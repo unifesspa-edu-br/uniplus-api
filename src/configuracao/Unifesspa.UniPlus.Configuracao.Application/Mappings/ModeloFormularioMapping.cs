@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Mappings;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -29,26 +30,39 @@ public static class ModeloFormularioMapping
         ArgumentNullException.ThrowIfNull(conteudo);
         return new ConteudoDoModeloInput(
             conteudo.Titulo,
-            [.. conteudo.Etapas.Select(static e => new EtapaFormularioInput(
-                e.Codigo, e.Ordem, EstruturaFormulario.ParaToken(e.Tipo), EstruturaFormulario.ParaToken(e.Bloco),
-                e.Titulo, e.Descricao, e.Aviso, EntradaDeRegras.ParaEntrada(e.Exibicao)))],
-            [.. conteudo.Itens.Select(ParaEntrada)],
-            [.. conteudo.Termos.Select(static t => new TermoExigidoInput(
-                t.Codigo, t.Ordem, t.TermoId, t.VersaoId, EntradaDeRegras.ParaEntrada(t.Exibicao),
-                EntradaDeRegras.ParaEntrada(t.Obrigatoriedade), EntradaDeRegras.ParaEntrada(t.Obrigatoriedade.Predicado)))],
+            [.. conteudo.Etapas.Select(EtapaParaEntrada)],
+            [.. conteudo.Itens.Select(ItemParaEntrada)],
+            [.. conteudo.Termos.Select(TermoParaEntrada)],
             conteudo.Pressupostos,
-            [.. conteudo.Grupos.Select(static g => new GrupoColetadoInput(
-                g.Codigo, g.Ordem, g.Rotulo, g.EtapaCodigo, g.Minimo, g.Maximo, EntradaDeRegras.ParaEntrada(g.Exibicao),
-                EntradaDeRegras.ParaEntrada(g.Obrigatoriedade), EntradaDeRegras.ParaEntrada(g.Obrigatoriedade.Predicado),
-                [.. g.Subitens.Select(ParaEntrada)], g.IncluiCandidato))],
-            [.. conteudo.Documentos.Select(static d => new DocumentoExigidoDoModeloInput(
-                d.FaseCodigo, d.TipoDocumentoCodigo, d.Obrigatorio, EntradaDeRegras.ParaEntrada(d.Quando), d.ConsequenciaIndeferimento,
-                [.. d.BasesLegais.Select(static b => new BaseLegalDoModeloInput(b.Referencia, b.Abrangencia, b.Status, b.Observacao))],
-                d.PorOpcao is null ? null : new ExigenciaPorOpcaoInput(d.PorOpcao.FatoCodigo, [.. d.PorOpcao.Exceto])))]);
+            [.. conteudo.Grupos.Select(GrupoParaEntrada)],
+            [.. conteudo.Documentos.Select(DocumentoParaEntrada)]);
     }
 
-    private static FatoColetadoInput ParaEntrada(ItemDoModelo campo) => new(
+    private static EtapaFormularioInput EtapaParaEntrada(EtapaDoModelo etapa) => new(
+        etapa.Codigo, etapa.Ordem, EstruturaFormulario.ParaToken(etapa.Tipo), EstruturaFormulario.ParaToken(etapa.Bloco),
+        etapa.Titulo, etapa.Descricao, etapa.Aviso, EntradaDeRegras.ParaEntrada(etapa.Exibicao));
+
+    private static FatoColetadoInput ItemParaEntrada(ItemDoModelo campo) => new(
         campo.FatoCodigo, campo.Ordem, campo.Rotulo, campo.TipoRenderizacao.ToCodigo(), EntradaDeRegras.ParaEntrada(campo.Obrigatoriedade),
         EntradaDeRegras.ParaEntrada(campo.Exibicao), campo.EtapaCodigo, EntradaDeRegras.ParaEntrada(campo.Obrigatoriedade.Predicado),
         campo.Ajuda, campo.PedirConfirmacao, [.. campo.Restricoes.Select(EntradaDeRegras.ParaEntrada)], EntradaDeRegras.ParaEntrada(campo.Impedimento));
+
+    private static TermoExigidoInput TermoParaEntrada(TermoDoModelo termo) => new(
+        termo.Codigo, termo.Ordem, termo.TermoId, termo.VersaoId, EntradaDeRegras.ParaEntrada(termo.Exibicao),
+        EntradaDeRegras.ParaEntrada(termo.Obrigatoriedade), EntradaDeRegras.ParaEntrada(termo.Obrigatoriedade.Predicado));
+
+    private static GrupoColetadoInput GrupoParaEntrada(GrupoDoModelo grupo) => new(
+        grupo.Codigo, grupo.Ordem, grupo.Rotulo, grupo.EtapaCodigo, grupo.Minimo, grupo.Maximo, EntradaDeRegras.ParaEntrada(grupo.Exibicao),
+        EntradaDeRegras.ParaEntrada(grupo.Obrigatoriedade), EntradaDeRegras.ParaEntrada(grupo.Obrigatoriedade.Predicado),
+        [.. grupo.Subitens.Select(ItemParaEntrada)], grupo.IncluiCandidato);
+
+    private static DocumentoExigidoDoModeloInput DocumentoParaEntrada(DocumentoExigidoDoModelo documento) => new(
+        documento.FaseCodigo, documento.TipoDocumentoCodigo, documento.Obrigatorio, EntradaDeRegras.ParaEntrada(documento.Quando),
+        documento.ConsequenciaIndeferimento, [.. documento.BasesLegais.Select(BaseLegalParaEntrada)], PorOpcaoParaEntrada(documento.PorOpcao));
+
+    private static BaseLegalDoModeloInput BaseLegalParaEntrada(BaseLegalDoDocumentoDoModelo baseLegal) =>
+        new(baseLegal.Referencia, baseLegal.Abrangencia, baseLegal.Status, baseLegal.Observacao);
+
+    private static ExigenciaPorOpcaoInput? PorOpcaoParaEntrada(ExigenciaPorOpcao? porOpcao) =>
+        porOpcao is null ? null : new ExigenciaPorOpcaoInput(porOpcao.FatoCodigo, [.. porOpcao.Exceto]);
 }

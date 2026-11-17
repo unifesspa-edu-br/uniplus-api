@@ -241,7 +241,6 @@ Ocorrências por arquivo de teste, com as linhas e a ação. `Habilitacao` como 
 | `Configuracao.IntegrationTests/Vocabularios/VocabulariosEndpointTests.cs` | fase-HOMOLOGACAO | 102 | renomear |
 | `Configuracao.IntegrationTests/Vocabularios/VocabulariosEndpointTests.cs` | fase-HABILITACAO | 109 | manter (ponto em aberto) |
 | `Configuracao.IntegrationTests/Vocabularios/VocabulariosEndpointTests.cs` | fase-HOMOLOGACAO-resultado-final | 113 | manter |
-| `Configuracao.IntegrationTests/ModelosFormulario/ModeloFormularioReaderTests.cs` | finalidade-HABILITACAO | 54,57 | manter (ponto em aberto) |
 | `Configuracao.IntegrationTests/ModelosFormulario/ModeloFormularioAdminEndpointTests.cs` | finalidade-HABILITACAO | 56,66,271,614 | manter (ponto em aberto) |
 | `Configuracao.IntegrationTests/ModelosFormulario/ModeloFormularioAdminEndpointTests.cs` | modelo-codigo | 274 | manter |
 | `Configuracao.IntegrationTests/PrecedenciasFase/PrecedenciaFasePersistenceTests.cs` | fase-HOMOLOGACAO | 34,161,180 | renomear |

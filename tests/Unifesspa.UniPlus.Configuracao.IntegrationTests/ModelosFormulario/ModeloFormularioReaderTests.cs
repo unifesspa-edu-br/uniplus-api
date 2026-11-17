@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
@@ -16,9 +17,8 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
-/// O leitor cross-módulo dos modelos de formulário (UNI-REQ-0144): a escolha do processo vê só os
-/// modelos ativos da finalidade que servem ao tipo dele, os do próprio tipo e os de todos os tipos;
-/// o modelo pedido pelo identificador vem com o estado, ativo ou não.
+/// O leitor cross-módulo dos modelos de formulário (UNI-REQ-0144): o modelo pedido pelo
+/// identificador vem com o estado, ativo ou não, e com o conteúdo que a Seleção copia.
 /// </summary>
 [Collection(ConfiguracaoEndpointCollection.Name)]
 [SuppressMessage(
@@ -34,65 +34,71 @@ public sealed class ModeloFormularioReaderTests
         _fixture = fixture;
     }
 
-    [Fact(DisplayName = "A escolha traz os modelos ativos da finalidade que servem ao tipo, inclusive os de todos os tipos, por código")]
-    public async Task ListarAtivos_FiltraPorTipoFinalidadeEEstado()
+    [Fact(DisplayName = "O modelo desativado é lido com o estado desativado")]
+    public async Task Obter_ModeloDesativado_TrazOEstado()
     {
-        string tipo = $"T{Guid.NewGuid():N}"[..20];
-        ModeloFormulario doTipo = Novo("B", tipo);
-        ModeloFormulario deTodos = Novo("A", tipoProcessoCodigo: null);
-        ModeloFormulario desativado = Novo("C", tipo);
-        ModeloFormulario deOutroTipo = Novo("D", "OUTRO_TIPO");
-        doTipo.Ativar().IsSuccess.Should().BeTrue();
-        deTodos.Ativar().IsSuccess.Should().BeTrue();
-        deOutroTipo.Ativar().IsSuccess.Should().BeTrue();
+        ModeloFormularioView? lido = await GravarELerAsync(Novo());
 
-        using IServiceScope escopo = _fixture.Factory.Services.CreateScope();
-        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        db.ModelosFormulario.AddRange(doTipo, deTodos, desativado, deOutroTipo);
-        await db.SaveChangesAsync();
-        IModeloFormularioReader reader = escopo.ServiceProvider.GetRequiredService<IModeloFormularioReader>();
+        lido!.Ativo.Should().BeFalse();
+    }
 
-        IReadOnlyList<ModeloFormularioView> habilitacao = await reader.ListarAtivosAsync($" {tipo} ", "HABILITACAO");
-        IReadOnlyList<ModeloFormularioView> inscricao = await reader.ListarAtivosAsync(tipo, "INSCRICAO");
-        ModeloFormularioView? lidoDesativado = await reader.ObterAsync(desativado.Id);
-        IReadOnlyList<ModeloFormularioView> tipoNaoGravavel = await reader.ListarAtivosAsync("PSR\u0000", "HABILITACAO");
+    [Fact(DisplayName = "O item e o grupo do modelo são lidos como foram gravados")]
+    public async Task Obter_Conteudo_TrazItemEGrupoGravados()
+    {
+        ModeloFormularioView? lido = await GravarELerAsync(Novo());
 
-        Guid[] ids = [.. habilitacao.Select(static m => m.Id)];
-        ids.Should().Contain([doTipo.Id, deTodos.Id]).And.NotContain([desativado.Id, deOutroTipo.Id]);
-        habilitacao.Select(static m => m.Codigo).Should().BeInAscendingOrder(StringComparer.Ordinal);
-        inscricao.Select(static m => m.Id).Should().NotContain(doTipo.Id);
-        tipoNaoGravavel.Should().BeEmpty();
-        lidoDesativado!.Ativo.Should().BeFalse();
-        lidoDesativado.Conteudo.Itens!.Single().FatoCodigo.Should().Be("CERTIFICADO");
-        GrupoColetadoInput grupo = lidoDesativado.Conteudo.Grupos!.Single();
+        lido!.Conteudo.Itens!.Single().FatoCodigo.Should().Be("CERTIFICADO");
+        GrupoColetadoInput grupo = lido.Conteudo.Grupos!.Single();
         grupo.Subitens.Select(static s => s.FatoCodigo).Should().Equal(CandidatoComoMembro.FatoParentesco, "MAIOR_IDADE");
         grupo.Maximo.Should().BeNull("o grupo sem máximo é gravado e lido sem máximo");
         grupo.IncluiCandidato.Should().BeTrue();
     }
 
-    private static ModeloFormulario Novo(string prefixo, string? tipoProcessoCodigo)
+    [Fact(DisplayName = "O identificador sem modelo não devolve nada")]
+    public async Task Obter_IdentificadorSemModelo_NaoTemModelo()
     {
-        ItemDoModelo item = new("CERTIFICADO", 0, "DADOS", "Certificado", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false);
-        return ModeloFormulario.Criar(
-            $"{prefixo}_{Guid.NewGuid():N}"[..30], "Habilitação", null, FinalidadeFormulario.Habilitacao, tipoProcessoCodigo,
-            new ConteudoDoModelo(
-                "Habilitação",
-                [
-                    new("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null, null),
-                    new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null),
-                ],
-                [item],
-                [],
-                [],
-                [
-                    new GrupoDoModelo(
-                        "COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", 1, null, null, Obrigatoriedade.Sempre,
-                        [
-                            new(CandidatoComoMembro.FatoParentesco, 0, null, "Parentesco", TipoRenderizacao.SelecaoUnica, null, null, Obrigatoriedade.Sempre, null, [], false),
-                            new("MAIOR_IDADE", 1, null, "Maior de idade", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false),
-                        ],
-                        IncluiCandidato: true),
-                ]),
-            new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)).Value!;
+        using IServiceScope escopo = _fixture.Factory.Services.CreateScope();
+        IModeloFormularioReader reader = escopo.ServiceProvider.GetRequiredService<IModeloFormularioReader>();
+
+        ModeloFormularioView? lido = await reader.ObterAsync(Guid.NewGuid());
+
+        lido.Should().BeNull();
     }
+
+    private async Task<ModeloFormularioView?> GravarELerAsync(ModeloFormulario modelo)
+    {
+        using IServiceScope escopo = _fixture.Factory.Services.CreateScope();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        db.ModelosFormulario.Add(modelo);
+        await db.SaveChangesAsync();
+        IModeloFormularioReader reader = escopo.ServiceProvider.GetRequiredService<IModeloFormularioReader>();
+        return await reader.ObterAsync(modelo.Id);
+    }
+
+    private static ModeloFormulario Novo() =>
+        ModeloFormulario.Criar(
+            $"A_{Guid.NewGuid():N}"[..30], "Habilitação", null, FinalidadeFormulario.Habilitacao, null,
+            ConteudoDeHabilitacao(),
+            new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)).Value!;
+
+    private static ConteudoDoModelo ConteudoDeHabilitacao() =>
+        new(
+            "Habilitação",
+            [
+                new("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null, null),
+                new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null),
+            ],
+            [new ItemDoModelo("CERTIFICADO", 0, "DADOS", "Certificado", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false)],
+            [],
+            [],
+            [GrupoDeComposicaoFamiliar()]);
+
+    private static GrupoDoModelo GrupoDeComposicaoFamiliar() =>
+        new(
+            "COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", 1, null, null, Obrigatoriedade.Sempre,
+            [
+                new(CandidatoComoMembro.FatoParentesco, 0, null, "Parentesco", TipoRenderizacao.SelecaoUnica, null, null, Obrigatoriedade.Sempre, null, [], false),
+                new("MAIOR_IDADE", 1, null, "Maior de idade", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false),
+            ],
+            IncluiCandidato: true);
 }

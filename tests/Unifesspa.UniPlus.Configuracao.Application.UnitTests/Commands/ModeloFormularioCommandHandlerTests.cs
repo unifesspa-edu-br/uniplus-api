@@ -106,17 +106,7 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
     [InlineData("NAO_EXISTE", ItemFormularioErrorCodes.FatoDesconhecido)]
     public async Task Criar_DocumentoPorOpcao_SoComOpcoesDoProcesso(string fato, string? recusa)
     {
-        FatoCandidato condicao = CriacaoDoFato.CriarDoAdministrador(
-            "CONDICAO", "Condição", "Descrição do fato.", DominioFato.Categorico, CardinalidadeFato.Multivalorado, FonteValoresFato.Processo, null, "INSCRICAO",
-            EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
-        Aprovar(condicao);
-        Fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [Certificado, condicao]);
-        ConteudoDoModeloInput conteudo = Conteudo(Item("CERTIFICADO", 0), Item("CONDICAO", 1, "SELECAO_MULTIPLA")) with
-        {
-            DocumentosExigidos = [new("INSCRICAO", "LAUDO_MEDICO", true, Quando("CERTIFICADO", true), "REMOVE_VANTAGEM", [], new ExigenciaPorOpcaoInput(fato, []))],
-        };
-
-        Result<Guid> resultado = await CriarAsync(conteudo);
+        Result<Guid> resultado = await CriarAsync(ComDocumentoPorOpcao(fato));
 
         if (recusa is null)
         {
@@ -189,5 +179,19 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
         resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(
             new FieldError("conteudo.termos[0].versaoId", new DomainError(ModeloFormularioErrorCodes.TermoVersaoNaoEncontrada, string.Empty)),
             static o => o.Excluding(static e => e.Error.Message).Excluding(static e => e.Origem));
+    }
+
+    private ConteudoDoModeloInput ComDocumentoPorOpcao(string fato)
+    {
+        FatoCandidato condicao = CriacaoDoFato.CriarDoAdministrador(
+            "CONDICAO", "Condição", "Descrição do fato.", DominioFato.Categorico, CardinalidadeFato.Multivalorado, FonteValoresFato.Processo, null, "INSCRICAO",
+            EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
+        Aprovar(condicao);
+        Fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [Certificado, condicao]);
+        return Conteudo(Item("CERTIFICADO", 0), Item("CONDICAO", 1, "SELECAO_MULTIPLA")) with
+        {
+            DocumentosExigidos = [new("INSCRICAO", "LAUDO_MEDICO", true, Quando("CERTIFICADO", true), "REMOVE_VANTAGEM", [], new ExigenciaPorOpcaoInput(fato, []))],
+        };
+
     }
 }

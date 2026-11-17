@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Services;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.Services;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -22,7 +24,7 @@ public static class VocabularioDoCatalogo
     /// que não citam fato de membro de grupo.
     /// </summary>
     public static Dictionary<string, DescritorFatoCandidato> Descritores(IEnumerable<FatoCandidato> fatos) =>
-        Descritores(fatos, static f => f.Escopo == EscopoFato.Candidato);
+        Descritores(fatos, static fato => fato.Escopo == EscopoFato.Candidato);
 
     /// <summary>
     /// O vocabulário das regras do formulário: o do candidato e os fatos de membro de grupo, que o
@@ -39,30 +41,37 @@ public static class VocabularioDoCatalogo
         Dictionary<string, DescritorFatoCandidato> vocabulario = new(StringComparer.Ordinal);
         foreach (FatoCandidato fato in porCodigo.Values.Where(noVocabulario))
         {
-            TipoDominioFato? tipo = fato switch
+            if (DescritorDe(fato, porCodigo) is { } descritor)
             {
-                { Dominio: DominioFato.Booleano } => TipoDominioFato.Booleano,
-                { Dominio: DominioFato.Numerico } => TipoDominioFato.Numerico,
-                { Dominio: DominioFato.Categorico, FonteValores: FonteValoresFato.Global } => TipoDominioFato.CategoricoEstatico,
-                { Dominio: DominioFato.Categorico } => TipoDominioFato.CategoricoDinamico,
-                _ => null,
-            };
-            if (tipo is null)
-            {
-                continue;
-            }
-
-            IReadOnlyList<string>? valores = tipo == TipoDominioFato.CategoricoEstatico
-                ? [.. ValoresDe(fato, porCodigo).Select(static v => v.Codigo)]
-                : null;
-            if (DescritorFatoCandidato.Criar(fato.Codigo, tipo.Value, valores) is { IsSuccess: true } descritor)
-            {
-                vocabulario[fato.Codigo] = descritor.Value!;
+                vocabulario[fato.Codigo] = descritor;
             }
         }
 
         return vocabulario;
     }
+
+    private static DescritorFatoCandidato? DescritorDe(FatoCandidato fato, IReadOnlyDictionary<string, FatoCandidato> porCodigo)
+    {
+        if (TipoNoVocabulario(fato) is not { } tipo)
+        {
+            return null;
+        }
+
+        IReadOnlyList<string>? valores = tipo == TipoDominioFato.CategoricoEstatico
+            ? [.. ValoresDe(fato, porCodigo).Select(static valor => valor.Codigo)]
+            : null;
+        return DescritorFatoCandidato.Criar(fato.Codigo, tipo, valores) is { IsSuccess: true } descritor ? descritor.Value : null;
+    }
+
+    private static TipoDominioFato? TipoNoVocabulario(FatoCandidato fato) =>
+        fato switch
+        {
+            { Dominio: DominioFato.Booleano } => TipoDominioFato.Booleano,
+            { Dominio: DominioFato.Numerico } => TipoDominioFato.Numerico,
+            { Dominio: DominioFato.Categorico, FonteValores: FonteValoresFato.Global } => TipoDominioFato.CategoricoEstatico,
+            { Dominio: DominioFato.Categorico } => TipoDominioFato.CategoricoDinamico,
+            _ => null,
+        };
 
     /// <summary>
     /// O domínio dos categóricos cujos valores o catálogo não enumera. UF e município de residência
@@ -75,18 +84,9 @@ public static class VocabularioDoCatalogo
     {
         ArgumentNullException.ThrowIfNull(fatos);
         Dictionary<string, DominioDeValores> dominios = new(StringComparer.Ordinal);
-        foreach (FatoCandidato fato in fatos.Where(static f => f.Dominio == DominioFato.Categorico))
+        foreach (FatoCandidato fato in fatos.Where(static fato => fato.Dominio == DominioFato.Categorico))
         {
-            DominioDeValores? dominio = fato.FonteValores switch
-            {
-                FonteValoresFato.GeoUf => DominioDeValores.Enumerado(ReferenciaCidadeGeo.Ufs),
-                FonteValoresFato.GeoMunicipio => DominioDeValores.PorFormato(ReferenciaCidadeGeo.EhCodigoMunicipioValido),
-                FonteValoresFato.Processo or FonteValoresFato.Modalidade or FonteValoresFato.MunicipiosBonus
-                    or FonteValoresFato.TiposDeficiencia
-                    => DominioDeValores.PorFormato(static _ => true),
-                _ => null,
-            };
-            if (dominio is not null)
+            if (DominioPelaFonte(fato.FonteValores) is { } dominio)
             {
                 dominios[fato.Codigo] = dominio;
             }
@@ -94,6 +94,17 @@ public static class VocabularioDoCatalogo
 
         return dominios;
     }
+
+    private static DominioDeValores? DominioPelaFonte(FonteValoresFato? fonte) =>
+        fonte switch
+        {
+            FonteValoresFato.GeoUf => DominioDeValores.Enumerado(ReferenciaCidadeGeo.Ufs),
+            FonteValoresFato.GeoMunicipio => DominioDeValores.PorFormato(ReferenciaCidadeGeo.EhCodigoMunicipioValido),
+            FonteValoresFato.Processo or FonteValoresFato.Modalidade or FonteValoresFato.MunicipiosBonus
+                or FonteValoresFato.TiposDeficiencia
+                => DominioDeValores.PorFormato(static _ => true),
+            _ => null,
+        };
 
     /// <summary>
     /// Como cada fato citado e não perguntado se apresenta: o nome e o tipo de campo que o domínio
@@ -107,7 +118,7 @@ public static class VocabularioDoCatalogo
         return codigos
             .Where(porCodigo.ContainsKey)
             .Distinct(StringComparer.Ordinal)
-            .ToDictionary(static c => c, c => Apresentacao(porCodigo[c]), StringComparer.Ordinal);
+            .ToDictionary(static codigo => codigo, codigo => Apresentacao(porCodigo[codigo]), StringComparer.Ordinal);
     }
 
     private static ApresentacaoDoFato Apresentacao(FatoCandidato fato) =>
@@ -116,28 +127,31 @@ public static class VocabularioDoCatalogo
             fato.Nome,
             DominiosFato.ParaTokenCanonico(fato.Dominio),
             CardinalidadesFato.ParaTokenCanonico(fato.Cardinalidade),
-            fato.FonteValores is { } fonte ? FontesValoresFato.ParaTokenCanonico(fonte) : null);
+            TokenDaFonteDeValores(fato));
+
+    private static string? TokenDaFonteDeValores(FatoCandidato fato) =>
+        fato.FonteValores is { } fonte ? FontesValoresFato.ParaTokenCanonico(fonte) : null;
 
     /// <summary>O catálogo como as regras do formulário o conferem, por código (<see cref="FatoDoCatalogo"/>).</summary>
     public static Dictionary<string, FatoDoCatalogo> ParaRegras(IEnumerable<FatoCandidato> fatos)
     {
         ArgumentNullException.ThrowIfNull(fatos);
         Dictionary<string, FatoCandidato> porCodigo = PorCodigo(fatos);
-        return porCodigo.Values.ToDictionary(
-            static f => f.Codigo,
-            f => new FatoDoCatalogo(
-                f.Codigo,
-                DominiosFato.ParaTokenCanonico(f.Dominio),
-                CardinalidadesFato.ParaTokenCanonico(f.Cardinalidade),
-                OrigensFato.ParaTokenCanonico(f.Origem),
-                f.Binding,
-                f.FonteValores is { } fonte ? FontesValoresFato.ParaTokenCanonico(fonte) : null,
-                EscoposFato.ParaTokenCanonico(f.Escopo),
-                f.Ativo,
-                [.. ValoresDe(f, porCodigo).Select(static v => new ValorDoCatalogo(v.Codigo, v.Ativo))],
-                f.Aprovacao.EstaAprovada),
-            StringComparer.Ordinal);
+        return porCodigo.Values.ToDictionary(static fato => fato.Codigo, fato => FatoParaRegras(fato, porCodigo), StringComparer.Ordinal);
     }
+
+    private static FatoDoCatalogo FatoParaRegras(FatoCandidato fato, IReadOnlyDictionary<string, FatoCandidato> porCodigo) =>
+        new(
+            fato.Codigo,
+            DominiosFato.ParaTokenCanonico(fato.Dominio),
+            CardinalidadesFato.ParaTokenCanonico(fato.Cardinalidade),
+            OrigensFato.ParaTokenCanonico(fato.Origem),
+            fato.Binding,
+            TokenDaFonteDeValores(fato),
+            EscoposFato.ParaTokenCanonico(fato.Escopo),
+            fato.Ativo,
+            [.. ValoresDe(fato, porCodigo).Select(static valor => new ValorDoCatalogo(valor.Codigo, valor.Ativo))],
+            fato.Aprovacao.EstaAprovada);
 
     /// <summary>
     /// Os valores do fato: os próprios, ou, no agregado sobre grupo repetível, os do fato de membro
@@ -165,15 +179,15 @@ public static class VocabularioDoCatalogo
         ArgumentNullException.ThrowIfNull(grupos);
         Dictionary<string, FatoCandidato> porCodigo = PorCodigo(fatos);
         Dictionary<string, string> grupoDoCampo = grupos
-            .SelectMany(static g => g.Subitens.Select(s => (Campo: s.FatoCodigo, Grupo: g.Codigo)))
-            .ToDictionary(static p => p.Campo, static p => p.Grupo, StringComparer.Ordinal);
+            .SelectMany(static grupo => grupo.Subitens.Select(subitem => (Campo: subitem.FatoCodigo, Grupo: grupo.Codigo)))
+            .ToDictionary(static campoEGrupo => campoEGrupo.Campo, static campoEGrupo => campoEGrupo.Grupo, StringComparer.Ordinal);
         return [.. porCodigo.Values
-            .Where(f => f.FatoDeMembroAgregado is { } membro && grupoDoCampo.ContainsKey(membro) && porCodigo.ContainsKey(membro))
-            .OrderBy(static f => f.Codigo, StringComparer.Ordinal)
-            .Select(f => (Agregado: f.Codigo, Membro: f.FatoDeMembroAgregado!,
-                Operacao: AgregadoDeGrupo.OperacaoDoDominio(DominiosFato.ParaTokenCanonico(porCodigo[f.FatoDeMembroAgregado!].Dominio))))
-            .Where(static a => a.Operacao != OperacaoAgregado.Nenhuma)
-            .Select(a => new DefinicaoAgregado(a.Agregado, grupoDoCampo[a.Membro], a.Membro, a.Operacao))];
+            .Where(fato => fato.FatoDeMembroAgregado is { } membro && grupoDoCampo.ContainsKey(membro) && porCodigo.ContainsKey(membro))
+            .OrderBy(static fato => fato.Codigo, StringComparer.Ordinal)
+            .Select(fato => (Agregado: fato.Codigo, Membro: fato.FatoDeMembroAgregado!,
+                Operacao: AgregadoDeGrupo.OperacaoDoDominio(DominiosFato.ParaTokenCanonico(porCodigo[fato.FatoDeMembroAgregado!].Dominio))))
+            .Where(static definicao => definicao.Operacao != OperacaoAgregado.Nenhuma)
+            .Select(definicao => new DefinicaoAgregado(definicao.Agregado, grupoDoCampo[definicao.Membro], definicao.Membro, definicao.Operacao))];
     }
 
     /// <summary>
@@ -188,24 +202,38 @@ public static class VocabularioDoCatalogo
         ArgumentNullException.ThrowIfNull(conteudo);
         Dictionary<string, FatoCandidato> porCodigo = PorCodigo(fatos);
         Dictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes = new(StringComparer.Ordinal);
-        foreach (string campo in conteudo.Itens.Concat(conteudo.Grupos.SelectMany(static g => g.Subitens)).Select(static i => i.FatoCodigo))
+        foreach (string campo in conteudo.Campos().Select(static item => item.FatoCodigo))
         {
-            opcoes[campo] = porCodigo.TryGetValue(campo, out FatoCandidato? fato) && fato.Dominio == DominioFato.Categorico
-                ? fato.FonteValores switch
-                {
-                    FonteValoresFato.Global => [.. ValoresDe(fato, porCodigo)
-                        .Where(static v => v.Ativo)
-                        .OrderBy(static v => v.Ordem)
-                        .ThenBy(static v => v.Codigo, StringComparer.Ordinal)
-                        .Select(static v => new ValorSelecionavel(v.Codigo, v.Descricao, v.Ordem, v.Orientacao))],
-                    FonteValoresFato.GeoUf => [.. ReferenciaCidadeGeo.UnidadesFederativas.Select(static (uf, ordem) => new ValorSelecionavel(uf.Sigla, uf.Nome, ordem))],
-                    _ => null,
-                }
-                : null;
+            opcoes[campo] = porCodigo.TryGetValue(campo, out FatoCandidato? fato) ? OpcoesDoCatalogo(fato, porCodigo) : null;
         }
 
         return opcoes;
     }
+
+    private static List<ValorSelecionavel>? OpcoesDoCatalogo(FatoCandidato fato, IReadOnlyDictionary<string, FatoCandidato> porCodigo)
+    {
+        if (fato.Dominio != DominioFato.Categorico)
+        {
+            return null;
+        }
+
+        return fato.FonteValores switch
+        {
+            FonteValoresFato.Global => OpcoesDosValoresAtivos(fato, porCodigo),
+            FonteValoresFato.GeoUf => OpcoesDasUnidadesFederativas(),
+            _ => null,
+        };
+    }
+
+    private static List<ValorSelecionavel> OpcoesDosValoresAtivos(FatoCandidato fato, IReadOnlyDictionary<string, FatoCandidato> porCodigo) =>
+        [.. ValoresDe(fato, porCodigo)
+            .Where(static valor => valor.Ativo)
+            .OrderBy(static valor => valor.Ordem)
+            .ThenBy(static valor => valor.Codigo, StringComparer.Ordinal)
+            .Select(static valor => new ValorSelecionavel(valor.Codigo, valor.Descricao, valor.Ordem, valor.Orientacao))];
+
+    private static List<ValorSelecionavel> OpcoesDasUnidadesFederativas() =>
+        [.. ReferenciaCidadeGeo.UnidadesFederativas.Select(static (uf, ordem) => new ValorSelecionavel(uf.Sigla, uf.Nome, ordem))];
 
     /// <summary>
     /// Os códigos que cada campo de seleção do modelo oferta, das opções do catálogo: a resposta fora
@@ -215,12 +243,12 @@ public static class VocabularioDoCatalogo
     {
         ArgumentNullException.ThrowIfNull(opcoes);
         return opcoes
-            .Where(static o => o.Value is not null)
-            .ToDictionary(static o => o.Key, static o => (IReadOnlySet<string>)o.Value!.Select(static v => v.Codigo).ToHashSet(StringComparer.Ordinal), StringComparer.Ordinal);
+            .Where(static campo => campo.Value is not null)
+            .ToDictionary(static campo => campo.Key, static campo => (IReadOnlySet<string>)campo.Value!.Select(static valor => valor.Codigo).ToHashSet(StringComparer.Ordinal), StringComparer.Ordinal);
     }
 
     private static Dictionary<string, FatoCandidato> PorCodigo(IEnumerable<FatoCandidato> fatos) =>
-        fatos.ToDictionary(static f => f.Codigo, StringComparer.Ordinal);
+        fatos.ToDictionary(static fato => fato.Codigo, StringComparer.Ordinal);
 
     /// <summary>
     /// As dependências de cada derivado que o catálogo sabe derivar: os fatos citados pelas regras
@@ -228,15 +256,15 @@ public static class VocabularioDoCatalogo
     /// por regra sem regra padrão não entra — quem o deriva é o processo.
     /// </summary>
     public static Dictionary<string, IReadOnlyCollection<string>> Derivacoes(IEnumerable<FatoCandidato> fatos) =>
-        DerivadosDoSistema.ComAsDoSistema(DerivacoesDosFatos(fatos).Select(static r => KeyValuePair.Create(r.CodigoFato, r.DependenciasDeclaradas)));
+        DerivadosDoSistema.ComAsDoSistema(DerivacoesDosFatos(fatos).Select(static derivacao => KeyValuePair.Create(derivacao.CodigoFato, derivacao.DependenciasDeclaradas)));
 
     /// <summary>O formato da resposta de cada fato de texto, em token canônico.</summary>
     public static Dictionary<string, string> Formatos(IEnumerable<FatoCandidato> fatos)
     {
         ArgumentNullException.ThrowIfNull(fatos);
         return fatos
-            .Where(static f => f.Formato is { } formato && formato != FormatoTexto.Nenhum)
-            .ToDictionary(static f => f.Codigo, static f => FormatosTexto.ParaTokenCanonico(f.Formato!.Value), StringComparer.Ordinal);
+            .Where(static fato => fato.Formato is { } formato && formato != FormatoTexto.Nenhum)
+            .ToDictionary(static fato => fato.Codigo, static fato => FormatosTexto.ParaTokenCanonico(fato.Formato!.Value), StringComparer.Ordinal);
     }
 
     /// <summary>
@@ -248,16 +276,16 @@ public static class VocabularioDoCatalogo
     {
         ArgumentNullException.ThrowIfNull(fatos);
         return [.. fatos
-            .Where(static f => f.RegrasPadrao.Count > 0 && VinculoDeFato.Usa(f.Binding, VinculoDeFato.RegraDeDerivacao))
-            .Select(static f =>
+            .Where(static fato => fato.RegrasPadrao.Count > 0 && VinculoDeFato.Usa(fato.Binding, VinculoDeFato.RegraDeDerivacao))
+            .Select(static fato =>
             {
-                string[] dependencias = [.. f.RegrasPadrao.SelectMany(static r => r.FatosCitados).Distinct(StringComparer.Ordinal)];
-                Result<DerivacaoDoFato> derivacao = f.Dominio == DominioFato.Booleano
-                    ? DerivacaoDoFato.CriarBooleana(f.Codigo, f.RegrasPadrao, dependencias)
-                    : DerivacaoDoFato.Criar(f.Codigo, f.RegrasPadrao, dependencias, [.. f.ValoresDominioDeclarados.Select(static v => v.Codigo)]);
+                string[] dependencias = [.. fato.RegrasPadrao.SelectMany(static regra => regra.FatosCitados).Distinct(StringComparer.Ordinal)];
+                Result<DerivacaoDoFato> derivacao = fato.Dominio == DominioFato.Booleano
+                    ? DerivacaoDoFato.CriarBooleana(fato.Codigo, fato.RegrasPadrao, dependencias)
+                    : DerivacaoDoFato.Criar(fato.Codigo, fato.RegrasPadrao, dependencias, [.. fato.ValoresDominioDeclarados.Select(static valor => valor.Codigo)]);
                 return derivacao.IsSuccess
                     ? derivacao.Value!
-                    : throw new InvalidOperationException($"As regras padrão gravadas de '{f.Codigo}' não formam uma derivação: {derivacao.Error!.Message}");
+                    : throw new InvalidOperationException($"As regras padrão gravadas de '{fato.Codigo}' não formam uma derivação: {derivacao.Error!.Message}");
             })];
     }
 }

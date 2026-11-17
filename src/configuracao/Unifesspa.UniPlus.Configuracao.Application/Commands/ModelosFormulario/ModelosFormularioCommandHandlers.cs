@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.ModelosFormulario;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
-using Unifesspa.UniPlus.Configuracao.Application.Mappings;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
@@ -31,26 +30,29 @@ public static class CriarModeloFormularioCommandHandler
         ArgumentNullException.ThrowIfNull(tipoProcessoReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
+        EscritaDoModelo escrita = new(fatoRepository, termoReader, tipoProcessoReader);
+        Result<ModeloFormulario> novo = await ConferirECriarAsync(command, escrita, cancellationToken).ConfigureAwait(false);
+        return novo.IsFailure
+            ? Result<Guid>.ValidationFailure(novo.Errors)
+            : await GravacaoDoModelo.GravarNovoAsync(novo.Value!, repository, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result<ModeloFormulario>> ConferirECriarAsync(
+        CriarModeloFormularioCommand command, EscritaDoModelo escrita, CancellationToken cancellationToken)
+    {
         FinalidadeFormulario finalidade = EstruturaFormulario.FinalidadeDoToken(command.Finalidade);
-        (ConteudoLido conteudo, CatalogoDoModelo catalogo, List<FieldError> erros) = await EscritaDoModelo.LerEConferirAsync(
-            command.Conteudo, finalidade, gravado: null, command.TipoProcessoCodigo, tipoProcessoAnterior: null, VinculosDoModelo.Nenhum,
-            fatoRepository, termoReader, tipoProcessoReader, cancellationToken).ConfigureAwait(false);
+        (ConteudoLido conteudo, CatalogoDoModelo catalogo, List<FieldError> erros) = await escrita.LerEConferirAsync(
+            command.Conteudo, finalidade, command.TipoProcessoCodigo, ModeloGravado.Nenhum, cancellationToken).ConfigureAwait(false);
         if (conteudo.Erros.Count > 0)
         {
             erros.AddRange(ModeloFormulario.ConferirCadastro(command.Codigo, command.Nome, command.Descricao, command.TipoProcessoCodigo, finalidade));
-            return Result<Guid>.ValidationFailure(erros);
+            return Result<ModeloFormulario>.ValidationFailure(erros);
         }
 
         Result<ModeloFormulario> criar = ModeloFormulario.Criar(
             command.Codigo, command.Nome, command.Descricao, finalidade, command.TipoProcessoCodigo, conteudo.ParaConteudo(), catalogo.Derivacoes);
-        if (criar.IsFailure)
-        {
-            erros.AddRange(criar.Errors);
-        }
-
-        return erros.Count > 0
-            ? Result<Guid>.ValidationFailure(erros)
-            : await EscritaDoModelo.GravarNovoAsync(criar.Value!, repository, unitOfWork, cancellationToken).ConfigureAwait(false);
+        erros.AddRange(criar.Errors);
+        return erros.Count > 0 ? Result<ModeloFormulario>.ValidationFailure(erros) : criar;
     }
 }
 
@@ -76,32 +78,26 @@ public static class AtualizarModeloFormularioCommandHandler
         ArgumentNullException.ThrowIfNull(tipoProcessoReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        return EscritaDoModelo.MutarAsync(
-            command.Id,
-            async modelo =>
-            {
-                (ConteudoLido conteudo, CatalogoDoModelo catalogo, List<FieldError> erros) = await EscritaDoModelo.LerEConferirAsync(
-                    command.Conteudo, modelo.Finalidade, modelo.ToView().Conteudo, command.TipoProcessoCodigo, modelo.TipoProcessoCodigo,
-                    ConferenciaDoModelo.VinculosGravados(modelo.Conteudo),
-                    fatoRepository, termoReader, tipoProcessoReader, cancellationToken).ConfigureAwait(false);
-                if (conteudo.Erros.Count > 0)
-                {
-                    erros.AddRange(ModeloFormulario.ConferirDescritivo(command.Nome, command.Descricao, command.TipoProcessoCodigo));
-                    return Result.ValidationFailure(erros);
-                }
+        EscritaDoModelo escrita = new(fatoRepository, termoReader, tipoProcessoReader);
+        return GravacaoDoModelo.MutarAsync(
+            command.Id, modelo => ConferirEAtualizarAsync(command, modelo, escrita, cancellationToken), repository, unitOfWork, cancellationToken);
+    }
 
-                Result atualizar = modelo.Atualizar(
-                    command.Nome, command.Descricao, command.TipoProcessoCodigo, conteudo.ParaConteudo(), catalogo.Derivacoes);
-                if (atualizar.IsFailure)
-                {
-                    erros.AddRange(atualizar.Errors);
-                }
+    private static async Task<Result> ConferirEAtualizarAsync(
+        AtualizarModeloFormularioCommand command, ModeloFormulario modelo, EscritaDoModelo escrita, CancellationToken cancellationToken)
+    {
+        (ConteudoLido conteudo, CatalogoDoModelo catalogo, List<FieldError> erros) = await escrita.LerEConferirAsync(
+            command.Conteudo, modelo.Finalidade, command.TipoProcessoCodigo, ModeloGravado.De(modelo), cancellationToken).ConfigureAwait(false);
+        if (conteudo.Erros.Count > 0)
+        {
+            erros.AddRange(ModeloFormulario.ConferirDescritivo(command.Nome, command.Descricao, command.TipoProcessoCodigo));
+            return Result.ValidationFailure(erros);
+        }
 
-                return erros.Count > 0 ? Result.ValidationFailure(erros) : Result.Success();
-            },
-            repository,
-            unitOfWork,
-            cancellationToken);
+        Result atualizar = modelo.Atualizar(
+            command.Nome, command.Descricao, command.TipoProcessoCodigo, conteudo.ParaConteudo(), catalogo.Derivacoes);
+        erros.AddRange(atualizar.Errors);
+        return erros.Count > 0 ? Result.ValidationFailure(erros) : Result.Success();
     }
 }
 
@@ -116,7 +112,7 @@ public static class AtivarModeloFormularioCommandHandler
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
-        return EscritaDoModelo.MutarAsync(command.Id, static m => Task.FromResult(m.Ativar()), repository, unitOfWork, cancellationToken);
+        return GravacaoDoModelo.MutarAsync(command.Id, static m => Task.FromResult(m.Ativar()), repository, unitOfWork, cancellationToken);
     }
 }
 
@@ -131,6 +127,6 @@ public static class DesativarModeloFormularioCommandHandler
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
-        return EscritaDoModelo.MutarAsync(command.Id, static m => Task.FromResult(m.Desativar()), repository, unitOfWork, cancellationToken);
+        return GravacaoDoModelo.MutarAsync(command.Id, static m => Task.FromResult(m.Desativar()), repository, unitOfWork, cancellationToken);
     }
 }

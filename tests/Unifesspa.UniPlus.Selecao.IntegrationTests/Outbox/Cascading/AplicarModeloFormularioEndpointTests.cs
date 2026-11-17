@@ -13,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
@@ -45,19 +46,8 @@ public sealed class AplicarModeloFormularioEndpointTests
         HttpResponseMessage resposta = await AplicarAsync(processoId, modeloId);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
-        using (JsonDocument relatorio = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync()))
-        {
-            relatorio.RootElement.GetProperty("finalidade").GetString().Should().Be("INSCRICAO");
-        }
-
-        await using (AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope())
-        {
-            UniPlusDbContext configuracao = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-            ModeloFormulario modelo = await configuracao.ModelosFormulario.SingleAsync(m => m.Id == modeloId);
-            modelo.Atualizar("Editado", null, null, Conteudo("QUILOMBOLA", "PCD"), new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal))
-                .IsSuccess.Should().BeTrue();
-            await configuracao.SaveChangesAsync();
-        }
+        (await FinalidadeDoRelatorioAsync(resposta)).Should().Be("INSCRICAO");
+        await EditarModeloAsync(modeloId, Conteudo("QUILOMBOLA", "PCD"));
 
         ProcessoSeletivo processo = await LerProcessoAsync(processoId);
         processo.FatosColetados.ForaDoConjuntoBasico().Select(static f => f.FatoCodigo).Should().Equal("QUILOMBOLA");
@@ -82,17 +72,7 @@ public sealed class AplicarModeloFormularioEndpointTests
     public async Task AplicarModelo_ComGrupo_GravaESubstitui()
     {
         Guid processoId = await SemearProcessoAsync(nameof(AplicarModelo_ComGrupo_GravaESubstitui));
-        Guid modeloId = await SemearModeloAsync(
-            FinalidadeFormulario.Inscricao,
-            Conteudo("QUILOMBOLA") with
-            {
-                Grupos =
-                [
-                    new GrupoDoModelo(
-                        "COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", 1, 10, null, Obrigatoriedade.Sempre,
-                        [new ItemDoModelo("MAIOR_IDADE", 0, null, "Maior de idade", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false)]),
-                ],
-            });
+        Guid modeloId = await SemearModeloAsync(FinalidadeFormulario.Inscricao, ConteudoComGrupoDaComposicaoFamiliar());
 
         (await AplicarAsync(processoId, modeloId)).StatusCode.Should().Be(HttpStatusCode.OK);
         HttpResponseMessage reaplicado = await AplicarAsync(processoId, modeloId);
@@ -101,6 +81,22 @@ public sealed class AplicarModeloFormularioEndpointTests
         ProcessoSeletivo processo = await LerProcessoAsync(processoId);
         processo.GruposColetados.Should().ContainSingle().Which.Subitens.Should().ContainSingle().Which.FatoCodigo.Should().Be("MAIOR_IDADE");
         processo.FatosColetados.ForaDoConjuntoBasico().Select(static f => f.FatoCodigo).Should().Equal("QUILOMBOLA");
+    }
+
+    private static async Task<string?> FinalidadeDoRelatorioAsync(HttpResponseMessage resposta)
+    {
+        using JsonDocument relatorio = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        return relatorio.RootElement.GetProperty("finalidade").GetString();
+    }
+
+    private async Task EditarModeloAsync(Guid modeloId, ConteudoDoModelo conteudo)
+    {
+        await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
+        UniPlusDbContext configuracao = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        ModeloFormulario modelo = await configuracao.ModelosFormulario.SingleAsync(m => m.Id == modeloId);
+        modelo.Atualizar("Editado", null, null, conteudo, new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal))
+            .IsSuccess.Should().BeTrue();
+        await configuracao.SaveChangesAsync();
     }
 
     private async Task<Guid> SemearProcessoAsync(string nome)
@@ -137,6 +133,17 @@ public sealed class AplicarModeloFormularioEndpointTests
             fato, ordem, "DADOS", fato, TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false))],
         [],
         [], []);
+
+    private static ConteudoDoModelo ConteudoComGrupoDaComposicaoFamiliar() =>
+        Conteudo("QUILOMBOLA") with
+        {
+            Grupos =
+            [
+                new GrupoDoModelo(
+                    "COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", 1, 10, null, Obrigatoriedade.Sempre,
+                    [new ItemDoModelo("MAIOR_IDADE", 0, null, "Maior de idade", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false)]),
+            ],
+        };
 
     private async Task<ProcessoSeletivo> LerProcessoAsync(Guid processoId)
     {

@@ -16,4 +16,10 @@
     <ProjectReference Include="..\Unifesspa.UniPlus.Configuracao.Contracts\Unifesspa.UniPlus.Configuracao.Contracts.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- A leitura e a conferência do conteúdo do modelo são internal: os testes de unidade as exercitam direto,
+         com a lista de recusas na ordem em que a escrita as devolve. -->
+    <InternalsVisibleTo Include="Unifesspa.UniPlus.Configuracao.Application.UnitTests" />
+  </ItemGroup>
+
 </Project>

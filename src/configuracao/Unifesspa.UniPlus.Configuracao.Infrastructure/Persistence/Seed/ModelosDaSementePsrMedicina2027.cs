@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Configuracao.Application.Commands.ModelosFormulario;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
-using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
@@ -312,12 +312,10 @@ internal static class ModelosDaSementePsrMedicina2027
 
     /// <summary>O predicado que vale quando todas as condições de alguma das cláusulas valem.</summary>
     private static PredicadoDnf SeAlguma(params CondicaoDnf[][] clausulas) =>
-        Exigir(
+        Declaracao.Exigir(
             PredicadoDnf.CriarDeCondicoesAgrupadas([.. clausulas.SelectMany(static (condicoes, i) => condicoes.Select(c => (i + 1, c)))]),
             $"predicado sobre {string.Join(", ", clausulas.SelectMany(static c => c).Select(static c => c.Fato).Distinct(StringComparer.Ordinal))}");
 
     private static CondicaoDnf Condicao<T>(string fato, Operador operador, T valor) =>
-        Exigir(CondicaoDnf.Criar(fato, operador, JsonSerializer.SerializeToElement(valor)), $"condição sobre {fato}");
-
-    private static T Exigir<T>(Result<T> resultado, string oQue) => SqlDaSemente.Exigir(resultado, NomeDaSemente, oQue);
+        Declaracao.Exigir(CondicaoDnf.Criar(fato, operador, JsonSerializer.SerializeToElement(valor)), $"condição sobre {fato}");
 }

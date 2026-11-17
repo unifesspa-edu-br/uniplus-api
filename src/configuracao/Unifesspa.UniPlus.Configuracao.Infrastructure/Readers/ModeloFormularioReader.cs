@@ -7,16 +7,11 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
-using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// Implementação de <see cref="IModeloFormularioReader"/> (ADR-0056): leitura direta dos modelos
 /// (<c>AsNoTracking</c>), na mesma forma da manutenção.
 /// </summary>
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via DI em ConfiguracaoInfrastructureRegistration.")]
 internal sealed class ModeloFormularioReader : IModeloFormularioReader
 {
     private readonly UniPlusDbContext _dbContext;
@@ -25,27 +20,6 @@ internal sealed class ModeloFormularioReader : IModeloFormularioReader
     {
         ArgumentNullException.ThrowIfNull(dbContext);
         _dbContext = dbContext;
-    }
-
-    public async Task<IReadOnlyList<ModeloFormularioView>> ListarAtivosAsync(
-        string tipoProcessoCodigo, string finalidade, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(tipoProcessoCodigo);
-        // Finalidade desconhecida, ou tipo que o banco não grava, não é de nenhum modelo.
-        FinalidadeFormulario daFinalidade = EstruturaFormulario.FinalidadeDoToken(finalidade);
-        if (daFinalidade == FinalidadeFormulario.Nenhuma || !ModeloFormulario.EhGravavel(tipoProcessoCodigo))
-        {
-            return [];
-        }
-
-        string tipo = tipoProcessoCodigo.Trim();
-        List<ModeloFormulario> modelos = await _dbContext.ModelosFormulario
-            .AsNoTracking()
-            .Where(m => m.Ativo && m.Finalidade == daFinalidade && (m.TipoProcessoCodigo == null || m.TipoProcessoCodigo == tipo))
-            .OrderBy(m => m.Codigo)
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-        return [.. modelos.Select(static m => m.ToView())];
     }
 
     public async Task<ModeloFormularioView?> ObterAsync(Guid id, CancellationToken cancellationToken = default)

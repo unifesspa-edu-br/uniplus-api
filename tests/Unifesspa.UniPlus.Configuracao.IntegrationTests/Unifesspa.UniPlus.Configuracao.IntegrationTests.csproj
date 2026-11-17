@@ -33,4 +33,9 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <!-- Os comandos SQL que cada semente grava, um por linha, comparados um a um. -->
+  <ItemGroup>
+    <Content Include="Sementes/Fixtures/*.sql" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

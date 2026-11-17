@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
@@ -36,6 +37,9 @@ public sealed class ModeloFormularioTests
     private static Result<ModeloFormulario> Criar(
         FinalidadeFormulario finalidade, ConteudoDoModelo conteudo, IReadOnlyDictionary<string, IReadOnlyCollection<string>>? derivacoes = null) =>
         ModeloFormulario.Criar("HABILITACAO_MEDICINA", "Habilitação Medicina 2027", null, finalidade, "PSR", conteudo, derivacoes ?? SemDerivacoes);
+
+    private static Result<ModeloFormulario> CriarInscricao(ConteudoDoModelo conteudo, IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes) =>
+        ModeloFormulario.Criar("INSCRICAO_MEDICINA", "Inscrição Medicina 2027", null, FinalidadeFormulario.Inscricao, null, conteudo, derivacoes);
 
     private static GrupoDoModelo Composicao(params ItemDoModelo[] campos) =>
         new("COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", 1, 10, null, Obrigatoriedade.Sempre, campos);
@@ -150,7 +154,7 @@ public sealed class ModeloFormularioTests
         modelo.IsSuccess.Should().BeTrue(modelo.Error?.Message);
     }
 
-    [Fact(DisplayName = "Campo opcional que alimenta um derivado citado pelo modelo é recusado; o que alimenta derivado não citado, não")]
+    [Fact(DisplayName = "Campo opcional que alimenta um derivado citado pelo modelo é recusado")]
     public void CampoOpcionalQueAlimentaDerivadoCitado_Recusa()
     {
         Dictionary<string, IReadOnlyCollection<string>> derivacoes = new(StringComparer.Ordinal)
@@ -159,16 +163,26 @@ public sealed class ModeloFormularioTests
             ["OUTRO_DERIVADO"] = ["RENDA_DECLARADA"],
         };
 
-        Result<ModeloFormulario> citado = ModeloFormulario.Criar(
-            "INSCRICAO_MEDICINA", "Inscrição Medicina 2027", null, FinalidadeFormulario.Inscricao, null,
+        Result<ModeloFormulario> citado = CriarInscricao(
             Conteudo([Item("TIPO_ESCOLA", 0, Obrigatoriedade.Nunca), Item("COTA", 1, exibicao: Quando("EGRESSO_ESCOLA_PUBLICA"))]),
             derivacoes);
-        Result<ModeloFormulario> naoCitado = ModeloFormulario.Criar(
-            "INSCRICAO_MEDICINA", "Inscrição Medicina 2027", null, FinalidadeFormulario.Inscricao, null,
-            Conteudo([Item("RENDA_DECLARADA", 0, Obrigatoriedade.Nunca), Item("COTA", 1, exibicao: Quando("EGRESSO_ESCOLA_PUBLICA"))]),
-            new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal) { ["EGRESSO_ESCOLA_PUBLICA"] = [], ["OUTRO_DERIVADO"] = ["RENDA_DECLARADA"] });
 
         citado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ItemFormularioErrorCodes.OpcionalQueAlimentaRegra);
+    }
+
+    [Fact(DisplayName = "Campo opcional que alimenta um derivado não citado pelo modelo é aceito")]
+    public void CampoOpcionalQueAlimentaDerivadoNaoCitado_Aceita()
+    {
+        Dictionary<string, IReadOnlyCollection<string>> derivacoes = new(StringComparer.Ordinal)
+        {
+            ["EGRESSO_ESCOLA_PUBLICA"] = [],
+            ["OUTRO_DERIVADO"] = ["RENDA_DECLARADA"],
+        };
+
+        Result<ModeloFormulario> naoCitado = CriarInscricao(
+            Conteudo([Item("RENDA_DECLARADA", 0, Obrigatoriedade.Nunca), Item("COTA", 1, exibicao: Quando("EGRESSO_ESCOLA_PUBLICA"))]),
+            derivacoes);
+
         naoCitado.IsSuccess.Should().BeTrue(naoCitado.Error?.Message);
     }
 
@@ -258,43 +272,87 @@ public sealed class ModeloFormularioTests
         modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.PressupostoEmBranco);
     }
 
-    [Fact(DisplayName = "Texto com caractere nulo, no descritivo, no item ou num valor citado por regra, é recusado antes de chegar ao banco")]
-    public void TextoComCaractereNulo_Recusa()
+    private static void DeveRecusarTextoNaoGravavelEm(Result<ModeloFormulario> modelo, string campo)
     {
-        Result<ModeloFormulario> descricao = ModeloFormulario.Criar(
+        FieldError recusa = modelo.Errors.Should().ContainSingle().Subject;
+        recusa.Field.Should().Be(campo);
+        recusa.Error.Code.Should().Be(ModeloFormularioErrorCodes.TextoNaoGravavel);
+    }
+
+    private static PredicadoDnf QuandoOValorE(Operador operador, JsonElement valor) =>
+        PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("CONCLUSAO_REGULAR", operador, valor).Value!)]).Value!;
+
+    [Fact(DisplayName = "Texto com caractere nulo na descrição é recusado antes de chegar ao banco, com o código de texto não gravável")]
+    public void TextoComCaractereNulo_NaDescricao_Recusa()
+    {
+        Result<ModeloFormulario> modelo = ModeloFormulario.Criar(
             "HABILITACAO_MEDICINA", "Habilitação", "texto\0", FinalidadeFormulario.Habilitacao, null, Conteudo([Item("CERTIFICADO", 0)]), SemDerivacoes);
-        Result<ModeloFormulario> rotulo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0) with { Rotulo = "Certificado\0" }]));
-        PredicadoDnf valorNulo = PredicadoDnf.CriarDeCondicoesAgrupadas(
-            [(0, CondicaoDnf.Criar("CONCLUSAO_REGULAR", Operador.Igual, JsonSerializer.SerializeToElement("A\0")).Value!)]).Value!;
-        Result<ModeloFormulario> valor = Criar(
+
+        DeveRecusarTextoNaoGravavelEm(modelo, "descricao");
+    }
+
+    [Fact(DisplayName = "Texto com caractere nulo no rótulo do item é recusado no caminho do conteúdo")]
+    public void TextoComCaractereNulo_NoRotuloDoItem_Recusa()
+    {
+        Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0) with { Rotulo = "Certificado\0" }]));
+
+        DeveRecusarTextoNaoGravavelEm(modelo, "conteudo.itens[0].rotulo");
+    }
+
+    [Fact(DisplayName = "Caractere nulo num valor citado por regra do item é recusado antes de chegar ao banco")]
+    public void TextoComCaractereNulo_NoValorDaRegra_Recusa()
+    {
+        PredicadoDnf valorNulo = QuandoOValorE(Operador.Igual, JsonSerializer.SerializeToElement("A\0"));
+
+        Result<ModeloFormulario> modelo = Criar(
             FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0, exibicao: valorNulo)], "CONCLUSAO_REGULAR"));
 
-        PredicadoDnf objetoNulo = PredicadoDnf.CriarDeCondicoesAgrupadas(
-            [(0, CondicaoDnf.Criar("CONCLUSAO_REGULAR", Operador.Em, JsonSerializer.SerializeToElement(new[] { new Dictionary<string, string> { ["a\0"] = "b" } })).Value!)]).Value!;
-        Result<ModeloFormulario> objeto = Criar(
-            FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0, exibicao: objetoNulo)], "CONCLUSAO_REGULAR"));
-
-        descricao.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.TextoNaoGravavel);
-        objeto.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.TextoNaoGravavel);
-        rotulo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.TextoNaoGravavel);
-        valor.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.TextoNaoGravavel);
+        DeveRecusarTextoNaoGravavelEm(modelo, "conteudo.itens[0].precondicao");
     }
 
-    [Fact(DisplayName = "Texto com caractere nulo no documento exigido do conjunto padrão, no código, na condição ou na base legal, é recusado")]
-    public void DocumentoComCaractereNulo_Recusa()
+    [Fact(DisplayName = "Caractere nulo num valor citado pela obrigatoriedade do item é recusado no predicado de obrigatoriedade")]
+    public void TextoComCaractereNulo_NoValorDaObrigatoriedade_Recusa()
     {
-        PredicadoDnf Quando(string valor) => PredicadoDnf.CriarDeCondicoesAgrupadas(
-            [(0, CondicaoDnf.Criar("CERTIFICADO", Operador.Igual, JsonSerializer.SerializeToElement(valor)).Value!)]).Value!;
-        DocumentoExigidoDoModelo Documento(string tipo, string valor, string referencia) =>
-            new("INSCRICAO", tipo, false, Quando(valor), "REMOVE_VANTAGEM", [new("Edital", "INTERNA_EDITAL", "PENDENTE", referencia)]);
+        PredicadoDnf valorNulo = QuandoOValorE(Operador.Igual, JsonSerializer.SerializeToElement("A\0"));
 
-        foreach (DocumentoExigidoDoModelo documento in new[] { Documento("LAUDO\0", "A", "x"), Documento("LAUDO", "A\0", "x"), Documento("LAUDO", "A", "x\0") })
-        {
-            Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0)]) with { DocumentosExigidos = [documento] });
+        Result<ModeloFormulario> modelo = Criar(
+            FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0, Obrigatoriedade.Quando(valorNulo))], "CONCLUSAO_REGULAR"));
 
-            modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.TextoNaoGravavel);
-        }
+        DeveRecusarTextoNaoGravavelEm(modelo, "conteudo.itens[0].predicadoObrigatoriedade");
     }
+
+    [Fact(DisplayName = "Caractere nulo no nome de propriedade de um valor JSON citado por regra é recusado")]
+    public void TextoComCaractereNulo_NoNomeDePropriedadeDoValor_Recusa()
+    {
+        JsonElement objetoNulo = JsonSerializer.SerializeToElement(new[] { new Dictionary<string, string> { ["a\0"] = "b" } });
+
+        Result<ModeloFormulario> modelo = Criar(
+            FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0, exibicao: QuandoOValorE(Operador.Em, objetoNulo))], "CONCLUSAO_REGULAR"));
+
+        DeveRecusarTextoNaoGravavelEm(modelo, "conteudo.itens[0].precondicao");
+    }
+
+    private static Result<ModeloFormulario> CriarComDocumento(string tipo, string valor, string observacao)
+    {
+        PredicadoDnf quando = PredicadoDnf.CriarDeCondicoesAgrupadas(
+            [(0, CondicaoDnf.Criar("CERTIFICADO", Operador.Igual, JsonSerializer.SerializeToElement(valor)).Value!)]).Value!;
+        DocumentoExigidoDoModelo documento = new(
+            "INSCRICAO", tipo, false, quando, "REMOVE_VANTAGEM", [new("Edital", "INTERNA_EDITAL", "PENDENTE", observacao)]);
+
+        return Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0)]) with { DocumentosExigidos = [documento] });
+    }
+
+    [Fact(DisplayName = "Caractere nulo no código do tipo do documento exigido do conjunto padrão é recusado")]
+    public void DocumentoComCaractereNulo_NoCodigoDoTipo_Recusa() =>
+        DeveRecusarTextoNaoGravavelEm(CriarComDocumento("LAUDO\0", "A", "x"), "conteudo.documentosExigidos[0].tipoDocumentoCodigo");
+
+    [Fact(DisplayName = "Caractere nulo no valor da condição do documento exigido é recusado")]
+    public void DocumentoComCaractereNulo_NaCondicao_Recusa() =>
+        DeveRecusarTextoNaoGravavelEm(CriarComDocumento("LAUDO", "A\0", "x"), "conteudo.documentosExigidos[0].quando");
+
+    [Fact(DisplayName = "Caractere nulo na base legal do documento exigido é recusado")]
+    public void DocumentoComCaractereNulo_NaBaseLegal_Recusa() =>
+        DeveRecusarTextoNaoGravavelEm(CriarComDocumento("LAUDO", "A", "x\0"), "conteudo.documentosExigidos[0].basesLegais[0].observacao");
 
     [Fact(DisplayName = "Código com surrogate sem par é recusado, sem exceção na normalização")]
     public void CodigoComSurrogateSemPar_Recusa()

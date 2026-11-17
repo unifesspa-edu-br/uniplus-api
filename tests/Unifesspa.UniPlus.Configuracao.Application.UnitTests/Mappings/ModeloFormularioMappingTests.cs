@@ -1,0 +1,135 @@
+namespace Unifesspa.UniPlus.Configuracao.Application.UnitTests.Mappings;
+
+using System.Text.Json;
+
+using AwesomeAssertions;
+
+using Unifesspa.UniPlus.Configuracao.Application.Mappings;
+using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Regras.Entradas;
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.ValueObjects;
+
+public sealed class ModeloFormularioMappingTests
+{
+    private static readonly Guid TermoId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+    private static readonly Guid VersaoId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+
+    [Fact(DisplayName = "O conteúdo com todos os opcionais presentes vira a entrada com cada parte no seu campo")]
+    public void ParaEntrada_ConteudoComOpcionaisPresentes_ProjetaCadaParteNoSeuCampo()
+    {
+        ConteudoDoModeloInput entrada = ConteudoCompleto().ParaEntrada();
+
+        Serializar(entrada).Should().Be(Serializar(EntradaCompleta()));
+    }
+
+    [Fact(DisplayName = "O conteúdo com os opcionais ausentes vira a entrada com os opcionais nulos e as listas vazias")]
+    public void ParaEntrada_ConteudoComOpcionaisAusentes_ProjetaNuloEListaVazia()
+    {
+        ConteudoDoModeloInput entrada = ConteudoMinimo().ParaEntrada();
+
+        Serializar(entrada).Should().Be(Serializar(EntradaMinima()));
+    }
+
+    [Fact(DisplayName = "O conteúdo sem documentos exigidos vira a entrada com a lista de documentos vazia")]
+    public void ParaEntrada_ConteudoSemDocumentosExigidos_ProjetaListaVazia()
+    {
+        ConteudoDoModeloInput entrada = (ConteudoMinimo() with { DocumentosExigidos = null }).ParaEntrada();
+
+        entrada.DocumentosExigidos.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "O conteúdo nulo é recusado")]
+    public void ParaEntrada_ConteudoNulo_Lanca()
+    {
+        Action projetar = () => ((ConteudoDoModelo)null!).ParaEntrada();
+
+        projetar.Should().Throw<ArgumentNullException>();
+    }
+
+    private static string Serializar(ConteudoDoModeloInput entrada) => JsonSerializer.Serialize(entrada);
+
+    private static ConteudoDoModelo ConteudoCompleto() => new(
+        "Inscrição Medicina",
+        [EtapaCompleta(), new EtapaDoModelo("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null)],
+        [ItemCompleto()],
+        [new TermoDoModelo("TERMO_USO", 0, TermoId, VersaoId, Quando("QUILOMBOLA", true), Obrigatoriedade.Quando(Quando("BAIXA_RENDA", true)))],
+        ["COR_RACA"],
+        [GrupoCompleto()],
+        [DocumentoCompleto()]);
+
+    private static ConteudoDoModelo ConteudoMinimo() => new(
+        null,
+        [new EtapaDoModelo("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null, null)],
+        [ItemMinimo("QUILOMBOLA", 0)],
+        [new TermoDoModelo("TERMO_USO", 0, TermoId, VersaoId, null, Obrigatoriedade.Sempre)],
+        [],
+        [new GrupoDoModelo("FAMILIA", 0, null, "Família", 1, null, null, Obrigatoriedade.Nunca, [ItemMinimo("PARENTESCO", 0)])],
+        [new DocumentoExigidoDoModelo("INSCRICAO", "RG", true, null, "INDEFERIMENTO", [])]);
+
+    private static EtapaDoModelo EtapaCompleta() => new(
+        "DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", "Dados do candidato", "Confira os dados", Quando("QUILOMBOLA", true));
+
+    private static ItemDoModelo ItemCompleto() => new(
+        "RENDA", 1, "DADOS", "Renda familiar", TipoRenderizacao.Numero, "LIVRE", "Some a renda de todos",
+        Obrigatoriedade.Quando(Quando("BAIXA_RENDA", true)), Quando("QUILOMBOLA", true), [new FaixaNumerica(0, 10), new OpcoesDasRespostas(["COR_RACA"])],
+        true, new Impedimento(Quando("BAIXA_RENDA", false), "Renda acima do limite"));
+
+    private static ItemDoModelo ItemMinimo(string fatoCodigo, int ordem) =>
+        new(fatoCodigo, ordem, null, "Pergunta", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false);
+
+    private static GrupoDoModelo GrupoCompleto() => new(
+        "FAMILIA", 2, "DADOS", "Composição familiar", 1, 5, Quando("QUILOMBOLA", true), Obrigatoriedade.Quando(Quando("BAIXA_RENDA", true)),
+        [ItemMinimo("PARENTESCO", 0), ItemMinimo("RENDA_MEMBRO", 1)], true);
+
+    private static DocumentoExigidoDoModelo DocumentoCompleto() => new(
+        "HABILITACAO", "CERTIDAO", false, Quando("QUILOMBOLA", true), "PERDA_DA_VAGA",
+        [new BaseLegalDoDocumentoDoModelo("Lei 12.711/2012", "NACIONAL", "VIGENTE", "Art. 3"), new BaseLegalDoDocumentoDoModelo("Portaria 18/2012", "NACIONAL", "VIGENTE", null)],
+        new ExigenciaPorOpcao("OPCAO_DE_CURSO", ["MEDICINA"]));
+
+    private static ConteudoDoModeloInput EntradaCompleta() => new(
+        "Inscrição Medicina",
+        [EtapaCompletaNaEntrada(), new EtapaFormularioInput("REVISAO", 1, "BLOCO", "REVISAO_E_ACEITE", "Revisão", null, null)],
+        [ItemCompletoNaEntrada()],
+        [new TermoExigidoInput("TERMO_USO", 0, TermoId, VersaoId, QuandoNaEntrada("QUILOMBOLA", true), "QUANDO", QuandoNaEntrada("BAIXA_RENDA", true))],
+        ["COR_RACA"],
+        [GrupoCompletoNaEntrada()],
+        [DocumentoCompletoNaEntrada()]);
+
+    private static ConteudoDoModeloInput EntradaMinima() => new(
+        null,
+        [new EtapaFormularioInput("DADOS", 0, "SECAO", null, "Dados", null, null)],
+        [ItemMinimoNaEntrada("QUILOMBOLA", 0)],
+        [new TermoExigidoInput("TERMO_USO", 0, TermoId, VersaoId, null, "SEMPRE", null)],
+        [],
+        [new GrupoColetadoInput("FAMILIA", 0, "Família", null, 1, null, null, "NUNCA", null, [ItemMinimoNaEntrada("PARENTESCO", 0)])],
+        [new DocumentoExigidoDoModeloInput("INSCRICAO", "RG", true, null, "INDEFERIMENTO", [])]);
+
+    private static EtapaFormularioInput EtapaCompletaNaEntrada() => new(
+        "DADOS", 0, "SECAO", null, "Dados", "Dados do candidato", "Confira os dados", QuandoNaEntrada("QUILOMBOLA", true));
+
+    private static FatoColetadoInput ItemCompletoNaEntrada() => new(
+        "RENDA", 1, "Renda familiar", "NUMERO", "QUANDO", QuandoNaEntrada("QUILOMBOLA", true), "DADOS", QuandoNaEntrada("BAIXA_RENDA", true),
+        "Some a renda de todos", true, [new RestricaoValorInput("FAIXA_NUMERICA", 0, 10), new RestricaoValorInput("OPCOES_DAS_RESPOSTAS", Fatos: ["COR_RACA"])],
+        new ImpedimentoInput(QuandoNaEntrada("BAIXA_RENDA", false), "Renda acima do limite"));
+
+    private static FatoColetadoInput ItemMinimoNaEntrada(string fatoCodigo, int ordem) =>
+        new(fatoCodigo, ordem, "Pergunta", "BOOLEANO", "SEMPRE", null, null, null, null, false, []);
+
+    private static GrupoColetadoInput GrupoCompletoNaEntrada() => new(
+        "FAMILIA", 2, "Composição familiar", "DADOS", 1, 5, QuandoNaEntrada("QUILOMBOLA", true), "QUANDO", QuandoNaEntrada("BAIXA_RENDA", true),
+        [ItemMinimoNaEntrada("PARENTESCO", 0), ItemMinimoNaEntrada("RENDA_MEMBRO", 1)], true);
+
+    private static DocumentoExigidoDoModeloInput DocumentoCompletoNaEntrada() => new(
+        "HABILITACAO", "CERTIDAO", false, QuandoNaEntrada("QUILOMBOLA", true), "PERDA_DA_VAGA",
+        [new BaseLegalDoModeloInput("Lei 12.711/2012", "NACIONAL", "VIGENTE", "Art. 3"), new BaseLegalDoModeloInput("Portaria 18/2012", "NACIONAL", "VIGENTE", null)],
+        new ExigenciaPorOpcaoInput("OPCAO_DE_CURSO", ["MEDICINA"]));
+
+    private static PredicadoDnf Quando(string fato, bool valor) =>
+        PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(valor)).Value!)]).Value!;
+
+    private static IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>> QuandoNaEntrada(string fato, bool valor) =>
+        [[new CondicaoPrecondicaoInput(fato, "IGUAL", JsonSerializer.SerializeToElement(valor))]];
+}
