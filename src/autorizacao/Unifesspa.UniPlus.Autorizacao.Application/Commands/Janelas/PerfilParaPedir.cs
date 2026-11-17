@@ -35,14 +35,21 @@ public sealed class PerfilParaPedir
             return Result<Perfil>.Failure(new DomainError(PerfilErrorCodes.NaoEncontrado, $"Perfil de acesso {perfilId} não encontrado."));
         }
 
+        DomainError? recusa = await RecusaDaJanelaAsync(perfilId, cancellationToken).ConfigureAwait(false);
+
+        return recusa is null ? Result<Perfil>.Success(perfil) : Result<Perfil>.Failure(recusa);
+    }
+
+    private async Task<DomainError?> RecusaDaJanelaAsync(Guid perfilId, CancellationToken cancellationToken)
+    {
         DateTimeOffset agora = _clock.GetUtcNow();
         if (await _janelas.TemJanelaAbertaAsync(perfilId, agora, cancellationToken).ConfigureAwait(false))
         {
-            return Result<Perfil>.Failure(MigracaoErros.PedidoEmPerfilEmMigracao());
+            return MigracaoErros.PedidoEmPerfilEmMigracao();
         }
 
         return await _janelas.TemJanelaPorMaterializarAsync(perfilId, agora, cancellationToken).ConfigureAwait(false)
-            ? Result<Perfil>.Failure(MigracaoErros.JanelaEmEncerramento())
-            : Result<Perfil>.Success(perfil);
+            ? MigracaoErros.JanelaEmEncerramento()
+            : null;
     }
 }
