@@ -10,14 +10,13 @@ using Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures;
 
 /// <summary>
-/// Smoke + drift check do endpoint <c>/openapi/ingresso.json</c>:
-/// runtime gera spec OpenAPI 3.x do módulo Ingresso e compara com o baseline
-/// committed em <c>contracts/openapi.ingresso.json</c>. Para regerar, rodar
-/// com <c>UPDATE_OPENAPI_BASELINE=1</c> definido (story #290).
+/// Confere o endpoint <c>/openapi/ingresso.json</c>: a API em execução gera a especificação OpenAPI 3.x do
+/// módulo Ingresso, e o teste a compara com o contrato gravado em <c>contracts/openapi.ingresso.json</c>.
+/// Para regerar o contrato, rodar com <c>UPDATE_OPENAPI_BASELINE=1</c> definido.
 /// </summary>
 public sealed class OpenApiEndpointTests : IClassFixture<IngressoApiFactory>
 {
-    private const string BaselineRelativePath = "contracts/openapi.ingresso.json";
+    private const string CaminhoDoContratoGravado = "contracts/openapi.ingresso.json";
 
     private readonly IngressoApiFactory _factory;
 
@@ -43,11 +42,11 @@ public sealed class OpenApiEndpointTests : IClassFixture<IngressoApiFactory>
         root.GetProperty("info").GetProperty("version").GetString().Should().Be("1.0.0");
     }
 
-    [Fact(DisplayName = "Spec runtime de Ingresso bate com baseline committed em contracts/")]
-    public async Task SpecRuntime_DeveCasarComBaselineCommitted()
+    [Fact(DisplayName = "A especificação em execução do Ingresso é igual ao contrato gravado em contracts/")]
+    public async Task SpecRuntime_DeveCasarComContratoGravado()
     {
         using HttpClient client = _factory.CreateClient();
 
-        await BaselineDoOpenApi.ConferirAsync(client, "/openapi/ingresso.json", BaselineRelativePath);
+        await ContratoOpenApiGravado.ConferirAsync(client, "/openapi/ingresso.json", CaminhoDoContratoGravado);
     }
 }
