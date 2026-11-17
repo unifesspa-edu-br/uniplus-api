@@ -107,8 +107,8 @@ public sealed class Providencia : EntityBase
             return Result.Failure(recusa);
         }
 
-        return Concessao.NormalizarMotivo(motivo) is { } motivoLido
-            ? RegistrarDesfecho(EstadoDaProvidencia.Respondida, ato, motivoLido)
+        return MotivoInformado.Normalizar(motivo) is { } motivoLido
+            ? RegistrarDesfecho(EstadoDaProvidencia.Respondida, ato, motivoLido.Valor)
             : Result.ValidationFailure([MotivoInvalido()]);
     }
 
@@ -134,7 +134,7 @@ public sealed class Providencia : EntityBase
         List<FieldError> erros = [];
         declaracao.Validar(concessao, erros);
 
-        return erros.Count > 0 ? Result.ValidationFailure(erros) : RevogarEAtender(concessao, ato, declaracao.MotivoLido!);
+        return erros.Count > 0 ? Result.ValidationFailure(erros) : RevogarEAtender(concessao, ato, declaracao.MotivoLido!.Valor);
     }
 
     /// <summary>A situação no instante: a providência aberta cuja concessão já não está ativa aparece como prejudicada.</summary>
@@ -164,7 +164,7 @@ public sealed class Providencia : EntityBase
     /// <summary>A recusa do motivo da resposta e do atendimento, no campo <c>motivo</c>.</summary>
     internal static FieldError MotivoInvalido() =>
         new("motivo", new DomainError(
-            ProvidenciaErrorCodes.MotivoInvalido, $"O motivo é obrigatório e deve ter até {Concessao.MotivoMaxLength} caracteres."));
+            ProvidenciaErrorCodes.MotivoInvalido, $"O motivo é obrigatório e deve ter até {MotivoInformado.MaximoDeCaracteres} caracteres."));
 
     private static DomainError? RecusaDaAbertura(Concessao concessao, Providencia? abertaNaConcessao, DateTimeOffset instante)
     {

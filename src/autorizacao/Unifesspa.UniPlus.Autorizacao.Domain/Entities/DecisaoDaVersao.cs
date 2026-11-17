@@ -56,7 +56,7 @@ public sealed class DecisaoDaVersao : IForensicEntity
         Ciclo = versao.CicloDeAprovacao;
         Etapa = pedida.Etapa;
         Resultado = pedida.Resultado;
-        Motivo = pedida.Resultado == ResultadoDaDecisao.Recusado ? pedida.Motivo : null;
+        Motivo = pedida.Resultado == ResultadoDaDecisao.Recusado ? pedida.Motivo?.Valor : null;
         AcrescimoAvaliado = [.. diferenca.Acrescimo];
         ExigiaProtecaoDeDados = diferenca.ExigeProtecaoDeDados;
         Instante = pedida.Instante;

@@ -45,7 +45,7 @@ internal sealed class LiberacaoDaReclassificacaoConfiguration : IEntityTypeConfi
 
         builder.Property(l => l.Etapa).HasConversion(EtapaConverter).HasMaxLength(CodigoMaxLength).IsRequired();
         builder.Property(l => l.Resultado).HasConversion(ResultadoConverter).HasMaxLength(CodigoMaxLength).IsRequired();
-        builder.Property(l => l.Motivo).HasMaxLength(MotivosDaVersao.MaxLength);
+        builder.Property(l => l.Motivo).HasMaxLength(MotivoInformado.MaximoDeCaracteres);
         builder.Property(l => l.DecisorEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(l => l.DecisorContaId).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(l => l.DecisorNome).HasMaxLength(NomeDeExibicao.MaxLength);

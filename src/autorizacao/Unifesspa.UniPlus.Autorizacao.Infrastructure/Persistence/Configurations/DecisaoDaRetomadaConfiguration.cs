@@ -43,7 +43,7 @@ internal sealed class DecisaoDaRetomadaConfiguration : IEntityTypeConfiguration<
         builder.Property(d => d.DecisorContaId).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(d => d.DecisorNome).HasMaxLength(NomeDeExibicao.MaxLength);
         builder.Property(d => d.DecisorTemConcessao).IsRequired();
-        builder.Property(d => d.Motivo).HasMaxLength(MotivosDaVersao.MaxLength).IsRequired();
+        builder.Property(d => d.Motivo).HasMaxLength(MotivoInformado.MaximoDeCaracteres).IsRequired();
         builder.Property(d => d.PerfilProtegidoNaDecisao).IsRequired();
         builder.Property(d => d.Instante).IsRequired();
         builder.Property(d => d.OrdemNaTrilha).IsRequired();

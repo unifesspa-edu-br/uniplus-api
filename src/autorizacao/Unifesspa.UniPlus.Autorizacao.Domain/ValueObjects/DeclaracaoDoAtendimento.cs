@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed record DeclaracaoDoAtendimento(string? Motivo, string? ConfirmacaoEmail)
 {
     /// <summary>O motivo aparado pela regra do motivo da revogação, ou nulo quando inválido.</summary>
-    internal string? MotivoLido => Concessao.NormalizarMotivo(Motivo);
+    internal MotivoInformado? MotivoLido => MotivoInformado.Normalizar(Motivo);
 
     /// <summary>
     /// Acrescenta ao lote a recusa do e-mail que não confirma o beneficiário, com a mesma recusa da revogação comum, e a do

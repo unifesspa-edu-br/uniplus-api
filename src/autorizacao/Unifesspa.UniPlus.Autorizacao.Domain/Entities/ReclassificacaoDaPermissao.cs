@@ -164,8 +164,8 @@ public sealed class ReclassificacaoDaPermissao : IForensicEntity, IRegistroDaTri
         concessao.Decisoes.Any(d => d.Etapa == pedido.Etapa) ? ReclassificacaoErros.EtapaJaDecidida() : null;
 
     private static DomainError? RecusaDoMotivo(PedidoDeDecisaoDaReclassificacao pedido) =>
-        pedido.Resultado == ResultadoDaLiberacao.Mantida && MotivosDaVersao.Normalizar(pedido.Motivo) is null
-            ? ReclassificacaoErros.MotivoInvalido(MotivosDaVersao.MaxLength)
+        pedido.Resultado == ResultadoDaLiberacao.Mantida && MotivoInformado.Normalizar(pedido.Motivo) is null
+            ? ReclassificacaoErros.MotivoInvalido(MotivoInformado.MaximoDeCaracteres)
             : null;
 
     private static bool DecididaEmOutraEtapaPeloDecisor(PedidoDeDecisaoDaReclassificacao pedido, ConcessaoNaReclassificacao concessao) =>

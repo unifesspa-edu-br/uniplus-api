@@ -6,13 +6,13 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 /// <param name="VersaoId">A versão decidida.</param>
 /// <param name="Etapa">A etapa que a pessoa decide.</param>
 /// <param name="Resultado">Aprovada ou recusada.</param>
-/// <param name="Motivo">O motivo já normalizado (<see cref="MotivosDaVersao"/>); obrigatório na recusa e ignorado na aprovação.</param>
+/// <param name="Motivo">O motivo já normalizado (<see cref="MotivoInformado"/>); obrigatório na recusa e ignorado na aprovação.</param>
 /// <param name="Autoria">Quem decide.</param>
 /// <param name="Instante">O instante da decisão, pelo relógio injetado.</param>
 public sealed record PedidoDeDecisaoDaVersao(
     Guid VersaoId,
     EtapaDaVersao Etapa,
     ResultadoDaDecisao Resultado,
-    string? Motivo,
+    MotivoInformado? Motivo,
     AutoriaDaVersao Autoria,
     DateTimeOffset Instante);

@@ -204,6 +204,6 @@ public sealed class PerfilMappingTests
 
     private static void DecidirPelaProtecaoDeDados(Perfil perfil) =>
         perfil.DecidirRetomada(new(
-            PerfisDeTeste.ProtecaoDeDados, true, EtapaDaVersao.ProtecaoDeDados, "Retomada avaliada.", new DoublesDePerfis.CatalogoDeTeste(), PerfisDeTeste.Instante))
+            PerfisDeTeste.ProtecaoDeDados, true, EtapaDaVersao.ProtecaoDeDados, MotivoInformado.Normalizar("Retomada avaliada."), new DoublesDePerfis.CatalogoDeTeste(), PerfisDeTeste.Instante))
             .IsSuccess.Should().BeTrue();
 }

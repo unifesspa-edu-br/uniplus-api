@@ -7,14 +7,14 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 /// <param name="Decisor">Quem decide a etapa.</param>
 /// <param name="DecisorTemConcessao">O decisor tem concessão do perfil, lida sob a trava do perfil.</param>
 /// <param name="Etapa">A etapa que o decisor decide.</param>
-/// <param name="Motivo">O texto informado; o agregado o normaliza.</param>
+/// <param name="Motivo">O motivo normalizado; nulo quando o texto informado não vale.</param>
 /// <param name="Catalogo">O catálogo atual, que diz se o perfil é protegido.</param>
 /// <param name="Instante">O instante da decisão, pelo relógio injetado.</param>
 public sealed record ContextoDaRetomada(
     Identidade Decisor,
     bool DecisorTemConcessao,
     EtapaDaVersao Etapa,
-    string? Motivo,
+    MotivoInformado? Motivo,
     ICatalogoDePermissoesConsultavel Catalogo,
     DateTimeOffset Instante);
 

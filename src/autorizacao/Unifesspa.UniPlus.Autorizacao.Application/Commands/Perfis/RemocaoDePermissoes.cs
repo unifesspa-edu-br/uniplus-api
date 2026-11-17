@@ -64,7 +64,7 @@ public sealed class RemocaoDePermissoes
     private static PedidoDeRemocao Pedido(RemoverPermissoesRequest dados, AutoriaDaVersao autoria, DateTimeOffset agora) =>
         new(
             [.. (dados.Permissoes ?? []).Distinct(StringComparer.Ordinal)],
-            MotivosDaVersao.Normalizar(dados.Motivo),
+            MotivoInformado.Normalizar(dados.Motivo),
             CategoriaDaRemocaoCodigo.TentarLer(dados.Categoria),
             autoria,
             agora);

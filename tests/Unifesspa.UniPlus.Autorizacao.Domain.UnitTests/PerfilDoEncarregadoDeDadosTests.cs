@@ -42,7 +42,7 @@ public sealed class PerfilDoEncarregadoDeDadosTests
 
         Codigo(perfil.Suspender(PerfisDeTeste.Gestor, EtapaDaVersao.GestaoDeAcessos, "Incidente.", PerfisDeTeste.Instante, _catalogo).Errors)
             .Should().Be(PerfilErrorCodes.GovernancaImutavel);
-        ProposicaoDaVersao.Remover(perfil, new PedidoDeRemocao([Consultar], "Incidente.", CategoriaDaRemocao.Incidente, PerfisDeTeste.AutoriaDoGestor, PerfisDeTeste.Instante), _catalogo)
+        ProposicaoDaVersao.Remover(perfil, new PedidoDeRemocao([Consultar], MotivoInformado.Normalizar("Incidente."), CategoriaDaRemocao.Incidente, PerfisDeTeste.AutoriaDoGestor, PerfisDeTeste.Instante), _catalogo)
             .Erro!.Code.Should().Be(PerfilErrorCodes.GovernancaImutavel);
         perfil.CancelarVersao(Guid.NewGuid(), PerfisDeTeste.Gestor, "Motivo.", PerfisDeTeste.Instante)
             .Erro!.Code.Should().Be(PerfilErrorCodes.GovernancaImutavel);

@@ -167,7 +167,7 @@ public sealed class PerfilPropostaTests
         ProposicaoDaVersao.Propor(perfil,
             new PropostaDeVersao(
                 PerfisDeTeste.Conteudo(nome, Descricao, permissoes, _catalogo),
-                motivo,
+                MotivoInformado.Normalizar(motivo),
                 CategoriaDaRemocao.Incidente,
                 PerfisDeTeste.AutoriaDoGestor,
                 Agora),

@@ -21,7 +21,6 @@ internal sealed class ConcessaoConfiguration : IEntityTypeConfiguration<Concessa
 {
     private const int IdentidadeMaxLength = 255;
     private const int TipoMaxLength = 20;
-    private const int MotivoMaxLength = 500;
 
     private static readonly ValueConverter<TipoDeEscopo, string> EscopoConverter = new(
         tipo => tipo.ToCodigo(),
@@ -77,7 +76,7 @@ internal sealed class ConcessaoConfiguration : IEntityTypeConfiguration<Concessa
         builder.Property(c => c.ConcedidaPorContaId).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(c => c.RevogadaPorEmissor).HasMaxLength(IdentidadeMaxLength);
         builder.Property(c => c.RevogadaPorContaId).HasMaxLength(IdentidadeMaxLength);
-        builder.Property(c => c.MotivoRevogacao).HasMaxLength(MotivoMaxLength);
+        builder.Property(c => c.MotivoRevogacao).HasMaxLength(MotivoInformado.MaximoDeCaracteres);
         builder.Property(c => c.EscopoTipo).HasConversion(EscopoConverter).HasMaxLength(TipoMaxLength).IsRequired();
         builder.Property(c => c.OrigemTipo).HasConversion(OrigemConverter).HasMaxLength(TipoMaxLength).IsRequired();
         // A unidade é de outro módulo (ADR-0087): sem chave estrangeira entre schemas.

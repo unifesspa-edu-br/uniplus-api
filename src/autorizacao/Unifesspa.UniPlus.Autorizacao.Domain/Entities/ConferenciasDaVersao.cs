@@ -22,7 +22,7 @@ internal static class ConferenciasDaVersao
             return versao.RecusaPorNaoPendente();
         }
 
-        return MotivosDaVersao.Normalizar(motivo) is null ? PerfilErros.MotivoInvalido(MotivosDaVersao.MaxLength) : null;
+        return MotivoInformado.Normalizar(motivo) is null ? PerfilErros.MotivoInvalido(MotivoInformado.MaximoDeCaracteres) : null;
     }
 
     /// <summary>

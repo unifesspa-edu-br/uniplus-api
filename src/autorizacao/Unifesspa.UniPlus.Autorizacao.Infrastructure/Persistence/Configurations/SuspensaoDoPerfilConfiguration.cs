@@ -43,7 +43,7 @@ internal sealed class SuspensaoDoPerfilConfiguration : IEntityTypeConfiguration<
         builder.Property(s => s.SuspensaPorContaId).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(s => s.SuspensaPorNome).HasMaxLength(NomeDeExibicao.MaxLength);
         builder.Property(s => s.Papel).HasColumnName("papel_de_quem_suspendeu").HasConversion(PapelConverter).HasMaxLength(CodigoMaxLength).IsRequired();
-        builder.Property(s => s.Motivo).HasMaxLength(MotivosDaVersao.MaxLength).IsRequired();
+        builder.Property(s => s.Motivo).HasMaxLength(MotivoInformado.MaximoDeCaracteres).IsRequired();
         builder.Property(s => s.OrdemNaTrilha).IsRequired();
 
         builder.Ignore(s => s.Aberta);

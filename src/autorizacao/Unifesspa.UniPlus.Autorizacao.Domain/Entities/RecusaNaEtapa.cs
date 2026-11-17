@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>A recusa que um decisor tenta na etapa corrente do pedido, com o motivo já normalizado.</summary>
-internal sealed record RecusaNaEtapa(Identidade Decisor, EtapaDoPedido Etapa, string? Motivo, PerfilAvaliado Perfil, DateTimeOffset Instante)
+internal sealed record RecusaNaEtapa(Identidade Decisor, EtapaDoPedido Etapa, MotivoInformado? Motivo, PerfilAvaliado Perfil, DateTimeOffset Instante)
 {
     internal AtoDoAgente Ato => new(Decisor, Instante);
 
@@ -19,7 +19,7 @@ internal sealed record RecusaNaEtapa(Identidade Decisor, EtapaDoPedido Etapa, st
         {
             erros.Add(new("motivo", new DomainError(
                 PedidoErrorCodes.MotivoInvalido,
-                $"O motivo da recusa é obrigatório e deve ter até {MotivosDaVersao.MaxLength} caracteres.")));
+                $"O motivo da recusa é obrigatório e deve ter até {MotivoInformado.MaximoDeCaracteres} caracteres.")));
         }
 
         return erros;

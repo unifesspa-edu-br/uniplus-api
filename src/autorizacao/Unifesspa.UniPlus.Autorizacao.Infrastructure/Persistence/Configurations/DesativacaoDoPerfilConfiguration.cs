@@ -33,11 +33,11 @@ internal sealed class DesativacaoDoPerfilConfiguration : IEntityTypeConfiguratio
         builder.Property(d => d.DesativadaPorEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(d => d.DesativadaPorContaId).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(d => d.DesativadaPorNome).HasMaxLength(NomeDeExibicao.MaxLength);
-        builder.Property(d => d.Motivo).HasMaxLength(MotivosDaVersao.MaxLength).IsRequired();
+        builder.Property(d => d.Motivo).HasMaxLength(MotivoInformado.MaximoDeCaracteres).IsRequired();
         builder.Property(d => d.ReativadaPorEmissor).HasMaxLength(IdentidadeMaxLength);
         builder.Property(d => d.ReativadaPorContaId).HasMaxLength(IdentidadeMaxLength);
         builder.Property(d => d.ReativadaPorNome).HasMaxLength(NomeDeExibicao.MaxLength);
-        builder.Property(d => d.MotivoDaReativacao).HasMaxLength(MotivosDaVersao.MaxLength);
+        builder.Property(d => d.MotivoDaReativacao).HasMaxLength(MotivoInformado.MaximoDeCaracteres);
         builder.Property(d => d.OrdemNaTrilha).IsRequired();
 
         builder.Ignore(d => d.Aberta);
