@@ -36,6 +36,23 @@ public static class ResultExtensions
         return BuildProblemDetailsResult(result.Errors, mapper);
     }
 
+    /// <summary>
+    /// Devolve <c>null</c> quando o Id da rota é o mesmo do corpo; senão, a recusa registrada na
+    /// fronteira (400). Igual para todo endpoint de atualização.
+    /// </summary>
+    public static IActionResult? ConferirIdDaRota(this ControllerBase controller, Guid idDaRota, Guid idDoCorpo, IDomainErrorMapper mapper)
+    {
+        ArgumentNullException.ThrowIfNull(controller);
+        ArgumentNullException.ThrowIfNull(mapper);
+
+        return idDaRota == idDoCorpo
+            ? null
+            : Result.Failure(new DomainError(
+                    ErrosDaFronteiraHttp.IdDaRotaDivergenteDoCorpo.Code,
+                    "O Id informado na rota é diferente do Id do corpo da requisição; os dois precisam identificar o mesmo recurso."))
+                .ToActionResult(mapper);
+    }
+
     private static ObjectResult BuildProblemDetailsResult(IReadOnlyList<FieldError> errors, IDomainErrorMapper mapper)
     {
         DomainError primeira = errors[0].Error;

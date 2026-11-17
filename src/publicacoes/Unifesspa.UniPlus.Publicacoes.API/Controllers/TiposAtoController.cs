@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Publicacoes.API.Controllers;
 
 using System.ComponentModel.DataAnnotations;
-using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -32,10 +31,6 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 /// </remarks>
 [ApiController]
 [Authorize]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class TiposAtoController : ControllerBase
 {
     private const string ResourceTag = "tipos-ato";
@@ -206,14 +201,9 @@ public sealed class TiposAtoController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        if (id != command.Id)
+        if (this.ConferirIdDaRota(id, command.Id, _mapper) is { } divergente)
         {
-            // Pelo mapeador, e não por um ProblemDetails montado à mão: assim o erro
-            // sai com type, instance e traceId, como todo o resto do contrato.
-            return Result.Failure(new DomainError(
-                TipoAtoPublicadoErrorCodes.IdDivergente,
-                "O Id na URL não corresponde ao Id no corpo da requisição."))
-                .ToActionResult(_mapper);
+            return divergente;
         }
 
         Result resultado = await _commandBus.Send(command, cancellationToken).ConfigureAwait(false);

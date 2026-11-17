@@ -3837,11 +3837,6 @@
       "titulo": "Tamanho do código do tipo de ato inválido"
     },
     {
-      "codigo": "uniplus.publicacoes.tipo_ato.id_divergente",
-      "status": 400,
-      "titulo": "O identificador da URL não corresponde ao do corpo da requisição"
-    },
-    {
       "codigo": "uniplus.publicacoes.tipo_ato.nao_encontrado",
       "status": 404,
       "titulo": "Tipo de ato não encontrado"
