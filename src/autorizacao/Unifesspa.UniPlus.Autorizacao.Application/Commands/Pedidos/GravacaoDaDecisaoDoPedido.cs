@@ -119,9 +119,10 @@ public sealed class GravacaoDaDecisaoDoPedido
     private async Task<(Result<PedidoDeConcessaoDto> Resposta, IEnumerable<object> Mensagens)> GravarDevolucaoAsync(
         DecisaoDaEtapa decisao, DomainError erro, CancellationToken cancellationToken)
     {
-        if (!await SalvouAsync(cancellationToken).ConfigureAwait(false))
+        Result gravado = await GravacaoDoPedido.GravarAsync(_unitOfWork, cancellationToken).ConfigureAwait(false);
+        if (gravado.IsFailure)
         {
-            return Recusa(PedidoHandlerErros.ConflitoDeConcorrencia());
+            return Recusa(gravado.Error!);
         }
 
         IReadOnlyList<EnviarEmail> mensagens = await AvisosDaDevolucaoAsync(decisao, erro, cancellationToken).ConfigureAwait(false);
@@ -133,18 +134,4 @@ public sealed class GravacaoDaDecisaoDoPedido
         erro.Code == PedidoErrorCodes.TermoExigido
             ? _avisoDeTermoExigido.AvisarAsync(decisao.Pedido, decisao.Perfil.Nome, cancellationToken)
             : _avisos.AvisarAsync(decisao.Pedido, decisao.Perfil.Nome, SituacaoDoPedido.AguardandoProtecaoDeDados, cancellationToken);
-
-    private async Task<bool> SalvouAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            await _unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-            return true;
-        }
-        catch (Exception ex) when (ViolacoesDeGravacao.EhConflitoDeConcorrencia(ex))
-        {
-            _unitOfWork.DescartarAlteracoesNaoSalvas();
-            return false;
-        }
-    }
 }
