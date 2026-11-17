@@ -200,20 +200,42 @@ public sealed class AtoNormativoPersistenceTests
         (await insercao.Should().ThrowAsync<PostgresException>()).Which.SqlState.Should().Be(CheckViolation);
     }
 
-    [Fact(DisplayName = "ListarIdsComMesmaNumeracao devolve os conflitantes, ignorando o próprio ato")]
-    public async Task ListarIdsComMesmaNumeracao_IgnoraProprio()
+    [Fact(DisplayName = "ListarIdsComMesmaNumeracao devolve todos os atos da mesma numeração")]
+    public async Task ListarIdsComMesmaNumeracao_DevolveOsDaMesmaNumeracao()
     {
-        AtoNormativo a1 = (Base with { Numero = "99" }).Registrar();
-        AtoNormativo a2 = (Base with { Numero = "99" }).Registrar();
+        string numero = Guid.NewGuid().ToString("N")[..8];
+        AtoNormativo a1 = (Base with { Numero = numero }).Registrar();
+        AtoNormativo a2 = (Base with { Numero = numero }).Registrar();
         await _apoio.GravarAsync(a1, a2);
 
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         var repo = new AtoNormativoRepository(ctx);
 
-        IReadOnlyList<Guid> conflitantesDeA1 = await repo.ListarIdsComMesmaNumeracaoAsync(
-            "CEPS", "EDITAL", 2026, "99", a1.Id, default);
+        IReadOnlyList<Guid> conflitantes = await repo.ListarIdsComMesmaNumeracaoAsync(
+            "CEPS", "EDITAL", 2026, numero, null, default);
 
-        conflitantesDeA1.Should().Contain(a2.Id).And.NotContain(a1.Id);
+        conflitantes.Should().BeEquivalentTo([a1.Id, a2.Id]);
+    }
+
+    [Theory(DisplayName = "ListarIdsComMesmaNumeracao deixa de fora o ato que difere em órgão, série, ano ou número")]
+    [InlineData("PROEG", "EDITAL", 2026, "")]
+    [InlineData("CEPS", "PORTARIA", 2026, "")]
+    [InlineData("CEPS", "EDITAL", 2025, "")]
+    [InlineData("CEPS", "EDITAL", 2026, "-1")]
+    public async Task ListarIdsComMesmaNumeracao_DeixaDeForaOutraNumeracao(string orgao, string serie, int ano, string sufixoDoNumero)
+    {
+        string numero = Guid.NewGuid().ToString("N")[..8];
+        AtoNormativo ato = (Base with { Numero = numero }).Registrar();
+        AtoNormativo deOutraNumeracao = (Base with { Orgao = orgao, Serie = serie, Ano = ano, Numero = numero + sufixoDoNumero }).Registrar();
+        await _apoio.GravarAsync(ato, deOutraNumeracao);
+
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+        var repo = new AtoNormativoRepository(ctx);
+
+        IReadOnlyList<Guid> conflitantes = await repo.ListarIdsComMesmaNumeracaoAsync(
+            "CEPS", "EDITAL", 2026, numero, null, default);
+
+        conflitantes.Should().Equal(ato.Id);
     }
 
     [Fact(DisplayName = "Listagem paginada por cursor devolve os atos em ordem de Id")]
