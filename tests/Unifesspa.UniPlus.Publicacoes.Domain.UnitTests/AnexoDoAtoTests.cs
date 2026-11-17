@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// A regra do que um anexo precisa ter para provar o ato (hash, nome, tipo de mídia,
@@ -20,6 +21,7 @@ public sealed class AnexoDoAtoTests
 {
     private const string HashValido = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
     private const string OutroHash = "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210";
+    private static readonly AtoNormativoDeTeste Base = new();
 
     [Theory(DisplayName = "Hash que não é SHA-256 em hexadecimal minúsculo é recusado")]
     [InlineData("")]
@@ -85,12 +87,63 @@ public sealed class AnexoDoAtoTests
         AnexoDoAto.Conferir(anexos[..AnexoDoAto.QuantidadeMaxima]).Should().BeNull();
     }
 
+    [Fact(DisplayName = "Com mais de 50 anexos e um inválido, a recusa é pela quantidade")]
+    public void Conferir_AcimaDoLimiteComUmInvalido_RecusaPelaQuantidade()
+    {
+        (string, string, string)[] anexos =
+            [("Anexo 0.pdf", "application/pdf", "abc"), .. Enumerable.Range(1, AnexoDoAto.QuantidadeMaxima).Select(i => ($"Anexo {i}.pdf", "application/pdf", HashValido))];
+
+        AnexoDoAto.Conferir(anexos)!.Code.Should().Be(AnexoDoAtoErrorCodes.QuantidadeExcedida);
+    }
+
+    [Fact(DisplayName = "Anexo com nome, tipo de mídia e hash inválidos é recusado pelo nome")]
+    public void Conferir_NomeTipoEHashInvalidos_RecusaPeloNome()
+    {
+        DomainError? erro = AnexoDoAto.Conferir([("  ", "pdf", "abc")]);
+
+        erro!.Code.Should().Be(AnexoDoAtoErrorCodes.NomeInvalido);
+    }
+
+    [Fact(DisplayName = "Nome nulo é recusado pelo nome")]
+    public void Conferir_NomeNulo_RecusaPeloNome()
+    {
+        DomainError? erro = AnexoDoAto.Conferir([(null!, "application/pdf", HashValido)]);
+
+        erro!.Code.Should().Be(AnexoDoAtoErrorCodes.NomeInvalido);
+    }
+
+    [Fact(DisplayName = "Nome repetido antes de um hash inválido é recusado pelo nome duplicado")]
+    public void Conferir_NomeDuplicadoAntesDeHashInvalido_RecusaPelaDuplicidade()
+    {
+        DomainError? erro = AnexoDoAto.Conferir(
+        [
+            ("A.pdf", "application/pdf", HashValido),
+            ("A.pdf", "application/pdf", OutroHash),
+            ("C.pdf", "application/pdf", "abc"),
+        ]);
+
+        erro!.Code.Should().Be(AnexoDoAtoErrorCodes.NomeDuplicado);
+    }
+
+    [Fact(DisplayName = "Hash inválido no primeiro anexo é recusado antes da duplicidade do segundo")]
+    public void Conferir_HashInvalidoAntesDeNomeDuplicado_RecusaPeloHash()
+    {
+        DomainError? erro = AnexoDoAto.Conferir(
+        [
+            ("A.pdf", "application/pdf", "abc"),
+            ("A.pdf", "application/pdf", OutroHash),
+        ]);
+
+        erro!.Code.Should().Be(AnexoDoAtoErrorCodes.HashInvalido);
+    }
+
     [Fact(DisplayName = "Registrar guarda os anexos na ordem recebida, com o tipo de mídia em minúsculas")]
     public void Registrar_ComAnexos_GuardaNaOrdemRecebida()
     {
-        AtoNormativo ato = Registrar(
-            ("Anexo II.pdf", "Application/PDF", OutroHash),
-            ("Anexo I.pdf", "application/pdf", HashValido));
+        AtoNormativo ato = (Base with
+        {
+            Anexos = [("Anexo II.pdf", "Application/PDF", OutroHash), ("Anexo I.pdf", "application/pdf", HashValido)],
+        }).Registrar();
 
         ato.Anexos.OrderBy(a => a.Ordem).Select(a => (a.Ordem, a.Nome, a.TipoMidia, a.Hash))
             .Should().Equal(
@@ -101,27 +154,13 @@ public sealed class AnexoDoAtoTests
 
     [Fact(DisplayName = "Registrar sem anexos deixa a lista vazia")]
     public void Registrar_SemAnexos_ListaVazia() =>
-        Registrar().Anexos.Should().BeEmpty();
+        Base.Registrar().Anexos.Should().BeEmpty();
 
     [Fact(DisplayName = "Registrar com anexo inválido lança — última linha das invariantes")]
     public void Registrar_ComAnexoInvalido_Lanca()
     {
-        Action acao = () => Registrar(("Anexo I.pdf", "application/pdf", "abc"));
+        Action acao = () => (Base with { Anexos = [("Anexo I.pdf", "application/pdf", "abc")] }).Registrar();
 
         acao.Should().Throw<ArgumentException>();
     }
-
-    private static AtoNormativo Registrar(params (string Nome, string TipoMidia, string Hash)[] anexos) =>
-        AtoNormativo.Registrar(
-            Guid.CreateVersion7(),
-            "CEPS", "EDITAL", 2026, "13", "EDITAL_ABERTURA",
-            congelaConfiguracao: false,
-            efeitoIrreversivel: false,
-            unicoPorObjeto: false,
-            dataDoAto: new DateOnly(2026, 3, 13),
-            documentoHash: HashValido,
-            assinante: "Jairo Belchior",
-            publicadoEm: new DateTimeOffset(2026, 3, 13, 19, 0, 0, TimeSpan.Zero),
-            versaoDoObjeto: null,
-            anexos: anexos);
 }

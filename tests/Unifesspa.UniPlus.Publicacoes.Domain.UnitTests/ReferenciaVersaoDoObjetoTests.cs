@@ -39,6 +39,14 @@ public sealed class ReferenciaVersaoDoObjetoTests
         resultado.Error!.Code.Should().Be("ReferenciaVersaoDoObjeto.IdObrigatorio");
     }
 
+    [Fact(DisplayName = "Id vazio com hash inválido é recusado pelo id")]
+    public void Criar_ComIdVazioEHashInvalido_RecusaPeloId()
+    {
+        Result<ReferenciaVersaoDoObjeto> resultado = ReferenciaVersaoDoObjeto.Criar(Guid.Empty, "abc");
+
+        resultado.Error!.Code.Should().Be("ReferenciaVersaoDoObjeto.IdObrigatorio");
+    }
+
     [Theory(DisplayName = "Hash fora do formato SHA-256 é recusado")]
     [InlineData("")]
     [InlineData("abc")]
