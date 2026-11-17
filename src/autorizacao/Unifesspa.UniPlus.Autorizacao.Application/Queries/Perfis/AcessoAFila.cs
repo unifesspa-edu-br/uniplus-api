@@ -19,4 +19,22 @@ internal static class AcessoAFila
 
         return acesso.Recusa(PerfilErros.SemPermissaoNaEtapa);
     }
+
+    /// <summary>
+    /// Lê a etapa pedida e confere o acesso a ela: a etapa desconhecida é recusada antes de qualquer registro, e a decisão
+    /// da permissão da etapa vai para a trilha.
+    /// </summary>
+    public static async Task<Result<EtapaDaVersao>> AutorizarAsync(string? etapa, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(verificador);
+
+        if (EtapaDaVersaoCodigo.TentarLer(etapa) is not { } pedida)
+        {
+            return Result<EtapaDaVersao>.Failure(PerfilErros.EtapaInvalida());
+        }
+
+        DomainError? negado = await NegadoAsync(verificador, pedida, cancellationToken).ConfigureAwait(false);
+
+        return negado is null ? Result<EtapaDaVersao>.Success(pedida) : Result<EtapaDaVersao>.Failure(negado);
+    }
 }

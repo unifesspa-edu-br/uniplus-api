@@ -28,16 +28,11 @@ public static class ListarFilaDeJanelasQueryHandler
         ArgumentNullException.ThrowIfNull(fila);
         ArgumentNullException.ThrowIfNull(userContext);
 
-        if (EtapaDaVersaoCodigo.TentarLer(query.Etapa) is not { } etapa)
-        {
-            return Recusa(PerfilErros.EtapaInvalida());
-        }
+        Result<EtapaDaVersao> etapa = await AcessoAFila.AutorizarAsync(query.Etapa, verificador, cancellationToken).ConfigureAwait(false);
 
-        DomainError? negado = await AcessoAFila.NegadoAsync(verificador, etapa, cancellationToken).ConfigureAwait(false);
-
-        return negado is not null
-            ? Recusa(negado)
-            : await ListarAsync(fila, etapa, IdentidadeDoToken.De(userContext), cancellationToken).ConfigureAwait(false);
+        return etapa.IsFailure
+            ? Recusa(etapa.Error!)
+            : await ListarAsync(fila, etapa.Value, IdentidadeDoToken.De(userContext), cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<Result<IReadOnlyList<ItemDaFilaDeJanelasDto>>> ListarAsync(
