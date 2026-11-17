@@ -52,7 +52,7 @@ public sealed class FormularioPortavelTests
         definicao.Error!.Code.Should().Be(codigo);
     }
 
-    public static TheoryData<FormularioPortavel, string> Malformados() => new()
+    public static readonly TheoryData<FormularioPortavel, string> Malformados = new()
     {
         { Formulario(Item("RENDA", obrigatoriedade: "QUANDO")), FormularioPortavelErrorCodes.ObrigatoriedadeInvalida },
         { Formulario(Item("RENDA"), Item("RENDA")), FormularioPortavelErrorCodes.EstruturaInvalida },
@@ -78,7 +78,18 @@ public sealed class FormularioPortavelTests
         definicao.Error.Message.Should().Be(detalhe);
     }
 
-    public static TheoryData<FormularioPortavel, string, string> MalformadosComDetalhe() => new()
+    [Fact(DisplayName = "Derivação sem regra é recusada como derivação inválida, com a mensagem da derivação")]
+    public void ParaDefinicao_DerivacaoSemRegras_RecusaComoDerivacaoInvalida()
+    {
+        FormularioPortavel formulario = Formulario(Item("ELEGIVEL")) with { Derivacoes = [new DerivacaoPortavel("COTISTA", true, [])] };
+
+        Result<DefinicaoFormulario> definicao = formulario.ParaDefinicao();
+
+        definicao.Error!.Code.Should().Be(FormularioPortavelErrorCodes.DerivacaoInvalida);
+        definicao.Error.Message.Should().Be("A derivação de 'COTISTA' precisa de ao menos uma regra.");
+    }
+
+    public static readonly TheoryData<FormularioPortavel, string, string> MalformadosComDetalhe = new()
     {
         {
             Formulario(Item("RENDA"), Item("RENDA")),
@@ -169,7 +180,7 @@ public sealed class FormularioPortavelTests
         definicao.Error.Message.Should().Be(detalhe);
     }
 
-    public static TheoryData<FormularioPortavel, string, string> ComDoisDefeitos() => new()
+    public static readonly TheoryData<FormularioPortavel, string, string> ComDoisDefeitos = new()
     {
         {
             Formulario(Item("RENDA", obrigatoriedade: "QUANDO"), Item(" ")),

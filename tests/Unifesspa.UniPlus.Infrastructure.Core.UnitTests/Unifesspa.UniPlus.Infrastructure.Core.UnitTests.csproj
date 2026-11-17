@@ -29,6 +29,11 @@
     <EmbeddedResource Include="Messaging\SchemaRegistry\Resources\*.schema.json" />
   </ItemGroup>
 
+  <!-- Tabela de mapeamentos que o registro das regras precisa expor (RegrasDomainErrorRegistrationTests) -->
+  <ItemGroup>
+    <None Include="Errors\RegrasMapeamentosEsperados.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="../Shared/DecisaoDeAcessoDeTeste.cs" Link="DecisaoDeAcessoDeTeste.cs" />
     <Compile Include="../Shared/RegraDeNomeDeTabela.cs" Link="RegraDeNomeDeTabela.cs" />

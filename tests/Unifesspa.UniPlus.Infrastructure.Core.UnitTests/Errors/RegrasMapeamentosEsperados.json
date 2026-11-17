@@ -1,0 +1,596 @@
+[
+  {
+    "chave": "EstruturaFormulario.EtapaCodigoDuplicado",
+    "status": 422,
+    "codigo": "uniplus.estrutura_formulario.etapa_codigo_duplicado",
+    "titulo": "O código de etapa se repete no formulário"
+  },
+  {
+    "chave": "EstruturaFormulario.EtapaOrdemDuplicada",
+    "status": 422,
+    "codigo": "uniplus.estrutura_formulario.etapa_ordem_duplicada",
+    "titulo": "Duas etapas do formulário têm a mesma ordem"
+  },
+  {
+    "chave": "EstruturaFormulario.TipoDeEtapaObrigatorio",
+    "status": 422,
+    "codigo": "uniplus.estrutura_formulario.tipo_de_etapa_obrigatorio",
+    "titulo": "A etapa é uma seção ou um bloco de sistema"
+  },
+  {
+    "chave": "EstruturaFormulario.SecaoReservada",
+    "status": 422,
+    "codigo": "uniplus.estrutura_formulario.secao_reservada",
+    "titulo": "A seção dos dados básicos do candidato é reservada"
+  },
+  {
+    "chave": "EstruturaFormulario.SecaoReservadaAlterada",
+    "status": 422,
+    "codigo": "uniplus.estrutura_formulario.secao_reservada_alterada",
+    "titulo": "A seção dos dados básicos do candidato não pode ser alterada"
+  },
+  {
+    "chave": "EstruturaFormulario.DadoBasicoAlterado",
+    "status": 422,
+    "codigo": "uniplus.estrutura_formulario.dado_basico_alterado",
+    "titulo": "O item do conjunto básico de dados do candidato não pode ser alterado"
+  },
+  {
+    "chave": "EstruturaFormulario.SecaoComBloco",
+    "status": 422,
+    "codigo": "uniplus.estrutura_formulario.secao_com_bloco",
+    "titulo": "Uma seção não declara bloco de sistema"
+  },
+  {
+    "chave": "EstruturaFormulario.BlocoNaoAdmitido",
+    "status": 422,
+    "codigo": "uniplus.estrutura_formulario.bloco_nao_admitido",
+    "titulo": "O bloco não é admitido pela finalidade do formulário"
+  },
+  {
+    "chave": "EstruturaFormulario.BlocoRepetido",
+    "status": 422,
+    "codigo": "uniplus.estrutura_formulario.bloco_repetido",
+    "titulo": "O bloco aparece mais de uma vez no formulário"
+  },
+  {
+    "chave": "EstruturaFormulario.BlocoExigidoAusente",
+    "status": 422,
+    "codigo": "uniplus.estrutura_formulario.bloco_exigido_ausente",
+    "titulo": "Falta um bloco que a finalidade exige"
+  },
+  {
+    "chave": "EstruturaFormulario.RevisaoEAceiteForaDoFim",
+    "status": 422,
+    "codigo": "uniplus.estrutura_formulario.revisao_e_aceite_fora_do_fim",
+    "titulo": "A revisão e aceite é sempre a última etapa"
+  },
+  {
+    "chave": "EstruturaFormulario.ItemForaDeSecao",
+    "status": 422,
+    "codigo": "uniplus.estrutura_formulario.item_fora_de_secao",
+    "titulo": "O item precisa estar numa seção do formulário"
+  },
+  {
+    "chave": "EstruturaFormulario.ItemForaDaOrdemDasSecoes",
+    "status": 422,
+    "codigo": "uniplus.estrutura_formulario.item_fora_da_ordem_das_secoes",
+    "titulo": "A ordem dos itens não acompanha a ordem das seções"
+  },
+  {
+    "chave": "EstruturaFormulario.FinalidadeInvalida",
+    "status": 422,
+    "codigo": "uniplus.estrutura_formulario.finalidade_invalida",
+    "titulo": "A finalidade do formulário é inscrição, isenção de taxa ou habilitação"
+  },
+  {
+    "chave": "EstruturaFormulario.TituloTamanho",
+    "status": 422,
+    "codigo": "uniplus.estrutura_formulario.titulo_tamanho",
+    "titulo": "O título do formulário excede o tamanho máximo"
+  },
+  {
+    "chave": "EstruturaFormulario.EtapaCodigoInvalido",
+    "status": 422,
+    "codigo": "uniplus.estrutura_formulario.etapa_codigo_invalido",
+    "titulo": "O código da etapa é obrigatório e tem tamanho limitado"
+  },
+  {
+    "chave": "EstruturaFormulario.EtapaOrdemInvalida",
+    "status": 422,
+    "codigo": "uniplus.estrutura_formulario.etapa_ordem_invalida",
+    "titulo": "A ordem da etapa não pode ser negativa"
+  },
+  {
+    "chave": "EstruturaFormulario.EtapaTituloInvalido",
+    "status": 422,
+    "codigo": "uniplus.estrutura_formulario.etapa_titulo_invalido",
+    "titulo": "O título da etapa é obrigatório e tem tamanho limitado"
+  },
+  {
+    "chave": "EstruturaFormulario.EtapaTextoTamanho",
+    "status": 422,
+    "codigo": "uniplus.estrutura_formulario.etapa_texto_tamanho",
+    "titulo": "A descrição ou o aviso da etapa excede o tamanho máximo"
+  },
+  {
+    "chave": "EstruturaFormulario.ExibicaoForaDeSecao",
+    "status": 422,
+    "codigo": "uniplus.estrutura_formulario.exibicao_fora_de_secao",
+    "titulo": "Só a seção do formulário tem exibição condicional"
+  },
+  {
+    "chave": "GrafoFormulario.FatoDuplicado",
+    "status": 422,
+    "codigo": "uniplus.grafo_formulario.fato_duplicado",
+    "titulo": "O fato aparece mais de uma vez no formulário"
+  },
+  {
+    "chave": "GrafoFormulario.OrdemDuplicada",
+    "status": 422,
+    "codigo": "uniplus.grafo_formulario.ordem_duplicada",
+    "titulo": "A ordem de coleta do formulário precisa ser total"
+  },
+  {
+    "chave": "GrafoFormulario.GrafoComCiclo",
+    "status": 422,
+    "codigo": "uniplus.grafo_formulario.grafo_com_ciclo",
+    "titulo": "As regras dos campos formam um ciclo"
+  },
+  {
+    "chave": "GrafoFormulario.CitaFatoNaoConhecido",
+    "status": 422,
+    "codigo": "uniplus.grafo_formulario.cita_fato_nao_conhecido",
+    "titulo": "Uma regra do formulário cita fato que ele não conhece"
+  },
+  {
+    "chave": "GrafoFormulario.CitaFatoPosterior",
+    "status": 422,
+    "codigo": "uniplus.grafo_formulario.cita_fato_posterior",
+    "titulo": "Uma regra do formulário cita fato conhecido só depois dela"
+  },
+  {
+    "chave": "GrafoFormulario.CitaAtributoDoCandidato",
+    "status": 422,
+    "codigo": "uniplus.grafo_formulario.cita_atributo_do_candidato",
+    "titulo": "A regra do formulário cita fato calculado de atributos do candidato"
+  },
+  {
+    "chave": "GrafoFormulario.CitaFatoDeMembroForaDoGrupo",
+    "status": 422,
+    "codigo": "uniplus.grafo_formulario.cita_fato_de_membro_fora_do_grupo",
+    "titulo": "A regra cita campo de grupo repetível fora do grupo"
+  },
+  {
+    "chave": "GrupoFormulario.CodigoInvalido",
+    "status": 422,
+    "codigo": "uniplus.grupo_formulario.codigo_invalido",
+    "titulo": "O código do grupo é obrigatório e tem tamanho limitado"
+  },
+  {
+    "chave": "GrupoFormulario.OrdemInvalida",
+    "status": 422,
+    "codigo": "uniplus.grupo_formulario.ordem_invalida",
+    "titulo": "A ordem do grupo não pode ser negativa"
+  },
+  {
+    "chave": "GrupoFormulario.RotuloInvalido",
+    "status": 422,
+    "codigo": "uniplus.grupo_formulario.rotulo_invalido",
+    "titulo": "O rótulo do grupo é obrigatório e tem tamanho limitado"
+  },
+  {
+    "chave": "GrupoFormulario.ContagemIncoerente",
+    "status": 422,
+    "codigo": "uniplus.grupo_formulario.contagem_incoerente",
+    "titulo": "O mínimo e o máximo de ocorrências do grupo são incoerentes"
+  },
+  {
+    "chave": "GrupoFormulario.SubitensForaDoLimite",
+    "status": 422,
+    "codigo": "uniplus.grupo_formulario.subitens_fora_do_limite",
+    "titulo": "A quantidade de campos do grupo está fora do limite"
+  },
+  {
+    "chave": "GrupoFormulario.RegraAutorreferente",
+    "status": 422,
+    "codigo": "uniplus.grupo_formulario.regra_autorreferente",
+    "titulo": "A regra do grupo cita o próprio grupo"
+  },
+  {
+    "chave": "GrupoFormulario.CampoComSecaoPropria",
+    "status": 422,
+    "codigo": "uniplus.grupo_formulario.campo_com_secao_propria",
+    "titulo": "O campo do grupo segue a seção do grupo"
+  },
+  {
+    "chave": "GrupoFormulario.CandidatoComoMembroIncompleto",
+    "status": 422,
+    "codigo": "uniplus.grupo_formulario.candidato_como_membro_incompleto",
+    "titulo": "O grupo que inclui o candidato não identifica a ocorrência dele"
+  },
+  {
+    "chave": "ItemFormulario.MunicipioSemUf",
+    "status": 422,
+    "codigo": "uniplus.item_formulario.municipio_sem_uf",
+    "titulo": "O campo de município cita a UF respondida antes"
+  },
+  {
+    "chave": "ItemFormulario.UfDoMunicipioInvalida",
+    "status": 422,
+    "codigo": "uniplus.item_formulario.uf_do_municipio_invalida",
+    "titulo": "Os municípios da UF citam um campo de UF do Geo"
+  },
+  {
+    "chave": "ItemFormulario.ImpedimentoSemCondicao",
+    "status": 422,
+    "codigo": "uniplus.item_formulario.impedimento_sem_condicao",
+    "titulo": "O impedimento do campo não tem condição"
+  },
+  {
+    "chave": "ItemFormulario.ImpedimentoSemOProprioCampo",
+    "status": 422,
+    "codigo": "uniplus.item_formulario.impedimento_sem_o_proprio_campo",
+    "titulo": "Cada cláusula do impedimento cita a resposta do próprio campo"
+  },
+  {
+    "chave": "ItemFormulario.ImpedimentoMensagemInvalida",
+    "status": 422,
+    "codigo": "uniplus.item_formulario.impedimento_mensagem_invalida",
+    "titulo": "A mensagem do impedimento é obrigatória e limitada"
+  },
+  {
+    "chave": "ItemFormulario.ImpedimentoNaoCabeNoCampo",
+    "status": 422,
+    "codigo": "uniplus.item_formulario.impedimento_nao_cabe_no_campo",
+    "titulo": "O tipo de campo não aceita impedimento"
+  },
+  {
+    "chave": "ItemFormulario.ImpedimentoForaDaInscricao",
+    "status": 422,
+    "codigo": "uniplus.item_formulario.impedimento_fora_da_inscricao",
+    "titulo": "Só o formulário de inscrição tem impedimento"
+  },
+  {
+    "chave": "GrupoFormulario.CampoComImpedimento",
+    "status": 422,
+    "codigo": "uniplus.grupo_formulario.campo_com_impedimento",
+    "titulo": "O campo do grupo não tem impedimento"
+  },
+  {
+    "chave": "ItemFormulario.FatoCodigoObrigatorio",
+    "status": 422,
+    "codigo": "uniplus.item_formulario.fato_codigo_obrigatorio",
+    "titulo": "O código do fato do item é obrigatório"
+  },
+  {
+    "chave": "ItemFormulario.FatoCodigoTamanho",
+    "status": 422,
+    "codigo": "uniplus.item_formulario.fato_codigo_tamanho",
+    "titulo": "O código do fato do item excede o tamanho máximo"
+  },
+  {
+    "chave": "ItemFormulario.OrdemInvalida",
+    "status": 422,
+    "codigo": "uniplus.item_formulario.ordem_invalida",
+    "titulo": "A ordem do item não pode ser negativa"
+  },
+  {
+    "chave": "ItemFormulario.RotuloObrigatorio",
+    "status": 422,
+    "codigo": "uniplus.item_formulario.rotulo_obrigatorio",
+    "titulo": "O rótulo do item é obrigatório"
+  },
+  {
+    "chave": "ItemFormulario.RotuloTamanho",
+    "status": 422,
+    "codigo": "uniplus.item_formulario.rotulo_tamanho",
+    "titulo": "O rótulo do item excede o tamanho máximo"
+  },
+  {
+    "chave": "ItemFormulario.TipoRenderizacaoObrigatorio",
+    "status": 422,
+    "codigo": "uniplus.item_formulario.tipo_renderizacao_obrigatorio",
+    "titulo": "O tipo de campo do item é obrigatório"
+  },
+  {
+    "chave": "ItemFormulario.AjudaTamanho",
+    "status": 422,
+    "codigo": "uniplus.item_formulario.ajuda_tamanho",
+    "titulo": "Ajuda do campo acima do tamanho máximo"
+  },
+  {
+    "chave": "ItemFormulario.FormatoIncoerente",
+    "status": 422,
+    "codigo": "uniplus.item_formulario.formato_incoerente",
+    "titulo": "Formato do campo incoerente com o tipo de campo"
+  },
+  {
+    "chave": "ItemFormulario.RegraAutorreferente",
+    "status": 422,
+    "codigo": "uniplus.item_formulario.regra_autorreferente",
+    "titulo": "Uma regra do item cita o próprio fato"
+  },
+  {
+    "chave": "ItemFormulario.RestricaoIncoerente",
+    "status": 422,
+    "codigo": "uniplus.item_formulario.restricao_incoerente",
+    "titulo": "A restrição de valor não se aplica ao tipo do campo"
+  },
+  {
+    "chave": "ItemFormulario.OpcionalQueAlimentaRegra",
+    "status": 422,
+    "codigo": "uniplus.item_formulario.opcional_que_alimenta_regra",
+    "titulo": "Campo que alimenta derivação, agregado ou negação precisa ser obrigatório sempre que exibido"
+  },
+  {
+    "chave": "ItemFormulario.TipoRenderizacaoIncoerenteComDominio",
+    "status": 422,
+    "codigo": "uniplus.item_formulario.tipo_renderizacao_incoerente_com_dominio",
+    "titulo": "O tipo de campo não é coerente com o domínio do fato"
+  },
+  {
+    "chave": "ItemFormulario.FatoDesconhecido",
+    "status": 422,
+    "codigo": "uniplus.item_formulario.fato_desconhecido",
+    "titulo": "O fato do item não pertence ao catálogo de fatos do candidato"
+  },
+  {
+    "chave": "ItemFormulario.FatoNaoColetavel",
+    "status": 422,
+    "codigo": "uniplus.item_formulario.fato_nao_coletavel",
+    "titulo": "O fato do item não é coletável num campo"
+  },
+  {
+    "chave": "ItemFormulario.ItensEmExcesso",
+    "status": 422,
+    "codigo": "uniplus.item_formulario.itens_em_excesso",
+    "titulo": "O formulário excede o teto de itens"
+  },
+  {
+    "chave": "ItemFormulario.OpcoesDeOutroDominio",
+    "status": 422,
+    "codigo": "uniplus.item_formulario.opcoes_de_outro_dominio",
+    "titulo": "As opções vêm de um campo com outra fonte ou outro domínio de valores"
+  },
+  {
+    "chave": "VinculoCatalogo.FatoDesativado",
+    "status": 422,
+    "codigo": "uniplus.vinculo_catalogo.fato_desativado",
+    "titulo": "O fato está desativado no catálogo e não aceita vínculo novo"
+  },
+  {
+    "chave": "VinculoCatalogo.FatoComProtecaoPendente",
+    "status": 422,
+    "codigo": "uniplus.vinculo_catalogo.fato_com_protecao_pendente",
+    "titulo": "O fato aguarda a aprovação da proteção de dados e não aceita vínculo novo"
+  },
+  {
+    "chave": "VinculoCatalogo.ValorDesativado",
+    "status": 422,
+    "codigo": "uniplus.vinculo_catalogo.valor_desativado",
+    "titulo": "O valor está desativado no catálogo e não aceita vínculo novo"
+  },
+  {
+    "chave": "TermoFormulario.CodigoObrigatorio",
+    "status": 422,
+    "codigo": "uniplus.termo_formulario.codigo_obrigatorio",
+    "titulo": "O código do termo exigido é obrigatório"
+  },
+  {
+    "chave": "TermoFormulario.CodigoTamanho",
+    "status": 422,
+    "codigo": "uniplus.termo_formulario.codigo_tamanho",
+    "titulo": "O código do termo exigido excede o tamanho máximo"
+  },
+  {
+    "chave": "TermoFormulario.OrdemInvalida",
+    "status": 422,
+    "codigo": "uniplus.termo_formulario.ordem_invalida",
+    "titulo": "A ordem do termo não pode ser negativa"
+  },
+  {
+    "chave": "TermoFormulario.CodigoDuplicado",
+    "status": 422,
+    "codigo": "uniplus.termo_formulario.codigo_duplicado",
+    "titulo": "O código aparece em mais de um termo do formulário"
+  },
+  {
+    "chave": "TermoFormulario.OrdemDuplicada",
+    "status": 422,
+    "codigo": "uniplus.termo_formulario.ordem_duplicada",
+    "titulo": "Dois termos do formulário têm a mesma ordem"
+  },
+  {
+    "chave": "RestricaoValor.TipoDesconhecido",
+    "status": 422,
+    "codigo": "uniplus.restricao_valor.tipo_desconhecido",
+    "titulo": "O tipo da restrição de valor não é reconhecido"
+  },
+  {
+    "chave": "RestricaoValor.LimitesIncoerentes",
+    "status": 422,
+    "codigo": "uniplus.restricao_valor.limites_incoerentes",
+    "titulo": "Os limites da restrição de valor são incoerentes"
+  },
+  {
+    "chave": "RestricaoValor.OpcoesVazias",
+    "status": 422,
+    "codigo": "uniplus.restricao_valor.opcoes_vazias",
+    "titulo": "As opções permitidas precisam de valores"
+  },
+  {
+    "chave": "RestricaoValor.FatosVazios",
+    "status": 422,
+    "codigo": "uniplus.restricao_valor.fatos_vazios",
+    "titulo": "As opções formadas pelas respostas precisam citar fatos"
+  },
+  {
+    "chave": "RestricaoValor.FormaJsonInvalida",
+    "status": 422,
+    "codigo": "uniplus.restricao_valor.forma_json_invalida",
+    "titulo": "A restrição de valor não tem a forma esperada"
+  },
+  {
+    "chave": "RestricaoValor.TipoRepetido",
+    "status": 422,
+    "codigo": "uniplus.restricao_valor.tipo_repetido",
+    "titulo": "O item declara no máximo uma restrição de cada tipo"
+  },
+  {
+    "chave": "RestricaoValor.LimiteDeDataInvalido",
+    "status": 422,
+    "codigo": "uniplus.restricao_valor.limite_de_data_invalido",
+    "titulo": "O limite da faixa de data é uma data fixa ou o envio deslocado em anos e dias"
+  },
+  {
+    "chave": "PredicadoDnf.FormaJsonInvalida",
+    "status": 422,
+    "codigo": "uniplus.predicado_dnf.forma_json_invalida",
+    "titulo": "O predicado ou a obrigatoriedade não tem a forma esperada"
+  },
+  {
+    "chave": "ClausulaDnf.ClausulaVazia",
+    "status": 422,
+    "codigo": "uniplus.clausula_dnf.clausula_vazia",
+    "titulo": "Uma cláusula do predicado deve ter ao menos uma condição"
+  },
+  {
+    "chave": "PredicadoDnf.CondicaoNula",
+    "status": 422,
+    "codigo": "uniplus.predicado_dnf.condicao_nula",
+    "titulo": "O predicado contém uma condição nula"
+  },
+  {
+    "chave": "CondicaoDnf.FatoObrigatorio",
+    "status": 422,
+    "codigo": "uniplus.condicao_dnf.fato_obrigatorio",
+    "titulo": "O fato da condição é obrigatório"
+  },
+  {
+    "chave": "CondicaoDnf.OperadorInvalido",
+    "status": 422,
+    "codigo": "uniplus.condicao_dnf.operador_invalido",
+    "titulo": "O operador da condição não é reconhecido"
+  },
+  {
+    "chave": "CondicaoDnf.FormaIncoerenteComOperador",
+    "status": 422,
+    "codigo": "uniplus.condicao_dnf.forma_incoerente_com_operador",
+    "titulo": "A forma do valor não é coerente com o operador da condição"
+  },
+  {
+    "chave": "PredicadoDnf.FatoDesconhecido",
+    "status": 422,
+    "codigo": "uniplus.predicado_dnf.fato_desconhecido",
+    "titulo": "O fato da condição não pertence ao vocabulário fechado"
+  },
+  {
+    "chave": "PredicadoDnf.OperadorIncompativelComDominio",
+    "status": 422,
+    "codigo": "uniplus.predicado_dnf.operador_incompativel_com_dominio",
+    "titulo": "O operador da condição não é compatível com o domínio do fato"
+  },
+  {
+    "chave": "PredicadoDnf.ValorIncompativelComTipo",
+    "status": 422,
+    "codigo": "uniplus.predicado_dnf.valor_incompativel_com_tipo",
+    "titulo": "O valor da condição não é compatível com o tipo do fato"
+  },
+  {
+    "chave": "PredicadoDnf.ValorForaDoDominio",
+    "status": 422,
+    "codigo": "uniplus.predicado_dnf.valor_fora_do_dominio",
+    "titulo": "O valor da condição não pertence ao domínio declarado do fato"
+  },
+  {
+    "chave": "PredicadoDnf.FatoNaoColetadoPeloProcesso",
+    "status": 422,
+    "codigo": "uniplus.predicado_dnf.fato_nao_coletado_pelo_processo",
+    "titulo": "O fato da condição não é coletado por este processo"
+  },
+  {
+    "chave": "PredicadoDnf.DominioDinamicoNaoFornecido",
+    "status": 422,
+    "codigo": "uniplus.predicado_dnf.dominio_dinamico_nao_fornecido",
+    "titulo": "O domínio dinâmico do fato não foi fornecido pelo chamador"
+  },
+  {
+    "chave": "DescritorFatoCandidato.DominioIncoerente",
+    "status": 422,
+    "codigo": "uniplus.descritor_fato_candidato.dominio_incoerente",
+    "titulo": "A combinação de domínio e valores declarados do fato é incoerente"
+  },
+  {
+    "chave": "RegraDerivacao.ContribuiObrigatorio",
+    "status": 422,
+    "codigo": "uniplus.regra_derivacao.contribui_obrigatorio",
+    "titulo": "Uma regra de derivação precisa contribuir um código"
+  },
+  {
+    "chave": "RegrasDerivacaoFato.SemRegras",
+    "status": 422,
+    "codigo": "uniplus.regras_derivacao_fato.sem_regras",
+    "titulo": "A derivação de um fato precisa de ao menos uma regra"
+  },
+  {
+    "chave": "RegrasDerivacaoFato.ContribuiForaDoDominio",
+    "status": 422,
+    "codigo": "uniplus.regras_derivacao_fato.contribui_fora_do_dominio",
+    "titulo": "Uma regra contribui um código fora do domínio do fato"
+  },
+  {
+    "chave": "RegrasDerivacaoFato.DependenciasIncoerentes",
+    "status": 422,
+    "codigo": "uniplus.regras_derivacao_fato.dependencias_incoerentes",
+    "titulo": "As dependências declaradas não são exatamente os fatos citados"
+  },
+  {
+    "chave": "FormularioPortavel.ObrigatoriedadeInvalida",
+    "status": 422,
+    "codigo": "uniplus.formulario_portavel.obrigatoriedade_invalida",
+    "titulo": "A obrigatoriedade é SEMPRE ou NUNCA sem predicado, ou QUANDO com ele"
+  },
+  {
+    "chave": "FormularioPortavel.OperacaoDeAgregadoInvalida",
+    "status": 422,
+    "codigo": "uniplus.formulario_portavel.operacao_de_agregado_invalida",
+    "titulo": "A operação do agregado é EXISTE ou VALORES_PRESENTES"
+  },
+  {
+    "chave": "FormularioPortavel.DerivacaoInvalida",
+    "status": 422,
+    "codigo": "uniplus.formulario_portavel.derivacao_invalida",
+    "titulo": "A derivação do formulário não forma regras válidas"
+  },
+  {
+    "chave": "FormularioPortavel.EstruturaInvalida",
+    "status": 422,
+    "codigo": "uniplus.formulario_portavel.estrutura_invalida",
+    "titulo": "As regras não formam um formulário: elemento nulo, código repetido ou referência que não existe"
+  },
+  {
+    "chave": "FormularioPortavel.OcorrenciaInvalida",
+    "status": 422,
+    "codigo": "uniplus.formulario_portavel.ocorrencia_invalida",
+    "titulo": "Ocorrência de grupo sem identidade própria no grupo"
+  },
+  {
+    "chave": "FormularioPortavel.FusoDoEnvioDesconhecido",
+    "status": 422,
+    "codigo": "uniplus.formulario_portavel.fuso_do_envio_desconhecido",
+    "titulo": "A zona do envio simulado não é reconhecida"
+  },
+  {
+    "chave": "FormularioPortavel.InstanteDoEnvioForaDoCalendario",
+    "status": 422,
+    "codigo": "uniplus.formulario_portavel.instante_do_envio_fora_do_calendario",
+    "titulo": "O instante do envio simulado está ausente ou fora do calendário que os limites da faixa de data alcançam"
+  },
+  {
+    "chave": "RegrasDerivacaoFato.DerivacaoAutorreferente",
+    "status": 422,
+    "codigo": "uniplus.regras_derivacao_fato.derivacao_autorreferente",
+    "titulo": "Um fato derivado não pode depender de si mesmo"
+  }
+]
