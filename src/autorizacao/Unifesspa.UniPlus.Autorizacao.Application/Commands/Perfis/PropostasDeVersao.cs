@@ -50,25 +50,28 @@ public sealed class PropostasDeVersao
     {
         ArgumentNullException.ThrowIfNull(dados);
 
-        if (await _autoria.DaVersaoAsync(perfilId, cancellationToken).ConfigureAwait(false) is not { } autoria)
-        {
-            return Recusada(Result<ResultadoDaPropostaDto>.Failure(PerfilHandlerErros.AutorNaoIdentificado()));
-        }
-
+        Result<AutoriaDaVersao> autoria = await _autoria.ExigirDaVersaoAsync(perfilId, cancellationToken).ConfigureAwait(false);
         Result<ConteudoDaVersao> conteudo = Validar(dados);
-        if (Recusa(conteudo, dados.CategoriaDaRemocao) is { } recusa)
+        if (Recusa(autoria, conteudo, dados.CategoriaDaRemocao) is { } recusa)
         {
-            return Recusada(recusa);
+            return GravacaoDaOperacao<ResultadoDaPropostaDto>.Sem(recusa);
         }
 
         return await _operacao.ExecutarComAvisosAsync(
             perfilId,
-            (perfil, contexto) => ProporNoPerfilAsync(perfil, Proposta(conteudo.Value!, dados, autoria, contexto.Agora), cancellationToken),
+            (perfil, contexto) => ProporNoPerfilAsync(perfil, Proposta(conteudo.Value!, dados, autoria.Value!, contexto.Agora), cancellationToken),
             cancellationToken).ConfigureAwait(false);
     }
 
-    private static Result<ResultadoDaPropostaDto>? Recusa(Result<ConteudoDaVersao> conteudo, string? categoriaDaRemocao)
+    /// <summary>A recusa da proposta na ordem: autor não identificado, conteúdo inválido, categoria da remoção inexistente.</summary>
+    private static Result<ResultadoDaPropostaDto>? Recusa(
+        Result<AutoriaDaVersao> autoria, Result<ConteudoDaVersao> conteudo, string? categoriaDaRemocao)
     {
+        if (autoria.IsFailure)
+        {
+            return Result<ResultadoDaPropostaDto>.Failure(autoria.Error!);
+        }
+
         if (conteudo.IsFailure)
         {
             return Result<ResultadoDaPropostaDto>.ValidationFailure(conteudo.Errors);
@@ -78,9 +81,6 @@ public sealed class PropostasDeVersao
             ? Result<ResultadoDaPropostaDto>.Failure(PerfilErros.RemocaoInvalida())
             : null;
     }
-
-    private static GravacaoDaOperacao<ResultadoDaPropostaDto> Recusada(Result<ResultadoDaPropostaDto> resultado) =>
-        GravacaoDaOperacao<ResultadoDaPropostaDto>.Sem(resultado);
 
     private static PropostaDeVersao Proposta(ConteudoDaVersao conteudo, ProporVersaoRequest dados, AutoriaDaVersao autoria, DateTimeOffset agora) =>
         new(
