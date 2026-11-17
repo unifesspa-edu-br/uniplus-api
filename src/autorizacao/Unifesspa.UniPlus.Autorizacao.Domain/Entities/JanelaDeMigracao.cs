@@ -111,7 +111,7 @@ public sealed class JanelaDeMigracao : EntityBase
     {
         ArgumentNullException.ThrowIfNull(concessao);
 
-        return concessao.PerfilId == PerfilId && concessao.EstaAtiva(agora) && concessao.VersaoId != VersaoAlvoId;
+        return concessao.PerfilId == PerfilId && concessao.PendenteDeMigrarPara(VersaoAlvoId, agora);
     }
 
     public int Pendencias(IEnumerable<Concessao> concessoes, DateTimeOffset agora)
@@ -165,20 +165,25 @@ public sealed class JanelaDeMigracao : EntityBase
         ArgumentNullException.ThrowIfNull(autoria);
         ArgumentNullException.ThrowIfNull(contexto);
 
-        AutoriaDaVersao quem = ComConcessaoDoPerfil(autoria, contexto);
-        if (ConferenciasDaMigracao.DoLote(this, pedido, quem.Pessoa, contexto) is { } recusa)
+        Result<AutoriaDaVersao> autor = ConferirPeloAutor(autoria, contexto, pessoa => ConferenciasDaMigracao.DoLote(this, pedido, pessoa, contexto));
+        if (autor.IsFailure)
         {
-            return Result.Failure(recusa);
+            return Result.Failure(autor.Error!);
         }
 
+        RegistrarOLote(pedido, autor.Value!, contexto);
+
+        return Result.Success();
+    }
+
+    private void RegistrarOLote(PedidoDoLote pedido, AutoriaDaVersao quem, ContextoDaMigracao contexto)
+    {
         List<Concessao> elegiveis = [.. contexto.Concessoes.Where(c => Elegivel(c, contexto.Agora)).OrderBy(static c => c.Id)];
         LoteDaMigracao lote = LoteDaMigracao.Registrar(
             this, EtapaDaMigracao.GestaoDeAcessos, quem, pedido.ConfirmouExclusao, elegiveis.Count, contexto.Agora);
         Acrescentar(lote);
         AplicarOLote(pedido, elegiveis, lote, new EfeitosDaDecisaoDaMigracao(this, contexto, quem));
         EncerrarSeConcluida(contexto);
-
-        return Result.Success();
     }
 
     /// <summary>A concessão retida, que outra pessoa decide depois do lote; o que o lote decidiu não muda.</summary>
@@ -188,13 +193,13 @@ public sealed class JanelaDeMigracao : EntityBase
         ArgumentNullException.ThrowIfNull(autoria);
         ArgumentNullException.ThrowIfNull(contexto);
 
-        AutoriaDaVersao quem = ComConcessaoDoPerfil(autoria, contexto);
-        if (ConferenciasDaMigracao.DaRetida(this, pedido, quem.Pessoa, contexto) is { } recusa)
+        Result<AutoriaDaVersao> autor = ConferirPeloAutor(autoria, contexto, pessoa => ConferenciasDaMigracao.DaRetida(this, pedido, pessoa, contexto));
+        if (autor.IsFailure)
         {
-            return Result.Failure(recusa);
+            return Result.Failure(autor.Error!);
         }
 
-        new EfeitosDaDecisaoDaMigracao(this, contexto, quem).DaGestao(contexto.Concessao(pedido.ConcessaoId)!, pedido.Decisao!.Value, null);
+        new EfeitosDaDecisaoDaMigracao(this, contexto, autor.Value!).DaGestao(contexto.Concessao(pedido.ConcessaoId)!, pedido.Decisao!.Value, null);
         EncerrarSeConcluida(contexto);
 
         return Result.Success();
@@ -207,20 +212,25 @@ public sealed class JanelaDeMigracao : EntityBase
         ArgumentNullException.ThrowIfNull(autoria);
         ArgumentNullException.ThrowIfNull(contexto);
 
-        AutoriaDaVersao quem = ComConcessaoDoPerfil(autoria, contexto);
-        if (ConferenciasDaMigracao.DaEtapaDaProtecao(this, pedido, quem.Pessoa, contexto) is { } recusa)
+        Result<AutoriaDaVersao> autor = ConferirPeloAutor(autoria, contexto, pessoa => ConferenciasDaMigracao.DaEtapaDaProtecao(this, pedido, pessoa, contexto));
+        if (autor.IsFailure)
         {
-            return Result.Failure(recusa);
+            return Result.Failure(autor.Error!);
         }
 
+        RegistrarEtapaDaProtecao(pedido, autor.Value!, contexto);
+
+        return Result.Success();
+    }
+
+    private void RegistrarEtapaDaProtecao(PedidoDaEtapaDaProtecao pedido, AutoriaDaVersao quem, ContextoDaMigracao contexto)
+    {
         LoteDaMigracao envio = LoteDaMigracao.Registrar(
             this, EtapaDaMigracao.ProtecaoDeDados, quem, pedido.ConfirmouExclusao, pedido.Itens.Count, contexto.Agora);
         Acrescentar(envio);
         EfeitosDaDecisaoDaMigracao efeitos = new(this, contexto, quem);
         pedido.Itens.ToList().ForEach(i => efeitos.DaProtecao(contexto.Concessao(i.ConcessaoId)!, i.Decisao!.Value, envio));
         EncerrarSeConcluida(contexto);
-
-        return Result.Success();
     }
 
     // A decisão da gestão, por elegível: as do próprio gestor ficam retidas; o item que já não é elegível é ignorado.
@@ -240,6 +250,16 @@ public sealed class JanelaDeMigracao : EntityBase
                 efeitos.Reter(concessao);
             }
         }
+    }
+
+    // Toda recusa sai antes da primeira alteração: a conferência é feita pela pessoa, com a concessão do perfil no instante.
+    private static Result<AutoriaDaVersao> ConferirPeloAutor(
+        AutoriaDaVersao autoria, ContextoDaMigracao contexto, Func<Identidade, DomainError?> conferencia)
+    {
+        AutoriaDaVersao quem = ComConcessaoDoPerfil(autoria, contexto);
+        DomainError? recusa = conferencia(quem.Pessoa);
+
+        return recusa is null ? Result<AutoriaDaVersao>.Success(quem) : Result<AutoriaDaVersao>.Failure(recusa);
     }
 
     // Ter o perfil não impede o ato, mas a trilha registra: a conferência vale no instante da decisão.
