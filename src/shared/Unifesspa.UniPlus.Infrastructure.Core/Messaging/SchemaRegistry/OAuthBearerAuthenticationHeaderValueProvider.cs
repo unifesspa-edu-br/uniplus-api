@@ -98,33 +98,17 @@ public sealed partial class OAuthBearerAuthenticationHeaderValueProvider
     }
 
     private async Task<string> GetOrRefreshTokenAsync(CancellationToken cancellationToken)
+        => TryGetValidCachedToken()
+            ?? await RenewWithExclusiveAccessAsync(cancellationToken).ConfigureAwait(false);
+
+    private async Task<string> RenewWithExclusiveAccessAsync(CancellationToken cancellationToken)
     {
-        DateTimeOffset now = _timeProvider.GetUtcNow();
-        TimeSpan skew = TimeSpan.FromSeconds(_settings.RefreshSkewSeconds);
-
-        if (_cachedToken is not null && now < _cachedTokenExpiresAt - skew)
-        {
-            return _cachedToken;
-        }
-
         await _refreshLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             // Re-check após acquire — outro thread pode ter renovado enquanto esperávamos.
-            now = _timeProvider.GetUtcNow();
-            if (_cachedToken is not null && now < _cachedTokenExpiresAt - skew)
-            {
-                return _cachedToken;
-            }
-
-            TokenEndpointResponse response = await RequestTokenAsync(cancellationToken).ConfigureAwait(false);
-
-            _cachedToken = response.AccessToken;
-            _cachedTokenExpiresAt = _timeProvider.GetUtcNow().AddSeconds(response.ExpiresInSeconds);
-
-            LogTokenRefreshed(_logger, _settings.ClientId, response.ExpiresInSeconds);
-
-            return _cachedToken;
+            return TryGetValidCachedToken()
+                ?? await RenewTokenAsync(cancellationToken).ConfigureAwait(false);
         }
         finally
         {
@@ -132,7 +116,46 @@ public sealed partial class OAuthBearerAuthenticationHeaderValueProvider
         }
     }
 
+    private string? TryGetValidCachedToken()
+    {
+        DateTimeOffset now = _timeProvider.GetUtcNow();
+        TimeSpan skew = TimeSpan.FromSeconds(_settings.RefreshSkewSeconds);
+
+        return _cachedToken is not null && now < _cachedTokenExpiresAt - skew
+            ? _cachedToken
+            : null;
+    }
+
+    private async Task<string> RenewTokenAsync(CancellationToken cancellationToken)
+    {
+        TokenEndpointResponse response = await RequestTokenAsync(cancellationToken).ConfigureAwait(false);
+
+        _cachedToken = response.AccessToken;
+        _cachedTokenExpiresAt = _timeProvider.GetUtcNow().AddSeconds(response.ExpiresInSeconds);
+
+        LogTokenRefreshed(_logger, _settings.ClientId, response.ExpiresInSeconds);
+
+        return response.AccessToken;
+    }
+
     private async Task<TokenEndpointResponse> RequestTokenAsync(CancellationToken cancellationToken)
+    {
+        using FormUrlEncodedContent content = new(BuildTokenRequestForm());
+        using HttpResponseMessage response = await _httpClient
+            .PostAsync(new Uri(_settings.TokenEndpoint), content, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            int status = (int)response.StatusCode;
+            LogTokenRequestFailed(_logger, _settings.ClientId, status, FailureSummary(status));
+            throw CreateTokenEndpointFailure(status);
+        }
+
+        return await ReadTokenResponseAsync(response, cancellationToken).ConfigureAwait(false);
+    }
+
+    private List<KeyValuePair<string, string>> BuildTokenRequestForm()
     {
         List<KeyValuePair<string, string>> form =
         [
@@ -146,44 +169,40 @@ public sealed partial class OAuthBearerAuthenticationHeaderValueProvider
             form.Add(new("scope", _settings.Scope));
         }
 
-        using FormUrlEncodedContent content = new(form);
-        using HttpResponseMessage response = await _httpClient
-            .PostAsync(new Uri(_settings.TokenEndpoint), content, cancellationToken)
-            .ConfigureAwait(false);
+        return form;
+    }
 
-        if (!response.IsSuccessStatusCode)
-        {
-            string body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-            int status = (int)response.StatusCode;
-            LogTokenRequestFailed(_logger, _settings.ClientId, status, body);
+    private static bool IsPermanentRejection(int status) => status is >= 400 and < 500;
 
-            // 4xx = falha determinística (client_id/client_secret incorretos, scope inválido,
-            // realm errado, client desabilitado). Propagar como InvalidOperationException
-            // para que o consumidor (e.g. SchemaRegistrationHostedService) NÃO trate
-            // como transiente — release com config ruim deve travar StartAsync.
-            //
-            // 5xx = falha possivelmente transiente (Keycloak sob carga, restart em curso) —
-            // mantém HttpRequestException para fallback fail-graceful no caminho startup.
-            if (status >= 400 && status < 500)
-            {
-                throw new InvalidOperationException(
-                    $"OAuth client_credentials para Schema Registry recebeu status determinístico {status} "
-                    + "(config inválida — verifique ClientId/ClientSecret/TokenEndpoint/Scope no realm). "
-                    + $"ClientId={_settings.ClientId}.");
-            }
+    private static string FailureSummary(int status)
+        => IsPermanentRejection(status) ? "recusa definitiva (4xx)" : "falha transitória";
 
-            // 5xx do token endpoint é transitivo — Keycloak sob carga, restart em curso.
-            // Marca explicitamente HttpRequestError.ConnectionError para que o
-            // SchemaRegistrationHostedService trate via fail-graceful (ConnectionError/
-            // NameResolutionError são os casos transientes filtrados). Sem o enum value
-            // explícito, HttpRequestError fica Unknown e o catch propaga, travando
-            // startup em incidente transitivo do Keycloak (boot avoidable failure).
-            throw new HttpRequestException(
+    // 4xx = falha determinística (client_id/client_secret incorretos, scope inválido,
+    // realm errado, client desabilitado). Propagar como InvalidOperationException
+    // para que o consumidor (e.g. SchemaRegistrationHostedService) NÃO trate
+    // como transiente — release com config ruim deve travar StartAsync.
+    //
+    // 5xx = falha possivelmente transiente (Keycloak sob carga, restart em curso).
+    // Marca explicitamente HttpRequestError.ConnectionError para que o
+    // SchemaRegistrationHostedService trate via fail-graceful (ConnectionError/
+    // NameResolutionError são os casos transientes filtrados). Sem o enum value
+    // explícito, HttpRequestError fica Unknown e o catch propaga, travando
+    // startup em incidente transitivo do Keycloak (boot avoidable failure).
+    private Exception CreateTokenEndpointFailure(int status)
+        => IsPermanentRejection(status)
+            ? new InvalidOperationException(
+                $"OAuth client_credentials para Schema Registry recebeu status determinístico {status} "
+                + "(config inválida — verifique ClientId/ClientSecret/TokenEndpoint/Scope no realm). "
+                + $"ClientId={_settings.ClientId}.")
+            : new HttpRequestException(
                 HttpRequestError.ConnectionError,
                 $"OAuth client_credentials para Schema Registry falhou com status transiente {status}. "
                 + $"ClientId={_settings.ClientId}.");
-        }
 
+    private async Task<TokenEndpointResponse> ReadTokenResponseAsync(
+        HttpResponseMessage response,
+        CancellationToken cancellationToken)
+    {
         TokenEndpointResponse? parsed = await response.Content
             .ReadFromJsonAsync<TokenEndpointResponse>(cancellationToken)
             .ConfigureAwait(false);
@@ -222,8 +241,8 @@ public sealed partial class OAuthBearerAuthenticationHeaderValueProvider
 
     [LoggerMessage(
         Level = LogLevel.Error,
-        Message = "SchemaRegistry OAuth token endpoint falhou. ClientId={ClientId} Status={Status} Body={Body}")]
-    private static partial void LogTokenRequestFailed(ILogger logger, string clientId, int status, string body);
+        Message = "SchemaRegistry OAuth token endpoint falhou. ClientId={ClientId} Status={Status} Summary={Summary}")]
+    private static partial void LogTokenRequestFailed(ILogger logger, string clientId, int status, string summary);
 
     private sealed record TokenEndpointResponse
     {
