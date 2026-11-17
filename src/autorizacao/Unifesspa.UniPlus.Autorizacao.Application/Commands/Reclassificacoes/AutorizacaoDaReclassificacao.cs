@@ -32,7 +32,7 @@ public sealed class AutorizacaoDaReclassificacao
     {
         ArgumentNullException.ThrowIfNull(verificador);
 
-        AcessoDaVersao? acesso = await AcessoDaVersao.ConsultarAsync(verificador, reclassificacaoId, cancellationToken, ResourceTiposAutorizacao.Reclassificacao).ConfigureAwait(false);
+        AcessoDasEtapas? acesso = await AcessoDaVersao.ConsultarAsync(verificador, reclassificacaoId, cancellationToken, ResourceTiposAutorizacao.Reclassificacao).ConfigureAwait(false);
         if (acesso is null)
         {
             return Result.Failure(PerfilHandlerErros.AutorNaoIdentificado());
