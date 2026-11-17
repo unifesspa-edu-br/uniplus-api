@@ -7,11 +7,10 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed record DocumentoDeDesignacao
 {
     public const int NumeroMaxLength = 60;
-    public const long TamanhoMaximoDoPdfBytes = 10L * 1024 * 1024;
 
     public string Numero { get; }
 
-    /// <summary>Tamanho declarado do PDF, em bytes; é o limite do pedido ao verificador, no máximo <see cref="TamanhoMaximoDoPdfBytes"/>.</summary>
+    /// <summary>Tamanho declarado do PDF, em bytes; é o limite do pedido ao verificador, no máximo <see cref="PdfDeclarado.TamanhoMaximoBytes"/>.</summary>
     public long TamanhoDoPdf { get; }
 
     private DocumentoDeDesignacao(string numero, long tamanhoDoPdf)
@@ -54,9 +53,9 @@ public sealed record DocumentoDeDesignacao
                 $"O número do documento de designação é obrigatório e deve ter até {NumeroMaxLength} caracteres."))];
 
     private static FieldError[] ErroDoTamanho(long tamanhoDoPdf) =>
-        tamanhoDoPdf is >= 1 and <= TamanhoMaximoDoPdfBytes
+        PdfDeclarado.TamanhoAdmitido(tamanhoDoPdf)
             ? []
             : [new("tamanhoDoPdf", new DomainError(
                 InstalacaoErrorCodes.DocumentoInvalido,
-                "O PDF do documento de designação deve ter de 1 byte a 10 MB."))];
+                $"O PDF do documento de designação deve ter de 1 byte a {PdfDeclarado.TamanhoMaximoEmMegabytes} MB."))];
 }

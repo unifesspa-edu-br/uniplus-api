@@ -136,7 +136,7 @@ public sealed class InstalacaoTests
     [Theory(DisplayName = "PDF vazio ou acima de 10 MB é recusado")]
     [InlineData(0)]
     [InlineData(-1)]
-    [InlineData(DocumentoDeDesignacao.TamanhoMaximoDoPdfBytes + 1)]
+    [InlineData(PdfDeclarado.TamanhoMaximoBytes + 1)]
     public void Iniciar_TamanhoDoPdfForaDoLimite_Recusa(long tamanho)
     {
         CodigosDaRecusa(Instalacao.Iniciar(Paulo, Gestores(ContaIdDiogo, ContaIdIsabella), Emissor, "123", tamanho, Agora))

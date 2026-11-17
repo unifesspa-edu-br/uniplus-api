@@ -139,7 +139,7 @@ public sealed class PedidoDeConcessaoCicloTests
     [Theory(DisplayName = "O PDF do anexo tem de 1 byte a 10 MB")]
     [InlineData(0)]
     [InlineData(-1)]
-    [InlineData(10L * 1024 * 1024 + 1)]
+    [InlineData(PdfDeclarado.TamanhoMaximoBytes + 1)]
     public void Anexo_TamanhoInvalido_Recusa(long tamanho) =>
         Codigos(Pedido().AguardandoGestor().NovoAnexo(tamanho)).Should().Equal(PedidoErrorCodes.AnexoInvalido);
 

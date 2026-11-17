@@ -96,14 +96,14 @@ public sealed class PerfilTests
     [Theory(DisplayName = "Tamanho do documento fora de 1 byte a 10 MB é recusado")]
     [InlineData(0)]
     [InlineData(-1)]
-    [InlineData(DocumentoDaVersao.TamanhoMaximoBytes + 1)]
+    [InlineData(PdfDeclarado.TamanhoMaximoBytes + 1)]
     public void Validar_TamanhoForaDoLimite_Recusa(long tamanho) =>
         CodigosDaRecusa(ConteudoDaVersao.Validar("Analista", Descricao, [Consultar], PerfisDeTeste.Protocolo, tamanho, Catalogo))
             .Should().Equal(PerfilErrorCodes.DocumentoInvalido);
 
     [Theory(DisplayName = "Tamanho do documento nos limites é aceito")]
     [InlineData(1)]
-    [InlineData(DocumentoDaVersao.TamanhoMaximoBytes)]
+    [InlineData(PdfDeclarado.TamanhoMaximoBytes)]
     public void Validar_TamanhoNosLimites_Aceita(long tamanho) =>
         ConteudoDaVersao.Validar("Analista", Descricao, [Consultar], PerfisDeTeste.Protocolo, tamanho, Catalogo)
             .IsSuccess.Should().BeTrue();
