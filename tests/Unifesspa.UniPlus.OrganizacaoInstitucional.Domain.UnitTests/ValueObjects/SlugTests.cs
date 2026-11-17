@@ -53,6 +53,24 @@ public sealed class SlugTests
         resultado.Error!.Code.Should().Be(UnidadeErrorCodes.SlugTamanho);
     }
 
+    [Fact(DisplayName = "Slug curto e fora do formato recusa pelo tamanho, que vem antes do formato")]
+    public void From_ComSlugCurtoEForaDoFormato_DeveRetornarSlugTamanho()
+    {
+        Result<Slug> resultado = Slug.From("AB");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(UnidadeErrorCodes.SlugTamanho);
+    }
+
+    [Fact(DisplayName = "Slug com espaços nas pontas é aparado antes de validar o tamanho e o formato")]
+    public void From_ComEspacosNasPontas_DeveAparar()
+    {
+        Result<Slug> resultado = Slug.From("  ceps  ");
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.Valor.Should().Be("ceps");
+    }
+
     [Theory(DisplayName = "Slug em formato inválido retorna SlugFormatoInvalido")]
     [InlineData("1ceps")]          // começa com dígito
     [InlineData("-ceps")]          // começa com hífen

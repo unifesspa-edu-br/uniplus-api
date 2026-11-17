@@ -31,24 +31,29 @@ public readonly record struct Slug
         }
 
         string normalizado = valor.Trim();
+        DomainError? erro = ErroDoSlug(normalizado);
 
+        return erro is null
+            ? Result<Slug>.Success(new Slug(normalizado))
+            : Result<Slug>.Failure(erro);
+    }
+
+    private static DomainError? ErroDoSlug(string normalizado)
+    {
         if (!FormatoKebab.TemComprimentoValido(normalizado))
         {
-            return Result<Slug>.Failure(new DomainError(
+            return new DomainError(
                 UnidadeErrorCodes.SlugTamanho,
-                $"Slug deve ter entre {FormatoKebab.ComprimentoMinimo} e {FormatoKebab.ComprimentoMaximo} caracteres."));
+                $"Slug deve ter entre {FormatoKebab.ComprimentoMinimo} e {FormatoKebab.ComprimentoMaximo} caracteres.");
         }
 
-        if (!FormatoKebab.TemFormatoValido(normalizado))
-        {
-            return Result<Slug>.Failure(new DomainError(
+        return FormatoKebab.TemFormatoValido(normalizado)
+            ? null
+            : new DomainError(
                 UnidadeErrorCodes.SlugFormatoInvalido,
                 "Slug deve estar no formato kebab-case: iniciar com letra minúscula, "
                 + "conter apenas letras minúsculas, dígitos e hífens, e terminar com "
-                + "letra minúscula ou dígito (ex.: ceps, faculdade-de-ciencias)."));
-        }
-
-        return Result<Slug>.Success(new Slug(normalizado));
+                + "letra minúscula ou dígito (ex.: ceps, faculdade-de-ciencias).");
     }
 
     public override string ToString() => Valor ?? string.Empty;
