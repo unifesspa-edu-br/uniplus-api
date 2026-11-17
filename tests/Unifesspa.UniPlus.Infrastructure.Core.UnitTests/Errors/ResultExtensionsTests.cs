@@ -175,10 +175,10 @@ public sealed class ResultExtensionsTests
     }
 
     [Fact]
-    public void ToActionResult_ComFailureDeConflito_NaoDeveConterExtensionErrors()
+    public void ToActionResult_ComConflitoSemCampo_NaoDeveConterExtensionErrors()
     {
         // Um Failure comum (ex.: SiglaJaExiste, 409) vira FieldError(null, error) só
-        // pela forma interna do Result — não é erro de validação, então errors[]
+        // pela forma interna do Result — a violação não tem campo, então errors[]
         // continua fora do wire.
         IDomainErrorMapper mapper = CriarMapper(
             ("Campus.SiglaJaExiste", new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.configuracao.campus.sigla_ja_existe", "Sigla já existe")));
@@ -187,6 +187,21 @@ public sealed class ResultExtensionsTests
         ProblemDetails problem = ExtrairProblemDetails(resultado.ToActionResult(mapper));
 
         problem.Extensions.Should().NotContainKey("errors");
+    }
+
+    [Fact]
+    public void ToActionResult_ComConflitoAtribuidoACampo_DeveConterExtensionErrors()
+    {
+        IDomainErrorMapper mapper = CriarMapper(
+            ("Campus.SiglaJaExiste", new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.configuracao.campus.sigla_ja_existe", "Sigla já existe")));
+        Result resultado = Result.ValidationFailure(
+            [new FieldError("Sigla", new DomainError("Campus.SiglaJaExiste", "Já existe um Campus vivo com essa sigla."))]);
+
+        ProblemDetails problem = ExtrairProblemDetails(resultado.ToActionResult(mapper));
+
+        problem.Status.Should().Be(StatusCodes.Status409Conflict);
+        dynamic[] erros = ItensDeErrors(problem);
+        ((string)erros[0].field).Should().Be("Sigla");
     }
 
     // ─── Conflito retentável (ADR-0134) ────────────────────────────────────
