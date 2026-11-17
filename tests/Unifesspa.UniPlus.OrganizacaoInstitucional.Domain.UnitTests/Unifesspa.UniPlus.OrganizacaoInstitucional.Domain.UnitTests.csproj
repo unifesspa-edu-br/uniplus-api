@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <Compile Include="../Shared/InstituicaoDeTeste.cs" Link="InstituicaoDeTeste.cs" />
+    <Compile Include="../Shared/UnidadeDeTeste.cs" Link="UnidadeDeTeste.cs" />
   </ItemGroup>
 
   <ItemGroup>
