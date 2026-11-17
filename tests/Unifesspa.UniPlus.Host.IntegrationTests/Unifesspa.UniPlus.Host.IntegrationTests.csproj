@@ -12,6 +12,7 @@
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="AwesomeAssertions" />
+    <PackageReference Include="TngTech.ArchUnitNET" />
     <PackageReference Include="Testcontainers.PostgreSql" />
     <PackageReference Include="SSH.NET" />
     <PackageReference Include="WolverineFx" />
@@ -42,6 +43,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../Shared/RegraSemMetaforaNosNomes.cs" Link="RegraSemMetaforaNosNomes.cs" />
     <Compile Include="../Shared/TiposDeProcessoDeTeste.cs" Link="TiposDeProcessoDeTeste.cs" />
   </ItemGroup>
 

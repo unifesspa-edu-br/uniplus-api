@@ -10,6 +10,7 @@
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="AwesomeAssertions" />
+    <PackageReference Include="TngTech.ArchUnitNET" />
     <PackageReference Include="NSubstitute" />
   </ItemGroup>
 
@@ -18,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../Shared/RegraSemMetaforaNosNomes.cs" Link="RegraSemMetaforaNosNomes.cs" />
     <Compile Include="../Shared/DecisaoDeAcessoDeTeste.cs" Link="DecisaoDeAcessoDeTeste.cs" />
     <Compile Include="..\Unifesspa.UniPlus.Autorizacao.Domain.UnitTests\PerfisDeTeste.cs" Link="Apoio\PerfisDeTeste.cs" />
     <Compile Include="..\Unifesspa.UniPlus.Autorizacao.Domain.UnitTests\ConcessaoBuilder.cs" Link="Apoio\ConcessaoBuilder.cs" />
