@@ -38,17 +38,22 @@ public static class AutorizacaoModuleRegistration
 
         services.AddAutorizacaoApplication();
         services.AddAutorizacaoInfrastructure();
-        services.AddHostedService<ExpiracaoDasVersoesPendentesHostedService>();
-        services.AddHostedService<JanelasDeMigracaoHostedService>();
-        AddMonitoramento(services);
+        AddRotinas(services);
+        AddMedidorDaGovernanca(services);
 
         return services;
     }
 
-    // O medidor nasce antes do provedor de métricas: a série existe desde a primeira coleta.
-    private static void AddMonitoramento(IServiceCollection services)
+    private static void AddRotinas(IServiceCollection services)
     {
+        services.AddHostedService<ExpiracaoDasVersoesPendentesHostedService>();
+        services.AddHostedService<JanelasDeMigracaoHostedService>();
         services.AddHostedService<AmostragemDaGovernancaHostedService>();
+    }
+
+    // O medidor nasce antes do provedor de métricas: a série existe desde a primeira coleta.
+    private static void AddMedidorDaGovernanca(IServiceCollection services)
+    {
         services.ConfigureOpenTelemetryMeterProvider(static (sp, builder) =>
             builder.AddMeter(sp.GetRequiredService<MetricasDaGovernancaDePerfis>().Medidor.Name));
     }
