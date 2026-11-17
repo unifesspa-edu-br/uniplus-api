@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 
 /// <summary>
 /// Decisão de um aprovador numa etapa do pedido. Só se acrescenta, nunca se altera: é evidência
-/// forense (ADR-0063), sem soft delete nem auditoria de alteração. Guarda o retrato do que foi
+/// forense (ADR-0063), sem soft delete nem auditoria de alteração. Guarda o que foi
 /// avaliado (as permissões do perfil e a sensibilidade naquele instante), não uma cópia viva do perfil.
 /// </summary>
 public sealed class DecisaoDoPedido : IForensicEntity

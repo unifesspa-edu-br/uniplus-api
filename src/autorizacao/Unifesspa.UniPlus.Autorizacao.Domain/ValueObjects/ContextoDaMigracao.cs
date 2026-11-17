@@ -20,7 +20,7 @@ public sealed class ContextoDaMigracao
     /// <param name="composicoes">Os códigos que cada concessão dá hoje, pela regra única da decisão de acesso.</param>
     /// <param name="composicaoDoAlvo">Os códigos da versão-alvo, ordenados.</param>
     /// <param name="catalogo">O catálogo de permissões.</param>
-    /// <param name="versoes">As versões do perfil, de onde a migração tira o retrato da que sai e o da que entra.</param>
+    /// <param name="versoes">As versões do perfil, de onde a migração tira a composição da que sai e a da que entra.</param>
     public ContextoDaMigracao(
         DateTimeOffset agora,
         IReadOnlyList<Concessao> concessoes,

@@ -32,7 +32,7 @@ public sealed class VersaoPendenteEReclassificacaoNoHostTests : ReclassificacaoN
         using HttpClient gestor = await GestorAsync();
         Envio vigente = await PerfilVigenteAsync(gestor, Consultar);
         Envio nova = await PendenteVerificadaAsync(gestor, vigente.PerfilId, Consultar, Sensivel);
-        await RebaixarRetratoAsync(vigente.PerfilId, 2, Sensivel, "interno");
+        await RebaixarClassificacaoNaVersaoAsync(vigente.PerfilId, 2, Sensivel, "interno");
 
         await AprovarEPorEmVigorAsync(gestor, nova);
 
@@ -43,11 +43,11 @@ public sealed class VersaoPendenteEReclassificacaoNoHostTests : ReclassificacaoN
         (await FilaDaProtecaoAsync()).Should().Contain((await ReclassificacaoAsync(vigente.PerfilId, Sensivel)).ToString());
     }
 
-    [Fact(DisplayName = "A versão de remoção depois da troca de catálogo copia o retrato antigo e grava a reclassificação ao entrar em vigor")]
+    [Fact(DisplayName = "A versão de remoção depois da troca de catálogo copia a classificação antiga e grava a reclassificação ao entrar em vigor")]
     public async Task VersaoDeRemocao_GravaAReclassificacao()
     {
         Cenario perfil = await CenarioAsync([Consultar, Sensivel], Leandro);
-        await RebaixarRetratoAsync(perfil.Perfil, 1, Sensivel, "interno");
+        await RebaixarClassificacaoNaVersaoAsync(perfil.Perfil, 1, Sensivel, "interno");
         using HttpClient gestor = await GestorAsync();
 
         using HttpResponseMessage remocao = await RemoverBrutoAsync(gestor, perfil.Perfil, [Consultar]);
@@ -57,8 +57,8 @@ public sealed class VersaoPendenteEReclassificacaoNoHostTests : ReclassificacaoN
         (await PermissoesAsync(Leandro, perfil.Perfil)).Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "A versão com o retrato igual ao catálogo entra em vigor sem gravar reclassificação")]
-    public async Task VersaoComRetratoAtual_NaoGravaReclassificacao()
+    [Fact(DisplayName = "A versão com a classificação igual à do catálogo entra em vigor sem gravar reclassificação")]
+    public async Task VersaoComClassificacaoAtual_NaoGravaReclassificacao()
     {
         using HttpClient gestor = await GestorAsync();
         Envio vigente = await PerfilVigenteAsync(gestor, Consultar);

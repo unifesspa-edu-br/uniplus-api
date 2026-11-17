@@ -4,7 +4,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 
 /// <summary>
 /// O perfil como o aprovador o avalia, no instante da decisão: as permissões que ele reúne e a
-/// sensibilidade que o catálogo atribui a elas. É o retrato do que foi decidido, não uma cópia
+/// sensibilidade que o catálogo atribui a elas. É o que foi decidido, não uma cópia
 /// viva do perfil, e o domínio não conhece o catálogo.
 /// </summary>
 public sealed record PerfilAvaliado

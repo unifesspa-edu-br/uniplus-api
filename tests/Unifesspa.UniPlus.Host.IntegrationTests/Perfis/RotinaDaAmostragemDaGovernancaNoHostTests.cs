@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Observability;
 
 /// <summary>
 /// A rotina que amostra a governança de perfis, que o host de teste remove: aqui ela é montada a partir do registro do
-/// módulo e disparada pelo relógio do teste, e a passada entrega o retrato às métricas do host.
+/// módulo e disparada pelo relógio do teste, e a passada entrega o estado às métricas do host.
 /// </summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
 [SuppressMessage(
@@ -32,7 +32,7 @@ public sealed class RotinaDaAmostragemDaGovernancaNoHostTests
         _fixture = fixture;
     }
 
-    [Fact(DisplayName = "A passada da rotina de amostragem publica o retrato nos gauges e zera a idade da amostra")]
+    [Fact(DisplayName = "A passada da rotina de amostragem publica o estado nos gauges e zera a idade da amostra")]
     public async Task Passada_PublicaOsGaugesEZeraAIdade()
     {
         IServiceProvider servicos = _fixture.Factory.Services;

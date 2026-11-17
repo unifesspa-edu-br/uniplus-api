@@ -16,7 +16,7 @@ using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.PedidoDeConcessaoBui
 /// <summary>As etapas de aprovação do pedido: o gestor, a proteção de dados, o prazo e quem pode decidir.</summary>
 public sealed class PedidoDeConcessaoAprovacaoTests
 {
-    [Fact(DisplayName = "Pedido de perfil só interno vale com a aprovação do gestor, que conclui e grava o retrato avaliado")]
+    [Fact(DisplayName = "Pedido de perfil só interno vale com a aprovação do gestor, que conclui e grava o perfil avaliado")]
     public void Aprovar_PerfilInterno_ConcluiComOGestor()
     {
         PedidoDeConcessao pedido = Pedido().Criado();

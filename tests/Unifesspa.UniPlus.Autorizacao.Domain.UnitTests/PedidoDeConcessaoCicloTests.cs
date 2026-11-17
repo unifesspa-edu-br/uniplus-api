@@ -65,7 +65,7 @@ public sealed class PedidoDeConcessaoCicloTests
         pedido.Decisoes.Count.Should().Be(naEtapaDeProtecaoDeDados ? 1 : 0);
     }
 
-    [Fact(DisplayName = "Recusa encerra o pedido com o motivo e o retrato avaliado, sem concessão")]
+    [Fact(DisplayName = "Recusa encerra o pedido com o motivo e o perfil avaliado, sem concessão")]
     public void Recusar_EncerraComMotivo()
     {
         PedidoDeConcessao pedido = Pedido().Protegido().AguardandoGestor();

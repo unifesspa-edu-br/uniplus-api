@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 
 /// <summary>
 /// A base de uma permissão numa concessão num instante da história dela. A última linha do par (concessão, código) é a
-/// base em vigor, salvo se for de saída: então a base é o retrato da versão atual da concessão. Só se acrescenta: é
+/// base em vigor, salvo se for de saída: então a base é o que a versão atual guarda da concessão. Só se acrescenta: é
 /// evidência forense (ADR-0063).
 /// </summary>
 public sealed class BaseDaPermissaoNaConcessao : IForensicEntity, IRegistroDaTrilhaDeContencao

@@ -134,7 +134,7 @@ public sealed class Concessao : EntityBase
     /// <summary>
     /// Passa a concessão para a versão que substituiu a que ela alcançava, sem acréscimo de permissão: troca só a versão e
     /// mantém pessoa, escopo, validade e origem. É o caminho único da troca de versão da concessão. Antes da troca, grava a
-    /// base de cada código mantido que ainda não tem base (o retrato da versão que sai) e encerra a de cada código que sai,
+    /// base de cada código mantido que ainda não tem base (o que a versão que sai guarda) e encerra a de cada código que sai,
     /// para que "sem base" signifique sempre que a versão atual é aquela em que o código chegou por último. Quem chama trava
     /// o perfil e as concessões da versão que sai e traz as bases da concessão, então a que está revogada, é de governança
     /// ou segue outra versão é defeito de quem chama.

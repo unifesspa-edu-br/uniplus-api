@@ -13,7 +13,7 @@ public sealed record ItemDaFilaDeReclassificacoesDto(
     DateTimeOffset Instante,
     int ConcessoesAguardando);
 
-/// <summary>A permissão como a versão a retratou.</summary>
+/// <summary>A permissão como a versão a guardou.</summary>
 public sealed record PermissaoDaVersaoEmUsoDto(string Codigo, string Classificacao, bool DeUnidade);
 
 /// <summary>Uma versão do perfil em uso, com todas as permissões e o caminho do documento instituidor.</summary>

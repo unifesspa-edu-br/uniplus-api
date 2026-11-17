@@ -36,7 +36,7 @@ public sealed class ConcorrenciaDaReclassificacaoNoHostTests : ReclassificacaoNo
     public async Task Conciliacao_ContraCriacaoDeConcessao(bool conciliacaoPrimeiro)
     {
         Cenario perfil = await CenarioAsync([Consultar, Sensivel], Leandro);
-        await RebaixarRetratoAsync(perfil.Perfil, 1, Sensivel, "interno");
+        await RebaixarClassificacaoNaVersaoAsync(perfil.Perfil, 1, Sensivel, "interno");
         await ImplantarAsync(Sensivel, ClassificacaoDeProtecao.Interno);
         Func<Task> conciliacao = ImplantarRealAsync;
         Func<Task> concessao = () => ConcederDepoisAsync(perfil, Betina);
@@ -128,13 +128,13 @@ public sealed class ConcorrenciaDaReclassificacaoNoHostTests : ReclassificacaoNo
         (await PermissoesAsync(Leandro, perfil.Perfil)).Should().BeEmpty();
     }
 
-    /// <summary>A versão 2 acrescenta a sensível, com o retrato dela rebaixado, aprovada pela gestão e com a reclassificação implantada.</summary>
+    /// <summary>A versão 2 acrescenta a sensível, com a classificação dela rebaixada, aprovada pela gestão e com a reclassificação implantada.</summary>
     private async Task<Envio> NovaVersaoAprovadaPelaGestaoAsync()
     {
         using HttpClient gestor = await GestorAsync();
         Envio vigente = await PerfilVigenteAsync(gestor, Consultar);
         Envio nova = await PendenteVerificadaAsync(gestor, vigente.PerfilId, Consultar, Sensivel);
-        await RebaixarRetratoAsync(vigente.PerfilId, 2, Sensivel, "interno");
+        await RebaixarClassificacaoNaVersaoAsync(vigente.PerfilId, 2, Sensivel, "interno");
         using HttpClient gestao = await GestaoAsync();
         await AprovarAsync(gestao, nova, EtapaGestao);
         await ImplantarAsync(Sensivel, ClassificacaoDeProtecao.Interno);

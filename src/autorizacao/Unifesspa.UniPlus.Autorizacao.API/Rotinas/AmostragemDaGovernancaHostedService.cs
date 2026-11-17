@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.Monitoramento;
 using Unifesspa.UniPlus.Infrastructure.Core.Hosting;
 
 /// <summary>
-/// Amostra o estado da governança de perfis a cada 5 minutos e entrega o retrato às métricas. Só lê, sem trava: cada
+/// Amostra o estado da governança de perfis a cada 5 minutos e entrega o estado às métricas. Só lê, sem bloquear linhas: cada
 /// réplica informa o mesmo valor. A falha só vai ao log da rotina; o gauge <c>uniplus.autorizacao.amostra.idade</c> a
 /// torna visível enquanto a amostra envelhece.
 /// </summary>

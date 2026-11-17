@@ -23,7 +23,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// pessoa espera o aceite dela, que grava emissor, <c>contaId</c> e nome do token.
 /// </para>
 /// <para>
-/// <b>As decisões só se acrescentam</b> e guardam o retrato do que o aprovador avaliou. Os estados
+/// <b>As decisões só se acrescentam</b> e guardam o que o aprovador avaliou. Os estados
 /// terminais não voltam.
 /// </para>
 /// </remarks>

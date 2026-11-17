@@ -142,8 +142,8 @@ public sealed class PerfilTests
         CodigosDaRecusa(Validar("Analista", Descricao, [Consultar, "unidade:inscricoes:operar"]))
             .Should().Equal(PerfilErrorCodes.AlcanceMisto);
 
-    [Fact(DisplayName = "A versão guarda o retrato da classificação e do alcance de cada permissão")]
-    public void Versao_GuardaORetratoDasPermissoes()
+    [Fact(DisplayName = "A versão guarda a classificação e o alcance de cada permissão")]
+    public void Versao_GuardaClassificacaoEAlcanceDasPermissoes()
     {
         FakeCatalogo catalogo = new(["unidade:inscricoes:operar"], [], sensiveis: ["unidade:inscricoes:operar"]);
 

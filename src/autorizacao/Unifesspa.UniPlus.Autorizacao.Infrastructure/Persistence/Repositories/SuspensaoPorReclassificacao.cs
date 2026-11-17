@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// <summary>
 /// A suspensão da permissão que o catálogo atual reclassificou para cima ou mudou de escopo, na concessão: o fragmento da
 /// consulta de acesso que compara o catálogo atual do banco com a base da permissão na concessão. A base é a última linha
-/// gravada para a concessão e o código, desde que não seja de saída; sem ela, é o retrato da versão da concessão. O código
+/// gravada para a concessão e o código, desde que não seja de saída; sem ela, é o valor que a versão da concessão guarda. O código
 /// que o catálogo atual não conhece não suspende nada. Sem cache entre requisições; quando o cache da ADR-0085 existir,
 /// toda conciliação e toda liberação terão de invalidá-lo.
 /// </summary>

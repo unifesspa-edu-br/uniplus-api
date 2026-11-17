@@ -18,7 +18,7 @@ using static Unifesspa.UniPlus.Autorizacao.IntegrationTests.Perfis.CenarioDaRecl
 
 /// <summary>
 /// As consultas do repositório das reclassificações sobre o PostgreSQL: os fatos que ainda não foram avisados, com o
-/// limite, e as concessões com a permissão reclassificada, com a base viva quando há e o retrato da concessão quando não.
+/// limite, e as concessões com a permissão reclassificada, com a base viva quando há e o que a versão da concessão guarda quando não.
 /// </summary>
 [Collection(AutorizacaoEndpointCollection.Name)]
 public sealed class ConsultasDasReclassificacoesNoBancoTests : PerfilEndpointTestBase, IAsyncLifetime
@@ -76,18 +76,18 @@ public sealed class ConsultasDasReclassificacoesNoBancoTests : PerfilEndpointTes
         fatos.Select(f => f.Id).Should().ContainInOrder(reclassificacao, primeiraDivergencia, segundaDivergencia);
     }
 
-    [Fact(DisplayName = "A concessão com a permissão traz o retrato da base e, havendo base viva, a base viva")]
-    public async Task ConcessoesComAPermissao_RetratoEDepoisBaseViva()
+    [Fact(DisplayName = "A concessão com a permissão traz a base da versão e, havendo base viva, a base viva")]
+    public async Task ConcessoesComAPermissao_BaseDaVersaoEDepoisBaseViva()
     {
         (Guid perfil, _) = await _cenario.PerfilConcedidoComCatalogoAnteriorAsync(ClassificacaoDeProtecao.Publico, deUnidade: false);
         await _cenario.ConciliarAsync();
         Guid concessao = await _cenario.ConcessaoDoPerfilAsync(perfil);
 
-        IReadOnlyList<ConcessaoComAPermissao> retrato = await ConcessoesComAPermissaoAsync(perfil);
+        IReadOnlyList<ConcessaoComAPermissao> daVersao = await ConcessoesComAPermissaoAsync(perfil);
         await GravarBaseVivaAsync(perfil, concessao, ClassificacaoDeProtecao.Interno);
         IReadOnlyList<ConcessaoComAPermissao> viva = await ConcessoesComAPermissaoAsync(perfil);
 
-        retrato.Should().ContainSingle(c => c.Concessao.Id == concessao).Which.Base.Classificacao.Should().Be(ClassificacaoDeProtecao.Publico);
+        daVersao.Should().ContainSingle(c => c.Concessao.Id == concessao).Which.Base.Classificacao.Should().Be(ClassificacaoDeProtecao.Publico);
         viva.Should().ContainSingle(c => c.Concessao.Id == concessao).Which.Base.Classificacao.Should().Be(ClassificacaoDeProtecao.Interno);
     }
 
