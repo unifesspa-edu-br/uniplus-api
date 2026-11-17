@@ -7,8 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Catalogo;
-using Unifesspa.UniPlus.Authorization.Enums;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
+using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 using Unifesspa.UniPlus.Autorizacao.Application.Permissoes;
 using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
@@ -50,24 +50,7 @@ public sealed class PermissoesController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public IActionResult ConsultarCatalogo()
     {
-        IReadOnlyList<ModuloDoCatalogoResponse> corpo =
-        [
-            .. _catalogo.Definicoes
-                .GroupBy(static d => d.Modulo)
-                .Select(static modulo => new ModuloDoCatalogoResponse(
-                    modulo.Key,
-                    [.. modulo
-                        .GroupBy(static d => d.Resource)
-                        .Select(static resource => new ResourceDoCatalogoResponse(
-                            resource.Key,
-                            [.. resource.Select(static d => new PermissaoDoCatalogoResponse(
-                                d.Codigo,
-                                d.Nome,
-                                d.Descricao,
-                                ValoresCanonicos.De(d.Requisito.Sensibilidade)))]))])),
-        ];
-
-        return Ok(corpo);
+        return Ok(CatalogoMapping.Modulos(_catalogo));
     }
 
     /// <summary>
