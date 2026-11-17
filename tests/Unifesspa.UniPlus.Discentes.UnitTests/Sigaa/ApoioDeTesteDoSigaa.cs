@@ -7,6 +7,10 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 
+using Microsoft.Extensions.Configuration;
+
+using Unifesspa.UniPlus.Discentes.Infrastructure.Sigaa;
+
 /// <summary>
 /// Relógio controlado pelo teste. O projeto não adota biblioteca de relógio falso — cada
 /// suíte declara o seu, e este acompanha a convenção.
@@ -120,4 +124,37 @@ internal static class RespostasDoSigaa
 
     private static string CodificarSemPreenchimento(ReadOnlySpan<byte> conteudo) =>
         Base64Url.EncodeToString(conteudo);
+}
+
+/// <summary>
+/// Configuração do SIGAA como o operador a entrega: chaves de texto lidas pelo binder, e
+/// não propriedades preenchidas à mão. Parte de uma configuração válida e deixa o teste
+/// trocar só o que quer provar.
+/// </summary>
+internal static class OpcoesDoSigaa
+{
+    private static readonly Dictionary<string, string?> Validas = new()
+    {
+        [Chave(nameof(SigaaOptions.BaseUrl))] = "https://sigaa.exemplo.test",
+        [Chave(nameof(SigaaOptions.Usuario))] = "servico",
+        [Chave(nameof(SigaaOptions.Senha))] = "segredo",
+    };
+
+    public static SigaaOptions Com(params (string Propriedade, string? Valor)[] alteracoes)
+    {
+        Dictionary<string, string?> valores = new(Validas);
+
+        foreach ((string propriedade, string? valor) in alteracoes)
+        {
+            valores[Chave(propriedade)] = valor;
+        }
+
+        return new ConfigurationBuilder()
+            .AddInMemoryCollection(valores)
+            .Build()
+            .GetSection(SigaaOptions.SectionName)
+            .Get<SigaaOptions>() ?? new SigaaOptions();
+    }
+
+    private static string Chave(string propriedade) => $"{SigaaOptions.SectionName}:{propriedade}";
 }

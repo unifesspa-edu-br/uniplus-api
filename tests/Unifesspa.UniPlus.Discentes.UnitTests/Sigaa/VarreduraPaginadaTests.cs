@@ -21,6 +21,17 @@ public sealed class VarreduraPaginadaTests
     }
 
     [Fact]
+    public async Task Busca_em_blocos_ate_a_ultima_pagina_prevista_e_nao_alem()
+    {
+        ApiPaginada api = new(totalDeItens: 45, paginasExistentes: 5);
+
+        IReadOnlyList<PaginaDeVinculos> paginas = await Percorrer(api, itensPorPagina: 10);
+
+        paginas.Should().HaveCount(5);
+        api.PaginasPedidas.Should().BeEquivalentTo([1, 2, 3, 4, 5]);
+    }
+
+    [Fact]
     public async Task Segue_alem_do_total_quando_a_origem_indica_continuacao()
     {
         // A origem cresce enquanto a varredura acontece: o total lido na primeira página
