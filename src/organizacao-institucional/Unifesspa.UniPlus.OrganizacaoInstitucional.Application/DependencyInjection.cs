@@ -5,6 +5,7 @@ using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Instituicoes;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Unidades;
 
 /// <summary>
 /// Registra recursos da camada Application do módulo OrganizacaoInstitucional.
@@ -24,6 +25,8 @@ public static class OrganizacaoInstitucionalApplicationServiceRegistration
 
         services.AddScoped<ConferenciaDoCadastroDaInstituicao>();
         services.AddScoped<GravacaoDaInstituicao>();
+        services.AddScoped<ConferenciaDoCadastroDaUnidade>();
+        services.AddScoped<GravacaoDaUnidade>();
 
         return services;
     }

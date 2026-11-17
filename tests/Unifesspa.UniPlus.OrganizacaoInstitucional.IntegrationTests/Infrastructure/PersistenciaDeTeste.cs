@@ -91,6 +91,25 @@ internal static class PersistenciaDeTeste
     }
 
     /// <summary>
+    /// Confere que o banco recusa uma exclusão crua (SQL parametrizado, fora do domínio) pela chave estrangeira
+    /// esperada, declarada com <c>ON DELETE RESTRICT</c>: o PostgreSQL recusa com <c>restrict_violation</c> (23001),
+    /// e não com a violação genérica de chave estrangeira. É a prova de que a restrição vive no banco, não só no agregado.
+    /// </summary>
+    public static async Task ConferirQueOBancoRestringeAExclusaoAsync(
+        this IFabricaDeContextoDeTeste banco,
+        FormattableString escritaCrua,
+        string restricaoEsperada,
+        string motivo)
+    {
+        await using UniPlusDbContext rawCtx = banco.CreateDbContext(userId: null);
+        Func<Task> act = async () => await rawCtx.Database.ExecuteSqlAsync(escritaCrua);
+
+        Npgsql.PostgresException violacao = (await act.Should().ThrowAsync<Npgsql.PostgresException>(motivo)).Which;
+        violacao.SqlState.Should().Be(Npgsql.PostgresErrorCodes.RestrictViolation);
+        violacao.ConstraintName.Should().Be(restricaoEsperada);
+    }
+
+    /// <summary>
     /// Confere que o banco recusa uma escrita crua (SQL parametrizado, fora do domínio) por violação de
     /// CHECK, e da restrição esperada: é a prova de que a restrição vive no banco, não só no agregado.
     /// </summary>

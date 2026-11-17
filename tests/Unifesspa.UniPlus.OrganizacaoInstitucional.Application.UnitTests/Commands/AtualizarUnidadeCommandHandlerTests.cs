@@ -4,235 +4,66 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Abstractions;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Unidades;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class AtualizarUnidadeCommandHandlerTests
 {
-    private static readonly DateOnly DataInicio = new(2026, 1, 1);
+    private static readonly DateTimeOffset Agora = new(2026, 3, 15, 10, 0, 0, TimeSpan.Zero);
 
-    private static Unidade UnidadeExistente() => Unidade.Criar(
-        "Centro de Processos Seletivos",
-        new IdentificadoresDaUnidade("ceps", "CEPS", "0001", null),
-        CidadeDaUnidade.Nenhuma,
-        new VigenciaDaUnidade(DataInicio, null),
-        null,
-        TipoUnidade.Centro,
-        false).Value!;
+    private readonly CadastroDeUnidadeSimulado _cadastro = new();
 
-    // Command que reapresenta os mesmos identificadores da unidade existente —
-    // as verificações de unicidade são puladas (não houve mudança).
-    private static AtualizarUnidadeCommand CommandSemMudancaDeIdentificador(Guid id) => new(
-        id,
-        "Centro de Processos Seletivos (novo nome)",
-        null,
-        "ceps",
-        "CEPS",
-        "0001",
-        null,
-        TipoUnidade.Centro,
-        false,
-        null);
+    private Task<Result> AtualizarAsync(AtualizarUnidadeCommand command) =>
+        AtualizarUnidadeCommandHandler.Handle(
+            command, _cadastro.Conferencia, _cadastro.Gravacao, new RelogioFixo(Agora), CancellationToken.None);
 
-    private static (IUnidadeRepository Repo, IUnitOfWork Uow, IUnidadeCacheInvalidator Cache) Mocks()
+    [Fact(DisplayName = "Unidade inexistente devolve NaoEncontrada sem tocar a unidade de trabalho nem o cache")]
+    public async Task UnidadeInexistente_NaoGrava()
     {
-        IUnidadeRepository repo = Substitute.For<IUnidadeRepository>();
-        repo.SlugExisteEntreLivosAsync(Arg.Any<Slug>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>()).Returns(false);
-        repo.SiglaExisteEntreLivosAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>()).Returns(false);
-        repo.CodigoExisteEntreLivosAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>()).Returns(false);
-        return (repo, Substitute.For<IUnitOfWork>(), Substitute.For<IUnidadeCacheInvalidator>());
-    }
+        Result resultado = await AtualizarAsync(
+            CadastroDeUnidadeSimulado.AtualizacaoSemMudancaDeIdentificador(Guid.NewGuid()));
 
-    [Fact(DisplayName = "Handle com unidade inexistente retorna NaoEncontrada e NÃO persiste")]
-    public async Task Handle_ComUnidadeInexistente_RetornaNaoEncontrada()
-    {
-        (IUnidadeRepository repo, IUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
-        Guid id = Guid.NewGuid();
-        repo.ObterPorIdAsync(id, Arg.Any<CancellationToken>()).Returns((Unidade?)null);
-
-        Result resultado = await AtualizarUnidadeCommandHandler.Handle(
-            CommandSemMudancaDeIdentificador(id), repo, uow, cache, TimeProvider.System, CancellationToken.None);
-
-        resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(UnidadeErrorCodes.NaoEncontrada);
-        await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-        await cache.DidNotReceive().InvalidarAsync(Arg.Any<CancellationToken>());
+        _cadastro.UnitOfWork.ReceivedCalls().Should().BeEmpty();
+        _cadastro.Cache.ReceivedCalls().Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "Handle com motivo > 500 chars e sigla ausente acumula os dois erros sem buscar a unidade")]
-    public async Task Handle_ComMotivoLongoESiglaAusente_AcumulaErrosAntesDeBuscar()
+    [Fact(DisplayName = "Payload inválido devolve o erro sem buscar a Unidade")]
+    public async Task PayloadInvalido_NaoBusca()
     {
-        (IUnidadeRepository repo, IUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
-        Guid id = Guid.NewGuid();
-        AtualizarUnidadeCommand command = CommandSemMudancaDeIdentificador(id)
-            with
-        { Sigla = null, MotivoMudancaIdentificador = new string('m', 501) };
+        Result resultado = await AtualizarAsync(
+            CadastroDeUnidadeSimulado.AtualizacaoSemMudancaDeIdentificador(Guid.NewGuid()) with { Sigla = "" });
 
-        Result resultado = await AtualizarUnidadeCommandHandler.Handle(
-            command, repo, uow, cache, TimeProvider.System, CancellationToken.None);
-
-        resultado.Errors.Select(e => e.Error.Code).Should()
-            .BeEquivalentTo([UnidadeErrorCodes.SiglaObrigatoria, UnidadeErrorCodes.MotivoMudancaTamanho]);
-        await repo.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
-        await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        resultado.Error!.Code.Should().Be(UnidadeErrorCodes.SiglaObrigatoria);
+        _cadastro.Unidades.ReceivedCalls().Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "Handle trocando slug para um já existente entre vivos retorna SlugJaExiste")]
-    public async Task Handle_ComSlugDuplicadoExcluindoSelf_RetornaSlugJaExiste()
+    [Fact(DisplayName = "Conferência aceita grava e invalida o cache")]
+    public async Task ConferenciaAceita_GravaEInvalida()
     {
-        (IUnidadeRepository repo, IUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
-        Unidade existente = UnidadeExistente();
-        repo.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
-        repo.SlugExisteEntreLivosAsync(Arg.Any<Slug>(), existente.Id, Arg.Any<CancellationToken>()).Returns(true);
+        Unidade unidade = _cadastro.UnidadeCadastrada();
 
-        AtualizarUnidadeCommand command = CommandSemMudancaDeIdentificador(existente.Id) with { Slug = "cga" };
-
-        Result resultado = await AtualizarUnidadeCommandHandler.Handle(
-            command, repo, uow, cache, TimeProvider.System, CancellationToken.None);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(UnidadeErrorCodes.SlugJaExiste);
-        await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact(DisplayName = "Handle trocando sigla para uma já existente entre vivos retorna SiglaJaExiste")]
-    public async Task Handle_ComSiglaDuplicadaExcluindoSelf_RetornaSiglaJaExiste()
-    {
-        (IUnidadeRepository repo, IUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
-        Unidade existente = UnidadeExistente();
-        repo.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
-        repo.SiglaExisteEntreLivosAsync("CGA", existente.Id, Arg.Any<CancellationToken>()).Returns(true);
-
-        AtualizarUnidadeCommand command = CommandSemMudancaDeIdentificador(existente.Id) with { Sigla = "CGA" };
-
-        Result resultado = await AtualizarUnidadeCommandHandler.Handle(
-            command, repo, uow, cache, TimeProvider.System, CancellationToken.None);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(UnidadeErrorCodes.SiglaJaExiste);
-        await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact(DisplayName = "Handle com superior igual à própria unidade retorna SuperiorFormaCiclo")]
-    public async Task Handle_ComSuperiorIgualAoProprio_RetornaSuperiorFormaCiclo()
-    {
-        (IUnidadeRepository repo, IUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
-        Unidade existente = UnidadeExistente();
-        repo.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
-
-        AtualizarUnidadeCommand command =
-            CommandSemMudancaDeIdentificador(existente.Id) with { UnidadeSuperiorId = existente.Id };
-
-        Result resultado = await AtualizarUnidadeCommandHandler.Handle(
-            command, repo, uow, cache, TimeProvider.System, CancellationToken.None);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(UnidadeErrorCodes.SuperiorFormaCiclo);
-        await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact(DisplayName = "Handle com superior inexistente retorna SuperiorNaoEncontrado")]
-    public async Task Handle_ComSuperiorInexistente_RetornaSuperiorNaoEncontrado()
-    {
-        (IUnidadeRepository repo, IUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
-        Unidade existente = UnidadeExistente();
-        Guid superiorId = Guid.NewGuid();
-        repo.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
-        repo.ObterPorIdAsync(superiorId, Arg.Any<CancellationToken>()).Returns((Unidade?)null);
-
-        AtualizarUnidadeCommand command =
-            CommandSemMudancaDeIdentificador(existente.Id) with { UnidadeSuperiorId = superiorId };
-
-        Result resultado = await AtualizarUnidadeCommandHandler.Handle(
-            command, repo, uow, cache, TimeProvider.System, CancellationToken.None);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(UnidadeErrorCodes.SuperiorNaoEncontrado);
-        await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact(DisplayName = "Handle com superior que é descendente retorna SuperiorFormaCiclo (via EhDescendenteAsync)")]
-    public async Task Handle_ComSuperiorDescendente_RetornaSuperiorFormaCiclo()
-    {
-        (IUnidadeRepository repo, IUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
-        Unidade existente = UnidadeExistente();
-        Unidade superior = UnidadeExistente();
-        Guid superiorId = Guid.NewGuid();
-        repo.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
-        repo.ObterPorIdAsync(superiorId, Arg.Any<CancellationToken>()).Returns(superior);
-        repo.EhDescendenteAsync(superiorId, existente.Id, Arg.Any<CancellationToken>()).Returns(true);
-
-        AtualizarUnidadeCommand command =
-            CommandSemMudancaDeIdentificador(existente.Id) with { UnidadeSuperiorId = superiorId };
-
-        Result resultado = await AtualizarUnidadeCommandHandler.Handle(
-            command, repo, uow, cache, TimeProvider.System, CancellationToken.None);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(UnidadeErrorCodes.SuperiorFormaCiclo);
-        await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact(DisplayName = "Handle trocando Codigo só na caixa (ABC→abc) detecta mudança e checa unicidade")]
-    public async Task Handle_ComCodigoMudandoApenasCaixa_RodaChecagemDeUnicidade()
-    {
-        (IUnidadeRepository repo, IUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
-        Unidade existente = Unidade.Criar(
-            "Centro de Processos Seletivos",
-            new IdentificadoresDaUnidade("ceps", "CEPS", "ABC", null),
-            CidadeDaUnidade.Nenhuma,
-            new VigenciaDaUnidade(DataInicio, null),
-            null,
-            TipoUnidade.Centro,
-            false).Value!;
-        repo.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
-        repo.CodigoExisteEntreLivosAsync("abc", existente.Id, Arg.Any<CancellationToken>()).Returns(true);
-
-        // Mesmos Slug/Sigla (pulam a checagem); só o Codigo muda de "ABC" para "abc".
-        AtualizarUnidadeCommand command = CommandSemMudancaDeIdentificador(existente.Id) with { Codigo = "abc" };
-
-        Result resultado = await AtualizarUnidadeCommandHandler.Handle(
-            command, repo, uow, cache, TimeProvider.System, CancellationToken.None);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(UnidadeErrorCodes.CodigoJaExiste);
-        await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact(DisplayName = "Handle com command válido persiste e invalida cache")]
-    public async Task Handle_ComCommandValido_PersisteEInvalidaCache()
-    {
-        (IUnidadeRepository repo, IUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
-        Unidade existente = UnidadeExistente();
-        repo.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
-
-        Result resultado = await AtualizarUnidadeCommandHandler.Handle(
-            CommandSemMudancaDeIdentificador(existente.Id), repo, uow, cache, TimeProvider.System, CancellationToken.None);
+        Result resultado = await AtualizarAsync(
+            CadastroDeUnidadeSimulado.AtualizacaoSemMudancaDeIdentificador(unidade.Id));
 
         resultado.IsSuccess.Should().BeTrue();
-        await uow.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-        await cache.Received(1).InvalidarAsync(Arg.Any<CancellationToken>());
+        await _cadastro.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        await _cadastro.Cache.Received(1).InvalidarAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Handle com sigla ausente propaga o erro sem buscar a Unidade por Id — validação vence 404")]
-    public async Task Handle_ComSiglaAusente_RetornaErroSemBuscarPorId()
+    [Fact(DisplayName = "A troca de slug é registrada na data do relógio injetado")]
+    public async Task TrocaDeSlug_UsaADataDoRelogio()
     {
-        (IUnidadeRepository repo, IUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
-        AtualizarUnidadeCommand command = CommandSemMudancaDeIdentificador(Guid.NewGuid()) with { Sigla = "" };
+        Unidade unidade = _cadastro.UnidadeCadastrada();
 
-        Result resultado = await AtualizarUnidadeCommandHandler.Handle(
-            command, repo, uow, cache, TimeProvider.System, CancellationToken.None);
+        await AtualizarAsync(
+            CadastroDeUnidadeSimulado.AtualizacaoSemMudancaDeIdentificador(unidade.Id) with { Slug = "ceps-unifesspa" });
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(UnidadeErrorCodes.SiglaObrigatoria);
-        await repo.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
-        await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        unidade.Historico.Should().Contain(h =>
+            h.TipoIdentificador == TipoIdentificador.Slug && h.VigenciaFim == new DateOnly(2026, 3, 15));
     }
 }
