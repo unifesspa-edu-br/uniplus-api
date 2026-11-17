@@ -12514,6 +12514,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("processo_seletivo_id");
 
+                    b.Property<string>("RegraDeHomologacao")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("regra_de_homologacao")
+                        .HasComment("Regra de homologação das inscrições que a fase declara: o resultado que publica a lista e as alternativas de condições, na ordem declarada. Nula quando a fase não homologa.");
+
                     b.Property<string>("UnidadeResponsavelNome")
                         .HasMaxLength(250)
                         .HasColumnType("character varying(250)")

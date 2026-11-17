@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261117114548_Inicial")]
+    [Migration("20261117155218_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -12516,6 +12516,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")
                         .HasColumnName("processo_seletivo_id");
+
+                    b.Property<string>("RegraDeHomologacao")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("regra_de_homologacao")
+                        .HasComment("Regra de homologação das inscrições que a fase declara: o resultado que publica a lista e as alternativas de condições, na ordem declarada. Nula quando a fase não homologa.");
 
                     b.Property<string>("UnidadeResponsavelNome")
                         .HasMaxLength(250)

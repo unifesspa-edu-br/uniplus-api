@@ -1576,6 +1576,7 @@ selecao.fases_cronograma.ordem: Interno
 selecao.fases_cronograma.origem_data: Interno
 selecao.fases_cronograma.permite_complementacao: Interno
 selecao.fases_cronograma.processo_seletivo_id: Interno
+selecao.fases_cronograma.regra_de_homologacao: Interno
 selecao.fases_cronograma.tipos_de_decisao: Interno
 selecao.fases_cronograma.unidade_responsavel_nome: Interno
 selecao.fases_cronograma.unidade_responsavel_origem_id: Interno
