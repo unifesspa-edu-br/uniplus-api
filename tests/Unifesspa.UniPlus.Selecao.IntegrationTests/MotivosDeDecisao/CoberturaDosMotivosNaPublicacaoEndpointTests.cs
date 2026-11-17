@@ -33,7 +33,6 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 [Trait("Category", "OutboxCapability")]
 public sealed class CoberturaDosMotivosNaPublicacaoEndpointTests : IAsyncLifetime
 {
-    private const string Fundamento = "CADASTRO_UNICO";
     private readonly CascadingFixture _fixture;
     private readonly ChamadasDosMotivosDeTeste _chamadas;
 
@@ -67,7 +66,7 @@ public sealed class CoberturaDosMotivosNaPublicacaoEndpointTests : IAsyncLifetim
         string corpo = Regex.Unescape(await recusada.Content.ReadAsStringAsync());
         recusada.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity, corpo);
         corpo.Should().Contain("uniplus.selecao.motivo_de_decisao.cobertura_insuficiente")
-            .And.Contain($"motivo favorável para o fundamento de isenção {Fundamento}")
+            .And.Contain($"motivo favorável para o fundamento de isenção {ProcessoComIsencaoDeTeste.Fundamento}")
             .And.NotContain("motivo desfavorável para o fundamento", "o sentido desfavorável já está coberto");
     }
 
@@ -95,7 +94,7 @@ public sealed class CoberturaDosMotivosNaPublicacaoEndpointTests : IAsyncLifetim
         string corpo = Regex.Unescape(await recusada.Content.ReadAsStringAsync());
         recusada.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity, corpo);
         corpo.Should().Contain("uniplus.selecao.motivo_de_decisao.tipo_de_decisao_nao_declarado")
-            .And.Contain($"O fundamento de isenção {Fundamento} é habilitado, mas nenhuma fase nem etapa declara o tipo de decisão");
+            .And.Contain($"O fundamento de isenção {ProcessoComIsencaoDeTeste.Fundamento} é habilitado, mas nenhuma fase nem etapa declara o tipo de decisão");
     }
 
     [Fact(DisplayName = "A descrição alterada no cadastro depois da escolha não muda o texto que a versão publicada traz")]
@@ -125,61 +124,18 @@ public sealed class CoberturaDosMotivosNaPublicacaoEndpointTests : IAsyncLifetim
         await db.SaveChangesAsync();
     }
 
-    private async Task<(Guid ProcessoId, Guid DocumentoId)> SemearProcessoComIsencaoAsync(string nome, string[]? tiposDeDecisao = null)
-    {
-        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
-            db, $"{nome} {Guid.CreateVersion7()}", complementar: processo => HabilitarIsencao(processo, tiposDeDecisao ?? [TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa]));
-        return (processo.Id, documento.Id);
-    }
-
-    /// <summary>
-    /// Abre a janela da isenção em fase própria, que fecha antes das inscrições, com os tipos de decisão que ela declara, e
-    /// cobra a taxa com um fundamento.
-    /// </summary>
-    private static void HabilitarIsencao(ProcessoSeletivo processo, string[] tiposDeDecisao)
-    {
-        FaseCronograma isencao = FaseCronograma.Criar(
-            new OrigemCanonicaDaFase(
-                OrigemId: Guid.CreateVersion7(), Codigo: "ISENCAO_DA_TAXA", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
-                ColetaSolicitacaoIsencao: true),
-            new DecisoesDeCronogramaDaFase(
-                Ordem: 2, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 15, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
-                UnidadeResponsavel: UnidadesDeTeste.Ceps),
-            new PublicacoesDaFase(
-                Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null, TiposDeDecisao: tiposDeDecisao),
-            bancasRequeridas: []).Value!;
-        processo.DefinirCronogramaFases([processo.CronogramaFases.Single(), isencao], [])
-            .IsSuccess.Should().BeTrue();
-        ConfiguracaoTaxaInscricao taxa = ConfiguracaoTaxaInscricao.Criar(cobra: true, valor: 100m, fundamentosCodigos: [Fundamento]).Value!;
-        processo.DefinirTaxaInscricao(taxa).IsSuccess.Should().BeTrue();
-    }
+    private Task<(Guid ProcessoId, Guid DocumentoId)> SemearProcessoComIsencaoAsync(string nome, string[]? tiposDeDecisao = null) =>
+        ProcessoComIsencaoDeTeste.SemearAsync(_fixture.Factory.Services, nome, tiposDeDecisao);
 
     private async Task<MotivoDeDecisao> IncluirNovoMotivoAsync(HttpClient client, Guid processoId, SentidoDoMotivo sentido)
     {
-        MotivoDeDecisao motivo = await SemearMotivoAsync(sentido);
-        Guid fase = await LugaresDoProcessoDeTeste.FaseAsync(_fixture.Factory.Services, processoId, "ISENCAO_DA_TAXA");
+        MotivoDeDecisao motivo = await _chamadas.SemearMotivoDeIsencaoAsync(sentido);
+        Guid fase = await LugaresDoProcessoDeTeste.FaseAsync(_fixture.Factory.Services, processoId, ProcessoComIsencaoDeTeste.CodigoDaFase);
 
         using HttpResponseMessage inclusao = await EnviarAsync(
             client, HttpMethod.Put, LugaresDoProcessoDeTeste.RotaDaFase(processoId, fase, motivo.Id), new { justificativa = (string?)null });
         inclusao.StatusCode.Should().Be(HttpStatusCode.NoContent, await inclusao.Content.ReadAsStringAsync());
 
-        return motivo;
-    }
-
-    private async Task<MotivoDeDecisao> SemearMotivoAsync(SentidoDoMotivo sentido)
-    {
-        MotivoDeDecisao motivo = MotivoDeDecisao.Criar(new CamposDoMotivo(
-            TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa,
-            $"TEST_CDM_{Guid.NewGuid():N}"[..40].ToUpperInvariant(),
-            "Situação no Cadastro Único conferida pela comissão",
-            Fundamento,
-            sentido)).Value!;
-        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        db.MotivosDeDecisao.Add(motivo);
-        await db.SaveChangesAsync();
         return motivo;
     }
 

@@ -40,6 +40,23 @@ internal sealed class ChamadasDosMotivosDeTeste(CascadingFixture fixture, string
         return motivo;
     }
 
+    /// <summary>Semeia um motivo da isenção da taxa para o fundamento do processo com isenção habilitada.</summary>
+    internal async Task<MotivoDeDecisao> SemearMotivoDeIsencaoAsync(SentidoDoMotivo sentido)
+    {
+        MotivoDeDecisao motivo = MotivoDeDecisao.Criar(new CamposDoMotivo(
+            TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa,
+            $"{prefixoDoCodigo}_{Guid.NewGuid():N}"[..40].ToUpperInvariant(),
+            "Situação no Cadastro Único conferida pela comissão",
+            ProcessoComIsencaoDeTeste.Fundamento,
+            sentido)).Value!;
+        await using AsyncServiceScope escopo = Services.CreateAsyncScope();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        db.MotivosDeDecisao.Add(motivo);
+        await db.SaveChangesAsync();
+
+        return motivo;
+    }
+
     /// <summary>Semeia um processo publicável e devolve o documento do edital que a publicação confirma.</summary>
     internal async Task<(Guid ProcessoId, Guid DocumentoId)> SemearProcessoAsync(string nome)
     {
@@ -65,6 +82,11 @@ internal sealed class ChamadasDosMotivosDeTeste(CascadingFixture fixture, string
 
     internal async Task LimparAsync()
     {
+        if (fixture.Inutilizavel)
+        {
+            return;
+        }
+
         await using AsyncServiceScope escopo = Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         string padrao = $"{prefixoDoCodigo}\\_%";

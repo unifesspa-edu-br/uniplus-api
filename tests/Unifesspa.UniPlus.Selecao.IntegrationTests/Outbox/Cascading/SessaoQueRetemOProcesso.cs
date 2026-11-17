@@ -9,12 +9,20 @@ using Npgsql;
 /// chegar depois espere por ela. O que a operação que espera já segurou é lido do catálogo do banco por outra conexão,
 /// sem gancho no código de produção.
 /// </summary>
-internal sealed class SessaoQueRetemOProcesso : IAsyncDisposable
+internal sealed class SessaoQueRetemOProcesso : IRetencaoDoProcesso, IAsyncDisposable
 {
     private const string TravaDoProcesso = "SELECT 1 FROM selecao.processos_seletivos WHERE id = @processo FOR UPDATE";
 
-    private const string SessoesEsperandoPorEsta =
-        "SELECT pid::text FROM pg_stat_activity WHERE datname = current_database() AND @retida = ANY(pg_blocking_pids(pid))";
+    // A primeira operação espera pela transação que retém a linha; as seguintes esperam pelo bloqueio da linha que a primeira
+    // segura na fila, e o banco as aponta como bloqueadas por ela, não pela sessão que retém. A fila é a cadeia inteira.
+    private const string SessoesNaFilaDesteBloqueio = """
+        WITH RECURSIVE na_fila(pid) AS (
+            SELECT pid FROM pg_stat_activity WHERE datname = current_database() AND @retida = ANY(pg_blocking_pids(pid))
+            UNION
+            SELECT a.pid FROM pg_stat_activity a JOIN na_fila f ON f.pid = ANY(pg_blocking_pids(a.pid)) WHERE a.datname = current_database()
+        )
+        SELECT pid::text FROM na_fila
+        """;
 
     // Leitura pega só AccessShareLock; qualquer outro modo numa tabela de Publicações ou da divulgação é escrita ou trava de linha.
     private const string TravasDeEscritaDasSessoesEmEspera = """
@@ -32,6 +40,7 @@ internal sealed class SessaoQueRetemOProcesso : IAsyncDisposable
     private readonly NpgsqlConnection _conexao;
     private readonly NpgsqlTransaction _transacao;
     private readonly int _pid;
+    private bool _liberada;
 
     private SessaoQueRetemOProcesso(string connectionString, NpgsqlConnection conexao, NpgsqlTransaction transacao, int pid)
     {
@@ -56,14 +65,17 @@ internal sealed class SessaoQueRetemOProcesso : IAsyncDisposable
     }
 
     /// <summary>Espera o banco registrar uma sessão esperando por esta trava: a operação chegou ao ponto da disputa.</summary>
-    public async Task AguardarOperacaoEsperandoAsync()
+    public Task AguardarOperacaoEsperandoAsync() => AguardarOperacoesEsperandoAsync(1);
+
+    /// <summary>Espera o banco registrar a quantidade de sessões na fila deste bloqueio: as operações chegaram, em ordem, ao ponto da disputa.</summary>
+    public async Task AguardarOperacoesEsperandoAsync(int quantidade)
     {
         DateTimeOffset limite = DateTimeOffset.UtcNow.AddSeconds(30);
-        while ((await ListarAsync(SessoesEsperandoPorEsta)).Count == 0)
+        while ((await ListarAsync(SessoesNaFilaDesteBloqueio)).Count < quantidade)
         {
             if (DateTimeOffset.UtcNow > limite)
             {
-                throw new TimeoutException($"Nenhuma sessão ficou esperando pela trava do processo mantida pela sessão {_pid.ToString(CultureInfo.InvariantCulture)}.");
+                throw new TimeoutException($"Menos de {quantidade.ToString(CultureInfo.InvariantCulture)} sessões ficaram na fila do bloqueio do processo mantida pela sessão {_pid.ToString(CultureInfo.InvariantCulture)}.");
             }
 
             await Task.Delay(TimeSpan.FromMilliseconds(50));
@@ -73,7 +85,17 @@ internal sealed class SessaoQueRetemOProcesso : IAsyncDisposable
     /// <summary>As tabelas de Publicações e da divulgação em que as sessões que esperam por esta trava seguram escrita ou trava de linha.</summary>
     public Task<IReadOnlyList<string>> TravasDeEscritaDaOperacaoEmEsperaAsync() => ListarAsync(TravasDeEscritaDasSessoesEmEspera);
 
-    public Task LiberarAsync() => _transacao.RollbackAsync();
+    /// <summary>Solta a linha do processo; chamar de novo não faz nada, para que a liberação também caiba no encerramento.</summary>
+    public async Task LiberarAsync()
+    {
+        if (_liberada)
+        {
+            return;
+        }
+
+        _liberada = true;
+        await _transacao.RollbackAsync();
+    }
 
     public async ValueTask DisposeAsync()
     {
