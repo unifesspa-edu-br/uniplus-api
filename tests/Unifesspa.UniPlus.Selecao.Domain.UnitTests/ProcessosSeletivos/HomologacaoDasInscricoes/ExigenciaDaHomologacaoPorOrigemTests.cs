@@ -188,7 +188,7 @@ public sealed class ExigenciaDaHomologacaoPorOrigemTests
     [Fact(DisplayName = "A capacidade da fase, com o tipo de decisão e a regra, é o que a exigência usa para achar a fase que homologa")]
     public void InscricaoPropria_CapacidadeDaFase_SatisfazAExigencia()
     {
-        RegraDeHomologacaoDasInscricoes regra = RegraDeHomologacaoDasInscricoes.Criar(ResultadoDaLista, []).Value!;
+        RegraDeHomologacaoDasInscricoes regra = RegraDeHomologacaoDasInscricoes.Declarar(ResultadoDaLista, []);
         FaseCronograma homologa = Fase(2, "HOMOLOGACAO_INSCRICOES", [Preliminar(), Definitivo()], tiposDeDecisao: [TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes], regraDeHomologacao: regra);
         FaseCronograma[] fases = [FaseDeColeta(1), homologa];
 

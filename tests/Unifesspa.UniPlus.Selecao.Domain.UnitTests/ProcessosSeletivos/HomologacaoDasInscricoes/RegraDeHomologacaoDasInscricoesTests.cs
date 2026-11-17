@@ -2,8 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Homologa
 
 using AwesomeAssertions;
 
-using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 
 using Xunit;
@@ -14,46 +12,43 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Homol
 public sealed class RegraDeHomologacaoDasInscricoesTests
 {
     [Fact(DisplayName = "A regra guarda o resultado apontado e as alternativas na ordem declarada")]
-    public void Criar_ComResultadoEAlternativas_MantemAOrdem()
+    public void Declarar_ComResultadoEAlternativas_MantemAOrdem()
     {
         AlternativaDeCondicoes primeira = Alternativa(ConfirmacaoDoInep(2026, "SEM_RESULTADO_INEP"));
         AlternativaDeCondicoes segunda = Alternativa(ConfirmacaoDoInep(2025, "SEM_RESULTADO_INEP_ANTERIOR"));
 
-        Result<RegraDeHomologacaoDasInscricoes> resultado = RegraDeHomologacaoDasInscricoes.Criar("RESULTADO_HOMOLOGACAO", [primeira, segunda]);
+        RegraDeHomologacaoDasInscricoes regra = RegraDeHomologacaoDasInscricoes.Declarar("RESULTADO_HOMOLOGACAO", [primeira, segunda]);
 
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!.ResultadoAtoCodigo.Should().Be("RESULTADO_HOMOLOGACAO");
-        resultado.Value.Alternativas.Should().Equal(primeira, segunda);
+        regra.ResultadoAtoCodigo.Should().Be("RESULTADO_HOMOLOGACAO");
+        regra.Alternativas.Should().Equal(primeira, segunda);
     }
 
     [Fact(DisplayName = "Regra sem alternativa é aceita: a fase homologa toda inscrição enviada, e o aviso é do painel de conformidade")]
-    public void Criar_SemAlternativas_EAceita()
+    public void Declarar_SemAlternativas_HomologaTodaInscricaoEnviada()
     {
-        Result<RegraDeHomologacaoDasInscricoes> resultado = RegraDeHomologacaoDasInscricoes.Criar("RESULTADO_HOMOLOGACAO", []);
+        RegraDeHomologacaoDasInscricoes regra = RegraDeHomologacaoDasInscricoes.Declarar("RESULTADO_HOMOLOGACAO", []);
 
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!.HomologaTodaInscricaoEnviada.Should().BeTrue();
+        regra.HomologaTodaInscricaoEnviada.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Regra com alternativas não homologa toda inscrição enviada")]
-    public void Criar_ComAlternativas_NaoHomologaTodaInscricao()
+    public void Declarar_ComAlternativas_NaoHomologaTodaInscricao()
     {
-        Result<RegraDeHomologacaoDasInscricoes> resultado = RegraDeHomologacaoDasInscricoes.Criar(
+        RegraDeHomologacaoDasInscricoes regra = RegraDeHomologacaoDasInscricoes.Declarar(
             "RESULTADO_HOMOLOGACAO", [Alternativa(ConfirmacaoDoInep(2026, "SEM_RESULTADO_INEP"))]);
 
-        resultado.Value!.HomologaTodaInscricaoEnviada.Should().BeFalse();
+        regra.HomologaTodaInscricaoEnviada.Should().BeFalse();
     }
 
-    [Theory(DisplayName = "Regra sem o resultado apontado é recusada como resultado não declarado")]
+    [Theory(DisplayName = "Regra sem o resultado apontado é declarada com o resultado ausente, sem recusa própria")]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void Criar_SemResultadoApontado_ResultadoNaoDeclarado(string? resultadoAtoCodigo)
+    public void Declarar_SemResultadoApontado_GuardaAAusencia(string? resultadoAtoCodigo)
     {
-        Result<RegraDeHomologacaoDasInscricoes> resultado = RegraDeHomologacaoDasInscricoes.Criar(resultadoAtoCodigo, []);
+        RegraDeHomologacaoDasInscricoes regra = RegraDeHomologacaoDasInscricoes.Declarar(resultadoAtoCodigo, []);
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado);
+        regra.ResultadoAtoCodigo.Should().BeNull();
     }
 
     [Fact(DisplayName = "Regras com as mesmas alternativas na mesma ordem têm o mesmo conteúdo; a ordem diferente as distingue")]
@@ -61,26 +56,35 @@ public sealed class RegraDeHomologacaoDasInscricoesTests
     {
         AlternativaDeCondicoes atual = Alternativa(ConfirmacaoDoInep(2026, "SEM_RESULTADO_INEP"));
         AlternativaDeCondicoes anterior = Alternativa(ConfirmacaoDoInep(2025, "SEM_RESULTADO_INEP_ANTERIOR"));
-        RegraDeHomologacaoDasInscricoes regra = RegraDeHomologacaoDasInscricoes.Criar("RESULTADO_HOMOLOGACAO", [atual, anterior]).Value!;
+        RegraDeHomologacaoDasInscricoes regra = RegraDeHomologacaoDasInscricoes.Declarar("RESULTADO_HOMOLOGACAO", [atual, anterior]);
 
-        regra.MesmoConteudo(RegraDeHomologacaoDasInscricoes.Criar("RESULTADO_HOMOLOGACAO", [atual, anterior]).Value!).Should().BeTrue();
-        regra.MesmoConteudo(RegraDeHomologacaoDasInscricoes.Criar("RESULTADO_HOMOLOGACAO", [anterior, atual]).Value!).Should().BeFalse();
-        regra.MesmoConteudo(RegraDeHomologacaoDasInscricoes.Criar("OUTRO_RESULTADO", [atual, anterior]).Value!).Should().BeFalse();
+        regra.MesmoConteudo(RegraDeHomologacaoDasInscricoes.Declarar("RESULTADO_HOMOLOGACAO", [atual, anterior])).Should().BeTrue();
+        regra.MesmoConteudo(RegraDeHomologacaoDasInscricoes.Declarar("RESULTADO_HOMOLOGACAO", [anterior, atual])).Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "Regras que apontam resultados diferentes, ou um resultado e nenhum, não têm o mesmo conteúdo")]
+    public void MesmoConteudo_ConsideraOResultadoApontado()
+    {
+        RegraDeHomologacaoDasInscricoes regra = RegraDeHomologacaoDasInscricoes.Declarar("RESULTADO_HOMOLOGACAO", []);
+
+        regra.MesmoConteudo(RegraDeHomologacaoDasInscricoes.Declarar("OUTRO_RESULTADO", [])).Should().BeFalse();
+        regra.MesmoConteudo(RegraDeHomologacaoDasInscricoes.Declarar(null, [])).Should().BeFalse();
+        RegraDeHomologacaoDasInscricoes.Declarar(null, []).MesmoConteudo(RegraDeHomologacaoDasInscricoes.Declarar(" ", [])).Should().BeTrue();
     }
 
     [Fact(DisplayName = "Regra com alternativa nula é recusada")]
-    public void Criar_ComAlternativaNula_Lanca()
+    public void Declarar_ComAlternativaNula_Lanca()
     {
-        Action criar = () => RegraDeHomologacaoDasInscricoes.Criar("RESULTADO_HOMOLOGACAO", [null!]);
+        Action declarar = () => RegraDeHomologacaoDasInscricoes.Declarar("RESULTADO_HOMOLOGACAO", [null!]);
 
-        criar.Should().Throw<ArgumentException>();
+        declarar.Should().Throw<ArgumentException>();
     }
 
     [Fact(DisplayName = "O código do resultado apontado é guardado sem os espaços das pontas")]
-    public void Criar_ResultadoComEspacos_ENormalizado()
+    public void Declarar_ResultadoComEspacos_ENormalizado()
     {
-        Result<RegraDeHomologacaoDasInscricoes> resultado = RegraDeHomologacaoDasInscricoes.Criar("  RESULTADO_HOMOLOGACAO ", []);
+        RegraDeHomologacaoDasInscricoes regra = RegraDeHomologacaoDasInscricoes.Declarar("  RESULTADO_HOMOLOGACAO ", []);
 
-        resultado.Value!.ResultadoAtoCodigo.Should().Be("RESULTADO_HOMOLOGACAO");
+        regra.ResultadoAtoCodigo.Should().Be("RESULTADO_HOMOLOGACAO");
     }
 }

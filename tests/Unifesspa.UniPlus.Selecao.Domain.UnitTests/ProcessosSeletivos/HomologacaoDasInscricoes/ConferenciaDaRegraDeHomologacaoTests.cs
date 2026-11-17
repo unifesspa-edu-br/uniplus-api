@@ -21,8 +21,8 @@ public sealed class ConferenciaDaRegraDeHomologacaoTests
 {
     private static readonly string[] TipoDaHomologacao = [TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes];
 
-    private static RegraDeHomologacaoDasInscricoes Regra(string resultado = ResultadoDaLista, params AlternativaDeCondicoes[] alternativas) =>
-        RegraDeHomologacaoDasInscricoes.Criar(resultado, alternativas).Value!;
+    private static RegraDeHomologacaoDasInscricoes Regra(string? resultado = ResultadoDaLista, params AlternativaDeCondicoes[] alternativas) =>
+        RegraDeHomologacaoDasInscricoes.Declarar(resultado, alternativas);
 
     private static FaseCronograma FaseComListaFechada() => FaseQueHomologa(1, "HOMOLOGACAO_INSCRICOES", [Preliminar(), Definitivo()]);
 
@@ -66,6 +66,18 @@ public sealed class ConferenciaDaRegraDeHomologacaoTests
         faltas[0].Field.Should().Be("regraDeHomologacao.resultadoAtoCodigo");
         faltas[0].Error.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado);
         faltas[0].Error.Message.Should().Be("O resultado indicado pela regra deve ser publicado nesta fase, com resultado definitivo nela ou na fase que a conclui.");
+    }
+
+    [Fact(DisplayName = "Regra que não aponta o resultado é recusada como resultado não declarado")]
+    public void Resultado_NaoApontado_Recusa()
+    {
+        FaseCronograma fase = FaseComListaFechada();
+
+        IReadOnlyList<FieldError> faltas = Faltas(Regra(resultado: null), fase);
+
+        faltas.Should().ContainSingle();
+        faltas[0].Field.Should().Be("regraDeHomologacao.resultadoAtoCodigo");
+        faltas[0].Error.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado);
     }
 
     [Fact(DisplayName = "Fase sem nenhum resultado publicado recusa a regra como resultado não declarado")]

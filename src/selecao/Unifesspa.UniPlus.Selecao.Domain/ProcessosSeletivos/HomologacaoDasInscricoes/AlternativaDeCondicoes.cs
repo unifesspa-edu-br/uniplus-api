@@ -9,6 +9,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 /// </summary>
 public sealed record AlternativaDeCondicoes
 {
+    private const string CampoDasCondicoes = "condicoes";
+
     private AlternativaDeCondicoes(IReadOnlyList<CondicaoDeHomologacao> condicoes) => Condicoes = condicoes;
 
     public IReadOnlyList<CondicaoDeHomologacao> Condicoes { get; }
@@ -21,7 +23,8 @@ public sealed record AlternativaDeCondicoes
             && Condicoes.Zip(outra.Condicoes).All(static par => par.First.MesmoConteudo(par.Second));
     }
 
-    public static Result<AlternativaDeCondicoes> Criar(IReadOnlyList<CondicaoDeHomologacao> condicoes)
+    /// <summary>Confere que a alternativa tem ao menos uma condição; a recusa fica no campo das condições (ADR-0125).</summary>
+    public static Result<AlternativaDeCondicoes> Declarar(IReadOnlyList<CondicaoDeHomologacao> condicoes)
     {
         ArgumentNullException.ThrowIfNull(condicoes);
         if (condicoes.Any(static condicao => condicao is null))
@@ -30,9 +33,9 @@ public sealed record AlternativaDeCondicoes
         }
 
         return condicoes.Count == 0
-            ? Result<AlternativaDeCondicoes>.Failure(new DomainError(
+            ? Result<AlternativaDeCondicoes>.ValidationFailure([new FieldError(CampoDasCondicoes, new DomainError(
                 HomologacaoDasInscricoesErrorCodes.AlternativaSemCondicao,
-                "A alternativa precisa de ao menos uma condição."))
+                "A alternativa precisa de ao menos uma condição."))])
             : Result<AlternativaDeCondicoes>.Success(new AlternativaDeCondicoes([.. condicoes]));
     }
 }

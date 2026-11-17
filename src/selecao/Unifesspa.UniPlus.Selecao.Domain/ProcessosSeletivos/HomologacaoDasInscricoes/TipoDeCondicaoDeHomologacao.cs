@@ -24,12 +24,14 @@ public static class TiposDeCondicaoDeHomologacao
         _ => throw new ArgumentOutOfRangeException(nameof(tipo), tipo, "Tipo de condição de homologação desconhecido."),
     };
 
+    /// <summary>O tipo do código; recusa, como condição não disponível, o código ausente ou que o sistema ainda não apura.</summary>
     public static Result<TipoDeCondicaoDeHomologacao> DoCodigo(string? codigo) => codigo switch
     {
         CodigoResultadoNoRetornoDoInep => Result<TipoDeCondicaoDeHomologacao>.Success(TipoDeCondicaoDeHomologacao.ResultadoNoRetornoDoInep),
-        _ => Result<TipoDeCondicaoDeHomologacao>.Failure(CondicaoNaoDisponivel($"A condição '{codigo}' ainda não é apurada pelo sistema.")),
+        _ => Result<TipoDeCondicaoDeHomologacao>.Failure(new DomainError(
+            HomologacaoDasInscricoesErrorCodes.CondicaoNaoDisponivel,
+            string.IsNullOrWhiteSpace(codigo)
+                ? "O tipo da condição precisa ser informado."
+                : $"A condição '{codigo}' ainda não é apurada pelo sistema.")),
     };
-
-    internal static DomainError CondicaoNaoDisponivel(string mensagem) =>
-        new(HomologacaoDasInscricoesErrorCodes.CondicaoNaoDisponivel, mensagem);
 }

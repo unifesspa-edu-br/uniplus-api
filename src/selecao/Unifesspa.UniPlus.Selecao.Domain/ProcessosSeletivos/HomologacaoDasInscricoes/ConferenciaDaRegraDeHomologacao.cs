@@ -73,14 +73,15 @@ internal static class ConferenciaDaRegraDeHomologacao
 
     private static bool ResultadoTemDefinitivo(
         RegraDeHomologacaoDasInscricoes regra, FaseCronograma fase, IReadOnlyCollection<FaseCronograma> cronograma) =>
-        fase.Produtos.Any(produto => produto.Papel is not null && produto.AtoCodigo == regra.ResultadoAtoCodigo)
-        && (fase.PublicaResultadoDefinitivoDe(regra.ResultadoAtoCodigo) || ConcluinteTemDefinitivo(regra, fase, cronograma));
+        regra.ResultadoAtoCodigo is { } resultado
+        && fase.Produtos.Any(produto => produto.Papel is not null && produto.AtoCodigo == resultado)
+        && (fase.PublicaResultadoDefinitivoDe(resultado) || ConcluinteTemDefinitivo(resultado, fase, cronograma));
 
     private static bool ConcluinteTemDefinitivo(
-        RegraDeHomologacaoDasInscricoes regra, FaseCronograma fase, IReadOnlyCollection<FaseCronograma> cronograma) =>
+        string resultado, FaseCronograma fase, IReadOnlyCollection<FaseCronograma> cronograma) =>
         fase.FaseConcluinteCodigo is { } concluinte
         && cronograma.Any(outra => string.Equals(outra.Codigo, concluinte, StringComparison.Ordinal)
-            && outra.PublicaResultadoDefinitivoDe(regra.ResultadoAtoCodigo));
+            && outra.PublicaResultadoDefinitivoDe(resultado));
 
     private static FieldError TipoNaoDeclarado() => new(FaseDeclarada.CampoDaRegraDeHomologacao, new DomainError(
         MotivoDeDecisaoErrorCodes.TipoDeDecisaoNaoDeclarado,

@@ -62,7 +62,33 @@ public sealed class LeituraDaRegraDeHomologacaoDaFaseTests
     {
         IdentificacaoECronogramaLidos lidos = Ler(Documento(ComHomologacao(ComEnquadramento("[[{\"fato\":\"cota\",\"operador\":\"EM\",\"valor\":\"A\"}]]"))));
 
-        PartesRecusadas(lidos).Should().Equal(($"{CaminhoDaRegra}/alternativas/0/condicoes/0/enquadramento", "CondicaoDnf.FormaIncoerenteComOperador"));
+        PartesRecusadas(lidos).Should().Equal(($"{CaminhoDaRegra}/alternativas/0/condicoes/0/enquadramento/0/0/valor", "CondicaoDnf.FormaIncoerenteComOperador"));
+    }
+
+    [Theory(DisplayName = "O documento indica a posição e a propriedade recusada")]
+    [InlineData("[[]]", "/0", "PredicadoDnf.FormaJsonInvalida", "Cada cláusula é uma lista não vazia de condições.")]
+    [InlineData("[[null]]", "/0/0", "PredicadoDnf.FormaJsonInvalida", "Cada condição tem fato, operador e valor.")]
+    [InlineData("[[{\"fato\":\"X\",\"operador\":\"IGUAL\",\"valor\":true}],[{\"fato\":\"X\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"X\",\"operador\":\"INVALIDO\",\"valor\":true}]]", "/1/1/operador", "CondicaoDnf.OperadorInvalido", "O operador informado não é reconhecido.")]
+    public void Enquadramento_Recusado_LocalizaNoDocumento(string json, string sufixo, string codigo, string mensagem)
+    {
+        IdentificacaoECronogramaLidos lidos = Ler(Documento(ComHomologacao(ComEnquadramento(json))));
+
+        PartesRecusadas(lidos).Should().Equal(($"{CaminhoDaRegra}/alternativas/0/condicoes/0/enquadramento{sufixo}", codigo));
+        Mensagens(lidos).Should().Equal(mensagem);
+    }
+
+    [Fact(DisplayName = "O enquadramento vazio e outros campos inválidos são recusados juntos")]
+    public void Enquadramento_Vazio_AcumulaComOutrosCampos()
+    {
+        CondicaoNoDocumento condicao = ComEnquadramento("[]") with { EdicaoDoExame = 1900, MotivoDesfavoravelCodigo = "motivo mal formado" };
+        IdentificacaoECronogramaLidos lidos = Ler(Documento(ComHomologacao(condicao)));
+
+        lidos.Cronograma.CronogramaFases.Single().RegraDeHomologacao.Should().BeNull();
+        PartesRecusadas(lidos).Select(static parte => parte.Ponteiro).Should().Equal(
+            $"{CaminhoDaRegra}/alternativas/0/condicoes/0/edicaoDoExame",
+            $"{CaminhoDaRegra}/alternativas/0/condicoes/0/motivoDesfavoravelCodigo",
+            $"{CaminhoDaRegra}/alternativas/0/condicoes/0/enquadramento");
+        PartesRecusadas(lidos).Last().Codigo.Should().Be("PredicadoDnf.FormaJsonInvalida");
     }
 
     [Fact(DisplayName = "O tipo de condição ausente ou que o sistema não apura recusa a regra no campo da condição")]
@@ -71,7 +97,7 @@ public sealed class LeituraDaRegraDeHomologacaoDaFaseTests
         IdentificacaoECronogramaLidos lidos = Ler(Documento(ComHomologacao(Condicao(null, 2025, Motivo))));
 
         lidos.Cronograma.CronogramaFases.Single().RegraDeHomologacao.Should().BeNull();
-        PartesRecusadas(lidos).Should().Equal(($"{CaminhoDaRegra}/alternativas/0/condicoes/0", HomologacaoDasInscricoesErrorCodes.CondicaoNaoDisponivel));
+        PartesRecusadas(lidos).Should().Equal(($"{CaminhoDaRegra}/alternativas/0/condicoes/0/tipo", HomologacaoDasInscricoesErrorCodes.CondicaoNaoDisponivel));
     }
 
     [Fact(DisplayName = "Edição do exame inválida e motivo mal formado na mesma alternativa acumulam as duas causas, cada uma na sua condição")]
@@ -82,23 +108,17 @@ public sealed class LeituraDaRegraDeHomologacaoDaFaseTests
             Condicao(TipoDeCondicaoDeHomologacao.ResultadoNoRetornoDoInep, 2025, "motivo mal formado"))));
 
         PartesRecusadas(lidos).Select(static parte => parte.Ponteiro).Should().Equal(
-            $"{CaminhoDaRegra}/alternativas/0/condicoes/0",
-            $"{CaminhoDaRegra}/alternativas/0/condicoes/1");
+            $"{CaminhoDaRegra}/alternativas/0/condicoes/0/edicaoDoExame",
+            $"{CaminhoDaRegra}/alternativas/0/condicoes/1/motivoDesfavoravelCodigo");
     }
 
-    [Fact(DisplayName = "A edição e o motivo ausentes na mesma condição acumulam as recusas")]
-    public void Condicao_SemEdicaoEMotivo_AcumulaRecusas()
+    [Fact(DisplayName = "A edição ausente é recusada e o motivo ausente é aceito na declaração")]
+    public void Condicao_SemEdicaoEMotivo_RecusaEdicao()
     {
         IdentificacaoECronogramaLidos lidos = Ler(Documento(ComHomologacao(
             new CondicaoNoDocumento(TipoDeCondicaoDeHomologacao.ResultadoNoRetornoDoInep, null, null, null))));
 
-        (string? Ponteiro, string Codigo)[] recusas = PartesRecusadas(lidos);
-        recusas.Should().HaveCount(2);
-        recusas.Select(static parte => parte.Ponteiro).Should().Equal(
-            $"{CaminhoDaRegra}/alternativas/0/condicoes/0",
-            $"{CaminhoDaRegra}/alternativas/0/condicoes/0");
-        recusas[0].Item2.Should().Be(HomologacaoDasInscricoesErrorCodes.EdicaoDoExameInvalida);
-        recusas[1].Item2.Should().Be(MotivoDeDecisaoErrorCodes.CodigoObrigatorio);
+        PartesRecusadas(lidos).Should().Equal(($"{CaminhoDaRegra}/alternativas/0/condicoes/0/edicaoDoExame", HomologacaoDasInscricoesErrorCodes.EdicaoDoExameInvalida));
     }
 
     [Fact(DisplayName = "A alternativa sem condição recusa a regra no campo da alternativa")]
@@ -106,18 +126,20 @@ public sealed class LeituraDaRegraDeHomologacaoDaFaseTests
     {
         IdentificacaoECronogramaLidos lidos = Ler(Documento(ComHomologacao()));
 
-        PartesRecusadas(lidos).Should().Equal(($"{CaminhoDaRegra}/alternativas/0", HomologacaoDasInscricoesErrorCodes.AlternativaSemCondicao));
+        PartesRecusadas(lidos).Should().Equal(($"{CaminhoDaRegra}/alternativas/0/condicoes", HomologacaoDasInscricoesErrorCodes.AlternativaSemCondicao));
     }
 
-    [Fact(DisplayName = "O resultado ausente recusa a regra no campo do resultado")]
-    public void Resultado_Ausente_ApontaOResultado()
+    [Fact(DisplayName = "O resultado ausente permanece na regra para conferência com a fase")]
+    public void Resultado_Ausente_PermaneceNaRegra()
     {
         FaseNoDocumento fase = Fase(0, "homologacao", "RESULTADO") with
         {
             Publicacoes = new([], false, null, new RegraDeHomologacaoNoDocumento(null, [])),
         };
 
-        PartesRecusadas(Ler(Documento(fase))).Should().Equal(($"{CaminhoDaRegra}/resultadoAtoCodigo", HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado));
+        IdentificacaoECronogramaLidos lidos = Ler(Documento(fase));
+        lidos.Cronograma.CronogramaFases.Single().RegraDeHomologacao!.ResultadoAtoCodigo.Should().BeNull();
+        PartesRecusadas(lidos).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "A fase sem regra de homologação não tem parte recusada")]

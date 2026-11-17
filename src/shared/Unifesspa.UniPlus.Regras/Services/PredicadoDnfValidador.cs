@@ -48,7 +48,7 @@ public static class PredicadoDnfValidador
     /// quando a recusa é do valor, o valor. Serve a quem precisa distinguir recusas de causas
     /// diferentes que têm o mesmo código; <see langword="null"/> quando o predicado vale.
     /// </summary>
-    public static (Result Resultado, string? Causa) ValidarComCausa(
+    public static (Result Resultado, string? Causa, TipoDeValorEsperado? TipoEsperado) ValidarComCausa(
         PredicadoDnf predicado,
         IReadOnlyDictionary<string, DescritorFatoCandidato> vocabularioFechado,
         IReadOnlySet<string>? fatosColetadosPeloProcesso = null,
@@ -57,27 +57,50 @@ public static class PredicadoDnfValidador
         ArgumentNullException.ThrowIfNull(predicado);
         ArgumentNullException.ThrowIfNull(vocabularioFechado);
 
-        foreach (ClausulaDnf clausula in predicado.Clausulas)
+        for (int c = 0; c < predicado.Clausulas.Count; c++)
         {
-            foreach (CondicaoDnf condicao in clausula.Condicoes)
+            (Result resultado, string? causa, TipoDeValorEsperado? tipoEsperado) = ValidarClausula(predicado.Clausulas[c], c, vocabularioFechado, fatosColetadosPeloProcesso, dominiosDinamicos);
+            if (resultado.IsFailure)
             {
-                Result condicaoResult = ValidarCondicao(condicao, vocabularioFechado, fatosColetadosPeloProcesso, dominiosDinamicos);
-                if (condicaoResult.IsFailure)
-                {
-                    return (condicaoResult, CausaDaRecusa(condicao, condicaoResult.Error!.Code));
-                }
+                return (resultado, causa, tipoEsperado);
             }
         }
 
-        return (Result.Success(), null);
+        return (Result.Success(), null, null);
     }
+
+    private static (Result Resultado, string? Causa, TipoDeValorEsperado? TipoEsperado) ValidarClausula(
+        ClausulaDnf clausula, int c, IReadOnlyDictionary<string, DescritorFatoCandidato> vocabulario,
+        IReadOnlySet<string>? coletados, IReadOnlyDictionary<string, DominioDeValores>? dominios)
+    {
+        for (int i = 0; i < clausula.Condicoes.Count; i++)
+        {
+            CondicaoDnf condicao = clausula.Condicoes[i];
+            (Result resultado, TipoDeValorEsperado? tipoEsperado) = ValidarCondicao(condicao, vocabulario, coletados, dominios);
+            if (resultado.IsFailure)
+            {
+                string campo = CampoDaRecusa(resultado.Error!.Code);
+                return (Result.ValidationFailure([new FieldError($"[{c}][{i}]{campo}", resultado.Error)]), CausaDaRecusa(condicao, resultado.Error.Code), tipoEsperado);
+            }
+        }
+
+        return (Result.Success(), null, null);
+    }
+
+    private static string CampoDaRecusa(string codigo) => codigo switch
+    {
+        "PredicadoDnf.FatoDesconhecido" or "PredicadoDnf.FatoNaoColetadoPeloProcesso" => ".fato",
+        PredicadoDnfErrorCodes.OperadorIncompativelComDominio => ".operador",
+        PredicadoDnfErrorCodes.ValorForaDoDominio or PredicadoDnfErrorCodes.ValorIncompativelComTipo => ".valor",
+        _ => "",
+    };
 
     private static string CausaDaRecusa(CondicaoDnf condicao, string codigo) =>
         codigo is PredicadoDnfErrorCodes.ValorForaDoDominio or PredicadoDnfErrorCodes.ValorIncompativelComTipo
             ? $"{condicao.Fato}={condicao.Valor.GetRawText()}"
             : condicao.Fato;
 
-    private static Result ValidarCondicao(
+    private static (Result Resultado, TipoDeValorEsperado? TipoEsperado) ValidarCondicao(
         CondicaoDnf condicao,
         IReadOnlyDictionary<string, DescritorFatoCandidato> vocabularioFechado,
         IReadOnlySet<string>? fatosColetadosPeloProcesso,
@@ -85,20 +108,27 @@ public static class PredicadoDnfValidador
     {
         if (!vocabularioFechado.TryGetValue(condicao.Fato, out DescritorFatoCandidato? descritor))
         {
-            return Result.Failure(new DomainError(
+            return (Result.Failure(new DomainError(
                 "PredicadoDnf.FatoDesconhecido",
-                $"O fato '{condicao.Fato}' não pertence ao vocabulário fechado."));
+                $"O fato '{condicao.Fato}' não pertence ao vocabulário fechado.")), null);
         }
 
+        return ValidarCondicaoConhecida(condicao, descritor, fatosColetadosPeloProcesso, dominiosDinamicos);
+    }
+
+    private static (Result Resultado, TipoDeValorEsperado? TipoEsperado) ValidarCondicaoConhecida(
+        CondicaoDnf condicao, DescritorFatoCandidato descritor, IReadOnlySet<string>? fatosColetadosPeloProcesso,
+        IReadOnlyDictionary<string, DominioDeValores>? dominiosDinamicos)
+    {
         if (fatosColetadosPeloProcesso is not null && !fatosColetadosPeloProcesso.Contains(condicao.Fato))
         {
-            return Result.Failure(new DomainError(
+            return (Result.Failure(new DomainError(
                 "PredicadoDnf.FatoNaoColetadoPeloProcesso",
-                $"O fato '{condicao.Fato}' não é coletado por este processo."));
+                $"O fato '{condicao.Fato}' não é coletado por este processo.")), null);
         }
 
         Result operadorResult = ValidarOperador(condicao, descritor);
-        return operadorResult.IsFailure ? operadorResult : ValidarValor(condicao, descritor, dominiosDinamicos);
+        return operadorResult.IsFailure ? (operadorResult, null) : ValidarValor(condicao, descritor, dominiosDinamicos);
     }
 
     private static Result ValidarOperador(CondicaoDnf condicao, DescritorFatoCandidato descritor)
@@ -107,34 +137,47 @@ public static class PredicadoDnfValidador
         // booleano/numérico (a letra da spec: "DIFERENTE só onde IGUAL vale", sem exceção de
         // domínio). NAO_EM acompanha EM, que só vale nos dois ramos categóricos — booleano e
         // numérico nunca tiveram EM.
-        bool operadorCompativel = descritor.TipoDominio switch
-        {
-            TipoDominioFato.Booleano => condicao.Operador is Operador.Igual or Operador.Diferente,
-            TipoDominioFato.Numerico => condicao.Operador is Operador.Igual or Operador.MaiorIgual or Operador.MenorIgual or Operador.Diferente,
-            TipoDominioFato.CategoricoEstatico => condicao.Operador is Operador.Igual or Operador.Em or Operador.Diferente or Operador.NaoEm,
-            TipoDominioFato.CategoricoDinamico => condicao.Operador is Operador.Igual or Operador.Em or Operador.Diferente or Operador.NaoEm,
-            _ => false,
-        };
-
-        return operadorCompativel
+        return OperadorCompativel(condicao.Operador, descritor.TipoDominio)
             ? Result.Success()
             : Result.Failure(new DomainError(
                 PredicadoDnfErrorCodes.OperadorIncompativelComDominio,
                 $"O operador {condicao.Operador} não é compatível com o domínio {descritor.TipoDominio} do fato '{condicao.Fato}'."));
     }
 
-    private static Result ValidarValor(
+    private static bool OperadorCompativel(Operador operador, TipoDominioFato dominio) => dominio switch
+    {
+        TipoDominioFato.Booleano => OperadorBooleano(operador),
+        TipoDominioFato.Numerico => OperadorNumerico(operador),
+        TipoDominioFato.CategoricoEstatico or TipoDominioFato.CategoricoDinamico => OperadorCategorico(operador),
+        _ => false,
+    };
+
+    private static bool OperadorBooleano(Operador operador) => operador is Operador.Igual or Operador.Diferente;
+
+    private static bool OperadorNumerico(Operador operador) =>
+        OperadorBooleano(operador) || operador is Operador.MaiorIgual or Operador.MenorIgual;
+
+    private static bool OperadorCategorico(Operador operador) =>
+        OperadorBooleano(operador) || operador is Operador.Em or Operador.NaoEm;
+
+    private static (Result Resultado, TipoDeValorEsperado? TipoEsperado) ValidarValor(
         CondicaoDnf condicao,
         DescritorFatoCandidato descritor,
         IReadOnlyDictionary<string, DominioDeValores>? dominiosDinamicos) => descritor.TipoDominio switch
         {
-            TipoDominioFato.Booleano => ValidarValorBooleano(condicao),
-            TipoDominioFato.Numerico => ValidarValorNumerico(condicao),
-            TipoDominioFato.CategoricoEstatico => ValidarValorCategorico(
-                condicao, valor => descritor.ValoresDominio!.Contains(valor, StringComparer.Ordinal), ForaDoDominioDeclarado),
-            TipoDominioFato.CategoricoDinamico => ValidarValorCategoricoDinamico(condicao, dominiosDinamicos),
-            _ => Result.Failure(new DomainError(PredicadoDnfErrorCodes.ValorIncompativelComTipo, "Domínio do fato desconhecido.")),
+            TipoDominioFato.Booleano => ComTipoEsperado(ValidarValorBooleano(condicao), TipoDeValorEsperado.VerdadeiroOuFalso),
+            TipoDominioFato.Numerico => ComTipoEsperado(ValidarValorNumerico(condicao), TipoDeValorEsperado.NumeroInteiro),
+            TipoDominioFato.CategoricoEstatico => ComTipoEsperado(ValidarValorCategorico(
+                condicao, valor => descritor.ValoresDominio!.Contains(valor, StringComparer.Ordinal), ForaDoDominioDeclarado), TipoCategorico(condicao)),
+            TipoDominioFato.CategoricoDinamico => ComTipoEsperado(ValidarValorCategoricoDinamico(condicao, dominiosDinamicos), TipoCategorico(condicao)),
+            _ => (Result.Failure(new DomainError(PredicadoDnfErrorCodes.ValorIncompativelComTipo, "Domínio do fato desconhecido.")), null),
         };
+
+    private static TipoDeValorEsperado TipoCategorico(CondicaoDnf condicao) =>
+        condicao.Operador is Operador.Em or Operador.NaoEm ? TipoDeValorEsperado.ListaDeTextos : TipoDeValorEsperado.Texto;
+
+    private static (Result Resultado, TipoDeValorEsperado? TipoEsperado) ComTipoEsperado(Result resultado, TipoDeValorEsperado tipo) =>
+        (resultado, resultado.Error?.Code == PredicadoDnfErrorCodes.ValorIncompativelComTipo ? tipo : null);
 
     /// <summary>
     /// CA-03 (integridade referencial, Story #554): o domínio válido de um fato
@@ -191,6 +234,11 @@ public static class PredicadoDnfValidador
             return ValidarValorCategoricoEm(condicao, pertence, foraDoDominio);
         }
 
+        return ValidarValorCategoricoEscalar(condicao, pertence, foraDoDominio);
+    }
+
+    private static Result ValidarValorCategoricoEscalar(CondicaoDnf condicao, Func<string, bool> pertence, string foraDoDominio)
+    {
         if (condicao.Valor.ValueKind != JsonValueKind.String)
         {
             return Result.Failure(new DomainError(
@@ -198,13 +246,19 @@ public static class PredicadoDnfValidador
                 $"O valor da condição sobre '{condicao.Fato}' deve ser uma string JSON."));
         }
 
-        string valor = condicao.Valor.GetString()!;
-        return pertence(valor)
+        return ConferirValorCategorico(condicao, condicao.Valor.GetString()!, pertence, foraDoDominio);
+    }
+
+    private static Result ConferirValorCategorico(CondicaoDnf condicao, string valor, Func<string, bool> pertence, string foraDoDominio) =>
+        pertence(valor)
             ? Result.Success()
             : Result.Failure(new DomainError(
                 PredicadoDnfErrorCodes.ValorForaDoDominio,
                 $"O valor '{valor}' da condição sobre '{condicao.Fato}' {foraDoDominio}"));
-    }
+
+    private static Result ValorForaDoDominio(CondicaoDnf condicao, string valor, string foraDoDominio) =>
+        Result.Failure(new DomainError(PredicadoDnfErrorCodes.ValorForaDoDominio,
+            $"O valor '{valor}' da condição EM sobre '{condicao.Fato}' {foraDoDominio}"));
 
     private static Result ValidarValorCategoricoEm(CondicaoDnf condicao, Func<string, bool> pertence, string foraDoDominio)
     {
@@ -218,14 +272,17 @@ public static class PredicadoDnfValidador
                 $"Os valores da condição EM sobre '{condicao.Fato}' devem ser strings JSON."));
         }
 
+        return ConferirValoresCategoricos(condicao, pertence, foraDoDominio);
+    }
+
+    private static Result ConferirValoresCategoricos(CondicaoDnf condicao, Func<string, bool> pertence, string foraDoDominio)
+    {
         string? valorFora = condicao.Valor.EnumerateArray()
             .Select(static item => item.GetString()!)
             .FirstOrDefault(valor => !pertence(valor));
 
         return valorFora is null
             ? Result.Success()
-            : Result.Failure(new DomainError(
-                PredicadoDnfErrorCodes.ValorForaDoDominio,
-                $"O valor '{valorFora}' da condição EM sobre '{condicao.Fato}' {foraDoDominio}"));
+            : ValorForaDoDominio(condicao, valorFora, foraDoDominio);
     }
 }

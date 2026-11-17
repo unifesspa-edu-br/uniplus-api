@@ -35,6 +35,28 @@ public sealed class PredicadoDnfValidadorTests
     private static Result Validar(CondicaoDnf condicao, IReadOnlySet<string>? fatosColetados = null) =>
         PredicadoDnfValidador.Validar(PredicadoDe(condicao), Vocabulario, fatosColetados);
 
+    [Theory]
+    [InlineData("PCD", Operador.Igual, "\"texto\"", TipoDeValorEsperado.VerdadeiroOuFalso)]
+    [InlineData("FAIXA_ETARIA", Operador.Igual, "18.5", TipoDeValorEsperado.NumeroInteiro)]
+    [InlineData("COR_RACA", Operador.Igual, "12", TipoDeValorEsperado.Texto)]
+    [InlineData("COR_RACA", Operador.Em, "[12]", TipoDeValorEsperado.ListaDeTextos)]
+    public void ValidarComCausa_ValorInvalido_InformaTipoEsperado(string fato, Operador operador, string valor, TipoDeValorEsperado esperado)
+    {
+        CondicaoDnf condicao = CondicaoDnf.Criar(fato, operador, Json(valor)).Value!;
+        (Result Resultado, string? Causa, TipoDeValorEsperado? TipoEsperado) resultado = PredicadoDnfValidador.ValidarComCausa(PredicadoDe(condicao), Vocabulario);
+        resultado.Resultado.Error!.Code.Should().Be("PredicadoDnf.ValorIncompativelComTipo");
+        resultado.TipoEsperado.Should().Be(esperado);
+    }
+
+    [Fact]
+    public void ValidarComCausa_ValorValido_NaoInformaTipoEsperado()
+    {
+        CondicaoDnf condicao = CondicaoDnf.Criar("PCD", Operador.Igual, Json("true")).Value!;
+        (Result Resultado, string? Causa, TipoDeValorEsperado? TipoEsperado) resultado = PredicadoDnfValidador.ValidarComCausa(PredicadoDe(condicao), Vocabulario);
+        resultado.Resultado.IsSuccess.Should().BeTrue();
+        resultado.TipoEsperado.Should().BeNull();
+    }
+
     [Fact(DisplayName = "PredicadoDnfValidador_Rejeita_Fato_Desconhecido")]
     public void PredicadoDnfValidador_Rejeita_Fato_Desconhecido()
     {

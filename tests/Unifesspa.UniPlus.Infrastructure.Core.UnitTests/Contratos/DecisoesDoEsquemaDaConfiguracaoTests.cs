@@ -110,17 +110,28 @@ public sealed class DecisoesDoEsquemaDaConfiguracaoTests
         CaminhosComErro(Documento("""{ "resultadoAtoCodigo": "RESULTADO_FINAL", "alternativas": [] }"""), Homologacao).Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "A alternativa sem condição, a edição fora do intervalo e o tipo desconhecido são recusados com o caminho")]
+    [Fact(DisplayName = "O resultado fora do formato, a edição fora do intervalo, o tipo mal formado e a alternativa sem condição são recusados com o caminho")]
     public void Homologacao_ForaDaRegra_Recusa()
     {
         JsonNode regra = Documento("""
             { "resultadoAtoCodigo": "resultado", "alternativas": [
-              { "condicoes": [ { "tipo": "NOTA_MINIMA", "edicaoDoExame": 1997, "motivoDesfavoravelCodigo": "sem" } ] } ] }
+              { "condicoes": [ { "tipo": "nota mínima", "edicaoDoExame": 1997, "motivoDesfavoravelCodigo": "sem" } ] } ] }
             """);
 
         CaminhosComErro(regra, Homologacao).Should().Contain(
             ["/resultadoAtoCodigo", "/alternativas/0/condicoes/0/tipo", "/alternativas/0/condicoes/0/edicaoDoExame", "/alternativas/0/condicoes/0/motivoDesfavoravelCodigo"]);
         CaminhosComErro(Documento("""{ "alternativas": [ { "condicoes": [] } ] }"""), Homologacao).Should().Contain("/alternativas/0/condicoes");
+    }
+
+    [Fact(DisplayName = "O tipo de condição bem formado que o sistema ainda não apura passa pelo esquema: a recusa é do domínio")]
+    public void Homologacao_TipoBemFormadoQueNaoSeApura_Valida()
+    {
+        JsonNode regra = Documento("""
+            { "resultadoAtoCodigo": "RESULTADO_FINAL", "alternativas": [
+              { "condicoes": [ { "tipo": "NOTA_MINIMA", "edicaoDoExame": 2026, "motivoDesfavoravelCodigo": "SEM_NOTA" } ] } ] }
+            """);
+
+        CaminhosComErro(regra, Homologacao).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "O documento com os motivos do processo e a regra de homologação na fase valida")]

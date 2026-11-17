@@ -19,7 +19,7 @@ public sealed class FaseCronogramaRegraDeHomologacaoTests
     private const string Homologacao = TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes;
 
     private static readonly RegraDeHomologacaoDasInscricoes Regra =
-        RegraDeHomologacaoDasInscricoes.Criar("RESULTADO_HOMOLOGACAO", []).Value!;
+        RegraDeHomologacaoDasInscricoes.Declarar("RESULTADO_HOMOLOGACAO", []);
 
     private static FaseCronograma FaseCom(RegraDeHomologacaoDasInscricoes? regra, params string?[] tipos) => FaseCronograma.Criar(
         new OrigemCanonicaDaFase(

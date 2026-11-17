@@ -8,17 +8,19 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscrico
 
 internal static class CondicoesDeHomologacaoParaTestes
 {
+    internal const string CodigoDoRetornoDoInep = "RESULTADO_NO_RETORNO_DO_INEP";
+
     internal static CondicaoDeHomologacao ConfirmacaoDoInep(int edicao, string motivo) =>
-        CondicaoDeHomologacao.Criar(TipoDeCondicaoDeHomologacao.ResultadoNoRetornoDoInep, edicao, motivo, enquadramento: null).Value!;
+        CondicaoDeHomologacao.Declarar(CodigoDoRetornoDoInep, edicao, motivo, enquadramento: null).Value!;
 
     internal static CondicaoDeHomologacao ConfirmacaoDoInepSoParaAmpla(int edicao, string motivo) =>
-        CondicaoDeHomologacao.Criar(
-            TipoDeCondicaoDeHomologacao.ResultadoNoRetornoDoInep,
+        CondicaoDeHomologacao.Declarar(
+            CodigoDoRetornoDoInep,
             edicao,
             motivo,
             PredicadoDnf.CriarDeCondicoesAgrupadas(
                 [(0, CondicaoDnf.Criar("MODALIDADE", Operador.Igual, JsonSerializer.SerializeToElement("AMPLA")).Value!)]).Value!).Value!;
 
     internal static AlternativaDeCondicoes Alternativa(params CondicaoDeHomologacao[] condicoes) =>
-        AlternativaDeCondicoes.Criar(condicoes).Value!;
+        AlternativaDeCondicoes.Declarar(condicoes).Value!;
 }

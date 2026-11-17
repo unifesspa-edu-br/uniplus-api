@@ -13,11 +13,11 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Homol
 public sealed class AvisosDaHomologacaoTests
 {
     private static RegraDeHomologacaoDasInscricoes Vazia() =>
-        RegraDeHomologacaoDasInscricoes.Criar("RESULTADO_HOMOLOGACAO", []).Value!;
+        RegraDeHomologacaoDasInscricoes.Declarar("RESULTADO_HOMOLOGACAO", []);
 
     private static RegraDeHomologacaoDasInscricoes ComConfirmacao() =>
-        RegraDeHomologacaoDasInscricoes.Criar(
-            "RESULTADO_HOMOLOGACAO", [Alternativa(ConfirmacaoDoInep(2026, "SEM_RESULTADO_INEP"))]).Value!;
+        RegraDeHomologacaoDasInscricoes.Declarar(
+            "RESULTADO_HOMOLOGACAO", [Alternativa(ConfirmacaoDoInep(2026, "SEM_RESULTADO_INEP"))]);
 
     [Fact(DisplayName = "Regra sem condição gera um aviso de cronograma que nomeia a fase")]
     public void RegraVazia_GeraAviso()

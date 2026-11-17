@@ -65,31 +65,66 @@ internal static class ConferenciaDoModelo
         ArgumentNullException.ThrowIfNull(versoes);
         ArgumentNullException.ThrowIfNull(existentes);
 
+        return ConferirConteudo(conteudo, catalogo, versoes, existentes);
+    }
+
+    private static List<FieldError> ConferirConteudo(ConteudoLido conteudo, CatalogoDoModelo catalogo,
+        IReadOnlyDictionary<Guid, VersaoTermoConsentimentoView> versoes, VinculosDoModelo existentes)
+    {
         List<FieldError> erros = [];
+        ConferirItens(conteudo, catalogo, erros);
+        ConferirGrupos(conteudo, catalogo, erros);
+        ConferirDocumentos(conteudo, catalogo, erros);
+        ConferirEtapas(conteudo, catalogo, erros);
+        ConferirTermos(conteudo, catalogo, versoes, existentes, erros);
+        ConferirPressupostos(conteudo, catalogo, erros);
+        ConferirVinculosNovos(conteudo, catalogo, existentes, erros);
+
+        return erros;
+    }
+
+    private static void ConferirItens(ConteudoLido conteudo, CatalogoDoModelo catalogo, List<FieldError> erros)
+    {
         foreach ((int indice, ItemDoModelo item) in conteudo.Itens)
         {
             erros.AddRange(ConferirCampo(item, catalogo, ConferenciaNoCatalogo.FatoDoItem).Select(e => e with { Field = Prefixar($"itens[{indice}]", e.Field) }));
         }
+    }
 
+    private static void ConferirGrupos(ConteudoLido conteudo, CatalogoDoModelo catalogo, List<FieldError> erros)
+    {
         foreach ((int indice, GrupoDoModelo grupo) in conteudo.Grupos)
         {
-            if (ConferirPredicado($"grupos[{indice}].exibicao", grupo.Exibicao, catalogo) is { } exibicao)
-            {
-                erros.Add(exibicao);
-            }
+            ConferirGrupo(indice, grupo, catalogo, erros);
+        }
+    }
 
-            if (ConferirPredicado($"grupos[{indice}].predicadoObrigatoriedade", grupo.Obrigatoriedade.Predicado, catalogo) is { } obrigatoriedade)
-            {
-                erros.Add(obrigatoriedade);
-            }
-
-            for (int j = 0; j < grupo.Subitens.Count; j++)
-            {
-                erros.AddRange(ConferirCampo(grupo.Subitens[j], catalogo, ConferenciaNoCatalogo.FatoDoSubitem)
-                    .Select(e => e with { Field = Prefixar($"grupos[{indice}].subitens[{j}]", e.Field) }));
-            }
+    private static void ConferirGrupo(int indice, GrupoDoModelo grupo, CatalogoDoModelo catalogo, List<FieldError> erros)
+    {
+        if (ConferirPredicado($"grupos[{indice}].exibicao", grupo.Exibicao, catalogo) is { } exibicao)
+        {
+            erros.Add(exibicao);
         }
 
+        if (ConferirPredicado($"grupos[{indice}].predicadoObrigatoriedade", grupo.Obrigatoriedade.Predicado, catalogo) is { } obrigatoriedade)
+        {
+            erros.Add(obrigatoriedade);
+        }
+
+        ConferirSubitens(indice, grupo, catalogo, erros);
+    }
+
+    private static void ConferirSubitens(int indice, GrupoDoModelo grupo, CatalogoDoModelo catalogo, List<FieldError> erros)
+    {
+        for (int j = 0; j < grupo.Subitens.Count; j++)
+        {
+            erros.AddRange(ConferirCampo(grupo.Subitens[j], catalogo, ConferenciaNoCatalogo.FatoDoSubitem)
+                .Select(e => e with { Field = Prefixar($"grupos[{indice}].subitens[{j}]", e.Field) }));
+        }
+    }
+
+    private static void ConferirDocumentos(ConteudoLido conteudo, CatalogoDoModelo catalogo, List<FieldError> erros)
+    {
         for (int i = 0; i < conteudo.Documentos.Count; i++)
         {
             if (ConferirPredicado($"documentosExigidos[{i}].quando", conteudo.Documentos[i].Quando, catalogo) is { } quando)
@@ -102,7 +137,10 @@ internal static class ConferenciaDoModelo
                 erros.Add(new($"documentosExigidos[{i}].porOpcao.fatoCodigo", recusa, porOpcao.FatoCodigo));
             }
         }
+    }
 
+    private static void ConferirEtapas(ConteudoLido conteudo, CatalogoDoModelo catalogo, List<FieldError> erros)
+    {
         foreach ((int indice, EtapaDoModelo etapa) in conteudo.Etapas)
         {
             if (ConferirPredicado($"etapas[{indice}].exibicao", etapa.Exibicao, catalogo) is { } recusa)
@@ -110,12 +148,18 @@ internal static class ConferenciaDoModelo
                 erros.Add(recusa);
             }
         }
+    }
 
+    private static void ConferirTermos(ConteudoLido conteudo, CatalogoDoModelo catalogo, IReadOnlyDictionary<Guid, VersaoTermoConsentimentoView> versoes, VinculosDoModelo existentes, List<FieldError> erros)
+    {
         foreach ((int indice, TermoDoModelo termo) in conteudo.Termos)
         {
             erros.AddRange(ConferirTermo(termo, catalogo, versoes, existentes.Termos).Select(e => e with { Field = Prefixar($"termos[{indice}]", e.Field) }));
         }
+    }
 
+    private static void ConferirPressupostos(ConteudoLido conteudo, CatalogoDoModelo catalogo, List<FieldError> erros)
+    {
         for (int i = 0; i < conteudo.Pressupostos.Count; i++)
         {
             string pressuposto = ModeloFormulario.CodigoNaFormaGravada(conteudo.Pressupostos[i]);
@@ -125,7 +169,10 @@ internal static class ConferenciaDoModelo
                 erros.Add(new($"pressupostos[{i}]", recusa, pressuposto));
             }
         }
+    }
 
+    private static void ConferirVinculosNovos(ConteudoLido conteudo, CatalogoDoModelo catalogo, VinculosDoModelo existentes, List<FieldError> erros)
+    {
         // Os vínculos são os do conteúdo como será gravado: um código com espaço é o mesmo fato.
         VinculosDeFatos propostos = Vinculos(ModeloFormulario.NaFormaGravada(conteudo.ParaConteudo()));
         if (ConferenciaNoCatalogo.VinculoNovo(catalogo.Fatos, existentes.Fatos, propostos) is { IsFailure: true } vinculo)
@@ -133,7 +180,6 @@ internal static class ConferenciaDoModelo
             erros.AddRange(vinculo.Errors);
         }
 
-        return erros;
     }
 
     /// <summary>O que o modelo gravado já vincula: os fatos e valores, e a versão de cada termo.</summary>
@@ -152,14 +198,7 @@ internal static class ConferenciaDoModelo
     {
         ArgumentNullException.ThrowIfNull(conteudo);
         ItemDoModelo[] campos = [.. conteudo.Itens, .. conteudo.Grupos.SelectMany(static g => g.Subitens)];
-        IEnumerable<PredicadoDnf> predicados = campos
-            .SelectMany(static i => new[] { i.Exibicao, i.Obrigatoriedade.Predicado, i.Impedimento?.Quando }
-                .Concat(i.Restricoes.OfType<OpcoesPermitidas>().SelectMany(static o => o.Entradas.Select(static e => e.Quando))))
-            .Concat(conteudo.Grupos.SelectMany(static g => new[] { g.Exibicao, g.Obrigatoriedade.Predicado }))
-            .Concat(conteudo.Etapas.Select(static e => e.Exibicao))
-            .Concat(conteudo.Termos.SelectMany(static t => new[] { t.Exibicao, t.Obrigatoriedade.Predicado }))
-            .Concat(conteudo.Documentos.Select(static d => d.Quando))
-            .OfType<PredicadoDnf>();
+        IEnumerable<PredicadoDnf> predicados = Predicados(conteudo, campos);
         IEnumerable<(string Fato, JsonElement Valor)> condicoes = predicados
             .SelectMany(static p => p.Clausulas).SelectMany(static c => c.Condicoes).Select(static c => (c.Fato, c.Valor));
         IEnumerable<(string Fato, string Valor)> opcoes = campos
@@ -172,6 +211,18 @@ internal static class ConferenciaDoModelo
         return VinculosDeFatos.De(fatos, condicoes, opcoes);
     }
 
+    private static IEnumerable<PredicadoDnf> Predicados(ConteudoDoModelo conteudo, ItemDoModelo[] campos)
+    {
+        return campos
+            .SelectMany(static i => new[] { i.Exibicao, i.Obrigatoriedade.Predicado, i.Impedimento?.Quando }
+                .Concat(i.Restricoes.OfType<OpcoesPermitidas>().SelectMany(static o => o.Entradas.Select(static e => e.Quando))))
+            .Concat(conteudo.Grupos.SelectMany(static g => new[] { g.Exibicao, g.Obrigatoriedade.Predicado }))
+            .Concat(conteudo.Etapas.Select(static e => e.Exibicao))
+            .Concat(conteudo.Termos.SelectMany(static t => new[] { t.Exibicao, t.Obrigatoriedade.Predicado }))
+            .Concat(conteudo.Documentos.Select(static d => d.Quando))
+            .OfType<PredicadoDnf>();
+    }
+
     /// <summary>
     /// O campo do modelo contra o catálogo: o fato coletável — como item ou como campo de grupo,
     /// conforme <paramref name="recusaDeColetavel"/> —, o tipo do campo, as regras e as restrições.
@@ -181,22 +232,38 @@ internal static class ConferenciaDoModelo
     {
         if (FormaDoItem.ValidarFormaBasica(item.FatoCodigo, item.Ordem, item.Rotulo, item.TipoRenderizacao).Count > 0)
         {
-            yield break;
+            return [];
         }
 
         string codigo = ModeloFormulario.CodigoNaFormaGravada(item.FatoCodigo);
         if (recusaDeColetavel(codigo, catalogo.Fatos) is { } naoColetavel)
         {
-            yield return new("fatoCodigo", naoColetavel, codigo);
-            yield break;
+            return [new("fatoCodigo", naoColetavel, codigo)];
         }
 
+        return ConferirCampoConhecido(item, catalogo, codigo);
+    }
+
+    private static IEnumerable<FieldError> ConferirCampoConhecido(ItemDoModelo item, CatalogoDoModelo catalogo, string codigo)
+    {
         FatoDoCatalogo fato = catalogo.Fatos[codigo];
         if (CoerenciaDoCampo.Validar(codigo, item.TipoRenderizacao, fato.Dominio, fato.Cardinalidade, fato.FonteValores) is { } incoerencia)
         {
             yield return new("tipoRenderizacao", incoerencia, codigo);
         }
 
+        foreach (FieldError erro in ConferirRegrasERestricoes(item, catalogo, fato))
+        {
+            yield return erro;
+        }
+    }
+
+    private static IEnumerable<FieldError> ConferirRegrasERestricoes(ItemDoModelo item, CatalogoDoModelo catalogo, FatoDoCatalogo fato) =>
+        ConferirRegrasDoCampo(item, catalogo).Concat(ConferenciaNoCatalogo.SemanticaDasRestricoes(
+            fato, item.TipoRenderizacao, item.Restricoes, catalogo.Fatos, catalogo.Vocabulario, catalogo.DominiosDinamicos));
+
+    private static IEnumerable<FieldError> ConferirRegrasDoCampo(ItemDoModelo item, CatalogoDoModelo catalogo)
+    {
         if (ConferirPredicado("precondicao", item.Exibicao, catalogo) is { } exibicao)
         {
             yield return exibicao;
@@ -207,16 +274,8 @@ internal static class ConferenciaDoModelo
             yield return obrigatoriedade;
         }
 
-        if (ConferirPredicado("impedimento.quando", item.Impedimento?.Quando, catalogo) is { } impedimento)
-        {
-            yield return impedimento;
-        }
-
-        foreach (FieldError restricao in ConferenciaNoCatalogo.SemanticaDasRestricoes(
-            fato, item.TipoRenderizacao, item.Restricoes, catalogo.Fatos, catalogo.Vocabulario, catalogo.DominiosDinamicos))
-        {
-            yield return restricao;
-        }
+        FieldError? impedimento = ConferirPredicado("impedimento.quando", item.Impedimento?.Quando, catalogo);
+        if (impedimento is not null) yield return impedimento;
     }
 
     private static IEnumerable<FieldError> ConferirTermo(
@@ -235,16 +294,27 @@ internal static class ConferenciaDoModelo
             yield return obrigatoriedade;
         }
 
+        if (ConferirVersaoDoTermo(termo, versoes, termosExistentes) is { } versao)
+        {
+            yield return versao;
+        }
+    }
+
+    private static FieldError? ConferirVersaoDoTermo(TermoDoModelo termo,
+        IReadOnlyDictionary<Guid, VersaoTermoConsentimentoView> versoes, IReadOnlySet<(Guid TermoId, Guid VersaoId)> termosExistentes)
+    {
         // A versão já escolhida pelo modelo continua com ele, mesmo que o catálogo tenha excluído o
         // termo depois: a recusa é só do vínculo novo (ADR-0136).
         if (!termosExistentes.Contains((termo.TermoId, termo.VersaoId))
             && (!versoes.TryGetValue(termo.VersaoId, out VersaoTermoConsentimentoView? versao) || versao.TermoId != termo.TermoId))
         {
-            yield return new("versaoId", new DomainError(
+            return new("versaoId", new DomainError(
                 ModeloFormularioErrorCodes.TermoVersaoNaoEncontrada,
                 "A versão informada não existe no catálogo de termos, ou pertence a outro termo."),
                 $"{termo.TermoId}/{termo.VersaoId}");
         }
+
+        return null;
     }
 
     /// <summary>
@@ -265,7 +335,7 @@ internal static class ConferenciaDoModelo
         }
 
         return PredicadoDnfValidador.ValidarComCausa(predicado, catalogo.Vocabulario, null, catalogo.DominiosDinamicos)
-            is ({ IsFailure: true } recusa, { } causa)
+            is ({ IsFailure: true } recusa, { } causa, _)
             ? new(campo, recusa.Error!, causa)
             : null;
     }

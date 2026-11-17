@@ -30,64 +30,94 @@ public static class ValidadorRegrasPadrao
         ArgumentNullException.ThrowIfNull(regras);
         ArgumentNullException.ThrowIfNull(catalogo);
 
+        return Conferir(derivado, regras, catalogo);
+    }
+
+    private static Result Conferir(FatoCandidato derivado, IReadOnlyList<RegraDerivacao> regras, CatalogoDeFatos catalogo)
+    {
         Dictionary<string, FatoCandidato> fatos = catalogo.Fatos.ToDictionary(static f => f.Codigo, StringComparer.Ordinal);
         Dictionary<string, DescritorFatoCandidato> vocabulario = VocabularioDoCatalogo.Descritores(fatos.Values);
-        Dictionary<string, DominioDeValores> dominiosDinamicos = VocabularioDoCatalogo.DominiosDinamicos(fatos.Values);
-
+        Dictionary<string, DominioDeValores> dominios = VocabularioDoCatalogo.DominiosDinamicos(fatos.Values);
         List<FieldError> erros = [];
         void Recusar(string campo, string codigo, string mensagem, string? origem = null) =>
             erros.Add(new(campo, new DomainError(codigo, mensagem), origem ?? campo));
 
+        ConferirPredicados(derivado, regras, catalogo, fatos, vocabulario, dominios, erros);
+
+        ConferirVinculosNovos(derivado, regras, fatos, Recusar);
+        ConferirEstrutura(derivado, regras, Recusar);
+        ConferirCiclo(derivado, regras, fatos.Values, Recusar);
+        return erros.Count > 0 ? Result.ValidationFailure(erros) : Result.Success();
+    }
+
+    private static void ConferirPredicados(FatoCandidato derivado, IReadOnlyList<RegraDerivacao> regras,
+        CatalogoDeFatos catalogo, Dictionary<string, FatoCandidato> fatos, Dictionary<string, DescritorFatoCandidato> vocabulario,
+        Dictionary<string, DominioDeValores> dominios, List<FieldError> erros)
+    {
+        void Recusar(string campo, string codigo, string mensagem, string? origem = null) =>
+            erros.Add(new(campo, new DomainError(codigo, mensagem), origem ?? campo));
         for (int i = 0; i < regras.Count; i++)
         {
             string campo = $"regras[{i}]";
-            bool citaForaDoVocabulario = false;
-            foreach (string citado in regras[i].FatosCitados)
-            {
-                // O fato desconhecido é recusado pelo validador do predicado, e o próprio derivado,
-                // pela recusa de autorreferência.
-                if (!fatos.TryGetValue(citado, out FatoCandidato? dependencia)
-                    || string.Equals(citado, derivado.Codigo, StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                if (!vocabulario.ContainsKey(citado))
-                {
-                    citaForaDoVocabulario = true;
-                    Recusar(campo, FatoCandidatoErrorCodes.RegraCitaFatoNaoCitavel,
-                        $"O fato '{citado}' não pode ser citado em regra: texto, data, endereço, fato de membro de grupo e categórico sem valores não entram em predicado.",
-                        $"{campo}.{citado}");
-                }
-
-                if (derivado.ClassificacaoProtecao < dependencia.ClassificacaoProtecao)
-                {
-                    Recusar(campo, FatoCandidatoErrorCodes.ClassificacaoAbaixoDaDependencia,
-                        $"O derivado revela o que se sabe de '{citado}' e não pode ter proteção de dados mais fraca que a dele.",
-                        $"{campo}.{citado}");
-                }
-
-                if (Precede(derivado.PontoResolucao, dependencia.PontoResolucao, catalogo.Precedencias))
-                {
-                    Recusar(campo, FatoCandidatoErrorCodes.PontoResolucaoAnteriorADependencia,
-                        $"O derivado resolve em {derivado.PontoResolucao}, antes de '{citado}', que só é conhecido em {dependencia.PontoResolucao}.",
-                        $"{campo}.{citado}");
-                }
-            }
-
-            if (!citaForaDoVocabulario
-                && PredicadoDnfValidador.ValidarComCausa(regras[i].Quando, vocabulario, dominiosDinamicos: dominiosDinamicos)
-                    is ({ IsFailure: true } predicado, { } causa))
+            bool fora = ConferirDependencias(derivado, regras[i], catalogo, fatos, vocabulario, campo, Recusar);
+            if (!fora && PredicadoDnfValidador.ValidarComCausa(regras[i].Quando, vocabulario, dominiosDinamicos: dominios)
+                is ({ IsFailure: true } predicado, { } causa, _))
             {
                 erros.Add(new(campo, predicado.Error!, $"{campo}.{causa}"));
             }
         }
 
-        ConferirVinculosNovos(derivado, regras, fatos, Recusar);
-        ConferirEstrutura(derivado, regras, Recusar);
-        ConferirCiclo(derivado, regras, fatos.Values, Recusar);
+    }
 
-        return erros.Count > 0 ? Result.ValidationFailure(erros) : Result.Success();
+    private static bool ConferirDependencias(
+        FatoCandidato derivado, RegraDerivacao regra, CatalogoDeFatos catalogo,
+        Dictionary<string, FatoCandidato> fatos, Dictionary<string, DescritorFatoCandidato> vocabulario,
+        string campo, Recusa recusar)
+    {
+        bool fora = false;
+        foreach (string citado in regra.FatosCitados)
+        {
+            if (fatos.TryGetValue(citado, out FatoCandidato? dependencia)
+                && !string.Equals(citado, derivado.Codigo, StringComparison.Ordinal))
+            {
+                bool naoCitavel = !vocabulario.ContainsKey(citado);
+                ConferirDependencia(derivado, dependencia, catalogo.Precedencias, campo, naoCitavel, recusar);
+                fora |= naoCitavel;
+            }
+        }
+
+        return fora;
+    }
+
+    private static void ConferirDependencia(
+        FatoCandidato derivado, FatoCandidato dependencia, IReadOnlyCollection<PrecedenciaFase> precedencias,
+        string campo, bool naoCitavel, Recusa recusar)
+    {
+        string citado = dependencia.Codigo;
+        if (naoCitavel)
+        {
+            recusar(campo, FatoCandidatoErrorCodes.RegraCitaFatoNaoCitavel,
+                $"O fato '{citado}' não pode ser citado em regra: texto, data, endereço, fato de membro de grupo e categórico sem valores não entram em predicado.", $"{campo}.{citado}");
+        }
+
+        if (derivado.ClassificacaoProtecao < dependencia.ClassificacaoProtecao)
+        {
+            recusar(campo, FatoCandidatoErrorCodes.ClassificacaoAbaixoDaDependencia,
+                $"O derivado revela o que se sabe de '{citado}' e não pode ter proteção de dados mais fraca que a dele.", $"{campo}.{citado}");
+        }
+
+        ConferirPrecedencia(derivado, dependencia, precedencias, campo, recusar);
+    }
+
+    private static void ConferirPrecedencia(FatoCandidato derivado, FatoCandidato dependencia,
+        IReadOnlyCollection<PrecedenciaFase> precedencias, string campo, Recusa recusar)
+    {
+        string citado = dependencia.Codigo;
+        if (Precede(derivado.PontoResolucao, dependencia.PontoResolucao, precedencias))
+        {
+            recusar(campo, FatoCandidatoErrorCodes.PontoResolucaoAnteriorADependencia,
+                $"O derivado resolve em {derivado.PontoResolucao}, antes de '{citado}', que só é conhecido em {dependencia.PontoResolucao}.", $"{campo}.{citado}");
+        }
     }
 
     /// <summary>
@@ -107,23 +137,35 @@ public static class ValidadorRegrasPadrao
             string campo = $"regras[{i}]";
             VinculosDeFatos propostos = Vinculos(derivado.Codigo, [regras[i]]);
 
-            IEnumerable<string> fatosDesativados = propostos.Fatos
-                .Where(f => !existentes.Fatos.Contains(f) && fatos.TryGetValue(f, out FatoCandidato? citado) && !citado.Ativo)
-                .Order(StringComparer.Ordinal);
-            foreach (string fato in fatosDesativados)
-            {
-                recusar(campo, FatoCandidatoErrorCodes.RegraCitaFatoDesativado,
-                    $"O fato '{fato}' está desativado e não aceita citação nova.", $"{campo}.{fato}");
-            }
+            ConferirFatosDesativados(campo, existentes, propostos, fatos, recusar);
+            ConferirValoresDesativados(campo, existentes, propostos, fatos, recusar);
+        }
+    }
 
-            IEnumerable<(string Fato, string Valor)> valoresDesativados = propostos.Valores
-                .Where(v => !existentes.Valores.Contains(v) && ValorDesativado(fatos, v.Fato, v.Valor))
-                .OrderBy(static v => v.Fato, StringComparer.Ordinal).ThenBy(static v => v.Valor, StringComparer.Ordinal);
-            foreach ((string fato, string valor) in valoresDesativados)
-            {
-                recusar(campo, FatoCandidatoErrorCodes.RegraCitaValorDesativado,
-                    $"O valor '{valor}' do fato '{fato}' está desativado e não aceita citação nova.", $"{campo}.{fato}.{valor}");
-            }
+    private static void ConferirFatosDesativados(string campo, VinculosDeFatos existentes, VinculosDeFatos propostos,
+        Dictionary<string, FatoCandidato> fatos, Recusa recusar)
+    {
+        IEnumerable<string> fatosDesativados = propostos.Fatos
+            .Where(f => !existentes.Fatos.Contains(f) && fatos.TryGetValue(f, out FatoCandidato? citado) && !citado.Ativo)
+            .Order(StringComparer.Ordinal);
+        foreach (string fato in fatosDesativados)
+        {
+            recusar(campo, FatoCandidatoErrorCodes.RegraCitaFatoDesativado,
+                $"O fato '{fato}' está desativado e não aceita citação nova.", $"{campo}.{fato}");
+        }
+
+    }
+
+    private static void ConferirValoresDesativados(string campo, VinculosDeFatos existentes, VinculosDeFatos propostos,
+        Dictionary<string, FatoCandidato> fatos, Recusa recusar)
+    {
+        IEnumerable<(string Fato, string Valor)> valoresDesativados = propostos.Valores
+            .Where(v => !existentes.Valores.Contains(v) && ValorDesativado(fatos, v.Fato, v.Valor))
+            .OrderBy(static v => v.Fato, StringComparer.Ordinal).ThenBy(static v => v.Valor, StringComparer.Ordinal);
+        foreach ((string fato, string valor) in valoresDesativados)
+        {
+            recusar(campo, FatoCandidatoErrorCodes.RegraCitaValorDesativado,
+                $"O valor '{valor}' do fato '{fato}' está desativado e não aceita citação nova.", $"{campo}.{fato}.{valor}");
         }
     }
 
@@ -201,26 +243,41 @@ public static class ValidadorRegrasPadrao
             return false;
         }
 
+        return ExisteCaminho(fase, outra, precedencias);
+    }
+
+    private static bool ExisteCaminho(string fase, string outra, IReadOnlyCollection<PrecedenciaFase> precedencias)
+    {
         ILookup<string, string> sucessoras = precedencias.ToLookup(
             static p => p.AntecessoraCodigo, static p => p.SucessoraCodigo, StringComparer.Ordinal);
         HashSet<string> visitadas = new(StringComparer.Ordinal) { fase };
         Queue<string> fila = new([fase]);
         while (fila.TryDequeue(out string? atual))
         {
-            foreach (string proxima in sucessoras[atual])
+            if (VisitarSucessoras(sucessoras[atual], outra, visitadas, fila))
             {
-                if (string.Equals(proxima, outra, StringComparison.Ordinal))
-                {
-                    return true;
-                }
-
-                if (visitadas.Add(proxima))
-                {
-                    fila.Enqueue(proxima);
-                }
+                return true;
             }
         }
 
         return false;
     }
+    private static bool VisitarSucessoras(IEnumerable<string> sucessoras, string outra, HashSet<string> visitadas, Queue<string> fila)
+    {
+        foreach (string proxima in sucessoras)
+        {
+            if (string.Equals(proxima, outra, StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            if (visitadas.Add(proxima))
+            {
+                fila.Enqueue(proxima);
+            }
+        }
+
+        return false;
+    }
+
 }

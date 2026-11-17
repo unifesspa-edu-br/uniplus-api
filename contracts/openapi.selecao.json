@@ -17940,7 +17940,7 @@
         "properties": {
           "resultadoAtoCodigo": {
             "title": "Resultado que publica a lista",
-            "description": "C\u00F3digo do tipo de ato, resultado da pr\u00F3pria fase ou da fase concluinte, que publica a lista de homologadas.",
+            "description": "C\u00F3digo do tipo de ato que publica a lista de homologadas: produto da pr\u00F3pria fase; o definitivo sai nela ou na fase concluinte.",
             "type": "string",
             "pattern": "^[A-Z]\u002B(_[A-Z]\u002B)*$",
             "minLength": 1,
@@ -17981,10 +17981,10 @@
         "properties": {
           "tipo": {
             "title": "Tipo da condi\u00E7\u00E3o",
-            "description": "O que a condi\u00E7\u00E3o apura. Por ora, o resultado do candidato no retorno do INEP.",
-            "enum": [
-              "RESULTADO_NO_RETORNO_DO_INEP"
-            ]
+            "description": "O que a condi\u00E7\u00E3o apura, em c\u00F3digo mai\u00FAsculo com sublinhado. Por ora, o sistema s\u00F3 apura RESULTADO_NO_RETORNO_DO_INEP, o resultado do candidato no retorno do INEP.",
+            "type": "string",
+            "pattern": "^[A-Z]\u002B(_[A-Z]\u002B)*$",
+            "maxLength": 60
           },
           "edicaoDoExame": {
             "title": "Edi\u00E7\u00E3o do exame",

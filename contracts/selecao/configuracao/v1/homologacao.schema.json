@@ -8,7 +8,7 @@
   "properties": {
     "resultadoAtoCodigo": {
       "title": "Resultado que publica a lista",
-      "description": "Código do tipo de ato, resultado da própria fase ou da fase concluinte, que publica a lista de homologadas.",
+      "description": "Código do tipo de ato que publica a lista de homologadas: produto da própria fase; o definitivo sai nela ou na fase concluinte.",
       "type": "string",
       "pattern": "^[A-Z]+(_[A-Z]+)*$",
       "minLength": 1,
@@ -49,10 +49,10 @@
       "properties": {
         "tipo": {
           "title": "Tipo da condição",
-          "description": "O que a condição apura. Por ora, o resultado do candidato no retorno do INEP.",
-          "enum": [
-            "RESULTADO_NO_RETORNO_DO_INEP"
-          ]
+          "description": "O que a condição apura, em código maiúsculo com sublinhado. Por ora, o sistema só apura RESULTADO_NO_RETORNO_DO_INEP, o resultado do candidato no retorno do INEP.",
+          "type": "string",
+          "pattern": "^[A-Z]+(_[A-Z]+)*$",
+          "maxLength": 60
         },
         "edicaoDoExame": {
           "title": "Edição do exame",

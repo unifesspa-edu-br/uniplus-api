@@ -15,8 +15,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscrico
 /// </summary>
 internal static class LeituraDaRegraDeHomologacaoDaFase
 {
-    private const string CampoDoResultado = FaseDeclarada.CampoDaRegraDeHomologacao + ".resultadoAtoCodigo";
-
     internal static ValorLido<RegraDeHomologacaoDasInscricoes?> Ler(FaseNoDocumento fase)
     {
         if (fase.Publicacoes.RegraDeHomologacao is not { } declarada)
@@ -26,12 +24,11 @@ internal static class LeituraDaRegraDeHomologacaoDaFase
 
         ValorLido<AlternativaDeCondicoes?>[] alternativas =
             [.. declarada.Alternativas.Select((alternativa, posicao) => Alternativa(fase, alternativa, $"{FaseDeclarada.CampoDaRegraDeHomologacao}.alternativas[{posicao}]"))];
-        Result<RegraDeHomologacaoDasInscricoes> regra = RegraDeHomologacaoDasInscricoes.Criar(
+        RecusaDaParte[] recusas = [.. alternativas.SelectMany(static alternativa => alternativa.Recusas)];
+        RegraDeHomologacaoDasInscricoes regra = RegraDeHomologacaoDasInscricoes.Declarar(
             declarada.ResultadoAtoCodigo, [.. alternativas.Select(static alternativa => alternativa.Valor).OfType<AlternativaDeCondicoes>()]);
-        RecusaDaParte[] recusas =
-            [.. Recusas(fase, CampoDoResultado, regra.Errors), .. alternativas.SelectMany(static alternativa => alternativa.Recusas)];
 
-        return recusas.Length > 0 ? new(null, recusas) : new(regra.Value, []);
+        return recusas.Length > 0 ? new(null, recusas) : new(regra, []);
     }
 
     // A causa de uma condição recusada já está nas recusas: a alternativa que a perdeu não se monta, para não recusar de novo por falta dela.
@@ -45,7 +42,7 @@ internal static class LeituraDaRegraDeHomologacaoDaFase
             return new(null, recusasDasCondicoes);
         }
 
-        Result<AlternativaDeCondicoes> alternativa = AlternativaDeCondicoes.Criar([.. condicoes.Select(static condicao => condicao.Valor!)]);
+        Result<AlternativaDeCondicoes> alternativa = AlternativaDeCondicoes.Declarar([.. condicoes.Select(static condicao => condicao.Valor!)]);
 
         return new(alternativa.Value, Recusas(fase, campo, alternativa.Errors));
     }
@@ -53,8 +50,8 @@ internal static class LeituraDaRegraDeHomologacaoDaFase
     private static ValorLido<CondicaoDeHomologacao?> Condicao(FaseNoDocumento fase, CondicaoNoDocumento declarada, string campo)
     {
         ValorLido<PredicadoDnf?> enquadramento = Enquadramento(fase, declarada.Enquadramento, $"{campo}.enquadramento");
-        Result<CondicaoDeHomologacao> condicao = CondicaoDeHomologacao.Criar(
-            declarada.Tipo ?? default, declarada.EdicaoDoExame, declarada.MotivoDesfavoravelCodigo, enquadramento.Valor);
+        Result<CondicaoDeHomologacao> condicao = CondicaoDeHomologacao.Declarar(
+            declarada.Tipo is { } tipo && Enum.IsDefined(tipo) ? tipo.Codigo() : null, declarada.EdicaoDoExame, declarada.MotivoDesfavoravelCodigo, enquadramento.Valor);
         RecusaDaParte[] recusas = [.. Recusas(fase, campo, condicao.Errors), .. enquadramento.Recusas];
 
         return new(recusas.Length > 0 ? null : condicao.Value, recusas);
@@ -69,9 +66,22 @@ internal static class LeituraDaRegraDeHomologacaoDaFase
 
         Result<PredicadoDnf> predicado = PredicadoDnfJson.DeJson(json);
 
-        return new(predicado.Value, Recusas(fase, campo, predicado.Errors));
+        FieldError[] erros = [.. predicado.Errors.Select(static erro => erro with
+        {
+            Error = new DomainError(erro.Error.Code, MensagemDoEnquadramento(erro.Error)),
+        })];
+        return new(predicado.Value, Recusas(fase, campo, erros));
     }
 
+    private static string MensagemDoEnquadramento(DomainError erro) => erro.Code switch
+    {
+        PredicadoDnfJson.FormaInvalida => erro.Message,
+        "CondicaoDnf.FatoObrigatorio" => "Informe o fato da condição.",
+        "CondicaoDnf.OperadorInvalido" => "O operador informado não é reconhecido.",
+        "CondicaoDnf.FormaIncoerenteComOperador" => "O formato do valor não corresponde ao operador informado.",
+        _ => "Confira a forma do enquadramento informado.",
+    };
+
     private static RecusaDaParte[] Recusas(FaseNoDocumento fase, string campo, IReadOnlyList<FieldError> erros) =>
-        [.. erros.Select(erro => new RecusaDaParte(FaseDeclarada.CampoDaRegraDeHomologacao, campo, fase.PosicaoNoDocumento, null, erro.Error))];
+        [.. erros.Select(erro => new RecusaDaParte(FaseDeclarada.CampoDaRegraDeHomologacao, string.IsNullOrEmpty(erro.Field) ? campo : erro.Field.StartsWith('[') ? $"{campo}{erro.Field}" : $"{campo}.{erro.Field}", fase.PosicaoNoDocumento, null, erro.Error))];
 }
