@@ -89,9 +89,10 @@ public sealed class AceiteDoPedido
     private async Task<(Result<PedidoDeConcessaoDto> Resposta, IEnumerable<object> Mensagens)> GravarAsync(
         PedidoDeConcessao pedido, CancellationToken cancellationToken)
     {
-        if (!await SalvouAsync(cancellationToken).ConfigureAwait(false))
+        Result gravado = await GravacaoDoPedido.GravarAsync(_unitOfWork, cancellationToken).ConfigureAwait(false);
+        if (gravado.IsFailure)
         {
-            return Recusa(PedidoHandlerErros.ConflitoDeConcorrencia());
+            return Recusa(gravado.Error!);
         }
 
         PedidoDeConcessaoDto dto = await RespostaDoPedido.ParaDtoAsync(pedido, _perfis, cancellationToken).ConfigureAwait(false);
@@ -100,20 +101,5 @@ public sealed class AceiteDoPedido
             .ConfigureAwait(false);
 
         return (Result<PedidoDeConcessaoDto>.Success(dto), mensagens);
-    }
-
-    // Com Idempotency-Key o handler captura e descarta o rastreamento (ADR-0119).
-    private async Task<bool> SalvouAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            await _unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-            return true;
-        }
-        catch (Exception ex) when (ViolacoesDeGravacao.EhConflitoDeConcorrencia(ex))
-        {
-            _unitOfWork.DescartarAlteracoesNaoSalvas();
-            return false;
-        }
     }
 }
