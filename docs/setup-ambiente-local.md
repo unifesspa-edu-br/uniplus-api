@@ -81,6 +81,7 @@ e a base de CEP no Geo. Não há passo extra além de `cp .env.example .env`.
   divergentes; ajuste o `.env` e rode `docker compose down -v`, ou suba sem a base pronta. As demais portas (inclusive `API_PORT`) podem mudar: o
   `localhost:5200` que aparece no banco é só o cache de idempotência de respostas antigas, que nunca é reproduzido.
 - **Versão da base:** vale para a migration `Inicial` da `main`. Quando a migration for regerada, os dumps precisam ser gerados de novo.
+  Com dumps de outra versão da migration, a API para na subida com a mensagem "tem migration aplicada que esta versão não conhece", que traz o comando `docker compose down -v && docker compose up`; se o volume já era novo, os dumps estão defasados e precisam ser regerados.
 
 ## Serviços e portas
 

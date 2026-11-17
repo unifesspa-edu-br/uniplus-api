@@ -64,7 +64,7 @@ public static partial class MigrationServiceCollectionExtensions
         CancellationToken cancellationToken)
     {
         string contextName = context.GetType().Name;
-        string[] pendentes = [.. await context.Database.GetPendingMigrationsAsync(cancellationToken).ConfigureAwait(false)];
+        string[] pendentes = await ConferirHistoricoEObterPendentesAsync(context, contextName, cancellationToken).ConfigureAwait(false);
         if (pendentes.Length == 0)
         {
             LogNoPendingMigrations(logger, contextName);
@@ -75,6 +75,33 @@ public static partial class MigrationServiceCollectionExtensions
         await context.Database.MigrateAsync(cancellationToken).ConfigureAwait(false);
         LogMigrationsApplied(logger, contextName);
     }
+
+    /// <summary>
+    /// As migrations do código que o banco ainda não tem. Recusa o banco que tem migration aplicada desconhecida
+    /// do código e ainda não tem a deste código: foi criado por outra versão da migration, e aplicar a desta por cima
+    /// falharia nas tabelas existentes. Sem pendentes, a migration desconhecida é só volta de imagem e não recusa.
+    /// </summary>
+    private static async Task<string[]> ConferirHistoricoEObterPendentesAsync(
+        DbContext context,
+        string contextName,
+        CancellationToken cancellationToken)
+    {
+        string[] doCodigo = [.. context.Database.GetMigrations()];
+        string[] aplicadas = [.. await context.Database.GetAppliedMigrationsAsync(cancellationToken).ConfigureAwait(false)];
+        string[] pendentes = [.. doCodigo.Except(aplicadas, StringComparer.Ordinal)];
+        string[] desconhecidas = [.. aplicadas.Except(doCodigo, StringComparer.Ordinal)];
+
+        return pendentes.Length > 0 && desconhecidas.Length > 0
+            ? throw new InvalidOperationException(MensagemDeBancoDeOutraVersao(contextName, desconhecidas, pendentes))
+            : pendentes;
+    }
+
+    private static string MensagemDeBancoDeOutraVersao(string contextName, string[] desconhecidas, string[] pendentes) =>
+        $"O banco do {contextName} tem migration aplicada que esta versão não conhece ({string.Join(", ", desconhecidas)}) " +
+        $"e ainda não tem a desta versão ({string.Join(", ", pendentes)}): foi criado por outra versão da migration, " +
+        "e aplicá-la por cima falharia nas tabelas existentes. Recrie o banco. No ambiente local, na pasta docker: " +
+        "`docker compose down -v && docker compose up`. Se o volume já era novo, os dumps de docker/base-local " +
+        "estão defasados e precisam ser regerados.";
 
     /// <summary>
     /// Registra um <see cref="IHostedService"/> que aplica as migrations EF Core do

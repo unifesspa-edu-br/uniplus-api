@@ -103,7 +103,7 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.host
-    restart: unless-stopped
+    restart: on-failure:3
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080

@@ -24,7 +24,7 @@ aguardar_http() {
         curl -fsS -o /dev/null "$url" 2>/dev/null && return 0
         sleep 3
     done
-    falha "$nome não respondeu em ${segundos}s em $url."
+    falha "$nome não respondeu em ${segundos}s em $url. Veja o motivo com: docker compose logs (na pasta docker)."
 }
 
 main() {
