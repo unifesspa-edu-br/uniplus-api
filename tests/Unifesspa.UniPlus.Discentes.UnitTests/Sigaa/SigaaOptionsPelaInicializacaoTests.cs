@@ -34,10 +34,13 @@ public sealed class SigaaOptionsPelaInicializacaoTests
         provedor.GetService<IOptions<SigaaOptions>>().Should().BeNull();
     }
 
+    /// <summary>
+    /// Um caminho relativo, como <c>/relativo</c>, chega do binder como endereço relativo e é
+    /// recusado por não ser absoluto; a credencial ausente é acumulada na mesma mensagem.
+    /// </summary>
     [Theory]
+    [InlineData("/relativo")]
     [InlineData("sigaa.exemplo.test")]
-    [InlineData("ht!tp://sigaa")]
-    [InlineData("https://[::1")]
     public void Endereco_que_nao_e_absoluto_acumula_com_a_credencial_ausente(string endereco)
     {
         using ServiceProvider provedor = Registrar(endereco, senha: "");
@@ -46,18 +49,6 @@ public sealed class SigaaOptionsPelaInicializacaoTests
 
         falhas.Should().HaveCount(2);
         falhas[0].Should().Be("Sigaa:BaseUrl precisa ser um endereço absoluto.");
-        falhas[1].Should().StartWith("Sigaa:Senha é obrigatório");
-    }
-
-    [Fact]
-    public void Caminho_relativo_e_recusado_por_nao_usar_https_e_acumula_com_a_credencial_ausente()
-    {
-        using ServiceProvider provedor = Registrar("/relativo", senha: "");
-
-        string[] falhas = FalhasAoLer(provedor);
-
-        falhas.Should().HaveCount(2);
-        falhas[0].Should().StartWith("Sigaa:BaseUrl precisa usar https.");
         falhas[1].Should().StartWith("Sigaa:Senha é obrigatório");
     }
 
@@ -71,6 +62,33 @@ public sealed class SigaaOptionsPelaInicializacaoTests
         falhas.Should().HaveCount(2);
         falhas[0].Should().StartWith("Sigaa:BaseUrl precisa usar https.");
         falhas[1].Should().StartWith("Sigaa:Senha é obrigatório");
+    }
+
+    [Fact]
+    public void Endereco_impossivel_e_recusado_junto_da_credencial_ausente()
+    {
+        using ServiceProvider provedor = Registrar("ht!tp://sigaa", senha: "");
+
+        string[] falhas = FalhasAoLer(provedor);
+
+        falhas.Should().HaveCount(2);
+        falhas[0].Should().Be("Sigaa:BaseUrl precisa ser um endereço absoluto.");
+        falhas[1].Should().StartWith("Sigaa:Senha é obrigatório");
+    }
+
+    /// <summary>
+    /// Um endereço que nem como URI se lê (como <c>https://[::1</c>) estoura no binder, antes
+    /// do validador, e a falha nomeia a chave <c>Sigaa:BaseUrl</c>. A recusa da senha só
+    /// aparece depois que o operador corrige o endereço.
+    /// </summary>
+    [Fact]
+    public void Endereco_mal_formado_de_verdade_falha_no_binder_nomeando_a_chave()
+    {
+        using ServiceProvider provedor = Registrar("https://[::1", senha: "");
+
+        Func<SigaaOptions> leitura = () => provedor.GetRequiredService<IOptions<SigaaOptions>>().Value;
+
+        leitura.Should().Throw<InvalidOperationException>().WithMessage("*Sigaa:BaseUrl*");
     }
 
     [Fact]
