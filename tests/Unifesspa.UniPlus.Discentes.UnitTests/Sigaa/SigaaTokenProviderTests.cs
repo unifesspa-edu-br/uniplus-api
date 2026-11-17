@@ -181,6 +181,48 @@ public sealed class SigaaTokenProviderTests : IDisposable
         rede.AutenticacoesRealizadas.Should().Be(1);
     }
 
+    /// <summary>
+    /// Sem emissão declarada, a validade vem da diferença entre a expiração e o relógio
+    /// local: dez minutos, menos a margem de renovação de um minuto.
+    /// </summary>
+    [Fact]
+    public async Task Sem_emissao_declarada_a_validade_vem_do_relogio_local()
+    {
+        string token = RespostasDoSigaa.TokenComExpiracaoBruta(Agora.AddMinutes(10).ToUnixTimeSeconds());
+        RedeSimulada rede = new((_, _) => RespostasDoSigaa.ComToken(token));
+
+        SigaaTokenProvider provedor = Montar(rede, out RelogioControlado relogio);
+
+        await provedor.ObterAsync(CancellationToken.None);
+
+        relogio.Avancar(TimeSpan.FromMinutes(8));
+        await provedor.ObterAsync(CancellationToken.None);
+        rede.AutenticacoesRealizadas.Should().Be(1, "ainda faltam dois minutos, mais que a margem");
+
+        relogio.Avancar(TimeSpan.FromMinutes(1.5));
+        await provedor.ObterAsync(CancellationToken.None);
+        rede.AutenticacoesRealizadas.Should().Be(2, "restam trinta segundos, menos que a margem");
+    }
+
+    /// <summary>
+    /// Uma expiração que já passou, sem emissão para comparar, não serve de validade: vale a
+    /// assumida.
+    /// </summary>
+    [Fact]
+    public async Task Expiracao_ja_vencida_sem_emissao_cai_na_validade_assumida()
+    {
+        string token = RespostasDoSigaa.TokenComExpiracaoBruta(Agora.AddSeconds(-10).ToUnixTimeSeconds());
+        RedeSimulada rede = new((_, _) => RespostasDoSigaa.ComToken(token));
+
+        SigaaTokenProvider provedor = Montar(rede, out RelogioControlado relogio);
+
+        await provedor.ObterAsync(CancellationToken.None);
+        relogio.Avancar(TimeSpan.FromMinutes(30));
+        await provedor.ObterAsync(CancellationToken.None);
+
+        rede.AutenticacoesRealizadas.Should().Be(1, "a validade assumida é de uma hora");
+    }
+
     [Fact]
     public async Task Recusa_de_credencial_falha_sem_expor_o_corpo_da_resposta()
     {

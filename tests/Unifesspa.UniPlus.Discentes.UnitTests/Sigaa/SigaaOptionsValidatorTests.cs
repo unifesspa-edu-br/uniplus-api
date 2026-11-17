@@ -8,12 +8,84 @@ using Unifesspa.UniPlus.Discentes.Infrastructure.Sigaa;
 
 public sealed class SigaaOptionsValidatorTests
 {
+    /// <summary>
+    /// Cada linha viola uma regra e nada mais além dela: a falha precisa nomear a chave.
+    /// </summary>
+    public static readonly TheoryData<string, string> ValoresRecusados = new()
+    {
+        { nameof(SigaaOptions.BaseUrl), "/relativo" },
+        { nameof(SigaaOptions.BaseUrl), "http://sigaa.exemplo.test" },
+        { nameof(SigaaOptions.Usuario), " " },
+        { nameof(SigaaOptions.Senha), "" },
+        { nameof(SigaaOptions.ItensPorPagina), "0" },
+        { nameof(SigaaOptions.ItensPorPagina), "201" },
+        { nameof(SigaaOptions.GrauDeParalelismo), "0" },
+        { nameof(SigaaOptions.MaximoDeRetentativas), "-1" },
+        { nameof(SigaaOptions.EsperaBaseEntreTentativasEmMilissegundos), "-1" },
+        { nameof(SigaaOptions.TimeoutPorTentativaEmSegundos), "0" },
+        { nameof(SigaaOptions.TimeoutTotalEmSegundos), "29" },
+        { nameof(SigaaOptions.MargemDeRenovacaoDoTokenEmSegundos), "-1" },
+        { nameof(SigaaOptions.ValidadeAssumidaDoTokenEmSegundos), "0" },
+        { nameof(SigaaOptions.ValidadeMaximaDoTokenEmSegundos), "0" },
+        { nameof(SigaaOptions.MargemDeRenovacaoDoTokenEmSegundos), "86400" },
+        { nameof(SigaaOptions.MargemDeRenovacaoDoTokenEmSegundos), "3600" },
+        { nameof(SigaaOptions.ChamadasMinimasParaAvaliarCorte), "0" },
+        { nameof(SigaaOptions.JanelaDeAmostragemDoCorteEmSegundos), "0" },
+        { nameof(SigaaOptions.JanelaDeAmostragemDoCorteEmSegundos), "59" },
+        { nameof(SigaaOptions.ProporcaoDeFalhaParaAbrirCorte), "0" },
+        { nameof(SigaaOptions.ProporcaoDeFalhaParaAbrirCorte), "1.5" },
+        { nameof(SigaaOptions.DuracaoDoCorteEmSegundos), "0" },
+    };
+
+    public static readonly TheoryData<string, string> ValoresNoLimite = new()
+    {
+        { nameof(SigaaOptions.ItensPorPagina), "1" },
+        { nameof(SigaaOptions.ItensPorPagina), "200" },
+        { nameof(SigaaOptions.GrauDeParalelismo), "1" },
+        { nameof(SigaaOptions.MaximoDeRetentativas), "0" },
+        { nameof(SigaaOptions.EsperaBaseEntreTentativasEmMilissegundos), "0" },
+        { nameof(SigaaOptions.TimeoutTotalEmSegundos), "30" },
+        { nameof(SigaaOptions.MargemDeRenovacaoDoTokenEmSegundos), "0" },
+        { nameof(SigaaOptions.ChamadasMinimasParaAvaliarCorte), "1" },
+        { nameof(SigaaOptions.JanelaDeAmostragemDoCorteEmSegundos), "60" },
+        { nameof(SigaaOptions.ProporcaoDeFalhaParaAbrirCorte), "1" },
+        { nameof(SigaaOptions.DuracaoDoCorteEmSegundos), "1" },
+    };
+
     [Fact]
     public void Aceita_configuracao_completa_e_coerente()
     {
-        ValidateOptionsResult resultado = Validar(Basicas());
+        ValidateOptionsResult resultado = Validar(OpcoesDoSigaa.Com());
 
         resultado.Succeeded.Should().BeTrue();
+    }
+
+    [Theory]
+    [MemberData(nameof(ValoresRecusados))]
+    public void Recusa_o_valor_que_viola_a_regra_e_nomeia_a_chave(string propriedade, string valor)
+    {
+        ValidateOptionsResult resultado = Validar(OpcoesDoSigaa.Com((propriedade, valor)));
+
+        resultado.Failed.Should().BeTrue();
+        resultado.FailureMessage.Should().Contain($"{SigaaOptions.SectionName}:{propriedade}");
+    }
+
+    [Theory]
+    [MemberData(nameof(ValoresNoLimite))]
+    public void Aceita_o_valor_no_limite_da_regra(string propriedade, string valor)
+    {
+        ValidateOptionsResult resultado = Validar(OpcoesDoSigaa.Com((propriedade, valor)));
+
+        resultado.Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Configuracao_vazia_recusa_na_ordem_em_que_as_regras_sao_declaradas()
+    {
+        ValidateOptionsResult resultado = Validar(new SigaaOptions { ItensPorPagina = 0 });
+
+        (resultado.Failures ?? []).Select(falha => falha.Split(' ')[0]).Should().Equal(
+            "Sigaa:BaseUrl", "Sigaa:Usuario", "Sigaa:Senha", "Sigaa:ItensPorPagina");
     }
 
     [Theory]
@@ -23,9 +95,8 @@ public sealed class SigaaOptionsValidatorTests
     {
         // A integração transporta senha de serviço, token e CPF. Em canal não cifrado,
         // tudo isso trafega legível.
-        ValidateOptionsResult resultado = Validar(Basicas(baseUrl: endereco));
+        ValidateOptionsResult resultado = Validar(OpcoesDoSigaa.Com((nameof(SigaaOptions.BaseUrl), endereco)));
 
-        resultado.Failed.Should().BeTrue();
         resultado.FailureMessage.Should().Contain("https");
     }
 
@@ -35,75 +106,30 @@ public sealed class SigaaOptionsValidatorTests
         // Com a margem alcançando a validade assumida, todo token obtido quando a
         // expiração não é legível já nasce vencido — e cada chamada ao SIGAA passaria a
         // esperar por uma autenticação nova, uma por chamada.
-        ValidateOptionsResult resultado = Validar(
-            Basicas(validadeAssumida: 60, margemDeRenovacao: 60));
+        ValidateOptionsResult resultado = Validar(OpcoesDoSigaa.Com(
+            (nameof(SigaaOptions.ValidadeAssumidaDoTokenEmSegundos), "60"),
+            (nameof(SigaaOptions.MargemDeRenovacaoDoTokenEmSegundos), "60")));
 
-        resultado.Failed.Should().BeTrue();
         resultado.FailureMessage.Should().Contain("ValidadeAssumida");
     }
 
     [Fact]
-    public void Recusa_janela_do_corte_menor_que_o_dobro_do_limite_por_tentativa()
+    public void Recusa_janela_da_interrupcao_menor_que_o_dobro_do_limite_por_tentativa()
     {
-        ValidateOptionsResult resultado = Validar(
-            Basicas(timeoutPorTentativa: 30, janelaDoCorte: 45));
+        ValidateOptionsResult resultado = Validar(OpcoesDoSigaa.Com(
+            (nameof(SigaaOptions.TimeoutPorTentativaEmSegundos), "30"),
+            (nameof(SigaaOptions.JanelaDeAmostragemDoCorteEmSegundos), "45")));
 
-        resultado.Failed.Should().BeTrue();
         resultado.FailureMessage.Should().Contain("dobro");
     }
 
     [Fact]
     public void Recusa_senha_ausente_e_diz_de_onde_ela_deveria_vir()
     {
-        ValidateOptionsResult resultado = Validar(Basicas(senha: ""));
+        ValidateOptionsResult resultado = Validar(OpcoesDoSigaa.Com((nameof(SigaaOptions.Senha), "")));
 
-        resultado.Failed.Should().BeTrue();
         resultado.FailureMessage.Should().Contain("Sigaa__Senha");
     }
-
-    [Fact]
-    public void Recusa_espera_negativa_entre_tentativas()
-    {
-        // A biblioteca de resiliência também recusaria, mas só ao montar a política, na
-        // primeira consulta — o processo já teria se declarado pronto.
-        ValidateOptionsResult resultado = Validar(Basicas(esperaEntreTentativas: -1));
-
-        resultado.Failed.Should().BeTrue();
-        resultado.FailureMessage.Should().Contain("EsperaBase");
-    }
-
-    [Fact]
-    public void Recusa_pagina_maior_que_o_teto_da_origem()
-    {
-        ValidateOptionsResult resultado = Validar(
-            Basicas(itensPorPagina: SigaaOptions.MaximoItensPorPagina + 1));
-
-        resultado.Failed.Should().BeTrue();
-    }
-
-    /// <summary>
-    /// Configuração válida, com um campo por vez substituído pelo que o teste quer provar.
-    /// </summary>
-    private static SigaaOptions Basicas(
-        string baseUrl = "https://sigaa.exemplo.test",
-        string senha = "segredo",
-        int itensPorPagina = SigaaOptions.MaximoItensPorPagina,
-        int validadeAssumida = 3600,
-        int margemDeRenovacao = 60,
-        int timeoutPorTentativa = 30,
-        int janelaDoCorte = 120,
-        int esperaEntreTentativas = 500) => new()
-        {
-            BaseUrl = baseUrl,
-            Usuario = "servico",
-            Senha = senha,
-            ItensPorPagina = itensPorPagina,
-            ValidadeAssumidaDoTokenEmSegundos = validadeAssumida,
-            MargemDeRenovacaoDoTokenEmSegundos = margemDeRenovacao,
-            TimeoutPorTentativaEmSegundos = timeoutPorTentativa,
-            JanelaDeAmostragemDoCorteEmSegundos = janelaDoCorte,
-            EsperaBaseEntreTentativasEmMilissegundos = esperaEntreTentativas,
-        };
 
     private static ValidateOptionsResult Validar(SigaaOptions opcoes) =>
         new SigaaOptionsValidator().Validate(name: null, opcoes);
