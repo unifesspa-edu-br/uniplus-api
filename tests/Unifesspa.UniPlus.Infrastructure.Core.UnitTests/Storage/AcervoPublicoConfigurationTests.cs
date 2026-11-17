@@ -32,19 +32,64 @@ public sealed class AcervoPublicoConfigurationTests
             .WithMessage("*https*");
     }
 
-    private static void Resolver(string ambiente, string? enderecoBase)
+    [Fact(DisplayName = "Fora de Development, sem o bucket do acervo a partida falha")]
+    public void ForaDeDevelopment_SemBucket_Falha()
     {
-        Dictionary<string, string?> config = new()
+        Action resolver = () => Resolver(Environments.Production, "https://uniplus.unifesspa.edu.br/acervo", bucket: null);
+
+        resolver.Should().Throw<OptionsValidationException>()
+            .WithMessage("*AcervoPublico:Bucket must be configured outside Development.*");
+    }
+
+    [Theory(DisplayName = "O endereço do acervo com query, fragmento ou sem esquema absoluto é recusado")]
+    [InlineData("https://uniplus.unifesspa.edu.br/acervo?x=1")]
+    [InlineData("https://uniplus.unifesspa.edu.br/acervo#topo")]
+    [InlineData("/acervo")]
+    public void EnderecoBaseInvalido_Falha(string enderecoBase)
+    {
+        Action resolver = () => Resolver(Environments.Production, enderecoBase);
+
+        resolver.Should().Throw<OptionsValidationException>()
+            .WithMessage("*AcervoPublico:EnderecoBase must be an absolute https URI without query or fragment (http is accepted only in Development).*");
+    }
+
+    [Fact(DisplayName = "Em Development, o endereço do acervo em http é aceito")]
+    public void EmDevelopment_EnderecoBaseHttp_NaoFalha()
+    {
+        Action resolver = () => Resolver(Environments.Development, "http://localhost:9000/acervo");
+
+        resolver.Should().NotThrow();
+    }
+
+    [Fact(DisplayName = "Em Development, sem bucket nem endereço a partida não falha")]
+    public void EmDevelopment_SemBucketNemEndereco_NaoFalha()
+    {
+        Action resolver = () => Resolver(Environments.Development, enderecoBase: null, bucket: null);
+
+        resolver.Should().NotThrow();
+    }
+
+    [Fact(DisplayName = "Fora de Development, o endereço do acervo em https é aceito")]
+    public void ForaDeDevelopment_EnderecoBaseHttps_NaoFalha()
+    {
+        Action resolver = () => Resolver(Environments.Production, "https://uniplus.unifesspa.edu.br/acervo");
+
+        resolver.Should().NotThrow();
+    }
+
+    private static void Resolver(string ambiente, string? enderecoBase, string? bucket = "uniplus-acervo-publico")
+    {
+        Dictionary<string, string?> configuracao = new()
         {
-            ["AcervoPublico:Bucket"] = "uniplus-acervo-publico",
+            ["AcervoPublico:Bucket"] = bucket,
             ["AcervoPublico:EnderecoBase"] = enderecoBase,
         };
         ServiceCollection services = new();
         services.AddUniPlusAcervoPublico(
-            new ConfigurationBuilder().AddInMemoryCollection(config).Build(),
+            new ConfigurationBuilder().AddInMemoryCollection(configuracao).Build(),
             new HostingEnvironment { EnvironmentName = ambiente });
 
-        using ServiceProvider provider = services.BuildServiceProvider();
-        _ = provider.GetRequiredService<IOptions<AcervoPublicoOptions>>().Value;
+        using ServiceProvider provedor = services.BuildServiceProvider();
+        _ = provedor.GetRequiredService<IOptions<AcervoPublicoOptions>>().Value;
     }
 }
