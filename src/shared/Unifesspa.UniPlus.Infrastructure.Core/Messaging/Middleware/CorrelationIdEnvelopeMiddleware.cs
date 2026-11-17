@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.Messaging.Middleware;
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
 using Serilog.Context;
@@ -101,6 +102,11 @@ public static partial class CorrelationIdEnvelopeMiddleware
     ///   sem origem HTTP nem header de Kafka (scheduler interno, retry de mensagem que perdeu
     ///   o header). Garante que todo handler emita logs com pelo menos um id estável.</description></item>
     /// </list>
+    /// <para>O header do envelope é reescrito sempre: mesmo quando chegou ausente ou inválido,
+    /// <c>PropagateIncomingHeaderToOutgoing</c> repassa o id canônico a qualquer mensagem de saída do handler
+    /// (sem isso, o primeiro trecho de um fluxo — HTTP, <c>ICommandBus.Send</c>, cascading — sairia sem o header).
+    /// A tag em <see cref="Activity.Current"/> é opcional: ela é nula quando o OpenTelemetry não está configurado
+    /// (suítes de teste só HTTP com <c>Observability:Enabled=false</c>).</para>
     /// </remarks>
     /// <param name="envelope">Envelope Wolverine do incoming — fornecido pelo code-gen.</param>
     /// <param name="accessor"><see cref="ICorrelationIdAccessor"/> resolvido via DI pelo
@@ -118,15 +124,7 @@ public static partial class CorrelationIdEnvelopeMiddleware
         ArgumentNullException.ThrowIfNull(accessor);
 
         string correlationId = ObterOuGerarCorrelationId(envelope, accessor);
-
-        // Reescreve sempre — assim, mesmo quando o header chegou ausente ou inválido,
-        // PropagateIncomingHeaderToOutgoing repassa o GUID gerado aqui para qualquer
-        // cascading message saída do handler. Sem isso, traços que entram pela primeira
-        // vez no sistema (ex.: HTTP → ICommandBus.Send → cascading) sairiam sem o header.
         envelope.Headers[HeaderName] = correlationId;
-
-        // Activity.Current pode ser null quando OTel não está wired (suites de teste
-        // HTTP-only com Observability:Enabled=false). O ?. mantém o middleware safe.
         Activity.Current?.SetTag(ActivityTagName, correlationId);
 
         return LogContext.PushProperty(LogContextProperty, correlationId);
@@ -149,36 +147,27 @@ public static partial class CorrelationIdEnvelopeMiddleware
         scope.Dispose();
     }
 
+    /// <summary>
+    /// O identificador da requisição HTTP só é usado quando o envelope não traz um cabeçalho válido. Quando o
+    /// controlador chama <c>ICommandBus.Send</c>, o Wolverine cria o envelope local sem esse cabeçalho, e o
+    /// processamento precisa registrar o mesmo identificador da requisição original. Gerar outro GUID substituiria
+    /// o <c>LogContext</c> HTTP e impediria acompanhar a requisição do início ao fim. Um novo GUID é gerado apenas
+    /// quando não há origem HTTP nem cabeçalho do Kafka, como em tarefas agendadas ou mensagens reenviadas sem cabeçalho.
+    /// </summary>
     private static string ObterOuGerarCorrelationId(Envelope envelope, ICorrelationIdAccessor accessor)
     {
-        // 1. Header explícito no envelope é a fonte canônica para fluxos cross-host
-        //    (consumer recebendo de Kafka via outbox). O valor já foi gerado/validado
-        //    pelo produtor — preservamos identicamente.
-        if (envelope.Headers.TryGetValue(HeaderName, out string? valor)
-            && !string.IsNullOrEmpty(valor)
-            && FormatoValido().IsMatch(valor))
+        if (envelope.Headers.TryGetValue(HeaderName, out string? doEnvelope) && TemFormatoValido(doEnvelope))
         {
-            return valor;
+            return doEnvelope;
         }
 
-        // 2. Fallback ambient para fluxos in-process iniciados por HTTP: controller chama
-        //    ICommandBus.Send → Wolverine cria envelope local sem o header (WolverineCommandBus
-        //    delega ao InvokeAsync sem DeliveryOptions). O CorrelationIdMiddleware HTTP
-        //    populou o AsyncLocal do CorrelationIdAccessor antes do Send; preservamos esse
-        //    valor para que o handler emita logs no mesmo id que o request original.
-        //    Sem isto, geraríamos um segundo GUID e sobrescreveríamos o LogContext do HTTP,
-        //    quebrando o drill-down end-to-end.
-        string? ambient = accessor.CorrelationId;
-        if (!string.IsNullOrEmpty(ambient) && FormatoValido().IsMatch(ambient))
-        {
-            return ambient;
-        }
+        string? doAmbiente = accessor.CorrelationId;
 
-        // 3. Último recurso: handler invocado sem origem HTTP nem header de Kafka
-        //    (ex.: scheduler interno, retry de mensagem que perdeu o header). Gera GUID
-        //    novo para que o handler tenha pelo menos um id estável durante sua execução.
-        return Guid.NewGuid().ToString("D");
+        return TemFormatoValido(doAmbiente) ? doAmbiente : Guid.NewGuid().ToString("D");
     }
+
+    private static bool TemFormatoValido([NotNullWhen(true)] string? valor) =>
+        !string.IsNullOrEmpty(valor) && FormatoValido().IsMatch(valor);
 
     // Pattern consumido também por CorrelationIdMiddleware (HTTP) via
     // CorrelationIdMiddleware.FormatoValidoPattern — single source of truth garante
