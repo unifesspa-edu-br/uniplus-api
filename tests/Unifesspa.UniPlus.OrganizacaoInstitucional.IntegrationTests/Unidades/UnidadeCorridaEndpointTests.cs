@@ -59,7 +59,7 @@ public sealed class UnidadeCorridaEndpointTests
 
     private async Task ConferirQueOConflitoDoSlugSeRepeteNoReenvioAsync(HttpMethod metodo, string recurso, object corpo)
     {
-        var consultas = new ConsultasObsoletasContadas();
+        var consultas = new ConsultasAoCadastroContadas();
         await using WebApplicationFactory<HostAssemblyMarker> host = ComConsultaObsoleta(consultas);
         using HttpClient client = host.CreateClient();
         string chave = Guid.NewGuid().ToString();
@@ -101,7 +101,7 @@ public sealed class UnidadeCorridaEndpointTests
             unidadeAcademica = false,
         };
 
-    private WebApplicationFactory<HostAssemblyMarker> ComConsultaObsoleta(ConsultasObsoletasContadas consultas) =>
+    private WebApplicationFactory<HostAssemblyMarker> ComConsultaObsoleta(ConsultasAoCadastroContadas consultas) =>
         _fixture.Factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
         {
             // Registro por tipo, como o do repositório real: o codegen do Wolverine monta o handler sem service
