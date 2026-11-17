@@ -50,22 +50,9 @@ public sealed class ProfileEndpointsTests : IClassFixture<IngressoApiFactory>
     public async Task GetMe_ShouldReturnProfile_WithCpfAndNomeSocial_WhenTokenIncludesUniPlusScope()
     {
         using WebApplicationFactory<Unifesspa.UniPlus.Host.HostAssemblyMarker> factory = ComConcessoes();
-        using HttpClient client = factory.CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
-            TestAuthHandler.AuthorizationScheme,
-            TestAuthHandler.TokenValue);
-        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, "4dc27b1b-c56f-488a-a7a2-2a30bdbc08b8");
-        client.DefaultRequestHeaders.Add(TestAuthHandler.NameHeader, "Maria Santos");
-        client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, "maria@teste.unifesspa.edu.br");
-        client.DefaultRequestHeaders.Add(TestAuthHandler.RolesHeader, "candidato");
-        client.DefaultRequestHeaders.Add(TestAuthHandler.CpfHeader, "529.982.247-25");
-        client.DefaultRequestHeaders.Add(TestAuthHandler.NomeSocialHeader, "Maria dos Santos");
-
-        HttpResponseMessage response = await client.GetAsync(GetMeUri);
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        using JsonDocument payload = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+        using HttpClient client = ClienteAutenticado(factory);
+        ComMariaSantos(client);
+        using JsonDocument payload = await ConsultarPerfilAsync(client);
 
         payload.RootElement.GetProperty("userId").GetString().Should().Be("4dc27b1b-c56f-488a-a7a2-2a30bdbc08b8");
         payload.RootElement.GetProperty("name").GetString().Should().Be("Maria Santos");
@@ -81,16 +68,8 @@ public sealed class ProfileEndpointsTests : IClassFixture<IngressoApiFactory>
     public async Task GetMe_ShouldReturnNullNomeSocial_WhenClaimAbsent()
     {
         using WebApplicationFactory<Unifesspa.UniPlus.Host.HostAssemblyMarker> factory = ComConcessoes();
-        using HttpClient client = factory.CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
-            TestAuthHandler.AuthorizationScheme,
-            TestAuthHandler.TokenValue);
-
-        HttpResponseMessage response = await client.GetAsync(GetMeUri);
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        using JsonDocument payload = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+        using HttpClient client = ClienteAutenticado(factory);
+        using JsonDocument payload = await ConsultarPerfilAsync(client);
 
         payload.RootElement.GetProperty("cpf").GetString().Should().Be(TestAuthHandler.CpfPadrao);
         payload.RootElement.GetProperty("nomeSocial").ValueKind.Should().Be(JsonValueKind.Null);
@@ -100,34 +79,69 @@ public sealed class ProfileEndpointsTests : IClassFixture<IngressoApiFactory>
     public async Task GetMe_ShouldReturnGrantedProfiles_WithScopeUnitAndExpiry()
     {
         Guid unidadeId = Guid.CreateVersion7();
-        ConcessaoAtiva institucional = new(Guid.CreateVersion7(), Guid.CreateVersion7(), null, "Consulta institucional", null, true, null, []);
-        ConcessaoAtiva daUnidade = new(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), null, "Gestor de processo seletivo", unidadeId, false, DateTimeOffset.UtcNow.AddDays(30), []);
+        (ConcessaoAtiva institucional, ConcessaoAtiva daUnidade) = ConcessoesDeExemplo(unidadeId);
         using WebApplicationFactory<Unifesspa.UniPlus.Host.HostAssemblyMarker> factory = ComConcessoes(
             [daUnidade, institucional],
             new UnidadeView(unidadeId, "CEPS", "ceps", "Centro de Processos Seletivos", null, "Centro", true, null));
-        using HttpClient client = factory.CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
-            TestAuthHandler.AuthorizationScheme,
-            TestAuthHandler.TokenValue);
-
-        HttpResponseMessage response = await client.GetAsync(GetMeUri);
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        using JsonDocument payload = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+        using HttpClient client = ClienteAutenticado(factory);
+        using JsonDocument payload = await ConsultarPerfilAsync(client);
         JsonElement[] perfis = [.. payload.RootElement.GetProperty("perfis").EnumerateArray()];
 
         perfis.Select(static p => p.GetProperty("nome").GetString())
             .Should().Equal("Consulta institucional", "Gestor de processo seletivo");
-        perfis[0].GetProperty("escopoTipo").GetString().Should().Be("instituicao");
-        perfis[0].GetProperty("unidadeSigla").ValueKind.Should().Be(JsonValueKind.Null);
-        perfis[1].GetProperty("concessaoId").GetGuid().Should().Be(daUnidade.ConcessaoId);
-        perfis[1].GetProperty("escopoTipo").GetString().Should().Be("unidade");
-        perfis[1].GetProperty("unidadeId").GetGuid().Should().Be(unidadeId);
-        perfis[1].GetProperty("unidadeSigla").GetString().Should().Be("CEPS");
-        perfis[1].GetProperty("unidadeNome").GetString().Should().Be("Centro de Processos Seletivos");
-        perfis[1].GetProperty("validaAte").GetDateTimeOffset().Should().BeAfter(DateTimeOffset.UtcNow);
+        ConferirPerfilInstitucional(perfis[0]);
+        ConferirPerfilDaUnidade(perfis[1], unidadeId, daUnidade);
+    }
+
+    private static HttpClient ClienteAutenticado(WebApplicationFactory<Unifesspa.UniPlus.Host.HostAssemblyMarker> factory)
+    {
+        HttpClient client = factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+            TestAuthHandler.AuthorizationScheme,
+            TestAuthHandler.TokenValue);
+        return client;
+    }
+
+    private static void ComMariaSantos(HttpClient client)
+    {
+        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, "4dc27b1b-c56f-488a-a7a2-2a30bdbc08b8");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.NameHeader, "Maria Santos");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, "maria@teste.unifesspa.edu.br");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.RolesHeader, "candidato");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.CpfHeader, "529.982.247-25");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.NomeSocialHeader, "Maria dos Santos");
+    }
+
+    private static async Task<JsonDocument> ConsultarPerfilAsync(HttpClient client)
+    {
+        HttpResponseMessage response = await client.GetAsync(GetMeUri);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        return await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+    }
+
+    private static (ConcessaoAtiva Institucional, ConcessaoAtiva DaUnidade) ConcessoesDeExemplo(Guid unidadeId) =>
+    (
+        new ConcessaoAtiva(Guid.CreateVersion7(), Guid.CreateVersion7(), null, "Consulta institucional", null, true, null, []),
+        new ConcessaoAtiva(
+            Guid.CreateVersion7(), Guid.CreateVersion7(), null, "Gestor de processo seletivo", unidadeId, false, DateTimeOffset.UtcNow.AddDays(30), [])
+    );
+
+    private static void ConferirPerfilInstitucional(JsonElement perfil)
+    {
+        perfil.GetProperty("escopoTipo").GetString().Should().Be("instituicao");
+        perfil.GetProperty("unidadeSigla").ValueKind.Should().Be(JsonValueKind.Null);
+    }
+
+    private static void ConferirPerfilDaUnidade(JsonElement perfil, Guid unidadeId, ConcessaoAtiva concessao)
+    {
+        perfil.GetProperty("concessaoId").GetGuid().Should().Be(concessao.ConcessaoId);
+        perfil.GetProperty("escopoTipo").GetString().Should().Be("unidade");
+        perfil.GetProperty("unidadeId").GetGuid().Should().Be(unidadeId);
+        perfil.GetProperty("unidadeSigla").GetString().Should().Be("CEPS");
+        perfil.GetProperty("unidadeNome").GetString().Should().Be("Centro de Processos Seletivos");
+        perfil.GetProperty("validaAte").GetDateTimeOffset().Should().BeAfter(DateTimeOffset.UtcNow);
     }
 
     // A fábrica sobe sem banco: as concessões e as unidades vêm de dublês.
