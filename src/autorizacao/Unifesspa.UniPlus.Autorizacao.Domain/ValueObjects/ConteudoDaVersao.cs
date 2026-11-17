@@ -12,13 +12,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public sealed record ConteudoDaVersao
 {
-    private const int NomeMinLength = 3;
-    private const int NomeMaxLength = 120;
-    private const int DescricaoMinLength = 3;
-    private const int DescricaoMaxLength = 500;
-    private const int ProtocoloMinLength = 1;
-    private const int ProtocoloMaxLength = 60;
-
     public string Nome { get; }
 
     public string Descricao { get; }
@@ -52,42 +45,33 @@ public sealed record ConteudoDaVersao
     {
         ArgumentNullException.ThrowIfNull(catalogo);
 
-        string? nomeNormalizado = TextoLivre.Normalizar(nome, NomeMinLength, NomeMaxLength);
-        string? descricaoNormalizada = TextoLivre.Normalizar(descricao, DescricaoMinLength, DescricaoMaxLength);
-        string? protocoloNormalizado = TextoLivre.Normalizar(protocolo, ProtocoloMinLength, ProtocoloMaxLength);
-
-        // Códigos repetidos na entrada se consolidam sem recusa.
-        string[] codigos = [.. (permissoes ?? []).Select(static c => c?.Trim() ?? string.Empty).Distinct(StringComparer.Ordinal)];
-
-        List<FieldError> erros =
-        [
-            .. ErrosDosTextos(nomeNormalizado, descricaoNormalizada, protocoloNormalizado),
-            .. ValidarPermissoes(codigos, catalogo),
-            .. DocumentoDaVersao.ValidarTamanho(tamanhoDoDocumento),
-        ];
+        TextosDaVersao textos = TextosDaVersao.Normalizar(nome, descricao, protocolo);
+        string[] codigos = CodigosConsolidados(permissoes);
+        List<FieldError> erros = ErrosDoConteudo(textos, codigos, tamanhoDoDocumento, catalogo);
 
         return erros.Count > 0
             ? Result<ConteudoDaVersao>.ValidationFailure(erros)
             : Result<ConteudoDaVersao>.Success(new ConteudoDaVersao(
-                nomeNormalizado!, descricaoNormalizada!, Catalogar(codigos, catalogo), protocoloNormalizado!, tamanhoDoDocumento));
+                textos.Nome!, textos.Descricao!, Catalogar(codigos, catalogo), textos.Protocolo!, tamanhoDoDocumento));
     }
+
+    internal static FieldError Erro(string campo, string codigo, string mensagem) => new(campo, new DomainError(codigo, mensagem));
+
+    /// <summary>A ordem dos erros do lote: textos, permissões, tamanho do documento (ADR-0125).</summary>
+    private static List<FieldError> ErrosDoConteudo(
+        TextosDaVersao textos, string[] codigos, long tamanhoDoDocumento, ICatalogoDePermissoesConsultavel catalogo) =>
+        [
+            .. textos.Erros(),
+            .. ValidarPermissoes(codigos, catalogo),
+            .. DocumentoDaVersao.ValidarTamanho(tamanhoDoDocumento),
+        ];
+
+    /// <summary>Os códigos da entrada sem espaços nas pontas; os repetidos se consolidam sem recusa.</summary>
+    private static string[] CodigosConsolidados(IEnumerable<string>? permissoes) =>
+        [.. (permissoes ?? []).Select(static c => c?.Trim() ?? string.Empty).Distinct(StringComparer.Ordinal)];
 
     private static PermissaoCatalogada[] Catalogar(string[] codigos, ICatalogoDePermissoesConsultavel catalogo) =>
         [.. codigos.Select(c => new PermissaoCatalogada(c, catalogo.Sensibilidade(c), catalogo.Existe(c) && catalogo.DeUnidade(c)))];
-
-    private static IEnumerable<FieldError> ErrosDosTextos(string? nome, string? descricao, string? protocolo) =>
-        new[]
-        {
-            nome is null
-                ? Erro("nome", PerfilErrorCodes.NomeInvalido, $"O nome do perfil é obrigatório e deve ter entre {NomeMinLength} e {NomeMaxLength} caracteres.")
-                : null,
-            descricao is null
-                ? Erro("descricao", PerfilErrorCodes.DescricaoInvalida, $"A descrição do perfil é obrigatória e deve ter entre {DescricaoMinLength} e {DescricaoMaxLength} caracteres.")
-                : null,
-            protocolo is null
-                ? Erro("protocolo", PerfilErrorCodes.ProtocoloInvalido, $"O protocolo do documento instituidor é obrigatório e deve ter até {ProtocoloMaxLength} caracteres.")
-                : null,
-        }.OfType<FieldError>();
 
     private static IEnumerable<FieldError> ValidarPermissoes(string[] codigos, ICatalogoDePermissoesConsultavel catalogo) =>
         codigos.Length == 0
@@ -120,6 +104,4 @@ public sealed record ConteudoDaVersao
             ? Erro("permissoes", PerfilErrorCodes.PermissaoReservada, $"Permissões reservadas aos perfis de governança: {string.Join(", ", reservadas)}.")
             : null;
     }
-
-    private static FieldError Erro(string campo, string codigo, string mensagem) => new(campo, new DomainError(codigo, mensagem));
 }
