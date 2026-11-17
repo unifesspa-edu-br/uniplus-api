@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.Commands.Providencias;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.UnitTests;
+using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 
 /// <summary>
 /// O cenário dos casos de uso da providência: os repositórios e a unidade de trabalho substituídos, os avisos de verdade
@@ -69,8 +70,8 @@ internal sealed class CenarioDaProvidencia
     /// <summary>A concessão como os repositórios a leem: sob a trava compartilhada, com o perfil e travada para alterar.</summary>
     public Concessao ComConcessao(Concessao concessao)
     {
-        Providencias.ObterConcessaoSobTravaCompartilhadaAsync(concessao.Id, Arg.Any<CancellationToken>()).Returns(new ConcessaoDaProvidencia(concessao, PerfilNome));
-        Concessoes.ObterComPerfilAsync(concessao.Id, Arg.Any<CancellationToken>()).Returns(new ConcessaoComPerfil(concessao, PerfilNome, 1));
+        Providencias.ObterConcessaoSobTravaCompartilhadaAsync(concessao.Id, Arg.Any<CancellationToken>()).Returns(new ConcessaoDaProvidencia(concessao, NomeDoPerfil.Reidratar(PerfilNome)));
+        Concessoes.ObterComPerfilAsync(concessao.Id, Arg.Any<CancellationToken>()).Returns(new ConcessaoComPerfil(concessao, NomeDoPerfil.Reidratar(PerfilNome), 1));
         Concessoes.ObterParaAlterarAsync(concessao.Id, Arg.Any<CancellationToken>()).Returns(concessao);
         return concessao;
     }

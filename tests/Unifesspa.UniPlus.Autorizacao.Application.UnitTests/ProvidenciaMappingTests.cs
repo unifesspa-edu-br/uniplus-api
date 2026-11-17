@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.UnitTests;
+using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 
 /// <summary>A providência como a API a expõe, na leitura e na trilha da concessão.</summary>
 public sealed class ProvidenciaMappingTests
@@ -94,5 +95,5 @@ public sealed class ProvidenciaMappingTests
     }
 
     private static ProvidenciaComConcessao Item(Providencia p, ProvidenciaBuilder cenario) =>
-        new(p, new ConcessaoDaProvidencia(cenario.Concessao, CenarioDaProvidencia.PerfilNome));
+        new(p, new ConcessaoDaProvidencia(cenario.Concessao, NomeDoPerfil.Reidratar(CenarioDaProvidencia.PerfilNome)));
 }

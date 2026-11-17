@@ -90,5 +90,5 @@ public sealed class ConcessoesAtivasDoSujeito : IConcessoesAtivasDoSujeito
     ];
 
     private static ConcessaoAtiva ConcessaoAtivaDe(ConcessaoLida c, IReadOnlyList<string> permissoes) =>
-        new(c.Id, c.PerfilId, c.VersaoId, c.PerfilNome, c.UnidadeId, c.EscopoTipo == TipoDeEscopo.Instituicao, c.ValidaAte, permissoes);
+        new(c.Id, c.PerfilId, c.VersaoId, c.PerfilNome.Valor, c.UnidadeId, c.EscopoTipo == TipoDeEscopo.Instituicao, c.ValidaAte, permissoes);
 }

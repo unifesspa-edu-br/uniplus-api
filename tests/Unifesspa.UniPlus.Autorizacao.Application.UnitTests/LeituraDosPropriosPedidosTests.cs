@@ -188,7 +188,7 @@ public sealed class LeituraDosPropriosPedidosTests
     {
         IPedidoDeConcessaoRepository repository = Substitute.For<IPedidoDeConcessaoRepository>();
         repository.ListarPaginadoAsync(default!, default, default, default, default, default)
-            .ReturnsForAnyArgs(([.. pedidos.Select(static p => new PedidoComPerfil(p, "Análise de atendimento", 1))], null, null));
+            .ReturnsForAnyArgs(([.. pedidos.Select(static p => new PedidoComPerfil(p, NomeDoPerfil.Reidratar("Análise de atendimento"), 1))], null, null));
 
         return ListarPedidosDeConcessaoQueryHandler.Handle(
             new ListarPedidosDeConcessaoQuery(FilaDePedidos.Meus, null, null, null, 10, PaginationDirection.Next),

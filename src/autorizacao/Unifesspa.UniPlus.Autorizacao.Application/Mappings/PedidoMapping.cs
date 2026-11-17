@@ -34,7 +34,7 @@ public static class PedidoMapping
         return new PedidoResumoDto(
             p.Id, p.Andamento.Situacao.ToCodigo(), p.Andamento.EtapaAtual?.ToCodigo(),
             Beneficiario(p),
-            new PerfilResumoDto(p.PerfilId, item.PerfilNome),
+            new PerfilResumoDto(p.PerfilId, item.PerfilNome.Valor),
             item.Versao, Escopo(p), p.Declaracao.Justificativa,
             p.CriadoEm, p.AguardaAceiteDoTermo);
     }

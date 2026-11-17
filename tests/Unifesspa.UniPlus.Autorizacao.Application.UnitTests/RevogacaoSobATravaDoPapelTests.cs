@@ -113,7 +113,7 @@ public sealed class RevogacaoSobATravaDoPapelTests
         Perfil perfil = PerfisDeTeste.DeGovernanca("Perfil de teste", "Perfil de teste.", ["autorizacao:revisoes:conduzir"], new CatalogoLivre());
         Concessao concessao = ConcessaoBuilder.DoPerfil(perfil, new CatalogoLivre()).Para(Leandro, EmailDoBeneficiario).ConcedidaPor(Diogo).Construir();
         typeof(Concessao).GetProperty(nameof(Concessao.PerfilId))!.SetValue(concessao, perfilId);
-        _repositorio.ObterComPerfilAsync(concessao.Id, Arg.Any<CancellationToken>()).Returns(new ConcessaoComPerfil(concessao, perfil.Nome, null));
+        _repositorio.ObterComPerfilAsync(concessao.Id, Arg.Any<CancellationToken>()).Returns(new ConcessaoComPerfil(concessao, NomeDoPerfil.Reidratar(perfil.Nome), null));
         _repositorio.ObterParaAlterarAsync(concessao.Id, Arg.Any<CancellationToken>()).Returns(concessao);
         return concessao;
     }

@@ -90,7 +90,7 @@ public sealed partial class AvisosDaProvidencia
     {
         string link = tipo == TipoDeAviso.ConcessaoRevogadaNoAtendimento ? _link.DoNovoPedido() : _link.DaProvidencia(item.Providencia.Id);
 
-        return new PedidoDeAviso(new ModeloDeAviso(tipo, item.Alvo.PerfilNome, null, [], link), item.Providencia.Id, string.Empty, destinatarios, excluidos);
+        return new PedidoDeAviso(new ModeloDeAviso(tipo, item.Alvo.PerfilNome.Valor, null, [], link), item.Providencia.Id, string.Empty, destinatarios, excluidos);
     }
 
     [LoggerMessage(

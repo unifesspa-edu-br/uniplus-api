@@ -103,5 +103,5 @@ public sealed class AvisosDaProvidenciaTests
 
     private Task<IReadOnlyList<EnviarEmail>> AvisarAsync(ProvidenciaBuilder cenario, Func<ProvidenciaBuilder, Providencia> montar) =>
         _cenario.Avisos.AvisarAsync(
-            new ProvidenciaComConcessao(montar(cenario), new ConcessaoDaProvidencia(cenario.Concessao, CenarioDaProvidencia.PerfilNome)), CancellationToken.None);
+            new ProvidenciaComConcessao(montar(cenario), new ConcessaoDaProvidencia(cenario.Concessao, NomeDoPerfil.Reidratar(CenarioDaProvidencia.PerfilNome))), CancellationToken.None);
 }

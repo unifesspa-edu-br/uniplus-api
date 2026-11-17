@@ -43,7 +43,7 @@ public sealed class RevogacaoDoItemDaRevisaoTests
     {
         _revisao = RevisaoDeAcessos.Abrir(Marlene, [_designacao.Id], Agora.AddDays(-1));
         _revisoes.ObterParaAlterarAsync(_revisao.Id, Arg.Any<CancellationToken>()).Returns(_revisao);
-        _concessoes.ObterComPerfilAsync(_designacao.Id, Arg.Any<CancellationToken>()).Returns(new ConcessaoComPerfil(_designacao, "Representante do controlador", null));
+        _concessoes.ObterComPerfilAsync(_designacao.Id, Arg.Any<CancellationToken>()).Returns(new ConcessaoComPerfil(_designacao, NomeDoPerfil.Reidratar("Representante do controlador"), null));
         _concessoes.ObterParaAlterarAsync(_designacao.Id, Arg.Any<CancellationToken>()).Returns(_designacao);
         _papel.EVigenteAsync(Isabella, Agora, Arg.Any<CancellationToken>()).Returns(true);
     }

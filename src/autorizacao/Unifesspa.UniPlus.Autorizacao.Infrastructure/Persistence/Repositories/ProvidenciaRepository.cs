@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
+using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
@@ -153,6 +154,6 @@ public sealed class ProvidenciaRepository : IProvidenciaRepository
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        return alvos.ToDictionary(static a => a.Concessao.Id, static a => new ConcessaoDaProvidencia(a.Concessao, a.PerfilNome));
+        return alvos.ToDictionary(static a => a.Concessao.Id, static a => new ConcessaoDaProvidencia(a.Concessao, NomeDoPerfil.Reidratar(a.PerfilNome)));
     }
 }

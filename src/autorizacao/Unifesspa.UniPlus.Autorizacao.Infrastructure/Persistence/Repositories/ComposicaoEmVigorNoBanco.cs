@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
@@ -57,7 +58,7 @@ internal static class ComposicaoEmVigorNoBanco
                {
                    Impressao = impressao.FirstOrDefault(),
                    Linha = l.PerfilNome == null ? null : new LinhaDaConcessao(
-                       new ConcessaoLida(l.Concessao.Id, l.Concessao.PerfilId, l.PerfilNome, l.Concessao.UnidadeId, l.Concessao.EscopoTipo, l.Concessao.ValidaAte, l.Concessao.VersaoId), l.Codigo),
+                       new ConcessaoLida(l.Concessao.Id, l.Concessao.PerfilId, NomeDoPerfil.Reidratar(l.PerfilNome), l.Concessao.UnidadeId, l.Concessao.EscopoTipo, l.Concessao.ValidaAte, l.Concessao.VersaoId), l.Codigo),
                };
     }
 
@@ -66,7 +67,7 @@ internal static class ComposicaoEmVigorNoBanco
         from l in context.LinhasPlanas(concessoes, codigos)
         orderby l.Concessao.ConcedidaEm, l.Concessao.Id
         select new LinhaDaConcessao(
-            new ConcessaoLida(l.Concessao.Id, l.Concessao.PerfilId, l.PerfilNome, l.Concessao.UnidadeId, l.Concessao.EscopoTipo, l.Concessao.ValidaAte, l.Concessao.VersaoId), l.Codigo);
+            new ConcessaoLida(l.Concessao.Id, l.Concessao.PerfilId, NomeDoPerfil.Reidratar(l.PerfilNome), l.Concessao.UnidadeId, l.Concessao.EscopoTipo, l.Concessao.ValidaAte, l.Concessao.VersaoId), l.Codigo);
 
     private static IQueryable<LinhaPlana> LinhasPlanas(
         this UniPlusDbContext context, IQueryable<Concessao> concessoes, IQueryable<CodigoDaConcessao> codigos) =>
@@ -168,7 +169,7 @@ internal static class ComposicaoEmVigorNoBanco
 
 /// <summary>A concessão como a decisão de acesso a lê.</summary>
 internal sealed record ConcessaoLida(
-    Guid Id, Guid PerfilId, string PerfilNome, Guid? UnidadeId, TipoDeEscopo EscopoTipo, DateTimeOffset? ValidaAte, Guid? VersaoId);
+    Guid Id, Guid PerfilId, NomeDoPerfil PerfilNome, Guid? UnidadeId, TipoDeEscopo EscopoTipo, DateTimeOffset? ValidaAte, Guid? VersaoId);
 
 /// <summary>Uma linha da consulta da decisão: a concessão e um dos códigos que ela dá, ou nenhum.</summary>
 internal sealed record LinhaDaConcessao(ConcessaoLida Concessao, string? Codigo);

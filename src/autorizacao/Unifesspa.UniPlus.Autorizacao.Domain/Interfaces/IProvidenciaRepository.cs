@@ -2,11 +2,12 @@ namespace Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>A concessão alvo de uma providência, com o nome do perfil que ela concede, para a resposta e os avisos.</summary>
-public sealed record ConcessaoDaProvidencia(Concessao Concessao, string PerfilNome);
+public sealed record ConcessaoDaProvidencia(Concessao Concessao, NomeDoPerfil PerfilNome);
 
 /// <summary>Providência lida junto da concessão alvo, para a resposta.</summary>
 public sealed record ProvidenciaComConcessao(Providencia Providencia, ConcessaoDaProvidencia Alvo) : IIdentificavel

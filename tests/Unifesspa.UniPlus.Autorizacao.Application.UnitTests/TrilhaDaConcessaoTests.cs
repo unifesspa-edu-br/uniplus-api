@@ -84,7 +84,7 @@ public sealed class TrilhaDaConcessaoTests
 
     private Task<Result<IReadOnlyList<EventoDaTrilhaDto>>> ObterAsync(Concessao concessao, VerificadorDeTeste? verificador = null)
     {
-        _concessoes.ObterComPerfilAsync(concessao.Id, Arg.Any<CancellationToken>()).Returns(new ConcessaoComPerfil(concessao, CenarioDaProvidencia.PerfilNome, 1));
+        _concessoes.ObterComPerfilAsync(concessao.Id, Arg.Any<CancellationToken>()).Returns(new ConcessaoComPerfil(concessao, NomeDoPerfil.Reidratar(CenarioDaProvidencia.PerfilNome), 1));
 
         return ObterTrilhaDaConcessaoQueryHandler.Handle(
             new ObterTrilhaDaConcessaoQuery(concessao.Id), _concessoes, Trilha(), verificador ?? new VerificadorDeTeste("diogo.souza", [Administrar]), CancellationToken.None);

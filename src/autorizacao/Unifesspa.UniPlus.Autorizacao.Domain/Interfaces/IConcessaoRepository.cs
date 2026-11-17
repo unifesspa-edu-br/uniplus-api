@@ -32,7 +32,7 @@ public sealed record TitularComEmail(Identidade Pessoa, string Email);
 
 /// <summary>Concessão com o nome do perfil que ela concede e o número da versão a que está presa, para a resposta.</summary>
 /// <param name="Versao">Número da versão apontada pela própria concessão; nulo no perfil de governança, que não tem versão.</param>
-public sealed record ConcessaoComPerfil(Concessao Concessao, string PerfilNome, int? Versao) : IIdentificavel
+public sealed record ConcessaoComPerfil(Concessao Concessao, NomeDoPerfil PerfilNome, int? Versao) : IIdentificavel
 {
     /// <summary>Id da concessão, exposto para a paginação keyset operar sobre a projeção.</summary>
     public Guid Id { get; init; } = Concessao.Id;

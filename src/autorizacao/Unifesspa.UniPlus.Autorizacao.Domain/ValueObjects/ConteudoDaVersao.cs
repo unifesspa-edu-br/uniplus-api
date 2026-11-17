@@ -52,7 +52,7 @@ public sealed record ConteudoDaVersao
         return erros.Count > 0
             ? Result<ConteudoDaVersao>.ValidationFailure(erros)
             : Result<ConteudoDaVersao>.Success(new ConteudoDaVersao(
-                textos.Nome!, textos.Descricao!, Catalogar(codigos, catalogo), textos.Protocolo!, tamanhoDoDocumento));
+                textos.Nome!.Valor, textos.Descricao!, Catalogar(codigos, catalogo), textos.Protocolo!, tamanhoDoDocumento));
     }
 
     internal static FieldError Erro(string campo, string codigo, string mensagem) => new(campo, new DomainError(codigo, mensagem));

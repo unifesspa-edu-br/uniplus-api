@@ -156,7 +156,7 @@ public sealed class PedidoDeConcessaoRepository : IPedidoDeConcessaoRepository
     private async Task<IReadOnlyList<PedidoComPerfil>> ComPerfilAsync(
         IReadOnlyList<PedidoDeConcessao> pedidos, CancellationToken cancellationToken)
     {
-        Dictionary<Guid, string> nomes = await NomesDosPerfisAsync(pedidos, cancellationToken).ConfigureAwait(false);
+        Dictionary<Guid, NomeDoPerfil> nomes = await NomesDosPerfisAsync(pedidos, cancellationToken).ConfigureAwait(false);
         Dictionary<Guid, int> numeros = await NumerosDasVersoesAsync(pedidos, cancellationToken).ConfigureAwait(false);
 
         return
@@ -165,13 +165,13 @@ public sealed class PedidoDeConcessaoRepository : IPedidoDeConcessaoRepository
         ];
     }
 
-    private async Task<Dictionary<Guid, string>> NomesDosPerfisAsync(IReadOnlyList<PedidoDeConcessao> pedidos, CancellationToken cancellationToken)
+    private async Task<Dictionary<Guid, NomeDoPerfil>> NomesDosPerfisAsync(IReadOnlyList<PedidoDeConcessao> pedidos, CancellationToken cancellationToken)
     {
         Guid[] perfilIds = [.. pedidos.Select(p => p.PerfilId).Distinct()];
 
         return await _context.Perfis.AsNoTracking()
             .Where(perfil => perfilIds.Contains(perfil.Id))
-            .ToDictionaryAsync(perfil => perfil.Id, perfil => perfil.Nome, cancellationToken)
+            .ToDictionaryAsync(perfil => perfil.Id, perfil => NomeDoPerfil.Reidratar(perfil.Nome), cancellationToken)
             .ConfigureAwait(false);
     }
 
