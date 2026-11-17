@@ -20,6 +20,8 @@
   <ItemGroup>
     <!-- Os três PDFs da regra de senha: sem senha, só de proprietário e com senha de abertura. -->
     <None Include="Fixtures\*.pdf" CopyToOutputDirectory="PreserveNewest" />
+    <!-- O corpo de referência do pedido e do resultado, comparado com a serialização do Wolverine. -->
+    <None Include="Fixtures\mensagens-serializadas.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
