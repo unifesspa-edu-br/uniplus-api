@@ -3792,6 +3792,11 @@
       "titulo": "O tipo admite um único ato vivo por objeto, e a entidade vinculada já é tratada por outra linhagem"
     },
     {
+      "codigo": "uniplus.publicacoes.ato_normativo.tipo_de_entidade_invalido",
+      "status": 400,
+      "titulo": "Tipo de entidade inválido"
+    },
+    {
       "codigo": "uniplus.publicacoes.ato_normativo.tipo_sem_versao_vigente",
       "status": 422,
       "titulo": "Não há versão vigente do tipo de ato na data da publicação"
