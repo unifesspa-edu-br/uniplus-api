@@ -100,26 +100,29 @@ public sealed class DocumentoAPublicarRepository : IDocumentoAPublicarRepository
     public async Task<IReadOnlyList<ArquivoPendenteVencido>> ListarPendentesVencidosAsync(
         DateTimeOffset agora, int limite, CancellationToken cancellationToken = default)
     {
-        return await _context.DocumentosAPublicar
+        // A chave da cópia gravada é calculada pela entidade e não vira SQL: o lote é materializado e mapeado em memória.
+        List<DocumentoAPublicar> lote = await _context.DocumentosAPublicar
             .AsNoTracking()
             .Where(PendenteVencido(agora))
             .OrderBy(d => d.ExpiraEm)
             .ThenBy(d => d.Id)
             .Take(limite)
-            .Select(d => new ArquivoPendenteVencido(d.Id, d.ObjectKey))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
+
+        return [.. lote.Select(d => new ArquivoPendenteVencido(d.Id, ChavesDeObjeto(d)))];
     }
 
-    public async Task<bool> RemoverSePendenteVencidoAsync(Guid id, DateTimeOffset agora, CancellationToken cancellationToken = default)
+    public async Task<bool> RemoverSePendenteVencidoAsync(
+        Guid id, DateTimeOffset agora, Func<CancellationToken, Task> removerObjetos, CancellationToken cancellationToken = default)
     {
-        int linhasAfetadas = await _context.DocumentosAPublicar
-            .Where(d => d.Id == id)
-            .Where(PendenteVencido(agora))
-            .ExecuteDeleteAsync(cancellationToken)
-            .ConfigureAwait(false);
+        ArgumentNullException.ThrowIfNull(removerObjetos);
 
-        return linhasAfetadas == 1;
+        return await RemocaoDoPendenteVencido.ExecutarAsync(
+            _context.Database,
+            ct => _context.DocumentosAPublicar.Where(d => d.Id == id).Where(PendenteVencido(agora)).ExecuteDeleteAsync(ct),
+            removerObjetos,
+            cancellationToken).ConfigureAwait(false);
     }
 
     public void Remover(DocumentoAPublicar entity)

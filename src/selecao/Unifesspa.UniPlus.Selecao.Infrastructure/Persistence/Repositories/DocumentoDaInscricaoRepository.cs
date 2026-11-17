@@ -132,46 +132,57 @@ public sealed class DocumentoDaInscricaoRepository : IDocumentoDaInscricaoReposi
             .ConfigureAwait(false);
 
     public async Task<IReadOnlyList<ArquivoPendenteVencido>> ListarPendentesVencidosAsync(
-        DateTimeOffset agora, int limite, CancellationToken cancellationToken = default) =>
-        await _context.ArquivosDaApresentacao
+        DateTimeOffset agora, int limite, CancellationToken cancellationToken = default)
+    {
+        // O objeto pendente do candidato não é removido: o bucket de envio expira sozinho.
+        List<Guid> ids = await _context.ArquivosDaApresentacao
             .AsNoTracking()
             .Where(PendenteVencido(agora))
             .OrderBy(a => a.ExpiraEm)
             .ThenBy(a => a.Id)
             .Take(limite)
-            .Select(a => new ArquivoPendenteVencido(a.Id, a.ObjectKey))
+            .Select(a => a.Id)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-    public async Task<bool> RemoverSePendenteVencidoAsync(Guid id, DateTimeOffset agora, CancellationToken cancellationToken = default)
+        return [.. ids.Select(id => new ArquivoPendenteVencido(id, []))];
+    }
+
+    public async Task<bool> RemoverSePendenteVencidoAsync(
+        Guid id, DateTimeOffset agora, Func<CancellationToken, Task> removerObjetos, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(removerObjetos);
+
         Guid? apresentacaoId = await _context.ArquivosDaApresentacao
             .Where(a => a.Id == id)
             .Select(a => (Guid?)a.ApresentacaoId)
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction transacao =
-            await _context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+        return await RemocaoDoPendenteVencido.ExecutarAsync(
+            _context.Database,
+            ct => RemoverArquivoEApresentacaoSemArquivosAsync(id, apresentacaoId, agora, ct),
+            removerObjetos,
+            cancellationToken).ConfigureAwait(false);
+    }
 
-        await using (transacao.ConfigureAwait(false))
+    private async Task<int> RemoverArquivoEApresentacaoSemArquivosAsync(
+        Guid id, Guid? apresentacaoId, DateTimeOffset agora, CancellationToken cancellationToken)
+    {
+        int linhasAfetadas = await _context.ArquivosDaApresentacao
+            .Where(a => a.Id == id)
+            .Where(PendenteVencido(agora))
+            .ExecuteDeleteAsync(cancellationToken)
+            .ConfigureAwait(false);
+        if (linhasAfetadas == 1)
         {
-            int linhasAfetadas = await _context.ArquivosDaApresentacao
-                .Where(a => a.Id == id)
-                .Where(PendenteVencido(agora))
+            await _context.ApresentacoesDeDocumento
+                .Where(p => p.Id == apresentacaoId && !_context.Set<ArquivoDaApresentacao>().Any(a => a.ApresentacaoId == p.Id))
                 .ExecuteDeleteAsync(cancellationToken)
                 .ConfigureAwait(false);
-            if (linhasAfetadas == 1)
-            {
-                await _context.ApresentacoesDeDocumento
-                    .Where(p => p.Id == apresentacaoId && !_context.Set<ArquivoDaApresentacao>().Any(a => a.ApresentacaoId == p.Id))
-                    .ExecuteDeleteAsync(cancellationToken)
-                    .ConfigureAwait(false);
-            }
-
-            await transacao.CommitAsync(cancellationToken).ConfigureAwait(false);
-            return linhasAfetadas == 1;
         }
+
+        return linhasAfetadas;
     }
 
     public async Task AgendarLimpezaAsync(string objectKey, DateTimeOffset limparApos, CancellationToken cancellationToken = default) =>

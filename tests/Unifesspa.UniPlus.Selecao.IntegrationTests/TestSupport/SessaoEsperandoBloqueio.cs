@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.IntegrationTests.DocumentosAPublicar;
+namespace Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 using Npgsql;
 

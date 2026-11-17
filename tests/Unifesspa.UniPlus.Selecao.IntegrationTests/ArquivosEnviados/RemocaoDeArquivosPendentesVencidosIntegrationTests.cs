@@ -4,13 +4,9 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
-using Microsoft.Extensions.Logging.Abstractions;
-
-using NSubstitute;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -36,26 +32,28 @@ public sealed class RemocaoDeArquivosPendentesVencidosIntegrationTests
 
     private readonly ProcessoSeletivoDbFixture _dbFixture;
     private readonly ArquivoArmazenadoStorageService _storage;
+    private readonly EnviosPendentesNoBanco _envios;
 
     public RemocaoDeArquivosPendentesVencidosIntegrationTests(ProcessoSeletivoDbFixture dbFixture, MinioContainerFixture minio)
     {
         ArgumentNullException.ThrowIfNull(dbFixture);
         _dbFixture = dbFixture;
         _storage = new ArmazenamentoDeTesteNoMinio(minio, TestBucket).ArquivosArmazenados();
+        _envios = new EnviosPendentesNoBanco(dbFixture, _storage);
     }
 
     [Fact(DisplayName = "Pendente vencido do documento do Edital e do modelo sai do banco e do armazenamento")]
     public async Task PendenteVencido_SaiDoBancoEDoArmazenamento()
     {
-        Guid processoId = await NovoProcessoAsync();
+        Guid processoId = await _envios.NovoProcessoAsync();
         DocumentoAPublicar documento = EnviosPendentesDeTeste.Documento(processoId, Vencido);
         ModeloDeDocumento modelo = EnviosPendentesDeTeste.Modelo(processoId, Vencido);
         await PersistirComObjetoAsync(documento, documento.ObjectKey, modelo, modelo.ObjectKey);
 
-        await ExecutarRemocaoAsync();
+        await _envios.ExecutarRemocaoAsync();
 
-        (await ExisteDocumentoAsync(documento.Id)).Should().BeFalse();
-        (await ExisteModeloAsync(modelo.Id)).Should().BeFalse();
+        (await _envios.ExisteDocumentoAsync(documento.Id)).Should().BeFalse();
+        (await _envios.ExisteModeloAsync(modelo.Id)).Should().BeFalse();
         (await _storage.ObterInfoAsync(documento.ObjectKey)).Should().BeNull();
         (await _storage.ObterInfoAsync(modelo.ObjectKey)).Should().BeNull();
     }
@@ -63,15 +61,15 @@ public sealed class RemocaoDeArquivosPendentesVencidosIntegrationTests
     [Fact(DisplayName = "Pendente no prazo permanece com o objeto")]
     public async Task PendenteNoPrazo_Permanece()
     {
-        Guid processoId = await NovoProcessoAsync();
+        Guid processoId = await _envios.NovoProcessoAsync();
         DocumentoAPublicar documento = EnviosPendentesDeTeste.Documento(processoId, NoPrazo);
         ModeloDeDocumento modelo = EnviosPendentesDeTeste.Modelo(processoId, NoPrazo);
         await PersistirComObjetoAsync(documento, documento.ObjectKey, modelo, modelo.ObjectKey);
 
-        await ExecutarRemocaoAsync();
+        await _envios.ExecutarRemocaoAsync();
 
-        (await ExisteDocumentoAsync(documento.Id)).Should().BeTrue();
-        (await ExisteModeloAsync(modelo.Id)).Should().BeTrue();
+        (await _envios.ExisteDocumentoAsync(documento.Id)).Should().BeTrue();
+        (await _envios.ExisteModeloAsync(modelo.Id)).Should().BeTrue();
         (await _storage.ObterInfoAsync(documento.ObjectKey)).Should().NotBeNull();
         (await _storage.ObterInfoAsync(modelo.ObjectKey)).Should().NotBeNull();
     }
@@ -79,17 +77,17 @@ public sealed class RemocaoDeArquivosPendentesVencidosIntegrationTests
     [Fact(DisplayName = "Confirmado permanece com o objeto, mesmo com o prazo de envio vencido")]
     public async Task Confirmado_Permanece()
     {
-        Guid processoId = await NovoProcessoAsync();
+        Guid processoId = await _envios.NovoProcessoAsync();
         DocumentoAPublicar documento = EnviosPendentesDeTeste.Documento(processoId, Vencido);
         documento.Confirmar(Conteudo.Length, new string('a', 64), TimeProvider.System).IsSuccess.Should().BeTrue();
         ModeloDeDocumento modelo = EnviosPendentesDeTeste.Modelo(processoId, Vencido);
         modelo.Confirmar(Conteudo.Length, new string('b', 64), TimeProvider.System).IsSuccess.Should().BeTrue();
         await PersistirComObjetoAsync(documento, documento.ObjectKeyConfirmado!, modelo, modelo.ObjectKeyConfirmado!);
 
-        await ExecutarRemocaoAsync();
+        await _envios.ExecutarRemocaoAsync();
 
-        (await ExisteDocumentoAsync(documento.Id)).Should().BeTrue();
-        (await ExisteModeloAsync(modelo.Id)).Should().BeTrue();
+        (await _envios.ExisteDocumentoAsync(documento.Id)).Should().BeTrue();
+        (await _envios.ExisteModeloAsync(modelo.Id)).Should().BeTrue();
         (await _storage.ObterInfoAsync(documento.ObjectKeyConfirmado!)).Should().NotBeNull();
         (await _storage.ObterInfoAsync(modelo.ObjectKeyConfirmado!)).Should().NotBeNull();
     }
@@ -97,27 +95,27 @@ public sealed class RemocaoDeArquivosPendentesVencidosIntegrationTests
     [Fact(DisplayName = "Objeto já ausente do armazenamento não impede a remoção do registro vencido")]
     public async Task ObjetoAusente_NaoImpedeARemocao()
     {
-        Guid processoId = await NovoProcessoAsync();
+        Guid processoId = await _envios.NovoProcessoAsync();
         // O bucket existe — o que falta é só o objeto do pendente.
         await _storage.SalvarConteudoSeladoAsync($"selecao/outro/{Guid.CreateVersion7():D}.pdf", Conteudo, TiposDeMidiaDeDocumento.Pdf);
         DocumentoAPublicar documento = EnviosPendentesDeTeste.Documento(processoId, Vencido);
-        await PersistirAsync(documento);
+        await _envios.PersistirAsync(documento);
 
-        await ExecutarRemocaoAsync();
+        await _envios.ExecutarRemocaoAsync();
 
-        (await ExisteDocumentoAsync(documento.Id)).Should().BeFalse();
+        (await _envios.ExisteDocumentoAsync(documento.Id)).Should().BeFalse();
     }
 
     [Fact(DisplayName = "A remoção do documento vencido não alcança o que a confirmação concorrente reivindicou primeiro")]
     public async Task RemocaoCondicionada_DocumentoReivindicadoPelaConfirmacao_Permanece()
     {
-        Guid processoId = await NovoProcessoAsync();
+        Guid processoId = await _envios.NovoProcessoAsync();
         DocumentoAPublicar documento = EnviosPendentesDeTeste.Documento(processoId, Vencido);
-        await PersistirAsync(documento);
+        await _envios.PersistirAsync(documento);
 
         bool removeu = await RemoverDuranteAConfirmacaoAsync(
             context => new DocumentoAPublicarRepository(context).TentarReivindicarConfirmacaoAsync(documento.Id),
-            context => new DocumentoAPublicarRepository(context).RemoverSePendenteVencidoAsync(documento.Id, TimeProvider.System.GetUtcNow()));
+            context => new DocumentoAPublicarRepository(context).RemoverSePendenteVencidoAsync(documento.Id, TimeProvider.System.GetUtcNow(), static _ => Task.CompletedTask));
 
         removeu.Should().BeFalse();
         await using UniPlusDbContext leitura = _dbFixture.CreateDbContext();
@@ -128,13 +126,13 @@ public sealed class RemocaoDeArquivosPendentesVencidosIntegrationTests
     [Fact(DisplayName = "A remoção do modelo vencido não alcança o que a confirmação concorrente reivindicou primeiro")]
     public async Task RemocaoCondicionada_ModeloReivindicadoPelaConfirmacao_Permanece()
     {
-        Guid processoId = await NovoProcessoAsync();
+        Guid processoId = await _envios.NovoProcessoAsync();
         ModeloDeDocumento modelo = EnviosPendentesDeTeste.Modelo(processoId, Vencido);
-        await PersistirAsync(modelo);
+        await _envios.PersistirAsync(modelo);
 
         bool removeu = await RemoverDuranteAConfirmacaoAsync(
             context => new ModeloDeDocumentoRepository(context).TentarReivindicarConfirmacaoAsync(modelo.Id),
-            context => new ModeloDeDocumentoRepository(context).RemoverSePendenteVencidoAsync(modelo.Id, TimeProvider.System.GetUtcNow()));
+            context => new ModeloDeDocumentoRepository(context).RemoverSePendenteVencidoAsync(modelo.Id, TimeProvider.System.GetUtcNow(), static _ => Task.CompletedTask));
 
         removeu.Should().BeFalse();
         await using UniPlusDbContext leitura = _dbFixture.CreateDbContext();
@@ -162,60 +160,12 @@ public sealed class RemocaoDeArquivosPendentesVencidosIntegrationTests
         return await remocao;
     }
 
-    private async Task ExecutarRemocaoAsync()
-    {
-        await using UniPlusDbContext context = _dbFixture.CreateDbContext();
-        RemocaoDeArquivosPendentesVencidos remocao = new(
-            new DocumentoAPublicarRepository(context),
-            new ModeloDeDocumentoRepository(context),
-            new DocumentoDaInscricaoRepository(context),
-            _storage,
-            Substitute.For<IArquivoDoCandidatoStorage>(),
-            TimeProvider.System,
-            NullLogger<RemocaoDeArquivosPendentesVencidos>.Instance);
-        await remocao.ExecutarAsync(CancellationToken.None);
-    }
-
     private async Task PersistirComObjetoAsync(
         DocumentoAPublicar documento, string chaveDoDocumento, ModeloDeDocumento modelo, string chaveDoModelo)
     {
-        await using UniPlusDbContext context = _dbFixture.CreateDbContext();
-        context.DocumentosAPublicar.Add(documento);
-        context.ModelosDeDocumento.Add(modelo);
-        await context.SaveChangesAsync();
+        await _envios.PersistirAsync(documento);
+        await _envios.PersistirAsync(modelo);
         await _storage.SalvarConteudoSeladoAsync(chaveDoDocumento, Conteudo, TiposDeMidiaDeDocumento.Pdf);
         await _storage.SalvarConteudoSeladoAsync(chaveDoModelo, Conteudo, modelo.ContentType);
-    }
-
-    private async Task PersistirAsync(DocumentoAPublicar documento)
-    {
-        await using UniPlusDbContext context = _dbFixture.CreateDbContext();
-        context.DocumentosAPublicar.Add(documento);
-        await context.SaveChangesAsync();
-    }
-
-    private async Task PersistirAsync(ModeloDeDocumento modelo)
-    {
-        await using UniPlusDbContext context = _dbFixture.CreateDbContext();
-        context.ModelosDeDocumento.Add(modelo);
-        await context.SaveChangesAsync();
-    }
-
-    private async Task<bool> ExisteDocumentoAsync(Guid id)
-    {
-        await using UniPlusDbContext context = _dbFixture.CreateDbContext();
-        return await context.DocumentosAPublicar.AsNoTracking().AnyAsync(d => d.Id == id);
-    }
-
-    private async Task<bool> ExisteModeloAsync(Guid id)
-    {
-        await using UniPlusDbContext context = _dbFixture.CreateDbContext();
-        return await context.ModelosDeDocumento.AsNoTracking().AnyAsync(m => m.Id == id);
-    }
-
-    private async Task<Guid> NovoProcessoAsync()
-    {
-        await using UniPlusDbContext context = _dbFixture.CreateDbContext();
-        return (await ProcessoSeletivoDeTeste.GravarAsync(context, "PS 2027 — envios pendentes")).Id;
     }
 }

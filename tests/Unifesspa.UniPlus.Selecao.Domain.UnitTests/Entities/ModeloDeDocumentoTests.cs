@@ -124,7 +124,7 @@ public sealed class ModeloDeDocumentoTests
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloDeDocumentoErrorCodes.FormatoNaoEditavel);
     }
 
-    [Fact(DisplayName = "Só o modelo pendente é confirmado, e a chave selada tem a extensão do formato")]
+    [Fact(DisplayName = "Só o modelo pendente é confirmado, e a chave da cópia gravada tem a extensão do formato")]
     public void Confirmar_SoDoPendente()
     {
         ModeloDeDocumento modelo = Pendente("ODT");
@@ -132,6 +132,21 @@ public sealed class ModeloDeDocumentoTests
         modelo.Confirmar(10, new string('a', 64), Relogio).IsSuccess.Should().BeTrue();
         modelo.ObjectKeyConfirmado.Should().EndWith("/confirmado.odt");
         modelo.Confirmar(10, new string('a', 64), Relogio).Error!.Code.Should().Be(ModeloDeDocumentoErrorCodes.StatusInvalidoParaConfirmacao);
+    }
+
+    [Fact(DisplayName = "A chave da cópia gravada existe desde o modelo pendente e é a que a confirmação registra")]
+    public void Confirmar_RegistraAChaveDaCopiaGravadaCalculadaDesdeOPendente()
+    {
+        ModeloDeDocumento modelo = Pendente("DOCX");
+        string chaveCalculadaAntes = modelo.ChaveDaCopiaGravada;
+
+        modelo.ObjectKeyConfirmado.Should().BeNull();
+        chaveCalculadaAntes.Should().Be(
+            $"selecao/modelos-de-documento/{modelo.ProcessoSeletivoId:D}/{modelo.Id:D}/confirmado.docx").And.NotBe(modelo.ObjectKey);
+
+        modelo.Confirmar(10, new string('a', 64), Relogio).IsSuccess.Should().BeTrue();
+
+        modelo.ObjectKeyConfirmado.Should().Be(chaveCalculadaAntes);
     }
 
     private static ModeloDeDocumento Pendente(string formato, string nome = "Autodeclaração") =>

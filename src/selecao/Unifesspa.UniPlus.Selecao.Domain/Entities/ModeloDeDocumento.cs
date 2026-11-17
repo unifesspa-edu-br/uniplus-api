@@ -40,11 +40,19 @@ public sealed class ModeloDeDocumento : EntityBase, IArquivoEnviado
     public DateTimeOffset? ConfirmadoEm { get; private set; }
 
     /// <summary>
-    /// Chave selada, gravada só na confirmação — nunca alvo de URL pré-assinada de PUT. A cópia do
-    /// conteúdo validado para ela é o que torna o modelo confirmado imutável de fato: a chave de
-    /// envio segue sobrescrevível até o TTL da URL expirar.
+    /// Chave da cópia gravada, registrada só na confirmação — nunca alvo de URL pré-assinada de PUT.
+    /// A cópia do conteúdo validado para ela é o que torna o modelo confirmado imutável de fato: a
+    /// chave de envio segue sobrescrevível até o TTL da URL expirar.
     /// </summary>
     public string? ObjectKeyConfirmado { get; private set; }
+
+    /// <summary>
+    /// Onde a cópia gravada na confirmação fica no armazenamento, calculada desde o modelo pendente: a
+    /// confirmação a registra em <see cref="ObjectKeyConfirmado"/> e a remoção a usa também enquanto o
+    /// modelo está pendente, porque a cópia pode já existir no armazenamento sem que a confirmação
+    /// tenha chegado ao banco.
+    /// </summary>
+    public string ChaveDaCopiaGravada => $"selecao/modelos-de-documento/{ProcessoSeletivoId:D}/{Id:D}/confirmado.{Extensao}";
 
     /// <summary>A recusa do arquivo maior que <see cref="TamanhoMaximoBytes"/>.</summary>
     public static DomainError TamanhoExcedido { get; } = new(
@@ -114,7 +122,7 @@ public sealed class ModeloDeDocumento : EntityBase, IArquivoEnviado
     }
 
     /// <summary>
-    /// Finaliza o modelo como confirmado e imutável e determina a chave selada. Só a partir do
+    /// Finaliza o modelo como confirmado e imutável e registra a chave da cópia gravada. Só a partir do
     /// pendente; a validação do conteúdo (<see cref="ValidarConteudo"/>) já passou. Quem chama
     /// ainda copia o conteúdo para <see cref="ObjectKeyConfirmado"/> no storage.
     /// </summary>
@@ -132,7 +140,7 @@ public sealed class ModeloDeDocumento : EntityBase, IArquivoEnviado
         HashSha256 = hashSha256;
         Status = StatusArquivoEnviado.Confirmado;
         ConfirmadoEm = clock.GetUtcNow();
-        ObjectKeyConfirmado = $"selecao/modelos-de-documento/{ProcessoSeletivoId:D}/{Id:D}/confirmado.{Extensao}";
+        ObjectKeyConfirmado = ChaveDaCopiaGravada;
         return Result.Success();
     }
 
