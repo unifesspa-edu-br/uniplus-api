@@ -28,8 +28,9 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// integridade do CONTEÚDO — não a sua permanência.
 /// </para>
 /// <para>
-/// O substituto é mais forte que a FK antiga: um documento <b>confirmado</b> não se remove,
-/// tenha ele sido publicado ou não. É o que o próprio ciclo de vida já declarava —
+/// O substituto é mais forte que a FK antiga: um documento <b>confirmado</b> de um processo que
+/// existe não se remove, tenha ele sido publicado ou não (o do rascunho sai junto com ele). É o
+/// que o próprio ciclo de vida já declarava —
 /// <c>StatusArquivoEnviado.Confirmado</c> não tem caminho de volta. O pendente, que é um
 /// upload que nunca se completou, segue removível (a limpeza dos expirados depende disso).
 /// </para>

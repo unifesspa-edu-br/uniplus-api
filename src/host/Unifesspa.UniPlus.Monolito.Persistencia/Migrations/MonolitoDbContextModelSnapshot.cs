@@ -19391,16 +19391,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasConstraintName("fk_destinos_remanejamento_configuracao_de_remanejamento");
                 });
 
-            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.DocumentoAPublicar", b =>
-                {
-                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", null)
-                        .WithMany()
-                        .HasForeignKey("ProcessoSeletivoId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_documentos_a_publicar_processo_seletivo");
-                });
-
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.DocumentoExigido", b =>
                 {
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.EtapaProcesso", null)

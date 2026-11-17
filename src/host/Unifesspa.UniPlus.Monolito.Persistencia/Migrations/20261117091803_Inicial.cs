@@ -413,6 +413,31 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "documentos_a_publicar",
+                schema: "selecao",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    finalidade = table.Column<int>(type: "integer", nullable: false),
+                    nome_arquivo = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
+                    formato = table.Column<int>(type: "integer", nullable: false),
+                    object_key = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    status = table.Column<int>(type: "integer", nullable: false),
+                    expira_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    tamanho_bytes = table.Column<long>(type: "bigint", nullable: true),
+                    hash_sha256 = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
+                    confirmado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    object_key_confirmado = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_documentos_a_publicar", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "fases_canonicas",
                 schema: "configuracao",
                 columns: table => new
@@ -2106,6 +2131,51 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "atos_do_processo",
+                schema: "selecao",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ordem_de_registro = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityAlwaysColumn),
+                    tipo_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
+                    tipo_nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    numero = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
+                    data_do_ato = table.Column<DateOnly>(type: "date", nullable: false),
+                    publicado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    assinante = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    slug_da_unidade_administradora = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    identificador_legivel_do_processo = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    item_do_edital = table.Column<string>(type: "character varying(160)", maxLength: 160, nullable: true),
+                    documento_principal_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ato_corrigido_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    motivo_da_correcao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    politica_de_divulgacao_confirmada_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    politica_de_divulgacao_confirmada_por_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_atos_do_processo", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_atos_do_processo_documento_a_publicar_principal",
+                        column: x => x.documento_principal_id,
+                        principalSchema: "selecao",
+                        principalTable: "documentos_a_publicar",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "fk_atos_do_processo_processo_seletivo_processo_seletivo_id",
+                        column: x => x.processo_seletivo_id,
+                        principalSchema: "selecao",
+                        principalTable: "processos_seletivos",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "configuracoes_bonus_regional",
                 schema: "selecao",
                 columns: table => new
@@ -2347,38 +2417,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.PrimaryKey("pk_criterios_desempate", x => x.id);
                     table.ForeignKey(
                         name: "fk_criterios_desempate_processo_seletivo_processo_seletivo_id",
-                        column: x => x.processo_seletivo_id,
-                        principalSchema: "selecao",
-                        principalTable: "processos_seletivos",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "documentos_a_publicar",
-                schema: "selecao",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    finalidade = table.Column<int>(type: "integer", nullable: false),
-                    nome_arquivo = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
-                    formato = table.Column<int>(type: "integer", nullable: false),
-                    object_key = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    status = table.Column<int>(type: "integer", nullable: false),
-                    expira_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    tamanho_bytes = table.Column<long>(type: "bigint", nullable: true),
-                    hash_sha256 = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
-                    confirmado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    object_key_confirmado = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_documentos_a_publicar", x => x.id);
-                    table.ForeignKey(
-                        name: "fk_documentos_a_publicar_processo_seletivo",
                         column: x => x.processo_seletivo_id,
                         principalSchema: "selecao",
                         principalTable: "processos_seletivos",
@@ -3427,6 +3465,38 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "anexos_do_ato_do_processo",
+                schema: "selecao",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ato_do_processo_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    documento_a_publicar_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    nome_de_exibicao = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    ordem = table.Column<int>(type: "integer", nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_anexos_do_ato_do_processo", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_anexos_do_ato_do_processo_ato_do_processo",
+                        column: x => x.ato_do_processo_id,
+                        principalSchema: "selecao",
+                        principalTable: "atos_do_processo",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "fk_anexos_do_ato_do_processo_documento_a_publicar",
+                        column: x => x.documento_a_publicar_id,
+                        principalSchema: "selecao",
+                        principalTable: "documentos_a_publicar",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "municipios_do_bonus_regional",
                 schema: "selecao",
                 columns: table => new
@@ -3613,51 +3683,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         principalTable: "configuracoes_derivacao_fato",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "atos_do_processo",
-                schema: "selecao",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ordem_de_registro = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityAlwaysColumn),
-                    tipo_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
-                    tipo_nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    numero = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
-                    data_do_ato = table.Column<DateOnly>(type: "date", nullable: false),
-                    publicado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    assinante = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    slug_da_unidade_administradora = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    identificador_legivel_do_processo = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    item_do_edital = table.Column<string>(type: "character varying(160)", maxLength: 160, nullable: true),
-                    documento_principal_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ato_corrigido_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    motivo_da_correcao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
-                    politica_de_divulgacao_confirmada_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    politica_de_divulgacao_confirmada_por_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_atos_do_processo", x => x.id);
-                    table.ForeignKey(
-                        name: "fk_atos_do_processo_documento_a_publicar_principal",
-                        column: x => x.documento_principal_id,
-                        principalSchema: "selecao",
-                        principalTable: "documentos_a_publicar",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "fk_atos_do_processo_processo_seletivo_processo_seletivo_id",
-                        column: x => x.processo_seletivo_id,
-                        principalSchema: "selecao",
-                        principalTable: "processos_seletivos",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -4306,38 +4331,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         principalTable: "regras_derivacao_configuradas",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "anexos_do_ato_do_processo",
-                schema: "selecao",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ato_do_processo_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    documento_a_publicar_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    nome_de_exibicao = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    ordem = table.Column<int>(type: "integer", nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_anexos_do_ato_do_processo", x => x.id);
-                    table.ForeignKey(
-                        name: "fk_anexos_do_ato_do_processo_ato_do_processo",
-                        column: x => x.ato_do_processo_id,
-                        principalSchema: "selecao",
-                        principalTable: "atos_do_processo",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "fk_anexos_do_ato_do_processo_documento_a_publicar",
-                        column: x => x.documento_a_publicar_id,
-                        principalSchema: "selecao",
-                        principalTable: "documentos_a_publicar",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(

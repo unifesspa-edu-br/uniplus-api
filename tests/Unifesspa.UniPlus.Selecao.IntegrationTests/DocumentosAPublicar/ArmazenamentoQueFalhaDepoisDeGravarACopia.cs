@@ -2,8 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.DocumentosAPublicar;
 
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 
-/// <summary>Grava a cópia selada de verdade e então falha, como o armazenamento que cai entre a gravação e o fim da confirmação.</summary>
-internal sealed class ArmazenamentoQueFalhaDepoisDeSelar(IArquivoArmazenadoStorage armazenamento) : IArquivoArmazenadoStorage
+/// <summary>Grava a cópia do arquivo de verdade e então falha, como o armazenamento que cai entre a gravação e o fim da confirmação.</summary>
+internal sealed class ArmazenamentoQueFalhaDepoisDeGravarACopia(IArquivoArmazenadoStorage armazenamento) : IArquivoArmazenadoStorage
 {
     public Task<string> GerarUrlUploadAsync(string objectKey, string contentType, TimeSpan expiracao, CancellationToken cancellationToken = default) =>
         armazenamento.GerarUrlUploadAsync(objectKey, contentType, expiracao, cancellationToken);
@@ -20,7 +20,7 @@ internal sealed class ArmazenamentoQueFalhaDepoisDeSelar(IArquivoArmazenadoStora
     public async Task SalvarConteudoSeladoAsync(string objectKey, byte[] conteudo, string contentType, CancellationToken cancellationToken = default)
     {
         await armazenamento.SalvarConteudoSeladoAsync(objectKey, conteudo, contentType, cancellationToken);
-        throw new InvalidOperationException("Falha simulada depois de salvar a cópia selada.");
+        throw new InvalidOperationException("Falha simulada depois de salvar a cópia do arquivo.");
     }
 
     public Task RemoverAsync(string objectKey, CancellationToken cancellationToken = default) =>

@@ -7,9 +7,11 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
+using Unifesspa.UniPlus.Selecao.Application.Commands.Rascunhos;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -56,7 +58,7 @@ public sealed class DocumentoAPublicarEnvioIntegrationTests : IClassFixture<Proc
         confirmar.Value.HashSha256.Should().Be(Convert.ToHexStringLower(SHA256.HashData(ConteudoPdfValido)));
     }
 
-    [Theory(DisplayName = "DOCX e ODT seguem o mesmo fluxo: o conteúdo selado tem o hash do arquivo e o tipo de mídia do formato")]
+    [Theory(DisplayName = "DOCX e ODT seguem o mesmo fluxo: o conteúdo da cópia gravada tem o hash do arquivo e o tipo de mídia do formato")]
     [InlineData(TiposDeMidiaDeDocumento.Docx)]
     [InlineData(TiposDeMidiaDeDocumento.Odt)]
     public async Task FluxoCompleto_DocumentoDeTexto_HashConfereESelaComOTipoDeMidia(string tipoDeMidia)
@@ -72,7 +74,7 @@ public sealed class DocumentoAPublicarEnvioIntegrationTests : IClassFixture<Proc
         confirmar.IsSuccess.Should().BeTrue();
         confirmar.Value!.HashSha256.Should().Be(Convert.ToHexStringLower(SHA256.HashData(arquivo)));
         confirmar.Value.TipoDeMidia.Should().Be(tipoDeMidia);
-        await ConferirCopiaSeladaComOTipoDeMidiaAsync(envio, iniciar.DocumentoAPublicarId, tipoDeMidia);
+        await ConferirCopiaGravadaComOTipoDeMidiaAsync(envio, iniciar.DocumentoAPublicarId, tipoDeMidia);
     }
 
     /// <summary>
@@ -81,8 +83,8 @@ public sealed class DocumentoAPublicarEnvioIntegrationTests : IClassFixture<Proc
     /// inservível — chave errada, assinatura de outro método, bucket trocado —
     /// passaria em qualquer mock e falharia no primeiro clique do operador.
     /// </summary>
-    [Fact(DisplayName = "Acesso a documento confirmado devolve URL que abre o conteúdo selado")]
-    public async Task Acesso_DocumentoConfirmado_UrlAbreConteudoSelado()
+    [Fact(DisplayName = "Acesso a documento confirmado devolve URL que abre o conteúdo da cópia gravada")]
+    public async Task Acesso_DocumentoConfirmado_UrlAbreConteudoDaCopiaGravada()
     {
         await using EnvioDoDocumentoAPublicar envio = await NovoEnvioAsync();
         Guid documentoId = (await envio.IniciarEEnviarAsync(ConteudoPdfValido)).DocumentoAPublicarId;
@@ -111,8 +113,8 @@ public sealed class DocumentoAPublicarEnvioIntegrationTests : IClassFixture<Proc
     /// A URL de upload original ainda vale (TTL não expirou): um titular mal-intencionado ou um retry duplicado do
     /// cliente sobrescreve a ObjectKey de staging depois da confirmação.
     /// </summary>
-    [Fact(DisplayName = "Sobrescrever a object key original após confirmação não afeta o conteúdo selado (P1)")]
-    public async Task Confirmar_ObjectKeyOriginalSobrescritaDepois_ConteudoSeladoPermaneceIntacto()
+    [Fact(DisplayName = "Sobrescrever a object key original após confirmação não afeta o conteúdo da cópia gravada (P1)")]
+    public async Task Confirmar_ObjectKeyOriginalSobrescritaDepois_ConteudoDaCopiaGravadaPermaneceIntacto()
     {
         await using EnvioDoDocumentoAPublicar envio = await NovoEnvioAsync();
         IniciarEnvioDoDocumentoAPublicarDto iniciar = await envio.IniciarEEnviarAsync(ConteudoPdfValido);
@@ -122,9 +124,9 @@ public sealed class DocumentoAPublicarEnvioIntegrationTests : IClassFixture<Proc
 
         await EnvioDoDocumentoAPublicar.EnviarAsync(iniciar.UrlUpload, [.. "%PDF-1.7 conteúdo trocado após a confirmação"u8]);
 
-        byte[] selado = await LerSeladoAsync(confirmado.ObjectKeyConfirmado!);
-        selado.Should().Equal(ConteudoPdfValido);
-        Convert.ToHexStringLower(SHA256.HashData(selado)).Should().Be(confirmar.Value!.HashSha256);
+        byte[] copiaGravada = await LerCopiaGravadaAsync(confirmado.ObjectKeyConfirmado!);
+        copiaGravada.Should().Equal(ConteudoPdfValido);
+        Convert.ToHexStringLower(SHA256.HashData(copiaGravada)).Should().Be(confirmar.Value!.HashSha256);
     }
 
     [Fact(DisplayName = "Confirmar sem upload prévio recusa (422 ObjetoNaoEncontrado)")]
@@ -186,22 +188,38 @@ public sealed class DocumentoAPublicarEnvioIntegrationTests : IClassFixture<Proc
         doc1!.ObjectKey.Should().NotBe(doc2!.ObjectKey);
     }
 
-    [Fact(DisplayName = "Falha após reivindicação reverte para pendente e retry converge na mesma cópia selada")]
-    public async Task Confirmar_FalhaAoSalvarCopiaSelada_ReverteEPermiteRetrySemOrfaos()
+    [Fact(DisplayName = "Falha após reivindicação reverte para pendente e retry converge na mesma cópia gravada")]
+    public async Task Confirmar_FalhaAoSalvarCopia_ReverteEPermiteRetrySemOrfaos()
     {
         await using EnvioDoDocumentoAPublicar envio = await NovoEnvioAsync();
         Guid documentoId = (await envio.IniciarEEnviarAsync(ConteudoPdfValido)).DocumentoAPublicarId;
-        await ConfirmarFalhandoAoSalvarACopiaSeladaAsync(envio, documentoId);
+        await ConfirmarFalhandoAoSalvarACopiaAsync(envio, documentoId);
         await using EnvioDoDocumentoAPublicar retentativa = envio.EmNovoContexto(_dbFixture);
-        string chaveSelada = $"selecao/documentos-a-publicar/{envio.Processo.Id:D}/{documentoId:D}/confirmado.pdf";
-        await ConferirPendenteComACopiaSeladaJaGravadaAsync(retentativa, documentoId, chaveSelada);
+        string chaveDaCopia = $"selecao/documentos-a-publicar/{envio.ProcessoId:D}/{documentoId:D}/confirmado.pdf";
+        await ConferirPendenteComACopiaJaGravadaAsync(retentativa, documentoId, chaveDaCopia);
 
         Result<DocumentoAPublicarDto> retry = await retentativa.ConfirmarAsync(documentoId);
 
         retry.IsSuccess.Should().BeTrue();
         retry.Value!.Status.Should().Be("Confirmado");
         retry.Value.TamanhoBytes.Should().Be(ConteudoPdfValido.Length);
-        await ConferirCopiaSeladaIntegraAsync(retentativa, documentoId, chaveSelada);
+        await ConferirCopiaGravadaIntegraAsync(retentativa, documentoId, chaveDaCopia);
+    }
+
+    [Fact(DisplayName = "Excluir o rascunho depois da falha entre a gravação da cópia e o commit leva também a chave da cópia")]
+    public async Task ExcluirRascunho_DepoisDaFalhaAoSalvarACopia_MensagemLevaAChaveDaCopia()
+    {
+        await using EnvioDoDocumentoAPublicar envio = await EnvioDoDocumentoAPublicar.NovoDeRascunhoAsync(_dbFixture, _storage);
+        Guid documentoId = (await envio.IniciarEEnviarAsync(ConteudoPdfValido)).DocumentoAPublicarId;
+        await ConfirmarFalhandoAoSalvarACopiaAsync(envio, documentoId);
+        DocumentoAPublicar pendente = await LerPendenteComACopiaGravadaNoArmazenamentoAsync(documentoId);
+        await using UniPlusDbContext excluidor = _dbFixture.CreateDbContext();
+
+        (Result resposta, IEnumerable<object> mensagens) = await new ExclusaoDoRascunhoDeTeste(excluidor).ExcluirNaTransacaoAsync(envio.ProcessoId);
+
+        resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
+        mensagens.Should().ContainSingle().Which.Should().BeOfType<RemoverArquivosDoRascunhoExcluido>()
+            .Which.Chaves.Should().BeEquivalentTo([pendente.ObjectKey, pendente.ChaveDaCopiaGravada]);
     }
 
     private static void ConferirRecusa(Result<DocumentoAPublicarDto> confirmar, string codigo)
@@ -212,45 +230,54 @@ public sealed class DocumentoAPublicarEnvioIntegrationTests : IClassFixture<Proc
 
     private Task<EnvioDoDocumentoAPublicar> NovoEnvioAsync() => EnvioDoDocumentoAPublicar.NovoAsync(_dbFixture, _storage);
 
-    private async Task<byte[]> LerSeladoAsync(string chave)
+    private async Task<DocumentoAPublicar> LerPendenteComACopiaGravadaNoArmazenamentoAsync(Guid documentoId)
     {
-        await using Stream selado = await _storage.AbrirLeituraAsync(chave, DocumentoAPublicar.TamanhoMaximoBytes + 1, CancellationToken.None);
+        await using UniPlusDbContext leitura = _dbFixture.CreateDbContext();
+        DocumentoAPublicar pendente = await leitura.DocumentosAPublicar.AsNoTracking().SingleAsync(d => d.Id == documentoId);
+        pendente.Status.Should().Be(StatusArquivoEnviado.Pendente);
+        (await _storage.ObterInfoAsync(pendente.ChaveDaCopiaGravada, CancellationToken.None)).Should().NotBeNull();
+        return pendente;
+    }
+
+    private async Task<byte[]> LerCopiaGravadaAsync(string chave)
+    {
+        await using Stream copia = await _storage.AbrirLeituraAsync(chave, DocumentoAPublicar.TamanhoMaximoBytes + 1, CancellationToken.None);
         using MemoryStream buffer = new();
-        await selado.CopyToAsync(buffer, CancellationToken.None);
+        await copia.CopyToAsync(buffer, CancellationToken.None);
         return buffer.ToArray();
     }
 
-    private async Task ConferirCopiaSeladaComOTipoDeMidiaAsync(EnvioDoDocumentoAPublicar envio, Guid documentoId, string tipoDeMidia)
+    private async Task ConferirCopiaGravadaComOTipoDeMidiaAsync(EnvioDoDocumentoAPublicar envio, Guid documentoId, string tipoDeMidia)
     {
         DocumentoAPublicar gravado = await envio.Context.DocumentosAPublicar.AsNoTracking().SingleAsync(d => d.Id == documentoId);
-        InfoObjetoArmazenado? selado = await _storage.ObterInfoAsync(gravado.ObjectKeyConfirmado!);
-        selado.Should().NotBeNull();
-        selado!.ContentType.Should().Be(tipoDeMidia);
+        InfoObjetoArmazenado? infoDaCopia = await _storage.ObterInfoAsync(gravado.ObjectKeyConfirmado!);
+        infoDaCopia.Should().NotBeNull();
+        infoDaCopia!.ContentType.Should().Be(tipoDeMidia);
     }
 
-    private async Task ConfirmarFalhandoAoSalvarACopiaSeladaAsync(EnvioDoDocumentoAPublicar envio, Guid documentoId)
+    private async Task ConfirmarFalhandoAoSalvarACopiaAsync(EnvioDoDocumentoAPublicar envio, Guid documentoId)
     {
         await using IDbContextTransaction transacao = await envio.Context.Database.BeginTransactionAsync();
 
-        Func<Task> confirmar = () => envio.ConfirmarAsync(documentoId, new ArmazenamentoQueFalhaDepoisDeSelar(_storage));
+        Func<Task> confirmar = () => envio.ConfirmarAsync(documentoId, new ArmazenamentoQueFalhaDepoisDeGravarACopia(_storage));
 
         await confirmar.Should().ThrowAsync<InvalidOperationException>();
         await transacao.RollbackAsync();
     }
 
-    private async Task ConferirPendenteComACopiaSeladaJaGravadaAsync(EnvioDoDocumentoAPublicar envio, Guid documentoId, string chaveSelada)
+    private async Task ConferirPendenteComACopiaJaGravadaAsync(EnvioDoDocumentoAPublicar envio, Guid documentoId, string chaveDaCopia)
     {
         DocumentoAPublicar documento = await envio.Context.DocumentosAPublicar.FirstAsync(d => d.Id == documentoId);
         documento.Status.Should().Be(StatusArquivoEnviado.Pendente);
         documento.HashSha256.Should().BeNull();
         documento.ObjectKeyConfirmado.Should().BeNull();
-        (await _storage.ObterInfoAsync(chaveSelada, CancellationToken.None)).Should().NotBeNull();
+        (await _storage.ObterInfoAsync(chaveDaCopia, CancellationToken.None)).Should().NotBeNull();
     }
 
-    private async Task ConferirCopiaSeladaIntegraAsync(EnvioDoDocumentoAPublicar envio, Guid documentoId, string chaveSelada)
+    private async Task ConferirCopiaGravadaIntegraAsync(EnvioDoDocumentoAPublicar envio, Guid documentoId, string chaveDaCopia)
     {
         DocumentoAPublicar confirmado = await envio.Context.DocumentosAPublicar.AsNoTracking().FirstAsync(d => d.Id == documentoId);
-        confirmado.ObjectKeyConfirmado.Should().Be(chaveSelada);
-        (await LerSeladoAsync(confirmado.ObjectKeyConfirmado!)).Should().Equal(ConteudoPdfValido);
+        confirmado.ObjectKeyConfirmado.Should().Be(chaveDaCopia);
+        (await LerCopiaGravadaAsync(confirmado.ObjectKeyConfirmado!)).Should().Equal(ConteudoPdfValido);
     }
 }

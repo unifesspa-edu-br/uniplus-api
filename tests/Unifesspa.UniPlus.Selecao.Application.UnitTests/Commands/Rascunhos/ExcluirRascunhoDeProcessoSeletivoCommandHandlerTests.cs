@@ -15,17 +15,22 @@ public sealed class ExcluirRascunhoDeProcessoSeletivoCommandHandlerTests
 {
     private readonly CenarioDoRascunho _cenario = new();
 
-    private Task<Result> Excluir(Guid id, PrecondicaoIfMatch precondicao) =>
+    private async Task<Result> Excluir(Guid id, PrecondicaoIfMatch precondicao) =>
+        (await ExcluirComMensagens(id, precondicao)).Resposta;
+
+    private Task<(Result Resposta, IEnumerable<object> Mensagens)> ExcluirComMensagens(Guid id, PrecondicaoIfMatch precondicao) =>
         ExcluirRascunhoDeProcessoSeletivoCommandHandler.Handle(
             new ExcluirRascunhoDeProcessoSeletivoCommand(id, precondicao),
             _cenario.Bloqueio,
             _cenario.Rascunhos,
+            _cenario.Documentos,
             _cenario.UnitOfWork,
             CancellationToken.None);
 
     private async Task NadaFoiApagado()
     {
         _cenario.Rascunhos.DidNotReceiveWithAnyArgs().Remover(default!);
+        await _cenario.Documentos.DidNotReceiveWithAnyArgs().RemoverDoProcessoAsync(default, default);
         await _cenario.UnitOfWork.DidNotReceiveWithAnyArgs().SalvarAlteracoesAsync(default);
     }
 
@@ -119,7 +124,7 @@ public sealed class ExcluirRascunhoDeProcessoSeletivoCommandHandlerTests
     public async Task ArgumentosNulos_Lancam()
     {
         Func<Task> semComando = () => ExcluirRascunhoDeProcessoSeletivoCommandHandler.Handle(
-            null!, _cenario.Bloqueio, _cenario.Rascunhos, _cenario.UnitOfWork, CancellationToken.None);
+            null!, _cenario.Bloqueio, _cenario.Rascunhos, _cenario.Documentos, _cenario.UnitOfWork, CancellationToken.None);
 
         await semComando.Should().ThrowAsync<ArgumentNullException>();
     }

@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Rascunhos;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
@@ -40,6 +41,17 @@ internal static class RascunhosSemeadosParaTeste
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         contexto.ProcessosSeletivos.Add(processo);
+        await contexto.SaveChangesAsync();
+        return processo;
+    }
+
+    /// <summary>O processo excluído logicamente: a linha continua no banco, e o filtro global o tira de alcance.</summary>
+    public static async Task<ProcessoSeletivo> SemearProcessoExcluidoAsync(ProcessoSeletivoDbFixture fixture, Guid unidadeId)
+    {
+        ProcessoSeletivo processo = await SemearProcessoAsync(fixture, unidadeId);
+        await using UniPlusDbContext contexto = fixture.CreateDbContext();
+        ProcessoSeletivo gravado = await contexto.ProcessosSeletivos.SingleAsync(p => p.Id == processo.Id);
+        gravado.MarkAsDeleted("conta-de-teste", TimeProvider.System.GetUtcNow());
         await contexto.SaveChangesAsync();
         return processo;
     }

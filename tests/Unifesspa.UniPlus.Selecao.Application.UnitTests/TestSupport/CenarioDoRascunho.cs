@@ -53,6 +53,8 @@ internal sealed class CenarioDoRascunho
 
     public IProcessoSeletivoRepository Processos { get; } = Substitute.For<IProcessoSeletivoRepository>();
 
+    public IDocumentoAPublicarRepository Documentos { get; } = Substitute.For<IDocumentoAPublicarRepository>();
+
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
 
     public PreparacaoDoDocumentoDoRascunho Preparacao =>

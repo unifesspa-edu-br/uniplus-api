@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261117031701_Inicial")]
+    [Migration("20261117091803_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -19392,16 +19392,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_destinos_remanejamento_configuracao_de_remanejamento");
-                });
-
-            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.DocumentoAPublicar", b =>
-                {
-                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", null)
-                        .WithMany()
-                        .HasForeignKey("ProcessoSeletivoId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_documentos_a_publicar_processo_seletivo");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.DocumentoExigido", b =>

@@ -16,7 +16,10 @@ using Services;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
-/// <summary>Handler de <see cref="ConfirmarEnvioDoDocumentoAPublicarCommand"/>.</summary>
+/// <summary>
+/// Handler de <see cref="ConfirmarEnvioDoDocumentoAPublicarCommand"/>. Bloqueia o dono antes de qualquer leitura do
+/// documento: a ordem dos bloqueios é a do rascunho, depois a do documento, a mesma de quem exclui ou publica o rascunho.
+/// </summary>
 public static class ConfirmarEnvioDoDocumentoAPublicarCommandHandler
 {
     private static readonly ConfirmacaoDoArquivoEnviado.Recusas Recusas = new(
@@ -27,8 +30,12 @@ public static class ConfirmarEnvioDoDocumentoAPublicarCommandHandler
         StatusInvalido: new DomainError(
             DocumentoAPublicarErrorCodes.StatusInvalidoParaConfirmacao, "Somente um documento pendente pode ser confirmado."));
 
+    private static readonly DomainError DocumentoNaoEncontrado = new(
+        DocumentoAPublicarErrorCodes.NaoEncontrado, "Documento não encontrado neste Processo Seletivo.");
+
     public static async Task<Result<DocumentoAPublicarDto>> Handle(
         ConfirmarEnvioDoDocumentoAPublicarCommand command,
+        BloqueioDoDonoDoDocumentoAPublicar bloqueio,
         IDocumentoAPublicarRepository documentoAPublicarRepository,
         IArquivoArmazenadoStorage storage,
         IUnitOfWork unitOfWork,
@@ -36,20 +43,42 @@ public static class ConfirmarEnvioDoDocumentoAPublicarCommandHandler
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
+        ArgumentNullException.ThrowIfNull(bloqueio);
         ArgumentNullException.ThrowIfNull(documentoAPublicarRepository);
         ArgumentNullException.ThrowIfNull(storage);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(clock);
 
+        return await bloqueio.BloquearSeExisteAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false)
+            ? await ConfirmarAsync(command, documentoAPublicarRepository, storage, unitOfWork, clock, cancellationToken).ConfigureAwait(false)
+            : Result<DocumentoAPublicarDto>.Failure(AcessoAoProcesso.NaoEncontrado(command.ProcessoSeletivoId));
+    }
+
+    private static async Task<Result<DocumentoAPublicarDto>> ConfirmarAsync(
+        ConfirmarEnvioDoDocumentoAPublicarCommand command,
+        IDocumentoAPublicarRepository documentoAPublicarRepository,
+        IArquivoArmazenadoStorage storage,
+        IUnitOfWork unitOfWork,
+        TimeProvider clock,
+        CancellationToken cancellationToken)
+    {
         DocumentoAPublicar? documento = await documentoAPublicarRepository
             .ObterPorIdAsync(command.DocumentoAPublicarId, cancellationToken)
             .ConfigureAwait(false);
-        if (documento is null || documento.ProcessoSeletivoId != command.ProcessoSeletivoId)
-        {
-            return Result<DocumentoAPublicarDto>.Failure(new DomainError(
-                DocumentoAPublicarErrorCodes.NaoEncontrado, "Documento não encontrado neste Processo Seletivo."));
-        }
 
+        return documento is null || documento.ProcessoSeletivoId != command.ProcessoSeletivoId
+            ? Result<DocumentoAPublicarDto>.Failure(DocumentoNaoEncontrado)
+            : await ConfirmarEGravarAsync(documento, documentoAPublicarRepository, storage, unitOfWork, clock, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result<DocumentoAPublicarDto>> ConfirmarEGravarAsync(
+        DocumentoAPublicar documento,
+        IDocumentoAPublicarRepository documentoAPublicarRepository,
+        IArquivoArmazenadoStorage storage,
+        IUnitOfWork unitOfWork,
+        TimeProvider clock,
+        CancellationToken cancellationToken)
+    {
         Result confirmacao = await ConfirmacaoDoArquivoEnviado
             .ConfirmarAsync(documento, DocumentoAPublicar.TamanhoMaximoBytes, Recusas, documentoAPublicarRepository, storage, clock, cancellationToken)
             .ConfigureAwait(false);

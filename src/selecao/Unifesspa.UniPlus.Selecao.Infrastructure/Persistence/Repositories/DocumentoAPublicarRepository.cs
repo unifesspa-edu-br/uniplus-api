@@ -64,6 +64,17 @@ public sealed class DocumentoAPublicarRepository : IDocumentoAPublicarRepository
             .ConfigureAwait(false);
     }
 
+    public async Task<IReadOnlyList<string>> RemoverDoProcessoAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default)
+    {
+        List<DocumentoAPublicar> documentos = await _context.DocumentosAPublicar
+            .Where(d => d.ProcessoSeletivoId == processoSeletivoId)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        _context.DocumentosAPublicar.RemoveRange(documentos);
+        return [.. documentos.SelectMany(ChavesDeObjeto)];
+    }
+
     public async Task AdicionarAsync(DocumentoAPublicar entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
@@ -115,11 +126,13 @@ public sealed class DocumentoAPublicarRepository : IDocumentoAPublicarRepository
     {
         ArgumentNullException.ThrowIfNull(entity);
         // Sem soft-delete (EntityBase puro — DocumentoAPublicar não é ISoftDeletable).
-        // Nenhum caso de uso remove documento pela entidade rastreada: o pendente
-        // vencido sai por RemoverSePendenteVencidoAsync, condicionado no banco.
+        // Nenhum caso de uso remove um documento isolado pela entidade rastreada: o pendente vencido sai por
+        // RemoverSePendenteVencidoAsync, condicionado no banco, e os do rascunho excluído por RemoverDoProcessoAsync.
         // Implementado por completude do contrato IRepository<T>.
         _context.DocumentosAPublicar.Remove(entity);
     }
+
+    private static string[] ChavesDeObjeto(DocumentoAPublicar documento) => [documento.ObjectKey, documento.ChaveDaCopiaGravada];
 
     private static Expression<Func<DocumentoAPublicar, bool>> PendenteVencido(DateTimeOffset agora) =>
         d => d.Status == StatusArquivoEnviado.Pendente && d.ExpiraEm <= agora;
