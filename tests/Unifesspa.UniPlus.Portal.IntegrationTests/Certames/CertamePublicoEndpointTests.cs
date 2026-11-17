@@ -30,6 +30,10 @@ public sealed class CertamePublicoEndpointTests : IClassFixture<PortalComOrigens
     private static readonly Uri EditalNoAcervo =
         new("https://acervo.example/editais/2026/ceps/edital-abertura/medicina-2027/0199a000-0000-7000-8000-00000000000a/abc.pdf");
 
+    private const string AvisoDeListaIncompleta =
+        "A lista de publicações deste processo seletivo pode estar incompleta no momento. "
+        + "Tente novamente em alguns minutos.";
+
     private readonly PortalComOrigensSimuladasApiFactory _factory;
 
     public CertamePublicoEndpointTests(PortalComOrigensSimuladasApiFactory factory)
@@ -37,11 +41,10 @@ public sealed class CertamePublicoEndpointTests : IClassFixture<PortalComOrigens
         _factory = factory;
     }
 
-    [Fact(DisplayName = "Certame publicado com atos: anônimo, compõe as duas origens, linha do tempo do mais recente ao mais antigo")]
+    [Fact(DisplayName = "Certame publicado com atos: anônimo, no tipo de mídia da página, revalidável e com os dados de Seleção")]
     public async Task Publicado_ComAtos_ComposicaoCompleta()
     {
-        ServirCertame();
-        _factory.Registro.Resposta = new LeituraDosAtos(AtosEmOrdemDaOrigem(), Falha: null);
+        ServirCertameComAtosEmOrdemDaOrigem();
 
         using HttpClient client = _factory.CreateClient();
         using HttpResponseMessage resposta = await client.GetAsync(new Uri(Rota, UriKind.Relative));
@@ -53,37 +56,48 @@ public sealed class CertamePublicoEndpointTests : IClassFixture<PortalComOrigens
         _factory.Contrato.UltimoIdentificador.Should().Be(Identificador);
 
         using JsonDocument corpo = await LerAsync(resposta);
-        JsonElement raiz = corpo.RootElement;
+        ConferirDadosDoCertame(corpo.RootElement);
+    }
 
-        raiz.GetProperty("identificador").GetString().Should().Be(Identificador);
-        raiz.GetProperty("nome").GetString().Should().Be("Medicina 2027");
-        raiz.GetProperty("numeroEdital").GetString().Should().Be("012/2026");
-        raiz.GetProperty("situacao").GetString().Should().Be("ultimosDias", "a Portal repassa a situação de Seleção com o vocabulário da vitrine");
-        raiz.GetProperty("documentoEditalUrl").GetString().Should().Be(EditalNoAcervo.ToString());
-        raiz.GetProperty("dataDoAto").GetString().Should().Be("2026-12-01", "é a data do edital vigente");
-        raiz.GetProperty("aviso").ValueKind.Should().Be(JsonValueKind.Null);
+    [Fact(DisplayName = "Certame publicado com atos: linha do tempo do mais recente ao mais antigo; só o ato criador traz o edital do acervo")]
+    public async Task Publicado_ComAtos_LinhaDoTempoDoMaisRecenteAoMaisAntigo()
+    {
+        ServirCertameComAtosEmOrdemDaOrigem();
 
-        JsonElement[] linha = [.. raiz.GetProperty("linhaDoTempo").EnumerateArray()];
-        linha.Select(e => e.GetProperty("id").GetGuid()).Should().Equal(ResultadoId, AvisoId, CriadorId);
+        using HttpClient client = _factory.CreateClient();
+        using HttpResponseMessage resposta = await client.GetAsync(new Uri(Rota, UriKind.Relative));
+        using JsonDocument corpo = await LerAsync(resposta);
+        JsonElement[] linha = EventosDaLinhaDoTempo(corpo.RootElement);
 
-        JsonElement edital = linha[2];
-        edital.GetProperty("data").GetString().Should().Be("2026-12-01");
-        edital.GetProperty("titulo").GetString().Should().Be("Edital de abertura nº 012/2026");
-        edital.GetProperty("numero").GetString().Should().Be("012/2026");
-        edital.GetProperty("ano").GetInt32().Should().Be(2026);
-        edital.GetProperty("tipo").GetProperty("codigo").GetString().Should().Be("EDITAL_ABERTURA");
-        edital.GetProperty("tipo").GetProperty("nome").GetString().Should().Be("Edital de abertura");
-        edital.GetProperty("descricao").ValueKind.Should().Be(JsonValueKind.Null);
-        edital.GetProperty("documentoUrl").GetString().Should().Be(EditalNoAcervo.ToString());
-        edital.GetProperty("documentos").EnumerateArray().Single().GetProperty("papel").GetString().Should().Be("principal");
+        linha.Select(evento => evento.GetProperty("id").GetGuid()).Should().Equal(ResultadoId, AvisoId, CriadorId);
+        ConferirEventoDoEditalDeAbertura(linha[2]);
         linha[0].GetProperty("documentoUrl").ValueKind.Should().Be(JsonValueKind.Null, "só o ato criador tem documento no acervo");
+    }
 
-        // Ato sem nome do tipo copiado cai para o código, no título e no tipo.
-        JsonElement aviso = linha[1];
+    [Fact(DisplayName = "Ato sem nome do tipo copiado: título e tipo caem para o código")]
+    public async Task Publicado_AtoSemNomeDoTipo_TituloETipoCaemParaOCodigo()
+    {
+        ServirCertameComAtosEmOrdemDaOrigem();
+
+        using HttpClient client = _factory.CreateClient();
+        using HttpResponseMessage resposta = await client.GetAsync(new Uri(Rota, UriKind.Relative));
+        using JsonDocument corpo = await LerAsync(resposta);
+        JsonElement aviso = EventosDaLinhaDoTempo(corpo.RootElement)[1];
+
         aviso.GetProperty("titulo").GetString().Should().Be("AVISO");
         aviso.GetProperty("tipo").GetProperty("nome").GetString().Should().Be("AVISO");
+    }
 
-        // Ato sem número declarado: o número vem ausente e o ano da numeração continua presente.
+    [Fact(DisplayName = "Ato sem número declarado: número ausente e ano da numeração presente")]
+    public async Task Publicado_AtoSemNumero_NumeroAusenteEAnoPresente()
+    {
+        ServirCertameComAtosEmOrdemDaOrigem();
+
+        using HttpClient client = _factory.CreateClient();
+        using HttpResponseMessage resposta = await client.GetAsync(new Uri(Rota, UriKind.Relative));
+        using JsonDocument corpo = await LerAsync(resposta);
+        JsonElement aviso = EventosDaLinhaDoTempo(corpo.RootElement)[1];
+
         aviso.GetProperty("numero").ValueKind.Should().Be(JsonValueKind.Null);
         aviso.GetProperty("ano").GetInt32().Should().Be(2027);
     }
@@ -91,8 +105,7 @@ public sealed class CertamePublicoEndpointTests : IClassFixture<PortalComOrigens
     [Fact(DisplayName = "A resposta não carrega dado pessoal do ato nem campo interno da composição")]
     public async Task Publicado_SemDadoPessoalNemCampoInterno()
     {
-        ServirCertame();
-        _factory.Registro.Resposta = new LeituraDosAtos(AtosEmOrdemDaOrigem(), Falha: null);
+        ServirCertameComAtosEmOrdemDaOrigem();
 
         using HttpClient client = _factory.CreateClient();
         using HttpResponseMessage resposta = await client.GetAsync(new Uri(Rota, UriKind.Relative));
@@ -166,7 +179,7 @@ public sealed class CertamePublicoEndpointTests : IClassFixture<PortalComOrigens
     {
         { "Publicações indisponível", new LeituraDosAtos([], FalhaNaLeituraDosAtos.OrigemIndisponivel) },
         { "falha no meio da paginação", new LeituraDosAtos([AtoCriador()], FalhaNaLeituraDosAtos.FalhaNaPaginacao) },
-        { "teto de páginas atingido", new LeituraDosAtos([AtoCriador()], FalhaNaLeituraDosAtos.TetoDePaginas) },
+        { "limite de páginas atingido", new LeituraDosAtos([AtoCriador()], FalhaNaLeituraDosAtos.LimiteDePaginas) },
         { "ato criador ausente da linha do tempo", new LeituraDosAtos([AtoAviso()], Falha: null) },
         { "detalhe atrasado em relação a Publicações", new LeituraDosAtos([AtoCriador(), AtoRetificacaoMaisRecente()], Falha: null) },
     };
@@ -187,17 +200,13 @@ public sealed class CertamePublicoEndpointTests : IClassFixture<PortalComOrigens
 
         using JsonDocument corpo = await LerAsync(resposta);
         corpo.RootElement.GetProperty("nome").GetString().Should().Be("Medicina 2027", caso);
-        corpo.RootElement.GetProperty("aviso").GetString().Should().Be(
-            "A lista de publicações deste processo seletivo pode estar incompleta no momento. "
-            + "Tente novamente em alguns minutos.",
-            caso);
+        corpo.RootElement.GetProperty("aviso").GetString().Should().Be(AvisoDeListaIncompleta, caso);
     }
 
     [Fact(DisplayName = "Página completa: selo do conteúdo composto, 304 quando o cliente já o tem")]
     public async Task PaginaCompleta_RevalidaPorSelo()
     {
-        ServirCertame();
-        _factory.Registro.Resposta = new LeituraDosAtos(AtosEmOrdemDaOrigem(), Falha: null);
+        ServirCertameComAtosEmOrdemDaOrigem();
 
         using HttpClient client = _factory.CreateClient();
         using HttpResponseMessage primeira = await client.GetAsync(new Uri(Rota, UriKind.Relative));
@@ -256,6 +265,39 @@ public sealed class CertamePublicoEndpointTests : IClassFixture<PortalComOrigens
         using HttpResponseMessage resposta = await client.SendAsync(pedido);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.NotAcceptable);
+    }
+
+    private void ServirCertameComAtosEmOrdemDaOrigem()
+    {
+        ServirCertame();
+        _factory.Registro.Resposta = new LeituraDosAtos(AtosEmOrdemDaOrigem(), Falha: null);
+    }
+
+    private static JsonElement[] EventosDaLinhaDoTempo(JsonElement raiz) =>
+        [.. raiz.GetProperty("linhaDoTempo").EnumerateArray()];
+
+    private static void ConferirDadosDoCertame(JsonElement raiz)
+    {
+        raiz.GetProperty("identificador").GetString().Should().Be(Identificador);
+        raiz.GetProperty("nome").GetString().Should().Be("Medicina 2027");
+        raiz.GetProperty("numeroEdital").GetString().Should().Be("012/2026");
+        raiz.GetProperty("situacao").GetString().Should().Be("ultimosDias", "a Portal repassa a situação de Seleção com o vocabulário da vitrine");
+        raiz.GetProperty("documentoEditalUrl").GetString().Should().Be(EditalNoAcervo.ToString());
+        raiz.GetProperty("dataDoAto").GetString().Should().Be("2026-12-01", "é a data do edital vigente");
+        raiz.GetProperty("aviso").ValueKind.Should().Be(JsonValueKind.Null);
+    }
+
+    private static void ConferirEventoDoEditalDeAbertura(JsonElement edital)
+    {
+        edital.GetProperty("data").GetString().Should().Be("2026-12-01");
+        edital.GetProperty("titulo").GetString().Should().Be("Edital de abertura nº 012/2026");
+        edital.GetProperty("numero").GetString().Should().Be("012/2026");
+        edital.GetProperty("ano").GetInt32().Should().Be(2026);
+        edital.GetProperty("tipo").GetProperty("codigo").GetString().Should().Be("EDITAL_ABERTURA");
+        edital.GetProperty("tipo").GetProperty("nome").GetString().Should().Be("Edital de abertura");
+        edital.GetProperty("descricao").ValueKind.Should().Be(JsonValueKind.Null);
+        edital.GetProperty("documentoUrl").GetString().Should().Be(EditalNoAcervo.ToString());
+        edital.GetProperty("documentos").EnumerateArray().Single().GetProperty("papel").GetString().Should().Be("principal");
     }
 
     private void ServirCertame() =>

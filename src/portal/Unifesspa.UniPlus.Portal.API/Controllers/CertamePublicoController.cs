@@ -78,6 +78,11 @@ public sealed class CertamePublicoController : ControllerBase
     /// Quando só a linha do tempo não pode ser montada por completo, os dados do certame saem
     /// assim mesmo, com <c>aviso</c> e sem guarda em cache.
     /// </para>
+    /// <para>
+    /// O identificador é anulável de propósito: o binder transforma um segmento só de espaços em
+    /// nulo, e um parâmetro obrigatório faria essa entrada sair como 400 de validação — o endereço
+    /// fora do formato tem de dar o mesmo "não encontrado" dos demais casos.
+    /// </para>
     /// </remarks>
     [HttpGet("certames/{identificador}")]
     [VendorMediaType(Resource = "certame-publico", Versions = [1])]
@@ -93,49 +98,65 @@ public sealed class CertamePublicoController : ControllerBase
         [FromHeader(Name = "If-None-Match")] string? ifNoneMatch,
         CancellationToken cancellationToken)
     {
-        // Anulável de propósito: o binder transforma um segmento só de espaços em nulo, e um
-        // parâmetro obrigatório faria essa entrada sair como 400 de validação — o endereço fora do
-        // formato tem de dar o mesmo "não encontrado" dos demais casos.
         identificador ??= string.Empty;
 
         Result<PaginaDoCertame> resultado = await _composicao
             .ComporPorIdentificadorAsync(identificador, cancellationToken)
             .ConfigureAwait(false);
 
-        if (resultado.IsFailure)
-        {
-            if (resultado.Error!.Code == PaginaDoCertameErrorCodes.OrigemIndisponivel)
-            {
-                // Estado transitório: nada dele pode ser guardado, e o cliente recebe quando voltar.
-                Response.Headers.CacheControl = "no-store";
-                Response.Headers.RetryAfter =
-                    _origens.ReencaminharAposEmSegundos.ToString(CultureInfo.InvariantCulture);
-            }
-            else
-            {
-                // O mesmo endereço passa a existir quando o certame é publicado: revalidação
-                // obrigatória, para que nenhum cache atribua frescor heurístico ao 404.
-                Response.Headers.CacheControl = "no-cache";
-            }
+        return resultado.IsFailure
+            ? RespostaDeFalha(resultado)
+            : RespostaDaPagina(identificador, resultado.Value!, ifNoneMatch);
+    }
 
-            return resultado.ToActionResult(_mapper);
-        }
-
-        PaginaDoCertame pagina = resultado.Value!;
-        CertamePublicoResponse resposta = CertamePublicoResponse.De(identificador, pagina);
-
-        // Linha do tempo degradada é estado transitório e não é guardada em camada nenhuma
-        // (ADR-0131, Emenda 1); a completa é servida com revalidação obrigatória.
-        if (pagina.Degradacao is not null)
+    /// <summary>
+    /// Origem indisponível é estado transitório: nada dele pode ser guardado, e o cliente recebe
+    /// quando voltar. O "não encontrado" é revalidável, porque o mesmo endereço passa a existir
+    /// quando o certame é publicado: nenhum cache atribui frescor heurístico ao 404.
+    /// </summary>
+    private IActionResult RespostaDeFalha(Result<PaginaDoCertame> resultado)
+    {
+        if (resultado.Error!.Code == PaginaDoCertameErrorCodes.OrigemIndisponivel)
         {
             Response.Headers.CacheControl = "no-store";
-            return Ok(resposta);
+            Response.Headers.RetryAfter = _origens.ReencaminharAposEmSegundos.ToString(CultureInfo.InvariantCulture);
+        }
+        else
+        {
+            Response.Headers.CacheControl = "no-cache";
         }
 
-        Response.Headers.CacheControl = "no-cache";
+        return resultado.ToActionResult(_mapper);
+    }
 
-        // A página é composta de duas origens, e nenhum selo de origem sozinho muda quando a outra
-        // muda: o selo é o do conteúdo servido, calculado a cada leitura sem guardar a composição.
+    private IActionResult RespostaDaPagina(string identificador, PaginaDoCertame pagina, string? ifNoneMatch)
+    {
+        CertamePublicoResponse resposta = CertamePublicoResponse.De(identificador, pagina);
+
+        return pagina.Degradacao is not null
+            ? RespostaDegradada(resposta)
+            : RespostaCompleta(resposta, ifNoneMatch);
+    }
+
+    /// <summary>
+    /// Linha do tempo degradada é estado transitório e não é guardada em camada nenhuma
+    /// (ADR-0131, Emenda 1).
+    /// </summary>
+    private OkObjectResult RespostaDegradada(CertamePublicoResponse resposta)
+    {
+        Response.Headers.CacheControl = "no-store";
+
+        return Ok(resposta);
+    }
+
+    /// <summary>
+    /// Servida com revalidação obrigatória. A página é composta de duas origens, e nenhum selo de
+    /// origem sozinho muda quando a outra muda: o selo é o do conteúdo servido, calculado a cada
+    /// leitura sem guardar a composição.
+    /// </summary>
+    private IActionResult RespostaCompleta(CertamePublicoResponse resposta, string? ifNoneMatch)
+    {
+        Response.Headers.CacheControl = "no-cache";
         string selo = SeloDe(resposta);
         Response.Headers.ETag = selo;
 
