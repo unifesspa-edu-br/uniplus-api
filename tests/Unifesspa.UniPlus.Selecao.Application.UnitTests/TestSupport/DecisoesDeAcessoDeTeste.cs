@@ -59,7 +59,7 @@ internal sealed class DecisoesDeAcessoDeTeste
     public DecisaoDeAcesso Decidir(PermissionRequirement requisito, ResourceContext resource)
     {
         bool permitida = _concedidas.Contains(requisito.Permissao) && !ForaDaDesignacao(requisito, resource);
-        EffectiveGrant concessao = EffectiveGrant.From(requisito.Permissao, FonteGrant.Concessao, escopoUnidadeId: Unidade).Value!;
+        EffectiveGrant concessao = EffectiveGrant.DaConcessaoDePerfil(requisito.Permissao, EscopoDaPermissaoEfetiva.DaUnidade(Unidade).Value!).Value!;
         AuthorizationSubject sujeito = AuthorizationSubject.From(
             UsuarioRef.From("https://idp.exemplo/realms/unifesspa", Persona).Value!, "jti", concessoesEfetivas: [concessao]).Value!;
         AuthorizationRequestContext contexto = AuthorizationRequestContext.From("req-1", DateTimeOffset.UtcNow, OrigemRequisicao.Api).Value!;

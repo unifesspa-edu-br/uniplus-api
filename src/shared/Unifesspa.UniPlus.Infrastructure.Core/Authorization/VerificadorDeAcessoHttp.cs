@@ -192,7 +192,7 @@ internal sealed class VerificadorDeAcessoHttp : IVerificadorDeAcesso
         AuthorizationSubject sujeito, AuthorizationRequestContext contexto, PermissionRequirement requisito, CancellationToken cancellationToken)
     {
         List<DecisaoDeAcesso> decisoes = [];
-        foreach (Guid unidade in ConcessoesDa(sujeito, requisito).Select(static c => c.EscopoUnidadeId).OfType<Guid>().Distinct())
+        foreach (Guid unidade in ConcessoesDa(sujeito, requisito).Select(static concessao => concessao.Escopo.UnidadeId).OfType<Guid>().Distinct())
         {
             DecisaoDeAcesso decisao = await DecidirAsync(
                 sujeito, contexto, requisito, ResourceDaOperacaoNaUnidade(requisito, unidade), cancellationToken).ConfigureAwait(false);
@@ -247,7 +247,7 @@ internal sealed class VerificadorDeAcessoHttp : IVerificadorDeAcesso
         AuthorizationSubject sujeito, AuthorizationRequestContext contexto, PermissionRequirement operacaoDoTitular)
     {
         ResourceContext alvo = ResourceDaPropriaOperacao(operacaoDoTitular);
-        EffectiveGrant titularidade = EffectiveGrant.From(operacaoDoTitular.Permissao, FonteGrant.Titularidade).Value!;
+        EffectiveGrant titularidade = EffectiveGrant.PorTitularidade(operacaoDoTitular.Permissao).Value!;
         AuthorizationDecision permitida = AuthorizationDecision.Permitir(titularidade);
 
         return new DecisaoPermitida(

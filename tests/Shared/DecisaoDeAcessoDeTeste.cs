@@ -24,19 +24,23 @@ internal static class DecisaoDeAcessoDeTeste
         }
 
         ResourceContext alvo = resource ?? ResourceContext.From(ResourceTipos.Operacao, requisito.Sensibilidade).Value!;
-        AuthorizationSubject sujeito = AuthorizationSubject.From(
-            UsuarioRef.From("https://idp.exemplo/realms/unifesspa", "diogo.souza").Value!, "jti-teste").Value!;
-        AuthorizationDecision decisao = resultado switch
-        {
-            ResultadoDoAcesso.Permitido => AuthorizationDecision.Permitir(
-                EffectiveGrant.From(requisito.Permissao, FonteGrant.Concessao, escopoInstitucional: true).Value!),
-            ResultadoDoAcesso.Impedido => AuthorizationDecision.Negar(MotivoNegativa.ImpedidoPorInscricaoNoProcesso),
-            _ => AuthorizationDecision.Negar(MotivoNegativa.SemConcessaoAplicavel),
-        };
+        RegistroDecisaoAcesso registro = RegistroDecisaoAcesso.De(Sujeito(), requisito, alvo, Requisicao, Decisao(resultado, requisito));
 
-        return DecisaoDeAcesso.Tomada(requisito, alvo, RegistroDecisaoAcesso.De(sujeito, requisito, alvo, Requisicao, decisao));
+        return DecisaoDeAcesso.Tomada(requisito, alvo, registro);
     }
 
     public static DecisaoPermitida Permitida(PermissionRequirement requisito, ResourceContext? resource = null) =>
         (DecisaoPermitida)Tomada(ResultadoDoAcesso.Permitido, requisito, resource);
+
+    private static AuthorizationSubject Sujeito() =>
+        AuthorizationSubject.From(UsuarioRef.From("https://idp.exemplo/realms/unifesspa", "diogo.souza").Value!, "jti-teste").Value!;
+
+    private static AuthorizationDecision Decisao(ResultadoDoAcesso resultado, PermissionRequirement requisito) =>
+        resultado switch
+        {
+            ResultadoDoAcesso.Permitido => AuthorizationDecision.Permitir(
+                EffectiveGrant.DaConcessaoDePerfil(requisito.Permissao, EscopoDaPermissaoEfetiva.Instituicao).Value!),
+            ResultadoDoAcesso.Impedido => AuthorizationDecision.Negar(MotivoNegativa.ImpedidoPorInscricaoNoProcesso),
+            _ => AuthorizationDecision.Negar(MotivoNegativa.SemConcessaoAplicavel),
+        };
 }

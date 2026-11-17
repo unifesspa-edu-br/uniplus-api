@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.ArchTests.Fixtures;
 
 using Unifesspa.UniPlus.Authorization.Contracts;
-using Unifesspa.UniPlus.Authorization.Enums;
 using Unifesspa.UniPlus.Authorization.ValueObjects;
 
 /// <summary>
@@ -10,10 +9,10 @@ using Unifesspa.UniPlus.Authorization.ValueObjects;
 /// </summary>
 internal static class FixturesDeTitularidade
 {
-    internal static class MontaConcessaoComFonteEscolhida
+    internal static class MontaTitularidade
     {
         public static EffectiveGrant? Montar() =>
-            EffectiveGrant.From("autorizacao:pedidos:ler-proprios", FonteGrant.Titularidade).Value;
+            EffectiveGrant.PorTitularidade("autorizacao:pedidos:ler-proprios").Value;
     }
 
     internal static class PermiteForaDoPontoDeDecisao

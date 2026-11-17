@@ -105,7 +105,7 @@ public sealed class RegistroDeAcessoKafkaRecriacaoTests
     {
         AuthorizationSubject sujeito = AuthorizationSubject.From(
             UsuarioRef.From("https://idp.exemplo/realms/unifesspa", "leandro.viana").Value!, "jti-teste").Value!;
-        EffectiveGrant concessao = EffectiveGrant.From("selecao:inscricoes:revelar-cpf", FonteGrant.Concessao, escopoInstitucional: true).Value!;
+        EffectiveGrant concessao = EffectiveGrant.DaConcessaoDePerfil("selecao:inscricoes:revelar-cpf", EscopoDaPermissaoEfetiva.Instituicao).Value!;
 
         return RegistroDecisaoAcesso.De(
             sujeito,

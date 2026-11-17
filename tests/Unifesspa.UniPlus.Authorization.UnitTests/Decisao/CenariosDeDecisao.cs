@@ -57,28 +57,45 @@ internal static class CenariosDeDecisao
             escopoContextoObrigatorio,
             verificacoesDeContexto).Value!;
 
-    /// <summary>Concessão da permissão do cenário: de unidade quando a unidade é informada, institucional nos demais casos.</summary>
-    public static EffectiveGrant Concessao(
-        string? permissaoCodigo = null,
-        FonteGrant fonte = FonteGrant.Concessao,
+    /// <summary>Concessão de perfil da permissão do cenário, com a instituição como escopo.</summary>
+    public static EffectiveGrant ConcessaoInstitucional(
+        string? permissao = null, Guid? grantId = null, DateTimeOffset? validoAte = null)
+        => DeConcessaoDePerfil(EscopoDaPermissaoEfetiva.Instituicao, permissao, grantId, validoAte: validoAte);
+
+    /// <summary>Concessão de perfil da permissão do cenário, com a unidade como escopo.</summary>
+    public static EffectiveGrant ConcessaoDaUnidade(
+        Guid unidadeId,
+        string? permissao = null,
         Guid? grantId = null,
-        Guid? escopoUnidadeId = null,
-        Guid? escopoProcessoId = null,
-        Guid? escopoChamadaId = null,
-        string? resourceTipoRestricao = null,
-        DateTimeOffset? validoAte = null,
-        Guid? perfilId = null)
-        => EffectiveGrant.From(
-            permissaoCodigo ?? Permissao,
-            fonte,
-            grantId,
-            escopoUnidadeId,
-            escopoProcessoId,
-            escopoChamadaId,
-            resourceTipoRestricao,
-            validoAte,
-            escopoInstitucional: escopoUnidadeId is null,
-            perfilId: perfilId).Value!;
+        Guid? perfilId = null,
+        DateTimeOffset? validoAte = null)
+        => DeConcessaoDePerfil(EscopoDaPermissaoEfetiva.DaUnidade(unidadeId).Value!, permissao, grantId, perfilId, validoAte);
+
+    /// <summary>Concessão de perfil institucional restrita a um processo.</summary>
+    public static EffectiveGrant ConcessaoDoProcesso(Guid processoId, Guid? grantId = null)
+        => DeConcessaoDePerfil(
+            EscopoDaPermissaoEfetiva.Criar(null, processoId, null, null, institucional: true).Value!, grantId: grantId);
+
+    /// <summary>Concessão de perfil institucional restrita a um tipo de resource.</summary>
+    public static EffectiveGrant ConcessaoDoTipoDeResource(string resourceTipo)
+        => DeConcessaoDePerfil(EscopoDaPermissaoEfetiva.Criar(null, null, null, resourceTipo, institucional: true).Value!);
+
+    /// <summary>Concessão excepcional da permissão do cenário, no escopo e até a validade dados.</summary>
+    public static EffectiveGrant ConcessaoExcepcional(
+        EscopoDaPermissaoEfetiva escopo, DateTimeOffset validoAte, string? permissao = null)
+        => EffectiveGrant.Excepcional(permissao ?? Permissao, escopo, validoAte).Value!;
+
+    /// <summary>Titularidade da permissão do cenário: o registro de quem acessa o que é seu, que nunca autoriza.</summary>
+    public static EffectiveGrant ConcessaoDeTitularidade()
+        => EffectiveGrant.PorTitularidade(Permissao).Value!;
+
+    private static EffectiveGrant DeConcessaoDePerfil(
+        EscopoDaPermissaoEfetiva escopo,
+        string? permissao = null,
+        Guid? grantId = null,
+        Guid? perfilId = null,
+        DateTimeOffset? validoAte = null)
+        => EffectiveGrant.DaConcessaoDePerfil(permissao ?? Permissao, escopo, grantId, perfilId, validoAte).Value!;
 
     public static AuthorizationSubject Sujeito(
         bool mfaSatisfeito = false,
@@ -163,6 +180,6 @@ internal static class CenariosDeDecisao
         }
 
         public Task<bool> ExisteDesignacaoVigenteAsync(Guid bancaId, CancellationToken cancellationToken) =>
-            Task.FromResult(_designacoes.Any(d => d.Banca.BancaId == bancaId));
+            Task.FromResult(_designacoes.Any(designacao => designacao.Banca.BancaId == bancaId));
     }
 }

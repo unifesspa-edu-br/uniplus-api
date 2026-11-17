@@ -16,38 +16,66 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// </summary>
 public sealed class TiposFormaisContratoTests
 {
+    private const string Permissao = "selecao.editais.publicar";
+
+    private static readonly Guid Unidade = Guid.CreateVersion7();
+
+    private static EffectiveGrant ConcessaoInstitucional() =>
+        EffectiveGrant.DaConcessaoDePerfil(Permissao, EscopoDaPermissaoEfetiva.Instituicao).Value!;
+
+    private static ResourceContext Resource(string tipo) =>
+        ResourceContext.From(tipo, ClassificacaoDeProtecao.Pessoal, unidadeProprietariaId: Unidade).Value!;
+
+    private static AuthorizationRequestContext Requisicao(Guid execucao) =>
+        AuthorizationRequestContext.From(
+            "req-1", new DateTimeOffset(2026, 6, 15, 12, 0, 0, TimeSpan.Zero), OrigemRequisicao.Api, execucaoId: execucao).Value!;
+
+    private static PermissionRequirement Requisito(IEnumerable<string> verificacoes) =>
+        PermissionRequirement.From(
+            "selecao.resultado.homologar",
+            ClassificacaoDeProtecao.Sensivel,
+            baseLegalPadrao: "LGPD art. 7º, II",
+            requerMfa: true,
+            escopoContextoObrigatorio: ["processoId"],
+            verificacoesDeContexto: verificacoes).Value!;
+
+    private static AuthorizationSubject Sujeito(IEnumerable<string> grupos) =>
+        AuthorizationSubject.From(
+            UsuarioRef.From("https://sso.gov.br", "conta-1").Value!,
+            "jti-1",
+            gruposOidc: grupos,
+            unidadesAdministradas: [Unidade],
+            concessoesEfetivas: [ConcessaoInstitucional()]).Value!;
+
     [Fact]
-    public void TiposFormais_Imutaveis_IgualdadePorValor()
+    public void DenyReason_MesmoMotivo_EhIgualPorValor()
     {
-        // DenyReason — igualdade por código.
-        DenyReason.De(MotivoNegativa.FaseFechada)
-            .Should().Be(DenyReason.De(MotivoNegativa.FaseFechada));
-        DenyReason.De(MotivoNegativa.FaseFechada)
-            .Should().NotBe(DenyReason.De(MotivoNegativa.ConcessaoExpirada));
+        DenyReason.De(MotivoNegativa.FaseFechada).Should().Be(DenyReason.De(MotivoNegativa.FaseFechada));
+        DenyReason.De(MotivoNegativa.FaseFechada).Should().NotBe(DenyReason.De(MotivoNegativa.ConcessaoExpirada));
+    }
 
-        // ResourceContext — igualdade por valor dos atributos.
-        Guid unidade = Guid.CreateVersion7();
-        ResourceContext resourceA = ResourceContext.From("edital", ClassificacaoDeProtecao.Pessoal, unidadeProprietariaId: unidade).Value!;
-        ResourceContext resourceB = ResourceContext.From("edital", ClassificacaoDeProtecao.Pessoal, unidadeProprietariaId: unidade).Value!;
-        resourceA.Should().Be(resourceB);
-        resourceA.Should().NotBe(ResourceContext.From("inscricao", ClassificacaoDeProtecao.Pessoal, unidadeProprietariaId: unidade).Value!);
+    [Fact]
+    public void ResourceContext_MesmosAtributos_EhIgualPorValor()
+    {
+        Resource("edital").Should().Be(Resource("edital"));
+        Resource("edital").Should().NotBe(Resource("inscricao"));
+    }
 
-        // AuthorizationRequestContext — igualdade por valor (sem dupla aprovação).
-        var instante = new DateTimeOffset(2026, 6, 15, 12, 0, 0, TimeSpan.Zero);
+    [Fact]
+    public void AuthorizationRequestContext_MesmosAtributos_EhIgualPorValor()
+    {
         Guid execucao = Guid.CreateVersion7();
-        AuthorizationRequestContext reqA = AuthorizationRequestContext.From("req-1", instante, OrigemRequisicao.Api, execucaoId: execucao).Value!;
-        AuthorizationRequestContext reqB = AuthorizationRequestContext.From("req-1", instante, OrigemRequisicao.Api, execucaoId: execucao).Value!;
-        reqA.Should().Be(reqB);
 
-        // AuthorizationDecision — permitida igual por valor do grant; negada por código.
-        EffectiveGrant grant1 = EffectiveGrant.From("selecao.editais.publicar", FonteGrant.Concessao, escopoInstitucional: true).Value!;
-        EffectiveGrant grant2 = EffectiveGrant.From("selecao.editais.publicar", FonteGrant.Concessao, escopoInstitucional: true).Value!;
-        AuthorizationDecision.Permitir(grant1).Should().Be(AuthorizationDecision.Permitir(grant2));
+        Requisicao(execucao).Should().Be(Requisicao(execucao));
+    }
+
+    [Fact]
+    public void AuthorizationDecision_PermitidaIgualPorGrantENegadaPorCodigo()
+    {
+        AuthorizationDecision.Permitir(ConcessaoInstitucional()).Should().Be(AuthorizationDecision.Permitir(ConcessaoInstitucional()));
         AuthorizationDecision.Negar(MotivoNegativa.SemConcessaoAplicavel)
             .Should().Be(AuthorizationDecision.Negar(MotivoNegativa.SemConcessaoAplicavel));
-
-        // Permitida e negada nunca são iguais.
-        AuthorizationDecision.Permitir(grant1)
+        AuthorizationDecision.Permitir(ConcessaoInstitucional())
             .Should().NotBe(AuthorizationDecision.Negar(MotivoNegativa.SemConcessaoAplicavel));
     }
 
@@ -58,48 +86,22 @@ public sealed class TiposFormaisContratoTests
     [Fact]
     public void PermissionRequirement_ConteudoIdentico_EhIgualPorValor()
     {
-        PermissionRequirement Criar() => PermissionRequirement.From(
-            "selecao.resultado.homologar",
-            ClassificacaoDeProtecao.Sensivel,
-            baseLegalPadrao: "LGPD art. 7º, II",
-            requerMfa: true,
-            escopoContextoObrigatorio: ["processoId"],
-            verificacoesDeContexto: ["fase_aberta", "base_legal"]).Value!;
-
-        PermissionRequirement a = Criar();
-        PermissionRequirement b = Criar();
+        PermissionRequirement a = Requisito(["fase_aberta", "base_legal"]);
+        PermissionRequirement b = Requisito(["fase_aberta", "base_legal"]);
 
         a.Should().Be(b, "coleções de conteúdo idêntico não quebram a igualdade por valor");
         a.GetHashCode().Should().Be(b.GetHashCode());
-
-        PermissionRequirement diferente = PermissionRequirement.From(
-            "selecao.resultado.homologar",
-            ClassificacaoDeProtecao.Sensivel,
-            verificacoesDeContexto: ["fase_aberta"]).Value!;
-        a.Should().NotBe(diferente, "conteúdo de coleção distinto torna os contratos desiguais");
+        a.Should().NotBe(Requisito(["fase_aberta"]), "conteúdo de coleção distinto torna os contratos desiguais");
     }
 
     [Fact]
     public void AuthorizationSubject_ConteudoIdentico_EhIgualPorValor()
     {
-        UsuarioRef usuario = UsuarioRef.From("https://sso.gov.br", "conta-1").Value!;
-        Guid unidade = Guid.CreateVersion7();
-        EffectiveGrant grant = EffectiveGrant.From("selecao.editais.publicar", FonteGrant.Concessao, escopoInstitucional: true).Value!;
-
-        AuthorizationSubject Criar(IEnumerable<string> grupos) => AuthorizationSubject.From(
-            usuario,
-            "jti-1",
-            gruposOidc: grupos,
-            unidadesAdministradas: [unidade],
-            concessoesEfetivas: [grant]).Value!;
-
-        AuthorizationSubject a = Criar(["ceps-admin", "proeg-leitor"]);
-        AuthorizationSubject b = Criar(["proeg-leitor", "ceps-admin"]); // mesma composição, ordem distinta
+        AuthorizationSubject a = Sujeito(["ceps-admin", "proeg-leitor"]);
+        AuthorizationSubject b = Sujeito(["proeg-leitor", "ceps-admin"]); // mesma composição, ordem distinta
 
         a.Should().Be(b, "conjuntos comparam-se por conteúdo, não por ordem nem referência");
         a.GetHashCode().Should().Be(b.GetHashCode());
-
-        AuthorizationSubject diferente = Criar(["ceps-admin"]);
-        a.Should().NotBe(diferente, "composição de grupos distinta torna os sujeitos desiguais");
+        a.Should().NotBe(Sujeito(["ceps-admin"]), "composição de grupos distinta torna os sujeitos desiguais");
     }
 }
