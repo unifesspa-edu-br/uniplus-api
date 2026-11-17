@@ -18,7 +18,7 @@ public sealed class KafkaSecurityTests
     [InlineData("SASL_PLAINTEXT", SecurityProtocol.SaslPlaintext)]
     public void TryParseSecurityProtocol_AceitaFormasConvencionais(string raw, SecurityProtocol expected)
     {
-        bool ok = KafkaSecurity.TryParseSecurityProtocol(raw, out SecurityProtocol parsed);
+        bool ok = KafkaSecurity.TryParseByName(raw, out SecurityProtocol parsed);
         ok.Should().BeTrue();
         parsed.Should().Be(expected);
     }
@@ -37,7 +37,7 @@ public sealed class KafkaSecurityTests
     [InlineData("100")]
     public void TryParseSecurityProtocol_RejeitaInvalido(string? raw)
     {
-        bool ok = KafkaSecurity.TryParseSecurityProtocol(raw, out _);
+        bool ok = KafkaSecurity.TryParseByName<SecurityProtocol>(raw, out _);
         ok.Should().BeFalse();
     }
 
@@ -53,7 +53,7 @@ public sealed class KafkaSecurityTests
     [InlineData("GSSAPI", SaslMechanism.Gssapi)]
     public void TryParseSaslMechanism_AceitaFormasConvencionais(string raw, SaslMechanism expected)
     {
-        bool ok = KafkaSecurity.TryParseSaslMechanism(raw, out SaslMechanism parsed);
+        bool ok = KafkaSecurity.TryParseByName(raw, out SaslMechanism parsed);
         ok.Should().BeTrue();
         parsed.Should().Be(expected);
     }
@@ -69,32 +69,40 @@ public sealed class KafkaSecurityTests
     [InlineData("42")]
     public void TryParseSaslMechanism_RejeitaInvalido(string? raw)
     {
-        bool ok = KafkaSecurity.TryParseSaslMechanism(raw, out _);
+        bool ok = KafkaSecurity.TryParseByName<SaslMechanism>(raw, out _);
         ok.Should().BeFalse();
     }
 
     [Fact]
-    public void Apply_SaslSslComScramSha512_PreencheTodosOsCamposNoClientConfig()
+    public void Apply_SaslSslComScramSha512_PreencheProtocoloEMecanismo()
     {
-        KafkaSettings settings = new()
-        {
-            BootstrapServers = "kafka:9092",
-            SecurityProtocol = "SASL_SSL",
-            SaslMechanism = "SCRAM-SHA-512",
-            SaslUsername = "uniplus",
-            SaslPassword = "secret",
-            SslCaLocation = "/etc/uniplus-kafka/ca.crt",
-        };
-
         ClientConfig config = new();
-        KafkaSecurity.Apply(config, settings);
+        KafkaSecurity.Apply(config, ConfiguracaoSaslSsl());
 
         config.SecurityProtocol.Should().Be(SecurityProtocol.SaslSsl);
         config.SaslMechanism.Should().Be(SaslMechanism.ScramSha512);
+    }
+
+    [Fact]
+    public void Apply_SaslSslComScramSha512_PreencheCredenciaisEAutoridade()
+    {
+        ClientConfig config = new();
+        KafkaSecurity.Apply(config, ConfiguracaoSaslSsl());
+
         config.SaslUsername.Should().Be("uniplus");
         config.SaslPassword.Should().Be("secret");
         config.SslCaLocation.Should().Be("/etc/uniplus-kafka/ca.crt");
     }
+
+    private static KafkaSettings ConfiguracaoSaslSsl() => new()
+    {
+        BootstrapServers = "kafka:9092",
+        SecurityProtocol = "SASL_SSL",
+        SaslMechanism = "SCRAM-SHA-512",
+        SaslUsername = "uniplus",
+        SaslPassword = "secret",
+        SslCaLocation = "/etc/uniplus-kafka/ca.crt",
+    };
 
     [Fact]
     public void Apply_SoBootstrap_NaoMexeEmCamposVazios()

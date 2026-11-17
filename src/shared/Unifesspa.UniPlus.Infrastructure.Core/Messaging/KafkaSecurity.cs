@@ -11,53 +11,6 @@ using Confluent.Kafka;
 /// </summary>
 internal static class KafkaSecurity
 {
-    public static bool TryParseSecurityProtocol(string? raw, out SecurityProtocol protocol)
-    {
-        protocol = default;
-        if (string.IsNullOrWhiteSpace(raw))
-        {
-            return false;
-        }
-
-        // Rejeita inputs numéricos antes de Normalize — Enum.TryParse aceita "999"/"-1"/"1"
-        // e casts os valores como enum sem verificar se mapeiam para nome definido. Pior ainda,
-        // Normalize() strip `-` (para tolerar SCRAM-SHA-512), então "-1" viraria "1" e parseia
-        // para SecurityProtocol.Ssl silenciosamente. A política Uni+ é: SecurityProtocol é
-        // declarado por nome (PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL), não por inteiro.
-        if (long.TryParse(raw.Trim(), out _))
-        {
-            return false;
-        }
-
-        string normalized = Normalize(raw);
-
-        // IsDefined garante que só nomes legítimos do enum passem, defesa em profundidade contra
-        // inputs que driblariam o filtro numérico (caracteres unicode, formatações inesperadas).
-        return Enum.TryParse(normalized, ignoreCase: true, out protocol)
-            && Enum.IsDefined(protocol);
-    }
-
-    public static bool TryParseSaslMechanism(string? raw, out SaslMechanism mechanism)
-    {
-        mechanism = default;
-        if (string.IsNullOrWhiteSpace(raw))
-        {
-            return false;
-        }
-
-        // Mesma proteção de TryParseSecurityProtocol — Mechanism é declarado por nome (PLAIN,
-        // SCRAM-SHA-512 etc.), não por inteiro.
-        if (long.TryParse(raw.Trim(), out _))
-        {
-            return false;
-        }
-
-        string normalized = Normalize(raw);
-
-        return Enum.TryParse(normalized, ignoreCase: true, out mechanism)
-            && Enum.IsDefined(mechanism);
-    }
-
     /// <summary>
     /// Aplica <see cref="KafkaSettings"/> ao <see cref="ClientConfig"/> do Confluent.Kafka.
     /// Idempotente — campos vazios ficam como estavam (ClientConfig defaults).
@@ -67,34 +20,66 @@ internal static class KafkaSecurity
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(settings);
 
-        if (TryParseSecurityProtocol(settings.SecurityProtocol, out SecurityProtocol protocol))
+        ApplyProtocolAndMechanism(config, settings);
+        ApplyCredentials(config, settings);
+        ApplyCertificateAuthority(config, settings);
+    }
+
+    /// <summary>
+    /// Protocolo e mecanismo são declarados por nome (PLAINTEXT, SCRAM-SHA-512 etc.), não por inteiro. Rejeita o
+    /// número antes de <see cref="Normalize"/>: <c>Enum.TryParse</c> aceita "999" e "-1" e os converte em enum sem
+    /// conferir se há nome definido, e como <see cref="Normalize"/> remove o <c>-</c> (para tolerar SCRAM-SHA-512),
+    /// "-1" viraria "1" e seria lido como <c>SecurityProtocol.Ssl</c> em silêncio. <c>IsDefined</c> é a defesa em
+    /// profundidade contra entradas que driblariam o filtro numérico (caracteres unicode, formatações inesperadas).
+    /// </summary>
+    public static bool TryParseByName<TEnum>(string? texto, out TEnum valor)
+        where TEnum : struct, Enum
+    {
+        valor = default;
+        if (string.IsNullOrWhiteSpace(texto) || long.TryParse(texto.Trim(), out _))
         {
-            config.SecurityProtocol = protocol;
+            return false;
         }
 
-        if (TryParseSaslMechanism(settings.SaslMechanism, out SaslMechanism mechanism))
+        return Enum.TryParse(Normalize(texto), ignoreCase: true, out valor) && Enum.IsDefined(valor);
+    }
+
+    private static void ApplyProtocolAndMechanism(ClientConfig cliente, KafkaSettings configuracao)
+    {
+        if (TryParseByName(configuracao.SecurityProtocol, out SecurityProtocol protocolo))
         {
-            config.SaslMechanism = mechanism;
+            cliente.SecurityProtocol = protocolo;
         }
 
-        if (!string.IsNullOrWhiteSpace(settings.SaslUsername))
+        if (TryParseByName(configuracao.SaslMechanism, out SaslMechanism mecanismo))
         {
-            config.SaslUsername = settings.SaslUsername;
+            cliente.SaslMechanism = mecanismo;
+        }
+    }
+
+    private static void ApplyCredentials(ClientConfig cliente, KafkaSettings configuracao)
+    {
+        if (!string.IsNullOrWhiteSpace(configuracao.SaslUsername))
+        {
+            cliente.SaslUsername = configuracao.SaslUsername;
         }
 
-        if (!string.IsNullOrWhiteSpace(settings.SaslPassword))
+        if (!string.IsNullOrWhiteSpace(configuracao.SaslPassword))
         {
-            config.SaslPassword = settings.SaslPassword;
+            cliente.SaslPassword = configuracao.SaslPassword;
+        }
+    }
+
+    private static void ApplyCertificateAuthority(ClientConfig cliente, KafkaSettings configuracao)
+    {
+        if (!string.IsNullOrWhiteSpace(configuracao.SslCaLocation))
+        {
+            cliente.SslCaLocation = configuracao.SslCaLocation;
         }
 
-        if (!string.IsNullOrWhiteSpace(settings.SslCaLocation))
+        if (!string.IsNullOrWhiteSpace(configuracao.SslCaPem))
         {
-            config.SslCaLocation = settings.SslCaLocation;
-        }
-
-        if (!string.IsNullOrWhiteSpace(settings.SslCaPem))
-        {
-            config.SslCaPem = settings.SslCaPem;
+            cliente.SslCaPem = configuracao.SslCaPem;
         }
     }
 
