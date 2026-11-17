@@ -22,6 +22,24 @@ public sealed class ResultExtensionsTests
     private static readonly DomainErrorMapping MappingValidacao =
         new(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.edital.ja_publicado", "Edital já publicado");
 
+    private static readonly DomainErrorMapping MappingConflitoRetentavel = new(
+        StatusCodes.Status409Conflict,
+        "uniplus.configuracao.termo_consentimento.conflito_de_concorrencia",
+        "O rascunho foi modificado concorrentemente",
+        RetryableConflict: true);
+
+    private static readonly DomainErrorMapping MappingSiglaObrigatoria =
+        new(StatusCodes.Status422UnprocessableEntity, "uniplus.configuracao.campus.sigla_obrigatoria", "Sigla obrigatória");
+
+    private static readonly DomainErrorMapping MappingNomeObrigatorio =
+        new(StatusCodes.Status422UnprocessableEntity, "uniplus.configuracao.campus.nome_obrigatorio", "Nome obrigatório");
+
+    private static readonly DomainErrorMapping MappingRecusaAposGravacao = new(
+        StatusCodes.Status422UnprocessableEntity,
+        "uniplus.selecao.edital.recusado_apos_gravacao",
+        "Edital recusado depois da gravação",
+        RecusaAposGravacao: true);
+
     // ─── Status HTTP correto ───────────────────────────────────────────────
 
     [Fact]
@@ -137,22 +155,21 @@ public sealed class ResultExtensionsTests
 
     // ─── ValidationFailure multi-erro — errors[] (ADR-0023, ADR-0125) ────
 
+    /// <remarks>
+    /// ADR-0023: errors[] é condicional a ter Field associado (ValidationFailure), não a ter mais de
+    /// uma violação — uma única Sigla vazia ainda é erro de validação e o cliente precisa achar o
+    /// field sem tratar "erro único" como caso especial.
+    /// </remarks>
     [Fact]
     public void ToActionResult_ComValidationFailureDeUmErro_DeveConterExtensionErrorsComUmElemento()
     {
-        // ADR-0023: errors[] é condicional a ter Field associado (ValidationFailure),
-        // não a ter mais de uma violação — uma única Sigla vazia ainda é erro de
-        // validação e o cliente precisa achar o field sem tratar "erro único" como
-        // caso especial.
         IDomainErrorMapper mapper = CriarMapper(("Campus.SiglaObrigatoria", MappingValidacao));
         Result resultado = Result.ValidationFailure(
             [new FieldError("Sigla", new DomainError("Campus.SiglaObrigatoria", "Sigla obrigatória."))]);
 
         ProblemDetails problem = ExtrairProblemDetails(resultado.ToActionResult(mapper));
 
-        object? errosObj = problem.Extensions["errors"];
-        errosObj.Should().NotBeNull();
-        dynamic[] erros = ((System.Collections.IEnumerable)errosObj!).Cast<dynamic>().ToArray();
+        dynamic[] erros = ItensDeErrors(problem);
         ((int)erros.Length).Should().Be(1);
         ((string)erros[0].field).Should().Be("Sigla");
     }
@@ -174,20 +191,16 @@ public sealed class ResultExtensionsTests
 
     // ─── Conflito retentável (ADR-0134) ────────────────────────────────────
 
+    /// <remarks>
+    /// O nome do campo e a posição dele (raiz do corpo) são contrato: o filtro de idempotência lê
+    /// exatamente "retryable" na raiz da resposta para decidir se a reserva da chave é liberada.
+    /// Uma renomeação silenciosa faria o conflito de corrida voltar a ocupar a chave por 24 h sem
+    /// quebrar nenhum outro teste.
+    /// </remarks>
     [Fact]
     public void ToActionResult_ComConflitoDeclaradoRetentavel_DeveTrazerRetryableNaRaizDoEnvelope()
     {
-        // O nome do campo e a posição dele (raiz do corpo) são contrato: o filtro de
-        // idempotência lê exatamente "retryable" na raiz da resposta para decidir se a
-        // reserva da chave é liberada. Uma renomeação silenciosa faria o conflito de
-        // corrida voltar a ocupar a chave por 24 h sem quebrar nenhum outro teste.
-        IDomainErrorMapper mapper = CriarMapper((
-            "TermoConsentimento.ConflitoDeConcorrencia",
-            new DomainErrorMapping(
-                StatusCodes.Status409Conflict,
-                "uniplus.configuracao.termo_consentimento.conflito_de_concorrencia",
-                "O rascunho foi modificado concorrentemente",
-                RetryableConflict: true)));
+        IDomainErrorMapper mapper = CriarMapper(("TermoConsentimento.ConflitoDeConcorrencia", MappingConflitoRetentavel));
         Result resultado = Result.Failure(new DomainError(
             "TermoConsentimento.ConflitoDeConcorrencia", "O rascunho foi modificado concorrentemente."));
 
@@ -248,30 +261,46 @@ public sealed class ResultExtensionsTests
     }
 
     [Fact]
-    public void ToActionResult_ComValidationFailureDeVariosErros_DeveConterErrorsPorCampoComCodeTraduzido()
+    public void ToActionResult_ComVariasViolacoes_RaizDescreveAPrimeira()
     {
         IDomainErrorMapper mapper = CriarMapper(
-            ("Campus.SiglaObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.configuracao.campus.sigla_obrigatoria", "Sigla obrigatória")),
-            ("Campus.NomeObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.configuracao.campus.nome_obrigatorio", "Nome obrigatório")));
-        Result resultado = Result.ValidationFailure(
-        [
-            new FieldError("Sigla", new DomainError("Campus.SiglaObrigatoria", "Sigla do Campus é obrigatória.")),
-            new FieldError("Nome", new DomainError("Campus.NomeObrigatorio", "Nome do Campus é obrigatório.")),
-        ]);
+            ("Campus.SiglaObrigatoria", MappingSiglaObrigatoria),
+            ("Campus.NomeObrigatorio", MappingNomeObrigatorio));
 
-        ProblemDetails problem = ExtrairProblemDetails(resultado.ToActionResult(mapper));
+        ProblemDetails problem = ExtrairProblemDetails(ViolacoesDeSiglaENome().ToActionResult(mapper));
 
-        // Raiz usa o primeiro erro — fail-fast, mesma semântica que o domínio já tinha.
         problem.Extensions["code"].Should().Be("uniplus.configuracao.campus.sigla_obrigatoria");
+        problem.Title.Should().Be("Sigla obrigatória");
+        problem.Detail.Should().Be("Sigla do Campus é obrigatória.");
+    }
 
-        object? errosObj = problem.Extensions["errors"];
-        errosObj.Should().NotBeNull();
-        dynamic[] erros = ((System.Collections.IEnumerable)errosObj!).Cast<dynamic>().ToArray();
+    [Fact]
+    public void ToActionResult_ComVariasViolacoes_ErrorsTrazCadaCampoComOCodeTraduzido()
+    {
+        IDomainErrorMapper mapper = CriarMapper(
+            ("Campus.SiglaObrigatoria", MappingSiglaObrigatoria),
+            ("Campus.NomeObrigatorio", MappingNomeObrigatorio));
+
+        ProblemDetails problem = ExtrairProblemDetails(ViolacoesDeSiglaENome().ToActionResult(mapper));
+
+        dynamic[] erros = ItensDeErrors(problem);
         ((int)erros.Length).Should().Be(2);
         ((string)erros[0].field).Should().Be("Sigla");
         ((string)erros[0].code).Should().Be("uniplus.configuracao.campus.sigla_obrigatoria");
         ((string)erros[1].field).Should().Be("Nome");
         ((string)erros[1].code).Should().Be("uniplus.configuracao.campus.nome_obrigatorio");
+    }
+
+    [Fact]
+    public void ToActionResult_ComRecusaAposGravacao_DevolveRespostaDeRecusaAposGravacaoCom422()
+    {
+        IDomainErrorMapper mapper = CriarMapper(("Edital.RecusadoAposGravacao", MappingRecusaAposGravacao));
+        Result resultado = Result.Failure(new DomainError("Edital.RecusadoAposGravacao", "Edital recusado depois da gravação."));
+
+        IActionResult actionResult = resultado.ToActionResult(mapper);
+
+        ObjectResult resposta = actionResult.Should().BeOfType<RespostaDeRecusaAposGravacao>().Subject;
+        resposta.StatusCode.Should().Be(StatusCodes.Status422UnprocessableEntity);
     }
 
     // ─── Overload genérico Result<T> ──────────────────────────────────────
@@ -324,6 +353,20 @@ public sealed class ResultExtensionsTests
             Options.Create(new ProblemTypeOptions { BaseUri = BaseUriDoCatalogo }));
 
         return new StubDomainErrorMapper(dict, fabricaDeType);
+    }
+
+    private static Result ViolacoesDeSiglaENome() =>
+        Result.ValidationFailure(
+        [
+            new FieldError("Sigla", new DomainError("Campus.SiglaObrigatoria", "Sigla do Campus é obrigatória.")),
+            new FieldError("Nome", new DomainError("Campus.NomeObrigatorio", "Nome do Campus é obrigatório.")),
+        ]);
+
+    private static dynamic[] ItensDeErrors(ProblemDetails problem)
+    {
+        object? erros = problem.Extensions["errors"];
+        erros.Should().NotBeNull();
+        return ((System.Collections.IEnumerable)erros!).Cast<dynamic>().ToArray();
     }
 
     private static ProblemDetails ExtrairProblemDetails(IActionResult actionResult)
