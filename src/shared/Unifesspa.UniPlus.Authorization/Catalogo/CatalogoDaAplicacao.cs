@@ -40,8 +40,8 @@ public sealed class CatalogoDaAplicacao
     private static LinhaDoCatalogo[] LinhasEmOrdemDeCodigo(IEnumerable<DefinicaoDePermissao> definicoes) =>
     [
         .. definicoes
-            .Select(static d => new LinhaDoCatalogo(d.Codigo, d.Modulo, d.Requisito.Sensibilidade, d.DeUnidade, d.ReservadaAGovernanca))
-            .OrderBy(static l => l.Codigo, StringComparer.Ordinal),
+            .Select(static d => new LinhaDoCatalogo(CodigoDePermissao.De(d.Codigo), d.Requisito.Sensibilidade, d.DeUnidade, d.ReservadaAGovernanca))
+            .OrderBy(static l => l.Codigo.Valor, StringComparer.Ordinal),
     ];
 
     /// <summary>Todas as permissões, ordenadas por módulo, resource e ação.</summary>

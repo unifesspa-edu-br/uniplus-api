@@ -14,8 +14,8 @@ using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 /// </summary>
 public sealed class ImpressaoDoCatalogoTests
 {
-    private static readonly LinhaDoCatalogo Primeira = new("alfa:itens:ler", "alfa", ClassificacaoDeProtecao.Interno, false, false);
-    private static readonly LinhaDoCatalogo Segunda = new("beta:itens:manter", "beta", ClassificacaoDeProtecao.Pessoal, true, false);
+    private static readonly LinhaDoCatalogo Primeira = new(CodigoDePermissao.De("alfa:itens:ler"), ClassificacaoDeProtecao.Interno, false, false);
+    private static readonly LinhaDoCatalogo Segunda = new(CodigoDePermissao.De("beta:itens:manter"), ClassificacaoDeProtecao.Pessoal, true, false);
 
     [Fact(DisplayName = "A impressão não depende da ordem das linhas")]
     public void Impressao_OrdemDasLinhas_NaoAltera() =>
@@ -35,7 +35,7 @@ public sealed class ImpressaoDoCatalogoTests
             Segunda with { Classificacao = ClassificacaoDeProtecao.Sensivel },
             Segunda with { DeUnidade = false },
             Segunda with { Reservada = true },
-            Segunda with { Modulo = "gama" },
+            Segunda with { Codigo = CodigoDePermissao.De("gama:itens:manter") },
         ];
 
         foreach (LinhaDoCatalogo variada in variacoes)
@@ -54,7 +54,7 @@ public sealed class ImpressaoDoCatalogoTests
         CatalogoDaAplicacao invertida = new([beta, alfa]);
 
         direta.Impressao.Should().Be(invertida.Impressao);
-        direta.Linhas.Select(static l => l.Codigo).Should().Equal("alfa:itens:ler", "beta:itens:manter");
+        direta.Linhas.Select(static l => l.Codigo.Valor).Should().Equal("alfa:itens:ler", "beta:itens:manter");
         direta.Linhas[1].Should().Be(Segunda);
     }
 

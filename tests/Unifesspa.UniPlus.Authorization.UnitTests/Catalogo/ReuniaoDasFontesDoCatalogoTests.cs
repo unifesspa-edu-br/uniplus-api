@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.Projecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
 /// O que só se vê na reunião das fontes do catálogo da aplicação: código ou nome repetido entre enums e par repetido no
@@ -101,7 +102,7 @@ public sealed class ReuniaoDasFontesDoCatalogoTests
         ]);
 
         catalogo.Definicoes.Select(static d => d.Codigo).Should().Equal("teste:itens:ler", "teste:itens:manter");
-        catalogo.Linhas.Select(static l => l.Codigo).Should().Equal("teste:itens:ler", "teste:itens:manter");
+        catalogo.Linhas.Select(static l => l.Codigo.Valor).Should().Equal("teste:itens:ler", "teste:itens:manter");
         catalogo.TentarObter("teste:itens:ler", out DefinicaoDePermissao? achada).Should().BeTrue();
         achada!.Nome.Should().Be("Ler itens");
         catalogo.TentarObter("teste:itens:inexistente", out _).Should().BeFalse();
@@ -112,8 +113,8 @@ public sealed class ReuniaoDasFontesDoCatalogoTests
     {
         LinhaDoCatalogo[] linhas =
         [
-            new("beta:itens:manter", "beta", ClassificacaoDeProtecao.Pessoal, true, false),
-            new("alfa:itens:ler", "alfa", ClassificacaoDeProtecao.Interno, false, false),
+            new(CodigoDePermissao.De("beta:itens:manter"), ClassificacaoDeProtecao.Pessoal, true, false),
+            new(CodigoDePermissao.De("alfa:itens:ler"), ClassificacaoDeProtecao.Interno, false, false),
         ];
 
         LinhaDoCatalogo.ImpressaoDe(linhas).Valor.Should().Be("d05499ba573110812d843fb0aa90efb001dd7c37fbf9918e67de86980bbf4eaf");

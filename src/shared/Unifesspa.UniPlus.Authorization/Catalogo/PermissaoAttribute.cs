@@ -1,8 +1,10 @@
 namespace Unifesspa.UniPlus.Authorization.Catalogo;
 
+using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.Enums;
 using Unifesspa.UniPlus.Authorization.Projecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Qualifica um membro de enum de permissões: o código que é o contrato, o texto
@@ -68,4 +70,15 @@ public sealed class PermissaoAttribute : Attribute
     /// da conta do mínimo de gestores.
     /// </summary>
     public bool ReservadaAGovernanca { get; init; }
+
+    /// <summary>O requisito que o ponto de decisão avalia, montado dos metadados declarados, ou a recusa deles.</summary>
+    internal Result<PermissionRequirement> Requisito() =>
+        PermissionRequirement.From(
+            Codigo,
+            Sensibilidade,
+            BaseLegal,
+            RequerMfa,
+            RequerDuplaAprovacao,
+            EscopoContextoObrigatorio,
+            VerificacoesDeContexto);
 }

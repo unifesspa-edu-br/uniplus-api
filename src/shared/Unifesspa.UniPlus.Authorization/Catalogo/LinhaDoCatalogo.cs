@@ -10,12 +10,11 @@ using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 /// O que o catálogo registra de cada permissão para decidir se o acesso dela mudou: a classificação, o escopo e a reserva
 /// à governança. É a linha de uma aplicação do catálogo e a unidade da impressão.
 /// </summary>
-/// <param name="Codigo">Código <c>{módulo}:{resource}:{ação}</c>.</param>
-/// <param name="Modulo">Módulo dono da permissão.</param>
+/// <param name="Codigo">Código da permissão; o módulo dono é uma parte dele.</param>
 /// <param name="Classificacao">Classificação de proteção que o catálogo atribui à permissão.</param>
 /// <param name="DeUnidade">A permissão exige a unidade proprietária; as demais são institucionais.</param>
 /// <param name="Reservada">Só perfis de governança podem reunir a permissão.</param>
-public sealed record LinhaDoCatalogo(string Codigo, string Modulo, ClassificacaoDeProtecao Classificacao, bool DeUnidade, bool Reservada)
+public sealed record LinhaDoCatalogo(CodigoDePermissao Codigo, ClassificacaoDeProtecao Classificacao, bool DeUnidade, bool Reservada)
 {
     /// <summary>A classificação como texto estável em minúsculas, o mesmo formato gravado nas versões dos perfis.</summary>
     public string ClassificacaoEmTexto => Classificacao.ToString().ToLowerInvariant();
@@ -29,9 +28,9 @@ public sealed record LinhaDoCatalogo(string Codigo, string Modulo, Classificacao
         ArgumentNullException.ThrowIfNull(linhas);
 
         StringBuilder texto = new();
-        foreach (LinhaDoCatalogo linha in linhas.OrderBy(static l => l.Codigo, StringComparer.Ordinal))
+        foreach (LinhaDoCatalogo linha in linhas.OrderBy(static l => l.Codigo.Valor, StringComparer.Ordinal))
         {
-            texto.Append(CultureInfo.InvariantCulture, $"{linha.Codigo}|{linha.Modulo}|{linha.ClassificacaoEmTexto}|{Booleano(linha.DeUnidade)}|{Booleano(linha.Reservada)}\n");
+            texto.Append(CultureInfo.InvariantCulture, $"{linha.Codigo.Valor}|{linha.Codigo.Modulo}|{linha.ClassificacaoEmTexto}|{Booleano(linha.DeUnidade)}|{Booleano(linha.Reservada)}\n");
         }
 
         return ResumoSha256.DoConteudo(Encoding.UTF8.GetBytes(texto.ToString()));

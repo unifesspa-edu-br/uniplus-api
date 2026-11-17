@@ -2,13 +2,6 @@ namespace Unifesspa.UniPlus.Authorization.Catalogo;
 
 using System.Collections.Frozen;
 using System.Reflection;
-using System.Text.RegularExpressions;
-
-using Unifesspa.UniPlus.Authorization.Contracts;
-using Unifesspa.UniPlus.Authorization.Decisao;
-using Unifesspa.UniPlus.Authorization.Projecao;
-using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
-using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Catálogo de um enum de permissões: lê o <see cref="PermissaoAttribute"/> de cada
@@ -20,7 +13,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <see cref="CatalogoDePermissoesInvalidoException"/>, de modo que o defeito derruba
 /// a subida em vez de aparecer como um 403 plausível em execução.
 /// </remarks>
-public static partial class CatalogoDePermissoes<TPermissao>
+public static class CatalogoDePermissoes<TPermissao>
     where TPermissao : struct, Enum
 {
     private static readonly Lazy<FrozenDictionary<TPermissao, DefinicaoDePermissao>> Carregado =
@@ -51,142 +44,19 @@ public static partial class CatalogoDePermissoes<TPermissao>
 
     private static FrozenDictionary<TPermissao, DefinicaoDePermissao> Carregar()
     {
-        string tipo = typeof(TPermissao).Name;
-        List<string> problemas = [];
-        string? modulo = ModuloDoEnum();
-
-        if (string.IsNullOrWhiteSpace(modulo))
-        {
-            problemas.Add($"{tipo}: falta [{nameof(ModuloDePermissoesAttribute)}] com o módulo do enum.");
-        }
-
+        ConferenciaDoEnum conferencia = new(typeof(TPermissao), ModuloDoEnum());
         Dictionary<TPermissao, DefinicaoDePermissao> definicoes = [];
-        Dictionary<string, string> codigos = new(StringComparer.Ordinal);
-        Dictionary<string, string> nomes = new(StringComparer.OrdinalIgnoreCase);
 
         foreach (FieldInfo campo in typeof(TPermissao).GetFields(BindingFlags.Public | BindingFlags.Static))
         {
-            TPermissao membro = (TPermissao)campo.GetValue(null)!;
-            string quem = $"{tipo}.{campo.Name}";
-
-            PermissaoAttribute? atributo = campo.GetCustomAttribute<PermissaoAttribute>();
-
-            if (atributo is null)
+            if (conferencia.Conferir(campo) is { } definicao)
             {
-                problemas.Add($"{quem}: falta [{nameof(PermissaoAttribute)}].");
-                continue;
-            }
-
-            int antes = problemas.Count;
-            ConferirTextos(quem, atributo, nomes, problemas);
-            string[] segmentos = ConferirCodigo(quem, atributo.Codigo, modulo, codigos, problemas);
-            ConferirEscopo(quem, atributo, problemas);
-            ConferirNatureza(quem, atributo, problemas);
-
-            Result<PermissionRequirement> requisito = PermissionRequirement.From(
-                atributo.Codigo,
-                atributo.Sensibilidade,
-                atributo.BaseLegal,
-                atributo.RequerMfa,
-                atributo.RequerDuplaAprovacao,
-                atributo.EscopoContextoObrigatorio,
-                atributo.VerificacoesDeContexto);
-
-            if (requisito.IsFailure)
-            {
-                problemas.Add($"{quem}: metadados recusados — {requisito.Error!.Message}");
-            }
-
-            if (problemas.Count == antes && segmentos.Length == 3)
-            {
-                definicoes[membro] = new DefinicaoDePermissao(
-                    atributo.Codigo,
-                    atributo.Nome,
-                    atributo.Descricao,
-                    segmentos[0],
-                    segmentos[1],
-                    segmentos[2],
-                    requisito.Value!,
-                    atributo.ReservadaAGovernanca,
-                    atributo.Natureza);
+                definicoes[(TPermissao)campo.GetValue(null)!] = definicao;
             }
         }
 
-        problemas.AddRange(UnicidadeDoPar.Problemas(definicoes.Values.Select(static d => (d.Codigo, d))));
-
-        if (problemas.Count > 0)
-        {
-            throw new CatalogoDePermissoesInvalidoException(problemas);
-        }
+        conferencia.ExigirCoerente(definicoes.Values);
 
         return definicoes.ToFrozenDictionary();
     }
-
-    private static void ConferirTextos(
-        string quem,
-        PermissaoAttribute atributo,
-        Dictionary<string, string> nomes,
-        List<string> problemas)
-    {
-        if (string.IsNullOrWhiteSpace(atributo.Nome))
-        {
-            problemas.Add($"{quem}: o nome está vazio.");
-        }
-        else if (!nomes.TryAdd(atributo.Nome.Trim(), quem))
-        {
-            problemas.Add($"{quem}: o nome '{atributo.Nome}' já é de {nomes[atributo.Nome.Trim()]}.");
-        }
-
-        if (string.IsNullOrWhiteSpace(atributo.Descricao))
-        {
-            problemas.Add($"{quem}: a descrição está vazia.");
-        }
-    }
-
-    private static string[] ConferirCodigo(
-        string quem,
-        string? codigo,
-        string? modulo,
-        Dictionary<string, string> codigos,
-        List<string> problemas)
-    {
-        if (string.IsNullOrWhiteSpace(codigo) || !FormatoDoCodigo().IsMatch(codigo))
-        {
-            problemas.Add($"{quem}: o código '{codigo}' não segue {{módulo}}:{{resource}}:{{ação}} em minúsculas, dígitos e hífen.");
-            return [];
-        }
-
-        if (!codigos.TryAdd(codigo, quem))
-        {
-            problemas.Add($"{quem}: o código '{codigo}' já é de {codigos[codigo]}.");
-        }
-
-        string[] segmentos = codigo.Split(':');
-        if (!string.IsNullOrWhiteSpace(modulo) && segmentos[0] != modulo)
-        {
-            problemas.Add($"{quem}: o código '{codigo}' tem o prefixo '{segmentos[0]}', mas o módulo do enum é '{modulo}'.");
-        }
-
-        return segmentos;
-    }
-
-    private static void ConferirEscopo(string quem, PermissaoAttribute atributo, List<string> problemas)
-    {
-        foreach (string campo in (atributo.EscopoContextoObrigatorio ?? [])
-            .Where(static campo => !CamposDeContexto.NomesConhecidos.Contains(campo)))
-        {
-            problemas.Add($"{quem}: o campo de contexto '{campo}' não é verificável pela decisão.");
-        }
-    }
-
-    private static void ConferirNatureza(string quem, PermissaoAttribute atributo, List<string> problemas)
-    {
-        if (!Enum.IsDefined(atributo.Natureza))
-        {
-            problemas.Add($"{quem}: a natureza '{atributo.Natureza}' não é dado nem arquivo.");
-        }
-    }
-
-    [GeneratedRegex("^" + SegmentoKebab.Padrao + ":" + SegmentoKebab.Padrao + ":" + SegmentoKebab.Padrao + @"\z", RegexOptions.CultureInvariant)]
-    private static partial Regex FormatoDoCodigo();
 }

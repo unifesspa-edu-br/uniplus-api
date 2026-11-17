@@ -88,6 +88,6 @@ public sealed class ModeloDoCatalogoNoBancoTests : PerfilEndpointTestBase
             .Where(c => c.Impressao == catalogo.Impressao).OrderByDescending(c => c.Sequencia).FirstAsync();
 
         atual.Permissoes!.Select(p => (p.Codigo, p.Classificacao, p.DeUnidade, p.Reservada))
-            .Should().BeEquivalentTo(catalogo.Linhas.Select(l => (l.Codigo, l.Classificacao, l.DeUnidade, l.Reservada)));
+            .Should().BeEquivalentTo(catalogo.Linhas.Select(l => (l.Codigo.Valor, l.Classificacao, l.DeUnidade, l.Reservada)));
     }
 }
