@@ -35,6 +35,17 @@ public sealed class FilaDeReclassificacoes
             .ListarVigentesQueSuspendemAsync(cancellationToken).ConfigureAwait(false);
         IReadOnlyDictionary<Guid, string> nomes = await _reclassificacoes
             .ObterNomesDosPerfisAsync([.. candidatas.Select(static r => r.PerfilId).Distinct()], cancellationToken).ConfigureAwait(false);
+
+        return await QueAguardamAEtapaAsync(candidatas, nomes, etapa, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Entra na fila só a candidata com ao menos uma concessão suspensa à espera da etapa, na ordem das candidatas.</summary>
+    private async Task<List<ItemDaFilaDeReclassificacoesDto>> QueAguardamAEtapaAsync(
+        IReadOnlyList<ReclassificacaoDaPermissao> candidatas,
+        IReadOnlyDictionary<Guid, string> nomes,
+        EtapaDaVersao etapa,
+        CancellationToken cancellationToken)
+    {
         List<ItemDaFilaDeReclassificacoesDto> fila = [];
 
         foreach (ReclassificacaoDaPermissao reclassificacao in candidatas)
