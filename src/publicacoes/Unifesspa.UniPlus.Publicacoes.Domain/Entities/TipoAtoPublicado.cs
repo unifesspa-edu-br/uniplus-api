@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 
+using System.Linq.Expressions;
 using System.Text.RegularExpressions;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
@@ -182,6 +183,32 @@ public sealed partial class TipoAtoPublicado : SoftDeletableEntity, IAuditableEn
             vigenciaInicio, vigenciaFim, baseLegal, publicavelComoAvulso, exigeAtoCorrigido);
 
         return Result.Success();
+    }
+
+    /// <summary>
+    /// A janela semiaberta <c>[inicio, fim)</c> como expressão: fonte única da regra, composta pelas
+    /// consultas. Declarada antes dos usos porque os inicializadores estáticos rodam na ordem do texto.
+    /// </summary>
+    private static readonly Expression<Func<DateOnly, DateOnly?, DateOnly, bool>> JanelaDeVigencia =
+        (inicio, fim, dia) => inicio <= dia && (fim == null || fim > dia);
+
+    /// <summary>
+    /// Seleciona as versões cuja janela semiaberta <c>[VigenciaInicio, VigenciaFim)</c> contém
+    /// <paramref name="dia"/>. É expressão, e não método, para que o EF a traduza em SQL; o dia vai
+    /// como variável capturada, e portanto como parâmetro da consulta.
+    /// </summary>
+    public static Expression<Func<TipoAtoPublicado, bool>> VigenteEm(DateOnly dia)
+    {
+        Expression<Func<DateOnly>> diaDaConsulta = () => dia;
+        ParameterExpression tipo = Expression.Parameter(typeof(TipoAtoPublicado), "tipo");
+
+        return Expression.Lambda<Func<TipoAtoPublicado, bool>>(
+            Expression.Invoke(
+                JanelaDeVigencia,
+                Expression.Property(tipo, nameof(VigenciaInicio)),
+                Expression.Property(tipo, nameof(VigenciaFim)),
+                diaDaConsulta.Body),
+            tipo);
     }
 
     /// <summary>
