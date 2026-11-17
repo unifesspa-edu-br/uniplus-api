@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Publicacoes.IntegrationTests.TiposAtoPublicado;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 using AwesomeAssertions;
@@ -10,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Publicacoes.Application.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
@@ -22,17 +22,43 @@ using Unifesspa.UniPlus.Publicacoes.IntegrationTests.Infrastructure;
 /// valerem no mesmo dia, os CHECKs de formato e de janela, e a resolução da versão
 /// vigente numa data.
 /// </summary>
+/// <remarks>
+/// O nome da exclusion constraint é o que a camada Application usa para distinguir a violação de
+/// qualquer outra exclusion constraint futura: se o PostgreSQL deixasse de informá-lo, a tradução
+/// para erro de domínio falharia em silêncio e a corrida viraria 500. O CHECK de janela e o de
+/// formato são a defesa contra gravações que não passam pelo agregado (carga inicial, correção manual,
+/// ferramenta administrativa), que a validação do domínio já recusa.
+/// </remarks>
 [Collection(PublicacoesDbCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class TipoAtoPublicadoPersistenceTests
 {
     private const string Admin = "admin-publicacoes";
     private const string ExclusionViolation = "23P01";
     private const string CheckViolation = "23514";
     private const string NomeDaExclusionConstraint = RestricoesDoBanco.TipoDeAtoPublicadoCodigoVigencia;
+
+    private const string ContypeDaRestricao =
+        """
+        SELECT contype::text
+        FROM pg_constraint c
+        JOIN pg_class t ON t.oid = c.conrelid
+        JOIN pg_namespace n ON n.oid = t.relnamespace
+        WHERE n.nspname = 'publicacoes'
+          AND t.relname = 'tipos_de_ato_publicado'
+          AND c.conname = @nome
+        """;
+
+    private const string InsercaoSemPassarPeloAgregado =
+        """
+        INSERT INTO publicacoes.tipos_de_ato_publicado
+            (id, codigo, nome, congela_configuracao, unico_por_objeto, efeito_irreversivel,
+             eh_resultado, exige_ato_corrigido, publicavel_como_avulso,
+             vigencia_inicio, vigencia_fim, created_at, is_deleted)
+        VALUES
+            (gen_random_uuid(), @codigo, 'Gravado sem o agregado', false, false, false,
+             false, false, false,
+             @inicio, @fim, now(), false)
+        """;
 
     private static readonly DateOnly Inicio = new(2026, 1, 1);
     private static readonly DateOnly Meio = new(2026, 6, 1);
@@ -46,15 +72,13 @@ public sealed class TipoAtoPublicadoPersistenceTests
     }
 
     [Fact(DisplayName = "Persiste os campos e a autoria da criação")]
-    public async Task Insert_PersisteCamposEAutoria()
+    public async Task Insert_VersaoValida_PersisteCamposEAutoria()
     {
         string codigo = CodigoUnico();
-        TipoAtoPublicado tipo = Novo(codigo, Inicio, vigenciaFim: null, congela: true, irreversivel: true, ehResultado: false);
-
+        TipoAtoPublicado tipo = Novo(codigo, Inicio, vigenciaFim: null, congela: true, irreversivel: true);
         await Gravar(tipo);
 
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
-        TipoAtoPublicado persistido = await ctx.TiposAtoPublicado.SingleAsync(t => t.Id == tipo.Id);
+        TipoAtoPublicado persistido = await LerPersistidoAsync(tipo.Id);
 
         persistido.Codigo.Should().Be(codigo);
         persistido.CongelaConfiguracao.Should().BeTrue();
@@ -65,49 +89,30 @@ public sealed class TipoAtoPublicadoPersistenceTests
         persistido.IsDeleted.Should().BeFalse();
     }
 
+    /// <summary>
+    /// A constraint vive em SQL escrito à mão, fora do modelo gerado: reunir as migrations a descartaria
+    /// em silêncio, e todos os testes de sobreposição continuariam passando pela validação da
+    /// aplicação. Esta asserção olha o catálogo do Postgres.
+    /// </summary>
     [Fact(DisplayName = "A exclusion constraint existe no banco como constraint de exclusão")]
-    public async Task ExclusionConstraint_ExisteNoCatalogo()
+    public async Task ExclusionConstraint_ConsultadaNoCatalogo_EhDoTipoExclusao()
     {
-        // A constraint vive em SQL cru, fora do ModelSnapshot: um squash de migrations
-        // a descartaria em silêncio, e todos os testes de sobreposição continuariam
-        // passando pelo guard de aplicação. Esta asserção olha o catálogo do Postgres.
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
-        await ctx.Database.OpenConnectionAsync();
-
-        await using var command = new NpgsqlCommand(
-            $"""
-            SELECT contype::text
-            FROM pg_constraint c
-            JOIN pg_class t ON t.oid = c.conrelid
-            JOIN pg_namespace n ON n.oid = t.relnamespace
-            WHERE n.nspname = 'publicacoes'
-              AND t.relname = 'tipos_de_ato_publicado'
-              AND c.conname = '{NomeDaExclusionConstraint}'
-            """,
-            (NpgsqlConnection)ctx.Database.GetDbConnection());
-
-        object? contype = await command.ExecuteScalarAsync();
+        object? contype = await ConsultarContypeAsync(NomeDaExclusionConstraint);
 
         contype.Should().Be("x", "'x' é o contype de EXCLUDE no pg_constraint");
     }
 
     [Fact(DisplayName = "Duas versões vivas do mesmo código com janelas que se cruzam são recusadas")]
-    public async Task Insert_ComVigenciaSobreposta_Falha()
+    public async Task Insert_ComVigenciaSobreposta_FalhaComViolacaoDeExclusao()
     {
         string codigo = CodigoUnico();
         await Gravar(Novo(codigo, Inicio, Fim));
 
-        // [2026-06-01, 2027-06-01) cruza [2026-01-01, 2027-01-01).
         Func<Task> segundaInsercao = () => Gravar(Novo(codigo, Meio, Fim.AddYears(1)));
 
         DbUpdateException erro = (await segundaInsercao.Should().ThrowAsync<DbUpdateException>()).Which;
         PostgresException pg = erro.InnerException.Should().BeOfType<PostgresException>().Which;
         pg.SqlState.Should().Be(ExclusionViolation);
-
-        // O nome da constraint é o que a camada Application usa para distinguir esta
-        // violação de qualquer outra exclusion constraint futura. Se o PostgreSQL
-        // deixasse de informá-lo, a tradução para erro de domínio falharia em silêncio
-        // e a corrida viraria 500.
         pg.ConstraintName.Should().Be(NomeDaExclusionConstraint);
     }
 
@@ -130,17 +135,13 @@ public sealed class TipoAtoPublicadoPersistenceTests
         string codigo = CodigoUnico();
         TipoAtoPublicado antiga = Novo(codigo, Inicio, Meio, congela: false);
         TipoAtoPublicado nova = Novo(codigo, Meio, vigenciaFim: null, congela: true);
-
         await Gravar(antiga);
         await Gravar(nova);
 
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
-        var repo = new TipoAtoPublicadoRepository(ctx, TimeProvider.System);
-
         // Véspera: a antiga. Dia da fronteira: já a nova — o fim é exclusivo.
-        (await repo.ObterVigenteAsync(codigo, Meio.AddDays(-1), default))!.Id.Should().Be(antiga.Id);
-        (await repo.ObterVigenteAsync(codigo, Meio, default))!.Id.Should().Be(nova.Id);
-        (await repo.ObterVigenteAsync(codigo, Meio.AddYears(10), default))!.Id.Should().Be(nova.Id);
+        (await VigenteEmAsync(codigo, Meio.AddDays(-1)))!.Id.Should().Be(antiga.Id);
+        (await VigenteEmAsync(codigo, Meio))!.Id.Should().Be(nova.Id);
+        (await VigenteEmAsync(codigo, Meio.AddYears(10)))!.Id.Should().Be(nova.Id);
     }
 
     [Fact(DisplayName = "A versão vigente numa data histórica é a que valia então")]
@@ -151,10 +152,7 @@ public sealed class TipoAtoPublicadoPersistenceTests
         await Gravar(antiga);
         await Gravar(Novo(codigo, Meio, vigenciaFim: null, congela: true));
 
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
-        var repo = new TipoAtoPublicadoRepository(ctx, TimeProvider.System);
-
-        TipoAtoPublicado? vigenteEmMarco = await repo.ObterVigenteAsync(codigo, new DateOnly(2026, 3, 15), default);
+        TipoAtoPublicado? vigenteEmMarco = await VigenteEmAsync(codigo, new DateOnly(2026, 3, 15));
 
         vigenteEmMarco!.Id.Should().Be(antiga.Id);
         vigenteEmMarco.CongelaConfiguracao.Should().BeFalse(
@@ -167,146 +165,219 @@ public sealed class TipoAtoPublicadoPersistenceTests
         string codigo = CodigoUnico();
         await Gravar(Novo(codigo, Inicio, vigenciaFim: null));
 
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
-        var repo = new TipoAtoPublicadoRepository(ctx, TimeProvider.System);
-
-        (await repo.ObterVigenteAsync(codigo, Inicio.AddDays(-1), default)).Should().BeNull();
+        (await VigenteEmAsync(codigo, Inicio.AddDays(-1))).Should().BeNull();
     }
 
+    /// <summary>
+    /// Sem <c>IgnoreQueryFilters</c> a linha some — e sumir é indistinguível de ter sido apagada. A
+    /// afirmação de que o delete é lógico só se sustenta olhando a linha por trás do filtro.
+    /// </summary>
     [Fact(DisplayName = "Remover marca a linha como excluída em vez de apagá-la")]
-    public async Task Remover_MarcaComoExcluido()
+    public async Task Remover_VersaoExistente_MarcaComoExcluida()
     {
-        string codigo = CodigoUnico();
-        TipoAtoPublicado original = Novo(codigo, Inicio, vigenciaFim: null);
+        TipoAtoPublicado original = Novo(CodigoUnico(), Inicio, vigenciaFim: null);
         await Gravar(original);
         await Excluir(original.Id);
 
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
-
-        // Sem IgnoreQueryFilters a linha some — e sumir é indistinguível de ter sido
-        // apagada. A afirmação de que o delete é lógico só se sustenta olhando a
-        // linha por trás do filtro.
-        TipoAtoPublicado excluido = await ctx.TiposAtoPublicado
-            .IgnoreQueryFilters()
-            .SingleAsync(t => t.Id == original.Id);
+        TipoAtoPublicado excluido = await LerExcluidoAsync(original.Id);
 
         excluido.IsDeleted.Should().BeTrue();
         excluido.DeletedAt.Should().NotBeNull();
         excluido.DeletedBy.Should().Be(Admin);
-
-        (await ctx.TiposAtoPublicado.AnyAsync(t => t.Id == original.Id))
-            .Should().BeFalse("a leitura normal oculta o registro excluído");
+        (await ExisteNaLeituraNormalAsync(original.Id)).Should().BeFalse("a leitura normal oculta o registro excluído");
     }
 
+    /// <summary>
+    /// A versão excluída continua no banco, com a mesma janela — a exclusion constraint a ignora
+    /// porque o predicado dela é <c>is_deleted = false</c>.
+    /// </summary>
     [Fact(DisplayName = "Soft-delete libera a janela para uma nova versão do mesmo código")]
-    public async Task SoftDelete_LiberaJanela()
+    public async Task Remover_VersaoExcluida_LiberaAJanelaParaNovaVersao()
     {
         string codigo = CodigoUnico();
         TipoAtoPublicado original = Novo(codigo, Inicio, vigenciaFim: null);
         await Gravar(original);
         await Excluir(original.Id);
-
         TipoAtoPublicado recriado = Novo(codigo, Inicio, vigenciaFim: null);
         await Gravar(recriado);
 
-        await using UniPlusDbContext leitura = _fixture.CreateDbContext(userId: null);
-        var repo = new TipoAtoPublicadoRepository(leitura, TimeProvider.System);
-
-        (await repo.ObterVigenteAsync(codigo, Inicio, default))!.Id.Should().Be(recriado.Id);
-
-        // A versão excluída continua no banco, com a mesma janela — a exclusion
-        // constraint a ignora porque o predicado dela é `is_deleted = false`.
-        (await leitura.TiposAtoPublicado.IgnoreQueryFilters()
-            .CountAsync(t => t.Codigo == codigo)).Should().Be(2);
+        (await VigenteEmAsync(codigo, Inicio))!.Id.Should().Be(recriado.Id);
+        (await ContarIncluindoExcluidosAsync(codigo)).Should().Be(2);
     }
 
-    [Fact(DisplayName = "CHECK recusa janela vazia vinda de insert cru")]
-    public async Task CheckVigencia_RecusaJanelaVazia()
+    [Fact(DisplayName = "A restrição de vigência do banco recusa janela vazia gravada sem passar pelo agregado")]
+    public async Task Gravar_JanelaVaziaSemPassarPeloAgregado_ViolaARestricaoDeVigencia()
     {
-        // O guard de domínio já recusa; o CHECK é a defesa contra inserts que não
-        // passam pelo agregado (seed, correção manual, ferramenta administrativa).
-        Func<Task> insercao = () => InserirCru(CodigoUnico(), Inicio, Inicio);
+        Func<Task> insercao = () => InserirSemPassarPeloAgregado(CodigoUnico(), Inicio, Inicio);
 
         (await insercao.Should().ThrowAsync<PostgresException>()).Which.SqlState.Should().Be(CheckViolation);
     }
 
-    [Fact(DisplayName = "CHECK recusa código fora do formato vindo de insert cru")]
-    public async Task CheckFormato_RecusaCodigoInvalido()
+    [Fact(DisplayName = "A restrição de formato do banco recusa código fora do formato gravado sem passar pelo agregado")]
+    public async Task Gravar_CodigoForaDoFormatoSemPassarPeloAgregado_ViolaARestricaoDeFormato()
     {
-        Func<Task> insercao = () => InserirCru("edital abertura", Inicio, null);
+        Func<Task> insercao = () => InserirSemPassarPeloAgregado("edital abertura", Inicio, null);
 
         (await insercao.Should().ThrowAsync<PostgresException>()).Which.SqlState.Should().Be(CheckViolation);
     }
 
-    [Fact(DisplayName = "ExisteSobreposicaoDeVigencia detecta cruzamento e ignora a própria versão")]
-    public async Task ExisteSobreposicao_DetectaCruzamentoEIgnoraProprio()
+    [Fact(DisplayName = "ExisteSobreposicaoDeVigencia detecta a janela que cruza")]
+    public async Task ExisteSobreposicao_JanelaQueCruza_DevolveVerdadeiro()
+    {
+        string codigo = CodigoUnico();
+        await Gravar(Novo(codigo, Inicio, Fim));
+
+        (await ExisteSobreposicaoAsync(codigo, Meio, null, null)).Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "ExisteSobreposicaoDeVigencia não acusa a janela que começa exatamente onde a outra termina")]
+    public async Task ExisteSobreposicao_JanelaAdjacentePelaDireita_DevolveFalso()
+    {
+        string codigo = CodigoUnico();
+        await Gravar(Novo(codigo, Inicio, Fim));
+
+        (await ExisteSobreposicaoAsync(codigo, Fim, null, null)).Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "ExisteSobreposicaoDeVigencia não acusa a janela que termina exatamente onde a outra começa")]
+    public async Task ExisteSobreposicao_JanelaAdjacentePelaEsquerda_DevolveFalso()
+    {
+        string codigo = CodigoUnico();
+        await Gravar(Novo(codigo, Inicio, Fim));
+
+        (await ExisteSobreposicaoAsync(codigo, Inicio.AddYears(-1), Inicio, null)).Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "ExisteSobreposicaoDeVigencia ignora a própria versão")]
+    public async Task ExisteSobreposicao_ExcluindoAPropriaVersao_DevolveFalso()
     {
         string codigo = CodigoUnico();
         TipoAtoPublicado existente = Novo(codigo, Inicio, Fim);
         await Gravar(existente);
 
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
-        var repo = new TipoAtoPublicadoRepository(ctx, TimeProvider.System);
+        (await ExisteSobreposicaoAsync(codigo, Inicio, Fim, existente.Id)).Should().BeFalse();
+    }
 
-        // Cruza.
-        (await repo.ExisteSobreposicaoDeVigenciaAsync(codigo, Meio, null, null, default))
-            .Should().BeTrue();
+    [Fact(DisplayName = "ExisteSobreposicaoDeVigencia não acusa outro código na mesma janela")]
+    public async Task ExisteSobreposicao_OutroCodigoNaMesmaJanela_DevolveFalso()
+    {
+        await Gravar(Novo(CodigoUnico(), Inicio, Fim));
 
-        // Adjacente pela direita: começa exatamente onde a outra termina.
-        (await repo.ExisteSobreposicaoDeVigenciaAsync(codigo, Fim, null, null, default))
-            .Should().BeFalse();
+        (await ExisteSobreposicaoAsync(CodigoUnico(), Inicio, Fim, null)).Should().BeFalse();
+    }
 
-        // Adjacente pela esquerda: termina exatamente onde a outra começa.
-        (await repo.ExisteSobreposicaoDeVigenciaAsync(codigo, Inicio.AddYears(-1), Inicio, null, default))
-            .Should().BeFalse();
+    [Fact(DisplayName = "A listagem por vigência inclui o dia do início e exclui o dia do fim")]
+    public async Task ListarPaginado_ComDiaDeVigencia_RespeitaInicioInclusivoEFimExclusivo()
+    {
+        string codigo = CodigoUnico();
+        TipoAtoPublicado encerrada = Novo(codigo, Inicio, Meio);
+        TipoAtoPublicado sucessora = Novo(codigo, Meio, vigenciaFim: null);
+        await Gravar(encerrada);
+        await Gravar(sucessora);
 
-        // A própria versão não conta como sobreposição de si mesma.
-        (await repo.ExisteSobreposicaoDeVigenciaAsync(codigo, Inicio, Fim, existente.Id, default))
-            .Should().BeFalse();
+        (await IdsListadosAsync(Meio.AddDays(-1))).Should().Contain(encerrada.Id).And.NotContain(sucessora.Id);
+        (await IdsListadosAsync(Meio)).Should().Contain(sucessora.Id).And.NotContain(encerrada.Id);
+    }
 
-        // Outro código, mesma janela.
-        (await repo.ExisteSobreposicaoDeVigenciaAsync(CodigoUnico(), Inicio, Fim, null, default))
-            .Should().BeFalse();
+    [Fact(DisplayName = "A listagem sem dia de vigência devolve também a versão encerrada")]
+    public async Task ListarPaginado_SemDiaDeVigencia_DevolveAVersaoEncerrada()
+    {
+        TipoAtoPublicado encerrada = Novo(CodigoUnico(), Inicio, Meio);
+        await Gravar(encerrada);
+
+        (await IdsListadosAsync(vigentesEm: null)).Should().Contain(encerrada.Id);
     }
 
     private async Task Gravar(TipoAtoPublicado tipo)
     {
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(Admin);
-        ctx.TiposAtoPublicado.Add(tipo);
-        await ctx.SaveChangesAsync();
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext(Admin);
+        contexto.TiposAtoPublicado.Add(tipo);
+        await contexto.SaveChangesAsync();
     }
 
     private async Task Excluir(Guid id)
     {
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(Admin);
-        TipoAtoPublicado alvo = await ctx.TiposAtoPublicado.SingleAsync(t => t.Id == id);
-        ctx.TiposAtoPublicado.Remove(alvo);
-        await ctx.SaveChangesAsync();
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext(Admin);
+        TipoAtoPublicado alvo = await contexto.TiposAtoPublicado.SingleAsync(tipo => tipo.Id == id);
+        contexto.TiposAtoPublicado.Remove(alvo);
+        await contexto.SaveChangesAsync();
     }
 
-    private async Task InserirCru(string codigo, DateOnly inicio, DateOnly? fim)
+    private async Task<TipoAtoPublicado> LerPersistidoAsync(Guid id)
     {
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
-        await ctx.Database.OpenConnectionAsync();
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext(userId: null);
+        return await contexto.TiposAtoPublicado.SingleAsync(tipo => tipo.Id == id);
+    }
 
-        await using var command = new NpgsqlCommand(
-            """
-            INSERT INTO publicacoes.tipos_de_ato_publicado
-                (id, codigo, nome, congela_configuracao, unico_por_objeto, efeito_irreversivel,
-                 eh_resultado, exige_ato_corrigido, publicavel_como_avulso,
-                 vigencia_inicio, vigencia_fim, created_at, is_deleted)
-            VALUES
-                (gen_random_uuid(), @codigo, 'Insert cru', false, false, false,
-                 false, false, false,
-                 @inicio, @fim, now(), false)
-            """,
-            (NpgsqlConnection)ctx.Database.GetDbConnection());
+    private async Task<TipoAtoPublicado> LerExcluidoAsync(Guid id)
+    {
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext(userId: null);
+        return await contexto.TiposAtoPublicado.IgnoreQueryFilters().SingleAsync(tipo => tipo.Id == id);
+    }
 
-        command.Parameters.AddWithValue("codigo", codigo);
-        command.Parameters.AddWithValue("inicio", inicio);
-        command.Parameters.AddWithValue("fim", fim ?? (object)DBNull.Value);
+    private async Task<bool> ExisteNaLeituraNormalAsync(Guid id)
+    {
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext(userId: null);
+        return await contexto.TiposAtoPublicado.AnyAsync(tipo => tipo.Id == id);
+    }
 
-        await command.ExecuteNonQueryAsync();
+    private async Task<int> ContarIncluindoExcluidosAsync(string codigo)
+    {
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext(userId: null);
+        return await contexto.TiposAtoPublicado.IgnoreQueryFilters().CountAsync(tipo => tipo.Codigo == codigo);
+    }
+
+    private async Task<TipoAtoPublicado?> VigenteEmAsync(string codigo, DateOnly dia)
+    {
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext(userId: null);
+        return await new TipoAtoPublicadoRepository(contexto).ObterVigenteAsync(codigo, dia, default);
+    }
+
+    private async Task<IReadOnlyList<Guid>> IdsListadosAsync(DateOnly? vigentesEm)
+    {
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext(userId: null);
+
+        (IReadOnlyList<TipoAtoPublicado> itens, _, _) = await new TipoAtoPublicadoRepository(contexto)
+            .ListarPaginadoAsync(null, 100, PaginationDirection.Next, vigentesEm, default);
+
+        return [.. itens.Select(tipo => tipo.Id)];
+    }
+
+    private async Task<bool> ExisteSobreposicaoAsync(
+        string codigo, DateOnly vigenciaInicio, DateOnly? vigenciaFim, Guid? excluirId)
+    {
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext(userId: null);
+
+        return await new TipoAtoPublicadoRepository(contexto)
+            .ExisteSobreposicaoDeVigenciaAsync(codigo, vigenciaInicio, vigenciaFim, excluirId, default);
+    }
+
+    private async Task<object?> ConsultarContypeAsync(string nomeDaRestricao)
+    {
+        await using UniPlusDbContext contexto = await ContextoComConexaoAbertaAsync();
+        await using var comando = new NpgsqlCommand(ContypeDaRestricao, (NpgsqlConnection)contexto.Database.GetDbConnection());
+        comando.Parameters.AddWithValue("nome", nomeDaRestricao);
+
+        return await comando.ExecuteScalarAsync();
+    }
+
+    private async Task InserirSemPassarPeloAgregado(string codigo, DateOnly inicio, DateOnly? fim)
+    {
+        await using UniPlusDbContext contexto = await ContextoComConexaoAbertaAsync();
+        await using var comando = new NpgsqlCommand(
+            InsercaoSemPassarPeloAgregado, (NpgsqlConnection)contexto.Database.GetDbConnection());
+        comando.Parameters.AddWithValue("codigo", codigo);
+        comando.Parameters.AddWithValue("inicio", inicio);
+        comando.Parameters.AddWithValue("fim", fim ?? (object)DBNull.Value);
+
+        await comando.ExecuteNonQueryAsync();
+    }
+
+    private async Task<UniPlusDbContext> ContextoComConexaoAbertaAsync()
+    {
+        UniPlusDbContext contexto = _fixture.CreateDbContext(userId: null);
+        await contexto.Database.OpenConnectionAsync();
+        return contexto;
     }
 
     private static TipoAtoPublicado Novo(
@@ -335,6 +406,6 @@ public sealed class TipoAtoPublicadoPersistenceTests
     private static string CodigoUnico()
     {
         string hex = Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture)[..12];
-        return "TESTE_" + string.Concat(hex.Select(c => (char)('A' + Convert.ToInt32(c.ToString(), 16))));
+        return "TESTE_" + string.Concat(hex.Select(digito => (char)('A' + Convert.ToInt32(digito.ToString(), 16))));
     }
 }

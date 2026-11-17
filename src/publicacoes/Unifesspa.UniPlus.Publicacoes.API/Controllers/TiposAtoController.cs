@@ -58,8 +58,8 @@ public sealed class TiposAtoController : ControllerBase
     /// <summary>
     /// Lista tipos de ato, paginados por cursor opaco bidirecional
     /// (ADR-0026 + ADR-0089). Navegação via header <c>Link</c>; cada item carrega
-    /// seu <c>_links.self</c> (ADR-0029). Traz apenas as versões vigentes hoje
-    /// (<c>vigentes=true</c> por default).
+    /// seu <c>_links.self</c> (ADR-0029). Traz apenas as versões vigentes hoje no
+    /// fuso institucional (<c>vigentes=true</c> por default).
     /// </summary>
     /// <remarks>
     /// Uma versão com vigência futura é planejamento normativo ainda não anunciado.
@@ -81,16 +81,13 @@ public sealed class TiposAtoController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(page);
 
-        ListarTiposAtoPublicadoResult resultado = await _queryBus
+        Result<ListarTiposAtoPublicadoResult> resultado = await _queryBus
             .Send(new ListarTiposAtoPublicadoQuery(page.AfterId, page.Limit, page.Direction, vigentes), cancellationToken)
             .ConfigureAwait(false);
 
-        TipoAtoPublicadoDto[] comLinks =
-            [.. resultado.Items.Select(t => t with { Links = _linksBuilder.Build(t) })];
-
-        return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag,
-            cancellationToken: cancellationToken).ConfigureAwait(false);
+        return resultado.IsSuccess
+            ? await RespostaPaginadaAsync(resultado.Value!, page, cancellationToken).ConfigureAwait(false)
+            : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>Obtém uma versão de tipo de ato pelo Id. Retorna 404 quando inexistente ou removida.</summary>
@@ -112,7 +109,7 @@ public sealed class TiposAtoController : ControllerBase
     /// <summary>
     /// Resolve o que um código de tipo de ato significava numa data: a única versão
     /// viva cuja janela semiaberta <c>[inicio, fim)</c> contém a data. Sem
-    /// <c>data</c>, hoje.
+    /// <c>data</c>, hoje no fuso institucional.
     /// </summary>
     /// <remarks>
     /// O formato do código é validado aqui, no boundary. Sem isso, <c>edital_abertura</c>
@@ -146,6 +143,18 @@ public sealed class TiposAtoController : ControllerBase
         consulta.IsSuccess
             ? Ok(consulta.Value! with { Links = _linksBuilder.Build(consulta.Value!) })
             : consulta.ToActionResult(_mapper);
+
+    /// <summary>A página de tipos de ato, com os links de cada item e a navegação por cursor.</summary>
+    private async Task<IActionResult> RespostaPaginadaAsync(
+        ListarTiposAtoPublicadoResult resultado, PageRequest page, CancellationToken cancellationToken)
+    {
+        TipoAtoPublicadoDto[] comLinks =
+            [.. resultado.Items.Select(tipo => tipo with { Links = _linksBuilder.Build(tipo) })];
+
+        return await this.OkPaginatedAsync(
+            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+    }
 
     /// <summary>
     /// Cria uma versão de tipo de ato. Exige a permissão de manutenção.

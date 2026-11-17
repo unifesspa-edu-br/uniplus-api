@@ -26,6 +26,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../Shared/InstanteEmBelem.cs" Link="InstanteEmBelem.cs" />
+    <Compile Include="../Shared/RelogioFixo.cs" Link="RelogioFixo.cs" />
+    <Compile Include="../Shared/ResolvedorFusoDeTeste.cs" Link="ResolvedorFusoDeTeste.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
 
