@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Authorization.Catalogo;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Application.Permissoes;
@@ -31,8 +32,6 @@ using Unifesspa.UniPlus.Kernel.Results;
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class VersoesDoPerfilController : ControllerBase
 {
-    private const int TtlDaIdempotenciaEmSegundos = 15 * 60;
-
     private readonly ICommandBus _commandBus;
     private readonly IDomainErrorMapper _mapper;
 
@@ -49,7 +48,7 @@ public sealed class VersoesDoPerfilController : ControllerBase
     /// </summary>
     [HttpPost("perfis/{id:guid}/versoes")]
     [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, ResourceTipo = ResourceTiposAutorizacao.Perfil)]
-    [RequiresIdempotencyKey(TtlSeconds = TtlDaIdempotenciaEmSegundos)]
+    [RequiresIdempotencyKey(TtlSeconds = EnvioDoPdf.PrazoEmSegundos)]
     [ProducesResponseType(typeof(EnvioDoDocumentoDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(PerfilDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -78,7 +77,7 @@ public sealed class VersoesDoPerfilController : ControllerBase
     /// <summary>Pede a URL de PUT de outro documento, depois que a verificação recusou o anterior.</summary>
     [HttpPost("perfis/{id:guid}/versoes/{versaoId:guid}/documento")]
     [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, ResourceTipo = ResourceTiposAutorizacao.Perfil)]
-    [RequiresIdempotencyKey(TtlSeconds = TtlDaIdempotenciaEmSegundos)]
+    [RequiresIdempotencyKey(TtlSeconds = EnvioDoPdf.PrazoEmSegundos)]
     [ProducesResponseType(typeof(EnvioDoDocumentoDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -102,7 +101,7 @@ public sealed class VersoesDoPerfilController : ControllerBase
     /// <summary>Pede outra URL de PUT para o documento que ainda aguarda o envio.</summary>
     [HttpPost("perfis/{id:guid}/versoes/{versaoId:guid}/documento/envio")]
     [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, ResourceTipo = ResourceTiposAutorizacao.Perfil)]
-    [RequiresIdempotencyKey(TtlSeconds = TtlDaIdempotenciaEmSegundos)]
+    [RequiresIdempotencyKey(TtlSeconds = EnvioDoPdf.PrazoEmSegundos)]
     [ProducesResponseType(typeof(EnvioDoDocumentoDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
