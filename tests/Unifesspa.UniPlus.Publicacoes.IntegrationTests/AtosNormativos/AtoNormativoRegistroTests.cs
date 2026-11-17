@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static AtoNormativoApoio;
 
@@ -167,7 +168,7 @@ public sealed class AtoNormativoRegistroTests
             tipoCodigo = "QUALQUER",
             dataDoAto = Publicacao,
             documentoHash = "nao-e-hash",
-            assinante = "Jairo Belchior",
+            assinante = PersonasDeTeste.NomeKevinCarvalho,
             versaoDoObjetoId = Guid.CreateVersion7(),
             versaoDoObjetoHash = (string?)null,
             vinculos = new[] { new { entidadeTipo = "minusculo", entidadeId = Guid.Empty } },
@@ -210,14 +211,13 @@ public sealed class AtoNormativoRegistroTests
 
     private async Task<Guid> GravarAtoSemNomeDoTipoAsync(string tipoCodigo)
     {
-        AtoNormativo semNome = AtoNormativo.Registrar(
-            Guid.CreateVersion7(), "CEPS", SerieUnica(), 2026, "1", tipoCodigo,
-            congelaConfiguracao: false, efeitoIrreversivel: false, unicoPorObjeto: false,
-            dataDoAto: new DateOnly(2026, 3, 13),
-            documentoHash: HashValido,
-            assinante: "Jairo Belchior",
-            publicadoEm: DateTimeOffset.UtcNow,
-            versaoDoObjeto: null);
+        AtoNormativo semNome = new AtoNormativoDeTeste
+        {
+            Serie = SerieUnica(),
+            Numero = "1",
+            TipoCodigo = tipoCodigo,
+            PublicadoEm = DateTimeOffset.UtcNow,
+        }.Registrar();
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext ctx = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         await ctx.Set<AtoNormativo>().AddAsync(semNome);

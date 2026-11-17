@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 using Npgsql;
 
@@ -13,6 +14,7 @@ using Unifesspa.UniPlus.Publicacoes.Application.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Publicacoes.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Integração do vínculo ato ↔ entidade e da vaga de linhagem única por objeto contra
@@ -24,10 +26,6 @@ using Unifesspa.UniPlus.Publicacoes.IntegrationTests.Infrastructure;
     "Performance",
     "CA1515:Consider making public types internal",
     Justification = "xUnit collection fixture exige tipo de teste público.")]
-[SuppressMessage(
-    "Security",
-    "CA2100:Review SQL queries for security vulnerabilities",
-    Justification = "INSERT cru escrito no próprio teste, com identificadores gerados nele — é o que se quer exercitar: a trava do banco contra escrita fora do agregado.")]
 public sealed class VinculoAtoEntidadePersistenceTests
 {
     private const string HashValido = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
@@ -35,8 +33,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
     private const string UniqueViolation = "23505";
     private const string ForeignKeyViolation = "23503";
     private const string TipoUnico = "EDITAL_ABERTURA";
-    private static readonly DateOnly Publicacao = new(2026, 3, 13);
-    private static readonly DateTimeOffset Registro = new(2026, 3, 13, 19, 0, 0, TimeSpan.Zero);
+    private static readonly AtoNormativoDeTeste Base = new() { Numero = null, TipoCodigo = TipoUnico, CongelaConfiguracao = true };
 
     private readonly PublicacoesDbFixture _fixture;
 
@@ -50,7 +47,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
     {
         Guid processo = Guid.CreateVersion7();
         Guid chamada = Guid.CreateVersion7();
-        AtoNormativo ato = Novo(unicoPorObjeto: false, vinculos: [("PROCESSO_SELETIVO", processo), ("CHAMADA", chamada)]);
+        AtoNormativo ato = (Base with { Vinculos = [("PROCESSO_SELETIVO", processo), ("CHAMADA", chamada)] }).Registrar();
 
         await Gravar(ato);
 
@@ -66,7 +63,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
     [Fact(DisplayName = "Um ato sem vínculo persiste — há atos que não tratam de objeto algum")]
     public async Task Insert_SemVinculo_Persiste()
     {
-        AtoNormativo ato = Novo(unicoPorObjeto: true);
+        AtoNormativo ato = (Base with { UnicoPorObjeto = true }).Registrar();
 
         await Gravar(ato);
 
@@ -78,11 +75,11 @@ public sealed class VinculoAtoEntidadePersistenceTests
     [Fact(DisplayName = "UPDATE cru no vínculo é bloqueado pelo trigger append-only")]
     public async Task Update_Vinculo_Bloqueado()
     {
-        AtoNormativo ato = Novo(unicoPorObjeto: false, vinculos: [("PROCESSO_SELETIVO", Guid.CreateVersion7())]);
+        AtoNormativo ato = (Base with { Vinculos = [("PROCESSO_SELETIVO", Guid.CreateVersion7())] }).Registrar();
         await Gravar(ato);
 
         PostgresException erro = await Assert.ThrowsAsync<PostgresException>(() => ExecutarCruAsync(
-            $"UPDATE publicacoes.vinculos_do_ato_com_entidade SET entidade_id = '{Guid.CreateVersion7()}' WHERE ato_id = '{ato.Id}'"));
+            $"UPDATE publicacoes.vinculos_do_ato_com_entidade SET entidade_id = {Guid.CreateVersion7()} WHERE ato_id = {ato.Id}"));
 
         erro.SqlState.Should().Be(RestrictViolation);
     }
@@ -90,11 +87,11 @@ public sealed class VinculoAtoEntidadePersistenceTests
     [Fact(DisplayName = "DELETE cru no vínculo é bloqueado pelo trigger append-only")]
     public async Task Delete_Vinculo_Bloqueado()
     {
-        AtoNormativo ato = Novo(unicoPorObjeto: false, vinculos: [("PROCESSO_SELETIVO", Guid.CreateVersion7())]);
+        AtoNormativo ato = (Base with { Vinculos = [("PROCESSO_SELETIVO", Guid.CreateVersion7())] }).Registrar();
         await Gravar(ato);
 
         PostgresException erro = await Assert.ThrowsAsync<PostgresException>(() => ExecutarCruAsync(
-            $"DELETE FROM publicacoes.vinculos_do_ato_com_entidade WHERE ato_id = '{ato.Id}'"));
+            $"DELETE FROM publicacoes.vinculos_do_ato_com_entidade WHERE ato_id = {ato.Id}"));
 
         erro.SqlState.Should().Be(RestrictViolation);
     }
@@ -103,14 +100,14 @@ public sealed class VinculoAtoEntidadePersistenceTests
     public async Task Insert_TrioRepetido_Colide()
     {
         Guid processo = Guid.CreateVersion7();
-        AtoNormativo ato = Novo(unicoPorObjeto: false, vinculos: [("PROCESSO_SELETIVO", processo)]);
+        AtoNormativo ato = (Base with { Vinculos = [("PROCESSO_SELETIVO", processo)] }).Registrar();
         await Gravar(ato);
 
         // O agregado e o validator já recusam antes; aqui prova-se a trava do banco.
         PostgresException erro = await Assert.ThrowsAsync<PostgresException>(() => ExecutarCruAsync(
             $"""
             INSERT INTO publicacoes.vinculos_do_ato_com_entidade (id, ato_id, entidade_tipo, entidade_id)
-            VALUES ('{Guid.CreateVersion7()}', '{ato.Id}', 'PROCESSO_SELETIVO', '{processo}')
+            VALUES ({Guid.CreateVersion7()}, {ato.Id}, 'PROCESSO_SELETIVO', {processo})
             """));
 
         erro.SqlState.Should().Be(UniqueViolation);
@@ -122,60 +119,46 @@ public sealed class VinculoAtoEntidadePersistenceTests
         PostgresException erro = await Assert.ThrowsAsync<PostgresException>(() => ExecutarCruAsync(
             $"""
             INSERT INTO publicacoes.vinculos_do_ato_com_entidade (id, ato_id, entidade_tipo, entidade_id)
-            VALUES ('{Guid.CreateVersion7()}', '{Guid.CreateVersion7()}', 'PROCESSO_SELETIVO', '{Guid.CreateVersion7()}')
+            VALUES ({Guid.CreateVersion7()}, {Guid.CreateVersion7()}, 'PROCESSO_SELETIVO', {Guid.CreateVersion7()})
             """));
 
         erro.SqlState.Should().Be(ForeignKeyViolation);
     }
 
+    /// <remarks>
+    /// O ato e o vínculo do segundo entram por via crua (o handler o recusaria antes), para exercitar
+    /// exatamente a trava do banco, e não a do handler.
+    /// </remarks>
     [Fact(DisplayName = "Duas linhagens não ocupam a vaga do mesmo objeto: o índice único recusa a segunda")]
     public async Task Insert_SegundaVagaNoMesmoObjeto_Colide()
     {
         Guid processo = Guid.CreateVersion7();
         AtoNormativo primeiro = await GravarComVaga(processo);
-        AtoNormativo segundo = Novo(unicoPorObjeto: true, vinculos: [("PROCESSO_SELETIVO", processo)]);
+        AtoNormativo segundo = (Base with { UnicoPorObjeto = true, Vinculos = [("PROCESSO_SELETIVO", processo)] }).Registrar();
 
-        // Grava o ato e o vínculo do segundo por via crua (o handler o recusaria antes),
-        // para exercitar exatamente a trava do banco — e não a do handler.
-        PostgresException erro = await Assert.ThrowsAsync<PostgresException>(async () =>
-        {
-            await using NpgsqlConnection conexao = new(_fixture.ConnectionString);
-            await conexao.OpenAsync();
-            await using NpgsqlTransaction tx = await conexao.BeginTransactionAsync();
-
-            await ExecutarAsync(conexao, tx, InsertAtoCru(segundo));
-            await ExecutarAsync(conexao, tx, InsertVinculoCru(segundo.Id, "PROCESSO_SELETIVO", processo));
-            await ExecutarAsync(conexao, tx, InsertVagaCru(segundo.Id, segundo.Id, "PROCESSO_SELETIVO", processo));
-
-            await tx.CommitAsync();
-        });
+        PostgresException erro = await Assert.ThrowsAsync<PostgresException>(() => ExecutarNumaTransacaoAsync(
+            InsertAtoCru(segundo),
+            InsertVinculoCru(segundo.Id, "PROCESSO_SELETIVO", processo),
+            InsertVagaCru(segundo.Id, segundo.Id, "PROCESSO_SELETIVO", processo)));
 
         erro.SqlState.Should().Be(UniqueViolation);
         erro.ConstraintName.Should().Be(RestricoesDoBanco.VagaDeLinhagemObjetoTipoUnica);
         primeiro.Id.Should().NotBe(segundo.Id);
     }
 
+    /// <remarks>A raiz declarada na vaga é outro ato, que nada tem com a cadeia do ato que a reserva.</remarks>
     [Fact(DisplayName = "Vaga forjada em nome de uma raiz que não é a da cadeia do ato é bloqueada")]
     public async Task Insert_VagaComRaizFalsa_Bloqueada()
     {
         Guid processo = Guid.CreateVersion7();
-        AtoNormativo ato = Novo(unicoPorObjeto: true, vinculos: [("PROCESSO_SELETIVO", processo)]);
-        AtoNormativo outro = Novo(unicoPorObjeto: true);
+        AtoNormativo ato = (Base with { UnicoPorObjeto = true, Vinculos = [("PROCESSO_SELETIVO", processo)] }).Registrar();
+        AtoNormativo outro = (Base with { UnicoPorObjeto = true }).Registrar();
 
-        PostgresException erro = await Assert.ThrowsAsync<PostgresException>(async () =>
-        {
-            await using NpgsqlConnection conexao = new(_fixture.ConnectionString);
-            await conexao.OpenAsync();
-            await using NpgsqlTransaction tx = await conexao.BeginTransactionAsync();
-
-            await ExecutarAsync(conexao, tx, InsertAtoCru(ato));
-            await ExecutarAsync(conexao, tx, InsertAtoCru(outro));
-            await ExecutarAsync(conexao, tx, InsertVinculoCru(ato.Id, "PROCESSO_SELETIVO", processo));
-            // A raiz declarada é outro ato, que nada tem com a cadeia deste.
-            await ExecutarAsync(conexao, tx, InsertVagaCru(ato.Id, outro.Id, "PROCESSO_SELETIVO", processo));
-
-            await tx.CommitAsync();
-        });
+        PostgresException erro = await Assert.ThrowsAsync<PostgresException>(() => ExecutarNumaTransacaoAsync(
+            InsertAtoCru(ato),
+            InsertAtoCru(outro),
+            InsertVinculoCru(ato.Id, "PROCESSO_SELETIVO", processo),
+            InsertVagaCru(ato.Id, outro.Id, "PROCESSO_SELETIVO", processo)));
 
         erro.SqlState.Should().Be(RestrictViolation);
     }
@@ -184,70 +167,44 @@ public sealed class VinculoAtoEntidadePersistenceTests
     public async Task Insert_VagaSemVinculo_Bloqueada()
     {
         Guid processo = Guid.CreateVersion7();
-        AtoNormativo ato = Novo(unicoPorObjeto: true);
+        AtoNormativo ato = (Base with { UnicoPorObjeto = true }).Registrar();
 
-        PostgresException erro = await Assert.ThrowsAsync<PostgresException>(async () =>
-        {
-            await using NpgsqlConnection conexao = new(_fixture.ConnectionString);
-            await conexao.OpenAsync();
-            await using NpgsqlTransaction tx = await conexao.BeginTransactionAsync();
-
-            await ExecutarAsync(conexao, tx, InsertAtoCru(ato));
-            await ExecutarAsync(conexao, tx, InsertVagaCru(ato.Id, ato.Id, "PROCESSO_SELETIVO", processo));
-
-            await tx.CommitAsync();
-        });
+        PostgresException erro = await Assert.ThrowsAsync<PostgresException>(() => ExecutarNumaTransacaoAsync(
+            InsertAtoCru(ato),
+            InsertVagaCru(ato.Id, ato.Id, "PROCESSO_SELETIVO", processo)));
 
         erro.SqlState.Should().Be(RestrictViolation);
     }
 
+    /// <remarks>
+    /// É esta trava que faz o índice único valer alguma coisa: sem ela, gravar o vínculo e omitir a
+    /// vaga deixaria o objeto livre para uma segunda linhagem, e o índice, que só vê as vagas que
+    /// existem, nada acusaria.
+    /// </remarks>
     [Fact(DisplayName = "Vínculo de ato único por objeto sem a vaga reservada é bloqueado — a correspondência é obrigatória")]
     public async Task Insert_VinculoSemVaga_Bloqueado()
     {
-        // É esta trava que faz o índice único valer alguma coisa: sem ela, gravar o
-        // vínculo e omitir a vaga deixaria o objeto livre para uma segunda linhagem, e o
-        // índice, que só vê as vagas que existem, nada acusaria.
         Guid processo = Guid.CreateVersion7();
-        AtoNormativo ato = Novo(unicoPorObjeto: true);
+        AtoNormativo ato = (Base with { UnicoPorObjeto = true }).Registrar();
 
-        PostgresException erro = await Assert.ThrowsAsync<PostgresException>(async () =>
-        {
-            await using NpgsqlConnection conexao = new(_fixture.ConnectionString);
-            await conexao.OpenAsync();
-            await using NpgsqlTransaction tx = await conexao.BeginTransactionAsync();
-
-            await ExecutarAsync(conexao, tx, InsertAtoCru(ato));
-            await ExecutarAsync(conexao, tx, InsertVinculoCru(ato.Id, "PROCESSO_SELETIVO", processo));
-
-            await tx.CommitAsync();
-        });
+        PostgresException erro = await Assert.ThrowsAsync<PostgresException>(() => ExecutarNumaTransacaoAsync(
+            InsertAtoCru(ato),
+            InsertVinculoCru(ato.Id, "PROCESSO_SELETIVO", processo)));
 
         erro.SqlState.Should().Be(RestrictViolation);
     }
 
+    /// <remarks>
+    /// A chave estrangeira não barra isto: ela é verificada ao fim do comando, e no fim do comando os
+    /// dois atos existem. O CHECK só cobre o ciclo de tamanho um, e o índice único da linearidade não
+    /// vê ciclo nenhum (A→B e B→A são alvos distintos). Um ciclo gravado seria irreparável — UPDATE e
+    /// DELETE estão bloqueados — e faria toda travessia da cadeia girar para sempre.
+    /// </remarks>
     [Fact(DisplayName = "Ciclo de retificação inserido num único comando é bloqueado")]
     public async Task Insert_CicloDeRetificacao_Bloqueado()
     {
-        // A chave estrangeira não barra isto: ela é verificada ao fim do COMANDO, e no fim
-        // do comando os dois atos existem. O CHECK só cobre o ciclo de tamanho um, e o
-        // índice único da linearidade não vê ciclo nenhum (A→B e B→A são alvos distintos).
-        // Um ciclo gravado seria irreparável — UPDATE e DELETE estão bloqueados — e faria
-        // toda travessia da cadeia girar para sempre.
-        Guid a = Guid.CreateVersion7();
-        Guid b = Guid.CreateVersion7();
-
         PostgresException erro = await Assert.ThrowsAsync<PostgresException>(() => ExecutarCruAsync(
-            $"""
-            INSERT INTO publicacoes.atos_normativos
-                (id, orgao, serie, ano, numero, tipo_codigo, congela_configuracao, efeito_irreversivel,
-                 unico_por_objeto, data_do_ato, documento_hash, assinante, publicado_em,
-                 ato_retificado_id, motivo_retificacao)
-            VALUES
-                ('{a}', 'CEPS', 'EDITAL', 2026, NULL, '{TipoUnico}', true, false, false,
-                 DATE '2026-03-13', '{HashValido}', 'Jairo Belchior', now(), '{b}', 'ciclo'),
-                ('{b}', 'CEPS', 'EDITAL', 2026, NULL, '{TipoUnico}', true, false, false,
-                 DATE '2026-03-13', '{HashValido}', 'Jairo Belchior', now(), '{a}', 'ciclo')
-            """));
+            InsertDeCicloDeRetificacao(Guid.CreateVersion7(), Guid.CreateVersion7())));
 
         erro.SqlState.Should().Be(RestrictViolation);
     }
@@ -256,7 +213,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
     public async Task Truncate_DoVinculo_Bloqueado()
     {
         PostgresException erro = await Assert.ThrowsAsync<PostgresException>(() => ExecutarCruAsync(
-            "TRUNCATE publicacoes.vinculos_do_ato_com_entidade"));
+            $"TRUNCATE publicacoes.vinculos_do_ato_com_entidade"));
 
         erro.SqlState.Should().Be(RestrictViolation);
     }
@@ -265,7 +222,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
     public async Task Truncate_DoAto_Bloqueado()
     {
         PostgresException erro = await Assert.ThrowsAsync<PostgresException>(() => ExecutarCruAsync(
-            "TRUNCATE publicacoes.atos_normativos CASCADE"));
+            $"TRUNCATE publicacoes.atos_normativos CASCADE"));
 
         erro.SqlState.Should().Be(RestrictViolation);
     }
@@ -273,7 +230,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
     [Fact(DisplayName = "Vínculo de ato não único por objeto dispensa vaga")]
     public async Task Insert_VinculoDeAtoNaoUnico_NaoExigeVaga()
     {
-        AtoNormativo ato = Novo(unicoPorObjeto: false, vinculos: [("CHAMADA", Guid.CreateVersion7())]);
+        AtoNormativo ato = (Base with { Vinculos = [("CHAMADA", Guid.CreateVersion7())] }).Registrar();
 
         await Gravar(ato);
 
@@ -286,7 +243,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
 
     private async Task<AtoNormativo> GravarComVaga(Guid processo)
     {
-        AtoNormativo ato = Novo(unicoPorObjeto: true, vinculos: [("PROCESSO_SELETIVO", processo)]);
+        AtoNormativo ato = (Base with { UnicoPorObjeto = true, Vinculos = [("PROCESSO_SELETIVO", processo)] }).Registrar();
 
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         ctx.AtosNormativos.Add(ato);
@@ -304,64 +261,59 @@ public sealed class VinculoAtoEntidadePersistenceTests
         await ctx.SaveChangesAsync();
     }
 
-    private async Task ExecutarCruAsync(string sql)
+    private async Task ExecutarCruAsync(FormattableString sql)
     {
-        await using NpgsqlConnection conexao = new(_fixture.ConnectionString);
-        await conexao.OpenAsync();
-        await using NpgsqlCommand comando = conexao.CreateCommand();
-        comando.CommandText = sql;
-        await comando.ExecuteNonQueryAsync();
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await ctx.Database.ExecuteSqlAsync(sql);
     }
 
-    private static async Task ExecutarAsync(NpgsqlConnection conexao, NpgsqlTransaction transacao, string sql)
+    private async Task ExecutarNumaTransacaoAsync(params FormattableString[] comandos)
     {
-        await using NpgsqlCommand comando = conexao.CreateCommand();
-        comando.Transaction = transacao;
-        comando.CommandText = sql;
-        await comando.ExecuteNonQueryAsync();
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using IDbContextTransaction transacao = await ctx.Database.BeginTransactionAsync();
+
+        foreach (FormattableString sql in comandos)
+        {
+            await ctx.Database.ExecuteSqlAsync(sql);
+        }
+
+        await transacao.CommitAsync();
     }
 
-    private static string InsertAtoCru(AtoNormativo ato) =>
+    private static FormattableString InsertDeCicloDeRetificacao(Guid a, Guid b) =>
+        $"""
+        INSERT INTO publicacoes.atos_normativos
+            (id, orgao, serie, ano, numero, tipo_codigo, congela_configuracao, efeito_irreversivel,
+             unico_por_objeto, data_do_ato, documento_hash, assinante, publicado_em,
+             ato_retificado_id, motivo_retificacao)
+        VALUES
+            ({a}, 'CEPS', 'EDITAL', 2026, NULL, {TipoUnico}, true, false, false,
+             DATE '2026-03-13', {HashValido}, {PersonasDeTeste.NomeKevinCarvalho}, now(), {b}, 'ciclo'),
+            ({b}, 'CEPS', 'EDITAL', 2026, NULL, {TipoUnico}, true, false, false,
+             DATE '2026-03-13', {HashValido}, {PersonasDeTeste.NomeKevinCarvalho}, now(), {a}, 'ciclo')
+        """;
+
+    private static FormattableString InsertAtoCru(AtoNormativo ato) =>
         $"""
         INSERT INTO publicacoes.atos_normativos
             (id, orgao, serie, ano, numero, tipo_codigo, congela_configuracao, efeito_irreversivel,
              unico_por_objeto, data_do_ato, documento_hash, assinante, publicado_em)
         VALUES
-            ('{ato.Id}', 'CEPS', 'EDITAL', 2026, NULL, '{ato.TipoCodigo}', true, false,
-             {(ato.UnicoPorObjeto ? "true" : "false")}, DATE '2026-03-13', '{HashValido}',
-             'Jairo Belchior', now())
+            ({ato.Id}, 'CEPS', 'EDITAL', 2026, NULL, {ato.TipoCodigo}, true, false,
+             {ato.UnicoPorObjeto}, DATE '2026-03-13', {HashValido},
+             {PersonasDeTeste.NomeKevinCarvalho}, now())
         """;
 
-    private static string InsertVinculoCru(Guid atoId, string entidadeTipo, Guid entidadeId) =>
+    private static FormattableString InsertVinculoCru(Guid atoId, string entidadeTipo, Guid entidadeId) =>
         $"""
         INSERT INTO publicacoes.vinculos_do_ato_com_entidade (id, ato_id, entidade_tipo, entidade_id)
-        VALUES ('{Guid.CreateVersion7()}', '{atoId}', '{entidadeTipo}', '{entidadeId}')
+        VALUES ({Guid.CreateVersion7()}, {atoId}, {entidadeTipo}, {entidadeId})
         """;
 
-    private static string InsertVagaCru(Guid atoId, Guid raizId, string entidadeTipo, Guid entidadeId) =>
+    private static FormattableString InsertVagaCru(Guid atoId, Guid raizId, string entidadeTipo, Guid entidadeId) =>
         $"""
         INSERT INTO publicacoes.vagas_de_linhagem
             (id, entidade_tipo, entidade_id, tipo_codigo, raiz_id, ato_id)
-        VALUES ('{Guid.CreateVersion7()}', '{entidadeTipo}', '{entidadeId}', '{TipoUnico}', '{raizId}', '{atoId}')
+        VALUES ({Guid.CreateVersion7()}, {entidadeTipo}, {entidadeId}, {TipoUnico}, {raizId}, {atoId})
         """;
-
-    private static AtoNormativo Novo(
-        bool unicoPorObjeto,
-        IEnumerable<(string EntidadeTipo, Guid EntidadeId)>? vinculos = null) =>
-        AtoNormativo.Registrar(
-            Guid.CreateVersion7(),
-            orgao: "CEPS",
-            serie: "EDITAL",
-            ano: 2026,
-            numero: null,
-            tipoCodigo: TipoUnico,
-            congelaConfiguracao: true,
-            efeitoIrreversivel: false,
-            unicoPorObjeto: unicoPorObjeto,
-            dataDoAto: Publicacao,
-            documentoHash: HashValido,
-            assinante: "Jairo Belchior",
-            publicadoEm: Registro,
-            versaoDoObjeto: null,
-            vinculos: vinculos);
 }

@@ -3,13 +3,13 @@ namespace Unifesspa.UniPlus.Publicacoes.IntegrationTests.TiposAtoPublicado;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net;
-using System.Net.Http.Json;
 using System.Text.Json;
 
 using AwesomeAssertions;
 
-using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Publicacoes.IntegrationTests.Infrastructure;
+
+using static TipoAtoPublicadoApoio;
 
 /// <summary>
 /// O princípio da ADR-0103, exercitado pela API: acrescentar um tipo de ato é linha
@@ -31,8 +31,7 @@ using Unifesspa.UniPlus.Publicacoes.IntegrationTests.Infrastructure;
     Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class PrincipioDoCadastroTests
 {
-    private const string Base = "/api/publicacoes/tipos-ato";
-    private const string Admin = "/api/publicacoes/admin/tipos-ato";
+    private static readonly string[] AtributosDeConsequencia = ["congelaConfiguracao", "unicoPorObjeto", "efeitoIrreversivel"];
 
     private readonly PublicacoesEndpointFixture _fixture;
 
@@ -41,104 +40,105 @@ public sealed class PrincipioDoCadastroTests
         _fixture = fixture;
     }
 
-    [Fact(DisplayName = "Dois tipos com a mesma configuração comportam-se identicamente")]
-    public async Task DoisTiposComMesmaConfiguracao_SaoIndistinguiveis()
+    /// <remarks>Mesmas chaves, mesma forma: o que varia é a identidade e o rótulo.</remarks>
+    [Fact(DisplayName = "Dois tipos com a mesma configuração têm a mesma forma")]
+    public async Task DoisTiposComMesmaConfiguracao_TemAMesmaForma()
     {
-        string alfa = CodigoUnico();
-        string beta = CodigoUnico();
-
         using HttpClient client = _fixture.Factory.CreateClient();
+        ParDeTipos par = await CadastrarParAsync(client);
 
-        Guid idAlfa = await CriarAsync(client, alfa, congela: true, unico: true, irreversivel: true);
-        Guid idBeta = await CriarAsync(client, beta, congela: true, unico: true, irreversivel: true);
+        JsonElement corpoAlfa = await LerAsync(client, $"{Base}/{par.IdAlfa}");
+        JsonElement corpoBeta = await LerAsync(client, $"{Base}/{par.IdBeta}");
 
-        JsonElement corpoAlfa = await LerAsync(client, $"{Base}/{idAlfa}");
-        JsonElement corpoBeta = await LerAsync(client, $"{Base}/{idBeta}");
-
-        // Mesmas chaves, mesma forma. O que varia é a identidade e o rótulo.
         Nomes(corpoAlfa).Should().BeEquivalentTo(Nomes(corpoBeta));
+    }
 
-        foreach (string campo in new[] { "congelaConfiguracao", "unicoPorObjeto", "efeitoIrreversivel" })
+    [Fact(DisplayName = "Dois tipos com a mesma configuração têm os mesmos atributos de consequência")]
+    public async Task DoisTiposComMesmaConfiguracao_TemOsMesmosAtributos()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        ParDeTipos par = await CadastrarParAsync(client);
+
+        JsonElement corpoAlfa = await LerAsync(client, $"{Base}/{par.IdAlfa}");
+        JsonElement corpoBeta = await LerAsync(client, $"{Base}/{par.IdBeta}");
+
+        foreach (string campo in AtributosDeConsequencia)
         {
             corpoAlfa.GetProperty(campo).GetBoolean()
                 .Should().Be(corpoBeta.GetProperty(campo).GetBoolean(), $"{campo} foi informado igual nos dois");
         }
-
-        // E o mesmo vale para a resolução por data e para o ciclo de escrita.
-        (await LerAsync(client, $"{Base}/{alfa}/vigente")).GetProperty("id").GetGuid().Should().Be(idAlfa);
-        (await LerAsync(client, $"{Base}/{beta}/vigente")).GetProperty("id").GetGuid().Should().Be(idBeta);
-
-        (await RemoverAsync(client, idAlfa)).Should().Be(await RemoverAsync(client, idBeta));
     }
 
-    [Fact(DisplayName = "Um código que o código-fonte nunca viu percorre o ciclo de vida inteiro")]
-    public async Task CodigoDesconhecido_PercorreOCicloDeVida()
+    [Fact(DisplayName = "Dois tipos com a mesma configuração são resolvidos pela data do mesmo jeito")]
+    public async Task DoisTiposComMesmaConfiguracao_SaoResolvidosPelaData()
     {
-        // Nenhum arquivo de src/publicacoes/ conhece este código. Se acrescentar um
-        // tipo exigisse alteração no domínio, este teste falharia.
-        string codigo = CodigoUnico();
+        using HttpClient client = _fixture.Factory.CreateClient();
+        ParDeTipos par = await CadastrarParAsync(client);
 
+        (await LerAsync(client, $"{Base}/{par.CodigoAlfa}/vigente")).GetProperty("id").GetGuid().Should().Be(par.IdAlfa);
+        (await LerAsync(client, $"{Base}/{par.CodigoBeta}/vigente")).GetProperty("id").GetGuid().Should().Be(par.IdBeta);
+    }
+
+    [Fact(DisplayName = "Dois tipos com a mesma configuração são removidos do mesmo jeito")]
+    public async Task DoisTiposComMesmaConfiguracao_SaoRemovidosDoMesmoJeito()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        ParDeTipos par = await CadastrarParAsync(client);
+
+        (await RemoverAsync(client, par.IdAlfa)).Should().Be(await RemoverAsync(client, par.IdBeta));
+    }
+
+    /// <remarks>
+    /// Nenhum arquivo de <c>src/publicacoes/</c> conhece o código usado: se acrescentar um tipo exigisse
+    /// alteração no domínio, estes testes falhariam.
+    /// </remarks>
+    [Fact(DisplayName = "Um código que o código-fonte nunca viu é cadastrado, lido e resolvido pela data")]
+    public async Task CodigoDesconhecido_ECadastradoELido()
+    {
+        string codigo = CodigoUnico();
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        Guid id = await CriarAsync(client, codigo, congela: false, unico: false, irreversivel: false);
+        Guid id = await CadastrarAsync(client, new CorpoDoTipoDeAto(codigo) { CongelaConfiguracao = false });
 
         (await LerAsync(client, $"{Base}/{id}")).GetProperty("codigo").GetString().Should().Be(codigo);
         (await LerAsync(client, $"{Base}/{codigo}/vigente")).GetProperty("id").GetGuid().Should().Be(id);
+    }
 
-        using HttpRequestMessage put = new(HttpMethod.Put, new Uri($"{Admin}/{id}", UriKind.Relative));
-        Autenticar(put);
-        put.Content = JsonContent.Create(new
-        {
-            id,
-            codigo,
-            nome = "Renomeado sem que nada saiba o que ele é",
-            congelaConfiguracao = true,
-            unicoPorObjeto = true,
-            efeitoIrreversivel = true,
-            publicavelComoAvulso = false,
-            exigeAtoCorrigido = false,
-            vigenciaInicio = "2026-01-01",
-            vigenciaFim = (string?)null,
-        });
-        (await client.SendAsync(put)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+    [Fact(DisplayName = "Um código que o código-fonte nunca viu muda os atributos de consequência por PUT")]
+    public async Task CodigoDesconhecido_MudaOsAtributosPorPut()
+    {
+        string codigo = CodigoUnico();
+        using HttpClient client = _fixture.Factory.CreateClient();
+        Guid id = await CadastrarAsync(client, new CorpoDoTipoDeAto(codigo) { CongelaConfiguracao = false });
 
-        JsonElement atualizado = await LerAsync(client, $"{Base}/{id}");
-        atualizado.GetProperty("congelaConfiguracao").GetBoolean().Should().BeTrue(
+        CorpoDoTipoDeAto corpo = ComTodasAsConsequencias(codigo) with { Id = id, Nome = "Renomeado sem que nada saiba o que ele é" };
+        (await AtualizarAsync(client, id, corpo)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        (await LerAsync(client, $"{Base}/{id}")).GetProperty("congelaConfiguracao").GetBoolean().Should().BeTrue(
             "os atributos de consequência são dados: mudam por PUT, não por deploy");
+    }
+
+    [Fact(DisplayName = "Um código que o código-fonte nunca viu é removido")]
+    public async Task CodigoDesconhecido_ERemovido()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        Guid id = await CadastrarAsync(client, new CorpoDoTipoDeAto(CodigoUnico()) { CongelaConfiguracao = false });
 
         (await RemoverAsync(client, id)).Should().Be(HttpStatusCode.NoContent);
     }
 
-    private static void Autenticar(HttpRequestMessage request)
+    private static async Task<ParDeTipos> CadastrarParAsync(HttpClient client)
     {
-        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
-        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
+        string alfa = CodigoUnico();
+        string beta = CodigoUnico();
+
+        return new ParDeTipos(
+            alfa, await CadastrarAsync(client, ComTodasAsConsequencias(alfa)),
+            beta, await CadastrarAsync(client, ComTodasAsConsequencias(beta)));
     }
 
-    private static async Task<Guid> CriarAsync(
-        HttpClient client, string codigo, bool congela, bool unico, bool irreversivel)
-    {
-        using HttpRequestMessage request = new(HttpMethod.Post, new Uri(Admin, UriKind.Relative));
-        Autenticar(request);
-        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-        request.Content = JsonContent.Create(new
-        {
-            codigo,
-            nome = "Tipo de ato de teste",
-            congelaConfiguracao = congela,
-            unicoPorObjeto = unico,
-            efeitoIrreversivel = irreversivel,
-            publicavelComoAvulso = false,
-            exigeAtoCorrigido = false,
-            vigenciaInicio = "2026-01-01",
-            vigenciaFim = (string?)null,
-        });
-
-        HttpResponseMessage response = await client.SendAsync(request);
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
-
-        return JsonSerializer.Deserialize<Guid>(await response.Content.ReadAsStringAsync());
-    }
+    private static CorpoDoTipoDeAto ComTodasAsConsequencias(string codigo) =>
+        new(codigo) { UnicoPorObjeto = true, EfeitoIrreversivel = true };
 
     private static async Task<JsonElement> LerAsync(HttpClient client, string url)
     {
@@ -165,4 +165,6 @@ public sealed class PrincipioDoCadastroTests
         string hex = Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture)[..12];
         return "PRINCIPIO_" + string.Concat(hex.Select(c => (char)('A' + Convert.ToInt32(c.ToString(), 16))));
     }
+
+    private sealed record ParDeTipos(string CodigoAlfa, Guid IdAlfa, string CodigoBeta, Guid IdBeta);
 }

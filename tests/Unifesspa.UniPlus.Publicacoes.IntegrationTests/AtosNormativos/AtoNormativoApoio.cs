@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Publicacoes.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Operações HTTP e montagem de payloads compartilhadas pelas classes de teste
@@ -46,7 +47,7 @@ internal sealed class AtoNormativoApoio(PublicacoesEndpointFixture fixture)
             tipoCodigo,
             dataDoAto = Publicacao,
             documentoHash = HashValido,
-            assinante = "Jairo Belchior",
+            assinante = PersonasDeTeste.NomeKevinCarvalho,
         };
 
     internal static object PayloadComVersaoDoObjeto(string tipoCodigo, Guid versaoId, string? versaoHash) =>
@@ -59,7 +60,7 @@ internal sealed class AtoNormativoApoio(PublicacoesEndpointFixture fixture)
             tipoCodigo,
             dataDoAto = Publicacao,
             documentoHash = HashValido,
-            assinante = "Jairo Belchior",
+            assinante = PersonasDeTeste.NomeKevinCarvalho,
             versaoDoObjetoId = versaoId,
             versaoDoObjetoHash = versaoHash,
         };
@@ -75,7 +76,7 @@ internal sealed class AtoNormativoApoio(PublicacoesEndpointFixture fixture)
             tipoCodigo,
             dataDoAto = Publicacao,
             documentoHash = HashValido,
-            assinante = "Jairo Belchior",
+            assinante = PersonasDeTeste.NomeKevinCarvalho,
             anexos,
             vinculos,
         };
@@ -91,7 +92,7 @@ internal sealed class AtoNormativoApoio(PublicacoesEndpointFixture fixture)
             tipoCodigo,
             dataDoAto = Publicacao,
             documentoHash = HashValido,
-            assinante = "Jairo Belchior",
+            assinante = PersonasDeTeste.NomeKevinCarvalho,
             atoRetificadoId,
             motivoRetificacao = motivo,
         };
@@ -148,7 +149,7 @@ internal sealed class AtoNormativoApoio(PublicacoesEndpointFixture fixture)
         using HttpResponseMessage resposta = await client.GetAsync(new Uri(url, UriKind.RelativeOrAbsolute));
         resposta.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        return (ProcurarNaPagina(await resposta.Content.ReadAsStringAsync(), atoId), ProximaPagina(resposta));
+        return (ProcurarNaPagina(await resposta.Content.ReadAsStringAsync(), atoId), LinkDe(resposta, "next"));
     }
 
     internal static string SerieUnica() => "EDITAL_" + Sufixo();
@@ -212,16 +213,17 @@ internal sealed class AtoNormativoApoio(PublicacoesEndpointFixture fixture)
         return null;
     }
 
-    private static string? ProximaPagina(HttpResponseMessage resposta)
+    /// <summary>O destino do cabeçalho <c>Link</c> com a relação pedida (<c>next</c>, <c>prev</c>), ou nulo quando a resposta não a traz.</summary>
+    internal static string? LinkDe(HttpResponseMessage resposta, string rel)
     {
         if (!resposta.Headers.TryGetValues("Link", out IEnumerable<string>? valores))
         {
             return null;
         }
 
-        string? next = string.Join(',', valores).Split(',')
-            .FirstOrDefault(p => p.Contains("rel=\"next\"", StringComparison.Ordinal));
+        string? parte = string.Join(',', valores).Split(',')
+            .FirstOrDefault(p => p.Contains($"rel=\"{rel}\"", StringComparison.Ordinal));
 
-        return next is null ? null : next[(next.IndexOf('<', StringComparison.Ordinal) + 1)..next.IndexOf('>', StringComparison.Ordinal)];
+        return parte?[(parte.IndexOf('<', StringComparison.Ordinal) + 1)..parte.IndexOf('>', StringComparison.Ordinal)];
     }
 }
