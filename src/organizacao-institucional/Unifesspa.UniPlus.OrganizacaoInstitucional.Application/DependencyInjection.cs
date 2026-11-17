@@ -4,12 +4,14 @@ using FluentValidation;
 
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Instituicoes;
+
 /// <summary>
 /// Registra recursos da camada Application do módulo OrganizacaoInstitucional.
 /// CQRS roda integralmente sobre Wolverine (<c>ICommandBus</c>/<c>IQueryBus</c>),
-/// então esta extensão registra apenas os validators FluentValidation,
-/// consumidos pelo middleware de validação FluentValidation do Wolverine
-/// (<c>UseFluentValidation</c>, configurado em Infrastructure.Core).
+/// então esta extensão registra os validators FluentValidation, consumidos pelo
+/// middleware de validação FluentValidation do Wolverine (<c>UseFluentValidation</c>,
+/// configurado em Infrastructure.Core), e os serviços de conferência e gravação da Instituição.
 /// </summary>
 public static class OrganizacaoInstitucionalApplicationServiceRegistration
 {
@@ -19,6 +21,9 @@ public static class OrganizacaoInstitucionalApplicationServiceRegistration
 
         System.Reflection.Assembly assembly = typeof(OrganizacaoInstitucionalApplicationServiceRegistration).Assembly;
         services.AddValidatorsFromAssembly(assembly);
+
+        services.AddScoped<ConferenciaDoCadastroDaInstituicao>();
+        services.AddScoped<GravacaoDaInstituicao>();
 
         return services;
     }

@@ -11,49 +11,41 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Instituico
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class RemoverInstituicaoCommandHandlerTests
 {
-    private static Instituicao InstituicaoExistente() =>
-        Instituicao.Criar(
-            "3990", "Universidade Federal do Sul e Sudeste do Pará", "Unifesspa", "Universidade", "Pública Federal",
-            cnpj: null, mantenedora: null, codigoMantenedoraEmec: null, situacao: null, atoCredenciamento: null,
-            atoRecredenciamento: null, conceitoInstitucional: null, igc: null, website: null, endereco: null,
-            cidadeCodigoIbge: null, cidadeNome: null, cidadeUf: null, cidadeOrigem: null,
-            cidadeDisplayAtualizadoEm: null, unidadeRaizId: null).Value!;
+    private readonly IInstituicaoRepository _repo = Substitute.For<IInstituicaoRepository>();
+    private readonly IUnitOfWork _uow = Substitute.For<IUnitOfWork>();
+    private readonly IInstituicaoCacheInvalidator _cache = Substitute.For<IInstituicaoCacheInvalidator>();
 
-    [Fact(DisplayName = "Handle com Instituição existente faz soft-delete e invalida cache")]
-    public async Task Handle_ComInstituicaoExistente_RemoveEInvalidaCache()
+    private Task<Result> RemoverAsync(Guid id) =>
+        RemoverInstituicaoCommandHandler.Handle(
+            new RemoverInstituicaoCommand(id), _repo, new GravacaoDaInstituicao(_repo, _uow, _cache), CancellationToken.None);
+
+    [Fact(DisplayName = "Handle com Instituição existente a remove, salva e invalida o cache")]
+    public async Task Handle_ComInstituicaoExistente_RemoveSalvaEInvalidaCache()
     {
-        IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-        IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
-        Instituicao existente = InstituicaoExistente();
-        repo.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+        Instituicao existente = InstituicaoDeTeste.Criar().Value!;
+        _repo.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
 
-        Result resultado = await RemoverInstituicaoCommandHandler.Handle(
-            new RemoverInstituicaoCommand(existente.Id), repo, uow, cache, CancellationToken.None);
+        Result resultado = await RemoverAsync(existente.Id);
 
         resultado.IsSuccess.Should().BeTrue();
-        repo.Received(1).Remover(existente);
-        await uow.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-        await cache.Received(1).InvalidarAsync(Arg.Any<CancellationToken>());
+        _repo.Received(1).Remover(existente);
+        await _uow.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        await _cache.Received(1).InvalidarAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Handle com Instituição inexistente retorna NaoEncontrada e NÃO persiste")]
-    public async Task Handle_ComInstituicaoInexistente_RetornaNaoEncontrada()
+    [Fact(DisplayName = "Handle com Instituição inexistente devolve NaoEncontrada sem gravar")]
+    public async Task Handle_ComInstituicaoInexistente_DevolveNaoEncontrada()
     {
-        IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-        IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
-        repo.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((Instituicao?)null);
+        _repo.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((Instituicao?)null);
 
-        Result resultado = await RemoverInstituicaoCommandHandler.Handle(
-            new RemoverInstituicaoCommand(Guid.CreateVersion7()), repo, uow, cache, CancellationToken.None);
+        Result resultado = await RemoverAsync(Guid.CreateVersion7());
 
-        resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(InstituicaoErrorCodes.NaoEncontrada);
-        repo.DidNotReceive().Remover(Arg.Any<Instituicao>());
-        await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        _repo.DidNotReceive().Remover(Arg.Any<Instituicao>());
+        await _uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 }

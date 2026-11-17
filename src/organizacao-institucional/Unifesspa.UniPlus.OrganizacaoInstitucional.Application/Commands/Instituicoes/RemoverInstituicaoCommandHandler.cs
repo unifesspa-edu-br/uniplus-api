@@ -1,10 +1,7 @@
 namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Instituicoes;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Abstractions;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
 
 /// <summary>
@@ -17,32 +14,20 @@ public static class RemoverInstituicaoCommandHandler
     public static async Task<Result> Handle(
         RemoverInstituicaoCommand command,
         IInstituicaoRepository repository,
-        IUnitOfWork unitOfWork,
-        IInstituicaoCacheInvalidator cacheInvalidator,
+        GravacaoDaInstituicao gravacao,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(repository);
-        ArgumentNullException.ThrowIfNull(unitOfWork);
-        ArgumentNullException.ThrowIfNull(cacheInvalidator);
+        ArgumentNullException.ThrowIfNull(gravacao);
 
-        Instituicao? instituicao = await repository
-            .ObterPorIdAsync(command.Id, cancellationToken)
-            .ConfigureAwait(false);
+        Instituicao? instituicao = await repository.ObterPorIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
         if (instituicao is null)
         {
-            return Result.Failure(new DomainError(
-                InstituicaoErrorCodes.NaoEncontrada,
-                "Instituição não encontrada."));
+            return Result.Failure(InstituicaoHandlerErros.NaoEncontrada());
         }
 
-        // SoftDeleteInterceptor converte EntityState.Deleted em soft-delete
-        // preenchendo DeletedBy/DeletedAt a partir de IUserContext + TimeProvider.
-        repository.Remover(instituicao);
-
-        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        await cacheInvalidator.InvalidarAsync(cancellationToken).ConfigureAwait(false);
-
+        await gravacao.GravarRemocaoAsync(instituicao, cancellationToken).ConfigureAwait(false);
         return Result.Success();
     }
 }

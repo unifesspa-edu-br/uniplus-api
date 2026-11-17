@@ -104,8 +104,9 @@ public sealed class OrdemDasRecusasDaInstituicaoTests
                 AcimaDeQualquerLimite, AcimaDeQualquerLimite, AcimaDeQualquerLimite, AcimaDeQualquerLimite, AcimaDeQualquerLimite,
                 AcimaDeQualquerLimite, AcimaDeQualquerLimite, AcimaDeQualquerLimite, AcimaDeQualquerLimite,
                 EnderecoEmMaraba(cep: "123"), "1504208", null, "SP", null),
-            _repositorio, Substitute.For<IUnidadeRepository>(), Substitute.For<IUnitOfWork>(),
-            Substitute.For<IInstituicaoCacheInvalidator>(), TimeProvider.System, CancellationToken.None);
+            new ConferenciaDoCadastroDaInstituicao(_repositorio, Substitute.For<IUnidadeRepository>()),
+            new GravacaoDaInstituicao(_repositorio, Substitute.For<IUnitOfWork>(), Substitute.For<IInstituicaoCacheInvalidator>()),
+            TimeProvider.System, CancellationToken.None);
 
         Recusas(resultado.Errors).Should().Equal(RecusasDeTudoInvalido);
         await _repositorio.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
@@ -113,8 +114,10 @@ public sealed class OrdemDasRecusasDaInstituicaoTests
 
     private Task<Result<Guid>> CriarAsync(CriarInstituicaoCommand command) =>
         CriarInstituicaoCommandHandler.Handle(
-            command, _repositorio, Substitute.For<IUnidadeRepository>(), Substitute.For<IUnitOfWork>(),
-            Substitute.For<IInstituicaoCacheInvalidator>(), TimeProvider.System, CancellationToken.None);
+            command,
+            new ConferenciaDoCadastroDaInstituicao(_repositorio, Substitute.For<IUnidadeRepository>()),
+            new GravacaoDaInstituicao(_repositorio, Substitute.For<IUnitOfWork>(), Substitute.For<IInstituicaoCacheInvalidator>()),
+            TimeProvider.System, CancellationToken.None);
 
     private static EnderecoGeoInput EnderecoEmMaraba(string cep) =>
         new(cep, "Folha 31", "s/n", null, "Nova Marabá", null,
