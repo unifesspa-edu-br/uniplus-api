@@ -91,7 +91,7 @@ public sealed class ConciliacaoDoCatalogo
     {
         ImplantacaoDasPermissoes novo = ImplantacaoDasPermissoes.Implantar(
             _catalogo.Impressao,
-            _catalogo.Linhas.Select(l => new LinhaDoRetratoDoCatalogo(l.Codigo, l.Modulo, l.Classificacao, l.DeUnidade, l.Reservada)),
+            _catalogo.Linhas.Select(l => new LinhaDoRetratoDoCatalogo(l.Codigo.Valor, l.Codigo.Modulo, l.Classificacao, l.DeUnidade, l.Reservada)),
             agora);
         _db.ImplantacoesDasPermissoes.Add(novo);
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

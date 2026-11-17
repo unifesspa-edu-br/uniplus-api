@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.Decisao;
 using Unifesspa.UniPlus.Authorization.Projecao;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>Definição de uma permissão lida do atributo de um membro de enum.</summary>
 /// <param name="Codigo">Código <c>{módulo}:{resource}:{ação}</c>.</param>
@@ -30,4 +31,17 @@ public sealed record DefinicaoDePermissao(
     /// permissões são institucionais.
     /// </summary>
     public bool DeUnidade => Requisito.EscopoContextoObrigatorio.Contains(CamposDeContexto.UnidadeProprietariaId, StringComparer.Ordinal);
+
+    /// <summary>A definição de um membro de enum conferido: o código dá as três partes e o atributo, o resto.</summary>
+    internal static DefinicaoDePermissao Declarada(PermissaoAttribute atributo, CodigoDePermissao codigo, PermissionRequirement requisito) =>
+        new(
+            codigo.Valor,
+            atributo.Nome,
+            atributo.Descricao,
+            codigo.Modulo,
+            codigo.Resource,
+            codigo.Acao,
+            requisito,
+            atributo.ReservadaAGovernanca,
+            atributo.Natureza);
 }
