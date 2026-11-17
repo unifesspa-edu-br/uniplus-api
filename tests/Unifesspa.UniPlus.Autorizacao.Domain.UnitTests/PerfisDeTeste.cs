@@ -131,7 +131,7 @@ public static class PerfisDeTeste
     private static TrocaDeVigencia? Retirar(Perfil perfil, string[] retiradas, ICatalogoDePermissoesConsultavel catalogo) =>
         retiradas.Length == 0
             ? null
-            : ProposicaoDaVersao.Remover(perfil, new PedidoDeRemocao(retiradas, "Permissão concedida por engano.", null, AutoriaDoGestor, Instante), catalogo).Troca!;
+            : ProposicaoDaVersao.Remover(perfil, new PedidoDeRemocao(retiradas, MotivoInformado.Normalizar("Permissão concedida por engano."), null, AutoriaDoGestor, Instante), catalogo).Troca!;
 
     /// <summary>
     /// Leva a versão pendente do perfil à vigência pelo caminho real: o envio e a verificação do documento, a aprovação

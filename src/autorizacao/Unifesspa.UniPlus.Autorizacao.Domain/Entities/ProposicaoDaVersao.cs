@@ -164,7 +164,7 @@ public static class ProposicaoDaVersao
 
         return estado
             ?? (CodigosValidos(perfil.VersaoVigente!, pedido.Codigos) ? null : PerfilErros.RemocaoInvalida())
-            ?? (pedido.Motivo is null ? PerfilErros.MotivoInvalido(MotivosDaVersao.MaxLength) : null);
+            ?? (pedido.Motivo is null ? PerfilErros.MotivoInvalido(MotivoInformado.MaximoDeCaracteres) : null);
     }
 
     private static bool CodigosValidos(VersaoDoPerfil vigente, IReadOnlyList<string> codigos) =>

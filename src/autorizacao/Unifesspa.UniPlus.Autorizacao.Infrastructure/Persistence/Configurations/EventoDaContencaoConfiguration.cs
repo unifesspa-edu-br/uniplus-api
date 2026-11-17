@@ -66,7 +66,7 @@ internal sealed class EventoDaContencaoConfiguration : IEntityTypeConfiguration<
         builder.Property(e => e.AtorContaId).HasMaxLength(IdentidadeMaxLength);
         builder.Property(e => e.AtorNome).HasMaxLength(NomeDeExibicao.MaxLength);
         builder.Property(e => e.Papel).HasConversion(PapelConverter).HasMaxLength(CodigoMaxLength);
-        builder.Property(e => e.Motivo).HasMaxLength(MotivosDaVersao.MaxLength);
+        builder.Property(e => e.Motivo).HasMaxLength(MotivoInformado.MaximoDeCaracteres);
         builder.Property(e => e.PerfilProtegido).IsRequired();
         builder.Property(e => e.OrdemNaTrilha).IsRequired();
 

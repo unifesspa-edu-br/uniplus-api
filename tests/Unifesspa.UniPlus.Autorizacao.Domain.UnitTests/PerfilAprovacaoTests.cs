@@ -363,7 +363,7 @@ public sealed class PerfilAprovacaoTests
         string? motivo = null,
         DateTimeOffset? instante = null,
         Guid? versaoId = null) =>
-        new(versaoId ?? perfil.VersaoPendente!.Id, etapa, resultado, motivo, autoria, instante ?? Agora);
+        new(versaoId ?? perfil.VersaoPendente!.Id, etapa, resultado, MotivoInformado.Normalizar(motivo), autoria, instante ?? Agora);
 
     private DesfechoDaVersao Decidir(
         Perfil perfil,

@@ -27,9 +27,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </remarks>
 public sealed class Concessao : EntityBase
 {
-    /// <summary>Tamanho máximo do motivo da revogação, em caracteres (runas Unicode), também o da coluna que o guarda.</summary>
-    public const int MotivoMaxLength = 500;
-
     private readonly List<BaseDaPermissaoNaConcessao> _bases = [];
 
     /// <summary>As bases das permissões na concessão, quando o chamador as trouxe; só se acrescenta.</summary>
@@ -236,8 +233,8 @@ public sealed class Concessao : EntityBase
             return Result.Failure(new DomainError(ConcessaoErrorCodes.JaRevogada, "A concessão já foi revogada."));
         }
 
-        return NormalizarMotivo(motivo) is { } motivoNormalizado
-            ? RegistrarRevogacao(ato, motivoNormalizado)
+        return MotivoInformado.Normalizar(motivo) is { } motivoNormalizado
+            ? RegistrarRevogacao(ato, motivoNormalizado.Valor)
             : Result.ValidationFailure([MotivoDaRevogacaoInvalido()]);
     }
 
@@ -255,7 +252,7 @@ public sealed class Concessao : EntityBase
     private static FieldError MotivoDaRevogacaoInvalido() =>
         new("motivo", new DomainError(
             ConcessaoErrorCodes.MotivoInvalido,
-            $"O motivo da revogação é obrigatório e deve ter até {MotivoMaxLength} caracteres."));
+            $"O motivo da revogação é obrigatório e deve ter até {MotivoInformado.MaximoDeCaracteres} caracteres."));
 
     /// <summary>
     /// Revoga a concessão pelo sistema, em nome da janela de migração que a encerrou ou a recusou. Quem chama trava a
@@ -371,27 +368,4 @@ public sealed class Concessao : EntityBase
             TipoDeEscopo.Instituicao => "O perfil só pode ser concedido no escopo da instituição.",
             _ => "O perfil só pode ser concedido no escopo de uma unidade.",
         };
-
-    /// <summary>
-    /// O motivo aparado, ou nulo quando ausente, acima de <see cref="MotivoMaxLength"/> caracteres ou com o caractere nulo.
-    /// É também a regra do motivo da providência, porque no atendimento o mesmo texto vira o motivo da revogação.
-    /// </summary>
-    /// <remarks>
-    /// O caractere nulo cabe no tamanho, mas a coluna textual do banco não o armazena: sem esta recusa o valor só falharia
-    /// ao gravar e responderia 500 em vez da validação de domínio. O tamanho conta caracteres, como a coluna, e não
-    /// unidades UTF-16.
-    /// </remarks>
-    internal static string? NormalizarMotivo(string? motivo)
-    {
-        if (string.IsNullOrWhiteSpace(motivo))
-        {
-            return null;
-        }
-
-        string normalizado = motivo.Trim();
-
-        return normalizado.Contains('\0', StringComparison.Ordinal) || normalizado.EnumerateRunes().Count() > MotivoMaxLength
-            ? null
-            : normalizado;
-    }
 }

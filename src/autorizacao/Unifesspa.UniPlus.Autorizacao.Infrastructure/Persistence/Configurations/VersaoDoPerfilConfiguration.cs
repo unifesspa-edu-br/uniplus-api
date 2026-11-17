@@ -123,7 +123,7 @@ public sealed class VersaoDoPerfilConfiguration : IEntityTypeConfiguration<Versa
     private static void ConfigurarCancelamentoEExpiracao(EntityTypeBuilder<VersaoDoPerfil> builder)
     {
         builder.Property(v => v.FormaDoCancelamento).HasConversion(FormaConverter).HasMaxLength(CodigoMaxLength);
-        builder.Property(v => v.MotivoDoCancelamento).HasMaxLength(MotivosDaVersao.MaxLength);
+        builder.Property(v => v.MotivoDoCancelamento).HasMaxLength(MotivoInformado.MaximoDeCaracteres);
         builder.Property(v => v.ExpiradaEm);
     }
 
@@ -131,7 +131,7 @@ public sealed class VersaoDoPerfilConfiguration : IEntityTypeConfiguration<Versa
     // outro perfil. A FK de versão para versão é restrita: nenhuma versão some por exclusão em cascata.
     private static void ConfigurarRemocao(EntityTypeBuilder<VersaoDoPerfil> builder)
     {
-        builder.Property(v => v.MotivoDaRemocao).HasMaxLength(MotivosDaVersao.MaxLength);
+        builder.Property(v => v.MotivoDaRemocao).HasMaxLength(MotivoInformado.MaximoDeCaracteres);
         builder.Property(v => v.CategoriaDaRemocao).HasConversion(CategoriaConverter).HasMaxLength(CodigoMaxLength);
         builder.HasOne<VersaoDoPerfil>()
             .WithMany()

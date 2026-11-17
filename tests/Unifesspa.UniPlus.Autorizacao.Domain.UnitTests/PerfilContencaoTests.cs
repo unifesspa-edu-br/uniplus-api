@@ -140,6 +140,61 @@ public sealed class PerfilContencaoTests
         retomada.DecisaoId.Should().Be(perfil.Suspensoes.Single().Decisoes.Single().Id);
     }
 
+    [Theory(DisplayName = "Suspensão, desativação e reativação conferem o limite do motivo")]
+    [InlineData(500, "a", true)]
+    [InlineData(501, "a", false)]
+    [InlineData(500, "😀", true)]
+    [InlineData(501, "😀", false)]
+    public void Contencao_LimiteDoMotivo_Valida(int tamanho, string caractere, bool aceita)
+    {
+        string motivo = string.Concat(Enumerable.Repeat(caractere, tamanho));
+        Perfil suspenso = Comum();
+        Perfil desativado = Comum();
+        Perfil reativado = Comum();
+        reativado.Desativar(PerfisDeTeste.Gestor, Motivo, Agora, _catalogo).IsSuccess.Should().BeTrue();
+
+        Suspender(suspenso, motivo).IsSuccess.Should().Be(aceita);
+        desativado.Desativar(PerfisDeTeste.Gestor, motivo, Agora, _catalogo).IsSuccess.Should().Be(aceita);
+        reativado.Reativar(PerfisDeTeste.ProtecaoDeDados, motivo, Agora, _catalogo).IsSuccess.Should().Be(aceita);
+        if (aceita)
+        {
+            MotivosDaContencao(suspenso, desativado, reativado).Should().Equal(motivo, motivo, motivo);
+        }
+    }
+
+    private static string?[] MotivosDaContencao(Perfil suspenso, Perfil desativado, Perfil reativado) =>
+        [suspenso.SuspensaoAberta!.Motivo, desativado.DesativacaoAberta!.Motivo, reativado.Desativacoes.Single().MotivoDaReativacao];
+
+    [Theory(DisplayName = "A retomada registra motivo com 500 runas")]
+    [InlineData("a")]
+    [InlineData("😀")]
+    public void Retomar_MotivoCom500Runas_Registra(string caractere)
+    {
+        Perfil perfil = Comum();
+        Suspender(perfil, Motivo);
+        string motivo = string.Concat(Enumerable.Repeat(caractere, 500));
+
+        Result resultado = Decidir(perfil, PerfisDeTeste.ProtecaoDeDados, EtapaDaVersao.GestaoDeAcessos, motivo);
+
+        resultado.IsSuccess.Should().BeTrue();
+        perfil.Suspensoes.Single().Decisoes.Single().Motivo.Should().Be(motivo);
+    }
+
+    [Theory(DisplayName = "A retomada recusa motivo com 501 runas")]
+    [InlineData("a")]
+    [InlineData("😀")]
+    public void Retomar_MotivoCom501Runas_Recusa(string caractere)
+    {
+        Perfil perfil = Comum();
+        Suspender(perfil, Motivo);
+        string motivo = string.Concat(Enumerable.Repeat(caractere, 501));
+
+        Result resultado = Decidir(perfil, PerfisDeTeste.ProtecaoDeDados, EtapaDaVersao.GestaoDeAcessos, motivo);
+
+        Codigo(resultado).Should().Be(PerfilErrorCodes.MotivoInvalido);
+        perfil.Suspensoes.Single().Decisoes.Should().BeEmpty();
+    }
+
     [Theory(DisplayName = "No perfil protegido, as duas etapas fecham a suspensão em qualquer ordem")]
     [InlineData(true)]
     [InlineData(false)]
@@ -289,7 +344,7 @@ public sealed class PerfilContencaoTests
         perfil.Suspender(PerfisDeTeste.Gestor, EtapaDaVersao.GestaoDeAcessos, motivo, Agora, _catalogo);
 
     private Result Decidir(Perfil perfil, Identidade decisor, EtapaDaVersao etapa, string? motivo = Motivo) =>
-        perfil.DecidirRetomada(new ContextoDaRetomada(decisor, DecisorTemConcessao: true, etapa, motivo, _catalogo, Agora));
+        perfil.DecidirRetomada(new ContextoDaRetomada(decisor, DecisorTemConcessao: true, etapa, MotivoInformado.Normalizar(motivo), _catalogo, Agora));
 
     private static string Codigo(Result resultado) => resultado.Errors.Single().Error.Code;
 

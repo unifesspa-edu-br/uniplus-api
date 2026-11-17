@@ -56,7 +56,13 @@ public sealed class CodigosDaReclassificacaoTests
     [Fact(DisplayName = "Cada erro da reclassificação traz um código próprio e uma mensagem em português")]
     public void Erros_TemCodigoProprioEMensagem()
     {
-        DomainError[] erros =
+        DomainError[] erros = ErrosDaReclassificacao();
+
+        erros.Select(e => e.Code).Should().OnlyHaveUniqueItems();
+        erros.Should().OnlyContain(e => e.Message.Length > 0);
+    }
+
+    private static DomainError[] ErrosDaReclassificacao() =>
         [
             ReclassificacaoErros.Superada(),
             ReclassificacaoErros.EtapaJaDecidida(),
@@ -69,8 +75,4 @@ public sealed class CodigosDaReclassificacaoTests
             ReclassificacaoErros.MotivoInvalido(500),
             ReclassificacaoErros.SemPermissaoNaEtapa(),
         ];
-
-        erros.Select(e => e.Code).Should().OnlyHaveUniqueItems();
-        erros.Should().OnlyContain(e => e.Message.Length > 0);
-    }
 }

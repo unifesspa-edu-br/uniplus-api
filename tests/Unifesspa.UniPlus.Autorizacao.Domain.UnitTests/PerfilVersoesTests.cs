@@ -88,7 +88,7 @@ public sealed class PerfilVersoesTests
         DesfechoDaVersao desfecho = ProposicaoDaVersao.Propor(perfil,
             new PropostaDeVersao(
                 PerfisDeTeste.Conteudo("Analista", Descricao, [Unidade], Catalogo),
-                Motivo,
+                MotivoInformado.Normalizar(Motivo),
                 null,
                 PerfisDeTeste.AutoriaDoAutor,
                 PerfisDeTeste.Instante),

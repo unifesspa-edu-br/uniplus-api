@@ -7,13 +7,13 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 /// categoria dessa remoção, que vale na hora.
 /// </summary>
 /// <param name="Conteudo">O que a versão declara, já validado.</param>
-/// <param name="Motivo">O motivo da remoção já normalizado (<see cref="MotivosDaVersao"/>); nulo quando o texto informado não vale.</param>
+/// <param name="Motivo">O motivo da remoção já normalizado (<see cref="MotivoInformado"/>); nulo quando o texto informado não vale.</param>
 /// <param name="Categoria">A categoria da remoção, quando quem propõe a informa.</param>
 /// <param name="Autoria">Quem propõe.</param>
 /// <param name="Instante">O instante da proposta, pelo relógio injetado.</param>
 public sealed record PropostaDeVersao(
     ConteudoDaVersao Conteudo,
-    string? Motivo,
+    MotivoInformado? Motivo,
     CategoriaDaRemocao? Categoria,
     AutoriaDaVersao Autoria,
     DateTimeOffset Instante)

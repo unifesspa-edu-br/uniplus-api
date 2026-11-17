@@ -280,7 +280,7 @@ public sealed class PedidoDeConcessao : EntityBase
         ArgumentNullException.ThrowIfNull(perfil);
 
         return Andamento.EtapaAtual is { } etapa
-            ? RecusarNaEtapa(new RecusaNaEtapa(decisor, etapa, MotivosDaVersao.Normalizar(motivo), perfil, instante))
+            ? RecusarNaEtapa(new RecusaNaEtapa(decisor, etapa, MotivoInformado.Normalizar(motivo), perfil, instante))
             : Result.Failure(SituacaoInvalida("O pedido não aguarda decisão."));
     }
 
@@ -316,7 +316,7 @@ public sealed class PedidoDeConcessao : EntityBase
             return Result.ValidationFailure(erros);
         }
 
-        _decisoes.Add(DecisaoDoPedido.Registrar(Id, recusa.Etapa, recusa.Ato, ResultadoDaDecisao.Recusado, recusa.Motivo, recusa.Perfil, null));
+        _decisoes.Add(DecisaoDoPedido.Registrar(Id, recusa.Etapa, recusa.Ato, ResultadoDaDecisao.Recusado, recusa.Motivo?.Valor, recusa.Perfil, null));
         Andamento = Andamento.Encerrado(SituacaoDoPedido.Recusado, recusa.Instante);
 
         return Result.Success();

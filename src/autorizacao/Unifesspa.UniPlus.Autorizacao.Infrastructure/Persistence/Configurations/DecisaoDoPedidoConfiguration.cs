@@ -48,7 +48,7 @@ internal sealed class DecisaoDoPedidoConfiguration : IEntityTypeConfiguration<De
         builder.Property(d => d.DecisorEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(d => d.DecisorContaId).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(d => d.DecisorNome).HasMaxLength(NomeDeExibicao.MaxLength);
-        builder.Property(d => d.Motivo).HasMaxLength(MotivosDaVersao.MaxLength);
+        builder.Property(d => d.Motivo).HasMaxLength(MotivoInformado.MaximoDeCaracteres);
         builder.Property(d => d.Instante).IsRequired();
         builder.Property(d => d.OrdemDeRegistro).UseIdentityAlwaysColumn().ValueGeneratedOnAdd();
         builder.Property(d => d.PermissoesAvaliadas).IsRequired();

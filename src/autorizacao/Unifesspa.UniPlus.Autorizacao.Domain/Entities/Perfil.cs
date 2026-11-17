@@ -206,7 +206,7 @@ public sealed class Perfil : EntityBase
             return recusa;
         }
 
-        versao.Value!.Cancelar(autor, motivo, FormaDoCancelamento.Pessoa, instante);
+        versao.Value!.Cancelar(autor, MotivoInformado.Normalizar(motivo)?.Valor, FormaDoCancelamento.Pessoa, instante);
 
         return DesfechoDaVersao.Concluido();
     }
@@ -277,13 +277,13 @@ public sealed class Perfil : EntityBase
         ArgumentNullException.ThrowIfNull(autor);
         ArgumentNullException.ThrowIfNull(catalogo);
 
-        DomainError? recusa = ConferenciasDaContencao.DaContencao(this, motivo) ?? (SuspensaoAberta is null ? null : PerfilErros.JaSuspenso());
+        DomainError? recusa = ConferenciasDaContencao.DaContencao(this, MotivoInformado.Normalizar(motivo)) ?? (SuspensaoAberta is null ? null : PerfilErros.JaSuspenso());
         if (recusa is not null)
         {
             return Result.Failure(recusa);
         }
 
-        AbrirSuspensao(autor, papel, MotivosDaVersao.Normalizar(motivo)!, instante, catalogo);
+        AbrirSuspensao(autor, papel, MotivoInformado.Normalizar(motivo)!.Valor, instante, catalogo);
 
         return Result.Success();
     }
@@ -294,10 +294,10 @@ public sealed class Perfil : EntityBase
         ArgumentNullException.ThrowIfNull(autor);
         ArgumentNullException.ThrowIfNull(catalogo);
 
-        DomainError? recusa = ConferenciasDaContencao.DaContencao(this, motivo);
+        DomainError? recusa = ConferenciasDaContencao.DaContencao(this, MotivoInformado.Normalizar(motivo));
         if (recusa is null && Ativo)
         {
-            AbrirDesativacao(autor, MotivosDaVersao.Normalizar(motivo)!, instante, catalogo);
+            AbrirDesativacao(autor, MotivoInformado.Normalizar(motivo)!.Valor, instante, catalogo);
         }
 
         return recusa is null ? Result.Success() : Result.Failure(recusa);
@@ -309,10 +309,10 @@ public sealed class Perfil : EntityBase
         ArgumentNullException.ThrowIfNull(autor);
         ArgumentNullException.ThrowIfNull(catalogo);
 
-        DomainError? recusa = ConferenciasDaContencao.DaContencao(this, motivo) ?? ConferenciasDaContencao.DaReativacao(this, autor);
+        DomainError? recusa = ConferenciasDaContencao.DaContencao(this, MotivoInformado.Normalizar(motivo)) ?? ConferenciasDaContencao.DaReativacao(this, autor);
         if (recusa is null && DesativacaoAberta is { } desativacao)
         {
-            FecharDesativacao(desativacao, autor, MotivosDaVersao.Normalizar(motivo)!, instante, catalogo);
+            FecharDesativacao(desativacao, autor, MotivoInformado.Normalizar(motivo)!.Valor, instante, catalogo);
         }
 
         return recusa is null ? Result.Success() : Result.Failure(recusa);
@@ -334,7 +334,7 @@ public sealed class Perfil : EntityBase
             return Result.Failure(recusa);
         }
 
-        DecisaoDaRetomada decisao = SuspensaoAberta!.Decidir(contexto, MotivosDaVersao.Normalizar(contexto.Motivo)!, protegido, ProximaPosicao());
+        DecisaoDaRetomada decisao = SuspensaoAberta!.Decidir(contexto, contexto.Motivo!.Valor, protegido, ProximaPosicao());
         ReavaliarRetomada(new OrigemDaReavaliacao.PelaDecisao(decisao.Id), contexto.Catalogo, contexto.Instante);
 
         return Result.Success();

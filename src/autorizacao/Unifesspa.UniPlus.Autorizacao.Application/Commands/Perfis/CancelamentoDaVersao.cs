@@ -83,7 +83,7 @@ public sealed class CancelamentoDaVersao
             return new DesfechoDaOperacao<PerfilDto>(Result<PerfilDto>.Failure(PerfilErros.SemPermissaoNaEtapa()));
         }
 
-        DesfechoDaVersao desfecho = perfil.CancelarVersao(versaoId, autor, MotivosDaVersao.Normalizar(motivo), agora);
+        DesfechoDaVersao desfecho = perfil.CancelarVersao(versaoId, autor, motivo, agora);
 
         return await _efeitos.AplicarAsync(perfil, desfecho, autor, cancellationToken).ConfigureAwait(false);
     }

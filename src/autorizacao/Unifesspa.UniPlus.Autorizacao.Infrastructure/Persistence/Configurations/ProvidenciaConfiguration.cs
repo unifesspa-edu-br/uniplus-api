@@ -91,7 +91,7 @@ public sealed class ProvidenciaConfiguration : IEntityTypeConfiguration<Providen
         builder.Property(p => p.DesfechoPorEmissor).HasMaxLength(IdentidadeMaxLength);
         builder.Property(p => p.DesfechoPorContaId).HasMaxLength(IdentidadeMaxLength);
         builder.Property(p => p.DesfechoPorNome).HasMaxLength(NomeDeExibicao.MaxLength);
-        builder.Property(p => p.MotivoDoDesfecho).HasMaxLength(Concessao.MotivoMaxLength);
+        builder.Property(p => p.MotivoDoDesfecho).HasMaxLength(MotivoInformado.MaximoDeCaracteres);
     }
 
     private static void ConfigurarIndices(EntityTypeBuilder<Providencia> builder)

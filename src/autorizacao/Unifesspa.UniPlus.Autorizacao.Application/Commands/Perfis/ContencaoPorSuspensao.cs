@@ -139,7 +139,7 @@ public sealed class ContencaoPorSuspensao
             return Result<RetomadaDaSuspensaoDto>.Failure(autoria.Error!);
         }
 
-        Result decisao = perfil.DecidirRetomada(new ContextoDaRetomada(autoria.Value!.Pessoa, autoria.Value.TemConcessao, etapa, motivo, _catalogo, agora));
+        Result decisao = perfil.DecidirRetomada(new ContextoDaRetomada(autoria.Value!.Pessoa, autoria.Value.TemConcessao, etapa, MotivoInformado.Normalizar(motivo), _catalogo, agora));
 
         return decisao.IsFailure
             ? Result<RetomadaDaSuspensaoDto>.ValidationFailure(decisao.Errors)

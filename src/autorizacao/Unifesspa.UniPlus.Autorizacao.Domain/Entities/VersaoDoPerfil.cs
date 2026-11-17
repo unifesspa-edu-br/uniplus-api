@@ -116,7 +116,7 @@ public sealed class VersaoDoPerfil : EntityBase
     {
         VersaoDoPerfil versao = CopiaDe(vigente, numero);
         versao.Origem = OrigemDaVersao.Remocao;
-        versao.MotivoDaRemocao = pedido.Motivo;
+        versao.MotivoDaRemocao = pedido.Motivo?.Valor;
         versao.CategoriaDaRemocao = pedido.Categoria;
         versao.VersaoDoDocumento = vigente.VersaoDoDocumento ?? vigente.Id;
         versao._permissoes.AddRange(vigente.PermissoesSem(pedido.Codigos));

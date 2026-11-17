@@ -48,7 +48,7 @@ internal sealed class DecisaoDaVersaoConfiguration : IEntityTypeConfiguration<De
         builder.Property(d => d.DecisorNome).HasMaxLength(NomeDeExibicao.MaxLength);
         builder.Property(d => d.DecisorEmail).HasMaxLength(EmailDaPessoa.MaxLength);
         builder.Property(d => d.DecisorTemConcessao).IsRequired();
-        builder.Property(d => d.Motivo).HasMaxLength(MotivosDaVersao.MaxLength);
+        builder.Property(d => d.Motivo).HasMaxLength(MotivoInformado.MaximoDeCaracteres);
         builder.Property(d => d.AcrescimoAvaliado).IsRequired();
         builder.Property(d => d.ExigiaProtecaoDeDados).IsRequired();
         builder.Property(d => d.Instante).IsRequired();

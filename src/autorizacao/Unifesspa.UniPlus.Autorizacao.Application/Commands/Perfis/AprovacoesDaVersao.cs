@@ -84,7 +84,7 @@ public sealed class AprovacoesDaVersao
             solicitada.VersaoId,
             EtapaDaVersaoCodigo.FromCodigo(solicitada.Etapa!),
             solicitada.Resultado,
-            MotivosDaVersao.Normalizar(solicitada.Motivo),
+            MotivoInformado.Normalizar(solicitada.Motivo),
             autoria,
             agora);
 

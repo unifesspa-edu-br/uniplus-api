@@ -59,7 +59,7 @@ public sealed class LiberacaoDaReclassificacao : IForensicEntity, IRegistroDaTri
             ConcessaoId = concessaoId,
             Etapa = pedido.Etapa,
             Resultado = pedido.Resultado,
-            Motivo = pedido.Resultado == ResultadoDaLiberacao.Mantida ? MotivosDaVersao.Normalizar(pedido.Motivo) : null,
+            Motivo = pedido.Resultado == ResultadoDaLiberacao.Mantida ? MotivoInformado.Normalizar(pedido.Motivo)?.Valor : null,
             LoteId = pedido.LoteId,
             Instante = pedido.Instante,
             OrdinalLocal = ordinal,

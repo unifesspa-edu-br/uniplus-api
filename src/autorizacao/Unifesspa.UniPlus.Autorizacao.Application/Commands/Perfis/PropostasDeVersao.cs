@@ -85,7 +85,7 @@ public sealed class PropostasDeVersao
     private static PropostaDeVersao Proposta(ConteudoDaVersao conteudo, ProporVersaoRequest dados, AutoriaDaVersao autoria, DateTimeOffset agora) =>
         new(
             conteudo,
-            MotivosDaVersao.Normalizar(dados.MotivoDaRemocao),
+            MotivoInformado.Normalizar(dados.MotivoDaRemocao),
             CategoriaDaRemocaoCodigo.TentarLer(dados.CategoriaDaRemocao),
             autoria,
             agora);

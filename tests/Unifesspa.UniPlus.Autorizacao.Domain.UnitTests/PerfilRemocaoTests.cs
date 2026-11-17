@@ -130,5 +130,5 @@ public sealed class PerfilRemocaoTests
     }
 
     private static PedidoDeRemocao Pedido(string[] codigos, DateTimeOffset? instante = null, string? motivo = Motivo) =>
-        new(codigos, motivo, CategoriaDaRemocao.Incidente, PerfisDeTeste.AutoriaDoGestor, instante ?? Agora);
+        new(codigos, MotivoInformado.Normalizar(motivo), CategoriaDaRemocao.Incidente, PerfisDeTeste.AutoriaDoGestor, instante ?? Agora);
 }

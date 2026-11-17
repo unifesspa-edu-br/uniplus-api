@@ -126,7 +126,7 @@ public sealed class DestinatariosPorPapelTests
     }
 
     private static PedidoDeRemocao Remocao() =>
-        new([Removida], "Permissão concedida por engano.", null, PerfisDeTeste.AutoriaDoGestor, PerfisDeTeste.Instante);
+        new([Removida], MotivoInformado.Normalizar("Permissão concedida por engano."), null, PerfisDeTeste.AutoriaDoGestor, PerfisDeTeste.Instante);
 
     private static string[] Destinatarios(IEnumerable<EnviarEmail> avisos) => [.. avisos.Select(static a => a.Destinatario).Order(StringComparer.Ordinal)];
 

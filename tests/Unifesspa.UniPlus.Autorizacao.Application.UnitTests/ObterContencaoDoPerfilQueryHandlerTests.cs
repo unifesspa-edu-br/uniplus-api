@@ -23,7 +23,7 @@ public sealed class ObterContencaoDoPerfilQueryHandlerTests
     {
         Perfil perfil = Suspenso();
         perfil.DecidirRetomada(new ContextoDaRetomada(
-            PerfisDeTeste.ProtecaoDeDados, true, EtapaDaVersao.GestaoDeAcessos, Motivo, new DoublesDePerfis.CatalogoDeTeste(), PerfisDeTeste.Instante));
+            PerfisDeTeste.ProtecaoDeDados, true, EtapaDaVersao.GestaoDeAcessos, MotivoInformado.Normalizar(Motivo), new DoublesDePerfis.CatalogoDeTeste(), PerfisDeTeste.Instante));
         CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Autor, [Manter]);
 
         Result<IReadOnlyList<RegistroDaContencaoDto>> resultado = await Obter(cenario, perfil.Id);

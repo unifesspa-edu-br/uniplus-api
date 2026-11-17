@@ -28,9 +28,6 @@ public sealed class JanelaDeMigracao : EntityBase
     /// <summary>A duração da janela, fixa.</summary>
     public static readonly TimeSpan Duracao = TimeSpan.FromHours(72);
 
-    /// <summary>O tamanho máximo do motivo do encerramento manual.</summary>
-    public const int MotivoMaxLength = 500;
-
     private readonly List<LoteDaMigracao> _lotes = [];
     private readonly List<MigracaoDaConcessao> _migracoes = [];
     private readonly List<DecisaoDaMigracao> _decisoes = [];
@@ -344,22 +341,22 @@ public sealed class JanelaDeMigracao : EntityBase
         ArgumentNullException.ThrowIfNull(encerramento);
         ArgumentNullException.ThrowIfNull(contexto);
 
-        string? motivo = MotivosDaVersao.Normalizar(encerramento.Motivo);
+        MotivoInformado? motivo = MotivoInformado.Normalizar(encerramento.Motivo);
         if (RecusaDoEncerramento(motivo, confirmouExclusao) is { } recusa)
         {
             return Result.Failure(recusa);
         }
 
-        Materializar(contexto, FormaDoEncerramento.Manual, encerramento with { Motivo = motivo });
+        Materializar(contexto, FormaDoEncerramento.Manual, encerramento with { Motivo = motivo?.Valor });
 
         return Result.Success();
     }
 
-    private static DomainError? RecusaDoEncerramento(string? motivo, bool confirmouExclusao)
+    private static DomainError? RecusaDoEncerramento(MotivoInformado? motivo, bool confirmouExclusao)
     {
         if (motivo is null)
         {
-            return MigracaoErros.MotivoInvalido(MotivoMaxLength);
+            return MigracaoErros.MotivoInvalido(MotivoInformado.MaximoDeCaracteres);
         }
 
         return confirmouExclusao ? null : MigracaoErros.ExclusaoNaoConfirmada();
