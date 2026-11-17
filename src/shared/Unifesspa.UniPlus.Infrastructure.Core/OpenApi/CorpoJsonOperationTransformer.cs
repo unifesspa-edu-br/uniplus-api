@@ -5,7 +5,7 @@ using Microsoft.OpenApi;
 
 /// <summary>
 /// Escreve o <c>requestBody</c> <c>application/json</c> obrigatório das actions marcadas com <see cref="CorpoJsonAttribute"/>:
-/// um objeto cujo formato está no JSON Schema publicado, que a documentação externa do esquema aponta.
+/// uma referência ao componente que descreve o corpo.
 /// </summary>
 public sealed class CorpoJsonOperationTransformer : IOpenApiOperationTransformer
 {
@@ -24,25 +24,18 @@ public sealed class CorpoJsonOperationTransformer : IOpenApiOperationTransformer
             .FirstOrDefault();
         if (corpo is not null)
         {
-            operation.RequestBody = RequestBodyDe(corpo);
+            operation.RequestBody = RequestBodyDe(corpo, context.Document);
         }
 
         return Task.CompletedTask;
     }
 
-    private static OpenApiRequestBody RequestBodyDe(CorpoJsonAttribute corpo) => new()
+    private static OpenApiRequestBody RequestBodyDe(CorpoJsonAttribute corpo, OpenApiDocument? documento) => new()
     {
         Required = true,
         Content = new Dictionary<string, OpenApiMediaType>(StringComparer.Ordinal)
         {
-            [MediaType] = new OpenApiMediaType { Schema = ObjetoDescritoPeloEsquema(corpo.Esquema) },
+            [MediaType] = new OpenApiMediaType { Schema = new OpenApiSchemaReference(corpo.Componente, documento) },
         },
-    };
-
-    private static OpenApiSchema ObjetoDescritoPeloEsquema(string esquema) => new()
-    {
-        Type = JsonSchemaType.Object,
-        Description = "O corpo é um documento JSON no formato do esquema indicado na documentação externa.",
-        ExternalDocs = new OpenApiExternalDocs { Description = "JSON Schema do corpo.", Url = new Uri(esquema) },
     };
 }

@@ -31,6 +31,7 @@ public static class UniPlusOpenApiServiceCollectionExtensions
             {
                 AdicionarTransformersDeDocumento(options);
                 AdicionarTransformersDeOperacao(options);
+                AdicionarTransformersDeCorpoEDeResposta(options);
                 AdicionarTransformersDeSchema(options);
             });
     }
@@ -88,6 +89,7 @@ public static class UniPlusOpenApiServiceCollectionExtensions
         services.TryAddSingleton<AuthorizationOperationTransformer>();
         services.TryAddSingleton<CorpoMultipartOperationTransformer>();
         services.TryAddSingleton<CorpoJsonOperationTransformer>();
+        services.TryAddSingleton<RespostaJsonOperationTransformer>();
         services.TryAddSingleton<VendorMediaTypeOperationTransformer>();
         return services;
     }
@@ -116,12 +118,17 @@ public static class UniPlusOpenApiServiceCollectionExtensions
         options.AddOperationTransformer<IdempotenciaOperationTransformer>();
         options.AddOperationTransformer<EsperaEsgotadaPelaTravaOperationTransformer>();
         options.AddOperationTransformer<AuthorizationOperationTransformer>();
+    }
+
+    private static void AdicionarTransformersDeCorpoEDeResposta(OpenApiOptions options)
+    {
         options.AddOperationTransformer<CorpoMultipartOperationTransformer>();
         options.AddOperationTransformer<CorpoJsonOperationTransformer>();
+        options.AddOperationTransformer<RespostaJsonOperationTransformer>();
 
-        // Depois do UniPlusOperationTransformer, que coage os 4xx/5xx para
-        // application/problem+json: este reescreve só as respostas de sucesso, e a ordem
-        // deixa claro que os dois tratam de faixas de status disjuntas.
+        // Depois do RespostaJsonOperationTransformer, de quem copia o schema do corpo para as vendor MIME, e depois do
+        // UniPlusOperationTransformer, que coage os 4xx/5xx para application/problem+json: este reescreve só as
+        // respostas de sucesso, e a ordem deixa claro que os dois tratam de faixas de status disjuntas.
         options.AddOperationTransformer<VendorMediaTypeOperationTransformer>();
     }
 

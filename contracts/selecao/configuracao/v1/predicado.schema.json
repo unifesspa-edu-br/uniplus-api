@@ -46,7 +46,8 @@
           },
           "else": {
             "if": {
-              "type": "array"
+              "type": "array",
+              "items": {}
             },
             "then": {
               "items": {
@@ -74,7 +75,8 @@
       "then": {
         "properties": {
           "valor": {
-            "type": "array"
+            "type": "array",
+            "items": {}
           }
         }
       },

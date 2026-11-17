@@ -31,6 +31,8 @@
   <!-- Esquema versionado da configuração do processo seletivo e os exemplos, conferidos pelo teste de contrato. -->
   <ItemGroup>
     <None Include="..\..\contracts\selecao\configuracao\**\*.json" Link="Contratos\selecao-configuracao\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <!-- O baseline da OpenAPI do módulo Seleção, onde o esquema do documento é publicado como componentes. -->
+    <None Include="..\..\contracts\openapi.selecao.json" Link="Contratos\openapi.selecao.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

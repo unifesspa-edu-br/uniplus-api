@@ -10964,12 +10964,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "description": "O corpo \u00E9 um documento JSON no formato do esquema indicado na documenta\u00E7\u00E3o externa.",
-                "externalDocs": {
-                  "description": "JSON Schema do corpo.",
-                  "url": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/documento.schema.json"
-                }
+                "$ref": "#/components/schemas/DocumentoDaConfiguracao"
               }
             }
           },
@@ -11109,7 +11104,7 @@
             "content": {
               "application/vnd.uniplus.rascunho-de-processo-seletivo.v1\u002Bjson": {
                 "schema": {
-                  "$ref": "#/components/schemas/JsonObject"
+                  "$ref": "#/components/schemas/DocumentoDaConfiguracao"
                 }
               }
             }
@@ -11189,12 +11184,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "description": "O corpo \u00E9 um documento JSON no formato do esquema indicado na documenta\u00E7\u00E3o externa.",
-                "externalDocs": {
-                  "description": "JSON Schema do corpo.",
-                  "url": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/documento.schema.json"
-                }
+                "$ref": "#/components/schemas/DocumentoDaConfiguracao"
               }
             }
           },
@@ -15278,6 +15268,3750 @@
           }
         }
       },
+      "DocumentoDaConfiguracao": {
+        "title": "Documento de configura\u00E7\u00E3o do processo seletivo",
+        "description": "Formato port\u00E1vel da configura\u00E7\u00E3o de um processo seletivo, na vers\u00E3o 1. Serve ao rascunho salvo pela tela e \u00E0 importa\u00E7\u00E3o e exporta\u00E7\u00E3o de um processo, inclusive o preparado fora do sistema. O esquema descreve s\u00F3 a forma: tipo, formato, enumera\u00E7\u00F5es, limites de tamanho e o que \u00E9 estruturalmente obrigat\u00F3rio. As regras de neg\u00F3cio (o que torna a configura\u00E7\u00E3o public\u00E1vel) s\u00E3o do dom\u00EDnio e n\u00E3o se repetem aqui; por isso um rascunho incompleto \u00E9 v\u00E1lido. Campo ainda n\u00E3o preenchido \u00E9 campo ausente, nunca texto no lugar de n\u00FAmero ou de data. Cat\u00E1logos e unidades s\u00E3o citados pelo c\u00F3digo est\u00E1vel, nunca pelo identificador interno do banco. As refer\u00EAncias entre partes do documento usam a chave local da parte referenciada, definida no pr\u00F3prio documento e \u00FAnica nele.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "formato",
+          "versaoFormato"
+        ],
+        "properties": {
+          "formato": {
+            "title": "Formato do documento",
+            "description": "Identificador fixo do formato. Distingue este documento de qualquer outro JSON.",
+            "const": "uniplus.selecao.configuracao"
+          },
+          "versaoFormato": {
+            "title": "Vers\u00E3o do formato",
+            "description": "Vers\u00E3o principal do formato. Neste esquema \u00E9 sempre 1. Mudan\u00E7a incompat\u00EDvel cria a vers\u00E3o 2 em outro esquema.",
+            "const": 1
+          },
+          "id": {
+            "title": "Id do processo",
+            "description": "Identificador \u00FAnico (uuid) do processo. No rascunho \u00E9 o id do pr\u00F3prio rascunho, que vira o id do processo na publica\u00E7\u00E3o. N\u00E3o concede pertencimento. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o, porque o processo importado ganha id novo.",
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
+          "versao": {
+            "title": "Vers\u00E3o",
+            "description": "N\u00FAmero da vers\u00E3o do processo que foi exportada, a partir de 1. N\u00E3o existe no rascunho. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o e definido pela publica\u00E7\u00E3o.",
+            "type": "integer",
+            "minimum": 1,
+            "readOnly": true
+          },
+          "publicadoEm": {
+            "title": "Publicado em",
+            "description": "Instante da divulga\u00E7\u00E3o da vers\u00E3o exportada, em UTC. A publicidade \u00E9 a divulga\u00E7\u00E3o gravada na transa\u00E7\u00E3o; numa retifica\u00E7\u00E3o o campo traz o instante da vers\u00E3o retificada. N\u00E3o existe no rascunho. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o e definido pela divulga\u00E7\u00E3o.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsInstante",
+            "readOnly": true
+          },
+          "identificacao": {
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoIdentificacao"
+          },
+          "coleta": {
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoColeta"
+          },
+          "formularios": {
+            "title": "Formul\u00E1rios",
+            "description": "Os formul\u00E1rios do processo, no m\u00E1ximo um por finalidade. Lista vazia ou ausente \u00E9 v\u00E1lida no rascunho.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoFormulario"
+            }
+          },
+          "opcoesDeCurso": {
+            "title": "Op\u00E7\u00F5es de curso",
+            "description": "Quantas op\u00E7\u00F5es de curso o candidato escolhe: 1 ou 2. A segunda op\u00E7\u00E3o \u00E9 outra oferta do processo. Ausente: ainda n\u00E3o declarado, e a aus\u00EAncia nunca vale uma op\u00E7\u00E3o.",
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "numero": {
+                "title": "N\u00FAmero de op\u00E7\u00F5es",
+                "description": "1 ou 2.",
+                "enum": [
+                  1,
+                  2
+                ]
+              }
+            }
+          },
+          "distribuicaoVagas": {
+            "title": "Distribui\u00E7\u00E3o de vagas",
+            "description": "A distribui\u00E7\u00E3o de vagas de cada oferta de curso do processo, no m\u00E1ximo uma por oferta.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoDistribuicaoDeVagas"
+            }
+          },
+          "cascataRemanejamento": {
+            "title": "Cascata de remanejamento",
+            "description": "A cascata de remanejamento entre modalidades. Ausente quando o processo n\u00E3o tem cascata.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoCascataDeRemanejamento"
+          },
+          "cronograma": {
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoCronograma"
+          },
+          "etapas": {
+            "title": "Etapas",
+            "description": "Etapas de avalia\u00E7\u00E3o do processo. A chave de cada etapa \u00E9 \u00FAnica no documento e \u00E9 a que as outras partes usam para cit\u00E1-la. Lista vazia ou ausente \u00E9 v\u00E1lida: h\u00E1 processos sem prova.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoEtapas"
+            }
+          },
+          "taxaDeInscricao": {
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoTaxaDeInscricao"
+          },
+          "divulgacao": {
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoDivulgacao"
+          },
+          "tiposDeAtoCongelados": {
+            "title": "Tipos de ato congelados",
+            "description": "C\u00F3pia, congelada na publica\u00E7\u00E3o, dos tipos de ato do cat\u00E1logo de Publica\u00E7\u00F5es que o processo usa, com o que cada um significa. Existe s\u00F3 no processo publicado. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo do tipo de ato em cada produto de fase e de etapa.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "codigo": {
+                  "title": "C\u00F3digo do tipo de ato",
+                  "description": "C\u00F3digo do tipo de ato no cat\u00E1logo de Publica\u00E7\u00F5es.",
+                  "type": "string",
+                  "maxLength": 128
+                },
+                "unicoPorObjeto": {
+                  "title": "\u00DAnico por objeto",
+                  "description": "Verdadeiro quando o tipo s\u00F3 pode ser publicado uma vez para o mesmo objeto.",
+                  "type": "boolean"
+                },
+                "ehResultado": {
+                  "title": "\u00C9 resultado",
+                  "description": "Verdadeiro quando o tipo publica um resultado.",
+                  "type": "boolean"
+                },
+                "congelaConfiguracao": {
+                  "title": "Congela a configura\u00E7\u00E3o",
+                  "description": "Verdadeiro quando publicar o ato congela a configura\u00E7\u00E3o do processo.",
+                  "type": "boolean"
+                }
+              }
+            },
+            "readOnly": true
+          },
+          "documentosExigidos": {
+            "title": "Documentos exigidos",
+            "description": "As exig\u00EAncias de documentos do processo e a \u00E1rvore de satisfa\u00E7\u00E3o delas. Lista vazia ou ausente \u00E9 v\u00E1lida: h\u00E1 processos sem comprova\u00E7\u00E3o documental.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoExigencias"
+          },
+          "classificacao": {
+            "title": "Classifica\u00E7\u00E3o",
+            "description": "C\u00E1lculo da nota final, ordem de aloca\u00E7\u00E3o, elimina\u00E7\u00E3o e desempate. Ausente no rascunho que ainda n\u00E3o decidiu a classifica\u00E7\u00E3o.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoClassificacao"
+          },
+          "atendimento": {
+            "title": "Atendimento especializado",
+            "description": "Condi\u00E7\u00F5es, recursos e tipos de defici\u00EAncia que o processo atende. Ausente no rascunho que ainda n\u00E3o decidiu o atendimento.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoAtendimento"
+          },
+          "bonusRegional": {
+            "title": "B\u00F4nus regional",
+            "description": "Declara\u00E7\u00E3o de que o processo aplica ou n\u00E3o o b\u00F4nus regional e, se aplica, a regra e a base legal. Ausente no rascunho que ainda n\u00E3o decidiu.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoBonusRegional"
+          },
+          "importacao": {
+            "title": "Importa\u00E7\u00E3o do resultado",
+            "description": "Relat\u00F3rios e primeira fase depois da importa\u00E7\u00E3o, nos processos de resultado importado. Ausente nos demais.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoImportacao"
+          },
+          "provaPresencial": {
+            "title": "Prova presencial",
+            "description": "Declara\u00E7\u00E3o de que o processo tem ou n\u00E3o prova presencial e, se tem, dos munic\u00EDpios de aplica\u00E7\u00E3o. Ausente no rascunho que ainda n\u00E3o a declarou.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoProvaPresencial"
+          },
+          "motivos": {
+            "title": "Motivos de decis\u00E3o",
+            "description": "Motivos do cat\u00E1logo que o processo escolheu para as decis\u00F5es das fases e das etapas. Cada motivo se identifica pelo lugar, a fase ou a etapa pela chave, e pelo tipo e pelo c\u00F3digo.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoMotivo"
+            }
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoArvoreDeSatisfacao": {
+        "title": "N\u00F3 da \u00E1rvore de satisfa\u00E7\u00E3o",
+        "description": "Um n\u00F3 da \u00E1rvore que diz quais documentos satisfazem a exig\u00EAncia do candidato: a folha aponta uma exig\u00EAncia; E e OU combinam os filhos.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "tipo"
+        ],
+        "properties": {
+          "ordem": {
+            "title": "Ordem",
+            "description": "Posi\u00E7\u00E3o do n\u00F3 entre os irm\u00E3os.",
+            "type": "integer",
+            "minimum": 0
+          },
+          "tipo": {
+            "title": "Tipo do n\u00F3",
+            "description": "FOLHA cita uma exig\u00EAncia; E exige todos os filhos; OU exige algum deles.",
+            "enum": [
+              "FOLHA",
+              "E",
+              "OU"
+            ]
+          },
+          "exigenciaChave": {
+            "title": "Exig\u00EAncia da folha",
+            "description": "Chave local da exig\u00EAncia que a folha cita. S\u00F3 existe no n\u00F3 FOLHA.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
+          },
+          "quantidadeMinima": {
+            "title": "Quantidade m\u00EDnima",
+            "description": "Quantas ocorr\u00EAncias do documento satisfazem a folha (at\u00E9 366), ou quantos filhos o n\u00F3 OU precisa.",
+            "type": "integer",
+            "minimum": 1
+          },
+          "consequencia": {
+            "title": "Consequ\u00EAncia",
+            "description": "Consequ\u00EAncia da insatisfa\u00E7\u00E3o do n\u00F3.",
+            "enum": [
+              "ELIMINA",
+              "RECLASSIFICA_AC",
+              "REMOVE_VANTAGEM",
+              "PENDENCIA_REENVIO"
+            ]
+          },
+          "basesLegais": {
+            "title": "Bases legais",
+            "description": "Embasamento normativo do n\u00F3.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoBaseLegal"
+            }
+          },
+          "chaveDistincao": {
+            "title": "Chave de distin\u00E7\u00E3o",
+            "description": "O que torna duas ocorr\u00EAncias do mesmo documento distintas.",
+            "enum": [
+              "COMPETENCIA_MENSAL",
+              "EXERCICIO_ANUAL",
+              "OCORRENCIA"
+            ]
+          },
+          "dataReferencia": {
+            "title": "Data de refer\u00EAncia",
+            "description": "Data de refer\u00EAncia: a compet\u00EAncia ou o exerc\u00EDcio dela \u00E9 o \u00FAltimo a comprovar, contando-se para tr\u00E1s.",
+            "type": "string",
+            "format": "date"
+          },
+          "ocorrenciasEsperadas": {
+            "title": "Ocorr\u00EAncias esperadas",
+            "description": "R\u00F3tulos das ocorr\u00EAncias esperadas, quando a chave de distin\u00E7\u00E3o \u00E9 a ocorr\u00EAncia.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "repetePorEntidade": {
+            "title": "Repete por entidade",
+            "description": "C\u00F3digo do grupo de entidades do formul\u00E1rio (por exemplo, os integrantes da fam\u00EDlia) para cada uma das quais o n\u00F3 se repete. Ausente quando o n\u00F3 n\u00E3o se repete.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "filhos": {
+            "title": "Filhos",
+            "description": "N\u00F3s filhos, nos n\u00F3s E e OU.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoArvoreDeSatisfacao"
+            }
+          }
+        },
+        "if": {
+          "properties": {
+            "tipo": {
+              "const": "FOLHA"
+            }
+          }
+        },
+        "then": {
+          "properties": {
+            "quantidadeMinima": {
+              "maximum": 366
+            }
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoAtendimento": {
+        "title": "Atendimento especializado",
+        "description": "O que o processo oferece a candidatos com necessidades de atendimento: as condi\u00E7\u00F5es atendidas, os recursos de acessibilidade e os tipos de defici\u00EAncia. Cada item \u00E9 citado pelo c\u00F3digo do cat\u00E1logo.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "condicoes": {
+            "title": "Condi\u00E7\u00F5es",
+            "description": "Condi\u00E7\u00F5es de atendimento que o processo oferece.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoAtendimentoCondicao"
+            }
+          },
+          "recursos": {
+            "title": "Recursos",
+            "description": "Recursos de acessibilidade que o processo oferece.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoAtendimentoRecurso"
+            }
+          },
+          "tiposDeficiencia": {
+            "title": "Tipos de defici\u00EAncia",
+            "description": "Tipos de defici\u00EAncia que o atendimento do processo cobre.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoAtendimentoTipoDeficiencia"
+            }
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoAtendimentoCondicao": {
+        "title": "Condi\u00E7\u00E3o de atendimento",
+        "description": "Uma condi\u00E7\u00E3o de atendimento que o processo oferece.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "condicaoCodigo"
+        ],
+        "properties": {
+          "condicaoCodigo": {
+            "title": "C\u00F3digo",
+            "description": "C\u00F3digo est\u00E1vel no cat\u00E1logo: mai\u00FAscula inicial, depois mai\u00FAsculas, d\u00EDgitos e sublinhado, de 2 a 50 caracteres.",
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]{1,49}$"
+          },
+          "condicaoNome": {
+            "title": "Nome",
+            "description": "Nome no cat\u00E1logo, copiado na exporta\u00E7\u00E3o. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o, porque vem do cat\u00E1logo pelo c\u00F3digo.",
+            "type": "string",
+            "maxLength": 200,
+            "readOnly": true
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoAtendimentoRecurso": {
+        "title": "Recurso de acessibilidade",
+        "description": "Um recurso de acessibilidade que o processo oferece.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "recursoCodigo"
+        ],
+        "properties": {
+          "recursoCodigo": {
+            "title": "C\u00F3digo",
+            "description": "C\u00F3digo est\u00E1vel no cat\u00E1logo: mai\u00FAscula inicial, depois mai\u00FAsculas, d\u00EDgitos e sublinhado, de 2 a 50 caracteres.",
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]{1,49}$"
+          },
+          "recursoNome": {
+            "title": "Nome",
+            "description": "Nome no cat\u00E1logo, copiado na exporta\u00E7\u00E3o. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o, porque vem do cat\u00E1logo pelo c\u00F3digo.",
+            "type": "string",
+            "maxLength": 200,
+            "readOnly": true
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoAtendimentoTipoDeficiencia": {
+        "title": "Tipo de defici\u00EAncia",
+        "description": "Um tipo de defici\u00EAncia que o atendimento cobre.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "tipoDeficienciaCodigo"
+        ],
+        "properties": {
+          "tipoDeficienciaCodigo": {
+            "title": "C\u00F3digo",
+            "description": "C\u00F3digo est\u00E1vel no cat\u00E1logo: mai\u00FAscula inicial, depois mai\u00FAsculas, d\u00EDgitos e sublinhado, de 2 a 50 caracteres.",
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]{1,49}$"
+          },
+          "tipoDeficienciaNome": {
+            "title": "Nome",
+            "description": "Nome no cat\u00E1logo, copiado na exporta\u00E7\u00E3o. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o, porque vem do cat\u00E1logo pelo c\u00F3digo.",
+            "type": "string",
+            "maxLength": 200,
+            "readOnly": true
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoBancas": {
+        "title": "Banca requerida",
+        "description": "Uma banca que a fase exige: o tipo dela, o recorte de compet\u00EAncia e a regra de delibera\u00E7\u00E3o.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "chave"
+        ],
+        "properties": {
+          "chave": {
+            "title": "Chave da banca",
+            "description": "Chave local da banca, \u00FAnica no documento. \u00C9 obrigat\u00F3ria: \u00E9 escolhida por quem cria a banca, o sistema n\u00E3o a atribui, e ela n\u00E3o muda ao renomear nem ao reordenar.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
+          },
+          "tipoBancaCodigo": {
+            "title": "Tipo de banca",
+            "description": "C\u00F3digo do tipo de banca no cat\u00E1logo, por exemplo BANCA_ANALISE_RECURSOS.",
+            "type": "string",
+            "pattern": "^[A-Z_]\u002B$",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "categoriasDocumentoCodigos": {
+            "title": "Recorte de compet\u00EAncia",
+            "description": "C\u00F3digos das categorias de documento que a banca analisa. Lista vazia quando a banca n\u00E3o \u00E9 recortada por categoria.",
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9_]{1,49}$",
+              "maxLength": 50
+            }
+          },
+          "regraDeDeliberacao": {
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoBancasRegraDeDeliberacao"
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoBancasRegraDeDeliberacao": {
+        "title": "Regra de delibera\u00E7\u00E3o da banca",
+        "description": "Como a banca decide: o modo, a composi\u00E7\u00E3o e, na vota\u00E7\u00E3o do colegiado, o qu\u00F3rum, o crit\u00E9rio, o desempate e o encerramento. Os campos que o modo n\u00E3o admite ficam ausentes.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "modo": {
+            "title": "Modo de delibera\u00E7\u00E3o",
+            "description": "Vota\u00E7\u00E3o do colegiado (colegiadaComVotacao) ou ato individual (atoIndividual).",
+            "enum": [
+              "colegiadaComVotacao",
+              "atoIndividual"
+            ]
+          },
+          "integrantes": {
+            "title": "Integrantes titulares",
+            "description": "N\u00FAmero de titulares da banca.",
+            "type": "integer",
+            "minimum": 0
+          },
+          "suplentes": {
+            "title": "Suplentes",
+            "description": "N\u00FAmero de suplentes da banca.",
+            "type": "integer",
+            "minimum": 0
+          },
+          "quorum": {
+            "title": "Qu\u00F3rum",
+            "description": "N\u00FAmero m\u00EDnimo de votos para decidir. S\u00F3 na vota\u00E7\u00E3o do colegiado.",
+            "type": "integer",
+            "minimum": 0
+          },
+          "criterio": {
+            "title": "Crit\u00E9rio de vota\u00E7\u00E3o",
+            "description": "Maioria simples, maioria absoluta ou unanimidade. S\u00F3 na vota\u00E7\u00E3o do colegiado.",
+            "enum": [
+              "maioriaSimples",
+              "maioriaAbsoluta",
+              "unanimidade"
+            ]
+          },
+          "desempate": {
+            "title": "Desempate",
+            "description": "Como se desempata nos crit\u00E9rios de maioria: voto da presid\u00EAncia ou nova vota\u00E7\u00E3o.",
+            "enum": [
+              "votoDaPresidencia",
+              "novaVotacao"
+            ]
+          },
+          "encerramento": {
+            "title": "Encerramento da vota\u00E7\u00E3o",
+            "description": "Quando a vota\u00E7\u00E3o termina: com o voto de todos os titulares ou quando a presid\u00EAncia v\u00EA o qu\u00F3rum atingido.",
+            "enum": [
+              "todosOsTitulares",
+              "presidenciaNoQuorum"
+            ]
+          },
+          "semUnanimidade": {
+            "title": "Resultado sem unanimidade",
+            "description": "O que vale quando a unanimidade \u00E9 o crit\u00E9rio e ela n\u00E3o ocorre: favor\u00E1vel, desfavor\u00E1vel ou nova vota\u00E7\u00E3o.",
+            "enum": [
+              "favoravel",
+              "desfavoravel",
+              "novaVotacao"
+            ]
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoBonusRegional": {
+        "title": "B\u00F4nus regional",
+        "description": "O acr\u00E9scimo na nota do candidato que cumpre a base legal do b\u00F4nus regional. O processo declara que aplica o b\u00F4nus e cita a regra do cat\u00E1logo e a base legal pelo c\u00F3digo, ou declara que n\u00E3o o aplica.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "aplica"
+        ],
+        "properties": {
+          "aplica": {
+            "title": "Aplica o b\u00F4nus",
+            "description": "Verdadeiro quando o processo aplica o b\u00F4nus regional. Falso pro\u00EDbe os demais campos.",
+            "type": "boolean"
+          },
+          "regra": {
+            "title": "Regra do b\u00F4nus",
+            "description": "Regra do cat\u00E1logo que calcula o b\u00F4nus.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsReferenciaDeRegra"
+          },
+          "fator": {
+            "title": "Fator",
+            "description": "Fator multiplicativo aplicado \u00E0 nota do candidato eleg\u00EDvel. Maior que zero, at\u00E9 99,9999.",
+            "type": "number",
+            "multipleOf": 0.0001,
+            "exclusiveMinimum": 0,
+            "maximum": 99.9999
+          },
+          "teto": {
+            "title": "Teto",
+            "description": "Acr\u00E9scimo m\u00E1ximo que o b\u00F4nus pode dar, quando houver. Maior que zero, at\u00E9 99,9999.",
+            "type": "number",
+            "multipleOf": 0.0001,
+            "exclusiveMinimum": 0,
+            "maximum": 99.9999
+          },
+          "fatoElegibilidadeCodigo": {
+            "title": "Fato de elegibilidade",
+            "description": "C\u00F3digo do fato que decide quem recebe o b\u00F4nus, quando o processo o declara, de 1 a 60 caracteres.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsCodigoDeCatalogo",
+            "maxLength": 60
+          },
+          "baseLegalBonusRegionalCodigo": {
+            "title": "Base legal",
+            "description": "C\u00F3digo est\u00E1vel da base legal do b\u00F4nus regional no cat\u00E1logo: mai\u00FAscula inicial, depois mai\u00FAsculas, d\u00EDgitos e sublinhado, de 2 a 100 caracteres.",
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]{1,99}$"
+          },
+          "tipoInstrumento": {
+            "title": "Tipo do instrumento",
+            "description": "Tipo do instrumento normativo da base legal. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o, porque vem do cat\u00E1logo pelo c\u00F3digo.",
+            "type": "string",
+            "maxLength": 30,
+            "readOnly": true
+          },
+          "identificacao": {
+            "title": "Identifica\u00E7\u00E3o",
+            "description": "Identifica\u00E7\u00E3o do instrumento normativo da base legal. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o, porque vem do cat\u00E1logo pelo c\u00F3digo.",
+            "type": "string",
+            "maxLength": 500,
+            "readOnly": true
+          },
+          "descricao": {
+            "title": "Descri\u00E7\u00E3o",
+            "description": "Descri\u00E7\u00E3o da base legal. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o, porque vem do cat\u00E1logo pelo c\u00F3digo.",
+            "type": "string",
+            "maxLength": 2000,
+            "readOnly": true
+          },
+          "municipios": {
+            "title": "Munic\u00EDpios",
+            "description": "Munic\u00EDpios que a base legal contempla. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o, porque vem do cat\u00E1logo pelo c\u00F3digo.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoBonusRegionalMunicipio"
+            },
+            "readOnly": true
+          }
+        },
+        "if": {
+          "properties": {
+            "aplica": {
+              "const": true
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "regra",
+            "fator",
+            "baseLegalBonusRegionalCodigo"
+          ]
+        },
+        "else": {
+          "properties": {
+            "regra": false,
+            "fator": false,
+            "teto": false,
+            "fatoElegibilidadeCodigo": false,
+            "baseLegalBonusRegionalCodigo": false,
+            "tipoInstrumento": false,
+            "identificacao": false,
+            "descricao": false,
+            "municipios": false
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoBonusRegionalMunicipio": {
+        "title": "Munic\u00EDpio",
+        "description": "Um munic\u00EDpio contemplado pela base legal.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "codigoIbge": {
+            "title": "C\u00F3digo IBGE",
+            "description": "C\u00F3digo do munic\u00EDpio no IBGE, com 7 d\u00EDgitos.",
+            "type": "string",
+            "pattern": "^[0-9]{7}$"
+          },
+          "nome": {
+            "title": "Nome",
+            "description": "Nome do munic\u00EDpio.",
+            "type": "string",
+            "maxLength": 150
+          },
+          "uf": {
+            "title": "UF",
+            "description": "Sigla da unidade federativa.",
+            "type": "string",
+            "pattern": "^[A-Z]{2}$"
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoCascataDeRemanejamento": {
+        "title": "Cascata de remanejamento",
+        "description": "A ordem em que as vagas n\u00E3o preenchidas de uma modalidade passam a outras. No m\u00E1ximo uma cascata por processo; sem o objeto, o processo n\u00E3o tem cascata.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "regra": {
+            "title": "Regra de remanejamento",
+            "description": "Regra do cat\u00E1logo que define o remanejamento.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsReferenciaDeRegra"
+          },
+          "fallbackCodigo": {
+            "title": "Modalidade de destino final",
+            "description": "C\u00F3digo da modalidade que recebe as vagas quando nenhum destino da cascata as absorve, em geral a ampla concorr\u00EAncia.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60,
+            "pattern": "^[A-Z0-9_]\u002B$"
+          },
+          "destinos": {
+            "title": "Destinos",
+            "description": "Os destinos de cada modalidade de origem, at\u00E9 56 no total e at\u00E9 8 origens distintas.",
+            "type": "array",
+            "maxItems": 56,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "modalidadeOrigemCodigo",
+                "ordem",
+                "modalidadeDestinoCodigo"
+              ],
+              "properties": {
+                "modalidadeOrigemCodigo": {
+                  "title": "Modalidade de origem",
+                  "description": "C\u00F3digo da modalidade que cede as vagas.",
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 60,
+                  "pattern": "^[A-Z0-9_]\u002B$"
+                },
+                "ordem": {
+                  "title": "Ordem",
+                  "description": "Posi\u00E7\u00E3o do destino na cascata da origem, a partir de 1. A ordem \u00E9 sem\u00E2ntica: decide quem recebe primeiro.",
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "modalidadeDestinoCodigo": {
+                  "title": "Modalidade de destino",
+                  "description": "C\u00F3digo da modalidade que recebe as vagas.",
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 60,
+                  "pattern": "^[A-Z0-9_]\u002B$"
+                }
+              }
+            }
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoClassificacao": {
+        "title": "Classifica\u00E7\u00E3o",
+        "description": "Como os candidatos s\u00E3o classificados: o c\u00E1lculo da nota final, o arredondamento, a ordem de aloca\u00E7\u00E3o, a elimina\u00E7\u00E3o e o desempate.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "regraCalculo": {
+            "title": "Regra de c\u00E1lculo",
+            "description": "Regra do cat\u00E1logo que calcula a nota final. A classifica\u00E7\u00E3o importada dispensa o arredondamento local e as regras de elimina\u00E7\u00E3o por corte de nota.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsReferenciaDeRegra"
+          },
+          "regraArredondamento": {
+            "title": "Regra de arredondamento",
+            "description": "Regra do cat\u00E1logo que arredonda a nota. Ausente quando a classifica\u00E7\u00E3o \u00E9 importada.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsReferenciaDeRegra"
+          },
+          "casasArredondamento": {
+            "title": "Casas de arredondamento",
+            "description": "Casas decimais da nota arredondada. Ausente quando a classifica\u00E7\u00E3o \u00E9 importada.",
+            "type": "integer",
+            "minimum": 1
+          },
+          "escalaNotaFinal": {
+            "title": "Escala da nota final",
+            "description": "Escala em que a nota final \u00E9 publicada: 10, 100, 1000. S\u00F3 se aplica ao c\u00E1lculo local.",
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "exclusiveMaximum": 100000,
+            "multipleOf": 0.0001
+          },
+          "regraOrdemAlocacao": {
+            "title": "Regra de ordem de aloca\u00E7\u00E3o",
+            "description": "Regra do cat\u00E1logo que define a ordem em que as vagas s\u00E3o alocadas.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsReferenciaDeRegra"
+          },
+          "baseadoEmEnem": {
+            "title": "Baseado no Enem",
+            "description": "Se a classifica\u00E7\u00E3o usa as notas do Enem.",
+            "type": "boolean"
+          },
+          "regrasEliminacao": {
+            "title": "Regras de elimina\u00E7\u00E3o",
+            "description": "Regras que eliminam candidatos da classifica\u00E7\u00E3o.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoEliminacao"
+            }
+          },
+          "criteriosDeDesempate": {
+            "title": "Crit\u00E9rios de desempate",
+            "description": "Crit\u00E9rios aplicados em ordem quando as notas empatam.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoDesempate"
+            }
+          },
+          "resolucaoPesoAreaEnem": {
+            "title": "Resolu\u00E7\u00E3o do peso por \u00E1rea do Enem",
+            "description": "C\u00F3digo da resolu\u00E7\u00E3o cujo quadro de pesos por \u00E1rea vale para o processo.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "quadroPesoAreaEnem": {
+            "title": "Quadro de pesos por \u00E1rea do Enem",
+            "description": "Os pesos e cortes por \u00E1rea do Enem que a resolu\u00E7\u00E3o fixa, copiados na exporta\u00E7\u00E3o. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o, porque \u00E9 congelado do cat\u00E1logo pela resolu\u00E7\u00E3o.",
+            "type": "array",
+            "readOnly": true,
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoPesosPorArea"
+            }
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoColeta": {
+        "title": "Coleta de fatos",
+        "description": "Regras de coleta dos fatos do candidato: a refer\u00EAncia temporal e as regras que derivam fatos das respostas.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "referenciaTemporalFatos": {
+            "title": "Refer\u00EAncia temporal dos fatos",
+            "description": "Instante a partir do qual se avaliam os fatos que dependem de data, como a idade do candidato. A fase citada \u00E9 a do cronograma deste documento.",
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "tipo": {
+                "title": "Tipo de refer\u00EAncia",
+                "description": "\u00C2ncora da refer\u00EAncia: fim da inscri\u00E7\u00E3o, in\u00EDcio ou fim de uma fase, ou uma data espec\u00EDfica.",
+                "enum": [
+                  "FIM_INSCRICAO",
+                  "INICIO_FASE",
+                  "FIM_FASE",
+                  "DATA_ESPECIFICA"
+                ]
+              },
+              "data": {
+                "title": "Data espec\u00EDfica",
+                "description": "Data da refer\u00EAncia, no formato AAAA-MM-DD. Usada quando o tipo \u00E9 DATA_ESPECIFICA.",
+                "type": "string",
+                "format": "date"
+              },
+              "faseChave": {
+                "title": "Fase de refer\u00EAncia",
+                "description": "Chave local da fase do cronograma que ancora a refer\u00EAncia. Usada quando o tipo \u00E9 INICIO_FASE ou FIM_FASE.",
+                "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
+              }
+            }
+          },
+          "regrasDerivacao": {
+            "title": "Regras de deriva\u00E7\u00E3o",
+            "description": "Regras que derivam o valor de um fato do cat\u00E1logo a partir de outros fatos. Cada fato derivado aparece uma vez. A deriva\u00E7\u00E3o da modalidade n\u00E3o entra aqui: vem da oferta.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "fatoCodigo"
+              ],
+              "properties": {
+                "fatoCodigo": {
+                  "title": "Fato derivado",
+                  "description": "C\u00F3digo do fato derivado no cat\u00E1logo, de 1 a 60 caracteres.",
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 60,
+                  "pattern": "\\S"
+                },
+                "regras": {
+                  "title": "Regras",
+                  "description": "Regras da deriva\u00E7\u00E3o, cada uma com a condi\u00E7\u00E3o em que contribui. A regra sem condi\u00E7\u00E3o \u00E9 a \u00E2ncora e contribui sempre, junto com as demais que valerem.",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "ordem": {
+                        "title": "Ordem",
+                        "description": "Posi\u00E7\u00E3o da regra na avalia\u00E7\u00E3o, a partir de 0.",
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "contribui": {
+                        "title": "Valor contribu\u00EDdo",
+                        "description": "Valor que a regra atribui ao fato quando vale, de at\u00E9 60 caracteres.",
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "maxLength": 60
+                      },
+                      "quando": {
+                        "title": "Quando vale",
+                        "description": "Condi\u00E7\u00E3o da regra. Nula ou ausente: regra \u00E2ncora, que vale sempre.",
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoPredicado"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoComunsAlvoDoProcedimentoDeRecurso": {
+        "title": "Alvo do procedimento de recurso",
+        "description": "Um item de avalia\u00E7\u00E3o da etapa que produz a decis\u00E3o, pela chave, ou uma \u00E1rea do ENEM, pelo c\u00F3digo; um s\u00F3 dos dois. A \u00E1rea exige que o processo importe a nota do ENEM.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "itemDeAvaliacaoChave": {
+            "title": "Item de avalia\u00E7\u00E3o",
+            "description": "Chave do item de avalia\u00E7\u00E3o da etapa.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
+          },
+          "areaDoEnem": {
+            "title": "\u00C1rea do ENEM",
+            "description": "C\u00F3digo da \u00E1rea do ENEM.",
+            "enum": [
+              "REDACAO",
+              "CIENCIAS_DA_NATUREZA",
+              "CIENCIAS_HUMANAS",
+              "LINGUAGENS",
+              "MATEMATICA"
+            ]
+          }
+        },
+        "minProperties": 1,
+        "maxProperties": 1
+      },
+      "DocumentoDaConfiguracaoComunsChave": {
+        "title": "Chave local",
+        "description": "Identificador local de uma parte do documento, que as outras partes usam para se referir a ela; as refer\u00EAncias a uma parte (por exemplo a chave da fase ou da etapa) t\u00EAm este mesmo formato. \u00C9 \u00FAnico entre as partes do mesmo tipo no documento ou, quando a parte pertence a outra (os itens de uma etapa), dentro da parte que a cont\u00E9m. Letras min\u00FAsculas, n\u00FAmeros e h\u00EDfens, come\u00E7ando por letra.",
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]\u002B)*$",
+        "minLength": 1,
+        "maxLength": 64
+      },
+      "DocumentoDaConfiguracaoComunsCodigoDeCatalogo": {
+        "title": "C\u00F3digo est\u00E1vel de cat\u00E1logo",
+        "description": "C\u00F3digo est\u00E1vel e leg\u00EDvel de um item de cat\u00E1logo ou de uma unidade. Nunca o identificador interno do banco: um valor com a forma de identificador \u00FAnico (UUID) \u00E9 recusado.",
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+        "minLength": 1,
+        "maxLength": 128,
+        "not": {
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+        }
+      },
+      "DocumentoDaConfiguracaoComunsIdentificadorDaConta": {
+        "title": "Identificador da conta",
+        "description": "Identificador da conta da pessoa no Uni\u002B, texto opaco e est\u00E1vel que o provedor de identidade atribui (o sub do token). Nunca \u00E9 CPF, e-mail, telefone nem nome, e quem o escreve n\u00E3o o monta a partir deles. O esquema s\u00F3 descreve a forma: n\u00E3o exige nem pro\u00EDbe a forma de UUID e recusa o texto vazio, o que tem espa\u00E7o nas pontas e o que passa de 255 caracteres. Que o valor \u00E9 uma conta existente \u00E9 confer\u00EAncia do dom\u00EDnio contra o cadastro de assinantes, que recusa o c\u00F3digo desconhecido pela posi\u00E7\u00E3o.",
+        "type": "string",
+        "pattern": "^\\S(?:.*\\S)?$",
+        "minLength": 1,
+        "maxLength": 255
+      },
+      "DocumentoDaConfiguracaoComunsInstante": {
+        "title": "Instante",
+        "description": "Instante em UTC, no formato RFC 3339 com o sufixo Z e, se necess\u00E1rio, at\u00E9 seis casas de fra\u00E7\u00E3o de segundo. Exemplo: 2027-01-10T03:00:00Z.",
+        "type": "string",
+        "format": "date-time",
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,6})?Z$"
+      },
+      "DocumentoDaConfiguracaoComunsProcedimentoDeRecurso": {
+        "title": "Procedimento de recurso",
+        "description": "Como se revisa o recurso de uma mat\u00E9ria: o tipo de decis\u00E3o recorrida, o alvo opcional dentro dela e a regra do cat\u00E1logo que diz como revisar. Sem alvo, o procedimento cobre o tipo de decis\u00E3o inteiro. O tipo de decis\u00E3o precisa estar entre os que a fase ou a etapa declara.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "tipoDeDecisao": {
+            "title": "Tipo de decis\u00E3o",
+            "description": "Tipo da decis\u00E3o recorrida, entre os que a fase ou a etapa declara.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsTipoDeDecisao"
+          },
+          "alvo": {
+            "title": "Alvo",
+            "description": "A parte da mat\u00E9ria que o procedimento cobre: um item de avalia\u00E7\u00E3o da etapa, pela chave, ou uma \u00E1rea do ENEM, pelo c\u00F3digo. Ausente, o procedimento cobre o tipo de decis\u00E3o inteiro.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsAlvoDoProcedimentoDeRecurso"
+          },
+          "regra": {
+            "title": "Regra do procedimento",
+            "description": "Regra do cat\u00E1logo que diz como o recurso \u00E9 revisado: nova corre\u00E7\u00E3o, confer\u00EAncia, corre\u00E7\u00E3o de erro de registro ou rec\u00E1lculo.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsReferenciaDeRegra",
+            "properties": {
+              "codigo": {
+                "title": "C\u00F3digo da regra do procedimento",
+                "description": "C\u00F3digo de um procedimento de recurso do cat\u00E1logo: nova corre\u00E7\u00E3o, confer\u00EAncia, corre\u00E7\u00E3o de erro de registro ou rec\u00E1lculo.",
+                "enum": [
+                  "PROCEDIMENTO-RECURSO-RECORRECAO",
+                  "PROCEDIMENTO-RECURSO-CONFERENCIA",
+                  "PROCEDIMENTO-RECURSO-CORRECAO-MATERIAL",
+                  "PROCEDIMENTO-RECURSO-RECALCULO"
+                ]
+              }
+            }
+          }
+        },
+        "required": [
+          "tipoDeDecisao",
+          "regra"
+        ]
+      },
+      "DocumentoDaConfiguracaoComunsProduto": {
+        "title": "Ato publicado pela fase",
+        "description": "Um tipo de ato que a fase publica, com o papel dele no ciclo de recurso.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "atoCodigo": {
+            "title": "Tipo de ato",
+            "description": "C\u00F3digo do tipo de ato no cat\u00E1logo de publica\u00E7\u00F5es.",
+            "type": "string",
+            "pattern": "^[A-Z]\u002B(_[A-Z]\u002B)*$",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "papel": {
+            "title": "Papel do ato",
+            "description": "PRELIMINAR para o resultado que admite recurso, DEFINITIVO para o resultado final. Ausente quando o ato n\u00E3o \u00E9 um resultado.",
+            "enum": [
+              "PRELIMINAR",
+              "DEFINITIVO"
+            ]
+          }
+        },
+        "required": [
+          "atoCodigo"
+        ]
+      },
+      "DocumentoDaConfiguracaoComunsPropriedadesDoRecurso": {
+        "title": "Propriedades do recurso",
+        "description": "Prazo de interposi\u00E7\u00E3o, \u00E2ncora e efeito suspensivo do recurso, comuns \u00E0 fase e \u00E0 etapa.",
+        "type": "object",
+        "properties": {
+          "regraCodigo": {
+            "title": "C\u00F3digo da regra",
+            "description": "C\u00F3digo da regra de prazo de recurso no cat\u00E1logo de regras.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "regraVersao": {
+            "title": "Vers\u00E3o da regra",
+            "description": "Vers\u00E3o da regra de prazo de recurso, na forma v1, v2, v3.",
+            "type": "string",
+            "pattern": "^v[0-9]\u002B$",
+            "maxLength": 16
+          },
+          "prazoValor": {
+            "title": "Prazo de interposi\u00E7\u00E3o",
+            "description": "Quantidade de unidades do prazo para recorrer, com at\u00E9 quatro casas decimais.",
+            "type": "number",
+            "multipleOf": 0.0001
+          },
+          "prazoUnidade": {
+            "title": "Unidade do prazo",
+            "description": "Unidade do prazo de interposi\u00E7\u00E3o: horas ou dias \u00FAteis (diasUteis).",
+            "enum": [
+              "horas",
+              "diasUteis"
+            ]
+          },
+          "atoAncoraCodigo": {
+            "title": "Ato \u00E2ncora do prazo",
+            "description": "C\u00F3digo do tipo de ato, entre os atos preliminares da pr\u00F3pria fase, a partir de cujo instante o prazo corre.",
+            "type": "string",
+            "pattern": "^[A-Z]\u002B(_[A-Z]\u002B)*$",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "suspensividadePrimeiraInstanciaValor": {
+            "title": "Efeito suspensivo na primeira inst\u00E2ncia, quantidade",
+            "description": "Quantidade de unidades do efeito suspensivo na primeira inst\u00E2ncia, com at\u00E9 quatro casas decimais.",
+            "type": "number",
+            "multipleOf": 0.0001
+          },
+          "suspensividadePrimeiraInstanciaUnidade": {
+            "title": "Efeito suspensivo na primeira inst\u00E2ncia, unidade",
+            "description": "Unidade do efeito suspensivo na primeira inst\u00E2ncia: horas, dias ou dias \u00FAteis (diasUteis).",
+            "enum": [
+              "horas",
+              "dias",
+              "diasUteis"
+            ]
+          },
+          "admiteInstanciaSuperior": {
+            "title": "Admite inst\u00E2ncia superior",
+            "description": "Se cabe recurso \u00E0 inst\u00E2ncia superior.",
+            "type": "boolean"
+          },
+          "suspensividadeSegundaInstanciaValor": {
+            "title": "Efeito suspensivo na inst\u00E2ncia superior, quantidade",
+            "description": "Quantidade de unidades do efeito suspensivo na inst\u00E2ncia superior, com at\u00E9 quatro casas decimais.",
+            "type": "number",
+            "multipleOf": 0.0001
+          },
+          "suspensividadeSegundaInstanciaUnidade": {
+            "title": "Efeito suspensivo na inst\u00E2ncia superior, unidade",
+            "description": "Unidade do efeito suspensivo na inst\u00E2ncia superior: horas, dias ou dias \u00FAteis (diasUteis).",
+            "enum": [
+              "horas",
+              "dias",
+              "diasUteis"
+            ]
+          },
+          "procedimentosDeRecurso": {
+            "title": "Procedimentos de recurso",
+            "description": "O procedimento que revisa o recurso de cada mat\u00E9ria que a fase ou a etapa decide. Cada mat\u00E9ria tem um \u00FAnico procedimento, e um tipo de decis\u00E3o n\u00E3o mistura procedimento para o tipo inteiro com procedimento por alvo.",
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsProcedimentoDeRecurso"
+            }
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoComunsReferenciaDeRegra": {
+        "title": "Refer\u00EAncia a uma regra do cat\u00E1logo",
+        "description": "Cita uma regra do cat\u00E1logo de regras pelo c\u00F3digo e pela vers\u00E3o. O cat\u00E1logo \u00E9 s\u00F3 de acr\u00E9scimo: a vers\u00E3o citada nunca muda de conte\u00FAdo.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "codigo": {
+            "title": "C\u00F3digo da regra",
+            "description": "C\u00F3digo da regra no cat\u00E1logo de regras.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "versao": {
+            "title": "Vers\u00E3o da regra",
+            "description": "Vers\u00E3o da regra no cat\u00E1logo de regras, na forma v1, v2, v3.",
+            "type": "string",
+            "pattern": "^v[0-9]\u002B$",
+            "maxLength": 16
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoComunsSemParametros": {
+        "title": "Regra sem par\u00E2metros",
+        "description": "A regra n\u00E3o tem par\u00E2metros.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      },
+      "DocumentoDaConfiguracaoComunsTipoDeDecisao": {
+        "title": "Tipo de decis\u00E3o",
+        "description": "Tipo de decis\u00E3o que a fase ou a etapa toma e para a qual escolhe motivos.",
+        "enum": [
+          "ISENCAO_DA_TAXA",
+          "HOMOLOGACAO_DAS_INSCRICOES",
+          "ANALISE_DOCUMENTAL",
+          "HETEROIDENTIFICACAO",
+          "AVALIACAO_BIOPSICOSSOCIAL",
+          "CLASSIFICACAO",
+          "GABARITO_DA_PROVA",
+          "NOTA_DA_ETAPA"
+        ]
+      },
+      "DocumentoDaConfiguracaoComunsTiposDeDecisao": {
+        "title": "Tipos de decis\u00E3o",
+        "description": "Tipos de decis\u00E3o declarados, cada um uma \u00FAnica vez.",
+        "type": "array",
+        "uniqueItems": true,
+        "items": {
+          "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsTipoDeDecisao"
+        }
+      },
+      "DocumentoDaConfiguracaoCronograma": {
+        "title": "Cronograma",
+        "description": "As fases do processo, cada uma com a sua janela de datas, unidade respons\u00E1vel, atos que publica, bancas e regra de recurso.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "fases": {
+            "title": "Fases",
+            "description": "Fases do cronograma. A chave de cada fase \u00E9 \u00FAnica no documento.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoCronogramaFase"
+            }
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoCronogramaFase": {
+        "title": "Fase do cronograma",
+        "description": "Uma fase do processo. S\u00F3 a chave local \u00E9 obrigat\u00F3ria: as datas, a unidade e o resto podem faltar num rascunho.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "chave"
+        ],
+        "properties": {
+          "chave": {
+            "title": "Chave da fase",
+            "description": "Chave local da fase, \u00FAnica no documento. Outras partes a usam para citar esta fase. \u00C9 obrigat\u00F3ria: \u00E9 escolhida por quem cria a fase, o sistema n\u00E3o a atribui, e ela n\u00E3o muda ao renomear nem ao reordenar.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
+          },
+          "faseCanonicaCodigo": {
+            "title": "Fase can\u00F4nica",
+            "description": "C\u00F3digo da fase no cat\u00E1logo de fases can\u00F4nicas, por exemplo INSCRICAO ou RESULTADO_FINAL.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsCodigoDeCatalogo"
+          },
+          "ordem": {
+            "title": "Ordem",
+            "description": "Posi\u00E7\u00E3o da fase na linha do tempo do processo, a partir de 1. N\u00E3o se repete entre as fases.",
+            "type": "integer",
+            "minimum": 1
+          },
+          "inicio": {
+            "title": "In\u00EDcio da fase",
+            "description": "Instante em que a fase come\u00E7a, em UTC. Ausente enquanto n\u00E3o definido.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsInstante"
+          },
+          "fim": {
+            "title": "Fim da fase",
+            "description": "Instante em que a fase termina, em UTC. Ausente enquanto n\u00E3o definido.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsInstante"
+          },
+          "unidadeResponsavelCodigo": {
+            "title": "Unidade respons\u00E1vel pela fase",
+            "description": "C\u00F3digo est\u00E1vel da unidade respons\u00E1vel por conduzir a fase.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsCodigoDeCatalogo"
+          },
+          "unidadeResponsavelNome": {
+            "title": "Nome da unidade respons\u00E1vel",
+            "description": "Nome da unidade respons\u00E1vel pela fase, guardado no processo. Campo s\u00F3 de leitura: a exporta\u00E7\u00E3o o traz para quem l\u00EA o arquivo, e ele \u00E9 ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 unidadeResponsavelCodigo.",
+            "type": "string",
+            "maxLength": 250,
+            "readOnly": true
+          },
+          "unidadeResponsavelSigla": {
+            "title": "Sigla da unidade respons\u00E1vel",
+            "description": "Sigla da unidade respons\u00E1vel pela fase, guardada no processo. Campo s\u00F3 de leitura: a exporta\u00E7\u00E3o o traz para quem l\u00EA o arquivo, e ele \u00E9 ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 unidadeResponsavelCodigo.",
+            "type": "string",
+            "maxLength": 50,
+            "readOnly": true
+          },
+          "produtos": {
+            "title": "Atos que a fase publica",
+            "description": "Tipos de ato publicados pela fase, como o resultado preliminar. O par tipo de ato e papel n\u00E3o se repete na fase.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsProduto"
+            }
+          },
+          "faseConcluinteChave": {
+            "title": "Fase que conclui o ciclo",
+            "description": "Chave local da fase do cronograma que conclui o ciclo de recurso desta fase.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
+          },
+          "emiteParecerIndividual": {
+            "title": "Emite parecer individual",
+            "description": "Se a fase emite parecer individual ao candidato, quando ela publica resultado.",
+            "type": "boolean"
+          },
+          "bancasRequeridas": {
+            "title": "Bancas requeridas",
+            "description": "Bancas que a fase exige. Cada uma tem uma chave local, porque o mesmo tipo de banca pode aparecer mais de uma vez com recortes diferentes.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoBancas"
+            }
+          },
+          "regraRecurso": {
+            "title": "Regra de recurso",
+            "description": "Prazo e efeito suspensivo do recurso. A presen\u00E7a desta regra \u00E9 o que faz a fase admitir recurso.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoCronogramaRegraRecurso"
+          },
+          "tiposDeDecisao": {
+            "title": "Tipos de decis\u00E3o da fase",
+            "description": "Tipos de decis\u00E3o que a fase toma e para os quais o processo escolhe motivos.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsTiposDeDecisao"
+          },
+          "regraDeHomologacao": {
+            "title": "Regra de homologa\u00E7\u00E3o",
+            "description": "Como a fase homologa as inscri\u00E7\u00F5es. Exige o tipo HOMOLOGACAO_DAS_INSCRICOES entre os tipos de decis\u00E3o da fase.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoHomologacao"
+          },
+          "assinantes": {
+            "title": "Assinantes da fase",
+            "description": "Pessoas que assinam o documento da fase, em ordem, cada uma citada pelo identificador da conta dela no Uni\u002B. O documento n\u00E3o traz o nome nem qualquer dado pessoal: o nome vem do cadastro de assinantes na emiss\u00E3o. A pessoa aparece uma \u00FAnica vez.",
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsIdentificadorDaConta"
+            }
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoCronogramaRegraRecurso": {
+        "title": "Regra de recurso",
+        "description": "Regra do cat\u00E1logo que define o prazo de interposi\u00E7\u00E3o do recurso, a \u00E2ncora dele e o efeito suspensivo.",
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsPropriedadesDoRecurso"
+          }
+        ],
+        "unevaluatedProperties": false
+      },
+      "DocumentoDaConfiguracaoDesempate": {
+        "title": "Crit\u00E9rio de desempate",
+        "description": "Um crit\u00E9rio de desempate: a regra do cat\u00E1logo e os par\u00E2metros dela. Os crit\u00E9rios s\u00E3o aplicados na ordem, do primeiro ao \u00FAltimo.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "regra"
+        ],
+        "properties": {
+          "ordem": {
+            "title": "Ordem",
+            "description": "Posi\u00E7\u00E3o do crit\u00E9rio na sequ\u00EAncia de desempate, a partir de 1.",
+            "type": "integer",
+            "minimum": 1
+          },
+          "regra": {
+            "title": "Regra do crit\u00E9rio",
+            "description": "Regra de desempate no cat\u00E1logo de regras.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsReferenciaDeRegra"
+          },
+          "args": {
+            "title": "Par\u00E2metros",
+            "description": "Par\u00E2metros da regra, conforme o c\u00F3digo dela.",
+            "type": "object"
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "regra": {
+                  "properties": {
+                    "codigo": {
+                      "const": "DESEMPATE-MAIOR-NOTA-ETAPA"
+                    }
+                  },
+                  "required": [
+                    "codigo"
+                  ]
+                }
+              },
+              "required": [
+                "regra"
+              ]
+            },
+            "then": {
+              "properties": {
+                "args": {
+                  "$ref": "#/components/schemas/DocumentoDaConfiguracaoDesempateParametrosMaiorNotaEtapa"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "regra": {
+                  "properties": {
+                    "codigo": {
+                      "const": "DESEMPATE-MAIOR-IDADE"
+                    }
+                  },
+                  "required": [
+                    "codigo"
+                  ]
+                }
+              },
+              "required": [
+                "regra"
+              ]
+            },
+            "then": {
+              "properties": {
+                "args": {
+                  "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsSemParametros"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "regra": {
+                  "properties": {
+                    "codigo": {
+                      "const": "DESEMPATE-IDOSO"
+                    }
+                  },
+                  "required": [
+                    "codigo"
+                  ]
+                }
+              },
+              "required": [
+                "regra"
+              ]
+            },
+            "then": {
+              "properties": {
+                "args": {
+                  "$ref": "#/components/schemas/DocumentoDaConfiguracaoDesempateParametrosIdoso"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "regra": {
+                  "properties": {
+                    "codigo": {
+                      "const": "DESEMPATE-PREDICADO-FATO"
+                    }
+                  },
+                  "required": [
+                    "codigo"
+                  ]
+                }
+              },
+              "required": [
+                "regra"
+              ]
+            },
+            "then": {
+              "properties": {
+                "args": {
+                  "$ref": "#/components/schemas/DocumentoDaConfiguracaoDesempateCondicaoDoDesempate"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "regra": {
+                  "properties": {
+                    "codigo": {
+                      "const": "DESEMPATE-MAIOR-NOTA-AREA-ENEM"
+                    }
+                  },
+                  "required": [
+                    "codigo"
+                  ]
+                }
+              },
+              "required": [
+                "regra"
+              ]
+            },
+            "then": {
+              "properties": {
+                "args": {
+                  "$ref": "#/components/schemas/DocumentoDaConfiguracaoDesempateParametrosMaiorNotaAreaEnem"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "DocumentoDaConfiguracaoDesempateCondicaoDoDesempate": {
+        "title": "Condi\u00E7\u00E3o do desempate",
+        "description": "Fato, operador e valor que o desempate por predicado avalia.",
+        "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoCondicao"
+      },
+      "DocumentoDaConfiguracaoDesempateParametrosIdoso": {
+        "title": "Par\u00E2metros da regra",
+        "description": "Desempata a favor do candidato com a idade m\u00EDnima informada ou mais.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "idadeMinima": {
+            "title": "Idade m\u00EDnima",
+            "description": "Idade m\u00EDnima, em anos, para valer a prefer\u00EAncia.",
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "idadeMinima"
+        ]
+      },
+      "DocumentoDaConfiguracaoDesempateParametrosMaiorNotaAreaEnem": {
+        "title": "Par\u00E2metros da regra",
+        "description": "Desempata pela maior nota nas \u00E1reas do Enem, na ordem listada.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "areas": {
+            "title": "\u00C1reas",
+            "description": "C\u00F3digos das \u00E1reas do Enem, em ordem de preced\u00EAncia.",
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Z0-9_]\u002B$",
+              "minLength": 1,
+              "maxLength": 30
+            }
+          }
+        },
+        "required": [
+          "areas"
+        ]
+      },
+      "DocumentoDaConfiguracaoDesempateParametrosMaiorNotaEtapa": {
+        "title": "Par\u00E2metros da regra",
+        "description": "Desempata pela maior nota numa etapa.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "etapaChave": {
+            "title": "Etapa citada",
+            "description": "Chave local da etapa que a regra cita.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
+          }
+        },
+        "required": [
+          "etapaChave"
+        ]
+      },
+      "DocumentoDaConfiguracaoDistribuicaoDeVagas": {
+        "title": "Distribui\u00E7\u00E3o de vagas por oferta de curso",
+        "description": "Os insumos que o edital declara para distribuir as vagas de uma oferta de curso. No m\u00E1ximo uma distribui\u00E7\u00E3o por oferta no processo. O quadro de vagas \u00E9 calculado pelo sistema e vai ao documento s\u00F3 como leitura.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "ofertaCursoCodigo"
+        ],
+        "properties": {
+          "ofertaCursoCodigo": {
+            "title": "Oferta de curso",
+            "description": "C\u00F3digo da oferta de curso no cadastro, de letras mai\u00FAsculas, d\u00EDgitos e sublinhado, de 2 a 50 caracteres. \u00C9 a chave da distribui\u00E7\u00E3o.",
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 50,
+            "pattern": "^[A-Z][A-Z0-9_]{1,49}$"
+          },
+          "vagasOfertadasBase": {
+            "title": "Vagas ofertadas base",
+            "description": "N\u00FAmero de vagas que a oferta tem antes da distribui\u00E7\u00E3o por modalidade. Maior que zero.",
+            "type": "integer",
+            "minimum": 1
+          },
+          "percentualDaReservaLegal": {
+            "title": "Percentual da reserva legal",
+            "description": "Fra\u00E7\u00E3o das vagas reservada pela Lei de Cotas, de 0,5 a 1, com at\u00E9 quatro casas decimais. S\u00F3 nas regras do ramo federal.",
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0.5,
+            "maximum": 1,
+            "multipleOf": 0.0001
+          },
+          "regraDistribuicao": {
+            "title": "Regra de distribui\u00E7\u00E3o",
+            "description": "Regra do cat\u00E1logo que distribui as vagas entre as modalidades.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsReferenciaDeRegra"
+          },
+          "regraAjuste": {
+            "title": "Regra de ajuste",
+            "description": "Regra do cat\u00E1logo que concilia o quadro de vagas. Nula ou ausente quando a distribui\u00E7\u00E3o n\u00E3o a usa.",
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsReferenciaDeRegra"
+              }
+            ]
+          },
+          "ajusteDoQuadro": {
+            "title": "Ajuste do quadro",
+            "description": "Como o edital reduz o quadro fixado: de uma modalidade ou proporcionalmente em um conjunto delas. Nulo ou ausente quando n\u00E3o h\u00E1 ajuste.",
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DocumentoDaConfiguracaoDistribuicaoDeVagasAjusteDoQuadro"
+              }
+            ]
+          },
+          "referenciaDemograficaCodigo": {
+            "title": "Refer\u00EAncia demogr\u00E1fica",
+            "description": "C\u00F3digo do censo de refer\u00EAncia da reserva demogr\u00E1fica no cadastro, de at\u00E9 20 caracteres. \u00C9 o \u0060censoReferencia\u0060 do cadastro de refer\u00EAncias demogr\u00E1ficas. S\u00F3 nas regras do ramo federal.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 20
+          },
+          "modalidades": {
+            "title": "Modalidades",
+            "description": "Modalidades que a oferta distribui, cada uma pelo c\u00F3digo do cadastro.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoDistribuicaoDeVagasModalidade"
+            }
+          },
+          "cursoNome": {
+            "title": "Nome do curso",
+            "description": "Nome do curso da oferta, para leitura. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o.",
+            "type": "string",
+            "maxLength": 200,
+            "readOnly": true
+          },
+          "cursoGrau": {
+            "title": "Grau do curso",
+            "description": "Grau do curso da oferta. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o.",
+            "type": "string",
+            "maxLength": 60,
+            "readOnly": true
+          },
+          "unidadeOfertanteNome": {
+            "title": "Unidade ofertante",
+            "description": "Nome da unidade que oferta o curso. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o.",
+            "type": "string",
+            "maxLength": 250,
+            "readOnly": true
+          },
+          "turnos": {
+            "title": "Turnos",
+            "description": "Turnos da oferta. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o.",
+            "type": "array",
+            "readOnly": true,
+            "items": {
+              "type": "string",
+              "maxLength": 30
+            }
+          },
+          "quadro": {
+            "title": "Quadro de vagas",
+            "description": "Vagas por modalidade calculadas pelo sistema a partir dos insumos. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o, porque o sistema recalcula o quadro.",
+            "type": "array",
+            "readOnly": true,
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoDistribuicaoDeVagasVagasDaModalidade"
+            }
+          },
+          "totalDeVagasDoEdital": {
+            "title": "Total de vagas do edital",
+            "description": "Soma das vagas do quadro. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o.",
+            "type": "integer",
+            "minimum": 0,
+            "readOnly": true
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoDistribuicaoDeVagasAjusteDoQuadro": {
+        "title": "Ajuste do quadro",
+        "description": "O ajuste que o edital declara sobre o quadro fixado. O discriminador $tipo escolhe qual propriedade vale.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "$tipo"
+        ],
+        "properties": {
+          "$tipo": {
+            "title": "Tipo de ajuste",
+            "description": "reduzirDe reduz de uma modalidade; reduzirProporcionalEm reduz proporcionalmente num conjunto delas.",
+            "enum": [
+              "reduzirDe",
+              "reduzirProporcionalEm"
+            ]
+          },
+          "modalidadeCodigo": {
+            "title": "Modalidade reduzida",
+            "description": "C\u00F3digo da modalidade de onde se reduz. Usado em reduzirDe.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60,
+            "pattern": "^[A-Z0-9_]\u002B$"
+          },
+          "modalidadeCodigos": {
+            "title": "Modalidades reduzidas",
+            "description": "C\u00F3digos das modalidades em que se reduz proporcionalmente. Usado em reduzirProporcionalEm.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60,
+              "pattern": "^[A-Z0-9_]\u002B$"
+            }
+          }
+        },
+        "if": {
+          "properties": {
+            "$tipo": {
+              "const": "reduzirDe"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "modalidadeCodigo"
+          ],
+          "not": {
+            "required": [
+              "modalidadeCodigos"
+            ]
+          }
+        },
+        "else": {
+          "required": [
+            "modalidadeCodigos"
+          ],
+          "not": {
+            "required": [
+              "modalidadeCodigo"
+            ]
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoDistribuicaoDeVagasModalidade": {
+        "title": "Modalidade da oferta",
+        "description": "Uma modalidade de concorr\u00EAncia da oferta. A natureza, a composi\u00E7\u00E3o e o remanejamento dela v\u00EAm do cadastro de modalidades e n\u00E3o se declaram aqui.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "codigo"
+        ],
+        "properties": {
+          "codigo": {
+            "title": "C\u00F3digo da modalidade",
+            "description": "C\u00F3digo da modalidade no cadastro, de letras mai\u00FAsculas, d\u00EDgitos e sublinhado, de 1 a 60 caracteres.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60,
+            "pattern": "^[A-Z0-9_]\u002B$"
+          },
+          "quantidadeDeclarada": {
+            "title": "Quantidade declarada",
+            "description": "Quantidade de vagas que o edital fixa para a modalidade. Nula ou ausente quando o sistema a calcula.",
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "descricao": {
+            "title": "Descri\u00E7\u00E3o da modalidade",
+            "description": "Descri\u00E7\u00E3o da modalidade no cadastro. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 300,
+            "readOnly": true
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoDistribuicaoDeVagasVagasDaModalidade": {
+        "title": "Vagas de uma modalidade",
+        "description": "A quantidade de vagas calculada para uma modalidade.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "modalidadeCodigo": {
+            "title": "C\u00F3digo da modalidade",
+            "description": "C\u00F3digo da modalidade no cadastro.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60,
+            "pattern": "^[A-Z0-9_]\u002B$"
+          },
+          "quantidade": {
+            "title": "Quantidade",
+            "description": "Vagas da modalidade no quadro.",
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoDivulgacao": {
+        "title": "Pol\u00EDtica de divulga\u00E7\u00E3o",
+        "description": "Quais dados do candidato aparecem nas listas p\u00FAblicas de resultado. Bloco ausente significa que a pol\u00EDtica ainda n\u00E3o foi preenchida.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "camposPublicos": {
+            "title": "Campos p\u00FAblicos",
+            "description": "Dados do candidato divulgados nas listas p\u00FAblicas: numero_inscricao, nome_abreviado ou nome. N\u00E3o se repetem.",
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "numero_inscricao",
+                "nome_abreviado",
+                "nome"
+              ]
+            }
+          },
+          "justificativa": {
+            "title": "Justificativa",
+            "description": "Motivo de divulgar o nome completo, texto livre de at\u00E9 1000 caracteres.",
+            "type": "string",
+            "maxLength": 1000
+          },
+          "regraNomeAbreviado": {
+            "title": "Regra do nome abreviado",
+            "description": "Identificador da regra vigente que abrevia o nome do candidato, presente quando nome_abreviado \u00E9 divulgado. Definido pelo servidor na publica\u00E7\u00E3o. Campo s\u00F3 de leitura: a exporta\u00E7\u00E3o o traz para quem l\u00EA o arquivo, e ele \u00E9 ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 camposPublicos.",
+            "type": "string",
+            "maxLength": 100,
+            "readOnly": true
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoEliminacao": {
+        "title": "Regra de elimina\u00E7\u00E3o",
+        "description": "Uma regra de elimina\u00E7\u00E3o: a regra do cat\u00E1logo e os par\u00E2metros dela.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "regra"
+        ],
+        "properties": {
+          "regra": {
+            "title": "Regra de elimina\u00E7\u00E3o",
+            "description": "Regra de elimina\u00E7\u00E3o no cat\u00E1logo de regras.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsReferenciaDeRegra"
+          },
+          "args": {
+            "title": "Par\u00E2metros",
+            "description": "Par\u00E2metros da regra, conforme o c\u00F3digo dela.",
+            "type": "object"
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "regra": {
+                  "properties": {
+                    "codigo": {
+                      "const": "ELIM-NOTA-MINIMA-ETAPA"
+                    }
+                  },
+                  "required": [
+                    "codigo"
+                  ]
+                }
+              },
+              "required": [
+                "regra"
+              ]
+            },
+            "then": {
+              "properties": {
+                "args": {
+                  "$ref": "#/components/schemas/DocumentoDaConfiguracaoEliminacaoParametrosNotaMinimaEtapa"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "regra": {
+                  "properties": {
+                    "codigo": {
+                      "const": "ELIM-CORTE-EM-AREA"
+                    }
+                  },
+                  "required": [
+                    "codigo"
+                  ]
+                }
+              },
+              "required": [
+                "regra"
+              ]
+            },
+            "then": {
+              "properties": {
+                "args": {
+                  "$ref": "#/components/schemas/DocumentoDaConfiguracaoEliminacaoParametrosCorteEmArea"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "regra": {
+                  "properties": {
+                    "codigo": {
+                      "const": "ELIM-ZERO-EM-AREA"
+                    }
+                  },
+                  "required": [
+                    "codigo"
+                  ]
+                }
+              },
+              "required": [
+                "regra"
+              ]
+            },
+            "then": {
+              "properties": {
+                "args": {
+                  "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsSemParametros"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "regra": {
+                  "properties": {
+                    "codigo": {
+                      "const": "ELIM-FALTA-EM-DIA-DE-PROVA-ENEM"
+                    }
+                  },
+                  "required": [
+                    "codigo"
+                  ]
+                }
+              },
+              "required": [
+                "regra"
+              ]
+            },
+            "then": {
+              "properties": {
+                "args": {
+                  "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsSemParametros"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "regra": {
+                  "properties": {
+                    "codigo": {
+                      "const": "ELIM-AUSENCIA-NA-ETAPA"
+                    }
+                  },
+                  "required": [
+                    "codigo"
+                  ]
+                }
+              },
+              "required": [
+                "regra"
+              ]
+            },
+            "then": {
+              "properties": {
+                "args": {
+                  "$ref": "#/components/schemas/DocumentoDaConfiguracaoEliminacaoParametrosAusenciaNaEtapa"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "DocumentoDaConfiguracaoEliminacaoParametrosAusenciaNaEtapa": {
+        "title": "Par\u00E2metros da regra",
+        "description": "Elimina o candidato ausente numa etapa.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "etapaChave": {
+            "title": "Etapa citada",
+            "description": "Chave local da etapa que a regra cita.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
+          }
+        },
+        "required": [
+          "etapaChave"
+        ]
+      },
+      "DocumentoDaConfiguracaoEliminacaoParametrosCorteEmArea": {
+        "title": "Par\u00E2metros da regra",
+        "description": "Elimina o candidato com nota abaixo do corte numa \u00E1rea do Enem.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "areaCodigo": {
+            "title": "\u00C1rea",
+            "description": "C\u00F3digo da \u00E1rea do Enem: letras mai\u00FAsculas, d\u00EDgitos e sublinhado, at\u00E9 30 caracteres.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 30,
+            "pattern": "^[A-Z0-9_]\u002B$"
+          },
+          "minimo": {
+            "title": "M\u00EDnimo",
+            "description": "Nota abaixo da qual o candidato \u00E9 eliminado na \u00E1rea.",
+            "type": "number",
+            "multipleOf": 0.0001,
+            "minimum": 0
+          }
+        },
+        "required": [
+          "areaCodigo",
+          "minimo"
+        ]
+      },
+      "DocumentoDaConfiguracaoEliminacaoParametrosNotaMinimaEtapa": {
+        "title": "Par\u00E2metros da regra",
+        "description": "Elimina o candidato com nota abaixo do m\u00EDnimo numa etapa.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "etapaChave": {
+            "title": "Etapa citada",
+            "description": "Chave local da etapa que a regra cita.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
+          },
+          "notaMinima": {
+            "title": "Nota m\u00EDnima",
+            "description": "Nota abaixo da qual o candidato \u00E9 eliminado.",
+            "type": "number",
+            "multipleOf": 0.0001,
+            "minimum": 0
+          }
+        },
+        "required": [
+          "etapaChave",
+          "notaMinima"
+        ]
+      },
+      "DocumentoDaConfiguracaoEtapas": {
+        "title": "Etapa de avalia\u00E7\u00E3o",
+        "description": "Uma etapa de avalia\u00E7\u00E3o do processo. S\u00F3 a chave local \u00E9 obrigat\u00F3ria: o resto pode faltar num rascunho.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "chave"
+        ],
+        "properties": {
+          "chave": {
+            "title": "Chave da etapa",
+            "description": "Chave local da etapa, \u00FAnica no documento. Desempate, elimina\u00E7\u00E3o e exig\u00EAncias a usam para citar esta etapa. \u00C9 obrigat\u00F3ria: \u00E9 escolhida por quem cria a etapa, o sistema n\u00E3o a atribui, e ela n\u00E3o muda ao renomear nem ao reordenar.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
+          },
+          "nome": {
+            "title": "Nome da etapa",
+            "description": "Nome da etapa como aparece para as pessoas.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "carater": {
+            "title": "Car\u00E1ter da etapa",
+            "description": "Se a etapa classifica (classificatoria), elimina (eliminatoria) ou faz as duas coisas (ambas).",
+            "enum": [
+              "classificatoria",
+              "eliminatoria",
+              "ambas"
+            ]
+          },
+          "tipoEtapaCodigo": {
+            "title": "Tipo de etapa",
+            "description": "C\u00F3digo do tipo de etapa no cat\u00E1logo de tipos de etapa.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsCodigoDeCatalogo"
+          },
+          "peso": {
+            "title": "Peso",
+            "description": "Peso da etapa na nota final, com at\u00E9 quatro casas decimais.",
+            "type": "number",
+            "multipleOf": 0.0001
+          },
+          "notaMinima": {
+            "title": "Nota m\u00EDnima",
+            "description": "Nota m\u00EDnima para n\u00E3o ser eliminado, com at\u00E9 quatro casas decimais.",
+            "type": "number",
+            "multipleOf": 0.0001
+          },
+          "notaMaxima": {
+            "title": "Nota m\u00E1xima",
+            "description": "Nota m\u00E1xima da etapa, com at\u00E9 quatro casas decimais.",
+            "type": "number",
+            "multipleOf": 0.0001
+          },
+          "passoDoLancamento": {
+            "title": "Passo do lan\u00E7amento",
+            "description": "Menor varia\u00E7\u00E3o aceita no lan\u00E7amento da nota, com at\u00E9 quatro casas decimais.",
+            "type": "number",
+            "multipleOf": 0.0001
+          },
+          "formaDeAvaliacao": {
+            "title": "Forma de avalia\u00E7\u00E3o",
+            "description": "OBJETIVA para corre\u00E7\u00E3o autom\u00E1tica ou HUMANA para corre\u00E7\u00E3o por avaliadores.",
+            "enum": [
+              "OBJETIVA",
+              "HUMANA"
+            ]
+          },
+          "regraConsolidacao": {
+            "title": "Regra de consolida\u00E7\u00E3o",
+            "description": "Regra do cat\u00E1logo que consolida as corre\u00E7\u00F5es na avalia\u00E7\u00E3o humana.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsReferenciaDeRegra"
+          },
+          "itensDeAvaliacao": {
+            "title": "Itens de avalia\u00E7\u00E3o",
+            "description": "Itens que comp\u00F5em a nota da etapa. Cada item tem uma chave local, que o preserva quando o r\u00F3tulo muda.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoEtapasItemDeAvaliacao"
+            }
+          },
+          "escalaDeAtendimento": {
+            "title": "Escala de atendimento",
+            "description": "N\u00EDveis de atendimento que o avaliador usa para dar a fra\u00E7\u00E3o da pontua\u00E7\u00E3o de cada item.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoEtapasNivelDeAtendimento"
+            }
+          },
+          "ordem": {
+            "title": "Ordem",
+            "description": "Posi\u00E7\u00E3o de apresenta\u00E7\u00E3o da etapa, a partir de 1.",
+            "type": "integer",
+            "minimum": 1
+          },
+          "faseChave": {
+            "title": "Fase da etapa",
+            "description": "Chave local da fase do cronograma que cont\u00E9m a etapa.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
+          },
+          "inicio": {
+            "title": "In\u00EDcio da etapa",
+            "description": "Instante em que a etapa come\u00E7a, em UTC. Ausente quando ela segue a janela da fase.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsInstante"
+          },
+          "fim": {
+            "title": "Fim da etapa",
+            "description": "Instante em que a etapa termina, em UTC. Ausente quando ela segue a janela da fase.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsInstante"
+          },
+          "emiteParecerIndividual": {
+            "title": "Emite parecer individual",
+            "description": "Se a etapa emite parecer individual ao candidato, quando ela publica resultado.",
+            "type": "boolean"
+          },
+          "produtos": {
+            "title": "Atos que a etapa publica",
+            "description": "Tipos de ato publicados pela etapa. O par tipo de ato e papel n\u00E3o se repete na etapa.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsProduto"
+            }
+          },
+          "bancas": {
+            "title": "Bancas da etapa",
+            "description": "Bancas que a etapa exige. Cada uma tem uma chave local.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoBancas"
+            }
+          },
+          "recursos": {
+            "title": "Recursos da etapa",
+            "description": "Recursos que a etapa admite.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoEtapasRecursoDaEtapa"
+            }
+          },
+          "tiposDeDecisao": {
+            "title": "Tipos de decis\u00E3o da etapa",
+            "description": "Tipos de decis\u00E3o que a etapa toma e para os quais o processo escolhe motivos.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsTiposDeDecisao"
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoEtapasItemDeAvaliacao": {
+        "title": "Item de avalia\u00E7\u00E3o",
+        "description": "Um item que comp\u00F5e a nota de uma etapa.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "chave"
+        ],
+        "properties": {
+          "chave": {
+            "title": "Chave do item",
+            "description": "Chave local do item, \u00FAnica na etapa. \u00C9 obrigat\u00F3ria: \u00E9 escolhida por quem cria o item, o sistema n\u00E3o a atribui, e ela n\u00E3o muda ao renomear nem ao reordenar.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
+          },
+          "rotulo": {
+            "title": "R\u00F3tulo",
+            "description": "Nome do item como aparece para o avaliador.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "pontuacaoMaxima": {
+            "title": "Pontua\u00E7\u00E3o m\u00E1xima",
+            "description": "Pontua\u00E7\u00E3o m\u00E1xima do item, com at\u00E9 quatro casas decimais.",
+            "type": "number",
+            "multipleOf": 0.0001
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoEtapasNivelDeAtendimento": {
+        "title": "N\u00EDvel de atendimento",
+        "description": "Um n\u00EDvel da escala de atendimento: o r\u00F3tulo e a fra\u00E7\u00E3o da pontua\u00E7\u00E3o do item que ele vale.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "chave"
+        ],
+        "properties": {
+          "chave": {
+            "title": "Chave do n\u00EDvel",
+            "description": "Chave local do n\u00EDvel, \u00FAnica na escala. \u00C9 a identidade do n\u00EDvel entre vers\u00F5es e nas refer\u00EAncias internas: o r\u00F3tulo \u00E9 texto edit\u00E1vel, e corrigir a grafia n\u00E3o pode virar retirada e inclus\u00E3o. \u00C9 obrigat\u00F3ria: \u00E9 escolhida por quem cria o n\u00EDvel, o sistema n\u00E3o a atribui, e ela n\u00E3o muda ao renomear nem ao reordenar.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
+          },
+          "rotulo": {
+            "title": "R\u00F3tulo do n\u00EDvel",
+            "description": "Nome do n\u00EDvel, \u00FAnico na escala.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "fracao": {
+            "title": "Fra\u00E7\u00E3o",
+            "description": "Fra\u00E7\u00E3o da pontua\u00E7\u00E3o do item que o n\u00EDvel vale, de 0 a 1, com at\u00E9 quatro casas decimais.",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "multipleOf": 0.0001
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoEtapasRecursoDaEtapa": {
+        "title": "Recurso da etapa",
+        "description": "Recurso que a etapa admite: a \u00E2ncora do prazo e as mesmas propriedades de prazo e efeito suspensivo do recurso da fase. Com a \u00E2ncora atoPublicado, o ato \u00E2ncora \u00E9 um ato preliminar da pr\u00F3pria etapa.",
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsPropriedadesDoRecurso"
+          }
+        ],
+        "properties": {
+          "ancora": {
+            "title": "\u00C2ncora do prazo",
+            "description": "De onde o prazo corre: do ato publicado (atoPublicado) ou da ci\u00EAncia individual do candidato (cienciaIndividual).",
+            "enum": [
+              "atoPublicado",
+              "cienciaIndividual"
+            ]
+          }
+        },
+        "unevaluatedProperties": false
+      },
+      "DocumentoDaConfiguracaoExigencias": {
+        "title": "Documentos exigidos",
+        "description": "As exig\u00EAncias de documentos do processo e a \u00E1rvore que combina os documentos que satisfazem a exig\u00EAncia do candidato.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "exigencias": {
+            "title": "Exig\u00EAncias",
+            "description": "Documentos que o processo exige.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoExigenciasExigencia"
+            }
+          },
+          "arvoreDeSatisfacao": {
+            "title": "\u00C1rvore de satisfa\u00E7\u00E3o",
+            "description": "Ra\u00EDzes da \u00E1rvore de satisfa\u00E7\u00E3o das exig\u00EAncias.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoArvoreDeSatisfacao"
+            }
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoExigenciasExigencia": {
+        "title": "Exig\u00EAncia de documento",
+        "description": "Um documento que o processo exige, onde \u00E9 exigido, se \u00E9 obrigat\u00F3rio, em que condi\u00E7\u00E3o e como \u00E9 entregue. O tipo de documento \u00E9 citado pelo c\u00F3digo do cat\u00E1logo.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "chave"
+        ],
+        "properties": {
+          "chave": {
+            "title": "Chave da exig\u00EAncia",
+            "description": "Chave local da exig\u00EAncia, \u00FAnica no documento. A \u00E1rvore de satisfa\u00E7\u00E3o a cita por ela. \u00C9 obrigat\u00F3ria: \u00E9 escolhida por quem cria a exig\u00EAncia, o sistema n\u00E3o a atribui, e ela n\u00E3o muda ao renomear nem ao reordenar.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
+          },
+          "tipoDocumentoCodigo": {
+            "title": "Tipo de documento",
+            "description": "C\u00F3digo do tipo de documento no cat\u00E1logo, de 1 a 60 caracteres.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsCodigoDeCatalogo"
+              }
+            ],
+            "maxLength": 60
+          },
+          "tipoDocumentoNome": {
+            "title": "Nome do tipo de documento",
+            "description": "Nome do tipo de documento no cat\u00E1logo, copiado na exporta\u00E7\u00E3o. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o, porque vem do cat\u00E1logo pelo c\u00F3digo.",
+            "type": "string",
+            "maxLength": 200,
+            "readOnly": true
+          },
+          "tipoDocumentoCategoria": {
+            "title": "Categoria do tipo de documento",
+            "description": "Categoria do tipo de documento no cat\u00E1logo. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o, porque vem do cat\u00E1logo pelo c\u00F3digo.",
+            "type": "string",
+            "maxLength": 60,
+            "readOnly": true
+          },
+          "classificacaoProtecao": {
+            "title": "Classifica\u00E7\u00E3o de prote\u00E7\u00E3o",
+            "description": "Classifica\u00E7\u00E3o do tipo de documento quanto \u00E0 prote\u00E7\u00E3o de dados. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o, porque vem do cat\u00E1logo pelo c\u00F3digo.",
+            "enum": [
+              "PUBLICO",
+              "INTERNO",
+              "PESSOAL",
+              "IDENTIFICADOR",
+              "SENSIVEL"
+            ],
+            "readOnly": true
+          },
+          "finalidadeTratamento": {
+            "title": "Finalidade do tratamento",
+            "description": "Finalidade do tratamento de dados do tipo de documento. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o, porque vem do cat\u00E1logo pelo c\u00F3digo.",
+            "type": "string",
+            "maxLength": 500,
+            "readOnly": true
+          },
+          "hipoteseLegal": {
+            "title": "Hip\u00F3tese legal",
+            "description": "Hip\u00F3tese legal do tratamento de dados do tipo de documento. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o, porque vem do cat\u00E1logo pelo c\u00F3digo.",
+            "type": "string",
+            "maxLength": 40,
+            "readOnly": true
+          },
+          "fatosComprovados": {
+            "title": "Fatos comprovados",
+            "description": "C\u00F3digos dos fatos do candidato que o documento comprova. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o, porque vem do cat\u00E1logo pelo c\u00F3digo.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60
+            },
+            "readOnly": true
+          },
+          "faseChave": {
+            "title": "Fase em que \u00E9 exigido",
+            "description": "Chave local da fase do cronograma em que o documento \u00E9 exigido.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
+          },
+          "etapaChave": {
+            "title": "Etapa em que \u00E9 exigido",
+            "description": "Chave local da etapa em que o documento \u00E9 exigido, quando a exig\u00EAncia \u00E9 de uma etapa.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
+          },
+          "finalidade": {
+            "title": "Finalidade do formul\u00E1rio",
+            "description": "Finalidade do formul\u00E1rio a que a exig\u00EAncia pertence, quando houver.",
+            "enum": [
+              "INSCRICAO",
+              "ISENCAO_TAXA",
+              "HABILITACAO"
+            ]
+          },
+          "aplicabilidade": {
+            "title": "Aplicabilidade",
+            "description": "GERAL vale para todos os candidatos; CONDICIONAL vale s\u00F3 quando a condi\u00E7\u00E3o de gatilho \u00E9 verdadeira.",
+            "enum": [
+              "Geral",
+              "Condicional"
+            ]
+          },
+          "obrigatorio": {
+            "title": "Obrigat\u00F3rio",
+            "description": "Se a entrega do documento \u00E9 obrigat\u00F3ria.",
+            "type": "boolean"
+          },
+          "consequenciaIndeferimento": {
+            "title": "Consequ\u00EAncia do indeferimento",
+            "description": "O que acontece quando o documento \u00E9 indeferido.",
+            "enum": [
+              "ELIMINA",
+              "RECLASSIFICA_AC",
+              "REMOVE_VANTAGEM",
+              "PENDENCIA_REENVIO"
+            ]
+          },
+          "condicaoGatilho": {
+            "title": "Condi\u00E7\u00E3o de gatilho",
+            "description": "Predicado que torna a exig\u00EAncia aplic\u00E1vel, quando ela \u00E9 condicional.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoPredicado"
+          },
+          "basesLegais": {
+            "title": "Bases legais",
+            "description": "Embasamento normativo da exig\u00EAncia.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoBaseLegal"
+            }
+          },
+          "idadeMaximaEmissao": {
+            "title": "Idade m\u00E1xima de emiss\u00E3o",
+            "description": "Quanto tempo o documento pode ter desde a emiss\u00E3o, contado a partir da refer\u00EAncia.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoExigenciasIdadeMaximaEmissao"
+          },
+          "formatosPermitidos": {
+            "title": "Formatos permitidos",
+            "description": "Os formatos de arquivo aceitos para a entrega do documento: qualquer um ou uma lista com o tamanho m\u00E1ximo de cada formato.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoExigenciasFormatosPermitidos"
+          },
+          "tamanhoMaximoBytes": {
+            "title": "Tamanho m\u00E1ximo",
+            "description": "Tamanho m\u00E1ximo do arquivo, em bytes, para os formatos sem limite pr\u00F3prio.",
+            "type": "integer",
+            "minimum": 1
+          },
+          "modelo": {
+            "title": "Modelo do documento",
+            "description": "Modelo de documento que a exig\u00EAncia oferece ao candidato, descrito na exporta\u00E7\u00E3o. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o, porque o modelo \u00E9 um arquivo enviado em separado.",
+            "type": "object",
+            "additionalProperties": false,
+            "readOnly": true,
+            "properties": {
+              "nomeArquivo": {
+                "title": "Nome do arquivo",
+                "description": "Nome do arquivo do modelo.",
+                "type": "string",
+                "maxLength": 120
+              },
+              "formato": {
+                "title": "Formato",
+                "description": "Formato do arquivo do modelo.",
+                "type": "string",
+                "maxLength": 30
+              },
+              "hashSha256": {
+                "title": "Resumo do conte\u00FAdo",
+                "description": "Resumo SHA-256 do conte\u00FAdo do modelo, em hexadecimal.",
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoExigenciasFormatosPermitidos": {
+        "title": "Formatos permitidos",
+        "description": "Os formatos de arquivo aceitos para a entrega do documento: qualquer um ou uma lista com o tamanho m\u00E1ximo de cada formato.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "qualquer": {
+            "title": "Qualquer formato",
+            "description": "Verdadeiro quando o documento aceita qualquer formato.",
+            "type": "boolean"
+          },
+          "lista": {
+            "title": "Lista de formatos",
+            "description": "Formatos aceitos, quando n\u00E3o \u00E9 qualquer um.",
+            "type": "array",
+            "items": {
+              "title": "Formato aceito",
+              "description": "Um formato e o tamanho m\u00E1ximo aceito para ele.",
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "formato": {
+                  "title": "Formato",
+                  "description": "Formato do arquivo.",
+                  "enum": [
+                    "PDF",
+                    "JPEG",
+                    "PNG"
+                  ]
+                },
+                "tamanhoMaximoBytesMax": {
+                  "title": "Tamanho m\u00E1ximo",
+                  "description": "Tamanho m\u00E1ximo do arquivo nesse formato, em bytes.",
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoExigenciasIdadeMaximaEmissao": {
+        "title": "Idade m\u00E1xima de emiss\u00E3o",
+        "description": "Quanto tempo o documento pode ter desde a emiss\u00E3o, contado a partir da refer\u00EAncia.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "valor": {
+            "title": "Valor",
+            "description": "Quantidade de unidades, maior que zero.",
+            "type": "integer",
+            "minimum": 1
+          },
+          "unidade": {
+            "title": "Unidade",
+            "description": "Unidade do valor.",
+            "enum": [
+              "DIAS",
+              "MESES",
+              "ANOS"
+            ]
+          },
+          "referenciaTipo": {
+            "title": "Refer\u00EAncia",
+            "description": "Instante de onde a idade \u00E9 contada.",
+            "enum": [
+              "FIM_INSCRICAO",
+              "INICIO_FASE",
+              "FIM_FASE",
+              "DATA_ESPECIFICA",
+              "DATA_SUBMISSAO"
+            ]
+          },
+          "data": {
+            "title": "Data",
+            "description": "Data da refer\u00EAncia, quando ela \u00E9 uma data espec\u00EDfica.",
+            "type": "string",
+            "format": "date"
+          },
+          "referenciaFaseChave": {
+            "title": "Fase da refer\u00EAncia",
+            "description": "Chave local da fase de onde a idade \u00E9 contada, quando a refer\u00EAncia \u00E9 o in\u00EDcio ou o fim de uma fase.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoFormulario": {
+        "title": "Formul\u00E1rio do processo",
+        "description": "O formul\u00E1rio de uma finalidade: as etapas, os itens e grupos coletados e os termos de consentimento exigidos. Cada finalidade tem no m\u00E1ximo um formul\u00E1rio no processo. Um formul\u00E1rio comporta no m\u00E1ximo 200 itens, contando itens, grupos e subitens.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "finalidade"
+        ],
+        "properties": {
+          "finalidade": {
+            "title": "Finalidade",
+            "description": "Para que serve o formul\u00E1rio. \u00C9 a chave dele no documento.",
+            "enum": [
+              "INSCRICAO",
+              "ISENCAO_TAXA",
+              "HABILITACAO"
+            ]
+          },
+          "faseChave": {
+            "title": "Fase do formul\u00E1rio",
+            "description": "Chave local da fase do cronograma a que o formul\u00E1rio pertence.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
+          },
+          "titulo": {
+            "title": "T\u00EDtulo",
+            "description": "T\u00EDtulo do formul\u00E1rio, de at\u00E9 300 caracteres.",
+            "type": "string",
+            "maxLength": 300
+          },
+          "modeloOrigemCodigo": {
+            "title": "Modelo de origem",
+            "description": "C\u00F3digo do modelo de formul\u00E1rio aplicado ao processo, de at\u00E9 60 caracteres. Registra s\u00F3 a proveni\u00EAncia. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60,
+            "readOnly": true
+          },
+          "etapas": {
+            "title": "Etapas",
+            "description": "Se\u00E7\u00F5es e blocos do formul\u00E1rio, na ordem de apresenta\u00E7\u00E3o.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoFormularioEtapa"
+            }
+          },
+          "itens": {
+            "title": "Itens",
+            "description": "Fatos coletados pelo formul\u00E1rio.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoItemDoFormulario"
+            }
+          },
+          "grupos": {
+            "title": "Grupos",
+            "description": "Grupos repet\u00EDveis de campos, como a composi\u00E7\u00E3o familiar.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoFormularioGrupo"
+            }
+          },
+          "termos": {
+            "title": "Termos de consentimento",
+            "description": "Termos que o candidato deve aceitar, cada um citando o termo e o n\u00FAmero da vers\u00E3o no cat\u00E1logo.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoFormularioTermoExigido"
+            }
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoFormularioEtapa": {
+        "title": "Etapa do formul\u00E1rio",
+        "description": "Uma se\u00E7\u00E3o de campos ou um bloco de sistema.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "codigo",
+          "tipo"
+        ],
+        "properties": {
+          "codigo": {
+            "title": "C\u00F3digo",
+            "description": "C\u00F3digo da etapa, \u00FAnico no formul\u00E1rio. Os itens e grupos a citam em etapaCodigo.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoItemDoFormularioCodigoLocal"
+          },
+          "ordem": {
+            "title": "Ordem",
+            "description": "Posi\u00E7\u00E3o de apresenta\u00E7\u00E3o, a partir de 0.",
+            "type": "integer",
+            "minimum": 0
+          },
+          "tipo": {
+            "title": "Tipo",
+            "description": "SECAO re\u00FAne campos; BLOCO \u00E9 um bloco de sistema.",
+            "enum": [
+              "SECAO",
+              "BLOCO"
+            ]
+          },
+          "bloco": {
+            "title": "Bloco de sistema",
+            "description": "Qual bloco de sistema a etapa \u00E9. S\u00F3 faz sentido quando o tipo \u00E9 BLOCO; a coer\u00EAncia \u00E9 regra do dom\u00EDnio.",
+            "enum": [
+              "COMPROVACAO_DOCUMENTAL",
+              "MODALIDADES_CALCULADAS",
+              "REVISAO_E_ACEITE"
+            ]
+          },
+          "titulo": {
+            "title": "T\u00EDtulo",
+            "description": "T\u00EDtulo da etapa, de at\u00E9 300 caracteres.",
+            "type": "string",
+            "maxLength": 300
+          },
+          "descricao": {
+            "title": "Descri\u00E7\u00E3o",
+            "description": "Texto explicativo da etapa, de at\u00E9 2000 caracteres.",
+            "type": "string",
+            "maxLength": 2000
+          },
+          "aviso": {
+            "title": "Aviso",
+            "description": "Aviso destacado da etapa, de at\u00E9 2000 caracteres.",
+            "type": "string",
+            "maxLength": 2000
+          },
+          "exibicao": {
+            "title": "Exibi\u00E7\u00E3o",
+            "description": "Condi\u00E7\u00E3o para exibir a etapa. Nula ou ausente: sempre exibida.",
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoPredicado"
+              }
+            ]
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoFormularioGrupo": {
+        "title": "Grupo repet\u00EDvel",
+        "description": "Conjunto de campos que o candidato repete, uma vez por ocorr\u00EAncia.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "codigo",
+          "subitens"
+        ],
+        "properties": {
+          "codigo": {
+            "title": "C\u00F3digo",
+            "description": "C\u00F3digo do grupo, \u00FAnico no processo e distinto de qualquer c\u00F3digo de fato.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoItemDoFormularioCodigoLocal"
+          },
+          "etapaCodigo": {
+            "title": "Etapa",
+            "description": "C\u00F3digo da etapa do tipo SECAO, do mesmo formul\u00E1rio, em que o grupo aparece.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoItemDoFormularioCodigoLocal"
+          },
+          "ordem": {
+            "title": "Ordem",
+            "description": "Posi\u00E7\u00E3o de apresenta\u00E7\u00E3o, a partir de 0, \u00FAnica no formul\u00E1rio entre itens e grupos.",
+            "type": "integer",
+            "minimum": 0
+          },
+          "rotulo": {
+            "title": "R\u00F3tulo",
+            "description": "Texto do grupo exibido ao candidato, de at\u00E9 300 caracteres.",
+            "type": "string",
+            "maxLength": 300
+          },
+          "minimo": {
+            "title": "M\u00EDnimo de ocorr\u00EAncias",
+            "description": "Menor n\u00FAmero de ocorr\u00EAncias aceito.",
+            "type": "integer",
+            "minimum": 0
+          },
+          "maximo": {
+            "title": "M\u00E1ximo de ocorr\u00EAncias",
+            "description": "Maior n\u00FAmero de ocorr\u00EAncias aceito. Nulo ou ausente: sem teto.",
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "incluiCandidato": {
+            "title": "Inclui o candidato",
+            "description": "Se o pr\u00F3prio candidato conta como uma das ocorr\u00EAncias.",
+            "type": "boolean"
+          },
+          "exibicao": {
+            "title": "Exibi\u00E7\u00E3o",
+            "description": "Condi\u00E7\u00E3o para exibir o grupo. Nula ou ausente: sempre exibido.",
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoPredicado"
+              }
+            ]
+          },
+          "obrigatoriedade": {
+            "title": "Obrigatoriedade",
+            "description": "Se o preenchimento do grupo \u00E9 obrigat\u00F3rio sempre, nunca ou s\u00F3 sob uma condi\u00E7\u00E3o.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoObrigatoriedade"
+          },
+          "subitens": {
+            "title": "Subitens",
+            "description": "Campos de cada ocorr\u00EAncia, at\u00E9 30. O subitem n\u00E3o tem etapa nem impedimento: ficam ausentes ou nulos.",
+            "type": "array",
+            "maxItems": 30,
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoItemDoFormulario",
+              "properties": {
+                "etapaCodigo": {
+                  "title": "Etapa do subitem",
+                  "description": "Sempre ausente ou nula: o subitem aparece na etapa do grupo.",
+                  "type": "null"
+                },
+                "impedimento": {
+                  "title": "Impedimento do subitem",
+                  "description": "Sempre ausente ou nulo: o subitem de grupo n\u00E3o tem impedimento.",
+                  "type": "null"
+                }
+              }
+            }
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoFormularioTermoExigido": {
+        "title": "Termo exigido pelo formul\u00E1rio",
+        "description": "Um termo de consentimento que o candidato aceita, apontando uma vers\u00E3o publicada do cat\u00E1logo. Nome, texto, base legal e forma de aceite v\u00EAm da vers\u00E3o e n\u00E3o se declaram aqui.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "codigo",
+          "termoCodigo",
+          "versaoNumero"
+        ],
+        "properties": {
+          "codigo": {
+            "title": "C\u00F3digo",
+            "description": "C\u00F3digo do termo neste formul\u00E1rio, de at\u00E9 60 caracteres, \u00FAnico no formul\u00E1rio.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoItemDoFormularioCodigoLocal"
+          },
+          "ordem": {
+            "title": "Ordem",
+            "description": "Posi\u00E7\u00E3o de apresenta\u00E7\u00E3o, a partir de 0.",
+            "type": "integer",
+            "minimum": 0
+          },
+          "termoCodigo": {
+            "title": "Termo",
+            "description": "C\u00F3digo est\u00E1vel do termo no cat\u00E1logo de termos de consentimento, de at\u00E9 100 caracteres.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "pattern": "^[A-Z][A-Z0-9_]\u002B$"
+          },
+          "versaoNumero": {
+            "title": "Vers\u00E3o do termo",
+            "description": "N\u00FAmero da vers\u00E3o publicada do termo, a partir de 1.",
+            "type": "integer",
+            "minimum": 1
+          },
+          "exibicao": {
+            "title": "Exibi\u00E7\u00E3o",
+            "description": "Condi\u00E7\u00E3o para exibir o termo. Nula ou ausente: sempre exibido.",
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoPredicado"
+              }
+            ]
+          },
+          "obrigatoriedade": {
+            "title": "Obrigatoriedade",
+            "description": "Se o aceite \u00E9 obrigat\u00F3rio sempre, nunca ou s\u00F3 sob uma condi\u00E7\u00E3o.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoObrigatoriedade"
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoHomologacao": {
+        "title": "Regra de homologa\u00E7\u00E3o das inscri\u00E7\u00F5es",
+        "description": "Como a fase homologa as inscri\u00E7\u00F5es: o resultado que publica a lista e as alternativas de condi\u00E7\u00F5es. A inscri\u00E7\u00E3o \u00E9 homologada se cumpre todas as condi\u00E7\u00F5es de ao menos uma alternativa; sem alternativa, toda inscri\u00E7\u00E3o enviada \u00E9 homologada.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "resultadoAtoCodigo": {
+            "title": "Resultado que publica a lista",
+            "description": "C\u00F3digo do tipo de ato, resultado da pr\u00F3pria fase ou da fase concluinte, que publica a lista de homologadas.",
+            "type": "string",
+            "pattern": "^[A-Z]\u002B(_[A-Z]\u002B)*$",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "alternativas": {
+            "title": "Alternativas",
+            "description": "Alternativas de condi\u00E7\u00F5es ligadas por OU; dentro de cada uma, as condi\u00E7\u00F5es se ligam por E.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoHomologacaoAlternativa"
+            }
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoHomologacaoAlternativa": {
+        "title": "Alternativa de condi\u00E7\u00F5es",
+        "description": "Conjunto de condi\u00E7\u00F5es que, cumpridas todas, homologa a inscri\u00E7\u00E3o.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "condicoes": {
+            "title": "Condi\u00E7\u00F5es",
+            "description": "Condi\u00E7\u00F5es da alternativa, ao menos uma.",
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoHomologacaoCondicao"
+            }
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoHomologacaoCondicao": {
+        "title": "Condi\u00E7\u00E3o de homologa\u00E7\u00E3o",
+        "description": "Uma condi\u00E7\u00E3o que a inscri\u00E7\u00E3o cumpre para ser homologada.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "tipo": {
+            "title": "Tipo da condi\u00E7\u00E3o",
+            "description": "O que a condi\u00E7\u00E3o apura. Por ora, o resultado do candidato no retorno do INEP.",
+            "enum": [
+              "RESULTADO_NO_RETORNO_DO_INEP"
+            ]
+          },
+          "edicaoDoExame": {
+            "title": "Edi\u00E7\u00E3o do exame",
+            "description": "Ano da edi\u00E7\u00E3o do exame, de 1998 a 2100.",
+            "type": "integer",
+            "minimum": 1998,
+            "maximum": 2100
+          },
+          "motivoDesfavoravelCodigo": {
+            "title": "Motivo desfavor\u00E1vel",
+            "description": "C\u00F3digo do motivo desfavor\u00E1vel registrado quando a condi\u00E7\u00E3o n\u00E3o \u00E9 cumprida.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoMotivoCodigoDoMotivo"
+          },
+          "enquadramento": {
+            "title": "Enquadramento",
+            "description": "Predicado que restringe a quem a condi\u00E7\u00E3o vale; ausente ou nulo, vale para todos.",
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoPredicado"
+              }
+            ]
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoIdentificacao": {
+        "title": "Identifica\u00E7\u00E3o do processo",
+        "description": "Quem \u00E9 o processo seletivo: nome, tipo, unidade administradora, origem dos candidatos, localidade e identificador leg\u00EDvel, mais as conven\u00E7\u00F5es de contagem de prazo e a refer\u00EAncia temporal dos fatos.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "nome": {
+            "title": "Nome do processo",
+            "description": "Nome do processo seletivo como aparece para as pessoas.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "tipoProcessoCodigo": {
+            "title": "Tipo de processo",
+            "description": "C\u00F3digo do tipo de processo no cat\u00E1logo de tipos de processo.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsCodigoDeCatalogo"
+          },
+          "tipoProcessoNome": {
+            "title": "Nome do tipo de processo",
+            "description": "Nome do tipo de processo guardado no processo. Campo s\u00F3 de leitura: a exporta\u00E7\u00E3o o traz para quem l\u00EA o arquivo, e ele \u00E9 ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 tipoProcessoCodigo.",
+            "type": "string",
+            "maxLength": 200,
+            "readOnly": true
+          },
+          "unidadeAdministradoraCodigo": {
+            "title": "Unidade administradora",
+            "description": "C\u00F3digo est\u00E1vel da unidade que administra o processo.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsCodigoDeCatalogo"
+          },
+          "unidadeAdministradoraNome": {
+            "title": "Nome da unidade administradora",
+            "description": "Nome da unidade administradora guardado no processo. Campo s\u00F3 de leitura: a exporta\u00E7\u00E3o o traz para quem l\u00EA o arquivo, e ele \u00E9 ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 unidadeAdministradoraCodigo.",
+            "type": "string",
+            "maxLength": 250,
+            "readOnly": true
+          },
+          "unidadeAdministradoraSigla": {
+            "title": "Sigla da unidade administradora",
+            "description": "Sigla da unidade administradora guardada no processo. Campo s\u00F3 de leitura: a exporta\u00E7\u00E3o o traz para quem l\u00EA o arquivo, e ele \u00E9 ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 unidadeAdministradoraCodigo.",
+            "type": "string",
+            "maxLength": 50,
+            "readOnly": true
+          },
+          "origemCandidatos": {
+            "title": "Origem dos candidatos",
+            "description": "Como os candidatos chegam ao processo: inscrevendo-se pelo sistema (inscricaoPropria) ou por importa\u00E7\u00E3o de uma lista externa (importacaoExterna).",
+            "enum": [
+              "inscricaoPropria",
+              "importacaoExterna"
+            ]
+          },
+          "localidadeCodigoIbge": {
+            "title": "Localidade do processo",
+            "description": "C\u00F3digo IBGE do munic\u00EDpio (7 d\u00EDgitos) que rege a contagem de prazos. O nome e a UF v\u00EAm do cadastro de localidades.",
+            "type": "string",
+            "pattern": "^[0-9]{7}$"
+          },
+          "localidadeNome": {
+            "title": "Nome da localidade",
+            "description": "Nome do munic\u00EDpio, guardado no processo como texto de exibi\u00E7\u00E3o. Campo s\u00F3 de leitura: a exporta\u00E7\u00E3o o traz para quem l\u00EA o arquivo, e ele \u00E9 ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 localidadeCodigoIbge.",
+            "type": "string",
+            "maxLength": 150,
+            "readOnly": true
+          },
+          "localidadeUf": {
+            "title": "UF da localidade",
+            "description": "Sigla da unidade federativa do munic\u00EDpio, guardada como texto de exibi\u00E7\u00E3o. Campo s\u00F3 de leitura: a exporta\u00E7\u00E3o o traz para quem l\u00EA o arquivo, e ele \u00E9 ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 localidadeCodigoIbge.",
+            "type": "string",
+            "pattern": "^[A-Z]{2}$",
+            "readOnly": true
+          },
+          "identificadorLegivel": {
+            "title": "Identificador leg\u00EDvel",
+            "description": "Identificador do processo para endere\u00E7os e refer\u00EAncias: de 3 a 64 caracteres, min\u00FAsculas, n\u00FAmeros e h\u00EDfens, come\u00E7ando por letra.",
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]\u002B)*$",
+            "minLength": 3,
+            "maxLength": 64
+          },
+          "algoritmoContagemPrazo": {
+            "title": "Conven\u00E7\u00E3o de contagem de prazo",
+            "description": "Regra do cat\u00E1logo que define como os prazos do processo s\u00E3o contados.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsReferenciaDeRegra"
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoImportacao": {
+        "title": "Importa\u00E7\u00E3o do resultado",
+        "description": "O que o processo de resultado importado declara da importa\u00E7\u00E3o: os relat\u00F3rios que importa, cada um pelo leiaute e pela vers\u00E3o, e a primeira fase depois da importa\u00E7\u00E3o, em que o formul\u00E1rio coleta o que o arquivo n\u00E3o traz.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "relatorios": {
+            "title": "Relat\u00F3rios",
+            "description": "Relat\u00F3rios que o processo importa. Nenhum leiaute se repete.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoImportacaoRelatorio"
+            }
+          },
+          "primeiraFaseDepoisDaImportacaoChave": {
+            "title": "Primeira fase depois da importa\u00E7\u00E3o",
+            "description": "Chave local da primeira fase do cronograma depois da importa\u00E7\u00E3o.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoImportacaoRelatorio": {
+        "title": "Relat\u00F3rio importado",
+        "description": "Um relat\u00F3rio que o processo importa, pelo leiaute que ele segue.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "leiauteCodigo": {
+            "title": "Leiaute",
+            "description": "C\u00F3digo do leiaute do arquivo no cat\u00E1logo de leiautes.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsCodigoDeCatalogo"
+          },
+          "leiauteVersao": {
+            "title": "Vers\u00E3o do leiaute",
+            "description": "Vers\u00E3o do leiaute do arquivo.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 16
+          }
+        },
+        "required": [
+          "leiauteCodigo",
+          "leiauteVersao"
+        ]
+      },
+      "DocumentoDaConfiguracaoItemDoFormulario": {
+        "title": "Item do formul\u00E1rio",
+        "description": "Um fato do cat\u00E1logo coletado pelo formul\u00E1rio. O item aponta o fato pelo c\u00F3digo; tipo de renderiza\u00E7\u00E3o, formato, classifica\u00E7\u00E3o de prote\u00E7\u00E3o e demais propriedades do fato v\u00EAm do cat\u00E1logo e n\u00E3o se declaram aqui.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "fatoCodigo"
+        ],
+        "properties": {
+          "fatoCodigo": {
+            "title": "Fato",
+            "description": "C\u00F3digo do fato no cat\u00E1logo, de 1 a 60 caracteres. Cada fato \u00E9 coletado por um s\u00F3 formul\u00E1rio do processo.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60,
+            "pattern": "\\S"
+          },
+          "etapaCodigo": {
+            "title": "Etapa",
+            "description": "C\u00F3digo da etapa do tipo SECAO, do mesmo formul\u00E1rio, em que o item aparece. Nulo ou ausente em subitem de grupo.",
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DocumentoDaConfiguracaoItemDoFormularioCodigoLocal"
+              }
+            ]
+          },
+          "ordem": {
+            "title": "Ordem",
+            "description": "Posi\u00E7\u00E3o de apresenta\u00E7\u00E3o, a partir de 0. \u00DAnica no formul\u00E1rio entre itens e grupos; o subitem tem ordem pr\u00F3pria dentro do grupo.",
+            "type": "integer",
+            "minimum": 0
+          },
+          "rotulo": {
+            "title": "R\u00F3tulo",
+            "description": "Texto da pergunta exibido ao candidato, de at\u00E9 300 caracteres.",
+            "type": "string",
+            "maxLength": 300
+          },
+          "ajuda": {
+            "title": "Ajuda",
+            "description": "Texto de apoio ao preenchimento, de at\u00E9 1000 caracteres.",
+            "type": "string",
+            "maxLength": 1000
+          },
+          "pedirConfirmacao": {
+            "title": "Pedir confirma\u00E7\u00E3o",
+            "description": "Se o candidato deve digitar a resposta duas vezes.",
+            "type": "boolean"
+          },
+          "obrigatoriedade": {
+            "title": "Obrigatoriedade",
+            "description": "Se a resposta \u00E9 obrigat\u00F3ria sempre, nunca ou s\u00F3 sob uma condi\u00E7\u00E3o.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoObrigatoriedade"
+          },
+          "precondicao": {
+            "title": "Precondi\u00E7\u00E3o",
+            "description": "Condi\u00E7\u00E3o para o fato ser coletado. Nula ou ausente: \u00E9 sempre coletado. A lista vazia nunca \u00E9 verdadeira.",
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoPredicado"
+              }
+            ]
+          },
+          "restricoes": {
+            "title": "Restri\u00E7\u00F5es de valor",
+            "description": "Limites impostos \u00E0 resposta.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoRestricaoDeValor"
+            }
+          },
+          "impedimento": {
+            "title": "Impedimento",
+            "description": "Resposta que impede a inscri\u00E7\u00E3o, com a mensagem ao candidato. S\u00F3 no formul\u00E1rio de inscri\u00E7\u00E3o e fora de subitem de grupo.",
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DocumentoDaConfiguracaoItemDoFormularioImpedimento"
+              }
+            ]
+          },
+          "opcoes": {
+            "title": "Op\u00E7\u00F5es declaradas",
+            "description": "Op\u00E7\u00F5es de resposta definidas pelo processo, para fato cujos valores v\u00EAm do processo. Cada c\u00F3digo \u00E9 \u00FAnico no fato.",
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoItemDoFormularioOpcao"
+            }
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoItemDoFormularioCodigoLocal": {
+        "title": "C\u00F3digo local",
+        "description": "C\u00F3digo escolhido por quem escreve o formul\u00E1rio, de 1 a 60 caracteres, \u00FAnico no formul\u00E1rio.",
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 60,
+        "pattern": "\\S"
+      },
+      "DocumentoDaConfiguracaoItemDoFormularioImpedimento": {
+        "title": "Impedimento de inscri\u00E7\u00E3o",
+        "description": "Condi\u00E7\u00E3o sobre a resposta do pr\u00F3prio campo que impede a inscri\u00E7\u00E3o.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "quando",
+          "mensagem"
+        ],
+        "properties": {
+          "quando": {
+            "title": "Quando impede",
+            "description": "Predicado que, verdadeiro, impede a inscri\u00E7\u00E3o.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoPredicado"
+          },
+          "mensagem": {
+            "title": "Mensagem",
+            "description": "Explica\u00E7\u00E3o ao candidato, de 1 a 500 caracteres.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500,
+            "pattern": "\\S"
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoItemDoFormularioOpcao": {
+        "title": "Op\u00E7\u00E3o declarada",
+        "description": "Uma op\u00E7\u00E3o de resposta do fato.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "codigo"
+        ],
+        "properties": {
+          "codigo": {
+            "title": "C\u00F3digo",
+            "description": "C\u00F3digo da op\u00E7\u00E3o, de 1 a 60 caracteres, \u00FAnico no fato.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoItemDoFormularioCodigoLocal"
+          },
+          "rotulo": {
+            "title": "R\u00F3tulo",
+            "description": "Texto da op\u00E7\u00E3o exibido ao candidato, de at\u00E9 300 caracteres.",
+            "type": "string",
+            "maxLength": 300
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoMotivo": {
+        "title": "Motivo de decis\u00E3o do processo",
+        "description": "Um motivo do cat\u00E1logo que o processo escolheu para uma fase ou etapa. A identidade \u00E9 o lugar, a fase ou a etapa pela chave, mais o par tipo e c\u00F3digo do cat\u00E1logo; o descritivo \u00E9 c\u00F3pia do cat\u00E1logo e, depois de publicado o edital, n\u00E3o acompanha mais as mudan\u00E7as dele.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "tipoCodigo",
+          "codigo"
+        ],
+        "oneOf": [
+          {
+            "required": [
+              "faseChave"
+            ]
+          },
+          {
+            "required": [
+              "etapaChave"
+            ]
+          }
+        ],
+        "properties": {
+          "faseChave": {
+            "title": "Fase da decis\u00E3o",
+            "description": "Chave da fase do cronograma em que o motivo vale. Exatamente um entre a fase e a etapa.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
+          },
+          "etapaChave": {
+            "title": "Etapa da decis\u00E3o",
+            "description": "Chave da etapa em que o motivo vale. Exatamente um entre a fase e a etapa.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
+          },
+          "tipoCodigo": {
+            "title": "Tipo de decis\u00E3o",
+            "description": "Tipo de decis\u00E3o a que o motivo pertence.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsTipoDeDecisao"
+          },
+          "codigo": {
+            "title": "C\u00F3digo do motivo",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoMotivoCodigoDoMotivo"
+          },
+          "descricao": {
+            "title": "Descri\u00E7\u00E3o do motivo",
+            "description": "Descri\u00E7\u00E3o do motivo no cat\u00E1logo, de at\u00E9 500 caracteres. Campo s\u00F3 de leitura: a exporta\u00E7\u00E3o o traz para quem l\u00EA o arquivo, e ele \u00E9 ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "maxLength": 500,
+            "readOnly": true
+          },
+          "subclassificacao": {
+            "title": "Subclassifica\u00E7\u00E3o",
+            "description": "Subclassifica\u00E7\u00E3o do motivo no cat\u00E1logo, de at\u00E9 64 caracteres. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o.",
+            "type": "string",
+            "maxLength": 64,
+            "readOnly": true
+          },
+          "sentido": {
+            "title": "Sentido do motivo",
+            "description": "Se o motivo sustenta a decis\u00E3o favor\u00E1vel ou a desfavor\u00E1vel. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o.",
+            "enum": [
+              "FAVORAVEL",
+              "DESFAVORAVEL"
+            ],
+            "readOnly": true
+          },
+          "justificativaDaInclusao": {
+            "title": "Justificativa da inclus\u00E3o",
+            "description": "Por que o motivo entrou no processo depois da publica\u00E7\u00E3o, de at\u00E9 1000 caracteres. Ausente nas inclus\u00F5es feitas antes dela.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "versaoDoEditalDeEntrada": {
+            "title": "Vers\u00E3o do edital de entrada",
+            "description": "N\u00FAmero da vers\u00E3o do edital em que o motivo entrou: 1 no rascunho, e a vers\u00E3o seguinte \u00E0 base na sess\u00E3o de retifica\u00E7\u00E3o. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o.",
+            "type": "integer",
+            "minimum": 1,
+            "readOnly": true
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoMotivoCodigoDoMotivo": {
+        "title": "C\u00F3digo do motivo",
+        "description": "C\u00F3digo do motivo no cat\u00E1logo: mai\u00FAscula inicial, depois mai\u00FAsculas, d\u00EDgitos e sublinhado, de 2 a 50 caracteres.",
+        "type": "string",
+        "pattern": "^[A-Z][A-Z0-9_]{1,49}$"
+      },
+      "DocumentoDaConfiguracaoPesosPorArea": {
+        "title": "Grupo de pesos por \u00E1rea",
+        "description": "Os pesos e cortes das \u00E1reas do Enem de um grupo, congelados do cat\u00E1logo. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o, porque \u00E9 congelado do cat\u00E1logo pela resolu\u00E7\u00E3o.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "grupoAreaEnemCodigo": {
+            "title": "Grupo",
+            "description": "C\u00F3digo do grupo de \u00E1reas do Enem.",
+            "type": "string",
+            "maxLength": 30
+          },
+          "grupoAreaEnemRotulo": {
+            "title": "R\u00F3tulo do grupo",
+            "description": "R\u00F3tulo do grupo de \u00E1reas do Enem.",
+            "type": "string",
+            "maxLength": 60
+          },
+          "baseLegal": {
+            "title": "Base legal",
+            "description": "Base legal do quadro de pesos do grupo.",
+            "type": "string",
+            "maxLength": 500
+          },
+          "areas": {
+            "title": "\u00C1reas",
+            "description": "Peso e corte de cada \u00E1rea do grupo.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoPesosPorAreaAreaDePeso"
+            }
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoPesosPorAreaAreaDePeso": {
+        "title": "\u00C1rea do Enem",
+        "description": "Peso e corte de uma \u00E1rea do Enem.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "codigo": {
+            "title": "C\u00F3digo",
+            "description": "C\u00F3digo da \u00E1rea.",
+            "type": "string",
+            "maxLength": 30
+          },
+          "rotulo": {
+            "title": "R\u00F3tulo",
+            "description": "R\u00F3tulo da \u00E1rea.",
+            "type": "string",
+            "maxLength": 100
+          },
+          "peso": {
+            "title": "Peso",
+            "description": "Peso da \u00E1rea na nota.",
+            "type": "number",
+            "minimum": 0,
+            "multipleOf": 0.0001
+          },
+          "corte": {
+            "title": "Corte",
+            "description": "Nota de corte da \u00E1rea, quando houver.",
+            "type": "number",
+            "minimum": 0,
+            "multipleOf": 0.0001,
+            "maximum": 1000
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoPredicadoBaseLegal": {
+        "title": "Base legal",
+        "description": "Embasamento da exig\u00EAncia: a norma, a abrang\u00EAncia dela e se a refer\u00EAncia j\u00E1 foi resolvida.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "referencia": {
+            "title": "Refer\u00EAncia",
+            "description": "Cita\u00E7\u00E3o da norma que fundamenta a exig\u00EAncia.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "abrangencia": {
+            "title": "Abrang\u00EAncia",
+            "description": "Esfera da norma.",
+            "enum": [
+              "FEDERAL",
+              "ESTADUAL",
+              "MUNICIPAL",
+              "INTERNA_NORMA",
+              "INTERNA_EDITAL"
+            ]
+          },
+          "status": {
+            "title": "Situa\u00E7\u00E3o",
+            "description": "Se a refer\u00EAncia foi resolvida ou ainda est\u00E1 pendente.",
+            "enum": [
+              "PENDENTE",
+              "RESOLVIDO"
+            ]
+          },
+          "observacao": {
+            "title": "Observa\u00E7\u00E3o",
+            "description": "Nota livre sobre a base legal.",
+            "type": "string",
+            "maxLength": 1000
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoPredicadoCondicao": {
+        "title": "Condi\u00E7\u00E3o de um predicado",
+        "description": "Um \u00E1tomo do predicado: o fato, o operador e o valor de compara\u00E7\u00E3o. Os operadores EM e NAO_EM comparam com uma lista; os demais, com um valor escalar. A exist\u00EAncia do fato no vocabul\u00E1rio \u00E9 regra do dom\u00EDnio, n\u00E3o do esquema.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "fato",
+          "operador",
+          "valor"
+        ],
+        "properties": {
+          "fato": {
+            "title": "Fato",
+            "description": "C\u00F3digo do fato que a condi\u00E7\u00E3o examina, de 1 a 60 caracteres (o limite do armazenamento), com ao menos um caractere que n\u00E3o seja espa\u00E7o.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60,
+            "pattern": "\\S"
+          },
+          "operador": {
+            "title": "Operador",
+            "description": "Operador de compara\u00E7\u00E3o entre o fato e o valor.",
+            "enum": [
+              "IGUAL",
+              "DIFERENTE",
+              "MAIOR_IGUAL",
+              "MENOR_IGUAL",
+              "EM",
+              "NAO_EM"
+            ]
+          },
+          "valor": {
+            "title": "Valor",
+            "description": "Valor de compara\u00E7\u00E3o: uma lista para EM e NAO_EM, um texto, n\u00FAmero ou booleano para os demais. Texto em branco, sozinho ou como item da lista, \u00E9 recusado.",
+            "if": {
+              "type": "string"
+            },
+            "then": {
+              "pattern": "\\S"
+            },
+            "else": {
+              "if": {
+                "type": "array",
+                "items": {}
+              },
+              "then": {
+                "items": {
+                  "if": {
+                    "type": "string"
+                  },
+                  "then": {
+                    "pattern": "\\S"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "if": {
+          "properties": {
+            "operador": {
+              "enum": [
+                "EM",
+                "NAO_EM"
+              ]
+            }
+          }
+        },
+        "then": {
+          "properties": {
+            "valor": {
+              "type": "array",
+              "items": {}
+            }
+          }
+        },
+        "else": {
+          "properties": {
+            "valor": {
+              "type": [
+                "string",
+                "number",
+                "boolean",
+                "null"
+              ]
+            }
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoPredicadoObrigatoriedade": {
+        "title": "Obrigatoriedade",
+        "description": "Se a exig\u00EAncia vale sempre, nunca, ou s\u00F3 quando o predicado \u00E9 verdadeiro. O predicado existe somente em QUANDO.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "tipo"
+        ],
+        "properties": {
+          "tipo": {
+            "title": "Tipo da obrigatoriedade",
+            "description": "SEMPRE, NUNCA ou QUANDO.",
+            "enum": [
+              "SEMPRE",
+              "NUNCA",
+              "QUANDO"
+            ]
+          },
+          "predicado": {
+            "title": "Predicado",
+            "description": "Condi\u00E7\u00E3o em que a obrigatoriedade QUANDO vale; nas outras o campo \u00E9 nulo ou ausente.",
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoPredicado"
+              }
+            ]
+          }
+        },
+        "if": {
+          "properties": {
+            "tipo": {
+              "const": "QUANDO"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "predicado"
+          ],
+          "properties": {
+            "predicado": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoPredicado"
+            }
+          }
+        },
+        "else": {
+          "properties": {
+            "predicado": {
+              "type": "null"
+            }
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoPredicadoPredicado": {
+        "title": "Predicado em forma normal disjuntiva",
+        "description": "Lista de cl\u00E1usulas ligadas por OU; cada cl\u00E1usula \u00E9 uma lista de condi\u00E7\u00F5es ligadas por E. A lista vazia \u00E9 o predicado sem cl\u00E1usula, que n\u00E3o \u00E9 verdadeiro para ningu\u00E9m: us\u00E1-lo como condi\u00E7\u00E3o de uma regra a torna nunca aplic\u00E1vel.",
+        "type": "array",
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoCondicao"
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoProvaPresencial": {
+        "title": "Prova presencial",
+        "description": "O que o processo declara da prova presencial: se a tem e, s\u00F3 ent\u00E3o, os munic\u00EDpios em que a aplica. A declara\u00E7\u00E3o \u00E9 do pr\u00F3prio processo, nunca deduzida do tipo de processo nem das etapas.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "temProvaPresencial"
+        ],
+        "properties": {
+          "temProvaPresencial": {
+            "title": "Tem prova presencial",
+            "description": "Verdadeiro quando o processo tem prova presencial.",
+            "type": "boolean"
+          },
+          "municipios": {
+            "title": "Munic\u00EDpios de aplica\u00E7\u00E3o",
+            "description": "Munic\u00EDpios em que a prova \u00E9 aplicada, cada um pelo c\u00F3digo do IBGE. Vazio sem prova presencial.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoProvaPresencialMunicipio"
+            }
+          }
+        },
+        "if": {
+          "properties": {
+            "temProvaPresencial": {
+              "const": false
+            }
+          }
+        },
+        "then": {
+          "properties": {
+            "municipios": {
+              "maxItems": 0
+            }
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoProvaPresencialMunicipio": {
+        "title": "Munic\u00EDpio de aplica\u00E7\u00E3o",
+        "description": "Um munic\u00EDpio em que a prova \u00E9 aplicada: o c\u00F3digo do IBGE \u00E9 a autoridade, e a UF \u00E9 a do prefixo do c\u00F3digo.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "codigoIbge",
+          "uf"
+        ],
+        "properties": {
+          "codigoIbge": {
+            "title": "C\u00F3digo IBGE",
+            "description": "C\u00F3digo do munic\u00EDpio no IBGE, com 7 d\u00EDgitos e o prefixo de uma unidade federativa.",
+            "type": "string",
+            "pattern": "^(1[1-7]|2[1-9]|3[1-3]|35|4[1-3]|5[0-3])[0-9]{5}$"
+          },
+          "uf": {
+            "title": "UF",
+            "description": "Sigla da unidade federativa do munic\u00EDpio.",
+            "type": "string",
+            "pattern": "^[A-Z]{2}$"
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoRestricaoDeValor": {
+        "title": "Restri\u00E7\u00E3o de valor",
+        "description": "Limite que o formul\u00E1rio imp\u00F5e \u00E0 resposta de um campo. O tipo escolhe quais outras propriedades valem; a coer\u00EAncia com o tipo de renderiza\u00E7\u00E3o do fato \u00E9 regra do dom\u00EDnio, n\u00E3o do esquema.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "tipo"
+        ],
+        "properties": {
+          "tipo": {
+            "title": "Tipo da restri\u00E7\u00E3o",
+            "description": "Faixa num\u00E9rica, tamanho do texto, op\u00E7\u00F5es permitidas, op\u00E7\u00F5es formadas pelas respostas, munic\u00EDpios da UF respondida ou faixa de data.",
+            "enum": [
+              "FAIXA_NUMERICA",
+              "TAMANHO_TEXTO",
+              "OPCOES_PERMITIDAS",
+              "OPCOES_DAS_RESPOSTAS",
+              "MUNICIPIOS_DA_UF",
+              "FAIXA_DE_DATA"
+            ]
+          },
+          "minimo": {
+            "title": "M\u00EDnimo",
+            "description": "Limite inferior da faixa num\u00E9rica (at\u00E9 quatro casas decimais) ou do tamanho do texto (inteiro). Usado nos tipos FAIXA_NUMERICA e TAMANHO_TEXTO.",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "maximo": {
+            "title": "M\u00E1ximo",
+            "description": "Limite superior da faixa num\u00E9rica (at\u00E9 quatro casas decimais) ou do tamanho do texto (inteiro). Usado nos tipos FAIXA_NUMERICA e TAMANHO_TEXTO.",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "entradas": {
+            "title": "Entradas de op\u00E7\u00F5es permitidas",
+            "description": "Conjuntos de valores permitidos, cada um com a condi\u00E7\u00E3o em que vale. Usado no tipo OPCOES_PERMITIDAS.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "valores"
+              ],
+              "properties": {
+                "quando": {
+                  "title": "Quando vale",
+                  "description": "Condi\u00E7\u00E3o em que o conjunto vale. Ausente ou nula: vale sempre.",
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/DocumentoDaConfiguracaoPredicadoPredicado"
+                    }
+                  ]
+                },
+                "valores": {
+                  "title": "Valores permitidos",
+                  "description": "C\u00F3digos dos valores permitidos.",
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "pattern": "\\S"
+                  }
+                }
+              }
+            }
+          },
+          "fatos": {
+            "title": "Fatos de origem",
+            "description": "C\u00F3digos dos fatos cujas respostas formam as op\u00E7\u00F5es (OPCOES_DAS_RESPOSTAS) ou fato com a UF respondida (MUNICIPIOS_DA_UF).",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60,
+              "pattern": "\\S"
+            }
+          },
+          "dataMinima": {
+            "title": "Data m\u00EDnima",
+            "description": "Limite inferior da faixa de data. Usado no tipo FAIXA_DE_DATA.",
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DocumentoDaConfiguracaoRestricaoDeValorLimiteDeData"
+              }
+            ]
+          },
+          "dataMaxima": {
+            "title": "Data m\u00E1xima",
+            "description": "Limite superior da faixa de data. Usado no tipo FAIXA_DE_DATA.",
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DocumentoDaConfiguracaoRestricaoDeValorLimiteDeData"
+              }
+            ]
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoRestricaoDeValorLimiteDeData": {
+        "title": "Limite de data",
+        "description": "Data fixa, ou deslocamento em anos e dias a partir do envio da resposta.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "ancora"
+        ],
+        "properties": {
+          "ancora": {
+            "title": "\u00C2ncora",
+            "description": "DATA_FIXA usa a data; ENVIO usa o deslocamento em anos e dias.",
+            "enum": [
+              "DATA_FIXA",
+              "ENVIO"
+            ]
+          },
+          "data": {
+            "title": "Data",
+            "description": "Data do limite, no formato AAAA-MM-DD. Usada na \u00E2ncora DATA_FIXA.",
+            "type": "string",
+            "format": "date"
+          },
+          "anos": {
+            "title": "Anos",
+            "description": "Deslocamento em anos a partir do envio, de 0 a 150. Usado na \u00E2ncora ENVIO.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 150
+          },
+          "dias": {
+            "title": "Dias",
+            "description": "Deslocamento em dias a partir do envio, de 0 a 54900. Usado na \u00E2ncora ENVIO.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 54900
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoTaxaDeInscricao": {
+        "title": "Taxa de inscri\u00E7\u00E3o e isen\u00E7\u00E3o",
+        "description": "Se o processo cobra taxa de inscri\u00E7\u00E3o, o valor e os fundamentos de isen\u00E7\u00E3o que ele reconhece. Bloco ausente significa que a taxa ainda n\u00E3o foi declarada.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "cobra": {
+            "title": "Cobra taxa",
+            "description": "Se o processo cobra taxa de inscri\u00E7\u00E3o.",
+            "type": "boolean"
+          },
+          "valor": {
+            "title": "Valor da taxa",
+            "description": "Valor da taxa em reais, com at\u00E9 duas casas decimais.",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 9999999999.99,
+            "multipleOf": 0.01
+          },
+          "fundamentos": {
+            "title": "Fundamentos de isen\u00E7\u00E3o",
+            "description": "Fundamentos de isen\u00E7\u00E3o da taxa que o processo reconhece. N\u00E3o se repetem.",
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "CADASTRO_UNICO",
+                "DOACAO_MEDULA_OSSEA",
+                "CARENCIA_SOCIOECONOMICA"
+              ]
+            }
+          }
+        }
+      },
       "DocumentoDaInscricaoDto": {
         "required": [
           "exigenciaId",
@@ -18633,9 +22367,6 @@
       },
       "JsonElement": {},
       "JsonNode": {},
-      "JsonObject": {
-        "type": "object"
-      },
       "LeiauteDoInepDto": {
         "required": [
           "codigo",

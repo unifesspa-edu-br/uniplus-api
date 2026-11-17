@@ -44,9 +44,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Expõe internals (ex.: RegraCatalogoReader) aos testes de integração —
+    <!-- Expõe internals (ex.: RegraCatalogoReader) aos testes de integração e o gerador dos componentes do esquema aos unitários —
          mesmo padrão de Configuracao/OrganizacaoInstitucional/Infrastructure.Core. -->
     <InternalsVisibleTo Include="Unifesspa.UniPlus.Selecao.IntegrationTests" />
+    <InternalsVisibleTo Include="Unifesspa.UniPlus.Selecao.Infrastructure.UnitTests" />
   </ItemGroup>
 
 </Project>

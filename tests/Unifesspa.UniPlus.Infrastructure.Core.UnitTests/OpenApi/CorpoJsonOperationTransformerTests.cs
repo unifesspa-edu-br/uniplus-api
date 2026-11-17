@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.OpenApi;
 
+using System.Text.Json.Nodes;
+
 using AwesomeAssertions;
 
 using Microsoft.AspNetCore.Mvc.Abstractions;
@@ -11,32 +13,31 @@ using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
 
 public sealed class CorpoJsonOperationTransformerTests
 {
-    private const string Esquema = "https://exemplo.test/contracts/documento.schema.json";
+    private const string Componente = "DocumentoDeExemplo";
 
-    [Fact(DisplayName = "A action marcada declara o corpo JSON obrigatório, um objeto que aponta o esquema na documentação externa")]
-    public async Task ActionMarcada_DeclaraCorpoJsonQueApontaOEsquema()
+    [Fact(DisplayName = "A action marcada declara o corpo JSON obrigatório, uma referência ao componente")]
+    public async Task ActionMarcada_DeclaraCorpoJsonQueReferenciaOComponente()
     {
         OpenApiOperation operation = new();
 
-        await Transformar(operation, new CorpoJsonAttribute(Esquema));
+        await Transformar(operation, new CorpoJsonAttribute(Componente));
 
         OpenApiRequestBody corpo = operation.RequestBody.Should().BeOfType<OpenApiRequestBody>().Subject;
         corpo.Required.Should().BeTrue();
-        OpenApiSchema schema = corpo.Content!["application/json"].Schema.Should().BeOfType<OpenApiSchema>().Subject;
-        schema.Type.Should().Be(JsonSchemaType.Object);
-        schema.ExternalDocs!.Url!.ToString().Should().Be(Esquema);
-        schema.Description.Should().NotBeNullOrWhiteSpace();
+        corpo.Content!.Keys.Should().Equal("application/json");
+        OpenApiSchemaReference schema = corpo.Content["application/json"].Schema.Should().BeOfType<OpenApiSchemaReference>().Subject;
+        schema.Reference.Id.Should().Be(Componente);
     }
 
-    [Fact(DisplayName = "O corpo só referencia o esquema: não embute propriedades nem $ref")]
-    public async Task ActionMarcada_NaoEmbuteOEsquema()
+    [Fact(DisplayName = "A referência do corpo é escrita como $ref para o componente, sem embutir o esquema")]
+    public async Task ActionMarcada_EscreveORefParaOComponente()
     {
         OpenApiOperation operation = new();
 
-        await Transformar(operation, new CorpoJsonAttribute(Esquema));
+        await Transformar(operation, new CorpoJsonAttribute(Componente));
 
-        OpenApiSchema schema = operation.RequestBody!.Content!["application/json"].Schema.Should().BeOfType<OpenApiSchema>().Subject;
-        schema.Properties.Should().BeNullOrEmpty();
+        string escrito = await operation.RequestBody!.Content!["application/json"].Schema!.SerializeAsJsonAsync(OpenApiSpecVersion.OpenApi3_1);
+        JsonNode.DeepEquals(JsonNode.Parse(escrito), JsonNode.Parse("""{ "$ref": "#/components/schemas/DocumentoDeExemplo" }""")).Should().BeTrue(escrito);
     }
 
     [Fact(DisplayName = "A action sem a marca não ganha corpo")]

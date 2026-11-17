@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.API.Controllers;
 
-using System.Text.Json.Nodes;
-
 using Application.Commands.Rascunhos;
 using Application.DTOs;
 using Application.Queries.Rascunhos;
@@ -80,7 +78,7 @@ public sealed class RascunhosDeProcessosSeletivosController : ControllerBase
     [HttpPost]
     [RequiresIdempotencyKey(MaxBodyBytes = LimitesDoDocumento.TamanhoMaximoEmBytes)]
     [Consumes("application/json")]
-    [CorpoJson(EsquemaPublicadoDoDocumento.Identificador)]
+    [CorpoJson(EsquemaPublicadoDoDocumento.Componente)]
     [EmiteETag(Descricao = DescricaoDoETag)]
     [EmiteHeader("Location", "Endereço do rascunho criado.", Status = "201")]
     [ProducesResponseType(typeof(RascunhoCriadoResponse), StatusCodes.Status201Created)]
@@ -113,8 +111,9 @@ public sealed class RascunhosDeProcessosSeletivosController : ControllerBase
     [HttpGet("{id:guid}")]
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [VendorMediaType(Resource = "rascunho-de-processo-seletivo", Versions = [1])]
+    [RespostaJson(EsquemaPublicadoDoDocumento.Componente)]
     [EmiteETag(Descricao = DescricaoDoETag)]
-    [ProducesResponseType(typeof(JsonObject), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> Obter(Guid id, CancellationToken cancellationToken)
@@ -159,7 +158,7 @@ public sealed class RascunhosDeProcessosSeletivosController : ControllerBase
     [HttpPut("{id:guid}")]
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [Consumes("application/json")]
-    [CorpoJson(EsquemaPublicadoDoDocumento.Identificador)]
+    [CorpoJson(EsquemaPublicadoDoDocumento.Componente)]
     [PrecondicaoObrigatoria]
     [EmiteETag(Descricao = DescricaoDoETag)]
     [EmiteEsperaEsgotadaPelaTrava]
