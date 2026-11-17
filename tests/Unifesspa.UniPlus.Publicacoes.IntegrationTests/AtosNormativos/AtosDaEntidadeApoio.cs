@@ -133,23 +133,29 @@ internal sealed class AtosDaEntidadeApoio(PublicacoesEndpointFixture fixture)
     /// Registra o ato como o domínio dono do objeto faz: pela porta de escrita, que é o único caminho que admite o
     /// vínculo com o processo seletivo, e com a gravação única que o domínio faz depois dela.
     /// </summary>
-    internal async Task<Guid> RegistrarPeloDominioAsync(string tipoCodigo, string numero, Guid processo)
+    internal Task<Guid> RegistrarPeloDominioAsync(string tipoCodigo, string numero, Guid processo) =>
+        RegistrarPeloDominioAsync(tipoCodigo, numero, processo, Guid.CreateVersion7(), AtoDoDominio.PublicadoEm);
+
+    /// <summary>O mesmo registro, com o identificador do ato e o instante da divulgação escolhidos pelo teste.</summary>
+    internal async Task<Guid> RegistrarPeloDominioAsync(
+        string tipoCodigo, string numero, Guid processo, Guid atoId, DateTimeOffset publicadoEm)
     {
-        Guid atoId = Guid.CreateVersion7();
         await using AsyncServiceScope escopo = fixture.Factory.Services.CreateAsyncScope();
 
         Result registrado = await escopo.ServiceProvider.GetRequiredService<IRegistroDeAtoNormativo>()
-            .RegistrarAsync(AtoDoProcessoSeletivo(atoId, tipoCodigo, numero, processo), CancellationToken.None);
+            .RegistrarAsync(AtoDoProcessoSeletivo(atoId, tipoCodigo, numero, processo, publicadoEm), CancellationToken.None);
         registrado.IsSuccess.Should().BeTrue(registrado.Error?.Message);
         await escopo.ServiceProvider.GetRequiredService<IUnitOfWork>().SalvarAlteracoesAsync(CancellationToken.None);
 
         return atoId;
     }
 
-    private static AtoNormativoPublicado AtoDoProcessoSeletivo(Guid atoId, string tipoCodigo, string numero, Guid processo) =>
+    private static AtoNormativoPublicado AtoDoProcessoSeletivo(
+        Guid atoId, string tipoCodigo, string numero, Guid processo, DateTimeOffset publicadoEm) =>
         AtoDoDominio with
         {
             AtoId = atoId,
+            PublicadoEm = publicadoEm,
             Numero = numero,
             TipoCodigo = tipoCodigo,
             Vinculos = [new VinculoDoAtoPublicado(EntidadesDeRegistroPeloDominio.ProcessoSeletivo, processo)],
