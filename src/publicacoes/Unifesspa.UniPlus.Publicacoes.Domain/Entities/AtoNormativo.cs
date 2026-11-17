@@ -6,8 +6,8 @@ using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 /// <summary>
 /// Ato publicado — o registro central e append-only de que algo foi publicado
 /// (ADR-0105). Guarda a essência documental do ato (órgão, série, ano, número,
-/// tipo, data do ato, hash do documento, assinante) e, por valor, os
-/// atributos de consequência do catálogo e a versão do objeto a que o ato
+/// tipo, data do ato, hash do documento, assinante e cadeia de retificação) e, por
+/// valor, os atributos de consequência do catálogo e a versão do objeto a que o ato
 /// se refere. É a <b>prova</b> do publicado: o passado documental não se muta.
 /// </summary>
 /// <remarks>
@@ -62,14 +62,6 @@ using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 /// </remarks>
 public sealed class AtoNormativo : IForensicEntity
 {
-    private const int OrgaoMaxLength = 200;
-    private const int SerieMaxLength = 100;
-    private const int NumeroMaxLength = 60;
-    private const int TipoCodigoMaxLength = 60;
-    private const int TipoNomeMaxLength = 200;
-    private const int AssinanteMaxLength = 200;
-    private const int MotivoRetificacaoMaxLength = 1000;
-
     public Guid Id { get; private init; } = Guid.CreateVersion7();
 
     /// <summary>Órgão publicador que emitiu o ato (ex.: CEPS, CGA).</summary>
@@ -83,6 +75,9 @@ public sealed class AtoNormativo : IForensicEntity
 
     /// <summary>Número que o órgão deu ao ato. Opcional — há atos sem número (ex.: comunicado).</summary>
     public string? Numero { get; private init; }
+
+    /// <summary>A numeração declarada pelo órgão, composta de <see cref="Orgao"/>, <see cref="Serie"/>, <see cref="Ano"/> e <see cref="Numero"/>. Não é persistida.</summary>
+    public NumeracaoDoAto Numeracao => new(Orgao, Serie, Ano, Numero);
 
     /// <summary>Código do tipo de ato no catálogo (<c>TipoAtoPublicado</c>) vigente no registro.</summary>
     public string TipoCodigo { get; private init; } = null!;
@@ -163,17 +158,38 @@ public sealed class AtoNormativo : IForensicEntity
     {
     }
 
+    private AtoNormativo(EssenciaDocumentalDoAto essencia)
+    {
+        Orgao = essencia.Numeracao.Orgao;
+        Serie = essencia.Numeracao.Serie;
+        Ano = essencia.Numeracao.Ano;
+        Numero = essencia.Numeracao.Numero;
+        TipoCodigo = essencia.Tipo.Codigo;
+        TipoNome = essencia.Tipo.Nome;
+        CongelaConfiguracao = essencia.Tipo.CongelaConfiguracao;
+        EfeitoIrreversivel = essencia.Tipo.EfeitoIrreversivel;
+        UnicoPorObjeto = essencia.Tipo.UnicoPorObjeto;
+        DataDoAto = essencia.DataDoAto;
+        DocumentoHash = essencia.DocumentoHash;
+        Assinante = essencia.Assinante;
+        AtoRetificadoId = essencia.Retificacao.AtoRetificadoId;
+        MotivoRetificacao = essencia.Retificacao.Motivo;
+    }
+
     /// <summary>
-    /// Registra um ato publicado. Os atributos de consequência
-    /// (<paramref name="congelaConfiguracao"/>, <paramref name="efeitoIrreversivel"/>,
-    /// <paramref name="unicoPorObjeto"/>) já vêm resolvidos por valor do catálogo
-    /// vigente; a validação de negócio (existência de versão vigente, formato do
-    /// payload) é responsabilidade do handler e do validator. Aqui ficam as
-    /// invariantes de última linha, que lançam — o agregado nunca materializa em
-    /// estado inválido. As regras de retificação que dependem do ato retificado
-    /// (classe de congelamento coincidente, linearidade da cadeia) são do handler,
-    /// que as consulta no repositório; a factory garante só a simetria de shape do
-    /// par (<paramref name="atoRetificadoId"/>, <paramref name="motivoRetificacao"/>).
+    /// Registra um ato publicado. A <paramref name="essencia"/> traz os atributos de consequência já
+    /// resolvidos por valor do catálogo vigente; a validação de negócio (existência de versão vigente,
+    /// formato do payload) é responsabilidade do handler e do validator. Aqui ficam as invariantes de
+    /// última linha, que lançam — o agregado nunca materializa em estado inválido. As regras de
+    /// retificação que dependem do ato retificado (classe de congelamento coincidente, linearidade da
+    /// cadeia) são do handler, que as consulta no repositório; a essência garante só a simetria de
+    /// forma do par.
+    ///
+    /// O <paramref name="id"/> vem do domínio que publica, quando ele o decide: é o que torna a
+    /// reentrega da fila durável (at-least-once) idempotente, porque o segundo processamento tenta gravar
+    /// o MESMO id e a chave primária o recusa. Sem isso, a reentrega criaria um ato gêmeo, e o gêmeo
+    /// disputaria a vaga de linhagem do objeto (ADR-0107) contra a linhagem do primeiro. Vazio, o
+    /// identificador é gerado aqui.
     ///
     /// Os <paramref name="vinculos"/> são construídos a partir do ato recém-criado, de
     /// modo que nenhum deles possa apontar para outro ato. A unicidade da linhagem por
@@ -185,149 +201,55 @@ public sealed class AtoNormativo : IForensicEntity
     /// </summary>
     public static AtoNormativo Registrar(
         Guid id,
-        string orgao,
-        string serie,
-        int ano,
-        string? numero,
-        string tipoCodigo,
-        bool congelaConfiguracao,
-        bool efeitoIrreversivel,
-        bool unicoPorObjeto,
-        DateOnly dataDoAto,
-        string documentoHash,
-        string assinante,
+        EssenciaDocumentalDoAto essencia,
         DateTimeOffset publicadoEm,
         ReferenciaVersaoDoObjeto? versaoDoObjeto,
-        Guid? atoRetificadoId = null,
-        string? motivoRetificacao = null,
-        IEnumerable<(string EntidadeTipo, Guid EntidadeId)>? vinculos = null,
-        string? tipoNome = null,
+        IEnumerable<EntidadeVinculada>? vinculos = null,
         IEnumerable<(string Nome, string TipoMidia, string Hash)>? anexos = null)
     {
-        string orgaoNorm = ExigirTexto(orgao, OrgaoMaxLength, nameof(orgao));
-        string serieNorm = ExigirTexto(serie, SerieMaxLength, nameof(serie));
-        string tipoCodigoNorm = ExigirTexto(tipoCodigo, TipoCodigoMaxLength, nameof(tipoCodigo));
-        string assinanteNorm = ExigirTexto(assinante, AssinanteMaxLength, nameof(assinante));
-        string? numeroNorm = NormalizarOpcional(numero, NumeroMaxLength, nameof(numero));
-        string? motivoNorm = NormalizarOpcional(motivoRetificacao, MotivoRetificacaoMaxLength, nameof(motivoRetificacao));
-        string? tipoNomeNorm = NormalizarOpcional(tipoNome, TipoNomeMaxLength, nameof(tipoNome));
-
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(ano);
-
-        if (!HashSha256.TemFormatoValido(documentoHash))
+        AtoNormativo ato = new(essencia.Conferida())
         {
-            throw new ArgumentException(
-                "Hash do documento deve ser um SHA-256 em hexadecimal minúsculo (64 caracteres).",
-                nameof(documentoHash));
-        }
-
-        if (atoRetificadoId == Guid.Empty)
-        {
-            throw new ArgumentException(
-                "Identificador do ato retificado não pode ser vazio.",
-                nameof(atoRetificadoId));
-        }
-
-        // Simetria da retificação (ADR-0103): a linhagem é o par (ato retificado,
-        // motivo) — um sem o outro não registra emenda alguma. A auto-referência é
-        // impossível por esta via (o Id é gerado aqui, fresco); o insert cru fica
-        // barrado por CHECK no banco.
-        if ((atoRetificadoId is not null) != (motivoNorm is not null))
-        {
-            throw new ArgumentException(
-                "A retificação é o par (ato retificado, motivo) completo, ou nenhum dos dois.",
-                nameof(atoRetificadoId));
-        }
-
-        AtoNormativo ato = new()
-        {
-            // o id vem do domínio que publica, quando ele o decide. É o que
-            // torna a reentrega da fila durável (at-least-once) idempotente: o segundo
-            // processamento tenta gravar o MESMO id e a chave primária o recusa. Sem
-            // isso, a reentrega criaria um ato gêmeo, e o gêmeo disputaria a vaga de
-            // linhagem do objeto (ADR-0107) contra a linhagem do primeiro.
             Id = id == Guid.Empty ? Guid.CreateVersion7() : id,
-            Orgao = orgaoNorm,
-            Serie = serieNorm,
-            Ano = ano,
-            Numero = numeroNorm,
-            TipoCodigo = tipoCodigoNorm,
-            TipoNome = tipoNomeNorm,
-            CongelaConfiguracao = congelaConfiguracao,
-            EfeitoIrreversivel = efeitoIrreversivel,
-            UnicoPorObjeto = unicoPorObjeto,
-            DataDoAto = dataDoAto,
-            DocumentoHash = documentoHash,
-            Assinante = assinanteNorm,
             PublicadoEm = publicadoEm,
             VersaoDoObjeto = versaoDoObjeto,
-            AtoRetificadoId = atoRetificadoId,
-            MotivoRetificacao = motivoNorm,
         };
+        ato.Vincular(vinculos ?? []);
+        ato.Anexar(anexos ?? []);
 
-        foreach ((string entidadeTipo, Guid entidadeId) in vinculos ?? [])
+        return ato;
+    }
+
+    /// <summary>
+    /// O trio (ato, tipo, id) é único: repetir a mesma entidade no mesmo ato não acrescenta vínculo
+    /// nenhum, e o índice único do banco recusaria a segunda linha. O validator já devolve 422 antes;
+    /// aqui é a última linha.
+    /// </summary>
+    private void Vincular(IEnumerable<EntidadeVinculada> vinculos)
+    {
+        foreach (EntidadeVinculada entidade in vinculos)
         {
-            VinculoAtoEntidade vinculo = VinculoAtoEntidade.Criar(ato, entidadeTipo, entidadeId);
+            VinculoAtoEntidade vinculo = VinculoAtoEntidade.Criar(this, entidade);
 
-            // O trio (ato, tipo, id) é único: repetir a mesma entidade no mesmo ato não
-            // acrescenta vínculo nenhum, e o índice único do banco recusaria a segunda
-            // linha. O validator já devolve 422 antes; aqui é a última linha.
-            if (ato._vinculos.Exists(v =>
-                    string.Equals(v.EntidadeTipo, vinculo.EntidadeTipo, StringComparison.Ordinal)
-                    && v.EntidadeId == vinculo.EntidadeId))
+            if (_vinculos.Exists(v => v.Entidade == vinculo.Entidade))
             {
                 throw new ArgumentException(
                     $"A entidade {vinculo.EntidadeTipo}/{vinculo.EntidadeId} está vinculada mais de uma vez ao mesmo ato.",
                     nameof(vinculos));
             }
 
-            ato._vinculos.Add(vinculo);
+            _vinculos.Add(vinculo);
         }
+    }
 
-        (string Nome, string TipoMidia, string Hash)[] anexosRecebidos = [.. anexos ?? []];
-        if (AnexoDoAto.Conferir(anexosRecebidos) is { } recusa)
+    private void Anexar(IEnumerable<(string Nome, string TipoMidia, string Hash)> anexos)
+    {
+        (string Nome, string TipoMidia, string Hash)[] recebidos = [.. anexos];
+        if (AnexoDoAto.Conferir(recebidos) is { } recusa)
         {
             throw new ArgumentException(recusa.Message, nameof(anexos));
         }
 
-        for (int ordem = 0; ordem < anexosRecebidos.Length; ordem++)
-        {
-            (string nome, string tipoMidia, string hash) = anexosRecebidos[ordem];
-            ato._anexos.Add(AnexoDoAto.Criar(ato, ordem, nome, tipoMidia, hash));
-        }
-
-        return ato;
-    }
-
-    private static string ExigirTexto(string valor, int maxLength, string paramName)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(valor, paramName);
-        string norm = valor.Trim();
-        if (norm.Length > maxLength)
-        {
-            throw new ArgumentException(
-                $"'{paramName}' deve ter no máximo {maxLength} caracteres.",
-                paramName);
-        }
-
-        return norm;
-    }
-
-    private static string? NormalizarOpcional(string? valor, int maxLength, string paramName)
-    {
-        if (string.IsNullOrWhiteSpace(valor))
-        {
-            return null;
-        }
-
-        string norm = valor.Trim();
-        if (norm.Length > maxLength)
-        {
-            throw new ArgumentException(
-                $"'{paramName}' deve ter no máximo {maxLength} caracteres.",
-                paramName);
-        }
-
-        return norm;
+        _anexos.AddRange(recebidos.Select((anexo, ordem) =>
+            AnexoDoAto.Criar(this, ordem, anexo.Nome, anexo.TipoMidia, anexo.Hash)));
     }
 }

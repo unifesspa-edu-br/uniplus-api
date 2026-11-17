@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
 
+using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
+
 /// <summary>
 /// Limites, padrões e mensagens do registro de ato normativo, compartilhados
 /// entre o validator e (por espelhamento) as invariantes do agregado. As regras
@@ -13,7 +15,7 @@ internal static class AtoNormativoRegras
     public const int TipoCodigoMaxLength = 60;
     public const int AssinanteMaxLength = 200;
     public const int MotivoRetificacaoMaxLength = 1000;
-    public const int EntidadeTipoMaxLength = 60;
+    public const int EntidadeTipoMaxLength = TipoDaEntidadeVinculada.TamanhoMaximo;
 
     /// <summary>
     /// SHA-256 em hexadecimal minúsculo, 64 caracteres. <c>\z</c> e não <c>$</c>: em .NET o
@@ -27,7 +29,7 @@ internal static class AtoNormativoRegras
     /// (ADR-0105). O que se exige é grafia única, sem a qual a mesma entidade se
     /// partiria em duas na consulta unificada.
     /// </summary>
-    public const string EntidadeTipoPattern = "^[A-Z0-9]+(_[A-Z0-9]+)*$";
+    public const string EntidadeTipoPattern = TipoDaEntidadeVinculada.Padrao;
 
     public const string OrgaoObrigatorio = "Órgão publicador é obrigatório.";
     public const string OrgaoTamanho = "Órgão publicador deve ter no máximo 200 caracteres.";

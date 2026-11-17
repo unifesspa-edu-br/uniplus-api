@@ -1,8 +1,7 @@
 namespace Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 
-using System.Text.RegularExpressions;
-
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
+using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 
 /// <summary>
 /// Vínculo entre um ato publicado e uma entidade de outro domínio — o par
@@ -27,15 +26,13 @@ using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 /// </para>
 /// <para>
 /// Construído exclusivamente a partir do próprio ato
-/// (<see cref="Criar(AtoNormativo, string, Guid)"/>): a identidade do ato não é
+/// (<see cref="Criar(AtoNormativo, EntidadeVinculada)"/>): a identidade do ato não é
 /// recebida solta, e por isso não há como um vínculo apontar para um ato que não é
 /// o seu.
 /// </para>
 /// </remarks>
-public sealed partial class VinculoAtoEntidade : IForensicEntity
+public sealed class VinculoAtoEntidade : IForensicEntity
 {
-    private const int EntidadeTipoMaxLength = 60;
-
     public Guid Id { get; private init; } = Guid.CreateVersion7();
 
     /// <summary>Ato publicado a que este vínculo pertence. Única chave estrangeira da entidade.</summary>
@@ -56,52 +53,23 @@ public sealed partial class VinculoAtoEntidade : IForensicEntity
     {
     }
 
+    /// <summary>A entidade vinculada, como par. Só leitura: as colunas guardam o rótulo e o identificador.</summary>
+    public EntidadeVinculada Entidade => new(EntidadeTipo, EntidadeId);
+
     /// <summary>
-    /// Cria o vínculo de <paramref name="ato"/> com a entidade
-    /// <paramref name="entidadeTipo"/>/<paramref name="entidadeId"/>. Invariantes de
+    /// Cria o vínculo de <paramref name="ato"/> com a <paramref name="entidade"/>. Invariantes de
     /// última linha — o validator já recusa o mesmo antes, com 422.
     /// </summary>
-    public static VinculoAtoEntidade Criar(AtoNormativo ato, string entidadeTipo, Guid entidadeId)
+    public static VinculoAtoEntidade Criar(AtoNormativo ato, EntidadeVinculada entidade)
     {
         ArgumentNullException.ThrowIfNull(ato);
-        ArgumentException.ThrowIfNullOrWhiteSpace(entidadeTipo);
-
-        string tipoNorm = entidadeTipo.Trim();
-        if (tipoNorm.Length > EntidadeTipoMaxLength)
-        {
-            throw new ArgumentException(
-                $"Tipo da entidade deve ter no máximo {EntidadeTipoMaxLength} caracteres.",
-                nameof(entidadeTipo));
-        }
-
-        if (!FormatoDoTipo().IsMatch(tipoNorm))
-        {
-            throw new ArgumentException(
-                "Tipo da entidade deve ser um rótulo em UPPER_SNAKE.",
-                nameof(entidadeTipo));
-        }
-
-        if (entidadeId == Guid.Empty)
-        {
-            throw new ArgumentException(
-                "Identificador da entidade vinculada não pode ser vazio.",
-                nameof(entidadeId));
-        }
+        EntidadeVinculada conferida = entidade.Conferida();
 
         return new VinculoAtoEntidade
         {
             AtoId = ato.Id,
-            EntidadeTipo = tipoNorm,
-            EntidadeId = entidadeId,
+            EntidadeTipo = conferida.Tipo,
+            EntidadeId = conferida.Id,
         };
     }
-
-    /// <summary>
-    /// Forma do rótulo, não o seu valor: letras maiúsculas e dígitos em grupos
-    /// separados por <c>_</c>. Fixa uma grafia canônica — sem ela,
-    /// <c>PROCESSO_SELETIVO</c> e <c>processo-seletivo</c> seriam objetos distintos
-    /// na consulta, e a mesma entidade se partiria em duas.
-    /// </summary>
-    [GeneratedRegex(@"^[A-Z0-9]+(_[A-Z0-9]+)*$")]
-    private static partial Regex FormatoDoTipo();
 }

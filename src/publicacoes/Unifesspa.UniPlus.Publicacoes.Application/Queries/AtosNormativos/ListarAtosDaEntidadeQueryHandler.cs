@@ -18,8 +18,7 @@ public static class ListarAtosDaEntidadeQueryHandler
         (IReadOnlyList<AtoNormativo> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) =
             await repository
                 .ListarPorEntidadeAsync(
-                    query.EntidadeTipo,
-                    query.EntidadeId,
+                    query.Entidade,
                     query.AfterSortKey,
                     query.AfterId,
                     query.Limit,

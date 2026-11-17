@@ -71,7 +71,19 @@ public sealed class VagaDeLinhagem : IForensicEntity
     {
         ArgumentNullException.ThrowIfNull(ato);
         ArgumentNullException.ThrowIfNull(vinculo);
+        ExigirLinhagemDeAtoUnicoPorObjeto(ato, raizId);
+        return new VagaDeLinhagem
+        {
+            EntidadeTipo = vinculo.EntidadeTipo,
+            EntidadeId = vinculo.EntidadeId,
+            TipoCodigo = ato.TipoCodigo,
+            RaizId = raizId,
+            AtoId = ato.Id,
+        };
+    }
 
+    private static void ExigirLinhagemDeAtoUnicoPorObjeto(AtoNormativo ato, Guid raizId)
+    {
         if (raizId == Guid.Empty)
         {
             throw new ArgumentException("Raiz da linhagem não pode ser vazia.", nameof(raizId));
@@ -82,14 +94,5 @@ public sealed class VagaDeLinhagem : IForensicEntity
             throw new InvalidOperationException(
                 "Só um ato de tipo único por objeto reserva a vaga de um objeto.");
         }
-
-        return new VagaDeLinhagem
-        {
-            EntidadeTipo = vinculo.EntidadeTipo,
-            EntidadeId = vinculo.EntidadeId,
-            TipoCodigo = ato.TipoCodigo,
-            RaizId = raizId,
-            AtoId = ato.Id,
-        };
     }
 }

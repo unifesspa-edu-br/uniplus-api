@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Publicacoes.Application.Queries.AtosNormativos;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Kernel.Pagination;
+using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 
 /// <summary>
 /// Todos os atos publicados que tratam de uma entidade — a consulta unificada que é o
@@ -9,7 +10,7 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// (Guid v7) de desempate para o mesmo microssegundo.
 /// </summary>
 /// <remarks>
-/// <para>O par <c>(EntidadeTipo, EntidadeId)</c> é <b>opaco</b>: Publicações não sabe se
+/// <para>O par <c>(tipo, id)</c> da <paramref name="Entidade"/> é <b>opaco</b>: Publicações não sabe se
 /// a entidade existe — não conhece os domínios, e perguntar-lhes derrubaria a fronteira
 /// que este módulo existe para manter. Entidade inexistente e entidade sem ato algum
 /// respondem, ambas, uma coleção vazia; nunca 404.</para>
@@ -18,8 +19,7 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// certame não navega a coleção de outro.</para>
 /// </remarks>
 public sealed record ListarAtosDaEntidadeQuery(
-    string EntidadeTipo,
-    Guid EntidadeId,
+    EntidadeVinculada Entidade,
     string? AfterSortKey,
     Guid? AfterId,
     int Limit,

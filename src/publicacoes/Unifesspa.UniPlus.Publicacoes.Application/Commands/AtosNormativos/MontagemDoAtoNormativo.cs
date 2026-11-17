@@ -68,14 +68,14 @@ public sealed class MontagemDoAtoNormativo(
     private static DomainError? RecusaDaEntrada(RegistrarAtoNormativoCommand command)
     {
         if (!command.ChegouPeloDominioDono
-            && RecusaDoVinculoExclusivoDoDominio(CadeiaDeRetificacaoDoAto.VinculosDeclarados(command).Select(v => v.EntidadeTipo))
+            && RecusaDoVinculoExclusivoDoDominio(CadeiaDeRetificacaoDoAto.VinculosDeclarados(command).Select(v => v.Tipo))
                 is { } declarado)
         {
             return declarado;
         }
 
         return (command.Anexos ?? []).Any(a => a is null)
-            ? new DomainError(AnexoDoAtoErrorCodes.Nulo, "A lista de anexos não admite elemento nulo.")
+            ? AnexoDoAtoErros.Nulo()
             : AnexoDoAto.Conferir(AnexosConferiveis(command));
     }
 
@@ -88,21 +88,21 @@ public sealed class MontagemDoAtoNormativo(
     /// ele que compõe o título público do ato. A versão vigente é a do dia civil da publicação no fuso
     /// institucional: a data que o documento declara não escolhe o tipo.
     /// </summary>
-    private async Task<Result<TipoResolvido>> ResolverTipoAsync(
+    private async Task<Result<TipoDoAtoNoRegistro>> ResolverTipoAsync(
         RegistrarAtoNormativoCommand command, DateTimeOffset publicadoEm, CancellationToken cancellationToken)
     {
         if (command.AtributosDoTipo is { } conferidos)
         {
-            return Result<TipoResolvido>.Success(new TipoResolvido(command.TipoCodigo.Trim(), conferidos));
+            return Result<TipoDoAtoNoRegistro>.Success(TipoConferidoPeloDominio(command.TipoCodigo.Trim(), conferidos));
         }
 
         Result<DateOnly> diaDaPublicacao = fuso.DiaCivilDe(publicadoEm);
         return diaDaPublicacao.IsFailure
-            ? Result<TipoResolvido>.Failure(diaDaPublicacao.Error!)
+            ? Result<TipoDoAtoNoRegistro>.Failure(diaDaPublicacao.Error!)
             : await ResolverNoCatalogoAsync(command.TipoCodigo, diaDaPublicacao.Value, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task<Result<TipoResolvido>> ResolverNoCatalogoAsync(
+    private async Task<Result<TipoDoAtoNoRegistro>> ResolverNoCatalogoAsync(
         string tipoCodigo, DateOnly diaDaPublicacao, CancellationToken cancellationToken)
     {
         TipoAtoPublicado? tipo = await tipos
@@ -110,14 +110,14 @@ public sealed class MontagemDoAtoNormativo(
             .ConfigureAwait(false);
 
         return tipo is null
-            ? Result<TipoResolvido>.Failure(new DomainError(
+            ? Result<TipoDoAtoNoRegistro>.Failure(new DomainError(
                 AtoNormativoErrorCodes.TipoSemVersaoVigente,
                 $"Não há versão vigente do tipo de ato '{tipoCodigo}' na data da publicação ({diaDaPublicacao:yyyy-MM-dd})."))
-            : Result<TipoResolvido>.Success(new TipoResolvido(tipo.Codigo, AtributosDe(tipo)));
+            : Result<TipoDoAtoNoRegistro>.Success(TipoDoAtoNoRegistro.CopiadoDe(tipo));
     }
 
-    private static AtributosDoTipoAto AtributosDe(TipoAtoPublicado tipo) =>
-        new(tipo.CongelaConfiguracao, tipo.UnicoPorObjeto, tipo.EfeitoIrreversivel, tipo.Nome);
+    private static TipoDoAtoNoRegistro TipoConferidoPeloDominio(string codigo, AtributosDoTipoAto atributos) =>
+        new(codigo, atributos.Nome, atributos.CongelaConfiguracao, atributos.EfeitoIrreversivel, atributos.UnicoPorObjeto);
 
     /// <summary>
     /// O par {id, hash} é recebido por valor, completo ou ausente. Ausente devolve
@@ -159,14 +159,14 @@ public sealed class MontagemDoAtoNormativo(
             return Result<DadosConferidos>.Failure(recusa);
         }
 
-        Result<TipoResolvido> tipo = await ResolverTipoAsync(command, publicadoEm, cancellationToken).ConfigureAwait(false);
+        Result<TipoDoAtoNoRegistro> tipo = await ResolverTipoAsync(command, publicadoEm, cancellationToken).ConfigureAwait(false);
         return tipo.IsFailure
             ? Result<DadosConferidos>.Failure(tipo.Error!)
             : await ConferirVersaoAsync(command, tipo.Value!, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<Result<DadosConferidos>> ConferirVersaoAsync(
-        RegistrarAtoNormativoCommand command, TipoResolvido tipo, CancellationToken cancellationToken)
+        RegistrarAtoNormativoCommand command, TipoDoAtoNoRegistro tipo, CancellationToken cancellationToken)
     {
         Result<ReferenciaVersaoDoObjeto>? versao = ResolverVersaoDoObjeto(command);
         return versao is { IsFailure: true }
@@ -182,12 +182,12 @@ public sealed class MontagemDoAtoNormativo(
     /// </summary>
     private async Task<Result<DadosConferidos>> ConferirCadeiaAsync(
         RegistrarAtoNormativoCommand command,
-        TipoResolvido tipo,
+        TipoDoAtoNoRegistro tipo,
         ReferenciaVersaoDoObjeto? versao,
         CancellationToken cancellationToken)
     {
         DomainError? retificacao = await cadeia
-            .ConferirAsync(command, tipo.Atributos.CongelaConfiguracao, cancellationToken).ConfigureAwait(false);
+            .ConferirAsync(command, tipo.CongelaConfiguracao, cancellationToken).ConfigureAwait(false);
         if (retificacao is not null)
         {
             return Result<DadosConferidos>.Failure(retificacao);
@@ -195,7 +195,7 @@ public sealed class MontagemDoAtoNormativo(
 
         LinhagemDoAto linhagem = await cadeia.ResolverAsync(command, cancellationToken).ConfigureAwait(false);
         return !command.ChegouPeloDominioDono
-            && RecusaDoVinculoExclusivoDoDominio(linhagem.Vinculos.Select(v => v.EntidadeTipo)) is { } herdado
+            && RecusaDoVinculoExclusivoDoDominio(linhagem.Vinculos.Select(v => v.Tipo)) is { } herdado
             ? Result<DadosConferidos>.Failure(herdado)
             : Result<DadosConferidos>.Success(new DadosConferidos(tipo, versao, linhagem));
     }
@@ -206,16 +206,33 @@ public sealed class MontagemDoAtoNormativo(
     /// factory gerá-lo.
     /// </summary>
     private static AtoNormativo Criar(
-        RegistrarAtoNormativoCommand command, DadosConferidos dados, DateTimeOffset publicadoEm)
-    {
-        AtributosDoTipoAto atributos = dados.Tipo.Atributos;
-        return AtoNormativo.Registrar(
-            command.AtoId ?? Guid.Empty, command.Orgao, command.Serie, command.Ano, command.Numero,
-            dados.Tipo.Codigo, atributos.CongelaConfiguracao, atributos.EfeitoIrreversivel, atributos.UnicoPorObjeto,
-            command.DataDoAto, command.DocumentoHash, command.Assinante, publicadoEm, dados.Versao,
-            command.AtoRetificadoId, command.MotivoRetificacao, dados.Linhagem.Vinculos, atributos.Nome,
+        RegistrarAtoNormativoCommand command, DadosConferidos dados, DateTimeOffset publicadoEm) =>
+        AtoNormativo.Registrar(
+            command.AtoId ?? Guid.Empty,
+            EssenciaDeclarada(command, dados.Tipo),
+            publicadoEm,
+            dados.Versao,
+            dados.Linhagem.Vinculos,
             AnexosConferiveis(command));
-    }
+
+    /// <summary>
+    /// A essência que o comando declara, com o tipo já resolvido (no catálogo ou conferido pelo
+    /// domínio que publicou).
+    /// </summary>
+    private static EssenciaDocumentalDoAto EssenciaDeclarada(RegistrarAtoNormativoCommand command, TipoDoAtoNoRegistro tipo) =>
+        new(
+            new NumeracaoDoAto(
+                command.Orgao,
+                command.Serie,
+                command.Ano,
+                command.Numero),
+            tipo,
+            command.DataDoAto,
+            command.DocumentoHash,
+            command.Assinante,
+            new RelacaoDeRetificacao(
+                command.AtoRetificadoId,
+                command.MotivoRetificacao));
 
     private async Task<DomainError?> ReservarAsync(
         RegistrarAtoNormativoCommand command, AtoNormativo ato, DadosConferidos dados, CancellationToken cancellationToken)
@@ -226,10 +243,8 @@ public sealed class MontagemDoAtoNormativo(
             .ReservarAsync(ato, dados.Linhagem.IdsDaPropriaCadeia, raiz, cancellationToken).ConfigureAwait(false);
     }
 
-    private sealed record TipoResolvido(string Codigo, AtributosDoTipoAto Atributos);
-
     private sealed record DadosConferidos(
-        TipoResolvido Tipo,
+        TipoDoAtoNoRegistro Tipo,
         ReferenciaVersaoDoObjeto? Versao,
         LinhagemDoAto Linhagem);
 }

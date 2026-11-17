@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Publicacoes.Application.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
+using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 
 /// <summary>
 /// Persistência da vaga que um objeto reserva para uma única linhagem de atos de
@@ -19,7 +20,7 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
     Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class VagaDeLinhagemConfiguration : IEntityTypeConfiguration<VagaDeLinhagem>
 {
-    private const int EntidadeTipoMaxLength = 60;
+    private const int EntidadeTipoMaxLength = TipoDaEntidadeVinculada.TamanhoMaximo;
     private const int TipoCodigoMaxLength = 60;
 
     public void Configure(EntityTypeBuilder<VagaDeLinhagem> builder)
@@ -34,7 +35,7 @@ internal sealed class VagaDeLinhagemConfiguration : IEntityTypeConfiguration<Vag
             {
                 t.HasCheckConstraint(
                     "ck_vagas_de_linhagem_entidade_tipo_formato",
-                    "entidade_tipo ~ '^[A-Z0-9]+(_[A-Z0-9]+)*$'");
+                    $"entidade_tipo ~ '{TipoDaEntidadeVinculada.Padrao}'");
 
                 t.HasCheckConstraint(
                     "ck_vagas_de_linhagem_entidade_id_nao_zero",

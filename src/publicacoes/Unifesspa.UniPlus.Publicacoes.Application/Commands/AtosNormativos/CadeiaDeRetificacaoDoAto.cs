@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
+using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 
 /// <summary>
 /// O que o ato que emenda outro herda e deve respeitar: as invariantes da cadeia de retificação
@@ -81,25 +82,25 @@ public sealed class CadeiaDeRetificacaoDoAto(IAtoNormativoRepository atos)
     /// não estética: as vagas do objeto são reservadas nesta ordem, e duas transações que reservem
     /// o mesmo par de objetos em ordens opostas travariam uma na outra.
     /// </remarks>
-    private async Task<IReadOnlyList<(string EntidadeTipo, Guid EntidadeId)>> ResolverVinculosAsync(
+    private async Task<IReadOnlyList<EntidadeVinculada>> ResolverVinculosAsync(
         RegistrarAtoNormativoCommand command, CancellationToken cancellationToken)
     {
-        List<(string EntidadeTipo, Guid EntidadeId)> vinculos = [.. VinculosDeclarados(command)];
+        List<EntidadeVinculada> vinculos = [.. VinculosDeclarados(command)];
         if (command.AtoRetificadoId is { } retificadoId)
         {
             vinculos.AddRange(await HerdadosSemRepetirAsync(retificadoId, vinculos, cancellationToken).ConfigureAwait(false));
         }
 
-        return [.. vinculos.OrderBy(v => v.EntidadeTipo, StringComparer.Ordinal).ThenBy(v => v.EntidadeId)];
+        return [.. vinculos.OrderBy(v => v.Tipo, StringComparer.Ordinal).ThenBy(v => v.Id)];
     }
 
-    private async Task<IEnumerable<(string EntidadeTipo, Guid EntidadeId)>> HerdadosSemRepetirAsync(
+    private async Task<IEnumerable<EntidadeVinculada>> HerdadosSemRepetirAsync(
         Guid retificadoId,
-        IEnumerable<(string EntidadeTipo, Guid EntidadeId)> declarados,
+        IEnumerable<EntidadeVinculada> declarados,
         CancellationToken cancellationToken)
     {
-        HashSet<(string, Guid)> vistos = [.. declarados];
-        IReadOnlyList<(string EntidadeTipo, Guid EntidadeId)> herdados = await atos
+        HashSet<EntidadeVinculada> vistos = [.. declarados];
+        IReadOnlyList<EntidadeVinculada> herdados = await atos
             .ListarVinculosDoAtoAsync(retificadoId, cancellationToken)
             .ConfigureAwait(false);
         return herdados.Where(vistos.Add);
@@ -109,11 +110,11 @@ public sealed class CadeiaDeRetificacaoDoAto(IAtoNormativoRepository atos)
     /// O elemento nulo já foi recusado pelo validator (422); descartá-lo aqui evita que um chamador
     /// interno, sem passar pelo HTTP, derrube a montagem com uma referência nula.
     /// </summary>
-    internal static IEnumerable<(string EntidadeTipo, Guid EntidadeId)> VinculosDeclarados(
+    internal static IEnumerable<EntidadeVinculada> VinculosDeclarados(
         RegistrarAtoNormativoCommand command) =>
         (command.Vinculos ?? [])
             .Where(v => v is not null)
-            .Select(v => (v.EntidadeTipo.Trim(), v.EntidadeId));
+            .Select(v => new EntidadeVinculada(v.EntidadeTipo.Trim(), v.EntidadeId));
 
     /// <summary>
     /// A classe de congelamento do ato que retifica deve coincidir com a do retificado: é essa
@@ -145,7 +146,7 @@ public sealed class CadeiaDeRetificacaoDoAto(IAtoNormativoRepository atos)
             retificadoId);
 
     private static string AtoJaRetificadoMensagem(AtoNormativo retificador) =>
-        $"O ato que se tentou retificar já foi retificado pelo ato {NumeracaoDoAto.Descrever(retificador)}. "
+        $"O ato que se tentou retificar já foi retificado pelo ato {retificador.Numeracao.Descrever()}. "
         + "A cadeia é linear: retifique a cabeça da cadeia, não um ato já retificado.";
 }
 
@@ -155,4 +156,4 @@ public sealed class CadeiaDeRetificacaoDoAto(IAtoNormativoRepository atos)
 /// </summary>
 public sealed record LinhagemDoAto(
     IReadOnlyList<Guid> IdsDaPropriaCadeia,
-    IReadOnlyList<(string EntidadeTipo, Guid EntidadeId)> Vinculos);
+    IReadOnlyList<EntidadeVinculada> Vinculos);

@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
+using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -86,7 +87,7 @@ public sealed class RegistroDeAtoNormativoPeloDominioTests
     {
         AtoNormativo ocupante = AtoExistente(Tipo, congela: true);
         _atos.ObterAtoConflitanteNoObjetoAsync(
-                Objeto, Arg.Any<Guid>(), Tipo, Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
+                Arg.Is<EntidadeVinculada>(e => e.Tipo == Objeto), Tipo, Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(ocupante);
 
         Result resultado = await _porta.RegistrarAsync(Ato(unicoPorObjeto: true), CancellationToken.None);
@@ -101,7 +102,7 @@ public sealed class RegistroDeAtoNormativoPeloDominioTests
     public async Task Registrar_VagaDeOutraLinhagem_RecusaCitandoARaiz()
     {
         AtoNormativo raiz = AtoExistente(Tipo, congela: true);
-        _atos.ObterVagaDoObjetoAsync(Objeto, Arg.Any<Guid>(), Tipo, Arg.Any<CancellationToken>())
+        _atos.ObterVagaDoObjetoAsync(Arg.Is<EntidadeVinculada>(e => e.Tipo == Objeto), Tipo, Arg.Any<CancellationToken>())
             .Returns(VagaDeLinhagem.Criar(raiz, raiz.Vinculos.First(), raiz.Id));
         _atos.ObterPorIdParaLeituraAsync(raiz.Id, Arg.Any<CancellationToken>()).Returns(raiz);
 
@@ -188,6 +189,6 @@ public sealed class RegistroDeAtoNormativoPeloDominioTests
             DataDoAto = DataDoAto,
             DocumentoHash = Hash,
             PublicadoEm = PublicadoEm,
-            Vinculos = [(Objeto, ProcessoDoTeste)],
+            Vinculos = [new(Objeto, ProcessoDoTeste)],
         }.Registrar();
 }

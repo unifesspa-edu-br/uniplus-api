@@ -46,13 +46,19 @@ internal sealed record AtoNormativoDeTeste
 
     public string? MotivoRetificacao { get; init; }
 
-    public IEnumerable<(string EntidadeTipo, Guid EntidadeId)>? Vinculos { get; init; }
+    public IEnumerable<EntidadeVinculada>? Vinculos { get; init; }
 
     public IEnumerable<(string Nome, string TipoMidia, string Hash)>? Anexos { get; init; }
 
     public AtoNormativo Registrar() =>
-        AtoNormativo.Registrar(
-            Id, Orgao, Serie, Ano, Numero, TipoCodigo, CongelaConfiguracao, EfeitoIrreversivel,
-            UnicoPorObjeto, DataDoAto, DocumentoHash, Assinante, PublicadoEm, VersaoDoObjeto,
-            AtoRetificadoId, MotivoRetificacao, Vinculos, TipoNome, Anexos);
+        AtoNormativo.Registrar(Id, Essencia(), PublicadoEm, VersaoDoObjeto, Vinculos, Anexos);
+
+    private EssenciaDocumentalDoAto Essencia() =>
+        new(
+            new NumeracaoDoAto(Orgao, Serie, Ano, Numero),
+            new TipoDoAtoNoRegistro(TipoCodigo, TipoNome, CongelaConfiguracao, EfeitoIrreversivel, UnicoPorObjeto),
+            DataDoAto,
+            DocumentoHash,
+            Assinante,
+            new RelacaoDeRetificacao(AtoRetificadoId, MotivoRetificacao));
 }

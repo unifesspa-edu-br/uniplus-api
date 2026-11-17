@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
+using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Publicacoes.IntegrationTests.Infrastructure;
@@ -31,7 +32,7 @@ public sealed class AtoConflitanteNoObjetoPersistenceTests
     [Fact(DisplayName = "O ato vivo do tipo pedido, fora da cadeia, é o conflitante; o de outro tipo e o da própria cadeia não contam")]
     public async Task ObterAtoConflitante_ComElegivel_DevolveSoOElegivel()
     {
-        ObjetoDoAto objeto = new(Rotulo, Guid.CreateVersion7());
+        EntidadeVinculada objeto = new(Rotulo, Guid.CreateVersion7());
         AtoNormativo elegivel = await GravarAsync(TipoPedido, objeto);
         await GravarAsync(OutroTipo, objeto);
         AtoNormativo daPropriaCadeia = await GravarAsync(TipoPedido, objeto);
@@ -47,7 +48,7 @@ public sealed class AtoConflitanteNoObjetoPersistenceTests
     [Fact(DisplayName = "Sem ato elegível, o de outro tipo e o da própria cadeia não conflitam")]
     public async Task ObterAtoConflitante_SemElegivel_DevolveNulo()
     {
-        ObjetoDoAto objeto = new(Rotulo, Guid.CreateVersion7());
+        EntidadeVinculada objeto = new(Rotulo, Guid.CreateVersion7());
         await GravarAsync(OutroTipo, objeto);
         AtoNormativo daPropriaCadeia = await GravarAsync(TipoPedido, objeto);
 
@@ -59,20 +60,20 @@ public sealed class AtoConflitanteNoObjetoPersistenceTests
     [Fact(DisplayName = "O ato elegível de um objeto não conflita com outro rótulo nem com outro identificador")]
     public async Task ObterAtoConflitante_OutroObjeto_DevolveNulo()
     {
-        ObjetoDoAto objeto = new(Rotulo, Guid.CreateVersion7());
+        EntidadeVinculada objeto = new(Rotulo, Guid.CreateVersion7());
         await GravarAsync(TipoPedido, objeto);
 
-        (await ObterConflitanteAsync(new ObjetoDoAto("CHAMADA", objeto.Id), TipoPedido, [])).Should().BeNull();
-        (await ObterConflitanteAsync(new ObjetoDoAto(Rotulo, Guid.CreateVersion7()), TipoPedido, [])).Should().BeNull();
+        (await ObterConflitanteAsync(new EntidadeVinculada("CHAMADA", objeto.Id), TipoPedido, [])).Should().BeNull();
+        (await ObterConflitanteAsync(new EntidadeVinculada(Rotulo, Guid.CreateVersion7()), TipoPedido, [])).Should().BeNull();
     }
 
-    private async Task<AtoNormativo> GravarAsync(string tipoCodigo, ObjetoDoAto objeto)
+    private async Task<AtoNormativo> GravarAsync(string tipoCodigo, EntidadeVinculada objeto)
     {
         AtoNormativo ato = new AtoNormativoDeTeste
         {
             Numero = null,
             TipoCodigo = tipoCodigo,
-            Vinculos = [(objeto.Tipo, objeto.Id)],
+            Vinculos = [new(objeto.Tipo, objeto.Id)],
         }.Registrar();
 
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
@@ -83,12 +84,10 @@ public sealed class AtoConflitanteNoObjetoPersistenceTests
     }
 
     private async Task<AtoNormativo?> ObterConflitanteAsync(
-        ObjetoDoAto objeto, string tipoCodigo, IReadOnlyCollection<Guid> idsDaPropriaCadeia)
+        EntidadeVinculada objeto, string tipoCodigo, IReadOnlyCollection<Guid> idsDaPropriaCadeia)
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         return await new AtoNormativoRepository(ctx)
-            .ObterAtoConflitanteNoObjetoAsync(objeto.Tipo, objeto.Id, tipoCodigo, idsDaPropriaCadeia, CancellationToken.None);
+            .ObterAtoConflitanteNoObjetoAsync(objeto, tipoCodigo, idsDaPropriaCadeia, CancellationToken.None);
     }
-
-    private readonly record struct ObjetoDoAto(string Tipo, Guid Id);
 }

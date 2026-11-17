@@ -83,6 +83,18 @@ public sealed class AtosDaEntidadeRecusasEndpointTests
         await resposta.AssertNoPiiAsync();
     }
 
+    [Theory(DisplayName = "Tipo de entidade com quebra de linha no fim é recusado com 400, como o PostgreSQL recusaria o rótulo")]
+    [InlineData("PROCESSO_SELETIVO\n")]
+    [InlineData("PROCESSO_SELETIVO\r\n")]
+    public async Task TipoDeEntidadeComQuebraDeLinhaFinal_Retorna400(string rotulo)
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage resposta = await ListarAsync(client, rotulo, Guid.CreateVersion7());
+
+        await ConferirTipoDeEntidadeInvalidoAsync(resposta);
+    }
+
     [Fact(DisplayName = "Âncora do cursor que não é instante é recusada com 400 antes de consultar os atos")]
     public async Task AncoraQueNaoEhInstante_Retorna400SemConsultar()
     {

@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
+using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Performance",
@@ -13,7 +14,7 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
     Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class VinculoAtoEntidadeConfiguration : IEntityTypeConfiguration<VinculoAtoEntidade>
 {
-    private const int EntidadeTipoMaxLength = 60;
+    private const int EntidadeTipoMaxLength = TipoDaEntidadeVinculada.TamanhoMaximo;
 
     public void Configure(EntityTypeBuilder<VinculoAtoEntidade> builder)
     {
@@ -31,7 +32,7 @@ internal sealed class VinculoAtoEntidadeConfiguration : IEntityTypeConfiguration
                 // entidade se partiria em duas na consulta.
                 t.HasCheckConstraint(
                     "ck_vinculos_do_ato_com_entidade_tipo_formato",
-                    "entidade_tipo ~ '^[A-Z0-9]+(_[A-Z0-9]+)*$'");
+                    $"entidade_tipo ~ '{TipoDaEntidadeVinculada.Padrao}'");
 
                 // Um Guid.Empty não designa objeto algum — defesa contra insert cru.
                 t.HasCheckConstraint(
