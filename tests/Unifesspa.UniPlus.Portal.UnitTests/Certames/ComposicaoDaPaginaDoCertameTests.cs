@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Portal.UnitTests.Certames;
 
 using AwesomeAssertions;
+using AwesomeAssertions.Specialized;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Portal.Application.Certames;
@@ -12,32 +13,29 @@ public sealed class ComposicaoDaPaginaDoCertameTests
 
     private static readonly Guid ProcessoId = Guid.Parse("0192a000-0000-7000-8000-000000000001");
     private static readonly Guid Criador = Guid.Parse("0192a000-0000-7000-8000-0000000000a1");
+    private static readonly Guid AberturaId = Guid.Parse("0192a000-0000-7000-8000-0000000000a2");
+    private static readonly Guid PrimeiraRetificacaoId = Guid.Parse("0192a000-0000-7000-8000-0000000000a3");
+    private static readonly Guid AvisoId = Guid.Parse("0192a000-0000-7000-8000-0000000000a4");
     private static readonly Uri EditalNoAcervo = new("https://acervo.example/editais/2026/ceps/edital-abertura/medicina-2027/0192a000-0000-7000-8000-0000000000a1/abc.pdf");
 
+    /// <summary>
+    /// Inverter a ordem da origem mantém o desempate dela: o aviso, registrado depois do edital
+    /// na mesma data, vem antes dele.
+    /// </summary>
     [Fact]
     public async Task Compoe_os_dados_do_certame_com_a_linha_do_tempo_do_mais_recente_para_o_mais_antigo()
     {
         AtoDaOrigem edital = Ato(Criador, "EDITAL", "Edital de abertura", "012/2026", new(2026, 3, 10), congela: true);
         AtoDaOrigem aviso = Ato(Guid.NewGuid(), "AVISO", "Aviso", null, new(2026, 3, 10));
         AtoDaOrigem homologacao = Ato(Guid.NewGuid(), "HOMOLOGACAO", "Homologação", "3", new(2026, 4, 2));
-
-        ComposicaoDaPaginaDoCertame composicao = Montar(
-            Encontrado(),
-            new LeituraDosAtos([edital, aviso, homologacao], null));
-
+        ComposicaoDaPaginaDoCertame composicao = Montar(Encontrado(), new LeituraDosAtos([edital, aviso, homologacao], null));
         Result<PaginaDoCertame> resultado = await composicao.ComporPorIdentificadorAsync(Identificador, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
         PaginaDoCertame pagina = resultado.Value!;
-        pagina.ProcessoSeletivoId.Should().Be(ProcessoId);
-        pagina.Nome.Should().Be("Medicina 2027");
-        pagina.NumeroEdital.Should().Be("012/2026");
-        pagina.Situacao.Should().Be(SituacaoDaInscricao.InscricoesAbertas);
+        ConferirDadosDoCertameDeSelecao(pagina);
         pagina.Degradacao.Should().BeNull();
-
-        // Inverter a ordem da origem mantém o desempate dela: o aviso, registrado depois do edital
-        // na mesma data, vem antes dele.
-        pagina.LinhaDoTempo.Select(e => e.Id).Should().Equal(homologacao.Id, aviso.Id, edital.Id);
+        pagina.LinhaDoTempo.Select(evento => evento.Id).Should().Equal(homologacao.Id, aviso.Id, edital.Id);
     }
 
     [Fact]
@@ -69,7 +67,7 @@ public sealed class ComposicaoDaPaginaDoCertameTests
     [Theory]
     [InlineData(FalhaNaLeituraDosAtos.OrigemIndisponivel, MotivoDaDegradacao.OrigemIndisponivel)]
     [InlineData(FalhaNaLeituraDosAtos.FalhaNaPaginacao, MotivoDaDegradacao.FalhaNaPaginacao)]
-    [InlineData(FalhaNaLeituraDosAtos.TetoDePaginas, MotivoDaDegradacao.TetoDePaginas)]
+    [InlineData(FalhaNaLeituraDosAtos.LimiteDePaginas, MotivoDaDegradacao.LimiteDePaginas)]
     public async Task Leitura_de_atos_interrompida_degrada_mantendo_o_que_foi_lido(
         FalhaNaLeituraDosAtos falha,
         MotivoDaDegradacao esperado)
@@ -81,7 +79,7 @@ public sealed class ComposicaoDaPaginaDoCertameTests
         PaginaDoCertame pagina = (await composicao.ComporPorIdentificadorAsync(Identificador, CancellationToken.None)).Value!;
 
         pagina.Degradacao.Should().Be(esperado);
-        pagina.LinhaDoTempo.Select(e => e.Id).Should().Equal(edital.Id);
+        pagina.LinhaDoTempo.Select(evento => evento.Id).Should().Equal(edital.Id);
         pagina.Nome.Should().Be("Medicina 2027", "a degradação é só da linha do tempo; o certame continua servido");
     }
 
@@ -215,74 +213,52 @@ public sealed class ComposicaoDaPaginaDoCertameTests
     [Fact]
     public async Task Edital_vigente_e_o_documento_e_a_data_do_ato_que_criou_a_versao_servida()
     {
-        AtoDaOrigem abertura = Ato(Guid.NewGuid(), "EDITAL", "Edital de abertura", "012/2026", new(2026, 3, 10), congela: true);
-        AtoDaOrigem retificacao = Ato(Criador, "RETIFICACAO", "Retificação", "013/2026", new(2026, 3, 20), congela: true);
-        AtoDaOrigem aviso = Ato(Guid.NewGuid(), "AVISO", "Aviso", null, new(2026, 4, 1));
-
         ComposicaoDaPaginaDoCertame composicao = Montar(
             Encontrado(new Dictionary<Guid, IReadOnlyList<DocumentoDoEvento>> { [Criador] = [Principal(EditalNoAcervo)] }),
-            new LeituraDosAtos([abertura, retificacao, aviso], null));
+            AtosDoEditalRetificadoComAviso());
 
         PaginaDoCertame pagina = (await composicao.ComporPorIdentificadorAsync(Identificador, CancellationToken.None)).Value!;
 
         pagina.DocumentoEditalUrl.Should().Be(EditalNoAcervo);
         pagina.DataDoAto.Should().Be(new DateOnly(2026, 3, 20), "é a data do edital vigente, não a do ato mais recente");
-        pagina.LinhaDoTempo.Single(e => e.Id == Criador).DocumentoUrl.Should().Be(EditalNoAcervo);
-        pagina.LinhaDoTempo.Where(e => e.Id != Criador).Select(e => e.DocumentoUrl)
+        pagina.LinhaDoTempo.Single(evento => evento.Id == Criador).DocumentoUrl.Should().Be(EditalNoAcervo);
+        pagina.LinhaDoTempo.Where(evento => evento.Id != Criador).Select(evento => evento.DocumentoUrl)
             .Should().AllSatisfy(url => url.Should().BeNull(), "o edital do acervo é o da versão servida, e não de outro ato");
     }
 
     [Fact]
     public async Task Cada_evento_de_ato_que_criou_versao_traz_o_edital_daquela_versao()
     {
-        AtoDaOrigem abertura = Ato(Guid.NewGuid(), "EDITAL", "Edital de abertura", "012/2026", new(2026, 3, 10), congela: true);
-        AtoDaOrigem primeiraRetificacao = Ato(Guid.NewGuid(), "RETIFICACAO", "Retificação", "013/2026", new(2026, 3, 15), congela: true);
-        AtoDaOrigem retificacao = Ato(Criador, "RETIFICACAO", "Retificação", "014/2026", new(2026, 3, 20), congela: true);
-        AtoDaOrigem aviso = Ato(Guid.NewGuid(), "AVISO", "Aviso", null, new(2026, 4, 1));
         Uri daAbertura = new("https://acervo.example/editais/abertura.pdf");
         Uri daPrimeira = new("https://acervo.example/editais/primeira.pdf");
         Uri daVigente = new("https://acervo.example/editais/vigente.pdf");
-
-        ComposicaoDaPaginaDoCertame composicao = Montar(
-            Encontrado(new Dictionary<Guid, IReadOnlyList<DocumentoDoEvento>>
-            {
-                [abertura.Id] = [Principal(daAbertura)],
-                [primeiraRetificacao.Id] = [Principal(daPrimeira)],
-                [Criador] = [Principal(daVigente)],
-            }),
-            new LeituraDosAtos([abertura, primeiraRetificacao, retificacao, aviso], null));
+        ComposicaoDaPaginaDoCertame composicao = ComposicaoComTresVersoesDoEditalEUmAviso(daAbertura, daPrimeira, daVigente);
 
         PaginaDoCertame pagina = (await composicao.ComporPorIdentificadorAsync(Identificador, CancellationToken.None)).Value!;
 
-        pagina.LinhaDoTempo.Single(e => e.Id == abertura.Id).DocumentoUrl.Should().Be(daAbertura);
-        pagina.LinhaDoTempo.Single(e => e.Id == primeiraRetificacao.Id).DocumentoUrl.Should().Be(daPrimeira);
-        pagina.LinhaDoTempo.Single(e => e.Id == Criador).DocumentoUrl.Should().Be(daVigente);
-        pagina.LinhaDoTempo.Single(e => e.Id == aviso.Id).DocumentoUrl.Should().BeNull(
+        pagina.LinhaDoTempo.Single(evento => evento.Id == AberturaId).DocumentoUrl.Should().Be(daAbertura);
+        pagina.LinhaDoTempo.Single(evento => evento.Id == PrimeiraRetificacaoId).DocumentoUrl.Should().Be(daPrimeira);
+        pagina.LinhaDoTempo.Single(evento => evento.Id == Criador).DocumentoUrl.Should().Be(daVigente);
+        pagina.LinhaDoTempo.Single(evento => evento.Id == AvisoId).DocumentoUrl.Should().BeNull(
             "ato que não criou versão de Seleção não tem edital no acervo");
     }
 
     [Fact]
     public async Task Cada_evento_traz_os_documentos_do_acervo_e_o_ato_sem_documento_traz_lista_vazia()
     {
-        AtoDaOrigem abertura = Ato(Guid.NewGuid(), "EDITAL", "Edital de abertura", "012/2026", new(2026, 3, 10), congela: true);
-        AtoDaOrigem retificacao = Ato(Criador, "RETIFICACAO", "Retificação", "013/2026", new(2026, 3, 20), congela: true);
-        AtoDaOrigem aviso = Ato(Guid.NewGuid(), "AVISO", "Aviso", null, new(2026, 4, 1));
         DocumentoDoEvento principal = new(PapelDoDocumento.Principal, "edital.pdf", "application/pdf", 1200, EditalNoAcervo);
         DocumentoDoEvento anexo = new(PapelDoDocumento.Anexo, "Quadro de vagas.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", 800, new Uri("https://acervo.example/anexos/quadro.docx"));
-
         ComposicaoDaPaginaDoCertame composicao = Montar(
-            new ConsultaDoCertame.Encontrado(new CertameDaOrigem(
-                ProcessoId, Criador, "Medicina 2027", "012/2026", EditalNoAcervo,
-                new Dictionary<Guid, IReadOnlyList<DocumentoDoEvento>> { [Criador] = [principal, anexo] }, SituacaoDaInscricao.InscricoesAbertas)),
-            new LeituraDosAtos([abertura, retificacao, aviso], null));
+            Encontrado(new Dictionary<Guid, IReadOnlyList<DocumentoDoEvento>> { [Criador] = [principal, anexo] }),
+            AtosDoEditalRetificadoComAviso());
 
         PaginaDoCertame pagina = (await composicao.ComporPorIdentificadorAsync(Identificador, CancellationToken.None)).Value!;
 
-        pagina.LinhaDoTempo.Single(e => e.Id == Criador).Documentos.Should().Equal(principal, anexo);
-        pagina.LinhaDoTempo.Single(e => e.Id == Criador).DocumentoUrl.Should().Be(principal.Url,
+        pagina.LinhaDoTempo.Single(evento => evento.Id == Criador).Documentos.Should().Equal(principal, anexo);
+        pagina.LinhaDoTempo.Single(evento => evento.Id == Criador).DocumentoUrl.Should().Be(principal.Url,
             "o documentoUrl repete sempre o documento de papel principal");
-        pagina.LinhaDoTempo.Single(e => e.Id == abertura.Id).Documentos.Should().BeEmpty();
-        pagina.LinhaDoTempo.Single(e => e.Id == aviso.Id).Documentos.Should().BeEmpty("o ato avulso só ganha documentos com a sua própria publicação");
+        pagina.LinhaDoTempo.Single(evento => evento.Id == AberturaId).Documentos.Should().BeEmpty();
+        pagina.LinhaDoTempo.Single(evento => evento.Id == AvisoId).Documentos.Should().BeEmpty("o ato avulso só ganha documentos com a sua própria publicação");
     }
 
     [Fact]
@@ -303,8 +279,59 @@ public sealed class ComposicaoDaPaginaDoCertameTests
     {
         Type[] tipos = [typeof(AtoDaOrigem), typeof(EventoDaLinhaDoTempo), typeof(PaginaDoCertame), typeof(TipoDoEvento)];
 
-        tipos.SelectMany(t => t.GetProperties()).Select(p => p.Name)
+        tipos.SelectMany(tipo => tipo.GetProperties()).Select(propriedade => propriedade.Name)
             .Should().NotContain(nome => nome.Contains("Assinante", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task Falha_de_leitura_desconhecida_e_recusada_com_o_valor_e_o_texto_da_leitura()
+    {
+        FalhaNaLeituraDosAtos desconhecida = (FalhaNaLeituraDosAtos)99;
+        ComposicaoDaPaginaDoCertame composicao = Montar(Encontrado(), new LeituraDosAtos([], desconhecida));
+
+        Func<Task> composicaoComFalhaDesconhecida = () => composicao.ComporPorIdentificadorAsync(Identificador, CancellationToken.None);
+
+        ExceptionAssertions<ArgumentOutOfRangeException> excecao =
+            await composicaoComFalhaDesconhecida.Should().ThrowAsync<ArgumentOutOfRangeException>();
+        excecao.Which.ParamName.Should().Be("leitura");
+        excecao.Which.ActualValue.Should().Be(desconhecida);
+        excecao.Which.Message.Should().Contain("Falha de leitura desconhecida.");
+    }
+
+    private static void ConferirDadosDoCertameDeSelecao(PaginaDoCertame pagina)
+    {
+        pagina.ProcessoSeletivoId.Should().Be(ProcessoId);
+        pagina.Nome.Should().Be("Medicina 2027");
+        pagina.NumeroEdital.Should().Be("012/2026");
+        pagina.Situacao.Should().Be(SituacaoDaInscricao.InscricoesAbertas);
+    }
+
+    /// <summary>Edital de abertura, a retificação que criou a versão servida e um aviso posterior, na ordem da origem.</summary>
+    private static LeituraDosAtos AtosDoEditalRetificadoComAviso() =>
+        new(
+            [
+                Ato(AberturaId, "EDITAL", "Edital de abertura", "012/2026", new(2026, 3, 10), congela: true),
+                Ato(Criador, "RETIFICACAO", "Retificação", "013/2026", new(2026, 3, 20), congela: true),
+                Ato(AvisoId, "AVISO", "Aviso", null, new(2026, 4, 1)),
+            ],
+            null);
+
+    private static ComposicaoDaPaginaDoCertame ComposicaoComTresVersoesDoEditalEUmAviso(
+        Uri editalDaAbertura, Uri editalDaPrimeiraRetificacao, Uri editalVigente)
+    {
+        AtoDaOrigem abertura = Ato(AberturaId, "EDITAL", "Edital de abertura", "012/2026", new(2026, 3, 10), congela: true);
+        AtoDaOrigem primeiraRetificacao = Ato(PrimeiraRetificacaoId, "RETIFICACAO", "Retificação", "013/2026", new(2026, 3, 15), congela: true);
+        AtoDaOrigem retificacao = Ato(Criador, "RETIFICACAO", "Retificação", "014/2026", new(2026, 3, 20), congela: true);
+        AtoDaOrigem aviso = Ato(AvisoId, "AVISO", "Aviso", null, new(2026, 4, 1));
+
+        return Montar(
+            Encontrado(new Dictionary<Guid, IReadOnlyList<DocumentoDoEvento>>
+            {
+                [AberturaId] = [Principal(editalDaAbertura)],
+                [PrimeiraRetificacaoId] = [Principal(editalDaPrimeiraRetificacao)],
+                [Criador] = [Principal(editalVigente)],
+            }),
+            new LeituraDosAtos([abertura, primeiraRetificacao, retificacao, aviso], null));
     }
 
     private static ConsultaDoCertame.Encontrado Encontrado(IReadOnlyDictionary<Guid, IReadOnlyList<DocumentoDoEvento>>? documentosPorAto = null) =>

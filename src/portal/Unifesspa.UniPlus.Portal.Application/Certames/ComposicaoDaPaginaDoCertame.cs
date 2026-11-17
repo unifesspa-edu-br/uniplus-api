@@ -83,20 +83,11 @@ public sealed class ComposicaoDaPaginaDoCertame
             PaginaDoCertameErrorCodes.CertameNaoEncontrado,
             "Certame não encontrado."));
 
-    private async Task<PaginaDoCertame> ComporEncontradoAsync(
-        CertameDaOrigem certame,
-        CancellationToken cancellationToken)
+    private async Task<PaginaDoCertame> ComporEncontradoAsync(CertameDaOrigem certame, CancellationToken cancellationToken)
     {
         LeituraDosAtos leitura = await _registro
             .LerAtosAsync(certame.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
-
-        // A origem devolve do mais antigo para o mais recente, com o identificador de desempate;
-        // a página mostra o inverso, e inverter preserva o mesmo desempate.
-        EventoDaLinhaDoTempo[] linhaDoTempo =
-            [.. leitura.Atos.Reverse().Select(ato => ParaEvento(ato, DocumentosDo(ato, certame)))];
-
-        AtoDaOrigem? criador = leitura.Atos.FirstOrDefault(ato => ato.Id == certame.AtoCriadorId);
 
         return new PaginaDoCertame(
             certame.ProcessoSeletivoId,
@@ -104,55 +95,67 @@ public sealed class ComposicaoDaPaginaDoCertame
             certame.NumeroEdital,
             certame.Situacao,
             certame.DocumentoEditalUrl,
-            criador?.DataDoAto,
-            linhaDoTempo,
+            DataDoAtoCriador(leitura, certame),
+            LinhaDoTempoDe(leitura, certame),
             AvaliarDegradacao(certame, leitura));
     }
 
-    private static MotivoDaDegradacao? AvaliarDegradacao(CertameDaOrigem certame, LeituraDosAtos leitura)
+    private static DateOnly? DataDoAtoCriador(LeituraDosAtos leitura, CertameDaOrigem certame)
     {
-        switch (leitura.Falha)
-        {
-            case FalhaNaLeituraDosAtos.OrigemIndisponivel:
-                return MotivoDaDegradacao.OrigemIndisponivel;
-            case FalhaNaLeituraDosAtos.FalhaNaPaginacao:
-                return MotivoDaDegradacao.FalhaNaPaginacao;
-            case FalhaNaLeituraDosAtos.TetoDePaginas:
-                return MotivoDaDegradacao.TetoDePaginas;
-            case null:
-                break;
-            default:
-                throw new ArgumentOutOfRangeException(nameof(leitura), leitura.Falha, "Falha de leitura desconhecida.");
-        }
+        int posicao = PosicaoDoCriador(leitura.Atos, certame.AtoCriadorId);
 
-        IReadOnlyList<AtoDaOrigem> atos = leitura.Atos;
-        int posicaoDoCriador = -1;
-        for (int i = 0; i < atos.Count; i++)
-        {
-            if (atos[i].Id == certame.AtoCriadorId)
-            {
-                posicaoDoCriador = i;
-                break;
-            }
-        }
+        return posicao < 0 ? null : leitura.Atos[posicao].DataDoAto;
+    }
+
+    /// <summary>
+    /// A origem devolve do mais antigo para o mais recente, com o identificador de desempate; a
+    /// página mostra o inverso, e inverter preserva o mesmo desempate.
+    /// </summary>
+    private static EventoDaLinhaDoTempo[] LinhaDoTempoDe(LeituraDosAtos leitura, CertameDaOrigem certame) =>
+        [.. leitura.Atos.Reverse().Select(ato => ParaEvento(ato, DocumentosDo(ato, certame)))];
+
+    private static MotivoDaDegradacao? AvaliarDegradacao(CertameDaOrigem certame, LeituraDosAtos leitura) =>
+        MotivoDaFalha(leitura) ?? MotivoDaLinhaDoTempo(certame, leitura.Atos);
+
+    private static MotivoDaDegradacao? MotivoDaFalha(LeituraDosAtos leitura) => leitura.Falha switch
+    {
+        FalhaNaLeituraDosAtos.OrigemIndisponivel => MotivoDaDegradacao.OrigemIndisponivel,
+        FalhaNaLeituraDosAtos.FalhaNaPaginacao => MotivoDaDegradacao.FalhaNaPaginacao,
+        FalhaNaLeituraDosAtos.LimiteDePaginas => MotivoDaDegradacao.LimiteDePaginas,
+        null => null,
+        _ => throw new ArgumentOutOfRangeException(nameof(leitura), leitura.Falha, "Falha de leitura desconhecida."),
+    };
+
+    /// <summary>
+    /// "Mais recente" é a posição na ordem da própria origem, que já desempata atos da mesma data
+    /// pelo identificador — comparar datas aqui empataria a retificação publicada no mesmo dia do
+    /// ato que ela emenda.
+    /// </summary>
+    private static MotivoDaDegradacao? MotivoDaLinhaDoTempo(CertameDaOrigem certame, IReadOnlyList<AtoDaOrigem> atos)
+    {
+        int posicaoDoCriador = PosicaoDoCriador(atos, certame.AtoCriadorId);
 
         if (posicaoDoCriador < 0)
         {
             return MotivoDaDegradacao.CriadorAusente;
         }
 
-        // "Mais recente" é a posição na ordem da própria origem, que já desempata atos da mesma
-        // data pelo identificador — comparar datas aqui empataria a retificação publicada no mesmo
-        // dia do ato que ela emenda.
-        for (int i = posicaoDoCriador + 1; i < atos.Count; i++)
+        return atos.Skip(posicaoDoCriador + 1).Any(static ato => ato.CongelaConfiguracao)
+            ? MotivoDaDegradacao.DetalheAtrasado
+            : null;
+    }
+
+    private static int PosicaoDoCriador(IReadOnlyList<AtoDaOrigem> atos, Guid atoCriadorId)
+    {
+        for (int i = 0; i < atos.Count; i++)
         {
-            if (atos[i].CongelaConfiguracao)
+            if (atos[i].Id == atoCriadorId)
             {
-                return MotivoDaDegradacao.DetalheAtrasado;
+                return i;
             }
         }
 
-        return null;
+        return -1;
     }
 
     /// <summary>
@@ -179,7 +182,7 @@ public sealed class ComposicaoDaPaginaDoCertame
             ato.Ano,
             new TipoDoEvento(ato.TipoCodigo, nomeDoTipo),
             ato.MotivoRetificacao,
-            documentos.FirstOrDefault(static d => d.Papel == PapelDoDocumento.Principal)?.Url,
+            documentos.FirstOrDefault(static documento => documento.Papel == PapelDoDocumento.Principal)?.Url,
             documentos);
     }
 

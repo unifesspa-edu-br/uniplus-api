@@ -30,12 +30,28 @@ public sealed class ContratoPublicoDoCertameHttpTests
         }
         """;
 
+    private static readonly string EditaisPublicadosComDocumentosInvalidos = $$"""
+        "editaisPublicados": [
+          {
+            "atoId": "{{Criador}}",
+            "documentos": [
+              { "papel": "principal", "nome": "edital.pdf", "tipoDeMidia": "application/pdf", "tamanhoBytes": 1200, "urlDownload": "https://acervo.example/editais/abc.pdf" },
+              { "papel": "anexo", "nome": "Quadro de vagas.docx", "tipoDeMidia": "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "tamanhoBytes": 800, "urlDownload": "https://acervo.example/anexos/quadro.docx" },
+              { "papel": "outro", "nome": "papel desconhecido.pdf", "tipoDeMidia": "application/pdf", "tamanhoBytes": 1, "urlDownload": "https://acervo.example/x.pdf" },
+              { "papel": "anexo", "nome": "sem endereço.pdf", "tipoDeMidia": "application/pdf", "tamanhoBytes": 1, "urlDownload": "ftp://acervo.example/y.pdf" },
+              { "papel": "anexo", "tipoDeMidia": "application/pdf", "tamanhoBytes": 1, "urlDownload": "https://acervo.example/z.pdf" },
+              null
+            ]
+          }
+        ]
+        """;
+
     [Fact]
     public async Task Le_o_certame_pedindo_o_media_type_da_origem()
     {
         RedeSimulada rede = new((_, _) => RedeSimulada.Json(CorpoDoCertame, MediaType));
 
-        ConsultaDoCertame consulta = await Consultar(rede, c => c.ObterPorIdentificadorAsync("medicina-2027", CancellationToken.None));
+        ConsultaDoCertame consulta = await Consultar(rede, contrato => contrato.ObterPorIdentificadorAsync("medicina-2027", CancellationToken.None));
 
         consulta.Should().BeEquivalentTo(new ConsultaDoCertame.Encontrado(
             new CertameDaOrigem(
@@ -43,7 +59,7 @@ public sealed class ContratoPublicoDoCertameHttpTests
 
         HttpRequestMessage requisicao = rede.Requisicoes.Single();
         requisicao.RequestUri!.ToString().Should().Be($"{OrigensMontagem.EnderecoSelecao}/api/selecao/certames/medicina-2027");
-        requisicao.Headers.Accept.Select(a => a.MediaType).Should().Equal(MediaType);
+        requisicao.Headers.Accept.Select(cabecalho => cabecalho.MediaType).Should().Equal(MediaType);
     }
 
     [Theory]
@@ -55,7 +71,7 @@ public sealed class ContratoPublicoDoCertameHttpTests
         string corpo = CorpoDoCertame.Replace("https://acervo.example/editais/abc.pdf", endereco, StringComparison.Ordinal);
         RedeSimulada rede = new((_, _) => RedeSimulada.Json(corpo, MediaType));
 
-        ConsultaDoCertame consulta = await Consultar(rede, c => c.ObterPorIdentificadorAsync("medicina-2027", CancellationToken.None));
+        ConsultaDoCertame consulta = await Consultar(rede, contrato => contrato.ObterPorIdentificadorAsync("medicina-2027", CancellationToken.None));
 
         consulta.Should().BeOfType<ConsultaDoCertame.Encontrado>()
             .Which.Certame.DocumentoEditalUrl.Should().BeNull();
@@ -64,29 +80,14 @@ public sealed class ContratoPublicoDoCertameHttpTests
     [Fact]
     public async Task Documentos_do_edital_viram_lista_por_ato_e_documento_invalido_e_ignorado()
     {
-        string editais = $$"""
-            "editaisPublicados": [
-              {
-                "atoId": "{{Criador}}",
-                "documentos": [
-                  { "papel": "principal", "nome": "edital.pdf", "tipoDeMidia": "application/pdf", "tamanhoBytes": 1200, "urlDownload": "https://acervo.example/editais/abc.pdf" },
-                  { "papel": "anexo", "nome": "Quadro de vagas.docx", "tipoDeMidia": "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "tamanhoBytes": 800, "urlDownload": "https://acervo.example/anexos/quadro.docx" },
-                  { "papel": "outro", "nome": "papel desconhecido.pdf", "tipoDeMidia": "application/pdf", "tamanhoBytes": 1, "urlDownload": "https://acervo.example/x.pdf" },
-                  { "papel": "anexo", "nome": "sem endereço.pdf", "tipoDeMidia": "application/pdf", "tamanhoBytes": 1, "urlDownload": "ftp://acervo.example/y.pdf" },
-                  { "papel": "anexo", "tipoDeMidia": "application/pdf", "tamanhoBytes": 1, "urlDownload": "https://acervo.example/z.pdf" },
-                  null
-                ]
-              }
-            ]
-            """;
-        string corpo = CorpoDoCertame.Replace("\"situacao\"", editais + ", \"situacao\"", StringComparison.Ordinal);
+        string corpo = CorpoDoCertame.Replace("\"situacao\"", EditaisPublicadosComDocumentosInvalidos + ", \"situacao\"", StringComparison.Ordinal);
         RedeSimulada rede = new((_, _) => RedeSimulada.Json(corpo, MediaType));
 
-        ConsultaDoCertame consulta = await Consultar(rede, c => c.ObterPorIdentificadorAsync("medicina-2027", CancellationToken.None));
+        ConsultaDoCertame consulta = await Consultar(rede, contrato => contrato.ObterPorIdentificadorAsync("medicina-2027", CancellationToken.None));
 
         IReadOnlyList<DocumentoDoEvento> documentos = consulta.Should().BeOfType<ConsultaDoCertame.Encontrado>()
             .Which.Certame.DocumentosPorAto[Criador];
-        documentos.Select(d => (d.Papel, d.Nome, d.TamanhoBytes, d.Url.ToString())).Should().Equal(
+        documentos.Select(documento => (documento.Papel, documento.Nome, documento.TamanhoBytes, documento.Url.ToString())).Should().Equal(
             (PapelDoDocumento.Principal, "edital.pdf", 1200L, "https://acervo.example/editais/abc.pdf"),
             (PapelDoDocumento.Anexo, "Quadro de vagas.docx", 800L, "https://acervo.example/anexos/quadro.docx"));
     }
@@ -96,7 +97,7 @@ public sealed class ContratoPublicoDoCertameHttpTests
     {
         RedeSimulada rede = new((_, _) => RedeSimulada.Json(CorpoDoCertame, MediaType));
 
-        await Consultar(rede, c => c.ObterPorIdentificadorAsync("medicina-2027", CancellationToken.None));
+        await Consultar(rede, contrato => contrato.ObterPorIdentificadorAsync("medicina-2027", CancellationToken.None));
 
         HttpRequestMessage requisicao = rede.Requisicoes.Single();
         requisicao.Headers.Authorization.Should().BeNull();
@@ -110,7 +111,7 @@ public sealed class ContratoPublicoDoCertameHttpTests
 
         ConsultaDoCertame consulta = await Consultar(
             rede,
-            c => c.ObterPorIdentificadorAsync("medicina-2027", CancellationToken.None));
+            contrato => contrato.ObterPorIdentificadorAsync("medicina-2027", CancellationToken.None));
 
         consulta.Should().BeOfType<ConsultaDoCertame.Encontrado>();
         rede.Requisicoes.Single().RequestUri!.AbsolutePath.Should().Be("/api/selecao/certames/medicina-2027");
@@ -121,7 +122,7 @@ public sealed class ContratoPublicoDoCertameHttpTests
     {
         RedeSimulada rede = new((_, _) => RedeSimulada.Status(HttpStatusCode.NotFound));
 
-        ConsultaDoCertame consulta = await Consultar(rede, c => c.ObterPorIdentificadorAsync("medicina-2027", CancellationToken.None));
+        ConsultaDoCertame consulta = await Consultar(rede, contrato => contrato.ObterPorIdentificadorAsync("medicina-2027", CancellationToken.None));
 
         consulta.Should().BeOfType<ConsultaDoCertame.NaoEncontrado>();
         rede.Chamadas.Should().Be(1, "não encontrado é resposta, não falha transitória");
@@ -132,7 +133,7 @@ public sealed class ContratoPublicoDoCertameHttpTests
     {
         RedeSimulada rede = new((_, _) => RedeSimulada.Status(HttpStatusCode.ServiceUnavailable));
 
-        ConsultaDoCertame consulta = await Consultar(rede, c => c.ObterPorIdentificadorAsync("medicina-2027", CancellationToken.None));
+        ConsultaDoCertame consulta = await Consultar(rede, contrato => contrato.ObterPorIdentificadorAsync("medicina-2027", CancellationToken.None));
 
         consulta.Should().BeOfType<ConsultaDoCertame.Indisponivel>();
         rede.Chamadas.Should().Be(2, "uma tentativa e uma repetição, conforme configurado");
@@ -143,39 +144,25 @@ public sealed class ContratoPublicoDoCertameHttpTests
     {
         RedeSimulada rede = new((_, _) => throw new HttpRequestException("conexão recusada"));
 
-        ConsultaDoCertame consulta = await Consultar(rede, c => c.ObterPorIdentificadorAsync("medicina-2027", CancellationToken.None));
+        ConsultaDoCertame consulta = await Consultar(rede, contrato => contrato.ObterPorIdentificadorAsync("medicina-2027", CancellationToken.None));
 
         consulta.Should().BeOfType<ConsultaDoCertame.Indisponivel>();
     }
 
     [Fact]
-    public async Task Circuito_aberto_vira_indisponivel_sem_chegar_a_rede()
+    public async Task Interrupcao_por_falhas_vira_indisponivel_sem_chegar_a_rede()
     {
         RedeSimulada rede = new((_, _) => RedeSimulada.Status(HttpStatusCode.ServiceUnavailable));
+        using ServiceProvider provedor = MontarComInterrupcaoEmDuasChamadas(rede);
 
-        using ServiceProvider provedor = OrigensMontagem.Montar(rede, new Dictionary<string, string?>
-        {
-            ["MaximoDeRetentativas"] = "0",
-            ["ChamadasMinimasParaAvaliarCorte"] = "2",
-        });
-
-        // Duas falhas na janela abrem o circuito.
-        for (int i = 0; i < 2; i++)
-        {
-            using IServiceScope escopo = provedor.CreateScope();
-            await escopo.ServiceProvider.GetRequiredService<IContratoPublicoDoCertame>()
-                .ObterPorIdentificadorAsync("medicina-2027", CancellationToken.None);
-        }
-
+        await InterromperComDuasFalhasAsync(provedor);
         int chamadasAntes = rede.Chamadas;
 
-        using IServiceScope seguinte = provedor.CreateScope();
-        ConsultaDoCertame consulta = await seguinte.ServiceProvider.GetRequiredService<IContratoPublicoDoCertame>()
-            .ObterPorIdentificadorAsync("medicina-2027", CancellationToken.None);
+        ConsultaDoCertame consulta = await ConsultarNumEscopoNovoAsync(provedor);
 
         consulta.Should().BeOfType<ConsultaDoCertame.Indisponivel>(
-            "o circuito aberto não pode escapar como exceção e virar 500 no tratador global");
-        rede.Chamadas.Should().Be(chamadasAntes, "com o circuito aberto a consulta nem chega à origem");
+            "a interrupção por falhas não pode escapar como exceção e virar 500 no tratador global");
+        rede.Chamadas.Should().Be(chamadasAntes, "com a interrupção por falhas a consulta nem chega à origem");
     }
 
     [Fact]
@@ -185,7 +172,7 @@ public sealed class ContratoPublicoDoCertameHttpTests
             $$"""{ "processoSeletivoId": "{{ProcessoId}}", "atoCriadorId": "{{Criador}}" }""",
             MediaType));
 
-        ConsultaDoCertame consulta = await Consultar(rede, c => c.ObterPorIdentificadorAsync("medicina-2027", CancellationToken.None));
+        ConsultaDoCertame consulta = await Consultar(rede, contrato => contrato.ObterPorIdentificadorAsync("medicina-2027", CancellationToken.None));
 
         consulta.Should().BeOfType<ConsultaDoCertame.Indisponivel>();
     }
@@ -197,7 +184,7 @@ public sealed class ContratoPublicoDoCertameHttpTests
         using CancellationTokenSource cancelamento = new();
         await cancelamento.CancelAsync();
 
-        Func<Task> chamada = () => Consultar(rede, c => c.ObterPorIdentificadorAsync("medicina-2027", cancelamento.Token));
+        Func<Task> chamada = () => Consultar(rede, contrato => contrato.ObterPorIdentificadorAsync("medicina-2027", cancelamento.Token));
 
         await chamada.Should().ThrowAsync<OperationCanceledException>();
     }
@@ -213,10 +200,33 @@ public sealed class ContratoPublicoDoCertameHttpTests
             throw new TaskCanceledException();
         });
 
-        Func<Task> chamada = () => Consultar(rede, c => c.ObterPorIdentificadorAsync("medicina-2027", cancelamento.Token));
+        Func<Task> chamada = () => Consultar(rede, contrato => contrato.ObterPorIdentificadorAsync("medicina-2027", cancelamento.Token));
 
         await chamada.Should().ThrowAsync<OperationCanceledException>(
             "quem desistiu da leitura não quer uma página marcada como indisponível");
+    }
+
+    private static ServiceProvider MontarComInterrupcaoEmDuasChamadas(RedeSimulada rede) =>
+        OrigensMontagem.Montar(rede, new Dictionary<string, string?>
+        {
+            ["MaximoDeRetentativas"] = "0",
+            ["ChamadasMinimasParaAvaliarInterrupcao"] = "2",
+        });
+
+    private static async Task InterromperComDuasFalhasAsync(ServiceProvider provedor)
+    {
+        for (int tentativa = 0; tentativa < 2; tentativa++)
+        {
+            await ConsultarNumEscopoNovoAsync(provedor);
+        }
+    }
+
+    private static async Task<ConsultaDoCertame> ConsultarNumEscopoNovoAsync(ServiceProvider provedor)
+    {
+        using IServiceScope escopo = provedor.CreateScope();
+
+        return await escopo.ServiceProvider.GetRequiredService<IContratoPublicoDoCertame>()
+            .ObterPorIdentificadorAsync("medicina-2027", CancellationToken.None);
     }
 
     private static async Task<ConsultaDoCertame> Consultar(

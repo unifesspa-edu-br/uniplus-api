@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Portal.Infrastructure.Origens;
 
+using System.Net.Http.Headers;
 using System.Web;
 
 using Microsoft.Extensions.Logging;
@@ -36,86 +37,138 @@ internal sealed partial class RegistroDeAtosDoCertameHttp : IRegistroDeAtosDoCer
     public async Task<LeituraDosAtos> LerAtosAsync(Guid processoSeletivoId, CancellationToken cancellationToken)
     {
         List<AtoDaOrigem> atos = [];
+        PaginaDeAtosLida pagina;
         string? cursor = null;
-        int paginasLidas = 0;
+        int numero = 0;
 
-        while (true)
+        do
         {
-            // Uma falha na primeira página é a origem fora; depois dela, é o percurso que se
-            // interrompeu — e a página já tem parte da linha do tempo para mostrar.
-            FalhaNaLeituraDosAtos falhaDestaPagina = paginasLidas == 0
-                ? FalhaNaLeituraDosAtos.OrigemIndisponivel
-                : FalhaNaLeituraDosAtos.FalhaNaPaginacao;
+            pagina = await LerPaginaAsync(processoSeletivoId, cursor, ++numero, cancellationToken).ConfigureAwait(false);
+            atos.AddRange(pagina.Atos);
+            cursor = pagina.ProximoCursor;
+        }
+        while (!pagina.Terminou);
 
-            // A falha de envio chega dentro da resposta, sem exceção (ver ContratoPublicoDoCertameHttp);
-            // só o cancelamento pedido por quem chama continua saindo como exceção.
-            IApiResponse<List<AtoNormativoPayload>> resposta = await _api
-                .ListarAsync(
-                    processoSeletivoId,
-                    cursor,
-                    cursor is null ? _opcoes.ItensPorPaginaDeAtos : null,
-                    cancellationToken)
-                .ConfigureAwait(false);
+        return new LeituraDosAtos(atos, pagina.Falha);
+    }
 
-            using (resposta)
-            {
-                if (resposta.StatusCode is null)
-                {
-                    LogOrigemSemResposta(_logger, paginasLidas + 1, resposta.Error);
-                    return new LeituraDosAtos(atos, falhaDestaPagina);
-                }
+    /// <summary>
+    /// A falha de envio chega dentro da resposta, sem exceção (ver <c>ContratoPublicoDoCertameHttp</c>);
+    /// só o cancelamento pedido por quem chama continua saindo como exceção.
+    /// </summary>
+    private async Task<PaginaDeAtosLida> LerPaginaAsync(
+        Guid processoSeletivoId, string? cursor, int numero, CancellationToken cancellationToken)
+    {
+        IApiResponse<List<AtoNormativoPayload>> resposta = await _api
+            .ListarAsync(processoSeletivoId, cursor, cursor is null ? _opcoes.ItensPorPaginaDeAtos : null, cancellationToken)
+            .ConfigureAwait(false);
 
-                if (!resposta.IsSuccessStatusCode || resposta.Content is not { } pagina)
-                {
-                    // Inclui o cursor recusado no meio do caminho (expirado, por exemplo) — a origem
-                    // não tem mais como continuar a partir dele — e o corpo fora do contrato.
-                    LogRespostaInesperada(_logger, paginasLidas + 1, (int)resposta.StatusCode);
-                    return new LeituraDosAtos(atos, falhaDestaPagina);
-                }
-
-                // A anotação de nulidade não alcança os elementos da lista desserializada: um ato
-                // nulo na página é ato fora do contrato, como o ato sem id ou sem tipo.
-                foreach (AtoNormativoPayload ato in pagina)
-                {
-                    if (ato is null || ato.Id == Guid.Empty || string.IsNullOrWhiteSpace(ato.TipoCodigo))
-                    {
-                        LogAtoForaDoContrato(_logger, paginasLidas + 1);
-                        return new LeituraDosAtos(atos, falhaDestaPagina);
-                    }
-
-                    atos.Add(new AtoDaOrigem(
-                        ato.Id,
-                        ato.TipoCodigo,
-                        ato.TipoNome,
-                        ato.Ano,
-                        ato.Numero,
-                        ato.DataDoAto,
-                        ato.CongelaConfiguracao,
-                        ato.MotivoRetificacao));
-                }
-
-                paginasLidas++;
-
-                if (!HaProximaPagina(resposta.Headers, out cursor))
-                {
-                    return new LeituraDosAtos(atos, null);
-                }
-
-                if (cursor is null)
-                {
-                    // A origem anuncia uma próxima página que não há como pedir. Encerrar aqui como
-                    // se a lista tivesse acabado cortaria os atos mais recentes em silêncio.
-                    LogProximaPaginaIlegivel(_logger, paginasLidas);
-                    return new LeituraDosAtos(atos, FalhaNaLeituraDosAtos.FalhaNaPaginacao);
-                }
-            }
-
-            if (paginasLidas >= _opcoes.TetoDePaginasDeAtos)
-            {
-                return new LeituraDosAtos(atos, FalhaNaLeituraDosAtos.TetoDePaginas);
-            }
+        using (resposta)
+        {
+            return resposta is { IsSuccessStatusCode: true, Content: { } conteudo, Headers: { } cabecalhos }
+                ? DaResposta(conteudo, cabecalhos, numero)
+                : PaginaDeAtosLida.Interrompida([], FalhaDaResposta(resposta, numero));
         }
     }
+
+    /// <summary>
+    /// Inclui o cursor recusado no meio do caminho (expirado, por exemplo) — a origem não tem mais
+    /// como continuar a partir dele — e o corpo fora do contrato.
+    /// </summary>
+    private FalhaNaLeituraDosAtos FalhaDaResposta(IApiResponse<List<AtoNormativoPayload>> resposta, int numero) =>
+        resposta.StatusCode is { } status
+            ? RespostaInesperada((int)status, numero)
+            : SemResposta(resposta.Error, numero);
+
+    private FalhaNaLeituraDosAtos SemResposta(Exception? erro, int numero)
+    {
+        LogOrigemSemResposta(_logger, numero, erro);
+
+        return FalhaDaPagina(numero);
+    }
+
+    private FalhaNaLeituraDosAtos RespostaInesperada(int status, int numero)
+    {
+        LogRespostaInesperada(_logger, numero, status);
+
+        return FalhaDaPagina(numero);
+    }
+
+    /// <summary>
+    /// Uma falha na primeira página é a origem fora; depois dela, é o percurso que se interrompeu —
+    /// e a página já tem parte da linha do tempo para mostrar.
+    /// </summary>
+    private static FalhaNaLeituraDosAtos FalhaDaPagina(int numero) =>
+        numero == 1 ? FalhaNaLeituraDosAtos.OrigemIndisponivel : FalhaNaLeituraDosAtos.FalhaNaPaginacao;
+
+    private PaginaDeAtosLida DaResposta(List<AtoNormativoPayload> pagina, HttpResponseHeaders cabecalhos, int numero)
+    {
+        (List<AtoDaOrigem> aceitos, bool foraDoContrato) = AtosAceitos(pagina, numero);
+
+        return foraDoContrato
+            ? PaginaDeAtosLida.Interrompida(aceitos, FalhaDaPagina(numero))
+            : ProximaPagina(aceitos, cabecalhos, numero);
+    }
+
+    private (List<AtoDaOrigem> Aceitos, bool ForaDoContrato) AtosAceitos(List<AtoNormativoPayload> pagina, int numero)
+    {
+        List<AtoDaOrigem> aceitos = [.. pagina.Select(AtoDaOrigemDe).TakeWhile(static ato => ato is not null).OfType<AtoDaOrigem>()];
+        bool foraDoContrato = aceitos.Count < pagina.Count;
+
+        if (foraDoContrato)
+        {
+            LogAtoForaDoContrato(_logger, numero);
+        }
+
+        return (aceitos, foraDoContrato);
+    }
+
+    /// <summary>
+    /// A anotação de nulidade não alcança os elementos da lista desserializada: um ato nulo na página
+    /// é ato fora do contrato, como o ato sem id ou sem tipo.
+    /// </summary>
+    private static AtoDaOrigem? AtoDaOrigemDe(AtoNormativoPayload? ato) =>
+        ato is { Id: var id, TipoCodigo: { } tipoCodigo }
+        && id != Guid.Empty
+        && !string.IsNullOrWhiteSpace(tipoCodigo)
+            ? new AtoDaOrigem(
+                id,
+                tipoCodigo,
+                ato.TipoNome,
+                ato.Ano,
+                ato.Numero,
+                ato.DataDoAto,
+                ato.CongelaConfiguracao,
+                ato.MotivoRetificacao)
+            : null;
+
+    private PaginaDeAtosLida ProximaPagina(List<AtoDaOrigem> atos, HttpResponseHeaders cabecalhos, int numero)
+    {
+        if (!HaProximaPagina(cabecalhos, out string? cursor))
+        {
+            return PaginaDeAtosLida.Final(atos);
+        }
+
+        return cursor is null
+            ? CursorIlegivel(atos, numero)
+            : ContinuaOuAtingeOLimite(atos, cursor, numero);
+    }
+
+    /// <summary>
+    /// A origem anuncia uma próxima página que não há como pedir. Encerrar aqui como se a lista
+    /// tivesse acabado omitiria os atos mais recentes em silêncio.
+    /// </summary>
+    private PaginaDeAtosLida CursorIlegivel(List<AtoDaOrigem> atos, int numero)
+    {
+        LogProximaPaginaIlegivel(_logger, numero);
+
+        return PaginaDeAtosLida.Interrompida(atos, FalhaNaLeituraDosAtos.FalhaNaPaginacao);
+    }
+
+    private PaginaDeAtosLida ContinuaOuAtingeOLimite(List<AtoDaOrigem> atos, string cursor, int numero) =>
+        numero >= _opcoes.LimiteDePaginasDeAtos
+            ? PaginaDeAtosLida.Interrompida(atos, FalhaNaLeituraDosAtos.LimiteDePaginas)
+            : PaginaDeAtosLida.Continua(atos, cursor);
 
     /// <summary>
     /// Diz se a resposta anuncia uma próxima página (link <c>rel="next"</c>) e extrai o cursor
@@ -127,39 +180,47 @@ internal sealed partial class RegistroDeAtosDoCertameHttp : IRegistroDeAtosDoCer
     /// endereço ditado pela resposta mandaria a próxima requisição para um destino que ninguém
     /// configurou, pelo mesmo motivo que o cliente não segue redirecionamento.
     /// </remarks>
-    internal static bool HaProximaPagina(System.Net.Http.Headers.HttpResponseHeaders cabecalhos, out string? cursor)
+    internal static bool HaProximaPagina(HttpResponseHeaders cabecalhos, out string? cursor)
     {
-        cursor = null;
+        string? trecho = LinksDoCabecalho(cabecalhos).FirstOrDefault(static link => link.Contains("rel=\"next\"", StringComparison.Ordinal));
+        cursor = trecho is null ? null : CursorDoLink(trecho);
 
-        if (!cabecalhos.TryGetValues("Link", out IEnumerable<string>? valores))
+        return trecho is not null;
+    }
+
+    private static IEnumerable<string> LinksDoCabecalho(HttpResponseHeaders cabecalhos) =>
+        cabecalhos.TryGetValues("Link", out IEnumerable<string>? valores)
+            ? valores.SelectMany(static valor => valor.Split(',')).Select(static parte => parte.Trim())
+            : [];
+
+    private static string? CursorDoLink(string trecho)
+    {
+        int inicio = trecho.IndexOf('<', StringComparison.Ordinal);
+        int fim = trecho.IndexOf('>', StringComparison.Ordinal);
+
+        if (inicio < 0 || fim <= inicio || !Uri.TryCreate(trecho[(inicio + 1)..fim], UriKind.Absolute, out Uri? endereco))
         {
-            return false;
+            return null;
         }
 
-        foreach (string valor in valores)
-        {
-            foreach (string parte in valor.Split(','))
-            {
-                string trecho = parte.Trim();
-                if (!trecho.Contains("rel=\"next\"", StringComparison.Ordinal))
-                {
-                    continue;
-                }
+        string? proximo = HttpUtility.ParseQueryString(endereco.Query)["cursor"];
 
-                int inicio = trecho.IndexOf('<', StringComparison.Ordinal);
-                int fim = trecho.IndexOf('>', StringComparison.Ordinal);
-                if (inicio >= 0 && fim > inicio
-                    && Uri.TryCreate(trecho[(inicio + 1)..fim], UriKind.Absolute, out Uri? endereco))
-                {
-                    string? proximo = HttpUtility.ParseQueryString(endereco.Query)["cursor"];
-                    cursor = string.IsNullOrEmpty(proximo) ? null : proximo;
-                }
+        return string.IsNullOrEmpty(proximo) ? null : proximo;
+    }
 
-                return true;
-            }
-        }
+    private readonly record struct PaginaDeAtosLida(
+        IReadOnlyList<AtoDaOrigem> Atos,
+        FalhaNaLeituraDosAtos? Falha,
+        string? ProximoCursor)
+    {
+        public bool Terminou => ProximoCursor is null;
 
-        return false;
+        public static PaginaDeAtosLida Final(IReadOnlyList<AtoDaOrigem> atos) => new(atos, null, null);
+
+        public static PaginaDeAtosLida Interrompida(IReadOnlyList<AtoDaOrigem> atos, FalhaNaLeituraDosAtos falha) =>
+            new(atos, falha, null);
+
+        public static PaginaDeAtosLida Continua(IReadOnlyList<AtoDaOrigem> atos, string cursor) => new(atos, null, cursor);
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Publicações não respondeu à página {Pagina} da consulta de atos do certame.")]

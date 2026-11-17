@@ -62,8 +62,8 @@ public static class OrigensRegistration
 
     /// <summary>
     /// O cliente é gerado em tempo de compilação: se a interface sair do que o gerador sabe montar, a falha vem na
-    /// compilação, e não na primeira chamada. Cada origem tem a política de resiliência própria, para que o circuito
-    /// aberto por uma não bloqueie a outra.
+    /// compilação, e não na primeira chamada. Cada origem tem a política de resiliência própria, para que a interrupção
+    /// por falhas de uma não bloqueie a outra.
     /// </summary>
     private static void RegistrarClienteDaOrigem<TApi>(
         IServiceCollection services, string politica, Func<OrigensOptions, string> endereco)
@@ -118,11 +118,11 @@ public static class OrigensRegistration
 
     /// <summary>
     /// Política das consultas na ordem canônica da biblioteca: limite total por fora, retentativa,
-    /// corte de circuito dentro dela e limite por tentativa no miolo. Cada origem tem a sua
-    /// instância, para que o circuito aberto por uma não bloqueie a outra.
+    /// interrupção por falhas dentro dela e limite por tentativa no miolo. Cada origem tem a sua
+    /// instância, para que a interrupção por falhas de uma não bloqueie a outra.
     /// </summary>
     /// <remarks>
-    /// O corte fica dentro da retentativa: aberto, ele faz a tentativa seguinte falhar na hora com
+    /// A interrupção fica dentro da retentativa: em andamento, ela faz a tentativa seguinte falhar na hora com
     /// um erro que a retentativa não repete, e o laço termina em vez de insistir numa origem que já
     /// se declarou indisponível. O relógio é o do contêiner: os testes o trocam para exercitar espera
     /// e expiração sem tempo real.
@@ -137,7 +137,7 @@ public static class OrigensRegistration
         construtor.AddTimeout(TimeSpan.FromSeconds(opcoes.TimeoutTotalEmSegundos));
         AdicionarRetentativa(construtor, opcoes);
         construtor
-            .AddCircuitBreaker(CorteDeCircuito(opcoes))
+            .AddCircuitBreaker(InterrupcaoPorFalhas(opcoes))
             .AddTimeout(TimeSpan.FromSeconds(opcoes.TimeoutPorTentativaEmSegundos));
     }
 
@@ -159,12 +159,12 @@ public static class OrigensRegistration
         }
     }
 
-    private static HttpCircuitBreakerStrategyOptions CorteDeCircuito(OrigensOptions opcoes) =>
+    private static HttpCircuitBreakerStrategyOptions InterrupcaoPorFalhas(OrigensOptions opcoes) =>
         new()
         {
-            SamplingDuration = TimeSpan.FromSeconds(opcoes.JanelaDeAmostragemDoCorteEmSegundos),
-            MinimumThroughput = opcoes.ChamadasMinimasParaAvaliarCorte,
-            FailureRatio = opcoes.ProporcaoDeFalhaParaAbrirCorte,
-            BreakDuration = TimeSpan.FromSeconds(opcoes.DuracaoDoCorteEmSegundos),
+            SamplingDuration = TimeSpan.FromSeconds(opcoes.JanelaDeAmostragemDasFalhasEmSegundos),
+            MinimumThroughput = opcoes.ChamadasMinimasParaAvaliarInterrupcao,
+            FailureRatio = opcoes.ProporcaoDeFalhaParaInterromper,
+            BreakDuration = TimeSpan.FromSeconds(opcoes.DuracaoDaInterrupcaoEmSegundos),
         };
 }

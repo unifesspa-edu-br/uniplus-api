@@ -17,10 +17,10 @@ public enum MotivoDaDegradacao
     FalhaNaPaginacao = 2,
 
     /// <summary>
-    /// A linha do tempo tem mais páginas do que o teto permite percorrer. A origem ordena de
+    /// A linha do tempo tem mais páginas do que o limite permite percorrer. A origem ordena de
     /// forma ascendente: o que ficou de fora são justamente os atos mais recentes.
     /// </summary>
-    TetoDePaginas = 3,
+    LimiteDePaginas = 3,
 
     /// <summary>O ato que criou a versão servida não aparece na linha do tempo.</summary>
     CriadorAusente = 4,

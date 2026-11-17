@@ -34,92 +34,113 @@ internal sealed partial class ContratoPublicoDoCertameHttp : IContratoPublicoDoC
         return ConsultarAsync(() => _api.ObterPorIdentificadorAsync(identificador, cancellationToken), cancellationToken);
     }
 
+    /// <summary>
+    /// Com a resposta pedida como <c>IApiResponse</c>, a falha de envio — rede, tempo esgotado,
+    /// interrupção por falhas — chega dentro da resposta, sem exceção, e cai no "sem resposta": é por
+    /// isso que a interrupção por falhas não escapa até o tratador global como erro inesperado. Só o
+    /// cancelamento pedido por quem chama continua saindo como exceção.
+    /// </summary>
     private async Task<ConsultaDoCertame> ConsultarAsync(
         Func<Task<IApiResponse<CertamePublicadoPayload>>> consultar,
         CancellationToken cancellationToken)
     {
-        // Com a resposta pedida como IApiResponse, a falha de envio — rede, tempo esgotado,
-        // circuito aberto — chega dentro da resposta, sem exceção, e cai no "sem resposta" abaixo:
-        // é por isso que o circuito aberto não escapa até o tratador global como erro inesperado.
-        // Só o cancelamento pedido por quem chama continua saindo como exceção.
         IApiResponse<CertamePublicadoPayload> resposta = await consultar().ConfigureAwait(false);
 
         using (resposta)
         {
-            if (resposta.StatusCode == HttpStatusCode.NotFound)
-            {
-                return new ConsultaDoCertame.NaoEncontrado();
-            }
-
-            if (resposta.StatusCode is null)
-            {
-                LogOrigemSemResposta(_logger, resposta.Error);
-                return new ConsultaDoCertame.Indisponivel();
-            }
-
-            if (!resposta.IsSuccessStatusCode)
-            {
-                LogRespostaInesperada(_logger, (int)resposta.StatusCode);
-                return new ConsultaDoCertame.Indisponivel();
-            }
-
-            if (resposta.Content is not { } certame
-                || certame.ProcessoSeletivoId == Guid.Empty
-                || certame.AtoCriadorId == Guid.Empty
-                || string.IsNullOrWhiteSpace(certame.Nome)
-                || certame.Situacao is not { } situacao)
-            {
-                // Um 200 sem os campos que a página exige não é certame: é contrato quebrado, e
-                // servi-lo mostraria ao candidato uma página sem título ou sem linha do tempo
-                // verificável.
-                LogCorpoForaDoContrato(_logger);
-                return new ConsultaDoCertame.Indisponivel();
-            }
-
-            return new ConsultaDoCertame.Encontrado(new CertameDaOrigem(
-                certame.ProcessoSeletivoId,
-                certame.AtoCriadorId,
-                certame.Nome,
-                string.IsNullOrWhiteSpace(certame.Periodo?.Numero) ? null : certame.Periodo.Numero,
-                DocumentoPublico(certame.DocumentoEdital?.UrlDownload),
-                DocumentosPorAto(certame.EditaisPublicados),
-                situacao));
+            return FalhaDaConsulta(resposta) ?? DoConteudo(resposta.Content);
         }
     }
 
+    private ConsultaDoCertame? FalhaDaConsulta(IApiResponse<CertamePublicadoPayload> resposta) => resposta.StatusCode switch
+    {
+        HttpStatusCode.NotFound => new ConsultaDoCertame.NaoEncontrado(),
+        null => IndisponivelSemResposta(resposta.Error),
+        _ when !resposta.IsSuccessStatusCode => IndisponivelPorStatus((int)resposta.StatusCode!.Value),
+        _ => null,
+    };
+
+    private ConsultaDoCertame.Indisponivel IndisponivelSemResposta(Exception? erro)
+    {
+        LogOrigemSemResposta(_logger, erro);
+
+        return new ConsultaDoCertame.Indisponivel();
+    }
+
+    private ConsultaDoCertame.Indisponivel IndisponivelPorStatus(int status)
+    {
+        LogRespostaInesperada(_logger, status);
+
+        return new ConsultaDoCertame.Indisponivel();
+    }
+
+    /// <summary>
+    /// Um 200 sem os campos que a página exige não é certame: é contrato quebrado, e servi-lo
+    /// mostraria ao candidato uma página sem título ou sem linha do tempo verificável.
+    /// </summary>
+    private ConsultaDoCertame DoConteudo(CertamePublicadoPayload? conteudo)
+    {
+        if (CertameDaOrigemDe(conteudo) is { } certame)
+        {
+            return new ConsultaDoCertame.Encontrado(certame);
+        }
+
+        LogCorpoForaDoContrato(_logger);
+
+        return new ConsultaDoCertame.Indisponivel();
+    }
+
+    private static CertameDaOrigem? CertameDaOrigemDe(CertamePublicadoPayload? certame) =>
+        certame is { Nome: { } nome, Situacao: { } situacao }
+        && certame.ProcessoSeletivoId != Guid.Empty
+        && certame.AtoCriadorId != Guid.Empty
+        && !string.IsNullOrWhiteSpace(nome)
+            ? new CertameDaOrigem(
+                certame.ProcessoSeletivoId,
+                certame.AtoCriadorId,
+                nome,
+                NumeroDoEdital(certame.Periodo),
+                DocumentoPublico(certame.DocumentoEdital?.UrlDownload),
+                DocumentosPorAto(certame.EditaisPublicados),
+                situacao)
+            : null;
+
+    private static string? NumeroDoEdital(PeriodoDoCertamePayload? periodo) =>
+        string.IsNullOrWhiteSpace(periodo?.Numero) ? null : periodo.Numero;
+
     /// <summary>
     /// Os documentos de cada ato divulgado do processo, pelo ato: o edital de cada versão e os atos que
-    /// não criam versão. Documento sem nome, sem tipo de
-    /// mídia, com tamanho negativo, papel desconhecido ou endereço fora do padrão aceito é
-    /// ignorado, como o link do edital: o resto do evento segue servido.
+    /// não criam versão.
     /// </summary>
     private static Dictionary<Guid, IReadOnlyList<DocumentoDoEvento>> DocumentosPorAto(
         IReadOnlyList<EditalPublicadoDoCertamePayload?>? editais)
     {
         Dictionary<Guid, IReadOnlyList<DocumentoDoEvento>> porAto = [];
+
         foreach (EditalPublicadoDoCertamePayload? edital in editais ?? [])
         {
-            if (edital is null || edital.AtoId == Guid.Empty)
+            if (edital is not null && edital.AtoId != Guid.Empty)
             {
-                continue;
+                porAto[edital.AtoId] = DocumentosDoEdital(edital);
             }
-
-            List<DocumentoDoEvento> documentos = [];
-            foreach (DocumentoDoAtoPayload? documento in edital.Documentos ?? [])
-            {
-                if (documento is { Nome: { Length: > 0 } nome, TipoDeMidia: { Length: > 0 } tipoDeMidia, TamanhoBytes: >= 0 and { } tamanho }
-                    && PapelDe(documento.Papel) is { } papel
-                    && DocumentoPublico(documento.UrlDownload) is { } url)
-                {
-                    documentos.Add(new DocumentoDoEvento(papel, nome, tipoDeMidia, tamanho, url));
-                }
-            }
-
-            porAto[edital.AtoId] = documentos;
         }
 
         return porAto;
     }
+
+    private static IReadOnlyList<DocumentoDoEvento> DocumentosDoEdital(EditalPublicadoDoCertamePayload edital) =>
+        [.. (edital.Documentos ?? []).Select(ComoDocumento).OfType<DocumentoDoEvento>()];
+
+    /// <summary>
+    /// Documento sem nome, sem tipo de mídia, com tamanho negativo, papel desconhecido ou endereço
+    /// fora do padrão aceito é ignorado, como o link do edital: o resto do evento segue servido.
+    /// </summary>
+    private static DocumentoDoEvento? ComoDocumento(DocumentoDoAtoPayload? documento) =>
+        documento is { Nome: { Length: > 0 } nome, TipoDeMidia: { Length: > 0 } tipoDeMidia, TamanhoBytes: >= 0 and { } tamanho }
+        && PapelDe(documento.Papel) is { } papel
+        && DocumentoPublico(documento.UrlDownload) is { } url
+            ? new DocumentoDoEvento(papel, nome, tipoDeMidia, tamanho, url)
+            : null;
 
     private static PapelDoDocumento? PapelDe(string? papel) => papel switch
     {

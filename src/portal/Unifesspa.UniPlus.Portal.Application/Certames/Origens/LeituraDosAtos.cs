@@ -19,6 +19,6 @@ public enum FalhaNaLeituraDosAtos
     /// <summary>A origem deixou de responder, ou recusou o cursor, depois da primeira página.</summary>
     FalhaNaPaginacao = 2,
 
-    /// <summary>Havia mais páginas do que o teto configurado permite percorrer.</summary>
-    TetoDePaginas = 3,
+    /// <summary>Havia mais páginas do que o limite configurado permite percorrer.</summary>
+    LimiteDePaginas = 3,
 }
