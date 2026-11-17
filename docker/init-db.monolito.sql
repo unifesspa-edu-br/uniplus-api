@@ -18,12 +18,10 @@
 
 \c uniplus
 
--- Extensões usadas pelos módulos (uuid-ossp; pg_trgm/unaccent para busca
--- acento-insensível na Organizacao; btree_gist para exclusion constraints
--- temporais — ADR-0060).
+-- Extensões usadas pelos módulos (uuid-ossp; pg_trgm para a busca por trigramas;
+-- btree_gist para exclusion constraints temporais — ADR-0060).
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";
-CREATE EXTENSION IF NOT EXISTS unaccent;
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 
 -- Banco do Keycloak (auth) — fora do escopo do monólito, mantido por paridade

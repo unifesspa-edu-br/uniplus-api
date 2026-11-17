@@ -11,8 +11,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 /// </summary>
 /// <param name="Termo">
 /// Termo de busca bruto do usuário; <c>null</c> ou vazio = sem filtro textual.
-/// A normalização (remoção de diacríticos e caixa) é aplicada server-side pela
-/// função <c>immutable_unaccent</c> + <c>ILIKE</c> no repositório.
+/// O repositório prepara o termo e consulta as colunas normalizadas pela plataforma.
 /// </param>
 /// <param name="Tipos">
 /// Tipos de unidade a incluir (OR entre si); vazio = sem filtro por tipo.

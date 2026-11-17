@@ -11,8 +11,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
 /// tipo inválido (<see cref="FiltroDaListagemDeUnidades"/>, nessa ordem) antes de consultar o
 /// repositório, e só então pagina por cursor bidirecional (ADR-0026 + ADR-0089). A mecânica de keyset
 /// (ordenação, probe <c>n+1</c>, reversão e flags <c>prev</c>/<c>next</c> sem COUNT) vive no
-/// repositório via <c>CursorKeyset</c>; a normalização acento/caixa é delegada ao banco via
-/// immutable_unaccent + ILIKE.
+/// repositório via <c>CursorKeyset</c>; a busca usa as colunas normalizadas pelo banco.
 /// </summary>
 public static class ListarUnidadesAtivasQueryHandler
 {

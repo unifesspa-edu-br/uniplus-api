@@ -45,7 +45,7 @@ CREATE DATABASE uniplus_geo_staging OWNER uniplus_geo_staging_app;
 -- Extensões dos databases de aplicação:
 --   uuid-ossp  — geração de UUIDs
 --   pg_trgm    — busca por similaridade (trigram matching)
---   unaccent   — busca acento-insensível (Organizacao)
+--   unaccent   — busca acento-insensível (Portal e Geo)
 --   btree_gist — pré-requisito de exclusion constraints GIST em junction
 --                tables temporais (ADR-0060), provisionado para uso futuro.
 
@@ -54,7 +54,6 @@ CREATE DATABASE uniplus_geo_staging OWNER uniplus_geo_staging_app;
 \c uniplus
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";
-CREATE EXTENSION IF NOT EXISTS unaccent;
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 
 \c uniplus_portal
