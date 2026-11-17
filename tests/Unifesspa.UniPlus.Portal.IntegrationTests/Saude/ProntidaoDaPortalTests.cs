@@ -70,13 +70,10 @@ public sealed class ProntidaoDaPortalTests : IClassFixture<PortalProntidaoApiFac
         _factory.ProvedorDeIdentidade.Pendurado = true;
         try
         {
-            HealthCheckService servico = _factory.Services.GetRequiredService<HealthCheckService>();
-            Stopwatch cronometro = Stopwatch.StartNew();
+            (HealthStatus status, TimeSpan duracao) = await MedirVerificacaoDoProvedorAsync();
 
-            HealthReport relatorio = await servico.CheckHealthAsync(r => r.Name == VerificacaoDoProvedor);
-
-            relatorio.Entries[VerificacaoDoProvedor].Status.Should().Be(HealthStatus.Degraded);
-            cronometro.Elapsed.Should().BeLessThan(OidcDiscoveryHealthCheck.LimiteDeEspera + TimeSpan.FromSeconds(2));
+            status.Should().Be(HealthStatus.Degraded);
+            duracao.Should().BeLessThan(OidcDiscoveryHealthCheck.LimiteDeEspera + TimeSpan.FromSeconds(2));
         }
         finally
         {
@@ -95,6 +92,16 @@ public sealed class ProntidaoDaPortalTests : IClassFixture<PortalProntidaoApiFac
         resposta.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
+    private async Task<(HealthStatus Status, TimeSpan Duracao)> MedirVerificacaoDoProvedorAsync()
+    {
+        HealthCheckService servico = _factory.Services.GetRequiredService<HealthCheckService>();
+        Stopwatch cronometro = Stopwatch.StartNew();
+
+        HealthReport relatorio = await servico.CheckHealthAsync(verificacao => verificacao.Name == VerificacaoDoProvedor);
+
+        return (relatorio.Entries[VerificacaoDoProvedor].Status, cronometro.Elapsed);
+    }
+
     /// <summary>
     /// Inventário da sonda: uma verificação nova só entra quando uma rota servida passar a
     /// depender dela — inclusive de origem consultada por rede, cuja indisponibilidade aparece na
@@ -107,8 +114,8 @@ public sealed class ProntidaoDaPortalTests : IClassFixture<PortalProntidaoApiFac
             .GetRequiredService<IOptions<HealthCheckServiceOptions>>().Value;
 
         opcoes.Registrations
-            .Where(r => r.Tags.Contains(HealthChecksServiceCollectionExtensions.ReadyTag))
-            .Select(r => r.Name)
+            .Where(registro => registro.Tags.Contains(HealthChecksServiceCollectionExtensions.ReadyTag))
+            .Select(registro => registro.Name)
             .Should().BeEmpty();
     }
 }

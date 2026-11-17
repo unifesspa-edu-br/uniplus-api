@@ -50,15 +50,27 @@ public sealed class PortalRoutingTests : IClassFixture<PortalApiFactory>
 
         RouteEndpoint[] endpoints = dataSource.Endpoints
             .OfType<RouteEndpoint>()
-            .Where(e => e.Metadata.GetMetadata<ControllerActionDescriptor>() != null)
+            .Where(endpoint => endpoint.Metadata.GetMetadata<ControllerActionDescriptor>() != null)
             .ToArray();
 
         endpoints.Should().NotBeEmpty();
 
-        endpoints.Should().OnlyContain(e => HasExpectedRoutePrefix(e));
+        endpoints.Should().OnlyContain(endpoint => HasExpectedRoutePrefix(endpoint));
     }
 
     private static bool HasExpectedRoutePrefix(RouteEndpoint endpoint)
+    {
+        string? prefix = ExpectedModulePrefix(endpoint);
+        if (prefix is null) return false;
+
+        string template = endpoint.RoutePattern.RawText ?? string.Empty;
+
+        return template == prefix || template.StartsWith(
+                    $"{prefix}/",
+                    StringComparison.Ordinal);
+    }
+
+    private static string? ExpectedModulePrefix(RouteEndpoint endpoint)
     {
         ControllerActionDescriptor? actionDescriptor =
             endpoint.Metadata.GetMetadata<ControllerActionDescriptor>();
@@ -66,15 +78,7 @@ public sealed class PortalRoutingTests : IClassFixture<PortalApiFactory>
         Assembly? assembly = actionDescriptor?
             .ControllerTypeInfo
             .Assembly;
-        if (assembly is null) return false;
 
-        string moduleName = ApiModuleMetadata.GetRequiredName(assembly);
-        string prefix = $"api/{moduleName}";
-
-        string template = endpoint.RoutePattern.RawText ?? string.Empty;
-
-        return template == prefix || template.StartsWith(
-                    $"{prefix}/",
-                    StringComparison.Ordinal);
+        return assembly is null ? null : $"api/{ApiModuleMetadata.GetRequiredName(assembly)}";
     }
 }
