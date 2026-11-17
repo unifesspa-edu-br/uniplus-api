@@ -9,7 +9,11 @@ using AwesomeAssertions;
 
 using Domain.Enums;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+
+using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
@@ -17,12 +21,13 @@ using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
 /// Os tipos de decisão declarados pela fase e pela etapa chegando ao cliente pelo HTTP: o tipo repetido e o
-/// tipo fora do vocabulário saem como 422 com a posição de cada um em <c>errors[]</c>, e a recusa de forma do
-/// validator do comando sai sozinha, antes de qualquer tipo ser conferido.
+/// tipo fora do vocabulário saem como 422 com a posição de cada um em <c>errors[]</c>, junto das demais recusas
+/// da mesma fase ou etapa e na ordem da declaração, e a recusa de forma do validator do comando sai sozinha,
+/// antes de qualquer tipo ser conferido.
 /// </summary>
 /// <remarks>
-/// Os tipos são conferidos no estágio do payload, antes de qualquer cadastro; por isso os corpos usam
-/// identificadores de catálogo que não precisam existir.
+/// A fase e a etapa são julgadas contra o cadastro, por isso os corpos usam a fase canônica e o tipo de etapa
+/// semeados.
 /// </remarks>
 [Collection(CascadingCollection.Name)]
 [Trait("Category", "Integration")]
@@ -36,6 +41,14 @@ public sealed class TiposDeDecisaoDaFaseEEtapaEndpointTests
     private const string CodigoDeTipoInvalido = "uniplus.selecao.motivo_de_decisao.tipo_invalido";
     private const string CodigoDeTipoDuplicado = "uniplus.selecao.motivo_de_decisao.tipo_de_decisao_duplicado";
     private const string PrefixoDaValidacao = "uniplus.validacao";
+    private const string CodigoDeJanelaInvertidaDaFase = "uniplus.selecao.fase_cronograma.janela_invertida";
+    private const string CodigoDeJanelaInvertidaDaEtapa = "uniplus.selecao.etapa_processo.janela_invertida";
+    private const string FasePreliminar = "HETEROIDENTIFICACAO";
+    private const string FaseDefinitiva = "HOMOLOGACAO_RESULTADO_FINAL";
+    private static readonly Guid TipoDeEtapaSemeado = new("019fee1e-7000-7000-8000-000000000001");
+    private static readonly DateTimeOffset Inicio = new(2027, 2, 1, 0, 0, 0, TimeSpan.Zero);
+    private static readonly DateTimeOffset FimAntesDoInicio = new(2027, 1, 1, 0, 0, 0, TimeSpan.Zero);
+    private static readonly DateTimeOffset FimDepoisDoInicio = new(2027, 3, 1, 0, 0, 0, TimeSpan.Zero);
 
     private readonly CascadingFixture _fixture;
 
@@ -46,8 +59,8 @@ public sealed class TiposDeDecisaoDaFaseEEtapaEndpointTests
     {
         object[] fases =
         [
-            Fase(ordem: 1, [Classificacao, Isencao, Classificacao]),
-            Fase(ordem: 2, [TipoForaDoVocabulario]),
+            Fase(ordem: 1, await FaseCanonicaAsync(FasePreliminar), Inicio, FimDepoisDoInicio, [Classificacao, Isencao, Classificacao]),
+            Fase(ordem: 2, await FaseCanonicaAsync(FaseDefinitiva), Inicio, FimDepoisDoInicio, [TipoForaDoVocabulario]),
         ];
 
         Recusa recusa = await EnviarAsync("cronograma-fases", fases);
@@ -65,8 +78,8 @@ public sealed class TiposDeDecisaoDaFaseEEtapaEndpointTests
     {
         object[] etapas =
         [
-            Etapa(ordem: 1, Guid.CreateVersion7(), [Classificacao, Classificacao]),
-            Etapa(ordem: 2, Guid.CreateVersion7(), [TipoForaDoVocabulario]),
+            Etapa(ordem: 1, TipoDeEtapaSemeado, [Classificacao, Classificacao]),
+            Etapa(ordem: 2, TipoDeEtapaSemeado, [TipoForaDoVocabulario]),
         ];
 
         Recusa recusa = await EnviarAsync("etapas", etapas);
@@ -77,6 +90,34 @@ public sealed class TiposDeDecisaoDaFaseEEtapaEndpointTests
             ("etapas[0].tiposDeDecisao[1]", CodigoDeTipoDuplicado),
             ("etapas[1].tiposDeDecisao[0]", CodigoDeTipoInvalido),
         ]);
+    }
+
+    [Fact(DisplayName = "Fase com tipo inválido e janela invertida devolve a janela e o tipo em errors[], nessa ordem, e a raiz traz a janela")]
+    public async Task Fase_TipoInvalidoEJanelaInvertida_422NaOrdemDaDeclaracao()
+    {
+        object[] fases = [Fase(ordem: 1, await FaseCanonicaAsync(FasePreliminar), Inicio, FimAntesDoInicio, [TipoForaDoVocabulario])];
+
+        Recusa recusa = await EnviarAsync("cronograma-fases", fases);
+
+        recusa.Status.Should().Be(HttpStatusCode.UnprocessableEntity);
+        recusa.CodigoDaRaiz.Should().Be(CodigoDeJanelaInvertidaDaFase);
+        recusa.Erros.Should().Equal(
+            ("fases[0].fim", CodigoDeJanelaInvertidaDaFase),
+            ("fases[0].tiposDeDecisao[0]", CodigoDeTipoInvalido));
+    }
+
+    [Fact(DisplayName = "Etapa com tipo inválido e janela invertida devolve a janela e o tipo em errors[], nessa ordem, e a raiz traz a janela")]
+    public async Task Etapa_TipoInvalidoEJanelaInvertida_422NaOrdemDaDeclaracao()
+    {
+        object[] etapas = [Etapa(ordem: 1, TipoDeEtapaSemeado, [TipoForaDoVocabulario], Inicio, FimAntesDoInicio)];
+
+        Recusa recusa = await EnviarAsync("etapas", etapas);
+
+        recusa.Status.Should().Be(HttpStatusCode.UnprocessableEntity);
+        recusa.CodigoDaRaiz.Should().Be(CodigoDeJanelaInvertidaDaEtapa);
+        recusa.Erros.Should().Equal(
+            ("etapas[0].fim", CodigoDeJanelaInvertidaDaEtapa),
+            ("etapas[0].tiposDeDecisao[0]", CodigoDeTipoInvalido));
     }
 
     [Fact(DisplayName = "Fase com a ordem fora da forma e tipos inválidos devolve só a recusa de forma do validator")]
@@ -113,33 +154,43 @@ public sealed class TiposDeDecisaoDaFaseEEtapaEndpointTests
         recusa.Erros.Should().AllSatisfy(static e => e.Codigo.Should().StartWith(PrefixoDaValidacao + "."));
     }
 
-    private static object Fase(int ordem, string[] tiposDeDecisao) => new
-    {
-        ordem,
-        faseCanonicaId = Guid.CreateVersion7(),
-        inicio = (DateTimeOffset?)null,
-        fim = (DateTimeOffset?)null,
-        produtos = Array.Empty<object>(),
-        faseConcluinteCodigo = (string?)null,
-        emiteParecerIndividual = false,
-        bancasRequeridas = Array.Empty<object>(),
-        regraRecurso = (object?)null,
-        tiposDeDecisao,
-    };
+    private static object Fase(
+        int ordem, Guid faseCanonicaId, DateTimeOffset? inicio, DateTimeOffset? fim, string[] tiposDeDecisao) => new
+        {
+            ordem,
+            faseCanonicaId,
+            inicio,
+            fim,
+            produtos = Array.Empty<object>(),
+            faseConcluinteCodigo = (string?)null,
+            emiteParecerIndividual = false,
+            bancasRequeridas = Array.Empty<object>(),
+            regraRecurso = (object?)null,
+            tiposDeDecisao,
+        };
 
-    private static object Etapa(int ordem, Guid tipoEtapaOrigemId, string[] tiposDeDecisao) => new
-    {
-        nome = $"Etapa {ordem}",
-        carater = (int)CaraterEtapa.Classificatoria,
-        tipoEtapaOrigemId,
-        peso = 1.0m,
-        notaMinima = (decimal?)null,
-        ordem,
-        produtos = Array.Empty<object>(),
-        bancas = Array.Empty<object>(),
-        recursos = Array.Empty<object>(),
-        tiposDeDecisao,
-    };
+    private static object Fase(int ordem, string[] tiposDeDecisao) =>
+        Fase(ordem, Guid.CreateVersion7(), inicio: null, fim: null, tiposDeDecisao);
+
+    private static object Etapa(int ordem, Guid tipoEtapaOrigemId, string[] tiposDeDecisao) =>
+        Etapa(ordem, tipoEtapaOrigemId, tiposDeDecisao, inicio: null, fim: null);
+
+    private static object Etapa(
+        int ordem, Guid tipoEtapaOrigemId, string[] tiposDeDecisao, DateTimeOffset? inicio, DateTimeOffset? fim) => new
+        {
+            nome = $"Etapa {ordem}",
+            carater = (int)CaraterEtapa.Classificatoria,
+            tipoEtapaOrigemId,
+            peso = 1.0m,
+            notaMinima = (decimal?)null,
+            ordem,
+            inicio,
+            fim,
+            produtos = Array.Empty<object>(),
+            bancas = Array.Empty<object>(),
+            recursos = Array.Empty<object>(),
+            tiposDeDecisao,
+        };
 
     private async Task<Recusa> EnviarAsync(string recurso, object corpo)
     {
@@ -157,6 +208,14 @@ public sealed class TiposDeDecisaoDaFaseEEtapaEndpointTests
 
         using HttpResponseMessage resposta = await _fixture.Factory.CreateClient().SendAsync(request);
         return await Recusa.LerAsync(resposta);
+    }
+
+    private async Task<Guid> FaseCanonicaAsync(string codigo)
+    {
+        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        List<FaseCanonica> vivas = await db.FasesCanonicas.AsNoTracking().ToListAsync();
+        return vivas.Single(fase => string.Equals(fase.Codigo.Valor, codigo, StringComparison.Ordinal)).Id;
     }
 
     private async Task<Guid> SemearProcessoAsync()

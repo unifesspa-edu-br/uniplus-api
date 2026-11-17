@@ -157,4 +157,25 @@ public sealed class TiposDeDecisaoDeclaradosTests
         Recusas(bruto).Should().Equal(primeira);
         bruto.Should().Equal(TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa, "RECURSO_DA_BANCA", TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa);
     }
+
+    [Fact(DisplayName = "A declaração recusada não tem tipos aceitos: quem depende do dado não o lê recusado")]
+    public void Aceitos_DeclaracaoRecusada_DevolveNulo()
+    {
+        TiposDeDecisaoDeclarados.Aceitos(["RECURSO_DA_BANCA", TipoMotivoDeDecisaoCodigo.Classificacao]).Should().BeNull();
+        TiposDeDecisaoDeclarados.Aceitos([TipoMotivoDeDecisaoCodigo.Classificacao, TipoMotivoDeDecisaoCodigo.Classificacao]).Should().BeNull();
+    }
+
+    [Fact(DisplayName = "A declaração aceita devolve o conjunto dos tipos declarados")]
+    public void Aceitos_DeclaracaoAceita_DevolveOConjunto()
+    {
+        TiposDeDecisaoDeclarados.Aceitos([TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa, TipoMotivoDeDecisaoCodigo.Classificacao])
+            .Should().BeEquivalentTo([TipoMotivoDeDecisao.IsencaoDaTaxa, TipoMotivoDeDecisao.Classificacao]);
+    }
+
+    [Fact(DisplayName = "A declaração ausente ou vazia é aceita e não declara tipo nenhum")]
+    public void Aceitos_DeclaracaoAusenteOuVazia_DevolveConjuntoVazio()
+    {
+        TiposDeDecisaoDeclarados.Aceitos(null).Should().BeEmpty();
+        TiposDeDecisaoDeclarados.Aceitos([]).Should().BeEmpty();
+    }
 }

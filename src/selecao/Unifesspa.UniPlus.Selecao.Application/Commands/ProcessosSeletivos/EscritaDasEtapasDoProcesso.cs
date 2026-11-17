@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Errors;
-using Domain.MotivosDeDecisao;
 using Domain.ProcessosSeletivos.Etapas;
 using Domain.ValueObjects;
 
@@ -11,7 +10,7 @@ using Kernel.Results;
 
 /// <summary>
 /// A escrita das etapas do processo que só olha o payload, sem cadastro nem agregado: o <c>Id</c> repetido
-/// a forma e os tipos de decisão de TODAS as etapas, acumulados (ADR-0125). Roda antes de qualquer leitura externa — a validação
+/// e a forma de TODAS as etapas, acumulada (ADR-0125). Roda antes de qualquer leitura externa — a validação
 /// vence o I/O —, para que uma etapa com nome vazio não fique escondida atrás da recusa de catálogo de
 /// outra. Também lê uma etapa do payload na forma que o domínio recebe.
 /// </summary>
@@ -53,9 +52,7 @@ internal static class EscritaDasEtapasDoProcesso
         ComIndice(CaraterDaEtapa.ValidarAdmitido(carater, admitePontuacao, admiteEliminacao, nomeDoTipo), indice);
 
     private static IReadOnlyList<FieldError> ErrosDoPayloadDaEtapa(EtapaProcessoInput etapa, int indice) =>
-        ComIndice(
-            [.. FormaDaEtapa(etapa), .. TiposDeDecisaoDeclarados.Validar(etapa.TiposDeDecisao, TiposDeDecisaoDeclarados.Campo)],
-            indice);
+        ComIndice(FormaDaEtapa(etapa), indice);
 
     private static List<FieldError> FormaDaEtapa(EtapaProcessoInput etapa) =>
         ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica(

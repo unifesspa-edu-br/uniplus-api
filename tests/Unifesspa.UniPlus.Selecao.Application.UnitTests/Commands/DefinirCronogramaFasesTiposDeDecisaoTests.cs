@@ -6,21 +6,23 @@ using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Recursos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.FasesDoCronogramaDeTeste;
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.PublicacaoDeTeste;
 
 /// <summary>
-/// Os tipos de decisão de cada fase são conferidos por uma passada pura sobre todo o payload, depois do processo, da
-/// precondição e da leitura das fases iniciadas e antes de qualquer cadastro: havendo recusa de tipos em alguma fase, o
-/// lote delas sai sozinho, por posição, e nenhum cadastro é consultado.
+/// Os tipos de decisão de cada fase são conferidos pelo domínio, na criação da fase, e a recusa deles se acumula com a
+/// das demais violações da mesma fase e com a das outras fases. Só o procedimento de recurso, que lê os tipos
+/// declarados, deixa de ser avaliado quando os tipos são recusados.
 /// </summary>
 public sealed class DefinirCronogramaFasesTiposDeDecisaoTests
 {
@@ -38,24 +40,29 @@ public sealed class DefinirCronogramaFasesTiposDeDecisaoTests
     private static (string? Campo, string Codigo)[] Recusas(Result<MutacaoAceita> resultado) =>
         [.. resultado.Errors.Select(static e => (e.Field, e.Error.Code))];
 
-    private static FaseCronogramaInput[] FasesComTiposEmVariasPosicoes() =>
+    private static FaseCronogramaInput[] FasesComTiposEmVariasPosicoes(CenarioDoCronogramaDeFases cenario) =>
     [
-        FaseSemCadastro(1, TipoForaDoVocabulario),
-        FaseSemCadastro(2, Classificacao),
-        FaseSemCadastro(3, Isencao, Classificacao, Isencao),
-        FaseSemCadastro(4, null, Classificacao),
+        FaseDoCadastro(cenario, 1, TipoForaDoVocabulario),
+        FaseDoCadastro(cenario, 2, Classificacao),
+        FaseDoCadastro(cenario, 3, Isencao, Classificacao, Isencao),
+        FaseDoCadastro(cenario, 4, null, Classificacao),
     ];
 
-    private static void NenhumCadastroFoiConsultado(CenarioDoCronogramaDeFases cenario)
-    {
-        object[] cadastros =
-        [
-            cenario.FaseCanonicaReader, cenario.UnidadeResponsavel, cenario.TipoBancaReader,
-            cenario.CategoriaDocumentoReader, cenario.RegraCatalogoReader, cenario.TipoAtoPublicadoReader,
-        ];
+    private static CenarioDoCronogramaDeFases CenarioComTipoDeAtoDaClassificacao() =>
+        CenarioDoCronogramaDeFases.EmRascunho().ComTipoDeAto(TipoAtoDaClassificacao()).ComRegraNoCatalogo(RegraDePrazoDeRecurso())
+            .ComRegraNoCatalogo(RegraDoProcedimentoDeRecalculo());
 
-        cadastros.SelectMany(static cadastro => cadastro.ReceivedCalls()).Should().BeEmpty();
-    }
+    private static FaseCronogramaInput FaseComProcedimentoDaClassificacao(
+        CenarioDoCronogramaDeFases cenario, params string?[] tiposDeDecisao) =>
+        cenario.CadastrarFase(FaseCanonicaRecorrivel()) with
+        {
+            Produtos = ProdutosPreliminarEDefinitivo(),
+            TiposDeDecisao = tiposDeDecisao,
+            RegraRecurso = RecursoAncoradoNaClassificacao() with
+            {
+                Procedimentos = [new(Classificacao, null, RegraProcedimentoRecursoCodigo.Recalculo, "v1")],
+            },
+        };
 
     private static CenarioDoCronogramaDeFases CenarioDaFaseConforme()
     {
@@ -68,12 +75,12 @@ public sealed class DefinirCronogramaFasesTiposDeDecisaoTests
     {
         (ProcessoSeletivo processo, VersaoConfiguracao versaoAtual) = ProcessoPublicado();
         AbrirRetificacao(processo, versaoAtual);
-        return CenarioDoCronogramaDeFases.Para(processo).ComFasesIniciadas(FasesIniciadas.Nenhuma);
+        return CenarioDoCronogramaDeFases.Para(processo).ComFasesIniciadas(FasesIniciadas.Nenhuma).ComTipoDeAto(TipoAtoDaClassificacao());
     }
 
     private static Task<Result<MutacaoAceita>> DefinirComTipoInvalidoAsync(CenarioDoCronogramaDeFases cenario) =>
         cenario.DefinirAsync(new DefinirCronogramaFasesCommand(
-            cenario.Processo.Id, [FaseSemCadastro(1, TipoForaDoVocabulario)], PrecondicaoIfMatch.Curinga));
+            cenario.Processo.Id, [FaseDoCadastro(cenario, 1, TipoForaDoVocabulario)], PrecondicaoIfMatch.Curinga));
 
     [Fact(DisplayName = "A fase declara os tipos de decisão e a leitura os devolve em ordem canônica, do comando ao DTO")]
     public async Task Handle_FaseComTipos_GravaEDevolveEmOrdemCanonica()
@@ -101,38 +108,92 @@ public sealed class DefinirCronogramaFasesTiposDeDecisaoTests
         cenario.Processo.CronogramaFases.Single().TiposDeDecisao.Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "Tipos inválidos em várias fases saem juntos, por posição de fase e de tipo, sem consultar cadastro")]
-    public async Task Handle_TiposInvalidosEmVariasFases_RecusaPorPosicaoSemConsultarCadastro()
+    [Fact(DisplayName = "Tipos inválidos em várias fases saem juntos, por posição de fase e de tipo")]
+    public async Task Handle_TiposInvalidosEmVariasFases_RecusaPorPosicao()
     {
-        CenarioDoCronogramaDeFases cenario = CenarioDoCronogramaDeFases.EmRascunho();
+        CenarioDoCronogramaDeFases cenario = CenarioComTipoDeAtoDaClassificacao();
 
-        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(FasesComTiposEmVariasPosicoes());
+        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(FasesComTiposEmVariasPosicoes(cenario));
 
         Recusas(resultado).Should().Equal(
             ("fases[0].tiposDeDecisao[0]", MotivoDeDecisaoErrorCodes.TipoInvalido),
             ("fases[2].tiposDeDecisao[2]", MotivoDeDecisaoErrorCodes.TipoDeDecisaoDuplicado),
             ("fases[3].tiposDeDecisao[0]", MotivoDeDecisaoErrorCodes.TipoInvalido));
-        NenhumCadastroFoiConsultado(cenario);
     }
 
-    [Fact(DisplayName = "Fase anterior com cadastro inexistente e tipo inválido na seguinte: só os tipos são recusados")]
-    public async Task Handle_CanonicaInexistenteNaFaseZeroETipoInvalidoNaFaseUm_RecusaSoOsTipos()
+    [Fact(DisplayName = "Fase com tipo inválido e janela invertida devolve as duas recusas, a da janela primeiro")]
+    public async Task Handle_TipoInvalidoEJanelaInvertidaNaMesmaFase_RecusaAsDuasNaOrdemDaDeclaracao()
+    {
+        CenarioDoCronogramaDeFases cenario = CenarioComTipoDeAtoDaClassificacao();
+        FaseCronogramaInput fase = FaseDoCadastro(cenario, 1, TipoForaDoVocabulario) with
+        {
+            Inicio = new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero),
+            Fim = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+        };
+
+        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(fase);
+
+        Recusas(resultado).Should().Equal(
+            ("fases[0].fim", "FaseCronograma.JanelaInvertida"),
+            ("fases[0].tiposDeDecisao[0]", MotivoDeDecisaoErrorCodes.TipoInvalido));
+        resultado.Error!.Code.Should().Be("FaseCronograma.JanelaInvertida");
+    }
+
+    [Fact(DisplayName = "Tipo inválido na fase 0 não impede o julgamento da fase 1, que recusa o ato repetido")]
+    public async Task Handle_TipoInvalidoNaFaseZeroEAtoRepetidoNaFaseUm_RecusaAsDuas()
+    {
+        CenarioDoCronogramaDeFases cenario = CenarioComTipoDeAtoDaClassificacao();
+        FaseCronogramaInput comTipoInvalido = FaseDoCadastro(cenario, 1, TipoForaDoVocabulario);
+        FaseCronogramaInput comAtoRepetido = FaseDoCadastro(cenario, 2) with
+        {
+            Produtos = [ProdutoDaClassificacao(PapelProdutoFaseCodigo.Definitivo), ProdutoDaClassificacao(PapelProdutoFaseCodigo.Definitivo)],
+        };
+
+        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(comTipoInvalido, comAtoRepetido);
+
+        Recusas(resultado).Should().Equal(
+            ("fases[0].tiposDeDecisao[0]", MotivoDeDecisaoErrorCodes.TipoInvalido),
+            ("fases[1].produtos", "FaseCronograma.AtoDuplicadoNaFase"));
+    }
+
+    [Fact(DisplayName = "Tipo com erro de digitação recusa só o tipo: o procedimento do tipo certo não é avaliado")]
+    public async Task Handle_TipoComErroDeDigitacaoEProcedimentoDoTipoCerto_RecusaSoOTipo()
+    {
+        CenarioDoCronogramaDeFases cenario = CenarioComTipoDeAtoDaClassificacao();
+
+        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(FaseComProcedimentoDaClassificacao(cenario, "CLASIFICACAO"));
+
+        Recusas(resultado).Should().Equal(("fases[0].tiposDeDecisao[0]", MotivoDeDecisaoErrorCodes.TipoInvalido));
+    }
+
+    [Fact(DisplayName = "Tipos válidos sem o tipo do procedimento continuam recusando o procedimento")]
+    public async Task Handle_TiposValidosSemOTipoDoProcedimento_RecusaOProcedimento()
+    {
+        CenarioDoCronogramaDeFases cenario = CenarioComTipoDeAtoDaClassificacao();
+
+        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(FaseComProcedimentoDaClassificacao(cenario, Isencao));
+
+        Recusas(resultado).Should().Equal((
+            "fases[0].regraRecurso.procedimentos[0].tipoDeDecisao", CodigosDoProcedimentoDeRecurso.DaFase.ParaDecisaoNaoDeclarada));
+    }
+
+    [Fact(DisplayName = "Fase anterior com cadastro inexistente interrompe a montagem: a recusa de tipo da fase seguinte não é julgada")]
+    public async Task Handle_CanonicaInexistenteNaFaseZeroETipoInvalidoNaFaseUm_DevolveAInterrupcaoDaFaseZero()
     {
         CenarioDoCronogramaDeFases cenario = CenarioDoCronogramaDeFases.EmRascunho();
         FaseCronogramaInput[] fases = [FaseSemCadastro(1, Classificacao), FaseSemCadastro(2, TipoForaDoVocabulario)];
 
         Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(fases);
 
-        Recusas(resultado).Should().Equal(("fases[1].tiposDeDecisao[0]", MotivoDeDecisaoErrorCodes.TipoInvalido));
-        NenhumCadastroFoiConsultado(cenario);
+        Recusas(resultado).Should().Equal(("fases[0].faseCanonicaId", "FaseCronograma.FaseCanonicaNaoEncontrada"));
     }
 
     [Fact(DisplayName = "A recusa dos tipos não muda o processo nem grava")]
     public async Task Handle_TiposInvalidos_NaoMutaOProcessoNemGrava()
     {
-        CenarioDoCronogramaDeFases cenario = CenarioDoCronogramaDeFases.EmRascunho();
+        CenarioDoCronogramaDeFases cenario = CenarioComTipoDeAtoDaClassificacao();
 
-        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(FaseSemCadastro(1, TipoForaDoVocabulario));
+        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(FaseDoCadastro(cenario, 1, TipoForaDoVocabulario));
 
         resultado.IsFailure.Should().BeTrue();
         cenario.Processo.CronogramaFases.Should().BeEmpty();

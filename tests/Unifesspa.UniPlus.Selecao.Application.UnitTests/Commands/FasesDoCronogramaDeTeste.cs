@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
+using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -65,6 +66,9 @@ internal static class FasesDoCronogramaDeTeste
 
     public static RegraCatalogo RegraDePrazoDeRecurso() =>
         RegraDoCatalogo(RegraPrazoRecursoCodigo.AncoradoEmAto, TipoRegra.RegraPrazoRecurso, "Lei 9.784/1999 art. 56");
+
+    public static RegraCatalogo RegraDoProcedimentoDeRecalculo() =>
+        RegraDoCatalogo(RegraProcedimentoRecursoCodigo.Recalculo, TipoRegra.RegraProcedimentoRecurso, "base legal");
 
     public static RegraCatalogo RegraDeBonus() =>
         RegraDoCatalogo("BONUS-MULTIPLICATIVO", TipoRegra.RegraBonus, "base legal");

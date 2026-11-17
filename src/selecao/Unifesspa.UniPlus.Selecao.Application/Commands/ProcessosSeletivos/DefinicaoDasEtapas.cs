@@ -96,27 +96,23 @@ public sealed class DefinicaoDasEtapas(
     private static async Task<Result> DeclararFilhosAsync(
         EdicaoDasEtapas edicao, List<EtapaProcesso> etapas, CancellationToken cancellationToken)
     {
-        DeclaracaoDosFilhosDasEtapas declaracao = new(
+        DeclaracaoDosFilhosDasEtapas declaracao = DeclaracaoDosFilhos(edicao, etapas);
+        List<FieldError> recusas = [];
+        for (int indice = 0; indice < etapas.Count; indice++)
+        {
+            IReadOnlyList<FieldError> doFilho = await declaracao
+                .DeclararAsync(etapas[indice], edicao.Command.Etapas[indice], cancellationToken).ConfigureAwait(false);
+            recusas.AddRange(EscritaDasEtapasDoProcesso.ComIndice(doFilho, indice));
+        }
+
+        return recusas.Count > 0 ? Result.ValidationFailure(recusas) : Result.Success();
+    }
+
+    private static DeclaracaoDosFilhosDasEtapas DeclaracaoDosFilhos(EdicaoDasEtapas edicao, List<EtapaProcesso> etapas) =>
+        new(
             new DeclaracaoDosProdutosDaEtapa(edicao.Atos),
             new DeclaracaoDasBancasDaEtapa(edicao.Cadastros.TiposDeBanca),
             new DeclaracaoDosRecursosDaEtapa(edicao.Atos, edicao.Cadastros.Regras, etapas.Exists(static e => e.DeclaraNotaDoEnem)));
-        for (int indice = 0; indice < etapas.Count; indice++)
-        {
-            Result declarada = await declaracao.DeclararAsync(etapas[indice], edicao.Command.Etapas[indice], cancellationToken).ConfigureAwait(false);
-            if (declarada.IsFailure)
-            {
-                return ComPosicaoDaEtapa(declarada, indice);
-            }
-        }
-
-        return Result.Success();
-    }
-
-    // A recusa com campo ganha a posição da etapa no payload; a sem campo segue como veio.
-    private static Result ComPosicaoDaEtapa(Result declarada, int indice) =>
-        declarada.Errors.Any(static erro => erro.Field is not null)
-            ? Result.ValidationFailure(EscritaDasEtapasDoProcesso.ComIndice(declarada.Errors, indice))
-            : declarada;
 
     private sealed record EdicaoDasEtapas(
         ProcessoSeletivo Processo, DefinirEtapasCommand Command, CadastrosDasEtapas Cadastros, AtosConsultadosNaEdicao Atos);

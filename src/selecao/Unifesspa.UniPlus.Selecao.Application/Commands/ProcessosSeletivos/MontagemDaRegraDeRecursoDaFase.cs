@@ -80,7 +80,7 @@ internal sealed class MontagemDaRegraDeRecursoDaFase(
     // O lugar da janela é a própria fase: ela declara os tipos de decisão que produz, e o produtor fase não tem itens de
     // avaliação. A área do ENEM vale em qualquer janela de processo que importa a nota do ENEM.
     private ContextoDosProcedimentosDeRecurso ContextoDosProcedimentos(IReadOnlyList<string?>? tiposDeDecisao) => new(
-        TiposDeDecisaoDeclarados.Canonicos(tiposDeDecisao).Select(TipoMotivoDeDecisaoCodigo.FromCodigo).ToHashSet(),
+        TiposDeDecisaoDeclarados.Aceitos(tiposDeDecisao),
         new HashSet<Guid>(),
         processoTemNotaDoEnem);
 

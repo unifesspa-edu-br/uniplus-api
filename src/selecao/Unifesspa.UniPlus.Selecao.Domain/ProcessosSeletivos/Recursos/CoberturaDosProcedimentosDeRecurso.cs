@@ -17,7 +17,7 @@ public static class CoberturaDosProcedimentosDeRecurso
         ArgumentNullException.ThrowIfNull(declarados);
         ArgumentNullException.ThrowIfNull(contexto);
 
-        return [.. contexto.TiposDeDecisaoDoLugar
+        return [.. ((IEnumerable<TipoMotivoDeDecisao>?)contexto.TiposDeDecisaoDoLugar ?? [])
             .Where(tipo => !TipoCoberto(declarados.Itens.Where(p => p.TipoDeDecisao == tipo).ToList(), contexto))
             .Order()];
     }

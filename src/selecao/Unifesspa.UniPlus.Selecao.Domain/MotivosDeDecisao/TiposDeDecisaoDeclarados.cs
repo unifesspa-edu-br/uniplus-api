@@ -36,6 +36,15 @@ public static class TiposDeDecisaoDeclarados
     }
 
     /// <summary>
+    /// Os tipos da declaração quando <see cref="Validar"/> a aceita; nulo quando recusa, para quem depende
+    /// do dado não o ler recusado. A declaração ausente é a declaração vazia. Não emite recusa.
+    /// </summary>
+    public static IReadOnlySet<TipoMotivoDeDecisao>? Aceitos(IReadOnlyList<string?>? bruto) =>
+        Validar(bruto, Campo).Count > 0
+            ? null
+            : (bruto ?? []).Select(TipoMotivoDeDecisaoCodigo.FromCodigo).ToHashSet();
+
+    /// <summary>
     /// Os códigos canônicos em ordem alfabética ordinal, sem repetição. Pressupõe a declaração já
     /// conferida por <see cref="Validar"/>: o que não pertence ao vocabulário fica de fora.
     /// </summary>

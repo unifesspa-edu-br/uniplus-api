@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Errors;
+using Domain.MotivosDeDecisao;
 using Domain.ProcessosSeletivos.Recursos;
 using Domain.ValueObjects;
 
@@ -54,12 +55,31 @@ internal sealed class DeclaracaoDosRecursosDaEtapa(
     {
         RecursoDaEtapaInput declarado = input.Recursos[posicao];
         ProdutoDaEtapa? produtoAncora = ProdutoAncora(etapa, declarado);
-        if (produtoAncora is not null)
+        DomainError? recusaDaAncora = await RecusaDaAncoraAsync(etapa, input, produtoAncora, atosJaAncorados, cancellationToken)
+            .ConfigureAwait(false);
+        if (recusaDaAncora is not null)
         {
-            // Conferido sobre o produto âncora JÁ RESOLVIDO, e não sobre o código cru do payload: um código
-            // que não corresponde a produto preliminar algum da etapa é âncora inexistente, e quem sabe
-            // dizer isso é o domínio, nomeando os preliminares disponíveis.
-            DomainError? recusaDaAncora = await _conferenciaDaAncora
+            return Result<RecursoDaEtapa>.Failure(recusaDaAncora);
+        }
+
+        Result<ReferenciaRegra> regra = await ReferenciaDaRegraAsync(declarado, cancellationToken).ConfigureAwait(false);
+        return regra.IsFailure
+            ? Result<RecursoDaEtapa>.ValidationFailure(regra.Errors)
+            : await RecursoComRegraAsync(etapa, input, posicao, produtoAncora, regra.Value!, cancellationToken).ConfigureAwait(false);
+    }
+
+    // Conferido sobre o produto âncora JÁ RESOLVIDO, e não sobre o código cru do payload: um código
+    // que não corresponde a produto preliminar algum da etapa é âncora inexistente, e quem sabe
+    // dizer isso é o domínio, nomeando os preliminares disponíveis.
+    private async Task<DomainError?> RecusaDaAncoraAsync(
+        EtapaProcesso etapa,
+        EtapaProcessoInput input,
+        ProdutoDaEtapa? produtoAncora,
+        IReadOnlySet<string> atosJaAncorados,
+        CancellationToken cancellationToken) =>
+        produtoAncora is null
+            ? null
+            : await _conferenciaDaAncora
                 .ConferirAsync(
                     produtoAncora.AtoCodigo,
                     RotuloDoDonoDaAncora.DaEtapa(input.Nome),
@@ -67,30 +87,29 @@ internal sealed class DeclaracaoDosRecursosDaEtapa(
                     (atoCodigo, token) => atos.Congelados.AncoraDaEtapaJaPublicadaAsync(etapa.Id, atoCodigo, token),
                     cancellationToken)
                 .ConfigureAwait(false);
-            if (recusaDaAncora is not null)
-            {
-                return Result<RecursoDaEtapa>.Failure(recusaDaAncora);
-            }
-        }
 
-        Result<ReferenciaRegra> regra = await ReferenciaDaRegraAsync(declarado, cancellationToken).ConfigureAwait(false);
-        if (regra.IsFailure)
-        {
-            return Result<RecursoDaEtapa>.ValidationFailure(regra.Errors);
-        }
-
+    private async Task<Result<RecursoDaEtapa>> RecursoComRegraAsync(
+        EtapaProcesso etapa,
+        EtapaProcessoInput input,
+        int posicao,
+        ProdutoDaEtapa? produtoAncora,
+        ReferenciaRegra regra,
+        CancellationToken cancellationToken)
+    {
+        RecursoDaEtapaInput declarado = input.Recursos[posicao];
         Result<ProcedimentosDeRecurso> procedimentos = await _procedimentos
-            .DeclararAsync(declarado.Procedimentos, ContextoDosProcedimentos(etapa), $"recursos[{posicao}].procedimentos", cancellationToken)
+            .DeclararAsync(declarado.Procedimentos, ContextoDosProcedimentos(etapa, input), $"recursos[{posicao}].procedimentos", cancellationToken)
             .ConfigureAwait(false);
         return procedimentos.IsFailure
             ? Result<RecursoDaEtapa>.ValidationFailure(procedimentos.Errors)
-            : RecursoDaEtapa.Criar(declarado.Ancora, regra.Value!, ArgumentosDoPrazo(declarado), produtoAncora?.Id ?? Guid.Empty, procedimentos.Value);
+            : RecursoDaEtapa.Criar(declarado.Ancora, regra, ArgumentosDoPrazo(declarado), produtoAncora?.Id ?? Guid.Empty, procedimentos.Value);
     }
 
     // O lugar da janela é a própria etapa: ela declara os tipos de decisão que produz e os itens de avaliação que o alvo
-    // pode apontar. A área do ENEM vale em qualquer janela de processo que importa a nota do ENEM.
-    private ContextoDosProcedimentosDeRecurso ContextoDosProcedimentos(EtapaProcesso etapa) => new(
-        etapa.TiposDeDecisao.Select(TipoMotivoDeDecisaoCodigo.FromCodigo).ToHashSet(),
+    // pode apontar. A área do ENEM vale em qualquer janela de processo que importa a nota do ENEM. Os tipos vêm do payload,
+    // e não da etapa: recusada a declaração dos tipos, a etapa ainda guarda os anteriores.
+    private ContextoDosProcedimentosDeRecurso ContextoDosProcedimentos(EtapaProcesso etapa, EtapaProcessoInput input) => new(
+        TiposDeDecisaoDeclarados.Aceitos(input.TiposDeDecisao),
         etapa.ItensDeAvaliacao.Select(static item => item.Id).ToHashSet(),
         processoTemNotaDoEnem);
 

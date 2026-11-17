@@ -137,4 +137,25 @@ public sealed class ConferenciaDosProcedimentosDeRecursoTests
         faltas[0].Field.Should().Be("regraRecurso.procedimentos[0].tipoDeDecisao");
         faltas[0].Error.Code.Should().Be("RegraRecursoFase.ProcedimentoParaDecisaoNaoDeclarada");
     }
+
+    [Fact(DisplayName = "Com a declaração dos tipos do lugar recusada, o tipo do procedimento não é recusado e a regra e o alvo continuam sendo")]
+    public void TiposDoLugarRecusados_NaoRecusaOTipoDoProcedimento()
+    {
+        ContextoDosProcedimentosDeRecurso semTipos = Contexto() with { TiposDeDecisaoDoLugar = null };
+
+        IReadOnlyList<FieldError> faltas = Faltas(semTipos,
+            Procedimento(TipoMotivoDeDecisao.AnaliseDocumental, AlvoItem(OutroItem), "OUTRA-REGRA"));
+
+        faltas.Select(f => f.Error.Code).Should().Equal(Codigos.Desconhecido, Codigos.AlvoInexistente);
+    }
+
+    [Fact(DisplayName = "Com a declaração dos tipos do lugar recusada, a coerência entre procedimentos continua sendo conferida")]
+    public void TiposDoLugarRecusados_MantemACoerencia()
+    {
+        ContextoDosProcedimentosDeRecurso semTipos = Contexto() with { TiposDeDecisaoDoLugar = null };
+
+        IReadOnlyList<FieldError> faltas = Faltas(semTipos, Procedimento(), Procedimento());
+
+        faltas.Should().ContainSingle().Which.Error.Code.Should().Be(Codigos.Duplicado);
+    }
 }

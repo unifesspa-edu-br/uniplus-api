@@ -25,6 +25,10 @@ public sealed class CoberturaDosProcedimentosDeRecursoTests
     public void LugarSemTipos_NaoExige() =>
         SemProcedimento(Contexto(tiposDoLugar: [])).Should().BeEmpty();
 
+    [Fact(DisplayName = "Lugar cuja declaração dos tipos foi recusada não tem tipo a cobrir")]
+    public void TiposDoLugarRecusados_NaoExige() =>
+        SemProcedimento(Contexto() with { TiposDeDecisaoDoLugar = null }).Should().BeEmpty();
+
     [Fact(DisplayName = "Procedimento sem alvo cobre o tipo inteiro")]
     public void SemAlvo_CobreOTipo() =>
         SemProcedimento(Contexto(), Procedimento()).Should().BeEmpty();

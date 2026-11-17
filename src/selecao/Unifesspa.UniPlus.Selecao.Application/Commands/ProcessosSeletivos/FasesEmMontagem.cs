@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Errors;
-using Domain.MotivosDeDecisao;
 using Domain.ValueObjects;
 
 using Kernel.Results;
@@ -16,11 +15,10 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// edição acumula, as fases montadas e as recusas, e por isso vive só pela duração dela.
 /// </summary>
 /// <remarks>
-/// A passada pura sobre os tipos de decisão de TODAS as fases roda antes de qualquer cadastro: havendo recusa,
-/// o lote dela sai sozinho e nenhum cadastro é consultado, porque tipo inválido impede as verificações
-/// seguintes. O resto não tem passada pura: a data de origem é cópia da fase canônica, o papel de cada
-/// produto depende do catálogo de tipos de ato e o recorte de competência da banca depende do cadastro de
-/// categorias. Sem recusa de tipos, as recusas de produto e as da fábrica da fase acumulam, e a recusa do domínio sai como lote, com o campo de
+/// Nenhuma passada pura antecede os cadastros: os tipos de decisão são conferidos pelo domínio, na fábrica da fase,
+/// junto das demais violações dela. A data de origem é cópia da fase canônica, o papel de cada produto depende do
+/// catálogo de tipos de ato e o recorte de competência da banca depende do cadastro de categorias, e por isso as
+/// recusas de produto e as da fábrica da fase acumulam por fase, e a recusa do domínio sai como lote, com o campo de
 /// cada violação. Os insumos que faltam inteiro interrompem a montagem, levando junto o que já foi
 /// acumulado: parar é decidir o que ainda dá para avaliar, não apagar defeito já diagnosticado. A ordem
 /// continua só no domínio, coberta pelo FluentValidation, e a janela (fim depois do início) acumula na
@@ -45,20 +43,6 @@ internal sealed class FasesEmMontagem
     }
 
     public async Task<Result<List<FaseCronograma>>> MontarAsync(
-        IReadOnlyList<FaseCronogramaInput> fases, CancellationToken cancellationToken)
-    {
-        List<FieldError> recusasDosTipos = TiposDeDecisaoDasFases(fases);
-        return recusasDosTipos.Count > 0
-            ? Result<List<FaseCronograma>>.ValidationFailure(recusasDosTipos)
-            : await MontarFasesAsync(fases, cancellationToken).ConfigureAwait(false);
-    }
-
-    private static List<FieldError> TiposDeDecisaoDasFases(IReadOnlyList<FaseCronogramaInput> fases) =>
-        [.. fases.SelectMany((fase, indice) => TiposDeDecisaoDeclarados
-            .Validar(fase.TiposDeDecisao, TiposDeDecisaoDeclarados.Campo)
-            .Select(erro => ComIndice(erro, indice)))];
-
-    private async Task<Result<List<FaseCronograma>>> MontarFasesAsync(
         IReadOnlyList<FaseCronogramaInput> fases, CancellationToken cancellationToken)
     {
         for (int indice = 0; indice < fases.Count; indice++)

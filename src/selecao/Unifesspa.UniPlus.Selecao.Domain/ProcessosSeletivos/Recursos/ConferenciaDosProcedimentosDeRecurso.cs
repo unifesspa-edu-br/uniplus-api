@@ -74,7 +74,7 @@ public static class ConferenciaDosProcedimentosDeRecurso
 
     private static FieldError? FaltaDoTipo(
         ProcedimentoDeRecursoDeclarado procedimento, ContextoDosProcedimentosDeRecurso contexto, CodigosDoProcedimentoDeRecurso codigos, string campo) =>
-        contexto.TiposDeDecisaoDoLugar.Contains(procedimento.TipoDeDecisao)
+        contexto.TiposDeDecisaoDoLugar is not { } tipos || tipos.Contains(procedimento.TipoDeDecisao)
             ? null
             : new FieldError($"{campo}.tipoDeDecisao", new DomainError(
                 codigos.ParaDecisaoNaoDeclarada,
