@@ -89,23 +89,16 @@ internal static class ManifestoDeEditalSnapshotsECronograma
                 ("RegraDeHomologacao", "Ainda não entra no envelope congelado nem no hash."),
             ]),
 
-        // Regra de homologação das inscrições declarada pela fase: ainda fora do envelope congelado.
+        // Regra de homologação das inscrições declarada pela fase.
         [typeof(RegraDeHomologacaoDasInscricoes)] = (
-            [],
+            ["ResultadoAtoCodigo", "Alternativas"],
             [
-                ("ResultadoAtoCodigo", "A regra de homologação das inscrições ainda não entra no envelope congelado nem no hash."),
-                ("Alternativas", "A regra de homologação das inscrições ainda não entra no envelope congelado nem no hash."),
                 ("HomologaTodaInscricaoEnviada", "Derivada de Alternativas."),
             ]),
-        [typeof(AlternativaDeCondicoes)] = ([], [("Condicoes", "A regra de homologação das inscrições ainda não entra no envelope congelado nem no hash.")]),
+        [typeof(AlternativaDeCondicoes)] = (["Condicoes"], []),
         [typeof(CondicaoDeHomologacao)] = (
-            [],
-            [
-                ("Tipo", "A regra de homologação das inscrições ainda não entra no envelope congelado nem no hash."),
-                ("EdicaoDoExame", "A regra de homologação das inscrições ainda não entra no envelope congelado nem no hash."),
-                ("MotivoDesfavoravelCodigo", "A regra de homologação das inscrições ainda não entra no envelope congelado nem no hash."),
-                ("Enquadramento", "A regra de homologação das inscrições ainda não entra no envelope congelado nem no hash."),
-            ]),
+            ["Tipo", "EdicaoDoExame", "MotivoDesfavoravelCodigo", "Enquadramento"],
+            []),
 
         // Cópia da unidade responsável pela fase (ADR-0061), congelada na publicação.
         [typeof(UnidadeResponsavelSnapshot)] = (["OrigemId", "Sigla", "Nome"], []),

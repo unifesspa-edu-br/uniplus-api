@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Recursos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
@@ -61,7 +62,9 @@ internal static class CorpusEnvelopeCronograma
     /// </summary>
     /// <param name="variante">Ver <see cref="EtapaId"/> — só distingue processos no mesmo Postgres entre testes de persistência.</param>
     /// <param name="permutar">Inverte a ordem de ENTRADA dos produtos e das bancas requeridas desta fase — nunca o conteúdo.</param>
-    internal static FaseCronograma FaseResultadoPreliminarComRecurso(int variante = 0, bool permutar = false) => FaseCronograma.Reidratar(
+    /// <param name="regraDeHomologacao">A regra de homologação das inscrições da fase; a do corpus quando ausente.</param>
+    internal static FaseCronograma FaseResultadoPreliminarComRecurso(
+        int variante = 0, bool permutar = false, RegraDeHomologacaoDasInscricoes? regraDeHomologacao = null) => FaseCronograma.Reidratar(
         id: new Guid($"6666aaaa-000{variante:x}-4000-8000-000000000002"),
         new OrigemCanonicaDaFase(
             OrigemId: new Guid("4444dddd-0000-4000-8000-000000000002"), Codigo: "RESULTADO_PRELIMINAR", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false,
@@ -71,8 +74,28 @@ internal static class CorpusEnvelopeCronograma
             UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(
                 Produtos: ProdutosDaFaseDeRecurso(variante, permutar), EmiteParecerIndividual: true, RegraRecurso: RegraDeRecursoDaFase(variante),
-                TiposDeDecisao: [TipoMotivoDeDecisaoCodigo.Classificacao]),
+                TiposDeDecisao: [TipoMotivoDeDecisaoCodigo.Classificacao],
+                RegraDeHomologacao: regraDeHomologacao ?? RegraDeHomologacaoDoCorpus()),
         bancasRequeridas: BancasRequeridasDaFaseDeRecurso(permutar));
+
+    /// <summary>
+    /// Duas alternativas, a primeira com duas condições, sem e com enquadramento, na ordem que não é a alfabética dos
+    /// motivos: a escrita do envelope preserva a ordem declarada. A segunda alternativa não aponta motivo.
+    /// </summary>
+    internal static RegraDeHomologacaoDasInscricoes RegraDeHomologacaoDoCorpus() => RegraDeHomologacaoDasInscricoes.Declarar(
+        "RESULTADO_CLASSIFICACAO",
+        [
+            AlternativaDeCondicoes.Declarar([
+                CondicaoDeHomologacao.Declarar("RESULTADO_NO_RETORNO_DO_INEP", 2026, "MOTIVO_Z_SEM_RETORNO_DO_INEP", null).Value!,
+                CondicaoDeHomologacao.Declarar("RESULTADO_NO_RETORNO_DO_INEP", 2025, "MOTIVO_A_SEM_RETORNO_DO_INEP", EnquadramentoDoCorpus()).Value!,
+            ]).Value!,
+            AlternativaDeCondicoes.Declarar([
+                CondicaoDeHomologacao.Declarar("RESULTADO_NO_RETORNO_DO_INEP", 2024, null, null).Value!,
+            ]).Value!,
+        ]);
+
+    private static PredicadoDnf EnquadramentoDoCorpus() => PredicadoDnf.CriarDeCondicoesAgrupadas(
+        [(0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!)]).Value!;
 
     internal static IReadOnlyList<ProdutoDaFase> ProdutosDaFaseDeRecurso(int variante, bool permutar) =>
         Ordem<ProdutoDaFase>([

@@ -31,7 +31,7 @@ using Xunit;
 
 internal static class ApoioDoEnvelopeCodec
 {
-    internal const string SchemaCorrente = "0.0.51";
+    internal const string SchemaCorrente = "0.0.52";
 
     internal static (ProcessoSeletivo Processo, FaseCronograma Fase) ProcessoDeInscricao(string titulo)
     {
@@ -76,27 +76,18 @@ internal static class ApoioDoEnvelopeCodec
     internal static void Mutar(JsonObject raiz, string caminho, string valorNovo)
     {
         string[] partes = caminho.Split('.');
-        JsonNode atual = raiz;
-
-        for (int i = 0; i < partes.Length - 1; i++)
-        {
-            atual = int.TryParse(partes[i], CultureInfo.InvariantCulture, out int indice)
-                ? atual.AsArray()[indice]!
-                : atual.AsObject()[partes[i]]!;
-        }
+        JsonNode atual = PaiDoCampo(raiz, partes);
 
         string chave = partes[^1];
 
         if (int.TryParse(chave, CultureInfo.InvariantCulture, out int posicao))
         {
-            JsonArray array = atual.AsArray();
-            array[posicao].Should().NotBeNull($"pré-condição: o path '{caminho}' tem de existir no envelope");
-            array[posicao] = ValorComoNo(array[posicao]!, valorNovo);
+            TrocarElemento(atual.AsArray(), posicao, valorNovo, caminho);
             return;
         }
 
         JsonObject objeto = atual.AsObject();
-        objeto[chave].Should().NotBeNull($"pré-condição: o path '{caminho}' tem de existir no envelope");
+        objeto[chave].Should().NotBeNull($"pré-condição: o caminho '{caminho}' tem de existir no envelope");
         objeto[chave] = ValorComoNo(objeto[chave]!, valorNovo);
     }
 
@@ -175,5 +166,23 @@ internal static class ApoioDoEnvelopeCodec
         recodificado.IsSuccess.Should().BeTrue(recodificado.Error?.Message);
 
         return recodificado.Value!;
+    }
+
+    private static JsonNode PaiDoCampo(JsonObject raiz, string[] partes)
+    {
+        JsonNode atual = raiz;
+        for (int i = 0; i < partes.Length - 1; i++)
+        {
+            atual = int.TryParse(partes[i], CultureInfo.InvariantCulture, out int indice)
+                ? atual.AsArray()[indice]!
+                : atual.AsObject()[partes[i]]!;
+        }
+        return atual;
+    }
+
+    private static void TrocarElemento(JsonArray array, int posicao, string valorNovo, string caminho)
+    {
+        array[posicao].Should().NotBeNull($"pré-condição: o caminho '{caminho}' tem de existir no envelope");
+        array[posicao] = ValorComoNo(array[posicao]!, valorNovo);
     }
 }

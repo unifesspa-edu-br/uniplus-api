@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -22,7 +23,7 @@ internal static class LeituraDoCronograma
     [
         "ordem", "faseCanonicaOrigemId", "codigo", "origemData", "agrupaEtapas", "permiteComplementacao",
         "coletaInscricao", "coletaSolicitacaoIsencao", "inicio", "fim", "produtos", "faseConcluinteCodigo",
-        "emiteParecerIndividual", "bancasRequeridas", "regraRecurso", "unidadeResponsavel", "tiposDeDecisao",
+        "emiteParecerIndividual", "bancasRequeridas", "regraRecurso", "unidadeResponsavel", "tiposDeDecisao", "regraDeHomologacao",
     ];
 
     /// <summary>
@@ -45,11 +46,11 @@ internal static class LeituraDoCronograma
         leitor.Enumeracao<OrigemCandidatos>(bloco, "origemCandidatos", "cronogramaFases");
 
         JsonArray array = leitor.Array(bloco, "fases", "cronogramaFases");
-        if (leitor.Falhou)
-        {
-            return [];
-        }
+        return leitor.Falhou ? [] : LerFases(leitor, array, comId);
+    }
 
+    private static List<FaseCronograma> LerFases(LeitorEnvelope leitor, JsonArray array, bool comId)
+    {
         List<FaseCronograma> fases = [];
         for (int i = 0; i < array.Count; i++)
         {
@@ -112,10 +113,13 @@ internal static class LeituraDoCronograma
         RegraRecursoFase? regraRecurso = leitor.Falhou ? null : LeituraDosPrazosDeRecurso.LerRegraRecursoFase(leitor, item, path);
         UnidadeResponsavelSnapshot? unidade = leitor.Falhou ? null : LerUnidadeResponsavel(leitor, item, path);
         IReadOnlyList<string> tipos = leitor.Falhou ? [] : TiposDeDecisaoNoEnvelope.Ler(leitor, item, path);
+        RegraDeHomologacaoDasInscricoes? regraDeHomologacao = leitor.Falhou ? null : RegraDeHomologacaoNoEnvelope.Ler(leitor, item, path);
 
         return leitor.Falhou
             ? null
-            : Montar(leitor, id, origem, decisoes with { UnidadeResponsavel = unidade }, new(produtos, emiteParecerIndividual, regraRecurso, tipos), bancas);
+            : Montar(
+                leitor, id, origem, decisoes with { UnidadeResponsavel = unidade },
+                new(produtos, emiteParecerIndividual, regraRecurso, tipos, regraDeHomologacao), bancas);
     }
 
     private static FaseCronograma? Montar(
@@ -187,31 +191,27 @@ internal static class LeituraDoCronograma
     internal static List<ProdutoDaFase> LerProdutosDaFase(LeitorEnvelope leitor, JsonObject faseItem, string pathPai)
     {
         JsonArray array = leitor.Array(faseItem, "produtos", pathPai);
-        if (leitor.Falhou)
-        {
-            return [];
-        }
-
         List<ProdutoDaFase> produtos = [];
-        for (int i = 0; i < array.Count; i++)
+        for (int i = 0; !leitor.Falhou && i < array.Count; i++)
         {
-            string path = $"{pathPai}.produtos[{i}]";
-            JsonObject item = leitor.ItemObjeto(array, i, $"{pathPai}.produtos");
-            leitor.ExigirChaves(item, path, "id", "atoCodigo", "papel");
-
-            Guid? id = leitor.Identificador(item, "id", path);
-            string atoCodigo = leitor.TextoNaoVazio(item, "atoCodigo", path, LimitesDoEnvelope.TipoAtoCodigo);
-            PapelProdutoFase? papel = leitor.EnumeracaoOpcional<PapelProdutoFase>(item, "papel", path);
-
-            if (leitor.Falhou)
+            ProdutoDaFase? produto = LerProduto(leitor, leitor.ItemObjeto(array, i, $"{pathPai}.produtos"), $"{pathPai}.produtos[{i}]");
+            if (produto is not null)
             {
-                return [];
+                produtos.Add(produto);
             }
-
-            produtos.Add(ProdutoDaFase.Reidratar(id!.Value, atoCodigo, papel));
         }
 
-        return produtos;
+        return leitor.Falhou ? [] : produtos;
+    }
+
+    private static ProdutoDaFase? LerProduto(LeitorEnvelope leitor, JsonObject item, string path)
+    {
+        leitor.ExigirChaves(item, path, "id", "atoCodigo", "papel");
+        Guid? id = leitor.Identificador(item, "id", path);
+        string atoCodigo = leitor.TextoNaoVazio(item, "atoCodigo", path, LimitesDoEnvelope.TipoAtoCodigo);
+        PapelProdutoFase? papel = leitor.EnumeracaoOpcional<PapelProdutoFase>(item, "papel", path);
+
+        return leitor.Falhou ? null : ProdutoDaFase.Reidratar(id!.Value, atoCodigo, papel);
     }
 
     internal static List<BancaRequerida> LerBancasRequeridas(LeitorEnvelope leitor, JsonObject faseItem, string pathPai)

@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Projeta no envelope o cronograma: fases, produtos, bancas requeridas e regras de recurso.
+/// Projeta no envelope o cronograma: fases, produtos, bancas requeridas, regras de recurso e regra de homologação das inscrições.
 /// </summary>
 internal static class SerializacaoDoCronograma
 {
@@ -34,7 +34,7 @@ internal static class SerializacaoDoCronograma
         new([.. OrdemCanonicaDaConfiguracao.Fases(processo.CronogramaFases)
             .Select(static fase => (JsonNode)SerializarFase(fase))]);
 
-    private static JsonObject SerializarFase(FaseCronograma fase)
+    internal static JsonObject SerializarFase(FaseCronograma fase)
     {
         JsonObject item = new() { ["id"] = fase.Id, ["bancasRequeridas"] = SerializarBancasRequeridas(fase) };
         AcrescentarOrigemCanonica(item, fase);
@@ -70,6 +70,9 @@ internal static class SerializacaoDoCronograma
         item["emiteParecerIndividual"] = fase.EmiteParecerIndividual;
         item["regraRecurso"] = fase.RegraRecurso is { } regraRecurso ? SerializarRegraRecursoFase(regraRecurso) : null;
         item["tiposDeDecisao"] = TiposDeDecisaoNoEnvelope.Serializar(fase.TiposDeDecisao);
+        item[RegraDeHomologacaoNoEnvelope.Chave] = fase.RegraDeHomologacao is { } regraDeHomologacao
+            ? RegraDeHomologacaoNoEnvelope.Serializar(regraDeHomologacao)
+            : null;
     }
 
     private static JsonObject SerializarUnidadeResponsavel(UnidadeResponsavelSnapshot unidade) => new()

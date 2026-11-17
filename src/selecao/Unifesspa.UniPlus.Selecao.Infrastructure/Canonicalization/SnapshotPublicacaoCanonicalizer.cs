@@ -43,7 +43,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// <summary>
     /// Versão da forma do envelope (ADR-0109 D1). O codec é um só, reescrito no lugar quando a forma muda.
     /// </summary>
-    internal const string SchemaVersionAtual = "0.0.51";
+    internal const string SchemaVersionAtual = "0.0.52";
 
     /// <summary>
     /// Projeta o processo seletivo e os dados do edital no envelope canônico.
@@ -52,11 +52,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// <returns>Os bytes canônicos, a versão do schema e o algoritmo do perfil.</returns>
     public SnapshotCanonico Canonicalizar(EntradaCanonicalizacao entrada)
     {
-        ArgumentNullException.ThrowIfNull(entrada);
-        if (string.IsNullOrWhiteSpace(entrada.HashDocumento))
-        {
-            throw new ArgumentException("A entrada da canonicalização precisa do hash do documento.", nameof(entrada));
-        }
+        ExigirHashDoDocumento(entrada);
 
         JsonObject payload = [];
         ProjetarEdital(payload, entrada);
@@ -67,6 +63,15 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
 
         byte[] bytes = EscritaCanonica.PerfilAtual.Serializar(payload);
         return new SnapshotCanonico(bytes, SchemaVersionAtual, EscritaCanonica.PerfilAtual.Algoritmo);
+    }
+
+    private static void ExigirHashDoDocumento(EntradaCanonicalizacao entrada)
+    {
+        ArgumentNullException.ThrowIfNull(entrada);
+        if (string.IsNullOrWhiteSpace(entrada.HashDocumento))
+        {
+            throw new ArgumentException("A entrada da canonicalização precisa do hash do documento.", nameof(entrada));
+        }
     }
 
     private static void ProjetarEdital(JsonObject payload, EntradaCanonicalizacao entrada)

@@ -1,13 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.UnitTests.Persistence;
 
-using System.Text.Json;
-
 using AwesomeAssertions;
 
-using Unifesspa.UniPlus.Regras.Enums;
-using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
+
+using static Unifesspa.UniPlus.Selecao.Infrastructure.UnitTests.TestSupport.RegraDeHomologacaoDeTeste;
 
 /// <summary>
 /// O documento <c>jsonb</c> da regra de homologação na fase: a ida e volta sem perda, a ordem declarada, o
@@ -15,7 +13,6 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 /// </summary>
 public sealed class ColunaDaRegraDeHomologacaoTests
 {
-    private const string TipoDoRetornoDoInep = "RESULTADO_NO_RETORNO_DO_INEP";
     private const string ResultadoPreliminar = "RESULTADO_PRELIMINAR_HOMOLOGACAO";
 
     [Fact(DisplayName = "Regra com enquadramento e sem enquadramento volta igual ao que foi gravada")]
@@ -135,16 +132,4 @@ public sealed class ColunaDaRegraDeHomologacaoTests
 
         leitura.Should().Throw<Exception>();
     }
-
-    private static RegraDeHomologacaoDasInscricoes Regra(string? resultadoAtoCodigo, params AlternativaDeCondicoes[] alternativas) =>
-        RegraDeHomologacaoDasInscricoes.Declarar(resultadoAtoCodigo, alternativas);
-
-    private static AlternativaDeCondicoes Alternativa(params CondicaoDeHomologacao[] condicoes) =>
-        AlternativaDeCondicoes.Declarar(condicoes).Value!;
-
-    private static CondicaoDeHomologacao Condicao(int edicao, string? motivo, PredicadoDnf? enquadramento) =>
-        CondicaoDeHomologacao.Declarar(TipoDoRetornoDoInep, edicao, motivo, enquadramento).Value!;
-
-    private static PredicadoDnf EnquadramentoDaModalidade(string modalidade) => PredicadoDnf.CriarDeCondicoesAgrupadas(
-        [(0, CondicaoDnf.Criar("MODALIDADE", Operador.Igual, JsonSerializer.SerializeToElement(modalidade)).Value!)]).Value!;
 }

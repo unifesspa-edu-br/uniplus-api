@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -48,12 +49,13 @@ internal static class CorpusEnvelopeProcessoRico
     /// referência para todo consumidor de <see cref="ProcessoRico"/>, não só quem testa a permutação.
     /// </param>
     /// <param name="tiposDeDecisaoDaFaseFinal">Os tipos de decisão que a fase de resultado final declara; ausentes por padrão.</param>
+    /// <param name="regraDeHomologacao">A regra de homologação das inscrições da fase de resultado preliminar; a do corpus quando ausente.</param>
     internal static ProcessoSeletivo ProcessoRico(
         int variante = 0, bool permutar = false, bool comArvoreSatisfacao = false, IReadOnlyList<string?>? tiposDeDecisaoDaFaseFinal = null,
-        int vagasOfertadasBaseDaLeiDeCotas = VagasOfertadasBaseDaLeiDeCotasDoCorpus)
+        int vagasOfertadasBaseDaLeiDeCotas = VagasOfertadasBaseDaLeiDeCotasDoCorpus, RegraDeHomologacaoDasInscricoes? regraDeHomologacao = null)
     {
         ProcessoSeletivo processo = NovoProcessoRico(variante);
-        DefinirCronogramaEEtapas(processo, variante, permutar, tiposDeDecisaoDaFaseFinal);
+        DefinirCronogramaEEtapas(processo, variante, permutar, tiposDeDecisaoDaFaseFinal, regraDeHomologacao);
         DefinirOfertaEClassificacao(processo, variante, permutar, vagasOfertadasBaseDaLeiDeCotas);
         DefinirFormularioDeInscricao(processo, permutar);
         DefinirCascataEDocumentos(processo, variante, permutar, comArvoreSatisfacao);
@@ -88,10 +90,11 @@ internal static class CorpusEnvelopeProcessoRico
             AlgoritmoDeContagemDoCorpus()).IsSuccess.Should().BeTrue();
 
     internal static void DefinirCronogramaEEtapas(
-        ProcessoSeletivo processo, int variante, bool permutar, IReadOnlyList<string?>? tiposDeDecisaoDaFaseFinal)
+        ProcessoSeletivo processo, int variante, bool permutar, IReadOnlyList<string?>? tiposDeDecisaoDaFaseFinal,
+        RegraDeHomologacaoDasInscricoes? regraDeHomologacao = null)
     {
         processo.DefinirCronogramaFases(
-            Ordem([FaseInscricao(variante), FaseResultadoPreliminarComRecurso(variante, permutar), FaseResultadoFinal(variante, tiposDeDecisaoDaFaseFinal)], permutar), [])
+            Ordem([FaseInscricao(variante), FaseResultadoPreliminarComRecurso(variante, permutar, regraDeHomologacao), FaseResultadoFinal(variante, tiposDeDecisaoDaFaseFinal)], permutar), [])
             .IsSuccess.Should().BeTrue();
         processo.DefinirEtapas(Ordem([
             EtapaObjetiva(variante, permutar),
