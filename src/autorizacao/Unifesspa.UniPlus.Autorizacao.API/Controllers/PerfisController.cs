@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Authorization.Catalogo;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Application.Permissoes;
@@ -103,7 +104,7 @@ public sealed class PerfisController : ControllerBase
     /// </summary>
     [HttpPost("perfis")]
     [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, ResourceTipo = ResourceTiposAutorizacao.Perfil)]
-    [RequiresIdempotencyKey(TtlSeconds = 15 * 60)]
+    [RequiresIdempotencyKey(TtlSeconds = EnvioDoPdf.PrazoEmSegundos)]
     [ProducesResponseType(typeof(EnvioDoDocumentoDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
