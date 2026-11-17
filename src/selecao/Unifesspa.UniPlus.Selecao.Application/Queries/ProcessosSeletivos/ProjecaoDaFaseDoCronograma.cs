@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
 using Domain.Entities;
 using Domain.Enums;
+using Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 using Domain.ProcessosSeletivos.Recursos;
 using Domain.ValueObjects;
 
@@ -45,7 +46,8 @@ internal static class ProjecaoDaFaseDoCronograma
         ProduzResultado: fase.ProduzResultado,
         EmiteParecerIndividual: fase.EmiteParecerIndividual,
         RegraRecurso: fase.RegraRecurso is { } regraRecurso ? ProjetarRegraDeRecurso(regraRecurso) : null,
-        TiposDeDecisao: [.. fase.TiposDeDecisao]);
+        TiposDeDecisao: [.. fase.TiposDeDecisao],
+        RegraDeHomologacao: fase.RegraDeHomologacao is { } regraDeHomologacao ? ProjetarRegraDeHomologacao(regraDeHomologacao) : null);
 
     private static ProdutoDaFaseDto[] ProjetarProdutosDaFase(FaseCronograma fase) =>
         [.. fase.Produtos
@@ -70,6 +72,15 @@ internal static class ProjecaoDaFaseDoCronograma
         [.. banca.RecorteDeCompetencia
             .OrderBy(static c => c.Codigo, StringComparer.Ordinal)
             .Select(static c => new CategoriaJulgadaDto(c.Id, c.CategoriaDocumentoOrigemId, c.Codigo))]);
+
+    private static RegraDeHomologacaoDto ProjetarRegraDeHomologacao(RegraDeHomologacaoDasInscricoes regra) => new(
+        regra.ResultadoAtoCodigo,
+        [.. regra.Alternativas.Select(static alternativa => new AlternativaDeCondicoesDto(
+            [.. alternativa.Condicoes.Select(static condicao => new CondicaoDeHomologacaoDto(
+                condicao.Tipo.Codigo(),
+                condicao.EdicaoDoExame,
+                condicao.MotivoDesfavoravelCodigo,
+                condicao.Enquadramento?.ToDto()))]))]);
 
     private static RegraRecursoFaseDto ProjetarRegraDeRecurso(RegraRecursoFase regraRecurso) => new(
         regraRecurso.Id,

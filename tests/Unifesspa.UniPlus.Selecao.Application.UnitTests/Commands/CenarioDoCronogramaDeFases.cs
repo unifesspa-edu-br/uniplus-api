@@ -29,6 +29,7 @@ internal sealed class CenarioDoCronogramaDeFases
         Processo = processo;
         Repository = RepositorioQueDevolve(processo);
         PrecedenciaFaseReader = PrecedenciasSemArestas();
+        FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns((IReadOnlyList<FatoCandidatoView>)[]);
     }
 
     public ProcessoSeletivo Processo { get; }
@@ -46,6 +47,8 @@ internal sealed class CenarioDoCronogramaDeFases
     public IPrecedenciaFaseReader PrecedenciaFaseReader { get; }
 
     public IRegraCatalogoReader RegraCatalogoReader { get; } = Substitute.For<IRegraCatalogoReader>();
+
+    public IFatoCandidatoReader FatoCandidatoReader { get; } = Substitute.For<IFatoCandidatoReader>();
 
     public ITipoAtoPublicadoReader TipoAtoPublicadoReader { get; } = Substitute.For<ITipoAtoPublicadoReader>();
 
@@ -93,6 +96,13 @@ internal sealed class CenarioDoCronogramaDeFases
     {
         TipoAtoPublicadoReader.ObterVigenteAsync(codigo, Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns((TipoAtoPublicadoView?)null);
+        return this;
+    }
+
+    /// <summary>O catálogo de fatos do candidato passa a ser o dado.</summary>
+    public CenarioDoCronogramaDeFases ComFatosNoCatalogo(params FatoCandidatoView[] fatos)
+    {
+        FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns((IReadOnlyList<FatoCandidatoView>)fatos);
         return this;
     }
 
@@ -157,7 +167,7 @@ internal sealed class CenarioDoCronogramaDeFases
             command, repositorio, DefinicaoSobre(repositorio), UnitOfWork, Relogio, CancellationToken.None);
 
     private DefinicaoDoCronogramaDeFases DefinicaoSobre(IProcessoSeletivoRepository repositorio) => new(
-        new MontagemDasFases(FaseCanonicaReader, UnidadeResponsavel, TipoBancaReader, CategoriaDocumentoReader, RegraCatalogoReader),
+        new MontagemDasFases(FaseCanonicaReader, UnidadeResponsavel, TipoBancaReader, CategoriaDocumentoReader, RegraCatalogoReader, FatoCandidatoReader),
         PrecedenciaFaseReader, TipoAtoPublicadoReader, repositorio, Codecs, new MotivosDosLugaresQueSaem(MotivosEscolhidos));
 
     private static IProcessoSeletivoRepository RepositorioQueDevolve(ProcessoSeletivo processo)

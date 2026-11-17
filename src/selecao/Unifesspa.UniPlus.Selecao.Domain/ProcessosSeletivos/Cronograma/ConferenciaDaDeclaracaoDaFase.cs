@@ -5,6 +5,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -87,9 +88,19 @@ internal static class ConferenciaDaDeclaracaoDaFase
         .. JanelaDaFase.Violacoes(origem.OrigemData, cronograma),
         .. ViolacoesDasPublicacoes(origem.Codigo, publicacoes, colecoesComParteRecusada.Contains(FaseDeclarada.ListaDosProdutos)),
         .. TiposDeDecisaoDeclarados.Validar(publicacoes.TiposDeDecisao, TiposDeDecisaoDeclarados.Campo),
+        .. ResultadoDaRegraDeHomologacao(origem.Codigo, publicacoes, colecoesComParteRecusada.Contains(FaseDeclarada.ListaDosProdutos)),
         .. RecorteDeCompetenciaDasBancas.Violacoes(origem.Codigo, bancasRequeridas),
         .. RecortesEmBancaDeRecursos(origem.Codigo, bancasRequeridas),
     ];
+
+    // A falta do resultado sai sempre; o resultado que não é produto da fase só é julgado contra a lista de produtos íntegra.
+    private static IEnumerable<FieldError> ResultadoDaRegraDeHomologacao(
+        string codigoDaFase, PublicacoesDaFase publicacoes, bool produtosComParteRecusada)
+    {
+        FieldError? recusa = ConferenciaDaRegraDeHomologacao.ResultadoAusente(codigoDaFase, publicacoes.RegraDeHomologacao)
+            ?? (produtosComParteRecusada ? null : ConferenciaDaRegraDeHomologacao.ResultadoQueNaoEProduto(codigoDaFase, publicacoes));
+        return recusa is null ? [] : [recusa];
+    }
 
     private static IEnumerable<FieldError> RecortesEmBancaDeRecursos(string codigoDaFase, IReadOnlyList<BancaRequerida> bancasRequeridas)
     {

@@ -26,7 +26,7 @@ public sealed class FaseCronogramaRegraDeHomologacaoTests
             Guid.CreateVersion7(), "HOMOLOGACAO_INSCRICOES", OrigemDataFase.NaExecucao,
             AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(1, null, null, null, UnidadesDeTeste.Ceps),
-        new PublicacoesDaFase([], false, null, tipos, regra),
+        new PublicacoesDaFase([ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo)], false, null, tipos, regra),
         []).Value!;
 
     [Fact(DisplayName = "A fase guarda a regra declarada nas publicações e, sem declarar, fica sem regra")]

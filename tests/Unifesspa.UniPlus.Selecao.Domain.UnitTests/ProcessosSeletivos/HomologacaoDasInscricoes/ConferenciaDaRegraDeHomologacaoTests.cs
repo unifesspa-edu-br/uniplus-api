@@ -1,188 +1,178 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.HomologacaoDasInscricoes;
 
+using System.Collections.Frozen;
+
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
-using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.HomologacaoDasInscricoes.CondicoesDeHomologacaoParaTestes;
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.HomologacaoDasInscricoes.FasesDeHomologacaoParaTestes;
 
 /// <summary>
-/// A regra que a fase declara, conferida contra a própria fase e o cronograma: o tipo de decisão declarado,
-/// o resultado que leva a lista e a confirmação do INEP quando o processo importa a nota de um exame.
+/// O resultado que a regra de homologação aponta é conferido contra os produtos, com papel, da própria fase. O definitivo
+/// dele é do ciclo recursal, e a falta do tipo de decisão e da confirmação do INEP é de outras regras.
 /// </summary>
 public sealed class ConferenciaDaRegraDeHomologacaoTests
 {
-    private static readonly string[] TipoDaHomologacao = [TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes];
+    private const string FaseDaRegra = "HOMOLOGACAO_INSCRICOES";
+    private const string CampoDoResultado = "regraDeHomologacao.resultadoAtoCodigo";
 
-    private static RegraDeHomologacaoDasInscricoes Regra(string? resultado = ResultadoDaLista, params AlternativaDeCondicoes[] alternativas) =>
-        RegraDeHomologacaoDasInscricoes.Declarar(resultado, alternativas);
+    private static RegraDeHomologacaoDasInscricoes Regra(string? resultado = ResultadoDaLista) =>
+        RegraDeHomologacaoDasInscricoes.Declarar(resultado, []);
 
-    private static FaseCronograma FaseComListaFechada() => FaseQueHomologa(1, "HOMOLOGACAO_INSCRICOES", [Preliminar(), Definitivo()]);
+    private static PublicacoesDaFase Publicando(RegraDeHomologacaoDasInscricoes? regra, params ProdutoDaFase[] produtos) =>
+        new(produtos, EmiteParecerIndividual: false, RegraRecurso: null, TiposDeDecisao: null, RegraDeHomologacao: regra);
 
-    private static FaseCronograma FaseQueHomologa(int ordem, string codigo, IReadOnlyList<ProdutoDaFase>? produtos = null, string? faseConcluinteCodigo = null) =>
-        Fase(ordem, codigo, produtos, faseConcluinteCodigo: faseConcluinteCodigo, tiposDeDecisao: TipoDaHomologacao);
+    private static FieldError? Ausente(RegraDeHomologacaoDasInscricoes? regra, string codigoDaFase = FaseDaRegra) =>
+        ConferenciaDaRegraDeHomologacao.ResultadoAusente(codigoDaFase, regra);
 
-    private static IReadOnlyList<FieldError> Faltas(
-        RegraDeHomologacaoDasInscricoes regra, FaseCronograma fase, bool exame = false, params FaseCronograma[] outras) =>
-        ConferenciaDaRegraDeHomologacao.Faltas(regra, fase, [fase, .. outras], exame);
+    private static FieldError? QueNaoEProduto(
+        RegraDeHomologacaoDasInscricoes? regra, ProdutoDaFase[] produtos, string codigoDaFase = FaseDaRegra) =>
+        ConferenciaDaRegraDeHomologacao.ResultadoQueNaoEProduto(codigoDaFase, Publicando(regra, produtos));
 
-    [Fact(DisplayName = "Regra com o tipo declarado, o resultado na fase e o definitivo na própria fase não tem falta")]
-    public void Regra_Completa_SemFalta()
+    [Fact(DisplayName = "O resultado apontado que é produto com papel da fase não tem recusa")]
+    public void Resultado_ProdutoComPapel_SemRecusa() =>
+        QueNaoEProduto(Regra(), [Preliminar()]).Should().BeNull();
+
+    [Fact(DisplayName = "A fase sem regra não tem o que conferir")]
+    public void SemRegra_SemRecusa()
     {
-        FaseCronograma fase = FaseComListaFechada();
-
-        Faltas(Regra(), fase).Should().BeEmpty();
+        Ausente(regra: null).Should().BeNull();
+        QueNaoEProduto(regra: null, []).Should().BeNull();
     }
 
-    [Theory(DisplayName = "Regra numa fase que não declara o tipo HOMOLOGACAO_DAS_INSCRICOES é recusada no campo da regra, qualquer que seja o código da fase")]
-    [InlineData("HOMOLOGACAO_INSCRICOES")]
-    [InlineData("CLASSIFICACAO")]
-    public void Regra_FaseSemOTipo_Recusa(string codigo)
-    {
-        FaseCronograma fase = Fase(1, codigo, [Preliminar(), Definitivo()], tiposDeDecisao: [TipoMotivoDeDecisaoCodigo.Classificacao]);
-
-        IReadOnlyList<FieldError> faltas = Faltas(Regra(), fase);
-
-        faltas.Should().ContainSingle();
-        faltas[0].Field.Should().Be("regraDeHomologacao");
-        faltas[0].Error.Code.Should().Be(MotivoDeDecisaoErrorCodes.TipoDeDecisaoNaoDeclarado);
-    }
-
-    [Fact(DisplayName = "Resultado apontado que a fase não publica é recusado no campo do resultado")]
-    public void Resultado_ForaDaFase_Recusa()
-    {
-        FaseCronograma fase = FaseComListaFechada();
-
-        IReadOnlyList<FieldError> faltas = Faltas(Regra("ATO_SENTINELA"), fase);
-
-        faltas.Should().ContainSingle();
-        faltas[0].Field.Should().Be("regraDeHomologacao.resultadoAtoCodigo");
-        faltas[0].Error.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado);
-        faltas[0].Error.Message.Should().Be("O resultado indicado pela regra deve ser publicado nesta fase, com resultado definitivo nela ou na fase que a conclui.");
-    }
-
-    [Fact(DisplayName = "Regra que não aponta o resultado é recusada como resultado não declarado")]
+    [Fact(DisplayName = "Regra que não aponta o resultado é recusada no campo do resultado")]
     public void Resultado_NaoApontado_Recusa()
     {
-        FaseCronograma fase = FaseComListaFechada();
+        FieldError? recusa = Ausente(Regra(resultado: null));
 
-        IReadOnlyList<FieldError> faltas = Faltas(Regra(resultado: null), fase);
-
-        faltas.Should().ContainSingle();
-        faltas[0].Field.Should().Be("regraDeHomologacao.resultadoAtoCodigo");
-        faltas[0].Error.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado);
+        recusa.Should().NotBeNull();
+        recusa!.Field.Should().Be(CampoDoResultado);
+        recusa.Error.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado);
+        recusa.Error.Message.Should().Contain(FaseDaRegra);
     }
 
-    [Fact(DisplayName = "Fase sem nenhum resultado publicado recusa a regra como resultado não declarado")]
-    public void Resultado_FaseSemProdutos_Recusa()
+    [Theory(DisplayName = "Resultado em branco vale como não apontado")]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Resultado_EmBranco_Recusa(string resultado) =>
+        Ausente(Regra(resultado)).Should().NotBeNull();
+
+    [Fact(DisplayName = "Regra que aponta o resultado não é recusada como resultado ausente, qualquer que seja ele")]
+    public void Resultado_Apontado_NaoEAusente() =>
+        Ausente(Regra("OUTRO_RESULTADO")).Should().BeNull();
+
+    [Fact(DisplayName = "Resultado apontado que a fase não publica é recusado no campo do resultado")]
+    public void Resultado_QueNaoEProdutoDaFase_Recusa()
     {
-        FaseCronograma fase = FaseQueHomologa(1, "HOMOLOGACAO_INSCRICOES");
+        FieldError? recusa = QueNaoEProduto(Regra("OUTRO_RESULTADO"), [Preliminar(), Definitivo()]);
 
-        Faltas(Regra(), fase).Should().ContainSingle()
-            .Which.Error.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado);
+        recusa.Should().NotBeNull();
+        recusa!.Field.Should().Be(CampoDoResultado);
+        recusa.Error.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado);
+        recusa.Error.Message.Should().Contain("precisa ser produto, com papel").And.Contain(FaseDaRegra).And.NotContain("OUTRO_RESULTADO");
     }
+
+    [Fact(DisplayName = "Regra sem resultado não é recusada como resultado que não é produto: a falta é de outra regra")]
+    public void Resultado_NaoApontado_NaoEQueNaoEProduto() =>
+        QueNaoEProduto(Regra(resultado: null), [Preliminar()]).Should().BeNull();
+
+    [Fact(DisplayName = "Produto sem papel, que é só um ato publicado pela fase, não é o resultado da regra")]
+    public void Resultado_ProdutoSemPapel_Recusa()
+    {
+        FieldError? recusa = QueNaoEProduto(Regra(), [ProdutoDaFase.Criar(ResultadoDaLista, papel: null)]);
+
+        recusa.Should().NotBeNull();
+        recusa!.Error.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado);
+    }
+
+    [Fact(DisplayName = "Fase sem nenhum produto recusa a regra como resultado não declarado")]
+    public void Resultado_FaseSemProdutos_Recusa() =>
+        QueNaoEProduto(Regra(), []).Should().NotBeNull();
 
     [Fact(DisplayName = "Fase com mais de um resultado aceita a regra: só o apontado leva a lista")]
-    public void Resultado_FaseComVariosResultados_Aceita()
-    {
-        FaseCronograma fase = FaseQueHomologa(1, "HOMOLOGACAO_INSCRICOES", [Preliminar(), Definitivo(), Preliminar("OUTRO_RESULTADO"), Definitivo("OUTRO_RESULTADO")]);
+    public void Resultado_FaseComVariosResultados_Aceita() =>
+        QueNaoEProduto(Regra("OUTRO_RESULTADO"), [Preliminar(), Definitivo(), Preliminar("OUTRO_RESULTADO"), Definitivo("OUTRO_RESULTADO")])
+            .Should().BeNull();
 
-        Faltas(Regra("OUTRO_RESULTADO"), fase).Should().BeEmpty();
+    [Fact(DisplayName = "O definitivo do resultado não é conferido por esta regra: só o preliminar basta")]
+    public void Resultado_SemDefinitivo_NaoEConferidoAqui() =>
+        QueNaoEProduto(Regra(), [Preliminar()]).Should().BeNull();
+
+    [Theory(DisplayName = "O código da fase não decide a conferência: o resultado vem dos produtos qualquer que seja o código")]
+    [InlineData("HOMOLOGACAO_INSCRICOES")]
+    [InlineData("HOMOLOGACAO_RESULTADO_FINAL")]
+    [InlineData("CLASSIFICACAO")]
+    public void Resultado_QualquerCodigoDeFase_ConfereOsProdutos(string codigoDaFase)
+    {
+        QueNaoEProduto(Regra(), [Preliminar()], codigoDaFase).Should().BeNull();
+        QueNaoEProduto(Regra("OUTRO_RESULTADO"), [Preliminar()], codigoDaFase).Should().NotBeNull();
     }
 
-    [Fact(DisplayName = "Resultado apontado só com preliminar, sem definitivo na fase nem em fase concluinte, é recusado")]
-    public void Resultado_SemDefinitivo_Recusa()
+    [Fact(DisplayName = "Criar a fase recusa o resultado que a regra aponta e não é produto, no campo da fase")]
+    public void Criar_ResultadoQueNaoEProduto_RecusaNoCampoDaRegra()
     {
-        FaseCronograma fase = FaseQueHomologa(1, "HOMOLOGACAO_INSCRICOES", [Preliminar()]);
+        Result<FaseCronograma> fase = FaseComRegra(Regra("OUTRO_RESULTADO"), [Preliminar()]);
 
-        Faltas(Regra(), fase).Should().ContainSingle()
-            .Which.Error.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado);
+        fase.IsFailure.Should().BeTrue();
+        fase.Errors.Should().ContainSingle();
+        fase.Errors[0].Field.Should().Be(CampoDoResultado);
+        fase.Errors[0].Error.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado);
     }
 
-    [Fact(DisplayName = "O definitivo publicado pela fase concluinte do cronograma basta")]
-    public void Resultado_DefinitivoNaFaseConcluinte_Aceita()
+    [Fact(DisplayName = "A recusa do resultado vem depois da dos tipos de decisão declarados")]
+    public void Criar_TipoDeDecisaoInvalidoEResultadoAusente_RecusaNaOrdemDaDeclaracao()
     {
-        FaseCronograma fase = FaseConcluidaPor("RESULTADO_FINAL", [Preliminar()]);
-        FaseCronograma concluinte = Fase(2, "RESULTADO_FINAL", [Definitivo()]);
+        Result<FaseCronograma> fase = FaseComRegra(Regra(resultado: null), [Preliminar()], "TIPO_FORA_DO_VOCABULARIO");
 
-        Faltas(Regra(), fase, exame: false, concluinte).Should().BeEmpty();
+        fase.Errors.Select(static e => e.Error.Code).Should().Equal(
+            MotivoDeDecisaoErrorCodes.TipoInvalido,
+            HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado);
     }
 
-    [Fact(DisplayName = "A fase concluinte que publica o definitivo de outro resultado não basta")]
-    public void Resultado_ConcluinteComDefinitivoDeOutroResultado_Recusa()
+    [Fact(DisplayName = "A fase declarada com a lista de produtos recusada na leitura não julga o resultado apontado")]
+    public void Declarar_ProdutosComParteRecusada_NaoJulgaOResultado()
     {
-        FaseCronograma fase = FaseConcluidaPor("RESULTADO_FINAL", [Preliminar()]);
-        FaseCronograma concluinte = Fase(2, "RESULTADO_FINAL", [Definitivo("OUTRO_RESULTADO")]);
+        FaseDeclarada fase = Declarar(Regra("OUTRO_RESULTADO"), [Preliminar()], new HashSet<string> { FaseDeclarada.ListaDosProdutos });
 
-        Faltas(Regra(), fase, exame: false, concluinte).Should().ContainSingle()
-            .Which.Error.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado);
+        fase.Recusas.Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "O definitivo publicado por outra fase que não é a concluinte declarada não basta")]
-    public void Resultado_DefinitivoEmFaseQueNaoEhAConcluinte_Recusa()
+    [Fact(DisplayName = "A fase declarada com a lista de produtos recusada na leitura recusa a regra sem resultado")]
+    public void Declarar_ProdutosComParteRecusadaESemResultado_RecusaOResultadoAusente()
     {
-        FaseCronograma fase = FaseConcluidaPor("RESULTADO_FINAL", [Preliminar()]);
-        FaseCronograma concluinte = Fase(2, "RESULTADO_FINAL", [Preliminar()]);
-        FaseCronograma outra = Fase(3, "OUTRA_FASE", [Definitivo()]);
+        FaseDeclarada fase = Declarar(Regra(resultado: null), [], new HashSet<string> { FaseDeclarada.ListaDosProdutos });
 
-        Faltas(Regra(), fase, exame: false, concluinte, outra).Should().ContainSingle()
-            .Which.Error.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado);
+        fase.Recusas.Should().ContainSingle().Which.Field.Should().Be(CampoDoResultado);
     }
 
-    [Fact(DisplayName = "Importação de exame com regra vazia é recusada: falta a confirmação do INEP entre as condições")]
-    public void Exame_RegraVazia_FaltaConfirmacaoDoInep()
+    [Fact(DisplayName = "A fase declarada sem parte recusada recusa o resultado apontado que não é produto")]
+    public void Declarar_ResultadoQueNaoEProduto_Recusa()
     {
-        IReadOnlyList<FieldError> faltas = Faltas(Regra(), FaseComListaFechada(), exame: true);
+        FaseDeclarada fase = Declarar(Regra("OUTRO_RESULTADO"), [Preliminar()], FrozenSet<string>.Empty);
 
-        faltas.Should().ContainSingle();
-        faltas[0].Field.Should().Be("regraDeHomologacao.alternativas");
-        faltas[0].Error.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.ConfirmacaoDoInepAusente);
+        fase.Recusas.Should().ContainSingle().Which.Field.Should().Be(CampoDoResultado);
     }
 
-    [Fact(DisplayName = "Importação de exame com a confirmação do INEP em todas as alternativas não tem falta")]
-    public void Exame_ConfirmacaoEmTodasAsAlternativas_SemFalta()
-    {
-        RegraDeHomologacaoDasInscricoes regra = Regra(ResultadoDaLista,
-            Alternativa(ConfirmacaoDoInep(2026, "SEM_RESULTADO_INEP")),
-            Alternativa(ConfirmacaoDoInep(2025, "SEM_RESULTADO_INEP_ANTERIOR")));
+    private static Result<FaseCronograma> FaseComRegra(
+        RegraDeHomologacaoDasInscricoes regra, ProdutoDaFase[] produtos, params string?[] tiposDeDecisao) =>
+        FaseCronograma.Criar(Origem(), Decisoes(), new PublicacoesDaFase(produtos, false, null, tiposDeDecisao, regra), []);
 
-        Faltas(regra, FaseComListaFechada(), exame: true).Should().BeEmpty();
-    }
+    private static FaseDeclarada Declarar(RegraDeHomologacaoDasInscricoes regra, ProdutoDaFase[] produtos, IReadOnlySet<string> colecoesRecusadas) =>
+        FaseDeclarada.Declarar(Guid.CreateVersion7(), Origem(), Decisoes(), Publicando(regra, produtos), [], colecoesRecusadas);
 
-    [Fact(DisplayName = "A confirmação do INEP restrita por enquadramento não alcança todos os candidatos e não conta")]
-    public void Exame_ConfirmacaoComEnquadramento_FaltaConfirmacaoDoInep()
-    {
-        RegraDeHomologacaoDasInscricoes regra = Regra(ResultadoDaLista,
-            Alternativa(ConfirmacaoDoInepSoParaAmpla(2026, "SEM_RESULTADO_INEP")));
+    private static OrigemCanonicaDaFase Origem() => new(
+        Guid.CreateVersion7(), FaseDaRegra, OrigemDataFase.NaExecucao,
+        AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false);
 
-        Faltas(regra, FaseComListaFechada(), exame: true).Should().ContainSingle()
-            .Which.Error.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.ConfirmacaoDoInepAusente);
-    }
-
-    [Fact(DisplayName = "Sem nota importada de exame, a regra vazia é aceita pela conferência (o aviso é à parte)")]
-    public void SemExame_RegraVazia_SemFalta()
-    {
-        Faltas(Regra(), FaseComListaFechada(), exame: false).Should().BeEmpty();
-    }
-
-    [Fact(DisplayName = "As faltas se acumulam na ordem tipo, resultado e confirmação do INEP")]
-    public void Faltas_AcumulamNaOrdemDaConferencia()
-    {
-        IReadOnlyList<FieldError> faltas = Faltas(Regra("OUTRO_RESULTADO"), Fase(1, "HOMOLOGACAO_INSCRICOES", [Preliminar(), Definitivo()]), exame: true);
-
-        faltas.Select(f => f.Error.Code).Should().Equal(
-            MotivoDeDecisaoErrorCodes.TipoDeDecisaoNaoDeclarado,
-            HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado,
-            HomologacaoDasInscricoesErrorCodes.ConfirmacaoDoInepAusente);
-    }
-
-    private static FaseCronograma FaseConcluidaPor(string concluinte, IReadOnlyList<ProdutoDaFase> produtos) =>
-        FaseQueHomologa(1, "HOMOLOGACAO_INSCRICOES", produtos, concluinte);
+    private static DecisoesDeCronogramaDaFase Decisoes() => new(1, null, null, null, UnidadesDeTeste.Ceps);
 }

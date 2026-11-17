@@ -48,7 +48,10 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
     /// <summary>
     /// Substitui integralmente o cronograma de fases do processo:
     /// janela, produtos publicados com o papel de cada um, fase que conclui o ciclo
-    /// recursal, parecer individual, bancas requeridas e regra de recurso, por fase. O
+    /// recursal, parecer individual, bancas requeridas, regra de recurso e regra de homologação das inscrições, por fase. A
+    /// regra de homologação ausente remove a que a fase tinha, e a fase que não a declara não homologa: o cliente devolve a
+    /// regra que leu. As recusas da regra se acumulam, cada uma no campo da fase, da alternativa, da condição e do campo
+    /// da condição que a causou. O
     /// <c>GET</c> vem do endpoint agregado
     /// (<see cref="ProcessoSeletivoController.ObterPorId"/>), que passa a devolver <c>CronogramaFases</c> como parte
     /// do recurso — não há rota aninhada própria de leitura. A fase se identifica pela fase canônica de origem. A que sai

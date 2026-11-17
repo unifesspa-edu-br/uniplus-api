@@ -66,6 +66,7 @@ public sealed class PredicadoDnfValidadorTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("PredicadoDnf.FatoDesconhecido");
+        resultado.Error.Message.Should().Contain("FATO_INEXISTENTE");
     }
 
     [Fact(DisplayName = "PredicadoDnfValidador_Aceita_Fato_Conhecido")]
@@ -155,6 +156,7 @@ public sealed class PredicadoDnfValidadorTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("PredicadoDnf.ValorForaDoDominio");
+        resultado.Error.Message.Should().Contain("ROXO");
     }
 
     [Fact(DisplayName = "PredicadoDnfValidador_Aceita_Valor_No_Dominio_Categorico")]

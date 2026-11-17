@@ -1,11 +1,16 @@
 namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries;
 
+using System.Text.Json;
+
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public sealed class ProjecaoDaFaseDoCronogramaTests
@@ -58,7 +63,9 @@ public sealed class ProjecaoDaFaseDoCronogramaTests
         "Banca de recursos",
         []);
 
-    private static FaseCronograma FaseCompleta(bool agrupaEtapas = true, bool permiteComplementacao = false, bool coletaInscricao = true, bool coletaIsencao = false) =>
+    private static FaseCronograma FaseCompleta(
+        bool agrupaEtapas = true, bool permiteComplementacao = false, bool coletaInscricao = true, bool coletaIsencao = false,
+        RegraDeHomologacaoDasInscricoes? regraDeHomologacao = null) =>
         FaseCronograma.Reidratar(
             FaseId,
             Origem(agrupaEtapas, permiteComplementacao, coletaInscricao, coletaIsencao),
@@ -67,7 +74,8 @@ public sealed class ProjecaoDaFaseDoCronogramaTests
                 Produtos: Produtos(),
                 EmiteParecerIndividual: true,
                 RegraRecurso: RegraDeRecurso(),
-                TiposDeDecisao: [TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa, TipoMotivoDeDecisaoCodigo.Classificacao]),
+                TiposDeDecisao: [TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa, TipoMotivoDeDecisaoCodigo.Classificacao],
+                RegraDeHomologacao: regraDeHomologacao),
             [Banca()]);
 
     private static FaseCronograma FaseSemUnidadeNemPublicacoes() =>
@@ -146,6 +154,23 @@ public sealed class ProjecaoDaFaseDoCronogramaTests
         dto.Publicacoes.ProduzResultado.Should().BeFalse();
         dto.Publicacoes.EmiteParecerIndividual.Should().BeFalse();
         dto.Publicacoes.TiposDeDecisao.Should().BeEmpty();
+        dto.Publicacoes.RegraDeHomologacao.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "A regra de homologação é projetada na forma da escrita: resultado, alternativas na ordem e enquadramento")]
+    public void ProjetarFase_RegraDeHomologacao_ProjetaNaFormaDaEscrita()
+    {
+        FaseCronograma fase = FaseCompleta(regraDeHomologacao: RegraDeHomologacao());
+
+        RegraDeHomologacaoDto regra = ProjecaoDaFaseDoCronograma.ProjetarFase(fase).Publicacoes.RegraDeHomologacao!;
+
+        regra.ResultadoAtoCodigo.Should().Be("RESULTADO_CLASSIFICACAO");
+        CondicaoDeHomologacaoDto[] condicoes = [.. regra.Alternativas.Single().Condicoes];
+        condicoes.Select(static c => (c.Tipo, c.EdicaoDoExame, c.MotivoDesfavoravelCodigo)).Should().Equal(
+            ("RESULTADO_NO_RETORNO_DO_INEP", 2025, "MOTIVO_B"), ("RESULTADO_NO_RETORNO_DO_INEP", 2024, null));
+        condicoes[0].Enquadramento.Should().BeNull();
+        CondicaoPrecondicaoDto enquadramento = condicoes[1].Enquadramento!.Single().Single();
+        (enquadramento.Fato, enquadramento.Operador, enquadramento.Valor.GetString()).Should().Be(("MODALIDADE", "IGUAL", "AMPLA"));
     }
 
     private static PublicacoesDaFaseDto PublicacoesEsperadas(RegraRecursoFase regra) => new(
@@ -162,5 +187,18 @@ public sealed class ProjecaoDaFaseDoCronogramaTests
             new ReferenciaRegraDto(RegraPrazoRecursoCodigo.AncoradoEmAto, "1", new string('a', 64)),
             new ParametrosRegraPrazoRecursoDto(2m, UnidadePrazo.DiasUteis, 5m, UnidadePrazo.Dias, true, 3m, UnidadePrazo.Dias),
             []),
-        TiposDeDecisao: [TipoMotivoDeDecisaoCodigo.Classificacao, TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa]);
+        TiposDeDecisao: [TipoMotivoDeDecisaoCodigo.Classificacao, TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa],
+        RegraDeHomologacao: null);
+
+    private static RegraDeHomologacaoDasInscricoes RegraDeHomologacao() => RegraDeHomologacaoDasInscricoes.Declarar(
+        "RESULTADO_CLASSIFICACAO",
+        [
+            AlternativaDeCondicoes.Declarar([
+                CondicaoDeHomologacao.Declarar("RESULTADO_NO_RETORNO_DO_INEP", 2025, "MOTIVO_B", null).Value!,
+                CondicaoDeHomologacao.Declarar("RESULTADO_NO_RETORNO_DO_INEP", 2024, null, EnquadramentoDaModalidade()).Value!,
+            ]).Value!,
+        ]);
+
+    private static PredicadoDnf EnquadramentoDaModalidade() => PredicadoDnf.CriarDeCondicoesAgrupadas(
+        [(0, CondicaoDnf.Criar("MODALIDADE", Operador.Igual, JsonSerializer.SerializeToElement("AMPLA")).Value!)]).Value!;
 }

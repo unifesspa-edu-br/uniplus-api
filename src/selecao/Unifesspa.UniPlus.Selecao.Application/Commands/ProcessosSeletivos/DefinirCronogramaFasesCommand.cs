@@ -95,6 +95,10 @@ public sealed record BancaRequeridaInput(
 /// ordem não importa, e a leitura os devolve em ordem canônica. Tirar um tipo mantém os motivos escolhidos daquele tipo: o
 /// congelamento da versão recusa até que sejam retirados ou o tipo volte a ser declarado.
 /// </param>
+/// <param name="RegraDeHomologacao">
+/// A regra com que a fase homologa as inscrições. Ausente: a fase não homologa, e a substituição do cronograma remove a regra
+/// que a fase tinha; o cliente devolve a regra que leu.
+/// </param>
 public sealed record FaseCronogramaInput(
     int Ordem,
     Guid FaseCanonicaId,
@@ -106,7 +110,8 @@ public sealed record FaseCronogramaInput(
     IReadOnlyList<BancaRequeridaInput> BancasRequeridas,
     RegraRecursoFaseInput? RegraRecurso,
     Guid? UnidadeResponsavelId = null,
-    IReadOnlyList<string?>? TiposDeDecisao = null);
+    IReadOnlyList<string?>? TiposDeDecisao = null,
+    RegraDeHomologacaoInput? RegraDeHomologacao = null);
 
 /// <summary>
 /// Substitui integralmente o cronograma de fases do processo (Story #851, CA-06):

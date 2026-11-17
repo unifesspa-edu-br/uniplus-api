@@ -106,7 +106,8 @@ public sealed class MontagemDasBancasDaFaseTests
         Substitute.For<IResolvedorDaUnidadeResponsavel>(),
         TiposDeBanca(),
         Categorias(),
-        Substitute.For<IRegraCatalogoReader>()));
+        Substitute.For<IRegraCatalogoReader>(),
+        Substitute.For<IFatoCandidatoReader>()));
 
     private static ITipoBancaReader TiposDeBanca()
     {

@@ -132,10 +132,6 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
     /// <summary>Encerra ciclo recursal: publica ao menos um resultado definitivo.</summary>
     internal bool PublicaResultadoDefinitivo => CicloRecursal.PublicaComPapel(ParesDeAto(), PapelProdutoFase.Definitivo);
 
-    /// <summary>Se a fase publica o resultado definitivo desse tipo de ato (a matéria é o tipo).</summary>
-    internal bool PublicaResultadoDefinitivoDe(string atoCodigo) =>
-        CicloRecursal.PublicaDefinitivoDe(ParesDeAto(), atoCodigo);
-
     /// <summary>
     /// Os tipos de ato cujo preliminar a fase publica sem publicar o definitivo do mesmo tipo:
     /// são as matérias cujo ciclo recursal ela deixa para a fase concluinte fechar.

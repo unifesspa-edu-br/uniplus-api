@@ -139,8 +139,13 @@ public sealed class RegraDeHomologacaoPersistenciaTests(ProcessoSeletivoDbFixtur
     private static FaseCronograma NovaFase(Guid origemId, RegraDeHomologacaoDasInscricoes? regra) => FaseCronograma.Criar(
         new OrigemCanonicaDaFase(origemId, "HOMOLOGACAO_INSCRICOES", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(Ordem: 1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
-        new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null, TiposDeDecisao: [], RegraDeHomologacao: regra),
+        new PublicacoesDaFase(Produtos: ProdutosDoResultado(regra), EmiteParecerIndividual: false, RegraRecurso: null, TiposDeDecisao: [], RegraDeHomologacao: regra),
         bancasRequeridas: []).Value!;
+
+    private static ProdutoDaFase[] ProdutosDoResultado(RegraDeHomologacaoDasInscricoes? regra) =>
+        regra?.ResultadoAtoCodigo is { } resultado
+            ? [ProdutoDaFase.Criar(resultado, PapelProdutoFase.Preliminar), ProdutoDaFase.Criar(resultado, PapelProdutoFase.Definitivo)]
+            : [];
 
     private async Task<(Guid ProcessoId, Guid FaseId)> GravarProcessoAsync(Guid origemId, RegraDeHomologacaoDasInscricoes? regra)
     {
@@ -156,7 +161,7 @@ public sealed class RegraDeHomologacaoPersistenciaTests(ProcessoSeletivoDbFixtur
     {
         await using UniPlusDbContext db = fixture.CreateDbContext();
         ProcessoSeletivo processo = await db.ProcessosSeletivos
-            .Include(p => p.CronogramaFases)
+            .Include(p => p.CronogramaFases).ThenInclude(f => f.Produtos)
             .AsSplitQuery()
             .FirstAsync(p => p.Id == processoId);
         processo.DefinirCronogramaFases([NovaFase(origemId, regra)], []).IsSuccess.Should().BeTrue();

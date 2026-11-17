@@ -16,7 +16,7 @@ using ProcessosSeletivos.HomologacaoDasInscricoes;
 /// </param>
 /// <param name="RegraDeHomologacao">
 /// A regra que a fase declara para homologar as inscrições; ausente quando a fase não homologa. Já validada
-/// como valor, a conferência contra a fase e o cronograma é de <c>ConferenciaDaRegraDeHomologacao</c>.
+/// como valor, o resultado que ela aponta é conferido contra os produtos da fase por <c>ConferenciaDaRegraDeHomologacao</c>.
 /// </param>
 public sealed record PublicacoesDaFase(
     IReadOnlyList<ProdutoDaFase> Produtos,

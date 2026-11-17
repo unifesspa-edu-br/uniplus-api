@@ -5872,6 +5872,26 @@
       "titulo": "Cada grupo do quadro de pesos por área precisa de ao menos uma área"
     },
     {
+      "codigo": "uniplus.selecao.homologacao_das_inscricoes.alternativa_sem_condicao",
+      "status": 422,
+      "titulo": "A alternativa da regra de homologação não tem condição"
+    },
+    {
+      "codigo": "uniplus.selecao.homologacao_das_inscricoes.condicao_nao_disponivel",
+      "status": 422,
+      "titulo": "A condição de homologação ainda não é apurada pelo sistema"
+    },
+    {
+      "codigo": "uniplus.selecao.homologacao_das_inscricoes.edicao_do_exame_invalida",
+      "status": 422,
+      "titulo": "A edição do exame da condição é inválida (de 1998 a 2100)"
+    },
+    {
+      "codigo": "uniplus.selecao.homologacao_das_inscricoes.resultado_nao_declarado",
+      "status": 422,
+      "titulo": "A regra de homologação das inscrições não aponta um resultado da fase"
+    },
+    {
       "codigo": "uniplus.selecao.idade_maxima_emissao.campos_incoerentes_com_ausencia",
       "status": 422,
       "titulo": "Data e a fase âncora só são aceitas quando a idade máxima de emissão está definida"

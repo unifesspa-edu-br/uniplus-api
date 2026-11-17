@@ -93,7 +93,7 @@ public sealed record CronogramaDaFaseDto(
     string? FaseConcluinteCodigo,
     UnidadeResponsavelDto? UnidadeResponsavel);
 
-/// <summary>O que a fase publica e decide: os produtos, o resultado, o parecer, o recurso e os tipos de decisão.</summary>
+/// <summary>O que a fase publica e decide: os produtos, o resultado, o parecer, o recurso, os tipos de decisão e a regra de homologação das inscrições.</summary>
 /// <param name="Produtos">Os atos que a fase publica, com o papel de cada publicação.</param>
 /// <param name="ProduzResultado">
 /// Derivado dos produtos declarados — a fase produz resultado quando publica ao menos um
@@ -102,9 +102,11 @@ public sealed record CronogramaDaFaseDto(
 /// <param name="EmiteParecerIndividual">Se a fase emite parecer individual.</param>
 /// <param name="RegraRecurso">A regra de recurso da fase, ou nulo quando a fase não admite recurso.</param>
 /// <param name="TiposDeDecisao">Os tipos de decisão que a fase declara produzir, em ordem alfabética ordinal e sem repetição.</param>
+/// <param name="RegraDeHomologacao">A regra com que a fase homologa as inscrições, ou nulo quando a fase não homologa.</param>
 public sealed record PublicacoesDaFaseDto(
     IReadOnlyList<ProdutoDaFaseDto> Produtos,
     bool ProduzResultado,
     bool EmiteParecerIndividual,
     RegraRecursoFaseDto? RegraRecurso,
-    IReadOnlyList<string> TiposDeDecisao);
+    IReadOnlyList<string> TiposDeDecisao,
+    RegraDeHomologacaoDto? RegraDeHomologacao);

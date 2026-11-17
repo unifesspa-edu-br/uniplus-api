@@ -11869,6 +11869,34 @@
           }
         }
       },
+      "AlternativaDeCondicoesDto": {
+        "required": [
+          "condicoes"
+        ],
+        "type": "object",
+        "properties": {
+          "condicoes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CondicaoDeHomologacaoDto"
+            }
+          }
+        }
+      },
+      "AlternativaDeCondicoesInput": {
+        "type": "object",
+        "properties": {
+          "condicoes": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/CondicaoDeHomologacaoInput"
+            }
+          }
+        }
+      },
       "AlternativasSimuladasDto": {
         "required": [
           "grupoId",
@@ -13382,6 +13410,78 @@
           },
           "nome": {
             "type": "string"
+          }
+        }
+      },
+      "CondicaoDeHomologacaoDto": {
+        "required": [
+          "tipo",
+          "edicaoDoExame",
+          "motivoDesfavoravelCodigo",
+          "enquadramento"
+        ],
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string"
+          },
+          "edicaoDoExame": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "motivoDesfavoravelCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "enquadramento": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoPrecondicaoDto"
+              }
+            }
+          }
+        }
+      },
+      "CondicaoDeHomologacaoInput": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "edicaoDoExame": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "motivoDesfavoravelCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "enquadramento": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
+              }
+            }
           }
         }
       },
@@ -20128,6 +20228,16 @@
             "items": {
               "type": "string"
             }
+          },
+          "regraDeHomologacao": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RegraDeHomologacaoInput"
+              }
+            ]
           }
         }
       },
@@ -24876,7 +24986,8 @@
           "produzResultado",
           "emiteParecerIndividual",
           "regraRecurso",
-          "tiposDeDecisao"
+          "tiposDeDecisao",
+          "regraDeHomologacao"
         ],
         "type": "object",
         "properties": {
@@ -24907,6 +25018,16 @@
             "items": {
               "type": "string"
             }
+          },
+          "regraDeHomologacao": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RegraDeHomologacaoDto"
+              }
+            ]
           }
         }
       },
@@ -25686,6 +25807,47 @@
                 "$ref": "#/components/schemas/ResultadoSemUnanimidade"
               }
             ]
+          }
+        }
+      },
+      "RegraDeHomologacaoDto": {
+        "required": [
+          "resultadoAtoCodigo",
+          "alternativas"
+        ],
+        "type": "object",
+        "properties": {
+          "resultadoAtoCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "alternativas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AlternativaDeCondicoesDto"
+            }
+          }
+        }
+      },
+      "RegraDeHomologacaoInput": {
+        "type": "object",
+        "properties": {
+          "resultadoAtoCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "alternativas": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/AlternativaDeCondicoesInput"
+            }
           }
         }
       },
