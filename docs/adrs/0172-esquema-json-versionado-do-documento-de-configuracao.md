@@ -43,6 +43,14 @@ A [ADR-0051](0051-apicurio-schema-registry-avro-wolverine.md) define o registro 
 - **Congelamento:** a versão congela na primeira tag que a publica, e a cópia dos arquivos passa a `publicadas/vN/`. Dali em diante um teste compara o esquema atual com cada cópia publicada e recusa a mudança incompatível que o comparador reconhece; o que ele não examina fica para a revisão.
 - **Registro:** o esquema é registrado no registro de esquemas com regra de compatibilidade desligada, porque a versão atual do registro recusa a segunda versão de um esquema 2020-12 sob regra de compatibilidade; a garantia vive no teste acima.
 
+> **Emenda (2026-11-17) — a publicação do esquema no contrato REST.**
+>
+> A OpenAPI do módulo publica o esquema como componentes, derivados na geração dos mesmos arquivos, sem cópia. A raiz é `DocumentoDaConfiguracao`; cada arquivo e cada definição alcançados viram um componente, com nome fixado por regra (prefixo, arquivo, definição). As referências relativas passam a apontar o componente, e `$id` e `$schema` saem. Os arquivos continuam sendo a fonte e o que a API usa para validar; os clientes geram tipos a partir da OpenAPI.
+>
+> **Confirmação:** teste de contrato em que cada componente do documento na OpenAPI publicada é o trecho correspondente dos arquivos, com as referências trocadas pela regra, sem componente sobrando ou faltando.
+>
+> **Consequências:** a OpenAPI do módulo cresce o tamanho do esquema. Os geradores de tipo ignoram as condicionais (`if`/`then`/`else`), então o tipo gerado é mais largo que o esquema, e a validação da forma é a da API. A versão seguinte do formato decide o nome dos componentes dela.
+
 ## Consequências
 
 ### Positivas
