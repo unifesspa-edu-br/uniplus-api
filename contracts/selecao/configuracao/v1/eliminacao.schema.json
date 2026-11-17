@@ -42,7 +42,7 @@
       "then": {
         "properties": {
           "args": {
-            "$ref": "#/$defs/argsNotaMinimaEtapa"
+            "$ref": "#/$defs/parametrosNotaMinimaEtapa"
           }
         }
       }
@@ -68,7 +68,7 @@
       "then": {
         "properties": {
           "args": {
-            "$ref": "#/$defs/argsCorteEmArea"
+            "$ref": "#/$defs/parametrosCorteEmArea"
           }
         }
       }
@@ -146,14 +146,14 @@
       "then": {
         "properties": {
           "args": {
-            "$ref": "#/$defs/argsAusenciaNaEtapa"
+            "$ref": "#/$defs/parametrosAusenciaNaEtapa"
           }
         }
       }
     }
   ],
   "$defs": {
-    "argsNotaMinimaEtapa": {
+    "parametrosNotaMinimaEtapa": {
       "title": "Parâmetros da regra",
       "description": "Elimina o candidato com nota abaixo do mínimo numa etapa.",
       "type": "object",
@@ -177,7 +177,7 @@
         "notaMinima"
       ]
     },
-    "argsCorteEmArea": {
+    "parametrosCorteEmArea": {
       "title": "Parâmetros da regra",
       "description": "Elimina o candidato com nota abaixo do corte numa área do Enem.",
       "type": "object",
@@ -204,7 +204,7 @@
         "minimo"
       ]
     },
-    "argsAusenciaNaEtapa": {
+    "parametrosAusenciaNaEtapa": {
       "title": "Parâmetros da regra",
       "description": "Elimina o candidato ausente numa etapa.",
       "type": "object",

@@ -48,7 +48,7 @@
       "then": {
         "properties": {
           "args": {
-            "$ref": "#/$defs/argsMaiorNotaEtapa"
+            "$ref": "#/$defs/parametrosMaiorNotaEtapa"
           }
         }
       }
@@ -100,7 +100,7 @@
       "then": {
         "properties": {
           "args": {
-            "$ref": "#/$defs/argsIdoso"
+            "$ref": "#/$defs/parametrosIdoso"
           }
         }
       }
@@ -152,14 +152,14 @@
       "then": {
         "properties": {
           "args": {
-            "$ref": "#/$defs/argsMaiorNotaAreaEnem"
+            "$ref": "#/$defs/parametrosMaiorNotaAreaEnem"
           }
         }
       }
     }
   ],
   "$defs": {
-    "argsMaiorNotaEtapa": {
+    "parametrosMaiorNotaEtapa": {
       "title": "Parâmetros da regra",
       "description": "Desempata pela maior nota numa etapa.",
       "type": "object",
@@ -175,7 +175,7 @@
         "etapaChave"
       ]
     },
-    "argsIdoso": {
+    "parametrosIdoso": {
       "title": "Parâmetros da regra",
       "description": "Desempata a favor do candidato com a idade mínima informada ou mais.",
       "type": "object",
@@ -192,7 +192,7 @@
         "idadeMinima"
       ]
     },
-    "argsMaiorNotaAreaEnem": {
+    "parametrosMaiorNotaAreaEnem": {
       "title": "Parâmetros da regra",
       "description": "Desempata pela maior nota nas áreas do Enem, na ordem listada.",
       "type": "object",
