@@ -142,11 +142,13 @@ public sealed class EfeitosDaTrocaNaJanelaEAsConcessoesTests
 
         return new EfeitosDaTrocaDeVigencia(
             new ConcessoesNaMemoria(paraMigrar: paraMigrar, titulares: []),
-            new PedidosAtivosNaMemoria(pedidos ?? []),
-            new AvisosDoPedido(new ConcessoesNaMemoria(titulares: []), new SemUnidade(), new LinkDeTeste(), TimeProvider.System),
-            AvisoDeDevolucao(registro),
             JanelaDaTroca(registro),
             AvisosDosEfeitos(registro, [Gestor]),
+            new ReavaliacaoDosPedidosNaTroca(
+                new PedidosAtivosNaMemoria(pedidos ?? []),
+                new AvisosDoPedido(new ConcessoesNaMemoria(titulares: []), new SemUnidade(), new LinkDeTeste(), TimeProvider.System),
+                AvisoDeDevolucao(registro),
+                TimeProvider.System),
             new RelogioFixo(Agora));
     }
 
