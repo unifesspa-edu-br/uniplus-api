@@ -31,7 +31,7 @@ public sealed class VerificarArquivoHandlerFalhasTests
         VerificarArquivoHandler handler = Cenario.Handler(usado, clamd, erros.Metricas, new());
         Func<Task<ResultadoDaVerificacaoDeArquivo>> acao = () => handler.Verificar(Cenario.Pedido(), CancellationToken.None);
 
-        await acao.Should().ThrowAsync<Exception>().Where(e => ReferenceEquals(e, falha));
+        await acao.Should().ThrowAsync<Exception>().Where(excecao => ReferenceEquals(excecao, falha));
         erros.Origens.Should().Equal(origem);
     }
 
@@ -156,31 +156,46 @@ public sealed class VerificarArquivoHandlerFalhasTests
         public void Dispose() => Directory.Delete(Caminho, recursive: true);
     }
 
-    // O medidor é estático por nome e os testes rodam em paralelo: só o instrumento criado por esta captura, na
-    // thread dela, é escutado.
+    // Os testes rodam em paralelo e o medidor tem o mesmo nome em todos. O Start do escutador reenvia, na thread que o
+    // chama, os instrumentos que outros testes já criaram; por isso só vale o instrumento publicado enquanto esta
+    // captura cria as suas métricas, nesta thread.
     private sealed class CapturaDosErros : IDisposable
     {
         private readonly MeterListener _escuta = new();
         private readonly int _threadDaCriacao = Environment.CurrentManagedThreadId;
+        private bool _criandoAsMetricas;
 
         public CapturaDosErros()
         {
             _escuta.InstrumentPublished = (instrumento, escuta) =>
             {
-                if (instrumento.Name == "uniplus.verificador.erros" && Environment.CurrentManagedThreadId == _threadDaCriacao)
+                if (_criandoAsMetricas && instrumento.Name == "uniplus.verificador.erros" && Environment.CurrentManagedThreadId == _threadDaCriacao)
                 {
                     escuta.EnableMeasurementEvents(instrumento);
                 }
             };
             _escuta.SetMeasurementEventCallback<long>((_, _, etiquetas, _) =>
-                Origens.Add((string)etiquetas.ToArray().Single(e => e.Key == "origem").Value!));
+                Origens.Add((string)etiquetas.ToArray().Single(etiqueta => etiqueta.Key == "origem").Value!));
             _escuta.Start();
-            Metricas = new MetricasDoVerificador(TimeProvider.System);
+            Metricas = CriarAsMetricas();
         }
 
         public MetricasDoVerificador Metricas { get; }
 
         public List<string> Origens { get; } = [];
+
+        private MetricasDoVerificador CriarAsMetricas()
+        {
+            _criandoAsMetricas = true;
+            try
+            {
+                return new MetricasDoVerificador(TimeProvider.System);
+            }
+            finally
+            {
+                _criandoAsMetricas = false;
+            }
+        }
 
         public void Dispose()
         {
