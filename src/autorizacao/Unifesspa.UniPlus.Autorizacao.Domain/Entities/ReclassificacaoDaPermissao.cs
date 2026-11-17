@@ -57,7 +57,6 @@ public sealed class ReclassificacaoDaPermissao : IForensicEntity, IRegistroDaTri
         Guid implantacaoId, Guid perfilId, string codigo, MudancaDaPermissao mudanca, DateTimeOffset instante, int ordinal)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
-        ArgumentNullException.ThrowIfNull(mudanca);
 
         return new ReclassificacaoDaPermissao
         {

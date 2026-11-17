@@ -74,10 +74,10 @@ internal sealed partial class PerfisAfetadosPeloCatalogo
     private ReclassificacaoDaPermissao? Reclassificar(
         Perfil perfil, PermissaoEmUso permissao, LinhaDoRetratoDoCatalogo nova, ComparacaoDeCatalogos comparacao)
     {
-        MudancaDaPermissao? mudanca = permissao.Anteriores
+        MudancaDaPermissao? candidata = permissao.Anteriores
             .Select(r => ComparacaoComOCatalogo.MudancaDe(comparacao.AnteriorDe(permissao.Codigo, r), nova))
             .FirstOrDefault(static m => m is not null);
-        if (mudanca is null)
+        if (candidata is not { } mudanca)
         {
             return null;
         }
@@ -105,11 +105,11 @@ internal sealed partial class PerfisAfetadosPeloCatalogo
         MudancaDaPermissao? mudanca = ComparacaoComOCatalogo.MudancaDe(
             comparacao.AnteriorDe(emVigor.Codigo, emVigor.Base), comparacao.Atualizado[emVigor.Codigo]);
 
-        return mudanca is null
-            ? null
-            : BaseDaPermissaoNaConcessao.Registrar(
-                perfilId, emVigor.ConcessaoId, emVigor.Codigo, ComparacaoComOCatalogo.BaseDaConciliacao(emVigor.Base, mudanca),
-                OrigemDaBase.Conciliacao, comparacao.ImplantacaoId, 0);
+        return mudanca is { } mudou
+            ? BaseDaPermissaoNaConcessao.Registrar(
+                perfilId, emVigor.ConcessaoId, emVigor.Codigo, ComparacaoComOCatalogo.BaseDaConciliacao(emVigor.Base, mudou),
+                OrigemDaBase.Conciliacao, comparacao.ImplantacaoId, 0)
+            : null;
     }
 
     /// <summary>A base de cada código das concessões ativas do perfil: a gravada em vigor e, sem ela, o retrato da versão.</summary>

@@ -50,11 +50,13 @@ public sealed class ConferenciaDoCatalogoTests
     [InlineData(ClassificacaoDeProtecao.Interno, true)]
     public void Comparacao_ComDiferenca_Muda(ClassificacaoDeProtecao nova, bool deUnidade)
     {
-        MudancaDaPermissao? mudanca = ComparacaoComOCatalogo.MudancaDe(
-            new BaseDaConcessao(ClassificacaoDeProtecao.Interno, false), Linha("a:b:c", nova, deUnidade));
+        if (ComparacaoComOCatalogo.MudancaDe(new BaseDaConcessao(ClassificacaoDeProtecao.Interno, false), Linha("a:b:c", nova, deUnidade)) is not { } mudanca)
+        {
+            Assert.Fail("A diferença de classe ou de escopo devia ter gerado uma mudança.");
+            return;
+        }
 
-        mudanca.Should().NotBeNull();
-        mudanca!.ClassificacaoNova.Should().Be(nova);
+        mudanca.ClassificacaoNova.Should().Be(nova);
         mudanca.DeUnidadeNovo.Should().Be(deUnidade);
     }
 
