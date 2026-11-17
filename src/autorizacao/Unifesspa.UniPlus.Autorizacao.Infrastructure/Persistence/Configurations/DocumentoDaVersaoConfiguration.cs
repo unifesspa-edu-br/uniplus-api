@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
@@ -13,7 +14,6 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 public sealed class DocumentoDaVersaoConfiguration : IEntityTypeConfiguration<DocumentoDaVersao>
 {
     private const int SituacaoMaxLength = 40;
-    private const int ETagMaxLength = 200;
     private const int Sha256HexLength = 64;
 
     private static readonly ValueConverter<SituacaoDoAnexo, string> SituacaoConverter = new(
@@ -32,7 +32,7 @@ public sealed class DocumentoDaVersaoConfiguration : IEntityTypeConfiguration<Do
 
         builder.Property(d => d.Situacao).HasConversion(SituacaoConverter).HasMaxLength(SituacaoMaxLength).IsRequired();
         builder.Property(d => d.TamanhoDeclarado).IsRequired();
-        builder.Property(d => d.ETag).HasColumnName("etag").HasMaxLength(ETagMaxLength);
+        builder.Property(d => d.ETag).HasColumnName("etag").HasMaxLength(ETagDoArmazenamento.MaxLength);
         builder.Property(d => d.Sha256).HasColumnName("sha256").HasMaxLength(Sha256HexLength);
 
         builder.Ignore(d => d.ChaveDeEnvio);

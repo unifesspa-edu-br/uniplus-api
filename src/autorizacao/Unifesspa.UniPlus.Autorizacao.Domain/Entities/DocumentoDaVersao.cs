@@ -12,7 +12,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public sealed class DocumentoDaVersao : EntityBase
 {
-    private const int ETagMaxLength = 200;
     private const string PrefixoDasChaves = "autorizacao/perfil";
 
     public Guid VersaoId { get; private set; }
@@ -84,16 +83,13 @@ public sealed class DocumentoDaVersao : EntityBase
             return Result.Failure(PerfilErros.DocumentoNaoAguardaEnvio());
         }
 
-        if (string.IsNullOrWhiteSpace(etag) || etag.Length > ETagMaxLength || etag.Contains('\0', StringComparison.Ordinal))
+        if (ETagDoArmazenamento.Normalizar(etag) is not { } normalizado)
         {
-            return Result.ValidationFailure([new FieldError("etag", new DomainError(
-                PerfilErrorCodes.DocumentoInvalido,
-                "O ETag que o armazenamento devolveu ao enviar o PDF é obrigatório."))]);
+            return ETagAusente();
         }
 
-        ETag = etag.Trim();
-        EnviadoEm = instante;
-        Situacao = SituacaoDoAnexo.EmVerificacao;
+        EntrarEmVerificacao(normalizado, instante);
+
         return Result.Success();
     }
 
@@ -127,5 +123,17 @@ public sealed class DocumentoDaVersao : EntityBase
         RecusadoEm = instante;
         Situacao = SituacaoDoAnexo.Recusado;
         return true;
+    }
+
+    private static Result ETagAusente() =>
+        Result.ValidationFailure([new FieldError("etag", new DomainError(
+            PerfilErrorCodes.DocumentoInvalido,
+            "O ETag que o armazenamento devolveu ao enviar o PDF é obrigatório."))]);
+
+    private void EntrarEmVerificacao(string etag, DateTimeOffset instante)
+    {
+        ETag = etag;
+        EnviadoEm = instante;
+        Situacao = SituacaoDoAnexo.EmVerificacao;
     }
 }
