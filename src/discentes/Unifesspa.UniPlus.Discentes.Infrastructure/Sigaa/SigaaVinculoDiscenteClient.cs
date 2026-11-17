@@ -41,28 +41,11 @@ internal sealed class SigaaVinculoDiscenteClient : ISigaaVinculoDiscenteClient
         ArgumentNullException.ThrowIfNull(filtro);
         ArgumentOutOfRangeException.ThrowIfLessThan(pagina, 1);
 
-        ColecaoHydra<VinculoDiscentePayload> colecao = await _api
-            .ObterVinculosAsync(
-                filtro.Nivel,
-                filtro.AnoIngressoMinimo,
-                filtro.Situacoes is { Count: > 0 } ? filtro.Situacoes : null,
-                _opcoes.ItensPorPagina,
-                pagina,
-                cancellationToken)
+        ColecaoHydra<VinculoDiscentePayload> colecao = await PedirAsync(filtro, pagina, cancellationToken)
             .ConfigureAwait(false);
+        IReadOnlyList<VinculoDiscentePayload> itens = ItensDe(colecao);
 
-        if (colecao.Itens is not { } itens)
-        {
-            throw new EnvelopeDaOrigemInvalidoException(
-                "A resposta do SIGAA não trouxe a propriedade \"hydra:member\". Uma página sem "
-                + "essa propriedade não é uma página vazia: é envelope fora do contrato, e "
-                + "aceitá-la encerraria a varredura como bem-sucedida sem ler vínculo nenhum.");
-        }
-
-        return new PaginaDeVinculos(
-            itens,
-            colecao.TotalDeItens,
-            TemProximaPagina(colecao.Visao, itens.Count));
+        return new PaginaDeVinculos(itens, colecao.TotalDeItens, TemProximaPagina(colecao.Visao, itens.Count));
     }
 
     public async IAsyncEnumerable<PaginaDeVinculos> PercorrerAsync(
@@ -71,53 +54,105 @@ internal sealed class SigaaVinculoDiscenteClient : ISigaaVinculoDiscenteClient
     {
         ArgumentNullException.ThrowIfNull(filtro);
 
-        PaginaDeVinculos ultima = await ObterPaginaAsync(filtro, 1, cancellationToken)
-            .ConfigureAwait(false);
-
-        yield return ultima;
-
-        int numeroDaUltima = 1;
-
-        // O total só dimensiona o trabalho: sabendo quantas páginas existem, dá para
-        // buscá-las em paralelo em vez de uma de cada vez.
-        if (ultima.TotalDeItensNaOrigem is { } total)
+        await foreach (PaginaDeVinculos[] bloco in BlocosAsync(filtro, cancellationToken).ConfigureAwait(false))
         {
-            int previstas = (int)Math.Ceiling(total / (double)_opcoes.ItensPorPagina);
-
-            for (int inicio = 2; inicio <= previstas; inicio += _opcoes.GrauDeParalelismo)
+            foreach (PaginaDeVinculos pagina in bloco)
             {
-                int fim = Math.Min(inicio + _opcoes.GrauDeParalelismo - 1, previstas);
-
-                Task<PaginaDeVinculos>[] emVoo =
-                [
-                    .. Enumerable.Range(inicio, fim - inicio + 1)
-                        .Select(numero => ObterPaginaAsync(filtro, numero, cancellationToken)),
-                ];
-
-                PaginaDeVinculos[] doBloco = await Task.WhenAll(emVoo).ConfigureAwait(false);
-
-                foreach (PaginaDeVinculos pagina in doBloco)
-                {
-                    yield return pagina;
-                }
-
-                ultima = doBloco[^1];
-                numeroDaUltima = fim;
+                yield return pagina;
             }
         }
+    }
 
-        // Quem decide o fim é a origem, não a conta feita no início. Vínculos criados
-        // durante a varredura empurram o fim para além do previsto, e parar na estimativa
-        // os deixaria de fora — sem erro algum, com a execução registrada como completa.
-        while (ultima.TemProximaPagina)
+    private Task<ColecaoHydra<VinculoDiscentePayload>> PedirAsync(
+        FiltroDeVinculos filtro,
+        int pagina,
+        CancellationToken cancellationToken) =>
+        _api.ObterVinculosAsync(
+            filtro.Nivel,
+            filtro.AnoIngressoMinimo,
+            filtro.Situacoes is { Count: > 0 } ? filtro.Situacoes : null,
+            _opcoes.ItensPorPagina,
+            pagina,
+            cancellationToken);
+
+    private static IReadOnlyList<VinculoDiscentePayload> ItensDe(ColecaoHydra<VinculoDiscentePayload> colecao)
+    {
+        if (colecao.Itens is not { } itens)
         {
-            numeroDaUltima++;
-            ultima = await ObterPaginaAsync(filtro, numeroDaUltima, cancellationToken)
-                .ConfigureAwait(false);
+            throw new EnvelopeDaOrigemInvalidoException(
+                "A resposta do SIGAA não trouxe a propriedade \"hydra:member\". Uma página sem "
+                + "essa propriedade não é uma página vazia: é envelope fora do contrato, e "
+                + "aceitá-la encerraria a varredura como bem-sucedida sem ler vínculo nenhum.");
+        }
 
-            yield return ultima;
+        return itens;
+    }
+
+    /// <summary>
+    /// As páginas da varredura, em blocos: a primeira sozinha, depois as que o total
+    /// declarado permite buscar em paralelo e, por fim, uma de cada vez enquanto a origem
+    /// indicar continuação.
+    /// </summary>
+    private async IAsyncEnumerable<PaginaDeVinculos[]> BlocosAsync(
+        FiltroDeVinculos filtro,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        PaginaDeVinculos primeira = await ObterPaginaAsync(filtro, 1, cancellationToken).ConfigureAwait(false);
+        PaginaDeVinculos[] bloco = [primeira];
+        int previstas = PaginasPrevistas(primeira);
+        int numeroDaUltima = 1;
+
+        while (bloco.Length > 0)
+        {
+            yield return bloco;
+
+            bloco = await ProximoBlocoAsync(filtro, numeroDaUltima, previstas, bloco[^1], cancellationToken)
+                .ConfigureAwait(false);
+            numeroDaUltima += bloco.Length;
         }
     }
+
+    /// <summary>
+    /// O total só dimensiona o trabalho: sabendo quantas páginas existem, dá para buscá-las
+    /// em paralelo em vez de uma de cada vez.
+    /// </summary>
+    private int PaginasPrevistas(PaginaDeVinculos primeira) =>
+        primeira.TotalDeItensNaOrigem is { } total
+            ? (int)Math.Ceiling(total / (double)_opcoes.ItensPorPagina)
+            : 0;
+
+    /// <remarks>
+    /// Quem decide o fim é a origem, não a conta feita no início. Vínculos criados durante
+    /// a varredura empurram o fim para além do previsto, e parar na estimativa os deixaria
+    /// de fora — sem erro algum, com a execução registrada como completa.
+    /// </remarks>
+    private async Task<PaginaDeVinculos[]> ProximoBlocoAsync(
+        FiltroDeVinculos filtro,
+        int numeroDaUltima,
+        int previstas,
+        PaginaDeVinculos ultima,
+        CancellationToken cancellationToken)
+    {
+        if (numeroDaUltima < previstas)
+        {
+            int fim = Math.Min(numeroDaUltima + _opcoes.GrauDeParalelismo, previstas);
+            return await ObterEmParaleloAsync(filtro, numeroDaUltima + 1, fim, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        return ultima.TemProximaPagina
+            ? [await ObterPaginaAsync(filtro, numeroDaUltima + 1, cancellationToken).ConfigureAwait(false)]
+            : [];
+    }
+
+    private Task<PaginaDeVinculos[]> ObterEmParaleloAsync(
+        FiltroDeVinculos filtro,
+        int primeira,
+        int ultima,
+        CancellationToken cancellationToken) =>
+        Task.WhenAll(
+            Enumerable.Range(primeira, ultima - primeira + 1)
+                .Select(numero => ObterPaginaAsync(filtro, numero, cancellationToken)));
 
     /// <summary>
     /// Decide se há continuação sem depender do total declarado.
