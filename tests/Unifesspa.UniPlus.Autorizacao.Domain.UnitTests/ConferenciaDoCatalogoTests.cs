@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
 /// A comparação do catálogo com a base de cada concessão e com a governança: a base acompanha só a descida, o escopo
@@ -36,8 +37,8 @@ public sealed class ConferenciaDoCatalogoTests
 
     private static string PublicacaoDoTermo => CatalogoDePermissoes<PermissaoAutorizacao>.Obter(PermissaoAutorizacao.TermosPublicar).Codigo;
 
-    private static LinhaDoRetratoDoCatalogo Linha(string codigo, ClassificacaoDeProtecao classificacao, bool deUnidade = false) =>
-        new(codigo, "autorizacao", classificacao, deUnidade, false);
+    private static PermissaoDoCatalogo Linha(string codigo, ClassificacaoDeProtecao classificacao, bool deUnidade = false) =>
+        new(CodigoDePermissao.De(codigo), classificacao, deUnidade, false);
 
     [Fact(DisplayName = "A base sem diferença de classe nem de escopo não gera mudança")]
     public void Comparacao_SemDiferenca_NaoMuda() =>
@@ -105,8 +106,8 @@ public sealed class ConferenciaDoCatalogoTests
     public void Governanca_PermissaoReclassificada_GeraDivergencia()
     {
         string codigo = ComposicaoDaGovernanca.Esperada[0].Codigo;
-        Dictionary<string, LinhaDoRetratoDoCatalogo> anterior = new() { [codigo] = Linha(codigo, ClassificacaoDeProtecao.Interno) };
-        Dictionary<string, LinhaDoRetratoDoCatalogo> novo = new() { [codigo] = Linha(codigo, ClassificacaoDeProtecao.Sensivel, deUnidade: true) };
+        Dictionary<CodigoDePermissao, PermissaoDoCatalogo> anterior = new() { [CodigoDePermissao.De(codigo)] = Linha(codigo, ClassificacaoDeProtecao.Interno) };
+        Dictionary<CodigoDePermissao, PermissaoDoCatalogo> novo = new() { [CodigoDePermissao.De(codigo)] = Linha(codigo, ClassificacaoDeProtecao.Sensivel, deUnidade: true) };
 
         IReadOnlyList<DivergenciaDaGovernanca> divergencias = ConferenciaDaGovernanca.DoCatalogo(Catalogo, anterior, novo, Agora);
 
@@ -118,7 +119,7 @@ public sealed class ConferenciaDoCatalogoTests
     public void Governanca_PermissaoIgual_SemDivergencia()
     {
         string codigo = ComposicaoDaGovernanca.Esperada[0].Codigo;
-        Dictionary<string, LinhaDoRetratoDoCatalogo> catalogo = new() { [codigo] = Linha(codigo, ClassificacaoDeProtecao.Interno) };
+        Dictionary<CodigoDePermissao, PermissaoDoCatalogo> catalogo = new() { [CodigoDePermissao.De(codigo)] = Linha(codigo, ClassificacaoDeProtecao.Interno) };
 
         ConferenciaDaGovernanca.DoCatalogo(Catalogo, catalogo, catalogo, Agora).Should().BeEmpty();
     }
@@ -157,7 +158,7 @@ public sealed class ConferenciaDoCatalogoTests
     [InlineData("configuracao", false, false)]
     [InlineData("selecao", false, false)]
     public void Composicao_Admite_ReservadaDeOutroModulo(string modulo, bool reservada, bool admite) =>
-        ComposicaoDaGovernanca.Admite(new LinhaDoRetratoDoCatalogo(modulo + ":a:b", modulo, ClassificacaoDeProtecao.Pessoal, false, reservada))
+        ComposicaoDaGovernanca.Admite(new PermissaoDoCatalogo(CodigoDePermissao.De(modulo + ":a:b"), ClassificacaoDeProtecao.Pessoal, false, reservada))
             .Should().Be(admite);
 
     [Fact(DisplayName = "A publicação do termo de responsabilidade é só do gestor de acessos")]

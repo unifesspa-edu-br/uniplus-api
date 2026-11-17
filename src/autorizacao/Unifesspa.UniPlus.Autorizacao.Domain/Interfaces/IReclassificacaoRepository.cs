@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>O catálogo atual gravado no banco: o id, a impressão e as linhas dos códigos pedidos.</summary>
-public sealed record ImplantacaoNoBanco(Guid Id, ResumoSha256 Impressao, IReadOnlyDictionary<string, LinhaDoRetratoDoCatalogo> Linhas);
+public sealed record ImplantacaoNoBanco(Guid Id, ResumoSha256 Impressao, IReadOnlyDictionary<CodigoDePermissao, PermissaoDoCatalogo> Linhas);
 
 /// <summary>Uma concessão não revogada que reúne a permissão reclassificada pela composição, com a base dela.</summary>
 public sealed record ConcessaoComAPermissao(Concessao Concessao, BaseDaConcessao Base);
@@ -21,7 +21,7 @@ public interface IReclassificacaoRepository
     Task<ResumoSha256?> ObterImpressaoAtualAsync(CancellationToken cancellationToken = default);
 
     /// <summary>O catálogo atual com as linhas dos <paramref name="codigos"/>; nulo quando nenhum catálogo foi gravado.</summary>
-    Task<ImplantacaoNoBanco?> ObterImplantacaoAtualAsync(IReadOnlyCollection<string> codigos, CancellationToken cancellationToken = default);
+    Task<ImplantacaoNoBanco?> ObterImplantacaoAtualAsync(IReadOnlyCollection<CodigoDePermissao> codigos, CancellationToken cancellationToken = default);
 
     /// <summary>Os códigos do perfil que já têm reclassificação do catálogo.</summary>
     Task<IReadOnlySet<string>> ObterCodigosReclassificadosAsync(

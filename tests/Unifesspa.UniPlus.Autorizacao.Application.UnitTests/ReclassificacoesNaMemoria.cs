@@ -37,7 +37,7 @@ internal sealed class ReclassificacoesNaMemoria : IReclassificacaoRepository
 
     public ImplantacaoNoBanco? ImplantacaoAtual { get; set; }
 
-    public Task<ImplantacaoNoBanco?> ObterImplantacaoAtualAsync(IReadOnlyCollection<string> codigos, CancellationToken cancellationToken = default) =>
+    public Task<ImplantacaoNoBanco?> ObterImplantacaoAtualAsync(IReadOnlyCollection<CodigoDePermissao> codigos, CancellationToken cancellationToken = default) =>
         Task.FromResult(ImplantacaoAtual);
 
     public Task<IReadOnlySet<string>> ObterCodigosReclassificadosAsync(Guid implantacaoId, Guid perfilId, CancellationToken cancellationToken = default) =>

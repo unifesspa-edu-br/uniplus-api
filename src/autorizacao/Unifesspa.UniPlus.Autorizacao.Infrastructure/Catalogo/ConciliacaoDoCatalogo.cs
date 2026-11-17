@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
 /// A conferência do catálogo da aplicação com o último catálogo gravado, na implantação, depois das migrations. Numa
@@ -91,7 +92,7 @@ public sealed class ConciliacaoDoCatalogo
     {
         ImplantacaoDasPermissoes novo = ImplantacaoDasPermissoes.Implantar(
             _catalogo.Impressao,
-            _catalogo.Linhas.Select(l => new LinhaDoRetratoDoCatalogo(l.Codigo.Valor, l.Codigo.Modulo, l.Classificacao, l.DeUnidade, l.Reservada)),
+            _catalogo.Linhas.Select(l => new PermissaoDoCatalogo(CodigoDePermissao.De(l.Codigo.Valor), l.Classificacao, l.DeUnidade, l.Reservada)),
             agora);
         _db.ImplantacoesDasPermissoes.Add(novo);
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
@@ -113,26 +114,25 @@ public sealed class ConciliacaoDoCatalogo
 
         _db.DivergenciasDaGovernanca.AddRange(ConferenciaDaGovernanca.DaComposicao(comparacao.ImplantacaoId, gravada, comparacao.Instante));
         _db.DivergenciasDaGovernanca.AddRange(
-            ConferenciaDaGovernanca.DoCatalogo(comparacao.ImplantacaoId, comparacao.Anterior ?? new Dictionary<string, LinhaDoRetratoDoCatalogo>(), comparacao.Atualizado, comparacao.Instante));
+            ConferenciaDaGovernanca.DoCatalogo(comparacao.ImplantacaoId, comparacao.Anterior ?? new Dictionary<CodigoDePermissao, PermissaoDoCatalogo>(), comparacao.Atualizado, comparacao.Instante));
     }
 
-    private static Dictionary<string, LinhaDoRetratoDoCatalogo> Linhas(IEnumerable<PermissaoImplantada>? permissoes) =>
+    private static Dictionary<CodigoDePermissao, PermissaoDoCatalogo> Linhas(IEnumerable<PermissaoImplantada>? permissoes) =>
         (permissoes ?? []).ToDictionary(
-            static p => p.Codigo,
-            static p => new LinhaDoRetratoDoCatalogo(p.Codigo, p.Modulo, p.Classificacao, p.DeUnidade, p.Reservada),
-            StringComparer.Ordinal);
+            static p => CodigoDePermissao.De(p.Codigo),
+            static p => new PermissaoDoCatalogo(CodigoDePermissao.De(p.Codigo), p.Classificacao, p.DeUnidade, p.Reservada));
 }
 
 /// <summary>O catálogo que entra, o anterior (nulo na primeira conferência) e o instante da conciliação.</summary>
 internal sealed record ComparacaoDeCatalogos(
     Guid ImplantacaoId,
-    IReadOnlyDictionary<string, LinhaDoRetratoDoCatalogo>? Anterior,
-    IReadOnlyDictionary<string, LinhaDoRetratoDoCatalogo> Atualizado,
+    IReadOnlyDictionary<CodigoDePermissao, PermissaoDoCatalogo>? Anterior,
+    IReadOnlyDictionary<CodigoDePermissao, PermissaoDoCatalogo> Atualizado,
     DateTimeOffset Instante)
 {
     /// <summary>O valor que a permissão tinha: o do catálogo anterior e, sem ele, o do retrato dado.</summary>
-    public BaseDaConcessao AnteriorDe(string codigo, BaseDaConcessao retrato) =>
-        Anterior is not null && Anterior.TryGetValue(codigo, out LinhaDoRetratoDoCatalogo? linha)
+    public BaseDaConcessao AnteriorDe(CodigoDePermissao codigo, BaseDaConcessao retrato) =>
+        Anterior is not null && Anterior.TryGetValue(codigo, out PermissaoDoCatalogo? linha)
             ? new BaseDaConcessao(linha.Classificacao, linha.DeUnidade)
             : retrato;
 }

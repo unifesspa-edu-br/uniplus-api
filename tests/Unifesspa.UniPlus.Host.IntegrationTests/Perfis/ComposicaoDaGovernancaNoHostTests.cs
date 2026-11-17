@@ -19,6 +19,7 @@ using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
 /// Os perfis de governança não têm versão, aprovação nem janela, e a composição deles só muda pela carga do modelo. Reúnem
@@ -118,10 +119,10 @@ public sealed class ComposicaoDaGovernancaNoHostTests
     private static Guid[] PerfisQueReunem(string codigo) =>
         [.. ComposicaoDaGovernanca.Esperada.Where(p => p.Codigo == codigo).Select(static p => p.PerfilId)];
 
-    private LinhaDoRetratoDoCatalogo Linha(string codigo)
+    private PermissaoDoCatalogo Linha(string codigo)
     {
         Catalogo.TentarObter(codigo, out DefinicaoDePermissao? definicao).Should().BeTrue(codigo);
-        return new(definicao!.Codigo, definicao.Modulo, definicao.Requisito.Sensibilidade, definicao.DeUnidade, definicao.ReservadaAGovernanca);
+        return new(CodigoDePermissao.De(definicao!.Codigo), definicao.Requisito.Sensibilidade, definicao.DeUnidade, definicao.ReservadaAGovernanca);
     }
 
     private HttpClient Cliente(string contaId)

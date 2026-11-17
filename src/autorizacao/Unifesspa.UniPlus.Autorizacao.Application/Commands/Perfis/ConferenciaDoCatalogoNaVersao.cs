@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 /// A conferência da versão com o catálogo gravado no banco, sob a trava do perfil. A instância cujo catálogo não é o do banco
 /// é anterior à implantação que o trocou e não decide aprovação. A versão que entra em vigor com permissão que o catálogo
 /// atual reclassificou para cima, ou de escopo diferente, ganha o fato da reclassificação do perfil, se ainda não há: a
-/// concessão nessa versão fica suspensa pela mesma regra da base e tem item na fila. O retrato da versão não muda.
+/// concessão nessa versão fica suspensa pela mesma regra da base e tem item na fila. A composição que a versão guardou não muda.
 /// </summary>
 public sealed class ConferenciaDoCatalogoNaVersao
 {
@@ -47,7 +47,8 @@ public sealed class ConferenciaDoCatalogoNaVersao
         ArgumentNullException.ThrowIfNull(perfil);
         ArgumentNullException.ThrowIfNull(entrante);
 
-        ImplantacaoNoBanco? atual = await _reclassificacoes.ObterImplantacaoAtualAsync(entrante.Codigos(), cancellationToken).ConfigureAwait(false);
+        ImplantacaoNoBanco? atual = await _reclassificacoes.ObterImplantacaoAtualAsync(
+            [.. entrante.Codigos().Select(CodigoDePermissao.De)], cancellationToken).ConfigureAwait(false);
         if (atual is null)
         {
             return;
@@ -84,7 +85,7 @@ public sealed class ConferenciaDoCatalogoNaVersao
     {
         BaseDaConcessao retrato = new(permissao.Classificacao, permissao.DeUnidade);
 
-        return atual.Linhas.TryGetValue(permissao.Codigo, out LinhaDoRetratoDoCatalogo? linha) && retrato.SuspendeFrenteA(linha.Classificacao, linha.DeUnidade)
+        return atual.Linhas.TryGetValue(CodigoDePermissao.De(permissao.Codigo), out PermissaoDoCatalogo? linha) && retrato.SuspendeFrenteA(linha.Classificacao, linha.DeUnidade)
             ? ComparacaoComOCatalogo.MudancaDe(retrato, linha)
             : null;
     }

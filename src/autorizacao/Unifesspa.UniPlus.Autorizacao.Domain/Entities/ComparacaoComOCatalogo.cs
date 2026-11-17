@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 public static class ComparacaoComOCatalogo
 {
     /// <summary>A mudança de <paramref name="anterior"/> para o valor do catálogo novo; nulo quando nenhum dos eixos mudou.</summary>
-    public static MudancaDaPermissao? MudancaDe(BaseDaConcessao anterior, LinhaDoRetratoDoCatalogo nova)
+    public static MudancaDaPermissao? MudancaDe(BaseDaConcessao anterior, PermissaoDoCatalogo nova)
     {
         ArgumentNullException.ThrowIfNull(anterior);
         ArgumentNullException.ThrowIfNull(nova);
