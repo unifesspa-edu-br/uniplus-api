@@ -8,8 +8,8 @@ using Unifesspa.UniPlus.Autorizacao.Application.Commands.Reclassificacoes;
 using Unifesspa.UniPlus.Infrastructure.Core.Hosting;
 
 /// <summary>
-/// Agenda <see cref="ProcessamentoDasJanelas"/> e os avisos da reclassificação a cada 5 minutos. Com mais de uma réplica, só a que obtém a trava de
-/// instância única processa; as outras pulam a execução.
+/// Agenda <see cref="ProcessamentoDasJanelas"/> e os avisos da reclassificação a cada 5 minutos. Com mais de uma réplica, só a que inicia a execução
+/// única processa; as outras pulam a execução.
 /// </summary>
 internal sealed class JanelasDeMigracaoHostedService : PeriodicJobHostedService
 {

@@ -17,21 +17,21 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 /// descarte da execução a libera, e a conexão dedicada só continua aberta enquanto a execução é a da instância.
 /// </summary>
 [Collection(AutorizacaoEndpointCollection.Name)]
-public sealed class TravaDaRotinaNoBancoTests
+public sealed class ExecucaoUnicaDaRotinaNoBancoTests
 {
     private readonly AutorizacaoEndpointFixture _fixture;
 
-    public TravaDaRotinaNoBancoTests(AutorizacaoEndpointFixture fixture) => _fixture = fixture;
+    public ExecucaoUnicaDaRotinaNoBancoTests(AutorizacaoEndpointFixture fixture) => _fixture = fixture;
 
     [Fact(DisplayName = "A segunda tentativa da mesma rotina recebe nulo enquanto a primeira execução não é descartada")]
     public async Task TentarIniciar_SegundaTentativaDaMesmaRotina_RecebeNulo()
     {
         string rotina = NomeDaRotina();
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-        ITravaDaRotina execucaoUnica = escopo.ServiceProvider.GetRequiredService<ITravaDaRotina>();
+        IExecucaoUnicaDaRotina execucaoUnica = escopo.ServiceProvider.GetRequiredService<IExecucaoUnicaDaRotina>();
 
-        await using IAsyncDisposable? primeira = await execucaoUnica.TentarObterAsync(rotina, CancellationToken.None);
-        IAsyncDisposable? segunda = await execucaoUnica.TentarObterAsync(rotina, CancellationToken.None);
+        await using IAsyncDisposable? primeira = await execucaoUnica.TentarIniciarAsync(rotina, CancellationToken.None);
+        IAsyncDisposable? segunda = await execucaoUnica.TentarIniciarAsync(rotina, CancellationToken.None);
 
         primeira.Should().NotBeNull();
         segunda.Should().BeNull();
@@ -42,11 +42,11 @@ public sealed class TravaDaRotinaNoBancoTests
     {
         string rotina = NomeDaRotina();
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-        ITravaDaRotina execucaoUnica = escopo.ServiceProvider.GetRequiredService<ITravaDaRotina>();
-        IAsyncDisposable? primeira = await execucaoUnica.TentarObterAsync(rotina, CancellationToken.None);
+        IExecucaoUnicaDaRotina execucaoUnica = escopo.ServiceProvider.GetRequiredService<IExecucaoUnicaDaRotina>();
+        IAsyncDisposable? primeira = await execucaoUnica.TentarIniciarAsync(rotina, CancellationToken.None);
         await primeira!.DisposeAsync();
 
-        await using IAsyncDisposable? seguinte = await execucaoUnica.TentarObterAsync(rotina, CancellationToken.None);
+        await using IAsyncDisposable? seguinte = await execucaoUnica.TentarIniciarAsync(rotina, CancellationToken.None);
 
         seguinte.Should().NotBeNull();
     }
@@ -55,10 +55,10 @@ public sealed class TravaDaRotinaNoBancoTests
     public async Task TentarIniciar_RotinasDiferentes_ExecutamJuntas()
     {
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-        ITravaDaRotina execucaoUnica = escopo.ServiceProvider.GetRequiredService<ITravaDaRotina>();
+        IExecucaoUnicaDaRotina execucaoUnica = escopo.ServiceProvider.GetRequiredService<IExecucaoUnicaDaRotina>();
 
-        await using IAsyncDisposable? primeira = await execucaoUnica.TentarObterAsync(NomeDaRotina(), CancellationToken.None);
-        await using IAsyncDisposable? segunda = await execucaoUnica.TentarObterAsync(NomeDaRotina(), CancellationToken.None);
+        await using IAsyncDisposable? primeira = await execucaoUnica.TentarIniciarAsync(NomeDaRotina(), CancellationToken.None);
+        await using IAsyncDisposable? segunda = await execucaoUnica.TentarIniciarAsync(NomeDaRotina(), CancellationToken.None);
 
         primeira.Should().NotBeNull();
         segunda.Should().NotBeNull();
@@ -69,9 +69,9 @@ public sealed class TravaDaRotinaNoBancoTests
     {
         string aplicacao = NomeDaAplicacao();
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-        TravaDaRotinaNoBanco execucaoUnica = NoBanco(escopo, aplicacao, "banco_que_nao_existe");
+        ExecucaoUnicaDaRotinaNoBanco execucaoUnica = NoBanco(escopo, aplicacao, "banco_que_nao_existe");
 
-        Func<Task> iniciar = () => execucaoUnica.TentarObterAsync(NomeDaRotina(), CancellationToken.None);
+        Func<Task> iniciar = () => execucaoUnica.TentarIniciarAsync(NomeDaRotina(), CancellationToken.None);
 
         await iniciar.Should().ThrowAsync<PostgresException>();
         (await SessoesAteAsync(aplicacao, 0)).Should().Be(0);
@@ -83,10 +83,10 @@ public sealed class TravaDaRotinaNoBancoTests
         string aplicacao = NomeDaAplicacao();
         string rotina = NomeDaRotina();
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-        TravaDaRotinaNoBanco execucaoUnica = NoBanco(escopo, aplicacao);
-        await using IAsyncDisposable? primeira = await execucaoUnica.TentarObterAsync(rotina, CancellationToken.None);
+        ExecucaoUnicaDaRotinaNoBanco execucaoUnica = NoBanco(escopo, aplicacao);
+        await using IAsyncDisposable? primeira = await execucaoUnica.TentarIniciarAsync(rotina, CancellationToken.None);
 
-        IAsyncDisposable? negada = await execucaoUnica.TentarObterAsync(rotina, CancellationToken.None);
+        IAsyncDisposable? negada = await execucaoUnica.TentarIniciarAsync(rotina, CancellationToken.None);
 
         negada.Should().BeNull();
         (await SessoesAteAsync(aplicacao, 1)).Should().Be(1);
@@ -97,8 +97,8 @@ public sealed class TravaDaRotinaNoBancoTests
     {
         string aplicacao = NomeDaAplicacao();
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-        TravaDaRotinaNoBanco execucaoUnica = NoBanco(escopo, aplicacao);
-        IAsyncDisposable? execucao = await execucaoUnica.TentarObterAsync(NomeDaRotina(), CancellationToken.None);
+        ExecucaoUnicaDaRotinaNoBanco execucaoUnica = NoBanco(escopo, aplicacao);
+        IAsyncDisposable? execucao = await execucaoUnica.TentarIniciarAsync(NomeDaRotina(), CancellationToken.None);
 
         (await SessoesAteAsync(aplicacao, 1)).Should().Be(1);
         await execucao!.DisposeAsync();
@@ -111,7 +111,7 @@ public sealed class TravaDaRotinaNoBancoTests
     private static string NomeDaAplicacao() => $"teste-execucao-unica-{Guid.NewGuid():N}";
 
     // Sem pool e com nome de aplicação próprio: cada conexão da rotina aparece sozinha no banco e some quando é fechada.
-    private static TravaDaRotinaNoBanco NoBanco(AsyncServiceScope escopo, string aplicacao, string? banco = null)
+    private static ExecucaoUnicaDaRotinaNoBanco NoBanco(AsyncServiceScope escopo, string aplicacao, string? banco = null)
     {
         UniPlusDbContext contexto = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         NpgsqlConnectionStringBuilder cadeia = new(contexto.Database.GetConnectionString()) { Pooling = false, ApplicationName = aplicacao };
@@ -122,7 +122,7 @@ public sealed class TravaDaRotinaNoBancoTests
 
         contexto.Database.SetConnectionString(cadeia.ConnectionString);
 
-        return new TravaDaRotinaNoBanco(contexto);
+        return new ExecucaoUnicaDaRotinaNoBanco(contexto);
     }
 
     private async Task<int> SessoesAteAsync(string aplicacao, int esperadas)
