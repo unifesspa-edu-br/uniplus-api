@@ -113,54 +113,99 @@ public sealed class VinculoDiscenteRepository : IVinculoDiscenteRepository
             return new ResultadoDaGravacao(0, 0, 0);
         }
 
-        long[] identificadores = [.. lote.Select(v => v.Vinculo.Snapshot.Identificacao.IdDiscenteSigaa)];
-
-        Dictionary<long, VinculoDiscenteRecord> existentes = await _dbContext.VinculosDiscentes
-            .Where(r => identificadores.Contains(r.IdDiscenteSigaa))
-            .ToDictionaryAsync(r => r.IdDiscenteSigaa, cancellationToken)
+        Dictionary<long, VinculoDiscenteRecord> existentes = await ExistentesDoLoteAsync(lote, cancellationToken)
             .ConfigureAwait(false);
 
-        int inseridos = 0;
-        int atualizados = 0;
-        int inalterados = 0;
+        return await PrepararLoteAsync(lote, existentes, cancellationToken).ConfigureAwait(false);
+    }
+
+    private Task<Dictionary<long, VinculoDiscenteRecord>> ExistentesDoLoteAsync(
+        IReadOnlyList<VinculoSincronizavel> lote,
+        CancellationToken cancellationToken)
+    {
+        long[] identificadores = [.. lote.Select(v => v.Vinculo.Snapshot.Identificacao.IdDiscenteSigaa)];
+
+        return _dbContext.VinculosDiscentes
+            .Where(r => identificadores.Contains(r.IdDiscenteSigaa))
+            .ToDictionaryAsync(r => r.IdDiscenteSigaa, cancellationToken);
+    }
+
+    private async Task<ResultadoDaGravacao> PrepararLoteAsync(
+        IReadOnlyList<VinculoSincronizavel> lote,
+        Dictionary<long, VinculoDiscenteRecord> existentes,
+        CancellationToken cancellationToken)
+    {
+        ResultadoDaGravacao resultado = new(0, 0, 0);
 
         foreach (VinculoSincronizavel item in lote)
         {
-            long idDeOrigem = item.Vinculo.Snapshot.Identificacao.IdDiscenteSigaa;
-
-            try
-            {
-                if (!existentes.TryGetValue(idDeOrigem, out VinculoDiscenteRecord? existente))
-                {
-                    VinculoDiscenteRecord novo = new() { Id = item.Vinculo.Id };
-                    await AtualizarCamposAsync(novo, item.Vinculo, cancellationToken).ConfigureAwait(false);
-                    novo.ResumoDoConteudo = item.ResumoDoConteudo;
-                    _dbContext.VinculosDiscentes.Add(novo);
-                    inseridos++;
-                    continue;
-                }
-
-                if (string.Equals(existente.ResumoDoConteudo, item.ResumoDoConteudo, StringComparison.Ordinal))
-                {
-                    inalterados++;
-                    continue;
-                }
-
-                await AtualizarCamposAsync(existente, item.Vinculo, cancellationToken).ConfigureAwait(false);
-                existente.ResumoDoConteudo = item.ResumoDoConteudo;
-                atualizados++;
-            }
-            catch (Exception excecao) when (excecao is not OperationCanceledException)
-            {
-                // Cifrar o CPF deste vínculo falhou. O que já foi classificado até aqui sobe
-                // junto: sem isso, os vínculos reconhecidos como iguais — que continuam
-                // corretos na réplica — seriam contados como não gravados.
-                throw new FalhaAoPrepararLoteException(
-                    new ResultadoDaGravacao(inseridos, atualizados, inalterados), excecao);
-            }
+            resultado = await PrepararSomandoAsync(item, existentes, resultado, cancellationToken)
+                .ConfigureAwait(false);
         }
 
-        return new ResultadoDaGravacao(inseridos, atualizados, inalterados);
+        return resultado;
+    }
+
+    /// <summary>
+    /// Prepara um vínculo do lote e soma o que ele deu ao que o lote já alcançou. Se
+    /// preparar falha — cifrar o CPF deste vínculo —, o que já foi classificado até aqui
+    /// sobe junto: sem isso, os vínculos reconhecidos como iguais, que continuam corretos na
+    /// réplica, seriam contados como não gravados.
+    /// </summary>
+    private async Task<ResultadoDaGravacao> PrepararSomandoAsync(
+        VinculoSincronizavel item,
+        Dictionary<long, VinculoDiscenteRecord> existentes,
+        ResultadoDaGravacao alcancadoAteAqui,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            ResultadoDaGravacao deste = await PrepararAsync(item, existentes, cancellationToken)
+                .ConfigureAwait(false);
+
+            return alcancadoAteAqui.Somar(deste);
+        }
+        catch (Exception excecao) when (excecao is not OperationCanceledException)
+        {
+            throw new FalhaAoPrepararLoteException(alcancadoAteAqui, excecao);
+        }
+    }
+
+    private async Task<ResultadoDaGravacao> PrepararAsync(
+        VinculoSincronizavel item,
+        Dictionary<long, VinculoDiscenteRecord> existentes,
+        CancellationToken cancellationToken)
+    {
+        if (!existentes.TryGetValue(item.Vinculo.Snapshot.Identificacao.IdDiscenteSigaa, out VinculoDiscenteRecord? existente))
+        {
+            await InserirAsync(item, cancellationToken).ConfigureAwait(false);
+            return new ResultadoDaGravacao(1, 0, 0);
+        }
+
+        if (string.Equals(existente.ResumoDoConteudo, item.ResumoDoConteudo, StringComparison.Ordinal))
+        {
+            return new ResultadoDaGravacao(0, 0, 1);
+        }
+
+        await AtualizarDaSincronizacaoAsync(existente, item, cancellationToken).ConfigureAwait(false);
+        return new ResultadoDaGravacao(0, 1, 0);
+    }
+
+    private async Task InserirAsync(VinculoSincronizavel item, CancellationToken cancellationToken)
+    {
+        VinculoDiscenteRecord novo = await ParaRegistroNovoAsync(item.Vinculo, cancellationToken).ConfigureAwait(false);
+
+        novo.ResumoDoConteudo = item.ResumoDoConteudo;
+        _dbContext.VinculosDiscentes.Add(novo);
+    }
+
+    private async Task AtualizarDaSincronizacaoAsync(
+        VinculoDiscenteRecord existente,
+        VinculoSincronizavel item,
+        CancellationToken cancellationToken)
+    {
+        await AtualizarCamposAsync(existente, item.Vinculo, cancellationToken).ConfigureAwait(false);
+        existente.ResumoDoConteudo = item.ResumoDoConteudo;
     }
 
     private async Task<VinculoDiscente> ParaDominioAsync(VinculoDiscenteRecord record, CancellationToken cancellationToken)
@@ -169,27 +214,7 @@ public sealed class VinculoDiscenteRepository : IVinculoDiscenteRepository
             .DecryptAsync(DiscentesEncryptionKeys.IdentificadoresPessoais, record.CpfCiphertext, cancellationToken)
             .ConfigureAwait(false);
 
-        Cpf cpf = ReidratarCpf(cpfPlano);
-
-        CursoSigaaSnapshot curso = CursoSigaaSnapshot.Criar(
-                record.CursoId, record.CursoNome, record.CursoCodigoEmec, record.CursoUnidadeId, record.CursoUnidadeNome)
-            .Match(c => c, erro => throw new InvalidOperationException($"Curso corrompido no registro persistido ({erro.Code})."));
-
-        SituacaoAcademicaSnapshot situacao = SituacaoAcademicaSnapshot.Criar(
-                record.SituacaoId, record.SituacaoDescricao, record.SituacaoVinculo)
-            .Match(s => s, erro => throw new InvalidOperationException($"Situação corrompida no registro persistido ({erro.Code})."));
-
-        PeriodoIngresso ingresso = PeriodoIngresso.Criar(record.AnoIngresso, record.PeriodoIngresso)
-            .Match(p => p, erro => throw new InvalidOperationException($"Período corrompido no registro persistido ({erro.Code})."));
-
-        IdentificacaoDoDiscente identificacao = IdentificacaoDoDiscente.Criar(
-                record.IdDiscenteSigaa, record.Matricula, cpf, record.Nome)
-            .Match(i => i, erro => throw new InvalidOperationException($"Identificação corrompida no registro persistido ({erro.Code})."));
-
-        VinculoDiscenteSnapshot snapshot = VinculoDiscenteSnapshot.Criar(identificacao, record.Nivel, curso, situacao, ingresso)
-            .Match(s => s, erro => throw new InvalidOperationException($"Snapshot corrompido no registro persistido ({erro.Code})."));
-
-        return VinculoDiscente.Reidratar(record.Id, snapshot);
+        return MapeamentoDoVinculoDiscente.ParaDominio(record, ReidratarCpf(cpfPlano));
     }
 
     private async Task<VinculoDiscenteRecord> ParaRegistroNovoAsync(VinculoDiscente entity, CancellationToken cancellationToken)
@@ -199,31 +224,19 @@ public sealed class VinculoDiscenteRepository : IVinculoDiscenteRepository
         return record;
     }
 
+    /// <summary>
+    /// Cifra o CPF antes de tocar em qualquer campo do registro rastreado pelo
+    /// ChangeTracker. Se a cifragem falhar — Vault indisponível durante uma sincronização em
+    /// lote que continua para as próximas linhas depois de capturar a exceção —, o registro
+    /// permanece intocado: nunca fica com o identificador e a matrícula novos e o CPF
+    /// cifrado antigo, uma mutação parcial que um <c>SaveChangesAsync</c> posterior, das
+    /// linhas que tiveram sucesso, persistiria por engano.
+    /// </summary>
     private async Task AtualizarCamposAsync(VinculoDiscenteRecord record, VinculoDiscente entity, CancellationToken cancellationToken)
     {
-        // Cifra ANTES de mutar qualquer campo do record rastreado pelo ChangeTracker.
-        // Se a cifragem falhar (ex.: Vault indisponível durante um sync em lote que
-        // continua para as próximas linhas após capturar a exceção), este record
-        // permanece intocado — nunca fica com IdDiscenteSigaa/Matricula novos e o
-        // CpfCiphertext antigo, uma mutação parcial que um SaveChangesAsync posterior
-        // (das linhas que tiveram sucesso) persistiria por engano.
         byte[] cpfCiphertext = await CifrarCpfAsync(entity.Snapshot.Identificacao.Cpf, cancellationToken).ConfigureAwait(false);
 
-        record.IdDiscenteSigaa = entity.Snapshot.Identificacao.IdDiscenteSigaa;
-        record.Matricula = entity.Snapshot.Identificacao.Matricula;
-        record.CpfCiphertext = cpfCiphertext;
-        record.Nome = entity.Snapshot.Identificacao.Nome;
-        record.Nivel = entity.Snapshot.Nivel;
-        record.CursoId = entity.Snapshot.Curso.Id;
-        record.CursoNome = entity.Snapshot.Curso.Nome;
-        record.CursoCodigoEmec = entity.Snapshot.Curso.CodigoEmec;
-        record.CursoUnidadeId = entity.Snapshot.Curso.UnidadeId;
-        record.CursoUnidadeNome = entity.Snapshot.Curso.UnidadeNome;
-        record.SituacaoId = entity.Snapshot.Situacao.Id;
-        record.SituacaoDescricao = entity.Snapshot.Situacao.Descricao;
-        record.SituacaoVinculo = entity.Snapshot.Situacao.Vinculo;
-        record.AnoIngresso = entity.Snapshot.Ingresso.Ano;
-        record.PeriodoIngresso = entity.Snapshot.Ingresso.Periodo;
+        MapeamentoDoVinculoDiscente.Aplicar(record, entity.Snapshot, cpfCiphertext);
     }
 
     private Task<byte[]> CifrarCpfAsync(Cpf cpf, CancellationToken cancellationToken) =>
