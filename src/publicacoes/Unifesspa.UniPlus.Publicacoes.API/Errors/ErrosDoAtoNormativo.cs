@@ -64,5 +64,12 @@ internal static class ErrosDoAtoNormativo
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.publicacoes.ato_normativo.vinculo_exige_registro_pelo_dominio",
                 "Ato vinculado a esta entidade só pode ser registrado pelo módulo dono do objeto")),
+
+        // 400 e não 422: o rótulo chega na rota de uma consulta, não num payload.
+        new(AtoNormativoErrorCodes.TipoDeEntidadeInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status400BadRequest,
+                "uniplus.publicacoes.ato_normativo.tipo_de_entidade_invalido",
+                "Tipo de entidade inválido")),
     ];
 }

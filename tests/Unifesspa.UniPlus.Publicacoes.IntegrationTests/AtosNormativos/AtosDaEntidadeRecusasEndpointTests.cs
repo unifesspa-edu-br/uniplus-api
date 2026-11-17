@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Publicacoes.IntegrationTests.AtosNormativos;
 
 using System.Globalization;
 using System.Net;
-using System.Text.Json;
 
 using AwesomeAssertions;
 
@@ -29,7 +28,7 @@ public sealed class AtosDaEntidadeRecusasEndpointTests
     private const string TituloDoTipoDeEntidadeInvalido = "Tipo de entidade inválido";
     private const string DetalheDoTipoDeEntidadeInvalido =
         "O tipo da entidade deve ser um rótulo em maiúsculas, com grupos separados por sublinhado.";
-    private const string TituloDoCursorInvalidoHoje = "Cursor inválido";
+    private const string TipoDeEntidadeInvalido = "uniplus.publicacoes.ato_normativo.tipo_de_entidade_invalido";
     private const string CursorInvalido = "uniplus.cursor.invalido";
     private const string TituloDoCursorInvalido = "Cursor de paginação inválido";
     private const string DetalheDoCursorInvalido = "O cursor informado é inválido.";
@@ -65,7 +64,7 @@ public sealed class AtosDaEntidadeRecusasEndpointTests
 
         HttpResponseMessage resposta = await ListarAsync(client, EntidadeInvalida, Guid.CreateVersion7());
 
-        await ConferirRecusaSemCodigoAsync(resposta, TituloDoTipoDeEntidadeInvalido, DetalheDoTipoDeEntidadeInvalido);
+        await ConferirTipoDeEntidadeInvalidoAsync(resposta);
         consultas.Enviadas.OfType<ListarAtosDaEntidadeQuery>().Should().BeEmpty("a recusa da fronteira sai antes da consulta");
     }
 
@@ -95,7 +94,7 @@ public sealed class AtosDaEntidadeRecusasEndpointTests
 
         HttpResponseMessage resposta = await ListarAsync(client, EntidadeValida, entidade, ComCursor(cursor));
 
-        await ConferirRecusaSemCodigoAsync(resposta, TituloDoCursorInvalidoHoje, DetalheDoCursorInvalido);
+        await ConferirCursorInvalidoAsync(resposta);
         consultas.Enviadas.OfType<ListarAtosDaEntidadeQuery>().Should().BeEmpty("a recusa da fronteira sai antes da consulta");
     }
 
@@ -124,7 +123,7 @@ public sealed class AtosDaEntidadeRecusasEndpointTests
 
         HttpResponseMessage resposta = await ListarAsync(client, EntidadeInvalida, entidade, ComCursor(cursor));
 
-        await ConferirRecusaSemCodigoAsync(resposta, TituloDoTipoDeEntidadeInvalido, DetalheDoTipoDeEntidadeInvalido);
+        await ConferirTipoDeEntidadeInvalidoAsync(resposta);
     }
 
     [Fact(DisplayName = "Cursor adulterado com tipo de entidade inválido: prevalece a recusa do cursor, sem consultar os atos")]
@@ -266,14 +265,7 @@ public sealed class AtosDaEntidadeRecusasEndpointTests
         ProblemaRegistrado.ConferirAsync(
             resposta, HttpStatusCode.BadRequest, CursorInvalido, TituloDoCursorInvalido, DetalheDoCursorInvalido);
 
-    private static async Task ConferirRecusaSemCodigoAsync(HttpResponseMessage resposta, string title, string detail)
-    {
-        resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        resposta.Content.Headers.ContentType?.MediaType.Should().Be("application/problem+json");
-
-        using JsonDocument corpo = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
-        corpo.RootElement.GetProperty("title").GetString().Should().Be(title);
-        corpo.RootElement.GetProperty("detail").GetString().Should().Be(detail);
-        corpo.RootElement.TryGetProperty("code", out _).Should().BeFalse("hoje a recusa não leva o código registrado");
-    }
+    private static Task ConferirTipoDeEntidadeInvalidoAsync(HttpResponseMessage resposta) =>
+        ProblemaRegistrado.ConferirAsync(
+            resposta, HttpStatusCode.BadRequest, TipoDeEntidadeInvalido, TituloDoTipoDeEntidadeInvalido, DetalheDoTipoDeEntidadeInvalido);
 }

@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Publicacoes.API.Controllers;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
@@ -19,6 +18,7 @@ using Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
 using Unifesspa.UniPlus.Publicacoes.Application.DTOs;
 using Unifesspa.UniPlus.Publicacoes.Application.Permissoes;
 using Unifesspa.UniPlus.Publicacoes.Application.Queries.AtosNormativos;
+using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 
 /// <summary>
 /// Endpoints públicos de leitura (<c>GET /api/publicacoes/atos</c>) e o endpoint
@@ -34,10 +34,6 @@ using Unifesspa.UniPlus.Publicacoes.Application.Queries.AtosNormativos;
 /// </remarks>
 [ApiController]
 [Authorize]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed partial class AtosNormativosController : ControllerBase
 {
     private const string ResourceTag = "atos";
@@ -86,11 +82,8 @@ public sealed partial class AtosNormativosController : ControllerBase
             .Send(new ListarAtosNormativosQuery(page.AfterId, page.Limit, page.Direction), cancellationToken)
             .ConfigureAwait(false);
 
-        AtoNormativoDto[] comLinks =
-            [.. resultado.Items.Select(a => a with { Links = _linksBuilder.Build(a) })];
-
         return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag,
+            ComLinks(resultado.Items), resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
@@ -129,46 +122,17 @@ public sealed partial class AtosNormativosController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(page);
 
-        // A forma do rótulo é conferida — o valor, jamais. Sem esta recusa, um rótulo
-        // fora da grafia canônica (minúsculo, com hífen) devolveria a mesma coleção vazia
-        // de uma entidade sem atos, e o erro de digitação passaria por resultado legítimo.
-        if (!FormatoDoTipoDeEntidade().IsMatch(entidadeTipo))
+        if (RecusaDaListagem(entidadeTipo, page) is { } recusa)
         {
-            return Problem(
-                statusCode: StatusCodes.Status400BadRequest,
-                title: "Tipo de entidade inválido",
-                detail: "O tipo da entidade deve ser um rótulo em maiúsculas, com grupos separados por sublinhado.");
-        }
-
-        // A âncora do cursor é o par (instante da divulgação, Id), e o instante chega como texto.
-        // Decodificar o wire é do boundary (ADR-0031): sem esta recusa, uma âncora
-        // malformada só falharia lá dentro, ao construir a chave do seek — e um cursor
-        // adulterado viraria 500 em vez de 400.
-        if (page.AfterSortKey is { } ancora
-            && !DateTimeOffset.TryParseExact(ancora, "O", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out _))
-        {
-            return Problem(
-                statusCode: StatusCodes.Status400BadRequest,
-                title: "Cursor inválido",
-                detail: "O cursor informado é inválido.");
+            return recusa;
         }
 
         ListarAtosDaEntidadeResult resultado = await _queryBus
-            .Send(
-                new ListarAtosDaEntidadeQuery(
-                    entidadeTipo, entidadeId, page.AfterSortKey, page.AfterId, page.Limit, page.Direction),
-                cancellationToken)
+            .Send(new ListarAtosDaEntidadeQuery(entidadeTipo, entidadeId, page.AfterSortKey, page.AfterId, page.Limit, page.Direction), cancellationToken)
             .ConfigureAwait(false);
 
-        AtoNormativoDto[] comLinks =
-            [.. resultado.Items.Select(a => a with { Links = _linksBuilder.Build(a) })];
-
         return await this.OkPaginatedOrdenadoAsync(
-            comLinks,
-            resultado.Anterior,
-            resultado.Proximo,
-            page,
-            EtiquetaDaEntidade(entidadeTipo, entidadeId),
+            ComLinks(resultado.Items), resultado.Anterior, resultado.Proximo, page, EtiquetaDaEntidade(entidadeTipo, entidadeId),
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
@@ -232,6 +196,42 @@ public sealed partial class AtosNormativosController : ControllerBase
 
         return resultado.ToActionResult(_mapper);
     }
+
+    /// <summary>Dá a cada ato o seu link <c>self</c> (HATEOAS nível 1, ADR-0029).</summary>
+    private AtoNormativoDto[] ComLinks(IEnumerable<AtoNormativoDto> atos) =>
+        [.. atos.Select(a => a with { Links = _linksBuilder.Build(a) })];
+
+    /// <summary>
+    /// A recusa que a fronteira dá a uma consulta dos atos de uma entidade antes de enviá-la, ou
+    /// <c>null</c>: primeiro o tipo de entidade, depois a âncora do cursor.
+    /// </summary>
+    /// <remarks>
+    /// A forma do rótulo é conferida, o valor jamais: sem a recusa, um rótulo fora da grafia canônica
+    /// (minúsculo, com hífen) devolveria a mesma coleção vazia de uma entidade sem atos, e o erro de
+    /// digitação passaria por resultado legítimo. A âncora é o par (instante da divulgação, Id) e o
+    /// instante chega como texto: decodificar o wire é da fronteira (ADR-0031); sem a recusa, o cursor
+    /// adulterado viraria 500. O código é o que o binder dá ao cursor que não decodifica.
+    /// </remarks>
+    private IActionResult? RecusaDaListagem(string entidadeTipo, PageRequest page)
+    {
+        if (!FormatoDoTipoDeEntidade().IsMatch(entidadeTipo))
+        {
+            return Result.Failure(new DomainError(
+                    AtoNormativoErrorCodes.TipoDeEntidadeInvalido,
+                    "O tipo da entidade deve ser um rótulo em maiúsculas, com grupos separados por sublinhado."))
+                .ToActionResult(_mapper);
+        }
+
+        return AncoraEhInstante(page.AfterSortKey)
+            ? null
+            : Result.Failure(new DomainError(CursorBindingErrorCodes.Invalido, "O cursor informado é inválido."))
+                .ToActionResult(_mapper);
+    }
+
+    /// <summary>A âncora desta coleção é o instante da divulgação no formato <c>O</c>; sem âncora, é a primeira página.</summary>
+    private static bool AncoraEhInstante(string? ancora) =>
+        ancora is null
+        || DateTimeOffset.TryParseExact(ancora, "O", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out _);
 
     /// <summary>
     /// Etiqueta do cursor da coleção desta entidade. Composta pelo mesmo utilitário que

@@ -53,4 +53,11 @@ public static class AtoNormativoErrorCodes
     /// sem documento e fora das regras do domínio sobre o que pode publicar.
     /// </summary>
     public const string VinculoExigeRegistroPeloDominio = "AtoNormativo.VinculoExigeRegistroPeloDominio";
+
+    /// <summary>
+    /// O rótulo do tipo de entidade da consulta não está na grafia canônica (maiúsculas, com grupos
+    /// separados por sublinhado). O rótulo chega na rota de uma consulta, não num payload: daí 400, e
+    /// não 422. Sem a recusa, a consulta devolveria a mesma coleção vazia de uma entidade sem atos.
+    /// </summary>
+    public const string TipoDeEntidadeInvalido = "AtoNormativo.TipoDeEntidadeInvalido";
 }
