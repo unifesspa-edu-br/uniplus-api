@@ -33,6 +33,15 @@ public static partial class RegistrarResultadoDaVerificacaoDoDocumentoDaAutoriza
 
         Validar(resultado);
 
+        return await ReceberPeloQueReconheceAsync(resultado, receptores, logger, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<IEnumerable<EnviarEmail>> ReceberPeloQueReconheceAsync(
+        ResultadoDaVerificacaoDeArquivo resultado,
+        IEnumerable<IReceptorDoResultadoDaVerificacao> receptores,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
         foreach (IReceptorDoResultadoDaVerificacao receptor in receptores)
         {
             DesfechoDoRecebimento desfecho = await receptor.ReceberAsync(resultado, cancellationToken).ConfigureAwait(false);
