@@ -26,7 +26,6 @@ public static class ComparacaoComOCatalogo
     public static BaseDaConcessao BaseDaConciliacao(BaseDaConcessao atual, MudancaDaPermissao mudanca)
     {
         ArgumentNullException.ThrowIfNull(atual);
-        ArgumentNullException.ThrowIfNull(mudanca);
 
         return new BaseDaConcessao(
             atual.Classificacao <= mudanca.ClassificacaoNova ? atual.Classificacao : mudanca.ClassificacaoNova,
