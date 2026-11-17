@@ -39,13 +39,9 @@ public static class ConferenciaDoArquivo
             using PdfDocument documento = PdfDocument.Open(pdf, new ParsingOptions { Passwords = [string.Empty] });
             return false;
         }
-        catch (PdfDocumentEncryptedException)
-        {
-            return true;
-        }
         catch (Exception ex) when (ex is not (OperationCanceledException or OutOfMemoryException))
         {
-            return false;
+            return ex is PdfDocumentEncryptedException;
         }
     }
 }
