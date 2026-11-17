@@ -93,21 +93,34 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
     private async Task<HttpResponseMessage> EnviarAsync(string? contaId, string rota, string? papel = null)
     {
         using HttpClient client = _fixture.Factory.CreateClient();
-        using HttpRequestMessage request = new(HttpMethod.Post, new Uri(rota, UriKind.Relative))
+        using HttpRequestMessage request = RequisicaoDeCriacao(contaId, rota, papel);
+
+        return await client.SendAsync(request);
+    }
+
+    private static HttpRequestMessage RequisicaoDeCriacao(string? contaId, string rota, string? papel)
+    {
+        HttpRequestMessage request = new(HttpMethod.Post, new Uri(rota, UriKind.Relative))
         {
             Content = JsonContent.Create(new { }),
         };
 
         if (contaId is not null)
         {
-            request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-            request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, contaId);
-            if (papel is not null)
-            {
-                request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, papel);
-            }
+            ComoPessoaAutenticada(request, contaId, papel);
         }
 
-        return await client.SendAsync(request);
+        return request;
+    }
+
+    private static void ComoPessoaAutenticada(HttpRequestMessage request, string contaId, string? papel)
+    {
+        request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
+        request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, contaId);
+
+        if (papel is not null)
+        {
+            request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, papel);
+        }
     }
 }

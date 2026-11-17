@@ -1,22 +1,22 @@
 namespace Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests;
 
-using System.IO;
 using System.Net;
 using System.Text.Json;
 
 using AwesomeAssertions;
 
-using Infrastructure;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests.Infrastructure;
 
 /// <summary>
-/// Smoke + drift check do endpoint <c>/openapi/organizacao.json</c>:
-/// runtime gera spec OpenAPI 3.x do módulo Organização Institucional e compara
-/// com o baseline committed em <c>contracts/openapi.organizacao.json</c>.
+/// Confere o endpoint <c>/openapi/organizacao.json</c>: a API em execução gera a especificação OpenAPI 3.x
+/// do módulo Organização Institucional, e o teste a compara com o contrato gravado em
+/// <c>contracts/openapi.organizacao.json</c> (ADR-0030).
 /// </summary>
 public sealed class OpenApiEndpointTests : IClassFixture<OrganizacaoApiFactory>
 {
-    private const string BaselineRelativePath = "contracts/openapi.organizacao.json";
-    private const string UpdateBaselineEnvVar = "UPDATE_OPENAPI_BASELINE";
+    private const string CaminhoDoContratoGravado = "contracts/openapi.organizacao.json";
+    private const string RotaDaEspecificacao = "/openapi/organizacao.json";
 
     private readonly OrganizacaoApiFactory _factory;
 
@@ -30,100 +30,60 @@ public sealed class OpenApiEndpointTests : IClassFixture<OrganizacaoApiFactory>
     {
         using HttpClient client = _factory.CreateClient();
 
-        HttpResponseMessage response = await client.GetAsync(new Uri("/openapi/organizacao.json", UriKind.Relative));
+        using HttpResponseMessage response = await client.GetAsync(new Uri(RotaDaEspecificacao, UriKind.Relative));
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        string body = await response.Content.ReadAsStringAsync();
-        using JsonDocument doc = JsonDocument.Parse(body);
-        JsonElement root = doc.RootElement;
-
-        root.GetProperty("openapi").GetString().Should().StartWith("3.");
-        root.GetProperty("info").GetProperty("title").GetString().Should().Be("Uni+ — Módulo Organização Institucional");
-        root.GetProperty("info").GetProperty("version").GetString().Should().Be("1.0.0");
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        JsonElement info = doc.RootElement.GetProperty("info");
+        doc.RootElement.GetProperty("openapi").GetString().Should().StartWith("3.");
+        info.GetProperty("title").GetString().Should().Be("Uni+ — Módulo Organização Institucional");
+        info.GetProperty("version").GetString().Should().Be("1.0.0");
     }
 
     [Fact(DisplayName = "Spec runtime de Organização bate com baseline committed em contracts/")]
     public async Task SpecRuntime_DeveCasarComBaselineCommitted()
     {
         using HttpClient client = _factory.CreateClient();
-        HttpResponseMessage response = await client.GetAsync(new Uri("/openapi/organizacao.json", UriKind.Relative));
-        response.EnsureSuccessStatusCode();
 
-        string runtimeSpec = NormalizeJson(await response.Content.ReadAsStringAsync());
-        string baselinePath = ResolveRepoPath(BaselineRelativePath);
-
-        if (string.Equals(Environment.GetEnvironmentVariable(UpdateBaselineEnvVar), "1", StringComparison.Ordinal))
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(baselinePath)!);
-            await File.WriteAllTextAsync(baselinePath, runtimeSpec + "\n");
-            return;
-        }
-
-        File.Exists(baselinePath).Should().BeTrue(
-            $"baseline {BaselineRelativePath} precisa estar committed; rode `{UpdateBaselineEnvVar}=1 dotnet test --filter SpecRuntime` e commit o arquivo gerado.");
-
-        string committedSpec = NormalizeJson(await File.ReadAllTextAsync(baselinePath));
-
-        runtimeSpec.Should().Be(committedSpec,
-            $"contrato OpenAPI mudou — regerar a baseline com `{UpdateBaselineEnvVar}=1 dotnet test --filter SpecRuntime` e revisar o diff antes de commit (ADR-0030).");
+        await ContratoOpenApiGravado.ConferirAsync(client, RotaDaEspecificacao, CaminhoDoContratoGravado);
     }
 
-    [Fact(DisplayName = "Contrato de Unidade não anuncia vocabulário de procedência do registro")]
-    public async Task SpecRuntime_NaoDeclaraProcedenciaDaUnidade()
+    [Fact(DisplayName = "Contrato de Unidade não anuncia o enum de procedência do registro")]
+    public async Task SpecRuntime_NaoDeclaraOEnumDeProcedenciaDaUnidade()
+    {
+        using JsonDocument especificacao = await ObterEspecificacaoAsync();
+
+        SchemasDe(especificacao).TryGetProperty("OrigemUnidade", out _).Should().BeFalse(
+            "o vocabulário de procedência foi removido do domínio da Unidade");
+    }
+
+    [Theory(DisplayName = "Nenhum schema de Unidade declara nem exige a propriedade origem")]
+    [InlineData("CriarUnidadeCommand")]
+    [InlineData("AtualizarUnidadeCommand")]
+    [InlineData("UnidadeDto")]
+    public async Task SpecRuntime_SchemaDeUnidadeNaoDeclaraOrigem(string nomeDoSchema)
+    {
+        using JsonDocument especificacao = await ObterEspecificacaoAsync();
+        JsonElement schema = SchemasDe(especificacao).GetProperty(nomeDoSchema);
+
+        schema.GetProperty("properties").TryGetProperty("origem", out _).Should().BeFalse();
+        ObrigatoriosDe(schema).Should().NotContain("origem");
+    }
+
+    private async Task<JsonDocument> ObterEspecificacaoAsync()
     {
         using HttpClient client = _factory.CreateClient();
-        HttpResponseMessage response = await client.GetAsync(new Uri("/openapi/organizacao.json", UriKind.Relative));
+        using HttpResponseMessage response = await client.GetAsync(new Uri(RotaDaEspecificacao, UriKind.Relative));
         response.EnsureSuccessStatusCode();
 
-        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        JsonElement schemas = doc.RootElement.GetProperty("components").GetProperty("schemas");
-
-        // Procedência de registro é metadado de carga, não atributo da Unidade: o
-        // enum saiu do domínio e nenhum schema de Unidade deve reintroduzir o campo.
-        schemas.TryGetProperty("OrigemUnidade", out _).Should().BeFalse(
-            "o vocabulário de procedência foi removido do domínio da Unidade");
-
-        foreach (string schemaDeUnidade in new[] { "CriarUnidadeCommand", "AtualizarUnidadeCommand", "UnidadeDto" })
-        {
-            JsonElement schema = schemas.GetProperty(schemaDeUnidade);
-
-            schema.GetProperty("properties").TryGetProperty("origem", out _).Should().BeFalse(
-                $"{schemaDeUnidade} não deve declarar a propriedade origem");
-
-            if (schema.TryGetProperty("required", out JsonElement obrigatorios))
-            {
-                obrigatorios.EnumerateArray().Select(campo => campo.GetString())
-                    .Should().NotContain("origem", $"{schemaDeUnidade} não deve exigir origem");
-            }
-        }
+        return JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     }
 
-    private static string NormalizeJson(string raw)
-    {
-        using JsonDocument document = JsonDocument.Parse(raw);
-        return JsonSerializer.Serialize(document.RootElement, JsonNormalizationOptions);
-    }
+    private static JsonElement SchemasDe(JsonDocument especificacao) =>
+        especificacao.RootElement.GetProperty("components").GetProperty("schemas");
 
-    private static readonly JsonSerializerOptions JsonNormalizationOptions = new()
-    {
-        WriteIndented = true,
-    };
-
-    private static string ResolveRepoPath(string relative)
-    {
-        // Caminho deve ser relativo à raiz do repositório — um caminho enraizado
-        // faria Path.Combine descartar `current` silenciosamente.
-        ArgumentException.ThrowIfNullOrWhiteSpace(relative);
-        if (Path.IsPathRooted(relative))
-            throw new ArgumentException("Caminho deve ser relativo à raiz do repositório.", nameof(relative));
-
-        string? current = AppContext.BaseDirectory;
-        while (current is not null && !File.Exists(Path.Combine(current, "UniPlus.slnx")))
-            current = Path.GetDirectoryName(current);
-
-        if (current is null)
-            throw new DirectoryNotFoundException("UniPlus.slnx não encontrado a partir de AppContext.BaseDirectory.");
-
-        return Path.Combine(current, relative);
-    }
+    private static IEnumerable<string?> ObrigatoriosDe(JsonElement schema) =>
+        schema.TryGetProperty("required", out JsonElement obrigatorios)
+            ? obrigatorios.EnumerateArray().Select(campo => campo.GetString())
+            : [];
 }
