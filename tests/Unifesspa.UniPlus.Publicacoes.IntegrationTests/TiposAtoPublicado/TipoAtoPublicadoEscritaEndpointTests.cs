@@ -281,6 +281,33 @@ public sealed class TipoAtoPublicadoEscritaEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
+    [Fact(DisplayName = "PUT com Id divergente é recusado sem alterar o tipo")]
+    public async Task Atualizar_IdDivergente_NaoAlteraOTipo()
+    {
+        string codigo = CodigoUnico();
+        Guid id = await _apoio.CriarAsync(codigo);
+        CorpoDoTipoDeAto corpo = new(codigo) { Id = id, Nome = "Nome que a recusa não grava" };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage recusa = await AtualizarAsync(client, Guid.NewGuid(), corpo);
+
+        recusa.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        using JsonDocument doc = await LerAsync(client, new Uri($"{Base}/{id}", UriKind.Relative));
+        doc.RootElement.GetProperty("nome").GetString().Should().Be("Tipo de ato de teste");
+    }
+
+    [Fact(DisplayName = "PUT com Id vazio na rota e no corpo é recusado pela validação do comando, não como divergente")]
+    public async Task Atualizar_IdVazioNaRotaENoCorpo_NaoEhDivergente()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        CorpoDoTipoDeAto corpo = new(CodigoUnico()) { Id = Guid.Empty };
+
+        HttpResponseMessage response = await AtualizarAsync(client, Guid.Empty, corpo);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await response.Content.ReadAsStringAsync()).Should().NotContain("divergente");
+    }
+
     [Fact(DisplayName = "DELETE remove, retorna 204 e o tipo some da leitura")]
     public async Task Remover_Retorna204ESomeDaLeitura()
     {
