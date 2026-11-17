@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Messaging;
 using Confluent.Kafka;
 
 /// <summary>
-/// Helpers internos para mapear strings de configuração Kafka para os enums
+/// Leitura dos nomes de protocolo e mecanismo da configuração Kafka como os enums
 /// <see cref="Confluent.Kafka.SecurityProtocol"/> e <see cref="Confluent.Kafka.SaslMechanism"/>.
 /// Aceita formas convencionais (<c>SASL_SSL</c>, <c>SCRAM-SHA-512</c>) e PascalCase
 /// (<c>SaslSsl</c>, <c>ScramSha512</c>) — tolera o que vem de variáveis de ambiente

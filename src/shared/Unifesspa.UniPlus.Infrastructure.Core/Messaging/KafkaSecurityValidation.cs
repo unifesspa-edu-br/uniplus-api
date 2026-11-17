@@ -1,10 +1,12 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.Messaging;
 
+using System.Diagnostics;
+
 using Confluent.Kafka;
 
 /// <summary>Nomes dos campos de segurança numa seção de configuração, para as mensagens de validação.</summary>
-internal sealed record CamposDeSegurancaKafka(
-    string Secao,
+internal sealed record KafkaSecurityFields(
+    string Section,
     string Protocolo,
     string Mecanismo,
     string Usuario,
@@ -16,10 +18,14 @@ internal sealed record CamposDeSegurancaKafka(
 /// Validação cruzada de segurança do cliente Kafka (protocolo, SASL, SSL), a mesma para todo uso que conecta ao broker:
 /// o transporte do Wolverine e o registro de acesso. Cada um informa os nomes dos próprios campos.
 /// </summary>
+/// <remarks>
+/// Cada regra devolve as falhas dela, e <see cref="Validar"/> as junta na ordem de declaração. Protocolo não
+/// reconhecido encerra a validação: as demais regras dependem do que o protocolo exige.
+/// </remarks>
 internal static class KafkaSecurityValidation
 {
     public static List<string> Validar(
-        CamposDeSegurancaKafka campos,
+        KafkaSecurityFields campos,
         string? securityProtocol,
         string? saslMechanism,
         string? usuario,
@@ -27,96 +33,123 @@ internal static class KafkaSecurityValidation
         string? caLocation,
         string? caPem)
     {
-        string secao = campos.Secao;
-        List<string> failures = [];
-
-        bool hasAnySaslField =
-            !string.IsNullOrWhiteSpace(saslMechanism)
-            || !string.IsNullOrWhiteSpace(usuario)
-            || !string.IsNullOrWhiteSpace(senha);
-
-        bool hasAnySslField = !string.IsNullOrWhiteSpace(caLocation) || !string.IsNullOrWhiteSpace(caPem);
-
-        SecurityProtocol protocol = SecurityProtocol.Plaintext;
-        if (!string.IsNullOrWhiteSpace(securityProtocol)
-            && !KafkaSecurity.TryParseSecurityProtocol(securityProtocol, out protocol))
+        if (!TryParseProtocol(securityProtocol, out SecurityProtocol protocolo))
         {
-            failures.Add($"{secao}:{campos.Protocolo} '{securityProtocol}' inválido. Use PLAINTEXT, SSL, SASL_PLAINTEXT ou SASL_SSL.");
-            return failures;
+            return [ProtocoloInvalido(campos, securityProtocol)];
+        }
+        ProtocolRequirements exigencias = ProtocolRequirements.De(protocolo);
+        return
+        [
+            .. Falhas(
+                CoerenciaDoSasl(campos, AlgumPreenchido(saslMechanism, usuario, senha), exigencias),
+                CoerenciaDoSsl(campos, AlgumPreenchido(caLocation, caPem), exigencias),
+                CaAmbiguo(campos, caLocation, caPem)),
+            .. exigencias.Sasl ? FalhasDoSasl(campos, securityProtocol, saslMechanism, usuario, senha) : [],
+            .. Falhas(CaObrigatorio(campos, securityProtocol, caLocation, caPem, exigencias)),
+        ];
+    }
+
+    private static IEnumerable<string> Falhas(params string?[] falhas) => falhas.OfType<string>();
+
+    private static bool AlgumPreenchido(params string?[] valores) =>
+        valores.Any(valor => !string.IsNullOrWhiteSpace(valor));
+
+    /// <summary>Protocolo ausente vale PLAINTEXT; informado e não reconhecido não vale nenhum.</summary>
+    private static bool TryParseProtocol(string? texto, out SecurityProtocol protocolo)
+    {
+        protocolo = SecurityProtocol.Plaintext;
+        return string.IsNullOrWhiteSpace(texto) || KafkaSecurity.TryParseSecurityProtocol(texto, out protocolo);
+    }
+
+    private static string ProtocoloInvalido(KafkaSecurityFields campos, string? securityProtocol) =>
+        $"{campos.Section}:{campos.Protocolo} '{securityProtocol}' inválido. Use PLAINTEXT, SSL, SASL_PLAINTEXT ou SASL_SSL.";
+
+    // Credenciais com SecurityProtocol=PLAINTEXT fariam o cliente cair em PLAINTEXT silenciosamente: risco de segurança.
+    private static string? CoerenciaDoSasl(KafkaSecurityFields campos, bool temCampoSasl, ProtocolRequirements exigencias) =>
+        temCampoSasl && !exigencias.Sasl
+            ? $"{campos.Section}:{campos.Mecanismo}/{campos.Usuario}/{campos.Senha} exigem {campos.Protocolo}=SASL_PLAINTEXT ou SASL_SSL."
+            : null;
+
+    private static string? CoerenciaDoSsl(KafkaSecurityFields campos, bool temCampoSsl, ProtocolRequirements exigencias)
+    {
+        if (!temCampoSsl || exigencias.Ssl)
+        {
+            return null;
         }
 
-        bool requiresSasl = protocol is SecurityProtocol.SaslPlaintext or SecurityProtocol.SaslSsl;
-        bool requiresSsl = protocol is SecurityProtocol.Ssl or SecurityProtocol.SaslSsl;
+        string ca = campos.CaPem is null ? campos.CaLocation : $"{campos.CaLocation}/{campos.CaPem}";
+        return $"{campos.Section}:{ca} exigem {campos.Protocolo}=SSL ou SASL_SSL.";
+    }
 
-        // Coerência: campos SASL preenchidos exigem protocolo SASL_*; idem para SSL.
-        // Sem isso, credenciais com SecurityProtocol=PLAINTEXT fariam o cliente cair em PLAINTEXT
-        // silenciosamente — risco de segurança.
-        if (hasAnySaslField && !requiresSasl)
+    // CaLocation e CaPem são alternativas: preencher os dois é ambíguo.
+    private static string? CaAmbiguo(KafkaSecurityFields campos, string? caLocation, string? caPem) =>
+        campos.CaPem is not null && !string.IsNullOrWhiteSpace(caLocation) && !string.IsNullOrWhiteSpace(caPem)
+            ? $"{campos.Section}:{campos.CaLocation} e {campos.Section}:{campos.CaPem} são mutuamente exclusivos — preencha apenas um."
+            : null;
+
+    private static IEnumerable<string> FalhasDoSasl(
+        KafkaSecurityFields campos,
+        string? securityProtocol,
+        string? saslMechanism,
+        string? usuario,
+        string? senha) =>
+        ClassificarMecanismo(saslMechanism) switch
         {
-            failures.Add($"{secao}:{campos.Mecanismo}/{campos.Usuario}/{campos.Senha} exigem {campos.Protocolo}=SASL_PLAINTEXT ou SASL_SSL.");
+            SaslMechanismKind.Ausente => [Obrigatorio(campos, campos.Mecanismo, securityProtocol)],
+            SaslMechanismKind.Desconhecido => [$"{campos.Section}:{campos.Mecanismo} '{saslMechanism}' inválido. Use PLAIN, SCRAM-SHA-256 ou SCRAM-SHA-512."],
+            SaslMechanismKind.NaoSuportado => [$"{campos.Section}:{campos.Mecanismo} '{saslMechanism}' não é suportado pelo Uni+. Use PLAIN, SCRAM-SHA-256 ou SCRAM-SHA-512."],
+            SaslMechanismKind.UsuarioESenha => FalhasDeUsuarioESenha(campos, securityProtocol, usuario, senha),
+            _ => throw new UnreachableException(),
+        };
+
+    /// <summary>
+    /// PLAIN e SCRAM-* exigem usuário e senha. OAUTHBEARER e GSSAPI ficam fora do escopo desta camada: quem escolhe um
+    /// deles precisa estender a validação, não cair no caminho de usuário e senha em silêncio.
+    /// </summary>
+    private static SaslMechanismKind ClassificarMecanismo(string? saslMechanism)
+    {
+        if (string.IsNullOrWhiteSpace(saslMechanism))
+        {
+            return SaslMechanismKind.Ausente;
         }
 
-        if (hasAnySslField && !requiresSsl)
+        if (!KafkaSecurity.TryParseSaslMechanism(saslMechanism, out SaslMechanism mecanismo))
         {
-            string ca = campos.CaPem is null ? campos.CaLocation : $"{campos.CaLocation}/{campos.CaPem}";
-            failures.Add($"{secao}:{ca} exigem {campos.Protocolo}=SSL ou SASL_SSL.");
+            return SaslMechanismKind.Desconhecido;
         }
 
-        // CaLocation e CaPem são alternativas — preencher os dois é ambíguo.
-        if (campos.CaPem is not null
-            && !string.IsNullOrWhiteSpace(caLocation)
-            && !string.IsNullOrWhiteSpace(caPem))
+        return mecanismo is SaslMechanism.Plain or SaslMechanism.ScramSha256 or SaslMechanism.ScramSha512
+            ? SaslMechanismKind.UsuarioESenha
+            : SaslMechanismKind.NaoSuportado;
+    }
+
+    private static IEnumerable<string> FalhasDeUsuarioESenha(
+        KafkaSecurityFields campos,
+        string? securityProtocol,
+        string? usuario,
+        string? senha) =>
+        Falhas(
+            string.IsNullOrWhiteSpace(usuario) ? Obrigatorio(campos, campos.Usuario, securityProtocol) : null,
+            string.IsNullOrWhiteSpace(senha) ? Obrigatorio(campos, campos.Senha, securityProtocol) : null);
+
+    private static string Obrigatorio(KafkaSecurityFields campos, string campo, string? securityProtocol) =>
+        $"{campos.Section}:{campo} é obrigatório com {campos.Protocolo}={securityProtocol}.";
+
+    // Política Uni+ standalone (ADR-009 do uniplus-infra): o cluster usa CA self-signed, então o CA explícito é
+    // mandatório quando o transporte é SSL ou SASL_SSL.
+    private static string? CaObrigatorio(
+        KafkaSecurityFields campos,
+        string? securityProtocol,
+        string? caLocation,
+        string? caPem,
+        ProtocolRequirements exigencias)
+    {
+        if (!exigencias.Ssl || AlgumPreenchido(caLocation, caPem))
         {
-            failures.Add($"{secao}:{campos.CaLocation} e {secao}:{campos.CaPem} são mutuamente exclusivos — preencha apenas um.");
+            return null;
         }
 
-        if (requiresSasl)
-        {
-            if (string.IsNullOrWhiteSpace(saslMechanism))
-            {
-                failures.Add($"{secao}:{campos.Mecanismo} é obrigatório com {campos.Protocolo}={securityProtocol}.");
-            }
-            else if (!KafkaSecurity.TryParseSaslMechanism(saslMechanism, out SaslMechanism mechanism))
-            {
-                failures.Add($"{secao}:{campos.Mecanismo} '{saslMechanism}' inválido. Use PLAIN, SCRAM-SHA-256 ou SCRAM-SHA-512.");
-            }
-            else
-            {
-                // PLAIN e SCRAM-* exigem user+pwd. OAUTHBEARER e GSSAPI ficam fora do escopo desta camada —
-                // operador escolhendo um destes precisa estender o helper, não cair no caminho user/password
-                // silenciosamente.
-                bool requiresUserPassword = mechanism is
-                    SaslMechanism.Plain
-                    or SaslMechanism.ScramSha256
-                    or SaslMechanism.ScramSha512;
-
-                if (!requiresUserPassword)
-                {
-                    failures.Add($"{secao}:{campos.Mecanismo} '{saslMechanism}' não é suportado pelo Uni+. Use PLAIN, SCRAM-SHA-256 ou SCRAM-SHA-512.");
-                }
-                else
-                {
-                    if (string.IsNullOrWhiteSpace(usuario))
-                    {
-                        failures.Add($"{secao}:{campos.Usuario} é obrigatório com {campos.Protocolo}={securityProtocol}.");
-                    }
-
-                    if (string.IsNullOrWhiteSpace(senha))
-                    {
-                        failures.Add($"{secao}:{campos.Senha} é obrigatório com {campos.Protocolo}={securityProtocol}.");
-                    }
-                }
-            }
-        }
-
-        // Política Uni+ standalone (ADR-009 do uniplus-infra): cluster usa CA self-signed, então CA explícito é
-        // mandatório quando o transporte é SSL/SASL_SSL.
-        if (requiresSsl && string.IsNullOrWhiteSpace(caLocation) && string.IsNullOrWhiteSpace(caPem))
-        {
-            string ca = campos.CaPem is null ? campos.CaLocation : $"{campos.CaLocation} ou {secao}:{campos.CaPem}";
-            failures.Add($"{secao}:{ca} é obrigatório com {campos.Protocolo}={securityProtocol} (política Uni+: CA explícito).");
-        }
-
-        return failures;
+        string ca = campos.CaPem is null ? campos.CaLocation : $"{campos.CaLocation} ou {campos.Section}:{campos.CaPem}";
+        return $"{campos.Section}:{ca} é obrigatório com {campos.Protocolo}={securityProtocol} (política Uni+: CA explícito).";
     }
 }
