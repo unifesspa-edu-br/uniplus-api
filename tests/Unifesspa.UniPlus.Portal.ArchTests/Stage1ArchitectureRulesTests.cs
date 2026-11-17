@@ -10,9 +10,9 @@ using static ArchUnitNET.Fluent.ArchRuleDefinition;
 using ReflectionAssembly = System.Reflection.Assembly;
 
 /// <summary>
-/// Fitness tests stage 1 da Portal API, conforme ADR-023.
-/// R2 protege o encapsulamento Wolverine da ADR-0003 e R3 protege a direcao
-/// Clean Architecture definida pela ADR-002. O isolamento em relacao aos demais
+/// Testes de arquitetura da Portal API, conforme ADR-023.
+/// Protegem o encapsulamento do Wolverine, da ADR-0003, e a direcao de dependencia entre
+/// camadas, da ADR-002. O isolamento em relacao aos demais
 /// modulos (so <c>{Modulo}.Contracts</c> atravessa a fronteira) ja e coberto para
 /// todos os modulos, inclusive a Portal, por <c>CrossModuleReadIsolationTests</c>.
 /// </summary>
@@ -21,7 +21,7 @@ public sealed class Stage1ArchitectureRulesTests
     private static readonly Architecture ModuleArchitecture = LoadModuleArchitecture();
     private static readonly Architecture WolverineGuardArchitecture = LoadWolverineGuardArchitecture();
 
-    [Fact(DisplayName = "R2: Application.Abstractions, Portal.Application e Portal.Domain nao dependem de Wolverine (exceto Wolverine.Attributes)")]
+    [Fact(DisplayName = "Application.Abstractions, Portal.Application e Portal.Domain nao dependem de Wolverine (exceto Wolverine.Attributes)")]
     public void ApplicationEDomain_NaoDependemDeWolverine()
     {
         IArchRule rule = Types()
@@ -33,10 +33,10 @@ public sealed class Stage1ArchitectureRulesTests
         rule.Check(WolverineGuardArchitecture);
     }
 
-    [Fact(DisplayName = "R3: camadas da Portal respeitam a direcao Domain -> Application -> Infrastructure -> API")]
-    public void Camadas_RespeitamDirecaoDeDependencia()
+    [Fact(DisplayName = "Portal.Domain nao depende de Application, Infrastructure nem API")]
+    public void Domain_NaoDependeDeCamadasExternas()
     {
-        IArchRule domainRule = Types()
+        IArchRule regra = Types()
             .That()
             .ResideInNamespaceMatching(@"^Unifesspa\.UniPlus\.Portal\.Domain(\.|$)")
             .Should()
@@ -49,8 +49,13 @@ public sealed class Stage1ArchitectureRulesTests
             .NotDependOnAnyTypesThat()
             .ResideInNamespaceMatching(@"^Unifesspa\.UniPlus\.Portal\.API(\.|$)")
             .Because("ADR-002 define Domain como camada interna, sem dependencias para camadas externas.");
+        regra.Check(ModuleArchitecture);
+    }
 
-        IArchRule applicationRule = Types()
+    [Fact(DisplayName = "Portal.Application nao depende de Infrastructure nem API")]
+    public void Application_NaoDependeDeInfrastructureNemApi()
+    {
+        IArchRule regra = Types()
             .That()
             .ResideInNamespaceMatching(@"^Unifesspa\.UniPlus\.Portal\.Application(\.|$)")
             .Should()
@@ -60,18 +65,20 @@ public sealed class Stage1ArchitectureRulesTests
             .NotDependOnAnyTypesThat()
             .ResideInNamespaceMatching(@"^Unifesspa\.UniPlus\.Portal\.API(\.|$)")
             .Because("ADR-002 permite Application depender de Domain, mas nao de Infrastructure nem API.");
+        regra.Check(ModuleArchitecture);
+    }
 
-        IArchRule infrastructureRule = Types()
+    [Fact(DisplayName = "Portal.Infrastructure nao depende da API")]
+    public void Infrastructure_NaoDependeDaApi()
+    {
+        IArchRule regra = Types()
             .That()
             .ResideInNamespaceMatching(@"^Unifesspa\.UniPlus\.Portal\.Infrastructure(\.|$)")
             .Should()
             .NotDependOnAnyTypesThat()
             .ResideInNamespaceMatching(@"^Unifesspa\.UniPlus\.Portal\.API(\.|$)")
             .Because("ADR-002 deixa API como camada mais externa; Infrastructure nao pode depender dela.");
-
-        domainRule.Check(ModuleArchitecture);
-        applicationRule.Check(ModuleArchitecture);
-        infrastructureRule.Check(ModuleArchitecture);
+        regra.Check(ModuleArchitecture);
     }
 
     private static Architecture LoadModuleArchitecture()
