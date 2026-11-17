@@ -9,7 +9,9 @@
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <AllowMissingPrunePackageData>true</AllowMissingPrunePackageData>
-    <WarningsNotAsErrors>$(WarningsNotAsErrors);MA0051;S104;S3776;S1541;S107</WarningsNotAsErrors>
+    <!-- Módulo Verificador sem dívida de métricas: o CI barra. -->
+    <MetricasBarradas Condition="$(MSBuildProjectName.StartsWith('Unifesspa.UniPlus.Verificador'))">true</MetricasBarradas>
+    <WarningsNotAsErrors Condition="'$(MetricasBarradas)' != 'true'">$(WarningsNotAsErrors);MA0051;S104;S3776;S1541;S107</WarningsNotAsErrors>
     <ErrorLog>$(MSBuildThisFileDirectory)artifacts/analise/$(MSBuildProjectName).sarif,version=2.1</ErrorLog>
   </PropertyGroup>
 
