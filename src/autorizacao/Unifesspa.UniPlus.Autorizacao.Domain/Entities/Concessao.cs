@@ -213,6 +213,10 @@ public sealed class Concessao : EntityBase
     public bool EstaAtiva(DateTimeOffset agora) =>
         RevogadaEm is null && (ValidaAte is null || ValidaAte > agora);
 
+    /// <summary>Ativa e ainda fora da versão para a qual as concessões migram.</summary>
+    public bool PendenteDeMigrarPara(Guid versaoAlvoId, DateTimeOffset agora) =>
+        EstaAtiva(agora) && VersaoId != versaoAlvoId;
+
     /// <summary>Estava ativa no instante, mesmo que tenha sido revogada ou vencido depois dele.</summary>
     public bool EstavaAtivaEm(DateTimeOffset instante) =>
         ConcedidaEm <= instante && (RevogadaEm is null || RevogadaEm > instante) && (ValidaAte is null || ValidaAte > instante);

@@ -60,21 +60,9 @@ internal static class ConferenciasDaMigracao
     private static DomainError? ForaDaEtapa(
         JanelaDeMigracao janela, IEnumerable<Guid> concessoes, SituacaoDaMigracao esperada, DomainError semLinha)
     {
-        if (janela.LoteDaGestao is null)
-        {
-            return semLinha;
-        }
-
-        foreach (Guid concessaoId in concessoes)
-        {
-            DomainError? recusa = janela.LinhaDe(concessaoId) is { } linha ? RecusaDaLinha(linha, esperada) : semLinha;
-            if (recusa is not null)
-            {
-                return recusa;
-            }
-        }
-
-        return null;
+        return janela.LoteDaGestao is null
+            ? semLinha
+            : concessoes.Select(concessaoId => janela.LinhaDe(concessaoId) is { } linha ? RecusaDaLinha(linha, esperada) : semLinha).FirstOrDefault(static recusa => recusa is not null);
     }
 
     private static DomainError? RecusaDaLinha(MigracaoDaConcessao linha, SituacaoDaMigracao esperada) =>
