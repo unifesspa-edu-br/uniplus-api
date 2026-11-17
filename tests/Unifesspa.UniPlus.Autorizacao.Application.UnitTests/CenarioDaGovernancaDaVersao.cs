@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.UnitTests;
 
+using System.Diagnostics.CodeAnalysis;
+
 using Microsoft.Extensions.Logging.Abstractions;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
@@ -37,22 +39,24 @@ internal sealed class CenarioDaGovernancaDaVersao
         EstadoDasConcessoes situacao = estado ?? new EstadoDasConcessoes();
         Concessoes = new(situacao.TemConcessao, titulares: []);
         JanelasNaMemoria janelas = new(situacao.JanelaAberta);
-        ConcessoesNaMemoria concessoes = Concessoes;
         Perfis = new PerfisNaMemoria([perfil, .. outrosPerfis ?? []]);
         Unidade = new UnidadeDeTrabalho();
         Verificador = new VerificadorDeTeste(ator?.ContaId ?? "sem-autor", permitidas);
         OperacaoSobreOPerfil operacao = new(Perfis, Unidade, tempo);
-        AutoriaDaOperacao autoria = new(new Usuario(ator), tempo, concessoes);
+        AutoriaDaOperacao autoria = new(new Usuario(ator), tempo, Concessoes);
         ConferenciaDoCatalogoNaVersao conferencia = new(new ReclassificacoesNaMemoria(), new CatalogoDaAplicacao([]), tempo);
-        EfeitosDoDesfechoDaVersao efeitos = new(
-            new EfeitosDaTrocaDeVigencia(
-                concessoes,
-                new PedidosAtivosNaMemoria(),
-                new AvisosDoPedido(concessoes, new SemUnidade(), new LinkDeTeste(), tempo),
-                AvisoDeDevolucao(Registro),
-                JanelaDaTroca(janelas, Registro, tempo, titulares),
-                AvisosDosEfeitos(Registro, titulares),
-                tempo),
+        EfeitosDoDesfechoDaVersao efeitos = Efeitos(Concessoes, janelas, titulares, tempo, conferencia);
+        MontarCasosDeUso(operacao, autoria, efeitos, conferencia, janelas, titulares, tempo);
+    }
+
+    private EfeitosDoDesfechoDaVersao Efeitos(
+        ConcessoesNaMemoria concessoes,
+        JanelasNaMemoria janelas,
+        TitularDaPermissao[]? titulares,
+        TimeProvider tempo,
+        ConferenciaDoCatalogoNaVersao conferencia) =>
+        new(
+            EfeitosDaTroca(concessoes, janelas, titulares, tempo),
             new AvisosDaVersao(
                 new EmissorDeAvisos(Registro, DoublesDeAvisos.MetricasDeTeste, NullLogger<EmissorDeAvisos>.Instance),
                 new GruposDaGovernanca(new TitularesDeTeste(titulares ?? [])),
@@ -61,23 +65,44 @@ internal sealed class CenarioDaGovernancaDaVersao
             AvisoDeEtapaApta(Registro, titulares, tempo),
             new CatalogoDaAplicacao([]),
             conferencia);
-        Aprovacoes = new AprovacoesDaVersao(
-            operacao, new LeitorDoContextoDaVersao(Perfis, janelas, tempo), efeitos, autoria, new CatalogoDeTeste(), conferencia);
+
+    private EfeitosDaTrocaDeVigencia EfeitosDaTroca(
+        ConcessoesNaMemoria concessoes, JanelasNaMemoria janelas, TitularDaPermissao[]? titulares, TimeProvider tempo) =>
+        new(
+            concessoes,
+            JanelaDaTroca(janelas, Registro, tempo, titulares),
+            AvisosDosEfeitos(Registro, titulares),
+            new ReavaliacaoDosPedidosNaTroca(
+                new PedidosAtivosNaMemoria(), new AvisosDoPedido(concessoes, new SemUnidade(), new LinkDeTeste(), tempo), AvisoDeDevolucao(Registro), tempo),
+            tempo);
+
+    [MemberNotNull(
+        nameof(Aprovacoes), nameof(Cancelamento), nameof(Remocao), nameof(Ativacao), nameof(Contencao), nameof(Propostas), nameof(Expiracao))]
+    private void MontarCasosDeUso(
+        OperacaoSobreOPerfil operacao,
+        AutoriaDaOperacao autoria,
+        EfeitosDoDesfechoDaVersao efeitos,
+        ConferenciaDoCatalogoNaVersao conferencia,
+        JanelasNaMemoria janelas,
+        TitularDaPermissao[]? titulares,
+        TimeProvider tempo)
+    {
+        LeitorDoContextoDaVersao leitor = new(Perfis, janelas, tempo);
+        Aprovacoes = new AprovacoesDaVersao(operacao, leitor, efeitos, autoria, new CatalogoDeTeste(), conferencia);
         Cancelamento = new CancelamentoDaVersao(operacao, efeitos, autoria);
         Remocao = new RemocaoDePermissoes(operacao, efeitos, autoria, new CatalogoDeTeste());
         Ativacao = new AtivacaoDoPerfil(operacao, autoria, new CatalogoDeTeste());
-        Contencao = new ContencaoPorSuspensao(
-            operacao,
-            autoria,
-            new AvisosDaContencao(
-                new EmissorDeAvisos(Registro, DoublesDeAvisos.MetricasDeTeste, NullLogger<EmissorDeAvisos>.Instance),
-                new GruposDaGovernanca(new TitularesDeTeste(titulares ?? [])),
-                new LinkDeTeste()),
-            new CatalogoDeTeste());
+        Contencao = new ContencaoPorSuspensao(operacao, autoria, AvisosDaContencaoDe(titulares), new CatalogoDeTeste());
         Propostas = new PropostasDeVersao(
-            operacao, new LeitorDoContextoDaVersao(Perfis, janelas, tempo), efeitos, new EnvioDoDocumento(new EnvioDoPdf(Armazenamento), tempo), autoria, new CatalogoDeTeste());
+            operacao, leitor, efeitos, new EnvioDoDocumento(new EnvioDoPdf(Armazenamento), tempo), autoria, new CatalogoDeTeste());
         Expiracao = new ExpiracaoDasVersoesPendentes(Perfis, new BarramentoDeTeste(operacao), tempo, NullLogger<ExpiracaoDasVersoesPendentes>.Instance);
     }
+
+    private AvisosDaContencao AvisosDaContencaoDe(TitularDaPermissao[]? titulares) =>
+        new(
+            new EmissorDeAvisos(Registro, DoublesDeAvisos.MetricasDeTeste, NullLogger<EmissorDeAvisos>.Instance),
+            new GruposDaGovernanca(new TitularesDeTeste(titulares ?? [])),
+            new LinkDeTeste());
 
     public PerfisNaMemoria Perfis { get; }
 
@@ -110,21 +135,21 @@ internal sealed class CenarioDaGovernancaDaVersao
             new LinkDeTeste(),
             new CatalogoDaAplicacao([]));
 
-    public AprovacoesDaVersao Aprovacoes { get; }
+    public AprovacoesDaVersao Aprovacoes { get; private set; }
 
-    public CancelamentoDaVersao Cancelamento { get; }
+    public CancelamentoDaVersao Cancelamento { get; private set; }
 
-    public RemocaoDePermissoes Remocao { get; }
+    public RemocaoDePermissoes Remocao { get; private set; }
 
-    public AtivacaoDoPerfil Ativacao { get; }
+    public AtivacaoDoPerfil Ativacao { get; private set; }
 
-    public ContencaoPorSuspensao Contencao { get; }
+    public ContencaoPorSuspensao Contencao { get; private set; }
 
-    public PropostasDeVersao Propostas { get; }
+    public PropostasDeVersao Propostas { get; private set; }
 
     public Armazenamento Armazenamento { get; } = new();
 
-    public ExpiracaoDasVersoesPendentes Expiracao { get; }
+    public ExpiracaoDasVersoesPendentes Expiracao { get; private set; }
 
     /// <summary>Perfil com a versão pendente de documento já verificado: pronta para a decisão da gestão.</summary>
     public static Perfil PendenteVerificada(string[] permissoes)

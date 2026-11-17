@@ -5,14 +5,14 @@ using Unifesspa.UniPlus.Autorizacao.Application.Avisos;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
-using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 
 /// <summary>
 /// O que a entrada em vigor de uma versão faz à volta do perfil: leva as concessões da versão que saiu para a nova,
-/// quando ela não acrescenta permissão, e reavalia os pedidos ativos. Roda na transação e sob a trava do perfil de quem a
-/// chama, de modo que não há instante em que um pedido possa ser aprovado contra uma versão já encerrada.
+/// quando ela não acrescenta permissão, e reavalia os pedidos ativos (<see cref="ReavaliacaoDosPedidosNaTroca"/>). Roda na
+/// transação e com o perfil exclusivo de quem a chama, de modo que não há instante em que um pedido possa ser aprovado
+/// contra uma versão já encerrada.
 /// </summary>
 /// <remarks>
 /// A versão que acrescenta permissão deixa as concessões onde estão e abre a janela de migração: quem já tem o perfil
@@ -23,36 +23,28 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 public sealed class EfeitosDaTrocaDeVigencia
 {
     private readonly IConcessaoRepository _concessoes;
-    private readonly IPedidoDeConcessaoRepository _pedidos;
-    private readonly AvisosDoPedido _avisos;
-    private readonly AvisoDePedidoDevolvido _avisoDeDevolucao;
     private readonly EfeitosDaJanelaNaTroca _janela;
     private readonly AvisosDosEfeitosDaJanela _avisosDaVersao;
+    private readonly ReavaliacaoDosPedidosNaTroca _reavaliacao;
     private readonly TimeProvider _clock;
 
     public EfeitosDaTrocaDeVigencia(
         IConcessaoRepository concessoes,
-        IPedidoDeConcessaoRepository pedidos,
-        AvisosDoPedido avisos,
-        AvisoDePedidoDevolvido avisoDeDevolucao,
         EfeitosDaJanelaNaTroca janela,
         AvisosDosEfeitosDaJanela avisosDaVersao,
+        ReavaliacaoDosPedidosNaTroca reavaliacao,
         TimeProvider clock)
     {
         ArgumentNullException.ThrowIfNull(concessoes);
-        ArgumentNullException.ThrowIfNull(pedidos);
-        ArgumentNullException.ThrowIfNull(avisos);
-        ArgumentNullException.ThrowIfNull(avisoDeDevolucao);
         ArgumentNullException.ThrowIfNull(janela);
         ArgumentNullException.ThrowIfNull(avisosDaVersao);
+        ArgumentNullException.ThrowIfNull(reavaliacao);
         ArgumentNullException.ThrowIfNull(clock);
 
         _concessoes = concessoes;
-        _pedidos = pedidos;
-        _avisos = avisos;
-        _avisoDeDevolucao = avisoDeDevolucao;
         _janela = janela;
         _avisosDaVersao = avisosDaVersao;
+        _reavaliacao = reavaliacao;
         _clock = clock;
     }
 
@@ -73,25 +65,39 @@ public sealed class EfeitosDaTrocaDeVigencia
 
         JanelaAposAMaterializacao materializada = await _janela.MaterializarSeVencidaAsync(perfil, cancellationToken).ConfigureAwait(false);
         IReadOnlyList<EnviarEmail> daTroca = await ConcessoesDaTrocaAsync(perfil, troca, materializada.Aberta, autor, cancellationToken).ConfigureAwait(false);
-        IReadOnlyList<EnviarEmail> dosPedidos = await ReavaliarPedidosAsync(perfil, troca, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<EnviarEmail> dosPedidos = await _reavaliacao.ReavaliarAsync(perfil, troca, cancellationToken).ConfigureAwait(false);
 
         return [.. materializada.Avisos, .. daTroca, .. dosPedidos];
     }
 
-    // A versão com acréscimo abre a janela; a que não acrescenta leva as concessões da que saiu para a nova e, dentro de
-    // uma janela, faz da nova o destino das migrações. A versão anterior encerra com a troca quando não há janela dela.
+    /// <summary>
+    /// Escolhe o efeito pela regra da troca: a versão com acréscimo abre a janela, e a que não acrescenta leva as
+    /// concessões. A versão anterior encerra com a troca quando não há janela dela.
+    /// </summary>
     private async Task<IReadOnlyList<EnviarEmail>> ConcessoesDaTrocaAsync(
+        Perfil perfil, TrocaDeVigencia troca, JanelaDeMigracao? aberta, Identidade autor, CancellationToken cancellationToken) =>
+        troca.TemAcrescimo
+            ? await ComAcrescimoAsync(perfil, troca, autor, cancellationToken).ConfigureAwait(false)
+            : await SemAcrescimoAsync(perfil, troca, aberta, autor, cancellationToken).ConfigureAwait(false);
+
+    /// <summary>A versão com acréscimo abre a janela; sem concessão a migrar, a versão anterior encerra com a troca.</summary>
+    private async Task<IReadOnlyList<EnviarEmail>> ComAcrescimoAsync(
+        Perfil perfil, TrocaDeVigencia troca, Identidade autor, CancellationToken cancellationToken)
+    {
+        AberturaDaJanela abertura = await _janela.AbrirAsync(perfil, troca, _clock.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+
+        return abertura.Abriu
+            ? abertura.Avisos
+            : await EncerrarAVersaoAsync(perfil, troca, FormaDoAviso.SemConcessaoAMigrar, autor, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// A versão sem acréscimo leva as concessões da que saiu para a nova e, dentro de uma janela, faz da nova o destino das
+    /// migrações; sem janela, a versão anterior encerra com a troca.
+    /// </summary>
+    private async Task<IReadOnlyList<EnviarEmail>> SemAcrescimoAsync(
         Perfil perfil, TrocaDeVigencia troca, JanelaDeMigracao? aberta, Identidade autor, CancellationToken cancellationToken)
     {
-        if (troca.TemAcrescimo)
-        {
-            AberturaDaJanela abertura = await _janela.AbrirAsync(perfil, troca, _clock.GetUtcNow(), cancellationToken).ConfigureAwait(false);
-
-            return abertura.Abriu
-                ? abertura.Avisos
-                : await EncerrarAVersaoAsync(perfil, troca, FormaDoAviso.SemConcessaoAMigrar, autor, cancellationToken).ConfigureAwait(false);
-        }
-
         await MigrarConcessoesAsync(perfil.Id, troca.Anterior!, troca.Nova, cancellationToken).ConfigureAwait(false);
         if (aberta is not null)
         {
@@ -119,49 +125,4 @@ public sealed class EfeitosDaTrocaDeVigencia
             concessao.MigrarParaVersao(anterior, nova);
         }
     }
-
-    private async Task<IReadOnlyList<EnviarEmail>> ReavaliarPedidosAsync(
-        Perfil perfil, TrocaDeVigencia troca, CancellationToken cancellationToken)
-    {
-        IReadOnlyList<PedidoDeConcessao> ativos = await _pedidos
-            .ListarAtivosDoPerfilParaAlterarAsync(perfil.Id, cancellationToken)
-            .ConfigureAwait(false);
-        DateTimeOffset instante = _clock.GetUtcNow();
-        List<EnviarEmail> mensagens = [];
-
-        foreach (PedidoDeConcessao pedido in ativos)
-        {
-            mensagens.AddRange(await TransitarAsync(pedido, perfil.Nome, troca, instante, cancellationToken).ConfigureAwait(false));
-        }
-
-        return mensagens;
-    }
-
-    private async Task<IReadOnlyList<EnviarEmail>> TransitarAsync(
-        PedidoDeConcessao pedido,
-        string perfilNome,
-        TrocaDeVigencia troca,
-        DateTimeOffset instante,
-        CancellationToken cancellationToken)
-    {
-        SituacaoDoPedido situacaoAnterior = pedido.Andamento.Situacao;
-        DesfechoDaTrocaDeVersao desfecho = pedido.AoEntrarEmVigor(troca, instante);
-
-        return await AvisarAsync(pedido, perfilNome, situacaoAnterior, troca, desfecho, cancellationToken).ConfigureAwait(false);
-    }
-
-    // Só o pedido devolvido e o que volta ao gestor mudam de mãos; o que apenas troca de versão segue sem aviso.
-    private async Task<IReadOnlyList<EnviarEmail>> AvisarAsync(
-        PedidoDeConcessao pedido,
-        string perfilNome,
-        SituacaoDoPedido situacaoAnterior,
-        TrocaDeVigencia troca,
-        DesfechoDaTrocaDeVersao desfecho,
-        CancellationToken cancellationToken) =>
-        desfecho switch
-        {
-            DesfechoDaTrocaDeVersao.Devolvido => await _avisoDeDevolucao.AvisarAsync(pedido, perfilNome, troca.Nova, cancellationToken).ConfigureAwait(false),
-            DesfechoDaTrocaDeVersao.VoltouAoGestor => await _avisos.AvisarAsync(pedido, perfilNome, situacaoAnterior, cancellationToken).ConfigureAwait(false),
-            _ => [],
-        };
 }

@@ -143,11 +143,13 @@ public sealed class EfeitosDaTrocaDeVigenciaTests
         Concessao[]? concessoes = null, PedidoDeConcessao[]? pedidos = null, TitularComEmail[]? titulares = null) =>
         new(
             new ConcessoesNaMemoria(paraMigrar: concessoes ?? [], titulares: titulares ?? []),
-            new PedidosAtivosNaMemoria(pedidos ?? []),
-            new AvisosDoPedido(new ConcessoesNaMemoria(titulares: titulares ?? []), new SemUnidade(), new LinkDeTeste(), TimeProvider.System),
-            CenarioDaGovernancaDaVersao.AvisoDeDevolucao(new CenarioDaGovernancaDaVersao.RegistroDeAvisosNaMemoria()),
             CenarioDaGovernancaDaVersao.JanelaDaTroca(new JanelasNaMemoria(), new CenarioDaGovernancaDaVersao.RegistroDeAvisosNaMemoria(), TimeProvider.System),
             CenarioDaGovernancaDaVersao.AvisosDosEfeitos(new CenarioDaGovernancaDaVersao.RegistroDeAvisosNaMemoria()),
+            new ReavaliacaoDosPedidosNaTroca(
+                new PedidosAtivosNaMemoria(pedidos ?? []),
+                new AvisosDoPedido(new ConcessoesNaMemoria(titulares: titulares ?? []), new SemUnidade(), new LinkDeTeste(), TimeProvider.System),
+                CenarioDaGovernancaDaVersao.AvisoDeDevolucao(new CenarioDaGovernancaDaVersao.RegistroDeAvisosNaMemoria()),
+                TimeProvider.System),
             TimeProvider.System);
 
     private static Perfil PerfilNaVersao1(params string[] permissoes) =>

@@ -61,6 +61,7 @@ public static class AutorizacaoApplicationServiceRegistration
     {
         services.AddScoped<AvisosDoPedido>();
         services.AddScoped<AvisoDePedidoDevolvido>();
+        services.AddScoped<ReavaliacaoDosPedidosNaTroca>();
         services.AddScoped<AvisoDeDevolucaoPorTermoExigido>();
         services.AddScoped<ConferenciaDoNovoPedido>();
         services.AddScoped<FixacaoDoTermo>();
