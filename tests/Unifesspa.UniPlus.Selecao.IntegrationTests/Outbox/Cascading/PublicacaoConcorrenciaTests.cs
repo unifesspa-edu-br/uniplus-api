@@ -56,7 +56,7 @@ public sealed class PublicacaoConcorrenciaTests
         {
             UniPlusDbContext seedDb = seedScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
-                .SemearAsync(seedDb, $"Concorrência {Guid.CreateVersion7()}");
+                .SemearAsync(seedDb, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"Concorrência {Guid.CreateVersion7()}" });
             processoId = processo.Id;
             documentoId = documento.Id;
         }

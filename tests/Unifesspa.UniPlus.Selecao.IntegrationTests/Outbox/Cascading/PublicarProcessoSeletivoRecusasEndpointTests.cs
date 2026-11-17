@@ -63,7 +63,7 @@ public sealed class PublicarProcessoSeletivoRecusasEndpointTests
         try
         {
             (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
-                .SemearAsync(db, nameof(Publicar_QuandoSoObrigatoriedadeLegalReprovada_Retorna422SemPendencias));
+                .SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = nameof(Publicar_QuandoSoObrigatoriedadeLegalReprovada_Retorna422SemPendencias) });
 
             HttpResponseMessage response = await PostPublicarAsync(client, processo.Id, documento.Id, MakeIdempotencyKey());
 

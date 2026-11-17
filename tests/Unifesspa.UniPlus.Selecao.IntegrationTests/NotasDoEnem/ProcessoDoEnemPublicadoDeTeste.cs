@@ -53,11 +53,7 @@ internal static class ProcessoDoEnemPublicadoDeTeste
         await using (AsyncServiceScope scope = fixture.Factory.Services.CreateAsyncScope())
         {
             UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-            (processo, documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
-                db,
-                $"PS Medicina notas do ENEM {Guid.CreateVersion7()}",
-                complementar: p => etapaDoEnem = ConfigurarEnem(p, ofertaTecnologica, ofertaHumanistica),
-                fimDasInscricoes: fimDasInscricoes);
+            (processo, documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"PS Medicina notas do ENEM {Guid.CreateVersion7()}", Complementar = p => etapaDoEnem = ConfigurarEnem(p, ofertaTecnologica, ofertaHumanistica), FimDasInscricoes = fimDasInscricoes });
         }
 
         using HttpClient client = fixture.Factory.CreateClient();

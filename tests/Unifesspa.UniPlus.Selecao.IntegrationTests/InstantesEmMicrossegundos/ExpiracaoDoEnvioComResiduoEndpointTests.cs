@@ -75,8 +75,7 @@ public sealed class ExpiracaoDoEnvioComResiduoEndpointTests
     {
         await using AsyncServiceScope escopo = Fabrica.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
-            db, $"Instantes em microssegundos {Guid.CreateVersion7()}");
+        (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"Instantes em microssegundos {Guid.CreateVersion7()}" });
         return processo.Id;
     }
 

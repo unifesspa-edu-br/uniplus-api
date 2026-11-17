@@ -80,10 +80,10 @@ public sealed class LinkDoModeloNoCertamePublicadoE2ETests(AcervoPublicoE2EFixtu
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         ModeloDeDocumento? modelo = null;
 
-        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
-            db,
-            $"PS com modelo no acervo {Guid.CreateVersion7()}",
-            complementar: processo =>
+        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel
+        {
+            Nome = $"PS com modelo no acervo {Guid.CreateVersion7()}",
+            Complementar = processo =>
             {
                 modelo = ModeloDeDocumento.IniciarPendente(
                     processo.Id, "Autodeclaração étnico-racial", "ODT", TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
@@ -109,7 +109,8 @@ public sealed class LinkDoModeloNoCertamePublicadoE2ETests(AcervoPublicoE2EFixtu
                     finalidade: FinalidadeFormulario.Inscricao).Value!;
                 processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!])
                     .IsSuccess.Should().BeTrue();
-            });
+            }
+        });
 
         IArquivoArmazenadoStorage storage = scope.ServiceProvider.GetRequiredService<IArquivoArmazenadoStorage>();
         await storage.SalvarConteudoSeladoAsync(modelo!.ObjectKeyConfirmado!, conteudo, modelo.ContentType);

@@ -31,7 +31,7 @@ internal static class ProcessoComFaseQueSaiDeTeste
         await using AsyncServiceScope escopo = services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, DocumentoAPublicar documento) =
-            await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, nome, complementar: AcrescentarAFaseQueSai);
+            await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = nome, Complementar = AcrescentarAFaseQueSai });
         await db.Database.ExecuteSqlAsync(
             $"UPDATE selecao.fases_cronograma SET fase_canonica_origem_id = {inscricao}, codigo = {CodigoDaFaseQueFica}, agrupa_etapas = FALSE WHERE processo_seletivo_id = {processo.Id} AND codigo <> {CodigoDaFaseQueSai}");
 

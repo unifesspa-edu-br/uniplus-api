@@ -107,8 +107,7 @@ public sealed class MinimoDeIntegrantesNaPublicacaoEndpointTests
             regra.Codigo == codigoDaRegra && regra.Versao == RegraCatalogoSeed.VersaoV1)).Referencia();
         ReferenciaRegra consolidacao = hashDaReferencia is null ? doRol : ReferenciaRegra.De(doRol.Codigo, doRol.Versao, hashDaReferencia);
 
-        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
-            db, $"{cenario} {Guid.CreateVersion7()}", complementar: p => ComBancaDeRecursosNaEtapa(p, consolidacao, integrantes));
+        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"{cenario} {Guid.CreateVersion7()}", Complementar = p => ComBancaDeRecursosNaEtapa(p, consolidacao, integrantes) });
 
         return await PublicacaoPeloEndpointDeTeste.PublicarAsync(client, processo.Id, documento.Id);
     }

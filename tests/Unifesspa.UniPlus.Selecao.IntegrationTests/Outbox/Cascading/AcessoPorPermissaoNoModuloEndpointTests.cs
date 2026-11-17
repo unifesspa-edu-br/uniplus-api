@@ -162,7 +162,7 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, $"Acesso por permissão {Guid.CreateVersion7()}");
+        (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"Acesso por permissão {Guid.CreateVersion7()}" });
         Guid unidade = await db.ProcessosSeletivos.AsNoTracking()
             .Where(p => p.Id == processo.Id).Select(p => p.UnidadeAdministradoraOrigemId).SingleAsync();
         return (processo.Id, unidade);

@@ -159,8 +159,7 @@ public sealed class AplicarModelosPsrMedicina2027Tests
             SementePsrMedicina2027.TipoProcessoId, SementePsrMedicina2027.TipoProcessoCodigo, "Processo Seletivo Regular Unificado").Value!;
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
-            db, $"Medicina 2027 {Guid.CreateVersion7()}", complementar: p => ComBonusRegionalEAtendimento(p, ofertarAtendimento), tipo: psr);
+        (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"Medicina 2027 {Guid.CreateVersion7()}", Complementar = p => ComBonusRegionalEAtendimento(p, ofertarAtendimento), Tipo = psr });
         return processo.Id;
     }
 

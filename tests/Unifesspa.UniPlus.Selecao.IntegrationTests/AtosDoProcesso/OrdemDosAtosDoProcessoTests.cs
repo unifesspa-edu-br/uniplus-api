@@ -30,8 +30,7 @@ public sealed class OrdemDosAtosDoProcessoTests : IClassFixture<InscricaoDbFixtu
     public async Task MesmoInstante_ListaTrazPrimeiroOUltimoRegistrado()
     {
         await using UniPlusDbContext db = _fixture.CreateDbContext();
-        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
-            db, $"Ordem dos atos {Guid.CreateVersion7()}");
+        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"Ordem dos atos {Guid.CreateVersion7()}" });
         (Guid idMenor, Guid idMaior) = PorIdentificador(Guid.CreateVersion7(), Guid.CreateVersion7());
         await RegistrarAsync(db, Aviso(idMaior, processo.Id, documento.Id));
         await RegistrarAsync(db, Aviso(idMenor, processo.Id, documento.Id));

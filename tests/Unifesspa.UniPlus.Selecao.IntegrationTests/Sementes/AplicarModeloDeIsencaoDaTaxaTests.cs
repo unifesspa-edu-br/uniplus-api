@@ -65,11 +65,11 @@ public sealed class AplicarModeloDeIsencaoDaTaxaTests
     {
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
-            db,
-            $"Processo que cobra taxa {Guid.CreateVersion7()}",
-            coletaSolicitacaoIsencao: true,
-            complementar: static p =>
+        (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel
+        {
+            Nome = $"Processo que cobra taxa {Guid.CreateVersion7()}",
+            ColetaSolicitacaoIsencao = true,
+            Complementar = static p =>
             {
                 ConfiguracaoTaxaInscricao taxa = ConfiguracaoTaxaInscricao.Criar(
                     cobra: true, valor: 100m, fundamentosCodigos: [FundamentoIsencaoCodigo.CarenciaSocioeconomica]).Value!;
@@ -85,7 +85,8 @@ public sealed class AplicarModeloDeIsencaoDaTaxaTests
                         TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
                 ]);
                 itens.IsSuccess.Should().BeTrue(itens.Error?.Message);
-            });
+            }
+        });
         return processo.Id;
     }
 

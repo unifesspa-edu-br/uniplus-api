@@ -49,36 +49,69 @@ internal static class ProcessoSeletivoPublicavelSeeder
         new PublicacoesDaFase(Produtos: produtosDaFase ?? [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null, TiposDeDecisao: TiposDeDecisaoDaFaseUnica),
         bancasRequeridas: []).Value!;
 
-    /// <param name="coletaSolicitacaoIsencao">
-    /// Se a fase única também abre o pedido de isenção, dividindo a fase entre a inscrição e a isenção.
-    /// </param>
-    /// <param name="complementar">Configuração a mais do cenário, aplicada antes de gravar.</param>
-    /// <param name="tipo">O tipo do processo; sem ele, SiSU.</param>
-    /// <param name="produtosDaFase">O que a fase única declara publicar; sem isso, o resultado definitivo da classificação.</param>
-    /// <param name="unidadeResponsavel">A unidade que responde pela fase única; sem ela, o CEPS de teste.</param>
-    /// <param name="fimDasInscricoes">O fim do período de inscrição da fase única; sem ele, 31/01/2026.</param>
     public static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearAsync(
-        UniPlusDbContext db,
-        string nome,
-        bool coletaSolicitacaoIsencao = false,
-        Action<ProcessoSeletivo>? complementar = null,
-        TipoProcessoSnapshot? tipo = null,
-        IReadOnlyList<ProdutoDaFase>? produtosDaFase = null,
-        UnidadeResponsavelSnapshot? unidadeResponsavel = null,
-        DateTimeOffset? fimDasInscricoes = null)
+        UniPlusDbContext db, OpcoesDoProcessoSeletivoPublicavel opcoes)
     {
         ArgumentNullException.ThrowIfNull(db);
-        ArgumentException.ThrowIfNullOrWhiteSpace(nome);
+        ArgumentNullException.ThrowIfNull(opcoes);
+        ValidarNome(opcoes.Nome);
+        ProcessoSeletivo processo = CriarProcesso(db, opcoes);
+        DefinirAtendimentoEspecializado(processo);
+        DefinirDistribuicaoDeVagas(processo);
+        DefinirClassificacao(processo);
+        DefinirCronograma(processo, opcoes);
+        DefinirTaxaEDeclaracoes(processo);
+        opcoes.Complementar?.Invoke(processo);
+        DocumentoAPublicar documento = CriarDocumentoConfirmado(processo);
+        await PersistirProcessoEDocumentoAsync(db, processo, documento);
+        return (processo, documento);
+    }
 
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(nome, tipo ?? TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+    private static async Task PersistirProcessoEDocumentoAsync(
+        UniPlusDbContext db, ProcessoSeletivo processo, DocumentoAPublicar documento)
+    {
+        await db.ProcessosSeletivos.AddAsync(processo);
+        await db.DocumentosAPublicar.AddAsync(documento);
+        await db.SaveChangesAsync();
+        processo.DequeueDomainEvents();
+    }
 
+    private static void ValidarNome(string nome) => ArgumentException.ThrowIfNullOrWhiteSpace(nome);
+
+    private static ProcessoSeletivo CriarProcesso(UniPlusDbContext db, OpcoesDoProcessoSeletivoPublicavel opcoes)
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar(opcoes.Nome, opcoes.Tipo ?? TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+
+        if (opcoes.ProcessoSeletivoId.HasValue)
+        {
+            db.Entry(processo).Property(p => p.Id).CurrentValue = opcoes.ProcessoSeletivoId.Value;
+        }
+
+        return processo;
+    }
+
+    private static void DefinirAtendimentoEspecializado(ProcessoSeletivo processo)
+    {
         Result atendimentoResult = processo.DefinirAtendimentoEspecializado(
             AtendimentoEspecializado.Criar([], [], []).Value!);
         atendimentoResult.IsSuccess.Should().BeTrue(atendimentoResult.Error?.Message);
+    }
 
+    private static void DefinirDistribuicaoDeVagas(ProcessoSeletivo processo)
+    {
         ReferenciaRegra regraDistribuicao = ReferenciaRegra.De(
             RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo);
-        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
+        ModalidadeSelecionada modalidade = CriarModalidadeDeAmplaConcorrencia();
+        Result<ConfiguracaoDistribuicaoVagas> distribuicaoResult = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = regraDistribuicao, Modalidades = [modalidade] },
+            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina });
+        distribuicaoResult.IsSuccess.Should().BeTrue(distribuicaoResult.Error?.Message);
+        Result distribuicaoDefinirResult = processo.DefinirDistribuicaoVagas([distribuicaoResult.Value!], FatosDeModalidadeDeTeste.DoCatalogo);
+        distribuicaoDefinirResult.IsSuccess.Should().BeTrue(distribuicaoDefinirResult.Error?.Message);
+    }
+
+    private static ModalidadeSelecionada CriarModalidadeDeAmplaConcorrencia() =>
+        ModalidadeSelecionada.Criar(
             modalidadeOrigemId: Guid.CreateVersion7(),
             codigo: "AC",
             descricao: "Ampla concorrência",
@@ -93,13 +126,9 @@ internal static class ProcessoSeletivoPublicavelSeeder
             acaoQuandoIndeferido: null,
             baseLegal: "Res. Unifesspa 532/2021",
             quantidadeDeclarada: 40).Value!;
-        Result<ConfiguracaoDistribuicaoVagas> distribuicaoResult = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = regraDistribuicao, Modalidades = [modalidade] },
-            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina });
-        distribuicaoResult.IsSuccess.Should().BeTrue(distribuicaoResult.Error?.Message);
-        Result distribuicaoDefinirResult = processo.DefinirDistribuicaoVagas([distribuicaoResult.Value!], FatosDeModalidadeDeTeste.DoCatalogo);
-        distribuicaoDefinirResult.IsSuccess.Should().BeTrue(distribuicaoDefinirResult.Error?.Message);
 
+    private static void DefinirClassificacao(ProcessoSeletivo processo)
+    {
         ReferenciaRegra regraCalculo = ReferenciaRegra.De(
             RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo);
         ReferenciaRegra regraOrdemAlocacao = ReferenciaRegra.De(
@@ -112,43 +141,54 @@ internal static class ProcessoSeletivoPublicavelSeeder
         classificacaoResult.IsSuccess.Should().BeTrue(classificacaoResult.Error?.Message);
         Result classificacaoDefinirResult = processo.DefinirClassificacao(classificacaoResult.Value!);
         classificacaoDefinirResult.IsSuccess.Should().BeTrue(classificacaoDefinirResult.Error?.Message);
+    }
 
-        FaseCronograma faseConforme = FaseDeResultadoFinal(coletaSolicitacaoIsencao, fimDasInscricoes, unidadeResponsavel, produtosDaFase);
+    private static void DefinirCronograma(ProcessoSeletivo processo, OpcoesDoProcessoSeletivoPublicavel opcoes)
+    {
+        FaseCronograma faseConforme = FaseDeResultadoFinal(opcoes.ColetaSolicitacaoIsencao, opcoes.FimDasInscricoes, opcoes.UnidadeResponsavel, opcoes.ProdutosDaFase);
         Result cronogramaResult = processo.DefinirCronogramaFases([faseConforme], []);
+        DefinirEtapas(processo);
+        cronogramaResult.IsSuccess.Should().BeTrue(cronogramaResult.Error?.Message);
+        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
+    }
+
+    private static void DefinirEtapas(ProcessoSeletivo processo)
+    {
         Result etapasResult = processo.DefinirEtapas([
             EtapaProcesso.Criar(
                 new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
         ]);
         etapasResult.IsSuccess.Should().BeTrue(etapasResult.Error?.Message);
-        cronogramaResult.IsSuccess.Should().BeTrue(cronogramaResult.Error?.Message);
-        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
+    }
 
-        // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01) — o seeder
-        // declara explicitamente "não cobra" para continuar representando um processo publicável.
+    private static void DefinirTaxaEDeclaracoes(ProcessoSeletivo processo)
+    {
         Result<ConfiguracaoTaxaInscricao> taxaResult = ConfiguracaoTaxaInscricao.Criar(
             cobra: false, valor: null, fundamentosCodigos: null);
         taxaResult.IsSuccess.Should().BeTrue(taxaResult.Error?.Message);
         Result taxaDefinirResult = processo.DefinirTaxaInscricao(taxaResult.Value!);
         taxaDefinirResult.IsSuccess.Should().BeTrue(taxaDefinirResult.Error?.Message);
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
+    }
 
-        complementar?.Invoke(processo);
-
-        await db.ProcessosSeletivos.AddAsync(processo);
-
+    private static DocumentoAPublicar CriarDocumentoConfirmado(ProcessoSeletivo processo)
+    {
         DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         Result confirmarResult = documento.Confirmar(1024, HashFixo, TimeProvider.System);
         confirmarResult.IsSuccess.Should().BeTrue(confirmarResult.Error?.Message);
-        await db.DocumentosAPublicar.AddAsync(documento);
-
-        await db.SaveChangesAsync();
-
-        // A seed bypassa o handler produtivo — drena eventos residuais (não
-        // deveria haver nenhum, já que Criar/Definir* não emitem, mas evita
-        // vazamento silencioso se essa invariante mudar no futuro).
-        processo.DequeueDomainEvents();
-
-        return (processo, documento);
+        return documento;
     }
+}
+
+internal sealed record OpcoesDoProcessoSeletivoPublicavel
+{
+    public required string Nome { get; init; }
+    public bool ColetaSolicitacaoIsencao { get; init; }
+    public Action<ProcessoSeletivo>? Complementar { get; init; }
+    public TipoProcessoSnapshot? Tipo { get; init; }
+    public IReadOnlyList<ProdutoDaFase>? ProdutosDaFase { get; init; }
+    public UnidadeResponsavelSnapshot? UnidadeResponsavel { get; init; }
+    public DateTimeOffset? FimDasInscricoes { get; init; }
+    public Guid? ProcessoSeletivoId { get; init; }
 }

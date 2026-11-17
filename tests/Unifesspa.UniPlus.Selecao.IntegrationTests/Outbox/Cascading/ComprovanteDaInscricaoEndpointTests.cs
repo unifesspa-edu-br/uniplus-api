@@ -102,7 +102,7 @@ public sealed class ComprovanteDaInscricaoEndpointTests
     {
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, $"Comprovante {Guid.CreateVersion7()}");
+        (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"Comprovante {Guid.CreateVersion7()}" });
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         bool cancelada = situacao == SituacaoInscricao.Cancelada;
         Inscricao inscricao = Inscricao.Reidratar(

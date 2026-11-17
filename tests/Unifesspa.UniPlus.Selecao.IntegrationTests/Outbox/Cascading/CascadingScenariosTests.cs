@@ -35,129 +35,98 @@ public sealed class CascadingScenariosTests
         _fixture = fixture;
     }
 
-    // V8 — caminho feliz: cascading entrega ProcessoPublicadoEvent ao handler
-    // local da queue PG após Publicar+SaveChanges. Atomicidade write+evento
-    // verificada indiretamente: se a transação não tivesse drenado o envelope
-    // junto do SaveChanges, o listener da queue PG não receberia o evento.
     [Fact(DisplayName =
         "V8 — cascading entrega ProcessoPublicadoEvent ao handler local PG após Publicar+SaveChanges")]
     public async Task V8_Cascading_EntregaEvento_AposPublicarViaCommand()
     {
         CascadingApiFactory api = _fixture.Factory;
-
         await TiposDeAtoSeeder.SemearAsync(api.Services);
-
-        using HttpClient _ = api.CreateClient();
-
-        DomainEventCollector collector = api.Services.GetRequiredService<DomainEventCollector>();
-        collector.Clear();
-
-        Guid processoId;
-        Guid documentoId;
-        await using (AsyncServiceScope seedScope = api.Services.CreateAsyncScope())
-        {
-            UniPlusDbContext seedDb = seedScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-            (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
-                .SemearAsync(seedDb, $"V8 cascading {Guid.CreateVersion7()}");
-            processoId = processo.Id;
-            documentoId = documento.Id;
-        }
-
-        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        IMessageBus bus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
-        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-
-        var command = new PublicarProcessoSeletivoCommand(
-            processoId,
-            Numero: null,
-            // O processo do cenário tem fase que coleta inscrição: o período vem dela (#1350).
-            PeriodoInscricaoInicio: null,
-            PeriodoInscricaoFim: null,
-            DocumentoEditalId: documentoId,
-            Ato: DadosDoAtoDeTeste.Padrao);
-
-        await bus.InvokeAsync(command);
-
-        ProcessoPublicadoEvent? evento = await EsperarEventoAsync(collector, processoId, TimeSpan.FromSeconds(15));
-
-        evento.Should().NotBeNull(
-            "cascading messages do handler devem ser persistidas pelo PersistOrSendAsync na transação ativa e entregues pelo listener da queue PG");
+        using HttpClient cliente = api.CreateClient();
+        DomainEventCollector coletor = api.Services.GetRequiredService<DomainEventCollector>();
+        coletor.Clear();
+        (Guid processoId, Guid documentoId) = await PrepararProcessoPublicavelAsync(api);
+        await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
+        await PublicarProcessoAsync(escopo, processoId, documentoId);
+        ProcessoPublicadoEvent? evento = await EsperarEventoAsync(coletor, processoId, TimeSpan.FromSeconds(15));
+        evento.Should().NotBeNull("cascading messages devem ser persistidas e entregues pelo listener da queue PG");
         evento!.ProcessoSeletivoId.Should().Be(processoId);
         evento.EditalId.Should().NotBeEmpty();
-
-        // EditalId é o nome histórico do membro (contrato do envelope durável e do schema
-        // Avro); o VALOR é o id do ato criador, e é por ele que a versão o referencia — por
-        // valor, sem FK (ADR-0061). O ato em si vive em Publicações e chega lá pela fila.
-        bool persistido = await db.VersoesConfiguracao.AsNoTracking()
-            .AnyAsync(v => v.AtoCriadorId == evento.EditalId);
-        persistido.Should().BeTrue();
+        await VerificarVersaoDaPublicacaoAsync(escopo, evento.EditalId);
     }
 
-    // V9 — rollback: exceção pós-SaveChanges deve eliminar entidade e
-    // envelope. O retorno cascading sequer chega a ser executado (throw
-    // antes do return); a IEnvelopeTransaction faz o rollback no catch.
     [Fact(DisplayName =
         "V9 — rollback cascading: exceção pós-SaveChanges deixa entidade ausente e envelope sem registro")]
     public async Task V9_RollbackCascading_DeixaEntidadeEEnvelopeAusentes()
     {
         CascadingApiFactory api = _fixture.Factory;
-
         await TiposDeAtoSeeder.SemearAsync(api.Services);
-
-        using HttpClient _ = api.CreateClient();
-
-        DomainEventCollector collector = api.Services.GetRequiredService<DomainEventCollector>();
-        collector.Clear();
-
-        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        IMessageBus bus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
-        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-
+        using HttpClient cliente = api.CreateClient();
+        DomainEventCollector coletor = api.Services.GetRequiredService<DomainEventCollector>();
+        await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
         string nomeProcesso = $"V9 cascading rollback {Guid.CreateVersion7()}";
-        var command = new FalharAposPublicarCascadingCommand(nomeProcesso);
-
-        Func<Task> act = () => bus.InvokeAsync(command);
-
-        await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage(FalharAposPublicarCascadingHandler.MensagemErro);
-
-        bool entidadePersistida = await db.ProcessosSeletivos.AsNoTracking()
-            .AnyAsync(p => p.Nome == nomeProcesso);
-        entidadePersistida.Should().BeFalse(
-            "rollback da transação Wolverine + EF deve eliminar o INSERT do processo (e do edital/snapshot dependentes) — "
-            + "sem a transação ambiente, o SaveChanges já teria committado independente do throw seguinte");
-
-        // O throw acontece ANTES do `return (Result, IEnumerable<object>)` —
-        // CaptureCascadingMessages só roda em retorno normal do handler, então
-        // nenhum envelope chega a ser criado para este ProcessoPublicadoEvent
-        // por construção (não é preciso consultar wolverine_outgoing_envelopes:
-        // não há caminho de código que o escreva neste cenário). A prova
-        // observável de "nada vazou" é o coletor permanecer vazio.
+        Guid processoId = Guid.CreateVersion7();
+        await PublicarComFalhaAsync(escopo, nomeProcesso, processoId);
+        await VerificarProcessoAusenteAsync(escopo, nomeProcesso);
         await Task.Delay(TimeSpan.FromSeconds(3));
-        collector.Snapshot().Should().BeEmpty(
-            "sem cascading emitido pelo handler que lançou exceção, o subscritor nunca é acionado");
+        coletor.Snapshot().Where(e => e.ProcessoSeletivoId == processoId).Should().BeEmpty(
+            "o rollback impede que eventos deste processo sejam entregues ao coletor");
+    }
+
+    private static async Task<(Guid ProcessoId, Guid DocumentoId)> PrepararProcessoPublicavelAsync(CascadingApiFactory api)
+    {
+        await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
+            db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"V8 cascading {Guid.CreateVersion7()}" });
+        return (processo.Id, documento.Id);
+    }
+
+    private static async Task PublicarProcessoAsync(AsyncServiceScope escopo, Guid processoId, Guid documentoId)
+    {
+        IMessageBus bus = escopo.ServiceProvider.GetRequiredService<IMessageBus>();
+        var comando = new PublicarProcessoSeletivoCommand(
+            processoId, Numero: null, PeriodoInscricaoInicio: null, PeriodoInscricaoFim: null,
+            DocumentoEditalId: documentoId, Ato: DadosDoAtoDeTeste.Padrao);
+        await bus.InvokeAsync(comando);
+    }
+
+    private static async Task VerificarVersaoDaPublicacaoAsync(AsyncServiceScope escopo, Guid atoCriadorId)
+    {
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        bool persistido = await db.VersoesConfiguracao.AsNoTracking().AnyAsync(v => v.AtoCriadorId == atoCriadorId);
+        persistido.Should().BeTrue();
+    }
+
+    private static async Task PublicarComFalhaAsync(AsyncServiceScope escopo, string nomeProcesso, Guid processoId)
+    {
+        IMessageBus bus = escopo.ServiceProvider.GetRequiredService<IMessageBus>();
+        var comando = new FalharAposPublicarCascadingCommand(nomeProcesso, processoId);
+        Func<Task> acao = () => bus.InvokeAsync(comando);
+        await acao.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage(FalharAposPublicarCascadingHandler.MensagemErro);
+    }
+
+    private static async Task VerificarProcessoAusenteAsync(AsyncServiceScope escopo, string nomeProcesso)
+    {
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        bool persistido = await db.ProcessosSeletivos.AsNoTracking().AnyAsync(p => p.Nome == nomeProcesso);
+        persistido.Should().BeFalse("o rollback da transação deve eliminar o processo e suas entidades dependentes");
     }
 
     internal static async Task<ProcessoPublicadoEvent?> EsperarEventoAsync(
-        DomainEventCollector collector,
-        Guid processoSeletivoIdEsperado,
-        TimeSpan timeout)
+        DomainEventCollector collector, Guid processoSeletivoIdEsperado, TimeSpan timeout)
     {
-        DateTimeOffset deadline = DateTimeOffset.UtcNow + timeout;
-
-        while (DateTimeOffset.UtcNow < deadline)
+        DateTimeOffset limite = DateTimeOffset.UtcNow + timeout;
+        while (DateTimeOffset.UtcNow < limite)
         {
-            ProcessoPublicadoEvent? candidato = collector.Snapshot()
+            ProcessoPublicadoEvent? evento = collector.Snapshot()
                 .FirstOrDefault(e => e.ProcessoSeletivoId == processoSeletivoIdEsperado);
-
-            if (candidato is not null)
+            if (evento is not null)
             {
-                return candidato;
+                return evento;
             }
-
             await Task.Delay(TimeSpan.FromMilliseconds(150));
         }
-
         return null;
     }
 }

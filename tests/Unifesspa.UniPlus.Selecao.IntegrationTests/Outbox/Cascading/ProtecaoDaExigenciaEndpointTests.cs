@@ -212,7 +212,7 @@ public sealed class ProtecaoDaExigenciaEndpointTests
         {
             UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
-                .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}");
+                .SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"{nome} {Guid.CreateVersion7()}" });
             processoId = processo.Id;
             documentoId = documento.Id;
             faseId = processo.CronogramaFases.Single().Id;

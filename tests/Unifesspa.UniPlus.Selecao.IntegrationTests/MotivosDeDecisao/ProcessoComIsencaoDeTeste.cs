@@ -28,8 +28,7 @@ internal static class ProcessoComIsencaoDeTeste
     {
         await using AsyncServiceScope escopo = services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
-            db, $"{nome} {Guid.CreateVersion7()}", complementar: processo => Habilitar(processo, tiposDeDecisao ?? [TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa]));
+        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"{nome} {Guid.CreateVersion7()}", Complementar = processo => Habilitar(processo, tiposDeDecisao ?? [TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa]) });
 
         return (processo.Id, documento.Id);
     }

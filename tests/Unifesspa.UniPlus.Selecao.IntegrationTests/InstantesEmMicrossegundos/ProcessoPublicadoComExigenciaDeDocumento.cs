@@ -59,11 +59,7 @@ internal static class ProcessoPublicadoComExigenciaDeDocumento
         await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         Guid exigenciaId = Guid.Empty;
-        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
-            db,
-            $"PS com exigência de documento {Guid.CreateVersion7()}",
-            complementar: processo => exigenciaId = ExigirDocumento(processo),
-            fimDasInscricoes: new DateTimeOffset(2099, 12, 31, 0, 0, 0, TimeSpan.Zero));
+        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"PS com exigência de documento {Guid.CreateVersion7()}", Complementar = processo => exigenciaId = ExigirDocumento(processo), FimDasInscricoes = new DateTimeOffset(2099, 12, 31, 0, 0, 0, TimeSpan.Zero) });
         return (processo.Id, documento.Id, exigenciaId);
     }
 
