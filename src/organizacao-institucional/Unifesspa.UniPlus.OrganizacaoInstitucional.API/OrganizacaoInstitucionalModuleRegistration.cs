@@ -16,9 +16,13 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure;
 
 /// <summary>
 /// Registro self-describing do módulo OrganizacaoInstitucional para o composition
-/// root do monólito modular. Reúne tudo que é específico do módulo —
-/// OpenAPI doc, registro de erros de domínio, builders HATEOAS, permissões,
-/// Application e Infrastructure.
+/// root do monólito modular. Reúne tudo que é específico do módulo: o documento
+/// OpenAPI 3.1 (ADR-0030), publicado em <c>/openapi/organizacao.json</c>; os erros de
+/// domínio, consumidos por <c>AddDomainErrorMapper</c>, que o host registra uma vez via
+/// <c>IEnumerable&lt;IDomainErrorRegistration&gt;</c>; os builders HATEOAS; as permissões (ADR-0151), cujo enum entra no catálogo da
+/// aplicação e é conferido na subida; e
+/// Application e Infrastructure, que registram validators, repositórios, readers
+/// cross-módulo (ADR-0056) e cache invalidators.
 ///
 /// O que é compartilhado entre módulos (Serilog, auth, CORS, cache, storage,
 /// observabilidade, middleware, AddControllers, AddDomainErrorMapper, criptografia,
@@ -39,26 +43,20 @@ public static class OrganizacaoInstitucionalModuleRegistration
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
-        // OpenAPI 3.1 (ADR-0030) — documento nomeado por módulo. Spec em /openapi/organizacao.json.
         services.AddUniPlusOpenApi(OrganizacaoApiAssemblyMarker.ModuleName, configuration);
-
-        // Erros de domínio do módulo (consumidos por AddDomainErrorMapper, registrado
-        // uma vez no host via IEnumerable<IDomainErrorRegistration>).
         services.AddSingleton<IDomainErrorRegistration, OrganizacaoDomainErrorRegistration>();
-
-        // HATEOAS Level 1 (ADR-0029/0049) — builders de _links.
-        services.AddSingleton<IResourceLinksBuilder<UnidadeDto>, UnidadeLinksBuilder>();
-        services.AddSingleton<IResourceLinksBuilder<InstituicaoDto>, InstituicaoLinksBuilder>();
-
-        // Permissões do módulo (ADR-0151): o enum entra no catálogo da aplicação e é
-        // conferido na subida.
+        AddHateoas(services);
         services.AddCatalogoDePermissoes<PermissaoOrganizacao>();
-
-        // Application + Infrastructure — registram validators, repositórios,
-        // readers cross-módulo (ADR-0056) e cache invalidators.
         services.AddOrganizacaoInstitucionalApplication();
         services.AddOrganizacaoInstitucionalInfrastructure();
 
         return services;
+    }
+
+    /// <summary>Os builders de <c>_links</c> (HATEOAS Level 1, ADR-0029/0049) dos recursos do módulo.</summary>
+    private static void AddHateoas(IServiceCollection services)
+    {
+        services.AddSingleton<IResourceLinksBuilder<UnidadeDto>, UnidadeLinksBuilder>();
+        services.AddSingleton<IResourceLinksBuilder<InstituicaoDto>, InstituicaoLinksBuilder>();
     }
 }
