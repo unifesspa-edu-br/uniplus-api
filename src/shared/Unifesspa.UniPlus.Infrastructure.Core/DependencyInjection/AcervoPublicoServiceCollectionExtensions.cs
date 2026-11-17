@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
 using Storage;
 
@@ -26,22 +27,26 @@ public static class AcervoPublicoServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(configuration);
         ArgumentNullException.ThrowIfNull(environment);
 
-        services.AddOptions<AcervoPublicoOptions>()
-            .Bind(configuration.GetSection(AcervoPublicoOptions.SectionName))
-            .Validate(
-                options => environment.IsDevelopment() || !string.IsNullOrWhiteSpace(options.Bucket),
-                "AcervoPublico:Bucket must be configured outside Development.")
-            .Validate(
-                options => environment.IsDevelopment() || !string.IsNullOrWhiteSpace(options.EnderecoBase),
-                "AcervoPublico:EnderecoBase must be configured outside Development — it is the edge address every published document link is built on.")
-            .Validate(
-                options => string.IsNullOrWhiteSpace(options.EnderecoBase)
-                    || EhEnderecoBaseValido(options.EnderecoBase, exigeHttps: !environment.IsDevelopment()),
-                "AcervoPublico:EnderecoBase must be an absolute https URI without query or fragment (http is accepted only in Development).")
-            .ValidateOnStart();
+        OptionsBuilder<AcervoPublicoOptions> options = services.AddOptions<AcervoPublicoOptions>()
+            .Bind(configuration.GetSection(AcervoPublicoOptions.SectionName));
+        ExigirAcervoConfiguradoForaDoDesenvolvimento(options, environment).ValidateOnStart();
 
         return services;
     }
+
+    private static OptionsBuilder<AcervoPublicoOptions> ExigirAcervoConfiguradoForaDoDesenvolvimento(
+        OptionsBuilder<AcervoPublicoOptions> options, IHostEnvironment environment) =>
+        options
+            .Validate(
+                valores => environment.IsDevelopment() || !string.IsNullOrWhiteSpace(valores.Bucket),
+                "AcervoPublico:Bucket must be configured outside Development.")
+            .Validate(
+                valores => environment.IsDevelopment() || !string.IsNullOrWhiteSpace(valores.EnderecoBase),
+                "AcervoPublico:EnderecoBase must be configured outside Development — it is the edge address every published document link is built on.")
+            .Validate(
+                valores => string.IsNullOrWhiteSpace(valores.EnderecoBase)
+                    || EhEnderecoBaseValido(valores.EnderecoBase, exigeHttps: !environment.IsDevelopment()),
+                "AcervoPublico:EnderecoBase must be an absolute https URI without query or fragment (http is accepted only in Development).");
 
     private static bool EhEnderecoBaseValido(string enderecoBase, bool exigeHttps) =>
         Uri.TryCreate(enderecoBase, UriKind.Absolute, out Uri? endereco)
