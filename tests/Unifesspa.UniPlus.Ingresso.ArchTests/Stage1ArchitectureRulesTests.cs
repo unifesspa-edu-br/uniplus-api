@@ -47,10 +47,10 @@ public sealed class Stage1ArchitectureRulesTests
         rule.Check(WolverineGuardArchitecture);
     }
 
-    [Fact(DisplayName = "R3: camadas do modulo Ingresso respeitam a direcao Domain -> Infrastructure -> API")]
-    public void Camadas_RespeitamDirecaoDeDependencia()
+    [Fact(DisplayName = "R3a: Domain do Ingresso nao depende de Infrastructure nem de API")]
+    public void Domain_NaoDependeDeInfraestruturaNemDaApi()
     {
-        IArchRule domainRule = Types()
+        IArchRule rule = Types()
             .That()
             .ResideInNamespaceMatching(@"^Unifesspa\.UniPlus\.Ingresso\.Domain(\.|$)")
             .Should()
@@ -61,7 +61,13 @@ public sealed class Stage1ArchitectureRulesTests
             .ResideInNamespaceMatching(@"^Unifesspa\.UniPlus\.Ingresso\.API(\.|$)")
             .Because("ADR-002 define Domain como camada interna, sem dependencias para camadas externas.");
 
-        IArchRule infrastructureRule = Types()
+        rule.Check(ModuleArchitecture);
+    }
+
+    [Fact(DisplayName = "R3b: Infrastructure do Ingresso nao depende de API")]
+    public void Infraestrutura_NaoDependeDaApi()
+    {
+        IArchRule rule = Types()
             .That()
             .ResideInNamespaceMatching(@"^Unifesspa\.UniPlus\.Ingresso\.Infrastructure(\.|$)")
             .Should()
@@ -69,8 +75,7 @@ public sealed class Stage1ArchitectureRulesTests
             .ResideInNamespaceMatching(@"^Unifesspa\.UniPlus\.Ingresso\.API(\.|$)")
             .Because("ADR-002 deixa API como camada mais externa; Infrastructure nao pode depender dela.");
 
-        domainRule.Check(ModuleArchitecture);
-        infrastructureRule.Check(ModuleArchitecture);
+        rule.Check(ModuleArchitecture);
     }
 
     private static Architecture LoadModuleArchitecture()
