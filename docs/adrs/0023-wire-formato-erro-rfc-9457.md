@@ -50,11 +50,11 @@ Toda resposta 4xx ou 5xx é emitida com `Content-Type: application/problem+json`
 Extensions obrigatórias em toda resposta de erro:
 
 - **`code`** (string) — identificador estável da causa, regex `^[a-z]+(\.[a-z_]+)+$`, namespace `uniplus.<modulo>.<razao>` (ex.: `uniplus.edital.nao_encontrado`, `uniplus.cpf.invalido`). É a chave primária de troubleshooting, observabilidade e do catálogo público.
-- **`traceId`** (string) — `trace-id` do W3C trace context (32 caracteres hex). Mesmo valor presente no header `traceparent` da response. Permite cruzar erro com span no Tempo/Grafana.
+- **`traceId`** (string) — `trace-id` do W3C trace context (32 caracteres hex). É o `trace-id` do contexto W3C da requisição (o mesmo do header `traceparent` que a API recebeu ou iniciou); a API não escreve `traceparent` na resposta, porque o corpo já entrega o valor. Sem atividade de tracing corrente, o valor é gerado só para correlação com o log e não corresponde a span. Permite cruzar erro com span no Tempo/Grafana.
 
 Extensions condicionais:
 
-- **`errors`** (array) — presente apenas em erros de validação (status 422). Cada elemento contém `field` (caminho dot-notation, ex.: `inscricao.candidato.cpf`), `code` (próprio do nível de campo, mesma taxonomia do `code` raiz) e `message` (pt-BR genérica). **Nunca** carrega `value` ou qualquer reflexo do dado rejeitado.
+- **`errors`** (array) — presente sempre que a violação é atribuível a campo, em qualquer status 4xx; ausente quando a violação não tem campo. Cada elemento contém `field` (caminho dot-notation, ex.: `inscricao.candidato.cpf`), `code` (próprio do nível de campo, mesma taxonomia do `code` raiz) e `message` (pt-BR genérica). **Nunca** carrega `value` ou qualquer reflexo do dado rejeitado.
 - **`legal_reference`** (objeto) — presente quando o erro decorre de regra normativa rastreável. Campos: `norma_id` (ex.: `lei-14.723-2023`), `artigo` (ex.: `art.5,§2`), `clausula_edital` (ex.: `edital-2026-1.cap-3.item-7`), `edital_snapshot_id` (referência ao snapshot congelado dos parâmetros do edital). Todos os subcampos são opcionais entre si — basta um para a extension fazer sentido.
 
 Extensions adicionais não definidas aqui são proibidas em V1 sem ADR de extensão. Extensions que carregam dado pessoal são proibidas por princípio (umbrella, princípio 3).
@@ -68,6 +68,8 @@ Extensions adicionais não definidas aqui são proibidas em V1 sem ADR de extens
 - Como `DomainError` (Application/Domain) é convertido em ProblemDetails — decisão na [ADR-0024](0024-mapeamento-domain-error-http.md).
 - Como a versão do recurso entra no `Content-Type` em respostas de sucesso — decisão na [ADR-0028](0028-versionamento-per-resource-content-negotiation.md). Respostas de erro permanecem em `application/problem+json` independente da versão do recurso.
 - Como a estrutura de catálogo público em `/erros/{code}` é construída — decisão na ADR-0001 do `uniplus-developers`.
+
+> **Emenda (2026-11-17) — a base do `type` é a do portal publicado.** O `type` aponta para a página do catálogo em `https://unifesspa-edu-br.github.io/uniplus-developers/erros/{code}`, o endereço em que o portal está no ar, configurado em `ProblemType:BaseUri` e conferido pelos testes de integração contra a constante do contrato. A URN provisória `urn:uniplus:problem:{code}` acabou: o portal está implantado e a `uniplus-api` não a emite. Se a instituição passar a publicar o catálogo sob o domínio institucional, muda a configuração e o portal juntos, e a constante do contrato nos testes acompanha.
 
 ## Consequências
 
