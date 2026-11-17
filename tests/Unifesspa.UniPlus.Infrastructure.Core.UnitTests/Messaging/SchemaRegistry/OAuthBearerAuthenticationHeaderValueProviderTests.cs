@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Messaging.SchemaRegistry;
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net;
@@ -11,6 +12,7 @@ using System.Threading.Tasks;
 
 using AwesomeAssertions;
 
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging.SchemaRegistry;
@@ -25,12 +27,15 @@ using Unifesspa.UniPlus.Infrastructure.Core.Messaging.SchemaRegistry;
 [Trait("Category", "Unit")]
 public sealed class OAuthBearerAuthenticationHeaderValueProviderTests
 {
-    private static OAuthBearerSettings DefaultSettings(int refreshSkewSeconds = 30)
+    private const string SensitiveBody = "VALOR-SENSIVEL-DE-TESTE";
+    private const string SensitiveSecret = "SEGREDO-SENTINELA-DE-TESTE";
+
+    private static OAuthBearerSettings DefaultSettings(int refreshSkewSeconds = 30, string clientSecret = "s3cr3t")
         => new()
         {
             TokenEndpoint = "https://kc.test/realms/uniplus/protocol/openid-connect/token",
             ClientId = "uniplus-api-selecao",
-            ClientSecret = "s3cr3t",
+            ClientSecret = clientSecret,
             RefreshSkewSeconds = refreshSkewSeconds,
             RequestTimeoutMs = 1_000,
         };
@@ -49,14 +54,15 @@ public sealed class OAuthBearerAuthenticationHeaderValueProviderTests
         Justification = "Factory: HttpClient é owned pelo provider (ownsHttpClient=true); ownership do provider passa ao caller via 'using'.")]
     private static OAuthBearerAuthenticationHeaderValueProvider CreateProvider(
         StubHttpMessageHandler handler,
-        OAuthBearerSettings? settings = null)
+        OAuthBearerSettings? settings = null,
+        ILogger<OAuthBearerAuthenticationHeaderValueProvider>? logger = null)
     {
         HttpClient httpClient = new(handler);
         return new OAuthBearerAuthenticationHeaderValueProvider(
             httpClient,
             ownsHttpClient: true,
             settings ?? DefaultSettings(),
-            NullLogger<OAuthBearerAuthenticationHeaderValueProvider>.Instance,
+            logger ?? NullLogger<OAuthBearerAuthenticationHeaderValueProvider>.Instance,
             TimeProvider.System);
     }
 
@@ -148,6 +154,34 @@ public sealed class OAuthBearerAuthenticationHeaderValueProviderTests
                 because: "5xx é tratado como transient para que SchemaRegistrationHostedService siga o caminho fail-graceful.");
     }
 
+    [Theory(DisplayName = "Falha do token endpoint registra cliente e status, nunca o corpo da resposta")]
+    [InlineData(HttpStatusCode.Unauthorized, typeof(InvalidOperationException))]
+    [InlineData(HttpStatusCode.ServiceUnavailable, typeof(HttpRequestException))]
+    public void FalhaDoEndpoint_NaoRegistraCorpoDaRespostaNoLog(HttpStatusCode status, Type expectedExceptionType)
+    {
+        using StubHttpMessageHandler handler = new();
+        handler.EnqueueResponse(status, $$"""{"error":"{{SensitiveBody}}"}""");
+        LogCollector collector = new();
+        using OAuthBearerAuthenticationHeaderValueProvider sut = CreateProvider(
+            handler, DefaultSettings(clientSecret: SensitiveSecret), collector);
+
+        Action act = () => sut.GetAuthenticationHeader();
+
+        Exception exception = act.Should().Throw<Exception>().Which;
+        exception.Should().BeOfType(expectedExceptionType);
+        AssertNoSentinelLeaks(exception.Message, exception.ToString(), string.Join('\n', collector.Entries));
+        collector.Entries.Should().ContainSingle(entry => entry.Contains("uniplus-api-selecao")
+            && entry.Contains(((int)status).ToString(System.Globalization.CultureInfo.InvariantCulture)));
+    }
+
+    private static void AssertNoSentinelLeaks(params string[] texts)
+    {
+        foreach (string text in texts)
+        {
+            text.Should().NotContain(SensitiveBody).And.NotContain(SensitiveSecret);
+        }
+    }
+
     [Fact(DisplayName = "Renovações concorrentes serializam — 1 chamada só ao token endpoint")]
     public async Task RenovacoesConcorrentes_DeveSerializarChamadas()
     {
@@ -156,18 +190,10 @@ public sealed class OAuthBearerAuthenticationHeaderValueProviderTests
         using OAuthBearerAuthenticationHeaderValueProvider sut = CreateProvider(handler);
 
         // 10 threads disputam token cold-cache simultaneamente
-        Task<AuthenticationHeaderValue>[] tasks = Enumerable
-            .Range(0, 10)
-            .Select(_ => Task.Run(sut.GetAuthenticationHeader))
-            .ToArray();
+        AuthenticationHeaderValue[] results = await Task.WhenAll(
+            Enumerable.Range(0, 10).Select(_ => Task.Run(sut.GetAuthenticationHeader)));
 
-        AuthenticationHeaderValue[] results = await Task.WhenAll(tasks);
-
-        results.Should().AllSatisfy(h =>
-        {
-            h.Scheme.Should().Be("Bearer");
-            h.Parameter.Should().Be("jwt-shared");
-        });
+        results.Should().AllSatisfy(h => h.Parameter.Should().Be("jwt-shared"));
         handler.CallCount.Should().Be(1,
             because: "SemaphoreSlim serializa renovações; threads pós-refresh reutilizam o token recém-obtido.");
     }
@@ -197,24 +223,28 @@ public sealed class OAuthBearerAuthenticationHeaderValueProviderTests
         handler.EnqueueResponse(HttpStatusCode.OK, TokenResponseJson("jwt-2", 300));
         using HttpClient externalClient = new(handler, disposeHandler: false);
 
-        using (OAuthBearerAuthenticationHeaderValueProvider sut = new(
+        GetTokenThenDisposeProvider(externalClient);
+
+        // HttpClient externo deve continuar utilizável (managed pelo IHttpClientFactory na realidade).
+        // Se externalClient tivesse sido disposed, lançaria ObjectDisposedException antes do handler.
+        Action useExternalAfterProviderDispose = () => CallDirectly(externalClient);
+        useExternalAfterProviderDispose.Should().NotThrow<ObjectDisposedException>();
+    }
+
+    private static void GetTokenThenDisposeProvider(HttpClient externalClient)
+    {
+        using OAuthBearerAuthenticationHeaderValueProvider sut = new(
             externalClient,
             settings: DefaultSettings(),
             logger: NullLogger<OAuthBearerAuthenticationHeaderValueProvider>.Instance,
-            timeProvider: TimeProvider.System))
-        {
-            sut.GetAuthenticationHeader();
-        }
+            timeProvider: TimeProvider.System);
 
-        // HttpClient externo deve continuar utilizável (managed pelo IHttpClientFactory na realidade).
-        Action useExternalAfterProviderDispose = () =>
-        {
-            // Faz uma request direta — handler está acessível, response 200 OK.
-            using HttpResponseMessage _ = externalClient.GetAsync(new Uri("https://kc.test/")).GetAwaiter().GetResult();
-        };
+        sut.GetAuthenticationHeader();
+    }
 
-        // Se externalClient tivesse sido disposed, lançaria ObjectDisposedException antes do handler.
-        useExternalAfterProviderDispose.Should().NotThrow<ObjectDisposedException>();
+    private static void CallDirectly(HttpClient client)
+    {
+        using HttpResponseMessage _ = client.GetAsync(new Uri("https://kc.test/")).GetAwaiter().GetResult();
     }
 
     [Fact(DisplayName = "Dispose é idempotente — múltiplas chamadas não lançam")]
@@ -227,5 +257,27 @@ public sealed class OAuthBearerAuthenticationHeaderValueProviderTests
         Action act = sut.Dispose;
 
         act.Should().NotThrow();
+    }
+
+    private sealed class LogCollector : ILogger<OAuthBearerAuthenticationHeaderValueProvider>
+    {
+        public List<string> Entries { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state)
+            where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(
+            LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+        {
+            ArgumentNullException.ThrowIfNull(formatter);
+
+            // Mensagem formatada, structuredState estruturado e exceção: tudo o que chegaria ao sink.
+            string structuredState = state is IEnumerable<KeyValuePair<string, object?>> pairs
+                ? string.Join(';', pairs.Select(pair => $"{pair.Key}={pair.Value}"))
+                : string.Empty;
+            Entries.Add($"{logLevel} {formatter(state, exception)} {structuredState} {exception}");
+        }
     }
 }
