@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -242,27 +243,36 @@ public sealed class AlterarDefinicaoDoFatoCandidatoCommandHandlerTests
 
     private static List<FatoCandidato> Catalogo(string pontoDoMembro = "INSCRICAO")
     {
-        FatoCandidato certificado = Declarado("CERTIFICADO");
         FatoCandidato renda = Declarado("RENDA");
-        FatoCandidato optou = Declarado("OPTOU");
-        FatoCandidato opcaoPelasCotas = Declarado(OpcaoPelasCotasDaLei.Fato);
         FatoCandidato membro = Declarado("CATEGORIA_RENDA", DominioFato.Categorico, FonteValoresFato.Global, EscopoFato.MembroGrupo, pontoDoMembro);
+        List<FatoCandidato> fatos =
+        [
+            Declarado("CERTIFICADO"), renda, Declarado("OPTOU"), Declarado(OpcaoPelasCotasDaLei.Fato), membro,
+            PerfilDerivadoDe(renda), AgregadoDeCategoriasDe(membro),
+        ];
+        fatos.ForEach(FixarIdentidade);
+
+        return fatos;
+    }
+
+    private static FatoCandidato PerfilDerivadoDe(FatoCandidato renda)
+    {
         FatoCandidato perfil = CriacaoDoFato.CriarDerivadoDoAdministrador(
             "PERFIL", "PERFIL", "Descrição do fato.", DominioFato.Booleano, "INSCRICAO", EscopoFato.Candidato,
             ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
-        FatoCandidato agregado = CriacaoDoFato.CriarAgregadoDoAdministrador(
+        perfil.DefinirRegrasPadrao([RegraBooleana("RENDA")], new CatalogoDeFatos([renda, perfil], [])).IsSuccess.Should().BeTrue();
+        return perfil;
+    }
+
+    private static FatoCandidato AgregadoDeCategoriasDe(FatoCandidato membro) =>
+        CriacaoDoFato.CriarAgregadoDoAdministrador(
             "CATEGORIAS_RENDA", "CATEGORIAS_RENDA", "Descrição do fato.", "CATEGORIA_RENDA", new CatalogoDeFatos([membro], []), "INSCRICAO",
             ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
-        perfil.DefinirRegrasPadrao([RegraBooleana("RENDA")], new CatalogoDeFatos([renda, perfil], [])).IsSuccess.Should().BeTrue();
 
-        List<FatoCandidato> fatos = [certificado, renda, optou, opcaoPelasCotas, membro, perfil, agregado];
-        foreach (FatoCandidato fato in fatos)
-        {
-            // A identidade é a mesma em todas as leituras; EntityBase só a atribui na criação.
-            typeof(EntityBase).GetProperty(nameof(EntityBase.Id))!.SetValue(fato, Ids.TryGetValue(fato.Codigo, out Guid id) ? id : Ids[fato.Codigo] = fato.Id);
-        }
-
-        return fatos;
+    private static void FixarIdentidade(FatoCandidato fato)
+    {
+        // A identidade é a mesma em todas as leituras; EntityBase só a atribui na criação.
+        typeof(EntityBase).GetProperty(nameof(EntityBase.Id))!.SetValue(fato, Ids.TryGetValue(fato.Codigo, out Guid id) ? id : Ids[fato.Codigo] = fato.Id);
     }
 
     private static FatoCandidato Declarado(
@@ -298,30 +308,32 @@ public sealed class AlterarDefinicaoDoFatoCandidatoCommandHandlerTests
             (0, CondicaoDnf.Criar(primeiro, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!),
             (0, CondicaoDnf.Criar(segundo, Operador.Igual, JsonSerializer.SerializeToElement("x")).Value!),
         ]).Value!;
-        EtapaDoModelo secao = new("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null, null);
-        EtapaDoModelo revisao = new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null);
         ItemDoModelo[] itens =
         [
-            new(primeiro, 0, "DADOS", primeiro, TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false),
-            new(segundo, 1, "DADOS", segundo, TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false),
-            new("CERTIFICADO", 2, "DADOS", "Certificado", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, precondicao, [], false),
+            ItemBooleano(primeiro, 0),
+            ItemBooleano(segundo, 1),
+            ItemBooleano("CERTIFICADO", 2, "Certificado", precondicao),
         ];
-        ModeloFormulario modelo = ModeloFormulario.Criar(
-            "HABILITACAO_MEDICINA", "Habilitação Medicina", null, FinalidadeFormulario.Habilitacao, null,
-            new ConteudoDoModelo("Habilitação", [secao, revisao], itens, [], [], []),
-            new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)).Value!;
-        modelo.Ativar();
-        return modelo;
+
+        return ModeloHabilitacao(new ConteudoDoModelo("Habilitação", EtapasDoModelo(), itens, [], [], []), ativo: true);
     }
 
-    private static ModeloFormulario ModeloComCertificado(bool ativo = true)
+    private static ModeloFormulario ModeloComCertificado(bool ativo = true) =>
+        ModeloHabilitacao(new ConteudoDoModelo("Habilitação", EtapasDoModelo(), [ItemBooleano("CERTIFICADO", 0, "Certificado")], [], [], []), ativo);
+
+    private static EtapaDoModelo[] EtapasDoModelo() =>
+    [
+        new("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null, null),
+        new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null),
+    ];
+
+    private static ItemDoModelo ItemBooleano(string fato, int ordem, string? rotulo = null, PredicadoDnf? precondicao = null) =>
+        new(fato, ordem, "DADOS", rotulo ?? fato, TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, precondicao, [], false);
+
+    private static ModeloFormulario ModeloHabilitacao(ConteudoDoModelo conteudo, bool ativo)
     {
-        EtapaDoModelo secao = new("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null, null);
-        EtapaDoModelo revisao = new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null);
-        ItemDoModelo item = new("CERTIFICADO", 0, "DADOS", "Certificado", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false);
         ModeloFormulario modelo = ModeloFormulario.Criar(
-            "HABILITACAO_MEDICINA", "Habilitação Medicina", null, FinalidadeFormulario.Habilitacao, null,
-            new ConteudoDoModelo("Habilitação", [secao, revisao], [item], [], [], []),
+            "HABILITACAO_MEDICINA", "Habilitação Medicina", null, FinalidadeFormulario.Habilitacao, null, conteudo,
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)).Value!;
         if (ativo)
         {

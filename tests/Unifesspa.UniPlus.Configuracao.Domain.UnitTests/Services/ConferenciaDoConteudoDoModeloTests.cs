@@ -1,0 +1,238 @@
+namespace Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Services;
+
+using AwesomeAssertions;
+
+using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Configuracao.Domain.Services;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Errors;
+using Unifesspa.UniPlus.Regras.Formularios;
+
+using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport.ConteudosDoModeloDeTeste;
+
+/// <summary>
+/// A forma do conteúdo do modelo, parte a parte, e o acúmulo das recusas na ordem das regras. As regras
+/// de forma em si são as de <c>Unifesspa.UniPlus.Regras</c>; aqui vale que cada uma é aplicada à parte
+/// certa do conteúdo e que a recusa aponta o campo dentro dele.
+/// </summary>
+public sealed class ConferenciaDoConteudoDoModeloTests
+{
+    private static readonly Dictionary<string, IReadOnlyCollection<string>> SemDerivacoes = new(StringComparer.Ordinal);
+
+    private static readonly EtapaDoModelo Revisao = new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null);
+
+    private static ConteudoDoModelo Conteudo(params ItemDoModelo[] itens) => new("Habilitação", [Etapa(), Revisao], itens, [], [], []);
+
+    private static List<FieldError> Conferir(ConteudoDoModelo conteudo, FinalidadeFormulario finalidade = FinalidadeFormulario.Habilitacao) =>
+        ConferenciaDoConteudoDoModelo.Conferir(finalidade, conteudo, SemDerivacoes);
+
+    private static string[] Campos(IEnumerable<FieldError> erros) => [.. erros.Select(static e => e.Field ?? "(sem campo)")];
+
+    private static string[] Codigos(IEnumerable<FieldError> erros) => [.. erros.Select(static e => e.Error.Code)];
+
+    [Fact(DisplayName = "As recusas do conteúdo: sem campo segue sem campo, a raiz relativa é o conteúdo e o campo é filho dele")]
+    public void NoConteudo_PrefixaSoOQueTemCaminho()
+    {
+        DomainError erro = new("Modelo.Recusado", "O conteúdo foi recusado.");
+
+        IEnumerable<FieldError> recusas = ConferenciaDoConteudoDoModelo.NoConteudo(
+            [new FieldError(null, erro), new FieldError(string.Empty, erro), new FieldError("itens[0]", erro)]);
+
+        recusas.Select(static recusa => recusa.Field).Should().Equal(null, "conteudo", "conteudo.itens[0]");
+    }
+
+    [Fact(DisplayName = "O conteúdo bem formado não tem recusa")]
+    public void ConteudoBemFormado_NaoRecusa() =>
+        Conferir(Conteudo(Item("CERTIFICADO"))).Should().BeEmpty();
+
+    [Fact(DisplayName = "O conteúdo e as derivações são obrigatórios")]
+    public void ConteudoOuDerivacoesNulos_Lanca()
+    {
+        Action semConteudo = () => ConferenciaDoConteudoDoModelo.Conferir(FinalidadeFormulario.Habilitacao, null!, SemDerivacoes);
+        Action semDerivacoes = () => ConferenciaDoConteudoDoModelo.Conferir(FinalidadeFormulario.Habilitacao, Conteudo(), null!);
+
+        semConteudo.Should().Throw<ArgumentNullException>();
+        semDerivacoes.Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact(DisplayName = "O texto que o banco não grava é recusado no campo dele, com o código de texto não gravável")]
+    public void TextoNaoGravavel_RecusaNoCampo()
+    {
+        List<FieldError> erros = Conferir(Conteudo(Item("CERTIFICADO")) with { Titulo = "Habilitação\0" });
+
+        erros.Should().ContainSingle().Which.Should().BeEquivalentTo(new
+        {
+            Field = "conteudo.titulo",
+            Error = new { Code = ModeloFormularioErrorCodes.TextoNaoGravavel },
+        });
+    }
+
+    [Theory(DisplayName = "O título cabe no limite do cabeçalho: no limite passa, acima dele é recusado")]
+    [InlineData(FormaDoCabecalho.TituloMaxLength, false)]
+    [InlineData(FormaDoCabecalho.TituloMaxLength + 1, true)]
+    public void Titulo_ConferidoContraOLimite(int tamanho, bool recusado)
+    {
+        List<FieldError> erros = Conferir(Conteudo(Item("CERTIFICADO")) with { Titulo = new string('T', tamanho) });
+
+        Codigos(erros).Should().Equal(recusado ? [EstruturaFormularioErrorCodes.TituloTamanho] : []);
+        Campos(erros).Should().Equal(recusado ? ["conteudo.titulo"] : []);
+    }
+
+    [Fact(DisplayName = "A forma de cada etapa é recusada no índice dela")]
+    public void Etapa_RecusaNoIndice()
+    {
+        ConteudoDoModelo conteudo = Conteudo(Item("CERTIFICADO")) with { Etapas = [Etapa(), Revisao with { Titulo = " " }] };
+
+        List<FieldError> erros = Conferir(conteudo);
+
+        Campos(erros).Should().Equal("conteudo.etapas[1].titulo");
+        Codigos(erros).Should().Equal(EstruturaFormularioErrorCodes.EtapaTituloInvalido);
+    }
+
+    [Fact(DisplayName = "A forma de cada item é recusada no índice dele")]
+    public void Item_RecusaNoIndice()
+    {
+        List<FieldError> erros = Conferir(Conteudo(Item("CERTIFICADO"), Item("LAUDO", 1) with { Rotulo = string.Empty }));
+
+        Campos(erros).Should().Equal("conteudo.itens[1].rotulo");
+        Codigos(erros).Should().Equal(ItemFormularioErrorCodes.RotuloObrigatorio);
+    }
+
+    [Fact(DisplayName = "No teto de itens a forma dos itens é conferida")]
+    public void TetoDeItens_NoTeto_ConfereAFormaDosItens()
+    {
+        List<FieldError> erros = Conferir(Conteudo(ItensComOPrimeiroSemRotulo(FormaDoItem.MaximoDeItens)));
+
+        Codigos(erros).Should().Equal(ItemFormularioErrorCodes.RotuloObrigatorio);
+    }
+
+    [Fact(DisplayName = "Acima do teto de itens só o excesso é recusado, e a forma dos itens não é lida")]
+    public void TetoDeItens_AcimaDoTeto_RecusaSoOExcesso()
+    {
+        List<FieldError> erros = Conferir(Conteudo(ItensComOPrimeiroSemRotulo(FormaDoItem.MaximoDeItens + 1)));
+
+        Codigos(erros).Should().Equal(ItemFormularioErrorCodes.ItensEmExcesso);
+    }
+
+    [Fact(DisplayName = "O item com impedimento fora do modelo de inscrição é recusado, e no de inscrição passa")]
+    public void Impedimento_SoNaInscricao()
+    {
+        ConteudoDoModelo conteudo = Conteudo(Item("CERTIFICADO") with { Impedimento = new Impedimento(Quando("CERTIFICADO"), "Já possui o certificado.") });
+
+        Campos(Conferir(conteudo)).Should().Equal("conteudo.itens[0].impedimento");
+        Conferir(conteudo, FinalidadeFormulario.Inscricao).Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "A forma do grupo, o candidato como membro e a forma de cada campo saem nessa ordem, cada um no caminho do grupo")]
+    public void Grupo_RecusaNaOrdemDaFormaDoCandidatoEDosCampos()
+    {
+        GrupoDoModelo grupo = Grupo("COMPOSICAO_FAMILIAR", 1, null, Item("RENDA") with { EtapaCodigo = null, Rotulo = string.Empty }) with
+        {
+            Minimo = 3,
+            Maximo = 2,
+            IncluiCandidato = true,
+        };
+
+        List<FieldError> erros = Conferir(Conteudo(Item("CERTIFICADO")) with { Grupos = [grupo] });
+
+        Campos(erros).Should().Equal("conteudo.grupos[0].maximo", "conteudo.grupos[0].subitens", "conteudo.grupos[0].subitens[0].rotulo");
+    }
+
+    [Fact(DisplayName = "O grupo que não inclui o candidato não pede o parentesco")]
+    public void Grupo_SemCandidatoComoMembro_NaoPedeParentesco()
+    {
+        GrupoDoModelo grupo = Grupo("COMPOSICAO_FAMILIAR", 1, null, Item("RENDA") with { EtapaCodigo = null });
+
+        Conferir(Conteudo(Item("CERTIFICADO")) with { Grupos = [grupo] }).Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "O código do termo é obrigatório e único: a recusa aponta o índice do termo")]
+    public void Termos_RecusaFormaEUnicidadeNoIndice()
+    {
+        ConteudoDoModelo conteudo = Conteudo(Item("CERTIFICADO")) with { Termos = [Termo(" ", 0), Termo("LGPD", 1), Termo("LGPD", 2)] };
+
+        List<FieldError> erros = Conferir(conteudo);
+
+        Campos(erros).Should().Equal("conteudo.termos[0].codigo", "conteudo.termos[2].codigo");
+        Codigos(erros).Should().Equal(TermoFormularioErrorCodes.CodigoObrigatorio, TermoFormularioErrorCodes.CodigoDuplicado);
+    }
+
+    [Fact(DisplayName = "O modelo de inscrição não tem pressupostos")]
+    public void Pressupostos_NaInscricao_Recusa()
+    {
+        List<FieldError> erros = Conferir(Conteudo(Item("CERTIFICADO")) with { Pressupostos = ["SEXO", string.Empty] }, FinalidadeFormulario.Inscricao);
+
+        Campos(erros).Should().Equal("conteudo.pressupostos");
+        Codigos(erros).Should().Equal(ModeloFormularioErrorCodes.PressupostoNaInscricao);
+    }
+
+    [Fact(DisplayName = "O pressuposto em branco é recusado no índice dele, sem outra recusa para o mesmo pressuposto")]
+    public void Pressuposto_EmBranco_RecusaSo()
+    {
+        List<FieldError> erros = Conferir(Conteudo(Item("CERTIFICADO")) with { Pressupostos = [string.Empty] });
+
+        Campos(erros).Should().Equal("conteudo.pressupostos[0]");
+        Codigos(erros).Should().Equal(ModeloFormularioErrorCodes.PressupostoEmBranco);
+    }
+
+    [Fact(DisplayName = "O pressuposto repetido e o que também é item acumulam, por posição e na ordem das duas regras")]
+    public void Pressupostos_RepetidoETambemItem_AcumulamPorPosicao()
+    {
+        List<FieldError> erros = Conferir(Conteudo(Item("CONCLUSAO_REGULAR")) with { Pressupostos = ["CONCLUSAO_REGULAR", "CONCLUSAO_REGULAR"] });
+
+        Campos(erros).Should().Equal("conteudo.pressupostos[0]", "conteudo.pressupostos[1]", "conteudo.pressupostos[1]");
+        Codigos(erros).Should().Equal(
+            ModeloFormularioErrorCodes.PressupostoTambemItem, ModeloFormularioErrorCodes.PressupostoRepetido, ModeloFormularioErrorCodes.PressupostoTambemItem);
+        erros.Select(static e => e.Error.Message).Should().Equal(
+            "O fato é item do modelo e não pode ser também pressuposto: ou o formulário o coleta, ou o recebe da inscrição.",
+            "O fato aparece mais de uma vez entre os pressupostos.",
+            "O fato é item do modelo e não pode ser também pressuposto: ou o formulário o coleta, ou o recebe da inscrição.");
+    }
+
+    [Fact(DisplayName = "A estrutura por finalidade só é conferida sobre partes bem formadas")]
+    public void Estrutura_NaoEConferidaComParteMalFormada()
+    {
+        ConteudoDoModelo foraDeSecao = Conteudo(Item("CERTIFICADO") with { EtapaCodigo = null });
+
+        Codigos(Conferir(foraDeSecao)).Should().Equal(EstruturaFormularioErrorCodes.ItemForaDeSecao);
+        Codigos(Conferir(foraDeSecao with { Titulo = new string('T', FormaDoCabecalho.TituloMaxLength + 1) }))
+            .Should().Equal(EstruturaFormularioErrorCodes.TituloTamanho);
+    }
+
+    [Fact(DisplayName = "Com a finalidade recusada no cadastro, a estrutura que depende dela não é conferida")]
+    public void Estrutura_NaoEConferidaSemFinalidade() =>
+        Conferir(Conteudo(Item("CERTIFICADO") with { EtapaCodigo = null }), FinalidadeFormulario.Nenhuma).Should().BeEmpty();
+
+    [Fact(DisplayName = "A estrutura das etapas recusada impede a conferência da posição dos itens")]
+    public void Estrutura_EtapaRecusada_ImpedeAConferenciaDosItens()
+    {
+        EtapaDoModelo repetida = Etapa() with { Ordem = 2 };
+        ConteudoDoModelo conteudo = Conteudo(Item("CERTIFICADO") with { EtapaCodigo = null }) with { Etapas = [Etapa(), repetida, Revisao with { Ordem = 3 }] };
+
+        Codigos(Conferir(conteudo)).Should().Equal(EstruturaFormularioErrorCodes.EtapaCodigoDuplicado);
+    }
+
+    [Fact(DisplayName = "As recusas das famílias acumulam juntas, cada uma no seu ponteiro, na ordem das regras do conteúdo")]
+    public void Recusas_AcumulamNaOrdemDasRegras()
+    {
+        ConteudoDoModelo conteudo = Conteudo(Item("CERTIFICADO") with { Rotulo = string.Empty }, ComImpedimento(Item("LAUDO", 1))) with
+        {
+            Titulo = new string('T', FormaDoCabecalho.TituloMaxLength + 1),
+            Etapas = [Etapa(), Revisao with { Titulo = " " }],
+            Grupos = [Grupo("COMPOSICAO_FAMILIAR", 2, null, Item("RENDA") with { EtapaCodigo = null }) with { Minimo = 3, Maximo = 2 }],
+            Termos = [Termo(" ", 0)],
+            Pressupostos = [string.Empty],
+        };
+
+        Campos(Conferir(conteudo)).Should().Equal(
+            "conteudo.titulo", "conteudo.etapas[1].titulo", "conteudo.itens[0].rotulo", "conteudo.itens[1].impedimento",
+            "conteudo.grupos[0].maximo", "conteudo.termos[0].codigo", "conteudo.pressupostos[0]");
+    }
+
+    private static ItemDoModelo[] ItensComOPrimeiroSemRotulo(int quantidade) =>
+        [.. Enumerable.Range(0, quantidade).Select(static i => Item($"FATO_{i}", i) with { Rotulo = i == 0 ? string.Empty : $"Fato {i}" })];
+
+    private static ItemDoModelo ComImpedimento(ItemDoModelo item) =>
+        item with { Impedimento = new Impedimento(Quando(item.FatoCodigo), "Já possui o certificado.") };
+}

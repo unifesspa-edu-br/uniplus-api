@@ -6,11 +6,12 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Configuracao.Application.Commands.OfertasCurso;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
+using Unifesspa.UniPlus.Configuracao.Application.Queries.ModelosFormulario;
 
 /// <summary>
 /// Registra recursos da camada Application do módulo Configuracao: os validators FluentValidation do assembly e os
-/// serviços do circuito de aprovação da proteção do catálogo de tipos de documento e de fatos do candidato, que os
-/// handlers recebem prontos.
+/// serviços do circuito de aprovação da proteção do catálogo de tipos de documento e de fatos do candidato e das opções
+/// do cadastro institucional da simulação do modelo de formulário, que os handlers recebem prontos.
 /// </summary>
 public static class ConfiguracaoApplicationServiceRegistration
 {
@@ -22,6 +23,7 @@ public static class ConfiguracaoApplicationServiceRegistration
         services.AddValidatorsFromAssembly(assembly);
 
         services.AddScoped<ConferenciaDasReferenciasDaOferta>();
+        services.AddScoped<OpcoesDoCadastroInstitucional>();
         services.AddScoped<ItensSobAprovacao>();
         services.AddScoped<SolicitacaoDaProtecaoDoCatalogo>();
         services.AddScoped<DecisaoNaProtecaoDoCatalogo>();

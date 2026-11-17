@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 
@@ -17,12 +18,13 @@ using Unifesspa.UniPlus.Regras.Formularios;
 public sealed record ObterFormularioRenderizavelDoModeloQuery(Guid Id) : IQuery<FormularioRenderizavel?>;
 
 /// <summary>
-/// Projeta o conteúdo do modelo como aplicado — o de inscrição, com o conjunto básico — com o catálogo
-/// vivo: as regras pela mesma definição da pré-visualização do modelo, recortadas como um formulário só; as opções que o catálogo oferece a
-/// cada campo; e o conteúdo da versão escolhida de cada termo. As opções que só existem no processo
-/// — as que ele declara, as modalidades, os municípios do bônus — saem nulas: no modelo, ainda não há
-/// processo que as oferte. A condição de atendimento, o recurso de acessibilidade, o tipo de deficiência e os
-/// municípios do bônus são a exceção: oferecem o cadastro institucional, que o processo recorta.
+/// Projeta a simulação do modelo — o conteúdo como aplicado, com o catálogo vivo — no formato do
+/// renderizável: as regras pela mesma definição da pré-visualização do modelo, recortadas como um
+/// formulário só; as opções que o catálogo oferece a cada campo; e o conteúdo da versão escolhida de cada
+/// termo. As opções que só existem no processo — as que ele declara, as modalidades, os municípios do
+/// bônus — saem nulas: no modelo, ainda não há processo que as oferte. A condição de atendimento, o
+/// recurso de acessibilidade, o tipo de deficiência e os municípios do bônus são a exceção: oferecem o
+/// cadastro institucional, que o processo recorta.
 /// </summary>
 public static class ObterFormularioRenderizavelDoModeloQueryHandler
 {
@@ -30,82 +32,105 @@ public static class ObterFormularioRenderizavelDoModeloQueryHandler
         ObterFormularioRenderizavelDoModeloQuery query,
         IModeloFormularioRepository repository,
         IFatoCandidatoRepository fatoRepository,
-        ICondicaoAtendimentoRepository condicaoRepository,
-        IRecursoAcessibilidadeRepository recursoRepository,
-        ITipoDeficienciaRepository tipoDeficienciaRepository,
-        IBaseLegalBonusRegionalRepository baseLegalBonusRepository,
+        OpcoesDoCadastroInstitucional cadastro,
         ITermoConsentimentoRepository termoRepository,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(fatoRepository);
-        ArgumentNullException.ThrowIfNull(condicaoRepository);
-        ArgumentNullException.ThrowIfNull(recursoRepository);
-        ArgumentNullException.ThrowIfNull(tipoDeficienciaRepository);
-        ArgumentNullException.ThrowIfNull(baseLegalBonusRepository);
+        ArgumentNullException.ThrowIfNull(cadastro);
         ArgumentNullException.ThrowIfNull(termoRepository);
 
         ModeloFormulario? modelo = await repository.ObterPorIdParaLeituraAsync(query.Id, cancellationToken).ConfigureAwait(false);
-        if (modelo is null)
-        {
-            return null;
-        }
+        return modelo is null
+            ? null
+            : await RenderizarAsync(modelo, fatoRepository, cadastro, termoRepository, cancellationToken).ConfigureAwait(false);
+    }
 
+    private static async Task<FormularioRenderizavel> RenderizarAsync(
+        ModeloFormulario modelo,
+        IFatoCandidatoRepository fatoRepository,
+        OpcoesDoCadastroInstitucional cadastro,
+        ITermoConsentimentoRepository termoRepository,
+        CancellationToken cancellationToken)
+    {
         IReadOnlyList<FatoCandidato> fatos = await fatoRepository.ListarTodosAsync(cancellationToken).ConfigureAwait(false);
-        // O formulário que o candidato verá é o do modelo aplicado: o de inscrição, com o conjunto básico.
-        ConteudoDoModelo conteudo = EscritaDoModelo.ComoAplicado(modelo, fatos);
-        IReadOnlyList<DefinicaoAgregado> agregados = VocabularioDoCatalogo.AgregadosDosGrupos(fatos, conteudo.Grupos);
-        Dictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes = VocabularioDoCatalogo.OpcoesDoModelo(fatos, conteudo);
-        await OpcoesDoCadastroInstitucional.CompletarAsync(opcoes, fatos, condicaoRepository, recursoRepository, tipoDeficienciaRepository, baseLegalBonusRepository, cancellationToken).ConfigureAwait(false);
+        SimulacaoDoModelo simulacao = await SimulacaoDoModelo.MontarAsync(modelo, fatos, cadastro, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<TermoRenderizavel> termos = await TermosAsync(modelo.Id, simulacao.Conteudo, termoRepository, cancellationToken).ConfigureAwait(false);
+        return Montar(modelo.Finalidade, simulacao, termos);
+    }
 
+    private static FormularioRenderizavel Montar(FinalidadeFormulario finalidade, SimulacaoDoModelo simulacao, IReadOnlyList<TermoRenderizavel> termos)
+    {
+        ConteudoDoModelo conteudo = simulacao.Conteudo;
+        RecorteDaFinalidade recorte = RecorteDaFinalidade.DoFormulario(simulacao.Definicao(), simulacao.Ofertas);
+        return FormularioRenderizavel.Montar(
+            EstruturaFormulario.ParaToken(finalidade),
+            conteudo.Titulo,
+            [.. conteudo.Etapas.OrderBy(static e => e.Ordem).Select(Secao)],
+            termos,
+            [.. conteudo.Itens.OrderBy(static i => i.Ordem).Select(i => Campo(finalidade, i, simulacao.Opcoes))],
+            [.. conteudo.Grupos.OrderBy(static g => g.Ordem).Select(g => Grupo(finalidade, g, simulacao.Opcoes))],
+            recorte,
+            camposDosOutrosFormularios: [],
+            VocabularioDoCatalogo.ApresentacaoDos(simulacao.Fatos, recorte.Pressupostos),
+            simulacao.Agregados,
+            dataReferenciaFatos: null, fusoDoEnvio: null);
+    }
+
+    private static async Task<IReadOnlyList<TermoRenderizavel>> TermosAsync(
+        Guid modeloId, ConteudoDoModelo conteudo, ITermoConsentimentoRepository termoRepository, CancellationToken cancellationToken)
+    {
         List<TermoRenderizavel> termos = [];
         foreach (TermoDoModelo termo in conteudo.Termos.OrderBy(static t => t.Ordem))
         {
-            TermoConsentimento? doCatalogo = await termoRepository.ObterPorIdParaLeituraAsync(termo.TermoId, cancellationToken).ConfigureAwait(false);
-            TermoConsentimentoVersao? versao = doCatalogo?.Versoes.FirstOrDefault(v => v.Id == termo.VersaoId);
-            if (doCatalogo is null || versao is null)
-            {
-                // O modelo confere a versão contra o catálogo ao gravar; uma versão que sumiu depois é
-                // defeito do cadastro, não estado que a simulação deva esconder.
-                throw new InvalidOperationException($"A versão {termo.VersaoId} do termo '{termo.Codigo}' do modelo {modelo.Id} não está no catálogo.");
-            }
-
-            termos.Add(new TermoRenderizavel(
-                termo.Codigo, termo.Codigo, termo.Ordem, termo.TermoId, termo.VersaoId, doCatalogo.Nome, versao.Texto, versao.BaseLegal,
-                FormasAceite.ParaTokenCanonico(versao.FormaAceite), versao.Hash));
+            termos.Add(await TermoAsync(modeloId, termo, termoRepository, cancellationToken).ConfigureAwait(false));
         }
 
-        RecorteDaFinalidade recorte = RecorteDaFinalidade.DoFormulario(
-            conteudo.ParaAvaliacao(VocabularioDoCatalogo.DerivacoesDosFatos(fatos), agregados), VocabularioDoCatalogo.Ofertas(opcoes));
-
-        return FormularioRenderizavel.Montar(
-            EstruturaFormulario.ParaToken(modelo.Finalidade),
-            conteudo.Titulo,
-            [.. conteudo.Etapas.OrderBy(static e => e.Ordem).Select(static e => new SecaoRenderizavel(
-                e.Codigo,
-                e.Tipo == TipoEtapaFormulario.Secao ? e.Codigo : null,
-                e.Ordem,
-                EstruturaFormulario.ParaToken(e.Tipo),
-                EstruturaFormulario.ParaToken(e.Bloco),
-                e.Titulo,
-                e.Descricao,
-                e.Aviso))],
-            termos,
-            [.. conteudo.Itens.OrderBy(static i => i.Ordem).Select(i => Campo(modelo.Finalidade, i, opcoes))],
-            [.. conteudo.Grupos.OrderBy(static g => g.Ordem).Select(g => new GrupoRenderizavel(
-                g.Codigo, g.Ordem, g.EtapaCodigo, g.Rotulo, g.Minimo, g.Maximo, g.IncluiCandidato,
-                [.. g.Subitens.OrderBy(static s => s.Ordem).Select(s => Campo(modelo.Finalidade, s, opcoes))]))],
-            recorte,
-            camposDosOutrosFormularios: [],
-            VocabularioDoCatalogo.ApresentacaoDos(fatos, recorte.Pressupostos),
-            agregados,
-            dataReferenciaFatos: null,
-            fusoDoEnvio: null);
+        return termos;
     }
 
+    private static async Task<TermoRenderizavel> TermoAsync(
+        Guid modeloId, TermoDoModelo termo, ITermoConsentimentoRepository termoRepository, CancellationToken cancellationToken)
+    {
+        TermoConsentimento? doCatalogo = await termoRepository.ObterPorIdParaLeituraAsync(termo.TermoId, cancellationToken).ConfigureAwait(false);
+        TermoConsentimentoVersao? versao = doCatalogo?.Versoes.FirstOrDefault(v => v.Id == termo.VersaoId);
+        if (doCatalogo is null || versao is null)
+        {
+            // O modelo confere a versão contra o catálogo ao gravar; uma versão que sumiu depois é
+            // defeito do cadastro, não estado que a simulação deva esconder.
+            throw new InvalidOperationException($"A versão {termo.VersaoId} do termo '{termo.Codigo}' do modelo {modeloId} não está no catálogo.");
+        }
+
+        return new TermoRenderizavel(
+            termo.Codigo, termo.Codigo, termo.Ordem, termo.TermoId, termo.VersaoId, doCatalogo.Nome, versao.Texto, versao.BaseLegal,
+            FormasAceite.ParaTokenCanonico(versao.FormaAceite), versao.Hash);
+    }
+
+    private static SecaoRenderizavel Secao(EtapaDoModelo etapa) => new(
+        etapa.Codigo,
+        etapa.Tipo == TipoEtapaFormulario.Secao ? etapa.Codigo : null,
+        etapa.Ordem,
+        EstruturaFormulario.ParaToken(etapa.Tipo),
+        EstruturaFormulario.ParaToken(etapa.Bloco),
+        etapa.Titulo,
+        etapa.Descricao,
+        etapa.Aviso);
+
+    private static GrupoRenderizavel Grupo(
+        FinalidadeFormulario finalidade, GrupoDoModelo grupo, IReadOnlyDictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes) => new(
+        grupo.Codigo,
+        grupo.Ordem,
+        grupo.EtapaCodigo,
+        grupo.Rotulo,
+        grupo.Minimo,
+        grupo.Maximo,
+        grupo.IncluiCandidato,
+        [.. grupo.Subitens.OrderBy(static s => s.Ordem).Select(s => Campo(finalidade, s, opcoes))]);
+
     private static CampoRenderizavel Campo(
-        FinalidadeFormulario finalidade, ItemDoModelo item, Dictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes) => new(
+        FinalidadeFormulario finalidade, ItemDoModelo item, IReadOnlyDictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes) => new(
         item.FatoCodigo,
         item.Ordem,
         item.Rotulo,

@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -156,18 +157,10 @@ public sealed class AgregadoDoAdministradorTests
     [Fact]
     public void RegraSobreAgregadoCategorico_UsaOsValoresDoFatoDeMembro()
     {
-        FatoCandidato membro = DeMembro("CATEGORIA_RENDA", DominioFato.Categorico, ponto: "INSCRICAO", fonte: FonteValoresFato.Global);
-        membro.AdicionarValorDominio("RURAL", "Trabalho rural", 0, ativo: true).IsSuccess.Should().BeTrue();
-        FatoCandidato agregado = CriacaoDoFato.CriarAgregadoDoAdministrador(
-            "CATEGORIAS_RENDA_FAMILIA", "Categorias de renda", "Descrição do fato.", "CATEGORIA_RENDA", new CatalogoDeFatos([membro], []), "INSCRICAO",
-            ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
-        FatoCandidato derivado = CriacaoDoFato.CriarDerivadoDoAdministrador(
-            "TEM_RENDA_RURAL", "Tem renda rural", "Descrição do fato.", DominioFato.Booleano, "INSCRICAO", EscopoFato.Candidato,
-            ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
-        RegraDerivacao regra = RegraDerivacao.CriarBooleana(PredicadoDnf.CriarDeCondicoesAgrupadas(
-            [(0, CondicaoDnf.Criar("CATEGORIAS_RENDA_FAMILIA", Operador.Em, System.Text.Json.JsonSerializer.SerializeToElement(new[] { "RURAL" })).Value!)]).Value!);
+        FatoCandidato membro = DeMembroCategoricoComValorRural();
+        FatoCandidato agregado = AgregadoDeCategorias(membro);
 
-        Result resultado = derivado.DefinirRegrasPadrao([regra], new CatalogoDeFatos([membro, agregado, derivado], []));
+        Result resultado = DefinirRegraQueCitaRural(membro, agregado);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         VocabularioDoCatalogo.ParaRegras([membro, agregado])["CATEGORIAS_RENDA_FAMILIA"].Valores.Select(static v => v.Codigo).Should().Equal("RURAL");
@@ -176,19 +169,11 @@ public sealed class AgregadoDoAdministradorTests
     [Fact]
     public void RegraSobreAgregado_CitandoValorDesativadoNoFatoDeMembro_Recusa()
     {
-        FatoCandidato membro = DeMembro("CATEGORIA_RENDA", DominioFato.Categorico, ponto: "INSCRICAO", fonte: FonteValoresFato.Global);
-        membro.AdicionarValorDominio("RURAL", "Trabalho rural", 0, ativo: true).IsSuccess.Should().BeTrue();
+        FatoCandidato membro = DeMembroCategoricoComValorRural();
         membro.DesativarValor("RURAL").IsSuccess.Should().BeTrue();
-        FatoCandidato agregado = CriacaoDoFato.CriarAgregadoDoAdministrador(
-            "CATEGORIAS_RENDA_FAMILIA", "Categorias de renda", "Descrição do fato.", "CATEGORIA_RENDA", new CatalogoDeFatos([membro], []), "INSCRICAO",
-            ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
-        FatoCandidato derivado = CriacaoDoFato.CriarDerivadoDoAdministrador(
-            "TEM_RENDA_RURAL", "Tem renda rural", "Descrição do fato.", DominioFato.Booleano, "INSCRICAO", EscopoFato.Candidato,
-            ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
-        RegraDerivacao regra = RegraDerivacao.CriarBooleana(PredicadoDnf.CriarDeCondicoesAgrupadas(
-            [(0, CondicaoDnf.Criar("CATEGORIAS_RENDA_FAMILIA", Operador.Em, System.Text.Json.JsonSerializer.SerializeToElement(new[] { "RURAL" })).Value!)]).Value!);
+        FatoCandidato agregado = AgregadoDeCategorias(membro);
 
-        Result resultado = derivado.DefinirRegrasPadrao([regra], new CatalogoDeFatos([membro, agregado, derivado], []));
+        Result resultado = DefinirRegraQueCitaRural(membro, agregado);
 
         resultado.Errors.Select(static e => e.Error.Code).Should().Contain(FatoCandidatoErrorCodes.RegraCitaValorDesativado);
     }
@@ -209,6 +194,29 @@ public sealed class AgregadoDoAdministradorTests
 
         agregados.Should().ContainSingle().Which.Should().Be(new Regras.Formularios.DefinicaoAgregado(
             "EXISTE_MENOR_SOB_GUARDA", "COMPOSICAO_FAMILIAR", "MENOR_SOB_GUARDA", Regras.Formularios.OperacaoAgregado.Existe));
+    }
+
+    private static FatoCandidato DeMembroCategoricoComValorRural()
+    {
+        FatoCandidato membro = DeMembro("CATEGORIA_RENDA", DominioFato.Categorico, ponto: "INSCRICAO", fonte: FonteValoresFato.Global);
+        membro.AdicionarValorDominio("RURAL", "Trabalho rural", 0, ativo: true).IsSuccess.Should().BeTrue();
+        return membro;
+    }
+
+    private static FatoCandidato AgregadoDeCategorias(FatoCandidato membro) =>
+        CriacaoDoFato.CriarAgregadoDoAdministrador(
+            "CATEGORIAS_RENDA_FAMILIA", "Categorias de renda", "Descrição do fato.", "CATEGORIA_RENDA", new CatalogoDeFatos([membro], []), "INSCRICAO",
+            ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
+
+    private static Result DefinirRegraQueCitaRural(FatoCandidato membro, FatoCandidato agregado)
+    {
+        FatoCandidato derivado = CriacaoDoFato.CriarDerivadoDoAdministrador(
+            "TEM_RENDA_RURAL", "Tem renda rural", "Descrição do fato.", DominioFato.Booleano, "INSCRICAO", EscopoFato.Candidato,
+            ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
+        RegraDerivacao regra = RegraDerivacao.CriarBooleana(PredicadoDnf.CriarDeCondicoesAgrupadas(
+            [(0, CondicaoDnf.Criar("CATEGORIAS_RENDA_FAMILIA", Operador.Em, System.Text.Json.JsonSerializer.SerializeToElement(new[] { "RURAL" })).Value!)]).Value!);
+
+        return derivado.DefinirRegrasPadrao([regra], new CatalogoDeFatos([membro, agregado, derivado], []));
     }
 
     private static Result<FatoCandidato> Criar(string codigo, string fatoDeMembro, params FatoCandidato[] catalogo) =>

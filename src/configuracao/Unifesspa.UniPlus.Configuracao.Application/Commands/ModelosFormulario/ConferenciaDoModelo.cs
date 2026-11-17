@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -64,72 +65,15 @@ internal static class ConferenciaDoModelo
         ArgumentNullException.ThrowIfNull(catalogo);
         ArgumentNullException.ThrowIfNull(versoes);
         ArgumentNullException.ThrowIfNull(existentes);
-
-        return
-        [
-            .. ConferirCampos(conteudo, catalogo),
-            .. ConferirPredicadosDasPartes(conteudo, catalogo),
-            .. ConferirTermos(conteudo, catalogo, versoes, existentes),
-            .. ConferirPressupostos(conteudo, catalogo),
-            .. ConferirVinculoNovo(conteudo, catalogo, existentes),
+        return [
+            .. ConferirItens(conteudo.Itens, catalogo),
+            .. ConferirGrupos(conteudo.Grupos, catalogo),
+            .. ConferirDocumentos(conteudo.Documentos, catalogo),
+            .. ConferirEtapas(conteudo.Etapas, catalogo),
+            .. ConferirTermos(conteudo.Termos, catalogo, versoes, existentes.Termos),
+            .. ConferirPressupostos(conteudo.Pressupostos, catalogo),
+            .. ConferirVinculos(conteudo, catalogo, existentes),
         ];
-    }
-
-    private static IEnumerable<FieldError> ConferirCampos(ConteudoLido conteudo, CatalogoDoModelo catalogo) =>
-        conteudo.Itens
-            .SelectMany(item => ConferirCampo(item.Item, catalogo, ConferenciaNoCatalogo.FatoDoItem)
-                .Select(e => e with { Field = Prefixar($"itens[{item.Indice}]", e.Field) }))
-            .Concat(conteudo.Grupos.SelectMany(grupo => ConferirGrupo(grupo.Indice, grupo.Grupo, catalogo)));
-
-    private static IEnumerable<FieldError> ConferirGrupo(int indice, GrupoDoModelo grupo, CatalogoDoModelo catalogo) =>
-        new[]
-        {
-            ConferirPredicado($"grupos[{indice}].exibicao", grupo.Exibicao, catalogo),
-            ConferirPredicado($"grupos[{indice}].predicadoObrigatoriedade", grupo.Obrigatoriedade.Predicado, catalogo),
-        }.OfType<FieldError>()
-        .Concat(grupo.Subitens.SelectMany((subitem, j) => ConferirCampo(subitem, catalogo, ConferenciaNoCatalogo.FatoDoSubitem)
-            .Select(e => e with { Field = Prefixar($"grupos[{indice}].subitens[{j}]", e.Field) })));
-
-    private static IEnumerable<FieldError> ConferirPredicadosDasPartes(ConteudoLido conteudo, CatalogoDoModelo catalogo) =>
-        conteudo.Documentos.SelectMany(documento => ConferirDocumento(documento.Indice, documento.Documento, catalogo))
-            .Concat(conteudo.Etapas
-                .Select(etapa => ConferirPredicado($"etapas[{etapa.Indice}].exibicao", etapa.Etapa.Exibicao, catalogo))
-                .OfType<FieldError>());
-
-    private static IEnumerable<FieldError> ConferirDocumento(int indice, DocumentoExigidoDoModelo documento, CatalogoDoModelo catalogo)
-    {
-        FieldError? porOpcao = documento.PorOpcao is { } opcao && ConferirPorOpcao(opcao.FatoCodigo, catalogo) is { } recusa
-            ? new($"documentosExigidos[{indice}].porOpcao.fatoCodigo", recusa, opcao.FatoCodigo)
-            : null;
-        return new[] { ConferirPredicado($"documentosExigidos[{indice}].quando", documento.Quando, catalogo), porOpcao }.OfType<FieldError>();
-    }
-
-    private static IEnumerable<FieldError> ConferirTermos(
-        ConteudoLido conteudo,
-        CatalogoDoModelo catalogo,
-        IReadOnlyDictionary<Guid, VersaoTermoConsentimentoView> versoes,
-        VinculosDoModelo existentes) =>
-        conteudo.Termos.SelectMany(termo => ConferirTermo(termo.Termo, catalogo, versoes, existentes.Termos)
-            .Select(e => e with { Field = Prefixar($"termos[{termo.Indice}]", e.Field) }));
-
-    private static IEnumerable<FieldError> ConferirPressupostos(ConteudoLido conteudo, CatalogoDoModelo catalogo) =>
-        conteudo.Pressupostos.Select((texto, i) => ConferirPressuposto(texto, i, catalogo)).OfType<FieldError>();
-
-    private static FieldError? ConferirPressuposto(string texto, int indice, CatalogoDoModelo catalogo)
-    {
-        string pressuposto = ModeloFormulario.CodigoNaFormaGravada(texto);
-        return !string.IsNullOrWhiteSpace(texto) && ConferenciaNoCatalogo.FatoDoItem(pressuposto, catalogo.Fatos) is { } recusa
-            ? new($"pressupostos[{indice}]", recusa, pressuposto)
-            : null;
-    }
-
-    // Os vínculos são os do conteúdo como será gravado: um código com espaço é o mesmo fato.
-    private static IReadOnlyList<FieldError> ConferirVinculoNovo(ConteudoLido conteudo, CatalogoDoModelo catalogo, VinculosDoModelo existentes)
-    {
-        VinculosDeFatos propostos = Vinculos(ModeloFormulario.NaFormaGravada(conteudo.ParaConteudo()));
-        return ConferenciaNoCatalogo.VinculoNovo(catalogo.Fatos, existentes.Fatos, propostos) is { IsFailure: true } vinculo
-            ? vinculo.Errors
-            : [];
     }
 
     /// <summary>O que o modelo gravado já vincula: os fatos e valores, e a versão de cada termo.</summary>
@@ -147,125 +91,149 @@ internal static class ConferenciaDoModelo
     public static VinculosDeFatos Vinculos(ConteudoDoModelo conteudo)
     {
         ArgumentNullException.ThrowIfNull(conteudo);
-        ItemDoModelo[] campos = [.. conteudo.Itens, .. conteudo.Grupos.SelectMany(static g => g.Subitens)];
-        IEnumerable<PredicadoDnf> predicados = Predicados(conteudo, campos);
-        IEnumerable<(string Fato, JsonElement Valor)> condicoes = predicados
-            .SelectMany(static p => p.Clausulas).SelectMany(static c => c.Condicoes).Select(static c => (c.Fato, c.Valor));
+        ItemDoModelo[] campos = [.. conteudo.Campos()];
+        IEnumerable<(string Fato, JsonElement Valor)> condicoes = conteudo.CondicoesDasRegras().Select(static c => (c.Fato, c.Valor));
         IEnumerable<(string Fato, string Valor)> opcoes = campos
             .SelectMany(static i => i.Restricoes.OfType<OpcoesPermitidas>().SelectMany(static o => o.Entradas)
                 .SelectMany(e => e.Valores.Select(v => (i.FatoCodigo, v))));
         IEnumerable<string> fatos = campos.Select(static i => i.FatoCodigo)
             .Concat(conteudo.Pressupostos)
             .Concat(campos.SelectMany(static i => i.Restricoes.SelectMany(static r => r.FatosCitados)))
-            .Concat(conteudo.Documentos.Select(static d => d.PorOpcao?.FatoCodigo).OfType<string>().Select(ModeloFormulario.CodigoNaFormaGravada));
+            .Concat(conteudo.Documentos.Select(static d => d.PorOpcao?.FatoCodigo).OfType<string>().Select(TextoGravavel.CodigoNaFormaGravada));
         return VinculosDeFatos.De(fatos, condicoes, opcoes);
     }
 
-    private static IEnumerable<PredicadoDnf> Predicados(ConteudoDoModelo conteudo, ItemDoModelo[] campos)
+    private static IEnumerable<FieldError> ConferirItens(IReadOnlyList<(int Indice, ItemDoModelo Item)> itens, CatalogoDoModelo catalogo) =>
+        itens.SelectMany(item => ConferirCampo(item.Item, $"itens[{item.Indice}]", catalogo, ConferenciaNoCatalogo.FatoDoItem));
+
+    private static IEnumerable<FieldError> ConferirGrupos(IReadOnlyList<(int Indice, GrupoDoModelo Grupo)> grupos, CatalogoDoModelo catalogo) =>
+        grupos.SelectMany(grupo => ConferirGrupo(grupo.Grupo, $"grupos[{grupo.Indice}]", catalogo));
+
+    private static IEnumerable<FieldError> ConferirGrupo(GrupoDoModelo grupo, string caminho, CatalogoDoModelo catalogo) =>
+    [
+        .. ConferirPredicados(caminho, grupo.Predicados(), catalogo),
+        .. grupo.Subitens.SelectMany((subitem, posicao) =>
+            ConferirCampo(subitem, $"{caminho}.subitens[{posicao}]", catalogo, ConferenciaNoCatalogo.FatoDoSubitem)),
+    ];
+
+    private static IEnumerable<FieldError> ConferirDocumentos(
+        IReadOnlyList<(int Indice, DocumentoExigidoDoModelo Documento)> documentos, CatalogoDoModelo catalogo) =>
+        documentos.SelectMany(documento => ConferirDocumento(documento.Documento, $"documentosExigidos[{documento.Indice}]", catalogo));
+
+    private static IEnumerable<FieldError> ConferirDocumento(DocumentoExigidoDoModelo documento, string caminho, CatalogoDoModelo catalogo) =>
+    [
+        .. ConferirPredicados(caminho, documento.Predicados(), catalogo),
+        .. ConferirExigenciaPorOpcao(documento.PorOpcao, caminho, catalogo),
+    ];
+
+    private static IEnumerable<FieldError> ConferirEtapas(IReadOnlyList<(int Indice, EtapaDoModelo Etapa)> etapas, CatalogoDoModelo catalogo) =>
+        etapas.SelectMany(etapa => ConferirPredicados($"etapas[{etapa.Indice}]", etapa.Etapa.Predicados(), catalogo));
+
+    private static IEnumerable<FieldError> ConferirTermos(
+        IReadOnlyList<(int Indice, TermoDoModelo Termo)> termos,
+        CatalogoDoModelo catalogo,
+        IReadOnlyDictionary<Guid, VersaoTermoConsentimentoView> versoes,
+        IReadOnlySet<(Guid TermoId, Guid VersaoId)> termosExistentes) =>
+        termos.SelectMany(termo => ConferirTermo(termo.Termo, $"termos[{termo.Indice}]", catalogo, versoes, termosExistentes));
+
+    private static IEnumerable<FieldError> ConferirTermo(
+        TermoDoModelo termo,
+        string caminho,
+        CatalogoDoModelo catalogo,
+        IReadOnlyDictionary<Guid, VersaoTermoConsentimentoView> versoes,
+        IReadOnlySet<(Guid TermoId, Guid VersaoId)> termosExistentes) =>
+    [
+        .. ConferirPredicados(caminho, termo.Predicados(), catalogo),
+        .. ConferirVersaoDoTermo(termo, caminho, versoes, termosExistentes),
+    ];
+
+    private static IEnumerable<FieldError> ConferirPressupostos(IReadOnlyList<string> pressupostos, CatalogoDoModelo catalogo) =>
+        pressupostos.SelectMany((pressuposto, posicao) => ConferirPressuposto(pressuposto, $"pressupostos[{posicao}]", catalogo));
+
+    private static IEnumerable<FieldError> ConferirPressuposto(string pressuposto, string caminho, CatalogoDoModelo catalogo)
     {
-        return campos
-            .SelectMany(static i => new[] { i.Exibicao, i.Obrigatoriedade.Predicado, i.Impedimento?.Quando }
-                .Concat(i.Restricoes.OfType<OpcoesPermitidas>().SelectMany(static o => o.Entradas.Select(static e => e.Quando))))
-            .Concat(conteudo.Grupos.SelectMany(static g => new[] { g.Exibicao, g.Obrigatoriedade.Predicado }))
-            .Concat(conteudo.Etapas.Select(static e => e.Exibicao))
-            .Concat(conteudo.Termos.SelectMany(static t => new[] { t.Exibicao, t.Obrigatoriedade.Predicado }))
-            .Concat(conteudo.Documentos.Select(static d => d.Quando))
-            .OfType<PredicadoDnf>();
+        string codigo = TextoGravavel.CodigoNaFormaGravada(pressuposto);
+        return !string.IsNullOrWhiteSpace(pressuposto) && ConferenciaNoCatalogo.FatoDoItem(codigo, catalogo.Fatos) is { } recusa
+            ? [new FieldError(caminho, recusa, codigo)]
+            : [];
+    }
+
+    private static IEnumerable<FieldError> ConferirVinculos(ConteudoLido conteudo, CatalogoDoModelo catalogo, VinculosDoModelo existentes)
+    {
+        // Os vínculos são os do conteúdo como será gravado: um código com espaço é o mesmo fato.
+        VinculosDeFatos propostos = Vinculos(conteudo.ParaConteudo().NaFormaGravada());
+        return ConferenciaNoCatalogo.VinculoNovo(catalogo.Fatos, existentes.Fatos, propostos) is { IsFailure: true } vinculo ? vinculo.Errors : [];
     }
 
     /// <summary>
     /// O campo do modelo contra o catálogo: o fato coletável — como item ou como campo de grupo,
     /// conforme <paramref name="recusaDeColetavel"/> —, o tipo do campo, as regras e as restrições.
+    /// O campo de forma inválida não é conferido: a recusa dele é a de forma, do modelo.
     /// </summary>
     private static IEnumerable<FieldError> ConferirCampo(
-        ItemDoModelo item, CatalogoDoModelo catalogo, Func<string, IReadOnlyDictionary<string, FatoDoCatalogo>, DomainError?> recusaDeColetavel)
+        ItemDoModelo item,
+        string caminho,
+        CatalogoDoModelo catalogo,
+        Func<string, IReadOnlyDictionary<string, FatoDoCatalogo>, DomainError?> recusaDeColetavel)
     {
         if (FormaDoItem.ValidarFormaBasica(item.FatoCodigo, item.Ordem, item.Rotulo, item.TipoRenderizacao).Count > 0)
         {
             return [];
         }
 
-        string codigo = ModeloFormulario.CodigoNaFormaGravada(item.FatoCodigo);
-        if (recusaDeColetavel(codigo, catalogo.Fatos) is { } naoColetavel)
-        {
-            return [new("fatoCodigo", naoColetavel, codigo)];
-        }
-
-        return ConferirCampoConhecido(item, catalogo, codigo);
+        string codigo = TextoGravavel.CodigoNaFormaGravada(item.FatoCodigo);
+        return recusaDeColetavel(codigo, catalogo.Fatos) is { } naoColetavel
+            ? [new FieldError($"{caminho}.fatoCodigo", naoColetavel, codigo)]
+            : ConferirCampoDeFatoColetavel(item, codigo, caminho, catalogo);
     }
 
-    private static IEnumerable<FieldError> ConferirCampoConhecido(ItemDoModelo item, CatalogoDoModelo catalogo, string codigo)
+    private static IEnumerable<FieldError> ConferirCampoDeFatoColetavel(ItemDoModelo item, string codigo, string caminho, CatalogoDoModelo catalogo)
     {
         FatoDoCatalogo fato = catalogo.Fatos[codigo];
-        if (CoerenciaDoCampo.Validar(codigo, item.TipoRenderizacao, fato.Dominio, fato.Cardinalidade, fato.FonteValores) is { } incoerencia)
-        {
-            yield return new("tipoRenderizacao", incoerencia, codigo);
-        }
-
-        foreach (FieldError erro in ConferirRegrasERestricoes(item, catalogo, fato))
-        {
-            yield return erro;
-        }
+        return
+        [
+            .. ConferirTipoDoCampo(item, fato, codigo, caminho),
+            .. ConferirPredicados(caminho, item.Predicados(), catalogo),
+            .. ConferenciaNoCatalogo.SemanticaDasRestricoes(
+                fato, item.TipoRenderizacao, item.Restricoes, catalogo.Fatos, catalogo.Vocabulario, catalogo.DominiosDinamicos)
+                .Select(restricao => restricao.NoCaminhoDe(caminho)),
+            .. ConferirImpedimentoDoItem(item, caminho, catalogo),
+        ];
     }
 
-    private static IEnumerable<FieldError> ConferirRegrasERestricoes(ItemDoModelo item, CatalogoDoModelo catalogo, FatoDoCatalogo fato) =>
-        ConferirRegrasDoCampo(item, catalogo).Concat(ConferenciaNoCatalogo.SemanticaDasRestricoes(
-            fato, item.TipoRenderizacao, item.Restricoes, catalogo.Fatos, catalogo.Vocabulario, catalogo.DominiosDinamicos));
+    private static IEnumerable<FieldError> ConferirImpedimentoDoItem(ItemDoModelo item, string caminho, CatalogoDoModelo catalogo) =>
+        ConferirPredicado($"{caminho}.impedimento.quando", item.Impedimento?.Quando, catalogo) is { } recusa ? [recusa] : [];
 
-    private static IEnumerable<FieldError> ConferirRegrasDoCampo(ItemDoModelo item, CatalogoDoModelo catalogo)
-    {
-        if (ConferirPredicado("precondicao", item.Exibicao, catalogo) is { } exibicao)
-        {
-            yield return exibicao;
-        }
+    private static IEnumerable<FieldError> ConferirTipoDoCampo(ItemDoModelo item, FatoDoCatalogo fato, string codigo, string caminho) =>
+        CoerenciaDoCampo.Validar(codigo, item.TipoRenderizacao, fato.Dominio, fato.Cardinalidade, fato.FonteValores) is { } incoerencia
+            ? [new FieldError($"{caminho}.tipoRenderizacao", incoerencia, codigo)]
+            : [];
 
-        if (ConferirPredicado("predicadoObrigatoriedade", item.Obrigatoriedade.Predicado, catalogo) is { } obrigatoriedade)
-        {
-            yield return obrigatoriedade;
-        }
-
-        FieldError? impedimento = ConferirPredicado("impedimento.quando", item.Impedimento?.Quando, catalogo);
-        if (impedimento is not null) yield return impedimento;
-    }
-
-    private static IEnumerable<FieldError> ConferirTermo(
+    private static IEnumerable<FieldError> ConferirVersaoDoTermo(
         TermoDoModelo termo,
-        CatalogoDoModelo catalogo,
+        string caminho,
         IReadOnlyDictionary<Guid, VersaoTermoConsentimentoView> versoes,
         IReadOnlySet<(Guid TermoId, Guid VersaoId)> termosExistentes)
     {
-        if (ConferirPredicado("exibicao", termo.Exibicao, catalogo) is { } exibicao)
-        {
-            yield return exibicao;
-        }
-
-        if (ConferirPredicado("predicadoObrigatoriedade", termo.Obrigatoriedade.Predicado, catalogo) is { } obrigatoriedade)
-        {
-            yield return obrigatoriedade;
-        }
-
-        if (ConferirVersaoDoTermo(termo, versoes, termosExistentes) is { } versao)
-        {
-            yield return versao;
-        }
-    }
-
-    private static FieldError? ConferirVersaoDoTermo(TermoDoModelo termo,
-        IReadOnlyDictionary<Guid, VersaoTermoConsentimentoView> versoes, IReadOnlySet<(Guid TermoId, Guid VersaoId)> termosExistentes)
-    {
         // A versão já escolhida pelo modelo continua com ele, mesmo que o catálogo tenha excluído o
         // termo depois: a recusa é só do vínculo novo (ADR-0136).
-        if (!termosExistentes.Contains((termo.TermoId, termo.VersaoId))
-            && (!versoes.TryGetValue(termo.VersaoId, out VersaoTermoConsentimentoView? versao) || versao.TermoId != termo.TermoId))
+        if (termosExistentes.Contains((termo.TermoId, termo.VersaoId))
+            || (versoes.TryGetValue(termo.VersaoId, out VersaoTermoConsentimentoView? versao) && versao.TermoId == termo.TermoId))
         {
-            return new("versaoId", new DomainError(
-                ModeloFormularioErrorCodes.TermoVersaoNaoEncontrada,
-                "A versão informada não existe no catálogo de termos, ou pertence a outro termo."),
-                $"{termo.TermoId}/{termo.VersaoId}");
+            return [];
         }
 
-        return null;
+        return [new FieldError($"{caminho}.versaoId", new DomainError(
+            ModeloFormularioErrorCodes.TermoVersaoNaoEncontrada,
+            "A versão informada não existe no catálogo de termos, ou pertence a outro termo."),
+            $"{termo.TermoId}/{termo.VersaoId}")];
     }
+
+    private static IEnumerable<FieldError> ConferirPredicados(
+        string caminhoDaParte, IEnumerable<PredicadoNaEntrada> predicados, CatalogoDoModelo catalogo) =>
+        predicados
+            .Select(predicado => ConferirPredicado($"{caminhoDaParte}.{predicado.Caminho}", predicado.Predicado, catalogo))
+            .OfType<FieldError>();
 
     /// <summary>
     /// A regra que cita fato calculado de atributos do candidato é recusada antes da semântica; a
@@ -290,24 +258,27 @@ internal static class ConferenciaDoModelo
             : null;
     }
 
+    private static IEnumerable<FieldError> ConferirExigenciaPorOpcao(ExigenciaPorOpcao? porOpcao, string caminho, CatalogoDoModelo catalogo) =>
+        porOpcao is not null && RecusaDoFatoPorOpcao(porOpcao.FatoCodigo, catalogo) is { } recusa
+            ? [new FieldError($"{caminho}.porOpcao.fatoCodigo", recusa, porOpcao.FatoCodigo)]
+            : [];
+
     /// <summary>
     /// O documento só se multiplica pelas opções que o processo declara para o fato: são elas que a
     /// aplicação do modelo enumera. Fato de valores globais ou de outra fonte não tem essa lista.
     /// </summary>
-    private static DomainError? ConferirPorOpcao(string fatoCodigoInformado, CatalogoDoModelo catalogo)
+    private static DomainError? RecusaDoFatoPorOpcao(string fatoCodigoInformado, CatalogoDoModelo catalogo)
     {
-        string fatoCodigo = ModeloFormulario.CodigoNaFormaGravada(fatoCodigoInformado);
+        string fatoCodigo = TextoGravavel.CodigoNaFormaGravada(fatoCodigoInformado);
         if (!catalogo.Fatos.TryGetValue(fatoCodigo, out FatoDoCatalogo? fato))
         {
-            return new(ItemFormularioErrorCodes.FatoDesconhecido, $"O fato '{fatoCodigo}' não pertence ao catálogo de fatos do candidato.");
+            return new(ItemFormularioErrorCodes.FatoDesconhecido, "O fato informado não pertence ao catálogo de fatos do candidato.");
         }
 
         return string.Equals(fato.Dominio, DominiosFato.ParaTokenCanonico(DominioFato.Categorico), StringComparison.Ordinal)
             && string.Equals(fato.FonteValores, FontesValoresFato.ParaTokenCanonico(FonteValoresFato.Processo), StringComparison.Ordinal)
             ? null
             : new(ModeloFormularioErrorCodes.ExigenciaPorOpcaoInvalida,
-                $"O documento só pode ser exigido uma vez por opção de fato cujas opções o processo declara; o fato '{fatoCodigo}' não é um deles.");
+                "O documento só pode ser exigido uma vez por opção de fato cujas opções o processo declara. Informe um fato que atenda a essa condição.");
     }
-
-    private static string Prefixar(string prefixo, string? campo) => string.IsNullOrEmpty(campo) ? prefixo : $"{prefixo}.{campo}";
 }

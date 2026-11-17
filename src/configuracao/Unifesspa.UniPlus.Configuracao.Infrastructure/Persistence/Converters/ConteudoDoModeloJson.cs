@@ -6,7 +6,7 @@ using System.Text.Json.Nodes;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
-using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Serializacao;
@@ -31,62 +31,25 @@ internal static class ConteudoDoModeloJson
     public static string Serializar(ConteudoDoModelo conteudo) => new JsonObject
     {
         ["titulo"] = conteudo.Titulo,
-        ["etapas"] = new JsonArray([.. conteudo.Etapas.Select(static e => (JsonNode)new JsonObject
-        {
-            ["codigo"] = e.Codigo,
-            ["ordem"] = e.Ordem,
-            ["tipo"] = EstruturaFormulario.ParaToken(e.Tipo),
-            ["bloco"] = EstruturaFormulario.ParaToken(e.Bloco),
-            ["titulo"] = e.Titulo,
-            ["descricao"] = e.Descricao,
-            ["aviso"] = e.Aviso,
-            ["exibicao"] = e.Exibicao is null ? null : PredicadoDnfJson.ParaJson(e.Exibicao),
-        })]),
-        ["itens"] = new JsonArray([.. conteudo.Itens.Select(static i => (JsonNode)CampoParaJson(i))]),
-        ["termos"] = new JsonArray([.. conteudo.Termos.Select(static t => (JsonNode)new JsonObject
-        {
-            ["codigo"] = t.Codigo,
-            ["ordem"] = t.Ordem,
-            ["termoId"] = t.TermoId,
-            ["versaoId"] = t.VersaoId,
-            ["exibicao"] = t.Exibicao is null ? null : PredicadoDnfJson.ParaJson(t.Exibicao),
-            ["obrigatoriedade"] = PredicadoDnfJson.ParaJson(t.Obrigatoriedade),
-        })]),
-        ["pressupostos"] = new JsonArray([.. conteudo.Pressupostos.Select(static p => (JsonNode)p)]),
-        ["grupos"] = new JsonArray([.. conteudo.Grupos.Select(static g => (JsonNode)new JsonObject
-        {
-            ["codigo"] = g.Codigo,
-            ["ordem"] = g.Ordem,
-            ["etapaCodigo"] = g.EtapaCodigo,
-            ["rotulo"] = g.Rotulo,
-            ["minimo"] = g.Minimo,
-            ["maximo"] = g.Maximo,
-            ["incluiCandidato"] = g.IncluiCandidato,
-            ["exibicao"] = g.Exibicao is null ? null : PredicadoDnfJson.ParaJson(g.Exibicao),
-            ["obrigatoriedade"] = PredicadoDnfJson.ParaJson(g.Obrigatoriedade),
-            ["subitens"] = new JsonArray([.. g.Subitens.Select(static s => (JsonNode)CampoParaJson(s))]),
-        })]),
-        ["documentosExigidos"] = new JsonArray([.. conteudo.Documentos.Select(static d => (JsonNode)new JsonObject
-        {
-            ["faseCodigo"] = d.FaseCodigo,
-            ["tipoDocumentoCodigo"] = d.TipoDocumentoCodigo,
-            ["obrigatorio"] = d.Obrigatorio,
-            ["quando"] = d.Quando is null ? null : PredicadoDnfJson.ParaJson(d.Quando),
-            ["consequenciaIndeferimento"] = d.ConsequenciaIndeferimento,
-            ["basesLegais"] = new JsonArray([.. d.BasesLegais.Select(static b => (JsonNode)new JsonObject
-            {
-                ["referencia"] = b.Referencia,
-                ["abrangencia"] = b.Abrangencia,
-                ["status"] = b.Status,
-                ["observacao"] = b.Observacao,
-            })]),
-            ["porOpcao"] = d.PorOpcao is null ? null : new JsonObject
-            {
-                ["fatoCodigo"] = d.PorOpcao.FatoCodigo,
-                ["exceto"] = new JsonArray([.. d.PorOpcao.Exceto.Select(static v => (JsonNode)JsonValue.Create(v))]),
-            },
-        })]),
+        ["etapas"] = new JsonArray([.. conteudo.Etapas.Select(EtapaParaJson)]),
+        ["itens"] = new JsonArray([.. conteudo.Itens.Select(CampoParaJson)]),
+        ["termos"] = new JsonArray([.. conteudo.Termos.Select(TermoParaJson)]),
+        ["pressupostos"] = new JsonArray([.. conteudo.Pressupostos.Select(static pressuposto => (JsonNode)pressuposto)]),
+        ["grupos"] = new JsonArray([.. conteudo.Grupos.Select(GrupoParaJson)]),
+        ["documentosExigidos"] = new JsonArray([.. conteudo.Documentos.Select(DocumentoParaJson)]),
     }.ToJsonString();
+
+    private static JsonObject EtapaParaJson(EtapaDoModelo etapa) => new()
+    {
+        ["codigo"] = etapa.Codigo,
+        ["ordem"] = etapa.Ordem,
+        ["tipo"] = EstruturaFormulario.ParaToken(etapa.Tipo),
+        ["bloco"] = EstruturaFormulario.ParaToken(etapa.Bloco),
+        ["titulo"] = etapa.Titulo,
+        ["descricao"] = etapa.Descricao,
+        ["aviso"] = etapa.Aviso,
+        ["exibicao"] = PredicadoOpcionalParaJson(etapa.Exibicao),
+    };
 
     private static JsonObject CampoParaJson(ItemDoModelo campo) => new()
     {
@@ -98,11 +61,66 @@ internal static class ConteudoDoModeloJson
         ["formato"] = campo.Formato,
         ["ajuda"] = campo.Ajuda,
         ["obrigatoriedade"] = PredicadoDnfJson.ParaJson(campo.Obrigatoriedade),
-        ["exibicao"] = campo.Exibicao is null ? null : PredicadoDnfJson.ParaJson(campo.Exibicao),
+        ["exibicao"] = PredicadoOpcionalParaJson(campo.Exibicao),
         ["restricoes"] = RestricaoValorJson.ParaJson(campo.Restricoes),
         ["pedirConfirmacao"] = campo.PedirConfirmacao,
         ["impedimento"] = campo.Impedimento is null ? null : PredicadoDnfJson.ParaJson(campo.Impedimento),
     };
+
+    private static JsonObject TermoParaJson(TermoDoModelo termo) => new()
+    {
+        ["codigo"] = termo.Codigo,
+        ["ordem"] = termo.Ordem,
+        ["termoId"] = termo.TermoId,
+        ["versaoId"] = termo.VersaoId,
+        ["exibicao"] = PredicadoOpcionalParaJson(termo.Exibicao),
+        ["obrigatoriedade"] = PredicadoDnfJson.ParaJson(termo.Obrigatoriedade),
+    };
+
+    private static JsonObject GrupoParaJson(GrupoDoModelo grupo) => new()
+    {
+        ["codigo"] = grupo.Codigo,
+        ["ordem"] = grupo.Ordem,
+        ["etapaCodigo"] = grupo.EtapaCodigo,
+        ["rotulo"] = grupo.Rotulo,
+        ["minimo"] = grupo.Minimo,
+        ["maximo"] = grupo.Maximo,
+        ["incluiCandidato"] = grupo.IncluiCandidato,
+        ["exibicao"] = PredicadoOpcionalParaJson(grupo.Exibicao),
+        ["obrigatoriedade"] = PredicadoDnfJson.ParaJson(grupo.Obrigatoriedade),
+        ["subitens"] = new JsonArray([.. grupo.Subitens.Select(CampoParaJson)]),
+    };
+
+    private static JsonObject DocumentoParaJson(DocumentoExigidoDoModelo documento) => new()
+    {
+        ["faseCodigo"] = documento.FaseCodigo,
+        ["tipoDocumentoCodigo"] = documento.TipoDocumentoCodigo,
+        ["obrigatorio"] = documento.Obrigatorio,
+        ["quando"] = PredicadoOpcionalParaJson(documento.Quando),
+        ["consequenciaIndeferimento"] = documento.ConsequenciaIndeferimento,
+        ["basesLegais"] = new JsonArray([.. documento.BasesLegais.Select(BaseLegalParaJson)]),
+        ["porOpcao"] = PorOpcaoParaJson(documento.PorOpcao),
+    };
+
+    private static JsonObject BaseLegalParaJson(BaseLegalDoDocumentoDoModelo baseLegal) => new()
+    {
+        ["referencia"] = baseLegal.Referencia,
+        ["abrangencia"] = baseLegal.Abrangencia,
+        ["status"] = baseLegal.Status,
+        ["observacao"] = baseLegal.Observacao,
+    };
+
+    private static JsonObject? PorOpcaoParaJson(ExigenciaPorOpcao? porOpcao) =>
+        porOpcao is null
+            ? null
+            : new JsonObject
+            {
+                ["fatoCodigo"] = porOpcao.FatoCodigo,
+                ["exceto"] = new JsonArray([.. porOpcao.Exceto.Select(static valor => (JsonNode)JsonValue.Create(valor))]),
+            };
+
+    private static JsonArray? PredicadoOpcionalParaJson(PredicadoDnf? predicado) =>
+        predicado is null ? null : PredicadoDnfJson.ParaJson(predicado);
 
     /// <summary>
     /// Remonta o conteúdo gravado. O documento só é escrito por <see cref="Serializar"/>, sobre um
@@ -114,54 +132,23 @@ internal static class ConteudoDoModeloJson
         JsonElement raiz = documento.RootElement;
         return new ConteudoDoModelo(
             Texto(raiz, "titulo"),
-            [.. raiz.GetProperty("etapas").EnumerateArray().Select(static e => new EtapaDoModelo(
-                e.GetProperty("codigo").GetString()!,
-                e.GetProperty("ordem").GetInt32(),
-                EstruturaFormulario.TipoDoToken(e.GetProperty("tipo").GetString()),
-                EstruturaFormulario.BlocoDoToken(Texto(e, "bloco")),
-                e.GetProperty("titulo").GetString()!,
-                Texto(e, "descricao"),
-                Texto(e, "aviso"),
-                Predicado(e, "exibicao")))],
+            [.. raiz.GetProperty("etapas").EnumerateArray().Select(EtapaDeJson)],
             [.. raiz.GetProperty("itens").EnumerateArray().Select(CampoDeJson)],
-            [.. raiz.GetProperty("termos").EnumerateArray().Select(static t => new TermoDoModelo(
-                t.GetProperty("codigo").GetString()!,
-                t.GetProperty("ordem").GetInt32(),
-                t.GetProperty("termoId").GetGuid(),
-                t.GetProperty("versaoId").GetGuid(),
-                Predicado(t, "exibicao"),
-                Remontar(PredicadoDnfJson.ObrigatoriedadeDeJson(t.GetProperty("obrigatoriedade")))))],
-            [.. raiz.GetProperty("pressupostos").EnumerateArray().Select(static p => p.GetString()!)],
-            [.. raiz.GetProperty("grupos").EnumerateArray().Select(static g => new GrupoDoModelo(
-                g.GetProperty("codigo").GetString()!,
-                g.GetProperty("ordem").GetInt32(),
-                Texto(g, "etapaCodigo"),
-                g.GetProperty("rotulo").GetString()!,
-                g.GetProperty("minimo").GetInt32(),
-                InteiroOuNulo(g.GetProperty("maximo")),
-                Predicado(g, "exibicao"),
-                Remontar(PredicadoDnfJson.ObrigatoriedadeDeJson(g.GetProperty("obrigatoriedade"))),
-                [.. g.GetProperty("subitens").EnumerateArray().Select(CampoDeJson)],
-                g.GetProperty("incluiCandidato").GetBoolean()))],
-            raiz.TryGetProperty("documentosExigidos", out JsonElement documentos)
-                ? [.. documentos.EnumerateArray().Select(static d => new DocumentoExigidoDoModelo(
-                    d.GetProperty("faseCodigo").GetString()!,
-                    d.GetProperty("tipoDocumentoCodigo").GetString()!,
-                    d.GetProperty("obrigatorio").GetBoolean(),
-                    Predicado(d, "quando"),
-                    d.GetProperty("consequenciaIndeferimento").GetString()!,
-                    [.. d.GetProperty("basesLegais").EnumerateArray().Select(static b => new BaseLegalDoDocumentoDoModelo(
-                        b.GetProperty("referencia").GetString()!,
-                        b.GetProperty("abrangencia").GetString()!,
-                        b.GetProperty("status").GetString()!,
-                        Texto(b, "observacao")))],
-                    d.TryGetProperty("porOpcao", out JsonElement porOpcao) && porOpcao.ValueKind == JsonValueKind.Object
-                        ? new ExigenciaPorOpcao(
-                            porOpcao.GetProperty("fatoCodigo").GetString()!,
-                            [.. porOpcao.GetProperty("exceto").EnumerateArray().Select(static v => v.GetString()!)])
-                        : null))]
-                : []);
+            [.. raiz.GetProperty("termos").EnumerateArray().Select(TermoDeJson)],
+            [.. raiz.GetProperty("pressupostos").EnumerateArray().Select(static pressuposto => pressuposto.GetString()!)],
+            [.. raiz.GetProperty("grupos").EnumerateArray().Select(GrupoDeJson)],
+            DocumentosDeJson(raiz));
     }
+
+    private static EtapaDoModelo EtapaDeJson(JsonElement etapa) => new(
+        etapa.GetProperty("codigo").GetString()!,
+        etapa.GetProperty("ordem").GetInt32(),
+        EstruturaFormulario.TipoDoToken(etapa.GetProperty("tipo").GetString()),
+        EstruturaFormulario.BlocoDoToken(Texto(etapa, "bloco")),
+        etapa.GetProperty("titulo").GetString()!,
+        Texto(etapa, "descricao"),
+        Texto(etapa, "aviso"),
+        Predicado(etapa, "exibicao"));
 
     private static ItemDoModelo CampoDeJson(JsonElement campo) => new(
         campo.GetProperty("fatoCodigo").GetString()!,
@@ -176,6 +163,53 @@ internal static class ConteudoDoModeloJson
         Remontar(RestricaoValorJson.ListaDeJson(campo.GetProperty("restricoes"))),
         campo.GetProperty("pedirConfirmacao").GetBoolean(),
         Remontar(PredicadoDnfJson.ImpedimentoDeJson(campo.TryGetProperty("impedimento", out JsonElement impedimento) ? impedimento : default)));
+
+    private static TermoDoModelo TermoDeJson(JsonElement termo) => new(
+        termo.GetProperty("codigo").GetString()!,
+        termo.GetProperty("ordem").GetInt32(),
+        termo.GetProperty("termoId").GetGuid(),
+        termo.GetProperty("versaoId").GetGuid(),
+        Predicado(termo, "exibicao"),
+        Remontar(PredicadoDnfJson.ObrigatoriedadeDeJson(termo.GetProperty("obrigatoriedade"))));
+
+    private static GrupoDoModelo GrupoDeJson(JsonElement grupo) => new(
+        grupo.GetProperty("codigo").GetString()!,
+        grupo.GetProperty("ordem").GetInt32(),
+        Texto(grupo, "etapaCodigo"),
+        grupo.GetProperty("rotulo").GetString()!,
+        grupo.GetProperty("minimo").GetInt32(),
+        InteiroOuNulo(grupo.GetProperty("maximo")),
+        Predicado(grupo, "exibicao"),
+        Remontar(PredicadoDnfJson.ObrigatoriedadeDeJson(grupo.GetProperty("obrigatoriedade"))),
+        [.. grupo.GetProperty("subitens").EnumerateArray().Select(CampoDeJson)],
+        grupo.GetProperty("incluiCandidato").GetBoolean());
+
+    private static IReadOnlyList<DocumentoExigidoDoModelo> DocumentosDeJson(JsonElement raiz) =>
+        raiz.TryGetProperty("documentosExigidos", out JsonElement documentos)
+            ? [.. documentos.EnumerateArray().Select(DocumentoDeJson)]
+            : [];
+
+    private static DocumentoExigidoDoModelo DocumentoDeJson(JsonElement documento) => new(
+        documento.GetProperty("faseCodigo").GetString()!,
+        documento.GetProperty("tipoDocumentoCodigo").GetString()!,
+        documento.GetProperty("obrigatorio").GetBoolean(),
+        Predicado(documento, "quando"),
+        documento.GetProperty("consequenciaIndeferimento").GetString()!,
+        [.. documento.GetProperty("basesLegais").EnumerateArray().Select(BaseLegalDeJson)],
+        PorOpcaoDeJson(documento));
+
+    private static BaseLegalDoDocumentoDoModelo BaseLegalDeJson(JsonElement baseLegal) => new(
+        baseLegal.GetProperty("referencia").GetString()!,
+        baseLegal.GetProperty("abrangencia").GetString()!,
+        baseLegal.GetProperty("status").GetString()!,
+        Texto(baseLegal, "observacao"));
+
+    private static ExigenciaPorOpcao? PorOpcaoDeJson(JsonElement documento) =>
+        documento.TryGetProperty("porOpcao", out JsonElement porOpcao) && porOpcao.ValueKind == JsonValueKind.Object
+            ? new ExigenciaPorOpcao(
+                porOpcao.GetProperty("fatoCodigo").GetString()!,
+                [.. porOpcao.GetProperty("exceto").EnumerateArray().Select(static valor => valor.GetString()!)])
+            : null;
 
     /// <summary>Só o nulo explícito é ausência; qualquer outro valor que não seja inteiro falha, como o resto da leitura.</summary>
     private static int? InteiroOuNulo(JsonElement valor) =>

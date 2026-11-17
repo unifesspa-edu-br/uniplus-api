@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Configuracao.Application.Commands.ModelosFormulario;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -25,7 +26,7 @@ using static Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed.SqlD
 /// É dado administrado — depois de semeado, edita-se pelas telas de administração —, gravado direto
 /// no banco por decisão do líder técnico (uniplus-api#1802), para o processo real estar disponível
 /// sem cadastro manual em cada ambiente. Cada linha é construída pelas factories do domínio: o que o
-/// domínio recusaria derruba a preparaÃ§Ã£o do banco em vez de gravar dado que a API não aceita.
+/// domínio recusaria derruba a preparação do banco em vez de gravar dado que a API não aceita.
 /// </para>
 /// <para>
 /// Os identificadores são fixos, para a inserção ser idempotente e as chaves estrangeiras baterem
@@ -45,15 +46,10 @@ public static class SementePsrMedicina2027
     private const string PontoInscricao = "INSCRICAO";
     private const string PontoHabilitacao = "HABILITACAO";
 
-    /// <summary>Quem consta como autor da promoção dos termos semeados, que não passaram por pessoa.</summary>
-    private const string AutorDaSemente = "semente-psr-medicina-2027";
-
-    /// <summary>Como as recusas do domínio nomeiam esta semente.</summary>
-    internal const string NomeDaSemente = "do PSR Medicina 2027";
+    internal static DeclaracaoDaSemente Declaracao { get; } = new(
+        "do PSR Medicina 2027", "semente-psr-medicina-2027", new DateTimeOffset(2026, 10, 5, 0, 0, 0, TimeSpan.Zero));
 
     private const HipoteseLegalTratamento HipoteseLegal = HipoteseLegalTratamento.CumprimentoObrigacaoLegal;
-
-    private static readonly DateTimeOffset Instante = new(2026, 10, 5, 0, 0, 0, TimeSpan.Zero);
 
     private const string FinalidadeDoFator =
         "Concessão do Fator de Atenuação das Desigualdades de Acesso previsto no edital do processo seletivo.";
@@ -113,26 +109,19 @@ public static class SementePsrMedicina2027
     /// <inheritdoc cref="CaminhoPeloEnsinoMedio"/>
     public const string CaminhoPelaResidencia = "RESIDENCIA";
 
-    /// <summary>Um termo da inscrição: o código pelo qual o modelo o cita, o nome, o texto e a base legal.</summary>
-    public sealed record TermoDaSemente(int N, string Codigo, string Nome, string Texto, string BaseLegal)
-    {
-        /// <summary>O identificador do termo.</summary>
-        public Guid TermoId => Id(TabelaTermo, N);
-
-        /// <summary>O identificador da versão promovida, que o modelo cita.</summary>
-        public Guid VersaoId => Id(TabelaVersaoDoTermo, N);
-    }
+    private static TermoDaSemente Termo(int n, string codigo, string nome, string texto, string baseLegal) =>
+        new(Id(TabelaTermo, n), Id(TabelaVersaoDoTermo, n), codigo, nome, texto, baseLegal);
 
     /// <summary>Os termos que a inscrição de Medicina exige (edital, item 1.10). Os textos são proposta.</summary>
     public static IReadOnlyList<TermoDaSemente> Termos { get; } =
     [
-        new(1, "USO_DAS_NOTAS_DO_ENEM", "Uso das notas do ENEM e dos dados da inscrição",
+        Termo(1, "USO_DAS_NOTAS_DO_ENEM", "Uso das notas do ENEM e dos dados da inscrição",
             "Autorizo a Unifesspa a utilizar meus resultados no Exame Nacional do Ensino Médio (ENEM), nas edições admitidas pelo edital, e os dados que informo nesta inscrição, exclusivamente para as finalidades deste processo seletivo.",
             "Lei nº 13.709/2018 (LGPD), art. 7º, inciso I; edital do processo seletivo."),
-        new(2, "NORMAS_DO_EDITAL", "Concordância com as normas do edital",
+        Termo(2, "NORMAS_DO_EDITAL", "Concordância com as normas do edital",
             "Declaro que li e concordo com as normas do edital deste processo seletivo e que as informações que presto são verdadeiras, sob as penas da lei.",
             "Edital do processo seletivo."),
-        new(3, "CONSULTA_AO_BANCO_CENTRAL", "Autorização de consulta ao Banco Central",
+        Termo(3, "CONSULTA_AO_BANCO_CENTRAL", "Autorização de consulta ao Banco Central",
             "Autorizo a Unifesspa a consultar, junto ao Banco Central do Brasil, as informações financeiras em meu nome e no dos membros da minha composição familiar, para a verificação da renda que declaro ao concorrer às vagas reservadas por critério de renda.",
             "Lei nº 12.711/2012; Lei nº 13.709/2018 (LGPD), art. 7º, inciso I; edital do processo seletivo."),
     ];
@@ -232,7 +221,7 @@ public static class SementePsrMedicina2027
     public static IReadOnlyList<string> ComandosDoTipoTermosEFatos()
     {
         List<string> comandos = [ComandoDoTipoProcesso()];
-        comandos.AddRange(Termos.SelectMany(ComandosDoTermo));
+        comandos.AddRange(Termos.SelectMany(static t => SqlDaSemente.ComandosDoTermo(t, Declaracao)));
         comandos.AddRange(ComandosDosFatos(Fatos));
         return comandos;
     }
@@ -255,7 +244,7 @@ public static class SementePsrMedicina2027
         foreach (FatoDaSemente semente in fatos)
         {
             CatalogoDeFatos catalogo = new([.. construidos.Select(static c => c.Item2)], []);
-            FatoCandidato fato = Exigir(semente.Construir(catalogo), $"fato {semente.N}");
+            FatoCandidato fato = Declaracao.Exigir(semente.Construir(catalogo), $"fato {semente.N}");
             AdicionarValores(fato, semente.Valores);
             construidos.Add((semente, fato));
         }
@@ -268,7 +257,7 @@ public static class SementePsrMedicina2027
         for (int ordem = 0; ordem < valores.Count; ordem++)
         {
             (string codigo, string descricao) = valores[ordem];
-            Exigir(fato.AdicionarValorDominio(codigo, descricao, ordem, ativo: true), $"valor {codigo} de {fato.Codigo}");
+            Declaracao.Exigir(fato.AdicionarValorDominio(codigo, descricao, ordem, ativo: true), $"valor {codigo} de {fato.Codigo}");
         }
     }
 
@@ -320,23 +309,23 @@ public static class SementePsrMedicina2027
 
     private static string ComandoDoModelo(
         int n, string codigo, string nome, string descricao, FinalidadeFormulario finalidade, ConteudoDoModelo conteudo,
-        IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes) =>
-        SqlDaSemente.ComandoDoModelo(
-            Id(TabelaModelo, n), codigo, nome, descricao, finalidade, TipoProcessoCodigo, conteudo, derivacoes, Instante, NomeDaSemente);
+        IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes)
+    {
+        ModeloFormulario modelo = Declaracao.Exigir(
+            ModeloFormulario.Criar(codigo, nome, descricao, finalidade, TipoProcessoCodigo, conteudo, derivacoes), $"modelo {codigo}");
+        Declaracao.Exigir(modelo.Ativar(), $"ativação do modelo {codigo}");
+        return SqlDaSemente.ComandoDoModelo(Id(TabelaModelo, n), modelo, Declaracao);
+    }
 
     private static string ComandoDoTipoProcesso()
     {
-        TipoProcesso tipo = Exigir(TipoProcesso.Criar(TipoProcessoCodigo, "Processo Seletivo Regular Unificado", null), "tipo de processo");
+        TipoProcesso tipo = Declaracao.Exigir(TipoProcesso.Criar(TipoProcessoCodigo, "Processo Seletivo Regular Unificado", null), "tipo de processo");
         // O tipo de processo é reaproveitado pelo código quando o ambiente já o tem: os modelos o
         // citam pelo código, e nada depende do identificador dele.
         return Inserir("tipos_processo", "codigo",
             ("id", Uuid(TipoProcessoId)), ("codigo", Texto(tipo.Codigo)), ("nome", Texto(tipo.Nome)),
-            ("descricao", Texto(tipo.Descricao)), ("ativo", Logico(tipo.Ativo)), ("created_at", Momento(Instante)));
+            ("descricao", Texto(tipo.Descricao)), ("ativo", Logico(tipo.Ativo)), ("created_at", Momento(Declaracao.Instante)));
     }
-
-    private static IEnumerable<string> ComandosDoTermo(TermoDaSemente semente) =>
-        SqlDaSemente.ComandosDoTermo(
-            semente.TermoId, semente.VersaoId, semente.Nome, semente.Texto, semente.BaseLegal, AutorDaSemente, Instante, NomeDaSemente);
 
     private static string ComandoDoFato(Guid id, FatoCandidato fato) =>
         Inserir("fatos_do_candidato", "id", [.. ColunasDoFato(id, fato), .. ColunasDaAprovacao(fato.Aprovacao)]);
@@ -355,7 +344,7 @@ public static class SementePsrMedicina2027
         ("finalidade_tratamento", Texto(fato.FinalidadeTratamento)),
         ("hipotese_legal", Texto(HipotesesLegaisTratamento.ParaTokenCanonico(fato.HipoteseLegal))),
         ("semeado_pelo_sistema", Logico(fato.SemeadoPeloSistema)), ("ativo", Logico(fato.Ativo)), ("regras_padrao", "'[]'::jsonb"),
-        ("dependencias", ListaDeTexto(fato.Dependencias)), ("created_at", Momento(Instante)),
+        ("dependencias", ListaDeTexto(fato.Dependencias)), ("created_at", Momento(Declaracao.Instante)),
     ];
 
     private static (string Coluna, string Valor)[] ColunasDaAprovacao(AprovacaoDaProtecao aprovacao) =>
@@ -370,9 +359,5 @@ public static class SementePsrMedicina2027
         Inserir("valores_de_dominio_do_fato", "id",
             ("id", Uuid(id)), ("fato_candidato_id", Uuid(fatoId)), ("codigo", Texto(valor.Codigo)),
             ("descricao", Texto(valor.Descricao)), ("ordem", valor.Ordem.ToString(CultureInfo.InvariantCulture)),
-            ("ativo", Logico(valor.Ativo)), ("created_at", Momento(Instante)));
-
-    private static T Exigir<T>(Result<T> resultado, string oQue) => SqlDaSemente.Exigir(resultado, NomeDaSemente, oQue);
-
-    private static void Exigir(Result resultado, string oQue) => SqlDaSemente.Exigir(resultado, NomeDaSemente, oQue);
+            ("ativo", Logico(valor.Ativo)), ("created_at", Momento(Declaracao.Instante)));
 }

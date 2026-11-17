@@ -4,8 +4,12 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Application.Commands.ModelosFormulario;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+
+using static Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport.ConteudosDeModeloParaTeste;
 
 /// <summary>O conjunto básico no modelo de inscrição gravado antes de o conjunto ganhar itens.</summary>
 public sealed class ConjuntoBasicoDoModeloTests
@@ -31,16 +35,7 @@ public sealed class ConjuntoBasicoDoModeloTests
     [Fact(DisplayName = "O modelo de inscrição gravado sem os dados de sexo e gênero os recebe na seção dos dados básicos, sem repetir a ordem de nenhum item")]
     public void Mesclar_ModeloGravadoAntesDosTresDados_RecebeOsItensSemColidir()
     {
-        ConteudoDoModelo completo = ConjuntoBasicoDoModelo.Mesclar(
-            new ConteudoDoModelo("Inscrição", [Dados], [], [], [], []), Formatos);
-        string[] novos = ["SEXO_CIVIL", "IDENTIDADE_GENERO", "ORIENTACAO_SEXUAL"];
-        ItemDoModelo[] doConjunto = [.. completo.Itens.Where(i => i.EtapaCodigo == ConjuntoBasicoDaInscricao.CodigoDaSecao && !novos.Contains(i.FatoCodigo))];
-        ItemDoModelo[] gravadosAntes =
-        [
-            .. doConjunto.Select(static (item, ordem) => item with { Ordem = ordem }),
-            new ItemDoModelo("BAIXA_RENDA", doConjunto.Length, "DADOS", "Baixa renda", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Nunca, null, [], false),
-        ];
-        ConteudoDoModelo legado = completo with { Itens = gravadosAntes };
+        ConteudoDoModelo legado = ModeloGravadoAntesDosTresDados();
 
         ConteudoDoModelo mesclado = ConjuntoBasicoDoModelo.Mesclar(legado, Formatos);
 
@@ -53,8 +48,7 @@ public sealed class ConjuntoBasicoDoModeloTests
     [Fact(DisplayName = "O modelo com a seção dos dados básicos fora da ordem canônica sai na ordem e com os rótulos do conjunto")]
     public void Mesclar_SecaoForaDaOrdem_SaiNaOrdemCanonica()
     {
-        ConteudoDoModelo completo = ConjuntoBasicoDoModelo.Mesclar(
-            new ConteudoDoModelo("Inscrição", [Dados], [], [], [], []), Formatos);
+        ConteudoDoModelo completo = ConteudoComOConjunto();
         ItemDoModelo[] doConjunto = [.. completo.Itens.Where(i => i.EtapaCodigo == ConjuntoBasicoDaInscricao.CodigoDaSecao)];
         ItemDoModelo sexo = doConjunto.Single(static i => i.FatoCodigo == "SEXO");
         ItemDoModelo[] sexoNoFim = [.. doConjunto.Where(static i => i.FatoCodigo != "SEXO"), sexo with { Rotulo = "Sexo" }];
@@ -65,5 +59,51 @@ public sealed class ConjuntoBasicoDoModeloTests
         mesclado.Itens.OrderBy(static i => i.Ordem).Select(static i => i.FatoCodigo)
             .Should().Equal(ConjuntoBasicoDaInscricao.Itens.Select(static i => i.FatoCodigo));
         mesclado.Itens.Single(static i => i.FatoCodigo == "SEXO").Rotulo.Should().Be("Sexo biológico");
+    }
+
+    [Fact(DisplayName = "O modelo de inscrição, como aplicado, traz o conjunto básico na seção reservada")]
+    public void ComoAplicado_ModeloDeInscricao_TrazOConjuntoBasico()
+    {
+        ModeloFormulario modelo = ModeloGravado(FinalidadeFormulario.Inscricao);
+
+        ConteudoDoModelo aplicado = ConjuntoBasicoDoModelo.ComoAplicado(modelo, []);
+
+        aplicado.Itens.Select(static i => i.FatoCodigo).Should().Contain(ConjuntoBasicoDaInscricao.Fatos);
+    }
+
+    [Fact(DisplayName = "O modelo de outra finalidade, como aplicado, é o conteúdo gravado")]
+    public void ComoAplicado_OutraFinalidade_DevolveOConteudoGravado()
+    {
+        ModeloFormulario modelo = ModeloGravado(FinalidadeFormulario.Habilitacao);
+
+        ConteudoDoModelo aplicado = ConjuntoBasicoDoModelo.ComoAplicado(modelo, []);
+
+        aplicado.Should().BeSameAs(modelo.Conteudo);
+    }
+
+    private static ConteudoDoModelo ConteudoComOConjunto() =>
+        ConjuntoBasicoDoModelo.Mesclar(new ConteudoDoModelo("Inscrição", [Dados], [], [], [], []), Formatos);
+
+    private static ConteudoDoModelo ModeloGravadoAntesDosTresDados()
+    {
+        ConteudoDoModelo completo = ConteudoComOConjunto();
+        string[] novos = ["SEXO_CIVIL", "IDENTIDADE_GENERO", "ORIENTACAO_SEXUAL"];
+        ItemDoModelo[] doConjunto = [.. completo.Itens.Where(i => i.EtapaCodigo == ConjuntoBasicoDaInscricao.CodigoDaSecao && !novos.Contains(i.FatoCodigo))];
+        ItemDoModelo[] gravadosAntes =
+        [
+            .. doConjunto.Select(static (item, ordem) => item with { Ordem = ordem }),
+            new ItemDoModelo("BAIXA_RENDA", doConjunto.Length, "DADOS", "Baixa renda", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Nunca, null, [], false),
+        ];
+        return completo with { Itens = gravadosAntes };
+    }
+
+    private static ModeloFormulario ModeloGravado(FinalidadeFormulario finalidade)
+    {
+        ConteudoDoModelo conteudo = ConjuntoBasicoDoModelo.Mesclar(new ConteudoDoModelo("Modelo", [Secao, Revisao], [], [], [], []), Formatos);
+        Result<ModeloFormulario> criado = ModeloFormulario.Criar(
+            "MODELO_DO_TESTE", "Modelo do teste", null, finalidade, null, conteudo,
+            new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal));
+        criado.IsSuccess.Should().BeTrue(string.Join("; ", criado.Errors.Select(static e => $"{e.Field}: {e.Error.Code}")));
+        return criado.Value!;
     }
 }

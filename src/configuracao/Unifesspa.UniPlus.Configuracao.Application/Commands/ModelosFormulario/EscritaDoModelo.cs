@@ -1,26 +1,22 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.ModelosFormulario;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
-using Unifesspa.UniPlus.Configuracao.Application.Commands.CalendariosDiasUteis;
-using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposProcesso;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Domain.Services;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
-/// O que a criação e a edição do modelo têm em comum: ler o conteúdo, conferi-lo contra o catálogo
-/// de fatos, de termos e de tipos de processo, e gravar, traduzindo as corridas de índice único e
-/// de concorrência otimista (xmin) em recusa.
+/// O que a criação e a edição do modelo têm em comum antes de gravar: ler o conteúdo e conferi-lo
+/// contra o catálogo de fatos, de termos e de tipos de processo (<see cref="GravacaoDoModelo"/> grava).
 /// </summary>
-internal static class EscritaDoModelo
+internal sealed class EscritaDoModelo(
+    IFatoCandidatoRepository fatoRepository, ITermoConsentimentoReader termoReader, ITipoProcessoReader tipoProcessoReader)
 {
-    private const string IndiceUnicoDoCodigo = "ix_modelos_formulario_codigo";
-
     /// <summary>
     /// O conteúdo lido e as recusas da leitura e do catálogo, acumuladas (ADR-0125). O modelo de
     /// inscrição coleta o conjunto básico na seção reservada, como o formulário do processo: o item
@@ -28,149 +24,54 @@ internal static class EscritaDoModelo
     /// de processo é conferido só quando muda: desativar o tipo recusa vínculo novo, e o modelo que
     /// já o usava continua com ele.
     /// </summary>
-    public static async Task<(ConteudoLido Conteudo, CatalogoDoModelo Catalogo, List<FieldError> Erros)> LerEConferirAsync(
+    public async Task<(ConteudoLido Conteudo, CatalogoDoModelo Catalogo, List<FieldError> Erros)> LerEConferirAsync(
         ConteudoDoModeloInput? entrada,
         FinalidadeFormulario finalidade,
-        ConteudoDoModeloInput? gravado,
         string? tipoProcessoCodigo,
-        string? tipoProcessoAnterior,
-        VinculosDoModelo existentes,
-        IFatoCandidatoRepository fatoRepository,
-        ITermoConsentimentoReader termoReader,
-        ITipoProcessoReader tipoProcessoReader,
+        ModeloGravado gravado,
         CancellationToken cancellationToken)
     {
         IReadOnlyList<FatoCandidato> fatos = await fatoRepository.ListarTodosAsync(cancellationToken).ConfigureAwait(false);
         CatalogoDoModelo catalogo = CatalogoDoModelo.De(fatos);
-        (ConteudoDoModeloInput? mesclada, List<FieldError> daSecao) = ComASecaoDosDadosBasicos(entrada, finalidade, gravado);
+        (ConteudoDoModeloInput? mesclada, List<FieldError> daSecao) = ConjuntoBasicoDoModelo.ComASecaoDosDadosBasicos(entrada, finalidade, gravado.Conteudo);
         ConteudoLido conteudo = ConteudoLido.Ler(mesclada, catalogo.Formatos);
 
-        IReadOnlyList<VersaoTermoConsentimentoView> versoes = await termoReader
-            .ListarVersoesAsync([.. conteudo.Termos.Select(static t => t.Termo.VersaoId).Distinct()], cancellationToken)
-            .ConfigureAwait(false);
-        List<FieldError> erros = [.. ModeloFormulario.NoConteudo(
-            daSecao.Concat(conteudo.Erros).Concat(ConferenciaDoModelo.Conferir(conteudo, catalogo, versoes.ToDictionary(static v => v.VersaoId), existentes)))];
-
-        await ConferirTipoDeProcessoAsync(tipoProcessoCodigo, tipoProcessoAnterior, tipoProcessoReader, erros, cancellationToken).ConfigureAwait(false);
+        List<FieldError> erros = await ConferirNoCatalogoAsync(conteudo, catalogo, daSecao, gravado.Vinculos, cancellationToken).ConfigureAwait(false);
+        if (await TipoDeProcessoNovoInexistenteAsync(tipoProcessoCodigo, gravado.TipoProcessoCodigo, cancellationToken).ConfigureAwait(false) is { } inexistente)
+        {
+            erros.Add(inexistente);
+        }
 
         return (conteudo, catalogo, erros);
     }
 
+    private async Task<List<FieldError>> ConferirNoCatalogoAsync(
+        ConteudoLido conteudo, CatalogoDoModelo catalogo, List<FieldError> daSecao, VinculosDoModelo existentes, CancellationToken cancellationToken)
+    {
+        IReadOnlyList<VersaoTermoConsentimentoView> versoes = await termoReader
+            .ListarVersoesAsync([.. conteudo.Termos.Select(static t => t.Termo.VersaoId).Distinct()], cancellationToken)
+            .ConfigureAwait(false);
+        return [.. ConferenciaDoConteudoDoModelo.NoConteudo(
+            daSecao.Concat(conteudo.Erros).Concat(ConferenciaDoModelo.Conferir(conteudo, catalogo, versoes.ToDictionary(static v => v.VersaoId), existentes)))];
+    }
+
+    private async Task<FieldError?> TipoDeProcessoNovoInexistenteAsync(
+        string? informado, string? anterior, CancellationToken cancellationToken)
+    {
+        string? tipo = CodigoGravavelDoTipoDeProcesso(informado);
+        if (tipo is null || string.Equals(tipo, anterior, StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        return await tipoProcessoReader.ObterAtivoPorCodigoAsync(tipo, cancellationToken).ConfigureAwait(false) is null
+            ? new FieldError("tipoProcessoCodigo", new DomainError(
+                ModeloFormularioErrorCodes.TipoProcessoInexistente, "O tipo de processo não existe ou está desativado."))
+            : null;
+    }
+
     // O texto que o banco não grava não é consultado: a recusa dele é a do modelo. O código é
-    // comparado na forma em que o cadastro de tipo de processo o grava (TextoNormalizavel.AparadoEmNfc).
-    private static async Task ConferirTipoDeProcessoAsync(
-        string? tipoProcessoCodigo,
-        string? tipoProcessoAnterior,
-        ITipoProcessoReader tipoProcessoReader,
-        List<FieldError> erros,
-        CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrWhiteSpace(tipoProcessoCodigo) || !ModeloFormulario.EhGravavel(tipoProcessoCodigo))
-        {
-            return;
-        }
-
-        string tipo = TextoNormalizavel.AparadoEmNfc(tipoProcessoCodigo);
-        if (!string.Equals(tipo, tipoProcessoAnterior, StringComparison.Ordinal)
-            && await tipoProcessoReader.ObterAtivoPorCodigoAsync(tipo, cancellationToken).ConfigureAwait(false) is null)
-        {
-            erros.Add(new("tipoProcessoCodigo", new DomainError(
-                ModeloFormularioErrorCodes.TipoProcessoInexistente, $"O tipo de processo '{tipo}' não existe ou está desativado.")));
-        }
-    }
-
-    /// <summary>
-    /// O conteúdo do modelo como o formulário do processo o terá depois de aplicado: no de inscrição, com o
-    /// conjunto básico na seção reservada (<see cref="ConjuntoBasicoDoModelo"/>). A simulação do modelo
-    /// tem de mostrar o que o candidato verá.
-    /// </summary>
-    public static ConteudoDoModelo ComoAplicado(ModeloFormulario modelo, IReadOnlyList<FatoCandidato> fatos)
-    {
-        ArgumentNullException.ThrowIfNull(modelo);
-        return modelo.Finalidade == FinalidadeFormulario.Inscricao
-            ? ConjuntoBasicoDoModelo.Mesclar(modelo.Conteudo, CatalogoDoModelo.De(fatos).Formatos)
-            : modelo.Conteudo;
-    }
-
-    internal static (ConteudoDoModeloInput? Entrada, List<FieldError> Erros) ComASecaoDosDadosBasicos(
-        ConteudoDoModeloInput? entrada, FinalidadeFormulario finalidade, ConteudoDoModeloInput? gravado)
-    {
-        if (entrada is null || finalidade != FinalidadeFormulario.Inscricao)
-        {
-            return (entrada, []);
-        }
-
-        (IReadOnlyList<FatoColetadoInput> itens, IReadOnlyList<GrupoColetadoInput> grupos, List<FieldError> erros) =
-            ConjuntoBasicoDaInscricao.MesclarItens(entrada.Itens ?? [], entrada.Grupos ?? [], ConjuntoBasicoDaInscricao.Referencia(gravado?.Itens ?? []));
-        (IReadOnlyList<EtapaFormularioInput> etapas, List<FieldError> daSecao) =
-            ConjuntoBasicoDaInscricao.MesclarEtapas(entrada.Etapas ?? [], ConjuntoBasicoDaInscricao.SecaoDe(gravado?.Etapas ?? []));
-        return (entrada with { Itens = itens, Grupos = grupos, Etapas = etapas }, [.. erros, .. daSecao]);
-    }
-
-    /// <summary>Grava o modelo novo: o código é único entre todos os modelos, desativados inclusive.</summary>
-    public static async Task<Result<Guid>> GravarNovoAsync(
-        ModeloFormulario modelo, IModeloFormularioRepository repository, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
-    {
-        if (await repository.CodigoExisteAsync(modelo.Codigo, cancellationToken).ConfigureAwait(false))
-        {
-            return Result<Guid>.Failure(CodigoJaExiste());
-        }
-
-        await repository.AdicionarAsync(modelo, cancellationToken).ConfigureAwait(false);
-        try
-        {
-            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception exception) when (UniqueConstraintViolation.EhConflito(exception, IndiceUnicoDoCodigo))
-        {
-            // Sem descartar, a inserção continua rastreada e o SaveChangesAsync do outbox a repete
-            // fora deste catch, e o 409 vira 500.
-            unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result<Guid>.Failure(CodigoJaExiste());
-        }
-
-        return Result<Guid>.Success(modelo.Id);
-    }
-
-    /// <summary>Carrega o modelo, aplica a mutação e grava, traduzindo a corrida de concorrência em conflito.</summary>
-    public static async Task<Result> MutarAsync(
-        Guid id,
-        Func<ModeloFormulario, Task<Result>> mutacao,
-        IModeloFormularioRepository repository,
-        IUnitOfWork unitOfWork,
-        CancellationToken cancellationToken)
-    {
-        ModeloFormulario? modelo = await repository.ObterPorIdAsync(id, cancellationToken).ConfigureAwait(false);
-        if (modelo is null)
-        {
-            return Result.Failure(new DomainError(ModeloFormularioErrorCodes.NaoEncontrado, "Modelo de formulário não encontrado."));
-        }
-
-        Result resultado = await mutacao(modelo).ConfigureAwait(false);
-        if (resultado.IsFailure)
-        {
-            // A edição recusada pelo catálogo pode já ter mudado o modelo rastreado; sem descartar,
-            // o SaveChangesAsync do outbox o gravaria mesmo com a recusa.
-            unitOfWork.DescartarAlteracoesNaoSalvas();
-            return resultado;
-        }
-
-        try
-        {
-            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception ex) when (OptimisticConcurrencyViolation.Is(ex))
-        {
-            // Os endpoints têm Idempotency-Key (ADR-0119): captura local e descarte, para o
-            // SaveChangesAsync do outbox não reencontrar a entidade modificada.
-            unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result.Failure(new DomainError(
-                ModeloFormularioErrorCodes.ConflitoDeConcorrencia, "Este modelo de formulário foi alterado concorrentemente. Tente novamente."));
-        }
-
-        return Result.Success();
-    }
-
-    private static DomainError CodigoJaExiste() => new(
-        ModeloFormularioErrorCodes.CodigoJaExiste, "Já existe um modelo de formulário com o código informado.");
+    // comparado aparado, em NFC, a forma em que o cadastro de tipo de processo o grava.
+    private static string? CodigoGravavelDoTipoDeProcesso(string? informado) =>
+        string.IsNullOrWhiteSpace(informado) || !TextoGravavel.EhGravavel(informado) ? null : TextoNormalizavel.AparadoEmNfc(informado);
 }

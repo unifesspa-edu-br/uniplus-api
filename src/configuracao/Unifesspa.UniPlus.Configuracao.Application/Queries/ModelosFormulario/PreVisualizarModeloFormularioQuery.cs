@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -45,65 +46,75 @@ public static class PreVisualizarModeloFormularioQueryHandler
         PreVisualizarModeloFormularioQuery query,
         IModeloFormularioRepository repository,
         IFatoCandidatoRepository fatoRepository,
-        ICondicaoAtendimentoRepository condicaoRepository,
-        IRecursoAcessibilidadeRepository recursoRepository,
-        ITipoDeficienciaRepository tipoDeficienciaRepository,
-        IBaseLegalBonusRegionalRepository baseLegalBonusRepository,
+        OpcoesDoCadastroInstitucional cadastro,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(fatoRepository);
-        ArgumentNullException.ThrowIfNull(condicaoRepository);
-        ArgumentNullException.ThrowIfNull(recursoRepository);
-        ArgumentNullException.ThrowIfNull(tipoDeficienciaRepository);
-        ArgumentNullException.ThrowIfNull(baseLegalBonusRepository);
+        ArgumentNullException.ThrowIfNull(cadastro);
 
         ModeloFormulario? modelo = await repository.ObterPorIdParaLeituraAsync(query.Id, cancellationToken).ConfigureAwait(false);
-        if (modelo is null)
-        {
-            return Result<PreVisualizacaoDoModeloDto?>.Success(null);
-        }
+        return modelo is null
+            ? Result<PreVisualizacaoDoModeloDto?>.Success(null)
+            : await PreVisualizarAsync(modelo, query.Simulacao ?? new(null, null, null), fatoRepository, cadastro, cancellationToken).ConfigureAwait(false);
+    }
 
-        PreVisualizacaoDoModeloInput simulacao = query.Simulacao ?? new(null, null, null);
+    private static async Task<Result<PreVisualizacaoDoModeloDto?>> PreVisualizarAsync(
+        ModeloFormulario modelo,
+        PreVisualizacaoDoModeloInput entrada,
+        IFatoCandidatoRepository fatoRepository,
+        OpcoesDoCadastroInstitucional cadastro,
+        CancellationToken cancellationToken)
+    {
         (Dictionary<string, IReadOnlyList<OcorrenciaRespondida>> ocorrencias, List<FieldError> erros) =
-            OcorrenciasRecebidas.Ler(simulacao.Grupos, ModeloFormularioErrorCodes.OcorrenciaSimuladaInvalida);
+            OcorrenciasRecebidas.Ler(entrada.Grupos, ModeloFormularioErrorCodes.OcorrenciaSimuladaInvalida);
         if (erros.Count > 0)
         {
             return Result<PreVisualizacaoDoModeloDto?>.ValidationFailure(erros);
         }
 
-        // A resposta fora das opções que o catálogo oferta não vale, como no renderizável que o front
-        // interpreta: os dois têm de dar o mesmo resultado para a mesma simulação.
         IReadOnlyList<FatoCandidato> fatos = await fatoRepository.ListarTodosAsync(cancellationToken).ConfigureAwait(false);
-        // O mesmo conteúdo do renderizável: o do modelo aplicado, o de inscrição com o conjunto básico.
-        ConteudoDoModelo conteudo = EscritaDoModelo.ComoAplicado(modelo, fatos);
-        Dictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes = VocabularioDoCatalogo.OpcoesDoModelo(fatos, conteudo);
-        await OpcoesDoCadastroInstitucional.CompletarAsync(opcoes, fatos, condicaoRepository, recursoRepository, tipoDeficienciaRepository, baseLegalBonusRepository, cancellationToken).ConfigureAwait(false);
-        Dictionary<string, IReadOnlySet<string>> ofertas = VocabularioDoCatalogo.Ofertas(opcoes);
-        AvaliacaoFormulario avaliacao = AvaliadorFormulario.Avaliar(
-            conteudo.ParaAvaliacao(VocabularioDoCatalogo.DerivacoesDosFatos(fatos), VocabularioDoCatalogo.AgregadosDosGrupos(fatos, conteudo.Grupos)),
-            new EntradaAvaliacaoFormulario(
-                RespostaDeCampo.DentroDaOferta(simulacao.Respostas ?? new Dictionary<string, JsonElement>(), ofertas),
-                new HashSet<string>(simulacao.EtapasConcluidas ?? [], StringComparer.Ordinal),
-                RespostaDeCampo.ComoFatosConhecidos(simulacao.Pressupostos),
-                Envio: null,
-                ocorrencias.ToDictionary(
-                    static o => o.Key,
-                    o => (IReadOnlyList<OcorrenciaRespondida>)[.. o.Value.Select(r => r with { Respostas = RespostaDeCampo.DentroDaOferta(r.Respostas, ofertas) })],
-                    StringComparer.Ordinal)));
+        SimulacaoDoModelo simulacao = await SimulacaoDoModelo.MontarAsync(modelo, fatos, cadastro, cancellationToken).ConfigureAwait(false);
+        return Result<PreVisualizacaoDoModeloDto?>.Success(Projetar(Avaliar(simulacao, entrada, ocorrencias), simulacao.Conteudo));
+    }
 
-        Dictionary<string, ItemDoModelo> itemPorFato = conteudo.Itens
-            .Concat(conteudo.Grupos.SelectMany(static g => g.Subitens))
-            .ToDictionary(static i => i.FatoCodigo, StringComparer.Ordinal);
-        return Result<PreVisualizacaoDoModeloDto?>.Success(new PreVisualizacaoDoModeloDto(
+    private static AvaliacaoFormulario Avaliar(
+        SimulacaoDoModelo simulacao, PreVisualizacaoDoModeloInput entrada, Dictionary<string, IReadOnlyList<OcorrenciaRespondida>> ocorrencias) =>
+        AvaliadorFormulario.Avaliar(
+            simulacao.Definicao(),
+            new EntradaAvaliacaoFormulario(
+                simulacao.RespostasDentroDaOferta(entrada.Respostas ?? new Dictionary<string, JsonElement>()),
+                new HashSet<string>(entrada.EtapasConcluidas ?? [], StringComparer.Ordinal),
+                RespostaDeCampo.ComoFatosConhecidos(entrada.Pressupostos),
+                Envio: null,
+                OcorrenciasDentroDaOferta(simulacao, ocorrencias)));
+
+    private static Dictionary<string, IReadOnlyList<OcorrenciaRespondida>> OcorrenciasDentroDaOferta(
+        SimulacaoDoModelo simulacao, Dictionary<string, IReadOnlyList<OcorrenciaRespondida>> ocorrencias) =>
+        ocorrencias.ToDictionary(
+            static o => o.Key,
+            o => (IReadOnlyList<OcorrenciaRespondida>)[.. o.Value.Select(r => r with { Respostas = simulacao.RespostasDentroDaOferta(r.Respostas) })],
+            StringComparer.Ordinal);
+
+    private static PreVisualizacaoDoModeloDto Projetar(AvaliacaoFormulario avaliacao, ConteudoDoModelo conteudo)
+    {
+        Dictionary<string, ItemDoModelo> itemPorFato = conteudo.Campos().ToDictionary(static i => i.FatoCodigo, StringComparer.Ordinal);
+        return new PreVisualizacaoDoModeloDto(
             [.. avaliacao.Itens.Select(i => Item(i, itemPorFato))],
             [.. avaliacao.Termos.Select(static t => new TermoPreVisualizadoDto(t.Codigo, t.Visivel.ToCodigo(), t.Obrigatorio.ToCodigo()))],
-            [.. avaliacao.Grupos.Select(g => new GrupoPreVisualizadoDto(
-                g.Codigo, g.EtapaCodigo, g.Visivel.ToCodigo(), g.Obrigatorio.ToCodigo(), g.ContagemValida, g.OcorrenciaDoCandidatoValida,
-                [.. g.Ocorrencias.Select(o => new OcorrenciaPreVisualizadaDto(o.Id, [.. o.Itens.Select(i => Item(i, itemPorFato))]))]))],
-            [.. avaliacao.Etapas.Select(static e => new SecaoPreVisualizadaDto(e.Codigo, e.Visivel.ToCodigo()))]));
+            [.. avaliacao.Grupos.Select(g => Grupo(g, itemPorFato))],
+            [.. avaliacao.Etapas.Select(static e => new SecaoPreVisualizadaDto(e.Codigo, e.Visivel.ToCodigo()))]);
     }
+
+    private static GrupoPreVisualizadoDto Grupo(AvaliacaoGrupo grupo, Dictionary<string, ItemDoModelo> itemPorFato) => new(
+        grupo.Codigo,
+        grupo.EtapaCodigo,
+        grupo.Visivel.ToCodigo(),
+        grupo.Obrigatorio.ToCodigo(),
+        grupo.ContagemValida,
+        grupo.OcorrenciaDoCandidatoValida,
+        [.. grupo.Ocorrencias.Select(o => new OcorrenciaPreVisualizadaDto(o.Id, [.. o.Itens.Select(i => Item(i, itemPorFato))]))]);
 
     private static ItemPreVisualizadoDto Item(AvaliacaoItem item, Dictionary<string, ItemDoModelo> itemPorFato) => new(
         item.FatoCodigo,

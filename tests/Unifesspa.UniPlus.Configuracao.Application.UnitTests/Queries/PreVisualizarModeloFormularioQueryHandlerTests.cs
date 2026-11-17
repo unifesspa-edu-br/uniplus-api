@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -38,9 +39,11 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     private readonly ITipoDeficienciaRepository _tiposDeficiencia = Substitute.For<ITipoDeficienciaRepository>();
     private readonly IBaseLegalBonusRegionalRepository _basesDoBonus = Substitute.For<IBaseLegalBonusRegionalRepository>();
     private readonly FatoCandidato _certificado = Declarado("CERTIFICADO");
+    private readonly OpcoesDoCadastroInstitucional _cadastro;
 
     public PreVisualizarModeloFormularioQueryHandlerTests()
     {
+        _cadastro = new OpcoesDoCadastroInstitucional(_condicoes, _recursos, _tiposDeficiencia, _basesDoBonus);
         _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [_certificado]);
     }
 
@@ -110,7 +113,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     public async Task Handle_ModeloInexistente_DevolveNulo()
     {
         Kernel.Results.Result<PreVisualizacaoDoModeloDto?> resultado = await PreVisualizarModeloFormularioQueryHandler.Handle(
-            new PreVisualizarModeloFormularioQuery(Guid.NewGuid(), new(null, null, null)), _repository, _fatos, _condicoes, _recursos, _tiposDeficiencia, _basesDoBonus, CancellationToken.None);
+            new PreVisualizarModeloFormularioQuery(Guid.NewGuid(), new(null, null, null)), _repository, _fatos, _cadastro, CancellationToken.None);
 
         resultado.Value.Should().BeNull();
     }
@@ -118,19 +121,9 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     [Fact(DisplayName = "A pré-visualização avalia o grupo repetível: a exibição de cada campo em cada ocorrência e a contagem")]
     public async Task Handle_GrupoRepetivel_AvaliaCadaOcorrencia()
     {
-        GrupoDoModelo familia = new(
-            "COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", 1, 2, null, Obrigatoriedade.Sempre,
-            [Subitem("TRABALHA_NO_CAMPO", 0), Subitem("DECLARACAO_RURAL", 1, exibicao: Quando("TRABALHA_NO_CAMPO", true))]);
-        ModeloFormulario modelo = Modelo([Item("CERTIFICADO", 0)], grupos: [familia]);
+        ModeloFormulario modelo = Modelo([Item("CERTIFICADO", 0)], grupos: [ComposicaoFamiliar(minimo: 1, maximo: 2)]);
 
-        PreVisualizacaoDoModeloDto resultado = (await PreVisualizarAsync(modelo, grupos: new()
-        {
-            ["COMPOSICAO_FAMILIAR"] =
-            [
-                new OcorrenciaRecebida("m1", Json(new() { ["TRABALHA_NO_CAMPO"] = true })),
-                new OcorrenciaRecebida("m2", Json(new() { ["TRABALHA_NO_CAMPO"] = false })),
-            ],
-        }))!;
+        PreVisualizacaoDoModeloDto resultado = (await PreVisualizarAsync(modelo, grupos: new() { ["COMPOSICAO_FAMILIAR"] = TrabalhaNoCampoEDeixaDeTrabalhar() }))!;
 
         GrupoPreVisualizadoDto grupo = resultado.Grupos.Should().ContainSingle().Which;
         grupo.ContagemValida.Should().BeTrue();
@@ -141,12 +134,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     [Fact(DisplayName = "A resposta fora das opções que o catálogo oferta não vale, como no renderizável que o front interpreta")]
     public async Task Handle_RespostaForaDaOferta_NaoVale()
     {
-        FatoCandidato cor = CriacaoDoFato.CriarDoAdministrador(
-            "COR_RACA", "Cor ou raça", "Descrição do fato.", DominioFato.Categorico, CardinalidadeFato.Escalar, FonteValoresFato.Global, null, "INSCRICAO",
-            EscopoFato.Candidato, ClassificacaoDeProtecao.Sensivel, Finalidade, Hipotese).Value!;
-        cor.AdicionarValorDominio("PRETA", "Preta", 0, ativo: true).IsSuccess.Should().BeTrue();
-        cor.AdicionarValorDominio("AMARELA", "Amarela", 1, ativo: false).IsSuccess.Should().BeTrue();
-        _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [_certificado, cor]);
+        _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [_certificado, CorComAmarelaDesativada()]);
         ModeloFormulario modelo = Modelo([
             Item("COR_RACA", 0, TipoRenderizacao.SelecaoUnica),
             Item("CERTIFICADO", 1, exibicao: Quando("COR_RACA", "AMARELA")),
@@ -156,6 +144,23 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
 
         resultado.Itens.Single(static i => i.FatoCodigo == "CERTIFICADO").Visivel.Should().NotBe(
             "VERDADEIRO", "o valor desativado no catálogo não é ofertado, e a resposta com ele é descartada");
+    }
+
+    [Fact(DisplayName = "A resposta fora do cadastro institucional que o modelo oferta não vale")]
+    public async Task Handle_RespostaForaDoCadastroInstitucional_NaoVale()
+    {
+        _condicoes.ListarVivosParaLeituraAsync(Arg.Any<CancellationToken>()).Returns([CondicaoAtendimentoEspecializado.Criar("TEA", "Autismo", null).Value!]);
+        _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [_certificado, Declarado("CONDICAO_ATENDIMENTO", DominioFato.Categorico, FonteValoresFato.Processo)]);
+        ModeloFormulario modelo = Modelo([
+            Item("CONDICAO_ATENDIMENTO", 0, TipoRenderizacao.SelecaoUnica),
+            Item("CERTIFICADO", 1, exibicao: Quando("CONDICAO_ATENDIMENTO", "TEA")),
+        ]);
+
+        PreVisualizacaoDoModeloDto dentro = (await PreVisualizarAsync(modelo, respostas: new() { ["CONDICAO_ATENDIMENTO"] = "TEA" }))!;
+        PreVisualizacaoDoModeloDto fora = (await PreVisualizarAsync(modelo, respostas: new() { ["CONDICAO_ATENDIMENTO"] = "OUTRA" }))!;
+
+        dentro.Itens.Single(static i => i.FatoCodigo == "CERTIFICADO").Visivel.Should().Be("VERDADEIRO");
+        fora.Itens.Single(static i => i.FatoCodigo == "CERTIFICADO").Visivel.Should().NotBe("VERDADEIRO");
     }
 
     [Fact(DisplayName = "A pré-visualização diz de cada seção se ela aparece e as opções vigentes do campo de escolha")]
@@ -180,17 +185,13 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
         GrupoDoModelo familia = new(
             "COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", 0, null, null, Obrigatoriedade.Nunca, [Subitem("TRABALHA_NO_CAMPO", 0)]);
         ModeloFormulario modelo = Modelo([Item("CERTIFICADO", 0)], grupos: [familia]);
-        _repository.ObterPorIdParaLeituraAsync(modelo.Id, Arg.Any<CancellationToken>()).Returns(modelo);
 
-        Kernel.Results.Result<PreVisualizacaoDoModeloDto?> resultado = await PreVisualizarModeloFormularioQueryHandler.Handle(
-            new PreVisualizarModeloFormularioQuery(modelo.Id, new(null, null, null, new Dictionary<string, IReadOnlyList<OcorrenciaRecebida>?>
-            {
-                ["COMPOSICAO_FAMILIAR"] = [new OcorrenciaRecebida("m1", null), new OcorrenciaRecebida("m1", null)],
-            })),
-            _repository, _fatos, _condicoes, _recursos, _tiposDeficiencia, _basesDoBonus, CancellationToken.None);
+        Kernel.Results.Result<PreVisualizacaoDoModeloDto?> resultado = await ResultadoDaPreVisualizacaoAsync(
+            modelo, grupos: new() { ["COMPOSICAO_FAMILIAR"] = [new OcorrenciaRecebida("m1", null), new OcorrenciaRecebida("m1", null)] });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModeloFormulario.OcorrenciaSimuladaInvalida");
+        await _fatos.DidNotReceiveWithAnyArgs().ListarTodosAsync(default);
     }
 
     private async Task<PreVisualizacaoDoModeloDto?> PreVisualizarAsync(
@@ -199,12 +200,21 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
         Dictionary<string, object>? pressupostos = null,
         Dictionary<string, IReadOnlyList<OcorrenciaRecebida>?>? grupos = null)
     {
-        _repository.ObterPorIdParaLeituraAsync(modelo.Id, Arg.Any<CancellationToken>()).Returns(modelo);
-        Kernel.Results.Result<PreVisualizacaoDoModeloDto?> resultado = await PreVisualizarModeloFormularioQueryHandler.Handle(
-            new PreVisualizarModeloFormularioQuery(modelo.Id, new(Json(respostas), null, Json(pressupostos), grupos)),
-            _repository, _fatos, _condicoes, _recursos, _tiposDeficiencia, _basesDoBonus, CancellationToken.None);
+        Kernel.Results.Result<PreVisualizacaoDoModeloDto?> resultado = await ResultadoDaPreVisualizacaoAsync(modelo, respostas, pressupostos, grupos);
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         return resultado.Value;
+    }
+
+    private Task<Kernel.Results.Result<PreVisualizacaoDoModeloDto?>> ResultadoDaPreVisualizacaoAsync(
+        ModeloFormulario modelo,
+        Dictionary<string, object>? respostas = null,
+        Dictionary<string, object>? pressupostos = null,
+        Dictionary<string, IReadOnlyList<OcorrenciaRecebida>?>? grupos = null)
+    {
+        _repository.ObterPorIdParaLeituraAsync(modelo.Id, Arg.Any<CancellationToken>()).Returns(modelo);
+        return PreVisualizarModeloFormularioQueryHandler.Handle(
+            new PreVisualizarModeloFormularioQuery(modelo.Id, new(Json(respostas), null, Json(pressupostos), grupos)),
+            _repository, _fatos, _cadastro, CancellationToken.None);
     }
 
     private static Dictionary<string, JsonElement>? Json(Dictionary<string, object>? valores) =>
@@ -234,8 +244,26 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     private static PredicadoDnf Quando(string fato, object valor) =>
         PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(valor)).Value!)]).Value!;
 
-    private static FatoCandidato Declarado(string codigo) =>
+    private static GrupoDoModelo ComposicaoFamiliar(int minimo, int maximo) => new(
+        "COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", minimo, maximo, null, Obrigatoriedade.Sempre,
+        [Subitem("TRABALHA_NO_CAMPO", 0), Subitem("DECLARACAO_RURAL", 1, exibicao: Quando("TRABALHA_NO_CAMPO", true))]);
+
+    private static IReadOnlyList<OcorrenciaRecebida> TrabalhaNoCampoEDeixaDeTrabalhar() =>
+    [
+        new OcorrenciaRecebida("m1", Json(new() { ["TRABALHA_NO_CAMPO"] = true })),
+        new OcorrenciaRecebida("m2", Json(new() { ["TRABALHA_NO_CAMPO"] = false })),
+    ];
+
+    private static FatoCandidato CorComAmarelaDesativada()
+    {
+        FatoCandidato cor = Declarado("COR_RACA", DominioFato.Categorico, FonteValoresFato.Global);
+        cor.AdicionarValorDominio("PRETA", "Preta", 0, ativo: true).IsSuccess.Should().BeTrue();
+        cor.AdicionarValorDominio("AMARELA", "Amarela", 1, ativo: false).IsSuccess.Should().BeTrue();
+        return cor;
+    }
+
+    private static FatoCandidato Declarado(string codigo, DominioFato dominio = DominioFato.Booleano, FonteValoresFato? fonte = null) =>
         CriacaoDoFato.CriarDoAdministrador(
-            codigo, codigo, "Descrição do fato.", DominioFato.Booleano, CardinalidadeFato.Escalar, null, null, "INSCRICAO", EscopoFato.Candidato,
+            codigo, codigo, "Descrição do fato.", dominio, CardinalidadeFato.Escalar, fonte, null, "INSCRICAO", EscopoFato.Candidato,
             ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
 }

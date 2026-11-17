@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
@@ -102,20 +103,8 @@ public sealed class ModeloFormularioVinculoNovoTests : ModeloFormularioHandlerTe
     [Fact(DisplayName = "Derivado desativado cujas respostas formam as opções de um item é vínculo novo recusado")]
     public async Task Criar_OpcoesDeDerivadoDesativado_Recusa()
     {
-        FatoCandidato opcao = CriacaoDoFato.CriarDoAdministrador(
-            "OPCAO", "Opção", "Descrição do fato.", DominioFato.Categorico, CardinalidadeFato.Escalar, FonteValoresFato.Global, null, "INSCRICAO",
-            EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
-        FatoCandidato perfil = CriacaoDoFato.CriarDerivadoDoAdministrador(
-            "PERFIL", "Perfil", "Descrição do fato.", DominioFato.Categorico, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
-        Aprovar(opcao);
-        Aprovar(perfil);
-        opcao.AdicionarValorDominio("A", "A", 0, ativo: true).IsSuccess.Should().BeTrue();
-        perfil.AdicionarValorDominio("A", "A", 0, ativo: true).IsSuccess.Should().BeTrue();
-        RegraDerivacao regra = RegraDerivacao.Criar(
-            PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("CERTIFICADO", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!,
-            "A").Value!;
-        perfil.DefinirRegrasPadrao([regra], new CatalogoDeFatos([Certificado, opcao, perfil], [])).IsSuccess.Should().BeTrue();
-        perfil.Desativar().IsSuccess.Should().BeTrue();
+        FatoCandidato opcao = OpcaoComUmValor();
+        FatoCandidato perfil = PerfilDerivadoDesativado(opcao);
         Fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns([Certificado, opcao, perfil]);
         FatoColetadoInput comOpcoes = Item("OPCAO", 1, "SELECAO_UNICA") with { Restricoes = [new RestricaoValorInput("OPCOES_DAS_RESPOSTAS", Fatos: ["PERFIL"])] };
 
@@ -193,4 +182,28 @@ public sealed class ModeloFormularioVinculoNovoTests : ModeloFormularioHandlerTe
         resultado.Error!.Code.Should().Be(ModeloFormularioErrorCodes.ConflitoDeConcorrencia);
         UnitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
     }
+    private static FatoCandidato OpcaoComUmValor()
+    {
+        FatoCandidato opcao = CriacaoDoFato.CriarDoAdministrador(
+            "OPCAO", "Opção", "Descrição do fato.", DominioFato.Categorico, CardinalidadeFato.Escalar, FonteValoresFato.Global, null, "INSCRICAO",
+            EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
+        Aprovar(opcao);
+        opcao.AdicionarValorDominio("A", "A", 0, ativo: true).IsSuccess.Should().BeTrue();
+        return opcao;
+    }
+
+    private FatoCandidato PerfilDerivadoDesativado(FatoCandidato opcao)
+    {
+        FatoCandidato perfil = CriacaoDoFato.CriarDerivadoDoAdministrador(
+            "PERFIL", "Perfil", "Descrição do fato.", DominioFato.Categorico, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
+        Aprovar(perfil);
+        perfil.AdicionarValorDominio("A", "A", 0, ativo: true).IsSuccess.Should().BeTrue();
+        RegraDerivacao regra = RegraDerivacao.Criar(
+            PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("CERTIFICADO", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!,
+            "A").Value!;
+        perfil.DefinirRegrasPadrao([regra], new CatalogoDeFatos([Certificado, opcao, perfil], [])).IsSuccess.Should().BeTrue();
+        perfil.Desativar().IsSuccess.Should().BeTrue();
+        return perfil;
+    }
+
 }

@@ -5,6 +5,7 @@ using Unifesspa.UniPlus.Configuracao.Application.Mappings;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Regras.Formularios;
 
@@ -37,30 +38,23 @@ public static class ObterModeloFormularioQueryHandler
 
 public static class ListarModelosFormularioQueryHandler
 {
+    private static readonly ListarModelosFormularioResult PaginaVazia = new([], null, null);
+
     public static async Task<ListarModelosFormularioResult> Handle(
         ListarModelosFormularioQuery query, IModeloFormularioRepository repository, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
 
-        // Finalidade desconhecida não filtra por nada que exista: a página é vazia, em vez de ignorar
-        // o filtro e listar tudo.
-        FinalidadeFormulario? finalidade = null;
-        if (query.Finalidade is not null)
-        {
-            finalidade = EstruturaFormulario.FinalidadeDoToken(query.Finalidade);
-            if (finalidade == FinalidadeFormulario.Nenhuma)
-            {
-                return new ListarModelosFormularioResult([], null, null);
-            }
-        }
+        FinalidadeFormulario? finalidade = FinalidadeDoFiltro(query.Finalidade);
+        return finalidade == FinalidadeFormulario.Nenhuma || TipoDeProcessoNaoGravavel(query.TipoProcessoCodigo)
+            ? PaginaVazia
+            : await ListarPaginaAsync(query, finalidade, repository, cancellationToken).ConfigureAwait(false);
+    }
 
-        // Tipo de processo que o banco não grava não é de nenhum modelo: a página é vazia.
-        if (query.TipoProcessoCodigo is { } tipo && !ModeloFormulario.EhGravavel(tipo))
-        {
-            return new ListarModelosFormularioResult([], null, null);
-        }
-
+    private static async Task<ListarModelosFormularioResult> ListarPaginaAsync(
+        ListarModelosFormularioQuery query, FinalidadeFormulario? finalidade, IModeloFormularioRepository repository, CancellationToken cancellationToken)
+    {
         (IReadOnlyList<ModeloFormulario> itens, Guid? anterior, Guid? proximo) = await repository
             .ListarPaginadoAsync(
                 query.AfterId, query.Limit, query.Direction,
@@ -69,4 +63,12 @@ public static class ListarModelosFormularioQueryHandler
             .ConfigureAwait(false);
         return new ListarModelosFormularioResult([.. itens.Select(static m => m.ToView())], anterior, proximo);
     }
+
+    // Finalidade desconhecida não filtra por nada que exista: a página é vazia, em vez de ignorar
+    // o filtro e listar tudo.
+    private static FinalidadeFormulario? FinalidadeDoFiltro(string? token) =>
+        token is null ? null : EstruturaFormulario.FinalidadeDoToken(token);
+
+    // Tipo de processo que o banco não grava não é de nenhum modelo: a página é vazia.
+    private static bool TipoDeProcessoNaoGravavel(string? tipo) => tipo is not null && !TextoGravavel.EhGravavel(tipo);
 }
