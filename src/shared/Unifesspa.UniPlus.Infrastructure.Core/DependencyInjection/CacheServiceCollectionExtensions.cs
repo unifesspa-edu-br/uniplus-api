@@ -42,6 +42,14 @@ public static class CacheServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(configuration);
         ArgumentNullException.ThrowIfNull(environment);
 
+        AddRedisOptions(services, configuration, environment);
+        AddRedisConnection(services);
+
+        return services;
+    }
+
+    private static void AddRedisOptions(
+        IServiceCollection services, IConfiguration configuration, IHostEnvironment environment) =>
         services.AddOptions<RedisOptions>()
             .Bind(configuration.GetSection(RedisOptions.SectionName))
             .Validate(
@@ -50,14 +58,14 @@ public static class CacheServiceCollectionExtensions
                 "Redis:ConnectionString must be configured outside Development.")
             .ValidateOnStart();
 
-        services.AddSingleton<IConnectionMultiplexer>(sp =>
+    private static void AddRedisConnection(IServiceCollection services)
+    {
+        services.AddSingleton<IConnectionMultiplexer>(provider =>
         {
-            RedisOptions opts = sp.GetRequiredService<IOptions<RedisOptions>>().Value;
-            return ConnectionMultiplexer.Connect(opts.ConnectionString);
+            RedisOptions options = provider.GetRequiredService<IOptions<RedisOptions>>().Value;
+            return ConnectionMultiplexer.Connect(options.ConnectionString);
         });
 
         services.AddScoped<ICacheService, RedisCacheService>();
-
-        return services;
     }
 }
