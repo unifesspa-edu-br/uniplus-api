@@ -42,17 +42,16 @@ public sealed class ContencaoPorSuspensao
     {
         ArgumentNullException.ThrowIfNull(verificador);
 
-        AcessoDasEtapas? acesso = await AcessoDaVersao.ConsultarParaContencaoAsync(verificador, perfilId, cancellationToken).ConfigureAwait(false);
-        DomainError? recusa = await RecusaDeSuspenderAsync(acesso, verificador, cancellationToken).ConfigureAwait(false);
-        if (recusa is not null || _autoria.Autor is not { } autor)
+        Result<PedidoDeSuspensao> pedido = await PedidoAutorizadoAsync(perfilId, motivo, verificador, cancellationToken).ConfigureAwait(false);
+        if (pedido.IsFailure)
         {
-            return GravacaoDaOperacao<bool>.Sem(Result<bool>.Failure(recusa ?? PerfilHandlerErros.AutorNaoIdentificado()));
+            return GravacaoDaOperacao<bool>.Sem(Result<bool>.Failure(pedido.Error!));
         }
 
         return await _operacao
             .ExecutarComAvisosAsync(
                 perfilId,
-                (perfil, contexto) => SuspenderNoPerfilAsync(perfil, new PedidoDeSuspensao(autor, acesso!.Papel, motivo, contexto.Agora), cancellationToken),
+                (perfil, contexto) => SuspenderNoPerfilAsync(perfil, pedido.Value!, contexto.Agora, cancellationToken),
                 cancellationToken)
             .ConfigureAwait(false);
     }
@@ -63,11 +62,8 @@ public sealed class ContencaoPorSuspensao
     {
         ArgumentNullException.ThrowIfNull(verificador);
 
-        AcessoDasEtapas? acesso = await AcessoDaVersao.ConsultarParaContencaoAsync(verificador, perfilId, cancellationToken).ConfigureAwait(false);
         EtapaDaVersao? pedida = EtapaDaVersaoCodigo.TentarLer(etapa);
-        DomainError? recusa = acesso is null
-            ? PerfilHandlerErros.AutorNaoIdentificado()
-            : await acesso.RecusaDaEtapaAsync(pedida, verificador, cancellationToken).ConfigureAwait(false);
+        DomainError? recusa = await RecusaDaRetomadaAsync(perfilId, pedida, verificador, cancellationToken).ConfigureAwait(false);
 
         return recusa is not null
             ? Result<RetomadaDaSuspensaoDto>.Failure(recusa)
@@ -77,6 +73,28 @@ public sealed class ContencaoPorSuspensao
                     (perfil, contexto) => RetomarNoPerfilAsync(perfil, pedida!.Value, motivo, contexto.Agora, cancellationToken),
                     cancellationToken)
                 .ConfigureAwait(false);
+    }
+
+    /// <summary>Quem suspende, com o papel que a permissão lhe deu, e por quê; a recusa de acesso responde antes da identidade do token.</summary>
+    private async Task<Result<PedidoDeSuspensao>> PedidoAutorizadoAsync(
+        Guid perfilId, string? motivo, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
+    {
+        AcessoDasEtapas? acesso = await AcessoDaVersao.ConsultarParaContencaoAsync(verificador, perfilId, cancellationToken).ConfigureAwait(false);
+        DomainError? recusa = await RecusaDeSuspenderAsync(acesso, verificador, cancellationToken).ConfigureAwait(false);
+
+        return recusa is null && _autoria.Autor is { } autor
+            ? Result<PedidoDeSuspensao>.Success(new PedidoDeSuspensao(autor, acesso!.Papel, motivo))
+            : Result<PedidoDeSuspensao>.Failure(recusa ?? PerfilHandlerErros.AutorNaoIdentificado());
+    }
+
+    private static async Task<DomainError?> RecusaDaRetomadaAsync(
+        Guid perfilId, EtapaDaVersao? pedida, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
+    {
+        AcessoDasEtapas? acesso = await AcessoDaVersao.ConsultarParaContencaoAsync(verificador, perfilId, cancellationToken).ConfigureAwait(false);
+
+        return acesso is null
+            ? PerfilHandlerErros.AutorNaoIdentificado()
+            : await acesso.RecusaDaEtapaAsync(pedida, verificador, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<DomainError?> RecusaDeSuspenderAsync(
@@ -99,9 +117,9 @@ public sealed class ContencaoPorSuspensao
     }
 
     private async Task<DesfechoDaOperacao<bool>> SuspenderNoPerfilAsync(
-        Perfil perfil, PedidoDeSuspensao pedido, CancellationToken cancellationToken)
+        Perfil perfil, PedidoDeSuspensao pedido, DateTimeOffset agora, CancellationToken cancellationToken)
     {
-        Result suspensao = perfil.Suspender(pedido.Autor, pedido.Papel, pedido.Motivo, pedido.Instante, _catalogo);
+        Result suspensao = perfil.Suspender(pedido.Autor, pedido.Papel, pedido.Motivo, agora, _catalogo);
         if (suspensao.IsFailure)
         {
             return new DesfechoDaOperacao<bool>(Result<bool>.ValidationFailure(suspensao.Errors));
@@ -115,12 +133,13 @@ public sealed class ContencaoPorSuspensao
     private async Task<Result<RetomadaDaSuspensaoDto>> RetomarNoPerfilAsync(
         Perfil perfil, EtapaDaVersao etapa, string? motivo, DateTimeOffset agora, CancellationToken cancellationToken)
     {
-        if (await _autoria.DaVersaoAsync(perfil.Id, cancellationToken).ConfigureAwait(false) is not { } autoria)
+        Result<AutoriaDaVersao> autoria = await _autoria.ExigirDaVersaoAsync(perfil.Id, cancellationToken).ConfigureAwait(false);
+        if (autoria.IsFailure)
         {
-            return Result<RetomadaDaSuspensaoDto>.Failure(PerfilHandlerErros.AutorNaoIdentificado());
+            return Result<RetomadaDaSuspensaoDto>.Failure(autoria.Error!);
         }
 
-        Result decisao = perfil.DecidirRetomada(new ContextoDaRetomada(autoria.Pessoa, autoria.TemConcessao, etapa, motivo, _catalogo, agora));
+        Result decisao = perfil.DecidirRetomada(new ContextoDaRetomada(autoria.Value!.Pessoa, autoria.Value.TemConcessao, etapa, motivo, _catalogo, agora));
 
         return decisao.IsFailure
             ? Result<RetomadaDaSuspensaoDto>.ValidationFailure(decisao.Errors)
@@ -129,5 +148,5 @@ public sealed class ContencaoPorSuspensao
                 [.. perfil.EtapasPendentesDaRetomada(_catalogo).Select(static e => e.ToCodigo())]));
     }
 
-    private sealed record PedidoDeSuspensao(Identidade Autor, EtapaDaVersao Papel, string? Motivo, DateTimeOffset Instante);
+    private sealed record PedidoDeSuspensao(Identidade Autor, EtapaDaVersao Papel, string? Motivo);
 }
