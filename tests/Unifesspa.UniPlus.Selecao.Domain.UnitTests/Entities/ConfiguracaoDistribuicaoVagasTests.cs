@@ -231,7 +231,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     [Fact(DisplayName = "ConferirForma sem violação retorna lote vazio")]
     public void ConferirForma_SemViolacao_Vazio()
     {
-        IReadOnlyList<FieldError> erros = ConferenciaDaDistribuicaoDeVagas.ConferirForma(50, 0.75m, 1);
+        IReadOnlyList<FieldError> erros = ConferenciaDaDistribuicaoDeVagas.ConferirForma(50, 0.75m, 1, []);
 
         erros.Should().BeEmpty();
     }
@@ -239,7 +239,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     [Fact(DisplayName = "ConferirForma com zero modalidades reporta ModalidadesVazias sem precisar de nenhuma resolvida")]
     public void ConferirForma_ZeroModalidades_ReportaModalidadesVazias()
     {
-        IReadOnlyList<FieldError> erros = ConferenciaDaDistribuicaoDeVagas.ConferirForma(50, 0.75m, 0);
+        IReadOnlyList<FieldError> erros = ConferenciaDaDistribuicaoDeVagas.ConferirForma(50, 0.75m, 0, []);
 
         erros.Select(e => e.Error.Code).Should().BeEquivalentTo(["ConfiguracaoDistribuicaoVagas.ModalidadesVazias"]);
     }

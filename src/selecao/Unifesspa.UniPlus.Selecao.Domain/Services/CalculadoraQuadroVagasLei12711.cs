@@ -44,9 +44,9 @@ public static class CalculadoraQuadroVagasLei12711
         ArgumentNullException.ThrowIfNull(retiradas);
         ArgumentNullException.ThrowIfNull(suplementares);
 
-        Result entradas = ValidarEntradas(retiradas, suplementares);
-        return entradas.IsFailure
-            ? Result<QuadroDeVagasDaLeiDeCotas>.Failure(entradas.Error!)
+        Result colisao = ValidarColisaoDeChave(retiradas, suplementares);
+        return colisao.IsFailure
+            ? Result<QuadroDeVagasDaLeiDeCotas>.Failure(colisao.Error!)
             : Montar(vagasOfertadasBase, percentualDaReservaLegal, demografica, retiradas, suplementares);
     }
 
@@ -99,24 +99,6 @@ public static class CalculadoraQuadroVagasLei12711
     private static DomainError AmplaConcorrenciaNegativa(int ampla, int vagasOfertadasBase) => new(
         "ConfiguracaoDistribuicaoVagas.QuadroAmplaConcorrenciaNegativa",
         $"A ampla concorrência resultaria negativa ({ampla}) para {vagasOfertadasBase} vagas ofertadas base: ajuste as vagas ofertadas base, o percentual da reserva legal ou as retiradas.");
-
-    private static Result ValidarEntradas(
-        IReadOnlyDictionary<string, int> retiradas, IReadOnlyDictionary<string, int> suplementares)
-    {
-        Result quantidadesValidas = ValidarQuantidadesNaoNegativas(retiradas, suplementares);
-        return quantidadesValidas.IsFailure ? quantidadesValidas : ValidarColisaoDeChave(retiradas, suplementares);
-    }
-
-    private static Result ValidarQuantidadesNaoNegativas(
-        IReadOnlyDictionary<string, int> retiradas, IReadOnlyDictionary<string, int> suplementares)
-    {
-        KeyValuePair<string, int>? negativa = retiradas.Concat(suplementares).FirstOrDefault(kv => kv.Value < 0);
-        return negativa is { Key: not null } n
-            ? Result.Failure(new DomainError(
-                "ConfiguracaoDistribuicaoVagas.QuantidadeVagaNegativa",
-                $"A quantidade de vagas de \"{n.Key}\" não pode ser negativa ({n.Value})."))
-            : Result.Success();
-    }
 
     /// <summary>
     /// Uma retirada ou suplemento cujo código coincide com uma sub-reserva

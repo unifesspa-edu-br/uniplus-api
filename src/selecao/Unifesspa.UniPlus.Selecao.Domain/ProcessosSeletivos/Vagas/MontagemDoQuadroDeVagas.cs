@@ -20,9 +20,11 @@ public static class MontagemDoQuadroDeVagas
     /// A regra de distribuição não é de nenhum dos dois ramos: a partição dos códigos é fechada, e a
     /// regra que entra nela entra também no ramo que a monta.
     /// </exception>
+    /// <exception cref="InvalidOperationException">A declaração traz dado recusado: só o que foi aceito se monta.</exception>
     public static Result<QuadroDeVagas> Montar(DistribuicaoDeVagasDeclarada declarada)
     {
         ArgumentNullException.ThrowIfNull(declarada);
+        declarada.ExigirSemRecusados();
 
         return MontarDoRamo(declarada with { Modalidades = [.. declarada.Modalidades.OrderBy(static m => m.Codigo, StringComparer.Ordinal)] });
     }
@@ -31,16 +33,15 @@ public static class MontagemDoQuadroDeVagas
     // não depender da ordem da declaração, que o envelope também não preserva.
     private static Result<QuadroDeVagas> MontarDoRamo(DistribuicaoDeVagasDeclarada declarada)
     {
-        string regra = declarada.RegraDeDistribuicao.Codigo;
-        if (RegraDistribuicaoVagasCodigo.EhRamoFederal(regra))
+        if (declarada.NoRamoFederal)
         {
             return MontarDaLeiDeCotas(declarada);
         }
 
-        return RegraDistribuicaoVagasCodigo.EhQuadroFixo(regra)
+        return declarada.NoQuadroFixo
             ? MontarFixadoNoEdital(declarada)
             : throw new ArgumentException(
-                $"A regra de distribuição {regra} não é do ramo da Lei de Cotas nem de quadro fixado no edital.",
+                $"A regra de distribuição {declarada.CodigoDaRegra} não é do ramo da Lei de Cotas nem de quadro fixado no edital.",
                 nameof(declarada));
     }
 

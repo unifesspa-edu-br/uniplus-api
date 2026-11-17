@@ -62,7 +62,10 @@ public static class DefinirDistribuicaoVagasCommandHandler
             return processo;
         }
 
-        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagas>> resolvidas = await ResolverAsync(command, resolvedor, cancellationToken).ConfigureAwait(false);
+        ArgumentNullException.ThrowIfNull(resolvedor);
+
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagas>> resolvidas = await resolvedor
+            .ResolverTodasAsync(command.DistribuicaoVagas, cancellationToken).ConfigureAwait(false);
         return resolvidas.IsFailure
             ? Result<ProcessoSeletivo>.ValidationFailure(resolvidas.Errors)
             : await DefinirAsync(command, processo.Value!, resolvidas.Value!, fatoCandidatoReader, cancellationToken).ConfigureAwait(false);
@@ -85,19 +88,6 @@ public static class DefinirDistribuicaoVagasCommandHandler
             : processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio
                 ? Result<ProcessoSeletivo>.Failure(bloqueio)
                 : Result<ProcessoSeletivo>.Success(processo);
-    }
-
-    // A forma de todas as distribuições do payload não depende de nenhum cadastro nem do catálogo de regras, e
-    // roda antes de qualquer I/O (validação vence I/O dentro do bucket 422, ADR-0125).
-    private static async Task<Result<IReadOnlyList<ConfiguracaoDistribuicaoVagas>>> ResolverAsync(
-        DefinirDistribuicaoVagasCommand command, ConfiguracaoDistribuicaoVagasResolver resolvedor, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(resolvedor);
-
-        IReadOnlyList<FieldError> formaErros = ConfiguracaoDistribuicaoVagasResolver.ConferirForma(command.DistribuicaoVagas);
-        return formaErros.Count > 0
-            ? Result<IReadOnlyList<ConfiguracaoDistribuicaoVagas>>.ValidationFailure(formaErros)
-            : await resolvedor.ResolverTodasAsync(command.DistribuicaoVagas, cancellationToken).ConfigureAwait(false);
     }
 
     // Uma modalidade retirada da oferta não pode deixar sem valor válido a condição viva sobre qualquer fato cujos

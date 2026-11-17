@@ -31,6 +31,11 @@ internal static class ApoioDaDistribuicaoDeVagas
     internal static RegraCatalogo RegraDistribuicao(string codigo) => RegraCatalogo.Criar(
         codigo, "v1", TipoRegra.RegraDistribuicaoVagas, Json("{}"), Json("[]"), "base legal");
 
+    internal static RegraCatalogo RegraDistribuicaoComRol(string codigo, params string[] modalidadesAdmitidas) => RegraCatalogo.Criar(
+        codigo, "v1", TipoRegra.RegraDistribuicaoVagas,
+        Json($"{{\"modalidades_admitidas\":[{string.Join(",", modalidadesAdmitidas.Select(static m => $"\"{m}\""))}]}}"),
+        Json("[]"), "base legal");
+
     internal sealed record Mocks(
         IProcessoSeletivoRepository Repository,
         IRegraCatalogoReader RegraCatalogoReader,

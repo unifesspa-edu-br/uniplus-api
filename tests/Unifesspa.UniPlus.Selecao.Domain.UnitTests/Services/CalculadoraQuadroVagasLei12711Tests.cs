@@ -225,18 +225,6 @@ public sealed class CalculadoraQuadroVagasLei12711Tests
         quadro.ConferenciaDaReservaLegal.VagasCortadasPorEscassez.Should().BePositive();
     }
 
-    [Fact(DisplayName = "V13 — quantidade negativa de retirada é recusada")]
-    public void QuantidadeNegativaDeRetirada_Falha()
-    {
-        Dictionary<string, int> retiradas = new(StringComparer.Ordinal) { ["V"] = -1 };
-
-        Result<QuadroDeVagasDaLeiDeCotas> resultado = CalculadoraQuadroVagasLei12711.Calcular(
-            40, 0.5m, Demografica(50, 10, 10), retiradas, SemSuplementares);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.QuantidadeVagaNegativa");
-    }
-
     [Fact(DisplayName = "Suplemento aumenta o total publicado sem afetar VO nem a ampla concorrência")]
     public void Suplemento_AumentaTotalPublicado_SemAfetarAc()
     {

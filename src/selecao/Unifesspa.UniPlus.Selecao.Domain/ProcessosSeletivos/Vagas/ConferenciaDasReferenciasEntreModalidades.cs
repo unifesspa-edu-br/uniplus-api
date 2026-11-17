@@ -8,7 +8,10 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// O cadastro só prova que os códigos de origem, destino, par e fallback existem; aqui se confere que
 /// participam desta oferta. Uma modalidade que cita um código fora do conjunto selecionado deixaria o
 /// remanejamento apontando para uma modalidade ausente. As recusas se acumulam (ADR-0125), por
-/// modalidade, na ordem do conjunto.
+/// modalidade, na ordem do conjunto. Com uma modalidade recusada pelo cadastro, o código que uma aceita cita
+/// pode ser o da recusada: a citação a código fora das aceitas e a reclassificação para uma ampla concorrência
+/// que não está entre as aceitas não se conferem; o par consigo mesma e o par não recíproco entre aceitas
+/// continuam conferidos.
 /// </summary>
 public static class ConferenciaDasReferenciasEntreModalidades
 {
@@ -23,23 +26,29 @@ public static class ConferenciaDasReferenciasEntreModalidades
         (static m => m.RemanejamentoFallback, DistribuicaoDeVagasErrorCodes.RemanejamentoFallbackNaoSelecionado, "o fallback de remanejamento"),
     ];
 
-    public static IReadOnlyList<FieldError> Conferir(IReadOnlyList<ModalidadeSelecionada> modalidades)
+    public static IReadOnlyList<FieldError> Conferir(DistribuicaoDeVagasDeclarada declarada)
     {
-        ArgumentNullException.ThrowIfNull(modalidades);
+        ArgumentNullException.ThrowIfNull(declarada);
 
-        HashSet<string> codigos = [.. modalidades.Select(static m => m.Codigo)];
-        return [.. modalidades.SelectMany(modalidade => RecusasDaModalidade(modalidade, modalidades, codigos))];
+        HashSet<string> codigos = [.. declarada.Modalidades.Select(static m => m.Codigo)];
+        return [.. declarada.Modalidades.SelectMany(modalidade => RecusasDaModalidade(modalidade, declarada, codigos))];
     }
 
     private static IEnumerable<FieldError> RecusasDaModalidade(
-        ModalidadeSelecionada modalidade, IReadOnlyList<ModalidadeSelecionada> modalidades, HashSet<string> codigos) =>
+        ModalidadeSelecionada modalidade, DistribuicaoDeVagasDeclarada declarada, HashSet<string> codigos) =>
     [
-        .. Citacoes
-            .Where(citacao => citacao.Citada(modalidade) is { } citada && !codigos.Contains(citada))
-            .Select(citacao => Recusa(citacao.Codigo, $"Modalidade {modalidade.Codigo} referencia {citacao.Rotulo} {citacao.Citada(modalidade)}, que não está selecionado nesta oferta.")),
-        .. ParCruzadoNaoReciproco(modalidade, modalidades),
-        .. ReclassificacaoSemAmplaOfertada(modalidade, codigos),
+        .. CitacoesForaDoConjunto(modalidade, declarada, codigos),
+        .. ParCruzadoNaoReciproco(modalidade, declarada.Modalidades),
+        .. ReclassificacaoSemAmplaOfertada(modalidade, declarada, codigos),
     ];
+
+    private static IEnumerable<FieldError> CitacoesForaDoConjunto(
+        ModalidadeSelecionada modalidade, DistribuicaoDeVagasDeclarada declarada, HashSet<string> codigos) =>
+        declarada.Recusado(DadoDaDistribuicaoDeVagas.Modalidades)
+            ? []
+            : Citacoes
+                .Where(citacao => citacao.Citada(modalidade) is { } citada && !codigos.Contains(citada))
+                .Select(citacao => Recusa(citacao.Codigo, $"Modalidade {modalidade.Codigo} referencia {citacao.Rotulo} {citacao.Citada(modalidade)}, que não está selecionado nesta oferta."));
 
     // A reciprocidade é exigida aqui, e não no cadastro, porque a primeira modalidade de um par não teria
     // a que apontar quando é criada. O auto-laço satisfaria a comparação — a modalidade aponta para si e
@@ -72,9 +81,11 @@ public static class ConferenciaDasReferenciasEntreModalidades
     // O destino não é declarado pelo operador: está implícito no token. Sem a recusa, um certame que não
     // oferta ampla concorrência congela no envelope — imutável — uma instrução de reclassificar para
     // modalidade que ele não tem.
-    private static IEnumerable<FieldError> ReclassificacaoSemAmplaOfertada(ModalidadeSelecionada modalidade, HashSet<string> codigos) =>
+    private static IEnumerable<FieldError> ReclassificacaoSemAmplaOfertada(
+        ModalidadeSelecionada modalidade, DistribuicaoDeVagasDeclarada declarada, HashSet<string> codigos) =>
         string.Equals(modalidade.AcaoQuandoIndeferido, ReclassificarNaAmplaConcorrencia, StringComparison.Ordinal)
         && !codigos.Contains(ModalidadesFederaisLei12711.Ac)
+        && !declarada.Recusado(DadoDaDistribuicaoDeVagas.Modalidades)
             ? [Recusa(DistribuicaoDeVagasErrorCodes.ReclassificacaoParaAmplaSemAmplaOfertada,
                 $"Modalidade {modalidade.Codigo} reclassifica em {ModalidadesFederaisLei12711.Ac}, que não está selecionada nesta oferta.")]
             : [];

@@ -53,11 +53,7 @@ public static class SimularDistribuicaoVagasQueryHandler
             return Result<IReadOnlyList<ConfiguracaoDistribuicaoVagas>>.Failure(ProcessoNaoEncontrado(query.ProcessoSeletivoId));
         }
 
-        // Mesma ordem do comando de escrita (ADR-0125): a forma de todas as ofertas antes de qualquer I/O.
-        IReadOnlyList<FieldError> formaErros = ConfiguracaoDistribuicaoVagasResolver.ConferirForma(query.DistribuicaoVagas);
-        return formaErros.Count > 0
-            ? Result<IReadOnlyList<ConfiguracaoDistribuicaoVagas>>.ValidationFailure(formaErros)
-            : await resolvedor.ResolverTodasAsync(query.DistribuicaoVagas, cancellationToken).ConfigureAwait(false);
+        return await resolvedor.ResolverTodasAsync(query.DistribuicaoVagas, cancellationToken).ConfigureAwait(false);
     }
 
     private static DomainError ProcessoNaoEncontrado(Guid processoSeletivoId) =>

@@ -41,7 +41,13 @@ public sealed class ConferenciaDasReferenciasEntreModalidadesTests
         Montar(codigo, ComposicaoVagasModalidade.SuplementarAoTotal, null, RegraRemanejamentoModalidade.Cruzado, (null, par, fallback), null);
 
     private static IReadOnlyList<FieldError> Conferir(params ModalidadeSelecionada[] modalidades) =>
-        ConferenciaDasReferenciasEntreModalidades.Conferir(modalidades);
+        ConferenciaDasReferenciasEntreModalidades.Conferir(DistribuicaoDeVagasDeTeste.FixadaNoEdital(modalidades));
+
+    private static IReadOnlyList<FieldError> ConferirComUmaRecusada(params ModalidadeSelecionada[] aceitas) =>
+        ConferenciaDasReferenciasEntreModalidades.Conferir(DistribuicaoDeVagasDeTeste.FixadaNoEdital(aceitas) with
+        {
+            Recusados = DistribuicaoDeVagasDeTeste.Recusando(DadoDaDistribuicaoDeVagas.Modalidades),
+        });
 
     private static void DeveRecusarSo(IReadOnlyList<FieldError> recusas, string codigo, string trecho) =>
         recusas.Should().ContainSingle().Which.Should().Match<FieldError>(
@@ -127,4 +133,28 @@ public sealed class ConferenciaDasReferenciasEntreModalidadesTests
             DistribuicaoDeVagasErrorCodes.ReclassificacaoParaAmplaSemAmplaOfertada,
             DistribuicaoDeVagasErrorCodes.ParCruzadoNaoReciproco);
     }
+
+    [Fact(DisplayName = "Com uma modalidade recusada, a citação a código fora das aceitas não é recusada")]
+    public void ModalidadeRecusada_CitacaoForaDasAceitas_NaoRecusa() =>
+        ConferirComUmaRecusada(ComDestino("IND", "AC"), Cruzada("QUI", par: "PCD", fallback: "AC")).Should().BeEmpty();
+
+    [Fact(DisplayName = "Com uma modalidade recusada, a citação a código aceito continua conferida sem recusa")]
+    public void ModalidadeRecusada_CitacaoAAceita_SemRecusa() =>
+        ConferirComUmaRecusada(Modalidade("AC"), ComDestino("IND", "AC")).Should().BeEmpty();
+
+    [Fact(DisplayName = "Com uma modalidade recusada, a reclassificação sem a ampla concorrência entre as aceitas não é recusada")]
+    public void ModalidadeRecusada_ReclassificarSemAmpla_NaoRecusa() =>
+        ConferirComUmaRecusada(Modalidade("IND", acaoQuandoIndeferido: "RECLASSIFICAR_AC")).Should().BeEmpty();
+
+    [Fact(DisplayName = "Com uma modalidade recusada, o par cruzado consigo mesmo continua recusado")]
+    public void ModalidadeRecusada_ParConsigoMesmo_Recusa() =>
+        DeveRecusarSo(
+            ConferirComUmaRecusada(Cruzada("QUI", par: "QUI")),
+            DistribuicaoDeVagasErrorCodes.ParCruzadoNaoReciproco, "forma par cruzado consigo mesma");
+
+    [Fact(DisplayName = "Com uma modalidade recusada, o par cruzado não recíproco entre duas aceitas continua recusado")]
+    public void ModalidadeRecusada_ParNaoReciprocoEntreAceitas_Recusa() =>
+        DeveRecusarSo(
+            ConferirComUmaRecusada(Cruzada("QUI", par: "IND"), Modalidade("IND")),
+            DistribuicaoDeVagasErrorCodes.ParCruzadoNaoReciproco, "QUI forma par cruzado com IND, que não aponta de volta");
 }

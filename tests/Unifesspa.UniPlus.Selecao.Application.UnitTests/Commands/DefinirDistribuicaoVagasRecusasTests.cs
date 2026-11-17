@@ -131,30 +131,6 @@ public sealed class DefinirDistribuicaoVagasRecusasTests
         result.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.ReferenciaDemograficaNaoEncontrada");
     }
 
-    [Fact(DisplayName = "ADR-0125: VoBase/PR inválidos acumulam entre distribuições, com o índice prefixado ao field, ANTES de consultar os readers")]
-    public async Task Handle_DuasDistribuicoesComVoBaseOuPrInvalidos_AcumulaComIndicePrefixadoESemConsultarReaders()
-    {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        Mocks mocks = NovosMocks(processo, processo.Id);
-
-        DefinirDistribuicaoVagasCommand command = new(
-            processo.Id,
-            [
-                new ConfiguracaoDistribuicaoVagasInput(Guid.CreateVersion7(), 0, 0.5m, "X", "v1", null, null, null, [Guid.CreateVersion7()], []),
-                new ConfiguracaoDistribuicaoVagasInput(Guid.CreateVersion7(), 50, 1.5m, "X", "v1", null, null, null, [Guid.CreateVersion7()], []),
-            ], PrecondicaoIfMatch.Ausente);
-
-        Result<MutacaoComDistribuicaoVagasDto> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
-            command, mocks.Repository, mocks.Resolvedor, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
-
-        result.IsFailure.Should().BeTrue();
-        result.Errors.Select(e => e.Field).Should().BeEquivalentTo(
-            ["distribuicaoVagas[0].vagasOfertadasBase", "distribuicaoVagas[1].percentualDaReservaLegal"]);
-        await mocks.OfertaCursoReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
-        await mocks.RegraCatalogoReader.DidNotReceiveWithAnyArgs().ObterAsync(default!, default!, default);
-        await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-    }
-
     [Fact(DisplayName = "Handle com modalidade duplicada traduz o field do domínio (modalidades) para o do payload (modalidadeIds)")]
     public async Task Handle_ModalidadeDuplicada_TraduzFieldDoDominioParaODoPayload()
     {
@@ -184,28 +160,5 @@ public sealed class DefinirDistribuicaoVagasRecusasTests
         result.IsFailure.Should().BeTrue();
         result.Errors.Should().Contain(e => e.Error.Code == "ConfiguracaoDistribuicaoVagas.ModalidadeDuplicada");
         result.Errors.Select(e => e.Field).Should().OnlyContain(campo => campo == "distribuicaoVagas[0].modalidadeIds");
-    }
-
-    [Fact(DisplayName = "ADR-0125: ModalidadeIds vazio recusa com ModalidadesVazias na 1ª passada, mesmo com oferta/regra inexistentes")]
-    public async Task Handle_ModalidadeIdsVazioComOfertaInexistente_RecusaComModalidadesVaziasSemConsultarReaders()
-    {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        Mocks mocks = NovosMocks(processo, processo.Id);
-        // Oferta/regra propositalmente NÃO configuradas nos mocks — se a checagem de
-        // forma perdesse para o I/O, o handler tentaria resolvê-las e devolveria
-        // OfertaCursoNaoEncontrada em vez de ModalidadesVazias.
-
-        DefinirDistribuicaoVagasCommand command = new(
-            processo.Id,
-            [new ConfiguracaoDistribuicaoVagasInput(Guid.CreateVersion7(), 50, 1m, "X", "v1", null, null, null, [], [])], PrecondicaoIfMatch.Ausente);
-
-        Result<MutacaoComDistribuicaoVagasDto> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
-            command, mocks.Repository, mocks.Resolvedor, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
-
-        result.IsFailure.Should().BeTrue();
-        result.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(["ConfiguracaoDistribuicaoVagas.ModalidadesVazias"]);
-        result.Errors.Select(e => e.Field).Should().BeEquivalentTo(["distribuicaoVagas[0].modalidadeIds"]);
-        await mocks.OfertaCursoReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
-        await mocks.RegraCatalogoReader.DidNotReceiveWithAnyArgs().ObterAsync(default!, default!, default);
     }
 }

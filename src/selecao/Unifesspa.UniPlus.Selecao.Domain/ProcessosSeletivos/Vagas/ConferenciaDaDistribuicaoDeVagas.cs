@@ -8,7 +8,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// O que se confere na distribuição de vagas declarada para uma oferta antes de montar o quadro: a
 /// forma, o teto das vagas autorizadas no e-MEC, o rol fechado da regra, a coerência do ramo e a
 /// fronteira entre a quantidade calculada e a declarada. As recusas se acumulam (ADR-0125), na ordem
-/// em que as conferências estão acima.
+/// em que as conferências estão acima. Uma regra deixa de rodar só quando um dado dela foi recusado
+/// na resolução do cadastro (<see cref="DistribuicaoDeVagasDeclarada.Recusados"/>), e roda sobre as
+/// modalidades aceitas.
 /// </summary>
 public static class ConferenciaDaDistribuicaoDeVagas
 {
@@ -32,7 +34,7 @@ public static class ConferenciaDaDistribuicaoDeVagas
 
         return
         [
-            .. RecusasDeForma(declarada),
+            .. RecusasDeFormaDaDeclaracao(declarada),
             .. RecusasDeTeto(declarada, vagasAnuaisAutorizadas),
             .. RecusasDoRolFechado(declarada, modalidadesAdmitidas),
             .. RecusasDeCoerenciaDoRamo(declarada),
@@ -42,22 +44,44 @@ public static class ConferenciaDaDistribuicaoDeVagas
 
     /// <summary>
     /// A forma que não depende de modalidade já resolvida nem da regra: as vagas ofertadas base, o percentual
-    /// quando informado e a contagem das modalidades. O handler a confere de todas as ofertas antes de resolver
-    /// qualquer cadastro, para que a recusa de forma não perca para o I/O.
+    /// quando informado, a contagem das modalidades e a quantidade declarada em cada linha do quadro, na ordem
+    /// em que o pedido as traz.
     /// </summary>
+    /// <param name="quantidadesDoQuadro">A quantidade de cada linha do quadro, nula quando a linha não a traz.</param>
     public static IReadOnlyList<FieldError> ConferirForma(
-        int vagasOfertadasBase, decimal? percentualDaReservaLegal, int quantidadeDeModalidades) =>
-        [.. Presentes(
-            VagasOfertadasBaseInvalidas(vagasOfertadasBase),
-            PercentualForaDoLimite(percentualDaReservaLegal),
-            ModalidadesAusentes(quantidadeDeModalidades))];
+        int vagasOfertadasBase,
+        decimal? percentualDaReservaLegal,
+        int quantidadeDeModalidades,
+        IReadOnlyList<int?> quantidadesDoQuadro)
+    {
+        ArgumentNullException.ThrowIfNull(quantidadesDoQuadro);
 
-    private static IEnumerable<FieldError> RecusasDeForma(DistribuicaoDeVagasDeclarada declarada) =>
-        Presentes(
-            VagasOfertadasBaseInvalidas(declarada.VagasOfertadasBase),
-            PercentualInvalido(declarada),
-            ModalidadesAusentes(declarada.Modalidades.Count),
-            ModalidadesRepetidas(declarada.Modalidades));
+        return
+        [
+            .. Presentes(
+                VagasOfertadasBaseInvalidas(vagasOfertadasBase),
+                PercentualForaDoLimite(percentualDaReservaLegal),
+                ModalidadesAusentes(quantidadeDeModalidades)),
+            .. QuantidadesNegativas(quantidadesDoQuadro),
+        ];
+    }
+
+    /// <summary>A forma da declaração: a do pedido, lida das próprias modalidades e das quantidades que elas trazem.</summary>
+    internal static IReadOnlyList<FieldError> ConferirForma(DistribuicaoDeVagasDeclarada declarada)
+    {
+        ArgumentNullException.ThrowIfNull(declarada);
+
+        return ConferirForma(
+            declarada.VagasOfertadasBase,
+            declarada.PercentualDaReservaLegal,
+            declarada.Modalidades.Count,
+            [.. declarada.Modalidades.Select(static m => m.QuantidadeDeclarada)]);
+    }
+
+    // O que da forma depende da regra e das modalidades aceitas: o percentual é da Lei de Cotas, onde é
+    // obrigatório, e a repetição se lê sobre as modalidades que o cadastro aceitou.
+    private static IEnumerable<FieldError> RecusasDeFormaDaDeclaracao(DistribuicaoDeVagasDeclarada declarada) =>
+        Presentes(PercentualObrigatorioAusente(declarada), ModalidadesRepetidas(declarada.Modalidades));
 
     private static FieldError? VagasOfertadasBaseInvalidas(int vagasOfertadasBase) =>
         vagasOfertadasBase <= 0
@@ -65,11 +89,10 @@ public static class ConferenciaDaDistribuicaoDeVagas
                 "As vagas ofertadas base devem ser maior que zero.")
             : null;
 
-    // O percentual é da Lei de Cotas: lá é obrigatório; no quadro fixado no edital não se usa.
-    private static FieldError? PercentualInvalido(DistribuicaoDeVagasDeclarada declarada) =>
-        declarada.PercentualDaReservaLegal is null && RegraDistribuicaoVagasCodigo.EhRamoFederal(declarada.RegraDeDistribuicao.Codigo)
+    private static FieldError? PercentualObrigatorioAusente(DistribuicaoDeVagasDeclarada declarada) =>
+        declarada.PercentualDaReservaLegal is null && declarada.NoRamoFederal
             ? RecusaDoPercentual()
-            : PercentualForaDoLimite(declarada.PercentualDaReservaLegal);
+            : null;
 
     private static FieldError? PercentualForaDoLimite(decimal? percentual) =>
         percentual is < PercentualMinimoDaReservaLegal or > PercentualMaximoDaReservaLegal
@@ -86,6 +109,14 @@ public static class ConferenciaDaDistribuicaoDeVagas
                 "A oferta deve ter ao menos uma modalidade selecionada.")
             : null;
 
+    private static IEnumerable<FieldError> QuantidadesNegativas(IReadOnlyList<int?> quantidades) =>
+        quantidades
+            .Select(static (quantidade, indice) => quantidade is < 0
+                ? Recusa($"quadro[{indice}].quantidade", DistribuicaoDeVagasErrorCodes.QuantidadeVagaNegativa,
+                    $"A quantidade de vagas declarada não pode ser negativa ({quantidade}).")
+                : null)
+            .OfType<FieldError>();
+
     private static FieldError? ModalidadesRepetidas(IReadOnlyList<ModalidadeSelecionada> modalidades) =>
         modalidades.Select(static m => m.Codigo).Distinct(StringComparer.Ordinal).Count() != modalidades.Count
             ? Recusa("modalidades", DistribuicaoDeVagasErrorCodes.ModalidadeDuplicada,
@@ -101,18 +132,20 @@ public static class ConferenciaDaDistribuicaoDeVagas
             : [];
 
     // A regra declara o conjunto exato que reconhece, e não um teto: os dois lados do rol são a mesma
-    // invariante, só o sentido da comparação muda.
+    // invariante, só o sentido da comparação muda. A modalidade que sobra do rol pode ser a que o cadastro
+    // recusou; por isso a ausência só se confere quando nenhuma foi recusada.
     private static IEnumerable<FieldError> RecusasDoRolFechado(
         DistribuicaoDeVagasDeclarada declarada, IReadOnlyCollection<string>? modalidadesAdmitidas)
     {
-        if (modalidadesAdmitidas is not { Count: > 0 })
+        if (modalidadesAdmitidas is not { Count: > 0 } || declarada.CodigoDaRegra is not { } regra)
         {
             return [];
         }
 
         string[] codigos = [.. declarada.Modalidades.Select(static m => m.Codigo)];
-        string regra = declarada.RegraDeDistribuicao.Codigo;
-        return Presentes(ModalidadesForaDoRol(regra, codigos, modalidadesAdmitidas), ModalidadesDoRolAusentes(regra, codigos, modalidadesAdmitidas));
+        return Presentes(
+            ModalidadesForaDoRol(regra, codigos, modalidadesAdmitidas),
+            declarada.Recusado(DadoDaDistribuicaoDeVagas.Modalidades) ? null : ModalidadesDoRolAusentes(regra, codigos, modalidadesAdmitidas));
     }
 
     private static FieldError? ModalidadesForaDoRol(string regra, string[] codigos, IReadOnlyCollection<string> admitidas)
@@ -134,8 +167,8 @@ public static class ConferenciaDaDistribuicaoDeVagas
     }
 
     private static IEnumerable<FieldError> RecusasDeCoerenciaDoRamo(DistribuicaoDeVagasDeclarada declarada) =>
-        RegraDistribuicaoVagasCodigo.EhRamoFederal(declarada.RegraDeDistribuicao.Codigo)
-            ? RecusasDeCoerenciaDaLeiDeCotas(declarada)
+        !declarada.RamoDeterminado ? []
+            : declarada.NoRamoFederal ? RecusasDeCoerenciaDaLeiDeCotas(declarada)
             : Presentes(ReferenciaDemograficaIndevida(declarada));
 
     private static FieldError? ReferenciaDemograficaIndevida(DistribuicaoDeVagasDeclarada declarada) =>
@@ -150,18 +183,18 @@ public static class ConferenciaDaDistribuicaoDeVagas
             ReferenciaDemograficaAusente(declarada),
             RegraDeAjusteAusente(declarada),
             MotorDeAjusteVedado(declarada),
-            ModalidadesFederaisFaltantes(declarada.Modalidades)),
+            ModalidadesFederaisFaltantes(declarada)),
         .. RetiradasForaDaAmplaConcorrencia(declarada.Modalidades),
     ];
 
     private static FieldError? ReferenciaDemograficaAusente(DistribuicaoDeVagasDeclarada declarada) =>
-        declarada.ReferenciaDemografica is null
+        declarada.ReferenciaDemografica is null && !declarada.Recusado(DadoDaDistribuicaoDeVagas.ReferenciaDemografica)
             ? Recusa("referenciaDemografica", DistribuicaoDeVagasErrorCodes.ReferenciaDemograficaObrigatoria,
                 "A distribuição pelo ramo federal (Lei 12.711) exige a referência de reserva demográfica.")
             : null;
 
     private static FieldError? RegraDeAjusteAusente(DistribuicaoDeVagasDeclarada declarada) =>
-        declarada.RegraDeAjuste is null
+        declarada.RegraDeAjuste is null && !declarada.Recusado(DadoDaDistribuicaoDeVagas.RegraDeAjuste)
             ? Recusa("regraDeAjuste", DistribuicaoDeVagasErrorCodes.RegraAjusteObrigatoria,
                 "A distribuição pelo ramo federal (Lei 12.711) exige a regra de ajuste (RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO).")
             : null;
@@ -174,9 +207,14 @@ public static class ConferenciaDaDistribuicaoDeVagas
                 "Os motores de redução não se aplicam à distribuição pelo ramo federal (Lei 12.711) — a reconciliação dele é a do art. 11, parágrafo único.")
             : null;
 
-    private static FieldError? ModalidadesFederaisFaltantes(IReadOnlyList<ModalidadeSelecionada> modalidades)
+    private static FieldError? ModalidadesFederaisFaltantes(DistribuicaoDeVagasDeclarada declarada)
     {
-        string[] informados = [.. modalidades.Select(static m => m.Codigo)];
+        if (declarada.Recusado(DadoDaDistribuicaoDeVagas.Modalidades))
+        {
+            return null;
+        }
+
+        string[] informados = [.. declarada.Modalidades.Select(static m => m.Codigo)];
         string[] faltantes = [.. ModalidadesFederaisLei12711.CodigosComAc.Where(c => !informados.Contains(c, StringComparer.Ordinal))];
         return faltantes.Length > 0
             ? Recusa("modalidades", DistribuicaoDeVagasErrorCodes.ModalidadesFederaisIncompletas,
@@ -199,17 +237,10 @@ public static class ConferenciaDaDistribuicaoDeVagas
     // A fronteira entre o calculado e o declarado: na Lei de Cotas, a sub-reserva e a ampla concorrência
     // nunca aceitam quantidade fixada, e a retirada e o suplemento sempre exigem; no quadro fixado, toda
     // modalidade exige a quantidade, porque não há cálculo algum.
-    private static IEnumerable<FieldError> RecusasDeFronteiraDaQuantidade(DistribuicaoDeVagasDeclarada declarada)
-    {
-        string regra = declarada.RegraDeDistribuicao.Codigo;
-        if (!RegraDistribuicaoVagasCodigo.EhRamoFederal(regra) && !RegraDistribuicaoVagasCodigo.EhQuadroFixo(regra))
-        {
-            return [];
-        }
-
-        bool federal = RegraDistribuicaoVagasCodigo.EhRamoFederal(regra);
-        return [.. declarada.Modalidades.Select(m => federal ? FronteiraDaLeiDeCotas(m) : FronteiraDoQuadroFixado(m)).OfType<FieldError>()];
-    }
+    private static IEnumerable<FieldError> RecusasDeFronteiraDaQuantidade(DistribuicaoDeVagasDeclarada declarada) =>
+        declarada.NoRamoFederal ? [.. declarada.Modalidades.Select(FronteiraDaLeiDeCotas).OfType<FieldError>()]
+            : declarada.NoQuadroFixo ? [.. declarada.Modalidades.Select(FronteiraDoQuadroFixado).OfType<FieldError>()]
+            : [];
 
     private static FieldError? FronteiraDoQuadroFixado(ModalidadeSelecionada modalidade) =>
         modalidade.QuantidadeDeclarada is null

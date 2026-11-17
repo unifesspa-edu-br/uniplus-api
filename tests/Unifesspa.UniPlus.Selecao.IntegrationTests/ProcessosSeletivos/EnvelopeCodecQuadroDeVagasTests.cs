@@ -98,6 +98,22 @@ public sealed class EnvelopeCodecQuadroDeVagasTests
         reidratado.Error!.Message.Should().Contain("o quadro congelado não é o que a declaração da oferta monta");
     }
 
+    [Fact(DisplayName = "Envelope com quantidade negativa declarada em uma modalidade é recusado na restauração")]
+    public void Reidratar_QuantidadeDeclaradaNegativa_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoComQuadroFixadoReduzido(new ArgsReduzirDe("AC"));
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        CorpusEnvelopeEntrada.Publicar(processo);
+        JsonObject adulterado = Envelope(congelado);
+        Mutar(adulterado, "modalidades.1.quantidadeDeclarada", "-3");
+
+        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, PerfilCanonicoV1.Instancia.Serializar(adulterado));
+        Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(versao);
+
+        reidratado.IsFailure.Should().BeTrue();
+        reidratado.Error!.Code.Should().Be(DistribuicaoDeVagasErrorCodes.QuantidadeVagaNegativa);
+    }
+
     private static EnvelopeReidratado ReidratarOEnvelopeDe(ProcessoSeletivo processo)
     {
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));

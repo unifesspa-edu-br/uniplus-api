@@ -5,13 +5,10 @@ using Commands.ProcessosSeletivos;
 using FluentValidation;
 
 /// <summary>
-/// Regras de shape de um item de distribuição de vagas. Extraído de
-/// <see cref="DefinirDistribuicaoVagasCommandValidator"/> (issue #1282/#1283)
-/// para ser reaproveitado também por
-/// <c>SimularDistribuicaoVagasQueryValidator</c> — o comando que persiste e
-/// a query que só simula aceitam exatamente o mesmo
-/// <see cref="ConfiguracaoDistribuicaoVagasInput"/>, e precisam recusar o
-/// mesmo payload malformado.
+/// Regras de shape de um item de distribuição de vagas, compartilhadas por
+/// <see cref="DefinirDistribuicaoVagasCommandValidator"/> e pelo validator da simulação: o comando que persiste
+/// e a query que só simula aceitam o mesmo <see cref="ConfiguracaoDistribuicaoVagasInput"/> e recusam o mesmo
+/// payload malformado. A quantidade de vagas não é conferida aqui: a regra é do domínio.
 /// </summary>
 public sealed class ConfiguracaoDistribuicaoVagasInputValidator : AbstractValidator<ConfiguracaoDistribuicaoVagasInput>
 {
@@ -76,14 +73,8 @@ public sealed class ConfiguracaoDistribuicaoVagasInputValidator : AbstractValida
         RuleForEach(d => d.Quadro).ChildRules(RegrasDaQuantidadeDeVagas);
     }
 
-    private static void RegrasDaQuantidadeDeVagas(InlineValidator<QuantidadeVagaInput> quantidade)
-    {
+    private static void RegrasDaQuantidadeDeVagas(InlineValidator<QuantidadeVagaInput> quantidade) =>
         quantidade.RuleFor(q => q.ModalidadeId)
             .NotEmpty()
             .WithMessage("ModalidadeId do quadro é obrigatório.");
-
-        quantidade.RuleFor(q => q.Quantidade)
-            .GreaterThanOrEqualTo(0)
-            .WithMessage("A quantidade de vagas de uma modalidade não pode ser negativa.");
-    }
 }

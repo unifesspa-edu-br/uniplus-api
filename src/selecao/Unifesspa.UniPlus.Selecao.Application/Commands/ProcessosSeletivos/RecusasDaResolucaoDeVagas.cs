@@ -32,4 +32,8 @@ internal static class RecusasDaResolucaoDeVagas
     internal static DomainError ModalidadeNaoEncontrada(Guid modalidadeId) => new(
         "ConfiguracaoDistribuicaoVagas.ModalidadeNaoEncontrada",
         $"Modalidade {modalidadeId} não encontrada ou não está mais viva.");
+
+    internal static DomainError QuadroModalidadeNaoSelecionada(Guid modalidadeId) => new(
+        "ConfiguracaoDistribuicaoVagas.QuadroModalidadeNaoSelecionada",
+        $"A modalidade {modalidadeId} no quadro não está entre as modalidades selecionadas desta oferta.");
 }

@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -107,32 +108,53 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase, IParteDoProcesso
     private ConfiguracaoDistribuicaoVagas() { }
 
     /// <summary>
-    /// Cria a configuração de distribuição de vagas de uma oferta. Acumula (ADR-0125) as recusas da
-    /// conferência da distribuição, da coerência entre as modalidades e do grupo de área do ENEM; só depois
+    /// Cria a configuração de distribuição de vagas de uma oferta. Acumula (ADR-0125) as recusas da forma,
+    /// da conferência da distribuição, da coerência entre as modalidades e do grupo de área do ENEM; só depois
     /// monta o quadro, que pode recusar o que depende do cálculo.
     /// </summary>
     /// <param name="ofertaCursoOrigemId">A oferta de curso a que a distribuição pertence.</param>
-    /// <param name="declarada">O que o admin declara para a oferta.</param>
+    /// <param name="declarada">O que o admin declara para a oferta, com todos os dados aceitos.</param>
     /// <param name="fatos">O que os cadastros dizem sobre a oferta; <see langword="null"/> quando não há nenhum.</param>
+    /// <exception cref="InvalidOperationException">A declaração traz dado que o cadastro recusou.</exception>
     public static Result<ConfiguracaoDistribuicaoVagas> Criar(
         Guid ofertaCursoOrigemId,
         DistribuicaoDeVagasDeclarada declarada,
         FatosDaOfertaNoCadastro? fatos = null)
     {
         ArgumentNullException.ThrowIfNull(declarada);
+        declarada.ExigirSemRecusados();
         fatos ??= FatosDaOfertaNoCadastro.Nenhum;
 
-        Result<GrupoAreaEnemSnapshot?> grupo = ConferirGrupoAreaEnem(fatos.GrupoAreaEnem);
         IReadOnlyList<FieldError> recusas =
         [
-            .. ConferenciaDaDistribuicaoDeVagas.Conferir(declarada, fatos.VagasAnuaisAutorizadas, fatos.ModalidadesAdmitidas),
-            .. ConferenciaDasReferenciasEntreModalidades.Conferir(declarada.Modalidades),
-            .. grupo.Errors,
+            .. ConferenciaDaDistribuicaoDeVagas.ConferirForma(declarada),
+            .. ConferirDeclaracao(declarada, fatos),
         ];
 
         return recusas.Count > 0
             ? Result<ConfiguracaoDistribuicaoVagas>.ValidationFailure(recusas)
-            : MontarEMaterializar(ofertaCursoOrigemId, declarada, fatos, grupo.Value);
+            : MontarEMaterializar(ofertaCursoOrigemId, declarada, fatos, ConferirGrupoAreaEnem(fatos.GrupoAreaEnem).Value);
+    }
+
+    /// <summary>
+    /// O que a declaração, depois da forma, tem de cumprir: a conferência da distribuição, as referências entre
+    /// as modalidades aceitas e o grupo de área do ENEM. Uma regra deixa de rodar só quando um dado dela foi
+    /// recusado na resolução do cadastro.
+    /// </summary>
+    /// <param name="declarada">O que o admin declara para a oferta.</param>
+    /// <param name="fatos">O que os cadastros dizem sobre a oferta; <see langword="null"/> quando não há nenhum.</param>
+    public static IReadOnlyList<FieldError> ConferirDeclaracao(
+        DistribuicaoDeVagasDeclarada declarada, FatosDaOfertaNoCadastro? fatos = null)
+    {
+        ArgumentNullException.ThrowIfNull(declarada);
+        fatos ??= FatosDaOfertaNoCadastro.Nenhum;
+
+        return
+        [
+            .. ConferenciaDaDistribuicaoDeVagas.Conferir(declarada, fatos.VagasAnuaisAutorizadas, fatos.ModalidadesAdmitidas),
+            .. ConferenciaDasReferenciasEntreModalidades.Conferir(declarada),
+            .. ConferirGrupoAreaEnem(fatos.GrupoAreaEnem).Errors,
+        ];
     }
 
     // Ausente é legítimo (curso sem grupo declarado); presente e inválido não designa grupo nenhum e
@@ -191,7 +213,7 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase, IParteDoProcesso
         {
             OfertaCursoOrigemId = ofertaCursoOrigemId,
             VagasOfertadasBase = declarada.VagasOfertadasBase,
-            RegraDistribuicao = declarada.RegraDeDistribuicao,
+            RegraDistribuicao = declarada.RegraDeDistribuicao!,
             RegraAjuste = declarada.RegraDeAjuste,
             ReferenciaDemografica = declarada.ReferenciaDemografica,
             GrupoAreaEnem = grupo,

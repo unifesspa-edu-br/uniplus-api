@@ -129,8 +129,8 @@ public sealed class DefinirDistribuicaoVagasCommandValidatorTests
         resultado.IsValid.Should().BeFalse();
     }
 
-    [Fact(DisplayName = "Quantidade negativa no quadro gera erro")]
-    public void Validar_QuadroComQuantidadeNegativa_GeraErro()
+    [Fact(DisplayName = "Quantidade negativa no quadro não é recusada pelo validator: a regra é do domínio")]
+    public void Validar_QuadroComQuantidadeNegativa_NaoGeraErro()
     {
         ConfiguracaoDistribuicaoVagasInput item = ItemValido() with
         {
@@ -140,7 +140,7 @@ public sealed class DefinirDistribuicaoVagasCommandValidatorTests
 
         ValidationResult resultado = _validator.Validate(command);
 
-        resultado.IsValid.Should().BeFalse();
+        resultado.IsValid.Should().BeTrue();
     }
 
     [Fact(DisplayName = "ModalidadeId vazio no quadro gera erro")]

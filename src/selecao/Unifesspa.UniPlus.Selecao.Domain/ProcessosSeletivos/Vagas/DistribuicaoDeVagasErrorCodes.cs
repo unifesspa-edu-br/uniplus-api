@@ -6,6 +6,7 @@ public static class DistribuicaoDeVagasErrorCodes
 
     public const string VagasOfertadasBaseInvalido = Prefixo + "VagasOfertadasBaseInvalido";
     public const string PercentualDaReservaLegalForaDoLimite = Prefixo + "PercentualDaReservaLegalForaDoLimite";
+    public const string QuantidadeVagaNegativa = Prefixo + "QuantidadeVagaNegativa";
     public const string ModalidadesVazias = Prefixo + "ModalidadesVazias";
     public const string ModalidadeDuplicada = Prefixo + "ModalidadeDuplicada";
     public const string VagasOfertadasBaseAcimaDasVagasAutorizadas = Prefixo + "VagasOfertadasBaseAcimaDasVagasAutorizadas";

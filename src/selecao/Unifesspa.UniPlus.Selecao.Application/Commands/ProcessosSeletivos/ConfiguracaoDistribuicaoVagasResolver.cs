@@ -43,37 +43,67 @@ public sealed class ConfiguracaoDistribuicaoVagasResolver(
         };
 
     /// <summary>
-    /// A forma de todas as distribuições do payload, acumulada (ADR-0125) antes de qualquer I/O: a recusa de
-    /// forma vence a de cadastro dentro do bucket 422.
+    /// Resolve todas as distribuições do payload, cada uma contra os cadastros, e acumula (ADR-0125) as recusas
+    /// de todas: primeiro as de forma, depois as de cadastro, depois as da declaração e por fim as do quadro, e
+    /// dentro de cada família na ordem das ofertas. Só as ofertas sem recusa alguma têm o quadro montado.
     /// </summary>
-    internal static IReadOnlyList<FieldError> ConferirForma(IReadOnlyList<ConfiguracaoDistribuicaoVagasInput> pedidos) =>
-        [.. pedidos.SelectMany((pedido, indice) => ConferenciaDaDistribuicaoDeVagas
-            .ConferirForma(pedido.VagasOfertadasBase, pedido.PercentualDaReservaLegal, pedido.ModalidadeIds.Count)
-            .Select(erro => ComIndice(erro, indice)))];
-
     internal async Task<Result<IReadOnlyList<ConfiguracaoDistribuicaoVagas>>> ResolverTodasAsync(
         IReadOnlyList<ConfiguracaoDistribuicaoVagasInput> pedidos, CancellationToken cancellationToken)
     {
-        List<ConfiguracaoDistribuicaoVagas> distribuicoes = [];
-        for (int indice = 0; indice < pedidos.Count; indice++)
+        List<ResolucaoDaDistribuicao> resolucoes = [];
+        foreach (ConfiguracaoDistribuicaoVagasInput pedido in pedidos)
         {
-            Result<ConfiguracaoDistribuicaoVagas> resultado = await new ResolucaoDaDistribuicao(pedidos[indice], regraCatalogoReader, ofertaCursoReader, modalidadeReader, referenciaReservaDemograficaReader)
-                .ResolverAsync(cancellationToken).ConfigureAwait(false);
-            if (resultado.IsFailure)
-            {
-                return FalhaDoPedido(resultado, indice);
-            }
-
-            distribuicoes.Add(resultado.Value!);
+            ResolucaoDaDistribuicao resolucao = new(pedido, regraCatalogoReader, ofertaCursoReader, modalidadeReader, referenciaReservaDemograficaReader);
+            await resolucao.ResolverAsync(cancellationToken).ConfigureAwait(false);
+            resolucoes.Add(resolucao);
         }
 
-        return Result<IReadOnlyList<ConfiguracaoDistribuicaoVagas>>.Success(distribuicoes);
+        return Concluir(resolucoes);
     }
 
-    private static Result<IReadOnlyList<ConfiguracaoDistribuicaoVagas>> FalhaDoPedido(
-        Result<ConfiguracaoDistribuicaoVagas> resultado, int indice) =>
-        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagas>>.ValidationFailure(
-            [.. resultado.Errors.Select(erro => ComIndice(erro, indice))]);
+    private static Result<IReadOnlyList<ConfiguracaoDistribuicaoVagas>> Concluir(List<ResolucaoDaDistribuicao> resolucoes)
+    {
+        List<FieldError> recusas = RecusasDeTodasAsOfertas(resolucoes);
+        List<ConfiguracaoDistribuicaoVagas> distribuicoes = [];
+        for (int indice = 0; indice < resolucoes.Count; indice++)
+        {
+            MontarDaOferta(resolucoes[indice], indice, distribuicoes, recusas);
+        }
+
+        return recusas.Count > 0
+            ? Result<IReadOnlyList<ConfiguracaoDistribuicaoVagas>>.ValidationFailure(recusas)
+            : Result<IReadOnlyList<ConfiguracaoDistribuicaoVagas>>.Success(distribuicoes);
+    }
+
+    private static List<FieldError> RecusasDeTodasAsOfertas(List<ResolucaoDaDistribuicao> resolucoes) =>
+    [
+        .. DaFamilia(resolucoes, static resolucao => resolucao.RecusasDaForma),
+        .. DaFamilia(resolucoes, static resolucao => resolucao.RecusasDoCadastro),
+        .. DaFamilia(resolucoes, static resolucao => resolucao.RecusasDaDeclaracao),
+    ];
+
+    private static IEnumerable<FieldError> DaFamilia(
+        List<ResolucaoDaDistribuicao> resolucoes, Func<ResolucaoDaDistribuicao, IReadOnlyList<FieldError>> recusasDaFamilia) =>
+        resolucoes.SelectMany((resolucao, indice) => recusasDaFamilia(resolucao).Select(erro => ComIndice(erro, indice)));
+
+    // O quadro só se monta quando nenhuma das famílias anteriores recusou a oferta.
+    private static void MontarDaOferta(
+        ResolucaoDaDistribuicao resolucao, int indice, List<ConfiguracaoDistribuicaoVagas> distribuicoes, List<FieldError> recusas)
+    {
+        if (!resolucao.SemRecusas)
+        {
+            return;
+        }
+
+        Result<ConfiguracaoDistribuicaoVagas> montada = resolucao.Montar();
+        if (montada.IsSuccess)
+        {
+            distribuicoes.Add(montada.Value!);
+            return;
+        }
+
+        recusas.AddRange(montada.Errors.Select(erro => ComIndice(erro, indice)));
+    }
 
     private static FieldError ComIndice(FieldError erro, int indice) =>
         erro.Field is null ? erro : erro with { Field = $"distribuicaoVagas[{indice}].{TraduzirFieldDoDominio(erro.Field)}" };

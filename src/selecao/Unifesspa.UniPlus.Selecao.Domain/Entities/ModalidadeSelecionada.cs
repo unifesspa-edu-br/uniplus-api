@@ -128,13 +128,6 @@ public sealed class ModalidadeSelecionada : EntityBase
                 "ModalidadeSelecionada.CodigoObrigatorio", "Código da modalidade é obrigatório."));
         }
 
-        if (quantidadeDeclarada is < 0)
-        {
-            return Result<ModalidadeSelecionada>.Failure(new DomainError(
-                "ConfiguracaoDistribuicaoVagas.QuantidadeVagaNegativa",
-                $"A quantidade de vagas declarada para {codigo} não pode ser negativa ({quantidadeDeclarada})."));
-        }
-
         // Natureza legal, composição de vagas e base legal completas.
         if (naturezaLegal == NaturezaLegalModalidade.Nenhuma)
         {

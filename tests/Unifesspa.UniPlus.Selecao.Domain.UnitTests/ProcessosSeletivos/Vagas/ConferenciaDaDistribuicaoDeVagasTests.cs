@@ -37,22 +37,23 @@ public sealed class ConferenciaDaDistribuicaoDeVagasTests
     [InlineData(-5)]
     public void VagasOfertadasBase_NaoPositivas_Recusa(int base_) =>
         DeveRecusarSo(
-            Conferir(DaLeiDeCotas() with { VagasOfertadasBase = base_ }),
+            ConferenciaDaDistribuicaoDeVagas.ConferirForma(base_, 0.5m, 1, []),
             "vagasOfertadasBase", DistribuicaoDeVagasErrorCodes.VagasOfertadasBaseInvalido);
 
-    [Theory(DisplayName = "O percentual da reserva legal fora de 0,5 a 1 é recusado no ramo da Lei de Cotas")]
+    [Theory(DisplayName = "O percentual da reserva legal fora de 0,5 a 1 é recusado")]
     [InlineData(0.49)]
     [InlineData(1.01)]
     public void Percentual_ForaDoLimite_Recusa(double percentual) =>
         DeveRecusarSo(
-            Conferir(DaLeiDeCotas() with { PercentualDaReservaLegal = (decimal)percentual }),
+            ConferenciaDaDistribuicaoDeVagas.ConferirForma(50, (decimal)percentual, 1, []),
             "percentualDaReservaLegal", DistribuicaoDeVagasErrorCodes.PercentualDaReservaLegalForaDoLimite);
 
-    [Theory(DisplayName = "O percentual da reserva legal nos limites é aceito")]
+    [Theory(DisplayName = "O percentual da reserva legal nos limites, ou ausente, passa na forma")]
     [InlineData(0.5)]
-    [InlineData(1)]
-    public void Percentual_NosLimites_Aceita(double percentual) =>
-        Conferir(DaLeiDeCotas() with { PercentualDaReservaLegal = (decimal)percentual }).Should().BeEmpty();
+    [InlineData(1.0)]
+    [InlineData(null)]
+    public void Percentual_NosLimitesOuAusente_PassaNaForma(double? percentual) =>
+        ConferenciaDaDistribuicaoDeVagas.ConferirForma(50, (decimal?)percentual, 1, []).Should().BeEmpty();
 
     [Fact(DisplayName = "O ramo da Lei de Cotas sem percentual da reserva legal é recusado")]
     public void LeiDeCotas_SemPercentual_Recusa() =>
@@ -67,8 +68,36 @@ public sealed class ConferenciaDaDistribuicaoDeVagasTests
     [Fact(DisplayName = "A oferta sem modalidade é recusada")]
     public void SemModalidades_Recusa() =>
         DeveRecusarSo(
-            Conferir(FixadaNoEdital()),
+            ConferenciaDaDistribuicaoDeVagas.ConferirForma(50, null, 0, []),
             "modalidades", DistribuicaoDeVagasErrorCodes.ModalidadesVazias);
+
+    [Fact(DisplayName = "A quantidade negativa no quadro é recusada no campo da linha, citando o valor")]
+    public void QuantidadeNegativa_RecusaNoCampoDaLinha()
+    {
+        IReadOnlyList<FieldError> recusas = ConferenciaDaDistribuicaoDeVagas.ConferirForma(50, null, 2, [10, -3]);
+
+        DeveRecusarSo(recusas, "quadro[1].quantidade", DistribuicaoDeVagasErrorCodes.QuantidadeVagaNegativa);
+        recusas[0].Error.Message.Should().Be("A quantidade de vagas declarada não pode ser negativa (-3).");
+    }
+
+    [Fact(DisplayName = "A quantidade zero ou ausente no quadro passa na forma")]
+    public void QuantidadeZeroOuAusente_PassaNaForma() =>
+        ConferenciaDaDistribuicaoDeVagas.ConferirForma(50, null, 2, [0, null]).Should().BeEmpty();
+
+    [Fact(DisplayName = "A forma acumula as recusas na ordem: vagas base, percentual, modalidades e quantidades do quadro")]
+    public void RecusasDeForma_Acumulam()
+    {
+        IReadOnlyList<FieldError> recusas = ConferenciaDaDistribuicaoDeVagas.ConferirForma(0, 2m, 0, [-1, -2]);
+
+        recusas.Select(static r => r.Error.Code).Should().Equal(
+            DistribuicaoDeVagasErrorCodes.VagasOfertadasBaseInvalido,
+            DistribuicaoDeVagasErrorCodes.PercentualDaReservaLegalForaDoLimite,
+            DistribuicaoDeVagasErrorCodes.ModalidadesVazias,
+            DistribuicaoDeVagasErrorCodes.QuantidadeVagaNegativa,
+            DistribuicaoDeVagasErrorCodes.QuantidadeVagaNegativa);
+        recusas.Select(static r => r.Field).Should().Equal(
+            "vagasOfertadasBase", "percentualDaReservaLegal", "modalidades", "quadro[0].quantidade", "quadro[1].quantidade");
+    }
 
     [Fact(DisplayName = "A modalidade selecionada duas vezes é recusada")]
     public void ModalidadeDuplicada_Recusa() =>
@@ -181,7 +210,6 @@ public sealed class ConferenciaDaDistribuicaoDeVagasTests
     private static DistribuicaoDeVagasDeclarada ComUmaRecusaDeCadaConferencia() => DaLeiDeCotas() with
     {
         VagasOfertadasBase = 60,
-        PercentualDaReservaLegal = 2m,
         ReferenciaDemografica = null,
         Modalidades = [.. AsOitoFederaisMaisAmplaConcorrencia().Select(static m => m.Codigo == ModalidadesFederaisLei12711.Ac
             ? Modalidade(m.Codigo, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas, 5)
@@ -195,22 +223,10 @@ public sealed class ConferenciaDaDistribuicaoDeVagasTests
             ComUmaRecusaDeCadaConferencia(), vagasAnuaisAutorizadas: 50, modalidadesAdmitidas: [ModalidadesFederaisLei12711.Ac]);
 
         recusas.Select(static r => r.Error.Code).Should().Equal(
-            DistribuicaoDeVagasErrorCodes.PercentualDaReservaLegalForaDoLimite,
             DistribuicaoDeVagasErrorCodes.VagasOfertadasBaseAcimaDasVagasAutorizadas,
             DistribuicaoDeVagasErrorCodes.ModalidadeNaoAdmitidaPelaRegra,
             DistribuicaoDeVagasErrorCodes.ReferenciaDemograficaObrigatoria,
             DistribuicaoDeVagasErrorCodes.QuantidadeCalculadaNaoInformavel);
-    }
-
-    [Fact(DisplayName = "As recusas de forma se acumulam, na ordem das regras de forma")]
-    public void RecusasDeForma_Acumulam()
-    {
-        IReadOnlyList<FieldError> recusas = Conferir(FixadaNoEdital() with { VagasOfertadasBase = 0, PercentualDaReservaLegal = 2m });
-
-        recusas.Select(static r => r.Error.Code).Should().Equal(
-            DistribuicaoDeVagasErrorCodes.VagasOfertadasBaseInvalido,
-            DistribuicaoDeVagasErrorCodes.PercentualDaReservaLegalForaDoLimite,
-            DistribuicaoDeVagasErrorCodes.ModalidadesVazias);
     }
 
     [Fact(DisplayName = "As recusas de coerência da Lei de Cotas se acumulam, na ordem das regras")]

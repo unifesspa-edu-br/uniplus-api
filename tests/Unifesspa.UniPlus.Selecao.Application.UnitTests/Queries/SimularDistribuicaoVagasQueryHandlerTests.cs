@@ -320,23 +320,43 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
         result.Errors.Should().OnlyContain(e => e.Field == "distribuicaoVagas[0].modalidadeIds");
     }
 
-    [Fact(DisplayName = "ADR-0125: ModalidadeIds vazio recusa com ModalidadesVazias na 1ª passada, mesmo com oferta/regra inexistentes")]
-    public async Task Handle_ModalidadeIdsVazioComOfertaInexistente_RecusaComModalidadesVaziasSemConsultarReaders()
+    private static string[] CamposECodigos(Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> resultado) =>
+        [.. resultado.Errors.Select(static erro => erro.Field + "|" + erro.Error.Code)];
+
+    private static async Task<Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>> SimularAsync(
+        Mocks mocks, Guid processoId, ConfiguracaoDistribuicaoVagasInput pedido) =>
+        await SimularDistribuicaoVagasQueryHandler.Handle(
+            new SimularDistribuicaoVagasQuery(processoId, [pedido]), mocks.Repository, mocks.Resolvedor, CancellationToken.None);
+
+    [Fact(DisplayName = "A lista de modalidades vazia é recusada antes do cadastro, e o cadastro também é conferido")]
+    public async Task Handle_ModalidadeIdsVazioComOfertaInexistente_RecusaComModalidadesVaziasAntesDoCadastro()
     {
         Guid processoId = Guid.CreateVersion7();
+        ConfiguracaoDistribuicaoVagasInput pedido = new(Guid.CreateVersion7(), 50, 1m, "X", "v1", null, null, null, [], []);
+
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result =
+            await SimularAsync(NovosMocks(processoExiste: true, processoId), processoId, pedido);
+
+        CamposECodigos(result).Should().Equal(
+            "distribuicaoVagas[0].modalidadeIds|ConfiguracaoDistribuicaoVagas.ModalidadesVazias",
+            "distribuicaoVagas[0].ofertaCursoId|ConfiguracaoDistribuicaoVagas.OfertaCursoNaoEncontrada",
+            "distribuicaoVagas[0].regraDistribuicaoCodigo|ConfiguracaoDistribuicaoVagas.RegraDistribuicaoNaoEncontrada");
+    }
+
+    [Fact(DisplayName = "A simulação recusa a quantidade negativa no quadro com o código e o campo específicos")]
+    public async Task Handle_QuantidadeNegativaNoQuadro_RecusaComCodigoECampoEspecificos()
+    {
+        (Guid processoId, Guid ofertaCursoId, Guid modalidadeId) = (Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7());
         Mocks mocks = NovosMocks(processoExiste: true, processoId);
+        mocks.OfertaCursoReader.ObterPorIdAsync(ofertaCursoId, Arg.Any<CancellationToken>()).Returns(NovaOferta(ofertaCursoId));
+        mocks.RegraCatalogoReader.ObterAsync(RegraDistribuicaoVagasCodigo.Institucional, "v1", Arg.Any<CancellationToken>())
+            .Returns(RegraDistribuicao(RegraDistribuicaoVagasCodigo.Institucional));
+        mocks.ModalidadeReader.ObterPorIdAsync(modalidadeId, Arg.Any<CancellationToken>()).Returns(NovaModalidadeAmpla(modalidadeId));
+        ConfiguracaoDistribuicaoVagasInput pedido = new(
+            ofertaCursoId, 60, null, RegraDistribuicaoVagasCodigo.Institucional, "v1", null, null, null,
+            [modalidadeId], [new QuantidadeVagaInput(modalidadeId, -3)]);
 
-        SimularDistribuicaoVagasQuery query = new(
-            processoId,
-            [new ConfiguracaoDistribuicaoVagasInput(Guid.CreateVersion7(), 50, 1m, "X", "v1", null, null, null, [], [])]);
-
-        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await SimularDistribuicaoVagasQueryHandler.Handle(
-            query, mocks.Repository, mocks.Resolvedor, CancellationToken.None);
-
-        result.IsFailure.Should().BeTrue();
-        result.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(["ConfiguracaoDistribuicaoVagas.ModalidadesVazias"]);
-        result.Errors.Select(e => e.Field).Should().BeEquivalentTo(["distribuicaoVagas[0].modalidadeIds"]);
-        await mocks.OfertaCursoReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
-        await mocks.RegraCatalogoReader.DidNotReceiveWithAnyArgs().ObterAsync(default!, default!, default);
+        CamposECodigos(await SimularAsync(mocks, processoId, pedido)).Should().Equal(
+            "distribuicaoVagas[0].quadro[0].quantidade|ConfiguracaoDistribuicaoVagas.QuantidadeVagaNegativa");
     }
 }
