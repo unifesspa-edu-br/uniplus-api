@@ -21,7 +21,7 @@ public static class ErrosDaFronteiraHttp
         StatusCodes.Status406NotAcceptable, "uniplus.contract.versao_nao_suportada", "Versão de mídia não suportada");
 
     public static readonly DomainErrorMapping IdDaRotaDivergenteDoCorpo = new(
-        StatusCodes.Status400BadRequest, "uniplus.contract.id_path_body_divergente", "Id do path não bate com Id do body");
+        StatusCodes.Status400BadRequest, "uniplus.contract.id_path_body_divergente", "Id da rota diferente do Id do corpo");
 
     public static readonly DomainErrorMapping ErroDeDominioNaoMapeado = new(
         StatusCodes.Status400BadRequest, "uniplus.erro_nao_mapeado", "Erro de domínio");
