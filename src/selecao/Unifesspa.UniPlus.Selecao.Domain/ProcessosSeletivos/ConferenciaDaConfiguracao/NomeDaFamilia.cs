@@ -14,4 +14,5 @@ internal static class NomeDaFamilia
     internal const string TiposDeAto = "TiposDeAto";
     internal const string Cascata = "Cascata";
     internal const string CondicoesDaCanonicalizacao = "CondicoesDaCanonicalizacao";
+    internal const string MotivosDeDecisao = "MotivosDeDecisao";
 }

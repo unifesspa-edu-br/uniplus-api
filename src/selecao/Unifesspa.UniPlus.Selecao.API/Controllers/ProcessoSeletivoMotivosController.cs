@@ -66,7 +66,10 @@ public sealed class ProcessoSeletivoMotivosController : ControllerBase
         return motivos.IsFailure ? motivos.ToActionResult(_mapper) : Ok(motivos.Value);
     }
 
-    /// <summary>Inclui na fase o motivo do cadastro, só em rascunho.</summary>
+    /// <summary>
+    /// Inclui na fase o motivo do cadastro, só em rascunho. Não confere se a fase declara o tipo de decisão do motivo: a
+    /// publicação e a retificação conferem.
+    /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/fases/{faseCanonicaOrigemId:guid}/motivos-de-decisao/{motivoDeDecisaoId:guid}")]
     [RequiresIdempotencyKey]
@@ -77,7 +80,10 @@ public sealed class ProcessoSeletivoMotivosController : ControllerBase
     public Task<IActionResult> IncluirNaFase(Guid id, Guid faseCanonicaOrigemId, Guid motivoDeDecisaoId, CancellationToken cancellationToken) =>
         IncluirAsync(id, LugarDaFase(faseCanonicaOrigemId), motivoDeDecisaoId, cancellationToken);
 
-    /// <summary>Inclui na etapa o motivo do cadastro, só em rascunho.</summary>
+    /// <summary>
+    /// Inclui na etapa o motivo do cadastro, só em rascunho. Não confere se a etapa declara o tipo de decisão do motivo: a
+    /// publicação e a retificação conferem.
+    /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/etapas/{etapaId:guid}/motivos-de-decisao/{motivoDeDecisaoId:guid}")]
     [RequiresIdempotencyKey]

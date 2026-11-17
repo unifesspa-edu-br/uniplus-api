@@ -30,6 +30,9 @@ internal sealed record LeiturasDoCongelamento(
     CadastrosDaConfiguracao Cadastros,
     IReadOnlyList<FieldError> CausasDaAprovacao);
 
+/// <summary>O catálogo vivo, a recópia feita ao congelar e as causas da aprovação da proteção, lidos antes da configuração.</summary>
+internal sealed record CatalogoERecopia(CatalogoVivo Catalogo, RecopiadoAoCongelar Recopiado, IReadOnlyList<FieldError> CausasDaAprovacao);
+
 /// <summary>
 /// Confere a configuração que a publicação e a retificação de ato único congelam, numa ordem só
 /// de recusa (ADR-0109 D5, ADR-0125): lê os cadastros, confere a aprovação da proteção, confere a configuração
@@ -42,9 +45,7 @@ public sealed class ConferenciaDaConfiguracaoAoCongelar(
     ConferenciaDoCatalogoEDaProtecao catalogos,
     RecopiaAoCongelar recopia,
     IResolvedorFusoInstitucional resolvedorFuso,
-    ResolucaoDosTiposDeAtoUnicos tiposDeAto,
-    LeituraDoContextoDeContagemDePrazos contextos,
-    LeituraDosCorretoresDasEtapas corretores,
+    LeituraDosCadastrosDaConfiguracao cadastros,
     ConferenciaDaOperacaoAoCongelar operacao)
 {
     /// <summary>
@@ -111,11 +112,10 @@ public sealed class ConferenciaDaConfiguracaoAoCongelar(
             return Result<LeiturasDoCongelamento>.ValidationFailure([.. daAprovacao.Concat(vivo.Errors).Concat(jaCongelados.Errors).Distinct()]);
         }
 
-        CadastrosDaConfiguracao cadastros = await LerOsCadastrosDoDominioAsync(processo, ato, jaCongelados.Value!, vivo.Value!, cancellationToken)
-            .ConfigureAwait(false);
+        CadastrosDaConfiguracao lidos = await cadastros.LerAsync(processo, ato, origem, jaCongelados.Value!, vivo.Value!, cancellationToken).ConfigureAwait(false);
 
         return Result<LeiturasDoCongelamento>.Success(
-            new LeiturasDoCongelamento(vivo.Value!.Catalogo, vivo.Value.Recopiado, fuso, cadastros, vivo.Value.CausasDaAprovacao));
+            new LeiturasDoCongelamento(vivo.Value!.Catalogo, vivo.Value.Recopiado, fuso, lidos, vivo.Value.CausasDaAprovacao));
     }
 
     // A recópia roda sempre, com a aprovação conferida ou não: a proteção que a aprovação recusa fica de fora das pendências que a
@@ -130,25 +130,6 @@ public sealed class ConferenciaDaConfiguracaoAoCongelar(
         return recopiado.IsFailure
             ? Result<CatalogoERecopia>.ValidationFailure([.. daAprovacao, .. recopiado.Errors])
             : Result<CatalogoERecopia>.Success(new CatalogoERecopia(catalogo, recopiado.Value!, daAprovacao));
-    }
-
-    // O tipo que a versão vigente já congelou mantém a classificação dela: mudar o catálogo depois não alcança o processo já
-    // publicado, nem pela retificação. O catálogo e o calendário valem no dia em que a operação publica.
-    private async Task<CadastrosDaConfiguracao> LerOsCadastrosDoDominioAsync(
-        ProcessoSeletivo processo,
-        AtoEDocumentoConferidos ato,
-        IReadOnlyDictionary<string, TipoDeAtoCongelado> jaCongelados,
-        CatalogoERecopia vivo,
-        CancellationToken cancellationToken)
-    {
-        TiposDeAtoUnicosPorObjeto tipos = await tiposDeAto
-            .ParaOperacaoAsync(processo, ato.TipoDoAto, ato.AtosDaLinhagem, ato.Publicacao.Dia, jaCongelados, cancellationToken)
-            .ConfigureAwait(false);
-        ContextoDeContagemDePrazos contexto = await contextos.LerAsync(cancellationToken).ConfigureAwait(false);
-        CorretoresDasEtapas corretoresDasEtapas = await corretores.LerAsync(processo, cancellationToken).ConfigureAwait(false);
-
-        return new CadastrosDaConfiguracao(
-            contexto, vivo.Catalogo.FatosDeModalidade, tipos, corretoresDasEtapas, vivo.Recopiado.Protecao.Exigencias, vivo.Recopiado.Publicadas);
     }
 
     private static Result<ConfiguracaoConferida> Resultado(
@@ -180,5 +161,4 @@ public sealed class ConferenciaDaConfiguracaoAoCongelar(
             TiposDeAtoCongelados: daOperacao.Documentos.TiposDeAto,
             FatosDerivadosCongelados: lidos.Recopiado.Protecao.FatosDerivados);
 
-    private sealed record CatalogoERecopia(CatalogoVivo Catalogo, RecopiadoAoCongelar Recopiado, IReadOnlyList<FieldError> CausasDaAprovacao);
 }

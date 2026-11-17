@@ -9,8 +9,8 @@ public interface IMotivoDoProcessoRepository
     Task<IReadOnlyList<MotivoDoProcesso>> ListarEscolhaAtualAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// A escolha atual, rastreada, cada motivo com o motivo de origem no cadastro (nulo se a linha de origem não existe
-    /// mais): é o que a publicação confere e recopia.
+    /// A escolha atual, sem rastreamento, cada motivo com o motivo de origem no cadastro (nulo se a linha de origem não
+    /// existe mais): é o que a conferência da configuração lê para saber se o motivo continua ativo.
     /// </summary>
     Task<IReadOnlyList<MotivoEscolhidoComOrigem>> ListarEscolhaAtualComOrigemAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default);
 

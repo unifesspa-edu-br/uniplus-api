@@ -33,6 +33,9 @@ internal static class ProcessoCarregadoDoBanco
     /// <summary>A fase que o banco hidrata declarando um tipo de decisão, sem que a gravação o tenha conferido.</summary>
     internal static void ComTipoDeDecisao(FaseCronograma fase, string tipo) => Lista<string>(fase, "_tiposDeDecisao").Add(tipo);
 
+    /// <summary>A fase que o banco hidrata sem declarar nenhum tipo de decisão.</summary>
+    internal static void SemTiposDeDecisao(FaseCronograma fase) => Lista<string>(fase, "_tiposDeDecisao").Clear();
+
     /// <summary>A fase que o banco hidrata sem nenhuma banca requerida.</summary>
     internal static void SemBancasRequeridas(FaseCronograma fase) => Lista<BancaRequerida>(fase, "_bancasRequeridas").Clear();
 

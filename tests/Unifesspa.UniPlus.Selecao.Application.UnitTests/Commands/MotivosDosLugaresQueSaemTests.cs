@@ -55,7 +55,7 @@ public sealed class MotivosDosLugaresQueSaemTests
     public async Task RetirarAsync_SemMotivos_NaoRemoveNada()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
-        LugaresDaDecisao antes = LugaresDaDecisao.Do(processo);
+        LugaresDaDecisao antes = LugaresDaDecisao.Das(processo.CronogramaFases, processo.Etapas);
 
         await new MotivosDosLugaresQueSaem(_motivos).RetirarAsync(processo, antes, CancellationToken.None);
 

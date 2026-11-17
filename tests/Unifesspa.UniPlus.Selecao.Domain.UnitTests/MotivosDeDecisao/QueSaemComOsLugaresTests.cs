@@ -32,7 +32,7 @@ public sealed class QueSaemComOsLugaresTests
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho();
         MotivoDoProcesso daQueSai = Na(processo, Discursiva);
         MotivoDoProcesso daQueFica = Na(processo, Objetiva);
-        LugaresDaDecisao antes = LugaresDaDecisao.Do(processo);
+        LugaresDaDecisao antes = ProcessoParaMotivos.Lugares(processo);
         SaiAEtapa(processo, Discursiva);
 
         QueSaem(antes, processo, daQueSai, daQueFica).Should().Equal(daQueSai);
@@ -43,7 +43,7 @@ public sealed class QueSaemComOsLugaresTests
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho();
         MotivoDoProcesso escolhido = Na(processo, Objetiva);
-        LugaresDaDecisao antes = LugaresDaDecisao.Do(processo);
+        LugaresDaDecisao antes = ProcessoParaMotivos.Lugares(processo);
         SaiAEtapa(processo, Discursiva);
 
         QueSaem(antes, processo, escolhido).Should().BeEmpty();
@@ -56,7 +56,7 @@ public sealed class QueSaemComOsLugaresTests
         LugarDaDecisao daFase = ProcessoParaMotivos.LugarDaFase(processo, "INSCRICAO");
         MotivoDoProcesso naFase = ProcessoParaMotivos.Escolha(processo, daFase, Motivo(), 1);
         MotivoDoProcesso naEtapa = Na(processo, Objetiva);
-        LugaresDaDecisao antes = LugaresDaDecisao.Do(processo);
+        LugaresDaDecisao antes = ProcessoParaMotivos.Lugares(processo);
         processo.DefinirCronogramaFases([processo.CronogramaFases.Last()], []).IsSuccess.Should().BeTrue();
         SaiAEtapa(processo, Objetiva);
 

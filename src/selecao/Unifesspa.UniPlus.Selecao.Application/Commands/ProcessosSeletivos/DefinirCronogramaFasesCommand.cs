@@ -92,7 +92,8 @@ public sealed record BancaRequeridaInput(
 /// </param>
 /// <param name="TiposDeDecisao">
 /// Os tipos de decisão que a fase declara produzir, como o cliente os escreveu. Ausente ou vazio: nenhum. A
-/// ordem não importa, e a leitura os devolve em ordem canônica.
+/// ordem não importa, e a leitura os devolve em ordem canônica. Tirar um tipo mantém os motivos escolhidos daquele tipo: o
+/// congelamento da versão recusa até que sejam retirados ou o tipo volte a ser declarado.
 /// </param>
 public sealed record FaseCronogramaInput(
     int Ordem,

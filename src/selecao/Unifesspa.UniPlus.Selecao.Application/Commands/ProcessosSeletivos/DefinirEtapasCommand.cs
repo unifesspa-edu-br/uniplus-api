@@ -20,7 +20,9 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// </summary>
 /// <param name="TiposDeDecisao">
 /// Os tipos de decisão que a etapa declara produzir, como o cliente os escreveu. Ausente ou vazio: nenhum; a
-/// gravação substitui a declaração anterior. A ordem não importa, e a leitura os devolve em ordem canônica.
+/// gravação substitui a declaração anterior. A ordem não importa, e a leitura os devolve em ordem canônica. Tirar um tipo
+/// mantém os motivos escolhidos daquele tipo: o congelamento da versão recusa até que sejam retirados ou o tipo volte a ser
+/// declarado.
 /// </param>
 /// <param name="TipoEtapaOrigemId">
 /// Id do tipo de etapa ativo em Configuração (issue #1071). Obrigatório em toda

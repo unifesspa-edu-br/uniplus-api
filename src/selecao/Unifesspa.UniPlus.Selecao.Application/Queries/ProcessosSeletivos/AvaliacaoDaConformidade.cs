@@ -4,6 +4,7 @@ using Abstractions;
 
 using Domain.Entities;
 using Domain.Interfaces;
+using Domain.MotivosDeDecisao;
 using Domain.ProcessosSeletivos.Bancas;
 using Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 using Domain.ValueObjects;
@@ -47,7 +48,8 @@ public sealed class AvaliacaoDaConformidade(
     LeituraDosCorretoresDasEtapas corretores,
     ResolucaoDosTiposDeAtoUnicos tiposDeAto,
     ConferenciaDoCatalogoEDaProtecao catalogos,
-    IRegistroCodecsEnvelope registroCodecs)
+    IRegistroCodecsEnvelope registroCodecs,
+    IMotivoDoProcessoRepository motivos)
 {
     /// <summary>
     /// Item do checklist para a versão publicada que o codec não lê: sem ela não há classificação
@@ -67,9 +69,14 @@ public sealed class AvaliacaoDaConformidade(
             .ParaChecklistAsync(processo, atosDaLinhagem, contexto.FusoInstitucional, publicada.TiposCongelados, cancellationToken)
             .ConfigureAwait(false);
         CatalogoVivo catalogo = await catalogos.LerAsync(processo, cancellationToken).ConfigureAwait(false);
+        MotivosEscolhidos escolhidos = await LerOsMotivosEscolhidosAsync(processo.Id, publicada, cancellationToken).ConfigureAwait(false);
 
-        return Projetar(processo, contexto, corretoresDasEtapas, tiposDeAtoUnicos, catalogo, publicada);
+        return Projetar(processo, new LeiturasDoPainel(contexto, corretoresDasEtapas, tiposDeAtoUnicos, escolhidos), catalogo, publicada);
     }
+
+    // Os motivos entram na versão que nasce, a mesma que o congelamento confere.
+    private async Task<MotivosEscolhidos> LerOsMotivosEscolhidosAsync(Guid processoId, VersaoPublicada publicada, CancellationToken cancellationToken) =>
+        new(await motivos.ListarEscolhaAtualComOrigemAsync(processoId, cancellationToken).ConfigureAwait(false), publicada.NumeroDaVersaoQueNasce);
 
     // Como a retificação, o checklist trata o tipo que a versão vigente já congelou pela classificação congelada; só o
     // processo ainda não publicado, ou o tipo novo, lê o catálogo de hoje. Uma versão que o codec não lê é recusada pela
@@ -80,7 +87,7 @@ public sealed class AvaliacaoDaConformidade(
         VersaoConfiguracao? versaoAtual = await processoSeletivoRepository.ObterVersaoAtualAsync(processoId, cancellationToken).ConfigureAwait(false);
         if (versaoAtual is null)
         {
-            return new VersaoPublicada(new Dictionary<string, TipoDeAtoCongelado>(StringComparer.Ordinal), null, null);
+            return new VersaoPublicada(new Dictionary<string, TipoDeAtoCongelado>(StringComparer.Ordinal), null, null, VersaoConfiguracao.NumeroDaAbertura);
         }
 
         Result<EnvelopeReidratado> envelope = registroCodecs.Reidratar(versaoAtual);
@@ -89,20 +96,16 @@ public sealed class AvaliacaoDaConformidade(
         return new VersaoPublicada(
             congelados.IsSuccess ? congelados.Value! : new Dictionary<string, TipoDeAtoCongelado>(StringComparer.Ordinal),
             ProtecaoVigenteDasExigenciasDoProcesso.DoEnvelope(envelope),
-            congelados.Error);
+            congelados.Error,
+            VersaoConfiguracao.NumeroDaSucessora(versaoAtual.NumeroVersao));
     }
 
     private static ConformidadeProcessoSeletivoDto Projetar(
-        ProcessoSeletivo processo,
-        ContextoDeContagemDePrazos contexto,
-        CorretoresDasEtapas corretores,
-        TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos,
-        CatalogoVivo catalogo,
-        VersaoPublicada publicada)
+        ProcessoSeletivo processo, LeiturasDoPainel leituras, CatalogoVivo catalogo, VersaoPublicada publicada)
     {
         ItemConformidadeDto[] itens =
         [
-            .. ItensDoChecklist(processo, contexto, corretores, tiposDeAtoUnicos, catalogo, publicada),
+            .. ItensDoChecklist(processo, leituras, catalogo, publicada),
             .. ConferenciaDaAprovacaoDaProtecao.Conferir(processo, catalogo.TiposVivos, catalogo.Fatos).Errors.Select(ItemDaProtecaoPendente),
             .. ItemDaVersaoIlegivel(publicada.Falha),
         ];
@@ -115,17 +118,13 @@ public sealed class AvaliacaoDaConformidade(
     // A mesma proteção e a mesma aprovação que a publicação e a retificação avaliam, sobre a mesma leitura dos tipos de
     // documento: o painel não aprova o que elas recusam.
     private static IEnumerable<ItemConformidadeDto> ItensDoChecklist(
-        ProcessoSeletivo processo,
-        ContextoDeContagemDePrazos contexto,
-        CorretoresDasEtapas corretores,
-        TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos,
-        CatalogoVivo catalogo,
-        VersaoPublicada publicada)
+        ProcessoSeletivo processo, LeiturasDoPainel leituras, CatalogoVivo catalogo, VersaoPublicada publicada)
     {
         ProtecaoVigenteDasExigencias protecao = ProtecaoVigenteDasExigenciasDoProcesso
             .Montar(processo, catalogo.TiposVivos, catalogo.Fatos, publicada.CongeladoNaVersao).Exigencias;
 
-        CadastrosDaConfiguracao cadastros = new(contexto, catalogo.FatosDeModalidade, tiposDeAtoUnicos, corretores, protecao);
+        CadastrosDaConfiguracao cadastros = new(
+            leituras.Contexto, catalogo.FatosDeModalidade, leituras.TiposDeAtoUnicos, leituras.Corretores, protecao, leituras.MotivosEscolhidos);
 
         return ChecklistDeConformidade
             .AvaliarConformidade(processo.Declaracao(), cadastros)
@@ -146,7 +145,20 @@ public sealed class AvaliacaoDaConformidade(
             ? []
             : [new ItemConformidadeDto(CodigoDaVersaoPublicadaIlegivel, DimensaoConformidade.Cronograma, falha.Message, Ok: false)];
 
-    /// <summary>O que a versão vigente informa ao checklist: a classificação dos tipos de ato e as exigências que congelou, ou a falha do codec.</summary>
+    /// <summary>
+    /// O que a versão vigente informa ao checklist: a classificação dos tipos de ato e as exigências que congelou, ou a falha do
+    /// codec, e o número da versão que nasceria agora.
+    /// </summary>
     private sealed record VersaoPublicada(
-        IReadOnlyDictionary<string, TipoDeAtoCongelado> TiposCongelados, CongeladoNaVersaoVigente? CongeladoNaVersao, DomainError? Falha);
+        IReadOnlyDictionary<string, TipoDeAtoCongelado> TiposCongelados,
+        CongeladoNaVersaoVigente? CongeladoNaVersao,
+        DomainError? Falha,
+        int NumeroDaVersaoQueNasce);
+
+    /// <summary>Os cadastros que o painel lê além do catálogo e da versão vigente.</summary>
+    private sealed record LeiturasDoPainel(
+        ContextoDeContagemDePrazos Contexto,
+        CorretoresDasEtapas Corretores,
+        TiposDeAtoUnicosPorObjeto TiposDeAtoUnicos,
+        MotivosEscolhidos MotivosEscolhidos);
 }

@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 /// <remarks>
 /// A escolha nasce já com a versão do edital em que entra: a primeira, porque só o rascunho escolhe. Congelar a versão
-/// não grava nada nela; a descrição se refaz do cadastro só na versão em que a escolha entra.
+/// não grava nada nela e não refaz a cópia: o texto publicado é o da escolha, mesmo que o cadastro mude depois.
 /// A regra de quando incluir e retirar é de <see cref="EscolhaDosMotivos"/>, que enxerga o estado do processo.
 /// </remarks>
 public sealed class MotivoDoProcesso : EntityBase, IAuditableEntity
@@ -72,9 +72,6 @@ public sealed class MotivoDoProcesso : EntityBase, IAuditableEntity
             JustificativaDaInclusao = justificativa,
         };
     }
-
-    /// <summary>Refaz a cópia da descrição vigente no cadastro; quem chama só recopia a escolha que entra na versão.</summary>
-    internal void Recopiar(MotivoDeDecisao origem) => Descricao = origem.Descricao;
 
     /// <summary>
     /// Se a escolha ainda não consta de edital publicado, estando <paramref name="numeroDaVersaoEmPreparo"/> em preparo: a

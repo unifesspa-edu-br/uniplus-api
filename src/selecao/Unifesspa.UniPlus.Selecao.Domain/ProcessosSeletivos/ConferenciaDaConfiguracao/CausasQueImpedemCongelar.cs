@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cascata;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
@@ -37,6 +38,7 @@ internal static class CausasQueImpedemCongelar
         new(NomeDaFamilia.TiposDeAto, static c => TiposDeAto(c.Cronograma, c.Etapas, c.Cadastros.TiposDeAtoUnicos)),
         new(NomeDaFamilia.Cascata, static c => CausasDaRecusa.NoCampo(CoberturaDaCascata.CausasDaCascata(c.Configuracao), "cascataRemanejamento")),
         new(NomeDaFamilia.CondicoesDaCanonicalizacao, static c => CondicoesDaCanonicalizacao.Causas(c.Configuracao, c.Cadastros)),
+        new(NomeDaFamilia.MotivosDeDecisao, static c => MotivosDasDecisoes(c.Configuracao, c.Cadastros.MotivosEscolhidos)),
     ];
 
     internal static IReadOnlyList<FieldError> De(ConfiguracaoDeclarada configuracao, CadastrosDaConfiguracao cadastros) =>
@@ -100,4 +102,18 @@ internal static class CausasQueImpedemCongelar
         .. ConferenciaDosTiposDeAto.ConferirResultadosSemPapel(cronograma, etapas, tipos),
         .. ConferenciaDosTiposDeAto.ConferirTiposQueCongelamComoResultado(cronograma, etapas, tipos),
     ];
+
+    // O motivo recusado por estar desativado ou por ter o tipo não declarado não conta para a cobertura. A avaliação que já
+    // começou depende do instante da operação e fica na conferência da retificação.
+    private static IEnumerable<FieldError> MotivosDasDecisoes(ConfiguracaoDeclarada configuracao, MotivosEscolhidos motivos)
+    {
+        LugaresDaDecisao lugares = LugaresDaDecisao.Da(configuracao);
+
+        return
+        [
+            .. motivos.Desativados(lugares),
+            .. motivos.DeTipoNaoDeclarado(lugares),
+            .. CoberturaDosMotivos.Faltas(configuracao, lugares, motivos.QueCompoemAVersao(lugares)),
+        ];
+    }
 }

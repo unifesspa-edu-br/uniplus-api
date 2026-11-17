@@ -20,7 +20,7 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.Publicacao
 
 /// <summary>
 /// O que a conferência da configuração acumula numa resposta só e o que ela deixa de avaliar: as recusas da configuração,
-/// do edital e dos motivos saem juntas, na ordem das famílias; o anexo recusado impede avaliar o período e a conformidade
+/// dos motivos e do edital saem juntas, na ordem da conferência; o anexo recusado impede avaliar o período e a conformidade
 /// legal; o período recusado impede avaliar a conformidade legal; o fato que o catálogo não deixa coletar impede avaliar o
 /// que leria o catálogo sobre ele; o fuso ausente é defeito do ambiente e recusa sozinho.
 /// </summary>
@@ -30,7 +30,7 @@ public sealed class RecusasAcumuladasNoCongelamentoTests
     private static readonly DateTimeOffset InicioInformado = new(2026, 2, 1, 0, 0, 0, TimeSpan.FromHours(-3));
     private static readonly DateTimeOffset FimInformado = new(2026, 2, 28, 23, 59, 59, TimeSpan.FromHours(-3));
 
-    [Fact(DisplayName = "A configuração, o edital e os motivos recusam numa resposta só, na ordem das famílias")]
+    [Fact(DisplayName = "A configuração, os motivos e o edital recusam numa resposta só, na ordem da conferência")]
     public async Task ConfiguracaoEditalEMotivos_SaemJuntosNaOrdemDasFamilias()
     {
         CenarioDeRecusaNoCongelamento cenario = Para(OperacaoQueCongela.Publicar)
@@ -42,8 +42,8 @@ public sealed class RecusasAcumuladasNoCongelamentoTests
 
         resposta.Errors.Select(static e => e.Error.Code).Should().ContainInOrder(
             CodigoDa(DefeitoDoCongelamento.Cronograma),
-            CodigoDa(DefeitoDoCongelamento.ConformidadeLegal),
-            CodigoDa(DefeitoDoCongelamento.Motivos));
+            CodigoDa(DefeitoDoCongelamento.Motivos),
+            CodigoDa(DefeitoDoCongelamento.ConformidadeLegal));
         eventos.Should().BeEmpty();
         await cenario.Servicos.NadaFoiGravadoAsync();
         cenario.AfirmarQueNaoTransitou();

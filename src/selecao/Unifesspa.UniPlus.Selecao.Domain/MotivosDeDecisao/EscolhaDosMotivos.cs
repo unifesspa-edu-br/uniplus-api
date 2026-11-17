@@ -65,7 +65,7 @@ public static class EscolhaDosMotivos
         ArgumentNullException.ThrowIfNull(processo);
         ArgumentNullException.ThrowIfNull(escolhaAtual);
 
-        HashSet<LugarDaDecisao> ausentes = [.. antes.AusentesEm(LugaresDaDecisao.Do(processo))];
+        HashSet<LugarDaDecisao> ausentes = [.. antes.AusentesEm(LugaresDaDecisao.Das(processo.CronogramaFases, processo.Etapas))];
 
         return [.. escolhaAtual.Where(e => ausentes.Contains(e.Lugar))];
     }
@@ -75,7 +75,7 @@ public static class EscolhaDosMotivos
         new(MotivoDeDecisaoErrorCodes.FaseOuEtapaNaoEncontrada, "A fase ou a etapa informada não existe neste processo.");
 
     private static DomainError? RecusaDoLugar(ProcessoSeletivo processo, LugarDaDecisao lugar) =>
-        LugaresDaDecisao.Do(processo).Contem(lugar) ? null : LugarNaoEncontrado();
+        LugaresDaDecisao.Das(processo.CronogramaFases, processo.Etapas).Contem(lugar) ? null : LugarNaoEncontrado();
 
     private static DomainError? RecusaDeEscolhaAusente(MotivoDoProcesso? escolhido, Guid motivoDeDecisaoId) =>
         escolhido is null

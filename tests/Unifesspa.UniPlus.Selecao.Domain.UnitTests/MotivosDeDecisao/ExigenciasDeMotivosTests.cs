@@ -24,24 +24,19 @@ public sealed class ExigenciasDeMotivosTests
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho(FundamentoIsencaoCodigo.CadastroUnico);
         IExigenciaDeMotivos[] exigencias = [new ExigenciaFalsa("primeira"), new ExigenciaDaIsencaoDaTaxa(), new ExigenciaFalsa("terceira")];
 
-        Result resultado = CoberturaDosMotivos.Conferir(processo, [], exigencias);
+        FieldError[] faltas = [.. CoberturaDosMotivos.Faltas(processo.Declaracao(), ProcessoParaMotivos.Lugares(processo), [], exigencias)];
 
-        resultado.Errors.Select(e => e.Error.Code).Should().Equal(
+        faltas.Select(e => e.Error.Code).Should().Equal(
             "primeira", MotivoDeDecisaoErrorCodes.CoberturaInsuficiente, MotivoDeDecisaoErrorCodes.CoberturaInsuficiente, "terceira");
     }
 
     [Fact(DisplayName = "A exigência de teste isolada recusa mesmo sem taxa e sem fundamento")]
     public void Cobertura_ExigenciaAdicionalRecusaSozinha()
     {
-        Result resultado = CoberturaDosMotivos.Conferir(ProcessoParaMotivos.Rascunho(), [], [new ExigenciaFalsa("outra")]);
+        ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho();
 
-        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be("outra");
-    }
-
-    [Fact(DisplayName = "Sem faltas em nenhuma exigência, a cobertura passa")]
-    public void Cobertura_SemFaltas_Aceita()
-    {
-        CoberturaDosMotivos.Conferir(ProcessoParaMotivos.Rascunho(), [], [new ExigenciaDaIsencaoDaTaxa()]).IsSuccess.Should().BeTrue();
+        CoberturaDosMotivos.Faltas(processo.Declaracao(), ProcessoParaMotivos.Lugares(processo), [], [new ExigenciaFalsa("outra")])
+            .Should().ContainSingle().Which.Error.Code.Should().Be("outra");
     }
 
     [Fact(DisplayName = "A cobertura pública percorre o registro das exigências")]
@@ -49,32 +44,34 @@ public sealed class ExigenciasDeMotivosTests
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho(FundamentoIsencaoCodigo.CadastroUnico);
 
-        Result publica = CoberturaDosMotivos.Conferir(processo, []);
+        FieldError[] publica = [.. CoberturaDosMotivos.Faltas(processo.Declaracao(), ProcessoParaMotivos.Lugares(processo), [])];
 
-        publica.Errors.Should().HaveCount(2);
-        publica.Errors.Select(e => e.Error.Code).Should().OnlyContain(c => c == MotivoDeDecisaoErrorCodes.CoberturaInsuficiente);
+        publica.Should().HaveCount(2);
+        publica.Select(e => e.Error.Code).Should().OnlyContain(c => c == MotivoDeDecisaoErrorCodes.CoberturaInsuficiente);
     }
 
     [Fact(DisplayName = "Sem taxa, a isenção não tem falta")]
     public void Isencao_SemTaxa_SemFaltas()
     {
-        new ExigenciaDaIsencaoDaTaxa().Faltas(ProcessoParaMotivos.Rascunho(), []).Should().BeEmpty();
+        ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho();
+
+        new ExigenciaDaIsencaoDaTaxa().Faltas(processo.Declaracao(), ProcessoParaMotivos.Lugares(processo), []).Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "A isenção cobra os dois sentidos de cada fundamento e cita o fundamento e o sentido que faltam")]
+    [Fact(DisplayName = "A isenção cobra os dois sentidos de cada fundamento e cita a fase, o fundamento e o sentido que faltam")]
     public void Isencao_CitaOFundamentoEOSentido()
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho(FundamentoIsencaoCodigo.CadastroUnico, FundamentoIsencaoCodigo.DoacaoMedulaOssea);
         MotivoDoProcesso[] escolhidos = [Escolher(processo, FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel)];
 
-        FieldError[] faltas = [.. new ExigenciaDaIsencaoDaTaxa().Faltas(processo, escolhidos)];
+        FieldError[] faltas = [.. new ExigenciaDaIsencaoDaTaxa().Faltas(processo.Declaracao(), ProcessoParaMotivos.Lugares(processo), escolhidos)];
 
         faltas.Should().HaveCount(3).And.OnlyContain(f => f.Field == "motivos");
         faltas.Select(f => f.Error.Message).Should().Equal(
         [
-            $"Falta escolher ao menos um motivo desfavorável para o fundamento de isenção {FundamentoIsencaoCodigo.CadastroUnico}.",
-            $"Falta escolher ao menos um motivo favorável para o fundamento de isenção {FundamentoIsencaoCodigo.DoacaoMedulaOssea}.",
-            $"Falta escolher ao menos um motivo desfavorável para o fundamento de isenção {FundamentoIsencaoCodigo.DoacaoMedulaOssea}.",
+            $"A fase 'INSCRICAO' precisa de ao menos um motivo desfavorável para o fundamento de isenção {FundamentoIsencaoCodigo.CadastroUnico}.",
+            $"A fase 'INSCRICAO' precisa de ao menos um motivo favorável para o fundamento de isenção {FundamentoIsencaoCodigo.DoacaoMedulaOssea}.",
+            $"A fase 'INSCRICAO' precisa de ao menos um motivo desfavorável para o fundamento de isenção {FundamentoIsencaoCodigo.DoacaoMedulaOssea}.",
         ]);
     }
 
@@ -88,31 +85,16 @@ public sealed class ExigenciasDeMotivosTests
             Escolher(processo, FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Desfavoravel),
         ];
 
-        new ExigenciaDaIsencaoDaTaxa().Faltas(processo, escolhidos).Should().BeEmpty();
-    }
-
-    [Fact(DisplayName = "Motivo de outro tipo ou de outro fundamento não cobre a isenção")]
-    public void Isencao_OutroTipoOuFundamento_NaoCobre()
-    {
-        ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho(FundamentoIsencaoCodigo.CadastroUnico);
-        MotivoDoProcesso[] escolhidos =
-        [
-            Escolher(processo, ProcessoParaMotivos.Motivo(TipoMotivoDeDecisao.HomologacaoDasInscricoes, "DOCUMENTO_ILEGIVEL", SentidoDoMotivo.Favoravel)),
-            Escolher(processo, FundamentoIsencaoCodigo.CarenciaSocioeconomica, SentidoDoMotivo.Desfavoravel),
-        ];
-
-        new ExigenciaDaIsencaoDaTaxa().Faltas(processo, escolhidos).Should().HaveCount(2);
+        new ExigenciaDaIsencaoDaTaxa().Faltas(processo.Declaracao(), ProcessoParaMotivos.Lugares(processo), escolhidos).Should().BeEmpty();
     }
 
     private static MotivoDoProcesso Escolher(ProcessoSeletivo processo, string fundamento, SentidoDoMotivo sentido) =>
-        Escolher(processo, ProcessoParaMotivos.DaIsencao(fundamento, sentido));
-
-    private static MotivoDoProcesso Escolher(ProcessoSeletivo processo, MotivoDeDecisao origem) =>
-        ProcessoParaMotivos.Escolha(processo, ProcessoParaMotivos.LugarDaFase(processo, "INSCRICAO"), origem, versaoDeEntrada: 1);
+        ProcessoParaMotivos.Escolha(
+            processo, ProcessoParaMotivos.LugarDaFase(processo, "INSCRICAO"), ProcessoParaMotivos.DaIsencao(fundamento, sentido), versaoDeEntrada: 1);
 
     private sealed class ExigenciaFalsa(string codigo) : IExigenciaDeMotivos
     {
-        public IEnumerable<FieldError> Faltas(ProcessoSeletivo processo, IReadOnlyCollection<MotivoDoProcesso> escolhidos) =>
+        public IEnumerable<FieldError> Faltas(ConfiguracaoDeclarada configuracao, LugaresDaDecisao lugares, IReadOnlyCollection<MotivoDoProcesso> escolhidos) =>
             [new FieldError("motivos", new DomainError(codigo, "Falta de teste."))];
     }
 }

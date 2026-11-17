@@ -58,6 +58,7 @@ public static class ChecklistDeConformidade
             .. ItensDoCronograma.Avaliar(configuracao, cadastros),
             .. ItensDaCascata.Avaliar(configuracao),
             .. ItensDasCondicoesDaCanonicalizacao.Avaliar(configuracao, cadastros),
+            .. ItensDosMotivosDeDecisao.Avaliar(configuracao, cadastros.MotivosEscolhidos),
         ];
     }
 

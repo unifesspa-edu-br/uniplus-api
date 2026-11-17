@@ -12,7 +12,7 @@ public sealed class LugaresDaDecisaoTests
     public void Contem_SoOQueOProcessoTem()
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho();
-        LugaresDaDecisao lugares = LugaresDaDecisao.Do(processo);
+        LugaresDaDecisao lugares = ProcessoParaMotivos.Lugares(processo);
 
         lugares.Contem(ProcessoParaMotivos.LugarDaFase(processo, "INSCRICAO")).Should().BeTrue();
         lugares.Contem(ProcessoParaMotivos.LugarDaEtapa(processo, "Prova objetiva")).Should().BeTrue();
@@ -26,16 +26,16 @@ public sealed class LugaresDaDecisaoTests
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho();
         Guid identidadeDaFase = processo.CronogramaFases.First().FaseCanonicaOrigemId;
 
-        LugaresDaDecisao.Do(processo).Contem(LugarDaDecisao.DaEtapa(identidadeDaFase)).Should().BeFalse();
+        ProcessoParaMotivos.Lugares(processo).Contem(LugarDaDecisao.DaEtapa(identidadeDaFase)).Should().BeFalse();
     }
 
     [Fact(DisplayName = "Os lugares ausentes do retrato posterior são todos os que o retrato anterior tinha, fases e etapas")]
     public void AusentesEm_TodosOsQueSaem()
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho();
-        LugaresDaDecisao semNada = LugaresDaDecisao.Do(ProcessoParaMotivos.SemFasesNemEtapas());
+        LugaresDaDecisao semNada = ProcessoParaMotivos.Lugares(ProcessoParaMotivos.SemFasesNemEtapas());
 
-        LugarDaDecisao[] ausentes = [.. LugaresDaDecisao.Do(processo).AusentesEm(semNada)];
+        LugarDaDecisao[] ausentes = [.. ProcessoParaMotivos.Lugares(processo).AusentesEm(semNada)];
 
         ausentes.Should().BeEquivalentTo([
             ProcessoParaMotivos.LugarDaFase(processo, "INSCRICAO"),
@@ -50,10 +50,10 @@ public sealed class LugaresDaDecisaoTests
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho();
         LugarDaDecisao discursiva = ProcessoParaMotivos.LugarDaEtapa(processo, "Prova discursiva");
-        LugaresDaDecisao antes = LugaresDaDecisao.Do(processo);
+        LugaresDaDecisao antes = ProcessoParaMotivos.Lugares(processo);
         EtapaProcesso mantida = processo.Etapas.First();
         processo.DefinirEtapas([mantida]).IsSuccess.Should().BeTrue();
 
-        antes.AusentesEm(LugaresDaDecisao.Do(processo)).Should().Equal(discursiva);
+        antes.AusentesEm(ProcessoParaMotivos.Lugares(processo)).Should().Equal(discursiva);
     }
 }

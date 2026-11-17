@@ -262,7 +262,7 @@ internal sealed class ServicosDoCongelamentoDeTeste
     public ConferenciaDeConformidadeLegal ConformidadeLegal() =>
         new(ObrigatoriedadesLegais, Modalidades, TiposDocumento, TiposEtapa, TiposDeficiencia, RegrasDesempate);
 
-    public ConferenciaDosMotivosAoCongelar Motivos() => new(MotivosEscolhidos);
+    public LeituraDosCadastrosDaConfiguracao CadastrosDaConfiguracao() => new(TiposDeAtoUnicos(), Contextos(), Corretores(), MotivosEscolhidos);
 
     public LeituraDoContextoDeContagemDePrazos Contextos() => new(Calendario, Fuso);
 
@@ -270,12 +270,10 @@ internal sealed class ServicosDoCongelamentoDeTeste
 
     public ConferenciaDosDocumentosDaOperacao DocumentosDaOperacao() => new(Anexos(), ConformidadeLegal());
 
-    public ConferenciaDosFatosDaVersao FatosDaVersao() => new(Motivos());
-
-    public ConferenciaDaOperacaoAoCongelar Operacao() => new(DocumentosDaOperacao(), FatosDaVersao());
+    public ConferenciaDaOperacaoAoCongelar Operacao() => new(DocumentosDaOperacao());
 
     public ConferenciaDaConfiguracaoAoCongelar Conferencia() =>
-        new(Catalogos(), Recopia(), FusoDaConferencia ?? Fuso, TiposDeAtoUnicos(), Contextos(), Corretores(), Operacao());
+        new(Catalogos(), Recopia(), FusoDaConferencia ?? Fuso, CadastrosDaConfiguracao(), Operacao());
 
     public MontagemDoCongelamento Montagem() => new(Canonicalizer, Usuario);
 
@@ -300,7 +298,7 @@ internal sealed class ServicosDoCongelamentoDeTeste
         RetificarAsync(new RetificarProcessoSeletivoCommand(
             processoId, "Correção do prazo", "001/2026-R1", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: PublicacaoDeTeste.NovoAto()));
 
-    public AvaliacaoDaConformidade Avaliacao() => new(Repositorio, Contextos(), Corretores(), TiposDeAtoUnicos(), Catalogos(), Codecs);
+    public AvaliacaoDaConformidade Avaliacao() => new(Repositorio, Contextos(), Corretores(), TiposDeAtoUnicos(), Catalogos(), Codecs, MotivosEscolhidos);
 
     public Task<ConformidadeProcessoSeletivoDto?> ConformidadeAsync(ObterConformidadeProcessoSeletivoQuery consulta) =>
         ObterConformidadeProcessoSeletivoQueryHandler.Handle(consulta, Repositorio, Avaliacao(), CancellationToken.None);

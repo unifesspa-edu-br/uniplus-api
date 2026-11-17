@@ -30,7 +30,7 @@ public sealed class DefinicaoDoCronogramaDeFases(
     internal async Task<Result> DefinirAsync(
         ProcessoSeletivo processo, DefinirCronogramaFasesCommand command, DateTimeOffset agora, CancellationToken cancellationToken)
     {
-        LugaresDaDecisao lugaresAntes = LugaresDaDecisao.Do(processo);
+        LugaresDaDecisao lugaresAntes = LugaresDaDecisao.Das(processo.CronogramaFases, processo.Etapas);
         Result definido = await MontarEDefinirAsync(processo, command, agora, cancellationToken).ConfigureAwait(false);
         if (definido.IsSuccess)
         {

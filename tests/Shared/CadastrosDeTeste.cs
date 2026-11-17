@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -14,7 +15,9 @@ internal static class CadastrosDeTeste
         new HashSet<string>(StringComparer.Ordinal),
         new HashSet<Guid>());
 
-    /// <summary>Sem calendário, com os fatos de modalidade do catálogo, sem tipo de ato único, sem consolidação e sem proteção vigente.</summary>
+    private static readonly MotivosEscolhidos SemMotivosEscolhidos = new([], numeroDaVersaoQueNasce: 1);
+
+    /// <summary>Sem calendário, com os fatos de modalidade do catálogo, sem tipo de ato único, sem consolidação, sem proteção vigente e sem motivo escolhido.</summary>
     public static CadastrosDaConfiguracao Padrao { get; } = Com();
 
     /// <summary>Os cadastros padrão, trocando só o que o cenário declara.</summary>
@@ -24,11 +27,13 @@ internal static class CadastrosDeTeste
         TiposDeAtoUnicosPorObjeto? tiposDeAtoUnicos = null,
         CorretoresDasEtapas? corretores = null,
         ProtecaoVigenteDasExigencias? protecao = null,
+        MotivosEscolhidos? motivosEscolhidos = null,
         FatosDasVersoesPublicadas? fatosDasVersoesPublicadas = null) => new(
             contagemDePrazos ?? ContextoDeContagemDePrazos.SemCalendario,
             fatosDeModalidade ?? FatosDeModalidadeDeTeste.DoCatalogo,
             tiposDeAtoUnicos ?? TiposDeAtoUnicosDeTeste.Nenhum,
             corretores ?? CorretoresDeTeste.SemConsolidacao,
             protecao ?? SemProtecaoVigente,
+            motivosEscolhidos ?? SemMotivosEscolhidos,
             fatosDasVersoesPublicadas);
 }

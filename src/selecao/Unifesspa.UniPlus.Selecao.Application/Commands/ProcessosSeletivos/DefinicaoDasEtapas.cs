@@ -37,7 +37,7 @@ public sealed class DefinicaoDasEtapas(
             return payload;
         }
 
-        LugaresDaDecisao lugaresAntes = LugaresDaDecisao.Do(processo);
+        LugaresDaDecisao lugaresAntes = LugaresDaDecisao.Das(processo.CronogramaFases, processo.Etapas);
         Result substituida = await SubstituirAsync(NovaEdicao(processo, command, agora), cancellationToken).ConfigureAwait(false);
         if (substituida.IsSuccess)
         {

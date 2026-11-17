@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// O que a versão congela dos fatos coletados: o metadado dos fatos citados, os valores que o candidato pode escolher, a
-/// operação dos agregados, a definição avaliável e os motivos. As conferências acumulam, na ordem: a coletabilidade, o
+/// operação dos agregados e a definição avaliável. As conferências acumulam, na ordem: a coletabilidade, o
 /// metadado, os valores, o eixo trocado e a definição. Cada fato coletado que o catálogo não deixa coletar é uma causa
 /// própria, e as demais conferências seguem sobre os fatos que ainda se coletam. O eixo trocado se compara sobre o que
 /// resolveu: o fato que o catálogo não tem ou não deixa coletar já é causa própria e sai da comparação, e os demais seguem
@@ -27,18 +27,9 @@ internal sealed record FatosConferidos(
     DefinicaoAvaliavel? Avaliavel,
     IReadOnlyList<FieldError> Causas);
 
-public sealed class ConferenciaDosFatosDaVersao(ConferenciaDosMotivosAoCongelar motivos)
+public static class ConferenciaDosFatosDaVersao
 {
-    internal async Task<FatosConferidos> ConferirAsync(
-        ProcessoSeletivo processo, LeiturasDoCongelamento lidos, int numeroDaVersaoQueNasce, CancellationToken cancellationToken)
-    {
-        FatosConferidos fatos = ConferirOsFatosCongelados(processo, lidos);
-        Result dosMotivos = await motivos.ConferirAsync(processo, numeroDaVersaoQueNasce, cancellationToken).ConfigureAwait(false);
-
-        return fatos with { Causas = [.. fatos.Causas, .. dosMotivos.Errors] };
-    }
-
-    private static FatosConferidos ConferirOsFatosCongelados(ProcessoSeletivo processo, LeiturasDoCongelamento lidos)
+    internal static FatosConferidos Conferir(ProcessoSeletivo processo, LeiturasDoCongelamento lidos)
     {
         IReadOnlyList<ItemNoDocumento> naoColetaveis = ConferenciaDeColetabilidadeDeFatos.NaoColetaveis(processo, lidos.Catalogo.PorCodigo);
         HashSet<string> excluidos = [.. naoColetaveis.Select(static n => n.Item.FatoCodigo)];

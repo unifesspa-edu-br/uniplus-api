@@ -50,7 +50,7 @@ internal static class CongelamentoDeTeste
     }
 
     private static CadastrosDaConfiguracao CadastrosDe(ProcessoSeletivo processo, CenarioDeCongelamento cenario) =>
-        CadastrosDeTeste.Com(cenario.Contagem, cenario.FatosDeModalidade, cenario.TiposDeAtoUnicos, cenario.Corretores ?? CorretoresDeTeste.DoProcesso(processo));
+        CadastrosDeTeste.Com(cenario.Contagem, cenario.FatosDeModalidade, cenario.TiposDeAtoUnicos, cenario.Corretores ?? CorretoresDeTeste.DoProcesso(processo), motivosEscolhidos: cenario.MotivosEscolhidos);
 
     private static PedidoDeCongelamento Pedido(CenarioDeCongelamento cenario, ConfiguracaoAptaACongelar configuracao) =>
         new()

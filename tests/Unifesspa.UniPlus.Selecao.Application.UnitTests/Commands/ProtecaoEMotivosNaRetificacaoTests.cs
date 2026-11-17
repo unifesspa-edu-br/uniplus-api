@@ -8,8 +8,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.FatoCitadoDeTeste;
 
 /// <summary>
-/// A retificação recusa o que voltou a pendente na proteção de dados depois de vinculado e o fundamento de
-/// isenção habilitado sem motivos escolhidos (UNI-REQ-0144).
+/// A retificação recusa o que voltou a pendente na proteção de dados depois de vinculado e o fundamento de isenção
+/// habilitado que nenhuma fase nem etapa declara decidir (UNI-REQ-0144, UNI-REQ-0123).
 /// </summary>
 public sealed class ProtecaoEMotivosNaRetificacaoTests
 {
@@ -37,16 +37,26 @@ public sealed class ProtecaoEMotivosNaRetificacaoTests
         eventos.Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "Retificar de uma vez recusa o processo cujo fundamento de isenção habilitado não tem motivos escolhidos")]
-    public async Task Retificar_SemCoberturaDosMotivos_Recusa()
+    [Fact(DisplayName = "Retificar recusa o processo cujo fundamento de isenção habilitado não tem fase nem etapa que declare o tipo de isenção")]
+    public async Task Retificar_FundamentoSemLugarQueDeclare_Recusa()
     {
         CenarioDeRetificacaoPublicada cenario = CenarioDeRetificacaoPublicada.Publicado();
         cenario.ComIsencaoHabilitadaSemMotivos();
 
         (Result resposta, IEnumerable<object> eventos) = await cenario.RetificarAsync();
 
-        resposta.Errors.Select(static e => e.Error.Code).Should().OnlyContain(c => c == MotivoDeDecisaoErrorCodes.CoberturaInsuficiente)
-            .And.HaveCount(2, "falta um motivo favorável e um desfavorável para o fundamento");
+        resposta.Errors.Select(static e => e.Error.Code).Should().ContainSingle().Which.Should().Be(MotivoDeDecisaoErrorCodes.TipoDeDecisaoNaoDeclarado);
         eventos.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Retificar recusa os motivos antes do eixo alterado do fato, porque a configuração se confere antes da operação")]
+    public async Task Retificar_RecusaDosMotivos_PrecedeAsRecusasDaOperacao()
+    {
+        CenarioDeRetificacaoPublicada cenario = CenarioDeRetificacaoPublicada.Publicado(new SituacaoDoFatoCitado { DominioCongelado = "CATEGORICO" });
+        cenario.ComIsencaoHabilitadaSemMotivos();
+
+        (Result resposta, IEnumerable<object> _) = await cenario.RetificarAsync();
+
+        resposta.Errors.Select(static e => e.Error.Code).Should().Equal(MotivoDeDecisaoErrorCodes.TipoDeDecisaoNaoDeclarado, CodigoDaRecusaDoEixoAlterado);
     }
 }

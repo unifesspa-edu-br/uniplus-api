@@ -18,8 +18,7 @@ internal sealed record OperacaoConferida(
 /// outra recusou (<see cref="ConferenciaDosDocumentosDaOperacao"/> e <see cref="ConferenciaDosFatosDaVersao"/>).
 /// </summary>
 public sealed class ConferenciaDaOperacaoAoCongelar(
-    ConferenciaDosDocumentosDaOperacao documentos,
-    ConferenciaDosFatosDaVersao fatos)
+    ConferenciaDosDocumentosDaOperacao documentos)
 {
     internal async Task<OperacaoConferida> ConferirAsync(
         ProcessoSeletivo processo,
@@ -30,7 +29,7 @@ public sealed class ConferenciaDaOperacaoAoCongelar(
         CancellationToken cancellationToken)
     {
         DocumentosConferidos doEdital = await documentos.ConferirAsync(processo, edital, ato, origem, lidos, cancellationToken).ConfigureAwait(false);
-        FatosConferidos dosFatos = await fatos.ConferirAsync(processo, lidos, origem.NumeroDaVersaoQueNasce, cancellationToken).ConfigureAwait(false);
+        FatosConferidos dosFatos = ConferenciaDosFatosDaVersao.Conferir(processo, lidos);
 
         return new OperacaoConferida(doEdital, dosFatos);
     }

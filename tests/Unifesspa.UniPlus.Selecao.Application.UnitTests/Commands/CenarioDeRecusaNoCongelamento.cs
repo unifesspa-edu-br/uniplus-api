@@ -75,22 +75,22 @@ internal sealed class CenarioDeRecusaNoCongelamento
         [DefeitoDoCongelamento.TiposDeAtoCongelados] = ["ProcessoSeletivo.TipoDeAtoSemVersaoVigente"],
         [DefeitoDoCongelamento.Anexos] = ["AnexoDoEdital.NaoEncontrado"],
         [DefeitoDoCongelamento.ConformidadeLegal] = ["ProcessoSeletivo.ConformidadeLegalInsuficiente"],
-        [DefeitoDoCongelamento.Motivos] = [MotivoDeDecisaoErrorCodes.CoberturaInsuficiente, MotivoDeDecisaoErrorCodes.CoberturaInsuficiente],
+        [DefeitoDoCongelamento.Motivos] = [MotivoDeDecisaoErrorCodes.TipoDeDecisaoNaoDeclarado],
     };
 
     private static readonly DefeitoDoCongelamento[] DefeitosDaPublicacao =
     [
         DefeitoDoCongelamento.Documento, DefeitoDoCongelamento.TipoDeAto, DefeitoDoCongelamento.ProtecaoPendente,
-        DefeitoDoCongelamento.UnidadeExcluida, DefeitoDoCongelamento.Cronograma, DefeitoDoCongelamento.TiposDeAtoCongelados,
-        DefeitoDoCongelamento.Anexos, DefeitoDoCongelamento.ConformidadeLegal, DefeitoDoCongelamento.Motivos,
+        DefeitoDoCongelamento.UnidadeExcluida, DefeitoDoCongelamento.Cronograma, DefeitoDoCongelamento.Motivos,
+        DefeitoDoCongelamento.TiposDeAtoCongelados, DefeitoDoCongelamento.Anexos, DefeitoDoCongelamento.ConformidadeLegal,
     ];
 
     private static readonly DefeitoDoCongelamento[] DefeitosDaRetificacao =
     [
         DefeitoDoCongelamento.Documento, DefeitoDoCongelamento.TipoDeAto,
         DefeitoDoCongelamento.ProtecaoPendente, DefeitoDoCongelamento.VersoesPublicadasIlegiveis, DefeitoDoCongelamento.UnidadeExcluida,
-        DefeitoDoCongelamento.TiposDeAtoCongelados, DefeitoDoCongelamento.Anexos, DefeitoDoCongelamento.ConformidadeLegal,
-        DefeitoDoCongelamento.Motivos,
+        DefeitoDoCongelamento.Motivos, DefeitoDoCongelamento.TiposDeAtoCongelados, DefeitoDoCongelamento.Anexos,
+        DefeitoDoCongelamento.ConformidadeLegal,
     ];
 
     private static readonly HashSet<DefeitoDoCongelamento> QueRecusamSozinhos =

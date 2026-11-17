@@ -170,9 +170,14 @@ internal static class CorpusEnvelopeCronograma
             TiposDeDecisao: tiposDeDecisao ?? TiposDaFaseFinalDoCorpus),
         bancasRequeridas: []);
 
-    /// <summary>Fase sem recurso, com os tipos declarados fora de ordem: o envelope os escreve em ordem alfabética.</summary>
+    /// <summary>
+    /// Fase sem recurso, com os tipos declarados fora de ordem: o envelope os escreve em ordem alfabética. Inclui o da isenção
+    /// da taxa, que o corpus, por cobrar taxa com fundamentos de isenção, precisa que alguma fase declare para ser publicado.
+    /// </summary>
     private static readonly string[] TiposDaFaseFinalDoCorpus =
-        [TipoMotivoDeDecisaoCodigo.NotaDaEtapa, TipoMotivoDeDecisaoCodigo.GabaritoDaProva, TipoMotivoDeDecisaoCodigo.AnaliseDocumental];
+    [
+        TipoMotivoDeDecisaoCodigo.NotaDaEtapa, TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa, TipoMotivoDeDecisaoCodigo.GabaritoDaProva, TipoMotivoDeDecisaoCodigo.AnaliseDocumental,
+    ];
 
     internal static List<ProdutoDaFase> ProdutosDaFaseResultadoFinal(int variante) =>
     [

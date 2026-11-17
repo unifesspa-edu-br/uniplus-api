@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
 /// <summary>
 /// Recusas do cadastro único de motivos de decisão (UNI-REQ-0283), da escolha dos motivos pelo
-/// processo (UNI-REQ-0285) e da conferência de cobertura dos motivos na publicação (UNI-REQ-0123).
+/// processo (UNI-REQ-0285) e da conferência dos motivos escolhidos ao congelar a versão: motivo desativado (UNI-REQ-0122), tipo de decisão que a fase ou etapa não declara e cobertura (UNI-REQ-0123).
 /// </summary>
 internal static class ErrosDosMotivosDeDecisao
 {
@@ -64,6 +64,7 @@ internal static class ErrosDosMotivosDeDecisao
         Mapear(MotivoDeDecisaoErrorCodes.VersaoNaoPublicada, StatusCodes.Status404NotFound, "versao_nao_publicada", "O processo não tem esta versão do edital publicada"),
         Recusa(MotivoDeDecisaoErrorCodes.MotivoDesativado, "motivo_desativado", "Motivo escolhido foi desativado no cadastro"),
         Recusa(MotivoDeDecisaoErrorCodes.CoberturaInsuficiente, "cobertura_insuficiente", "Motivos insuficientes para as decisões do processo"),
+        Recusa(MotivoDeDecisaoErrorCodes.TipoDeDecisaoNaoDeclarado, "tipo_de_decisao_nao_declarado", "A fase ou etapa não declara o tipo de decisão"),
     ];
 
     private static KeyValuePair<string, DomainErrorMapping> Recusa(string codigo, string sufixo, string titulo) =>

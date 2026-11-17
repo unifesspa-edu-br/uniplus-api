@@ -67,7 +67,7 @@ public sealed class RecusasDaPublicacaoTests
             "ProcessoSeletivo.ConformidadeInsuficiente",
             "o contrato HTTP não muda — continua sendo o mesmo 422 de sempre");
         resposta.Errors.Select(static e => e.Error.Code).Should().ContainInOrder(
-            "ProcessoSeletivo.ConformidadeInsuficiente", MotivoDeDecisaoErrorCodes.CoberturaInsuficiente);
+            "ProcessoSeletivo.ConformidadeInsuficiente", MotivoDeDecisaoErrorCodes.TipoDeDecisaoNaoDeclarado);
         canonicalizer.FoiInvocado.Should().BeFalse(
             "um processo não conforme NÃO chega a ser canonicalizado (ADR-0109 D5). Sem a conferência antecipada, a " +
             "projeção de uma dimensão obrigatória ausente lançaria e o 422 viraria 500.");
@@ -162,7 +162,7 @@ public sealed class RecusasDaPublicacaoTests
     private static readonly DateTimeOffset PeriodoDoAtoFim = new(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3));
 
     // Cobra a taxa com um fundamento e não escolheu motivo: a recusa estrutural da conferência da configuração vem antes da
-    // cobertura dos motivos, na mesma resposta. Sem cronograma, não há fase que colete inscrição:
+    // dos motivos, na mesma resposta: nenhuma fase declara o tipo de isenção. Sem cronograma, não há fase que colete inscrição:
     // o período continua vindo do ato.
     private static ProcessoSeletivo ProcessoNaoConformeQueCobraTaxaSemMotivo()
     {

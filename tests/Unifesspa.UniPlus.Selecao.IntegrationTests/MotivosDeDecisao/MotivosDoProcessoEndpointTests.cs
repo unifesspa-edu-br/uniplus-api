@@ -88,7 +88,7 @@ public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
         (await CodigoDoErro(recusada)).Should().Be("uniplus.selecao.motivo_de_decisao.motivo_desativado");
     }
 
-    [Fact(DisplayName = "Trocado o motivo desativado depois de escolhido, publica e a cópia fica como estava na publicação")]
+    [Fact(DisplayName = "Trocado o motivo desativado depois de escolhido, publica e a cópia fica como estava na escolha, mesmo com o cadastro mudado antes e depois da publicação")]
     public async Task Publicar_MotivoTrocado_MantemACopia()
     {
         (Guid processoId, Guid documentoId) = await SemearProcessoAsync(nameof(Publicar_MotivoTrocado_MantemACopia));
@@ -102,8 +102,8 @@ public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
         await AlterarMotivoAsync(substituto.Id, static m => m.Atualizar("Redação posterior à publicação."));
         JsonElement publicado = (await ListarAsync(client, processoId)).Should().ContainSingle().Subject;
         publicado.GetProperty("vigencia").GetProperty("versaoDoEditalDeEntrada").GetInt32().Should().Be(1);
-        publicado.GetProperty("descricao").GetString().Should().Be("Redação vigente na publicação.",
-            "a cópia vale como estava na publicação: mudar o cadastro depois não muda o processo");
+        publicado.GetProperty("descricao").GetString().Should().Be(substituto.Descricao,
+            "o processo congela a cópia feita na escolha: mudar o cadastro, antes ou depois da publicação, não muda o processo");
     }
 
     [Fact(DisplayName = "Depois da publicação o processo não retira nem inclui motivo")]
@@ -153,7 +153,7 @@ public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
         MotivoDeDecisao substituto = await SemearMotivoAsync();
         (await RetirarAsync(client, processoId, desativado.Id)).StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await IncluirAsync(client, processoId, substituto.Id)).StatusCode.Should().Be(HttpStatusCode.NoContent);
-        await AlterarMotivoAsync(substituto.Id, static m => m.Atualizar("Redação vigente na publicação."));
+        await AlterarMotivoAsync(substituto.Id, static m => m.Atualizar("Redação do cadastro depois da escolha."));
         return substituto;
     }
 

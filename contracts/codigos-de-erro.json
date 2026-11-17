@@ -6467,6 +6467,11 @@
       "titulo": "Tipo de decisão declarado mais de uma vez"
     },
     {
+      "codigo": "uniplus.selecao.motivo_de_decisao.tipo_de_decisao_nao_declarado",
+      "status": 422,
+      "titulo": "A fase ou etapa não declara o tipo de decisão"
+    },
+    {
       "codigo": "uniplus.selecao.motivo_de_decisao.tipo_invalido",
       "status": 422,
       "titulo": "Tipo de decisão desconhecido"

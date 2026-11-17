@@ -31,6 +31,10 @@ internal static class ProcessoSeletivoPublicavelSeeder
     // recomputado, só precisa satisfazer o formato).
     private static readonly string HashFixo = string.Concat(Enumerable.Repeat("ab01234567", 7))[..64];
 
+    // O que a fase única declara decidir: os motivos escolhidos nela nos testes são deste tipo, e o motivo só vale no lugar que
+    // declara o tipo dele.
+    private static readonly string[] TiposDeDecisaoDaFaseUnica = [TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes];
+
     private static FaseCronograma FaseDeResultadoFinal(
         bool coletaSolicitacaoIsencao,
         DateTimeOffset? fimDasInscricoes,
@@ -42,7 +46,7 @@ internal static class ProcessoSeletivoPublicavelSeeder
         new DecisoesDeCronogramaDaFase(
             Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: fimDasInscricoes ?? new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
             UnidadeResponsavel: unidadeResponsavel ?? UnidadesDeTeste.Ceps),
-        new PublicacoesDaFase(Produtos: produtosDaFase ?? [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        new PublicacoesDaFase(Produtos: produtosDaFase ?? [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null, TiposDeDecisao: TiposDeDecisaoDaFaseUnica),
         bancasRequeridas: []).Value!;
 
     /// <param name="coletaSolicitacaoIsencao">

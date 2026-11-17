@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfigura
 /// (ADR-0125). A ordem decide qual código o cliente vê primeiro: trocar duas famílias deixaria o cliente vendo a causa errada.
 /// </summary>
 /// <remarks>
-/// A sequência das onze famílias está escrita neste teste, sem ler a lista de produção: ela falha se duas famílias trocarem de
+/// A sequência das famílias está escrita neste teste, sem ler a lista de produção: ela falha se duas famílias trocarem de
 /// posição e se a conferência ganhar ou perder uma família. O cenário tem um defeito característico para cada família, pelo
 /// nome. Com os defeitos da primeira família em diante ligados, a primeira causa tem de ser a da família que vem a seguir, e a
 /// lista das causas é a concatenação das famílias na ordem.
@@ -21,12 +21,12 @@ public sealed class OrdemDasFamiliasDaConfiguracaoTests
     private static readonly string[] SequenciaEsperada =
     [
         "Identificacao", "Conformidade", "Declaracoes", "Conjunto", "Completude", "Recursos",
-        "Bancas", "CorrecaoIndependente", "TiposDeAto", "Cascata", "CondicoesDaCanonicalizacao",
+        "Bancas", "CorrecaoIndependente", "TiposDeAto", "Cascata", "CondicoesDaCanonicalizacao", "MotivosDeDecisao",
     ];
 
     public static TheoryData<string> Transicoes => ["Publicar", "Retificar"];
 
-    [Fact(DisplayName = "A conferência tem as onze famílias na ordem única escrita no teste: trocar duas de lugar, ganhar ou perder uma reprova")]
+    [Fact(DisplayName = "A conferência tem as famílias na ordem única escrita no teste: trocar duas de lugar, ganhar ou perder uma reprova")]
     public void Familias_SaoAsDaSequenciaEsperadaNaOrdem() =>
         CausasQueImpedemCongelar.Familias.Select(static familia => familia.Nome).Should().Equal(SequenciaEsperada);
 
