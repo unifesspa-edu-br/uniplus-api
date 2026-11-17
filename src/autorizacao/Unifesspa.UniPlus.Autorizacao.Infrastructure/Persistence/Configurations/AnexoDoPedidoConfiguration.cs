@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
@@ -19,7 +20,6 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 internal sealed class AnexoDoPedidoConfiguration : IEntityTypeConfiguration<AnexoDoPedido>
 {
     private const int SituacaoMaxLength = 40;
-    private const int ETagMaxLength = 200;
     private const int Sha256HexLength = 64;
 
     private static readonly ValueConverter<SituacaoDoAnexo, string> SituacaoConverter = new(
@@ -38,7 +38,7 @@ internal sealed class AnexoDoPedidoConfiguration : IEntityTypeConfiguration<Anex
 
         builder.Property(a => a.Situacao).HasConversion(SituacaoConverter).HasMaxLength(SituacaoMaxLength).IsRequired();
         builder.Property(a => a.TamanhoDeclarado).IsRequired();
-        builder.Property(a => a.ETag).HasColumnName("etag").HasMaxLength(ETagMaxLength);
+        builder.Property(a => a.ETag).HasColumnName("etag").HasMaxLength(ETagDoArmazenamento.MaxLength);
         builder.Property(a => a.Sha256).HasColumnName("sha256").HasMaxLength(Sha256HexLength);
 
         builder.Ignore(a => a.ChaveDeEnvio);
