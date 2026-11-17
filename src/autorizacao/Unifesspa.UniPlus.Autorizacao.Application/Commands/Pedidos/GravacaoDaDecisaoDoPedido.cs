@@ -10,8 +10,8 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// A gravação da aprovação de uma etapa: a concessão da última aprovação exigida, a resposta com o pedido e os avisos da
-/// situação em que ele ficou. A concessão igual vencida e não revogada é revogada antes, porque o índice único a trata
+/// A gravação da decisão de uma etapa, aprovação ou recusa: a concessão da última aprovação exigida, a resposta com o pedido
+/// e os avisos da situação em que ele ficou. A concessão igual vencida e não revogada é revogada antes, porque o índice único a trata
 /// como existente; a ativa igual recusa o pedido.
 /// </summary>
 public sealed class GravacaoDaDecisaoDoPedido
@@ -75,6 +75,32 @@ public sealed class GravacaoDaDecisaoDoPedido
             return (Result<PedidoDeConcessaoDto>.ValidationFailure(gravado.Errors), []);
         }
 
+        return await RespostaComAvisosAsync(decisao, situacaoAnterior, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Grava a recusa que o pedido aceitou. A recusa do agregado descarta o rastreamento; o conflito de concorrência
+    /// devolve a recusa do pedido (ADR-0119).
+    /// </summary>
+    internal async Task<(Result<PedidoDeConcessaoDto> Resposta, IEnumerable<object> Mensagens)> GravarRecusaAsync(
+        DecisaoDaEtapa decisao, Result recusa, SituacaoDoPedido situacaoAnterior, CancellationToken cancellationToken)
+    {
+        if (recusa.IsFailure)
+        {
+            _unitOfWork.DescartarAlteracoesNaoSalvas();
+            return (Result<PedidoDeConcessaoDto>.ValidationFailure(recusa.Errors), []);
+        }
+
+        Result gravado = await GravacaoDoPedido.GravarAsync(_unitOfWork, cancellationToken).ConfigureAwait(false);
+
+        return gravado.IsFailure
+            ? Recusa(gravado.Error!)
+            : await RespostaComAvisosAsync(decisao, situacaoAnterior, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<(Result<PedidoDeConcessaoDto> Resposta, IEnumerable<object> Mensagens)> RespostaComAvisosAsync(
+        DecisaoDaEtapa decisao, SituacaoDoPedido situacaoAnterior, CancellationToken cancellationToken)
+    {
         PedidoDeConcessaoDto dto = await RespostaDoPedido.ParaDtoAsync(decisao.Pedido, _perfis, cancellationToken).ConfigureAwait(false);
         IReadOnlyList<EnviarEmail> mensagens = await _avisos
             .AvisarAsync(decisao.Pedido, dto.Perfil.Nome, situacaoAnterior, cancellationToken)

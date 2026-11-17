@@ -68,13 +68,19 @@ public static class AutorizacaoApplicationServiceRegistration
         services.AddScoped<AceiteDoPedido>();
         services.AddScoped<CancelamentoDoPedido>();
         services.AddScoped<EmissaoDaLeituraDoAnexo>();
+        AdicionarDecisoesDoPedido(services);
     }
 
-    private static void AdicionarDecisoesDaGovernanca(IServiceCollection services)
+    private static void AdicionarDecisoesDoPedido(IServiceCollection services)
     {
         services.AddScoped<ConcessaoDoPedidoAprovado>();
         services.AddScoped<GravacaoDaDecisaoDoPedido>();
         services.AddScoped<AprovacaoDoPedido>();
+        services.AddScoped<RecusaDoPedido>();
+    }
+
+    private static void AdicionarDecisoesDaGovernanca(IServiceCollection services)
+    {
         services.AddScoped<TravasDaRevogacao>();
         services.AddScoped<RevogacaoDaConcessao>();
         services.AddScoped<PreparoDaDecisaoDoItem>();
