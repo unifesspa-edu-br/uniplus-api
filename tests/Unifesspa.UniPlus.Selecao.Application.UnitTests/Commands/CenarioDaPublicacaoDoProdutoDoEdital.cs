@@ -22,17 +22,13 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-public abstract class ContextoDaPublicacaoDeProdutoDoEdital
+public sealed class CenarioDaPublicacaoDoProdutoDoEdital
 {
-    protected ContextoDaPublicacaoDeProdutoDoEdital()
+    public CenarioDaPublicacaoDoProdutoDoEdital()
     {
         Processos.ObterSiglaDaUnidadeAdministradoraAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns("CEPS");
         Processos.ObterAtosCriadoresAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([VersaoDivulgadaAtoId]);
-        Divulgados.ObterParaMutacaoAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns(
-            CertameDivulgado.Criar(
-                ProcessoId, 1, VersaoDivulgadaAtoId, new string('a', 64), "1",
-                new FacetasDoCertameDivulgado("psm-medicina-2027", "PSM Medicina 2027", "001/2027", [], Agora.AddDays(-1), Agora.AddDays(20)),
-                """{"nome":"documento"}""", Agora));
+        ConfigurarCertameDivulgado();
         Atos.ObterComAnexosAsync(VersaoDivulgadaAtoId, Arg.Any<CancellationToken>()).Returns(RegistroDoAto(VersaoDivulgadaAtoId, "EDITAL_ABERTURA"));
         Atos.ListarDoProcessoAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns(_ => AtosDoProcesso.ToList());
         Atos.ListarDocumentosJaUsadosAsync(ProcessoId, Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(new HashSet<Guid>());
@@ -43,34 +39,41 @@ public abstract class ContextoDaPublicacaoDeProdutoDoEdital
         Tipo(Materia, resultado: true);
     }
 
-    protected const string Materia = "RESULTADO_HOMOLOGACAO";
-    protected const string Versao = "0.0.10";
-    protected const string ContaId = "conta-do-administrador";
-    protected static readonly DateTimeOffset Agora = new(2027, 1, 20, 12, 0, 0, TimeSpan.Zero);
-    protected static readonly DateOnly DataDoAto = new(2027, 1, 20);
-    protected static readonly Guid ProcessoDosDocumentos = Guid.CreateVersion7();
+    private void ConfigurarCertameDivulgado() =>
+        Divulgados.ObterParaMutacaoAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns(
+            CertameDivulgado.Criar(
+                ProcessoId, 1, VersaoDivulgadaAtoId, new string('a', 64), "1",
+                new FacetasDoCertameDivulgado("psm-medicina-2027", "PSM Medicina 2027", "001/2027", [], Agora.AddDays(-1), Agora.AddDays(20)),
+                """{"nome":"documento"}""", Agora));
 
-    protected Guid ProcessoId { get; } = Guid.CreateVersion7();
-    protected Guid VersaoDivulgadaAtoId { get; } = Guid.CreateVersion7();
+    public const string Materia = "RESULTADO_HOMOLOGACAO";
+    public const string Versao = "0.0.10";
+    public const string ContaId = "conta-do-administrador";
+    public static readonly DateTimeOffset Agora = new(2027, 1, 20, 12, 0, 0, TimeSpan.Zero);
+    public static readonly DateOnly DataDoAto = new(2027, 1, 20);
+    public static readonly Guid ProcessoDosDocumentos = Guid.CreateVersion7();
 
-    protected IProcessoSeletivoRepository Processos { get; } = Substitute.For<IProcessoSeletivoRepository>();
-    protected ICertameDivulgadoRepository Divulgados { get; } = Substitute.For<ICertameDivulgadoRepository>();
-    protected IAtoDoProcessoRepository Atos { get; } = Substitute.For<IAtoDoProcessoRepository>();
-    protected IDocumentoAPublicarRepository Documentos { get; } = Substitute.For<IDocumentoAPublicarRepository>();
-    protected IRegistroCodecsEnvelope Codecs { get; } = Substitute.For<IRegistroCodecsEnvelope>();
-    protected ITipoAtoPublicadoReader Tipos { get; } = Substitute.For<ITipoAtoPublicadoReader>();
-    protected IRegistroDeAtoNormativo Registro { get; } = ServicosDoCongelamentoDeTeste.RegistroQueAceita();
-    protected IUserContext Usuario { get; } = Substitute.For<IUserContext>();
-    protected IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
+    public Guid ProcessoId { get; } = Guid.CreateVersion7();
+    public Guid VersaoDivulgadaAtoId { get; } = Guid.CreateVersion7();
+
+    public IProcessoSeletivoRepository Processos { get; } = Substitute.For<IProcessoSeletivoRepository>();
+    public ICertameDivulgadoRepository Divulgados { get; } = Substitute.For<ICertameDivulgadoRepository>();
+    public IAtoDoProcessoRepository Atos { get; } = Substitute.For<IAtoDoProcessoRepository>();
+    public IDocumentoAPublicarRepository Documentos { get; } = Substitute.For<IDocumentoAPublicarRepository>();
+    public IRegistroCodecsEnvelope Codecs { get; } = Substitute.For<IRegistroCodecsEnvelope>();
+    public ITipoAtoPublicadoReader Tipos { get; } = Substitute.For<ITipoAtoPublicadoReader>();
+    public IRegistroDeAtoNormativo Registro { get; } = ServicosDoCongelamentoDeTeste.RegistroQueAceita();
+    public IUserContext Usuario { get; } = Substitute.For<IUserContext>();
+    public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
 
     // O que a versão publicada congelou do tipo do item; o catálogo vivo (Tipos) só diz que o tipo existe.
-    protected TipoDeAtoCongelado Congelado { get; set; } = new(Materia, UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false);
+    public TipoDeAtoCongelado Congelado { get; set; } = new(Materia, UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false);
 
-    protected DocumentoAPublicar Principal { get; } = Documento();
-    protected List<AtoDoProcesso> AtosDoProcesso { get; } = [];
-    protected Dictionary<Guid, IdentidadeDoItemDoEdital> ItensDoCronograma { get; set; } = [];
+    public DocumentoAPublicar Principal { get; } = Documento();
+    public List<AtoDoProcesso> AtosDoProcesso { get; } = [];
+    public Dictionary<Guid, IdentidadeDoItemDoEdital> ItensDoCronograma { get; private set; } = [];
 
-    protected async Task DeveRecusar(PublicarProdutoDoEditalCommand comando, string codigoEsperado)
+    public async Task DeveRecusar(PublicarProdutoDoEditalCommand comando, string codigoEsperado)
     {
         Atos.ClearReceivedCalls();
         UnitOfWork.ClearReceivedCalls();
@@ -84,21 +87,21 @@ public abstract class ContextoDaPublicacaoDeProdutoDoEdital
         await UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    protected Task<(Result<AtoPublicadoDto> Resposta, IEnumerable<object> Eventos)> Publicar(PublicarProdutoDoEditalCommand comando, TimeProvider? relogio = null) =>
+    public Task<(Result<AtoPublicadoDto> Resposta, IEnumerable<object> Eventos)> Publicar(PublicarProdutoDoEditalCommand comando, TimeProvider? relogio = null) =>
         PublicarProdutoDoEditalCommandHandler.Handle(
             comando, Processos, Divulgados, Atos, Documentos, Codecs, Tipos, Registro, Usuario, UnitOfWork,
             new LeituraDoInstanteDaPublicacao(relogio ?? new RelogioFixo(Agora), new ResolvedorFusoDeTeste()), CancellationToken.None);
 
-    protected PublicarProdutoDoEditalCommand Comando(Guid produtoId, bool politica = true, Guid? corrige = null) =>
+    public PublicarProdutoDoEditalCommand Comando(Guid produtoId, bool politica = true, Guid? corrige = null) =>
         new(ProcessoId, produtoId, "5/2027", DataDoAto, "Diretor do CEPS", Principal.Id,
             PoliticaDeDivulgacaoConfirmada: politica, AtoCorrigidoId: corrige, MotivoDaCorrecao: corrige is null ? null : "Erro de digitação");
 
     /// <summary>O tipo no catálogo vivo, que a publicação só consulta para saber que ele existe e vigora.</summary>
-    protected void Tipo(string codigo, bool resultado, bool unico = false, bool congela = false) =>
+    public void Tipo(string codigo, bool resultado, bool unico = false, bool congela = false) =>
         Tipos.ObterVigenteAsync(codigo, DataDoAto, Arg.Any<CancellationToken>())
             .Returns(new TipoAtoPublicadoView(codigo, "Resultado da homologação", CongelaConfiguracao: congela, UnicoPorObjeto: unico, EfeitoIrreversivel: false, EhResultado: resultado));
 
-    protected void Cronograma(params FaseCronograma[] fases)
+    public void Cronograma(params FaseCronograma[] fases)
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS 2027 — Medicina");
         ItensDoCronograma = IdentidadeDoItemDoEdital.Dos(fases, [.. processo.Etapas]);
@@ -115,10 +118,10 @@ public abstract class ContextoDaPublicacaoDeProdutoDoEdital
             tiposDeAtoCongelados: new Dictionary<string, TipoDeAtoCongelado>(StringComparer.Ordinal) { [Materia] = Congelado })));
     }
 
-    protected static FaseCronograma Fase(string codigo, int ordem, params ProdutoDaFase[] produtos) =>
+    public static FaseCronograma Fase(string codigo, int ordem, params ProdutoDaFase[] produtos) =>
         FaseQueConclui(codigo, ordem, null, produtos);
 
-    protected static FaseCronograma FaseQueConclui(string codigo, int ordem, string? faseConcluinteCodigo, params ProdutoDaFase[] produtos) =>
+    public static FaseCronograma FaseQueConclui(string codigo, int ordem, string? faseConcluinteCodigo, params ProdutoDaFase[] produtos) =>
         FaseCronograma.Criar(
             new OrigemCanonicaDaFase(
                 Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
@@ -126,11 +129,18 @@ public abstract class ContextoDaPublicacaoDeProdutoDoEdital
             new PublicacoesDaFase(produtos, EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;
 
-    protected static (ProdutoDaFase Preliminar, ProdutoDaFase Definitivo) Par() =>
+    public static (ProdutoDaFase Preliminar, ProdutoDaFase Definitivo) Par() =>
         (ProdutoDaFase.Criar(Materia, PapelProdutoFase.Preliminar), ProdutoDaFase.Criar(Materia, PapelProdutoFase.Definitivo));
 
+    public (ProdutoDaFase Preliminar, ProdutoDaFase Definitivo) ParNaMesmaFase()
+    {
+        (ProdutoDaFase preliminar, ProdutoDaFase definitivo) = Par();
+        Cronograma(Fase("HOMOLOGACAO_INSCRICOES", 1, preliminar, definitivo));
+        return (preliminar, definitivo);
+    }
+
     /// <summary>Um ato já publicado do item, registrado na Seleção e conhecido como ato do processo.</summary>
-    protected AtoDoProcesso Publicado(string tipo, Guid produtoId)
+    public AtoDoProcesso Publicado(string tipo, Guid produtoId)
     {
         AtoDoProcesso ato = AtoDoProcesso.Registrar(
             new NovoAtoDoProcesso(
@@ -144,13 +154,13 @@ public abstract class ContextoDaPublicacaoDeProdutoDoEdital
         return ato;
     }
 
-    protected AtoDoProcesso RegistroDoAto(Guid atoId, string tipo) => AtoDoProcesso.Registrar(
+    private AtoDoProcesso RegistroDoAto(Guid atoId, string tipo) => AtoDoProcesso.Registrar(
         new NovoAtoDoProcesso(
             atoId, ProcessoId, tipo, tipo, "1/2027", DataDoAto, "Diretor do CEPS", "ceps", "psm-medicina-2027",
             Guid.CreateVersion7(), []),
         Agora).Value!;
 
-    protected static DocumentoAPublicar Documento()
+    private static DocumentoAPublicar Documento()
     {
         DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(
             ProcessoDosDocumentos, FinalidadeDoDocumento.DocumentoDeAto, "lista.pdf", TiposDeMidiaDeDocumento.Pdf, new RelogioFixo(Agora), TimeSpan.FromMinutes(15)).Value!;
