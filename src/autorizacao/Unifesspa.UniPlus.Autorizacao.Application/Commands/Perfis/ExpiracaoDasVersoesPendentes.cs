@@ -4,12 +4,11 @@ using Microsoft.Extensions.Logging;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
-using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Materializa o fim do prazo das versões pendentes. A trilha não depende de a rotina ter rodado, porque toda operação
 /// sobre o perfil materializa o prazo vencido antes de decidir; a rotina garante que a versão que ninguém tocou também
-/// termine expirada. Cada perfil vai num comando próprio, com a transação e a trava dele, e a falha de um não impede os
+/// termine expirada. Cada perfil vai num comando próprio, com a transação e o acesso exclusivo a ele, e a falha de um não impede os
 /// demais.
 /// </summary>
 public sealed partial class ExpiracaoDasVersoesPendentes
@@ -47,25 +46,9 @@ public sealed partial class ExpiracaoDasVersoesPendentes
         return expiradas;
     }
 
-    private async Task<int> ExpirarAsync(Guid perfilId, CancellationToken cancellationToken)
-    {
-        try
-        {
-            Result<bool> resultado = await _bus.Send(new ExpirarVersaoPendenteDoPerfilCommand(perfilId), cancellationToken).ConfigureAwait(false);
-            if (resultado.IsFailure)
-            {
-                LogFalhaAoExpirar(_logger, perfilId, null);
-            }
-
-            return resultado.IsSuccess && resultado.Value ? 1 : 0;
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            LogFalhaAoExpirar(_logger, perfilId, ex);
-
-            return 0;
-        }
-    }
+    private Task<int> ExpirarAsync(Guid perfilId, CancellationToken cancellationToken) =>
+        ProcessamentoDoPerfil.ExecutarAsync(
+            _bus, new ExpirarVersaoPendenteDoPerfilCommand(perfilId), excecao => LogFalhaAoExpirar(_logger, perfilId, excecao), cancellationToken);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Não foi possível expirar a versão pendente do perfil {PerfilId}")]
     private static partial void LogFalhaAoExpirar(ILogger logger, Guid perfilId, Exception? exception);
