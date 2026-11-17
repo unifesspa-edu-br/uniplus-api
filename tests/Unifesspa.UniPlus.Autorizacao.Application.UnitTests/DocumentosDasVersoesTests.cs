@@ -127,6 +127,50 @@ public sealed class DocumentosDasVersoesTests
         cenario.Unidade.Gravacoes.Should().Be(0);
     }
 
+    [Theory(DisplayName = "O ETag ausente, em branco, com caractere nulo ou acima de 200 caracteres não confirma o envio")]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("  ")]
+    [InlineData("\"etag\0\"")]
+    [InlineData("acima-do-limite")]
+    public async Task Confirmar_ETagInvalido_RecusaSemGravar(string? etag)
+    {
+        Perfil perfil = PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo);
+        Cenario cenario = new(perfil);
+        string? enviado = etag == "acima-do-limite" ? new string('a', ETagDoArmazenamento.MaxLength + 1) : etag;
+
+        Result<DocumentoDaVersao> resposta = await cenario.Documentos.ConfirmarAsync(perfil.Id, perfil.VersaoPendente!.Id, enviado, CancellationToken.None);
+
+        (resposta.Error!.Code, resposta.Errors.Single().Field).Should().Be((PerfilErrorCodes.DocumentoInvalido, "etag"));
+        perfil.VersaoPendente.Documento!.Situacao.Should().Be(SituacaoDoAnexo.AguardandoEnvio);
+        cenario.Unidade.Gravacoes.Should().Be(0);
+    }
+
+    [Fact(DisplayName = "O ETag que cabe em 200 caracteres com os espaços das pontas confirma o envio e se guarda sem eles")]
+    public async Task Confirmar_ETagNoLimiteComEspacos_GuardaAparado()
+    {
+        Perfil perfil = PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo);
+        Cenario cenario = new(perfil);
+        string etag = new('a', ETagDoArmazenamento.MaxLength - 2);
+
+        Result<DocumentoDaVersao> resposta = await cenario.Documentos.ConfirmarAsync(perfil.Id, perfil.VersaoPendente!.Id, $" {etag} ", CancellationToken.None);
+
+        resposta.IsSuccess.Should().BeTrue();
+        perfil.VersaoPendente.Documento!.ETag.Should().Be(etag);
+    }
+
+    [Fact(DisplayName = "Confirmar de novo o documento que já está em verificação é recusado pela situação, antes do ETag")]
+    public async Task Confirmar_DocumentoJaEmVerificacao_RecusaPelaSituacao()
+    {
+        Perfil perfil = PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo);
+        Cenario cenario = new(perfil);
+        await cenario.Documentos.ConfirmarAsync(perfil.Id, perfil.VersaoPendente!.Id, "\"etag-1\"", CancellationToken.None);
+
+        Result<DocumentoDaVersao> resposta = await cenario.Documentos.ConfirmarAsync(perfil.Id, perfil.VersaoPendente.Id, " ", CancellationToken.None);
+
+        resposta.Error!.Code.Should().Be(PerfilErrorCodes.DocumentoNaoAguardaEnvio);
+    }
+
     [Fact(DisplayName = "Ler o documento verificado registra o acesso antes de devolver a URL")]
     public async Task Ler_Verificado_RegistraATrilha()
     {

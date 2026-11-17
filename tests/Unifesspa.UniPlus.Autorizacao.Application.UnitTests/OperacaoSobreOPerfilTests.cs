@@ -52,6 +52,82 @@ public sealed class OperacaoSobreOPerfilTests
         unidade.Descartes.Should().Be(1);
     }
 
+    [Fact(DisplayName = "O perfil que não existe devolve não encontrado, sem rodar a operação nem gravar")]
+    public async Task ComAvisos_PerfilInexistente_NaoEncontrado()
+    {
+        Perfil perfil = PerfisDeTeste.Pendente("Analista", "Descrição válida.", [Consultar], new CatalogoDeTeste());
+        OperacaoSobreOPerfil operacao = OperacaoSemFalha(perfil, out UnidadeDeTrabalho unidade);
+        Func<Perfil, ContextoDaOperacao, Task<DesfechoDaOperacao<bool>>> naoDeveRodar = (_, _) => throw new InvalidOperationException("A operação não deveria rodar.");
+
+        GravacaoDaOperacao<bool> gravacao = await operacao.ExecutarComAvisosAsync(Guid.NewGuid(), naoDeveRodar, CancellationToken.None);
+
+        gravacao.Resultado.Error!.Code.Should().Be(PerfilErrorCodes.NaoEncontrado);
+        unidade.Gravacoes.Should().Be(0);
+    }
+
+    [Fact(DisplayName = "O desfecho com sucesso se grava uma vez")]
+    public async Task ComAvisos_Sucesso_Grava()
+    {
+        Perfil perfil = PerfisDeTeste.Pendente("Analista", "Descrição válida.", [Consultar], new CatalogoDeTeste());
+        OperacaoSobreOPerfil operacao = OperacaoSemFalha(perfil, out UnidadeDeTrabalho unidade);
+
+        GravacaoDaOperacao<bool> gravacao = await operacao.ExecutarComAvisosAsync(
+            perfil.Id, (_, _) => Task.FromResult(new DesfechoDaOperacao<bool>(Result<bool>.Success(true))), CancellationToken.None);
+
+        gravacao.Resultado.IsSuccess.Should().BeTrue();
+        (unidade.Gravacoes, unidade.Descartes).Should().Be((1, 0));
+    }
+
+    [Fact(DisplayName = "O desfecho recusado descarta o rastreamento e não grava")]
+    public async Task ComAvisos_Recusa_Descarta()
+    {
+        Perfil perfil = PerfisDeTeste.Pendente("Analista", "Descrição válida.", [Consultar], new CatalogoDeTeste());
+        OperacaoSobreOPerfil operacao = OperacaoSemFalha(perfil, out UnidadeDeTrabalho unidade);
+
+        GravacaoDaOperacao<bool> gravacao = await operacao.ExecutarComAvisosAsync(
+            perfil.Id, (_, _) => Task.FromResult(new DesfechoDaOperacao<bool>(Result<bool>.Failure(PerfilHandlerErros.AutorNaoIdentificado()))), CancellationToken.None);
+
+        gravacao.Resultado.IsFailure.Should().BeTrue();
+        (unidade.Gravacoes, unidade.Descartes).Should().Be((0, 1));
+    }
+
+    [Fact(DisplayName = "O desfecho recusado que pede para gravar mesmo assim grava")]
+    public async Task ComAvisos_RecusaQueGravaMesmoNaFalha_Grava()
+    {
+        Perfil perfil = PerfisDeTeste.Pendente("Analista", "Descrição válida.", [Consultar], new CatalogoDeTeste());
+        OperacaoSobreOPerfil operacao = OperacaoSemFalha(perfil, out UnidadeDeTrabalho unidade);
+
+        GravacaoDaOperacao<bool> gravacao = await operacao.ExecutarComAvisosAsync(
+            perfil.Id,
+            (_, _) => Task.FromResult(new DesfechoDaOperacao<bool>(Result<bool>.Failure(PerfilHandlerErros.AutorNaoIdentificado()), GravarMesmoNaFalha: true)),
+            CancellationToken.None);
+
+        gravacao.Resultado.IsFailure.Should().BeTrue();
+        (unidade.Gravacoes, unidade.Descartes).Should().Be((1, 0));
+    }
+
+    [Fact(DisplayName = "A operação recusada que encontrou o prazo da pendente vencido grava a expiração mesmo assim")]
+    public async Task ComAvisos_RecusaComPrazoVencido_GravaAExpiracao()
+    {
+        Perfil perfil = PerfisDeTeste.Pendente("Analista", "Descrição válida.", [Consultar], new CatalogoDeTeste());
+        OperacaoSobreOPerfil operacao = OperacaoSemFalha(perfil, out UnidadeDeTrabalho unidade, PerfisDeTeste.Instante.AddYears(1));
+
+        GravacaoDaOperacao<bool> gravacao = await operacao.ExecutarComAvisosAsync(
+            perfil.Id, (_, _) => Task.FromResult(new DesfechoDaOperacao<bool>(Result<bool>.Failure(PerfilHandlerErros.AutorNaoIdentificado()))), CancellationToken.None);
+
+        gravacao.Resultado.IsFailure.Should().BeTrue();
+        perfil.VersaoPendente.Should().BeNull("o prazo da pendente venceu e a expiração se gravou");
+        (unidade.Gravacoes, unidade.Descartes).Should().Be((1, 0));
+    }
+
+    private static OperacaoSobreOPerfil OperacaoSemFalha(Perfil perfil, out UnidadeDeTrabalho unidade, DateTimeOffset? agora = null)
+    {
+        unidade = new UnidadeDeTrabalho();
+
+        return new OperacaoSobreOPerfil(
+            new PerfisNaMemoria(perfil), unidade, new CenarioDaGovernancaDaVersao.RelogioFixo(agora ?? PerfisDeTeste.Instante.AddHours(1)));
+    }
+
     private static OperacaoSobreOPerfil Operacao(Perfil perfil, out UnidadeDeTrabalho unidade)
     {
         unidade = new UnidadeDeTrabalho { Falha = new Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException() };
