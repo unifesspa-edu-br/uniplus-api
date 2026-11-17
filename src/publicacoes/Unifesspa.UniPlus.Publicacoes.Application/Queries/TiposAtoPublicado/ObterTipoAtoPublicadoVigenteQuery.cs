@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Publicacoes.Application.Queries.TiposAtoPublicado;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Application.DTOs;
 
 /// <summary>
@@ -11,4 +12,4 @@ using Unifesspa.UniPlus.Publicacoes.Application.DTOs;
 /// <param name="Data">Data de referência. Nula significa hoje.</param>
 public sealed record ObterTipoAtoPublicadoVigenteQuery(
     string Codigo,
-    DateOnly? Data) : IQuery<TipoAtoPublicadoDto?>;
+    DateOnly? Data) : IQuery<Result<TipoAtoPublicadoDto>>;

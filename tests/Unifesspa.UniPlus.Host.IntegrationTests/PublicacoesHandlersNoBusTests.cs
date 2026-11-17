@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests;
 
-using System.Diagnostics.CodeAnalysis;
-
 using AwesomeAssertions;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -15,6 +13,7 @@ using Unifesspa.UniPlus.Publicacoes.Application.Commands.TiposAtoPublicado;
 using Unifesspa.UniPlus.Publicacoes.Application.DTOs;
 using Unifesspa.UniPlus.Publicacoes.Application.Queries.AtosNormativos;
 using Unifesspa.UniPlus.Publicacoes.Application.Queries.TiposAtoPublicado;
+using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 
 /// <summary>
 /// Prova que os handlers do módulo Publicações são alcançáveis pelo bus no
@@ -31,10 +30,6 @@ using Unifesspa.UniPlus.Publicacoes.Application.Queries.TiposAtoPublicado;
 /// instância de <c>DbContext</c>, e a leitura de volta pela query.</para>
 /// </remarks>
 [Collection(MonolitoHostCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class PublicacoesHandlersNoBusTests
 {
     private static readonly DateOnly Inicio = new(2026, 1, 1);
@@ -58,11 +53,24 @@ public sealed class PublicacoesHandlersNoBusTests
         criado.IsSuccess.Should().BeTrue(
             "o assembly Publicacoes.Application precisa estar no Discovery do Wolverine "
             + "e a IUnitOfWork declarada no opt-in de codegen");
-        TipoAtoPublicadoDto? lido = await queryBus.Send(
+        Result<TipoAtoPublicadoDto> lido = await queryBus.Send(
             new ObterTipoAtoPublicadoPorIdQuery(criado.Value), CancellationToken.None);
-        lido.Should().NotBeNull();
-        lido!.Codigo.Should().Be("BUS_TESTE");
-        lido.CongelaConfiguracao.Should().BeTrue();
+        lido.Value.Should().NotBeNull();
+        lido.Value!.Codigo.Should().Be("BUS_TESTE");
+        lido.Value.CongelaConfiguracao.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "A query por Id de tipo inexistente atravessa o bus e falha com tipo não encontrado")]
+    public async Task QueryPorId_TipoInexistente_AtravessaOBusComNaoEncontrado()
+    {
+        using IServiceScope scope = _fixture.Factory.Services.CreateScope();
+        IQueryBus queryBus = scope.ServiceProvider.GetRequiredService<IQueryBus>();
+
+        Result<TipoAtoPublicadoDto> lido = await queryBus.Send(
+            new ObterTipoAtoPublicadoPorIdQuery(Guid.NewGuid()), CancellationToken.None);
+
+        lido.IsFailure.Should().BeTrue();
+        lido.Error!.Code.Should().Be(TipoAtoPublicadoErrorCodes.NaoEncontrado);
     }
 
     [Fact(DisplayName = "A query de tipo vigente atravessa o bus e resolve a data de referência")]
@@ -73,11 +81,13 @@ public sealed class PublicacoesHandlersNoBusTests
         IQueryBus queryBus = scope.ServiceProvider.GetRequiredService<IQueryBus>();
         await CriarTipoComJanelaDeUmAnoAsync(commandBus, "BUS_VIGENTE");
 
-        TipoAtoPublicadoDto? dentro = await ObterVigenteAsync(queryBus, "BUS_VIGENTE", Inicio.AddMonths(6));
-        TipoAtoPublicadoDto? noFim = await ObterVigenteAsync(queryBus, "BUS_VIGENTE", Inicio.AddYears(1));
+        Result<TipoAtoPublicadoDto> dentro = await ObterVigenteAsync(queryBus, "BUS_VIGENTE", Inicio.AddMonths(6));
+        Result<TipoAtoPublicadoDto> noFim = await ObterVigenteAsync(queryBus, "BUS_VIGENTE", Inicio.AddYears(1));
 
-        dentro.Should().NotBeNull();
-        noFim.Should().BeNull("o fim é exclusivo: no dia em que a janela fecha, nenhuma versão vale");
+        dentro.Value.Should().NotBeNull();
+        noFim.Error!.Code.Should().Be(
+            TipoAtoPublicadoErrorCodes.NaoEncontrado,
+            "o fim é exclusivo: no dia em que a janela fecha, nenhuma versão vale");
     }
 
     [Fact(DisplayName = "O registro de ato atravessa o bus, resolve o tipo vigente e copia por valor")]
@@ -125,7 +135,7 @@ public sealed class PublicacoesHandlersNoBusTests
         criado.IsSuccess.Should().BeTrue();
     }
 
-    private static Task<TipoAtoPublicadoDto?> ObterVigenteAsync(IQueryBus queryBus, string codigo, DateOnly data) =>
+    private static Task<Result<TipoAtoPublicadoDto>> ObterVigenteAsync(IQueryBus queryBus, string codigo, DateOnly data) =>
         queryBus.Send(new ObterTipoAtoPublicadoVigenteQuery(codigo, data), CancellationToken.None);
 
     private static Task<Result<RegistrarAtoNormativoResult>> RegistrarAtoAsync(

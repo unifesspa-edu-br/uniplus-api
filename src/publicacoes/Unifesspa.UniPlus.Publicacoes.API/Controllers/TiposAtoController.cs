@@ -98,25 +98,20 @@ public sealed class TiposAtoController : ControllerBase
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Obtém uma versão de tipo de ato pelo Id. Retorna 404 quando inexistente.</summary>
+    /// <summary>Obtém uma versão de tipo de ato pelo Id. Retorna 404 quando inexistente ou removida.</summary>
     [HttpGet("tipos-ato/{id:guid}")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "tipo-ato", Versions = [1])]
     [ProducesResponseType(typeof(TipoAtoPublicadoDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, Description = "O tipo de ato não existe ou foi removido (uniplus.publicacoes.tipo_ato.nao_encontrado).")]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterPorId(Guid id, CancellationToken cancellationToken)
     {
-        TipoAtoPublicadoDto? tipo = await _queryBus
+        Result<TipoAtoPublicadoDto> consulta = await _queryBus
             .Send(new ObterTipoAtoPublicadoPorIdQuery(id), cancellationToken)
             .ConfigureAwait(false);
 
-        if (tipo is null)
-        {
-            return NotFound();
-        }
-
-        return Ok(tipo with { Links = _linksBuilder.Build(tipo) });
+        return RespostaDaConsulta(consulta);
     }
 
     /// <summary>
@@ -134,7 +129,7 @@ public sealed class TiposAtoController : ControllerBase
     [VendorMediaType(Resource = "tipo-ato", Versions = [1])]
     [ProducesResponseType(typeof(TipoAtoPublicadoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, Description = "Nenhuma versão do tipo de ato vale na data (uniplus.publicacoes.tipo_ato.nao_encontrado).")]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterVigente(
         [FromRoute]
@@ -144,17 +139,18 @@ public sealed class TiposAtoController : ControllerBase
         [FromQuery] DateOnly? data,
         CancellationToken cancellationToken)
     {
-        TipoAtoPublicadoDto? tipo = await _queryBus
+        Result<TipoAtoPublicadoDto> consulta = await _queryBus
             .Send(new ObterTipoAtoPublicadoVigenteQuery(codigo, data), cancellationToken)
             .ConfigureAwait(false);
 
-        if (tipo is null)
-        {
-            return NotFound();
-        }
-
-        return Ok(tipo with { Links = _linksBuilder.Build(tipo) });
+        return RespostaDaConsulta(consulta);
     }
+
+    /// <summary>A resposta da leitura de um tipo de ato: 200 com os links, ou o erro registrado da consulta.</summary>
+    private IActionResult RespostaDaConsulta(Result<TipoAtoPublicadoDto> consulta) =>
+        consulta.IsSuccess
+            ? Ok(consulta.Value! with { Links = _linksBuilder.Build(consulta.Value!) })
+            : consulta.ToActionResult(_mapper);
 
     /// <summary>
     /// Cria uma versão de tipo de ato. Exige a permissão de manutenção.

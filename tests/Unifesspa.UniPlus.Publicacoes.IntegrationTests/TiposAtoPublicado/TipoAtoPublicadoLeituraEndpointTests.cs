@@ -17,6 +17,8 @@ using static TipoAtoPublicadoApoio;
 public sealed class TipoAtoPublicadoLeituraEndpointTests
 {
     private const string NaoEncontrado = "uniplus.publicacoes.tipo_ato.nao_encontrado";
+    private const string TituloNaoEncontrado = "Tipo de ato não encontrado";
+    private const string DetalheNaoEncontrado = "Tipo de ato não encontrado.";
 
     private readonly PublicacoesEndpointFixture _fixture;
     private readonly TipoAtoPublicadoApoio _apoio;
@@ -41,7 +43,7 @@ public sealed class TipoAtoPublicadoLeituraEndpointTests
             .Should().Be("application/vnd.uniplus.tipo-ato.v1+json");
     }
 
-    [Fact(DisplayName = "GET tipos-ato/{id} retorna 404 quando inexistente")]
+    [Fact(DisplayName = "GET tipos-ato/{id} inexistente retorna 404 com o código registrado")]
     public async Task ObterPorId_NaoExiste_Retorna404()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -49,11 +51,12 @@ public sealed class TipoAtoPublicadoLeituraEndpointTests
         HttpResponseMessage response = await client.GetAsync(
             new Uri($"{Base}/{Guid.NewGuid()}", UriKind.Relative));
 
-        await ConferirSemOCodigoRegistradoAsync(response);
+        await ProblemaRegistrado.ConferirAsync(
+            response, HttpStatusCode.NotFound, NaoEncontrado, TituloNaoEncontrado, DetalheNaoEncontrado);
     }
 
-    [Fact(DisplayName = "GET tipos-ato/{id} de tipo removido retorna 404")]
-    public async Task ObterPorId_Removido_Retorna404()
+    [Fact(DisplayName = "GET tipos-ato/{id} de tipo removido retorna 404 com o código registrado")]
+    public async Task ObterPorId_Removido_Retorna404ComCodigo()
     {
         Guid id = await _apoio.CriarAsync(CodigoUnico());
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -63,7 +66,8 @@ public sealed class TipoAtoPublicadoLeituraEndpointTests
 
         HttpResponseMessage response = await client.GetAsync(new Uri($"{Base}/{id}", UriKind.Relative));
 
-        await ConferirSemOCodigoRegistradoAsync(response);
+        await ProblemaRegistrado.ConferirAsync(
+            response, HttpStatusCode.NotFound, NaoEncontrado, TituloNaoEncontrado, DetalheNaoEncontrado);
     }
 
     [Fact(DisplayName = "GET tipos-ato/{id} devolve _links.self e _links.collection resolvidos")]
@@ -162,7 +166,7 @@ public sealed class TipoAtoPublicadoLeituraEndpointTests
         doc.RootElement.GetProperty("id").GetGuid().Should().Be(id);
     }
 
-    [Fact(DisplayName = "GET vigente de código inexistente retorna 404")]
+    [Fact(DisplayName = "GET vigente de código inexistente retorna 404 com o código registrado")]
     public async Task ObterVigente_CodigoInexistente_Retorna404()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -170,11 +174,12 @@ public sealed class TipoAtoPublicadoLeituraEndpointTests
         HttpResponseMessage response = await client.GetAsync(
             new Uri($"{Base}/{CodigoUnico()}/vigente", UriKind.Relative));
 
-        await ConferirSemOCodigoRegistradoAsync(response);
+        await ProblemaRegistrado.ConferirAsync(
+            response, HttpStatusCode.NotFound, NaoEncontrado, TituloNaoEncontrado, DetalheNaoEncontrado);
     }
 
-    [Fact(DisplayName = "GET vigente numa data fora da janela retorna 404")]
-    public async Task ObterVigente_ForaDaJanela_Retorna404()
+    [Fact(DisplayName = "GET vigente numa data fora da janela retorna 404 com o mesmo código")]
+    public async Task ObterVigente_ForaDaJanela_Retorna404ComOMesmoCodigo()
     {
         string codigo = CodigoUnico();
         await _apoio.CriarAsync(codigo, inicio: "2026-01-01", fim: "2026-06-01");
@@ -183,10 +188,11 @@ public sealed class TipoAtoPublicadoLeituraEndpointTests
         HttpResponseMessage response = await client.GetAsync(
             new Uri($"{Base}/{codigo}/vigente?data=2026-07-01", UriKind.Relative));
 
-        await ConferirSemOCodigoRegistradoAsync(response);
+        await ProblemaRegistrado.ConferirAsync(
+            response, HttpStatusCode.NotFound, NaoEncontrado, TituloNaoEncontrado, DetalheNaoEncontrado);
     }
 
-    [Fact(DisplayName = "GET vigente de tipo só com versão futura retorna 404 igual ao do tipo inexistente")]
+    [Fact(DisplayName = "GET vigente de tipo só com versão futura retorna 404 igual ao do tipo inexistente, com o código registrado")]
     public async Task ObterVigente_SoComVersaoFutura_Retorna404IgualAoInexistente()
     {
         string codigo = CodigoUnico();
@@ -196,7 +202,8 @@ public sealed class TipoAtoPublicadoLeituraEndpointTests
         HttpResponseMessage response = await client.GetAsync(
             new Uri($"{Base}/{codigo}/vigente?data=2098-06-01", UriKind.Relative));
 
-        await ConferirSemOCodigoRegistradoAsync(response);
+        await ProblemaRegistrado.ConferirAsync(
+            response, HttpStatusCode.NotFound, NaoEncontrado, TituloNaoEncontrado, DetalheNaoEncontrado);
     }
 
     /// <remarks>
@@ -245,13 +252,6 @@ public sealed class TipoAtoPublicadoLeituraEndpointTests
         request.Headers.Add("Accept", "application/vnd.uniplus.tipo-ato.v99+json");
 
         (await client.SendAsync(request)).StatusCode.Should().Be(HttpStatusCode.NotAcceptable);
-    }
-
-    private static async Task ConferirSemOCodigoRegistradoAsync(HttpResponseMessage response)
-    {
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        (await response.Content.ReadAsStringAsync())
-            .Should().NotContain(NaoEncontrado, "hoje a leitura não usa o erro registrado");
     }
 
     private static async Task<Guid> VigenteIdAsync(HttpClient client, string codigo, string data)

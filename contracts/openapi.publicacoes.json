@@ -624,7 +624,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "O tipo de ato n\u00E3o existe ou foi removido (uniplus.publicacoes.tipo_ato.nao_encontrado).",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -694,7 +694,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "Nenhuma vers\u00E3o do tipo de ato vale na data (uniplus.publicacoes.tipo_ato.nao_encontrado).",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
