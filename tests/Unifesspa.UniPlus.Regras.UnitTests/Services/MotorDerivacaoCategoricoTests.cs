@@ -58,6 +58,15 @@ public sealed class MotorDerivacaoCategoricoTests
         resultado.Error!.Code.Should().Be(DerivacaoDoFatoErrorCodes.ContribuiForaDoDominio);
     }
 
+    [Fact(DisplayName = "Derivação sem nenhuma regra é recusada")]
+    public void Criar_SemNenhumaRegra_RecusaComSemRegras()
+    {
+        Result<DerivacaoDoFato> resultado = DerivacaoDoFato.Criar("VAGA", [], [], Dominio);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(DerivacaoDoFatoErrorCodes.SemRegras);
+    }
+
     [Theory(DisplayName = "As dependências declaradas são exatamente os fatos citados")]
     [InlineData("OPTOU", "RENDA")]
     [InlineData("OPTOU")]
