@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.Decisao;
 using Unifesspa.UniPlus.Authorization.Projecao;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
