@@ -50,9 +50,9 @@ public sealed class LugaresDaDecisao
         ArgumentNullException.ThrowIfNull(etapas);
 
         IEnumerable<LugarNoProcesso> dasFases = OrdemCanonicaDaConfiguracao.Fases(fases).Select((f, posicao) => new LugarNoProcesso(
-            LugarDaDecisao.DaFase(f.FaseCanonicaOrigemId), $"A fase '{f.Codigo}'", TiposDeDecisaoDe(f.TiposDeDecisao), TiposRecusadosEm(origem, ListaDasFases, posicao)));
+            LugarDaDecisao.DaFase(f.FaseCanonicaOrigemId), f.Id, $"A fase '{f.Codigo}'", TiposDeDecisaoDe(f.TiposDeDecisao), TiposRecusadosEm(origem, ListaDasFases, posicao)));
         IEnumerable<LugarNoProcesso> dasEtapas = OrdemCanonicaDaConfiguracao.Etapas(etapas).Select((e, posicao) => new LugarNoProcesso(
-            LugarDaDecisao.DaEtapa(e.Id), $"A etapa '{e.Nome}'", TiposDeDecisaoDe(e.TiposDeDecisao), TiposRecusadosEm(origem, ListaDasEtapas, posicao)));
+            LugarDaDecisao.DaEtapa(e.Id), e.Id, $"A etapa '{e.Nome}'", TiposDeDecisaoDe(e.TiposDeDecisao), TiposRecusadosEm(origem, ListaDasEtapas, posicao)));
 
         return new([.. dasFases, .. dasEtapas], origem.TemParteRecusadaEm(ListaDasFases) || origem.TemParteRecusadaEm(ListaDasEtapas));
     }
@@ -62,6 +62,12 @@ public sealed class LugaresDaDecisao
     /// <summary>Se o lugar existe no processo e declara produzir decisões do tipo.</summary>
     public bool Declara(LugarDaDecisao lugar, TipoMotivoDeDecisao tipo) =>
         Lugares.Any(l => l.Lugar == lugar && l.TiposDeDecisao.Contains(tipo));
+
+    /// <summary>
+    /// O lugar da fase ou etapa de identidade dada: duas fases de mesma origem são dois lugares no retrato, cada um com os tipos que
+    /// a sua própria declaração traz.
+    /// </summary>
+    internal LugarNoProcesso? DaLinha(Guid linhaId) => Lugares.FirstOrDefault(l => l.Linha == linhaId);
 
     /// <summary>Os lugares que declaram produzir decisões do tipo, na ordem do retrato.</summary>
     internal IEnumerable<LugarNoProcesso> QueDeclaram(TipoMotivoDeDecisao tipo) => Lugares.Where(l => l.TiposDeDecisao.Contains(tipo));
@@ -82,8 +88,8 @@ public sealed class LugaresDaDecisao
 }
 
 /// <summary>
-/// Um lugar da decisão com o nome dele na mensagem, os tipos de decisão que declara e se a leitura recusou parte da lista
+/// Um lugar da decisão com a identidade da fase ou etapa que o declara, o nome dele na mensagem, os tipos de decisão que declara e se a leitura recusou parte da lista
 /// deles: então os tipos declarados são só os aceitos, e o lugar pode declarar outros que não se sabe quais são.
 /// </summary>
 internal sealed record LugarNoProcesso(
-    LugarDaDecisao Lugar, string Descricao, IReadOnlySet<TipoMotivoDeDecisao> TiposDeDecisao, bool TiposDeDecisaoComParteRecusada);
+    LugarDaDecisao Lugar, Guid Linha, string Descricao, IReadOnlySet<TipoMotivoDeDecisao> TiposDeDecisao, bool TiposDeDecisaoComParteRecusada);

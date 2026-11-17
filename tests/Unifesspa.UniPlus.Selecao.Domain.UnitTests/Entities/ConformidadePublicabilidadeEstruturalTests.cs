@@ -183,7 +183,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             []).IsSuccess.Should().BeTrue();
 
         // A fase que homologa as inscrições publica o resultado, então sem resultado também falta a homologação: o item da falta de resultado é um dos vermelhos.
-        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao).Where(static i => !i.Ok).Select(static i => i.Codigo)
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Where(static i => !i.Ok).Select(static i => i.Codigo)
             .Should().Contain("cronograma_vagas_sem_fase_que_produz_resultado");
 
         ExigirPublicacaoRecusada(processo, "ProcessoSeletivo.VagasSemFaseQueProduzResultado");

@@ -40,6 +40,19 @@ internal static class ProcessoParaMotivos
         Fase(2, "HOMOLOGACAO_INSCRICOES", InicioDaHomologacao, coletaIsencao: false, TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes),
     ];
 
+    /// <summary>A fase de homologação das inscrições passa a ter a regra de homologação e a não declarar o tipo de decisão dela.</summary>
+    internal static void HomologandoSemDeclararOTipo(ProcessoSeletivo processo)
+    {
+        FaseCronograma homologacao = FaseCronograma.Criar(
+            new OrigemCanonicaDaFase(
+                Guid.CreateVersion7(), "HOMOLOGACAO_INSCRICOES", OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+            new DecisoesDeCronogramaDaFase(2, Inicio: InicioDaHomologacao, Fim: InicioDaHomologacao.AddDays(20), FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa() with { TiposDeDecisao = [] },
+            bancasRequeridas: []).Value!;
+
+        processo.DefinirCronogramaFases([processo.CronogramaFases.Single(f => f.Codigo == "INSCRICAO"), homologacao], []).IsSuccess.Should().BeTrue();
+    }
+
     /// <summary>O processo recém-criado, sem fase nem etapa declaradas.</summary>
     internal static ProcessoSeletivo SemFasesNemEtapas() =>
         ProcessoSeletivo.Criar(

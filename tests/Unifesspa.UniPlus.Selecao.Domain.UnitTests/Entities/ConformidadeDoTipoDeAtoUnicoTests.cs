@@ -162,9 +162,9 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
             FaseQuePublica(1, "CLASSIFICACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)));
         TiposDeAtoUnicosPorObjeto unicos = Unicos("RESULTADO_CLASSIFICACAO", "Resultado da classificação");
 
-        ChecklistDeConformidade.AvaliarConformidade(duplicado.Declaracao(), CadastrosDeTeste.Com(tiposDeAtoUnicos: unicos))
+        ChecklistDeConformidade.AvaliarConformidade(duplicado.Declaracao(), CadastrosDeTeste.Com(tiposDeAtoUnicos: unicos, motivosEscolhidos: MotivosDoProcessoDeTeste.Cobrindo(duplicado)))
             .Should().Contain(item => item.Codigo == CodigoItemTipoUnico && !item.Ok);
-        ChecklistDeConformidade.AvaliarConformidade(unico.Declaracao(), CadastrosDeTeste.Com(tiposDeAtoUnicos: unicos))
+        ChecklistDeConformidade.AvaliarConformidade(unico.Declaracao(), CadastrosDeTeste.Com(tiposDeAtoUnicos: unicos, motivosEscolhidos: MotivosDoProcessoDeTeste.Cobrindo(unico)))
             .Should().Contain(item => item.Codigo == CodigoItemTipoUnico && item.Ok);
     }
 
@@ -305,7 +305,7 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
             FaseQuePublica(2, "HABILITACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)));
 
         ChecklistDeConformidade.AvaliarAvisos(processo.Declaracao()).Should().NotBeEmpty();
-        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao)
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
             .Where(static i => i.Codigo.StartsWith("cronograma_", StringComparison.Ordinal)).Should().OnlyContain(static i => i.Ok);
         PublicarComUnicos(processo, TiposDeAtoUnicosDeTeste.Nenhum).IsSuccess.Should().BeTrue();
     }

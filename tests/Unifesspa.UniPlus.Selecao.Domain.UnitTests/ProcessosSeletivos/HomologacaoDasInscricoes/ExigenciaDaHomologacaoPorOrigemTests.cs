@@ -69,6 +69,15 @@ public sealed class ExigenciaDaHomologacaoPorOrigemTests
     private static bool[] Itens(OrigemCandidatos origem, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
         [.. ExigenciaDaHomologacaoPorOrigem.Itens(origem, cronograma, etapas).Select(static item => item.Ok)];
 
+    [Fact(DisplayName = "A origem ausente na leitura suspende as exigências que dependem dela e mantém os itens pendentes")]
+    public void OrigemAusente_NaoPresumeInscricaoPropriaNemDispensaOCiclo()
+    {
+        CronogramaDoProcesso cronograma = Cronograma(Coleta(1));
+
+        Causas(OrigemCandidatos.Nenhuma, cronograma, SemEtapas).Should().BeEmpty();
+        Itens(OrigemCandidatos.Nenhuma, cronograma, SemEtapas).Should().Equal(false, false, true);
+    }
+
     [Fact(DisplayName = "Inscrição própria sem fase que tem a regra é recusada em fases, mesmo com a fase de coleta")]
     public void InscricaoPropria_SemFaseComARegra_Recusa()
     {

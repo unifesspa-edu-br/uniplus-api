@@ -84,7 +84,7 @@ public sealed class BancasDoProcessoTests
             .FirstOrDefault();
 
     private static IEnumerable<string> CodigosDaConferencia(ProcessoSeletivo processo, CorretoresDasEtapas corretores) =>
-        ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Com(corretores: corretores)).Errors
+        ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Com(corretores: corretores, motivosEscolhidos: MotivosDoProcessoDeTeste.Cobrindo(processo))).Errors
             .Where(static causa => causa.Error.Code != "ProcessoSeletivo.ConformidadeInsuficiente"
                 && causa.Field?.StartsWith("identificacao", StringComparison.Ordinal) != true)
             .Select(static causa => causa.Error.Code);

@@ -48,7 +48,7 @@ public sealed class ConferenciaDoCronogramaNaPublicacaoTests
         resultado.IsSuccess.Should().BeTrue(string.Join(", ", resultado.Errors.Select(static e => e.Error.Code)));
 
     private static DomainError? Pendencia(ProcessoSeletivo processo) =>
-        PonteiroNoDocumento.Converter(ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Padrao).Errors, OrigemNoDocumento.Identidade)
+        PonteiroNoDocumento.Converter(ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Para(processo)).Errors, OrigemNoDocumento.Identidade)
             .Where(static causa => causa.Error.Code != "ProcessoSeletivo.ConformidadeInsuficiente"
                 && causa.Field is not null
                 && (causa.Field.StartsWith("/cronograma", StringComparison.Ordinal) || causa.Field.StartsWith("/etapas", StringComparison.Ordinal)))
@@ -105,7 +105,7 @@ public sealed class ConferenciaDoCronogramaNaPublicacaoTests
             new ModeloDeFase("MATRICULA", 2) { ComUnidade = false }.Criar());
 
         IReadOnlyList<FieldError> causas = PonteiroNoDocumento.Converter(
-            ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Padrao).Errors, OrigemNoDocumento.Identidade);
+            ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Para(processo)).Errors, OrigemNoDocumento.Identidade);
 
         causas.Where(static causa => causa.Error.Code == "ProcessoSeletivo.FaseSemUnidadeResponsavel").Select(static causa => (causa.Field, causa.Error.Message))
             .Should().SatisfyRespectively(

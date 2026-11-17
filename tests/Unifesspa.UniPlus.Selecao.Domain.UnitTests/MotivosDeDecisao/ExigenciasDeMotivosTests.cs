@@ -15,14 +15,15 @@ public sealed class ExigenciasDeMotivosTests
     [Fact(DisplayName = "O registro das exigências começa pela da isenção da taxa")]
     public void Registro_ComecaPelaIsencao()
     {
-        ExigenciasDeMotivos.Todas.Should().ContainSingle().Which.Should().BeOfType<ExigenciaDaIsencaoDaTaxa>();
+        ExigenciasDeMotivos.Todas.Select(static exigencia => exigencia.GetType()).Should().Equal(
+            typeof(ExigenciaDaIsencaoDaTaxa), typeof(ExigenciaDaHomologacaoDasInscricoes));
     }
 
     [Fact(DisplayName = "A cobertura agrega as faltas de cada exigência na ordem do registro")]
     public void Cobertura_AgregaFaltasDeVariasExigencias()
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho(FundamentoIsencaoCodigo.CadastroUnico);
-        IExigenciaDeMotivos[] exigencias = [new ExigenciaFalsa("primeira"), new ExigenciaDaIsencaoDaTaxa(), new ExigenciaFalsa("terceira")];
+        IExigenciaDeMotivos[] exigencias = [ExigenciaFalsa.DeCobertura("primeira"), new ExigenciaDaIsencaoDaTaxa(), ExigenciaFalsa.DeCobertura("terceira")];
 
         FieldError[] faltas = [.. CoberturaDosMotivos.Faltas(processo.Declaracao(), ProcessoParaMotivos.Lugares(processo), [], exigencias)];
 
@@ -35,7 +36,7 @@ public sealed class ExigenciasDeMotivosTests
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho();
 
-        CoberturaDosMotivos.Faltas(processo.Declaracao(), ProcessoParaMotivos.Lugares(processo), [], [new ExigenciaFalsa("outra")])
+        CoberturaDosMotivos.Faltas(processo.Declaracao(), ProcessoParaMotivos.Lugares(processo), [], [ExigenciaFalsa.DeCobertura("outra")])
             .Should().ContainSingle().Which.Error.Code.Should().Be("outra");
     }
 
@@ -55,7 +56,7 @@ public sealed class ExigenciasDeMotivosTests
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho();
 
-        new ExigenciaDaIsencaoDaTaxa().Faltas(processo.Declaracao(), ProcessoParaMotivos.Lugares(processo), []).Should().BeEmpty();
+        new ExigenciaDaIsencaoDaTaxa().FaltasDeCobertura(processo.Declaracao(), ProcessoParaMotivos.Lugares(processo), []).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "A isenção cobra os dois sentidos de cada fundamento e cita a fase, o fundamento e o sentido que faltam")]
@@ -64,7 +65,7 @@ public sealed class ExigenciasDeMotivosTests
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho(FundamentoIsencaoCodigo.CadastroUnico, FundamentoIsencaoCodigo.DoacaoMedulaOssea);
         MotivoDoProcesso[] escolhidos = [Escolher(processo, FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel)];
 
-        FieldError[] faltas = [.. new ExigenciaDaIsencaoDaTaxa().Faltas(processo.Declaracao(), ProcessoParaMotivos.Lugares(processo), escolhidos)];
+        FieldError[] faltas = [.. new ExigenciaDaIsencaoDaTaxa().FaltasDeCobertura(processo.Declaracao(), ProcessoParaMotivos.Lugares(processo), escolhidos)];
 
         faltas.Should().HaveCount(3).And.OnlyContain(f => f.Field == "motivos");
         faltas.Select(f => f.Error.Message).Should().Equal(
@@ -85,16 +86,48 @@ public sealed class ExigenciasDeMotivosTests
             Escolher(processo, FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Desfavoravel),
         ];
 
-        new ExigenciaDaIsencaoDaTaxa().Faltas(processo.Declaracao(), ProcessoParaMotivos.Lugares(processo), escolhidos).Should().BeEmpty();
+        new ExigenciaDaIsencaoDaTaxa().FaltasDeCobertura(processo.Declaracao(), ProcessoParaMotivos.Lugares(processo), escolhidos).Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "A cobertura emite primeiro os tipos não declarados de todas as exigências e depois as faltas de cobertura de todas")]
+    public void Cobertura_TiposNaoDeclaradosAntecedemACoberturaDeTodasAsExigencias()
+    {
+        ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho();
+        IExigenciaDeMotivos[] exigencias = [ExigenciaFalsa.Com("tipoA", "coberturaA"), ExigenciaFalsa.Com("tipoB", "coberturaB")];
+
+        FieldError[] faltas = [.. CoberturaDosMotivos.Faltas(processo.Declaracao(), ProcessoParaMotivos.Lugares(processo), [], exigencias)];
+
+        faltas.Select(e => e.Error.Code).Should().Equal("tipoA", "tipoB", "coberturaA", "coberturaB");
+    }
+
+    [Fact(DisplayName = "O tipo de homologação não declarado antecede a cobertura da isenção, mesmo com a isenção registrada primeiro")]
+    public void Cobertura_TipoDaHomologacaoNaoDeclaradoAntecedeACoberturaDaIsencao()
+    {
+        ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho(FundamentoIsencaoCodigo.CadastroUnico);
+        ProcessoParaMotivos.HomologandoSemDeclararOTipo(processo);
+
+        FieldError[] faltas = [.. CoberturaDosMotivos.Faltas(processo.Declaracao(), ProcessoParaMotivos.Lugares(processo), [])];
+
+        faltas.Select(e => e.Error.Code).Should().Equal(
+            MotivoDeDecisaoErrorCodes.TipoDeDecisaoNaoDeclarado, MotivoDeDecisaoErrorCodes.CoberturaInsuficiente, MotivoDeDecisaoErrorCodes.CoberturaInsuficiente);
     }
 
     private static MotivoDoProcesso Escolher(ProcessoSeletivo processo, string fundamento, SentidoDoMotivo sentido) =>
         ProcessoParaMotivos.Escolha(
             processo, ProcessoParaMotivos.LugarDaFase(processo, "INSCRICAO"), ProcessoParaMotivos.DaIsencao(fundamento, sentido), versaoDeEntrada: 1);
 
-    private sealed class ExigenciaFalsa(string codigo) : IExigenciaDeMotivos
+    private sealed class ExigenciaFalsa(string? codigoDoTipoNaoDeclarado, string? codigoDaCobertura) : IExigenciaDeMotivos
     {
-        public IEnumerable<FieldError> Faltas(ConfiguracaoDeclarada configuracao, LugaresDaDecisao lugares, IReadOnlyCollection<MotivoDoProcesso> escolhidos) =>
-            [new FieldError("motivos", new DomainError(codigo, "Falta de teste."))];
+        public static ExigenciaFalsa DeCobertura(string codigo) => new(null, codigo);
+
+        public static ExigenciaFalsa Com(string codigoDoTipoNaoDeclarado, string codigoDaCobertura) => new(codigoDoTipoNaoDeclarado, codigoDaCobertura);
+
+        public IEnumerable<FieldError> TiposNaoDeclarados(ConfiguracaoDeclarada configuracao, LugaresDaDecisao lugares) => Falta(codigoDoTipoNaoDeclarado);
+
+        public IEnumerable<FieldError> FaltasDeCobertura(ConfiguracaoDeclarada configuracao, LugaresDaDecisao lugares, IReadOnlyCollection<MotivoDoProcesso> escolhidos) =>
+            Falta(codigoDaCobertura);
+
+        private static IEnumerable<FieldError> Falta(string? codigo) =>
+            codigo is null ? [] : [new FieldError("motivos", new DomainError(codigo, "Falta de teste."))];
     }
 }

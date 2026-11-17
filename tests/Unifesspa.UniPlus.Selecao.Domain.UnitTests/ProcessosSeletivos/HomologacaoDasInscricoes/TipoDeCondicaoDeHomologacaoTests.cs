@@ -32,5 +32,9 @@ public sealed class TipoDeCondicaoDeHomologacaoTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.CondicaoNaoDisponivel);
+        if (!string.IsNullOrWhiteSpace(codigo))
+        {
+            resultado.Error.Message.Should().NotContain(codigo);
+        }
     }
 }

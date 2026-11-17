@@ -74,13 +74,13 @@ internal static class CorpusEnvelopeCronograma
             UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(
                 Produtos: ProdutosDaFaseDeRecurso(variante, permutar), EmiteParecerIndividual: true, RegraRecurso: RegraDeRecursoDaFase(variante),
-                TiposDeDecisao: [TipoMotivoDeDecisaoCodigo.Classificacao],
+                TiposDeDecisao: [TipoMotivoDeDecisaoCodigo.Classificacao, TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes],
                 RegraDeHomologacao: regraDeHomologacao ?? RegraDeHomologacaoDoCorpus()),
         bancasRequeridas: BancasRequeridasDaFaseDeRecurso(permutar));
 
     /// <summary>
     /// Duas alternativas, a primeira com duas condições, sem e com enquadramento, na ordem que não é a alfabética dos
-    /// motivos: a escrita do envelope preserva a ordem declarada. A segunda alternativa não aponta motivo.
+    /// motivos: a escrita do envelope preserva a ordem declarada. Cada condição aponta o motivo desfavorável que a publicação confere.
     /// </summary>
     internal static RegraDeHomologacaoDasInscricoes RegraDeHomologacaoDoCorpus() => RegraDeHomologacaoDasInscricoes.Declarar(
         "RESULTADO_CLASSIFICACAO",
@@ -90,7 +90,7 @@ internal static class CorpusEnvelopeCronograma
                 CondicaoDeHomologacao.Declarar("RESULTADO_NO_RETORNO_DO_INEP", 2025, "MOTIVO_A_SEM_RETORNO_DO_INEP", EnquadramentoDoCorpus()).Value!,
             ]).Value!,
             AlternativaDeCondicoes.Declarar([
-                CondicaoDeHomologacao.Declarar("RESULTADO_NO_RETORNO_DO_INEP", 2024, null, null).Value!,
+                CondicaoDeHomologacao.Declarar("RESULTADO_NO_RETORNO_DO_INEP", 2024, "MOTIVO_M_SEM_RETORNO_DO_INEP", null).Value!,
             ]).Value!,
         ]);
 
@@ -171,6 +171,7 @@ internal static class CorpusEnvelopeCronograma
     private static ProcedimentosDeRecurso ProcedimentosDoCorpusDaFase() => ProcedimentosDeRecurso.De(
     [
         ProcedimentoDeRecursoDeclarado.De(TipoMotivoDeDecisao.Classificacao, null, Regra(RegraProcedimentoRecursoCodigo.Recalculo, '7')),
+        ProcedimentoDeRecursoDeclarado.De(TipoMotivoDeDecisao.HomologacaoDasInscricoes, null, Regra(RegraProcedimentoRecursoCodigo.Recorrecao, '8')),
     ]);
 
     /// <summary>

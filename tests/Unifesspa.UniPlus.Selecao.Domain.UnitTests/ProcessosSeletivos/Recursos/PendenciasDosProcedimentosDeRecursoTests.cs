@@ -92,7 +92,7 @@ public sealed class PendenciasDosProcedimentosDeRecursoTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         processo.DefinirEtapas([EtapaComJanela(ProcedimentosDeRecurso.Nenhum, TipoMotivoDeDecisaoCodigo.Classificacao)]).IsSuccess.Should().BeTrue();
 
-        FieldError causa = ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Padrao).Errors
+        FieldError causa = ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Para(processo)).Errors
             .Single(static causa => causa.Error.Code == CodigosDoProcedimentoDeRecurso.DaEtapa.Ausente);
 
         causa.Field.Should().Be("etapas[0].recursos");
@@ -107,10 +107,10 @@ public sealed class PendenciasDosProcedimentosDeRecursoTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         processo.DefinirEtapas([EtapaComJanela(procedimentos, TipoMotivoDeDecisaoCodigo.Classificacao)]).IsSuccess.Should().BeTrue();
 
-        IReadOnlyList<ItemConformidade> itens = ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao);
+        IReadOnlyList<ItemConformidade> itens = ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo));
 
         itens.Single(i => i.Codigo == "cronograma_procedimento_de_recurso").Ok.Should().Be(esperadoOk);
-        ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Padrao).Errors
+        ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Para(processo)).Errors
             .Any(static causa => causa.Error.Code == CodigosDoProcedimentoDeRecurso.DaEtapa.Ausente).Should().Be(!esperadoOk);
     }
 }

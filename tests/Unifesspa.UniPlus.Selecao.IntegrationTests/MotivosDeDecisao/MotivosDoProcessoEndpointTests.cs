@@ -29,6 +29,8 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 [Trait("Category", "OutboxCapability")]
 public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
 {
+    private const string PrefixoDosMotivosDoTeste = "TEST_MDP_";
+
     private readonly CascadingFixture _fixture;
 
     public MotivosDoProcessoEndpointTests(CascadingFixture fixture) => _fixture = fixture;
@@ -53,7 +55,7 @@ public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
         using HttpResponseMessage inclusao = await IncluirAsync(client, processoId, motivo.Id);
         inclusao.StatusCode.Should().Be(HttpStatusCode.NoContent, await inclusao.Content.ReadAsStringAsync());
 
-        JsonElement escolhido = (await ListarAsync(client, processoId)).Should().ContainSingle().Subject;
+        JsonElement escolhido = (await ListarOsEscolhidosPeloTesteAsync(client, processoId)).Should().ContainSingle().Subject;
         escolhido.GetProperty("codigo").GetString().Should().Be(motivo.Codigo.Valor);
         escolhido.GetProperty("tipo").GetString().Should().Be("HOMOLOGACAO_DAS_INSCRICOES");
         escolhido.GetProperty("lugar").GetProperty("faseCanonicaOrigemId").GetGuid().Should().Be(await FaseAsync(processoId));
@@ -100,7 +102,7 @@ public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
         publicada.StatusCode.Should().Be(HttpStatusCode.NoContent, await publicada.Content.ReadAsStringAsync());
 
         await AlterarMotivoAsync(substituto.Id, static m => m.Atualizar("Redação posterior à publicação."));
-        JsonElement publicado = (await ListarAsync(client, processoId)).Should().ContainSingle().Subject;
+        JsonElement publicado = (await ListarOsEscolhidosPeloTesteAsync(client, processoId)).Should().ContainSingle().Subject;
         publicado.GetProperty("vigencia").GetProperty("versaoDoEditalDeEntrada").GetInt32().Should().Be(1);
         publicado.GetProperty("descricao").GetString().Should().Be(substituto.Descricao,
             "o processo congela a cópia feita na escolha: mudar o cadastro, antes ou depois da publicação, não muda o processo");
@@ -121,7 +123,7 @@ public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
 
         retirada.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         inclusao.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        (await ListarAsync(client, processoId)).Should().ContainSingle();
+        (await ListarOsEscolhidosPeloTesteAsync(client, processoId)).Should().ContainSingle();
     }
 
     [Fact(DisplayName = "Depois da publicação, incluir motivo que o cadastro não tem e retirar o que o processo não escolheu devolvem o bloqueio da publicação")]
@@ -170,7 +172,7 @@ public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
     {
         MotivoDeDecisao motivo = MotivoDeDecisao.Criar(new CamposDoMotivo(
             TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes,
-            $"TEST_MDP_{Guid.NewGuid():N}"[..40].ToUpperInvariant(),
+            $"{PrefixoDosMotivosDoTeste}{Guid.NewGuid():N}"[..40].ToUpperInvariant(),
             "Sem resultado no retorno do INEP para a edição indicada",
             null,
             SentidoDoMotivo.Desfavoravel)).Value!;
@@ -230,13 +232,14 @@ public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
             },
         });
 
-    private static async Task<IReadOnlyList<JsonElement>> ListarAsync(HttpClient client, Guid processoId)
+    // O processo semeado já escolhe o motivo que a condição da regra de homologação aponta: a leitura confere só os que o teste inclui.
+    private static async Task<IReadOnlyList<JsonElement>> ListarOsEscolhidosPeloTesteAsync(HttpClient client, Guid processoId)
     {
         using HttpRequestMessage request = new(HttpMethod.Get, new Uri($"/api/selecao/processos-seletivos/{processoId}/motivos-de-decisao", UriKind.Relative));
         Autenticar(request);
         using HttpResponseMessage resposta = await client.SendAsync(request);
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
-        return [.. (await resposta.Content.ReadFromJsonAsync<JsonElement>()).EnumerateArray()];
+        return [.. (await resposta.Content.ReadFromJsonAsync<JsonElement>()).EnumerateArray().Where(static e => e.GetProperty("codigo").GetString()!.StartsWith(PrefixoDosMotivosDoTeste, StringComparison.Ordinal))];
     }
 
     private static async Task<HttpResponseMessage> EnviarAsync(HttpClient client, HttpMethod metodo, string url, object? corpo)

@@ -63,7 +63,7 @@ internal static class ExigenciaDaHomologacaoPorOrigem
             return Veredicto.Atendido;
         }
 
-        return cronograma.TemParteRecusadaNaListaDeFases || RegraRecusadaEmAlgumaFase(cronograma) || (origem != OrigemCandidatos.ImportacaoExterna && etapas.UsoDaNotaDoEnemIndeterminado)
+        return origem == OrigemCandidatos.Nenhuma || cronograma.TemParteRecusadaNaListaDeFases || RegraRecusadaEmAlgumaFase(cronograma) || (origem != OrigemCandidatos.ImportacaoExterna && etapas.UsoDaNotaDoEnemIndeterminado)
             ? Veredicto.SemJulgar
             : Veredicto.Recusado([new FieldError(CampoDasFases, FaseAusente(origem, etapas))]);
     }
@@ -71,7 +71,8 @@ internal static class ExigenciaDaHomologacaoPorOrigem
     private static bool RegraRecusadaEmAlgumaFase(CronogramaDoProcesso cronograma) =>
         cronograma.Fases.Any(static fase => fase.ParteRecusadaEm(FaseDeclarada.CampoDaRegraDeHomologacao));
 
-    private static bool TemARegra(FaseDeclarada fase) => fase.Atos.RegraDeHomologacao is not null;
+    private static bool TemARegra(FaseDeclarada fase) =>
+        !fase.ParteRecusadaEm(FaseDeclarada.CampoDaRegraDeHomologacao) && fase.Atos.RegraDeHomologacao is not null;
 
     private static DomainError FaseAusente(OrigemCandidatos origem, EtapasDoProcesso etapas) => origem switch
     {
@@ -92,7 +93,7 @@ internal static class ExigenciaDaHomologacaoPorOrigem
     {
         if (origem != OrigemCandidatos.ImportacaoExterna)
         {
-            return Veredicto.Atendido;
+            return origem == OrigemCandidatos.Nenhuma ? Veredicto.SemJulgar : Veredicto.Atendido;
         }
 
         CicloDaFase[] fases = [.. cronograma.Fases.Select(CicloDaFase.De).Where(static ciclo => TemARegra(ciclo.Fase))];
@@ -119,10 +120,10 @@ internal static class ExigenciaDaHomologacaoPorOrigem
 
     private static DomainError CicloIncompleto(FaseDeclarada fase) => new(
         ProcessoSeletivoErrorCodes.ImportacaoExternaSemJanelaDeRecurso,
-        $"A fase '{fase.Codigo}' homologa as inscrições e precisa publicar o resultado preliminar e o definitivo do resultado que a regra aponta, com o período de recurso ancorada no preliminar.");
+        $"A fase '{fase.Codigo}' homologa as inscrições e precisa publicar o resultado preliminar e o definitivo do resultado que a regra aponta, com o período de recurso iniciado pelo preliminar.");
 
-    // O INEP só vale se a regra o configurou, e a regra vazia também o dispensa. A alternativa ou a condição que a leitura recusou
-    // pode ser a que o traz: a fase só se julga com as alternativas íntegras, e o item fica pendente enquanto alguma não se julga.
+    // Com nota do ENEM, cada regra aceita precisa conter a confirmação, inclusive quando está vazia.
+    // A regra descartada pela leitura deixa a fase sem julgamento, e o item do painel permanece pendente.
     private static Veredicto ConfirmacaoDoInep(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
         etapas.UsoDaNotaDoEnemIndeterminado ? Veredicto.SemJulgar
         : etapas.UsaNotaDoEnem ? InepDasFases(cronograma)

@@ -37,6 +37,7 @@ ESPERA_VERIFICACAO="${ESPERA_VERIFICACAO:-240}"
 PDF_DO_PERFIL="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/edital-de-teste.pdf"
 
 PERFIL_INSTITUCIONAL="Roteiro de teste — cadastros institucionais"
+PERFIL_DE_MOTIVOS="Roteiro de teste — motivos de decisão"
 PERMISSOES_INSTITUCIONAIS='[
     "publicacoes:tipos-ato:manter",
     "organizacao:instituicao:manter", "organizacao:unidades:manter",
@@ -207,6 +208,7 @@ garantir_perfil() {
 
 garantir_acesso_institucional() {
     garantir_perfil "$PERFIL_INSTITUCIONAL" "$PERMISSOES_INSTITUCIONAIS"
+    garantir_perfil "$PERFIL_DE_MOTIVOS" '["selecao:motivos-de-decisao:manter"]'
 }
 
 # $1=id da unidade que conduz o processo

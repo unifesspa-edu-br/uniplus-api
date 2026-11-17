@@ -57,7 +57,7 @@ public sealed class BlocosDoDocumentoDasCausasTests
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
         IReadOnlyList<FieldError> causas = PonteiroNoDocumento.Converter(
-            ConfiguracaoAptaACongelar.Conferir(semNada.Id, semNada.Declaracao(), CadastrosDeTeste.Padrao).Errors, OrigemNoDocumento.Identidade);
+            ConfiguracaoAptaACongelar.Conferir(semNada.Id, semNada.Declaracao(), CadastrosDeTeste.Para(semNada)).Errors, OrigemNoDocumento.Identidade);
 
         causas.Should().NotBeEmpty();
         CaminhosAusentes(causas).Should().BeEmpty();
@@ -98,7 +98,7 @@ public sealed class BlocosDoDocumentoDasCausasTests
             .IsSuccess.Should().BeTrue();
 
         IReadOnlyList<FieldError> causas = PonteiroNoDocumento.Converter(
-            ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Padrao).Errors, OrigemNoDocumento.Identidade);
+            ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Para(processo)).Errors, OrigemNoDocumento.Identidade);
 
         causas.Select(static causa => causa.Field).Should().Contain("/etapas/0/recursos");
         CaminhosAusentes(causas).Should().BeEmpty();

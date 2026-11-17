@@ -106,10 +106,11 @@ internal static class PayloadsDoEnvelopeFechado
         bancasRequeridas = new object[] { BancaDoTipo(catalogos.TipoBancaId) },
         regraRecurso = (object?)null,
         regraDeHomologacao = RegraDeHomologacaoDoResultado(),
+        tiposDeDecisao = new[] { TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes },
         unidadeResponsavelId = catalogos.UnidadeId,
     };
 
-    // A fase que publica o resultado homologa as inscrições: aponta o resultado dela e confirma o retorno do INEP.
+    // A fase que publica o resultado homologa as inscrições: aponta o resultado dela e confirma o retorno do INEP, com o motivo desfavorável escolhido na fase.
     internal static object RegraDeHomologacaoDoResultado() => new
     {
         resultadoAtoCodigo = CodigoAtoResultado,
@@ -119,7 +120,7 @@ internal static class PayloadsDoEnvelopeFechado
             {
                 condicoes = new[]
                 {
-                    new { tipo = "RESULTADO_NO_RETORNO_DO_INEP", edicaoDoExame = 2026, motivoDesfavoravelCodigo = (string?)null, enquadramento = (object?)null },
+                    new { tipo = "RESULTADO_NO_RETORNO_DO_INEP", edicaoDoExame = 2026, motivoDesfavoravelCodigo = HomologacaoDasInscricoesDeTeste.MotivoSemResultadoNoInep, enquadramento = (object?)null },
                 },
             },
         },

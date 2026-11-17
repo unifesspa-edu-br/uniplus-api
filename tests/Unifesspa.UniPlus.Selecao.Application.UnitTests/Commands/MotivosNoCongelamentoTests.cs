@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.CenarioDeRecusaNoCongelamento;
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.MotivoDeTeste;
@@ -66,6 +67,8 @@ public sealed class MotivosNoCongelamentoTests
         return (origem, Escolhido(processo, LugarDaPrimeiraFase(processo), origem));
     }
 
+    // Além do motivo do teste, o processo escolhe os que cobrem as decisões que a conferência exige.
     private static void LerEscolha(CenarioDeRecusaNoCongelamento cenario, params MotivoEscolhidoComOrigem[] escolha) =>
-        cenario.Servicos.MotivosEscolhidos.ListarEscolhaAtualComOrigemAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(escolha);
+        cenario.Servicos.MotivosEscolhidos.ListarEscolhaAtualComOrigemAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns([.. MotivosDoProcessoDeTeste.Escolha(cenario.Processo), .. escolha]);
 }

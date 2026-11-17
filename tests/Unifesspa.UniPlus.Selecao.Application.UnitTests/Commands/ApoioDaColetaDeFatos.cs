@@ -101,7 +101,7 @@ internal static class ApoioDaColetaDeFatos
     ];
 
     internal static IEnumerable<string> CodigosDaConferencia(ProcessoSeletivo processo) =>
-        ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Padrao).Errors.Select(static e => e.Error.Code);
+        ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Para(processo)).Errors.Select(static e => e.Error.Code);
 
     internal static ProcessoSeletivo ProcessoEmRascunho()
     {

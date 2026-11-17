@@ -18,8 +18,12 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// </summary>
 public sealed class IdentidadeDosItensDeConformidadeTests
 {
-    private static IReadOnlyList<ItemConformidade> Checklist() =>
-        ChecklistDeConformidade.AvaliarConformidade(ProcessoConformeFactory.Criar().Declaracao(), CadastrosDeTeste.Padrao);
+    private static IReadOnlyList<ItemConformidade> Checklist()
+    {
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
+
+        return ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo));
+    }
 
     private static IReadOnlyList<string> DimensoesDeclaradas() =>
     [

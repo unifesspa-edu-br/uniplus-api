@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -309,6 +310,24 @@ public sealed class DefinirCronogramaFasesRegraDeHomologacaoTests
             $"{CampoDaRegra}.resultadoAtoCodigo");
     }
 
+    [Fact(DisplayName = "Todos os erros dos parâmetros do recurso acumulam com a falta do resultado da homologação")]
+    public async Task Handle_ParametrosDoRecursoRecusados_AcumulaTodosComAHomologacao()
+    {
+        CenarioDoCronogramaDeFases cenario = Cenario().ComRegraNoCatalogo(RegraDePrazoDeRecurso());
+        RegraRecursoFaseInput recurso = RecursoAncoradoNaClassificacao() with
+        {
+            PrazoValor = 0m,
+            SuspensividadePrimeiraInstanciaValor = -1m,
+            SuspensividadePrimeiraInstanciaUnidade = UnidadePrazo.Horas,
+        };
+        Result resultado = await cenario.DefinirFasesAsync(Fase(cenario, Regra(resultado: null)) with { RegraRecurso = recurso });
+
+        Recusas(resultado).Should().Equal(
+            ("fases[0].regraRecurso", "RegraRecursoFase.PrazoNaoPositivo"),
+            ("fases[0].regraRecurso", "RegraRecursoFase.SuspensividadeNaoPositiva"),
+            ($"{CampoDaRegra}.resultadoAtoCodigo", HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado));
+    }
+
     [Fact(DisplayName = "A regra de recurso recusada não impede a conferência da regra de homologação da mesma fase")]
     public async Task Handle_RegraDeRecursoRecusada_AcumulaComARegraDeHomologacao()
     {
@@ -320,6 +339,7 @@ public sealed class DefinirCronogramaFasesRegraDeHomologacaoTests
         Recusas(resultado).Should().Equal(
             ("fases[0].regraRecurso.regraCodigo", "RegraRecursoFase.RegraCatalogoInvalida"),
             ($"{CampoDaRegra}.alternativas[0].condicoes[0].edicaoDoExame", HomologacaoDasInscricoesErrorCodes.EdicaoDoExameInvalida));
+        resultado.Errors[0].Error.Message.Should().NotContain(RegraDeBonus().Codigo).And.NotContain(RegraDeBonus().Versao);
     }
 
     [Fact(DisplayName = "A regra de recurso recusada em uma fase não impede a conferência das demais fases")]

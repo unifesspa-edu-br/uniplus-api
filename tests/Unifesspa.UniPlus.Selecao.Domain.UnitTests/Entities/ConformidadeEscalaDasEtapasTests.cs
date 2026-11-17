@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -27,16 +28,8 @@ public sealed class ConformidadeEscalaDasEtapasTests
     private static TipoEtapaSnapshot Tipo(bool notaDoEnem = false) =>
         TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), notaDoEnem ? "NOTA_ENEM" : "PROVA_OBJETIVA", "Prova", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: notaDoEnem).Value!;
 
-    private static EtapaProcesso Etapa(
-        string nome, int ordem, CaraterEtapa carater = CaraterEtapa.Classificatoria, decimal? peso = null,
-        decimal? notaMinima = null, decimal? notaMaxima = null, decimal? passo = null, bool notaDoEnem = false,
-        bool semForma = false) =>
-        EtapaProcesso.Criar(
-            new IdentificacaoDaEtapa(Nome: nome, Carater: carater, TipoEtapa: Tipo(notaDoEnem), Ordem: ordem, FaseCodigo: "RESULTADO_FINAL"),
-            new DeclaracaoDaAvaliacaoDaEtapa(Peso: peso, NotaMinima: notaMinima, NotaMaxima: notaMaxima, PassoDoLancamento: passo, FormaDeAvaliacao: notaDoEnem || semForma ? null : FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
-
     private static EtapaProcesso EtapaDaMedia(string nome = "Prova", int ordem = 1, decimal? notaMaxima = 10m) =>
-        Etapa(nome, ordem, peso: 1m, notaMaxima: notaMaxima);
+        new ModeloDeEtapa(nome) { Ordem = ordem, FaseCodigo = "RESULTADO_FINAL", Peso = 1m, NotaMaxima = notaMaxima }.Criar();
 
     private static ProcessoSeletivo ProcessoCom(params EtapaProcesso[] etapas)
     {
@@ -98,7 +91,7 @@ public sealed class ConformidadeEscalaDasEtapasTests
         new CenarioDeCongelamento { Dados = ProcessoConformeFactory.Dados(), Documento = new DocumentoCongelado("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "teste" });
 
     private static IEnumerable<ItemConformidade> Vermelhos(ProcessoSeletivo processo) =>
-        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao)
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
             .Where(static i => !i.Ok && i.Dimensao == DimensaoConformidade.Etapas);
 
     /// <summary>
@@ -112,24 +105,13 @@ public sealed class ConformidadeEscalaDasEtapasTests
         EtapaProcesso base1 = EtapaDaMedia();
         EtapaProcesso alvo = razao switch
         {
-            "media" => Etapa("Alvo", 2, peso: 1m, notaMaxima: notaMaxima),
-            "nota minima" => Etapa("Alvo", 2, CaraterEtapa.Eliminatoria, notaMinima: 5m, notaMaxima: notaMaxima),
-            _ => Etapa("Alvo", 2, CaraterEtapa.Eliminatoria, notaMaxima: notaMaxima),
+            "media" => new ModeloDeEtapa("Alvo") { Ordem = 2, FaseCodigo = "RESULTADO_FINAL", Peso = 1m, NotaMaxima = notaMaxima }.Criar(),
+            "nota minima" => new ModeloDeEtapa("Alvo") { Ordem = 2, FaseCodigo = "RESULTADO_FINAL", Carater = CaraterEtapa.Eliminatoria, Peso = null, NotaMaxima = notaMaxima, NotaMinima = 5m }.Criar(),
+            _ => new ModeloDeEtapa("Alvo") { Ordem = 2, FaseCodigo = "RESULTADO_FINAL", Carater = CaraterEtapa.Eliminatoria, Peso = null, NotaMaxima = notaMaxima }.Criar(),
         };
 
         ProcessoSeletivo processo = ProcessoCom(base1, alvo);
-        if (razao == "eliminacao")
-        {
-            CitarPorEliminacao(processo, alvo.Id, 5m);
-        }
-        else if (razao == "desempate")
-        {
-            CitarPorDesempate(processo, alvo.Id);
-        }
-        else
-        {
-            processo.DefinirClassificacao(ClassificacaoSemEliminacao()).IsSuccess.Should().BeTrue();
-        }
+        DefinirUsoDaNota(processo, alvo.Id, razao);
 
         return processo;
     }
@@ -176,8 +158,8 @@ public sealed class ConformidadeEscalaDasEtapasTests
     [Fact(DisplayName = "Etapa sem nota com nota máxima ou com passo recusa a publicação; sem escala publica")]
     public void EtapaSemNotaComEscala_Recusa()
     {
-        EtapaProcesso comNotaMaxima = Etapa("Análise", 2, CaraterEtapa.Eliminatoria, notaMaxima: 10m, semForma: true);
-        EtapaProcesso comPasso = Etapa("Entrevista", 3, CaraterEtapa.Eliminatoria, passo: 0.5m, semForma: true);
+        EtapaProcesso comNotaMaxima = new ModeloDeEtapa("Análise") { Ordem = 2, FaseCodigo = "RESULTADO_FINAL", Carater = CaraterEtapa.Eliminatoria, Peso = null, NotaMaxima = 10m, Forma = null }.Criar();
+        EtapaProcesso comPasso = new ModeloDeEtapa("Entrevista") { Ordem = 3, FaseCodigo = "RESULTADO_FINAL", Carater = CaraterEtapa.Eliminatoria, Peso = null, NotaMaxima = null, Passo = 0.5m, Forma = null }.Criar();
         ProcessoSeletivo processo = ProcessoCom(EtapaDaMedia(), comNotaMaxima, comPasso);
 
         Vermelhos(processo).Should().ContainSingle().Which.Should().Match<ItemConformidade>(
@@ -185,7 +167,7 @@ public sealed class ConformidadeEscalaDasEtapasTests
                 && i.Mensagem.Contains("\"Análise\"; \"Entrevista\"", StringComparison.Ordinal));
         Publicar(processo).IsFailure.Should().BeTrue();
 
-        ProcessoSeletivo semEscala = ProcessoCom(EtapaDaMedia(), Etapa("Análise", 2, CaraterEtapa.Eliminatoria, semForma: true));
+        ProcessoSeletivo semEscala = ProcessoCom(EtapaDaMedia(), new ModeloDeEtapa("Análise") { Ordem = 2, FaseCodigo = "RESULTADO_FINAL", Carater = CaraterEtapa.Eliminatoria, Peso = null, NotaMaxima = null, Forma = null }.Criar());
         Vermelhos(semEscala).Should().BeEmpty();
         Publicar(semEscala).IsSuccess.Should().BeTrue();
     }
@@ -195,9 +177,7 @@ public sealed class ConformidadeEscalaDasEtapasTests
     [InlineData(false)]
     public void EtapaDoEnemComEscala_Recusa(bool comNotaMaxima)
     {
-        EtapaProcesso enem = Etapa(
-            "Nota do ENEM", 2, peso: 1m,
-            notaMaxima: comNotaMaxima ? 1000m : null, passo: comNotaMaxima ? null : 1m, notaDoEnem: true);
+        EtapaProcesso enem = new ModeloDeEtapa("Nota do ENEM") { Ordem = 2, FaseCodigo = "RESULTADO_FINAL", Peso = 1m, NotaMaxima = comNotaMaxima ? 1000m : null, Passo = comNotaMaxima ? null : 1m, NotaDoEnem = true, Forma = null }.Criar();
         ProcessoSeletivo processo = ProcessoComEtapaDoEnem(enem);
 
         Vermelhos(processo).Should().ContainSingle().Which.Codigo.Should().Be("etapa_do_enem_com_escala");
@@ -206,7 +186,7 @@ public sealed class ConformidadeEscalaDasEtapasTests
     [Fact(DisplayName = "Etapa de nota do ENEM sem escala publica sem nota máxima")]
     public void EtapaDoEnemSemEscala_NaoExigeNotaMaxima()
     {
-        ProcessoSeletivo processo = ProcessoComEtapaDoEnem(Etapa("Nota do ENEM", 2, peso: 1m, notaDoEnem: true));
+        ProcessoSeletivo processo = ProcessoComEtapaDoEnem(new ModeloDeEtapa("Nota do ENEM") { Ordem = 2, FaseCodigo = "RESULTADO_FINAL", Peso = 1m, NotaMaxima = null, NotaDoEnem = true, Forma = null }.Criar());
 
         Vermelhos(processo).Should().BeEmpty();
     }
@@ -214,7 +194,7 @@ public sealed class ConformidadeEscalaDasEtapasTests
     [Fact(DisplayName = "Nota mínima da regra acima da nota máxima da etapa recusa; igual aceita")]
     public void NotaMinimaDaRegraAcimaDaNotaMaxima_Recusa()
     {
-        EtapaProcesso entrevista = Etapa("Entrevista", 2, CaraterEtapa.Eliminatoria, notaMaxima: 10m);
+        EtapaProcesso entrevista = new ModeloDeEtapa("Entrevista") { Ordem = 2, FaseCodigo = "RESULTADO_FINAL", Carater = CaraterEtapa.Eliminatoria, Peso = null, NotaMaxima = 10m }.Criar();
         ProcessoSeletivo acima = ProcessoCom(EtapaDaMedia(), entrevista);
         CitarPorEliminacao(acima, entrevista.Id, 10.5m);
 
@@ -229,7 +209,7 @@ public sealed class ConformidadeEscalaDasEtapasTests
     [Fact(DisplayName = "Sem nota máxima declarada, só o item da nota máxima reprova, não o da regra")]
     public void NotaMinimaDaRegra_SemNotaMaximaDeclarada_NaoReprovaOItemDaRegra()
     {
-        EtapaProcesso entrevista = Etapa("Entrevista", 2, CaraterEtapa.Eliminatoria);
+        EtapaProcesso entrevista = new ModeloDeEtapa("Entrevista") { Ordem = 2, FaseCodigo = "RESULTADO_FINAL", Carater = CaraterEtapa.Eliminatoria, Peso = null, NotaMaxima = null }.Criar();
         ProcessoSeletivo processo = ProcessoCom(EtapaDaMedia(), entrevista);
         CitarPorEliminacao(processo, entrevista.Id, 99m);
 
@@ -241,9 +221,9 @@ public sealed class ConformidadeEscalaDasEtapasTests
 
     private static ProcessoSeletivo ProcessoComTresEtapasRecusadas()
     {
-        EtapaProcesso semNotaMaxima = Etapa("Redação", 2, peso: 1m);
-        EtapaProcesso semNotaComEscala = Etapa("Análise", 3, CaraterEtapa.Eliminatoria, notaMaxima: 10m, semForma: true);
-        EtapaProcesso acimaDaMaxima = Etapa("Entrevista", 4, CaraterEtapa.Eliminatoria, notaMaxima: 10m);
+        EtapaProcesso semNotaMaxima = new ModeloDeEtapa("Redação") { Ordem = 2, FaseCodigo = "RESULTADO_FINAL", Peso = 1m, NotaMaxima = null }.Criar();
+        EtapaProcesso semNotaComEscala = new ModeloDeEtapa("Análise") { Ordem = 3, FaseCodigo = "RESULTADO_FINAL", Carater = CaraterEtapa.Eliminatoria, Peso = null, NotaMaxima = 10m, Forma = null }.Criar();
+        EtapaProcesso acimaDaMaxima = new ModeloDeEtapa("Entrevista") { Ordem = 4, FaseCodigo = "RESULTADO_FINAL", Carater = CaraterEtapa.Eliminatoria, Peso = null, NotaMaxima = 10m }.Criar();
         ProcessoSeletivo processo = ProcessoCom(EtapaDaMedia(), semNotaMaxima, semNotaComEscala, acimaDaMaxima);
         CitarPorEliminacao(processo, acimaDaMaxima.Id, 12m);
 
@@ -293,4 +273,21 @@ public sealed class ConformidadeEscalaDasEtapasTests
             QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
             EscalaNotaFinal = 100m,
         }).Value!;
+
+    private static void DefinirUsoDaNota(ProcessoSeletivo processo, Guid alvoId, string razao)
+    {
+        if (razao == "eliminacao")
+        {
+            CitarPorEliminacao(processo, alvoId, 5m);
+        }
+        else if (razao == "desempate")
+        {
+            CitarPorDesempate(processo, alvoId);
+        }
+        else
+        {
+            processo.DefinirClassificacao(ClassificacaoSemEliminacao()).IsSuccess.Should().BeTrue();
+        }
+    }
+
 }

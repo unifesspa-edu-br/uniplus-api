@@ -27,8 +27,9 @@ public sealed class EtapaDeclaraFaseDoCronogramaTests
         // antes de a invariante existir. Sem o item correspondente, a publicação recusaria por
         // uma causa que o painel de conformidade aprovava, e quem lê o painel não teria o que
         // corrigir.
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         IReadOnlyList<ItemConformidade> checklist =
-            ChecklistDeConformidade.AvaliarConformidade(ProcessoConformeFactory.Criar().Declaracao(), CadastrosDeTeste.Padrao);
+            ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo));
 
         checklist.Should().ContainSingle(i => i.Codigo == "cronograma_etapa_fora_da_janela_da_fase")
             .Which.Ok.Should().BeTrue("o processo conforme não tem etapa pendurada fora da fase");

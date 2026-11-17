@@ -85,12 +85,7 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
         Ofertar(processo,
             Modalidade("AC", NaturezaLegalModalidade.Ampla, PredicadoDnf.SemClausula),
             Modalidade("LI_EP", NaturezaLegalModalidade.CotaReservada, Exige((OpcaoPelasCotasDaLei.Fato, true))));
-        List<FatoColetado> itens = [Booleano(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 0)];
-        if (perguntaAOrigemEscolar)
-        {
-            itens.Add(Booleano(OrigemEscolar.FatoOndeCursou, 1));
-            itens.Add(Booleano(OrigemEscolar.FatoFormaDeConclusao, 2));
-        }
+        List<FatoColetado> itens = CamposDaOrigemEscolar(perguntaAOrigemEscolar);
 
         processo.DefinirItens(itens, finalidade: FinalidadeFormulario.Inscricao).IsSuccess.Should().BeTrue();
 
@@ -125,11 +120,11 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
         processo.DefinirItens([], finalidade: FinalidadeFormulario.Inscricao).IsSuccess.Should().BeTrue();
         processo.DefinirItens([], finalidade: finalidadeDoGrupo, grupos: [GrupoComOCampoDeMembro(finalidadeDoGrupo)]).IsSuccess.Should().BeTrue();
 
-        DomainError? recusa = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo, CadastrosDeTeste.Com(fatosDeModalidade: ComOAgregado));
+        DomainError? recusa = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo, CadastrosDeTeste.Com(fatosDeModalidade: ComOAgregado, motivosEscolhidos: MotivosDoProcessoDeTeste.Cobrindo(processo)));
 
         AfirmarRecusaDoCampoDeMembro(recusa, esperadoAceito);
 
-        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Com(fatosDeModalidade: ComOAgregado))
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Com(fatosDeModalidade: ComOAgregado, motivosEscolhidos: MotivosDoProcessoDeTeste.Cobrindo(processo)))
             .Single(i => i.Codigo == ItemFatoNaoColetado).Ok.Should().Be(esperadoAceito);
     }
 
@@ -229,7 +224,7 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
             finalidade).Value!;
 
     private static ItemConformidade Item(ProcessoSeletivo processo, string codigo) =>
-        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao).Single(i => i.Codigo == codigo);
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Single(i => i.Codigo == codigo);
 
     private static void Ofertar(ProcessoSeletivo processo, params ModalidadeSelecionada[] modalidades) =>
         processo.DefinirDistribuicaoVagas(
@@ -256,4 +251,17 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
     private static PredicadoDnf Exige(params (string Fato, bool Valor)[] atomos) =>
         PredicadoDnf.CriarDeCondicoesAgrupadas([.. atomos.Select(static a => (0, CondicaoDnf.Criar(
             a.Fato, Operador.Igual, JsonSerializer.SerializeToElement(a.Valor)).Value!))]).Value!;
+
+    private static List<FatoColetado> CamposDaOrigemEscolar(bool perguntaAOrigemEscolar)
+    {
+        List<FatoColetado> itens = [Booleano(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 0)];
+        if (perguntaAOrigemEscolar)
+        {
+            itens.Add(Booleano(OrigemEscolar.FatoOndeCursou, 1));
+            itens.Add(Booleano(OrigemEscolar.FatoFormaDeConclusao, 2));
+        }
+
+        return itens;
+    }
+
 }

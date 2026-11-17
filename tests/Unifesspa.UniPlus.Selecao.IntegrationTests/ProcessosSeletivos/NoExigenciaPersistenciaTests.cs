@@ -120,7 +120,7 @@ public sealed class NoExigenciaPersistenciaTests : IClassFixture<ProcessoSeletiv
     // O processo cru deixa pendente o resto da configuração; aqui só importam as causas do bloco das exigências documentais.
     private static void AfirmarSemCausasDaArvore(ProcessoSeletivo processo)
     {
-        Result<ConfiguracaoAptaACongelar> conferida = ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Padrao);
+        Result<ConfiguracaoAptaACongelar> conferida = ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Para(processo));
         FieldError[] daArvore = [.. conferida.Errors.Where(static e => e.Field == "documentosExigidos" && e.Origem is null)];
         daArvore.Should().BeEmpty(string.Join(";", daArvore.Select(static e => e.Error.Message)));
     }
@@ -148,24 +148,7 @@ public sealed class NoExigenciaPersistenciaTests : IClassFixture<ProcessoSeletiv
         await repository.AdicionarAsync(processo, CancellationToken.None);
         await context.SaveChangesAsync(CancellationToken.None);
 
-        // Três substituições seguidas na MESMA sessão de DbContext — a raiz de cada árvore usa
-        // Ordem 0, a mesma da raiz anterior, exatamente o cenário que colide com o índice
-        // não-deferível. A 1ª chamada não tem nada para colidir (árvore vazia -> com grupo);
-        // são a 2ª e a 3ª que exercitam a substituição de uma árvore-com-grupo por outra.
-        for (int tentativa = 1; tentativa <= 3; tentativa++)
-        {
-            NoExigencia grupoE = NoExigencia.CriarGrupo(
-                TipoNo.GrupoE, 0, null, null, [],
-                [NoExigencia.CriarFolha(Documento(fase.Id), 0).Value!, NoExigencia.CriarFolha(Documento(fase.Id), 1).Value!]).Value!;
-
-            Result definirResult = processo.DefinirDocumentosExigidos([grupoE]);
-            definirResult.IsSuccess.Should().BeTrue(definirResult.Error?.Message);
-
-            Func<Task> salvar = async () => await context.SaveChangesAsync(CancellationToken.None);
-            await salvar.Should().NotThrowAsync(
-                $"tentativa {tentativa}: substituir uma árvore com grupo E/OU por outra não pode falhar com " +
-                "violação de índice único transitória (issue #943)");
-        }
+        await SubstituirArvoreNaMesmaSessaoAsync(context, processo, fase.Id);
 
         processo.RaizesDeExigencia.Should().ContainSingle().Which.Tipo.Should().Be(TipoNo.GrupoE);
     }
@@ -191,15 +174,7 @@ public sealed class NoExigenciaPersistenciaTests : IClassFixture<ProcessoSeletiv
         await context.Database.OpenConnectionAsync();
 
         await using NpgsqlCommand command = new(
-            """
-            SELECT contype::text, condeferrable, condeferred
-            FROM pg_constraint c
-            JOIN pg_class t ON t.oid = c.conrelid
-            JOIN pg_namespace n ON n.oid = t.relnamespace
-            WHERE n.nspname = 'selecao'
-              AND t.relname = 'nos_da_arvore_de_exigencias'
-              AND c.conname = @nome
-            """,
+ConsultaDasRestricoesDeOrdem,
             (NpgsqlConnection)context.Database.GetDbConnection());
         command.Parameters.AddWithValue("nome", nomeDaConstraint);
 
@@ -210,4 +185,44 @@ public sealed class NoExigenciaPersistenciaTests : IClassFixture<ProcessoSeletiv
         reader.GetBoolean(1).Should().BeTrue("a checagem deferível é o que evita a colisão transitória da issue #943");
         reader.GetBoolean(2).Should().BeTrue("INITIALLY DEFERRED — checada só no COMMIT, não a cada statement");
     }
+
+    private const string ConsultaDasRestricoesDeOrdem =
+            """
+            SELECT contype::text, condeferrable, condeferred
+            FROM pg_constraint c
+            JOIN pg_class t ON t.oid = c.conrelid
+            JOIN pg_namespace n ON n.oid = t.relnamespace
+            WHERE n.nspname = 'selecao'
+              AND t.relname = 'nos_da_arvore_de_exigencias'
+              AND c.conname = @nome
+            """;
+
+
+    private static async Task SubstituirArvoreNaMesmaSessaoAsync(UniPlusDbContext context, ProcessoSeletivo processo, Guid faseId)
+    {
+        for (int tentativa = 1; tentativa <= 3; tentativa++)
+        {
+            NoExigencia grupoE = GrupoComDoisDocumentos(faseId);
+
+            Result definirResult = processo.DefinirDocumentosExigidos([grupoE]);
+            definirResult.IsSuccess.Should().BeTrue(definirResult.Error?.Message);
+
+            Func<Task> salvar = async () => await context.SaveChangesAsync(CancellationToken.None);
+            await salvar.Should().NotThrowAsync(
+                $"tentativa {tentativa}: substituir uma árvore com grupo E/OU por outra não pode falhar com " +
+                "violação de índice único transitória (issue #943)");
+        }
+
+    }
+
+
+    private static NoExigencia GrupoComDoisDocumentos(Guid faseId)
+    {
+        NoExigencia grupoE = NoExigencia.CriarGrupo(
+            TipoNo.GrupoE, 0, null, null, [],
+            [NoExigencia.CriarFolha(Documento(faseId), 0).Value!, NoExigencia.CriarFolha(Documento(faseId), 1).Value!]).Value!;
+
+        return grupoE;
+    }
+
 }

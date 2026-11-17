@@ -32,8 +32,8 @@ public sealed class ParidadeDoPainelComAConferenciaTests
         ProcessoSeletivo processo = Montar(cenario);
         ConfiguracaoDeclarada configuracao = processo.Declaracao();
 
-        bool painelTodoConforme = ChecklistDeConformidade.AvaliarConformidade(configuracao, CadastrosDeTeste.Padrao).All(static item => item.Ok);
-        bool configuracaoApta = ConfiguracaoAptaACongelar.Conferir(processo.Id, configuracao, CadastrosDeTeste.Padrao).IsSuccess;
+        bool painelTodoConforme = ChecklistDeConformidade.AvaliarConformidade(configuracao, CadastrosDeTeste.Para(processo)).All(static item => item.Ok);
+        bool configuracaoApta = ConfiguracaoAptaACongelar.Conferir(processo.Id, configuracao, CadastrosDeTeste.Para(processo)).IsSuccess;
 
         painelTodoConforme.Should().Be(configuracaoApta);
     }

@@ -43,7 +43,7 @@ public sealed class OrdemDasRecusasDaConferenciaTests
             .SetValue(processo, null);
 
     private static string[] Codigos(ProcessoSeletivo processo) =>
-        [.. ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Padrao).Errors.Select(static causa => causa.Error.Code)];
+        [.. ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Para(processo)).Errors.Select(static causa => causa.Error.Code)];
 
     [Fact(DisplayName = "A identificação do processo vem antes da conformidade por item")]
     public void Identificacao_VemAntesDaConformidadePorItem()

@@ -297,7 +297,7 @@ public sealed class ProcessoSeletivoCascataTests
         ProcessoSeletivo processo = NovoProcessoComOferta(oferta);
 
         CoberturaDaCascata.CausasDaCascata(processo.Declaracao()).Should().BeEmpty();
-        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao).Should().Contain(item => item.Codigo == "cascata_pendente" && item.Ok);
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Should().Contain(item => item.Codigo == "cascata_pendente" && item.Ok);
     }
 
     [Fact(DisplayName = "AvaliarConformidade com oferta federal sem cascata tem o item Cascata de remanejamento não-Ok")]
@@ -305,7 +305,7 @@ public sealed class ProcessoSeletivoCascataTests
     {
         ProcessoSeletivo processo = NovoProcessoComOferta(OfertaFederalCompleta());
 
-        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao).Should().Contain(item => item.Codigo == "cascata_pendente" && !item.Ok);
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Should().Contain(item => item.Codigo == "cascata_pendente" && !item.Ok);
     }
 
     private static FaseCronograma FaseDeResultadoFinal() => FaseCronograma.Criar(
@@ -362,6 +362,6 @@ public sealed class ProcessoSeletivoCascataTests
 
         CausasDeConformidadeDeTeste.De(processo).Should().BeEmpty("os itens estruturais estão todos completos — a cascata não é um deles");
         CoberturaDaCascata.CausasDaCascata(processo.Declaracao()).Should().NotBeEmpty("a oferta federal tem SegueCascata sem cascata configurada");
-        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao).Should().Contain(item => item.Codigo == "cascata_pendente" && !item.Ok);
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Should().Contain(item => item.Codigo == "cascata_pendente" && !item.Ok);
     }
 }

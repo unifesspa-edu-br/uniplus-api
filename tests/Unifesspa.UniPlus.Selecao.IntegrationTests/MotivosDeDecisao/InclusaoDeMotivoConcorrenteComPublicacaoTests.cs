@@ -194,8 +194,16 @@ public sealed class InclusaoDeMotivoConcorrenteComPublicacaoTests : IAsyncLifeti
 
         return new EstadoFinal(
             await db.ProcessosSeletivos.AsNoTracking().Where(p => p.Id == processoId).Select(p => p.Status).SingleAsync(),
-            await db.MotivosDoProcesso.AsNoTracking().Where(m => m.ProcessoSeletivoId == processoId).ToListAsync(),
+            await EscolhasDoTesteAsync(db, processoId),
             await db.VersoesConfiguracao.AsNoTracking().Where(v => v.ProcessoSeletivoId == processoId).ToListAsync());
+    }
+
+    // O processo semeado já escolhe o motivo da condição da regra de homologação; a escolha em disputa é só a dos motivos do teste.
+    private static async Task<IReadOnlyList<MotivoDoProcesso>> EscolhasDoTesteAsync(UniPlusDbContext db, Guid processoId)
+    {
+        List<MotivoDoProcesso> escolhas = await db.MotivosDoProcesso.AsNoTracking().Where(m => m.ProcessoSeletivoId == processoId).ToListAsync();
+
+        return [.. escolhas.Where(static m => m.Codigo.Valor.StartsWith("TEST_ICP_", StringComparison.Ordinal))];
     }
 
     private sealed record Cenario(Guid ProcessoId, Guid DocumentoId, Guid FaseId, IReadOnlyList<Guid> Anteriores, MotivoDeDecisao Disputado);

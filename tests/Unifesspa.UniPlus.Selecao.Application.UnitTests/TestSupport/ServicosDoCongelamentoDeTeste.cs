@@ -104,6 +104,18 @@ internal sealed class ServicosDoCongelamentoDeTeste
         Repositorio = RepositorioDoProcesso(processo);
         Documentos = RepositorioDeDocumento(processo.Id);
 
+        return ComMotivosDoProcesso(processo);
+    }
+
+    // O processo escolhe, no rascunho, os motivos das decisões que declara; a porta devolve essa escolha, inclusive depois da publicação.
+    public ServicosDoCongelamentoDeTeste ComMotivosDoProcesso(ProcessoSeletivo processo)
+    {
+        _ = MotivosDoProcessoDeTeste.Escolha(processo);
+        MotivosEscolhidos.ListarEscolhaAtualComOrigemAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(_ => MotivosDoProcessoDeTeste.Escolha(processo));
+        MotivosEscolhidos.ListarEscolhaAtualAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(_ => [.. MotivosDoProcessoDeTeste.Escolha(processo).Select(static m => m.Escolhido)]);
+
         return this;
     }
 

@@ -53,18 +53,7 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
         FaseCronograma habilitacao = Fase(3, FormularioProcesso.CodigoFaseHabilitacao);
         FaseCronograma[] fases = isencaoNaFaseDaInscricao ? [inscricao, habilitacao] : [inscricao, isencao, habilitacao];
         processo.DefinirCronogramaFases(fases, []).IsSuccess.Should().BeTrue();
-        foreach ((FinalidadeFormulario finalidade, FaseCronograma fase, FatoColetado[] fatos) in new[]
-        {
-            (FinalidadeFormulario.Inscricao, inscricao, new[] { Item("PEDE_O_ACRESCIMO"), Numero("RENDA_FAMILIAR", 1) }),
-            (FinalidadeFormulario.IsencaoTaxa, isencao, [Item("BOLSISTA")]),
-            (FinalidadeFormulario.Habilitacao, habilitacao, [Item("COMPROVANTE_RENDA")]),
-        })
-        {
-            processo.DefinirFormulario(finalidade, fase.Id, null, FormularioDeTeste.Etapas()).IsSuccess.Should().BeTrue();
-            Result itens = processo.DefinirFatosColetados(
-                finalidade, fatos, finalidade == FinalidadeFormulario.Inscricao ? [GrupoDaInscricao()] : null);
-            itens.IsSuccess.Should().BeTrue(itens.Error?.Message);
-        }
+        DefinirFormulariosDoAcrescimo(processo, inscricao, isencao, habilitacao);
 
         return processo;
     }
@@ -89,7 +78,7 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
         ]).IsSuccess.Should().BeTrue();
 
     private static bool ItemVermelho(ProcessoSeletivo processo) =>
-        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao)
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
             .Single(static i => i.Codigo == "bonus_regional_fato_de_elegibilidade").Ok is false;
 
     [Fact(DisplayName = "Com inscrição própria, o acréscimo sem o fato de elegibilidade fica pendente no checklist")]
@@ -199,4 +188,29 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
         RegrasDosFatos.ConferirFatoDeElegibilidade(processo.Declaracao(), SemCatalogo, SemCatalogo).Should().BeNull();
         ItemVermelho(processo).Should().BeFalse();
     }
+
+    private static void DefinirFormularioComFatos(ProcessoSeletivo processo, FinalidadeFormulario finalidade, Guid faseId, FatoColetado[] fatos)
+    {
+        processo.DefinirFormulario(finalidade, faseId, null, FormularioDeTeste.Etapas()).IsSuccess.Should().BeTrue();
+        Result itens = processo.DefinirFatosColetados(
+            finalidade, fatos, finalidade == FinalidadeFormulario.Inscricao ? [GrupoDaInscricao()] : null);
+        itens.IsSuccess.Should().BeTrue(itens.Error?.Message);
+    }
+
+
+    private static void DefinirFormulariosDoAcrescimo(
+        ProcessoSeletivo processo, FaseCronograma inscricao, FaseCronograma isencao, FaseCronograma habilitacao)
+    {
+        foreach ((FinalidadeFormulario finalidade, FaseCronograma fase, FatoColetado[] fatos) in new[]
+        {
+            (FinalidadeFormulario.Inscricao, inscricao, new[] { Item("PEDE_O_ACRESCIMO"), Numero("RENDA_FAMILIAR", 1) }),
+            (FinalidadeFormulario.IsencaoTaxa, isencao, [Item("BOLSISTA")]),
+            (FinalidadeFormulario.Habilitacao, habilitacao, [Item("COMPROVANTE_RENDA")]),
+        })
+        {
+            DefinirFormularioComFatos(processo, finalidade, fase.Id, fatos);
+        }
+
+    }
+
 }

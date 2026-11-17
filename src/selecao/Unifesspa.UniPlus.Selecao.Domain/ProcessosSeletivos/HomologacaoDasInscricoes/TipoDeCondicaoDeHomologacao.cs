@@ -32,6 +32,6 @@ public static class TiposDeCondicaoDeHomologacao
             HomologacaoDasInscricoesErrorCodes.CondicaoNaoDisponivel,
             string.IsNullOrWhiteSpace(codigo)
                 ? "O tipo da condição precisa ser informado."
-                : $"A condição '{codigo}' ainda não é apurada pelo sistema.")),
+                : "A condição indicada ainda não é apurada pelo sistema.")),
     };
 }

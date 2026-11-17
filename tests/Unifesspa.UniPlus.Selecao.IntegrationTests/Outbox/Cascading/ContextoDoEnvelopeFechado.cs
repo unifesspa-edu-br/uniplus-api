@@ -33,6 +33,7 @@ using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -75,23 +76,14 @@ internal sealed record ContextoDoEnvelopeFechado(CascadingApiFactory Api, HttpCl
     {
         object[] distribuicao =
         [
-            new
-            {
-                ofertaCursoId = Catalogos.OfertaCursoId,
-                vagasOfertadasBase = 60,
-                percentualDaReservaLegal = 0.7500m,
-                regraDistribuicaoCodigo = RegraDistribuicaoVagasCodigo.Lei12711,
-                regraDistribuicaoVersao = "v1",
-                regraAjusteCodigo = RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico,
-                regraAjusteVersao = "v1",
-                referenciaReservaDemograficaId = Catalogos.ReferenciaReservaDemograficaId,
-                modalidadeIds = Catalogos.ModalidadeIdPorCodigo.Values.ToArray(),
-                quadro = Array.Empty<object>(),
-            },
+            DistribuicaoFederal(),
         ];
 
         return EnviarAsync(HttpMethod.Put, $"{Rota}/{ProcessoId}/distribuicao-vagas", distribuicao);
     }
+
+    public Task<HttpResponseMessage> PutMotivoNaFaseAsync(Guid faseCanonicaOrigemId, Guid motivoId) => EnviarAsync(
+        HttpMethod.Put, LugaresDoProcessoDeTeste.RotaDaFase(ProcessoId, faseCanonicaOrigemId, motivoId), new { justificativa = (string?)null });
 
     public Task<HttpResponseMessage> PutOpcoesDeCursoAsync() => EnviarAsync(
         HttpMethod.Put, $"{Rota}/{ProcessoId}/opcoes-de-curso", new { numero = 1 });
@@ -135,29 +127,9 @@ internal sealed record ContextoDoEnvelopeFechado(CascadingApiFactory Api, HttpCl
 
     public Task<HttpResponseMessage> PutClassificacaoAsync(Guid objetivaId, string resolucaoPesoAreaEnem)
     {
-        object[] regrasEliminacao =
-        [
-            new { regraCodigo = RegraEliminacaoCodigo.ElimNotaMinimaEtapa, regraVersao = "v1", etapaRef = (Guid?)objetivaId, notaMinima = (decimal?)45.0000m, minimo = (decimal?)null },
-            new { regraCodigo = RegraEliminacaoCodigo.ElimCorteEmArea, regraVersao = "v1", etapaRef = (Guid?)null, notaMinima = (decimal?)null, minimo = (decimal?)400.0000m, areaCodigo = "REDACAO" },
-            new { regraCodigo = RegraEliminacaoCodigo.ElimZeroEmArea, regraVersao = "v1", etapaRef = (Guid?)null, notaMinima = (decimal?)null, minimo = (decimal?)null },
-        ];
-
         return EnviarAsync(
             HttpMethod.Put, $"{Rota}/{ProcessoId}/classificacao",
-            new
-            {
-                regraCalculoCodigo = RegraCalculoCodigo.FormulaMediaPonderada,
-                regraCalculoVersao = "v1",
-                regraArredondamentoCodigo = RegraArredondamentoCodigo.PrecisaoArredondarCima,
-                regraArredondamentoVersao = "v1",
-                casasArredondamento = 3,
-                regraOrdemAlocacaoCodigo = RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria,
-                regraOrdemAlocacaoVersao = "v1",
-                regrasEliminacao,
-                baseadoEmEnem = true,
-                resolucaoPesoAreaEnem,
-                escalaNotaFinal = 1000m,
-            });
+Classificacao(objetivaId, resolucaoPesoAreaEnem));
     }
 
     internal async Task<HttpResponseMessage> EnviarAsync(
@@ -169,9 +141,59 @@ internal sealed record ContextoDoEnvelopeFechado(CascadingApiFactory Api, HttpCl
             request.Content = JsonContent.Create(corpo);
         }
 
-        // Leituras versionadas exigem o vendor media type (ADR-0028) — sem ele o servidor
-        // devolve 406, e o teste "falharia" por um motivo que nada tem a ver com o que ele
-        // quer provar (plano §4.0).
+        ConfigurarCabecalhos(request, idempotente, accept);
+
+        return await Client.SendAsync(request).ConfigureAwait(false);
+    }
+
+    private object DistribuicaoFederal() =>
+        new
+        {
+            ofertaCursoId = Catalogos.OfertaCursoId,
+            vagasOfertadasBase = 60,
+            percentualDaReservaLegal = 0.7500m,
+            regraDistribuicaoCodigo = RegraDistribuicaoVagasCodigo.Lei12711,
+            regraDistribuicaoVersao = "v1",
+            regraAjusteCodigo = RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico,
+            regraAjusteVersao = "v1",
+            referenciaReservaDemograficaId = Catalogos.ReferenciaReservaDemograficaId,
+            modalidadeIds = Catalogos.ModalidadeIdPorCodigo.Values.ToArray(),
+            quadro = Array.Empty<object>(),
+        };
+
+
+    private static object[] RegrasDeEliminacao(Guid objetivaId)
+    {
+        object[] regrasEliminacao =
+        [
+            new { regraCodigo = RegraEliminacaoCodigo.ElimNotaMinimaEtapa, regraVersao = "v1", etapaRef = (Guid?)objetivaId, notaMinima = (decimal?)45.0000m, minimo = (decimal?)null },
+            new { regraCodigo = RegraEliminacaoCodigo.ElimCorteEmArea, regraVersao = "v1", etapaRef = (Guid?)null, notaMinima = (decimal?)null, minimo = (decimal?)400.0000m, areaCodigo = "REDACAO" },
+            new { regraCodigo = RegraEliminacaoCodigo.ElimZeroEmArea, regraVersao = "v1", etapaRef = (Guid?)null, notaMinima = (decimal?)null, minimo = (decimal?)null },
+        ];
+
+        return regrasEliminacao;
+    }
+
+
+    private static object Classificacao(Guid objetivaId, string resolucaoPesoAreaEnem) =>
+        new
+        {
+            regraCalculoCodigo = RegraCalculoCodigo.FormulaMediaPonderada,
+            regraCalculoVersao = "v1",
+            regraArredondamentoCodigo = RegraArredondamentoCodigo.PrecisaoArredondarCima,
+            regraArredondamentoVersao = "v1",
+            casasArredondamento = 3,
+            regraOrdemAlocacaoCodigo = RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria,
+            regraOrdemAlocacaoVersao = "v1",
+            regrasEliminacao = RegrasDeEliminacao(objetivaId),
+            baseadoEmEnem = true,
+            resolucaoPesoAreaEnem,
+            escalaNotaFinal = 1000m,
+        };
+
+
+    private static void ConfigurarCabecalhos(HttpRequestMessage request, bool idempotente, string? accept)
+    {
         if (accept is not null)
         {
             request.Headers.TryAddWithoutValidation("Accept", accept);
@@ -181,13 +203,10 @@ internal sealed record ContextoDoEnvelopeFechado(CascadingApiFactory Api, HttpCl
             TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
         request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "plataforma-admin");
 
-        // Chave de idempotência NOVA em toda mutação (plano §4.0) — reutilizar transformaria
-        // a segunda chamada em replay e mascararia a dimensão realmente enviada.
         if (idempotente)
         {
             request.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
         }
-
-        return await Client.SendAsync(request).ConfigureAwait(false);
     }
+
 }

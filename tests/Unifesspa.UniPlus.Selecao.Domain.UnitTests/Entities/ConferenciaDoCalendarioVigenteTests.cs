@@ -118,7 +118,7 @@ public sealed class ConferenciaDoCalendarioVigenteTests
             .IsSuccess.Should().BeTrue();
 
     private static IReadOnlyList<ItemConformidade> Checklist(ProcessoSeletivo processo, ContextoDeContagemDePrazos contexto) =>
-        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Com(contexto));
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Com(contexto, motivosEscolhidos: MotivosDoProcessoDeTeste.Cobrindo(processo)));
 
     private static ItemConformidade ItemDoCalendario(ProcessoSeletivo processo, ContextoDeContagemDePrazos contexto, string codigo = "calendario_vigente_ausente") =>
         Checklist(processo, contexto).Single(i => i.Codigo == codigo);

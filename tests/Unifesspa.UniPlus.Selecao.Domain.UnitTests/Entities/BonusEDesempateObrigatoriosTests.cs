@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// </summary>
 public sealed class BonusEDesempateObrigatoriosTests
 {
-    private static IEnumerable<string> Vermelhos(ProcessoSeletivo processo) => ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao)
+    private static IEnumerable<string> Vermelhos(ProcessoSeletivo processo) => ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
         .Where(static i => !i.Ok)
         .Select(static i => i.Codigo);
 

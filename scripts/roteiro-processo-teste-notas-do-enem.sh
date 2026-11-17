@@ -304,6 +304,7 @@ main() {
     definir_edicoes_enem
     definir_taxa_inscricao
     definir_cronograma_fases
+    escolher_motivo_da_homologacao
     definir_etapa_nota_do_enem
     aplicar_modelo_inscricao
     vincular_fase_do_formulario

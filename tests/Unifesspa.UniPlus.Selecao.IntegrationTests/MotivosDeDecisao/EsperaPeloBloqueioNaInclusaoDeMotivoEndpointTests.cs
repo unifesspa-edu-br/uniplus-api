@@ -126,7 +126,10 @@ public sealed class EsperaPeloBloqueioNaInclusaoDeMotivoEndpointTests : IAsyncLi
         {
             await using AsyncServiceScope escopo = _cenario.Preparo.Services.CreateAsyncScope();
             UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-            return await db.MotivosDoProcesso.AsNoTracking().CountAsync(m => m.ProcessoSeletivoId == ProcessoId);
+            List<MotivoDoProcesso> escolhas = await db.MotivosDoProcesso.AsNoTracking().Where(m => m.ProcessoSeletivoId == ProcessoId).ToListAsync();
+
+            // O processo semeado já escolhe o motivo da condição da regra de homologação; só se contam os motivos do teste.
+            return escolhas.Count(static m => m.Codigo.Valor.StartsWith("TEST_EPT_", StringComparison.Ordinal));
         }
 
         private static async Task<Guid> SemearMotivoAsync(CenarioDeEsperaPelaTrava cenario)

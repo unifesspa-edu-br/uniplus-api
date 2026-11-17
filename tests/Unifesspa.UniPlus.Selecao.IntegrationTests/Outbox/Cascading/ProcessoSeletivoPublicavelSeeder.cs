@@ -76,6 +76,7 @@ internal static class ProcessoSeletivoPublicavelSeeder
         UniPlusDbContext db, ProcessoSeletivo processo, DocumentoAPublicar documento)
     {
         await db.ProcessosSeletivos.AddAsync(processo);
+        await MotivosDaHomologacaoSemeados.EscolherAsync(db, processo);
         await db.DocumentosAPublicar.AddAsync(documento);
         await db.SaveChangesAsync();
         processo.DequeueDomainEvents();

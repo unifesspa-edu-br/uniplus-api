@@ -20,9 +20,9 @@ internal static class DeclaracoesComDefeitoParaOEsquema
 
     internal static ContextoDaConferencia ContextoComTodosOsDefeitos()
     {
-        ConfiguracaoDeclarada configuracao = ProcessoConformeFactory.Criar().Declaracao();
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
 
-        return new ContextoDaConferencia(configuracao, CadastrosDeTeste.Padrao, new CronogramaDoProcesso(Fases()), new EtapasDoProcesso(Etapas()));
+        return new ContextoDaConferencia(processo.Declaracao(), CadastrosDeTeste.Para(processo), new CronogramaDoProcesso(Fases()), new EtapasDoProcesso(Etapas()));
     }
 
     private static FaseDeclarada[] Fases()

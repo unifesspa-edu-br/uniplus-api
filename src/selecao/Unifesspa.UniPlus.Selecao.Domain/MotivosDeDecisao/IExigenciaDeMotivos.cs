@@ -12,8 +12,14 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public interface IExigenciaDeMotivos
 {
     /// <summary>
-    /// As faltas do processo diante dos motivos <paramref name="escolhidos"/>, que já são só os que a versão leva e que o
-    /// lugar admite; vazio quando a exigência está atendida.
+    /// As faltas de tipo de decisão não declarado: a decisão que o processo exige e nenhum lugar declara produzir, salvo quando a
+    /// leitura recusou parte do que declara os tipos. Antecedem, em todas as exigências, a cobertura.
     /// </summary>
-    IEnumerable<FieldError> Faltas(ConfiguracaoDeclarada configuracao, LugaresDaDecisao lugares, IReadOnlyCollection<MotivoDoProcesso> escolhidos);
+    IEnumerable<FieldError> TiposNaoDeclarados(ConfiguracaoDeclarada configuracao, LugaresDaDecisao lugares);
+
+    /// <summary>
+    /// As faltas de cobertura do processo diante dos motivos <paramref name="escolhidos"/>, que já são só os que a versão leva e
+    /// que o lugar admite; vazio quando a exigência está atendida.
+    /// </summary>
+    IEnumerable<FieldError> FaltasDeCobertura(ConfiguracaoDeclarada configuracao, LugaresDaDecisao lugares, IReadOnlyCollection<MotivoDoProcesso> escolhidos);
 }

@@ -16,26 +16,33 @@ public sealed class ExigenciaDaIsencaoDaTaxa : IExigenciaDeMotivos
 {
     private static readonly SentidoDoMotivo[] Sentidos = [SentidoDoMotivo.Favoravel, SentidoDoMotivo.Desfavoravel];
 
-    public IEnumerable<FieldError> Faltas(ConfiguracaoDeclarada configuracao, LugaresDaDecisao lugares, IReadOnlyCollection<MotivoDoProcesso> escolhidos)
+    public IEnumerable<FieldError> TiposNaoDeclarados(ConfiguracaoDeclarada configuracao, LugaresDaDecisao lugares)
+    {
+        ArgumentNullException.ThrowIfNull(configuracao);
+        ArgumentNullException.ThrowIfNull(lugares);
+
+        return lugares.QueDeclaram(TipoMotivoDeDecisao.IsencaoDaTaxa).Any() || lugares.DeclaracaoDosTiposComParteRecusada
+            ? []
+            : FundamentosHabilitados(configuracao).Select(SemLugarQueDeclareOTipo);
+    }
+
+    public IEnumerable<FieldError> FaltasDeCobertura(ConfiguracaoDeclarada configuracao, LugaresDaDecisao lugares, IReadOnlyCollection<MotivoDoProcesso> escolhidos)
     {
         ArgumentNullException.ThrowIfNull(configuracao);
         ArgumentNullException.ThrowIfNull(lugares);
         ArgumentNullException.ThrowIfNull(escolhidos);
 
-        IReadOnlyList<FundamentoIsencao> fundamentos = configuracao.DivulgacaoETaxa.ConfiguracaoTaxaInscricao is { Cobra: true } taxa ? taxa.Fundamentos : [];
-        LugarNoProcesso[] declarantes = [.. lugares.QueDeclaram(TipoMotivoDeDecisao.IsencaoDaTaxa)];
+        IReadOnlyList<FundamentoIsencao> fundamentos = FundamentosHabilitados(configuracao);
 
-        return declarantes.Length == 0
-            ? FundamentosSemLugar(fundamentos, lugares)
-            : from lugar in declarantes
-              from fundamento in fundamentos
-              from sentido in Sentidos
-              where !escolhidos.Any(e => Cobre(e, lugar, fundamento.ToCodigo(), sentido))
-              select Falta(lugar, fundamento.ToCodigo(), sentido);
+        return from lugar in lugares.QueDeclaram(TipoMotivoDeDecisao.IsencaoDaTaxa)
+               from fundamento in fundamentos
+               from sentido in Sentidos
+               where !escolhidos.Any(e => Cobre(e, lugar, fundamento.ToCodigo(), sentido))
+               select Falta(lugar, fundamento.ToCodigo(), sentido);
     }
 
-    private static IEnumerable<FieldError> FundamentosSemLugar(IReadOnlyList<FundamentoIsencao> fundamentos, LugaresDaDecisao lugares) =>
-        lugares.DeclaracaoDosTiposComParteRecusada ? [] : fundamentos.Select(SemLugarQueDeclareOTipo);
+    private static IReadOnlyList<FundamentoIsencao> FundamentosHabilitados(ConfiguracaoDeclarada configuracao) =>
+        configuracao.DivulgacaoETaxa.ConfiguracaoTaxaInscricao is { Cobra: true } taxa ? taxa.Fundamentos : [];
 
     private static bool Cobre(MotivoDoProcesso escolhido, LugarNoProcesso lugar, string fundamento, SentidoDoMotivo sentido) =>
         escolhido.Lugar == lugar.Lugar

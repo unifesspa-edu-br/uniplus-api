@@ -32,7 +32,7 @@ public sealed class ConfiguracaoAptaACongelarTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
 
-        Result<ConfiguracaoAptaACongelar> conferida = ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Padrao);
+        Result<ConfiguracaoAptaACongelar> conferida = ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Para(processo));
 
         conferida.IsSuccess.Should().BeTrue(conferida.Error?.Message);
         conferida.Value!.ProcessoId.Should().Be(processo.Id);
@@ -46,7 +46,7 @@ public sealed class ConfiguracaoAptaACongelarTests
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
-        Result<ConfiguracaoAptaACongelar> conferida = ConfiguracaoAptaACongelar.Conferir(semEtapas.Id, semEtapas.Declaracao(), CadastrosDeTeste.Padrao);
+        Result<ConfiguracaoAptaACongelar> conferida = ConfiguracaoAptaACongelar.Conferir(semEtapas.Id, semEtapas.Declaracao(), CadastrosDeTeste.Para(semEtapas));
 
         conferida.IsFailure.Should().BeTrue();
         conferida.Value.Should().BeNull();
@@ -62,7 +62,7 @@ public sealed class ConfiguracaoAptaACongelarTests
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
-        IReadOnlyList<FieldError> causas = ConfiguracaoAptaACongelar.Conferir(semEtapas.Id, semEtapas.Declaracao(), CadastrosDeTeste.Padrao).Errors
+        IReadOnlyList<FieldError> causas = ConfiguracaoAptaACongelar.Conferir(semEtapas.Id, semEtapas.Declaracao(), CadastrosDeTeste.Para(semEtapas)).Errors
             .Where(static causa => causa.Error.Code == "ProcessoSeletivo.ConformidadeInsuficiente").ToList();
 
         causas.Should().HaveCountGreaterThan(1);
@@ -87,7 +87,7 @@ public sealed class ConfiguracaoAptaACongelarTests
     public void ConfiguracaoAptaDeOutroProcesso_Lanca(string transicao)
     {
         ProcessoSeletivo outro = ProcessoConformeFactory.Criar();
-        ConfiguracaoAptaACongelar deOutroProcesso = ConfiguracaoAptaACongelar.Conferir(outro.Id, outro.Declaracao(), CadastrosDeTeste.Padrao).Value!;
+        ConfiguracaoAptaACongelar deOutroProcesso = ConfiguracaoAptaACongelar.Conferir(outro.Id, outro.Declaracao(), CadastrosDeTeste.Para(outro)).Value!;
 
         Action congelar = AcaoQueCongela(transicao, deOutroProcesso);
 
@@ -98,7 +98,7 @@ public sealed class ConfiguracaoAptaACongelarTests
     public void InstanteDoPedido_ValeParaAVersaoEParaOEvento()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        ConfiguracaoAptaACongelar apta = ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Padrao).Value!;
+        ConfiguracaoAptaACongelar apta = ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Para(processo)).Value!;
         DateTimeOffset instante = new(2026, 3, 10, 8, 30, 15, 123, TimeSpan.Zero);
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(Pedido(apta, instante));

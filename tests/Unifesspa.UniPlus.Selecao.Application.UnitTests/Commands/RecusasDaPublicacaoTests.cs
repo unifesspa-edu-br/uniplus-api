@@ -214,16 +214,23 @@ public sealed class RecusasDaPublicacaoTests
             _documento = DocumentoAPublicar.IniciarPendente(
                 processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
             _documento.Confirmar(1024, new string('a', 64), TimeProvider.System).IsSuccess.Should().BeTrue();
-            Servicos = new ServicosDoCongelamentoDeTeste()
-                .ComRepositorio(RepositorioQueDevolve(processo))
-                .ComDocumentos(RepositorioDoDocumento(_documento))
-                .ComCanonicalizer(canonicalizer)
-                .ComUsuario(UsuarioDeTeste())
-                .ComTiposDeAto(tipoDeAtoReader)
-                .ComObrigatoriedadesLegais(ObrigatoriedadesSemRegraVigente())
-                .ComCatalogoDeFatos(Substitute.For<IFatoCandidatoReader>())
-                .ComCalendario(Substitute.For<ICalendarioVigenteReader>())
-                .ComRelogio(TimeProvider.System);
+            Servicos = ServicosDoEdital(canonicalizer, tipoDeAtoReader);
+        }
+
+        private ServicosDoCongelamentoDeTeste ServicosDoEdital(
+            ISnapshotPublicacaoCanonicalizer canonicalizer, ITipoAtoPublicadoReader tipoDeAtoReader)
+        {
+            return new ServicosDoCongelamentoDeTeste()
+                    .ComRepositorio(RepositorioQueDevolve(_processo))
+                    .ComMotivosDoProcesso(_processo)
+                    .ComDocumentos(RepositorioDoDocumento(_documento))
+                    .ComCanonicalizer(canonicalizer)
+                    .ComUsuario(UsuarioDeTeste())
+                    .ComTiposDeAto(tipoDeAtoReader)
+                    .ComObrigatoriedadesLegais(ObrigatoriedadesSemRegraVigente())
+                    .ComCatalogoDeFatos(Substitute.For<IFatoCandidatoReader>())
+                    .ComCalendario(Substitute.For<ICalendarioVigenteReader>())
+                    .ComRelogio(TimeProvider.System);
         }
 
         public ServicosDoCongelamentoDeTeste Servicos { get; }

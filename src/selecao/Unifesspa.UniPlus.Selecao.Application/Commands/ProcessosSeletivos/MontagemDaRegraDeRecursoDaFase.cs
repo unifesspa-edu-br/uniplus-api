@@ -116,7 +116,7 @@ internal sealed class MontagemDaRegraDeRecursoDaFase(
         {
             return Recusa<ReferenciaRegra>($"{campo}.regraCodigo", new DomainError(
                 "RegraRecursoFase.RegraCatalogoInvalida",
-                $"A regra {declarada.RegraCodigo}/{declarada.RegraVersao} não é a regra {RegraPrazoRecursoCodigo.AncoradoEmAto} do tipo regra_prazo_recurso."));
+                "A regra indicada não é a regra de prazo de recurso iniciado pela publicação de um ato."));
         }
 
         return Result<ReferenciaRegra>.Success(regra.Referencia());

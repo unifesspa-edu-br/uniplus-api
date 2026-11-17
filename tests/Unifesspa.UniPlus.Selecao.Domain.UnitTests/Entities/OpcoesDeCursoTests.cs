@@ -24,7 +24,7 @@ public sealed class OpcoesDeCursoTests
     private const string CodigoAcimaDasOfertas = "uniplus.selecao.processo_seletivo.opcoes_de_curso_acima_das_ofertas";
     private const string MensagemAcimaDasOfertas = "Com 2 opções de curso, cadastre pelo menos dois cursos.";
 
-    private static IEnumerable<string> Vermelhos(ProcessoSeletivo processo) => ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao)
+    private static IEnumerable<string> Vermelhos(ProcessoSeletivo processo) => ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
         .Where(static i => !i.Ok)
         .Select(static i => i.Codigo);
 
@@ -113,10 +113,7 @@ public sealed class OpcoesDeCursoTests
     [Fact(DisplayName = "2 opções sem distribuição gravada são aceitas, e o mínimo de cursos passa a ser cobrado quando há distribuição")]
     public void DuasOpcoesSemDistribuicao_AceitaEApontaAteHaverOfertas()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Opções", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
-            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSemOfertas();
 
         processo.DefinirOpcoesDeCurso(2).IsSuccess.Should().BeTrue();
 
@@ -216,4 +213,15 @@ public sealed class OpcoesDeCursoTests
 
         Vermelhos(processo).Should().NotContain("opcoes_de_curso_acima_das_ofertas");
     }
+
+    private static ProcessoSeletivo ProcessoSemOfertas()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
+            "PS Opções", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+
+        return processo;
+    }
+
 }

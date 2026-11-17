@@ -316,7 +316,8 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
                 Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
                 UnidadeResponsavel: UnidadesDeTeste.Ceps),
             HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(
-                [preliminar, ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], RegraDeRecurso(preliminar.Id, procedimentos)) with { TiposDeDecisao = TiposDeDecisaoDaFase() },
+                [preliminar, ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], RegraDeRecurso(preliminar.Id, procedimentos)) with
+            { TiposDeDecisao = TiposDeDecisaoDaFase() },
             bancasRequeridas: [BancasDeTeste.DeRecursosDaFase()]).Value!;
     }
 

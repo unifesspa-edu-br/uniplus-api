@@ -48,17 +48,17 @@ public sealed class CausasQueImpedemCongelarTests
         bancasRequeridas: []).Value!;
 
     private static string[] Codigos(ProcessoSeletivo processo) =>
-        [.. ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Padrao).Errors.Select(static causa => causa.Error.Code)];
+        [.. ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Para(processo)).Errors.Select(static causa => causa.Error.Code)];
 
     private static IReadOnlyList<FieldError> CausasDaCompletude(ProcessoSeletivo processo)
     {
-        ContextoDaConferencia contexto = ContextoDaConferencia.De(processo.Declaracao(), CadastrosDeTeste.Padrao);
+        ContextoDaConferencia contexto = ContextoDaConferencia.De(processo.Declaracao(), CadastrosDeTeste.Para(processo));
 
         return [.. CausasQueImpedemCongelar.Assuntos.Single(static assunto => assunto.Nome == NomeDoAssunto.Completude).Causas(contexto)];
     }
 
     private static string[] VermelhosDaHomologacao(ProcessoSeletivo processo) =>
-        [.. ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao)
+        [.. ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
             .Where(static item => !item.Ok && item.Codigo.StartsWith("cronograma_homologacao_das_inscricoes", StringComparison.Ordinal))
             .Select(static item => item.Codigo)];
 

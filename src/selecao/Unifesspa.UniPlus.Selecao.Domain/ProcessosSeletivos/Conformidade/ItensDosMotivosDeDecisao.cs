@@ -18,7 +18,7 @@ internal static class ItensDosMotivosDeDecisao
         [
             Item("motivos_escolhidos_ativos_no_cadastro", "Motivos de decisão: nenhum motivo escolhido foi desativado no cadastro antes de entrar na versão", !motivos.Desativados(lugares).Any()),
             Item("motivos_escolhidos_de_tipo_declarado_pelo_lugar", "Motivos de decisão: cada motivo escolhido é de um tipo que a fase ou a etapa declara", !lugares.DeclaracaoDosTiposComParteRecusada && !motivos.DeTipoNaoDeclarado(lugares).Any()),
-            Item("motivos_cobrem_as_decisoes_do_processo", "Motivos de decisão: cada fase ou etapa tem os motivos que as decisões dela exigem", !lugares.DeclaracaoDosTiposComParteRecusada && !CoberturaDosMotivos.Faltas(configuracao, lugares, motivos.QueCompoemAVersao(lugares)).Any()),
+            Item("motivos_cobrem_as_decisoes_do_processo", "Motivos de decisão: cada fase ou etapa tem os motivos que as decisões dela exigem", !lugares.DeclaracaoDosTiposComParteRecusada && !ExigenciaDaHomologacaoDasInscricoes.LeituraIncompleta(configuracao) && !CoberturaDosMotivos.Faltas(configuracao, lugares, motivos.QueCompoemAVersao(lugares)).Any()),
         ];
     }
 

@@ -81,7 +81,7 @@ public sealed class ProcessoSeletivoCronogramaTests
         Result resultado = processo.DefinirCronogramaFases([fase], []);
 
         resultado.IsSuccess.Should().BeTrue();
-        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao)
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
             .Should().Contain(item =>
                 item.Codigo == "cronograma_fase_agrupadora_sem_etapa_pontuada" && !item.Ok);
     }
@@ -265,14 +265,7 @@ public sealed class ProcessoSeletivoCronogramaTests
     public void Conclusao_SemDeclaracaoComDefinitivoDeOutroTipo_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        FaseCronograma fase = Fase(
-            1,
-            "AVALIACAO",
-            produtos:
-            [
-                ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
-                ProdutoDaFase.Criar("GABARITO", PapelProdutoFase.Definitivo),
-            ]).Value!;
+        FaseCronograma fase = FaseComResultadosDeTiposDistintos();
 
         Result resultado = processo.DefinirCronogramaFases([fase], []);
 
@@ -282,4 +275,19 @@ public sealed class ProcessoSeletivoCronogramaTests
         erro.Error.Code.Should().Be("ProcessoSeletivo.ConclusaoNaoDeclarada");
         erro.Error.Message.Should().Contain("'RESULTADO_CLASSIFICACAO'");
     }
+
+    private static FaseCronograma FaseComResultadosDeTiposDistintos()
+    {
+        FaseCronograma fase = Fase(
+            1,
+            "AVALIACAO",
+            produtos:
+            [
+                ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
+                ProdutoDaFase.Criar("GABARITO", PapelProdutoFase.Definitivo),
+            ]).Value!;
+
+        return fase;
+    }
+
 }

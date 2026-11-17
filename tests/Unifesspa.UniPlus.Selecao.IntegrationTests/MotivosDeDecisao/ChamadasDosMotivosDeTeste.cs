@@ -140,13 +140,20 @@ internal sealed class ChamadasDosMotivosDeTeste(CascadingFixture fixture, string
 
     internal Task<HttpResponseMessage> RetirarAsync(string rota, string? etag = null) => EnviarAsync(HttpMethod.Delete, rota, etag: etag);
 
+    /// <summary>
+    /// Os motivos que o teste escolheu, pelo prefixo do código: o processo semeado já escolhe, para a condição da regra de
+    /// homologação, o motivo do cadastro, e a leitura dos motivos do teste não o conta.
+    /// </summary>
     internal async Task<IReadOnlyList<JsonElement>> LerAsync(Guid processoId, int? versao = null)
     {
         using HttpResponseMessage resposta = await LerRespostaAsync(processoId, versao);
         resposta.StatusCode.Should().Be(System.Net.HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
 
-        return [.. (await resposta.Content.ReadFromJsonAsync<JsonElement>()).EnumerateArray()];
+        return [.. (await resposta.Content.ReadFromJsonAsync<JsonElement>()).EnumerateArray().Where(EscolhidoPeloTeste)];
     }
+
+    private bool EscolhidoPeloTeste(JsonElement escolhido) =>
+        escolhido.GetProperty("codigo").GetString()!.StartsWith($"{prefixoDoCodigo}_", StringComparison.Ordinal);
 
     internal async Task<HttpResponseMessage> LerRespostaAsync(Guid processoId, int? versao = null)
     {

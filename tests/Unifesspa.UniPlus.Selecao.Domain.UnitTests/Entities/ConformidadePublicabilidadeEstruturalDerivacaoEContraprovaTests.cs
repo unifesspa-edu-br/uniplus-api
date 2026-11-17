@@ -75,17 +75,7 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
     public void PreCanon_DesempatePorAreaSemQuadro()
     {
         ProcessoSeletivo processo = ProcessoConforme(); // classificação importada: sem quadro de pesos por área
-        ConfiguracaoClassificacao classificacao = processo.Classificacao!;
-
-        // As duas gravações recusam este estado; ele só chega por outro caminho — um envelope
-        // restaurado ou uma escrita feita fora do agregado. É montado aqui direto no agregado:
-        // o desempate gravado enquanto a classificação não existia, e a classificação sem
-        // quadro posta depois.
-        PropertyInfo propriedadeClassificacao = typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Classificacao))!;
-        propriedadeClassificacao.SetValue(processo, null);
-        processo.DefinirCriteriosDesempate(
-            [CriterioDesempate.Criar(3, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ParametrosDesempateMaiorNotaAreaEnem(["REDACAO"])).Value!]).IsSuccess.Should().BeTrue();
-        propriedadeClassificacao.SetValue(processo, classificacao);
+        DeclararDesempatePorAreaSemQuadro(processo);
 
         SoEstesItensVermelhos(processo, "desempate_area_enem_sem_quadro");
 
@@ -106,9 +96,7 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
 
         SoEstesItensVermelhos(processo, "criterios_desempate_em_excesso");
 
-        Result<VersaoConfiguracao> resultado = Publicar(processo);
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.CriteriosDesempateEmExcesso");
+        ExigirPublicacaoRecusada(processo, "ProcessoSeletivo.CriteriosDesempateEmExcesso");
     }
 
     [Theory(DisplayName = "Pré-canonicalização: desempate por área com a ordem de áreas mal formada — só o item da ordem fica vermelho, e Publicar recusa")]
@@ -118,25 +106,12 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
     public void PreCanon_DesempatePorAreaComOrdemMalFormada(string[] areas, string codigo)
     {
         ProcessoSeletivo processo = ProcessoConformeComEtapaQueCompoeNota();
-        typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Classificacao))!.SetValue(processo, ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
-        {
-            RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'),
-            RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'),
-            CasasArredondamento = 2,
-            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
-            BaseadoEmEnem = true,
-            ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
-            QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
-            EscalaNotaFinal = 100m,
-        }).Value!);
+        DefinirClassificacaoComQuadroDoEnem(processo);
         processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!])
             .IsSuccess.Should().BeTrue();
         // A ordem mal formada não passa por CriterioDesempate.Criar: os parâmetros são trocados depois,
         // como num critério que chega ao agregado por outro caminho.
-        CriterioDesempate criterio = CriterioDesempate.Criar(
-            1, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ParametrosDesempateMaiorNotaAreaEnem(["REDACAO"])).Value!;
-        typeof(CriterioDesempate).GetProperty(nameof(CriterioDesempate.Parametros))!.SetValue(criterio, new ParametrosDesempateMaiorNotaAreaEnem(areas));
-        CriteriosDesempateDe(processo).Add(criterio);
+        AdicionarCriterioComAreasMalFormadas(processo, areas);
 
         SoEstesItensVermelhos(processo, "desempate_area_enem_areas_mal_formadas");
 
@@ -294,7 +269,7 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
     {
         ProcessoSeletivo processo = ProcessoConforme();
 
-        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao).Should().OnlyContain(i => i.Ok);
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Should().OnlyContain(i => i.Ok);
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -308,9 +283,9 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
         // publica sem prova local. Esta contraprova torna essa premissa EXPLÍCITA.
         processo.Etapas.Should().BeEmpty("pré-condição da contraprova: sem etapa, sob CLASSIFICACAO-IMPORTADA");
 
-        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao).Should().Contain(
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Should().Contain(
             i => i.Codigo == "cronograma_fase_agrupadora_sem_etapa_pontuada" && i.Ok);
-        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao).Should().Contain(
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Should().Contain(
             i => i.Codigo == "cronograma_etapa_declara_a_fase" && i.Ok);
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
@@ -328,4 +303,43 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
             checklist.Should().Contain(i => i.Codigo == item && i.Ok, $"cascata não se aplica — \"{item}\" não pode ficar vermelho");
         }
     }
+
+    private static void DefinirClassificacaoComQuadroDoEnem(ProcessoSeletivo processo)
+    {
+        typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Classificacao))!.SetValue(processo, ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'),
+            RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'),
+            CasasArredondamento = 2,
+            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+            BaseadoEmEnem = true,
+            ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
+            QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
+            EscalaNotaFinal = 100m,
+        }).Value!);
+    }
+
+
+    private static void DeclararDesempatePorAreaSemQuadro(ProcessoSeletivo processo)
+    {
+        ConfiguracaoClassificacao classificacao = processo.Classificacao!;
+
+        // A fábrica recusa esta combinação; o estado representa uma gravação feita fora do agregado.
+        PropertyInfo propriedadeClassificacao = typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Classificacao))!;
+        propriedadeClassificacao.SetValue(processo, null);
+        processo.DefinirCriteriosDesempate(
+            [CriterioDesempate.Criar(3, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ParametrosDesempateMaiorNotaAreaEnem(["REDACAO"])).Value!]).IsSuccess.Should().BeTrue();
+        propriedadeClassificacao.SetValue(processo, classificacao);
+
+    }
+
+
+    private static void AdicionarCriterioComAreasMalFormadas(ProcessoSeletivo processo, string[] areas)
+    {
+        CriterioDesempate criterio = CriterioDesempate.Criar(
+            1, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ParametrosDesempateMaiorNotaAreaEnem(["REDACAO"])).Value!;
+        typeof(CriterioDesempate).GetProperty(nameof(CriterioDesempate.Parametros))!.SetValue(criterio, new ParametrosDesempateMaiorNotaAreaEnem(areas));
+        CriteriosDesempateDe(processo).Add(criterio);
+    }
+
 }

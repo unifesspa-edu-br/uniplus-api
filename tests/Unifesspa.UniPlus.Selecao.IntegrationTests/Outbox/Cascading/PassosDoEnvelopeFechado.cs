@@ -25,6 +25,7 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.MotivosDeDecisao;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.CatalogosDoEnvelopeFechado;
@@ -115,6 +116,7 @@ internal static class PassosDoEnvelopeFechado
     internal static async Task DeclararEtapasAsync(Cenario c)
     {
         await ExecutarPassoAsync(() => c.Ctx.PutCronogramaFasesAsync(), HttpStatusCode.NoContent, "PUT cronograma-fases", "/cronograma-fases");
+        await EscolherOMotivoDaHomologacaoAsync(c);
         await ExecutarPassoAsync(() => c.Ctx.PutEtapasAsync(EtapasIniciais(c.Ctx.Catalogos.TipoBancaId)), HttpStatusCode.NoContent, "PUT etapas", "/etapas");
 
         ProcessoSeletivoDto processo = await c.Ctx.ObterProcessoAsync();
@@ -123,6 +125,14 @@ internal static class PassosDoEnvelopeFechado
         c.EntrevistaId = processo.Etapas.Single(e => e.Identificacao.Nome == "Entrevista").Id;
         processo.Etapas.Single(e => e.Id == c.ObjetivaId).Nota.Peso.Should().Be(
             3.5000m, "a Prova Objetiva nasce com este peso em EtapasIniciais — é o valor que o envelope das duas versões carrega");
+    }
+
+    // A fase que homologa as inscrições escolhe o motivo desfavorável que a condição da regra aponta.
+    private static async Task EscolherOMotivoDaHomologacaoAsync(Cenario c)
+    {
+        Guid motivoId = await MotivosDaHomologacaoSemeados.NoCadastroAsync(c.Api.Services, HomologacaoDasInscricoesDeTeste.MotivoSemResultadoNoInep);
+        Guid faseId = await LugaresDoProcessoDeTeste.FaseAsync(c.Api.Services, c.Ctx.ProcessoId, "RESULTADO_PRELIMINAR");
+        await ExecutarPassoAsync(() => c.Ctx.PutMotivoNaFaseAsync(faseId, motivoId), HttpStatusCode.NoContent, "PUT motivo na fase", "/fases/{fase}/motivos-de-decisao/{motivo}");
     }
 
     // Passos 3, 4 e 4b — atendimento especializado (listas vazias: o checklist só exige AtendimentoEspecializado

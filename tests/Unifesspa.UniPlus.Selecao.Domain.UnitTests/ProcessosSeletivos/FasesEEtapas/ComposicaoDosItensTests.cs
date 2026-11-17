@@ -24,7 +24,7 @@ public sealed class ComposicaoDosItensTests
     private static readonly DateTimeOffset Inicio = new(2026, 3, 2, 12, 0, 0, TimeSpan.Zero);
 
     private static IReadOnlyList<ItemConformidade> Itens(ProcessoSeletivo processo) =>
-        ItensDoCronograma.Avaliar(processo.Declaracao(), CadastrosDeTeste.Padrao);
+        ItensDoCronograma.Avaliar(processo.Declaracao(), CadastrosDeTeste.Para(processo));
 
     private static string[] Pendentes(IReadOnlyList<ItemConformidade> itens) => [.. itens.Where(static item => !item.Ok).Select(static item => item.Codigo)];
 

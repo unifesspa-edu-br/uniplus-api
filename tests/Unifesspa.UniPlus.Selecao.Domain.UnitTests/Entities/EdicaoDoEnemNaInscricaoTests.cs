@@ -53,7 +53,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
             obrigatoriedade ?? Obrigatoriedade.Sempre, exibicao, "PESSOAL", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoDoFatoDeTeste.Descricao, OrigemValoresColeta.OpcoesDoProcesso, etapaCodigo: secao).Value!;
 
     private static bool ItemOk(ProcessoSeletivo processo, string codigo) =>
-        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao)
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
             .Single(i => i.Codigo == codigo).Ok;
 
     private static PredicadoDnf SeCasado() =>
@@ -122,7 +122,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
         processo.DefinirClassificacao(ClassificacaoImportadaDoEnem()).IsSuccess.Should().BeTrue();
 
         IReadOnlyList<ItemConformidade> itens =
-            ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao);
+            ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo));
 
         itens.Should().NotContain(i => i.Codigo == ItemDasEdicoes);
         itens.Single(i => i.Codigo == ItemDoCampo).Ok.Should().BeTrue();
@@ -196,7 +196,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
         processo.DefinirClassificacao(ClassificacaoImportadaSemEnem()).IsSuccess.Should().BeTrue();
         processo.DefinirItens([CampoDaEdicao()]).IsSuccess.Should().BeTrue();
 
-        CondicoesDaCanonicalizacao.Causas(processo.Declaracao(), CadastrosDeTeste.Padrao).Select(static causa => causa.Error.Code)
+        CondicoesDaCanonicalizacao.Causas(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Select(static causa => causa.Error.Code)
             .Should().Equal(FormularioProcessoErrorCodes.EdicaoDoEnemSemClassificacaoEnem);
     }
 
@@ -213,7 +213,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
         processo.DefinirTermos([TermoSemFormaDeAceite()]).IsSuccess.Should().BeTrue();
         processo.DefinirClassificacao(ClassificacaoImportadaSemEnem()).IsSuccess.Should().BeTrue();
 
-        List<string> vermelhos = [.. ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao)
+        List<string> vermelhos = [.. ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
             .Where(static i => !i.Ok).Select(static i => i.Codigo)];
 
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code

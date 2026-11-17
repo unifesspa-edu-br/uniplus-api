@@ -15,17 +15,13 @@ internal static class MotivosDaIsencaoDeTeste
     private static readonly SentidoDoMotivo[] Sentidos = [SentidoDoMotivo.Favoravel, SentidoDoMotivo.Desfavoravel];
 
     /// <summary>A escolha que cobre o processo na versão que nasce com a publicação.</summary>
-    public static MotivosEscolhidos Cobrindo(ProcessoSeletivo processo)
+    public static IEnumerable<MotivoEscolhidoComOrigem> Escolha(ProcessoSeletivo processo)
     {
         ArgumentNullException.ThrowIfNull(processo);
 
         IReadOnlyList<string> fundamentos = [.. processo.ConfiguracaoTaxaInscricao?.Fundamentos.Select(static f => f.ToCodigo()) ?? []];
-        List<MotivoEscolhidoComOrigem> escolha =
-        [
-            .. LugaresQueDeclaramOTipo(processo).SelectMany(lugar => EscolherEm(processo, lugar, fundamentos)),
-        ];
 
-        return new MotivosEscolhidos(escolha, numeroDaVersaoQueNasce: 1);
+        return [.. LugaresQueDeclaramOTipo(processo).SelectMany(lugar => EscolherEm(processo, lugar, fundamentos))];
     }
 
     private static IEnumerable<LugarDaDecisao> LugaresQueDeclaramOTipo(ProcessoSeletivo processo) =>

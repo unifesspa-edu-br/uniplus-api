@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
@@ -17,8 +18,12 @@ internal static class CadastrosDeTeste
 
     private static readonly MotivosEscolhidos SemMotivosEscolhidos = new([], numeroDaVersaoQueNasce: 1);
 
-    /// <summary>Com calendário vigente, com os fatos de modalidade do catálogo, sem tipo de ato único, sem consolidação, sem proteção vigente e sem motivo escolhido.</summary>
+    /// <summary>Com calendário vigente, com os fatos de modalidade do catálogo, sem tipo de ato único, sem consolidação, sem proteção vigente e sem motivo escolhido: serve ao teste que não tem processo ou cujo processo não declara decisão que exija motivo.</summary>
     public static CadastrosDaConfiguracao Padrao { get; } = Com();
+
+    /// <summary>Os cadastros padrão, com os motivos que cobrem as decisões que o processo declara.</summary>
+    public static CadastrosDaConfiguracao Para(ProcessoSeletivo processo) =>
+        Com(motivosEscolhidos: MotivosDoProcessoDeTeste.Cobrindo(processo));
 
     /// <summary>Os cadastros padrão, trocando só o que o cenário declara.</summary>
     public static CadastrosDaConfiguracao Com(

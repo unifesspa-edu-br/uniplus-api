@@ -117,7 +117,7 @@ internal sealed class CenarioDeCongelamentoPorAssunto
     }
 
     private CadastrosDaConfiguracao Cadastros() =>
-        CadastrosDeTeste.Com(contagemDePrazos: _contagem, tiposDeAtoUnicos: _tipos, corretores: _corretores ?? CorretoresDeTeste.DoProcesso(_processo), motivosEscolhidos: _motivos);
+        CadastrosDeTeste.Com(contagemDePrazos: _contagem, tiposDeAtoUnicos: _tipos, corretores: _corretores ?? CorretoresDeTeste.DoProcesso(_processo), motivosEscolhidos: _motivos ?? MotivosDoProcessoDeTeste.Cobrindo(_processo));
 
     private sealed record Defeito(Action<CenarioDeCongelamentoPorAssunto> Aplicar);
 
@@ -166,7 +166,7 @@ internal sealed class CenarioDeCongelamentoPorAssunto
         LugarDaDecisao lugar = ProcessoParaMotivos.LugarDaFase(_processo, "INSCRICAO");
         MotivoDoProcesso escolhido = ProcessoParaMotivos.Escolha(_processo, lugar, origem, _versaoQueNasce);
         origem.Desativar();
-        _motivos = new MotivosEscolhidos([new MotivoEscolhidoComOrigem(escolhido, origem)], _versaoQueNasce);
+        _motivos = new MotivosEscolhidos([.. MotivosDoProcessoDeTeste.Escolha(_processo), new MotivoEscolhidoComOrigem(escolhido, origem)], _versaoQueNasce);
     }
 
     private FaseCronograma FaseDoRecurso() => _processo.CronogramaFases.Single(static f => f.Codigo == CodigoDaFaseDoRecurso);

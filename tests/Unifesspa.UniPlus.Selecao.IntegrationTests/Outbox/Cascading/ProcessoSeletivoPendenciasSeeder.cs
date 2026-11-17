@@ -258,6 +258,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
     {
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         await db.ProcessosSeletivos.AddAsync(processo);
+        await MotivosDaHomologacaoSemeados.EscolherAsync(db, processo);
 
         DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         Result confirmarResult = documento.Confirmar(1024, HashFixo, TimeProvider.System);
@@ -275,6 +276,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
     {
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         await db.ProcessosSeletivos.AddAsync(processo);
+        await MotivosDaHomologacaoSemeados.EscolherAsync(db, processo);
 
         DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         await db.DocumentosAPublicar.AddAsync(documento);
