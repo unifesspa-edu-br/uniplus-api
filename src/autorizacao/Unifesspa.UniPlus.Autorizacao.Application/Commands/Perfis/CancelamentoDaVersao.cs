@@ -39,6 +39,13 @@ public sealed class CancelamentoDaVersao
             return GravacaoDaOperacao<PerfilDto>.Sem(Result<PerfilDto>.Failure(PerfilHandlerErros.AutorNaoIdentificado()));
         }
 
+        return await CancelarComPerfilExclusivoAsync(perfilId, versaoId, motivo, autor, verificador, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>O cancelamento na operação que tem o perfil só para si. O perfil que não existe não tem autor de versão: quem não mantém perfis recebe a mesma recusa do perfil que existe.</summary>
+    private async Task<GravacaoDaOperacao<PerfilDto>> CancelarComPerfilExclusivoAsync(
+        Guid perfilId, Guid versaoId, string? motivo, Identidade autor, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
+    {
         GravacaoDaOperacao<PerfilDto> gravacao = await _operacao
             .ExecutarComAvisosAsync(
                 perfilId,
@@ -51,7 +58,6 @@ public sealed class CancelamentoDaVersao
             : gravacao;
     }
 
-    // O perfil que não existe não tem autor de versão: quem não mantém perfis recebe a mesma recusa do perfil que existe.
     private static async Task<GravacaoDaOperacao<PerfilDto>> RecusarSemPermissaoAsync(
         GravacaoDaOperacao<PerfilDto> naoEncontrado, Guid perfilId, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
     {
