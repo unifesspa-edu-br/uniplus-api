@@ -56,16 +56,23 @@ internal sealed class TipoAtoPublicadoApoio(PublicacoesEndpointFixture fixture)
         return await client.SendAsync(request);
     }
 
+    /// <summary>Cadastra o tipo pelo POST e devolve o id; o cadastro tem de responder 201.</summary>
+    internal static async Task<Guid> CadastrarAsync(HttpClient client, CorpoDoTipoDeAto corpo)
+    {
+        HttpResponseMessage response = await PostAsync(client, corpo);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        return JsonSerializer.Deserialize<Guid>(await response.Content.ReadAsStringAsync());
+    }
+
     internal async Task<Guid> CriarAsync(
         string codigo, string inicio = Inicio, string? fim = null, bool congela = true)
     {
         using HttpClient client = fixture.Factory.CreateClient();
-        HttpResponseMessage response = await PostAsync(
+
+        return await CadastrarAsync(
             client,
             new CorpoDoTipoDeAto(codigo) { VigenciaInicio = inicio, VigenciaFim = fim, CongelaConfiguracao = congela });
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
-
-        return JsonSerializer.Deserialize<Guid>(await response.Content.ReadAsStringAsync());
     }
 
     /// <summary>Código único no formato UPPER_SNAKE, para não colidir entre testes.</summary>

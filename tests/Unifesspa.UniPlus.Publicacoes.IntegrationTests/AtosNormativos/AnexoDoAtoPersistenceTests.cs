@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 using Npgsql;
 
@@ -12,6 +13,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Publicacoes.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Os anexos do ato contra Postgres real: persistem na ordem enviada e, como o ato,
@@ -22,16 +24,13 @@ using Unifesspa.UniPlus.Publicacoes.IntegrationTests.Infrastructure;
     "Performance",
     "CA1515:Consider making public types internal",
     Justification = "xUnit collection fixture exige tipo de teste público.")]
-[SuppressMessage(
-    "Security",
-    "CA2100:Review SQL queries for security vulnerabilities",
-    Justification = "SQL cru escrito no próprio teste, com identificadores gerados nele — é o que se quer exercitar: a trava do banco contra escrita fora do agregado.")]
 public sealed class AnexoDoAtoPersistenceTests
 {
     private const string HashValido = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
     private const string OutroHash = "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210";
     private const string RestrictViolation = "23001";
     private const string UniqueViolation = "23505";
+    private static readonly AtoNormativoDeTeste Base = new() { Numero = null };
 
     private readonly PublicacoesDbFixture _fixture;
 
@@ -43,9 +42,10 @@ public sealed class AnexoDoAtoPersistenceTests
     [Fact(DisplayName = "O ato persiste com os anexos, e a leitura os devolve na ordem enviada")]
     public async Task Insert_PersisteAnexosNaOrdemEnviada()
     {
-        AtoNormativo ato = Novo(
-            ("Anexo II.pdf", "application/pdf", HashValido),
-            ("Anexo I.pdf", "application/pdf", OutroHash));
+        AtoNormativo ato = (Base with
+        {
+            Anexos = [("Anexo II.pdf", "application/pdf", HashValido), ("Anexo I.pdf", "application/pdf", OutroHash)],
+        }).Registrar();
         await Gravar(ato);
 
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
@@ -60,11 +60,11 @@ public sealed class AnexoDoAtoPersistenceTests
     [Fact(DisplayName = "UPDATE cru no anexo é bloqueado pelo trigger append-only")]
     public async Task Update_Anexo_Bloqueado()
     {
-        AtoNormativo ato = Novo(("Anexo I.pdf", "application/pdf", HashValido));
+        AtoNormativo ato = (Base with { Anexos = [("Anexo I.pdf", "application/pdf", HashValido)] }).Registrar();
         await Gravar(ato);
 
         PostgresException erro = await Assert.ThrowsAsync<PostgresException>(() => ExecutarCruAsync(
-            $"UPDATE publicacoes.anexos_do_ato SET hash = '{OutroHash}' WHERE ato_id = '{ato.Id}'"));
+            $"UPDATE publicacoes.anexos_do_ato SET hash = {OutroHash} WHERE ato_id = {ato.Id}"));
 
         erro.SqlState.Should().Be(RestrictViolation);
     }
@@ -72,11 +72,11 @@ public sealed class AnexoDoAtoPersistenceTests
     [Fact(DisplayName = "DELETE cru no anexo é bloqueado pelo trigger append-only")]
     public async Task Delete_Anexo_Bloqueado()
     {
-        AtoNormativo ato = Novo(("Anexo I.pdf", "application/pdf", HashValido));
+        AtoNormativo ato = (Base with { Anexos = [("Anexo I.pdf", "application/pdf", HashValido)] }).Registrar();
         await Gravar(ato);
 
         PostgresException erro = await Assert.ThrowsAsync<PostgresException>(() => ExecutarCruAsync(
-            $"DELETE FROM publicacoes.anexos_do_ato WHERE ato_id = '{ato.Id}'"));
+            $"DELETE FROM publicacoes.anexos_do_ato WHERE ato_id = {ato.Id}"));
 
         erro.SqlState.Should().Be(RestrictViolation);
     }
@@ -85,7 +85,7 @@ public sealed class AnexoDoAtoPersistenceTests
     public async Task Truncate_DoAnexo_Bloqueado()
     {
         PostgresException erro = await Assert.ThrowsAsync<PostgresException>(() => ExecutarCruAsync(
-            "TRUNCATE publicacoes.anexos_do_ato"));
+            $"TRUNCATE publicacoes.anexos_do_ato"));
 
         erro.SqlState.Should().Be(RestrictViolation);
     }
@@ -93,13 +93,13 @@ public sealed class AnexoDoAtoPersistenceTests
     [Fact(DisplayName = "INSERT cru de anexo em ato gravado em transação anterior é recusado")]
     public async Task Insert_AnexoEmAtoDeTransacaoAnterior_Recusado()
     {
-        AtoNormativo ato = Novo();
+        AtoNormativo ato = Base.Registrar();
         await Gravar(ato);
 
         PostgresException erro = await Assert.ThrowsAsync<PostgresException>(() => ExecutarCruAsync(
             $"""
             INSERT INTO publicacoes.anexos_do_ato (id, ato_id, ordem, nome, tipo_midia, hash)
-            VALUES ('{Guid.CreateVersion7()}', '{ato.Id}', 0, 'Tardio.pdf', 'application/pdf', '{OutroHash}')
+            VALUES ({Guid.CreateVersion7()}, {ato.Id}, 0, 'Tardio.pdf', 'application/pdf', {OutroHash})
             """));
 
         erro.SqlState.Should().Be(RestrictViolation);
@@ -108,25 +108,9 @@ public sealed class AnexoDoAtoPersistenceTests
     [Fact(DisplayName = "INSERT cru de anexo na mesma transação que inseriu o ato passa")]
     public async Task Insert_AnexoNaTransacaoDoAto_Passa()
     {
-        AtoNormativo ato = Novo();
+        AtoNormativo ato = Base.Registrar();
 
-        await using NpgsqlConnection conexao = new(_fixture.ConnectionString);
-        await conexao.OpenAsync();
-        await using NpgsqlTransaction transacao = await conexao.BeginTransactionAsync();
-        await using NpgsqlCommand comando = conexao.CreateCommand();
-        comando.Transaction = transacao;
-        comando.CommandText =
-            $"""
-            INSERT INTO publicacoes.atos_normativos
-                (id, orgao, serie, ano, numero, tipo_codigo, congela_configuracao, efeito_irreversivel,
-                 unico_por_objeto, data_do_ato, documento_hash, assinante, publicado_em)
-            VALUES ('{ato.Id}', 'CEPS', 'EDITAL', 2026, NULL, 'EDITAL_ABERTURA', false, false, false,
-                    DATE '2026-03-13', '{HashValido}', 'Jairo Belchior', now());
-            INSERT INTO publicacoes.anexos_do_ato (id, ato_id, ordem, nome, tipo_midia, hash)
-            VALUES ('{Guid.CreateVersion7()}', '{ato.Id}', 0, 'Anexo I.pdf', 'application/pdf', '{OutroHash}');
-            """;
-        await comando.ExecuteNonQueryAsync();
-        await transacao.CommitAsync();
+        await ExecutarNumaTransacaoAsync(InsertDoAtoCru(ato.Id), InsertDoAnexoCru(ato.Id));
 
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         (await ctx.AnexosDoAto.CountAsync(a => a.AtoId == ato.Id)).Should().Be(1);
@@ -135,7 +119,7 @@ public sealed class AnexoDoAtoPersistenceTests
     [Fact(DisplayName = "Dois anexos com o mesmo nome no mesmo ato colidem no índice único")]
     public async Task Insert_NomeRepetido_Colide()
     {
-        AtoNormativo ato = Novo(("Anexo I.pdf", "application/pdf", HashValido));
+        AtoNormativo ato = (Base with { Anexos = [("Anexo I.pdf", "application/pdf", HashValido)] }).Registrar();
         AnexoDoAto repetido = AnexoDoAto.Criar(ato, 1, "Anexo I.pdf", "application/pdf", OutroHash);
 
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
@@ -165,30 +149,37 @@ public sealed class AnexoDoAtoPersistenceTests
         await ctx.SaveChangesAsync();
     }
 
-    private async Task ExecutarCruAsync(string sql)
+    private static FormattableString InsertDoAtoCru(Guid atoId) =>
+        $"""
+        INSERT INTO publicacoes.atos_normativos
+            (id, orgao, serie, ano, numero, tipo_codigo, congela_configuracao, efeito_irreversivel,
+             unico_por_objeto, data_do_ato, documento_hash, assinante, publicado_em)
+        VALUES ({atoId}, 'CEPS', 'EDITAL', 2026, NULL, 'EDITAL_ABERTURA', false, false, false,
+                DATE '2026-03-13', {HashValido}, {PersonasDeTeste.NomeKevinCarvalho}, now())
+        """;
+
+    private static FormattableString InsertDoAnexoCru(Guid atoId) =>
+        $"""
+        INSERT INTO publicacoes.anexos_do_ato (id, ato_id, ordem, nome, tipo_midia, hash)
+        VALUES ({Guid.CreateVersion7()}, {atoId}, 0, 'Anexo I.pdf', 'application/pdf', {OutroHash})
+        """;
+
+    private async Task ExecutarCruAsync(FormattableString sql)
     {
-        await using NpgsqlConnection conexao = new(_fixture.ConnectionString);
-        await conexao.OpenAsync();
-        await using NpgsqlCommand comando = conexao.CreateCommand();
-        comando.CommandText = sql;
-        await comando.ExecuteNonQueryAsync();
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await ctx.Database.ExecuteSqlAsync(sql);
     }
 
-    private static AtoNormativo Novo(params (string Nome, string TipoMidia, string Hash)[] anexos) =>
-        AtoNormativo.Registrar(
-            Guid.CreateVersion7(),
-            orgao: "CEPS",
-            serie: "EDITAL",
-            ano: 2026,
-            numero: null,
-            tipoCodigo: "EDITAL_ABERTURA",
-            congelaConfiguracao: false,
-            efeitoIrreversivel: false,
-            unicoPorObjeto: false,
-            dataDoAto: new DateOnly(2026, 3, 13),
-            documentoHash: HashValido,
-            assinante: "Jairo Belchior",
-            publicadoEm: new DateTimeOffset(2026, 3, 13, 19, 0, 0, TimeSpan.Zero),
-            versaoDoObjeto: null,
-            anexos: anexos);
+    private async Task ExecutarNumaTransacaoAsync(params FormattableString[] comandos)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using IDbContextTransaction transacao = await ctx.Database.BeginTransactionAsync();
+
+        foreach (FormattableString sql in comandos)
+        {
+            await ctx.Database.ExecuteSqlAsync(sql);
+        }
+
+        await transacao.CommitAsync();
+    }
 }

@@ -54,6 +54,29 @@ public sealed class FronteiraDoModuloTests
           AND column_name = ANY(@proibidas)
         """;
 
+    private const string CanarioDeColunaDeDominioAlheio =
+        "CREATE TABLE publicacoes.canario_dominio (id uuid PRIMARY KEY, processo_seletivo_id uuid)";
+
+    private const string CanarioDeChaveEstrangeiraCrossSchema = """
+        CREATE SCHEMA canario_vizinho;
+        CREATE TABLE canario_vizinho.alvo (id uuid PRIMARY KEY);
+        CREATE TABLE publicacoes.canario_fk (
+            id uuid PRIMARY KEY,
+            alvo_id uuid NOT NULL REFERENCES canario_vizinho.alvo (id)
+        )
+        """;
+
+    private const string ListaAlvosDasChavesDoVinculo = """
+        SELECT alvo.relname
+        FROM pg_constraint con
+        JOIN pg_class rel ON rel.oid = con.conrelid
+        JOIN pg_namespace ns ON ns.oid = rel.relnamespace
+        JOIN pg_class alvo ON alvo.oid = con.confrelid
+        WHERE con.contype = 'f'
+          AND ns.nspname = 'publicacoes'
+          AND rel.relname = 'vinculos_do_ato_com_entidade'
+        """;
+
     private const string ListaChavesEstrangeirasCrossSchema = """
         SELECT con.conname
         FROM pg_constraint con
@@ -76,23 +99,12 @@ public sealed class FronteiraDoModuloTests
     [Fact(DisplayName = "ADR-0105: o schema publicacoes não tem coluna de domínio alheio (com canário)")]
     public async Task Schema_NaoTemColunaDeDominioAlheio()
     {
-        await using NpgsqlConnection conexao = new(_fixture.ConnectionString);
-        await conexao.OpenAsync();
+        await using NpgsqlConnection conexao = await AbrirConexaoAsync();
 
-        // Canário: a coluna proibida, plantada — o banco a aceita, e o detector a acusa.
-        await using (NpgsqlTransaction canario = await conexao.BeginTransactionAsync())
-        {
-            await ExecutarAsync(
-                conexao,
-                canario,
-                "CREATE TABLE publicacoes.canario_dominio (id uuid PRIMARY KEY, processo_seletivo_id uuid)");
-
-            long comCanario = await ContarColunasDeDominioAsync(conexao, canario);
-            comCanario.Should().Be(
-                1, "sem acusar a violação plantada, a ausência de achados sobre o schema real não significaria nada");
-
-            await canario.RollbackAsync();
-        }
+        long comCanario = await DetectarNoCanarioAsync(
+            conexao, CanarioDeColunaDeDominioAlheio, canario => ContarColunasDeDominioAsync(conexao, canario));
+        comCanario.Should().Be(
+            1, "sem acusar a violação plantada, a ausência de achados sobre o schema real não significaria nada");
 
         long noSchemaReal = await ContarColunasDeDominioAsync(conexao, transacao: null);
 
@@ -102,36 +114,20 @@ public sealed class FronteiraDoModuloTests
             + "o vínculo com a entidade é um par opaco, não uma coluna de domínio");
     }
 
+    /// <remarks>
+    /// O canário prova as duas coisas de que a asserção depende: que o banco aceitaria a chave
+    /// estrangeira (com schema por módulo, ADR-0097, nada na física a impede) e que a consulta a enxergaria.
+    /// </remarks>
     [Fact(DisplayName = "ADR-0061: nenhuma chave estrangeira de publicacoes atravessa outro schema (com canário)")]
     public async Task Schema_NaoTemChaveEstrangeiraCrossSchema()
     {
-        await using NpgsqlConnection conexao = new(_fixture.ConnectionString);
-        await conexao.OpenAsync();
+        await using NpgsqlConnection conexao = await AbrirConexaoAsync();
 
-        // Canário: a chave estrangeira cross-schema, plantada. Prova as duas coisas de
-        // que a asserção depende — que o banco a aceitaria (com schema por módulo,
-        // ADR-0097, nada na física a impede) e que a consulta a enxergaria.
-        await using (NpgsqlTransaction canario = await conexao.BeginTransactionAsync())
-        {
-            await ExecutarAsync(conexao, canario, "CREATE SCHEMA canario_vizinho");
-            await ExecutarAsync(conexao, canario, "CREATE TABLE canario_vizinho.alvo (id uuid PRIMARY KEY)");
-            await ExecutarAsync(
-                conexao,
-                canario,
-                """
-                CREATE TABLE publicacoes.canario_fk (
-                    id uuid PRIMARY KEY,
-                    alvo_id uuid NOT NULL REFERENCES canario_vizinho.alvo (id)
-                )
-                """);
-
-            IReadOnlyList<string> comCanario = await ListarChavesCrossSchemaAsync(conexao, canario);
-            comCanario.Should().ContainSingle(
-                "o Postgres aceita a chave estrangeira cross-schema — a ausência dela é decisão de "
-                + "modelagem (ADR-0061), não impedimento físico; e o detector precisa enxergá-la");
-
-            await canario.RollbackAsync();
-        }
+        IReadOnlyList<string> comCanario = await DetectarNoCanarioAsync(
+            conexao, CanarioDeChaveEstrangeiraCrossSchema, canario => ListarChavesCrossSchemaAsync(conexao, canario));
+        comCanario.Should().ContainSingle(
+            "o Postgres aceita a chave estrangeira cross-schema — a ausência dela é decisão de "
+            + "modelagem (ADR-0061), não impedimento físico; e o detector precisa enxergá-la");
 
         IReadOnlyList<string> noSchemaReal = await ListarChavesCrossSchemaAsync(conexao, transacao: null);
 
@@ -143,34 +139,36 @@ public sealed class FronteiraDoModuloTests
     [Fact(DisplayName = "ADR-0105: a única chave estrangeira do vínculo aponta para o próprio ato")]
     public async Task Vinculo_SoTemChaveEstrangeiraParaOAto()
     {
-        await using NpgsqlConnection conexao = new(_fixture.ConnectionString);
-        await conexao.OpenAsync();
-
+        await using NpgsqlConnection conexao = await AbrirConexaoAsync();
         await using NpgsqlCommand comando = conexao.CreateCommand();
-        comando.CommandText = """
-            SELECT alvo.relname
-            FROM pg_constraint con
-            JOIN pg_class rel ON rel.oid = con.conrelid
-            JOIN pg_namespace ns ON ns.oid = rel.relnamespace
-            JOIN pg_class alvo ON alvo.oid = con.confrelid
-            WHERE con.contype = 'f'
-              AND ns.nspname = 'publicacoes'
-              AND rel.relname = 'vinculos_do_ato_com_entidade'
-            """;
+        comando.CommandText = ListaAlvosDasChavesDoVinculo;
 
-        List<string> alvos = [];
-        await using (NpgsqlDataReader leitor = await comando.ExecuteReaderAsync())
-        {
-            while (await leitor.ReadAsync())
-            {
-                alvos.Add(leitor.GetString(0));
-            }
-        }
+        List<string> alvos = await LerNomesAsync(comando);
 
         alvos.Should().ContainSingle().Which.Should().Be(
             "atos_normativos",
             "o vínculo aponta para o ato e para mais nada: o objeto do outro lado é opaco, "
             + "e uma chave estrangeira para ele reintroduziria o acoplamento que a ADR-0105 recusa");
+    }
+
+    private async Task<NpgsqlConnection> AbrirConexaoAsync()
+    {
+        NpgsqlConnection conexao = new(_fixture.ConnectionString);
+        await conexao.OpenAsync();
+        return conexao;
+    }
+
+    /// <summary>Planta a violação numa transação, roda o detector sobre ela e desfaz: o DDL é transacional, e o rollback não deixa rastro no schema real.</summary>
+    private static async Task<T> DetectarNoCanarioAsync<T>(
+        NpgsqlConnection conexao, string ddlDoCanario, Func<NpgsqlTransaction, Task<T>> detectar)
+    {
+        await using NpgsqlTransaction canario = await conexao.BeginTransactionAsync();
+        await ExecutarAsync(conexao, canario, ddlDoCanario);
+
+        T achado = await detectar(canario);
+
+        await canario.RollbackAsync();
+        return achado;
     }
 
     private static async Task<long> ContarColunasDeDominioAsync(NpgsqlConnection conexao, NpgsqlTransaction? transacao)
@@ -190,6 +188,11 @@ public sealed class FronteiraDoModuloTests
         comando.Transaction = transacao;
         comando.CommandText = ListaChavesEstrangeirasCrossSchema;
 
+        return await LerNomesAsync(comando);
+    }
+
+    private static async Task<List<string>> LerNomesAsync(NpgsqlCommand comando)
+    {
         List<string> nomes = [];
         await using NpgsqlDataReader leitor = await comando.ExecuteReaderAsync();
         while (await leitor.ReadAsync())

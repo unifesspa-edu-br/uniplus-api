@@ -100,14 +100,19 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
 
         if (contaId is not null)
         {
-            request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-            request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, contaId);
-            if (papel is not null)
-            {
-                request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, papel);
-            }
+            IdentificarComo(request, contaId, papel);
         }
 
         return await client.SendAsync(request);
+    }
+
+    private static void IdentificarComo(HttpRequestMessage request, string contaId, string? papel)
+    {
+        request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
+        request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, contaId);
+        if (papel is not null)
+        {
+            request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, papel);
+        }
     }
 }
