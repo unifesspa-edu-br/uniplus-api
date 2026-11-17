@@ -5,7 +5,6 @@ using Microsoft.Extensions.Logging;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
-using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// A rotina das janelas de migração: materializa o fim das que venceram ou concluíram e emite os lembretes de 48 e de 24
@@ -68,25 +67,9 @@ public sealed partial class ProcessamentoDasJanelas
         return processadas;
     }
 
-    private async Task<int> ProcessarAsync(Guid perfilId, CancellationToken cancellationToken)
-    {
-        try
-        {
-            Result<bool> resultado = await _bus.Send(new MaterializarJanelaVencidaCommand(perfilId), cancellationToken).ConfigureAwait(false);
-            if (resultado.IsFailure)
-            {
-                LogFalhaAoProcessar(_logger, perfilId, null);
-            }
-
-            return resultado.IsSuccess && resultado.Value ? 1 : 0;
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            LogFalhaAoProcessar(_logger, perfilId, ex);
-
-            return 0;
-        }
-    }
+    private Task<int> ProcessarAsync(Guid perfilId, CancellationToken cancellationToken) =>
+        ProcessamentoDoPerfil.ExecutarAsync(
+            _bus, new MaterializarJanelaVencidaCommand(perfilId), excecao => LogFalhaAoProcessar(_logger, perfilId, excecao), cancellationToken);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Outra instância processa as janelas de migração; esta execução foi pulada")]
     private static partial void LogOutraInstanciaNaRotina(ILogger logger);
