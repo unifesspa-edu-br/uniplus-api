@@ -58,7 +58,7 @@ internal static class KafkaSecurityValidation
     private static bool TryParseProtocol(string? texto, out SecurityProtocol protocolo)
     {
         protocolo = SecurityProtocol.Plaintext;
-        return string.IsNullOrWhiteSpace(texto) || KafkaSecurity.TryParseSecurityProtocol(texto, out protocolo);
+        return string.IsNullOrWhiteSpace(texto) || KafkaSecurity.TryParseByName(texto, out protocolo);
     }
 
     private static string ProtocoloInvalido(KafkaSecurityFields campos, string? securityProtocol) =>
@@ -113,7 +113,7 @@ internal static class KafkaSecurityValidation
             return SaslMechanismKind.Ausente;
         }
 
-        if (!KafkaSecurity.TryParseSaslMechanism(saslMechanism, out SaslMechanism mecanismo))
+        if (!KafkaSecurity.TryParseByName(saslMechanism, out SaslMechanism mecanismo))
         {
             return SaslMechanismKind.Desconhecido;
         }
