@@ -36,10 +36,12 @@ public sealed class VinculoDiscentePersistenceTests : IClassFixture<VinculoDisce
     private static VinculoDiscente NovoVinculo(long idSigaa, string cpfValor) =>
         VinculoDiscente.Criar(
             VinculoDiscenteSnapshot.Criar(
-                idSigaa,
-                matricula: idSigaa.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                cpf: Cpf.Criar(cpfValor).Match(cpf => cpf, erro => throw new InvalidOperationException(erro.Code)),
-                nome: "Discente de Teste",
+                IdentificacaoDoDiscente.Criar(
+                        idSigaa,
+                        idSigaa.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                        Cpf.Criar(cpfValor).Match(cpf => cpf, erro => throw new InvalidOperationException(erro.Code)),
+                        "Discente de Teste")
+                    .Match(i => i, erro => throw new InvalidOperationException(erro.Code)),
                 nivel: "G",
                 curso: CursoSigaaSnapshot.Criar(
                     id: 1,
@@ -74,8 +76,8 @@ public sealed class VinculoDiscentePersistenceTests : IClassFixture<VinculoDisce
 
         lido.Should().NotBeNull();
         lido!.Id.Should().Be(original.Id);
-        lido.Snapshot.Cpf.Valor.Should().Be(CpfValido);
-        lido.Snapshot.Nome.Should().Be(original.Snapshot.Nome);
+        lido.Snapshot.Identificacao.Cpf.Valor.Should().Be(CpfValido);
+        lido.Snapshot.Identificacao.Nome.Should().Be(original.Snapshot.Identificacao.Nome);
     }
 
     [Fact]
@@ -155,6 +157,6 @@ public sealed class VinculoDiscentePersistenceTests : IClassFixture<VinculoDisce
         VinculoDiscente? lido = await readRepository.ObterPorIdAsync(original.Id);
 
         lido.Should().NotBeNull();
-        lido!.Snapshot.Cpf.Valor.Should().Be(OutroCpfValido);
+        lido!.Snapshot.Identificacao.Cpf.Valor.Should().Be(OutroCpfValido);
     }
 }

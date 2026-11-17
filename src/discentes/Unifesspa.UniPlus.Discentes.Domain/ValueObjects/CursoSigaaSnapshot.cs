@@ -27,30 +27,46 @@ public sealed record CursoSigaaSnapshot
 
     public static Result<CursoSigaaSnapshot> Criar(int id, string? nome, string? codigoEmec, int unidadeId, string? unidadeNome)
     {
-        if (id <= 0)
-            return Result<CursoSigaaSnapshot>.Failure(new DomainError("Curso.IdInvalido", "Id do curso deve ser positivo."));
+        CursoSigaaSnapshot curso = new(id, nome ?? string.Empty, codigoEmec, unidadeId, unidadeNome ?? string.Empty);
 
-        if (string.IsNullOrWhiteSpace(nome))
-            return Result<CursoSigaaSnapshot>.Failure(new DomainError("Curso.NomeVazio", "Nome do curso é obrigatório."));
+        DomainError? erro = curso.ValidarObrigatorios() ?? curso.ValidarTamanhos();
 
-        if (unidadeId <= 0)
-            return Result<CursoSigaaSnapshot>.Failure(new DomainError("Curso.UnidadeIdInvalido", "Id da unidade deve ser positivo."));
+        return erro is null
+            ? Result<CursoSigaaSnapshot>.Success(curso)
+            : Result<CursoSigaaSnapshot>.Failure(erro);
+    }
 
-        if (string.IsNullOrWhiteSpace(unidadeNome))
-            return Result<CursoSigaaSnapshot>.Failure(new DomainError("Curso.UnidadeNomeVazio", "Nome da unidade é obrigatório."));
+    private DomainError? ValidarObrigatorios()
+    {
+        if (Id <= 0)
+            return new DomainError("Curso.IdInvalido", "Id do curso deve ser positivo.");
 
-        if (nome.Length > LimitesDaReplica.NomeDoCurso)
-            return Result<CursoSigaaSnapshot>.Failure(new DomainError(
-                DiscentesErrorCodes.Curso.NomeLongo, "Nome do curso excede o que a réplica comporta."));
+        if (string.IsNullOrWhiteSpace(Nome))
+            return new DomainError("Curso.NomeVazio", "Nome do curso é obrigatório.");
 
-        if (codigoEmec is { Length: > LimitesDaReplica.CodigoEmecDoCurso })
-            return Result<CursoSigaaSnapshot>.Failure(new DomainError(
-                DiscentesErrorCodes.Curso.CodigoEmecLongo, "Código e-MEC excede o que a réplica comporta."));
+        if (UnidadeId <= 0)
+            return new DomainError("Curso.UnidadeIdInvalido", "Id da unidade deve ser positivo.");
 
-        if (unidadeNome.Length > LimitesDaReplica.NomeDaUnidade)
-            return Result<CursoSigaaSnapshot>.Failure(new DomainError(
-                DiscentesErrorCodes.Curso.UnidadeNomeLongo, "Nome da unidade excede o que a réplica comporta."));
+        if (string.IsNullOrWhiteSpace(UnidadeNome))
+            return new DomainError("Curso.UnidadeNomeVazio", "Nome da unidade é obrigatório.");
 
-        return Result<CursoSigaaSnapshot>.Success(new CursoSigaaSnapshot(id, nome, codigoEmec, unidadeId, unidadeNome));
+        return null;
+    }
+
+    private DomainError? ValidarTamanhos()
+    {
+        if (Nome.Length > LimitesDaReplica.NomeDoCurso)
+            return new DomainError(
+                DiscentesErrorCodes.Curso.NomeLongo, "Nome do curso excede o que a réplica comporta.");
+
+        if (CodigoEmec is { Length: > LimitesDaReplica.CodigoEmecDoCurso })
+            return new DomainError(
+                DiscentesErrorCodes.Curso.CodigoEmecLongo, "Código e-MEC excede o que a réplica comporta.");
+
+        if (UnidadeNome.Length > LimitesDaReplica.NomeDaUnidade)
+            return new DomainError(
+                DiscentesErrorCodes.Curso.UnidadeNomeLongo, "Nome da unidade excede o que a réplica comporta.");
+
+        return null;
     }
 }

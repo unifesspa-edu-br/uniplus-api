@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Discentes.UnitTests.Sigaa;
 /// Origem de vínculos controlada pelo teste, no lugar da API do SIGAA.
 /// </summary>
 /// <remarks>
-/// Distingue as duas varreduras pelo recorte pedido, que é justamente o que o orquestrador
+/// Distingue as duas varreduras pelo filtro pedido, que é justamente o que o orquestrador
 /// decide: a primeira recorta por idade do vínculo, a segunda por situação.
 /// </remarks>
 internal sealed class OrigemSimulada : ISigaaVinculoDiscenteClient
@@ -21,7 +21,7 @@ internal sealed class OrigemSimulada : ISigaaVinculoDiscenteClient
     private VinculoDiscentePayload[] _porIngresso = [];
     private VinculoDiscentePayload[] _porSituacao = [];
 
-    /// <summary>Recortes que o orquestrador pediu, na ordem.</summary>
+    /// <summary>Filtros que o orquestrador pediu, na ordem.</summary>
     public List<FiltroDeVinculos> FiltrosPedidos { get; } = [];
 
     /// <summary>Faz a varredura por idade do vínculo falhar.</summary>
@@ -52,24 +52,32 @@ internal sealed class OrigemSimulada : ISigaaVinculoDiscenteClient
         FiltrosPedidos.Add(filtro);
 
         bool porIdade = filtro.AnoIngressoMinimo is not null;
+        ExigirQueAVarreduraNaoFalhe(porIdade);
 
+        VinculoDiscentePayload[] itens = porIdade ? _porIngresso : _porSituacao;
+        bool falhaNaPaginaSeguinte = porIdade && FalharAoBuscarPaginaSeguinte;
+
+        await Task.Yield();
+        yield return new PaginaDeVinculos(
+            itens, falhaNaPaginaSeguinte ? null : itens.Length, TemProximaPagina: falhaNaPaginaSeguinte);
+
+        ExigirQueAPaginaSeguinteNaoFalhe(falhaNaPaginaSeguinte);
+    }
+
+    private static void ExigirQueAPaginaSeguinteNaoFalhe(bool falha)
+    {
+        if (falha)
+        {
+            throw new InvalidOperationException("Origem indisponível ao buscar a página seguinte.");
+        }
+    }
+
+    private void ExigirQueAVarreduraNaoFalhe(bool porIdade)
+    {
         if ((porIdade && FalharNaPrimeiraVarredura) || (!porIdade && FalharNaSegundaVarredura))
         {
             throw new InvalidOperationException("Origem indisponível no meio da varredura.");
         }
-
-        VinculoDiscentePayload[] itens = porIdade ? _porIngresso : _porSituacao;
-
-        if (porIdade && FalharAoBuscarPaginaSeguinte)
-        {
-            await Task.Yield();
-            yield return new PaginaDeVinculos(itens, null, TemProximaPagina: true);
-
-            throw new InvalidOperationException("Origem indisponível ao buscar a página seguinte.");
-        }
-
-        await Task.Yield();
-        yield return new PaginaDeVinculos(itens, itens.Length, TemProximaPagina: false);
     }
 }
 
@@ -106,7 +114,7 @@ internal sealed class GravadorSimulado : IGravadorDeVinculos
                 new InvalidOperationException("Falha simulada na gravação do lote.")));
         }
 
-        IdentificadoresGravados.AddRange(lote.Select(v => v.Vinculo.Snapshot.IdDiscenteSigaa));
+        IdentificadoresGravados.AddRange(lote.Select(v => v.Vinculo.Snapshot.Identificacao.IdDiscenteSigaa));
 
         return Task.FromResult(new DesfechoDaGravacao(TratarTudoComoInalterado
             ? new ResultadoDaGravacao(0, 0, lote.Count)

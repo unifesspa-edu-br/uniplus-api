@@ -23,20 +23,36 @@ public sealed record SituacaoAcademicaSnapshot
 
     public static Result<SituacaoAcademicaSnapshot> Criar(int id, string? descricao, string? vinculo)
     {
-        if (id <= 0)
-            return Result<SituacaoAcademicaSnapshot>.Failure(new DomainError("SituacaoAcademica.IdInvalido", "Id da situação deve ser positivo."));
+        SituacaoAcademicaSnapshot situacao = new(id, descricao ?? string.Empty, vinculo);
 
-        if (string.IsNullOrWhiteSpace(descricao))
-            return Result<SituacaoAcademicaSnapshot>.Failure(new DomainError("SituacaoAcademica.DescricaoVazia", "Descrição da situação é obrigatória."));
+        DomainError? erro = situacao.ValidarObrigatorios() ?? situacao.ValidarTamanhos();
 
-        if (descricao.Length > LimitesDaReplica.DescricaoDaSituacao)
-            return Result<SituacaoAcademicaSnapshot>.Failure(new DomainError(
-                DiscentesErrorCodes.SituacaoAcademica.DescricaoLonga, "Descrição da situação excede o que a réplica comporta."));
+        return erro is null
+            ? Result<SituacaoAcademicaSnapshot>.Success(situacao)
+            : Result<SituacaoAcademicaSnapshot>.Failure(erro);
+    }
 
-        if (vinculo is { Length: > LimitesDaReplica.VinculoDaSituacao })
-            return Result<SituacaoAcademicaSnapshot>.Failure(new DomainError(
-                DiscentesErrorCodes.SituacaoAcademica.VinculoLongo, "Qualificador da situação excede o que a réplica comporta."));
+    private DomainError? ValidarObrigatorios()
+    {
+        if (Id <= 0)
+            return new DomainError("SituacaoAcademica.IdInvalido", "Id da situação deve ser positivo.");
 
-        return Result<SituacaoAcademicaSnapshot>.Success(new SituacaoAcademicaSnapshot(id, descricao, vinculo));
+        if (string.IsNullOrWhiteSpace(Descricao))
+            return new DomainError("SituacaoAcademica.DescricaoVazia", "Descrição da situação é obrigatória.");
+
+        return null;
+    }
+
+    private DomainError? ValidarTamanhos()
+    {
+        if (Descricao.Length > LimitesDaReplica.DescricaoDaSituacao)
+            return new DomainError(
+                DiscentesErrorCodes.SituacaoAcademica.DescricaoLonga, "Descrição da situação excede o que a réplica comporta.");
+
+        if (Vinculo is { Length: > LimitesDaReplica.VinculoDaSituacao })
+            return new DomainError(
+                DiscentesErrorCodes.SituacaoAcademica.VinculoLongo, "Qualificador da situação excede o que a réplica comporta.");
+
+        return null;
     }
 }

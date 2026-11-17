@@ -113,7 +113,7 @@ public sealed class VinculoDiscenteRepository : IVinculoDiscenteRepository
             return new ResultadoDaGravacao(0, 0, 0);
         }
 
-        long[] identificadores = [.. lote.Select(v => v.Vinculo.Snapshot.IdDiscenteSigaa)];
+        long[] identificadores = [.. lote.Select(v => v.Vinculo.Snapshot.Identificacao.IdDiscenteSigaa)];
 
         Dictionary<long, VinculoDiscenteRecord> existentes = await _dbContext.VinculosDiscentes
             .Where(r => identificadores.Contains(r.IdDiscenteSigaa))
@@ -126,7 +126,7 @@ public sealed class VinculoDiscenteRepository : IVinculoDiscenteRepository
 
         foreach (VinculoSincronizavel item in lote)
         {
-            long idDeOrigem = item.Vinculo.Snapshot.IdDiscenteSigaa;
+            long idDeOrigem = item.Vinculo.Snapshot.Identificacao.IdDiscenteSigaa;
 
             try
             {
@@ -182,8 +182,11 @@ public sealed class VinculoDiscenteRepository : IVinculoDiscenteRepository
         PeriodoIngresso ingresso = PeriodoIngresso.Criar(record.AnoIngresso, record.PeriodoIngresso)
             .Match(p => p, erro => throw new InvalidOperationException($"Período corrompido no registro persistido ({erro.Code})."));
 
-        VinculoDiscenteSnapshot snapshot = VinculoDiscenteSnapshot.Criar(
-                record.IdDiscenteSigaa, record.Matricula, cpf, record.Nome, record.Nivel, curso, situacao, ingresso)
+        IdentificacaoDoDiscente identificacao = IdentificacaoDoDiscente.Criar(
+                record.IdDiscenteSigaa, record.Matricula, cpf, record.Nome)
+            .Match(i => i, erro => throw new InvalidOperationException($"Identificação corrompida no registro persistido ({erro.Code})."));
+
+        VinculoDiscenteSnapshot snapshot = VinculoDiscenteSnapshot.Criar(identificacao, record.Nivel, curso, situacao, ingresso)
             .Match(s => s, erro => throw new InvalidOperationException($"Snapshot corrompido no registro persistido ({erro.Code})."));
 
         return VinculoDiscente.Reidratar(record.Id, snapshot);
@@ -204,12 +207,12 @@ public sealed class VinculoDiscenteRepository : IVinculoDiscenteRepository
         // permanece intocado — nunca fica com IdDiscenteSigaa/Matricula novos e o
         // CpfCiphertext antigo, uma mutação parcial que um SaveChangesAsync posterior
         // (das linhas que tiveram sucesso) persistiria por engano.
-        byte[] cpfCiphertext = await CifrarCpfAsync(entity.Snapshot.Cpf, cancellationToken).ConfigureAwait(false);
+        byte[] cpfCiphertext = await CifrarCpfAsync(entity.Snapshot.Identificacao.Cpf, cancellationToken).ConfigureAwait(false);
 
-        record.IdDiscenteSigaa = entity.Snapshot.IdDiscenteSigaa;
-        record.Matricula = entity.Snapshot.Matricula;
+        record.IdDiscenteSigaa = entity.Snapshot.Identificacao.IdDiscenteSigaa;
+        record.Matricula = entity.Snapshot.Identificacao.Matricula;
         record.CpfCiphertext = cpfCiphertext;
-        record.Nome = entity.Snapshot.Nome;
+        record.Nome = entity.Snapshot.Identificacao.Nome;
         record.Nivel = entity.Snapshot.Nivel;
         record.CursoId = entity.Snapshot.Curso.Id;
         record.CursoNome = entity.Snapshot.Curso.Nome;
