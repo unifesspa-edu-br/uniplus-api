@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
 
-using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -14,28 +13,5 @@ public readonly record struct CidadeDaUnidade(string? CodigoIbge, string? Nome, 
 
     internal bool Informada => !string.IsNullOrWhiteSpace(CodigoIbge);
 
-    internal IReadOnlyList<FieldError> Validar()
-    {
-        bool algumPresente = Informada
-            || !string.IsNullOrWhiteSpace(Nome)
-            || !string.IsNullOrWhiteSpace(Uf);
-        if (!algumPresente)
-        {
-            return [];
-        }
-
-        // Cada violação vai para o campo do payload que ela de fato descreve.
-        return [.. ReferenciaCidadeGeo.Validar(CodigoIbge, Nome, Uf).Errors
-            .Select(erro => new FieldError(CampoDoErro(erro.Error.Code), erro.Error))];
-    }
-
-    private static string CampoDoErro(string codigoErro) => codigoErro switch
-    {
-        CidadeReferenciaErrorCodes.NomeObrigatorio
-            or CidadeReferenciaErrorCodes.NomeCaractereInvalido
-            or CidadeReferenciaErrorCodes.NomeTamanho => "cidadeNome",
-        CidadeReferenciaErrorCodes.UfObrigatoria
-            or CidadeReferenciaErrorCodes.UfIncoerente => "cidadeUf",
-        _ => "cidadeCodigoIbge",
-    };
+    internal IReadOnlyList<FieldError> Validar() => ConferenciaDaCidade.Conferir(CodigoIbge, Nome, Uf);
 }
