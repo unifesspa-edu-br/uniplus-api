@@ -33,7 +33,7 @@ internal readonly record struct AtoEDocumentoConferidos(
 public sealed class ConferenciaDoAtoEDoDocumento(
     IDocumentoAPublicarRepository documentos,
     IProcessoSeletivoRepository processos,
-    ITipoAtoPublicadoReader tiposDeAto,
+    ConferenciaDoTipoDeAto tiposDeAto,
     LeituraDoInstanteDaPublicacao instantes)
 {
     internal async Task<Result<AtoEDocumentoConferidos>> ConferirAsync(
@@ -61,8 +61,8 @@ public sealed class ConferenciaDoAtoEDoDocumento(
     private async Task<Result<AtoEDocumentoConferidos>> ConferirOTipoNoDiaAsync(
         Guid processoId, DadosDoAto ato, DocumentoAPublicar documento, InstanteDaPublicacao instante, CancellationToken cancellationToken)
     {
-        Result<TipoAtoPublicadoView> tipoDoAto = await ConferenciaDoTipoDeAto
-            .CongelaConfiguracaoAsync(tiposDeAto, ato, instante.Dia, cancellationToken)
+        Result<TipoAtoPublicadoView> tipoDoAto = await tiposDeAto
+            .CongelaConfiguracaoAsync(ato, instante.Dia, cancellationToken)
             .ConfigureAwait(false);
         if (tipoDoAto.IsFailure)
         {

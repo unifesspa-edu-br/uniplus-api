@@ -10,6 +10,7 @@ using Services.InscricaoAdministrativa;
 using Services.Rascunhos;
 
 using Unifesspa.UniPlus.Authorization.Projecao;
+using Unifesspa.UniPlus.Selecao.Application.Commands.AtosDoProcesso;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
@@ -103,9 +104,24 @@ public static class SelecaoApplicationServiceRegistration
     private static void AddPublicacao(IServiceCollection services)
     {
         services.AddScoped<LeituraDoInstanteDaPublicacao>();
+        services.AddScoped<ConferenciaDoProcessoDivulgado>();
+        services.AddScoped<PublicacaoDoAtoDoProcesso>();
+        AddPreparacaoDosAtos(services);
         services.AddScoped<EnderecosDosDocumentosDoAto>();
         AddCongelamentoDaVersao(services);
         AddCopiaAoAcervo(services);
+    }
+
+    private static void AddPreparacaoDosAtos(IServiceCollection services)
+    {
+        services.AddScoped<ConferenciaDoTipoDeAto>();
+        services.AddScoped<ConferenciaDoTipoDoAtoAvulso>();
+        services.AddScoped<ConferenciaDoAtoCorrigido>();
+        services.AddScoped<ConferenciaDosDocumentosDoAto>();
+        services.AddScoped<PreparacaoDaPublicacaoDoAtoAvulso>();
+        services.AddScoped<GrafoVigenteDoProcesso>();
+        services.AddScoped<ConferenciaDoProdutoDoEdital>();
+        services.AddScoped<PreparacaoDaPublicacaoDoProdutoDoEdital>();
     }
 
     // A consulta de conformidade recebe a avaliação pronta, sem service location: as portas entram pelo construtor.

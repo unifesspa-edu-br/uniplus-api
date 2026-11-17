@@ -17,32 +17,34 @@ internal sealed record GrafoVigente(int NumeroDaVersao, GrafoConfiguracao Grafo,
 /// o ato cumpre, e a configuração em rascunho não entra — a retificação em curso só passa a valer
 /// quando publicada.
 /// </summary>
-internal static class GrafoVigenteDoProcesso
+public sealed class GrafoVigenteDoProcesso(
+    IProcessoSeletivoRepository processoSeletivoRepository,
+    IRegistroCodecsEnvelope registroCodecs)
 {
-    public static async Task<Result<GrafoVigente>> LerAsync(
-        IProcessoSeletivoRepository processoSeletivoRepository,
-        IRegistroCodecsEnvelope registroCodecs,
+    internal async Task<Result<GrafoVigente>> LerAsync(
         Guid processoSeletivoId,
         DateTimeOffset instante,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
-        ArgumentNullException.ThrowIfNull(registroCodecs);
-
         VersaoConfiguracao? versao = await processoSeletivoRepository
             .ObterVersaoVigenteAsync(processoSeletivoId, instante, cancellationToken)
             .ConfigureAwait(false);
         if (versao is null)
         {
-            return await SemVersaoVigenteAsync(processoSeletivoId, instante, processoSeletivoRepository, cancellationToken)
+            return await SemVersaoVigenteAsync(processoSeletivoId, instante, cancellationToken)
                 .ConfigureAwait(false);
         }
 
+        return Reidratar(versao);
+    }
+
+    private Result<GrafoVigente> Reidratar(VersaoConfiguracao versao)
+    {
         if (!registroCodecs.SabeLer(versao.SchemaVersion))
         {
             return Result<GrafoVigente>.Failure(new DomainError(
                 ErrosCodecEnvelope.VersaoDesconhecida,
-                $"A versão '{versao.SchemaVersion}' do envelope congelado não está entre as capacidades de leitura reconhecidas pelo codec vivo."));
+                "A versão do envelope congelado não está entre as capacidades de leitura reconhecidas pelo codec vivo."));
         }
 
         Result<EnvelopeReidratado> reidratado = registroCodecs.Reidratar(versao);
@@ -52,15 +54,14 @@ internal static class GrafoVigenteDoProcesso
     }
 
     // Só quando não há versão vigente se distingue 404 de 422: o caminho comum não paga essa consulta.
-    private static async Task<Result<GrafoVigente>> SemVersaoVigenteAsync(
+    private async Task<Result<GrafoVigente>> SemVersaoVigenteAsync(
         Guid processoSeletivoId,
         DateTimeOffset instante,
-        IProcessoSeletivoRepository processoSeletivoRepository,
         CancellationToken cancellationToken)
     {
         bool existe = await processoSeletivoRepository.ExisteAsync(processoSeletivoId, cancellationToken).ConfigureAwait(false);
         return Result<GrafoVigente>.Failure(existe
             ? new DomainError("Snapshot.VigenteAusente", $"Nenhuma publicação vigente para o instante {instante:O}.")
-            : new DomainError("ProcessoSeletivo.NaoEncontrado", $"Processo Seletivo {processoSeletivoId} não encontrado."));
+            : new DomainError("ProcessoSeletivo.NaoEncontrado", "Processo seletivo não encontrado."));
     }
 }

@@ -51,11 +51,7 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
         _processos.ObterSiglaDaUnidadeAdministradoraAsync(_processoId, Arg.Any<CancellationToken>()).Returns("CEPS");
         _processos.ObterAtosCriadoresAsync(_processoId, Arg.Any<CancellationToken>()).Returns([_versaoDivulgadaAtoId]);
 
-        _divulgados.ObterParaMutacaoAsync(_processoId, Arg.Any<CancellationToken>()).Returns(
-            CertameDivulgado.Criar(
-                _processoId, 1, _versaoDivulgadaAtoId, new string('a', 64), "1",
-                new FacetasDoCertameDivulgado("psm-medicina-2027", "PSM Medicina 2027", "001/2026", [], Agora.AddDays(-1), Agora.AddDays(20)),
-                """{"nome":"documento"}""", Agora));
+        ConfigurarDivulgacao();
         _atos.ObterComAnexosAsync(_versaoDivulgadaAtoId, Arg.Any<CancellationToken>()).Returns(
             RegistroDoAto(_versaoDivulgadaAtoId, "EDITAL_ABERTURA"));
 
@@ -66,6 +62,13 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
         _atos.ListarDocumentosJaUsadosAsync(_processoId, Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(new HashSet<Guid>());
     }
+
+    private void ConfigurarDivulgacao() =>
+        _divulgados.ObterParaMutacaoAsync(_processoId, Arg.Any<CancellationToken>()).Returns(
+            CertameDivulgado.Criar(
+                _processoId, 1, _versaoDivulgadaAtoId, new string('a', 64), "1",
+                new FacetasDoCertameDivulgado("psm-medicina-2027", "PSM Medicina 2027", "001/2026", [], Agora.AddDays(-1), Agora.AddDays(20)),
+                """{"nome":"documento"}""", Agora));
 
     [Fact(DisplayName = "O aviso com um anexo grava o registro do ato e o entrega à porta com o hash do principal e a lista de anexos, antes de salvar")]
     public async Task Aviso_ComAnexo_GravaORegistroEEntregaAPorta()
@@ -80,11 +83,21 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
         resposta.IsSuccess.Should().BeTrue();
         gravado.Should().NotBeNull();
         resposta.Value!.AtoId.Should().Be(gravado!.Id);
+        ConferirRegistro(gravado, mensagens);
+        ExigirOrdemDaGravacao();
+        ConferirEntrega(entregue!, gravado.Id);
+    }
+
+    private void ConferirRegistro(AtoDoProcesso gravado, IEnumerable<object> mensagens)
+    {
         gravado.SlugDaUnidadeAdministradora.Should().Be("ceps", "a chave no acervo usa a unidade e o identificador da versão divulgada");
         gravado.IdentificadorLegivelDoProcesso.Should().Be("psm-medicina-2027");
         gravado.DocumentoPrincipalId.Should().Be(_principal.Id);
         gravado.Anexos.Should().ContainSingle().Which.NomeDeExibicao.Should().Be("Quadro de vagas.docx");
         mensagens.Should().ContainSingle().Which.Should().Be(new CopiarDocumentosDoAtoAoAcervo(_processoId, gravado.Id));
+    }
+
+    private void ExigirOrdemDaGravacao() =>
         Received.InOrder(() =>
         {
             _ = _atos.AdicionarAsync(Arg.Any<AtoDoProcesso>(), Arg.Any<CancellationToken>());
@@ -92,7 +105,9 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
             _ = _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
         });
 
-        entregue!.AtoId.Should().Be(gravado.Id);
+    private void ConferirEntrega(AtoNormativoPublicado entregue, Guid atoId)
+    {
+        entregue.AtoId.Should().Be(atoId);
         entregue.Orgao.Should().Be("CEPS");
         entregue.Serie.Should().Be("AVISO");
         entregue.Ano.Should().Be(2026);
@@ -418,6 +433,7 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
         (Result<AtoPublicadoDto> resposta, IEnumerable<object> mensagens) = await Publicar(comando);
 
         resposta.IsFailure.Should().BeTrue();
+        resposta.Errors.Should().ContainSingle();
         resposta.Error!.Code.Should().Be(codigoEsperado);
         mensagens.Should().BeEmpty("a recusa acontece antes de qualquer envio ao registro central");
         await NadaFoiEscrito();
@@ -431,8 +447,13 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
 
     private Task<(Result<AtoPublicadoDto> Resposta, IEnumerable<object> Eventos)> Publicar(PublicarAtoAvulsoDoProcessoCommand comando, TimeProvider? relogio = null) =>
         PublicarAtoAvulsoDoProcessoCommandHandler.Handle(
-            comando, _processos, _divulgados, _atos, _documentos, _tipos, _registro, _unitOfWork,
-            new LeituraDoInstanteDaPublicacao(relogio ?? new RelogioFixo(Agora), new ResolvedorFusoDeTeste()), CancellationToken.None);
+            comando, _processos,
+            new PreparacaoDaPublicacaoDoAtoAvulso(
+                new ConferenciaDoProcessoDivulgado(_processos, _divulgados),
+                new LeituraDoInstanteDaPublicacao(relogio ?? new RelogioFixo(Agora), new ResolvedorFusoDeTeste()),
+                new ConferenciaDoTipoDoAtoAvulso(new ConferenciaDoTipoDeAto(_tipos)),
+                new ConferenciaDoAtoCorrigido(_atos, _processos), new ConferenciaDosDocumentosDoAto(_documentos, _atos)),
+            new PublicacaoDoAtoDoProcesso(_atos, _registro, _unitOfWork), CancellationToken.None);
 
     private PublicarAtoAvulsoDoProcessoCommand Comando(
         Guid? principalId = null,

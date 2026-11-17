@@ -25,17 +25,16 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// ele congela. Acrescentar um tipo de ato continua sendo linha de cadastro (ADR-0103).
 /// </para>
 /// </remarks>
-internal static class ConferenciaDoTipoDeAto
+public sealed class ConferenciaDoTipoDeAto(ITipoAtoPublicadoReader reader)
 {
-    public static async Task<Result<TipoAtoPublicadoView>> CongelaConfiguracaoAsync(
-        ITipoAtoPublicadoReader reader,
+    internal async Task<Result<TipoAtoPublicadoView>> CongelaConfiguracaoAsync(
         DadosDoAto ato,
         DateOnly diaDaPublicacao,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(ato);
 
-        Result<TipoAtoPublicadoView> vigente = await VigenteAsync(reader, ato.TipoAtoCodigo, diaDaPublicacao, cancellationToken)
+        Result<TipoAtoPublicadoView> vigente = await VigenteAsync(ato.TipoAtoCodigo, diaDaPublicacao, cancellationToken)
             .ConfigureAwait(false);
         if (vigente.IsFailure)
         {
@@ -46,21 +45,18 @@ internal static class ConferenciaDoTipoDeAto
             ? vigente
             : Result<TipoAtoPublicadoView>.Failure(new DomainError(
                 "ProcessoSeletivo.TipoDeAtoNaoCongelaConfiguracao",
-                $"O tipo de ato '{ato.TipoAtoCodigo}' não congela configuração, e publicar ou retificar um Processo Seletivo congela — o ato que cria a versão da configuração precisa ser de um tipo congelante."));
+                "O tipo de ato não congela configuração, e publicar ou retificar um Processo Seletivo congela — o ato que cria a versão da configuração precisa ser de um tipo congelante."));
     }
 
     /// <summary>
     /// A versão do tipo que vigora no dia civil da publicação, no fuso institucional, ou a recusa de que não há. A
     /// data que o documento declara não escolhe o tipo.
     /// </summary>
-    public static async Task<Result<TipoAtoPublicadoView>> VigenteAsync(
-        ITipoAtoPublicadoReader reader,
+    internal async Task<Result<TipoAtoPublicadoView>> VigenteAsync(
         string tipoAtoCodigo,
         DateOnly diaDaPublicacao,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(reader);
-
         TipoAtoPublicadoView? tipo = await reader
             .ObterVigenteAsync(tipoAtoCodigo, diaDaPublicacao, cancellationToken)
             .ConfigureAwait(false);
@@ -68,7 +64,7 @@ internal static class ConferenciaDoTipoDeAto
         return tipo is null
             ? Result<TipoAtoPublicadoView>.Failure(new DomainError(
                 "ProcessoSeletivo.TipoDeAtoSemVersaoVigente",
-                $"Não há versão vigente do tipo de ato '{tipoAtoCodigo}' na data da publicação ({diaDaPublicacao:yyyy-MM-dd})."))
+                $"Não há versão vigente do tipo de ato na data da publicação ({diaDaPublicacao:yyyy-MM-dd})."))
             : Result<TipoAtoPublicadoView>.Success(tipo);
     }
 }

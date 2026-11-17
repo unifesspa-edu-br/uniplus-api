@@ -5,13 +5,7 @@ using Domain.Interfaces;
 
 using DTOs;
 
-using ProcessosSeletivos;
-
-using Services;
-
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Publicacoes.Contracts;
 
 /// <summary>
 /// Publica um ato avulso do processo: confere o tipo, a correção e os documentos, grava o registro do ato
@@ -27,114 +21,24 @@ public static class PublicarAtoAvulsoDoProcessoCommandHandler
 {
     public static async Task<(Result<AtoPublicadoDto> Resposta, IEnumerable<object> Eventos)> Handle(
         PublicarAtoAvulsoDoProcessoCommand command,
-        IProcessoSeletivoRepository processoSeletivoRepository,
-        ICertameDivulgadoRepository certameDivulgadoRepository,
-        IAtoDoProcessoRepository atoDoProcessoRepository,
-        IDocumentoAPublicarRepository documentoAPublicarRepository,
-        ITipoAtoPublicadoReader tipoDeAtoReader,
-        IRegistroDeAtoNormativo registroCentralDeAtos,
-        IUnitOfWork unitOfWork,
-        LeituraDoInstanteDaPublicacao leituraDoInstante,
+        IProcessoSeletivoRepository processos,
+        PreparacaoDaPublicacaoDoAtoAvulso preparacao,
+        PublicacaoDoAtoDoProcesso publicacao,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
-        ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
-        ArgumentNullException.ThrowIfNull(certameDivulgadoRepository);
-        ArgumentNullException.ThrowIfNull(atoDoProcessoRepository);
-        ArgumentNullException.ThrowIfNull(documentoAPublicarRepository);
-        ArgumentNullException.ThrowIfNull(tipoDeAtoReader);
-        ArgumentNullException.ThrowIfNull(registroCentralDeAtos);
-        ArgumentNullException.ThrowIfNull(unitOfWork);
-        ArgumentNullException.ThrowIfNull(leituraDoInstante);
-
-        // A forma da correção é do agregado e sai antes de qualquer leitura ou trava (ADR-0125).
-        Result correcaoBemFormada = AtoDoProcesso.ValidarCorrecao(command.AtoCorrigidoId, command.MotivoDaCorrecao);
-        if (correcaoBemFormada.IsFailure)
+        ArgumentNullException.ThrowIfNull(processos);
+        ArgumentNullException.ThrowIfNull(preparacao);
+        ArgumentNullException.ThrowIfNull(publicacao);
+        Result correcao = AtoDoProcesso.ValidarCorrecao(command.AtoCorrigidoId, command.MotivoDaCorrecao);
+        if (correcao.IsFailure)
         {
-            return (Result<AtoPublicadoDto>.ValidationFailure(correcaoBemFormada.Errors), []);
+            return (Result<AtoPublicadoDto>.ValidationFailure(correcao.Errors), []);
         }
-
-        // As conferências abaixo leem para depois inserir (vaga do tipo único, documento já usado):
-        // sem serializar as publicações do mesmo processo, duas requisições passam juntas e as duas
-        // gravam. O lock cai com a transação, depois que o registro do ato já é visível à seguinte.
-        await processoSeletivoRepository
-            .TravarAsync(command.ProcessoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
-
-        Result<ProcessoDivulgadoConferido> conferenciaDoProcesso = await PublicacaoDoAtoDoProcesso
-            .ConferirProcessoDivulgadoAsync(processoSeletivoRepository, certameDivulgadoRepository, command.ProcessoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
-        if (conferenciaDoProcesso.IsFailure)
-        {
-            return Recusa(conferenciaDoProcesso.Error!);
-        }
-
-        Result<InstanteDaPublicacao> instante = leituraDoInstante.Ler();
-        if (instante.IsFailure)
-        {
-            return Recusa(instante.Error!);
-        }
-
-        Result<TipoAtoPublicadoView> conferenciaDoTipo = await ConferenciaDoTipoDoAtoAvulso
-            .ConferirAsync(tipoDeAtoReader, command.TipoAtoCodigo, instante.Value.Dia, cancellationToken)
-            .ConfigureAwait(false);
-        if (conferenciaDoTipo.IsFailure)
-        {
-            return Recusa(conferenciaDoTipo.Error!);
-        }
-
-        TipoAtoPublicadoView tipo = conferenciaDoTipo.Value!;
-
-        Result conferenciaDoAtoExigido = ConferenciaDoTipoDoAtoAvulso.ExigeAtoCorrigido(tipo, command.AtoCorrigidoId);
-        if (conferenciaDoAtoExigido.IsFailure)
-        {
-            return Recusa(conferenciaDoAtoExigido.Error!);
-        }
-
-        Result<IReadOnlyList<Guid>> conferenciaDoCorrigido = await ConferenciaDoAtoCorrigido
-            .ConferirAsync(atoDoProcessoRepository, processoSeletivoRepository, command.ProcessoSeletivoId, command.AtoCorrigidoId, cancellationToken)
-            .ConfigureAwait(false);
-        if (conferenciaDoCorrigido.IsFailure)
-        {
-            return Recusa(conferenciaDoCorrigido.Error!);
-        }
-
-        Result conferenciaDoItem = await ConferenciaDoAtoCorrigido
-            .NaoEhItemDoEditalAsync(atoDoProcessoRepository, conferenciaDoCorrigido.Value!, cancellationToken)
-            .ConfigureAwait(false);
-        if (conferenciaDoItem.IsFailure)
-        {
-            return Recusa(conferenciaDoItem.Error!);
-        }
-
-        Result<DocumentosDoAtoConferidos> conferenciaDosDocumentos = await ConferenciaDosDocumentosDoAto
-            .ConferirAsync(documentoAPublicarRepository, atoDoProcessoRepository, command.ProcessoSeletivoId, command.DocumentoPrincipalId, command.Anexos ?? [], cancellationToken)
-            .ConfigureAwait(false);
-        if (conferenciaDosDocumentos.IsFailure)
-        {
-            return Recusa(conferenciaDosDocumentos.Error!);
-        }
-
-        return await PublicacaoDoAtoDoProcesso
-            .PublicarAsync(
-                new AtoAPublicar(
-                    command.ProcessoSeletivoId,
-                    conferenciaDoProcesso.Value!,
-                    tipo,
-                    command.Numero,
-                    command.DataDoAto,
-                    instante.Value.Instante,
-                    command.Assinante,
-                    conferenciaDosDocumentos.Value!,
-                    command.AtoCorrigidoId,
-                    command.MotivoDaCorrecao),
-                atoDoProcessoRepository,
-                registroCentralDeAtos,
-                unitOfWork,
-                cancellationToken)
-            .ConfigureAwait(false);
+        await processos.TravarAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
+        Result<AtoAPublicar> ato = await preparacao.PrepararAsync(command, cancellationToken).ConfigureAwait(false);
+        return ato.IsFailure
+            ? (Result<AtoPublicadoDto>.Failure(ato.Error!), [])
+            : await publicacao.PublicarAsync(ato.Value!, cancellationToken).ConfigureAwait(false);
     }
-
-    private static (Result<AtoPublicadoDto> Resposta, IEnumerable<object> Eventos) Recusa(DomainError erro) =>
-        (Result<AtoPublicadoDto>.Failure(erro), []);
 }

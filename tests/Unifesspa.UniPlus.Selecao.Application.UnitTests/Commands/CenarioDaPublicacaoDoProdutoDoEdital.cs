@@ -82,6 +82,7 @@ public sealed class CenarioDaPublicacaoDoProdutoDoEdital
         (Result<AtoPublicadoDto> resposta, IEnumerable<object> mensagens) = await Publicar(comando);
 
         resposta.IsFailure.Should().BeTrue();
+        resposta.Errors.Should().ContainSingle();
         resposta.Error!.Code.Should().Be(codigoEsperado);
         mensagens.Should().BeEmpty("a recusa acontece antes de qualquer envio ao registro central");
         await Atos.DidNotReceive().AdicionarAsync(Arg.Any<AtoDoProcesso>(), Arg.Any<CancellationToken>());
@@ -90,8 +91,14 @@ public sealed class CenarioDaPublicacaoDoProdutoDoEdital
 
     public Task<(Result<AtoPublicadoDto> Resposta, IEnumerable<object> Eventos)> Publicar(PublicarProdutoDoEditalCommand comando, TimeProvider? relogio = null) =>
         PublicarProdutoDoEditalCommandHandler.Handle(
-            comando, Processos, Divulgados, Atos, Documentos, Codecs, Tipos, Registro, Usuario, UnitOfWork,
-            new LeituraDoInstanteDaPublicacao(relogio ?? new RelogioFixo(Agora), new ResolvedorFusoDeTeste()), CancellationToken.None);
+            comando, Processos,
+            new PreparacaoDaPublicacaoDoProdutoDoEdital(
+                new ConferenciaDoProcessoDivulgado(Processos, Divulgados),
+                new LeituraDoInstanteDaPublicacao(relogio ?? new RelogioFixo(Agora), new ResolvedorFusoDeTeste()),
+                new ConferenciaDoProdutoDoEdital(new GrafoVigenteDoProcesso(Processos, Codecs),
+                    new ConferenciaDoTipoDeAto(Tipos), Atos, new ConferenciaDoAtoCorrigido(Atos, Processos), Usuario),
+                new ConferenciaDosDocumentosDoAto(Documentos, Atos)),
+            new PublicacaoDoAtoDoProcesso(Atos, Registro, UnitOfWork), CancellationToken.None);
 
     public PublicarProdutoDoEditalCommand Comando(Guid produtoId, bool politica = true, Guid? corrige = null) =>
         new(ProcessoId, produtoId, "5/2027", DataDoAto, "Diretor do CEPS", Principal.Id,

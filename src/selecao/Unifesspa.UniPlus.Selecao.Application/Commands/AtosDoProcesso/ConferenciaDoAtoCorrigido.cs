@@ -14,66 +14,60 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// endpoint administrativo de Publicações já corrigiu é recusada pelo registro do ato, na mesma transação, e a que
 /// só a gravação enxerga, pela unicidade.
 /// </remarks>
-internal static class ConferenciaDoAtoCorrigido
+public sealed class ConferenciaDoAtoCorrigido(
+    IAtoDoProcessoRepository atoDoProcessoRepository,
+    IProcessoSeletivoRepository processoSeletivoRepository)
 {
     /// <returns>
     /// Os atos da cadeia de correção que termina no ato corrigido — a linhagem a que o novo ato passa a
     /// pertencer; vazio quando o ato não corrige nenhum.
     /// </returns>
-    public static async Task<Result<IReadOnlyList<Guid>>> ConferirAsync(
-        IAtoDoProcessoRepository atoDoProcessoRepository,
-        IProcessoSeletivoRepository processoSeletivoRepository,
+    internal async Task<Result<IReadOnlyList<Guid>>> ConferirAsync(
         Guid processoSeletivoId,
         Guid? atoCorrigidoId,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(atoDoProcessoRepository);
-        ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
-
         if (atoCorrigidoId is not { } corrigidoId)
         {
             return Result<IReadOnlyList<Guid>>.Success([]);
         }
 
-        Guid? processoDoCorrigido = await atoDoProcessoRepository
-            .ObterProcessoDoAtoAsync(corrigidoId, cancellationToken)
-            .ConfigureAwait(false);
+        return await ConferirPertencimentoAsync(processoSeletivoId, corrigidoId, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<Result<IReadOnlyList<Guid>>> ConferirPertencimentoAsync(
+        Guid processoSeletivoId, Guid corrigidoId, CancellationToken cancellationToken)
+    {
+        Guid? processoDoCorrigido = await atoDoProcessoRepository.ObterProcessoDoAtoAsync(corrigidoId, cancellationToken).ConfigureAwait(false);
         if (processoDoCorrigido is null)
         {
             return Falha(AtoDoProcessoErrorCodes.AtoCorrigidoNaoEncontrado,
-                $"O ato {corrigidoId} não é um ato publicado por um processo seletivo.");
+                "O ato não é um ato publicado por um processo seletivo.");
         }
+        return processoDoCorrigido != processoSeletivoId
+            ? Falha(AtoDoProcessoErrorCodes.AtoCorrigidoDeOutroProcesso,
+                "O ato é de outro processo seletivo, e um ato só corrige ato do próprio processo.")
+            : await ConferirClasseAsync(processoSeletivoId, corrigidoId, cancellationToken).ConfigureAwait(false);
+    }
 
-        // A correção herda os vínculos do ato corrigido no registro central: aceitar o ato de outro
-        // processo ligaria o novo ato a dois processos.
-        if (processoDoCorrigido != processoSeletivoId)
-        {
-            return Falha(AtoDoProcessoErrorCodes.AtoCorrigidoDeOutroProcesso,
-                $"O ato {corrigidoId} é de outro processo seletivo, e um ato só corrige ato do próprio processo.");
-        }
-
-        // Os atos que criam versão são os que congelam configuração: o tipo deles foi conferido como
-        // congelante ao publicar. O ato avulso nunca congela, e a classe do corretor tem de coincidir
-        // com a do corrigido (congelamento dos parâmetros na publicação, UNI-REQ-0019).
+    private async Task<Result<IReadOnlyList<Guid>>> ConferirClasseAsync(
+        Guid processoSeletivoId, Guid corrigidoId, CancellationToken cancellationToken)
+    {
         IReadOnlyList<Guid> atosQueCongelam = await processoSeletivoRepository
-            .ObterAtosCriadoresAsync(processoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
-        if (atosQueCongelam.Contains(corrigidoId))
-        {
-            return Falha(AtoDoProcessoErrorCodes.AtoCorrigidoDeOutraClasse,
-                $"O ato {corrigidoId} congela a configuração do processo e só se corrige por retificação do edital, com nova versão: o documento avulso não altera a configuração.");
-        }
+            .ObterAtosCriadoresAsync(processoSeletivoId, cancellationToken).ConfigureAwait(false);
+        return atosQueCongelam.Contains(corrigidoId)
+            ? Falha(AtoDoProcessoErrorCodes.AtoCorrigidoDeOutraClasse,
+                "O ato congela a configuração do processo e só se corrige por retificação do edital, com nova versão: o documento avulso não altera a configuração.")
+            : await ConferirCabecaAsync(corrigidoId, cancellationToken).ConfigureAwait(false);
+    }
 
-        Guid? corretor = await atoDoProcessoRepository
-            .ObterAtoQueCorrigeAsync(corrigidoId, cancellationToken)
-            .ConfigureAwait(false);
-        if (corretor is not null)
-        {
-            return Falha(AtoDoProcessoErrorCodes.AtoCorrigidoJaCorrigido, MensagemDoAtoJaCorrigido(corrigidoId, corretor));
-        }
-
-        return Result<IReadOnlyList<Guid>>.Success(
-            await atoDoProcessoRepository.ListarCadeiaDeCorrecaoAsync(corrigidoId, cancellationToken).ConfigureAwait(false));
+    private async Task<Result<IReadOnlyList<Guid>>> ConferirCabecaAsync(Guid corrigidoId, CancellationToken cancellationToken)
+    {
+        Guid? corretor = await atoDoProcessoRepository.ObterAtoQueCorrigeAsync(corrigidoId, cancellationToken).ConfigureAwait(false);
+        return corretor is not null
+            ? Falha(AtoDoProcessoErrorCodes.AtoCorrigidoJaCorrigido, MensagemDoAtoJaCorrigido())
+            : Result<IReadOnlyList<Guid>>.Success(
+                await atoDoProcessoRepository.ListarCadeiaDeCorrecaoAsync(corrigidoId, cancellationToken).ConfigureAwait(false));
     }
 
     /// <summary>
@@ -82,14 +76,11 @@ internal static class ConferenciaDoAtoCorrigido
     /// o resultado por documento avulso contornaria as três.
     /// </summary>
     /// <param name="cadeiaDoAtoCorrigido">A cadeia que <see cref="ConferirAsync"/> devolveu; vazia quando não corrige.</param>
-    public static async Task<Result> NaoEhItemDoEditalAsync(
-        IAtoDoProcessoRepository atoDoProcessoRepository,
+    internal async Task<Result> NaoEhItemDoEditalAsync(
         IReadOnlyCollection<Guid> cadeiaDoAtoCorrigido,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(atoDoProcessoRepository);
         ArgumentNullException.ThrowIfNull(cadeiaDoAtoCorrigido);
-
         if (cadeiaDoAtoCorrigido.Count == 0)
         {
             return Result.Success();
@@ -98,7 +89,6 @@ internal static class ConferenciaDoAtoCorrigido
         bool ehItemDoEdital = await atoDoProcessoRepository
             .ExisteItemDoEditalEntreAsync(cadeiaDoAtoCorrigido, cancellationToken)
             .ConfigureAwait(false);
-
         return ehItemDoEdital
             ? Result.Failure(new DomainError(
                 AtoDoProcessoErrorCodes.AtoCorrigidoEhItemDoEdital,
@@ -106,9 +96,8 @@ internal static class ConferenciaDoAtoCorrigido
             : Result.Success();
     }
 
-    public static string MensagemDoAtoJaCorrigido(Guid atoId, Guid? corretor) =>
-        (corretor is null ? $"O ato {atoId} já foi corrigido" : $"O ato {atoId} já foi corrigido pelo ato {corretor}")
-        + ". A cadeia de correção é linear: a correção seguinte aponta o ato mais recente da cadeia.";
+    public static string MensagemDoAtoJaCorrigido() =>
+        "O ato já foi corrigido. A cadeia de correção é linear: a correção seguinte aponta o ato mais recente da cadeia.";
 
     private static Result<IReadOnlyList<Guid>> Falha(string codigo, string mensagem) =>
         Result<IReadOnlyList<Guid>>.Failure(new DomainError(codigo, mensagem));

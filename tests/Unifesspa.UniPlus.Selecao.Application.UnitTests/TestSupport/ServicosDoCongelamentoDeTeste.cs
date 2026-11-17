@@ -245,7 +245,7 @@ internal sealed class ServicosDoCongelamentoDeTeste
 
     public LeituraDoInstanteDaPublicacao LeituraDoInstante() => new(Relogio, Fuso);
 
-    public ConferenciaDoAtoEDoDocumento AtoEDocumento() => new(Documentos, Repositorio, TiposDeAto, LeituraDoInstante());
+    public ConferenciaDoAtoEDoDocumento AtoEDocumento() => new(Documentos, Repositorio, new ConferenciaDoTipoDeAto(TiposDeAto), LeituraDoInstante());
 
     public LeituraDaBaseDaRetificacao LeituraDaBase() => new(Repositorio, Atos, Codecs);
 

@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.AtosDoProcesso;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProdutosPrevistos;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -120,11 +121,9 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
     }
 
     private async Task<Result<ProdutosPrevistosDoProcessoDto>> Consultar() =>
-        await ListarProdutosPrevistosDoProcessoQueryHandler.Handle(
-            new ListarProdutosPrevistosDoProcessoQuery(_processoId),
-            _processos, _atos, _documentos, _codecs, _tipos, _fuso,
-            new RelogioFixo(Agora),
-            CancellationToken.None);
+        await new ListarProdutosPrevistosDoProcessoQueryHandler(
+            new GrafoVigenteDoProcesso(_processos, _codecs), _atos, _documentos, _tipos, _fuso, new RelogioFixo(Agora))
+            .Handle(new ListarProdutosPrevistosDoProcessoQuery(_processoId), CancellationToken.None);
 
     private async Task<ProdutoPrevistoDto> ItemDaFase(Guid produtoId)
     {
@@ -195,10 +194,8 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
         (ProdutoDaFase preliminar, ProdutoDaFase definitivo) = Par();
         Cronograma([Fase("INSCRICAO", 1, preliminar, definitivo)]);
         AtoDoProcesso ato = Publicar(Materia, preliminar.Id);
-
         ProdutoPrevistoDto doPreliminar = await ItemDaFase(preliminar.Id);
         ProdutoPrevistoDto doDefinitivo = await ItemDaFase(definitivo.Id);
-
         doPreliminar.Situacao.Should().Be(SituacaoDoProdutoPrevisto.Publicado);
         doPreliminar.Ato!.Id.Should().Be(ato.Id);
         doPreliminar.Ato.Numero.Should().Be("5/2027");
@@ -265,7 +262,6 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
             FaseQueConclui("PROVA_2", 2, "RESULTADO", segundoPreliminar),
             Fase("RESULTADO", 3, definitivo),
         ]);
-
         Publicar(Materia, primeiroPreliminar.Id);
         (await ItemDaFase(definitivo.Id)).Impedimento!.Motivo.Should().Be(ImpedimentoDoProduto.PreliminarNaoPublicado);
 
@@ -319,7 +315,6 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
         Cronograma(
             [Fase("AVALIACAO", 1, daFase), Fase("RESULTADO", 2)],
             [Etapa("Prova objetiva", "AVALIACAO", gabarito), Etapa("Entrevista", null, semFase)]);
-
         Result<ProdutosPrevistosDoProcessoDto> resultado = await Consultar();
 
         FaseComProdutosPrevistosDto avaliacao = resultado.Value!.Fases.Single(f => f.Codigo == "AVALIACAO");

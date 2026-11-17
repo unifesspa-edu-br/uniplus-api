@@ -23,16 +23,15 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// aqui — se congela e se é único — vêm do catálogo vigente no dia da publicação, e não da versão publicada.
 /// </para>
 /// </remarks>
-internal static class ConferenciaDoTipoDoAtoAvulso
+public sealed class ConferenciaDoTipoDoAtoAvulso(ConferenciaDoTipoDeAto tiposDeAto)
 {
-    public static async Task<Result<TipoAtoPublicadoView>> ConferirAsync(
-        ITipoAtoPublicadoReader reader,
+    internal async Task<Result<TipoAtoPublicadoView>> ConferirAsync(
         string tipoAtoCodigo,
         DateOnly diaDaPublicacao,
         CancellationToken cancellationToken)
     {
-        Result<TipoAtoPublicadoView> vigente = await ConferenciaDoTipoDeAto
-            .VigenteAsync(reader, tipoAtoCodigo, diaDaPublicacao, cancellationToken)
+        Result<TipoAtoPublicadoView> vigente = await tiposDeAto
+            .VigenteAsync(tipoAtoCodigo, diaDaPublicacao, cancellationToken)
             .ConfigureAwait(false);
         if (vigente.IsFailure)
         {
@@ -41,18 +40,23 @@ internal static class ConferenciaDoTipoDoAtoAvulso
 
         TipoAtoPublicadoView tipo = vigente.Value!;
 
+        return Classificar(tipo);
+    }
+
+    private static Result<TipoAtoPublicadoView> Classificar(TipoAtoPublicadoView tipo)
+    {
         if (tipo.CongelaConfiguracao)
         {
             return Result<TipoAtoPublicadoView>.Failure(new DomainError(
                 AtoDoProcessoErrorCodes.TipoCongelaConfiguracao,
-                $"O tipo de ato '{tipo.Codigo}' congela configuração e só se publica com a publicação ou a retificação do edital — o documento avulso não altera a configuração do processo."));
+                "O tipo de ato congela configuração e só se publica com a publicação ou a retificação do edital — o documento avulso não altera a configuração do processo."));
         }
 
         return tipo.PublicavelComoAvulso
             ? Result<TipoAtoPublicadoView>.Success(tipo)
             : Result<TipoAtoPublicadoView>.Failure(new DomainError(
                 AtoDoProcessoErrorCodes.TipoNaoPublicavelComoAvulso,
-                $"O tipo de ato '{tipo.Codigo}' não é publicável como documento avulso: resultado, convocação e chamada têm fluxo próprio, e o documento avulso é o aviso, o comunicado e a errata."));
+                "O tipo de ato não é publicável como documento avulso: resultado, convocação e chamada têm fluxo próprio, e o documento avulso é o aviso, o comunicado e a errata."));
     }
 
     /// <summary>
@@ -66,7 +70,7 @@ internal static class ConferenciaDoTipoDoAtoAvulso
         return tipo.ExigeAtoCorrigido && atoCorrigidoId is null
             ? Result.Failure(new DomainError(
                 AtoDoProcessoErrorCodes.TipoExigeAtoCorrigido,
-                $"O tipo de ato '{tipo.Codigo}' corrige sempre outro ato publicado: informe o ato corrigido e o motivo da correção."))
+                "O tipo de ato corrige sempre outro ato publicado: informe o ato corrigido e o motivo da correção."))
             : Result.Success();
     }
 }
