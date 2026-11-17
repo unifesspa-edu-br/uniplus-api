@@ -64,25 +64,17 @@ public sealed class GravacaoDaDecisaoDoPedidoTests
     [Fact(DisplayName = "A aprovação que conclui o pedido adiciona a concessão do pedido e a grava com ele numa gravação só")]
     public async Task Gravar_Concluido_AdicionaAConcessaoEGrava()
     {
-        Perfil perfil = ApoioDoPedido.PerfilComum();
-        PedidoDeConcessao pedido = PedidoDeConcessaoBuilder.Pedido().DoPerfil(perfil).AguardandoGestor();
-        Result<DesfechoDaAprovacao> aprovacao = pedido.Aprovar(ApoioDoPedido.Diogo.Identidade, ApoioDoPedido.Interno, ApoioDoPedido.Contexto, Agora);
+        (PedidoDeConcessao pedido, Perfil perfil) = PedidoConcluidoPelaAprovacao();
         IConcessaoRepository concessoes = Substitute.For<IConcessaoRepository>();
         IUnitOfWork unidade = Substitute.For<IUnitOfWork>();
 
         (Result<PedidoDeConcessaoDto> resposta, _) = await Gravacao(unidade, concessoes)
             .GravarAsync(new DecisaoDaEtapa(pedido, perfil, ApoioDoPedido.Interno, ApoioDoPedido.Diogo.Identidade), SituacaoDoPedido.AguardandoGestor, concluido: true, Agora, CancellationToken.None);
 
-        aprovacao.Value.Should().Be(DesfechoDaAprovacao.Concluido);
         resposta.IsSuccess.Should().BeTrue();
-        await concessoes.Received(1).AdicionarAsync(Arg.Any<Concessao>(), Arg.Any<CancellationToken>());
         await concessoes.Received(1).AdicionarAsync(Arg.Is<Concessao>(c => c.PerfilId == perfil.Id), Arg.Any<CancellationToken>());
         await unidade.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-        Received.InOrder(() =>
-        {
-            _ = concessoes.AdicionarAsync(Arg.Any<Concessao>(), Arg.Any<CancellationToken>());
-            _ = unidade.SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-        });
+        ConferirConcessaoAntesDaGravacao(concessoes, unidade);
     }
 
     [Fact(DisplayName = "A aprovação que conclui o pedido com concessão igual ativa recusa e não grava")]
@@ -145,4 +137,20 @@ public sealed class GravacaoDaDecisaoDoPedidoTests
     }
 
     private static FieldError[] Erros(string codigo) => [new("pedido", new DomainError(codigo, "Recusa de teste."))];
+
+    private static (PedidoDeConcessao Pedido, Perfil Perfil) PedidoConcluidoPelaAprovacao()
+    {
+        Perfil perfil = ApoioDoPedido.PerfilComum();
+        PedidoDeConcessao pedido = PedidoDeConcessaoBuilder.Pedido().DoPerfil(perfil).AguardandoGestor();
+        pedido.Aprovar(ApoioDoPedido.Diogo.Identidade, ApoioDoPedido.Interno, ApoioDoPedido.Contexto, Agora).Value.Should().Be(DesfechoDaAprovacao.Concluido);
+
+        return (pedido, perfil);
+    }
+
+    private static void ConferirConcessaoAntesDaGravacao(IConcessaoRepository concessoes, IUnitOfWork unidade) =>
+        Received.InOrder(() =>
+        {
+            _ = concessoes.AdicionarAsync(Arg.Any<Concessao>(), Arg.Any<CancellationToken>());
+            _ = unidade.SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        });
 }
