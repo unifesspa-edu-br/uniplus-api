@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Authorization.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
 /// Concessões gravadas de uma pessoa, lidas para a decisão de acesso. O módulo Autorização é o
@@ -86,7 +87,7 @@ public sealed class ConcessoesAtivasDoSujeito : IConcessoesAtivasDoSujeito
     [
         .. linhas
             .GroupBy(l => l.Concessao)
-            .Select(g => ConcessaoAtivaDe(g.Key, [.. g.Select(l => l.Codigo).OfType<string>()])),
+            .Select(g => ConcessaoAtivaDe(g.Key, [.. g.Select(l => l.Codigo).OfType<CodigoDePermissao>().Select(static c => c.Valor)])),
     ];
 
     private static ConcessaoAtiva ConcessaoAtivaDe(ConcessaoLida c, IReadOnlyList<string> permissoes) =>

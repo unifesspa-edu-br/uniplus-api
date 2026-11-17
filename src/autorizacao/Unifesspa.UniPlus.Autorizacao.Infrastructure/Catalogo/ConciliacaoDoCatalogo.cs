@@ -92,7 +92,7 @@ public sealed class ConciliacaoDoCatalogo
     {
         ImplantacaoDasPermissoes novo = ImplantacaoDasPermissoes.Implantar(
             _catalogo.Impressao,
-            _catalogo.Linhas.Select(l => new PermissaoDoCatalogo(CodigoDePermissao.De(l.Codigo.Valor), l.Classificacao, l.DeUnidade, l.Reservada)),
+            _catalogo.Linhas.Select(l => new PermissaoDoCatalogo(l.Codigo, l.Classificacao, l.DeUnidade, l.Reservada)),
             agora);
         _db.ImplantacoesDasPermissoes.Add(novo);
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
@@ -119,8 +119,8 @@ public sealed class ConciliacaoDoCatalogo
 
     private static Dictionary<CodigoDePermissao, PermissaoDoCatalogo> Linhas(IEnumerable<PermissaoImplantada>? permissoes) =>
         (permissoes ?? []).ToDictionary(
-            static p => CodigoDePermissao.De(p.Codigo),
-            static p => new PermissaoDoCatalogo(CodigoDePermissao.De(p.Codigo), p.Classificacao, p.DeUnidade, p.Reservada));
+            static p => p.Codigo,
+            static p => new PermissaoDoCatalogo(p.Codigo, p.Classificacao, p.DeUnidade, p.Reservada));
 }
 
 /// <summary>O catálogo que entra, o anterior (nulo na primeira conferência) e o instante da conciliação.</summary>

@@ -59,7 +59,7 @@ internal sealed class ImplantacaoDasPermissoesConfiguration : IEntityTypeConfigu
         builder.ToTable("permissoes_implantadas");
         builder.HasKey(p => new { p.ImplantacaoId, p.Codigo });
 
-        builder.Property(p => p.Codigo).HasMaxLength(CodigoMaxLength).IsRequired();
+        builder.Property(p => p.Codigo).HasConversion(ConversoresDoCatalogo.Codigo).HasMaxLength(CodigoMaxLength).IsRequired();
         builder.Property(p => p.Classificacao).HasConversion(ConversoresDoCatalogo.Classificacao).HasMaxLength(ClassificacaoMaxLength).IsRequired();
         builder.Property(p => p.DeUnidade).IsRequired();
         builder.Property(p => p.Reservada).IsRequired();

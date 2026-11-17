@@ -24,7 +24,7 @@ public interface IReclassificacaoRepository
     Task<ImplantacaoNoBanco?> ObterImplantacaoAtualAsync(IReadOnlyCollection<CodigoDePermissao> codigos, CancellationToken cancellationToken = default);
 
     /// <summary>Os códigos do perfil que já têm reclassificação do catálogo.</summary>
-    Task<IReadOnlySet<string>> ObterCodigosReclassificadosAsync(
+    Task<IReadOnlySet<CodigoDePermissao>> ObterCodigosReclassificadosAsync(
         Guid implantacaoId, Guid perfilId, CancellationToken cancellationToken = default);
 
     /// <summary>Acrescenta a reclassificação à gravação seguinte.</summary>
@@ -51,10 +51,10 @@ public interface IReclassificacaoRepository
 
     /// <summary>
     /// As concessões não revogadas do perfil que reúnem a permissão pela composição, com a base de cada uma. Com
-    /// <paramref name="travar"/>, trava as concessões para leitura em ordem de id, antes de lê-las.
+    /// <paramref name="bloquearParaLeituraCompartilhada"/>, bloqueia as concessões em modo compartilhado, em ordem de id, antes de lê-las.
     /// </summary>
     Task<IReadOnlyList<ConcessaoComAPermissao>> ListarConcessoesComAPermissaoAsync(
-        Guid perfilId, string codigo, DateTimeOffset agora, bool travar, CancellationToken cancellationToken = default);
+        Guid perfilId, CodigoDePermissao codigo, DateTimeOffset agora, bool bloquearParaLeituraCompartilhada, CancellationToken cancellationToken = default);
 
     /// <summary>As versões do perfil em uso: a vigente, as das concessões não revogadas e a de destino de janela aberta.</summary>
     Task<IReadOnlyList<Guid>> ListarVersoesEmUsoAsync(Guid perfilId, CancellationToken cancellationToken = default);

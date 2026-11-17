@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.UnitTests;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.CenarioDaGovernancaDaVersao;
 using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.DoublesDePerfis;
@@ -124,7 +125,7 @@ public sealed class DecisoesDaReclassificacaoTests
             RelogioFixo tempo = new(PerfisDeTeste.Instante.AddHours(1));
             Concessao = ConcessaoBuilder.DoPerfil(perfil, new CatalogoDeTeste()).Para(Paulo).Construir();
             Reclassificacao = ReclassificacaoDaPermissao.Registrar(
-                Guid.NewGuid(), perfil.Id, Codigo, new MudancaDaPermissao(ClassificacaoDeProtecao.Interno, ClassificacaoDeProtecao.Pessoal, false, false), tempo.GetUtcNow(), 0);
+                Guid.NewGuid(), perfil.Id, CodigoDePermissao.De(Codigo), new MudancaDaPermissao(ClassificacaoDeProtecao.Interno, ClassificacaoDeProtecao.Pessoal, false, false), tempo.GetUtcNow(), 0);
             Reclassificacoes.Reclassificacoes.Add(Reclassificacao);
             Reclassificacoes.ConcessoesComAPermissao.Add(new ConcessaoComAPermissao(Concessao, new BaseDaConcessao(ClassificacaoDeProtecao.Interno, false)));
             Reclassificacoes.VersoesComDocumentoLido.Add(Concessao.VersaoId!.Value);

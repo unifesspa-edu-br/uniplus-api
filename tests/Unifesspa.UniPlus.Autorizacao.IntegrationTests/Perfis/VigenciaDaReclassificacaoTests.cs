@@ -23,6 +23,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 using static Unifesspa.UniPlus.Autorizacao.IntegrationTests.Perfis.CenarioDaReclassificacao;
 
@@ -86,7 +87,7 @@ public sealed class VigenciaDaReclassificacaoTests : PerfilEndpointTestBase, IAs
         (await _cenario.PermissoesDaPessoaAsync(pessoa)).Should().NotContain(PermissaoReclassificada).And.Contain(OutraPermissaoDoPerfil);
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
         IReclassificacaoRepository reclassificacoes = scope.ServiceProvider.GetRequiredService<IReclassificacaoRepository>();
-        (await reclassificacoes.ListarVigentesQueSuspendemAsync()).Should().ContainSingle(r => r.PerfilId == perfil && r.Codigo == PermissaoReclassificada);
+        (await reclassificacoes.ListarVigentesQueSuspendemAsync()).Should().ContainSingle(r => r.PerfilId == perfil && r.Codigo.Valor == PermissaoReclassificada);
     }
 
     private async Task GravarBaseRebaixadaAsync(Guid perfil, Guid concessao, ClassificacaoDeProtecao classificacao)
@@ -95,7 +96,7 @@ public sealed class VigenciaDaReclassificacaoTests : PerfilEndpointTestBase, IAs
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         Guid implantacao = await db.ImplantacoesDasPermissoes.OrderByDescending(c => c.Sequencia).Select(c => c.Id).FirstAsync();
         db.BasesDasPermissoes.Add(BaseDaPermissaoNaConcessao.Registrar(
-            perfil, concessao, PermissaoReclassificada, new BaseDaConcessao(classificacao, false), OrigemDaBase.Conciliacao, implantacao, 0));
+            perfil, concessao, CodigoDePermissao.De(PermissaoReclassificada), new BaseDaConcessao(classificacao, false), OrigemDaBase.Conciliacao, implantacao, 0));
         await db.SaveChangesAsync();
     }
 }

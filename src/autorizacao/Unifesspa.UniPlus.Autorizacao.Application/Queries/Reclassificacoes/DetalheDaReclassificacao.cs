@@ -67,7 +67,7 @@ public sealed class DetalheDaReclassificacao
             reclassificacao.Id,
             perfil.Id,
             perfil.Nome,
-            reclassificacao.Codigo,
+            reclassificacao.Codigo.Valor,
             Mudanca(reclassificacao),
             reclassificacao.Instante,
             await _reclassificacoes.EstaVigenteAsync(reclassificacao, cancellationToken).ConfigureAwait(false),
@@ -90,8 +90,8 @@ public sealed class DetalheDaReclassificacao
             versao.Id,
             versao.Numero,
             versao.Situacao.ToCodigo(),
-            [.. versao.Permissoes.OrderBy(static p => p.Codigo, StringComparer.Ordinal)
-                .Select(static p => new PermissaoDaVersaoEmUsoDto(p.Codigo, Texto(p.Classificacao), p.DeUnidade))],
+            [.. versao.Permissoes.OrderBy(static p => p.Codigo.Valor, StringComparer.Ordinal)
+                .Select(static p => new PermissaoDaVersaoEmUsoDto(p.Codigo.Valor, Texto(p.Classificacao), p.DeUnidade))],
             temDocumento ? $"/api/autorizacao/perfis/{perfil.Id:D}/versoes/{portadora:D}/documento" : null);
     }
 

@@ -40,8 +40,8 @@ internal sealed class ReclassificacoesNaMemoria : IReclassificacaoRepository
     public Task<ImplantacaoNoBanco?> ObterImplantacaoAtualAsync(IReadOnlyCollection<CodigoDePermissao> codigos, CancellationToken cancellationToken = default) =>
         Task.FromResult(ImplantacaoAtual);
 
-    public Task<IReadOnlySet<string>> ObterCodigosReclassificadosAsync(Guid implantacaoId, Guid perfilId, CancellationToken cancellationToken = default) =>
-        Task.FromResult<IReadOnlySet<string>>(Reclassificacoes.Where(r => r.ImplantacaoId == implantacaoId && r.PerfilId == perfilId).Select(r => r.Codigo).ToHashSet());
+    public Task<IReadOnlySet<CodigoDePermissao>> ObterCodigosReclassificadosAsync(Guid implantacaoId, Guid perfilId, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlySet<CodigoDePermissao>>(Reclassificacoes.Where(r => r.ImplantacaoId == implantacaoId && r.PerfilId == perfilId).Select(r => r.Codigo).ToHashSet());
 
     public void Adicionar(ReclassificacaoDaPermissao reclassificacao) => Reclassificacoes.Add(reclassificacao);
 
@@ -60,7 +60,7 @@ internal sealed class ReclassificacoesNaMemoria : IReclassificacaoRepository
         Task.FromResult<IReadOnlyList<LiberacaoDaReclassificacao>>([.. Liberacoes.Where(l => l.ReclassificacaoId == reclassificacaoId)]);
 
     public Task<IReadOnlyList<ConcessaoComAPermissao>> ListarConcessoesComAPermissaoAsync(
-        Guid perfilId, string codigo, DateTimeOffset agora, bool travar, CancellationToken cancellationToken = default) =>
+        Guid perfilId, CodigoDePermissao codigo, DateTimeOffset agora, bool bloquearParaLeituraCompartilhada, CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<ConcessaoComAPermissao>>([.. ConcessoesComAPermissao]);
 
     public Task<IReadOnlyList<Guid>> ListarVersoesEmUsoAsync(Guid perfilId, CancellationToken cancellationToken = default) =>

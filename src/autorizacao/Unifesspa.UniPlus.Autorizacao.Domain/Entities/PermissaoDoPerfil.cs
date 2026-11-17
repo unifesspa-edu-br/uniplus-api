@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
+
 /// <summary>
 /// Uma permissão do catálogo reunida por um perfil. Guarda só o código, que é o
 /// identificador estável da permissão: nome e sensibilidade pertencem ao catálogo e são
@@ -7,9 +9,9 @@ namespace Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 /// </summary>
 public sealed class PermissaoDoPerfil
 {
-    public string Codigo { get; private set; }
+    public CodigoDePermissao Codigo { get; private set; }
 
-    internal PermissaoDoPerfil(string codigo)
+    internal PermissaoDoPerfil(CodigoDePermissao codigo)
     {
         Codigo = codigo;
     }

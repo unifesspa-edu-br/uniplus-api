@@ -50,11 +50,11 @@ public sealed class ComposicaoDaGovernancaNoHostTests
     [Fact(DisplayName = "Os perfis de governança da carga reúnem permissões da autorização e, de outros módulos, só reservadas")]
     public async Task PerfisDeGovernanca_SoReunemAutorizacaoOuReservadas()
     {
-        string[] codigos = [.. (await ComposicaoGravadaAsync()).Select(static p => p.Codigo)];
+        CodigoDePermissao[] codigos = [.. (await ComposicaoGravadaAsync()).Select(static p => p.Codigo)];
 
         codigos.Should().NotBeEmpty();
-        codigos.Should().OnlyContain(codigo => ComposicaoDaGovernanca.Admite(Linha(codigo)));
-        codigos.Should().Contain([AprovacaoDaProtecaoDoCatalogo, ConsultaDaProtecaoDoCatalogo, ManifestacaoNaProtecaoDoCatalogo]);
+        codigos.Should().OnlyContain(codigo => ComposicaoDaGovernanca.Admite(Linha(codigo.Valor)));
+        codigos.Select(static c => c.Valor).Should().Contain([AprovacaoDaProtecaoDoCatalogo, ConsultaDaProtecaoDoCatalogo, ManifestacaoNaProtecaoDoCatalogo]);
     }
 
     [Fact(DisplayName = "A composição gravada dos perfis de gestor, de Representante e de Encarregado é a esperada")]
@@ -117,7 +117,7 @@ public sealed class ComposicaoDaGovernancaNoHostTests
     }
 
     private static Guid[] PerfisQueReunem(string codigo) =>
-        [.. ComposicaoDaGovernanca.Esperada.Where(p => p.Codigo == codigo).Select(static p => p.PerfilId)];
+        [.. ComposicaoDaGovernanca.Esperada.Where(p => p.Codigo.Valor == codigo).Select(static p => p.PerfilId)];
 
     private PermissaoDoCatalogo Linha(string codigo)
     {

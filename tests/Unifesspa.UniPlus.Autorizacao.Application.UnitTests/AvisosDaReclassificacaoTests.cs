@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -147,7 +148,7 @@ public sealed class AvisosDaReclassificacaoTests
 
         public ReclassificacaoDaPermissao Reclassificar(MudancaDaPermissao mudanca)
         {
-            ReclassificacaoDaPermissao fato = ReclassificacaoDaPermissao.Registrar(Guid.CreateVersion7(), PerfilId, Codigo, mudanca, Agora, 0);
+            ReclassificacaoDaPermissao fato = ReclassificacaoDaPermissao.Registrar(Guid.CreateVersion7(), PerfilId, CodigoDePermissao.De(Codigo), mudanca, Agora, 0);
             Repositorio.Reclassificacoes.Add(fato);
 
             return fato;

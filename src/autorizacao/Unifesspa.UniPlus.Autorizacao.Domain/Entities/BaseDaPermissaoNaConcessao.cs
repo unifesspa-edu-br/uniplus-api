@@ -5,6 +5,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
 /// A base de uma permissão numa concessão num instante da história dela. A última linha do par (concessão, código) é a
@@ -19,7 +20,7 @@ public sealed class BaseDaPermissaoNaConcessao : IForensicEntity, IRegistroDaTri
 
     public Guid ConcessaoId { get; private init; }
 
-    public string Codigo { get; private init; } = string.Empty;
+    public CodigoDePermissao Codigo { get; private init; } = null!;
 
     /// <summary>Nula só na saída, que encerra a base.</summary>
     public ClassificacaoDeProtecao? Classificacao { get; private init; }
@@ -42,7 +43,7 @@ public sealed class BaseDaPermissaoNaConcessao : IForensicEntity, IRegistroDaTri
     }
 
     public static BaseDaPermissaoNaConcessao Registrar(
-        Guid perfilId, Guid concessaoId, string codigo, BaseDaConcessao baseNova, OrigemDaBase origem, Guid referenciaId, int ordinal)
+        Guid perfilId, Guid concessaoId, CodigoDePermissao codigo, BaseDaConcessao baseNova, OrigemDaBase origem, Guid referenciaId, int ordinal)
     {
         ArgumentNullException.ThrowIfNull(baseNova);
 
@@ -50,10 +51,10 @@ public sealed class BaseDaPermissaoNaConcessao : IForensicEntity, IRegistroDaTri
     }
 
     /// <summary>A saída da permissão da composição da concessão: encerra a base dela.</summary>
-    public static BaseDaPermissaoNaConcessao DaSaida(Guid perfilId, Guid concessaoId, string codigo, Guid versaoAlvoId, int ordinal) =>
+    public static BaseDaPermissaoNaConcessao DaSaida(Guid perfilId, Guid concessaoId, CodigoDePermissao codigo, Guid versaoAlvoId, int ordinal) =>
         Nova(perfilId, concessaoId, codigo, new Referencia(OrigemDaBase.Saida, versaoAlvoId, ordinal), null);
 
-    private static BaseDaPermissaoNaConcessao Nova(Guid perfilId, Guid concessaoId, string codigo, Referencia referencia, BaseDaConcessao? valores) =>
+    private static BaseDaPermissaoNaConcessao Nova(Guid perfilId, Guid concessaoId, CodigoDePermissao codigo, Referencia referencia, BaseDaConcessao? valores) =>
         new()
         {
             PerfilId = perfilId,

@@ -61,7 +61,7 @@ public sealed class FilaDeReclassificacoes
     }
 
     private static ItemDaFilaDeReclassificacoesDto Item(ReclassificacaoDaPermissao reclassificacao, string perfilNome, int aguardando) =>
-        new(reclassificacao.Id, reclassificacao.PerfilId, perfilNome, reclassificacao.Codigo,
+        new(reclassificacao.Id, reclassificacao.PerfilId, perfilNome, reclassificacao.Codigo.Valor,
             DetalheDaReclassificacao.Mudanca(reclassificacao), reclassificacao.Instante, aguardando);
 
     private async Task<int> ContarAsync(ReclassificacaoDaPermissao reclassificacao, EtapaDaVersao etapa, CancellationToken cancellationToken) =>

@@ -1,9 +1,10 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>Uma permissão que um perfil de governança reúne.</summary>
-public sealed record PermissaoDeGovernanca(Guid PerfilId, string Codigo);
+public sealed record PermissaoDeGovernanca(Guid PerfilId, CodigoDePermissao Codigo);
 
 /// <summary>
 /// A composição esperada dos perfis de governança, a única que o código declara: a carga inicial a grava e a conferência
@@ -17,28 +18,30 @@ public static class ComposicaoDaGovernanca
     /// <summary>As permissões de cada perfil de governança, na ordem da carga.</summary>
     public static IReadOnlyList<PermissaoDeGovernanca> Esperada { get; } =
     [
-        new(PerfisDeSistema.GestorDeAcessosId, "autorizacao:concessoes:administrar"),
-        new(PerfisDeSistema.GestorDeAcessosId, "autorizacao:pedidos:aprovar-funcional"),
-        new(PerfisDeSistema.GestorDeAcessosId, "autorizacao:perfis:aprovar-funcional"),
-        new(PerfisDeSistema.GestorDeAcessosId, "autorizacao:perfis:manter"),
-        new(PerfisDeSistema.GestorDeAcessosId, "autorizacao:permissoes:consultar-catalogo"),
-        new(PerfisDeSistema.GestorDeAcessosId, "autorizacao:revisoes:rever-protecao-de-dados"),
-        new(PerfisDeSistema.GestorDeAcessosId, "autorizacao:termos:publicar"),
-        new(PerfisDeSistema.RepresentanteDoControladorId, "autorizacao:concessoes:administrar"),
-        new(PerfisDeSistema.RepresentanteDoControladorId, "autorizacao:pedidos:aprovar-protecao-de-dados"),
-        new(PerfisDeSistema.RepresentanteDoControladorId, "autorizacao:perfis:aprovar-protecao-de-dados"),
-        new(PerfisDeSistema.RepresentanteDoControladorId, "autorizacao:permissoes:consultar-catalogo"),
-        new(PerfisDeSistema.RepresentanteDoControladorId, "autorizacao:revisoes:conduzir"),
-        new(PerfisDeSistema.RepresentanteDoControladorId, "configuracao:protecao-do-catalogo:aprovar"),
-        new(PerfisDeSistema.EncarregadoDeDadosId, "autorizacao:concessoes:consultar"),
-        new(PerfisDeSistema.EncarregadoDeDadosId, "autorizacao:pedidos:consultar"),
-        new(PerfisDeSistema.EncarregadoDeDadosId, "autorizacao:perfis:consultar-versoes"),
-        new(PerfisDeSistema.EncarregadoDeDadosId, "autorizacao:permissoes:consultar-catalogo"),
-        new(PerfisDeSistema.EncarregadoDeDadosId, "autorizacao:providencias:solicitar"),
-        new(PerfisDeSistema.EncarregadoDeDadosId, "autorizacao:revisoes:consultar"),
-        new(PerfisDeSistema.EncarregadoDeDadosId, "configuracao:protecao-do-catalogo:consultar"),
-        new(PerfisDeSistema.EncarregadoDeDadosId, "configuracao:protecao-do-catalogo:manifestar"),
+        Reune(PerfisDeSistema.GestorDeAcessosId, "autorizacao:concessoes:administrar"),
+        Reune(PerfisDeSistema.GestorDeAcessosId, "autorizacao:pedidos:aprovar-funcional"),
+        Reune(PerfisDeSistema.GestorDeAcessosId, "autorizacao:perfis:aprovar-funcional"),
+        Reune(PerfisDeSistema.GestorDeAcessosId, "autorizacao:perfis:manter"),
+        Reune(PerfisDeSistema.GestorDeAcessosId, "autorizacao:permissoes:consultar-catalogo"),
+        Reune(PerfisDeSistema.GestorDeAcessosId, "autorizacao:revisoes:rever-protecao-de-dados"),
+        Reune(PerfisDeSistema.GestorDeAcessosId, "autorizacao:termos:publicar"),
+        Reune(PerfisDeSistema.RepresentanteDoControladorId, "autorizacao:concessoes:administrar"),
+        Reune(PerfisDeSistema.RepresentanteDoControladorId, "autorizacao:pedidos:aprovar-protecao-de-dados"),
+        Reune(PerfisDeSistema.RepresentanteDoControladorId, "autorizacao:perfis:aprovar-protecao-de-dados"),
+        Reune(PerfisDeSistema.RepresentanteDoControladorId, "autorizacao:permissoes:consultar-catalogo"),
+        Reune(PerfisDeSistema.RepresentanteDoControladorId, "autorizacao:revisoes:conduzir"),
+        Reune(PerfisDeSistema.RepresentanteDoControladorId, "configuracao:protecao-do-catalogo:aprovar"),
+        Reune(PerfisDeSistema.EncarregadoDeDadosId, "autorizacao:concessoes:consultar"),
+        Reune(PerfisDeSistema.EncarregadoDeDadosId, "autorizacao:pedidos:consultar"),
+        Reune(PerfisDeSistema.EncarregadoDeDadosId, "autorizacao:perfis:consultar-versoes"),
+        Reune(PerfisDeSistema.EncarregadoDeDadosId, "autorizacao:permissoes:consultar-catalogo"),
+        Reune(PerfisDeSistema.EncarregadoDeDadosId, "autorizacao:providencias:solicitar"),
+        Reune(PerfisDeSistema.EncarregadoDeDadosId, "autorizacao:revisoes:consultar"),
+        Reune(PerfisDeSistema.EncarregadoDeDadosId, "configuracao:protecao-do-catalogo:consultar"),
+        Reune(PerfisDeSistema.EncarregadoDeDadosId, "configuracao:protecao-do-catalogo:manifestar"),
     ];
+
+    private static PermissaoDeGovernanca Reune(Guid perfilId, string codigo) => new(perfilId, CodigoDePermissao.De(codigo));
 
     /// <summary>
     /// Se um perfil de governança pode reunir a permissão do catálogo: qualquer uma da autorização e, de outro módulo, só
@@ -53,6 +56,6 @@ public static class ComposicaoDaGovernanca
     }
 
     /// <summary>Os códigos que o perfil de governança deve reunir.</summary>
-    public static IReadOnlyList<string> CodigosDe(Guid perfilId) =>
+    public static IReadOnlyList<CodigoDePermissao> CodigosDe(Guid perfilId) =>
         [.. Esperada.Where(p => p.PerfilId == perfilId).Select(static p => p.Codigo)];
 }

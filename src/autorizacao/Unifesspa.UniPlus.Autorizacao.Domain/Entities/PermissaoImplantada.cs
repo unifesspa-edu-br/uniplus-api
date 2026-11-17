@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
 /// O que o catálogo registrava de uma permissão ao ser implantado: a classificação, o escopo e a reserva à governança. É a
@@ -10,7 +11,7 @@ public sealed class PermissaoImplantada
 {
     public Guid ImplantacaoId { get; private init; }
 
-    public string Codigo { get; private init; } = string.Empty;
+    public CodigoDePermissao Codigo { get; private init; } = null!;
 
     public ClassificacaoDeProtecao Classificacao { get; private init; }
 
@@ -23,7 +24,7 @@ public sealed class PermissaoImplantada
     {
     }
 
-    internal PermissaoImplantada(Guid implantacaoId, string codigo, ClassificacaoDeProtecao classificacao, bool deUnidade, bool reservada)
+    internal PermissaoImplantada(Guid implantacaoId, CodigoDePermissao codigo, ClassificacaoDeProtecao classificacao, bool deUnidade, bool reservada)
     {
         ImplantacaoId = implantacaoId;
         Codigo = codigo;

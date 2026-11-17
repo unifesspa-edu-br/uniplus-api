@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>Repositório das janelas de migração.</summary>
 public sealed class JanelaDeMigracaoRepository : IJanelaDeMigracaoRepository
@@ -85,7 +86,7 @@ public sealed class JanelaDeMigracaoRepository : IJanelaDeMigracaoRepository
 
         return pares
             .GroupBy(static p => p.Id)
-            .ToDictionary(static g => g.Key, static g => (IReadOnlyList<string>)[.. g.Select(static p => p.Codigo).OfType<string>().Order(StringComparer.Ordinal)]);
+            .ToDictionary(static g => g.Key, static g => (IReadOnlyList<string>)[.. g.Select(static p => p.Codigo).OfType<CodigoDePermissao>().Select(static c => c.Valor).Order(StringComparer.Ordinal)]);
     }
 
     public async Task<IReadOnlyList<JanelaDeMigracao>> ListarAbertasParaLeituraAsync(

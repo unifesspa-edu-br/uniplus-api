@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
 /// A suspensão da permissão que o catálogo atual reclassificou para cima ou mudou de escopo, na concessão: o fragmento da
@@ -44,7 +45,7 @@ internal sealed class BaseViva
 {
     public Guid ConcessaoId { get; init; }
 
-    public string Codigo { get; init; } = string.Empty;
+    public CodigoDePermissao Codigo { get; init; } = null!;
 
     public ClassificacaoDeProtecao Classificacao { get; init; }
 

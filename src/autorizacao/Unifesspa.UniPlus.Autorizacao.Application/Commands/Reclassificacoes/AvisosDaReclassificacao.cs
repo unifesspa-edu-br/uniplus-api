@@ -101,7 +101,7 @@ public sealed class AvisosDaReclassificacao
 
         TipoDeAviso tipo = r.MudouEscopo ? TipoDeAviso.EscopoDaPermissaoAlterado : TipoDeAviso.PermissaoReclassificada;
 
-        return new FatoDoAviso(r.PerfilId, r.Codigo, tipo, MudancaDe(r), r.MudouEscopo ? DosDoisGrupos : [GrupoDaGovernanca.RepresentanteDoControlador]);
+        return new FatoDoAviso(r.PerfilId, r.Codigo.Valor, tipo, MudancaDe(r), r.MudouEscopo ? DosDoisGrupos : [GrupoDaGovernanca.RepresentanteDoControlador]);
     }
 
     private async Task<FatoDoAviso?> DaDivergenciaAsync(Guid id, CancellationToken cancellationToken)

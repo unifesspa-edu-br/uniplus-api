@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -194,7 +195,7 @@ public static class PerfisDeTeste
 
     private static PermissaoDoPerfil NovaPermissaoDoPerfil(string codigo) =>
         (PermissaoDoPerfil)Activator.CreateInstance(
-            typeof(PermissaoDoPerfil), BindingFlags.Instance | BindingFlags.NonPublic, null, [codigo], null)!;
+            typeof(PermissaoDoPerfil), BindingFlags.Instance | BindingFlags.NonPublic, null, [CodigoDePermissao.De(codigo)], null)!;
 
     private static List<T> ListaPrivada<T>(Perfil perfil, string campo) =>
         (List<T>)typeof(Perfil).GetField(campo, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(perfil)!;

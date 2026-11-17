@@ -109,7 +109,7 @@ internal sealed class PerfilConfiguration : IEntityTypeConfiguration<Perfil>
             permissao.ToTable("permissoes_do_perfil");
             permissao.WithOwner().HasForeignKey("PerfilId");
             permissao.Property<Guid>("PerfilId");
-            permissao.Property(x => x.Codigo).HasMaxLength(CodigoPermissaoMaxLength).IsRequired();
+            permissao.Property(x => x.Codigo).HasConversion(ConversoresDoCatalogo.Codigo).HasMaxLength(CodigoPermissaoMaxLength).IsRequired();
             permissao.HasKey("PerfilId", nameof(PermissaoDoPerfil.Codigo));
 
             permissao.HasData(ComposicaoDaGovernanca.Esperada.Select(static p => new { p.PerfilId, p.Codigo }));
