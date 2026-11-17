@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Publicacoes.Application.Commands.TiposAtoPublicado;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 [SuppressMessage(
     "Performance",
@@ -40,8 +41,7 @@ public sealed class RemoverTipoAtoPublicadoCommandHandlerTests
     [Fact(DisplayName = "Remove e commita — a remoção nunca é bloqueada")]
     public async Task Handle_Encontrado_Remove()
     {
-        TipoAtoPublicado tipo = TipoAtoPublicado.Criar(
-            "AVISO", "Aviso", false, false, false, false, new DateOnly(2026, 1, 1), null, null).Value!;
+        TipoAtoPublicado tipo = new TipoAtoPublicadoDeTeste { Codigo = "AVISO", Nome = "Aviso" }.Criar().Value!;
         _repository.ObterPorIdAsync(tipo.Id, Arg.Any<CancellationToken>()).Returns(tipo);
 
         Result resultado = await RemoverTipoAtoPublicadoCommandHandler.Handle(

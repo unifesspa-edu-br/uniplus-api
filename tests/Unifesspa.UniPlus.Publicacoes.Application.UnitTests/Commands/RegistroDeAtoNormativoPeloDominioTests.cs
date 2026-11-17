@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// A porta de escrita registra o ato no rastreador, sem confirmar, e recusa antes de qualquer gravação com o código que
@@ -171,15 +172,22 @@ public sealed class RegistroDeAtoNormativoPeloDominioTests
             DataDoAto = DataDoAto,
             PublicadoEm = PublicadoEm,
             DocumentoHash = Hash,
-            Assinante = "Jairo Belchior",
+            Assinante = PersonasDeTeste.NomeKevinCarvalho,
             Vinculos = [new(Objeto, ProcessoDoTeste)],
         };
 
     private static readonly Guid ProcessoDoTeste = Guid.CreateVersion7();
 
     private static AtoNormativo AtoExistente(string tipo, bool congela, string numero = "13") =>
-        AtoNormativo.Registrar(
-            Guid.CreateVersion7(), "CEPS", "EDITAL", 2026, numero, tipo,
-            congelaConfiguracao: congela, efeitoIrreversivel: false, unicoPorObjeto: true,
-            DataDoAto, Hash, "Jairo Belchior", PublicadoEm, versaoDoObjeto: null, vinculos: [(Objeto, ProcessoDoTeste)]);
+        new AtoNormativoDeTeste
+        {
+            TipoCodigo = tipo,
+            Numero = numero,
+            CongelaConfiguracao = congela,
+            UnicoPorObjeto = true,
+            DataDoAto = DataDoAto,
+            DocumentoHash = Hash,
+            PublicadoEm = PublicadoEm,
+            Vinculos = [(Objeto, ProcessoDoTeste)],
+        }.Registrar();
 }

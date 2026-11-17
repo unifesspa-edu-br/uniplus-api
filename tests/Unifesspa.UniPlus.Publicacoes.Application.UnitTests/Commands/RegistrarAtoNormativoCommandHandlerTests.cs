@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 [SuppressMessage(
     "Performance",
@@ -31,6 +32,11 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
     private readonly IAtoNormativoRepository _atos = Substitute.For<IAtoNormativoRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
     private readonly TimeProvider _relogio = new RelogioFixo(Agora);
+    private AtoNormativo? _adicionado;
+
+    public RegistrarAtoNormativoCommandHandlerTests() =>
+        _atos.When(a => a.AdicionarAsync(Arg.Any<AtoNormativo>(), Arg.Any<CancellationToken>()))
+            .Do(chamada => _adicionado = chamada.Arg<AtoNormativo>());
 
     [Fact(DisplayName = "Recusa quando não há tipo vigente na data da publicação")]
     public async Task Handle_SemTipoVigente_Falha()
@@ -52,16 +58,13 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
         VigenteComConsequencia(congela: true, efeito: true);
         SemConflitoDeNumero();
 
-        AtoNormativo? capturado = null;
-        await _atos.AdicionarAsync(Arg.Do<AtoNormativo>(a => capturado = a), Arg.Any<CancellationToken>());
-
         Result<RegistrarAtoNormativoResult> resultado = await Executar(Comando());
 
         resultado.IsSuccess.Should().BeTrue();
-        capturado.Should().NotBeNull();
-        capturado!.CongelaConfiguracao.Should().BeTrue();
-        capturado.EfeitoIrreversivel.Should().BeTrue();
-        capturado.PublicadoEm.Should().Be(Agora);
+        _adicionado.Should().NotBeNull();
+        _adicionado!.CongelaConfiguracao.Should().BeTrue();
+        _adicionado!.EfeitoIrreversivel.Should().BeTrue();
+        _adicionado!.PublicadoEm.Should().Be(Agora);
         resultado.Value!.PublicadoEm.Should().Be(Agora);
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
@@ -125,47 +128,43 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
+    /// <remarks>O novo ato é de tipo não congelante e o retificado é congelante: as classes divergem.</remarks>
     [Fact(DisplayName = "Retificar com classe de congelamento divergente é recusado")]
     public async Task Handle_RetificaCongelaDivergente_Falha()
     {
-        // Novo ato: tipo não congelante. Retificado: congelante. Classes divergem.
         VigenteComConsequencia(congela: false, efeito: false);
         AtoNormativo retificado = AtoExistente(congela: true);
-        _atos.ObterPorIdParaLeituraAsync(retificado.Id, Arg.Any<CancellationToken>()).Returns(retificado);
-        _atos.ObterRetificadorAsync(retificado.Id, Arg.Any<CancellationToken>()).Returns((AtoNormativo?)null);
+        _atos.ComoRetificavel(retificado);
 
         Result<RegistrarAtoNormativoResult> resultado = await Executar(
-            Comando() with { AtoRetificadoId = retificado.Id, MotivoRetificacao = "corrige o anexo II" });
+            ComandoQueRetifica(retificado));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(AtoNormativoErrorCodes.ClasseDeCongelamentoDivergente);
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
+    /// <remarks>
+    /// O novo ato é do tipo EDITAL_ABERTURA e o retificado, do tipo AVISO, ambos congelantes: rótulos
+    /// distintos, mesma classe de congelamento (um aviso retifica um edital). A retificação não muda o
+    /// tipo: o novo ato mantém o próprio, não herda o do retificado.
+    /// </remarks>
     [Fact(DisplayName = "Tipo diferente com a mesma classe de congelamento pode retificar, e a retificação não muda o tipo")]
     public async Task Handle_RetificaMesmaClasse_Registra()
     {
-        // Novo ato tipo EDITAL_ABERTURA congelante; retificado tipo AVISO congelante —
-        // rótulos distintos, mesma classe de congelamento (um aviso retifica um edital).
         VigenteComConsequencia(congela: true, efeito: false);
         SemConflitoDeNumero();
         AtoNormativo retificado = AtoExistente(congela: true, tipoCodigo: "AVISO");
-        _atos.ObterPorIdParaLeituraAsync(retificado.Id, Arg.Any<CancellationToken>()).Returns(retificado);
-        _atos.ObterRetificadorAsync(retificado.Id, Arg.Any<CancellationToken>()).Returns((AtoNormativo?)null);
-
-        AtoNormativo? capturado = null;
-        await _atos.AdicionarAsync(Arg.Do<AtoNormativo>(a => capturado = a), Arg.Any<CancellationToken>());
+        _atos.ComoRetificavel(retificado);
 
         Result<RegistrarAtoNormativoResult> resultado = await Executar(
-            Comando() with { AtoRetificadoId = retificado.Id, MotivoRetificacao = "corrige o anexo II" });
+            ComandoQueRetifica(retificado));
 
         resultado.IsSuccess.Should().BeTrue();
-        capturado!.AtoRetificadoId.Should().Be(retificado.Id);
-        capturado.MotivoRetificacao.Should().Be("corrige o anexo II");
-        // A retificação não muda o tipo: o novo ato mantém o próprio tipo
-        // (EDITAL_ABERTURA), não herda o do retificado (AVISO).
+        _adicionado!.AtoRetificadoId.Should().Be(retificado.Id);
+        _adicionado!.MotivoRetificacao.Should().Be("corrige o anexo II");
         retificado.TipoCodigo.Should().Be("AVISO");
-        capturado.TipoCodigo.Should().Be("EDITAL_ABERTURA");
+        _adicionado!.TipoCodigo.Should().Be("EDITAL_ABERTURA");
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -179,7 +178,7 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
         _atos.ObterRetificadorAsync(retificado.Id, Arg.Any<CancellationToken>()).Returns(jaRetificador);
 
         Result<RegistrarAtoNormativoResult> resultado = await Executar(
-            Comando() with { AtoRetificadoId = retificado.Id, MotivoRetificacao = "corrige o anexo II" });
+            ComandoQueRetifica(retificado));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(AtoNormativoErrorCodes.AtoJaRetificado);
@@ -193,11 +192,10 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
         VigenteComConsequencia(congela: false, efeito: false);
         SemConflitoDeNumero();
         AtoNormativo cabeca = AtoExistente(congela: false);
-        _atos.ObterPorIdParaLeituraAsync(cabeca.Id, Arg.Any<CancellationToken>()).Returns(cabeca);
-        _atos.ObterRetificadorAsync(cabeca.Id, Arg.Any<CancellationToken>()).Returns((AtoNormativo?)null);
+        _atos.ComoRetificavel(cabeca);
 
         Result<RegistrarAtoNormativoResult> resultado = await Executar(
-            Comando() with { AtoRetificadoId = cabeca.Id, MotivoRetificacao = "corrige o anexo II" });
+            ComandoQueRetifica(cabeca));
 
         resultado.IsSuccess.Should().BeTrue();
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
@@ -208,13 +206,10 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
     {
         VigenteComConsequencia(congela: false, efeito: false, unico: true);
         SemConflitoDeNumero();
-        AtoNormativo? capturado = null;
-        await _atos.AdicionarAsync(Arg.Do<AtoNormativo>(a => capturado = a), Arg.Any<CancellationToken>());
-
         Result<RegistrarAtoNormativoResult> resultado = await Executar(Comando());
 
         resultado.IsSuccess.Should().BeTrue();
-        capturado!.UnicoPorObjeto.Should().BeTrue();
+        _adicionado!.UnicoPorObjeto.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Registro pelo endpoint copia o nome do tipo vigente por valor")]
@@ -222,34 +217,23 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
     {
         VigenteComConsequencia(congela: false, efeito: false);
         SemConflitoDeNumero();
-        AtoNormativo? capturado = null;
-        await _atos.AdicionarAsync(Arg.Do<AtoNormativo>(a => capturado = a), Arg.Any<CancellationToken>());
-
         Result<RegistrarAtoNormativoResult> resultado = await Executar(Comando());
 
         resultado.IsSuccess.Should().BeTrue();
-        capturado!.TipoNome.Should().Be("Edital de abertura");
+        _adicionado!.TipoNome.Should().Be("Edital de abertura");
     }
 
+    /// <remarks>O catálogo já tem outro nome para o tipo: se o handler o relesse, gravaria este.</remarks>
     [Fact(DisplayName = "Registro por mensagem grava o nome conferido pelo emissor, sem reler o catálogo")]
     public async Task Handle_PorMensagem_GravaNomeConferidoSemReler()
     {
-        // O catálogo já tem outro nome para o tipo: se o handler o relesse, gravaria este.
         VigenteComConsequencia(congela: false, efeito: false);
         SemConflitoDeNumero();
-        AtoNormativo? capturado = null;
-        await _atos.AdicionarAsync(Arg.Do<AtoNormativo>(a => capturado = a), Arg.Any<CancellationToken>());
-
-        Result<RegistrarAtoNormativoResult> resultado = await Executar(Comando() with
-        {
-            AtoId = Guid.CreateVersion7(),
-            AtributosDoTipo = new AtributosDoTipoAto(
-                CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false,
-                Nome: "Edital de abertura (nome da publicação)"),
-        });
+        Result<RegistrarAtoNormativoResult> resultado = await Executar(
+            ComandoPorMensagem(nome: "Edital de abertura (nome da publicação)"));
 
         resultado.IsSuccess.Should().BeTrue();
-        capturado!.TipoNome.Should().Be("Edital de abertura (nome da publicação)");
+        _adicionado!.TipoNome.Should().Be("Edital de abertura (nome da publicação)");
         await _tipos.DidNotReceive().ObterVigenteAsync(
             Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>());
     }
@@ -259,37 +243,30 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
     {
         VigenteComConsequencia(congela: false, efeito: false);
         SemConflitoDeNumero();
-        AtoNormativo? capturado = null;
-        await _atos.AdicionarAsync(Arg.Do<AtoNormativo>(a => capturado = a), Arg.Any<CancellationToken>());
-
-        Result<RegistrarAtoNormativoResult> resultado = await Executar(Comando() with
-        {
-            AtoId = Guid.CreateVersion7(),
-            AtributosDoTipo = new AtributosDoTipoAto(
-                CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, Nome: null),
-        });
+        Result<RegistrarAtoNormativoResult> resultado = await Executar(ComandoPorMensagem(nome: null));
 
         resultado.IsSuccess.Should().BeTrue();
-        capturado!.TipoNome.Should().BeNull();
-        capturado.TipoCodigo.Should().Be("EDITAL_ABERTURA");
+        _adicionado!.TipoNome.Should().BeNull();
+        _adicionado!.TipoCodigo.Should().Be("EDITAL_ABERTURA");
     }
 
+    /// <remarks>
+    /// A cadeia do retificado (aqui, só ele, que é a raiz) é excluída do aviso. O retificado compartilha
+    /// a numeração, como numa republicação com o mesmo número, e é o único conflitante: excluído, não
+    /// sobra aviso nenhum.
+    /// </remarks>
     [Fact(DisplayName = "Retificação exclui o ato retificado do aviso de numeração (mesma linhagem, não colisão)")]
     public async Task Handle_RetificacaoExcluiRetificadoDoAviso()
     {
         VigenteComConsequencia(congela: false, efeito: false);
         AtoNormativo retificado = AtoExistente(congela: false);
-        _atos.ObterPorIdParaLeituraAsync(retificado.Id, Arg.Any<CancellationToken>()).Returns(retificado);
-        _atos.ObterRetificadorAsync(retificado.Id, Arg.Any<CancellationToken>()).Returns((AtoNormativo?)null);
-        // A cadeia do retificado (aqui, só ele — é a raiz) é excluída do aviso.
+        _atos.ComoRetificavel(retificado);
         _atos.ListarIdsDaCadeiaAsync(retificado.Id, Arg.Any<CancellationToken>()).Returns([retificado.Id]);
-        // O retificado compartilha a numeração (republicação com o mesmo número); é o
-        // único conflitante — deve ser excluído, resultando em nenhum aviso.
         _atos.ListarIdsComMesmaNumeracaoAsync("CEPS", "EDITAL", 2026, "13", null, Arg.Any<CancellationToken>())
             .Returns([retificado.Id]);
 
         Result<RegistrarAtoNormativoResult> resultado = await Executar(
-            Comando() with { AtoRetificadoId = retificado.Id, MotivoRetificacao = "corrige o anexo II" });
+            ComandoQueRetifica(retificado));
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Avisos.Should().BeEmpty();
@@ -300,20 +277,11 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
     {
         VigenteComConsequencia(congela: false, efeito: false);
         SemConflitoDeNumero();
-        AtoNormativo? capturado = null;
-        await _atos.AdicionarAsync(Arg.Do<AtoNormativo>(a => capturado = a), Arg.Any<CancellationToken>());
-
-        Result<RegistrarAtoNormativoResult> resultado = await Executar(Comando() with
-        {
-            Anexos =
-            [
-                new AnexoDoAtoInput("Anexo II.pdf", "application/pdf", OutroHash),
-                new AnexoDoAtoInput("Anexo I.pdf", "application/pdf", HashValido),
-            ],
-        });
+        Result<RegistrarAtoNormativoResult> resultado = await Executar(
+            Comando() with { Anexos = [AnexoPdf("Anexo II.pdf", OutroHash), AnexoPdf("Anexo I.pdf", HashValido)] });
 
         resultado.IsSuccess.Should().BeTrue();
-        capturado!.Anexos.OrderBy(a => a.Ordem).Select(a => a.Nome)
+        _adicionado!.Anexos.OrderBy(a => a.Ordem).Select(a => a.Nome)
             .Should().Equal("Anexo II.pdf", "Anexo I.pdf");
     }
 
@@ -322,26 +290,17 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
     {
         VigenteComConsequencia(congela: false, efeito: false);
         SemConflitoDeNumero();
-        AtoNormativo? capturado = null;
-        await _atos.AdicionarAsync(Arg.Do<AtoNormativo>(a => capturado = a), Arg.Any<CancellationToken>());
-
         Result<RegistrarAtoNormativoResult> resultado = await Executar(Comando() with { Anexos = null });
 
         resultado.IsSuccess.Should().BeTrue();
-        capturado!.Anexos.Should().BeEmpty();
+        _adicionado!.Anexos.Should().BeEmpty();
     }
 
     [Fact(DisplayName = "Anexo com nome repetido é recusado antes de qualquer ida ao banco")]
     public async Task Handle_AnexoComNomeDuplicado_RecusaSemTocarOBanco()
     {
-        Result<RegistrarAtoNormativoResult> resultado = await Executar(Comando() with
-        {
-            Anexos =
-            [
-                new AnexoDoAtoInput("Anexo I.pdf", "application/pdf", HashValido),
-                new AnexoDoAtoInput("Anexo I.pdf", "application/pdf", OutroHash),
-            ],
-        });
+        Result<RegistrarAtoNormativoResult> resultado = await Executar(
+            Comando() with { Anexos = [AnexoPdf("Anexo I.pdf", HashValido), AnexoPdf("Anexo I.pdf", OutroHash)] });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(AnexoDoAtoErrorCodes.NomeDuplicado);
@@ -352,10 +311,8 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
     [Fact(DisplayName = "Elemento nulo na lista de anexos é recusado, sem descartá-lo")]
     public async Task Handle_AnexoNulo_RecusaSemDescartar()
     {
-        Result<RegistrarAtoNormativoResult> resultado = await Executar(Comando() with
-        {
-            Anexos = [new AnexoDoAtoInput("Anexo I.pdf", "application/pdf", HashValido), null!],
-        });
+        Result<RegistrarAtoNormativoResult> resultado = await Executar(
+            Comando() with { Anexos = [AnexoPdf("Anexo I.pdf", HashValido), null!] });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(AnexoDoAtoErrorCodes.Nulo);
@@ -368,23 +325,31 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
 
     private void VigenteComConsequencia(bool congela, bool efeito, bool unico = false)
     {
-        TipoAtoPublicado tipo = TipoAtoPublicado.Criar(
-            "EDITAL_ABERTURA", "Edital de abertura", congela, unicoPorObjeto: unico,
-            efeito, ehResultado: false, new DateOnly(2026, 1, 1), null, null).Value!;
+        TipoAtoPublicado tipo = new TipoAtoPublicadoDeTeste
+        {
+            CongelaConfiguracao = congela,
+            UnicoPorObjeto = unico,
+            EfeitoIrreversivel = efeito,
+        }.Criar().Value!;
         _tipos.ObterVigenteAsync("EDITAL_ABERTURA", DiaDaPublicacao, Arg.Any<CancellationToken>())
             .Returns(tipo);
     }
 
     private static AtoNormativo AtoExistente(bool congela, string tipoCodigo = "EDITAL_ABERTURA") =>
-        AtoNormativo.Registrar(
-            Guid.CreateVersion7(),
-            "CEPS", "EDITAL", 2026, "13", tipoCodigo,
-            congelaConfiguracao: congela, efeitoIrreversivel: false, unicoPorObjeto: false,
-            dataDoAto: DataDoAto,
-            documentoHash: HashValido,
-            assinante: "Jairo Belchior",
-            publicadoEm: Agora,
-            versaoDoObjeto: null);
+        new AtoNormativoDeTeste { CongelaConfiguracao = congela, TipoCodigo = tipoCodigo, DataDoAto = DataDoAto }.Registrar();
+
+    private static AnexoDoAtoInput AnexoPdf(string nome, string hash) => new(nome, "application/pdf", hash);
+
+    private static RegistrarAtoNormativoCommand ComandoQueRetifica(AtoNormativo retificado) =>
+        Comando() with { AtoRetificadoId = retificado.Id, MotivoRetificacao = "corrige o anexo II" };
+
+    private static RegistrarAtoNormativoCommand ComandoPorMensagem(string? nome) =>
+        Comando() with
+        {
+            AtoId = Guid.CreateVersion7(),
+            AtributosDoTipo = new AtributosDoTipoAto(
+                CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, Nome: nome),
+        };
 
     private void SemConflitoDeNumero() =>
         _atos.ListarIdsComMesmaNumeracaoAsync(
@@ -401,5 +366,5 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
             TipoCodigo: "EDITAL_ABERTURA",
             DataDoAto: DataDoAto,
             DocumentoHash: HashValido,
-            Assinante: "Jairo Belchior");
+            Assinante: PersonasDeTeste.NomeKevinCarvalho);
 }

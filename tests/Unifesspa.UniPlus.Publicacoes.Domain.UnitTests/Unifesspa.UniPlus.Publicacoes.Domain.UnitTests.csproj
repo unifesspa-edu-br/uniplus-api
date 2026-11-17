@@ -17,6 +17,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../Shared/AtoNormativoDeTeste.cs" Link="AtoNormativoDeTeste.cs" />
+    <Compile Include="../Shared/PersonasDeTeste.cs" Link="PersonasDeTeste.cs" />
+    <Compile Include="../Shared/TipoAtoPublicadoDeTeste.cs" Link="TipoAtoPublicadoDeTeste.cs" />
     <Using Include="Xunit" />
   </ItemGroup>
 

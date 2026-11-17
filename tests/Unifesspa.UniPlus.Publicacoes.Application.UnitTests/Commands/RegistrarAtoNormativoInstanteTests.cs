@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
 using Unifesspa.UniPlus.Publicacoes.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// O instante da divulgação do ato é recebido: o endpoint o lê do relógio uma só vez, e o registro
@@ -74,9 +75,7 @@ public sealed class RegistrarAtoNormativoInstanteTests
 
     private void PrepararTipoVigente()
     {
-        TipoAtoPublicado tipo = TipoAtoPublicado.Criar(
-            "EDITAL_ABERTURA", "Edital de abertura", congelaConfiguracao: false, unicoPorObjeto: false,
-            efeitoIrreversivel: false, ehResultado: false, new DateOnly(2026, 1, 1), null, null).Value!;
+        TipoAtoPublicado tipo = new TipoAtoPublicadoDeTeste().Criar().Value!;
         _tipos.ObterVigenteAsync("EDITAL_ABERTURA", DiaDaPublicacao, Arg.Any<CancellationToken>()).Returns(tipo);
         _atos.ListarIdsComMesmaNumeracaoAsync(
             Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<string>(),
@@ -93,5 +92,5 @@ public sealed class RegistrarAtoNormativoInstanteTests
             TipoCodigo: "EDITAL_ABERTURA",
             DataDoAto: DataDoAto,
             DocumentoHash: HashValido,
-            Assinante: "Jairo Belchior");
+            Assinante: PersonasDeTeste.NomeKevinCarvalho);
 }

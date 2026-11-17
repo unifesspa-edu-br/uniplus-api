@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Publicacoes.Application.Queries.AtosNormativos;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 [SuppressMessage(
     "Performance",
@@ -111,27 +112,8 @@ public sealed class AtoNormativoQueryHandlersTests
         return resultado.Value!;
     }
 
-    private static AtoNormativo NovoAto() =>
-        AtoNormativo.Registrar(
-            Guid.CreateVersion7(),
-            "CEPS", "EDITAL", 2026, "13", "EDITAL_ABERTURA",
-            congelaConfiguracao: false, efeitoIrreversivel: false, unicoPorObjeto: false,
-            dataDoAto: new DateOnly(2026, 3, 13),
-            documentoHash: HashValido,
-            assinante: "Jairo Belchior",
-            publicadoEm: new DateTimeOffset(2026, 3, 13, 19, 0, 0, TimeSpan.Zero),
-            versaoDoObjeto: null);
+    private static AtoNormativo NovoAto() => new AtoNormativoDeTeste().Registrar();
 
     private static AtoNormativo NovoRetificador(Guid atoRetificadoId) =>
-        AtoNormativo.Registrar(
-            Guid.CreateVersion7(),
-            "CEPS", "EDITAL", 2026, "13", "EDITAL_ABERTURA",
-            congelaConfiguracao: false, efeitoIrreversivel: false, unicoPorObjeto: false,
-            dataDoAto: new DateOnly(2026, 3, 13),
-            documentoHash: HashValido,
-            assinante: "Jairo Belchior",
-            publicadoEm: new DateTimeOffset(2026, 3, 13, 19, 0, 0, TimeSpan.Zero),
-            versaoDoObjeto: null,
-            atoRetificadoId: atoRetificadoId,
-            motivoRetificacao: "corrige o anexo II");
+        new AtoNormativoDeTeste { AtoRetificadoId = atoRetificadoId, MotivoRetificacao = "corrige o anexo II" }.Registrar();
 }

@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// A montagem do ato recusa sem gravar nada e devolve o ato pronto para quem chama adicionar e salvar.
@@ -91,18 +92,18 @@ public sealed class MontagemDoAtoNormativoTests
 
     private void TipoVigente(bool unicoPorObjeto)
     {
-        TipoAtoPublicado tipo = TipoAtoPublicado.Criar(
-            Tipo, "Edital de abertura", congelaConfiguracao: false, unicoPorObjeto,
-            efeitoIrreversivel: false, ehResultado: false, new DateOnly(2026, 1, 1), null, null).Value!;
+        TipoAtoPublicado tipo = new TipoAtoPublicadoDeTeste { Codigo = Tipo, UnicoPorObjeto = unicoPorObjeto }.Criar().Value!;
         _tipos.ObterVigenteAsync(Tipo, DiaDaPublicacao, Arg.Any<CancellationToken>()).Returns(tipo);
     }
 
     private static AtoNormativo AtoExistente(bool unicoPorObjeto) =>
-        AtoNormativo.Registrar(
-            Guid.CreateVersion7(),
-            "CEPS", "EDITAL", 2026, "13", Tipo,
-            congelaConfiguracao: false, efeitoIrreversivel: false, unicoPorObjeto,
-            DataDoAto, HashValido, "Jairo Belchior", PublicadoEm, versaoDoObjeto: null);
+        new AtoNormativoDeTeste
+        {
+            TipoCodigo = Tipo,
+            UnicoPorObjeto = unicoPorObjeto,
+            DataDoAto = DataDoAto,
+            PublicadoEm = PublicadoEm,
+        }.Registrar();
 
     private static RegistrarAtoNormativoCommand Comando() =>
         new(
@@ -113,5 +114,5 @@ public sealed class MontagemDoAtoNormativoTests
             TipoCodigo: Tipo,
             DataDoAto: DataDoAto,
             DocumentoHash: HashValido,
-            Assinante: "Jairo Belchior");
+            Assinante: PersonasDeTeste.NomeKevinCarvalho);
 }

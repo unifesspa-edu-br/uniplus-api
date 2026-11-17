@@ -82,9 +82,7 @@ public sealed class TipoVigenteDoAtoPeloInstanteTests
 
     private void TipoVigenteEm(DateOnly dia)
     {
-        TipoAtoPublicado tipo = TipoAtoPublicado.Criar(
-            Tipo, "Edital de abertura", congelaConfiguracao: false, unicoPorObjeto: false,
-            efeitoIrreversivel: false, ehResultado: false, new DateOnly(2026, 1, 1), null, null).Value!;
+        TipoAtoPublicado tipo = new TipoAtoPublicadoDeTeste { Codigo = Tipo }.Criar().Value!;
         _tipos.ObterVigenteAsync(Tipo, dia, Arg.Any<CancellationToken>()).Returns(tipo);
     }
 
@@ -97,5 +95,5 @@ public sealed class TipoVigenteDoAtoPeloInstanteTests
             TipoCodigo: Tipo,
             DataDoAto: dataDoAto,
             DocumentoHash: HashValido,
-            Assinante: "Jairo Belchior");
+            Assinante: PersonasDeTeste.NomeKevinCarvalho);
 }
