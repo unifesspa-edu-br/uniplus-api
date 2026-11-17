@@ -5,12 +5,13 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.Repositories;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests.Infrastructure;
 
 /// <summary>
 /// Delega tudo ao repositório real, exceto as conferências de unicidade entre as Unidades vivas, que respondem
 /// "não existe", como responderiam se outra transação gravasse a Unidade conflitante logo depois da conferência.
 /// </summary>
-public sealed class UnidadeComConsultaObsoleta(UnidadeRepository real, ConsultasObsoletasContadas? contagem = null)
+public sealed class UnidadeComConsultaObsoleta(UnidadeRepository real, ConsultasAoCadastroContadas? contagem = null)
     : IUnidadeRepository
 {
     public Task<bool> SlugExisteEntreVivosAsync(Slug slug, Guid? excluirId, CancellationToken cancellationToken) =>
@@ -49,14 +50,4 @@ public sealed class UnidadeComConsultaObsoleta(UnidadeRepository real, Consultas
         contagem?.Registrar();
         return Task.FromResult(false);
     }
-}
-
-/// <summary>Conta as conferências que o repositório de consulta obsoleta respondeu, para provar que o teste a exercitou.</summary>
-public sealed class ConsultasObsoletasContadas
-{
-    private int _total;
-
-    public int Total => _total;
-
-    public void Registrar() => Interlocked.Increment(ref _total);
 }
