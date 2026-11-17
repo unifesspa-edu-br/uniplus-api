@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Persistence;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.Converters;
 
@@ -93,17 +94,17 @@ internal sealed class UnidadeConfiguration : IEntityTypeConfiguration<Unidade>
         builder.HasIndex(u => u.Slug)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName("ix_unidades_slug_vivo");
+            .HasDatabaseName(RestricoesDoBanco.UnidadeSlugVivo);
 
         builder.HasIndex(u => u.Sigla)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName("ix_unidades_sigla_vivo");
+            .HasDatabaseName(RestricoesDoBanco.UnidadeSiglaVivo);
 
         builder.HasIndex(u => u.Codigo)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName("ix_unidades_codigo_vivo");
+            .HasDatabaseName(RestricoesDoBanco.UnidadeCodigoVivo);
 
         // Alias: índice não-único (para agrupamento/busca)
         builder.HasIndex(u => u.Alias)
