@@ -4,6 +4,7 @@ using ArchUnitNET.Domain;
 using ArchUnitNET.Fluent;
 using ArchUnitNET.Loader;
 
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Monolito.Persistencia;
@@ -15,7 +16,7 @@ using ReflectionAssembly = System.Reflection.Assembly;
 /// <summary>
 /// As duas arquiteturas das travas de fronteira: o produto, onde a regra vale, e os módulos sintéticos do projeto de
 /// teste, onde a regra tem de reprovar. As duas carregam as bibliotecas cujos membros as regras nomeiam (EF Core,
-/// Wolverine), porque o ArchUnitNET só enxerga o membro de um assembly carregado.
+/// Wolverine, MVC), porque o ArchUnitNET só enxerga o membro de um assembly carregado.
 /// </summary>
 internal static class ArquiteturaDasTravas
 {
@@ -40,6 +41,7 @@ internal static class ArquiteturaDasTravas
                     typeof(DbContext).Assembly,
                     typeof(RelationalDatabaseFacadeExtensions).Assembly,
                     typeof(IMessageBus).Assembly,
+                    typeof(ControllerBase).Assembly,
                 ])
             .Build();
 }
