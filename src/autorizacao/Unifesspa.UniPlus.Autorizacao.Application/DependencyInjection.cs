@@ -75,6 +75,7 @@ public static class AutorizacaoApplicationServiceRegistration
     {
         services.AddScoped<EmissaoDaLeituraDoAnexo>();
         services.AddScoped<EmissaoDoEnvioDoAnexo>();
+        services.AddScoped<ConfirmacaoDoAnexoDoPedido>();
     }
 
     private static void AdicionarDecisoesDoPedido(IServiceCollection services)
