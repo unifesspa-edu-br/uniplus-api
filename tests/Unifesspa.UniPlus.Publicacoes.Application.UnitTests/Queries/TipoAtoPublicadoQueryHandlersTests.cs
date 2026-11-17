@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Application.DTOs;
@@ -11,15 +12,23 @@ using Unifesspa.UniPlus.Publicacoes.Application.Queries.TiposAtoPublicado;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class TipoAtoPublicadoQueryHandlersTests
 {
+    private const string FusoNaoReconhecido = "ProcessoSeletivo.FusoInstitucionalNaoReconhecido";
+
     private static readonly DateOnly Inicio = new(2026, 1, 1);
 
+    /// <summary>22h30 em Belém, que em UTC já é o dia seguinte.</summary>
+    private static readonly DateOnly DiaEmBelem = new(2026, 6, 15);
+
     private readonly ITipoAtoPublicadoRepository _repository = Substitute.For<ITipoAtoPublicadoRepository>();
+    private readonly IResolvedorFusoInstitucional _fuso = new ResolvedorFusoDeTeste();
+    private readonly RelogioFixo _relogioDeBelem = new(InstanteEmBelem.Em(2026, 6, 15, 22, 30));
 
     [Fact(DisplayName = "ObterPorId projeta em DTO, com os quatro atributos de consequência")]
-    public async Task ObterPorId_Projeta()
+    public async Task ObterPorId_TipoExistente_ProjetaEmDto()
     {
         TipoAtoPublicado tipo = Novo("CONVOCACAO", congela: false, irreversivel: true, ehResultado: false);
         _repository.ObterPorIdParaLeituraAsync(tipo.Id, Arg.Any<CancellationToken>()).Returns(tipo);
@@ -50,67 +59,64 @@ public sealed class TipoAtoPublicadoQueryHandlersTests
         resultado.Error!.Code.Should().Be(TipoAtoPublicadoErrorCodes.NaoEncontrado);
     }
 
-    [Fact(DisplayName = "Listar repassa cursor, limite e direção, e devolve as âncoras")]
-    public async Task Listar_RepassaCursorEAncoras()
+    [Fact(DisplayName = "Listar com vigência repassa cursor, limite, direção e o dia civil de Belém, e devolve as âncoras")]
+    public async Task Listar_ComVigencia_RepassaCursorEDiaCivilDeBelemEDevolveAncoras()
     {
         Guid after = Guid.NewGuid();
         Guid prev = Guid.NewGuid();
         Guid next = Guid.NewGuid();
-        _repository.ListarPaginadoAsync(after, 25, PaginationDirection.Next, true, Arg.Any<CancellationToken>())
+        _repository.ListarPaginadoAsync(after, 25, PaginationDirection.Next, DiaEmBelem, Arg.Any<CancellationToken>())
             .Returns((new[] { Novo("AVISO") }, prev, next));
 
-        ListarTiposAtoPublicadoResult resultado = await ListarTiposAtoPublicadoQueryHandler.Handle(
+        Result<ListarTiposAtoPublicadoResult> resultado = await ListarTiposAtoPublicadoQueryHandler.Handle(
             new ListarTiposAtoPublicadoQuery(after, 25, PaginationDirection.Next),
-            _repository, CancellationToken.None);
+            _repository, _fuso, _relogioDeBelem, CancellationToken.None);
 
-        resultado.Items.Should().ContainSingle().Which.Codigo.Should().Be("AVISO");
-        resultado.AnteriorAfterId.Should().Be(prev);
-        resultado.ProximoAfterId.Should().Be(next);
+        resultado.Value!.Items.Should().ContainSingle().Which.Codigo.Should().Be("AVISO");
+        resultado.Value.AnteriorAfterId.Should().Be(prev);
+        resultado.Value.ProximoAfterId.Should().Be(next);
     }
 
-    [Fact(DisplayName = "Listar repassa o filtro de vigência ao repositório")]
-    public async Task Listar_RepassaFiltroDeVigencia()
+    [Fact(DisplayName = "Listar sem filtro de vigência repassa nulo e não consulta o fuso")]
+    public async Task Listar_SemFiltroDeVigencia_RepassaNuloENaoConsultaOFuso()
     {
+        IResolvedorFusoInstitucional fuso = Substitute.For<IResolvedorFusoInstitucional>();
         _repository.ListarPaginadoAsync(
-            Arg.Any<Guid?>(), Arg.Any<int>(), Arg.Any<PaginationDirection>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
+            Arg.Any<Guid?>(), Arg.Any<int>(), Arg.Any<PaginationDirection>(), Arg.Any<DateOnly?>(), Arg.Any<CancellationToken>())
             .Returns((Array.Empty<TipoAtoPublicado>(), (Guid?)null, (Guid?)null));
 
         await ListarTiposAtoPublicadoQueryHandler.Handle(
             new ListarTiposAtoPublicadoQuery(null, 25, PaginationDirection.Next, Vigentes: false),
-            _repository, CancellationToken.None);
+            _repository, fuso, _relogioDeBelem, CancellationToken.None);
 
         await _repository.Received(1).ListarPaginadoAsync(
-            null, 25, PaginationDirection.Next, false, Arg.Any<CancellationToken>());
+            null, 25, PaginationDirection.Next, null, Arg.Any<CancellationToken>());
+        fuso.DidNotReceive().Resolver();
     }
 
-    [Fact(DisplayName = "Listar filtra por vigentes quando a query não diz o contrário")]
-    public async Task Listar_DefaultEhVigentes()
+    [Fact(DisplayName = "Listar com vigência e fuso não reconhecido falha com a recusa do fuso, sem ler o repositório")]
+    public async Task Listar_ComVigenciaEFusoNaoReconhecido_FalhaSemLerORepositorio()
     {
-        _repository.ListarPaginadoAsync(
-            Arg.Any<Guid?>(), Arg.Any<int>(), Arg.Any<PaginationDirection>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
-            .Returns((Array.Empty<TipoAtoPublicado>(), (Guid?)null, (Guid?)null));
-
-        await ListarTiposAtoPublicadoQueryHandler.Handle(
+        Result<ListarTiposAtoPublicadoResult> resultado = await ListarTiposAtoPublicadoQueryHandler.Handle(
             new ListarTiposAtoPublicadoQuery(null, 25, PaginationDirection.Next),
-            _repository, CancellationToken.None);
+            _repository, new ResolvedorFusoIndisponivelDeTeste(), _relogioDeBelem, CancellationToken.None);
 
-        await _repository.Received(1).ListarPaginadoAsync(
-            null, 25, PaginationDirection.Next, true, Arg.Any<CancellationToken>());
+        resultado.Error!.Code.Should().Be(FusoNaoReconhecido);
+        await _repository.DidNotReceiveWithAnyArgs().ListarPaginadoAsync(
+            default, default, default, default, CancellationToken.None);
     }
 
-    [Fact(DisplayName = "ObterVigente sem data usa o relógio injetado, não DateTime.Now")]
-    public async Task ObterVigente_SemData_UsaRelogioInjetado()
+    [Fact(DisplayName = "ObterVigente sem data consulta o dia civil de Belém, e não o dia em UTC")]
+    public async Task ObterVigente_SemData_ConsultaODiaCivilDeBelem()
     {
-        var agora = new DateTimeOffset(2026, 6, 15, 23, 30, 0, TimeSpan.Zero);
         _repository.ObterVigenteAsync("AVISO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns(Novo("AVISO"));
 
         await ObterTipoAtoPublicadoVigenteQueryHandler.Handle(
             new ObterTipoAtoPublicadoVigenteQuery("AVISO", null),
-            _repository, new RelogioFixo(agora), CancellationToken.None);
+            _repository, _fuso, _relogioDeBelem, CancellationToken.None);
 
-        await _repository.Received(1).ObterVigenteAsync(
-            "AVISO", new DateOnly(2026, 6, 15), Arg.Any<CancellationToken>());
+        await _repository.Received(1).ObterVigenteAsync("AVISO", DiaEmBelem, Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "ObterVigente com data histórica consulta exatamente aquela data")]
@@ -121,10 +127,34 @@ public sealed class TipoAtoPublicadoQueryHandlersTests
 
         Result<TipoAtoPublicadoDto> resultado = await ObterTipoAtoPublicadoVigenteQueryHandler.Handle(
             new ObterTipoAtoPublicadoVigenteQuery("AVISO", data),
-            _repository, new RelogioFixo(DateTimeOffset.UnixEpoch), CancellationToken.None);
+            _repository, _fuso, _relogioDeBelem, CancellationToken.None);
 
         resultado.Value.Should().NotBeNull();
         await _repository.Received(1).ObterVigenteAsync("AVISO", data, Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "ObterVigente com data informada funciona mesmo com o fuso não reconhecido")]
+    public async Task ObterVigente_ComDataEFusoNaoReconhecido_ConsultaADataInformada()
+    {
+        var data = new DateOnly(2026, 3, 15);
+        _repository.ObterVigenteAsync("AVISO", data, Arg.Any<CancellationToken>()).Returns(Novo("AVISO"));
+
+        Result<TipoAtoPublicadoDto> resultado = await ObterTipoAtoPublicadoVigenteQueryHandler.Handle(
+            new ObterTipoAtoPublicadoVigenteQuery("AVISO", data),
+            _repository, new ResolvedorFusoIndisponivelDeTeste(), _relogioDeBelem, CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "ObterVigente sem data e com fuso não reconhecido falha com a recusa do fuso, sem ler o repositório")]
+    public async Task ObterVigente_SemDataEFusoNaoReconhecido_FalhaSemLerORepositorio()
+    {
+        Result<TipoAtoPublicadoDto> resultado = await ObterTipoAtoPublicadoVigenteQueryHandler.Handle(
+            new ObterTipoAtoPublicadoVigenteQuery("AVISO", null),
+            _repository, new ResolvedorFusoIndisponivelDeTeste(), _relogioDeBelem, CancellationToken.None);
+
+        resultado.Error!.Code.Should().Be(FusoNaoReconhecido);
+        await _repository.DidNotReceiveWithAnyArgs().ObterVigenteAsync(default!, default, CancellationToken.None);
     }
 
     [Fact(DisplayName = "ObterVigente falha com tipo não encontrado quando nenhuma versão vale na data")]
@@ -135,7 +165,7 @@ public sealed class TipoAtoPublicadoQueryHandlersTests
 
         Result<TipoAtoPublicadoDto> resultado = await ObterTipoAtoPublicadoVigenteQueryHandler.Handle(
             new ObterTipoAtoPublicadoVigenteQuery("AVISO", new DateOnly(2020, 1, 1)),
-            _repository, new RelogioFixo(DateTimeOffset.UnixEpoch), CancellationToken.None);
+            _repository, _fuso, _relogioDeBelem, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(TipoAtoPublicadoErrorCodes.NaoEncontrado);

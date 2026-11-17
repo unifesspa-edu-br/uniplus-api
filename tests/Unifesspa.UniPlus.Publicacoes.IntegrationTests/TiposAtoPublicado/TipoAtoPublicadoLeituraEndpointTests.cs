@@ -242,6 +242,18 @@ public sealed class TipoAtoPublicadoLeituraEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
+    [Fact(DisplayName = "GET tipos-ato com cursor que não decodifica retorna 400 com o código do cursor")]
+    public async Task Listar_CursorMalformado_Retorna400ComCodigoDoCursor()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage response = await client.GetAsync(
+            new Uri($"{Base}?cursor=isto-nao-e-um-cursor", UriKind.Relative));
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await response.Content.ReadAsStringAsync()).Should().Contain("uniplus.cursor.invalido");
+    }
+
     // ── Negociação de conteúdo ───────────────────────────────────────────────
 
     [Fact(DisplayName = "Accept com vendor MIME de versão inexistente retorna 406")]

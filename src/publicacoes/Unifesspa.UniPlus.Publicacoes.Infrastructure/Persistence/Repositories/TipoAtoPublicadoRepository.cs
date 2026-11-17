@@ -10,36 +10,35 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
 
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via DI em PublicacoesInfrastructureRegistration.")]
 public sealed class TipoAtoPublicadoRepository : ITipoAtoPublicadoRepository
 {
     private readonly UniPlusDbContext _dbContext;
-    private readonly TimeProvider _timeProvider;
 
-    public TipoAtoPublicadoRepository(UniPlusDbContext dbContext, TimeProvider timeProvider)
+    public TipoAtoPublicadoRepository(UniPlusDbContext dbContext)
     {
         ArgumentNullException.ThrowIfNull(dbContext);
-        ArgumentNullException.ThrowIfNull(timeProvider);
         _dbContext = dbContext;
-        _timeProvider = timeProvider;
     }
 
     public Task<TipoAtoPublicado?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken)
     {
         return _dbContext.TiposAtoPublicado
-            .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
+            .FirstOrDefaultAsync(tipo => tipo.Id == id, cancellationToken);
     }
 
     public Task<TipoAtoPublicado?> ObterPorIdParaLeituraAsync(Guid id, CancellationToken cancellationToken)
     {
         return _dbContext.TiposAtoPublicado
             .AsNoTracking()
-            .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
+            .FirstOrDefaultAsync(tipo => tipo.Id == id, cancellationToken);
     }
 
+    /// <remarks>
+    /// <c>SingleOrDefault</c>, e não <c>FirstOrDefault</c>: sob a exclusion constraint existe no
+    /// máximo uma versão viva vigente na data. Duas seria corrupção do catálogo, e devolver "a
+    /// primeira" entregaria em silêncio um congela_configuracao possivelmente errado a quem for
+    /// validar o ato.
+    /// </remarks>
     public Task<TipoAtoPublicado?> ObterVigenteAsync(
         string codigo,
         DateOnly data,
@@ -47,45 +46,40 @@ public sealed class TipoAtoPublicadoRepository : ITipoAtoPublicadoRepository
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
 
-        string codigoNorm = codigo.Trim();
+        string codigoNormalizado = codigo.Trim();
 
-        // SingleOrDefault, não FirstOrDefault: sob a exclusion constraint existe no
-        // máximo uma versão viva vigente na data. Duas seria corrupção do catálogo,
-        // e devolver "a primeira" entregaria em silêncio um congela_configuracao
-        // possivelmente errado a quem for validar o ato.
         return _dbContext.TiposAtoPublicado
             .AsNoTracking()
             .SingleOrDefaultAsync(
-                t => t.Codigo == codigoNorm
-                    && t.VigenciaInicio <= data
-                    && (t.VigenciaFim == null || t.VigenciaFim > data),
+                tipo => tipo.Codigo == codigoNormalizado
+                    && tipo.VigenciaInicio <= data
+                    && (tipo.VigenciaFim == null || tipo.VigenciaFim > data),
                 cancellationToken);
     }
 
+    /// <remarks>
+    /// Sem <c>OrderBy</c> aqui: o helper keyset (ADR-0089) ordena e fatia. Só os filtros se
+    /// aplicam, e os <c>EXISTS</c> de flag do helper herdam a mesma consulta base.
+    /// </remarks>
     public async Task<(IReadOnlyList<TipoAtoPublicado> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
         Guid? afterId,
         int limit,
         PaginationDirection direction,
-        bool vigentes,
+        DateOnly? vigentesEm,
         CancellationToken cancellationToken)
     {
-        // Sem OrderBy aqui: o helper keyset (ADR-0089) ordena e fatia. Aplicamos só
-        // os filtros; os EXISTS de flag do helper herdam a mesma query base.
-        IQueryable<TipoAtoPublicado> query = _dbContext.TiposAtoPublicado.AsNoTracking();
+        IQueryable<TipoAtoPublicado> consulta = _dbContext.TiposAtoPublicado.AsNoTracking();
 
-        if (vigentes)
+        if (vigentesEm is { } dia)
         {
-            DateOnly hoje = DateOnly.FromDateTime(_timeProvider.GetUtcNow().UtcDateTime.Date);
-            query = query.Where(t =>
-                t.VigenciaInicio <= hoje
-                && (t.VigenciaFim == null || t.VigenciaFim > hoje));
+            consulta = consulta.Where(TipoAtoPublicado.VigenteEm(dia));
         }
 
-        CursorKeysetPage<TipoAtoPublicado> page = await CursorKeyset
-            .ApplyAsync(query, afterId, limit, direction, cancellationToken)
+        CursorKeysetPage<TipoAtoPublicado> pagina = await CursorKeyset
+            .ApplyAsync(consulta, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
 
-        return (page.Items, page.PrevAfterId, page.NextAfterId);
+        return (pagina.Items, pagina.PrevAfterId, pagina.NextAfterId);
     }
 
     public async Task AdicionarAsync(TipoAtoPublicado tipo, CancellationToken cancellationToken)
@@ -100,6 +94,10 @@ public sealed class TipoAtoPublicadoRepository : ITipoAtoPublicadoRepository
         _dbContext.TiposAtoPublicado.Remove(tipo);
     }
 
+    /// <remarks>
+    /// Duas janelas semiabertas [a1,a2) e [b1,b2) se interceptam quando a1 &lt; b2 e b1 &lt; a2.
+    /// Fim nulo é +infinito, e o lado correspondente da conjunção some.
+    /// </remarks>
     public Task<bool> ExisteSobreposicaoDeVigenciaAsync(
         string codigo,
         DateOnly vigenciaInicio,
@@ -109,18 +107,15 @@ public sealed class TipoAtoPublicadoRepository : ITipoAtoPublicadoRepository
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
 
-        string codigoNorm = codigo.Trim();
+        string codigoNormalizado = codigo.Trim();
 
-        // Duas janelas semiabertas [a1,a2) e [b1,b2) se interceptam quando
-        // a1 < b2 e b1 < a2. Fim nulo é +infinito, e o lado correspondente da
-        // conjunção some.
         return _dbContext.TiposAtoPublicado
             .AsNoTracking()
-            .Where(t => excluirId == null || t.Id != excluirId)
+            .Where(tipo => excluirId == null || tipo.Id != excluirId)
             .AnyAsync(
-                t => t.Codigo == codigoNorm
-                    && (vigenciaFim == null || t.VigenciaInicio < vigenciaFim)
-                    && (t.VigenciaFim == null || t.VigenciaFim > vigenciaInicio),
+                tipo => tipo.Codigo == codigoNormalizado
+                    && (vigenciaFim == null || tipo.VigenciaInicio < vigenciaFim)
+                    && (tipo.VigenciaFim == null || tipo.VigenciaFim > vigenciaInicio),
                 cancellationToken);
     }
 }

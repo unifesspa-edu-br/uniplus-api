@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Publicacoes.IntegrationTests.TiposAtoPublicado;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 using AwesomeAssertions;
@@ -28,10 +27,6 @@ using Unifesspa.UniPlus.Publicacoes.IntegrationTests.Infrastructure;
 /// a consulta deu um instante antes.</para>
 /// </remarks>
 [Collection(PublicacoesDbCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class CriarTipoAtoPublicadoCorridaTests
 {
     private static readonly DateOnly Inicio = new(2026, 1, 1);
@@ -47,77 +42,66 @@ public sealed class CriarTipoAtoPublicadoCorridaTests
     public async Task Handle_QuandoAConsultaPreviaFicaObsoleta_TraduzOErroDoBanco()
     {
         string codigo = CodigoUnico();
+        await GravarPrimeiraVersaoAsync(codigo);
 
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext("admin");
-        var real = new TipoAtoPublicadoRepository(ctx, TimeProvider.System);
-
-        // Primeira versão, gravada normalmente.
-        Result<Guid> primeira = await CriarTipoAtoPublicadoCommandHandler.Handle(
-            Comando(codigo), real, ctx, CancellationToken.None);
-        primeira.IsSuccess.Should().BeTrue();
-
-        // Segunda versão, com a consulta prévia cega — o estado do banco mudou sob ela.
-        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext("admin");
-        var cego = new RepositorioComConsultaObsoleta(new TipoAtoPublicadoRepository(ctx2, TimeProvider.System));
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext("admin");
+        var cego = new RepositorioComConsultaObsoleta(new TipoAtoPublicadoRepository(contexto));
 
         Result<Guid> segunda = await CriarTipoAtoPublicadoCommandHandler.Handle(
-            Comando(codigo), cego, ctx2, CancellationToken.None);
+            Comando(codigo), cego, contexto, CancellationToken.None);
 
         segunda.IsFailure.Should().BeTrue();
         segunda.Error!.Code.Should().Be(TipoAtoPublicadoErrorCodes.VigenciaSobreposta);
     }
 
+    /// <summary>
+    /// Reproduz o achado da ADR-0119 para a exclusion constraint de vigência de Publicações: o
+    /// outbox do Wolverine (AutoApplyTransactions, ADR-0004) chama <c>SaveChangesAsync</c> no mesmo
+    /// <c>DbContext</c> depois que o handler retorna. Se o handler capturar a violação e devolver a
+    /// falha sem descartar o rastreamento da entidade <c>Added</c> da tentativa fracassada, essa
+    /// segunda chamada tenta gravar a mesma entidade de novo e a mesma exceção estoura fora do
+    /// <c>catch</c> do handler — 500 em vez do erro de domínio já traduzido.
+    /// </summary>
     [Fact(DisplayName =
         "Após o conflito capturado, descartar o rastreamento evita a segunda exceção do SaveChanges do outbox")]
     public async Task Handle_AposConflito_DescartarRastreamentoEvitaSegundaExcecao()
     {
-        // Reproduz o mesmo achado da ADR-0119 (issue #1027/PR #1019), agora para a
-        // exclusion constraint de vigência de Publicações: o outbox do Wolverine
-        // (AutoApplyTransactions, ADR-0004) chama SaveChangesAsync no MESMO
-        // DbContext DEPOIS que o handler retorna. Se o handler capturar a
-        // violação e devolver a falha sem descartar o rastreamento da entidade
-        // Added da tentativa fracassada, essa segunda chamada tenta gravar a
-        // MESMA entidade de novo e a mesma exceção estoura fora do catch do
-        // handler — 500 em vez do DomainError já traduzido.
         string codigo = CodigoUnico();
+        await GravarPrimeiraVersaoAsync(codigo);
 
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext("admin");
-        var real = new TipoAtoPublicadoRepository(ctx, TimeProvider.System);
-        (await CriarTipoAtoPublicadoCommandHandler.Handle(Comando(codigo), real, ctx, CancellationToken.None))
-            .IsSuccess.Should().BeTrue();
-
-        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext("admin");
-        var cego = new RepositorioComConsultaObsoleta(new TipoAtoPublicadoRepository(ctx2, TimeProvider.System));
-
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext("admin");
+        var cego = new RepositorioComConsultaObsoleta(new TipoAtoPublicadoRepository(contexto));
         Result<Guid> segunda = await CriarTipoAtoPublicadoCommandHandler.Handle(
-            Comando(codigo), cego, ctx2, CancellationToken.None);
+            Comando(codigo), cego, contexto, CancellationToken.None);
         segunda.IsFailure.Should().BeTrue();
 
-        // O handler (via unitOfWork.DescartarAlteracoesNaoSalvas() no catch) já
-        // limpou o rastreamento de ctx2 — o SaveChangesAsync automático do
-        // outbox, chamado DEPOIS que o handler já retornou a falha, é um no-op
-        // e não relança a exceção.
-        Func<Task> segundoSave = async () => await ctx2.SaveChangesAsync();
-        await segundoSave.Should().NotThrowAsync();
+        Func<Task> segundoSave = async () => await contexto.SaveChangesAsync();
+
+        await segundoSave.Should().NotThrowAsync("o handler já descartou o rastreamento da tentativa fracassada");
     }
 
     [Fact(DisplayName = "Sem corrida, a consulta prévia recusa antes de tocar o banco")]
     public async Task Handle_ComSobreposicaoConhecida_RecusaPelaConsultaPrevia()
     {
         string codigo = CodigoUnico();
+        await GravarPrimeiraVersaoAsync(codigo);
 
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext("admin");
-        var repositorio = new TipoAtoPublicadoRepository(ctx, TimeProvider.System);
-
-        (await CriarTipoAtoPublicadoCommandHandler.Handle(Comando(codigo), repositorio, ctx, CancellationToken.None))
-            .IsSuccess.Should().BeTrue();
-
-        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext("admin");
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext("admin");
         Result<Guid> segunda = await CriarTipoAtoPublicadoCommandHandler.Handle(
-            Comando(codigo), new TipoAtoPublicadoRepository(ctx2, TimeProvider.System), ctx2, CancellationToken.None);
+            Comando(codigo), new TipoAtoPublicadoRepository(contexto), contexto, CancellationToken.None);
 
         segunda.IsFailure.Should().BeTrue();
         segunda.Error!.Code.Should().Be(TipoAtoPublicadoErrorCodes.VigenciaSobreposta);
+    }
+
+    private async Task GravarPrimeiraVersaoAsync(string codigo)
+    {
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext("admin");
+
+        Result<Guid> primeira = await CriarTipoAtoPublicadoCommandHandler.Handle(
+            Comando(codigo), new TipoAtoPublicadoRepository(contexto), contexto, CancellationToken.None);
+
+        primeira.IsSuccess.Should().BeTrue();
     }
 
     private static CriarTipoAtoPublicadoCommand Comando(string codigo) =>
@@ -126,7 +110,7 @@ public sealed class CriarTipoAtoPublicadoCorridaTests
     private static string CodigoUnico()
     {
         string hex = Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture)[..12];
-        return "CORRIDA_" + string.Concat(hex.Select(c => (char)('A' + Convert.ToInt32(c.ToString(), 16))));
+        return "CORRIDA_" + string.Concat(hex.Select(digito => (char)('A' + Convert.ToInt32(digito.ToString(), 16))));
     }
 
     /// <summary>
@@ -141,22 +125,32 @@ public sealed class CriarTipoAtoPublicadoCorridaTests
         public RepositorioComConsultaObsoleta(ITipoAtoPublicadoRepository real) => _real = real;
 
         public Task<bool> ExisteSobreposicaoDeVigenciaAsync(
-            string codigo, DateOnly vigenciaInicio, DateOnly? vigenciaFim, Guid? excluirId, CancellationToken ct) =>
+            string codigo,
+            DateOnly vigenciaInicio,
+            DateOnly? vigenciaFim,
+            Guid? excluirId,
+            CancellationToken cancellationToken) =>
             Task.FromResult(false);
 
-        public Task<TipoAtoPublicado?> ObterPorIdAsync(Guid id, CancellationToken ct) => _real.ObterPorIdAsync(id, ct);
+        public Task<TipoAtoPublicado?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken) =>
+            _real.ObterPorIdAsync(id, cancellationToken);
 
-        public Task<TipoAtoPublicado?> ObterPorIdParaLeituraAsync(Guid id, CancellationToken ct) =>
-            _real.ObterPorIdParaLeituraAsync(id, ct);
+        public Task<TipoAtoPublicado?> ObterPorIdParaLeituraAsync(Guid id, CancellationToken cancellationToken) =>
+            _real.ObterPorIdParaLeituraAsync(id, cancellationToken);
 
-        public Task<TipoAtoPublicado?> ObterVigenteAsync(string codigo, DateOnly data, CancellationToken ct) =>
-            _real.ObterVigenteAsync(codigo, data, ct);
+        public Task<TipoAtoPublicado?> ObterVigenteAsync(string codigo, DateOnly data, CancellationToken cancellationToken) =>
+            _real.ObterVigenteAsync(codigo, data, cancellationToken);
 
         public Task<(IReadOnlyList<TipoAtoPublicado> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
-            Guid? afterId, int limit, PaginationDirection direction, bool vigentes, CancellationToken ct) =>
-            _real.ListarPaginadoAsync(afterId, limit, direction, vigentes, ct);
+            Guid? afterId,
+            int limit,
+            PaginationDirection direction,
+            DateOnly? vigentesEm,
+            CancellationToken cancellationToken) =>
+            _real.ListarPaginadoAsync(afterId, limit, direction, vigentesEm, cancellationToken);
 
-        public Task AdicionarAsync(TipoAtoPublicado tipo, CancellationToken ct) => _real.AdicionarAsync(tipo, ct);
+        public Task AdicionarAsync(TipoAtoPublicado tipo, CancellationToken cancellationToken) =>
+            _real.AdicionarAsync(tipo, cancellationToken);
 
         public void Remover(TipoAtoPublicado tipo) => _real.Remover(tipo);
     }
