@@ -2,8 +2,8 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.OpenApi;
 
 using AwesomeAssertions;
 
-using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.AspNetCore.Mvc.Abstractions;
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
