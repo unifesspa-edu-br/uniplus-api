@@ -47,7 +47,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
     {
         Guid processo = Guid.CreateVersion7();
         Guid chamada = Guid.CreateVersion7();
-        AtoNormativo ato = (Base with { Vinculos = [("PROCESSO_SELETIVO", processo), ("CHAMADA", chamada)] }).Registrar();
+        AtoNormativo ato = (Base with { Vinculos = [new("PROCESSO_SELETIVO", processo), new("CHAMADA", chamada)] }).Registrar();
 
         await Gravar(ato);
 
@@ -75,7 +75,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
     [Fact(DisplayName = "UPDATE cru no vínculo é bloqueado pelo trigger append-only")]
     public async Task Update_Vinculo_Bloqueado()
     {
-        AtoNormativo ato = (Base with { Vinculos = [("PROCESSO_SELETIVO", Guid.CreateVersion7())] }).Registrar();
+        AtoNormativo ato = (Base with { Vinculos = [new("PROCESSO_SELETIVO", Guid.CreateVersion7())] }).Registrar();
         await Gravar(ato);
 
         PostgresException erro = await Assert.ThrowsAsync<PostgresException>(() => ExecutarCruAsync(
@@ -87,7 +87,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
     [Fact(DisplayName = "DELETE cru no vínculo é bloqueado pelo trigger append-only")]
     public async Task Delete_Vinculo_Bloqueado()
     {
-        AtoNormativo ato = (Base with { Vinculos = [("PROCESSO_SELETIVO", Guid.CreateVersion7())] }).Registrar();
+        AtoNormativo ato = (Base with { Vinculos = [new("PROCESSO_SELETIVO", Guid.CreateVersion7())] }).Registrar();
         await Gravar(ato);
 
         PostgresException erro = await Assert.ThrowsAsync<PostgresException>(() => ExecutarCruAsync(
@@ -100,7 +100,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
     public async Task Insert_TrioRepetido_Colide()
     {
         Guid processo = Guid.CreateVersion7();
-        AtoNormativo ato = (Base with { Vinculos = [("PROCESSO_SELETIVO", processo)] }).Registrar();
+        AtoNormativo ato = (Base with { Vinculos = [new("PROCESSO_SELETIVO", processo)] }).Registrar();
         await Gravar(ato);
 
         // O agregado e o validator já recusam antes; aqui prova-se a trava do banco.
@@ -134,7 +134,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
     {
         Guid processo = Guid.CreateVersion7();
         AtoNormativo primeiro = await GravarComVaga(processo);
-        AtoNormativo segundo = (Base with { UnicoPorObjeto = true, Vinculos = [("PROCESSO_SELETIVO", processo)] }).Registrar();
+        AtoNormativo segundo = (Base with { UnicoPorObjeto = true, Vinculos = [new("PROCESSO_SELETIVO", processo)] }).Registrar();
 
         PostgresException erro = await Assert.ThrowsAsync<PostgresException>(() => ExecutarNumaTransacaoAsync(
             InsertAtoCru(segundo),
@@ -151,7 +151,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
     public async Task Insert_VagaComRaizFalsa_Bloqueada()
     {
         Guid processo = Guid.CreateVersion7();
-        AtoNormativo ato = (Base with { UnicoPorObjeto = true, Vinculos = [("PROCESSO_SELETIVO", processo)] }).Registrar();
+        AtoNormativo ato = (Base with { UnicoPorObjeto = true, Vinculos = [new("PROCESSO_SELETIVO", processo)] }).Registrar();
         AtoNormativo outro = (Base with { UnicoPorObjeto = true }).Registrar();
 
         PostgresException erro = await Assert.ThrowsAsync<PostgresException>(() => ExecutarNumaTransacaoAsync(
@@ -230,7 +230,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
     [Fact(DisplayName = "Vínculo de ato não único por objeto dispensa vaga")]
     public async Task Insert_VinculoDeAtoNaoUnico_NaoExigeVaga()
     {
-        AtoNormativo ato = (Base with { Vinculos = [("CHAMADA", Guid.CreateVersion7())] }).Registrar();
+        AtoNormativo ato = (Base with { Vinculos = [new("CHAMADA", Guid.CreateVersion7())] }).Registrar();
 
         await Gravar(ato);
 
@@ -243,7 +243,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
 
     private async Task<AtoNormativo> GravarComVaga(Guid processo)
     {
-        AtoNormativo ato = (Base with { UnicoPorObjeto = true, Vinculos = [("PROCESSO_SELETIVO", processo)] }).Registrar();
+        AtoNormativo ato = (Base with { UnicoPorObjeto = true, Vinculos = [new("PROCESSO_SELETIVO", processo)] }).Registrar();
 
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         ctx.AtosNormativos.Add(ato);

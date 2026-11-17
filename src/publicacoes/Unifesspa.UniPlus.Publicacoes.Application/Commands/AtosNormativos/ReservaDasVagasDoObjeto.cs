@@ -84,7 +84,7 @@ public sealed class ReservaDasVagasDoObjeto(IAtoNormativoRepository atos)
     {
         AtoNormativo? conflitante = await atos
             .ObterAtoConflitanteNoObjetoAsync(
-                vinculo.EntidadeTipo, vinculo.EntidadeId, ato.TipoCodigo, daLinhagem, cancellationToken)
+                vinculo.Entidade, ato.TipoCodigo, daLinhagem, cancellationToken)
             .ConfigureAwait(false);
         if (conflitante is not null)
         {
@@ -92,7 +92,7 @@ public sealed class ReservaDasVagasDoObjeto(IAtoNormativoRepository atos)
         }
 
         VagaDeLinhagem? vaga = await atos
-            .ObterVagaDoObjetoAsync(vinculo.EntidadeTipo, vinculo.EntidadeId, ato.TipoCodigo, cancellationToken)
+            .ObterVagaDoObjetoAsync(vinculo.Entidade, ato.TipoCodigo, cancellationToken)
             .ConfigureAwait(false);
         return await ExaminarVagaAsync(ato, vinculo, vaga, raizDaLinhagem, aReservar, cancellationToken).ConfigureAwait(false);
     }
@@ -135,7 +135,7 @@ public sealed class ReservaDasVagasDoObjeto(IAtoNormativoRepository atos)
     private static string ObjetoJaTemAtoVivoMensagem(
         VinculoAtoEntidade vinculo, string tipoCodigo, AtoNormativo conflitante) =>
         $"O tipo de ato '{tipoCodigo}' admite um único ato vivo por objeto, e o objeto vinculado ('{vinculo.EntidadeTipo}') "
-        + $"já é tratado pelo ato {NumeracaoDoAto.Descrever(conflitante)}. "
+        + $"já é tratado pelo ato {conflitante.Numeracao.Descrever()}. "
         + "Para publicar outra versão, retifique a linhagem existente.";
 
     // A raiz da linhagem que ocupa a vaga é um ato registrado; só a leitura que falha em achá-lo deixa a recusa sem nomeá-lo.
@@ -143,7 +143,7 @@ public sealed class ReservaDasVagasDoObjeto(IAtoNormativoRepository atos)
         VinculoAtoEntidade vinculo, string tipoCodigo, VagaDeLinhagem vaga, CancellationToken cancellationToken)
     {
         AtoNormativo? raiz = await atos.ObterPorIdParaLeituraAsync(vaga.RaizId, cancellationToken).ConfigureAwait(false);
-        string ocupante = raiz is null ? "por outra linhagem de atos" : $"pela linhagem do ato {NumeracaoDoAto.Descrever(raiz)}";
+        string ocupante = raiz is null ? "por outra linhagem de atos" : $"pela linhagem do ato {raiz.Numeracao.Descrever()}";
 
         return $"O tipo de ato '{tipoCodigo}' admite um único ato vivo por objeto, e o objeto vinculado ('{vinculo.EntidadeTipo}') "
             + $"já é tratado {ocupante}. Para publicar outra versão, retifique essa linhagem.";

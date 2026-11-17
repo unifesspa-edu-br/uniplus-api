@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
+using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -40,7 +41,7 @@ public sealed class RegistrarAtoNormativoVinculosTests
         CongelaConfiguracao = true,
         UnicoPorObjeto = true,
         DataDoAto = DataDoAto,
-        Vinculos = [(Objeto, Processo)],
+        Vinculos = [new(Objeto, Processo)],
     };
 
     private readonly ITipoAtoPublicadoRepository _tipos = Substitute.For<ITipoAtoPublicadoRepository>();
@@ -179,7 +180,7 @@ public sealed class RegistrarAtoNormativoVinculosTests
 
         AtoNormativo retificado = RetificadoQueERaiz();
         AtoNormativo raizDaVaga = AtoRetificado();
-        _atos.ObterVagaDoObjetoAsync(Objeto, Processo, Tipo, Arg.Any<CancellationToken>())
+        _atos.ObterVagaDoObjetoAsync(new EntidadeVinculada(Objeto, Processo), Tipo, Arg.Any<CancellationToken>())
             .Returns(VagaDeLinhagem.Criar(raizDaVaga, raizDaVaga.Vinculos.First(), retificado.Id));
 
         Result<RegistrarAtoNormativoResult> resultado = await Executar(ComandoRetificando(retificado));
@@ -197,7 +198,7 @@ public sealed class RegistrarAtoNormativoVinculosTests
 
         AtoNormativo retificado = RetificadoComVinculo();
         _atos.ListarVinculosDoAtoAsync(retificado.Id, Arg.Any<CancellationToken>())
-            .Returns([(EntidadesDeRegistroPeloDominio.ProcessoSeletivo, Processo)]);
+            .Returns([new EntidadeVinculada(EntidadesDeRegistroPeloDominio.ProcessoSeletivo, Processo)]);
 
         Result<RegistrarAtoNormativoResult> resultado = await Executar(ComandoRetificando(retificado));
 
@@ -258,7 +259,7 @@ public sealed class RegistrarAtoNormativoVinculosTests
         AtoNormativo retificado = AtoRetificado();
         _atos.ComoRetificavel(retificado);
         _atos.ListarIdsDaCadeiaAsync(retificado.Id, Arg.Any<CancellationToken>()).Returns([retificado.Id]);
-        _atos.ListarVinculosDoAtoAsync(retificado.Id, Arg.Any<CancellationToken>()).Returns([(Objeto, Processo)]);
+        _atos.ListarVinculosDoAtoAsync(retificado.Id, Arg.Any<CancellationToken>()).Returns([new EntidadeVinculada(Objeto, Processo)]);
         return retificado;
     }
 
@@ -277,18 +278,18 @@ public sealed class RegistrarAtoNormativoVinculosTests
 
     private void SemConflitoNoObjeto() =>
         _atos.ObterAtoConflitanteNoObjetoAsync(
-            Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<string>(),
+            Arg.Any<EntidadeVinculada>(), Arg.Any<string>(),
             Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
             .Returns((AtoNormativo?)null);
 
     private void ConflitoNoObjetoCom(AtoNormativo ato) =>
         _atos.ObterAtoConflitanteNoObjetoAsync(
-                Objeto, Processo, Tipo, Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
+                new EntidadeVinculada(Objeto, Processo), Tipo, Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(ato);
 
     private void VagaLivre() =>
         _atos.ObterVagaDoObjetoAsync(
-            Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            Arg.Any<EntidadeVinculada>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns((VagaDeLinhagem?)null);
 
     private static AtoNormativo AtoDeOutraLinhagem() =>

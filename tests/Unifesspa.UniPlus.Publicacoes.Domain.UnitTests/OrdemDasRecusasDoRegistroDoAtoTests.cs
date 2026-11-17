@@ -1,9 +1,9 @@
 namespace Unifesspa.UniPlus.Publicacoes.Domain.UnitTests;
 
-
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
+using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -20,8 +20,8 @@ public sealed class OrdemDasRecusasDoRegistroDoAtoTests
     private static readonly DateOnly DataDoAto = new(2026, 3, 13);
     private static readonly DateTimeOffset PublicadoEm = new(2026, 3, 13, 19, 0, 0, TimeSpan.Zero);
     private static readonly RegistroComViolacoes Valido = new();
-    private static readonly (string, Guid) Processo = ("PROCESSO", Guid.CreateVersion7());
-    private static readonly (string, Guid) ProcessoSemId = ("PROCESSO", Guid.Empty);
+    private static readonly EntidadeVinculada Processo = new("PROCESSO", Guid.CreateVersion7());
+    private static readonly EntidadeVinculada ProcessoSemId = new("PROCESSO", Guid.Empty);
     private static readonly (string, string, string) AnexoSemHash = ("Anexo I.pdf", "application/pdf", "abc");
 
     public static TheoryData<string, RegistroComViolacoes, Type, string, string> TextosObrigatorios => new()
@@ -46,11 +46,12 @@ public sealed class OrdemDasRecusasDoRegistroDoAtoTests
     public static TheoryData<string, RegistroComViolacoes, Type, string, string> RetificacaoVinculosEAnexos => new()
     {
         { "ato retificado vazio antes da simetria", Valido with { AtoRetificadoId = Guid.Empty }, typeof(ArgumentException), "atoRetificadoId", "Identificador do ato retificado" },
-        { "simetria antes dos vínculos", Valido with { MotivoRetificacao = "corrige", Vinculos = [("x", Guid.Empty)] }, typeof(ArgumentException), "atoRetificadoId", "par (ato retificado, motivo)" },
-        { "tipo do vínculo antes do identificador", Valido with { Vinculos = [("x", Guid.Empty)] }, typeof(ArgumentException), "entidadeTipo", "" },
+        { "simetria antes dos vínculos", Valido with { MotivoRetificacao = "corrige", Vinculos = [new("x", Guid.Empty)] }, typeof(ArgumentException), "atoRetificadoId", "par (ato retificado, motivo)" },
+        { "tipo do vínculo antes do identificador", Valido with { Vinculos = [new("x", Guid.Empty)] }, typeof(ArgumentException), "entidadeTipo", "" },
         { "identificador do vínculo antes da repetição", Valido with { Vinculos = [ProcessoSemId, ProcessoSemId] }, typeof(ArgumentException), "entidadeId", "" },
         { "repetição do vínculo antes dos anexos", Valido with { Vinculos = [Processo, Processo], Anexos = [AnexoSemHash] }, typeof(ArgumentException), "vinculos", "" },
-        { "tipo do vínculo antes dos anexos", Valido with { Vinculos = [("x", Guid.CreateVersion7())], Anexos = [AnexoSemHash] }, typeof(ArgumentException), "entidadeTipo", "" },
+        { "segundo vínculo inválido depois de um válido", Valido with { Vinculos = [Processo, new("x", Guid.CreateVersion7())] }, typeof(ArgumentException), "entidadeTipo", "" },
+        { "tipo do vínculo antes dos anexos", Valido with { Vinculos = [new("x", Guid.CreateVersion7())], Anexos = [AnexoSemHash] }, typeof(ArgumentException), "entidadeTipo", "" },
     };
 
     [Theory(DisplayName = "Com duas invariantes violadas, a exceção aponta a primeira da sequência")]
@@ -61,10 +62,7 @@ public sealed class OrdemDasRecusasDoRegistroDoAtoTests
         string descricao, RegistroComViolacoes r, Type excecao, string parametro, string trechoDaMensagem)
     {
         Exception? recusa = Record.Exception(() => AtoNormativo.Registrar(
-            Guid.CreateVersion7(), r.Orgao, r.Serie, r.Ano, r.Numero, r.TipoCodigo,
-            congelaConfiguracao: false, efeitoIrreversivel: false, unicoPorObjeto: false,
-            DataDoAto, r.DocumentoHash, r.Assinante, PublicadoEm, versaoDoObjeto: null,
-            r.AtoRetificadoId, r.MotivoRetificacao, r.Vinculos, r.TipoNome, r.Anexos));
+            Guid.CreateVersion7(), EssenciaDe(r), PublicadoEm, versaoDoObjeto: null, r.Vinculos, r.Anexos));
 
         recusa.Should().BeOfType(excecao, descricao);
         ((ArgumentException)recusa!).ParamName.Should().Be(parametro, descricao);
@@ -76,10 +74,7 @@ public sealed class OrdemDasRecusasDoRegistroDoAtoTests
     {
         Guid id = Guid.CreateVersion7();
 
-        AtoNormativo ato = AtoNormativo.Registrar(
-            id, "CEPS", "EDITAL", 2026, "13", "EDITAL_ABERTURA",
-            congelaConfiguracao: false, efeitoIrreversivel: false, unicoPorObjeto: false,
-            DataDoAto, HashValido, Assinante, PublicadoEm, versaoDoObjeto: null);
+        AtoNormativo ato = AtoNormativo.Registrar(id, EssenciaDe(Valido), PublicadoEm, versaoDoObjeto: null);
 
         ato.Id.Should().Be(id);
     }
@@ -87,14 +82,8 @@ public sealed class OrdemDasRecusasDoRegistroDoAtoTests
     [Fact(DisplayName = "Identificador vazio faz a fábrica gerar um novo, diferente a cada registro")]
     public void Registrar_ComIdVazio_GeraNovoId()
     {
-        AtoNormativo primeiro = AtoNormativo.Registrar(
-            Guid.Empty, "CEPS", "EDITAL", 2026, "13", "EDITAL_ABERTURA",
-            congelaConfiguracao: false, efeitoIrreversivel: false, unicoPorObjeto: false,
-            DataDoAto, HashValido, Assinante, PublicadoEm, versaoDoObjeto: null);
-        AtoNormativo segundo = AtoNormativo.Registrar(
-            Guid.Empty, "CEPS", "EDITAL", 2026, "13", "EDITAL_ABERTURA",
-            congelaConfiguracao: false, efeitoIrreversivel: false, unicoPorObjeto: false,
-            DataDoAto, HashValido, Assinante, PublicadoEm, versaoDoObjeto: null);
+        AtoNormativo primeiro = AtoNormativo.Registrar(Guid.Empty, EssenciaDe(Valido), PublicadoEm, versaoDoObjeto: null);
+        AtoNormativo segundo = AtoNormativo.Registrar(Guid.Empty, EssenciaDe(Valido), PublicadoEm, versaoDoObjeto: null);
 
         primeiro.Id.Should().NotBe(Guid.Empty);
         segundo.Id.Should().NotBe(Guid.Empty).And.NotBe(primeiro.Id);
@@ -106,10 +95,8 @@ public sealed class OrdemDasRecusasDoRegistroDoAtoTests
         Guid processo = Guid.CreateVersion7();
 
         Action acao = () => AtoNormativo.Registrar(
-            Guid.CreateVersion7(), "CEPS", "EDITAL", 2026, "13", "EDITAL_ABERTURA",
-            congelaConfiguracao: false, efeitoIrreversivel: false, unicoPorObjeto: false,
-            DataDoAto, HashValido, Assinante, PublicadoEm, versaoDoObjeto: null,
-            vinculos: [("PROCESSO", processo), ("CHAMADA", Guid.CreateVersion7()), ("PROCESSO", processo)]);
+            Guid.CreateVersion7(), EssenciaDe(Valido), PublicadoEm, versaoDoObjeto: null,
+            vinculos: [new("PROCESSO", processo), new("CHAMADA", Guid.CreateVersion7()), new("PROCESSO", processo)]);
 
         acao.Should().Throw<ArgumentException>().Which.ParamName.Should().Be("vinculos");
     }
@@ -118,13 +105,20 @@ public sealed class OrdemDasRecusasDoRegistroDoAtoTests
     public void Registrar_ComAnexos_GuardaNaOrdemDeEnvio()
     {
         AtoNormativo ato = AtoNormativo.Registrar(
-            Guid.CreateVersion7(), "CEPS", "EDITAL", 2026, "13", "EDITAL_ABERTURA",
-            congelaConfiguracao: false, efeitoIrreversivel: false, unicoPorObjeto: false,
-            DataDoAto, HashValido, Assinante, PublicadoEm, versaoDoObjeto: null,
+            Guid.CreateVersion7(), EssenciaDe(Valido), PublicadoEm, versaoDoObjeto: null,
             anexos: [("B.pdf", "application/pdf", HashValido), ("A.pdf", "application/pdf", HashValido)]);
 
         ato.Anexos.OrderBy(a => a.Ordem).Select(a => (a.Ordem, a.Nome)).Should().Equal((0, "B.pdf"), (1, "A.pdf"));
     }
+
+    private static EssenciaDocumentalDoAto EssenciaDe(RegistroComViolacoes r) =>
+        new(
+            new NumeracaoDoAto(r.Orgao, r.Serie, r.Ano, r.Numero),
+            new TipoDoAtoNoRegistro(r.TipoCodigo, r.TipoNome, CongelaConfiguracao: false, EfeitoIrreversivel: false, UnicoPorObjeto: false),
+            DataDoAto,
+            r.DocumentoHash,
+            r.Assinante,
+            new RelacaoDeRetificacao(r.AtoRetificadoId, r.MotivoRetificacao));
 
     private static string Texto(int tamanho) => new('x', tamanho);
 
@@ -151,7 +145,7 @@ public sealed class OrdemDasRecusasDoRegistroDoAtoTests
 
         public string? TipoNome { get; init; }
 
-        public IEnumerable<(string EntidadeTipo, Guid EntidadeId)>? Vinculos { get; init; }
+        public IEnumerable<EntidadeVinculada>? Vinculos { get; init; }
 
         public IEnumerable<(string Nome, string TipoMidia, string Hash)>? Anexos { get; init; }
     }

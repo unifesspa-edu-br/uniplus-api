@@ -68,48 +68,9 @@ public sealed partial class AnexoDoAto : IForensicEntity
     {
         ArgumentNullException.ThrowIfNull(anexos);
 
-        if (anexos.Count > QuantidadeMaxima)
-        {
-            return new DomainError(
-                AnexoDoAtoErrorCodes.QuantidadeExcedida,
-                $"O ato admite no máximo {QuantidadeMaxima} anexos; foram enviados {anexos.Count}.");
-        }
-
-        HashSet<string> nomes = new(NomeDoAnexoPublicado.Comparador);
-
-        foreach ((string nome, string tipoMidia, string hash) in anexos)
-        {
-            string nomeNorm = NomeDoAnexoPublicado.Normalizar(nome);
-            if (nomeNorm.Length == 0 || nomeNorm.Length > NomeMaxLength)
-            {
-                return new DomainError(
-                    AnexoDoAtoErrorCodes.NomeInvalido,
-                    $"O nome do anexo é obrigatório e deve ter no máximo {NomeMaxLength} caracteres.");
-            }
-
-            if (!TipoMidiaValido(NormalizarTipoMidia(tipoMidia)))
-            {
-                return new DomainError(
-                    AnexoDoAtoErrorCodes.TipoMidiaInvalido,
-                    $"O tipo de mídia do anexo '{nomeNorm}' deve ter a forma tipo/subtipo (ex.: application/pdf).");
-            }
-
-            if (!HashSha256.TemFormatoValido(hash))
-            {
-                return new DomainError(
-                    AnexoDoAtoErrorCodes.HashInvalido,
-                    $"O hash do anexo '{nomeNorm}' deve ser um SHA-256 em hexadecimal minúsculo (64 caracteres).");
-            }
-
-            if (!nomes.Add(nomeNorm))
-            {
-                return new DomainError(
-                    AnexoDoAtoErrorCodes.NomeDuplicado,
-                    $"Há mais de um anexo chamado '{nomeNorm}' no mesmo ato.");
-            }
-        }
-
-        return null;
+        return anexos.Count > QuantidadeMaxima
+            ? AnexoDoAtoErros.QuantidadeExcedida(anexos.Count)
+            : PrimeiraRecusaEntreOsAnexos(anexos);
     }
 
     /// <summary>
@@ -120,13 +81,7 @@ public sealed partial class AnexoDoAto : IForensicEntity
     {
         ArgumentNullException.ThrowIfNull(ato);
         ArgumentOutOfRangeException.ThrowIfNegative(ordem);
-        ArgumentNullException.ThrowIfNull(nome);
-        ArgumentNullException.ThrowIfNull(tipoMidia);
-
-        if (Conferir([(nome, tipoMidia, hash)]) is { } recusa)
-        {
-            throw new ArgumentException(recusa.Message, nameof(nome));
-        }
+        ExigirAceitavel(nome, tipoMidia, hash);
 
         return new AnexoDoAto
         {
@@ -136,6 +91,58 @@ public sealed partial class AnexoDoAto : IForensicEntity
             TipoMidia = NormalizarTipoMidia(tipoMidia),
             Hash = hash,
         };
+    }
+
+    private static void ExigirAceitavel(string nome, string tipoMidia, string hash)
+    {
+        ArgumentNullException.ThrowIfNull(nome);
+        ArgumentNullException.ThrowIfNull(tipoMidia);
+
+        if (Conferir([(nome, tipoMidia, hash)]) is { } recusa)
+        {
+            throw new ArgumentException(recusa.Message, nameof(nome));
+        }
+    }
+
+    /// <summary>
+    /// A primeira recusa entre os anexos, na ordem de envio: a do próprio anexo (nome, tipo de
+    /// mídia, hash) e, depois, a do nome já usado por um anexo anterior.
+    /// </summary>
+    private static DomainError? PrimeiraRecusaEntreOsAnexos(IEnumerable<(string Nome, string TipoMidia, string Hash)> anexos)
+    {
+        HashSet<string> nomes = new(NomeDoAnexoPublicado.Comparador);
+
+        foreach ((string Nome, string TipoMidia, string Hash) anexo in anexos)
+        {
+            if ((RecusaDoAnexo(anexo) ?? RecusaDoNomeRepetido(anexo.Nome, nomes)) is { } recusa)
+            {
+                return recusa;
+            }
+        }
+
+        return null;
+    }
+
+    private static DomainError? RecusaDoAnexo((string Nome, string TipoMidia, string Hash) anexo)
+    {
+        string nome = NomeDoAnexoPublicado.Normalizar(anexo.Nome);
+        if (nome.Length == 0 || nome.Length > NomeMaxLength)
+        {
+            return AnexoDoAtoErros.NomeInvalido();
+        }
+
+        if (!TipoMidiaValido(NormalizarTipoMidia(anexo.TipoMidia)))
+        {
+            return AnexoDoAtoErros.TipoMidiaInvalido(nome);
+        }
+
+        return HashSha256.TemFormatoValido(anexo.Hash) ? null : AnexoDoAtoErros.HashInvalido(nome);
+    }
+
+    private static DomainError? RecusaDoNomeRepetido(string nome, HashSet<string> nomesJaVistos)
+    {
+        string nomeNormalizado = NomeDoAnexoPublicado.Normalizar(nome);
+        return nomesJaVistos.Add(nomeNormalizado) ? null : AnexoDoAtoErros.NomeDuplicado(nomeNormalizado);
     }
 
     private static string NormalizarTipoMidia(string? tipoMidia) =>

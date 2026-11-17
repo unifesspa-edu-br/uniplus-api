@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Publicacoes.API.Controllers;
 
 using System.Globalization;
-using System.Text.RegularExpressions;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -19,6 +18,7 @@ using Unifesspa.UniPlus.Publicacoes.Application.DTOs;
 using Unifesspa.UniPlus.Publicacoes.Application.Permissoes;
 using Unifesspa.UniPlus.Publicacoes.Application.Queries.AtosNormativos;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
+using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 
 /// <summary>
 /// Endpoints públicos de leitura (<c>GET /api/publicacoes/atos</c>) e o endpoint
@@ -34,7 +34,7 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 /// </remarks>
 [ApiController]
 [Authorize]
-public sealed partial class AtosNormativosController : ControllerBase
+public sealed class AtosNormativosController : ControllerBase
 {
     private const string ResourceTag = "atos";
     private const string ResourceTagEntidade = "entidade-atos";
@@ -128,7 +128,7 @@ public sealed partial class AtosNormativosController : ControllerBase
         }
 
         ListarAtosDaEntidadeResult resultado = await _queryBus
-            .Send(new ListarAtosDaEntidadeQuery(entidadeTipo, entidadeId, page.AfterSortKey, page.AfterId, page.Limit, page.Direction), cancellationToken)
+            .Send(new ListarAtosDaEntidadeQuery(new EntidadeVinculada(entidadeTipo, entidadeId), page.AfterSortKey, page.AfterId, page.Limit, page.Direction), cancellationToken)
             .ConfigureAwait(false);
 
         return await this.OkPaginatedOrdenadoAsync(
@@ -214,7 +214,7 @@ public sealed partial class AtosNormativosController : ControllerBase
     /// </remarks>
     private IActionResult? RecusaDaListagem(string entidadeTipo, PageRequest page)
     {
-        if (!FormatoDoTipoDeEntidade().IsMatch(entidadeTipo))
+        if (!TipoDaEntidadeVinculada.TemFormaCanonica(entidadeTipo))
         {
             return Result.Failure(new DomainError(
                     AtoNormativoErrorCodes.TipoDeEntidadeInvalido,
@@ -241,8 +241,4 @@ public sealed partial class AtosNormativosController : ControllerBase
     private static string EtiquetaDaEntidade(string entidadeTipo, Guid entidadeId) =>
         CursorResourceTag.Compose(
             ResourceTagEntidade, [entidadeTipo, entidadeId.ToString()]);
-
-    /// <summary>Grafia canônica do rótulo opaco da entidade (a mesma que o domínio exige).</summary>
-    [GeneratedRegex(@"^[A-Z0-9]+(_[A-Z0-9]+)*$")]
-    private static partial Regex FormatoDoTipoDeEntidade();
 }

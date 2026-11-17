@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
+using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -77,7 +78,7 @@ public sealed class MontagemDoAtoNormativoTests
     {
         TipoVigente(unicoPorObjeto: true);
         _atos.ObterAtoConflitanteNoObjetoAsync(
-            Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<string>(),
+            Arg.Any<EntidadeVinculada>(), Arg.Any<string>(),
             Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(AtoExistente(unicoPorObjeto: true));
 

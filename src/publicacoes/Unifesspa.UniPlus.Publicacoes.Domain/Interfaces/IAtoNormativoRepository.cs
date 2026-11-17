@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
 
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
+using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 
 /// <summary>
 /// Repositório da entidade <see cref="AtoNormativo"/> (schema <c>publicacoes</c>,
@@ -72,15 +73,14 @@ public interface IAtoNormativoRepository
     Task<Guid> ObterRaizDaCadeiaAsync(Guid atoId, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Devolve a vaga que o objeto <paramref name="entidadeTipo"/>/<paramref name="entidadeId"/>
+    /// Devolve a vaga que o objeto <paramref name="entidade"/>
     /// reservou para o tipo de ato <paramref name="tipoCodigo"/>, ou <see langword="null"/>
     /// se a vaga está livre.
     /// Dá a mensagem legível no caso comum; a garantia dura contra a corrida
     /// check-then-act é o índice único da vaga, não esta consulta.
     /// </summary>
     Task<VagaDeLinhagem?> ObterVagaDoObjetoAsync(
-        string entidadeTipo,
-        Guid entidadeId,
+        EntidadeVinculada entidade,
         string tipoCodigo,
         CancellationToken cancellationToken);
 
@@ -88,19 +88,19 @@ public interface IAtoNormativoRepository
     Task ReservarVagaAsync(VagaDeLinhagem vaga, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Devolve os pares <c>(tipo, id)</c> das entidades a que <paramref name="atoId"/>
+    /// Devolve as entidades, ordenadas pelo rótulo e depois pelo identificador, a que <paramref name="atoId"/>
     /// está vinculado. Base da herança de vínculos pela retificação: quem emenda um ato
     /// trata do mesmo objeto que ele — se a retificação não os herdasse, sumiria da
     /// consulta do certame, e a consulta exibiria a versão superada escondendo a que
     /// vale.
     /// </summary>
-    Task<IReadOnlyList<(string EntidadeTipo, Guid EntidadeId)>> ListarVinculosDoAtoAsync(
+    Task<IReadOnlyList<EntidadeVinculada>> ListarVinculosDoAtoAsync(
         Guid atoId,
         CancellationToken cancellationToken);
 
     /// <summary>
     /// Devolve um ato do tipo <paramref name="tipoCodigo"/> já vinculado ao objeto
-    /// <paramref name="entidadeTipo"/>/<paramref name="entidadeId"/> e que <b>não</b>
+    /// <paramref name="entidade"/> e que <b>não</b>
     /// pertence à cadeia <paramref name="idsDaPropriaCadeia"/>, ou <see langword="null"/>
     /// se não há nenhum.
     /// </summary>
@@ -114,8 +114,7 @@ public interface IAtoNormativoRepository
     /// corrida entre transações concorrentes; esta consulta é a que enxerga o passado.
     /// </remarks>
     Task<AtoNormativo?> ObterAtoConflitanteNoObjetoAsync(
-        string entidadeTipo,
-        Guid entidadeId,
+        EntidadeVinculada entidade,
         string tipoCodigo,
         IReadOnlyCollection<Guid> idsDaPropriaCadeia,
         CancellationToken cancellationToken);
@@ -127,8 +126,7 @@ public interface IAtoNormativoRepository
     /// </summary>
     Task<(IReadOnlyList<AtoNormativo> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)>
         ListarPorEntidadeAsync(
-            string entidadeTipo,
-            Guid entidadeId,
+            EntidadeVinculada entidade,
             string? afterSortKey,
             Guid? afterId,
             int limit,

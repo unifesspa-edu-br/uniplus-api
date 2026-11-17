@@ -5,11 +5,14 @@ using System.Linq;
 
 using Microsoft.EntityFrameworkCore;
 
+using MR.EntityFrameworkCore.KeysetPagination;
+
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
+using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Performance",
@@ -165,21 +168,19 @@ public sealed class AtoNormativoRepository : IAtoNormativoRepository
     }
 
     public Task<VagaDeLinhagem?> ObterVagaDoObjetoAsync(
-        string entidadeTipo,
-        Guid entidadeId,
+        EntidadeVinculada entidade,
         string tipoCodigo,
         CancellationToken cancellationToken)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(entidadeTipo);
+        ArgumentException.ThrowIfNullOrWhiteSpace(entidade.Tipo, nameof(entidade));
         ArgumentException.ThrowIfNullOrWhiteSpace(tipoCodigo);
 
-        string tipoNorm = entidadeTipo.Trim();
         string codigoNorm = tipoCodigo.Trim();
 
         return _dbContext.VagasDeLinhagem
             .AsNoTracking()
             .FirstOrDefaultAsync(
-                l => l.EntidadeTipo == tipoNorm && l.EntidadeId == entidadeId && l.TipoCodigo == codigoNorm,
+                l => l.EntidadeTipo == entidade.Tipo && l.EntidadeId == entidade.Id && l.TipoCodigo == codigoNorm,
                 cancellationToken);
     }
 
@@ -189,7 +190,7 @@ public sealed class AtoNormativoRepository : IAtoNormativoRepository
         await _dbContext.VagasDeLinhagem.AddAsync(vaga, cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task<IReadOnlyList<(string EntidadeTipo, Guid EntidadeId)>> ListarVinculosDoAtoAsync(
+    public async Task<IReadOnlyList<EntidadeVinculada>> ListarVinculosDoAtoAsync(
         Guid atoId,
         CancellationToken cancellationToken)
     {
@@ -201,62 +202,42 @@ public sealed class AtoNormativoRepository : IAtoNormativoRepository
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        return [.. vinculos.Select(v => (v.EntidadeTipo, v.EntidadeId))];
+        return [.. vinculos.Select(v => v.Entidade)];
     }
 
     public Task<AtoNormativo?> ObterAtoConflitanteNoObjetoAsync(
-        string entidadeTipo,
-        Guid entidadeId,
+        EntidadeVinculada entidade,
         string tipoCodigo,
         IReadOnlyCollection<Guid> idsDaPropriaCadeia,
         CancellationToken cancellationToken)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(entidadeTipo);
         ArgumentException.ThrowIfNullOrWhiteSpace(tipoCodigo);
         ArgumentNullException.ThrowIfNull(idsDaPropriaCadeia);
 
-        string tipoNorm = entidadeTipo.Trim();
         string codigoNorm = tipoCodigo.Trim();
         Guid[] daPropriaCadeia = [.. idsDaPropriaCadeia];
 
-        return _dbContext.AtosNormativos
-            .AsNoTracking()
-            .Where(a => a.TipoCodigo == codigoNorm
-                && !daPropriaCadeia.Contains(a.Id)
-                && _dbContext.Set<VinculoAtoEntidade>()
-                    .Any(v => v.AtoId == a.Id && v.EntidadeTipo == tipoNorm && v.EntidadeId == entidadeId))
+        return VinculadosA(entidade)
+            .Where(a => a.TipoCodigo == codigoNorm && !daPropriaCadeia.Contains(a.Id))
             .OrderBy(a => a.Id)
             .FirstOrDefaultAsync(cancellationToken);
     }
 
     public async Task<(IReadOnlyList<AtoNormativo> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)>
         ListarPorEntidadeAsync(
-            string entidadeTipo,
-            Guid entidadeId,
+            EntidadeVinculada entidade,
             string? afterSortKey,
             Guid? afterId,
             int limit,
             PaginationDirection direction,
             CancellationToken cancellationToken)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(entidadeTipo);
-
-        string tipoNorm = entidadeTipo.Trim();
-
-        // EXISTS sobre o vínculo, servido por ix_vinculos_do_ato_com_entidade_objeto — não um
-        // JOIN, que duplicaria o ato vinculado à mesma entidade por mais de um caminho.
-        IQueryable<AtoNormativo> query = _dbContext.AtosNormativos
-            .AsNoTracking()
-            .Include(a => a.Anexos)
-            .Where(a => _dbContext.Set<VinculoAtoEntidade>()
-                .Any(v => v.AtoId == a.Id && v.EntidadeTipo == tipoNorm && v.EntidadeId == entidadeId));
-
         OrderedKeysetPage<AtoNormativo> page = await OrderedKeysetCursor
             .ApplyAsync(
-                query,
-                b => b.Ascending(a => a.PublicadoEm).Ascending(a => a.Id),
+                VinculadosA(entidade).Include(a => a.Anexos),
+                OrdemDaDivulgacao,
                 SortKeyDoInstante,
-                (sortKey, id) => new { PublicadoEm = InstanteDaSortKey(sortKey), Id = id },
+                AncoraDaDivulgacao,
                 afterSortKey,
                 afterId,
                 limit,
@@ -266,6 +247,24 @@ public sealed class AtoNormativoRepository : IAtoNormativoRepository
 
         return (page.Items, page.Previous, page.Next);
     }
+
+    // EXISTS sobre o vínculo, servido por ix_vinculos_do_ato_com_entidade_objeto — não um
+    // JOIN, que duplicaria o ato vinculado à mesma entidade por mais de um caminho.
+    private IQueryable<AtoNormativo> VinculadosA(EntidadeVinculada entidade)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(entidade.Tipo, nameof(entidade));
+
+        return _dbContext.AtosNormativos
+            .AsNoTracking()
+            .Where(a => _dbContext.Set<VinculoAtoEntidade>()
+                .Any(v => v.AtoId == a.Id && v.EntidadeTipo == entidade.Tipo && v.EntidadeId == entidade.Id));
+    }
+
+    private static void OrdemDaDivulgacao(KeysetPaginationBuilder<AtoNormativo> ordem) =>
+        ordem.Ascending(a => a.PublicadoEm).Ascending(a => a.Id);
+
+    private static object AncoraDaDivulgacao(string sortKey, Guid id) =>
+        new { PublicadoEm = InstanteDaSortKey(sortKey), Id = id };
 
     /// <summary>
     /// Sort key da âncora: o instante da divulgação em ISO-8601 com deslocamento zero

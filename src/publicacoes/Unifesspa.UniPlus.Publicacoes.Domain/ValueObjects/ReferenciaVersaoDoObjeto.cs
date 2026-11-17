@@ -40,23 +40,24 @@ public sealed record ReferenciaVersaoDoObjeto
     /// <see cref="Guid.Empty"/> e que <paramref name="hash"/> tem o formato de um
     /// SHA-256 hex minúsculo (64 caracteres).
     /// </summary>
-    public static Result<ReferenciaVersaoDoObjeto> Criar(Guid id, string hash)
+    public static Result<ReferenciaVersaoDoObjeto> Criar(Guid id, string hash) =>
+        RecusaDaReferencia(id, hash) is { } recusa
+            ? Result<ReferenciaVersaoDoObjeto>.Failure(recusa)
+            : Result<ReferenciaVersaoDoObjeto>.Success(new ReferenciaVersaoDoObjeto(id, hash));
+
+    private static DomainError? RecusaDaReferencia(Guid id, string hash)
     {
         if (id == Guid.Empty)
         {
-            return Result<ReferenciaVersaoDoObjeto>.Failure(new DomainError(
+            return new DomainError(
                 ReferenciaVersaoDoObjetoErrorCodes.IdObrigatorio,
-                "Identificador da versão do objeto é obrigatório."));
+                "Identificador da versão do objeto é obrigatório.");
         }
 
-        if (!HashSha256.TemFormatoValido(hash))
-        {
-            return Result<ReferenciaVersaoDoObjeto>.Failure(new DomainError(
+        return HashSha256.TemFormatoValido(hash)
+            ? null
+            : new DomainError(
                 ReferenciaVersaoDoObjetoErrorCodes.HashInvalido,
-                "Hash da versão do objeto deve ser um SHA-256 em hexadecimal minúsculo (64 caracteres)."));
-        }
-
-        return Result<ReferenciaVersaoDoObjeto>.Success(
-            new ReferenciaVersaoDoObjeto(id, hash));
+                "Hash da versão do objeto deve ser um SHA-256 em hexadecimal minúsculo (64 caracteres).");
     }
 }
