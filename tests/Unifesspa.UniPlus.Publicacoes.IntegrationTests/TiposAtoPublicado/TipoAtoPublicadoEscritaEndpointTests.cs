@@ -7,6 +7,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Assertions;
 using Unifesspa.UniPlus.Publicacoes.IntegrationTests.Infrastructure;
 
 using static TipoAtoPublicadoApoio;
