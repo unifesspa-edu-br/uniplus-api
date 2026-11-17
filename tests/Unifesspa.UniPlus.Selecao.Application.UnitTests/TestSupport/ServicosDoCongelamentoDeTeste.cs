@@ -49,6 +49,8 @@ internal sealed class ServicosDoCongelamentoDeTeste
 
     public IProcessoSeletivoRepository Repositorio { get; private set; } = Substitute.For<IProcessoSeletivoRepository>();
 
+    public IMotivoDoProcessoRepository MotivosEscolhidos { get; } = MotivoDeTeste.SemEscolha();
+
     public IDocumentoAPublicarRepository Documentos { get; private set; } = Substitute.For<IDocumentoAPublicarRepository>();
 
     public IRascunhoDePublicacaoRepository Rascunhos { get; } = Substitute.For<IRascunhoDePublicacaoRepository>();
@@ -271,7 +273,7 @@ internal sealed class ServicosDoCongelamentoDeTeste
     public ConferenciaDeConformidadeLegal ConformidadeLegal() =>
         new(ObrigatoriedadesLegais, Modalidades, TiposDocumento, TiposEtapa, TiposDeficiencia, RegrasDesempate);
 
-    public ConferenciaDosMotivosAoCongelar Motivos() => new(Repositorio);
+    public ConferenciaDosMotivosAoCongelar Motivos() => new(MotivosEscolhidos);
 
     public LeituraDoContextoDeContagemDePrazos Contextos() => new(Calendario, Fuso);
 

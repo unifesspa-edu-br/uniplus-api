@@ -20,49 +20,35 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport.Cenario
 public sealed class DefinirEtapasVinculoComTipoDeEtapaTests
 {
     /// <summary>
-    /// A primeira etapa do payload (vínculo
-    /// inalterado) não pode ter sido mutada quando a SEGUNDA é recusada por tipo inativo: o
-    /// SaveChangesAsync automático do Wolverine persistiria a mutação parcial mesmo com o PUT
-    /// inteiro recusado. A resolução dos tipos acontece na passada que confere o caráter, antes
-    /// de a reconciliação tocar qualquer instância rastreada — então não há mutação parcial a
-    /// desfazer, e não há rastreamento a descartar.
+    /// A primeira etapa do payload (vínculo inalterado) não pode ter sido mutada quando a SEGUNDA é recusada por tipo
+    /// inativo: o SaveChangesAsync automático do Wolverine persistiria a mutação parcial mesmo com o PUT inteiro
+    /// recusado. A resolução dos tipos acontece na passada que confere o caráter, antes de a reconciliação tocar
+    /// qualquer instância rastreada, então não há mutação parcial a desfazer; a recusa ainda descarta o rastreamento,
+    /// como toda recusa da substituição.
     /// </summary>
     [Fact(DisplayName = "Handle com tipo inativo numa etapa posterior recusa sem mutar a anterior")]
     public async Task Handle_ComTipoInativoNaEtapaPosterior_RecusaSemMutarAAnterior()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        EtapaProcesso etapaOriginal = EtapaProcesso.Criar(
-            new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
-            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
-        processo.DefinirEtapas([etapaOriginal], PrecondicaoIfMatch.Ausente);
-
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-        ITipoEtapaReader tipoEtapaReader = Substitute.For<ITipoEtapaReader>();
-        IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
-        ITipoAtoPublicadoReader tipoAtoPublicadoReader = Substitute.For<ITipoAtoPublicadoReader>();
-        Guid tipoInativo = Guid.CreateVersion7();
-        tipoEtapaReader.ObterAtivoPorIdAsync(tipoInativo, Arg.Any<CancellationToken>()).Returns((TipoEtapaView?)null);
+        EtapaProcesso etapaOriginal = EtapaDeProvaObjetiva("Prova Objetiva");
+        ProcessoSeletivo processo = ProcessoComAEtapa(etapaOriginal);
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
+        DefinirEtapasCommand command = RevisaAProvaEAdicionaEtapaDeTipoInativo(processo, etapaOriginal);
 
-        DefinirEtapasCommand command = new(
-            processo.Id,
-            [
-                // Vínculo e caráter inalterados: só o peso muda, e a etapa é a instância tracked.
-                new EtapaProcessoInput("Prova Objetiva (revisada)", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 9m, null, 1, etapaOriginal.Id, Produtos: [], Bancas: [], Recursos: []),
-                // Etapa nova com tipo inativo — é ela que derruba o PUT inteiro.
-                new EtapaProcessoInput("Entrevista", CaraterEtapa.Classificatoria, tipoInativo, 1m, null, 2, Produtos: [], Bancas: [], Recursos: []),
-            ], PrecondicaoIfMatch.Ausente);
+        Result<MutacaoAceita> result = await Executar(command, RepositorioCom(processo), unitOfWork, ReaderSemTipoAtivo());
 
-        Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
-
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("ProcessoSeletivo.TipoEtapaNaoEncontradoOuInativo");
-        await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-        etapaOriginal.Nome.Should().Be("Prova Objetiva", "a etapa anterior não pode ter sido mutada");
-        etapaOriginal.Peso.Should().Be(1m);
-        unitOfWork.DidNotReceive().DescartarAlteracoesNaoSalvas();
+        await RecusouSemGravarAsync(result, unitOfWork, "ProcessoSeletivo.TipoEtapaNaoEncontradoOuInativo");
+        etapaOriginal.Should().BeEquivalentTo(new { Nome = "Prova Objetiva", Peso = 1m }, "a etapa anterior não pode ter sido mutada");
     }
+
+    private static DefinirEtapasCommand RevisaAProvaEAdicionaEtapaDeTipoInativo(ProcessoSeletivo processo, EtapaProcesso etapaOriginal) => new(
+        processo.Id,
+        [
+            // Vínculo e caráter inalterados: só o peso muda, e a etapa é a instância tracked.
+            new EtapaProcessoInput("Prova Objetiva (revisada)", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 9m, null, 1, etapaOriginal.Id, Produtos: [], Bancas: [], Recursos: []),
+            // Etapa nova com tipo inativo — é ela que derruba o PUT inteiro.
+            new EtapaProcessoInput("Entrevista", CaraterEtapa.Classificatoria, Guid.CreateVersion7(), 1m, null, 2, Produtos: [], Bancas: [], Recursos: []),
+        ],
+        PrecondicaoIfMatch.Ausente);
 
     /// <summary>
     /// Desativar um tipo já vinculado a uma etapa
@@ -201,33 +187,18 @@ public sealed class DefinirEtapasVinculoComTipoDeEtapaTests
         await tipoEtapaReader.Received(1).ObterAtivoPorIdAsync(TipoProvaObjetivaOrigemId, Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "issue #1071 — CA-03: tipo de etapa inexistente ou inativo é recusado")]
+    [Fact(DisplayName = "Handle com tipo de etapa inexistente ou inativo recusa e não persiste etapa")]
     public async Task Handle_TipoEtapaInexistenteOuInativo_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>())
-            .Returns(processo);
-        ITipoEtapaReader tipoEtapaReader = Substitute.For<ITipoEtapaReader>();
-        IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
-        ITipoAtoPublicadoReader tipoAtoPublicadoReader = Substitute.For<ITipoAtoPublicadoReader>();
-        tipoEtapaReader.ObterAtivoPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns((TipoEtapaView?)null);
+        ProcessoSeletivo processo = ProcessoSemEtapas();
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
-
-        Guid tipoInexistente = Guid.CreateVersion7();
         DefinirEtapasCommand command = new(
             processo.Id,
-            [new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, tipoInexistente, 3m, null, 1, Produtos: [], Bancas: [], Recursos: [])], PrecondicaoIfMatch.Ausente);
+            [new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, Guid.CreateVersion7(), 3m, null, 1, Produtos: [], Bancas: [], Recursos: [])], PrecondicaoIfMatch.Ausente);
 
-        Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
+        Result<MutacaoAceita> result = await Executar(command, RepositorioCom(processo), unitOfWork, ReaderSemTipoAtivo());
 
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("ProcessoSeletivo.TipoEtapaNaoEncontradoOuInativo");
-        processo.Etapas.Should().BeEmpty("nenhuma etapa pode ser persistida sem snapshot de tipo (CA-04)");
-        await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-        // Nada a descartar: os tipos do payload são resolvidos na passada que confere o caráter,
-        // antes de a reconciliação tocar qualquer instância rastreada.
-        unitOfWork.DidNotReceive().DescartarAlteracoesNaoSalvas();
+        await RecusouSemGravarAsync(result, unitOfWork, "ProcessoSeletivo.TipoEtapaNaoEncontradoOuInativo");
+        processo.Etapas.Should().BeEmpty("nenhuma etapa pode ser persistida sem snapshot de tipo");
     }
 }

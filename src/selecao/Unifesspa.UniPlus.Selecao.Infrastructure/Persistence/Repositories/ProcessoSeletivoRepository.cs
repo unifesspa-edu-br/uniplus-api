@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
-public sealed partial class ProcessoSeletivoRepository : IProcessoSeletivoRepository
+public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
 {
     private readonly UniPlusDbContext _context;
     private readonly TimeProvider _timeProvider;

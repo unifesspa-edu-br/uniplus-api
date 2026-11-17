@@ -61,24 +61,38 @@ public sealed class DecisoesDoEsquemaDaConfiguracaoTests
         CaminhosComErro(desconhecida, "etapas.schema.json").Should().Contain("/tiposDeDecisao/1");
     }
 
-    [Fact(DisplayName = "O motivo com tipo e código do catálogo valida e a justificativa só vem se houver texto")]
-    public void Motivo_PorTipoECodigo_Valida()
+    [Fact(DisplayName = "O motivo na fase ou na etapa, com tipo e código do catálogo, valida; a justificativa só vem se houver texto")]
+    public void Motivo_NoLugar_Valida()
     {
-        JsonNode motivo = Documento("""
-            { "tipoCodigo": "ISENCAO_DA_TAXA", "codigo": "RENDA_ACIMA_DO_LIMITE", "descricao": "Renda acima do limite", "sentido": "DESFAVORAVEL",
-              "justificativaDaInclusao": "Motivo previsto no edital retificado", "congelado": false }
+        JsonNode naFase = Documento("""
+            { "faseChave": "homologacao", "tipoCodigo": "ISENCAO_DA_TAXA", "codigo": "RENDA_ACIMA_DO_LIMITE", "descricao": "Renda acima do limite",
+              "sentido": "DESFAVORAVEL", "justificativaDaInclusao": "Motivo previsto no edital retificado", "versaoDoEditalDeEntrada": 2 }
             """);
+        JsonNode naEtapa = Documento("""{ "etapaChave": "prova-objetiva", "tipoCodigo": "CLASSIFICACAO", "codigo": "NOTA_ZERADA" }""");
 
-        CaminhosComErro(motivo, Motivo).Should().BeEmpty();
+        CaminhosComErro(naFase, Motivo).Should().BeEmpty();
+        CaminhosComErro(naEtapa, Motivo).Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "O motivo sem lugar ou com fase e etapa juntas é recusado, e a chave e a versão de entrada seguem o formato")]
+    public void Motivo_ComLugarInvalido_Recusa()
+    {
+        JsonNode semLugar = Documento("""{ "tipoCodigo": "ISENCAO_DA_TAXA", "codigo": "RENDA" }""");
+        JsonNode comOsDois = Documento("""{ "faseChave": "homologacao", "etapaChave": "prova", "tipoCodigo": "ISENCAO_DA_TAXA", "codigo": "RENDA" }""");
+        JsonNode foraDoFormato = Documento("""{ "faseChave": "Homologação", "tipoCodigo": "ISENCAO_DA_TAXA", "codigo": "RENDA", "versaoDoEditalDeEntrada": 0 }""");
+
+        CaminhosComErro(semLugar, Motivo).Should().Contain("");
+        CaminhosComErro(comOsDois, Motivo).Should().Contain("");
+        CaminhosComErro(foraDoFormato, Motivo).Should().Contain(["/faseChave", "/versaoDoEditalDeEntrada"]);
     }
 
     [Fact(DisplayName = "O motivo sem tipo, com código fora do formato, tipo desconhecido e sentido inválido é recusado com o caminho")]
     public void Motivo_ForaDoFormato_Recusa()
     {
-        JsonNode motivo = Documento("""{ "tipoCodigo": "SORTEIO", "codigo": "renda", "sentido": "NEUTRO", "justificativaDaInclusao": "" }""");
+        JsonNode motivo = Documento("""{ "faseChave": "homologacao", "tipoCodigo": "SORTEIO", "codigo": "renda", "sentido": "NEUTRO", "justificativaDaInclusao": "" }""");
 
         CaminhosComErro(motivo, Motivo).Should().Contain(["/tipoCodigo", "/codigo", "/sentido", "/justificativaDaInclusao"]);
-        CaminhosComErro(Documento("""{ "codigo": "RENDA" }"""), Motivo).Should().Contain("");
+        CaminhosComErro(Documento("""{ "faseChave": "homologacao", "codigo": "RENDA" }"""), Motivo).Should().Contain("");
     }
 
     [Fact(DisplayName = "A regra de homologação por alternativas e condições valida e a sem alternativa homologa toda inscrição enviada")]
@@ -116,7 +130,7 @@ public sealed class DecisoesDoEsquemaDaConfiguracaoTests
             { "formato": "uniplus.selecao.configuracao", "versaoFormato": 1,
               "cronograma": { "fases": [ { "chave": "homologacao", "tiposDeDecisao": ["HOMOLOGACAO_DAS_INSCRICOES"],
                 "regraDeHomologacao": { "resultadoAtoCodigo": "RESULTADO_INSCRICOES_HOMOLOGADAS", "alternativas": [] }, "assinantes": ["conta-1"] } ] },
-              "motivos": [ { "tipoCodigo": "HOMOLOGACAO_DAS_INSCRICOES", "codigo": "SEM_RESULTADO_NO_INEP" } ] }
+              "motivos": [ { "faseChave": "homologacao", "tipoCodigo": "HOMOLOGACAO_DAS_INSCRICOES", "codigo": "SEM_RESULTADO_NO_INEP" } ] }
             """);
 
         CaminhosComErro(documento).Should().BeEmpty();

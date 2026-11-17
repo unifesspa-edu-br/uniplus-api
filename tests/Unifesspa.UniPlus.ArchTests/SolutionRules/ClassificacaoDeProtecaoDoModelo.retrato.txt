@@ -1752,10 +1752,11 @@ selecao.motivos_de_decisao.updated_at: Interno
 selecao.motivos_de_decisao.updated_by: Pessoal
 selecao.motivos_de_decisao.xmin: Interno
 selecao.motivos_do_processo.codigo: Interno
-selecao.motivos_do_processo.congelado: Interno
 selecao.motivos_do_processo.created_at: Interno
 selecao.motivos_do_processo.created_by: Pessoal
 selecao.motivos_do_processo.descricao: Interno
+selecao.motivos_do_processo.etapa_processo_id: Interno
+selecao.motivos_do_processo.fase_canonica_origem_id: Interno
 selecao.motivos_do_processo.id: Interno
 selecao.motivos_do_processo.justificativa_da_inclusao: Interno
 selecao.motivos_do_processo.motivo_de_decisao_origem_id: Interno
@@ -1765,6 +1766,8 @@ selecao.motivos_do_processo.subclassificacao: Interno
 selecao.motivos_do_processo.tipo: Interno
 selecao.motivos_do_processo.updated_at: Interno
 selecao.motivos_do_processo.updated_by: Pessoal
+selecao.motivos_do_processo.versao_do_edital_de_entrada: Interno
+selecao.motivos_do_processo.versao_do_edital_de_saida: Interno
 selecao.motivos_do_processo.xmin: Interno
 selecao.municipios_do_bonus_regional.codigo_ibge: Interno
 selecao.municipios_do_bonus_regional.configuracao_bonus_regional_id: Interno

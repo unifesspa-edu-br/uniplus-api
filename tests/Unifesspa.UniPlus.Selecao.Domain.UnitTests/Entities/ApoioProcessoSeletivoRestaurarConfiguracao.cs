@@ -75,14 +75,8 @@ internal static class ApoioProcessoSeletivoRestaurarConfiguracao
     /// (Application), que recanonicaliza; o Domain não canonicaliza (ADR-0042).
     /// </summary>
     internal static VersaoConfiguracao VersaoDo(ProcessoSeletivo processo) => VersaoConfiguracao.Abrir(
-        processo.Id,
-        [1, 2, 3],
-        schemaVersion: "1.1",
-        algoritmoHash: "canonical-json/sha256@v1",
-        atoCriadorId: Guid.CreateVersion7(),
-        atoCriadorHash: new string('a', 64),
-        atorUsuarioContaId: "testes",
-        instante: DateTimeOffset.UnixEpoch);
+        processo.Id, new DocumentoCongelado([1, 2, 3], "1.1", "canonical-json/sha256@v1", new string('a', 64)),
+        atoCriadorId: Guid.CreateVersion7(), atorUsuarioContaId: "testes", instante: DateTimeOffset.UnixEpoch);
 
     internal static GrafoConfiguracao GrafoComBonus(ConfiguracaoBonusRegional bonus) => new(
         etapas: [EtapaCongeladaDeProvaObjetiva(EtapaCongelada, "Prova", ordem: 1)],

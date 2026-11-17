@@ -129,5 +129,7 @@ public sealed class TransicoesDaVersaoSequenciaTests
             new CenarioDeCongelamento { Dados = Dados(), Documento = new DocumentoCongelado(Bytes, "1.1", "canonical-json/sha256@v1", Hash), Relogio = new RelogioFixo(Agora) }, versao, precondicao);
 
     private static VersaoConfiguracao VersaoDe(ProcessoSeletivo processo) =>
-        VersaoConfiguracao.Abrir(processo.Id, Bytes, "1.1", "canonical-json/sha256@v1", Guid.CreateVersion7(), Hash, "user-conta-123", Agora);
+        VersaoConfiguracao.Abrir(
+            processo.Id, new DocumentoCongelado(Bytes, "1.1", "canonical-json/sha256@v1", Hash),
+            Guid.CreateVersion7(), "user-conta-123", Agora);
 }

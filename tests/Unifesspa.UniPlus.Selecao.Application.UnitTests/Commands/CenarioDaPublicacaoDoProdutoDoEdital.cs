@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -106,7 +107,8 @@ public sealed class CenarioDaPublicacaoDoProdutoDoEdital
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS 2027 — Medicina");
         ItensDoCronograma = IdentidadeDoItemDoEdital.Dos(fases, [.. processo.Etapas]);
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
-            ProcessoId, [1], Versao, "canonical-json/sha256@v1", Guid.CreateVersion7(), new string('a', 64), "sub", Agora);
+            ProcessoId, new DocumentoCongelado([1], Versao, "canonical-json/sha256@v1", new string('a', 64)),
+            Guid.CreateVersion7(), "sub", Agora);
         Processos.ObterVersaoVigenteAsync(ProcessoId, Agora, Arg.Any<CancellationToken>()).Returns(versao);
         Codecs.Reidratar(versao).Returns(_ => Result<EnvelopeReidratado>.Success(new EnvelopeReidratado(
             new GrafoConfiguracao(

@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
@@ -265,27 +266,22 @@ public sealed class RestauradorDeConfiguracaoTests
     public void VersaoNaoReidratavel_Falha()
     {
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
-        byte[] bytes = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
+        byte[] bytes = ConfiguracaoCodificada(processo);
         CorpusEnvelopeEntrada.Publicar(processo);
-
-        VersaoConfiguracao versao10 = VersaoConfiguracao.Abrir(
-            processo.Id,
-            bytes,
-            schemaVersion: "9.9",
-            CorpusEnvelope.Codec.AlgoritmoHash,
-            atoCriadorId: CorpusEnvelope.AtoAbertura,
-            atoCriadorHash: CorpusEnvelope.HashDocumento,
-            atorUsuarioContaId: CorpusEnvelope.Ator,
-            instante: DateTimeOffset.UnixEpoch);
-
-        byte[] antes = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
+        VersaoConfiguracao versao10 = VersaoDeSchemaDesconhecido(processo, bytes);
+        byte[] antes = ConfiguracaoCodificada(processo);
 
         Result<GrafoConfiguracao> resultado = new RestauradorDeConfiguracao(CorpusEnvelope.Registro).Restaurar(processo, versao10);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.VersaoDesconhecida);
-
-        CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes
-            .Should().Equal(antes, "uma restauração recusada não altera a configuração");
+        ConfiguracaoCodificada(processo).Should().Equal(antes, "uma restauração recusada não altera a configuração");
     }
+
+    private static byte[] ConfiguracaoCodificada(ProcessoSeletivo processo) =>
+        CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
+
+    private static VersaoConfiguracao VersaoDeSchemaDesconhecido(ProcessoSeletivo processo, byte[] bytes) => VersaoConfiguracao.Abrir(
+        processo.Id, new DocumentoCongelado(bytes, "9.9", CorpusEnvelope.Codec.AlgoritmoHash, CorpusEnvelope.HashDocumento),
+        atoCriadorId: CorpusEnvelope.AtoAbertura, atorUsuarioContaId: CorpusEnvelope.Ator, instante: DateTimeOffset.UnixEpoch);
 }

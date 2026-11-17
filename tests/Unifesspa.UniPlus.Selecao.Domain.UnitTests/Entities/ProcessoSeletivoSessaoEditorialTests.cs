@@ -93,6 +93,7 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         rascunho.Revisao.Should().Be(1);
         rascunho.VersaoBaseId.Should().Be(versao.Id);
         rascunho.NumeroVersaoBase.Should().Be(versao.NumeroVersao);
+        rascunho.NumeroDaVersaoEmPreparo.Should().Be(versao.NumeroVersao + 1, "o fechamento congela a versão que sucede a base");
         rascunho.AbertoPorContaId.Should().Be("user-conta-1");
         rascunho.ETag.Should().Be($"\"{rascunho.Id}:1\"");
     }

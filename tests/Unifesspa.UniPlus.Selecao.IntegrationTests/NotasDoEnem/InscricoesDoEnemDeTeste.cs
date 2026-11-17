@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Cryptography;
@@ -44,8 +45,8 @@ internal static class InscricoesDoEnemDeTeste
     {
         await using UniPlusDbContext context = fixture.CreateDbContext();
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
-            processoId, Encoding.UTF8.GetBytes("{}"), "1", "sha256@v1", Guid.CreateVersion7(),
-            new string('a', 64), "integration-test-user", DateTimeOffset.UtcNow);
+            processoId, new DocumentoCongelado(Encoding.UTF8.GetBytes("{}"), "1", "sha256@v1", new string('a', 64)),
+            Guid.CreateVersion7(), "integration-test-user", DateTimeOffset.UtcNow);
         context.VersoesConfiguracao.Add(versao);
         await context.SaveChangesAsync();
         return versao.Id;

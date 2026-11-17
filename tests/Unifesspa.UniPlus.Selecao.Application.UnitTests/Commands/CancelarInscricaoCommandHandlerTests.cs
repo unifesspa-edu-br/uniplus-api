@@ -43,16 +43,13 @@ public sealed class CancelarInscricaoCommandHandlerTests
     private static async Task<(Result Resultado, Inscricao Inscricao, IUnitOfWork UnitOfWork)> Cancelar(
         Func<Guid, Inscricao> inscricao, DateTimeOffset agora, string contaId = "conta-1", string? motivo = null)
     {
-        (VersaoConfiguracao versao, GrafoConfiguracao grafo) = SalvarInscricaoCommandHandlerTests.MontarVersaoComItem(Item);
+        (VersaoConfiguracao versao, GrafoConfiguracao grafo) = SalvarDeTeste.MontarVersaoComItem(Item);
         Inscricao existente = inscricao(versao.Id);
         IInscricaoRepository repositorio = Substitute.For<IInscricaoRepository>();
         repositorio.ObterAtivaPorProcessoECpfAsync(ProcessoId, Dono, Arg.Any<CancellationToken>()).Returns(existente);
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
         IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
-        DivulgacaoDeTeste.ConfigurarFixadaEDivulgada(
-            processoRepository, registroCodecs, grafo,
-            fixada: (versao, DivulgacaoDeTeste.FimDoPeriodo),
-            divulgada: (versao, DivulgacaoDeTeste.FimDoPeriodo));
+        DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
 
         Result resultado = await CancelarInscricaoCommandHandler.Handle(

@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries;
 
 using AwesomeAssertions;
 
-
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
@@ -17,6 +16,7 @@ using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -63,7 +63,8 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS 2027 — Medicina");
         _itensDoCronograma = IdentidadeDoItemDoEdital.Dos(fases, etapas ?? [.. processo.Etapas]);
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
-            _processoId, [1], Versao, "canonical-json/sha256@v1", Guid.CreateVersion7(), new string('a', 64), "sub", Agora);
+            _processoId, new DocumentoCongelado([1], Versao, "canonical-json/sha256@v1", new string('a', 64)),
+            Guid.CreateVersion7(), "sub", Agora);
         _processos.ObterVersaoVigenteAsync(_processoId, Agora, Arg.Any<CancellationToken>()).Returns(versao);
         _codecs.Reidratar(versao).Returns(Result<EnvelopeReidratado>.Success(new EnvelopeReidratado(
             new GrafoConfiguracao(

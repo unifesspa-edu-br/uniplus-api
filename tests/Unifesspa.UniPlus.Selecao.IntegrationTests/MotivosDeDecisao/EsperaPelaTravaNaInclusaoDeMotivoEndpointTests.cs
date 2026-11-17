@@ -91,13 +91,13 @@ public sealed class EsperaPelaTravaNaInclusaoDeMotivoEndpointTests : IAsyncLifet
     private sealed class PedidoDeInclusao
     {
         private readonly CenarioDeEsperaPelaTrava _cenario;
-        private readonly Guid _motivoId;
+        private readonly string _rota;
 
-        private PedidoDeInclusao(CenarioDeEsperaPelaTrava cenario, Guid processoId, Guid motivoId)
+        private PedidoDeInclusao(CenarioDeEsperaPelaTrava cenario, Guid processoId, string rota)
         {
             _cenario = cenario;
             ProcessoId = processoId;
-            _motivoId = motivoId;
+            _rota = rota;
         }
 
         internal Guid ProcessoId { get; }
@@ -107,13 +107,14 @@ public sealed class EsperaPelaTravaNaInclusaoDeMotivoEndpointTests : IAsyncLifet
         internal static async Task<PedidoDeInclusao> PrepararAsync(CenarioDeEsperaPelaTrava cenario)
         {
             Guid processoId = await cenario.SemearProcessoAsync(nameof(EsperaPelaTravaNaInclusaoDeMotivoEndpointTests));
-            return new PedidoDeInclusao(cenario, processoId, await SemearMotivoAsync(cenario));
+            Guid fase = await LugaresDoProcessoDeTeste.FaseAsync(cenario.Preparo.Services, processoId);
+            return new PedidoDeInclusao(cenario, processoId, LugaresDoProcessoDeTeste.RotaDaFase(processoId, fase, await SemearMotivoAsync(cenario)));
         }
 
         internal async Task<HttpResponseMessage> EnviarAsync(string chave)
         {
             using HttpClient client = _cenario.Host.CreateClient();
-            using HttpRequestMessage request = new(HttpMethod.Put, new Uri($"/api/selecao/processos-seletivos/{ProcessoId}/motivos-de-decisao/{_motivoId}", UriKind.Relative))
+            using HttpRequestMessage request = new(HttpMethod.Put, new Uri(_rota, UriKind.Relative))
             {
                 Content = JsonContent.Create(new { justificativa = (string?)null }),
             };

@@ -14,36 +14,31 @@ public sealed class CamposSoDeLeituraDoEsquemaDaConfiguracaoTests
 {
     private const string ArquivoDoDocumento = "documento.schema.json";
 
-    public static TheoryData<string, string> CamposSoDeLeitura => new()
-    {
-        { ArquivoDoDocumento, "properties/id" },
-        { ArquivoDoDocumento, "properties/versao" },
-        { ArquivoDoDocumento, "properties/publicadoEm" },
-        { ArquivoDoDocumento, "properties/tiposDeAtoCongelados" },
-        { "identificacao.schema.json", "properties/localidadeNome" },
-        { "identificacao.schema.json", "properties/localidadeUf" },
-        { "identificacao.schema.json", "properties/tipoProcessoNome" },
-        { "identificacao.schema.json", "properties/unidadeAdministradoraNome" },
-        { "identificacao.schema.json", "properties/unidadeAdministradoraSigla" },
-        { "cronograma.schema.json", "$defs/fase/properties/unidadeResponsavelNome" },
-        { "cronograma.schema.json", "$defs/fase/properties/unidadeResponsavelSigla" },
-        { "divulgacao.schema.json", "properties/regraNomeAbreviado" },
-        { "motivo.schema.json", "properties/descricao" },
-        { "motivo.schema.json", "properties/subclassificacao" },
-        { "motivo.schema.json", "properties/sentido" },
-        { "motivo.schema.json", "properties/congelado" },
-        { "formulario.schema.json", "properties/modeloOrigemCodigo" },
-        { "distribuicao-de-vagas.schema.json", "properties/cursoNome" },
-        { "distribuicao-de-vagas.schema.json", "properties/cursoGrau" },
-        { "distribuicao-de-vagas.schema.json", "properties/unidadeOfertanteNome" },
-        { "distribuicao-de-vagas.schema.json", "properties/turnos" },
-        { "distribuicao-de-vagas.schema.json", "properties/quadro" },
-        { "distribuicao-de-vagas.schema.json", "properties/totalDeVagasDoEdital" },
-        { "distribuicao-de-vagas.schema.json", "$defs/modalidade/properties/descricao" },
-    };
-
     [Theory(DisplayName = "O campo só de leitura é marcado readOnly e a descrição diz que a importação o ignora")]
-    [MemberData(nameof(CamposSoDeLeitura))]
+    [InlineData(ArquivoDoDocumento, "properties/id")]
+    [InlineData(ArquivoDoDocumento, "properties/versao")]
+    [InlineData(ArquivoDoDocumento, "properties/publicadoEm")]
+    [InlineData(ArquivoDoDocumento, "properties/tiposDeAtoCongelados")]
+    [InlineData("identificacao.schema.json", "properties/localidadeNome")]
+    [InlineData("identificacao.schema.json", "properties/localidadeUf")]
+    [InlineData("identificacao.schema.json", "properties/tipoProcessoNome")]
+    [InlineData("identificacao.schema.json", "properties/unidadeAdministradoraNome")]
+    [InlineData("identificacao.schema.json", "properties/unidadeAdministradoraSigla")]
+    [InlineData("cronograma.schema.json", "$defs/fase/properties/unidadeResponsavelNome")]
+    [InlineData("cronograma.schema.json", "$defs/fase/properties/unidadeResponsavelSigla")]
+    [InlineData("divulgacao.schema.json", "properties/regraNomeAbreviado")]
+    [InlineData("motivo.schema.json", "properties/descricao")]
+    [InlineData("motivo.schema.json", "properties/subclassificacao")]
+    [InlineData("motivo.schema.json", "properties/sentido")]
+    [InlineData("motivo.schema.json", "properties/versaoDoEditalDeEntrada")]
+    [InlineData("formulario.schema.json", "properties/modeloOrigemCodigo")]
+    [InlineData("distribuicao-de-vagas.schema.json", "properties/cursoNome")]
+    [InlineData("distribuicao-de-vagas.schema.json", "properties/cursoGrau")]
+    [InlineData("distribuicao-de-vagas.schema.json", "properties/unidadeOfertanteNome")]
+    [InlineData("distribuicao-de-vagas.schema.json", "properties/turnos")]
+    [InlineData("distribuicao-de-vagas.schema.json", "properties/quadro")]
+    [InlineData("distribuicao-de-vagas.schema.json", "properties/totalDeVagasDoEdital")]
+    [InlineData("distribuicao-de-vagas.schema.json", "$defs/modalidade/properties/descricao")]
     public void Campo_EReadOnlyComDescricao(string arquivo, string caminho)
     {
         ArgumentNullException.ThrowIfNull(arquivo);

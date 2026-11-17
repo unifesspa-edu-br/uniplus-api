@@ -78,26 +78,13 @@ internal static class CorpusEnvelopeEntrada
     /// </remarks>
     internal static VersaoConfiguracao VersaoDeAbertura(ProcessoSeletivo processo, byte[] bytes, Guid? ato = null) =>
         VersaoConfiguracao.Abrir(
-            processo.Id,
-            bytes,
-            Codec.SchemaVersion,
-            Codec.AlgoritmoHash,
-            atoCriadorId: ato ?? AtoAbertura,
-            atoCriadorHash: HashDocumento,
-            atorUsuarioContaId: Ator,
-            instante: new DateTimeOffset(2026, 3, 1, 12, 0, 0, TimeSpan.Zero));
+            processo.Id, new DocumentoCongelado(bytes, Codec.SchemaVersion, Codec.AlgoritmoHash, HashDocumento),
+            atoCriadorId: ato ?? AtoAbertura, atorUsuarioContaId: Ator, instante: new DateTimeOffset(2026, 3, 1, 12, 0, 0, TimeSpan.Zero));
 
     internal static VersaoConfiguracao VersaoDeRetificacao(VersaoConfiguracao anterior, byte[] bytes) =>
         VersaoConfiguracao.Suceder(
-            anterior,
-            bytes,
-            Codec.SchemaVersion,
-            Codec.AlgoritmoHash,
-            atoCriadorId: AtoRetificador,
-            atoCriadorHash: HashDocumento,
-            atoCriadorRetificaId: anterior.AtoCriadorId,
-            atorUsuarioContaId: Ator,
-            instante: new DateTimeOffset(2026, 3, 20, 12, 0, 0, TimeSpan.Zero));
+            anterior, new DocumentoCongelado(bytes, Codec.SchemaVersion, Codec.AlgoritmoHash, HashDocumento),
+            atoCriadorId: AtoRetificador, atorUsuarioContaId: Ator, instante: new DateTimeOffset(2026, 3, 20, 12, 0, 0, TimeSpan.Zero));
 
     /// <summary>
     /// Publica o processo para que ele fique em <see cref="StatusProcesso.Publicado"/> —

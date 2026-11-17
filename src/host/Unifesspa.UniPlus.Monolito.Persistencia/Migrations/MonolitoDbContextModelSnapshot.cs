@@ -13458,10 +13458,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("codigo");
 
-                    b.Property<bool>("Congelado")
-                        .HasColumnType("boolean")
-                        .HasColumnName("congelado");
-
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -13525,11 +13521,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.HasKey("Id")
                         .HasName("pk_motivos_do_processo");
 
-                    b.HasIndex("ProcessoSeletivoId", "MotivoDeDecisaoOrigemId")
-                        .IsUnique()
-                        .HasDatabaseName("ux_motivos_do_processo_processo_origem");
+                    b.HasIndex("ProcessoSeletivoId")
+                        .HasDatabaseName("ix_motivos_do_processo_processo");
 
-                    b.ToTable("motivos_do_processo", "selecao");
+                    b.ToTable("motivos_do_processo", "selecao", t =>
+                        {
+                            t.HasCheckConstraint("ck_motivos_do_processo_lugar", "num_nonnulls(fase_canonica_origem_id, etapa_processo_id) = 1");
+
+                            t.HasCheckConstraint("ck_motivos_do_processo_vigencia", "versao_do_edital_de_entrada >= 1 AND (versao_do_edital_de_saida IS NULL OR versao_do_edital_de_saida > versao_do_edital_de_entrada)");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.NoExigencia", b =>
@@ -19816,6 +19816,61 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_modelos_de_documento_processo_seletivo");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.MotivoDoProcesso", b =>
+                {
+                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao.LugarDaDecisao", "Lugar", b1 =>
+                        {
+                            b1.Property<Guid>("MotivoDoProcessoId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<Guid?>("EtapaProcessoId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("etapa_processo_id");
+
+                            b1.Property<Guid?>("FaseCanonicaOrigemId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("fase_canonica_origem_id");
+
+                            b1.HasKey("MotivoDoProcessoId");
+
+                            b1.ToTable("motivos_do_processo", "selecao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("MotivoDoProcessoId")
+                                .HasConstraintName("fk_motivos_do_processo_motivos_do_processo_id");
+                        });
+
+                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao.VigenciaNoEdital", "Vigencia", b1 =>
+                        {
+                            b1.Property<Guid>("MotivoDoProcessoId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<int>("VersaoDoEditalDeEntrada")
+                                .HasColumnType("integer")
+                                .HasColumnName("versao_do_edital_de_entrada");
+
+                            b1.Property<int?>("VersaoDoEditalDeSaida")
+                                .HasColumnType("integer")
+                                .HasColumnName("versao_do_edital_de_saida");
+
+                            b1.HasKey("MotivoDoProcessoId");
+
+                            b1.ToTable("motivos_do_processo", "selecao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("MotivoDoProcessoId")
+                                .HasConstraintName("fk_motivos_do_processo_motivos_do_processo_id");
+                        });
+
+                    b.Navigation("Lugar")
+                        .IsRequired();
+
+                    b.Navigation("Vigencia")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.NoExigencia", b =>

@@ -94,7 +94,7 @@ public sealed class OrdemDasRecusasDaConferenciaTests
     {
         ProcessoSeletivo emSessao = ProcessoEmEdicaoDeTeste.EmSessao();
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
-            emSessao.Id, Bytes(), "1.1", "canonical-json/sha256@v1", Guid.CreateVersion7(), new string('a', 64), "user-conta-123", Agora);
+            emSessao.Id, new DocumentoCongelado(Bytes(), "1.1", "canonical-json/sha256@v1", new string('a', 64)), Guid.CreateVersion7(), "user-conta-123", Agora);
         LimparIdentificador(emSessao);
 
         Result<VersaoConfiguracao> resultado = emSessao.Retificar(
@@ -108,7 +108,7 @@ public sealed class OrdemDasRecusasDaConferenciaTests
     {
         ProcessoSeletivo emSessao = ProcessoEmEdicaoDeTeste.EmSessao();
         VersaoConfiguracao deOutro = VersaoConfiguracao.Abrir(
-            Guid.CreateVersion7(), Bytes(), "1.1", "canonical-json/sha256@v1", Guid.CreateVersion7(), new string('a', 64), "user-conta-123", Agora);
+            Guid.CreateVersion7(), new DocumentoCongelado(Bytes(), "1.1", "canonical-json/sha256@v1", new string('a', 64)), Guid.CreateVersion7(), "user-conta-123", Agora);
 
         Result doEstado = TransicoesDaVersao.ConferirEstadoParaFechar(EstadoDaConfiguracao.De(emSessao), deOutro, emSessao.Rascunho!);
 

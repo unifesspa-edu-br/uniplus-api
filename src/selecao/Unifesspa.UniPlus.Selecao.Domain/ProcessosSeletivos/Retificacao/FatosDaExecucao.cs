@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Retificacao;
 
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -35,8 +34,4 @@ public sealed record FatosDaExecucao
 
     /// <summary>Se há pedido de isenção da taxa feito.</summary>
     public bool HaPedidoDeIsencao { get; init; }
-
-    /// <summary>Por tipo de decisão, o instante do primeiro registro dela no processo; o tipo sem registro não consta.</summary>
-    public IReadOnlyDictionary<TipoMotivoDeDecisao, DateTimeOffset> PrimeiroRegistroDeDecisaoPorTipo { get; init; } =
-        new Dictionary<TipoMotivoDeDecisao, DateTimeOffset>();
 }

@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
@@ -33,11 +32,4 @@ public sealed class PoliticaDaIsencaoDaTaxa : IPoliticaDoTipoDeMotivo
     }
 
     public bool AdmiteSentido(SentidoDoMotivo sentido) => sentido is SentidoDoMotivo.Favoravel or SentidoDoMotivo.Desfavoravel;
-
-    /// <summary>A isenção é avaliada na fase que abre o pedido, qualquer que seja o código dela.</summary>
-    public bool AvaliaNaFase(FaseCronograma fase)
-    {
-        ArgumentNullException.ThrowIfNull(fase);
-        return fase.ColetaSolicitacaoIsencao;
-    }
 }

@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -61,22 +62,27 @@ internal static class DivulgacaoDeTeste
     /// Uma versão publicada do processo conforme de teste, legível pelo contexto da versão fixada: o
     /// grafo do processo e o bloco de documentos exigidos, sem referência temporal.
     /// </summary>
-    public static (VersaoConfiguracao Versao, GrafoConfiguracao Grafo) VersaoConforme(Guid processoId)
-    {
-        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS 2026 — Inscrição");
-        GrafoConfiguracao grafo = new(
-            [.. processo.Etapas], processo.AtendimentoEspecializado!, [.. processo.DistribuicaoVagas],
-            processo.BonusRegional, [.. processo.CriteriosDesempate], processo.Classificacao!,
-            [.. processo.CronogramaFases], [.. processo.DocumentosExigidos], [], null,
-            fatosColetados: [.. processo.FatosColetados],
-            formularios: [.. processo.Formularios],
-            gruposColetados: [.. processo.GruposColetados],
-            numeroDeOpcoesDeCurso: 1);
-        VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
-            processoId, Encoding.UTF8.GetBytes("""{"documentosExigidos":{"dataReferenciaFatos":null}}"""), "0.0.22", "canonical-json/sha256@v1",
-            Guid.CreateVersion7(), new string('a', 64), "user-conta-1", new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero));
-        return (versao, grafo);
-    }
+    public static (VersaoConfiguracao Versao, GrafoConfiguracao Grafo) VersaoConforme(Guid processoId) =>
+        (VersaoSemReferenciaTemporal(processoId), GrafoDe(ProcessoSeletivoConformeBuilder.Criar("PS 2026 — Inscrição")));
+
+    /// <summary>O grafo da configuração do próprio processo, com o formulário, os fatos e os grupos que ele declara.</summary>
+    public static GrafoConfiguracao GrafoDe(ProcessoSeletivo processo) => new(
+        [.. processo.Etapas], processo.AtendimentoEspecializado!, [.. processo.DistribuicaoVagas],
+        processo.BonusRegional, [.. processo.CriteriosDesempate], processo.Classificacao!,
+        [.. processo.CronogramaFases], [.. processo.DocumentosExigidos], [], null,
+        fatosColetados: [.. processo.FatosColetados],
+        formularios: [.. processo.Formularios],
+        gruposColetados: [.. processo.GruposColetados],
+        numeroDeOpcoesDeCurso: 1);
+
+    /// <summary>
+    /// A versão cujo bloco de documentos exigidos não declara referência temporal: o processo de teste não a tem, e o
+    /// contexto da versão fixada lê esse bloco do JSON cru.
+    /// </summary>
+    public static VersaoConfiguracao VersaoSemReferenciaTemporal(Guid processoId) => VersaoConfiguracao.Abrir(
+        processoId,
+        new DocumentoCongelado(Encoding.UTF8.GetBytes("""{"documentosExigidos":{"dataReferenciaFatos":null}}"""), "0.0.22", "canonical-json/sha256@v1", new string('a', 64)),
+        Guid.CreateVersion7(), "user-conta-1", new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero));
 
     /// <summary>A versão é a fixada pela inscrição e a divulgada pelo certame.</summary>
     public static void ConfigurarVersao(

@@ -2,14 +2,36 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/motivo.schema.json",
   "title": "Motivo de decisão do processo",
-  "description": "Um motivo do catálogo que o processo escolheu para um tipo de decisão. A identidade é o par tipo e código do catálogo; o descritivo é cópia do catálogo e, depois de congelado, não acompanha mais as mudanças dele.",
+  "description": "Um motivo do catálogo que o processo escolheu para uma fase ou etapa. A identidade é o lugar, a fase ou a etapa pela chave, mais o par tipo e código do catálogo; o descritivo é cópia do catálogo e, depois de publicado o edital, não acompanha mais as mudanças dele.",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "tipoCodigo",
     "codigo"
   ],
+  "oneOf": [
+    {
+      "required": [
+        "faseChave"
+      ]
+    },
+    {
+      "required": [
+        "etapaChave"
+      ]
+    }
+  ],
   "properties": {
+    "faseChave": {
+      "title": "Fase da decisão",
+      "description": "Chave da fase do cronograma em que o motivo vale. Exatamente um entre a fase e a etapa.",
+      "$ref": "comuns.schema.json#/$defs/chave"
+    },
+    "etapaChave": {
+      "title": "Etapa da decisão",
+      "description": "Chave da etapa em que o motivo vale. Exatamente um entre a fase e a etapa.",
+      "$ref": "comuns.schema.json#/$defs/chave"
+    },
     "tipoCodigo": {
       "title": "Tipo de decisão",
       "description": "Tipo de decisão a que o motivo pertence.",
@@ -49,10 +71,11 @@
       "minLength": 1,
       "maxLength": 1000
     },
-    "congelado": {
-      "title": "Congelado",
-      "description": "Se o motivo já foi congelado numa versão publicada. Campo só de leitura: ignorado na importação.",
-      "type": "boolean",
+    "versaoDoEditalDeEntrada": {
+      "title": "Versão do edital de entrada",
+      "description": "Número da versão do edital em que o motivo entrou: 1 no rascunho, e a versão seguinte à base na sessão de retificação. Campo só de leitura: ignorado na importação.",
+      "type": "integer",
+      "minimum": 1,
       "readOnly": true
     }
   },

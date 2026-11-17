@@ -33,7 +33,7 @@ public sealed class ConferenciaDosFatosDaVersao(ConferenciaDosMotivosAoCongelar 
         ProcessoSeletivo processo, OrigemDoCongelamento origem, LeiturasDoCongelamento lidos, CancellationToken cancellationToken)
     {
         FatosConferidos fatos = ConferirOsFatosCongelados(processo, origem, lidos);
-        Result dosMotivos = await motivos.ConferirAsync(processo, cancellationToken).ConfigureAwait(false);
+        Result dosMotivos = await motivos.ConferirAsync(processo, origem.NumeroDaVersaoQueNasce, cancellationToken).ConfigureAwait(false);
 
         return fatos with { Causas = [.. fatos.Causas, .. dosMotivos.Errors] };
     }

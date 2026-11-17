@@ -82,6 +82,11 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// etapa atualiza a mesma linha, preservando a identidade para quem aponta para ela; sem id é
 /// item novo.
 /// </para>
+/// <para>
+/// Devolva o <c>id</c> de cada etapa que continua. A etapa omitida, ou devolvida sem <c>id</c>, sai do processo e leva
+/// junto os motivos de decisão escolhidos nela que ainda não constam de edital publicado. Se algum já consta, a
+/// substituição é recusada (422 <c>fase_ou_etapa_com_motivo_publicado</c>) e nada muda.
+/// </para>
 /// </remarks>
 public sealed record EtapaProcessoInput(
     string Nome,

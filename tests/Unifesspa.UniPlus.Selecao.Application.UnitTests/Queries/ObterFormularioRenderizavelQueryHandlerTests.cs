@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -506,14 +507,8 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
         Guid processoId, string envelopeJson, string schemaVersion = VersaoCorrenteReconhecida)
     {
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
-            processoId,
-            Encoding.UTF8.GetBytes(envelopeJson),
-            schemaVersion,
-            "canonical-json/sha256@v1",
-            Guid.CreateVersion7(),
-            new string('a', 64),
-            "user-conta-123",
-            Relogio.GetUtcNow());
+            processoId, new DocumentoCongelado(Encoding.UTF8.GetBytes(envelopeJson), schemaVersion, "canonical-json/sha256@v1", new string('a', 64)),
+            Guid.CreateVersion7(), "user-conta-123", Relogio.GetUtcNow());
 
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterVersoesPorAtoCriadorAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([versao]);

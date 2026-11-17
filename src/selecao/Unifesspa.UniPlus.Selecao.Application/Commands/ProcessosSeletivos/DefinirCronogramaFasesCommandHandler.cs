@@ -11,7 +11,9 @@ using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 /// Handler do <see cref="DefinirCronogramaFasesCommand"/>: trava o processo para edição, delega a definição do
 /// cronograma (ver <see cref="DefinicaoDoCronogramaDeFases"/>) com o relógio injetado lido <b>uma vez</b> por
 /// operação (ADR-0068) e grava. A recusa do domínio sai como LOTE: a conclusão do ciclo recursal acumula uma
-/// violação por fase mal declarada, e reduzi-la a um <c>DomainError</c> apagaria os campos que localizam cada uma.
+/// violação por fase mal declarada, e reduzi-la a um <c>DomainError</c> apagaria os campos que localizam cada uma. A
+/// recusa descarta o rastreamento, porque o agregado já foi mutado em memória quando os motivos dos lugares que saem a
+/// provocam (ADR-0119).
 /// </summary>
 public static class DefinirCronogramaFasesCommandHandler
 {
@@ -63,6 +65,7 @@ public static class DefinirCronogramaFasesCommandHandler
         Result definida = await definicao.DefinirAsync(processo, command, agora, cancellationToken).ConfigureAwait(false);
         if (definida.IsFailure)
         {
+            unitOfWork.DescartarAlteracoesNaoSalvas();
             return Result<MutacaoAceita>.ValidationFailure(definida.Errors);
         }
 

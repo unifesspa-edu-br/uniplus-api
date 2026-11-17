@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 
-using System.Text.Json;
-
 using AwesomeAssertions;
 
 using NSubstitute;
@@ -71,7 +69,7 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
         Func<Inscricao, string> precondicao, Func<Guid, Inscricao>? rascunho = null, string contaId = "conta-1", DateTimeOffset? agora = null,
         IDocumentoDaInscricaoRepository? documentos = null)
     {
-        (VersaoConfiguracao versao, GrafoConfiguracao grafo) = SalvarInscricaoCommandHandlerTests.MontarVersaoComItem(Item);
+        (VersaoConfiguracao versao, GrafoConfiguracao grafo) = SalvarDeTeste.MontarVersaoComItem(Item);
         return Descartar(precondicao, (rascunho ?? NovoRascunho)(versao.Id), versao, versao, grafo, contaId, agora, documentos);
     }
 
@@ -157,8 +155,8 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
     [Fact(DisplayName = "Rascunho em versão anterior à divulgada é descartado com o ETag que a leitura devolve")]
     public async Task Handle_RetificacaoDivulgadaDepoisDoRascunho_ConfereOETagDoRascunhoAdotado()
     {
-        (VersaoConfiguracao fixada, GrafoConfiguracao grafo) = SalvarInscricaoCommandHandlerTests.MontarVersaoComItem(Item);
-        (VersaoConfiguracao divulgada, _) = SalvarInscricaoCommandHandlerTests.MontarVersaoComItem(Item);
+        (VersaoConfiguracao fixada, GrafoConfiguracao grafo) = SalvarDeTeste.MontarVersaoComItem(Item);
+        (VersaoConfiguracao divulgada, _) = SalvarDeTeste.MontarVersaoComItem(Item);
 
         (Result resultado, IInscricaoRepository repositorio, _) = await Descartar(
             r => DivulgacaoDeTeste.ETagDepoisDeAdotar(r, divulgada), NovoRascunho(fixada.Id), fixada, divulgada, grafo);

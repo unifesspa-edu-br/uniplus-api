@@ -58,11 +58,14 @@ public static class SelecaoApplicationServiceRegistration
         services.AddScoped<ConfiguracaoDistribuicaoVagasResolver>();
 
     // O serviço de definição e a montagem das fases não guardam estado de uma edição para outra: as portas entram
-    // por construtor, e o handler recebe os dois prontos.
+    // por construtor, e o handler recebe os dois prontos. A retirada dos motivos dos lugares que saem é comum ao
+    // cronograma e às etapas.
     private static void AddDefinicaoDoCronogramaDeFases(IServiceCollection services)
     {
         services.AddScoped<MontagemDasFases>();
+        services.AddScoped<MotivosDosLugaresQueSaem>();
         services.AddScoped<DefinicaoDoCronogramaDeFases>();
+        services.AddScoped<DefinicaoDasEtapas>();
     }
 
     // A decisão e a leitura da revelação de um campo e da abertura de um documento, pela consulta administrativa, guardam
@@ -134,6 +137,7 @@ public static class SelecaoApplicationServiceRegistration
     {
         services.AddScoped<ConferenciaDoAtoEDoDocumento>();
         services.AddScoped<LeituraDaBaseDaRetificacao>();
+        services.AddScoped<DescarteDaRetificacao>();
         services.AddScoped<LeituraDasVersoesPublicadas>();
         services.AddScoped<ConferenciaDoCatalogoEDaProtecao>();
         services.AddScoped<RecopiaAoCongelar>();

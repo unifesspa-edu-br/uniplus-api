@@ -167,6 +167,20 @@ public sealed class OrigemDoCongelamentoTests
         origem.ItensComEixoTrocado([.. ProcessoSoComOItemPublicado(TipoRenderizacao.Booleano).FatosColetados]).Should().BeEmpty();
     }
 
+    [Fact(DisplayName = "A primeira publicação faz nascer a versão de abertura")]
+    public void PrimeiraPublicacao_FazNascerAVersaoDeAbertura() =>
+        new PrimeiraPublicacao().NumeroDaVersaoQueNasce.Should().Be(VersaoConfiguracao.NumeroDaAbertura);
+
+    [Fact(DisplayName = "As duas formas de retificar fazem nascer a versão que sucede a vigente")]
+    public void Retificacao_FazNascerASucessoraDaVigente()
+    {
+        (_, VersaoConfiguracao vigente) = ProcessoPublicado();
+        BaseDaRetificacao baseDaRetificacao = Base(vigente, CodecsDeTeste.QueReidrataSemTiposDeAto());
+
+        new RetificacaoDeAtoUnico(baseDaRetificacao).NumeroDaVersaoQueNasce.Should().Be(vigente.NumeroVersao + 1);
+        new FechamentoDaSessao(baseDaRetificacao, FatosPublicados()).NumeroDaVersaoQueNasce.Should().Be(vigente.NumeroVersao + 1);
+    }
+
     private static BaseDaRetificacao Base(VersaoConfiguracao vigente, IRegistroCodecsEnvelope codecs) =>
         new(vigente, MotivoDaRetificacao, codecs.Reidratar(vigente));
 

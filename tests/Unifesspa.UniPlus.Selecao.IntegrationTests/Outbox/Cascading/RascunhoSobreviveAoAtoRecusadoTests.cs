@@ -15,6 +15,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 using Wolverine;
@@ -150,14 +151,8 @@ public sealed class RascunhoSobreviveAoAtoRecusadoTests
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         db.VersoesConfiguracao.Add(VersaoConfiguracao.Abrir(
-            processoId,
-            Encoding.UTF8.GetBytes("{}"),
-            schemaVersion: "0.0.1",
-            algoritmoHash: "SHA-256",
-            atoCriadorId: Guid.CreateVersion7(),
-            atoCriadorHash: new string('a', 64),
-            atorUsuarioContaId: "semeadura",
-            instante: DateTimeOffset.UtcNow));
+            processoId, new DocumentoCongelado(Encoding.UTF8.GetBytes("{}"), "0.0.1", "SHA-256", new string('a', 64)),
+            atoCriadorId: Guid.CreateVersion7(), atorUsuarioContaId: "semeadura", instante: DateTimeOffset.UtcNow));
 
         await db.SaveChangesAsync();
     }

@@ -25,7 +25,8 @@ internal static class ApoioDaRetificacaoDoProcessoSeletivo
     /// parâmetro não nulo de <see cref="ProcessoSeletivo.Retificar"/> ou provar que ela é de outro certame.
     /// </summary>
     internal static VersaoConfiguracao VersaoQualquer() => VersaoConfiguracao.Abrir(
-        Guid.CreateVersion7(), BytesCanonicos, VersaoDoEsquema, VersaoDoCanonicalizador, Guid.CreateVersion7(), HashFixo, Autor, Relogio().GetUtcNow());
+        Guid.CreateVersion7(), new DocumentoCongelado(BytesCanonicos, VersaoDoEsquema, VersaoDoCanonicalizador, HashFixo),
+        Guid.CreateVersion7(), Autor, Relogio().GetUtcNow());
 
     internal static ProcessoSeletivo NovoProcessoPublicado(RelogioManual clock, out VersaoConfiguracao versaoAbertura)
     {

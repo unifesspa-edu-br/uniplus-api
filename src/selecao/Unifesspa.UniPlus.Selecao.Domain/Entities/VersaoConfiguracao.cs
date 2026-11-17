@@ -4,6 +4,7 @@ using System.Text;
 
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -36,6 +37,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </remarks>
 public sealed class VersaoConfiguracao : IForensicEntity
 {
+    /// <summary>O número da versão da abertura, a primeira da cadeia do processo.</summary>
+    public const int NumeroDaAbertura = 1;
+
     public Guid Id { get; private init; } = Guid.CreateVersion7();
 
     public Guid ProcessoSeletivoId { get; private init; }
@@ -86,53 +90,63 @@ public sealed class VersaoConfiguracao : IForensicEntity
     }
 
     /// <summary>
+    /// Congela a versão. O hash e o jsonb nascem dos bytes do documento, que são copiados: guardar a referência
+    /// de quem chamou deixaria uma janela em que mutá-la, antes do INSERT, persistiria bytes que não correspondem
+    /// ao hash, e a evidência forense deixaria de provar o que diz provar.
+    /// </summary>
+    private VersaoConfiguracao(
+        Guid processoSeletivoId,
+        int numeroVersao,
+        DateTimeOffset vigenteAPartirDe,
+        DocumentoCongelado documento,
+        Guid atoCriadorId,
+        Guid? atoCriadorRetificaId,
+        string atorUsuarioContaId)
+    {
+        byte[] canonico = [.. documento.Canonico];
+
+        ProcessoSeletivoId = processoSeletivoId;
+        NumeroVersao = numeroVersao;
+        VigenteAPartirDe = vigenteAPartirDe;
+        SchemaVersion = documento.SchemaVersion;
+        AlgoritmoHash = documento.AlgoritmoHash;
+        ConfiguracaoCongeladaCanonica = canonico;
+        ConfiguracaoCongelada = Encoding.UTF8.GetString(canonico);
+        HashConfiguracao = HashCanonicalComputer.ComputeSha256Hex(canonico);
+        AtoCriadorId = atoCriadorId;
+        AtoCriadorHash = documento.HashDocumento;
+        AtoCriadorRetificaId = atoCriadorRetificaId;
+        AtorUsuarioContaId = atorUsuarioContaId;
+    }
+
+    /// <summary>
     /// Abre a cadeia de versões do processo: a versão 1, criada pelo ato de
     /// abertura. Não retifica ato algum — <see cref="AtoCriadorRetificaId"/>
     /// nasce nulo, e é a única versão em que isso é válido.
     /// </summary>
     public static VersaoConfiguracao Abrir(
         Guid processoSeletivoId,
-        byte[] configuracaoCongeladaCanonica,
-        string schemaVersion,
-        string algoritmoHash,
+        DocumentoCongelado documento,
         Guid atoCriadorId,
-        string atoCriadorHash,
         string atorUsuarioContaId,
         DateTimeOffset instante)
     {
-        GuardarFormato(
-            processoSeletivoId,
-            configuracaoCongeladaCanonica,
-            schemaVersion,
-            algoritmoHash,
-            atoCriadorId,
-            atoCriadorHash,
-            atorUsuarioContaId);
+        GuardarFormato(processoSeletivoId, documento, atoCriadorId, atorUsuarioContaId);
 
-        return Congelar(
-            processoSeletivoId,
-            numeroVersao: 1,
-            configuracaoCongeladaCanonica,
-            schemaVersion,
-            algoritmoHash,
-            atoCriadorId,
-            atoCriadorHash,
-            atoCriadorRetificaId: null,
-            atorUsuarioContaId,
-            instante);
+        return new VersaoConfiguracao(
+            processoSeletivoId, NumeroDaAbertura, instante, documento, atoCriadorId, atoCriadorRetificaId: null, atorUsuarioContaId);
     }
 
     /// <summary>
     /// Sucede <paramref name="anterior"/> na cadeia do mesmo processo: a versão
     /// <c>N + 1</c>, criada por um ato que retifica o ato criador da versão
-    /// <c>N</c>. O número é derivado da anterior — buraco de numeração é
-    /// impossível por construção.
+    /// <c>N</c>. O número e o ato retificado são derivados da anterior — buraco
+    /// de numeração e elo quebrado são impossíveis por construção.
     /// </summary>
     /// <remarks>
-    /// As invariantes de cadeia que dependem do ESTADO do certame (a versão
-    /// corrente ser deste processo; o ato criador emendar o ato criador dela)
-    /// são verificadas por <see cref="ProcessoSeletivo.Retificar"/> — a raiz é
-    /// quem tem o contexto para recusá-las como regra de negócio (422,
+    /// A invariante de cadeia que depende do ESTADO do certame (a versão corrente
+    /// ser deste processo) é verificada por <see cref="ProcessoSeletivo.Retificar"/>
+    /// — a raiz é quem tem o contexto para recusá-la como regra de negócio (422,
     /// ADR-0102). Os guards aqui são a última linha: relançam como erro de
     /// programação o que a raiz já deveria ter barrado, para que o agregado
     /// nunca materialize em estado inválido — mesmo critério de
@@ -140,97 +154,36 @@ public sealed class VersaoConfiguracao : IForensicEntity
     /// </remarks>
     public static VersaoConfiguracao Suceder(
         VersaoConfiguracao anterior,
-        byte[] configuracaoCongeladaCanonica,
-        string schemaVersion,
-        string algoritmoHash,
+        DocumentoCongelado documento,
         Guid atoCriadorId,
-        string atoCriadorHash,
-        Guid atoCriadorRetificaId,
         string atorUsuarioContaId,
         DateTimeOffset instante)
     {
         ArgumentNullException.ThrowIfNull(anterior);
-        GuardarFormato(
-            anterior.ProcessoSeletivoId,
-            configuracaoCongeladaCanonica,
-            schemaVersion,
-            algoritmoHash,
-            atoCriadorId,
-            atoCriadorHash,
-            atorUsuarioContaId);
-
-        if (atoCriadorRetificaId != anterior.AtoCriadorId)
-        {
-            throw new ArgumentException(
-                "O ato criador de uma versão sucessora deve retificar o ato criador da versão anterior.",
-                nameof(atoCriadorRetificaId));
-        }
+        GuardarFormato(anterior.ProcessoSeletivoId, documento, atoCriadorId, atorUsuarioContaId);
 
         if (atoCriadorId == anterior.AtoCriadorId)
         {
-            throw new ArgumentException(
-                "Um ato cria no máximo uma versão de configuração.",
-                nameof(atoCriadorId));
+            throw new ArgumentException("Um ato cria no máximo uma versão de configuração.", nameof(atoCriadorId));
         }
 
-        // A vigência de uma sucessora nunca precede a da versão que ela sucede.
-        // O relógio do sistema pode andar para trás (ajuste NTP em degrau, troca
-        // de hora do host) — e como é a vigência que ORDENA as versões, um
-        // retrocesso faria a versão N continuar sendo resolvida como vigente
-        // depois de a N+1 existir. Empatar no instante da anterior é seguro por
-        // desenho: o empate é permitido (não há unicidade de instante) e o
-        // desempate por NumeroVersao decrescente elege a mais nova (ADR-0104).
-        DateTimeOffset vigenteAPartirDe = instante < anterior.VigenteAPartirDe
-            ? anterior.VigenteAPartirDe
-            : instante;
-
-        return Congelar(
-            anterior.ProcessoSeletivoId,
-            anterior.NumeroVersao + 1,
-            configuracaoCongeladaCanonica,
-            schemaVersion,
-            algoritmoHash,
-            atoCriadorId,
-            atoCriadorHash,
-            atoCriadorRetificaId,
-            atorUsuarioContaId,
-            vigenteAPartirDe);
+        return new VersaoConfiguracao(
+            anterior.ProcessoSeletivoId, NumeroDaSucessora(anterior.NumeroVersao), anterior.VigenciaDaSucessora(instante),
+            documento, atoCriadorId, anterior.AtoCriadorId, atorUsuarioContaId);
     }
 
-    private static VersaoConfiguracao Congelar(
-        Guid processoSeletivoId,
-        int numeroVersao,
-        byte[] configuracaoCongeladaCanonica,
-        string schemaVersion,
-        string algoritmoHash,
-        Guid atoCriadorId,
-        string atoCriadorHash,
-        Guid? atoCriadorRetificaId,
-        string atorUsuarioContaId,
-        DateTimeOffset vigenteAPartirDe)
-    {
-        // Cópia defensiva: os bytes são a base do hash e do jsonb derivados logo
-        // abaixo. Guardar a referência do caller deixaria uma janela em que
-        // mutá-la, antes do INSERT, persistiria bytes que não correspondem ao
-        // hash — a evidência forense deixaria de provar o que diz provar.
-        byte[] canonico = [.. configuracaoCongeladaCanonica];
+    /// <summary>O número da versão que sucede a de número <paramref name="numeroDaAnterior"/>.</summary>
+    public static int NumeroDaSucessora(int numeroDaAnterior) => numeroDaAnterior + 1;
 
-        return new VersaoConfiguracao
-        {
-            ProcessoSeletivoId = processoSeletivoId,
-            NumeroVersao = numeroVersao,
-            VigenteAPartirDe = vigenteAPartirDe,
-            SchemaVersion = schemaVersion,
-            AlgoritmoHash = algoritmoHash,
-            ConfiguracaoCongeladaCanonica = canonico,
-            ConfiguracaoCongelada = Encoding.UTF8.GetString(canonico),
-            HashConfiguracao = HashCanonicalComputer.ComputeSha256Hex(canonico),
-            AtoCriadorId = atoCriadorId,
-            AtoCriadorHash = atoCriadorHash,
-            AtoCriadorRetificaId = atoCriadorRetificaId,
-            AtorUsuarioContaId = atorUsuarioContaId,
-        };
-    }
+    /// <summary>
+    /// A vigência de uma sucessora criada em <paramref name="instante"/>: nunca precede a desta versão. O relógio do
+    /// sistema pode andar para trás (ajuste NTP em degrau, troca de hora do host) e, como é a vigência que ORDENA as
+    /// versões, um retrocesso faria a versão N continuar sendo resolvida como vigente depois de a N+1 existir. Empatar
+    /// no instante desta é seguro por desenho: o empate é permitido (não há unicidade de instante) e o desempate por
+    /// <see cref="NumeroVersao"/> decrescente elege a mais nova (ADR-0104).
+    /// </summary>
+    public DateTimeOffset VigenciaDaSucessora(DateTimeOffset instante) =>
+        instante < VigenteAPartirDe ? VigenteAPartirDe : instante;
 
     /// <summary>
     /// Checagens de shape comuns às duas factories. Lançam
@@ -243,46 +196,19 @@ public sealed class VersaoConfiguracao : IForensicEntity
     /// a cadeia do certame — são da raiz, que as recusa como 422 (ADR-0102)
     /// antes de chegar aqui.
     /// </summary>
-    private static void GuardarFormato(
-        Guid processoSeletivoId,
-        byte[] configuracaoCongeladaCanonica,
-        string schemaVersion,
-        string algoritmoHash,
-        Guid atoCriadorId,
-        string atoCriadorHash,
-        string atorUsuarioContaId)
+    private static void GuardarFormato(Guid processoSeletivoId, DocumentoCongelado documento, Guid atoCriadorId, string atorUsuarioContaId)
     {
-        ArgumentNullException.ThrowIfNull(configuracaoCongeladaCanonica);
-        ArgumentException.ThrowIfNullOrWhiteSpace(schemaVersion);
-        ArgumentException.ThrowIfNullOrWhiteSpace(algoritmoHash);
+        DocumentoCongelado.GarantirFormato(documento);
         ArgumentException.ThrowIfNullOrWhiteSpace(atorUsuarioContaId);
 
         if (processoSeletivoId == Guid.Empty)
         {
-            throw new ArgumentException(
-                "A versão de configuração deve estar vinculada a um Processo Seletivo.",
-                nameof(processoSeletivoId));
-        }
-
-        if (configuracaoCongeladaCanonica.Length == 0)
-        {
-            throw new ArgumentException(
-                "A configuração congelada não pode ser vazia.",
-                nameof(configuracaoCongeladaCanonica));
+            throw new ArgumentException("A versão de configuração deve estar vinculada a um Processo Seletivo.", nameof(processoSeletivoId));
         }
 
         if (atoCriadorId == Guid.Empty)
         {
-            throw new ArgumentException(
-                "A versão de configuração deve declarar o ato que a criou.",
-                nameof(atoCriadorId));
-        }
-
-        if (!HashCanonicalComputer.IsValidHashShape(atoCriadorHash))
-        {
-            throw new ArgumentException(
-                "O hash do documento do ato criador deve ser um SHA-256 em hexadecimal minúsculo (64 caracteres).",
-                nameof(atoCriadorHash));
+            throw new ArgumentException("A versão de configuração deve declarar o ato que a criou.", nameof(atoCriadorId));
         }
     }
 }

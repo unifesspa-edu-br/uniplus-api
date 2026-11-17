@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -305,7 +306,8 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
-            processo.Id, [1], "0.0.42", "canonical-json/sha256@v1", Guid.CreateVersion7(), new string('a', 64), "sub", DateTimeOffset.UnixEpoch);
+            processo.Id, new DocumentoCongelado([1], "0.0.42", "canonical-json/sha256@v1", new string('a', 64)),
+            Guid.CreateVersion7(), "sub", DateTimeOffset.UnixEpoch);
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
         repository.ObterVersaoAtualAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(versao);

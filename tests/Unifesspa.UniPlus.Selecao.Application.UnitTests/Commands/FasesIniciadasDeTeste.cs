@@ -14,6 +14,7 @@ internal static class FasesIniciadasDeTeste
     {
         IFasesIniciadasDoProcesso leitor = Substitute.For<IFasesIniciadasDoProcesso>();
         leitor.ObterAsync(default, default, default).ReturnsForAnyArgs(iniciadas);
+        leitor.ObterAgoraAsync(default, default).ReturnsForAnyArgs(new FasesIniciadasNoInstante(iniciadas, DateTimeOffset.UnixEpoch));
         return leitor;
     }
 }

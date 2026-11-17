@@ -108,8 +108,7 @@ public sealed class ExigenciasDeMotivosTests
         Escolher(processo, ProcessoParaMotivos.DaIsencao(fundamento, sentido));
 
     private static MotivoDoProcesso Escolher(ProcessoSeletivo processo, MotivoDeDecisao origem) =>
-        EscolhaDosMotivos.Incluir(new InclusaoDeMotivo(
-            processo, [], origem, null, PrecondicaoIfMatch.Ausente, ProcessoParaMotivos.InicioDaInscricao, null)).Value!;
+        ProcessoParaMotivos.Escolha(processo, ProcessoParaMotivos.LugarDaFase(processo, "INSCRICAO"), origem, versaoDeEntrada: 1);
 
     private sealed class ExigenciaFalsa(string codigo) : IExigenciaDeMotivos
     {

@@ -32,4 +32,24 @@ public sealed record PedidoDeCongelamento
 /// (o Domain não os produz, ADR-0042), a versão do conjunto de blocos, o algoritmo de hash e o hash
 /// do documento publicado, que é o do ato criador.
 /// </summary>
-public readonly record struct DocumentoCongelado(byte[] Canonico, string SchemaVersion, string AlgoritmoHash, string HashDocumento);
+public readonly record struct DocumentoCongelado(byte[] Canonico, string SchemaVersion, string AlgoritmoHash, string HashDocumento)
+{
+    /// <summary>
+    /// Lança <see cref="ArgumentException"/> quando o documento não tem a forma que a versão congela: erro de programação
+    /// de quem o monta, e não regra de negócio.
+    /// </summary>
+    internal static void GarantirFormato(DocumentoCongelado documento)
+    {
+        bool formatoValido = documento.Canonico is { Length: > 0 }
+            && !string.IsNullOrWhiteSpace(documento.SchemaVersion)
+            && !string.IsNullOrWhiteSpace(documento.AlgoritmoHash)
+            && HashCanonicalComputer.IsValidHashShape(documento.HashDocumento);
+
+        if (!formatoValido)
+        {
+            throw new ArgumentException(
+                "O documento congelado exige bytes canônicos, versão do conjunto de blocos, algoritmo de hash e o hash SHA-256 do documento em hexadecimal minúsculo (64 caracteres).",
+                nameof(documento));
+        }
+    }
+}

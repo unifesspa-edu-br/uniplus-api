@@ -59,7 +59,7 @@ public static class FecharRetificacaoCommandHandler
             return Result<ProcessoSeletivo>.Failure(DefinirFormularioCommandHandler.ProcessoNaoEncontrado(command.ProcessoSeletivoId));
         }
 
-        return PrecondicoesDoFechamento.Recusa(command.Precondicao, processo) is { } recusa
+        return PrecondicoesDoEncerramentoDaSessao.Recusa(command.Precondicao, processo, "O fechamento") is { } recusa
             ? Result<ProcessoSeletivo>.Failure(recusa)
             : Result<ProcessoSeletivo>.Success(processo);
     }

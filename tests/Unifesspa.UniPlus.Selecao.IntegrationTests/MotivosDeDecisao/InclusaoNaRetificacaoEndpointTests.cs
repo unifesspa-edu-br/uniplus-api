@@ -53,19 +53,24 @@ public sealed class InclusaoNaRetificacaoEndpointTests : IAsyncLifetime
     {
         Guid processoId = await SemearPublicadoComIsencaoAsync(nameof(Retificacao_InclusaoAceitaERecusas));
         string etag = await AbrirRetificacaoAsync(processoId);
-        MotivoDeDecisao homologacao = await SemearMotivoAsync(TipoMotivoDeDecisao.HomologacaoDasInscricoes, null, SentidoDoMotivo.Desfavoravel);
-        MotivoDeDecisao outraHomologacao = await SemearMotivoAsync(TipoMotivoDeDecisao.HomologacaoDasInscricoes, null, SentidoDoMotivo.Favoravel);
-        MotivoDeDecisao isencao = await SemearMotivoAsync(TipoMotivoDeDecisao.IsencaoDaTaxa, Fundamento, SentidoDoMotivo.Desfavoravel);
+        (MotivoDeDecisao homologacao, MotivoDeDecisao outraHomologacao, MotivoDeDecisao isencao) = await SemearHomologacoesEIsencaoAsync();
 
-        using HttpResponseMessage semJustificativa = await IncluirAsync(processoId, outraHomologacao.Id, null, etag);
-        using HttpResponseMessage aceita = await IncluirAsync(processoId, homologacao.Id, "Retorno do INEP passou a ser exigido pela norma.", etag);
-        using HttpResponseMessage avaliacaoIniciada = await IncluirAsync(processoId, isencao.Id, "Motivo previsto em norma nova.", aceita.Headers.ETag!.Tag);
+        using HttpResponseMessage semJustificativa = await IncluirAsync(await RotaDaEtapaAsync(processoId, outraHomologacao.Id), null, etag);
+        using HttpResponseMessage aceita = await IncluirAsync(await RotaDaEtapaAsync(processoId, homologacao.Id), "Retorno do INEP passou a ser exigido pela norma.", etag);
+        using HttpResponseMessage avaliacaoIniciada = await IncluirAsync(
+            await RotaDaFaseAsync(processoId, isencao.Id, "ISENCAO_DA_TAXA"), "Motivo previsto em norma nova.", aceita.Headers.ETag!.Tag);
 
         (await CodigoDoErro(semJustificativa)).Should().Be("uniplus.selecao.motivo_de_decisao.justificativa_obrigatoria");
         aceita.StatusCode.Should().Be(HttpStatusCode.NoContent, await aceita.Content.ReadAsStringAsync());
         (await CodigoDoErro(avaliacaoIniciada)).Should().Be("uniplus.selecao.motivo_de_decisao.avaliacao_iniciada",
-            "a janela do pedido de isenção já começou, e a avaliação dessa decisão com ela");
+            "a janela da fase do pedido de isenção já começou, e a avaliação das decisões dela com ela");
     }
+
+    private async Task<(MotivoDeDecisao Homologacao, MotivoDeDecisao OutraHomologacao, MotivoDeDecisao Isencao)> SemearHomologacoesEIsencaoAsync() =>
+    (
+        await SemearMotivoAsync(TipoMotivoDeDecisao.HomologacaoDasInscricoes, null, SentidoDoMotivo.Desfavoravel),
+        await SemearMotivoAsync(TipoMotivoDeDecisao.HomologacaoDasInscricoes, null, SentidoDoMotivo.Favoravel),
+        await SemearMotivoAsync(TipoMotivoDeDecisao.IsencaoDaTaxa, Fundamento, SentidoDoMotivo.Desfavoravel));
 
     [Fact(DisplayName = "Descartar a sessão de retificação retira o motivo incluído nela e mantém os congelados na publicação")]
     public async Task Descarte_RetiraPendenteEMantemCongelados()
@@ -73,7 +78,8 @@ public sealed class InclusaoNaRetificacaoEndpointTests : IAsyncLifetime
         Guid processoId = await SemearPublicadoComIsencaoAsync(nameof(Descarte_RetiraPendenteEMantemCongelados));
         string etag = await AbrirRetificacaoAsync(processoId);
         MotivoDeDecisao novo = await SemearMotivoAsync(TipoMotivoDeDecisao.HomologacaoDasInscricoes, null, SentidoDoMotivo.Desfavoravel);
-        using HttpResponseMessage inclusao = await IncluirAsync(processoId, novo.Id, "Retorno do INEP passou a ser exigido pela norma.", etag);
+        using HttpResponseMessage inclusao = await IncluirAsync(
+            await RotaDaEtapaAsync(processoId, novo.Id), "Retorno do INEP passou a ser exigido pela norma.", etag);
         inclusao.StatusCode.Should().Be(HttpStatusCode.NoContent, await inclusao.Content.ReadAsStringAsync());
 
         using HttpResponseMessage descarte = await EnviarAsync(HttpMethod.Delete, $"{Rota}/{processoId}/retificacao-em-curso", new { }, inclusao.Headers.ETag!.Tag);
@@ -81,7 +87,7 @@ public sealed class InclusaoNaRetificacaoEndpointTests : IAsyncLifetime
         descarte.IsSuccessStatusCode.Should().BeTrue(await descarte.Content.ReadAsStringAsync());
         IReadOnlyList<JsonElement> escolhidos = await EscolhidosAsync(processoId);
         escolhidos.Select(static e => e.GetProperty("codigo").GetString()).Should().NotContain(novo.Codigo.Valor);
-        escolhidos.Should().HaveCount(2).And.OnlyContain(static e => e.GetProperty("congelado").GetBoolean());
+        escolhidos.Should().HaveCount(2).And.OnlyContain(static e => e.GetProperty("vigencia").GetProperty("versaoDoEditalDeEntrada").GetInt32() == 1);
     }
 
     [Fact(DisplayName = "Na retificação, a justificativa com caractere nulo é recusada com 422, e não com erro de servidor")]
@@ -91,7 +97,7 @@ public sealed class InclusaoNaRetificacaoEndpointTests : IAsyncLifetime
         string etag = await AbrirRetificacaoAsync(processoId);
         MotivoDeDecisao homologacao = await SemearMotivoAsync(TipoMotivoDeDecisao.HomologacaoDasInscricoes, null, SentidoDoMotivo.Desfavoravel);
 
-        using HttpResponseMessage resposta = await IncluirAsync(processoId, homologacao.Id, "Norma\u0000nova", etag);
+        using HttpResponseMessage resposta = await IncluirAsync(await RotaDaEtapaAsync(processoId, homologacao.Id), "Norma\u0000nova", etag);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await CodigoDoErro(resposta)).Should().Be("uniplus.selecao.motivo_de_decisao.justificativa_caractere_invalido");
@@ -103,7 +109,7 @@ public sealed class InclusaoNaRetificacaoEndpointTests : IAsyncLifetime
         Guid processoId = await SemearPublicadoComIsencaoAsync(nameof(Justificativa_NaoSaiEmLeituraPublica));
         string etag = await AbrirRetificacaoAsync(processoId);
         MotivoDeDecisao homologacao = await SemearMotivoAsync(TipoMotivoDeDecisao.HomologacaoDasInscricoes, null, SentidoDoMotivo.Desfavoravel);
-        (await IncluirAsync(processoId, homologacao.Id, JustificativaInterna, etag)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await IncluirAsync(await RotaDaEtapaAsync(processoId, homologacao.Id), JustificativaInterna, etag)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         using HttpResponseMessage anonimo = await LerAsync($"{Rota}/{processoId}/motivos-de-decisao", contaId: null, papel: null);
         using HttpResponseMessage candidata = await LerAsync($"{Rota}/{processoId}/motivos-de-decisao", contaId: "marlene.martins", papel: null);
@@ -130,7 +136,7 @@ public sealed class InclusaoNaRetificacaoEndpointTests : IAsyncLifetime
         foreach (SentidoDoMotivo sentido in new[] { SentidoDoMotivo.Favoravel, SentidoDoMotivo.Desfavoravel })
         {
             MotivoDeDecisao motivo = await SemearMotivoAsync(TipoMotivoDeDecisao.IsencaoDaTaxa, Fundamento, sentido);
-            (await IncluirAsync(processoId, motivo.Id, null, null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+            (await IncluirAsync(await RotaDaFaseAsync(processoId, motivo.Id, "ISENCAO_DA_TAXA"), null, null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
         }
     }
 
@@ -181,8 +187,14 @@ public sealed class InclusaoNaRetificacaoEndpointTests : IAsyncLifetime
         return motivo;
     }
 
-    private Task<HttpResponseMessage> IncluirAsync(Guid processoId, Guid motivoId, string? justificativa, string? etag) =>
-        EnviarAsync(HttpMethod.Put, $"{Rota}/{processoId}/motivos-de-decisao/{motivoId}", new { justificativa }, etag);
+    private Task<HttpResponseMessage> IncluirAsync(string rota, string? justificativa, string? etag) =>
+        EnviarAsync(HttpMethod.Put, rota, new { justificativa }, etag);
+
+    private async Task<string> RotaDaFaseAsync(Guid processoId, Guid motivoId, string codigoDaFase) =>
+        LugaresDoProcessoDeTeste.RotaDaFase(processoId, await LugaresDoProcessoDeTeste.FaseAsync(_fixture.Factory.Services, processoId, codigoDaFase), motivoId);
+
+    private async Task<string> RotaDaEtapaAsync(Guid processoId, Guid motivoId) =>
+        LugaresDoProcessoDeTeste.RotaDaEtapa(processoId, await LugaresDoProcessoDeTeste.EtapaAsync(_fixture.Factory.Services, processoId), motivoId);
 
     private static object CorpoDaPublicacao(Guid documentoId) => new
     {

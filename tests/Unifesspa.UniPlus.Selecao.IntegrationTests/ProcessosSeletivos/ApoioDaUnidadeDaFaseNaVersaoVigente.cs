@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -111,8 +112,8 @@ internal sealed class ApoioDaUnidadeDaFaseNaVersaoVigente
         JsonObject envelope = JsonNode.Parse(anterior.ConfiguracaoCongelada)!.AsObject();
         alteraOEnvelope(envelope);
         context.VersoesConfiguracao.Add(VersaoConfiguracao.Suceder(
-            anterior, Encoding.UTF8.GetBytes(envelope.ToJsonString()), anterior.SchemaVersion, anterior.AlgoritmoHash,
-            Guid.CreateVersion7(), anterior.AtoCriadorHash, anterior.AtoCriadorId, "plataforma-admin", vigenteAPartirDe));
+            anterior, new DocumentoCongelado(Encoding.UTF8.GetBytes(envelope.ToJsonString()), anterior.SchemaVersion, anterior.AlgoritmoHash, anterior.AtoCriadorHash),
+            Guid.CreateVersion7(), "plataforma-admin", vigenteAPartirDe));
         await context.SaveChangesAsync();
     }
 

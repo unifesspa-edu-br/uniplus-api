@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -46,31 +47,34 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
         Guid? faseDoBloco = null, string exigencias = "", FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao)
     {
         ProcessoSeletivo processoBase = ProcessoSeletivoConformeBuilder.Criar("PS 2026 — Formulário da inscrição");
-        FormularioProcesso formulario = FormularioProcesso.Criar(
-            finalidade, faseDoBloco, null,
-            [
-                .. faseDoBloco is null
-                    ? Array.Empty<EtapaFormulario>()
-                    : [EtapaFormulario.Criar("DOCUMENTOS", 0, TipoEtapaFormulario.Bloco, BlocoSistema.ComprovacaoDocumental, "Documentos", null, null).Value!],
-                EtapaFormulario.Criar("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null).Value!,
-            ]).Value!;
-
         EnvelopeReidratado envelope = new(
-            new GrafoConfiguracao(
-                [.. processoBase.Etapas], processoBase.AtendimentoEspecializado!, [.. processoBase.DistribuicaoVagas],
-                processoBase.BonusRegional, [.. processoBase.CriteriosDesempate], processoBase.Classificacao!,
-                [.. processoBase.CronogramaFases], [.. processoBase.DocumentosExigidos], [], null, formularios: [formulario],
-            numeroDeOpcoesDeCurso: 1),
+            GrafoComFormulario(processoBase, FormularioDeInscricao(faseDoBloco, finalidade)),
             DadosEdital.Criar(
                 "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), Guid.CreateVersion7()).Value!,
             new string('a', 64), "America/Belem", retificacao: null, conformidade: null);
 
-        VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
-            ProcessoId, Encoding.UTF8.GetBytes($$$"""{"documentosExigidos": {"dataReferenciaFatos": null, "exigencias": [{{{exigencias}}}]}}"""), SchemaVersion, "canonical-json/sha256@v1",
-            Guid.CreateVersion7(), new string('a', 64), "user-conta-1", new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero));
-
-        return (versao, envelope);
+        return (VersaoComExigencias(exigencias), envelope);
     }
+
+    private static FormularioProcesso FormularioDeInscricao(Guid? faseDoBloco, FinalidadeFormulario finalidade) => FormularioProcesso.Criar(
+        finalidade, faseDoBloco, null,
+        [
+            .. faseDoBloco is null
+                ? Array.Empty<EtapaFormulario>()
+                : [EtapaFormulario.Criar("DOCUMENTOS", 0, TipoEtapaFormulario.Bloco, BlocoSistema.ComprovacaoDocumental, "Documentos", null, null).Value!],
+            EtapaFormulario.Criar("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null).Value!,
+        ]).Value!;
+
+    private static GrafoConfiguracao GrafoComFormulario(ProcessoSeletivo processoBase, FormularioProcesso formulario) => new(
+        [.. processoBase.Etapas], processoBase.AtendimentoEspecializado!, [.. processoBase.DistribuicaoVagas],
+        processoBase.BonusRegional, [.. processoBase.CriteriosDesempate], processoBase.Classificacao!,
+        [.. processoBase.CronogramaFases], [.. processoBase.DocumentosExigidos], [], null, formularios: [formulario],
+        numeroDeOpcoesDeCurso: 1);
+
+    private static VersaoConfiguracao VersaoComExigencias(string exigencias) => VersaoConfiguracao.Abrir(
+        ProcessoId,
+        new DocumentoCongelado(Encoding.UTF8.GetBytes($$$"""{"documentosExigidos": {"dataReferenciaFatos": null, "exigencias": [{{{exigencias}}}]}}"""), SchemaVersion, "canonical-json/sha256@v1", new string('a', 64)),
+        Guid.CreateVersion7(), "user-conta-1", new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero));
 
     private static IRegistroCodecsEnvelope RegistroReidratando(EnvelopeReidratado envelope)
     {

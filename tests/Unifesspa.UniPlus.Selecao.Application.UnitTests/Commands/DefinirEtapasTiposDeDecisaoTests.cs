@@ -124,8 +124,8 @@ public sealed class DefinirEtapasTiposDeDecisaoTests
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.IdEtapaDuplicado");
     }
 
-    [Fact(DisplayName = "A recusa dos tipos não muda o processo, não grava e não descarta alteração alguma")]
-    public async Task Handle_TiposInvalidos_NaoMutaNemGravaNemDescarta()
+    [Fact(DisplayName = "A recusa dos tipos não muda o processo nem grava, e o rastreamento é descartado")]
+    public async Task Handle_TiposInvalidos_NaoMutaNemGravaEDescarta()
     {
         ProcessoSeletivo processo = ProcessoSemEtapas();
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
@@ -136,7 +136,7 @@ public sealed class DefinirEtapasTiposDeDecisaoTests
         resultado.IsFailure.Should().BeTrue();
         processo.Etapas.Should().BeEmpty();
         await unitOfWork.DidNotReceiveWithAnyArgs().SalvarAlteracoesAsync(default);
-        unitOfWork.DidNotReceive().DescartarAlteracoesNaoSalvas();
+        unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
     }
 
     [Fact(DisplayName = "Recusa de etapa depois de declarar os tipos descarta as alterações e não grava")]

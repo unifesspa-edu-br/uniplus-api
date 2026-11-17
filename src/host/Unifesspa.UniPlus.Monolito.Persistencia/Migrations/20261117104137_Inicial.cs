@@ -773,7 +773,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     descricao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     subclassificacao = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
                     sentido = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
-                    congelado = table.Column<bool>(type: "boolean", nullable: false),
+                    fase_canonica_origem_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    etapa_processo_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    versao_do_edital_de_entrada = table.Column<int>(type: "integer", nullable: false),
+                    versao_do_edital_de_saida = table.Column<int>(type: "integer", nullable: true),
                     justificativa_da_inclusao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
@@ -784,6 +787,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_motivos_do_processo", x => x.id);
+                    table.CheckConstraint("ck_motivos_do_processo_lugar", "num_nonnulls(fase_canonica_origem_id, etapa_processo_id) = 1");
+                    table.CheckConstraint("ck_motivos_do_processo_vigencia", "versao_do_edital_de_entrada >= 1 AND (versao_do_edital_de_saida IS NULL OR versao_do_edital_de_saida > versao_do_edital_de_entrada)");
                 });
 
             migrationBuilder.CreateTable(
@@ -6807,11 +6812,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ux_motivos_do_processo_processo_origem",
+                name: "ix_motivos_do_processo_processo",
                 schema: "selecao",
                 table: "motivos_do_processo",
-                columns: new[] { "processo_seletivo_id", "motivo_de_decisao_origem_id" },
-                unique: true);
+                column: "processo_seletivo_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_municipios_do_bonus_regional_configuracao_de_bonus_regional",

@@ -6,6 +6,7 @@ using System.Text.Json.Nodes;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
@@ -80,12 +81,6 @@ internal static class VersoesDoEnvelopeDeTeste
 
     private static VersaoConfiguracao AbrirVersaoDoCorpus(string schemaVersion, string algoritmoHash, string atoCriadorHash) =>
         VersaoConfiguracao.Abrir(
-            ProcessoPublicado().Id,
-            BytesDoCorpus(),
-            schemaVersion,
-            algoritmoHash,
-            atoCriadorId: CorpusEnvelope.AtoAbertura,
-            atoCriadorHash: atoCriadorHash,
-            atorUsuarioContaId: CorpusEnvelope.Ator,
-            instante: DateTimeOffset.UnixEpoch);
+            ProcessoPublicado().Id, new DocumentoCongelado(BytesDoCorpus(), schemaVersion, algoritmoHash, atoCriadorHash),
+            atoCriadorId: CorpusEnvelope.AtoAbertura, atorUsuarioContaId: CorpusEnvelope.Ator, instante: DateTimeOffset.UnixEpoch);
 }

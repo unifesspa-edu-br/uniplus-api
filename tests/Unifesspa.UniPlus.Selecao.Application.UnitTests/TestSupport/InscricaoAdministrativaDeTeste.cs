@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -139,54 +140,80 @@ internal sealed class InscricaoAdministrativaDeTeste
     /// <summary>Entrega os repositórios e o codec que respondem pelo cenário montado.</summary>
     public Mundo Montar()
     {
+        EnvelopeReidratado envelope = EnvelopeDoCenario();
+        VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
+            ProcessoId, new DocumentoCongelado([1], "0.0.42", "canonical-json/sha256@v1", new string('a', 64)),
+            Guid.CreateVersion7(), "sub", DateTimeOffset.UnixEpoch);
+        VersaoId = versao.Id;
+
+        return new Mundo(ProcessosCom(versao), InscricoesCom(versao), DocumentosDoCenario(), CodecsQueLem(versao, envelope));
+    }
+
+    private EnvelopeReidratado EnvelopeDoCenario()
+    {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar(NomeDoProcesso);
         GrafoConfiguracao grafo = new(
             [.. processo.Etapas], processo.AtendimentoEspecializado!, [ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(ofertaCursoOrigemId: OfertaCursoId)], processo.BonusRegional,
             [.. processo.CriteriosDesempate], processo.Classificacao!, [], _exigencias, [], null,
             fatosColetados: _fatos, gruposColetados: _grupos, numeroDeOpcoesDeCurso: 1,
             formularios: [FormularioProcesso.Criar(FinalidadeFormulario.Inscricao, _faseId, null, FormularioDeTeste.Etapas()).Value!]);
-        EnvelopeReidratado envelope = new(
+
+        return new EnvelopeReidratado(
             grafo, DadosEdital.Criar("001/2027", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(30), Guid.CreateVersion7()).Value!,
             new string('a', 64), "America/Sao_Paulo", retificacao: null, conformidade: null, fatosDerivadosCongelados: _derivados);
+    }
 
-        VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
-            ProcessoId, [1], "0.0.42", "canonical-json/sha256@v1", Guid.CreateVersion7(), new string('a', 64), "sub", DateTimeOffset.UnixEpoch);
-        VersaoId = versao.Id;
-
+    private IProcessoSeletivoRepository ProcessosCom(VersaoConfiguracao versao)
+    {
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
         processos.ObterUnidadeENomeAsync(ProcessoId, Arg.Any<CancellationToken>())
             .Returns(new UnidadeENomeDoProcesso(DecisoesDeAcessoDeTeste.UnidadeDona, NomeDoProcesso));
         IReadOnlyList<VersaoConfiguracao> versoes = [versao];
         processos.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns(versoes);
 
+        return processos;
+    }
+
+    private static IRegistroCodecsEnvelope CodecsQueLem(VersaoConfiguracao versao, EnvelopeReidratado envelope)
+    {
         IRegistroCodecsEnvelope codecs = Substitute.For<IRegistroCodecsEnvelope>();
         IReadOnlyList<CapacidadeCodec> capacidades = [new CapacidadeCodec(versao.SchemaVersion, TemEncoder: true, TemDecoder: true, MotivoDaRecusa: null)];
         codecs.Capacidades.Returns(capacidades);
         codecs.Reidratar(versao).Returns(Result<EnvelopeReidratado>.Success(envelope));
 
-        Inscricao inscricao = Inscricao.Reidratar(
-            InscricaoId, ProcessoId, _cpf, "conta-candidato", "https://idp.test", Situacao, versao.Id, OfertaCursoId, null,
-            Situacao == SituacaoInscricao.Rascunho ? null : "000001", _cancelamento?.Em, _cancelamento is null ? null : "conta-candidato", _cancelamento?.Motivo,
-            _respostas, _derivadas, _ocorrencias, [], new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal),
-            revisao: 1, DateTimeOffset.UtcNow, null);
+        return codecs;
+    }
 
+    private IInscricaoRepository InscricoesCom(VersaoConfiguracao versao)
+    {
         IInscricaoRepository inscricoes = Substitute.For<IInscricaoRepository>();
         inscricoes.ObterVinculoAsync(InscricaoId, Arg.Any<CancellationToken>())
             .Returns(new VinculoDaInscricao(InscricaoId, ProcessoId, Situacao, versao.Id, OfertaCursoId, null));
-        inscricoes.ObterPorIdAsync(InscricaoId, Arg.Any<CancellationToken>()).Returns(inscricao);
+        inscricoes.ObterPorIdAsync(InscricaoId, Arg.Any<CancellationToken>()).Returns(InscricaoReidratada(versao));
+        inscricoes.ObterPrimeirosEnviosAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(PrimeirosEnvios());
 
+        return inscricoes;
+    }
+
+    private Inscricao InscricaoReidratada(VersaoConfiguracao versao) => Inscricao.Reidratar(
+        InscricaoId, ProcessoId, _cpf, "conta-candidato", "https://idp.test", Situacao, versao.Id, OfertaCursoId, null,
+        Situacao == SituacaoInscricao.Rascunho ? null : "000001", _cancelamento?.Em, _cancelamento is null ? null : "conta-candidato", _cancelamento?.Motivo,
+        _respostas, _derivadas, _ocorrencias, [], new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal),
+        revisao: 1, DateTimeOffset.UtcNow, null);
+
+    private Dictionary<Guid, DateTimeOffset> PrimeirosEnvios() => _envios.Count == 0
+        ? []
+        : new Dictionary<Guid, DateTimeOffset> { [InscricaoId] = _envios.Min() };
+
+    private IDocumentoDaInscricaoRepository DocumentosDoCenario()
+    {
         IDocumentoDaInscricaoRepository documentos = Substitute.For<IDocumentoDaInscricaoRepository>();
         IReadOnlyList<ApresentacaoDeDocumento> apresentacoes = [.. _arquivos.Select(static a => a.Apresentacao)];
         IReadOnlyList<ArquivoDaApresentacao> arquivos = [.. _arquivos.Select(static a => a.Arquivo)];
         documentos.ListarApresentacoesDaInscricaoAsync(InscricaoId, Arg.Any<CancellationToken>()).Returns(apresentacoes);
         documentos.ListarArquivosDaInscricaoAsync(InscricaoId, Arg.Any<CancellationToken>()).Returns(arquivos);
 
-        IReadOnlyDictionary<Guid, DateTimeOffset> primeirosEnvios = _envios.Count == 0
-            ? new Dictionary<Guid, DateTimeOffset>()
-            : new Dictionary<Guid, DateTimeOffset> { [InscricaoId] = _envios.Min() };
-        inscricoes.ObterPrimeirosEnviosAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(primeirosEnvios);
-
-        return new Mundo(processos, inscricoes, documentos, codecs);
+        return documentos;
     }
 
     public sealed record Mundo(

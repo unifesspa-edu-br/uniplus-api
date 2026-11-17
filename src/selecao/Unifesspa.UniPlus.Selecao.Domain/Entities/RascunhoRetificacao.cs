@@ -51,6 +51,9 @@ public sealed class RascunhoRetificacao : EntityBase
 
     public int NumeroVersaoBase { get; private set; }
 
+    /// <summary>O número da versão que o fechamento desta sessão congela: a que sucede a base.</summary>
+    public int NumeroDaVersaoEmPreparo => VersaoConfiguracao.NumeroDaSucessora(NumeroVersaoBase);
+
     /// <summary>
     /// Se a versão base já congelou um identificador legível. É o que decide se a sessão pode
     /// declará-lo: o que já consta em versão publicada não muda mais.

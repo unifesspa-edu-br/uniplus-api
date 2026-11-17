@@ -34,6 +34,9 @@ internal abstract record OrigemDoCongelamento
     /// <summary>O ato que a versão emenda e o motivo; nulo quando a versão não retifica nada.</summary>
     public abstract RetificacaoDoEdital? Retificacao { get; }
 
+    /// <summary>O número da versão que nasce: o da abertura na primeira publicação, ou o que sucede a versão vigente.</summary>
+    public abstract int NumeroDaVersaoQueNasce { get; }
+
     /// <summary>O que a versão vigente congelou das exigências e dos fatos derivados; nulo sem versão vigente.</summary>
     public abstract CongeladoNaVersaoVigente? CongeladoNaVersaoVigente { get; }
 
@@ -78,6 +81,8 @@ internal sealed record PrimeiraPublicacao : OrigemDoCongelamento
 
     public override RetificacaoDoEdital? Retificacao => null;
 
+    public override int NumeroDaVersaoQueNasce => VersaoConfiguracao.NumeroDaAbertura;
+
     public override CongeladoNaVersaoVigente? CongeladoNaVersaoVigente => null;
 
     public override Result<IReadOnlyDictionary<string, TipoDeAtoCongelado>> TiposJaCongelados() =>
@@ -100,6 +105,8 @@ internal sealed record BaseDaRetificacao(
 internal abstract record OrigemRetificadora(BaseDaRetificacao Base) : OrigemDoCongelamento
 {
     public override RetificacaoDoEdital? Retificacao => new(Base.VersaoVigente.AtoCriadorId, Base.Motivo);
+
+    public override int NumeroDaVersaoQueNasce => VersaoConfiguracao.NumeroDaSucessora(Base.VersaoVigente.NumeroVersao);
 
     public override CongeladoNaVersaoVigente? CongeladoNaVersaoVigente =>
         ProtecaoVigenteDasExigenciasDoProcesso.DoEnvelope(Base.VersaoReidratada);

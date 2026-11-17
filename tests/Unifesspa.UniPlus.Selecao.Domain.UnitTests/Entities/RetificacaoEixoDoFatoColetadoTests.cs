@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -128,13 +129,14 @@ public sealed class RetificacaoEixoDoFatoColetadoTests
 
         GrafoConfiguracao publicada = VersoesPublicadasDeTeste.DoProcesso(processo);
         typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Status))!.SetValue(processo, StatusProcesso.Publicado);
-        VersaoConfiguracao versaoBase = VersaoConfiguracao.Abrir(
-            processo.Id, Encoding.UTF8.GetBytes("{}"), "1.1", "canonical-json/sha256@v1",
-            Guid.CreateVersion7(), new string('a', 64), "user-conta-1", Agora);
-        processo.AbrirRetificacao("Correção da coleta", versaoBase, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SemEixosCongelados([publicada]), "user-conta-1", Agora)
+        processo.AbrirRetificacao("Correção da coleta", VersaoBaseDe(processo), identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SemEixosCongelados([publicada]), "user-conta-1", Agora)
             .IsSuccess.Should().BeTrue();
         return processo;
     }
+
+    private static VersaoConfiguracao VersaoBaseDe(ProcessoSeletivo processo) => VersaoConfiguracao.Abrir(
+        processo.Id, new DocumentoCongelado(Encoding.UTF8.GetBytes("{}"), "1.1", "canonical-json/sha256@v1", new string('a', 64)),
+        Guid.CreateVersion7(), "user-conta-1", Agora);
 
     private static FaseCronograma Fase(int ordem, string codigo, bool coletaInscricao = false) =>
         FaseCronograma.Criar(

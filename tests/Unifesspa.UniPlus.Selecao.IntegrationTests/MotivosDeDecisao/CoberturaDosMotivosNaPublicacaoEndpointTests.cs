@@ -23,7 +23,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// O portão de cobertura dos motivos na publicação pelo endpoint real, contra Postgres via Testcontainers
+/// A conferência de cobertura dos motivos na publicação pelo endpoint real, contra Postgres via Testcontainers
 /// (UNI-REQ-0123): com um fundamento de isenção habilitado, a publicação exige ao menos um motivo
 /// favorável e um desfavorável escolhidos para esse fundamento.
 /// </summary>
@@ -105,9 +105,10 @@ public sealed class CoberturaDosMotivosNaPublicacaoEndpointTests : IAsyncLifetim
     private async Task IncluirNovoMotivoAsync(HttpClient client, Guid processoId, SentidoDoMotivo sentido)
     {
         MotivoDeDecisao motivo = await SemearMotivoAsync(sentido);
+        Guid fase = await LugaresDoProcessoDeTeste.FaseAsync(_fixture.Factory.Services, processoId, "ISENCAO_DA_TAXA");
 
         using HttpResponseMessage inclusao = await EnviarAsync(
-            client, HttpMethod.Put, $"/api/selecao/processos-seletivos/{processoId}/motivos-de-decisao/{motivo.Id}", new { justificativa = (string?)null });
+            client, HttpMethod.Put, LugaresDoProcessoDeTeste.RotaDaFase(processoId, fase, motivo.Id), new { justificativa = (string?)null });
         inclusao.StatusCode.Should().Be(HttpStatusCode.NoContent, await inclusao.Content.ReadAsStringAsync());
     }
 

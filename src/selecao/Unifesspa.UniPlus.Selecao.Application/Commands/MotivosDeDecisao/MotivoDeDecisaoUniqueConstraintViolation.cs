@@ -12,7 +12,7 @@ internal static class MotivoDeDecisaoUniqueConstraintViolation
 
     private const string CodigoConstraint = "ux_motivos_de_decisao_tipo_codigo";
 
-    private const string EscolhaConstraint = "ux_motivos_do_processo_processo_origem";
+    private const string EscolhaConstraint = "ux_motivos_do_processo_vigente";
 
     private const string DbUpdateExceptionFullName = "Microsoft.EntityFrameworkCore.DbUpdateException";
 
@@ -24,7 +24,7 @@ internal static class MotivoDeDecisaoUniqueConstraintViolation
     /// </summary>
     public static bool EhConflitoDeCodigo(Exception ex) => EhViolacaoDe(ex, CodigoConstraint);
 
-    /// <summary>A mesma tradução para a escolha repetida do mesmo motivo pelo processo, em corrida.</summary>
+    /// <summary>A mesma tradução para a escolha atual repetida do mesmo motivo no mesmo lugar do processo, em corrida.</summary>
     public static bool EhEscolhaRepetida(Exception ex) => EhViolacaoDe(ex, EscolhaConstraint);
 
     private static bool EhViolacaoDe(Exception ex, string constraint)

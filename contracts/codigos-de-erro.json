@@ -6349,7 +6349,7 @@
     {
       "codigo": "uniplus.selecao.motivo_de_decisao.avaliacao_iniciada",
       "status": 422,
-      "titulo": "A avaliação desta decisão já começou"
+      "titulo": "A avaliação nesta fase ou etapa já começou"
     },
     {
       "codigo": "uniplus.selecao.motivo_de_decisao.cobertura_insuficiente",
@@ -6387,6 +6387,16 @@
       "titulo": "Descrição do motivo fora do tamanho permitido"
     },
     {
+      "codigo": "uniplus.selecao.motivo_de_decisao.fase_ou_etapa_com_motivo_publicado",
+      "status": 422,
+      "titulo": "A fase ou etapa removida tem motivo de decisão publicado"
+    },
+    {
+      "codigo": "uniplus.selecao.motivo_de_decisao.fase_ou_etapa_nao_encontrada",
+      "status": 404,
+      "titulo": "Fase ou etapa não encontrada no processo"
+    },
+    {
       "codigo": "uniplus.selecao.motivo_de_decisao.ja_ativo",
       "status": 422,
       "titulo": "O motivo já está ativo"
@@ -6394,7 +6404,7 @@
     {
       "codigo": "uniplus.selecao.motivo_de_decisao.ja_escolhido",
       "status": 409,
-      "titulo": "O processo já escolheu este motivo"
+      "titulo": "O processo já escolheu este motivo nesta fase ou etapa"
     },
     {
       "codigo": "uniplus.selecao.motivo_de_decisao.ja_inativo",
@@ -6434,7 +6444,7 @@
     {
       "codigo": "uniplus.selecao.motivo_de_decisao.nao_escolhido",
       "status": 404,
-      "titulo": "O processo não escolheu este motivo"
+      "titulo": "O processo não escolheu este motivo nesta fase ou etapa"
     },
     {
       "codigo": "uniplus.selecao.motivo_de_decisao.retirada_apos_publicacao",
@@ -6485,6 +6495,11 @@
       "codigo": "uniplus.selecao.motivo_de_decisao.tipo_obrigatorio",
       "status": 422,
       "titulo": "Tipo do motivo é obrigatório"
+    },
+    {
+      "codigo": "uniplus.selecao.motivo_de_decisao.versao_nao_publicada",
+      "status": 404,
+      "titulo": "O processo não tem esta versão do edital publicada"
     },
     {
       "codigo": "uniplus.selecao.nivel_de_atendimento.duplicado",

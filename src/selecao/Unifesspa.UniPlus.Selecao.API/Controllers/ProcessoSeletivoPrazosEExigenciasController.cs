@@ -51,7 +51,9 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
     /// recursal, parecer individual, bancas requeridas e regra de recurso, por fase. O
     /// <c>GET</c> vem do endpoint agregado
     /// (<see cref="ProcessoSeletivoController.ObterPorId"/>), que passa a devolver <c>CronogramaFases</c> como parte
-    /// do recurso — não há rota aninhada própria de leitura.
+    /// do recurso — não há rota aninhada própria de leitura. A fase se identifica pela fase canônica de origem. A que sai
+    /// leva junto as etapas dela e os motivos de decisão pendentes da fase e dessas etapas; motivo já publicado recusa
+    /// com 422.
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/cronograma-fases")]

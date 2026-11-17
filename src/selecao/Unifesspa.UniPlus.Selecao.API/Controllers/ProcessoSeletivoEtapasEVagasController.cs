@@ -51,7 +51,10 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
     }
 
     /// <summary>
-    /// Substitui integralmente as etapas pontuadas do processo.
+    /// Substitui integralmente as etapas pontuadas do processo. Devolva o <c>id</c> de cada etapa que continua: a etapa
+    /// omitida, ou devolvida sem <c>id</c>, sai do processo e leva junto os motivos de decisão escolhidos nela que ainda
+    /// não constam de edital publicado. Se algum já consta, a substituição é recusada (422
+    /// <c>fase_ou_etapa_com_motivo_publicado</c>) e nada muda.
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/etapas")]

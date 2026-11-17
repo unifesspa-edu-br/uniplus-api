@@ -126,8 +126,8 @@ internal static class PublicacaoDoProcessoDeTeste
         VersaoConfiguracao anterior = (await processos.ObterVersoesAsync(processoId, CancellationToken.None)).MaxBy(static v => v.NumeroVersao)!;
         SnapshotCanonico congelado = CongelarProcesso(retificado, dados, hash, valoresDosCampos: null, new RetificacaoDoEdital(anterior.AtoCriadorId, "Retificação de teste"));
         VersaoConfiguracao sucessora = VersaoConfiguracao.Suceder(
-            anterior, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, Guid.CreateVersion7(), hash,
-            anterior.AtoCriadorId, "integration-test-user", TimeProvider.System.GetUtcNow());
+            anterior, new DocumentoCongelado(congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, hash),
+            Guid.CreateVersion7(), "integration-test-user", TimeProvider.System.GetUtcNow());
         await processos.AdicionarVersaoConfiguracaoAsync(sucessora, CancellationToken.None);
         await db.SaveChangesAsync();
         return sucessora;

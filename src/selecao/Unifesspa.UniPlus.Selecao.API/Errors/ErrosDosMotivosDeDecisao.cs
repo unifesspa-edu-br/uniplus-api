@@ -7,14 +7,14 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
 /// <summary>
 /// Recusas do cadastro único de motivos de decisão (UNI-REQ-0283), da escolha dos motivos pelo
-/// processo (UNI-REQ-0285) e do portão de cobertura dos motivos na publicação (UNI-REQ-0123).
+/// processo (UNI-REQ-0285) e da conferência de cobertura dos motivos na publicação (UNI-REQ-0123).
 /// </summary>
 internal static class ErrosDosMotivosDeDecisao
 {
     private const string Prefixo = "uniplus.selecao.motivo_de_decisao.";
 
     internal static IEnumerable<KeyValuePair<string, DomainErrorMapping>> Mapeamentos() =>
-        [.. IdentificacaoDoMotivo(), .. ConteudoDoMotivo(), .. SituacaoDoCadastro(), .. EscolhaECobertura()];
+        [.. IdentificacaoDoMotivo(), .. ConteudoDoMotivo(), .. SituacaoDoCadastro(), .. EscolhaPeloProcesso(), .. LeituraEConferenciaAoCongelar()];
 
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> IdentificacaoDoMotivo() =>
     [
@@ -46,19 +46,23 @@ internal static class ErrosDosMotivosDeDecisao
         new(MotivoDeDecisaoErrorCodes.SituacaoAlteradaConcorrentemente, new DomainErrorMapping(StatusCodes.Status409Conflict, Prefixo + "situacao_alterada_concorrentemente", "O motivo foi alterado por outra operação", RetryableConflict: true)),
     ];
 
-    private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> EscolhaECobertura() =>
+    private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> EscolhaPeloProcesso() =>
     [
-        // Escolha pelo processo.
         Recusa(MotivoDeDecisaoErrorCodes.MotivoInativo, "motivo_inativo", "Motivo desativado não entra em nova escolha"),
-        Mapear(MotivoDeDecisaoErrorCodes.JaEscolhido, StatusCodes.Status409Conflict, "ja_escolhido", "O processo já escolheu este motivo"),
-        Mapear(MotivoDeDecisaoErrorCodes.NaoEscolhido, StatusCodes.Status404NotFound, "nao_escolhido", "O processo não escolheu este motivo"),
+        Mapear(MotivoDeDecisaoErrorCodes.FaseOuEtapaNaoEncontrada, StatusCodes.Status404NotFound, "fase_ou_etapa_nao_encontrada", "Fase ou etapa não encontrada no processo"),
+        Mapear(MotivoDeDecisaoErrorCodes.JaEscolhido, StatusCodes.Status409Conflict, "ja_escolhido", "O processo já escolheu este motivo nesta fase ou etapa"),
+        Mapear(MotivoDeDecisaoErrorCodes.NaoEscolhido, StatusCodes.Status404NotFound, "nao_escolhido", "O processo não escolheu este motivo nesta fase ou etapa"),
         Recusa(MotivoDeDecisaoErrorCodes.JustificativaObrigatoria, "justificativa_obrigatoria", "Inclusão depois da publicação exige justificativa"),
         Recusa(MotivoDeDecisaoErrorCodes.JustificativaTamanho, "justificativa_tamanho", "Justificativa fora do tamanho permitido"),
         Recusa(MotivoDeDecisaoErrorCodes.JustificativaCaractereInvalido, "justificativa_caractere_invalido", "Justificativa contém caractere não permitido"),
-        Recusa(MotivoDeDecisaoErrorCodes.AvaliacaoIniciada, "avaliacao_iniciada", "A avaliação desta decisão já começou"),
+        Recusa(MotivoDeDecisaoErrorCodes.AvaliacaoIniciada, "avaliacao_iniciada", "A avaliação nesta fase ou etapa já começou"),
         Recusa(MotivoDeDecisaoErrorCodes.RetiradaAposPublicacao, "retirada_apos_publicacao", "Motivo publicado não é retirado do processo"),
+        Recusa(MotivoDeDecisaoErrorCodes.FaseOuEtapaComMotivoPublicado, "fase_ou_etapa_com_motivo_publicado", "A fase ou etapa removida tem motivo de decisão publicado"),
+    ];
 
-        // Publicação, retificação e fechamento da sessão.
+    private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> LeituraEConferenciaAoCongelar() =>
+    [
+        Mapear(MotivoDeDecisaoErrorCodes.VersaoNaoPublicada, StatusCodes.Status404NotFound, "versao_nao_publicada", "O processo não tem esta versão do edital publicada"),
         Recusa(MotivoDeDecisaoErrorCodes.MotivoDesativado, "motivo_desativado", "Motivo escolhido foi desativado no cadastro"),
         Recusa(MotivoDeDecisaoErrorCodes.CoberturaInsuficiente, "cobertura_insuficiente", "Motivos insuficientes para as decisões do processo"),
     ];

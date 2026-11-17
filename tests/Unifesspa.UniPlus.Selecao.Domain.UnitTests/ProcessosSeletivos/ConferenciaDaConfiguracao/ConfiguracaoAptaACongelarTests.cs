@@ -126,7 +126,7 @@ public sealed class ConfiguracaoAptaACongelarTests
     {
         ProcessoSeletivo emSessao = ProcessoEmEdicaoDeTeste.EmSessao();
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
-            emSessao.Id, Bytes, "1.1", "canonical-json/sha256@v1", Guid.CreateVersion7(), new string('a', 64), "user-conta-123", Agora);
+            emSessao.Id, new DocumentoCongelado(Bytes, "1.1", "canonical-json/sha256@v1", new string('a', 64)), Guid.CreateVersion7(), "user-conta-123", Agora);
 
         emSessao.FecharRetificacao(pedido, versao, PrecondicaoIfMatch.DeTags([emSessao.ETagDaSessaoEditorial!]));
     }

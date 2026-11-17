@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -87,8 +88,8 @@ internal sealed class SemeadorDoAcervoPublico(AcervoPublicoDeTeste acervo)
         byte[] envelope = EnvelopeDeReferenciaComModelo.Montar(
             modelo, identificador, edital.Id, hashDoEditalCongelado ?? edital.HashSha256!, anexos);
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
-            processo.Id, envelope, CorpusEnvelope.Codec.SchemaVersion, CorpusEnvelope.Codec.AlgoritmoHash,
-            atoCriadorId: ato, atoCriadorHash: new string('a', 64), atorUsuarioContaId: "teste", instante: DateTimeOffset.UtcNow);
+            processo.Id, new DocumentoCongelado(envelope, CorpusEnvelope.Codec.SchemaVersion, CorpusEnvelope.Codec.AlgoritmoHash, new string('a', 64)),
+            atoCriadorId: ato, atorUsuarioContaId: "teste", instante: DateTimeOffset.UtcNow);
 
         return await PublicarAsync(processo, versao, AcervoPublicoDeTeste.TipoDoAto, identificador, edital);
     }
@@ -104,9 +105,8 @@ internal sealed class SemeadorDoAcervoPublico(AcervoPublicoDeTeste acervo)
         edital ??= await EditalAsync(anterior.ProcessoSeletivoId);
         byte[] envelope = EnvelopeDeReferenciaComModelo.Montar(modelo, identificador, edital.Id, edital.HashSha256!, anexos);
         VersaoConfiguracao versao = VersaoConfiguracao.Suceder(
-            anterior, envelope, CorpusEnvelope.Codec.SchemaVersion, CorpusEnvelope.Codec.AlgoritmoHash,
-            atoCriadorId: ato, atoCriadorHash: new string('b', 64), atoCriadorRetificaId: anterior.AtoCriadorId,
-            atorUsuarioContaId: "teste", instante: DateTimeOffset.UtcNow);
+            anterior, new DocumentoCongelado(envelope, CorpusEnvelope.Codec.SchemaVersion, CorpusEnvelope.Codec.AlgoritmoHash, new string('b', 64)),
+            atoCriadorId: ato, atorUsuarioContaId: "teste", instante: DateTimeOffset.UtcNow);
 
         await using UniPlusDbContext leitura = acervo.Db.CreateDbContext();
         ProcessoSeletivo processo = await leitura.ProcessosSeletivos.AsNoTracking().SingleAsync(p => p.Id == anterior.ProcessoSeletivoId);

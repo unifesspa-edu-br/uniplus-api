@@ -30,7 +30,4 @@ internal static class EscritaDaEscolha
                 "Os motivos do processo foram alterados por outra operação. Consulte o estado atual antes de repetir."));
         }
     }
-
-    public static Result<MutacaoAceita> ProcessoNaoEncontrado(Guid id) =>
-        Result<MutacaoAceita>.Failure(new DomainError("ProcessoSeletivo.NaoEncontrado", $"Processo Seletivo {id} não encontrado."));
 }

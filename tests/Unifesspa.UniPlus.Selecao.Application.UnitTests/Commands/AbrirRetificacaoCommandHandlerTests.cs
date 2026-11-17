@@ -215,7 +215,7 @@ public sealed class AbrirRetificacaoCommandHandlerTests
                 :
                 [
                     VersaoConfiguracao.Abrir(
-                        processo.Id, Bytes, schemaDaVersaoAnterior, "canonical-json/sha256@v1", Guid.CreateVersion7(), HashFixo, "user-conta-1", Agora),
+                        processo.Id, new DocumentoCongelado(Bytes, schemaDaVersaoAnterior, "canonical-json/sha256@v1", HashFixo), Guid.CreateVersion7(), "user-conta-1", Agora),
                     versao,
                 ];
 

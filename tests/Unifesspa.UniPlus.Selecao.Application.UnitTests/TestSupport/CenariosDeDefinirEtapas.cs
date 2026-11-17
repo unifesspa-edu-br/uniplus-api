@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 
+using AwesomeAssertions;
+
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
@@ -8,6 +10,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -59,20 +62,77 @@ internal static class CenariosDeDefinirEtapas
         DefinirEtapasCommandHandler.Handle(
             command,
             repository,
-            tipoEtapaReader ?? ReaderPadrao(),
-            tipoBancaReader ?? Substitute.For<ITipoBancaReader>(),
-            regraCatalogoReader ?? Substitute.For<IRegraCatalogoReader>(),
-            tipoAtoPublicadoReader ?? Substitute.For<ITipoAtoPublicadoReader>(),
-            registroCodecs ?? Substitute.For<IRegistroCodecsEnvelope>(),
-            TimeProvider.System,
+            new DefinicaoDasEtapas(
+                tipoEtapaReader ?? ReaderPadrao(),
+                tipoBancaReader ?? Substitute.For<ITipoBancaReader>(),
+                regraCatalogoReader ?? Substitute.For<IRegraCatalogoReader>(),
+                tipoAtoPublicadoReader ?? Substitute.For<ITipoAtoPublicadoReader>(),
+                repository,
+                registroCodecs ?? Substitute.For<IRegistroCodecsEnvelope>(),
+                new MotivosDosLugaresQueSaem(MotivoDeTeste.SemEscolha())),
             unitOfWork,
+            TimeProvider.System,
             CancellationToken.None);
+
+    /// <summary>A definição das etapas sobre o repositório e a escolha de motivos dados, com os cadastros que resolvem os dois tipos de etapa.</summary>
+    internal static DefinicaoDasEtapas DefinicaoDasEtapasComMotivos(IProcessoSeletivoRepository repository, IMotivoDoProcessoRepository motivos) => new(
+        ReaderPadrao(),
+        Substitute.For<ITipoBancaReader>(),
+        Substitute.For<IRegraCatalogoReader>(),
+        Substitute.For<ITipoAtoPublicadoReader>(),
+        repository,
+        Substitute.For<IRegistroCodecsEnvelope>(),
+        new MotivosDosLugaresQueSaem(motivos));
 
     /// <summary>Certame recém-criado, ainda sem etapa alguma.</summary>
     internal static ProcessoSeletivo ProcessoSemEtapas() => ProcessoSeletivo.Criar(
         "PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
         UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+
+    /// <summary>A etapa classificatória de prova objetiva na ordem 1, de peso 1 e sem faixa de nota.</summary>
+    internal static EtapaProcesso EtapaDeProvaObjetiva(string nome) => EtapaProcesso.Criar(
+        new IdentificacaoDaEtapa(Nome: nome, Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
+        new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
+
+    /// <summary>Certame recém-criado que já tem <paramref name="etapa"/> como única etapa.</summary>
+    internal static ProcessoSeletivo ProcessoComAEtapa(EtapaProcesso etapa)
+    {
+        ProcessoSeletivo processo = ProcessoSemEtapas();
+        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
+
+        return processo;
+    }
+
+    /// <summary>Repositório que devolve <paramref name="processo"/> para a mutação.</summary>
+    internal static IProcessoSeletivoRepository RepositorioCom(ProcessoSeletivo processo)
+    {
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+
+        return repository;
+    }
+
+    /// <summary>Cadastro em que nenhum tipo de etapa existe ativo.</summary>
+    internal static ITipoEtapaReader ReaderSemTipoAtivo()
+    {
+        ITipoEtapaReader reader = Substitute.For<ITipoEtapaReader>();
+        reader.ObterAtivoPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((TipoEtapaView?)null);
+
+        return reader;
+    }
+
+    /// <summary>
+    /// A recusa da substituição das etapas não grava nada e descarta o rastreamento, como toda recusa da substituição:
+    /// o SaveChangesAsync automático do Wolverine persistiria qualquer mutação parcial que o rastreamento ainda guardasse.
+    /// </summary>
+    internal static async Task RecusouSemGravarAsync(Result<MutacaoAceita> result, IUnitOfWork unitOfWork, string codigo)
+    {
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(codigo);
+        await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
+    }
 
     /// <summary>Entrada de catálogo de um tipo de ato que divulga resultado.</summary>
     internal static TipoAtoPublicadoView AtoDeResultado(string codigo) => new(

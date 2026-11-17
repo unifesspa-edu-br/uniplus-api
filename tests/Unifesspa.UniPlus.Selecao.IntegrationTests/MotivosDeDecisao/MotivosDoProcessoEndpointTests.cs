@@ -43,7 +43,7 @@ public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
         await db.Database.ExecuteSqlAsync($"DELETE FROM selecao.motivos_de_decisao WHERE codigo LIKE 'TEST\\_MDP\\_%' ESCAPE '\\'");
     }
 
-    [Fact(DisplayName = "No rascunho, o processo inclui o motivo e a leitura devolve a cópia ainda não congelada")]
+    [Fact(DisplayName = "No rascunho, o processo inclui o motivo na fase e a leitura devolve a cópia no lugar, entrando na versão 1")]
     public async Task Rascunho_Inclui_ListaACopia()
     {
         (Guid processoId, _) = await SemearProcessoAsync(nameof(Rascunho_Inclui_ListaACopia));
@@ -56,7 +56,10 @@ public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
         JsonElement escolhido = (await ListarAsync(client, processoId)).Should().ContainSingle().Subject;
         escolhido.GetProperty("codigo").GetString().Should().Be(motivo.Codigo.Valor);
         escolhido.GetProperty("tipo").GetString().Should().Be("HOMOLOGACAO_DAS_INSCRICOES");
-        escolhido.GetProperty("congelado").GetBoolean().Should().BeFalse();
+        escolhido.GetProperty("lugar").GetProperty("faseCanonicaOrigemId").GetGuid().Should().Be(await FaseAsync(processoId));
+        escolhido.GetProperty("lugar").GetProperty("etapaId").ValueKind.Should().Be(JsonValueKind.Null);
+        escolhido.GetProperty("vigencia").GetProperty("versaoDoEditalDeEntrada").GetInt32().Should().Be(1);
+        escolhido.GetProperty("vigencia").GetProperty("versaoDoEditalDeSaida").ValueKind.Should().Be(JsonValueKind.Null);
     }
 
     [Fact(DisplayName = "Incluir motivo desativado é recusado com o código nomeado")]
@@ -85,10 +88,10 @@ public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
         (await CodigoDoErro(recusada)).Should().Be("uniplus.selecao.motivo_de_decisao.motivo_desativado");
     }
 
-    [Fact(DisplayName = "Trocado o motivo desativado depois de escolhido, publica e congela a cópia")]
-    public async Task Publicar_MotivoTrocado_CongelaACopia()
+    [Fact(DisplayName = "Trocado o motivo desativado depois de escolhido, publica e a cópia fica como estava na publicação")]
+    public async Task Publicar_MotivoTrocado_MantemACopia()
     {
-        (Guid processoId, Guid documentoId) = await SemearProcessoAsync(nameof(Publicar_MotivoTrocado_CongelaACopia));
+        (Guid processoId, Guid documentoId) = await SemearProcessoAsync(nameof(Publicar_MotivoTrocado_MantemACopia));
         using HttpClient client = Cliente();
         MotivoDeDecisao desativado = await EscolherEDesativarAsync(client, processoId);
         MotivoDeDecisao substituto = await TrocarMotivoDesativadoAsync(client, processoId, desativado);
@@ -97,10 +100,10 @@ public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
         publicada.StatusCode.Should().Be(HttpStatusCode.NoContent, await publicada.Content.ReadAsStringAsync());
 
         await AlterarMotivoAsync(substituto.Id, static m => m.Atualizar("Redação posterior à publicação."));
-        JsonElement congelado = (await ListarAsync(client, processoId)).Should().ContainSingle().Subject;
-        congelado.GetProperty("congelado").GetBoolean().Should().BeTrue();
-        congelado.GetProperty("descricao").GetString().Should().Be("Redação vigente na publicação.",
-            "a cópia congela na publicação: mudar o cadastro depois não muda o processo");
+        JsonElement publicado = (await ListarAsync(client, processoId)).Should().ContainSingle().Subject;
+        publicado.GetProperty("vigencia").GetProperty("versaoDoEditalDeEntrada").GetInt32().Should().Be(1);
+        publicado.GetProperty("descricao").GetString().Should().Be("Redação vigente na publicação.",
+            "a cópia vale como estava na publicação: mudar o cadastro depois não muda o processo");
     }
 
     [Fact(DisplayName = "Depois da publicação, sem retificação, o processo não retira nem inclui motivo")]
@@ -184,11 +187,16 @@ public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
 
     private HttpClient Cliente() => _fixture.Factory.CreateClient();
 
-    private static Task<HttpResponseMessage> IncluirAsync(HttpClient client, Guid processoId, Guid motivoId) =>
-        EnviarAsync(client, HttpMethod.Put, $"/api/selecao/processos-seletivos/{processoId}/motivos-de-decisao/{motivoId}", new { justificativa = (string?)null });
+    private async Task<HttpResponseMessage> IncluirAsync(HttpClient client, Guid processoId, Guid motivoId) =>
+        await EnviarAsync(client, HttpMethod.Put, await RotaAsync(processoId, motivoId), new { justificativa = (string?)null });
 
-    private static Task<HttpResponseMessage> RetirarAsync(HttpClient client, Guid processoId, Guid motivoId) =>
-        EnviarAsync(client, HttpMethod.Delete, $"/api/selecao/processos-seletivos/{processoId}/motivos-de-decisao/{motivoId}", corpo: null);
+    private async Task<HttpResponseMessage> RetirarAsync(HttpClient client, Guid processoId, Guid motivoId) =>
+        await EnviarAsync(client, HttpMethod.Delete, await RotaAsync(processoId, motivoId), corpo: null);
+
+    private Task<Guid> FaseAsync(Guid processoId) => LugaresDoProcessoDeTeste.FaseAsync(_fixture.Factory.Services, processoId);
+
+    private async Task<string> RotaAsync(Guid processoId, Guid motivoId) =>
+        LugaresDoProcessoDeTeste.RotaDaFase(processoId, await FaseAsync(processoId), motivoId);
 
     private static Task<HttpResponseMessage> PublicarAsync(HttpClient client, Guid processoId, Guid documentoId) =>
         EnviarAsync(client, HttpMethod.Post, $"/api/selecao/processos-seletivos/{processoId}/publicacao", new

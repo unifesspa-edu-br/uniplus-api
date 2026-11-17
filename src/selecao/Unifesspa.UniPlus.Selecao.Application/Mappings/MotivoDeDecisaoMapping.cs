@@ -27,12 +27,13 @@ public static class MotivoDeDecisaoMapping
 
         return new MotivoDoProcessoDto(
             motivo.MotivoDeDecisaoOrigemId,
+            new LugarDoMotivoDto(motivo.Lugar.FaseCanonicaOrigemId, motivo.Lugar.EtapaProcessoId),
             motivo.Tipo.ToCodigo(),
             motivo.Codigo.Valor,
             motivo.Descricao,
             motivo.Subclassificacao,
             motivo.Sentido.ToCodigo(),
-            motivo.Congelado,
+            new VigenciaDoMotivoDto(motivo.Vigencia.VersaoDoEditalDeEntrada, motivo.Vigencia.VersaoDoEditalDeSaida),
             motivo.JustificativaDaInclusao);
     }
 }

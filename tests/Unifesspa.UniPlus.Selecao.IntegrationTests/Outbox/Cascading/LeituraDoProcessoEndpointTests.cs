@@ -19,6 +19,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -230,15 +231,8 @@ public sealed class LeituraDoProcessoEndpointTests : IAsyncLifetime
         configuracao["localidade"] = new JsonObject { ["codigoIbge"] = LocalidadeNaoDivulgada, ["nome"] = "Marabá", ["uf"] = "PA" };
 
         db.VersoesConfiguracao.Add(VersaoConfiguracao.Suceder(
-            v1,
-            System.Text.Encoding.UTF8.GetBytes(configuracao.ToJsonString()),
-            v1.SchemaVersion,
-            v1.AlgoritmoHash,
-            Guid.CreateVersion7(),
-            v1.AtoCriadorHash,
-            v1.AtoCriadorId,
-            "plataforma-admin",
-            DateTimeOffset.UtcNow));
+            v1, new DocumentoCongelado(System.Text.Encoding.UTF8.GetBytes(configuracao.ToJsonString()), v1.SchemaVersion, v1.AlgoritmoHash, v1.AtoCriadorHash),
+            Guid.CreateVersion7(), "plataforma-admin", DateTimeOffset.UtcNow));
         await db.SaveChangesAsync();
         return v1.HashConfiguracao;
     }

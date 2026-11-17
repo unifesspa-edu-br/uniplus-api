@@ -55,6 +55,8 @@ internal sealed class CenarioDoCronogramaDeFases
 
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
 
+    public IMotivoDoProcessoRepository MotivosEscolhidos { get; } = MotivoDeTeste.SemEscolha();
+
     public static CenarioDoCronogramaDeFases EmRascunho() => Para(NovoProcessoEmRascunho());
 
     public static ProcessoSeletivo NovoProcessoEmRascunho() =>
@@ -165,7 +167,7 @@ internal sealed class CenarioDoCronogramaDeFases
 
     private DefinicaoDoCronogramaDeFases DefinicaoSobre(IProcessoSeletivoRepository repositorio) => new(
         new MontagemDasFases(FaseCanonicaReader, UnidadeResponsavel, TipoBancaReader, CategoriaDocumentoReader, RegraCatalogoReader),
-        PrecedenciaFaseReader, FasesIniciadas, TipoAtoPublicadoReader, repositorio, Codecs);
+        PrecedenciaFaseReader, FasesIniciadas, TipoAtoPublicadoReader, repositorio, Codecs, new MotivosDosLugaresQueSaem(MotivosEscolhidos));
 
     private static IProcessoSeletivoRepository RepositorioQueDevolve(ProcessoSeletivo processo)
     {
