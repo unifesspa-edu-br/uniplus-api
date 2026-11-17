@@ -7,6 +7,8 @@ decision-makers:
 
 # ADR-0024: Mapeamento `DomainError → HTTP` via `IDomainErrorMapper` registry
 
+> **Emenda (2026-11-16):** o registry cobre os `code` que alcançam a fronteira HTTP, isto é, os que um endpoint de controller pode devolver. Módulo sem controller não contribui com registro de erros, e `code` que nenhum caminho leva a uma resposta HTTP não se registra: o registro nasce com o primeiro endpoint que o expõe. As constantes de `code` e a validação do domínio permanecem, porque identificam a recusa dentro do módulo. O teste de arquitetura passa a exigir registro dos módulos cuja API expõe controller (api#2454).
+
 ## Contexto e enunciado do problema
 
 A camada `Domain` (e parcialmente `Application`) retorna falhas como `Result.Failure(DomainError code, message)` — padrão estabelecido como obrigatório no `CLAUDE.md` do repo e em uso em todos os handlers Wolverine das slices existentes. `DomainError` é um value object plano com `code` (string) e `message` (string), sem nenhuma referência a HTTP, status code ou ProblemDetails.
