@@ -56,28 +56,23 @@ public sealed class IdempotenciaCoHostingTests
     [Fact(DisplayName = "Cada endpoint [RequiresIdempotencyKey] tem exatamente 1 filtro de idempotência")]
     public void EndpointIdempotente_TemUmUnicoFiltro()
     {
-        IActionDescriptorCollectionProvider provider = _fixture.Factory.Services
-            .GetRequiredService<IActionDescriptorCollectionProvider>();
-
-        List<string> violacoes = [];
-        int cobertos = 0;
-
-        foreach (ControllerActionDescriptor action in provider.ActionDescriptors.Items
+        List<ControllerActionDescriptor> exigentes = [.. _fixture.Factory.Services
+            .GetRequiredService<IActionDescriptorCollectionProvider>().ActionDescriptors.Items
             .OfType<ControllerActionDescriptor>()
-            .Where(ExigeIdempotencia))
-        {
-            cobertos++;
-            int filtros = action.FilterDescriptors.Count(fd => EhFiltroIdempotencia(fd.Filter));
+            .Where(ExigeIdempotencia)];
 
-            if (filtros != 1)
-            {
-                violacoes.Add($"{action.DisplayName}: {filtros} filtros de idempotência (esperado 1)");
-            }
-        }
+        string[] violacoes = [.. exigentes.Select(DescreverViolacao).OfType<string>()];
 
-        cobertos.Should().BeGreaterThan(
-            0, "o monólito deve expor endpoints [RequiresIdempotencyKey] — senão o teste é vacuamente verde");
+        exigentes.Should().NotBeEmpty(
+            "o monólito deve expor endpoints [RequiresIdempotencyKey] — senão o teste é vacuamente verde");
         violacoes.Should().BeEmpty("cada endpoint idempotente deve ter exatamente um filtro");
+    }
+
+    private static string? DescreverViolacao(ControllerActionDescriptor action)
+    {
+        int filtros = action.FilterDescriptors.Count(fd => EhFiltroIdempotencia(fd.Filter));
+
+        return filtros == 1 ? null : $"{action.DisplayName}: {filtros} filtros de idempotência (esperado 1)";
     }
 
     private static bool ExigeIdempotencia(ControllerActionDescriptor action) =>

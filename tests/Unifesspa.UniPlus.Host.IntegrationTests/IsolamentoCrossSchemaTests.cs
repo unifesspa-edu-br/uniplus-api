@@ -108,42 +108,53 @@ public sealed class IsolamentoCrossSchemaTests
         _fixture = fixture;
     }
 
+    /// <summary>
+    /// (1) Planta o canário: se o comando falhasse, a asserção de ausência do outro teste seria vácua — estaria provando uma
+    /// impossibilidade do motor, não do modelo. (2) A consulta de detecção precisa ENXERGAR o canário: é isto que prova que
+    /// ela funciona; sem este passo, uma consulta errada passaria calada.
+    /// </summary>
     [Fact(DisplayName = "Canário: a chave estrangeira cross-schema é possível, e a consulta de detecção a encontra")]
     public async Task Canario_ChaveEstrangeiraCrossSchemaEDetectada()
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
         MonolitoDbContext dbContext =
             scope.ServiceProvider.GetRequiredService<MonolitoDbContext>();
+        await using CanarioDeChaveCrossSchema canario = new(dbContext);
 
-        try
-        {
-            // (1) Planta o canário. Se este comando falhasse, a asserção de ausência
-            //     seria vácua — estaria provando uma impossibilidade do motor, não do modelo.
-            await dbContext.Database.ExecuteSqlRawAsync(
-                """
-                CREATE TABLE publicacoes._canario_fk_cross_schema (
-                    id                   uuid PRIMARY KEY,
-                    processo_seletivo_id uuid NOT NULL
-                        REFERENCES selecao.processos_seletivos(id)
-                );
-                """,
-                CancellationToken.None);
+        await canario.PlantarAsync();
 
-            // (2) A consulta de detecção precisa ENXERGAR o canário. É isto que prova
-            //     que ela funciona; sem este passo, uma consulta errada passaria calada.
-            IReadOnlyCollection<string> comCanario = await ListarViolacoesAsync(dbContext);
+        IReadOnlyCollection<string> comCanario = await ListarViolacoesAsync(dbContext);
 
-            comCanario.Should().ContainSingle(
-                violacao => violacao.StartsWith("publicacoes._canario_fk_cross_schema", StringComparison.Ordinal),
-                "a consulta de detecção deve encontrar a chave estrangeira cross-schema que acabou de ser criada; "
-                + "se não encontra, a asserção de ausência do outro teste não vale como evidência");
-        }
-        finally
-        {
-            await dbContext.Database.ExecuteSqlRawAsync(
-                "DROP TABLE IF EXISTS publicacoes._canario_fk_cross_schema;",
-                CancellationToken.None);
-        }
+        comCanario.Should().ContainSingle(
+            violacao => violacao.StartsWith(CanarioDeChaveCrossSchema.Tabela, StringComparison.Ordinal),
+            "a consulta de detecção deve encontrar a chave estrangeira cross-schema que acabou de ser criada; "
+            + "se não encontra, a asserção de ausência do outro teste não vale como evidência");
+    }
+
+    /// <summary>
+    /// A tabela-canário: uma chave estrangeira de <c>publicacoes</c> para <c>selecao</c>, plantada de propósito. O recurso é
+    /// dono do ciclo inteiro — cria ao plantar e remove ao ser descartado, mesmo que o plantio tenha falhado no meio — para
+    /// que o canário nunca sobreviva ao teste e contamine a consulta de ausência.
+    /// </summary>
+    private sealed class CanarioDeChaveCrossSchema(MonolitoDbContext dbContext) : IAsyncDisposable
+    {
+        public const string Tabela = "publicacoes._canario_fk_cross_schema";
+
+        private const string Criacao = """
+            CREATE TABLE publicacoes._canario_fk_cross_schema (
+                id                   uuid PRIMARY KEY,
+                processo_seletivo_id uuid NOT NULL
+                    REFERENCES selecao.processos_seletivos(id)
+            );
+            """;
+
+        private const string Remocao = "DROP TABLE IF EXISTS publicacoes._canario_fk_cross_schema;";
+
+        public async Task PlantarAsync() =>
+            await dbContext.Database.ExecuteSqlRawAsync(Criacao, CancellationToken.None);
+
+        public async ValueTask DisposeAsync() =>
+            await dbContext.Database.ExecuteSqlRawAsync(Remocao, CancellationToken.None);
     }
 
     [Fact(DisplayName = "ADR-0061: nenhuma chave estrangeira do modelo atravessa schema de módulo")]

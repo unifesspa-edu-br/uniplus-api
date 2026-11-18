@@ -131,6 +131,17 @@ public sealed class CatalogoDePermissoesNoHostTests : IAsyncLifetime
     {
         using HttpClient client = await ClienteComConcessaoAsync(CodigoDoCatalogo);
 
+        JsonElement resource = await LerResourceDaSelecaoAsync(client, "motivos-de-decisao");
+
+        resource.GetProperty("permissoes").EnumerateArray()
+            .Select(p => p.GetProperty("codigo").GetString())
+            .Should().BeEquivalentTo("selecao:motivos-de-decisao:manter");
+        resource.GetProperty("permissoes")[0].GetProperty("nome").GetString().Should().NotBeNullOrWhiteSpace();
+        resource.GetProperty("permissoes")[0].GetProperty("sensibilidade").GetString().Should().Be("interno");
+    }
+
+    private static async Task<JsonElement> LerResourceDaSelecaoAsync(HttpClient client, string resource)
+    {
         using HttpResponseMessage resposta = await client.GetAsync(new Uri(Catalogo, UriKind.Relative));
 
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
@@ -138,14 +149,9 @@ public sealed class CatalogoDePermissoesNoHostTests : IAsyncLifetime
 
         JsonElement corpo = await resposta.Content.ReadFromJsonAsync<JsonElement>();
         JsonElement selecao = corpo.EnumerateArray().Single(m => m.GetProperty("modulo").GetString() == "selecao");
-        JsonElement resource = selecao.GetProperty("resources").EnumerateArray()
-            .Single(r => r.GetProperty("resource").GetString() == "motivos-de-decisao");
 
-        resource.GetProperty("permissoes").EnumerateArray()
-            .Select(p => p.GetProperty("codigo").GetString())
-            .Should().BeEquivalentTo("selecao:motivos-de-decisao:manter");
-        resource.GetProperty("permissoes")[0].GetProperty("nome").GetString().Should().NotBeNullOrWhiteSpace();
-        resource.GetProperty("permissoes")[0].GetProperty("sensibilidade").GetString().Should().Be("interno");
+        return selecao.GetProperty("resources").EnumerateArray()
+            .Single(r => r.GetProperty("resource").GetString() == resource);
     }
 
     [Fact(DisplayName = "GET do catálogo com Accept de outro tipo responde 406")]
