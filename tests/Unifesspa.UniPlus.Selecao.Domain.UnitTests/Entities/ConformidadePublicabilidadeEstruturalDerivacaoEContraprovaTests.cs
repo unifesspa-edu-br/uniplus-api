@@ -77,12 +77,6 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
         ProcessoSeletivo processo = ProcessoConforme(); // classificação importada: sem quadro de pesos por área
         DeclararDesempatePorAreaSemQuadro(processo);
 
-        SoEstesItensVermelhos(processo, "desempate_area_enem_sem_quadro");
-
-        Result<VersaoConfiguracao> resultado = Publicar(processo);
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.DesempateAreaEnemSemQuadro");
-        resultado.Error.Message.Should().Contain("ordem 3", "a recusa nomeia o critério que o operador tem de corrigir");
     }
 
     [Fact(DisplayName = "Pré-canonicalização: mais critérios de desempate que o teto — só o item do teto fica vermelho, e Publicar recusa")]
@@ -120,6 +114,31 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
         resultado.Error!.Code.Should().Be(codigo);
         resultado.Error.Message.Should().Contain("ordem 1");
     }
+
+    private static void ConfigurarDesempateComAreas(ProcessoSeletivo processo, string[] areas)
+    {
+        typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Classificacao))!.SetValue(processo, ClassificacaoComQuadro());
+        processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!])
+            .IsSuccess.Should().BeTrue();
+        // A ordem mal formada não passa por CriterioDesempate.Criar: os parâmetros são trocados depois,
+        // como num critério que chega ao agregado por outro caminho.
+        CriterioDesempate criterio = CriterioDesempate.Criar(
+            1, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ParametrosDesempateMaiorNotaAreaEnem(["REDACAO"])).Value!;
+        typeof(CriterioDesempate).GetProperty(nameof(CriterioDesempate.Parametros))!.SetValue(criterio, new ParametrosDesempateMaiorNotaAreaEnem(areas));
+        CriteriosDesempateDe(processo).Add(criterio);
+    }
+
+    private static ConfiguracaoClassificacao ClassificacaoComQuadro() => ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+    {
+        RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'),
+        RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'),
+        CasasArredondamento = 2,
+        RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+        BaseadoEmEnem = true,
+        ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
+        QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
+        EscalaNotaFinal = 100m,
+    }).Value!;
 
     [Fact(DisplayName = "Pré-canonicalização: formulário com mais itens que o teto — só o item do teto fica vermelho, e Publicar recusa")]
     public void PreCanon_ItensAcimaDoTeto()

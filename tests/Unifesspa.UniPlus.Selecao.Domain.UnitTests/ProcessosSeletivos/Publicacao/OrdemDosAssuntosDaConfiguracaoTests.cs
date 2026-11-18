@@ -20,9 +20,10 @@ public sealed class OrdemDosAssuntosDaConfiguracaoTests
 {
     private static readonly string[] SequenciaEsperada =
     [
-        "Identificacao", "Conformidade", "Declaracoes", "Conjunto", "Completude", "Recursos",
+        "Identificacao", "Conformidade", "Declaracoes", "ReferenciasDeRegra", "Conjunto", "Completude", "Recursos",
         "Bancas", "CorrecaoIndependente", "TiposDeAto", "Cascata", "CondicoesDaCanonicalizacao", "MotivosDeDecisao",
     ];
+
 
     public static TheoryData<string> Transicoes => ["Publicar", "Retificar"];
 

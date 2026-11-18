@@ -49,7 +49,7 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
 
     internal static void SoEstesItensVermelhos(
         ProcessoSeletivo processo, ContextoDeContagemDePrazos contexto, params string[] itensVermelhos) =>
-        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Com(contexto, motivosEscolhidos: MotivosDoProcessoDeTeste.Cobrindo(processo))).Where(static i => !i.Ok).Select(static i => i.Codigo)
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Com(contexto, motivosEscolhidos: MotivosDoProcessoDeTeste.Cobrindo(processo)).ComRegrasDo(processo)).Where(static i => !i.Ok).Select(static i => i.Codigo)
             .Should().BeEquivalentTo(itensVermelhos);
 
     internal static CondicaoGatilho GatilhoFaixaEtaria() =>
@@ -142,12 +142,23 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
     internal static ProcessoSeletivo ProcessoComCotaEAcaoAfirmativa(PredicadoDnf regraDasCotas, PredicadoDnf regraDaAcaoAfirmativa)
     {
         ConfiguracaoDistribuicaoVagas oferta = OfertaComCotasEAcaoAfirmativa(regraDasCotas, regraDaAcaoAfirmativa);
-
         ProcessoSeletivo processo = ProcessoConforme([oferta]);
         processo.DefinirCascataRemanejamento(CascataCompleta()).IsSuccess.Should().BeTrue();
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         return processo;
     }
+
+    private static IReadOnlyList<ModalidadeSelecionada> ModalidadesDaOferta(PredicadoDnf regraDasCotas, PredicadoDnf regraDaAcaoAfirmativa) =>
+    [
+        .. OrigensFederais.Select(codigo =>
+            Modalidade(codigo, NaturezaLegalModalidade.CotaReservada, RegraRemanejamentoModalidade.SegueCascata, quantidadeDeclarada: null, regra: regraDasCotas)),
+        Modalidade(ModalidadesFederaisLei12711.Ac, NaturezaLegalModalidade.Ampla, RegraRemanejamentoModalidade.Nenhuma, quantidadeDeclarada: null),
+        ModalidadeDeAcaoAfirmativa(regraDaAcaoAfirmativa),
+    ];
+
+    private static ModalidadeSelecionada ModalidadeDeAcaoAfirmativa(PredicadoDnf regra) => ModalidadeSelecionada.Criar(
+        Guid.CreateVersion7(), "AC_PCD", null, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade,
+        ModalidadesFederaisLei12711.Ac, RegraRemanejamentoModalidade.DestinoUnico, ModalidadesFederaisLei12711.Ac, null, null, regra, null, "base legal", 2).Value!;
 
     internal static bool ItemDaExclusividadeOk(ProcessoSeletivo processo) =>
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))

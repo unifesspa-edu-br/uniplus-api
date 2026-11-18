@@ -62,7 +62,7 @@ public sealed class MinimoDeIntegrantesNaPublicacaoEndpointTests
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
-        problema.RootElement.GetProperty("code").GetString().Should().Be("uniplus.selecao.etapa_processo.regra_de_consolidacao_nao_resolvida");
+        problema.RootElement.GetProperty("code").GetString().Should().Be("uniplus.selecao.processo_seletivo.regra_citada_nao_corresponde_ao_catalogo");
         problema.RootElement.GetProperty("pendencias").EnumerateArray().Select(static item => item.GetProperty("codigo").GetString())
             .Should().Contain("cronograma_banca_com_o_minimo_de_integrantes");
     }

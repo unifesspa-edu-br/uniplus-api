@@ -31,11 +31,25 @@ public sealed class ParidadeDoPainelComAConferenciaTests
     {
         ProcessoSeletivo processo = Montar(cenario);
         ConfiguracaoDeclarada configuracao = processo.Declaracao();
+        CadastrosDaConfiguracao cadastros = CadastrosDeTeste.Para(processo);
 
-        bool painelTodoConforme = ChecklistDeConformidade.AvaliarConformidade(configuracao, CadastrosDeTeste.Para(processo)).All(static item => item.Ok);
-        bool configuracaoApta = ConfiguracaoAptaACongelar.Conferir(processo.Id, configuracao, CadastrosDeTeste.Para(processo)).IsSuccess;
+        bool painelTodoConforme = ChecklistDeConformidade.AvaliarConformidade(configuracao, cadastros).All(static item => item.Ok);
+        bool configuracaoApta = ConfiguracaoAptaACongelar.Conferir(processo.Id, configuracao, cadastros).IsSuccess;
 
         painelTodoConforme.Should().Be(configuracaoApta);
+    }
+
+    [Fact(DisplayName = "Referência ausente no catálogo impede a conferência e aparece no painel")]
+    public void ReferenciaAusente_PainelEConferenciaApontamPendencia()
+    {
+        ProcessoSeletivo processo = Montar("conforme");
+        ConfiguracaoDeclarada configuracao = processo.Declaracao();
+        CadastrosDaConfiguracao cadastros = CadastrosDeTeste.Padrao;
+
+        CausasQueImpedemCongelar.De(configuracao, cadastros)
+            .Should().Contain(erro => erro.Error.Code == "ProcessoSeletivo.RegraCitadaNaoCorrespondeAoCatalogo");
+        ChecklistDeConformidade.AvaliarConformidade(configuracao, cadastros)
+            .Should().Contain(item => item.Codigo.StartsWith("regra_citada_", StringComparison.Ordinal) && !item.Ok);
     }
 
     [Theory(DisplayName = "Cada item estrutural pendente do painel é uma causa de conformidade no bloco da dimensão dele, e só eles")]
@@ -90,6 +104,7 @@ public sealed class ParidadeDoPainelComAConferenciaTests
         ["Identificacao"] = ["identificador_legivel_nao_declarado", "localidade_nao_declarada", "algoritmo_contagem_prazo_nao_declarado", "calendario_vigente_ausente"],
         ["Conformidade"] = ["taxa_inscricao_nao_declarada"],
         ["Declaracoes"] = ["cronograma_fases_declaradas"],
+        ["ReferenciasDeRegra"] = ["regra_citada_classificacao.regraCalculo"],
         ["Conjunto"] = ["etapas_em_conjunto"],
         ["Completude"] = ["cronograma_fase_agrupadora_sem_etapa_pontuada", "cronograma_etapa_declara_a_fase"],
         ["Recursos"] = ["cronograma_procedimento_de_recurso"],

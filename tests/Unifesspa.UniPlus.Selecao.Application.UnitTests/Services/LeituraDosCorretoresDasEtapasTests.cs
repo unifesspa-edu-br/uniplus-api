@@ -18,13 +18,13 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// O número de corretores em campo de cada etapa vem do catálogo, pela referência que a etapa guarda, e nunca de um padrão: a
 /// etapa sem regra de consolidação nem consulta o catálogo, e a referência que o catálogo não confirma volta como não resolvida.
 /// </summary>
-public sealed class LeituraDosCorretoresDasEtapasTests
+public sealed class LeituraDasRegrasCitadasNaConfiguracaoTests
 {
-    private static Task<CorretoresDasEtapas> Ler(IRegraCatalogoReader catalogo, ProcessoSeletivo processo) =>
-        new LeituraDosCorretoresDasEtapas(catalogo).LerAsync(processo, CancellationToken.None);
+    private static async Task<CorretoresDasEtapas> Ler(IRegraCatalogoReader catalogo, ProcessoSeletivo processo) =>
+        (await new LeituraDasRegrasCitadasNaConfiguracao(catalogo).LerAsync(processo, CancellationToken.None)).Corretores;
 
-    [Fact(DisplayName = "A etapa sem regra de consolidação não consulta o catálogo e fica sem corretores")]
-    public async Task EtapaSemConsolidacao_NaoConsultaOCatalogo()
+    [Fact(DisplayName = "A etapa sem regra de consolidação fica sem corretores")]
+    public async Task EtapaSemConsolidacao_FicaSemCorretores()
     {
         IRegraCatalogoReader catalogo = RegrasDeConsolidacaoDeTeste.Catalogo();
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS leitura sem consolidação");
@@ -32,7 +32,7 @@ public sealed class LeituraDosCorretoresDasEtapasTests
         CorretoresDasEtapas corretores = await Ler(catalogo, processo);
 
         corretores.EmCampo(processo.Etapas.Single()).Should().Be(0);
-        await catalogo.DidNotReceiveWithAnyArgs().ObterAsync(default!, default!, CancellationToken.None);
+        await catalogo.DidNotReceive().ObterAsync(RegraConsolidacaoCodigo.CorrecaoIndependente, Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Cada etapa recebe o número da regra de consolidação que referencia")]
@@ -114,6 +114,69 @@ public sealed class LeituraDosCorretoresDasEtapasTests
         CorretoresDasEtapas corretores = await Ler(RegrasDeConsolidacaoDeTeste.Catalogo(outraDefinicao), processo);
 
         corretores.Resolvida(processo.Etapas.Single()).Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "Hashes distintos da mesma versão compartilham a consulta e preservam a regra vigente")]
+    public async Task HashesDistintos_ConsultaUmaVezEPreservaRegraVigente()
+    {
+        RegraCatalogo vigente = RegrasDeConsolidacaoDeTeste.CorrecaoIndependente;
+        ReferenciaRegra antiga = ReferenciaRegra.De(vigente.Codigo, vigente.Versao, new string('a', 64));
+        ProcessoSeletivo processo = ProcessoComCorrecaoIndependente.ComRegras(antiga, vigente.Referencia());
+        IRegraCatalogoReader catalogo = RegrasDeConsolidacaoDeTeste.Catalogo(vigente);
+
+        RegrasCitadasNaConfiguracao resultado = await new LeituraDasRegrasCitadasNaConfiguracao(catalogo)
+            .LerAsync(processo, CancellationToken.None);
+
+        resultado.Regras[(vigente.Codigo, vigente.Versao)].Referencia.Should().Be(vigente.Referencia());
+        resultado.Corretores.Resolvida(processo.Etapas.Single(e => e.Ordem == 1)).Should().BeFalse();
+        resultado.Corretores.Resolvida(processo.Etapas.Single(e => e.Ordem == 2)).Should().BeTrue();
+        await catalogo.Received(1).ObterAsync(vigente.Codigo, vigente.Versao, Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Versões diferentes do mesmo código são consultadas separadamente")]
+    public async Task MesmoCodigoComVersoesDiferentes_ConsultaCadaVersao()
+    {
+        ReferenciaRegra vigente = ProcessoComCorrecaoIndependente.CorrecaoIndependente;
+        ReferenciaRegra outraVersao = ReferenciaRegra.De(vigente.Codigo, "v999", vigente.Hash);
+        ProcessoSeletivo processo = ProcessoComCorrecaoIndependente.ComRegras(vigente, outraVersao);
+        IRegraCatalogoReader catalogo = RegrasDeConsolidacaoDeTeste.Catalogo();
+
+        RegrasCitadasNaConfiguracao resultado = await new LeituraDasRegrasCitadasNaConfiguracao(catalogo)
+            .LerAsync(processo, CancellationToken.None);
+
+        resultado.Regras.Should().ContainKey((vigente.Codigo, vigente.Versao)).And.NotContainKey((vigente.Codigo, "v999"));
+        await catalogo.Received(1).ObterAsync(vigente.Codigo, vigente.Versao, Arg.Any<CancellationToken>());
+        await catalogo.Received(1).ObterAsync(vigente.Codigo, "v999", Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "A leitura encaminha o cancelamento à consulta do catálogo")]
+    public async Task LerAsync_RecebeCancelamento_EncaminhaAoCatalogo()
+    {
+        RegraCatalogo regra = RegrasDeConsolidacaoDeTeste.CorrecaoIndependente;
+        ProcessoSeletivo processo = ProcessoComCorrecaoIndependente.ComRegras(regra.Referencia());
+        IRegraCatalogoReader catalogo = RegrasDeConsolidacaoDeTeste.Catalogo(regra);
+        using CancellationTokenSource cancelamento = new();
+
+        await new LeituraDasRegrasCitadasNaConfiguracao(catalogo).LerAsync(processo, cancelamento.Token);
+
+        await catalogo.Received(1).ObterAsync(regra.Codigo, regra.Versao, cancelamento.Token);
+    }
+
+    [Fact(DisplayName = "Referências com hashes distintos à mesma regra ausente compartilham a consulta")]
+    public async Task RegraAusenteComHashesDistintos_ConsultaUmaVezESemCorretores()
+    {
+        ReferenciaRegra original = ProcessoComCorrecaoIndependente.CorrecaoIndependente;
+        ReferenciaRegra outra = ReferenciaRegra.De(original.Codigo, original.Versao, new string('a', 64));
+        ProcessoSeletivo processo = ProcessoComCorrecaoIndependente.ComRegras(original, outra);
+        IRegraCatalogoReader catalogo = RegrasDeConsolidacaoDeTeste.Catalogo(RegrasDeConsolidacaoDeTeste.AvaliacaoUnica);
+
+        RegrasCitadasNaConfiguracao resultado = await new LeituraDasRegrasCitadasNaConfiguracao(catalogo)
+            .LerAsync(processo, CancellationToken.None);
+
+        resultado.Regras.Should().NotContainKey((original.Codigo, original.Versao));
+        resultado.Corretores.Resolvida(processo.Etapas.Single(e => e.Ordem == 1)).Should().BeFalse();
+        resultado.Corretores.Resolvida(processo.Etapas.Single(e => e.Ordem == 2)).Should().BeFalse();
+        await catalogo.Received(1).ObterAsync(original.Codigo, original.Versao, Arg.Any<CancellationToken>());
     }
 
     [Theory(DisplayName = "A versão sem o número de corretores, com número ou tratamento inválido, volta como não resolvida, sem lançar")]

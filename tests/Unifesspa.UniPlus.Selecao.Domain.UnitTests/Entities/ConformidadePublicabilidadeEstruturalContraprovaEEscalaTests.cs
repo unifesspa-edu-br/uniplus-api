@@ -189,7 +189,7 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
     {
         ProcessoSeletivo processo = ProcessoComContagemETaxaPendentes();
 
-        string[] vermelhos = [.. ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Com(ContagemDePrazosDeTeste.ComCalendarioVigente, motivosEscolhidos: MotivosDoProcessoDeTeste.Cobrindo(processo))).Where(static i => !i.Ok).Select(static i => i.Codigo)];
+        string[] vermelhos = [.. ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Com(ContagemDePrazosDeTeste.ComCalendarioVigente, motivosEscolhidos: MotivosDoProcessoDeTeste.Cobrindo(processo)).ComRegrasDo(processo)).Where(static i => !i.Ok).Select(static i => i.Codigo)];
 
         // Equal, não BeEquivalentTo: aqui a ORDEM é o que está sendo provado.
         vermelhos.Should().Equal(

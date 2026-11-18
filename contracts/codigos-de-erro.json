@@ -7562,6 +7562,11 @@
       "titulo": "FIM_INSCRICAO exige uma fase que colete inscrição com Fim definido"
     },
     {
+      "codigo": "uniplus.selecao.processo_seletivo.regra_citada_nao_corresponde_ao_catalogo",
+      "status": 422,
+      "titulo": "A regra citada pela configuração não corresponde à regra atual do catálogo"
+    },
+    {
       "codigo": "uniplus.selecao.processo_seletivo.regra_de_aplicabilidade_divergente",
       "status": 422,
       "titulo": "A mesma modalidade foi copiada com regras de aplicabilidade diferentes em ofertas do processo"

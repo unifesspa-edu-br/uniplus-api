@@ -18,7 +18,7 @@ using Services;
 public sealed class LeituraDosCadastrosDaConfiguracao(
     ResolucaoDosTiposDeAtoUnicos tiposDeAto,
     LeituraDoContextoDeContagemDePrazos contextos,
-    LeituraDosCorretoresDasEtapas corretores,
+    LeituraDasRegrasCitadasNaConfiguracao leituraDasRegras,
     IMotivoDoProcessoRepository motivos)
 {
     // O tipo que a versão vigente já congelou mantém a classificação dela: mudar o catálogo depois não alcança o processo já
@@ -35,17 +35,17 @@ public sealed class LeituraDosCadastrosDaConfiguracao(
             .ParaOperacaoAsync(processo, ato.TipoDoAto, ato.AtosDaLinhagem, ato.Publicacao.Dia, jaCongelados, cancellationToken)
             .ConfigureAwait(false);
         ContextoDeContagemDePrazos contexto = await contextos.LerAsync(cancellationToken).ConfigureAwait(false);
-        CorretoresDasEtapas corretoresDasEtapas = await corretores.LerAsync(processo, cancellationToken).ConfigureAwait(false);
+        RegrasCitadasNaConfiguracao regrasCitadas = await leituraDasRegras.LerAsync(processo, cancellationToken).ConfigureAwait(false);
+        MotivosEscolhidos escolhidos = await LerOsMotivosEscolhidosAsync(processo.Id, origem.NumeroDaVersaoQueNasce, cancellationToken).ConfigureAwait(false);
 
-        return new CadastrosDaConfiguracao(
-            contexto,
-            vivo.Catalogo.FatosDeModalidade,
-            tipos,
-            corretoresDasEtapas,
-            vivo.Recopiado.Protecao.Exigencias,
-            await LerOsMotivosEscolhidosAsync(processo.Id, origem.NumeroDaVersaoQueNasce, cancellationToken).ConfigureAwait(false),
-            vivo.Recopiado.Publicadas);
+        return Montar(contexto, vivo, tipos, regrasCitadas, escolhidos);
     }
+
+    private static CadastrosDaConfiguracao Montar(ContextoDeContagemDePrazos contexto, CatalogoERecopia vivo,
+        TiposDeAtoUnicosPorObjeto tipos, RegrasCitadasNaConfiguracao regras, MotivosEscolhidos escolhidos) =>
+        new(contexto, vivo.Catalogo.FatosDeModalidade, tipos, regras.Corretores, vivo.Recopiado.Protecao.Exigencias,
+            escolhidos, vivo.Recopiado.Publicadas)
+        { Regras = regras.Regras, NomesDasFases = vivo.Catalogo.NomesDasFases };
 
     private async Task<MotivosEscolhidos> LerOsMotivosEscolhidosAsync(Guid processoId, int numeroDaVersaoQueNasce, CancellationToken cancellationToken) =>
         new(await motivos.ListarEscolhaAtualComOrigemAsync(processoId, cancellationToken).ConfigureAwait(false), numeroDaVersaoQueNasce);

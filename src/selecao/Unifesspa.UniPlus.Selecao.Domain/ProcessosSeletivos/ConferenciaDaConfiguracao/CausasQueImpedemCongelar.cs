@@ -31,6 +31,7 @@ internal static class CausasQueImpedemCongelar
         new(NomeDoAssunto.Identificacao, static c => Identificacao(c.Configuracao, c.Cadastros.ContagemDePrazos)),
         new(NomeDoAssunto.Conformidade, static c => ChecklistDeConformidade.CausasDeConformidade(c.Configuracao)),
         new(NomeDoAssunto.Declaracoes, static c => Declaracoes(c.Configuracao.Origem, c.Cronograma, c.Etapas)),
+        new(NomeDoAssunto.ReferenciasDeRegra, static c => ConferenciaDasReferenciasDeRegra.Conferir(c.Configuracao, c.Cadastros)),
         new(NomeDoAssunto.Conjunto, static c => Conjunto(c.Cronograma, c.Etapas)),
         new(NomeDoAssunto.Completude, static c => Completude(c.Configuracao, c.Cronograma, c.Etapas, c.Cadastros.ContagemDePrazos)),
         new(NomeDoAssunto.Recursos, static c => Recursos(c.Configuracao)),

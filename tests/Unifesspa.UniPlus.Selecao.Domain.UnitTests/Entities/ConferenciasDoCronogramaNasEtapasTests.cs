@@ -42,7 +42,7 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
             new CenarioDeCongelamento { Dados = ProcessoConformeFactory.Dados(), Documento = new DocumentoCongelado("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "teste", Contagem = contexto, TiposDeAtoUnicos = tipos ?? TiposDeAtoUnicosDeTeste.Nenhum });
 
     private static IEnumerable<string> Vermelhos(ProcessoSeletivo processo, ContextoDeContagemDePrazos contexto, TiposDeAtoUnicosPorObjeto? tipos = null) =>
-        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Com(contexto, tiposDeAtoUnicos: tipos, motivosEscolhidos: MotivosDoProcessoDeTeste.Cobrindo(processo)))
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Com(contexto, tiposDeAtoUnicos: tipos, motivosEscolhidos: MotivosDoProcessoDeTeste.Cobrindo(processo)).ComRegrasDo(processo))
             .Where(static i => !i.Ok).Select(static i => i.Codigo);
 
     private static RecursoDaEtapa Janela(Guid produtoAncoraId) => RecursoDaEtapa.Criar(
@@ -114,6 +114,13 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
 
         publicar.IsFailure.Should().BeTrue();
         publicar.Error!.Code.Should().Be("EtapaProcesso.AncoraNaoEhProdutoPreliminarDaEtapa");
+    }
+
+    private static void AcrescentarRecursoComProdutoDefinitivo(EtapaProcesso etapa)
+    {
+        Guid definitivo = etapa.Produtos.Single(p => p.Papel == PapelProdutoFase.Definitivo).Id;
+        typeof(EtapaProcesso).GetField("_recursos", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+            .GetValue(etapa).Should().BeAssignableTo<List<RecursoDaEtapa>>().Which.Add(Janela(definitivo));
     }
 
     [Fact(DisplayName = "Etapa que publica o preliminar sem o definitivo do mesmo tipo: a gravação das etapas recusa")]

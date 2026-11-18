@@ -49,15 +49,16 @@ internal sealed class CenarioDeCongelamentoPorAssunto
 
     private readonly ProcessoSeletivo _processo;
     private readonly int _versaoQueNasce;
-    private readonly Func<ContextoDeContagemDePrazos, TiposDeAtoUnicosPorObjeto, CorretoresDasEtapas?, MotivosEscolhidos?, Result<VersaoConfiguracao>> _transicao;
+    private readonly Func<ContextoDeContagemDePrazos, TiposDeAtoUnicosPorObjeto, CorretoresDasEtapas?, MotivosEscolhidos?, bool, Result<VersaoConfiguracao>> _transicao;
     private ContextoDeContagemDePrazos _contagem = ComCalendario();
     private TiposDeAtoUnicosPorObjeto _tipos = TiposDeAtoUnicosDeTeste.Nenhum;
     private CorretoresDasEtapas? _corretores;
     private MotivosEscolhidos? _motivos;
+    private bool _regraAusente;
 
     private CenarioDeCongelamentoPorAssunto(
         ProcessoSeletivo processo,
-        Func<ContextoDeContagemDePrazos, TiposDeAtoUnicosPorObjeto, CorretoresDasEtapas?, MotivosEscolhidos?, Result<VersaoConfiguracao>> transicao,
+        Func<ContextoDeContagemDePrazos, TiposDeAtoUnicosPorObjeto, CorretoresDasEtapas?, MotivosEscolhidos?, bool, Result<VersaoConfiguracao>> transicao,
         int versaoQueNasce)
     {
         _processo = processo;
@@ -74,7 +75,7 @@ internal sealed class CenarioDeCongelamentoPorAssunto
 
         return transicao switch
         {
-            "Publicar" => new(processo, (contagem, tipos, corretores, motivos) => PublicarProcesso(processo, contagem, tipos, corretores, motivos), versaoQueNasce: 1),
+            "Publicar" => new(processo, (contagem, tipos, corretores, motivos, regraAusente) => PublicarProcesso(processo, contagem, tipos, corretores, motivos, regraAusente), versaoQueNasce: 1),
             _ => Retificando(processo),
         };
     }
@@ -84,7 +85,7 @@ internal sealed class CenarioDeCongelamentoPorAssunto
     {
         Quebrar(assuntosComDefeito);
 
-        return _transicao(_contagem, _tipos, _corretores, _motivos);
+        return _transicao(_contagem, _tipos, _corretores, _motivos, _regraAusente);
     }
 
     /// <summary>Aplica o defeito característico de cada assunto informado, sem congelar.</summary>
@@ -117,7 +118,7 @@ internal sealed class CenarioDeCongelamentoPorAssunto
     }
 
     private CadastrosDaConfiguracao Cadastros() =>
-        CadastrosDeTeste.Com(contagemDePrazos: _contagem, tiposDeAtoUnicos: _tipos, corretores: _corretores ?? CorretoresDeTeste.DoProcesso(_processo), motivosEscolhidos: _motivos ?? MotivosDoProcessoDeTeste.Cobrindo(_processo));
+        CadastrosDeTeste.Com(contagemDePrazos: _contagem, tiposDeAtoUnicos: _tipos, corretores: _corretores ?? CorretoresDeTeste.DoProcesso(_processo), motivosEscolhidos: _motivos ?? MotivosDoProcessoDeTeste.Cobrindo(_processo)).ComRegrasDo(_processo, _regraAusente ? RegraCalculoCodigo.ClassificacaoImportada : null);
 
     private sealed record Defeito(Action<CenarioDeCongelamentoPorAssunto> Aplicar);
 
@@ -132,6 +133,7 @@ internal sealed class CenarioDeCongelamentoPorAssunto
         }),
         [NomeDoAssunto.Conformidade] = new(static c => Definir(c._processo, nameof(ProcessoSeletivo.ConfiguracaoTaxaInscricao), null)),
         [NomeDoAssunto.Declaracoes] = new(static c => ProcessoCarregadoDoBanco.Fase(c._processo, FaseComJanelaInvertida())),
+        [NomeDoAssunto.ReferenciasDeRegra] = new(static c => c._regraAusente = true),
         [NomeDoAssunto.Conjunto] = new(static c => ProcessoCarregadoDoBanco.Etapa(
             c._processo, EtapaDeProva("Outra prova", c._processo.Etapas.First().Ordem ?? 1, c._processo.Etapas.First().FaseCodigo))),
         [NomeDoAssunto.Completude] = new(static c => ProcessoCarregadoDoBanco.Etapa(c._processo, EtapaDeProva("Prova sem fase", 60, null))),
@@ -299,8 +301,8 @@ internal sealed class CenarioDeCongelamentoPorAssunto
     {
         VersaoConfiguracao versao = Publicada(processo);
 
-        return new(processo, (contagem, tipos, corretores, motivos) => processo.Retificar(
-            new CenarioDeCongelamento { Dados = DadosDoEdital, Documento = new DocumentoCongelado(Bytes, "1.1", Algoritmo, Hash), Relogio = new RelogioFixo(Agora), Contagem = contagem, TiposDeAtoUnicos = tipos, Corretores = corretores, MotivosEscolhidos = motivos }, versao, "Correção do prazo"), versaoQueNasce: 2);
+        return new(processo, (contagem, tipos, corretores, motivos, regraAusente) => processo.Retificar(
+            new CenarioDeCongelamento { Dados = DadosDoEdital, Documento = new DocumentoCongelado(Bytes, "1.1", Algoritmo, Hash), Relogio = new RelogioFixo(Agora), Contagem = contagem, TiposDeAtoUnicos = tipos, Corretores = corretores, MotivosEscolhidos = motivos, RegraAusenteDoCatalogo = regraAusente ? RegraCalculoCodigo.ClassificacaoImportada : null }, versao, "Correção do prazo"), versaoQueNasce: 2);
     }
 
     private static VersaoConfiguracao Publicada(ProcessoSeletivo processo)
@@ -312,6 +314,6 @@ internal sealed class CenarioDeCongelamentoPorAssunto
     }
 
     private static Result<VersaoConfiguracao> PublicarProcesso(
-        ProcessoSeletivo processo, ContextoDeContagemDePrazos contagem, TiposDeAtoUnicosPorObjeto tipos, CorretoresDasEtapas? corretores, MotivosEscolhidos? motivos = null) => processo.Publicar(
-            new CenarioDeCongelamento { Dados = DadosDoEdital, Documento = new DocumentoCongelado(Bytes, "1.1", Algoritmo, Hash), Relogio = new RelogioFixo(Agora), Contagem = contagem, TiposDeAtoUnicos = tipos, Corretores = corretores, MotivosEscolhidos = motivos });
+        ProcessoSeletivo processo, ContextoDeContagemDePrazos contagem, TiposDeAtoUnicosPorObjeto tipos, CorretoresDasEtapas? corretores, MotivosEscolhidos? motivos = null, bool regraAusente = false) => processo.Publicar(
+            new CenarioDeCongelamento { Dados = DadosDoEdital, Documento = new DocumentoCongelado(Bytes, "1.1", Algoritmo, Hash), Relogio = new RelogioFixo(Agora), Contagem = contagem, TiposDeAtoUnicos = tipos, Corretores = corretores, MotivosEscolhidos = motivos, RegraAusenteDoCatalogo = regraAusente ? RegraCalculoCodigo.ClassificacaoImportada : null });
 }

@@ -29,4 +29,6 @@ internal sealed record CenarioDeCongelamento
     public CorretoresDasEtapas? Corretores { get; init; }
 
     public MotivosEscolhidos? MotivosEscolhidos { get; init; }
+
+    public string? RegraAusenteDoCatalogo { get; init; }
 }

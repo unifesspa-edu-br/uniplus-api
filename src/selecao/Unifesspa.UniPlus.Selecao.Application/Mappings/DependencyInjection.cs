@@ -147,7 +147,7 @@ public static class SelecaoApplicationServiceRegistration
     {
         AddConferenciasDoCongelamento(services);
         services.AddScoped<LeituraDoContextoDeContagemDePrazos>();
-        services.AddScoped<LeituraDosCorretoresDasEtapas>();
+        services.AddScoped<LeituraDasRegrasCitadasNaConfiguracao>();
         services.AddScoped<MontagemDoCongelamento>();
         services.AddScoped<MontagemDaDivulgacao>();
         services.AddScoped<GravacaoDaVersaoCongelada>();

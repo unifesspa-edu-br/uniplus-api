@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -37,8 +38,11 @@ internal static class ProcessoSeletivoPublicacaoSeeder
     /// </summary>
     internal sealed record Resultado(Guid ProcessoId, Guid AtoId, Guid VersaoId);
 
-    private static ReferenciaRegra Regra(string codigo, char hashChar) =>
-        ReferenciaRegra.De(codigo, "v1", new string(hashChar, 64));
+    private static ReferenciaRegra Regra(string codigo)
+    {
+        RegraCatalogoSeedItem regra = RegraCatalogoSeed.Itens.Single(r => r.Codigo == codigo && r.Versao == "v1");
+        return ReferenciaRegra.De(codigo, regra.Versao, regra.ComputarHash());
+    }
 
     /// <summary>
     /// Processo com as quatro dimensões estruturalmente obrigatórias
@@ -90,7 +94,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
         quantidadeDeclarada: 40).Value!;
 
     private static ConfiguracaoDistribuicaoVagas DistribuicaoDaModalidadeAmpla() => ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-        new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'), Modalidades = [ModalidadeAmplaDeTeste()] },
+        new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional), Modalidades = [ModalidadeAmplaDeTeste()] },
         new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
     private static void DefinirClassificacaoImportadaEFaseDeResultadoFinal(ProcessoSeletivo processo, DateTimeOffset? inicioDaFase = null, FaseCronograma? fase = null)
@@ -103,8 +107,8 @@ internal static class ProcessoSeletivoPublicacaoSeeder
     {
         ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
-            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+            RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada),
+            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria),
         }).Value!;
         processo.DefinirClassificacao(classificacao).IsSuccess.Should().BeTrue();
     }
@@ -140,6 +144,8 @@ internal static class ProcessoSeletivoPublicacaoSeeder
         taxaResult.IsSuccess.Should().BeTrue(taxaResult.Error?.Message);
         processo.DefinirTaxaInscricao(taxaResult.Value!).IsSuccess.Should().BeTrue();
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
+        CriterioDesempate criterio = CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorIdade), new ParametrosDesempateMaiorIdade()).Value!;
+        processo.DefinirCriteriosDesempate([criterio]).IsSuccess.Should().BeTrue();
     }
 
     /// <summary>
@@ -186,14 +192,35 @@ internal static class ProcessoSeletivoPublicacaoSeeder
             {
                 VagasOfertadasBase = 50,
                 PercentualDaReservaLegal = 0.5m,
-                RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Lei12711, 'd'),
-                RegraDeAjuste = Regra(RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico, 'e'),
+                RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Lei12711),
+                RegraDeAjuste = Regra(RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico),
                 ReferenciaDemografica = ReferenciaReservaDemograficaSnapshot.Criar(
                 Guid.CreateVersion7(), "Censo IBGE 2022", 78.55m, 1.20m, 8.40m, "Lei 12.711/2012 art. 3º").Value!,
                 Modalidades = modalidades
             },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
     }
+
+    private static List<ModalidadeSelecionada> ModalidadesFederais()
+    {
+        List<ModalidadeSelecionada> modalidades = [ModalidadeAmplaFederal()];
+        modalidades.AddRange(ModalidadesFederaisLei12711.Codigos.Select(ModalidadeFederal));
+        return modalidades;
+    }
+
+    private static ModalidadeSelecionada ModalidadeAmplaFederal() => ModalidadeSelecionada.Criar(
+        Guid.CreateVersion7(), "AC", "Ampla concorrência",
+        NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas, null,
+        RegraRemanejamentoModalidade.Nenhuma, null, null, null,
+        regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), acaoQuandoIndeferido: null,
+        baseLegal: "Lei 12.711/2012 art. 1º").Value!;
+
+    private static ModalidadeSelecionada ModalidadeFederal(string codigo) => ModalidadeSelecionada.Criar(
+        Guid.CreateVersion7(), codigo, $"Reserva {codigo}",
+        NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, null,
+        RegraRemanejamentoModalidade.SegueCascata, null, null, null,
+        regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.CotaReservada), acaoQuandoIndeferido: "RECLASSIFICAR_AC",
+        baseLegal: "Lei 12.711/2012, alterada pela Lei 14.723/2023").Value!;
 
     /// <summary>A matriz legal completa (8×7), fallback AC — mesma forma semeada em REMANEJ-CASCATA-LEI-12711 v1.</summary>
     internal static ConfiguracaoCascataRemanejamento CascataLegalCompleta(char semente = 'f')
@@ -210,7 +237,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
         }
 
         return ConfiguracaoCascataRemanejamento.Criar(
-            Regra(RegraRemanejamentoCodigo.Cascata, semente), ModalidadesFederaisLei12711.Ac, destinos).Value!;
+            ReferenciaRegra.De(RegraRemanejamentoCodigo.Cascata, "v1", new string(semente, 64)), ModalidadesFederaisLei12711.Ac, destinos).Value!;
     }
 
     /// <summary>

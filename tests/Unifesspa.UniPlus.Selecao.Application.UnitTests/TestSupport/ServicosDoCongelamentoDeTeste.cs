@@ -263,7 +263,7 @@ internal sealed class ServicosDoCongelamentoDeTeste
 
     public LeituraDasVersoesPublicadas VersoesPublicadas() => new(Repositorio, Codecs);
 
-    public ConferenciaDoCatalogoEDaProtecao Catalogos() => new(CatalogoDeFatos, TiposDocumento);
+    public ConferenciaDoCatalogoEDaProtecao Catalogos() => new(CatalogoDeFatos, TiposDocumento, Substitute.For<IFaseCanonicaReader>());
 
     public RecopiaAoCongelar Recopia() => new(Unidades, VersoesPublicadas());
 
@@ -278,7 +278,7 @@ internal sealed class ServicosDoCongelamentoDeTeste
 
     public LeituraDoContextoDeContagemDePrazos Contextos() => new(Calendario, Fuso);
 
-    public LeituraDosCorretoresDasEtapas Corretores() => new(RegrasDeConsolidacao);
+    public LeituraDasRegrasCitadasNaConfiguracao Corretores() => new(RegrasDeConsolidacao);
 
     public ConferenciaDosDocumentosDaOperacao DocumentosDaOperacao() => new(Anexos(), ConformidadeLegal());
 

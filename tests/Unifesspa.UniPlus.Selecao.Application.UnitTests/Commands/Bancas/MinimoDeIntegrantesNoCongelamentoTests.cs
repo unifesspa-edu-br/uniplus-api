@@ -120,7 +120,8 @@ public sealed class MinimoDeIntegrantesNoCongelamentoTests
             .ComRegrasDeConsolidacao(CatalogoSemACorrecaoIndependente())
             .PublicarAsync(processo.Id);
 
-        resposta.Error!.Code.Should().Be(EtapaProcessoErrorCodes.RegraDeConsolidacaoNaoResolvida);
+        resposta.Errors.Select(e => e.Error.Code).Should().ContainInOrder(
+            ProcessoSeletivoErrorCodes.RegraCitadaNaoCorrespondeAoCatalogo, EtapaProcessoErrorCodes.RegraDeConsolidacaoNaoResolvida);
         eventos.Should().BeEmpty();
     }
 
@@ -129,7 +130,8 @@ public sealed class MinimoDeIntegrantesNoCongelamentoTests
     {
         (Result resposta, IEnumerable<object> eventos) = await Retificar(servicos => servicos.ComCalendario(CalendarioVigenteReaderDeTeste.ComVigente()).ComRegrasDeConsolidacao(CatalogoSemACorrecaoIndependente()));
 
-        resposta.Error!.Code.Should().Be(EtapaProcessoErrorCodes.RegraDeConsolidacaoNaoResolvida);
+        resposta.Errors.Select(e => e.Error.Code).Should().ContainInOrder(
+            ProcessoSeletivoErrorCodes.RegraCitadaNaoCorrespondeAoCatalogo, EtapaProcessoErrorCodes.RegraDeConsolidacaoNaoResolvida);
         eventos.Should().BeEmpty();
     }
 

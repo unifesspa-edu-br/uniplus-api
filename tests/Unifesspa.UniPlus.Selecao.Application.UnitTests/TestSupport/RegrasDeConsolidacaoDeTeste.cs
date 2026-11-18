@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -39,7 +40,23 @@ internal static class RegrasDeConsolidacaoDeTeste
 
     /// <summary>O catálogo com as regras de teste; sem argumento, o que não está nele devolve <see langword="null"/>.</summary>
     public static IRegraCatalogoReader Catalogo() =>
-        Catalogo(AvaliacaoUnica, CorrecaoIndependente, ConceitoMaioriaSimples, ConceitoUnanimidade);
+        Catalogo(AvaliacaoUnica, CorrecaoIndependente, ConceitoMaioriaSimples, ConceitoUnanimidade,
+            RegraComHash(RegraCalculoCodigo.ClassificacaoImportada, ProcessoSeletivoConformeBuilder.HashFixo),
+            RegraComHash(RegraCalculoCodigo.FormulaMediaPonderada, new string('b', 64)),
+            RegraComHash(RegraArredondamentoCodigo.PrecisaoTruncar, new string('c', 64)),
+            RegraComHash(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, ProcessoSeletivoConformeBuilder.HashFixo),
+            RegraComHash(RegraDistribuicaoVagasCodigo.Institucional, ProcessoSeletivoConformeBuilder.HashFixo),
+            RegraComHash(CriterioDesempateCodigo.MaiorIdade, new string('f', 64)),
+            RegraComHash(AlgoritmoContagemPrazoCodigo.AvancaDataUtil, ProcessoSeletivoConformeBuilder.HashFixo),
+            RegraComHash(RegraPrazoRecursoCodigo.AncoradoEmAto, ProcessoSeletivoConformeBuilder.HashFixo),
+            RegraComHash(RegraBonusCodigo.Multiplicativo, ProcessoSeletivoConformeBuilder.HashFixo));
+
+    private static RegraCatalogo RegraComHash(string codigo, string hash)
+    {
+        RegraCatalogo regra = Regra(codigo, "{}");
+        typeof(RegraCatalogo).GetProperty(nameof(RegraCatalogo.Hash))!.SetValue(regra, hash);
+        return regra;
+    }
 
     public static IRegraCatalogoReader Catalogo(params RegraCatalogo[] regras)
     {

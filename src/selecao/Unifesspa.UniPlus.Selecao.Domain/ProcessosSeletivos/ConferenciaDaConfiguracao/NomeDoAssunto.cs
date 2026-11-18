@@ -6,6 +6,7 @@ internal static class NomeDoAssunto
     internal const string Identificacao = "Identificacao";
     internal const string Conformidade = "Conformidade";
     internal const string Declaracoes = "Declaracoes";
+    internal const string ReferenciasDeRegra = "ReferenciasDeRegra";
     internal const string Conjunto = "Conjunto";
     internal const string Completude = "Completude";
     internal const string Recursos = "Recursos";

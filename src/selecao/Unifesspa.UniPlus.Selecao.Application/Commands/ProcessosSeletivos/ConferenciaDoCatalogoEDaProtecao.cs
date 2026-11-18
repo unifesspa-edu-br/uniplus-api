@@ -17,10 +17,11 @@ internal sealed record CatalogoVivo(
     IReadOnlyList<FatoCandidatoView> Fatos,
     IReadOnlyDictionary<string, FatoCandidatoView> PorCodigo,
     FatosDeModalidade FatosDeModalidade,
-    IReadOnlyDictionary<Guid, TipoDocumentoView> TiposVivos);
+    IReadOnlyDictionary<Guid, TipoDocumentoView> TiposVivos,
+    IReadOnlyDictionary<Guid, string> NomesDasFases);
 
 /// <summary>Lê o catálogo de fatos e os tipos de documento vivos, uma só vez por operação.</summary>
-public sealed class ConferenciaDoCatalogoEDaProtecao(IFatoCandidatoReader fatos, ITipoDocumentoReader tiposDeDocumento)
+public sealed class ConferenciaDoCatalogoEDaProtecao(IFatoCandidatoReader fatos, ITipoDocumentoReader tiposDeDocumento, IFaseCanonicaReader fases)
 {
     internal async Task<CatalogoVivo> LerAsync(ProcessoSeletivo processo, CancellationToken cancellationToken)
     {
@@ -29,10 +30,14 @@ public sealed class ConferenciaDoCatalogoEDaProtecao(IFatoCandidatoReader fatos,
             .LerTiposVivosAsync(processo, tiposDeDocumento, cancellationToken)
             .ConfigureAwait(false);
 
+        IReadOnlyList<FaseCanonicaView> fasesVivas = await fases.ListarVivasPorCodigosAsync(
+            [.. processo.CronogramaFases.Select(static fase => fase.Codigo).Distinct(StringComparer.Ordinal)], cancellationToken).ConfigureAwait(false);
+
         return new CatalogoVivo(
             catalogoDeFatos,
             catalogoDeFatos.ToDictionary(static f => f.Codigo, StringComparer.Ordinal),
             VocabularioDeFatos.ComValoresDeModalidade(catalogoDeFatos),
-            tiposVivos);
+            tiposVivos,
+            fasesVivas.ToDictionary(static fase => fase.Id, static fase => fase.Nome));
     }
 }

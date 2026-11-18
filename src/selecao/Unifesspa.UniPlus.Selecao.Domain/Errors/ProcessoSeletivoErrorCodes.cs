@@ -6,6 +6,9 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Errors;
 /// </summary>
 public static class ProcessoSeletivoErrorCodes
 {
+    /// <summary>A regra citada não corresponde à regra atual do catálogo.</summary>
+    public const string RegraCitadaNaoCorrespondeAoCatalogo = "ProcessoSeletivo.RegraCitadaNaoCorrespondeAoCatalogo";
+
     /// <summary>A pessoa autenticada não tem a permissão na unidade dona; responde 403.</summary>
     public const string SemPermissaoNaUnidade = "ProcessoSeletivo.SemPermissaoNaUnidade";
 

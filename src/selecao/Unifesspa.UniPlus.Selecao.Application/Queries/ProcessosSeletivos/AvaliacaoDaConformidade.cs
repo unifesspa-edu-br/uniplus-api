@@ -45,7 +45,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 public sealed class AvaliacaoDaConformidade(
     IProcessoSeletivoRepository processoSeletivoRepository,
     LeituraDoContextoDeContagemDePrazos contextos,
-    LeituraDosCorretoresDasEtapas corretores,
+    LeituraDasRegrasCitadasNaConfiguracao leituraDasRegras,
     ResolucaoDosTiposDeAtoUnicos tiposDeAto,
     ConferenciaDoCatalogoEDaProtecao catalogos,
     IRegistroCodecsEnvelope registroCodecs,
@@ -60,7 +60,7 @@ public sealed class AvaliacaoDaConformidade(
     internal async Task<ConformidadeProcessoSeletivoDto> AvaliarAsync(ProcessoSeletivo processo, CancellationToken cancellationToken)
     {
         ContextoDeContagemDePrazos contexto = await contextos.LerAsync(cancellationToken).ConfigureAwait(false);
-        CorretoresDasEtapas corretoresDasEtapas = await corretores.LerAsync(processo, cancellationToken).ConfigureAwait(false);
+        RegrasCitadasNaConfiguracao regrasCitadas = await leituraDasRegras.LerAsync(processo, cancellationToken).ConfigureAwait(false);
         IReadOnlyList<Guid> atosDaLinhagem = await processoSeletivoRepository
             .ObterAtosCriadoresAsync(processo.Id, cancellationToken)
             .ConfigureAwait(false);
@@ -71,7 +71,7 @@ public sealed class AvaliacaoDaConformidade(
         CatalogoVivo catalogo = await catalogos.LerAsync(processo, cancellationToken).ConfigureAwait(false);
         MotivosEscolhidos escolhidos = await LerOsMotivosEscolhidosAsync(processo.Id, publicada, cancellationToken).ConfigureAwait(false);
 
-        return Projetar(processo, new LeiturasDoPainel(contexto, corretoresDasEtapas, tiposDeAtoUnicos, escolhidos), catalogo, publicada);
+        return Projetar(processo, new LeiturasDoPainel(contexto, regrasCitadas, tiposDeAtoUnicos, escolhidos), catalogo, publicada);
     }
 
     // Os motivos entram na versão que nasce, a mesma que o congelamento confere.
@@ -124,7 +124,8 @@ public sealed class AvaliacaoDaConformidade(
             .Montar(processo, catalogo.TiposVivos, catalogo.Fatos, publicada.CongeladoNaVersao).Exigencias;
 
         CadastrosDaConfiguracao cadastros = new(
-            leituras.Contexto, catalogo.FatosDeModalidade, leituras.TiposDeAtoUnicos, leituras.Corretores, protecao, leituras.MotivosEscolhidos);
+            leituras.Contexto, catalogo.FatosDeModalidade, leituras.TiposDeAtoUnicos, leituras.Regras.Corretores, protecao, leituras.MotivosEscolhidos)
+        { Regras = leituras.Regras.Regras, NomesDasFases = catalogo.NomesDasFases };
 
         return ChecklistDeConformidade
             .AvaliarConformidade(processo.Declaracao(), cadastros)
@@ -158,7 +159,7 @@ public sealed class AvaliacaoDaConformidade(
     /// <summary>Os cadastros que o painel lê além do catálogo e da versão vigente.</summary>
     private sealed record LeiturasDoPainel(
         ContextoDeContagemDePrazos Contexto,
-        CorretoresDasEtapas Corretores,
+        RegrasCitadasNaConfiguracao Regras,
         TiposDeAtoUnicosPorObjeto TiposDeAtoUnicos,
         MotivosEscolhidos MotivosEscolhidos);
 }

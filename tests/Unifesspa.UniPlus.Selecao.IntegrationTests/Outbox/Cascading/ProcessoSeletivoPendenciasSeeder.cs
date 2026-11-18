@@ -39,7 +39,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
     public static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearComCronogramaNaoConformeAsync(
         UniPlusDbContext db, string nome)
     {
-        ProcessoSeletivo processo = ProcessoBaseConforme(nome, out FaseCronogramaBuilder faseBuilder);
+        ProcessoSeletivo processo = ProcessoBaseConforme(db, nome, out FaseCronogramaBuilder faseBuilder);
 
         DefinirCronogramaEEtapaDaFase(processo, [faseBuilder(coletaInscricao: false)]);
 
@@ -54,7 +54,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
     public static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearComFaseSemUnidadeResponsavelAsync(
         UniPlusDbContext db, string nome)
     {
-        ProcessoSeletivo processo = ProcessoBaseConforme(nome, out _);
+        ProcessoSeletivo processo = ProcessoBaseConforme(db, nome, out _);
 
         FaseCronograma faseSemUnidade = FaseCronograma.Criar(
             new OrigemCanonicaDaFase(
@@ -80,9 +80,9 @@ internal static class ProcessoSeletivoPendenciasSeeder
     public static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearComCascataNaoConformeAsync(
         UniPlusDbContext db, string nome)
     {
-        ConfiguracaoDistribuicaoVagas distribuicao = DistribuicaoComCascataForaDoRegimeFederal();
+        ConfiguracaoDistribuicaoVagas distribuicao = DistribuicaoComCascataForaDoRegimeFederal(db);
 
-        ProcessoSeletivo processo = ProcessoBaseConforme(nome, out FaseCronogramaBuilder faseBuilder, distribuicao: [distribuicao]);
+        ProcessoSeletivo processo = ProcessoBaseConforme(db, nome, out FaseCronogramaBuilder faseBuilder, distribuicao: [distribuicao]);
 
         DefinirCronogramaEEtapaDaFase(processo, [faseBuilder(coletaInscricao: true)]);
 
@@ -98,7 +98,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
     public static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearComPreCanonicalizacaoNaoConformeAsync(
         UniPlusDbContext db, string nome)
     {
-        ProcessoSeletivo processo = ProcessoBaseConforme(nome, out FaseCronogramaBuilder faseBuilder);
+        ProcessoSeletivo processo = ProcessoBaseConforme(db, nome, out FaseCronogramaBuilder faseBuilder);
         DefinirCronogramaEEtapaDaFase(processo, [faseBuilder(coletaInscricao: true)]);
 
         ExigirCertidaoComCondicionalVazia(processo);
@@ -122,7 +122,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
     public static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearComCadastroProprioNaoConformeAsync(
         UniPlusDbContext db, string nome, bool documentoConfirmado = true)
     {
-        ProcessoSeletivo processo = ProcessoBaseConforme(nome, out FaseCronogramaBuilder faseBuilder, definirAtendimentoEspecializado: false);
+        ProcessoSeletivo processo = ProcessoBaseConforme(db, nome, out FaseCronogramaBuilder faseBuilder, definirAtendimentoEspecializado: false);
         DefinirCronogramaEEtapaDaFase(processo, [faseBuilder(coletaInscricao: true)]);
 
         return documentoConfirmado
@@ -176,10 +176,10 @@ internal static class ProcessoSeletivoPendenciasSeeder
         UniPlusDbContext db, string nome, bool ofertaComGrupo)
     {
         ProcessoSeletivo processo = ProcessoBaseConforme(
-            nome, out FaseCronogramaBuilder faseBuilder,
-            distribuicao: [DistribuicaoAmplaPadrao(ofertaComGrupo ? ("TECNOLOGICA", "Tecnológica") : null)]);
+            db, nome, out FaseCronogramaBuilder faseBuilder,
+            distribuicao: [DistribuicaoAmplaPadrao(db, ofertaComGrupo ? ("TECNOLOGICA", "Tecnológica") : null)]);
 
-        DefinirClassificacaoLocalDoEnem(processo);
+        DefinirClassificacaoEnem(processo, db);
 
         AdmitirEdicaoDoEnem(processo);
 
@@ -191,7 +191,25 @@ internal static class ProcessoSeletivoPendenciasSeeder
         return await PersistirComDocumentoConfirmadoAsync(db, processo);
     }
 
-    private static ConfiguracaoDistribuicaoVagas DistribuicaoAmplaPadrao((string? Codigo, string? Rotulo)? grupoAreaEnem = null)
+    private static void DefinirClassificacaoEnem(ProcessoSeletivo processo, UniPlusDbContext db)
+    {
+        Result<ConfiguracaoClassificacao> classificacaoResult = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = RegraDoCatalogo(db, RegraCalculoCodigo.FormulaMediaPonderada),
+            RegraArredondamento = RegraDoCatalogo(db, RegraArredondamentoCodigo.PrecisaoTruncar),
+            CasasArredondamento = 2,
+            RegraOrdemAlocacao = RegraDoCatalogo(db, RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria),
+            BaseadoEmEnem = true,
+            ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
+            QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
+            EscalaNotaFinal = 100m,
+        });
+        classificacaoResult.IsSuccess.Should().BeTrue(classificacaoResult.Error?.Message);
+        processo.DefinirClassificacao(classificacaoResult.Value!).IsSuccess.Should().BeTrue();
+
+    }
+
+    private static ConfiguracaoDistribuicaoVagas DistribuicaoAmplaPadrao(UniPlusDbContext db, (string? Codigo, string? Rotulo)? grupoAreaEnem = null)
     {
         ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
             modalidadeOrigemId: Guid.CreateVersion7(), codigo: "AC", descricao: "Ampla concorrência",
@@ -201,7 +219,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
             regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), acaoQuandoIndeferido: null, baseLegal: "Res. Unifesspa 532/2021",
             quantidadeDeclarada: 40).Value!;
         return ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo), Modalidades = [modalidade] },
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = RegraDoCatalogo(db, RegraDistribuicaoVagasCodigo.Institucional), Modalidades = [modalidade] },
             new FatosDaOfertaNoCadastro { GrupoAreaEnem = grupoAreaEnem, OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
     }
 
@@ -233,25 +251,29 @@ internal static class ProcessoSeletivoPendenciasSeeder
         bancasRequeridas: []).Value!;
 
     private static ProcessoSeletivo ProcessoBaseConforme(
-        string nome,
+        UniPlusDbContext db, string nome,
         out FaseCronogramaBuilder faseBuilder,
         bool definirAtendimentoEspecializado = true,
         IReadOnlyList<ConfiguracaoDistribuicaoVagas>? distribuicao = null)
     {
         ProcessoSeletivo processo = ProcessoComAtendimento(nome, definirAtendimentoEspecializado);
 
-        IReadOnlyList<ConfiguracaoDistribuicaoVagas> distribuicaoEfetiva = distribuicao ?? [DistribuicaoAmplaPadrao()];
+        IReadOnlyList<ConfiguracaoDistribuicaoVagas> distribuicaoEfetiva = distribuicao ?? [DistribuicaoAmplaPadrao(db)];
         Result distribuicaoDefinirResult = processo.DefinirDistribuicaoVagas(distribuicaoEfetiva, FatosDeModalidadeDeTeste.DoCatalogo);
         distribuicaoDefinirResult.IsSuccess.Should().BeTrue(distribuicaoDefinirResult.Error?.Message);
 
-        DefinirClassificacaoImportada(processo);
+        DefinirClassificacaoImportada(processo, db);
 
         faseBuilder = FaseDeResultadoFinal;
 
         DefinirTaxaSemCobranca(processo);
+        processo.DefinirCriteriosDesempate([CriterioDesempate.Criar(1, RegraDoCatalogo(db, CriterioDesempateCodigo.MaiorIdade), new ParametrosDesempateMaiorIdade()).Value!]).IsSuccess.Should().BeTrue();
 
         return processo;
     }
+
+    private static ReferenciaRegra RegraDoCatalogo(UniPlusDbContext db, string codigo) =>
+        db.RolDeRegras.Single(r => r.Codigo == codigo && r.Versao == "v1").Referencia();
 
     private static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> PersistirComDocumentoConfirmadoAsync(
         UniPlusDbContext db, ProcessoSeletivo processo)
@@ -287,12 +309,12 @@ internal static class ProcessoSeletivoPendenciasSeeder
         return (processo, documento);
     }
 
-    private static ConfiguracaoDistribuicaoVagas DistribuicaoComCascataForaDoRegimeFederal()
+    private static ConfiguracaoDistribuicaoVagas DistribuicaoComCascataForaDoRegimeFederal(UniPlusDbContext db)
     {
         ModalidadeSelecionada ampla = AmplaDaOfertaNaoFederal();
         ModalidadeSelecionada cotaSegueCascataForaDoFederal = CotaComCascataForaDoRegimeFederal();
         Result<ConfiguracaoDistribuicaoVagas> distribuicaoResult = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 10, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo), Modalidades = [ampla, cotaSegueCascataForaDoFederal] },
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 10, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = RegraDoCatalogo(db, RegraDistribuicaoVagasCodigo.Institucional), Modalidades = [ampla, cotaSegueCascataForaDoFederal] },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina });
         distribuicaoResult.IsSuccess.Should().BeTrue(distribuicaoResult.Error?.Message);
         return distribuicaoResult.Value!;
@@ -370,12 +392,10 @@ internal static class ProcessoSeletivoPendenciasSeeder
     }
 
 
-    private static void DefinirClassificacaoImportada(ProcessoSeletivo processo)
+    private static void DefinirClassificacaoImportada(ProcessoSeletivo processo, UniPlusDbContext db)
     {
-        ReferenciaRegra regraCalculo = ReferenciaRegra.De(
-            RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo);
-        ReferenciaRegra regraOrdemAlocacao = ReferenciaRegra.De(
-            RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo);
+        ReferenciaRegra regraCalculo = RegraDoCatalogo(db, RegraCalculoCodigo.ClassificacaoImportada);
+        ReferenciaRegra regraOrdemAlocacao = RegraDoCatalogo(db, RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria);
         Result<ConfiguracaoClassificacao> classificacaoResult = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
             RegraCalculo = regraCalculo,

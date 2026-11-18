@@ -127,7 +127,7 @@ internal static class ProcessosDoPainelDeConformidade
             Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
             null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "base legal", quantidadeDeclarada: 50).Value!;
         ReferenciaRegra regraInstitucional = ReferenciaRegra.De(
-            RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64));
+            RegraDistribuicaoVagasCodigo.Institucional, "v1", ProcessoSeletivoConformeBuilder.HashFixo);
 
         return ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
             new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 50, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = regraInstitucional, Modalidades = [ampla] },
@@ -137,8 +137,8 @@ internal static class ProcessosDoPainelDeConformidade
     private static ConfiguracaoClassificacao ClassificacaoImportada() =>
         ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64)),
-            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('d', 64)),
+            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", ProcessoSeletivoConformeBuilder.HashFixo),
+            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", ProcessoSeletivoConformeBuilder.HashFixo),
         }).Value!;
 
     private static ConfiguracaoClassificacao ClassificacaoPorMediaPonderada() =>
@@ -147,7 +147,7 @@ internal static class ProcessosDoPainelDeConformidade
             RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('b', 64)),
             RegraArredondamento = ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('c', 64)),
             CasasArredondamento = 2,
-            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('d', 64)),
+            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", ProcessoSeletivoConformeBuilder.HashFixo),
             EscalaNotaFinal = 100m,
         }).Value!;
 

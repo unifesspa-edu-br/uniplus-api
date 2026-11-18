@@ -17,6 +17,7 @@ internal static class ErrosDoDocumentoDaConfiguracao
 
     internal static IEnumerable<KeyValuePair<string, DomainErrorMapping>> Mapeamentos() =>
     [
+        new(ProcessoSeletivoErrorCodes.RegraCitadaNaoCorrespondeAoCatalogo, new DomainErrorMapping(Invalido, "uniplus.selecao.processo_seletivo.regra_citada_nao_corresponde_ao_catalogo", "A regra citada pela configuração não corresponde à regra atual do catálogo")),
         .. Grupo(),
         .. CausasDoEsquema(),
         .. CausasDaEstrutura(),

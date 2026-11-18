@@ -106,6 +106,12 @@ public sealed class BlocosDoDocumentoDasCausasTests
 
     [Theory(DisplayName = "O ponteiro que um emissor sem cenário construível produz existe no esquema publicado")]
     [InlineData("fases[0].regraRecurso")]
+    [InlineData("fases[0].regraRecurso.regraCodigo")]
+    [InlineData("fases[0].regraRecurso.procedimentosDeRecurso[0].regra")]
+    [InlineData("etapas[0].recursos[0].regraCodigo")]
+    [InlineData("etapas[0].recursos[0].procedimentosDeRecurso[0].regra")]
+    [InlineData("classificacao.regrasEliminacao[0].regra")]
+    [InlineData("classificacao.criteriosDeDesempate[0].regra")]
     [InlineData("fases[0].produtos[1].atoCodigo")]
     [InlineData("etapas[0].produtos[2].atoCodigo")]
     [InlineData("formularios[0].itens[0].fatoCodigo")]

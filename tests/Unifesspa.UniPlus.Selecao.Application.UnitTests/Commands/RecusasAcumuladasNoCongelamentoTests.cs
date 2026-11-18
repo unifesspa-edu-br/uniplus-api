@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -29,6 +30,45 @@ public sealed class RecusasAcumuladasNoCongelamentoTests
     private const string PeriodoNaoInformavel = "ProcessoSeletivo.PeriodoInscricaoNaoInformavel";
     private static readonly DateTimeOffset InicioInformado = new(2026, 2, 1, 0, 0, 0, TimeSpan.FromHours(-3));
     private static readonly DateTimeOffset FimInformado = new(2026, 2, 28, 23, 59, 59, TimeSpan.FromHours(-3));
+
+    [Theory(DisplayName = "A regra ausente ou divergente acumula com as demais causas sem gravar a configuração")]
+    [InlineData(OperacaoQueCongela.Publicar, false)]
+    [InlineData(OperacaoQueCongela.Retificar, false)]
+    [InlineData(OperacaoQueCongela.Publicar, true)]
+    [InlineData(OperacaoQueCongela.Retificar, true)]
+    public async Task RegraDivergente_AcumulaSemGravar(OperacaoQueCongela operacao, bool existeNoCatalogo)
+    {
+        CenarioDeRecusaNoCongelamento cenario = Para(operacao).Com(DefeitoDoCongelamento.Motivos);
+        ReferenciaRegra referencia = ConfigurarRegra(cenario, existeNoCatalogo);
+
+        ConformidadeProcessoSeletivoDto painel = await cenario.Servicos.Avaliacao().AvaliarAsync(cenario.Processo, CancellationToken.None);
+        (Result resposta, IEnumerable<object> eventos) = await cenario.ExecutarAsync();
+
+        painel.Itens.Should().Contain(i => i.Codigo == "regra_citada_identificacao.algoritmoContagemPrazo" && !i.Ok);
+        VerificarRecusaDaRegra(resposta, referencia);
+        eventos.Should().BeEmpty();
+        await cenario.Servicos.NadaFoiGravadoAsync();
+        cenario.AfirmarQueNaoTransitou();
+    }
+
+    private static ReferenciaRegra ConfigurarRegra(CenarioDeRecusaNoCongelamento cenario, bool existeNoCatalogo)
+    {
+        RegraCatalogo regra = RegrasDeConsolidacaoDeTeste.CorrecaoIndependente;
+        ReferenciaRegra referencia = ReferenciaRegra.De(regra.Codigo, regra.Versao, new string('a', 64));
+        cenario.Servicos.RegrasDeConsolidacao.ObterAsync(regra.Codigo, regra.Versao, Arg.Any<CancellationToken>())
+            .Returns(existeNoCatalogo ? regra : null);
+        typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.AlgoritmoContagemPrazo))!.SetValue(cenario.Processo, referencia);
+        return referencia;
+    }
+
+    private static void VerificarRecusaDaRegra(Result resposta, ReferenciaRegra referencia)
+    {
+        resposta.Errors.Select(static e => e.Error.Code).Should().ContainInOrder(
+            "ProcessoSeletivo.RegraCitadaNaoCorrespondeAoCatalogo", CodigoDa(DefeitoDoCongelamento.Motivos));
+        FieldError recusa = resposta.Errors.First(e => e.Error.Code == "ProcessoSeletivo.RegraCitadaNaoCorrespondeAoCatalogo");
+        recusa.Field.Should().Be("/identificacao/algoritmoContagemPrazo");
+        recusa.Error.Message.Should().NotContain(referencia.Codigo).And.NotContain(referencia.Hash);
+    }
 
     [Fact(DisplayName = "A configuração, os motivos e o edital recusam numa resposta só, na ordem da conferência")]
     public async Task ConfiguracaoEditalEMotivos_SaemJuntosNaOrdemDosAssuntos()

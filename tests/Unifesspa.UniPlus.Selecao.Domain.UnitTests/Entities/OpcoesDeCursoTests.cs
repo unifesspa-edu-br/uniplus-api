@@ -127,6 +127,11 @@ public sealed class OpcoesDeCursoTests
         Vermelhos(processo).Should().NotContain("opcoes_de_curso_acima_das_ofertas");
     }
 
+    private static ProcessoSeletivo ProcessoSemDistribuicao() => ProcessoSeletivo.Criar(
+        "PS Opções", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+        UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+        LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+
     [Fact(DisplayName = "Publicar sem declarar o número de opções é recusado, e declarar libera")]
     public void SemDeclararONumero_RecusaPublicarEDeclararLibera()
     {

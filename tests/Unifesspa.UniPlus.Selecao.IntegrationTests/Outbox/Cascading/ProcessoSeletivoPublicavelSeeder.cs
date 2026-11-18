@@ -8,6 +8,8 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
+using Microsoft.EntityFrameworkCore;
+
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
@@ -62,14 +64,31 @@ internal static class ProcessoSeletivoPublicavelSeeder
         ValidarNome(opcoes.Nome);
         ProcessoSeletivo processo = CriarProcesso(db, opcoes);
         DefinirAtendimentoEspecializado(processo);
-        DefinirDistribuicaoDeVagas(processo);
-        DefinirClassificacao(processo);
-        DefinirCronograma(processo, opcoes);
-        DefinirTaxaEDeclaracoes(processo);
+        Dictionary<string, ReferenciaRegra> regras = await RegrasAsync(db);
+        DefinirDistribuicaoDeVagas(processo, regras);
+        DefinirClassificacao(processo, regras);
+        DefinirCronogramaEDeclaracoes(processo, opcoes, regras);
         opcoes.Complementar?.Invoke(processo);
         DocumentoAPublicar documento = CriarDocumentoConfirmado(processo);
         await PersistirProcessoEDocumentoAsync(db, processo, documento);
         return (processo, documento);
+    }
+
+    private static void DefinirCronogramaEDeclaracoes(
+        ProcessoSeletivo processo, OpcoesDoProcessoSeletivoPublicavel opcoes, Dictionary<string, ReferenciaRegra> regras)
+    {
+        DefinirCronograma(processo, opcoes);
+        DefinirTaxaEDeclaracoes(processo);
+        DefinirDesempate(processo, regras);
+    }
+
+    private static Task<Dictionary<string, ReferenciaRegra>> RegrasAsync(UniPlusDbContext db) =>
+        db.RolDeRegras.Where(r => r.Versao == "v1").ToDictionaryAsync(r => r.Codigo, r => r.Referencia());
+
+    private static void DefinirDesempate(ProcessoSeletivo processo, Dictionary<string, ReferenciaRegra> regras)
+    {
+        CriterioDesempate criterio = CriterioDesempate.Criar(1, regras[CriterioDesempateCodigo.MaiorIdade], new ParametrosDesempateMaiorIdade()).Value!;
+        processo.DefinirCriteriosDesempate([criterio]).IsSuccess.Should().BeTrue();
     }
 
     private static async Task PersistirProcessoEDocumentoAsync(
@@ -103,10 +122,9 @@ internal static class ProcessoSeletivoPublicavelSeeder
         atendimentoResult.IsSuccess.Should().BeTrue(atendimentoResult.Error?.Message);
     }
 
-    private static void DefinirDistribuicaoDeVagas(ProcessoSeletivo processo)
+    private static void DefinirDistribuicaoDeVagas(ProcessoSeletivo processo, Dictionary<string, ReferenciaRegra> regras)
     {
-        ReferenciaRegra regraDistribuicao = ReferenciaRegra.De(
-            RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo);
+        ReferenciaRegra regraDistribuicao = regras[RegraDistribuicaoVagasCodigo.Institucional];
         ModalidadeSelecionada modalidade = CriarModalidadeDeAmplaConcorrencia();
         Result<ConfiguracaoDistribuicaoVagas> distribuicaoResult = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
             new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = regraDistribuicao, Modalidades = [modalidade] },
@@ -133,12 +151,10 @@ internal static class ProcessoSeletivoPublicavelSeeder
             baseLegal: "Res. Unifesspa 532/2021",
             quantidadeDeclarada: 40).Value!;
 
-    private static void DefinirClassificacao(ProcessoSeletivo processo)
+    private static void DefinirClassificacao(ProcessoSeletivo processo, Dictionary<string, ReferenciaRegra> regras)
     {
-        ReferenciaRegra regraCalculo = ReferenciaRegra.De(
-            RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo);
-        ReferenciaRegra regraOrdemAlocacao = ReferenciaRegra.De(
-            RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo);
+        ReferenciaRegra regraCalculo = regras[RegraCalculoCodigo.ClassificacaoImportada];
+        ReferenciaRegra regraOrdemAlocacao = regras[RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria];
         Result<ConfiguracaoClassificacao> classificacaoResult = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
             RegraCalculo = regraCalculo,
