@@ -28,9 +28,7 @@ public sealed class OpenApiEndpointTests : IClassFixture<AutorizacaoApiFactory>
     [Fact(DisplayName = "GET /openapi/autorizacao.json retorna 200 com documento OpenAPI válido e metadata Uni+")]
     public async Task GetOpenApiDocument_RetornaSpecJsonComMetadataInjetada()
     {
-        using HttpClient client = _factory.CreateClient();
-
-        HttpResponseMessage response = await client.GetAsync(new Uri("/openapi/autorizacao.json", UriKind.Relative));
+        using HttpResponseMessage response = await ObterDocumentoAsync();
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         string body = await response.Content.ReadAsStringAsync();
@@ -45,27 +43,42 @@ public sealed class OpenApiEndpointTests : IClassFixture<AutorizacaoApiFactory>
     [Fact(DisplayName = "Spec runtime de Autorização bate com baseline committed em contracts/")]
     public async Task SpecRuntime_DeveCasarComBaselineCommitted()
     {
-        using HttpClient client = _factory.CreateClient();
-        HttpResponseMessage response = await client.GetAsync(new Uri("/openapi/autorizacao.json", UriKind.Relative));
-        response.EnsureSuccessStatusCode();
-
-        string runtimeSpec = NormalizeJson(await response.Content.ReadAsStringAsync());
-        string baselinePath = ResolveRepoPath(BaselineRelativePath);
-
-        if (string.Equals(Environment.GetEnvironmentVariable(UpdateBaselineEnvVar), "1", StringComparison.Ordinal))
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(baselinePath)!);
-            await File.WriteAllTextAsync(baselinePath, runtimeSpec + "\n");
+        CenarioDaBaseline cenario = new(this);
+        await cenario.ExecutarAsync();
+        if (cenario.Atualizada)
             return;
-        }
 
-        File.Exists(baselinePath).Should().BeTrue(
+        File.Exists(cenario.Caminho).Should().BeTrue(
             $"baseline {BaselineRelativePath} precisa estar committed; rode `{UpdateBaselineEnvVar}=1 dotnet test --filter SpecRuntime` e commit o arquivo gerado.");
-
-        string committedSpec = NormalizeJson(await File.ReadAllTextAsync(baselinePath));
-
-        runtimeSpec.Should().Be(committedSpec,
+        string committedSpec = NormalizeJson(await File.ReadAllTextAsync(cenario.Caminho));
+        cenario.Spec.Should().Be(committedSpec,
             $"contrato OpenAPI mudou — regerar a baseline com `{UpdateBaselineEnvVar}=1 dotnet test --filter SpecRuntime` e revisar o diff antes de commit (ADR-0030).");
+    }
+
+    private sealed class CenarioDaBaseline(OpenApiEndpointTests testes)
+    {
+        public string Caminho { get; } = ResolveRepoPath(BaselineRelativePath);
+        public string Spec { get; private set; } = string.Empty;
+        public bool Atualizada { get; private set; }
+
+        public async Task ExecutarAsync()
+        {
+            using HttpResponseMessage response = await testes.ObterDocumentoAsync();
+            response.EnsureSuccessStatusCode();
+            Spec = NormalizeJson(await response.Content.ReadAsStringAsync());
+            Atualizada = string.Equals(Environment.GetEnvironmentVariable(UpdateBaselineEnvVar), "1", StringComparison.Ordinal);
+            if (Atualizada)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(Caminho)!);
+                await File.WriteAllTextAsync(Caminho, Spec + "\n");
+            }
+        }
+    }
+
+    private async Task<HttpResponseMessage> ObterDocumentoAsync()
+    {
+        using HttpClient client = _factory.CreateClient();
+        return await client.GetAsync(new Uri("/openapi/autorizacao.json", UriKind.Relative));
     }
 
     private static string NormalizeJson(string raw)
