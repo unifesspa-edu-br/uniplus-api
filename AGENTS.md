@@ -35,9 +35,19 @@ NuGet versions or lockfiles. Regenerate OpenAPI baselines with
 Follow `.editorconfig`: four spaces, LF, UTF-8, final newline, file-scoped
 namespaces, nullable enabled, and warnings treated as errors. Use PascalCase for
 types, members, constants, and static readonly fields; camelCase for locals and
-parameters; `_camelCase` for private fields. Keep infrastructure identifiers in
-English; domain identifiers preserve the ubiquitous language of the domain and
-are therefore in pt-BR (`ProcessoSeletivo`, `RegraCatalogo`, `TipoRegra`).
+parameters; `_camelCase` for private fields. Names mix English and pt-BR on
+purpose; the test is naturalness. Established technical terms stay in English
+(binder, provider, formatter, handler, middleware, options, cache, health check,
+token, endpoint, `Add*`/`Try*`/`To*`, and anything that points to an existing
+English type): `AddRedisOptions`, `PageRequestReader`,
+`TryParseSecurityProtocol`. Domain concepts and the project's own rule
+vocabulary stay in pt-BR, as the ubiquitous language: `ProcessoSeletivo`,
+`CodigoDePermissao`, `RecusarLimiteForaDoIntervalo`. Mixing word by word is fine
+when each word sits on its own side (`RegistroDeAcessoKafkaOptions`); never
+translate an established technical term (`LeitorDaPaginaPedida` for
+`PageRequestReader`) nor anglicize a project concept. Option property names,
+config-bound enum members and config keys are contract and are not renamed for
+language.
 User-facing API messages are in pt-BR. The domain is the sole source of
 validation (ADR-0125): a Command validator only covers shape/DTO checks with
 no domain equivalent (e.g., a route/DTO identity check with nothing to
