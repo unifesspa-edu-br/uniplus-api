@@ -25,7 +25,7 @@ internal sealed class CenarioDeCascataPersistida
     public UniPlusDbContext CriarDbContext() => _fixture.CreateDbContext();
 
     public static ReferenciaRegra Regra(string codigo, string hashChar) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string(hashChar[0], 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string(hashChar[0], 64));
 
     public static ConfiguracaoCascataRemanejamento CascataDeDuasOrigens(string semente) =>
         ConfiguracaoCascataRemanejamento.Criar(

@@ -12,8 +12,7 @@ using Kernel.Results;
 internal static partial class PosicaoNoModelo
 {
     /// <summary>Prefixa o campo da recusa com <c>modelo</c>.</summary>
-    public static FieldError NoModelo(FieldError erro) =>
-        erro with { Field = string.IsNullOrEmpty(erro.Field) ? "modelo" : $"modelo.{erro.Field}" };
+    public static FieldError NoModelo(FieldError erro) => erro.NoCaminhoDe("modelo");
 
     public static FieldError NoModelo(FieldError erro, string lista, List<int> indices) =>
         NoModelo(NaPosicaoDoModelo(erro, lista, indices));

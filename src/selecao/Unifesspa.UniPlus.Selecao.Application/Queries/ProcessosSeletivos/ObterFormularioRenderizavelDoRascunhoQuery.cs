@@ -18,8 +18,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 
 /// <summary>
-/// O formulário de uma finalidade como a configuração viva o define agora — o rascunho, ou a sessão
-/// de retificação aberta —, no mesmo formato que o certame divulgado serve (ADR-0139). É o que a
+/// O formulário de uma finalidade como a configuração viva o define agora — o rascunho —, no mesmo formato que o certame divulgado serve (ADR-0139). É o que a
 /// simulação do administrador interpreta antes de publicar; nada é gravado.
 /// </summary>
 public sealed record ObterFormularioRenderizavelDoRascunhoQuery(
@@ -65,7 +64,7 @@ public static class ObterFormularioRenderizavelDoRascunhoQueryHandler
 
         return ProjecaoDoFormularioRenderizavel.Projetar(
                 query.Finalidade, avaliavel.Value!, processo.Formularios, processo.FatosColetados, processo.GruposColetados, processo.TermosExigidos,
-                ReferenciaTemporalDosFatos.DataReferenciaFatosEmMontagem(EstadoDaConfiguracao.De(processo), fuso.Value!)) is { } formulario
+                ReferenciaTemporalDosFatos.DataReferenciaFatosEmMontagem(processo.Declaracao(), fuso.Value!)) is { } formulario
             ? Result<FormularioRenderizavelDto>.Success(FormularioRenderizavelDto.De(
                 formulario, comprovacaoDocumental: null, dependenciasDaAvaliacao: null, dependenciasDoFator: null,
                 processo.Formularios.FirstOrDefault(f => f.Finalidade == query.Finalidade)?.FaseId))

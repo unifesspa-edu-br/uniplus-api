@@ -77,7 +77,7 @@ internal static class SerializacaoDosPredicados
 
     internal static JsonObject SerializarPredicadoObrigatoriedade(PredicadoObrigatoriedade predicado)
     {
-        (string tipo, JsonObject args) = predicado switch
+        (string tipo, JsonObject parametros) = predicado switch
         {
             EtapaObrigatoria p => ("etapaObrigatoria", new JsonObject { ["tipoEtapaCodigo"] = HashCanonicalComputer.NormalizeNfc(p.TipoEtapaCodigo) }),
             ModalidadesMinimas p => ("modalidadesMinimas", new JsonObject { ["codigos"] = EscritaCanonica.TextosEmOrdemCanonica(p.Codigos) }),
@@ -97,7 +97,7 @@ internal static class SerializacaoDosPredicados
         return new JsonObject
         {
             ["tipo"] = tipo,
-            ["args"] = args,
+            ["parametros"] = parametros,
         };
     }
 }

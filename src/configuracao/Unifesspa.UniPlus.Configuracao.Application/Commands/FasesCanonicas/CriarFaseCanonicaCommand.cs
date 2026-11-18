@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.FasesCanonicas;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -28,4 +29,9 @@ public sealed record CriarFaseCanonicaCommand(
     bool ColetaInscricao = false,
     bool ColetaSolicitacaoIsencao = false,
     string? OrigemData = null,
-    Guid? UnidadeSugeridaId = null) : ICommand<Result<Guid>>;
+    Guid? UnidadeSugeridaId = null) : ICommand<Result<Guid>>
+{
+    /// <summary>Os quatro sinalizadores do corpo, como o valor que a fase confere contra o código.</summary>
+    public SinalizadoresDaFase Sinalizadores() =>
+        new(AgrupaEtapas, PermiteComplementacao, ColetaInscricao, ColetaSolicitacaoIsencao);
+}

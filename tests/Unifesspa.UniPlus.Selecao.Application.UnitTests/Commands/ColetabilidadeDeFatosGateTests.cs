@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -81,7 +82,7 @@ public sealed class ColetabilidadeDeFatosGateTests
     public async Task Publicar_ComFatoColetadoNaoMaisDeclarado_RecusaSemCanonicalizar()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
-        processo.DefinirItens([FatoColetadoModalidade()], PrecondicaoIfMatch.Ausente)
+        processo.DefinirItens([FatoColetadoModalidade()])
             .IsSuccess.Should().BeTrue();
         ISnapshotPublicacaoCanonicalizer canonicalizer = CanonicalizerSubstituto();
 
@@ -104,28 +105,12 @@ public sealed class ColetabilidadeDeFatosGateTests
         AfirmarRecusaDoFatoNaoMaisDeclarado(resposta, eventos, canonicalizer);
     }
 
-    [Fact(DisplayName = "FecharRetificacao_ComFatoColetadoNaoMaisDeclarado_RecusaESessaoPermaneceAberta — recusa não destrói a sessão editorial")]
-    public async Task FecharRetificacao_ComFatoColetadoNaoMaisDeclarado_RecusaESessaoPermaneceAberta()
-    {
-        (ProcessoSeletivo processo, VersaoConfiguracao versaoAtual) = ProcessoPublicadoComFatoColetado();
-        PublicacaoDeTeste.AbrirRetificacao(processo, versaoAtual);
-        ISnapshotPublicacaoCanonicalizer canonicalizer = CanonicalizerSubstituto();
-
-        (Result resposta, IEnumerable<object> eventos) = await ServicosComModalidadeDerivada(processo, canonicalizer)
-            .ComVersaoVigente(processo, versaoAtual)
-            .FecharRetificacaoAsync(processo.Id);
-
-        AfirmarRecusaDoFatoNaoMaisDeclarado(resposta, eventos, canonicalizer);
-        processo.Rascunho.Should().NotBeNull(
-            "uma recusa de coletabilidade não destrói a sessão editorial — o administrador corrige e tenta de novo");
-    }
-
     [Fact(DisplayName = "Publicar_ComFatoColetadoAindaDeclarado_Aprova — um fato ainda coletável não bloqueia a publicação")]
     public async Task Publicar_ComFatoColetadoAindaDeclarado_Aprova()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         // COR_RACA é coletado pela seção dos dados básicos do formulário de inscrição.
-        processo.DefinirItens([], PrecondicaoIfMatch.Ausente)
+        processo.DefinirItens([])
             .IsSuccess.Should().BeTrue();
         ISnapshotPublicacaoCanonicalizer canonicalizer = CanonicalizerSubstituto();
 
@@ -188,7 +173,7 @@ public sealed class ColetabilidadeDeFatosGateTests
             FatoColetado.Criar("ATENDIMENTO_NO_MUNICIPIO", 0, "Deseja atendimento no município?", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, [
                 CondicaoPrecondicaoFato.Criar(0, "MUNICIPIO_RESIDENCIA", Operador.Igual, JsonSerializer.SerializeToElement("1504208")).Value!,
             ], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ]).IsSuccess.Should().BeTrue();
         return processo;
     }
 
@@ -273,19 +258,18 @@ public sealed class ColetabilidadeDeFatosGateTests
         Assinante: "Diretor do CEPS",
         TipoAtoCodigo: "EDITAL_ABERTURA");
 
-    /// <summary>Processo publicado com um FatoColetado (MODALIDADE) — para os cenários de Retificar/FecharRetificacao.</summary>
+    /// <summary>Processo publicado com um FatoColetado (MODALIDADE) — para os cenários de Retificar.</summary>
     private static (ProcessoSeletivo Processo, VersaoConfiguracao VersaoAtual) ProcessoPublicadoComFatoColetado()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
-        processo.DefinirItens([FatoColetadoModalidade()], PrecondicaoIfMatch.Ausente)
+        processo.DefinirItens([FatoColetadoModalidade()])
             .IsSuccess.Should().BeTrue();
 
         DadosEdital dados = DadosEdital.Criar(
             "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)), new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!;
 
         VersaoConfiguracao versao = processo.Publicar(
-            dados, EnvelopeCongeladoDeTeste.SemAnexos(), "1.1", "canonical-json/sha256@v1", HashFixo, "user-conta-1",
-            new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Value!;
+            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(EnvelopeCongeladoDeTeste.SemAnexos(), "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "user-conta-1", Relogio = new RelogioFixo(Agora) }).Value!;
         processo.DequeueDomainEvents();
 
         return (processo, versao);

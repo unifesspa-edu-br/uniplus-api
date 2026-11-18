@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// Predicado sobre o candidato na forma normal disjuntiva — um OU de
 /// <see cref="ClausulaDnf"/>, cada uma um E de <see cref="CondicaoDnf"/>
 /// (ADR-0111, Story #847). Compartilhado por <c>DESEMPATE-PREDICADO-FATO</c>
-/// (via <c>ArgsDesempatePredicadoFato</c>) e pelos futuros consumidores
+/// (via <c>ParametrosDesempatePredicadoFato</c>) e pelos futuros consumidores
 /// #554 (<c>CondicaoGatilho</c>) e #559 (<c>CampoFormulario.CondicaoExibicao</c>).
 /// </summary>
 /// <remarks>
@@ -23,7 +23,7 @@ public sealed record PredicadoDnf
 {
     private PredicadoDnf(IReadOnlyList<ClausulaDnf> clausulas)
     {
-        Clausulas = clausulas;
+        Clausulas = Array.AsReadOnly([.. clausulas]);
     }
 
     /// <summary>O predicado sem cláusula: a regra de derivação incondicional, a âncora.</summary>

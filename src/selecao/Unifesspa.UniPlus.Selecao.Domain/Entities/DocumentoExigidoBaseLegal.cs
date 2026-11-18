@@ -33,7 +33,7 @@ public sealed class DocumentoExigidoBaseLegal : EntityBase
     /// Acumula (ADR-0125) as três checagens — todas primitivas do payload cru, sem
     /// qualquer resolução de cadastro. Exposta para o handler poder confirmar a forma de
     /// TODAS as bases legais do payload numa primeira passada, antes de qualquer I/O (mesmo
-    /// padrão de <c>EtapaProcesso.ValidarFormaBasica</c>, PR #1218).
+    /// padrão de <c>ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica</c>).
     /// </summary>
     public static List<FieldError> ValidarFormaBasica(string? referencia, TipoAbrangencia abrangencia, StatusBaseLegal status)
     {

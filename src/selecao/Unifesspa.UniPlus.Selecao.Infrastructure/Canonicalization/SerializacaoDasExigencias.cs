@@ -38,7 +38,7 @@ internal static class SerializacaoDasExigencias
                 ["faseId"] = referencia.FaseId,
             }
             : null,
-            ["dataReferenciaFatos"] = Domain.ProcessosSeletivos.Fatos.ReferenciaTemporalDosFatos.ResolverDataReferenciaFatos(Domain.ProcessosSeletivos.Edicao.EstadoDaConfiguracao.De(processo), fusoHorario) is { } data
+            ["dataReferenciaFatos"] = Domain.ProcessosSeletivos.Fatos.ReferenciaTemporalDosFatos.ResolverDataReferenciaFatos(processo.Declaracao(), fusoHorario) is { } data
             ? data.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
             : null,
             ["metadadosFatos"] = SerializacaoDosFatos.SerializarMetadadosFatos(metadadosFatosCongelados),

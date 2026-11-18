@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
+using System.Linq.Expressions;
+
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -7,15 +9,14 @@ using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Motivo que o processo escolheu do cadastro para um tipo de decisão que usa (UNI-REQ-0285):
-/// cópia por valor (ADR-0061) do código, da descrição, do sentido e da subclassificação, que
-/// congela na publicação. Mudar o cadastro depois não muda o processo, e o motivo desativado
-/// continua utilizável onde já foi congelado (UNI-REQ-0122).
+/// Motivo que o processo escolheu do cadastro para a decisão de uma fase ou de uma etapa (UNI-REQ-0285): cópia por
+/// valor (ADR-0061) do código, da descrição, do sentido e da subclassificação. Mudar o cadastro depois não muda o
+/// processo, e o motivo desativado continua utilizável onde já consta do edital publicado (UNI-REQ-0122).
 /// </summary>
 /// <remarks>
-/// Enquanto não congelada, a cópia é refeita ao publicar (ou retificar), como as demais cópias do
-/// cadastro: o processo publica a descrição vigente naquele momento. A regra de quando incluir e
-/// retirar é de <see cref="EscolhaDosMotivos"/>, que enxerga o estado do processo.
+/// A escolha nasce já com a versão do edital em que entra: a primeira, porque só o rascunho escolhe. Congelar a versão
+/// não grava nada nela e não refaz a cópia: o texto publicado é o da escolha, mesmo que o cadastro mude depois.
+/// A regra de quando incluir e retirar é de <see cref="EscolhaDosMotivos"/>, que enxerga o estado do processo.
 /// </remarks>
 public sealed class MotivoDoProcesso : EntityBase, IAuditableEntity
 {
@@ -34,8 +35,11 @@ public sealed class MotivoDoProcesso : EntityBase, IAuditableEntity
 
     public SentidoDoMotivo Sentido { get; private set; }
 
-    /// <summary>Verdadeiro desde a publicação (ou o fechamento da retificação) que o incluiu.</summary>
-    public bool Congelado { get; private set; }
+    /// <summary>A fase ou a etapa em que o motivo é escolhido: o mesmo motivo pode ser escolhido em mais de um lugar.</summary>
+    public LugarDaDecisao Lugar { get; private set; } = null!;
+
+    /// <summary>As versões do edital em que a escolha vale.</summary>
+    public VigenciaNoEdital Vigencia { get; private set; } = null!;
 
     /// <summary>
     /// Por que o motivo entrou depois da publicação (UNI-REQ-0124). Uso interno da administração:
@@ -51,26 +55,36 @@ public sealed class MotivoDoProcesso : EntityBase, IAuditableEntity
     {
     }
 
-    internal static MotivoDoProcesso Copiar(Guid processoSeletivoId, MotivoDeDecisao origem, string? justificativa) => new()
+    internal static MotivoDoProcesso Copiar(
+        Guid processoSeletivoId, LugarDaDecisao lugar, MotivoDeDecisao origem, int versaoDeEntrada, string? justificativa)
     {
-        ProcessoSeletivoId = processoSeletivoId,
-        MotivoDeDecisaoOrigemId = origem.Id,
-        Tipo = origem.Tipo,
-        Codigo = origem.Codigo,
-        Descricao = origem.Descricao,
-        Subclassificacao = origem.Subclassificacao,
-        Sentido = origem.Sentido,
-        JustificativaDaInclusao = justificativa,
-    };
-
-    /// <summary>Refaz a cópia da descrição vigente no cadastro; só a não congelada se refaz.</summary>
-    internal void Recopiar(MotivoDeDecisao origem)
-    {
-        if (!Congelado)
+        return new()
         {
-            Descricao = origem.Descricao;
-        }
+            ProcessoSeletivoId = processoSeletivoId,
+            Lugar = lugar,
+            Vigencia = VigenciaNoEdital.APartirDa(versaoDeEntrada),
+            MotivoDeDecisaoOrigemId = origem.Id,
+            Tipo = origem.Tipo,
+            Codigo = origem.Codigo,
+            Descricao = origem.Descricao,
+            Subclassificacao = origem.Subclassificacao,
+            Sentido = origem.Sentido,
+            JustificativaDaInclusao = justificativa,
+        };
     }
 
-    internal void Congelar() => Congelado = true;
+    /// <summary>
+    /// Se a escolha ainda não consta de edital publicado, estando <paramref name="numeroDaVersaoEmPreparo"/> em preparo: a
+    /// que entra nessa versão ou depois dela ainda não consta; a que entrou antes já consta.
+    /// </summary>
+    public bool PendenteNa(int numeroDaVersaoEmPreparo) => Vigencia.VersaoDoEditalDeEntrada >= numeroDaVersaoEmPreparo;
+
+    /// <summary>As escolhas que valem na versão do edital: a que entrou nela ou antes, e que não saiu até ela.</summary>
+    public static Expression<Func<MotivoDoProcesso, bool>> ValeNaVersao(int numeroDaVersao) =>
+        m => m.Vigencia.VersaoDoEditalDeEntrada <= numeroDaVersao
+            && (m.Vigencia.VersaoDoEditalDeSaida == null || m.Vigencia.VersaoDoEditalDeSaida > numeroDaVersao);
+
+    /// <summary>As escolhas atuais: as que ainda não saíram do edital.</summary>
+    public static Expression<Func<MotivoDoProcesso, bool>> NaEscolhaAtual =>
+        m => m.Vigencia.VersaoDoEditalDeSaida == null;
 }

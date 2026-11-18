@@ -64,24 +64,19 @@ internal static class CadastrosVivos
 
     private static RegraCatalogo RegraDesempate(string codigo)
     {
-        // esquema_args precisa ser objeto e invariantes precisa ser array — a factory
+        // declaracao_da_regra precisa ser objeto e invariantes precisa ser array — a factory
         // recusa qualquer outra forma, e um dublê que devolvesse null aqui só apareceria
         // como NullReferenceException lá adiante, na conferência.
         using JsonDocument esquema = JsonDocument.Parse("{}");
         using JsonDocument invariantes = JsonDocument.Parse("[]");
 
-        Result<RegraCatalogo> resultado = RegraCatalogo.Criar(
+        return RegraCatalogo.Criar(
             codigo,
             "v1",
             TipoRegra.CriterioDesempate,
             esquema.RootElement.Clone(),
             invariantes.RootElement.Clone(),
             "Regra de teste");
-
-        return resultado.IsSuccess
-            ? resultado.Value!
-            : throw new InvalidOperationException(
-                $"Dublê de regra de desempate inválido para '{codigo}': {resultado.Error?.Message}");
     }
 
     public static IModalidadeReader Modalidades(params string[] codigos)
@@ -143,7 +138,7 @@ internal static class CadastrosVivos
     }
 
     public static ModalidadeView Modalidade(string codigo) =>
-        new(IdentidadeDe(codigo), codigo, null, "COTA_RESERVADA", "DENTRO_DO_VR", null, null, null, null, null, PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, null);
+        new(IdentidadeDe(codigo), codigo, null, "COTA_RESERVADA", "DENTRO_DA_RESERVA_LEGAL", null, null, null, null, null, PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, null);
 
     public static TipoDocumentoView TipoDocumento(string codigo) =>
         new(IdentidadeDe(codigo), codigo, "Documento", "OUTROS", ClassificacaoDeProtecao.Pessoal, "Comprovação documental do candidato.", "CUMPRIMENTO_OBRIGACAO_LEGAL", ProtecaoAprovada: true);
@@ -153,7 +148,7 @@ internal static class CadastrosVivos
     /// outro assunto. Quem testa o recorte de caráter declara os sinalizadores explicitamente.
     /// </summary>
     public static TipoEtapaView TipoEtapa(string codigo) =>
-        new(IdentidadeDe(codigo), codigo, "Etapa", null, AdmitePontuacao: true, AdmiteEliminacao: true, NotaDeOrigemNoEnem: false, ConceitosAdmitidos: []);
+        new(IdentidadeDe(codigo), codigo, "Etapa", null, AdmitePontuacao: true, AdmiteEliminacao: true, NotaDeOrigemNoEnem: false, ExigeCorrecaoIndependente: false, ConceitosAdmitidos: []);
 
     /// <summary>
     /// Identidade que o cadastro atribui a um código, estável por código dentro da suíte.

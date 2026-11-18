@@ -21,6 +21,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -191,8 +192,8 @@ public sealed class MinhasInscricoesQueryHandlerTests
 
     private static VersaoConfiguracao NovaVersao(Guid processoId) =>
         VersaoConfiguracao.Abrir(
-            processoId, Encoding.UTF8.GetBytes("{}"), SchemaVersion, "canonical-json/sha256@v1",
-            Guid.CreateVersion7(), new string('a', 64), "user-conta-1", new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero));
+            processoId, new DocumentoCongelado(Encoding.UTF8.GetBytes("{}"), SchemaVersion, "canonical-json/sha256@v1", new string('a', 64)),
+            Guid.CreateVersion7(), "user-conta-1", new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero));
 
     /// <summary>Um registro de codecs que reidrata cada versão no envelope dela.</summary>
     private static IRegistroCodecsEnvelope RegistroDas(params (VersaoConfiguracao Versao, EnvelopeReidratado Envelope)[] versoes)

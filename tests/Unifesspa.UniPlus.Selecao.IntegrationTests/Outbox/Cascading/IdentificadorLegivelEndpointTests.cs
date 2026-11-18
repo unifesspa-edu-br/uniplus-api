@@ -39,7 +39,7 @@ public sealed class IdentificadorLegivelEndpointTests
         (HttpClient client, Guid processoId, _) = await SemearAsync(nameof(Rascunho_DefineERelê));
         string novo = IdentificadoresDeTeste.NovoValor();
 
-        HttpResponseMessage resposta = await PutIdentificadorAsync(client, processoId, novo, ifMatch: null);
+        HttpResponseMessage resposta = await PutIdentificadorAsync(client, processoId, novo);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
         using HttpRequestMessage obter = new(HttpMethod.Get, new Uri($"{Rota}/{processoId}", UriKind.Relative));
@@ -56,7 +56,7 @@ public sealed class IdentificadorLegivelEndpointTests
         (_, Guid outroId, _) = await SemearAsync($"{nameof(EmUso_Conflito)} outro");
         string doOutro = await LerIdentificadorAsync(outroId);
 
-        HttpResponseMessage resposta = await PutIdentificadorAsync(client, processoId, doOutro, ifMatch: null);
+        HttpResponseMessage resposta = await PutIdentificadorAsync(client, processoId, doOutro);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.Conflict);
         (await LerCodigoAsync(resposta)).Should().Be("uniplus.selecao.processo_seletivo.identificador_legivel_em_uso");
@@ -70,7 +70,7 @@ public sealed class IdentificadorLegivelEndpointTests
     {
         (HttpClient client, Guid processoId, _) = await SemearAsync(nameof(FormatoInvalido_Recusa));
 
-        HttpResponseMessage resposta = await PutIdentificadorAsync(client, processoId, valor, ifMatch: null);
+        HttpResponseMessage resposta = await PutIdentificadorAsync(client, processoId, valor);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await LerCodigoAsync(resposta)).Should().Be(codigo);
@@ -82,27 +82,24 @@ public sealed class IdentificadorLegivelEndpointTests
         (HttpClient client, Guid processoId, _) = await SemearAsync(nameof(Rascunho_Remover_Recusa));
         string original = await LerIdentificadorAsync(processoId);
 
-        HttpResponseMessage resposta = await PutIdentificadorAsync(client, processoId, null, ifMatch: null);
+        HttpResponseMessage resposta = await PutIdentificadorAsync(client, processoId, null);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await LerCodigoAsync(resposta)).Should().Be("uniplus.selecao.processo_seletivo.identificador_legivel_ausente");
         (await LerIdentificadorAsync(processoId)).Should().Be(original);
     }
 
-    [Fact(DisplayName = "Identificador de certame publicado não muda, nem na sessão de retificação")]
+    [Fact(DisplayName = "Identificador de certame publicado não muda")]
     public async Task Publicado_Imutavel()
     {
         (HttpClient client, Guid processoId, Guid documentoId) = await SemearAsync(nameof(Publicado_Imutavel));
         string original = await LerIdentificadorAsync(processoId);
         (await PublicarAsync(client, processoId, documentoId)).StatusCode.Should().Be(HttpStatusCode.NoContent);
-        HttpResponseMessage abertura = await AbrirRetificacaoAsync(client, processoId);
-        abertura.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        HttpResponseMessage resposta = await PutIdentificadorAsync(
-            client, processoId, IdentificadoresDeTeste.NovoValor(), abertura.Headers.ETag!.ToString());
+        HttpResponseMessage resposta = await PutIdentificadorAsync(client, processoId, IdentificadoresDeTeste.NovoValor());
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        (await LerCodigoAsync(resposta)).Should().Be("uniplus.selecao.processo_seletivo.identificador_legivel_imutavel");
+        (await LerCodigoAsync(resposta)).Should().Be("uniplus.selecao.processo_seletivo.mutacao_pos_publicacao_bloqueada");
         (await LerIdentificadorAsync(processoId)).Should().Be(original);
     }
 
@@ -114,7 +111,7 @@ public sealed class IdentificadorLegivelEndpointTests
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
-            .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}");
+            .SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"{nome} {Guid.CreateVersion7()}" });
         return (api.CreateClient(), processo.Id, documento.Id);
     }
 
@@ -127,7 +124,7 @@ public sealed class IdentificadorLegivelEndpointTests
     }
 
     private static async Task<HttpResponseMessage> PutIdentificadorAsync(
-        HttpClient client, Guid processoId, string? identificador, string? ifMatch)
+        HttpClient client, Guid processoId, string? identificador)
     {
         using HttpRequestMessage request = new(
             HttpMethod.Put, new Uri($"{Rota}/{processoId}/identificador-legivel", UriKind.Relative))
@@ -136,11 +133,6 @@ public sealed class IdentificadorLegivelEndpointTests
         };
         AppendTestAuth(request);
         request.Headers.TryAddWithoutValidation("Idempotency-Key", MakeIdempotencyKey());
-        if (ifMatch is not null)
-        {
-            request.Headers.TryAddWithoutValidation("If-Match", ifMatch);
-        }
-
         return await client.SendAsync(request);
     }
 
@@ -162,18 +154,6 @@ public sealed class IdentificadorLegivelEndpointTests
                     tipoAtoCodigo = "EDITAL_ABERTURA",
                 },
             }),
-        };
-        AppendTestAuth(request);
-        request.Headers.TryAddWithoutValidation("Idempotency-Key", MakeIdempotencyKey());
-        return await client.SendAsync(request);
-    }
-
-    private static async Task<HttpResponseMessage> AbrirRetificacaoAsync(HttpClient client, Guid processoId)
-    {
-        using HttpRequestMessage request = new(
-            HttpMethod.Post, new Uri($"{Rota}/{processoId}/retificacao-em-curso", UriKind.Relative))
-        {
-            Content = JsonContent.Create(new { motivo = "Correção do prazo" }),
         };
         AppendTestAuth(request);
         request.Headers.TryAddWithoutValidation("Idempotency-Key", MakeIdempotencyKey());

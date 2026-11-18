@@ -27,7 +27,7 @@ public static class PrecedenciaFaseSeed
     /// <summary>As seis arestas estruturais, na ordem canônica de §3.3.</summary>
     public static IReadOnlyList<PrecedenciaFaseSeedItem> Itens { get; } =
     [
-        new(SeedId(1), "INSCRICAO", "HOMOLOGACAO", false),
+        new(SeedId(1), "INSCRICAO", "HOMOLOGACAO_INSCRICOES", false),
         new(SeedId(2), "RESULTADO_PRELIMINAR", "RECURSOS", false),
         new(SeedId(3), "RECURSOS", "RESULTADO_FINAL", false),
         new(SeedId(4), "RESULTADO_FINAL", "HABILITACAO", false),

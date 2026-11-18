@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -25,7 +26,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 internal static class SerializacaoDosFormularios
 {
     internal static JsonArray SerializarFormularios(ProcessoSeletivo processo) =>
-        new([.. processo.Formularios.OrderBy(static f => f.Finalidade).Select(formulario => (JsonNode)new JsonObject
+        new([.. OrdemCanonicaDaConfiguracao.Formularios(processo.Formularios).Select(formulario => (JsonNode)new JsonObject
         {
             ["finalidade"] = EstruturaFormulario.ParaToken(formulario.Finalidade),
             ["faseId"] = formulario.FaseId is { } fase ? JsonValue.Create(fase) : null,
@@ -60,6 +61,8 @@ internal static class SerializacaoDosFormularios
         ["ordem"] = termo.Ordem,
         ["termoId"] = JsonValue.Create(termo.TermoId),
         ["versaoId"] = JsonValue.Create(termo.VersaoId),
+        ["termoCodigo"] = HashCanonicalComputer.NormalizeNfc(termo.TermoCodigo),
+        ["versaoNumero"] = termo.VersaoNumero,
         ["nome"] = HashCanonicalComputer.NormalizeNfc(termo.Nome),
         ["texto"] = HashCanonicalComputer.NormalizeNfc(termo.Texto),
         ["baseLegal"] = HashCanonicalComputer.NormalizeNfc(termo.BaseLegal),

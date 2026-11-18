@@ -857,6 +857,21 @@
       "titulo": "O operador da condição não é reconhecido"
     },
     {
+      "codigo": "uniplus.configuracao.base_legal_bonus_regional.codigo_formato_invalido",
+      "status": 422,
+      "titulo": "Código da base legal de bônus regional fora do formato"
+    },
+    {
+      "codigo": "uniplus.configuracao.base_legal_bonus_regional.codigo_ja_existe",
+      "status": 409,
+      "titulo": "Já existe uma base legal de bônus regional com este código"
+    },
+    {
+      "codigo": "uniplus.configuracao.base_legal_bonus_regional.codigo_tamanho",
+      "status": 422,
+      "titulo": "Código da base legal de bônus regional passa do tamanho máximo"
+    },
+    {
       "codigo": "uniplus.configuracao.base_legal_bonus_regional.descricao_caractere_invalido",
       "status": 422,
       "titulo": "A descrição da base legal de bônus regional contém o caractere nulo, de controle ou de formatação"
@@ -1672,11 +1687,6 @@
       "titulo": "A ampla concorrência vale para todo candidato e não admite condição"
     },
     {
-      "codigo": "uniplus.configuracao.modalidade.argumento_remanejamento_obrigatorio",
-      "status": 422,
-      "titulo": "Argumentos de remanejamento incompatíveis com a regra declarada"
-    },
-    {
       "codigo": "uniplus.configuracao.modalidade.base_legal_tamanho",
       "status": 422,
       "titulo": "Tamanho da base legal da modalidade inválido"
@@ -1742,14 +1752,19 @@
       "titulo": "Regra de remanejamento incoerente com a natureza legal da modalidade"
     },
     {
-      "codigo": "uniplus.configuracao.modalidade.origem_apenas_para_retira_de",
+      "codigo": "uniplus.configuracao.modalidade.origem_apenas_para_retirada_de_outra_modalidade",
       "status": 422,
       "titulo": "Somente a composição 'retira de' admite modalidade de origem"
     },
     {
-      "codigo": "uniplus.configuracao.modalidade.origem_obrigatoria_para_retira_de",
+      "codigo": "uniplus.configuracao.modalidade.origem_obrigatoria_para_retirada_de_outra_modalidade",
       "status": 422,
       "titulo": "A modalidade com composição 'retira de' exige a modalidade de origem"
+    },
+    {
+      "codigo": "uniplus.configuracao.modalidade.parametros_remanejamento_obrigatorio",
+      "status": 422,
+      "titulo": "Parâmetros de remanejamento incompatíveis com a regra declarada"
     },
     {
       "codigo": "uniplus.configuracao.modalidade.referencia_inexistente_ou_inativa",
@@ -1955,6 +1970,21 @@
       "codigo": "uniplus.configuracao.oferta_curso.cardinalidade_turnos_incompativel_com_regime",
       "status": 422,
       "titulo": "Quantidade de turnos incompatível com o regime declarado"
+    },
+    {
+      "codigo": "uniplus.configuracao.oferta_curso.codigo_formato_invalido",
+      "status": 422,
+      "titulo": "O código da oferta de curso está fora do formato"
+    },
+    {
+      "codigo": "uniplus.configuracao.oferta_curso.codigo_ja_em_uso",
+      "status": 409,
+      "titulo": "Já existe uma oferta de curso ativa com este código"
+    },
+    {
+      "codigo": "uniplus.configuracao.oferta_curso.codigo_obrigatorio",
+      "status": 422,
+      "titulo": "O código da oferta de curso é obrigatório"
     },
     {
       "codigo": "uniplus.configuracao.oferta_curso.codigo_sga_tamanho",
@@ -2457,6 +2487,21 @@
       "titulo": "Tamanho da base legal do rascunho inválido"
     },
     {
+      "codigo": "uniplus.configuracao.termo_consentimento.codigo_formato_invalido",
+      "status": 422,
+      "titulo": "Código do termo de consentimento fora do formato"
+    },
+    {
+      "codigo": "uniplus.configuracao.termo_consentimento.codigo_ja_existe",
+      "status": 409,
+      "titulo": "Já existe um termo de consentimento com este código"
+    },
+    {
+      "codigo": "uniplus.configuracao.termo_consentimento.codigo_tamanho",
+      "status": 422,
+      "titulo": "Código do termo de consentimento passa do tamanho máximo"
+    },
+    {
       "codigo": "uniplus.configuracao.termo_consentimento.conflito_de_concorrencia",
       "status": 409,
       "titulo": "O rascunho foi modificado concorrentemente"
@@ -2857,6 +2902,16 @@
       "titulo": "Tipo de etapa alterado concorrentemente"
     },
     {
+      "codigo": "uniplus.configuracao.tipo_etapa.correcao_independente_com_nota_de_origem_no_enem",
+      "status": 422,
+      "titulo": "Tipo de etapa com nota de origem no ENEM não admite correção independente"
+    },
+    {
+      "codigo": "uniplus.configuracao.tipo_etapa.correcao_independente_sem_conceito",
+      "status": 422,
+      "titulo": "Tipo de etapa que exige correção independente deve admitir conceito"
+    },
+    {
       "codigo": "uniplus.configuracao.tipo_etapa.descricao_caractere_invalido",
       "status": 422,
       "titulo": "A descrição do tipo de etapa contém o caractere nulo, de controle ou de formatação"
@@ -2865,6 +2920,11 @@
       "codigo": "uniplus.configuracao.tipo_etapa.descricao_tamanho",
       "status": 422,
       "titulo": "Tamanho da descrição do tipo de etapa inválido"
+    },
+    {
+      "codigo": "uniplus.configuracao.tipo_etapa.exige_correcao_independente_obrigatorio",
+      "status": 422,
+      "titulo": "Declaração de que o tipo de etapa exige correção independente é obrigatória"
     },
     {
       "codigo": "uniplus.configuracao.tipo_etapa.ja_desativado",
@@ -3587,6 +3647,11 @@
       "titulo": "Tamanho do alias da unidade inválido"
     },
     {
+      "codigo": "uniplus.organizacao.unidade.codigo_formato_invalido",
+      "status": 422,
+      "titulo": "Código da unidade fora do formato aceito"
+    },
+    {
       "codigo": "uniplus.organizacao.unidade.codigo_ja_existe",
       "status": 409,
       "titulo": "Já existe uma unidade ativa com este código"
@@ -3725,6 +3790,11 @@
       "codigo": "uniplus.predicado_dnf.fato_nao_coletado_pelo_processo",
       "status": 422,
       "titulo": "O fato da condição não é coletado por este processo"
+    },
+    {
+      "codigo": "uniplus.predicado_dnf.forma_json_invalida",
+      "status": 422,
+      "titulo": "O predicado ou a obrigatoriedade não tem a forma esperada"
     },
     {
       "codigo": "uniplus.predicado_dnf.operador_incompativel_com_dominio",
@@ -4439,7 +4509,7 @@
     {
       "codigo": "uniplus.selecao.configuracao_cascata_remanejamento.matriz_divergente_da_regra",
       "status": 422,
-      "titulo": "A cascata informada diverge do esquema_args da regra referenciada"
+      "titulo": "A ordem de remanejamento informada diverge da declaração da regra referenciada"
     },
     {
       "codigo": "uniplus.selecao.configuracao_cascata_remanejamento.ordem_duplicada_na_origem",
@@ -4634,7 +4704,7 @@
     {
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.composicao_origem_nao_selecionada",
       "status": 422,
-      "titulo": "A origem da composição RETIRA_DE não está selecionada nesta oferta"
+      "titulo": "A origem da composição RETIRADA_DE_OUTRA_MODALIDADE não está selecionada nesta oferta"
     },
     {
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.modalidade_do_rol_ausente",
@@ -4667,7 +4737,7 @@
       "titulo": "A oferta deve ter ao menos uma modalidade selecionada"
     },
     {
-      "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.motor_de_ajuste_vedado_na_lei_12711",
+      "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.motor_de_ajuste_vedado_na_lei_de_cotas",
       "status": 422,
       "titulo": "Motor de redução não se aplica à distribuição pela Lei 12.711"
     },
@@ -4682,14 +4752,14 @@
       "titulo": "Par de remanejamento cruzado não aponta de volta"
     },
     {
-      "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.pr_fora_do_limite",
+      "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.percentual_da_reserva_legal_fora_do_limite",
       "status": 422,
-      "titulo": "PR deve estar entre 0,5 e 1,0 (art. 10, II)"
+      "titulo": "O percentual da reserva legal deve estar entre 0,5 e 1,0 (art. 10, II)"
     },
     {
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.quadro_ampla_concorrencia_negativa",
       "status": 422,
-      "titulo": "A ampla concorrência resultaria negativa — ajuste o VO, o PR ou as retiradas"
+      "titulo": "A ampla concorrência resultaria negativa — ajuste as vagas ofertadas base, o percentual da reserva legal ou as retiradas"
     },
     {
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.quadro_chave_colide",
@@ -4697,7 +4767,7 @@
       "titulo": "Uma retirada ou suplemento não pode usar o código de uma sub-reserva federal ou da ampla concorrência"
     },
     {
-      "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.quadro_excede_vo_base",
+      "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.quadro_excede_as_vagas_ofertadas_base",
       "status": 422,
       "titulo": "Quadro de vagas acima do total da oferta"
     },
@@ -4712,7 +4782,7 @@
       "titulo": "O quadro traz uma modalidade que não está selecionada nesta oferta"
     },
     {
-      "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.quadro_nao_completa_vo_base",
+      "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.quadro_nao_completa_as_vagas_ofertadas_base",
       "status": 422,
       "titulo": "Quadro de vagas abaixo do total da oferta"
     },
@@ -4797,14 +4867,14 @@
       "titulo": "No ramo federal, toda modalidade de retirada só pode retirar da ampla concorrência"
     },
     {
-      "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.vo_base_acima_das_vagas_autorizadas",
+      "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.vagas_ofertadas_base_acima_das_vagas_autorizadas",
       "status": 422,
-      "titulo": "VO_base acima das vagas anuais autorizadas da oferta"
+      "titulo": "Vagas ofertadas base acima das vagas anuais autorizadas da oferta"
     },
     {
-      "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.vo_base_invalido",
+      "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.vagas_ofertadas_base_invalido",
       "status": 422,
-      "titulo": "VO_base deve ser maior que zero"
+      "titulo": "As vagas ofertadas base devem ser maiores que zero"
     },
     {
       "codigo": "uniplus.selecao.configuracao_divulgacao.campo_nao_permitido",
@@ -4887,11 +4957,6 @@
       "titulo": "O critério de desempate por área do ENEM exige ao menos uma área"
     },
     {
-      "codigo": "uniplus.selecao.criterio_desempate.args_incompativeis_com_regra",
-      "status": 422,
-      "titulo": "Os args informados não correspondem à regra referenciada"
-    },
-    {
       "codigo": "uniplus.selecao.criterio_desempate.etapa_ref_obrigatorio",
       "status": 422,
       "titulo": "EtapaRef é obrigatório para a regra DESEMPATE-MAIOR-NOTA-ETAPA"
@@ -4910,6 +4975,11 @@
       "codigo": "uniplus.selecao.criterio_desempate.ordem_invalida",
       "status": 422,
       "titulo": "A ordem do critério de desempate deve ser maior que zero"
+    },
+    {
+      "codigo": "uniplus.selecao.criterio_desempate.parametros_incompativeis_com_regra",
+      "status": 422,
+      "titulo": "Os parâmetros informados não correspondem à regra referenciada"
     },
     {
       "codigo": "uniplus.selecao.criterio_desempate.predicado_fato_incompleto",
@@ -5030,6 +5100,56 @@
       "codigo": "uniplus.selecao.documento_a_publicar.tipo_de_midia_nao_aceito",
       "status": 422,
       "titulo": "O tipo de mídia deve ser PDF, DOCX ou ODT"
+    },
+    {
+      "codigo": "uniplus.selecao.documento_da_configuracao.acima_do_limite",
+      "status": 413,
+      "titulo": "O documento passa de um limite do formato"
+    },
+    {
+      "codigo": "uniplus.selecao.documento_da_configuracao.campo_desconhecido",
+      "status": 422,
+      "titulo": "O documento tem um campo que o formato não define"
+    },
+    {
+      "codigo": "uniplus.selecao.documento_da_configuracao.campo_obrigatorio_ausente",
+      "status": 422,
+      "titulo": "O documento não traz um campo que o formato exige"
+    },
+    {
+      "codigo": "uniplus.selecao.documento_da_configuracao.chave_citada_inexistente",
+      "status": 422,
+      "titulo": "Uma parte do documento cita uma chave que nenhuma parte do tipo citado tem"
+    },
+    {
+      "codigo": "uniplus.selecao.documento_da_configuracao.chave_repetida",
+      "status": 422,
+      "titulo": "Duas partes do mesmo tipo têm a mesma chave"
+    },
+    {
+      "codigo": "uniplus.selecao.documento_da_configuracao.forma_invalida",
+      "status": 422,
+      "titulo": "O documento não respeita o formato da configuração do processo seletivo"
+    },
+    {
+      "codigo": "uniplus.selecao.documento_da_configuracao.propriedade_repetida",
+      "status": 422,
+      "titulo": "Um objeto do documento repete uma propriedade"
+    },
+    {
+      "codigo": "uniplus.selecao.documento_da_configuracao.tipo_invalido",
+      "status": 422,
+      "titulo": "O valor de um campo do documento tem o tipo errado"
+    },
+    {
+      "codigo": "uniplus.selecao.documento_da_configuracao.valor_invalido",
+      "status": 422,
+      "titulo": "O valor de um campo do documento não respeita o formato"
+    },
+    {
+      "codigo": "uniplus.selecao.documento_da_configuracao.versao_do_formato_nao_suportada",
+      "status": 422,
+      "titulo": "O formato ou a versão do formato do documento não é suportado"
     },
     {
       "codigo": "uniplus.selecao.documento_da_inscricao.apresentacao_nao_encontrada",
@@ -5247,11 +5367,6 @@
       "titulo": "O envelope referencia um código de regra fora do rol conhecido"
     },
     {
-      "codigo": "uniplus.selecao.envelope_codec.round_trip_divergente",
-      "status": 422,
-      "titulo": "A configuração reidratada não reproduz os bytes congelados"
-    },
-    {
       "codigo": "uniplus.selecao.envelope_codec.versao_desconhecida",
       "status": 422,
       "titulo": "A versão do envelope congelado não está no registro de codecs"
@@ -5264,7 +5379,7 @@
     {
       "codigo": "uniplus.selecao.etapa_processo.ancora_nao_eh_produto_preliminar_da_etapa",
       "status": 422,
-      "titulo": "O recurso contra ato publicado ancora num resultado preliminar da própria etapa"
+      "titulo": "O prazo do recurso contra ato publicado começa na publicação de um resultado preliminar da própria etapa; indique um resultado preliminar publicado pela etapa"
     },
     {
       "codigo": "uniplus.selecao.etapa_processo.ato_duplicado_na_etapa",
@@ -5297,6 +5412,11 @@
       "titulo": "O prazo contado da ciência exige que a etapa prometa parecer individual"
     },
     {
+      "codigo": "uniplus.selecao.etapa_processo.correcao_independente_com_menos_de_dois_corretores",
+      "status": 422,
+      "titulo": "O tipo da etapa exige correção independente, e a regra de consolidação congelada tem menos de dois corretores distintos"
+    },
+    {
       "codigo": "uniplus.selecao.etapa_processo.escala_na_forma_objetiva",
       "status": 422,
       "titulo": "A escala de atendimento só se aplica à etapa de avaliação humana"
@@ -5312,6 +5432,11 @@
       "titulo": "A forma de avaliação declarada não existe: use OBJETIVA ou HUMANA"
     },
     {
+      "codigo": "uniplus.selecao.etapa_processo.forma_objetiva_em_tipo_que_exige_correcao_independente",
+      "status": 422,
+      "titulo": "O tipo da etapa exige correção independente, que só existe na avaliação humana"
+    },
+    {
       "codigo": "uniplus.selecao.etapa_processo.itens_na_etapa_do_enem",
       "status": 422,
       "titulo": "A etapa de nota do ENEM não declara itens de avaliação nem escala de atendimento"
@@ -5319,7 +5444,7 @@
     {
       "codigo": "uniplus.selecao.etapa_processo.janela_invertida",
       "status": 422,
-      "titulo": "O fim da janela da etapa é anterior ao início"
+      "titulo": "A data de término do período da etapa é anterior à data de início"
     },
     {
       "codigo": "uniplus.selecao.etapa_processo.nome_obrigatorio",
@@ -5389,7 +5514,7 @@
     {
       "codigo": "uniplus.selecao.etapa_processo.recurso_duplicado_na_etapa",
       "status": 422,
-      "titulo": "Cada fato recorrível abre uma única janela de interposição"
+      "titulo": "Cada fato recorrível abre um único prazo de interposição; declare um só recurso para cada fato"
     },
     {
       "codigo": "uniplus.selecao.etapa_processo.regra_de_consolidacao_fora_da_forma_humana",
@@ -5400,6 +5525,11 @@
       "codigo": "uniplus.selecao.etapa_processo.regra_de_consolidacao_invalida",
       "status": 422,
       "titulo": "A regra declarada não é uma regra de consolidação do catálogo"
+    },
+    {
+      "codigo": "uniplus.selecao.etapa_processo.regra_de_consolidacao_nao_resolvida",
+      "status": 422,
+      "titulo": "A regra de consolidação de uma etapa não pôde ser confirmada no catálogo"
     },
     {
       "codigo": "uniplus.selecao.etapa_processo.tipo_banca_nao_encontrado_ou_inativo",
@@ -5439,12 +5569,12 @@
     {
       "codigo": "uniplus.selecao.fase_cronograma.janela_invertida",
       "status": 422,
-      "titulo": "O fim da janela da fase não pode anteceder o início"
+      "titulo": "A data de término do período da fase é anterior à data de início"
     },
     {
       "codigo": "uniplus.selecao.fase_cronograma.janela_obrigatoria_em_data_no_edital",
       "status": 422,
-      "titulo": "Fase com a data fixada no edital exige início e fim da janela"
+      "titulo": "Fase com data fixada no edital exige início e término do período"
     },
     {
       "codigo": "uniplus.selecao.fase_cronograma.parecer_individual_sem_resultado",
@@ -5537,11 +5667,6 @@
       "titulo": "O tamanho máximo em bytes por formato, quando presente, deve ser maior que zero"
     },
     {
-      "codigo": "uniplus.selecao.formulario_processo.aplicacao_de_modelo_so_em_rascunho",
-      "status": 422,
-      "titulo": "O modelo se aplica só em rascunho"
-    },
-    {
       "codigo": "uniplus.selecao.formulario_processo.fase_fora_do_cronograma",
       "status": 422,
       "titulo": "A fase do formulário não está no cronograma do processo"
@@ -5560,11 +5685,6 @@
       "codigo": "uniplus.selecao.formulario_processo.isencao_sem_taxa",
       "status": 422,
       "titulo": "Formulário de isenção de taxa em processo que não cobra taxa"
-    },
-    {
-      "codigo": "uniplus.selecao.formulario_processo.remocao_so_em_rascunho",
-      "status": 422,
-      "titulo": "A retificação acrescenta formulário, mas não remove"
     },
     {
       "codigo": "uniplus.selecao.grafo_dependencia_conjunta.grafo_conjunto_com_ciclo",
@@ -5630,6 +5750,31 @@
       "codigo": "uniplus.selecao.grupo_peso_area_enem_congelado.sem_areas",
       "status": 422,
       "titulo": "Cada grupo do quadro de pesos por área precisa de ao menos uma área"
+    },
+    {
+      "codigo": "uniplus.selecao.homologacao_das_inscricoes.alternativa_sem_condicao",
+      "status": 422,
+      "titulo": "A alternativa da regra de homologação não tem condição"
+    },
+    {
+      "codigo": "uniplus.selecao.homologacao_das_inscricoes.condicao_nao_disponivel",
+      "status": 422,
+      "titulo": "A condição de homologação ainda não é apurada pelo sistema"
+    },
+    {
+      "codigo": "uniplus.selecao.homologacao_das_inscricoes.confirmacao_do_inep_ausente",
+      "status": 422,
+      "titulo": "A confirmação do INEP não está entre as condições da homologação"
+    },
+    {
+      "codigo": "uniplus.selecao.homologacao_das_inscricoes.edicao_do_exame_invalida",
+      "status": 422,
+      "titulo": "A edição do exame da condição é inválida (de 1998 a 2100)"
+    },
+    {
+      "codigo": "uniplus.selecao.homologacao_das_inscricoes.resultado_nao_declarado",
+      "status": 422,
+      "titulo": "A regra de homologação das inscrições não aponta um resultado da fase"
     },
     {
       "codigo": "uniplus.selecao.idade_maxima_emissao.campos_incoerentes_com_ausencia",
@@ -6004,12 +6149,12 @@
     {
       "codigo": "uniplus.selecao.modalidade_selecionada.composicao_origem_indevida",
       "status": 422,
-      "titulo": "Código de origem só se aplica à composição RETIRA_DE"
+      "titulo": "Código de origem só se aplica à composição RETIRADA_DE_OUTRA_MODALIDADE"
     },
     {
       "codigo": "uniplus.selecao.modalidade_selecionada.composicao_origem_obrigatoria",
       "status": 422,
-      "titulo": "Modalidade com composição RETIRA_DE exige o código de origem"
+      "titulo": "Modalidade com composição RETIRADA_DE_OUTRA_MODALIDADE exige o código de origem"
     },
     {
       "codigo": "uniplus.selecao.modalidade_selecionada.composicao_vagas_obrigatoria",
@@ -6099,7 +6244,7 @@
     {
       "codigo": "uniplus.selecao.motivo_de_decisao.avaliacao_iniciada",
       "status": 422,
-      "titulo": "A avaliação desta decisão já começou"
+      "titulo": "A avaliação nesta fase ou etapa já começou"
     },
     {
       "codigo": "uniplus.selecao.motivo_de_decisao.cobertura_insuficiente",
@@ -6137,6 +6282,11 @@
       "titulo": "Descrição do motivo fora do tamanho permitido"
     },
     {
+      "codigo": "uniplus.selecao.motivo_de_decisao.fase_ou_etapa_nao_encontrada",
+      "status": 404,
+      "titulo": "Fase ou etapa não encontrada no processo"
+    },
+    {
       "codigo": "uniplus.selecao.motivo_de_decisao.ja_ativo",
       "status": 422,
       "titulo": "O motivo já está ativo"
@@ -6144,7 +6294,7 @@
     {
       "codigo": "uniplus.selecao.motivo_de_decisao.ja_escolhido",
       "status": 409,
-      "titulo": "O processo já escolheu este motivo"
+      "titulo": "O processo já escolheu este motivo nesta fase ou etapa"
     },
     {
       "codigo": "uniplus.selecao.motivo_de_decisao.ja_inativo",
@@ -6184,7 +6334,7 @@
     {
       "codigo": "uniplus.selecao.motivo_de_decisao.nao_escolhido",
       "status": 404,
-      "titulo": "O processo não escolheu este motivo"
+      "titulo": "O processo não escolheu este motivo nesta fase ou etapa"
     },
     {
       "codigo": "uniplus.selecao.motivo_de_decisao.retirada_apos_publicacao",
@@ -6222,6 +6372,16 @@
       "titulo": "O tipo exige subclassificação"
     },
     {
+      "codigo": "uniplus.selecao.motivo_de_decisao.tipo_de_decisao_duplicado",
+      "status": 422,
+      "titulo": "Tipo de decisão declarado mais de uma vez"
+    },
+    {
+      "codigo": "uniplus.selecao.motivo_de_decisao.tipo_de_decisao_nao_declarado",
+      "status": 422,
+      "titulo": "A fase ou etapa não declara o tipo de decisão"
+    },
+    {
       "codigo": "uniplus.selecao.motivo_de_decisao.tipo_invalido",
       "status": 422,
       "titulo": "Tipo de decisão desconhecido"
@@ -6230,6 +6390,11 @@
       "codigo": "uniplus.selecao.motivo_de_decisao.tipo_obrigatorio",
       "status": 422,
       "titulo": "Tipo do motivo é obrigatório"
+    },
+    {
+      "codigo": "uniplus.selecao.motivo_de_decisao.versao_nao_publicada",
+      "status": 404,
+      "titulo": "O processo não tem esta versão do edital publicada"
     },
     {
       "codigo": "uniplus.selecao.nivel_de_atendimento.duplicado",
@@ -6649,7 +6814,7 @@
     {
       "codigo": "uniplus.selecao.precondicao_falhou",
       "status": 412,
-      "titulo": "O If-Match não corresponde ao estado atual da sessão editorial"
+      "titulo": "O If-Match não corresponde ao estado atual do recurso"
     },
     {
       "codigo": "uniplus.selecao.precondicao_malformada",
@@ -6659,7 +6824,7 @@
     {
       "codigo": "uniplus.selecao.precondicao_requerida",
       "status": 428,
-      "titulo": "Há uma retificação em curso — a mutação exige o If-Match com o ETag da sessão"
+      "titulo": "A mutação exige o If-Match com o ETag corrente"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.acao_quando_indeferido_divergente",
@@ -6689,7 +6854,7 @@
     {
       "codigo": "uniplus.selecao.processo_seletivo.avaliacao_sem_etapa",
       "status": 422,
-      "titulo": "Há fase que agrupa etapas, mas o processo não tem etapa pontuada"
+      "titulo": "Fase que agrupa etapas sem nenhuma etapa que aconteça nela"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.bonus_regional_aplica_sem_configuracao",
@@ -6797,16 +6962,6 @@
       "titulo": "O fato é derivado das modalidades que o processo oferta e não se configura no processo"
     },
     {
-      "codigo": "uniplus.selecao.processo_seletivo.descarte_com_versao_errada",
-      "status": 500,
-      "titulo": "A configuração reposta não é a da versão base da retificação"
-    },
-    {
-      "codigo": "uniplus.selecao.processo_seletivo.descarte_sem_restauracao",
-      "status": 500,
-      "titulo": "A sessão editorial não pode ser encerrada sem repor a configuração congelada"
-    },
-    {
       "codigo": "uniplus.selecao.processo_seletivo.desempate_area_enem_fora_do_quadro",
       "status": 422,
       "titulo": "O desempate cita área do ENEM que o quadro de pesos por área não tem"
@@ -6859,7 +7014,7 @@
     {
       "codigo": "uniplus.selecao.processo_seletivo.etapa_fora_da_janela_da_fase",
       "status": 422,
-      "titulo": "A etapa acontece inteira fora da janela da fase que a abriga"
+      "titulo": "A etapa acontece inteira fora do período da fase que a abriga; ajuste as datas da etapa para ficarem dentro do período da fase"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.etapa_nota_enem_com_banca",
@@ -6869,7 +7024,7 @@
     {
       "codigo": "uniplus.selecao.processo_seletivo.etapa_nota_enem_com_produto_ou_recurso_em_ato",
       "status": 422,
-      "titulo": "Etapa de nota do ENEM não declara produto nem recurso ancorado em ato; o recurso coletivo é o da regra de recurso da fase"
+      "titulo": "Etapa de nota do ENEM não declara produto nem recurso contra ato publicado; o recurso coletivo é o da regra de recurso da fase"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.etapa_nota_enem_duplicada",
@@ -6912,11 +7067,6 @@
       "titulo": "A etapa a remover é onde um documento exigido é coletado"
     },
     {
-      "codigo": "uniplus.selecao.processo_seletivo.etapa_sem_fase_de_avaliacao",
-      "status": 422,
-      "titulo": "Há etapa pontuada, mas nenhuma fase do cronograma agrupa etapas"
-    },
-    {
       "codigo": "uniplus.selecao.processo_seletivo.etapa_sem_fase_declarada",
       "status": 422,
       "titulo": "A etapa não declara a fase em que acontece"
@@ -6954,7 +7104,7 @@
     {
       "codigo": "uniplus.selecao.processo_seletivo.fase_concluinte_comeca_antes_da_concluida",
       "status": 422,
-      "titulo": "A janela da fase concluinte começa antes da janela da fase que ela encerra"
+      "titulo": "O período da fase concluinte começa antes do período da fase que ela encerra; a fase concluinte não pode começar antes da fase que ela encerra"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.fase_concluinte_fora_do_cronograma",
@@ -7047,19 +7197,9 @@
       "titulo": "O fuso institucional aplicado não é uma zona reconhecida"
     },
     {
-      "codigo": "uniplus.selecao.processo_seletivo.id_etapa_ausente",
-      "status": 422,
-      "titulo": "Toda etapa restaurada declara o Id congelado no envelope"
-    },
-    {
       "codigo": "uniplus.selecao.processo_seletivo.id_etapa_duplicado",
       "status": 422,
-      "titulo": "O mesmo Id de etapa foi informado mais de uma vez no payload"
-    },
-    {
-      "codigo": "uniplus.selecao.processo_seletivo.id_no_exigencia_duplicado",
-      "status": 422,
-      "titulo": "O mesmo Id de nó da árvore de satisfação não pode aparecer mais de uma vez na configuração restaurada"
+      "titulo": "O mesmo identificador de etapa aparece em mais de uma etapa"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.identidade_incompleta",
@@ -7097,9 +7237,29 @@
       "titulo": "O identificador legível deve ter entre 3 e 64 caracteres"
     },
     {
+      "codigo": "uniplus.selecao.processo_seletivo.importacao_de_exame_sem_homologacao_das_inscricoes",
+      "status": 422,
+      "titulo": "O processo que usa a nota do ENEM não tem fase que homologa as inscrições"
+    },
+    {
+      "codigo": "uniplus.selecao.processo_seletivo.importacao_externa_sem_homologacao_das_inscricoes",
+      "status": 422,
+      "titulo": "O processo de importação externa não tem fase que homologa as inscrições"
+    },
+    {
+      "codigo": "uniplus.selecao.processo_seletivo.importacao_externa_sem_janela_de_recurso",
+      "status": 422,
+      "titulo": "A homologação da importação externa não tem preliminar, período de recurso e definitivo"
+    },
+    {
       "codigo": "uniplus.selecao.processo_seletivo.inscricao_propria_sem_fase_de_coleta",
       "status": 422,
       "titulo": "A origem dos candidatos é inscrição própria, e nenhuma fase coleta inscrição"
+    },
+    {
+      "codigo": "uniplus.selecao.processo_seletivo.inscricao_propria_sem_homologacao_das_inscricoes",
+      "status": 422,
+      "titulo": "O processo com inscrição própria não tem fase que homologa as inscrições"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.inscricao_sem_conjunto_basico",
@@ -7182,44 +7342,9 @@
       "titulo": "Ao menos uma etapa deve compor a nota final"
     },
     {
-      "codigo": "uniplus.selecao.processo_seletivo.no_exigencia_consequencia_nao_canonica",
-      "status": 422,
-      "titulo": "Um nó da árvore de satisfação restaurada declara uma consequência que não está na forma canônica"
-    },
-    {
       "codigo": "uniplus.selecao.processo_seletivo.no_exigencia_documento_exigido_duplicado",
       "status": 422,
-      "titulo": "Duas folhas da árvore de satisfação restaurada não podem referenciar o mesmo DocumentoExigido"
-    },
-    {
-      "codigo": "uniplus.selecao.processo_seletivo.no_exigencia_folha_com_base_legal",
-      "status": 422,
-      "titulo": "Uma folha da árvore de satisfação restaurada carrega base legal — campo exclusivo de grupo OU/N-de"
-    },
-    {
-      "codigo": "uniplus.selecao.processo_seletivo.no_exigencia_folha_com_filhos",
-      "status": 422,
-      "titulo": "Uma folha da árvore de satisfação restaurada não pode ter filhos"
-    },
-    {
-      "codigo": "uniplus.selecao.processo_seletivo.no_exigencia_folha_sem_documento_exigido",
-      "status": 422,
-      "titulo": "Uma folha da árvore de satisfação restaurada referencia um DocumentoExigido que não existe na configuração restaurada"
-    },
-    {
-      "codigo": "uniplus.selecao.processo_seletivo.no_exigencia_grupo_com_campo_de_folha",
-      "status": 422,
-      "titulo": "Um grupo da árvore de satisfação restaurada carrega chaveDistincao, dataReferencia ou ocorrenciasEsperadas — campos exclusivos de folha"
-    },
-    {
-      "codigo": "uniplus.selecao.processo_seletivo.no_exigencia_quantidade_minima_ausente",
-      "status": 422,
-      "titulo": "Uma folha ou grupo OU/N-de da árvore de satisfação restaurada não declara quantidadeMinima"
-    },
-    {
-      "codigo": "uniplus.selecao.processo_seletivo.no_exigencia_tipo_invalido",
-      "status": 422,
-      "titulo": "Um nó da árvore de satisfação restaurada tem um tipo desconhecido"
+      "titulo": "Duas folhas não podem citar a mesma exigência"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.ocorrencia_simulada_invalida",
@@ -7267,6 +7392,11 @@
       "titulo": "Cada raiz da árvore de satisfação deve ter uma ordem única dentro do processo"
     },
     {
+      "codigo": "uniplus.selecao.processo_seletivo.origem_candidatos_ausente",
+      "status": 422,
+      "titulo": "Origem dos candidatos não declarada"
+    },
+    {
       "codigo": "uniplus.selecao.processo_seletivo.periodo_inscricao_nao_informavel",
       "status": 422,
       "titulo": "O período de inscrição vem da janela da fase do cronograma que coleta inscrição e não pode ser informado na publicação"
@@ -7312,6 +7442,11 @@
       "titulo": "FIM_INSCRICAO exige uma fase que colete inscrição com Fim definido"
     },
     {
+      "codigo": "uniplus.selecao.processo_seletivo.regra_citada_nao_corresponde_ao_catalogo",
+      "status": 422,
+      "titulo": "A regra citada pela configuração não corresponde à regra atual do catálogo"
+    },
+    {
       "codigo": "uniplus.selecao.processo_seletivo.regra_de_aplicabilidade_divergente",
       "status": 422,
       "titulo": "A mesma modalidade foi copiada com regras de aplicabilidade diferentes em ofertas do processo"
@@ -7342,11 +7477,6 @@
       "titulo": "O processo oferta a reserva de pessoa com deficiência de ampla concorrência e cota da lei, sem a cota da lei para pessoa com deficiência"
     },
     {
-      "codigo": "uniplus.selecao.processo_seletivo.restauracao_fora_de_publicado",
-      "status": 422,
-      "titulo": "Só um processo publicado tem configuração congelada a restaurar"
-    },
-    {
       "codigo": "uniplus.selecao.processo_seletivo.resultado_declarado_sem_papel",
       "status": 422,
       "titulo": "O tipo de ato classificado como resultado precisa declarar papel preliminar ou definitivo"
@@ -7359,7 +7489,7 @@
     {
       "codigo": "uniplus.selecao.processo_seletivo.sobreposicao_de_janelas_nao_permitida",
       "status": 422,
-      "titulo": "As janelas de duas fases dependentes se sobrepõem, e o cadastro não permite sobreposição"
+      "titulo": "Os períodos de duas fases coincidem em parte, e o cadastro não permite essa coincidência"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.termo_exigido_sem_forma_de_aceite",
@@ -7392,6 +7522,11 @@
       "titulo": "Tipo de etapa não encontrado ou não está ativo"
     },
     {
+      "codigo": "uniplus.selecao.processo_seletivo.tipo_processo_ausente",
+      "status": 422,
+      "titulo": "Tipo de processo não declarado"
+    },
+    {
       "codigo": "uniplus.selecao.processo_seletivo.tipo_processo_nao_encontrado_ou_inativo",
       "status": 422,
       "titulo": "Tipo de processo seletivo não encontrado ou não está ativo"
@@ -7405,6 +7540,11 @@
       "codigo": "uniplus.selecao.processo_seletivo.transicao_invalida",
       "status": 422,
       "titulo": "Só é possível publicar um processo em rascunho"
+    },
+    {
+      "codigo": "uniplus.selecao.processo_seletivo.unidade_administradora_ausente",
+      "status": 422,
+      "titulo": "Unidade administradora não declarada"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.unidade_administradora_nao_encontrada",
@@ -7452,34 +7592,44 @@
       "titulo": "Só ato que é resultado no catálogo recebe papel preliminar ou definitivo"
     },
     {
-      "codigo": "uniplus.selecao.rascunho_publicacao.conteudo_muito_grande",
+      "codigo": "uniplus.selecao.rascunho_de_processo_seletivo.conteudo_do_documento_ausente",
       "status": 422,
-      "titulo": "Rascunho da publicação acima do tamanho permitido"
+      "titulo": "O documento do rascunho veio sem conteúdo"
     },
     {
-      "codigo": "uniplus.selecao.rascunho_publicacao.gravacao_concorrente",
+      "codigo": "uniplus.selecao.rascunho_de_processo_seletivo.ja_publicado",
       "status": 409,
-      "titulo": "Outra gravação do mesmo rascunho chegou primeiro"
+      "titulo": "O rascunho já virou processo seletivo"
     },
     {
-      "codigo": "uniplus.selecao.rascunho_publicacao.sem_usuario_autenticado",
+      "codigo": "uniplus.selecao.rascunho_de_processo_seletivo.nome_acima_do_limite",
       "status": 422,
-      "titulo": "O rascunho da publicação pertence a quem o escreve"
+      "titulo": "O nome do processo passa do tamanho que a listagem comporta"
     },
     {
-      "codigo": "uniplus.selecao.rascunho_publicacao.versao_invalida",
+      "codigo": "uniplus.selecao.rascunho_de_processo_seletivo.unidade_administradora_ausente",
       "status": 422,
-      "titulo": "Versão do formato do rascunho inválida"
+      "titulo": "O documento não informa a unidade administradora"
+    },
+    {
+      "codigo": "uniplus.selecao.rascunho_de_processo_seletivo.unidade_fora_da_permissao",
+      "status": 403,
+      "titulo": "Sem permissão para configurar processos na unidade informada"
+    },
+    {
+      "codigo": "uniplus.selecao.recurso_da_etapa.alvo_do_procedimento_de_recurso_inexistente",
+      "status": 422,
+      "titulo": "O alvo do procedimento de recurso não existe na etapa. Informe um item de avaliação da etapa que produz a decisão ou uma área do ENEM de processo que importa a nota do ENEM"
     },
     {
       "codigo": "uniplus.selecao.recurso_da_etapa.ancora_em_ato_congelante",
       "status": 422,
-      "titulo": "A âncora do recurso da etapa não pode ser o ato que congela a configuração"
+      "titulo": "O evento que inicia o prazo do recurso da etapa não pode ser o ato que congela a configuração; escolha outro ato"
     },
     {
       "codigo": "uniplus.selecao.recurso_da_etapa.ancora_em_ato_irreversivel",
       "status": 422,
-      "titulo": "A âncora do recurso da etapa não pode ser ato de efeito irreversível"
+      "titulo": "O evento que inicia o prazo do recurso da etapa não pode ser ato de efeito irreversível; escolha outro ato"
     },
     {
       "codigo": "uniplus.selecao.recurso_da_etapa.ancora_obrigatoria",
@@ -7507,6 +7657,31 @@
       "titulo": "O prazo de interposição precisa declarar dias úteis ou horas"
     },
     {
+      "codigo": "uniplus.selecao.recurso_da_etapa.procedimento_de_recurso_ausente",
+      "status": 422,
+      "titulo": "Há decisão sem procedimento de recurso para sua revisão"
+    },
+    {
+      "codigo": "uniplus.selecao.recurso_da_etapa.procedimento_de_recurso_conflitante",
+      "status": 422,
+      "titulo": "O tipo de decisão tem procedimento sem alvo e procedimento com alvo ao mesmo tempo"
+    },
+    {
+      "codigo": "uniplus.selecao.recurso_da_etapa.procedimento_de_recurso_desconhecido",
+      "status": 422,
+      "titulo": "A regra declarada não é um procedimento de recurso do catálogo"
+    },
+    {
+      "codigo": "uniplus.selecao.recurso_da_etapa.procedimento_de_recurso_duplicado",
+      "status": 422,
+      "titulo": "A mesma matéria tem mais de um procedimento de recurso declarado"
+    },
+    {
+      "codigo": "uniplus.selecao.recurso_da_etapa.procedimento_para_decisao_nao_declarada",
+      "status": 422,
+      "titulo": "O procedimento de recurso é de um tipo de decisão que a fase ou a etapa não declara produzir"
+    },
+    {
       "codigo": "uniplus.selecao.recurso_da_etapa.regra_catalogo_invalida",
       "status": 422,
       "titulo": "A regra declarada não é uma regra de prazo de recurso do catálogo"
@@ -7524,27 +7699,12 @@
     {
       "codigo": "uniplus.selecao.recurso_da_etapa.suspensividade_superior_sem_instancia_superior",
       "status": 422,
-      "titulo": "A janela que não admite instância superior não declara tempo de bloqueio superior"
+      "titulo": "Sem recurso em instância superior, não há tempo de bloqueio para essa instância"
     },
     {
       "codigo": "uniplus.selecao.recurso_da_etapa.suspensividade_unidade_nao_declaravel",
       "status": 422,
       "titulo": "A unidade da suspensividade não é declarável"
-    },
-    {
-      "codigo": "uniplus.selecao.referencia_regra.codigo_obrigatorio",
-      "status": 422,
-      "titulo": "Código da regra referenciada obrigatório"
-    },
-    {
-      "codigo": "uniplus.selecao.referencia_regra.hash_invalido",
-      "status": 422,
-      "titulo": "Hash da regra referenciada inválido"
-    },
-    {
-      "codigo": "uniplus.selecao.referencia_regra.versao_obrigatoria",
-      "status": 422,
-      "titulo": "Versão da regra referenciada obrigatória"
     },
     {
       "codigo": "uniplus.selecao.referencia_reserva_demografica_snapshot.base_legal_obrigatoria",
@@ -7587,39 +7747,9 @@
       "titulo": "O tipo de referência temporal é obrigatório"
     },
     {
-      "codigo": "uniplus.selecao.regra_catalogo.base_legal_obrigatoria",
-      "status": 422,
-      "titulo": "Base legal da regra obrigatória"
-    },
-    {
-      "codigo": "uniplus.selecao.regra_catalogo.codigo_obrigatorio",
-      "status": 422,
-      "titulo": "Código da regra obrigatório"
-    },
-    {
-      "codigo": "uniplus.selecao.regra_catalogo.esquema_args_invalido",
-      "status": 422,
-      "titulo": "esquema_args deve ser um objeto JSON"
-    },
-    {
-      "codigo": "uniplus.selecao.regra_catalogo.invariantes_invalidas",
-      "status": 422,
-      "titulo": "invariantes deve ser um array JSON"
-    },
-    {
       "codigo": "uniplus.selecao.regra_catalogo.nao_encontrada",
       "status": 404,
       "titulo": "Regra não encontrada no catálogo na versão pedida"
-    },
-    {
-      "codigo": "uniplus.selecao.regra_catalogo.tipo_obrigatorio",
-      "status": 422,
-      "titulo": "Tipo da regra obrigatório"
-    },
-    {
-      "codigo": "uniplus.selecao.regra_catalogo.versao_obrigatoria",
-      "status": 422,
-      "titulo": "Versão da regra obrigatória"
     },
     {
       "codigo": "uniplus.selecao.regra_derivacao_configurada.contribui_em_branco",
@@ -7642,11 +7772,6 @@
       "titulo": "A área do corte não é um código de área do ENEM bem formado"
     },
     {
-      "codigo": "uniplus.selecao.regra_eliminacao.args_incompativeis_com_regra",
-      "status": 422,
-      "titulo": "Os args informados não correspondem à regra referenciada"
-    },
-    {
       "codigo": "uniplus.selecao.regra_eliminacao.etapa_ref_e_nota_minima_obrigatorios",
       "status": 422,
       "titulo": "EtapaRef e NotaMinima são obrigatórios para a regra ELIM-NOTA-MINIMA-ETAPA"
@@ -7667,6 +7792,11 @@
       "titulo": "A nota mínima da eliminação deve ser não negativa"
     },
     {
+      "codigo": "uniplus.selecao.regra_eliminacao.parametros_incompativeis_com_regra",
+      "status": 422,
+      "titulo": "Os parâmetros informados não correspondem à regra referenciada"
+    },
+    {
       "codigo": "uniplus.selecao.regra_eliminacao.regra_nao_encontrada",
       "status": 422,
       "titulo": "Regra de eliminação não encontrada no catálogo de regras"
@@ -7677,9 +7807,14 @@
       "titulo": "A regra referenciada não é do tipo regra_eliminacao"
     },
     {
+      "codigo": "uniplus.selecao.regra_recurso_fase.alvo_do_procedimento_de_recurso_inexistente",
+      "status": 422,
+      "titulo": "O alvo do procedimento de recurso não existe na fase. Informe um item de avaliação da etapa que produz a decisão ou uma área do ENEM de processo que importa a nota do ENEM"
+    },
+    {
       "codigo": "uniplus.selecao.regra_recurso_fase.ancora_em_ato_congelante",
       "status": 422,
-      "titulo": "A âncora do recurso nunca é o ato que congela a configuração"
+      "titulo": "O evento que inicia o prazo do recurso da fase nunca é o ato que congela a configuração; escolha outro ato"
     },
     {
       "codigo": "uniplus.selecao.regra_recurso_fase.ancora_em_ato_irreversivel",
@@ -7689,7 +7824,7 @@
     {
       "codigo": "uniplus.selecao.regra_recurso_fase.ancora_nao_eh_produto_preliminar_da_fase",
       "status": 422,
-      "titulo": "A âncora do recurso tem de ser um dos produtos preliminares publicados pela própria fase"
+      "titulo": "O evento que inicia o prazo do recurso da fase tem de ser a publicação de um dos produtos preliminares da própria fase; escolha um deles"
     },
     {
       "codigo": "uniplus.selecao.regra_recurso_fase.fase_sem_produto_preliminar",
@@ -7717,9 +7852,34 @@
       "titulo": "O prazo de interposição precisa declarar dias úteis ou horas"
     },
     {
+      "codigo": "uniplus.selecao.regra_recurso_fase.procedimento_de_recurso_ausente",
+      "status": 422,
+      "titulo": "Há decisão sem procedimento de recurso para sua revisão"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_recurso_fase.procedimento_de_recurso_conflitante",
+      "status": 422,
+      "titulo": "O tipo de decisão tem procedimento sem alvo e procedimento com alvo ao mesmo tempo"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_recurso_fase.procedimento_de_recurso_desconhecido",
+      "status": 422,
+      "titulo": "A regra declarada não é um procedimento de recurso do catálogo"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_recurso_fase.procedimento_de_recurso_duplicado",
+      "status": 422,
+      "titulo": "A mesma matéria tem mais de um procedimento de recurso declarado"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_recurso_fase.procedimento_para_decisao_nao_declarada",
+      "status": 422,
+      "titulo": "O procedimento de recurso é de um tipo de decisão que a fase ou a etapa não declara produzir"
+    },
+    {
       "codigo": "uniplus.selecao.regra_recurso_fase.regra_catalogo_invalida",
       "status": 422,
-      "titulo": "A regra referenciada não é RECURSO-PRAZO-ANCORADO-EM-ATO, ou diverge do catálogo de regras"
+      "titulo": "A regra indicada não permite contar o prazo de recurso a partir de uma publicação"
     },
     {
       "codigo": "uniplus.selecao.regra_recurso_fase.suspensividade_incompleta",
@@ -7734,7 +7894,7 @@
     {
       "codigo": "uniplus.selecao.regra_recurso_fase.suspensividade_superior_sem_instancia_superior",
       "status": 422,
-      "titulo": "A janela que não admite instância superior não declara tempo de bloqueio superior"
+      "titulo": "Sem recurso em instância superior, não há tempo de bloqueio para essa instância"
     },
     {
       "codigo": "uniplus.selecao.regra_recurso_fase.suspensividade_unidade_nao_declaravel",
@@ -7777,31 +7937,6 @@
       "titulo": "A retificação não retira da inscrição fato que ela já coleta"
     },
     {
-      "codigo": "uniplus.selecao.retificacao.motivo_muito_longo",
-      "status": 422,
-      "titulo": "O motivo da retificação excede o limite de caracteres"
-    },
-    {
-      "codigo": "uniplus.selecao.retificacao.motivo_obrigatorio",
-      "status": 422,
-      "titulo": "O motivo da retificação é obrigatório"
-    },
-    {
-      "codigo": "uniplus.selecao.retificacao_base_desatualizada",
-      "status": 409,
-      "titulo": "A versão sobre a qual a retificação foi aberta não é mais o topo da cadeia"
-    },
-    {
-      "codigo": "uniplus.selecao.retificacao_ja_aberta",
-      "status": 409,
-      "titulo": "Já existe uma retificação em curso neste processo"
-    },
-    {
-      "codigo": "uniplus.selecao.retificacao_nao_aberta",
-      "status": 409,
-      "titulo": "Não há retificação em curso neste processo"
-    },
-    {
       "codigo": "uniplus.selecao.snapshot.vigente_ausente",
       "status": 422,
       "titulo": "Nenhuma publicação vigente para o instante"
@@ -7824,7 +7959,7 @@
     {
       "codigo": "uniplus.selecao.tipo_etapa_snapshot.caractere_invalido",
       "status": 422,
-      "titulo": "Snapshot do tipo de etapa contém caractere nulo, de controle, de formatação ou que não é texto"
+      "titulo": "A cópia congelada do tipo de etapa contém caractere nulo, de controle, de formatação ou que não é texto"
     },
     {
       "codigo": "uniplus.selecao.tipo_etapa_snapshot.codigo_obrigatorio",
@@ -7839,7 +7974,7 @@
     {
       "codigo": "uniplus.selecao.tipo_etapa_snapshot.nota_de_origem_no_enem_sem_pontuacao",
       "status": 422,
-      "titulo": "Snapshot do tipo de etapa com nota de origem no ENEM deve admitir compor a nota final"
+      "titulo": "A cópia congelada do tipo de etapa com nota de origem no ENEM deve admitir compor a nota final"
     },
     {
       "codigo": "uniplus.selecao.tipo_etapa_snapshot.origem_id_obrigatorio",
@@ -7849,12 +7984,12 @@
     {
       "codigo": "uniplus.selecao.tipo_etapa_snapshot.sem_carater_admitido",
       "status": 422,
-      "titulo": "Snapshot do tipo de etapa não admite caráter nenhum"
+      "titulo": "A cópia congelada do tipo de etapa não admite caráter nenhum"
     },
     {
       "codigo": "uniplus.selecao.tipo_etapa_snapshot.tamanho_invalido",
       "status": 422,
-      "titulo": "Snapshot do tipo de etapa excede o tamanho permitido"
+      "titulo": "A cópia congelada do tipo de etapa excede o tamanho permitido"
     },
     {
       "codigo": "uniplus.selecao.tipo_processo_snapshot.codigo_obrigatorio",
@@ -7874,7 +8009,7 @@
     {
       "codigo": "uniplus.selecao.tipo_processo_snapshot.tamanho_invalido",
       "status": 422,
-      "titulo": "Snapshot do tipo de processo seletivo excede o tamanho permitido"
+      "titulo": "A cópia congelada do tipo de processo seletivo excede o tamanho permitido"
     },
     {
       "codigo": "uniplus.selecao.vaga_ofertada.modalidade_codigo_obrigatorio",
@@ -7900,11 +8035,6 @@
       "codigo": "uniplus.selecao.versao_configuracao.numero_duplicado",
       "status": 409,
       "titulo": "Outra publicação concorrente já criou esta versão da configuração"
-    },
-    {
-      "codigo": "uniplus.selecao.versao_configuracao.versao_de_outro_processo",
-      "status": 422,
-      "titulo": "A configuração congelada de um certame não se repõe em outro"
     },
     {
       "codigo": "uniplus.selecao.versao_configuracao.vigencia_regressiva",

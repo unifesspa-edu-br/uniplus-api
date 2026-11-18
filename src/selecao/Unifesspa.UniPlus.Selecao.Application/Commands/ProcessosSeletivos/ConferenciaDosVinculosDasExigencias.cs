@@ -34,7 +34,7 @@ internal static class ConferenciaDosVinculosDasExigencias
 
     private static VinculosDeFatos VinculosExistentes(ProcessoSeletivo processo)
     {
-        VinculosDeFatos vivos = ReferenciasVivas.Vinculos(EstadoDaConfiguracao.De(processo));
+        VinculosDeFatos vivos = ReferenciasVivas.Vinculos(processo.Declaracao());
         IEnumerable<string> comprovados = processo.DocumentosExigidos.SelectMany(static d => d.FatosComprovados);
         return vivos with { Fatos = new HashSet<string>(vivos.Fatos.Concat(comprovados), StringComparer.Ordinal) };
     }

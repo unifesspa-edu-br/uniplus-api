@@ -1,11 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using System.Text.Json;
-
 using Domain.Entities;
-using Domain.Enums;
 using Domain.Interfaces;
-using Domain.ValueObjects;
 
 using Kernel.Results;
 
@@ -18,12 +14,12 @@ using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 /// <see langword="null"/>); todos presentes valida a forma de cada destino e a
 /// coerência entre eles (cascata de remanejamento de cotas, UNI-REQ-0056) ANTES de consultar o <c>regras_do_catalogo</c>
 /// (ADR-0125: validação sempre precede I/O) e só então compara célula a célula
-/// contra o <c>esquema_args</c> congelado da regra resolvida (conteúdo —
+/// contra o <c>declaracao_da_regra</c> congelado da regra resolvida (conteúdo —
 /// vínculo com a regra versionada da cascata de remanejamento de cotas, UNI-REQ-0056) — ver §4 da story para o porquê da ordem entre forma e conteúdo.
 /// </summary>
 public static class DefinirCascataRemanejamentoCommandHandler
 {
-    public static async Task<Result<MutacaoAceita>> Handle(
+    public static async Task<Result> Handle(
         DefinirCascataRemanejamentoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IRegraCatalogoReader regraCatalogoReader,
@@ -35,206 +31,51 @@ public static class DefinirCascataRemanejamentoCommandHandler
         ArgumentNullException.ThrowIfNull(regraCatalogoReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        ProcessoSeletivo? processo = await processoSeletivoRepository
-            .ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
+        Result<ProcessoSeletivo> obtido = await ObterProcessoAsync(command.ProcessoSeletivoId,
+            processoSeletivoRepository, cancellationToken).ConfigureAwait(false);
+        return obtido.IsFailure ? Result.ValidationFailure(obtido.Errors)
+            : await AplicarAsync(command, obtido.Value!, regraCatalogoReader, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result<ProcessoSeletivo>> ObterProcessoAsync(
+        Guid id, IProcessoSeletivoRepository repositorio, CancellationToken cancellationToken)
+    {
+        ProcessoSeletivo? processo = await repositorio.ObterParaMutacaoAsync(id, cancellationToken).ConfigureAwait(false);
         if (processo is null)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
-                "ProcessoSeletivo.NaoEncontrado",
-                $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
+            return Result<ProcessoSeletivo>.Failure(new DomainError(
+                "ProcessoSeletivo.NaoEncontrado", "Processo seletivo não encontrado."));
         }
 
-        if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
+        return processo.MutacaoBloqueada() is { } bloqueio
+            ? Result<ProcessoSeletivo>.Failure(bloqueio) : Result<ProcessoSeletivo>.Success(processo);
+    }
+
+    private static async Task<Result> AplicarAsync(DefinirCascataRemanejamentoCommand command,
+        ProcessoSeletivo processo, IRegraCatalogoReader regraCatalogoReader, IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
+        Result<ConfiguracaoCascataRemanejamento?> resolucao = await ResolucaoDaCascataRemanejamento
+            .ResolverAsync(command, regraCatalogoReader, cancellationToken).ConfigureAwait(false);
+        if (resolucao.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(bloqueio);
+            return Result.ValidationFailure(resolucao.Errors);
         }
 
-        bool tudoNulo = command.RegraCodigo is null && command.RegraVersao is null
-            && command.FallbackCodigo is null && command.Destinos is null;
-        bool tudoPresente = command.RegraCodigo is not null && command.RegraVersao is not null
-            && command.FallbackCodigo is not null && command.Destinos is not null;
+        return await GravarAsync(processo, resolucao.Value, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
 
-        if (tudoNulo)
-        {
-            Result removerResult = processo.DefinirCascataRemanejamento(null, command.Precondicao);
-            if (removerResult.IsFailure)
-            {
-                return Result<MutacaoAceita>.Failure(removerResult.Error!);
-            }
-
-            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-            return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
-        }
-
-        if (!tudoPresente)
-        {
-            return Result<MutacaoAceita>.Failure(new DomainError(
-                "ConfiguracaoCascataRemanejamento.CamposObrigatorios",
-                "RegraCodigo, RegraVersao, FallbackCodigo e Destinos precisam estar todos presentes " +
-                "(definição) ou todos ausentes (remoção)."));
-        }
-
-        // Validação sempre precede I/O (ADR-0125, ponto 5): confirma fallback + forma de cada
-        // destino + coerência entre destinos ANTES de consultar o catálogo de regras — um payload
-        // malformado não pode "vencer" pela sorte de a regra também não existir, nem o inverso.
-        // Acumula (ADR-0125) as violações de TODOS os itens em vez de parar no primeiro — um
-        // payload com vários destinos malformados reporta todos de uma vez, cada um com o
-        // índice do item na lista prefixado ao field (ex.: "destinos[2].ordem").
-        List<DestinoRemanejamento> destinos = [];
-        List<FieldError> itemErros = [];
-        for (int indice = 0; indice < command.Destinos!.Count; indice++)
-        {
-            DestinoRemanejamentoInput? destinoInput = command.Destinos[indice];
-
-            // Única barreira contra item nulo: o validator não inspeciona os itens de Destinos
-            // (a forma de cada item é responsabilidade de DestinoRemanejamento.Criar), então um
-            // payload com `destinos: [null]` chega até aqui — recusar como CamposObrigatorios no
-            // índice do item em vez de desreferenciar null e virar 500.
-            if (destinoInput is null)
-            {
-                itemErros.Add(new($"destinos[{indice}]", new DomainError(
-                    "ConfiguracaoCascataRemanejamento.CamposObrigatorios",
-                    "Nenhum item da lista de destinos pode ser nulo.")));
-                continue;
-            }
-
-            Result<DestinoRemanejamento> destinoResult = DestinoRemanejamento.Criar(
-                destinoInput.ModalidadeOrigemCodigo, destinoInput.Ordem, destinoInput.ModalidadeDestinoCodigo);
-            if (destinoResult.IsFailure)
-            {
-                itemErros.AddRange(destinoResult.Errors.Select(erro => erro with { Field = $"destinos[{indice}].{erro.Field}" }));
-                continue;
-            }
-
-            destinos.Add(destinoResult.Value!);
-        }
-
-        if (itemErros.Count > 0)
-        {
-            // A checagem de coerência ENTRE itens (ordem duplicada/não contígua, destino
-            // repetido) pressupõe destinos já válidos e não roda aqui — mas fallback e limites
-            // de contagem não dependem disso, e não podem desaparecer do lote só porque outro
-            // item também falhou.
-            List<FieldError> checagensIndependentes = ConfiguracaoCascataRemanejamento.ValidarFallbackELimitesIndependentesDeItens(
-                command.FallbackCodigo, command.Destinos.Count, command.Destinos.Select(d => d?.ModalidadeOrigemCodigo));
-            return Result<MutacaoAceita>.ValidationFailure([.. checagensIndependentes, .. itemErros]);
-        }
-
-        List<FieldError> formaErros = ConfiguracaoCascataRemanejamento.ValidarForma(command.FallbackCodigo!, destinos);
-        if (formaErros.Count > 0)
-        {
-            return Result<MutacaoAceita>.ValidationFailure(formaErros);
-        }
-
-        RegraCatalogo? regra = await regraCatalogoReader
-            .ObterAsync(command.RegraCodigo!, command.RegraVersao!, cancellationToken)
-            .ConfigureAwait(false);
-        if (regra is null)
-        {
-            return Result<MutacaoAceita>.Failure(new DomainError(
-                "ConfiguracaoCascataRemanejamento.RegraNaoEncontrada",
-                $"Regra de remanejamento {command.RegraCodigo}/{command.RegraVersao} não encontrada no catálogo de regras."));
-        }
-
-        if (regra.Tipo != TipoRegra.CriterioRemanejamento)
-        {
-            return Result<MutacaoAceita>.Failure(new DomainError(
-                "ConfiguracaoCascataRemanejamento.RegraTipoInvalido",
-                $"A regra {command.RegraCodigo}/{command.RegraVersao} não é do tipo criterio_remanejamento."));
-        }
-
-        Result<ReferenciaRegra> referenciaRegraResult = ReferenciaRegra.Criar(regra.Codigo, regra.Versao, regra.Hash);
-        if (referenciaRegraResult.IsFailure)
-        {
-            return Result<MutacaoAceita>.Failure(referenciaRegraResult.Error!);
-        }
-
-        // ValidarForma já confirmou que o resultado será sucesso — Criar não deveria voltar a
-        // falhar (mesmos dados, checagem determinística), mas ainda é a fonte de verdade da
-        // construção (mesmo padrão de Campus.ValidarAtualizacao/Campus.Atualizar).
-        Result<ConfiguracaoCascataRemanejamento> cascataResult = ConfiguracaoCascataRemanejamento.Criar(
-            referenciaRegraResult.Value!, command.FallbackCodigo!, destinos);
-        if (cascataResult.IsFailure)
-        {
-            return Result<MutacaoAceita>.ValidationFailure(cascataResult.Errors);
-        }
-
-        ConfiguracaoCascataRemanejamento cascata = cascataResult.Value!;
-        if (!BateComEsquemaArgs(cascata, regra.EsquemaArgs))
-        {
-            return Result<MutacaoAceita>.Failure(new DomainError(
-                "ConfiguracaoCascataRemanejamento.MatrizDivergenteDaRegra",
-                $"O fallback e/ou os destinos informados divergem do esquema_args congelado da regra {command.RegraCodigo}/{command.RegraVersao}."));
-        }
-
-        Result definirResult = processo.DefinirCascataRemanejamento(cascata, command.Precondicao);
+    private static async Task<Result> GravarAsync(ProcessoSeletivo processo, ConfiguracaoCascataRemanejamento? cascata,
+        IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
+        Result definirResult = processo.DefinirCascataRemanejamento(cascata);
         if (definirResult.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(definirResult.Error!);
+            return Result.Failure(definirResult.Error!);
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
-        return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
-    }
-
-    /// <summary>
-    /// Regra versionada da cascata de remanejamento de cotas (UNI-REQ-0056): o payload aplicado (fallback + todos os destinos, célula a
-    /// célula) precisa ser idêntico ao <c>esquema_args</c> congelado da versão da
-    /// regra — não só a forma (já garantida pela factory). Shape esperado:
-    /// <c>{"fallbackCodigo": "AC", "ordens": [{"origem": "...", "destinos": ["...", ...]}]}</c>.
-    /// </summary>
-    private static bool BateComEsquemaArgs(ConfiguracaoCascataRemanejamento cascata, JsonElement esquemaArgs)
-    {
-        if (!esquemaArgs.TryGetProperty("fallbackCodigo", out JsonElement fallbackElemento)
-            || !string.Equals(fallbackElemento.GetString(), cascata.FallbackCodigo, StringComparison.Ordinal))
-        {
-            return false;
-        }
-
-        if (!esquemaArgs.TryGetProperty("ordens", out JsonElement ordensElemento) || ordensElemento.ValueKind != JsonValueKind.Array)
-        {
-            return false;
-        }
-
-        Dictionary<string, List<string>> destinosPorOrigemNaCascata = cascata.Destinos
-            .GroupBy(static d => d.ModalidadeOrigemCodigo, StringComparer.Ordinal)
-            .ToDictionary(
-                static grupo => grupo.Key,
-                static grupo => grupo.OrderBy(static d => d.Ordem).Select(static d => d.ModalidadeDestinoCodigo).ToList(),
-                StringComparer.Ordinal);
-
-        // Conjunto de origens já conferidas — não uma contagem. Um esquema_args corrompido
-        // que repita uma origem não pode "cobrir" outra origem por coincidência de contagem.
-        // A origem repetida é rejeitada explicitamente por Add devolver false na segunda
-        // ocorrência, e a checagem final compara o CONJUNTO de origens conferidas contra o
-        // conjunto exigido pela cascata, não o tamanho de cada um.
-        HashSet<string> origensConferidas = new(StringComparer.Ordinal);
-        foreach (JsonElement itemOrigem in ordensElemento.EnumerateArray())
-        {
-            if (!itemOrigem.TryGetProperty("origem", out JsonElement origemElemento)
-                || !itemOrigem.TryGetProperty("destinos", out JsonElement destinosElemento)
-                || destinosElemento.ValueKind != JsonValueKind.Array)
-            {
-                return false;
-            }
-
-            string? origem = origemElemento.GetString();
-            if (origem is null || !origensConferidas.Add(origem)
-                || !destinosPorOrigemNaCascata.TryGetValue(origem, out List<string>? destinosDaCascata))
-            {
-                return false;
-            }
-
-            List<string?> destinosDoEsquema = [.. destinosElemento.EnumerateArray().Select(static d => d.GetString())];
-            if (destinosDoEsquema.Count != destinosDaCascata.Count
-                || !destinosDoEsquema.SequenceEqual(destinosDaCascata, StringComparer.Ordinal))
-            {
-                return false;
-            }
-        }
-
-        return origensConferidas.SetEquals(destinosPorOrigemNaCascata.Keys);
+        return Result.Success();
     }
 }

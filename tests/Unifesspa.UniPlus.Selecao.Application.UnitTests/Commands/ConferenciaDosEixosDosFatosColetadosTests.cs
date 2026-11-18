@@ -25,17 +25,17 @@ public sealed class ConferenciaDosEixosDosFatosColetadosTests
     [Fact(DisplayName = "Troca de domínio do fato citado por condição de documento recusa e nomeia o fato e o eixo")]
     public void TrocaDeDominio_Recusa()
     {
-        DomainError? erro = ConferenciaDosEixosDosFatosColetados.Conferir(Publicadas, Metadado("BOOLEANO", "Sim"), []);
+        IReadOnlyList<FieldError> erros = ConferenciaDosEixosDosFatosColetados.Conferir(Publicadas, [], Metadado("BOOLEANO", "Sim"), []);
 
-        erro.Should().NotBeNull();
-        erro!.Code.Should().Be("RascunhoRetificacao.EixoDoFatoJaColetadoAlterado");
+        DomainError erro = erros.Should().ContainSingle().Subject.Error;
+        erro.Code.Should().Be("Retificacao.EixoDoFatoJaColetadoAlterado");
         erro.Message.Should().Contain("SEXO").And.Contain("domínio").And.Contain("processo novo");
     }
 
     [Fact(DisplayName = "Troca da descrição de um valor de domínio passa: não é eixo")]
     public void TrocaDeDescricaoDeValor_Passa()
     {
-        ConferenciaDosEixosDosFatosColetados.Conferir(Publicadas, Metadado("CATEGORICO", "Descrição nova"), []).Should().BeNull();
+        ConferenciaDosEixosDosFatosColetados.Conferir(Publicadas, [], Metadado("CATEGORICO", "Descrição nova"), []).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "Troca da operação do agregado recusa falando do resumo de grupo, não de fato")]
@@ -45,10 +45,10 @@ public sealed class ConferenciaDosEixosDosFatosColetadosTests
             [Testes.Compartilhado.VersoesPublicadasDeTeste.Versao([], [Item("SEXO")])],
             [new EixosDeVersaoPublicada(new Dictionary<string, EixosDoMetadadoCongelado>(), new Dictionary<string, string> { ["RENDA_FAMILIAR"] = "EXISTE" })]);
 
-        DomainError? erro = ConferenciaDosEixosDosFatosColetados.Conferir(
-            publicadas, null, [new DefinicaoAgregado("RENDA_FAMILIAR", "G", "M", OperacaoAgregado.ValoresPresentes)]);
+        IReadOnlyList<FieldError> erros = ConferenciaDosEixosDosFatosColetados.Conferir(
+            publicadas, [], null, [new DefinicaoAgregado("RENDA_FAMILIAR", "G", "M", OperacaoAgregado.ValoresPresentes)]);
 
-        erro!.Message.Should().StartWith("O resumo de grupo 'RENDA_FAMILIAR'").And.Contain("'EXISTE' para 'VALORES_PRESENTES'").And.NotContain("O fato");
+        erros.Should().ContainSingle().Which.Error.Message.Should().StartWith("O resumo de grupo 'RENDA_FAMILIAR'").And.Contain("'EXISTE' para 'VALORES_PRESENTES'").And.NotContain("O fato");
     }
 
     [Fact(DisplayName = "A origem dos valores congelada no item é o token canônico da fonte, não o nome do enum")]

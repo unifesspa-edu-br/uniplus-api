@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
+using Domain.ValueObjects;
+
 /// <summary>Projeção de leitura de uma modalidade selecionada (Story #773).</summary>
 public sealed record ModalidadeSelecionadaDto(
     Guid Id,
@@ -42,27 +44,48 @@ public sealed record GrupoAreaEnemSnapshotDto(string Codigo, string Rotulo);
 /// <summary>Projeção de leitura de uma linha do quadro de vagas (issue #848/ADR-0115).</summary>
 public sealed record VagaOfertadaDto(Guid Id, Guid ModalidadeOrigemId, string ModalidadeCodigo, int Quantidade);
 
+/// <summary>As vagas que o quadro da Lei de Cotas deu à reserva legal frente ao que a lei nomina (ADR-0115).</summary>
+public sealed record ConferenciaDaReservaLegalDto(
+    int ReservaLegalNominal,
+    int ReservaLegalEfetiva,
+    int ExcedenteSobreAReservaLegal,
+    int VagasCortadasPorEscassez);
+
+/// <summary>As vagas que o ajuste retirou de uma modalidade do quadro fixado no edital.</summary>
+public sealed record VagasRetiradasDaModalidadeDto(string ModalidadeCodigo, int Quantidade);
+
+/// <summary>O que o ajuste retirou do quadro fixado no edital, por modalidade e no total (ADR-0115).</summary>
+public sealed record AjusteDoQuadroFixadoDto(
+    IReadOnlyList<VagasRetiradasDaModalidadeDto> VagasRetiradas,
+    int TotalDeVagasRetiradas);
+
 /// <summary>
 /// Projeção de leitura de <c>ConfiguracaoDistribuicaoVagas</c> (Story #773).
-/// O quadro de vagas (issue #848/ADR-0115) é output derivado, sempre
-/// materializado junto da configuração — <see cref="Quadro"/> e os derivados
-/// (<see cref="VrNominal"/> etc.) refletem exatamente o que foi congelado.
-/// <see cref="GrupoAreaEnem"/> é o grupo de área do ENEM do curso da oferta, com código e
+/// O quadro de vagas (issue #848/ADR-0115) é output derivado, sempre materializado junto da
+/// configuração: <see cref="Quadro"/> e o que o acompanha refletem exatamente o que foi congelado. Cada
+/// ramo descreve só o que é dele: <see cref="ConferenciaDaReservaLegal"/> na Lei de Cotas (e
+/// <see cref="PercentualDaReservaLegal"/>), <see cref="AjusteDoQuadroFixado"/> no quadro fixado no
+/// edital. <see cref="GrupoAreaEnem"/> é o grupo de área do ENEM do curso da oferta, com código e
 /// rótulo, congelado na definição; <see langword="null"/> quando o curso não o declara.
 /// </summary>
+/// <param name="RamoDaDistribuicao">
+/// O ramo em que a distribuição foi montada (<c>LEI_DE_COTAS</c> ou <c>QUADRO_FIXADO_NO_EDITAL</c>), calculado
+/// do código da <paramref name="RegraDistribuicao"/> congelado na configuração, nunca do catálogo vivo;
+/// <see langword="null"/> para um código que não é de nenhum dos dois ramos.
+/// </param>
 public sealed record ConfiguracaoDistribuicaoVagasDto(
     Guid Id,
     Guid OfertaCursoOrigemId,
-    int VoBase,
-    decimal Pr,
+    int VagasOfertadasBase,
+    decimal? PercentualDaReservaLegal,
     ReferenciaRegraDto RegraDistribuicao,
+    string? RamoDaDistribuicao,
     ReferenciaRegraDto? RegraAjuste,
+    ParametrosRegraAjusteDistribuicao? AjusteDoQuadro,
     ReferenciaReservaDemograficaSnapshotDto? ReferenciaDemografica,
     GrupoAreaEnemSnapshotDto? GrupoAreaEnem,
     IReadOnlyList<ModalidadeSelecionadaDto> Modalidades,
     IReadOnlyList<VagaOfertadaDto> Quadro,
-    int VrNominal,
-    int VrFinal,
-    int Estouro,
-    bool CapadoEmVo,
-    int TotalPublicado);
+    int TotalDeVagasDoEdital,
+    ConferenciaDaReservaLegalDto? ConferenciaDaReservaLegal,
+    AjusteDoQuadroFixadoDto? AjusteDoQuadroFixado);

@@ -5,6 +5,52 @@ using Domain.Enums;
 /// <summary>
 /// Projeção de leitura de <c>EtapaProcesso</c> (Story #758).
 /// </summary>
+/// <param name="Identificacao">Quem a etapa é no processo: o nome, o caráter, o tipo, a ordem e a fase onde acontece.</param>
+/// <param name="Nota">O peso da etapa na nota final e a escala em que a nota é lançada.</param>
+/// <param name="Avaliacao">Como a banca chega à nota: a forma de avaliação, a consolidação, os itens e a escala de atendimento.</param>
+/// <param name="Janela">A janela própria da etapa.</param>
+/// <param name="Publicacoes">O que a etapa publica e decide: os produtos, o parecer, os recursos e os tipos de decisão.</param>
+public sealed record EtapaProcessoDto(
+    Guid Id,
+    IdentificacaoDaEtapaDto Identificacao,
+    NotaDaEtapaDto Nota,
+    AvaliacaoDaEtapaDto Avaliacao,
+    JanelaDaEtapaDto Janela,
+    PublicacoesDaEtapaDto Publicacoes,
+    IReadOnlyList<BancaDaEtapaDto> Bancas);
+
+/// <summary>Quem a etapa é no processo.</summary>
+/// <param name="Nome">O nome editorial da etapa.</param>
+/// <param name="Carater">O caráter declarado da etapa.</param>
+/// <param name="TipoEtapa">
+/// Snapshot congelado do tipo (issue #1071) — fecha o round-trip GET→PUT: um cliente que
+/// reler a etapa precisa de <c>OrigemId</c> para reenviar o mesmo vínculo em
+/// <c>EtapaProcessoInput.TipoEtapaOrigemId</c>.
+/// </param>
+/// <param name="Ordem">A posição da etapa na sequência, ou nulo enquanto não declarada.</param>
+/// <param name="FaseCodigo">
+/// O código da fase do cronograma onde a etapa acontece; é por código, e não por id, porque o id da fase
+/// não identifica a fase fora do processo.
+/// </param>
+public sealed record IdentificacaoDaEtapaDto(
+    string Nome,
+    CaraterEtapa Carater,
+    TipoEtapaSnapshotDto TipoEtapa,
+    int? Ordem,
+    string? FaseCodigo);
+
+/// <summary>O peso da etapa na nota final e a escala em que a nota é lançada.</summary>
+/// <param name="Peso">O peso da etapa na média, ou nulo quando ela não compõe a nota final.</param>
+/// <param name="NotaMinima">A nota mínima exigida na etapa, ou nulo.</param>
+/// <param name="NotaMaxima">O teto da escala do lançamento; nulo na etapa sem nota e na de nota do ENEM.</param>
+/// <param name="PassoDoLancamento">De quanto em quanto a nota pode ser lançada; vale só para a nota digitada.</param>
+public sealed record NotaDaEtapaDto(
+    decimal? Peso,
+    decimal? NotaMinima,
+    decimal? NotaMaxima,
+    decimal? PassoDoLancamento);
+
+/// <summary>Como a banca chega à nota da etapa.</summary>
 /// <param name="FormaDeAvaliacao">
 /// Token canônico UPPER_SNAKE (<c>OBJETIVA</c>/<c>HUMANA</c>); nulo enquanto a etapa não declara.
 /// </param>
@@ -19,32 +65,27 @@ using Domain.Enums;
 /// Os níveis entre os quais a banca escolhe em cada item, do que mais vale ao que menos vale; nulo
 /// quando a etapa lança nota digitada.
 /// </param>
-/// <param name="TipoEtapa">
-/// Snapshot congelado do tipo (issue #1071) — fecha o round-trip GET→PUT: um cliente que
-/// reler a etapa precisa de <c>OrigemId</c> para reenviar o mesmo vínculo em
-/// <c>EtapaProcessoInput.TipoEtapaOrigemId</c>.
-/// </param>
-public sealed record EtapaProcessoDto(
-    Guid Id,
-    string Nome,
-    CaraterEtapa Carater,
-    TipoEtapaSnapshotDto TipoEtapa,
-    decimal? Peso,
-    decimal? NotaMinima,
-    decimal? NotaMaxima,
-    decimal? PassoDoLancamento,
-    int? Ordem,
-    string? FaseCodigo,
-    IReadOnlyList<ProdutoDaEtapaDto> Produtos,
-    DateTimeOffset? Inicio,
-    DateTimeOffset? Fim,
-    bool EmiteParecerIndividual,
-    IReadOnlyList<BancaDaEtapaDto> Bancas,
-    IReadOnlyList<RecursoDaEtapaDto> Recursos,
+public sealed record AvaliacaoDaEtapaDto(
     string? FormaDeAvaliacao,
     ReferenciaRegraDto? RegraConsolidacao,
     IReadOnlyList<ItemDeAvaliacaoDto> ItensDeAvaliacao,
     IReadOnlyList<NivelDeAtendimentoDto>? EscalaDeAtendimento);
+
+/// <summary>A janela própria da etapa, em UTC.</summary>
+/// <param name="Inicio">O início da janela própria; nulo quando a etapa herda a da fase.</param>
+/// <param name="Fim">O fim da janela própria; nulo quando a etapa herda a da fase.</param>
+public sealed record JanelaDaEtapaDto(DateTimeOffset? Inicio, DateTimeOffset? Fim);
+
+/// <summary>O que a etapa publica e decide: os produtos, o parecer, os recursos e os tipos de decisão.</summary>
+/// <param name="Produtos">Os atos que a etapa publica, com o papel de cada publicação.</param>
+/// <param name="EmiteParecerIndividual">Se a etapa promete parecer individual por candidato.</param>
+/// <param name="Recursos">Os recursos que a etapa admite, cada um ancorado num produto dela.</param>
+/// <param name="TiposDeDecisao">Os tipos de decisão que a etapa declara produzir, em ordem alfabética ordinal e sem repetição.</param>
+public sealed record PublicacoesDaEtapaDto(
+    IReadOnlyList<ProdutoDaEtapaDto> Produtos,
+    bool EmiteParecerIndividual,
+    IReadOnlyList<RecursoDaEtapaDto> Recursos,
+    IReadOnlyList<string> TiposDeDecisao);
 
 /// <summary>Projeção de leitura de <c>ItemDeAvaliacao</c>.</summary>
 public sealed record ItemDeAvaliacaoDto(Guid Id, string Rotulo, decimal PontuacaoMaxima);
@@ -67,9 +108,10 @@ public sealed record RecursoDaEtapaDto(
     Guid Id,
     AncoraDoRecurso Ancora,
     ReferenciaRegraDto Regra,
-    ArgsRegraPrazoRecursoDto Args,
+    ParametrosRegraPrazoRecursoDto Parametros,
     Guid ProdutoAncoraId,
-    string? AtoAncoraCodigo);
+    string? AtoAncoraCodigo,
+    IReadOnlyList<ProcedimentoDeRecursoDto> Procedimentos);
 
 /// <summary>Projeção de leitura de <c>ProdutoDaEtapa</c>.</summary>
 /// <param name="Papel">
@@ -84,4 +126,7 @@ public sealed record ProdutoDaEtapaDto(Guid Id, string AtoCodigo, string? Papel)
 /// Se a nota da etapa vem do ENEM, como congelado na etapa: é por ele, e não pelo cadastro
 /// atual nem pelo código, que o cliente reconhece a etapa de nota do ENEM.
 /// </param>
-public sealed record TipoEtapaSnapshotDto(Guid OrigemId, string Codigo, string Nome, bool NotaDeOrigemNoEnem);
+/// <param name="ExigeCorrecaoIndependente">
+/// Se as etapas do tipo são corrigidas por mais de um corretor, cada um independente dos outros, como congelado na etapa.
+/// </param>
+public sealed record TipoEtapaSnapshotDto(Guid OrigemId, string Codigo, string Nome, bool NotaDeOrigemNoEnem, bool ExigeCorrecaoIndependente);

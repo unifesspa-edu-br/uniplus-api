@@ -31,6 +31,6 @@ public static class ModalidadesFederaisLei12711
     public static readonly IReadOnlyList<string> Codigos =
         [LbPpi, LbQ, LbPcd, LbEp, LiPpi, LiQ, LiPcd, LiEp];
 
-    /// <summary>Os 8 códigos federais + AC — conjunto completo exigido pela INV-6.</summary>
+    /// <summary>Os 8 códigos federais + AC — conjunto completo exigido pela Lei 12.711.</summary>
     public static readonly IReadOnlyList<string> CodigosComAc = [.. Codigos, Ac];
 }

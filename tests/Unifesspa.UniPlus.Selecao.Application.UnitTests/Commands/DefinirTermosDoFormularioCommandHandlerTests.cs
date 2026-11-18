@@ -58,26 +58,25 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
         ]));
         mocks.TermoReader.ListarVersoesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(
         [
-            new VersaoTermoConsentimentoView(TermoId, VersaoId, "Autorização de consulta", "Autorizo a consulta.", "Lei 12.711/2012",
+            new VersaoTermoConsentimentoView(TermoId, VersaoId, "AUTORIZACAO_DE_CONSULTA", 1, "Autorização de consulta", "Autorizo a consulta.", "Lei 12.711/2012",
                 "REGISTRO_DIGITAL_COM_LOG_IP", new string('b', 64)),
         ]);
         return mocks;
     }
 
-    private static Task<Result<MutacaoAceita>> HandleAsync(Mocks mocks, ProcessoSeletivo processo, params TermoExigidoInput[] termos) =>
+    private static Task<Result> HandleAsync(Mocks mocks, ProcessoSeletivo processo, params TermoExigidoInput[] termos) =>
         DefinirTermosDoFormularioCommandHandler.Handle(
-            new DefinirTermosDoFormularioCommand(processo.Id, FinalidadeFormulario.Habilitacao, termos, PrecondicaoIfMatch.Ausente),
+            new DefinirTermosDoFormularioCommand(processo.Id, FinalidadeFormulario.Habilitacao, termos),
             mocks.Repository, mocks.FatoCandidatoReader, mocks.TermoReader, mocks.UnitOfWork, CancellationToken.None);
 
     private static ProcessoSeletivo ProcessoQueColetaCorRaca()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             "PS Termos", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirItens(
-            [FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!],
-            PrecondicaoIfMatch.Ausente, FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+            [FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!], FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
         return processo;
     }
 
@@ -93,11 +92,10 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
                 [
                     FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
                     FatoColetado.Criar("DATA_NASCIMENTO", 1, "Data de nascimento", TipoRenderizacao.Data, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-                ],
-                PrecondicaoIfMatch.Ausente, FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+                ], FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
         }
 
-        Result<MutacaoAceita> resultado = await HandleAsync(
+        Result resultado = await HandleAsync(
             NovosMocks(processo), processo, new TermoExigidoInput("CONSULTA", 0, TermoId, VersaoId, Quando("FAIXA_ETARIA", 18), "SEMPRE", null));
 
         resultado.IsSuccess.Should().Be(coletaDataDeNascimento, resultado.Error?.Message);
@@ -112,7 +110,7 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
         ProcessoSeletivo processo = ProcessoQueColetaCorRaca();
         Mocks mocks = NovosMocks(processo);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, processo,
+        Result resultado = await HandleAsync(mocks, processo,
             new TermoExigidoInput("CONSULTA", 0, TermoId, VersaoId, Quando("COR_RACA", "PRETA"), "QUANDO", Quando("COR_RACA", "PRETA")));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -128,7 +126,7 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
         ProcessoSeletivo processo = ProcessoQueColetaCorRaca();
         Mocks mocks = NovosMocks(processo);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, processo,
+        Result resultado = await HandleAsync(mocks, processo,
             new TermoExigidoInput("CONSULTA", 0, Guid.CreateVersion7(), VersaoId, null, "SEMPRE", null));
 
         resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
@@ -144,7 +142,7 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
         ProcessoSeletivo processo = ProcessoQueColetaCorRaca();
         Mocks mocks = NovosMocks(processo);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, processo,
+        Result resultado = await HandleAsync(mocks, processo,
             new TermoExigidoInput("CONSULTA", 0, TermoId, VersaoId, Quando("BAIXA_RENDA", true), "SEMPRE", null));
 
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("termos[0].exibicao");
@@ -157,7 +155,7 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
         ProcessoSeletivo processo = ProcessoQueColetaCorRaca();
         Mocks mocks = NovosMocks(processo);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, processo,
+        Result resultado = await HandleAsync(mocks, processo,
             new TermoExigidoInput("CONSULTA", 0, TermoId, VersaoId, Quando("FAIXA_DE_RENDA", "DE_18_A_59"), "QUANDO", Quando("BAIXA_RENDA", true)));
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
@@ -173,7 +171,7 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
         ProcessoSeletivo processo = ProcessoQueColetaCorRaca();
         Mocks mocks = NovosMocks(processo);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, processo,
+        Result resultado = await HandleAsync(mocks, processo,
             new TermoExigidoInput("CONSULTA", 0, TermoId, Guid.CreateVersion7(), Quando("BAIXA_RENDA", true), "SEMPRE", null));
 
         resultado.Errors.Select(static e => e.Field).Should().BeEquivalentTo(["termos[0].exibicao", "termos[0].versaoId"]);
@@ -188,7 +186,7 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
         ProcessoSeletivo processo = ProcessoQueColetaCorRaca();
         Mocks mocks = NovosMocks(processo);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, processo,
+        Result resultado = await HandleAsync(mocks, processo,
             new TermoExigidoInput("CONSULTA", 0, TermoId, VersaoId, null, tipo, comPredicado ? Quando("COR_RACA", "PRETA") : null));
 
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(TermoExigidoFormularioErrorCodes.ObrigatoriedadeInvalida);
@@ -200,7 +198,7 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
         ProcessoSeletivo processo = ProcessoQueColetaCorRaca();
         Mocks mocks = NovosMocks(processo);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, processo,
+        Result resultado = await HandleAsync(mocks, processo,
             new TermoExigidoInput("", 0, TermoId, VersaoId, null, "SEMPRE", null),
             new TermoExigidoInput("CONSULTA", 1, TermoId, Guid.CreateVersion7(), null, "SEMPRE", null),
             new TermoExigidoInput("CONSULTA", 2, TermoId, VersaoId, null, "SEMPRE", null));

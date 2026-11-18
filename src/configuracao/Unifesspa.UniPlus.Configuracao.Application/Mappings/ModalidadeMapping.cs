@@ -20,9 +20,9 @@ public static class ModalidadeMapping
             modalidade.RegraRemanejamento is { } regra
                 ? RegrasRemanejamento.ParaTokenCanonico(regra)
                 : null,
-            modalidade.RemanejamentoArgs.Destino,
-            modalidade.RemanejamentoArgs.Par,
-            modalidade.RemanejamentoArgs.Fallback,
+            modalidade.RemanejamentoParametros.Destino,
+            modalidade.RemanejamentoParametros.Par,
+            modalidade.RemanejamentoParametros.Fallback,
             modalidade.RegraDeAplicabilidade.ToDto(),
             modalidade.AcaoQuandoIndeferido is { } acao
                 ? AcoesQuandoIndeferido.ParaTokenCanonico(acao)

@@ -32,14 +32,14 @@ public sealed class DefinirAlgoritmoContagemPrazoCommandHandlerTests
 
     private static ProcessoSeletivo NovoProcesso() => ProcessoSeletivo.Criar(
         "PS 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-        UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+        UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     private static RegraCatalogo RegraDoCatalogo(
         string codigo = AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial,
         TipoRegra tipo = TipoRegra.AlgoritmoContagemPrazo)
     {
-        RegraCatalogo regra = RegraCatalogo.Criar(codigo, "v1", tipo, Json("{}"), Json("[]"), "base legal").Value!;
+        RegraCatalogo regra = RegraCatalogo.Criar(codigo, "v1", tipo, Json("{}"), Json("[]"), "base legal");
 
         // O hash da entrada real é derivado da definição; aqui só precisa ser um valor
         // distinto e reconhecível, para que o teste consiga afirmar de ONDE ele veio.
@@ -64,9 +64,9 @@ public sealed class DefinirAlgoritmoContagemPrazoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(processo, processo.Id, RegraDoCatalogo());
         DefinirAlgoritmoContagemPrazoCommand command = new(
-            processo.Id, AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, "v1", PrecondicaoIfMatch.Ausente);
+            processo.Id, AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, "v1");
 
-        Result<MutacaoAceita> result = await DefinirAlgoritmoContagemPrazoCommandHandler.Handle(
+        Result result = await DefinirAlgoritmoContagemPrazoCommandHandler.Handle(
             command, mocks.Repository, mocks.Catalogo, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
@@ -84,9 +84,9 @@ public sealed class DefinirAlgoritmoContagemPrazoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(processo, processo.Id, regra: null);
         DefinirAlgoritmoContagemPrazoCommand command = new(
-            processo.Id, "CONTAGEM-PRAZO-INVENTADA", "v9", PrecondicaoIfMatch.Ausente);
+            processo.Id, "CONTAGEM-PRAZO-INVENTADA", "v9");
 
-        Result<MutacaoAceita> result = await DefinirAlgoritmoContagemPrazoCommandHandler.Handle(
+        Result result = await DefinirAlgoritmoContagemPrazoCommandHandler.Handle(
             command, mocks.Repository, mocks.Catalogo, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
@@ -95,16 +95,16 @@ public sealed class DefinirAlgoritmoContagemPrazoCommandHandlerTests
         await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Entrada de OUTRO tipo de regra é recusada — o rol tem muitas famílias, e só uma conta prazo")]
+    [Fact(DisplayName = "Entrada de OUTRO tipo de regra é recusada — o rol tem muitos assuntos, e só uma conta prazo")]
     public async Task Handle_TipoErrado_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(
             processo, processo.Id, RegraDoCatalogo(codigo: "BONUS-MULTIPLICATIVO", tipo: TipoRegra.RegraBonus));
         DefinirAlgoritmoContagemPrazoCommand command = new(
-            processo.Id, "BONUS-MULTIPLICATIVO", "v1", PrecondicaoIfMatch.Ausente);
+            processo.Id, "BONUS-MULTIPLICATIVO", "v1");
 
-        Result<MutacaoAceita> result = await DefinirAlgoritmoContagemPrazoCommandHandler.Handle(
+        Result result = await DefinirAlgoritmoContagemPrazoCommandHandler.Handle(
             command, mocks.Repository, mocks.Catalogo, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
@@ -120,9 +120,9 @@ public sealed class DefinirAlgoritmoContagemPrazoCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(processo, processo.Id, RegraDoCatalogo());
-        DefinirAlgoritmoContagemPrazoCommand command = new(processo.Id, codigo, versao, PrecondicaoIfMatch.Ausente);
+        DefinirAlgoritmoContagemPrazoCommand command = new(processo.Id, codigo, versao);
 
-        Result<MutacaoAceita> result = await DefinirAlgoritmoContagemPrazoCommandHandler.Handle(
+        Result result = await DefinirAlgoritmoContagemPrazoCommandHandler.Handle(
             command, mocks.Repository, mocks.Catalogo, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
@@ -137,9 +137,9 @@ public sealed class DefinirAlgoritmoContagemPrazoCommandHandlerTests
     {
         Mocks mocks = NovosMocks(null, Guid.CreateVersion7(), RegraDoCatalogo());
         DefinirAlgoritmoContagemPrazoCommand command = new(
-            Guid.CreateVersion7(), AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, "v1", PrecondicaoIfMatch.Ausente);
+            Guid.CreateVersion7(), AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, "v1");
 
-        Result<MutacaoAceita> result = await DefinirAlgoritmoContagemPrazoCommandHandler.Handle(
+        Result result = await DefinirAlgoritmoContagemPrazoCommandHandler.Handle(
             command, mocks.Repository, mocks.Catalogo, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();

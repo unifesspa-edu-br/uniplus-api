@@ -91,7 +91,7 @@ internal sealed class PlanejamentoDaAplicacaoDoModelo(
     private Result ConferirVinculoNovo(ContextoDoCatalogo contexto, FormularioSelecionado formulario, PartesResolvidas copia) =>
         ConferenciaDeVinculoNovo.Conferir(
             contexto.Fatos,
-            ReferenciasVivas.Vinculos(EstadoDaConfiguracao.De(processo)),
+            ReferenciasVivas.Vinculos(processo.Declaracao()),
             VinculosDeFatos.De(
                 formulario.Itens.Itens.Concat(formulario.Grupos.Grupos.SelectMany(static g => g.Subitens)).Select(static i => i.FatoCodigo)
                     .Concat(copia.Derivacoes.Select(static d => d.CodigoFato)),

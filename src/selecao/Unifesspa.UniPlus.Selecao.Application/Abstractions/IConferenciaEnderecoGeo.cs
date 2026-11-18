@@ -78,7 +78,7 @@ public static class ConferenciaEnderecoGeoErrorCodes
     public const string CidadeDivergente = "ConferenciaEnderecoGeo.CidadeDivergente";
 
     /// <summary>O código IBGE do município não existe no Geo.</summary>
-    public const string MunicipioNaoEncontrado = "ConferenciaEnderecoGeo.MunicipioNaoEncontrado";
+    public const string MunicipioNaoEncontrado = Domain.Errors.MunicipioErrorCodes.NaoEncontrado;
 
     /// <summary>O município existe, mas a UF declarada não é a dele.</summary>
     public const string MunicipioDivergente = "ConferenciaEnderecoGeo.MunicipioDivergente";

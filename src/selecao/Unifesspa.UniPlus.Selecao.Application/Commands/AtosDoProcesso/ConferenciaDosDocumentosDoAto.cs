@@ -19,99 +19,126 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// arquivo publicado tenha um único ato por trás; a finalidade já separa o documento do ato do
 /// documento e dos anexos do edital.
 /// </remarks>
-internal static class ConferenciaDosDocumentosDoAto
+public sealed class ConferenciaDosDocumentosDoAto(
+    IDocumentoAPublicarRepository documentoRepository,
+    IAtoDoProcessoRepository atoDoProcessoRepository)
 {
-    /// <summary>Quantos anexos um ato avulso pode levar.</summary>
     public const int QuantidadeMaximaDeAnexos = 20;
 
-    public static async Task<Result<DocumentosDoAtoConferidos>> ConferirAsync(
-        IDocumentoAPublicarRepository documentoRepository,
-        IAtoDoProcessoRepository atoDoProcessoRepository,
-        Guid processoSeletivoId,
-        Guid documentoPrincipalId,
-        IReadOnlyList<AnexoSolicitadoDoAto> anexosSolicitados,
-        CancellationToken cancellationToken)
+    internal async Task<Result<DocumentosDoAtoConferidos>> ConferirAsync(
+        Guid processoSeletivoId, Guid documentoPrincipalId,
+        IReadOnlyList<AnexoSolicitadoDoAto> anexosSolicitados, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(documentoRepository);
-        ArgumentNullException.ThrowIfNull(atoDoProcessoRepository);
         ArgumentNullException.ThrowIfNull(anexosSolicitados);
-
         if (anexosSolicitados.Count > QuantidadeMaximaDeAnexos)
         {
             return Falha(AtoDoProcessoErrorCodes.QuantidadeDeAnexosExcedida,
                 $"O ato aceita no máximo {QuantidadeMaximaDeAnexos} anexos.");
         }
-
         Guid[] ids = [documentoPrincipalId, .. anexosSolicitados.Select(static a => a.DocumentoId)];
-        if (ids.Distinct().Count() != ids.Length)
-        {
-            return Falha(AtoDoProcessoErrorCodes.DocumentoRepetido,
-                "O mesmo documento não pode constar duas vezes no ato, nem como principal e anexo.");
-        }
+        DomainError? recusa = ConferirRepeticao(ids);
+        return recusa is not null
+            ? Result<DocumentosDoAtoConferidos>.Failure(recusa)
+            : await ConferirDocumentosEnviadosAsync(processoSeletivoId, ids, anexosSolicitados, cancellationToken).ConfigureAwait(false);
+    }
 
+    private static DomainError? ConferirRepeticao(Guid[] ids) =>
+        ids.Distinct().Count() != ids.Length
+            ? new(AtoDoProcessoErrorCodes.DocumentoRepetido,
+                "O mesmo documento não pode constar duas vezes no ato, nem como principal e anexo.")
+            : null;
+
+    private async Task<Result<DocumentosDoAtoConferidos>> ConferirDocumentosEnviadosAsync(
+        Guid processoId, Guid[] ids, IReadOnlyList<AnexoSolicitadoDoAto> anexos, CancellationToken cancellationToken)
+    {
         IReadOnlyList<DocumentoAPublicar> encontrados = await documentoRepository
-            .ListarDoProcessoAsync(processoSeletivoId, ids, cancellationToken)
-            .ConfigureAwait(false);
+            .ListarDoProcessoAsync(processoId, ids, cancellationToken).ConfigureAwait(false);
         Dictionary<Guid, DocumentoAPublicar> porId = encontrados.ToDictionary(static d => d.Id);
+        DomainError? recusa = ConferirEnvios(ids, porId);
+        return recusa is not null
+            ? Result<DocumentosDoAtoConferidos>.Failure(recusa)
+            : await ConferirPrincipalEAnexosAsync(processoId, ids, porId, anexos, cancellationToken).ConfigureAwait(false);
+    }
 
+    private static DomainError? ConferirEnvios(Guid[] ids, Dictionary<Guid, DocumentoAPublicar> documentos)
+    {
         foreach (Guid id in ids)
         {
-            if (!porId.TryGetValue(id, out DocumentoAPublicar? documento))
+            DomainError? recusa = ConferirEnvio(documentos.GetValueOrDefault(id));
+            if (recusa is not null)
             {
-                return Falha(AtoDoProcessoErrorCodes.DocumentoNaoEncontrado,
-                    $"Documento {id} não encontrado ou não pertence a este processo.");
-            }
-
-            if (documento.Status != StatusArquivoEnviado.Confirmado)
-            {
-                return Falha(AtoDoProcessoErrorCodes.DocumentoNaoConfirmado,
-                    "Somente um documento confirmado pode ser referenciado no ato.");
-            }
-
-            if (documento.Finalidade != FinalidadeDoDocumento.DocumentoDeAto)
-            {
-                return Falha(AtoDoProcessoErrorCodes.DocumentoNaoEnviadoComoDocumentoDeAto,
-                    "Somente um documento enviado para um ato pode ser o principal ou o anexo de um ato.");
+                return recusa;
             }
         }
+        return null;
+    }
 
-        DocumentoAPublicar principal = porId[documentoPrincipalId];
+    private static DomainError? ConferirEnvio(DocumentoAPublicar? documento) => documento switch
+    {
+        null => new(AtoDoProcessoErrorCodes.DocumentoNaoEncontrado, "Documento não encontrado ou não pertence a este processo."),
+        { Status: not StatusArquivoEnviado.Confirmado } => new(AtoDoProcessoErrorCodes.DocumentoNaoConfirmado,
+            "Somente um documento confirmado pode ser referenciado no ato."),
+        { Finalidade: not FinalidadeDoDocumento.DocumentoDeAto } => new(AtoDoProcessoErrorCodes.DocumentoNaoEnviadoComoDocumentoDeAto,
+            "Somente um documento enviado para um ato pode ser o principal ou o anexo de um ato."),
+        _ => null,
+    };
+
+    private async Task<Result<DocumentosDoAtoConferidos>> ConferirPrincipalEAnexosAsync(
+        Guid processoId, Guid[] ids, Dictionary<Guid, DocumentoAPublicar> documentos,
+        IReadOnlyList<AnexoSolicitadoDoAto> pedidos, CancellationToken cancellationToken)
+    {
+        DocumentoAPublicar principal = documentos[ids[0]];
         if (principal.Formato != FormatoDeDocumento.Pdf)
         {
             return Falha(AtoDoProcessoErrorCodes.DocumentoPrincipalNaoEhPdf, "O documento principal do ato deve ser um PDF.");
         }
+        Result<IReadOnlyList<AnexoConferido>> anexos = ConferirNomesDosAnexos(pedidos, documentos);
+        return anexos.IsFailure
+            ? Result<DocumentosDoAtoConferidos>.Failure(anexos.Error!)
+            : await ConferirUsoAsync(processoId, ids, new(principal, anexos.Value!), cancellationToken).ConfigureAwait(false);
+    }
 
+    private static Result<IReadOnlyList<AnexoConferido>> ConferirNomesDosAnexos(
+        IReadOnlyList<AnexoSolicitadoDoAto> pedidos, Dictionary<Guid, DocumentoAPublicar> documentos)
+    {
         List<AnexoConferido> anexos = [];
         HashSet<string> nomesUsados = new(NomeDoAnexoPublicado.Comparador);
-        foreach (AnexoSolicitadoDoAto pedido in anexosSolicitados)
+        foreach (AnexoSolicitadoDoAto pedido in pedidos)
         {
-            DocumentoAPublicar documento = porId[pedido.DocumentoId];
-            string? nome = NomeDeArquivoEnviado.Normalizar(pedido.Nome, documento.Extensao);
-            if (nome is null)
+            Result<AnexoConferido> anexo = ConferirNomeDoAnexo(pedido, documentos[pedido.DocumentoId], nomesUsados);
+            if (anexo.IsFailure)
             {
-                return Falha(AtoDoProcessoErrorCodes.AnexoNomeInvalido,
-                    $"O nome do anexo é obrigatório, tem até {NomeDeArquivoEnviado.TamanhoMaximo} caracteres com a extensão e não tem separador de caminho, caractere de controle nem {NomeDeArquivoEnviado.CaracteresProibidos}.");
+                return Result<IReadOnlyList<AnexoConferido>>.Failure(anexo.Error!);
             }
-
-            if (!nomesUsados.Add(NomeDoAnexoPublicado.Normalizar(nome)))
-            {
-                return Falha(AtoDoProcessoErrorCodes.AnexoNomeRepetido,
-                    $"Há mais de um anexo chamado '{nome}' no ato. O nome do download leva a extensão do arquivo, então 'quadro' e 'quadro.pdf' são o mesmo nome.");
-            }
-
-            anexos.Add(new AnexoConferido(documento, nome));
+            anexos.Add(anexo.Value!);
         }
+        return Result<IReadOnlyList<AnexoConferido>>.Success(anexos);
+    }
 
+    private static Result<AnexoConferido> ConferirNomeDoAnexo(
+        AnexoSolicitadoDoAto pedido, DocumentoAPublicar documento, HashSet<string> nomesUsados)
+    {
+        string? nome = NomeDeArquivoEnviado.Normalizar(pedido.Nome, documento.Extensao);
+        if (nome is null)
+        {
+            return Result<AnexoConferido>.Failure(new(AtoDoProcessoErrorCodes.AnexoNomeInvalido,
+                $"O nome do anexo é obrigatório, tem até {NomeDeArquivoEnviado.TamanhoMaximo} caracteres com a extensão e não tem separador de caminho, caractere de controle nem {NomeDeArquivoEnviado.CaracteresProibidos}."));
+        }
+        return !nomesUsados.Add(NomeDoAnexoPublicado.Normalizar(nome))
+            ? Result<AnexoConferido>.Failure(new(AtoDoProcessoErrorCodes.AnexoNomeRepetido,
+                "Há mais de um anexo com o mesmo nome no ato. O nome do download leva a extensão do arquivo, então 'quadro' e 'quadro.pdf' são o mesmo nome."))
+            : Result<AnexoConferido>.Success(new(documento, nome));
+    }
+
+    private async Task<Result<DocumentosDoAtoConferidos>> ConferirUsoAsync(
+        Guid processoId, Guid[] ids, DocumentosDoAtoConferidos documentos, CancellationToken cancellationToken)
+    {
         IReadOnlySet<Guid> jaUsados = await atoDoProcessoRepository
-            .ListarDocumentosJaUsadosAsync(processoSeletivoId, ids, cancellationToken)
-            .ConfigureAwait(false);
-        if (jaUsados.Count > 0)
-        {
-            return Falha(AtoDoProcessoErrorCodes.DocumentoJaUsadoEmOutroAto,
-                $"O documento {jaUsados.First()} já foi usado em outro ato do processo. Envie o arquivo de novo para publicá-lo neste ato.");
-        }
-
-        return Result<DocumentosDoAtoConferidos>.Success(new DocumentosDoAtoConferidos(principal, anexos));
+            .ListarDocumentosJaUsadosAsync(processoId, ids, cancellationToken).ConfigureAwait(false);
+        return jaUsados.Count > 0
+            ? Falha(AtoDoProcessoErrorCodes.DocumentoJaUsadoEmOutroAto,
+                "O documento já foi usado em outro ato do processo. Envie o arquivo de novo para publicá-lo neste ato.")
+            : Result<DocumentosDoAtoConferidos>.Success(documentos);
     }
 
     private static Result<DocumentosDoAtoConferidos> Falha(string codigo, string mensagem) =>

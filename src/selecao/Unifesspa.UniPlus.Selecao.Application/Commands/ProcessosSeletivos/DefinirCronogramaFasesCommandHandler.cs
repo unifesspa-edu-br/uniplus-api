@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 /// </summary>
 public static class DefinirCronogramaFasesCommandHandler
 {
-    public static async Task<Result<MutacaoAceita>> Handle(
+    public static async Task<Result> Handle(
         DefinirCronogramaFasesCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         DefinicaoDoCronogramaDeFases definicao,
@@ -31,11 +31,11 @@ public static class DefinirCronogramaFasesCommandHandler
 
         Result<ProcessoSeletivo> obtido = await ObterParaEdicaoAsync(processoSeletivoRepository, command, cancellationToken).ConfigureAwait(false);
         return obtido.IsFailure
-            ? Result<MutacaoAceita>.Failure(obtido.Error!)
+            ? Result.Failure(obtido.Error!)
             : await DefinirEGravarAsync(obtido.Value!, command, definicao, unitOfWork, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
     }
 
-    // A precondição precede a resolução de regras externas (ADR-0110).
+    // Fora do rascunho a recusa vem antes de resolver regras externas.
     private static async Task<Result<ProcessoSeletivo>> ObterParaEdicaoAsync(
         IProcessoSeletivoRepository repositorio, DefinirCronogramaFasesCommand command, CancellationToken cancellationToken)
     {
@@ -47,12 +47,12 @@ public static class DefinirCronogramaFasesCommandHandler
             return Result<ProcessoSeletivo>.Failure(DefinirFormularioCommandHandler.ProcessoNaoEncontrado(command.ProcessoSeletivoId));
         }
 
-        return processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio
+        return processo.MutacaoBloqueada() is { } bloqueio
             ? Result<ProcessoSeletivo>.Failure(bloqueio)
             : Result<ProcessoSeletivo>.Success(processo);
     }
 
-    private static async Task<Result<MutacaoAceita>> DefinirEGravarAsync(
+    private static async Task<Result> DefinirEGravarAsync(
         ProcessoSeletivo processo,
         DefinirCronogramaFasesCommand command,
         DefinicaoDoCronogramaDeFases definicao,
@@ -63,10 +63,10 @@ public static class DefinirCronogramaFasesCommandHandler
         Result definida = await definicao.DefinirAsync(processo, command, agora, cancellationToken).ConfigureAwait(false);
         if (definida.IsFailure)
         {
-            return Result<MutacaoAceita>.ValidationFailure(definida.Errors);
+            return Result.ValidationFailure(definida.Errors);
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+        return Result.Success();
     }
 }

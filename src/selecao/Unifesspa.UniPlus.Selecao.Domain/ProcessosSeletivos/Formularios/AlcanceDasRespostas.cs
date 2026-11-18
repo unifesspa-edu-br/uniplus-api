@@ -1,10 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 
 /// <summary>
 /// Quais respostas um ponto de uso alcança (ADR-0171): as de um formulário obrigatório respondido
-/// antes dele, ou na mesma fase quando o ponto é uma exigência ou um formulário facultativo. A resposta
+/// antes dele, ou na mesma fase quando o ponto é um formulário facultativo ou não é formulário. A resposta
 /// de um formulário facultativo não é fonte de ninguém, o que impede o ciclo; dois obrigatórios na
 /// mesma fase não se alcançam. A fase que abre a solicitação de isenção conta como contemporânea da
 /// inscrição quando a ordem a coloca antes; havendo mais de uma fase que coleta a inscrição, vale a de
@@ -38,25 +39,16 @@ public static class AlcanceDasRespostas
 
     /// <summary>
     /// A resposta do obrigatório já existe quando o ponto a usa: o produtor vem numa fase anterior, ou
-    /// na mesma quando o ponto é uma exigência ou um formulário facultativo.
+    /// na mesma quando o ponto é um formulário facultativo ou não é formulário.
     /// </summary>
     private static bool JaRespondidaQuandoOPontoUsa(PontoDeUso ponto, FaseCronograma faseDoProdutor, IEnumerable<FaseCronograma> cronograma)
     {
-        int ordemDoProdutor = OrdemEfetivaDaFase(faseDoProdutor, cronograma);
-        int ordemDoPonto = OrdemEfetivaDaFase(ponto.Fase, cronograma);
-        return ordemDoProdutor < ordemDoPonto
-            || (ordemDoProdutor == ordemDoPonto && ponto.Formulario is not { Obrigatorio: true });
+        int momentoDoProdutor = MomentoDaFase.Da(faseDoProdutor, cronograma);
+        int momentoDoPonto = MomentoDaFase.Da(ponto.Fase, cronograma);
+        return momentoDoProdutor < momentoDoPonto
+            || (momentoDoProdutor == momentoDoPonto && ponto.Formulario is not { Obrigatorio: true });
     }
 
     private static FaseCronograma? FaseDoProdutor(FormularioDeclarado produtor, IEnumerable<FaseCronograma> cronograma) =>
         produtor.FaseId is { } faseId ? cronograma.FirstOrDefault(fase => fase.Id == faseId) : null;
-
-    /// <summary>A ordem da fase; a da solicitação de isenção vale a da inscrição quando esta vem depois.</summary>
-    private static int OrdemEfetivaDaFase(FaseCronograma fase, IEnumerable<FaseCronograma> cronograma) =>
-        fase.ColetaSolicitacaoIsencao && OrdemDaPrimeiraFaseDeInscricao(cronograma) is { } ordemDaInscricao
-            ? Math.Max(fase.Ordem, ordemDaInscricao)
-            : fase.Ordem;
-
-    private static int? OrdemDaPrimeiraFaseDeInscricao(IEnumerable<FaseCronograma> cronograma) =>
-        cronograma.Where(static fase => fase.ColetaInscricao).Select(static fase => (int?)fase.Ordem).Min();
 }

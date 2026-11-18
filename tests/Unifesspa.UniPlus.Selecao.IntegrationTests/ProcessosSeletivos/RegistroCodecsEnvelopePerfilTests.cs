@@ -8,6 +8,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 using Xunit;
@@ -130,14 +131,8 @@ public sealed class RegistroCodecsEnvelopePerfilTests
 
     private static VersaoConfiguracao VersaoCom(IPerfilCanonico perfil, byte[] bytes) =>
         VersaoConfiguracao.Abrir(
-            processoSeletivoId: Guid.CreateVersion7(),
-            configuracaoCongeladaCanonica: bytes,
-            schemaVersion: VersaoDeTeste,
-            algoritmoHash: perfil.Algoritmo,
-            atoCriadorId: Guid.CreateVersion7(),
-            atoCriadorHash: new string('a', 64),
-            atorUsuarioContaId: "user-conta-1",
-            instante: DateTimeOffset.UnixEpoch);
+            processoSeletivoId: Guid.CreateVersion7(), new DocumentoCongelado(bytes, VersaoDeTeste, perfil.Algoritmo, new string('a', 64)),
+            atoCriadorId: Guid.CreateVersion7(), atorUsuarioContaId: "user-conta-1", instante: DateTimeOffset.UnixEpoch);
 
     private static RegistroCodecsEnvelope RegistroCom(IPerfilCanonico perfil) =>
         new([new CodecDeTeste(perfil)], VersaoDeTeste);

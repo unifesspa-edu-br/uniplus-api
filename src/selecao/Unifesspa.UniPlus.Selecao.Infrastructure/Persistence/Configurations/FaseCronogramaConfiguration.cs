@@ -45,12 +45,15 @@ public sealed class FaseCronogramaConfiguration : IEntityTypeConfiguration<FaseC
         builder.Property(f => f.UnidadeResponsavelNome).HasMaxLength(UnidadeNomeMaxLength);
         builder.Ignore(f => f.UnidadeResponsavel);
 
+        builder.MapearRegraDeHomologacao(f => f.RegraDeHomologacao);
+
         // Referência por CÓDIGO canônico, não por FK: a fase concluinte é outra linha do
         // MESMO cronograma, e uma FK autorreferente exigiria ordenar os INSERTs de uma
         // reposição integral — que é como toda escrita do cronograma acontece. A
         // resolução (existe, publica definitiva, não antecede) é invariante da raiz.
         builder.Property(f => f.FaseConcluinteCodigo).HasMaxLength(CodigoMaxLength);
         builder.Property(f => f.EmiteParecerIndividual).IsRequired();
+        builder.MapearTiposDeDecisao();
 
         // Ordem e fase canônica únicas por processo — a rejeição em
         // ProcessoSeletivo.DefinirCronogramaFases é check-then-act não-atômico; a

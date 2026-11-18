@@ -1,10 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 
-using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 /// <summary>
 /// Lê, no envelope congelado de uma versão, as fases do cronograma e a fase de cada etapa. A etapa se liga à fase
@@ -94,10 +95,23 @@ internal static class FasesNoEnvelope
 
     private static Guid? GuidDe(JsonNode? node) => Guid.TryParse(TextoDe(node), out Guid id) ? id : null;
 
-    private static DateTimeOffset? InstanteDe(JsonNode? node) =>
-        DateTimeOffset.TryParse(TextoDe(node), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTimeOffset instante)
+    /// <summary>
+    /// Sem janela quando o nó é ausente ou <c>null</c>. Qualquer outro valor que não esteja na forma canônica
+    /// do envelope é falha, não ausência: tratar o instante ilegível como "sem janela" faria a fase passar
+    /// por não iniciada.
+    /// </summary>
+    private static DateTimeOffset? InstanteDe(JsonNode? node)
+    {
+        if (node is null)
+        {
+            return null;
+        }
+
+        return TextoDe(node) is { } texto && HashCanonicalComputer.TryParseInstantCanonical(texto, out DateTimeOffset instante)
             ? instante
-            : null;
+            : throw new PayloadForaDoPerfilCanonicoException(
+                $"O envelope congelado traz um instante fora da forma canônica '{HashCanonicalComputer.CanonicalInstantFormat}'.");
+    }
 
     private static string? TextoDe(JsonNode? node) =>
         node is JsonValue valor && valor.TryGetValue(out string? texto) ? texto : null;

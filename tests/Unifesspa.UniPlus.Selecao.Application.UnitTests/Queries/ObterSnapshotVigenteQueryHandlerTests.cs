@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 
 /// <summary>
 /// Cobertura do handler do snapshot vigente (ADR-0075/0076/0068/0103/0104): o instante
@@ -23,14 +24,8 @@ public sealed class ObterSnapshotVigenteQueryHandlerTests
 
     private static VersaoConfiguracao NovaVersao(Guid processoId, DateTimeOffset vigenteAPartirDe) =>
         VersaoConfiguracao.Abrir(
-            processoId,
-            System.Text.Encoding.UTF8.GetBytes("""{"etapas":[]}"""),
-            schemaVersion: "1.0",
-            algoritmoHash: "canonical-json/sha256@v1",
-            atoCriadorId: Guid.CreateVersion7(),
-            atoCriadorHash: HashFixo,
-            atorUsuarioContaId: "user-conta-123",
-            instante: vigenteAPartirDe);
+            processoId, new DocumentoCongelado(System.Text.Encoding.UTF8.GetBytes("""{"etapas":[]}"""), "1.0", "canonical-json/sha256@v1", HashFixo),
+            atoCriadorId: Guid.CreateVersion7(), atorUsuarioContaId: "user-conta-123", instante: vigenteAPartirDe);
 
     [Fact(DisplayName = "Instante omitido usa o relógio injetado — o seletor jamais lê um relógio por dentro (ADR-0068)")]
     public async Task Handle_InstanteOmitido_PassaORelogioInjetadoAoSeletor()

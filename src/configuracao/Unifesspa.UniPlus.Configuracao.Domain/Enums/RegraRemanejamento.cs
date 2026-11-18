@@ -15,7 +15,7 @@ public enum RegraRemanejamento
     /// <summary>Segue a cascata de remanejamento legalmente estabelecida (cotas reservadas).</summary>
     SegueCascata = 1,
 
-    /// <summary>Remaneja para um destino único informado em <c>RemanejamentoArgs.Destino</c>.</summary>
+    /// <summary>Remaneja para um destino único informado em <c>RemanejamentoParametros.Destino</c>.</summary>
     DestinoUnico = 2,
 
     /// <summary>Remaneja de forma cruzada entre um par (<c>Par</c>) com fallback (<c>Fallback</c>).</summary>

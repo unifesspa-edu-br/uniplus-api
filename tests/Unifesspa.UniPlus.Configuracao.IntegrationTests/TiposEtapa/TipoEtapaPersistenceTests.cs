@@ -60,4 +60,29 @@ public sealed class TipoEtapaPersistenceTests
         pg.SqlState.Should().Be("23514", "violação de CHECK constraint");
         pg.ConstraintName.Should().Be("ck_tipos_etapa_nota_de_origem_no_enem_admite_pontuacao");
     }
+
+    [Fact(DisplayName = "A carga do cadastro exige a correção independente só no tipo REDACAO, e a leitura cross-módulo a expõe")]
+    public async Task Carga_ExigeACorrecaoIndependenteSoNaRedacao()
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        IReadOnlyList<TipoEtapaView> ativos = await new TipoEtapaReader(ctx).ListarAtivosAsync(CancellationToken.None);
+
+        ativos.Where(tipo => tipo.ExigeCorrecaoIndependente).Select(tipo => tipo.Codigo).Should().Equal("REDACAO");
+    }
+
+    [Fact(DisplayName = "O banco recusa exigir correção independente no tipo com nota de origem no ENEM")]
+    public async Task CheckConstraint_CorrecaoIndependenteComNotaDeOrigemNoEnem_Recusa()
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using IDbContextTransaction transacao = await ctx.Database.BeginTransactionAsync();
+
+        Func<Task> act = async () => await ctx.Database.ExecuteSqlRawAsync(
+            "UPDATE configuracao.tipos_etapa SET exige_correcao_independente = true WHERE codigo = 'NOTA_ENEM'");
+
+        Npgsql.PostgresException pg = (await act.Should().ThrowAsync<Npgsql.PostgresException>()).Which;
+        await transacao.RollbackAsync();
+        pg.SqlState.Should().Be("23514", "violação de CHECK constraint");
+        pg.ConstraintName.Should().Be("ck_tipos_etapa_correcao_independente_sem_nota_do_enem");
+    }
 }

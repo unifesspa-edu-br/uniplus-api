@@ -208,7 +208,7 @@ internal static class LeituraDasCondicoes
 
         // O encoder nunca emite DNF vazio: "sem condição" é null, não []. Um array vazio num envelope
         // adulterado colapsaria para "sem pré-condição", forma que a projeção viva não produz, e a
-        // restauração o recanonicalizaria como null, aceitando em silêncio um snapshot nunca congelado.
+        // reidratação o recanonicalizaria como null, aceitando em silêncio um snapshot nunca congelado.
         if (clausulas.Count == 0)
         {
             return leitor.Recusar<IReadOnlyList<LinhaDoPredicado>>($"'{pathPai}.{chave}' é um array de cláusulas vazio — a ausência de condição é `null`, nunca `[]`.") ?? [];

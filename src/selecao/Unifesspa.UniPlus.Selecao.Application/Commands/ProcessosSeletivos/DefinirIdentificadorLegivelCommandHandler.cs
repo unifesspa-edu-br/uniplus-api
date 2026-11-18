@@ -11,12 +11,11 @@ using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 /// <summary>
 /// Handler do <see cref="DefinirIdentificadorLegivelCommand"/>. A regra de quando o identificador
 /// pode mudar é da raiz (<see cref="ProcessoSeletivo.DefinirIdentificadorLegivel"/>); aqui ficam
-/// o que depende de consulta — a unicidade entre processos —, a precondição da sessão editorial,
-/// que sai primeiro, e a validação do formato.
+/// o que depende de consulta — a unicidade entre processos — e a validação do formato.
 /// </summary>
 public static class DefinirIdentificadorLegivelCommandHandler
 {
-    public static async Task<Result<MutacaoAceita>> Handle(
+    public static async Task<Result> Handle(
         DefinirIdentificadorLegivelCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IUnitOfWork unitOfWork,
@@ -31,33 +30,32 @@ public static class DefinirIdentificadorLegivelCommandHandler
             .ConfigureAwait(false);
         if (processo is null)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 "ProcessoSeletivo.NaoEncontrado",
                 $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
         }
 
-        // A precondição é o gate de concorrência da sessão editorial e sai antes do formato: quem
-        // edita sobre um estado desatualizado precisa reler antes de qualquer outra correção.
-        if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
+        // Fora do rascunho a recusa sai antes da validação do formato.
+        if (processo.MutacaoBloqueada() is { } bloqueio)
         {
-            return Result<MutacaoAceita>.Failure(bloqueio);
+            return Result.Failure(bloqueio);
         }
 
         Result<IdentificadorLegivel> identificadorResult =
             CriarProcessoSeletivoCommandHandler.IdentificadorLegivelDeclarado(command.IdentificadorLegivel);
         if (identificadorResult.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(identificadorResult.Error!);
+            return Result.Failure(identificadorResult.Error!);
         }
 
         IdentificadorLegivel identificador = identificadorResult.Value!;
 
         // A recusa da raiz vem primeiro: quem não pode alterar recebe essa causa, e não um
         // conflito com outro processo que nada muda para ele.
-        Result definirResult = processo.DefinirIdentificadorLegivel(identificador, command.Precondicao);
+        Result definirResult = processo.DefinirIdentificadorLegivel(identificador);
         if (definirResult.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(definirResult.Error!);
+            return Result.Failure(definirResult.Error!);
         }
 
         // Daqui em diante a raiz já está alterada. Toda recusa descarta o rastreamento: sem isso,
@@ -68,7 +66,7 @@ public static class DefinirIdentificadorLegivelCommandHandler
                 .ConfigureAwait(false))
         {
             unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result<MutacaoAceita>.Failure(CriarProcessoSeletivoCommandHandler.IdentificadorLegivelEmUso(identificador));
+            return Result.Failure(CriarProcessoSeletivoCommandHandler.IdentificadorLegivelEmUso(identificador));
         }
 
         try
@@ -79,9 +77,9 @@ public static class DefinirIdentificadorLegivelCommandHandler
         {
             // Outro processo gravou o mesmo identificador entre a consulta acima e esta gravação.
             unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result<MutacaoAceita>.Failure(CriarProcessoSeletivoCommandHandler.IdentificadorLegivelEmUso(identificador));
+            return Result.Failure(CriarProcessoSeletivoCommandHandler.IdentificadorLegivelEmUso(identificador));
         }
 
-        return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+        return Result.Success();
     }
 }

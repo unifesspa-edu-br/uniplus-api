@@ -11,14 +11,14 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// Identificador legível do processo seletivo: livre antes da primeira publicação, exigido para
-/// gerar versão e imutável depois de constar em versão publicada. Na sessão de retificação aberta
-/// sobre versão congelada sem ele, o identificador é declarado e pode ser corrigido até o
-/// fechamento.
+/// Identificador legível do processo seletivo: livre em rascunho e exigido para gerar versão. Depois da
+/// publicação, a configuração só muda pela retificação, que confere o identificador contra a versão
+/// vigente (<see cref="Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Retificacao.ConferenciaDoIdentificadorDaRetificacao"/>).
 /// </summary>
 public sealed class ProcessoSeletivoIdentificadorLegivelTests
 {
@@ -31,7 +31,7 @@ public sealed class ProcessoSeletivoIdentificadorLegivelTests
     {
         Action criar = () => ProcessoSeletivo.Criar(
             "PS 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, default);
 
         criar.Should().Throw<ArgumentException>();
@@ -43,13 +43,13 @@ public sealed class ProcessoSeletivoIdentificadorLegivelTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         IdentificadorLegivel outro = Identificador("psiq-2026");
 
-        processo.DefinirIdentificadorLegivel(outro, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirIdentificadorLegivel(outro).IsSuccess.Should().BeTrue();
         processo.IdentificadorLegivel.Should().Be(outro);
 
-        processo.DefinirIdentificadorLegivel(Identificador("psiq-2026b"), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirIdentificadorLegivel(Identificador("psiq-2026b")).IsSuccess.Should().BeTrue();
         processo.IdentificadorLegivel!.Value.Valor.Should().Be("psiq-2026b");
 
-        Action remover = () => processo.DefinirIdentificadorLegivel(default, PrecondicaoIfMatch.Ausente);
+        Action remover = () => processo.DefinirIdentificadorLegivel(default);
         remover.Should().Throw<ArgumentException>();
         processo.IdentificadorLegivel!.Value.Valor.Should().Be("psiq-2026b");
     }
@@ -73,7 +73,7 @@ public sealed class ProcessoSeletivoIdentificadorLegivelTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         IdentificadoresDeTeste.Retirar(processo);
 
-        IReadOnlyList<ItemConformidade> itens = ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        IReadOnlyList<ItemConformidade> itens = ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo));
 
         itens.Where(static i => !i.Ok).Select(static i => i.Codigo)
             .Should().Equal("identificador_legivel_nao_declarado");
@@ -81,64 +81,16 @@ public sealed class ProcessoSeletivoIdentificadorLegivelTests
             .Should().Be(DimensaoConformidade.Identificacao);
     }
 
-    [Fact(DisplayName = "Identificador que consta na versão publicada não muda, nem dentro da sessão de retificação")]
-    public void Publicado_ComIdentificador_Imutavel()
-    {
-        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        processo.DefinirIdentificadorLegivel(Identificador("psiq-2026"), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        VersaoConfiguracao versao = Publicar(processo).Value!;
-        processo.AbrirRetificacao("Correção do prazo", versao, identificadorDaVersaoBase: processo.IdentificadorLegivel, VersoesPublicadasDeTeste.SoAVigente(processo), "user-conta-1", Agora).IsSuccess.Should().BeTrue();
-
-        Result resultado = processo.DefinirIdentificadorLegivel(
-            Identificador("psiq-2026b"), PrecondicaoIfMatch.DeTags([processo.ETagDaSessaoEditorial!]));
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentificadorLegivelImutavel);
-        processo.IdentificadorLegivel!.Value.Valor.Should().Be("psiq-2026");
-    }
-
-    [Fact(DisplayName = "Fora da sessão de retificação, processo publicado recusa pelo guarda geral")]
-    public void Publicado_SemSessao_Recusa()
+    [Fact(DisplayName = "Processo publicado recusa a troca do identificador pela guarda de edição")]
+    public void Publicado_Recusa()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         IdentificadorLegivel original = processo.IdentificadorLegivel!.Value;
         Publicar(processo).IsSuccess.Should().BeTrue();
 
-        processo.DefinirIdentificadorLegivel(Identificador("psiq-2026"), PrecondicaoIfMatch.Ausente)
+        processo.DefinirIdentificadorLegivel(Identificador("psiq-2026"))
             .Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
         processo.IdentificadorLegivel.Should().Be(original);
-    }
-
-    [Fact(DisplayName = "Reenviar o mesmo identificador de processo publicado também é recusado")]
-    public void Publicado_MesmoIdentificador_Recusa()
-    {
-        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        IdentificadorLegivel identificador = processo.IdentificadorLegivel!.Value;
-        VersaoConfiguracao versao = Publicar(processo).Value!;
-        processo.AbrirRetificacao("Correção do prazo", versao, identificadorDaVersaoBase: processo.IdentificadorLegivel, VersoesPublicadasDeTeste.SoAVigente(processo), "user-conta-1", Agora).IsSuccess.Should().BeTrue();
-        string etag = processo.ETagDaSessaoEditorial!;
-
-        processo.DefinirIdentificadorLegivel(identificador, PrecondicaoIfMatch.DeTags([etag]))
-            .Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentificadorLegivelImutavel);
-        processo.ETagDaSessaoEditorial.Should().Be(etag, "a recusa não move a revisão da sessão");
-    }
-
-    [Fact(DisplayName = "Fechar retificação de processo publicado sem identificador é recusado, sem gerar versão")]
-    public void FecharRetificacao_SemIdentificador_Recusa()
-    {
-        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        VersaoConfiguracao versao = Publicar(processo).Value!;
-        IdentificadoresDeTeste.Retirar(processo);
-        processo.AbrirRetificacao("Correção do prazo", versao, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "user-conta-1", Agora).IsSuccess.Should().BeTrue();
-
-        Result<VersaoConfiguracao> resultado = processo.FecharRetificacao(
-            ProcessoConformeFactory.Dados(), versao, BytesCanonicos, "1.1", "canonical-json/sha256@v1", HashFixo,
-            "user-conta-1", PrecondicaoIfMatch.Curinga, new RelogioFixo(Agora.AddMinutes(1)),
-            ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
-
-        resultado.IsFailure.Should().BeTrue("nenhuma versão nova é aberta");
-        resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentificadorLegivelAusente);
-        processo.Rascunho.Should().NotBeNull("a sessão continua aberta para quem corrigir");
     }
 
     [Fact(DisplayName = "Retificar processo publicado sem identificador é recusado, sem gerar versão")]
@@ -149,83 +101,16 @@ public sealed class ProcessoSeletivoIdentificadorLegivelTests
         IdentificadoresDeTeste.Retirar(processo);
 
         Result<VersaoConfiguracao> resultado = processo.Retificar(
-            ProcessoConformeFactory.Dados(), versao, BytesCanonicos, "1.1", "canonical-json/sha256@v1", HashFixo,
-            "user-conta-1", motivo: "Correção", clock: new RelogioFixo(Agora.AddMinutes(1)),
-            ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = ProcessoConformeFactory.Dados(), Documento = new DocumentoCongelado(BytesCanonicos, "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "user-conta-1", Relogio = new RelogioFixo(Agora.AddMinutes(1)) }, versao, "Correção");
 
         resultado.IsFailure.Should().BeTrue("nenhuma versão nova é aberta");
         resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentificadorLegivelAusente);
     }
 
-    [Fact(DisplayName = "Sessão aberta sobre versão sem identificador o declara e corrige, movendo a revisão")]
-    public void SessaoSobreVersaoSemIdentificador_Declara()
-    {
-        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        VersaoConfiguracao versao = Publicar(processo).Value!;
-        IdentificadoresDeTeste.Retirar(processo);
-        processo.AbrirRetificacao("Declara o endereço público", versao, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "user-conta-1", Agora).IsSuccess.Should().BeTrue();
-
-        string etagInicial = processo.ETagDaSessaoEditorial!;
-        processo.DefinirIdentificadorLegivel(Identificador("medicina-2072"), PrecondicaoIfMatch.DeTags([etagInicial]))
-            .IsSuccess.Should().BeTrue("a versão base não congelou identificador — a sessão o declara");
-        processo.ETagDaSessaoEditorial.Should().NotBe(etagInicial, "declarar é mutação da sessão e move a revisão");
-
-        processo.DefinirIdentificadorLegivel(
-                Identificador("medicina-2027"), PrecondicaoIfMatch.DeTags([processo.ETagDaSessaoEditorial!]))
-            .IsSuccess.Should().BeTrue("o valor ainda não consta em versão publicada — corrigir a digitação é aceito");
-        processo.IdentificadorLegivel!.Value.Valor.Should().Be("medicina-2027");
-    }
-
-    [Fact(DisplayName = "Versão vigente que congelou o identificador recusa a declaração, mesmo com a raiz viva sem ele")]
-    public void VersaoComIdentificador_RaizVivaSem_Recusa()
-    {
-        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        IdentificadorLegivel congelado = processo.IdentificadorLegivel!.Value;
-        VersaoConfiguracao versao = Publicar(processo).Value!;
-        IdentificadoresDeTeste.Retirar(processo);
-        processo.AbrirRetificacao("Correção do prazo", versao, identificadorDaVersaoBase: congelado, VersoesPublicadasDeTeste.SoAVigente(processo), "user-conta-1", Agora)
-            .IsSuccess.Should().BeTrue();
-
-        Result resultado = processo.DefinirIdentificadorLegivel(
-            Identificador("medicina-2027"), PrecondicaoIfMatch.DeTags([processo.ETagDaSessaoEditorial!]));
-
-        resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentificadorLegivelImutavel,
-            "a imutabilidade é conferida contra a versão publicada, e não contra o valor vivo da raiz");
-        processo.IdentificadorLegivel.Should().BeNull("a recusa não altera a raiz");
-    }
-
-    [Fact(DisplayName = "O identificador declarado na sessão entra na versão que ela gera e não muda mais")]
-    public void SessaoSobreVersaoSemIdentificador_FechamentoCongela()
-    {
-        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        VersaoConfiguracao versao = Publicar(processo).Value!;
-        IdentificadoresDeTeste.Retirar(processo);
-        processo.AbrirRetificacao("Declara o endereço público", versao, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "user-conta-1", Agora).IsSuccess.Should().BeTrue();
-        processo.DefinirIdentificadorLegivel(
-                Identificador("medicina-2027"), PrecondicaoIfMatch.DeTags([processo.ETagDaSessaoEditorial!]))
-            .IsSuccess.Should().BeTrue();
-
-        Result<VersaoConfiguracao> fechamento = processo.FecharRetificacao(
-            ProcessoConformeFactory.Dados(), versao, BytesCanonicos, "1.1", "canonical-json/sha256@v1", HashFixo,
-            "user-conta-1", PrecondicaoIfMatch.Curinga, new RelogioFixo(Agora.AddMinutes(1)),
-            ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
-        fechamento.IsSuccess.Should().BeTrue(fechamento.Error?.Message);
-
-        processo.AbrirRetificacao("Nova correção", fechamento.Value!, identificadorDaVersaoBase: Identificador("medicina-2027"), VersoesPublicadasDeTeste.SoAVigente(processo), "user-conta-1", Agora.AddMinutes(2))
-            .IsSuccess.Should().BeTrue();
-        Result troca = processo.DefinirIdentificadorLegivel(
-            Identificador("medicina-2028"), PrecondicaoIfMatch.DeTags([processo.ETagDaSessaoEditorial!]));
-
-        troca.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentificadorLegivelImutavel,
-            "agora o identificador consta na versão publicada que a sessão anterior gerou");
-        processo.IdentificadorLegivel!.Value.Valor.Should().Be("medicina-2027");
-    }
-
     private static IdentificadorLegivel Identificador(string valor) => IdentificadorLegivel.Criar(valor).Value;
 
     private static Result<VersaoConfiguracao> Publicar(ProcessoSeletivo processo) => processo.Publicar(
-        ProcessoConformeFactory.Dados(), BytesCanonicos, "1.1", "canonical-json/sha256@v1", HashFixo, "user-conta-1",
-        new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        new CenarioDeCongelamento { Dados = ProcessoConformeFactory.Dados(), Documento = new DocumentoCongelado(BytesCanonicos, "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "user-conta-1", Relogio = new RelogioFixo(Agora) });
 
     private sealed class RelogioFixo(DateTimeOffset instante) : TimeProvider
     {

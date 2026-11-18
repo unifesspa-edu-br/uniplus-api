@@ -19,6 +19,14 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
     Justification = "xUnit ICollectionFixture<T> requires the fixture type to be public.")]
 public sealed class CascadingFixture : MonolitoPostgresFixtureBase<CascadingApiFactory>
 {
+    /// <summary>
+    /// Verdadeiro quando um teste terminou com operação ainda viva sobre o host compartilhado: a limpeza dos dados e o descarte
+    /// do host passam a ser pulados, e os testes seguintes da coleção não são confiáveis.
+    /// </summary>
+    public bool Inutilizavel { get; private set; }
+
+    public void MarcarComoInutilizavel() => Inutilizavel = true;
+
     protected override CascadingApiFactory CreateFactory(string connectionString) =>
         new(connectionString);
 

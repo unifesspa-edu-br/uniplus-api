@@ -162,7 +162,7 @@ public sealed class VeredictoDeSubmissaoTests
     private static TermoExigidoFormulario NovoTermo(string codigo, Guid versaoId, string hash) =>
         TermoExigidoFormulario.Criar(
             codigo, 0,
-            new VersaoTermoEscolhida(Guid.NewGuid(), versaoId, "Declaração de veracidade", "Declaro que é verdade.", "Lei 9.784/1999, art. 4º", "REGISTRO_DIGITAL_SEM_LOG_IP", hash),
+            new VersaoTermoEscolhida(Guid.NewGuid(), versaoId, "TERMO_DE_TESTE", 1, "Declaração de veracidade", "Declaro que é verdade.", "Lei 9.784/1999, art. 4º", "REGISTRO_DIGITAL_SEM_LOG_IP", hash),
             exibicao: null, Obrigatoriedade.Sempre, FinalidadeFormulario.Inscricao).Value!;
 
     /// <summary>

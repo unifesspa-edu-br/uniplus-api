@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.NotasDoEnem.ApoioDaImportacaoDeNotasDeTeste;
@@ -253,22 +254,7 @@ public sealed class ImportacaoDeNotasEndpointTests
         Cenario cenario = await _apoio.NovoCenarioAsync(0);
         using HttpClient client = _fixture.Factory.CreateClient();
         byte[] arquivo = Bytes([Linha(Pessoas[0], 1)]);
-        Guid versaoDivulgada;
-        await using (AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope())
-        {
-            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-            VersaoConfiguracao divulgada = await db.VersoesConfiguracao.AsNoTracking().SingleAsync(v => v.ProcessoSeletivoId == cenario.Processo.ProcessoId);
-            versaoDivulgada = divulgada.Id;
-            VersaoConfiguracao outra = VersaoConfiguracao.Suceder(
-                divulgada, System.Text.Encoding.UTF8.GetBytes("{}"), "1", "sha256@v1", Guid.CreateVersion7(), new string('a', 64),
-                divulgada.AtoCriadorId, "integration-test-user", DateTimeOffset.UtcNow);
-            db.VersoesConfiguracao.Add(outra);
-            db.LotesDeNotasDoEnem.Add(LoteDeNotasDoEnem.Registrar(
-                cenario.Processo.ProcessoId, cenario.Processo.EtapaDoEnemId, Edicao, "INEP_ENEM_RETORNO", "v1", new string('b', 64),
-                Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(arquivo)), "conta-admin", DateTimeOffset.UtcNow, 0,
-                outra.Id, new Unifesspa.UniPlus.Selecao.Domain.Services.ResultadoDoCruzamento([], [], [], []), []));
-            await db.SaveChangesAsync();
-        }
+        Guid versaoDivulgada = await RegistrarLoteSobOutraVersaoAsync(cenario, arquivo);
 
         HttpResponseMessage sobOutraVersao = await ImportarAsync(client, cenario, arquivo);
         HttpResponseMessage sobAMesma = await ImportarAsync(client, cenario, arquivo);
@@ -277,9 +263,33 @@ public sealed class ImportacaoDeNotasEndpointTests
         Guid novo = await IdDoLoteAsync(sobOutraVersao);
         sobAMesma.StatusCode.Should().Be(HttpStatusCode.OK);
         (await IdDoLoteAsync(sobAMesma)).Should().Be(novo);
+        (await LoteAsync(novo)).VersaoConfiguracaoId.Should().Be(versaoDivulgada);
+    }
+
+    private async Task<Guid> RegistrarLoteSobOutraVersaoAsync(Cenario cenario, byte[] arquivo)
+    {
+        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        VersaoConfiguracao divulgada = await db.VersoesConfiguracao.AsNoTracking().SingleAsync(v => v.ProcessoSeletivoId == cenario.Processo.ProcessoId);
+        VersaoConfiguracao outra = VersaoConfiguracao.Suceder(
+            divulgada, new DocumentoCongelado(System.Text.Encoding.UTF8.GetBytes("{}"), "1", "sha256@v1", new string('a', 64)),
+            Guid.CreateVersion7(), "integration-test-user", DateTimeOffset.UtcNow);
+        db.VersoesConfiguracao.Add(outra);
+        db.LotesDeNotasDoEnem.Add(LoteDeNotasDoEnem.Registrar(
+            cenario.Processo.ProcessoId, cenario.Processo.EtapaDoEnemId, Edicao, "INEP_ENEM_RETORNO", "v1", new string('b', 64),
+            Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(arquivo)), "conta-admin", DateTimeOffset.UtcNow, 0,
+            outra.Id, new Unifesspa.UniPlus.Selecao.Domain.Services.ResultadoDoCruzamento([], [], [], []), []));
+        await db.SaveChangesAsync();
+
+        return divulgada.Id;
+    }
+
+    private async Task<LoteDeNotasDoEnem> LoteAsync(Guid id)
+    {
         await using AsyncServiceScope leitura = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext contexto = leitura.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        (await contexto.LotesDeNotasDoEnem.AsNoTracking().SingleAsync(l => l.Id == novo)).VersaoConfiguracaoId.Should().Be(versaoDivulgada);
+
+        return await contexto.LotesDeNotasDoEnem.AsNoTracking().SingleAsync(l => l.Id == id);
     }
 
     [Fact(DisplayName = "inscrição que concorre a curso fora do edital divulgado recusa o lote inteiro, sem gravar nada")]

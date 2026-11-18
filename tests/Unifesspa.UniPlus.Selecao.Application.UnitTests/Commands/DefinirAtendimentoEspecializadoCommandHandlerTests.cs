@@ -36,7 +36,7 @@ public sealed class DefinirAtendimentoEspecializadoCommandHandlerTests
     [Fact(DisplayName = "Handle com tipo de deficiência sob condição PcD persiste (CA-06, ADR-0067)")]
     public async Task Handle_TipoDeficienciaSobPcd_Persiste()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         Guid condicaoId = Guid.CreateVersion7();
         Guid tipoDeficienciaId = Guid.CreateVersion7();
 
@@ -46,9 +46,9 @@ public sealed class DefinirAtendimentoEspecializadoCommandHandlerTests
         mocks.TipoDeficienciaReader.ObterPorIdAsync(tipoDeficienciaId, Arg.Any<CancellationToken>())
             .Returns(new TipoDeficienciaView(tipoDeficienciaId, "DEFICIENCIA_VISUAL", "Deficiência visual", "Deficiência relacionada à visão", null));
 
-        DefinirAtendimentoEspecializadoCommand command = new(processo.Id, [condicaoId], [], [tipoDeficienciaId], PrecondicaoIfMatch.Ausente);
+        DefinirAtendimentoEspecializadoCommand command = new(processo.Id, [condicaoId], [], [tipoDeficienciaId]);
 
-        Result<MutacaoAceita> result = await DefinirAtendimentoEspecializadoCommandHandler.Handle(
+        Result result = await DefinirAtendimentoEspecializadoCommandHandler.Handle(
             command, mocks.Repository, mocks.CondicaoReader, mocks.RecursoReader, mocks.TipoDeficienciaReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
@@ -60,7 +60,7 @@ public sealed class DefinirAtendimentoEspecializadoCommandHandlerTests
     [Fact(DisplayName = "Handle com tipo de deficiência sem condição PcD recusa (CA-06, ADR-0067)")]
     public async Task Handle_TipoDeficienciaSemPcd_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         Guid condicaoId = Guid.CreateVersion7();
         Guid tipoDeficienciaId = Guid.CreateVersion7();
 
@@ -70,9 +70,9 @@ public sealed class DefinirAtendimentoEspecializadoCommandHandlerTests
         mocks.TipoDeficienciaReader.ObterPorIdAsync(tipoDeficienciaId, Arg.Any<CancellationToken>())
             .Returns(new TipoDeficienciaView(tipoDeficienciaId, "DEFICIENCIA_VISUAL", "Deficiência visual", "Deficiência relacionada à visão", null));
 
-        DefinirAtendimentoEspecializadoCommand command = new(processo.Id, [condicaoId], [], [tipoDeficienciaId], PrecondicaoIfMatch.Ausente);
+        DefinirAtendimentoEspecializadoCommand command = new(processo.Id, [condicaoId], [], [tipoDeficienciaId]);
 
-        Result<MutacaoAceita> result = await DefinirAtendimentoEspecializadoCommandHandler.Handle(
+        Result result = await DefinirAtendimentoEspecializadoCommandHandler.Handle(
             command, mocks.Repository, mocks.CondicaoReader, mocks.RecursoReader, mocks.TipoDeficienciaReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
@@ -83,14 +83,14 @@ public sealed class DefinirAtendimentoEspecializadoCommandHandlerTests
     [Fact(DisplayName = "ADR-0125: Handle recusa CondicaoId duplicado ANTES de consultar qualquer leitor (validação vence I/O)")]
     public async Task Handle_CondicaoIdDuplicado_RecusaSemConsultarLeitores()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         Guid condicaoId = Guid.CreateVersion7();
 
         (IProcessoSeletivoRepository Repository, ICondicaoAtendimentoReader CondicaoReader, IRecursoAcessibilidadeReader RecursoReader, ITipoDeficienciaReader TipoDeficienciaReader, IUnitOfWork UnitOfWork) mocks = NovosMocks(processo, processo.Id);
 
-        DefinirAtendimentoEspecializadoCommand command = new(processo.Id, [condicaoId, condicaoId], [], [], PrecondicaoIfMatch.Ausente);
+        DefinirAtendimentoEspecializadoCommand command = new(processo.Id, [condicaoId, condicaoId], [], []);
 
-        Result<MutacaoAceita> result = await DefinirAtendimentoEspecializadoCommandHandler.Handle(
+        Result result = await DefinirAtendimentoEspecializadoCommandHandler.Handle(
             command, mocks.Repository, mocks.CondicaoReader, mocks.RecursoReader, mocks.TipoDeficienciaReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
@@ -101,16 +101,16 @@ public sealed class DefinirAtendimentoEspecializadoCommandHandlerTests
     [Fact(DisplayName = "Handle com condição inexistente recusa sem persistir")]
     public async Task Handle_CondicaoInexistente_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         Guid condicaoId = Guid.CreateVersion7();
 
         (IProcessoSeletivoRepository Repository, ICondicaoAtendimentoReader CondicaoReader, IRecursoAcessibilidadeReader RecursoReader, ITipoDeficienciaReader TipoDeficienciaReader, IUnitOfWork UnitOfWork) mocks = NovosMocks(processo, processo.Id);
         mocks.CondicaoReader.ObterPorIdAsync(condicaoId, Arg.Any<CancellationToken>())
             .Returns((CondicaoAtendimentoView?)null);
 
-        DefinirAtendimentoEspecializadoCommand command = new(processo.Id, [condicaoId], [], [], PrecondicaoIfMatch.Ausente);
+        DefinirAtendimentoEspecializadoCommand command = new(processo.Id, [condicaoId], [], []);
 
-        Result<MutacaoAceita> result = await DefinirAtendimentoEspecializadoCommandHandler.Handle(
+        Result result = await DefinirAtendimentoEspecializadoCommandHandler.Handle(
             command, mocks.Repository, mocks.CondicaoReader, mocks.RecursoReader, mocks.TipoDeficienciaReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();

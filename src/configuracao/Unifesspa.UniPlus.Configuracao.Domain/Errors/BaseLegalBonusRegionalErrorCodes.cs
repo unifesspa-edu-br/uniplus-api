@@ -12,4 +12,7 @@ public static class BaseLegalBonusRegionalErrorCodes
     public const string SemMunicipios = "BaseLegalBonusRegional.SemMunicipios";
     public const string MunicipioInvalido = "BaseLegalBonusRegional.MunicipioInvalido";
     public const string NaoEncontrado = "BaseLegalBonusRegional.NaoEncontrado";
+    public const string CodigoFormatoInvalido = "BaseLegalBonusRegional.CodigoFormatoInvalido";
+    public const string CodigoTamanho = "BaseLegalBonusRegional.CodigoTamanho";
+    public const string CodigoJaExiste = "BaseLegalBonusRegional.CodigoJaExiste";
 }

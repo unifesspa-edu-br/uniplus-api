@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.OfertasCurso;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -9,7 +10,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// ADR-0066). A unidade chega como <paramref name="UnidadeOfertanteOrigemId"/>:
 /// o handler resolve a Unidade viva via <c>IUnidadeReader</c> (ADR-0056) e
 /// congela sigla/nome/tipo por snapshot-copy (ADR-0061) — o payload nunca traz
-/// o snapshot pronto. Enums como tokens UPPER_SNAKE: programa obrigatório;
+/// o snapshot pronto. O <c>Codigo</c> é informado pela gestão, obrigatório e único entre as ofertas vivas. Enums como tokens UPPER_SNAKE: programa obrigatório;
 /// formato pedagógico com default PRESENCIAL quando ausente; regime de
 /// funcionamento, regime de turno e turnos obrigatórios, conferidos entre si
 /// (REGULAR exige um turno; INTEGRAL, dois distintos; INTENSIVO exige INTEGRAL). A base legal é obrigatória quando o programa não é REGULAR
@@ -29,6 +30,7 @@ public sealed record CriarOfertaCursoCommand(
     Guid CursoId,
     Guid LocalOfertaId,
     Guid UnidadeOfertanteOrigemId,
+    string? Codigo,
     string? ProgramaDeOferta,
     string? RegimeDeFuncionamento,
     string? RegimeDeTurno,
@@ -38,4 +40,10 @@ public sealed record CriarOfertaCursoCommand(
     string? CodigoSga = null,
     int? VagasAnuaisAutorizadas = null,
     string? BaseLegal = null,
-    string? AtoAutorizacaoMec = null) : ICommand<Result<Guid>>;
+    string? AtoAutorizacaoMec = null) : ICommand<Result<Guid>>
+{
+    /// <summary>O que a gestão declara da oferta, sem o curso, o local e a unidade, que não mudam depois de criada.</summary>
+    public DeclaracaoDaOfertaDeCurso Declaracao() => new(
+        Codigo, ProgramaDeOferta, FormatoPedagogico, RegimeDeFuncionamento, RegimeDeTurno, Turnos,
+        EMecCodigo, CodigoSga, VagasAnuaisAutorizadas, BaseLegal, AtoAutorizacaoMec);
+}

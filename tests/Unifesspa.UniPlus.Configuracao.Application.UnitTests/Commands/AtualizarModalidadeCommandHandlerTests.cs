@@ -41,8 +41,9 @@ public sealed class AtualizarModalidadeCommandHandlerTests
         new(fato, "IGUAL", JsonSerializer.SerializeToElement(valor));
 
     private static Modalidade Existente(string codigo = "PSVR_AMPLA") =>
-        Modalidade.Criar(codigo, "Ampla", "AMPLA", "RESIDUAL_DO_VO", null, null, null, null, null,
-                PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, null)
+        Modalidade.Criar(codigo, new DeclaracaoDaModalidade(
+                "Ampla", "AMPLA", "RESTANTE_DAS_VAGAS_OFERTADAS", null, null, null, null, null,
+                PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, null))
             .Value!;
 
     [Fact(DisplayName = "Modalidade inexistente retorna NaoEncontrada (404)")]
@@ -66,7 +67,7 @@ public sealed class AtualizarModalidadeCommandHandlerTests
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
 
         var comando = new AtualizarModalidadeCommand(
-            existente.Id, Descricao: "Descrição nova", NaturezaLegal: "AMPLA", ComposicaoVagas: "RESIDUAL_DO_VO", RegraDeAplicabilidade: Incondicional);
+            existente.Id, Descricao: "Descrição nova", NaturezaLegal: "AMPLA", ComposicaoVagas: "RESTANTE_DAS_VAGAS_OFERTADAS", RegraDeAplicabilidade: Incondicional);
 
         Result resultado = await AtualizarModalidadeCommandHandler.Handle(
             comando, _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
@@ -128,7 +129,7 @@ public sealed class AtualizarModalidadeCommandHandlerTests
         // que vencer, não a coerência, mesmo com o pré-check do handler rodando
         // antes do fetch.
         var comando = new AtualizarModalidadeCommand(
-            existente.Id, NaturezaLegal: "AMPLA", ComposicaoVagas: "DENTRO_DO_VR",
+            existente.Id, NaturezaLegal: "AMPLA", ComposicaoVagas: "DENTRO_DA_RESERVA_LEGAL",
             RegraRemanejamento: "SEGUE_CASCATA", RegraDeAplicabilidade: Incondicional);
 
         Result resultado = await AtualizarModalidadeCommandHandler.Handle(
@@ -157,24 +158,32 @@ public sealed class AtualizarModalidadeCommandHandlerTests
     public async Task Handle_FatoDesativado_SoRecusaCitacaoNova()
     {
         _fatoRepository.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns([Fato(OpcaoPelasCotasDaLei.Fato), FatoDesativado("PCD"), FatoDesativado("QUILOMBOLA")]);
-        Modalidade existente = Modalidade.Criar("PSIQ_PCD", "Ampla", "ACAO_AFIRMATIVA", "SUPLEMENTAR_AO_TOTAL", null,
-            "DESTINO_UNICO", "AC", null, null, Predicado(Condicao(OpcaoPelasCotasDaLei.Fato, false), Condicao("PCD", true)), null, null).Value!;
-        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
-        _repository.CodigosVivosExistemAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>()).Returns(true);
+        Modalidade existente = ExistenteQueJaCitaOFatoPcd();
 
-        AtualizarModalidadeCommand Comando(string fato) => new(
-            existente.Id, NaturezaLegal: "ACAO_AFIRMATIVA", ComposicaoVagas: "SUPLEMENTAR_AO_TOTAL",
-            RegraRemanejamento: "DESTINO_UNICO", RemanejamentoDestino: "AC",
-            RegraDeAplicabilidade: [[Condicao(OpcaoPelasCotasDaLei.Fato, false), Condicao(fato, true)]]);
+        Result jaCitado = await AtualizarModalidadeCommandHandler.Handle(
+            ComandoQueCita(existente.Id, "PCD"), _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
+        Result citacaoNova = await AtualizarModalidadeCommandHandler.Handle(
+            ComandoQueCita(existente.Id, "QUILOMBOLA"), _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
 
-        (await AtualizarModalidadeCommandHandler.Handle(
-                Comando("PCD"), _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None))
-            .IsSuccess.Should().BeTrue();
-        (await AtualizarModalidadeCommandHandler.Handle(
-                Comando("QUILOMBOLA"), _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None))
-            .Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModalidadeErrorCodes.RegraCitaFatoDesativado);
+        jaCitado.IsSuccess.Should().BeTrue();
+        citacaoNova.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModalidadeErrorCodes.RegraCitaFatoDesativado);
         _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
     }
+
+    private Modalidade ExistenteQueJaCitaOFatoPcd()
+    {
+        Modalidade existente = Modalidade.Criar("PSIQ_PCD", new DeclaracaoDaModalidade(
+            "Ampla", "ACAO_AFIRMATIVA", "SUPLEMENTAR_AO_TOTAL", null, "DESTINO_UNICO", "AC", null, null,
+            Predicado(Condicao(OpcaoPelasCotasDaLei.Fato, false), Condicao("PCD", true)), null, null)).Value!;
+        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+        _repository.CodigosVivosExistemAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>()).Returns(true);
+        return existente;
+    }
+
+    private static AtualizarModalidadeCommand ComandoQueCita(Guid id, string fato) => new(
+        id, NaturezaLegal: "ACAO_AFIRMATIVA", ComposicaoVagas: "SUPLEMENTAR_AO_TOTAL",
+        RegraRemanejamento: "DESTINO_UNICO", RemanejamentoDestino: "AC",
+        RegraDeAplicabilidade: [[Condicao(OpcaoPelasCotasDaLei.Fato, false), Condicao(fato, true)]]);
 
     [Fact(DisplayName = "Regra malformada se acumula com as recusas dos demais campos, sem a de regra ausente")]
     public async Task Handle_RegraMalformada_AcumulaComOsDemaisCampos()

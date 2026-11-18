@@ -33,6 +33,8 @@ public sealed class TermoConsentimentoPersistenceTests
 
     private readonly ConfiguracaoDbFixture _fixture;
 
+    private static string NomeUnico() => $"Termo LGPD {Guid.NewGuid():N}";
+
     public TermoConsentimentoPersistenceTests(ConfiguracaoDbFixture fixture)
     {
         _fixture = fixture;
@@ -42,7 +44,7 @@ public sealed class TermoConsentimentoPersistenceTests
     public async Task Insert_PersisteRascunhoComCamposCorretos()
     {
         TermoConsentimento termo = TermoConsentimento.Criar(
-            "Termo LGPD", "Texto do termo", "Lei 13.709/2018", "REGISTRO_DIGITAL_SEM_LOG_IP").Value!;
+            NomeUnico(), "Texto do termo", "Lei 13.709/2018", "REGISTRO_DIGITAL_SEM_LOG_IP").Value!;
 
         await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
@@ -55,7 +57,7 @@ public sealed class TermoConsentimentoPersistenceTests
             .SingleAsync(t => t.Id == termo.Id);
 
         persistido.CreatedBy.Should().Be(AdminA);
-        persistido.Nome.Should().Be("Termo LGPD");
+        persistido.Nome.Should().Be(termo.Nome);
         persistido.TextoRascunho.Should().Be("Texto do termo");
         persistido.BaseLegalRascunho.Should().Be("Lei 13.709/2018");
         persistido.FormaAceiteRascunho.Should().Be(FormaAceite.RegistroDigitalSemLogIp);
@@ -73,7 +75,7 @@ public sealed class TermoConsentimentoPersistenceTests
         // a versão precisa ser adicionada explicitamente ao DbSet
         // (ITermoConsentimentoRepository.AdicionarVersaoAsync), como o handler faz.
         TermoConsentimento termo = TermoConsentimento.Criar(
-            "Termo LGPD", "Texto do termo", "Lei 13.709/2018", "REGISTRO_DIGITAL_SEM_LOG_IP").Value!;
+            NomeUnico(), "Texto do termo", "Lei 13.709/2018", "REGISTRO_DIGITAL_SEM_LOG_IP").Value!;
         termo.MarcarRevisado("usuario.revisor", Agora);
 
         await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
@@ -120,7 +122,7 @@ public sealed class TermoConsentimentoPersistenceTests
         // e comita. Sem o xmin amarrado a um write real no commit de A, a promoção
         // de A sairia gravada a partir de um rascunho já invalidado.
         TermoConsentimento termo = TermoConsentimento.Criar(
-            "Termo LGPD", "Texto do termo", "Lei 13.709/2018", null).Value!;
+            NomeUnico(), "Texto do termo", "Lei 13.709/2018", null).Value!;
         termo.MarcarRevisado("usuario.revisor", Agora);
 
         await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
@@ -159,7 +161,7 @@ public sealed class TermoConsentimentoPersistenceTests
         // segunda chamada tenta gravar as MESMAS entidades de novo e a mesma
         // exceção estoura fora do catch do handler — 500 em vez de 409.
         TermoConsentimento termo = TermoConsentimento.Criar(
-            "Termo LGPD", "Texto do termo", "Lei 13.709/2018", null).Value!;
+            NomeUnico(), "Texto do termo", "Lei 13.709/2018", null).Value!;
         termo.MarcarRevisado("usuario.revisor", Agora);
 
         await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
@@ -199,7 +201,7 @@ public sealed class TermoConsentimentoPersistenceTests
     [Fact(DisplayName = "Soft-delete de termo sem versões marca IsDeleted/DeletedBy")]
     public async Task SoftDelete_SemVersoes_MarcaExcluido()
     {
-        TermoConsentimento termo = TermoConsentimento.Criar("Termo LGPD", null, null, null).Value!;
+        TermoConsentimento termo = TermoConsentimento.Criar(NomeUnico(), null, null, null).Value!;
 
         await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
@@ -227,7 +229,7 @@ public sealed class TermoConsentimentoPersistenceTests
     public async Task SoftDelete_ComVersaoPromovida_PreservaVersaoFilha()
     {
         TermoConsentimento termo = TermoConsentimento.Criar(
-            "Termo LGPD", "Texto do termo", "Lei 13.709/2018", null).Value!;
+            NomeUnico(), "Texto do termo", "Lei 13.709/2018", null).Value!;
         termo.MarcarRevisado("usuario.revisor", Agora);
 
         await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))

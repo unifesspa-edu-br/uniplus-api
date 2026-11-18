@@ -4,8 +4,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
@@ -26,6 +29,11 @@ public sealed class BaseLegalBonusRegionalConfiguration : IEntityTypeConfigurati
         builder.ToTable("bases_legais_do_bonus_regional");
 
         builder.HasKey(e => e.Id);
+
+        builder.Property(e => e.Codigo)
+            .HasConversion<CodigoBaseLegalBonusRegionalValueConverter>()
+            .HasMaxLength(CodigoBaseLegalBonusRegional.TamanhoMaximo)
+            .IsRequired();
 
         builder.Property(e => e.TipoInstrumento)
             .HasConversion(TipoInstrumentoConverter)
@@ -52,6 +60,11 @@ public sealed class BaseLegalBonusRegionalConfiguration : IEntityTypeConfigurati
 
             m.ToTable(t => t.HasCheckConstraint("ck_municipios_da_base_legal_bonus_codigo_ibge", "codigo_ibge ~ '^[0-9]{7}$'"));
         });
+
+        builder.HasIndex(e => e.Codigo)
+            .IsUnique()
+            .HasFilter("is_deleted = false")
+            .HasDatabaseName(RestricoesDoBanco.BaseLegalBonusRegionalCodigoVivo);
 
         builder.HasIndex(e => e.TipoInstrumento).HasDatabaseName("ix_bases_legais_do_bonus_regional_tipo_instrumento");
     }

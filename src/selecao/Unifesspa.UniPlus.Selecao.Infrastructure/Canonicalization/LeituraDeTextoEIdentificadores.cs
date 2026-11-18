@@ -124,7 +124,7 @@ internal static class LeituraDeTextoEIdentificadores
         // dois modos, ambos errados: EtapaProcesso.Reidratar e os filhos do atendimento
         // LANÇAM (500 no meio de um descarte, em vez de recusa nomeada), enquanto
         // ConfiguracaoDistribuicaoVagas.Criar simplesmente o ACEITA como oferta de curso — e
-        // o grafo inválido restaura, persiste e faz round-trip perfeito. Nenhum id do
+        // o grafo inválido reidrata, persiste e faz round-trip perfeito. Nenhum id do
         // envelope pode ser vazio; recusar aqui é a única barreira que vale para todos.
         if (valor == Guid.Empty)
         {

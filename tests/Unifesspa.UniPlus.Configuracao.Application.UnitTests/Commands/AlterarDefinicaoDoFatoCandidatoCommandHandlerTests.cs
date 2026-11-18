@@ -283,13 +283,13 @@ public sealed class AlterarDefinicaoDoFatoCandidatoCommandHandlerTests
             [(0, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;
 
     private static Modalidade ModalidadeQueCitaOptou() =>
-        Modalidade.Criar(
-            "PSVR_AMPLA", "Ampla", "ACAO_AFIRMATIVA", "SUPLEMENTAR_AO_TOTAL", null, "DESTINO_UNICO", "AC", null, null,
+        Modalidade.Criar("PSVR_AMPLA", new DeclaracaoDaModalidade(
+            "Ampla", "ACAO_AFIRMATIVA", "SUPLEMENTAR_AO_TOTAL", null, "DESTINO_UNICO", "AC", null, null,
             PredicadoDnf.CriarDeCondicoesAgrupadas(
             [
                 (0, CondicaoDnf.Criar(OpcaoPelasCotasDaLei.Fato, Operador.Igual, JsonSerializer.SerializeToElement(false)).Value!),
                 (0, CondicaoDnf.Criar("OPTOU", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!),
-            ]).Value!, null, null).Value!;
+            ]).Value!, null, null)).Value!;
 
     private static ModeloFormulario ModeloComPrecondicaoSobre(string primeiro, string segundo)
     {

@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
@@ -30,11 +31,13 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
     private static readonly FormatosPermitidos Qualquer = FormatosPermitidos.Criar(true, null).Value!;
 
     private static FaseCronograma Inscricao() => FaseCronograma.Criar(
-        1, Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NoEdital,
-        agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: true, coletaSolicitacaoIsencao: false,
-        inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero),
-        produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)],
-        faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+        new OrigemCanonicaDaFase(
+            Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
 
     private static FatoColetado Fato(string codigo, int ordem, string classificacao) =>
         FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: classificacao, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
@@ -53,7 +56,7 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: inscricao);
         processo.DefinirItens([Fato(FatoSensivel, 0, "SENSIVEL")]).IsSuccess.Should().BeTrue();
         processo.DefinirDocumentosExigidos(
-            [.. exigencias.Select((e, i) => NoExigencia.CriarFolha(e(inscricao.Id), i).Value!)], PrecondicaoIfMatch.Ausente)
+            [.. exigencias.Select((e, i) => NoExigencia.CriarFolha(e(inscricao.Id), i).Value!)])
             .IsSuccess.Should().BeTrue();
         return processo;
     }
@@ -65,13 +68,13 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
         [FatoPessoal] = ClassificacaoDeProtecao.Pessoal,
     };
 
-    private static readonly ProtecaoVigenteDasExigencias ComCatalogo = new(Catalogo, new Dictionary<Guid, ProtecaoDoDocumento>(), new HashSet<string>());
+    private static readonly ProtecaoVigenteDasExigencias ComCatalogo = new(Catalogo, new Dictionary<Guid, ProtecaoDoDocumento>(), new HashSet<string>(), new HashSet<Guid>());
 
     private static DomainError? Pendencia(ProcessoSeletivo processo, ProtecaoVigenteDasExigencias? protecao = null) =>
-        ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo, protecao);
+        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo, CadastrosDeTeste.Com(protecao: protecao, motivosEscolhidos: MotivosDoProcessoDeTeste.Cobrindo(processo)));
 
     private static IEnumerable<string> VermelhosDoPainel(ProcessoSeletivo processo, ProtecaoVigenteDasExigencias? protecao) =>
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, protecao)
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Com(protecao: protecao, motivosEscolhidos: MotivosDoProcessoDeTeste.Cobrindo(processo)))
             .Where(i => !i.Ok).Select(i => i.Codigo);
 
     [Fact(DisplayName = "Exigência pessoal que comprova fato sensível é recusada, citando o tipo e o fato")]
@@ -84,7 +87,7 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
         pendencia.Should().NotBeNull();
         pendencia!.Code.Should().Be(ProcessoSeletivoErrorCodes.ExigenciaMenosProtegidaQueFatoComprovado);
         pendencia.Message.Should().Contain("ATESTADO_SIMPLES").And.Contain(FatoSensivel);
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
             .Should().Contain(i => !i.Ok && i.Codigo == "exigencia_menos_protegida_que_fato_comprovado");
     }
 
@@ -127,7 +130,7 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
     public void DerivadoSemProtecaoAprovada_NaoEForaDoProcesso()
     {
         ProcessoSeletivo processo = Processo(f => Exigencia(f, "LAUDO_MEDICO", ClassificacaoDeProtecao.Sensivel, ["RENDA_PER_CAPITA"]));
-        ProtecaoVigenteDasExigencias comDerivadoPendente = new(Catalogo, new Dictionary<Guid, ProtecaoDoDocumento>(), new HashSet<string> { "RENDA_PER_CAPITA" });
+        ProtecaoVigenteDasExigencias comDerivadoPendente = new(Catalogo, new Dictionary<Guid, ProtecaoDoDocumento>(), new HashSet<string> { "RENDA_PER_CAPITA" }, new HashSet<Guid>());
 
         Pendencia(processo, comDerivadoPendente).Should().BeNull();
     }
@@ -167,12 +170,51 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
         ProcessoSeletivo processo = Processo(f => Exigencia(f, "LAUDO_MEDICO", ClassificacaoDeProtecao.Sensivel, [FatoSensivel]));
         Guid exigenciaId = processo.DocumentosExigidos.Single().Id;
         Pendencia(processo).Should().BeNull();
-        ProtecaoVigenteDasExigencias rebaixada = new(Catalogo, new Dictionary<Guid, ProtecaoDoDocumento> { [exigenciaId] = ProtecaoDoDocumentoDeTeste.De(ClassificacaoDeProtecao.Pessoal) }, new HashSet<string>());
+        ProtecaoVigenteDasExigencias rebaixada = new(Catalogo, new Dictionary<Guid, ProtecaoDoDocumento> { [exigenciaId] = ProtecaoDoDocumentoDeTeste.De(ClassificacaoDeProtecao.Pessoal) }, new HashSet<string>(), new HashSet<Guid>());
 
         Pendencia(processo, rebaixada)!.Code.Should().Be(ProcessoSeletivoErrorCodes.ExigenciaMenosProtegidaQueFatoComprovado);
         VermelhosDoPainel(processo, rebaixada).Should().Contain("exigencia_menos_protegida_que_fato_comprovado");
 
         processo.AplicarProtecaoVigente(rebaixada);
         processo.DocumentosExigidos.Single().ClassificacaoProtecao.Should().Be(ClassificacaoDeProtecao.Pessoal);
+    }
+
+    [Fact(DisplayName = "A conferência usa a proteção vigente: com a proteção rebaixada a exigência é recusada, com a proteção do cadastro não é")]
+    public void Conferencia_UsaAProtecaoVigenteDaExigencia()
+    {
+        ProcessoSeletivo processo = Processo(f => Exigencia(f, "LAUDO_MEDICO", ClassificacaoDeProtecao.Sensivel, [FatoSensivel]));
+        Guid exigenciaId = processo.DocumentosExigidos.Single().Id;
+        ProtecaoVigenteDasExigencias rebaixada = new(Catalogo, new Dictionary<Guid, ProtecaoDoDocumento> { [exigenciaId] = ProtecaoDoDocumentoDeTeste.De(ClassificacaoDeProtecao.Pessoal) }, new HashSet<string>(), new HashSet<Guid>());
+
+        Result<ConfiguracaoAptaACongelar> comRebaixada = ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Com(protecao: rebaixada, motivosEscolhidos: MotivosDoProcessoDeTeste.Cobrindo(processo)));
+        Result<ConfiguracaoAptaACongelar> comProtecaoDoCadastro = ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Com(protecao: ComCatalogo, motivosEscolhidos: MotivosDoProcessoDeTeste.Cobrindo(processo)));
+
+        comRebaixada.Errors.Select(static causa => causa.Error.Code).Should().Contain(ProcessoSeletivoErrorCodes.ExigenciaMenosProtegidaQueFatoComprovado);
+        comProtecaoDoCadastro.Errors.Select(static causa => causa.Error.Code).Should().NotContain(ProcessoSeletivoErrorCodes.ExigenciaMenosProtegidaQueFatoComprovado);
+    }
+
+    [Fact(DisplayName = "A exigência que a aprovação da proteção recusa não entra na conferência da proteção, e a outra, de tipo aprovado, continua recusada")]
+    public void ExigenciaRecusadaPelaAprovacao_SaiDaConferencia_EAOutraContinuaRecusada()
+    {
+        ProcessoSeletivo processo = Processo(
+            f => Exigencia(f, "TIPO_PENDENTE", ClassificacaoDeProtecao.Pessoal, [FatoSensivel]),
+            f => Exigencia(f, "TIPO_APROVADO", ClassificacaoDeProtecao.Pessoal, [FatoSensivel]));
+        Guid pendente = processo.DocumentosExigidos.Single(e => e.TipoDocumentoCodigo == "TIPO_PENDENTE").Id;
+        ProtecaoVigenteDasExigencias comAPendenteRecusada = new(Catalogo, new Dictionary<Guid, ProtecaoDoDocumento>(), new HashSet<string>(), new HashSet<Guid> { pendente });
+
+        DomainError? pendencia = Pendencia(processo, comAPendenteRecusada);
+
+        pendencia!.Code.Should().Be(ProcessoSeletivoErrorCodes.ExigenciaMenosProtegidaQueFatoComprovado);
+        pendencia.Message.Should().Contain("TIPO_APROVADO").And.NotContain("TIPO_PENDENTE");
+    }
+
+    [Fact(DisplayName = "Só a exigência que a aprovação da proteção recusa: nenhuma pendência da proteção, que fica com a conferência da aprovação")]
+    public void SoExigenciaRecusadaPelaAprovacao_NaoTemPendenciaDaProtecao()
+    {
+        ProcessoSeletivo processo = Processo(f => Exigencia(f, "TIPO_PENDENTE", ClassificacaoDeProtecao.Pessoal, [FatoSensivel]));
+        Guid pendente = processo.DocumentosExigidos.Single().Id;
+        ProtecaoVigenteDasExigencias comAPendenteRecusada = new(Catalogo, new Dictionary<Guid, ProtecaoDoDocumento>(), new HashSet<string>(), new HashSet<Guid> { pendente });
+
+        Pendencia(processo, comAPendenteRecusada).Should().BeNull();
     }
 }

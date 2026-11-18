@@ -12,6 +12,7 @@ using Kernel.Results;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using Wolverine;
@@ -45,13 +46,13 @@ public sealed class CaraterAdmitidoPeloTipoDeEtapaTests
     {
         Guid processoId = await SemearProcessoAsync(nameof(EtapaClassificatoriaEmTipoQueNaoPontua_Recusa));
 
-        Result<MutacaoAceita> resultado = await DefinirEtapaAsync(
+        Result resultado = await DefinirEtapaAsync(
             processoId, AnaliseDocumental, CaraterEtapa.Classificatoria, peso: 1m);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle();
         resultado.Errors[0].Field.Should().Be("etapas[0].carater");
-        resultado.Errors[0].Error.Code.Should().Be(EtapaProcesso.CaraterNaoAdmitidoPeloTipo);
+        resultado.Errors[0].Error.Code.Should().Be(EtapaProcessoErrorCodes.CaraterNaoAdmitidoPeloTipo);
         resultado.Errors[0].Error.Message.Should().Contain("Análise Documental",
             "a recusa nomeia o tipo, senão não diz qual dos dois campos revisar");
     }
@@ -66,7 +67,7 @@ public sealed class CaraterAdmitidoPeloTipoDeEtapaTests
     {
         Guid processoId = await SemearProcessoAsync(nameof(EtapaEliminatoriaEmTipoQueNaoPontua_Aceita));
 
-        Result<MutacaoAceita> resultado = await DefinirEtapasAsync(
+        Result resultado = await DefinirEtapasAsync(
             processoId,
             new EtapaProcessoInput("Prova", CaraterEtapa.Classificatoria, ProvaObjetiva, 1m, null, 1, Produtos: [], Bancas: [], Recursos: []),
             new EtapaProcessoInput("Documentos", CaraterEtapa.Eliminatoria, AnaliseDocumental, null, 5m, 2, Produtos: [], Bancas: [], Recursos: []));
@@ -79,7 +80,7 @@ public sealed class CaraterAdmitidoPeloTipoDeEtapaTests
     {
         Guid processoId = await SemearProcessoAsync(nameof(EtapaClassificatoriaEmTipoQuePontua_Aceita));
 
-        Result<MutacaoAceita> resultado = await DefinirEtapaAsync(
+        Result resultado = await DefinirEtapaAsync(
             processoId, ProvaObjetiva, CaraterEtapa.Classificatoria, peso: 1m);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -90,11 +91,11 @@ public sealed class CaraterAdmitidoPeloTipoDeEtapaTests
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder
-            .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}");
+            .SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"{nome} {Guid.CreateVersion7()}" });
         return processo.Id;
     }
 
-    private Task<Result<MutacaoAceita>> DefinirEtapaAsync(
+    private Task<Result> DefinirEtapaAsync(
         Guid processoId,
         Guid tipoEtapaOrigemId,
         CaraterEtapa carater,
@@ -104,14 +105,14 @@ public sealed class CaraterAdmitidoPeloTipoDeEtapaTests
             processoId,
             new EtapaProcessoInput("Etapa", carater, tipoEtapaOrigemId, peso, notaMinima, 1, Produtos: [], Bancas: [], Recursos: []));
 
-    private async Task<Result<MutacaoAceita>> DefinirEtapasAsync(
+    private async Task<Result> DefinirEtapasAsync(
         Guid processoId,
         params EtapaProcessoInput[] etapas)
     {
-        DefinirEtapasCommand command = new(processoId, etapas, PrecondicaoIfMatch.Ausente);
+        DefinirEtapasCommand command = new(processoId, etapas);
 
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
         IMessageBus bus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
-        return await bus.InvokeAsync<Result<MutacaoAceita>>(command);
+        return await bus.InvokeAsync<Result>(command);
     }
 }

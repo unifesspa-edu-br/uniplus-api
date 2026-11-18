@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Domain.Entities;
-using Domain.ProcessosSeletivos.Bancas;
 using Domain.ValueObjects;
 
 using Kernel.Results;
@@ -29,7 +28,7 @@ internal sealed class DeclaracaoDasBancasDaEtapa(LeituraMemoizada<Guid, TipoBanc
         }
 
         Result<List<BancaDaEtapa>> declaradas = bancas.Resultado();
-        return declaradas.IsFailure ? Result.ValidationFailure(declaradas.Errors) : AlinhamentoDasBancasDaEtapa.Definir(etapa, declaradas.Value!);
+        return declaradas.IsFailure ? Result.ValidationFailure(declaradas.Errors) : etapa.DefinirBancas(declaradas.Value!);
     }
 
     private async Task<Result<BancaDaEtapa>> BancaAsync(BancaDaEtapaInput declarada, int posicao, CancellationToken cancellationToken)

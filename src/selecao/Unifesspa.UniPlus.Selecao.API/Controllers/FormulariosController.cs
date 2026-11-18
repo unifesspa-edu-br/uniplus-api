@@ -94,8 +94,7 @@ public sealed class FormulariosController : ControllerBase
     }
 
     /// <summary>
-    /// O formulário da finalidade como a configuração viva o define agora — o rascunho, ou a sessão de
-    /// retificação aberta —, no mesmo formato que o certame divulgado serve. É o que a simulação do
+    /// O formulário da finalidade como a configuração viva o define agora — o rascunho, no mesmo formato que o certame divulgado serve. É o que a simulação do
     /// administrador interpreta antes de publicar; nada é gravado.
     /// </summary>
     [HttpGet("admin/processos-seletivos/{id:guid}/formularios/{finalidade}/renderizavel")]
@@ -123,7 +122,7 @@ public sealed class FormulariosController : ControllerBase
 
     /// <summary>
     /// Define ou substitui o formulário da finalidade: a fase do cronograma, o título e as etapas.
-    /// Editável em rascunho e sob sessão de retificação, que pode acrescentar formulário.
+    /// Editável só em rascunho.
     /// </summary>
     [HttpPut("admin/processos-seletivos/{id:guid}/formularios/{finalidade}")]
     [Authorize]
@@ -134,20 +133,16 @@ public sealed class FormulariosController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
-    [EmiteETag]
     public Task<IActionResult> DefinirFormulario(
         Guid id,
         string finalidade,
         [FromBody] DefinirFormularioRequest request,
-        [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
-        return EnviarMutacao(finalidade, ifMatch,
-            (alvo, precondicao) => new DefinirFormularioCommand(id, alvo, request.FaseId, request.Titulo, request.Etapas, precondicao),
+        return EnviarMutacao(finalidade,
+            alvo => new DefinirFormularioCommand(id, alvo, request.FaseId, request.Titulo, request.Etapas),
             cancellationToken);
     }
 
@@ -161,8 +156,8 @@ public sealed class FormulariosController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public Task<IActionResult> RemoverFormulario(Guid id, string finalidade, CancellationToken cancellationToken) =>
-        EnviarMutacao(finalidade, ifMatch: null,
-            (alvo, precondicao) => new RemoverFormularioCommand(id, alvo, precondicao),
+        EnviarMutacao(finalidade,
+            alvo => new RemoverFormularioCommand(id, alvo),
             cancellationToken);
 
     /// <summary>
@@ -178,20 +173,16 @@ public sealed class FormulariosController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
-    [EmiteETag]
     public Task<IActionResult> DefinirItens(
         Guid id,
         string finalidade,
         [FromBody] DefinirItensDoFormularioRequest request,
-        [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
-        return EnviarMutacao(finalidade, ifMatch,
-            (alvo, precondicao) => new DefinirFatosColetadosCommand(id, alvo, request.Itens, precondicao, request.Grupos),
+        return EnviarMutacao(finalidade,
+            alvo => new DefinirFatosColetadosCommand(id, alvo, request.Itens, request.Grupos),
             cancellationToken);
     }
 
@@ -208,28 +199,23 @@ public sealed class FormulariosController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
-    [EmiteETag]
     public Task<IActionResult> DefinirTermos(
         Guid id,
         string finalidade,
         [FromBody] DefinirTermosDoFormularioRequest request,
-        [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
-        return EnviarMutacao(finalidade, ifMatch,
-            (alvo, precondicao) => new DefinirTermosDoFormularioCommand(id, alvo, request.Termos, precondicao),
+        return EnviarMutacao(finalidade,
+            alvo => new DefinirTermosDoFormularioCommand(id, alvo, request.Termos),
             cancellationToken);
     }
 
     /// <summary>
     /// Aplica ao processo a cópia de um modelo de formulário: o formulário da finalidade do modelo é
     /// criado ou substituído por inteiro, e a resposta relata o que a cópia trouxe, manteve,
-    /// descartou e derivou (UNI-REQ-0144). Só em rascunho, onde o <c>If-Match</c> é aceito e
-    /// ignorado, como nas demais escritas; mudar o modelo depois não muda o processo.
+    /// descartou e derivou (UNI-REQ-0144). Só em rascunho; mudar o modelo depois não muda o processo.
     /// </summary>
     [HttpPost("admin/processos-seletivos/{id:guid}/formularios/aplicacoes-de-modelo")]
     [Authorize]
@@ -242,34 +228,25 @@ public sealed class FormulariosController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> AplicarModelo(
         Guid id,
         [FromBody] AplicacaoDeModeloInput request,
-        [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
-        Result<PrecondicaoIfMatch> analise = IfMatchHeader.Analisar(ifMatch);
-        if (analise.IsFailure)
-        {
-            return analise.ToActionResult(_mapper);
-        }
 
         Result<AplicacaoDeModeloDto> resultado = await _commandBus
-            .Send(new AplicarModeloFormularioCommand(id, request.ModeloId, analise.Value!), cancellationToken).ConfigureAwait(false);
+            .Send(new AplicarModeloFormularioCommand(id, request.ModeloId), cancellationToken).ConfigureAwait(false);
         return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>
-    /// O fluxo comum das escritas: finalidade desconhecida é 404, o <c>If-Match</c> malformado é
-    /// recusado antes do comando, e a resposta segue o padrão das mutações sob sessão editorial.
+    /// O fluxo comum das escritas: finalidade desconhecida é 404, e a resposta é 204 sem corpo.
     /// </summary>
     private async Task<IActionResult> EnviarMutacao(
         string finalidade,
-        string? ifMatch,
-        Func<FinalidadeFormulario, PrecondicaoIfMatch, ICommand<Result<MutacaoAceita>>> comando,
+        Func<FinalidadeFormulario, ICommand<Result>> comando,
         CancellationToken cancellationToken)
     {
         if (EstruturaFormulario.FinalidadeDoToken(finalidade) is not (not FinalidadeFormulario.Nenhuma and var alvo))
@@ -277,23 +254,7 @@ public sealed class FormulariosController : ControllerBase
             return NotFound();
         }
 
-        Result<PrecondicaoIfMatch> analise = IfMatchHeader.Analisar(ifMatch);
-        if (analise.IsFailure)
-        {
-            return analise.ToActionResult(_mapper);
-        }
-
-        Result<MutacaoAceita> resultado = await _commandBus.Send(comando(alvo, analise.Value!), cancellationToken).ConfigureAwait(false);
-        if (resultado.IsFailure)
-        {
-            return resultado.ToActionResult(_mapper);
-        }
-
-        if (resultado.Value!.ETag is { } etag)
-        {
-            Response.Headers.ETag = etag;
-        }
-
-        return NoContent();
+        Result resultado = await _commandBus.Send(comando(alvo), cancellationToken).ConfigureAwait(false);
+        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 }

@@ -58,10 +58,10 @@ internal static class ModalidadeErrorMappings
                 "uniplus.configuracao.modalidade.natureza_remanejamento_incoerente",
                 "Regra de remanejamento incoerente com a natureza legal da modalidade")),
 
-        new(ModalidadeErrorCodes.OrigemObrigatoriaParaRetiraDe,
+        new(ModalidadeErrorCodes.OrigemObrigatoriaParaRetiradaDeOutraModalidade,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.modalidade.origem_obrigatoria_para_retira_de",
+                "uniplus.configuracao.modalidade.origem_obrigatoria_para_retirada_de_outra_modalidade",
                 "A modalidade com composição 'retira de' exige a modalidade de origem")),
 
         new(ModalidadeErrorCodes.ComposicaoOrigemCircular,
@@ -88,17 +88,17 @@ internal static class ModalidadeErrorMappings
                 "uniplus.configuracao.modalidade.remanejamento_fallback_circular",
                 "A modalidade não pode ser o fallback do próprio remanejamento")),
 
-        new(ModalidadeErrorCodes.OrigemApenasParaRetiraDe,
+        new(ModalidadeErrorCodes.OrigemApenasParaRetiradaDeOutraModalidade,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.modalidade.origem_apenas_para_retira_de",
+                "uniplus.configuracao.modalidade.origem_apenas_para_retirada_de_outra_modalidade",
                 "Somente a composição 'retira de' admite modalidade de origem")),
 
-        new(ModalidadeErrorCodes.ArgumentoRemanejamentoObrigatorio,
+        new(ModalidadeErrorCodes.ParametrosRemanejamentoObrigatorio,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.modalidade.argumento_remanejamento_obrigatorio",
-                "Argumentos de remanejamento incompatíveis com a regra declarada")),
+                "uniplus.configuracao.modalidade.parametros_remanejamento_obrigatorio",
+                "Parâmetros de remanejamento incompatíveis com a regra declarada")),
 
         new(ModalidadeErrorCodes.AcaoIndeferimentoInvalida,
             new DomainErrorMapping(

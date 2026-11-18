@@ -44,7 +44,7 @@ public sealed class CancelarInscricaoCommandHandlerTests
     private static async Task<(Result Resultado, Inscricao Inscricao, IUnitOfWork UnitOfWork)> Cancelar(
         Func<Guid, Inscricao> inscricao, DateTimeOffset agora, string contaId = "conta-1", string? motivo = null)
     {
-        (VersaoConfiguracao versao, GrafoConfiguracao grafo) = SalvarInscricaoCommandHandlerTests.MontarVersaoComItem(Item);
+        (VersaoConfiguracao versao, GrafoConfiguracao grafo) = SalvarDeTeste.MontarVersaoComItem(Item);
         Inscricao existente = inscricao(versao.Id);
         PortasDaInscricaoDeTeste portas = new(ProcessoId);
         portas.ComInscricao(Dono, existente);

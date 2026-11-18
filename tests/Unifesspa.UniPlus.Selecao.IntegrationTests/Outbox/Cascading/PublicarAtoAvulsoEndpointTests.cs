@@ -233,8 +233,7 @@ public sealed class PublicarAtoAvulsoEndpointTests
         Guid processoId;
         await using (AsyncServiceScope escopo = api.Services.CreateAsyncScope())
         {
-            (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
-                escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>(), $"Sem página {Guid.CreateVersion7()}");
+            (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>(), new OpcoesDoProcessoSeletivoPublicavel { Nome = $"Sem página {Guid.CreateVersion7()}" });
             processoId = processo.Id;
         }
 
@@ -262,8 +261,7 @@ public sealed class PublicarAtoAvulsoEndpointTests
         Guid documentoEdital;
         await using (AsyncServiceScope escopo = api.Services.CreateAsyncScope())
         {
-            (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
-                escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>(), $"Atos avulsos {Guid.CreateVersion7()}", produtosDaFase: produtosDaFase, fimDasInscricoes: fimDasInscricoes);
+            (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>(), new OpcoesDoProcessoSeletivoPublicavel { Nome = $"Atos avulsos {Guid.CreateVersion7()}", ProdutosDaFase = produtosDaFase, FimDasInscricoes = fimDasInscricoes });
             processoId = processo.Id;
             documentoEdital = documento.Id;
         }

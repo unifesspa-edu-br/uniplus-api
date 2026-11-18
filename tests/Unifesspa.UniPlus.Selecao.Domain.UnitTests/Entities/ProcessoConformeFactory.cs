@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -23,43 +24,29 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 internal static class ProcessoConformeFactory
 {
     internal static ReferenciaRegra Regra(string codigo, string hashSeed) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string(hashSeed[0], 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string(hashSeed[0], 64));
 
     /// <summary>
     /// Uma oferta de curso da distribuição: ampla concorrência única, com as vagas todas nela.
     /// Duas chamadas com ids distintos dão ao processo os dois cursos que a segunda opção exige.
     /// </summary>
     internal static ConfiguracaoDistribuicaoVagas Oferta(Guid? ofertaCursoOrigemId = null) =>
-        ConfiguracaoDistribuicaoVagas.Criar(
-            ofertaCursoOrigemId: ofertaCursoOrigemId ?? Guid.CreateVersion7(),
-            voBase: 40,
-            pr: 1m,
-            regraDistribuicao: Regra(RegraDistribuicaoVagasCodigo.Institucional, "a"),
-            regraAjuste: null,
-            referenciaDemografica: null,
-            modalidades: [
-                ModalidadeSelecionada.Criar(
-                    modalidadeOrigemId: Guid.CreateVersion7(),
-                    codigo: "AC",
-                    descricao: null,
-                    naturezaLegal: NaturezaLegalModalidade.Ampla,
-                    composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
-                    composicaoOrigemCodigo: null,
-                    regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
-                    remanejamentoDestino: null,
-                    remanejamentoPar: null,
-                    remanejamentoFallback: null,
-                    regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
-                    acaoQuandoIndeferido: null,
-                    baseLegal: "Res. Unifesspa 532/2021",
-                    quantidadeDeclarada: 40).Value!,
-            ], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
+        ConfiguracaoDistribuicaoVagas.Criar(ofertaCursoOrigemId ?? Guid.CreateVersion7(),
+            new DistribuicaoDeVagasDeclarada
+            {
+                VagasOfertadasBase = 40,
+                PercentualDaReservaLegal = 1m,
+                RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, "a"),
+                Modalidades = [
+                AmplaConcorrencia(),
+            ]
+            },
+            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
     private static EtapaProcesso EtapaDaProvaObjetiva(string faseCodigo) =>
         EtapaProcesso.Criar(
-            "Prova", CaraterEtapa.Classificatoria,
-            TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-            peso: 1m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: faseCodigo).Value!;
+            new IdentificacaoDaEtapa(Nome: "Prova", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: faseCodigo),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 
     /// <param name="declararTaxa">
     /// Falso deixa a taxa por declarar, único jeito de exercitar a recusa correspondente.
@@ -74,33 +61,12 @@ internal static class ProcessoConformeFactory
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             "PS Gate", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-
-        FaseCronograma faseDoProcesso = fase ?? FaseConforme();
-        processo.DefinirCronogramaFases([faseDoProcesso], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirEtapas([EtapaDaProvaObjetiva(faseDoProcesso.Codigo)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        processo.DefinirAtendimentoEspecializado(
-            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        processo.DefinirDistribuicaoVagas([Oferta()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
-            regraCalculo: Regra(RegraCalculoCodigo.ClassificacaoImportada, "b"),
-            regraArredondamento: null,
-            casasArredondamento: null,
-            regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
-            regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-
-        if (declararTaxa)
-        {
-            processo.DefinirTaxaInscricao(
-                ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
-                PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        }
-
+        DefinirFaseEtapaEAtendimento(processo, fase);
+        processo.DefinirDistribuicaoVagas([Oferta()], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
+        DefinirClassificacaoImportada(processo);
+        DefinirTaxa(processo, declararTaxa);
         DeclaracoesObrigatoriasDeTeste.Declarar(processo, bonus: declararBonus, desempate: comDesempate, opcoesDeCurso: declararOpcoesDeCurso);
 
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
@@ -114,21 +80,22 @@ internal static class ProcessoConformeFactory
     internal static readonly Guid ProdutoPreliminarId = new("77770000-0000-4000-8000-000000000001");
 
     /// <summary>
-    /// Fase mínima e conforme: agrupa etapas (há uma), produz resultado e coleta inscrição (há
-    /// vagas e a origem é inscrição própria). A asserção de sucesso impede que uma fase recusada
+    /// Fase mínima e conforme: agrupa etapas (há uma), produz resultado, coleta inscrição (há
+    /// vagas e a origem é inscrição própria) e homologa as inscrições, com a regra que aponta o resultado dela. A asserção de sucesso impede que uma fase recusada
     /// vire null e o teste siga com um cronograma vazio, passando por não exercitar nada.
     /// </summary>
     internal static FaseCronograma FaseConforme(
         RegraRecursoFase? regraRecurso = null, bool semUnidadeResponsavel = false, IReadOnlyList<BancaRequerida>? bancas = null)
     {
         Result<FaseCronograma> fase = FaseCronograma.Criar(
-            ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "RESULTADO_FINAL", origemData: OrigemDataFase.NoEdital,
-            agrupaEtapas: true, permiteComplementacao: false, coletaInscricao: true, coletaSolicitacaoIsencao: false,
-            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            produtos: ProdutosDaFaseConforme(comRecurso: regraRecurso is not null),
-            faseConcluinteCodigo: null, emiteParecerIndividual: false,
-            bancasRequeridas: bancas ?? (regraRecurso is null ? [] : [BancasDeTeste.DeRecursosDaFase()]),
-            regraRecurso: regraRecurso, unidadeResponsavel: semUnidadeResponsavel ? null : UnidadesDeTeste.Ceps);
+            new OrigemCanonicaDaFase(
+                OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true,
+                ColetaSolicitacaoIsencao: false),
+            new DecisoesDeCronogramaDaFase(
+                Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+                UnidadeResponsavel: semUnidadeResponsavel ? null : UnidadesDeTeste.Ceps),
+            HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(ProdutosDaFaseConforme(comRecurso: regraRecurso is not null), regraRecurso),
+            bancasRequeridas: bancas ?? (regraRecurso is null ? [] : [BancasDeTeste.DeRecursosDaFase()]));
 
         fase.IsSuccess.Should().BeTrue(fase.Error?.Message);
         return fase.Value!;
@@ -152,4 +119,50 @@ internal static class ProcessoConformeFactory
         periodoInscricaoInicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
         periodoInscricaoFim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
         documentoEditalId: Guid.CreateVersion7()).Value!;
+
+    private static ModalidadeSelecionada AmplaConcorrencia() => ModalidadeSelecionada.Criar(
+        modalidadeOrigemId: Guid.CreateVersion7(),
+        codigo: "AC",
+        descricao: null,
+        naturezaLegal: NaturezaLegalModalidade.Ampla,
+        composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
+        composicaoOrigemCodigo: null,
+        regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
+        remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
+        regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
+        acaoQuandoIndeferido: null,
+        baseLegal: "Res. Unifesspa 532/2021",
+        quantidadeDeclarada: 40).Value!;
+
+
+    private static void DefinirClassificacaoImportada(ProcessoSeletivo processo)
+    {
+        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, "b"),
+            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
+        }).Value!).IsSuccess.Should().BeTrue();
+    }
+
+
+    private static void DefinirTaxa(ProcessoSeletivo processo, bool declararTaxa)
+    {
+        if (declararTaxa)
+        {
+            processo.DefinirTaxaInscricao(
+                ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!).IsSuccess.Should().BeTrue();
+        }
+    }
+
+
+    private static void DefinirFaseEtapaEAtendimento(ProcessoSeletivo processo, FaseCronograma? fase)
+    {
+        FaseCronograma faseDoProcesso = fase ?? FaseConforme();
+        processo.DefinirCronogramaFases([faseDoProcesso], []).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([EtapaDaProvaObjetiva(faseDoProcesso.Codigo)]).IsSuccess.Should().BeTrue();
+
+        processo.DefinirAtendimentoEspecializado(
+            AtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
+    }
+
 }

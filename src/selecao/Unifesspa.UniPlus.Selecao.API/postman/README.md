@@ -106,9 +106,9 @@ Ou importe ambos os arquivos no Postman e selecione o ambiente — a coleção r
 | **Setup — Configuração** | Árvore Campus→LocalOferta→Curso→OfertaCurso + TipoDocumento + FaseCanonica (nenhum pré-seedado), a leitura das modalidades `AC` e `AC_PCD` do catálogo semeado, e a leitura dos catálogos de tipo de processo (`SiSU`) e de tipo de etapa (`PROVA_OBJETIVA`, `ENTREVISTA`), que a criação do processo e as etapas referenciam por id |
 | **ProcessoSeletivo — Configuração** | `Criar` (com tipo, localidade e identificador legível) + as dimensões `Definir*` (etapas, atendimento-especializado, distribuição-vagas, classificação, cronograma-fases, bônus-regional, critérios-desempate, referência-temporal-fatos, **formulário de inscrição e os seus itens** e **regras-derivação** — antes dos documentos, porque uma condição só pode citar fato que o processo coleta ou deriva —, **documentos-exigidos** com os 4 sub-casos de gatilho DNF da 7.3 (GERAL/nível de ensino, `MODALIDADE EM`/laudo de `AC_PCD`, `CONDICAO_ATENDIMENTO IGUAL`/laudo, conjunção AND/reservista) + 4 testes de borda (`[Borda]`, 422 com asserção no `code` do `ProblemDetails`)) |
 | **ProcessoSeletivo — Leitura** | `Listar`, `ObterPorId`, `ObterConformidade`, `ObterConformidadeLegal` |
+| **Rascunho do processo seletivo** | `POST` do documento da configuração (guarda `rascunho_id` e o ETag) → `GET` da exportação → `PUT` com `If-Match` (revisão 2) → `DELETE` com `If-Match` |
 | **ProcessoSeletivo — Publicação** | Upload de Edital em 3 passos (URL pré-assinada MinIO, PUT direto, confirmação) → `Publicar` → `ObterSnapshotVigente` |
-| **ProcessoSeletivo — Retificação (atalho)** | Novo Edital confirmado → `Retificar` (atalho atômico, sem sessão) |
-| **ProcessoSeletivo — Sessão editorial** | `AbrirRetificacao` → `PUT etapas` com `If-Match` → `AlterarMotivoRetificacao` com `If-Match` → `FecharRetificacao` com `If-Match` (congela N+1) → abre 2ª sessão → `DescartarRetificacao` com `If-Match` (reidrata) |
+| **ProcessoSeletivo — Retificação (atalho)** | Novo Edital confirmado → `Retificar` (ato único) |
 | **ProcessoSeletivo — Árvore de Satisfação (padrões estruturais, Story #923 §5)** | Matriz dos padrões estruturais reais do corpus (PS Principal 2027 §41-42, PSIQ 2027 §2) que o folder "Configuração" não cobre — aquele usa só folhas soltas na raiz. 5 padrões, cada um com `ProcessoSeletivo` DEDICADO (setup completo + `PUT documentos-exigidos` + `GET` de verificação da árvore persistida; nos que repetem por entidade, o setup define o formulário de inscrição com o grupo repetível pelo qual a exigência se repete): `Certificado E Histórico` (grupo `E` com 2 folhas); `E[OU[RG,CPF], Certidão]` por membro da composição familiar (`repetePorEntidade` = código do grupo `COMPOSICAO_FAMILIAR`, na raiz, sem aninhar); guarda condicional (folha com gatilho pelo campo `SOB_GUARDA` do grupo); IRPF/isento por adulto sem renda (grupo `OU` com consequência e base legal própria, gatilho AND por 2 campos do grupo); PF + PJ vinculada (grupo `PESSOAS_JURIDICAS`, com o fato de membro `CNPJ_PJ_VINCULADA` criado pelo administrador) |
 
 A coleção **não** é auto-limpante (diferente de `organizacao`): cria um
@@ -123,7 +123,7 @@ change `documentos-exigidos-cobertura-editais`, Feature #914). **59/59
 requests passam, 61/61 assertions** — todo o Setup, as 9 dimensões de
 `Definir*` (incluindo o cenário-alvo e2e da task 7.3, os operadores de
 exclusão, `formatosPermitidos[]` e o congelamento dos parâmetros na publicação (UNI-REQ-0019) de metadado de fato),
-toda a Leitura e o ciclo completo de Publicação/Retificação/Sessão editorial.
+toda a Leitura e o ciclo completo de Publicação/Retificação.
 Reprodutível: rodada duas vezes seguidas contra o mesmo banco compartilhado,
 sem falhas em nenhuma.
 
@@ -210,7 +210,7 @@ pelos guards de fase da PR-d).
 `documentoDoEdital`. O `GET` da mesma rota aceita `?finalidade=documentoDoEdital` para listar só os
 candidatos a edital oficial.
 
-`POST {id}/publicacao`, `POST {id}/retificacoes` e `POST {id}/retificacao-em-curso/fechamento` aceitam
+`POST {id}/publicacao` e `POST {id}/retificacoes` aceitam
 `anexos: [{ "documentoId": "...", "nome": "Quadro de vagas" }]`, na ordem em que o edital os
 apresenta. Cada `documentoId` é de um documento enviado com `finalidade: anexoDoEdital` e já
 confirmado. A coleção manda `anexos: []` (publicação sem anexo). Na retificação, omitir `anexos`

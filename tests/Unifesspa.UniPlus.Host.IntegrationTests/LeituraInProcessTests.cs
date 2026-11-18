@@ -71,12 +71,94 @@ public sealed class LeituraInProcessTests
     {
         Unidade unidade = await SemearUnidadeAsync("listagem-in-process", "LISTIP", "LIP001");
 
-        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        IUnidadeReader reader = scope.ServiceProvider.GetRequiredService<IUnidadeReader>();
-
-        IReadOnlyList<UnidadeView> ativas = await reader.ListarAtivasAsync(CancellationToken.None);
+        IReadOnlyList<UnidadeView> ativas = await ListarAtivasAsync();
 
         ativas.Should().Contain(u => u.Id == unidade.Id && u.Sigla == "LISTIP");
+    }
+
+    [Fact(DisplayName = "Resolve a Unidade viva pelo código e entrega a mesma Unidade que o Id")]
+    public async Task ObterPorCodigo_UnidadeViva_ResolveAMesmaUnidadeDoId()
+    {
+        Unidade unidade = await SemearUnidadeAsync($"cod-vivo-{Guid.NewGuid():N}"[..20], $"CV{Guid.NewGuid():N}"[..10], $"COD-{Guid.NewGuid():N}"[..14]);
+
+        UnidadeView? porCodigo = await ObterPorCodigoAsync(unidade.Codigo);
+
+        porCodigo.Should().NotBeNull();
+        porCodigo!.Id.Should().Be(unidade.Id);
+        porCodigo.Codigo.Should().Be(unidade.Codigo);
+    }
+
+    [Fact(DisplayName = "Código inexistente não resolve")]
+    public async Task ObterPorCodigo_CodigoInexistente_RetornaNulo()
+    {
+        UnidadeView? view = await ObterPorCodigoAsync($"NAO-EXISTE-{Guid.NewGuid():N}"[..20]);
+
+        view.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Código que a Unidade perdeu não resolve, mesmo com a lista em cache ainda mostrando o código antigo")]
+    public async Task ObterPorCodigo_CodigoAntigoComCacheAquecido_NaoResolve()
+    {
+        string sufixo = Guid.NewGuid().ToString("N");
+        Unidade unidade = await SemearUnidadeAsync($"cod-antigo-{sufixo}"[..20], $"CA{sufixo}"[..10], $"ANT-{sufixo}"[..14]);
+        string codigoAntigo = unidade.Codigo;
+        string codigoNovo = $"NOV-{sufixo}"[..14];
+
+        await ListarAtivasAsync();
+
+        await TrocarCodigoAsync(unidade.Id, codigoNovo);
+
+        (await ObterPorCodigoAsync(codigoAntigo)).Should().BeNull("o código antigo deixou de ser da Unidade");
+        UnidadeView? novo = await ObterPorCodigoAsync(codigoNovo);
+        novo.Should().NotBeNull();
+        novo!.Id.Should().Be(unidade.Id);
+    }
+
+    [Fact(DisplayName = "Unidade excluída não resolve pelo código")]
+    public async Task ObterPorCodigo_UnidadeExcluida_NaoResolve()
+    {
+        string sufixo = Guid.NewGuid().ToString("N");
+        Unidade unidade = await SemearUnidadeAsync($"cod-excl-{sufixo}"[..20], $"CE{sufixo}"[..10], $"EXC-{sufixo}"[..14]);
+
+        await using (AsyncServiceScope escrita = _fixture.Factory.Services.CreateAsyncScope())
+        {
+            UniPlusDbContext dbContext = escrita.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+            Unidade alvo = await dbContext.Unidades.FindAsync(unidade.Id) ?? throw new InvalidOperationException("Unidade semeada sumiu.");
+            dbContext.Unidades.Remove(alvo);
+            await dbContext.SaveChangesAsync(CancellationToken.None);
+        }
+
+        (await ObterPorCodigoAsync(unidade.Codigo)).Should().BeNull();
+    }
+
+    private async Task<IReadOnlyList<UnidadeView>> ListarAtivasAsync()
+    {
+        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<IUnidadeReader>().ListarAtivasAsync(CancellationToken.None);
+    }
+
+    private async Task<UnidadeView?> ObterPorCodigoAsync(string codigo)
+    {
+        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<IUnidadeReader>().ObterPorCodigoAsync(codigo, CancellationToken.None);
+    }
+
+    private async Task TrocarCodigoAsync(Guid unidadeId, string novoCodigo)
+    {
+        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
+        UniPlusDbContext dbContext = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        Unidade unidade = await dbContext.Unidades.FindAsync(unidadeId) ?? throw new InvalidOperationException("Unidade semeada sumiu.");
+
+        unidade.Atualizar(
+            unidade.Nome,
+            new MudancaDeIdentificadores(
+                new IdentificadoresDaUnidade(unidade.Slug.Valor, unidade.Sigla, novoCodigo, unidade.Alias), DataInicio.AddDays(1), "troca de código"),
+            CidadeDaUnidade.Nenhuma,
+            null,
+            null,
+            unidade.Tipo,
+            unidade.UnidadeAcademica).IsSuccess.Should().BeTrue();
+        await dbContext.SaveChangesAsync(CancellationToken.None);
     }
 
     private async Task<Unidade> SemearUnidadeAsync(string slug, string sigla, string codigo)

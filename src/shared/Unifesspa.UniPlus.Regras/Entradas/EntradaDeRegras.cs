@@ -26,7 +26,7 @@ public static class EntradaDeRegras
         Result<List<(int Clausula, CondicaoDnf Condicao)>> linhas = CondicoesPorClausula(clausulas);
         if (linhas.IsFailure)
         {
-            return Result<PredicadoDnf?>.Failure(linhas.Error!);
+            return Result<PredicadoDnf?>.ValidationFailure(linhas.Errors);
         }
 
         Result<PredicadoDnf> predicado = PredicadoDnf.CriarDeCondicoesAgrupadas(linhas.Value!);
@@ -42,7 +42,8 @@ public static class EntradaDeRegras
             Result<List<CondicaoDnf>> condicoes = CondicoesDaClausula(clausulas[c]);
             if (condicoes.IsFailure)
             {
-                return Result<List<(int Clausula, CondicaoDnf Condicao)>>.Failure(condicoes.Error!);
+                return Result<List<(int Clausula, CondicaoDnf Condicao)>>.ValidationFailure(
+                    [.. condicoes.Errors.Select(erro => erro with { Field = $"[{c}]{erro.Field}" })]);
             }
 
             linhas.AddRange(condicoes.Value!.Select(condicao => (c, condicao)));
@@ -55,7 +56,7 @@ public static class EntradaDeRegras
     {
         if (condicoes is not { Count: > 0 })
         {
-            return Result<List<CondicaoDnf>>.Failure(new DomainError("ClausulaDnf.ClausulaVazia", "Uma cláusula deve ter ao menos uma condição."));
+            return Result<List<CondicaoDnf>>.ValidationFailure([new FieldError("", new DomainError("ClausulaDnf.ClausulaVazia", "Uma cláusula deve ter ao menos uma condição."))]);
         }
 
         return CriarCondicoes(condicoes);
@@ -64,12 +65,13 @@ public static class EntradaDeRegras
     private static Result<List<CondicaoDnf>> CriarCondicoes(IReadOnlyList<CondicaoPrecondicaoInput> condicoes)
     {
         List<CondicaoDnf> criadas = [];
-        foreach (CondicaoPrecondicaoInput? condicao in condicoes)
+        for (int i = 0; i < condicoes.Count; i++)
         {
-            Result<CondicaoDnf> criada = CriarCondicao(condicao);
+            Result<CondicaoDnf> criada = CriarCondicao(condicoes[i]);
             if (criada.IsFailure)
             {
-                return Result<List<CondicaoDnf>>.Failure(criada.Error!);
+                return Result<List<CondicaoDnf>>.ValidationFailure(
+                    [new FieldError($"[{i}]{CampoDaCondicao(criada.Error!.Code)}", criada.Error)]);
             }
 
             criadas.Add(criada.Value!);
@@ -82,6 +84,15 @@ public static class EntradaDeRegras
         condicao is null
             ? Result<CondicaoDnf>.Failure(new DomainError(PredicadoDnfErrorCodes.CondicaoNula, "O predicado contém uma condição nula."))
             : CondicaoDnf.Criar(condicao.Fato, OperadorCodigo.FromCodigo(condicao.Operador), condicao.Valor);
+
+    /// <summary>Campo da condição identificado pela recusa de forma.</summary>
+    public static string CampoDaCondicao(string codigo) => codigo switch
+    {
+        "CondicaoDnf.FatoObrigatorio" => ".fato",
+        "CondicaoDnf.OperadorInvalido" => ".operador",
+        "CondicaoDnf.FormaIncoerenteComOperador" => ".valor",
+        _ => "",
+    };
 
     /// <summary>
     /// A obrigatoriedade do token e do predicado: <c>SEMPRE</c> e <c>NUNCA</c> sem predicado,

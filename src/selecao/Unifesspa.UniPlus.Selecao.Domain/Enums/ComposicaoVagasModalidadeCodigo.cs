@@ -7,9 +7,9 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </summary>
 public static class ComposicaoVagasModalidadeCodigo
 {
-    public const string ResidualDoVo = "RESIDUAL_DO_VO";
-    public const string DentroDoVr = "DENTRO_DO_VR";
-    public const string RetiraDe = "RETIRA_DE";
+    public const string RestanteDasVagasOfertadas = "RESTANTE_DAS_VAGAS_OFERTADAS";
+    public const string DentroDaReservaLegal = "DENTRO_DA_RESERVA_LEGAL";
+    public const string RetiradaDeOutraModalidade = "RETIRADA_DE_OUTRA_MODALIDADE";
     public const string SuplementarAoTotal = "SUPLEMENTAR_AO_TOTAL";
 
     /// <summary>Token não reconhecido mapeia para <see cref="ComposicaoVagasModalidade.Nenhuma"/> (ver <see cref="NaturezaLegalModalidadeCodigo.FromCodigo"/>).</summary>
@@ -20,9 +20,9 @@ public static class ComposicaoVagasModalidadeCodigo
     /// <exception cref="ArgumentOutOfRangeException">Se <paramref name="composicao"/> é o sentinela <see cref="ComposicaoVagasModalidade.Nenhuma"/>.</exception>
     public static string ToCodigo(this ComposicaoVagasModalidade composicao) => composicao switch
     {
-        ComposicaoVagasModalidade.ResidualDoVo => ResidualDoVo,
-        ComposicaoVagasModalidade.DentroDoVr => DentroDoVr,
-        ComposicaoVagasModalidade.RetiraDe => RetiraDe,
+        ComposicaoVagasModalidade.RestanteDasVagasOfertadas => RestanteDasVagasOfertadas,
+        ComposicaoVagasModalidade.DentroDaReservaLegal => DentroDaReservaLegal,
+        ComposicaoVagasModalidade.RetiradaDeOutraModalidade => RetiradaDeOutraModalidade,
         ComposicaoVagasModalidade.SuplementarAoTotal => SuplementarAoTotal,
         ComposicaoVagasModalidade.Nenhuma => throw new ArgumentOutOfRangeException(
             nameof(composicao), composicao, "ComposicaoVagasModalidade.Nenhuma é sentinela e não tem token canônico."),
@@ -31,9 +31,9 @@ public static class ComposicaoVagasModalidadeCodigo
 
     public static ComposicaoVagasModalidade FromCodigo(string? codigo) => codigo switch
     {
-        ResidualDoVo => ComposicaoVagasModalidade.ResidualDoVo,
-        DentroDoVr => ComposicaoVagasModalidade.DentroDoVr,
-        RetiraDe => ComposicaoVagasModalidade.RetiraDe,
+        RestanteDasVagasOfertadas => ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
+        DentroDaReservaLegal => ComposicaoVagasModalidade.DentroDaReservaLegal,
+        RetiradaDeOutraModalidade => ComposicaoVagasModalidade.RetiradaDeOutraModalidade,
         SuplementarAoTotal => ComposicaoVagasModalidade.SuplementarAoTotal,
         _ => ComposicaoVagasModalidade.Nenhuma,
     };

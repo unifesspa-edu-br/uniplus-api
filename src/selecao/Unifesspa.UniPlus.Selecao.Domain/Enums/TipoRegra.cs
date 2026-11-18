@@ -18,6 +18,8 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// prazo de recurso e passou a exigir que o edital declare qual convenção usa.
 /// O décimo terceiro (<see cref="RegraConsolidacao"/>) é a regra que a etapa de
 /// avaliação humana declara para transformar as notas dos avaliadores na nota da etapa.
+/// O décimo quarto (<see cref="RegraProcedimentoRecurso"/>) é o procedimento com que o edital declara
+/// revisar o recurso de cada matéria.
 /// O sentinela <see cref="Nenhuma"/> garante que <c>default(TipoRegra)</c>
 /// nunca colida com um tipo real — a factory o rejeita explicitamente.
 /// </para>
@@ -59,10 +61,10 @@ public enum TipoRegra
     /// <summary>Enquadramento em cota (ex.: <c>RENDA-PER-CAPITA-LEI-12711</c>).</summary>
     RegraElegibilidade = 8,
 
-    /// <summary>Cálculo do quadro de vagas reservadas (ex.: <c>DISTRIB-VAGAS-LEI-12711</c>, <c>DISTRIB-VAGAS-INSTITUCIONAL</c>).</summary>
+    /// <summary>Cálculo do quadro de vagas reservadas (ex.: <c>DISTRIBUICAO-LEI-12711</c>, <c>DISTRIBUICAO-INSTITUCIONAL</c>).</summary>
     RegraDistribuicaoVagas = 9,
 
-    /// <summary>Reconciliação do estouro por arredondamento na distribuição (ex.: <c>RECONCILIACAO-VAGAS-ART11-PU</c>).</summary>
+    /// <summary>Reconciliação do estouro por arredondamento na distribuição (ex.: <c>RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO</c>).</summary>
     RegraAjusteDistribuicaoVagas = 10,
 
     /// <summary>Prazo/janela/instâncias do recurso (P-D cronograma).</summary>
@@ -75,7 +77,7 @@ public enum TipoRegra
     /// âncora em dia não útil, em horas e em dias úteis; quem <b>executa</b> a
     /// contagem é o motor, que consome a definição pelo par código e versão. O
     /// algoritmo é escolhido pelo edital, não parametrizado
-    /// (<c>esquema_args</c> vazio).
+    /// (<c>declaracao_da_regra</c> vazio).
     /// </summary>
     AlgoritmoContagemPrazo = 12,
 
@@ -86,4 +88,12 @@ public enum TipoRegra
     /// executa a consolidação é a apuração, que a consome pelo par código e versão.
     /// </summary>
     RegraConsolidacao = 13,
+
+    /// <summary>
+    /// Como o recurso de uma matéria é revisado: a nova correção do material, a conferência de um fato
+    /// pela tabela, a correção de erro de registro ou o recálculo sobre insumos já conferidos. O rol é
+    /// fechado e o procedimento é dado congelado com a configuração, nunca fluxo programável; quem
+    /// executa o procedimento é a apuração do recurso, que o consome pelo par código e versão.
+    /// </summary>
+    RegraProcedimentoRecurso = 14,
 }

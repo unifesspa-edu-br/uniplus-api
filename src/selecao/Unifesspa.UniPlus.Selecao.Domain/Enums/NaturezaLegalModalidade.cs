@@ -14,7 +14,7 @@ public enum NaturezaLegalModalidade
     /// <summary>Cota da Lei 12.711/2012 (reservada) — dispara concorrência dupla.</summary>
     CotaReservada = 1,
 
-    /// <summary>Ampla concorrência (o residual do VO_base após as reservas).</summary>
+    /// <summary>Ampla concorrência (o residual das vagas ofertadas base após as reservas).</summary>
     Ampla = 2,
 
     /// <summary>

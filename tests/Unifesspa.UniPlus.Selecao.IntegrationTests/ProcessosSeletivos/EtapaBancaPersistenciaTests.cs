@@ -73,11 +73,8 @@ public sealed class EtapaBancaPersistenciaTests(ProcessoSeletivoDbFixture fixtur
 
     private static EtapaProcesso NovaEtapaDeTitulos() =>
         EtapaProcesso.Criar(
-            "Prova de títulos",
-            CaraterEtapa.Classificatoria,
-            TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_TITULOS", "Prova de títulos", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-            peso: 1m,
-            ordem: 1).Value!;
+            new IdentificacaoDaEtapa(Nome: "Prova de títulos", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_TITULOS", "Prova de títulos", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 
     private static ProcessoSeletivo NovoProcesso(string nome) =>
         ProcessoSeletivo.Criar(
@@ -85,7 +82,7 @@ public sealed class EtapaBancaPersistenciaTests(ProcessoSeletivoDbFixture fixtur
             TiposDeProcessoDeTeste.SiSU,
             OrigemCandidatos.InscricaoPropria,
             Guid.CreateVersion7(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     private async Task<(Guid ProcessoId, Guid EtapaId)> GravarEtapaComAsync(string nome, params BancaDaEtapa[] bancas)
@@ -94,7 +91,7 @@ public sealed class EtapaBancaPersistenciaTests(ProcessoSeletivoDbFixture fixtur
         ProcessoSeletivo processo = NovoProcesso(nome);
         EtapaProcesso etapa = NovaEtapaDeTitulos();
         etapa.DefinirBancas(bancas).IsSuccess.Should().BeTrue();
-        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([etapa]).IsSuccess.Should().BeTrue();
         escrita.ProcessosSeletivos.Add(processo);
         await escrita.SaveChangesAsync();
         return (processo.Id, etapa.Id);

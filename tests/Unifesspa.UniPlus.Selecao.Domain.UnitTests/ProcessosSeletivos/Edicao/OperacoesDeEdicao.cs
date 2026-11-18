@@ -9,79 +9,79 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// As 21 operações de escrita da configuração que passam pelo protocolo comum de edição, cada uma
+/// As 21 operações de escrita da configuração que só o rascunho aceita, cada uma
 /// com a chamada que reaplica o valor que o processo já tem (sucesso garantido sobre um processo
 /// conforme) e, nas que verificam argumento antes da guarda, a chamada com o argumento nulo.
 /// </summary>
 internal sealed record OperacaoDeEdicao(
     string Nome,
-    Func<ProcessoSeletivo, PrecondicaoIfMatch, Result> Reaplicar,
-    Func<ProcessoSeletivo, PrecondicaoIfMatch, Result>? ComArgumentoInvalido = null)
+    Func<ProcessoSeletivo, Result> Reaplicar,
+    Func<ProcessoSeletivo, Result>? ComArgumentoInvalido = null)
 {
     private const FinalidadeFormulario Inscricao = FinalidadeFormulario.Inscricao;
 
     internal static readonly IReadOnlyList<OperacaoDeEdicao> Todas =
     [
         new(nameof(ProcessoSeletivo.DefinirOpcoesDeclaradas),
-            (p, pre) => p.DefinirOpcoesDeclaradas("FATO_DE_TESTE", [OpcaoDeclaradaFato.Criar("FATO_DE_TESTE", "A", "A", 0).Value!], pre),
-            (p, pre) => p.DefinirOpcoesDeclaradas("FATO_DE_TESTE", null!, pre)),
+            p => p.DefinirOpcoesDeclaradas("FATO_DE_TESTE", [OpcaoDeclaradaFato.Criar("FATO_DE_TESTE", "A", "A", 0).Value!]),
+            p => p.DefinirOpcoesDeclaradas("FATO_DE_TESTE", null!)),
         new(nameof(ProcessoSeletivo.DefinirEtapas),
-            (p, pre) => p.DefinirEtapas([.. p.Etapas], pre),
-            (p, pre) => p.DefinirEtapas(null!, pre)),
+            p => p.DefinirEtapas([.. p.Etapas]),
+            p => p.DefinirEtapas(null!)),
         new(nameof(ProcessoSeletivo.DefinirAtendimentoEspecializado),
-            (p, pre) => p.DefinirAtendimentoEspecializado(p.AtendimentoEspecializado!, pre),
-            (p, pre) => p.DefinirAtendimentoEspecializado(null!, pre)),
+            p => p.DefinirAtendimentoEspecializado(p.AtendimentoEspecializado!),
+            p => p.DefinirAtendimentoEspecializado(null!)),
         new(nameof(ProcessoSeletivo.DefinirDistribuicaoVagas),
-            (p, pre) => p.DefinirDistribuicaoVagas([.. p.DistribuicaoVagas], FatosDeModalidadeDeTeste.DoCatalogo, pre),
-            (p, pre) => p.DefinirDistribuicaoVagas(null!, FatosDeModalidadeDeTeste.DoCatalogo, pre)),
+            p => p.DefinirDistribuicaoVagas([.. p.DistribuicaoVagas], FatosDeModalidadeDeTeste.DoCatalogo),
+            p => p.DefinirDistribuicaoVagas(null!, FatosDeModalidadeDeTeste.DoCatalogo)),
         new(nameof(ProcessoSeletivo.DefinirOpcoesDeCurso),
-            (p, pre) => p.DefinirOpcoesDeCurso(p.NumeroDeOpcoesDeCurso!.Value, pre)),
+            p => p.DefinirOpcoesDeCurso(p.NumeroDeOpcoesDeCurso!.Value)),
         new(nameof(ProcessoSeletivo.DefinirBonusRegional),
-            (p, pre) => p.DefinirBonusRegional(p.AplicaBonusRegional!.Value, p.BonusRegional, pre)),
+            p => p.DefinirBonusRegional(p.AplicaBonusRegional!.Value, p.BonusRegional)),
         new(nameof(ProcessoSeletivo.DefinirConfiguracaoDivulgacao),
-            (p, pre) => p.DefinirConfiguracaoDivulgacao(p.ConfiguracaoDivulgacao, pre)),
+            p => p.DefinirConfiguracaoDivulgacao(p.ConfiguracaoDivulgacao)),
         new(nameof(ProcessoSeletivo.DefinirTaxaInscricao),
-            (p, pre) => p.DefinirTaxaInscricao(p.ConfiguracaoTaxaInscricao, pre)),
+            p => p.DefinirTaxaInscricao(p.ConfiguracaoTaxaInscricao)),
         new(nameof(ProcessoSeletivo.DefinirCascataRemanejamento),
-            (p, pre) => p.DefinirCascataRemanejamento(p.Cascata, pre)),
+            p => p.DefinirCascataRemanejamento(p.Cascata)),
         new(nameof(ProcessoSeletivo.DefinirCriteriosDesempate),
-            (p, pre) => p.DefinirCriteriosDesempate([.. p.CriteriosDesempate], pre),
-            (p, pre) => p.DefinirCriteriosDesempate(null!, pre)),
+            p => p.DefinirCriteriosDesempate([.. p.CriteriosDesempate]),
+            p => p.DefinirCriteriosDesempate(null!)),
         new(nameof(ProcessoSeletivo.DefinirClassificacao),
-            (p, pre) => p.DefinirClassificacao(p.Classificacao!, pre),
-            (p, pre) => p.DefinirClassificacao(null!, pre)),
+            p => p.DefinirClassificacao(p.Classificacao!),
+            p => p.DefinirClassificacao(null!)),
         new(nameof(ProcessoSeletivo.DefinirFormulario),
-            (p, pre) =>
+            p =>
             {
                 FormularioProcesso formulario = p.Formularios.Single(f => f.Finalidade == Inscricao);
-                return p.DefinirFormulario(Inscricao, formulario.FaseId, formulario.Titulo, [.. formulario.Etapas], pre);
+                return p.DefinirFormulario(Inscricao, formulario.FaseId, formulario.Titulo, [.. formulario.Etapas]);
             },
-            (p, pre) => p.DefinirFormulario(Inscricao, null, null, null!, pre)),
+            p => p.DefinirFormulario(Inscricao, null, null, null!)),
         new(nameof(ProcessoSeletivo.DefinirTermosDoFormulario),
-            (p, pre) => p.DefinirTermosDoFormulario(Inscricao, [], pre),
-            (p, pre) => p.DefinirTermosDoFormulario(Inscricao, null!, pre)),
+            p => p.DefinirTermosDoFormulario(Inscricao, []),
+            p => p.DefinirTermosDoFormulario(Inscricao, null!)),
         new(nameof(ProcessoSeletivo.DefinirCronogramaFases),
-            (p, pre) => p.DefinirCronogramaFases([.. p.CronogramaFases], [], pre),
-            (p, pre) => p.DefinirCronogramaFases(null!, [], pre)),
+            p => p.DefinirCronogramaFases([.. p.CronogramaFases], []),
+            p => p.DefinirCronogramaFases(null!, [])),
         new(nameof(ProcessoSeletivo.DefinirDocumentosExigidos),
-            (p, pre) => p.DefinirDocumentosExigidos([.. p.RaizesDeExigencia], pre),
-            (p, pre) => p.DefinirDocumentosExigidos(null!, pre)),
+            p => p.DefinirDocumentosExigidos([.. p.RaizesDeExigencia]),
+            p => p.DefinirDocumentosExigidos(null!)),
         new(nameof(ProcessoSeletivo.DefinirFatosColetados),
-            (p, pre) => p.DefinirFatosColetados(Inscricao, [.. p.FatosColetados.Where(static f => f.Finalidade == Inscricao)], pre),
-            (p, pre) => p.DefinirFatosColetados(Inscricao, null!, pre)),
+            p => p.DefinirFatosColetados(Inscricao, [.. p.FatosColetados.Where(static f => f.Finalidade == Inscricao)]),
+            p => p.DefinirFatosColetados(Inscricao, null!)),
         new(nameof(ProcessoSeletivo.DefinirRegrasDerivacao),
-            (p, pre) => p.DefinirRegrasDerivacao([.. p.RegrasDerivacao], pre),
-            (p, pre) => p.DefinirRegrasDerivacao(null!, pre)),
+            p => p.DefinirRegrasDerivacao([.. p.RegrasDerivacao]),
+            p => p.DefinirRegrasDerivacao(null!)),
         new(nameof(ProcessoSeletivo.DefinirReferenciaTemporalFatos),
-            (p, pre) => p.DefinirReferenciaTemporalFatos(p.ReferenciaTemporalFatos, pre)),
+            p => p.DefinirReferenciaTemporalFatos(p.ReferenciaTemporalFatos)),
         new(nameof(ProcessoSeletivo.DefinirIdentificadorLegivel),
-            (p, pre) => p.DefinirIdentificadorLegivel(p.IdentificadorLegivel!.Value, pre),
-            (p, pre) => p.DefinirIdentificadorLegivel(default, pre)),
+            p => p.DefinirIdentificadorLegivel(p.IdentificadorLegivel!.Value),
+            p => p.DefinirIdentificadorLegivel(default)),
         new(nameof(ProcessoSeletivo.DefinirLocalidade),
-            (p, pre) => p.DefinirLocalidade(p.Localidade, pre)),
+            p => p.DefinirLocalidade(p.Localidade)),
         new(nameof(ProcessoSeletivo.DefinirAlgoritmoContagemPrazo),
-            (p, pre) => p.DefinirAlgoritmoContagemPrazo(
-                ProcessoConformeFactory.Regra(AlgoritmoContagemPrazoCodigo.AvancaDataUtil, "d"), pre)),
+            p => p.DefinirAlgoritmoContagemPrazo(
+                ProcessoConformeFactory.Regra(AlgoritmoContagemPrazoCodigo.AvancaDataUtil, "d"))),
     ];
 
     internal static OperacaoDeEdicao Por(string nome) => Todas.Single(o => o.Nome == nome);

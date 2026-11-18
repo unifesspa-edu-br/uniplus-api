@@ -16,24 +16,22 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport.CenariosDeDefinirEtapas;
+
 public sealed class DefinirFormularioCommandHandlerTests
 {
-    [Fact(DisplayName = "Processo publicado sem sessão recusa pela precondição antes de conferir as etapas")]
-    public async Task Handle_PublicadoSemSessao_EtapaInvalida_RecusaPelaPrecondicao()
+    [Fact(DisplayName = "Processo publicado recusa a mutação antes de conferir as etapas")]
+    public async Task Handle_Publicado_EtapaInvalida_RecusaAMutacao()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
-            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSemEtapas();
         typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Status))!.SetValue(processo, StatusProcesso.Publicado);
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
 
-        Result<MutacaoAceita> result = await DefinirFormularioCommandHandler.Handle(
+        Result result = await DefinirFormularioCommandHandler.Handle(
             new DefinirFormularioCommand(
                 processo.Id, FinalidadeFormulario.Inscricao, null, null,
-                [new EtapaFormularioInput("DADOS", 0, "SECAO", null, "", null, null)],
-                PrecondicaoIfMatch.Ausente),
+                [new EtapaFormularioInput("DADOS", 0, "SECAO", null, "", null, null)]),
             repository, Substitute.For<IFatoCandidatoReader>(), Substitute.For<IUnitOfWork>(), CancellationToken.None);
 
         result.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada",
@@ -47,11 +45,10 @@ public sealed class DefinirFormularioCommandHandlerTests
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
 
-        Result<MutacaoAceita> result = await DefinirFormularioCommandHandler.Handle(
+        Result result = await DefinirFormularioCommandHandler.Handle(
             new DefinirFormularioCommand(
                 processo.Id, FinalidadeFormulario.Habilitacao, faseDeInscricao, new string('a', 301),
-                [new EtapaFormularioInput("DADOS", 0, "SECAO", null, "", null, null)],
-                PrecondicaoIfMatch.Ausente),
+                [new EtapaFormularioInput("DADOS", 0, "SECAO", null, "", null, null)]),
             repository, Substitute.For<IFatoCandidatoReader>(), Substitute.For<IUnitOfWork>(), CancellationToken.None);
 
         result.Errors.Select(static e => e.Field).Should().BeEquivalentTo(["etapas[0].titulo", "titulo", "faseId"]);
@@ -66,14 +63,13 @@ public sealed class DefinirFormularioCommandHandlerTests
         IFatoCandidatoReader reader = Substitute.For<IFatoCandidatoReader>();
         reader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com([]));
 
-        Result<MutacaoAceita> result = await DefinirFormularioCommandHandler.Handle(
+        Result result = await DefinirFormularioCommandHandler.Handle(
             new DefinirFormularioCommand(
                 processo.Id, FinalidadeFormulario.Inscricao, faseDeInscricao, new string('a', 301),
                 [
                     new EtapaFormularioInput("DADOS", 0, "SECAO", null, "Dados", null, null,
                         [[new CondicaoPrecondicaoInput("FATO_INEXISTENTE", "IGUAL", System.Text.Json.JsonSerializer.SerializeToElement(true))]]),
-                ],
-                PrecondicaoIfMatch.Ausente),
+                ]),
             repository, reader, Substitute.For<IUnitOfWork>(), CancellationToken.None);
 
         result.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
@@ -88,20 +84,19 @@ public sealed class DefinirFormularioCommandHandlerTests
     public async Task Handle_CriarInscricao_TrazASecaoDosDadosBasicos()
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Formulário", out Guid faseDeInscricao);
-        processo.RemoverFormulario(FinalidadeFormulario.Inscricao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.RemoverFormulario(FinalidadeFormulario.Inscricao).IsSuccess.Should().BeTrue();
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
         IFatoCandidatoReader reader = Substitute.For<IFatoCandidatoReader>();
         reader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Fatos);
 
-        Result<MutacaoAceita> result = await DefinirFormularioCommandHandler.Handle(
+        Result result = await DefinirFormularioCommandHandler.Handle(
             new DefinirFormularioCommand(
                 processo.Id, FinalidadeFormulario.Inscricao, faseDeInscricao, null,
                 [
                     new EtapaFormularioInput("DADOS", 0, "SECAO", null, "Dados", null, null),
                     new EtapaFormularioInput("REVISAO", 1, "BLOCO", "REVISAO_E_ACEITE", "Revisão e aceite", null, null),
-                ],
-                PrecondicaoIfMatch.Ausente),
+                ]),
             repository, reader, Substitute.For<IUnitOfWork>(), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);

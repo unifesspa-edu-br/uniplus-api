@@ -9,6 +9,8 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Persistence;
 /// </summary>
 public static class RestricoesDoBanco
 {
+    public const string BaseLegalBonusRegionalCodigoVivo = "ix_bases_legais_do_bonus_regional_codigo_vivo";
+
     public const string CalendarioDeDiasUteisVigenteUnico = "ex_calendarios_de_dias_uteis_vigente_unico";
 
     public const string DiaNaoUtilUnicidade = "ix_dias_nao_uteis_unicidade";
@@ -18,6 +20,8 @@ public static class RestricoesDoBanco
     public const string CondicaoDeAtendimentoCodigoVivo = "ix_condicoes_de_atendimento_codigo_vivo";
 
     public const string CursoCodigoVivo = "ix_cursos_codigo_vivo";
+
+    public const string OfertaDeCursoCodigoVivo = "ix_ofertas_de_curso_codigo_vivo";
 
     public const string FaseCanonicaCodigoVivo = "ix_fases_canonicas_codigo_vivo";
 
@@ -56,4 +60,8 @@ public static class RestricoesDoBanco
     public const string TipoDeDeficienciaNomeVivo = "ix_tipos_de_deficiencia_nome_vivo";
 
     public const string TipoDeDocumentoCodigoVivo = "ix_tipos_de_documento_codigo_vivo";
+
+    public const string TermoDeConsentimentoCodigoVivo = "ix_termos_de_consentimento_codigo_vivo";
+
+    public const string VersaoDoTermoNumeroUnico = "ux_versoes_do_termo_consentimento_termo_numero";
 }

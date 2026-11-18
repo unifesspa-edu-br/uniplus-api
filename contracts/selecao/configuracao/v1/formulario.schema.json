@@ -1,0 +1,292 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/formulario.schema.json",
+  "title": "Formulário do processo",
+  "description": "O formulário de uma finalidade: as etapas, os itens e grupos coletados e os termos de consentimento exigidos. Cada finalidade tem no máximo um formulário no processo. Um formulário comporta no máximo 200 itens, contando itens, grupos e subitens.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "finalidade"
+  ],
+  "properties": {
+    "finalidade": {
+      "title": "Finalidade",
+      "description": "Para que serve o formulário. É a chave dele no documento.",
+      "enum": [
+        "INSCRICAO",
+        "ISENCAO_TAXA",
+        "HABILITACAO"
+      ]
+    },
+    "faseChave": {
+      "title": "Fase do formulário",
+      "description": "Chave local da fase do cronograma a que o formulário pertence.",
+      "$ref": "comuns.schema.json#/$defs/chave"
+    },
+    "titulo": {
+      "title": "Título",
+      "description": "Título do formulário, de até 300 caracteres.",
+      "type": "string",
+      "maxLength": 300
+    },
+    "modeloOrigemCodigo": {
+      "title": "Modelo de origem",
+      "description": "Código do modelo de formulário aplicado ao processo, de até 60 caracteres. Registra só a proveniência. Campo só de leitura: ignorado na importação.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60,
+      "readOnly": true
+    },
+    "etapas": {
+      "title": "Etapas",
+      "description": "Seções e blocos do formulário, na ordem de apresentação.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/etapa"
+      }
+    },
+    "itens": {
+      "title": "Itens",
+      "description": "Fatos coletados pelo formulário.",
+      "type": "array",
+      "items": {
+        "$ref": "item-do-formulario.schema.json"
+      }
+    },
+    "grupos": {
+      "title": "Grupos",
+      "description": "Grupos repetíveis de campos, como a composição familiar.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/grupo"
+      }
+    },
+    "termos": {
+      "title": "Termos de consentimento",
+      "description": "Termos que o candidato deve aceitar, cada um citando o termo e o número da versão no catálogo.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/termoExigido"
+      }
+    }
+  },
+  "$defs": {
+    "etapa": {
+      "title": "Etapa do formulário",
+      "description": "Uma seção de campos ou um bloco de sistema.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "codigo",
+        "tipo"
+      ],
+      "properties": {
+        "codigo": {
+          "title": "Código",
+          "description": "Código da etapa, único no formulário. Os itens e grupos a citam em etapaCodigo.",
+          "$ref": "item-do-formulario.schema.json#/$defs/codigoLocal"
+        },
+        "ordem": {
+          "title": "Ordem",
+          "description": "Posição de apresentação, a partir de 0.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "tipo": {
+          "title": "Tipo",
+          "description": "SECAO reúne campos; BLOCO é um bloco de sistema.",
+          "enum": [
+            "SECAO",
+            "BLOCO"
+          ]
+        },
+        "bloco": {
+          "title": "Bloco de sistema",
+          "description": "Qual bloco de sistema a etapa é. Só faz sentido quando o tipo é BLOCO; a coerência é regra do domínio.",
+          "enum": [
+            "COMPROVACAO_DOCUMENTAL",
+            "MODALIDADES_CALCULADAS",
+            "REVISAO_E_ACEITE"
+          ]
+        },
+        "titulo": {
+          "title": "Título",
+          "description": "Título da etapa, de até 300 caracteres.",
+          "type": "string",
+          "maxLength": 300
+        },
+        "descricao": {
+          "title": "Descrição",
+          "description": "Texto explicativo da etapa, de até 2000 caracteres.",
+          "type": "string",
+          "maxLength": 2000
+        },
+        "aviso": {
+          "title": "Aviso",
+          "description": "Aviso destacado da etapa, de até 2000 caracteres.",
+          "type": "string",
+          "maxLength": 2000
+        },
+        "exibicao": {
+          "title": "Exibição",
+          "description": "Condição para exibir a etapa. Nula ou ausente: sempre exibida.",
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "predicado.schema.json#/$defs/predicado"
+            }
+          ]
+        }
+      }
+    },
+    "grupo": {
+      "title": "Grupo repetível",
+      "description": "Conjunto de campos que o candidato repete, uma vez por ocorrência.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "codigo",
+        "subitens"
+      ],
+      "properties": {
+        "codigo": {
+          "title": "Código",
+          "description": "Código do grupo, único no processo e distinto de qualquer código de fato.",
+          "$ref": "item-do-formulario.schema.json#/$defs/codigoLocal"
+        },
+        "etapaCodigo": {
+          "title": "Etapa",
+          "description": "Código da etapa do tipo SECAO, do mesmo formulário, em que o grupo aparece.",
+          "$ref": "item-do-formulario.schema.json#/$defs/codigoLocal"
+        },
+        "ordem": {
+          "title": "Ordem",
+          "description": "Posição de apresentação, a partir de 0, única no formulário entre itens e grupos.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "rotulo": {
+          "title": "Rótulo",
+          "description": "Texto do grupo exibido ao candidato, de até 300 caracteres.",
+          "type": "string",
+          "maxLength": 300
+        },
+        "minimo": {
+          "title": "Mínimo de ocorrências",
+          "description": "Menor número de ocorrências aceito.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "maximo": {
+          "title": "Máximo de ocorrências",
+          "description": "Maior número de ocorrências aceito. Nulo ou ausente: sem teto.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "incluiCandidato": {
+          "title": "Inclui o candidato",
+          "description": "Se o próprio candidato conta como uma das ocorrências.",
+          "type": "boolean"
+        },
+        "exibicao": {
+          "title": "Exibição",
+          "description": "Condição para exibir o grupo. Nula ou ausente: sempre exibido.",
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "predicado.schema.json#/$defs/predicado"
+            }
+          ]
+        },
+        "obrigatoriedade": {
+          "title": "Obrigatoriedade",
+          "description": "Se o preenchimento do grupo é obrigatório sempre, nunca ou só sob uma condição.",
+          "$ref": "predicado.schema.json#/$defs/obrigatoriedade"
+        },
+        "subitens": {
+          "title": "Subitens",
+          "description": "Campos de cada ocorrência, até 30. O subitem não tem etapa nem impedimento: ficam ausentes ou nulos.",
+          "type": "array",
+          "maxItems": 30,
+          "items": {
+            "$ref": "item-do-formulario.schema.json",
+            "properties": {
+              "etapaCodigo": {
+                "title": "Etapa do subitem",
+                "description": "Sempre ausente ou nula: o subitem aparece na etapa do grupo.",
+                "type": "null"
+              },
+              "impedimento": {
+                "title": "Impedimento do subitem",
+                "description": "Sempre ausente ou nulo: o subitem de grupo não tem impedimento.",
+                "type": "null"
+              }
+            }
+          }
+        }
+      }
+    },
+    "termoExigido": {
+      "title": "Termo exigido pelo formulário",
+      "description": "Um termo de consentimento que o candidato aceita, apontando uma versão publicada do catálogo. Nome, texto, base legal e forma de aceite vêm da versão e não se declaram aqui.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "codigo",
+        "termoCodigo",
+        "versaoNumero"
+      ],
+      "properties": {
+        "codigo": {
+          "title": "Código",
+          "description": "Código do termo neste formulário, de até 60 caracteres, único no formulário.",
+          "$ref": "item-do-formulario.schema.json#/$defs/codigoLocal"
+        },
+        "ordem": {
+          "title": "Ordem",
+          "description": "Posição de apresentação, a partir de 0.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "termoCodigo": {
+          "title": "Termo",
+          "description": "Código estável do termo no catálogo de termos de consentimento, de até 100 caracteres.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[A-Z][A-Z0-9_]+$"
+        },
+        "versaoNumero": {
+          "title": "Versão do termo",
+          "description": "Número da versão publicada do termo, a partir de 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "exibicao": {
+          "title": "Exibição",
+          "description": "Condição para exibir o termo. Nula ou ausente: sempre exibido.",
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "predicado.schema.json#/$defs/predicado"
+            }
+          ]
+        },
+        "obrigatoriedade": {
+          "title": "Obrigatoriedade",
+          "description": "Se o aceite é obrigatório sempre, nunca ou só sob uma condição.",
+          "$ref": "predicado.schema.json#/$defs/obrigatoriedade"
+        }
+      }
+    }
+  }
+}

@@ -21,6 +21,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 internal sealed class ConfiguracaoBonusRegionalConfiguration : IEntityTypeConfiguration<ConfiguracaoBonusRegional>
 {
     private const int TipoInstrumentoMaxLength = 30;
+    private const int CodigoBaseLegalMaxLength = 100;
     private const int IdentificacaoMaxLength = 500;
     private const int DescricaoMaxLength = 2000;
 
@@ -42,6 +43,7 @@ internal sealed class ConfiguracaoBonusRegionalConfiguration : IEntityTypeConfig
         builder.Property(b => b.FatoElegibilidadeCodigo).HasMaxLength(FormaDoItem.FatoCodigoMaxLength);
 
         builder.Property(b => b.BaseLegalBonusRegionalId).IsRequired();
+        builder.Property(b => b.BaseLegalBonusRegionalCodigo).HasMaxLength(CodigoBaseLegalMaxLength).IsRequired();
         builder.Property(b => b.TipoInstrumento).HasMaxLength(TipoInstrumentoMaxLength).IsRequired();
         builder.Property(b => b.Identificacao).HasMaxLength(IdentificacaoMaxLength).IsRequired();
         builder.Property(b => b.Descricao).HasMaxLength(DescricaoMaxLength).IsRequired();

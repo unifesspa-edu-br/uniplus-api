@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Configurations;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
 using Microsoft.EntityFrameworkCore;
@@ -17,10 +16,6 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalidade>
 {
     private const int CodigoMaxLength = 60;
@@ -76,10 +71,11 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
             .HasConversion(new AcaoQuandoIndeferidoValueConverter())
             .HasMaxLength(EnumTokenMaxLength);
 
-        // remanejamento_args: value object serializado como jsonb (chaves fixadas por
+        // remanejamento_parametros: value object serializado como jsonb (chaves fixadas por
         // JsonPropertyName — destino/par/fallback). Default '{}' cobre inserts crus.
-        builder.Property(m => m.RemanejamentoArgs)
-            .HasConversion(RemanejamentoArgsConverter, RemanejamentoArgsComparer)
+        builder.Property(m => m.RemanejamentoParametros)
+            .HasColumnName("remanejamento_parametros")
+            .HasConversion(RemanejamentoParametrosConverter, RemanejamentoParametrosComparer)
             .HasColumnType("jsonb")
             .HasDefaultValueSql("'{}'::jsonb")
             .IsRequired();
@@ -126,7 +122,7 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
             ComposicaoVagas = item.Composicao,
             item.ComposicaoOrigem,
             RegraRemanejamento = item.Regra,
-            item.RemanejamentoArgs,
+            item.RemanejamentoParametros,
             item.RegraDeAplicabilidade,
             AcaoQuandoIndeferido = (AcaoQuandoIndeferido?)null,
             item.BaseLegal,
@@ -159,11 +155,11 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
             "ck_modalidades_codigo_formato",
             "codigo ~ '^[A-Z0-9_]+$'");
 
-        // Equivalência exata RETIRA_DE ⟺ composicao_origem preenchida (invariante 4),
+        // Equivalência exata RETIRADA_DE_OUTRA_MODALIDADE ⟺ composicao_origem preenchida (invariante 4),
         // como igualdade de dois booleanos — null-safe (ambos os lados nunca são null).
         table.HasCheckConstraint(
-            "ck_modalidades_retira_de_origem",
-            "(composicao_vagas = 'RETIRA_DE') = (composicao_origem IS NOT NULL)");
+            "ck_modalidades_retirada_de_outra_modalidade_origem",
+            "(composicao_vagas = 'RETIRADA_DE_OUTRA_MODALIDADE') = (composicao_origem IS NOT NULL)");
     }
 
     private static string TokensSql(IReadOnlyList<string> tokens) =>
@@ -171,22 +167,22 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
 
     // ── Conversores/comparadores jsonb ────────────────────────────────────────
 
-    private static readonly ValueConverter<RemanejamentoArgs, string> RemanejamentoArgsConverter =
+    private static readonly ValueConverter<RemanejamentoParametros, string> RemanejamentoParametrosConverter =
         new(
-            args => JsonSerializer.Serialize(args, JsonOptions),
-            json => JsonSerializer.Deserialize<RemanejamentoArgs>(json, JsonOptions) ?? RemanejamentoArgs.Vazio);
+            parametros => JsonSerializer.Serialize(parametros, JsonOptions),
+            json => JsonSerializer.Deserialize<RemanejamentoParametros>(json, JsonOptions) ?? RemanejamentoParametros.Vazio);
 
-    private static readonly ValueComparer<RemanejamentoArgs> RemanejamentoArgsComparer =
+    private static readonly ValueComparer<RemanejamentoParametros> RemanejamentoParametrosComparer =
         new(
-            (a, b) => SerializeArgs(a) == SerializeArgs(b),
-            v => v == null ? 0 : SerializeArgs(v).GetHashCode(StringComparison.Ordinal),
-            v => DeserializeArgs(SerializeArgs(v)));
+            (a, b) => SerializeParametros(a) == SerializeParametros(b),
+            v => v == null ? 0 : SerializeParametros(v).GetHashCode(StringComparison.Ordinal),
+            v => DeserializeParametros(SerializeParametros(v)));
 
-    private static string SerializeArgs(RemanejamentoArgs? v) =>
+    private static string SerializeParametros(RemanejamentoParametros? v) =>
         v is null ? string.Empty : JsonSerializer.Serialize(v, JsonOptions);
 
-    private static RemanejamentoArgs DeserializeArgs(string json) =>
+    private static RemanejamentoParametros DeserializeParametros(string json) =>
         string.IsNullOrEmpty(json)
-            ? RemanejamentoArgs.Vazio
-            : JsonSerializer.Deserialize<RemanejamentoArgs>(json, JsonOptions) ?? RemanejamentoArgs.Vazio;
+            ? RemanejamentoParametros.Vazio
+            : JsonSerializer.Deserialize<RemanejamentoParametros>(json, JsonOptions) ?? RemanejamentoParametros.Vazio;
 }

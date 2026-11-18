@@ -1,0 +1,230 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/etapas.schema.json",
+  "title": "Etapa de avaliação",
+  "description": "Uma etapa de avaliação do processo. Só a chave local é obrigatória: o resto pode faltar num rascunho.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "chave"
+  ],
+  "properties": {
+    "chave": {
+      "title": "Chave da etapa",
+      "description": "Chave local da etapa, única no documento. Desempate, eliminação e exigências a usam para citar esta etapa. É obrigatória: é escolhida por quem cria a etapa, o sistema não a atribui, e ela não muda ao renomear nem ao reordenar.",
+      "$ref": "comuns.schema.json#/$defs/chave"
+    },
+    "nome": {
+      "title": "Nome da etapa",
+      "description": "Nome da etapa como aparece para as pessoas.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300
+    },
+    "carater": {
+      "title": "Caráter da etapa",
+      "description": "Se a etapa classifica (classificatoria), elimina (eliminatoria) ou faz as duas coisas (ambas).",
+      "enum": [
+        "classificatoria",
+        "eliminatoria",
+        "ambas"
+      ]
+    },
+    "tipoEtapaCodigo": {
+      "title": "Tipo de etapa",
+      "description": "Código do tipo de etapa no catálogo de tipos de etapa.",
+      "$ref": "comuns.schema.json#/$defs/codigoDeCatalogo"
+    },
+    "peso": {
+      "title": "Peso",
+      "description": "Peso da etapa na nota final, com até quatro casas decimais.",
+      "type": "number",
+      "multipleOf": 0.0001
+    },
+    "notaMinima": {
+      "title": "Nota mínima",
+      "description": "Nota mínima para não ser eliminado, com até quatro casas decimais.",
+      "type": "number",
+      "multipleOf": 0.0001
+    },
+    "notaMaxima": {
+      "title": "Nota máxima",
+      "description": "Nota máxima da etapa, com até quatro casas decimais.",
+      "type": "number",
+      "multipleOf": 0.0001
+    },
+    "passoDoLancamento": {
+      "title": "Passo do lançamento",
+      "description": "Menor variação aceita no lançamento da nota, com até quatro casas decimais.",
+      "type": "number",
+      "multipleOf": 0.0001
+    },
+    "formaDeAvaliacao": {
+      "title": "Forma de avaliação",
+      "description": "OBJETIVA para correção automática ou HUMANA para correção por avaliadores.",
+      "enum": [
+        "OBJETIVA",
+        "HUMANA"
+      ]
+    },
+    "regraConsolidacao": {
+      "title": "Regra de consolidação",
+      "description": "Regra do catálogo que consolida as correções na avaliação humana.",
+      "$ref": "comuns.schema.json#/$defs/referenciaDeRegra"
+    },
+    "itensDeAvaliacao": {
+      "title": "Itens de avaliação",
+      "description": "Itens que compõem a nota da etapa. Cada item tem uma chave local, que o preserva quando o rótulo muda.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/itemDeAvaliacao"
+      }
+    },
+    "escalaDeAtendimento": {
+      "title": "Escala de atendimento",
+      "description": "Níveis de atendimento que o avaliador usa para dar a fração da pontuação de cada item.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/nivelDeAtendimento"
+      }
+    },
+    "ordem": {
+      "title": "Ordem",
+      "description": "Posição de apresentação da etapa, a partir de 1.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "faseChave": {
+      "title": "Fase da etapa",
+      "description": "Chave local da fase do cronograma que contém a etapa.",
+      "$ref": "comuns.schema.json#/$defs/chave"
+    },
+    "inicio": {
+      "title": "Início da etapa",
+      "description": "Instante em que a etapa começa, em UTC. Ausente quando ela segue a janela da fase.",
+      "$ref": "comuns.schema.json#/$defs/instante"
+    },
+    "fim": {
+      "title": "Fim da etapa",
+      "description": "Instante em que a etapa termina, em UTC. Ausente quando ela segue a janela da fase.",
+      "$ref": "comuns.schema.json#/$defs/instante"
+    },
+    "emiteParecerIndividual": {
+      "title": "Emite parecer individual",
+      "description": "Se a etapa emite parecer individual ao candidato, quando ela publica resultado.",
+      "type": "boolean"
+    },
+    "produtos": {
+      "title": "Atos que a etapa publica",
+      "description": "Tipos de ato publicados pela etapa. O par tipo de ato e papel não se repete na etapa.",
+      "type": "array",
+      "items": {
+        "$ref": "comuns.schema.json#/$defs/produto"
+      }
+    },
+    "bancas": {
+      "title": "Bancas da etapa",
+      "description": "Bancas que a etapa exige. Cada uma tem uma chave local.",
+      "type": "array",
+      "items": {
+        "$ref": "bancas.schema.json"
+      }
+    },
+    "recursos": {
+      "title": "Recursos da etapa",
+      "description": "Recursos que a etapa admite.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/recursoDaEtapa"
+      }
+    },
+    "tiposDeDecisao": {
+      "title": "Tipos de decisão da etapa",
+      "description": "Tipos de decisão que a etapa toma e para os quais o processo escolhe motivos.",
+      "$ref": "comuns.schema.json#/$defs/tiposDeDecisao"
+    }
+  },
+  "$defs": {
+    "recursoDaEtapa": {
+      "title": "Recurso da etapa",
+      "description": "Recurso que a etapa admite: a âncora do prazo e as mesmas propriedades de prazo e efeito suspensivo do recurso da fase. Com a âncora atoPublicado, o ato âncora é um ato preliminar da própria etapa.",
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "comuns.schema.json#/$defs/propriedadesDoRecurso"
+        }
+      ],
+      "properties": {
+        "ancora": {
+          "title": "Âncora do prazo",
+          "description": "De onde o prazo corre: do ato publicado (atoPublicado) ou da ciência individual do candidato (cienciaIndividual).",
+          "enum": [
+            "atoPublicado",
+            "cienciaIndividual"
+          ]
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "itemDeAvaliacao": {
+      "title": "Item de avaliação",
+      "description": "Um item que compõe a nota de uma etapa.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "chave"
+      ],
+      "properties": {
+        "chave": {
+          "title": "Chave do item",
+          "description": "Chave local do item, única na etapa. É obrigatória: é escolhida por quem cria o item, o sistema não a atribui, e ela não muda ao renomear nem ao reordenar.",
+          "$ref": "comuns.schema.json#/$defs/chave"
+        },
+        "rotulo": {
+          "title": "Rótulo",
+          "description": "Nome do item como aparece para o avaliador.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "pontuacaoMaxima": {
+          "title": "Pontuação máxima",
+          "description": "Pontuação máxima do item, com até quatro casas decimais.",
+          "type": "number",
+          "multipleOf": 0.0001
+        }
+      }
+    },
+    "nivelDeAtendimento": {
+      "title": "Nível de atendimento",
+      "description": "Um nível da escala de atendimento: o rótulo e a fração da pontuação do item que ele vale.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "chave"
+      ],
+      "properties": {
+        "chave": {
+          "title": "Chave do nível",
+          "description": "Chave local do nível, única na escala. É a identidade do nível entre versões e nas referências internas: o rótulo é texto editável, e corrigir a grafia não pode virar retirada e inclusão. É obrigatória: é escolhida por quem cria o nível, o sistema não a atribui, e ela não muda ao renomear nem ao reordenar.",
+          "$ref": "comuns.schema.json#/$defs/chave"
+        },
+        "rotulo": {
+          "title": "Rótulo do nível",
+          "description": "Nome do nível, único na escala.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "fracao": {
+          "title": "Fração",
+          "description": "Fração da pontuação do item que o nível vale, de 0 a 1, com até quatro casas decimais.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "multipleOf": 0.0001
+        }
+      }
+    }
+  }
+}

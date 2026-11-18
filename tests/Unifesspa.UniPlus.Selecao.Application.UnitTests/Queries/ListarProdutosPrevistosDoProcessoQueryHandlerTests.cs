@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries;
 
 using AwesomeAssertions;
 
-
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
@@ -12,11 +11,13 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.AtosDoProcesso;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProdutosPrevistos;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -63,7 +64,8 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS 2027 — Medicina");
         _itensDoCronograma = IdentidadeDoItemDoEdital.Dos(fases, etapas ?? [.. processo.Etapas]);
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
-            _processoId, [1], Versao, "canonical-json/sha256@v1", Guid.CreateVersion7(), new string('a', 64), "sub", Agora);
+            _processoId, new DocumentoCongelado([1], Versao, "canonical-json/sha256@v1", new string('a', 64)),
+            Guid.CreateVersion7(), "sub", Agora);
         _processos.ObterVersaoVigenteAsync(_processoId, Agora, Arg.Any<CancellationToken>()).Returns(versao);
         _codecs.Reidratar(versao).Returns(Result<EnvelopeReidratado>.Success(new EnvelopeReidratado(
             new GrafoConfiguracao(
@@ -82,17 +84,16 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
 
     private static FaseCronograma FaseDeOrigem(Guid origem, string codigo, int ordem, string? faseConcluinteCodigo, params ProdutoDaFase[] produtos) =>
         FaseCronograma.Criar(
-            ordem, origem, codigo, OrigemDataFase.NoEdital,
-            agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
-            inicio: Agora, fim: Agora.AddDays(10), produtos: produtos,
-            faseConcluinteCodigo: faseConcluinteCodigo, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+            new OrigemCanonicaDaFase(origem, codigo, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+            new DecisoesDeCronogramaDaFase(ordem, Inicio: Agora, Fim: Agora.AddDays(10), FaseConcluinteCodigo: faseConcluinteCodigo, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(Produtos: produtos, EmiteParecerIndividual: false, RegraRecurso: null),
+            bancasRequeridas: []).Value!;
 
     private static EtapaProcesso Etapa(string nome, string? faseCodigo, params ProdutoDaEtapa[] produtos)
     {
         EtapaProcesso etapa = EtapaProcesso.Criar(
-            nome, CaraterEtapa.Classificatoria,
-            TipoEtapaSnapshot.Criar(CadastrosVivos.IdentidadeDe("PROVA_OBJETIVA"), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-            peso: 1m, ordem: 1, faseCodigo: faseCodigo).Value!;
+            new IdentificacaoDaEtapa(Nome: nome, Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(CadastrosVivos.IdentidadeDe("PROVA_OBJETIVA"), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: faseCodigo),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
         etapa.DefinirProdutos(produtos).IsSuccess.Should().BeTrue();
         return etapa;
     }
@@ -120,11 +121,9 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
     }
 
     private async Task<Result<ProdutosPrevistosDoProcessoDto>> Consultar() =>
-        await ListarProdutosPrevistosDoProcessoQueryHandler.Handle(
-            new ListarProdutosPrevistosDoProcessoQuery(_processoId),
-            _processos, _atos, _documentos, _codecs, _tipos, _fuso,
-            new RelogioFixo(Agora),
-            CancellationToken.None);
+        await new ListarProdutosPrevistosDoProcessoQueryHandler(
+            new GrafoVigenteDoProcesso(_processos, _codecs), _atos, _documentos, _tipos, _fuso, new RelogioFixo(Agora))
+            .Handle(new ListarProdutosPrevistosDoProcessoQuery(_processoId), CancellationToken.None);
 
     private async Task<ProdutoPrevistoDto> ItemDaFase(Guid produtoId)
     {
@@ -143,11 +142,11 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
         ConfiguracaoDivulgacao ampliada = ConfiguracaoDivulgacao.Criar(
             [ConfiguracaoDivulgacao.NumeroInscricao, ConfiguracaoDivulgacao.Nome], "Lista nominal exigida pelo edital").Value!;
 
-        Cronograma([Fase("HOMOLOGACAO", 1, preliminar)], divulgacao: ampliada);
+        Cronograma([Fase("HOMOLOGACAO_INSCRICOES", 1, preliminar)], divulgacao: ampliada);
         (await Consultar()).Value!.PoliticaDeDivulgacao.CamposPublicos
             .Should().BeEquivalentTo([ConfiguracaoDivulgacao.NumeroInscricao, ConfiguracaoDivulgacao.Nome]);
 
-        Cronograma([Fase("HOMOLOGACAO", 1, preliminar)]);
+        Cronograma([Fase("HOMOLOGACAO_INSCRICOES", 1, preliminar)]);
         (await Consultar()).Value!.PoliticaDeDivulgacao.CamposPublicos
             .Should().Equal(ConfiguracaoDivulgacao.NumeroInscricao);
     }
@@ -178,7 +177,7 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
         Cronograma([FaseDeOrigem(origem, "INSCRICAO", 1, null, preliminar, definitivo)]);
         AtoDoProcesso ato = Publicar(Materia, preliminar.Id);
         (ProdutoDaFase preliminarRecriado, ProdutoDaFase definitivoRecriado) = Par();
-        Cronograma([Fase("HOMOLOGACAO", 1), FaseDeOrigem(origem, "INSCRICAO", 2, null, preliminarRecriado, definitivoRecriado)]);
+        Cronograma([Fase("HOMOLOGACAO_INSCRICOES", 1), FaseDeOrigem(origem, "INSCRICAO", 2, null, preliminarRecriado, definitivoRecriado)]);
 
         ProdutoPrevistoDto doPreliminar = await ItemDaFase(preliminarRecriado.Id);
         ProdutoPrevistoDto doDefinitivo = await ItemDaFase(definitivoRecriado.Id);
@@ -195,10 +194,8 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
         (ProdutoDaFase preliminar, ProdutoDaFase definitivo) = Par();
         Cronograma([Fase("INSCRICAO", 1, preliminar, definitivo)]);
         AtoDoProcesso ato = Publicar(Materia, preliminar.Id);
-
         ProdutoPrevistoDto doPreliminar = await ItemDaFase(preliminar.Id);
         ProdutoPrevistoDto doDefinitivo = await ItemDaFase(definitivo.Id);
-
         doPreliminar.Situacao.Should().Be(SituacaoDoProdutoPrevisto.Publicado);
         doPreliminar.Ato!.Id.Should().Be(ato.Id);
         doPreliminar.Ato.Numero.Should().Be("5/2027");
@@ -265,7 +262,6 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
             FaseQueConclui("PROVA_2", 2, "RESULTADO", segundoPreliminar),
             Fase("RESULTADO", 3, definitivo),
         ]);
-
         Publicar(Materia, primeiroPreliminar.Id);
         (await ItemDaFase(definitivo.Id)).Impedimento!.Motivo.Should().Be(ImpedimentoDoProduto.PreliminarNaoPublicado);
 
@@ -319,7 +315,6 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
         Cronograma(
             [Fase("AVALIACAO", 1, daFase), Fase("RESULTADO", 2)],
             [Etapa("Prova objetiva", "AVALIACAO", gabarito), Etapa("Entrevista", null, semFase)]);
-
         Result<ProdutosPrevistosDoProcessoDto> resultado = await Consultar();
 
         FaseComProdutosPrevistosDto avaliacao = resultado.Value!.Fases.Single(f => f.Codigo == "AVALIACAO");

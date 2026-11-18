@@ -2,64 +2,84 @@ namespace Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
-using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Quando o processo inclui e retira motivos do cadastro (UNI-REQ-0285). No rascunho a escolha é
-/// livre. Depois da publicação, só a retificação inclui — com justificativa e antes de começar a
-/// avaliação daquela decisão (UNI-REQ-0124) — e nada se retira do que já foi publicado.
+/// Quando o processo inclui e retira motivos do cadastro em uma fase ou etapa (UNI-REQ-0285). A escolha é livre no
+/// rascunho; depois da publicação o processo não aceita escolha direta, e a retificação inclui o motivo novo, com
+/// justificativa e antes de começar a avaliação naquele lugar (UNI-REQ-0124), pelo documento
+/// (<see cref="ProcessosSeletivos.Retificacao.ConferenciaDosMotivosDaRetificacao"/>).
 /// </summary>
 /// <remarks>
-/// A escolha vive fora da raiz do processo, mas obedece à mesma guarda de mutação dela: a sessão
-/// de retificação aberta, a precondição <c>If-Match</c> e o avanço da revisão da sessão, para que
-/// incluir motivo invalide o ETag como qualquer outra edição da configuração.
+/// A escolha vive fora da raiz do processo, mas obedece à mesma guarda de mutação dela: só o rascunho edita. A escolha
+/// entra na primeira versão do edital, a única que o rascunho prepara.
 /// </remarks>
 public static class EscolhaDosMotivos
 {
-    public const int JustificativaMaxLength = 1000;
-
-    /// <summary>Inclui no processo a cópia do motivo do cadastro, ou devolve a recusa.</summary>
+    /// <summary>Inclui no lugar a cópia do motivo do cadastro, ou devolve a recusa.</summary>
     public static Result<MotivoDoProcesso> Incluir(InclusaoDeMotivo inclusao)
     {
         ArgumentNullException.ThrowIfNull(inclusao);
 
         ProcessoSeletivo processo = inclusao.Processo;
-        if ((processo.MutacaoBloqueada(inclusao.Precondicao) ?? RecusaDaOrigem(inclusao) ?? RecusaAposPublicacao(inclusao)) is { } recusa)
-        {
-            return Result<MotivoDoProcesso>.Failure(recusa);
-        }
+        return (RecusaDoLugarOuDoBloqueio(processo, inclusao.Lugar) ?? RecusaDaOrigem(inclusao)) is { } recusa
+            ? Result<MotivoDoProcesso>.Failure(recusa)
+            : Result<MotivoDoProcesso>.Success(
+                MotivoDoProcesso.Copiar(processo.Id, inclusao.Lugar, inclusao.Origem, VersaoConfiguracao.NumeroDaAbertura, justificativa: null));
+    }
 
-        string? justificativa = processo.Status == StatusProcesso.Publicado ? inclusao.Justificativa!.Trim() : null;
-        processo.Rascunho?.IncrementarRevisao();
-        return Result<MotivoDoProcesso>.Success(MotivoDoProcesso.Copiar(processo.Id, inclusao.Origem, justificativa));
+    /// <summary>Devolve a escolha a retirar do lugar, ou a recusa.</summary>
+    public static Result<MotivoDoProcesso> Retirar(
+        ProcessoSeletivo processo, IReadOnlyCollection<MotivoDoProcesso> escolhaAtual, LugarDaDecisao lugar, Guid motivoDeDecisaoId)
+    {
+        ArgumentNullException.ThrowIfNull(processo);
+        ArgumentNullException.ThrowIfNull(escolhaAtual);
+        ArgumentNullException.ThrowIfNull(lugar);
+
+        MotivoDoProcesso? escolhido = escolhaAtual.FirstOrDefault(e => e.Lugar == lugar && e.MotivoDeDecisaoOrigemId == motivoDeDecisaoId);
+        return (RecusaDoLugarOuDoBloqueio(processo, lugar) ?? RecusaDeEscolhaAusente(escolhido, motivoDeDecisaoId)) is { } recusa
+            ? Result<MotivoDoProcesso>.Failure(recusa)
+            : Result<MotivoDoProcesso>.Success(escolhido!);
     }
 
     /// <summary>
-    /// Retira o motivo escolhido. O que já foi publicado não sai (UNI-REQ-0124): a decisão que o
-    /// citou continua citando um motivo que o edital previu. A inclusão ainda pendente na sessão de
-    /// retificação sai, porque ainda não é do edital.
+    /// As recusas que só dependem do próprio processo, na ordem em que antecedem a leitura de qualquer cadastro: o lugar
+    /// que ele não tem e depois o bloqueio da publicação.
     /// </summary>
-    public static Result Retirar(ProcessoSeletivo processo, MotivoDoProcesso escolhido, PrecondicaoIfMatch precondicao)
+    public static DomainError? RecusaDoLugarOuDoBloqueio(ProcessoSeletivo processo, LugarDaDecisao lugar)
     {
         ArgumentNullException.ThrowIfNull(processo);
-        ArgumentNullException.ThrowIfNull(escolhido);
+        ArgumentNullException.ThrowIfNull(lugar);
 
-        if ((processo.MutacaoBloqueada(precondicao) ?? RecusaDaRetirada(escolhido)) is { } recusa)
-        {
-            return Result.Failure(recusa);
-        }
-
-        processo.Rascunho?.IncrementarRevisao();
-        return Result.Success();
+        return RecusaDoLugar(processo, lugar) ?? processo.MutacaoBloqueada();
     }
 
-    private static DomainError? RecusaDaRetirada(MotivoDoProcesso escolhido) =>
-        escolhido.Congelado
-            ? new DomainError(
-                MotivoDeDecisaoErrorCodes.RetiradaAposPublicacao,
-                $"O motivo {escolhido.Codigo.Valor} já consta do edital publicado e não pode ser retirado; a retificação só inclui motivos.")
+    /// <summary>
+    /// A escolha que sai do processo junto com as fases e etapas que ele deixou de ter desde <paramref name="antes"/>. Só
+    /// lê; quem chama remove o devolvido.
+    /// </summary>
+    public static IReadOnlyList<MotivoDoProcesso> QueSaemComOsLugares(
+        LugaresDaDecisao antes, ProcessoSeletivo processo, IReadOnlyCollection<MotivoDoProcesso> escolhaAtual)
+    {
+        ArgumentNullException.ThrowIfNull(antes);
+        ArgumentNullException.ThrowIfNull(processo);
+        ArgumentNullException.ThrowIfNull(escolhaAtual);
+
+        HashSet<LugarDaDecisao> ausentes = [.. antes.AusentesEm(LugaresDaDecisao.Das(processo.CronogramaFases, processo.Etapas))];
+
+        return [.. escolhaAtual.Where(e => ausentes.Contains(e.Lugar))];
+    }
+
+    /// <summary>A recusa de uma fase ou etapa que o processo não tem, inclusive a identidade vazia, que não designa nenhuma.</summary>
+    public static DomainError LugarNaoEncontrado() =>
+        new(MotivoDeDecisaoErrorCodes.FaseOuEtapaNaoEncontrada, "A fase ou a etapa informada não existe neste processo.");
+
+    private static DomainError? RecusaDoLugar(ProcessoSeletivo processo, LugarDaDecisao lugar) =>
+        LugaresDaDecisao.Das(processo.CronogramaFases, processo.Etapas).Contem(lugar) ? null : LugarNaoEncontrado();
+
+    private static DomainError? RecusaDeEscolhaAusente(MotivoDoProcesso? escolhido, Guid motivoDeDecisaoId) =>
+        escolhido is null
+            ? new DomainError(MotivoDeDecisaoErrorCodes.NaoEscolhido, $"O processo não escolheu o motivo de decisão {motivoDeDecisaoId} neste lugar.")
             : null;
 
     private static DomainError? RecusaDaOrigem(InclusaoDeMotivo inclusao)
@@ -72,55 +92,16 @@ public static class EscolhaDosMotivos
                 $"O motivo {origem.Codigo.Valor} está desativado e não entra em novas escolhas do processo.");
         }
 
-        return inclusao.Escolhidos.Any(e => e.MotivoDeDecisaoOrigemId == origem.Id)
-            ? new DomainError(MotivoDeDecisaoErrorCodes.JaEscolhido, $"O processo já escolheu o motivo {origem.Codigo.Valor}.")
-            : null;
-    }
-
-    private static DomainError? RecusaAposPublicacao(InclusaoDeMotivo inclusao)
-    {
-        if (inclusao.Processo.Status != StatusProcesso.Publicado)
-        {
-            return null;
-        }
-
-        return RecusaDaJustificativa(inclusao.Justificativa)
-            ?? (InicioDaAvaliacao.JaComecou(inclusao.Processo, inclusao.Origem.Tipo, inclusao.PrimeiroRegistroDaDecisao, inclusao.Agora)
-                ? new DomainError(
-                    MotivoDeDecisaoErrorCodes.AvaliacaoIniciada,
-                    $"A avaliação de {inclusao.Origem.Tipo.ToCodigo()} já começou neste processo; motivo novo desse tipo não entra mais.")
-                : null);
-    }
-
-    private static DomainError? RecusaDaJustificativa(string? justificativa)
-    {
-        if (string.IsNullOrWhiteSpace(justificativa))
-        {
-            return new DomainError(
-                MotivoDeDecisaoErrorCodes.JustificativaObrigatoria,
-                "Incluir motivo no processo publicado exige justificativa, de uso interno da administração.");
-        }
-
-        if (ValidacaoDoMotivo.TemCaractereNulo(justificativa))
-        {
-            return new DomainError(MotivoDeDecisaoErrorCodes.JustificativaCaractereInvalido, "A justificativa não pode conter o caractere nulo.");
-        }
-
-        return justificativa.Trim().Length > JustificativaMaxLength
-            ? new DomainError(MotivoDeDecisaoErrorCodes.JustificativaTamanho, $"A justificativa deve ter até {JustificativaMaxLength} caracteres.")
+        return inclusao.EscolhaAtual.Any(e => e.MotivoDeDecisaoOrigemId == origem.Id && e.Lugar == inclusao.Lugar)
+            ? new DomainError(MotivoDeDecisaoErrorCodes.JaEscolhido, $"O processo já escolheu o motivo {origem.Codigo.Valor} neste lugar.")
             : null;
     }
 }
 
-/// <summary>O pedido de inclusão de um motivo do cadastro no processo.</summary>
-/// <param name="Escolhidos">Os motivos que o processo já escolheu.</param>
-/// <param name="Agora">O instante da operação, comparado ao início da avaliação.</param>
-/// <param name="PrimeiroRegistroDaDecisao">O primeiro registro de decisão do tipo no processo, quando houver.</param>
+/// <summary>O pedido de inclusão de um motivo do cadastro numa fase ou etapa do processo.</summary>
+/// <param name="EscolhaAtual">Os motivos que o processo escolheu e ainda valem, em todos os lugares.</param>
 public sealed record InclusaoDeMotivo(
     ProcessoSeletivo Processo,
-    IReadOnlyCollection<MotivoDoProcesso> Escolhidos,
-    MotivoDeDecisao Origem,
-    string? Justificativa,
-    PrecondicaoIfMatch Precondicao,
-    DateTimeOffset Agora,
-    DateTimeOffset? PrimeiroRegistroDaDecisao);
+    LugarDaDecisao Lugar,
+    IReadOnlyCollection<MotivoDoProcesso> EscolhaAtual,
+    MotivoDeDecisao Origem);

@@ -22,7 +22,7 @@ public sealed class DefinirConfiguracaoDivulgacaoCommandValidatorTests
     public void Aceita_CamposPublicosNulo()
     {
         ValidationResult result = Validator.Validate(new DefinirConfiguracaoDivulgacaoCommand(
-            Guid.CreateVersion7(), null, null, PrecondicaoIfMatch.Ausente));
+            Guid.CreateVersion7(), null, null));
 
         result.IsValid.Should().BeTrue();
     }
@@ -31,7 +31,7 @@ public sealed class DefinirConfiguracaoDivulgacaoCommandValidatorTests
     public void Rejeita_ProcessoSeletivoIdVazio()
     {
         ValidationResult result = Validator.Validate(new DefinirConfiguracaoDivulgacaoCommand(
-            Guid.Empty, null, null, PrecondicaoIfMatch.Ausente));
+            Guid.Empty, null, null));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "ProcessoSeletivoId");

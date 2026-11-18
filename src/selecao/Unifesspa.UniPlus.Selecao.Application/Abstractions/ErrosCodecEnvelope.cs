@@ -29,7 +29,7 @@ public static class ErrosCodecEnvelope
 
     /// <summary>
     /// <c>distribuicao</c>, <c>modalidades</c> e <c>ofertas</c> derivam da mesma coleção
-    /// e não fecham (ADR-0110 D8). Recombiná-los em silêncio reconstruiria um agregado
+    /// e não fecham. Recombiná-los em silêncio reconstruiria um agregado
     /// que nunca existiu.
     /// </summary>
     public const string BlocosDerivadosIncoerentes = "EnvelopeCodec.BlocosDerivadosIncoerentes";

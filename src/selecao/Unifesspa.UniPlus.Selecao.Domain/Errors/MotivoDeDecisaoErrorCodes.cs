@@ -11,6 +11,7 @@ public static class MotivoDeDecisaoErrorCodes
 {
     public const string TipoObrigatorio = "MotivoDeDecisao.TipoObrigatorio";
     public const string TipoInvalido = "MotivoDeDecisao.TipoInvalido";
+    public const string TipoDeDecisaoDuplicado = "MotivoDeDecisao.TipoDeDecisaoDuplicado";
     public const string CodigoObrigatorio = "MotivoDeDecisao.CodigoObrigatorio";
     public const string CodigoFormatoInvalido = "MotivoDeDecisao.CodigoFormatoInvalido";
     public const string CodigoJaExiste = "MotivoDeDecisao.CodigoJaExiste";
@@ -37,4 +38,9 @@ public static class MotivoDeDecisaoErrorCodes
     public const string RetiradaAposPublicacao = "MotivoDeDecisao.RetiradaAposPublicacao";
     public const string MotivoDesativado = "MotivoDeDecisao.MotivoDesativado";
     public const string CoberturaInsuficiente = "MotivoDeDecisao.CoberturaInsuficiente";
+    public const string FaseOuEtapaNaoEncontrada = "MotivoDeDecisao.FaseOuEtapaNaoEncontrada";
+    public const string VersaoNaoPublicada = "MotivoDeDecisao.VersaoNaoPublicada";
+
+    /// <summary>A fase ou a etapa usa uma capacidade que gera decisão de um tipo que ela não declara produzir.</summary>
+    public const string TipoDeDecisaoNaoDeclarado = "MotivoDeDecisao.TipoDeDecisaoNaoDeclarado";
 }

@@ -30,22 +30,23 @@ public sealed class RecursoDaEtapaConfiguration : IEntityTypeConfiguration<Recur
         builder.Property(r => r.Id).ValueGeneratedNever();
         builder.Property(r => r.Ancora).HasConversion<int>().IsRequired();
         builder.Property(r => r.ProdutoAncoraId).HasColumnName("produto_ancora_id");
+        builder.MapearProcedimentosDeRecurso(r => r.Procedimentos);
 
         builder.OwnsOne(r => r.Regra, regra => regra.ConfigurarReferenciaRegra("regra"));
         builder.Navigation(r => r.Regra).IsRequired();
 
-        builder.OwnsOne(r => r.Args, args =>
+        builder.OwnsOne(r => r.Parametros, parametros =>
         {
-            args.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
-            args.Property(x => x.PrazoValor).HasColumnName("prazo_valor").HasPrecision(18, 4).IsRequired();
-            args.Property(x => x.PrazoUnidade).HasColumnName("prazo_unidade").HasConversion<int>();
-            args.Property(x => x.SuspensividadePrimeiraInstanciaValor).HasColumnName("susp_1a_valor").HasPrecision(18, 4);
-            args.Property(x => x.SuspensividadePrimeiraInstanciaUnidade).HasColumnName("susp_1a_unidade").HasConversion<int>();
-            args.Property(x => x.AdmiteInstanciaSuperior).HasColumnName("admite_instancia_superior").IsRequired();
-            args.Property(x => x.SuspensividadeSegundaInstanciaValor).HasColumnName("susp_2a_valor").HasPrecision(18, 4);
-            args.Property(x => x.SuspensividadeSegundaInstanciaUnidade).HasColumnName("susp_2a_unidade").HasConversion<int>();
+            parametros.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
+            parametros.Property(x => x.PrazoValor).HasColumnName("prazo_valor").HasPrecision(18, 4).IsRequired();
+            parametros.Property(x => x.PrazoUnidade).HasColumnName("prazo_unidade").HasConversion<int>();
+            parametros.Property(x => x.SuspensividadePrimeiraInstanciaValor).HasColumnName("susp_1a_valor").HasPrecision(18, 4);
+            parametros.Property(x => x.SuspensividadePrimeiraInstanciaUnidade).HasColumnName("susp_1a_unidade").HasConversion<int>();
+            parametros.Property(x => x.AdmiteInstanciaSuperior).HasColumnName("admite_instancia_superior").IsRequired();
+            parametros.Property(x => x.SuspensividadeSegundaInstanciaValor).HasColumnName("susp_2a_valor").HasPrecision(18, 4);
+            parametros.Property(x => x.SuspensividadeSegundaInstanciaUnidade).HasColumnName("susp_2a_unidade").HasConversion<int>();
         });
-        builder.Navigation(r => r.Args).IsRequired();
+        builder.Navigation(r => r.Parametros).IsRequired();
 
         builder.HasIndex(r => r.EtapaProcessoId);
     }

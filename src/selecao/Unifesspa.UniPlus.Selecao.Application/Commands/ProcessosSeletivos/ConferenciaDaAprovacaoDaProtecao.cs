@@ -23,6 +23,16 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 /// </remarks>
 internal static class ConferenciaDaAprovacaoDaProtecao
 {
+    /// <summary>
+    /// As causas como a publicação e a retificação as devolvem: a aprovação é do cadastro (o tipo de documento e o fato), e não do
+    /// documento da configuração, então chegam sem campo, e a mensagem diz o tipo ou o fato que aguarda a aprovação.
+    /// </summary>
+    public static IReadOnlyList<FieldError> CausasAoCongelar(
+        ProcessoSeletivo processo,
+        IReadOnlyDictionary<Guid, TipoDocumentoView> tiposVivos,
+        IReadOnlyList<FatoCandidatoView> catalogoDeFatos) =>
+        [.. Conferir(processo, tiposVivos, catalogoDeFatos).Errors.Select(static causa => causa with { Field = null })];
+
     public static Result Conferir(
         ProcessoSeletivo processo,
         IReadOnlyDictionary<Guid, TipoDocumentoView> tiposVivos,
@@ -51,7 +61,7 @@ internal static class ConferenciaDaAprovacaoDaProtecao
             }
         }
 
-        HashSet<string> usados = new(ReferenciasVivas.Vinculos(EstadoDaConfiguracao.De(processo)).Fatos, StringComparer.Ordinal);
+        HashSet<string> usados = new(ReferenciasVivas.Vinculos(processo.Declaracao()).Fatos, StringComparer.Ordinal);
         usados.UnionWith(processo.DocumentosExigidos.SelectMany(static d => d.FatosComprovados));
         foreach (FatoCandidatoView fato in catalogoDeFatos
             .Where(f => !f.ProtecaoAprovada && usados.Contains(f.Codigo))

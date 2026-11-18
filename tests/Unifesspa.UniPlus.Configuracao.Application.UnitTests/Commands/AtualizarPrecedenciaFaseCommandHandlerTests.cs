@@ -50,7 +50,7 @@ public sealed class AtualizarPrecedenciaFaseCommandHandlerTests
     [Fact(DisplayName = "Atualização válida troca PermiteSobreposicao mantendo o par imutável")]
     public async Task Handle_Valido_PersisteParImutavel()
     {
-        PrecedenciaFase existente = PrecedenciaFase.Criar("INSCRICAO", "HOMOLOGACAO", false, []).Value!;
+        PrecedenciaFase existente = PrecedenciaFase.Criar("INSCRICAO", "HOMOLOGACAO_INSCRICOES", false, []).Value!;
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
 
         Result resultado = await AtualizarPrecedenciaFaseCommandHandler.Handle(
@@ -59,7 +59,7 @@ public sealed class AtualizarPrecedenciaFaseCommandHandlerTests
         resultado.IsSuccess.Should().BeTrue();
         existente.PermiteSobreposicao.Should().BeTrue();
         existente.AntecessoraCodigo.Should().Be("INSCRICAO");
-        existente.SucessoraCodigo.Should().Be("HOMOLOGACAO");
+        existente.SucessoraCodigo.Should().Be("HOMOLOGACAO_INSCRICOES");
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 }

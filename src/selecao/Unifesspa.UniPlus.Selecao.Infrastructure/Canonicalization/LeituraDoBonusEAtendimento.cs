@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <summary>
 /// Leitura do atendimento especializado e do bônus regional.
 /// </summary>
-internal static class LeituraDoBonusEAtendimento
+internal static partial class LeituraDoBonusEAtendimento
 {
     internal static AtendimentoEspecializado? LerAtendimento(LeitorEnvelope leitor, JsonObject payload)
     {
@@ -115,27 +115,54 @@ internal static class LeituraDoBonusEAtendimento
             return null;
         }
 
-        leitor.ExigirChaves(
-            bloco, "bonusRegional", "presente", "regra", "fator", "teto", "fatoElegibilidadeCodigo",
-            "baseLegalBonusRegionalId", "tipoInstrumento", "identificacao", "descricao", "municipios");
+        ExigirChavesDoBonus(leitor, bloco);
+        return LerParametrosDoBonus(leitor, bloco);
+    }
 
+    private static ConfiguracaoBonusRegional? LerParametrosDoBonus(LeitorEnvelope leitor, JsonObject bloco)
+    {
         ReferenciaRegra regra = leitor.Regra(bloco, "regra", "bonusRegional", RegraBonusCodigo.Multiplicativo);
         decimal fator = leitor.Decimal(bloco, "fator", EscritaCanonica.EscalaPadrao, "bonusRegional", LimitesDoEnvelope.PrecisaoBonus);
         decimal? teto = leitor.DecimalOpcional(bloco, "teto", EscritaCanonica.EscalaPadrao, "bonusRegional", LimitesDoEnvelope.PrecisaoBonus);
         string? fatoElegibilidade = leitor.TextoOpcional(bloco, "fatoElegibilidadeCodigo", "bonusRegional", LimitesDoEnvelope.FatoElegibilidadeBonusRegional);
-        Guid baseLegalBonusRegionalId = leitor.Identificador(bloco, "baseLegalBonusRegionalId", "bonusRegional");
-        string tipoInstrumento = leitor.TextoNaoVazio(bloco, "tipoInstrumento", "bonusRegional", LimitesDoEnvelope.TipoInstrumentoNormativo);
-        string identificacao = leitor.TextoNaoVazio(bloco, "identificacao", "bonusRegional", LimitesDoEnvelope.IdentificacaoBaseLegalBonusRegional);
-        string descricao = leitor.TextoNaoVazio(bloco, "descricao", "bonusRegional", LimitesDoEnvelope.DescricaoBaseLegalBonusRegional);
-        List<(string CodigoIbge, string Nome, string Uf)>? municipios = LerMunicipios(leitor, leitor.Array(bloco, "municipios", "bonusRegional"));
-        if (municipios is null)
+        BaseLegalCongelada? baseLegal = LerBaseLegalCongelada(leitor, bloco);
+        if (baseLegal is null)
         {
             return null;
         }
 
-        Result<ConfiguracaoBonusRegional> bonus = ConfiguracaoBonusRegional.Criar(
-            regra, fator, teto, fatoElegibilidade, baseLegalBonusRegionalId, tipoInstrumento, identificacao, descricao, municipios);
+        Result<ConfiguracaoBonusRegional> bonus = ConfiguracaoBonusRegional.Criar(regra, fator, teto, fatoElegibilidade, baseLegal);
         return bonus.IsFailure ? leitor.Propagar<ConfiguracaoBonusRegional>(bonus.Error!) : bonus.Value;
+    }
+
+    private static string LerCodigoDaBaseLegal(LeitorEnvelope leitor, JsonObject bloco)
+    {
+        string codigo = leitor.TextoNaoVazio(bloco, "baseLegalBonusRegionalCodigo", "bonusRegional", LimitesDoEnvelope.CodigoBaseLegalBonusRegional);
+        if (!leitor.Falhou && !FormatoDoCodigoDaBaseLegal().IsMatch(codigo))
+        {
+            leitor.Recusar<object>("'bonusRegional.baseLegalBonusRegionalCodigo' tem de ter de 2 a 100 caracteres, começar por letra maiúscula e ter só maiúsculas, dígitos e '_'.");
+        }
+
+        return codigo;
+    }
+
+    [GeneratedRegex(@"\A[A-Z][A-Z0-9_]{1,99}\z", RegexOptions.CultureInvariant)]
+    private static partial Regex FormatoDoCodigoDaBaseLegal();
+
+    private static void ExigirChavesDoBonus(LeitorEnvelope leitor, JsonObject bloco) =>
+        leitor.ExigirChaves(
+            bloco, "bonusRegional", "presente", "regra", "fator", "teto", "fatoElegibilidadeCodigo",
+            "baseLegalBonusRegionalId", "baseLegalBonusRegionalCodigo", "tipoInstrumento", "identificacao", "descricao", "municipios");
+
+    private static BaseLegalCongelada? LerBaseLegalCongelada(LeitorEnvelope leitor, JsonObject bloco)
+    {
+        Guid id = leitor.Identificador(bloco, "baseLegalBonusRegionalId", "bonusRegional");
+        string codigo = LerCodigoDaBaseLegal(leitor, bloco);
+        string tipoInstrumento = leitor.TextoNaoVazio(bloco, "tipoInstrumento", "bonusRegional", LimitesDoEnvelope.TipoInstrumentoNormativo);
+        string identificacao = leitor.TextoNaoVazio(bloco, "identificacao", "bonusRegional", LimitesDoEnvelope.IdentificacaoBaseLegalBonusRegional);
+        string descricao = leitor.TextoNaoVazio(bloco, "descricao", "bonusRegional", LimitesDoEnvelope.DescricaoBaseLegalBonusRegional);
+        List<(string CodigoIbge, string Nome, string Uf)>? municipios = LerMunicipios(leitor, leitor.Array(bloco, "municipios", "bonusRegional"));
+        return municipios is null ? null : new BaseLegalCongelada(id, codigo, tipoInstrumento, identificacao, descricao, municipios);
     }
 
     private static List<(string CodigoIbge, string Nome, string Uf)>? LerMunicipios(LeitorEnvelope leitor, JsonArray arrayMunicipios)

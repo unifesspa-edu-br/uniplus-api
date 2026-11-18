@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -40,7 +41,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
     private static readonly SnapshotPublicacaoCanonicalizer Canonicalizador = new();
 
     private static ReferenciaRegra Regra(string codigo, char semente) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string(semente, 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string(semente, 64));
 
     private static DadosEdital Dados() => DadosEdital.Criar(
         numero: "001/2026",
@@ -66,11 +67,21 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
     internal static byte[] BytesDoFragmento(JsonNode fragmento) =>
         PerfilCanonicoV1.Instancia.Serializar(new JsonObject { ["x"] = fragmento.DeepClone() });
 
+    private static FaseCronograma FaseDeInscricao() => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            OrigemId: Guid.CreateVersion7(), Codigo: "INSCRICAO", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: true, ColetaInscricao: true,
+            ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
+
     /// <summary>
     /// Um processo mínimo, válido para <see cref="SnapshotPublicacaoCanonicalizer.Canonicalizar"/>,
     /// com os dois knobs que os testes de <c>ocorrenciasEsperadas</c> e
     /// <c>formatosPermitidos.lista</c> precisam variar — os outros quatro arrays da issue
-    /// (<c>obrigatoriedades</c>, os dois <c>predicado.args</c> e <c>valoresDominio</c>) entram
+    /// (<c>obrigatoriedades</c>, os dois <c>predicado.parametros</c> e <c>valoresDominio</c>) entram
     /// pela <see cref="EntradaCanonicalizacao"/>, não pelo agregado, e não precisam deste builder.
     /// </summary>
     private static ProcessoSeletivo MontarProcesso(
@@ -79,18 +90,18 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             "PS Ordenação de Conjuntos", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
 
         processo.DefinirAtendimentoEspecializado(
-            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            AtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
 
         ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
             modalidadeOrigemId: Guid.CreateVersion7(),
             codigo: "AC",
             descricao: null,
             naturezaLegal: NaturezaLegalModalidade.Ampla,
-            composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
+            composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
             composicaoOrigemCodigo: null,
             regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
             remanejamentoDestino: null,
@@ -101,47 +112,25 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
             baseLegal: "Res. Unifesspa 532/2021",
             quantidadeDeclarada: 40).Value!;
 
-        ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
-            ofertaCursoOrigemId: Guid.CreateVersion7(),
-            voBase: 40,
-            pr: 1m,
-            regraDistribuicao: Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
-            regraAjuste: null,
-            referenciaDemografica: null,
-            modalidades: [modalidade], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'), Modalidades = [modalidade] },
+            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
+        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
 
-        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
-            regraCalculo: Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
-            regraArredondamento: null,
-            casasArredondamento: null,
-            regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
-            regrasEliminacao: [],
-            baseadoEmEnem: false,
-            resolucaoPesoAreaEnem: null,
-            quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirOpcoesDeCurso(1, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
+            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+        }).Value!).IsSuccess.Should().BeTrue();
+        processo.DefinirOpcoesDeCurso(1).IsSuccess.Should().BeTrue();
 
-        FaseCronograma fase = FaseCronograma.Criar(
-            ordem: 1,
-            faseCanonicaOrigemId: Guid.CreateVersion7(),
-            codigo: "INSCRICAO",
-            origemData: OrigemDataFase.NoEdital,
-            agrupaEtapas: true,
-            permiteComplementacao: true,
-            coletaInscricao: true, coletaSolicitacaoIsencao: false,
-            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-            fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)],
-            faseConcluinteCodigo: null,
-            emiteParecerIndividual: false,
-            bancasRequeridas: [],
-            regraRecurso: null,
-            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        FaseCronograma fase = FaseDeInscricao();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas([
-            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1, faseCodigo: "INSCRICAO").Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            EtapaProcesso.Criar(
+                new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "INSCRICAO"),
+                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
+        ]).IsSuccess.Should().BeTrue();
 
         if (ocorrenciasEsperadas is not null || formatosPermitidos is not null)
         {
@@ -160,7 +149,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
                     chaveDistincao: ChaveDistincao.Ocorrencia, ocorrenciasEsperadas: ocorrenciasEsperadas).Value!
                 : NoExigencia.CriarFolha(documento, 0).Value!;
 
-            processo.DefinirDocumentosExigidos([folha], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            processo.DefinirDocumentosExigidos([folha]).IsSuccess.Should().BeTrue();
         }
 
         return processo;
@@ -172,7 +161,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
     public void OcorrenciasEsperadas_OrdenaPelaChaveDeConteudo()
     {
         ProcessoSeletivo entradaUm = MontarProcesso(ocorrenciasEsperadas: ["MARCO", "JANEIRO", "FEVEREIRO"]);
-        JsonArray ocorrenciasUm = EnvelopeCodecRoundTripTests.Envelope(
+        JsonArray ocorrenciasUm = ApoioDoEnvelopeCodec.Envelope(
             Canonicalizador.Canonicalizar(Entrada(entradaUm)))["arvoreSatisfacao"]![0]!["ocorrenciasEsperadas"]!.AsArray();
 
         ocorrenciasUm.Select(static o => o!.GetValue<string>()).Should().Equal(
@@ -181,7 +170,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
 
         // CA-02 — a entrada invertida produz os MESMOS bytes.
         ProcessoSeletivo entradaDois = MontarProcesso(ocorrenciasEsperadas: ["FEVEREIRO", "JANEIRO", "MARCO"]);
-        JsonArray ocorrenciasDois = EnvelopeCodecRoundTripTests.Envelope(
+        JsonArray ocorrenciasDois = ApoioDoEnvelopeCodec.Envelope(
             Canonicalizador.Canonicalizar(Entrada(entradaDois)))["arvoreSatisfacao"]![0]!["ocorrenciasEsperadas"]!.AsArray();
 
         BytesDoFragmento(ocorrenciasDois).Should().Equal(BytesDoFragmento(ocorrenciasUm),
@@ -195,7 +184,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
     {
         ProcessoSeletivo entradaUm = MontarProcesso(
             formatosPermitidos: [("PNG", null), ("PDF", null), ("JPEG", null)]);
-        JsonArray listaUm = EnvelopeCodecRoundTripTests.Envelope(
+        JsonArray listaUm = ApoioDoEnvelopeCodec.Envelope(
             Canonicalizador.Canonicalizar(Entrada(entradaUm)))
             ["documentosExigidos"]!["exigencias"]![0]!["formatosPermitidos"]!["lista"]!.AsArray();
 
@@ -207,7 +196,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
         // CA-02 — a entrada invertida produz os MESMOS bytes.
         ProcessoSeletivo entradaDois = MontarProcesso(
             formatosPermitidos: [("JPEG", null), ("PDF", null), ("PNG", null)]);
-        JsonArray listaDois = EnvelopeCodecRoundTripTests.Envelope(
+        JsonArray listaDois = ApoioDoEnvelopeCodec.Envelope(
             Canonicalizador.Canonicalizar(Entrada(entradaDois)))
             ["documentosExigidos"]!["exigencias"]![0]!["formatosPermitidos"]!["lista"]!.AsArray();
 
@@ -254,7 +243,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
         ProcessoSeletivo processoUm = MontarProcesso();
         SnapshotCanonico snapshotUm = Canonicalizador.Canonicalizar(
             Entrada(processoUm, conformidade: new ResultadoConformidade(entradaUm, [])));
-        JsonArray obrigatoriedadesUm = EnvelopeCodecRoundTripTests.Envelope(snapshotUm)
+        JsonArray obrigatoriedadesUm = ApoioDoEnvelopeCodec.Envelope(snapshotUm)
             ["documentosExigidos"]!["obrigatoriedades"]!.AsArray();
 
         obrigatoriedadesUm.Select(static o => o!["regraCodigo"]!.GetValue<string>()).Should().Equal(
@@ -271,16 +260,16 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
         ProcessoSeletivo processoDois = MontarProcesso();
         SnapshotCanonico snapshotDois = Canonicalizador.Canonicalizar(
             Entrada(processoDois, conformidade: new ResultadoConformidade(entradaDois, [])));
-        JsonArray obrigatoriedadesDois = EnvelopeCodecRoundTripTests.Envelope(snapshotDois)
+        JsonArray obrigatoriedadesDois = ApoioDoEnvelopeCodec.Envelope(snapshotDois)
             ["documentosExigidos"]!["obrigatoriedades"]!.AsArray();
 
         BytesDoFragmento(obrigatoriedadesDois).Should().Equal(BytesDoFragmento(obrigatoriedadesUm),
             "duas entradas com o MESMO conjunto de regras em ordens DIFERENTES produzem o mesmo array canônico");
     }
 
-    // ── documentosExigidos.obrigatoriedades[].predicado.args.codigos (ModalidadesMinimas) ──
+    // ── documentosExigidos.obrigatoriedades[].predicado.parametros.codigos (ModalidadesMinimas) ──
 
-    [Fact(DisplayName = "predicado.args.codigos (ModalidadesMinimas) ordena pela chave de conteúdo — oráculo escrito à mão")]
+    [Fact(DisplayName = "predicado.parametros.codigos (ModalidadesMinimas) ordena pela chave de conteúdo — oráculo escrito à mão")]
     public void PredicadoModalidadesMinimas_Codigos_OrdenaPelaChaveDeConteudo()
     {
         RegraAvaliada regraUm = RegraDeConformidade("REGRA-MM", Guid.CreateVersion7()) with
@@ -291,8 +280,8 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
         ProcessoSeletivo processoUm = MontarProcesso();
         SnapshotCanonico snapshotUm = Canonicalizador.Canonicalizar(
             Entrada(processoUm, conformidade: new ResultadoConformidade([regraUm], [])));
-        JsonArray codigosUm = EnvelopeCodecRoundTripTests.Envelope(snapshotUm)
-            ["documentosExigidos"]!["obrigatoriedades"]![0]!["predicado"]!["args"]!["codigos"]!.AsArray();
+        JsonArray codigosUm = ApoioDoEnvelopeCodec.Envelope(snapshotUm)
+            ["documentosExigidos"]!["obrigatoriedades"]![0]!["predicado"]!["parametros"]!["codigos"]!.AsArray();
 
         codigosUm.Select(static c => c!.GetValue<string>()).Should().Equal(
             ["AC", "LB_PPI", "QUI"],
@@ -306,16 +295,16 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
         ProcessoSeletivo processoDois = MontarProcesso();
         SnapshotCanonico snapshotDois = Canonicalizador.Canonicalizar(
             Entrada(processoDois, conformidade: new ResultadoConformidade([regraDois], [])));
-        JsonArray codigosDois = EnvelopeCodecRoundTripTests.Envelope(snapshotDois)
-            ["documentosExigidos"]!["obrigatoriedades"]![0]!["predicado"]!["args"]!["codigos"]!.AsArray();
+        JsonArray codigosDois = ApoioDoEnvelopeCodec.Envelope(snapshotDois)
+            ["documentosExigidos"]!["obrigatoriedades"]![0]!["predicado"]!["parametros"]!["codigos"]!.AsArray();
 
         BytesDoFragmento(codigosDois).Should().Equal(BytesDoFragmento(codigosUm),
             "duas entradas com o MESMO conteúdo em ordens DIFERENTES produzem o mesmo array canônico");
     }
 
-    // ── documentosExigidos.obrigatoriedades[].predicado.args.necessidades (AtendimentoDisponivel) ──
+    // ── documentosExigidos.obrigatoriedades[].predicado.parametros.necessidades (AtendimentoDisponivel) ──
 
-    [Fact(DisplayName = "predicado.args.necessidades (AtendimentoDisponivel) ordena pela chave de conteúdo — oráculo escrito à mão")]
+    [Fact(DisplayName = "predicado.parametros.necessidades (AtendimentoDisponivel) ordena pela chave de conteúdo — oráculo escrito à mão")]
     public void PredicadoAtendimentoDisponivel_Necessidades_OrdenaPelaChaveDeConteudo()
     {
         RegraAvaliada regraUm = RegraDeConformidade("REGRA-AD", Guid.CreateVersion7()) with
@@ -326,8 +315,8 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
         ProcessoSeletivo processoUm = MontarProcesso();
         SnapshotCanonico snapshotUm = Canonicalizador.Canonicalizar(
             Entrada(processoUm, conformidade: new ResultadoConformidade([regraUm], [])));
-        JsonArray necessidadesUm = EnvelopeCodecRoundTripTests.Envelope(snapshotUm)
-            ["documentosExigidos"]!["obrigatoriedades"]![0]!["predicado"]!["args"]!["necessidades"]!.AsArray();
+        JsonArray necessidadesUm = ApoioDoEnvelopeCodec.Envelope(snapshotUm)
+            ["documentosExigidos"]!["obrigatoriedades"]![0]!["predicado"]!["parametros"]!["necessidades"]!.AsArray();
 
         necessidadesUm.Select(static n => n!.GetValue<string>()).Should().Equal(
             ["AUDITIVA", "FISICA", "VISUAL"],
@@ -341,8 +330,8 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
         ProcessoSeletivo processoDois = MontarProcesso();
         SnapshotCanonico snapshotDois = Canonicalizador.Canonicalizar(
             Entrada(processoDois, conformidade: new ResultadoConformidade([regraDois], [])));
-        JsonArray necessidadesDois = EnvelopeCodecRoundTripTests.Envelope(snapshotDois)
-            ["documentosExigidos"]!["obrigatoriedades"]![0]!["predicado"]!["args"]!["necessidades"]!.AsArray();
+        JsonArray necessidadesDois = ApoioDoEnvelopeCodec.Envelope(snapshotDois)
+            ["documentosExigidos"]!["obrigatoriedades"]![0]!["predicado"]!["parametros"]!["necessidades"]!.AsArray();
 
         BytesDoFragmento(necessidadesDois).Should().Equal(BytesDoFragmento(necessidadesUm),
             "duas entradas com o MESMO conteúdo em ordens DIFERENTES produzem o mesmo array canônico");
@@ -362,7 +351,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
         };
         SnapshotCanonico snapshotUm = Canonicalizador.Canonicalizar(
             Entrada(MontarProcesso(), metadadosFatos: metadadosUm));
-        JsonArray valoresUm = EnvelopeCodecRoundTripTests.Envelope(snapshotUm)
+        JsonArray valoresUm = ApoioDoEnvelopeCodec.Envelope(snapshotUm)
             ["documentosExigidos"]!["metadadosFatos"]![0]!["valoresDominio"]!.AsArray();
 
         valoresUm.Select(static v => v!.GetValue<string>()).Should().Equal(
@@ -379,7 +368,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
         };
         SnapshotCanonico snapshotDois = Canonicalizador.Canonicalizar(
             Entrada(MontarProcesso(), metadadosFatos: metadadosDois));
-        JsonArray valoresDois = EnvelopeCodecRoundTripTests.Envelope(snapshotDois)
+        JsonArray valoresDois = ApoioDoEnvelopeCodec.Envelope(snapshotDois)
             ["documentosExigidos"]!["metadadosFatos"]![0]!["valoresDominio"]!.AsArray();
 
         BytesDoFragmento(valoresDois).Should().Equal(BytesDoFragmento(valoresUm),

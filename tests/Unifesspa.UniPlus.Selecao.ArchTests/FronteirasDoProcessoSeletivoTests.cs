@@ -21,7 +21,6 @@ using static ArchUnitNET.Fluent.ArchRuleDefinition;
 public sealed class FronteirasDoProcessoSeletivoTests
 {
     private const string NamespaceDasPoliticas = "Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos";
-    private const string EstadoFullName = NamespaceDasPoliticas + ".Edicao.EstadoDaConfiguracao";
     private const string ParteFullName = "Unifesspa.UniPlus.Selecao.Domain.Entities.IParteDoProcesso";
 
     private static readonly Architecture Arquitetura = new ArchLoader().LoadAssemblies(
@@ -29,14 +28,13 @@ public sealed class FronteirasDoProcessoSeletivoTests
         typeof(Application.Commands.ProcessosSeletivos.CriarProcessoSeletivoCommand).Assembly,
         typeof(Infrastructure.Persistence.SelecaoContribuicao).Assembly).Build();
 
-    [Fact(DisplayName = "A1: nenhuma política depende da raiz, salvo a fábrica da vista")]
+    [Fact(DisplayName = "A1: nenhuma política depende da raiz")]
     public void A1_PoliticasNaoDependemDaRaiz()
     {
         IArchRule regra = Types()
             .That().ResideInNamespaceMatching($@"^{NamespaceDasPoliticas.Replace(".", @"\.", StringComparison.Ordinal)}(\.|$)")
-            .And().DoNotHaveFullNameStartingWith(EstadoFullName)
             .Should().NotDependOnAnyTypesThat().HaveFullName(typeof(ProcessoSeletivo).FullName!)
-            .Because("a política recebe a vista da configuração; só a fábrica da vista conhece a raiz");
+            .Because("a política recebe a configuração declarada e valores, nunca a raiz");
 
         regra.Check(Arquitetura);
     }
@@ -50,7 +48,7 @@ public sealed class FronteirasDoProcessoSeletivoTests
             .Where(static t => t.IsClass && !(t.IsAbstract && t.IsSealed) && !EhRegistro(t))
             .Select(static t => t.FullName!)];
 
-        naoEstaticas.Should().BeEmpty("a política é função pura da vista; estado vive na raiz");
+        naoEstaticas.Should().BeEmpty("a política é função pura da configuração declarada; estado vive na raiz, e o dado que a Application lê dos cadastros vive em ValueObjects");
     }
 
     [Fact(DisplayName = "A5: o Domain não depende de Application, Infrastructure, Wolverine nem EF Core")]

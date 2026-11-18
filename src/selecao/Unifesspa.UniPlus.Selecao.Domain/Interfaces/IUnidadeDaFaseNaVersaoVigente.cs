@@ -7,8 +7,8 @@ public sealed record UnidadeDaFase(Guid FaseId, Guid UnidadeId);
 
 /// <summary>
 /// Lê a unidade responsável por uma fase na <b>versão publicada vigente</b> do processo, e nunca nas entidades vivas:
-/// durante uma sessão de retificação elas guardam o rascunho, e a unidade que decide a ação da fase só muda quando a
-/// retificação é fechada. Devolve <see langword="null"/> quando a fase não se resolve: processo ou fase inexistente,
+/// a unidade que decide a ação da fase só muda quando a
+/// retificação publica a versão nova. Devolve <see langword="null"/> quando a fase não se resolve: processo ou fase inexistente,
 /// fase de outro processo, etapa sem fase na versão, ou fase sem unidade.
 /// </summary>
 public interface IUnidadeDaFaseNaVersaoVigente

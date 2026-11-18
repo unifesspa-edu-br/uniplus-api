@@ -33,7 +33,7 @@ public sealed class DefinirEtapasVersaoPublicadaTests
         catalogo.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns(AtoDeResultado("RESULTADO_CLASSIFICACAO") with { CongelaConfiguracao = true });
 
-        Result<MutacaoAceita> resultado = await Executar(
+        Result resultado = await Executar(
             ComUmProdutoDefinitivo(processo), repository, Substitute.For<IUnitOfWork>(),
             tipoAtoPublicadoReader: catalogo, registroCodecs: codecs);
 
@@ -54,7 +54,7 @@ public sealed class DefinirEtapasVersaoPublicadaTests
         catalogo.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns(AtoDeResultado("RESULTADO_CLASSIFICACAO") with { CongelaConfiguracao = true });
 
-        Result<MutacaoAceita> resultado = await Executar(
+        Result resultado = await Executar(
             ComUmProdutoDefinitivo(processo), repository, Substitute.For<IUnitOfWork>(),
             tipoAtoPublicadoReader: catalogo, registroCodecs: codecs);
 
@@ -74,7 +74,7 @@ public sealed class DefinirEtapasVersaoPublicadaTests
         catalogo.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns(AtoDeResultado("RESULTADO_CLASSIFICACAO"));
 
-        Result<MutacaoAceita> resultado = await Executar(
+        Result resultado = await Executar(
             ComUmProdutoDefinitivo(processo), repository, Substitute.For<IUnitOfWork>(),
             tipoAtoPublicadoReader: catalogo, registroCodecs: codecs);
 
@@ -88,6 +88,5 @@ public sealed class DefinirEtapasVersaoPublicadaTests
                 "Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
                 Produtos: [new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "DEFINITIVO")],
                 Bancas: [], Recursos: []),
-        ],
-        PrecondicaoIfMatch.Ausente);
+        ]);
 }

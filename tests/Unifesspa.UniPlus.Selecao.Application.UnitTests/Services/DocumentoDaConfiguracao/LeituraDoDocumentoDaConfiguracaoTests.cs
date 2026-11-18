@@ -1,0 +1,148 @@
+namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Services.DocumentoDaConfiguracao;
+
+using System.Text.Json.Nodes;
+
+using AwesomeAssertions;
+
+using Kernel.Results;
+
+using NSubstitute;
+
+using Unifesspa.UniPlus.Selecao.Application.Services;
+using Unifesspa.UniPlus.Selecao.Application.Services.DocumentoDaConfiguracao;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
+
+public sealed class LeituraDoDocumentoDaConfiguracaoTests
+{
+    private readonly IEsquemaDoDocumentoDaConfiguracao _esquema = Substitute.For<IEsquemaDoDocumentoDaConfiguracao>();
+
+    public LeituraDoDocumentoDaConfiguracaoTests()
+    {
+        _esquema.Forma.Returns(FormaDeTeste.Documento());
+        _esquema.Avaliar(Arg.Any<JsonObject>()).Returns([]);
+    }
+
+    private LeituraDoDocumentoDaConfiguracao Leitura => new(_esquema);
+
+    private static FieldError Causa(string ponteiro, string codigo) => new(ponteiro, new DomainError(codigo, "Mensagem."));
+
+    [Fact(DisplayName = "A estrutura recusada devolve as causas e não normaliza nem avalia")]
+    public void EstruturaRecusada_NaoNormalizaNemAvalia()
+    {
+        Result<DocumentoLido> resultado = Leitura.Ler("{ \"a\": 1, \"a\": 2 ");
+
+        resultado.IsFailure.Should().BeTrue();
+        _esquema.DidNotReceiveWithAnyArgs().Avaliar(default!);
+        _ = _esquema.DidNotReceive().Forma;
+    }
+
+    [Fact(DisplayName = "O documento é avaliado já normalizado: sem os campos só de leitura e sem inventar chave nas partes")]
+    public void Avaliacao_RecebeODocumentoNormalizado()
+    {
+        JsonObject? recebido = null;
+        _esquema.Avaliar(Arg.Do<JsonObject>(documento => recebido = (JsonObject)documento.DeepClone())).Returns([]);
+
+        _ = Leitura.Ler("""{ "id": "x", "etapas": [ { "nome": "Prova" } ] }""");
+
+        recebido!.ContainsKey("id").Should().BeFalse();
+        recebido["etapas"]![0]!.AsObject().ContainsKey("chave").Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "O documento válido devolve o normalizado, o nome e a unidade")]
+    public void DocumentoValido_DevolveONormalizadoComNomeEUnidade()
+    {
+        Result<DocumentoLido> resultado = Leitura.Ler("""
+            { "id": "x", "identificacao": { "nome": "Processo Seletivo de Exemplo", "unidadeAdministradoraCodigo": "CEPS", "unidadeNome": "Nome" } }
+            """);
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.Nome.Should().Be("Processo Seletivo de Exemplo");
+        resultado.Value.UnidadeAdministradoraCodigo.Should().Be("CEPS");
+        resultado.Value.Documento.ContainsKey("id").Should().BeFalse();
+        resultado.Value.Documento["identificacao"]!.AsObject().ContainsKey("unidadeNome").Should().BeFalse();
+    }
+
+    [Theory(DisplayName = "Sem identificação, ou com nome e unidade que não são texto, o nome e a unidade ficam nulos")]
+    [InlineData("""{ }""")]
+    [InlineData("""{ "identificacao": { } }""")]
+    [InlineData("""{ "identificacao": { "nome": 7, "unidadeAdministradoraCodigo": null } }""")]
+    [InlineData("""{ "identificacao": [ ] }""")]
+    public void NomeEUnidadeAusentes_FicamNulos(string texto)
+    {
+        DocumentoLido lido = Leitura.Ler(texto).Value!;
+
+        lido.Nome.Should().BeNull();
+        lido.UnidadeAdministradoraCodigo.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "As causas do esquema e a chave repetida saem juntas, na ordem do documento")]
+    public void CausasDasEtapasIndependentes_SaemJuntasNaOrdemDoDocumento()
+    {
+        _esquema.Avaliar(Arg.Any<JsonObject>()).Returns([Causa("/etapas/1/nome", DocumentoDaConfiguracaoErrorCodes.TipoInvalido), Causa("/nome", DocumentoDaConfiguracaoErrorCodes.TipoInvalido)]);
+
+        Result<DocumentoLido> resultado = Leitura.Ler("""{ "nome": 1, "etapas": [ { "chave": "a" }, { "chave": "a", "nome": 2 } ] }""");
+
+        resultado.Errors.Select(static causa => causa.Field).Should().Equal("/nome", "/etapas/1/chave", "/etapas/1/nome");
+    }
+
+    [Fact(DisplayName = "No mesmo ponteiro a causa do esquema vence a da chave repetida")]
+    public void MesmoPonteiro_VenceACausaDoEsquema()
+    {
+        _esquema.Avaliar(Arg.Any<JsonObject>()).Returns([Causa("/etapas/1/chave", DocumentoDaConfiguracaoErrorCodes.ValorInvalido)]);
+
+        Result<DocumentoLido> resultado = Leitura.Ler("""{ "etapas": [ { "chave": "" }, { "chave": "" } ] }""");
+
+        resultado.Errors.Select(static causa => (causa.Field, causa.Error.Code)).Should().Equal(
+            ("/etapas/1/chave", DocumentoDaConfiguracaoErrorCodes.ValorInvalido));
+    }
+
+    [Fact(DisplayName = "A causa de nome de propriedade com barra e til sai com ~1 e ~0 e na posição do documento")]
+    public void NomeDePropriedadeComBarraETil_SaiEscapadoNaPosicaoDoDocumento()
+    {
+        _esquema.Forma.Returns(FormaDeTeste.Objeto(new()
+        {
+            ["nome"] = FormaDeTeste.Valor(),
+            ["a/b~c"] = FormaDeTeste.Lista(FormaDeTeste.Objeto(new() { ["chave"] = FormaDeTeste.Valor() }, new ParteComChave("parte", EscopoDaChave.Documento))),
+        }));
+        _esquema.Avaliar(Arg.Any<JsonObject>()).Returns([Causa("/nome", DocumentoDaConfiguracaoErrorCodes.TipoInvalido)]);
+
+        Result<DocumentoLido> resultado = Leitura.Ler("""{ "a/b~c": [ { "chave": "x" }, { "chave": "x" } ], "nome": 1 }""");
+
+        resultado.Errors.Select(static causa => causa.Field).Should().Equal("/a~1b~0c/1/chave", "/nome");
+    }
+
+    // Raiz, identificação com o nome e a unidade, a lista e os valores dela: o documento declarado tem os nós pedidos, e os campos só
+    // de leitura (o id e o nome da unidade) vêm a mais no texto.
+    private static string ComNosDeclarados(int nos)
+    {
+        const int NosSemOsValores = 5;
+        JsonObject documento = new()
+        {
+            ["id"] = "x",
+            ["identificacao"] = new JsonObject { ["nome"] = "Processo", ["unidadeAdministradoraCodigo"] = "CEPS", ["unidadeNome"] = "Nome" },
+            ["valores"] = new JsonArray([.. Enumerable.Range(0, nos - NosSemOsValores).Select(static numero => JsonValue.Create(numero))]),
+        };
+
+        return documento.ToJsonString();
+    }
+
+    [Fact(DisplayName = "Os campos só de leitura não contam no limite de nós: o documento declarado no limite é aceito com eles no texto")]
+    public void CamposSomenteLeitura_NaoContamNoLimiteDeNos()
+    {
+        Result<DocumentoLido> resultado = Leitura.Ler(ComNosDeclarados(LimitesDoDocumento.QuantidadeMaximaDeNos));
+
+        resultado.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "O documento declarado com um nó acima do limite é recusado na raiz, sem avaliar o esquema")]
+    public void DocumentoDeclaradoAcimaDoLimiteDeNos_ERecusadoSemAvaliar()
+    {
+        Result<DocumentoLido> resultado = Leitura.Ler(ComNosDeclarados(LimitesDoDocumento.QuantidadeMaximaDeNos + 1));
+
+        resultado.Errors.Select(static causa => (causa.Field, causa.Error.Code)).Should().Equal((string.Empty, DocumentoDaConfiguracaoErrorCodes.AcimaDoLimite));
+        _esquema.DidNotReceiveWithAnyArgs().Avaliar(default!);
+    }
+
+    [Fact(DisplayName = "O texto é obrigatório")]
+    public void TextoNulo_Lanca() => Assert.Throws<ArgumentNullException>(() => Leitura.Ler(null!));
+}

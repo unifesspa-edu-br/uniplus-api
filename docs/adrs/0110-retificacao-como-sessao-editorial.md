@@ -1,5 +1,5 @@
 ---
-status: "accepted"
+status: "superseded by ADR-0175"
 date: "2026-07-13"
 decision-makers:
   - "Tech Lead (CTIC)"
@@ -10,6 +10,8 @@ informed:
 ---
 
 # ADR-0110: A retificação é uma sessão editorial sobre a configuração, não um estado do certame
+
+> **Superada.** A [ADR-0175](0175-o-processo-publicado-nao-tem-edicao-direta-nem-sessao-editorial.md) retira a sessão editorial, a reposição da configuração congelada e o `If-Match` das gravações por dimensão. O que esta ADR decidiu sobre o registro de codecs do envelope (D1, Emenda 2 e a emenda da ADR-0137) segue valendo para a leitura das versões publicadas. Leia o restante como registro histórico, não como contrato.
 
 ## Contexto e enunciado do problema
 
@@ -100,7 +102,7 @@ codec **quebra o build**.
 
 | Campo | No envelope? | Decisão |
 |---|---|---|
-| `etapa.Id` | **Sim** (`:149`) — `criteriosDesempate.args.etapaRef` e `regrasEliminacao.args.etapaRef` apontam para ele | **Preservado.** `EtapaProcesso.Criar` não aceita `Id` → **factory de reidratação** |
+| `etapa.Id` | **Sim** (`:149`) — `criteriosDesempate.parametros.etapaRef` e `regrasEliminacao.parametros.etapaRef` apontam para ele | **Preservado.** `EtapaProcesso.Criar` não aceita `Id` → **factory de reidratação** |
 | `Id` das demais filhas | **Não** | **Regenerados.** Precisão: *nenhuma referência de **negócio** exige estabilidade deles*; as **FKs internas** (ex.: `ModalidadeSelecionada.ConfiguracaoDistribuicaoVagasId`) são **reconstruídas junto com o grafo**. São expostos no DTO público, e o ADR declara que **o contrato não promete estabilidade** |
 | `CreatedAt` / `UpdatedAt` (todas herdam de `EntityBase`) | **Não** | **Parcialmente perdidos, com precisão:** as filhas **recriadas** recebem `CreatedAt` = instante do **descarte** e `UpdatedAt` = `null`; as **etapas reconciliadas** por `Id` **preservam** o `CreatedAt` original (são a mesma instância *tracked*). É perda de informação — **declarada**, não silenciosa. A auditoria com peso jurídico vive na `VersaoConfiguracao` (append-only, `IForensicEntity`), que **não** é tocada |
 

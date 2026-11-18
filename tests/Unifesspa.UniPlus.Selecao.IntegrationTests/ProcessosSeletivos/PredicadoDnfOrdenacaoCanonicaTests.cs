@@ -13,6 +13,8 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
@@ -47,9 +49,9 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
     private static readonly SnapshotPublicacaoCanonicalizer Canonicalizador = new();
 
     private static ReferenciaRegra Regra(string codigo, char semente) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string(semente, 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string(semente, 64));
 
-    private static DadosEdital Dados() => DadosEdital.Criar(
+    internal static DadosEdital Dados() => DadosEdital.Criar(
         numero: "001/2026",
         periodoInscricaoInicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
         periodoInscricaoFim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
@@ -58,9 +60,19 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
     private static EntradaCanonicalizacao Entrada(ProcessoSeletivo processo) =>
         new(processo, Dados(), new string('0', 64), FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados());
 
-    private static JsonElement Escalar(string valor) => JsonSerializer.SerializeToElement(valor);
+    internal static JsonElement Escalar(string valor) => JsonSerializer.SerializeToElement(valor);
 
     private static JsonElement Alternativas(params string[] valores) => JsonSerializer.SerializeToElement(valores);
+
+    private static FaseCronograma FaseDeInscricao() => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            OrigemId: Guid.CreateVersion7(), Codigo: "INSCRICAO", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: true, ColetaInscricao: true,
+            ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
 
     /// <summary>
     /// Um processo mínimo, válido para <see cref="SnapshotPublicacaoCanonicalizer.Canonicalizar"/>,
@@ -68,22 +80,49 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
     /// mesmo esqueleto de <see cref="OrdenacaoDeConjuntosCanonicosTests.MontarProcesso"/>, mas com
     /// o gatilho como o knob variável em vez dos conjuntos da issue #1067.
     /// </summary>
-    private static ProcessoSeletivo MontarProcessoComGatilho(IReadOnlyList<CondicaoGatilho> condicoes)
+    internal static ProcessoSeletivo MontarProcessoComGatilho(IReadOnlyList<CondicaoGatilho> condicoes)
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
+        ProcessoSeletivo processo = NovoProcessoDeOrdenacaoDePredicados();
+        DefinirAtendimentoEDistribuicaoDeVagas(processo);
+        processo.DefinirClassificacao(ClassificacaoImportada()).IsSuccess.Should().BeTrue();
+        FaseCronograma fase = DefinirCronogramaEEtapas(processo);
+        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
+        DefinirExigenciaCondicional(processo, fase, condicoes);
+        processo.DefinirTaxaInscricao(
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!).IsSuccess.Should().BeTrue();
+        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
+
+        return processo;
+    }
+
+    private static ProcessoSeletivo NovoProcessoDeOrdenacaoDePredicados() =>
+        ProcessoSeletivo.Criar(
             "PS Ordenação de Predicados", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
-
+    private static void DefinirAtendimentoEDistribuicaoDeVagas(ProcessoSeletivo processo)
+    {
         processo.DefinirAtendimentoEspecializado(
-            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            AtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
+        DefinirDistribuicaoDeVagas(processo);
+    }
 
-        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
+    private static void DefinirDistribuicaoDeVagas(ProcessoSeletivo processo)
+    {
+        ModalidadeSelecionada modalidade = ModalidadeAmpla();
+        ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'), Modalidades = [modalidade] },
+            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
+        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
+    }
+
+    private static ModalidadeSelecionada ModalidadeAmpla() =>
+        ModalidadeSelecionada.Criar(
             modalidadeOrigemId: Guid.CreateVersion7(),
             codigo: "AC",
             descricao: null,
             naturezaLegal: NaturezaLegalModalidade.Ampla,
-            composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
+            composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
             composicaoOrigemCodigo: null,
             regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
             remanejamentoDestino: null,
@@ -94,48 +133,28 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
             baseLegal: "Res. Unifesspa 532/2021",
             quantidadeDeclarada: 40).Value!;
 
-        ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
-            ofertaCursoOrigemId: Guid.CreateVersion7(),
-            voBase: 40,
-            pr: 1m,
-            regraDistribuicao: Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
-            regraAjuste: null,
-            referenciaDemografica: null,
-            modalidades: [modalidade], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+    private static ConfiguracaoClassificacao ClassificacaoImportada() =>
+        ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
+            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+        }).Value!;
 
-        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
-            regraCalculo: Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
-            regraArredondamento: null,
-            casasArredondamento: null,
-            regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
-            regrasEliminacao: [],
-            baseadoEmEnem: false,
-            resolucaoPesoAreaEnem: null,
-            quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        FaseCronograma fase = FaseCronograma.Criar(
-            ordem: 1,
-            faseCanonicaOrigemId: Guid.CreateVersion7(),
-            codigo: "INSCRICAO",
-            origemData: OrigemDataFase.NoEdital,
-            agrupaEtapas: true,
-            permiteComplementacao: true,
-            coletaInscricao: true, coletaSolicitacaoIsencao: false,
-            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-            fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)],
-            faseConcluinteCodigo: null,
-            emiteParecerIndividual: false,
-            bancasRequeridas: [],
-            regraRecurso: null,
-            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+    private static FaseCronograma DefinirCronogramaEEtapas(ProcessoSeletivo processo)
+    {
+        FaseCronograma fase = FaseDeInscricao();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas([
-            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: "INSCRICAO").Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
+            EtapaProcesso.Criar(
+                new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "INSCRICAO"),
+                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
+        ]).IsSuccess.Should().BeTrue();
 
+        return fase;
+    }
+
+    private static void DefinirExigenciaCondicional(ProcessoSeletivo processo, FaseCronograma fase, IReadOnlyList<CondicaoGatilho> condicoes)
+    {
         FormatosPermitidos qualquer = FormatosPermitidos.Criar(true, null).Value!;
 
         // obrigatorio: false, consequenciaIndeferimento: null — DeterminaResultado() fica falso,
@@ -148,18 +167,11 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
             condicoes, [], null, qualquer, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
 
         processo.DefinirDocumentosExigidos(
-            [NoExigencia.CriarFolha(documento, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
-
-        return processo;
+            [NoExigencia.CriarFolha(documento, 0).Value!]).IsSuccess.Should().BeTrue();
     }
 
     private static JsonNode CondicaoGatilhoDoEnvelope(SnapshotCanonico snapshot) =>
-        EnvelopeCodecRoundTripTests.Envelope(snapshot)["documentosExigidos"]!["exigencias"]![0]!["condicaoGatilho"]!;
+        ApoioDoEnvelopeCodec.Envelope(snapshot)["documentosExigidos"]!["exigencias"]![0]!["condicaoGatilho"]!;
 
     // ── Teste central: o ordinal do cliente sai do digest ──
 
@@ -298,7 +310,7 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
     }
 
     /// <summary>
-    /// Ponto 2 — o consumidor de DESEMPATE (<see cref="ArgsDesempatePredicadoFato"/>). Os testes
+    /// Ponto 2 — o consumidor de DESEMPATE (<see cref="ParametrosDesempatePredicadoFato"/>). Os testes
     /// do ponto 1 provam a consolidação de D1 (<c>SerializarDnf</c>), mas NÃO cobrem este segundo
     /// ponto de serialização de valor: uma implementação que aplicasse o auxiliar só no método
     /// consolidado passaria em todos eles e deixaria o desempate emitindo <c>["PRETA","PARDA"]</c>
@@ -314,92 +326,27 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
         ProcessoSeletivo MontarComDesempate(JsonElement valor)
         {
             ProcessoSeletivo processo = MontarProcessoComGatilho([]);
-            ArgsDesempatePredicadoFato args = new(CondicaoDnf.Criar("COR_RACA", operador, valor).Value!);
+            ParametrosDesempatePredicadoFato parametros = new(CondicaoDnf.Criar("COR_RACA", operador, valor).Value!);
             processo.DefinirCriteriosDesempate(
-                [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.PredicadoFato, 'e'), args).Value!],
-                PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+                [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.PredicadoFato, 'e'), parametros).Value!]).IsSuccess.Should().BeTrue();
             return processo;
         }
 
-        JsonNode ArgsDoEnvelope(SnapshotCanonico snapshot) =>
-            EnvelopeCodecRoundTripTests.Envelope(snapshot)["criteriosDesempate"]![0]!["args"]!["valor"]!;
+        JsonNode ParametrosDoEnvelope(SnapshotCanonico snapshot) =>
+            ApoioDoEnvelopeCodec.Envelope(snapshot)["criteriosDesempate"]![0]!["parametros"]!["valor"]!;
 
-        JsonNode valorUm = ArgsDoEnvelope(
+        JsonNode valorUm = ParametrosDoEnvelope(
             Canonicalizador.Canonicalizar(Entrada(MontarComDesempate(Alternativas("PRETA", "PARDA")))));
 
         valorUm.AsArray().Select(static v => v!.GetValue<string>()).Should().Equal(
             ["PARDA", "PRETA"], "'PA' (0x50 0x41) < 'PR' (0x50 0x52) — ordem alfabética ASCII simples");
 
-        JsonNode valorDois = ArgsDoEnvelope(
+        JsonNode valorDois = ParametrosDoEnvelope(
             Canonicalizador.Canonicalizar(Entrada(MontarComDesempate(Alternativas("PARDA", "PRETA")))));
 
         OrdenacaoDeConjuntosCanonicosTests.BytesDoFragmento(valorDois).Should().Equal(
             OrdenacaoDeConjuntosCanonicosTests.BytesDoFragmento(valorUm),
             "['PRETA','PARDA'] e ['PARDA','PRETA'] são a MESMA alternativa em ordens diferentes — o " +
             "consumidor de desempate tem de ordenar pela chave de conteúdo, não só o método consolidado");
-    }
-
-    // ── Round-trip: ordinais não contíguos, a partir de configuração VIVA ──
-
-    /// <summary>
-    /// O decodificador atribui <c>Clausula</c> pela POSIÇÃO no array (índice do laço) — o envelope
-    /// não carrega o ordinal original, só arrays posicionais. Um envelope congelado a partir de
-    /// ordinais <c>7, 4, 9</c> é reidratado com ordinais <c>0, 1, 2</c>; a recodificação reagrupa e
-    /// reordena por conteúdo, chegando aos MESMOS bytes — mas isso é uma afirmação a PROVAR, não a
-    /// assumir (Fase 0 do plano). Ao menos uma cláusula de DOIS átomos: só cláusulas unitárias não
-    /// provam preservação da conjunção (a reidratação de uma cláusula de um átomo só não
-    /// discriminaria "agrupar corretamente" de "criar uma cláusula por átomo").
-    /// </summary>
-    [Fact(DisplayName = "condicaoGatilho: round-trip a partir de ordinais não contíguos (7, 4, 9) — reidratar reatribui por posição e recanonicalizar reproduz os bytes")]
-    public void CondicaoGatilho_RoundTripComOrdinaisNaoContiguos_ReproduzOsBytes()
-    {
-        CondicaoGatilho clausula7A = CondicaoGatilho.Criar(7, "FATO_A", Operador.Igual, Escalar("valorA")).Value!;
-        CondicaoGatilho clausula7B = CondicaoGatilho.Criar(7, "FATO_B", Operador.Igual, Escalar("valorB")).Value!;
-        CondicaoGatilho clausula4 = CondicaoGatilho.Criar(4, "FATO_C", Operador.Igual, Escalar("valorC")).Value!;
-        CondicaoGatilho clausula9 = CondicaoGatilho.Criar(9, "FATO_D", Operador.Igual, Escalar("valorD")).Value!;
-
-        ProcessoSeletivo processo = MontarProcessoComGatilho([clausula7A, clausula7B, clausula4, clausula9]);
-
-        DadosEdital dados = Dados();
-        const string hashDocumento = "3333333333333333333333333333333333333333333333333333333333333333";
-        SnapshotCanonico congelado = Canonicalizador.Canonicalizar(new EntradaCanonicalizacao(processo, dados, hashDocumento, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
-
-        Result<VersaoConfiguracao> publicacao = processo.Publicar(
-            dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            hashDocumento, "user-conta-predicado-1068", TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
-        publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
-        VersaoConfiguracao v1 = publicacao.Value!;
-
-        Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(v1);
-        reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
-
-        // A afirmação de convergência, provada diretamente: o decoder reatribuiu Clausula por
-        // posição (0, 1, 2 — três cláusulas no array, não os ordinais 7/4/9 originais), e a
-        // cláusula de dois átomos permanece uma conjunção só, não duas cláusulas separadas.
-        DocumentoExigido exigenciaReidratada = reidratado.Value!.Grafo.DocumentosExigidos.Single();
-        exigenciaReidratada.Condicoes.Select(static c => c.Clausula).Distinct().Should().BeEquivalentTo([0, 1, 2],
-            "o decoder atribui Clausula pela posição no array — três cláusulas no envelope, nunca os " +
-            "ordinais originais 7/4/9, que não sobrevivem à canonicalização");
-        exigenciaReidratada.Condicoes.GroupBy(static c => c.Clausula).Should().ContainSingle(
-            static g => g.Count() == 2,
-            "a cláusula de dois átomos (FATO_A, FATO_B) tem de permanecer uma ÚNICA conjunção após o " +
-            "round-trip, não duas cláusulas de um átomo cada");
-
-        processo.RestaurarConfiguracaoCongelada(v1, reidratado.Value.Grafo).IsSuccess.Should().BeTrue();
-
-        Result<SnapshotCanonico> recodificado = CorpusEnvelope.Registro.Recodificar(
-            v1.SchemaVersion,
-            new EntradaCanonicalizacao(
-                processo, reidratado.Value.Dados, reidratado.Value.HashDocumento, FusoInstitucional.ZoneId, reidratado.Value.Retificacao,
-                reidratado.Value.Conformidade, reidratado.Value.MetadadosFatosCongelados,
-                reidratado.Value.ValoresSelecionaveisCongelados,
-                reidratado.Value.CalendarioDiasUteis, reidratado.Value.AgregadosDosGrupos, reidratado.Value.ApresentacaoDosPressupostos,
-                TiposDeAtoCongelados: reidratado.Value.TiposDeAtoCongelados, FatosDerivadosCongelados: reidratado.Value.FatosDerivadosCongelados));
-        recodificado.IsSuccess.Should().BeTrue(recodificado.Error?.Message);
-
-        recodificado.Value!.Bytes.Should().Equal(congelado.Bytes,
-            "reidratar um envelope com ordinais não contíguos e recanonicalizar tem de reproduzir os " +
-            "bytes congelados inteiros — o regrupamento pela posição reidratada converge para a mesma " +
-            "forma canônica que os ordinais originais já produziam");
     }
 }

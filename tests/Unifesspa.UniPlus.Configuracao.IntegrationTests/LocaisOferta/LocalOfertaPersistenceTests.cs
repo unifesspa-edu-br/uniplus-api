@@ -150,8 +150,8 @@ public sealed class LocalOfertaPersistenceTests
         UnidadeOfertante unidade = UnidadeOfertante.Criar(
             Guid.CreateVersion7(), "FACET", "Faculdade de Computação e Engenharia Elétrica", "Faculdade").Value!;
         OfertaCurso oferta = OfertaCurso.Criar(
-            curso.Id, local.Id, unidade, "REGULAR", "PRESENCIAL",
-            "EXTENSIVO", "REGULAR", ["MATUTINO"], null, null, null, null, null).Value!;
+            curso.Id, local.Id, unidade,
+            new DeclaracaoDaOfertaDeCurso($"OFERTA_{Guid.CreateVersion7():N}".ToUpperInvariant(), "REGULAR", "PRESENCIAL", "EXTENSIVO", "REGULAR", ["MATUTINO"])).Value!;
         await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.OfertasCurso.Add(oferta);

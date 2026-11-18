@@ -17,12 +17,13 @@ O catálogo `regras_do_catalogo` (Story #772) é uma biblioteca de regras tipada
 versionadas e content-addressable que a configuração do Processo Seletivo
 referencia por `(codigo, versao, hash)`. A configuração congelada de um certame
 (`VersaoConfiguracao`, ADR-0104) preserva essa referência para tornar o resultado
-reprodutível e auditável (RN08).
+reprodutível e auditável (RN08). A definição inclui a `declaracao_da_regra`, cujo
+conteúdo integra o hash da regra.
 
 Entre as 18 regras semeadas, `RECURSO-MULTI-INSTANCIA` conflacionava dois
 conceitos: a **gestão** de uma segunda instância de recurso — que o Uni+ não
 exerce, pois o julgamento em instância superior corre fora do sistema — e a
-**janela de suspensividade**, que é real e precisa ficar congelada por edital. O
+**período de suspensividade**, que é real e precisa ficar congelada por edital. O
 nome da regra negava o próprio conteúdo que deveria sobrar depois da correção.
 
 A pergunta é: pode-se **corrigir** uma linha do seed substituindo-a (removê-la e
@@ -67,8 +68,8 @@ a substituição é proibida.
 No caso concreto que motivou esta ADR, `RECURSO-MULTI-INSTANCIA` tinha zero
 referências congeladas (nenhuma `VersaoConfiguracao`, nenhum consumidor de
 `TipoRegra.RegraPrazoRecurso`, sem produção), e por isso foi substituída por
-`RECURSO-PRAZO-ANCORADO-EM-ATO` — que preserva a janela de suspensividade, agora
-por instância, e ancora o prazo no instante de publicação de um ato.
+`RECURSO-PRAZO-ANCORADO-EM-ATO` — que preserva a período de suspensividade, agora
+por instância, e inicia a contagem do prazo na publicação de um ato.
 
 ## Consequências
 
@@ -82,7 +83,7 @@ por instância, e ancora o prazo no instante de publicação de um ato.
 
 ### Negativas
 
-- Cria uma janela em que o comportamento de correção difere (substituição antes,
+- Cria uma período em que o comportamento de correção difere (substituição antes,
   append-only depois) — exige que a verificação seja executada, não presumida.
 - Reusar o `Id` técnico numa substituição pode surpreender quem espera que `Id`
   seja identidade de negócio; a identidade de negócio é `(codigo, versao)`.
@@ -111,7 +112,7 @@ por instância, e ancora o prazo no instante de publicação de um ato.
 
 ### Append-only estrito desde sempre
 
-- Bom, porque a regra é uniforme e não tem janela de exceção.
+- Bom, porque a regra é uniforme e não tem período de exceção.
 - Ruim, porque preserva vocabulário nunca usado como se fosse fato, e o nome
   errado de uma regra ficaria no catálogo para sempre.
 
@@ -135,14 +136,14 @@ identidade** `(codigo, versao)` — o exemplo concreto (`RECURSO-MULTI-INSTANCIA
 conteúdo. A reescrita das cinco regras de `regra_distribuicao_vagas` para uma única versão
 `v1` é uma correção mais ampla: além de reescrever conteúdo (o rol de modalidades admitidas
 de cada regra), ela **muda a identidade `(codigo, versao)`** de duas delas —
-`DISTRIB-VAGAS-LEI-12711` e `DISTRIB-VAGAS-INSTITUCIONAL` saem de `v2` para `v1`.
+`DISTRIBUICAO-LEI-12711` e `DISTRIBUICAO-INSTITUCIONAL` saem de `v2` para `v1`.
 
 A fronteira já cobria isso em espírito — "enquanto nenhuma configuração congelada referenciar
 uma linha do catálogo por `(codigo, versao)`, essa linha pode ser corrigida por substituição"
 não distingue substituir o conteúdo de substituir a versão — mas o texto original só
 exemplificava o caso mais estreito. Esta emenda o torna explícito: **a fronteira do
 append-only é sobre referência congelada, não sobre qual campo da linha muda**. Sem
-produção, `(DISTRIB-VAGAS-INSTITUCIONAL, v1)` pode passar a designar conteúdo diferente do
+produção, `(DISTRIBUICAO-INSTITUCIONAL, v1)` pode passar a designar conteúdo diferente do
 que `v1` designava antes de ter sido apagada por uma migration anterior — o par não estava
 congelado em nenhuma `VersaoConfiguracao`, então reusar a identidade não viola RN08. A
 verificação mecânica continua a mesma: cruzar `VersaoConfiguracao` (e o rascunho vivo em

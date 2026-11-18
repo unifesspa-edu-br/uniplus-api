@@ -7,8 +7,8 @@ using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public static class RegrasDosFatos
 {
@@ -20,39 +20,39 @@ public static class RegrasDosFatos
     /// a cada fato entra no congelamento, por quem o lê.
     /// </summary>
     public static DomainError? ConferirFatoDeElegibilidade(
-        EstadoDaConfiguracao estado,
+        ConfiguracaoDeclarada configuracao,
         IReadOnlyDictionary<string, string> pontoResolucaoPorFato,
         IReadOnlyDictionary<string, string> membroPorAgregado)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
         ArgumentNullException.ThrowIfNull(pontoResolucaoPorFato);
         ArgumentNullException.ThrowIfNull(membroPorAgregado);
 
-        if (estado.BonusRegional is not { } bonus)
+        if (configuracao.Vagas.BonusRegional is not { } bonus)
         {
             return null;
         }
 
         return bonus.FatoElegibilidadeCodigo is not { } fato
-            ? ConferirCitacaoObrigatoria(estado)
-            : ConferirFatoCitado(estado, fato) ?? ConferirMomentoEmQueOFatoEConhecido(estado, fato, pontoResolucaoPorFato, membroPorAgregado);
+            ? ConferirCitacaoObrigatoria(configuracao)
+            : ConferirFatoCitado(configuracao, fato) ?? ConferirMomentoEmQueOFatoEConhecido(configuracao, fato, pontoResolucaoPorFato, membroPorAgregado);
     }
 
-    private static DomainError? ConferirCitacaoObrigatoria(EstadoDaConfiguracao estado) =>
-        estado.OrigemCandidatos == OrigemCandidatos.InscricaoPropria
+    private static DomainError? ConferirCitacaoObrigatoria(ConfiguracaoDeclarada configuracao) =>
+        configuracao.Identidade.OrigemCandidatos == OrigemCandidatos.InscricaoPropria
             ? new DomainError(
                 ProcessoSeletivoErrorCodes.FatoElegibilidadeAusente,
                 "O processo com inscrição própria que aplica o acréscimo precisa citar o fato que decide quem o recebe.")
             : null;
 
-    private static DomainError? ConferirFatoCitado(EstadoDaConfiguracao estado, string fato)
+    private static DomainError? ConferirFatoCitado(ConfiguracaoDeclarada configuracao, string fato)
     {
-        FatoColetado? coletado = estado.Itens.FirstOrDefault(f =>
+        FatoColetado? coletado = configuracao.Coleta.Itens.FirstOrDefault(f =>
             f.Finalidade == FinalidadeFormulario.Inscricao && string.Equals(f.FatoCodigo, fato, StringComparison.Ordinal));
-        ConfiguracaoDerivacaoFato? derivado = estado.DerivacoesEfetivas().FirstOrDefault(d => string.Equals(d.CodigoFato, fato, StringComparison.Ordinal));
+        ConfiguracaoDerivacaoFato? derivado = configuracao.DerivacoesEfetivas().FirstOrDefault(d => string.Equals(d.CodigoFato, fato, StringComparison.Ordinal));
         if (coletado is null && derivado is null)
         {
-            return RecusaDoFatoForaDoProcesso(estado, fato);
+            return RecusaDoFatoForaDoProcesso(configuracao, fato);
         }
 
         return coletado is { TipoRenderizacao: not TipoRenderizacao.Booleano } || derivado is { Booleano: false }
@@ -63,8 +63,8 @@ public static class RegrasDosFatos
     }
 
     // O campo de grupo repetível tem um valor por membro; o acréscimo é do candidato.
-    private static DomainError RecusaDoFatoForaDoProcesso(EstadoDaConfiguracao estado, string fato) =>
-        estado.Campos.Any(f => f.GrupoColetadoId is not null && f.Finalidade == FinalidadeFormulario.Inscricao
+    private static DomainError RecusaDoFatoForaDoProcesso(ConfiguracaoDeclarada configuracao, string fato) =>
+        configuracao.Coleta.Campos.Any(f => f.GrupoColetadoId is not null && f.Finalidade == FinalidadeFormulario.Inscricao
                 && string.Equals(f.FatoCodigo, fato, StringComparison.Ordinal))
             ? new DomainError(
                 ProcessoSeletivoErrorCodes.FatoElegibilidadeDeMembroDeGrupo,
@@ -75,22 +75,22 @@ public static class RegrasDosFatos
 
     // Sem o formulário de inscrição na fase dele, a pendência é a do próprio formulário.
     private static DomainError? ConferirMomentoEmQueOFatoEConhecido(
-        EstadoDaConfiguracao estado,
+        ConfiguracaoDeclarada configuracao,
         string fato,
         IReadOnlyDictionary<string, string> pontoResolucaoPorFato,
         IReadOnlyDictionary<string, string> membroPorAgregado)
     {
-        if (estado.FormularioDe(FinalidadeFormulario.Inscricao)?.FaseId is not { } faseId
-            || estado.CronogramaFases.FirstOrDefault(f => f.Id == faseId) is not { } faseDaInscricao)
+        if (configuracao.Coleta.FormularioDe(FinalidadeFormulario.Inscricao)?.FaseId is not { } faseId
+            || configuracao.Cronograma.CronogramaFases.FirstOrDefault(f => f.Id == faseId) is not { } faseDaInscricao)
         {
             return null;
         }
 
-        FaseEfetivaDoFato.FaseEfetiva efetiva = FaseEfetivaDoFato.Resolver(estado, fato, pontoResolucaoPorFato, membroPorAgregado, []);
+        FaseEfetivaDoFato.FaseEfetiva efetiva = FaseEfetivaDoFato.Resolver(configuracao, fato, pontoResolucaoPorFato, membroPorAgregado, []);
 
         return efetiva.Recusa
             ?? RecusaDoFatoConhecidoDepoisDaInscricao(efetiva, faseDaInscricao, fato)
-            ?? RecusaDoFatoSoDaIsencao(estado, fato, membroPorAgregado);
+            ?? RecusaDoFatoSoDaIsencao(configuracao, fato, membroPorAgregado);
     }
 
     private static DomainError? RecusaDoFatoConhecidoDepoisDaInscricao(FaseEfetivaDoFato.FaseEfetiva efetiva, FaseCronograma faseDaInscricao, string fato) =>
@@ -100,8 +100,8 @@ public static class RegrasDosFatos
                 $"O fato '{fato}', que decide quem recebe o acréscimo, só é conhecido na fase '{fase.Codigo}', depois da inscrição.")
             : null;
 
-    private static DomainError? RecusaDoFatoSoDaIsencao(EstadoDaConfiguracao estado, string fato, IReadOnlyDictionary<string, string> membroPorAgregado) =>
-        FaseEfetivaDoFato.DependeDeFatoSoDaIsencao(estado, fato, membroPorAgregado, [])
+    private static DomainError? RecusaDoFatoSoDaIsencao(ConfiguracaoDeclarada configuracao, string fato, IReadOnlyDictionary<string, string> membroPorAgregado) =>
+        FaseEfetivaDoFato.DependeDeFatoSoDaIsencao(configuracao, fato, membroPorAgregado, [])
             ? new DomainError(
                 ProcessoSeletivoErrorCodes.FatoElegibilidadeDaIsencao,
                 $"O fato '{fato}', que decide quem recebe o acréscimo, depende do que só o formulário de isenção coleta.")

@@ -31,14 +31,8 @@ public sealed class DocumentoAPublicarConfiguration : IEntityTypeConfiguration<D
         builder.Ignore(d => d.Extensao);
         builder.Ignore(d => d.TipoDeMidia);
 
-        // Vínculo por FK ao processo (não é entidade filha do agregado — sem
-        // navegação inversa em ProcessoSeletivo, ver comentário da entidade).
-        builder.HasOne<ProcessoSeletivo>()
-            .WithMany()
-            .HasForeignKey(d => d.ProcessoSeletivoId)
-            .HasConstraintName("fk_documentos_a_publicar_processo_seletivo")
-            .OnDelete(DeleteBehavior.Cascade);
-
+        // Sem chave estrangeira: antes da primeira publicação o dono é o rascunho, que não é a linha do processo. A
+        // integridade com o dono é coordenada pelo bloqueio do rascunho (ver comentário da entidade).
         // Índice composto na ordem exata em que a leitura dos documentos de um
         // processo pede as linhas: filtra por processo e já entrega o resultado
         // ordenado, sem passo de sort. As colunas de ordenação são descendentes

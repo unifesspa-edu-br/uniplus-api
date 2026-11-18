@@ -102,17 +102,17 @@ internal static class SerializacaoDoEdital
         {
             ["origemId"] = processo.UnidadeAdministradoraOrigemId,
             ["sigla"] = HashCanonicalComputer.NormalizeNfc(processo.UnidadeAdministradora.Sigla),
+            ["codigo"] = HashCanonicalComputer.NormalizeNfc(processo.UnidadeAdministradora.Codigo),
             ["slug"] = HashCanonicalComputer.NormalizeNfc(processo.UnidadeAdministradora.Slug),
             ["nome"] = HashCanonicalComputer.NormalizeNfc(processo.UnidadeAdministradora.Nome),
             ["tipo"] = HashCanonicalComputer.NormalizeNfc(processo.UnidadeAdministradora.Tipo),
-            ["cidadeCodigoIbge"] = processo.UnidadeAdministradora.CidadeCodigoIbge is { } codigoIbge
-                ? HashCanonicalComputer.NormalizeNfc(codigoIbge) : null,
-            ["cidadeNome"] = processo.UnidadeAdministradora.CidadeNome is { } cidadeNome
-                ? HashCanonicalComputer.NormalizeNfc(cidadeNome) : null,
-            ["cidadeUf"] = processo.UnidadeAdministradora.CidadeUf is { } cidadeUf
-                ? HashCanonicalComputer.NormalizeNfc(cidadeUf) : null,
+            ["cidadeCodigoIbge"] = TextoCanonicoOpcional(processo.UnidadeAdministradora.CidadeCodigoIbge),
+            ["cidadeNome"] = TextoCanonicoOpcional(processo.UnidadeAdministradora.CidadeNome),
+            ["cidadeUf"] = TextoCanonicoOpcional(processo.UnidadeAdministradora.CidadeUf),
         },
     };
+
+    private static string? TextoCanonicoOpcional(string? texto) => texto is null ? null : HashCanonicalComputer.NormalizeNfc(texto);
 
     internal static JsonObject SerializarHashesEdital(DadosEdital dados, string hashEdital) => new()
     {

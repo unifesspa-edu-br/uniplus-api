@@ -16,128 +16,97 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// <summary>
 /// Handler do <see cref="DefinirDistribuicaoVagasCommand"/> (Story #773):
 /// resolve cada oferta e regra de distribuição nos cadastros vivos do módulo
-/// Configuração (<see cref="IOfertaCursoReader"/>/<see cref="IModalidadeReader"/>/
-/// <see cref="IReferenciaReservaDemograficaReader"/>, ADR-0056) e no catálogo
-/// <c>regras_do_catalogo</c> (<see cref="IRegraCatalogoReader"/>, Story #772),
-/// congela cada peça por valor (snapshot-copy, ADR-0061) e monta a
-/// distribuição — as invariantes (PR, referência demográfica, modalidades
+/// Configuração e no catálogo <c>regras_do_catalogo</c> (<see cref="ConfiguracaoDistribuicaoVagasResolver"/>,
+/// ADR-0056), congela cada peça por valor (snapshot-copy, ADR-0061) e monta a
+/// distribuição — as invariantes (percentual da reserva legal, referência demográfica, modalidades
 /// federais, coerência de cada modalidade) são garantidas pelas factories do
 /// domínio.
 /// </summary>
 public static class DefinirDistribuicaoVagasCommandHandler
 {
-    public static async Task<Result<MutacaoComDistribuicaoVagasDto>> Handle(
-        DefinirDistribuicaoVagasCommand command,
-        IProcessoSeletivoRepository processoSeletivoRepository,
-        IRegraCatalogoReader regraCatalogoReader,
-        IOfertaCursoReader ofertaCursoReader,
-        IModalidadeReader modalidadeReader,
-        IReferenciaReservaDemograficaReader referenciaReservaDemograficaReader,
-        IFatoCandidatoReader fatoCandidatoReader,
-        IUnitOfWork unitOfWork,
-        CancellationToken cancellationToken)
+    public static async Task<Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>> Handle(
+        DefinirDistribuicaoVagasCommand command, IProcessoSeletivoRepository processoSeletivoRepository, ConfiguracaoDistribuicaoVagasResolver resolvedor,
+        IFatoCandidatoReader fatoCandidatoReader, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
-        ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
-        ArgumentNullException.ThrowIfNull(regraCatalogoReader);
-        ArgumentNullException.ThrowIfNull(ofertaCursoReader);
-        ArgumentNullException.ThrowIfNull(modalidadeReader);
-        ArgumentNullException.ThrowIfNull(referenciaReservaDemograficaReader);
-        ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
+
+        Result<ProcessoSeletivo> definido = await DefinirNoProcessoAsync(
+            command, processoSeletivoRepository, resolvedor, fatoCandidatoReader, cancellationToken).ConfigureAwait(false);
+        return definido.IsFailure
+            ? Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>.ValidationFailure(definido.Errors)
+            : await PersistirAsync(definido.Value!, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
+
+    // Agregado tracked (ObterParaMutacaoAsync): a nova coleção e suas filhas (Guid v7 já preenchido) são persistidas
+    // por change detection. NÃO chamar DbSet.Update — marcaria os filhos novos como Modified, emitindo UPDATE de
+    // linhas nunca inseridas.
+    private static async Task<Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>> PersistirAsync(
+        ProcessoSeletivo processo, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
+        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        return Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>.Success(Persistida(processo));
+    }
+
+    private static async Task<Result<ProcessoSeletivo>> DefinirNoProcessoAsync(
+        DefinirDistribuicaoVagasCommand command,
+        IProcessoSeletivoRepository processoSeletivoRepository,
+        ConfiguracaoDistribuicaoVagasResolver resolvedor,
+        IFatoCandidatoReader fatoCandidatoReader,
+        CancellationToken cancellationToken)
+    {
+        Result<ProcessoSeletivo> processo = await CarregarParaMutacaoAsync(command, processoSeletivoRepository, cancellationToken).ConfigureAwait(false);
+        if (processo.IsFailure)
+        {
+            return processo;
+        }
+
+        ArgumentNullException.ThrowIfNull(resolvedor);
+
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagas>> resolvidas = await resolvedor
+            .ResolverTodasAsync(command.DistribuicaoVagas, cancellationToken).ConfigureAwait(false);
+        return resolvidas.IsFailure
+            ? Result<ProcessoSeletivo>.ValidationFailure(resolvidas.Errors)
+            : await DefinirAsync(command, processo.Value!, resolvidas.Value!, fatoCandidatoReader, cancellationToken).ConfigureAwait(false);
+    }
+
+    // Fora do rascunho a recusa vem antes de consultar cadastros.
+    private static async Task<Result<ProcessoSeletivo>> CarregarParaMutacaoAsync(
+        DefinirDistribuicaoVagasCommand command, IProcessoSeletivoRepository processoSeletivoRepository, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
+
         ProcessoSeletivo? processo = await processoSeletivoRepository
-            .ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
-        if (processo is null)
-        {
-            return Result<MutacaoComDistribuicaoVagasDto>.Failure(new DomainError(
-                "ProcessoSeletivo.NaoEncontrado",
-                $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
-        }
+            .ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
+        return processo is null
+            ? Result<ProcessoSeletivo>.Failure(new DomainError(
+                "ProcessoSeletivo.NaoEncontrado", $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."))
+            : processo.MutacaoBloqueada() is { } bloqueio
+                ? Result<ProcessoSeletivo>.Failure(bloqueio)
+                : Result<ProcessoSeletivo>.Success(processo);
+    }
 
-        // A precondição é conferida AQUI, logo depois do 404 e antes das regras de negócio
-        // que este handler avalia (existência de cadastros, coerência de referências): ela
-        // as precede na ordem da ADR-0110 D9. Um cliente com If-Match defasado tem de saber
-        // disso antes de sair caçando um cadastro que ele não errou.
-        //
-        // O que ela NÃO precede é a validação de SCHEMA do payload: o FluentValidation roda
-        // como middleware do Wolverine, antes deste handler, e um command malformado morre
-        // ali com 422 sem que o guard chegue a rodar. É desvio consciente da D9 — corrigi-lo
-        // exigiria carregar o agregado no middleware, o que é pior. O custo é uma rodada
-        // extra para quem erra as DUAS coisas ao mesmo tempo; nenhum estado é corrompido.
-        //
-        // O mesmo guard continua dentro do Definir* do domínio: esta antecipação dá a ordem,
-        // não a garantia.
-        if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
-        {
-            return Result<MutacaoComDistribuicaoVagasDto>.Failure(bloqueio);
-        }
+    // Uma modalidade retirada da oferta não pode deixar sem valor válido a condição viva sobre qualquer fato cujos
+    // valores são modalidades — a fonte vem do catálogo, não do código.
+    private static async Task<Result<ProcessoSeletivo>> DefinirAsync(
+        DefinirDistribuicaoVagasCommand command,
+        ProcessoSeletivo processo,
+        IReadOnlyList<ConfiguracaoDistribuicaoVagas> distribuicoes,
+        IFatoCandidatoReader fatoCandidatoReader,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
 
-        // Acumula (ADR-0125) a forma de VoBase/PR de TODAS as distribuições do payload —
-        // as únicas checagens de ConfiguracaoDistribuicaoVagas.Criar que não dependem de
-        // nenhum cadastro cross-módulo nem do catálogo de regras. Roda antes de qualquer
-        // I/O (validação vence I/O dentro do bucket 422, PR #1211).
-        List<FieldError> formaErros = [];
-        for (int indice = 0; indice < command.DistribuicaoVagas.Count; indice++)
-        {
-            ConfiguracaoDistribuicaoVagasInput itemForma = command.DistribuicaoVagas[indice];
-            formaErros.AddRange(ConfiguracaoDistribuicaoVagas
-                .ValidarFormaBasica(itemForma.VoBase, itemForma.Pr, itemForma.ModalidadeIds.Count)
-                .Select(erro => erro.Field is null ? erro : erro with { Field = $"distribuicaoVagas[{indice}].{ConfiguracaoDistribuicaoVagasResolver.TraduzirFieldDoDominio(erro.Field)}" }));
-        }
-
-        if (formaErros.Count > 0)
-        {
-            return Result<MutacaoComDistribuicaoVagasDto>.ValidationFailure(formaErros);
-        }
-
-        List<ConfiguracaoDistribuicaoVagas> distribuicoes = [];
-        for (int indice = 0; indice < command.DistribuicaoVagas.Count; indice++)
-        {
-            Result<ConfiguracaoDistribuicaoVagas> resultado = await ConfiguracaoDistribuicaoVagasResolver.ResolverDistribuicaoAsync(
-                command.DistribuicaoVagas[indice],
-                regraCatalogoReader,
-                ofertaCursoReader,
-                modalidadeReader,
-                referenciaReservaDemograficaReader,
-                cancellationToken).ConfigureAwait(false);
-
-            if (resultado.IsFailure)
-            {
-                IReadOnlyList<FieldError> errosComIndice = [.. resultado.Errors
-                    .Select(erro => erro.Field is null ? erro : erro with { Field = $"distribuicaoVagas[{indice}].{ConfiguracaoDistribuicaoVagasResolver.TraduzirFieldDoDominio(erro.Field)}" })];
-                return Result<MutacaoComDistribuicaoVagasDto>.ValidationFailure(errosComIndice);
-            }
-
-            distribuicoes.Add(resultado.Value!);
-        }
-
-        // Uma modalidade retirada da oferta não pode deixar sem valor válido a condição viva sobre
-        // qualquer fato cujos valores são modalidades — a fonte vem do catálogo, não do código.
         FatosDeModalidade fatosDeModalidade = VocabularioDeFatos.ComValoresDeModalidade(
             await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false));
-
-        Result result = processo.DefinirDistribuicaoVagas(distribuicoes, fatosDeModalidade, command.Precondicao);
-        if (result.IsFailure)
-        {
-            return Result<MutacaoComDistribuicaoVagasDto>.Failure(result.Error!);
-        }
-
-        // Agregado tracked (ObterParaMutacaoAsync): a nova coleção e suas
-        // filhas (Guid v7 já preenchido) são persistidas por change detection.
-        // NÃO chamar DbSet.Update — marcaria os filhos novos como Modified,
-        // emitindo UPDATE de linhas nunca inseridas.
-        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-
-        // Reprojeta do agregado (não da lista local `distribuicoes`): DefinirDistribuicaoVagas
-        // substitui a coleção inteira, então processo.DistribuicaoVagas já reflete exatamente
-        // o que foi persistido — mesma projeção do GET (ProjecaoDoProcessoSeletivo),
-        // para o corpo da resposta nunca divergir do que um GET mostraria em seguida.
-        IReadOnlyList<ConfiguracaoDistribuicaoVagasDto> distribuicaoPersistida =
-            [.. processo.DistribuicaoVagas.Select(ProjecaoDasVagas.ProjetarDistribuicao)];
-
-        return Result<MutacaoComDistribuicaoVagasDto>.Success(
-            new MutacaoComDistribuicaoVagasDto(processo.ETagDaSessaoEditorial, distribuicaoPersistida));
+        Result definido = processo.DefinirDistribuicaoVagas(distribuicoes, fatosDeModalidade);
+        return definido.IsFailure ? Result<ProcessoSeletivo>.Failure(definido.Error!) : Result<ProcessoSeletivo>.Success(processo);
     }
+
+    // Reprojeta do agregado (não da lista local): DefinirDistribuicaoVagas substitui a coleção inteira, então
+    // processo.DistribuicaoVagas já reflete exatamente o que foi persistido — mesma projeção do GET, para o corpo
+    // da resposta nunca divergir do que um GET mostraria em seguida.
+    private static IReadOnlyList<ConfiguracaoDistribuicaoVagasDto> Persistida(ProcessoSeletivo processo) =>
+        [.. processo.DistribuicaoVagas.Select(ProjecaoDasVagas.ProjetarDistribuicao)];
 }

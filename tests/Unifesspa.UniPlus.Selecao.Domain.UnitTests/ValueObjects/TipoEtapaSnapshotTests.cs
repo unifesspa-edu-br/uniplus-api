@@ -170,7 +170,7 @@ public sealed class TipoEtapaSnapshotTests
         TipoEtapaSnapshot congelado = TipoEtapaSnapshot.Criar(
             OrigemId, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: false, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
 
-        TipoEtapaSnapshot relido = congelado.ComSinalizadores(admitePontuacao: true, admiteEliminacao: false);
+        TipoEtapaSnapshot relido = congelado.ComSinalizadores(admitePontuacao: true, admiteEliminacao: false, exigeCorrecaoIndependente: false);
 
         relido.Should().NotBeSameAs(congelado, "o snapshot é owned type: cada etapa precisa da própria instância");
         relido.OrigemId.Should().Be(congelado.OrigemId);
@@ -186,7 +186,7 @@ public sealed class TipoEtapaSnapshotTests
         TipoEtapaSnapshot congelado = TipoEtapaSnapshot.Criar(
             OrigemId, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
 
-        Action refrescar = () => congelado.ComSinalizadores(admitePontuacao: false, admiteEliminacao: false);
+        Action refrescar = () => congelado.ComSinalizadores(admitePontuacao: false, admiteEliminacao: false, exigeCorrecaoIndependente: false);
 
         refrescar.Should().Throw<ArgumentException>();
     }
@@ -218,7 +218,7 @@ public sealed class TipoEtapaSnapshotTests
         TipoEtapaSnapshot congelado = TipoEtapaSnapshot.Criar(
             OrigemId, "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!;
 
-        TipoEtapaSnapshot relido = congelado.ComSinalizadores(admitePontuacao: true, admiteEliminacao: false);
+        TipoEtapaSnapshot relido = congelado.ComSinalizadores(admitePontuacao: true, admiteEliminacao: false, exigeCorrecaoIndependente: false);
 
         relido.NotaDeOrigemNoEnem.Should().BeTrue();
     }
@@ -229,7 +229,52 @@ public sealed class TipoEtapaSnapshotTests
         TipoEtapaSnapshot congelado = TipoEtapaSnapshot.Criar(
             OrigemId, "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!;
 
-        Action refrescar = () => congelado.ComSinalizadores(admitePontuacao: false, admiteEliminacao: true);
+        Action refrescar = () => congelado.ComSinalizadores(admitePontuacao: false, admiteEliminacao: true, exigeCorrecaoIndependente: false);
+
+        refrescar.Should().Throw<ArgumentException>();
+    }
+
+    [Fact(DisplayName = "Criar congela o sinalizador de correção independente, e sem ele declarado o tipo não a exige")]
+    public void Criar_CongelaACorrecaoIndependente()
+    {
+        TipoEtapaSnapshot exige = TipoEtapaSnapshot.Criar(
+            OrigemId, "REDACAO", "Redação", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false, exigeCorrecaoIndependente: true).Value!;
+        TipoEtapaSnapshot semDeclarar = TipoEtapaSnapshot.Criar(
+            OrigemId, "REDACAO", "Redação", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
+
+        exige.ExigeCorrecaoIndependente.Should().BeTrue();
+        semDeclarar.ExigeCorrecaoIndependente.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "Criar com nota de origem no ENEM e correção independente falha: a nota vem do INEP e ninguém a corrige")]
+    public void Criar_NotaDeOrigemNoEnemComCorrecaoIndependente_Falha()
+    {
+        Result<TipoEtapaSnapshot> resultado = TipoEtapaSnapshot.Criar(
+            OrigemId, "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true, exigeCorrecaoIndependente: true);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("TipoEtapaSnapshot.CorrecaoIndependenteComNotaDeOrigemNoEnem");
+    }
+
+    [Fact(DisplayName = "ComSinalizadores relê a correção independente do cadastro e mantém a identidade")]
+    public void ComSinalizadores_ReleACorrecaoIndependente()
+    {
+        TipoEtapaSnapshot congelado = TipoEtapaSnapshot.Criar(
+            OrigemId, "REDACAO", "Redação", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
+
+        TipoEtapaSnapshot relido = congelado.ComSinalizadores(admitePontuacao: true, admiteEliminacao: true, exigeCorrecaoIndependente: true);
+
+        relido.ExigeCorrecaoIndependente.Should().BeTrue();
+        relido.Codigo.Should().Be(congelado.Codigo);
+    }
+
+    [Fact(DisplayName = "ComSinalizadores que exige correção independente num tipo com nota do ENEM lança, porque o cadastro nunca o traz")]
+    public void ComSinalizadores_CorrecaoIndependenteComNotaDeOrigemNoEnem_Lanca()
+    {
+        TipoEtapaSnapshot congelado = TipoEtapaSnapshot.Criar(
+            OrigemId, "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!;
+
+        Action refrescar = () => congelado.ComSinalizadores(admitePontuacao: true, admiteEliminacao: true, exigeCorrecaoIndependente: true);
 
         refrescar.Should().Throw<ArgumentException>();
     }

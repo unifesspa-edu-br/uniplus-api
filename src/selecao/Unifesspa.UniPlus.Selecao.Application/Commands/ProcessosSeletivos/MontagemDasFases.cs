@@ -19,7 +19,8 @@ public sealed class MontagemDasFases(
     IResolvedorDaUnidadeResponsavel unidadeResponsavelResolvedor,
     ITipoBancaReader tipoBancaReader,
     ICategoriaDocumentoReader categoriaDocumentoReader,
-    IRegraCatalogoReader regraCatalogoReader)
+    IRegraCatalogoReader regraCatalogoReader,
+    IFatoCandidatoReader fatoCandidatoReader)
 {
     internal Task<Result<List<FaseCronograma>>> MontarAsync(
         ProcessoSeletivo processo,
@@ -28,7 +29,7 @@ public sealed class MontagemDasFases(
         CancellationToken cancellationToken)
     {
         CadastrosDasFases cadastros = new(
-            faseCanonicaReader, unidadeResponsavelResolvedor, tipoBancaReader, categoriaDocumentoReader, regraCatalogoReader);
+            faseCanonicaReader, unidadeResponsavelResolvedor, tipoBancaReader, categoriaDocumentoReader, regraCatalogoReader, fatoCandidatoReader);
         return new FasesEmMontagem(processo, cadastros, atos).MontarAsync(fases, cancellationToken);
     }
 }

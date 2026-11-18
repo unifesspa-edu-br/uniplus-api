@@ -16,6 +16,8 @@ public sealed record TermoExigidoDto(
     int Ordem,
     Guid TermoId,
     Guid VersaoId,
+    string TermoCodigo,
+    int VersaoNumero,
     string Nome,
     string Texto,
     string BaseLegal,

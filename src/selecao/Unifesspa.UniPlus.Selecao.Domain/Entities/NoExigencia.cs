@@ -560,21 +560,6 @@ public sealed class NoExigencia : EntityBase, IParteDoProcesso
 
     internal void VincularPai(Guid noPaiId) => NoPaiId = noPaiId;
 
-    /// <summary>
-    /// Corrige a navegação de uma FOLHA para o <see cref="DocumentoExigido"/> final, após a
-    /// reconciliação por Id em <see cref="ProcessoSeletivo.RestaurarConfiguracaoCongelada"/>
-    /// (Story #923) escolher a instância VIVA (tracked) no lugar da congelada — mesmo
-    /// espírito de <see cref="DocumentoExigido.RemapearFase"/>. <see cref="DocumentoExigidoId"/>
-    /// não muda (é o mesmo Id nos dois lados); só a referência de objeto é substituída, para
-    /// que <see cref="DocumentoExigido"/> nunca aponte para uma instância descartada pela
-    /// reconciliação de <see cref="DocumentoExigido"/>.
-    /// </summary>
-    internal void RemapearDocumentoExigido(DocumentoExigido documentoExigido)
-    {
-        ArgumentNullException.ThrowIfNull(documentoExigido);
-        DocumentoExigido = documentoExigido;
-    }
-
     /// <summary>Achata esta subárvore (este nó + todos os descendentes) — usado para popular a coleção plana de EF do agregado.</summary>
     public IEnumerable<NoExigencia> AchatarComDescendentes()
     {

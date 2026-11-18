@@ -23,8 +23,8 @@ podem ser citados**, **de que domínio** cada um é (categórico, booleano,
 numérico) e **quais valores** cada um aceita.
 
 O sintoma já está no código, não é hipotético. A regra de desempate
-`DESEMPATE-PREDICADO-FATO` (semeada em `regras_do_catalogo`) tipa seus argumentos em
-`ArgsDesempatePredicadoFato(string Fato, string Operador, string Valor)`, e o
+`DESEMPATE-PREDICADO-FATO` (semeada em `regras_do_catalogo`) tipa seus parâmetros em
+`ParametrosDesempatePredicadoFato(string Fato, string Operador, string Valor)`, e o
 próprio XML-doc dessa classe registra que o campo `Fato` é tipado como `string`
 mas **não é validado contra vocabulário nenhum**, porque o catálogo ainda não
 existe. Um administrador pode configurar um desempate com `Fato = "qualquercoisa"`
@@ -142,14 +142,14 @@ em `RENDA_PER_CAPITA`.
 
 **O operador `EM` e o consumidor de desempate.** O consumidor
 `DESEMPATE-PREDICADO-FATO` guarda hoje o valor do predicado como string única
-(`ArgsDesempatePredicadoFato.Valor`), que o envelope canônico serializa como
+(`ParametrosDesempatePredicadoFato.Valor`), que o envelope canônico serializa como
 escalar — forma incapaz de representar a lista de `EM`. Tornar `EM` utilizável
 nesse consumidor **depende da migração desse valor para tipo/lista**, escopo da
 story do validador de predicado (a mesma que fecha o gap de validação de `Fato`
 contra este vocabulário). Enquanto essa migração não ocorrer, o desempate só
 representa `IGUAL`; os consumidores novos (gatilho de documentos, condição de
 formulário) nascem já com o valor tipado e representam `EM` desde o início. A
-matriz acima é o contrato do vocabulário; a migração do `args` do desempate é a
+matriz acima é o contrato do vocabulário; a migração dos `parametros` do desempate é a
 condição para que o desempate a honre por inteiro.
 
 ### Cardinalidade e átomo canônico do predicado
@@ -167,7 +167,7 @@ arbitrária do conjunto a um escalar.
 Todos os consumidores usam o mesmo átomo tipado `{ Fato, Operador, Valor }`:
 `Valor` é escalar para `IGUAL`, `MAIOR_IGUAL` e `MENOR_IGUAL`, e lista tipada
 para `EM`. O contrato legado
-`ArgsDesempatePredicadoFato(string Fato, string Operador, string Valor)` não
+`ParametrosDesempatePredicadoFato(string Fato, string Operador, string Valor)` não
 representa `EM`; a story do validador deve migrá-lo, junto com o codec do
 envelope, para esse valor tipado antes de habilitar `EM` no desempate. Até essa
 migração, um consumidor que só aceite string não pode configurar `EM`.

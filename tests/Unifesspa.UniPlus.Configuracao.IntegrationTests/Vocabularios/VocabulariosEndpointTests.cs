@@ -81,6 +81,26 @@ public sealed class VocabulariosEndpointTests
         codigos.Should().AllSatisfy(c => c.Nome.Should().NotBeNullOrWhiteSpace());
     }
 
+    private static readonly string[] CodigosDeFaseNaOrdemPublicada =
+    [
+        "INSCRICAO",
+        "SOLICITACAO_ISENCAO",
+        "HOMOLOGACAO_INSCRICOES",
+        "ENSALAMENTO",
+        "AVALIACAO",
+        "CLASSIFICACAO",
+        "RESULTADO_PRELIMINAR",
+        "RECURSOS",
+        "RESULTADO_FINAL",
+        "HABILITACAO",
+        "HETEROIDENTIFICACAO",
+        "AVALIACAO_BIOPSICOSSOCIAL",
+        "MATRICULA",
+        "HOMOLOGACAO_RESULTADO_FINAL",
+        "LISTA_ESPERA",
+        "CHAMADA",
+    ];
+
     [Fact(DisplayName = "GET /vocabularios/fases-canonicas devolve os dezesseis códigos com nome, na ordem publicada, sem exigir autenticação")]
     public async Task ListarCodigosFaseCanonica_DevolveVocabularioCompleto()
     {
@@ -96,23 +116,7 @@ public sealed class VocabulariosEndpointTests
         FaseCanonicaVocabularioDto[] codigos =
             (await response.Content.ReadFromJsonAsync<FaseCanonicaVocabularioDto[]>())!;
 
-        codigos.Select(c => c.Codigo).Should().Equal(
-            "INSCRICAO",
-            "SOLICITACAO_ISENCAO",
-            "HOMOLOGACAO",
-            "ENSALAMENTO",
-            "AVALIACAO",
-            "CLASSIFICACAO",
-            "RESULTADO_PRELIMINAR",
-            "RECURSOS",
-            "RESULTADO_FINAL",
-            "HABILITACAO",
-            "HETEROIDENTIFICACAO",
-            "AVALIACAO_BIOPSICOSSOCIAL",
-            "MATRICULA",
-            "HOMOLOGACAO_RESULTADO_FINAL",
-            "LISTA_ESPERA",
-            "CHAMADA");
+        codigos.Select(c => c.Codigo).Should().Equal(CodigosDeFaseNaOrdemPublicada);
         codigos.Should().AllSatisfy(c => c.Nome.Should().NotBeNullOrWhiteSpace());
     }
 

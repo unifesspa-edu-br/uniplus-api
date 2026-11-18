@@ -93,7 +93,7 @@ public sealed class ConstraintsDosDestinosDaCascataTests
             CenarioDeCascataPersistida.Regra(RegraRemanejamentoCodigo.Cascata, "5"),
             "AC",
             [DestinoRemanejamento.Criar("LI_EP", 1, "AC").Value!]).Value!;
-        processo.DefinirCascataRemanejamento(cascata, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCascataRemanejamento(cascata).IsSuccess.Should().BeTrue();
 
         await _cenario.PersistirAsync(processo);
 

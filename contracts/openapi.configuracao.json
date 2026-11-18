@@ -15884,6 +15884,7 @@
       "AtualizarOfertaCursoCommand": {
         "required": [
           "id",
+          "codigo",
           "programaDeOferta",
           "regimeDeFuncionamento",
           "regimeDeTurno",
@@ -15894,6 +15895,12 @@
           "id": {
             "type": "string",
             "format": "uuid"
+          },
+          "codigo": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "programaDeOferta": {
             "type": [
@@ -16284,6 +16291,7 @@
           "nome",
           "admitePontuacao",
           "admiteEliminacao",
+          "exigeCorrecaoIndependente",
           "conceitosAdmitidos"
         ],
         "type": "object",
@@ -16305,6 +16313,12 @@
             ]
           },
           "admiteEliminacao": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "exigeCorrecaoIndependente": {
             "type": [
               "null",
               "boolean"
@@ -16448,6 +16462,7 @@
       "BaseLegalBonusRegionalDto": {
         "required": [
           "id",
+          "codigo",
           "tipoInstrumento",
           "identificacao",
           "descricao",
@@ -16459,6 +16474,9 @@
           "id": {
             "type": "string",
             "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
           },
           "tipoInstrumento": {
             "type": "string"
@@ -17767,6 +17785,7 @@
           "cursoId",
           "localOfertaId",
           "unidadeOfertanteOrigemId",
+          "codigo",
           "programaDeOferta",
           "regimeDeFuncionamento",
           "regimeDeTurno",
@@ -17785,6 +17804,12 @@
           "unidadeOfertanteOrigemId": {
             "type": "string",
             "format": "uuid"
+          },
+          "codigo": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "programaDeOferta": {
             "type": [
@@ -18212,6 +18237,7 @@
           "nome",
           "admitePontuacao",
           "admiteEliminacao",
+          "exigeCorrecaoIndependente",
           "conceitosAdmitidos"
         ],
         "type": "object",
@@ -18235,6 +18261,12 @@
             ]
           },
           "admiteEliminacao": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "exigeCorrecaoIndependente": {
             "type": [
               "null",
               "boolean"
@@ -19373,6 +19405,8 @@
           "descricao",
           "agrupaEtapas",
           "permiteComplementacao",
+          "admiteAgruparEtapas",
+          "admiteComplementacao",
           "baseLegal",
           "coletaInscricao",
           "coletaSolicitacaoIsencao",
@@ -19402,6 +19436,12 @@
             "type": "boolean"
           },
           "permiteComplementacao": {
+            "type": "boolean"
+          },
+          "admiteAgruparEtapas": {
+            "type": "boolean"
+          },
+          "admiteComplementacao": {
             "type": "boolean"
           },
           "baseLegal": {
@@ -20813,6 +20853,7 @@
       "OfertaCursoDto": {
         "required": [
           "id",
+          "codigo",
           "cursoId",
           "localOfertaId",
           "unidadeOfertante",
@@ -20833,6 +20874,9 @@
           "id": {
             "type": "string",
             "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
           },
           "cursoId": {
             "type": "string",
@@ -21768,6 +21812,7 @@
       "TermoConsentimentoDto": {
         "required": [
           "id",
+          "codigo",
           "nome",
           "textoRascunho",
           "baseLegalRascunho",
@@ -21782,6 +21827,9 @@
           "id": {
             "type": "string",
             "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
           },
           "nome": {
             "type": "string"
@@ -21835,6 +21883,7 @@
       "TermoConsentimentoResumoDto": {
         "required": [
           "id",
+          "codigo",
           "nome",
           "formaAceiteRascunho",
           "revisado",
@@ -21845,6 +21894,9 @@
           "id": {
             "type": "string",
             "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
           },
           "nome": {
             "type": "string"
@@ -21873,6 +21925,7 @@
       "TermoConsentimentoVersaoDto": {
         "required": [
           "id",
+          "numero",
           "texto",
           "baseLegal",
           "formaAceite",
@@ -21884,6 +21937,10 @@
           "id": {
             "type": "string",
             "format": "uuid"
+          },
+          "numero": {
+            "type": "integer",
+            "format": "int32"
           },
           "texto": {
             "type": "string"
@@ -22335,6 +22392,7 @@
           "admitePontuacao",
           "admiteEliminacao",
           "notaDeOrigemNoEnem",
+          "exigeCorrecaoIndependente",
           "conceitosAdmitidos",
           "criadoEm"
         ],
@@ -22366,6 +22424,9 @@
             "type": "boolean"
           },
           "notaDeOrigemNoEnem": {
+            "type": "boolean"
+          },
+          "exigeCorrecaoIndependente": {
             "type": "boolean"
           },
           "conceitosAdmitidos": {

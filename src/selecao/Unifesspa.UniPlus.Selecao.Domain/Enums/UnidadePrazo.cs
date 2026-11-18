@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// Unidade de um prazo do recurso — interposição ou suspensividade
-/// (<see cref="ValueObjects.ArgsRegraPrazoRecurso"/>, Story #851 §3.6).
+/// (<see cref="ValueObjects.ParametrosRegraPrazoRecurso"/>, Story #851 §3.6).
 /// </summary>
 /// <remarks>
 /// <para>

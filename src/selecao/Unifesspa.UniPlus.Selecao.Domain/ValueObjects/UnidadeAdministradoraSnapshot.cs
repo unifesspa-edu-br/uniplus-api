@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using System.Runtime.CompilerServices;
 
-using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -29,45 +28,45 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </remarks>
 public sealed record UnidadeAdministradoraSnapshot
 {
-    private UnidadeAdministradoraSnapshot(
-        string sigla, string slug, string nome, string tipo,
-        string? cidadeCodigoIbge, string? cidadeNome, string? cidadeUf)
+    private UnidadeAdministradoraSnapshot() { }
+
+    private UnidadeAdministradoraSnapshot(string sigla, string codigo, string slug, string nome, string tipo, CidadeCopiadaDaUnidade cidade)
     {
         Sigla = sigla;
+        Codigo = codigo;
         Slug = slug;
         Nome = nome;
         Tipo = tipo;
-        CidadeCodigoIbge = cidadeCodigoIbge;
-        CidadeNome = cidadeNome;
-        CidadeUf = cidadeUf;
+        CidadeCodigoIbge = cidade.CodigoIbge;
+        CidadeNome = cidade.Nome;
+        CidadeUf = cidade.Uf;
     }
 
-    public string Sigla { get; }
-    public string Slug { get; }
-    public string Nome { get; }
-    public string Tipo { get; }
-    public string? CidadeCodigoIbge { get; }
-    public string? CidadeNome { get; }
-    public string? CidadeUf { get; }
+    public string Sigla { get; private set; } = string.Empty;
+    public string Codigo { get; private set; } = string.Empty;
+    public string Slug { get; private set; } = string.Empty;
+    public string Nome { get; private set; } = string.Empty;
+    public string Tipo { get; private set; } = string.Empty;
+    public string? CidadeCodigoIbge { get; private set; }
+    public string? CidadeNome { get; private set; }
+    public string? CidadeUf { get; private set; }
 
     /// <summary>
-    /// Sigla, slug, nome e tipo vêm do cadastro vivo da unidade, que já os exige: vazios são defeito de quem chama, não recusa a
-    /// um cliente, e lançam <see cref="ArgumentException"/>. A referência de cidade é a que pode falhar como resultado.
+    /// Sigla, código, slug, nome e tipo vêm do cadastro vivo da unidade, que já os exige: vazios são defeito de quem chama, não recusa
+    /// a um cliente, e lançam <see cref="ArgumentException"/>. A referência de cidade é a que pode falhar como resultado.
     /// </summary>
     public static Result<UnidadeAdministradoraSnapshot> Criar(
-        string sigla, string slug, string nome, string tipo,
-        string? cidadeCodigoIbge = null, string? cidadeNome = null, string? cidadeUf = null)
+        string sigla, string codigo, string slug, string nome, string tipo, CidadeCopiadaDaUnidade? cidade = null)
     {
-        Result cidadeValidacao = ValidarReferenciaCidade(cidadeCodigoIbge, cidadeNome, cidadeUf);
+        CidadeCopiadaDaUnidade informada = cidade ?? CidadeCopiadaDaUnidade.Ausente;
+        Result cidadeValidacao = informada.Validar();
         if (cidadeValidacao.IsFailure)
         {
             return Result<UnidadeAdministradoraSnapshot>.Failure(cidadeValidacao.Error!);
         }
 
-        (string? codigo, string? nomeCidade, string? uf) = NormalizarReferenciaCidade(cidadeCodigoIbge, cidadeNome, cidadeUf);
-
         return Result<UnidadeAdministradoraSnapshot>.Success(new UnidadeAdministradoraSnapshot(
-            Obrigatorio(sigla), Obrigatorio(slug), Obrigatorio(nome), Obrigatorio(tipo), codigo, nomeCidade, uf));
+            Obrigatorio(sigla), Obrigatorio(codigo), Obrigatorio(slug), Obrigatorio(nome), Obrigatorio(tipo), informada.Normalizada()));
     }
 
     private static string Obrigatorio(string? valor, [CallerArgumentExpression(nameof(valor))] string? campo = null)
@@ -75,26 +74,4 @@ public sealed record UnidadeAdministradoraSnapshot
         ArgumentException.ThrowIfNullOrWhiteSpace(valor, campo);
         return valor.Trim();
     }
-
-    /// <summary>
-    /// Referência de cidade opcional all-or-nothing (issue #1114) — mesmo padrão de
-    /// <c>Unidade.ValidarReferenciaCidade</c>/<c>Instituicao</c>.
-    /// </summary>
-    private static Result ValidarReferenciaCidade(string? cidadeCodigoIbge, string? cidadeNome, string? cidadeUf)
-    {
-        bool algumPresente = !string.IsNullOrWhiteSpace(cidadeCodigoIbge)
-            || !string.IsNullOrWhiteSpace(cidadeNome)
-            || !string.IsNullOrWhiteSpace(cidadeUf);
-
-        return algumPresente
-            ? ReferenciaCidadeGeo.Validar(cidadeCodigoIbge, cidadeNome, cidadeUf)
-            : Result.Success();
-    }
-
-    /// <summary>Normaliza o trio já validado por <see cref="ValidarReferenciaCidade"/>: ou os três presentes, ou nenhum.</summary>
-    private static (string? Codigo, string? Nome, string? Uf) NormalizarReferenciaCidade(
-        string? cidadeCodigoIbge, string? cidadeNome, string? cidadeUf) =>
-        string.IsNullOrWhiteSpace(cidadeCodigoIbge)
-            ? (null, null, null)
-            : (cidadeCodigoIbge.Trim(), cidadeNome?.Trim(), cidadeUf?.Trim().ToUpperInvariant());
 }

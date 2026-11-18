@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 /// </summary>
 public static class DefinirLocalidadeCommandHandler
 {
-    public static async Task<Result<MutacaoAceita>> Handle(
+    public static async Task<Result> Handle(
         DefinirLocalidadeCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IUnitOfWork unitOfWork,
@@ -31,19 +31,19 @@ public static class DefinirLocalidadeCommandHandler
             .ConfigureAwait(false);
         if (processo is null)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 "ProcessoSeletivo.NaoEncontrado",
                 $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
         }
 
-        if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
+        if (processo.MutacaoBloqueada() is { } bloqueio)
         {
-            return Result<MutacaoAceita>.Failure(bloqueio);
+            return Result.Failure(bloqueio);
         }
 
         if (command.LocalidadeNaoDeclarada)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 "ProcessoSeletivo.LocalidadeAusente",
                 "A localidade que rege a contagem dos prazos é obrigatória para alterar o processo seletivo."));
         }
@@ -52,17 +52,17 @@ public static class DefinirLocalidadeCommandHandler
             command.CodigoIbge, command.Nome, command.Uf);
         if (localidadeResult.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(localidadeResult.Error!);
+            return Result.Failure(localidadeResult.Error!);
         }
 
-        Result definirResult = processo.DefinirLocalidade(localidadeResult.Value!, command.Precondicao);
+        Result definirResult = processo.DefinirLocalidade(localidadeResult.Value!);
         if (definirResult.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(definirResult.Error!);
+            return Result.Failure(definirResult.Error!);
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
-        return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+        return Result.Success();
     }
 }

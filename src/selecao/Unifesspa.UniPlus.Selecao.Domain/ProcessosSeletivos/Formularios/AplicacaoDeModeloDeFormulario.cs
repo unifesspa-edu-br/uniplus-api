@@ -15,12 +15,12 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 internal static class AplicacaoDeModeloDeFormulario
 {
-    internal static Result<PlanoDaCopiaDoModelo> Planejar(EstadoDaConfiguracao estado, CopiaDeModeloDeFormulario copia)
+    internal static Result<PlanoDaCopiaDoModelo> Planejar(ConfiguracaoDeclarada configuracao, CopiaDeModeloDeFormulario copia)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
         FinalidadeFormulario finalidade = copia.Finalidade;
-        FormularioProcesso? existente = estado.FormularioDe(finalidade);
+        FormularioProcesso? existente = configuracao.Coleta.FormularioDe(finalidade);
         Result<FormularioProcesso> formulario = FormularioProcesso.Criar(
             finalidade, existente?.FaseId, copia.Titulo, copia.Etapas, copia.ModeloId, copia.ModeloCodigo);
         if (formulario.IsFailure)
@@ -30,14 +30,14 @@ internal static class AplicacaoDeModeloDeFormulario
 
         FormularioProcesso novo = formulario.Value!;
         HashSet<string> daCopia = new(copia.Itens.Select(static i => i.FatoCodigo), StringComparer.Ordinal);
-        List<FieldError> erros = [.. ErrosDaCopia(estado, copia, novo, daCopia)];
+        List<FieldError> erros = [.. ErrosDaCopia(configuracao, copia, novo, daCopia)];
         if (erros.Count > 0)
         {
             return Result<PlanoDaCopiaDoModelo>.ValidationFailure(erros);
         }
 
         VincularFinalidadeAosItens(copia);
-        Result<PlanoDaCopiaDoModelo> recusaDoEstadoFinal = ConferirEstadoFinal(estado, copia, novo, existente, daCopia);
+        Result<PlanoDaCopiaDoModelo> recusaDoEstadoFinal = ConferirEstadoFinal(configuracao, copia, novo, existente, daCopia);
         return recusaDoEstadoFinal;
     }
 
@@ -60,14 +60,14 @@ internal static class AplicacaoDeModeloDeFormulario
     }
 
     private static List<FieldError> ErrosDaCopia(
-        EstadoDaConfiguracao estado, CopiaDeModeloDeFormulario copia, FormularioProcesso novo, HashSet<string> daCopia)
+        ConfiguracaoDeclarada configuracao, CopiaDeModeloDeFormulario copia, FormularioProcesso novo, HashSet<string> daCopia)
     {
         FinalidadeFormulario finalidade = copia.Finalidade;
         List<FieldError> erros = [.. FormaDoItem.ValidarQuantidade(CitacoesDosFormularios.QuantidadeNoTeto(copia.Itens.Count, copia.Grupos))];
         erros.AddRange(EstruturaFormulario.ValidarItens(novo.Estrutura, CitacoesDosFormularios.ParaEstrutura(copia.Itens, copia.Grupos), secaoObrigatoria: false));
         if (finalidade != FinalidadeFormulario.Inscricao)
         {
-            erros.AddRange(estado.Itens
+            erros.AddRange(configuracao.Coleta.Itens
                 .Where(f => f.Finalidade != finalidade && daCopia.Contains(f.FatoCodigo))
                 .OrderBy(static f => f.FatoCodigo, StringComparer.Ordinal)
                 .Select(f => new FieldError("itens", new DomainError(
@@ -75,14 +75,14 @@ internal static class AplicacaoDeModeloDeFormulario
                     $"O fato '{f.FatoCodigo}' já é coletado pelo formulário de {EstruturaFormulario.ParaToken(f.Finalidade)}."))));
         }
 
-        erros.AddRange(CodigosDeOutrosFormularios(estado, copia));
+        erros.AddRange(CodigosDeOutrosFormularios(configuracao, copia));
         erros.AddRange(copia.DerivacoesNovas
             .Where(static c => DerivacoesDaOferta.Deriva(c.CodigoFato))
             .Select(static c => new FieldError("derivacoes", DerivacoesDaOferta.RecusaDeConfiguracao(c.CodigoFato))));
 
         // A cópia não repete o que o processo grava. O egresso que a oferta supre pela regra do sistema
         // cede lugar ao que a cópia traz, como cede ao que o operador configura.
-        HashSet<string> derivados = new(estado.RegrasDerivacao.Select(static c => c.CodigoFato), StringComparer.Ordinal);
+        HashSet<string> derivados = new(configuracao.Coleta.RegrasDerivacao.Select(static c => c.CodigoFato), StringComparer.Ordinal);
         erros.AddRange(copia.DerivacoesNovas
             .Where(c => !derivados.Add(c.CodigoFato))
             .Select(static c => new FieldError("derivacoes", new DomainError(
@@ -95,11 +95,11 @@ internal static class AplicacaoDeModeloDeFormulario
     // nem campo de grupo, nem derivação da cópia repete o código de um deles ou de um campo deles. O
     // grupo e o campo de grupo da cópia também não repetem fato de outro formulário: diferente do item,
     // não são trazidos de outra finalidade.
-    private static IEnumerable<FieldError> CodigosDeOutrosFormularios(EstadoDaConfiguracao estado, CopiaDeModeloDeFormulario copia)
+    private static IEnumerable<FieldError> CodigosDeOutrosFormularios(ConfiguracaoDeclarada configuracao, CopiaDeModeloDeFormulario copia)
     {
         FinalidadeFormulario finalidade = copia.Finalidade;
         HashSet<string> dosGruposDeOutros = new(
-            estado.GruposColetados.Where(g => g.Finalidade != finalidade).SelectMany(static g => g.Subitens.Select(static s => s.FatoCodigo).Append(g.Codigo)),
+            configuracao.Coleta.GruposColetados.Where(g => g.Finalidade != finalidade).SelectMany(static g => g.Subitens.Select(static s => s.FatoCodigo).Append(g.Codigo)),
             StringComparer.Ordinal);
         foreach (string codigo in copia.Itens.Select(static i => i.FatoCodigo).Concat(copia.DerivacoesNovas.Select(static c => c.CodigoFato))
             .Where(dosGruposDeOutros.Contains)
@@ -110,7 +110,7 @@ internal static class AplicacaoDeModeloDeFormulario
         }
 
         HashSet<string> deOutros = new(
-            dosGruposDeOutros.Concat(estado.Itens.Where(f => f.Finalidade != finalidade).Select(static f => f.FatoCodigo)), StringComparer.Ordinal);
+            dosGruposDeOutros.Concat(configuracao.Coleta.Itens.Where(f => f.Finalidade != finalidade).Select(static f => f.FatoCodigo)), StringComparer.Ordinal);
         for (int indice = 0; indice < copia.Grupos.Count; indice++)
         {
             GrupoColetado grupo = copia.Grupos[indice];
@@ -126,13 +126,13 @@ internal static class AplicacaoDeModeloDeFormulario
 
     // O estado final: os outros formulários sem o que a cópia trouxe para cá, e a cópia.
     private static Result<PlanoDaCopiaDoModelo> ConferirEstadoFinal(
-        EstadoDaConfiguracao estado, CopiaDeModeloDeFormulario copia, FormularioProcesso novo, FormularioProcesso? existente, HashSet<string> daCopia)
+        ConfiguracaoDeclarada configuracao, CopiaDeModeloDeFormulario copia, FormularioProcesso novo, FormularioProcesso? existente, HashSet<string> daCopia)
     {
         FinalidadeFormulario finalidade = copia.Finalidade;
-        FatoColetado[] itensFinais = [.. estado.Itens.Where(f => f.Finalidade != finalidade && !daCopia.Contains(f.FatoCodigo)), .. copia.Itens];
-        IReadOnlyList<ConfiguracaoDerivacaoFato> derivacoesFinais = DerivacoesDaOferta.Efetivas([.. estado.RegrasDerivacao, .. copia.DerivacoesNovas], estado.DistribuicaoVagas);
-        TermoExigidoFormulario[] termosFinais = [.. estado.TermosExigidos.Where(t => t.Finalidade != finalidade), .. copia.Termos];
-        GrupoColetado[] gruposFinais = [.. estado.GruposColetados.Where(g => g.Finalidade != finalidade), .. copia.Grupos];
+        FatoColetado[] itensFinais = [.. configuracao.Coleta.Itens.Where(f => f.Finalidade != finalidade && !daCopia.Contains(f.FatoCodigo)), .. copia.Itens];
+        IReadOnlyList<ConfiguracaoDerivacaoFato> derivacoesFinais = DerivacoesDaOferta.Efetivas([.. configuracao.Coleta.RegrasDerivacao, .. copia.DerivacoesNovas], configuracao.Vagas.DistribuicaoVagas);
+        TermoExigidoFormulario[] termosFinais = [.. configuracao.Coleta.TermosExigidos.Where(t => t.Finalidade != finalidade), .. copia.Termos];
+        GrupoColetado[] gruposFinais = [.. configuracao.Coleta.GruposColetados.Where(g => g.Finalidade != finalidade), .. copia.Grupos];
         Dictionary<string, IReadOnlyCollection<string>> dependenciasDasDerivacoes = CitacoesDosFormularios.MapaDeDerivacoes(derivacoesFinais);
         HashSet<string> daInscricao = finalidade == FinalidadeFormulario.Inscricao
             ? new(StringComparer.Ordinal)
@@ -162,28 +162,28 @@ internal static class AplicacaoDeModeloDeFormulario
         // recusada, e a que já era inválida fica para a publicação. A cópia fora da inscrição não muda
         // o que os outros formulários conhecem.
         IEnumerable<DomainError> orfasDosOutros = finalidade == FinalidadeFormulario.Inscricao
-            ? CitacoesDosFormularios.CitacoesQueFicariamOrfas(estado, daCopia, outra => [.. itensFinais.Where(f => f.Finalidade == outra)], dependenciasDasDerivacoes)
+            ? CitacoesDosFormularios.CitacoesQueFicariamOrfas(configuracao, daCopia, outra => [.. itensFinais.Where(f => f.Finalidade == outra)], dependenciasDasDerivacoes)
             : [];
         FieldError[] orfas = [.. orfasDosOutros
             .Concat(CitacoesDosFormularios.CitacaoInvalidaNosFormularios([novo], itensFinais, termosFinais, derivacoesFinais, gruposFinais) is { } doNovo ? [doNovo] : [])
-            .Select(static recusa => new FieldError(string.Empty, recusa))];
+            .Select(static recusa => new FieldError(null, recusa))];
         return orfas.Length > 0
             ? Result<PlanoDaCopiaDoModelo>.ValidationFailure(orfas)
-            : Result<PlanoDaCopiaDoModelo>.Success(new PlanoDaCopiaDoModelo(copia, novo, existente, MudancaDaCopia(estado, copia, novo, existente, daCopia)));
+            : Result<PlanoDaCopiaDoModelo>.Success(new PlanoDaCopiaDoModelo(copia, novo, existente, MudancaDaCopia(configuracao, copia, novo, existente, daCopia)));
     }
 
     private static MudancaDaConfiguracao MudancaDaCopia(
-        EstadoDaConfiguracao estado, CopiaDeModeloDeFormulario copia, FormularioProcesso novo, FormularioProcesso? existente, HashSet<string> daCopia)
+        ConfiguracaoDeclarada configuracao, CopiaDeModeloDeFormulario copia, FormularioProcesso novo, FormularioProcesso? existente, HashSet<string> daCopia)
     {
         FinalidadeFormulario finalidade = copia.Finalidade;
         return new MudancaDaConfiguracao
         {
             Formularios = existente is null ? Troca.Acrescentando([novo]) : default,
             Campos = Troca.Substituindo(
-                estado.Campos.Where(f => f.Finalidade == finalidade || (f.GrupoColetadoId is null && daCopia.Contains(f.FatoCodigo))),
+                configuracao.Coleta.Campos.Where(f => f.Finalidade == finalidade || (f.GrupoColetadoId is null && daCopia.Contains(f.FatoCodigo))),
                 [.. copia.Itens, .. copia.Grupos.SelectMany(static g => g.Subitens)]),
-            GruposColetados = Troca.Substituindo(estado.GruposColetados.Where(g => g.Finalidade == finalidade), copia.Grupos),
-            TermosExigidos = Troca.Substituindo(estado.TermosExigidos.Where(t => t.Finalidade == finalidade), copia.Termos),
+            GruposColetados = Troca.Substituindo(configuracao.Coleta.GruposColetados.Where(g => g.Finalidade == finalidade), copia.Grupos),
+            TermosExigidos = Troca.Substituindo(configuracao.Coleta.TermosExigidos.Where(t => t.Finalidade == finalidade), copia.Termos),
             RegrasDerivacao = Troca.Acrescentando(copia.DerivacoesNovas),
         };
     }

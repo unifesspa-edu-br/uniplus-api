@@ -1,14 +1,17 @@
 namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
 
+using System.Text.RegularExpressions;
+
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
 
 /// <summary>
 /// Os quatro identificadores de uma Unidade que têm histórico de vigência, como o
-/// usuário os informou: a validação e a normalização são deste objeto.
+/// usuário os informou: a validação e a normalização são deste objeto. O código da unidade é citado
+/// pelo documento de configuração do processo, e o formato dele é o que esse documento aceita.
 /// </summary>
-public readonly record struct IdentificadoresDaUnidade(string? Slug, string? Sigla, string? Codigo, string? Alias)
+public readonly partial record struct IdentificadoresDaUnidade(string? Slug, string? Sigla, string? Codigo, string? Alias)
 {
     private const int SiglaMaxLength = 50;
     private const int SiglaMinLength = 1;
@@ -47,20 +50,24 @@ public readonly record struct IdentificadoresDaUnidade(string? Slug, string? Sig
         }
     }
 
-    private IEnumerable<FieldError> ValidarCodigo()
+    private IEnumerable<FieldError> ValidarCodigo() =>
+        RecusaDoCodigo(Codigo) is { } recusa ? [new FieldError("codigo", recusa)] : [];
+
+    // Uma só recusa, na ordem em que o usuário a corrige: o que falta, o tamanho, o formato.
+    internal static DomainError? RecusaDoCodigo(string? codigo) => codigo?.Trim() switch
     {
-        if (string.IsNullOrWhiteSpace(Codigo))
-        {
-            yield return new FieldError("codigo", new DomainError(
-                UnidadeErrorCodes.CodigoObrigatorio, "Código da Unidade é obrigatório."));
-        }
-        else if (Codigo.Trim().Length is < CodigoMinLength or > CodigoMaxLength)
-        {
-            yield return new FieldError("codigo", new DomainError(
-                UnidadeErrorCodes.CodigoTamanho,
-                $"Código da Unidade deve ter entre {CodigoMinLength} e {CodigoMaxLength} caracteres."));
-        }
-    }
+        null or "" => new DomainError(UnidadeErrorCodes.CodigoObrigatorio, "Código da Unidade é obrigatório."),
+        { Length: > CodigoMaxLength } => new DomainError(
+            UnidadeErrorCodes.CodigoTamanho,
+            $"Código da Unidade deve ter entre {CodigoMinLength} e {CodigoMaxLength} caracteres."),
+        string valor when !FormatoDoCodigo().IsMatch(valor) || Guid.TryParseExact(valor, "D", out _) => new DomainError(
+            UnidadeErrorCodes.CodigoFormatoInvalido,
+            "Código da Unidade deve usar letras sem acento, números, ponto, hífen e sublinhado, começando por letra ou número, e não pode ter a forma de um identificador único (UUID)."),
+        _ => null,
+    };
+
+    [GeneratedRegex(@"^[A-Za-z0-9][A-Za-z0-9_.-]*\z", RegexOptions.CultureInvariant)]
+    private static partial Regex FormatoDoCodigo();
 
     private IEnumerable<FieldError> ValidarAlias()
     {

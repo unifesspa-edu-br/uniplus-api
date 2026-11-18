@@ -242,21 +242,17 @@ public sealed class DesempatePorAreaEnemEndpointTests
     {
         CascadingApiFactory api = _fixture.Factory;
         HttpClient client = api.CreateClient();
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        OpcoesDoProcessoSeletivoPublicavel opcoes = new() { Nome = $"{nome} {Guid.CreateVersion7()}", Complementar = DeixarODesempatePorDefinir };
+        (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, opcoes);
 
-        Guid processoId;
-        await using (AsyncServiceScope scope = api.Services.CreateAsyncScope())
-        {
-            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-            // Estes testes partem de um desempate ainda por definir: o seeder declara um critério
-            // para o processo ser publicável, e aqui ele sai.
-            (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder
-                .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}", complementar: semear =>
-                    semear.DefinirCriteriosDesempate([], Domain.ValueObjects.PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue());
-            processoId = processo.Id;
-        }
-
-        return new Contexto(api, client, processoId);
+        return new Contexto(api, client, processo.Id);
     }
+
+    /// <summary>Estes testes partem de um desempate ainda por definir: o seeder declara um critério para o processo ser publicável, e aqui ele sai.</summary>
+    private static void DeixarODesempatePorDefinir(ProcessoSeletivo processo) =>
+        processo.DefinirCriteriosDesempate([]).IsSuccess.Should().BeTrue();
 
     private static void Autenticar(HttpRequestMessage request)
     {

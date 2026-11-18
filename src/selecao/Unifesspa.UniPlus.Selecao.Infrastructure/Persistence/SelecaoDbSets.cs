@@ -76,11 +76,8 @@ public static class SelecaoDbSets
         /// <summary>A existência da linha é a publicidade do certame.</summary>
         public DbSet<CertameDivulgado> CertamesDivulgados => contexto.Set<CertameDivulgado>();
 
-        /// <summary>Efêmera: apagada no fechamento e no descarte da retificação, sem histórico.</summary>
-        public DbSet<RascunhoRetificacao> RascunhosRetificacao => contexto.Set<RascunhoRetificacao>();
-
-        /// <summary>Conteúdo opaco: nada aqui alimenta a publicação.</summary>
-        public DbSet<RascunhoDePublicacao> RascunhosDePublicacao => contexto.Set<RascunhoDePublicacao>();
+        /// <summary>O processo antes da primeira publicação; a publicação o consome e a exclusão apaga a linha.</summary>
+        public DbSet<RascunhoDeProcessoSeletivo> RascunhosDeProcessosSeletivos => contexto.Set<RascunhoDeProcessoSeletivo>();
 
         public DbSet<InscricaoRecord> Inscricoes => contexto.Set<InscricaoRecord>();
 

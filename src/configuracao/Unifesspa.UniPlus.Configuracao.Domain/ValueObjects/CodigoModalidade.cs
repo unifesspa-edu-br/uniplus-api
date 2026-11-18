@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <para>Diferente do <c>TipoDocumento</c>, o código da Modalidade é <b>imutável</b>: o
 /// comando de atualização não o aceita como campo editável, pois a cascata de
 /// remanejamento e as referências de composição (<c>ComposicaoOrigem</c>,
-/// <c>RemanejamentoArgs</c>) apontam para modalidades por código — renomear
+/// <c>RemanejamentoParametros</c>) apontam para modalidades por código — renomear
 /// quebraria a integridade referencial intra-banco.</para>
 /// <para>Treze códigos são <b>reservados</b> ao catálogo legal fixo (ver
 /// <see cref="CodigosLegaisFixos"/>): as oito modalidades da Lei 12.711/2012 (red. Lei

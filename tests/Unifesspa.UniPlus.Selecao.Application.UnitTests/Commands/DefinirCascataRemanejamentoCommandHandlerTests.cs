@@ -13,53 +13,30 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
+
+using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.ApoioDaCascataDeRemanejamento;
 
 /// <summary>
 /// Cobertura do <see cref="DefinirCascataRemanejamentoCommandHandler"/>
 /// (cascata de remanejamento de cotas, UNI-REQ-0056, Story #575): remoção por ausência total, recusa de
 /// presença parcial, resolução da regra no catálogo, e a ordem
 /// forma-antes-de-conteúdo — a factory (cascata de remanejamento de cotas, UNI-REQ-0056) roda antes da
-/// comparação célula a célula contra o <c>esquema_args</c> (cascata de remanejamento de cotas, UNI-REQ-0056),
+/// comparação célula a célula contra o <c>declaracao_da_regra</c> (cascata de remanejamento de cotas, UNI-REQ-0056),
 /// para que um erro de forma nunca seja mascarado por
 /// <c>MatrizDivergenteDaRegra</c>.
 /// </summary>
 public sealed class DefinirCascataRemanejamentoCommandHandlerTests
 {
-    private static readonly string HashFixo = string.Concat(Enumerable.Repeat("ab01234567", 7))[..64];
-
-    private static JsonElement Json(string raw)
-    {
-        using JsonDocument document = JsonDocument.Parse(raw);
-        return document.RootElement.Clone();
-    }
-
-    private static RegraCatalogo RegraCascataValida() => RegraCatalogo.Criar(
-        RegraRemanejamentoCodigo.Cascata, "v1", TipoRegra.CriterioRemanejamento,
-        Json("""{"fallbackCodigo":"AC","ordens":[{"origem":"LB_PPI","destinos":["LB_Q","LB_PCD"]}]}"""),
-        Json("[]"), "ADR-0120").Value!;
-
-    private sealed record Mocks(
-        IProcessoSeletivoRepository Repository, IRegraCatalogoReader RegraCatalogoReader, IUnitOfWork UnitOfWork);
-
-    private static Mocks NovosMocks(ProcessoSeletivo? processo, Guid processoId)
-    {
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterParaMutacaoAsync(processoId, Arg.Any<CancellationToken>()).Returns(processo);
-        return new Mocks(repository, Substitute.For<IRegraCatalogoReader>(), Substitute.For<IUnitOfWork>());
-    }
-
-    private static ProcessoSeletivo NovoProcesso() =>
-        ProcessoSeletivo.Criar("PS 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-
     [Fact(DisplayName = "Handle com processo inexistente retorna ProcessoSeletivo.NaoEncontrado")]
     public async Task Handle_ProcessoInexistente_RetornaNaoEncontrado()
     {
         Mocks mocks = NovosMocks(null, Guid.CreateVersion7());
-        DefinirCascataRemanejamentoCommand command = new(Guid.CreateVersion7(), null, null, null, null, PrecondicaoIfMatch.Ausente);
+        DefinirCascataRemanejamentoCommand command = new(Guid.CreateVersion7(), null, null, null, null);
 
-        Result<MutacaoAceita> result = await DefinirCascataRemanejamentoCommandHandler.Handle(
+        Result result = await DefinirCascataRemanejamentoCommandHandler.Handle(
             command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
@@ -69,16 +46,12 @@ public sealed class DefinirCascataRemanejamentoCommandHandlerTests
     [Fact(DisplayName = "Handle com os quatro campos nulos remove a cascata, sem consultar o catálogo de regras")]
     public async Task Handle_TodosOsCamposNulos_Remove()
     {
-        ProcessoSeletivo processo = NovoProcesso();
-        ConfiguracaoCascataRemanejamento cascataExistente = ConfiguracaoCascataRemanejamento.Criar(
-            ReferenciaRegra.Criar(RegraRemanejamentoCodigo.Cascata, "v1", HashFixo).Value!,
-            "AC", [DestinoRemanejamento.Criar("LB_PPI", 1, "LB_Q").Value!]).Value!;
-        processo.DefinirCascataRemanejamento(cascataExistente, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ProcessoSeletivo processo = NovoProcessoComCascata();
 
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirCascataRemanejamentoCommand command = new(processo.Id, null, null, null, null, PrecondicaoIfMatch.Ausente);
+        DefinirCascataRemanejamentoCommand command = new(processo.Id, null, null, null, null);
 
-        Result<MutacaoAceita> result = await DefinirCascataRemanejamentoCommandHandler.Handle(
+        Result result = await DefinirCascataRemanejamentoCommandHandler.Handle(
             command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
@@ -87,28 +60,17 @@ public sealed class DefinirCascataRemanejamentoCommandHandlerTests
         await mocks.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    public static TheoryData<string?, string?, string?, IReadOnlyList<DestinoRemanejamentoInput>?> CombinacoesParciais() =>
-        new()
-        {
-            { RegraRemanejamentoCodigo.Cascata, null, null, null },
-            { null, "v1", null, null },
-            { null, null, "AC", null },
-            { null, null, null, [new DestinoRemanejamentoInput("LB_PPI", 1, "LB_Q")] },
-            { RegraRemanejamentoCodigo.Cascata, "v1", null, null },
-            { RegraRemanejamentoCodigo.Cascata, "v1", "AC", null },
-        };
-
     [Theory(DisplayName = "Handle com combinação parcial dos quatro campos recusa com CamposObrigatorios")]
-    [MemberData(nameof(CombinacoesParciais))]
+    [MemberData(nameof(ApoioDaCascataDeRemanejamento.CombinacoesParciais), MemberType = typeof(ApoioDaCascataDeRemanejamento))]
     public async Task Handle_CombinacaoParcial_Recusa(
         string? regraCodigo, string? regraVersao, string? fallbackCodigo, IReadOnlyList<DestinoRemanejamentoInput>? destinos)
     {
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(processo, processo.Id);
         DefinirCascataRemanejamentoCommand command = new(
-            processo.Id, regraCodigo, regraVersao, fallbackCodigo, destinos, PrecondicaoIfMatch.Ausente);
+            processo.Id, regraCodigo, regraVersao, fallbackCodigo, destinos);
 
-        Result<MutacaoAceita> result = await DefinirCascataRemanejamentoCommandHandler.Handle(
+        Result result = await DefinirCascataRemanejamentoCommandHandler.Handle(
             command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
@@ -124,13 +86,14 @@ public sealed class DefinirCascataRemanejamentoCommandHandlerTests
             .Returns((RegraCatalogo?)null);
 
         DefinirCascataRemanejamentoCommand command = new(
-            processo.Id, "INEXISTENTE", "v1", "AC", [new DestinoRemanejamentoInput("LB_PPI", 1, "LB_Q")], PrecondicaoIfMatch.Ausente);
+            processo.Id, "INEXISTENTE", "v1", "AC", [new DestinoRemanejamentoInput("LB_PPI", 1, "LB_Q")]);
 
-        Result<MutacaoAceita> result = await DefinirCascataRemanejamentoCommandHandler.Handle(
+        Result result = await DefinirCascataRemanejamentoCommandHandler.Handle(
             command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ConfiguracaoCascataRemanejamento.RegraNaoEncontrada");
+        result.Error.Message.Should().NotContain(command.RegraCodigo!);
     }
 
     [Fact(DisplayName = "Handle com regra de tipo diferente de criterio_remanejamento recusa com RegraTipoInvalido")]
@@ -139,313 +102,30 @@ public sealed class DefinirCascataRemanejamentoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(processo, processo.Id);
         RegraCatalogo regraTipoErrado = RegraCatalogo.Criar(
-            RegraRemanejamentoCodigo.Cascata, "v1", TipoRegra.RegraCalculo, Json("{}"), Json("[]"), "base legal").Value!;
-        mocks.RegraCatalogoReader.ObterAsync(RegraRemanejamentoCodigo.Cascata, "v1", Arg.Any<CancellationToken>())
-            .Returns(regraTipoErrado);
+            RegraRemanejamentoCodigo.Cascata, "v1", TipoRegra.RegraCalculo, Json("{}"), Json("[]"), "base legal");
+        ConfigurarRegra(mocks, regraTipoErrado);
+        DefinirCascataRemanejamentoCommand command = Comando(processo.Id);
 
-        DefinirCascataRemanejamentoCommand command = new(
-            processo.Id, RegraRemanejamentoCodigo.Cascata, "v1", "AC", [new DestinoRemanejamentoInput("LB_PPI", 1, "LB_Q")], PrecondicaoIfMatch.Ausente);
-
-        Result<MutacaoAceita> result = await DefinirCascataRemanejamentoCommandHandler.Handle(
+        Result result = await DefinirCascataRemanejamentoCommandHandler.Handle(
             command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ConfiguracaoCascataRemanejamento.RegraTipoInvalido");
+        result.Error.Message.Should().NotContain(command.RegraCodigo!);
     }
 
-    [Fact(DisplayName = "Handle com ordem inválida (cascata de remanejamento de cotas, UNI-REQ-0056) recusa pela factory, ANTES de comparar contra o esquema_args")]
-    public async Task Handle_OrdemInvalida_RecusaPelaFactoryAntesDoEsquemaArgs()
+    [Fact(DisplayName = "Handle com ordem inválida (cascata de remanejamento de cotas, UNI-REQ-0056) recusa pela factory, ANTES de comparar contra o declaracao_da_regra")]
+    public async Task Handle_OrdemInvalida_RecusaPelaFactoryAntesDoDeclaracaoDaRegra()
     {
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        mocks.RegraCatalogoReader.ObterAsync(RegraRemanejamentoCodigo.Cascata, "v1", Arg.Any<CancellationToken>())
-            .Returns(RegraCascataValida());
+        ConfigurarRegra(mocks, RegraCascataValida());
+        DefinirCascataRemanejamentoCommand command = Comando(processo.Id, ordem: 0);
 
-        // Ordem 0 é inválida na FORMA (cascata de remanejamento de cotas, UNI-REQ-0056) — mesmo que o resto da matriz
-        // divergisse do esquema_args também, o erro que deve aparecer é o de forma.
-        DefinirCascataRemanejamentoCommand command = new(
-            processo.Id, RegraRemanejamentoCodigo.Cascata, "v1", "AC",
-            [new DestinoRemanejamentoInput("LB_PPI", 0, "LB_Q")], PrecondicaoIfMatch.Ausente);
-
-        Result<MutacaoAceita> result = await DefinirCascataRemanejamentoCommandHandler.Handle(
+        Result result = await DefinirCascataRemanejamentoCommandHandler.Handle(
             command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ConfiguracaoCascataRemanejamento.OrdemInvalida");
-    }
-
-    [Fact(DisplayName = "Handle com fallback divergente do esquema_args recusa com MatrizDivergenteDaRegra, mesmo com forma válida")]
-    public async Task Handle_FallbackDivergenteDoEsquemaArgs_Recusa()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-        Mocks mocks = NovosMocks(processo, processo.Id);
-        mocks.RegraCatalogoReader.ObterAsync(RegraRemanejamentoCodigo.Cascata, "v1", Arg.Any<CancellationToken>())
-            .Returns(RegraCascataValida());
-
-        // Forma válida (a forma da cascata de remanejamento de cotas, UNI-REQ-0056, passa), mas o fallback ("AMPLA", não "AC") diverge
-        // do esquema_args congelado da regra.
-        DefinirCascataRemanejamentoCommand command = new(
-            processo.Id, RegraRemanejamentoCodigo.Cascata, "v1", "AMPLA",
-            [new DestinoRemanejamentoInput("LB_PPI", 1, "LB_Q"), new DestinoRemanejamentoInput("LB_PPI", 2, "LB_PCD")],
-            PrecondicaoIfMatch.Ausente);
-
-        Result<MutacaoAceita> result = await DefinirCascataRemanejamentoCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
-
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("ConfiguracaoCascataRemanejamento.MatrizDivergenteDaRegra");
-    }
-
-    [Fact(DisplayName = "Handle com destino trocado em relação ao esquema_args recusa com MatrizDivergenteDaRegra")]
-    public async Task Handle_DestinoTrocadoNoEsquemaArgs_Recusa()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-        Mocks mocks = NovosMocks(processo, processo.Id);
-        mocks.RegraCatalogoReader.ObterAsync(RegraRemanejamentoCodigo.Cascata, "v1", Arg.Any<CancellationToken>())
-            .Returns(RegraCascataValida());
-
-        // O esquema_args de RegraCascataValida() é LB_PPI → [LB_Q, LB_PCD]; aqui a
-        // ordem 2 aponta para LB_EP em vez de LB_PCD — um destino trocado.
-        DefinirCascataRemanejamentoCommand command = new(
-            processo.Id, RegraRemanejamentoCodigo.Cascata, "v1", "AC",
-            [new DestinoRemanejamentoInput("LB_PPI", 1, "LB_Q"), new DestinoRemanejamentoInput("LB_PPI", 2, "LB_EP")],
-            PrecondicaoIfMatch.Ausente);
-
-        Result<MutacaoAceita> result = await DefinirCascataRemanejamentoCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
-
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("ConfiguracaoCascataRemanejamento.MatrizDivergenteDaRegra");
-    }
-
-    [Fact(DisplayName = "Handle com linha de origem omitida em relação ao esquema_args recusa com MatrizDivergenteDaRegra")]
-    public async Task Handle_OrigemOmitidaNoEsquemaArgs_Recusa()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-        Mocks mocks = NovosMocks(processo, processo.Id);
-        RegraCatalogo regraComDuasOrigens = RegraCatalogo.Criar(
-            RegraRemanejamentoCodigo.Cascata, "v1", TipoRegra.CriterioRemanejamento,
-            Json("""{"fallbackCodigo":"AC","ordens":[{"origem":"LB_PPI","destinos":["LB_Q"]},{"origem":"LB_Q","destinos":["LB_PPI"]}]}"""),
-            Json("[]"), "ADR-0120").Value!;
-        mocks.RegraCatalogoReader.ObterAsync(RegraRemanejamentoCodigo.Cascata, "v1", Arg.Any<CancellationToken>())
-            .Returns(regraComDuasOrigens);
-
-        // O payload aplicado só declara LB_PPI — omite a linha de LB_Q que o
-        // esquema_args da regra também exige.
-        DefinirCascataRemanejamentoCommand command = new(
-            processo.Id, RegraRemanejamentoCodigo.Cascata, "v1", "AC",
-            [new DestinoRemanejamentoInput("LB_PPI", 1, "LB_Q")], PrecondicaoIfMatch.Ausente);
-
-        Result<MutacaoAceita> result = await DefinirCascataRemanejamentoCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
-
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("ConfiguracaoCascataRemanejamento.MatrizDivergenteDaRegra");
-    }
-
-    [Fact(DisplayName = "Handle com esquema_args repetindo uma origem não deixa outra origem sem conferir")]
-    public async Task Handle_EsquemaArgsComOrigemRepetida_NaoCobreOrigemNaoConferida()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-        Mocks mocks = NovosMocks(processo, processo.Id);
-        // O esquema_args declara LB_PPI DUAS vezes e nunca declara LB_Q — se a comparação
-        // fosse por CONTAGEM de linhas em vez de pelo CONJUNTO de origens conferidas, as duas
-        // entradas de LB_PPI bateriam com as duas origens do payload (LB_PPI e LB_Q), e o
-        // destino arbitrário de LB_Q no payload passaria sem nunca ser comparado a nada.
-        RegraCatalogo regraComOrigemRepetida = RegraCatalogo.Criar(
-            RegraRemanejamentoCodigo.Cascata, "v1", TipoRegra.CriterioRemanejamento,
-            Json("""{"fallbackCodigo":"AC","ordens":[{"origem":"LB_PPI","destinos":["LB_Q"]},{"origem":"LB_PPI","destinos":["LB_Q"]}]}"""),
-            Json("[]"), "ADR-0120").Value!;
-        mocks.RegraCatalogoReader.ObterAsync(RegraRemanejamentoCodigo.Cascata, "v1", Arg.Any<CancellationToken>())
-            .Returns(regraComOrigemRepetida);
-
-        DefinirCascataRemanejamentoCommand command = new(
-            processo.Id, RegraRemanejamentoCodigo.Cascata, "v1", "AC",
-            [
-                new DestinoRemanejamentoInput("LB_PPI", 1, "LB_Q"),
-                new DestinoRemanejamentoInput("LB_Q", 1, "DESTINO_NUNCA_CONFERIDO"),
-            ],
-            PrecondicaoIfMatch.Ausente);
-
-        Result<MutacaoAceita> result = await DefinirCascataRemanejamentoCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
-
-        result.IsFailure.Should().BeTrue("LB_Q nunca foi comparado contra o esquema_args — a origem repetida não pode cobri-la");
-        result.Error!.Code.Should().Be("ConfiguracaoCascataRemanejamento.MatrizDivergenteDaRegra");
-    }
-
-    [Fact(DisplayName = "Handle com item nulo na lista de destinos recusa com CamposObrigatorios, sem lançar")]
-    public async Task Handle_ItemNuloEmDestinos_RecusaSemLancar()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-        Mocks mocks = NovosMocks(processo, processo.Id);
-        mocks.RegraCatalogoReader.ObterAsync(RegraRemanejamentoCodigo.Cascata, "v1", Arg.Any<CancellationToken>())
-            .Returns(RegraCascataValida());
-
-        DefinirCascataRemanejamentoCommand command = new(
-            processo.Id, RegraRemanejamentoCodigo.Cascata, "v1", "AC",
-            [null!], PrecondicaoIfMatch.Ausente);
-
-        Result<MutacaoAceita> result = await DefinirCascataRemanejamentoCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
-
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("ConfiguracaoCascataRemanejamento.CamposObrigatorios");
-    }
-
-    [Fact(DisplayName = "Handle com regra válida e matriz batendo célula a célula define a cascata e persiste")]
-    public async Task Handle_RegraValidaEMatrizBatendo_DefineEPersiste()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-        Mocks mocks = NovosMocks(processo, processo.Id);
-        mocks.RegraCatalogoReader.ObterAsync(RegraRemanejamentoCodigo.Cascata, "v1", Arg.Any<CancellationToken>())
-            .Returns(RegraCascataValida());
-
-        DefinirCascataRemanejamentoCommand command = new(
-            processo.Id, RegraRemanejamentoCodigo.Cascata, "v1", "AC",
-            [new DestinoRemanejamentoInput("LB_PPI", 1, "LB_Q"), new DestinoRemanejamentoInput("LB_PPI", 2, "LB_PCD")],
-            PrecondicaoIfMatch.Ausente);
-
-        Result<MutacaoAceita> result = await DefinirCascataRemanejamentoCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
-
-        result.IsSuccess.Should().BeTrue(result.Error?.Message);
-        processo.Cascata.Should().NotBeNull();
-        processo.Cascata!.FallbackCodigo.Should().Be("AC");
-        processo.Cascata.Destinos.Should().HaveCount(2);
-        await mocks.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-    }
-
-    /// <summary>Processo publicado, sem sessão editorial aberta — o par mínimo exigido por <see cref="ProcessoSeletivo.MutacaoBloqueada"/> (ADR-0110).</summary>
-    private static ProcessoSeletivo NovoProcessoPublicado()
-    {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — Publicado", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-
-        processo.DefinirAtendimentoEspecializado(
-            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        ReferenciaRegra regraDistribuicao = ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!;
-        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!;
-        ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 40, pr: 1m, regraDistribuicao, regraAjuste: null, referenciaDemografica: null, [modalidade], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
-            regraCalculo: ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo).Value!,
-            regraArredondamento: null, casasArredondamento: null,
-            regraOrdemAlocacao: ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo).Value!, regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!;
-        processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        FaseCronograma faseConforme = FaseCronograma.Criar(
-            ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "RESULTADO_FINAL",
-            origemData: OrigemDataFase.NoEdital, agrupaEtapas: true, permiteComplementacao: false, coletaInscricao: true, coletaSolicitacaoIsencao: false,
-            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            produtos: [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)], faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
-        processo.DefinirCronogramaFases([faseConforme], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirEtapas([
-            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: "RESULTADO_FINAL").Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
-        processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
-
-        DadosEdital dados = DadosEdital.Criar(
-            "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)), new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!;
-        byte[] bytesCanonicos = System.Text.Encoding.UTF8.GetBytes(new JsonObject { ["status"] = "ok" }.ToJsonString());
-        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
-        processo.Publicar(dados, bytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
-            .IsSuccess.Should().BeTrue();
-
-        return processo;
-    }
-
-    [Fact(DisplayName = "ADR-0125: Handle acumula violações de itens distintos com o índice do item prefixado ao field")]
-    public async Task Handle_DoisItensInvalidos_AcumulaComIndicePrefixadoAoField()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-        Mocks mocks = NovosMocks(processo, processo.Id);
-        mocks.RegraCatalogoReader.ObterAsync(RegraRemanejamentoCodigo.Cascata, "v1", Arg.Any<CancellationToken>())
-            .Returns(RegraCascataValida());
-
-        DefinirCascataRemanejamentoCommand command = new(
-            processo.Id, RegraRemanejamentoCodigo.Cascata, "v1", "AC",
-            [new DestinoRemanejamentoInput("LB_PPI", 1, "LB_Q"), new DestinoRemanejamentoInput("lb-ppi", 0, "LB_PCD")],
-            PrecondicaoIfMatch.Ausente);
-
-        Result<MutacaoAceita> result = await DefinirCascataRemanejamentoCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
-
-        result.IsFailure.Should().BeTrue();
-        result.Errors.Select(e => e.Field).Should().BeEquivalentTo(
-        [
-            "destinos[1].modalidadeOrigemCodigo",
-            "destinos[1].ordem",
-        ]);
-    }
-
-    [Fact(DisplayName = "ADR-0125: Handle acumula fallback inválido junto com item malformado, mesmo sem checagem de coerência entre itens")]
-    public async Task Handle_FallbackInvalidoEItemMalformado_AcumulaOsDois()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-        Mocks mocks = NovosMocks(processo, processo.Id);
-        mocks.RegraCatalogoReader.ObterAsync(RegraRemanejamentoCodigo.Cascata, "v1", Arg.Any<CancellationToken>())
-            .Returns(RegraCascataValida());
-
-        DefinirCascataRemanejamentoCommand command = new(
-            processo.Id, RegraRemanejamentoCodigo.Cascata, "v1", "AC-1",
-            [new DestinoRemanejamentoInput("LB_PPI", 0, "LB_Q")], PrecondicaoIfMatch.Ausente);
-
-        Result<MutacaoAceita> result = await DefinirCascataRemanejamentoCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
-
-        result.IsFailure.Should().BeTrue();
-        result.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
-        [
-            "ConfiguracaoCascataRemanejamento.FallbackObrigatorio",
-            "ConfiguracaoCascataRemanejamento.OrdemInvalida",
-        ]);
-    }
-
-    [Fact(DisplayName = "ADR-0125: validação de forma precede a consulta ao catálogo de regras, mesmo com regra inexistente")]
-    public async Task Handle_FallbackInvalidoComRegraInexistente_ValidacaoVenceAConsultaAoCatalogo()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-        Mocks mocks = NovosMocks(processo, processo.Id);
-        mocks.RegraCatalogoReader.ObterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns((RegraCatalogo?)null);
-
-        DefinirCascataRemanejamentoCommand command = new(
-            processo.Id, "INEXISTENTE", "v1", "ac-invalido",
-            [new DestinoRemanejamentoInput("LB_PPI", 1, "LB_Q")], PrecondicaoIfMatch.Ausente);
-
-        Result<MutacaoAceita> result = await DefinirCascataRemanejamentoCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
-
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("ConfiguracaoCascataRemanejamento.FallbackObrigatorio");
-        await mocks.RegraCatalogoReader.DidNotReceiveWithAnyArgs().ObterAsync(default!, default!, default);
-    }
-
-    [Fact(DisplayName = "Handle com processo já publicado, sem sessão editorial, propaga bloqueio e NÃO persiste (CA-07/ADR-0110)")]
-    public async Task Handle_ProcessoPublicadoSemSessao_PropagaBloqueioENaoPersiste()
-    {
-        ProcessoSeletivo processo = NovoProcessoPublicado();
-        Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirCascataRemanejamentoCommand command = new(
-            processo.Id, RegraRemanejamentoCodigo.Cascata, "v1", "AC",
-            [new DestinoRemanejamentoInput("LB_PPI", 1, "LB_Q")], PrecondicaoIfMatch.Ausente);
-
-        Result<MutacaoAceita> result = await DefinirCascataRemanejamentoCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
-
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
-        processo.Cascata.Should().BeNull();
-        await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 }

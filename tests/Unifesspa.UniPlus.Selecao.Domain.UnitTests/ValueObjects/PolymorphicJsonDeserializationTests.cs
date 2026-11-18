@@ -30,9 +30,9 @@ public sealed class PolymorphicJsonDeserializationTests
     public static TheoryData<Type> UnioesRaiz() => new()
     {
         typeof(PredicadoObrigatoriedade),
-        typeof(ArgsCriterioDesempate),
-        typeof(ArgsRegraAjusteDistribuicao),
-        typeof(ArgsRegraEliminacao),
+        typeof(ParametrosCriterioDesempate),
+        typeof(ParametrosRegraAjusteDistribuicao),
+        typeof(ParametrosRegraEliminacao),
     };
 
     /// <summary>
@@ -103,7 +103,7 @@ public sealed class PolymorphicJsonDeserializationTests
         raizNaoObjeto.Should().Throw<JsonException>();
     }
 
-    [Fact(DisplayName = "Predicado com '$tipo' e os argumentos da variante é lido como a variante")]
+    [Fact(DisplayName = "Predicado com '$tipo' e os parâmetros da variante é lido como a variante")]
     public void Desserializar_ComDiscriminador_CriaAVariante()
     {
         PredicadoObrigatoriedade? predicado = JsonSerializer.Deserialize<PredicadoObrigatoriedade>(

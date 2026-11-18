@@ -176,7 +176,7 @@ public sealed class AcessoAFaseDoProcessoEndpointTests : IAsyncLifetime
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
-            .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}", unidadeResponsavel: UnidadesDeTeste.Cga);
+            .SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"{nome} {Guid.CreateVersion7()}", UnidadeResponsavel = UnidadesDeTeste.Cga });
 
         return (processo.Id, documento.Id, processo.CronogramaFases.Single().Id, processo.UnidadeAdministradoraOrigemId);
     }

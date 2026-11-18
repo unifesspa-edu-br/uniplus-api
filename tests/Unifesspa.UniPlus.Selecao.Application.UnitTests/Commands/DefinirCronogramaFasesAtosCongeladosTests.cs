@@ -24,7 +24,7 @@ public sealed class DefinirCronogramaFasesAtosCongeladosTests
             .ComTipoDeAto(TipoAtoDaClassificacao() with { CongelaConfiguracao = true });
         FaseCronogramaInput fase = cenario.CadastrarFase(FaseCanonicaDoResultadoFinal());
 
-        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(fase);
+        Result resultado = await cenario.DefinirFasesAsync(fase);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -37,7 +37,7 @@ public sealed class DefinirCronogramaFasesAtosCongeladosTests
             .ComTipoDeAto(TipoAtoDaClassificacao() with { CongelaConfiguracao = true });
         FaseCronogramaInput fase = cenario.CadastrarFase(FaseCanonicaDoResultadoFinal());
 
-        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(fase);
+        Result resultado = await cenario.DefinirFasesAsync(fase);
 
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be("ProcessoSeletivo.TipoQueCongelaDeclaradoComoResultado");
     }
@@ -50,7 +50,7 @@ public sealed class DefinirCronogramaFasesAtosCongeladosTests
             .ComTipoDeAto(TipoAtoDaClassificacao());
         FaseCronogramaInput fase = cenario.CadastrarFase(FaseCanonicaDoResultadoFinal());
 
-        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(fase);
+        Result resultado = await cenario.DefinirFasesAsync(fase);
 
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be("Envelope.CodecDesconhecido");
     }
@@ -66,7 +66,7 @@ public sealed class DefinirCronogramaFasesAtosCongeladosTests
 
         // O catálogo deixa de ter versão vigente do tipo: a irreversibilidade dele passa a ser desconhecida.
         cenario.SemVersaoVigenteDoTipoDeAto(AtoDaClassificacao);
-        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(comAncora);
+        Result resultado = await cenario.DefinirFasesAsync(comAncora);
 
         ConferirRecusaOuAceite(resultado, codigoEsperado);
     }
@@ -83,22 +83,22 @@ public sealed class DefinirCronogramaFasesAtosCongeladosTests
         (await cenario.DefinirFasesAsync(semAncora)).IsSuccess.Should().BeTrue();
         cenario.SemVersaoVigenteDoTipoDeAto(AtoDaClassificacao);
 
-        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(comAncora);
+        Result resultado = await cenario.DefinirFasesAsync(comAncora);
 
         resultado.IsSuccess.Should().BeTrue(MensagemDaRecusa(resultado));
     }
 
-    // A versão publicada congelou o tipo, mas ainda não tinha a âncora: ela entra na sessão.
-    [Fact(DisplayName = "Na sessão de retificação, a âncora declarada numa edição anterior segue aceita quando o catálogo perde o tipo")]
-    public async Task Handle_AncoraDeclaradaNaSessao_CatalogoSemOTipo_Aceita()
+    // A versão publicada congelou o tipo, mas ainda não tinha a âncora: ela entra numa edição posterior.
+    [Fact(DisplayName = "A âncora declarada numa edição anterior segue aceita quando o catálogo perde o tipo")]
+    public async Task Handle_AncoraDeclaradaEmEdicaoAnterior_CatalogoSemOTipo_Aceita()
     {
         (CenarioDoCronogramaDeFases cenario, _, FaseCronogramaInput comAncora) = CenarioDaAncora();
         cenario.ComVersaoPublicadaQueCongelou(ClassificacaoCongeladaComoComum());
-        Result<MutacaoAceita> primeira = await cenario.DefinirFasesAsync(comAncora);
+        Result primeira = await cenario.DefinirFasesAsync(comAncora);
         primeira.IsSuccess.Should().BeTrue(primeira.Error?.Message);
         cenario.SemVersaoVigenteDoTipoDeAto(AtoDaClassificacao);
 
-        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(comAncora);
+        Result resultado = await cenario.DefinirFasesAsync(comAncora);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -116,7 +116,7 @@ public sealed class DefinirCronogramaFasesAtosCongeladosTests
         return (cenario, semAncora, semAncora with { RegraRecurso = RecursoAncoradoNaClassificacao() });
     }
 
-    private static void ConferirRecusaOuAceite(Result<MutacaoAceita> resultado, string? codigoEsperado)
+    private static void ConferirRecusaOuAceite(Result resultado, string? codigoEsperado)
     {
         if (codigoEsperado is null)
         {
@@ -127,6 +127,6 @@ public sealed class DefinirCronogramaFasesAtosCongeladosTests
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(codigoEsperado);
     }
 
-    private static string? MensagemDaRecusa(Result<MutacaoAceita> resultado) =>
+    private static string? MensagemDaRecusa(Result resultado) =>
         resultado.Errors.Count > 0 ? resultado.Errors[0].Error.Message : resultado.Error?.Message;
 }

@@ -29,7 +29,7 @@ public sealed class DefinirClassificacaoCommandValidator : AbstractValidator<Def
             .NotEmpty()
             .WithMessage("Versão da regra de cálculo é obrigatória.");
 
-        // RegraArredondamentoCodigo nulo é válido (INV-B8: classificação
+        // RegraArredondamentoCodigo nulo é válido (classificação
         // importada dispensa precisão local) — a versão só é exigida quando o
         // código é informado.
         RuleFor(x => x.RegraArredondamentoVersao)

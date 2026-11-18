@@ -292,7 +292,7 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
 
     /// <summary>As recusas do conteúdo apontam o campo dentro dele, no caminho da escrita.</summary>
     public static IEnumerable<FieldError> NoConteudo(IEnumerable<FieldError> erros) =>
-        erros.Select(static e => e with { Field = string.IsNullOrEmpty(e.Field) ? "conteudo" : $"conteudo.{e.Field}" });
+        erros.Select(static e => e.NoCaminhoDe("conteudo"));
 
     private static List<FieldError> ValidarCodigo(string? codigo)
     {

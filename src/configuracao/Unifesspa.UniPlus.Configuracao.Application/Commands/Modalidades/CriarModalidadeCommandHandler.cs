@@ -5,6 +5,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
@@ -34,66 +35,100 @@ public static class CriarModalidadeCommandHandler
         ArgumentNullException.ThrowIfNull(precedenciaRepository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
+        Result<Modalidade> nova = await NovaModalidadeAsync(command, fatoRepository, precedenciaRepository, cancellationToken).ConfigureAwait(false);
+
+        return nova.IsFailure
+            ? Result<Guid>.ValidationFailure(nova.Errors)
+            : await CadastrarAsync(nova.Value!, repository, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result<Modalidade>> NovaModalidadeAsync(
+        CriarModalidadeCommand command,
+        IFatoCandidatoRepository fatoRepository,
+        IPrecedenciaFaseRepository precedenciaRepository,
+        CancellationToken cancellationToken)
+    {
         Result<PredicadoDnf?> regra = RegraDeAplicabilidadeDaEntrada.Montar(command.RegraDeAplicabilidade);
         PredicadoDnf? regraMontada = regra.IsSuccess ? regra.Value : null;
-
-        Result<Modalidade> modalidadeResult = Modalidade.Criar(
-            command.Codigo,
-            command.Descricao,
-            command.NaturezaLegal,
-            command.ComposicaoVagas,
-            command.ComposicaoOrigem,
-            command.RegraRemanejamento,
-            command.RemanejamentoDestino,
-            command.RemanejamentoPar,
-            command.RemanejamentoFallback,
-            regraMontada,
-            command.AcaoQuandoIndeferido,
-            command.BaseLegal);
+        Result<Modalidade> modalidade = Modalidade.Criar(command.Codigo, command.Declaracao(regraMontada));
 
         List<FieldError> erros = RegraDeAplicabilidadeDaEntrada.ComAsRecusasDaMontagem(
-            regra, modalidadeResult.IsFailure ? modalidadeResult.Errors : []);
-        if (regraMontada is { } regraDeAplicabilidade)
+            regra, modalidade.IsFailure ? modalidade.Errors : []);
+        if (regraMontada is not null)
         {
-            CatalogoDeFatos catalogo = await RegraDeAplicabilidadeDaEntrada
-                .CarregarCatalogoAsync(fatoRepository, precedenciaRepository, cancellationToken).ConfigureAwait(false);
-            erros.AddRange(ConferenciaDaRegraDeAplicabilidade.Conferir(regraDeAplicabilidade, vigente: null, catalogo));
+            erros.AddRange(await RecusasDaRegraContraOCatalogoAsync(regraMontada, fatoRepository, precedenciaRepository, cancellationToken).ConfigureAwait(false));
         }
 
-        if (erros.Count > 0)
+        return erros.Count > 0 ? Result<Modalidade>.ValidationFailure(erros) : modalidade;
+    }
+
+    private static async Task<IReadOnlyList<FieldError>> RecusasDaRegraContraOCatalogoAsync(
+        PredicadoDnf regra,
+        IFatoCandidatoRepository fatoRepository,
+        IPrecedenciaFaseRepository precedenciaRepository,
+        CancellationToken cancellationToken)
+    {
+        CatalogoDeFatos catalogo = await RegraDeAplicabilidadeDaEntrada
+            .CarregarCatalogoAsync(fatoRepository, precedenciaRepository, cancellationToken).ConfigureAwait(false);
+        return ConferenciaDaRegraDeAplicabilidade.Conferir(regra, vigente: null, catalogo);
+    }
+
+    private static async Task<Result<Guid>> CadastrarAsync(
+        Modalidade modalidade, IModalidadeRepository repository, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
+        DomainError? recusa = await RecusaDoCadastroAsync(modalidade, repository, cancellationToken).ConfigureAwait(false);
+
+        return recusa is null
+            ? await GravarAsync(modalidade, repository, unitOfWork, cancellationToken).ConfigureAwait(false)
+            : Result<Guid>.Failure(recusa);
+    }
+
+    private static async Task<DomainError?> RecusaDoCadastroAsync(
+        Modalidade modalidade, IModalidadeRepository repository, CancellationToken cancellationToken)
+    {
+        DomainError? recusaDoCodigo = await RecusaDoCodigoAsync(modalidade.Codigo, repository, cancellationToken).ConfigureAwait(false);
+
+        return recusaDoCodigo ?? await RecusaDasReferenciasAsync(modalidade, repository, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Os treze códigos legais fixos só nascem do seed. A reserva é do cadastro, não do domínio (a factory os aceita —
+    /// reidratação administrativa depende disso), e só é checada depois que o payload já está confirmado coerente:
+    /// 409 é sobre QUEM pode nascer, não sobre a FORMA do payload.
+    /// </summary>
+    private static async Task<DomainError?> RecusaDoCodigoAsync(
+        CodigoModalidade codigo, IModalidadeRepository repository, CancellationToken cancellationToken)
+    {
+        if (codigo.EhLegalFixa)
         {
-            return Result<Guid>.ValidationFailure(erros);
+            return CodigoReservadoErro();
         }
 
-        Modalidade modalidade = modalidadeResult.Value!;
+        return await repository.CodigoExisteEntreVivosAsync(codigo.Valor, null, cancellationToken).ConfigureAwait(false)
+            ? CodigoJaExisteErro()
+            : null;
+    }
 
-        // Os treze códigos legais fixos só nascem do seed. A reserva é do cadastro, não
-        // do domínio (a factory os aceita — reidratação administrativa depende disso),
-        // e só é checada depois que o payload já está confirmado coerente: 409 é sobre
-        // QUEM pode nascer, não sobre a FORMA do payload.
-        if (modalidade.Codigo.EhLegalFixa)
-        {
-            return Result<Guid>.Failure(new DomainError(
-                ModalidadeErrorCodes.CriacaoBloqueadaCodigoProtegido,
-                "Este código é reservado ao catálogo legal fixo e não pode ser criado por cadastro."));
-        }
+    /// <summary>
+    /// Integridade referencial (invariante 7): todos os códigos citados (origem + remanejamento) devem existir
+    /// como modalidade viva.
+    /// </summary>
+    private static async Task<DomainError?> RecusaDasReferenciasAsync(
+        Modalidade modalidade, IModalidadeRepository repository, CancellationToken cancellationToken) =>
+        await ReferenciasDeModalidade.TodasExistemAsync(modalidade, repository, cancellationToken).ConfigureAwait(false)
+            ? null
+            : ReferenciasDeModalidade.RecusaDaReferenciaInexistente();
 
-        if (await repository.CodigoExisteEntreVivosAsync(modalidade.Codigo.Valor, null, cancellationToken).ConfigureAwait(false))
-        {
-            return Result<Guid>.Failure(CodigoJaExisteErro());
-        }
-
-        // Integridade referencial (invariante 7): todos os códigos citados (origem +
-        // remanejamento) devem existir como modalidade viva.
-        IReadOnlyCollection<string> referencias = ReferenciasDeModalidade.Coletar(modalidade);
-        if (referencias.Count > 0
-            && !await repository.CodigosVivosExistemAsync(referencias, cancellationToken).ConfigureAwait(false))
-        {
-            return Result<Guid>.Failure(ReferenciaInexistenteErro());
-        }
-
+    /// <summary>
+    /// Protege a corrida entre a consulta de unicidade e o INSERT (check-then-act): o índice único parcial dispara
+    /// 23505 e vira o mesmo <c>CodigoJaExiste</c> do caminho sem corrida — 409 consistente. O filtro do <c>when</c>
+    /// garante que outras exceções propagam intactas. A entidade que não foi persistida sai do rastreamento, senão
+    /// o save automático do Wolverine repetiria a violação fora deste <c>catch</c>.
+    /// </summary>
+    private static async Task<Result<Guid>> GravarAsync(
+        Modalidade modalidade, IModalidadeRepository repository, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
         await repository.AdicionarAsync(modalidade, cancellationToken).ConfigureAwait(false);
-
         try
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
@@ -101,12 +136,6 @@ public static class CriarModalidadeCommandHandler
         catch (Exception ex) when (UniqueConstraintViolation.GetViolatedConstraint(ex) is { } constraint
             && UniqueConstraintViolation.IsCodigoConflict(constraint))
         {
-            // Corrida entre CodigoExisteEntreVivosAsync e o INSERT (check-then-act): o
-            // índice único parcial dispara 23505 e viramos o mesmo CodigoJaExiste do
-            // caminho não-race — 409 consistente. O filtro do `when` garante que
-            // outras exceções propagam intactas. Descarta o rastreamento da entidade
-            // que não foi persistida, senão o save automático do Wolverine repetiria a
-            // violação fora deste catch.
             unitOfWork.DescartarAlteracoesNaoSalvas();
             return Result<Guid>.Failure(CodigoJaExisteErro());
         }
@@ -114,11 +143,10 @@ public static class CriarModalidadeCommandHandler
         return Result<Guid>.Success(modalidade.Id);
     }
 
+    private static DomainError CodigoReservadoErro() =>
+        new(ModalidadeErrorCodes.CriacaoBloqueadaCodigoProtegido,
+            "Este código é reservado ao catálogo legal fixo e não pode ser criado por cadastro.");
+
     private static DomainError CodigoJaExisteErro() =>
         new(ModalidadeErrorCodes.CodigoJaExiste, "Já existe uma modalidade viva com o código informado.");
-
-    private static DomainError ReferenciaInexistenteErro() =>
-        new(ModalidadeErrorCodes.ReferenciaInexistenteOuInativa,
-            "Um ou mais códigos de modalidade referenciados (origem ou remanejamento) "
-            + "não correspondem a modalidades vivas.");
 }

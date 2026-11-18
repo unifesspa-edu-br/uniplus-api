@@ -4,77 +4,63 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
-/// <summary>
-/// Cobertura do hash content-addressable do <c>regras_do_catalogo</c>
-/// (<see cref="HashCanonicalComputer.ComputeRegraCatalogo"/>): determinismo,
-/// independência da ordem das chaves do jsonb e sensibilidade a mudança de
-/// definição — as propriedades que sustentam a reprodutibilidade do freeze
-/// (congelamento dos parâmetros na publicação, UNI-REQ-0019).
-/// </summary>
 public sealed class HashCanonicalComputerRegraCatalogoTests
 {
-    private static JsonElement Json(string raw)
+    [Fact]
+    public void Hash_MesmaDefinicao_EhDeterministico()
     {
-        using JsonDocument document = JsonDocument.Parse(raw);
-        return document.RootElement.Clone();
+        RegraCatalogo primeira = Criar();
+        RegraCatalogo segunda = Criar();
+
+        primeira.Hash.Should().Be(segunda.Hash);
+        primeira.RecomputeHash().Should().Be(primeira.Hash);
     }
 
-    [Fact(DisplayName = "Hash é determinístico para a mesma definição")]
-    public void Hash_MesmaDefinicao_Deterministico()
-    {
-        string h1 = HashCanonicalComputer.ComputeRegraCatalogo(
-            "BONUS-MULTIPLICATIVO", "v1", TipoRegra.RegraBonus,
-            Json("""{"fator":"numeric","teto":"numeric|null"}"""),
-            Json("""["nota_final × fator, após os pesos"]"""),
-            "Lei 14.723/2023 art.2º");
-
-        string h2 = HashCanonicalComputer.ComputeRegraCatalogo(
-            "BONUS-MULTIPLICATIVO", "v1", TipoRegra.RegraBonus,
-            Json("""{"fator":"numeric","teto":"numeric|null"}"""),
-            Json("""["nota_final × fator, após os pesos"]"""),
-            "Lei 14.723/2023 art.2º");
-
-        h1.Should().Be(h2);
-        HashCanonicalComputer.IsValidHashShape(h1).Should().BeTrue();
-    }
-
-    [Fact(DisplayName = "Hash independe da ordem das chaves do esquema_args (canonicalização)")]
+    [Fact]
     public void Hash_OrdemDasChaves_NaoAltera()
     {
-        string ordemA = HashCanonicalComputer.ComputeRegraCatalogo(
-            "R", "v1", TipoRegra.RegraBonus,
-            Json("""{"fator":"numeric","teto":"numeric|null"}"""),
-            Json("[]"),
-            "base");
+        RegraCatalogo primeira = Criar(declaracao: """{"a":1,"b":2}""");
+        RegraCatalogo segunda = Criar(declaracao: """{"b":2,"a":1}""");
 
-        string ordemB = HashCanonicalComputer.ComputeRegraCatalogo(
-            "R", "v1", TipoRegra.RegraBonus,
-            Json("""{"teto":"numeric|null","fator":"numeric"}"""),
-            Json("[]"),
-            "base");
-
-        ordemB.Should().Be(ordemA);
+        primeira.Hash.Should().Be(segunda.Hash);
     }
 
-    [Fact(DisplayName = "Hash muda quando qualquer campo definicional muda")]
-    public void Hash_MudancaDeDefinicao_MudaHash()
+    [Theory]
+    [InlineData("codigo")]
+    [InlineData("versao")]
+    [InlineData("tipo")]
+    [InlineData("declaracao")]
+    [InlineData("invariantes")]
+    [InlineData("baseLegal")]
+    public void Hash_MudancaEmCadaCampo_AlteraHash(string campo)
     {
-        string baseHash = HashCanonicalComputer.ComputeRegraCatalogo(
-            "R", "v1", TipoRegra.RegraBonus, Json("""{"fator":"numeric"}"""), Json("[]"), "base-a");
+        RegraCatalogo original = Criar();
+        RegraCatalogo alterada = Criar(
+            codigo: campo == "codigo" ? "OUTRA" : "REGRA",
+            versao: campo == "versao" ? "v2" : "v1",
+            tipo: campo == "tipo" ? TipoRegra.RegraArredondamento : TipoRegra.RegraBonus,
+            declaracao: campo == "declaracao" ? """{"a":2}""" : """{"a":1}""",
+            invariantes: campo == "invariantes" ? """["outra"]""" : """["condição"]""",
+            baseLegal: campo == "baseLegal" ? "Outra base" : "Base legal");
 
-        HashCanonicalComputer.ComputeRegraCatalogo(
-            "R", "v2", TipoRegra.RegraBonus, Json("""{"fator":"numeric"}"""), Json("[]"), "base-a")
-            .Should().NotBe(baseHash, "mudar a versão muda o hash");
+        alterada.Hash.Should().NotBe(original.Hash);
+    }
 
-        HashCanonicalComputer.ComputeRegraCatalogo(
-            "R", "v1", TipoRegra.RegraBonus, Json("""{"fator":"numeric"}"""), Json("[]"), "base-b")
-            .Should().NotBe(baseHash, "mudar a base legal muda o hash");
+    private static RegraCatalogo Criar(
+        string codigo = "REGRA",
+        string versao = "v1",
+        TipoRegra tipo = TipoRegra.RegraBonus,
+        string declaracao = """{"a":1}""",
+        string invariantes = """["condição"]""",
+        string baseLegal = "Base legal") =>
+        RegraCatalogo.Criar(codigo, versao, tipo, Json(declaracao), Json(invariantes), baseLegal);
 
-        HashCanonicalComputer.ComputeRegraCatalogo(
-            "R", "v1", TipoRegra.RegraArredondamento, Json("""{"fator":"numeric"}"""), Json("[]"), "base-a")
-            .Should().NotBe(baseHash, "mudar o tipo muda o hash");
+    private static JsonElement Json(string texto)
+    {
+        using JsonDocument documento = JsonDocument.Parse(texto);
+        return documento.RootElement.Clone();
     }
 }

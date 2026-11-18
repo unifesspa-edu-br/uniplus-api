@@ -188,7 +188,7 @@ internal static class LeituraDosFormularios
     internal static TermoExigidoFormulario? LerTermoExigido(
         LeitorEnvelope leitor, JsonObject item, string path, FinalidadeFormulario finalidade)
     {
-        leitor.ExigirChaves(item, path, "codigo", "ordem", "termoId", "versaoId", "nome", "texto", "baseLegal",
+        leitor.ExigirChaves(item, path, "codigo", "ordem", "termoId", "versaoId", "termoCodigo", "versaoNumero", "nome", "texto", "baseLegal",
             "formaAceite", "hashVersao", "exibicao", "obrigatoriedade");
 
         string codigo = leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.CodigoTermoExigido);
@@ -216,9 +216,19 @@ internal static class LeituraDosFormularios
         return termo.IsSuccess ? termo.Value : leitor.Propagar<TermoExigidoFormulario>(termo.Error!);
     }
 
+    private static int LerNumeroDaVersao(LeitorEnvelope leitor, JsonObject item, string path)
+    {
+        int numero = leitor.Inteiro(item, "versaoNumero", path);
+        return numero < 1 && !leitor.Falhou
+            ? leitor.Malformado<int>($"{path}.versaoNumero", "esperado um inteiro a partir de 1.")
+            : numero;
+    }
+
     private static VersaoTermoEscolhida LerVersaoDoTermo(LeitorEnvelope leitor, JsonObject item, string path) => new(
         leitor.Identificador(item, "termoId", path),
         leitor.Identificador(item, "versaoId", path),
+        leitor.TextoNaoVazio(item, "termoCodigo", path, LimitesDoEnvelope.CodigoDoTermoNoCatalogo),
+        LerNumeroDaVersao(leitor, item, path),
         leitor.TextoNaoVazio(item, "nome", path, LimitesDoEnvelope.NomeDoTermo),
         leitor.TextoNaoVazio(item, "texto", path, LimitesDoEnvelope.TextoDoTermo),
         leitor.TextoNaoVazio(item, "baseLegal", path, LimitesDoEnvelope.BaseLegalDoTermo),

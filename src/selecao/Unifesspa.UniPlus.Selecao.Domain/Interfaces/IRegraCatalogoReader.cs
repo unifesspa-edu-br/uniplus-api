@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Leitura da biblioteca <c>regras_do_catalogo</c> (Story #772): resolve regras
@@ -50,11 +49,4 @@ public interface IRegraCatalogoReader
         int limit,
         PaginationDirection direction,
         CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Quantos corretores distintos a regra de consolidação exige para julgar uma avaliação. O número
-    /// é parâmetro da regra no rol, e a banca que julga o recurso precisa de integrantes ao menos
-    /// nessa quantidade. Devolve zero enquanto a regra não declara o número.
-    /// </summary>
-    Task<int> NumeroDeCorretoresAsync(ReferenciaRegra regra, CancellationToken cancellationToken = default);
 }

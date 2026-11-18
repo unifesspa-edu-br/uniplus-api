@@ -120,7 +120,7 @@ public sealed class ValorDeCondicaoNoGetTests
         {
             UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder
-                .SemearAsync(db, $"Valor de condição {Guid.CreateVersion7()}");
+                .SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"Valor de condição {Guid.CreateVersion7()}" });
             processoId = processo.Id;
         }
 

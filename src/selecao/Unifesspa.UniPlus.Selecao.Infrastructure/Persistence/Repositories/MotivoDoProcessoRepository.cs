@@ -20,15 +20,12 @@ public sealed class MotivoDoProcessoRepository : IMotivoDoProcessoRepository
         _context = context;
     }
 
-    public async Task<IReadOnlyList<MotivoDoProcesso>> ListarDoProcessoAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default) =>
-        await _context.MotivosDoProcesso
-            .Where(m => m.ProcessoSeletivoId == processoSeletivoId)
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
+    public async Task<IReadOnlyList<MotivoDoProcesso>> ListarEscolhaAtualAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default) =>
+        await EscolhaAtual(processoSeletivoId).ToListAsync(cancellationToken).ConfigureAwait(false);
 
-    public async Task<IReadOnlyList<MotivoEscolhidoComOrigem>> ListarComOrigemAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<MotivoEscolhidoComOrigem>> ListarEscolhaAtualComOrigemAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default)
     {
-        IReadOnlyList<MotivoDoProcesso> escolhidos = await ListarDoProcessoAsync(processoSeletivoId, cancellationToken).ConfigureAwait(false);
+        List<MotivoDoProcesso> escolhidos = await EscolhaAtual(processoSeletivoId).AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
         Guid[] origens = [.. escolhidos.Select(static e => e.MotivoDeDecisaoOrigemId)];
 
         Dictionary<Guid, MotivoDeDecisao> porId = await _context.MotivosDeDecisao
@@ -38,6 +35,28 @@ public sealed class MotivoDoProcessoRepository : IMotivoDoProcessoRepository
             .ConfigureAwait(false);
 
         return [.. escolhidos.Select(e => new MotivoEscolhidoComOrigem(e, porId.GetValueOrDefault(e.MotivoDeDecisaoOrigemId)))];
+    }
+
+    private IQueryable<MotivoDoProcesso> EscolhaAtual(Guid processoSeletivoId) =>
+        _context.MotivosDoProcesso
+            .Where(m => m.ProcessoSeletivoId == processoSeletivoId)
+            .Where(MotivoDoProcesso.NaEscolhaAtual);
+
+    public async Task<IReadOnlyList<MotivoDoProcesso>?> ListarDaVersaoPublicadaAsync(
+        Guid processoSeletivoId, int numeroDaVersao, CancellationToken cancellationToken = default)
+    {
+        bool publicada = await _context.VersoesConfiguracao
+            .AnyAsync(v => v.ProcessoSeletivoId == processoSeletivoId && v.NumeroVersao == numeroDaVersao, cancellationToken)
+            .ConfigureAwait(false);
+
+        return publicada
+            ? await _context.MotivosDoProcesso
+                .AsNoTracking()
+                .Where(m => m.ProcessoSeletivoId == processoSeletivoId)
+                .Where(MotivoDoProcesso.ValeNaVersao(numeroDaVersao))
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false)
+            : null;
     }
 
     public async Task AdicionarAsync(MotivoDoProcesso motivo, CancellationToken cancellationToken = default)

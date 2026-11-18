@@ -20,6 +20,8 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
 
+using static Unifesspa.UniPlus.Configuracao.IntegrationTests.FasesCanonicas.ApoioDosEndpointsDeFaseCanonica;
+
 /// <summary>
 /// Smoke + caminho de escrita dos endpoints de <c>FaseCanonica</c> (UNI-REQ-0139):
 /// routing, vendor media type, HATEOAS, autenticação/autorização, idempotência,
@@ -40,6 +42,9 @@ public sealed class FaseCanonicaEndpointTests
     {
         _fixture = fixture;
     }
+
+    private Task LiberarSlotDoSeedAsync(string codigo) =>
+        ApoioDosEndpointsDeFaseCanonica.LiberarSlotDoSeedAsync(_fixture.ConnectionString, codigo);
 
     [Fact(DisplayName = "GET /api/configuracao/fases-canonicas retorna 200 com Content-Type vendor MIME")]
     public async Task Listar_Retorna200ComVendorMime()
@@ -96,31 +101,18 @@ public sealed class FaseCanonicaEndpointTests
     public async Task Criar_ComAuthEIdempotency_Retorna201EPersiste()
     {
         await LiberarSlotDoSeedAsync("CHAMADA");
+        using HttpClient client = _fixture.Factory.CreateClient();
 
-        var body = new
+        Guid id = await CriarAsync(client, new
         {
             codigo = "CHAMADA",
             nome = "Chamada",
             descricao = "Convocação de aprovados",
             origemData = "NO_EDITAL",
-        };
+        });
 
-        using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage criar = await EnviarPostAdmin(client, body);
-
-        criar.StatusCode.Should().Be(HttpStatusCode.Created);
-        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
-        id.Should().NotBe(Guid.Empty);
-
-        HttpResponseMessage obter = await client.GetAsync(
-            new Uri($"/api/configuracao/fases-canonicas/{id}", UriKind.Relative));
-        obter.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
-        JsonElement root = doc.RootElement;
-        root.GetProperty("codigo").GetString().Should().Be("CHAMADA");
-        root.GetProperty("nome").GetString().Should().Be("Chamada");
-        root.GetProperty("agrupaEtapas").GetBoolean().Should().BeFalse();
+        JsonElement root = await ObterAsync(client, id);
+        ConfirmarChamadaSemSinalizadoresLigados(root);
         root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
     }
 
@@ -166,7 +158,7 @@ public sealed class FaseCanonicaEndpointTests
     [Fact(DisplayName = "POST com agrupar etapas fora da avaliação retorna 422 (coerência de domínio)")]
     public async Task Criar_AgrupaEtapasIncoerente_Retorna422()
     {
-        var body = new { codigo = "HOMOLOGACAO", nome = "Homologação", agrupaEtapas = true };
+        var body = new { codigo = "HOMOLOGACAO_INSCRICOES", nome = "Homologação", agrupaEtapas = true };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await EnviarPostAdmin(client, body);
@@ -179,7 +171,7 @@ public sealed class FaseCanonicaEndpointTests
     [InlineData("DELEGADA")]
     public async Task Criar_OrigemDataComTokenAntigo_Retorna422DeOrigemInvalida(string origemData)
     {
-        var body = new { codigo = "HOMOLOGACAO", nome = "Homologação", origemData };
+        var body = new { codigo = "HOMOLOGACAO_INSCRICOES", nome = "Homologação", origemData };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await EnviarPostAdmin(client, body);
@@ -237,196 +229,12 @@ public sealed class FaseCanonicaEndpointTests
             "a coerência AgrupaEtapasApenasAvaliacao depende de um código já confiável e não deve somar ao erro de código");
     }
 
-    [Fact(DisplayName = "POST com unidade sugerida viva guarda a cópia de sigla e nome e o GET a devolve")]
-    public async Task Criar_UnidadeSugeridaViva_GetDevolveACopia()
+    private static void ConfirmarChamadaSemSinalizadoresLigados(JsonElement fase)
     {
-        await LiberarSlotDoSeedAsync("HABILITACAO");
-        Unidade cga = await SemearUnidadeAsync("Centro de Gestão Acadêmica", "CGA");
-
-        using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage criar = await EnviarPostAdmin(client, new
-        {
-            codigo = "HABILITACAO",
-            nome = "Habilitação",
-            origemData = "NA_EXECUCAO",
-            unidadeSugeridaId = cga.Id,
-        });
-        criar.StatusCode.Should().Be(HttpStatusCode.Created);
-        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
-
-        JsonElement unidade = (await ObterAsync(client, id)).GetProperty("unidadeSugerida");
-        unidade.GetProperty("origemId").GetGuid().Should().Be(cga.Id);
-        unidade.GetProperty("sigla").GetString().Should().Be(cga.Sigla);
-        unidade.GetProperty("nome").GetString().Should().Be("Centro de Gestão Acadêmica");
+        fase.GetProperty("codigo").GetString().Should().Be("CHAMADA");
+        fase.GetProperty("nome").GetString().Should().Be("Chamada");
+        fase.GetProperty("agrupaEtapas").GetBoolean().Should().BeFalse();
+        fase.GetProperty("admiteAgruparEtapas").GetBoolean().Should().BeFalse("só a avaliação admite agrupar etapas");
+        fase.GetProperty("admiteComplementacao").GetBoolean().Should().BeFalse("a chamada não está entre as fases que a lei permite complementar");
     }
-
-    [Fact(DisplayName = "POST sem unidade sugerida cria a fase e o GET não traz a unidade")]
-    public async Task Criar_SemUnidadeSugerida_GetNaoTrazAUnidade()
-    {
-        await LiberarSlotDoSeedAsync("CLASSIFICACAO");
-
-        using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage criar = await EnviarPostAdmin(client, new
-        {
-            codigo = "CLASSIFICACAO",
-            nome = "Classificação",
-            origemData = "NA_EXECUCAO",
-        });
-        criar.StatusCode.Should().Be(HttpStatusCode.Created);
-        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
-
-        (await ObterAsync(client, id)).GetProperty("unidadeSugerida").ValueKind
-            .Should().Be(JsonValueKind.Null, "a fase sem sugestão não carrega unidade");
-    }
-
-    [Fact(DisplayName = "POST com unidade sugerida inexistente retorna 422 no campo unidadeSugeridaId")]
-    public async Task Criar_UnidadeSugeridaInexistente_Retorna422NoCampo()
-    {
-        using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage response = await EnviarPostAdmin(client, new
-        {
-            codigo = "MATRICULA",
-            nome = "Matrícula",
-            origemData = "NA_EXECUCAO",
-            unidadeSugeridaId = Guid.NewGuid(),
-        });
-
-        await ConferirRecusaDaUnidadeSugeridaAsync(response);
-    }
-
-    [Fact(DisplayName = "POST com unidade sugerida inativa retorna 422 no campo unidadeSugeridaId")]
-    public async Task Criar_UnidadeSugeridaInativa_Retorna422NoCampo()
-    {
-        Unidade extinta = await SemearUnidadeAsync("Coordenação extinta", "COEXT", inativa: true);
-
-        using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage response = await EnviarPostAdmin(client, new
-        {
-            codigo = "MATRICULA",
-            nome = "Matrícula",
-            origemData = "NA_EXECUCAO",
-            unidadeSugeridaId = extinta.Id,
-        });
-
-        await ConferirRecusaDaUnidadeSugeridaAsync(response);
-    }
-
-    [Fact(DisplayName = "PUT troca a unidade sugerida e PUT com unidadeSugeridaId nulo a retira")]
-    public async Task Atualizar_TrocaERetiraAUnidadeSugerida()
-    {
-        await LiberarSlotDoSeedAsync("ENSALAMENTO");
-        Unidade cga = await SemearUnidadeAsync("Centro de Gestão Acadêmica", "CGA");
-
-        using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage criar = await EnviarPostAdmin(client, new
-        {
-            codigo = "ENSALAMENTO",
-            nome = "Ensalamento",
-            origemData = "NA_EXECUCAO",
-        });
-        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
-
-        HttpResponseMessage sugerir = await EnviarPutAdmin(client, id, new
-        {
-            id,
-            nome = "Ensalamento",
-            origemData = "NA_EXECUCAO",
-            unidadeSugeridaId = cga.Id,
-        });
-        sugerir.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await ObterAsync(client, id)).GetProperty("unidadeSugerida").GetProperty("sigla").GetString()
-            .Should().Be(cga.Sigla);
-
-        HttpResponseMessage retirar = await EnviarPutAdmin(client, id, new
-        {
-            id,
-            nome = "Ensalamento",
-            origemData = "NA_EXECUCAO",
-            unidadeSugeridaId = (Guid?)null,
-        });
-        retirar.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await ObterAsync(client, id)).GetProperty("unidadeSugerida").ValueKind.Should().Be(JsonValueKind.Null);
-    }
-
-    private static async Task ConferirRecusaDaUnidadeSugeridaAsync(HttpResponseMessage response)
-    {
-        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        doc.RootElement.GetProperty("code").GetString()
-            .Should().Be("uniplus.configuracao.fase_canonica.unidade_sugerida_nao_encontrada");
-        doc.RootElement.GetProperty("errors").EnumerateArray().Select(e => e.GetProperty("field").GetString())
-            .Should().Contain("unidadeSugeridaId");
-    }
-
-    private static async Task<JsonElement> ObterAsync(HttpClient client, Guid id)
-    {
-        HttpResponseMessage obter = await client.GetAsync(
-            new Uri($"/api/configuracao/fases-canonicas/{id}", UriKind.Relative));
-        obter.StatusCode.Should().Be(HttpStatusCode.OK);
-        using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
-        return doc.RootElement.Clone();
-    }
-
-    private async Task<Unidade> SemearUnidadeAsync(string nome, string siglaBase, bool inativa = false)
-    {
-        string sufixo = Guid.NewGuid().ToString("N")[..8];
-        Unidade unidade = Unidade.Criar(
-            nome,
-            new IdentificadoresDaUnidade($"{siglaBase.ToLowerInvariant()}-{sufixo}", $"{siglaBase}{sufixo[..4]}".ToUpperInvariant(), $"FSC{sufixo}".ToUpperInvariant(), null),
-            CidadeDaUnidade.Nenhuma,
-            new VigenciaDaUnidade(new DateOnly(2026, 1, 1), null),
-            null,
-            TipoUnidade.Centro,
-            false).Value!;
-        if (inativa)
-        {
-            unidade.MarkAsDeleted("teste", DateTimeOffset.UtcNow);
-        }
-
-        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        UniPlusDbContext dbContext =
-            scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        dbContext.Unidades.Add(unidade);
-        await dbContext.SaveChangesAsync(CancellationToken.None);
-        return unidade;
-    }
-
-    private static async Task<HttpResponseMessage> EnviarPutAdmin(HttpClient client, Guid id, object body)
-    {
-        using HttpRequestMessage request = new(HttpMethod.Put, new Uri($"/api/configuracao/admin/fases-canonicas/{id}", UriKind.Relative));
-        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
-        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
-        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-        request.Content = JsonContent.Create(body);
-        return await client.SendAsync(request);
-    }
-
-    private static async Task<HttpResponseMessage> EnviarPostAdmin(HttpClient client, object body)
-    {
-        using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/configuracao/admin/fases-canonicas", UriKind.Relative));
-        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
-        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
-        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-        request.Content = JsonContent.Create(body);
-        return await client.SendAsync(request);
-    }
-    /// <summary>
-    /// Libera o slot de um codigo ocupado pelo seed das dezesseis fases. Desde que
-    /// <c>FaseCanonica</c> passou a nascer semeada, todo codigo do vocabulario ja tem
-    /// linha viva ao preparar o banco de teste, e um POST de criacao responderia 409.
-    /// O filtro pelo prefixo do id restringe o apagamento as linhas do seed.
-    /// </summary>
-    private async Task LiberarSlotDoSeedAsync(string codigo)
-    {
-        await using var conexao = new NpgsqlConnection(_fixture.ConnectionString);
-        await conexao.OpenAsync();
-
-        await using NpgsqlCommand comando = conexao.CreateCommand();
-        comando.CommandText =
-            "DELETE FROM configuracao.fases_canonicas " +
-            "WHERE id::text LIKE 'f45e0000-0000-7000-8000-%' AND codigo = @codigo";
-        comando.Parameters.AddWithValue("codigo", codigo);
-        await comando.ExecuteNonQueryAsync();
-    }
-
 }

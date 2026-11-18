@@ -22,28 +22,24 @@ internal static class LeituraDoCertameVagas
     internal static bool TentarOfertas(JsonObject envelope, [NotNullWhen(true)] out List<OfertaDeCursoCertameDto>? ofertas)
     {
         ofertas = null;
-        if (!PrimitivasDaProjecao.TentarArray(envelope, ProjecaoDoCertamePublicado.BlocoPublico("ofertas"), out JsonArray? array))
+        return PrimitivasDaProjecao.TentarArray(envelope, ProjecaoDoCertamePublicado.BlocoPublico("ofertas"), out JsonArray? array)
+            && PrimitivasDaProjecao.TentarItens<OfertaDeCursoCertameDto>(array, TentarOferta, out ofertas);
+    }
+
+    private static bool TentarOferta(JsonNode? item, [NotNullWhen(true)] out OfertaDeCursoCertameDto? oferta)
+    {
+        oferta = null;
+        if (item is not JsonObject objeto
+            || !PrimitivasDaProjecao.TentarIdentificador(objeto, "ofertaCursoOrigemId", out Guid id)
+            || !PrimitivasDaProjecao.TentarTexto(objeto, "cursoNome", out string cursoNome)
+            || !PrimitivasDaProjecao.TentarTexto(objeto, "cursoGrau", out string cursoGrau)
+            || !PrimitivasDaProjecao.TentarTexto(objeto, "unidadeOfertanteNome", out string unidade)
+            || !PrimitivasDaProjecao.TentarTextos(objeto, "turnos", out List<string>? turnos))
         {
             return false;
         }
 
-        List<OfertaDeCursoCertameDto> lidas = [];
-        foreach (JsonNode? item in array)
-        {
-            if (item is not JsonObject oferta
-                || !PrimitivasDaProjecao.TentarIdentificador(oferta, "ofertaCursoOrigemId", out Guid id)
-                || !PrimitivasDaProjecao.TentarTexto(oferta, "cursoNome", out string cursoNome)
-                || !PrimitivasDaProjecao.TentarTexto(oferta, "cursoGrau", out string cursoGrau)
-                || !PrimitivasDaProjecao.TentarTexto(oferta, "unidadeOfertanteNome", out string unidade)
-                || !PrimitivasDaProjecao.TentarTextos(oferta, "turnos", out List<string>? turnos))
-            {
-                return false;
-            }
-
-            lidas.Add(new OfertaDeCursoCertameDto(id, cursoNome, cursoGrau, unidade, turnos));
-        }
-
-        ofertas = lidas;
+        oferta = new OfertaDeCursoCertameDto(id, cursoNome, cursoGrau, unidade, turnos);
         return true;
     }
 
@@ -73,7 +69,7 @@ internal static class LeituraDoCertameVagas
         quadro = null;
         if (item is not JsonObject configuracao
             || !PrimitivasDaProjecao.TentarIdentificador(configuracao, "ofertaCursoOrigemId", out Guid ofertaId)
-            || !PrimitivasDaProjecao.TentarInteiro(configuracao, "totalPublicado", out int total)
+            || !PrimitivasDaProjecao.TentarInteiro(configuracao, "totalDeVagasDoEdital", out int total)
             || !PrimitivasDaProjecao.TentarArray(configuracao, "quadro", out JsonArray? quadroArray)
             || !PrimitivasDaProjecao.TentarItens<VagaPorModalidadeCertameDto>(quadroArray, TentarVagaPorModalidade, out List<VagaPorModalidadeCertameDto>? linhas))
         {

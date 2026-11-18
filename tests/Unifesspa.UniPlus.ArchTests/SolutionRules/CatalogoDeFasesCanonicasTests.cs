@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -42,12 +43,10 @@ public sealed class CatalogoDeFasesCanonicasTests
                 item.Codigo,
                 item.Nome,
                 item.Descricao,
-                item.AgrupaEtapas,
-                item.PermiteComplementacao,
                 item.BaseLegal,
-                item.ColetaInscricao,
-                item.ColetaSolicitacaoIsencao,
-                OrigensDataFase.ParaTokenCanonico(item.OrigemData));
+                OrigensDataFase.ParaTokenCanonico(item.OrigemData),
+                new SinalizadoresDaFase(
+                    item.AgrupaEtapas, item.PermiteComplementacao, item.ColetaInscricao, item.ColetaSolicitacaoIsencao));
 
             resultado.IsSuccess.Should().BeTrue(
                 $"a fase {item.Codigo} do seed precisa ser aceita pelo mesmo caminho que valida o cadastro");

@@ -36,12 +36,18 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.CatalogosDoEnvelopeFechado;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.CheckpointsDoEnvelopeFechado;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.ItensDoChecklistDoEnvelopeFechado;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.PassosDoEnvelopeFechado;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.PayloadsDoEnvelopeFechado;
+
 /// <summary>
 /// A cadeia completa do envelope fechado (issue #1045, story-pai #40): um processo RICO,
 /// publicado pelo caminho HTTP com todas as dimensões que a cascata #1059/#1067/#1068/#563/#1069
-/// entregou, o ato confirmado em Publicações — não só enfileirado —, uma sessão editorial que
-/// altera e fecha, o segundo ato confirmado retificando o primeiro, e a versão vigente refletindo
-/// o fechamento.
+/// entregou, o ato confirmado em Publicações — não só enfileirado —, a retificação pelo envio
+/// único, o segundo ato confirmado retificando o primeiro, e a versão vigente refletindo a
+/// retificação.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -67,16 +73,8 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 [Trait("Category", "Integration")]
 [Trait("Category", "OutboxCapability")]
 [Trait("Category", "OutboxCascading")]
-public sealed partial class EnvelopeFechadoE2ETests
+public sealed class EnvelopeFechadoE2ETests
 {
-    /// <summary>
-    /// Os códigos dos atos que a fase de resultado publica — o preliminar, que abre o ciclo
-    /// recursal, e o definitivo, que o conclui. Nenhum congela configuração (são resultado,
-    /// não edital/retificação) e nenhum é único por objeto (um certame tem mais de um
-    /// resultado ao longo do ciclo).
-    /// </summary>
-    private const string CodigoAtoResultado = "RESULTADO_CLASSIFICACAO";
-
     private const string TituloDoCiclo =
         "Ciclo completo pelo HTTP: criar → configurar todas as dimensões → GET /conformidade verde → " +
         "publicar (ato V1 confirmado em Publicações) → abrir/alterar/fechar retificação (ato V2 confirmado, " +
@@ -89,50 +87,13 @@ public sealed partial class EnvelopeFechadoE2ETests
     [Fact(DisplayName = TituloDoCiclo)]
     public async Task CicloCompleto_DoHttpAoAtoConfirmadoEmPublicacoes()
     {
-        Cenario cenario = await PrepararAsync();
+        Cenario cenario = await PrepararAsync(_fixture.Factory);
 
         await ConfigurarTodasAsDimensoesAsync(cenario);
         await ConferirChecklistVerdeAsync(cenario);
         await PublicarEConfirmarV1Async(cenario);
-        await RetificarSobSessaoEditorialAsync(cenario);
+        await RetificarPeloEnvioUnicoAsync(cenario);
         await ConferirIdentidadeEAtoV2Async(cenario);
         await ConferirSnapshotVigenteAsync(cenario);
     }
-
-    // ══════════════════════════════════════════════════════════════════════════════
-    // Checkpoint — valida a resposta IMEDIATAMENTE, nomeando fase/rota/status/ProblemDetails
-    // ══════════════════════════════════════════════════════════════════════════════
-
-    private static async Task<HttpResponseMessage> ExecutarPassoAsync(
-        Func<Task<HttpResponseMessage>> acao, HttpStatusCode esperado, string passo, string rota)
-    {
-        HttpResponseMessage resposta = await acao().ConfigureAwait(false);
-        if (resposta.StatusCode != esperado)
-        {
-            string corpo = await resposta.Content.ReadAsStringAsync().ConfigureAwait(false);
-            resposta.StatusCode.Should().Be(
-                esperado,
-                $"passo '{passo}' ({rota}) esperava {(int)esperado} {esperado} e recebeu " +
-                $"{(int)resposta.StatusCode} {resposta.StatusCode}. ProblemDetails: {corpo}");
-        }
-
-        return resposta;
-    }
-
-    private static string LerETag(HttpResponseMessage resposta, string passo)
-    {
-        resposta.Headers.ETag.Should().NotBeNull($"passo '{passo}': a resposta de uma sessão editorial carrega o ETag");
-        return resposta.Headers.ETag!.ToString();
-    }
-
-    /// <summary>
-    /// Localiza, dentro do bloco <c>etapas</c> do envelope congelado, o item cujo <c>id</c>
-    /// bate com <paramref name="etapaId"/> — casamento por identidade, nunca por posição no
-    /// array (<c>SerializacaoDasEtapas.SerializarEtapas</c> reordena por conteúdo
-    /// quando duas etapas empatam em <c>Ordem</c>).
-    /// </summary>
-    private static JsonObject LocalizarEtapaPorId(JsonNode configuracao, Guid etapaId) =>
-        configuracao["etapas"]!.AsArray()
-            .Select(static no => no!.AsObject())
-            .Single(etapa => etapa["id"]!.GetValue<Guid>() == etapaId);
 }

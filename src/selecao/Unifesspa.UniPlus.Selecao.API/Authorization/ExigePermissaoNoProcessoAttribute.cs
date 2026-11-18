@@ -47,21 +47,25 @@ public sealed class ExigePermissaoNoProcessoAttribute : Attribute, IAsyncAuthori
         IServiceProvider servicos = context.HttpContext.RequestServices;
         Guid processoId = RotaDoProcesso.Id(context, ParametroDaRota);
 
-        ResultadoDoAcesso resultado = await AcessoAoProcesso
-            .VerificarAsync(
-                servicos.GetRequiredService<IVerificadorDeAcesso>(),
-                servicos.GetRequiredService<IProcessoSeletivoRepository>(),
-                processoId,
-                _permissao,
-                unidade => Alvo == AlvoDaPermissaoNoProcesso.Inscricoes
-                    ? AcessoAoProcesso.ResourceDaInscricao(unidade, processoId, inscricaoId: null)
-                    : AcessoAoProcesso.ResourceDoProcesso(unidade, processoId),
-                context.HttpContext.RequestAborted)
-            .ConfigureAwait(false);
+        ResultadoDoAcesso resultado = await DecidirAsync(servicos, processoId, context.HttpContext.RequestAborted).ConfigureAwait(false);
 
         context.Result = RespostaDoAcesso.Para(
             resultado, () => RotaDoProcesso.NaoEncontrado(servicos, processoId), () => RotaDoProcesso.Impedido(servicos));
     }
+
+    private Task<ResultadoDoAcesso> DecidirAsync(IServiceProvider servicos, Guid processoId, CancellationToken cancellationToken) =>
+        AcessoAoProcesso.VerificarAsync(
+            servicos.GetRequiredService<IVerificadorDeAcesso>(),
+            servicos.GetRequiredService<IUnidadeDonaDoProcesso>(),
+            processoId,
+            _permissao,
+            unidade => ResourceDoAlvo(unidade, processoId),
+            cancellationToken);
+
+    private ResourceContext ResourceDoAlvo(Guid unidade, Guid processoId) =>
+        Alvo == AlvoDaPermissaoNoProcesso.Inscricoes
+            ? AcessoAoProcesso.ResourceDaInscricao(unidade, processoId, inscricaoId: null)
+            : AcessoAoProcesso.ResourceDoProcesso(unidade, processoId);
 }
 
 /// <summary>O alvo que <see cref="ExigePermissaoNoProcessoAttribute"/> decide sobre o processo da rota.</summary>

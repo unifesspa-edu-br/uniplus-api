@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.API;
 
+using Microsoft.AspNetCore.OpenApi;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -17,6 +18,7 @@ using Unifesspa.UniPlus.Selecao.Application.Mappings;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Application.Queries.AtosDoProcesso;
 using Unifesspa.UniPlus.Selecao.Infrastructure;
+using Unifesspa.UniPlus.Selecao.Infrastructure.DocumentoDaConfiguracao;
 
 /// <summary>
 /// Registro self-describing do módulo Selecao para o composition root do
@@ -59,11 +61,24 @@ public static class SelecaoModuleRegistration
     private static void RegistrarContratoHttp(IServiceCollection services, IConfiguration configuration)
     {
         services.AddUniPlusOpenApi(SelecaoApiAssemblyMarker.ModuleName, configuration);
+        RegistrarEsquemaDoDocumentoNaOpenApi(services);
         services.AddSingleton<IDomainErrorRegistration, SelecaoDomainErrorRegistration>();
         services.AddSingleton<IResourceLinksBuilder<ObrigatoriedadeLegalDto>, ObrigatoriedadeLegalLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<MotivoDeDecisaoDto>, MotivoDeDecisaoLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<ProcessoSeletivoDto>, ProcessoSeletivoLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<RegraCatalogoDto>, RegraCatalogoLinksBuilder>();
+    }
+
+    /// <summary>
+    /// O esquema do documento de configuração entra como componentes só no documento OpenAPI do módulo Seleção: os
+    /// demais documentos não o descrevem.
+    /// </summary>
+    private static void RegistrarEsquemaDoDocumentoNaOpenApi(IServiceCollection services)
+    {
+        services.AddSingleton<EsquemaDoDocumentoNaOpenApi>();
+        services.Configure<OpenApiOptions>(
+            SelecaoApiAssemblyMarker.ModuleName,
+            opcoes => opcoes.AddDocumentTransformer<EsquemaDoDocumentoNaOpenApi>());
     }
 
     /// <summary>

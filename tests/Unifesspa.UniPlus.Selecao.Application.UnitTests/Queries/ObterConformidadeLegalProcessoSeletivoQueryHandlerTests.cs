@@ -17,6 +17,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport.CenariosDeDefinirEtapas;
+
 /// <summary>
 /// Story #853, CA-16 (fonte única): a consulta pública usa exatamente a mesma dupla de
 /// chamadas do gate que bloqueia a transição —
@@ -41,61 +43,18 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
     [Fact(DisplayName = "CA-16: o veredicto da consulta pública bate, item a item, com o do avaliador que também alimenta o gate")]
     public async Task Consulta_ComOMesmoProcessoERegras_BateComOAvaliadorDoGate()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        processo.DefinirEtapas(
-            [EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(CadastrosVivos.IdentidadeDe("PROVA_OBJETIVA"), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
+        TipoEtapaSnapshot provaObjetiva = TipoCongelado(CadastrosVivos.IdentidadeDe("PROVA_OBJETIVA"), "PROVA_OBJETIVA", "Prova Objetiva", true, true);
+        ProcessoSeletivo processo = ProcessoComAEtapa(EtapaDoProcesso("Prova Objetiva", CaraterEtapa.Classificatoria, 1, provaObjetiva, 1m));
         ObrigatoriedadeLegal regraAprovada = NovaRegra("CONSULTA-APROVA", new EtapaObrigatoria("PROVA_OBJETIVA"));
         ObrigatoriedadeLegal regraReprovada = NovaRegra("CONSULTA-REPROVA", new EtapaObrigatoria("ENTREVISTA"));
-        DateOnly dataDeCorte = new(2026, 1, 1);
 
-        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = Substitute.For<IObrigatoriedadeLegalRepository>();
-        obrigatoriedadeLegalRepository.ObterVigentesParaTipoProcessoAsync(
-            Arg.Any<string>(), dataDeCorte, Arg.Any<CancellationToken>())
-            .Returns([regraAprovada, regraReprovada]);
-
-        IProcessoSeletivoRepository processoSeletivoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        processoSeletivoRepository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>())
-            .Returns(processo);
-
-        Result<ConformidadeLegalProcessoSeletivoDto> resultadoDaConsulta = await ObterConformidadeLegalProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeLegalProcessoSeletivoQuery(processo.Id, dataDeCorte),
-            processoSeletivoRepository,
-            obrigatoriedadeLegalRepository,
-            CadastrosVivos.Modalidades(),
-            CadastrosVivos.TiposDocumento(),
-            CadastrosVivos.TiposEtapa(),
-            CadastrosVivos.TiposDeficiencia(),
-            CadastrosVivos.RegrasDesempate(),
-            new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(),
-            CancellationToken.None);
+        Result<ConformidadeLegalProcessoSeletivoDto> resultadoDaConsulta = await ConsultarAsync(processo, new DateOnly(2026, 1, 1), regraAprovada, regraReprovada);
 
         resultadoDaConsulta.IsSuccess.Should().BeTrue();
         ConformidadeLegalProcessoSeletivoDto dto = resultadoDaConsulta.Value!;
         dto.Regras.Should().HaveCount(2);
-
-        RegraAvaliadaDto reprovadaNaConsulta = dto.Regras.Single(r => r.RegraCodigo == "CONSULTA-REPROVA");
-        reprovadaNaConsulta.Aprovada.Should().BeFalse();
-        reprovadaNaConsulta.Motivo.Should().Contain("ENTREVISTA",
-            "a consulta pública tem de expor o motivo nomeado (CA-02), não projetar Motivo: null");
-        RegraAvaliadaDto aprovadaNaConsulta = dto.Regras.Single(r => r.RegraCodigo == "CONSULTA-APROVA");
-        aprovadaNaConsulta.Aprovada.Should().BeTrue();
-        aprovadaNaConsulta.Motivo.Should().BeNull("regra aprovada não carrega motivo de reprovação");
-
-        // Fonte única: (RegraId, Aprovada, Motivo) da consulta bate, item a item, com o que o
-        // MESMO avaliador (Domain, chamado pelo gate na Application) produz para o mesmo
-        // processo/regras/data — a consulta não tem lógica própria de decisão.
-        Dictionary<Guid, (bool Aprovada, string? Motivo)> avaliacaoDireta = AvaliadorConformidadeLegal
-            .Avaliar(processo, processo.TipoProcesso.ToString(), [regraAprovada, regraReprovada], IdentidadesDe(processo), FatosDeModalidadeDeTeste.DoCatalogo)
-            .Regras.ToDictionary(r => r.RegraId, r => (r.Aprovada, r.Motivo));
-
-        foreach (RegraAvaliadaDto regraDaConsulta in dto.Regras)
-        {
-            avaliacaoDireta.Should().ContainKey(regraDaConsulta.RegraId);
-            avaliacaoDireta[regraDaConsulta.RegraId].Aprovada.Should().Be(regraDaConsulta.Aprovada);
-            avaliacaoDireta[regraDaConsulta.RegraId].Motivo.Should().Be(regraDaConsulta.Motivo);
-        }
+        ConferirMotivosExpostos(dto);
+        ConferirQueBateComOAvaliadorDireto(dto, processo, regraAprovada, regraReprovada);
     }
 
     [Fact(DisplayName = "CA-16: regra que referencia cadastro inexistente aparece reprovada na consulta, não aprovada por vacuidade")]
@@ -321,6 +280,15 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
             "é o que a publicação recusa primeiro — a recusa que sai é a que orienta o operador");
     }
 
+    private static FaseCronograma FaseDeInscricaoComJanelaParcial(bool temInicio, bool temFim) => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            1, Inicio: temInicio ? InstanteEmBelem.Em(2026, 1, 1) : null, Fim: temFim ? InstanteEmBelem.Em(2026, 2, 1) : null, FaseConcluinteCodigo: null,
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
+
     [Theory(DisplayName = "#1456 — janela MEIO-ABERTA da fase âncora recusa como o gate, e não responde 200")]
     [InlineData(true, false)]
     [InlineData(false, true)]
@@ -330,39 +298,23 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
         // do `Inicio` deixava a consulta aprovar um rascunho que a publicação recusa — meia
         // janela é estado válido de cadastro, e a divergência apareceria exatamente aí.
         ProcessoSeletivo processo = ProcessoBase();
-        FaseCronograma meiaJanela = FaseCronograma.Criar(
-            1, Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao,
-            agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: true,
-            coletaSolicitacaoIsencao: false,
-            inicio: temInicio ? InstanteEmBelem.Em(2026, 1, 1) : null,
-            fim: temFim ? InstanteEmBelem.Em(2026, 2, 1) : null,
-            produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
-        processo.DefinirCronogramaFases([meiaJanela], [], PrecondicaoIfMatch.Ausente)
+        FaseCronograma meiaJanela = FaseDeInscricaoComJanelaParcial(temInicio, temFim);
+        processo.DefinirCronogramaFases([meiaJanela], [])
             .IsSuccess.Should().BeTrue();
 
-        IProcessoSeletivoRepository processoSeletivoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        processoSeletivoRepository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>())
-            .Returns(processo);
-        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = Substitute.For<IObrigatoriedadeLegalRepository>();
-
-        Result<ConformidadeLegalProcessoSeletivoDto> resultadoDaConsulta =
-            await ObterConformidadeLegalProcessoSeletivoQueryHandler.Handle(
-                new ObterConformidadeLegalProcessoSeletivoQuery(processo.Id),
-                processoSeletivoRepository,
-                obrigatoriedadeLegalRepository,
-                CadastrosVivos.Modalidades(),
-                CadastrosVivos.TiposDocumento(),
-                CadastrosVivos.TiposEtapa(),
-                CadastrosVivos.TiposDeficiencia(),
-                CadastrosVivos.RegrasDesempate(),
-                new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(),
-                CancellationToken.None);
+        Result<ConformidadeLegalProcessoSeletivoDto> resultadoDaConsulta = await ConsultarAsync(processo);
 
         resultadoDaConsulta.IsFailure.Should().BeTrue(
             "o gate recusa a janela meio-aberta, e a consulta responde pelo mesmo veredicto");
         resultadoDaConsulta.Error!.Code.Should().Be("ProcessoSeletivo.FaseQueColetaInscricaoSemJanela");
     }
+
+    private static FaseCronograma FaseDeInscricaoNaOrdem1() => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
 
     [Fact(DisplayName = "#1456 — fase que coleta inscrição sem janela recusa com FaseQueColetaInscricaoSemJanela (422), nunca com 404")]
     public async Task FaseDeColetaSemJanela_RecusaComOCodigoDoGate()
@@ -371,32 +323,11 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
         // Revisão. O gate recusa a publicação com este código; a consulta tem de dizer o mesmo,
         // para a tela apontar o cronograma em vez de mandar tentar de novo.
         ProcessoSeletivo processo = ProcessoBase();
-        FaseCronograma faseSemJanela = FaseCronograma.Criar(
-            1, Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao,
-            agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: true,
-            coletaSolicitacaoIsencao: false, inicio: null, fim: null,
-            produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
-        processo.DefinirCronogramaFases([faseSemJanela], [], PrecondicaoIfMatch.Ausente)
+        FaseCronograma faseSemJanela = FaseDeInscricaoNaOrdem1();
+        processo.DefinirCronogramaFases([faseSemJanela], [])
             .IsSuccess.Should().BeTrue();
 
-        IProcessoSeletivoRepository processoSeletivoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        processoSeletivoRepository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>())
-            .Returns(processo);
-        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = Substitute.For<IObrigatoriedadeLegalRepository>();
-
-        Result<ConformidadeLegalProcessoSeletivoDto> resultadoDaConsulta =
-            await ObterConformidadeLegalProcessoSeletivoQueryHandler.Handle(
-                new ObterConformidadeLegalProcessoSeletivoQuery(processo.Id),
-                processoSeletivoRepository,
-                obrigatoriedadeLegalRepository,
-                CadastrosVivos.Modalidades(),
-                CadastrosVivos.TiposDocumento(),
-                CadastrosVivos.TiposEtapa(),
-                CadastrosVivos.TiposDeficiencia(),
-                CadastrosVivos.RegrasDesempate(),
-                new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(),
-                CancellationToken.None);
+        Result<ConformidadeLegalProcessoSeletivoDto> resultadoDaConsulta = await ConsultarAsync(processo);
 
         resultadoDaConsulta.IsFailure.Should().BeTrue();
         resultadoDaConsulta.Error!.Code.Should().Be(
@@ -404,10 +335,28 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
             "o mesmo código que ProcessoSeletivo.Publicar recusa — a pendência é da fase, não do período do ato");
     }
 
+    private static async Task<Result<ConformidadeLegalProcessoSeletivoDto>> ConsultarAsync(ProcessoSeletivo processo)
+    {
+        IProcessoSeletivoRepository processoSeletivoRepository = Substitute.For<IProcessoSeletivoRepository>();
+        processoSeletivoRepository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>())
+            .Returns(processo);
+        return await ObterConformidadeLegalProcessoSeletivoQueryHandler.Handle(
+            new ObterConformidadeLegalProcessoSeletivoQuery(processo.Id),
+            processoSeletivoRepository,
+            Substitute.For<IObrigatoriedadeLegalRepository>(),
+            CadastrosVivos.Modalidades(),
+            CadastrosVivos.TiposDocumento(),
+            CadastrosVivos.TiposEtapa(),
+            CadastrosVivos.TiposDeficiencia(),
+            CadastrosVivos.RegrasDesempate(),
+            new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(),
+            CancellationToken.None);
+    }
+
     private static ProcessoSeletivo ProcessoBase() =>
         ProcessoSeletivo.Criar(
             "PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     /// <summary>
@@ -418,7 +367,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
     private static ProcessoSeletivo ProcessoDeImportacaoExterna() =>
         ProcessoSeletivo.Criar(
             "PS 2026 — Transferência", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     /// <summary>Identidades derivadas das próprias exigências — estado sem renomeação nem reciclagem.</summary>
@@ -448,4 +397,65 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
             .GroupBy(codigoDe, StringComparer.Ordinal)
             .ToDictionary(g => g.Key, g => origemDe(g.First()), StringComparer.Ordinal);
 
+
+    private static IObrigatoriedadeLegalRepository RepositorioComAsRegrasVigentes(DateOnly dataDeCorte, ObrigatoriedadeLegal[] regras)
+    {
+        IObrigatoriedadeLegalRepository repositorio = Substitute.For<IObrigatoriedadeLegalRepository>();
+        repositorio.ObterVigentesParaTipoProcessoAsync(Arg.Any<string>(), dataDeCorte, Arg.Any<CancellationToken>()).Returns(regras);
+        return repositorio;
+    }
+
+    private static IProcessoSeletivoRepository RepositorioQueDevolveOProcesso(ProcessoSeletivo processo)
+    {
+        IProcessoSeletivoRepository repositorio = Substitute.For<IProcessoSeletivoRepository>();
+        repositorio.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        return repositorio;
+    }
+
+    private static Task<Result<ConformidadeLegalProcessoSeletivoDto>> ConsultarAsync(
+        ProcessoSeletivo processo, DateOnly dataDeCorte, params ObrigatoriedadeLegal[] regras)
+    {
+        return ObterConformidadeLegalProcessoSeletivoQueryHandler.Handle(
+            new ObterConformidadeLegalProcessoSeletivoQuery(processo.Id, dataDeCorte),
+            RepositorioQueDevolveOProcesso(processo),
+            RepositorioComAsRegrasVigentes(dataDeCorte, regras),
+            CadastrosVivos.Modalidades(),
+            CadastrosVivos.TiposDocumento(),
+            CadastrosVivos.TiposEtapa(),
+            CadastrosVivos.TiposDeficiencia(),
+            CadastrosVivos.RegrasDesempate(),
+            new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(),
+            CancellationToken.None);
+    }
+
+    private static void ConferirMotivosExpostos(ConformidadeLegalProcessoSeletivoDto dto)
+    {
+        RegraAvaliadaDto reprovadaNaConsulta = dto.Regras.Single(r => r.RegraCodigo == "CONSULTA-REPROVA");
+        reprovadaNaConsulta.Aprovada.Should().BeFalse();
+        reprovadaNaConsulta.Motivo.Should().Contain("ENTREVISTA",
+            "a consulta pública tem de expor o motivo nomeado (CA-02), não projetar Motivo: null");
+        RegraAvaliadaDto aprovadaNaConsulta = dto.Regras.Single(r => r.RegraCodigo == "CONSULTA-APROVA");
+        aprovadaNaConsulta.Aprovada.Should().BeTrue();
+        aprovadaNaConsulta.Motivo.Should().BeNull("regra aprovada não carrega motivo de reprovação");
+    }
+
+    /// <summary>
+    /// Fonte única: (RegraId, Aprovada, Motivo) da consulta bate, item a item, com o que o mesmo
+    /// avaliador (Domain, chamado pelo gate na Application) produz para o mesmo processo, regras e
+    /// data — a consulta não tem lógica própria de decisão.
+    /// </summary>
+    private static void ConferirQueBateComOAvaliadorDireto(
+        ConformidadeLegalProcessoSeletivoDto dto, ProcessoSeletivo processo, params ObrigatoriedadeLegal[] regras)
+    {
+        Dictionary<Guid, (bool Aprovada, string? Motivo)> avaliacaoDireta = AvaliadorConformidadeLegal
+            .Avaliar(processo, processo.TipoProcesso.ToString(), regras, IdentidadesDe(processo), FatosDeModalidadeDeTeste.DoCatalogo)
+            .Regras.ToDictionary(r => r.RegraId, r => (r.Aprovada, r.Motivo));
+
+        foreach (RegraAvaliadaDto regraDaConsulta in dto.Regras)
+        {
+            avaliacaoDireta.Should().ContainKey(regraDaConsulta.RegraId);
+            avaliacaoDireta[regraDaConsulta.RegraId].Aprovada.Should().Be(regraDaConsulta.Aprovada);
+            avaliacaoDireta[regraDaConsulta.RegraId].Motivo.Should().Be(regraDaConsulta.Motivo);
+        }
+    }
 }

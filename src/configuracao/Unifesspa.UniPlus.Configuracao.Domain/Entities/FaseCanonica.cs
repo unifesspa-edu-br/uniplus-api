@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// de vida de um processo seletivo (inscrição, homologação, avaliação, recursos,
 /// resultado, matrícula…). Dado institucional de referência sem PII (LGPD
 /// inaplicável). Não é Etapa — a Etapa pontuada pertence a outro requisito; aqui o
-/// sinalizador <see cref="AgrupaEtapas"/> apenas marca qual fase as agrupa.
+/// sinalizador <see cref="SinalizadoresDaFase.AgrupaEtapas"/> apenas marca qual fase as agrupa.
 /// </summary>
 /// <remarks>
 /// <para>O <see cref="Codigo"/> (value object <see cref="CodigoFase"/>) é a chave
@@ -20,15 +20,16 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// false</c>) e <b>imutável</b>: o comando de atualização não o aceita — o
 /// vocabulário canônico é fixo. Além do formato, o código deve pertencer ao
 /// conjunto canônico de fases (<see cref="FaseCanonicaCatalogo"/>).</para>
-/// <para>As invariantes de coerência (<see cref="AgrupaEtapas"/> só para a fase de
-/// avaliação; <see cref="PermiteComplementacao"/> só nas fases legalmente permitidas)
-/// moram na factory <see cref="Criar"/>/<see cref="Atualizar"/>, revalidadas contra o
-/// código imutável. A remoção é sempre soft-delete; nunca bloqueada — o único
+/// <para>As invariantes de coerência dos <see cref="Sinalizadores"/> com o código (agrupamento
+/// de etapas só para a fase de avaliação, complementação só nas fases legalmente permitidas,
+/// marca de solicitação de isenção só na fase de isenção) e entre eles (coletar inscrição e
+/// solicitação de isenção são exclusivos) são conferidas pela factory <see cref="Criar"/> e por
+/// <see cref="Atualizar"/>, revalidadas contra o código imutável. A remoção é sempre soft-delete; nunca bloqueada — o único
 /// consumo é por snapshot-copy desacoplado no Módulo Seleção (ADR-0061), e não há
 /// FK intra-banco apontando para esta entidade.</para>
 /// <para>O que uma fase publica e o papel de cada publicação são declarados na fase
 /// do cronograma do processo, não aqui: quem monta o edital é quem sabe se aquela
-/// homologação sai preliminar, definitiva ou as duas. <see cref="ColetaInscricao"/>
+/// homologação sai preliminar, definitiva ou as duas. <see cref="SinalizadoresDaFase.ColetaInscricao"/>
 /// decide o piso mínimo do cronograma quando a origem dos candidatos é inscrição
 /// própria; <see cref="OrigemData"/>
 /// decide se a janela da fase é obrigatória (<c>NO_EDITAL</c>) ou opcional
@@ -47,22 +48,18 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
     public CodigoFase Codigo { get; private set; } = null!;
     public string Nome { get; private set; } = null!;
     public string? Descricao { get; private set; }
-    public bool AgrupaEtapas { get; private set; }
-    public bool PermiteComplementacao { get; private set; }
     public string? BaseLegal { get; private set; }
 
-    /// <summary>Verdadeiro quando a fase coleta inscrições — decide o piso mínimo quando a origem dos candidatos é inscrição própria.</summary>
-    public bool ColetaInscricao { get; private set; }
-
     /// <summary>
-    /// Verdadeiro quando a fase abre a janela em que o candidato pede isenção da taxa. Exclusiva da
-    /// fase de solicitação de isenção, e incompatível com <see cref="ColetaInscricao"/>.
+    /// O que a fase faz no certame: agrupa etapas, admite complementação, coleta inscrição ou coleta
+    /// solicitação de isenção. Substituído por inteiro a cada atualização.
     /// </summary>
     /// <remarks>
-    /// Booleana, e não comparação com o código: o código é rótulo administrável, e renomeá-lo pelo
-    /// CRUD faria toda regra escrita contra ele deixar de casar (ADR-0061).
+    /// Marcas booleanas, e não comparação com o código: a Seleção decide pelos atributos que copia
+    /// para o snapshot da fase, nunca pelo código (ADR-0113). O código é imutável e as marcas o
+    /// acompanham.
     /// </remarks>
-    public bool ColetaSolicitacaoIsencao { get; private set; }
+    public SinalizadoresDaFase Sinalizadores { get; private set; } = null!;
 
     /// <summary>Quando a data da fase é fixada: <see cref="OrigemDataFase.NoEdital"/> (janela obrigatória) ou <see cref="OrigemDataFase.NaExecucao"/> (janela opcional).</summary>
     public OrigemDataFase OrigemData { get; private set; }
@@ -93,10 +90,9 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
     /// <summary>
     /// Valida o código: formato fechado (<see cref="CodigoFase.Criar"/>) e pertença
     /// ao conjunto canônico de fases. Sem mutar nada — existe para
-    /// <see cref="Criar"/> decidir se as coerências que dependem do código (
-    /// <see cref="AgrupaEtapas"/>, <see cref="PermiteComplementacao"/>) fazem
-    /// sentido de avaliar, e para o handler consultar unicidade só com um código
-    /// já confiável.
+    /// <see cref="Criar"/> decidir se as coerências dos <see cref="SinalizadoresDaFase"/> que
+    /// dependem do código fazem sentido de avaliar, e para o handler consultar unicidade só com
+    /// um código já confiável.
     /// </summary>
     public static Result<CodigoFase> ValidarCodigo(string? codigo)
     {
@@ -117,181 +113,74 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
     }
 
     /// <summary>
-    /// Valida e normaliza os quatro campos editáveis que <b>não</b> dependem do
-    /// código da fase (nome, descrição, base legal e origem da data),
-    /// acumulando toda violação independente em vez de parar na primeira. Sem
-    /// mutar nada e sem depender de I/O — existe para o handler de atualização
-    /// falhar rápido antes de buscar a fase por Id, quando a causa da violação já
-    /// é determinável só pelo payload.
+    /// Recusa o que o corpo da atualização decide sem o código da fase: os quatro campos comuns
+    /// (nome, descrição, base legal e origem da data) e a exclusividade entre coletar inscrição e
+    /// coletar solicitação de isenção, acumulados nesta ordem. Sem mutar nada e sem depender de
+    /// I/O — existe para o handler de atualização falhar rápido antes de buscar a fase por Id.
+    /// O que depende do código gravado fica para <see cref="Atualizar"/>.
     /// </summary>
-    public static Result<(string Nome, string? Descricao, string? BaseLegal, OrigemDataFase OrigemData)> ValidarCamposComuns(
-        string? nome, string? descricao, string? baseLegal, string? origemData)
+    public static Result ValidarOQueNaoDependeDoCodigo(
+        string? nome, string? descricao, string? baseLegal, string? origemData, SinalizadoresDaFase sinalizadores)
     {
-        List<FieldError> erros = [];
-
-        string? nomeNormalizado = null;
-        if (string.IsNullOrWhiteSpace(nome))
-        {
-            erros.Add(new("nome", new DomainError(
-                FaseCanonicaErrorCodes.NomeObrigatorio, "Nome da fase canônica é obrigatório.")));
-        }
-        else
-        {
-            nomeNormalizado = nome.Trim();
-            if (nomeNormalizado.Length > NomeMaxLength)
-            {
-                erros.Add(new("nome", new DomainError(
-                    FaseCanonicaErrorCodes.NomeTamanho,
-                    $"Nome da fase deve ter no máximo {NomeMaxLength} caracteres.")));
-                nomeNormalizado = null;
-            }
-        }
-
-        string? descricaoNormalizada = NormalizarOpcional(descricao);
-        if (descricaoNormalizada is not null && descricaoNormalizada.Length > DescricaoMaxLength)
-        {
-            erros.Add(new("descricao", new DomainError(
-                FaseCanonicaErrorCodes.DescricaoTamanho,
-                $"Descrição da fase deve ter no máximo {DescricaoMaxLength} caracteres.")));
-            descricaoNormalizada = null;
-        }
-
-        string? baseLegalNormalizada = NormalizarOpcional(baseLegal);
-        if (baseLegalNormalizada is not null && baseLegalNormalizada.Length > BaseLegalMaxLength)
-        {
-            erros.Add(new("baseLegal", new DomainError(
-                FaseCanonicaErrorCodes.BaseLegalTamanho,
-                $"Base legal da fase deve ter no máximo {BaseLegalMaxLength} caracteres.")));
-            baseLegalNormalizada = null;
-        }
-
-        OrigemDataFase origem = OrigemDataFase.Nenhuma;
-        if (string.IsNullOrWhiteSpace(origemData))
-        {
-            erros.Add(new("origemData", new DomainError(
-                FaseCanonicaErrorCodes.OrigemDataObrigatoria, "Origem da data da fase é obrigatória.")));
-        }
-        else if (!OrigensDataFase.TryAnalisar(origemData, out origem))
-        {
-            erros.Add(new("origemData", new DomainError(
-                FaseCanonicaErrorCodes.OrigemDataInvalida,
-                $"Origem da data deve ser uma de: {string.Join(", ", OrigensDataFase.TokensCanonicos)}.")));
-        }
-
-        if (erros.Count > 0)
-        {
-            return Result<(string, string?, string?, OrigemDataFase)>.ValidationFailure(erros);
-        }
-
-        return Result<(string, string?, string?, OrigemDataFase)>.Success(
-            (nomeNormalizado!, descricaoNormalizada, baseLegalNormalizada, origem));
-    }
-
-    /// <summary>
-    /// Valida as coerências que dependem do código da fase — <see cref="AgrupaEtapas"/> só para a
-    /// fase de avaliação, <see cref="PermiteComplementacao"/> só nas fases legalmente permitidas,
-    /// <see cref="ColetaSolicitacaoIsencao"/> exatamente na fase de isenção e nunca junto de
-    /// <see cref="ColetaInscricao"/> — acumulando as violações independentes. Só faz
-    /// sentido avaliar contra um <paramref name="codigoValor"/> já confiável (formato
-    /// válido e pertencente ao conjunto canônico); por isso <see cref="Criar"/> só a
-    /// chama quando <see cref="ValidarCodigo"/> teve sucesso.
-    /// </summary>
-    public static Result ValidarCoerenciaDeCodigo(
-        string codigoValor, bool agrupaEtapas, bool permiteComplementacao, bool coletaInscricao, bool coletaSolicitacaoIsencao)
-    {
-        List<FieldError> erros = [];
-
-        // Bidirecional: a marca só existe na fase de isenção, e nela é obrigatória. Aceitá-la
-        // falsa ali deixaria a fase indistinguível das demais no cronograma, e a janela publicaria
-        // sem passar por nenhuma das regras que existem para ela.
-        if (coletaSolicitacaoIsencao != string.Equals(
-                codigoValor, FaseCanonicaCatalogo.CodigoSolicitacaoIsencao, StringComparison.Ordinal))
-        {
-            erros.Add(new("coletaSolicitacaoIsencao", new DomainError(
-                FaseCanonicaErrorCodes.SolicitacaoIsencaoApenasNaFaseDeIsencao,
-                "A marca de solicitação de isenção pertence à fase de isenção, e só a ela.")));
-        }
-
-        if (coletaInscricao && coletaSolicitacaoIsencao)
-        {
-            erros.Add(new("coletaSolicitacaoIsencao", new DomainError(
-                FaseCanonicaErrorCodes.ColetaInscricaoEIsencaoMutuamenteExclusivas,
-                "Uma fase não coleta inscrição e solicitação de isenção ao mesmo tempo — são janelas distintas, com prazos distintos.")));
-        }
-
-        if (agrupaEtapas && !string.Equals(codigoValor, FaseCanonicaCatalogo.CodigoAvaliacao, StringComparison.Ordinal))
-        {
-            erros.Add(new("agrupaEtapas", new DomainError(
-                FaseCanonicaErrorCodes.AgrupaEtapasApenasAvaliacao,
-                "Apenas a fase de avaliação agrupa etapas pontuadas.")));
-        }
-
-        if (permiteComplementacao && !FaseCanonicaCatalogo.PermiteComplementacao(codigoValor))
-        {
-            erros.Add(new("permiteComplementacao", new DomainError(
-                FaseCanonicaErrorCodes.ComplementacaoApenasFasesPermitidas,
-                "Complementação documental só é permitida nas fases de homologação e recursos.")));
-        }
+        ArgumentNullException.ThrowIfNull(sinalizadores);
+        List<FieldError> erros =
+        [
+            .. ValidarCamposComuns(nome, descricao, baseLegal, origemData).Errors,
+            .. sinalizadores.Recusas(codigoReconhecido: null),
+        ];
 
         return erros.Count == 0 ? Result.Success() : Result.ValidationFailure(erros);
     }
 
     /// <summary>
+    /// Valida e normaliza os quatro campos editáveis que <b>não</b> dependem do
+    /// código da fase (nome, descrição, base legal e origem da data). Roda as quatro regras
+    /// sempre, nesta ordem, gravando toda violação independente na mesma lista em vez de parar
+    /// na primeira. Sem mutar nada e sem depender de I/O.
+    /// </summary>
+    private static Result<(string Nome, string? Descricao, string? BaseLegal, OrigemDataFase OrigemData)> ValidarCamposComuns(
+        string? nome, string? descricao, string? baseLegal, string? origemData)
+    {
+        List<FieldError> erros = [];
+        string? nomeNormalizado = ValidarNome(nome, erros);
+        string? descricaoNormalizada = NormalizarDentroDoLimite(
+            descricao, "descricao", DescricaoMaxLength, FaseCanonicaErrorCodes.DescricaoTamanho, "Descrição da fase", erros);
+        string? baseLegalNormalizada = NormalizarDentroDoLimite(
+            baseLegal, "baseLegal", BaseLegalMaxLength, FaseCanonicaErrorCodes.BaseLegalTamanho, "Base legal da fase", erros);
+        OrigemDataFase origem = ValidarOrigemData(origemData, erros);
+
+        return erros.Count > 0
+            ? Result<(string, string?, string?, OrigemDataFase)>.ValidationFailure(erros)
+            : Result<(string, string?, string?, OrigemDataFase)>.Success(
+                (nomeNormalizado!, descricaoNormalizada, baseLegalNormalizada, origem));
+    }
+
+    /// <summary>
     /// Cria uma nova fase canônica. Valida o código (formato + pertença ao conjunto
-    /// canônico), os quatro campos comuns e — só quando o código é válido — as
-    /// coerências que dependem dele, acumulando toda violação no mesmo lote. A
-    /// unicidade do código entre vivos é responsabilidade do handler.
+    /// canônico), os quatro campos comuns e os <paramref name="sinalizadores"/> — a coerência
+    /// deles com o código só é conferida quando o código é reconhecido —, acumulando toda
+    /// violação no mesmo lote. A unicidade do código entre vivos é responsabilidade do handler.
     /// </summary>
     public static Result<FaseCanonica> Criar(
         string? codigo,
         string? nome,
         string? descricao,
-        bool agrupaEtapas,
-        bool permiteComplementacao,
         string? baseLegal,
-        bool coletaInscricao,
-        bool coletaSolicitacaoIsencao,
-        string? origemData)
+        string? origemData,
+        SinalizadoresDaFase sinalizadores)
     {
-        List<FieldError> erros = [];
-
+        ArgumentNullException.ThrowIfNull(sinalizadores);
         Result<CodigoFase> codigoResult = ValidarCodigo(codigo);
-        if (codigoResult.IsFailure)
-        {
-            erros.AddRange(codigoResult.Errors);
-        }
-
-        Result<(string Nome, string? Descricao, string? BaseLegal, OrigemDataFase OrigemData)> comunsResult =
+        Result<(string Nome, string? Descricao, string? BaseLegal, OrigemDataFase OrigemData)> comuns =
             ValidarCamposComuns(nome, descricao, baseLegal, origemData);
-        if (comunsResult.IsFailure)
-        {
-            erros.AddRange(comunsResult.Errors);
-        }
-
-        // As coerências dependentes do código só fazem sentido contra um código já
-        // confiável — se o código falhou, relatar "AgrupaEtapasApenasAvaliacao" sobre
-        // um valor malformado seria um segundo erro derivado do primeiro, não uma
-        // violação independente.
-        if (codigoResult.IsSuccess)
-        {
-            Result coerencia = ValidarCoerenciaDeCodigo(
-                codigoResult.Value!.Valor, agrupaEtapas, permiteComplementacao, coletaInscricao, coletaSolicitacaoIsencao);
-            if (coerencia.IsFailure)
-            {
-                erros.AddRange(coerencia.Errors);
-            }
-        }
-
+        List<FieldError> erros = [.. codigoResult.Errors, .. comuns.Errors, .. sinalizadores.Recusas(codigoResult.Value)];
         if (erros.Count > 0)
         {
             return Result<FaseCanonica>.ValidationFailure(erros);
         }
 
         var fase = new FaseCanonica { Codigo = codigoResult.Value! };
-        fase.AplicarCampos(
-            comunsResult.Value.Nome, comunsResult.Value.Descricao,
-            agrupaEtapas, permiteComplementacao, comunsResult.Value.BaseLegal,
-            coletaInscricao, coletaSolicitacaoIsencao, comunsResult.Value.OrigemData);
+        fase.AplicarCampos(comuns.Value, sinalizadores);
 
         return Result<FaseCanonica>.Success(fase);
     }
@@ -299,61 +188,40 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
     /// <summary>
     /// Atualiza os atributos editáveis da fase. O <c>Codigo</c> e o <c>Id</c> são
     /// <b>imutáveis</b> — este método não os recebe. Revalida os quatro campos comuns
-    /// e as coerências contra o código congelado da fase, acumulando toda
-    /// violação no mesmo lote — é a rede de segurança que cobre as duas regras que
-    /// o pré-check do handler não consegue avaliar sem o código persistido.
+    /// e os <paramref name="sinalizadores"/> contra o código gravado da fase, acumulando toda
+    /// violação no mesmo lote — é a rede de segurança que cobre as coerências que o pré-check do
+    /// handler não consegue avaliar sem o código persistido.
     /// </summary>
     public Result Atualizar(
         string? nome,
         string? descricao,
-        bool agrupaEtapas,
-        bool permiteComplementacao,
         string? baseLegal,
-        bool coletaInscricao,
-        bool coletaSolicitacaoIsencao,
-        string? origemData)
+        string? origemData,
+        SinalizadoresDaFase sinalizadores)
     {
-        List<FieldError> erros = [];
-
-        Result<(string Nome, string? Descricao, string? BaseLegal, OrigemDataFase OrigemData)> comunsResult =
+        ArgumentNullException.ThrowIfNull(sinalizadores);
+        Result<(string Nome, string? Descricao, string? BaseLegal, OrigemDataFase OrigemData)> comuns =
             ValidarCamposComuns(nome, descricao, baseLegal, origemData);
-        if (comunsResult.IsFailure)
-        {
-            erros.AddRange(comunsResult.Errors);
-        }
-
-        Result coerencia = ValidarCoerenciaDeCodigo(
-            Codigo.Valor, agrupaEtapas, permiteComplementacao, coletaInscricao, coletaSolicitacaoIsencao);
-        if (coerencia.IsFailure)
-        {
-            erros.AddRange(coerencia.Errors);
-        }
-
+        List<FieldError> erros = [.. comuns.Errors, .. sinalizadores.Recusas(Codigo)];
         if (erros.Count > 0)
         {
             return Result.ValidationFailure(erros);
         }
 
-        AplicarCampos(
-            comunsResult.Value.Nome, comunsResult.Value.Descricao,
-            agrupaEtapas, permiteComplementacao, comunsResult.Value.BaseLegal,
-            coletaInscricao, coletaSolicitacaoIsencao, comunsResult.Value.OrigemData);
+        AplicarCampos(comuns.Value, sinalizadores);
 
         return Result.Success();
     }
 
     private void AplicarCampos(
-        string nome, string? descricao, bool agrupaEtapas, bool permiteComplementacao,
-        string? baseLegal, bool coletaInscricao, bool coletaSolicitacaoIsencao, OrigemDataFase origemData)
+        (string Nome, string? Descricao, string? BaseLegal, OrigemDataFase OrigemData) comuns,
+        SinalizadoresDaFase sinalizadores)
     {
-        Nome = nome;
-        Descricao = descricao;
-        AgrupaEtapas = agrupaEtapas;
-        PermiteComplementacao = permiteComplementacao;
-        BaseLegal = baseLegal;
-        ColetaInscricao = coletaInscricao;
-        ColetaSolicitacaoIsencao = coletaSolicitacaoIsencao;
-        OrigemData = origemData;
+        (Nome, Descricao, BaseLegal, OrigemData) = comuns;
+        if (Sinalizadores != sinalizadores)
+        {
+            Sinalizadores = sinalizadores;
+        }
     }
 
     /// <summary>
@@ -367,6 +235,43 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
         UnidadeSugeridaNome = unidade?.Nome;
     }
 
-    private static string? NormalizarOpcional(string? valor) =>
-        string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
+    private static string? ValidarNome(string? nome, List<FieldError> erros)
+    {
+        if (string.IsNullOrWhiteSpace(nome))
+        {
+            erros.Add(new("nome", new DomainError(
+                FaseCanonicaErrorCodes.NomeObrigatorio, "Nome da fase canônica é obrigatório.")));
+            return null;
+        }
+
+        return NormalizarDentroDoLimite(
+            nome, "nome", NomeMaxLength, FaseCanonicaErrorCodes.NomeTamanho, "Nome da fase", erros);
+    }
+
+    private static string? NormalizarDentroDoLimite(
+        string? valor, string campo, int maximo, string codigoDoErro, string rotulo, List<FieldError> erros)
+    {
+        string? normalizado = string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
+        if (normalizado is null || normalizado.Length <= maximo)
+        {
+            return normalizado;
+        }
+
+        erros.Add(new(campo, new DomainError(codigoDoErro, $"{rotulo} deve ter no máximo {maximo} caracteres.")));
+        return null;
+    }
+
+    private static OrigemDataFase ValidarOrigemData(string? origemData, List<FieldError> erros)
+    {
+        if (!OrigensDataFase.TryAnalisar(origemData, out OrigemDataFase origem))
+        {
+            erros.Add(new("origemData", string.IsNullOrWhiteSpace(origemData)
+                ? new DomainError(FaseCanonicaErrorCodes.OrigemDataObrigatoria, "Origem da data da fase é obrigatória.")
+                : new DomainError(
+                    FaseCanonicaErrorCodes.OrigemDataInvalida,
+                    $"Origem da data deve ser uma de: {string.Join(", ", OrigensDataFase.TokensCanonicos)}.")));
+        }
+
+        return origem;
+    }
 }

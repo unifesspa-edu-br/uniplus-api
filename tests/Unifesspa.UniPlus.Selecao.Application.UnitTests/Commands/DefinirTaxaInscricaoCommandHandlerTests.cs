@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -29,15 +30,15 @@ public sealed class DefinirTaxaInscricaoCommandHandlerTests
     private static ProcessoSeletivo NovoProcesso() =>
         ProcessoSeletivo.Criar(
             "PS 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
     [Fact(DisplayName = "Handle com processo inexistente retorna ProcessoSeletivo.NaoEncontrado")]
     public async Task Handle_ProcessoInexistente_RetornaNaoEncontrado()
     {
         Mocks mocks = NovosMocks(null, Guid.CreateVersion7());
-        DefinirTaxaInscricaoCommand command = new(Guid.CreateVersion7(), true, 100m, null, PrecondicaoIfMatch.Ausente);
+        DefinirTaxaInscricaoCommand command = new(Guid.CreateVersion7(), true, 100m, null);
 
-        Result<MutacaoAceita> result = await DefinirTaxaInscricaoCommandHandler.Handle(
+        Result result = await DefinirTaxaInscricaoCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
@@ -50,13 +51,12 @@ public sealed class DefinirTaxaInscricaoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(
-                cobra: true, valor: 100m, fundamentosCodigos: [FundamentoIsencaoCodigo.CadastroUnico]).Value!,
-            PrecondicaoIfMatch.Ausente);
+                cobra: true, valor: 100m, fundamentosCodigos: [FundamentoIsencaoCodigo.CadastroUnico]).Value!);
 
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirTaxaInscricaoCommand command = new(processo.Id, null, null, null, PrecondicaoIfMatch.Ausente);
+        DefinirTaxaInscricaoCommand command = new(processo.Id, null, null, null);
 
-        Result<MutacaoAceita> result = await DefinirTaxaInscricaoCommandHandler.Handle(
+        Result result = await DefinirTaxaInscricaoCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
@@ -70,9 +70,9 @@ public sealed class DefinirTaxaInscricaoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(processo, processo.Id);
         DefinirTaxaInscricaoCommand command = new(
-            processo.Id, true, 150.00m, [FundamentoIsencaoCodigo.CadastroUnico], PrecondicaoIfMatch.Ausente);
+            processo.Id, true, 150.00m, [FundamentoIsencaoCodigo.CadastroUnico]);
 
-        Result<MutacaoAceita> result = await DefinirTaxaInscricaoCommandHandler.Handle(
+        Result result = await DefinirTaxaInscricaoCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
@@ -89,9 +89,9 @@ public sealed class DefinirTaxaInscricaoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(processo, processo.Id);
         DefinirTaxaInscricaoCommand command = new(
-            processo.Id, true, null, [FundamentoIsencaoCodigo.CadastroUnico], PrecondicaoIfMatch.Ausente);
+            processo.Id, true, null, [FundamentoIsencaoCodigo.CadastroUnico]);
 
-        Result<MutacaoAceita> result = await DefinirTaxaInscricaoCommandHandler.Handle(
+        Result result = await DefinirTaxaInscricaoCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
@@ -106,9 +106,9 @@ public sealed class DefinirTaxaInscricaoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(processo, processo.Id);
         DefinirTaxaInscricaoCommand command = new(
-            processo.Id, true, 100m, [], PrecondicaoIfMatch.Ausente);
+            processo.Id, true, 100m, []);
 
-        Result<MutacaoAceita> result = await DefinirTaxaInscricaoCommandHandler.Handle(
+        Result result = await DefinirTaxaInscricaoCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
@@ -134,8 +134,7 @@ public sealed class DefinirTaxaInscricaoCommandHandlerTests
         byte[] bytesCanonicos = System.Text.Encoding.UTF8.GetBytes(new JsonObject { ["status"] = "ok" }.ToJsonString());
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         processo.Publicar(
-            dados, bytesCanonicos, "1.0", "canonical-json/sha256@v1", ProcessoSeletivoConformeBuilder.HashFixo,
-            "user-conta-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).IsSuccess.Should().BeTrue();
+            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(bytesCanonicos, "1.0", "canonical-json/sha256@v1", ProcessoSeletivoConformeBuilder.HashFixo) }).IsSuccess.Should().BeTrue();
 
         return processo;
     }
@@ -146,9 +145,9 @@ public sealed class DefinirTaxaInscricaoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcessoPublicado();
         Mocks mocks = NovosMocks(processo, processo.Id);
         ConfiguracaoTaxaInscricao? antes = processo.ConfiguracaoTaxaInscricao;
-        DefinirTaxaInscricaoCommand command = new(processo.Id, true, 100m, null, PrecondicaoIfMatch.Ausente);
+        DefinirTaxaInscricaoCommand command = new(processo.Id, true, 100m, null);
 
-        Result<MutacaoAceita> result = await DefinirTaxaInscricaoCommandHandler.Handle(
+        Result result = await DefinirTaxaInscricaoCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();

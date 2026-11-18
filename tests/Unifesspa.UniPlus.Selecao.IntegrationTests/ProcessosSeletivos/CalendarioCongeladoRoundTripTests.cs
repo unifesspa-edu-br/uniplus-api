@@ -30,8 +30,8 @@ public sealed class CalendarioCongeladoRoundTripTests
     [Fact(DisplayName = "O bloco congela a lista inteira de dias, não uma referência ao dataset")]
     public void Bloco_CongelaListaPorValor()
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
 
         JsonObject bloco = Payload(congelado.Bytes)["calendarioDiasUteis"]!.AsObject();
 
@@ -52,11 +52,11 @@ public sealed class CalendarioCongeladoRoundTripTests
     [Fact(DisplayName = "A recanonicalização usa o calendário do envelope — o catálogo vivo não é consultado")]
     public void Recanonicalizacao_UsaOCalendarioDoEnvelope()
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
-        CorpusEnvelope.Publicar(processo);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        CorpusEnvelopeEntrada.Publicar(processo);
 
-        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
         Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(versao);
         reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
 
@@ -83,8 +83,8 @@ public sealed class CalendarioCongeladoRoundTripTests
     [Fact(DisplayName = "Trocado o dataset vigente, a versão publicada continua reproduzindo os mesmos bytes")]
     public void DatasetTrocado_NaoAfetaVersaoPublicada()
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
 
         // O cadastro publica um dataset novo: outra origem, outra versão, outro conteúdo.
         CalendarioDiasUteisCongelado datasetNovo = CalendarioDiasUteisCongelado.Criar(
@@ -93,7 +93,7 @@ public sealed class CalendarioCongeladoRoundTripTests
             [DiaNaoUtilCongelado.Criar(new DateOnly(2027, 1, 1), "NACIONAL", null, null, null).Value!]).Value!;
 
         byte[] sobDatasetNovo = CorpusEnvelope.Codec.Codificar(
-            CorpusEnvelope.Entrada(processo) with { CalendarioDiasUteis = datasetNovo }).Bytes;
+            CorpusEnvelopeEntrada.Entrada(processo) with { CalendarioDiasUteis = datasetNovo }).Bytes;
 
         sobDatasetNovo.Should().NotEqual(congelado.Bytes,
             "pré-condição: o conteúdo do calendário participa dos bytes — se não participasse, " +
@@ -101,7 +101,7 @@ public sealed class CalendarioCongeladoRoundTripTests
 
         // A versão publicada não se move: ela carrega o calendário que congelou.
         Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(
-            CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes));
+            CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes));
 
         reidratado.Value!.CalendarioDiasUteis!.VersaoDataset.Should().Be("2026");
         reidratado.Value.CalendarioDiasUteis.DiasNaoUteis.Should().HaveCount(4);
@@ -110,11 +110,11 @@ public sealed class CalendarioCongeladoRoundTripTests
     [Fact(DisplayName = "Removido o dataset da origem, a versão publicada ainda reproduz os bytes congelados")]
     public void DatasetRemovido_VersaoAindaSeReproduz()
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
-        CorpusEnvelope.Publicar(processo);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        CorpusEnvelopeEntrada.Publicar(processo);
 
-        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
 
         // Nada aqui consulta cadastro nenhum: a reidratação parte só dos bytes persistidos. É
         // essa ausência que o cenário prova — com o dataset removido da origem, um envelope que

@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -39,15 +40,15 @@ public sealed class GateDoAlgoritmoDeContagemTests
     private static ProcessoSeletivo Processo(RegraRecursoFase? regraRecurso) =>
         ProcessoConformeFactory.Criar(fase: ProcessoConformeFactory.FaseConforme(regraRecurso));
 
-    private static ReferenciaRegra Algoritmo() => ReferenciaRegra.Criar(
-        AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, "v1", new string('b', 64)).Value!;
+    private static ReferenciaRegra Algoritmo() => ReferenciaRegra.De(
+        AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, "v1", new string('b', 64));
 
     private static RegraRecursoFase RegraDeRecurso(
         UnidadePrazo prazoUnidade = UnidadePrazo.DiasUteis,
         decimal prazoValor = 2m,
         UnidadePrazo? suspensividadeUnidade = null) => RegraRecursoFase.Criar(
-            ReferenciaRegra.Criar(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('c', 64)).Value!,
-            new ArgsRegraPrazoRecurso(
+            ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('c', 64)),
+            new ParametrosRegraPrazoRecurso(
                 PrazoValor: prazoValor,
                 PrazoUnidade: prazoUnidade,
                 SuspensividadePrimeiraInstanciaValor: suspensividadeUnidade is null ? null : 5m,
@@ -55,7 +56,8 @@ public sealed class GateDoAlgoritmoDeContagemTests
                 AdmiteInstanciaSuperior: false,
                 SuspensividadeSegundaInstanciaValor: null,
                 SuspensividadeSegundaInstanciaUnidade: null),
-            ProcessoConformeFactory.ProdutoPreliminarId).Value!;
+            ProcessoConformeFactory.ProdutoPreliminarId,
+            HomologacaoDasInscricoesDeTeste.ProcedimentosDaHomologacao()).Value!;
 
     /// <summary>
     /// Calendário vigente mínimo. Este arquivo prova o gate da <b>convenção de contagem</b>; sem
@@ -71,13 +73,7 @@ public sealed class GateDoAlgoritmoDeContagemTests
         FusoInstitucional: TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId));
 
     private static Result<VersaoConfiguracao> Publicar(ProcessoSeletivo processo) => processo.Publicar(
-        ProcessoConformeFactory.Dados(),
-        configuracaoCongeladaCanonica: "{}"u8.ToArray(),
-        schemaVersion: "1.1",
-        algoritmoHash: "canonical-json/sha256@v1",
-        hashDocumento: HashFixo,
-        atorUsuarioContaId: "teste",
-        TimeProvider.System, ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        new CenarioDeCongelamento { Dados = ProcessoConformeFactory.Dados(), Documento = new DocumentoCongelado("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "teste", Contagem = ComCalendario() });
 
     /// <summary>
     /// Leva o processo ao estado publicado sem passar pelo gate — a publicação é assunto de
@@ -85,7 +81,7 @@ public sealed class GateDoAlgoritmoDeContagemTests
     /// </summary>
     private static VersaoConfiguracao PublicarComAlgoritmo(ProcessoSeletivo processo)
     {
-        processo.DefinirAlgoritmoContagemPrazo(Algoritmo(), PrecondicaoIfMatch.Ausente)
+        processo.DefinirAlgoritmoContagemPrazo(Algoritmo())
             .IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> publicada = Publicar(processo);
@@ -120,44 +116,10 @@ public sealed class GateDoAlgoritmoDeContagemTests
         RetirarAlgoritmo(processo);
 
         Result<VersaoConfiguracao> retificar = processo.Retificar(
-            ProcessoConformeFactory.Dados(),
-            versaoAtual,
-            configuracaoCongeladaCanonica: "{}"u8.ToArray(),
-            schemaVersion: "1.1",
-            algoritmoHash: "canonical-json/sha256@v1",
-            hashDocumento: HashFixo,
-            atorUsuarioContaId: "teste",
-            motivo: "Correção do prazo",
-            TimeProvider.System, ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = ProcessoConformeFactory.Dados(), Documento = new DocumentoCongelado("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "teste", Contagem = ComCalendario() }, versaoAtual, "Correção do prazo");
 
         retificar.IsFailure.Should().BeTrue();
         retificar.Error!.Code.Should().Be(CodigoDaRecusa);
-    }
-
-    [Fact(DisplayName = "Fechamento de sessão editorial: a terceira transição recusa com o mesmo erro nomeado")]
-    public void FechamentoDeSessao_SemAlgoritmo_Recusa()
-    {
-        ProcessoSeletivo processo = Processo(RegraDeRecurso());
-        VersaoConfiguracao versaoAtual = PublicarComAlgoritmo(processo);
-
-        processo.AbrirRetificacao("Ajustar o prazo", versaoAtual, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "teste", DateTimeOffset.UnixEpoch)
-            .IsSuccess.Should().BeTrue();
-
-        RetirarAlgoritmo(processo);
-
-        Result<VersaoConfiguracao> fechar = processo.FecharRetificacao(
-            ProcessoConformeFactory.Dados(),
-            versaoAtual,
-            configuracaoCongeladaCanonica: "{}"u8.ToArray(),
-            schemaVersion: "1.1",
-            algoritmoHash: "canonical-json/sha256@v1",
-            hashDocumento: HashFixo,
-            atorUsuarioContaId: "teste",
-            PrecondicaoIfMatch.Curinga,
-            TimeProvider.System, ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
-
-        fechar.IsFailure.Should().BeTrue();
-        fechar.Error!.Code.Should().Be(CodigoDaRecusa);
     }
 
     [Fact(DisplayName = "Prazo de interposição em HORAS também exige a convenção — só as horas em dia útil avançam o relógio")]
@@ -188,7 +150,7 @@ public sealed class GateDoAlgoritmoDeContagemTests
     {
         ProcessoSeletivo comAlgoritmo = Processo(
             RegraDeRecurso(prazoUnidade: UnidadePrazo.Horas, prazoValor: 48m, suspensividadeUnidade: UnidadePrazo.Dias));
-        comAlgoritmo.DefinirAlgoritmoContagemPrazo(Algoritmo(), PrecondicaoIfMatch.Ausente)
+        comAlgoritmo.DefinirAlgoritmoContagemPrazo(Algoritmo())
             .IsSuccess.Should().BeTrue();
 
         Publicar(comAlgoritmo).Error?.Code.Should().NotBe(CodigoDaRecusa,
@@ -200,27 +162,9 @@ public sealed class GateDoAlgoritmoDeContagemTests
     public void ComAlgoritmo_GateNaoRecusa()
     {
         ProcessoSeletivo processo = Processo(RegraDeRecurso());
-        processo.DefinirAlgoritmoContagemPrazo(Algoritmo(), PrecondicaoIfMatch.Ausente)
+        processo.DefinirAlgoritmoContagemPrazo(Algoritmo())
             .IsSuccess.Should().BeTrue();
 
         Publicar(processo).Error?.Code.Should().NotBe(CodigoDaRecusa);
-    }
-
-    [Fact(DisplayName = "Declarar a convenção move o ETag da sessão — sem isso, escrita concorrente com revisão velha passaria")]
-    public void DeclararAlgoritmo_MoveOETagDaSessao()
-    {
-        ProcessoSeletivo processo = Processo(RegraDeRecurso());
-        VersaoConfiguracao versaoAtual = PublicarComAlgoritmo(processo);
-
-        processo.AbrirRetificacao("Trocar a convenção", versaoAtual, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "teste", DateTimeOffset.UnixEpoch)
-            .IsSuccess.Should().BeTrue();
-        string? etagAntes = processo.ETagDaSessaoEditorial;
-        etagAntes.Should().NotBeNull("pré-condição: a sessão está aberta e tem ETag");
-
-        processo.DefinirAlgoritmoContagemPrazo(
-            ReferenciaRegra.Criar(AlgoritmoContagemPrazoCodigo.AvancaDataUtil, "v1", new string('d', 64)).Value!,
-            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
-
-        processo.ETagDaSessaoEditorial.Should().NotBe(etagAntes);
     }
 }

@@ -4,9 +4,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 /// <summary>
 /// O que uma edição muda nas coleções do processo. Coleção sem troca informada não muda. A raiz aplica
-/// a mudança e vincula ao processo o que entra. Os planos a calculam antes de qualquer efeito; a exceção
-/// é <c>ReposicaoDaConfiguracao.Repor</c>, que atualiza no lugar as partes vivas que continuam e só
-/// devolve a troca que falta aplicar.
+/// a mudança e vincula ao processo o que entra. Os planos a calculam antes de qualquer efeito.
 /// </summary>
 internal sealed record MudancaDaConfiguracao
 {

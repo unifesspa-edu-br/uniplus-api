@@ -35,18 +35,9 @@ public sealed class TermoConsentimentoReaderTests
     [Fact(DisplayName = "As versões pedidas voltam com o conteúdo e a forma de aceite em token; a de termo removido, não")]
     public async Task ListarVersoesAsync_DevolveConteudoEOmiteTermoRemovido()
     {
-        (TermoConsentimento vivo, TermoConsentimentoVersao versaoViva) = Promovido("Autorização de consulta", "A_DEFINIR");
-        (TermoConsentimento removido, TermoConsentimentoVersao versaoRemovida) = Promovido("Termo retirado", "REGISTRO_DIGITAL_SEM_LOG_IP");
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.TermosConsentimento.AddRange(vivo, removido);
-            await ctx.SaveChangesAsync();
-
-            removido.MarkAsDeleted(AdminA, Agora);
-            await ctx.SaveChangesAsync();
-        }
-
+        (TermoConsentimento vivo, TermoConsentimentoVersao versaoViva) = Promovido($"Autorização de consulta {Guid.NewGuid():N}", "A_DEFINIR");
+        (TermoConsentimento removido, TermoConsentimentoVersao versaoRemovida) = Promovido($"Termo retirado {Guid.NewGuid():N}", "REGISTRO_DIGITAL_SEM_LOG_IP");
+        await GravarUmVivoEUmRemovidoAsync(vivo, removido);
         await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         TermoConsentimentoReader reader = new(readCtx);
 
@@ -54,7 +45,41 @@ public sealed class TermoConsentimentoReaderTests
             await reader.ListarVersoesAsync([versaoViva.Id, versaoRemovida.Id], CancellationToken.None);
 
         versoes.Should().ContainSingle().Which.Should().BeEquivalentTo(new VersaoTermoConsentimentoView(
-            vivo.Id, versaoViva.Id, "Autorização de consulta", "Texto do termo", "Lei 13.709/2018", "A_DEFINIR", versaoViva.Hash));
+            vivo.Id, versaoViva.Id, vivo.Codigo.Valor, 1, vivo.Nome, "Texto do termo", "Lei 13.709/2018", "A_DEFINIR", versaoViva.Hash));
+    }
+
+    [Fact(DisplayName = "A versão sai pelo código do termo vivo e pelo número; código ou número desconhecido, malformado ou de termo removido, não")]
+    public async Task ObterVersaoPorCodigoENumeroAsync_EncontraSoOQueEstaVivo()
+    {
+        (TermoConsentimento vivo, TermoConsentimentoVersao versao) = Promovido($"Termo vivo {Guid.NewGuid():N}", "A_DEFINIR");
+        (TermoConsentimento removido, _) = Promovido($"Termo removido {Guid.NewGuid():N}", "A_DEFINIR");
+        await GravarUmVivoEUmRemovidoAsync(vivo, removido);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        TermoConsentimentoReader reader = new(readCtx);
+
+        VersaoTermoConsentimentoView? encontrada = await reader.ObterVersaoPorCodigoENumeroAsync(vivo.Codigo.Valor, 1, CancellationToken.None);
+
+        encontrada.Should().NotBeNull();
+        (encontrada!.VersaoId, encontrada.TermoId, encontrada.Numero).Should().Be((versao.Id, vivo.Id, 1));
+        await ConferirQueNaoEncontraAsync(reader, vivo.Codigo.Valor, removido.Codigo.Valor);
+    }
+
+    private async Task GravarUmVivoEUmRemovidoAsync(TermoConsentimento vivo, TermoConsentimento removido)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
+        ctx.TermosConsentimento.AddRange(vivo, removido);
+        await ctx.SaveChangesAsync();
+
+        removido.MarkAsDeleted(AdminA, Agora);
+        await ctx.SaveChangesAsync();
+    }
+
+    private static async Task ConferirQueNaoEncontraAsync(TermoConsentimentoReader reader, string codigoVivo, string codigoRemovido)
+    {
+        (await reader.ObterVersaoPorCodigoENumeroAsync(codigoVivo, 2, CancellationToken.None)).Should().BeNull();
+        (await reader.ObterVersaoPorCodigoENumeroAsync("INEXISTENTE_" + Guid.NewGuid().ToString("N").ToUpperInvariant(), 1, CancellationToken.None)).Should().BeNull();
+        (await reader.ObterVersaoPorCodigoENumeroAsync("codigo malformado", 1, CancellationToken.None)).Should().BeNull();
+        (await reader.ObterVersaoPorCodigoENumeroAsync(codigoRemovido, 1, CancellationToken.None)).Should().BeNull();
     }
 
     private static (TermoConsentimento Termo, TermoConsentimentoVersao Versao) Promovido(string nome, string formaAceite)

@@ -1,0 +1,30 @@
+namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.LeituraDoDocumento;
+
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+
+/// <summary>
+/// Uma fase como o documento a traz. A posição é a da fase na lista enviada, e a ordem dela é essa posição mais 1: o documento não
+/// tem <c>ordem</c>. A chave é a que o autor escolheu e as outras partes citam.
+/// </summary>
+public sealed record FaseNoDocumento(
+    int PosicaoNoDocumento,
+    string Chave,
+    ReferenciasDaFaseNoDocumento Referencias,
+    JanelaDeTempo Janela,
+    PublicacoesNoDocumento Publicacoes,
+    IReadOnlyList<BancaNoDocumento> Bancas,
+    RegraDeRecursoNoDocumento? RegraDeRecurso);
+
+/// <summary>O que a fase cita por código: a fase canônica, a unidade que responde por ela e a chave da fase que conclui o ciclo de recurso.</summary>
+public sealed record ReferenciasDaFaseNoDocumento(string FaseCanonicaCodigo, string? UnidadeResponsavelCodigo, string? FaseConcluinteChave);
+
+/// <summary>O que a fase publica e decide: os atos, o parecer individual, os tipos de decisão e a regra de homologação das inscrições.</summary>
+public sealed record PublicacoesNoDocumento(
+    IReadOnlyList<ProdutoNoDocumento> Produtos,
+    bool EmiteParecerIndividual,
+    IReadOnlyList<string?>? TiposDeDecisao,
+    RegraDeHomologacaoNoDocumento? RegraDeHomologacao);
+
+/// <summary>Um ato que a fase publica, com a posição dele na lista de produtos enviada; o papel ausente é nulo.</summary>
+public sealed record ProdutoNoDocumento(int PosicaoNoDocumento, string AtoCodigo, PapelProdutoFase? Papel);

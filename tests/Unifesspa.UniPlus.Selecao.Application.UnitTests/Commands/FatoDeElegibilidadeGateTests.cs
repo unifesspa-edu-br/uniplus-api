@@ -19,6 +19,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -64,20 +65,6 @@ public sealed class FatoDeElegibilidadeGateTests
         AfirmarRecusaDoFatoConhecidoDepoisDaInscricao(resposta, eventos, canonicalizer);
     }
 
-    [Fact(DisplayName = "Fechar a retificação recusa, antes de canonicalizar, o fato de elegibilidade que o catálogo só resolve na habilitação")]
-    public async Task FecharRetificacao_FatoResolvidoNaHabilitacao_Recusa()
-    {
-        (ProcessoSeletivo processo, VersaoConfiguracao versaoAtual) = ProcessoPublicado();
-        PublicacaoDeTeste.AbrirRetificacao(processo, versaoAtual);
-        ISnapshotPublicacaoCanonicalizer canonicalizer = CanonicalizerSubstituto();
-
-        (Result resposta, IEnumerable<object> eventos) = await ServicosDoCatalogoQueResolveNaHabilitacao(processo, versaoAtual, canonicalizer)
-            .FecharRetificacaoAsync(processo.Id);
-
-        AfirmarRecusaDoFatoConhecidoDepoisDaInscricao(resposta, eventos, canonicalizer);
-        processo.Rascunho.Should().NotBeNull("a recusa não destrói a sessão editorial");
-    }
-
     private static ServicosDoCongelamentoDeTeste ServicosDoCatalogoQueResolveNaHabilitacao(
         ProcessoSeletivo processo, VersaoConfiguracao versaoAtual, ISnapshotPublicacaoCanonicalizer canonicalizer) =>
         ServicosDoCongelamentoDeTeste.Para(processo)
@@ -93,6 +80,16 @@ public sealed class FatoDeElegibilidadeGateTests
         eventos.Should().BeEmpty();
     }
 
+    private static FaseCronograma FaseDoCronograma() => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            OrigemId: Guid.CreateVersion7(), Codigo: FormularioProcesso.CodigoFaseHabilitacao, OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false,
+            ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            Ordem: 2, Inicio: new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 2, 28, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
+
     /// <summary>
     /// Processo conforme com a habilitação depois da inscrição e o acréscimo citando um campo booleano
     /// do formulário de inscrição: sem o catálogo, o fato é da inscrição e o checklist o aceita.
@@ -100,30 +97,30 @@ public sealed class FatoDeElegibilidadeGateTests
     private static ProcessoSeletivo ProcessoQueAplicaOAcrescimo()
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Gate Elegibilidade");
-        FaseCronograma habilitacao = FaseCronograma.Criar(
-            ordem: 2, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: FormularioProcesso.CodigoFaseHabilitacao,
-            origemData: OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false,
-            coletaInscricao: false, coletaSolicitacaoIsencao: false,
-            inicio: new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 2, 28, 0, 0, 0, TimeSpan.Zero),
-            produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
-        FormularioDeTeste.TrocarCronograma(processo, [.. processo.CronogramaFases, habilitacao], PrecondicaoIfMatch.Ausente)
+        FaseCronograma habilitacao = FaseDoCronograma();
+        FormularioDeTeste.TrocarCronograma(processo, [.. processo.CronogramaFases, habilitacao])
             .IsSuccess.Should().BeTrue();
 
+        DefinirOFatoDoAcrescimo(processo);
+        DefinirOBonusRegionalDoAcrescimo(processo);
+
+        RegrasDosFatos.ConferirFatoDeElegibilidade(processo.Declaracao(), new Dictionary<string, string>(), new Dictionary<string, string>())
+            .Should().BeNull("sem o catálogo, o campo da inscrição é conhecido na inscrição");
+        return processo;
+    }
+
+    private static void DefinirOFatoDoAcrescimo(ProcessoSeletivo processo)
+    {
         Result itens = processo.DefinirItens(
             [FatoColetado.Criar(Fato, 0, "Deseja solicitar o acréscimo?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!]);
         itens.IsSuccess.Should().BeTrue(itens.Error?.Message);
+    }
 
+    private static void DefinirOBonusRegionalDoAcrescimo(ProcessoSeletivo processo)
+    {
         processo.DefinirBonusRegional(
             aplica: true,
-            ConfiguracaoBonusRegional.Criar(
-                ReferenciaRegra.Criar(RegraBonusCodigo.Multiplicativo, "v1", HashFixo).Value!,
-                1.20m, null, Fato, Guid.CreateVersion7(), "EDITAL", "Edital nº 1/2026", "Fator de Atenuação das Desigualdades de Acesso",
-                [("1504208", "Marabá", "PA")]).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        RegrasDosFatos.ConferirFatoDeElegibilidade(EstadoDaConfiguracao.De(processo), new Dictionary<string, string>(), new Dictionary<string, string>())
-            .Should().BeNull("sem o catálogo, o campo da inscrição é conhecido na inscrição");
-        return processo;
+            ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", HashFixo), 1.20m, null, Fato, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "EDITAL", "Edital nº 1/2026", "Fator de Atenuação das Desigualdades de Acesso", [("1504208", "Marabá", "PA")])).Value!).IsSuccess.Should().BeTrue();
     }
 
     private static (ProcessoSeletivo Processo, VersaoConfiguracao VersaoAtual) ProcessoPublicado()
@@ -133,8 +130,7 @@ public sealed class FatoDeElegibilidadeGateTests
             "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
             new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!;
         Result<VersaoConfiguracao> versao = processo.Publicar(
-            dados, EnvelopeCongeladoDeTeste.SemAnexos(), "1.1", "canonical-json/sha256@v1", HashFixo, "user-conta-1",
-            new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(EnvelopeCongeladoDeTeste.SemAnexos(), "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "user-conta-1", Relogio = new RelogioFixo(Agora) });
         versao.IsSuccess.Should().BeTrue(versao.Error?.Message);
         processo.DequeueDomainEvents();
         return (processo, versao.Value!);

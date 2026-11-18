@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.Modalidades;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
 using AwesomeAssertions;
@@ -25,53 +24,36 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Serializacao;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
-/// <summary>
-/// Integração ponta-a-ponta da Modalidade contra Postgres real (UNI-REQ-0011):
-/// persistência, UNIQUE parcial do código vivo, liberação do slot por soft-delete,
-/// CHECKs de domínio (natureza, formato do código, coerência RETIRA_DE⟺origem),
-/// bloqueio de remoção quando referenciada (composicao_origem e remanejamento_args
-/// jsonb) e leitura cross-módulo ordenada por código.
-/// </summary>
+using static Unifesspa.UniPlus.Configuracao.IntegrationTests.Modalidades.ApoioDaPersistenciaDeModalidades;
+
 [Collection(ConfiguracaoDbCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
-public sealed class ModalidadePersistenceTests
+public sealed class ModalidadePersistenceTests(ConfiguracaoDbFixture fixture)
 {
-    private const string AdminA = "admin-a";
-    private const string AdminB = "admin-b";
+    private readonly ConfiguracaoDbFixture _fixture = fixture;
 
-    private readonly ConfiguracaoDbFixture _fixture;
-
-    public ModalidadePersistenceTests(ConfiguracaoDbFixture fixture)
-    {
-        _fixture = fixture;
-    }
-
-    [Fact(DisplayName = "Criar persiste os campos e fica visível pelo leitor cross-módulo")]
-    public async Task Insert_PersisteEFicaVisivelPeloReader()
+    [Fact(DisplayName = "Criar persiste os campos da modalidade")]
+    public async Task Insert_PersisteOsCampos()
     {
         string codigo = CodigoUnico();
         Modalidade modalidade = Cota(codigo);
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.Modalidades.Add(modalidade);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
-        Modalidade persistida = await readCtx.Modalidades.SingleAsync(m => m.Id == modalidade.Id);
-
+        await GravarAsync(_fixture, modalidade);
+        await using UniPlusDbContext context = _fixture.CreateDbContext(userId: null);
+        Modalidade persistida = await context.Modalidades.SingleAsync(m => m.Id == modalidade.Id);
         persistida.Codigo.Valor.Should().Be(codigo);
         persistida.NaturezaLegal.Should().Be(Domain.Enums.NaturezaLegal.CotaReservada);
         persistida.RegraRemanejamento.Should().Be(Domain.Enums.RegraRemanejamento.SegueCascata);
         persistida.CreatedBy.Should().Be(AdminA);
         persistida.IsDeleted.Should().BeFalse();
+    }
 
-        var reader = new ModalidadeReader(readCtx);
-        ModalidadeView? view = await reader.ObterPorIdAsync(modalidade.Id);
+    [Fact(DisplayName = "Modalidade criada fica visível pelo leitor")]
+    public async Task Insert_FicaVisivelPeloReader()
+    {
+        string codigo = CodigoUnico();
+        Modalidade modalidade = Cota(codigo);
+        await GravarAsync(_fixture, modalidade);
+        await using UniPlusDbContext context = _fixture.CreateDbContext(userId: null);
+        ModalidadeView? view = await new ModalidadeReader(context).ObterPorIdAsync(modalidade.Id);
         view.Should().NotBeNull();
         view!.Codigo.Should().Be(codigo);
         view.NaturezaLegal.Should().Be("COTA_RESERVADA");
@@ -82,11 +64,7 @@ public sealed class ModalidadePersistenceTests
     public async Task UniquePartial_Codigo_RejeitaDuplicataAtiva()
     {
         string codigo = CodigoUnico();
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.Modalidades.Add(Ampla(codigo));
-            await ctx.SaveChangesAsync();
-        }
+        await GravarAsync(_fixture, Ampla(codigo));
 
         await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
         ctx2.Modalidades.Add(Ampla(codigo));
@@ -106,32 +84,18 @@ public sealed class ModalidadePersistenceTests
     {
         string codigo = CodigoUnico();
         Modalidade modalidade = Ampla(codigo);
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.Modalidades.Add(modalidade);
-            await ctx.SaveChangesAsync();
-        }
+        await GravarAsync(_fixture, modalidade);
+        await RemoverAsync(_fixture, modalidade.Id);
+        await ConferirRemocaoAsync(modalidade.Id);
+        await GravarAsync(_fixture, Ampla(codigo));
+    }
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
-        {
-            Modalidade tracked = await ctx.Modalidades.SingleAsync(m => m.Id == modalidade.Id);
-            ctx.Modalidades.Remove(tracked);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null))
-        {
-            Modalidade excluida = await ctx.Modalidades
-                .IgnoreQueryFilters().SingleAsync(m => m.Id == modalidade.Id);
-            excluida.IsDeleted.Should().BeTrue();
-            excluida.DeletedBy.Should().Be(AdminB);
-        }
-
-        await using UniPlusDbContext ctx3 = _fixture.CreateDbContext(AdminA);
-        ctx3.Modalidades.Add(Ampla(codigo));
-
-        Func<Task> act = async () => await ctx3.SaveChangesAsync();
-        await act.Should().NotThrowAsync("o slot do código foi liberado pelo soft-delete");
+    private async Task ConferirRemocaoAsync(Guid id)
+    {
+        await using UniPlusDbContext context = _fixture.CreateDbContext(userId: null);
+        Modalidade excluida = await context.Modalidades.IgnoreQueryFilters().SingleAsync(m => m.Id == id);
+        excluida.IsDeleted.Should().BeTrue();
+        excluida.DeletedBy.Should().Be(AdminB);
     }
 
     [Fact(DisplayName = "CHECK de banco rejeita natureza fora do domínio via SQL cru")]
@@ -140,7 +104,7 @@ public sealed class ModalidadePersistenceTests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.modalidades (id, codigo, natureza_legal, composicao_vagas, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"INVALIDA"}, {"RESIDUAL_DO_VO"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.modalidades (id, codigo, natureza_legal, composicao_vagas, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"INVALIDA"}, {"RESTANTE_DAS_VAGAS_OFERTADAS"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK de domínio de natureza_legal impede o INSERT direto");
@@ -152,362 +116,34 @@ public sealed class ModalidadePersistenceTests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.modalidades (id, codigo, natureza_legal, composicao_vagas, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"lb-ppi"}, {"AMPLA"}, {"RESIDUAL_DO_VO"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.modalidades (id, codigo, natureza_legal, composicao_vagas, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"lb-ppi"}, {"AMPLA"}, {"RESTANTE_DAS_VAGAS_OFERTADAS"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK codigo ~ '^[A-Z0-9_]+$' impede o INSERT direto");
     }
 
-    [Fact(DisplayName = "CHECK de banco rejeita RETIRA_DE sem origem via SQL cru")]
-    public async Task Check_RejeitaRetiraDeSemOrigemViaSqlCru()
+    [Fact(DisplayName = "CHECK de banco rejeita RETIRADA_DE_OUTRA_MODALIDADE sem origem via SQL cru")]
+    public async Task Check_RejeitaRetiradaDeOutraModalidadeSemOrigemViaSqlCru()
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.modalidades (id, codigo, natureza_legal, composicao_vagas, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"AMPLA"}, {"RETIRA_DE"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.modalidades (id, codigo, natureza_legal, composicao_vagas, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"AMPLA"}, {"RETIRADA_DE_OUTRA_MODALIDADE"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK (composicao_vagas = 'RETIRA_DE') = (composicao_origem IS NOT NULL) impede o INSERT direto");
+            "o CHECK (composicao_vagas = 'RETIRADA_DE_OUTRA_MODALIDADE') = (composicao_origem IS NOT NULL) impede o INSERT direto");
     }
 
-    [Fact(DisplayName = "CHECK de banco rejeita origem preenchida sem RETIRA_DE via SQL cru")]
-    public async Task Check_RejeitaOrigemSemRetiraDeViaSqlCru()
+    [Fact(DisplayName = "CHECK de banco rejeita origem preenchida sem RETIRADA_DE_OUTRA_MODALIDADE via SQL cru")]
+    public async Task Check_RejeitaOrigemSemRetiradaDeOutraModalidadeViaSqlCru()
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.modalidades (id, codigo, natureza_legal, composicao_vagas, composicao_origem, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"AMPLA"}, {"RESIDUAL_DO_VO"}, {"AC"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.modalidades (id, codigo, natureza_legal, composicao_vagas, composicao_origem, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"AMPLA"}, {"RESTANTE_DAS_VAGAS_OFERTADAS"}, {"AC"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK de coerência RETIRA_DE⟺origem impede o INSERT direto");
+            "o CHECK de coerência RETIRADA_DE_OUTRA_MODALIDADE⟺origem impede o INSERT direto");
     }
 
-    [Fact(DisplayName = "Remoção é bloqueada por referência via composicao_origem (repo)")]
-    public async Task EhReferenciada_PorComposicaoOrigem_True()
-    {
-        string origem = CodigoUnico();
-        string dependente = CodigoUnico();
-
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
-        ctx.Modalidades.Add(Ampla(origem));
-        ctx.Modalidades.Add(RetiraDe(dependente, origem));
-        await ctx.SaveChangesAsync();
-
-        var repo = new ModalidadeRepository(ctx);
-        bool referenciada = await repo.EhReferenciadaPorOutraModalidadeVivaAsync(origem, ExcluirId(ctx, origem), default);
-
-        referenciada.Should().BeTrue("outra modalidade viva aponta este código como composicao_origem");
-    }
-
-    [Fact(DisplayName = "Remoção é bloqueada por referência via remanejamento_args jsonb (repo)")]
-    public async Task EhReferenciada_PorRemanejamentoArgs_True()
-    {
-        string destino = CodigoUnico();
-        string dependente = CodigoUnico();
-
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
-        ctx.Modalidades.Add(Ampla(destino));
-        ctx.Modalidades.Add(DestinoUnico(dependente, destino));
-        await ctx.SaveChangesAsync();
-
-        var repo = new ModalidadeRepository(ctx);
-        bool referenciada = await repo.EhReferenciadaPorOutraModalidadeVivaAsync(destino, ExcluirId(ctx, destino), default);
-
-        referenciada.Should().BeTrue("o destino consta em remanejamento_args->>'destino' de outra viva");
-    }
-
-    [Fact(DisplayName = "Código não referenciado por ninguém não bloqueia a remoção (repo)")]
-    public async Task EhReferenciada_SemReferencia_False()
-    {
-        string livre = CodigoUnico();
-
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
-        ctx.Modalidades.Add(Ampla(livre));
-        await ctx.SaveChangesAsync();
-
-        var repo = new ModalidadeRepository(ctx);
-        bool referenciada = await repo.EhReferenciadaPorOutraModalidadeVivaAsync(livre, ExcluirId(ctx, livre), default);
-
-        referenciada.Should().BeFalse();
-    }
-
-    [Fact(DisplayName = "Reader.ListarVivosAsync ordena por código e exclui soft-deleted")]
-    public async Task ListarVivos_OrdenaPorCodigoEExcluiSoftDeleted()
-    {
-        string prefixo = $"MOD_{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
-        string codA = $"{prefixo}_A";
-        string codB = $"{prefixo}_B";
-        string codExcluido = $"{prefixo}_D";
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.Modalidades.Add(Ampla(codB));
-            ctx.Modalidades.Add(Ampla(codA));
-            ctx.Modalidades.Add(Ampla(codExcluido));
-            await ctx.SaveChangesAsync();
-        }
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
-        {
-            CodigoModalidade voExcluido = CodigoModalidade.Criar(codExcluido).Value!;
-            Modalidade aExcluir = await ctx.Modalidades.SingleAsync(m => m.Codigo == voExcluido);
-            ctx.Modalidades.Remove(aExcluir);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
-        var reader = new ModalidadeReader(readCtx);
-        IReadOnlyList<ModalidadeView> todos = await reader.ListarVivosAsync();
-
-        string[] meus = [.. todos
-            .Select(v => v.Codigo)
-            .Where(c => c.StartsWith(prefixo, StringComparison.Ordinal))];
-
-        meus.Should().Equal([codA, codB]);
-    }
-
-    [Fact(DisplayName = "Reader.ObterVivaPorCodigoAsync não devolve modalidade removida nem código fora do formato")]
-    public async Task ObterVivaPorCodigo_ExcluiSoftDeletedERecusaFormatoInvalido()
-    {
-        // Quem cadastra regra legal referencia a modalidade por código, e é este leitor que
-        // decide se a referência existe. Modalidade removida respondendo aqui faria a regra
-        // ser aceita e o edital publicar sob cláusula que ninguém pode cumprir. Código fora
-        // do formato do value object não tem modalidade viva alguma — devolver null é a
-        // resposta certa, e evita a consulta.
-        string codigoVivo = CodigoUnico();
-        string codigoRemovido = CodigoUnico();
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.Modalidades.Add(Ampla(codigoVivo));
-            ctx.Modalidades.Add(Ampla(codigoRemovido));
-            await ctx.SaveChangesAsync();
-        }
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
-        {
-            CodigoModalidade voRemovido = CodigoModalidade.Criar(codigoRemovido).Value!;
-            Modalidade aExcluir = await ctx.Modalidades.SingleAsync(m => m.Codigo == voRemovido);
-            ctx.Modalidades.Remove(aExcluir);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
-        var reader = new ModalidadeReader(readCtx);
-
-        ModalidadeView? viva = await reader.ObterVivaPorCodigoAsync(codigoVivo);
-        ModalidadeView? comEspaco = await reader.ObterVivaPorCodigoAsync($" {codigoVivo}  ");
-        ModalidadeView? removida = await reader.ObterVivaPorCodigoAsync(codigoRemovido);
-        ModalidadeView? foraDoFormato = await reader.ObterVivaPorCodigoAsync("lb ppi!");
-
-        viva.Should().NotBeNull();
-        viva!.Codigo.Should().Be(codigoVivo);
-        comEspaco.Should().NotBeNull("o leitor apara o código antes de comparar");
-        comEspaco!.Id.Should().Be(viva.Id);
-        removida.Should().BeNull("o filtro global de soft-delete tira a modalidade removida do cadastro vivo");
-        foraDoFormato.Should().BeNull();
-    }
-
-    private static Guid ExcluirId(UniPlusDbContext ctx, string codigo)
-    {
-        CodigoModalidade vo = CodigoModalidade.Criar(codigo).Value!;
-        return ctx.Modalidades.Single(m => m.Codigo == vo).Id;
-    }
-
-    [Fact(DisplayName = "Seed: as oito federais + AC + as institucionais nascem com a migração, vivas e com os atributos corretos")]
-    public async Task Seed_ModalidadesFederais_PresentesEVivas()
-    {
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
-
-        List<Modalidade> semeadas = await ctx.Modalidades.AsNoTracking()
-            .Where(m => !m.IsDeleted)
-            .ToListAsync();
-
-        string[] codigos = [.. semeadas.Select(m => m.Codigo.Valor).OrderBy(c => c, StringComparer.Ordinal)];
-        codigos.Should().Contain(
-            ["AC", "AC_I", "AC_PCD", "AC_Q", "LB_EP", "LB_PCD", "LB_PPI", "LB_Q", "LI_EP", "LI_PCD", "LI_PPI", "LI_Q"],
-            "o seed torna as modalidades legais fixas presentes sem digitação por edital");
-        codigos.Should().NotContain("PCD_PURO",
-            "a reserva de pessoa com deficiência sem as cotas da lei passou a ser AC_PCD");
-
-        Modalidade acPcd = semeadas.Single(m => m.Codigo.Valor == "AC_PCD");
-        acPcd.NaturezaLegal.Should().Be(NaturezaLegal.AcaoAfirmativa);
-        acPcd.ComposicaoVagas.Should().Be(ComposicaoVagas.RetiraDe);
-        acPcd.ComposicaoOrigem.Should().Be("AC", "AC_PCD retira suas vagas da ampla concorrência, não do total");
-        acPcd.RegraRemanejamento.Should().Be(RegraRemanejamento.DestinoUnico);
-        acPcd.RemanejamentoArgs.Destino.Should().Be("AC", "a vaga ociosa de AC_PCD retorna à ampla concorrência");
-        acPcd.Descricao.Should().Contain("(V)", "o rótulo V dos editais vive na descrição, nunca no código");
-
-        Modalidade ac = semeadas.Single(m => m.Codigo.Valor == "AC");
-        ac.NaturezaLegal.Should().Be(NaturezaLegal.Ampla);
-        ac.ComposicaoVagas.Should().Be(ComposicaoVagas.ResidualDoVo, "só a ampla concorrência é residual do volume de oferta");
-        ac.RegraRemanejamento.Should().BeNull("ampla concorrência não remaneja como cota");
-
-        semeadas.Where(m => m.Codigo.Valor.StartsWith('L'))
-            .Should().OnlyContain(m => m.NaturezaLegal == NaturezaLegal.CotaReservada
-                && m.ComposicaoVagas == ComposicaoVagas.DentroDoVr
-                && m.RegraRemanejamento == RegraRemanejamento.SegueCascata,
-                "as cotas federais são sub-reservas dentro das vagas reservadas e seguem a cascata legal");
-    }
-
-    [Fact(DisplayName = "Seed: AC_I e AC_Q são suplementares ao total e formam um par cruzado recíproco sem destino final")]
-    public async Task Seed_AcIAcQ_ParCruzadoReciproco()
-    {
-        CodigoModalidade acIVo = CodigoModalidade.Criar(CodigoModalidade.AcI).Value!;
-        CodigoModalidade acQVo = CodigoModalidade.Criar(CodigoModalidade.AcQ).Value!;
-
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
-
-        List<Modalidade> psiq = await ctx.Modalidades.AsNoTracking()
-            .Where(m => !m.IsDeleted && (m.Codigo == acIVo || m.Codigo == acQVo))
-            .ToListAsync();
-
-        Modalidade acI = psiq.Single(m => m.Codigo.Valor == "AC_I");
-        Modalidade acQ = psiq.Single(m => m.Codigo.Valor == "AC_Q");
-
-        // Vagas por acréscimo: somam ao total do curso, então não saem de lugar nenhum.
-        foreach (Modalidade m in psiq)
-        {
-            m.NaturezaLegal.Should().Be(NaturezaLegal.AcaoAfirmativa);
-            m.ComposicaoVagas.Should().Be(ComposicaoVagas.SuplementarAoTotal);
-            m.ComposicaoOrigem.Should().BeNull("vaga suplementar não é retirada de outra modalidade");
-            m.RegraRemanejamento.Should().Be(RegraRemanejamento.Cruzado);
-            m.RemanejamentoArgs.Destino.Should().BeNull("destino é argumento de DESTINO_UNICO");
-            m.RemanejamentoArgs.Fallback.Should().BeNull(
-                "o PSIQ não oferta ampla concorrência — a vaga que nenhum dos dois grupos preencher "
-                + "permanece ociosa, e é a ausência de fallback que declara isso");
-        }
-
-        // O cruzamento tem de ser mútuo: um par unilateral deixaria a vaga de um grupo migrar
-        // para o outro sem volta.
-        acI.RemanejamentoArgs.Par.Should().Be("AC_Q");
-        acQ.RemanejamentoArgs.Par.Should().Be("AC_I");
-
-        acI.BaseLegal.Should().NotBeNullOrWhiteSpace().And.NotContain("12.711",
-            "as vagas por acréscimo nascem de resolução institucional, não da Lei de Cotas");
-    }
-
-    [Theory(DisplayName = "Seed: a base legal das ações afirmativas é a Resolução 532/2021, não a Lei de Cotas")]
-    [InlineData("AC_PCD", "532/2021, art. 1º")]
-    [InlineData("AC_I", "532/2021-CONSEPE, art. 2º")]
-    [InlineData("AC_Q", "532/2021-CONSEPE, art. 2º")]
-    public async Task Seed_AcaoAfirmativa_FundamentadaNaResolucao532(string codigo, string normaEsperada)
-    {
-        CodigoModalidade vo = CodigoModalidade.Criar(codigo).Value!;
-
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
-
-        Modalidade modalidade = await ctx.Modalidades.AsNoTracking()
-            .SingleAsync(m => !m.IsDeleted && m.Codigo == vo);
-
-        // base_legal congela no snapshot de publicação como fundamentação do edital: citar a
-        // Lei 12.711, que não prevê essas reservas, ou uma resolução revogada pelo art. 3º da
-        // 532/2021 fundamentaria a vaga numa norma que não a institui.
-        modalidade.BaseLegal.Should().NotBeNullOrWhiteSpace()
-            .And.NotContain("12.711")
-            .And.NotContain("64/2015")
-            .And.NotContain("22/2014")
-            .And.Contain(normaEsperada);
-    }
-
-    [Fact(DisplayName = "Seed: o conjunto semeado é exatamente o catálogo legal fixo protegido")]
-    public void Seed_Codigos_CoincidemComOCatalogoProtegido()
-    {
-        string[] semeados = [.. ModalidadeSeed.Itens.Select(i => i.Codigo).Order(StringComparer.Ordinal)];
-        string[] protegidos = [.. CodigoModalidade.CodigosLegaisFixos.Order(StringComparer.Ordinal)];
-
-        semeados.Should().Equal(protegidos,
-            "acrescentar uma linha ao seed sem protegê-la (ou proteger um código que ninguém semeia) "
-            + "deixaria o catálogo legal incoerente");
-    }
-
-    [Fact(DisplayName = "Seed: cada item satisfaz as invariantes de Modalidade.Criar (natureza × composição × remanejamento × args)")]
-    public void Seed_CadaItem_SatisfazInvariantesDoAgregado()
-    {
-        foreach (ModalidadeSeedItem item in ModalidadeSeed.Itens)
-        {
-            Result<Modalidade> resultado = Modalidade.Criar(
-                item.Codigo,
-                item.Descricao,
-                NaturezasLegais.ParaTokenCanonico(item.Natureza),
-                ComposicoesVagas.ParaTokenCanonico(item.Composicao),
-                item.ComposicaoOrigem,
-                item.Regra is { } regra ? RegrasRemanejamento.ParaTokenCanonico(regra) : null,
-                item.RemanejamentoArgs.Destino,
-                item.RemanejamentoArgs.Par,
-                item.RemanejamentoArgs.Fallback,
-                item.RegraDeAplicabilidade,
-                acaoQuandoIndeferido: null,
-                item.BaseLegal);
-
-            resultado.IsSuccess.Should().BeTrue(
-                $"o item de seed '{item.Codigo}' precisa satisfazer as invariantes do agregado — {resultado.Error?.Message}");
-        }
-    }
-
-    [Fact(DisplayName = "Seed: a regra de cada modalidade legal passa pela conferência contra o catálogo semeado")]
-    public async Task Seed_RegrasDeAplicabilidade_PassamPelaConferenciaDoCatalogo()
-    {
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
-        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Include(static f => f.ValoresDominioDeclarados).ToListAsync();
-        List<PrecedenciaFase> precedencias = await ctx.PrecedenciasFase.AsNoTracking().ToListAsync();
-        CatalogoDeFatos catalogo = new(fatos, precedencias);
-
-        foreach (ModalidadeSeedItem item in ModalidadeSeed.Itens)
-        {
-            IReadOnlyList<FieldError> erros = ConferenciaDaRegraDeAplicabilidade.Conferir(item.RegraDeAplicabilidade, vigente: null, catalogo);
-
-            erros.Should().BeEmpty(
-                $"a regra semeada de '{item.Codigo}' tem de valer no catálogo — "
-                + string.Join("; ", erros.Select(static e => e.Error.Message)));
-        }
-    }
-
-    [Fact(DisplayName = "Regra que cita a modalidade da convocação é recusada: ela só existe depois do resultado final")]
-    public async Task Conferir_ModalidadeDaConvocacao_RecusaPelasPrecedenciasSemeadas()
-    {
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
-        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Include(static f => f.ValoresDominioDeclarados).ToListAsync();
-        List<PrecedenciaFase> precedencias = await ctx.PrecedenciasFase.AsNoTracking().ToListAsync();
-        PredicadoDnf regra = PredicadoDnf.CriarDeCondicoesAgrupadas(
-            [(0, CondicaoDnf.Criar("MODALIDADE_CONVOCACAO", Operador.Igual, JsonSerializer.SerializeToElement("AC")).Value!)]).Value!;
-
-        IReadOnlyList<FieldError> erros = ConferenciaDaRegraDeAplicabilidade.Conferir(
-            regra, vigente: null, new CatalogoDeFatos(fatos, precedencias));
-
-        erros.Select(static e => e.Error.Code).Should().Contain(ModalidadeErrorCodes.RegraCitaFatoPosteriorAInscricao);
-    }
-
-    [Fact(DisplayName = "Seed: a regra gravada de cada modalidade legal volta igual pela leitura cross-módulo")]
-    public async Task Seed_RegraDeAplicabilidade_VoltaIgualPeloReader()
-    {
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
-        IReadOnlyList<ModalidadeView> vivas = await new ModalidadeReader(ctx).ListarVivosAsync(CancellationToken.None);
-
-        foreach (ModalidadeSeedItem item in ModalidadeSeed.Itens)
-        {
-            PredicadoDnf lida = vivas.Single(v => v.Codigo == item.Codigo).RegraDeAplicabilidade;
-
-            PredicadoDnfJson.ParaJson(lida).ToJsonString().Should().Be(
-                PredicadoDnfJson.ParaJson(item.RegraDeAplicabilidade).ToJsonString(), item.Codigo);
-        }
-    }
-
-    private static Modalidade Ampla(string codigo) =>
-        Modalidade.Criar(codigo, null, "AMPLA", "RESIDUAL_DO_VO", null, null, null, null, null,
-            SementeDeAplicabilidadeLegal.AmplaConcorrencia, null, null).Value!;
-
-    private static Modalidade Cota(string codigo) =>
-        Modalidade.Criar(codigo, "Cota", "COTA_RESERVADA", "DENTRO_DO_VR", null, "SEGUE_CASCATA", null, null, null,
-            SementeDeAplicabilidadeLegal.LiEp, null, null).Value!;
-
-    private static Modalidade RetiraDe(string codigo, string origem) =>
-        Modalidade.Criar(codigo, null, "AMPLA", "RETIRA_DE", origem, null, null, null, null,
-            SementeDeAplicabilidadeLegal.AmplaConcorrencia, null, null).Value!;
-
-    private static Modalidade DestinoUnico(string codigo, string destino) =>
-        Modalidade.Criar(codigo, null, "ACAO_AFIRMATIVA", "SUPLEMENTAR_AO_TOTAL", null, "DESTINO_UNICO", destino, null, null,
-            SementeDeAplicabilidadeLegal.AcPcd, null, null).Value!;
-
-    private static string CodigoUnico() => $"MOD_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
 }

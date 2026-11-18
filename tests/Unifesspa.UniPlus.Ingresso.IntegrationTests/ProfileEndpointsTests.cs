@@ -82,7 +82,7 @@ public sealed class ProfileEndpointsTests : IClassFixture<IngressoApiFactory>
         (ConcessaoAtiva institucional, ConcessaoAtiva daUnidade) = ConcessoesDeExemplo(unidadeId);
         using WebApplicationFactory<Unifesspa.UniPlus.Host.HostAssemblyMarker> factory = ComConcessoes(
             [daUnidade, institucional],
-            new UnidadeView(unidadeId, "CEPS", "ceps", "Centro de Processos Seletivos", null, "Centro", true, null));
+            new UnidadeView(unidadeId, "CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", null, "Centro", true, null));
         using HttpClient client = ClienteAutenticado(factory);
         using JsonDocument payload = await ConsultarPerfilAsync(client);
         JsonElement[] perfis = [.. payload.RootElement.GetProperty("perfis").EnumerateArray()];
@@ -170,5 +170,8 @@ public sealed class ProfileEndpointsTests : IClassFixture<IngressoApiFactory>
 
         public Task<UnidadeView?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default) =>
             Task.FromResult(unidades.FirstOrDefault(u => u.Id == id));
+
+        public Task<UnidadeView?> ObterPorCodigoAsync(string codigo, CancellationToken cancellationToken = default) =>
+            Task.FromResult(unidades.FirstOrDefault(u => u.Codigo == codigo));
     }
 }

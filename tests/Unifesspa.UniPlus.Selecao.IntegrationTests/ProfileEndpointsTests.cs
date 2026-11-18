@@ -105,7 +105,7 @@ public sealed class ProfileEndpointsTests : IClassFixture<SelecaoApiFactory>
             Guid.CreateVersion7(), Guid.CreateVersion7(), null, "Gestor de processo seletivo", unidadeId, false, DateTimeOffset.UtcNow.AddDays(30), []);
         using WebApplicationFactory<Unifesspa.UniPlus.Host.HostAssemblyMarker> factory = ComConcessoes(
             [daUnidade, institucional],
-            new UnidadeView(unidadeId, "CEPS", "ceps", "Centro de Processos Seletivos", null, "Centro", true, null));
+            new UnidadeView(unidadeId, "CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", null, "Centro", true, null));
         using HttpClient client = factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
             TestAuthHandler.AuthorizationScheme,
@@ -156,5 +156,8 @@ public sealed class ProfileEndpointsTests : IClassFixture<SelecaoApiFactory>
 
         public Task<UnidadeView?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default) =>
             Task.FromResult(unidades.FirstOrDefault(u => u.Id == id));
+
+        public Task<UnidadeView?> ObterPorCodigoAsync(string codigo, CancellationToken cancellationToken = default) =>
+            Task.FromResult(unidades.FirstOrDefault(u => u.Codigo == codigo));
     }
 }

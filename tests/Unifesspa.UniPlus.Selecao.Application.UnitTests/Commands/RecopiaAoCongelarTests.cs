@@ -35,6 +35,6 @@ public sealed class RecopiaAoCongelarTests
 
         return new CatalogoVivo(
             fatos, fatos.ToDictionary(static f => f.Codigo, StringComparer.Ordinal), FatosDeModalidadeDeTeste.DoCatalogo,
-            new Dictionary<Guid, TipoDocumentoView>());
+            new Dictionary<Guid, TipoDocumentoView>(), new Dictionary<Guid, string>());
     }
 }

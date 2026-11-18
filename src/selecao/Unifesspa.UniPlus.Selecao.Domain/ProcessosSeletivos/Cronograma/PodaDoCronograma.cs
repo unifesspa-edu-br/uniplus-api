@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// O que existia só por causa das fases que saem do cronograma. Sem a poda, a etapa ficava apontando
@@ -11,9 +12,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 /// </summary>
 internal static class PodaDoCronograma
 {
-    internal static MudancaDaConfiguracao Planejar(EstadoDaConfiguracao estado, IReadOnlyCollection<FaseCronograma> removidas)
+    internal static MudancaDaConfiguracao Planejar(ConfiguracaoDeclarada configuracao, IReadOnlyCollection<FaseCronograma> removidas)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
         if (removidas.Count == 0)
         {
@@ -21,18 +22,18 @@ internal static class PodaDoCronograma
         }
 
         HashSet<string> codigos = new(removidas.Select(static f => f.Codigo), StringComparer.Ordinal);
-        IReadOnlyList<DocumentoExigido> exigencias = ExigenciasDasFases(estado, [.. removidas.Select(static f => f.Id)]);
+        IReadOnlyList<DocumentoExigido> exigencias = ExigenciasDasFases(configuracao, [.. removidas.Select(static f => f.Id)]);
         return new MudancaDaConfiguracao
         {
-            Etapas = Troca.Retirando(estado.Etapas.Where(e => e.FaseCodigo is { } codigo && codigos.Contains(codigo))),
+            Etapas = Troca.Retirando(configuracao.Avaliacao.Etapas.Where(e => e.FaseCodigo is { } codigo && codigos.Contains(codigo))),
             DocumentosExigidos = Troca.Retirando(exigencias),
-            NosExigencia = Troca.Retirando(NosDasExigencias(estado.NosExigencia, exigencias)),
+            NosExigencia = Troca.Retirando(NosDasExigencias(configuracao.Exigencias.NosExigencia, exigencias)),
         };
     }
 
     // O Id da fase, e não o código, porque é por Id que a exigência a referencia.
-    private static List<DocumentoExigido> ExigenciasDasFases(EstadoDaConfiguracao estado, HashSet<Guid> fases) =>
-        [.. estado.DocumentosExigidos.Where(d => fases.Contains(d.ExigidoNaFaseId))];
+    private static List<DocumentoExigido> ExigenciasDasFases(ConfiguracaoDeclarada configuracao, HashSet<Guid> fases) =>
+        [.. configuracao.Exigencias.DocumentosExigidos.Where(d => fases.Contains(d.ExigidoNaFaseId))];
 
     // A folha sai com o nó que a carregava; o grupo que ficou sem filho nenhum sai atrás, senão
     // sobraria um "um destes documentos" sem documento algum.

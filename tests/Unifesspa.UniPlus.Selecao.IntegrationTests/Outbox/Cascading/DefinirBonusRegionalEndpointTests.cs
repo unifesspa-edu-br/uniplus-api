@@ -116,15 +116,14 @@ public sealed class DefinirBonusRegionalEndpointTests
     private async Task<(HttpClient Client, Guid ProcessoId)> SemearRascunhoAsync(string nome)
     {
         CascadingApiFactory api = _fixture.Factory;
-        HttpClient client = api.CreateClient();
-
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder
-            .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}", complementar: semear =>
-            {
-                typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.AplicaBonusRegional))!.SetValue(semear, null);
-            });
-        return (client, processo.Id);
+        OpcoesDoProcessoSeletivoPublicavel opcoes = new() { Nome = $"{nome} {Guid.CreateVersion7()}", Complementar = DeixarOBonusPorDeclarar };
+        (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, opcoes);
+
+        return (api.CreateClient(), processo.Id);
     }
+
+    private static void DeixarOBonusPorDeclarar(ProcessoSeletivo processo) =>
+        typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.AplicaBonusRegional))!.SetValue(processo, null);
 }

@@ -7,15 +7,16 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// A sequência de cada transição que congela uma versão (publicar, retificar de uma vez, fechar a
-/// sessão): quais argumentos lançam, quais recusas vêm antes e o que nenhuma delas muda. Fixa o
-/// comportamento observável que a organização interna das transições não pode alterar.
+/// A sequência de cada transição que congela uma versão (publicar e retificar): quais argumentos lançam,
+/// quais recusas vêm antes e o que nenhuma delas muda. Fixa o comportamento observável que a organização
+/// interna das transições não pode alterar.
 /// </summary>
 public sealed class TransicoesDaVersaoSequenciaTests
 {
@@ -31,45 +32,71 @@ public sealed class TransicoesDaVersaoSequenciaTests
 
     private static Result<VersaoConfiguracao> Publicar(ProcessoSeletivo processo) =>
         processo.Publicar(
-            Dados(), Bytes, "1.1", "canonical-json/sha256@v1", Hash, "user-conta-123", new RelogioFixo(Agora),
-            ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = Dados(), Documento = new DocumentoCongelado(Bytes, "1.1", "canonical-json/sha256@v1", Hash), Relogio = new RelogioFixo(Agora) });
 
     private static Result<VersaoConfiguracao> Retificar(ProcessoSeletivo processo, VersaoConfiguracao versao) =>
         processo.Retificar(
-            Dados(), versao, Bytes, "1.1", "canonical-json/sha256@v1", Hash, "user-conta-123", "Correção do prazo",
-            new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo,
-            TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = Dados(), Documento = new DocumentoCongelado(Bytes, "1.1", "canonical-json/sha256@v1", Hash), Relogio = new RelogioFixo(Agora) }, versao, "Correção do prazo");
 
-    [Fact(DisplayName = "Publicar um processo já publicado recusa pelo status, sem exigir precondição")]
+    [Fact(DisplayName = "Publicar um processo já publicado recusa pelo status")]
     public void Publicar_JaPublicado_RecusaPeloStatus()
     {
-        ProcessoSeletivo publicado = ProcessoEmEdicaoDeTeste.PublicadoSemSessao(out _);
+        ProcessoSeletivo publicado = ProcessoEmEdicaoDeTeste.Publicado(out _);
 
         Result<VersaoConfiguracao> resultado = Publicar(publicado);
 
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.TransicaoInvalida");
     }
 
-    [Fact(DisplayName = "Publicar um rascunho conforme não exige precondição nem abre sessão")]
-    public void Publicar_Rascunho_NaoExigePrecondicaoNemAbreSessao()
+    [Fact(DisplayName = "Publicar um rascunho conforme tem sucesso")]
+    public void Publicar_Rascunho_TemSucesso()
     {
         ProcessoSeletivo rascunho = ProcessoConformeFactory.Criar();
 
         Result<VersaoConfiguracao> resultado = Publicar(rascunho);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        rascunho.Rascunho.Should().BeNull();
     }
 
-    [Fact(DisplayName = "Retificar de uma vez um processo publicado sem sessão tem sucesso, sem a guarda de mutação")]
-    public void Retificar_PublicadoSemSessao_TemSucesso()
+    [Fact(DisplayName = "Retificar um processo publicado tem sucesso, sem a guarda de mutação")]
+    public void Retificar_Publicado_TemSucesso()
     {
-        ProcessoSeletivo publicado = ProcessoEmEdicaoDeTeste.PublicadoSemSessao(out VersaoConfiguracao versao);
+        ProcessoSeletivo publicado = ProcessoEmEdicaoDeTeste.Publicado(out VersaoConfiguracao versao);
 
         Result<VersaoConfiguracao> resultado = Retificar(publicado, versao);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        publicado.Rascunho.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "O estado do rascunho admite publicar e não admite retificar")]
+    public void ConferirEstado_Rascunho_AdmitePublicarENaoRetificar()
+    {
+        ProcessoSeletivo rascunho = ProcessoConformeFactory.Criar();
+        ProcessoEmEdicaoDeTeste.Publicado(out VersaoConfiguracao deOutro);
+
+        TransicoesDaVersao.ConferirEstadoParaPublicar(rascunho.Status).IsSuccess.Should().BeTrue();
+        TransicoesDaVersao.ConferirEstadoParaRetificar(rascunho.Id, rascunho.Status, deOutro, "Correção do prazo").Error!.Code.Should().Be("ProcessoSeletivo.TransicaoInvalida");
+    }
+
+    [Fact(DisplayName = "O estado do processo publicado não admite publicar de novo e exige o motivo da retificação")]
+    public void ConferirEstado_Publicado_NaoAdmitePublicarEExigeOMotivo()
+    {
+        ProcessoSeletivo publicado = ProcessoEmEdicaoDeTeste.Publicado(out VersaoConfiguracao versao);
+
+        TransicoesDaVersao.ConferirEstadoParaPublicar(publicado.Status).Error!.Code.Should().Be("ProcessoSeletivo.TransicaoInvalida");
+        TransicoesDaVersao.ConferirEstadoParaRetificar(publicado.Id, publicado.Status, versao, " ").Error!.Code.Should().Be("ProcessoSeletivo.MotivoRetificacaoObrigatorio");
+        TransicoesDaVersao.ConferirEstadoParaRetificar(publicado.Id, publicado.Status, versao, "Correção do prazo").IsSuccess.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "A versão corrente de outro processo lança sem mutar o processo")]
+    public void ConferirEstado_VersaoDeOutroProcesso_Lanca()
+    {
+        ProcessoSeletivo publicado = ProcessoEmEdicaoDeTeste.Publicado(out _);
+        ProcessoEmEdicaoDeTeste.Publicado(out VersaoConfiguracao deOutro);
+
+        Action conferir = () => TransicoesDaVersao.ConferirEstadoParaRetificar(publicado.Id, publicado.Status, deOutro, "Correção do prazo");
+
+        conferir.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("versaoAtual");
     }
 
     [Fact(DisplayName = "Retificar lança pela versão atual nula antes de conferir o status")]
@@ -78,72 +105,8 @@ public sealed class TransicoesDaVersaoSequenciaTests
         ProcessoSeletivo rascunho = ProcessoConformeFactory.Criar();
 
         Action chamada = () => rascunho.Retificar(
-            Dados(), null!, Bytes, "1.1", "canonical-json/sha256@v1", Hash, "user-conta-123", "Correção do prazo",
-            new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo,
-            TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = Dados(), Documento = new DocumentoCongelado(Bytes, "1.1", "canonical-json/sha256@v1", Hash), Relogio = new RelogioFixo(Agora) }, null!, "Correção do prazo");
 
         chamada.Should().Throw<ArgumentNullException>().WithParameterName("versaoAtual");
     }
-
-    [Fact(DisplayName = "Retificar de uma vez com sessão aberta recusa pela sessão")]
-    public void Retificar_ComSessaoAberta_Recusa()
-    {
-        ProcessoSeletivo emSessao = ProcessoEmEdicaoDeTeste.EmSessao();
-
-        Result<VersaoConfiguracao> resultado = Retificar(emSessao, VersaoDe(emSessao));
-
-        resultado.Error!.Code.Should().Be("RascunhoRetificacao.JaAberta");
-    }
-
-    [Fact(DisplayName = "Fechar sem sessão aberta recusa pela inexistência dela, não pela precondição inválida")]
-    public void Fechar_SemSessao_RecusaPelaInexistenciaDaSessao()
-    {
-        ProcessoSeletivo publicado = ProcessoEmEdicaoDeTeste.PublicadoSemSessao(out VersaoConfiguracao versao);
-
-        Result<VersaoConfiguracao> resultado = Fechar(publicado, versao, PrecondicaoIfMatch.DeTags(["\"invalida:9\""]));
-
-        resultado.Error!.Code.Should().Be("RascunhoRetificacao.NaoAberta");
-    }
-
-    [Fact(DisplayName = "Fechar sem precondição lança antes de qualquer recusa")]
-    public void Fechar_PrecondicaoNula_Lanca()
-    {
-        ProcessoSeletivo publicado = ProcessoEmEdicaoDeTeste.PublicadoSemSessao(out VersaoConfiguracao versao);
-
-        Action chamada = () => Fechar(publicado, versao, null!);
-
-        chamada.Should().Throw<ArgumentNullException>().WithParameterName("precondicao");
-    }
-
-    [Fact(DisplayName = "Fechar recusado por portão deixa a sessão aberta na mesma revisão")]
-    public void Fechar_RecusadoPorPortao_MantemASessaoNaMesmaRevisao()
-    {
-        ProcessoSeletivo emSessao = ProcessoEmEdicaoDeTeste.EmSessao();
-        VersaoConfiguracao versao = VersaoDe(emSessao);
-        emSessao.DefinirCronogramaFases([FaseSemUnidade(emSessao)], [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
-        int revisao = emSessao.Rascunho!.Revisao;
-
-        Result<VersaoConfiguracao> resultado = Fechar(emSessao, versao, PrecondicaoIfMatch.DeTags([emSessao.ETagDaSessaoEditorial!]));
-
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.FaseSemUnidadeResponsavel");
-        emSessao.Rascunho!.Revisao.Should().Be(revisao);
-    }
-
-    private static FaseCronograma FaseSemUnidade(ProcessoSeletivo processo)
-    {
-        FaseCronograma atual = processo.CronogramaFases.Single();
-        return FaseCronograma.Criar(
-            atual.Ordem, atual.FaseCanonicaOrigemId, atual.Codigo, atual.OrigemData,
-            atual.AgrupaEtapas, atual.PermiteComplementacao, atual.ColetaInscricao, atual.ColetaSolicitacaoIsencao,
-            atual.Inicio, atual.Fim, [.. atual.Produtos], atual.FaseConcluinteCodigo, atual.EmiteParecerIndividual,
-            [.. atual.BancasRequeridas], atual.RegraRecurso, unidadeResponsavel: null).Value!;
-    }
-
-    private static Result<VersaoConfiguracao> Fechar(ProcessoSeletivo p, VersaoConfiguracao versao, PrecondicaoIfMatch precondicao) =>
-        p.FecharRetificacao(
-            Dados(), versao, Bytes, "1.1", "canonical-json/sha256@v1", Hash, "user-conta-123", precondicao,
-            new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
-
-    private static VersaoConfiguracao VersaoDe(ProcessoSeletivo processo) =>
-        VersaoConfiguracao.Abrir(processo.Id, Bytes, "1.1", "canonical-json/sha256@v1", Guid.CreateVersion7(), Hash, "user-conta-123", Agora);
 }

@@ -65,29 +65,36 @@ public sealed class AplicarModeloDeIsencaoDaTaxaTests
     {
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
-            db,
-            $"Processo que cobra taxa {Guid.CreateVersion7()}",
-            coletaSolicitacaoIsencao: true,
-            complementar: static p =>
-            {
-                ConfiguracaoTaxaInscricao taxa = ConfiguracaoTaxaInscricao.Criar(
-                    cobra: true, valor: 100m, fundamentosCodigos: [FundamentoIsencaoCodigo.CarenciaSocioeconomica]).Value!;
-                Result taxaDefinida = p.DefinirTaxaInscricao(taxa, PrecondicaoIfMatch.Ausente);
-                taxaDefinida.IsSuccess.Should().BeTrue(taxaDefinida.Error?.Message);
-
-                int ordem = FormularioDeTeste.PrimeiraOrdemDeInscricao;
-                Result itens = p.DefinirItens(
-                [
-                    FatoColetado.Criar(OrigemEscolar.FatoFormaDeConclusao, ordem, "Como você concluiu o ensino médio?",
-                        TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-                    FatoColetado.Criar(OrigemEscolar.FatoOndeCursou, ordem + 1, "Onde você cursou o ensino médio?",
-                        TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-                ]);
-                itens.IsSuccess.Should().BeTrue(itens.Error?.Message);
-            });
+        (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel
+        {
+            Nome = $"Processo que cobra taxa {Guid.CreateVersion7()}",
+            ColetaSolicitacaoIsencao = true,
+            Complementar = static p => CobrarTaxaEColetarAOrigemEscolar(p),
+        });
         return processo.Id;
     }
+
+    private static void CobrarTaxaEColetarAOrigemEscolar(ProcessoSeletivo processo)
+    {
+        ConfiguracaoTaxaInscricao taxa = ConfiguracaoTaxaInscricao.Criar(
+            cobra: true, valor: 100m, fundamentosCodigos: [FundamentoIsencaoCodigo.CarenciaSocioeconomica]).Value!;
+        Result taxaDefinida = processo.DefinirTaxaInscricao(taxa);
+        taxaDefinida.IsSuccess.Should().BeTrue(taxaDefinida.Error?.Message);
+
+        int ordem = FormularioDeTeste.PrimeiraOrdemDeInscricao;
+        Result itens = processo.DefinirItens(
+        [
+            PerguntaDeSelecaoUnica(OrigemEscolar.FatoFormaDeConclusao, ordem, "Como você concluiu o ensino médio?"),
+            PerguntaDeSelecaoUnica(OrigemEscolar.FatoOndeCursou, ordem + 1, "Onde você cursou o ensino médio?"),
+        ]);
+        itens.IsSuccess.Should().BeTrue(itens.Error?.Message);
+    }
+
+    private static FatoColetado PerguntaDeSelecaoUnica(string fatoCodigo, int ordem, string rotulo) =>
+        FatoColetado.Criar(
+            fatoCodigo, ordem, rotulo, TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
+            classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal,
+            finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
 
     private async Task<Guid> ModeloAsync()
     {

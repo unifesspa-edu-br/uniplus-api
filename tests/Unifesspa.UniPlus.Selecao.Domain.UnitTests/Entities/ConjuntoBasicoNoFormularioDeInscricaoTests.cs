@@ -33,13 +33,13 @@ public sealed class ConjuntoBasicoNoFormularioDeInscricaoTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         processo.DefinirFatosColetados(
-                FinalidadeFormulario.Inscricao, FormularioDeTeste.DadosBasicos(semODado is null ? [] : [semODado]), PrecondicaoIfMatch.Ausente)
+                FinalidadeFormulario.Inscricao, FormularioDeTeste.DadosBasicos(semODado is null ? [] : [semODado]))
             .IsSuccess.Should().BeTrue();
 
-        DomainError? pendencia = ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo);
+        DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
 
         (pendencia?.Code).Should().Be(semODado is null ? null : FormularioProcessoErrorCodes.InscricaoSemConjuntoBasico);
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
             .Single(static i => i.Codigo == "formulario_inscricao_sem_conjunto_basico").Ok.Should().Be(semODado is null);
     }
 
@@ -52,10 +52,10 @@ public sealed class ConjuntoBasicoNoFormularioDeInscricaoTests
             nome.FatoCodigo, FormularioDeTeste.PrimeiraOrdemDeInscricao, nome.Rotulo, nome.TipoRenderizacao, nome.Obrigatoriedade, null,
             etapaCodigo: FormularioDeTeste.Secao, formato: nome.Formato, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
         processo.DefinirFatosColetados(
-                FinalidadeFormulario.Inscricao, [.. FormularioDeTeste.DadosBasicos([nome.FatoCodigo]), nomeEmDados], PrecondicaoIfMatch.Ausente)
+                FinalidadeFormulario.Inscricao, [.. FormularioDeTeste.DadosBasicos([nome.FatoCodigo]), nomeEmDados])
             .IsSuccess.Should().BeTrue();
 
-        ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemConjuntoBasico);
+        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemConjuntoBasico);
     }
 
     [Theory(DisplayName = "O formulário de inscrição nasce com os dados básicos, e uma seção já pode citá-los")]
@@ -65,7 +65,34 @@ public sealed class ConjuntoBasicoNoFormularioDeInscricaoTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         Guid? fase = processo.FormularioDe(FinalidadeFormulario.Inscricao)!.FaseId;
-        processo.RemoverFormulario(FinalidadeFormulario.Inscricao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.RemoverFormulario(FinalidadeFormulario.Inscricao).IsSuccess.Should().BeTrue();
+        IReadOnlyList<EtapaFormulario> etapas = EtapasComSecaoDeRevalidacao();
+
+        Result resultado = processo.DefinirFormulario(
+            FinalidadeFormulario.Inscricao, fase, null, etapas, comOsDadosBasicos ? FormularioDeTeste.DadosBasicos() : null);
+
+        ConferirDadosBasicos(processo, resultado, comOsDadosBasicos);
+    }
+
+    [Fact(DisplayName = "Criar a inscrição quando outro formulário coleta um dado básico é recusado, e a recusa orienta")]
+    public void DefinirFormulario_DadoBasicoEmOutroFormulario_RecusaOrientando()
+    {
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
+        Guid? fase = processo.FormularioDe(FinalidadeFormulario.Inscricao)!.FaseId;
+        processo.RemoverFormulario(FinalidadeFormulario.Inscricao).IsSuccess.Should().BeTrue();
+        processo.DefinirItens(
+            [FatoColetado.Criar("EMAIL", 0, "E-mail", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null, formato: "EMAIL", classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!],
+            finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.DefinirFormulario(
+            FinalidadeFormulario.Inscricao, fase, null, FormularioDeTeste.Etapas(), FormularioDeTeste.DadosBasicos());
+
+        resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.FatoDuplicado);
+        resultado.Error.Message.Should().Contain("dados básicos").And.Contain("HABILITACAO");
+    }
+
+    private static IReadOnlyList<EtapaFormulario> EtapasComSecaoDeRevalidacao()
+    {
         PredicadoDnf estrangeiro = PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(0, CondicaoDnf.Criar("NACIONALIDADE", Operador.Igual, JsonSerializer.SerializeToElement("ESTRANGEIRO")).Value!)]).Value!;
         IReadOnlyList<EtapaFormulario> etapas =
@@ -74,10 +101,12 @@ public sealed class ConjuntoBasicoNoFormularioDeInscricaoTests
             EtapaFormulario.Criar("REVALIDACAO", 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Revalidação", null, null, estrangeiro).Value!,
             EtapaFormulario.Criar("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null).Value!,
         ];
+        return etapas;
+    }
 
-        Result resultado = processo.DefinirFormulario(
-            FinalidadeFormulario.Inscricao, fase, null, etapas, PrecondicaoIfMatch.Ausente, comOsDadosBasicos ? FormularioDeTeste.DadosBasicos() : null);
 
+    private static void ConferirDadosBasicos(ProcessoSeletivo processo, Result resultado, bool comOsDadosBasicos)
+    {
         if (comOsDadosBasicos)
         {
             resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -90,20 +119,4 @@ public sealed class ConjuntoBasicoNoFormularioDeInscricaoTests
         }
     }
 
-    [Fact(DisplayName = "Criar a inscrição quando outro formulário coleta um dado básico é recusado, e a recusa orienta")]
-    public void DefinirFormulario_DadoBasicoEmOutroFormulario_RecusaOrientando()
-    {
-        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        Guid? fase = processo.FormularioDe(FinalidadeFormulario.Inscricao)!.FaseId;
-        processo.RemoverFormulario(FinalidadeFormulario.Inscricao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirItens(
-            [FatoColetado.Criar("EMAIL", 0, "E-mail", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null, formato: "EMAIL", classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!],
-            finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
-
-        Result resultado = processo.DefinirFormulario(
-            FinalidadeFormulario.Inscricao, fase, null, FormularioDeTeste.Etapas(), PrecondicaoIfMatch.Ausente, FormularioDeTeste.DadosBasicos());
-
-        resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.FatoDuplicado);
-        resultado.Error.Message.Should().Contain("dados básicos").And.Contain("HABILITACAO");
-    }
 }

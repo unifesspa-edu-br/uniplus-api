@@ -30,33 +30,56 @@ internal static class LeituraDaClassificacao
         JsonObject bloco = leitor.Objeto(payload, "classificacao", "$");
         leitor.ExigirChaves(bloco, "classificacao", ChavesDaClassificacao);
 
-        ReferenciaRegra regraCalculo = leitor.Regra(
-            bloco, "regraCalculo", "classificacao", RegraCalculoCodigo.FormulaMediaPonderada, RegraCalculoCodigo.ClassificacaoImportada);
-        ReferenciaRegra? regraArredondamento = leitor.RegraOpcional(
-            bloco, "regraArredondamento", "classificacao", RegraArredondamentoCodigo.PrecisaoTruncar, RegraArredondamentoCodigo.PrecisaoArredondarCima);
-        int? casas = leitor.InteiroOpcional(bloco, "casasArredondamento", "classificacao");
-        decimal? escalaNotaFinal = leitor.DecimalOpcional(
-            bloco, "escalaNotaFinal", ConfiguracaoClassificacao.EscalaNotaFinalEscala, "classificacao", LimitesDoEnvelope.PrecisaoEscalaNotaFinal);
-        ReferenciaRegra regraOrdem = leitor.Regra(
-            bloco, "regraOrdemAlocacao", "classificacao", RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria);
-        bool baseadoEmEnem = leitor.Booleano(bloco, "baseadoEmEnem", "classificacao");
-        List<RegraEliminacao>? eliminacoes = LerRegrasDeEliminacao(leitor, bloco);
-        string? resolucaoPesoAreaEnem = leitor.TextoOpcional(
-            bloco, "resolucaoPesoAreaEnem", "classificacao", LimitesDoEnvelope.ResolucaoPesoAreaEnem);
-        IReadOnlyList<GrupoPesoAreaEnemCongelado>? quadro = eliminacoes is null ? null : LerQuadroPesoAreaEnem(leitor, bloco);
-        if (leitor.Falhou)
+        DeclaracaoDaClassificacao? declaracao = LerDeclaracao(leitor, bloco);
+        if (declaracao is null)
         {
             return null;
         }
 
-        Result<ConfiguracaoClassificacao> classificacao = ConfiguracaoClassificacao.Criar(
-            regraCalculo, regraArredondamento, casas, regraOrdem, eliminacoes!, baseadoEmEnem,
-            resolucaoPesoAreaEnem, quadro!, escalaNotaFinal);
-
+        Result<ConfiguracaoClassificacao> classificacao = ConfiguracaoClassificacao.Criar(declaracao);
         return classificacao.IsFailure
             ? leitor.Propagar<ConfiguracaoClassificacao>(classificacao.Error!)
             : classificacao.Value;
     }
+
+    private static DeclaracaoDaClassificacao? LerDeclaracao(LeitorEnvelope leitor, JsonObject bloco)
+    {
+        DeclaracaoDaClassificacao calculoEOrdem = LerCalculoEOrdemDeAlocacao(leitor, bloco);
+        bool baseadoEmEnem = leitor.Booleano(bloco, "baseadoEmEnem", "classificacao");
+        List<RegraEliminacao>? eliminacoes = LerRegrasDeEliminacao(leitor, bloco);
+        (string? resolucaoPesoAreaEnem, IReadOnlyList<GrupoPesoAreaEnemCongelado>? quadro) = LerPesosDaAreaDoEnem(leitor, bloco, eliminacoes is not null);
+
+        return leitor.Falhou
+            ? null
+            : calculoEOrdem with
+            {
+                RegrasEliminacao = eliminacoes!,
+                BaseadoEmEnem = baseadoEmEnem,
+                ResolucaoPesoAreaEnem = resolucaoPesoAreaEnem,
+                QuadroPesoAreaEnem = quadro!,
+            };
+    }
+
+    private static (string? Resolucao, IReadOnlyList<GrupoPesoAreaEnemCongelado>? Quadro) LerPesosDaAreaDoEnem(
+        LeitorEnvelope leitor, JsonObject bloco, bool eliminacoesLidas)
+    {
+        string? resolucao = leitor.TextoOpcional(bloco, "resolucaoPesoAreaEnem", "classificacao", LimitesDoEnvelope.ResolucaoPesoAreaEnem);
+        return (resolucao, eliminacoesLidas ? LerQuadroPesoAreaEnem(leitor, bloco) : null);
+    }
+
+    /// <summary>A leitura segue a ordem das propriedades: o leitor guarda a primeira recusa, e a ordem decide qual delas.</summary>
+    private static DeclaracaoDaClassificacao LerCalculoEOrdemDeAlocacao(LeitorEnvelope leitor, JsonObject bloco) => new()
+    {
+        RegraCalculo = leitor.Regra(
+            bloco, "regraCalculo", "classificacao", RegraCalculoCodigo.FormulaMediaPonderada, RegraCalculoCodigo.ClassificacaoImportada),
+        RegraArredondamento = leitor.RegraOpcional(
+            bloco, "regraArredondamento", "classificacao", RegraArredondamentoCodigo.PrecisaoTruncar, RegraArredondamentoCodigo.PrecisaoArredondarCima),
+        CasasArredondamento = leitor.InteiroOpcional(bloco, "casasArredondamento", "classificacao"),
+        EscalaNotaFinal = leitor.DecimalOpcional(
+            bloco, "escalaNotaFinal", ConfiguracaoClassificacao.EscalaNotaFinalEscala, "classificacao", LimitesDoEnvelope.PrecisaoEscalaNotaFinal),
+        RegraOrdemAlocacao = leitor.Regra(
+            bloco, "regraOrdemAlocacao", "classificacao", RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria),
+    };
 
     private static List<RegraEliminacao>? LerRegrasDeEliminacao(LeitorEnvelope leitor, JsonObject bloco)
     {
@@ -84,7 +107,7 @@ internal static class LeituraDaClassificacao
 
     private static RegraEliminacao? LerRegraDeEliminacao(LeitorEnvelope leitor, JsonObject item, string path)
     {
-        leitor.ExigirChaves(item, path, "regra", "args");
+        leitor.ExigirChaves(item, path, "regra", "parametros");
 
         ReferenciaRegra regra = leitor.Regra(
             item,
@@ -95,19 +118,19 @@ internal static class LeituraDaClassificacao
             RegraEliminacaoCodigo.ElimZeroEmArea,
             RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem,
             RegraEliminacaoCodigo.ElimAusenciaNaEtapa);
-        JsonObject args = leitor.Objeto(item, "args", path);
+        JsonObject parametros = leitor.Objeto(item, "parametros", path);
         if (leitor.Falhou)
         {
             return null;
         }
 
-        ArgsRegraEliminacao? argumentos = LerArgsEliminacao(leitor, regra.Codigo, args, $"{path}.args");
+        ParametrosRegraEliminacao? parametrosTipados = LerParametrosEliminacao(leitor, regra.Codigo, parametros, $"{path}.parametros");
         if (leitor.Falhou)
         {
             return null;
         }
 
-        Result<RegraEliminacao> eliminacao = RegraEliminacao.Criar(regra, argumentos!);
+        Result<RegraEliminacao> eliminacao = RegraEliminacao.Criar(regra, parametrosTipados!);
         return eliminacao.IsFailure ? leitor.Propagar<RegraEliminacao?>(eliminacao.Error!) : eliminacao.Value;
     }
 
@@ -146,21 +169,22 @@ internal static class LeituraDaClassificacao
     {
         leitor.ExigirChaves(item, path, "grupoAreaEnem", "baseLegal", "areas");
 
-        (string Codigo, string Rotulo)? grupo = LeituraDasVagas.LerGrupoAreaEnemObrigatorio(leitor, item, path);
+        (string Codigo, string Rotulo)? grupo = LeituraDoGrupoDeAreaEnem.LerObrigatorio(leitor, item, path);
         string baseLegal = leitor.TextoNaoVazio(item, "baseLegal", path, LimitesDoEnvelope.BaseLegalPesoAreaEnem);
         JsonArray arrayAreas = leitor.Array(item, "areas", path);
-        if (leitor.Falhou || grupo is not { } grupoLido)
-        {
-            return null;
-        }
+        return leitor.Falhou || grupo is not { } grupoLido ? null : CongelarGrupoDePesos(leitor, grupoLido, baseLegal, arrayAreas, path);
+    }
 
+    private static GrupoPesoAreaEnemCongelado? CongelarGrupoDePesos(
+        LeitorEnvelope leitor, (string Codigo, string Rotulo) grupo, string baseLegal, JsonArray arrayAreas, string path)
+    {
         List<(string? Codigo, string? Rotulo, decimal Peso, decimal? Corte)>? areas = LerAreas(leitor, arrayAreas, path);
         if (areas is null)
         {
             return null;
         }
 
-        Result<GrupoPesoAreaEnemCongelado> congelado = GrupoPesoAreaEnemCongelado.Criar(grupoLido.Codigo, grupoLido.Rotulo, baseLegal, areas);
+        Result<GrupoPesoAreaEnemCongelado> congelado = GrupoPesoAreaEnemCongelado.Criar(grupo.Codigo, grupo.Rotulo, baseLegal, areas);
         return congelado.IsFailure ? leitor.Propagar<GrupoPesoAreaEnemCongelado?>(congelado.Error!) : congelado.Value;
     }
 
@@ -189,48 +213,48 @@ internal static class LeituraDaClassificacao
         return areas;
     }
 
-    internal static ArgsRegraEliminacao? LerArgsEliminacao(
+    internal static ParametrosRegraEliminacao? LerParametrosEliminacao(
         LeitorEnvelope leitor,
         string codigo,
-        JsonObject args,
+        JsonObject parametros,
         string path) => codigo switch
         {
-            RegraEliminacaoCodigo.ElimNotaMinimaEtapa => LerNotaMinimaDaEtapa(leitor, args, path),
-            RegraEliminacaoCodigo.ElimCorteEmArea => LerCorteEmArea(leitor, args, path),
-            RegraEliminacaoCodigo.ElimZeroEmArea => LerSemArgumentos(leitor, args, path, static () => new ArgsElimZeroEmArea()),
-            RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem => LerSemArgumentos(leitor, args, path, static () => new ArgsElimFaltaEmDiaDeProvaEnem()),
-            RegraEliminacaoCodigo.ElimAusenciaNaEtapa => LerAusenciaNaEtapa(leitor, args, path),
-            _ => leitor.Propagar<ArgsRegraEliminacao>(new DomainError(
+            RegraEliminacaoCodigo.ElimNotaMinimaEtapa => LerNotaMinimaDaEtapa(leitor, parametros, path),
+            RegraEliminacaoCodigo.ElimCorteEmArea => LerCorteEmArea(leitor, parametros, path),
+            RegraEliminacaoCodigo.ElimZeroEmArea => LerSemParametros(leitor, parametros, path, static () => new ParametrosElimZeroEmArea()),
+            RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem => LerSemParametros(leitor, parametros, path, static () => new ParametrosElimFaltaEmDiaDeProvaEnem()),
+            RegraEliminacaoCodigo.ElimAusenciaNaEtapa => LerAusenciaNaEtapa(leitor, parametros, path),
+            _ => leitor.Propagar<ParametrosRegraEliminacao>(new DomainError(
                 ErrosCodecEnvelope.RegraDesconhecida,
-                $"Não há variante de args conhecida para a regra de eliminação '{codigo}' em '{path}'.")),
+                $"Não há variante de parâmetros conhecida para a regra de eliminação '{codigo}' em '{path}'.")),
         };
 
-    private static ArgsElimNotaMinimaEtapa? LerNotaMinimaDaEtapa(LeitorEnvelope leitor, JsonObject args, string path)
+    private static ParametrosElimNotaMinimaEtapa? LerNotaMinimaDaEtapa(LeitorEnvelope leitor, JsonObject parametros, string path)
     {
-        leitor.ExigirChaves(args, path, "etapaRef", "notaMinima");
-        Guid etapaRef = leitor.Identificador(args, "etapaRef", path);
-        decimal notaMinima = leitor.Decimal(args, "notaMinima", EscritaCanonica.EscalaPadrao, path);
-        return leitor.Falhou ? null : new ArgsElimNotaMinimaEtapa(etapaRef, notaMinima);
+        leitor.ExigirChaves(parametros, path, "etapaRef", "notaMinima");
+        Guid etapaRef = leitor.Identificador(parametros, "etapaRef", path);
+        decimal notaMinima = leitor.Decimal(parametros, "notaMinima", EscritaCanonica.EscalaPadrao, path);
+        return leitor.Falhou ? null : new ParametrosElimNotaMinimaEtapa(etapaRef, notaMinima);
     }
 
-    private static ArgsElimCorteEmArea? LerCorteEmArea(LeitorEnvelope leitor, JsonObject args, string path)
+    private static ParametrosElimCorteEmArea? LerCorteEmArea(LeitorEnvelope leitor, JsonObject parametros, string path)
     {
-        leitor.ExigirChaves(args, path, "areaCodigo", "minimo");
-        string areaCodigo = leitor.TextoNaoVazio(args, "areaCodigo", path, LimitesDoEnvelope.AreaPesoAreaEnemCodigo);
-        decimal minimo = leitor.Decimal(args, "minimo", EscritaCanonica.EscalaPadrao, path);
-        return leitor.Falhou ? null : new ArgsElimCorteEmArea(areaCodigo, minimo);
+        leitor.ExigirChaves(parametros, path, "areaCodigo", "minimo");
+        string areaCodigo = leitor.TextoNaoVazio(parametros, "areaCodigo", path, LimitesDoEnvelope.AreaPesoAreaEnemCodigo);
+        decimal minimo = leitor.Decimal(parametros, "minimo", EscritaCanonica.EscalaPadrao, path);
+        return leitor.Falhou ? null : new ParametrosElimCorteEmArea(areaCodigo, minimo);
     }
 
-    private static ArgsElimAusenciaNaEtapa? LerAusenciaNaEtapa(LeitorEnvelope leitor, JsonObject args, string path)
+    private static ParametrosElimAusenciaNaEtapa? LerAusenciaNaEtapa(LeitorEnvelope leitor, JsonObject parametros, string path)
     {
-        leitor.ExigirChaves(args, path, "etapaRef");
-        Guid etapaRef = leitor.Identificador(args, "etapaRef", path);
-        return leitor.Falhou ? null : new ArgsElimAusenciaNaEtapa(etapaRef);
+        leitor.ExigirChaves(parametros, path, "etapaRef");
+        Guid etapaRef = leitor.Identificador(parametros, "etapaRef", path);
+        return leitor.Falhou ? null : new ParametrosElimAusenciaNaEtapa(etapaRef);
     }
 
-    private static ArgsRegraEliminacao? LerSemArgumentos(LeitorEnvelope leitor, JsonObject args, string path, Func<ArgsRegraEliminacao> criar)
+    private static ParametrosRegraEliminacao? LerSemParametros(LeitorEnvelope leitor, JsonObject parametros, string path, Func<ParametrosRegraEliminacao> criar)
     {
-        leitor.ExigirChaves(args, path);
+        leitor.ExigirChaves(parametros, path);
         return leitor.Falhou ? null : criar();
     }
 }

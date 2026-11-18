@@ -12,12 +12,12 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 
 /// <summary>
 /// Handler do <see cref="DefinirClassificacaoCommand"/> (Story #775): resolve cada regra no catálogo
-/// <c>regras_do_catalogo</c> (<see cref="IRegraCatalogoReader"/>, Story #772), monta os args
+/// <c>regras_do_catalogo</c> (<see cref="IRegraCatalogoReader"/>, Story #772), monta os parâmetros
 /// tipados de cada regra de eliminação conforme o código, repassa <c>BaseadoEmEnem</c> e
 /// congela as referências — a invariante ENEM×eliminação e a coerência de arredondamento são
 /// validadas por <see cref="ConfiguracaoClassificacao.Criar"/>, que depende da regra de
-/// cálculo já resolvida (é ela que distingue classificação local de importada, INV-B8); a que
-/// depende de OUTRA dimensão do agregado (INV-B4) é garantida pela raiz
+/// cálculo já resolvida (é ela que distingue classificação local de importada); a que
+/// depende de OUTRA dimensão do agregado é garantida pela raiz
 /// (<see cref="ProcessoSeletivo.DefinirClassificacao"/>).
 /// </summary>
 /// <remarks>
@@ -30,7 +30,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// </remarks>
 public static class DefinirClassificacaoCommandHandler
 {
-    public static async Task<Result<MutacaoAceita>> Handle(
+    public static async Task<Result> Handle(
         DefinirClassificacaoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IRegraCatalogoReader regraCatalogoReader,
@@ -49,27 +49,15 @@ public static class DefinirClassificacaoCommandHandler
             .ConfigureAwait(false);
         if (processo is null)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 "ProcessoSeletivo.NaoEncontrado",
                 $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
         }
 
-        // A precondição é conferida AQUI, logo depois do 404 e antes das regras de negócio
-        // que este handler avalia (existência de cadastros, coerência de referências): ela
-        // as precede na ordem da ADR-0110 D9. Um cliente com If-Match defasado tem de saber
-        // disso antes de sair caçando um cadastro que ele não errou.
-        //
-        // O que ela NÃO precede é a validação de SCHEMA do payload: o FluentValidation roda
-        // como middleware do Wolverine, antes deste handler, e um command malformado morre
-        // ali com 422 sem que o guard chegue a rodar. É desvio consciente da D9 — corrigi-lo
-        // exigiria carregar o agregado no middleware, o que é pior. O custo é uma rodada
-        // extra para quem erra as DUAS coisas ao mesmo tempo; nenhum estado é corrompido.
-        //
-        // O mesmo guard continua dentro do Definir* do domínio: esta antecipação dá a ordem,
-        // não a garantia.
-        if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
+        // Fora do rascunho a recusa vem antes de consultar cadastros.
+        if (processo.MutacaoBloqueada() is { } bloqueio)
         {
-            return Result<MutacaoAceita>.Failure(bloqueio);
+            return Result.Failure(bloqueio);
         }
 
         Result<ReferenciaRegra> regraCalculoResult = await ResolverRegraAsync(
@@ -77,7 +65,7 @@ public static class DefinirClassificacaoCommandHandler
             .ConfigureAwait(false);
         if (regraCalculoResult.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(regraCalculoResult.Error!);
+            return Result.Failure(regraCalculoResult.Error!);
         }
 
         ReferenciaRegra? regraArredondamento = null;
@@ -85,7 +73,7 @@ public static class DefinirClassificacaoCommandHandler
         {
             if (command.RegraArredondamentoVersao is null)
             {
-                return Result<MutacaoAceita>.Failure(new DomainError(
+                return Result.Failure(new DomainError(
                     "ConfiguracaoClassificacao.RegraArredondamentoVersaoObrigatoria",
                     "Versão da regra de arredondamento é obrigatória quando o código é informado."));
             }
@@ -95,7 +83,7 @@ public static class DefinirClassificacaoCommandHandler
                 .ConfigureAwait(false);
             if (regraArredondamentoResult.IsFailure)
             {
-                return Result<MutacaoAceita>.Failure(regraArredondamentoResult.Error!);
+                return Result.Failure(regraArredondamentoResult.Error!);
             }
 
             regraArredondamento = regraArredondamentoResult.Value!;
@@ -106,7 +94,7 @@ public static class DefinirClassificacaoCommandHandler
             .ConfigureAwait(false);
         if (regraOrdemAlocacaoResult.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(regraOrdemAlocacaoResult.Error!);
+            return Result.Failure(regraOrdemAlocacaoResult.Error!);
         }
 
         List<RegraEliminacao> regrasEliminacao = [];
@@ -116,7 +104,7 @@ public static class DefinirClassificacaoCommandHandler
                 .ConfigureAwait(false);
             if (resultado.IsFailure)
             {
-                return Result<MutacaoAceita>.Failure(resultado.Error!);
+                return Result.Failure(resultado.Error!);
             }
 
             regrasEliminacao.Add(resultado.Value!);
@@ -150,16 +138,18 @@ public static class DefinirClassificacaoCommandHandler
             }
         }
 
-        Result<ConfiguracaoClassificacao> configuracaoResult = ConfiguracaoClassificacao.Criar(
-            regraCalculoResult.Value!,
-            regraArredondamento,
-            command.CasasArredondamento,
-            regraOrdemAlocacaoResult.Value!,
-            regrasEliminacao,
-            command.BaseadoEmEnem,
-            resolucaoPesoAreaEnem,
-            quadroPesoAreaEnem,
-            command.EscalaNotaFinal);
+        Result<ConfiguracaoClassificacao> configuracaoResult = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = regraCalculoResult.Value!,
+            RegraArredondamento = regraArredondamento,
+            CasasArredondamento = command.CasasArredondamento,
+            RegraOrdemAlocacao = regraOrdemAlocacaoResult.Value!,
+            RegrasEliminacao = regrasEliminacao,
+            BaseadoEmEnem = command.BaseadoEmEnem,
+            ResolucaoPesoAreaEnem = resolucaoPesoAreaEnem,
+            QuadroPesoAreaEnem = quadroPesoAreaEnem,
+            EscalaNotaFinal = command.EscalaNotaFinal,
+        });
 
         // A recusa da resolução — forma inválida ou cadastro que não a resolve — sai junto com
         // as do domínio (ADR-0125), sem as que são só consequência dela.
@@ -173,20 +163,20 @@ public static class DefinirClassificacaoCommandHandler
 
         if (erros.Count > 0)
         {
-            return Result<MutacaoAceita>.ValidationFailure(erros);
+            return Result.ValidationFailure(erros);
         }
 
-        Result result = processo.DefinirClassificacao(configuracaoResult.Value!, command.Precondicao);
+        Result result = processo.DefinirClassificacao(configuracaoResult.Value!);
         if (result.IsFailure)
         {
-            return Result<MutacaoAceita>.ValidationFailure(result.Errors);
+            return Result.ValidationFailure(result.Errors);
         }
 
         // Agregado tracked: persistência por change detection (ValueGeneratedNever
         // nos filhos) — não chamar DbSet.Update.
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
-        return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+        return Result.Success();
     }
 
     /// <summary>
@@ -269,7 +259,7 @@ public static class DefinirClassificacaoCommandHandler
                 $"A regra {codigo}/{versao} não é do tipo esperado."));
         }
 
-        return ReferenciaRegra.Criar(regra.Codigo, regra.Versao, regra.Hash);
+        return Result<ReferenciaRegra>.Success(regra.Referencia());
     }
 
     private static async Task<Result<RegraEliminacao>> ResolverEliminacaoAsync(
@@ -294,55 +284,54 @@ public static class DefinirClassificacaoCommandHandler
                 $"A regra {input.RegraCodigo}/{input.RegraVersao} não é do tipo regra_eliminacao."));
         }
 
-        Result<ArgsRegraEliminacao> argsResult = MontarArgs(input);
-        if (argsResult.IsFailure)
+        Result<ParametrosRegraEliminacao> parametrosResult = MontarParametros(input);
+        if (parametrosResult.IsFailure)
         {
-            return Result<RegraEliminacao>.Failure(argsResult.Error!);
+            return Result<RegraEliminacao>.Failure(parametrosResult.Error!);
         }
 
-        Result<ReferenciaRegra> referenciaRegraResult = ReferenciaRegra.Criar(regra.Codigo, regra.Versao, regra.Hash);
-        if (referenciaRegraResult.IsFailure)
-        {
-            return Result<RegraEliminacao>.Failure(referenciaRegraResult.Error!);
-        }
-
-        return RegraEliminacao.Criar(referenciaRegraResult.Value!, argsResult.Value!);
+        return RegraEliminacao.Criar(regra.Referencia(), parametrosResult.Value!);
     }
 
-    private static Result<ArgsRegraEliminacao> MontarArgs(RegraEliminacaoInput input) =>
+    private static Result<ParametrosRegraEliminacao> MontarParametros(RegraEliminacaoInput input) =>
         input.RegraCodigo switch
         {
-            RegraEliminacaoCodigo.ElimNotaMinimaEtapa => input.EtapaRef is { } etapaRef && input.NotaMinima is { } notaMinima && input.Minimo is null && input.AreaCodigo is null
-                ? Result<ArgsRegraEliminacao>.Success(new ArgsElimNotaMinimaEtapa(etapaRef, notaMinima))
-                : Result<ArgsRegraEliminacao>.Failure(new DomainError(
-                    "RegraEliminacao.EtapaRefENotaMinimaObrigatorios",
-                    $"EtapaRef e NotaMinima são obrigatórios (e Minimo/AreaCodigo não se aplicam) para a regra {RegraEliminacaoCodigo.ElimNotaMinimaEtapa}.")),
-
-            RegraEliminacaoCodigo.ElimCorteEmArea => input.AreaCodigo is { } areaCodigo && input.Minimo is { } minimo && input.EtapaRef is null && input.NotaMinima is null
-                ? Result<ArgsRegraEliminacao>.Success(new ArgsElimCorteEmArea(areaCodigo, minimo))
-                : Result<ArgsRegraEliminacao>.Failure(new DomainError(
-                    "RegraEliminacao.AreaEMinimoObrigatorios",
-                    $"AreaCodigo e Minimo são obrigatórios (e EtapaRef/NotaMinima não se aplicam) para a regra {RegraEliminacaoCodigo.ElimCorteEmArea}.")),
-
-            RegraEliminacaoCodigo.ElimZeroEmArea => SemArgs(input, new ArgsElimZeroEmArea()),
-
-            RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem => SemArgs(input, new ArgsElimFaltaEmDiaDeProvaEnem()),
-
-            RegraEliminacaoCodigo.ElimAusenciaNaEtapa => input.EtapaRef is { } etapaRefAusencia && input.NotaMinima is null && input.Minimo is null && input.AreaCodigo is null
-                ? Result<ArgsRegraEliminacao>.Success(new ArgsElimAusenciaNaEtapa(etapaRefAusencia))
-                : Result<ArgsRegraEliminacao>.Failure(new DomainError(
-                    "RegraEliminacao.EtapaRefObrigatorio",
-                    $"EtapaRef é obrigatório (e NotaMinima/Minimo/AreaCodigo não se aplicam) para a regra {RegraEliminacaoCodigo.ElimAusenciaNaEtapa}.")),
-
-            _ => Result<ArgsRegraEliminacao>.Failure(new DomainError(
-                "RegraEliminacao.RegraTipoInvalido",
-                $"Código de regra de eliminação desconhecido: {input.RegraCodigo}.")),
+            RegraEliminacaoCodigo.ElimNotaMinimaEtapa => ParametrosDaNotaMinimaNaEtapa(input),
+            RegraEliminacaoCodigo.ElimCorteEmArea => ParametrosDoCorteEmArea(input),
+            RegraEliminacaoCodigo.ElimZeroEmArea => SemParametros(input, new ParametrosElimZeroEmArea()),
+            RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem => SemParametros(input, new ParametrosElimFaltaEmDiaDeProvaEnem()),
+            RegraEliminacaoCodigo.ElimAusenciaNaEtapa => ParametrosDaAusenciaNaEtapa(input),
+            _ => RecusaDosParametros("RegraEliminacao.RegraTipoInvalido", $"Código de regra de eliminação desconhecido: {input.RegraCodigo}."),
         };
 
-    private static Result<ArgsRegraEliminacao> SemArgs(RegraEliminacaoInput input, ArgsRegraEliminacao args) =>
+    private static Result<ParametrosRegraEliminacao> ParametrosDaNotaMinimaNaEtapa(RegraEliminacaoInput input) =>
+        input.EtapaRef is { } etapaRef && input.NotaMinima is { } notaMinima && input.Minimo is null && input.AreaCodigo is null
+            ? Result<ParametrosRegraEliminacao>.Success(new ParametrosElimNotaMinimaEtapa(etapaRef, notaMinima))
+            : RecusaDosParametros(
+                "RegraEliminacao.EtapaRefENotaMinimaObrigatorios",
+                $"EtapaRef e NotaMinima são obrigatórios (e Minimo/AreaCodigo não se aplicam) para a regra {RegraEliminacaoCodigo.ElimNotaMinimaEtapa}.");
+
+    private static Result<ParametrosRegraEliminacao> ParametrosDoCorteEmArea(RegraEliminacaoInput input) =>
+        input.AreaCodigo is { } areaCodigo && input.Minimo is { } minimo && input.EtapaRef is null && input.NotaMinima is null
+            ? Result<ParametrosRegraEliminacao>.Success(new ParametrosElimCorteEmArea(areaCodigo, minimo))
+            : RecusaDosParametros(
+                "RegraEliminacao.AreaEMinimoObrigatorios",
+                $"AreaCodigo e Minimo são obrigatórios (e EtapaRef/NotaMinima não se aplicam) para a regra {RegraEliminacaoCodigo.ElimCorteEmArea}.");
+
+    private static Result<ParametrosRegraEliminacao> ParametrosDaAusenciaNaEtapa(RegraEliminacaoInput input) =>
+        input.EtapaRef is { } etapaRef && input.NotaMinima is null && input.Minimo is null && input.AreaCodigo is null
+            ? Result<ParametrosRegraEliminacao>.Success(new ParametrosElimAusenciaNaEtapa(etapaRef))
+            : RecusaDosParametros(
+                "RegraEliminacao.EtapaRefObrigatorio",
+                $"EtapaRef é obrigatório (e NotaMinima/Minimo/AreaCodigo não se aplicam) para a regra {RegraEliminacaoCodigo.ElimAusenciaNaEtapa}.");
+
+    private static Result<ParametrosRegraEliminacao> SemParametros(RegraEliminacaoInput input, ParametrosRegraEliminacao parametros) =>
         input.EtapaRef is null && input.NotaMinima is null && input.Minimo is null && input.AreaCodigo is null
-            ? Result<ArgsRegraEliminacao>.Success(args)
-            : Result<ArgsRegraEliminacao>.Failure(new DomainError(
-                "RegraEliminacao.ArgsIncompativeisComRegra",
-                $"A regra {input.RegraCodigo} não aceita args (EtapaRef/NotaMinima/Minimo/AreaCodigo)."));
+            ? Result<ParametrosRegraEliminacao>.Success(parametros)
+            : RecusaDosParametros(
+                "RegraEliminacao.ParametrosIncompativeisComRegra",
+                $"A regra {input.RegraCodigo} não aceita parâmetros (EtapaRef/NotaMinima/Minimo/AreaCodigo).");
+
+    private static Result<ParametrosRegraEliminacao> RecusaDosParametros(string codigo, string mensagem) =>
+        Result<ParametrosRegraEliminacao>.Failure(new DomainError(codigo, mensagem));
 }

@@ -306,4 +306,50 @@ public sealed class TermoConsentimentoTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(TermoConsentimentoErrorCodes.PromocaoSemRevisao);
     }
+
+    [Fact(DisplayName = "O código nasce do nome e não muda quando o rascunho é editado")]
+    public void Criar_GeraCodigoDoNome_EEditarNaoOMuda()
+    {
+        TermoConsentimento termo = TermoConsentimento.Criar("Termo de uso e privacidade", null, null, null).Value!;
+        string codigo = termo.Codigo.Valor;
+
+        termo.EditarRascunho("Texto", "Lei 13.709/2018", null);
+
+        codigo.Should().Be("TERMO_DE_USO_E_PRIVACIDADE");
+        termo.Codigo.Valor.Should().Be(codigo);
+    }
+
+    [Fact(DisplayName = "Nome que não forma código é recusado no campo nome")]
+    public void Criar_NomeSemLetraNemDigito_RecusaNoCampoNome()
+    {
+        Result<TermoConsentimento> resultado = TermoConsentimento.Criar("---", null, null, null);
+
+        resultado.Errors.Should().ContainSingle(e => e.Field == "nome" && e.Error.Code == TermoConsentimentoErrorCodes.CodigoFormatoInvalido);
+    }
+
+    [Fact(DisplayName = "Nome que forma código acima de 100 caracteres é recusado no campo nome")]
+    public void Criar_CodigoAcimaDoLimite_RecusaNoCampoNome()
+    {
+        Result<TermoConsentimento> resultado = TermoConsentimento.Criar(new string('a', 150), null, null, null);
+
+        resultado.Errors.Should().ContainSingle(e => e.Field == "nome" && e.Error.Code == TermoConsentimentoErrorCodes.CodigoTamanho);
+    }
+
+    [Fact(DisplayName = "As versões promovidas recebem números sequenciais a partir de 1")]
+    public void Promover_NumeraAsVersoesEmSequencia()
+    {
+        TermoConsentimento termo = TermoConsentimento.Criar("Termo", "Texto", "Lei 13.709/2018", null).Value!;
+
+        int primeira = Promovido(termo).Numero;
+        int segunda = Promovido(termo).Numero;
+
+        (primeira, segunda).Should().Be((1, 2));
+    }
+
+    private static TermoConsentimentoVersao Promovido(TermoConsentimento termo)
+    {
+        DateTimeOffset agora = new(2027, 1, 1, 12, 0, 0, TimeSpan.Zero);
+        termo.MarcarRevisado("revisor", agora);
+        return termo.Promover("revisor", agora).Value!;
+    }
 }

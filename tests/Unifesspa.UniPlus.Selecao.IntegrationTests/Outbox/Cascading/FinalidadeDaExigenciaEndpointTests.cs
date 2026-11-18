@@ -97,21 +97,21 @@ public sealed class FinalidadeDaExigenciaEndpointTests
     {
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        (ProcessoSeletivo processo, DocumentoAPublicar _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
-            db,
-            $"Inscrição e isenção na mesma fase {Guid.CreateVersion7()}",
-            coletaSolicitacaoIsencao: true,
-            complementar: p =>
+        (ProcessoSeletivo processo, DocumentoAPublicar _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel
+        {
+            Nome = $"Inscrição e isenção na mesma fase {Guid.CreateVersion7()}",
+            ColetaSolicitacaoIsencao = true,
+            Complementar = p =>
             {
                 Guid fase = p.CronogramaFases.Single().Id;
-                p.DefinirFormulario(FinalidadeFormulario.IsencaoTaxa, fase, null, FormularioDeTeste.Etapas(FinalidadeFormulario.IsencaoTaxa), PrecondicaoIfMatch.Ausente)
+                p.DefinirFormulario(FinalidadeFormulario.IsencaoTaxa, fase, null, FormularioDeTeste.Etapas(FinalidadeFormulario.IsencaoTaxa))
                     .IsSuccess.Should().BeTrue();
                 p.DefinirFatosColetados(
                         FinalidadeFormulario.IsencaoTaxa,
-                        [FatoColetado.Criar(fatoDaIsencao, 0, "Bolsista", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!],
-                        PrecondicaoIfMatch.Ausente)
+                        [FatoColetado.Criar(fatoDaIsencao, 0, "Bolsista", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!])
                     .IsSuccess.Should().BeTrue();
-            });
+            }
+        });
         return processo;
     }
 }

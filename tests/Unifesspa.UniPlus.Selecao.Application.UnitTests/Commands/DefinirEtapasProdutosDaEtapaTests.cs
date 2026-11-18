@@ -19,8 +19,7 @@ public sealed class DefinirEtapasProdutosDaEtapaTests
 {
     /// <summary>
     /// A fase confere o ato contra o catálogo de Publicações; a etapa não conferia. O código
-    /// declarado aqui vira o nome do produto no cronograma público e a chave pela qual a
-    /// restauração da configuração congelada reencontra o produto — um código com erro de
+    /// declarado aqui vira o nome do produto no cronograma público — um código com erro de
     /// digitação só apareceria depois de o certame estar no Diário Oficial.
     /// </summary>
     [Fact(DisplayName = "Produto de etapa com ato fora do catálogo é recusado, como na fase")]
@@ -43,10 +42,9 @@ public sealed class DefinirEtapasProdutosDaEtapaTests
                 new EtapaProcessoInput(
                     "Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
                     Produtos: [new ProdutoDaEtapaInput("RESULTADO_PRELMINAR", null)], Bancas: [], Recursos: []),
-            ],
-            PrecondicaoIfMatch.Ausente);
+            ]);
 
-        Result<MutacaoAceita> result = await Executar(
+        Result result = await Executar(
             command, repository, unitOfWork, tipoAtoPublicadoReader: tipoAtoPublicadoReader);
 
         result.IsFailure.Should().BeTrue();
@@ -84,10 +82,9 @@ public sealed class DefinirEtapasProdutosDaEtapaTests
                 new EtapaProcessoInput(
                     "Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
                     Produtos: [new ProdutoDaEtapaInput("EDITAL_ABERTURA", "PRELIMINAR")], Bancas: [], Recursos: []),
-            ],
-            PrecondicaoIfMatch.Ausente);
+            ]);
 
-        Result<MutacaoAceita> result = await Executar(
+        Result result = await Executar(
             command, repository, unitOfWork, tipoAtoPublicadoReader: tipoAtoPublicadoReader);
 
         result.IsFailure.Should().BeTrue();
@@ -134,10 +131,9 @@ public sealed class DefinirEtapasProdutosDaEtapaTests
                         new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "PRELIMINAR"),
                         new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "DEFINITIVO"),
                     ], Bancas: [], Recursos: []),
-            ],
-            PrecondicaoIfMatch.Ausente);
+            ]);
 
-        Result<MutacaoAceita> result = await Executar(
+        Result result = await Executar(
             command, repository, unitOfWork, tipoAtoPublicadoReader: tipoAtoPublicadoReader);
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
@@ -162,10 +158,9 @@ public sealed class DefinirEtapasProdutosDaEtapaTests
                 new EtapaProcessoInput(
                     "Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
                     Produtos: [new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", null)], Bancas: [], Recursos: []),
-            ],
-            PrecondicaoIfMatch.Ausente);
+            ]);
 
-        Result<MutacaoAceita> result = await Executar(
+        Result result = await Executar(
             command, repository, unitOfWork, tipoAtoPublicadoReader: tipoAtoPublicadoReader);
 
         result.IsFailure.Should().BeTrue();
@@ -205,8 +200,7 @@ public sealed class DefinirEtapasProdutosDaEtapaTests
                         new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "DEFINITIVO"),
                     ],
                     Bancas: [], Recursos: []),
-            ],
-            PrecondicaoIfMatch.Ausente);
+            ]);
 
         (await Executar(primeiraGravacao, repository, unitOfWork, tipoAtoPublicadoReader: catalogoComOAto))
             .IsSuccess.Should().BeTrue();
@@ -230,10 +224,9 @@ public sealed class DefinirEtapasProdutosDaEtapaTests
                         new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "DEFINITIVO"),
                     ],
                     Bancas: [], Recursos: []),
-            ],
-            PrecondicaoIfMatch.Curinga);
+            ]);
 
-        Result<MutacaoAceita> resultado = await Executar(
+        Result resultado = await Executar(
             segundaGravacao, repository, unitOfWork, tipoAtoPublicadoReader: catalogoSemOAto);
 
         resultado.IsSuccess.Should().BeTrue(

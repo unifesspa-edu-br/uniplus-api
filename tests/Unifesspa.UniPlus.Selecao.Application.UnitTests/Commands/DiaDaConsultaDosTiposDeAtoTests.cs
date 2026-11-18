@@ -31,7 +31,7 @@ public sealed class DiaDaConsultaDosTiposDeAtoTests
     {
         Cenario cenario = new();
 
-        await new ResolucaoDosTiposDeAtoUnicos(cenario.Catalogo, cenario.Atos, cenario.Relogio).ConferirAsync(
+        await new ResolucaoDosTiposDeAtoUnicos(cenario.Catalogo, cenario.Atos, cenario.Relogio).ParaOperacaoAsync(
             cenario.Processo, TipoDaOperacao(), [cenario.AtoDaLinhagem], DiaDeInicio, SemCongelados(), CancellationToken.None);
 
         await cenario.Catalogo.Received(1).ListarVigentesAsync(Arg.Any<IReadOnlyCollection<string>>(), DiaDeInicio, Arg.Any<CancellationToken>());
@@ -74,20 +74,23 @@ public sealed class DiaDaConsultaDosTiposDeAtoTests
 
         public Guid AtoDaLinhagem { get; } = Guid.CreateVersion7();
 
+        private static FaseCronograma FaseDeClassificacaoComResultado() => FaseCronograma.Criar(
+            new OrigemCanonicaDaFase(
+                Guid.CreateVersion7(), "CLASSIFICACAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false,
+                ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+            new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(
+                Produtos: [ProdutoDaFase.Criar("RESULTADO_X", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false,
+                RegraRecurso: null),
+            bancasRequeridas: []).Value!;
+
         private static ProcessoSeletivo ProcessoComUmaFase()
         {
             ProcessoSeletivo processo = ProcessoSeletivo.Criar(
                 "PS Dia da consulta", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
-                UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+                UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
                 LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-            processo.DefinirCronogramaFases(
-                [FaseCronograma.Criar(
-                    1, Guid.CreateVersion7(), "CLASSIFICACAO", OrigemDataFase.NaExecucao,
-                    agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
-                    inicio: null, fim: null, produtos: [ProdutoDaFase.Criar("RESULTADO_X", PapelProdutoFase.Definitivo)],
-                    faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!],
-                [],
-                PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            processo.DefinirCronogramaFases([FaseDeClassificacaoComResultado()], []).IsSuccess.Should().BeTrue();
 
             return processo;
         }

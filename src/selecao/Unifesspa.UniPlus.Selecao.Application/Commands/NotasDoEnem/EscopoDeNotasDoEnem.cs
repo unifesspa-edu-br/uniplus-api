@@ -31,8 +31,8 @@ public sealed record EscopoDeNotasDoEnem(
 
 /// <summary>
 /// Resolve e confere o escopo do envio ao INEP e da importação das notas pela versão divulgada do
-/// certame, e não pelo processo vivo: uma sessão de retificação aberta pode retirar a edição ou
-/// trocar a etapa no rascunho enquanto os candidatos já se inscreveram na versão que o público vê.
+/// certame, e não pelo processo vivo: a edição ou a etapa só mudam no rascunho, e os candidatos
+/// inscrevem-se na versão que o público vê.
 /// Processo sem versão divulgada é recusado.
 /// </summary>
 public static class ResolvedorDoEscopoDeNotasDoEnem

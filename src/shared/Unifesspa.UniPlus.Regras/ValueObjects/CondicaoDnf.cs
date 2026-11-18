@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// Átomo tipado <c>{ Fato, Operador, Valor }</c> de um predicado sobre o
 /// candidato — a unidade compartilhada por <see cref="ClausulaDnf"/>/
 /// <see cref="PredicadoDnf"/> e reusada literalmente por
-/// <c>ArgsDesempatePredicadoFato</c> (ADR-0111, Story #847).
+/// <c>ParametrosDesempatePredicadoFato</c> (ADR-0111, Story #847).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -33,13 +33,13 @@ public sealed record CondicaoDnf
 {
     /// <remarks>
     /// Privado, mas anotado com <see cref="JsonConstructorAttribute"/>: é o construtor
-    /// que o <c>System.Text.Json</c> usa para materializar <c>CriterioDesempate.Args</c>
+    /// que o <c>System.Text.Json</c> usa para materializar <c>CriterioDesempate.Parametros</c>
     /// a partir da coluna <c>json</c> (EF <c>ValueComparer</c>/reidratação de change
     /// tracking) — o mesmo tratamento que os demais registros de
-    /// <c>ArgsCriterioDesempate</c> já recebem implicitamente (construtor
+    /// <c>ParametrosCriterioDesempate</c> já recebem implicitamente (construtor
     /// posicional público). O dado já foi validado por <see cref="Criar"/> quando
     /// escrito; esta materialização não revalida, no mesmo espírito das demais
-    /// variantes de <c>ArgsCriterioDesempate</c>.
+    /// variantes de <c>ParametrosCriterioDesempate</c>.
     /// </remarks>
     [JsonConstructor]
     private CondicaoDnf(string fato, Operador operador, JsonElement valor)

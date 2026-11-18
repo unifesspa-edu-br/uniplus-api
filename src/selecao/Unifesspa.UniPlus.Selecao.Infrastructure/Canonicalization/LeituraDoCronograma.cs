@@ -9,6 +9,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -21,7 +23,7 @@ internal static class LeituraDoCronograma
     [
         "ordem", "faseCanonicaOrigemId", "codigo", "origemData", "agrupaEtapas", "permiteComplementacao",
         "coletaInscricao", "coletaSolicitacaoIsencao", "inicio", "fim", "produtos", "faseConcluinteCodigo",
-        "emiteParecerIndividual", "bancasRequeridas", "regraRecurso", "unidadeResponsavel",
+        "emiteParecerIndividual", "bancasRequeridas", "regraRecurso", "unidadeResponsavel", "tiposDeDecisao", "regraDeHomologacao",
     ];
 
     /// <summary>
@@ -44,11 +46,11 @@ internal static class LeituraDoCronograma
         leitor.Enumeracao<OrigemCandidatos>(bloco, "origemCandidatos", "cronogramaFases");
 
         JsonArray array = leitor.Array(bloco, "fases", "cronogramaFases");
-        if (leitor.Falhou)
-        {
-            return [];
-        }
+        return leitor.Falhou ? [] : LerFases(leitor, array, comId);
+    }
 
+    private static List<FaseCronograma> LerFases(LeitorEnvelope leitor, JsonArray array, bool comId)
+    {
         List<FaseCronograma> fases = [];
         for (int i = 0; i < array.Count; i++)
         {
@@ -68,98 +70,98 @@ internal static class LeituraDoCronograma
     {
         leitor.ExigirChaves(item, path, comId ? [.. ChavesDaFase, "id"] : ChavesDaFase);
 
-        DeclaracaoDaFase d = LerDeclaracao(leitor, item, path, comId);
-        if (leitor.Falhou)
-        {
-            return null;
-        }
+        Guid? id = comId ? leitor.Identificador(item, "id", path) : null;
+        int ordem = leitor.Inteiro(item, "ordem", path);
+        OrigemCanonicaDaFase origem = LerOrigemCanonica(leitor, item, path);
+        DecisoesDeCronogramaDaFase decisoes = LerDecisoesSemUnidade(leitor, item, path, ordem);
+        bool emiteParecerIndividual = leitor.Booleano(item, "emiteParecerIndividual", path);
 
+        return leitor.Falhou
+            ? null
+            : LerFilhasEMontar(leitor, item, path, id, origem, decisoes, emiteParecerIndividual);
+    }
+
+    private static OrigemCanonicaDaFase LerOrigemCanonica(LeitorEnvelope leitor, JsonObject item, string path) => new(
+        leitor.Identificador(item, "faseCanonicaOrigemId", path),
+        leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.FaseCodigo),
+        leitor.Enumeracao<OrigemDataFase>(item, "origemData", path),
+        leitor.Booleano(item, "agrupaEtapas", path),
+        leitor.Booleano(item, "permiteComplementacao", path),
+        leitor.Booleano(item, "coletaInscricao", path),
+        leitor.Booleano(item, "coletaSolicitacaoIsencao", path));
+
+    // A unidade responsável vem depois das filhas na ordem da gramática, e completa estas decisões.
+    private static DecisoesDeCronogramaDaFase LerDecisoesSemUnidade(
+        LeitorEnvelope leitor, JsonObject item, string path, int ordem) => new(
+        ordem,
+        leitor.InstanteOpcional(item, "inicio", path),
+        leitor.InstanteOpcional(item, "fim", path),
+        leitor.TextoOpcional(item, "faseConcluinteCodigo", path, LimitesDoEnvelope.FaseCodigo),
+        null);
+
+    private static FaseCronograma? LerFilhasEMontar(
+        LeitorEnvelope leitor,
+        JsonObject item,
+        string path,
+        Guid? id,
+        OrigemCanonicaDaFase origem,
+        DecisoesDeCronogramaDaFase decisoes,
+        bool emiteParecerIndividual)
+    {
         IReadOnlyList<ProdutoDaFase> produtos = LerProdutosDaFase(leitor, item, path);
         IReadOnlyList<BancaRequerida> bancas = leitor.Falhou ? [] : LerBancasRequeridas(leitor, item, path);
         RegraRecursoFase? regraRecurso = leitor.Falhou ? null : LeituraDosPrazosDeRecurso.LerRegraRecursoFase(leitor, item, path);
-        UnidadeResponsavelSnapshot? unidadeResponsavel = leitor.Falhou ? null : LerUnidadeResponsavel(leitor, item, path);
-        if (leitor.Falhou)
-        {
-            return null;
-        }
+        UnidadeResponsavelSnapshot? unidade = leitor.Falhou ? null : LerUnidadeResponsavel(leitor, item, path);
+        IReadOnlyList<string> tipos = leitor.Falhou ? [] : TiposDeDecisaoNoEnvelope.Ler(leitor, item, path);
+        RegraDeHomologacaoDasInscricoes? regraDeHomologacao = leitor.Falhou ? null : RegraDeHomologacaoNoEnvelope.Ler(leitor, item, path);
 
-        // A âncora do recurso e o recorte de competência são conferidos pelo mesmo predicado do agregado:
-        // a fábrica só tem throw para esses estados, porque nenhum caminho de escrita os produz, e um
-        // envelope incoerente tem de virar recusa nomeada.
-        if (FaseCronograma.ViolacaoDaAncoraDoRecurso(d.Codigo, produtos, regraRecurso) is { } violacaoDaAncora)
-        {
-            return leitor.Propagar<FaseCronograma?>(violacaoDaAncora.Error);
-        }
+        return leitor.Falhou
+            ? null
+            : Montar(
+                leitor, id, origem, decisoes with { UnidadeResponsavel = unidade },
+                new(produtos, emiteParecerIndividual, regraRecurso, tipos, regraDeHomologacao), bancas);
+    }
 
-        if (FaseCronograma.ViolacoesDoRecorteDeCompetencia(d.Codigo, bancas) is [{ } violacaoDoRecorte, ..])
-        {
-            return leitor.Propagar<FaseCronograma?>(violacaoDoRecorte.Error);
-        }
-
-        Result<FaseCronograma> fase = Reidratar(d, produtos, bancas, regraRecurso, unidadeResponsavel);
+    private static FaseCronograma? Montar(
+        LeitorEnvelope leitor,
+        Guid? id,
+        OrigemCanonicaDaFase origem,
+        DecisoesDeCronogramaDaFase decisoes,
+        PublicacoesDaFase publicacoes,
+        IReadOnlyList<BancaRequerida> bancas)
+    {
+        Result<FaseCronograma> fase = ConferirEReidratar(id, origem, decisoes, publicacoes, bancas);
         return fase.IsFailure ? leitor.Propagar<FaseCronograma?>(fase.Error!) : fase.Value;
     }
 
-    private static Result<FaseCronograma> Reidratar(
-        DeclaracaoDaFase d,
-        IReadOnlyList<ProdutoDaFase> produtos,
-        IReadOnlyList<BancaRequerida> bancas,
-        RegraRecursoFase? regraRecurso,
-        UnidadeResponsavelSnapshot? unidadeResponsavel) => d.Id is { } id
-        ? Result<FaseCronograma>.Success(FaseCronograma.Reidratar(
-            id, d.Ordem, d.FaseCanonicaOrigemId, d.Codigo, d.OrigemData,
-            d.AgrupaEtapas, d.PermiteComplementacao, d.ColetaInscricao, d.ColetaSolicitacaoIsencao,
-            d.Inicio, d.Fim, produtos, d.FaseConcluinteCodigo, d.EmiteParecerIndividual, bancas, regraRecurso, unidadeResponsavel))
-        : FaseCronograma.Criar(
-            d.Ordem, d.FaseCanonicaOrigemId, d.Codigo, d.OrigemData,
-            d.AgrupaEtapas, d.PermiteComplementacao, d.ColetaInscricao, d.ColetaSolicitacaoIsencao,
-            d.Inicio, d.Fim, produtos, d.FaseConcluinteCodigo, d.EmiteParecerIndividual, bancas, regraRecurso, unidadeResponsavel);
-
-    private static DeclaracaoDaFase LerDeclaracao(LeitorEnvelope leitor, JsonObject item, string path, bool comId) => new()
+    // A âncora do recurso e o recorte de competência são conferidos pelo mesmo predicado do agregado:
+    // a fábrica só tem throw para esses estados, porque nenhum caminho de escrita os produz, e um
+    // envelope incoerente tem de virar recusa nomeada.
+    private static Result<FaseCronograma> ConferirEReidratar(
+        Guid? id,
+        OrigemCanonicaDaFase origem,
+        DecisoesDeCronogramaDaFase decisoes,
+        PublicacoesDaFase publicacoes,
+        IReadOnlyList<BancaRequerida> bancas)
     {
-        Id = comId ? leitor.Identificador(item, "id", path) : null,
-        Ordem = leitor.Inteiro(item, "ordem", path),
-        FaseCanonicaOrigemId = leitor.Identificador(item, "faseCanonicaOrigemId", path),
-        Codigo = leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.FaseCodigo),
-        OrigemData = leitor.Enumeracao<OrigemDataFase>(item, "origemData", path),
-        AgrupaEtapas = leitor.Booleano(item, "agrupaEtapas", path),
-        PermiteComplementacao = leitor.Booleano(item, "permiteComplementacao", path),
-        ColetaInscricao = leitor.Booleano(item, "coletaInscricao", path),
-        ColetaSolicitacaoIsencao = leitor.Booleano(item, "coletaSolicitacaoIsencao", path),
-        Inicio = leitor.InstanteOpcional(item, "inicio", path),
-        Fim = leitor.InstanteOpcional(item, "fim", path),
-        FaseConcluinteCodigo = leitor.TextoOpcional(item, "faseConcluinteCodigo", path, LimitesDoEnvelope.FaseCodigo),
-        EmiteParecerIndividual = leitor.Booleano(item, "emiteParecerIndividual", path),
-    };
+        if (AncoraDoRecursoDaFase.Violacao(origem.Codigo, publicacoes.Produtos, publicacoes.RegraRecurso) is { } violacaoDaAncora)
+        {
+            return Result<FaseCronograma>.Failure(violacaoDaAncora.Error);
+        }
 
-    private sealed class DeclaracaoDaFase
-    {
-        public Guid? Id { get; init; }
-
-        public int Ordem { get; init; }
-
-        public Guid FaseCanonicaOrigemId { get; init; }
-
-        public string Codigo { get; init; } = string.Empty;
-
-        public OrigemDataFase OrigemData { get; init; }
-
-        public bool AgrupaEtapas { get; init; }
-
-        public bool PermiteComplementacao { get; init; }
-
-        public bool ColetaInscricao { get; init; }
-
-        public bool ColetaSolicitacaoIsencao { get; init; }
-
-        public DateTimeOffset? Inicio { get; init; }
-
-        public DateTimeOffset? Fim { get; init; }
-
-        public string? FaseConcluinteCodigo { get; init; }
-
-        public bool EmiteParecerIndividual { get; init; }
+        return RecorteDeCompetenciaDasBancas.Violacoes(origem.Codigo, bancas) is [{ } violacaoDoRecorte, ..]
+            ? Result<FaseCronograma>.Failure(violacaoDoRecorte.Error)
+            : Reidratar(id, origem, decisoes, publicacoes, bancas);
     }
+
+    private static Result<FaseCronograma> Reidratar(
+        Guid? id,
+        OrigemCanonicaDaFase origem,
+        DecisoesDeCronogramaDaFase decisoes,
+        PublicacoesDaFase publicacoes,
+        IReadOnlyList<BancaRequerida> bancas) => id is { } congelado
+        ? Result<FaseCronograma>.Success(FaseCronograma.Reidratar(congelado, origem, decisoes, publicacoes, bancas))
+        : FaseCronograma.Criar(origem, decisoes, publicacoes, bancas);
 
     /// <summary>
     /// A unidade que responde pela fase, congelada por valor: <c>null</c> enquanto a fase não a
@@ -189,31 +191,27 @@ internal static class LeituraDoCronograma
     internal static List<ProdutoDaFase> LerProdutosDaFase(LeitorEnvelope leitor, JsonObject faseItem, string pathPai)
     {
         JsonArray array = leitor.Array(faseItem, "produtos", pathPai);
-        if (leitor.Falhou)
-        {
-            return [];
-        }
-
         List<ProdutoDaFase> produtos = [];
-        for (int i = 0; i < array.Count; i++)
+        for (int i = 0; !leitor.Falhou && i < array.Count; i++)
         {
-            string path = $"{pathPai}.produtos[{i}]";
-            JsonObject item = leitor.ItemObjeto(array, i, $"{pathPai}.produtos");
-            leitor.ExigirChaves(item, path, "id", "atoCodigo", "papel");
-
-            Guid? id = leitor.Identificador(item, "id", path);
-            string atoCodigo = leitor.TextoNaoVazio(item, "atoCodigo", path, LimitesDoEnvelope.TipoAtoCodigo);
-            PapelProdutoFase? papel = leitor.EnumeracaoOpcional<PapelProdutoFase>(item, "papel", path);
-
-            if (leitor.Falhou)
+            ProdutoDaFase? produto = LerProduto(leitor, leitor.ItemObjeto(array, i, $"{pathPai}.produtos"), $"{pathPai}.produtos[{i}]");
+            if (produto is not null)
             {
-                return [];
+                produtos.Add(produto);
             }
-
-            produtos.Add(ProdutoDaFase.Reidratar(id!.Value, atoCodigo, papel));
         }
 
-        return produtos;
+        return leitor.Falhou ? [] : produtos;
+    }
+
+    private static ProdutoDaFase? LerProduto(LeitorEnvelope leitor, JsonObject item, string path)
+    {
+        leitor.ExigirChaves(item, path, "id", "atoCodigo", "papel");
+        Guid? id = leitor.Identificador(item, "id", path);
+        string atoCodigo = leitor.TextoNaoVazio(item, "atoCodigo", path, LimitesDoEnvelope.TipoAtoCodigo);
+        PapelProdutoFase? papel = leitor.EnumeracaoOpcional<PapelProdutoFase>(item, "papel", path);
+
+        return leitor.Falhou ? null : ProdutoDaFase.Reidratar(id!.Value, atoCodigo, papel);
     }
 
     internal static List<BancaRequerida> LerBancasRequeridas(LeitorEnvelope leitor, JsonObject faseItem, string pathPai)

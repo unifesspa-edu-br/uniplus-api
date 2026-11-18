@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -93,7 +94,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         TipoDocumentoView tipo = CadastrosVivos.TipoDocumento("LAUDO_MEDICO") with { ProtecaoAprovada = false };
         ProcessoSeletivo processo = QueExigeODocumento("PS painel da proteção", tipo);
 
-        ConformidadeProcessoSeletivoDto? result = await ServicosNeutros(RepositorioDo(processo))
+        ConformidadeProcessoSeletivoDto? result = await ServicosNeutros(RepositorioDo(processo)).ComMotivosDoProcesso(processo)
             .ComTiposDocumento(TiposVivos(tipo))
             .ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id));
 
@@ -106,7 +107,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         TipoDocumentoView tipo = CadastrosVivos.TipoDocumento("LAUDO_MEDICO");
         ProcessoSeletivo processo = QueExigeODocumento("PS painel do derivado", tipo, ["RENDA_PER_CAPITA"]);
 
-        ConformidadeProcessoSeletivoDto? result = await ServicosNeutros(RepositorioDo(processo))
+        ConformidadeProcessoSeletivoDto? result = await ServicosNeutros(RepositorioDo(processo)).ComMotivosDoProcesso(processo)
             .ComCatalogoDeFatos(CatalogoComDerivadosPendentes("RENDA_PER_CAPITA"))
             .ComTiposDocumento(TiposVivos(tipo))
             .ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id));
@@ -201,13 +202,13 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
             processo, repository, codecs, new TipoAtoPublicadoView("ATO_X", "Ato X", false, false, false, true));
 
         result.Itens.Should().Contain(i =>
-            i.Codigo == ObterConformidadeProcessoSeletivoQueryHandler.CodigoDaVersaoPublicadaIlegivel
+            i.Codigo == AvaliacaoDaConformidade.CodigoDaVersaoPublicadaIlegivel
             && !i.Ok
             && i.Mensagem == "A versão do envelope não é suportada.");
     }
 
     private static Task<ConformidadeProcessoSeletivoDto?> ConformidadeAsync(ProcessoSeletivo processo) =>
-        ServicosNeutros(RepositorioDo(processo)).ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id));
+        ServicosNeutros(RepositorioDo(processo)).ComMotivosDoProcesso(processo).ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id));
 
     private static void AfirmarQueSoOCronogramaFicouVermelho(ConformidadeProcessoSeletivoDto result) =>
         // O processo também não tem formulário de inscrição, e os itens do formulário ficam fora da
@@ -245,7 +246,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
     {
         ProcessoSeletivo processo = QueExigeODocumento("PS painel dos fatos", tipo, fatos);
 
-        return await ServicosNeutros(RepositorioDo(processo))
+        return await ServicosNeutros(RepositorioDo(processo)).ComMotivosDoProcesso(processo)
             .ComCatalogoDeFatos(CatalogoComDerivadosPendentes(fatos))
             .ComTiposDocumento(TiposVivos(tipo))
             .ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id));
@@ -284,6 +285,13 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         ProcessoSeletivo processo, IProcessoSeletivoRepository repository, IRegistroCodecsEnvelope codecs, TipoAtoPublicadoView hoje) =>
         (await ChecklistAsyncBruto(processo, repository, codecs, hoje))!;
 
+    private static FaseCronograma FaseDeClassificacaoQuePublica(ProdutoDaFase[] produtos) => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            Guid.CreateVersion7(), "CLASSIFICACAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(produtos, resultado: produtos[0].AtoCodigo),
+        bancasRequeridas: []).Value!;
+
     /// <summary>
     /// Processo com o cronograma pedido, cuja versão publicada congelou a classificação dada. O processo vivo
     /// declara o mesmo cronograma que a versão publicada.
@@ -291,34 +299,40 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
     private static (ProcessoSeletivo Processo, IProcessoSeletivoRepository Repositorio, IRegistroCodecsEnvelope Codecs) ProcessoPublicadoCom(
         ProdutoDaFase[] produtos, TipoDeAtoCongelado congelado)
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
         processo.DefinirCronogramaFases(
-            [FaseCronograma.Criar(
-                1, Guid.CreateVersion7(), "CLASSIFICACAO", OrigemDataFase.NaExecucao,
-                agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
-                inicio: null, fim: null, produtos: produtos,
-                faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!],
-            [],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            [FaseDeClassificacaoQuePublica(produtos)],
+            []).IsSuccess.Should().BeTrue();
 
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
-            processo.Id, [1], "0.0.42", "canonical-json/sha256@v1", Guid.CreateVersion7(), new string('a', 64), "sub", DateTimeOffset.UnixEpoch);
+            processo.Id, new DocumentoCongelado([1], "0.0.42", "canonical-json/sha256@v1", new string('a', 64)),
+            Guid.CreateVersion7(), "sub", DateTimeOffset.UnixEpoch);
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
         repository.ObterVersaoAtualAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(versao);
+        IRegistroCodecsEnvelope codecs = CodecsQueReidratamO(processo, versao, congelado);
+        return (processo, repository, codecs);
+    }
+
+    private static IRegistroCodecsEnvelope CodecsQueReidratamO(ProcessoSeletivo processo, VersaoConfiguracao versao, TipoDeAtoCongelado congelado)
+    {
         IRegistroCodecsEnvelope codecs = Substitute.For<IRegistroCodecsEnvelope>();
         codecs.Reidratar(versao).Returns(Result<EnvelopeReidratado>.Success(new EnvelopeReidratado(
             new GrafoConfiguracao(
                 [.. processo.Etapas], AtendimentoEspecializado.Criar([], [], []).Value!, [.. processo.DistribuicaoVagas], processo.BonusRegional,
-                [.. processo.CriteriosDesempate], ConfiguracaoClassificacao.Criar(
-                    ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64)).Value!, null, null,
-                    ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('d', 64)).Value!, [],
-                    baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!,
+                [.. processo.CriteriosDesempate], ClassificacaoImportada(),
                 [.. processo.CronogramaFases], [.. processo.DocumentosExigidos], [], null,
                 numeroDeOpcoesDeCurso: 1),
             DadosEdital.Criar("001/2027", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(30), Guid.CreateVersion7()).Value!,
             new string('a', 64), "America/Sao_Paulo", retificacao: null, conformidade: null,
             tiposDeAtoCongelados: new Dictionary<string, TipoDeAtoCongelado>(StringComparer.Ordinal) { [congelado.Codigo] = congelado })));
-        return (processo, repository, codecs);
+        return codecs;
     }
+
+    private static ConfiguracaoClassificacao ClassificacaoImportada() =>
+        ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64)),
+            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('d', 64)),
+        }).Value!;
 }

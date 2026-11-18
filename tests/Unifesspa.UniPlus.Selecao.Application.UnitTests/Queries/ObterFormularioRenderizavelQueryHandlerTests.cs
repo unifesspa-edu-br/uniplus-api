@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -426,7 +427,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
     /// O teste central da issue #1089: a versão é aposentada, mas o JSON congelado tem a forma
     /// ATUAL e é válido — exatamente o cenário em que decidir pela forma (o que o handler fazia
     /// antes desta correção) mascara a recusa que o registro de codecs já dá em outras
-    /// superfícies (ex.: <c>AbrirRetificacaoCommandHandler</c>). Um envelope malformado não
+    /// superfícies (ex.: a leitura da base da retificação). Um envelope malformado não
     /// provaria nada aqui: o handler já o recusava antes, por <c>CertamePublicado.EnvelopeInesperado</c>.
     /// O que só esta correção resolve é a versão desconhecida com bytes que "passariam" no shape.
     /// </summary>
@@ -506,14 +507,8 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
         Guid processoId, string envelopeJson, string schemaVersion = VersaoCorrenteReconhecida)
     {
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
-            processoId,
-            Encoding.UTF8.GetBytes(envelopeJson),
-            schemaVersion,
-            "canonical-json/sha256@v1",
-            Guid.CreateVersion7(),
-            new string('a', 64),
-            "user-conta-123",
-            Relogio.GetUtcNow());
+            processoId, new DocumentoCongelado(Encoding.UTF8.GetBytes(envelopeJson), schemaVersion, "canonical-json/sha256@v1", new string('a', 64)),
+            Guid.CreateVersion7(), "user-conta-123", Relogio.GetUtcNow());
 
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterVersoesPorAtoCriadorAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([versao]);

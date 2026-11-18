@@ -13,88 +13,11 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// O item de um fato que a versão publicada já coletou mantém a hipótese legal e a finalidade que ela congelou,
-/// e adota a descrição e o componente de exibição de hoje; corrigir o catálogo depois não troca o eixo na retificação.
+/// A recópia do item a partir do catálogo: a finalidade fica sem espaço nas pontas e em NFC, e o fato que a versão
+/// publicada já coletou adota a descrição e o componente de exibição de hoje sem trocar a proteção que ela congelou.
 /// </summary>
 public sealed class ProtecaoDoItemJaColetadoTests
 {
-    private static ContextoDoCatalogo Contexto(FatoCandidatoView catalogo, FatosDasVersoesPublicadas? publicadas)
-    {
-        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Proteção do item", out _);
-        return ContextoDoCatalogo.De(processo, [catalogo]) with { Publicadas = publicadas };
-    }
-
-    private static FatosDasVersoesPublicadas Publicadas(string fato, string hipotese, string finalidade) =>
-        FatosDasVersoesPublicadas.Reconstituir(
-            new Dictionary<FinalidadeFormulario, IReadOnlyCollection<string>>(),
-            [],
-            new Dictionary<string, IReadOnlyCollection<string>>(),
-            new Dictionary<string, IReadOnlyCollection<EixosDoItemCongelado>>
-            {
-                [fato] = [new EixosDoItemCongelado("TEXTO", "CATALOGO", "LIVRE", "PESSOAL", hipotese, finalidade)],
-            });
-
-    private static FatoCandidatoView Catalogo(string finalidade) =>
-        CatalogoDoConjuntoBasico.Fatos.Single(f => f.Codigo == "NOME_MAE") with
-        {
-            HipoteseLegal = "EXECUCAO_POLITICAS_PUBLICAS",
-            FinalidadeTratamento = finalidade,
-            Descricao = "Descrição corrigida no catálogo.",
-            ComponenteExibicao = "MOEDA",
-        };
-
-    [Fact(DisplayName = "O fato já coletado mantém a finalidade e a hipótese que a versão publicada congelou, e adota a descrição e o componente do catálogo corrigido")]
-    public void FatoJaColetado_UsaOCongeladoNaVersao()
-    {
-        FatoCandidatoView catalogo = Catalogo("Identificação corrigida no catálogo.");
-        ContextoDoCatalogo contexto = Contexto(catalogo, Publicadas("NOME_MAE", "CUMPRIMENTO_OBRIGACAO_LEGAL", "Identificação do candidato."));
-
-        contexto.TextosDoItem(catalogo).Should().Be(new TextosDoItem(
-            "CUMPRIMENTO_OBRIGACAO_LEGAL", "Identificação do candidato.", "Descrição corrigida no catálogo.", "MOEDA"));
-    }
-
-    [Fact(DisplayName = "Versões publicadas que congelaram os mesmos eixos: o item regravado os copia")]
-    public void VersoesSemDivergencia_CopiaOCongelado()
-    {
-        EixosDoItemCongelado eixos = new("TEXTO", "CATALOGO", "LIVRE", "PESSOAL", "CUMPRIMENTO_OBRIGACAO_LEGAL", "Finalidade congelada.");
-        FatoCandidatoView catalogo = Catalogo("Finalidade do catálogo.");
-        ContextoDoCatalogo contexto = Contexto(catalogo, FatosDasVersoesPublicadas.Reconstituir(
-            new Dictionary<FinalidadeFormulario, IReadOnlyCollection<string>>(),
-            [],
-            new Dictionary<string, IReadOnlyCollection<string>>(),
-            new Dictionary<string, IReadOnlyCollection<EixosDoItemCongelado>> { ["NOME_MAE"] = [eixos, eixos] }));
-
-        contexto.TextosDoItem(catalogo).Should().Be(new TextosDoItem(
-            "CUMPRIMENTO_OBRIGACAO_LEGAL", "Finalidade congelada.", "Descrição corrigida no catálogo.", "MOEDA"));
-    }
-
-    [Fact(DisplayName = "Versões publicadas que congelaram eixos diferentes: a retificação recusa o item, qualquer que seja a cópia")]
-    public void VersoesDivergentes_RetificacaoRecusa()
-    {
-        EixosDoItemCongelado antiga = new("TEXTO", "CATALOGO", "LIVRE", "PESSOAL", "CUMPRIMENTO_OBRIGACAO_LEGAL", "Finalidade antiga.");
-        EixosDoItemCongelado recente = antiga with { HipoteseLegal = "EXECUCAO_POLITICAS_PUBLICAS", FinalidadeTratamento = "Finalidade recente." };
-        FatosDasVersoesPublicadas publicadas = FatosDasVersoesPublicadas.Reconstituir(
-            new Dictionary<FinalidadeFormulario, IReadOnlyCollection<string>>(),
-            [],
-            new Dictionary<string, IReadOnlyCollection<string>>(),
-            new Dictionary<string, IReadOnlyCollection<EixosDoItemCongelado>> { ["NOME_MAE"] = [antiga, recente] });
-        FatoColetado item = FatoColetado.Criar(
-            "NOME_MAE", 0, "Nome da mãe", TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null, "PESSOAL",
-            antiga.HipoteseLegal, antiga.FinalidadeTratamento, ProtecaoDoFatoDeTeste.Descricao, formato: "LIVRE").Value!;
-
-        publicadas.PrimeiroItemComEixoTrocado([item], []).Should().NotBeNull();
-    }
-
-    [Fact(DisplayName = "O fato novo na retificação traz a hipótese, a finalidade, a descrição e o componente do catálogo de hoje")]
-    public void FatoNovo_VemDoCatalogo()
-    {
-        FatoCandidatoView catalogo = Catalogo("Finalidade do catálogo.");
-        ContextoDoCatalogo contexto = Contexto(catalogo, Publicadas("OUTRO_FATO", "CUMPRIMENTO_OBRIGACAO_LEGAL", "Outra."));
-
-        contexto.TextosDoItem(catalogo).Should().Be(new TextosDoItem(
-            "EXECUCAO_POLITICAS_PUBLICAS", "Finalidade do catálogo.", "Descrição corrigida no catálogo.", "MOEDA"));
-    }
-
     [Fact(DisplayName = "A finalidade recopiada do catálogo fica sem espaço nas pontas e em NFC, como o envelope a congela")]
     public void Recopia_NormalizaAFinalidade()
     {

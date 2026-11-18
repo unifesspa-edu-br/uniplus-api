@@ -1,15 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using Abstractions;
-
 using Domain.Entities;
 using Domain.Interfaces;
 
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
-using Unifesspa.UniPlus.Configuracao.Contracts;
-using Unifesspa.UniPlus.Publicacoes.Contracts;
 
 public static class DefinirEtapasCommandHandler
 {
@@ -22,53 +18,59 @@ public static class DefinirEtapasCommandHandler
     /// só serializa handlers concorrentes porque roda enrolado nela, e <c>[NonTransactional]</c> o
     /// desabilitaria.
     /// </remarks>
-    public static async Task<Result<MutacaoAceita>> Handle(
+    public static async Task<Result> Handle(
         DefinirEtapasCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
-        ITipoEtapaReader tipoEtapaReader,
-        ITipoBancaReader tipoBancaReader,
-        IRegraCatalogoReader regraCatalogoReader,
-        ITipoAtoPublicadoReader tipoAtoPublicadoReader,
-        IRegistroCodecsEnvelope registroCodecs,
-        TimeProvider timeProvider,
+        DefinicaoDasEtapas definicao,
         IUnitOfWork unitOfWork,
+        TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
-        ArgumentNullException.ThrowIfNull(timeProvider);
+        ArgumentNullException.ThrowIfNull(definicao);
         ArgumentNullException.ThrowIfNull(unitOfWork);
+        ArgumentNullException.ThrowIfNull(timeProvider);
 
-        ProcessoSeletivo? processo = await processoSeletivoRepository
+        Result<ProcessoSeletivo> obtido = await ObterParaEdicaoAsync(processoSeletivoRepository, command, cancellationToken).ConfigureAwait(false);
+        return obtido.IsFailure
+            ? Result.Failure(obtido.Error!)
+            : await DefinirEGravarAsync(obtido.Value!, command, definicao, unitOfWork, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+    }
+
+    // Fora do rascunho a recusa vem antes de consultar cadastros.
+    private static async Task<Result<ProcessoSeletivo>> ObterParaEdicaoAsync(
+        IProcessoSeletivoRepository repositorio, DefinirEtapasCommand command, CancellationToken cancellationToken)
+    {
+        ProcessoSeletivo? processo = await repositorio
             .ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
         if (processo is null)
         {
-            return Result<MutacaoAceita>.Failure(DefinirFormularioCommandHandler.ProcessoNaoEncontrado(command.ProcessoSeletivoId));
+            return Result<ProcessoSeletivo>.Failure(DefinirFormularioCommandHandler.ProcessoNaoEncontrado(command.ProcessoSeletivoId));
         }
 
-        // A precondição precede as regras de negócio que o handler avalia, na ordem da ADR-0110: quem tem
-        // If-Match defasado precisa saber disso antes de caçar um cadastro que não errou. Só a validação
-        // de schema do payload a antecede, no middleware; o mesmo guard continua dentro do Definir* do
-        // domínio, que dá a garantia enquanto esta antecipação dá a ordem.
-        if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
-        {
-            return Result<MutacaoAceita>.Failure(bloqueio);
-        }
+        return processo.MutacaoBloqueada() is { } bloqueio
+            ? Result<ProcessoSeletivo>.Failure(bloqueio)
+            : Result<ProcessoSeletivo>.Success(processo);
+    }
 
-        DefinicaoDasEtapas definicao = new(
-            command,
-            processo,
-            new CadastrosDasEtapas(tipoEtapaReader, tipoBancaReader, regraCatalogoReader),
-            new AtosConsultadosNaEdicao(tipoAtoPublicadoReader, processoSeletivoRepository, registroCodecs, command.ProcessoSeletivoId, timeProvider),
-            unitOfWork);
-        Result definida = await definicao.DefinirAsync(cancellationToken).ConfigureAwait(false);
+    private static async Task<Result> DefinirEGravarAsync(
+        ProcessoSeletivo processo,
+        DefinirEtapasCommand command,
+        DefinicaoDasEtapas definicao,
+        IUnitOfWork unitOfWork,
+        DateTimeOffset agora,
+        CancellationToken cancellationToken)
+    {
+        Result definida = await definicao.DefinirAsync(processo, command, agora, cancellationToken).ConfigureAwait(false);
         if (definida.IsFailure)
         {
-            return Result<MutacaoAceita>.ValidationFailure(definida.Errors);
+            unitOfWork.DescartarAlteracoesNaoSalvas();
+            return Result.ValidationFailure(definida.Errors);
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+        return Result.Success();
     }
 }

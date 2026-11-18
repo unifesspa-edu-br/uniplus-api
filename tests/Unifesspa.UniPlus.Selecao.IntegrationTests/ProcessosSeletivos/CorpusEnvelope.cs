@@ -15,6 +15,13 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeCronograma;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeDadosDoEdital;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeDocumentos;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeEntrada;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeEtapas;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeProcessoRico;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeVagas;
 
 /// <summary>
 /// Corpus da reidratação — agregados <b>ricos</b>, com ids fixos e valores
@@ -40,7 +47,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// então a volatilidade delas não vaza para os bytes.
 /// </para>
 /// </remarks>
-internal static partial class CorpusEnvelope
+internal static class CorpusEnvelope
 {
     internal static readonly EnvelopeCodec Codec = new();
     internal static readonly RegistroCodecsEnvelope Registro = new();
@@ -60,28 +67,28 @@ internal static partial class CorpusEnvelope
     /// colidiriam na chave primária de <c>etapas_processo</c>. A variante 0 é a do envelope
     /// congelado — mudá-la mudaria a fixture.
     /// </remarks>
-    private static Guid EtapaId(int ordem, int variante) =>
+    internal static Guid EtapaId(int ordem, int variante) =>
         new($"aaaa000{variante:x}-0000-4000-8000-00000000000{ordem:x}");
 
-    private static readonly Guid OfertaMedicina = new("bbbb0000-0000-4000-8000-000000000001");
-    private static readonly Guid OfertaDireito = new("bbbb0000-0000-4000-8000-000000000002");
+    internal static readonly Guid OfertaMedicina = new("bbbb0000-0000-4000-8000-000000000001");
+    internal static readonly Guid OfertaDireito = new("bbbb0000-0000-4000-8000-000000000002");
 
     // Filhas da objetiva. Variam pela mesma razão que <see cref="EtapaId"/>: os testes de
     // persistência põem dois processos no MESMO Postgres, e um id fixo aqui colidiria na
     // chave primária de produtos_da_etapa / recursos_da_etapa no segundo deles.
-    private static Guid ProdutoDaObjetivaId(int ordem, int variante) =>
+    internal static Guid ProdutoDaObjetivaId(int ordem, int variante) =>
         new($"aaab000{variante:x}-0000-4000-8000-00000000000{ordem:x}");
 
     // Itens de avaliação: o id é congelado no envelope, então varia pela mesma razão das filhas
     // acima — dois processos no mesmo Postgres não podem repetir a chave primária.
-    private static Guid ItemDeAvaliacaoId(int ordem, int variante) =>
+    internal static Guid ItemDeAvaliacaoId(int ordem, int variante) =>
         new($"aaad000{variante:x}-0000-4000-8000-00000000000{ordem:x}");
 
-    private static readonly Guid TipoBancaExaminadora = new("dddd2222-0000-4000-8000-000000000001");
-    private static readonly Guid TipoBancaRecursal = new("dddd2222-0000-4000-8000-000000000002");
-    private static readonly Guid TipoBancaAnulacao = new("dddd2222-0000-4000-8000-000000000003");
+    internal static readonly Guid TipoBancaExaminadora = new("dddd2222-0000-4000-8000-000000000001");
+    internal static readonly Guid TipoBancaRecursal = new("dddd2222-0000-4000-8000-000000000002");
+    internal static readonly Guid TipoBancaAnulacao = new("dddd2222-0000-4000-8000-000000000003");
 
-    private static Guid BancaDaObjetivaId(int ordem, int variante) =>
+    internal static Guid BancaDaObjetivaId(int ordem, int variante) =>
         new($"aaad000{variante:x}-0000-4000-8000-00000000000{ordem:x}");
 
     /// <summary>
@@ -128,18 +135,18 @@ internal static partial class CorpusEnvelope
     /// <summary>Par da banca acima, pela mesma construção: a ordem entre as duas vira com a normalização.</summary>
     internal const string BancaAnulacao = "BANCA_ANULACAO";
 
-    private static Guid RecursoDaObjetivaId(int ordem, int variante) =>
+    internal static Guid RecursoDaObjetivaId(int ordem, int variante) =>
         new($"aaac000{variante:x}-0000-4000-8000-00000000000{ordem:x}");
 
-    private static readonly Guid Documento = new("cccc0000-0000-4000-8000-000000000001");
-    private static readonly Guid ReferenciaDemografica = new("dddd0000-0000-4000-8000-000000000001");
-    private static readonly Guid UnidadeAdministradora = new("eeee0000-0000-4000-8000-000000000001");
+    internal static readonly Guid Documento = new("cccc0000-0000-4000-8000-000000000001");
+    internal static readonly Guid ReferenciaDemografica = new("dddd0000-0000-4000-8000-000000000001");
+    internal static readonly Guid UnidadeAdministradora = new("eeee0000-0000-4000-8000-000000000001");
 
     /// <summary>ContaId do publicador — evidência forense, não input de negócio.</summary>
     internal const string Ator = "corpus-tests";
 
     internal static ReferenciaRegra Regra(string codigo, char semente) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string(semente, 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string(semente, 64));
 
     /// <summary>
     /// Convenção de contagem do corpus. Como as demais referências daqui, o hash é semente
@@ -165,7 +172,7 @@ internal static partial class CorpusEnvelope
     /// carregue os dois valores do sinalizador e o round-trip prove ambos.
     /// </summary>
     internal static TipoEtapaSnapshot TipoEtapaEntrevista() =>
-        TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000003"), "ENTREVISTA", "Entrevista", admitePontuacao: false, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
+        TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000003"), "ENTREVISTA", "Entrevista", admitePontuacao: false, admiteEliminacao: true, notaDeOrigemNoEnem: false, exigeCorrecaoIndependente: true).Value!;
 
     /// <summary>
     /// Permuta a ORDEM DE ENTRADA de uma coleção não ordenada, sem mudar o conteúdo (Story
@@ -176,6 +183,6 @@ internal static partial class CorpusEnvelope
     /// cronograma de fases, fatos coletados, regras de derivação, destinos da cascata
     /// (dentro de uma mesma origem) e a árvore de satisfação (raízes e filhos).
     /// </summary>
-    private static IReadOnlyList<T> Ordem<T>(IReadOnlyList<T> itens, bool inverter) =>
+    internal static IReadOnlyList<T> Ordem<T>(IReadOnlyList<T> itens, bool inverter) =>
         inverter ? [.. ((IEnumerable<T>)itens).Reverse()] : itens;
 }

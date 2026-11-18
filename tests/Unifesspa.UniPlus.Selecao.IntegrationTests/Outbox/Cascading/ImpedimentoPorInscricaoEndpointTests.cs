@@ -144,7 +144,7 @@ public sealed class ImpedimentoPorInscricaoEndpointTests : IAsyncLifetime
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, $"Impedimento {Guid.CreateVersion7()}");
+        (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"Impedimento {Guid.CreateVersion7()}" });
 
         if (inscricaoDeBetina is { } situacao)
         {

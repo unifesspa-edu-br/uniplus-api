@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -48,30 +49,30 @@ public sealed class FalharAposPublicarCascadingHandler
         ArgumentNullException.ThrowIfNull(timeProvider);
 
         (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
-            .SemearAsync(db, command.NomeProcesso)
+            .SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = command.NomeProcesso, ProcessoSeletivoId = command.ProcessoSeletivoId })
             .ConfigureAwait(false);
 
-        Result<DadosEdital> dadosResult = DadosEdital.Criar(
-            numero: null,
-            periodoInscricaoInicio: DateTimeOffset.UtcNow,
-            periodoInscricaoFim: DateTimeOffset.UtcNow.AddDays(30),
-            documentoEditalId: documento.Id);
-
-        SnapshotCanonico canonico = canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosResult.Value!, documento.HashSha256!, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
-
-        Result<VersaoConfiguracao> publicarResult = processo.Publicar(
-            dadosResult.Value!,
-            canonico.Bytes,
-            canonico.SchemaVersion,
-            canonico.AlgoritmoHash,
-            documento.HashSha256!,
-            atorUsuarioContaId: "cascading-v9-test",
-            timeProvider, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
-
-        db.VersoesConfiguracao.Add(publicarResult.Value!);
+        db.VersoesConfiguracao.Add(Publicar(processo, documento, canonicalizer, timeProvider).Value!);
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         throw new InvalidOperationException(MensagemErro);
+    }
+
+    private static DadosEdital DadosDoEdital(DocumentoAPublicar documento) => DadosEdital.Criar(
+        numero: null,
+        periodoInscricaoInicio: DateTimeOffset.UtcNow,
+        periodoInscricaoFim: DateTimeOffset.UtcNow.AddDays(30),
+        documentoEditalId: documento.Id).Value!;
+
+    private static Result<VersaoConfiguracao> Publicar(
+        ProcessoSeletivo processo, DocumentoAPublicar documento, ISnapshotPublicacaoCanonicalizer canonicalizer, TimeProvider timeProvider)
+    {
+        DadosEdital dados = DadosDoEdital(documento);
+
+        SnapshotCanonico canonico = canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dados, documento.HashSha256!, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
+
+        return processo.Publicar(
+            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash, documento.HashSha256!), AtorUsuarioContaId = "cascading-v9-test", Relogio = timeProvider, Contagem = CorpusEnvelopeDadosDoEdital.ContextoRico() });
     }
 }
 

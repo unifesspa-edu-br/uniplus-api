@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 internal static class EnriquecimentoDaPublicacao
 {
     // A extensão sai só quando o checklist tem item vermelho, nunca como lista vazia, e
-    // independe de qual gate produziu o 422: a regra vem do checklist, não de uma lista de códigos.
+    // independe de qual regra produziu o 422: a regra vem do checklist, não de uma lista de códigos.
     internal static async Task<IActionResult> EnriquecerComPendenciasEstruturaisAsync(
         IQueryBus queryBus, IActionResult actionResult, Guid id, CancellationToken cancellationToken)
     {
@@ -56,14 +56,23 @@ internal static class EnriquecimentoDaPublicacao
         DateTimeOffset? periodoInscricaoInformado,
         CancellationToken cancellationToken)
     {
-        if (!resultado.HasErrorCode("ProcessoSeletivo.ConformidadeLegalInsuficiente")
-            || actionResult is not ObjectResult { Value: ProblemDetails problem })
+        if (ConformidadeLegalRecusada(resultado) && actionResult is ObjectResult { Value: ProblemDetails problem })
         {
-            return actionResult;
+            await AcrescentarReprovadasAsync(queryBus, problem, id, periodoInscricaoInformado, cancellationToken).ConfigureAwait(false);
         }
 
-        // A recusa que está sendo enriquecida é a que vale: se a reconsulta não chega a uma data de
-        // referência, o 422 sai sem a lista, nunca trocado pela falha da consulta auxiliar.
+        return actionResult;
+    }
+
+    // A conformidade legal é uma causa entre as que a recusa acumula, e nem sempre a primeira.
+    private static bool ConformidadeLegalRecusada(Result resultado) =>
+        resultado.Errors.Any(static erro => erro.Error.Code == "ProcessoSeletivo.ConformidadeLegalInsuficiente");
+
+    // A recusa que está sendo enriquecida é a que vale: se a reconsulta não chega a uma data de referência, o 422 sai sem a
+    // lista, nunca trocado pela falha da consulta auxiliar.
+    private static async Task AcrescentarReprovadasAsync(
+        IQueryBus queryBus, ProblemDetails problem, Guid id, DateTimeOffset? periodoInscricaoInformado, CancellationToken cancellationToken)
+    {
         Result<ConformidadeLegalProcessoSeletivoDto> conformidade = await queryBus
             .Send(new ObterConformidadeLegalProcessoSeletivoQuery(id, PeriodoInscricaoInformado: periodoInscricaoInformado), cancellationToken)
             .ConfigureAwait(false);
@@ -74,7 +83,5 @@ internal static class EnriquecimentoDaPublicacao
                 .Select(regra => new { regra.RegraCodigo, regra.DescricaoHumana, regra.BaseLegal, regra.Motivo })
                 .ToArray();
         }
-
-        return actionResult;
     }
 }

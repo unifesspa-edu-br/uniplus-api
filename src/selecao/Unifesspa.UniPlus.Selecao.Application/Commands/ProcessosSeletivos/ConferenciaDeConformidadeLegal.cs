@@ -18,8 +18,8 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Serviço compartilhado pela conferência do congelamento das três operações (<c>Publicar</c>,
-/// <c>Retificar</c> e <c>FecharRetificacao</c>), chamado uma vez em cada, com o mesmo veredicto.
+/// Serviço compartilhado pela conferência do congelamento das duas operações (<c>Publicar</c> e
+/// <c>Retificar</c>), chamado uma vez em cada, com o mesmo veredicto.
 /// </para>
 /// <para>
 /// <b>Fonte única (CA-16):</b> <see cref="IObrigatoriedadeLegalRepository.ObterVigentesParaTipoProcessoAsync"/>

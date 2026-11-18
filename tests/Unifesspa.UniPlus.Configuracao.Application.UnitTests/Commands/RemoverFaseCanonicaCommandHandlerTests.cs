@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Configuracao.Application.Commands.FasesCanonicas;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class RemoverFaseCanonicaCommandHandlerTests
@@ -17,7 +18,9 @@ public sealed class RemoverFaseCanonicaCommandHandlerTests
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     private static FaseCanonica Fase() =>
-        FaseCanonica.Criar("INSCRICAO", "Inscrição", null, false, false, null, false, false, "NO_EDITAL").Value!;
+        FaseCanonica.Criar(
+            "INSCRICAO", "Inscrição", null, null, "NO_EDITAL",
+            new SinalizadoresDaFase(AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false)).Value!;
 
     [Fact(DisplayName = "Fase existente faz soft-delete (Remover + Salvar), nunca bloqueada")]
     public async Task Handle_Existente_FazSoftDelete()

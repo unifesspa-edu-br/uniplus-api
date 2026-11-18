@@ -12,6 +12,8 @@ using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
@@ -47,78 +49,19 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
     }
 
     private static ReferenciaRegra Regra(string codigo, string hashChar) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string(hashChar[0], 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string(hashChar[0], 64));
 
-    private static ProcessoSeletivo NovoProcessoConforme(string nome)
-    {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(nome, TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+    private static FaseCronograma FaseDeResultadoFinal() => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true,
+            ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(),
+        bancasRequeridas: []).Value!;
 
-        processo.DefinirAtendimentoEspecializado(
-            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
-            modalidadeOrigemId: Guid.CreateVersion7(),
-            codigo: "AC",
-            descricao: null,
-            naturezaLegal: NaturezaLegalModalidade.Ampla,
-            composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
-            composicaoOrigemCodigo: null,
-            regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
-            remanejamentoDestino: null,
-            remanejamentoPar: null,
-            remanejamentoFallback: null,
-            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
-            acaoQuandoIndeferido: null,
-            baseLegal: "Res. Unifesspa 532/2021",
-            quantidadeDeclarada: 40).Value!;
-        ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
-            ofertaCursoOrigemId: Guid.CreateVersion7(),
-            voBase: 40,
-            pr: 1m,
-            regraDistribuicao: Regra(RegraDistribuicaoVagasCodigo.Institucional, "a"),
-            regraAjuste: null,
-            referenciaDemografica: null,
-            modalidades: [modalidade], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
-            regraCalculo: Regra(RegraCalculoCodigo.ClassificacaoImportada, "b"),
-            regraArredondamento: null,
-            casasArredondamento: null,
-            regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
-            regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!;
-        processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        FaseCronograma faseConforme = FaseCronograma.Criar(
-            ordem: 1,
-            faseCanonicaOrigemId: Guid.CreateVersion7(),
-            codigo: "RESULTADO_FINAL",
-            origemData: OrigemDataFase.NoEdital,
-            agrupaEtapas: true,
-            permiteComplementacao: false,
-            coletaInscricao: true, coletaSolicitacaoIsencao: false,
-            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-            fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
-            faseConcluinteCodigo: null,
-            emiteParecerIndividual: false,
-            bancasRequeridas: [],
-            regraRecurso: null,
-            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
-        processo.DefinirCronogramaFases([faseConforme], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirEtapas([
-            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: "RESULTADO_FINAL").Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
-        processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
-
-        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
-        return processo;
-    }
 
     private async Task<Guid> SemearRegraVigenteAsync(string regraCodigo)
     {
@@ -140,13 +83,8 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
             new DateOnly(2020, 1, 1),
             null).Value!;
 
-    private async Task<(Guid ProcessoId, Guid SnapshotId)> PublicarComConformidadeLegalAsync(string nome)
+    private static DadosEdital DadosDoEdital(DocumentoAPublicar documento)
     {
-        ProcessoSeletivo processo = NovoProcessoConforme(nome);
-
-        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
-        documento.Confirmar(1024, HashFixo, TimeProvider.System).IsSuccess.Should().BeTrue();
-
         Result<DadosEdital> dadosResult = DadosEdital.Criar(
             numero: "001/2026",
             periodoInscricaoInicio: InicioDaInscricao,
@@ -154,6 +92,11 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
             documentoEditalId: documento.Id);
         dadosResult.IsSuccess.Should().BeTrue();
 
+        return dadosResult.Value!;
+    }
+
+    private async Task<ResultadoConformidade> ConformidadeDoProcessoAsync(ProcessoSeletivo processo)
+    {
         // Mesma dupla de chamadas do gate real (ConferenciaDeConformidadeLegal): repositório
         // real + AvaliadorConformidadeLegal.Avaliar — a Application injeta isto no handler;
         // aqui, como as demais integrações desta suíte, a orquestração é feita inline.
@@ -164,69 +107,62 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
         ResultadoConformidade conformidade = AvaliadorConformidadeLegal.Avaliar(processo, processo.TipoProcesso.ToString(), vigentes, IdentidadesDe(processo), FatosDeModalidadeDeTeste.DoCatalogo);
         conformidade.Regras.Should().OnlyContain(static r => r.Aprovada, "pré-condição do teste — o processo satisfaz a regra semeada");
 
-        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(
-            new EntradaCanonicalizacao(processo, dadosResult.Value!, documento.HashSha256!, FusoInstitucional.ZoneId, Conformidade: conformidade, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
+        return conformidade;
+    }
 
-        Result<VersaoConfiguracao> publicarResult = processo.Publicar(
-            dadosResult.Value!,
-            canonico.Bytes,
-            canonico.SchemaVersion,
-            canonico.AlgoritmoHash,
-            documento.HashSha256!,
-            atorUsuarioContaId: "integration-test-user",
-            TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
-        publicarResult.IsSuccess.Should().BeTrue(publicarResult.Error?.Message);
-
+    private async Task GravarAsync(ProcessoSeletivo processo, DocumentoAPublicar documento, VersaoConfiguracao versao)
+    {
         await using UniPlusDbContext writeContext = _fixture.CreateDbContext();
         ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
         await repository.AdicionarAsync(processo, CancellationToken.None);
         await writeContext.DocumentosAPublicar.AddAsync(documento, CancellationToken.None);
-        await repository.AdicionarVersaoConfiguracaoAsync(publicarResult.Value!, CancellationToken.None);
+        await repository.AdicionarVersaoConfiguracaoAsync(versao, CancellationToken.None);
         await writeContext.SaveChangesAsync(CancellationToken.None);
+    }
 
-        return (processo.Id, publicarResult.Value!.Id);
+    private async Task<(Guid ProcessoId, Guid SnapshotId)> PublicarComConformidadeLegalAsync(string nome)
+    {
+        ProcessoSeletivo processo = ProcessoSeletivoPublicacaoSeeder.NovoProcessoConforme(nome);
+        DocumentoAPublicar documento = DocumentoConfirmado(processo);
+        DadosEdital dados = DadosDoEdital(documento);
+        ResultadoConformidade conformidade = await ConformidadeDoProcessoAsync(processo);
+        VersaoConfiguracao versao = Publicar(processo, documento, dados, conformidade);
+        await GravarAsync(processo, documento, versao);
+
+        return (processo.Id, versao.Id);
+    }
+
+    private static DocumentoAPublicar DocumentoConfirmado(ProcessoSeletivo processo)
+    {
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        documento.Confirmar(1024, HashFixo, TimeProvider.System).IsSuccess.Should().BeTrue();
+
+        return documento;
+    }
+
+    private static VersaoConfiguracao Publicar(ProcessoSeletivo processo, DocumentoAPublicar documento, DadosEdital dados, ResultadoConformidade conformidade)
+    {
+        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(
+            new EntradaCanonicalizacao(processo, dados, documento.HashSha256!, FusoInstitucional.ZoneId, Conformidade: conformidade, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
+
+        Result<VersaoConfiguracao> publicarResult = processo.Publicar(
+            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash, documento.HashSha256!), AtorUsuarioContaId = "integration-test-user", Contagem = CorpusEnvelopeDadosDoEdital.ContextoRico() });
+        publicarResult.IsSuccess.Should().BeTrue(publicarResult.Error?.Message);
+
+        return publicarResult.Value!;
     }
 
     [Fact(DisplayName = "CA-13/CA-18 — obrigatoriedades[] congela TODAS as regras vigentes e bate, conjunto a conjunto, com o recômputo do cadastro vivo na mesma data de corte")]
     public async Task Congelamento_BateComRecomputoDoCadastroVivo()
     {
-        // DUAS regras — não uma — para que a comparação "conjunto a conjunto" (não só um
-        // lookup por id) tenha algo real a provar: nenhuma órfã no congelado, nenhuma
-        // vigente de fora faltando.
+        // Duas regras fazem a comparação conferir o conjunto inteiro.
         Guid regraId1 = await SemearRegraVigenteAsync(UniqueRegraCodigo());
         Guid regraId2 = await SemearRegraVigenteAsync(UniqueRegraCodigo());
         (Guid processoId, Guid snapshotId) = await PublicarComConformidadeLegalAsync(nameof(Congelamento_BateComRecomputoDoCadastroVivo));
 
-        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
-        VersaoConfiguracao versao = await readContext.VersoesConfiguracao
-            .AsNoTracking().FirstAsync(v => v.Id == snapshotId, CancellationToken.None);
+        (Guid RegraId, string Hash)[] congeladoSet = await ConjuntoCongeladoAsync(snapshotId);
 
-        JsonObject documentosExigidos = JsonNode.Parse(versao.ConfiguracaoCongelada)!["documentosExigidos"]!.AsObject();
-        JsonArray obrigatoriedadesCongeladas = documentosExigidos["obrigatoriedades"]!.AsArray();
-        obrigatoriedadesCongeladas.Should().HaveCount(2);
-        obrigatoriedadesCongeladas.Should().OnlyContain(o => o!["aprovada"]!.GetValue<bool>());
-
-        (Guid RegraId, string Hash)[] congeladoSet = [.. obrigatoriedadesCongeladas
-            .Select(o => (o!["regraId"]!.GetValue<Guid>(), o["hash"]!.GetValue<string>()))
-            .OrderBy(t => t.Item1)];
-
-        // CA-18: recomputar a MESMA dupla de chamadas do gate (repositório vigentes + o
-        // avaliador), a partir do cadastro vivo, na MESMA data de corte — não um lookup por
-        // id, o conjunto inteiro — produz exatamente o mesmo (RegraId, Hash). Nenhuma
-        // entrada órfã no congelado; nenhuma regra vigente de fora do congelado.
-        await using UniPlusDbContext freshReadContext = _fixture.CreateDbContext();
-        ProcessoSeletivoRepository processoRepository = ProcessoSeletivoRepositoryDeTeste.Criar(freshReadContext);
-        ObrigatoriedadeLegalRepository freshRepository = new(freshReadContext, TimeProvider.System);
-
-        ProcessoSeletivo processoVivo = (await processoRepository.ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;
-        IReadOnlyList<ObrigatoriedadeLegal> vigentesAgora = await freshRepository
-            .ObterVigentesParaTipoProcessoAsync(processoVivo.TipoProcesso.ToString(), DataDeCorte, CancellationToken.None);
-        ResultadoConformidade recomputado = AvaliadorConformidadeLegal.Avaliar(
-            processoVivo, processoVivo.TipoProcesso.ToString(), vigentesAgora, IdentidadesDe(processoVivo), FatosDeModalidadeDeTeste.DoCatalogo);
-
-        (Guid RegraId, string Hash)[] recomputadoSet = [.. recomputado.Regras
-            .Select(r => (r.RegraId, r.Hash))
-            .OrderBy(t => t.Item1)];
+        (Guid RegraId, string Hash)[] recomputadoSet = await ConjuntoRecomputadoAsync(processoId);
 
         recomputadoSet.Should().Equal(congeladoSet,
             "o recômputo a partir do cadastro vivo, na mesma data de corte, tem de reproduzir exatamente o " +
@@ -240,35 +176,16 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
         await SemearRegraVigenteAsync(UniqueRegraCodigo());
         (_, Guid snapshotId) = await PublicarComConformidadeLegalAsync(nameof(DesativarRegraAposPublicacao_NaoAlteraOCongeladoNemOHash));
 
-        await using UniPlusDbContext antesContext = _fixture.CreateDbContext();
-        VersaoConfiguracao versaoAntes = await antesContext.VersoesConfiguracao
-            .AsNoTracking().FirstAsync(v => v.Id == snapshotId, CancellationToken.None);
-        string configuracaoAntes = versaoAntes.ConfiguracaoCongelada;
-        string hashAntes = versaoAntes.HashConfiguracao;
+        VersaoConfiguracao versaoAntes = await LerVersaoAsync(snapshotId);
 
-        // O CEPS desativa a obrigatoriedade no cadastro — a mesma operação de sempre, sem
-        // saber (nem precisar saber) que já existe um congelamento que a usou.
-        await using UniPlusDbContext escritaContext = _fixture.CreateDbContext();
-        await escritaContext.Database.ExecuteSqlAsync(
-            $"UPDATE selecao.obrigatoriedades_legais SET is_deleted = true WHERE regra_codigo LIKE 'TEST\\_%' ESCAPE '\\'");
+        await DesativarRegrasDeTesteAsync();
 
-        // Uma reavaliação AO VIVO, na MESMA data de corte, já não veria a regra — prova que a
-        // desativação teve efeito real no cadastro, e não que o teste está inerte.
-        await using UniPlusDbContext posContext = _fixture.CreateDbContext();
-        ObrigatoriedadeLegalRepository posRepository = new(posContext, TimeProvider.System);
-        IReadOnlyList<ObrigatoriedadeLegal> vigentesDepoisDaDesativacao = await posRepository
-            .ObterVigentesParaTipoProcessoAsync(TiposDeProcessoDeTeste.SiSU.ToString(), DataDeCorte, CancellationToken.None);
-        vigentesDepoisDaDesativacao.Should().BeEmpty(
-            "pré-condição do teste — a desativação precisa ter efeito real no cadastro vivo");
+        await ConfirmarCadastroSemRegrasAsync();
 
-        await using UniPlusDbContext depoisContext = _fixture.CreateDbContext();
-        VersaoConfiguracao versaoDepois = await depoisContext.VersoesConfiguracao
-            .AsNoTracking().FirstAsync(v => v.Id == snapshotId, CancellationToken.None);
+        VersaoConfiguracao versaoDepois = await LerVersaoAsync(snapshotId);
 
-        versaoDepois.ConfiguracaoCongelada.Should().Be(configuracaoAntes,
-            "Congelamento (UNI-REQ-0019) — o passado não muda: desativar a obrigatoriedade depois da publicação não altera o snapshot já congelado");
-        versaoDepois.HashConfiguracao.Should().Be(hashAntes,
-            "o hash é derivado dos bytes canônicos — se o conteúdo não muda, o hash não muda");
+        versaoDepois.ConfiguracaoCongelada.Should().Be(versaoAntes.ConfiguracaoCongelada);
+        versaoDepois.HashConfiguracao.Should().Be(versaoAntes.HashConfiguracao);
     }
 
     private static string UniqueRegraCodigo() => $"TEST_GATE_{Guid.CreateVersion7():N}";
@@ -299,5 +216,80 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
         itens
             .GroupBy(codigoDe, StringComparer.Ordinal)
             .ToDictionary(g => g.Key, g => origemDe(g.First()), StringComparer.Ordinal);
+
+
+    private async Task<(Guid RegraId, string Hash)[]> ConjuntoCongeladoAsync(Guid snapshotId)
+    {
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
+        VersaoConfiguracao versao = await readContext.VersoesConfiguracao
+            .AsNoTracking().FirstAsync(v => v.Id == snapshotId, CancellationToken.None);
+
+        JsonObject documentosExigidos = JsonNode.Parse(versao.ConfiguracaoCongelada)!["documentosExigidos"]!.AsObject();
+        JsonArray obrigatoriedadesCongeladas = documentosExigidos["obrigatoriedades"]!.AsArray();
+        obrigatoriedadesCongeladas.Should().HaveCount(2);
+        obrigatoriedadesCongeladas.Should().OnlyContain(o => o!["aprovada"]!.GetValue<bool>());
+
+        (Guid RegraId, string Hash)[] congeladoSet = [.. obrigatoriedadesCongeladas
+            .Select(o => (o!["regraId"]!.GetValue<Guid>(), o["hash"]!.GetValue<string>()))
+            .OrderBy(t => t.Item1)];
+
+        return congeladoSet;
+    }
+
+
+    private async Task<(Guid RegraId, string Hash)[]> ConjuntoRecomputadoAsync(Guid processoId)
+    {
+        ResultadoConformidade recomputado = await RecomputarConformidadeAsync(processoId);
+
+        (Guid RegraId, string Hash)[] recomputadoSet = [.. recomputado.Regras
+            .Select(r => (r.RegraId, r.Hash))
+            .OrderBy(t => t.Item1)];
+
+        return recomputadoSet;
+    }
+
+
+    private async Task DesativarRegrasDeTesteAsync()
+    {
+        await using UniPlusDbContext escritaContext = _fixture.CreateDbContext();
+        await escritaContext.Database.ExecuteSqlAsync(
+            $"UPDATE selecao.obrigatoriedades_legais SET is_deleted = true WHERE regra_codigo LIKE 'TEST\\_%' ESCAPE '\\'");
+
+    }
+
+
+    private async Task ConfirmarCadastroSemRegrasAsync()
+    {
+        await using UniPlusDbContext posContext = _fixture.CreateDbContext();
+        ObrigatoriedadeLegalRepository posRepository = new(posContext, TimeProvider.System);
+        IReadOnlyList<ObrigatoriedadeLegal> vigentesDepoisDaDesativacao = await posRepository
+            .ObterVigentesParaTipoProcessoAsync(TiposDeProcessoDeTeste.SiSU.ToString(), DataDeCorte, CancellationToken.None);
+        vigentesDepoisDaDesativacao.Should().BeEmpty(
+            "pré-condição do teste — a desativação precisa ter efeito real no cadastro vivo");
+
+    }
+
+
+    private async Task<VersaoConfiguracao> LerVersaoAsync(Guid snapshotId)
+    {
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
+        return await db.VersoesConfiguracao.AsNoTracking().FirstAsync(versao => versao.Id == snapshotId, CancellationToken.None);
+    }
+
+
+    private async Task<ResultadoConformidade> RecomputarConformidadeAsync(Guid processoId)
+    {
+        await using UniPlusDbContext freshReadContext = _fixture.CreateDbContext();
+        ProcessoSeletivoRepository processoRepository = ProcessoSeletivoRepositoryDeTeste.Criar(freshReadContext);
+        ObrigatoriedadeLegalRepository freshRepository = new(freshReadContext, TimeProvider.System);
+
+        ProcessoSeletivo processoVivo = (await processoRepository.ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;
+        IReadOnlyList<ObrigatoriedadeLegal> vigentesAgora = await freshRepository
+            .ObterVigentesParaTipoProcessoAsync(processoVivo.TipoProcesso.ToString(), DataDeCorte, CancellationToken.None);
+        ResultadoConformidade recomputado = AvaliadorConformidadeLegal.Avaliar(
+            processoVivo, processoVivo.TipoProcesso.ToString(), vigentesAgora, IdentidadesDe(processoVivo), FatosDeModalidadeDeTeste.DoCatalogo);
+
+        return recomputado;
+    }
 
 }

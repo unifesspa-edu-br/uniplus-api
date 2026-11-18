@@ -99,22 +99,16 @@ internal static class LeituraDoEnvelope
         ConfiguracaoDivulgacao? divulgacao = LeituraDaDivulgacaoETaxa.LerDivulgacao(leitor, payload);
         ConfiguracaoTaxaInscricao? taxa = LeituraDaDivulgacaoETaxa.LerTaxaInscricao(leitor, payload);
         (LocalidadeRegente? localidade, string? fusoHorario) = LeituraDoCalendario.LerLocalidade(leitor, payload);
-        int? opcoesDeCurso = LeituraDasVagas.LerOpcoesDeCurso(leitor, payload);
-        ReferenciaRegra? algoritmo = LeituraDoCalendario.LerAlgoritmoContagemPrazo(leitor, payload);
-        CalendarioDiasUteisCongelado? calendario = LeituraDoCalendario.LerCalendarioDiasUteis(
-            leitor, payload, configuracao.CronogramaFases, configuracao.Etapas);
-        IdentificadorLegivel? identificadorLegivel = LeituraDoEdital.LerIdentificadorLegivel(leitor, payload);
-
         return new BlocosDaPublicacao
         {
             Divulgacao = divulgacao,
             TaxaInscricao = taxa,
             Localidade = localidade,
             FusoHorario = fusoHorario,
-            NumeroDeOpcoesDeCurso = opcoesDeCurso,
-            AlgoritmoContagemPrazo = algoritmo,
-            CalendarioDiasUteis = calendario,
-            IdentificadorLegivel = identificadorLegivel,
+            NumeroDeOpcoesDeCurso = LeituraDasOpcoesDeCurso.Ler(leitor, payload),
+            AlgoritmoContagemPrazo = LeituraDoCalendario.LerAlgoritmoContagemPrazo(leitor, payload),
+            CalendarioDiasUteis = LeituraDoCalendario.LerCalendarioDiasUteis(leitor, payload, configuracao.CronogramaFases, configuracao.Etapas),
+            IdentificadorLegivel = LeituraDoEdital.LerIdentificadorLegivel(leitor, payload),
         };
     }
 

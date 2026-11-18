@@ -82,7 +82,8 @@ setup_ofertas_por_grupo() {
     if [ -z "$oferta_id" ]; then
         oferta_id=$(post_tolerante "/api/configuracao/admin/ofertas-curso" "{
             \"cursoId\": \"$curso_id\", \"localOfertaId\": \"$LOCAL_OFERTA_ID\",
-            \"unidadeOfertanteOrigemId\": \"$UNIDADE_OFERTANTE_ID\", \"programaDeOferta\": \"REGULAR\",
+            \"unidadeOfertanteOrigemId\": \"$UNIDADE_OFERTANTE_ID\", \"codigo\": \"OFERTA_PEDAGOGIA_NOTURNO\",
+            \"programaDeOferta\": \"REGULAR\",
             \"regimeDeFuncionamento\": \"EXTENSIVO\", \"formatoPedagogico\": \"PRESENCIAL\",
             \"regimeDeTurno\": \"REGULAR\", \"turnos\": [\"NOTURNO\"],
             \"eMecCodigo\": null, \"codigoSga\": null, \"vagasAnuaisAutorizadas\": null,
@@ -303,6 +304,7 @@ main() {
     definir_edicoes_enem
     definir_taxa_inscricao
     definir_cronograma_fases
+    escolher_motivo_da_homologacao
     definir_etapa_nota_do_enem
     aplicar_modelo_inscricao
     vincular_fase_do_formulario

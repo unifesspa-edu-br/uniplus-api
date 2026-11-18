@@ -34,24 +34,23 @@ public sealed class MontagemDasBancasDaFaseTests
         banca.RegraDeDeliberacao!.Quorum.Should().Be(2);
     }
 
-    [Fact(DisplayName = "A banca de análise de recursos não declara recorte: a violação sai no campo do recorte")]
-    public async Task Montar_BancaDeRecursosComRecorte_RecusaORecorteNoCampoDele()
+    [Fact(DisplayName = "A banca de análise de recursos com recorte é montada como veio: quem a recusa é a fábrica da fase")]
+    public async Task Montar_BancaDeRecursosComRecorte_MontaSemRecusar()
     {
         BancaRequeridaInput declarada = new(TipoDeRecursos.Id, [CategoriaRenda.Id], RegrasDeDeliberacaoDeTeste.Valida());
 
         Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(Fase(declarada), 2, CancellationToken.None);
 
-        FieldError recusa = resultado.Errors.Should().ContainSingle().Subject;
-        recusa.Field.Should().Be("fases[2].bancasRequeridas[0].categoriasDocumentoIds");
-        recusa.Error.Code.Should().Be("Banca.RecorteEmBancaDeRecursos");
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.Single().RecorteDeCompetencia.Select(static categoria => categoria.Codigo).Should().Equal("RENDA");
     }
 
-    [Fact(DisplayName = "As violações de todas as bancas da fase acumulam: a regra de uma não esconde o recorte da outra")]
+    [Fact(DisplayName = "As violações da regra de deliberação das bancas da fase acumulam sob o caminho de cada uma")]
     public async Task Montar_ComVariasBancasInvalidas_AcumulaTudoSobOCaminhoDeCada()
     {
         FaseCronogramaInput fase = Fase(
             new BancaRequeridaInput(TipoDocumental.Id, [], RegrasDeDeliberacaoDeTeste.ComTresViolacoes()),
-            new BancaRequeridaInput(TipoDeRecursos.Id, [CategoriaRenda.Id], RegrasDeDeliberacaoDeTeste.Valida()));
+            new BancaRequeridaInput(TipoDocumental.Id, [CategoriaRenda.Id], RegrasDeDeliberacaoDeTeste.Valida()));
 
         Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(fase, 0, CancellationToken.None);
 
@@ -60,7 +59,6 @@ public sealed class MontagemDasBancasDaFaseTests
             "fases[0].bancasRequeridas[0].regraDeDeliberacao.integrantes",
             "fases[0].bancasRequeridas[0].regraDeDeliberacao.criterio",
             "fases[0].bancasRequeridas[0].regraDeDeliberacao.encerramento",
-            "fases[0].bancasRequeridas[1].categoriasDocumentoIds",
         ]);
     }
 
@@ -108,7 +106,8 @@ public sealed class MontagemDasBancasDaFaseTests
         Substitute.For<IResolvedorDaUnidadeResponsavel>(),
         TiposDeBanca(),
         Categorias(),
-        Substitute.For<IRegraCatalogoReader>()));
+        Substitute.For<IRegraCatalogoReader>(),
+        Substitute.For<IFatoCandidatoReader>()));
 
     private static ITipoBancaReader TiposDeBanca()
     {

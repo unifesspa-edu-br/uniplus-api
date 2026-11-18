@@ -135,7 +135,7 @@ public sealed class FasesCanonicasController : ControllerBase
         return resultado.ToActionResult(_mapper);
     }
 
-    /// <summary>Atualiza uma fase canônica existente. O código é imutável. Exige a permissão de manutenção.</summary>
+    /// <summary>Atualiza uma fase canônica existente, substituindo tudo o que é editável pelo corpo: o que ele omite fica falso ou vazio, inclusive os sinalizadores. O código é imutável. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/fases-canonicas/{id:guid}")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FasesCanonicasManter, ResourceTipo = ResourceTiposConfiguracao.FaseCanonica)]
     [RequiresIdempotencyKey]

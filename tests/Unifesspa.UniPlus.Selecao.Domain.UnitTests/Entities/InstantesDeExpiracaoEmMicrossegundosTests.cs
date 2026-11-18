@@ -51,26 +51,6 @@ public sealed class InstantesDeExpiracaoEmMicrossegundosTests
         documento.ExpiraEm.Should().Be(VencimentoEsperado);
     }
 
-    [Fact(DisplayName = "O rascunho da publicação vence em microssegundos inteiros ao ser criado")]
-    public void RascunhoDePublicacao_Criar_VenceEmMicrossegundos()
-    {
-        RascunhoDePublicacao rascunho = RascunhoDePublicacao.Criar(
-            Guid.CreateVersion7(), "conta-123", "{}", 1, AgoraComSetimaCasa, PrazoComResto).Value!;
-
-        rascunho.ExpiraEm.Should().Be(VencimentoEsperado);
-    }
-
-    [Fact(DisplayName = "O rascunho da publicação regravado renova o vencimento em microssegundos inteiros")]
-    public void RascunhoDePublicacao_Substituir_VenceEmMicrossegundos()
-    {
-        RascunhoDePublicacao rascunho = RascunhoDePublicacao.Criar(
-            Guid.CreateVersion7(), "conta-123", "{}", 1, Meio, TimeSpan.FromDays(1)).Value!;
-
-        rascunho.Substituir("{}", 1, AgoraComSetimaCasa, PrazoComResto).IsSuccess.Should().BeTrue();
-
-        rascunho.ExpiraEm.Should().Be(VencimentoEsperado);
-    }
-
     [Fact(DisplayName = "A próxima publicação do arquivo confirmado sai em microssegundos inteiros com a política de prazo com resto")]
     public void ArquivoDaApresentacao_Confirmar_ProximaPublicacaoEmMicrossegundos()
     {

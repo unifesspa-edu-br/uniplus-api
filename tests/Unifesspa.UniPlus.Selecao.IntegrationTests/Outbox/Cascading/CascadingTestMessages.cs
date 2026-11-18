@@ -12,4 +12,4 @@ using System.Diagnostics.CodeAnalysis;
     "Performance",
     "CA1515:Consider making public types internal",
     Justification = "Mensagens descobertas pela convenção do Wolverine precisam ser públicas.")]
-public sealed record FalharAposPublicarCascadingCommand(string NomeProcesso);
+public sealed record FalharAposPublicarCascadingCommand(string NomeProcesso, Guid ProcessoSeletivoId);

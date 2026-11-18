@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Selecao.API.Http;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// A decodificação do <c>If-Match</c> no boundary (ADR-0110 D5, RFC 9110 §13.1.1).
+/// A decodificação do <c>If-Match</c> no boundary (RFC 9110 §13.1.1).
 /// </summary>
 /// <remarks>
 /// O que estes testes fixam é a <b>fronteira entre 400 e 412</b>, que é sutil e fácil de

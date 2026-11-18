@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
@@ -41,6 +42,23 @@ internal sealed class FaseCanonicaReader : IFaseCanonicaReader
         return [.. entidades.Select(ParaView)];
     }
 
+    public async Task<IReadOnlyList<FaseCanonicaView>> ListarVivasPorCodigosAsync(
+        IReadOnlyCollection<string> codigos,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(codigos);
+
+        List<CodigoFase> codigosDoLote = CodigosDoLote.Validos(codigos, CodigoFase.Criar);
+        List<FaseCanonica> entidades = await _dbContext.FasesCanonicas
+            .AsNoTracking()
+            .Where(f => codigosDoLote.Contains(f.Codigo))
+            .OrderBy(f => f.Codigo)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return [.. entidades.Select(ParaView)];
+    }
+
     public async Task<FaseCanonicaView?> ObterPorIdAsync(
         Guid id,
         CancellationToken cancellationToken = default)
@@ -59,10 +77,10 @@ internal sealed class FaseCanonicaReader : IFaseCanonicaReader
             f.Codigo.Valor,
             f.Nome,
             f.Descricao,
-            f.AgrupaEtapas,
-            f.PermiteComplementacao,
+            f.Sinalizadores.AgrupaEtapas,
+            f.Sinalizadores.PermiteComplementacao,
             f.BaseLegal,
-            f.ColetaInscricao,
-            f.ColetaSolicitacaoIsencao,
+            f.Sinalizadores.ColetaInscricao,
+            f.Sinalizadores.ColetaSolicitacaoIsencao,
             OrigensDataFase.ParaTokenCanonico(f.OrigemData));
 }

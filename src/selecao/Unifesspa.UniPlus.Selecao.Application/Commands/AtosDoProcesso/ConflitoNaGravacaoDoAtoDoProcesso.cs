@@ -24,9 +24,9 @@ internal static class ConflitoNaGravacaoDoAtoDoProcesso
 
         return constraint switch
         {
-            ConstraintDaCorrecaoUnica when ato.AtoCorrigidoId is { } corrigido => new DomainError(
+            ConstraintDaCorrecaoUnica when ato.AtoCorrigidoId is not null => new DomainError(
                 AtoDoProcessoErrorCodes.AtoCorrigidoJaCorrigido,
-                ConferenciaDoAtoCorrigido.MensagemDoAtoJaCorrigido(corrigido, corretor: null)),
+                ConferenciaDoAtoCorrigido.MensagemDoAtoJaCorrigido()),
             ConstraintDaPublicacaoOriginalUnica when ato.ItemDoEdital is not null => new DomainError(
                 AtoDoProcessoErrorCodes.ProdutoJaPublicado,
                 ProjecaoDosProdutosPrevistos.MensagemDoItemJaPublicado),

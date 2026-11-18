@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/divulgacao.schema.json",
+  "title": "Política de divulgação",
+  "description": "Quais dados do candidato aparecem nas listas públicas de resultado. Bloco ausente significa que a política ainda não foi preenchida.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "camposPublicos": {
+      "title": "Campos públicos",
+      "description": "Dados do candidato divulgados nas listas públicas: numero_inscricao, nome_abreviado ou nome. Não se repetem.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "numero_inscricao",
+          "nome_abreviado",
+          "nome"
+        ]
+      }
+    },
+    "justificativa": {
+      "title": "Justificativa",
+      "description": "Motivo de divulgar o nome completo, texto livre de até 1000 caracteres.",
+      "type": "string",
+      "maxLength": 1000
+    },
+    "regraNomeAbreviado": {
+      "title": "Regra do nome abreviado",
+      "description": "Identificador da regra vigente que abrevia o nome do candidato, presente quando nome_abreviado é divulgado. Definido pelo servidor na publicação. Campo só de leitura: a exportação o traz para quem lê o arquivo, e ele é ignorado na importação; a referência é camposPublicos.",
+      "type": "string",
+      "maxLength": 100,
+      "readOnly": true
+    }
+  }
+}

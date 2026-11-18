@@ -13,11 +13,9 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// <see cref="CamposPublicos"/> nulo remove a configuração explícita — o processo volta ao
 /// default minimizado (só o número de inscrição). Lista vazia é sempre recusada: não é o
 /// mesmo pedido que remover a configuração. Este contrato de três estados é o que permite
-/// desfazer uma ampliação anterior — inclusive removendo <c>nome_abreviado</c> durante uma
-/// sessão de retificação.
+/// desfazer uma ampliação anterior.
 /// </remarks>
 public sealed record DefinirConfiguracaoDivulgacaoCommand(
     Guid ProcessoSeletivoId,
     IReadOnlyList<string>? CamposPublicos,
-    string? Justificativa,
-    PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;
+    string? Justificativa) : ICommand<Result>;

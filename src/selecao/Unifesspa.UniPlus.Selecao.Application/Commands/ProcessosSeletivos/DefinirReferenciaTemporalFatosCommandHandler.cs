@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 /// </summary>
 public static class DefinirReferenciaTemporalFatosCommandHandler
 {
-    public static async Task<Result<MutacaoAceita>> Handle(
+    public static async Task<Result> Handle(
         DefinirReferenciaTemporalFatosCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IUnitOfWork unitOfWork,
@@ -31,14 +31,14 @@ public static class DefinirReferenciaTemporalFatosCommandHandler
             .ConfigureAwait(false);
         if (processo is null)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 "ProcessoSeletivo.NaoEncontrado",
                 $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
         }
 
-        if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
+        if (processo.MutacaoBloqueada() is { } bloqueio)
         {
-            return Result<MutacaoAceita>.Failure(bloqueio);
+            return Result.Failure(bloqueio);
         }
 
         ReferenciaTemporalFatos? referencia = null;
@@ -47,20 +47,20 @@ public static class DefinirReferenciaTemporalFatosCommandHandler
             Result<ReferenciaTemporalFatos> referenciaResult = ReferenciaTemporalFatos.Criar(command.Tipo, command.Data, command.FaseId);
             if (referenciaResult.IsFailure)
             {
-                return Result<MutacaoAceita>.ValidationFailure(referenciaResult.Errors);
+                return Result.ValidationFailure(referenciaResult.Errors);
             }
 
             referencia = referenciaResult.Value!;
         }
 
-        Result definirResult = processo.DefinirReferenciaTemporalFatos(referencia, command.Precondicao);
+        Result definirResult = processo.DefinirReferenciaTemporalFatos(referencia);
         if (definirResult.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(definirResult.Error!);
+            return Result.Failure(definirResult.Error!);
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
-        return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+        return Result.Success();
     }
 }

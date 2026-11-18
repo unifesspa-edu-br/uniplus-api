@@ -86,14 +86,13 @@ internal static class FormularioDeTeste
     public static Result DefinirItens(
         this ProcessoSeletivo processo,
         IReadOnlyList<FatoColetado> fatos,
-        PrecondicaoIfMatch? precondicao = null,
         FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao,
         IReadOnlyList<GrupoColetado>? grupos = null)
     {
-        PrecondicaoIfMatch vigente = GarantirFormulario(processo, finalidade, precondicao ?? PrecondicaoIfMatch.Ausente);
+        GarantirFormulario(processo, finalidade);
         if (finalidade != FinalidadeFormulario.Inscricao)
         {
-            return processo.DefinirFatosColetados(finalidade, [.. fatos.Select(f => NaSecao(f, 0))], vigente, grupos);
+            return processo.DefinirFatosColetados(finalidade, [.. fatos.Select(f => NaSecao(f, 0))], grupos);
         }
 
         int deslocamento = fatos.Any(static f => !EhBasico(f) && f.Ordem < PrimeiraOrdemDeInscricao)
@@ -103,7 +102,6 @@ internal static class FormularioDeTeste
         return processo.DefinirFatosColetados(
             finalidade,
             [.. fatos.Select(f => EhBasico(f) ? NaSecaoReservada(f) : NaSecao(f, deslocamento)), .. DadosBasicos(fatos.Select(static f => f.FatoCodigo))],
-            vigente,
             grupos is null ? null : [.. grupos.Select(g => Deslocar(g, deslocamento))]);
     }
 
@@ -116,7 +114,7 @@ internal static class FormularioDeTeste
         if (FaseDe(processo, FinalidadeFormulario.Inscricao) is null)
         {
             FaseCronograma inscricao = FaseDeInscricao(processo.CronogramaFases.Select(static f => f.Ordem).DefaultIfEmpty(0).Max() + 1);
-            Result cronograma = processo.DefinirCronogramaFases([inscricao, .. processo.CronogramaFases], [], PrecondicaoIfMatch.Ausente);
+            Result cronograma = processo.DefinirCronogramaFases([inscricao, .. processo.CronogramaFases], []);
             if (cronograma.IsFailure)
             {
                 return cronograma;
@@ -130,53 +128,51 @@ internal static class FormularioDeTeste
     public static Result DefinirTitulo(
         this ProcessoSeletivo processo,
         string? titulo,
-        PrecondicaoIfMatch? precondicao = null,
         FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao)
     {
-        PrecondicaoIfMatch vigente = GarantirFormulario(processo, finalidade, precondicao ?? PrecondicaoIfMatch.Ausente);
-        return processo.DefinirFormulario(finalidade, processo.FormularioDe(finalidade)!.FaseId, titulo, Etapas(finalidade), vigente);
+        GarantirFormulario(processo, finalidade);
+        return processo.DefinirFormulario(finalidade, processo.FormularioDe(finalidade)!.FaseId, titulo, Etapas(finalidade));
     }
 
     /// <summary>Define os termos da finalidade, criando antes o formulário mínimo quando o processo não o tem.</summary>
     public static Result DefinirTermos(
         this ProcessoSeletivo processo,
         IReadOnlyList<TermoExigidoFormulario> termos,
-        PrecondicaoIfMatch? precondicao = null,
         FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao)
     {
-        PrecondicaoIfMatch vigente = GarantirFormulario(processo, finalidade, precondicao ?? PrecondicaoIfMatch.Ausente);
-        return processo.DefinirTermosDoFormulario(finalidade, termos, vigente);
+        GarantirFormulario(processo, finalidade);
+        return processo.DefinirTermosDoFormulario(finalidade, termos);
     }
 
     /// <summary>
     /// Troca o cronograma do processo: o formulário de inscrição sai antes, porque é respondido
     /// numa fase que a troca remove, e volta depois, na fase de inscrição do cronograma novo.
     /// </summary>
-    public static Result TrocarCronograma(ProcessoSeletivo processo, IReadOnlyList<FaseCronograma> fases, PrecondicaoIfMatch precondicao)
+    public static Result TrocarCronograma(ProcessoSeletivo processo, IReadOnlyList<FaseCronograma> fases)
     {
         bool tinhaFormulario = processo.FormularioDe(FinalidadeFormulario.Inscricao) is not null;
         if (tinhaFormulario)
         {
-            processo.RemoverFormulario(FinalidadeFormulario.Inscricao, precondicao);
+            processo.RemoverFormulario(FinalidadeFormulario.Inscricao);
         }
 
-        Result trocado = DefinirCronogramaRepondoEtapas(processo, fases, precondicao);
+        Result trocado = DefinirCronogramaRepondoEtapas(processo, fases);
         if (tinhaFormulario)
         {
-            GarantirFormulario(processo, FinalidadeFormulario.Inscricao, precondicao);
+            GarantirFormulario(processo, FinalidadeFormulario.Inscricao);
         }
 
         return trocado;
     }
 
     private static Result DefinirCronogramaRepondoEtapas(
-        ProcessoSeletivo processo, IReadOnlyList<FaseCronograma> fases, PrecondicaoIfMatch precondicao)
+        ProcessoSeletivo processo, IReadOnlyList<FaseCronograma> fases)
     {
         List<EtapaProcesso> etapasAntes = [.. processo.Etapas];
-        Result trocado = processo.DefinirCronogramaFases(fases, [], precondicao);
+        Result trocado = processo.DefinirCronogramaFases(fases, []);
         if (trocado.IsSuccess)
         {
-            ReporEtapasDeFaseQueContinua(processo, etapasAntes, fases, precondicao);
+            ReporEtapasDeFaseQueContinua(processo, etapasAntes, fases);
         }
 
         return trocado;
@@ -185,14 +181,14 @@ internal static class FormularioDeTeste
     // A poda do cronograma leva junto a etapa da fase que sai, e a troca de teste recria a fase com a mesma
     // identidade de negócio (o código) e outra origem: a etapa volta, presa à fase de mesmo código.
     private static void ReporEtapasDeFaseQueContinua(
-        ProcessoSeletivo processo, List<EtapaProcesso> etapasAntes, IReadOnlyList<FaseCronograma> fases, PrecondicaoIfMatch precondicao)
+        ProcessoSeletivo processo, List<EtapaProcesso> etapasAntes, IReadOnlyList<FaseCronograma> fases)
     {
         HashSet<Guid> sobreviventes = [.. processo.Etapas.Select(static e => e.Id)];
         List<EtapaProcesso> podadas = [.. etapasAntes.Where(e => !sobreviventes.Contains(e.Id)
             && fases.Any(f => string.Equals(f.Codigo, e.FaseCodigo, StringComparison.Ordinal)))];
         if (podadas.Count > 0)
         {
-            Result reposta = processo.DefinirEtapas([.. processo.Etapas, .. podadas], precondicao);
+            Result reposta = processo.DefinirEtapas([.. processo.Etapas, .. podadas]);
             if (reposta.IsFailure)
             {
                 throw new InvalidOperationException($"A etapa podada não voltou ao cronograma de teste: {reposta.Error?.Message}");
@@ -217,44 +213,37 @@ internal static class FormularioDeTeste
     {
         if (processo.OrigemCandidatos == Unifesspa.UniPlus.Selecao.Domain.Enums.OrigemCandidatos.InscricaoPropria)
         {
-            GarantirFormulario(processo, FinalidadeFormulario.Inscricao, PrecondicaoIfMatch.Ausente);
+            GarantirFormulario(processo, FinalidadeFormulario.Inscricao);
         }
     }
 
-    /// <summary>
-    /// Cria o formulário mínimo da finalidade quando o processo não o tem. Devolve a precondição que
-    /// continua válida: sob sessão editorial, definir o formulário avança a revisão e troca o ETag.
-    /// </summary>
-    public static PrecondicaoIfMatch GarantirFormulario(
-        ProcessoSeletivo processo, FinalidadeFormulario finalidade, PrecondicaoIfMatch precondicao)
+    /// <summary>Cria o formulário mínimo da finalidade quando o processo não o tem.</summary>
+    public static void GarantirFormulario(ProcessoSeletivo processo, FinalidadeFormulario finalidade)
     {
         if (processo.FormularioDe(finalidade) is not null)
         {
-            return precondicao;
+            return;
         }
 
         Guid? fase = FaseDe(processo, finalidade);
         Result criado = processo.DefinirFormulario(
-            finalidade, fase, null, Etapas(finalidade), precondicao,
+            finalidade, fase, null, Etapas(finalidade),
             finalidade == FinalidadeFormulario.Inscricao ? DadosBasicos() : null);
         if (criado.IsFailure)
         {
             throw new InvalidOperationException($"O formulário de teste não pôde ser criado: {criado.Error!.Message}");
         }
-
-        return processo.ETagDaSessaoEditorial is { } etag ? PrecondicaoIfMatch.DeTags([etag]) : precondicao;
     }
 
     private static FaseCronograma FaseDeInscricao(int ordem) => FaseCronograma.Criar(
-        ordem, Guid.CreateVersion7(), "INSCRICAO", Unifesspa.UniPlus.Selecao.Domain.Enums.OrigemDataFase.NoEdital,
-        agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: true, coletaSolicitacaoIsencao: false,
-        inicio: new DateTimeOffset(2026, 3, 1, 12, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 3, 20, 12, 0, 0, TimeSpan.Zero),
-        produtos: [ProdutoDaFase.Criar("INSCRICAO", Unifesspa.UniPlus.Selecao.Domain.Enums.PapelProdutoFase.Definitivo)],
-        faseConcluinteCodigo: null,
-        emiteParecerIndividual: false,
-        bancasRequeridas: [],
-        regraRecurso: null,
-        unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+        new OrigemCanonicaDaFase(
+            Guid.CreateVersion7(), "INSCRICAO", Unifesspa.UniPlus.Selecao.Domain.Enums.OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true,
+            ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            ordem, Inicio: new DateTimeOffset(2026, 3, 1, 12, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 3, 20, 12, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("INSCRICAO", Unifesspa.UniPlus.Selecao.Domain.Enums.PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
 
     private static Guid? FaseDe(ProcessoSeletivo processo, FinalidadeFormulario finalidade) =>
         processo.CronogramaFases.FirstOrDefault(f => finalidade switch

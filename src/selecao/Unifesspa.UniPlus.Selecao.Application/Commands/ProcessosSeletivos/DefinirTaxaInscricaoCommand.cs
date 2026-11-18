@@ -16,5 +16,4 @@ public sealed record DefinirTaxaInscricaoCommand(
     Guid ProcessoSeletivoId,
     bool? Cobra,
     decimal? Valor,
-    IReadOnlyList<string>? Fundamentos,
-    PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;
+    IReadOnlyList<string>? Fundamentos) : ICommand<Result>;

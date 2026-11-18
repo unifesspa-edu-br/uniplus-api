@@ -37,7 +37,7 @@ public sealed class CancelarInscricaoEndpointTests
         {
             UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder
-                .SemearAsync(db, $"Cancelamento sem corpo {Guid.CreateVersion7()}");
+                .SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"Cancelamento sem corpo {Guid.CreateVersion7()}" });
             processoId = processo.Id;
         }
 

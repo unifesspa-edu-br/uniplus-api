@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 
 public sealed record BaseLegalBonusRegionalView(
     Guid Id,
+    string Codigo,
     string TipoInstrumento,
     string Identificacao,
     string Descricao,

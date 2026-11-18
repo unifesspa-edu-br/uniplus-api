@@ -93,9 +93,9 @@ internal sealed class ModalidadeReader : IModalidadeReader
             ComposicoesVagas.ParaTokenCanonico(m.ComposicaoVagas),
             m.ComposicaoOrigem,
             m.RegraRemanejamento is { } regra ? RegrasRemanejamento.ParaTokenCanonico(regra) : null,
-            m.RemanejamentoArgs.Destino,
-            m.RemanejamentoArgs.Par,
-            m.RemanejamentoArgs.Fallback,
+            m.RemanejamentoParametros.Destino,
+            m.RemanejamentoParametros.Par,
+            m.RemanejamentoParametros.Fallback,
             m.RegraDeAplicabilidade,
             m.AcaoQuandoIndeferido is { } acao ? AcoesQuandoIndeferido.ParaTokenCanonico(acao) : null,
             m.BaseLegal);

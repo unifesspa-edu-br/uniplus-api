@@ -25,7 +25,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <b>quebra o build</b> — que é o único jeito de esta lista não envelhecer em silêncio.
 /// </para>
 /// <para>
-/// Os campos que vivem dentro de um <c>json</c>/<c>jsonb</c> (os <c>args</c> dos critérios
+/// Os campos que vivem dentro de um <c>json</c>/<c>jsonb</c> (os <c>parametros</c> dos critérios
 /// e das regras de eliminação, a regra de aplicabilidade da modalidade) <b>não</b> têm limite
 /// de coluna — e por isso não aparecem aqui.
 /// </para>
@@ -174,7 +174,7 @@ public static class LimitesDoEnvelope
     /// </summary>
     public const int PrecisaoCorteAreaEnem = 8;
 
-    /// <summary>Precisão de <c>ArgsRegraPrazoRecurso.PrazoValor</c> e dos dois pares de suspensividade — <c>numeric(18,4)</c>.</summary>
+    /// <summary>Precisão de <c>ParametrosRegraPrazoRecurso.PrazoValor</c> e dos dois pares de suspensividade — <c>numeric(18,4)</c>.</summary>
     public const int PrecisaoPrazo = 18;
 
     /// <summary>Precisão de <c>ConfiguracaoTaxaInscricao.Valor</c> — <c>numeric(12,2)</c>, monetário.</summary>
@@ -186,6 +186,9 @@ public static class LimitesDoEnvelope
     // Unidade administradora.
     /// <summary><c>UnidadeAdministradoraSnapshot.Sigla</c> — espelha <c>UnidadeConfiguration.Sigla</c>.</summary>
     public const int UnidadeAdministradoraSigla = 50;
+
+    /// <summary><c>UnidadeAdministradoraSnapshot.Codigo</c> — espelha <c>UnidadeConfiguration.Codigo</c>.</summary>
+    public const int UnidadeAdministradoraCodigo = 50;
 
     /// <summary><c>UnidadeAdministradoraSnapshot.Slug</c> — espelha <c>UnidadeConfiguration.Slug</c>.</summary>
     public const int UnidadeAdministradoraSlug = 64;
@@ -230,6 +233,9 @@ public static class LimitesDoEnvelope
     /// <summary><c>TermoExigidoFormulario.Codigo</c>.</summary>
     public const int CodigoTermoExigido = FormaDoTermo.CodigoMaxLength;
 
+    /// <summary>Código estável do termo no catálogo de termos de consentimento.</summary>
+    public const int CodigoDoTermoNoCatalogo = Domain.Entities.TermoExigidoFormulario.TermoCodigoMaxLength;
+
     /// <summary>Nome do termo no catálogo de termos de consentimento.</summary>
     public const int NomeDoTermo = 200;
 
@@ -246,7 +252,7 @@ public static class LimitesDoEnvelope
     public const int HashDaVersaoDoTermo = 64;
 
     // Divulgação pública.
-    /// <summary><c>ConfiguracaoDivulgacao.Justificativa</c> — mesma grandeza de <c>RascunhoRetificacao.MotivoMaxLength</c>: texto de negócio livre, não um rótulo curto.</summary>
+    /// <summary><c>ConfiguracaoDivulgacao.Justificativa</c> — texto de negócio livre, não um rótulo curto.</summary>
     public const int Justificativa = 1000;
 
     // Bônus regional: referencia a base legal tipada.
@@ -255,6 +261,9 @@ public static class LimitesDoEnvelope
 
     /// <summary><c>ConfiguracaoBonusRegional.FatoElegibilidadeCodigo</c> — código do fato que decide quem recebe o acréscimo.</summary>
     public const int FatoElegibilidadeBonusRegional = FormaDoItem.FatoCodigoMaxLength;
+
+    /// <summary><c>ConfiguracaoBonusRegional.BaseLegalBonusRegionalCodigo</c> — snapshot-copy do código estável da Base Legal (teto do <c>CodigoBaseLegalBonusRegional</c>).</summary>
+    public const int CodigoBaseLegalBonusRegional = 100;
 
     /// <summary><c>ConfiguracaoBonusRegional.Identificacao</c> — snapshot-copy da identificação da Base Legal.</summary>
     public const int IdentificacaoBaseLegalBonusRegional = 500;

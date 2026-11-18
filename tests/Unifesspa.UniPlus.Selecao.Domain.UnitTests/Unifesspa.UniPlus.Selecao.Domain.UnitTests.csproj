@@ -21,6 +21,11 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- O esquema da configuração do processo seletivo, lido para conferir que as enumerações dele são as do domínio. -->
+    <None Include="..\..\contracts\selecao\configuracao\v1\*.json" Link="Contratos\selecao-configuracao\v1\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 
   <ItemGroup>
     <!-- Instantes construídos a partir da zona institucional resolvida (issue #1376). Compilado em
@@ -35,9 +40,17 @@
     <Compile Include="../Shared/InstanteEmBelem.cs" Link="InstanteEmBelem.cs" />
     <Compile Include="../Shared/RelogioFixo.cs" Link="RelogioFixo.cs" />
     <Compile Include="../Shared/CongelamentoDeTeste.cs" Link="CongelamentoDeTeste.cs" />
+    <Compile Include="../Shared/CenarioDeCongelamento.cs" Link="CenarioDeCongelamento.cs" />
+    <Compile Include="../Shared/CadastrosDeTeste.cs" Link="CadastrosDeTeste.cs" />
+    <Compile Include="../Shared/MotivosDoProcessoDeTeste.cs" Link="MotivosDoProcessoDeTeste.cs" />
+    <Compile Include="../Shared/MotivosDaHomologacaoDeTeste.cs" Link="MotivosDaHomologacaoDeTeste.cs" />
+    <Compile Include="../Shared/MotivosDaIsencaoDeTeste.cs" Link="MotivosDaIsencaoDeTeste.cs" />
     <Compile Include="../Shared/IdentificadoresDeTeste.cs" Link="IdentificadoresDeTeste.cs" />
     <Compile Include="../Shared/UnidadesDeTeste.cs" Link="UnidadesDeTeste.cs" />
     <Compile Include="../Shared/BancasDeTeste.cs" Link="BancasDeTeste.cs" />
+    <Compile Include="../Shared/HomologacaoDasInscricoesDeTeste.cs" Link="HomologacaoDasInscricoesDeTeste.cs" />
+    <Compile Include="../Shared/ContagemDePrazosDeTeste.cs" Link="ContagemDePrazosDeTeste.cs" />
+    <Compile Include="../Shared/CorretoresDeTeste.cs" Link="CorretoresDeTeste.cs" />
     <Compile Include="../Shared/DeclaracoesObrigatoriasDeTeste.cs" Link="DeclaracoesObrigatoriasDeTeste.cs" />
     <Compile Include="../Shared/QuadroPesoAreaEnemDeTeste.cs" Link="QuadroPesoAreaEnemDeTeste.cs" />
     <Compile Include="../Shared/OfertaCursoDeTeste.cs" Link="OfertaCursoDeTeste.cs" />

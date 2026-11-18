@@ -11,10 +11,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 /// <remarks>
 /// <para>
-/// A divisão é a que a ADR-0110 D5 fixa: <b>o transporte valida só a sintaxe</b>; quem
-/// decide se a precondição é <b>obrigatória</b>, e se ela <b>casa</b>, é o handler — sob o
-/// lock, com o agregado carregado, porque a obrigatoriedade depende do estado (há sessão
-/// editorial aberta?) e ninguém antes do handler sabe disso.
+/// <b>O transporte valida só a sintaxe</b>; quem decide se a precondição <b>casa</b> com o ETag da
+/// inscrição é o domínio, com o agregado carregado.
 /// </para>
 /// </remarks>
 public static class IfMatchHeader
@@ -30,9 +28,8 @@ public static class IfMatchHeader
     /// </param>
     public static Result<PrecondicaoIfMatch> Analisar(string? valor)
     {
-        // Header ausente é ESTADO VÁLIDO, não erro: os seis Definir* servem também um
-        // processo em Rascunho, que não tem sessão editorial e portanto não tem ETag a
-        // fornecer. Quem transforma a ausência em 428 é o handler — e só quando há sessão.
+        // Header ausente é ESTADO VÁLIDO, não erro: quem transforma a ausência em 428 é o domínio,
+        // com o agregado carregado.
         if (valor is null)
         {
             return Result<PrecondicaoIfMatch>.Success(PrecondicaoIfMatch.Ausente);

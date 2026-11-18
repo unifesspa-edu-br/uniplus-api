@@ -12,5 +12,8 @@ public static class TermoConsentimentoErrorCodes
     public const string PromocaoSemRevisao = "TermoConsentimento.PromocaoSemRevisao";
     public const string RemocaoBloqueadaComVersaoPromovida = "TermoConsentimento.RemocaoBloqueadaComVersaoPromovida";
     public const string NaoEncontrado = "TermoConsentimento.NaoEncontrado";
+    public const string CodigoFormatoInvalido = "TermoConsentimento.CodigoFormatoInvalido";
+    public const string CodigoTamanho = "TermoConsentimento.CodigoTamanho";
+    public const string CodigoJaExiste = "TermoConsentimento.CodigoJaExiste";
     public const string ConflitoDeConcorrencia = "TermoConsentimento.ConflitoDeConcorrencia";
 }

@@ -38,14 +38,14 @@ public sealed class ColunasParaBuscaDaUnidadeTests : IClassFixture<UnidadeDbFixt
         CadastroDeUnidadeDeTeste cadastro = basico with
         {
             Sigla = $"CIÊNCIA{sufixo}",
-            Codigo = $"Código-Ç{sufixo}",
+            Codigo = $"COD-C{sufixo}",
             Alias = "Núcleo Ágil",
         };
 
         Guid id = await GravarAsync(cadastro);
 
         (await FormasAsync(id)).Should().Be(
-            new FormasParaBusca("faculdade de fisica", $"ciencia{sufixo}", $"codigo-c{sufixo}", cadastro.Slug, "nucleo agil"));
+            new FormasParaBusca("faculdade de fisica", $"ciencia{sufixo}", $"cod-c{sufixo}", cadastro.Slug, "nucleo agil"));
     }
 
     [Fact(DisplayName = "Alterar o nome faz a coluna para busca do nome acompanhar")]
@@ -78,7 +78,7 @@ public sealed class ColunasParaBuscaDaUnidadeTests : IClassFixture<UnidadeDbFixt
         Guid id = await GravarAsync(original);
         string sufixo = NovoToken();
 
-        await AtualizarAsync(id, original with { Codigo = $"Ação-{sufixo}" });
+        await AtualizarAsync(id, original with { Codigo = $"ACAO-{sufixo}" });
 
         (await FormasAsync(id)).Codigo.Should().Be($"acao-{sufixo}");
     }

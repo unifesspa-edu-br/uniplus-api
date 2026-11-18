@@ -22,6 +22,8 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ApoioDaPersistenciaDoProcessoSeletivo;
+
 /// <summary>
 /// Cobertura de integração (Postgres real via Testcontainers) do agregado
 /// <c>ProcessoSeletivo</c> na fatia F0 (fundação): persiste e recarrega a raiz
@@ -29,13 +31,15 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// validando o mapeamento EF (HasMany/HasOne + FK, sem owned types) e a
 /// migration aplicando limpo contra Postgres real.
 /// </summary>
-public sealed partial class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSeletivoDbFixture>
+public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSeletivoDbFixture>
 {
     private readonly ProcessoSeletivoDbFixture _fixture;
+    private readonly ApoioDaPersistenciaDoProcessoSeletivo _apoio;
 
     public ProcessoSeletivoPersistenciaTests(ProcessoSeletivoDbFixture fixture)
     {
         _fixture = fixture;
+        _apoio = new ApoioDaPersistenciaDoProcessoSeletivo(fixture);
     }
 
     [Fact(DisplayName = "Persiste e recarrega o agregado com etapas e atendimento especializado")]
@@ -44,59 +48,15 @@ public sealed partial class ProcessoSeletivoPersistenciaTests : IClassFixture<Pr
         Guid condicaoOrigemId = Guid.CreateVersion7();
         Guid recursoOrigemId = Guid.CreateVersion7();
         Guid tipoDeficienciaOrigemId = Guid.CreateVersion7();
+        ProcessoSeletivo processo = NovoProcesso("PS 2026 — SiSU");
+        processo.DefinirEtapas([ProvaObjetivaComEscalaCompleta(), NovaEtapa("Redação", CaraterEtapa.Ambas, 2, DeclaracaoComPeso(2m, notaMinima: 5m))]).IsSuccess.Should().BeTrue();
+        processo.DefinirAtendimentoEspecializado(AtendimentoDaFundacao(condicaoOrigemId, recursoOrigemId, tipoDeficienciaOrigemId)).IsSuccess.Should().BeTrue();
+        await _apoio.GravarAsync(processo);
 
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo recarregado = await RecarregarComEtapasEAtendimentoAsync(processo.Id);
 
-        Result etapasResult = processo.DefinirEtapas(
-        [
-            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 3m, ordem: 1, notaMaxima: 10m, passoDoLancamento: 0.25m, formaDeAvaliacao: FormaDeAvaliacao.Humana,
-                regraConsolidacao: ReferenciaRegra.Criar(RegraConsolidacaoCodigo.AvaliacaoUnica, "v1", new string('c', 64)).Value!).Value!,
-            EtapaProcesso.Criar("Redação", CaraterEtapa.Ambas, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 2m, notaMinima: 5m, ordem: 2).Value!,
-        ], PrecondicaoIfMatch.Ausente);
-        etapasResult.IsSuccess.Should().BeTrue();
-
-        Result<AtendimentoEspecializado> atendimentoResult = AtendimentoEspecializado.Criar(
-            condicoes: [CondicaoOfertada.Criar(condicaoOrigemId, "PCD", "Pessoa com deficiência")],
-            recursos: [RecursoOfertado.Criar(recursoOrigemId, "LEDOR", "Ledor")],
-            tiposDeficiencia: [DeficienciaAtendida.Criar(tipoDeficienciaOrigemId, "DEFICIENCIA_VISUAL", "Deficiência visual")]);
-        atendimentoResult.IsSuccess.Should().BeTrue();
-        processo.DefinirAtendimentoEspecializado(atendimentoResult.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
-            await repository.AdicionarAsync(processo, CancellationToken.None);
-            await writeContext.SaveChangesAsync(CancellationToken.None);
-        }
-
-        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
-        ProcessoSeletivo? recarregado = await readContext.ProcessosSeletivos
-            .Include(p => p.Etapas)
-            .Include(p => p.AtendimentoEspecializado!).ThenInclude(o => o.Condicoes)
-            .Include(p => p.AtendimentoEspecializado!).ThenInclude(o => o.Recursos)
-            .Include(p => p.AtendimentoEspecializado!).ThenInclude(o => o.TiposDeficiencia)
-            .FirstOrDefaultAsync(p => p.Id == processo.Id, CancellationToken.None);
-
-        recarregado.Should().NotBeNull();
-        recarregado!.Status.Should().Be(StatusProcesso.Rascunho);
-        recarregado.TipoProcesso.OrigemId.Should().Be(TiposDeProcessoDeTeste.SiSU.OrigemId);
-        recarregado.TipoProcessoOrigemId.Should().Be(TiposDeProcessoDeTeste.SiSU.OrigemId);
-        recarregado.TipoProcesso.Codigo.Should().Be("SiSU");
-        recarregado.Etapas.Should().HaveCount(2);
-        EstadoDaConfiguracao.De(recarregado).CalcularDivisorMedia().Should().Be(5m);
-        recarregado.Etapas.Single(e => e.Ordem == 1).Should().Match<EtapaProcesso>(
-            e => e.NotaMaxima == 10m && e.PassoDoLancamento == 0.25m
-                && e.FormaDeAvaliacao == FormaDeAvaliacao.Humana
-                && e.RegraConsolidacao!.Codigo == RegraConsolidacaoCodigo.AvaliacaoUnica);
-        recarregado.Etapas.Single(e => e.Ordem == 2).Should().Match<EtapaProcesso>(
-            e => e.NotaMaxima == null && e.PassoDoLancamento == null
-                && e.FormaDeAvaliacao == null && e.RegraConsolidacao == null);
-
-        recarregado.AtendimentoEspecializado.Should().NotBeNull();
-        recarregado.AtendimentoEspecializado!.Condicoes.Single().CondicaoOrigemId.Should().Be(condicaoOrigemId);
-        recarregado.AtendimentoEspecializado.Recursos.Single().RecursoOrigemId.Should().Be(recursoOrigemId);
-        recarregado.AtendimentoEspecializado.Recursos.Single().RecursoCodigo.Should().Be("LEDOR");
-        recarregado.AtendimentoEspecializado.TiposDeficiencia.Single().TipoDeficienciaOrigemId.Should().Be(tipoDeficienciaOrigemId);
+        ConferirOProcessoEAsEtapasDaFundacao(recarregado);
+        ConferirOAtendimentoDaFundacao(recarregado, condicaoOrigemId, recursoOrigemId, tipoDeficienciaOrigemId);
     }
 
     [Fact(DisplayName = "Persiste dois processos do mesmo tipo no mesmo DbContext sem compartilhar o owned snapshot")]
@@ -104,10 +64,10 @@ public sealed partial class ProcessoSeletivoPersistenciaTests : IClassFixture<Pr
     {
         ProcessoSeletivo processoA = ProcessoSeletivo.Criar(
             "PS snapshot A", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         ProcessoSeletivo processoB = ProcessoSeletivo.Criar(
             "PS snapshot B", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -134,19 +94,8 @@ public sealed partial class ProcessoSeletivoPersistenciaTests : IClassFixture<Pr
     public async Task PersisteERecarrega_UnidadeAdministradora()
     {
         Guid unidadeId = Guid.NewGuid();
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, unidadeId,
-            UnidadeAdministradoraSnapshot.Criar(
-                "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA",
-                cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA").Value!,
-            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-
-        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
-            await repository.AdicionarAsync(processo, CancellationToken.None);
-            await writeContext.SaveChangesAsync(CancellationToken.None);
-        }
+        ProcessoSeletivo processo = NovoProcesso("PS 2026 — SiSU", unidadeOrigemId: unidadeId, unidade: UnidadeDoCeps(new CidadeCopiadaDaUnidade("1504208", "Marabá", "PA")));
+        await _apoio.GravarAsync(processo);
 
         await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         ProcessoSeletivo? recarregado = await readContext.ProcessosSeletivos
@@ -154,31 +103,14 @@ public sealed partial class ProcessoSeletivoPersistenciaTests : IClassFixture<Pr
 
         recarregado.Should().NotBeNull();
         recarregado!.UnidadeAdministradoraOrigemId.Should().Be(unidadeId);
-        recarregado.UnidadeAdministradora.Sigla.Should().Be("CEPS");
-        recarregado.UnidadeAdministradora.Slug.Should().Be("ceps");
-        recarregado.UnidadeAdministradora.Nome.Should().Be("Centro de Processos Seletivos");
-        recarregado.UnidadeAdministradora.Tipo.Should().Be("ADMINISTRATIVA");
-        recarregado.UnidadeAdministradora.CidadeCodigoIbge.Should().Be("1504208");
-        recarregado.UnidadeAdministradora.CidadeNome.Should().Be("Marabá");
-        recarregado.UnidadeAdministradora.CidadeUf.Should().Be("PA");
+        ConferirAUnidadeDoCepsEmMaraba(recarregado.UnidadeAdministradora);
     }
 
     [Fact(DisplayName = "CHECK ck_processos_seletivos_unidade_administradora_cidade_completa rejeita UPDATE cru com trio de cidade parcial (issue #1114)")]
     public async Task CheckCidadeCompleta_RejeitaTrioParcial()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS 2026 — Cidade Parcial", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar(
-                "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA",
-                cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA").Value!,
-            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-
-        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
-            await repository.AdicionarAsync(processo, CancellationToken.None);
-            await writeContext.SaveChangesAsync(CancellationToken.None);
-        }
+        ProcessoSeletivo processo = NovoProcesso("PS 2026 — Cidade Parcial", unidade: UnidadeDoCeps(new CidadeCopiadaDaUnidade("1504208", "Marabá", "PA")));
+        await _apoio.GravarAsync(processo);
 
         // Zera só o nome da cidade, deixando código/UF — trio parcial. O domínio trata a
         // cidade como all-or-nothing; o CHECK protege a escrita crua.
@@ -195,25 +127,11 @@ public sealed partial class ProcessoSeletivoPersistenciaTests : IClassFixture<Pr
     [InlineData(false)]
     public async Task ChecksDaEscalaDaEtapa_RejeitamValorNaoPositivo(bool notaMaxima)
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — Escala", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        processo.DefinirEtapas(
-        [
-            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1, notaMaxima: 10m, passoDoLancamento: 0.5m).Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ProcessoSeletivo processo = NovoProcesso("PS 2026 — Escala");
+        processo.DefinirEtapas([NovaEtapa("Prova Objetiva", CaraterEtapa.Classificatoria, 1, DeclaracaoComPeso(1m, notaMaxima: 10m, passo: 0.5m))]).IsSuccess.Should().BeTrue();
+        await _apoio.GravarAsync(processo);
 
-        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
-            await repository.AdicionarAsync(processo, CancellationToken.None);
-            await writeContext.SaveChangesAsync(CancellationToken.None);
-        }
-
-        await using UniPlusDbContext rawContext = _fixture.CreateDbContext();
-        Func<Task> act = async () => _ = notaMaxima
-            ? await rawContext.Database.ExecuteSqlAsync(
-                $"UPDATE selecao.etapas_processo SET nota_maxima = 0 WHERE processo_seletivo_id = {processo.Id}")
-            : await rawContext.Database.ExecuteSqlAsync(
-                $"UPDATE selecao.etapas_processo SET passo_do_lancamento = 0 WHERE processo_seletivo_id = {processo.Id}");
+        Func<Task> act = () => ZerarANotaMaximaOuOPassoAsync(notaMaxima, processo.Id);
 
         await act.Should().ThrowAsync<PostgresException>(
             "numeric(18,4) arredonda em silêncio, e o EF hidrata sem passar pelo domínio");
@@ -250,55 +168,32 @@ public sealed partial class ProcessoSeletivoPersistenciaTests : IClassFixture<Pr
             .Which.ColumnName.Should().Be("unidade_administradora_sigla");
     }
 
+    /// <summary>
+    /// Reproduz o fluxo criar→configurar real (que o caminho AdicionarAsync não cobria): carrega o
+    /// agregado JÁ tracked via ObterComConfiguracaoAsync, substitui a coleção de etapas por filhos com
+    /// Guid v7 já preenchido e salva. Sem a correção, DbSet.Update marcaria os filhos novos como Modified
+    /// e o SaveChanges emitiria UPDATE de linhas nunca inseridas.
+    /// </summary>
     [Fact(DisplayName = "Reconfigurar etapas sobre o agregado carregado (tracked) insere os filhos novos, não falha em UPDATE")]
     public async Task ReconfigurarEtapasSobreAgregadoTracked_InsereFilhos()
     {
-        // Reproduz o fluxo criar→configurar real (que o caminho AdicionarAsync não
-        // cobria): carrega o agregado JÁ tracked via ObterComConfiguracaoAsync,
-        // substitui a coleção de etapas por filhos com Guid v7 já preenchido e
-        // salva. Sem a correção, DbSet.Update marcaria os filhos novos como
-        // Modified e o SaveChanges emitiria UPDATE de linhas nunca inseridas.
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — PSIQ", TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        processo.DefinirEtapas([EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!], PrecondicaoIfMatch.Ausente);
+        ProcessoSeletivo processo = NovoProcesso("PS 2026 — PSIQ", TiposDeProcessoDeTeste.PSIQ);
+        processo.DefinirEtapas([NovaEtapa("Prova Objetiva", CaraterEtapa.Classificatoria, 1, DeclaracaoComPeso(1m))]);
+        await _apoio.GravarAsync(processo);
 
-        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
-            await repository.AdicionarAsync(processo, CancellationToken.None);
-            await writeContext.SaveChangesAsync(CancellationToken.None);
-        }
-
-        await using (UniPlusDbContext configureContext = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(configureContext);
-            ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
-
-            Result result = carregado.DefinirEtapas(
-            [
-                EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 3m, ordem: 1).Value!,
-                EtapaProcesso.Criar("Entrevista", CaraterEtapa.Ambas, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 2m, ordem: 2).Value!,
-            ], PrecondicaoIfMatch.Ausente);
-            result.IsSuccess.Should().BeTrue();
-
-            // Persistência por change detection sobre o agregado tracked.
-            await configureContext.SaveChangesAsync(CancellationToken.None);
-        }
+        await SubstituirAsEtapasPorProvaEEntrevistaAsync(processo.Id);
 
         await using UniPlusDbContext readContext = _fixture.CreateDbContext();
-        ProcessoSeletivo? recarregado = await readContext.ProcessosSeletivos
-            .Include(p => p.Etapas)
-            .FirstOrDefaultAsync(p => p.Id == processo.Id, CancellationToken.None);
-
-        recarregado.Should().NotBeNull();
-        recarregado!.Etapas.Should().HaveCount(2);
+        ProcessoSeletivo recarregado = await readContext.ProcessosSeletivos.Include(p => p.Etapas).SingleAsync(p => p.Id == processo.Id, CancellationToken.None);
+        recarregado.Etapas.Should().HaveCount(2);
         recarregado.Etapas.Select(e => e.Nome).Should().BeEquivalentTo(["Prova Objetiva", "Entrevista"]);
-        EstadoDaConfiguracao.De(recarregado).CalcularDivisorMedia().Should().Be(5m);
+        recarregado.Declaracao().Avaliacao.CalcularDivisorMedia().Should().Be(5m);
     }
 
     [Fact(DisplayName = "Persiste e reidrata a regra de derivação nos três níveis, reconstruindo o value object do motor")]
     public async Task PersisteEReidrata_RegraDerivacao()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — Derivação", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — Derivação", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
         ConfiguracaoDerivacaoFato config = ConfiguracaoDerivacaoFato.Criar("REGIME_DE_VAGA",
         [
@@ -306,7 +201,7 @@ public sealed partial class ProcessoSeletivoPersistenciaTests : IClassFixture<Pr
             RegraDerivacaoConfigurada.Criar(1, "AC_PCD",
                 [CondicaoRegraDerivacao.Criar(1, "CONCORRER_PCD", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!]).Value!,
         ]).Value!;
-        processo.DefinirRegrasDerivacao([config], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirRegrasDerivacao([config]).IsSuccess.Should().BeTrue();
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -329,5 +224,118 @@ public sealed partial class ProcessoSeletivoPersistenciaTests : IClassFixture<Pr
         DerivacaoDoFato vo = recarregadaConfig.ParaDerivacaoDoFato(["AC", "AC_PCD"]).Value!;
         vo.Regras.Should().HaveCount(2);
         vo.DependenciasDeclaradas.Should().BeEquivalentTo(["CONCORRER_PCD"]);
+    }
+
+    private static ProcessoSeletivo NovoProcesso(
+        string nome, TipoProcessoSnapshot? tipo = null, UnidadeAdministradoraSnapshot? unidade = null, Guid? unidadeOrigemId = null) =>
+        ProcessoSeletivo.Criar(
+            nome, tipo ?? TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, unidadeOrigemId ?? Guid.NewGuid(),
+            unidade ?? UnidadeDoCeps(), LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+
+    private static UnidadeAdministradoraSnapshot UnidadeDoCeps(CidadeCopiadaDaUnidade? cidade = null) =>
+        UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA", cidade).Value!;
+
+    private static EtapaProcesso NovaEtapa(string nome, CaraterEtapa carater, int ordem, DeclaracaoDaAvaliacaoDaEtapa declaracao) =>
+        EtapaProcesso.Criar(
+            new IdentificacaoDaEtapa(
+                Nome: nome, Carater: carater, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
+                Ordem: ordem, FaseCodigo: null),
+            declaracao).Value!;
+
+    private static DeclaracaoDaAvaliacaoDaEtapa DeclaracaoComPeso(decimal peso, decimal? notaMinima = null, decimal? notaMaxima = null, decimal? passo = null) =>
+        new(Peso: peso, NotaMinima: notaMinima, NotaMaxima: notaMaxima, PassoDoLancamento: passo, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null);
+
+    private static EtapaProcesso ProvaObjetivaComEscalaCompleta() =>
+        NovaEtapa(
+            "Prova Objetiva", CaraterEtapa.Classificatoria, 1,
+            DeclaracaoComPeso(3m, notaMaxima: 10m, passo: 0.25m) with
+            {
+                FormaDeAvaliacao = FormaDeAvaliacao.Humana,
+                RegraConsolidacao = ReferenciaRegra.De(RegraConsolidacaoCodigo.AvaliacaoUnica, "v1", new string('c', 64)),
+            });
+
+    private static AtendimentoEspecializado AtendimentoDaFundacao(Guid condicaoOrigemId, Guid recursoOrigemId, Guid tipoDeficienciaOrigemId)
+    {
+        Result<AtendimentoEspecializado> atendimento = AtendimentoEspecializado.Criar(
+            condicoes: [CondicaoOfertada.Criar(condicaoOrigemId, "PCD", "Pessoa com deficiência")],
+            recursos: [RecursoOfertado.Criar(recursoOrigemId, "LEDOR", "Ledor")],
+            tiposDeficiencia: [DeficienciaAtendida.Criar(tipoDeficienciaOrigemId, "DEFICIENCIA_VISUAL", "Deficiência visual")]);
+        atendimento.IsSuccess.Should().BeTrue();
+
+        return atendimento.Value!;
+    }
+
+    private async Task<ProcessoSeletivo> RecarregarComEtapasEAtendimentoAsync(Guid processoId)
+    {
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
+        ProcessoSeletivo? recarregado = await readContext.ProcessosSeletivos
+            .Include(p => p.Etapas)
+            .Include(p => p.AtendimentoEspecializado!).ThenInclude(o => o.Condicoes)
+            .Include(p => p.AtendimentoEspecializado!).ThenInclude(o => o.Recursos)
+            .Include(p => p.AtendimentoEspecializado!).ThenInclude(o => o.TiposDeficiencia)
+            .FirstOrDefaultAsync(p => p.Id == processoId, CancellationToken.None);
+
+        recarregado.Should().NotBeNull();
+        return recarregado!;
+    }
+
+    private static void ConferirOProcessoEAsEtapasDaFundacao(ProcessoSeletivo recarregado)
+    {
+        recarregado.Status.Should().Be(StatusProcesso.Rascunho);
+        recarregado.TipoProcesso.OrigemId.Should().Be(TiposDeProcessoDeTeste.SiSU.OrigemId);
+        recarregado.TipoProcessoOrigemId.Should().Be(TiposDeProcessoDeTeste.SiSU.OrigemId);
+        recarregado.TipoProcesso.Codigo.Should().Be("SiSU");
+        recarregado.Etapas.Should().HaveCount(2);
+        recarregado.Declaracao().Avaliacao.CalcularDivisorMedia().Should().Be(5m);
+        recarregado.Etapas.Single(e => e.Ordem == 1).Should().Match<EtapaProcesso>(
+            e => e.NotaMaxima == 10m && e.PassoDoLancamento == 0.25m
+                && e.FormaDeAvaliacao == FormaDeAvaliacao.Humana
+                && e.RegraConsolidacao!.Codigo == RegraConsolidacaoCodigo.AvaliacaoUnica);
+        recarregado.Etapas.Single(e => e.Ordem == 2).Should().Match<EtapaProcesso>(
+            e => e.NotaMaxima == null && e.PassoDoLancamento == null
+                && e.FormaDeAvaliacao == null && e.RegraConsolidacao == null);
+    }
+
+    private static void ConferirOAtendimentoDaFundacao(ProcessoSeletivo recarregado, Guid condicaoOrigemId, Guid recursoOrigemId, Guid tipoDeficienciaOrigemId)
+    {
+        recarregado.AtendimentoEspecializado.Should().NotBeNull();
+        recarregado.AtendimentoEspecializado!.Condicoes.Single().CondicaoOrigemId.Should().Be(condicaoOrigemId);
+        recarregado.AtendimentoEspecializado.Recursos.Single().RecursoOrigemId.Should().Be(recursoOrigemId);
+        recarregado.AtendimentoEspecializado.Recursos.Single().RecursoCodigo.Should().Be("LEDOR");
+        recarregado.AtendimentoEspecializado.TiposDeficiencia.Single().TipoDeficienciaOrigemId.Should().Be(tipoDeficienciaOrigemId);
+    }
+
+    private static void ConferirAUnidadeDoCepsEmMaraba(UnidadeAdministradoraSnapshot unidade)
+    {
+        unidade.Sigla.Should().Be("CEPS");
+        unidade.Slug.Should().Be("ceps");
+        unidade.Nome.Should().Be("Centro de Processos Seletivos");
+        unidade.Tipo.Should().Be("ADMINISTRATIVA");
+        unidade.CidadeCodigoIbge.Should().Be("1504208");
+        unidade.CidadeNome.Should().Be("Marabá");
+        unidade.CidadeUf.Should().Be("PA");
+    }
+
+    private async Task<int> ZerarANotaMaximaOuOPassoAsync(bool notaMaxima, Guid processoId)
+    {
+        await using UniPlusDbContext rawContext = _fixture.CreateDbContext();
+        return notaMaxima
+            ? await rawContext.Database.ExecuteSqlAsync($"UPDATE selecao.etapas_processo SET nota_maxima = 0 WHERE processo_seletivo_id = {processoId}")
+            : await rawContext.Database.ExecuteSqlAsync($"UPDATE selecao.etapas_processo SET passo_do_lancamento = 0 WHERE processo_seletivo_id = {processoId}");
+    }
+
+    /// <summary>Persistência por change detection sobre o agregado tracked.</summary>
+    private async Task SubstituirAsEtapasPorProvaEEntrevistaAsync(Guid processoId)
+    {
+        await using UniPlusDbContext configureContext = _fixture.CreateDbContext();
+        ProcessoSeletivo carregado = (await ProcessoSeletivoRepositoryDeTeste.Criar(configureContext).ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;
+
+        carregado.DefinirEtapas(
+        [
+            NovaEtapa("Prova Objetiva", CaraterEtapa.Classificatoria, 1, DeclaracaoComPeso(3m)),
+            NovaEtapa("Entrevista", CaraterEtapa.Ambas, 2, DeclaracaoComPeso(2m)),
+        ]).IsSuccess.Should().BeTrue();
+
+        await configureContext.SaveChangesAsync(CancellationToken.None);
     }
 }

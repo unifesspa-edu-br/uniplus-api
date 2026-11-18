@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Registro de codecs do envelope, por versão (ADR-0110 D1) — e o <b>gate forense</b>
+/// Registro de codecs do envelope, por versão — e a <b>conferência forense</b>
 /// da reidratação.
 /// </summary>
 /// <remarks>
@@ -82,7 +82,7 @@ public sealed class RegistroCodecsEnvelope : IRegistroCodecsEnvelope
         {
             throw new ArgumentException(
                 $"A versão de emissão corrente '{schemaVersionDeEmissaoCorrente}' precisa de codec completo: sem decoder, o " +
-                "descarte de tudo o que ela congelar seria irreversível; sem encoder, seria irreverificável.",
+                "tudo o que ela congelar seria ilegível; sem encoder, seria irreverificável.",
                 nameof(schemaVersionDeEmissaoCorrente));
         }
 

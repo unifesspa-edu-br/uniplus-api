@@ -1,0 +1,125 @@
+namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
+
+using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+
+/// <summary>
+/// A ordem em que cada lista da configuração aparece no documento canônico: o serializador do envelope escreve as listas nela e a
+/// declaração da configuração (<see cref="ConfiguracaoDeclarada"/>) as entrega nela, de modo que a posição de um item na
+/// declaração é a posição dele no documento, e o ponteiro de uma causa (<see cref="ProcessosSeletivos.FasesEEtapas.PonteiroNoDocumento"/>)
+/// aponta o mesmo lugar para quem lê o documento. A regra mora aqui, e cada função é a chave da ordem de uma lista: o desempate
+/// pelo conteúdo escrito, que só o serializador conhece, continua nele.
+/// </summary>
+public static class OrdemCanonicaDaConfiguracao
+{
+    /// <summary>As fases do cronograma, pela ordem declarada e, no empate, pela identidade.</summary>
+    public static IOrderedEnumerable<FaseCronograma> Fases(IEnumerable<FaseCronograma> fases)
+    {
+        ArgumentNullException.ThrowIfNull(fases);
+
+        return fases.OrderBy(static fase => fase.Ordem).ThenBy(static fase => fase.Id);
+    }
+
+    /// <summary>A posição da etapa no documento: a ordem declarada, e a etapa sem ordem vem depois de todas.</summary>
+    public static int ChaveDaEtapa(EtapaProcesso etapa)
+    {
+        ArgumentNullException.ThrowIfNull(etapa);
+
+        return etapa.Ordem ?? int.MaxValue;
+    }
+
+    /// <summary>As etapas pela chave da ordem e, no empate, pelo nome e pela identidade.</summary>
+    public static IOrderedEnumerable<EtapaProcesso> Etapas(IEnumerable<EtapaProcesso> etapas)
+    {
+        ArgumentNullException.ThrowIfNull(etapas);
+
+        return etapas.OrderBy(ChaveDaEtapa)
+            .ThenBy(static etapa => HashCanonicalComputer.NormalizeNfc(etapa.Nome), StringComparer.Ordinal)
+            .ThenBy(static etapa => etapa.Id);
+    }
+
+    /// <summary>Os atos que a fase publica, pelo código do ato e pelo papel.</summary>
+    public static IOrderedEnumerable<ProdutoDaFase> ProdutosDaFase(IEnumerable<ProdutoDaFase> produtos)
+    {
+        ArgumentNullException.ThrowIfNull(produtos);
+
+        return produtos.OrderBy(static produto => ChaveDoAto(produto.AtoCodigo), StringComparer.Ordinal)
+            .ThenBy(static produto => ChaveDoPapel(produto.Papel), StringComparer.Ordinal);
+    }
+
+    /// <summary>Os atos que a etapa publica, pelo código do ato e pelo papel.</summary>
+    public static IOrderedEnumerable<ProdutoDaEtapa> ProdutosDaEtapa(IEnumerable<ProdutoDaEtapa> produtos)
+    {
+        ArgumentNullException.ThrowIfNull(produtos);
+
+        return produtos.OrderBy(static produto => ChaveDoAto(produto.AtoCodigo), StringComparer.Ordinal)
+            .ThenBy(static produto => ChaveDoPapel(produto.Papel), StringComparer.Ordinal);
+    }
+
+    /// <summary>As bancas que a fase requer, pelo tipo e pelo código; <paramref name="banca"/> acha a banca em cada item.</summary>
+    public static IOrderedEnumerable<T> BancasDaFase<T>(IEnumerable<T> itens, Func<T, BancaRequerida> banca)
+    {
+        ArgumentNullException.ThrowIfNull(itens);
+        ArgumentNullException.ThrowIfNull(banca);
+
+        return itens.OrderBy(item => banca(item).TipoBancaOrigemId).ThenBy(item => banca(item).Codigo, StringComparer.Ordinal);
+    }
+
+    /// <summary>As bancas que a fase requer, pelo tipo e pelo código.</summary>
+    public static IOrderedEnumerable<BancaRequerida> BancasDaFase(IEnumerable<BancaRequerida> bancas) =>
+        BancasDaFase(bancas, static banca => banca);
+
+    /// <summary>As bancas da etapa, pelo código.</summary>
+    public static IOrderedEnumerable<BancaDaEtapa> BancasDaEtapa(IEnumerable<BancaDaEtapa> bancas)
+    {
+        ArgumentNullException.ThrowIfNull(bancas);
+
+        return bancas.OrderBy(static banca => HashCanonicalComputer.NormalizeNfc(banca.Codigo), StringComparer.Ordinal);
+    }
+
+    /// <summary>As categorias que a banca julga, pelo código.</summary>
+    public static IOrderedEnumerable<CategoriaJulgada> RecorteDeCompetencia(IEnumerable<CategoriaJulgada> categorias)
+    {
+        ArgumentNullException.ThrowIfNull(categorias);
+
+        return categorias.OrderBy(static categoria => categoria.Codigo, StringComparer.Ordinal);
+    }
+
+    /// <summary>As finalidades que têm formulário no documento, cada uma uma vez, na ordem da finalidade.</summary>
+    public static IEnumerable<FinalidadeFormulario> Finalidades(IEnumerable<FinalidadeFormulario> finalidades)
+    {
+        ArgumentNullException.ThrowIfNull(finalidades);
+
+        return finalidades.Distinct().Order();
+    }
+
+    /// <summary>Os formulários do processo, pela finalidade.</summary>
+    public static IOrderedEnumerable<FormularioProcesso> Formularios(IEnumerable<FormularioProcesso> formularios)
+    {
+        ArgumentNullException.ThrowIfNull(formularios);
+
+        return formularios.OrderBy(static formulario => formulario.Finalidade);
+    }
+
+    /// <summary>Os campos coletados, pela finalidade e pela ordem dentro dela.</summary>
+    public static IOrderedEnumerable<FatoColetado> Campos(IEnumerable<FatoColetado> campos)
+    {
+        ArgumentNullException.ThrowIfNull(campos);
+
+        return campos.OrderBy(static campo => campo.Finalidade).ThenBy(static campo => campo.Ordem);
+    }
+
+    /// <summary>Os grupos repetíveis, pela finalidade e pela ordem dentro dela.</summary>
+    public static IOrderedEnumerable<GrupoColetado> Grupos(IEnumerable<GrupoColetado> grupos)
+    {
+        ArgumentNullException.ThrowIfNull(grupos);
+
+        return grupos.OrderBy(static grupo => grupo.Finalidade).ThenBy(static grupo => grupo.Ordem);
+    }
+
+    private static string ChaveDoAto(string atoCodigo) => HashCanonicalComputer.NormalizeNfc(atoCodigo);
+
+    private static string ChaveDoPapel(PapelProdutoFase? papel) => papel?.ToString() ?? string.Empty;
+}

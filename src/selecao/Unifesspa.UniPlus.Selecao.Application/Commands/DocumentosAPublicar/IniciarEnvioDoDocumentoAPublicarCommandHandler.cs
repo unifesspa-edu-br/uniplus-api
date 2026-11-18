@@ -14,15 +14,16 @@ using Services;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 /// <summary>
-/// Handler de <see cref="IniciarEnvioDoDocumentoAPublicarCommand"/>: confere que o processo existe,
+/// Handler de <see cref="IniciarEnvioDoDocumentoAPublicarCommand"/>: confere que há dono — o rascunho ou o processo —,
 /// cria o registro pendente e devolve a URL pré-assinada de PUT, de validade curta
-/// (<see cref="PrazosDoArquivoEnviado.Envio"/>).
+/// (<see cref="PrazosDoArquivoEnviado.Envio"/>). Não bloqueia o dono: o pendente criado em corrida com a exclusão do
+/// rascunho fica sem dono e sai quando vence, pela rotina dos pendentes vencidos.
 /// </summary>
 public static class IniciarEnvioDoDocumentoAPublicarCommandHandler
 {
     public static async Task<Result<IniciarEnvioDoDocumentoAPublicarDto>> Handle(
         IniciarEnvioDoDocumentoAPublicarCommand command,
-        IProcessoSeletivoRepository processoSeletivoRepository,
+        IUnidadeDonaDoProcesso donos,
         IDocumentoAPublicarRepository documentoAPublicarRepository,
         IArquivoArmazenadoStorage storage,
         IUnitOfWork unitOfWork,
@@ -30,27 +31,40 @@ public static class IniciarEnvioDoDocumentoAPublicarCommandHandler
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
-        ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
+        ArgumentNullException.ThrowIfNull(donos);
         ArgumentNullException.ThrowIfNull(documentoAPublicarRepository);
         ArgumentNullException.ThrowIfNull(storage);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(clock);
 
-        if (!await processoSeletivoRepository.ExisteAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false))
-        {
-            return Result<IniciarEnvioDoDocumentoAPublicarDto>.Failure(new DomainError(
-                "ProcessoSeletivo.NaoEncontrado", "Processo Seletivo não encontrado."));
-        }
+        return await donos.DoProcessoAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false) is null
+            ? Result<IniciarEnvioDoDocumentoAPublicarDto>.Failure(AcessoAoProcesso.NaoEncontrado(command.ProcessoSeletivoId))
+            : await IniciarAsync(command, documentoAPublicarRepository, storage, unitOfWork, clock, cancellationToken).ConfigureAwait(false);
+    }
 
+    private static async Task<Result<IniciarEnvioDoDocumentoAPublicarDto>> IniciarAsync(
+        IniciarEnvioDoDocumentoAPublicarCommand command,
+        IDocumentoAPublicarRepository documentoAPublicarRepository,
+        IArquivoArmazenadoStorage storage,
+        IUnitOfWork unitOfWork,
+        TimeProvider clock,
+        CancellationToken cancellationToken)
+    {
         Result<DocumentoAPublicar> pendente = DocumentoAPublicar.IniciarPendente(
             command.ProcessoSeletivoId, command.Finalidade, command.NomeArquivo, command.TipoDeMidia, clock, PrazosDoArquivoEnviado.Envio);
-        if (pendente.IsFailure)
-        {
-            return Result<IniciarEnvioDoDocumentoAPublicarDto>.ValidationFailure(pendente.Errors);
-        }
 
-        DocumentoAPublicar documento = pendente.Value!;
+        return pendente.IsFailure
+            ? Result<IniciarEnvioDoDocumentoAPublicarDto>.ValidationFailure(pendente.Errors)
+            : await GravarPendenteAsync(pendente.Value!, documentoAPublicarRepository, storage, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
 
+    private static async Task<Result<IniciarEnvioDoDocumentoAPublicarDto>> GravarPendenteAsync(
+        DocumentoAPublicar documento,
+        IDocumentoAPublicarRepository documentoAPublicarRepository,
+        IArquivoArmazenadoStorage storage,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
         // A URL sai antes de persistir: se o armazenamento falhar, nada é gravado, e o retry com a
         // mesma Idempotency-Key não deixa um pendente órfão nem cria outro.
         string urlUpload = await storage

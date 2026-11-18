@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/restricao-de-valor.schema.json",
+  "title": "Restrição de valor",
+  "description": "Limite que o formulário impõe à resposta de um campo. O tipo escolhe quais outras propriedades valem; a coerência com o tipo de renderização do fato é regra do domínio, não do esquema.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tipo"
+  ],
+  "properties": {
+    "tipo": {
+      "title": "Tipo da restrição",
+      "description": "Faixa numérica, tamanho do texto, opções permitidas, opções formadas pelas respostas, municípios da UF respondida ou faixa de data.",
+      "enum": [
+        "FAIXA_NUMERICA",
+        "TAMANHO_TEXTO",
+        "OPCOES_PERMITIDAS",
+        "OPCOES_DAS_RESPOSTAS",
+        "MUNICIPIOS_DA_UF",
+        "FAIXA_DE_DATA"
+      ]
+    },
+    "minimo": {
+      "title": "Mínimo",
+      "description": "Limite inferior da faixa numérica (até quatro casas decimais) ou do tamanho do texto (inteiro). Usado nos tipos FAIXA_NUMERICA e TAMANHO_TEXTO.",
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "maximo": {
+      "title": "Máximo",
+      "description": "Limite superior da faixa numérica (até quatro casas decimais) ou do tamanho do texto (inteiro). Usado nos tipos FAIXA_NUMERICA e TAMANHO_TEXTO.",
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "entradas": {
+      "title": "Entradas de opções permitidas",
+      "description": "Conjuntos de valores permitidos, cada um com a condição em que vale. Usado no tipo OPCOES_PERMITIDAS.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "valores"
+        ],
+        "properties": {
+          "quando": {
+            "title": "Quando vale",
+            "description": "Condição em que o conjunto vale. Ausente ou nula: vale sempre.",
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "predicado.schema.json#/$defs/predicado"
+              }
+            ]
+          },
+          "valores": {
+            "title": "Valores permitidos",
+            "description": "Códigos dos valores permitidos.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            }
+          }
+        }
+      }
+    },
+    "fatos": {
+      "title": "Fatos de origem",
+      "description": "Códigos dos fatos cujas respostas formam as opções (OPCOES_DAS_RESPOSTAS) ou fato com a UF respondida (MUNICIPIOS_DA_UF).",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 60,
+        "pattern": "\\S"
+      }
+    },
+    "dataMinima": {
+      "title": "Data mínima",
+      "description": "Limite inferior da faixa de data. Usado no tipo FAIXA_DE_DATA.",
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/limiteDeData"
+        }
+      ]
+    },
+    "dataMaxima": {
+      "title": "Data máxima",
+      "description": "Limite superior da faixa de data. Usado no tipo FAIXA_DE_DATA.",
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/limiteDeData"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "limiteDeData": {
+      "title": "Limite de data",
+      "description": "Data fixa, ou deslocamento em anos e dias a partir do envio da resposta.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ancora"
+      ],
+      "properties": {
+        "ancora": {
+          "title": "Âncora",
+          "description": "DATA_FIXA usa a data; ENVIO usa o deslocamento em anos e dias.",
+          "enum": [
+            "DATA_FIXA",
+            "ENVIO"
+          ]
+        },
+        "data": {
+          "title": "Data",
+          "description": "Data do limite, no formato AAAA-MM-DD. Usada na âncora DATA_FIXA.",
+          "type": "string",
+          "format": "date"
+        },
+        "anos": {
+          "title": "Anos",
+          "description": "Deslocamento em anos a partir do envio, de 0 a 150. Usado na âncora ENVIO.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 150
+        },
+        "dias": {
+          "title": "Dias",
+          "description": "Deslocamento em dias a partir do envio, de 0 a 54900. Usado na âncora ENVIO.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 54900
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,281 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/comuns.schema.json",
+  "title": "Definições comuns da configuração do processo seletivo",
+  "description": "Definições compartilhadas pelas partes do documento de configuração: chave local, código de catálogo, identificador de conta, instante, produto, tipo de decisão, as propriedades do recurso, a referência a regra e a regra sem parâmetros.",
+  "$defs": {
+    "chave": {
+      "title": "Chave local",
+      "description": "Identificador local de uma parte do documento, que as outras partes usam para se referir a ela; as referências a uma parte (por exemplo a chave da fase ou da etapa) têm este mesmo formato. É único entre as partes do mesmo tipo no documento ou, quando a parte pertence a outra (os itens de uma etapa), dentro da parte que a contém. Letras minúsculas, números e hífens, começando por letra.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "codigoDeCatalogo": {
+      "title": "Código estável de catálogo",
+      "description": "Código estável e legível de um item de catálogo ou de uma unidade. Nunca o identificador interno do banco: um valor com a forma de identificador único (UUID) é recusado.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+      "minLength": 1,
+      "maxLength": 128,
+      "not": {
+        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+      }
+    },
+    "identificadorDaConta": {
+      "title": "Identificador da conta",
+      "description": "Identificador da conta da pessoa no Uni+, texto opaco e estável que o provedor de identidade atribui (o sub do token). Nunca é CPF, e-mail, telefone nem nome, e quem o escreve não o monta a partir deles. O esquema só descreve a forma: não exige nem proíbe a forma de UUID e recusa o texto vazio, o que tem espaço nas pontas e o que passa de 255 caracteres. Que o valor é uma conta existente é conferência do domínio contra o cadastro de assinantes, que recusa o código desconhecido pela posição.",
+      "type": "string",
+      "pattern": "^\\S(?:.*\\S)?$",
+      "minLength": 1,
+      "maxLength": 255
+    },
+    "instante": {
+      "title": "Instante",
+      "description": "Instante em UTC, no formato RFC 3339 com o sufixo Z e, se necessário, até seis casas de fração de segundo. Exemplo: 2027-01-10T03:00:00Z.",
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,6})?Z$"
+    },
+    "produto": {
+      "title": "Ato publicado pela fase",
+      "description": "Um tipo de ato que a fase publica, com o papel dele no ciclo de recurso.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "atoCodigo": {
+          "title": "Tipo de ato",
+          "description": "Código do tipo de ato no catálogo de publicações.",
+          "type": "string",
+          "pattern": "^[A-Z]+(_[A-Z]+)*$",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "papel": {
+          "title": "Papel do ato",
+          "description": "PRELIMINAR para o resultado que admite recurso, DEFINITIVO para o resultado final. Ausente quando o ato não é um resultado.",
+          "enum": [
+            "PRELIMINAR",
+            "DEFINITIVO"
+          ]
+        }
+      },
+      "required": [
+        "atoCodigo"
+      ]
+    },
+    "propriedadesDoRecurso": {
+      "title": "Propriedades do recurso",
+      "description": "Prazo de interposição, âncora e efeito suspensivo do recurso, comuns à fase e à etapa.",
+      "type": "object",
+      "properties": {
+        "regraCodigo": {
+          "title": "Código da regra",
+          "description": "Código da regra de prazo de recurso no catálogo de regras.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "regraVersao": {
+          "title": "Versão da regra",
+          "description": "Versão da regra de prazo de recurso, na forma v1, v2, v3.",
+          "type": "string",
+          "pattern": "^v[0-9]+$",
+          "maxLength": 16
+        },
+        "prazoValor": {
+          "title": "Prazo de interposição",
+          "description": "Quantidade de unidades do prazo para recorrer, com até quatro casas decimais.",
+          "type": "number",
+          "multipleOf": 0.0001
+        },
+        "prazoUnidade": {
+          "title": "Unidade do prazo",
+          "description": "Unidade do prazo de interposição: horas ou dias úteis (diasUteis).",
+          "enum": [
+            "horas",
+            "diasUteis"
+          ]
+        },
+        "atoAncoraCodigo": {
+          "title": "Ato âncora do prazo",
+          "description": "Código do tipo de ato, entre os atos preliminares da própria fase, a partir de cujo instante o prazo corre.",
+          "type": "string",
+          "pattern": "^[A-Z]+(_[A-Z]+)*$",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "suspensividadePrimeiraInstanciaValor": {
+          "title": "Efeito suspensivo na primeira instância, quantidade",
+          "description": "Quantidade de unidades do efeito suspensivo na primeira instância, com até quatro casas decimais. Nulo, junto à unidade, desativa o bloqueio nesta instância.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "multipleOf": 0.0001
+        },
+        "suspensividadePrimeiraInstanciaUnidade": {
+          "title": "Efeito suspensivo na primeira instância, unidade",
+          "description": "Unidade do efeito suspensivo na primeira instância: horas, dias ou dias úteis (diasUteis). Nula, junto ao valor, desativa o bloqueio nesta instância.",
+          "enum": [
+            "horas",
+            "dias",
+            "diasUteis",
+            null
+          ]
+        },
+        "admiteInstanciaSuperior": {
+          "title": "Admite instância superior",
+          "description": "Se cabe recurso à instância superior.",
+          "type": "boolean"
+        },
+        "suspensividadeSegundaInstanciaValor": {
+          "title": "Efeito suspensivo na instância superior, quantidade",
+          "description": "Quantidade de unidades do efeito suspensivo na instância superior, com até quatro casas decimais. Nulo, junto à unidade, desativa o bloqueio nesta instância.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "multipleOf": 0.0001
+        },
+        "suspensividadeSegundaInstanciaUnidade": {
+          "title": "Efeito suspensivo na instância superior, unidade",
+          "description": "Unidade do efeito suspensivo na instância superior: horas, dias ou dias úteis (diasUteis). Nula, junto ao valor, desativa o bloqueio nesta instância.",
+          "enum": [
+            "horas",
+            "dias",
+            "diasUteis",
+            null
+          ]
+        },
+        "procedimentosDeRecurso": {
+          "title": "Procedimentos de recurso",
+          "description": "O procedimento que revisa o recurso de cada matéria que a fase ou a etapa decide. Cada matéria tem um único procedimento, e um tipo de decisão não mistura procedimento para o tipo inteiro com procedimento por alvo.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/procedimentoDeRecurso"
+          }
+        }
+      }
+    },
+    "procedimentoDeRecurso": {
+      "title": "Procedimento de recurso",
+      "description": "Como se revisa o recurso de uma matéria: o tipo de decisão recorrida, o alvo opcional dentro dela e a regra do catálogo que diz como revisar. Sem alvo, o procedimento cobre o tipo de decisão inteiro. O tipo de decisão precisa estar entre os que a fase ou a etapa declara.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tipoDeDecisao": {
+          "title": "Tipo de decisão",
+          "description": "Tipo da decisão recorrida, entre os que a fase ou a etapa declara.",
+          "$ref": "#/$defs/tipoDeDecisao"
+        },
+        "alvo": {
+          "title": "Alvo",
+          "description": "A parte da matéria que o procedimento cobre: um item de avaliação da etapa, pela chave, ou uma área do ENEM, pelo código. Ausente, o procedimento cobre o tipo de decisão inteiro.",
+          "$ref": "#/$defs/alvoDoProcedimentoDeRecurso"
+        },
+        "regra": {
+          "title": "Regra do procedimento",
+          "description": "Regra do catálogo que diz como o recurso é revisado: nova correção, conferência, correção de erro de registro ou recálculo.",
+          "$ref": "#/$defs/referenciaDeRegra",
+          "properties": {
+            "codigo": {
+              "title": "Código da regra do procedimento",
+              "description": "Código de um procedimento de recurso do catálogo: nova correção, conferência, correção de erro de registro ou recálculo.",
+              "enum": [
+                "PROCEDIMENTO-RECURSO-RECORRECAO",
+                "PROCEDIMENTO-RECURSO-CONFERENCIA",
+                "PROCEDIMENTO-RECURSO-CORRECAO-MATERIAL",
+                "PROCEDIMENTO-RECURSO-RECALCULO"
+              ]
+            }
+          }
+        }
+      },
+      "required": [
+        "tipoDeDecisao",
+        "regra"
+      ]
+    },
+    "alvoDoProcedimentoDeRecurso": {
+      "title": "Alvo do procedimento de recurso",
+      "description": "Um item de avaliação da etapa que produz a decisão, pela chave, ou uma área do ENEM, pelo código; um só dos dois. A área exige que o processo importe a nota do ENEM.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "itemDeAvaliacaoChave": {
+          "title": "Item de avaliação",
+          "description": "Chave do item de avaliação da etapa.",
+          "$ref": "#/$defs/chave"
+        },
+        "areaDoEnem": {
+          "title": "Área do ENEM",
+          "description": "Código da área do ENEM.",
+          "enum": [
+            "REDACAO",
+            "CIENCIAS_DA_NATUREZA",
+            "CIENCIAS_HUMANAS",
+            "LINGUAGENS",
+            "MATEMATICA"
+          ]
+        }
+      },
+      "minProperties": 1,
+      "maxProperties": 1
+    },
+    "referenciaDeRegra": {
+      "title": "Referência a uma regra do catálogo",
+      "description": "Cita uma regra do catálogo de regras pelo código e pela versão. O catálogo é só de acréscimo: a versão citada nunca muda de conteúdo.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "codigo": {
+          "title": "Código da regra",
+          "description": "Código da regra no catálogo de regras.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "versao": {
+          "title": "Versão da regra",
+          "description": "Versão da regra no catálogo de regras, na forma v1, v2, v3.",
+          "type": "string",
+          "pattern": "^v[0-9]+$",
+          "maxLength": 16
+        }
+      }
+    },
+    "semParametros": {
+      "title": "Regra sem parâmetros",
+      "description": "A regra não tem parâmetros.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {}
+    },
+    "tipoDeDecisao": {
+      "title": "Tipo de decisão",
+      "description": "Tipo de decisão que a fase ou a etapa toma e para a qual escolhe motivos.",
+      "enum": [
+        "ISENCAO_DA_TAXA",
+        "HOMOLOGACAO_DAS_INSCRICOES",
+        "ANALISE_DOCUMENTAL",
+        "HETEROIDENTIFICACAO",
+        "AVALIACAO_BIOPSICOSSOCIAL",
+        "CLASSIFICACAO",
+        "GABARITO_DA_PROVA",
+        "NOTA_DA_ETAPA"
+      ]
+    },
+    "tiposDeDecisao": {
+      "title": "Tipos de decisão",
+      "description": "Tipos de decisão declarados, cada um uma única vez.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/tipoDeDecisao"
+      }
+    }
+  }
+}

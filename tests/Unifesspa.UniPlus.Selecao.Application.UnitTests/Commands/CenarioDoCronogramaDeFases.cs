@@ -29,6 +29,7 @@ internal sealed class CenarioDoCronogramaDeFases
         Processo = processo;
         Repository = RepositorioQueDevolve(processo);
         PrecedenciaFaseReader = PrecedenciasSemArestas();
+        FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns((IReadOnlyList<FatoCandidatoView>)[]);
     }
 
     public ProcessoSeletivo Processo { get; }
@@ -47,20 +48,22 @@ internal sealed class CenarioDoCronogramaDeFases
 
     public IRegraCatalogoReader RegraCatalogoReader { get; } = Substitute.For<IRegraCatalogoReader>();
 
+    public IFatoCandidatoReader FatoCandidatoReader { get; } = Substitute.For<IFatoCandidatoReader>();
+
     public ITipoAtoPublicadoReader TipoAtoPublicadoReader { get; } = Substitute.For<ITipoAtoPublicadoReader>();
 
     public IRegistroCodecsEnvelope Codecs { get; } = Substitute.For<IRegistroCodecsEnvelope>();
 
-    public IFasesIniciadasDoProcesso FasesIniciadas { get; } = Substitute.For<IFasesIniciadasDoProcesso>();
-
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
+
+    public IMotivoDoProcessoRepository MotivosEscolhidos { get; } = MotivoDeTeste.SemEscolha();
 
     public static CenarioDoCronogramaDeFases EmRascunho() => Para(NovoProcessoEmRascunho());
 
     public static ProcessoSeletivo NovoProcessoEmRascunho() =>
         ProcessoSeletivo.Criar(
             "PS", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!,
             IdentificadoresDeTeste.Novo());
 
@@ -96,20 +99,20 @@ internal sealed class CenarioDoCronogramaDeFases
         return this;
     }
 
+    /// <summary>O catálogo de fatos do candidato passa a ser o dado.</summary>
+    public CenarioDoCronogramaDeFases ComFatosNoCatalogo(params FatoCandidatoView[] fatos)
+    {
+        FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns((IReadOnlyList<FatoCandidatoView>)fatos);
+        return this;
+    }
+
     public CenarioDoCronogramaDeFases ComRegraNoCatalogo(RegraCatalogo regra)
     {
         RegraCatalogoReader.ObterAsync(regra.Codigo, regra.Versao, Arg.Any<CancellationToken>()).Returns(regra);
         return this;
     }
 
-    /// <summary>As fases da versão publicada vigente que já começaram.</summary>
     public TimeProvider Relogio { get; set; } = TimeProvider.System;
-
-    public CenarioDoCronogramaDeFases ComFasesIniciadas(FasesIniciadas iniciadas)
-    {
-        FasesIniciadas.ObterAsync(default, default, default).ReturnsForAnyArgs(iniciadas);
-        return this;
-    }
 
     public CenarioDoCronogramaDeFases ComUnidadeNoCadastro(UnidadeResponsavelSnapshot unidade)
     {
@@ -147,25 +150,25 @@ internal sealed class CenarioDoCronogramaDeFases
         return this;
     }
 
-    public Task<Result<MutacaoAceita>> DefinirFasesAsync(params FaseCronogramaInput[] fases) =>
-        DefinirAsync(new DefinirCronogramaFasesCommand(Processo.Id, fases, PrecondicaoIfMatch.Ausente));
+    public Task<Result> DefinirFasesAsync(params FaseCronogramaInput[] fases) =>
+        DefinirAsync(new DefinirCronogramaFasesCommand(Processo.Id, fases));
 
     /// <summary>Grava as fases noutro processo, consultando os mesmos cadastros.</summary>
-    public Task<Result<MutacaoAceita>> DefinirEmOutroProcessoAsync(ProcessoSeletivo outro, params FaseCronogramaInput[] fases) =>
+    public Task<Result> DefinirEmOutroProcessoAsync(ProcessoSeletivo outro, params FaseCronogramaInput[] fases) =>
         ChamarHandlerAsync(
-            new DefinirCronogramaFasesCommand(outro.Id, fases, PrecondicaoIfMatch.Ausente),
+            new DefinirCronogramaFasesCommand(outro.Id, fases),
             RepositorioQueDevolve(outro));
 
-    public Task<Result<MutacaoAceita>> DefinirAsync(DefinirCronogramaFasesCommand command) =>
+    public Task<Result> DefinirAsync(DefinirCronogramaFasesCommand command) =>
         ChamarHandlerAsync(command, Repository);
 
-    private Task<Result<MutacaoAceita>> ChamarHandlerAsync(DefinirCronogramaFasesCommand command, IProcessoSeletivoRepository repositorio) =>
+    private Task<Result> ChamarHandlerAsync(DefinirCronogramaFasesCommand command, IProcessoSeletivoRepository repositorio) =>
         DefinirCronogramaFasesCommandHandler.Handle(
             command, repositorio, DefinicaoSobre(repositorio), UnitOfWork, Relogio, CancellationToken.None);
 
     private DefinicaoDoCronogramaDeFases DefinicaoSobre(IProcessoSeletivoRepository repositorio) => new(
-        new MontagemDasFases(FaseCanonicaReader, UnidadeResponsavel, TipoBancaReader, CategoriaDocumentoReader, RegraCatalogoReader),
-        PrecedenciaFaseReader, FasesIniciadas, TipoAtoPublicadoReader, repositorio, Codecs);
+        new MontagemDasFases(FaseCanonicaReader, UnidadeResponsavel, TipoBancaReader, CategoriaDocumentoReader, RegraCatalogoReader, FatoCandidatoReader),
+        PrecedenciaFaseReader, TipoAtoPublicadoReader, repositorio, Codecs, new MotivosDosLugaresQueSaem(MotivosEscolhidos));
 
     private static IProcessoSeletivoRepository RepositorioQueDevolve(ProcessoSeletivo processo)
     {

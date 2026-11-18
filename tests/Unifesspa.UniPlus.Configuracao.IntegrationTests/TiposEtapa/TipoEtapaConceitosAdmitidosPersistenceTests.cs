@@ -139,7 +139,7 @@ public sealed class TipoEtapaConceitosAdmitidosPersistenceTests
 
     private async Task<TipoEtapa> GravarTipoAsync(params TipoConceito[] conceitos)
     {
-        TipoEtapa tipo = TipoEtapa.Criar(TiposConceitoHttpDeTeste.CodigoUnico(), "Etapa avaliada por conceito", null, true, true).Value!;
+        TipoEtapa tipo = TipoEtapa.Criar(TiposConceitoHttpDeTeste.CodigoUnico(), "Etapa avaliada por conceito", null, true, true, false).Value!;
         tipo.SubstituirConceitosAdmitidos(conceitos);
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         ctx.TiposEtapa.Add(tipo);

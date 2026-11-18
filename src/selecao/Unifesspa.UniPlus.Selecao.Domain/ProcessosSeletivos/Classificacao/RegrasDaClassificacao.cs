@@ -7,7 +7,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// As recusas de trocar a classificação que dependem de outras dimensões do processo: as etapas que
@@ -17,18 +19,18 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 /// </summary>
 internal static class RegrasDaClassificacao
 {
-    internal static Result<PlanoDaClassificacao> Planejar(EstadoDaConfiguracao estado, ConfiguracaoClassificacao classificacao)
+    internal static Result<PlanoDaClassificacao> Planejar(ConfiguracaoDeclarada configuracao, ConfiguracaoClassificacao classificacao)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
         // As recusas de campo se acumulam (todas de uma vez para quem edita); a das etapas, que nenhum
         // campo deste comando corrige, sai depois delas porque o errors[] só carrega erro de campo.
-        List<FieldError> erros = [.. EtapasDeEliminacaoRecusadas(estado, classificacao)];
-        DomainError? erroDaEtapaDoEnem = RegrasDasEtapas.ConferirEtapaDeNotaDoEnem(estado.Etapas, classificacao);
-        erros.AddRange(RecusasDoCalculoLocalEDoDesempate(estado, classificacao, erroDaEtapaDoEnem));
+        List<FieldError> erros = [.. EtapasDeEliminacaoRecusadas(configuracao, classificacao)];
+        DomainError? erroDaEtapaDoEnem = RegrasDasEtapas.ConferirEtapaDeNotaDoEnem(configuracao.Avaliacao.Etapas, classificacao);
+        erros.AddRange(RecusasDoCalculoLocalEDoDesempate(configuracao, classificacao, erroDaEtapaDoEnem));
 
-        List<OpcaoDeclaradaFato> edicoesARetirar = EdicoesDoEnemSemClassificacaoEnem(estado, classificacao);
-        erros.AddRange(RecusaDasEdicoesDoEnemCitadas(estado, edicoesARetirar));
+        List<OpcaoDeclaradaFato> edicoesARetirar = EdicoesDoEnemSemClassificacaoEnem(configuracao, classificacao);
+        erros.AddRange(RecusaDasEdicoesDoEnemCitadas(configuracao, edicoesARetirar));
 
         DomainError? erroDasEtapas = classificacao.CalculaPelosPesosPorAreaDoEnem ? erroDaEtapaDoEnem : null;
         return ResultadoDoPlano(classificacao, erros, erroDasEtapas, edicoesARetirar);
@@ -54,10 +56,10 @@ internal static class RegrasDaClassificacao
     // A etapa de nota do ENEM e o desempate sem quadro pedem a mesma correção, nos mesmos campos:
     // cada campo sai uma vez, com a primeira das duas causas.
     private static List<FieldError> RecusasDoCalculoLocalEDoDesempate(
-        EstadoDaConfiguracao estado, ConfiguracaoClassificacao classificacao, DomainError? erroDaEtapaDoEnem)
+        ConfiguracaoDeclarada configuracao, ConfiguracaoClassificacao classificacao, DomainError? erroDaEtapaDoEnem)
     {
         List<RegrasDoDesempate.ViolacaoDoDesempatePorArea> violacoes =
-            RegrasDoDesempate.ConferirDesempatePorAreaContraOQuadro(RegrasDoDesempate.EmOrdem(estado.CriteriosDesempate), classificacao);
+            RegrasDoDesempate.ConferirDesempatePorAreaContraOQuadro(RegrasDoDesempate.EmOrdem(configuracao.Avaliacao.CriteriosDesempate), classificacao);
         List<FieldError> erros = [];
         if (ErroSemCalculoLocal(classificacao, erroDaEtapaDoEnem, violacoes) is { } erroSemCalculoLocal)
         {
@@ -83,9 +85,9 @@ internal static class RegrasDaClassificacao
 
     // As edições do ENEM só existem com classificação baseada em ENEM; uma condição viva que cite
     // uma delas ficaria sem como se satisfazer.
-    private static List<FieldError> RecusaDasEdicoesDoEnemCitadas(EstadoDaConfiguracao estado, List<OpcaoDeclaradaFato> edicoesARetirar)
+    private static List<FieldError> RecusaDasEdicoesDoEnemCitadas(ConfiguracaoDeclarada configuracao, List<OpcaoDeclaradaFato> edicoesARetirar)
     {
-        if (edicoesARetirar.Count == 0 || !ReferenciasVivas.ReferenciaDinamicaSeriaInvalidada(estado, EdicaoDoEnem.Fato, []))
+        if (edicoesARetirar.Count == 0 || !ReferenciasVivas.ReferenciaDinamicaSeriaInvalidada(configuracao, EdicaoDoEnem.Fato, []))
         {
             return [];
         }
@@ -95,26 +97,20 @@ internal static class RegrasDaClassificacao
             "Uma condição viva (exigência documental, pré-condição de campo ou regra de derivação) cita uma edição do ENEM, que deixaria de existir com a classificação sem ENEM — ajuste ou remova a condição antes."))];
     }
 
-    private static List<FieldError> EtapasDeEliminacaoRecusadas(EstadoDaConfiguracao estado, ConfiguracaoClassificacao classificacao)
-    {
-        List<FieldError> erros = [];
-        foreach ((RegraEliminacao regra, int indice) in classificacao.RegrasEliminacao.Select(static (regra, indice) => (regra, indice)))
-        {
-            string campo = $"regrasEliminacao[{indice}].etapaRef";
-            if (regra.Args.EtapaReferenciada() is { } etapaRef && !estado.Etapas.Any(e => e.Id == etapaRef))
-            {
-                erros.Add(new(campo, new DomainError(
-                    "ProcessoSeletivo.EtapaRefEliminacaoInexistente",
-                    $"A regra de eliminação referencia a etapa {etapaRef}, que não existe neste processo (INV-B4).")));
-            }
-            else if (RegrasDasEtapas.AusenciaNaEtapaDoEnem(regra.Args, estado.Etapas))
-            {
-                erros.Add(new(campo, RegrasDasEtapas.AusenciaNaEtapaDoEnemRecusada()));
-            }
-        }
+    private static List<FieldError> EtapasDeEliminacaoRecusadas(ConfiguracaoDeclarada configuracao, ConfiguracaoClassificacao classificacao) =>
+    [
+        .. classificacao.RegrasEliminacao.SelectMany((regra, indice) =>
+            RecusaDaEtapaDaRegra(regra, configuracao) is { } recusa
+                ? [new FieldError($"regrasEliminacao[{indice}].etapaRef", recusa)]
+                : Array.Empty<FieldError>()),
+    ];
 
-        return erros;
-    }
+    private static DomainError? RecusaDaEtapaDaRegra(RegraEliminacao regra, ConfiguracaoDeclarada configuracao) =>
+        regra.Parametros.EtapaReferenciada() is { } etapaRef && !configuracao.Avaliacao.Etapas.Any(e => e.Id == etapaRef)
+            ? ReferenciaAEtapaInexistente.PelaEliminacao(etapaRef)
+            : RegrasDasEtapas.AusenciaNaEtapaDoEnem(regra.Parametros, configuracao.Avaliacao.Etapas)
+                ? RegrasDasEtapas.AusenciaNaEtapaDoEnemRecusada()
+                : null;
 
     // Uma recusa por critério afetado, e não por área: a classificação é a mesma para todas.
     private static IEnumerable<FieldError> DesempateForaDoQuadro(List<RegrasDoDesempate.ViolacaoDoDesempatePorArea> violacoesDeArea) =>
@@ -125,10 +121,10 @@ internal static class RegrasDaClassificacao
                 DesempatePorAreaEnemErrorCodes.ForaDoQuadro,
                 $"O critério de desempate na ordem {criterio.Key} cita área que o quadro de pesos por área desta classificação não tem em todos os grupos: {string.Join(", ", criterio.Select(static v => v.Codigo))}.")));
 
-    private static List<OpcaoDeclaradaFato> EdicoesDoEnemSemClassificacaoEnem(EstadoDaConfiguracao estado, ConfiguracaoClassificacao classificacao) =>
+    private static List<OpcaoDeclaradaFato> EdicoesDoEnemSemClassificacaoEnem(ConfiguracaoDeclarada configuracao, ConfiguracaoClassificacao classificacao) =>
         classificacao.BaseadoEmEnem
             ? []
-            : [.. estado.OpcoesDeclaradas.Where(static o => string.Equals(o.FatoCodigo, EdicaoDoEnem.Fato, StringComparison.Ordinal))];
+            : [.. configuracao.Coleta.OpcoesDeclaradas.Where(static o => string.Equals(o.FatoCodigo, EdicaoDoEnem.Fato, StringComparison.Ordinal))];
 
     /// <summary>
     /// Os campos da classificação que impedem o cálculo local do ENEM — e com ele o quadro de pesos por

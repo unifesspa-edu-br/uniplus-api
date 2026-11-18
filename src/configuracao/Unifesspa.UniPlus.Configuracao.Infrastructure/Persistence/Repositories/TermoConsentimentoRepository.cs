@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
@@ -99,6 +100,12 @@ public sealed class TermoConsentimentoRepository : ITermoConsentimentoRepository
             .Replace("\\", "\\\\", StringComparison.Ordinal)
             .Replace("%", "\\%", StringComparison.Ordinal)
             .Replace("_", "\\_", StringComparison.Ordinal);
+
+    public Task<bool> CodigoExisteAsync(CodigoTermoConsentimento codigo, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(codigo);
+        return _dbContext.TermosConsentimento.AsNoTracking().AnyAsync(t => t.Codigo == codigo, cancellationToken);
+    }
 
     public async Task AdicionarAsync(TermoConsentimento termo, CancellationToken cancellationToken)
     {

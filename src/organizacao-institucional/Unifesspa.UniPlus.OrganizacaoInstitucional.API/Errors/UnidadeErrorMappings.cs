@@ -51,6 +51,12 @@ internal static class UnidadeErrorMappings
                 "uniplus.organizacao.unidade.codigo_tamanho",
                 "Tamanho do código da unidade inválido")),
 
+        new(UnidadeErrorCodes.CodigoFormatoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.unidade.codigo_formato_invalido",
+                "Código da unidade fora do formato aceito")),
+
         new(UnidadeErrorCodes.CodigoJaExiste,
             new DomainErrorMapping(
                 StatusCodes.Status409Conflict,

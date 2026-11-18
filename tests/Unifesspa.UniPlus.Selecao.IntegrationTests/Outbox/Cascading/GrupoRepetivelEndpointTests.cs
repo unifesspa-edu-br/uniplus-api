@@ -254,7 +254,7 @@ public sealed class GrupoRepetivelEndpointTests
     {
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        return await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, $"Agregado do grupo {Guid.CreateVersion7()}");
+        return await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"Agregado do grupo {Guid.CreateVersion7()}" });
     }
 
     private static async Task<HttpResponseMessage> EnviarAsync(HttpClient client, HttpMethod metodo, string rota, object corpo, bool exigeSucesso = true)
@@ -290,7 +290,7 @@ public sealed class GrupoRepetivelEndpointTests
     {
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, $"Grupo repetível {Guid.CreateVersion7()}");
+        (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"Grupo repetível {Guid.CreateVersion7()}" });
         return processo.Id;
     }
 

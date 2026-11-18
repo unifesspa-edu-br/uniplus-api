@@ -16,15 +16,17 @@ using Microsoft.Extensions.Logging;
 /// </summary>
 /// <remarks>
 /// <para>
-/// O objeto sai antes do registro. Se a remoção do objeto falha, o registro fica e a próxima
-/// execução tenta de novo; se o registro não chega a sair depois do objeto, a próxima execução
-/// repete a remoção do objeto já ausente, que o armazenamento trata como concluída. Na ordem
-/// inversa, uma falha entre os dois passos deixaria um objeto sem registro, que nenhuma execução
-/// voltaria a encontrar.
+/// O registro e os objetos saem numa transação só: o repositório apaga o registro, segurando a linha,
+/// executa a remoção dos objetos e só então confirma. Se a remoção dos objetos falha, a transação é
+/// desfeita, o registro fica e a próxima execução tenta de novo; a remoção do objeto já ausente é
+/// concluída pelo armazenamento. A linha segurada impede a confirmação concorrente de gravar a cópia
+/// de um registro que esta execução já decidiu remover, e a remoção condicionada ao pendente vencido
+/// poupa a cópia do confirmado que reivindicou o registro primeiro.
 /// </para>
 /// <para>
-/// A remoção do registro é condicionada no banco ao pendente vencido. O objeto pendente do candidato não é
-/// removido: o bucket de envio expira sozinho.
+/// Os objetos do pendente são os que o registro lista: o de envio e, no arquivo do administrador, a
+/// cópia gravada na confirmação cujo registro foi desfeito. O arquivo do candidato não lista nenhum:
+/// o bucket de envio dele expira sozinho.
 /// </para>
 /// </remarks>
 public sealed partial class RemocaoDeArquivosPendentesVencidos
@@ -40,7 +42,7 @@ public sealed partial class RemocaoDeArquivosPendentesVencidos
     /// </summary>
     public static readonly TimeSpan Tolerancia = TimeSpan.FromHours(1);
 
-    private readonly (IArquivoEnviadoRepository Repositorio, Func<string, CancellationToken, Task>? RemoverObjeto)[] _fontes;
+    private readonly Fonte[] _fontes;
     private readonly IDocumentoDaInscricaoRepository _documentosDaInscricao;
     private readonly IArquivoDoCandidatoStorage _armazenamentoDoCandidato;
     private readonly TimeProvider _clock;
@@ -65,9 +67,9 @@ public sealed partial class RemocaoDeArquivosPendentesVencidos
 
         _fontes =
         [
-            (documentosAPublicar, storage.RemoverAsync),
-            (modelosDeDocumento, storage.RemoverAsync),
-            (documentosDaInscricao, null),
+            new Fonte(documentosAPublicar, storage.RemoverAsync),
+            new Fonte(modelosDeDocumento, storage.RemoverAsync),
+            new Fonte(documentosDaInscricao, static (_, _) => Task.CompletedTask),
         ];
         _documentosDaInscricao = documentosDaInscricao;
         _armazenamentoDoCandidato = armazenamentoDoCandidato;
@@ -81,13 +83,7 @@ public sealed partial class RemocaoDeArquivosPendentesVencidos
     /// </summary>
     public async Task<int> ExecutarAsync(CancellationToken cancellationToken)
     {
-        DateTimeOffset agora = _clock.GetUtcNow() - Tolerancia;
-        int removidos = 0;
-        foreach ((IArquivoEnviadoRepository repositorio, Func<string, CancellationToken, Task>? removerObjeto) in _fontes)
-        {
-            removidos += await RemoverVencidosAsync(repositorio, removerObjeto, agora, cancellationToken).ConfigureAwait(false);
-        }
-
+        int removidos = await RemoverVencidosDasFontesAsync(_clock.GetUtcNow() - Tolerancia, cancellationToken).ConfigureAwait(false);
         await LimparChavesAgendadasAsync(cancellationToken).ConfigureAwait(false);
 
         if (removidos > 0)
@@ -98,43 +94,79 @@ public sealed partial class RemocaoDeArquivosPendentesVencidos
         return removidos;
     }
 
+    private async Task<int> RemoverVencidosDasFontesAsync(DateTimeOffset corte, CancellationToken cancellationToken)
+    {
+        int removidos = 0;
+        foreach (Fonte fonte in _fontes)
+        {
+            removidos += await RemoverVencidosAsync(fonte, corte, cancellationToken).ConfigureAwait(false);
+        }
+
+        return removidos;
+    }
+
     /// <summary>
     /// Percorre os vencidos lote a lote. Para no lote incompleto — não há mais — e no lote com
     /// alguma falha: a consulta seguinte traria de volta o que acabou de falhar, e a execução
     /// insistiria contra um armazenamento indisponível em vez de esperar a próxima.
     /// </summary>
-    private async Task<int> RemoverVencidosAsync(
-        IArquivoEnviadoRepository repositorio,
-        Func<string, CancellationToken, Task>? removerObjeto,
-        DateTimeOffset agora,
-        CancellationToken cancellationToken)
+    private async Task<int> RemoverVencidosAsync(Fonte fonte, DateTimeOffset corte, CancellationToken cancellationToken)
     {
         int removidos = 0;
         while (true)
         {
-            IReadOnlyList<ArquivoPendenteVencido> lote = await repositorio
-                .ListarPendentesVencidosAsync(agora, TamanhoDoLote, cancellationToken)
+            IReadOnlyList<ArquivoPendenteVencido> lote = await fonte.Repositorio
+                .ListarPendentesVencidosAsync(corte, TamanhoDoLote, cancellationToken)
                 .ConfigureAwait(false);
+            DesfechoDoLote desfecho = await RemoverLoteAsync(fonte, lote, corte, cancellationToken).ConfigureAwait(false);
+            removidos += desfecho.Removidos;
 
-            bool houveFalha = false;
-            foreach (ArquivoPendenteVencido pendente in lote)
-            {
-                if (removerObjeto is not null && !await RemoverObjetoAsync(pendente, removerObjeto, cancellationToken).ConfigureAwait(false))
-                {
-                    houveFalha = true;
-                    continue;
-                }
-
-                if (await repositorio.RemoverSePendenteVencidoAsync(pendente.Id, agora, cancellationToken).ConfigureAwait(false))
-                {
-                    removidos++;
-                }
-            }
-
-            if (houveFalha || lote.Count < TamanhoDoLote)
+            if (desfecho.HouveFalha || lote.Count < TamanhoDoLote)
             {
                 return removidos;
             }
+        }
+    }
+
+    private async Task<DesfechoDoLote> RemoverLoteAsync(
+        Fonte fonte, IReadOnlyList<ArquivoPendenteVencido> lote, DateTimeOffset corte, CancellationToken cancellationToken)
+    {
+        int removidos = 0;
+        bool houveFalha = false;
+        foreach (ArquivoPendenteVencido pendente in lote)
+        {
+            DesfechoDaRemocao desfecho = await RemoverPendenteAsync(fonte, pendente, corte, cancellationToken).ConfigureAwait(false);
+            removidos += desfecho == DesfechoDaRemocao.Removido ? 1 : 0;
+            houveFalha |= desfecho == DesfechoDaRemocao.Falhou;
+        }
+
+        return new DesfechoDoLote(removidos, houveFalha);
+    }
+
+    private async Task<DesfechoDaRemocao> RemoverPendenteAsync(
+        Fonte fonte, ArquivoPendenteVencido pendente, DateTimeOffset corte, CancellationToken cancellationToken)
+    {
+        try
+        {
+            bool removido = await fonte.Repositorio
+                .RemoverSePendenteVencidoAsync(
+                    pendente.Id, corte, ct => RemoverObjetosAsync(pendente.ChavesDeObjeto, fonte.RemoverObjeto, ct), cancellationToken)
+                .ConfigureAwait(false);
+            return removido ? DesfechoDaRemocao.Removido : DesfechoDaRemocao.Preservado;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            LogFalhaAoRemoverPendente(_logger, pendente.Id, ex);
+            return DesfechoDaRemocao.Falhou;
+        }
+    }
+
+    private static async Task RemoverObjetosAsync(
+        IReadOnlyList<string> chaves, Func<string, CancellationToken, Task> removerObjeto, CancellationToken cancellationToken)
+    {
+        foreach (string chave in chaves)
+        {
+            await removerObjeto(chave, cancellationToken).ConfigureAwait(false);
         }
     }
 
@@ -150,18 +182,7 @@ public sealed partial class RemocaoDeArquivosPendentesVencidos
             IReadOnlyList<ChaveALimpar> lote = await _documentosDaInscricao
                 .ListarChavesVencidasAsync(agora, TamanhoDoLote, cancellationToken)
                 .ConfigureAwait(false);
-
-            bool houveFalha = false;
-            foreach (ChaveALimpar chave in lote)
-            {
-                if (!await RemoverObjetoAsync(new ArquivoPendenteVencido(chave.Id, chave.ObjectKey), _armazenamentoDoCandidato.RemoverDefinitivoAsync, cancellationToken).ConfigureAwait(false))
-                {
-                    houveFalha = true;
-                    continue;
-                }
-
-                await _documentosDaInscricao.RemoverChaveAgendadaAsync(chave.Id, cancellationToken).ConfigureAwait(false);
-            }
+            bool houveFalha = !await LimparLoteDeChavesAsync(lote, cancellationToken).ConfigureAwait(false);
 
             if (houveFalha || lote.Count < TamanhoDoLote)
             {
@@ -170,20 +191,48 @@ public sealed partial class RemocaoDeArquivosPendentesVencidos
         }
     }
 
-    private async Task<bool> RemoverObjetoAsync(
-        ArquivoPendenteVencido pendente, Func<string, CancellationToken, Task> removerObjeto, CancellationToken cancellationToken)
+    private async Task<bool> LimparLoteDeChavesAsync(IReadOnlyList<ChaveALimpar> lote, CancellationToken cancellationToken)
+    {
+        bool semFalha = true;
+        foreach (ChaveALimpar chave in lote)
+        {
+            if (await RemoverChaveAgendadaAsync(chave, cancellationToken).ConfigureAwait(false))
+            {
+                await _documentosDaInscricao.RemoverChaveAgendadaAsync(chave.Id, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                semFalha = false;
+            }
+        }
+
+        return semFalha;
+    }
+
+    private async Task<bool> RemoverChaveAgendadaAsync(ChaveALimpar chave, CancellationToken cancellationToken)
     {
         try
         {
-            await removerObjeto(pendente.ObjectKey, cancellationToken).ConfigureAwait(false);
+            await _armazenamentoDoCandidato.RemoverDefinitivoAsync(chave.ObjectKey, cancellationToken).ConfigureAwait(false);
             return true;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             // A chave é composta só por identificadores; o nome do arquivo nunca entra nela.
-            LogFalhaAoRemoverObjeto(_logger, pendente.Id, pendente.ObjectKey, ex);
+            LogFalhaAoRemoverChaveAgendada(_logger, chave.Id, chave.ObjectKey, ex);
             return false;
         }
+    }
+
+    private sealed record Fonte(IArquivoEnviadoRepository Repositorio, Func<string, CancellationToken, Task> RemoverObjeto);
+
+    private sealed record DesfechoDoLote(int Removidos, bool HouveFalha);
+
+    private enum DesfechoDaRemocao
+    {
+        Removido,
+        Preservado,
+        Falhou,
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Removidos {Quantidade} envios de arquivo pendentes vencidos")]
@@ -191,6 +240,11 @@ public sealed partial class RemocaoDeArquivosPendentesVencidos
 
     [LoggerMessage(
         Level = LogLevel.Warning,
-        Message = "Falha ao remover o objeto {ObjectKey} do envio pendente vencido {RegistroId}; o registro fica para a próxima execução")]
-    private static partial void LogFalhaAoRemoverObjeto(ILogger logger, Guid registroId, string objectKey, Exception exception);
+        Message = "Falha ao remover o envio pendente vencido {RegistroId} e os objetos dele; o registro fica para a próxima execução")]
+    private static partial void LogFalhaAoRemoverPendente(ILogger logger, Guid registroId, Exception exception);
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Falha ao remover a chave agendada {ObjectKey} ({RegistroId}); ela fica para a próxima execução")]
+    private static partial void LogFalhaAoRemoverChaveAgendada(ILogger logger, Guid registroId, string objectKey, Exception exception);
 }

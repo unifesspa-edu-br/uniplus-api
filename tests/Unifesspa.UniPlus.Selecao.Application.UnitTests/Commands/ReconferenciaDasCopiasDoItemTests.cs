@@ -110,7 +110,7 @@ public sealed class ReconferenciaDasCopiasDoItemTests
         resposta.Error!.Message.Should().Contain("Cor ou raça");
     }
 
-    [Fact(DisplayName = "A recusa junta todos os itens incoerentes no mesmo lote, cada um no caminho do próprio item")]
+    [Fact(DisplayName = "A recusa junta todos os itens incoerentes no mesmo lote, cada um no caminho do próprio item, pela posição dele no documento")]
     public void Aplicar_VariosItensIncoerentes_AcumulaTodasAsRecusas()
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Cópias do item", out _);
@@ -127,7 +127,7 @@ public sealed class ReconferenciaDasCopiasDoItemTests
 
         resposta.IsFailure.Should().BeTrue();
         resposta.Errors.Should().HaveCountGreaterThanOrEqualTo(2);
-        resposta.Errors.Select(static e => e.Field).Should().OnlyContain(static campo => campo.StartsWith("formularios[INSCRICAO].itens[", StringComparison.Ordinal))
+        resposta.Errors.Select(static e => e.Field).Should().OnlyContain(static campo => campo.StartsWith("formularios[0].itens[", StringComparison.Ordinal))
             .And.OnlyHaveUniqueItems();
         resposta.Errors.Select(static e => e.Error.Message).Should().Contain(m => m.Contains("fonte de valores 'GEO_MUNICIPIO'"));
     }
@@ -180,7 +180,7 @@ public sealed class ReconferenciaDasCopiasDoItemTests
             "COMPOSICAO_FAMILIAR", itens.Max(static f => f.Ordem) + 1, itens.First().EtapaCodigo, "Composição familiar", 0, 10, quandoPreta, Obrigatoriedade.Nunca,
             [FatoColetado.Criar("MENOR_SOB_GUARDA", 0, "Menor sob guarda", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!],
             FinalidadeFormulario.Inscricao).Value!;
-        Result definido = processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, itens, PrecondicaoIfMatch.Ausente, [grupo]);
+        Result definido = processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, itens, [grupo]);
         definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
         ReconferenciaDeTeste.Aplicar(processo, vigente, null).IsSuccess.Should().BeTrue("o domínio atual tem PRETA");
 
@@ -193,11 +193,11 @@ public sealed class ReconferenciaDasCopiasDoItemTests
         Result resposta = ReconferenciaDeTeste.Aplicar(processo, catalogo, null);
 
         resposta.IsFailure.Should().BeTrue();
-        resposta.Errors.Should().ContainSingle().Which.Field.Should().Be("formularios[INSCRICAO].grupos[0].exibicao");
+        resposta.Errors.Should().ContainSingle().Which.Field.Should().Be("formularios[0].grupos[0].exibicao");
         resposta.Error!.Message.Should().Contain("Composição familiar").And.Contain("Regrave o grupo");
     }
 
-    [Fact(DisplayName = "As recusas de dois formulários saem no caminho do formulário de cada um")]
+    [Fact(DisplayName = "As recusas de dois formulários saem no caminho do formulário de cada um, pela posição dele no documento")]
     public void Aplicar_ItensIncoerentesEmDoisFormularios_CaminhosDistintos()
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Cópias do item", out _);
@@ -219,8 +219,8 @@ public sealed class ReconferenciaDasCopiasDoItemTests
 
         resposta.IsFailure.Should().BeTrue();
         resposta.Errors.Select(static e => e.Field).Should().Contain([
-            "formularios[HABILITACAO].itens[0].tipoRenderizacao",
-        ]).And.Contain(static campo => campo.StartsWith("formularios[INSCRICAO].itens[", StringComparison.Ordinal));
+            "formularios[1].itens[0].tipoRenderizacao",
+        ]).And.Contain(static campo => campo.StartsWith("formularios[0].itens[", StringComparison.Ordinal));
     }
 
     [Fact(DisplayName = "A recusa da semântica não muda o agregado: a cópia do item conforme só é refeita sem nenhuma recusa")]

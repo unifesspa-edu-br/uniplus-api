@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
@@ -33,12 +34,18 @@ internal sealed class TermoConsentimentoVersaoConfiguration : IEntityTypeConfigu
 
         builder.ToTable(
             "versoes_do_termo_consentimento",
-            t => t.HasCheckConstraint(
-                "ck_versoes_do_termo_consentimento_forma_aceite",
-                $"forma_aceite IN ({TokensSql(FormasAceite.TokensCanonicos)})"));
+            t =>
+            {
+                t.HasCheckConstraint(
+                    "ck_versoes_do_termo_consentimento_forma_aceite",
+                    $"forma_aceite IN ({TokensSql(FormasAceite.TokensCanonicos)})");
+                t.HasCheckConstraint("ck_versoes_do_termo_consentimento_numero", "numero >= 1");
+            });
         builder.HasKey(v => v.Id);
 
         builder.Property(v => v.TermoConsentimentoId).IsRequired();
+
+        builder.Property(v => v.Numero).IsRequired();
 
         builder.Property(v => v.Texto).IsRequired();
         builder.Property(v => v.BaseLegal).IsRequired();
@@ -58,6 +65,10 @@ internal sealed class TermoConsentimentoVersaoConfiguration : IEntityTypeConfigu
         builder.Property(v => v.PromovidaPor).ClassificaComo(ClassificacaoDeProtecao.Pessoal)
             .HasMaxLength(PromovidaPorMaxLength)
             .IsRequired();
+
+        builder.HasIndex(v => new { v.TermoConsentimentoId, v.Numero })
+            .IsUnique()
+            .HasDatabaseName(RestricoesDoBanco.VersaoDoTermoNumeroUnico);
 
         builder.HasIndex(v => new { v.TermoConsentimentoId, v.PromovidaEm })
             .HasDatabaseName("ix_versoes_do_termo_consentimento_termo_promovida_em");

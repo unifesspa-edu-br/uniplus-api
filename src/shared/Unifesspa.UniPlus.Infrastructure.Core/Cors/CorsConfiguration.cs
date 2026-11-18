@@ -51,8 +51,8 @@ public static class CorsConfiguration
     // por isso um header de um módulo só é exposto onde esse módulo é servido, e nenhuma lista
     // paralela precisa ser mantida à mão.
     //
-    // - ETag: a precondição da sessão editorial de retificação (ADR-0110 D5); o cliente o lê e o
-    //   devolve no If-Match da próxima mutação.
+    // - ETag: o selo da representação; o cliente o lê e o devolve no If-Match da próxima mutação da
+    //   inscrição ou no If-None-Match da revalidação.
     // - Idempotency-Replayed: diagnóstico de replay (ADR-0027), emitido pelo filtro de
     //   idempotência; o frontend distingue "executou agora" de "resposta gravada".
     // - Link e X-Page-Size: a navegação por cursor vive inteiramente neles (ADR-0026); o corpo é um

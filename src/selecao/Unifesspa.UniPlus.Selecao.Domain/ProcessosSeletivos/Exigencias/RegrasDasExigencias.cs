@@ -11,9 +11,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public static class RegrasDasExigencias
 {
-    internal static Result<MudancaDaConfiguracao> Planejar(EstadoDaConfiguracao estado, IReadOnlyList<NoExigencia> raizes)
+    internal static Result<MudancaDaConfiguracao> Planejar(ConfiguracaoDeclarada configuracao, IReadOnlyList<NoExigencia> raizes)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
         List<NoExigencia> todosOsNos = [.. raizes.SelectMany(static raiz => raiz.AchatarComDescendentes())];
         List<DocumentoExigido> folhas = [.. todosOsNos
@@ -24,30 +24,30 @@ public static class RegrasDasExigencias
         // conferido por um serviço, porque a configuração congelada volta por um caminho próprio que
         // monta o mesmo grafo sem passar por aqui.
         DomainError? recusa =
-            ValidadorVinculoDaExigencia.PrimeiroVinculoInvalido(folhas, estado.CronogramaFases, estado.Etapas)
-            ?? ConferirRepeticaoPorGrupo(estado, todosOsNos)
-            ?? folhas.Select(folha => RecusaDaIdadeMaximaDeEmissao(estado, folha)).FirstOrDefault(static r => r is not null)
-            ?? RecusaDaPendenciaDeReenvio(estado, todosOsNos);
+            ValidadorVinculoDaExigencia.PrimeiroVinculoInvalido(folhas, configuracao.Cronograma.CronogramaFases, configuracao.Avaliacao.Etapas)
+            ?? ConferirRepeticaoPorGrupo(configuracao, todosOsNos)
+            ?? folhas.Select(folha => RecusaDaIdadeMaximaDeEmissao(configuracao, folha)).FirstOrDefault(static r => r is not null)
+            ?? RecusaDaPendenciaDeReenvio(configuracao, todosOsNos);
         return recusa is null
-            ? Result<MudancaDaConfiguracao>.Success(MudancaDaTroca(estado, todosOsNos, folhas))
+            ? Result<MudancaDaConfiguracao>.Success(MudancaDaTroca(configuracao, todosOsNos, folhas))
             : Result<MudancaDaConfiguracao>.Failure(recusa);
     }
 
     private static MudancaDaConfiguracao MudancaDaTroca(
-        EstadoDaConfiguracao estado, IReadOnlyList<NoExigencia> todosOsNos, IReadOnlyList<DocumentoExigido> folhas) => new()
+        ConfiguracaoDeclarada configuracao, IReadOnlyList<NoExigencia> todosOsNos, IReadOnlyList<DocumentoExigido> folhas) => new()
         {
-            DocumentosExigidos = Troca.Substituindo(estado.DocumentosExigidos, folhas),
-            NosExigencia = Troca.Substituindo(estado.NosExigencia, todosOsNos),
+            DocumentosExigidos = Troca.Substituindo(configuracao.Exigencias.DocumentosExigidos, folhas),
+            NosExigencia = Troca.Substituindo(configuracao.Exigencias.NosExigencia, todosOsNos),
         };
 
     // A âncora de fase da idade máxima de emissão é conferida na escrita, e não na publicação: a regra
     // vive na exigência, que está sendo escrita agora. Fase viva do mesmo processo com o extremo
     // correspondente definido, sem fallback silencioso.
-    private static DomainError? RecusaDaIdadeMaximaDeEmissao(EstadoDaConfiguracao estado, DocumentoExigido folha)
+    private static DomainError? RecusaDaIdadeMaximaDeEmissao(ConfiguracaoDeclarada configuracao, DocumentoExigido folha)
     {
         if (folha.IdadeMaximaEmissao is { ReferenciaFaseId: { } referenciaFaseId } idadeComFase)
         {
-            return RecusaDaFaseAncora(estado, referenciaFaseId, idadeComFase);
+            return RecusaDaFaseAncora(configuracao, referenciaFaseId, idadeComFase);
         }
 
         // O fim da inscrição não usa ReferenciaFaseId (a âncora é a fase que coleta inscrição do
@@ -58,23 +58,23 @@ public static class RegrasDasExigencias
             return null;
         }
 
-        if (!estado.CronogramaFases.Any(f => f.ColetaInscricao))
+        if (!configuracao.Cronograma.CronogramaFases.Any(f => f.ColetaInscricao))
         {
             return new DomainError(
                 "IdadeMaximaEmissao.FaseNaoPertenceAoProcesso",
                 "FIM_INSCRICAO exige uma fase do cronograma com ColetaInscricao, e o processo não tem nenhuma.");
         }
 
-        return estado.CronogramaFases.Any(f => f.ColetaInscricao && f.Fim is not null)
+        return configuracao.Cronograma.CronogramaFases.Any(f => f.ColetaInscricao && f.Fim is not null)
             ? null
             : new DomainError(
                 "IdadeMaximaEmissao.FaseExtremoAusente",
                 "Nenhuma fase que coleta inscrição tem Fim definido — FIM_INSCRICAO não pode ser resolvido, sem fallback silencioso.");
     }
 
-    private static DomainError? RecusaDaFaseAncora(EstadoDaConfiguracao estado, Guid referenciaFaseId, IdadeMaximaEmissao idade)
+    private static DomainError? RecusaDaFaseAncora(ConfiguracaoDeclarada configuracao, Guid referenciaFaseId, IdadeMaximaEmissao idade)
     {
-        FaseCronograma? faseAncora = estado.CronogramaFases.FirstOrDefault(f => f.Id == referenciaFaseId);
+        FaseCronograma? faseAncora = configuracao.Cronograma.CronogramaFases.FirstOrDefault(f => f.Id == referenciaFaseId);
         if (faseAncora is null)
         {
             return new DomainError(
@@ -92,7 +92,7 @@ public static class RegrasDasExigencias
 
     // Consequência de reenvio exige que a fase permita complementação, para folha e para grupo; o
     // sentido inverso é conferido ao redefinir o cronograma.
-    private static DomainError? RecusaDaPendenciaDeReenvio(EstadoDaConfiguracao estado, List<NoExigencia> todosOsNos)
+    private static DomainError? RecusaDaPendenciaDeReenvio(ConfiguracaoDeclarada configuracao, List<NoExigencia> todosOsNos)
     {
         foreach (NoExigencia no in todosOsNos)
         {
@@ -101,7 +101,7 @@ public static class RegrasDasExigencias
                 : no.Consequencia;
             if (consequenciaDoNo == "PENDENCIA_REENVIO"
                 && no.FaseComum() is { } faseId
-                && ConferirConsequenciaPendenciaReenvio(estado, faseId) is { } erro)
+                && ConferirConsequenciaPendenciaReenvio(configuracao, faseId) is { } erro)
             {
                 return erro;
             }
@@ -115,9 +115,9 @@ public static class RegrasDasExigencias
     /// para folha e grupo, forward (aqui, na escrita da exigência) e reverso (em
     /// <see cref="ProcessoSeletivo.DefinirCronogramaFases"/>, via <see cref="ExisteConsequenciaPendenciaReenvioNaFase"/>).
     /// </summary>
-    internal static DomainError? ConferirConsequenciaPendenciaReenvio(EstadoDaConfiguracao estado, Guid faseId)
+    internal static DomainError? ConferirConsequenciaPendenciaReenvio(ConfiguracaoDeclarada configuracao, Guid faseId)
     {
-        FaseCronograma? fase = estado.CronogramaFases.FirstOrDefault(f => f.Id == faseId);
+        FaseCronograma? fase = configuracao.Cronograma.CronogramaFases.FirstOrDefault(f => f.Id == faseId);
         if (fase is null)
         {
             // FaseNaoPertenceAoProcesso já cobre a ausência — defesa em profundidade, não
@@ -133,9 +133,9 @@ public static class RegrasDasExigencias
     }
 
     /// <summary>Lado reverso do gate acima — usado por <see cref="ProcessoSeletivo.DefinirCronogramaFases"/> ao verificar se uma fase pode perder <c>PermiteComplementacao</c>, para folha OU grupo <c>OU</c>/<c>N-de</c>.</summary>
-    internal static bool ExisteConsequenciaPendenciaReenvioNaFase(EstadoDaConfiguracao estado, Guid faseId) =>
-        estado.DocumentosExigidos.Any(d => d.ExigidoNaFaseId == faseId && d.ConsequenciaIndeferimento == "PENDENCIA_REENVIO")
-        || estado.NosExigencia.Any(n => n.Tipo == TipoNo.GrupoOu && n.Consequencia == "PENDENCIA_REENVIO" && n.FaseComum() == faseId);
+    internal static bool ExisteConsequenciaPendenciaReenvioNaFase(ConfiguracaoDeclarada configuracao, Guid faseId) =>
+        configuracao.Exigencias.DocumentosExigidos.Any(d => d.ExigidoNaFaseId == faseId && d.ConsequenciaIndeferimento == "PENDENCIA_REENVIO")
+        || configuracao.Exigencias.NosExigencia.Any(n => n.Tipo == TipoNo.GrupoOu && n.Consequencia == "PENDENCIA_REENVIO" && n.FaseComum() == faseId);
 
     /// <summary>
     /// A repetição por entidade nomeia um grupo do processo (<see cref="Services.ValidadorRepeticaoPorGrupo"/>)
@@ -143,9 +143,9 @@ public static class RegrasDasExigencias
     /// de fase e de formulário dos gatilhos, inclusive a do grupo coletado só na isenção. A fase que o
     /// catálogo dá a cada campo é conferida com os gatilhos, por quem lê o catálogo.
     /// </summary>
-    internal static DomainError? ConferirRepeticaoPorGrupo(EstadoDaConfiguracao estado, IReadOnlyCollection<NoExigencia> nos)
+    internal static DomainError? ConferirRepeticaoPorGrupo(ConfiguracaoDeclarada configuracao, IReadOnlyCollection<NoExigencia> nos)
     {
-        if (Services.ValidadorRepeticaoPorGrupo.PrimeiraSemGrupo(nos, estado.GruposColetados) is { } semGrupo)
+        if (Services.ValidadorRepeticaoPorGrupo.PrimeiraSemGrupo(nos, configuracao.Coleta.GruposColetados) is { } semGrupo)
         {
             return semGrupo;
         }
@@ -159,9 +159,9 @@ public static class RegrasDasExigencias
                 continue;
             }
 
-            GrupoColetado grupo = estado.GruposColetados.Single(g => string.Equals(g.Codigo, no.RepetePorEntidade, StringComparison.Ordinal));
+            GrupoColetado grupo = configuracao.Coleta.GruposColetados.Single(g => string.Equals(g.Codigo, no.RepetePorEntidade, StringComparison.Ordinal));
             if (grupo.Subitens
-                    .Select(campo => FaseEfetivaDoFato.RecusaDeFaseDoGatilho(estado, campo.FatoCodigo, fase, finalidade, CitacoesDosFormularios.SemCatalogo, CitacoesDosFormularios.SemCatalogo))
+                    .Select(campo => FaseEfetivaDoFato.RecusaDeFaseDoGatilho(configuracao, campo.FatoCodigo, fase, finalidade, CitacoesDosFormularios.SemCatalogo, CitacoesDosFormularios.SemCatalogo))
                     .FirstOrDefault(static r => r is not null) is { } recusa)
             {
                 return recusa;
@@ -176,26 +176,26 @@ public static class RegrasDasExigencias
     /// quando a folha não está numa subárvore repetida. São os fatos que o gatilho da folha cita além
     /// dos do candidato.
     /// </summary>
-    public static IReadOnlySet<string> CamposDaRepeticao(EstadoDaConfiguracao estado, Guid documentoExigidoId)
+    public static IReadOnlySet<string> CamposDaRepeticao(ConfiguracaoDeclarada configuracao, Guid documentoExigidoId)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
-        NoExigencia? no = estado.NosExigencia.FirstOrDefault(n => n.DocumentoExigidoId == documentoExigidoId);
+        NoExigencia? no = configuracao.Exigencias.NosExigencia.FirstOrDefault(n => n.DocumentoExigidoId == documentoExigidoId);
         while (no is { RepetePorEntidade: null, NoPaiId: { } paiId })
         {
-            no = estado.NosExigencia.FirstOrDefault(n => n.Id == paiId);
+            no = configuracao.Exigencias.NosExigencia.FirstOrDefault(n => n.Id == paiId);
         }
 
-        return CamposDoGrupo(estado, no?.RepetePorEntidade);
+        return CamposDoGrupo(configuracao, no?.RepetePorEntidade);
     }
 
     /// <summary>Os fatos dos campos do grupo repetível de código dado; vazio quando o processo não o tem.</summary>
-    public static IReadOnlySet<string> CamposDoGrupo(EstadoDaConfiguracao estado, string? codigoDoGrupo)
+    public static IReadOnlySet<string> CamposDoGrupo(ConfiguracaoDeclarada configuracao, string? codigoDoGrupo)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
         return new HashSet<string>(
-                estado.GruposColetados.Where(g => string.Equals(g.Codigo, codigoDoGrupo, StringComparison.Ordinal))
+                configuracao.Coleta.GruposColetados.Where(g => string.Equals(g.Codigo, codigoDoGrupo, StringComparison.Ordinal))
                     .SelectMany(static g => g.Subitens).Select(static s => s.FatoCodigo),
                 StringComparer.Ordinal);
     }

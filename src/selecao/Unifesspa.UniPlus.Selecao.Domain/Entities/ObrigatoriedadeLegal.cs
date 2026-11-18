@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
@@ -22,12 +21,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// (<see cref="ValidarCampos"/>); as factories a repetem, então nenhuma regra
 /// nasce nem muda sem ter passado por ela.
 /// </remarks>
-[SuppressMessage(
-    "Design",
-    "CA1056:URI-like properties should not be strings",
-    Justification = "AtoNormativoUrl é payload textual exibido para auditoria — pode incluir DOI, "
-        + "URN, IRI ou identificadores não-HTTP que System.Uri suporta apenas com workarounds. "
-        + "Mantemos string para preservar fidelidade do valor original informado pelo admin.")]
 public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
 {
     /// <summary>
@@ -212,7 +205,7 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
         AplicarTexto(texto);
         VigenciaInicio = vigenciaInicio!.Value;
         VigenciaFim = vigenciaFim;
-        Hash = ComputeHash();
+        Hash = HashCanonicalComputer.Compute(this);
     }
 
     private void AplicarTexto(TextoNormativo texto)
@@ -231,17 +224,7 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
     /// </summary>
     public string RecomputeHash()
     {
-        Hash = ComputeHash();
+        Hash = HashCanonicalComputer.Compute(this);
         return Hash;
     }
-
-    private string ComputeHash() => HashCanonicalComputer.Compute(
-        TipoProcessoCodigo,
-        Categoria,
-        RegraCodigo,
-        Predicado,
-        BaseLegal,
-        PortariaInternaCodigo,
-        VigenciaInicio,
-        VigenciaFim);
 }

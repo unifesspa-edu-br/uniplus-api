@@ -18,6 +18,12 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// referenciar (<c>etapa_ref</c>). Omitido (ou sem correspondência), o
 /// handler cria uma etapa nova.
 /// </summary>
+/// <param name="TiposDeDecisao">
+/// Os tipos de decisão que a etapa declara produzir, como o cliente os escreveu. Ausente ou vazio: nenhum; a
+/// gravação substitui a declaração anterior. A ordem não importa, e a leitura os devolve em ordem canônica. Tirar um tipo
+/// mantém os motivos escolhidos daquele tipo: o congelamento da versão recusa até que sejam retirados ou o tipo volte a ser
+/// declarado.
+/// </param>
 /// <param name="TipoEtapaOrigemId">
 /// Id do tipo de etapa ativo em Configuração (issue #1071). Obrigatório em toda
 /// definição — o handler resolve o item via <c>ITipoEtapaReader</c> e congela um
@@ -78,6 +84,11 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// etapa atualiza a mesma linha, preservando a identidade para quem aponta para ela; sem id é
 /// item novo.
 /// </para>
+/// <para>
+/// Devolva o <c>id</c> de cada etapa que continua. A etapa omitida, ou devolvida sem <c>id</c>, sai do processo e leva
+/// junto os motivos de decisão escolhidos nela que ainda não constam de edital publicado. Se algum já consta, a
+/// substituição é recusada (422 <c>fase_ou_etapa_com_motivo_publicado</c>) e nada muda.
+/// </para>
 /// </remarks>
 public sealed record EtapaProcessoInput(
     string Nome,
@@ -100,7 +111,8 @@ public sealed record EtapaProcessoInput(
     string? RegraConsolidacaoCodigo = null,
     string? RegraConsolidacaoVersao = null,
     IReadOnlyList<ItemDeAvaliacaoInput>? ItensDeAvaliacao = null,
-    IReadOnlyList<NivelDeAtendimentoInput>? EscalaDeAtendimento = null);
+    IReadOnlyList<NivelDeAtendimentoInput>? EscalaDeAtendimento = null,
+    IReadOnlyList<string?>? TiposDeDecisao = null);
 
 /// <summary>Um item de avaliação (critério ou bloco) da etapa e a pontuação máxima que ele vale.</summary>
 public sealed record ItemDeAvaliacaoInput(Guid? Id, string Rotulo, decimal PontuacaoMaxima);
@@ -121,6 +133,7 @@ public sealed record BancaDaEtapaInput(Guid TipoBancaId, RegraDeDeliberacaoInput
 /// qual publicação abre a janela. <paramref name="AdmiteInstanciaSuperior"/> é
 /// <c>[JsonRequired]</c> pela mesma razão das listas da etapa: o ausente virava <c>false</c> em
 /// silêncio, e a janela seria congelada sem instância superior sem que ninguém o tivesse decidido.
+/// <paramref name="Procedimentos"/> declara como o recurso de cada matéria que a etapa produz é revisado.
 /// </summary>
 public sealed record RecursoDaEtapaInput(
     AncoraDoRecurso Ancora,
@@ -133,7 +146,8 @@ public sealed record RecursoDaEtapaInput(
     UnidadePrazo? SuspensividadePrimeiraInstanciaUnidade,
     [property: JsonRequired] bool AdmiteInstanciaSuperior,
     decimal? SuspensividadeSegundaInstanciaValor,
-    UnidadePrazo? SuspensividadeSegundaInstanciaUnidade);
+    UnidadePrazo? SuspensividadeSegundaInstanciaUnidade,
+    IReadOnlyList<ProcedimentoDeRecursoInput>? Procedimentos = null);
 
 /// <summary>O que uma etapa publica: o código do tipo de ato e o papel no ciclo recursal.</summary>
 /// <param name="Papel">Token UPPER_SNAKE, como o produto da fase o recebe.</param>
@@ -146,5 +160,4 @@ public sealed record ProdutoDaEtapaInput(string AtoCodigo, string? Papel);
 /// </summary>
 public sealed record DefinirEtapasCommand(
     Guid ProcessoSeletivoId,
-    IReadOnlyList<EtapaProcessoInput> Etapas,
-    PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;
+    IReadOnlyList<EtapaProcessoInput> Etapas) : ICommand<Result>;

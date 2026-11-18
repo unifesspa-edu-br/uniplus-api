@@ -48,6 +48,10 @@ O `Id` é imutável (via `EntityBase`, [ADR-0032](0032-guid-v7-para-identidade-d
 
 Os três identificadores são únicos entre unidades não excluídas, via **índice único parcial** com filtro `is_deleted = false` (naming snake_case da [ADR-0054](0054-naming-convention-e-strategy-migrations.md); soft-delete opt-in). Um valor liberado por soft-delete pode ser reusado por outra unidade. A checagem de colisão na aplicação espelha o filtro de "vivos".
 
+### Formato do `Codigo`
+
+O `Codigo` da unidade é citável pelo documento de configuração ([ADR-0172](0172-esquema-json-versionado-do-documento-de-configuracao.md)): letras sem acento, dígitos, `.`, `-` e `_`, começando por letra ou dígito, sem a forma de UUID. O formato é do agregado `Unidade`, que o confere na criação e na atualização.
+
 ### `Alias` é não-único
 
 `Alias` é rótulo de agrupamento popular — várias divisões compartilham o alias da pró-reitoria ou centro pai. É indexado para busca, **sem** restrição de unicidade.

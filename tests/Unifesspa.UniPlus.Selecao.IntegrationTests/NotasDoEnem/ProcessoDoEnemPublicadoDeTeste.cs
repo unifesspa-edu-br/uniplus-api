@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
@@ -29,8 +30,6 @@ internal static class ProcessoDoEnemPublicadoDeTeste
 {
     public const string Edicao = "2025";
 
-    private static readonly string HashFixo = string.Concat(Enumerable.Repeat("ab01234567", 7))[..64];
-
     /// <summary>
     /// O processo publicado: a etapa de nota do ENEM e as duas ofertas do edital, uma no grupo
     /// Tecnológica e outra no grupo Humanística I, que as inscrições de teste concorrem como 1ª e 2ª opção.
@@ -44,89 +43,116 @@ internal static class ProcessoDoEnemPublicadoDeTeste
 
         await TiposDeAtoSeeder.SemearAsync(fixture.Factory.Services);
 
-        Guid etapaDoEnem = Guid.Empty;
-        Guid ofertaTecnologica = Guid.CreateVersion7();
-        Guid ofertaHumanistica = Guid.CreateVersion7();
-        ProcessoSeletivo processo;
-        DocumentoAPublicar documento;
-        await using (AsyncServiceScope scope = fixture.Factory.Services.CreateAsyncScope())
-        {
-            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-            (processo, documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
-                db,
-                $"PS Medicina notas do ENEM {Guid.CreateVersion7()}",
-                complementar: p => etapaDoEnem = ConfigurarEnem(p, ofertaTecnologica, ofertaHumanistica),
-                fimDasInscricoes: fimDasInscricoes);
-        }
+        (Publicado publicado, Guid documentoId) = await SemearProcessoAsync(fixture, fimDasInscricoes);
 
         using HttpClient client = fixture.Factory.CreateClient();
-        using (HttpResponseMessage publicacao = await PublicarAsync(client, processo.Id, documento.Id))
+        await PublicarEConferirAsync(client, publicado.ProcessoId, documentoId);
+
+        await AguardarRegistroAsync(fixture, publicado.ProcessoId);
+
+        await AguardarDivulgacaoAsync(client, publicado.ProcessoId);
+        return publicado;
+    }
+
+    private static async Task PublicarEConferirAsync(HttpClient client, Guid processoId, Guid documentoId)
+    {
+        using (HttpResponseMessage publicacao = await PublicarAsync(client, processoId, documentoId))
         {
             publicacao.StatusCode.Should().Be(HttpStatusCode.NoContent, await publicacao.Content.ReadAsStringAsync());
         }
 
-        await using (AsyncServiceScope scope = fixture.Factory.Services.CreateAsyncScope())
-        {
-            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-            Guid atoId = await db.VersoesConfiguracao.AsNoTracking()
-                .Where(v => v.ProcessoSeletivoId == processo.Id)
-                .Select(v => v.AtoCriadorId)
-                .SingleAsync();
-            await AtoNoRegistroCentral.LerAsync(fixture.Factory, atoId);
-        }
-
-        await AguardarDivulgacaoAsync(client, processo.Id);
-        return new Publicado(processo.Id, etapaDoEnem, ofertaTecnologica, ofertaHumanistica);
     }
 
-    private static Guid ConfigurarEnem(ProcessoSeletivo processo, Guid ofertaTecnologica, Guid ofertaHumanistica)
+    private static async Task<(Publicado Publicado, Guid DocumentoId)> SemearProcessoAsync(CascadingFixture fixture, DateTimeOffset? fimDasInscricoes)
+    {
+        Guid etapaDoEnem = Guid.Empty;
+        Guid ofertaTecnologica = Guid.CreateVersion7();
+        Guid ofertaHumanistica = Guid.CreateVersion7();
+        await using AsyncServiceScope scope = fixture.Factory.Services.CreateAsyncScope();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        Dictionary<string, ReferenciaRegra> regras = await db.RolDeRegras.Where(r => r.Versao == "v1").ToDictionaryAsync(r => r.Codigo, r => r.Referencia());
+        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"PS Medicina notas do ENEM {Guid.CreateVersion7()}", Complementar = p => etapaDoEnem = ConfigurarEnem(p, ofertaTecnologica, ofertaHumanistica, regras), FimDasInscricoes = fimDasInscricoes });
+        return (new Publicado(processo.Id, etapaDoEnem, ofertaTecnologica, ofertaHumanistica), documento.Id);
+    }
+
+    private static async Task AguardarRegistroAsync(CascadingFixture fixture, Guid processoId)
+    {
+        await using AsyncServiceScope scope = fixture.Factory.Services.CreateAsyncScope();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        Guid atoId = await db.VersoesConfiguracao.AsNoTracking()
+            .Where(v => v.ProcessoSeletivoId == processoId)
+            .Select(v => v.AtoCriadorId)
+            .SingleAsync();
+        await AtoNoRegistroCentral.LerAsync(fixture.Factory, atoId);
+    }
+
+    private static Guid ConfigurarEnem(ProcessoSeletivo processo, Guid ofertaTecnologica, Guid ofertaHumanistica, Dictionary<string, ReferenciaRegra> regras)
     {
         EtapaProcesso etapa = EtapaProcesso.Criar(
-            "Nota do ENEM", CaraterEtapa.Classificatoria,
-            TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!,
-            peso: 1m, notaMinima: null, ordem: 1, faseCodigo: "RESULTADO_FINAL").Value!;
-        Exigir(processo.DefinirClassificacao(
-            ConfiguracaoClassificacao.Criar(
-                regraCalculo: ReferenciaRegra.Criar(RegraCalculoCodigo.FormulaMediaPonderada, "v1", HashFixo).Value!,
-                regraArredondamento: ReferenciaRegra.Criar(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", HashFixo).Value!,
-                casasArredondamento: 2,
-                regraOrdemAlocacao: ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo).Value!,
-                regrasEliminacao: [],
-                baseadoEmEnem: true,
-                resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao,
-                quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo(), escalaNotaFinal: 100m).Value!,
-            PrecondicaoIfMatch.Curinga));
+            new IdentificacaoDaEtapa(Nome: "Nota do ENEM", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
+        DefinirClassificacao(processo, regras);
 
-        Exigir(processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Curinga));
+        Exigir(processo.DefinirEtapas([etapa]));
 
-        Exigir(processo.DefinirDistribuicaoVagas(
-            [
-                DistribuicaoDaOferta(ofertaTecnologica, ("TECNOLOGICA", "Tecnológica"), OfertaCursoDeTeste.Medicina),
-                DistribuicaoDaOferta(ofertaHumanistica, ("HUMANISTICA_I", "Humanística I"), OfertaCursoDeTeste.Pedagogia),
-            ],
-            FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Curinga));
+        DefinirDistribuicao(processo, ofertaTecnologica, ofertaHumanistica, regras);
 
-        Exigir(processo.DefinirOpcoesDeclaradas(
-            Regras.Services.EdicaoDoEnem.Fato, [OpcaoDeclaradaFato.Criar(Regras.Services.EdicaoDoEnem.Fato, Edicao, Edicao, 0).Value!], PrecondicaoIfMatch.Curinga));
-
-        FatoColetado[] basicos = [.. FormularioDeTeste.DadosBasicos()];
-        Exigir(processo.DefinirItens([.. basicos, FormularioDeTeste.CampoDaEdicaoDoEnem(basicos.Max(static f => f.Ordem) + 1)], PrecondicaoIfMatch.Curinga));
+        DefinirDadosDoEnem(processo);
 
         return etapa.Id;
     }
 
-    private static ConfiguracaoDistribuicaoVagas DistribuicaoDaOferta(Guid ofertaCursoOrigemId, (string? Codigo, string? Rotulo) grupoAreaEnem, OfertaCursoSnapshot ofertaCurso)
+    private static void DefinirDistribuicao(ProcessoSeletivo processo, Guid ofertaTecnologica, Guid ofertaHumanistica, Dictionary<string, ReferenciaRegra> regras)
+    {
+        Exigir(processo.DefinirDistribuicaoVagas(
+            [
+                DistribuicaoDaOferta(ofertaTecnologica, ("TECNOLOGICA", "Tecnológica"), OfertaCursoDeTeste.Medicina, regras),
+                DistribuicaoDaOferta(ofertaHumanistica, ("HUMANISTICA_I", "Humanística I"), OfertaCursoDeTeste.Pedagogia, regras),
+            ],
+            FatosDeModalidadeDeTeste.DoCatalogo));
+
+    }
+
+    private static void DefinirDadosDoEnem(ProcessoSeletivo processo)
+    {
+        Exigir(processo.DefinirOpcoesDeclaradas(
+            Regras.Services.EdicaoDoEnem.Fato, [OpcaoDeclaradaFato.Criar(Regras.Services.EdicaoDoEnem.Fato, Edicao, Edicao, 0).Value!]));
+
+        FatoColetado[] basicos = [.. FormularioDeTeste.DadosBasicos()];
+        Exigir(processo.DefinirItens([.. basicos, FormularioDeTeste.CampoDaEdicaoDoEnem(basicos.Max(static f => f.Ordem) + 1)]));
+
+    }
+
+    private static void DefinirClassificacao(ProcessoSeletivo processo, Dictionary<string, ReferenciaRegra> regras)
+    {
+        Exigir(processo.DefinirClassificacao(
+            ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+            {
+                RegraCalculo = regras[RegraCalculoCodigo.FormulaMediaPonderada],
+                RegraArredondamento = regras[RegraArredondamentoCodigo.PrecisaoTruncar],
+                CasasArredondamento = 2,
+                RegraOrdemAlocacao = regras[RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria],
+                BaseadoEmEnem = true,
+                ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
+                QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
+                EscalaNotaFinal = 100m,
+            }).Value!));
+
+    }
+
+    private static ConfiguracaoDistribuicaoVagas DistribuicaoDaOferta(Guid ofertaCursoOrigemId, (string? Codigo, string? Rotulo) grupoAreaEnem, OfertaCursoSnapshot ofertaCurso, Dictionary<string, ReferenciaRegra> regras)
     {
         ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC", "Ampla concorrência", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
+            Guid.CreateVersion7(), "AC", "Ampla concorrência", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
             null, RegraRemanejamentoModalidade.Nenhuma, null, null, null,
             RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!;
 
-        return ConfiguracaoDistribuicaoVagas.Criar(
-            ofertaCursoOrigemId, 40, 1m,
-            ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!,
-            null, null, [modalidade], grupoAreaEnem: grupoAreaEnem, ofertaCurso: ofertaCurso).Value!;
+        return ConfiguracaoDistribuicaoVagas.Criar(ofertaCursoOrigemId,
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Copiar(regras[RegraDistribuicaoVagasCodigo.Institucional]), Modalidades = [modalidade] },
+            new FatosDaOfertaNoCadastro { GrupoAreaEnem = grupoAreaEnem, OfertaCurso = ofertaCurso }).Value!;
     }
+
+    private static ReferenciaRegra Copiar(ReferenciaRegra regra) => ReferenciaRegra.De(regra.Codigo, regra.Versao, regra.Hash);
 
     private static void Exigir(Result resultado) => resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
 
@@ -135,25 +161,30 @@ internal static class ProcessoDoEnemPublicadoDeTeste
         using HttpRequestMessage request = new(
             HttpMethod.Post, new Uri($"/api/selecao/processos-seletivos/{processoId}/publicacao", UriKind.Relative))
         {
-            Content = JsonContent.Create(new
-            {
-                numero = "001/2027",
-                documentoEditalId,
-                ato = new
-                {
-                    orgao = "CEPS",
-                    serie = "EDITAL",
-                    ano = 2027,
-                    dataDoAto = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-                    assinante = "Diretor do CEPS",
-                    tipoAtoCodigo = DadosDoAtoDeTeste.TipoAbertura,
-                },
-            }),
+            Content = JsonContent.Create(CorpoDaPublicacao(documentoEditalId)),
         };
         request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
         request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "plataforma-admin");
         request.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
         return await client.SendAsync(request);
+    }
+
+    private static object CorpoDaPublicacao(Guid documentoEditalId)
+    {
+        return new
+        {
+            numero = "001/2027",
+            documentoEditalId,
+            ato = new
+            {
+                orgao = "CEPS",
+                serie = "EDITAL",
+                ano = 2027,
+                dataDoAto = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                assinante = "Diretor do CEPS",
+                tipoAtoCodigo = DadosDoAtoDeTeste.TipoAbertura,
+            },
+        };
     }
 
     private static async Task AguardarDivulgacaoAsync(HttpClient client, Guid processoId)

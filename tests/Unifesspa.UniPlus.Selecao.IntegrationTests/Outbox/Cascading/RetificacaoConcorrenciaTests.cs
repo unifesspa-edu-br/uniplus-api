@@ -203,7 +203,7 @@ public sealed class RetificacaoConcorrenciaTests
         await using AsyncServiceScope seedScope = api.Services.CreateAsyncScope();
         UniPlusDbContext seedDb = seedScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
-            .SemearAsync(seedDb, $"Concorrência {Guid.CreateVersion7()}");
+            .SemearAsync(seedDb, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"Concorrência {Guid.CreateVersion7()}" });
         return (processo.Id, documento.Id);
     }
 

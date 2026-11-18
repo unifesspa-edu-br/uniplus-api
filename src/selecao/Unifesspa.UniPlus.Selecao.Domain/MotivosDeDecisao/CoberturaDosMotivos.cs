@@ -2,43 +2,35 @@ namespace Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Portão da publicação, da retificação e do fechamento da sessão: o processo só congela com os
-/// motivos que as suas decisões exigem. Cada decisão que passa a exigir motivo acrescenta aqui a
-/// sua exigência; hoje vale a da isenção da taxa (UNI-REQ-0123): ao menos um motivo favorável e um
-/// desfavorável escolhidos para cada fundamento de isenção habilitado.
+/// A cobertura que a publicação e a retificação exigem: o processo só congela com os motivos
+/// que as suas decisões pedem, em cada fase ou etapa que as produz. Cada exigência vive em
+/// <see cref="ExigenciasDeMotivos"/>. Primeiro vêm as faltas de tipo de decisão não declarado de todas as exigências, e depois as
+/// faltas de cobertura de todas, cada grupo na ordem do registro.
 /// </summary>
-public static class CoberturaDosMotivos
+internal static class CoberturaDosMotivos
 {
-    private static readonly SentidoDoMotivo[] Sentidos = [SentidoDoMotivo.Favoravel, SentidoDoMotivo.Desfavoravel];
+    /// <summary>As faltas das exigências diante dos motivos que a versão leva, na ordem dos tipos não declarados e da cobertura; vazio quando a cobertura está completa.</summary>
+    internal static IEnumerable<FieldError> Faltas(
+        ConfiguracaoDeclarada configuracao, LugaresDaDecisao lugares, IReadOnlyCollection<MotivoDoProcesso> escolhidos) =>
+        Faltas(configuracao, lugares, escolhidos, ExigenciasDeMotivos.Todas);
 
-    /// <summary>Sucesso quando a cobertura está completa; senão, uma recusa por fundamento e sentido que falta.</summary>
-    public static Result Conferir(ProcessoSeletivo processo, IReadOnlyCollection<MotivoDoProcesso> escolhidos)
+    internal static IEnumerable<FieldError> Faltas(
+        ConfiguracaoDeclarada configuracao,
+        LugaresDaDecisao lugares,
+        IReadOnlyCollection<MotivoDoProcesso> escolhidos,
+        IEnumerable<IExigenciaDeMotivos> exigencias)
     {
-        ArgumentNullException.ThrowIfNull(processo);
+        ArgumentNullException.ThrowIfNull(configuracao);
+        ArgumentNullException.ThrowIfNull(lugares);
         ArgumentNullException.ThrowIfNull(escolhidos);
+        ArgumentNullException.ThrowIfNull(exigencias);
 
-        FieldError[] faltas = [.. FaltasDaIsencao(processo, escolhidos)];
-        return faltas.Length > 0 ? Result.ValidationFailure(faltas) : Result.Success();
+        IExigenciaDeMotivos[] registradas = [.. exigencias];
+
+        return registradas.SelectMany(exigencia => exigencia.TiposNaoDeclarados(configuracao, lugares))
+            .Concat(registradas.SelectMany(exigencia => exigencia.FaltasDeCobertura(configuracao, lugares, escolhidos)));
     }
-
-    private static IEnumerable<FieldError> FaltasDaIsencao(ProcessoSeletivo processo, IReadOnlyCollection<MotivoDoProcesso> escolhidos)
-    {
-        IReadOnlyList<FundamentoIsencao> fundamentos = processo.ConfiguracaoTaxaInscricao is { Cobra: true } taxa ? taxa.Fundamentos : [];
-
-        return from fundamento in fundamentos
-               from sentido in Sentidos
-               where !escolhidos.Any(e => CobreAIsencao(e, fundamento.ToCodigo(), sentido))
-               select new FieldError("motivosDeDecisao", new DomainError(
-                   MotivoDeDecisaoErrorCodes.CoberturaInsuficiente,
-                   $"Falta escolher ao menos um motivo {sentido.Rotulo()} para o fundamento de isenção {fundamento.ToCodigo()}."));
-    }
-
-    private static bool CobreAIsencao(MotivoDoProcesso escolhido, string fundamento, SentidoDoMotivo sentido) =>
-        escolhido.Tipo == TipoMotivoDeDecisao.IsencaoDaTaxa
-        && escolhido.Sentido == sentido
-        && string.Equals(escolhido.Subclassificacao, fundamento, StringComparison.Ordinal);
 }

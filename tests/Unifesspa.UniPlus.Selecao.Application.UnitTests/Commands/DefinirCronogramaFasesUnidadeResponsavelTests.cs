@@ -27,7 +27,7 @@ public sealed class DefinirCronogramaFasesUnidadeResponsavelTests
             .ComUnidadeNoCadastro(UnidadesDeTeste.Cga);
         FaseCronogramaInput fase = cenario.CadastrarFase(FaseCanonicaDoResultadoFinal());
 
-        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(
+        Result resultado = await cenario.DefinirFasesAsync(
             fase with { UnidadeResponsavelId = UnidadesDeTeste.Cga.OrigemId });
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -40,7 +40,7 @@ public sealed class DefinirCronogramaFasesUnidadeResponsavelTests
         CenarioDoCronogramaDeFases cenario = CenarioDoCronogramaDeFases.EmRascunho().ComTipoDeAto(TipoAtoDaClassificacao());
         FaseCronogramaInput fase = cenario.CadastrarFase(FaseCanonicaDoResultadoFinal());
 
-        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(fase);
+        Result resultado = await cenario.DefinirFasesAsync(fase);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         cenario.Processo.CronogramaFases.Single().UnidadeResponsavel.Should().BeNull();
@@ -53,25 +53,10 @@ public sealed class DefinirCronogramaFasesUnidadeResponsavelTests
         (CenarioDoCronogramaDeFases cenario, DefinirCronogramaFasesCommand comando) =
             CadastroSemAUnidadeGravada(ProcessoComUnidadeGravada());
 
-        Result<MutacaoAceita> resultado = await cenario.DefinirAsync(comando);
+        Result resultado = await cenario.DefinirAsync(comando);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be("FaseCronograma.UnidadeResponsavelNaoEncontrada");
-    }
-
-    [Fact(DisplayName = "Na retificação, a unidade que saiu do cadastro é recusada citando a fase, como no rascunho")]
-    public async Task Handle_RetificacaoComUnidadeQueSaiuDoCadastro_Recusa()
-    {
-        ProcessoSeletivo processo = ProcessoComUnidadeGravada();
-        PublicacaoDeTeste.AbrirRetificacao(processo, PublicacaoDeTeste.Publicar(processo));
-        (CenarioDoCronogramaDeFases cenario, DefinirCronogramaFasesCommand comando) = CadastroSemAUnidadeGravada(processo);
-
-        Result<MutacaoAceita> resultado = await cenario.DefinirAsync(comando);
-
-        resultado.IsFailure.Should().BeTrue();
-        FieldError recusa = resultado.Errors.Should().ContainSingle().Subject;
-        recusa.Field.Should().Be("fases[0].unidadeResponsavelId");
-        recusa.Error.Code.Should().Be("FaseCronograma.UnidadeResponsavelNaoEncontrada");
     }
 
     [Fact(DisplayName = "Duas fases sob a mesma unidade nova resolvem o cadastro uma vez só")]
@@ -93,7 +78,7 @@ public sealed class DefinirCronogramaFasesUnidadeResponsavelTests
         CenarioDoCronogramaDeFases cenario = CenarioDoCronogramaDeFases.EmRascunho().SemAUnidadeNoCadastro(unidadeExcluida);
         FaseCronogramaInput fase = cenario.CadastrarFase(FaseCanonicaDoResultadoFinal());
 
-        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(fase with { UnidadeResponsavelId = unidadeExcluida });
+        Result resultado = await cenario.DefinirFasesAsync(fase with { UnidadeResponsavelId = unidadeExcluida });
 
         resultado.IsFailure.Should().BeTrue();
         FieldError recusa = resultado.Errors.Should().ContainSingle().Subject;
@@ -116,11 +101,13 @@ public sealed class DefinirCronogramaFasesUnidadeResponsavelTests
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS unidade gravada");
         FaseCronograma conforme = processo.CronogramaFases.Single();
         FaseCronograma comCga = FaseCronograma.Criar(
-            conforme.Ordem, conforme.FaseCanonicaOrigemId, conforme.Codigo, conforme.OrigemData,
-            conforme.AgrupaEtapas, conforme.PermiteComplementacao, conforme.ColetaInscricao, conforme.ColetaSolicitacaoIsencao,
-            conforme.Inicio, conforme.Fim, [.. conforme.Produtos], conforme.FaseConcluinteCodigo, conforme.EmiteParecerIndividual,
-            [.. conforme.BancasRequeridas], conforme.RegraRecurso, UnidadesDeTeste.Cga).Value!;
-        processo.DefinirCronogramaFases([comCga], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            new OrigemCanonicaDaFase(
+                conforme.FaseCanonicaOrigemId, conforme.Codigo, conforme.OrigemData, conforme.AgrupaEtapas, conforme.PermiteComplementacao, conforme.ColetaInscricao,
+                conforme.ColetaSolicitacaoIsencao),
+            new DecisoesDeCronogramaDaFase(conforme.Ordem, conforme.Inicio, conforme.Fim, conforme.FaseConcluinteCodigo, UnidadesDeTeste.Cga),
+            new PublicacoesDaFase([.. conforme.Produtos], conforme.EmiteParecerIndividual, conforme.RegraRecurso),
+            [.. conforme.BancasRequeridas]).Value!;
+        processo.DefinirCronogramaFases([comCga], []).IsSuccess.Should().BeTrue();
 
         return processo;
     }
@@ -134,6 +121,6 @@ public sealed class DefinirCronogramaFasesUnidadeResponsavelTests
             FaseCanonicaDoResultadoFinal() with { Id = processo.CronogramaFases.Single().FaseCanonicaOrigemId });
         FaseCronogramaInput gravada = cadastrada with { UnidadeResponsavelId = UnidadesDeTeste.Cga.OrigemId };
 
-        return (cenario, new DefinirCronogramaFasesCommand(processo.Id, [gravada], PrecondicaoIfMatch.Curinga));
+        return (cenario, new DefinirCronogramaFasesCommand(processo.Id, [gravada]));
     }
 }

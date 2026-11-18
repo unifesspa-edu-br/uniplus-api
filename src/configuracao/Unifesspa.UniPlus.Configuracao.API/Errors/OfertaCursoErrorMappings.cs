@@ -172,6 +172,24 @@ internal static class OfertaCursoErrorMappings
                 "uniplus.configuracao.oferta_curso.ato_autorizacao_mec_tamanho",
                 "Tamanho do ato de autorização MEC inválido")),
 
+        new(OfertaCursoErrorCodes.CodigoObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.oferta_curso.codigo_obrigatorio",
+                "O código da oferta de curso é obrigatório")),
+
+        new(OfertaCursoErrorCodes.CodigoFormatoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.oferta_curso.codigo_formato_invalido",
+                "O código da oferta de curso está fora do formato")),
+
+        new(OfertaCursoErrorCodes.CodigoJaEmUso,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.configuracao.oferta_curso.codigo_ja_em_uso",
+                "Já existe uma oferta de curso ativa com este código")),
+
         new(OfertaCursoErrorCodes.NaoEncontrada,
             new DomainErrorMapping(
                 StatusCodes.Status404NotFound,

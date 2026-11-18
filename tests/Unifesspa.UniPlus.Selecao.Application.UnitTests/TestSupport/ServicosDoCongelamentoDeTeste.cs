@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -48,9 +49,9 @@ internal sealed class ServicosDoCongelamentoDeTeste
 
     public IProcessoSeletivoRepository Repositorio { get; private set; } = Substitute.For<IProcessoSeletivoRepository>();
 
-    public IDocumentoAPublicarRepository Documentos { get; private set; } = Substitute.For<IDocumentoAPublicarRepository>();
+    public IMotivoDoProcessoRepository MotivosEscolhidos { get; } = MotivoDeTeste.SemEscolha();
 
-    public IRascunhoDePublicacaoRepository Rascunhos { get; } = Substitute.For<IRascunhoDePublicacaoRepository>();
+    public IDocumentoAPublicarRepository Documentos { get; private set; } = Substitute.For<IDocumentoAPublicarRepository>();
 
     public IAtoDoProcessoRepository Atos { get; private set; } = Substitute.For<IAtoDoProcessoRepository>();
 
@@ -78,9 +79,9 @@ internal sealed class ServicosDoCongelamentoDeTeste
 
     public IResolvedorDaUnidadeResponsavel Unidades { get; private set; } = ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste();
 
-    public IRegistroCodecsEnvelope Codecs { get; private set; } = CodecsDeTeste.QueReidrataSemTiposDeAto();
+    public IRegraCatalogoReader RegrasDeConsolidacao { get; private set; } = RegrasDeConsolidacaoDeTeste.Catalogo();
 
-    public IFasesIniciadasDoProcesso FasesIniciadas { get; private set; } = FasesIniciadasDeTeste.Nenhuma();
+    public IRegistroCodecsEnvelope Codecs { get; private set; } = CodecsDeTeste.QueReidrataSemTiposDeAto();
 
     public TimeProvider Relogio { get; private set; } = new RelogioFixo(Agora);
 
@@ -92,6 +93,8 @@ internal sealed class ServicosDoCongelamentoDeTeste
 
     private IResolvedorFusoInstitucional Fuso { get; } = new ResolvedorFusoDeTeste();
 
+    private IResolvedorFusoInstitucional? FusoDaConferencia { get; set; }
+
     /// <summary>Os serviços de um processo que o repositório devolve para mutação, com o documento do edital confirmado.</summary>
     public static ServicosDoCongelamentoDeTeste Para(ProcessoSeletivo processo) =>
         new ServicosDoCongelamentoDeTeste().ComProcesso(processo);
@@ -100,6 +103,18 @@ internal sealed class ServicosDoCongelamentoDeTeste
     {
         Repositorio = RepositorioDoProcesso(processo);
         Documentos = RepositorioDeDocumento(processo.Id);
+
+        return ComMotivosDoProcesso(processo);
+    }
+
+    // O processo escolhe, no rascunho, os motivos das decisões que declara; a porta devolve essa escolha, inclusive depois da publicação.
+    public ServicosDoCongelamentoDeTeste ComMotivosDoProcesso(ProcessoSeletivo processo)
+    {
+        _ = MotivosDoProcessoDeTeste.Escolha(processo);
+        MotivosEscolhidos.ListarEscolhaAtualComOrigemAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(_ => MotivosDoProcessoDeTeste.Escolha(processo));
+        MotivosEscolhidos.ListarEscolhaAtualAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(_ => [.. MotivosDoProcessoDeTeste.Escolha(processo).Select(static m => m.Escolhido)]);
 
         return this;
     }
@@ -202,6 +217,13 @@ internal sealed class ServicosDoCongelamentoDeTeste
         return this;
     }
 
+    public ServicosDoCongelamentoDeTeste ComRegrasDeConsolidacao(IRegraCatalogoReader regras)
+    {
+        RegrasDeConsolidacao = regras;
+
+        return this;
+    }
+
     public ServicosDoCongelamentoDeTeste ComCodecs(IRegistroCodecsEnvelope codecs)
     {
         Codecs = codecs;
@@ -209,18 +231,19 @@ internal sealed class ServicosDoCongelamentoDeTeste
         return this;
     }
 
-    public ServicosDoCongelamentoDeTeste ComFasesIniciadas(IFasesIniciadasDoProcesso fasesIniciadas)
-    {
-        FasesIniciadas = fasesIniciadas;
-
-        return this;
-    }
-
-    /// <summary>A versão vigente que o repositório devolve ao processo, para a retificação e o fechamento da sessão.</summary>
+    /// <summary>A versão vigente que o repositório devolve ao processo, para a retificação.</summary>
     public ServicosDoCongelamentoDeTeste ComVersaoVigente(ProcessoSeletivo processo, VersaoConfiguracao versaoVigente)
     {
         ArgumentNullException.ThrowIfNull(processo);
         Repositorio.ObterVersaoAtualAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(versaoVigente);
+
+        return this;
+    }
+
+    /// <summary>O fuso que só a conferência da configuração resolve; o instante da publicação segue lido no fuso do ambiente.</summary>
+    public ServicosDoCongelamentoDeTeste ComFusoDaConferencia(IResolvedorFusoInstitucional fuso)
+    {
+        FusoDaConferencia = fuso;
 
         return this;
     }
@@ -232,15 +255,15 @@ internal sealed class ServicosDoCongelamentoDeTeste
         return this;
     }
 
-    public LeituraDoInstanteDaPublicacao LeituraDoInstante() => new(Relogio, Fuso);
+    public LeituraDoInstanteDoComando LeituraDoInstante() => new(Relogio, Fuso);
 
-    public ConferenciaDoAtoEDoDocumento AtoEDocumento() => new(Documentos, Repositorio, TiposDeAto, LeituraDoInstante());
+    public ConferenciaDoAtoEDoDocumento AtoEDocumento() => new(Documentos, Repositorio, new ConferenciaDoTipoDeAto(TiposDeAto), LeituraDoInstante());
 
-    public LeituraDaBaseDaRetificacao LeituraDaBase() => new(Repositorio, Atos, Codecs, FasesIniciadas);
+    public LeituraDaBaseDaRetificacao LeituraDaBase() => new(Repositorio, Atos, Codecs);
 
     public LeituraDasVersoesPublicadas VersoesPublicadas() => new(Repositorio, Codecs);
 
-    public ConferenciaDoCatalogoEDaProtecao Catalogos() => new(CatalogoDeFatos, TiposDocumento);
+    public ConferenciaDoCatalogoEDaProtecao Catalogos() => new(CatalogoDeFatos, TiposDocumento, Substitute.For<IFaseCanonicaReader>());
 
     public RecopiaAoCongelar Recopia() => new(Unidades, VersoesPublicadas());
 
@@ -251,31 +274,33 @@ internal sealed class ServicosDoCongelamentoDeTeste
     public ConferenciaDeConformidadeLegal ConformidadeLegal() =>
         new(ObrigatoriedadesLegais, Modalidades, TiposDocumento, TiposEtapa, TiposDeficiencia, RegrasDesempate);
 
-    public ConferenciaDosMotivosAoCongelar Motivos() => new(Repositorio);
+    public LeituraDosCadastrosDaConfiguracao CadastrosDaConfiguracao() => new(TiposDeAtoUnicos(), Contextos(), Corretores(), MotivosEscolhidos);
 
     public LeituraDoContextoDeContagemDePrazos Contextos() => new(Calendario, Fuso);
 
-    public ConferenciaDaConfiguracaoAoCongelar Conferencia() =>
-        new(Catalogos(), Recopia(), Fuso, TiposDeAtoUnicos(), Anexos(), ConformidadeLegal(), Motivos());
+    public LeituraDasRegrasCitadasNaConfiguracao Corretores() => new(RegrasDeConsolidacao);
 
-    public MontagemDoCongelamento Montagem() => new(Contextos(), Canonicalizer, Usuario);
+    public ConferenciaDosDocumentosDaOperacao DocumentosDaOperacao() => new(Anexos(), ConformidadeLegal());
+
+    public ConferenciaDaOperacaoAoCongelar Operacao() => new(DocumentosDaOperacao());
+
+    public ConferenciaDaConfiguracaoAoCongelar Conferencia() =>
+        new(Catalogos(), Recopia(), FusoDaConferencia ?? Fuso, CadastrosDaConfiguracao(), Operacao());
+
+    public MontagemDoCongelamento Montagem() => new(Canonicalizer, Usuario);
 
     public MontagemDaDivulgacao Divulgacao() => new(Certames, EnderecoNoAcervo());
 
-    public GravacaoDaVersaoCongelada Gravacao() => new(Repositorio, Atos, Rascunhos, Registro, Divulgacao(), UnitOfWork);
+    public GravacaoDaVersaoCongelada Gravacao() => new(Repositorio, Atos, Registro, Divulgacao(), UnitOfWork);
 
-    public CongelamentoDaVersao Congelamento() => new(Conferencia(), Montagem(), Gravacao(), UnitOfWork);
+    public CongelamentoDaVersao Congelamento() => new(AtoEDocumento(), Conferencia(), Montagem(), Gravacao(), UnitOfWork);
 
     public Task<(Result Resposta, IEnumerable<object> Eventos)> PublicarAsync(PublicarProcessoSeletivoCommand comando) =>
-        PublicarProcessoSeletivoCommandHandler.Handle(comando, Repositorio, AtoEDocumento(), Congelamento(), CancellationToken.None);
+        PublicarProcessoSeletivoCommandHandler.Handle(comando, Repositorio, Congelamento(), CancellationToken.None);
 
     public Task<(Result Resposta, IEnumerable<object> Eventos)> RetificarAsync(RetificarProcessoSeletivoCommand comando) =>
         RetificarProcessoSeletivoCommandHandler.Handle(
-            comando, Repositorio, AtoEDocumento(), Congelamento(), LeituraDaBase(), CancellationToken.None);
-
-    public Task<(Result Resposta, IEnumerable<object> Eventos)> FecharRetificacaoAsync(FecharRetificacaoCommand comando) =>
-        FecharRetificacaoCommandHandler.Handle(
-            comando, Repositorio, AtoEDocumento(), Congelamento(), LeituraDaBase(), CancellationToken.None);
+            comando, Repositorio, Congelamento(), LeituraDaBase(), CancellationToken.None);
 
     public Task<(Result Resposta, IEnumerable<object> Eventos)> PublicarAsync(Guid processoId) =>
         PublicarAsync(new PublicarProcessoSeletivoCommand(
@@ -285,11 +310,8 @@ internal sealed class ServicosDoCongelamentoDeTeste
         RetificarAsync(new RetificarProcessoSeletivoCommand(
             processoId, "Correção do prazo", "001/2026-R1", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: PublicacaoDeTeste.NovoAto()));
 
-    public Task<(Result Resposta, IEnumerable<object> Eventos)> FecharRetificacaoAsync(Guid processoId) =>
-        FecharRetificacaoAsync(new FecharRetificacaoCommand(
-            processoId, "001/2026-R1", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: PublicacaoDeTeste.NovoAto(), Precondicao: PrecondicaoIfMatch.Curinga));
+    public AvaliacaoDaConformidade Avaliacao() => new(Repositorio, Contextos(), Corretores(), TiposDeAtoUnicos(), Catalogos(), Codecs, MotivosEscolhidos);
 
     public Task<ConformidadeProcessoSeletivoDto?> ConformidadeAsync(ObterConformidadeProcessoSeletivoQuery consulta) =>
-        ObterConformidadeProcessoSeletivoQueryHandler.Handle(
-            consulta, Repositorio, Contextos(), TiposDeAtoUnicos(), Catalogos(), Codecs, CancellationToken.None);
+        ObterConformidadeProcessoSeletivoQueryHandler.Handle(consulta, Repositorio, Avaliacao(), CancellationToken.None);
 }

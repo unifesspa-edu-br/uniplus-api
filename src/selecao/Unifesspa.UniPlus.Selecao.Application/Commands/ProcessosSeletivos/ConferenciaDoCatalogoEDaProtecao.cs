@@ -6,8 +6,6 @@ using Domain.Entities;
 using Domain.Interfaces;
 using Domain.ValueObjects;
 
-using Kernel.Results;
-
 using Unifesspa.UniPlus.Configuracao.Contracts;
 
 /// <summary>
@@ -19,10 +17,11 @@ internal sealed record CatalogoVivo(
     IReadOnlyList<FatoCandidatoView> Fatos,
     IReadOnlyDictionary<string, FatoCandidatoView> PorCodigo,
     FatosDeModalidade FatosDeModalidade,
-    IReadOnlyDictionary<Guid, TipoDocumentoView> TiposVivos);
+    IReadOnlyDictionary<Guid, TipoDocumentoView> TiposVivos,
+    IReadOnlyDictionary<Guid, string> NomesDasFases);
 
-/// <summary>Lê o catálogo vivo e confere que a proteção que o envelope congela está aprovada.</summary>
-public sealed class ConferenciaDoCatalogoEDaProtecao(IFatoCandidatoReader fatos, ITipoDocumentoReader tiposDeDocumento)
+/// <summary>Lê o catálogo de fatos e os tipos de documento vivos, uma só vez por operação.</summary>
+public sealed class ConferenciaDoCatalogoEDaProtecao(IFatoCandidatoReader fatos, ITipoDocumentoReader tiposDeDocumento, IFaseCanonicaReader fases)
 {
     internal async Task<CatalogoVivo> LerAsync(ProcessoSeletivo processo, CancellationToken cancellationToken)
     {
@@ -31,24 +30,14 @@ public sealed class ConferenciaDoCatalogoEDaProtecao(IFatoCandidatoReader fatos,
             .LerTiposVivosAsync(processo, tiposDeDocumento, cancellationToken)
             .ConfigureAwait(false);
 
+        IReadOnlyList<FaseCanonicaView> fasesVivas = await fases.ListarVivasPorCodigosAsync(
+            [.. processo.CronogramaFases.Select(static fase => fase.Codigo).Distinct(StringComparer.Ordinal)], cancellationToken).ConfigureAwait(false);
+
         return new CatalogoVivo(
             catalogoDeFatos,
             catalogoDeFatos.ToDictionary(static f => f.Codigo, StringComparer.Ordinal),
             VocabularioDeFatos.ComValoresDeModalidade(catalogoDeFatos),
-            tiposVivos);
-    }
-
-    /// <summary>
-    /// O catálogo lido, desde que a proteção que o envelope congela esteja aprovada pela proteção de dados
-    /// (ADR-0153). A leitura dos tipos de documento que a confere é a mesma que a proteção congelada usa depois.
-    /// </summary>
-    internal async Task<Result<CatalogoVivo>> ConferirAsync(ProcessoSeletivo processo, CancellationToken cancellationToken)
-    {
-        CatalogoVivo catalogo = await LerAsync(processo, cancellationToken).ConfigureAwait(false);
-        Result protecaoAprovada = ConferenciaDaAprovacaoDaProtecao.Conferir(processo, catalogo.TiposVivos, catalogo.Fatos);
-
-        return protecaoAprovada.IsFailure
-            ? Result<CatalogoVivo>.ValidationFailure(protecaoAprovada.Errors)
-            : Result<CatalogoVivo>.Success(catalogo);
+            tiposVivos,
+            fasesVivas.ToDictionary(static fase => fase.Id, static fase => fase.Nome));
     }
 }

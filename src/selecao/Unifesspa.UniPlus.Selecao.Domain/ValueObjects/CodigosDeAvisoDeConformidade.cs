@@ -11,4 +11,10 @@ public static class CodigosDeAvisoDeConformidade
     /// mais de um ciclo recursal por declarações distintas.
     /// </summary>
     public const string CronogramaTipoDefinitivoEmMaisDeUmLugar = "cronograma_tipo_definitivo_em_mais_de_um_lugar";
+
+    /// <summary>
+    /// Uma fase declara a regra de homologação das inscrições sem nenhuma condição: ela homologa toda
+    /// inscrição enviada.
+    /// </summary>
+    public const string HomologacaoDasInscricoesSemCondicao = "homologacao_das_inscricoes_sem_condicao";
 }

@@ -25,25 +25,18 @@ public sealed class VagaOfertada : EntityBase
     private VagaOfertada() { }
 
     /// <summary>
-    /// Cria a linha do quadro. A modalidade precisa ter sido validada
-    /// previamente (INV-2 em <see cref="ModalidadeSelecionada.Criar"/>) — esta
-    /// factory só valida a quantidade, que é sempre não-negativa por
-    /// construção (a calculadora e o ramo institucional já recusam valores
-    /// negativos antes de chegar aqui).
+    /// Cria a linha do quadro. A quantidade vem do cálculo do quadro, depois de a conferência da forma recusar
+    /// a quantidade declarada negativa; uma negativa aqui é defeito de programa.
     /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">A quantidade é negativa.</exception>
     public static Result<VagaOfertada> Criar(Guid modalidadeOrigemId, string modalidadeCodigo, int quantidade)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(quantidade);
+
         if (string.IsNullOrWhiteSpace(modalidadeCodigo))
         {
             return Result<VagaOfertada>.Failure(new DomainError(
                 "VagaOfertada.ModalidadeCodigoObrigatorio", "Código da modalidade é obrigatório."));
-        }
-
-        if (quantidade < 0)
-        {
-            return Result<VagaOfertada>.Failure(new DomainError(
-                "ConfiguracaoDistribuicaoVagas.QuantidadeVagaNegativa",
-                $"A quantidade de vagas de \"{modalidadeCodigo}\" não pode ser negativa ({quantidade})."));
         }
 
         return Result<VagaOfertada>.Success(new VagaOfertada

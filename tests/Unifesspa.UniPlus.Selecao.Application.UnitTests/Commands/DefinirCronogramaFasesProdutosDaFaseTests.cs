@@ -23,7 +23,7 @@ public sealed class DefinirCronogramaFasesProdutosDaFaseTests
         CenarioDoCronogramaDeFases cenario = CenarioDoCronogramaDeFases.EmRascunho().SemVersaoVigenteDoTipoDeAto(AtoDaClassificacao);
         FaseCronogramaInput fase = cenario.CadastrarFase(FaseCanonicaDoResultadoFinal());
 
-        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(fase);
+        Result resultado = await cenario.DefinirFasesAsync(fase);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle()
@@ -38,7 +38,7 @@ public sealed class DefinirCronogramaFasesProdutosDaFaseTests
         CenarioDoCronogramaDeFases cenario = CenarioDoCronogramaDeFases.EmRascunho().ComTipoDeAto(TipoAtoDaClassificacao());
         FaseCronogramaInput fase = cenario.CadastrarFase(FaseCanonicaDoResultadoFinal()) with { Produtos = [ProdutoDaClassificacao(null)] };
 
-        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(fase);
+        Result resultado = await cenario.DefinirFasesAsync(fase);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(e =>
@@ -57,7 +57,7 @@ public sealed class DefinirCronogramaFasesProdutosDaFaseTests
         FaseCronogramaInput cadastrada = cenario.CadastrarFase(FaseCanonicaDoResultadoFinal());
         FaseCronogramaInput segunda = cadastrada with { Ordem = 2, Produtos = [ProdutoDoComunicado(PapelProdutoFaseCodigo.Definitivo)] };
 
-        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(primeira, segunda);
+        Result resultado = await cenario.DefinirFasesAsync(primeira, segunda);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Field).Should().BeEquivalentTo(["fases[1].produtos[0].papel"]);
@@ -75,7 +75,7 @@ public sealed class DefinirCronogramaFasesProdutosDaFaseTests
         FaseCronogramaInput cadastrada = cenario.CadastrarFase(FaseCanonicaDoResultadoFinal());
         FaseCronogramaInput fase = cadastrada with { Inicio = null, Fim = null, Produtos = [], EmiteParecerIndividual = true };
 
-        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(fase);
+        Result resultado = await cenario.DefinirFasesAsync(fase);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Field).Should().BeEquivalentTo(["fases[0]", "fases[0].emiteParecerIndividual"]);
@@ -88,7 +88,7 @@ public sealed class DefinirCronogramaFasesProdutosDaFaseTests
         CenarioDoCronogramaDeFases cenario = CenarioDoCronogramaDeFases.EmRascunho().ComTipoDeAto(TipoAtoDoComunicado());
         FaseCronogramaInput fase = cenario.CadastrarFase(FaseCanonicaDoResultadoFinal()) with { Produtos = [ProdutoDoComunicado(null)] };
 
-        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(fase);
+        Result resultado = await cenario.DefinirFasesAsync(fase);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         cenario.Processo.CronogramaFases.Should().ContainSingle()
@@ -101,7 +101,7 @@ public sealed class DefinirCronogramaFasesProdutosDaFaseTests
         CenarioDoCronogramaDeFases cenario = CenarioDoCronogramaDeFases.EmRascunho();
         FaseCronogramaInput fase = cenario.CadastrarFase(FaseCanonicaDoResultadoFinal()) with { Produtos = [ProdutoDaClassificacao("PRELIMINARY")] };
 
-        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(fase);
+        Result resultado = await cenario.DefinirFasesAsync(fase);
 
         resultado.IsFailure.Should().BeTrue(
             "aceitar o token desconhecido como ausência de papel transformaria erro de digitação em fase que deixa de produzir resultado, em silêncio");
@@ -121,7 +121,7 @@ public sealed class DefinirCronogramaFasesProdutosDaFaseTests
             Produtos = [ProdutoDoComunicado(PapelProdutoFaseCodigo.Preliminar), new ProdutoDaFaseInput("ATO_INEXISTENTE", null)],
         };
 
-        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(fase);
+        Result resultado = await cenario.DefinirFasesAsync(fase);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Field).Should().BeEquivalentTo(
@@ -134,9 +134,9 @@ public sealed class DefinirCronogramaFasesProdutosDaFaseTests
     {
         CenarioDoCronogramaDeFases cenario = CenarioDoCronogramaDeFases.EmRascunho().ComTipoDeAto(TipoAtoDaClassificacao());
         FaseCronogramaInput primeira = cenario.CadastrarFase(FaseCanonicaDoResultadoFinal());
-        FaseCronogramaInput segunda = cenario.CadastrarFase(FaseCanonicaDoResultadoFinal()) with { Ordem = 2 };
+        FaseCronogramaInput segunda = cenario.CadastrarFase(FaseCanonicaRecorrivel()) with { Ordem = 2 };
 
-        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(primeira, segunda);
+        Result resultado = await cenario.DefinirFasesAsync(primeira, segunda);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         await cenario.TipoAtoPublicadoReader.Received(1)

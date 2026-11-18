@@ -13,6 +13,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -30,11 +32,10 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
         ITipoAtoPublicadoReader reader = CatalogoDoLote();
         var tipoDaOperacao = new TipoAtoPublicadoView("EDITAL_DA_OPERACAO", "Edital", true, true, false, false);
 
-        Result<TiposDeAtoUnicosPorObjeto> resultado = await new ResolucaoDosTiposDeAtoUnicos(reader, AtosQueRegistram(atoDaLinhagem, "EDITAL_JA_REGISTRADO"), RelogioDeHoje)
-            .ConferirAsync(processo, tipoDaOperacao, [atoDaLinhagem], Hoje, SemCongelados(), CancellationToken.None);
+        TiposDeAtoUnicosPorObjeto resultado = await new ResolucaoDosTiposDeAtoUnicos(reader, AtosQueRegistram(atoDaLinhagem, "EDITAL_JA_REGISTRADO"), RelogioDeHoje)
+            .ParaOperacaoAsync(processo, tipoDaOperacao, [atoDaLinhagem], Hoje, SemCongelados(), CancellationToken.None);
 
-        resultado.IsSuccess.Should().BeTrue();
-        AfirmarAUnicidadeDoLote(resultado.Value!);
+        AfirmarAUnicidadeDoLote(resultado);
         await reader.Received(1).ListarVigentesAsync(Arg.Any<IReadOnlyCollection<string>>(), Hoje, Arg.Any<CancellationToken>());
         await reader.DidNotReceiveWithAnyArgs().ObterVigenteAsync(default!, default, default);
     }
@@ -56,28 +57,9 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
     [Fact(DisplayName = "Congela a classificação de cada tipo declarado, e recusa o tipo declarado que o catálogo não tem")]
     public void Congelamento_UmaEntradaPorTipoDeclarado_ERecusaOSemVersaoVigente()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        processo.DefinirCronogramaFases(
-            [FaseCronograma.Criar(
-                1, Guid.CreateVersion7(), "CLASSIFICACAO", OrigemDataFase.NaExecucao,
-                agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
-                inicio: null, fim: null,
-                produtos:
-                [
-                    ProdutoDaFase.Criar("RESULTADO_X", PapelProdutoFase.Preliminar),
-                    ProdutoDaFase.Criar("RESULTADO_X", PapelProdutoFase.Definitivo),
-                    ProdutoDaFase.Criar("AVISO_UNICO", null),
-                ],
-                faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!],
-            [],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        var classificacoes = new Dictionary<string, ClassificacaoDoTipoDeAto>(StringComparer.Ordinal)
-        {
-            ["RESULTADO_X"] = new(EhResultado: true, CongelaConfiguracao: false),
-            ["AVISO_UNICO"] = new(EhResultado: false, CongelaConfiguracao: false),
-        };
-        TiposDeAtoUnicosPorObjeto tipos = TiposDeAtoUnicosPorObjeto.ParaChecklist(
-            new Dictionary<string, string>(StringComparer.Ordinal) { ["AVISO_UNICO"] = "Aviso único" }, [], classificacoes);
+        ProcessoSeletivo processo = ProcessoQueProduz(
+            ("RESULTADO_X", PapelProdutoFase.Preliminar), ("RESULTADO_X", PapelProdutoFase.Definitivo), ("AVISO_UNICO", null));
+        TiposDeAtoUnicosPorObjeto tipos = TiposComResultadoXEAvisoUnico();
 
         Result<IReadOnlyDictionary<string, Application.Abstractions.TipoDeAtoCongelado>> congelados = CongelamentoDosTiposDeAto.Resolver(processo, tipos);
 
@@ -99,16 +81,15 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
         ITipoAtoPublicadoReader reader = CatalogoDeHojeComOResultadoUnicoEOTipoNovo();
         Dictionary<string, Application.Abstractions.TipoDeAtoCongelado> congelados = ResultadoXCongeladoComoComum();
 
-        Result<TiposDeAtoUnicosPorObjeto> resultado = await ConferirRetificacaoAsync(processo, reader, congelados);
+        TiposDeAtoUnicosPorObjeto resultado = await ConferirRetificacaoAsync(processo, reader, congelados);
 
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        AfirmarQueOCatalogoDeHojeNaoAlcancaOTipoCongelado(processo, resultado.Value!);
+        AfirmarQueOCatalogoDeHojeNaoAlcancaOTipoCongelado(processo, resultado);
         await reader.Received(1).ListarVigentesAsync(
             Arg.Is<IReadOnlyCollection<string>>(c => c.Single() == "TIPO_NOVO"), Hoje, Arg.Any<CancellationToken>());
-        AfirmarQueAVersaoNovaMantemAClassificacao(processo, resultado.Value!, congelados);
+        AfirmarQueAVersaoNovaMantemAClassificacao(processo, resultado, congelados);
     }
 
-    [Fact(DisplayName = "O ato da operação de mesmo código que um item do cronograma não sobrescreve a classificação congelada do item: os gates não recusam e a versão nova a mantém")]
+    [Fact(DisplayName = "O ato da operação de mesmo código que um item do cronograma não sobrescreve a classificação congelada do item: a conferência da configuração não recusa e a versão nova a mantém")]
     public async Task Retificacao_AtoDaOperacaoComOCodigoDeItemCongelado_NaoSobrescreveOItem()
     {
         ProcessoSeletivo processo = ProcessoQueProduz(("RESULTADO_X", PapelProdutoFase.Preliminar), ("RESULTADO_X", PapelProdutoFase.Definitivo));
@@ -116,38 +97,50 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
         // O catálogo de hoje diz único e congelante, e a retificação usa esse mesmo código como tipo do ato.
         var tipoDaOperacao = new TipoAtoPublicadoView("RESULTADO_X", "Resultado X", CongelaConfiguracao: true, UnicoPorObjeto: true, EfeitoIrreversivel: false, EhResultado: true);
 
-        Result<TiposDeAtoUnicosPorObjeto> resultado = await new ResolucaoDosTiposDeAtoUnicos(
+        TiposDeAtoUnicosPorObjeto resultado = await new ResolucaoDosTiposDeAtoUnicos(
                 Substitute.For<ITipoAtoPublicadoReader>(), Substitute.For<IAtoDoProcessoRepository>(), RelogioDeHoje)
-            .ConferirAsync(processo, tipoDaOperacao, [], Hoje, congelados, CancellationToken.None);
+            .ParaOperacaoAsync(processo, tipoDaOperacao, [], Hoje, congelados, CancellationToken.None);
 
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!.EhUnico("RESULTADO_X").Should().BeFalse("a unicidade do item é a congelada");
-        resultado.Value.AtoDaOperacaoEhUnico.Should().BeTrue("o ato da operação tem a vaga dele");
-        TiposDeAtoDoCronograma.PendenciaDoTipoQueCongelaDeclaradoComoResultado(EstadoDaConfiguracao.De(processo), resultado.Value).Should().BeNull();
-        CongelamentoDosTiposDeAto.Resolver(processo, resultado.Value).Value!["RESULTADO_X"].Should().Be(congelados["RESULTADO_X"]);
+        resultado.EhUnico("RESULTADO_X").Should().BeFalse("a unicidade do item é a congelada");
+        resultado.AtoDaOperacaoEhUnico.Should().BeTrue("o ato da operação tem a vaga dele");
+        CausasDoTipoQueCongelaComoResultado(processo, resultado).Should().BeEmpty();
+        CongelamentoDosTiposDeAto.Resolver(processo, resultado).Value!["RESULTADO_X"].Should().Be(congelados["RESULTADO_X"]);
     }
 
-    private static Task<Result<TiposDeAtoUnicosPorObjeto>> ConferirRetificacaoAsync(
+    private static Task<TiposDeAtoUnicosPorObjeto> ConferirRetificacaoAsync(
         ProcessoSeletivo processo,
         ITipoAtoPublicadoReader reader,
         IReadOnlyDictionary<string, Application.Abstractions.TipoDeAtoCongelado> congelados) =>
         new ResolucaoDosTiposDeAtoUnicos(reader, Substitute.For<IAtoDoProcessoRepository>(), RelogioDeHoje)
-            .ConferirAsync(
+            .ParaOperacaoAsync(
                 processo, new TipoAtoPublicadoView("EDITAL_RETIFICACAO", "Retificação", true, false, false, false), [],
                 Hoje, congelados, CancellationToken.None);
+
+    private static TiposDeAtoUnicosPorObjeto TiposComResultadoXEAvisoUnico()
+    {
+        var classificacoes = new Dictionary<string, ClassificacaoDoTipoDeAto>(StringComparer.Ordinal)
+        {
+            ["RESULTADO_X"] = new(EhResultado: true, CongelaConfiguracao: false),
+            ["AVISO_UNICO"] = new(EhResultado: false, CongelaConfiguracao: false),
+        };
+        return TiposDeAtoUnicosPorObjeto.ParaChecklist(
+            new Dictionary<string, string>(StringComparer.Ordinal) { ["AVISO_UNICO"] = "Aviso único" }, [], classificacoes);
+    }
+
+    private static FaseCronograma FaseDeClassificacaoQuePublica(params (string Tipo, PapelProdutoFase? Papel)[] produtos) => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            Guid.CreateVersion7(), "CLASSIFICACAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false,
+            ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(
+            Produtos: [.. produtos.Select(static p => ProdutoDaFase.Criar(p.Tipo, p.Papel))], EmiteParecerIndividual: false,
+            RegraRecurso: null),
+        bancasRequeridas: []).Value!;
 
     private static ProcessoSeletivo ProcessoQueProduz(params (string Tipo, PapelProdutoFase? Papel)[] produtos)
     {
         ProcessoSeletivo processo = ProcessosDeTeste.SemConfiguracao("PS", OrigemCandidatos.ImportacaoExterna);
-        processo.DefinirCronogramaFases(
-            [FaseCronograma.Criar(
-                1, Guid.CreateVersion7(), "CLASSIFICACAO", OrigemDataFase.NaExecucao,
-                agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
-                inicio: null, fim: null,
-                produtos: [.. produtos.Select(static p => ProdutoDaFase.Criar(p.Tipo, p.Papel))],
-                faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!],
-            [],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([FaseDeClassificacaoQuePublica(produtos)], []).IsSuccess.Should().BeTrue();
 
         return processo;
     }
@@ -228,8 +221,12 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
     {
         tipos.EhUnico("RESULTADO_X").Should().BeFalse("a marcação de único congelada vale, e não a do catálogo de hoje");
         tipos.ClassificacaoDe("RESULTADO_X")!.CongelaConfiguracao.Should().BeFalse();
-        TiposDeAtoDoCronograma.PendenciaDoTipoQueCongelaDeclaradoComoResultado(EstadoDaConfiguracao.De(processo), tipos).Should().BeNull();
+        CausasDoTipoQueCongelaComoResultado(processo, tipos).Should().BeEmpty();
     }
+
+    private static IReadOnlyList<FieldError> CausasDoTipoQueCongelaComoResultado(ProcessoSeletivo processo, TiposDeAtoUnicosPorObjeto tipos) =>
+        ConferenciaDosTiposDeAto.ConferirTiposQueCongelamComoResultado(
+            CronogramaDoProcesso.Do(processo.CronogramaFases), EtapasDoProcesso.Das(processo.Etapas), tipos);
 
     private static void AfirmarQueAVersaoNovaMantemAClassificacao(
         ProcessoSeletivo processo, TiposDeAtoUnicosPorObjeto tipos, Dictionary<string, Application.Abstractions.TipoDeAtoCongelado> congelados)

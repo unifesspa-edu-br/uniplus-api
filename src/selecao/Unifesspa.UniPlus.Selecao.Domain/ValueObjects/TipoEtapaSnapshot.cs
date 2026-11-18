@@ -19,7 +19,7 @@ public sealed record TipoEtapaSnapshot
     private TipoEtapaSnapshot() { }
 
     private TipoEtapaSnapshot(
-        Guid origemId, string codigo, string nome, bool admitePontuacao, bool admiteEliminacao, bool notaDeOrigemNoEnem)
+        Guid origemId, string codigo, string nome, bool admitePontuacao, bool admiteEliminacao, bool notaDeOrigemNoEnem, bool exigeCorrecaoIndependente)
     {
         OrigemId = origemId;
         Codigo = codigo;
@@ -27,6 +27,7 @@ public sealed record TipoEtapaSnapshot
         AdmitePontuacao = admitePontuacao;
         AdmiteEliminacao = admiteEliminacao;
         NotaDeOrigemNoEnem = notaDeOrigemNoEnem;
+        ExigeCorrecaoIndependente = exigeCorrecaoIndependente;
     }
 
     /// <remarks>Usado apenas na construção; a identidade é persistida no próprio snapshot.</remarks>
@@ -46,73 +47,146 @@ public sealed record TipoEtapaSnapshot
     /// </summary>
     public bool NotaDeOrigemNoEnem { get; private set; }
 
+    /// <summary>
+    /// Se as etapas do tipo são corrigidas por mais de um corretor, cada um independente dos outros, quando o tipo foi
+    /// congelado. Regravado com os demais sinalizadores quando o caráter da etapa muda.
+    /// </summary>
+    public bool ExigeCorrecaoIndependente { get; private set; }
+
     public static Result<TipoEtapaSnapshot> Criar(
         Guid origemId,
         string codigo,
         string nome,
         bool admitePontuacao,
         bool admiteEliminacao,
-        bool notaDeOrigemNoEnem)
+        bool notaDeOrigemNoEnem,
+        bool exigeCorrecaoIndependente = false)
+    {
+        DomainError? recusa = RecusaDaIdentidade(origemId, codigo, nome)
+            ?? RecusaDoCaraterAdmitido(admitePontuacao, admiteEliminacao, notaDeOrigemNoEnem, exigeCorrecaoIndependente);
+        if (recusa is not null)
+        {
+            return Result<TipoEtapaSnapshot>.Failure(recusa);
+        }
+
+        return CriarComTextoCongelado(origemId, codigo, nome, admitePontuacao, admiteEliminacao, notaDeOrigemNoEnem, exigeCorrecaoIndependente);
+    }
+
+    private static DomainError? RecusaDaIdentidade(Guid origemId, string codigo, string nome)
     {
         if (origemId == Guid.Empty)
         {
-            return Falha("TipoEtapaSnapshot.OrigemIdObrigatorio", "Origem do tipo de etapa é obrigatória.");
+            return new("TipoEtapaSnapshot.OrigemIdObrigatorio", "Origem do tipo de etapa é obrigatória.");
         }
+
         if (string.IsNullOrWhiteSpace(codigo))
         {
-            return Falha("TipoEtapaSnapshot.CodigoObrigatorio", "Código do tipo de etapa é obrigatório.");
-        }
-        if (string.IsNullOrWhiteSpace(nome))
-        {
-            return Falha("TipoEtapaSnapshot.NomeObrigatorio", "Nome do tipo de etapa é obrigatório.");
+            return new("TipoEtapaSnapshot.CodigoObrigatorio", "Código do tipo de etapa é obrigatório.");
         }
 
-        // O cadastro de tipos não admite tipo que não pontua nem elimina — nenhum caráter de
-        // etapa sobraria para ele. A cópia congelada carrega a mesma garantia: sem ela, um
-        // envelope adulterado reporia uma etapa cujo caráter nenhum tipo real admitiria.
-        if (!admitePontuacao && !admiteEliminacao)
+        return string.IsNullOrWhiteSpace(nome) ? new("TipoEtapaSnapshot.NomeObrigatorio", "Nome do tipo de etapa é obrigatório.") : null;
+    }
+
+    /// <summary>
+    /// O cadastro de tipos não admite tipo que não pontua nem elimina (nenhum caráter de etapa sobraria para ele), nem
+    /// tipo com nota do ENEM que não pontue, nem o que reúna nota do ENEM e correção independente (a nota vem do INEP e
+    /// ninguém a corrige). A cópia congelada carrega as mesmas garantias: sem elas, um envelope adulterado reporia uma
+    /// etapa que nenhum tipo real admitiria.
+    /// </summary>
+    private static DomainError? RecusaDoCaraterAdmitido(
+        bool admitePontuacao, bool admiteEliminacao, bool notaDeOrigemNoEnem, bool exigeCorrecaoIndependente) =>
+        RecusaDoTipoSemCaraterAdmitido(admitePontuacao, admiteEliminacao)
+        ?? RecusaDaNotaDeOrigemNoEnem(notaDeOrigemNoEnem, admitePontuacao, exigeCorrecaoIndependente);
+
+    private static DomainError? RecusaDoTipoSemCaraterAdmitido(bool admitePontuacao, bool admiteEliminacao)
+    {
+        if (admitePontuacao || admiteEliminacao)
         {
-            return Falha(
-                "TipoEtapaSnapshot.SemCaraterAdmitido",
-                "Snapshot do tipo de etapa deve admitir compor a nota final, eliminar candidato, ou os dois.");
+            return null;
         }
 
-        // O cadastro não admite tipo com nota do ENEM que não pontue; o envelope que
-        // chegasse assim reporia uma etapa de nota do ENEM que não compõe a média.
-        if (notaDeOrigemNoEnem && !admitePontuacao)
+        return new(
+            "TipoEtapaSnapshot.SemCaraterAdmitido",
+            "A cópia congelada do tipo de etapa deve admitir compor a nota final, eliminar candidato, ou os dois.");
+    }
+
+    private static DomainError? RecusaDaNotaDeOrigemNoEnem(bool notaDeOrigemNoEnem, bool admitePontuacao, bool exigeCorrecaoIndependente)
+    {
+        if (!notaDeOrigemNoEnem)
         {
-            return Falha(
-                "TipoEtapaSnapshot.NotaDeOrigemNoEnemSemPontuacao",
-                "Snapshot do tipo de etapa com nota de origem no ENEM deve admitir compor a nota final.");
+            return null;
         }
 
-        // NFC na fronteira de congelamento (mesma normalização do payload canônico,
-        // HashCanonicalComputer.NormalizeNfc): sem isso, o mesmo código digitado em forma
-        // decomposta aqui e recomposta (NFC) ao serializar no envelope vira dois valores
-        // ordinalmente diferentes depois de um ciclo de retificação descartada — o código
-        // congelado muda de representação sem que o dado mude de significado, e
-        // AvaliadorConformidadeLegal, que compara por igualdade ordinal, passa a reportar a
-        // etapa como ausente mesmo com a regra e a etapa usando o "mesmo" código.
-        string? codigoNormalizado = TextoCongelado.Normalizar(codigo);
-        string? nomeNormalizado = TextoCongelado.Normalizar(nome);
+        return RecusaDaNotaDeOrigemNoEnemSemPontuacao(admitePontuacao)
+            ?? RecusaDaCorrecaoIndependenteComNotaDeOrigemNoEnem(exigeCorrecaoIndependente);
+    }
 
-        // Defesa de decode: um envelope adulterado não pode injetar nulo, controle ou formatação e só falhar
-        // depois, na constraint do Postgres — o VO recusa aqui, na fronteira do domínio.
-        if (codigoNormalizado is null || nomeNormalizado is null
-            || TextoCongelado.TemCaractereInvalido(codigoNormalizado) || TextoCongelado.TemCaractereInvalido(nomeNormalizado))
+    private static DomainError? RecusaDaNotaDeOrigemNoEnemSemPontuacao(bool admitePontuacao)
+    {
+        if (admitePontuacao)
         {
-            return Falha(
+            return null;
+        }
+
+        return new(
+            "TipoEtapaSnapshot.NotaDeOrigemNoEnemSemPontuacao",
+            "A cópia congelada do tipo de etapa com nota de origem no ENEM deve admitir compor a nota final.");
+    }
+
+    private static DomainError? RecusaDaCorrecaoIndependenteComNotaDeOrigemNoEnem(bool exigeCorrecaoIndependente)
+    {
+        if (!exigeCorrecaoIndependente)
+        {
+            return null;
+        }
+
+        return new(
+            "TipoEtapaSnapshot.CorrecaoIndependenteComNotaDeOrigemNoEnem",
+            "A cópia congelada do tipo de etapa com nota de origem no ENEM não pode exigir correção independente: a nota vem do INEP.");
+    }
+
+    /// <summary>
+    /// NFC na fronteira de congelamento (mesma normalização do payload canônico, HashCanonicalComputer.NormalizeNfc): sem
+    /// isso, o mesmo código digitado em forma decomposta aqui e recomposta (NFC) ao serializar no envelope vira dois valores
+    /// ordinalmente diferentes depois de um ciclo de retificação descartada — o código congelado muda de representação sem
+    /// que o dado mude de significado, e AvaliadorConformidadeLegal, que compara por igualdade ordinal, passa a reportar a
+    /// etapa como ausente mesmo com a regra e a etapa usando o "mesmo" código.
+    /// </summary>
+    private static Result<TipoEtapaSnapshot> CriarComTextoCongelado(
+        Guid origemId,
+        string codigo,
+        string nome,
+        bool admitePontuacao,
+        bool admiteEliminacao,
+        bool notaDeOrigemNoEnem,
+        bool exigeCorrecaoIndependente)
+    {
+        string? codigoCongelado = TextoCongelado.Normalizar(codigo);
+        string? nomeCongelado = TextoCongelado.Normalizar(nome);
+        DomainError? recusa = RecusaDoTextoCongelado(codigoCongelado, nomeCongelado);
+
+        return recusa is not null
+            ? Result<TipoEtapaSnapshot>.Failure(recusa)
+            : Result<TipoEtapaSnapshot>.Success(new TipoEtapaSnapshot(
+                origemId, codigoCongelado!, nomeCongelado!, admitePontuacao, admiteEliminacao, notaDeOrigemNoEnem, exigeCorrecaoIndependente));
+    }
+
+    /// <summary>
+    /// Defesa de decode: um envelope adulterado não pode injetar nulo, controle ou formatação e só falhar depois, na
+    /// constraint do Postgres — o VO recusa aqui, na fronteira do domínio.
+    /// </summary>
+    private static DomainError? RecusaDoTextoCongelado(string? codigo, string? nome)
+    {
+        if (codigo is null || nome is null || TextoCongelado.TemCaractereInvalido(codigo) || TextoCongelado.TemCaractereInvalido(nome))
+        {
+            return new(
                 "TipoEtapaSnapshot.CaractereInvalido",
-                "Snapshot do tipo de etapa não pode conter o caractere nulo, de controle ou de formatação, nem caractere que não seja texto.");
+                "A cópia congelada do tipo de etapa não pode conter o caractere nulo, de controle ou de formatação, nem caractere que não seja texto.");
         }
 
-        if (codigoNormalizado.Length > 64 || nomeNormalizado.Length > 200)
-        {
-            return Falha("TipoEtapaSnapshot.TamanhoInvalido", "Snapshot do tipo de etapa excede o tamanho permitido.");
-        }
-
-        return Result<TipoEtapaSnapshot>.Success(new TipoEtapaSnapshot(
-            origemId, codigoNormalizado, nomeNormalizado, admitePontuacao, admiteEliminacao, notaDeOrigemNoEnem));
+        return codigo.Length > 64 || nome.Length > 200
+            ? new("TipoEtapaSnapshot.TamanhoInvalido", "A cópia congelada do tipo de etapa excede o tamanho permitido.")
+            : null;
     }
 
     /// <summary>
@@ -125,16 +199,14 @@ public sealed record TipoEtapaSnapshot
     /// cadastro, que já as cumpre; uma recusa aqui é erro de programação, não dado de entrada,
     /// e por isso lança em vez de devolver <c>Result</c>.
     /// </remarks>
-    public TipoEtapaSnapshot ComSinalizadores(bool admitePontuacao, bool admiteEliminacao)
+    public TipoEtapaSnapshot ComSinalizadores(bool admitePontuacao, bool admiteEliminacao, bool exigeCorrecaoIndependente)
     {
-        Result<TipoEtapaSnapshot> relido = Criar(OrigemId, Codigo, Nome, admitePontuacao, admiteEliminacao, NotaDeOrigemNoEnem);
+        Result<TipoEtapaSnapshot> relido = Criar(
+            OrigemId, Codigo, Nome, admitePontuacao, admiteEliminacao, NotaDeOrigemNoEnem, exigeCorrecaoIndependente);
         return relido.IsSuccess
             ? relido.Value!
             : throw new ArgumentException(relido.Error!.Message, nameof(admitePontuacao));
     }
 
     public override string ToString() => Codigo;
-
-    private static Result<TipoEtapaSnapshot> Falha(string code, string message) =>
-        Result<TipoEtapaSnapshot>.Failure(new DomainError(code, message));
 }

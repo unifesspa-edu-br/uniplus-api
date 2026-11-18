@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Reduz um quadro fixado pelo edital cuja soma passa do <c>VO_base</c>, aplicando o motor
+/// Reduz um quadro fixado pelo edital cuja soma passa das vagas ofertadas base, aplicando o motor
 /// que a regra de ajuste declara. Serviço de domínio puro: recebe o quadro já resolvido e
 /// não consulta cadastro (ADR-0013).
 /// </summary>
@@ -25,112 +25,86 @@ public static class ReconciliadorQuadroInstitucional
     /// entregar como reconciliado o que não fecha.
     /// </remarks>
     public static Result<QuadroReconciliado> Reduzir(
-        IReadOnlyList<string> codigos,
-        IReadOnlyList<int> quantidades,
-        int excesso,
-        ArgsRegraAjusteDistribuicao args)
+        IReadOnlyList<string> codigos, IReadOnlyList<int> quantidades, int excesso, ParametrosRegraAjusteDistribuicao parametros)
     {
         ArgumentNullException.ThrowIfNull(codigos);
         ArgumentNullException.ThrowIfNull(quantidades);
-        ArgumentNullException.ThrowIfNull(args);
+        ArgumentNullException.ThrowIfNull(parametros);
 
-        if (excesso <= 0)
-        {
-            return Result<QuadroReconciliado>.Success(new QuadroReconciliado(quantidades, Reduzido: 0));
-        }
-
-        return args switch
-        {
-            ArgsReduzirDe reduzirDe => ReduzirDeUmaModalidade(codigos, quantidades, excesso, reduzirDe),
-            ArgsReduzirProporcionalEm proporcional => ReduzirProporcionalmente(codigos, quantidades, excesso, proporcional),
-            _ => throw new UnreachableException(
-                $"O motor {args.GetType().Name} não é uma das variantes de {nameof(ArgsRegraAjusteDistribuicao)}."),
-        };
+        return excesso <= 0
+            ? Result<QuadroReconciliado>.Success(new QuadroReconciliado(quantidades, Reduzido: 0))
+            : ReduzirConformeOMotor(codigos, quantidades, excesso, parametros);
     }
 
+    private static Result<QuadroReconciliado> ReduzirConformeOMotor(
+        IReadOnlyList<string> codigos, IReadOnlyList<int> quantidades, int excesso, ParametrosRegraAjusteDistribuicao parametros) =>
+        parametros switch
+        {
+            ParametrosReduzirDe reduzirDe => ReduzirDeUmaModalidade(codigos, quantidades, excesso, reduzirDe),
+            ParametrosReduzirProporcionalEm proporcional => ReduzirProporcionalmente(codigos, quantidades, excesso, proporcional),
+            _ => throw new UnreachableException(
+                $"O motor {parametros.GetType().Name} não é uma das variantes de {nameof(ParametrosRegraAjusteDistribuicao)}."),
+        };
+
     private static Result<QuadroReconciliado> ReduzirDeUmaModalidade(
-        IReadOnlyList<string> codigos,
-        IReadOnlyList<int> quantidades,
-        int excesso,
-        ArgsReduzirDe args)
+        IReadOnlyList<string> codigos, IReadOnlyList<int> quantidades, int excesso, ParametrosReduzirDe parametros)
     {
-        int indice = IndiceDe(codigos, args.ModalidadeCodigo);
+        int indice = IndiceDe(codigos, parametros.ModalidadeCodigo);
         if (indice < 0)
         {
-            return ModalidadeForaDoQuadro(args.ModalidadeCodigo);
+            return ModalidadeForaDoQuadro(parametros.ModalidadeCodigo);
         }
 
-        if (quantidades[indice] < excesso)
-        {
-            return Result<QuadroReconciliado>.Failure(new DomainError(
-                "ConfiguracaoDistribuicaoVagas.AjusteNaoAbsorveOExcesso",
-                $"A modalidade {args.ModalidadeCodigo} tem {quantidades[indice]} vaga(s) e o excesso é de {excesso}."));
-        }
-
-        int[] reduzidas = [.. quantidades];
-        reduzidas[indice] -= excesso;
-
-        return Result<QuadroReconciliado>.Success(new QuadroReconciliado(reduzidas, excesso));
+        return quantidades[indice] < excesso
+            ? ExcessoNaoAbsorvido($"A modalidade {parametros.ModalidadeCodigo} tem {quantidades[indice]} vaga(s) e o excesso é de {excesso}.")
+            : Retirar(quantidades, [indice], [excesso], excesso);
     }
 
     private static Result<QuadroReconciliado> ReduzirProporcionalmente(
-        IReadOnlyList<string> codigos,
-        IReadOnlyList<int> quantidades,
-        int excesso,
-        ArgsReduzirProporcionalEm args)
+        IReadOnlyList<string> codigos, IReadOnlyList<int> quantidades, int excesso, ParametrosReduzirProporcionalEm parametros)
     {
-        List<int> alvos = [];
-        foreach (string codigo in args.ModalidadeCodigos)
+        string? ausente = parametros.ModalidadeCodigos.FirstOrDefault(codigo => IndiceDe(codigos, codigo) < 0);
+        if (ausente is not null)
         {
-            int indice = IndiceDe(codigos, codigo);
-            if (indice < 0)
-            {
-                return ModalidadeForaDoQuadro(codigo);
-            }
-
-            alvos.Add(indice);
+            return ModalidadeForaDoQuadro(ausente);
         }
 
-        int disponivel = alvos.Sum(i => quantidades[i]);
-        if (disponivel < excesso)
-        {
-            return Result<QuadroReconciliado>.Failure(new DomainError(
-                "ConfiguracaoDistribuicaoVagas.AjusteNaoAbsorveOExcesso",
-                $"As modalidades do ajuste somam {disponivel} vaga(s) e o excesso é de {excesso}."));
-        }
+        int[] alvos = [.. parametros.ModalidadeCodigos.Select(codigo => IndiceDe(codigos, codigo))];
+        int disponivel = alvos.Sum(indice => quantidades[indice]);
+        return disponivel < excesso
+            ? ExcessoNaoAbsorvido($"As modalidades do ajuste somam {disponivel} vaga(s) e o excesso é de {excesso}.")
+            : Retirar(quantidades, alvos, CortesProporcionais(quantidades, alvos, excesso, disponivel), excesso);
+    }
 
+    // Maior resto: a parte inteira de cada proporção deixa sobra, e distribuí-la pelos maiores
+    // restos é o que faz o total retirado bater exatamente com o excesso. Sem isso o quadro
+    // fecharia com uma ou duas vagas de diferença, conforme o arredondamento.
+    private static int[] CortesProporcionais(IReadOnlyList<int> quantidades, int[] alvos, int excesso, int disponivel)
+    {
+        long[] numeradores = [.. alvos.Select(indice => (long)quantidades[indice] * excesso)];
+        int sobra = excesso - (int)numeradores.Sum(numerador => numerador / disponivel);
+        HashSet<int> comResto = [.. Enumerable.Range(0, alvos.Length)
+            .OrderByDescending(posicao => numeradores[posicao] % disponivel)
+            .ThenBy(posicao => alvos[posicao])
+            .Take(sobra)];
+
+        return [.. numeradores.Select((numerador, posicao) => (int)(numerador / disponivel) + (comResto.Contains(posicao) ? 1 : 0))];
+    }
+
+    private static Result<QuadroReconciliado> Retirar(
+        IReadOnlyList<int> quantidades, int[] indices, int[] cortes, int excesso)
+    {
         int[] reduzidas = [.. quantidades];
-
-        // Maior resto: a parte inteira de cada proporção deixa sobra, e distribuí-la pelos
-        // maiores restos é o que faz o total retirado bater exatamente com o excesso. Sem
-        // isso o quadro fecharia com uma ou duas vagas de diferença, conforme o arredondamento.
-        int[] cortePorAlvo = new int[alvos.Count];
-        long[] restos = new long[alvos.Count];
-        int distribuido = 0;
-
-        for (int i = 0; i < alvos.Count; i++)
+        for (int i = 0; i < indices.Length; i++)
         {
-            long numerador = (long)quantidades[alvos[i]] * excesso;
-            cortePorAlvo[i] = (int)(numerador / disponivel);
-            restos[i] = numerador % disponivel;
-            distribuido += cortePorAlvo[i];
-        }
-
-        foreach (int i in Enumerable.Range(0, alvos.Count)
-            .OrderByDescending(i => restos[i])
-            .ThenBy(i => alvos[i])
-            .Take(excesso - distribuido))
-        {
-            cortePorAlvo[i]++;
-        }
-
-        for (int i = 0; i < alvos.Count; i++)
-        {
-            reduzidas[alvos[i]] -= cortePorAlvo[i];
+            reduzidas[indices[i]] -= cortes[i];
         }
 
         return Result<QuadroReconciliado>.Success(new QuadroReconciliado(reduzidas, excesso));
     }
+
+    private static Result<QuadroReconciliado> ExcessoNaoAbsorvido(string detalhe) =>
+        Result<QuadroReconciliado>.Failure(new DomainError("ConfiguracaoDistribuicaoVagas.AjusteNaoAbsorveOExcesso", detalhe));
 
     private static int IndiceDe(IReadOnlyList<string> codigos, string codigo)
     {

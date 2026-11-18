@@ -13,6 +13,8 @@ public static class TipoMotivoDeDecisaoCodigo
     public const string Heteroidentificacao = "HETEROIDENTIFICACAO";
     public const string AvaliacaoBiopsicossocial = "AVALIACAO_BIOPSICOSSOCIAL";
     public const string Classificacao = "CLASSIFICACAO";
+    public const string GabaritoDaProva = "GABARITO_DA_PROVA";
+    public const string NotaDaEtapa = "NOTA_DA_ETAPA";
 
     private static readonly Dictionary<string, TipoMotivoDeDecisao> PorCodigo = new(StringComparer.Ordinal)
     {
@@ -22,6 +24,8 @@ public static class TipoMotivoDeDecisaoCodigo
         [Heteroidentificacao] = TipoMotivoDeDecisao.Heteroidentificacao,
         [AvaliacaoBiopsicossocial] = TipoMotivoDeDecisao.AvaliacaoBiopsicossocial,
         [Classificacao] = TipoMotivoDeDecisao.Classificacao,
+        [GabaritoDaProva] = TipoMotivoDeDecisao.GabaritoDaProva,
+        [NotaDaEtapa] = TipoMotivoDeDecisao.NotaDaEtapa,
     };
 
     /// <summary>Os códigos aceitos, na ordem de declaração do enum.</summary>

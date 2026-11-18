@@ -11,9 +11,11 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 /// <summary>
 /// Handler convention-based do acesso de leitura ao documento a publicar.
-/// Assina só depois de estabelecer que o documento existe, é deste processo e
+/// Assina só depois de estabelecer que o dono existe, que o documento existe, é deste processo e
 /// está confirmado — a assinatura é o último passo, nunca um que se descarta
-/// depois.
+/// depois. O dono é conferido antes do documento, e não deduzido dele: a porta lê pelo filtro global, então o
+/// processo excluído logicamente não tem dono e é recusado como inexistente, mesmo com a linha e os documentos
+/// preservados; o rascunho é apagado de fato com seus documentos.
 /// </summary>
 public static class ObterAcessoDocumentoAPublicarQueryHandler
 {
@@ -31,65 +33,67 @@ public static class ObterAcessoDocumentoAPublicarQueryHandler
 
     public static async Task<Result<AcessoDocumentoAPublicarDto>> Handle(
         ObterAcessoDocumentoAPublicarQuery query,
-        IProcessoSeletivoRepository processoSeletivoRepository,
+        IUnidadeDonaDoProcesso donos,
         IDocumentoAPublicarRepository documentoAPublicarRepository,
         IArquivoArmazenadoStorage storage,
         TimeProvider clock,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
+        ArgumentNullException.ThrowIfNull(donos);
         ArgumentNullException.ThrowIfNull(documentoAPublicarRepository);
         ArgumentNullException.ThrowIfNull(storage);
         ArgumentNullException.ThrowIfNull(clock);
 
-        // A visibilidade do processo é decidida antes do documento, e não
-        // deduzida dele: o processo é excluído logicamente e a exclusão
-        // preserva a linha, então um processo fora de alcance continua tendo
-        // documentos que apontam para ele.
-        bool processoExiste = await processoSeletivoRepository
-            .ExisteAsync(query.ProcessoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
-
-        if (!processoExiste)
+        if (await donos.DoProcessoAsync(query.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false) is null)
         {
-            return Result<AcessoDocumentoAPublicarDto>.Failure(new DomainError(
-                "ProcessoSeletivo.NaoEncontrado",
-                $"Processo Seletivo {query.ProcessoSeletivoId} não encontrado."));
+            return Result<AcessoDocumentoAPublicarDto>.Failure(AcessoAoProcesso.NaoEncontrado(query.ProcessoSeletivoId));
         }
+        Result<DocumentoAPublicar> confirmado = await DocumentoConfirmadoDoProcessoAsync(query, documentoAPublicarRepository, cancellationToken).ConfigureAwait(false);
+        return confirmado.IsFailure
+            ? Result<AcessoDocumentoAPublicarDto>.Failure(confirmado.Error!)
+            : await AssinarLeituraAsync(confirmado.Value!, storage, clock, cancellationToken).ConfigureAwait(false);
+    }
 
+    /// <summary>
+    /// Documento de outro processo recebe a mesma recusa de documento inexistente: separar as duas confirmaria, a
+    /// quem tenta um id colhido em outro lugar, que ele existe — e a rota deste processo não é o lugar de contar isso.
+    /// O pendente não passou pela validação de conteúdo: o que está na chave de upload pode não ser do formato
+    /// declarado, pode exceder o limite e pode ter sido sobrescrito enquanto a URL de PUT ainda valia.
+    /// </summary>
+    private static async Task<Result<DocumentoAPublicar>> DocumentoConfirmadoDoProcessoAsync(
+        ObterAcessoDocumentoAPublicarQuery query,
+        IDocumentoAPublicarRepository documentoAPublicarRepository,
+        CancellationToken cancellationToken)
+    {
         DocumentoAPublicar? documento = await documentoAPublicarRepository
             .ObterPorIdAsync(query.DocumentoAPublicarId, cancellationToken)
             .ConfigureAwait(false);
 
-        // Documento de outro processo recebe a mesma recusa de documento
-        // inexistente. Separar as duas confirmaria, a quem tenta um id colhido
-        // em outro lugar, que ele existe — e a rota deste processo não é o
-        // lugar de contar isso.
         if (documento is null || documento.ProcessoSeletivoId != query.ProcessoSeletivoId)
         {
-            return Result<AcessoDocumentoAPublicarDto>.Failure(new DomainError(
-                DocumentoAPublicarErrorCodes.NaoEncontrado,
-                "Documento não encontrado neste Processo Seletivo."));
+            return Result<DocumentoAPublicar>.Failure(new DomainError(
+                DocumentoAPublicarErrorCodes.NaoEncontrado, "Documento não encontrado neste Processo Seletivo."));
         }
 
-        // O pendente não passou pela validação de conteúdo: o que está na
-        // chave de upload pode não ser do formato declarado, pode exceder o limite, e pode ter
-        // sido sobrescrito enquanto a URL de PUT ainda valia.
-        if (documento.Status != StatusArquivoEnviado.Confirmado || documento.ObjectKeyConfirmado is null)
-        {
-            return Result<AcessoDocumentoAPublicarDto>.Failure(new DomainError(
-                DocumentoAPublicarErrorCodes.NaoConfirmado,
-                "Documento ainda não confirmado — não há conteúdo validado para conferir."));
-        }
+        return documento.Status != StatusArquivoEnviado.Confirmado || documento.ObjectKeyConfirmado is null
+            ? Result<DocumentoAPublicar>.Failure(new DomainError(
+                DocumentoAPublicarErrorCodes.NaoConfirmado, "Documento ainda não confirmado — não há conteúdo validado para conferir."))
+            : Result<DocumentoAPublicar>.Success(documento);
+    }
 
+    private static async Task<Result<AcessoDocumentoAPublicarDto>> AssinarLeituraAsync(
+        DocumentoAPublicar confirmado,
+        IArquivoArmazenadoStorage storage,
+        TimeProvider clock,
+        CancellationToken cancellationToken)
+    {
         DateTimeOffset expiraEm = clock.GetUtcNow().Add(TtlLeitura);
 
-        // A cópia selada, nunca a chave de upload: é ela que o hash do
-        // registro atesta, e a de upload segue alcançável por uma URL de PUT
-        // que pode não ter expirado.
+        // A cópia gravada na confirmação, nunca a chave de upload: é ela que o hash do registro atesta, e a de upload segue alcançável
+        // por uma URL de PUT que pode não ter expirado.
         string url = await storage
-            .GerarUrlLeituraAsync(documento.ObjectKeyConfirmado, TtlLeitura, cancellationToken)
+            .GerarUrlLeituraAsync(confirmado.ObjectKeyConfirmado!, TtlLeitura, cancellationToken)
             .ConfigureAwait(false);
 
         return Result<AcessoDocumentoAPublicarDto>.Success(

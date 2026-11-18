@@ -1,0 +1,78 @@
+namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Contratos;
+
+using System.Text.Json.Nodes;
+
+using AwesomeAssertions;
+
+using static Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Contratos.ContratoDaConfiguracao;
+
+/// <summary>
+/// A importação do resultado e a prova presencial no esquema da configuração: os relatórios entram pelo leiaute e pela
+/// versão, a primeira fase depois da importação pela chave local, e o município de aplicação pelo código do IBGE.
+/// </summary>
+public sealed class ImportacaoEProvaPresencialDoEsquemaDaConfiguracaoTests
+{
+    private const string Importacao = "importacao.schema.json";
+
+    private const string ProvaPresencial = "prova-presencial.schema.json";
+
+    [Fact(DisplayName = "A importação com relatório por leiaute e versão e a primeira fase pela chave valida")]
+    public void Importacao_PorLeiauteEVersao_Valida() =>
+        CaminhosComErro(Documento("""
+            { "relatorios": [ { "leiauteCodigo": "INEP-RESULTADO", "leiauteVersao": "2" } ], "primeiraFaseDepoisDaImportacaoChave": "matricula" }
+            """), Importacao).Should().BeEmpty();
+
+    [Fact(DisplayName = "O leiaute pelo identificador interno e a fase fora do formato de chave são recusados")]
+    public void Importacao_ReferenciaForaDoFormato_Recusa()
+    {
+        JsonNode importacao = Documento($$"""
+            { "relatorios": [ { "leiauteCodigo": "{{Guid.CreateVersion7()}}" } ], "primeiraFaseDepoisDaImportacaoChave": "Fase Final" }
+            """);
+
+        CaminhosComErro(importacao, Importacao).Should().Contain(["/relatorios/0/leiauteCodigo", "/primeiraFaseDepoisDaImportacaoChave"]);
+    }
+
+    [Fact(DisplayName = "A prova presencial com municípios pelo código do IBGE valida")]
+    public void ProvaPresencial_ComMunicipios_Valida() =>
+        CaminhosComErro(Documento("""
+            { "temProvaPresencial": true, "municipios": [ { "codigoIbge": "1505304", "uf": "PA" }, { "codigoIbge": "1508308", "uf": "PA" } ] }
+            """), ProvaPresencial).Should().BeEmpty();
+
+    [Fact(DisplayName = "Sem prova presencial a lista de municípios é recusada")]
+    public void ProvaPresencial_SemProva_RecusaMunicipios() =>
+        CaminhosComErro(Documento("""{ "temProvaPresencial": false, "municipios": [ { "codigoIbge": "1505304" } ] }"""), ProvaPresencial)
+            .Should().Contain("/municipios");
+
+    [Theory(DisplayName = "O município fora do formato do IBGE ou da UF é recusado")]
+    [InlineData("""{ "codigoIbge": "15053" }""", "/municipios/0/codigoIbge")]
+    [InlineData("""{ "codigoIbge": "1505304", "uf": "pa" }""", "/municipios/0/uf")]
+    [InlineData("""{ "uf": "PA" }""", "/municipios/0")]
+    [InlineData("""{ "codigoIbge": "9905304", "uf": "PA" }""", "/municipios/0/codigoIbge")]
+    [InlineData("""{ "codigoIbge": "1505304" }""", "/municipios/0")]
+    public void ProvaPresencial_MunicipioForaDoFormato_Recusa(string municipio, string caminho)
+    {
+        ArgumentNullException.ThrowIfNull(municipio);
+        ArgumentNullException.ThrowIfNull(caminho);
+
+        CaminhosComErro(Documento($$"""{ "temProvaPresencial": true, "municipios": [ {{municipio}} ] }"""), ProvaPresencial).Should().Contain(caminho);
+    }
+
+    [Fact(DisplayName = "A importação e a prova presencial ficam no documento")]
+    public void Documento_ComImportacaoEProvaPresencial() =>
+        CaminhosComErro(Documento("""
+            { "formato": "uniplus.selecao.configuracao", "versaoFormato": 1,
+              "importacao": { "relatorios": [ { "leiauteCodigo": "INEP-RESULTADO", "leiauteVersao": "2" } ] },
+              "provaPresencial": { "temProvaPresencial": false } }
+            """)).Should().BeEmpty();
+
+    [Theory(DisplayName = "O relatório sem o leiaute ou sem a versão é recusado")]
+    [InlineData("""{ }""")]
+    [InlineData("""{ "leiauteCodigo": "INEP-RESULTADO" }""")]
+    [InlineData("""{ "leiauteVersao": "2" }""")]
+    public void Importacao_RelatorioIncompleto_Recusa(string relatorio)
+    {
+        ArgumentNullException.ThrowIfNull(relatorio);
+
+        CaminhosComErro(Documento($$"""{ "relatorios": [ {{relatorio}} ] }"""), Importacao).Should().Contain("/relatorios/0");
+    }
+}

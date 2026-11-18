@@ -138,13 +138,11 @@ internal static class LeituraDoEdital
     }
 
     /// <summary>
-    /// A identidade da Unidade administradora: lida e
-    /// validada para fechar a gramática, mas <b>não é propagada</b> — mesmo raciocínio de
-    /// <c>origemCandidatos</c> em <see cref="LeituraDoCronograma.LerCronogramaFases"/>. É atributo de raiz do
-    /// agregado (<c>ProcessoSeletivo.UnidadeAdministradoraOrigemId</c>/<c>UnidadeAdministradora</c>),
-    /// imutável após a criação (nenhum <c>Definir*</c> a altera, não há operação de re-bind) — a
-    /// prova de fidelidade do round-trip vem de <c>ProcessoSeletivo.SombraParaVerificacao()</c>,
-    /// que já copia os dois campos direto da raiz viva, nunca do envelope decodificado.
+    /// A identidade da Unidade administradora: lida e validada para fechar a gramática, mas
+    /// <b>não é propagada</b> — mesmo raciocínio de <c>origemCandidatos</c> em
+    /// <see cref="LeituraDoCronograma.LerCronogramaFases"/>. É atributo de raiz do agregado
+    /// (<c>ProcessoSeletivo.UnidadeAdministradoraOrigemId</c>/<c>UnidadeAdministradora</c>), imutável
+    /// após a criação: nenhum <c>Definir*</c> a altera e não há operação de re-bind.
     /// </summary>
     /// <remarks>
     /// A cidade (ADR-0090) é opcional all-or-nothing: nula para processos
@@ -169,14 +167,25 @@ internal static class LeituraDoEdital
             return;
         }
 
+        LerAdministradora(leitor, administradora);
+    }
+
+    private static void LerAdministradora(LeitorEnvelope leitor, JsonObject administradora)
+    {
         const string path = "identidadesUnidade.administradora";
-        leitor.ExigirChaves(administradora, path, "origemId", "sigla", "slug", "nome", "tipo", "cidadeCodigoIbge", "cidadeNome", "cidadeUf");
+        leitor.ExigirChaves(administradora, path, "origemId", "sigla", "codigo", "slug", "nome", "tipo", "cidadeCodigoIbge", "cidadeNome", "cidadeUf");
 
         leitor.Identificador(administradora, "origemId", path);
         leitor.TextoNaoVazio(administradora, "sigla", path, LimitesDoEnvelope.UnidadeAdministradoraSigla);
+        leitor.TextoNaoVazio(administradora, "codigo", path, LimitesDoEnvelope.UnidadeAdministradoraCodigo);
         leitor.TextoNaoVazio(administradora, "slug", path, LimitesDoEnvelope.UnidadeAdministradoraSlug);
         leitor.TextoNaoVazio(administradora, "nome", path, LimitesDoEnvelope.UnidadeAdministradoraNome);
         leitor.TextoNaoVazio(administradora, "tipo", path, LimitesDoEnvelope.UnidadeAdministradoraTipo);
+        LerCidadeDaAdministradora(leitor, administradora, path);
+    }
+
+    private static void LerCidadeDaAdministradora(LeitorEnvelope leitor, JsonObject administradora, string path)
+    {
         string? cidadeCodigoIbge = leitor.TextoOpcional(administradora, "cidadeCodigoIbge", path, LimitesDoEnvelope.UnidadeAdministradoraCidadeCodigoIbge);
         string? cidadeNome = leitor.TextoOpcional(administradora, "cidadeNome", path, LimitesDoEnvelope.UnidadeAdministradoraCidadeNome);
         string? cidadeUf = leitor.TextoOpcional(administradora, "cidadeUf", path, LimitesDoEnvelope.UnidadeAdministradoraCidadeUf);

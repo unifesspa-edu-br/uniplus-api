@@ -54,6 +54,7 @@ public sealed class EnvelopeCodecRecusaEtapasTests
     [InlineData("admitePontuacao")]
     [InlineData("admiteEliminacao")]
     [InlineData("notaDeOrigemNoEnem")]
+    [InlineData("exigeCorrecaoIndependente")]
     public void TipoEtapa_ChaveAusente_Recusa(string chave)
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
@@ -78,6 +79,7 @@ public sealed class EnvelopeCodecRecusaEtapasTests
     [InlineData("admitePontuacao")]
     [InlineData("admiteEliminacao")]
     [InlineData("notaDeOrigemNoEnem")]
+    [InlineData("exigeCorrecaoIndependente")]
     public void TipoEtapa_SinalizadorNaoBooleano_Recusa(string chave)
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>

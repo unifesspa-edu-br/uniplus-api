@@ -125,78 +125,78 @@ internal static class LeituraDosDocumentosExigidos
 
     /// <summary>
     /// A variante vem do campo <c>tipo</c> (o próprio envelope carrega o discriminador
-    /// aqui — ao contrário de <see cref="LeituraDoDesempate.LerArgsDesempate"/>, não há um "código de regra"
-    /// externo ao args para decidir a forma; <c>PredicadoObrigatoriedade</c> já é a
+    /// aqui — ao contrário de <see cref="LeituraDoDesempate.LerParametrosDesempate"/>, não há um "código de regra"
+    /// externo aos parâmetros para decidir a forma; <c>PredicadoObrigatoriedade</c> já é a
     /// discriminated union completa que o domínio serializa).
     /// </summary>
     internal static PredicadoObrigatoriedade? LerPredicadoObrigatoriedade(LeitorEnvelope leitor, JsonObject predicado, string path)
     {
-        leitor.ExigirChaves(predicado, path, "tipo", "args");
+        leitor.ExigirChaves(predicado, path, "tipo", "parametros");
         string tipo = leitor.TextoNaoVazio(predicado, "tipo", path);
-        JsonObject args = leitor.Objeto(predicado, "args", path);
+        JsonObject parametros = leitor.Objeto(predicado, "parametros", path);
         if (leitor.Falhou)
         {
             return null;
         }
 
-        string argsPath = $"{path}.args";
+        string parametrosPath = $"{path}.parametros";
         return tipo switch
         {
-            "etapaObrigatoria" => LerArgumentoUnico(leitor, args, argsPath, "tipoEtapaCodigo", static codigo => new EtapaObrigatoria(codigo)),
-            "desempateDeveIncluir" => LerArgumentoUnico(leitor, args, argsPath, "criterio", static criterio => new DesempateDeveIncluir(criterio)),
-            "modalidadesMinimas" => LerListaDeArgumento(leitor, args, argsPath, "codigos", static codigos => new ModalidadesMinimas(codigos)),
-            "atendimentoDisponivel" => LerListaDeArgumento(leitor, args, argsPath, "necessidades", static necessidades => new AtendimentoDisponivel(necessidades)),
-            "documentoObrigatorioParaModalidade" => LerDocumentoObrigatorioParaModalidade(leitor, args, argsPath),
-            "concorrenciaDuplaObrigatoria" => LerSemArgumentos(leitor, args, argsPath),
-            "customizado" => LerCustomizado(leitor, args, argsPath),
+            "etapaObrigatoria" => LerParametroUnico(leitor, parametros, parametrosPath, "tipoEtapaCodigo", static codigo => new EtapaObrigatoria(codigo)),
+            "desempateDeveIncluir" => LerParametroUnico(leitor, parametros, parametrosPath, "criterio", static criterio => new DesempateDeveIncluir(criterio)),
+            "modalidadesMinimas" => LerListaDeParametro(leitor, parametros, parametrosPath, "codigos", static codigos => new ModalidadesMinimas(codigos)),
+            "atendimentoDisponivel" => LerListaDeParametro(leitor, parametros, parametrosPath, "necessidades", static necessidades => new AtendimentoDisponivel(necessidades)),
+            "documentoObrigatorioParaModalidade" => LerDocumentoObrigatorioParaModalidade(leitor, parametros, parametrosPath),
+            "concorrenciaDuplaObrigatoria" => LerSemParametros(leitor, parametros, parametrosPath),
+            "customizado" => LerCustomizado(leitor, parametros, parametrosPath),
             _ => leitor.Propagar<PredicadoObrigatoriedade>(new DomainError(
                 ErrosCodecEnvelope.RegraDesconhecida,
                 $"Não há variante de {nameof(PredicadoObrigatoriedade)} conhecida para o tipo '{tipo}' em '{path}'.")),
         };
     }
 
-    private static PredicadoObrigatoriedade? LerArgumentoUnico(
+    private static PredicadoObrigatoriedade? LerParametroUnico(
         LeitorEnvelope leitor,
-        JsonObject args,
-        string argsPath,
+        JsonObject parametros,
+        string parametrosPath,
         string chave,
         Func<string, PredicadoObrigatoriedade> criar)
     {
-        leitor.ExigirChaves(args, argsPath, chave);
-        string valor = leitor.TextoNaoVazio(args, chave, argsPath);
+        leitor.ExigirChaves(parametros, parametrosPath, chave);
+        string valor = leitor.TextoNaoVazio(parametros, chave, parametrosPath);
         return leitor.Falhou ? null : criar(valor);
     }
 
-    private static PredicadoObrigatoriedade? LerListaDeArgumento(
+    private static PredicadoObrigatoriedade? LerListaDeParametro(
         LeitorEnvelope leitor,
-        JsonObject args,
-        string argsPath,
+        JsonObject parametros,
+        string parametrosPath,
         string chave,
         Func<IReadOnlyList<string>, PredicadoObrigatoriedade> criar)
     {
-        leitor.ExigirChaves(args, argsPath, chave);
-        IReadOnlyList<string> valores = leitor.Textos(args, chave, argsPath);
+        leitor.ExigirChaves(parametros, parametrosPath, chave);
+        IReadOnlyList<string> valores = leitor.Textos(parametros, chave, parametrosPath);
         return leitor.Falhou ? null : criar(valores);
     }
 
-    private static DocumentoObrigatorioParaModalidade? LerDocumentoObrigatorioParaModalidade(LeitorEnvelope leitor, JsonObject args, string argsPath)
+    private static DocumentoObrigatorioParaModalidade? LerDocumentoObrigatorioParaModalidade(LeitorEnvelope leitor, JsonObject parametros, string parametrosPath)
     {
-        leitor.ExigirChaves(args, argsPath, "modalidade", "tipoDocumento");
-        string modalidade = leitor.TextoNaoVazio(args, "modalidade", argsPath);
-        string tipoDocumento = leitor.TextoNaoVazio(args, "tipoDocumento", argsPath);
+        leitor.ExigirChaves(parametros, parametrosPath, "modalidade", "tipoDocumento");
+        string modalidade = leitor.TextoNaoVazio(parametros, "modalidade", parametrosPath);
+        string tipoDocumento = leitor.TextoNaoVazio(parametros, "tipoDocumento", parametrosPath);
         return leitor.Falhou ? null : new DocumentoObrigatorioParaModalidade(modalidade, tipoDocumento);
     }
 
-    private static ConcorrenciaDuplaObrigatoria? LerSemArgumentos(LeitorEnvelope leitor, JsonObject args, string argsPath)
+    private static ConcorrenciaDuplaObrigatoria? LerSemParametros(LeitorEnvelope leitor, JsonObject parametros, string parametrosPath)
     {
-        leitor.ExigirChaves(args, argsPath);
+        leitor.ExigirChaves(parametros, parametrosPath);
         return leitor.Falhou ? null : new ConcorrenciaDuplaObrigatoria();
     }
 
-    private static Customizado? LerCustomizado(LeitorEnvelope leitor, JsonObject args, string argsPath)
+    private static Customizado? LerCustomizado(LeitorEnvelope leitor, JsonObject parametros, string parametrosPath)
     {
-        leitor.ExigirChaves(args, argsPath, "parametros");
-        System.Text.Json.JsonElement parametros = leitor.Valor(args, "parametros", argsPath);
-        return leitor.Falhou ? null : new Customizado(parametros);
+        leitor.ExigirChaves(parametros, parametrosPath, "parametros");
+        System.Text.Json.JsonElement parametrosDoPredicado = leitor.Valor(parametros, "parametros", parametrosPath);
+        return leitor.Falhou ? null : new Customizado(parametrosDoPredicado);
     }
 }

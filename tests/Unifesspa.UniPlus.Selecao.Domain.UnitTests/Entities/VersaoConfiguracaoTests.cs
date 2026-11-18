@@ -6,6 +6,7 @@ using System.Text.Json.Nodes;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -15,10 +16,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// retifica) e derivação do hash a partir dos bytes canônicos (ADR-0100).
 /// </summary>
 /// <remarks>
-/// As invariantes de cadeia que dependem do ESTADO do certame — a versão
-/// corrente ser do processo certo, e o ato criador emendar o ato criador dela —
-/// são regra de negócio da raiz, e afloram como 422 em
-/// <see cref="ProcessoSeletivo.Retificar"/>; a cobertura delas vive em
+/// A invariante de cadeia que depende do ESTADO do certame — a versão
+/// corrente ser do processo certo — é regra de negócio da raiz, e aflora como
+/// 422 em <see cref="ProcessoSeletivo.Retificar"/>; a cobertura dela vive em
 /// <see cref="ProcessoSeletivoRetificarTests"/>. Aqui ficam os guards de última
 /// linha da factory, que lançam: o agregado nunca materializa em estado
 /// inválido, nem quando o caller erra.
@@ -28,19 +28,19 @@ public sealed class VersaoConfiguracaoTests
     private static readonly string HashAto = string.Concat(Enumerable.Repeat("ab01234567", 7))[..64];
     private static readonly string OutroHashAto = string.Concat(Enumerable.Repeat("cd98765432", 7))[..64];
 
+    private const string Algoritmo = "canonical-json/sha256@v1";
+
     private static byte[] BytesCanonicos(string status) =>
         Encoding.UTF8.GetBytes(new JsonObject { ["status"] = status }.ToJsonString());
 
+    private static DocumentoCongelado Documento(string status, string? hash = null) =>
+        new(BytesCanonicos(status), "1.0", Algoritmo, hash ?? HashAto);
+
     private static VersaoConfiguracao Abrir(Guid processoId, Guid atoCriadorId) =>
-        VersaoConfiguracao.Abrir(
-            processoId,
-            BytesCanonicos("abertura"),
-            schemaVersion: "1.0",
-            algoritmoHash: "canonical-json/sha256@v1",
-            atoCriadorId,
-            atoCriadorHash: HashAto,
-            atorUsuarioContaId: "user-conta-123",
-            TimeProvider.System.GetUtcNow());
+        VersaoConfiguracao.Abrir(processoId, Documento("abertura"), atoCriadorId, "user-conta-123", TimeProvider.System.GetUtcNow());
+
+    private static VersaoConfiguracao Suceder(VersaoConfiguracao anterior, Guid atoCriadorId, DateTimeOffset instante) =>
+        VersaoConfiguracao.Suceder(anterior, Documento("retificacao", OutroHashAto), atoCriadorId, "user-conta-123", instante);
 
     [Fact(DisplayName = "Abrir — a versão 1 abre a cadeia e não retifica ato algum")]
     public void Abrir_VersaoUm_NaoRetificaNinguem()
@@ -75,21 +75,22 @@ public sealed class VersaoConfiguracaoTests
     public void Abrir_CopiaDefensivaDosBytes()
     {
         byte[] bytesDoCaller = BytesCanonicos("abertura");
-        VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
-            Guid.CreateVersion7(),
-            bytesDoCaller,
-            "1.0",
-            "canonical-json/sha256@v1",
-            Guid.CreateVersion7(),
-            HashAto,
-            "user-conta-123",
-            TimeProvider.System.GetUtcNow());
+        DocumentoCongelado documento = new(bytesDoCaller, "1.0", Algoritmo, HashAto);
+        VersaoConfiguracao versao = VersaoConfiguracao.Abrir(Guid.CreateVersion7(), documento, Guid.CreateVersion7(), "user-conta-123", TimeProvider.System.GetUtcNow());
 
         bytesDoCaller[0] = (byte)'X';
 
         HashCanonicalComputer.ComputeSha256Hex(versao.ConfiguracaoCongeladaCanonica)
             .Should().Be(versao.HashConfiguracao,
                 "os bytes persistidos têm de continuar provando o hash — mutar o array do caller não pode alcançá-los");
+    }
+
+    [Fact(DisplayName = "O número da versão da abertura é o 1, e o da sucessora é o da anterior mais um")]
+    public void Numeros_AberturaESucessora()
+    {
+        VersaoConfiguracao.NumeroDaAbertura.Should().Be(1);
+        VersaoConfiguracao.NumeroDaSucessora(VersaoConfiguracao.NumeroDaAbertura).Should().Be(2);
+        VersaoConfiguracao.NumeroDaSucessora(7).Should().Be(8);
     }
 
     [Fact(DisplayName = "Suceder — a versão N + 1 retifica o ato criador da versão N, e a numeração é contígua por construção")]
@@ -100,55 +101,34 @@ public sealed class VersaoConfiguracaoTests
         Guid atoRetificador = Guid.CreateVersion7();
         VersaoConfiguracao versao1 = Abrir(processoId, atoAbertura);
 
-        VersaoConfiguracao versao2 = VersaoConfiguracao.Suceder(
-            versao1,
-            BytesCanonicos("retificacao"),
-            "1.0",
-            "canonical-json/sha256@v1",
-            atoRetificador,
-            OutroHashAto,
-            atoCriadorRetificaId: atoAbertura,
-            "user-conta-123",
-            TimeProvider.System.GetUtcNow());
+        VersaoConfiguracao versao2 = Suceder(versao1, atoRetificador, TimeProvider.System.GetUtcNow());
 
         versao2.NumeroVersao.Should().Be(2, "o número é derivado da versão anterior — buraco é impossível por construção");
         versao2.ProcessoSeletivoId.Should().Be(processoId, "a sucessora herda o certame da versão que sucede");
         versao2.AtoCriadorId.Should().Be(atoRetificador);
-        versao2.AtoCriadorRetificaId.Should().Be(atoAbertura, "o ato criador da versão 2 retifica o ato criador da versão 1");
+        versao2.AtoCriadorHash.Should().Be(OutroHashAto);
+    }
+
+    [Fact(DisplayName = "Suceder — o ato retificado vem do ato criador da versão anterior, e nunca de quem chama")]
+    public void Suceder_AtoRetificadoEOCriadorDaAnterior()
+    {
+        VersaoConfiguracao versao1 = Abrir(Guid.CreateVersion7(), Guid.CreateVersion7());
+
+        VersaoConfiguracao versao2 = Suceder(versao1, Guid.CreateVersion7(), TimeProvider.System.GetUtcNow());
+
+        versao2.AtoCriadorRetificaId.Should().Be(versao1.AtoCriadorId);
     }
 
     [Fact(DisplayName = "Suceder — relógio que anda para trás não faz a vigência regredir: a sucessora empata com a anterior")]
     public void Suceder_RelogioRetrocede_VigenciaNaoRegride()
     {
-        Guid atoAbertura = Guid.CreateVersion7();
-        RelogioManual clock = new(new DateTimeOffset(2026, 3, 13, 19, 0, 0, TimeSpan.Zero));
+        DateTimeOffset abertura = new(2026, 3, 13, 19, 0, 0, TimeSpan.Zero);
+        VersaoConfiguracao versao1 = VersaoConfiguracao.Abrir(Guid.CreateVersion7(), Documento("abertura"), Guid.CreateVersion7(), "user-conta-123", abertura);
 
-        VersaoConfiguracao versao1 = VersaoConfiguracao.Abrir(
-            Guid.CreateVersion7(),
-            BytesCanonicos("abertura"),
-            "1.0",
-            "canonical-json/sha256@v1",
-            atoAbertura,
-            HashAto,
-            "user-conta-123",
-            clock.GetUtcNow());
-
-        // Ajuste NTP em degrau: o relógio do host recua entre a abertura e a
-        // retificação. Como é a VIGÊNCIA que ordena as versões (ADR-0104), deixar
-        // a sucessora nascer no passado faria o seletor continuar elegendo a
+        // Ajuste NTP em degrau: o relógio do host recua entre a abertura e a retificação. Como é a VIGÊNCIA que
+        // ordena as versões (ADR-0104), deixar a sucessora nascer no passado faria o seletor continuar elegendo a
         // versão velha depois de a nova existir.
-        clock.Avancar(TimeSpan.FromMinutes(-10));
-
-        VersaoConfiguracao versao2 = VersaoConfiguracao.Suceder(
-            versao1,
-            BytesCanonicos("retificacao"),
-            "1.0",
-            "canonical-json/sha256@v1",
-            Guid.CreateVersion7(),
-            OutroHashAto,
-            atoCriadorRetificaId: atoAbertura,
-            "user-conta-123",
-            clock.GetUtcNow());
+        VersaoConfiguracao versao2 = Suceder(versao1, Guid.CreateVersion7(), abertura.AddMinutes(-10));
 
         versao2.VigenteAPartirDe.Should().Be(
             versao1.VigenteAPartirDe,
@@ -156,24 +136,15 @@ public sealed class VersaoConfiguracaoTests
         versao2.NumeroVersao.Should().Be(2);
     }
 
-    [Fact(DisplayName = "Suceder — ato criador que não emenda o criador da versão anterior é erro de programação (a raiz já barrou como 422)")]
-    public void Suceder_AtoCriadorNaoRetificaAnterior_Lanca()
+    [Fact(DisplayName = "A vigência da sucessora é o instante pedido, e nunca precede a da versão")]
+    public void VigenciaDaSucessora_NuncaPrecedeAVersao()
     {
-        VersaoConfiguracao versao1 = Abrir(Guid.CreateVersion7(), Guid.CreateVersion7());
+        DateTimeOffset abertura = new(2026, 3, 13, 19, 0, 0, TimeSpan.Zero);
+        VersaoConfiguracao versao = VersaoConfiguracao.Abrir(Guid.CreateVersion7(), Documento("abertura"), Guid.CreateVersion7(), "user-conta-123", abertura);
 
-        Action sucederForaDaCadeia = () => VersaoConfiguracao.Suceder(
-            versao1,
-            BytesCanonicos("retificacao"),
-            "1.0",
-            "canonical-json/sha256@v1",
-            Guid.CreateVersion7(),
-            OutroHashAto,
-            atoCriadorRetificaId: Guid.CreateVersion7(),
-            "user-conta-123",
-            TimeProvider.System.GetUtcNow());
-
-        sucederForaDaCadeia.Should().Throw<ArgumentException>()
-            .WithParameterName("atoCriadorRetificaId");
+        versao.VigenciaDaSucessora(abertura.AddMinutes(-1)).Should().Be(abertura);
+        versao.VigenciaDaSucessora(abertura).Should().Be(abertura);
+        versao.VigenciaDaSucessora(abertura.AddMinutes(1)).Should().Be(abertura.AddMinutes(1));
     }
 
     [Fact(DisplayName = "Suceder — o ato criador da versão anterior não pode criar a seguinte (um ato congela uma vez)")]
@@ -182,16 +153,7 @@ public sealed class VersaoConfiguracaoTests
         Guid atoAbertura = Guid.CreateVersion7();
         VersaoConfiguracao versao1 = Abrir(Guid.CreateVersion7(), atoAbertura);
 
-        Action sucederComOMesmoAto = () => VersaoConfiguracao.Suceder(
-            versao1,
-            BytesCanonicos("retificacao"),
-            "1.0",
-            "canonical-json/sha256@v1",
-            atoAbertura,
-            HashAto,
-            atoCriadorRetificaId: atoAbertura,
-            "user-conta-123",
-            TimeProvider.System.GetUtcNow());
+        Action sucederComOMesmoAto = () => Suceder(versao1, atoAbertura, TimeProvider.System.GetUtcNow());
 
         sucederComOMesmoAto.Should().Throw<ArgumentException>()
             .WithParameterName("atoCriadorId");
@@ -210,48 +172,31 @@ public sealed class VersaoConfiguracaoTests
     public void Abrir_HashDoAtoMalformado_Lanca()
     {
         Action abrirComHashInvalido = () => VersaoConfiguracao.Abrir(
-            Guid.CreateVersion7(),
-            BytesCanonicos("abertura"),
-            "1.0",
-            "canonical-json/sha256@v1",
-            Guid.CreateVersion7(),
-            "NAO-E-UM-HASH",
-            "user-conta-123",
-            TimeProvider.System.GetUtcNow());
+            Guid.CreateVersion7(), Documento("abertura", "NAO-E-UM-HASH"), Guid.CreateVersion7(), "user-conta-123", TimeProvider.System.GetUtcNow());
 
-        abrirComHashInvalido.Should().Throw<ArgumentException>()
-            .WithParameterName("atoCriadorHash");
+        abrirComHashInvalido.Should().Throw<ArgumentException>();
     }
 
     [Fact(DisplayName = "Abrir — configuração congelada vazia é recusada")]
     public void Abrir_ConfiguracaoVazia_Lanca()
     {
         Action abrirSemBytes = () => VersaoConfiguracao.Abrir(
-            Guid.CreateVersion7(),
-            [],
-            "1.0",
-            "canonical-json/sha256@v1",
-            Guid.CreateVersion7(),
-            HashAto,
-            "user-conta-123",
-            TimeProvider.System.GetUtcNow());
+            Guid.CreateVersion7(), new DocumentoCongelado([], "1.0", Algoritmo, HashAto), Guid.CreateVersion7(), "user-conta-123", TimeProvider.System.GetUtcNow());
 
-        abrirSemBytes.Should().Throw<ArgumentException>()
-            .WithParameterName("configuracaoCongeladaCanonica");
+        abrirSemBytes.Should().Throw<ArgumentException>();
     }
 
-    /// <summary>
-    /// Relógio manual determinístico — permite simular o retrocesso do relógio
-    /// do host (ajuste NTP em degrau) sem depender de
-    /// <c>Microsoft.Extensions.TimeProvider.Testing</c> na camada de teste do
-    /// Domain, que só referencia Domain + Kernel.
-    /// </summary>
-    private sealed class RelogioManual(DateTimeOffset inicio) : TimeProvider
+    [Theory(DisplayName = "Abrir — versão do conjunto de blocos ou algoritmo de hash em branco é recusado")]
+    [InlineData("", Algoritmo)]
+    [InlineData(" ", Algoritmo)]
+    [InlineData("1.0", "")]
+    [InlineData("1.0", " ")]
+    public void Abrir_SchemaOuAlgoritmoEmBranco_Lanca(string schemaVersion, string algoritmoHash)
     {
-        private DateTimeOffset _agora = inicio;
+        DocumentoCongelado documento = new(BytesCanonicos("abertura"), schemaVersion, algoritmoHash, HashAto);
 
-        public override DateTimeOffset GetUtcNow() => _agora;
+        Action abrirComDocumentoIncompleto = () => VersaoConfiguracao.Abrir(Guid.CreateVersion7(), documento, Guid.CreateVersion7(), "user-conta-123", TimeProvider.System.GetUtcNow());
 
-        public void Avancar(TimeSpan delta) => _agora = _agora.Add(delta);
+        abrirComDocumentoIncompleto.Should().Throw<ArgumentException>();
     }
 }

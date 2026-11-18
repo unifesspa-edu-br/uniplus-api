@@ -11,47 +11,48 @@ using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.MotivosDoProcesso;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
-using Unifesspa.UniPlus.Selecao.Application.DTOs;
-using Unifesspa.UniPlus.Selecao.Application.Queries.MotivosDoProcesso;
-using Unifesspa.UniPlus.Selecao.Application.Services;
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Testes.Compartilhado;
+
+using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.MotivoDeTeste;
+using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.PublicacaoDeTeste;
 
 /// <summary>
-/// Inclusão e retirada de motivo no processo, a leitura dos escolhidos e o portão dos motivos nas
-/// transições que congelam versão (UNI-REQ-0122, UNI-REQ-0123, UNI-REQ-0285).
+/// Inclusão e retirada de motivo numa fase ou etapa do processo (UNI-REQ-0122, UNI-REQ-0285), só em rascunho: o que o
+/// handler carrega e grava.
 /// </summary>
 public sealed class MotivosDoProcessoCommandHandlersTests
 {
-    private readonly ProcessoSeletivo _processo = NovoProcesso();
+    private readonly ProcessoSeletivo _processo = NovoProcessoConforme();
     private readonly IProcessoSeletivoRepository _processos = Substitute.For<IProcessoSeletivoRepository>();
     private readonly IMotivoDeDecisaoRepository _cadastro = Substitute.For<IMotivoDeDecisaoRepository>();
     private readonly IMotivoDoProcessoRepository _escolhidos = Substitute.For<IMotivoDoProcessoRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
-    private readonly TimeProvider _relogio = new RelogioFixo(new DateTimeOffset(2027, 2, 1, 0, 0, 0, TimeSpan.Zero));
 
     public MotivosDoProcessoCommandHandlersTests()
     {
         _processos.ObterParaMutacaoAsync(_processo.Id, Arg.Any<CancellationToken>()).Returns(_processo);
-        _escolhidos.ListarDoProcessoAsync(_processo.Id, Arg.Any<CancellationToken>()).Returns([]);
+        _escolhidos.ListarEscolhaAtualAsync(_processo.Id, Arg.Any<CancellationToken>()).Returns([]);
     }
 
-    [Fact(DisplayName = "Incluir copia o motivo do cadastro no processo e grava")]
-    public async Task Incluir_MotivoAtivo_Grava()
+    private LugarDaDecisao Lugar => LugarDaPrimeiraFase(_processo);
+
+    [Fact(DisplayName = "Incluir no rascunho copia o motivo do cadastro no lugar e grava")]
+    public async Task Incluir_NoRascunho_Grava()
     {
         MotivoDeDecisao origem = Motivo();
         _cadastro.ObterPorIdAsync(origem.Id, Arg.Any<CancellationToken>()).Returns(origem);
 
-        Result<MutacaoAceita> resultado = await Incluir(origem.Id);
+        Result resultado = await Incluir(origem.Id);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         await _escolhidos.Received(1).AdicionarAsync(
-            Arg.Is<MotivoDoProcesso>(m => m.MotivoDeDecisaoOrigemId == origem.Id && m.ProcessoSeletivoId == _processo.Id),
+            Arg.Is<MotivoDoProcesso>(m => m.MotivoDeDecisaoOrigemId == origem.Id && m.Lugar == Lugar && m.ProcessoSeletivoId == _processo.Id),
             Arg.Any<CancellationToken>());
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
@@ -59,17 +60,27 @@ public sealed class MotivosDoProcessoCommandHandlersTests
     [Fact(DisplayName = "Incluir em processo inexistente devolve não encontrado")]
     public async Task Incluir_ProcessoInexistente_NaoEncontrado()
     {
-        Result<MutacaoAceita> resultado = await IncluirMotivoNoProcessoCommandHandler.Handle(
-            new IncluirMotivoNoProcessoCommand(Guid.CreateVersion7(), Guid.CreateVersion7(), null, PrecondicaoIfMatch.Ausente),
-            _processos, _cadastro, _escolhidos, _unitOfWork, _relogio, CancellationToken.None);
+        Result resultado = await IncluirMotivoNoProcessoCommandHandler.Handle(
+            new IncluirMotivoNoProcessoCommand(Guid.CreateVersion7(), Lugar, Guid.CreateVersion7()),
+            _processos, _cadastro, _escolhidos, _unitOfWork, CancellationToken.None);
 
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
     }
 
     [Fact(DisplayName = "Incluir motivo inexistente no cadastro devolve não encontrado")]
-    public async Task Incluir_MotivoInexistente_NaoEncontrado()
-    {
+    public async Task Incluir_MotivoInexistente_NaoEncontrado() =>
         (await Incluir(Guid.CreateVersion7())).Error!.Code.Should().Be(MotivoDeDecisaoErrorCodes.NaoEncontrado);
+
+    [Fact(DisplayName = "Incluir numa fase que o processo não tem devolve fase ou etapa não encontrada e não grava")]
+    public async Task Incluir_LugarInexistente_NaoGrava()
+    {
+        MotivoDeDecisao origem = Motivo();
+        _cadastro.ObterPorIdAsync(origem.Id, Arg.Any<CancellationToken>()).Returns(origem);
+
+        Result resultado = await Incluir(origem.Id, LugarDaDecisao.DaFase(Guid.CreateVersion7()));
+
+        resultado.Error!.Code.Should().Be(MotivoDeDecisaoErrorCodes.FaseOuEtapaNaoEncontrada);
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "A recusa do domínio descarta o rastreamento e não grava")]
@@ -79,7 +90,7 @@ public sealed class MotivosDoProcessoCommandHandlersTests
         origem.Desativar();
         _cadastro.ObterPorIdAsync(origem.Id, Arg.Any<CancellationToken>()).Returns(origem);
 
-        Result<MutacaoAceita> resultado = await Incluir(origem.Id);
+        Result resultado = await Incluir(origem.Id);
 
         resultado.Error!.Code.Should().Be(MotivoDeDecisaoErrorCodes.MotivoInativo);
         _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
@@ -93,154 +104,154 @@ public sealed class MotivosDoProcessoCommandHandlersTests
         _cadastro.ObterPorIdAsync(origem.Id, Arg.Any<CancellationToken>()).Returns(origem);
         _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>()).ThrowsAsync(new DbUpdateConcurrencyException("conflito sintético"));
 
-        Result<MutacaoAceita> resultado = await Incluir(origem.Id);
+        Result resultado = await Incluir(origem.Id);
 
         resultado.Error!.Code.Should().Be(MotivoDeDecisaoErrorCodes.SituacaoAlteradaConcorrentemente);
         _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
     }
 
+    [Fact(DisplayName = "A escolha repetida em corrida, que o índice da escolha vigente recusa, volta como conflito retentável")]
+    public async Task Incluir_EscolhaRepetidaEmCorrida_DevolveConflito()
+    {
+        MotivoDeDecisao origem = Motivo();
+        _cadastro.ObterPorIdAsync(origem.Id, Arg.Any<CancellationToken>()).Returns(origem);
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>()).ThrowsAsync(ExcecaoDeBancoDeTeste.ViolacaoDeUnicidade("ux_motivos_do_processo_vigente"));
+
+        Result resultado = await Incluir(origem.Id);
+
+        resultado.Error!.Code.Should().Be(MotivoDeDecisaoErrorCodes.SituacaoAlteradaConcorrentemente);
+        _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
+    }
+
+    [Fact(DisplayName = "A violação de outro índice único não é engolida como conflito da escolha")]
+    public async Task Incluir_ViolacaoDeOutroIndice_Propaga()
+    {
+        MotivoDeDecisao origem = Motivo();
+        _cadastro.ObterPorIdAsync(origem.Id, Arg.Any<CancellationToken>()).Returns(origem);
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>()).ThrowsAsync(ExcecaoDeBancoDeTeste.ViolacaoDeUnicidade("ux_outro_indice"));
+
+        Func<Task> incluindo = () => Incluir(origem.Id);
+
+        await incluindo.Should().ThrowAsync<DbUpdateException>();
+    }
+
     [Fact(DisplayName = "Retirar motivo escolhido no rascunho remove e grava")]
     public async Task Retirar_Escolhido_Remove()
     {
-        MotivoDoProcesso escolhido = Escolhido(Motivo());
-        _escolhidos.ListarDoProcessoAsync(_processo.Id, Arg.Any<CancellationToken>()).Returns([escolhido]);
+        MotivoDoProcesso escolhido = Escolhido(_processo, Lugar, Motivo());
+        _escolhidos.ListarEscolhaAtualAsync(_processo.Id, Arg.Any<CancellationToken>()).Returns([escolhido]);
 
-        Result<MutacaoAceita> resultado = await Retirar(escolhido.MotivoDeDecisaoOrigemId);
+        Result resultado = await Retirar(escolhido.MotivoDeDecisaoOrigemId);
 
         resultado.IsSuccess.Should().BeTrue();
         _escolhidos.Received(1).Remover(escolhido);
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Retirar motivo que o processo não escolheu devolve não escolhido")]
-    public async Task Retirar_NaoEscolhido_Recusa()
-    {
+    [Fact(DisplayName = "Retirar motivo que o processo não escolheu no lugar devolve não escolhido")]
+    public async Task Retirar_NaoEscolhido_Recusa() =>
         (await Retirar(Guid.CreateVersion7())).Error!.Code.Should().Be(MotivoDeDecisaoErrorCodes.NaoEscolhido);
+
+    [Fact(DisplayName = "Retirar de lugar que o processo não tem devolve fase ou etapa não encontrada")]
+    public async Task Retirar_LugarInexistente_Recusa() =>
+        (await Retirar(Guid.CreateVersion7(), LugarDaDecisao.DaEtapa(Guid.CreateVersion7()))).Error!.Code
+            .Should().Be(MotivoDeDecisaoErrorCodes.FaseOuEtapaNaoEncontrada);
+
+    [Fact(DisplayName = "Retirar motivo de processo publicado é recusado sem remover")]
+    public async Task Retirar_ProcessoPublicado_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme();
+        MotivoDoProcesso escolhido = Escolhido(processo, LugarDaPrimeiraFase(processo), Motivo());
+        Publicar(processo);
+        Registrar(processo, escolhido);
+
+        Result resultado = await RetirarMotivoDoProcessoCommandHandler.Handle(
+            new RetirarMotivoDoProcessoCommand(processo.Id, escolhido.Lugar, escolhido.MotivoDeDecisaoOrigemId),
+            _processos, _escolhidos, _unitOfWork, CancellationToken.None);
+
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
+        _escolhidos.DidNotReceive().Remover(Arg.Any<MotivoDoProcesso>());
     }
 
-    [Fact(DisplayName = "Retirar motivo já publicado é recusado sem remover")]
-    public async Task Retirar_Congelado_Recusa()
+    [Fact(DisplayName = "Incluir motivo em processo publicado é recusado sem gravar")]
+    public async Task Incluir_ProcessoPublicado_Recusa()
     {
-        MotivoDoProcesso escolhido = Escolhido(Motivo());
-        MotivosAoCongelar.Congelar([escolhido]);
-        _escolhidos.ListarDoProcessoAsync(_processo.Id, Arg.Any<CancellationToken>()).Returns([escolhido]);
+        ProcessoSeletivo processo = NovoProcessoConforme();
+        Publicar(processo);
+        Registrar(processo);
+        MotivoDeDecisao origem = Motivo();
+        _cadastro.ObterPorIdAsync(origem.Id, Arg.Any<CancellationToken>()).Returns(origem);
 
-        Result<MutacaoAceita> resultado = await Retirar(escolhido.MotivoDeDecisaoOrigemId);
+        Result resultado = await IncluirMotivoNoProcessoCommandHandler.Handle(
+            new IncluirMotivoNoProcessoCommand(processo.Id, LugarDaPrimeiraFase(processo), origem.Id),
+            _processos, _cadastro, _escolhidos, _unitOfWork, CancellationToken.None);
 
-        resultado.Error!.Code.Should().Be(MotivoDeDecisaoErrorCodes.RetiradaAposPublicacao);
-        _escolhidos.DidNotReceive().Remover(Arg.Any<MotivoDoProcesso>());
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
+        await _escolhidos.DidNotReceive().AdicionarAsync(Arg.Any<MotivoDoProcesso>(), Arg.Any<CancellationToken>());
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Incluir motivo inexistente em processo publicado devolve o bloqueio, sem ler o cadastro")]
+    public async Task Incluir_ProcessoPublicadoEMotivoInexistente_BloqueioPrecedeOCadastro()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme();
+        Publicar(processo);
+        Registrar(processo);
+
+        Result resultado = await IncluirMotivoNoProcessoCommandHandler.Handle(
+            new IncluirMotivoNoProcessoCommand(processo.Id, LugarDaPrimeiraFase(processo), Guid.CreateVersion7()),
+            _processos, _cadastro, _escolhidos, _unitOfWork, CancellationToken.None);
+
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
+        await _cadastro.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Incluir motivo inexistente numa fase que o processo não tem devolve o lugar, sem ler o cadastro")]
+    public async Task Incluir_LugarInexistenteEMotivoInexistente_LugarPrecedeOCadastro()
+    {
+        Result resultado = await Incluir(Guid.CreateVersion7(), LugarDaDecisao.DaFase(Guid.CreateVersion7()));
+
+        resultado.Error!.Code.Should().Be(MotivoDeDecisaoErrorCodes.FaseOuEtapaNaoEncontrada);
+        await _cadastro.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Retirar motivo não escolhido de processo publicado devolve o bloqueio")]
+    public async Task Retirar_ProcessoPublicadoENaoEscolhido_Bloqueio()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme();
+        Publicar(processo);
+        Registrar(processo);
+
+        Result resultado = await RetirarMotivoDoProcessoCommandHandler.Handle(
+            new RetirarMotivoDoProcessoCommand(processo.Id, LugarDaPrimeiraFase(processo), Guid.CreateVersion7()),
+            _processos, _escolhidos, _unitOfWork, CancellationToken.None);
+
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
     }
 
     [Fact(DisplayName = "Retirar de processo inexistente devolve não encontrado")]
     public async Task Retirar_ProcessoInexistente_NaoEncontrado()
     {
-        Result<MutacaoAceita> resultado = await RetirarMotivoDoProcessoCommandHandler.Handle(
-            new RetirarMotivoDoProcessoCommand(Guid.CreateVersion7(), Guid.CreateVersion7(), PrecondicaoIfMatch.Ausente),
+        Result resultado = await RetirarMotivoDoProcessoCommandHandler.Handle(
+            new RetirarMotivoDoProcessoCommand(Guid.CreateVersion7(), Lugar, Guid.CreateVersion7()),
             _processos, _escolhidos, _unitOfWork, CancellationToken.None);
 
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
     }
 
-    [Fact(DisplayName = "A leitura devolve os escolhidos ordenados por tipo e código")]
-    public async Task Listar_OrdenaPorTipoECodigo()
-    {
-        MotivoDoProcesso classificacao = Escolhido(Motivo(TipoMotivoDeDecisao.Classificacao, "NOTA_ZERADA", null));
-        MotivoDoProcesso isencaoB = Escolhido(Motivo(codigo: "RENDA_B"));
-        MotivoDoProcesso isencaoA = Escolhido(Motivo(codigo: "RENDA_A"));
-        _escolhidos.ListarDoProcessoAsync(_processo.Id, Arg.Any<CancellationToken>()).Returns([classificacao, isencaoB, isencaoA]);
-
-        IReadOnlyList<MotivoDoProcessoDto> lidos = await ListarMotivosDoProcessoQueryHandler.Handle(
-            new ListarMotivosDoProcessoQuery(_processo.Id), _escolhidos, CancellationToken.None);
-
-        lidos.Select(m => m.Codigo).Should().Equal("RENDA_A", "RENDA_B", "NOTA_ZERADA");
-        lidos[0].Tipo.Should().Be(TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa);
-        lidos[0].Sentido.Should().Be(SentidoDoMotivoCodigo.Desfavoravel);
-    }
-
-    [Fact(DisplayName = "Ao congelar, a falta de cobertura recusa e não congela")]
-    public async Task AoCongelar_SemCobertura_RecusaSemCongelar()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(true, 100m, [FundamentoIsencaoCodigo.CadastroUnico]).Value!, PrecondicaoIfMatch.Ausente);
-        MotivoDeDecisao origem = Motivo();
-        MotivoDoProcesso escolhido = Escolhido(origem);
-
-        Result resultado = await new ConferenciaDosMotivosAoCongelar(
-            MotivosDoProcessoDeTeste.Com([new MotivoEscolhidoComOrigem(escolhido, origem)]))
-            .ConferirAsync(processo, CancellationToken.None);
-
-        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(MotivoDeDecisaoErrorCodes.CoberturaInsuficiente);
-        escolhido.Congelado.Should().BeFalse();
-    }
-
-    [Fact(DisplayName = "Ao congelar, a escolha de motivo desativado recusa antes da cobertura")]
-    public async Task AoCongelar_MotivoDesativado_Recusa()
-    {
-        MotivoDeDecisao origem = Motivo();
-        MotivoDoProcesso escolhido = Escolhido(origem);
-        origem.Desativar();
-
-        Result resultado = await new ConferenciaDosMotivosAoCongelar(
-            MotivosDoProcessoDeTeste.Com([new MotivoEscolhidoComOrigem(escolhido, origem)]))
-            .ConferirAsync(NovoProcesso(), CancellationToken.None);
-
-        resultado.Error!.Code.Should().Be(MotivoDeDecisaoErrorCodes.MotivoDesativado);
-    }
-
-    [Fact(DisplayName = "Ao congelar com cobertura completa, a escolha congela")]
-    public async Task AoCongelar_ComCobertura_Congela()
-    {
-        MotivoDeDecisao origem = Motivo();
-        MotivoDoProcesso escolhido = Escolhido(origem);
-
-        Result resultado = await new ConferenciaDosMotivosAoCongelar(
-            MotivosDoProcessoDeTeste.Com([new MotivoEscolhidoComOrigem(escolhido, origem)]))
-            .ConferirAsync(NovoProcesso(), CancellationToken.None);
-
-        resultado.IsSuccess.Should().BeTrue();
-        escolhido.Congelado.Should().BeTrue();
-    }
-
-    [Fact(DisplayName = "Nos últimos portões, sem recusa anterior, a falta de cobertura recusa")]
-    public async Task UltimosPortoes_SemRecusaAnterior_RecusaPorCobertura()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(true, 100m, [FundamentoIsencaoCodigo.CadastroUnico]).Value!, PrecondicaoIfMatch.Ausente);
-
-        Result<DefinicaoAvaliavel> resultado = await new ConferenciaDosMotivosAoCongelar(
-            MotivosDoProcessoDeTeste.Com([]))
-            .UltimosPortoesAsync(processo, [], CancellationToken.None);
-
-        resultado.Errors.Should().HaveCount(2).And.OnlyContain(e => e.Error.Code == MotivoDeDecisaoErrorCodes.CoberturaInsuficiente);
-    }
-
-    private Task<Result<MutacaoAceita>> Incluir(Guid motivoId) =>
+    private Task<Result> Incluir(Guid motivoId, LugarDaDecisao? lugar = null) =>
         IncluirMotivoNoProcessoCommandHandler.Handle(
-            new IncluirMotivoNoProcessoCommand(_processo.Id, motivoId, null, PrecondicaoIfMatch.Ausente),
-            _processos, _cadastro, _escolhidos, _unitOfWork, _relogio, CancellationToken.None);
+            new IncluirMotivoNoProcessoCommand(_processo.Id, lugar ?? Lugar, motivoId),
+            _processos, _cadastro, _escolhidos, _unitOfWork, CancellationToken.None);
 
-    private Task<Result<MutacaoAceita>> Retirar(Guid motivoId) =>
+    private Task<Result> Retirar(Guid motivoId, LugarDaDecisao? lugar = null) =>
         RetirarMotivoDoProcessoCommandHandler.Handle(
-            new RetirarMotivoDoProcessoCommand(_processo.Id, motivoId, PrecondicaoIfMatch.Ausente),
+            new RetirarMotivoDoProcessoCommand(_processo.Id, lugar ?? Lugar, motivoId),
             _processos, _escolhidos, _unitOfWork, CancellationToken.None);
 
-    private MotivoDoProcesso Escolhido(MotivoDeDecisao origem) =>
-        EscolhaDosMotivos.Incluir(new InclusaoDeMotivo(_processo, [], origem, null, PrecondicaoIfMatch.Ausente, _relogio.GetUtcNow(), null)).Value!;
-
-    private static MotivoDeDecisao Motivo(
-        TipoMotivoDeDecisao tipo = TipoMotivoDeDecisao.IsencaoDaTaxa, string codigo = "RENDA_ACIMA_DO_LIMITE", string? subclassificacao = FundamentoIsencaoCodigo.CadastroUnico) =>
-        MotivoDeDecisao.Criar(new CamposDoMotivo(tipo.ToCodigo(), codigo, "Renda familiar per capita acima do limite legal.", subclassificacao, SentidoDoMotivo.Desfavoravel)).Value!;
-
-    private static ProcessoSeletivo NovoProcesso() =>
-        ProcessoSeletivo.Criar(
-            "PSR Medicina 2027", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
-            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-
-    private sealed class RelogioFixo(DateTimeOffset instante) : TimeProvider
+    private void Registrar(ProcessoSeletivo processo, params MotivoDoProcesso[] escolhidos)
     {
-        public override DateTimeOffset GetUtcNow() => instante;
+        _processos.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        _escolhidos.ListarEscolhaAtualAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(escolhidos);
     }
 }
