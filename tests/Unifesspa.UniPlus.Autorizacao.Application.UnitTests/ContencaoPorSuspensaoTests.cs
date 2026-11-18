@@ -252,6 +252,23 @@ public sealed class ContencaoPorSuspensaoTests
         resultado.Value!.Concluida.Should().BeTrue();
     }
 
+    [Theory(DisplayName = "A retomada confere o limite do motivo em runas")]
+    [InlineData(500, "a", true)]
+    [InlineData(501, "a", false)]
+    [InlineData(500, "😀", true)]
+    [InlineData(501, "😀", false)]
+    public async Task Retomar_MotivoNoLimite_Valida(int tamanho, string caractere, bool aceita)
+    {
+        Perfil perfil = SuspensoPor(Comum());
+        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.ProtecaoDeDados, [Manter]);
+        string motivo = string.Concat(Enumerable.Repeat(caractere, tamanho));
+
+        Result<RetomadaDaSuspensaoDto> resultado = await cenario.Contencao.RetomarAsync(perfil.Id, EtapaGestao, motivo, cenario.Verificador, CancellationToken.None);
+
+        resultado.IsSuccess.Should().Be(aceita);
+        perfil.Suspensoes.Single().Decisoes.Should().HaveCount(aceita ? 1 : 0);
+    }
+
     private static Task<GravacaoDaOperacao<bool>> Suspender(CenarioDaGovernancaDaVersao cenario, Perfil perfil) =>
         cenario.Contencao.SuspenderAsync(perfil.Id, Motivo, cenario.Verificador, CancellationToken.None);
 

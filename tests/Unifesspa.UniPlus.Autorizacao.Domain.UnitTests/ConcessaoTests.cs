@@ -185,10 +185,21 @@ public sealed class ConcessaoTests
         concessao.RevogadaEm.Should().BeNull();
     }
 
-    [Fact(DisplayName = "Motivo com mais de 500 caracteres é recusado")]
-    public void Revogar_MotivoLongo_Recusa() =>
-        CodigosDaRecusa(ConcessaoBuilder.DoPerfil(PerfilComum(), Catalogo).Construir().Revogar(DeDiogo, new string('a', 501)))
-            .Should().Equal(ConcessaoErrorCodes.MotivoInvalido);
+    [Theory(DisplayName = "O limite do motivo de revogação conta runas")]
+    [InlineData(500, "a", true)]
+    [InlineData(501, "a", false)]
+    [InlineData(500, "😀", true)]
+    [InlineData(501, "😀", false)]
+    public void Revogar_LimiteDoMotivo_Valida(int tamanho, string caractere, bool aceita)
+    {
+        Concessao concessao = ConcessaoBuilder.DoPerfil(PerfilComum(), Catalogo).Construir();
+        string motivo = string.Concat(Enumerable.Repeat(caractere, tamanho));
+
+        Result resultado = concessao.Revogar(DeDiogo, motivo);
+
+        resultado.IsSuccess.Should().Be(aceita);
+        concessao.MotivoRevogacao.Should().Be(aceita ? motivo : null);
+    }
 
     [Theory(DisplayName = "O e-mail do beneficiário confirma sem diferenciar maiúsculas nem espaços nas pontas")]
     [InlineData("leandro.viana@uniplus-test.local", true)]

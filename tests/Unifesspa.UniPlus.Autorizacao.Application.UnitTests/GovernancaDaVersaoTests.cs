@@ -130,6 +130,40 @@ public sealed class GovernancaDaVersaoTests
         perfil.VersaoPendente.Should().BeNull();
     }
 
+    [Theory(DisplayName = "A recusa confere o limite do motivo em runas")]
+    [InlineData(500, "a", true)]
+    [InlineData(501, "a", false)]
+    [InlineData(500, "😀", true)]
+    [InlineData(501, "😀", false)]
+    public async Task Recusar_MotivoNoLimite_Valida(int tamanho, string caractere, bool aceita)
+    {
+        Perfil perfil = PendenteVerificada([A]);
+        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Gestor, [Gestao]);
+        string motivo = string.Concat(Enumerable.Repeat(caractere, tamanho));
+
+        GravacaoDaOperacao<PerfilDto> gravacao = await cenario.Aprovacoes.DecidirAsync(
+            new DecisaoSolicitada(perfil.Id, perfil.VersaoPendente!.Id, EtapaGestao, ResultadoDaDecisao.Recusado, motivo), cenario.Verificador, CancellationToken.None);
+
+        gravacao.Resultado.IsSuccess.Should().Be(aceita);
+    }
+
+    [Theory(DisplayName = "A remoção confere o limite do motivo em runas")]
+    [InlineData(500, "a", true)]
+    [InlineData(501, "a", false)]
+    [InlineData(500, "😀", true)]
+    [InlineData(501, "😀", false)]
+    public async Task Remover_MotivoNoLimite_Valida(int tamanho, string caractere, bool aceita)
+    {
+        Perfil perfil = PerfisDeTeste.Vigente("Analista", "Descrição válida.", [A, B], new CatalogoDeTeste());
+        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Gestor, [Manter]);
+        string motivo = string.Concat(Enumerable.Repeat(caractere, tamanho));
+
+        GravacaoDaOperacao<PerfilDto> gravacao = await cenario.Remocao.RemoverAsync(
+            perfil.Id, new RemoverPermissoesRequest([B], motivo, null), CancellationToken.None);
+
+        gravacao.Resultado.IsSuccess.Should().Be(aceita);
+    }
+
     [Fact(DisplayName = "O criador cancela a própria pendente sem a permissão de manter perfis")]
     public async Task Cancelar_PeloCriador_Cancela()
     {

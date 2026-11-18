@@ -149,6 +149,24 @@ public sealed class JanelaDeMigracaoEncerramentoTests
         janela.Encerrada.Should().BeFalse();
     }
 
+    [Theory(DisplayName = "O encerramento manual confere o limite em runas")]
+    [InlineData(500, "a", true)]
+    [InlineData(501, "a", false)]
+    [InlineData(500, "😀", true)]
+    [InlineData(501, "😀", false)]
+    public void EncerrarManualmente_LimiteDoMotivo_Valida(int tamanho, string caractere, bool aceita)
+    {
+        var cenario = new CenarioDeMigracao(protegido: false);
+        cenario.Conceder(Leandro);
+        JanelaDeMigracao janela = cenario.Abrir();
+        string motivo = string.Concat(Enumerable.Repeat(caractere, tamanho));
+
+        Result resultado = janela.EncerrarManualmente(new EncerramentoManual(CenarioDeMigracao.Autoria(Betina), motivo), true, cenario.Contexto(Abertura.AddHours(5)));
+
+        resultado.IsSuccess.Should().Be(aceita);
+        janela.Encerrada.Should().Be(aceita);
+    }
+
     [Fact(DisplayName = "O encerramento manual revoga quem não migrou e grava quem encerrou")]
     public void EncerrarManualmente_RevogaEGravaQuemEncerrou()
     {

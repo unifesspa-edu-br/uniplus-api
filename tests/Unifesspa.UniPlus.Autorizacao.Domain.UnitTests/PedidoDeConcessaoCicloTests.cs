@@ -95,6 +95,25 @@ public sealed class PedidoDeConcessaoCicloTests
         pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
     }
 
+    [Theory(DisplayName = "O limite do motivo da recusa conta runas")]
+    [InlineData(500, "a", true)]
+    [InlineData(501, "a", false)]
+    [InlineData(500, "😀", true)]
+    [InlineData(501, "😀", false)]
+    public void Recusar_LimiteDoMotivo_Valida(int tamanho, string caractere, bool aceita)
+    {
+        PedidoDeConcessao pedido = Pedido().Protegido().AguardandoGestor();
+        string motivo = string.Concat(Enumerable.Repeat(caractere, tamanho));
+
+        Result resultado = pedido.Recusar(Diogo.Identidade, motivo, Interno, Agora);
+
+        resultado.IsSuccess.Should().Be(aceita);
+        if (aceita)
+        {
+            pedido.Decisoes.Single().Motivo.Should().Be(motivo);
+        }
+    }
+
     [Fact(DisplayName = "O solicitante cancela antes da primeira decisão")]
     public void Cancelar_AntesDaPrimeiraDecisao_Encerra()
     {

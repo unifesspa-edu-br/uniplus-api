@@ -122,6 +122,25 @@ public sealed class PerfilPropostaTests
         NadaMudou(perfil);
     }
 
+    [Theory(DisplayName = "A proposta com remoção confere o limite do motivo em runas")]
+    [InlineData(500, "a", true)]
+    [InlineData(501, "a", false)]
+    [InlineData(500, "😀", true)]
+    [InlineData(501, "😀", false)]
+    public void Propor_MotivoNoLimite_Valida(int tamanho, string caractere, bool aceita)
+    {
+        Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar, Dados], _catalogo);
+        string motivo = string.Concat(Enumerable.Repeat(caractere, tamanho));
+
+        DesfechoDaVersao resultado = Propor(perfil, "Analista", [Consultar, Publicar], motivo: motivo);
+
+        (resultado.Erro is null).Should().Be(aceita);
+        if (aceita)
+        {
+            perfil.VersaoVigente!.MotivoDaRemocao.Should().Be(motivo);
+        }
+    }
+
     [Fact(DisplayName = "A pendente recusada desfaz a remoção: a janela de migração aberta recusa a proposta e a vigente fica como estava")]
     public void Propor_PendenteRecusada_NaoAplicaARemocao()
     {

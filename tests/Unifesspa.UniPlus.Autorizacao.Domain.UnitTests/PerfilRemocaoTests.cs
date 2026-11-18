@@ -129,6 +129,25 @@ public sealed class PerfilRemocaoTests
         vigente.VersaoVigente!.Numero.Should().Be(1);
     }
 
+    [Theory(DisplayName = "A remoção confere o limite do motivo em runas")]
+    [InlineData(500, "a", true)]
+    [InlineData(501, "a", false)]
+    [InlineData(500, "😀", true)]
+    [InlineData(501, "😀", false)]
+    public void Remover_MotivoNoLimite_Valida(int tamanho, string caractere, bool aceita)
+    {
+        Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar, Publicar], _catalogo);
+        string motivo = string.Concat(Enumerable.Repeat(caractere, tamanho));
+
+        DesfechoDaVersao resultado = ProposicaoDaVersao.Remover(perfil, Pedido([Publicar], motivo: motivo), _catalogo);
+
+        resultado.Concluida.Should().Be(aceita);
+        if (aceita)
+        {
+            perfil.VersaoVigente!.MotivoDaRemocao.Should().Be(motivo);
+        }
+    }
+
     private static PedidoDeRemocao Pedido(string[] codigos, DateTimeOffset? instante = null, string? motivo = Motivo) =>
         new(codigos, MotivoInformado.Normalizar(motivo), CategoriaDaRemocao.Incidente, PerfisDeTeste.AutoriaDoGestor, instante ?? Agora);
 }

@@ -20,6 +20,23 @@ public sealed class PropostasDeVersaoTests
 
     private static readonly CatalogoDeTeste Catalogo = new();
 
+    [Theory(DisplayName = "A proposta confere o limite do nome em unidades UTF-16")]
+    [InlineData(120, "a", true)]
+    [InlineData(121, "a", false)]
+    [InlineData(60, "😀", true)]
+    [InlineData(61, "😀", false)]
+    public async Task Propor_NomeNoLimite_Valida(int tamanho, string caractere, bool aceita)
+    {
+        Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], Catalogo);
+        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Autor, []);
+        string nome = string.Concat(Enumerable.Repeat(caractere, tamanho));
+
+        GravacaoDaOperacao<ResultadoDaPropostaDto> gravacao = await cenario.Propostas.ProporAsync(
+            perfil.Id, Dados(nome, Consultar, Publicar), CancellationToken.None);
+
+        gravacao.Resultado.IsSuccess.Should().Be(aceita);
+    }
+
     [Fact(DisplayName = "Sem autor identificado nada é gravado")]
     public async Task Propor_SemAutor_Recusa()
     {
@@ -151,6 +168,23 @@ public sealed class PropostasDeVersaoTests
         perfil.ComposicaoEmVigor.Should().Equal(Consultar);
         perfil.VersaoPendente.Codigos().Should().Equal(Consultar, Publicar);
         cenario.Unidade.Gravacoes.Should().Be(1);
+    }
+
+    [Theory(DisplayName = "A proposta confere o limite do motivo em runas")]
+    [InlineData(500, "a", true)]
+    [InlineData(501, "a", false)]
+    [InlineData(500, "😀", true)]
+    [InlineData(501, "😀", false)]
+    public async Task Propor_MotivoNoLimite_Valida(int tamanho, string caractere, bool aceita)
+    {
+        Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar, Pessoal], Catalogo);
+        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Autor, []);
+        string motivo = string.Concat(Enumerable.Repeat(caractere, tamanho));
+
+        GravacaoDaOperacao<ResultadoDaPropostaDto> gravacao = await cenario.Propostas.ProporAsync(
+            perfil.Id, Dados("Analista", [Consultar, Publicar], motivo, "incidente"), CancellationToken.None);
+
+        gravacao.Resultado.IsSuccess.Should().Be(aceita);
     }
 
     [Fact(DisplayName = "A proposta só com remoção vale na hora, devolve o perfil e não emite envio de documento")]
