@@ -46,6 +46,32 @@ public sealed class EstruturaFormularioTests
             .Select(static e => e.Error.Code).Should().BeEquivalentTo(
                 [EstruturaFormularioErrorCodes.EtapaCodigoDuplicado, EstruturaFormularioErrorCodes.EtapaOrdemDuplicada]);
 
+    [Fact(DisplayName = "As recusas das etapas saem na ordem: cada etapa na sua posição, depois as do formulário")]
+    public void ValidarEtapas_RecusasEmOrdemComCampoECodigo() =>
+        EstruturaFormulario.ValidarEtapas(FinalidadeFormulario.Habilitacao, EtapasComTodasAsRecusas)
+            .Select(static erro => (Campo: erro.Field, Codigo: erro.Error.Code)).Should().Equal(RecusasDasEtapasComTodasAsRecusas);
+
+    private static readonly EtapaEstrutura[] EtapasComTodasAsRecusas =
+    [
+        new("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.ComprovacaoDocumental),
+        new("DADOS", 1, TipoEtapaFormulario.Nenhum, BlocoSistema.Nenhum),
+        Bloco(BlocoSistema.ComprovacaoDocumental, 2),
+        Bloco(BlocoSistema.ComprovacaoDocumental, 2),
+        Bloco(BlocoSistema.ModalidadesCalculadas, 3),
+    ];
+
+    private static readonly (string? Campo, string Codigo)[] RecusasDasEtapasComTodasAsRecusas =
+    [
+        ("etapas[0].bloco", EstruturaFormularioErrorCodes.SecaoComBloco),
+        ("etapas[1].codigo", EstruturaFormularioErrorCodes.EtapaCodigoDuplicado),
+        ("etapas[1].tipo", EstruturaFormularioErrorCodes.TipoDeEtapaObrigatorio),
+        ("etapas[3].codigo", EstruturaFormularioErrorCodes.EtapaCodigoDuplicado),
+        ("etapas[3].ordem", EstruturaFormularioErrorCodes.EtapaOrdemDuplicada),
+        ("etapas[3].bloco", EstruturaFormularioErrorCodes.BlocoRepetido),
+        ("etapas[4].bloco", EstruturaFormularioErrorCodes.BlocoNaoAdmitido),
+        ("etapas", EstruturaFormularioErrorCodes.BlocoExigidoAusente),
+    ];
+
     [Theory(DisplayName = "Item fora de seção — sem seção, em bloco ou em seção inexistente — é recusado")]
     [InlineData(null)]
     [InlineData("RevisaoEAceite")]
