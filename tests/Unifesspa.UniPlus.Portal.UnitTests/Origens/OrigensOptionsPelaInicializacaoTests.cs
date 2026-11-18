@@ -13,13 +13,13 @@ public sealed class OrigensOptionsPelaInicializacaoTests
     [Theory]
     [InlineData(null, typeof(OptionsValidationException), "Origens:SelecaoBaseUrl é obrigatório.")]
     [InlineData("", typeof(OptionsValidationException), "Origens:SelecaoBaseUrl é obrigatório.")]
-    [InlineData("   ", typeof(OptionsValidationException), "Origens:SelecaoBaseUrl é obrigatório.")]
+    [InlineData("   ", typeof(OptionsValidationException), "Origens:SelecaoBaseUrl precisa ser um endereço http ou https absoluto.")]
     [InlineData("/relativo", typeof(OptionsValidationException), "Origens:SelecaoBaseUrl precisa ser um endereço http ou https absoluto.")]
     [InlineData("sigaa.exemplo.test", typeof(OptionsValidationException), "Origens:SelecaoBaseUrl precisa ser um endereço http ou https absoluto.")]
     [InlineData("ht!tp://sigaa", typeof(OptionsValidationException), "Origens:SelecaoBaseUrl precisa ser um endereço http ou https absoluto.")]
     [InlineData("ftp://x:1", typeof(OptionsValidationException), "Origens:SelecaoBaseUrl precisa ser um endereço http ou https absoluto.")]
     [InlineData("file:///x", typeof(OptionsValidationException), "Origens:SelecaoBaseUrl precisa ser um endereço http ou https absoluto.")]
-    [InlineData("https://[::1", typeof(OptionsValidationException), "Origens:SelecaoBaseUrl precisa ser um endereço http ou https absoluto.")]
+    [InlineData("https://[::1", typeof(InvalidOperationException), "Failed to convert configuration value 'https://[::1' at 'Origens:SelecaoBaseUrl' to type 'System.Uri'.")]
     public void Ler_EnderecoInvalido_RecusaComMensagem(string? endereco, Type tipoDeFalha, string mensagem)
     {
         using ServiceProvider provedor = Montar(endereco);

@@ -66,7 +66,7 @@ public static class OrigensRegistration
     /// por falhas de uma não bloqueie a outra.
     /// </summary>
     private static void RegistrarClienteDaOrigem<TApi>(
-        IServiceCollection services, string politica, Func<OrigensOptions, string> endereco)
+        IServiceCollection services, string politica, Func<OrigensOptions, Uri?> endereco)
         where TApi : class
     {
         services.AddRefitGeneratedClient<TApi>()
@@ -104,11 +104,11 @@ public static class OrigensRegistration
     private static void ConfigurarCliente(
         IServiceProvider provedor,
         HttpClient cliente,
-        Func<OrigensOptions, string> endereco)
+        Func<OrigensOptions, Uri?> endereco)
     {
         OrigensOptions opcoes = provedor.GetRequiredService<IOptions<OrigensOptions>>().Value;
 
-        cliente.BaseAddress = new Uri(endereco(opcoes), UriKind.Absolute);
+        cliente.BaseAddress = endereco(opcoes);
 
         // O limite do próprio cliente envolve a cadeia inteira, retentativas incluídas. Precisa de
         // folga sobre o limite total da política: igual ou menor, o cancelamento observado viria

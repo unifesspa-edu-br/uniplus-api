@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Portal.Infrastructure.Origens;
 
-using System.Diagnostics.CodeAnalysis;
-
 /// <summary>
 /// Endereços das origens que a Portal compõe e as políticas de resiliência das consultas a elas.
 /// Mapeia a seção <c>Origens</c> da configuração.
@@ -11,10 +9,6 @@ using System.Diagnostics.CodeAnalysis;
 /// ser. Os limites de tempo são curtos de propósito — a página pública espera por essas consultas
 /// a cada leitura, e uma origem lenta vira página lenta.
 /// </remarks>
-[SuppressMessage(
-    "Design",
-    "CA1056:URI-like properties should not be strings",
-    Justification = "Opção vinda de IConfiguration — texto é a forma que o binder lê. O formato é validado em OrigensOptionsValidator.")]
 public sealed class OrigensOptions
 {
     public const string SectionName = "Origens";
@@ -25,12 +19,12 @@ public sealed class OrigensOptions
     /// <summary>
     /// Endereço base do módulo Seleção, sem o caminho do recurso (ex.: <c>http://uniplus-api:8080</c>).
     /// </summary>
-    public string SelecaoBaseUrl { get; init; } = string.Empty;
+    public Uri? SelecaoBaseUrl { get; init; }
 
     /// <summary>
     /// Endereço base do módulo Publicações, sem o caminho do recurso.
     /// </summary>
-    public string PublicacoesBaseUrl { get; init; } = string.Empty;
+    public Uri? PublicacoesBaseUrl { get; init; }
 
     /// <summary>Quantos atos pedir por página.</summary>
     public int ItensPorPaginaDeAtos { get; init; } = MaximoItensPorPaginaDeAtos;

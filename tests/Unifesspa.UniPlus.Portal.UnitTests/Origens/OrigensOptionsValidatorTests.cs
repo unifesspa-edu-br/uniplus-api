@@ -10,14 +10,14 @@ public sealed class OrigensOptionsValidatorTests
 {
     private static readonly OrigensOptions Valida = new()
     {
-        SelecaoBaseUrl = "http://uniplus-api:8080",
-        PublicacoesBaseUrl = "http://uniplus-api:8080",
+        SelecaoBaseUrl = new("http://uniplus-api:8080"),
+        PublicacoesBaseUrl = new("http://uniplus-api:8080"),
     };
 
     private static readonly OrigensOptions TodasAsSecoesInvalidas = new()
     {
-        SelecaoBaseUrl = "",
-        PublicacoesBaseUrl = "ftp://uniplus-api:8080",
+        SelecaoBaseUrl = null,
+        PublicacoesBaseUrl = new("ftp://uniplus-api:8080"),
         ItensPorPaginaDeAtos = 0,
         LimiteDePaginasDeAtos = 0,
         TimeoutPorTentativaEmSegundos = 0,
