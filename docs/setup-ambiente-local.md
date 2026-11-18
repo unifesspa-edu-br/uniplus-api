@@ -63,8 +63,8 @@ O `docker compose up` já sobe com uma base pronta, restaurada na primeira subid
 `docker/base-local/`: dois processos seletivos de exemplo, os perfis de operação com concessões às personas, as 60 personas no Keycloak
 e a base de CEP no Geo. Não há passo extra além de `cp .env.example .env`.
 
-- **Processos:** `psm-teste-multicurso-2027` (56 inscrições das personas; a inscrição fecha em 16/11/2026 às 16:25, horário de Belém, e depois
-  disso aparece encerrada) e `psm-2027` (Medicina; inscrição aberta até 18/11/2026 às 23:59:59).
+- **Processos:** `psm-teste-multicurso-2027` (56 inscrições das personas) e `psm-2027` (Medicina, sem inscrições). Nos dois, a inscrição vai de
+  18/11/2026 às 00:00 até 19/12/2026 às 23:59:59, horário de Belém.
 - **Pessoas:** as 60 personas fictícias do portal, com e-mail `{usuário}-uniplus-dev@unifesspa.edu.br` (os avisos vão só ao Mailpit) e a
   senha de desenvolvimento do `.env.example`. Gestores de acessos: `diogo.souza` e `leandro.viana`; Representantes do controlador:
   `betina.neves` e `caroline.jesus`; Encarregado de dados: `marlene.martins`.

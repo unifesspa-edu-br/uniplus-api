@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -165,6 +166,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
+                    codigo = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     tipo_instrumento = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
                     identificacao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     descricao = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: false),
@@ -411,6 +413,31 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "documentos_a_publicar",
+                schema: "selecao",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    finalidade = table.Column<int>(type: "integer", nullable: false),
+                    nome_arquivo = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
+                    formato = table.Column<int>(type: "integer", nullable: false),
+                    object_key = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    status = table.Column<int>(type: "integer", nullable: false),
+                    expira_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    tamanho_bytes = table.Column<long>(type: "bigint", nullable: true),
+                    hash_sha256 = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
+                    confirmado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    object_key_confirmado = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_documentos_a_publicar", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "fases_canonicas",
                 schema: "configuracao",
                 columns: table => new
@@ -419,9 +446,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
                     nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     descricao = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
+                    base_legal = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     agrupa_etapas = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     permite_complementacao = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    base_legal = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     coleta_inscricao = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     coleta_solicitacao_isencao = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     origem_data = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
@@ -440,10 +467,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_fases_canonicas", x => x.id);
                     table.CheckConstraint("ck_fases_canonicas_agrupa_etapas", "agrupa_etapas = false OR codigo = 'AVALIACAO'");
-                    table.CheckConstraint("ck_fases_canonicas_codigo_canonico", "codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_PRELIMINAR', 'RECURSOS', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
+                    table.CheckConstraint("ck_fases_canonicas_codigo_canonico", "codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO_INSCRICOES', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_PRELIMINAR', 'RECURSOS', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
                     table.CheckConstraint("ck_fases_canonicas_codigo_formato", "codigo ~ '^[A-Z_]+$'");
-                    table.CheckConstraint("ck_fases_canonicas_complementacao", "permite_complementacao = false OR codigo IN ('HOMOLOGACAO', 'RECURSOS')");
+                    table.CheckConstraint("ck_fases_canonicas_complementacao", "permite_complementacao = false OR codigo IN ('HOMOLOGACAO_INSCRICOES', 'RECURSOS')");
+                    table.CheckConstraint("ck_fases_canonicas_inscricao_e_isencao_exclusivas", "NOT (coleta_inscricao AND coleta_solicitacao_isencao)");
                     table.CheckConstraint("ck_fases_canonicas_origem_data", "origem_data IN ('NO_EDITAL', 'NA_EXECUCAO')");
+                    table.CheckConstraint("ck_fases_canonicas_solicitacao_isencao", "coleta_solicitacao_isencao = (codigo = 'SOLICITACAO_ISENCAO')");
                 });
 
             migrationBuilder.CreateTable(
@@ -660,7 +689,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     composicao_vagas = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
                     composicao_origem = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
                     regra_remanejamento = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true),
-                    remanejamento_args = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'{}'::jsonb"),
+                    remanejamento_parametros = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'{}'::jsonb"),
                     regra_de_aplicabilidade = table.Column<string>(type: "jsonb", nullable: false),
                     acao_quando_indeferido = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true),
                     base_legal = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
@@ -677,10 +706,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.PrimaryKey("pk_modalidades", x => x.id);
                     table.CheckConstraint("ck_modalidades_acao_quando_indeferido", "acao_quando_indeferido IS NULL OR acao_quando_indeferido IN ('RECLASSIFICAR_AC', 'RECLASSIFICAR_REGRA_EDITAL')");
                     table.CheckConstraint("ck_modalidades_codigo_formato", "codigo ~ '^[A-Z0-9_]+$'");
-                    table.CheckConstraint("ck_modalidades_composicao_vagas", "composicao_vagas IN ('RESIDUAL_DO_VO', 'DENTRO_DO_VR', 'RETIRA_DE', 'SUPLEMENTAR_AO_TOTAL')");
+                    table.CheckConstraint("ck_modalidades_composicao_vagas", "composicao_vagas IN ('RESTANTE_DAS_VAGAS_OFERTADAS', 'DENTRO_DA_RESERVA_LEGAL', 'RETIRADA_DE_OUTRA_MODALIDADE', 'SUPLEMENTAR_AO_TOTAL')");
                     table.CheckConstraint("ck_modalidades_natureza_legal", "natureza_legal IN ('COTA_RESERVADA', 'AMPLA', 'ACAO_AFIRMATIVA')");
                     table.CheckConstraint("ck_modalidades_regra_remanejamento", "regra_remanejamento IS NULL OR regra_remanejamento IN ('SEGUE_CASCATA', 'DESTINO_UNICO', 'CRUZADO')");
-                    table.CheckConstraint("ck_modalidades_retira_de_origem", "(composicao_vagas = 'RETIRA_DE') = (composicao_origem IS NOT NULL)");
+                    table.CheckConstraint("ck_modalidades_retirada_de_outra_modalidade_origem", "(composicao_vagas = 'RETIRADA_DE_OUTRA_MODALIDADE') = (composicao_origem IS NOT NULL)");
                 });
 
             migrationBuilder.CreateTable(
@@ -744,7 +773,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     descricao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     subclassificacao = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
                     sentido = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
-                    congelado = table.Column<bool>(type: "boolean", nullable: false),
+                    fase_canonica_origem_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    etapa_processo_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    versao_do_edital_de_entrada = table.Column<int>(type: "integer", nullable: false),
+                    versao_do_edital_de_saida = table.Column<int>(type: "integer", nullable: true),
                     justificativa_da_inclusao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
@@ -755,6 +787,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_motivos_do_processo", x => x.id);
+                    table.CheckConstraint("ck_motivos_do_processo_lugar", "num_nonnulls(fase_canonica_origem_id, etapa_processo_id) = 1");
+                    table.CheckConstraint("ck_motivos_do_processo_vigencia", "versao_do_edital_de_entrada >= 1 AND (versao_do_edital_de_saida IS NULL OR versao_do_edital_de_saida > versao_do_edital_de_entrada)");
                 });
 
             migrationBuilder.CreateTable(
@@ -851,10 +885,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_precedencias_entre_fases", x => x.id);
-                    table.CheckConstraint("ck_precedencias_entre_fases_antecessora_canonica", "antecessora_codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_PRELIMINAR', 'RECURSOS', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
+                    table.CheckConstraint("ck_precedencias_entre_fases_antecessora_canonica", "antecessora_codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO_INSCRICOES', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_PRELIMINAR', 'RECURSOS', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
                     table.CheckConstraint("ck_precedencias_entre_fases_antecessora_formato", "antecessora_codigo ~ '^[A-Z_]+$'");
                     table.CheckConstraint("ck_precedencias_entre_fases_sem_self_loop", "antecessora_codigo <> sucessora_codigo");
-                    table.CheckConstraint("ck_precedencias_entre_fases_sucessora_canonica", "sucessora_codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_PRELIMINAR', 'RECURSOS', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
+                    table.CheckConstraint("ck_precedencias_entre_fases_sucessora_canonica", "sucessora_codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO_INSCRICOES', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_PRELIMINAR', 'RECURSOS', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
                     table.CheckConstraint("ck_precedencias_entre_fases_sucessora_formato", "sucessora_codigo ~ '^[A-Z_]+$'");
                 });
 
@@ -873,6 +907,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     origem_candidatos = table.Column<int>(type: "integer", nullable: false),
                     unidade_administradora_origem_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Id da Unidade administradora em Organização Institucional (ADR-0061, sem FK cross-schema) — congelado na criação, imutável."),
                     unidade_administradora_sigla = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, comment: "Snapshot-copy da sigla da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem."),
+                    unidade_administradora_codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, comment: "Snapshot-copy do código da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem."),
                     unidade_administradora_slug = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false, comment: "Snapshot-copy do slug da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem."),
                     unidade_administradora_nome = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: false, comment: "Snapshot-copy do nome da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem."),
                     unidade_administradora_tipo = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Snapshot-copy do tipo organizacional da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem."),
@@ -901,6 +936,26 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.PrimaryKey("pk_processos_seletivos", x => x.id);
                     table.CheckConstraint("ck_processos_seletivos_numero_de_opcoes_de_curso", "numero_de_opcoes_de_curso IS NULL OR numero_de_opcoes_de_curso IN (1, 2)");
                     table.CheckConstraint("ck_processos_seletivos_unidade_administradora_cidade_completa", "(unidade_administradora_cidade_codigo_ibge IS NULL AND unidade_administradora_cidade_nome IS NULL AND unidade_administradora_cidade_uf IS NULL) OR (unidade_administradora_cidade_codigo_ibge IS NOT NULL AND unidade_administradora_cidade_nome IS NOT NULL AND unidade_administradora_cidade_uf IS NOT NULL)");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "rascunhos_processos_seletivos",
+                schema: "selecao",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    revisao = table.Column<int>(type: "integer", nullable: false),
+                    unidade_administradora_origem_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Id da Unidade administradora em Organização Institucional (ADR-0061, sem FK cross-schema): decide quem lê, grava, exclui e publica o rascunho."),
+                    documento = table.Column<string>(type: "jsonb", nullable: false, comment: "Documento da configuração. Traz o identificador da conta de quem assina (dado pessoal pseudonimizado); o formato não prevê nome, CPF nem e-mail, mas o texto livre de campos como o dos assinantes é guardado como veio."),
+                    nome = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_rascunhos_processos_seletivos", x => x.id);
+                    table.CheckConstraint("ck_rascunhos_processos_seletivos_documento_objeto", "jsonb_typeof(documento) = 'object'");
+                    table.CheckConstraint("ck_rascunhos_processos_seletivos_revisao", "revisao >= 1");
                 });
 
             migrationBuilder.CreateTable(
@@ -962,7 +1017,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
                     tipo = table.Column<string>(type: "character varying(48)", maxLength: 48, nullable: false),
-                    esquema_args = table.Column<string>(type: "jsonb", nullable: false),
+                    declaracao_da_regra = table.Column<string>(type: "jsonb", nullable: false),
                     invariantes = table.Column<string>(type: "jsonb", nullable: false),
                     base_legal = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
@@ -1023,6 +1078,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    codigo = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     texto_rascunho = table.Column<string>(type: "character varying(20000)", maxLength: 20000, nullable: true),
                     base_legal_rascunho = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     forma_aceite_rascunho = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
@@ -1041,6 +1097,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_termos_de_consentimento", x => x.id);
+                    table.CheckConstraint("ck_termos_de_consentimento_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9_]{1,99}$'");
                     table.CheckConstraint("ck_termos_de_consentimento_forma_aceite_rascunho", "forma_aceite_rascunho IN ('A_DEFINIR', 'REGISTRO_DIGITAL_SEM_LOG_IP', 'REGISTRO_DIGITAL_COM_LOG_IP')");
                 });
 
@@ -1219,6 +1276,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     admite_pontuacao = table.Column<bool>(type: "boolean", nullable: false),
                     admite_eliminacao = table.Column<bool>(type: "boolean", nullable: false),
                     nota_de_origem_no_enem = table.Column<bool>(type: "boolean", nullable: false, comment: "Nota das etapas deste tipo vem do ENEM; definido só pela carga do cadastro, nunca pela API."),
+                    exige_correcao_independente = table.Column<bool>(type: "boolean", nullable: false),
                     created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
@@ -1229,6 +1287,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_tipos_etapa", x => x.id);
                     table.CheckConstraint("ck_tipos_etapa_carater_admitido", "admite_pontuacao OR admite_eliminacao");
+                    table.CheckConstraint("ck_tipos_etapa_correcao_independente_sem_nota_do_enem", "NOT (exige_correcao_independente AND nota_de_origem_no_enem)");
                     table.CheckConstraint("ck_tipos_etapa_nota_de_origem_no_enem_admite_pontuacao", "NOT nota_de_origem_no_enem OR admite_pontuacao");
                 });
 
@@ -2081,6 +2140,51 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "atos_do_processo",
+                schema: "selecao",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ordem_de_registro = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityAlwaysColumn),
+                    tipo_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
+                    tipo_nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    numero = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
+                    data_do_ato = table.Column<DateOnly>(type: "date", nullable: false),
+                    publicado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    assinante = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    slug_da_unidade_administradora = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    identificador_legivel_do_processo = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    item_do_edital = table.Column<string>(type: "character varying(160)", maxLength: 160, nullable: true),
+                    documento_principal_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ato_corrigido_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    motivo_da_correcao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    politica_de_divulgacao_confirmada_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    politica_de_divulgacao_confirmada_por_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_atos_do_processo", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_atos_do_processo_documento_a_publicar_principal",
+                        column: x => x.documento_principal_id,
+                        principalSchema: "selecao",
+                        principalTable: "documentos_a_publicar",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "fk_atos_do_processo_processo_seletivo_processo_seletivo_id",
+                        column: x => x.processo_seletivo_id,
+                        principalSchema: "selecao",
+                        principalTable: "processos_seletivos",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "configuracoes_bonus_regional",
                 schema: "selecao",
                 columns: table => new
@@ -2094,6 +2198,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     teto = table.Column<decimal>(type: "numeric(6,4)", precision: 6, scale: 4, nullable: true),
                     fato_elegibilidade_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
                     base_legal_bonus_regional_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    base_legal_bonus_regional_codigo = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     tipo_instrumento = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
                     identificacao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     descricao = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: false),
@@ -2181,8 +2286,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
                     oferta_curso_origem_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    vo_base = table.Column<int>(type: "integer", nullable: false),
-                    pr = table.Column<decimal>(type: "numeric(5,4)", precision: 5, scale: 4, nullable: false),
+                    vagas_ofertadas_base = table.Column<int>(type: "integer", nullable: false),
+                    percentual_da_reserva_legal = table.Column<decimal>(type: "numeric(5,4)", precision: 5, scale: 4, nullable: true),
                     regra_distribuicao_codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     regra_distribuicao_versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
                     regra_distribuicao_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
@@ -2195,23 +2300,30 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     regra_ajuste_codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: true),
                     regra_ajuste_versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: true),
                     regra_ajuste_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: true),
+                    ajuste_do_quadro = table.Column<string>(type: "jsonb", nullable: true),
                     grupo_area_enem_codigo = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Código do grupo de área do ENEM do curso da oferta, sem abreviação e sem acento, congelado por valor do cadastro de cursos na definição da distribuição; casa a oferta com a linha de Pesos por Área. Nulo quando o curso não declara grupo."),
                     grupo_area_enem_rotulo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true, comment: "Rótulo do grupo de área do ENEM do curso da oferta, congelado por valor junto do código na definição da distribuição. Nulo quando o curso não declara grupo."),
+                    oferta_curso_codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true, comment: "Código da oferta de curso, congelado por valor do cadastro na definição da distribuição."),
                     oferta_curso_nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true, comment: "Nome do curso da oferta, congelado por valor do cadastro na definição da distribuição."),
                     oferta_curso_grau = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true, comment: "Grau do curso da oferta, congelado por valor do cadastro na definição da distribuição."),
                     oferta_unidade_ofertante_nome = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: true, comment: "Nome da unidade ofertante, congelado por valor do cadastro na definição da distribuição."),
                     oferta_turnos = table.Column<string[]>(type: "text[]", nullable: true, comment: "Turnos que a oferta ocupa (tokens), congelados por valor do cadastro na definição da distribuição."),
-                    vr_nominal = table.Column<int>(type: "integer", nullable: false),
-                    vr_final = table.Column<int>(type: "integer", nullable: false),
-                    estouro = table.Column<int>(type: "integer", nullable: false),
-                    capado_em_vo = table.Column<bool>(type: "boolean", nullable: false),
-                    total_publicado = table.Column<int>(type: "integer", nullable: false),
+                    reserva_legal_nominal = table.Column<int>(type: "integer", nullable: true),
+                    reserva_legal_efetiva = table.Column<int>(type: "integer", nullable: true),
+                    excedente_sobre_reserva_legal = table.Column<int>(type: "integer", nullable: true),
+                    vagas_cortadas_por_escassez = table.Column<int>(type: "integer", nullable: true),
+                    vagas_retiradas_no_ajuste = table.Column<string>(type: "jsonb", nullable: true),
+                    total_de_vagas_do_edital = table.Column<int>(type: "integer", nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_configuracoes_de_vagas", x => x.id);
+                    table.CheckConstraint("ck_configuracoes_de_vagas_excedente_sobre_reserva_legal", "excedente_sobre_reserva_legal IS NULL OR excedente_sobre_reserva_legal = GREATEST(0, reserva_legal_efetiva - reserva_legal_nominal)");
+                    table.CheckConstraint("ck_configuracoes_de_vagas_percentual_da_reserva_legal", "percentual_da_reserva_legal IS NULL OR (percentual_da_reserva_legal >= 0.5 AND percentual_da_reserva_legal <= 1)");
+                    table.CheckConstraint("ck_configuracoes_de_vagas_ramo_do_quadro", "reserva_legal_nominal IS NULL OR (vagas_retiradas_no_ajuste IS NULL AND ajuste_do_quadro IS NULL)");
+                    table.CheckConstraint("ck_configuracoes_de_vagas_reserva_legal_completa", "(percentual_da_reserva_legal IS NULL AND reserva_legal_nominal IS NULL AND reserva_legal_efetiva IS NULL AND excedente_sobre_reserva_legal IS NULL AND vagas_cortadas_por_escassez IS NULL) OR (percentual_da_reserva_legal IS NOT NULL AND reserva_legal_nominal IS NOT NULL AND reserva_legal_efetiva IS NOT NULL AND excedente_sobre_reserva_legal IS NOT NULL AND vagas_cortadas_por_escassez IS NOT NULL)");
                     table.ForeignKey(
                         name: "fk_configuracoes_de_vagas_processo_seletivo",
                         column: x => x.processo_seletivo_id,
@@ -2305,7 +2417,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     regra_codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     regra_versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
                     regra_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
-                    args = table.Column<string>(type: "json", nullable: false),
+                    parametros = table.Column<string>(type: "json", nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
@@ -2314,38 +2426,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.PrimaryKey("pk_criterios_desempate", x => x.id);
                     table.ForeignKey(
                         name: "fk_criterios_desempate_processo_seletivo_processo_seletivo_id",
-                        column: x => x.processo_seletivo_id,
-                        principalSchema: "selecao",
-                        principalTable: "processos_seletivos",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "documentos_a_publicar",
-                schema: "selecao",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    finalidade = table.Column<int>(type: "integer", nullable: false),
-                    nome_arquivo = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
-                    formato = table.Column<int>(type: "integer", nullable: false),
-                    object_key = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    status = table.Column<int>(type: "integer", nullable: false),
-                    expira_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    tamanho_bytes = table.Column<long>(type: "bigint", nullable: true),
-                    hash_sha256 = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
-                    confirmado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    object_key_confirmado = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_documentos_a_publicar", x => x.id);
-                    table.ForeignKey(
-                        name: "fk_documentos_a_publicar_processo_seletivo",
                         column: x => x.processo_seletivo_id,
                         principalSchema: "selecao",
                         principalTable: "processos_seletivos",
@@ -2369,6 +2449,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     tipo_etapa_admite_pontuacao = table.Column<bool>(type: "boolean", nullable: false),
                     tipo_etapa_admite_eliminacao = table.Column<bool>(type: "boolean", nullable: false),
                     tipo_etapa_nota_de_origem_no_enem = table.Column<bool>(type: "boolean", nullable: false, comment: "Nota da etapa vem do ENEM, congelado do tipo junto com a identidade."),
+                    tipo_etapa_exige_correcao_independente = table.Column<bool>(type: "boolean", nullable: false, comment: "Etapas do tipo são corrigidas por mais de um corretor, cada um independente dos outros; congelado do tipo e regravado com os demais sinalizadores."),
                     peso = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: true),
                     nota_minima = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: true),
                     nota_maxima = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: true, comment: "Nota máxima da escala da etapa com nota; ausente na etapa sem nota e na do ENEM."),
@@ -2382,6 +2463,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     inicio = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     fim = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     emite_parecer_individual = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    tipos_de_decisao = table.Column<List<string>>(type: "text[]", nullable: false, defaultValueSql: "'{}'::text[]", comment: "Tipos de decisão que a fase ou a etapa declara produzir, em ordem alfabética ordinal e sem repetição."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
@@ -2422,6 +2504,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     fim = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     fase_concluinte_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
                     emite_parecer_individual = table.Column<bool>(type: "boolean", nullable: false),
+                    regra_de_homologacao = table.Column<string>(type: "jsonb", nullable: true, comment: "Regra de homologação das inscrições que a fase declara: o resultado que publica a lista e as alternativas de condições, na ordem declarada. Nula quando a fase não homologa."),
+                    tipos_de_decisao = table.Column<List<string>>(type: "text[]", nullable: false, defaultValueSql: "'{}'::text[]", comment: "Tipos de decisão que a fase ou a etapa declara produzir, em ordem alfabética ordinal e sem repetição."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
@@ -2586,62 +2670,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "rascunhos_publicacao",
-                schema: "selecao",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    usuario_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    conteudo = table.Column<string>(type: "text", nullable: false),
-                    versao = table.Column<int>(type: "integer", nullable: false),
-                    expira_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_rascunhos_publicacao", x => x.id);
-                    table.ForeignKey(
-                        name: "fk_rascunhos_publicacao_processo_seletivo",
-                        column: x => x.processo_seletivo_id,
-                        principalSchema: "selecao",
-                        principalTable: "processos_seletivos",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "rascunhos_retificacao",
-                schema: "selecao",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    motivo = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false),
-                    versao_base_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    numero_versao_base = table.Column<int>(type: "integer", nullable: false),
-                    versao_base_com_identificador_legivel = table.Column<bool>(type: "boolean", nullable: false),
-                    fatos_das_versoes_publicadas = table.Column<string>(type: "jsonb", nullable: false),
-                    aberto_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    aberto_por_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    revisao = table.Column<int>(type: "integer", nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_rascunhos_retificacao", x => x.id);
-                    table.ForeignKey(
-                        name: "fk_rascunhos_retificacao_processo_seletivo",
-                        column: x => x.processo_seletivo_id,
-                        principalSchema: "selecao",
-                        principalTable: "processos_seletivos",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "termos_exigidos_formulario",
                 schema: "selecao",
                 columns: table => new
@@ -2653,6 +2681,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     ordem = table.Column<int>(type: "integer", nullable: false),
                     termo_id = table.Column<Guid>(type: "uuid", nullable: false),
                     versao_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    termo_codigo = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    versao_numero = table.Column<int>(type: "integer", nullable: false),
                     nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     texto = table.Column<string>(type: "character varying(20000)", maxLength: 20000, nullable: false),
                     base_legal = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
@@ -2719,6 +2749,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     termo_consentimento_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    numero = table.Column<int>(type: "integer", nullable: false),
                     texto = table.Column<string>(type: "text", nullable: false),
                     base_legal = table.Column<string>(type: "text", nullable: false),
                     forma_aceite = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
@@ -2730,6 +2761,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_versoes_do_termo_consentimento", x => x.id);
                     table.CheckConstraint("ck_versoes_do_termo_consentimento_forma_aceite", "forma_aceite IN ('A_DEFINIR', 'REGISTRO_DIGITAL_SEM_LOG_IP', 'REGISTRO_DIGITAL_COM_LOG_IP')");
+                    table.CheckConstraint("ck_versoes_do_termo_consentimento_numero", "numero >= 1");
                     table.ForeignKey(
                         name: "fk_versoes_do_termo_consentimento_termo_de_consentimento",
                         column: x => x.termo_consentimento_id,
@@ -2892,6 +2924,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
+                    codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     curso_id = table.Column<Guid>(type: "uuid", nullable: false),
                     local_oferta_id = table.Column<Guid>(type: "uuid", nullable: false),
                     unidade_oft_origem_id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -2920,6 +2953,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_ofertas_de_curso", x => x.id);
                     table.CheckConstraint("ck_ofertas_de_curso_base_legal_programa", "programa_de_oferta = 'REGULAR' OR base_legal IS NOT NULL");
+                    table.CheckConstraint("ck_ofertas_de_curso_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9_]{1,49}$'");
                     table.CheckConstraint("ck_ofertas_de_curso_formato_pedagogico", "formato_pedagogico IN ('PRESENCIAL', 'SEMIPRESENCIAL', 'EAD')");
                     table.CheckConstraint("ck_ofertas_de_curso_funcionamento_regime_de_turno", "(regime_de_funcionamento <> 'INTENSIVO' OR regime_de_turno = 'INTEGRAL')");
                     table.CheckConstraint("ck_ofertas_de_curso_programa_de_oferta", "programa_de_oferta IN ('REGULAR', 'FORMA_PARA', 'PARFOR', 'PRONERA', 'PEPETI', 'CONVENIO_OUTRO', 'OUTRO')");
@@ -3385,6 +3419,38 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "anexos_do_ato_do_processo",
+                schema: "selecao",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ato_do_processo_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    documento_a_publicar_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    nome_de_exibicao = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    ordem = table.Column<int>(type: "integer", nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_anexos_do_ato_do_processo", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_anexos_do_ato_do_processo_ato_do_processo",
+                        column: x => x.ato_do_processo_id,
+                        principalSchema: "selecao",
+                        principalTable: "atos_do_processo",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "fk_anexos_do_ato_do_processo_documento_a_publicar",
+                        column: x => x.documento_a_publicar_id,
+                        principalSchema: "selecao",
+                        principalTable: "documentos_a_publicar",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "municipios_do_bonus_regional",
                 schema: "selecao",
                 columns: table => new
@@ -3445,7 +3511,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     regra_codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     regra_versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
                     regra_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
-                    args = table.Column<string>(type: "json", nullable: false),
+                    parametros = table.Column<string>(type: "json", nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
@@ -3501,7 +3567,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     natureza_legal = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
                     composicao_vagas = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
                     composicao_origem_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
-                    regra_remanejamento = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
+                    regra_remanejamento = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true),
                     remanejamento_destino = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
                     remanejamento_par = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
                     remanejamento_fallback = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
@@ -3571,51 +3637,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         principalTable: "configuracoes_derivacao_fato",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "atos_do_processo",
-                schema: "selecao",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ordem_de_registro = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityAlwaysColumn),
-                    tipo_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
-                    tipo_nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    numero = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
-                    data_do_ato = table.Column<DateOnly>(type: "date", nullable: false),
-                    publicado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    assinante = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    slug_da_unidade_administradora = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    identificador_legivel_do_processo = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    item_do_edital = table.Column<string>(type: "character varying(160)", maxLength: 160, nullable: true),
-                    documento_principal_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ato_corrigido_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    motivo_da_correcao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
-                    politica_de_divulgacao_confirmada_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    politica_de_divulgacao_confirmada_por_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_atos_do_processo", x => x.id);
-                    table.ForeignKey(
-                        name: "fk_atos_do_processo_documento_a_publicar_principal",
-                        column: x => x.documento_principal_id,
-                        principalSchema: "selecao",
-                        principalTable: "documentos_a_publicar",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "fk_atos_do_processo_processo_seletivo_processo_seletivo_id",
-                        column: x => x.processo_seletivo_id,
-                        principalSchema: "selecao",
-                        principalTable: "processos_seletivos",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -3720,6 +3741,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     susp_2a_valor = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: true),
                     susp_2a_unidade = table.Column<int>(type: "integer", nullable: true),
                     produto_ancora_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    procedimentos_de_recurso = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'[]'::jsonb", comment: "Procedimentos de recurso declarados para a janela, um por matéria, em ordem canônica."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
@@ -3873,6 +3895,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     suspensividade_2a_instancia_valor = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: true),
                     suspensividade_2a_instancia_unidade = table.Column<int>(type: "integer", nullable: true),
                     produto_ancora_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    procedimentos_de_recurso = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'[]'::jsonb", comment: "Procedimentos de recurso declarados para a janela, um por matéria, em ordem canônica."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
@@ -4262,38 +4285,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         principalTable: "regras_derivacao_configuradas",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "anexos_do_ato_do_processo",
-                schema: "selecao",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ato_do_processo_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    documento_a_publicar_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    nome_de_exibicao = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    ordem = table.Column<int>(type: "integer", nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_anexos_do_ato_do_processo", x => x.id);
-                    table.ForeignKey(
-                        name: "fk_anexos_do_ato_do_processo_ato_do_processo",
-                        column: x => x.ato_do_processo_id,
-                        principalSchema: "selecao",
-                        principalTable: "atos_do_processo",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "fk_anexos_do_ato_do_processo_documento_a_publicar",
-                        column: x => x.documento_a_publicar_id,
-                        principalSchema: "selecao",
-                        principalTable: "documentos_a_publicar",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -5138,20 +5129,20 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
             migrationBuilder.InsertData(
                 schema: "configuracao",
                 table: "fases_canonicas",
-                columns: new[] { "id", "base_legal", "codigo", "coleta_inscricao", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by" },
-                values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000001"), null, "INSCRICAO", true, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Período em que o candidato se inscreve no processo seletivo.", false, "Inscrição", "NO_EDITAL", null, null, null, null, null });
+                columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by", "coleta_inscricao" },
+                values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000001"), null, "INSCRICAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Período em que o candidato se inscreve no processo seletivo.", false, "Inscrição", "NO_EDITAL", null, null, null, null, null, true });
 
             migrationBuilder.InsertData(
                 schema: "configuracao",
                 table: "fases_canonicas",
-                columns: new[] { "id", "base_legal", "codigo", "coleta_solicitacao_isencao", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by" },
-                values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000002"), "Lei nº 12.799/2013", "SOLICITACAO_ISENCAO", true, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Janela em que o candidato pede isenção da taxa de inscrição. Abre junto com as inscrições e termina antes delas.", false, "Solicitação de isenção", "NO_EDITAL", null, null, null, null, null });
+                columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by", "coleta_solicitacao_isencao" },
+                values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000002"), "Lei nº 12.799/2013", "SOLICITACAO_ISENCAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Janela em que o candidato pede isenção da taxa de inscrição. Abre junto com as inscrições e termina antes delas.", false, "Solicitação de isenção", "NO_EDITAL", null, null, null, null, null, true });
 
             migrationBuilder.InsertData(
                 schema: "configuracao",
                 table: "fases_canonicas",
-                columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "permite_complementacao", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by" },
-                values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000003"), null, "HOMOLOGACAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Conferência das inscrições recebidas e publicação de quais foram homologadas.", false, "Homologação das inscrições", "NO_EDITAL", true, null, null, null, null, null });
+                columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by", "permite_complementacao" },
+                values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000003"), null, "HOMOLOGACAO_INSCRICOES", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Conferência das inscrições recebidas e publicação de quais foram homologadas.", false, "Homologação das inscrições", "NO_EDITAL", null, null, null, null, null, true });
 
             migrationBuilder.InsertData(
                 schema: "configuracao",
@@ -5162,8 +5153,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
             migrationBuilder.InsertData(
                 schema: "configuracao",
                 table: "fases_canonicas",
-                columns: new[] { "id", "agrupa_etapas", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by" },
-                values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000005"), true, null, "AVALIACAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Fase que agrupa as etapas pontuadas do certame.", false, "Avaliação", "NO_EDITAL", null, null, null, null, null });
+                columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by", "agrupa_etapas" },
+                values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000005"), null, "AVALIACAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Fase que agrupa as etapas pontuadas do certame.", false, "Avaliação", "NO_EDITAL", null, null, null, null, null, true });
 
             migrationBuilder.InsertData(
                 schema: "configuracao",
@@ -5178,8 +5169,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
             migrationBuilder.InsertData(
                 schema: "configuracao",
                 table: "fases_canonicas",
-                columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "permite_complementacao", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by" },
-                values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000008"), null, "RECURSOS", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Interposição e análise dos recursos contra o resultado preliminar.", false, "Recursos", "NO_EDITAL", true, null, null, null, null, null });
+                columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by", "permite_complementacao" },
+                values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000008"), null, "RECURSOS", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Interposição e análise dos recursos contra o resultado preliminar.", false, "Recursos", "NO_EDITAL", null, null, null, null, null, true });
 
             migrationBuilder.InsertData(
                 schema: "configuracao",
@@ -5266,19 +5257,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
             migrationBuilder.InsertData(
                 schema: "configuracao",
                 table: "modalidades",
-                columns: new[] { "id", "acao_quando_indeferido", "base_legal", "codigo", "composicao_origem", "composicao_vagas", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "natureza_legal", "regra_de_aplicabilidade", "regra_remanejamento", "remanejamento_args", "updated_at", "updated_by" },
+                columns: new[] { "id", "acao_quando_indeferido", "base_legal", "codigo", "composicao_origem", "composicao_vagas", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "natureza_legal", "regra_de_aplicabilidade", "regra_remanejamento", "remanejamento_parametros", "updated_at", "updated_by" },
                 values: new object[,]
                 {
-                    { new Guid("70da1000-0000-7000-8000-000000000001"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "AC", null, "RESIDUAL_DO_VO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Ampla concorrência", false, "AMPLA", "[]", null, "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
-                    { new Guid("70da1000-0000-7000-8000-000000000002"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LB_PPI", null, "DENTRO_DO_VR", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — baixa renda, preto/pardo/indígena", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"EM\",\"valor\":[\"PRETA\",\"PARDA\"]},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}],[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"IGUAL\",\"valor\":\"INDIGENA\"},{\"fato\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
-                    { new Guid("70da1000-0000-7000-8000-000000000003"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LB_Q", null, "DENTRO_DO_VR", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — baixa renda, quilombola", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_Q\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
-                    { new Guid("70da1000-0000-7000-8000-000000000004"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LB_PCD", null, "DENTRO_DO_VR", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — baixa renda, pessoa com deficiência", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
-                    { new Guid("70da1000-0000-7000-8000-000000000005"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LB_EP", null, "DENTRO_DO_VR", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — baixa renda, egresso de escola pública", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
-                    { new Guid("70da1000-0000-7000-8000-000000000006"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LI_PPI", null, "DENTRO_DO_VR", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — independente de renda, preto/pardo/indígena", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"EM\",\"valor\":[\"PRETA\",\"PARDA\"]},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true}],[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"IGUAL\",\"valor\":\"INDIGENA\"},{\"fato\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
-                    { new Guid("70da1000-0000-7000-8000-000000000007"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LI_Q", null, "DENTRO_DO_VR", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — independente de renda, quilombola", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_Q\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
-                    { new Guid("70da1000-0000-7000-8000-000000000008"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LI_PCD", null, "DENTRO_DO_VR", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — independente de renda, pessoa com deficiência", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
-                    { new Guid("70da1000-0000-7000-8000-000000000009"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LI_EP", null, "DENTRO_DO_VR", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — independente de renda, egresso de escola pública", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
-                    { new Guid("70da1000-0000-7000-8000-000000000010"), null, "Res. Unifesspa 532/2021, art. 1º (reserva de vaga para pessoa com deficiência)", "AC_PCD", "AC", "RETIRA_DE", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Ampla Concorrência – Pessoa com Deficiência (V)", false, "ACAO_AFIRMATIVA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":false},{\"fato\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true}]]", "DESTINO_UNICO", "{\"destino\":\"AC\",\"par\":null,\"fallback\":null}", null, null },
+                    { new Guid("70da1000-0000-7000-8000-000000000001"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "AC", null, "RESTANTE_DAS_VAGAS_OFERTADAS", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Ampla concorrência", false, "AMPLA", "[]", null, "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
+                    { new Guid("70da1000-0000-7000-8000-000000000002"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LB_PPI", null, "DENTRO_DA_RESERVA_LEGAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — baixa renda, preto/pardo/indígena", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"EM\",\"valor\":[\"PRETA\",\"PARDA\"]},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}],[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"IGUAL\",\"valor\":\"INDIGENA\"},{\"fato\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
+                    { new Guid("70da1000-0000-7000-8000-000000000003"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LB_Q", null, "DENTRO_DA_RESERVA_LEGAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — baixa renda, quilombola", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_Q\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
+                    { new Guid("70da1000-0000-7000-8000-000000000004"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LB_PCD", null, "DENTRO_DA_RESERVA_LEGAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — baixa renda, pessoa com deficiência", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
+                    { new Guid("70da1000-0000-7000-8000-000000000005"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LB_EP", null, "DENTRO_DA_RESERVA_LEGAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — baixa renda, egresso de escola pública", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
+                    { new Guid("70da1000-0000-7000-8000-000000000006"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LI_PPI", null, "DENTRO_DA_RESERVA_LEGAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — independente de renda, preto/pardo/indígena", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"EM\",\"valor\":[\"PRETA\",\"PARDA\"]},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true}],[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"IGUAL\",\"valor\":\"INDIGENA\"},{\"fato\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
+                    { new Guid("70da1000-0000-7000-8000-000000000007"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LI_Q", null, "DENTRO_DA_RESERVA_LEGAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — independente de renda, quilombola", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_Q\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
+                    { new Guid("70da1000-0000-7000-8000-000000000008"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LI_PCD", null, "DENTRO_DA_RESERVA_LEGAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — independente de renda, pessoa com deficiência", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
+                    { new Guid("70da1000-0000-7000-8000-000000000009"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LI_EP", null, "DENTRO_DA_RESERVA_LEGAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — independente de renda, egresso de escola pública", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
+                    { new Guid("70da1000-0000-7000-8000-000000000010"), null, "Res. Unifesspa 532/2021, art. 1º (reserva de vaga para pessoa com deficiência)", "AC_PCD", "AC", "RETIRADA_DE_OUTRA_MODALIDADE", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Ampla Concorrência – Pessoa com Deficiência (V)", false, "ACAO_AFIRMATIVA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":false},{\"fato\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true}]]", "DESTINO_UNICO", "{\"destino\":\"AC\",\"par\":null,\"fallback\":null}", null, null },
                     { new Guid("70da1000-0000-7000-8000-000000000012"), null, "Res. Unifesspa 532/2021-CONSEPE, art. 2º (vagas por acréscimo para candidatos indígenas e quilombolas)", "AC_I", null, "SUPLEMENTAR_AO_TOTAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Vaga por acréscimo — candidato indígena (PSIQ)", false, "ACAO_AFIRMATIVA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":false},{\"fato\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_VAGA_POR_ACRESCIMO\",\"operador\":\"IGUAL\",\"valor\":true}]]", "CRUZADO", "{\"destino\":null,\"par\":\"AC_Q\",\"fallback\":null}", null, null },
                     { new Guid("70da1000-0000-7000-8000-000000000013"), null, "Res. Unifesspa 532/2021-CONSEPE, art. 2º (vagas por acréscimo para candidatos indígenas e quilombolas)", "AC_Q", null, "SUPLEMENTAR_AO_TOTAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Vaga por acréscimo — candidato quilombola (PSIQ)", false, "ACAO_AFIRMATIVA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":false},{\"fato\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_VAGA_POR_ACRESCIMO\",\"operador\":\"IGUAL\",\"valor\":true}]]", "CRUZADO", "{\"destino\":null,\"par\":\"AC_I\",\"fallback\":null}", null, null }
                 });
@@ -5300,7 +5291,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 columns: new[] { "id", "antecessora_codigo", "created_at", "created_by", "deleted_at", "deleted_by", "is_deleted", "sucessora_codigo", "updated_at", "updated_by" },
                 values: new object[,]
                 {
-                    { new Guid("93ec0000-0000-7000-8000-000000000001"), "INSCRICAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, false, "HOMOLOGACAO", null, null },
+                    { new Guid("93ec0000-0000-7000-8000-000000000001"), "INSCRICAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, false, "HOMOLOGACAO_INSCRICOES", null, null },
                     { new Guid("93ec0000-0000-7000-8000-000000000002"), "RESULTADO_PRELIMINAR", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, false, "RECURSOS", null, null },
                     { new Guid("93ec0000-0000-7000-8000-000000000003"), "RECURSOS", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, false, "RESULTADO_FINAL", null, null },
                     { new Guid("93ec0000-0000-7000-8000-000000000004"), "RESULTADO_FINAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, false, "HABILITACAO", null, null },
@@ -5311,39 +5302,46 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
             migrationBuilder.InsertData(
                 schema: "selecao",
                 table: "regras_do_catalogo",
-                columns: new[] { "id", "base_legal", "codigo", "created_at", "esquema_args", "hash", "invariantes", "tipo", "updated_at", "versao" },
+                columns: new[] { "id", "base_legal", "codigo", "created_at", "declaracao_da_regra", "hash", "invariantes", "tipo", "updated_at", "versao" },
                 values: new object[,]
                 {
-                    { new Guid("d0a00000-0000-7000-8000-000000000001"), "Proposta CEPS + #56; média ponderada NOTA=Σ(nota×peso)/Σpeso", "FORMULA-MEDIA-PONDERADA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"fonte_pesos\":[\"etapa\",\"peso_area_enem\"]}", "a6fdc29bce533ef3cf8acb6cfdd7d67a99104541f6201d227f0d1c7051229ad6", "[\"divisor = Σ(peso das etapas classificatória∪ambas)\"]", "regra_calculo", null, "v1" },
-                    { new Guid("d0a00000-0000-7000-8000-000000000002"), "Portaria MEC 18/2012 art. 16 — SiSU federal (CEPS não calcula)", "CLASSIFICACAO-IMPORTADA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "8e6f1f7b705c601991bf0617bbf881e39a3666c641abdfa4c1bd9ce2ecbcc85c", "[\"sem cálculo local; classificação federal por importação do listão\"]", "regra_calculo", null, "v1" },
-                    { new Guid("d0a00000-0000-7000-8000-000000000003"), "Decisão CEPS/PO (gaps 1.1) — truncamento 2 casas (default)", "PRECISAO-TRUNCAR", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"casas\":\"integer\"}", "66cbb932e61982f09fdd1d60a0db8411ea02dedc19bb72d1af23004f1e18360b", "[\"trunca na N-ésima casa, sem arredondar\"]", "regra_arredondamento", null, "v1" },
-                    { new Guid("d0a00000-0000-7000-8000-000000000004"), "Reprodução de editais antigos (PSE/Convênios)", "PRECISAO-ARREDONDAR-CIMA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"casas\":\"integer\"}", "efc491bf6a242a870c7bf9969048c198db88116ba39e72a44bcf1d5d5aebc4fb", "[\"arredonda p/ cima se 3ª casa ≥ 5\"]", "regra_arredondamento", null, "v1" },
-                    { new Guid("d0a00000-0000-7000-8000-000000000005"), "Edital por processo (nota mínima eliminatória)", "ELIM-NOTA-MINIMA-ETAPA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"etapa\":\"text\",\"nota_minima\":\"numeric\"}", "b64f643eba9744efc20bf19221bde85c645da32262a7d2ef616f18bd7c2ed5ac", "[\"nota < mínima na etapa → elimina\"]", "regra_eliminacao", null, "v1" },
-                    { new Guid("d0a00000-0000-7000-8000-000000000006"), "Res. 805/2024 art. 5º e Anexo I (ponto de corte por área do ENEM; Redação = 400)", "ELIM-CORTE-EM-AREA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"area_codigo\":\"text\",\"minimo\":\"numeric\"}", "2b664ed9b782ce9e4b47c70063fd2c2f5bc225c74301fcc801600956d856ad4a", "[\"nota na área < mínimo → elimina\",\"no máximo um corte por área\"]", "regra_eliminacao", null, "v1" },
-                    { new Guid("d0a00000-0000-7000-8000-000000000007"), "Res. 805/2024 art. 5º (zero em qualquer área elimina)", "ELIM-ZERO-EM-AREA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "75f4929b848138c8ed939a182e3664451ce38cd40a136adda438b62e1b6e3fb8", "[\"nota zero em qualquer área do ENEM → elimina\"]", "regra_eliminacao", null, "v1" },
-                    { new Guid("d0a00000-0000-7000-8000-000000000008"), "Bônus multiplicativo aplicado à nota final após os pesos das áreas do ENEM, sem teto por padrão", "BONUS-MULTIPLICATIVO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"fator\":\"numeric\",\"teto\":\"numeric|null\"}", "76a46eef115f27a52873a21eeee988a7d6978993ae535c026fa2c2d250d3acd1", "[\"nota_final × fator, após os pesos; teto opcional\"]", "regra_bonus", null, "v1" },
-                    { new Guid("d0a00000-0000-7000-8000-000000000009"), "Lei 10.741/2003 art. 27 (Estatuto do Idoso)", "DESEMPATE-IDOSO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"idade_minima\":\"integer\"}", "6738b1a9ca4f063f7f215cabb837e055d8abafaf0835f0b3deeed1c97f0becd4", "[\"prioriza quem satisfaz FAIXA_ETARIA ≥ idade_minima\"]", "criterio_desempate", null, "v1" },
-                    { new Guid("d0a00000-0000-7000-8000-000000000010"), "Edital (ordem de desempate)", "DESEMPATE-MAIOR-NOTA-ETAPA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"etapa\":\"text\"}", "1a988e6681b2970dc6c568c7372ceaf2f6e5ec0f7061ac47f656e1366a9ecad8", "[\"ordena por maior nota da etapa indicada\"]", "criterio_desempate", null, "v1" },
-                    { new Guid("d0a00000-0000-7000-8000-000000000011"), "Edital (maior idade cronológica)", "DESEMPATE-MAIOR-IDADE", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "1efa26eaeffc88baf31ce9e2030c05c9976fae125e9845fe0283168050dc1237", "[\"ordena por data de nascimento (nascido mais cedo vence)\"]", "criterio_desempate", null, "v1" },
-                    { new Guid("d0a00000-0000-7000-8000-000000000012"), "Edital (critério adicional via fato do candidato — ex.: professor rural)", "DESEMPATE-PREDICADO-FATO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"fato\":\"text\",\"operador\":\"text\",\"valor\":\"any\"}", "d832d910826f25b6b50fd324f2f3cae472440c0e81e082be7c8d4fefe3de3f21", "[\"prioriza quem satisfaz predicado sobre FatoCandidato; fato deve estar no vocabulário e ser coletado\"]", "criterio_desempate", null, "v1" },
-                    { new Guid("d0a00000-0000-7000-8000-000000000013"), "UNI-REQ-0045 — processamento da 1ª opção antes da 2ª", "ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "2b70a91223c2d03b6e89ce77ae88699dbfa3ed6c9c3e84fae88b8dc3b4c9444b", "[\"processam-se todas as 1ªs opções de cada curso\",\"a vaga de modalidade não preenchida é remanejada dentro do curso, entre candidatos de 1ª opção\",\"só a vaga que sobra depois do remanejamento vai à 2ª opção, em ordem de nota, sem deslocar aprovado de 1ª opção\",\"quem não é classificado em nenhuma opção vai para a lista de espera\"]", "regra_ordem_alocacao", null, "v1" },
-                    { new Guid("d0a00000-0000-7000-8000-000000000014"), "Lei 12.711/2012 art. 1º parágrafo único (red. Lei 14.723/2023) — renda familiar bruta per capita ≤ 1 SM (ensino superior); PN MEC 18/2012 art. 6º-7º — apuração da renda mensal per capita + exclusões obrigatórias", "RENDA-PER-CAPITA-LEI-12711", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"limite_sm\":\"numeric\",\"sm_referencia\":\"numeric (SM congelado na data de início das inscrições)\",\"periodo_apuracao_meses\":\"integer (ex.: 3 últimos meses)\",\"criterio_media_mensal\":\"text (média mensal dos rendimentos brutos)\",\"exclusoes_renda\":\"lista (PN 18/2012 art. 7º)\",\"composicao_nucleo_familiar\":\"quem compõe o núcleo familiar\"}", "5a1ad80627e354c03e4d6ef776a45db695a1203cea574a288dbcdf706ca58899", "[\"média mensal da renda familiar bruta (últimos N meses, após exclusões) ÷ nº de membros do núcleo ≤ limite_sm × sm_referencia\"]", "regra_elegibilidade", null, "v1" },
-                    { new Guid("d0a00000-0000-7000-8000-000000000017"), "Portaria MEC 18/2012 art. 11, parágrafo único (red. PN 2.027/2023) — cap nas vagas da oferta + prioridade do inciso III (LB) sobre o inciso IV (LI); art. 10 II (mínimo 50%, piso)", "RECONCILIACAO-VAGAS-ART11-PU", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"reconciliacao_federal\":\"CAP_VO + PRIORIDADE_LB (art. 11 §único, embutida em DISTRIB-VAGAS-LEI-12711)\",\"motores_nao_art10\":\"REDUZIR_DE | REDUZIR_PROPORCIONAL_EM (apenas distribuições institucionais; clamp >=0; VEDADOS à Lei 12.711)\"}", "ad2d8012ddc1f2ea4d763034899d07590c4a49901744b852dca2e70cede8b1e9", "[\"cap em VO: a reserva nunca excede as vagas da oferta (art. 11 §único I)\",\"prioridade LB>LI: na escassez a LI cede primeiro (art. 11 §único II)\",\"estouro sobre o nominal 50% (VR) e LEGAL — piso (art. 10 II), absorvido pela AC\",\"curso pequeno e determinístico por lei (capa, não bloqueia)\"]", "regra_ajuste_distribuicao_vagas", null, "v1" },
-                    { new Guid("d0a00000-0000-7000-8000-000000000018"), "Lei 9.784/1999 art. 56 (cabimento do recurso administrativo) e art. 61 (efeito suspensivo por decisão fundamentada); prazo configurável por edital", "RECURSO-PRAZO-ANCORADO-EM-ATO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"prazo_valor\":\"numeric (> 0) — inteiro quando a unidade é DIAS_UTEIS\",\"prazo_unidade\":\"DIAS_UTEIS|HORAS (sem default — dado do edital; DIAS não é declarável na interposição)\",\"suspensividade_primeira_instancia\":\"{valor:numeric, unidade:HORAS|DIAS|DIAS_UTEIS} | null — null = a pendência na fase não bloqueia atos irreversíveis\",\"suspensividade_segunda_instancia\":\"{valor:numeric, unidade:HORAS|DIAS|DIAS_UTEIS} | null — null = a pendência em instância superior não bloqueia (via judicial, prazo indeterminado)\"}", "42cbba27f7e36789437ecb469c74476c99a37baaf66404769774eeff619b9e2d", "[\"o Uni+ gere apenas a 1ª instância — o julgamento em instância superior (administrativa ou judicial) corre FORA do sistema; a sua existência e o seu desfecho são REGISTRADOS como ato publicado\",\"a suspensividade é configurável por fase e por grau: null = a pendência não bloqueia atos irreversíveis\",\"a janela de suspensividade fecha no julgamento OU no fim do prazo, o que vier primeiro — recurso nunca julgado não trava o certame para sempre\",\"interposição só é aceita com a janela da fase de recurso aberta\",\"não cabe recurso contra resultado definitivo\",\"prazo ancorado no instante de publicação do ato âncora: se o ato atrasa, o prazo desliza junto, sem retificação\",\"a âncora é um produto PRELIMINAR publicado pela própria fase, referenciado pela identidade da publicação e não pelo código do tipo de ato — o mesmo tipo publicado por outra fase do cronograma não é âncora desta\",\"a âncora nunca é um tipo de ato que congela configuração\",\"o prazo de INTERPOSIÇÃO corre exclusivamente em dia útil e admite apenas DIAS_UTEIS em valor inteiro ou HORAS — DIAS corridos é recusado, e fração de dia útil também, cada um com causa própria; nunca aproximado em silêncio\",\"contagem sobre dia útil depende de duas declarações do processo, o calendário de dias úteis vigente da localidade regente e a convenção de contagem — vale para todo prazo de INTERPOSIÇÃO, nas duas unidades, e para a suspensividade em DIAS_UTEIS\",\"a suspensividade em HORAS ou em DIAS corridos não depende de calendário nem de convenção de contagem — conta todos os dias, sem distinguir úteis de não úteis\",\"append-only: julgamento e retificação são NOVO fato, não sobrescrevem o passado\"]", "regra_prazo_recurso", null, "v1" },
-                    { new Guid("d0a00000-0000-7000-8000-000000000019"), "Portaria MEC nº 704/2025 (DOU 20/10/2025, Seção 1, p. 36-37), art. 2º e Anexo — insere o art. 20-A na Portaria Normativa MEC nº 21/2012; Lei 12.711/2012 art. 3º §1º (red. Lei 14.723/2023)", "REMANEJ-CASCATA-LEI-12711", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"fallbackCodigo\":\"AC\",\"ordens\":[\n  {\"origem\":\"LB_PPI\",\"destinos\":[\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LB_Q\",\"destinos\":[\"LB_PPI\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LB_PCD\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LB_EP\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LI_PPI\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LI_Q\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LI_PCD\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_EP\"]},\n  {\"origem\":\"LI_EP\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\"]}\n]}", "70f96f9fa5b2c5282adba8028070fdf0a82bef99408693d17d913c51d0c5078a", "[\"oito origens federais, ordem fixa por origem, terminal sempre AC — matriz não recalculada, só aplicada\"]", "criterio_remanejamento", null, "v1" },
-                    { new Guid("d0a00000-0000-7000-8000-000000000020"), "O edital de abertura é o fundamento normativo do prazo de interposição e declara a convenção pela qual ele se conta (UNI-REQ-0095): na ausência de norma específica que fixe outro prazo, o edital estabelece o seu, e o sistema congela e reproduz o declarado sem julgar a escolha. Decisão institucional juridicamente orientada — não é parecer formal nem jurisprudência consolidada. Não dispõe sobre efeito suspensivo, cuja confirmação é dependência própria (UNI-REQ-0117).", "CONTAGEM-PRAZO-EXCLUI-DIA-INICIAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "fce95fc44b52a5a93a697b0309659a5af0085f9d39ceac1c3917c7b00b1c0be5", "[\"âncora fora da meia-noite: a hora da âncora não influencia o fechamento — o dia civil da âncora é excluído por inteiro e a contagem parte do primeiro dia útil seguinte (1 dia útil ancorado sexta 18h, sem feriado no intervalo, fecha no fim de segunda)\",\"âncora em dia não útil: o início desloca para o primeiro dia útil seguinte; o dia da âncora, útil ou não, nunca conta (1 dia útil ancorado domingo 18h, sem feriado no intervalo, fecha no fim de segunda)\",\"em dias úteis: N dias úteis inteiros contados após o dia excluído; a janela fecha na fronteira final do N-ésimo dia útil — dia civil fechado no início e aberto no fim, no fuso congelado\",\"em horas: a contagem começa no primeiro instante do primeiro dia útil seguinte ao dia da âncora e consome apenas horas situadas em dia útil (48h ancoradas sexta 18h, sem feriado no intervalo, começam segunda 00:00 e fecham quarta 00:00)\"]", "algoritmo_contagem_prazo", null, "v1" },
-                    { new Guid("d0a00000-0000-7000-8000-000000000021"), "O edital de abertura é o fundamento normativo do prazo de interposição e declara a convenção pela qual ele se conta (UNI-REQ-0095): na ausência de norma específica que fixe outro prazo, o edital estabelece o seu, e o sistema congela e reproduz o declarado sem julgar a escolha. Decisão institucional juridicamente orientada — não é parecer formal nem jurisprudência consolidada. Não dispõe sobre efeito suspensivo, cuja confirmação é dependência própria (UNI-REQ-0117).", "CONTAGEM-PRAZO-HORAS-UTEIS-DESDE-ANCORA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "49b637293aaaa71449dcb971fc548c59fc840545d2d1740ac352f858a291105b", "[\"âncora fora da meia-noite: a contagem parte do instante exato da âncora — a hora do fechamento deriva da hora da âncora, sem deslocamento para fronteira de dia (48h ancoradas sexta 18h, com sábado e domingo não úteis e sem feriado, fecham terça 18h)\",\"âncora em dia não útil: o início não desloca — o relógio não avança em instante situado em dia não útil e o primeiro avanço ocorre no primeiro instante útil seguinte (24h ancoradas domingo 18h, com segunda útil, só começam a consumir segunda 00:00 e fecham terça 00:00)\",\"em horas: consome exatamente o valor declarado em horas situadas em dia útil, atravessando a madrugada de dia útil normalmente; fecha no instante em que o saldo zera\",\"em dias úteis: N dias úteis equivalem a N×24 horas situadas em dia útil consumidas desde a âncora; dia civil de transição de fuso contribui com as horas que realmente tem, nunca um bloco presumido de 24 (1 dia útil ancorado sexta 18h, sem feriado no intervalo, fecha segunda 18h)\"]", "algoritmo_contagem_prazo", null, "v1" },
-                    { new Guid("d0a00000-0000-7000-8000-000000000022"), "O edital de abertura é o fundamento normativo do prazo de interposição e declara a convenção pela qual ele se conta (UNI-REQ-0095): na ausência de norma específica que fixe outro prazo, o edital estabelece o seu, e o sistema congela e reproduz o declarado sem julgar a escolha. Decisão institucional juridicamente orientada — não é parecer formal nem jurisprudência consolidada. Não dispõe sobre efeito suspensivo, cuja confirmação é dependência própria (UNI-REQ-0117).", "CONTAGEM-PRAZO-AVANCA-DATA-UTIL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "cd4c631492d02126c88a7ca5558992b3ed8a27c80692ecabfb73609293f2a9c8", "[\"âncora fora da meia-noite: mantém a hora da âncora — a contagem parte do instante exato, sem deslocamento para fronteira de dia (1 dia útil ancorado sexta 18h, com sábado e domingo não úteis e sem feriado, fecha segunda 18h)\",\"âncora em dia não útil: em dias úteis, desloca para o próximo dia útil na mesma hora (âncora domingo 18h conta como segunda 18h, e 1 dia útil fecha terça 18h); em horas não há deslocamento, apenas a não contagem dos instantes de dia não útil\",\"em dias úteis: fecha na mesma hora da âncora, N datas úteis adiante, pulando cada data não útil; se a hora da âncora não existir na data de fechamento por transição de fuso, fecha no primeiro instante válido seguinte\",\"em horas: consome horas situadas em dia útil desde a âncora, sem deslocar o início — nesta unidade a convenção coincide com CONTAGEM-PRAZO-HORAS-UTEIS-DESDE-ANCORA, e a diferença entre as duas está só na unidade dias úteis\"]", "algoritmo_contagem_prazo", null, "v1" },
-                    { new Guid("d0a00000-0000-7000-8000-000000000023"), "Portaria Normativa MEC nº 18/2012 art. 10 e 11 (red. PN 2.027/2023) — distribuição e arredondamento das vagas reservadas; Lei 12.711/2012 (red. Lei 14.723/2023)", "DISTRIB-VAGAS-LEI-12711", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"pr_minimo\":\"numeric (piso 0,5 — art. 10 II; teto 1,0)\",\"modo_arredondamento\":\"teto (ceil) em todas as sub-reservas EXCETO LI_Q (floor) — art. 11\",\"ordem_garantia_minima\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_PCD\",\"LI_EP\"],\"sub_reservas\":[\"PPI\",\"Q\",\"PCD\",\"EP\"],\"entradas_por_edital\":[\"VO_base\",\"PR\",\"ReferenciaReservaDemografica\"],\"modalidades_admitidas\":[\"AC\",\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]}", "369e630525f26995a637d305851b4dfb0a713b8de8038a5874846ac512d7d375", "[\"VR=ceil(VO×PR)\",\"VRRI=ceil(VR×0,5)\",\"VRSI=VR−VRRI\",\"sub-reservas ceil EXCETO LI_Q=floor (art. 11)\",\"garantia mín-1 ordenada I-VII condicional à disponibilidade (art. 10 §2º), LI_Q fora\",\"INV-3a: LB_EP≥0 e LI_EP≥0\",\"INV-3b: AC≥0\",\"INV-3c: VR_final+RETIRADAS+AC=VO_base\",\"modalidade fora de modalidades_admitidas é recusada\"]", "regra_distribuicao_vagas", null, "v1" },
-                    { new Guid("d0a00000-0000-7000-8000-000000000024"), "Res. Unifesspa 532/2021 (vagas PcD/Indígena/Quilombola); Portaria MEC 18/2012 art. 12 (reservas suplementares e outras ações afirmativas)", "DISTRIB-VAGAS-INSTITUCIONAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"quadro_fixo_por_modalidade\":\"objeto {codigo: quantidade} fixado por edital (NÃO art. 10)\",\"aplicacao\":\"quadro institucional não nomeado por regra própria\",\"modalidades_admitidas\":null}", "a9f0f1cb005bf1fa891094b1271df22c0bf95605658659cd8a3f37f3e157e1dc", "[\"quadro fixo por edital (não recalculado pelo art. 10)\",\"a soma das quantidades declaradas é o total publicado, e fecha no VO_base\",\"modalidades_admitidas nulo: rol aberto, para o certame institucional que ainda não tem regra própria\"]", "regra_distribuicao_vagas", null, "v1" },
-                    { new Guid("d0a00000-0000-7000-8000-000000000025"), "Res. Unifesspa 532/2021-CONSEPE, art. 2º (vagas por acréscimo para candidatos indígenas e quilombolas)", "DISTRIB-VAGAS-PSIQ", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"quadro_fixo_por_modalidade\":\"objeto {codigo: quantidade} fixado por edital (NÃO art. 10)\",\"aplicacao\":\"Processo Seletivo Indígena e Quilombola\",\"modalidades_admitidas\":[\"AC_I\",\"AC_Q\"]}", "010df079f624fb7a3306eed54285fa5ad1f9e3be8f43195527c67b99b1534398", "[\"quadro fixo por edital (não recalculado pelo art. 10)\",\"certame exclusivo: não há ampla concorrência\",\"rol composto só de vagas por acréscimo — sem outro conjunto ao qual se somem, a soma delas é o total publicado\"]", "regra_distribuicao_vagas", null, "v1" },
-                    { new Guid("d0a00000-0000-7000-8000-000000000026"), "Res. Unifesspa 532/2021-CONSEPE, art. 1º (reserva de vaga para pessoa com deficiência); Portaria MEC 18/2012 art. 12", "DISTRIB-VAGAS-COM-AC-PCD", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"quadro_fixo_por_modalidade\":\"objeto {codigo: quantidade} fixado por edital (NÃO art. 10)\",\"aplicacao\":\"quadro fixo sem as cotas federais — AC_PCD como reserva de pessoa com deficiência fora do regime federal\",\"modalidades_admitidas\":[\"AC\",\"AC_PCD\"]}", "2bef4de324234a2d63164008d2e6dec6b4bb8901d816ee04f6824cbcc0027f80", "[\"quadro fixo por edital (não recalculado pelo art. 10)\",\"certame sem as cotas da Lei 12.711\",\"AC_PCD retira de AC: o par fecha no VO_base\"]", "regra_distribuicao_vagas", null, "v1" },
-                    { new Guid("d0a00000-0000-7000-8000-000000000027"), "Portaria Normativa MEC nº 18/2012 art. 10 e 11 (red. PN 2.027/2023) — distribuição e arredondamento das vagas reservadas; Lei 12.711/2012 (red. Lei 14.723/2023)", "DISTRIB-VAGAS-LEI-12711-COM-AC-PCD", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"pr_minimo\":\"numeric (piso 0,5 — art. 10 II; teto 1,0)\",\"modo_arredondamento\":\"teto (ceil) em todas as sub-reservas EXCETO LI_Q (floor) — art. 11\",\"ordem_garantia_minima\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_PCD\",\"LI_EP\"],\"sub_reservas\":[\"PPI\",\"Q\",\"PCD\",\"EP\"],\"entradas_por_edital\":[\"VO_base\",\"PR\",\"ReferenciaReservaDemografica\"],\"modalidades_admitidas\":[\"AC\",\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\",\"AC_PCD\"]}", "a0097d270c2fcd478ff8fb41a419275b328d0e13b6124dc179b6d224b83c8d08", "[\"VR=ceil(VO×PR)\",\"VRRI=ceil(VR×0,5)\",\"VRSI=VR−VRRI\",\"sub-reservas ceil EXCETO LI_Q=floor (art. 11)\",\"garantia mín-1 ordenada I-VII condicional à disponibilidade (art. 10 §2º), LI_Q fora\",\"INV-3a: LB_EP≥0 e LI_EP≥0\",\"INV-3b: AC≥0\",\"INV-3c: VR_final+RETIRADAS+AC=VO_base\",\"AC_PCD retira de AC, como qualquer outra retirada federal\",\"modalidade fora de modalidades_admitidas é recusada\"]", "regra_distribuicao_vagas", null, "v1" },
-                    { new Guid("d0a00000-0000-7000-8000-000000000028"), "Edital (ordem de desempate por nota de área do ENEM)", "DESEMPATE-MAIOR-NOTA-AREA-ENEM", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"areas\":\"text[]\"}", "81fd6b28df7be85dcfdeb6301d849029d1ac7066cd661e2e60e17fe817b74843", "[\"ordena por maior nota na primeira área da lista; o empate que resta passa à área seguinte\",\"cada área é citada uma única vez, pelo código, e existe em todos os grupos do quadro de pesos por área congelado na classificação\",\"exige classificação baseada em ENEM, calculada pela média ponderada\"]", "criterio_desempate", null, "v1" },
-                    { new Guid("d0a00000-0000-7000-8000-000000000029"), "Edital (falta em dia de prova do ENEM)", "ELIM-FALTA-EM-DIA-DE-PROVA-ENEM", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "72c9dc358aaa3e81e2ccb08bc6d9ec3c0842c0a1aec5c001e2526c518bb3f3aa", "[\"falta em pelo menos um dia de prova da edição do ENEM usada no processo → elimina\",\"sem participação registrada na edição do ENEM indicada pelo candidato equivale a falta\"]", "regra_eliminacao", null, "v1" },
-                    { new Guid("d0a00000-0000-7000-8000-000000000030"), "Decisão institucional da Unifesspa", "CONSOLIDACAO-AVALIACAO-UNICA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "0fdac8b1bc6a5f9f7e4d2f257d695e5028210d6c8cb16876157755e36c6b05b0", "[\"um só avaliador lança a nota de cada candidato na etapa\",\"a nota lançada é a nota da etapa, sem combinação com outra\"]", "regra_consolidacao", null, "v1" },
-                    { new Guid("d0a00000-0000-7000-8000-000000000031"), "UNI-REQ-0097 (dupla correção) e edital do processo seletivo", "CONSOLIDACAO-CORRECAO-INDEPENDENTE", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "376e2e3ace2ba3302fb7d2a957e390e4eeeceb2bdc0102d65db688dd744a67c3", "[\"mais de um avaliador corrige cada candidato na etapa, cada um sem conhecer a nota do outro\",\"a nota da etapa é a combinação das correções independentes, na forma que o edital determina\"]", "regra_consolidacao", null, "v1" },
-                    { new Guid("d0a00000-0000-7000-8000-000000000032"), "Edital (eliminação do candidato que faltar à etapa)", "ELIM-AUSENCIA-NA-ETAPA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"etapa_ref\":\"text\"}", "679d25bb9ac2d0948473cb183f5b8063a5caf3955a903980d6f3ed2af750035c", "[\"falta à etapa referenciada → elimina\",\"não se aplica à etapa de nota do ENEM\"]", "regra_eliminacao", null, "v1" }
+                    { new Guid("d0a00000-0000-7000-8000-000000000001"), "Proposta CEPS + #56; média ponderada NOTA=Σ(nota×peso)/Σpeso", "FORMULA-MEDIA-PONDERADA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"fonte_pesos\":[\"etapa\",\"peso_area_enem\"]}", "19e7eb71db8366ffffe886f8cf197182b770ad76cc9412e347de3fa4336fe2a4", "[\"divisor = Σ(peso das etapas classificatória∪ambas)\"]", "regra_calculo", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000002"), "Portaria MEC 18/2012 art. 16 — SiSU federal (CEPS não calcula)", "CLASSIFICACAO-IMPORTADA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "9cfe24c7afcee8fc87daf9f9bbc8a7b80d3a1df7401e24000ef463f43a472782", "[\"sem cálculo local; classificação federal por importação do listão\"]", "regra_calculo", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000003"), "Decisão CEPS/PO (gaps 1.1) — truncamento 2 casas (default)", "PRECISAO-TRUNCAR", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "3dab0ed7db55a129d6e166d7a29abf872a701ff63e7813e0f0443dc09ddd8525", "[\"trunca na N-ésima casa, sem arredondar\"]", "regra_arredondamento", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000004"), "Reprodução de editais antigos (PSE/Convênios)", "PRECISAO-ARREDONDAR-CIMA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "46da4f2755448705ee2105b6dd4f04b8ddac34ae54f1aeca92f62403031755de", "[\"arredonda p/ cima se 3ª casa ≥ 5\"]", "regra_arredondamento", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000005"), "Edital por processo (nota mínima eliminatória)", "ELIM-NOTA-MINIMA-ETAPA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "617f3c2475f598a7b603575cc2b15015b3a6cc2da69e6b36f783e24a5f6ce5d3", "[\"nota < mínima na etapa → elimina\"]", "regra_eliminacao", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000006"), "Res. 805/2024 art. 5º e Anexo I (ponto de corte por área do ENEM; Redação = 400)", "ELIM-CORTE-EM-AREA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "cd75036daf99e45f55147484860221ba8318552b5246b9f2c089457cd360d90f", "[\"nota na área < mínimo → elimina\",\"no máximo um corte por área\"]", "regra_eliminacao", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000007"), "Res. 805/2024 art. 5º (zero em qualquer área elimina)", "ELIM-ZERO-EM-AREA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "d386e1056176df828c484483cf3d35fe751c39515a156ed4b27fec33ed304c42", "[\"nota zero em qualquer área do ENEM → elimina\"]", "regra_eliminacao", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000008"), "Bônus multiplicativo aplicado à nota final após os pesos das áreas do ENEM, sem teto por padrão", "BONUS-MULTIPLICATIVO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "9a0a48e57734722f2165876fd9806b3e69098e6f5252c1d00221c3996ea123f3", "[\"nota final multiplicada pelo fator, após os pesos; teto opcional\"]", "regra_bonus", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000009"), "Lei 10.741/2003 art. 27 (Estatuto do Idoso)", "DESEMPATE-IDOSO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "e2d5aa49299ca4d401b24c4581e2252ef72cd302b41f0e4f37f838d54ee7a323", "[\"prioriza quem tem idade igual ou superior à idade mínima declarada no critério\"]", "criterio_desempate", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000010"), "Edital (ordem de desempate)", "DESEMPATE-MAIOR-NOTA-ETAPA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "1d007290da9c0dd131f4fad538138bcc830f49ec55b4a494160ba3cf1574d125", "[\"ordena por maior nota da etapa indicada\"]", "criterio_desempate", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000011"), "Edital (maior idade cronológica)", "DESEMPATE-MAIOR-IDADE", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "f3e04f52843030533e4c590764155903667ea05cc395a76655ddfd4967f9b4da", "[\"ordena por data de nascimento (nascido mais cedo vence)\"]", "criterio_desempate", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000012"), "Edital (critério adicional via fato do candidato — ex.: professor rural)", "DESEMPATE-PREDICADO-FATO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "5bdc4dc67c4cacc8550d0b521704de7adbb176eb1a4cfa62cc320b4354202312", "[\"prioriza quem atende à condição sobre um dado do candidato; o dado deve estar cadastrado e ser solicitado\"]", "criterio_desempate", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000013"), "UNI-REQ-0045 — processamento da 1ª opção antes da 2ª", "ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "91d63d7b9ef29893df02e1e7d96261e1dae304926ce9fa44722f3fbd447dae29", "[\"processam-se todas as 1ªs opções de cada curso\",\"a vaga de modalidade não preenchida é remanejada dentro do curso, entre candidatos de 1ª opção\",\"só a vaga que sobra depois do remanejamento vai à 2ª opção, em ordem de nota, sem deslocar aprovado de 1ª opção\",\"quem não é classificado em nenhuma opção vai para a lista de espera\"]", "regra_ordem_alocacao", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000014"), "Lei 12.711/2012 art. 1º parágrafo único (red. Lei 14.723/2023) — renda familiar bruta per capita ≤ 1 SM (ensino superior); PN MEC 18/2012 art. 6º-7º — apuração da renda mensal per capita + exclusões obrigatórias", "RENDA-PER-CAPITA-LEI-12711", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "2460afa057fa3154dbd788f2b8ce3770fd1407be1dacff1afb25737548ea7439", "[\"média mensal da renda familiar bruta no período considerado, após exclusões, dividida pelo número de membros da família deve ser menor ou igual ao limite em salários mínimos multiplicado pelo valor de referência do salário mínimo\"]", "regra_elegibilidade", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000017"), "Portaria MEC 18/2012 art. 11, parágrafo único (red. PN 2.027/2023) — reserva limitada às vagas da oferta e prioridade do inciso III (LB) sobre o inciso IV (LI); art. 10 II (mínimo 50%, piso)", "RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "efb16d5af5080f290a4f9c06ae05399f01879b38d8f57838a8f05b09a89a45cb", "[\"a reserva nunca excede as vagas da oferta (art. 11 §único I)\",\"na falta de vagas, as modalidades de baixa renda têm prioridade sobre as demais (art. 11 §único II)\",\"a reserva pode superar o mínimo legal de 50%, reduzindo as vagas da ampla concorrência (art. 10 II)\",\"a distribuição em cursos com poucas vagas segue o limite previsto em lei, sem impedir a oferta\"]", "regra_ajuste_distribuicao_vagas", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000018"), "Lei 9.784/1999 art. 56 (cabimento do recurso administrativo) e art. 61 (efeito suspensivo por decisão fundamentada); prazo configurável por edital", "RECURSO-PRAZO-ANCORADO-EM-ATO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "595a2d755e2f9ded25793c6f433964f36f4b9d314ef3a1183e45f57ed4d5bd02", "[\"o Uni+ gere apenas a 1ª instância — o julgamento em instância superior (administrativa ou judicial) corre FORA do sistema; a sua existência e o seu desfecho são REGISTRADOS como ato publicado\",\"a suspensividade é configurável por fase e por grau: sem prazo de suspensividade, a pendência não impede atos irreversíveis\",\"o período de suspensividade termina no julgamento ou no fim do prazo, o que ocorrer primeiro — recurso sem julgamento não impede o andamento do certame indefinidamente\",\"interposição só é aceita durante o período da fase de recurso\",\"não cabe recurso contra resultado definitivo\",\"o prazo começa no instante da publicação do ato: se a publicação atrasa, o prazo acompanha o atraso, sem retificação\",\"o evento que inicia o prazo é a publicação de um produto preliminar da própria fase, identificado pela publicação e não pelo código do tipo de ato — a publicação do mesmo tipo por outra fase do cronograma não inicia o prazo desta\",\"o evento que inicia o prazo nunca é um ato que registra a configuração da versão publicada\",\"o prazo de interposição corre exclusivamente em dia útil e admite apenas dias úteis em valor inteiro ou horas — dias corridos são recusados, e fração de dia útil também, cada um com causa própria; nunca aproximado em silêncio\",\"contagem sobre dia útil depende de duas declarações do processo, o calendário de dias úteis vigente da localidade regente e a convenção de contagem — vale para todo prazo de interposição, nas duas unidades, e para a suspensividade em dias úteis\",\"a suspensividade em horas ou em dias corridos não depende de calendário nem de convenção de contagem — conta todos os dias, sem distinguir úteis de não úteis\",\"julgamento e retificação são novos fatos e não sobrescrevem os registros anteriores\"]", "regra_prazo_recurso", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000019"), "Portaria MEC nº 704/2025 (DOU 20/10/2025, Seção 1, p. 36-37), art. 2º e Anexo — insere o art. 20-A na Portaria Normativa MEC nº 21/2012; Lei 12.711/2012 art. 3º §1º (red. Lei 14.723/2023)", "REMANEJ-CASCATA-LEI-12711", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"fallbackCodigo\":\"AC\",\"ordens\":[\n  {\"origem\":\"LB_PPI\",\"destinos\":[\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LB_Q\",\"destinos\":[\"LB_PPI\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LB_PCD\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LB_EP\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LI_PPI\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LI_Q\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LI_PCD\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_EP\"]},\n  {\"origem\":\"LI_EP\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\"]}\n]}", "06ec7280bb66571912648d9e6a1c6948745dc7b1dbdc30b3b43ad46c42deb04d", "[\"oito origens federais, ordem fixa por origem e ampla concorrência como modalidade final — a ordem é aplicada sem recálculo\"]", "criterio_remanejamento", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000020"), "O edital de abertura é o fundamento normativo do prazo de interposição e declara a convenção pela qual ele se conta (UNI-REQ-0095): na ausência de norma específica que fixe outro prazo, o edital estabelece o seu, e o sistema congela e reproduz o declarado sem julgar a escolha. Decisão institucional juridicamente orientada — não é parecer formal nem jurisprudência consolidada. Não dispõe sobre efeito suspensivo, cuja confirmação é dependência própria (UNI-REQ-0117).", "CONTAGEM-PRAZO-EXCLUI-DIA-INICIAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "64e9c6c59b5d9a4e25a6c2fee46689fcc1c2c439aa9d33bd148dd8c74371a562", "[\"evento que inicia o prazo fora da meia-noite: a hora do evento que inicia o prazo não influencia o fechamento — o dia civil do evento que inicia o prazo é excluído por inteiro e a contagem parte do primeiro dia útil seguinte (1 dia útil iniciado sexta às 18h, sem feriado no intervalo, fecha no fim de segunda)\",\"evento que inicia o prazo em dia não útil: o início desloca para o primeiro dia útil seguinte; o dia do evento que inicia o prazo, útil ou não, nunca conta (1 dia útil iniciado domingo às 18h, sem feriado no intervalo, fecha no fim de segunda)\",\"em dias úteis: N dias úteis inteiros contados após o dia excluído; o prazo termina à meia-noite que inicia o dia seguinte ao N-ésimo dia útil; esse instante não está incluído no prazo, conforme o fuso horário registrado na versão publicada\",\"em horas: a contagem começa no primeiro instante do primeiro dia útil seguinte ao dia do evento que inicia o prazo e consome apenas horas situadas em dia útil (48h iniciadas sexta às 18h, sem feriado no intervalo, começam segunda 00:00 e fecham quarta 00:00)\"]", "algoritmo_contagem_prazo", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000021"), "O edital de abertura é o fundamento normativo do prazo de interposição e declara a convenção pela qual ele se conta (UNI-REQ-0095): na ausência de norma específica que fixe outro prazo, o edital estabelece o seu, e o sistema congela e reproduz o declarado sem julgar a escolha. Decisão institucional juridicamente orientada — não é parecer formal nem jurisprudência consolidada. Não dispõe sobre efeito suspensivo, cuja confirmação é dependência própria (UNI-REQ-0117).", "CONTAGEM-PRAZO-HORAS-UTEIS-DESDE-ANCORA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "1319f925c7af96f337a34e8b705c6a40bd6d124dcc9e7bf9f5f1fd2d43d18cc6", "[\"evento que inicia o prazo fora da meia-noite: a contagem parte do instante exato do evento que inicia o prazo — a hora do fechamento deriva da hora do evento que inicia o prazo, sem deslocamento para o início de outro dia (48h iniciadas sexta às 18h, com sábado e domingo não úteis e sem feriado, fecham terça 18h)\",\"evento que inicia o prazo em dia não útil: o início não desloca — o relógio não avança em instante situado em dia não útil e o primeiro avanço ocorre no primeiro instante útil seguinte (24h iniciadas domingo às 18h, com segunda útil, só começam a consumir segunda 00:00 e fecham terça 00:00)\",\"em horas: consome exatamente o valor declarado em horas situadas em dia útil, atravessando a madrugada de dia útil normalmente; fecha no instante em que o saldo zera\",\"em dias úteis: N dias úteis equivalem a N×24 horas situadas em dia útil consumidas desde o evento que inicia o prazo; dia civil de transição de fuso contribui com as horas que realmente tem, nunca um bloco presumido de 24 (1 dia útil iniciado sexta às 18h, sem feriado no intervalo, fecha segunda 18h)\"]", "algoritmo_contagem_prazo", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000022"), "O edital de abertura é o fundamento normativo do prazo de interposição e declara a convenção pela qual ele se conta (UNI-REQ-0095): na ausência de norma específica que fixe outro prazo, o edital estabelece o seu, e o sistema congela e reproduz o declarado sem julgar a escolha. Decisão institucional juridicamente orientada — não é parecer formal nem jurisprudência consolidada. Não dispõe sobre efeito suspensivo, cuja confirmação é dependência própria (UNI-REQ-0117).", "CONTAGEM-PRAZO-AVANCA-DATA-UTIL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "47fb025bcfef2680377b57369e6f7e6657677c707f4e8293b979f883401eb094", "[\"evento que inicia o prazo fora da meia-noite: mantém a hora do evento que inicia o prazo — a contagem parte do instante exato, sem deslocamento para o início de outro dia (1 dia útil iniciado sexta às 18h, com sábado e domingo não úteis e sem feriado, fecha segunda 18h)\",\"evento que inicia o prazo em dia não útil: em dias úteis, desloca para o próximo dia útil na mesma hora (evento que inicia o prazo no domingo às 18h conta como segunda 18h, e 1 dia útil fecha terça 18h); em horas não há deslocamento, apenas a não contagem dos instantes de dia não útil\",\"em dias úteis: fecha na mesma hora do evento que inicia o prazo, N datas úteis adiante, pulando cada data não útil; se a hora do evento que inicia o prazo não existir na data de fechamento por transição de fuso, fecha no primeiro instante válido seguinte\",\"em horas: consome horas situadas em dia útil desde o evento que inicia o prazo, sem deslocar o início — nesta unidade a convenção coincide com a contagem de horas úteis a partir do evento que inicia o prazo; a diferença entre as duas está apenas na contagem em dias úteis\"]", "algoritmo_contagem_prazo", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000023"), "Portaria Normativa MEC nº 18/2012 art. 10 e 11 (red. PN 2.027/2023) — distribuição e arredondamento das vagas reservadas; Lei 12.711/2012 (red. Lei 14.723/2023)", "DISTRIBUICAO-LEI-12711", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"pr_minimo\":\"numeric (piso 0,5 — art. 10 II; teto 1,0)\",\"modo_arredondamento\":\"teto (ceil) em todas as sub-reservas EXCETO LI_Q (floor) — art. 11\",\"ordem_garantia_minima\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_PCD\",\"LI_EP\"],\"sub_reservas\":[\"PPI\",\"Q\",\"PCD\",\"EP\"],\"entradas_por_edital\":[\"VO_base\",\"PR\",\"ReferenciaReservaDemografica\"],\"modalidades_admitidas\":[\"AC\",\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]}", "33b7cb12bd7e3d2d98615beddfbe345959e47a9e4f395e45ffd52ccd264cbc5e", "[\"VR=ceil(VO×PR)\",\"VRRI=ceil(VR×0,5)\",\"VRSI=VR−VRRI\",\"sub-reservas ceil EXCETO LI_Q=floor (art. 11)\",\"garantia mín-1 ordenada I-VII condicional à disponibilidade (art. 10 §2º), LI_Q fora\",\"LB_EP≥0 e LI_EP≥0\",\"AC≥0\",\"VR_final+RETIRADAS+AC=VO_base\",\"modalidade fora de modalidades_admitidas é recusada\"]", "regra_distribuicao_vagas", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000024"), "Res. Unifesspa 532/2021 (vagas PcD/Indígena/Quilombola); Portaria MEC 18/2012 art. 12 (reservas suplementares e outras ações afirmativas)", "DISTRIBUICAO-INSTITUCIONAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"quadro_fixo_por_modalidade\":\"objeto {codigo: quantidade} fixado por edital (NÃO art. 10)\",\"aplicacao\":\"quadro institucional não nomeado por regra própria\",\"modalidades_admitidas\":null}", "54d9e00fc5545dec85005d7e131f2e9cdf4639fe8e89fe66c0b8883df663a93b", "[\"quadro fixo por edital (não recalculado pelo art. 10)\",\"a soma das quantidades declaradas é o total publicado, e fecha no VO_base\",\"modalidades_admitidas nulo: rol aberto, para o certame institucional que ainda não tem regra própria\"]", "regra_distribuicao_vagas", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000025"), "Res. Unifesspa 532/2021-CONSEPE, art. 2º (vagas por acréscimo para candidatos indígenas e quilombolas)", "DISTRIBUICAO-POR-ACRESCIMO-INDIGENA-E-QUILOMBOLA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"quadro_fixo_por_modalidade\":\"objeto {codigo: quantidade} fixado por edital (NÃO art. 10)\",\"aplicacao\":\"Processo Seletivo Indígena e Quilombola\",\"modalidades_admitidas\":[\"AC_I\",\"AC_Q\"]}", "56f020a09b0cfd20d4d8f02e10449cfbf9438023b7ef2b4c37657e1977d6d518", "[\"quadro fixo por edital (não recalculado pelo art. 10)\",\"certame exclusivo: não há ampla concorrência\",\"rol composto só de vagas por acréscimo — sem outro conjunto ao qual se somem, a soma delas é o total publicado\"]", "regra_distribuicao_vagas", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000026"), "Res. Unifesspa 532/2021-CONSEPE, art. 1º (reserva de vaga para pessoa com deficiência); Portaria MEC 18/2012 art. 12", "DISTRIBUICAO-COM-AMPLA-CONCORRENCIA-E-PESSOA-COM-DEFICIENCIA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"quadro_fixo_por_modalidade\":\"objeto {codigo: quantidade} fixado por edital (NÃO art. 10)\",\"aplicacao\":\"quadro fixo sem as cotas federais — AC_PCD como reserva de pessoa com deficiência fora do regime federal\",\"modalidades_admitidas\":[\"AC\",\"AC_PCD\"]}", "5c822c0575b947c2de85ca22099273db42460438e4bba276104a620960e8a145", "[\"quadro fixo por edital (não recalculado pelo art. 10)\",\"certame sem as cotas da Lei 12.711\",\"AC_PCD retira de AC: o par fecha no VO_base\"]", "regra_distribuicao_vagas", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000027"), "Portaria Normativa MEC nº 18/2012 art. 10 e 11 (red. PN 2.027/2023) — distribuição e arredondamento das vagas reservadas; Lei 12.711/2012 (red. Lei 14.723/2023)", "DISTRIBUICAO-LEI-12711-COM-AMPLA-CONCORRENCIA-E-PESSOA-COM-DEFICIENCIA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"pr_minimo\":\"numeric (piso 0,5 — art. 10 II; teto 1,0)\",\"modo_arredondamento\":\"teto (ceil) em todas as sub-reservas EXCETO LI_Q (floor) — art. 11\",\"ordem_garantia_minima\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_PCD\",\"LI_EP\"],\"sub_reservas\":[\"PPI\",\"Q\",\"PCD\",\"EP\"],\"entradas_por_edital\":[\"VO_base\",\"PR\",\"ReferenciaReservaDemografica\"],\"modalidades_admitidas\":[\"AC\",\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\",\"AC_PCD\"]}", "5affac48aa7350844e3a1b633263e92e99d0df78de323aedcb065111500a7136", "[\"VR=ceil(VO×PR)\",\"VRRI=ceil(VR×0,5)\",\"VRSI=VR−VRRI\",\"sub-reservas ceil EXCETO LI_Q=floor (art. 11)\",\"garantia mín-1 ordenada I-VII condicional à disponibilidade (art. 10 §2º), LI_Q fora\",\"LB_EP≥0 e LI_EP≥0\",\"AC≥0\",\"VR_final+RETIRADAS+AC=VO_base\",\"AC_PCD retira de AC, como qualquer outra retirada federal\",\"modalidade fora de modalidades_admitidas é recusada\"]", "regra_distribuicao_vagas", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000028"), "Edital (ordem de desempate por nota de área do ENEM)", "DESEMPATE-MAIOR-NOTA-AREA-ENEM", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "fa627f59003c26fe75e0797380520790e2d5c85e2c410f9bba903ca1973fb7b4", "[\"ordena por maior nota na primeira área da lista; o empate que resta passa à área seguinte\",\"cada área é citada uma única vez, pelo código, e existe em todos os grupos do quadro de pesos por área registrado na versão da classificação\",\"exige classificação baseada em ENEM, calculada pela média ponderada\"]", "criterio_desempate", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000029"), "Edital (falta em dia de prova do ENEM)", "ELIM-FALTA-EM-DIA-DE-PROVA-ENEM", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "49975e49b82c3f823938d1c89f15eba026acd1ee00088688b0b5e54107acdc19", "[\"falta em pelo menos um dia de prova da edição do ENEM usada no processo → elimina\",\"sem participação registrada na edição do ENEM indicada pelo candidato equivale a falta\"]", "regra_eliminacao", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000030"), "Decisão institucional da Unifesspa", "CONSOLIDACAO-AVALIACAO-UNICA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"corretores_distintos\":1,\"naturezas_do_conceito\":[\"categorico\",\"numerico\"]}", "7e1bd389e8de8efe97bcb8af08d4d8930d45f1acf00dca07d947fa6b6a96cf5f", "[\"um só avaliador lança a nota de cada candidato na etapa\",\"a nota lançada é a nota da etapa, sem combinação com outra\"]", "regra_consolidacao", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000031"), "UNI-REQ-0097 (dupla correção) e edital do processo seletivo", "CONSOLIDACAO-CORRECAO-INDEPENDENTE", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"corretores_distintos\":3,\"naturezas_do_conceito\":[\"numerico\"]}", "a2c2eca40be800aea8983c8a45aed3b5e350471b03982c3ba1069b220e5ebe1c", "[\"mais de um avaliador corrige cada candidato na etapa, cada um sem conhecer a nota do outro\",\"a nota da etapa é a combinação das correções independentes, na forma que o edital determina\"]", "regra_consolidacao", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000032"), "Edital (eliminação do candidato que faltar à etapa)", "ELIM-AUSENCIA-NA-ETAPA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "945883414c6954eaa0666665d9eb10997b2d73a4ae3c296a4662b4ea44d4c682", "[\"falta à etapa referenciada → elimina\",\"não se aplica à etapa de nota do ENEM\"]", "regra_eliminacao", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000033"), "UNI-REQ-0383 (procedimento de recurso por matéria) e UNI-REQ-0097 (correção cega)", "PROCEDIMENTO-RECURSO-RECORRECAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"revisa\":\"desempenho avaliado por pessoas\",\"evidencia\":\"nova correção cega do material\",\"corretores\":\"os_da_regra_de_consolidacao_da_etapa\"}", "4ce312b49c32f152fc2c73dda209a24cffe2a048f5e6a5c299b2dade0e088c0b", "[\"a revisão é uma nova correção do material, feita sem conhecer a nota anterior\",\"os corretores são os da regra de consolidação da etapa\"]", "regra_procedimento_recurso", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000034"), "UNI-REQ-0383 (procedimento de recurso por matéria)", "PROCEDIMENTO-RECURSO-CONFERENCIA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"revisa\":\"comprovação de um fato e aplicação da pontuação prevista por tabela\",\"evidencia\":\"o documento e a tabela\",\"corretores\":\"os_da_regra_de_consolidacao_da_etapa_quando_ha_consolidacao_humana\"}", "2cfc01f124953d982ba4fbc6dc749ea2e6b0d470242ccd149354657f1b7ad073", "[\"a revisão confere o documento contra a tabela do edital\",\"há corretores só quando a etapa tem consolidação humana; do contrário, nenhum\"]", "regra_procedimento_recurso", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000035"), "UNI-REQ-0383 (procedimento de recurso por matéria) e UNI-REQ-0281", "PROCEDIMENTO-RECURSO-CORRECAO-MATERIAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"revisa\":\"erro de registro (transcrição, soma, presença)\",\"evidencia\":\"o registro e a evidência do erro\",\"corretores\":\"nenhum\"}", "6878bc5b9e296e71658e263ecd30a03bb2bfa32bb6b2d225b3dd2b6169a645dc", "[\"a correção tem sempre um motivo da lista da etapa, sem a opção outro\",\"não é saída genérica para o que a derivação da nota não explica\"]", "regra_procedimento_recurso", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000036"), "UNI-REQ-0383 (procedimento de recurso por matéria)", "PROCEDIMENTO-RECURSO-RECALCULO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"revisa\":\"cálculo sobre insumos já conferidos (gabarito, média ponderada do ENEM, classificação)\",\"evidencia\":\"os dados registrados na versão publicada e o boletim\",\"corretores\":\"nenhum\"}", "3037fb8056047033781e438511c135bdad9bd37aef8d20303a53e138142a6032", "[\"o recálculo parte dos dados registrados na versão publicada, sem nova correção\",\"a nota do ENEM é recalculada à vista do boletim\"]", "regra_procedimento_recurso", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000037"), "Decisão institucional da Unifesspa", "CONSOLIDACAO-CONCEITO-UNANIMIDADE", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"corretores_distintos\":2,\"criterio\":\"unanimidade\",\"naturezas_do_conceito\":[\"categorico\"],\"quando_nao_consolida\":\"decisao_da_banca\"}", "0c10af9a05f0da11e46508bdff914663826487580c78f6a2e2944b3c68cc1325", "[\"cada corretor lança o conceito sem conhecer o dos demais\",\"o conceito da etapa é o valor em que o critério converge: todos os corretores atribuem o mesmo valor\",\"quando o critério não converge, o tratamento que a versão declara é aplicado\"]", "regra_consolidacao", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000038"), "Decisão institucional da Unifesspa", "CONSOLIDACAO-CONCEITO-MAIORIA-SIMPLES", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"corretores_distintos\":3,\"criterio\":\"maioria_simples\",\"naturezas_do_conceito\":[\"categorico\"],\"quando_nao_consolida\":\"novo_corretor\"}", "db1fb6e72c023ba45414e6d679990995891c72392e53a8c54c61efa83b6a79db", "[\"cada corretor lança o conceito sem conhecer o dos demais\",\"o conceito da etapa é o valor em que o critério converge: um valor com mais atribuições que cada um dos outros\",\"quando o critério não converge, o tratamento que a versão declara é aplicado\"]", "regra_consolidacao", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000039"), "Decisão institucional da Unifesspa", "CONSOLIDACAO-CONCEITO-MAIORIA-ABSOLUTA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"corretores_distintos\":3,\"criterio\":\"maioria_absoluta\",\"naturezas_do_conceito\":[\"categorico\"],\"quando_nao_consolida\":\"novo_corretor\"}", "194b514a5de402f43afb4c3b78d4bcc988e7d82f5a9ca59c538df8ebc342995a", "[\"cada corretor lança o conceito sem conhecer o dos demais\",\"o conceito da etapa é o valor em que o critério converge: um valor com mais da metade das atribuições\",\"quando o critério não converge, o tratamento que a versão declara é aplicado\"]", "regra_consolidacao", null, "v1" }
                 });
 
             migrationBuilder.InsertData(
@@ -5819,6 +5817,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 table: "bases_da_permissao_concedida",
                 column: "ordem_na_trilha",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_bases_legais_do_bonus_regional_codigo_vivo",
+                schema: "configuracao",
+                table: "bases_legais_do_bonus_regional",
+                column: "codigo",
+                unique: true,
+                filter: "is_deleted = false");
 
             migrationBuilder.CreateIndex(
                 name: "ix_bases_legais_do_bonus_regional_tipo_instrumento",
@@ -6728,11 +6734,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ux_motivos_do_processo_processo_origem",
+                name: "ix_motivos_do_processo_processo",
                 schema: "selecao",
                 table: "motivos_do_processo",
-                columns: new[] { "processo_seletivo_id", "motivo_de_decisao_origem_id" },
-                unique: true);
+                column: "processo_seletivo_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_municipios_do_bonus_regional_configuracao_de_bonus_regional",
@@ -6787,6 +6792,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao",
                 table: "ocorrencias_do_lote_de_notas",
                 column: "lote_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_ofertas_de_curso_codigo_vivo",
+                schema: "configuracao",
+                table: "ofertas_de_curso",
+                column: "codigo",
+                unique: true,
+                filter: "is_deleted = false");
 
             migrationBuilder.CreateIndex(
                 name: "ix_ofertas_de_curso_curso_id",
@@ -6915,24 +6928,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 filter: "estado = 'aberta'");
 
             migrationBuilder.CreateIndex(
-                name: "ix_rascunhos_publicacao_expira_em",
+                name: "ix_rascunhos_processos_seletivos_unidade_id",
                 schema: "selecao",
-                table: "rascunhos_publicacao",
-                column: "expira_em");
-
-            migrationBuilder.CreateIndex(
-                name: "ux_rascunhos_publicacao_processo_operador",
-                schema: "selecao",
-                table: "rascunhos_publicacao",
-                columns: new[] { "processo_seletivo_id", "usuario_conta_id" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "ux_rascunhos_retificacao_processo",
-                schema: "selecao",
-                table: "rascunhos_retificacao",
-                column: "processo_seletivo_id",
-                unique: true);
+                table: "rascunhos_processos_seletivos",
+                columns: new[] { "unidade_administradora_origem_id", "id" });
 
             migrationBuilder.CreateIndex(
                 name: "ix_recalculos_da_aprovacao_versao_id",
@@ -7132,6 +7131,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "autorizacao",
                 table: "tentativas_de_instalacao",
                 column: "instalacao_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_termos_de_consentimento_codigo_vivo",
+                schema: "configuracao",
+                table: "termos_de_consentimento",
+                column: "codigo",
+                unique: true,
+                filter: "is_deleted = false");
 
             migrationBuilder.CreateIndex(
                 name: "ix_termos_de_consentimento_nome",
@@ -7465,6 +7472,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "configuracao",
                 table: "versoes_do_termo_consentimento",
                 columns: new[] { "termo_consentimento_id", "promovida_em" });
+
+            migrationBuilder.CreateIndex(
+                name: "ux_versoes_do_termo_consentimento_termo_numero",
+                schema: "configuracao",
+                table: "versoes_do_termo_consentimento",
+                columns: new[] { "termo_consentimento_id", "numero" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "ix_vigencias_do_perfil_perfil_id_versao_id",
@@ -7872,11 +7886,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "autorizacao");
 
             migrationBuilder.DropTable(
-                name: "rascunhos_publicacao",
-                schema: "selecao");
-
-            migrationBuilder.DropTable(
-                name: "rascunhos_retificacao",
+                name: "rascunhos_processos_seletivos",
                 schema: "selecao");
 
             migrationBuilder.DropTable(
