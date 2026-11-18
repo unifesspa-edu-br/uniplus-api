@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 using Unifesspa.UniPlus.Discentes.Domain.Entities;
+using Unifesspa.UniPlus.Discentes.Domain.ValueObjects;
 using Unifesspa.UniPlus.Discentes.Infrastructure.Sigaa;
 using Unifesspa.UniPlus.Discentes.Infrastructure.Sigaa.Acl;
 
@@ -101,7 +102,7 @@ public sealed partial class OrquestradorDeSincronizacao
         ContagemDaSincronizacao contagem,
         CancellationToken cancellationToken)
     {
-        HashSet<long> jaProcessados = [];
+        HashSet<IdDoDiscenteNoSigaa> jaProcessados = [];
 
         foreach (FiltroDeVinculos filtro in FiltrosDaExecucao(dataDeReferencia))
         {
@@ -132,7 +133,7 @@ public sealed partial class OrquestradorDeSincronizacao
     /// </remarks>
     private async Task ReconciliarAsync(
         FiltroDeVinculos filtro,
-        HashSet<long> jaProcessados,
+        HashSet<IdDoDiscenteNoSigaa> jaProcessados,
         ContagemDaSincronizacao contagem,
         CancellationToken cancellationToken)
     {
@@ -154,7 +155,7 @@ public sealed partial class OrquestradorDeSincronizacao
 
     private async Task PercorrerEGravarAsync(
         FiltroDeVinculos filtro,
-        HashSet<long> jaProcessados,
+        HashSet<IdDoDiscenteNoSigaa> jaProcessados,
         ContagemDaSincronizacao contagem,
         List<VinculoSincronizavel> lote,
         CancellationToken cancellationToken)
@@ -180,7 +181,7 @@ public sealed partial class OrquestradorDeSincronizacao
     /// </summary>
     private async Task AcumularAsync(
         VinculoDecodificado item,
-        HashSet<long> jaProcessados,
+        HashSet<IdDoDiscenteNoSigaa> jaProcessados,
         ContagemDaSincronizacao contagem,
         List<VinculoSincronizavel> lote,
         CancellationToken cancellationToken)

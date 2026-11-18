@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Discentes.Domain.Entities;
 
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
+
 /// <summary>
 /// Um vínculo pronto para entrar na réplica, acompanhado do resumo do conteúdo que veio
 /// da origem.
@@ -10,7 +12,7 @@ namespace Unifesspa.UniPlus.Discentes.Domain.Entities;
 /// mudou desde a última execução e poupar a escrita — numa sincronização diária de
 /// dezenas de milhares de linhas, a esmagadora maioria não muda de um dia para o outro.
 /// </param>
-public sealed record VinculoSincronizavel(VinculoDiscente Vinculo, string ResumoDoConteudo);
+public sealed record VinculoSincronizavel(VinculoDiscente Vinculo, ResumoSha256 ResumoDoConteudo);
 
 /// <summary>
 /// O que a gravação de um lote produziu.

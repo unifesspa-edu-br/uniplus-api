@@ -45,26 +45,26 @@ internal static class MapeamentoDoVinculoDiscente
 
     private static void AplicarIdentificacao(VinculoDiscenteRecord record, VinculoDiscenteCopiado dadosCopiados)
     {
-        record.IdDiscenteSigaa = dadosCopiados.Identificacao.IdDiscenteSigaa;
-        record.Matricula = dadosCopiados.Identificacao.Matricula;
-        record.Nome = dadosCopiados.Identificacao.Nome;
-        record.Nivel = dadosCopiados.Nivel;
+        record.IdDiscenteSigaa = dadosCopiados.Identificacao.IdDiscenteSigaa.Valor;
+        record.Matricula = dadosCopiados.Identificacao.Matricula.Valor;
+        record.Nome = dadosCopiados.Identificacao.Nome.Valor;
+        record.Nivel = dadosCopiados.Nivel.Valor;
     }
 
     private static void AplicarCurso(VinculoDiscenteRecord record, CursoCopiadoDoSigaa curso)
     {
-        record.CursoId = curso.Id;
-        record.CursoNome = curso.Nome;
-        record.CursoCodigoEmec = curso.CodigoEmec;
-        record.CursoUnidadeId = curso.UnidadeId;
-        record.CursoUnidadeNome = curso.UnidadeNome;
+        record.CursoId = curso.Id.Valor;
+        record.CursoNome = curso.Nome.Valor;
+        record.CursoCodigoEmec = curso.CodigoEmec?.Valor;
+        record.CursoUnidadeId = curso.Unidade.Id.Valor;
+        record.CursoUnidadeNome = curso.Unidade.Nome.Valor;
     }
 
     private static void AplicarSituacao(VinculoDiscenteRecord record, SituacaoAcademicaCopiada situacao)
     {
-        record.SituacaoId = situacao.Id;
-        record.SituacaoDescricao = situacao.Descricao;
-        record.SituacaoVinculo = situacao.Vinculo;
+        record.SituacaoId = situacao.Id.Valor;
+        record.SituacaoDescricao = situacao.Descricao.Valor;
+        record.SituacaoVinculo = situacao.Qualificador?.Valor;
     }
 
     private static void AplicarIngresso(VinculoDiscenteRecord record, PeriodoIngresso ingresso)

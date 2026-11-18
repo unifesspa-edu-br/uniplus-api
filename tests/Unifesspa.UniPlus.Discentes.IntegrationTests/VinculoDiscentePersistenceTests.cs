@@ -147,7 +147,7 @@ public sealed class VinculoDiscentePersistenceTests : IClassFixture<VinculoDisce
     {
         await using UniPlusDbContext contexto = _fixture.CreateDbContext();
 
-        return await new VinculoDiscenteRepository(contexto, _fixture.Encryption).ObterPorIdSigaaAsync(idSigaa);
+        return await new VinculoDiscenteRepository(contexto, _fixture.Encryption).ObterPorIdSigaaAsync(VinculoDeTeste.IdNoSigaa(idSigaa));
     }
 
     private async Task<VinculoDiscente?> LerPorIdAsync(Guid id)

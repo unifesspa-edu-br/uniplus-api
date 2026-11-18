@@ -1,11 +1,12 @@
 using Unifesspa.UniPlus.Discentes.Domain.Entities;
+using Unifesspa.UniPlus.Discentes.Domain.ValueObjects;
 
 namespace Unifesspa.UniPlus.Discentes.Domain.Interfaces;
 
 public interface IVinculoDiscenteRepository
 {
     Task<VinculoDiscente?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default);
-    Task<VinculoDiscente?> ObterPorIdSigaaAsync(long idDiscenteSigaa, CancellationToken cancellationToken = default);
+    Task<VinculoDiscente?> ObterPorIdSigaaAsync(IdDoDiscenteNoSigaa idDiscenteSigaa, CancellationToken cancellationToken = default);
     Task AdicionarAsync(VinculoDiscente entity, CancellationToken cancellationToken = default);
 
     /// <summary>

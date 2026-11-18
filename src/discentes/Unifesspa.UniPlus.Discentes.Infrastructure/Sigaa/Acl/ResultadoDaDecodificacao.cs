@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 using Unifesspa.UniPlus.Discentes.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
 /// O que restou de uma página depois de traduzida para o domínio: os vínculos que entram
@@ -42,7 +43,7 @@ public sealed record ResultadoDaDecodificacao(
 /// Resumo dos campos trazidos da origem. Serve para a sincronização perceber que nada
 /// mudou e pular a escrita — dois vínculos com o mesmo resumo são o mesmo dado.
 /// </param>
-public sealed record VinculoDecodificado(VinculoDiscente Vinculo, string ResumoDoConteudo);
+public sealed record VinculoDecodificado(VinculoDiscente Vinculo, ResumoSha256 ResumoDoConteudo);
 
 /// <summary>
 /// Um vínculo que não entrou na réplica, e por quê.

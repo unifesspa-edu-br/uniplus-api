@@ -35,5 +35,5 @@ public sealed class VinculoDiscente
     /// <summary>
     /// Retorna uma representação técnica e opaca sem exposição de PII (Nome, Matrícula, CPF).
     /// </summary>
-    public override string ToString() => $"[VinculoDiscente Id={Id}, IdDiscenteSigaa={DadosCopiados.Identificacao.IdDiscenteSigaa}]";
+    public override string ToString() => $"[VinculoDiscente Id={Id}, IdDiscenteSigaa={DadosCopiados.Identificacao.IdDiscenteSigaa.Valor}]";
 }

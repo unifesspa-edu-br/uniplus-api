@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Text;
 
 using Unifesspa.UniPlus.Discentes.Domain.Entities;
@@ -72,7 +71,7 @@ public static class DecodificadorDeVinculos
 
         // A origem promete matrícula composta só por dígitos. Letra ou pontuação aqui é
         // entrega fora do combinado, não valor que a réplica não comporta.
-        new("matricula", i => string.IsNullOrWhiteSpace(i.Matricula) || !IdentificacaoDoDiscente.ApenasDigitos(i.Matricula)),
+        new("matricula", i => string.IsNullOrWhiteSpace(i.Matricula) || !MatriculaDoDiscente.ApenasDigitos(i.Matricula)),
         new("nome", i => string.IsNullOrWhiteSpace(i.Nome)),
         new("nivel", i => string.IsNullOrWhiteSpace(i.Nivel)),
         new("cpf", i => string.IsNullOrWhiteSpace(i.Cpf)),
@@ -300,7 +299,7 @@ public static class DecodificadorDeVinculos
     /// trata da busca por CPF.
     /// </para>
     /// </remarks>
-    private static string ResumirConteudo(VinculoDiscenteCopiado dadosCopiados)
+    private static ResumoSha256 ResumirConteudo(VinculoDiscenteCopiado dadosCopiados)
     {
         StringBuilder canonico = new();
 
@@ -309,8 +308,7 @@ public static class DecodificadorDeVinculos
             Acrescentar(canonico, campo);
         }
 
-        byte[] resumo = SHA256.HashData(Encoding.UTF8.GetBytes(canonico.ToString()));
-        return Convert.ToHexStringLower(resumo);
+        return ResumoSha256.DoConteudo(Encoding.UTF8.GetBytes(canonico.ToString()));
     }
 
     /// <summary>
@@ -319,10 +317,10 @@ public static class DecodificadorDeVinculos
     /// </summary>
     private static IEnumerable<string?> CamposDoResumo(VinculoDiscenteCopiado dadosCopiados) =>
     [
-        dadosCopiados.Identificacao.IdDiscenteSigaa.ToString(CultureInfo.InvariantCulture),
-        dadosCopiados.Identificacao.Matricula,
-        dadosCopiados.Identificacao.Nome,
-        dadosCopiados.Nivel,
+        dadosCopiados.Identificacao.IdDiscenteSigaa.Valor.ToString(CultureInfo.InvariantCulture),
+        dadosCopiados.Identificacao.Matricula.Valor,
+        dadosCopiados.Identificacao.Nome.Valor,
+        dadosCopiados.Nivel.Valor,
         .. CamposDoCurso(dadosCopiados.Curso),
         .. CamposDaSituacao(dadosCopiados.Situacao),
         dadosCopiados.Ingresso.Ano.ToString(CultureInfo.InvariantCulture),
@@ -331,18 +329,18 @@ public static class DecodificadorDeVinculos
 
     private static IEnumerable<string?> CamposDoCurso(CursoCopiadoDoSigaa curso) =>
     [
-        curso.Id.ToString(CultureInfo.InvariantCulture),
-        curso.Nome,
-        curso.CodigoEmec,
-        curso.UnidadeId.ToString(CultureInfo.InvariantCulture),
-        curso.UnidadeNome,
+        curso.Id.Valor.ToString(CultureInfo.InvariantCulture),
+        curso.Nome.Valor,
+        curso.CodigoEmec?.Valor,
+        curso.Unidade.Id.Valor.ToString(CultureInfo.InvariantCulture),
+        curso.Unidade.Nome.Valor,
     ];
 
     private static IEnumerable<string?> CamposDaSituacao(SituacaoAcademicaCopiada situacao) =>
     [
-        situacao.Id.ToString(CultureInfo.InvariantCulture),
-        situacao.Descricao,
-        situacao.Vinculo,
+        situacao.Id.Valor.ToString(CultureInfo.InvariantCulture),
+        situacao.Descricao.Valor,
+        situacao.Qualificador?.Valor,
     ];
 
     /// <summary>

@@ -19,13 +19,13 @@ public sealed class DecodificadorDeVinculosTests
         resultado.Descartados.Should().BeEmpty();
 
         VinculoDiscenteCopiado dadosCopiados = resultado.Aceitos[0].Vinculo.DadosCopiados;
-        dadosCopiados.Identificacao.IdDiscenteSigaa.Should().Be(24786);
-        dadosCopiados.Identificacao.Matricula.Should().Be("201446010001");
+        dadosCopiados.Identificacao.IdDiscenteSigaa.Valor.Should().Be(24786);
+        dadosCopiados.Identificacao.Matricula.Valor.Should().Be("201446010001");
         dadosCopiados.Identificacao.Cpf.Valor.Should().Be("52998224725");
-        dadosCopiados.Nivel.Should().Be("G");
-        dadosCopiados.Curso.Nome.Should().Be("CIÊNCIA DA COMPUTAÇÃO");
-        dadosCopiados.Curso.CodigoEmec.Should().Be("1269997");
-        dadosCopiados.Curso.UnidadeNome.Should().Be("INSTITUTO DE CIENCIAS EXATAS");
+        dadosCopiados.Nivel.Valor.Should().Be("G");
+        dadosCopiados.Curso.Nome.Valor.Should().Be("CIÊNCIA DA COMPUTAÇÃO");
+        dadosCopiados.Curso.CodigoEmec!.Valor.Should().Be("1269997");
+        dadosCopiados.Curso.Unidade.Nome.Valor.Should().Be("INSTITUTO DE CIENCIAS EXATAS");
         dadosCopiados.Ingresso.Ano.Should().Be(2020);
     }
 
@@ -35,9 +35,9 @@ public sealed class DecodificadorDeVinculosTests
         ResultadoDaDecodificacao resultado = Decodificar(Completo());
 
         SituacaoAcademicaCopiada situacao = resultado.Aceitos[0].Vinculo.DadosCopiados.Situacao;
-        situacao.Id.Should().Be(1);
-        situacao.Descricao.Should().Be("ATIVO", "a situação é espelhada, não traduzida");
-        situacao.Vinculo.Should().Be("ATV");
+        situacao.Id.Valor.Should().Be(1);
+        situacao.Descricao.Valor.Should().Be("ATIVO", "a situação é espelhada, não traduzida");
+        situacao.Qualificador!.Valor.Should().Be("ATV");
     }
 
     /// <summary>

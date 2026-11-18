@@ -10,14 +10,14 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed record VinculoDiscenteCopiado
 {
     public IdentificacaoDoDiscente Identificacao { get; }
-    public string Nivel { get; }
+    public NivelDoVinculo Nivel { get; }
     public CursoCopiadoDoSigaa Curso { get; }
     public SituacaoAcademicaCopiada Situacao { get; }
     public PeriodoIngresso Ingresso { get; }
 
     private VinculoDiscenteCopiado(
         IdentificacaoDoDiscente identificacao,
-        string nivel,
+        NivelDoVinculo nivel,
         CursoCopiadoDoSigaa curso,
         SituacaoAcademicaCopiada situacao,
         PeriodoIngresso ingresso)
@@ -41,31 +41,14 @@ public sealed record VinculoDiscenteCopiado
         ArgumentNullException.ThrowIfNull(situacao);
         ArgumentNullException.ThrowIfNull(ingresso);
 
-        VinculoDiscenteCopiado dadosCopiados = new(identificacao, nivel ?? string.Empty, curso, situacao, ingresso);
-
-        DomainError? erro = dadosCopiados.ValidarNivel();
-
-        return erro is null
-            ? Result<VinculoDiscenteCopiado>.Success(dadosCopiados)
-            : Result<VinculoDiscenteCopiado>.Failure(erro);
+        return NivelDoVinculo.Criar(nivel).Compor(nivelDoVinculo =>
+            new VinculoDiscenteCopiado(identificacao, nivelDoVinculo, curso, situacao, ingresso));
     }
 
     /// <summary>
     /// Sobrescreve o <c>ToString()</c> sintetizado do record — que, por padrão, enumeraria
     /// Nome e Matrícula em texto claro em qualquer interpolação ou log deste objeto.
     /// </summary>
-    public override string ToString() => $"[VinculoDiscenteCopiado IdDiscenteSigaa={Identificacao.IdDiscenteSigaa}]";
-
-    private DomainError? ValidarNivel()
-    {
-        if (string.IsNullOrWhiteSpace(Nivel))
-            return new DomainError("VinculoDiscente.NivelVazio", "Nível é obrigatório.");
-
-        if (Nivel.Length > LimitesDaReplica.Nivel)
-            return new DomainError(
-                "VinculoDiscente.NivelLongo",
-                $"Nível excede {LimitesDaReplica.Nivel} caracteres, o máximo que a réplica comporta.");
-
-        return null;
-    }
+    public override string ToString() =>
+        $"[VinculoDiscenteCopiado IdDiscenteSigaa={Identificacao.IdDiscenteSigaa.Valor}]";
 }
