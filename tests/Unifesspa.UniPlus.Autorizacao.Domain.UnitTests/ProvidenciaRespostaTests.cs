@@ -115,6 +115,7 @@ public sealed class ProvidenciaRespostaTests
     [InlineData(500, "a", true)]
     [InlineData(501, "a", false)]
     [InlineData(500, "😀", true)]
+    [InlineData(501, "😀", false)]
     public void Responder_LimiteDoMotivo(int repeticoes, string caractere, bool aceita)
     {
         ProvidenciaBuilder cenario = new();

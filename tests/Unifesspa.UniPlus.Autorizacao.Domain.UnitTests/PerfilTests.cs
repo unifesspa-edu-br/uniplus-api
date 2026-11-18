@@ -201,6 +201,20 @@ public sealed class PerfilTests
         perfil.Ativo.Should().BeTrue();
     }
 
+    [Theory(DisplayName = "O nome da versão respeita o limite de unidades UTF-16")]
+    [InlineData(120, "a", true)]
+    [InlineData(121, "a", false)]
+    [InlineData(60, "😀", true)]
+    [InlineData(61, "😀", false)]
+    public void Validar_NomeNoLimite_Valida(int tamanho, string caractere, bool aceita)
+    {
+        string nome = string.Concat(Enumerable.Repeat(caractere, tamanho));
+
+        Result<ConteudoDaVersao> resultado = Validar(nome, Descricao, [Consultar]);
+
+        resultado.IsSuccess.Should().Be(aceita);
+    }
+
     private static Result<ConteudoDaVersao> Validar(string nome, string descricao, string[] permissoes) =>
         ConteudoDaVersao.Validar(nome, descricao, permissoes, PerfisDeTeste.Protocolo, PerfisDeTeste.TamanhoDoDocumento, Catalogo);
 

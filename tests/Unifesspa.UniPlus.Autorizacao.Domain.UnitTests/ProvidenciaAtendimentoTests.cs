@@ -109,6 +109,22 @@ public sealed class ProvidenciaAtendimentoTests
         cenario.Concessao.RevogadaEm.Should().BeNull();
     }
 
+    [Theory(DisplayName = "O atendimento confere o limite do motivo em runas")]
+    [InlineData(500, "a", true)]
+    [InlineData(501, "a", false)]
+    [InlineData(500, "😀", true)]
+    [InlineData(501, "😀", false)]
+    public void Atender_MotivoNoLimite_Valida(int tamanho, string caractere, bool aceita)
+    {
+        ProvidenciaBuilder cenario = new();
+        string motivo = string.Concat(Enumerable.Repeat(caractere, tamanho));
+
+        Result resultado = cenario.Aberta().Atender(cenario.Concessao, ProvidenciaBuilder.AtoDeDiogo(), new DeclaracaoDoAtendimento(motivo, EmailDeLeandro));
+
+        resultado.IsSuccess.Should().Be(aceita);
+        cenario.Concessao.MotivoRevogacao.Should().Be(aceita ? motivo : null);
+    }
+
     private static DeclaracaoDoAtendimento Declaracao(string? confirmacaoEmail = "") =>
         new(ProvidenciaBuilder.Motivo, confirmacaoEmail == string.Empty ? EmailDeLeandro : confirmacaoEmail);
 

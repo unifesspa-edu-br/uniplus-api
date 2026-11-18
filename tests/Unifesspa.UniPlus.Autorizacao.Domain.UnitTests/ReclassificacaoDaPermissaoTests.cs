@@ -169,6 +169,24 @@ public sealed class ReclassificacaoDaPermissaoTests
         Recusa(Subida(false), Pedido(EtapaDaVersao.ProtecaoDeDados, ResultadoDaLiberacao.Mantida, [Concessao(Paulo)], motivo: "  "))
             .Should().Be(ReclassificacaoErrorCodes.MotivoInvalido);
 
+    [Theory(DisplayName = "O limite do motivo da suspensão mantida conta runas")]
+    [InlineData(500, "a", true)]
+    [InlineData(501, "a", false)]
+    [InlineData(500, "😀", true)]
+    [InlineData(501, "😀", false)]
+    public void Decidir_MotivoNoLimite_Valida(int tamanho, string caractere, bool aceita)
+    {
+        string motivo = string.Concat(Enumerable.Repeat(caractere, tamanho));
+        Result<DesfechoDaDecisaoDaReclassificacao> resultado = Subida(false)
+            .Decidir(Pedido(EtapaDaVersao.ProtecaoDeDados, ResultadoDaLiberacao.Mantida, [Concessao(Paulo)], motivo: motivo));
+
+        resultado.IsSuccess.Should().Be(aceita);
+        if (aceita)
+        {
+            resultado.Value!.Liberacoes.Single().Motivo.Should().Be(motivo);
+        }
+    }
+
     [Fact(DisplayName = "Na decisão em lote, a concessão do decisor e a que o escopo não comporta ficam de fora")]
     public void Decidir_Todas_SeparaAsQueFicamParaOutraPessoa()
     {

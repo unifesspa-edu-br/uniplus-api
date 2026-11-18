@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class PerfilAprovacaoTests
 {
@@ -325,6 +326,46 @@ public sealed class PerfilAprovacaoTests
         perfil.CancelarVersao(versaoId, PerfisDeTeste.Autor, "Motivo.", Agora.AddDays(15))
             .Erro!.Code.Should().Be(PerfilErrorCodes.VersaoExpirada);
         perfil.UltimaVersaoEncerradaSemVigor!.Situacao.Should().Be(SituacaoDaVersao.Expirada);
+    }
+
+    [Theory(DisplayName = "A recusa e o cancelamento conferem o limite do motivo em runas")]
+    [InlineData(500, "a", true)]
+    [InlineData(501, "a", false)]
+    [InlineData(500, "😀", true)]
+    [InlineData(501, "😀", false)]
+    public void DecidirECancelar_MotivoNoLimite_Valida(int tamanho, string caractere, bool aceita)
+    {
+        Perfil recusado = PendenteVerificada([Consultar]);
+        Perfil cancelado = PendenteVerificada([Consultar]);
+        string motivo = string.Concat(Enumerable.Repeat(caractere, tamanho));
+
+        Decidir(recusado, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDoGestor, ResultadoDaDecisao.Recusado, motivo).Concluida.Should().Be(aceita);
+        cancelado.CancelarVersao(cancelado.VersaoPendente!.Id, PerfisDeTeste.Autor, motivo, Agora).Concluida.Should().Be(aceita);
+        if (aceita)
+        {
+            recusado.UltimaVersaoEncerradaSemVigor!.Decisoes.Single().Motivo.Should().Be(motivo);
+            cancelado.UltimaVersaoEncerradaSemVigor!.MotivoDoCancelamento.Should().Be(motivo);
+        }
+    }
+
+    [Theory(DisplayName = "A aprovação respeita o limite do nome em unidades UTF-16")]
+    [InlineData(120, "a", true)]
+    [InlineData(121, "a", false)]
+    [InlineData(60, "😀", true)]
+    [InlineData(61, "😀", false)]
+    public void Aprovar_NomeNoLimite_Valida(int tamanho, string caractere, bool aceita)
+    {
+        string nome = string.Concat(Enumerable.Repeat(caractere, tamanho));
+        Result<ConteudoDaVersao> conteudo = ConteudoDaVersao.Validar(nome, Descricao, [Consultar], PerfisDeTeste.Protocolo, PerfisDeTeste.TamanhoDoDocumento, _catalogo);
+
+        conteudo.IsSuccess.Should().Be(aceita);
+        if (aceita)
+        {
+            Perfil perfil = PerfisDeTeste.Garantir(Perfil.Criar(conteudo.Value!, PerfisDeTeste.AutoriaDoAutor, Agora, _catalogo));
+            Verificar(perfil);
+            Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDoGestor).Concluida.Should().BeTrue();
+            perfil.Nome.Should().Be(nome);
+        }
     }
 
     private static readonly ContextoDaVersao NomeEmUso = new(NomeEmUsoPorOutroPerfil: true, JanelaDeMigracaoAberta: false);
