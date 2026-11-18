@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Services.DocumentoDaConfiguracao
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 
 /// <summary>
 /// As causas de recusa da forma do documento, cada uma no ponto do documento que a provoca (JSON Pointer). A mensagem descreve
@@ -43,6 +44,9 @@ public static class CausasDaForma
 
     public static FieldError ChaveRepetida(string ponteiro) =>
         Causa(ponteiro, DocumentoDaConfiguracaoErrorCodes.ChaveRepetida, "A chave já é de uma parte anterior do mesmo tipo; cada parte precisa de uma chave própria.");
+
+    public static FieldError OfertaCursoRepetida(string ponteiro) =>
+        Causa(ponteiro, DistribuicaoDeVagasErrorCodes.OfertaDeCursoDuplicada, "Cada oferta de curso só pode ter uma distribuição de vagas no processo.");
 
     public static FieldError CampoDesconhecido(string ponteiro) =>
         Causa(ponteiro, DocumentoDaConfiguracaoErrorCodes.CampoDesconhecido, "O campo não existe neste formato de documento.");
