@@ -18,15 +18,15 @@ public sealed class DecodificadorDeVinculosTests
         resultado.Aceitos.Should().HaveCount(1);
         resultado.Descartados.Should().BeEmpty();
 
-        VinculoDiscenteSnapshot snapshot = resultado.Aceitos[0].Vinculo.Snapshot;
-        snapshot.Identificacao.IdDiscenteSigaa.Should().Be(24786);
-        snapshot.Identificacao.Matricula.Should().Be("201446010001");
-        snapshot.Identificacao.Cpf.Valor.Should().Be("52998224725");
-        snapshot.Nivel.Should().Be("G");
-        snapshot.Curso.Nome.Should().Be("CIÊNCIA DA COMPUTAÇÃO");
-        snapshot.Curso.CodigoEmec.Should().Be("1269997");
-        snapshot.Curso.UnidadeNome.Should().Be("INSTITUTO DE CIENCIAS EXATAS");
-        snapshot.Ingresso.Ano.Should().Be(2020);
+        VinculoDiscenteCopiado dadosCopiados = resultado.Aceitos[0].Vinculo.DadosCopiados;
+        dadosCopiados.Identificacao.IdDiscenteSigaa.Should().Be(24786);
+        dadosCopiados.Identificacao.Matricula.Should().Be("201446010001");
+        dadosCopiados.Identificacao.Cpf.Valor.Should().Be("52998224725");
+        dadosCopiados.Nivel.Should().Be("G");
+        dadosCopiados.Curso.Nome.Should().Be("CIÊNCIA DA COMPUTAÇÃO");
+        dadosCopiados.Curso.CodigoEmec.Should().Be("1269997");
+        dadosCopiados.Curso.UnidadeNome.Should().Be("INSTITUTO DE CIENCIAS EXATAS");
+        dadosCopiados.Ingresso.Ano.Should().Be(2020);
     }
 
     [Fact]
@@ -34,7 +34,7 @@ public sealed class DecodificadorDeVinculosTests
     {
         ResultadoDaDecodificacao resultado = Decodificar(Completo());
 
-        SituacaoAcademicaSnapshot situacao = resultado.Aceitos[0].Vinculo.Snapshot.Situacao;
+        SituacaoAcademicaCopiada situacao = resultado.Aceitos[0].Vinculo.DadosCopiados.Situacao;
         situacao.Id.Should().Be(1);
         situacao.Descricao.Should().Be("ATIVO", "a situação é espelhada, não traduzida");
         situacao.Vinculo.Should().Be("ATV");

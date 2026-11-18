@@ -7,10 +7,6 @@ using Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Records;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class VinculoDiscenteRecordConfiguration : IEntityTypeConfiguration<VinculoDiscenteRecord>
 {
     public void Configure(EntityTypeBuilder<VinculoDiscenteRecord> builder)
@@ -21,7 +17,7 @@ internal sealed class VinculoDiscenteRecordConfiguration : IEntityTypeConfigurat
 
         builder.ToTable("vinculos_de_discentes", t => t.HasComment(
             "Réplica local dos vínculos de discentes sincronizados do SIGAA (ADR-0121) — " +
-            "snapshot desnormalizado, sem referência viva a outras tabelas."));
+            "dados copiados, sem consulta automática a outras tabelas."));
 
         builder.HasKey(v => v.Id);
 

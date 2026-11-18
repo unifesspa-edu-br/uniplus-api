@@ -185,7 +185,7 @@ public sealed partial class OrquestradorDeSincronizacao
         List<VinculoSincronizavel> lote,
         CancellationToken cancellationToken)
     {
-        if (!jaProcessados.Add(item.Vinculo.Snapshot.Identificacao.IdDiscenteSigaa))
+        if (!jaProcessados.Add(item.Vinculo.DadosCopiados.Identificacao.IdDiscenteSigaa))
         {
             contagem.RegistrarRepetido();
             return;

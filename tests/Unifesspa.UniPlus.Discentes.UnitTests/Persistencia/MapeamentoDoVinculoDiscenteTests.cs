@@ -20,77 +20,77 @@ public sealed class MapeamentoDoVinculoDiscenteTests
     [Fact]
     public void Aplicar_copia_a_identificacao_e_o_cpf_cifrado_para_o_registro()
     {
-        VinculoDiscenteSnapshot snapshot = VinculoDeTeste.Snapshot();
+        VinculoDiscenteCopiado dadosCopiados = VinculoDeTeste.DadosCopiados();
         VinculoDiscenteRecord registro = new();
 
-        MapeamentoDoVinculoDiscente.Aplicar(registro, snapshot, CpfCifrado);
+        MapeamentoDoVinculoDiscente.Aplicar(registro, dadosCopiados, CpfCifrado);
 
         registro.CpfCiphertext.Should().Equal(CpfCifrado);
-        registro.IdDiscenteSigaa.Should().Be(snapshot.Identificacao.IdDiscenteSigaa);
-        registro.Matricula.Should().Be(snapshot.Identificacao.Matricula);
-        registro.Nome.Should().Be(snapshot.Identificacao.Nome);
-        registro.Nivel.Should().Be(snapshot.Nivel);
+        registro.IdDiscenteSigaa.Should().Be(dadosCopiados.Identificacao.IdDiscenteSigaa);
+        registro.Matricula.Should().Be(dadosCopiados.Identificacao.Matricula);
+        registro.Nome.Should().Be(dadosCopiados.Identificacao.Nome);
+        registro.Nivel.Should().Be(dadosCopiados.Nivel);
     }
 
     [Fact]
     public void Aplicar_copia_o_curso_para_o_registro()
     {
-        VinculoDiscenteSnapshot snapshot = VinculoDeTeste.Snapshot();
+        VinculoDiscenteCopiado dadosCopiados = VinculoDeTeste.DadosCopiados();
         VinculoDiscenteRecord registro = new();
 
-        MapeamentoDoVinculoDiscente.Aplicar(registro, snapshot, CpfCifrado);
+        MapeamentoDoVinculoDiscente.Aplicar(registro, dadosCopiados, CpfCifrado);
 
-        registro.CursoId.Should().Be(snapshot.Curso.Id);
-        registro.CursoNome.Should().Be(snapshot.Curso.Nome);
-        registro.CursoCodigoEmec.Should().Be(snapshot.Curso.CodigoEmec);
-        registro.CursoUnidadeId.Should().Be(snapshot.Curso.UnidadeId);
-        registro.CursoUnidadeNome.Should().Be(snapshot.Curso.UnidadeNome);
+        registro.CursoId.Should().Be(dadosCopiados.Curso.Id);
+        registro.CursoNome.Should().Be(dadosCopiados.Curso.Nome);
+        registro.CursoCodigoEmec.Should().Be(dadosCopiados.Curso.CodigoEmec);
+        registro.CursoUnidadeId.Should().Be(dadosCopiados.Curso.UnidadeId);
+        registro.CursoUnidadeNome.Should().Be(dadosCopiados.Curso.UnidadeNome);
     }
 
     [Fact]
     public void Aplicar_copia_a_situacao_e_o_ingresso_para_o_registro()
     {
-        VinculoDiscenteSnapshot snapshot = VinculoDeTeste.Snapshot();
+        VinculoDiscenteCopiado dadosCopiados = VinculoDeTeste.DadosCopiados();
         VinculoDiscenteRecord registro = new();
 
-        MapeamentoDoVinculoDiscente.Aplicar(registro, snapshot, CpfCifrado);
+        MapeamentoDoVinculoDiscente.Aplicar(registro, dadosCopiados, CpfCifrado);
 
-        registro.SituacaoId.Should().Be(snapshot.Situacao.Id);
-        registro.SituacaoDescricao.Should().Be(snapshot.Situacao.Descricao);
-        registro.SituacaoVinculo.Should().Be(snapshot.Situacao.Vinculo);
-        registro.AnoIngresso.Should().Be(snapshot.Ingresso.Ano);
-        registro.PeriodoIngresso.Should().Be(snapshot.Ingresso.Periodo);
+        registro.SituacaoId.Should().Be(dadosCopiados.Situacao.Id);
+        registro.SituacaoDescricao.Should().Be(dadosCopiados.Situacao.Descricao);
+        registro.SituacaoVinculo.Should().Be(dadosCopiados.Situacao.Vinculo);
+        registro.AnoIngresso.Should().Be(dadosCopiados.Ingresso.Ano);
+        registro.PeriodoIngresso.Should().Be(dadosCopiados.Ingresso.Periodo);
     }
 
     [Fact]
     public void Qualificador_da_situacao_vai_e_volta_quando_existe()
     {
-        VinculoDiscenteSnapshot snapshot = VinculoDeTeste.Valor(VinculoDiscenteSnapshot.Criar(
+        VinculoDiscenteCopiado dadosCopiados = VinculoDeTeste.Valor(VinculoDiscenteCopiado.Criar(
             VinculoDeTeste.Identificacao(),
             "G",
             VinculoDeTeste.Curso(),
-            VinculoDeTeste.Valor(SituacaoAcademicaSnapshot.Criar(1, "ATIVO", "ATV")),
+            VinculoDeTeste.Valor(SituacaoAcademicaCopiada.Criar(1, "ATIVO", "ATV")),
             VinculoDeTeste.Ingresso()));
         VinculoDiscenteRecord registro = new() { Id = Guid.NewGuid() };
-        MapeamentoDoVinculoDiscente.Aplicar(registro, snapshot, CpfCifrado);
+        MapeamentoDoVinculoDiscente.Aplicar(registro, dadosCopiados, CpfCifrado);
 
         VinculoDiscente lido = MapeamentoDoVinculoDiscente.ParaDominio(registro, VinculoDeTeste.CpfDeTeste());
 
         registro.SituacaoVinculo.Should().Be("ATV");
-        lido.Snapshot.Situacao.Vinculo.Should().Be("ATV");
+        lido.DadosCopiados.Situacao.Vinculo.Should().Be("ATV");
     }
 
     [Fact]
     public void Registro_aplicado_volta_como_o_mesmo_vinculo()
     {
-        VinculoDiscente original = VinculoDiscente.Criar(VinculoDeTeste.Snapshot());
+        VinculoDiscente original = VinculoDiscente.Criar(VinculoDeTeste.DadosCopiados());
         VinculoDiscenteRecord registro = new() { Id = original.Id };
-        MapeamentoDoVinculoDiscente.Aplicar(registro, original.Snapshot, CpfCifrado);
+        MapeamentoDoVinculoDiscente.Aplicar(registro, original.DadosCopiados, CpfCifrado);
 
         VinculoDiscente lido = MapeamentoDoVinculoDiscente.ParaDominio(registro, VinculoDeTeste.CpfDeTeste());
 
         lido.Id.Should().Be(original.Id);
-        lido.Snapshot.Should().Be(original.Snapshot);
+        lido.DadosCopiados.Should().Be(original.DadosCopiados);
     }
 
     [Theory]
@@ -116,13 +116,13 @@ public sealed class MapeamentoDoVinculoDiscenteTests
         Action ler = () => MapeamentoDoVinculoDiscente.ParaDominio(registro, VinculoDeTeste.CpfDeTeste());
 
         ler.Should().Throw<InvalidOperationException>()
-            .WithMessage("Snapshot corrompido no registro persistido (VinculoDiscente.MatriculaNaoNumerica).");
+            .WithMessage("Dados copiados corrompidos no registro persistido (VinculoDiscente.MatriculaNaoNumerica).");
     }
 
     private static VinculoDiscenteRecord RegistroValido()
     {
         VinculoDiscenteRecord registro = new();
-        MapeamentoDoVinculoDiscente.Aplicar(registro, VinculoDeTeste.Snapshot(), CpfCifrado);
+        MapeamentoDoVinculoDiscente.Aplicar(registro, VinculoDeTeste.DadosCopiados(), CpfCifrado);
 
         return registro;
     }

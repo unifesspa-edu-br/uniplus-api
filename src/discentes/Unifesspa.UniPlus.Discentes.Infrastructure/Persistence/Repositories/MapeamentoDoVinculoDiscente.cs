@@ -15,14 +15,14 @@ internal static class MapeamentoDoVinculoDiscente
     /// <summary>
     /// Copia o estado do vínculo para o registro.
     /// </summary>
-    public static void Aplicar(VinculoDiscenteRecord record, VinculoDiscenteSnapshot snapshot, byte[] cpfCiphertext)
+    public static void Aplicar(VinculoDiscenteRecord record, VinculoDiscenteCopiado dadosCopiados, byte[] cpfCiphertext)
     {
         record.CpfCiphertext = cpfCiphertext;
 
-        AplicarIdentificacao(record, snapshot);
-        AplicarCurso(record, snapshot.Curso);
-        AplicarSituacao(record, snapshot.Situacao);
-        AplicarIngresso(record, snapshot.Ingresso);
+        AplicarIdentificacao(record, dadosCopiados);
+        AplicarCurso(record, dadosCopiados.Curso);
+        AplicarSituacao(record, dadosCopiados.Situacao);
+        AplicarIngresso(record, dadosCopiados.Ingresso);
     }
 
     /// <summary>
@@ -31,27 +31,27 @@ internal static class MapeamentoDoVinculoDiscente
     /// </summary>
     public static VinculoDiscente ParaDominio(VinculoDiscenteRecord record, Cpf cpf)
     {
-        CursoSigaaSnapshot curso = CursoDe(record);
-        SituacaoAcademicaSnapshot situacao = SituacaoDe(record);
+        CursoCopiadoDoSigaa curso = CursoDe(record);
+        SituacaoAcademicaCopiada situacao = SituacaoDe(record);
         PeriodoIngresso ingresso = IngressoDe(record);
         IdentificacaoDoDiscente identificacao = IdentificacaoDe(record, cpf);
 
-        VinculoDiscenteSnapshot snapshot = Exigir(
-            VinculoDiscenteSnapshot.Criar(identificacao, record.Nivel, curso, situacao, ingresso),
-            "Snapshot corrompido");
+        VinculoDiscenteCopiado dadosCopiados = Exigir(
+            VinculoDiscenteCopiado.Criar(identificacao, record.Nivel, curso, situacao, ingresso),
+            "Dados copiados corrompidos");
 
-        return VinculoDiscente.Reidratar(record.Id, snapshot);
+        return VinculoDiscente.Reidratar(record.Id, dadosCopiados);
     }
 
-    private static void AplicarIdentificacao(VinculoDiscenteRecord record, VinculoDiscenteSnapshot snapshot)
+    private static void AplicarIdentificacao(VinculoDiscenteRecord record, VinculoDiscenteCopiado dadosCopiados)
     {
-        record.IdDiscenteSigaa = snapshot.Identificacao.IdDiscenteSigaa;
-        record.Matricula = snapshot.Identificacao.Matricula;
-        record.Nome = snapshot.Identificacao.Nome;
-        record.Nivel = snapshot.Nivel;
+        record.IdDiscenteSigaa = dadosCopiados.Identificacao.IdDiscenteSigaa;
+        record.Matricula = dadosCopiados.Identificacao.Matricula;
+        record.Nome = dadosCopiados.Identificacao.Nome;
+        record.Nivel = dadosCopiados.Nivel;
     }
 
-    private static void AplicarCurso(VinculoDiscenteRecord record, CursoSigaaSnapshot curso)
+    private static void AplicarCurso(VinculoDiscenteRecord record, CursoCopiadoDoSigaa curso)
     {
         record.CursoId = curso.Id;
         record.CursoNome = curso.Nome;
@@ -60,7 +60,7 @@ internal static class MapeamentoDoVinculoDiscente
         record.CursoUnidadeNome = curso.UnidadeNome;
     }
 
-    private static void AplicarSituacao(VinculoDiscenteRecord record, SituacaoAcademicaSnapshot situacao)
+    private static void AplicarSituacao(VinculoDiscenteRecord record, SituacaoAcademicaCopiada situacao)
     {
         record.SituacaoId = situacao.Id;
         record.SituacaoDescricao = situacao.Descricao;
@@ -76,17 +76,17 @@ internal static class MapeamentoDoVinculoDiscente
     private static IdentificacaoDoDiscente IdentificacaoDe(VinculoDiscenteRecord record, Cpf cpf) =>
         Exigir(
             IdentificacaoDoDiscente.Criar(record.IdDiscenteSigaa, record.Matricula, cpf, record.Nome),
-            "Snapshot corrompido");
+            "Dados copiados corrompidos");
 
-    private static CursoSigaaSnapshot CursoDe(VinculoDiscenteRecord record) =>
+    private static CursoCopiadoDoSigaa CursoDe(VinculoDiscenteRecord record) =>
         Exigir(
-            CursoSigaaSnapshot.Criar(
+            CursoCopiadoDoSigaa.Criar(
                 record.CursoId, record.CursoNome, record.CursoCodigoEmec, record.CursoUnidadeId, record.CursoUnidadeNome),
             "Curso corrompido");
 
-    private static SituacaoAcademicaSnapshot SituacaoDe(VinculoDiscenteRecord record) =>
+    private static SituacaoAcademicaCopiada SituacaoDe(VinculoDiscenteRecord record) =>
         Exigir(
-            SituacaoAcademicaSnapshot.Criar(record.SituacaoId, record.SituacaoDescricao, record.SituacaoVinculo),
+            SituacaoAcademicaCopiada.Criar(record.SituacaoId, record.SituacaoDescricao, record.SituacaoVinculo),
             "Situação corrompida");
 
     private static PeriodoIngresso IngressoDe(VinculoDiscenteRecord record) =>

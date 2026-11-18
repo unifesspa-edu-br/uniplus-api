@@ -209,8 +209,8 @@ public static class DecodificadorDeVinculos
         PartesDoVinculo partes,
         List<VinculoDescartado> descartados)
     {
-        CursoSigaaSnapshot? curso = ValorOuNulo(partes.CriarCurso());
-        SituacaoAcademicaSnapshot? situacao = ValorOuNulo(partes.CriarSituacao());
+        CursoCopiadoDoSigaa? curso = ValorOuNulo(partes.CriarCurso());
+        SituacaoAcademicaCopiada? situacao = ValorOuNulo(partes.CriarSituacao());
         PeriodoIngresso? ingresso = ValorOuNulo(partes.CriarIngresso());
 
         if (curso is null || situacao is null || ingresso is null)
@@ -226,24 +226,24 @@ public static class DecodificadorDeVinculos
     private static VinculoDecodificado? CriarVinculo(
         VinculoDiscentePayload item,
         Cpf cpf,
-        CursoSigaaSnapshot curso,
-        SituacaoAcademicaSnapshot situacao,
+        CursoCopiadoDoSigaa curso,
+        SituacaoAcademicaCopiada situacao,
         PeriodoIngresso ingresso,
         List<VinculoDescartado> descartados)
     {
-        VinculoDiscenteSnapshot? snapshot =
+        VinculoDiscenteCopiado? dadosCopiados =
             ValorOuNulo(IdentificacaoDoDiscente.Criar(item.IdDiscente, item.Matricula, cpf, item.Nome)) is { } identificacao
-                ? ValorOuNulo(VinculoDiscenteSnapshot.Criar(identificacao, item.Nivel, curso, situacao, ingresso))
+                ? ValorOuNulo(VinculoDiscenteCopiado.Criar(identificacao, item.Nivel, curso, situacao, ingresso))
                 : null;
 
-        return snapshot is null
+        return dadosCopiados is null
             ? Descartar(descartados, Descarte(item, MotivoDeDescarte.ForaDoContrato, "vínculo"))
-            : new VinculoDecodificado(VinculoDiscente.Criar(snapshot), ResumirConteudo(snapshot));
+            : new VinculoDecodificado(VinculoDiscente.Criar(dadosCopiados), ResumirConteudo(dadosCopiados));
     }
 
     private static string DescreverParteInvalida(
-        CursoSigaaSnapshot? curso,
-        SituacaoAcademicaSnapshot? situacao)
+        CursoCopiadoDoSigaa? curso,
+        SituacaoAcademicaCopiada? situacao)
     {
         if (curso is null)
         {
@@ -300,11 +300,11 @@ public static class DecodificadorDeVinculos
     /// trata da busca por CPF.
     /// </para>
     /// </remarks>
-    private static string ResumirConteudo(VinculoDiscenteSnapshot snapshot)
+    private static string ResumirConteudo(VinculoDiscenteCopiado dadosCopiados)
     {
         StringBuilder canonico = new();
 
-        foreach (string? campo in CamposDoResumo(snapshot))
+        foreach (string? campo in CamposDoResumo(dadosCopiados))
         {
             Acrescentar(canonico, campo);
         }
@@ -317,19 +317,19 @@ public static class DecodificadorDeVinculos
     /// Os campos que entram no resumo, na ordem fixa em que são acrescentados. Mudar a
     /// ordem muda o resumo de todos os vínculos já guardados.
     /// </summary>
-    private static IEnumerable<string?> CamposDoResumo(VinculoDiscenteSnapshot snapshot) =>
+    private static IEnumerable<string?> CamposDoResumo(VinculoDiscenteCopiado dadosCopiados) =>
     [
-        snapshot.Identificacao.IdDiscenteSigaa.ToString(CultureInfo.InvariantCulture),
-        snapshot.Identificacao.Matricula,
-        snapshot.Identificacao.Nome,
-        snapshot.Nivel,
-        .. CamposDoCurso(snapshot.Curso),
-        .. CamposDaSituacao(snapshot.Situacao),
-        snapshot.Ingresso.Ano.ToString(CultureInfo.InvariantCulture),
-        snapshot.Ingresso.Periodo.ToString(CultureInfo.InvariantCulture),
+        dadosCopiados.Identificacao.IdDiscenteSigaa.ToString(CultureInfo.InvariantCulture),
+        dadosCopiados.Identificacao.Matricula,
+        dadosCopiados.Identificacao.Nome,
+        dadosCopiados.Nivel,
+        .. CamposDoCurso(dadosCopiados.Curso),
+        .. CamposDaSituacao(dadosCopiados.Situacao),
+        dadosCopiados.Ingresso.Ano.ToString(CultureInfo.InvariantCulture),
+        dadosCopiados.Ingresso.Periodo.ToString(CultureInfo.InvariantCulture),
     ];
 
-    private static IEnumerable<string?> CamposDoCurso(CursoSigaaSnapshot curso) =>
+    private static IEnumerable<string?> CamposDoCurso(CursoCopiadoDoSigaa curso) =>
     [
         curso.Id.ToString(CultureInfo.InvariantCulture),
         curso.Nome,
@@ -338,7 +338,7 @@ public static class DecodificadorDeVinculos
         curso.UnidadeNome,
     ];
 
-    private static IEnumerable<string?> CamposDaSituacao(SituacaoAcademicaSnapshot situacao) =>
+    private static IEnumerable<string?> CamposDaSituacao(SituacaoAcademicaCopiada situacao) =>
     [
         situacao.Id.ToString(CultureInfo.InvariantCulture),
         situacao.Descricao,
@@ -424,11 +424,11 @@ public static class DecodificadorDeVinculos
         int Ano,
         int Periodo)
     {
-        public Result<CursoSigaaSnapshot> CriarCurso() =>
-            CursoSigaaSnapshot.Criar(Curso.Id, Curso.Nome, Curso.CodigoEmec, Unidade.Id, Unidade.Nome);
+        public Result<CursoCopiadoDoSigaa> CriarCurso() =>
+            CursoCopiadoDoSigaa.Criar(Curso.Id, Curso.Nome, Curso.CodigoEmec, Unidade.Id, Unidade.Nome);
 
-        public Result<SituacaoAcademicaSnapshot> CriarSituacao() =>
-            SituacaoAcademicaSnapshot.Criar(Situacao.Id, Situacao.Descricao, Situacao.SituacaoVinculo);
+        public Result<SituacaoAcademicaCopiada> CriarSituacao() =>
+            SituacaoAcademicaCopiada.Criar(Situacao.Id, Situacao.Descricao, Situacao.SituacaoVinculo);
 
         public Result<PeriodoIngresso> CriarIngresso() => PeriodoIngresso.Criar(Ano, Periodo);
     }

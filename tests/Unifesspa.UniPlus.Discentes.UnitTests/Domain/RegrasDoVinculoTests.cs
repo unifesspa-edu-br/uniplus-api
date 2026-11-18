@@ -78,9 +78,9 @@ public sealed class RegrasDoVinculoTests
     [Theory]
     [InlineData("VinculoDiscente.NivelVazio", " ")]
     [InlineData("VinculoDiscente.NivelLongo", "GRADUA")]
-    public void Snapshot_recusa_o_nivel_invalido(string codigo, string nivel)
+    public void DadosCopiados_recusa_o_nivel_invalido(string codigo, string nivel)
     {
-        Result<VinculoDiscenteSnapshot> resultado = VinculoDiscenteSnapshot.Criar(
+        Result<VinculoDiscenteCopiado> resultado = VinculoDiscenteCopiado.Criar(
             VinculoDeTeste.Identificacao(),
             nivel,
             VinculoDeTeste.Curso(),
@@ -100,7 +100,7 @@ public sealed class RegrasDoVinculoTests
         int unidadeId,
         string unidadeNome)
     {
-        Result<CursoSigaaSnapshot> resultado = CursoSigaaSnapshot.Criar(
+        Result<CursoCopiadoDoSigaa> resultado = CursoCopiadoDoSigaa.Criar(
             id, nome, codigoEmec, unidadeId, unidadeNome);
 
         resultado.Error!.Code.Should().Be(codigo);
@@ -112,7 +112,7 @@ public sealed class RegrasDoVinculoTests
     [InlineData("SituacaoAcademica.DescricaoVazia", 1, "  ", null)]
     public void Situacao_recusa_a_primeira_regra_violada(string codigo, int id, string descricao, string? vinculo)
     {
-        Result<SituacaoAcademicaSnapshot> resultado = SituacaoAcademicaSnapshot.Criar(id, descricao, vinculo);
+        Result<SituacaoAcademicaCopiada> resultado = SituacaoAcademicaCopiada.Criar(id, descricao, vinculo);
 
         resultado.Error!.Code.Should().Be(codigo);
     }
@@ -120,22 +120,22 @@ public sealed class RegrasDoVinculoTests
     [Fact]
     public void Situacao_recusa_texto_alem_do_que_a_replica_comporta()
     {
-        SituacaoAcademicaSnapshot.Criar(1, Texto(LimitesDaReplica.DescricaoDaSituacao + 1), null)
+        SituacaoAcademicaCopiada.Criar(1, Texto(LimitesDaReplica.DescricaoDaSituacao + 1), null)
             .Error!.Code.Should().Be("SituacaoAcademica.DescricaoLonga");
-        SituacaoAcademicaSnapshot.Criar(1, "ATIVO", Texto(LimitesDaReplica.VinculoDaSituacao + 1))
+        SituacaoAcademicaCopiada.Criar(1, "ATIVO", Texto(LimitesDaReplica.VinculoDaSituacao + 1))
             .Error!.Code.Should().Be("SituacaoAcademica.VinculoLongo");
     }
 
     [Fact]
     public void Curso_e_situacao_aceitam_textos_no_limite()
     {
-        CursoSigaaSnapshot.Criar(
+        CursoCopiadoDoSigaa.Criar(
             1,
             Texto(LimitesDaReplica.NomeDoCurso),
             Texto(LimitesDaReplica.CodigoEmecDoCurso),
             1,
             Texto(LimitesDaReplica.NomeDaUnidade)).IsSuccess.Should().BeTrue();
-        SituacaoAcademicaSnapshot.Criar(
+        SituacaoAcademicaCopiada.Criar(
             1,
             Texto(LimitesDaReplica.DescricaoDaSituacao),
             Texto(LimitesDaReplica.VinculoDaSituacao)).IsSuccess.Should().BeTrue();

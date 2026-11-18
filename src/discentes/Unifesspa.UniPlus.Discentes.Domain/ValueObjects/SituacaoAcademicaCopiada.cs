@@ -8,28 +8,28 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// "vínculo" que o SIGAA associa à situação (nomenclatura do sistema de origem),
 /// não a situação do <c>VinculoDiscente</c> em si.
 /// </summary>
-public sealed record SituacaoAcademicaSnapshot
+public sealed record SituacaoAcademicaCopiada
 {
     public int Id { get; }
     public string Descricao { get; }
     public string? Vinculo { get; }
 
-    private SituacaoAcademicaSnapshot(int id, string descricao, string? vinculo)
+    private SituacaoAcademicaCopiada(int id, string descricao, string? vinculo)
     {
         Id = id;
         Descricao = descricao;
         Vinculo = vinculo;
     }
 
-    public static Result<SituacaoAcademicaSnapshot> Criar(int id, string? descricao, string? vinculo)
+    public static Result<SituacaoAcademicaCopiada> Criar(int id, string? descricao, string? vinculo)
     {
-        SituacaoAcademicaSnapshot situacao = new(id, descricao ?? string.Empty, vinculo);
+        SituacaoAcademicaCopiada situacao = new(id, descricao ?? string.Empty, vinculo);
 
         DomainError? erro = situacao.ValidarObrigatorios() ?? situacao.ValidarTamanhos();
 
         return erro is null
-            ? Result<SituacaoAcademicaSnapshot>.Success(situacao)
-            : Result<SituacaoAcademicaSnapshot>.Failure(erro);
+            ? Result<SituacaoAcademicaCopiada>.Success(situacao)
+            : Result<SituacaoAcademicaCopiada>.Failure(erro);
     }
 
     private DomainError? ValidarObrigatorios()

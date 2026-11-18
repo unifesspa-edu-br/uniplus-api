@@ -5,22 +5,21 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// Estado completo de um vínculo discente vindo do SIGAA: quem o discente é
 /// (<see cref="Identificacao"/>) e o que o vínculo é academicamente (nível, curso, situação e
-/// ingresso). Não é um Builder mutável — todos os campos chegam prontos de uma vez, como uma
-/// linha de sincronização.
+/// ingresso). Todos os campos chegam juntos na sincronização.
 /// </summary>
-public sealed record VinculoDiscenteSnapshot
+public sealed record VinculoDiscenteCopiado
 {
     public IdentificacaoDoDiscente Identificacao { get; }
     public string Nivel { get; }
-    public CursoSigaaSnapshot Curso { get; }
-    public SituacaoAcademicaSnapshot Situacao { get; }
+    public CursoCopiadoDoSigaa Curso { get; }
+    public SituacaoAcademicaCopiada Situacao { get; }
     public PeriodoIngresso Ingresso { get; }
 
-    private VinculoDiscenteSnapshot(
+    private VinculoDiscenteCopiado(
         IdentificacaoDoDiscente identificacao,
         string nivel,
-        CursoSigaaSnapshot curso,
-        SituacaoAcademicaSnapshot situacao,
+        CursoCopiadoDoSigaa curso,
+        SituacaoAcademicaCopiada situacao,
         PeriodoIngresso ingresso)
     {
         Identificacao = identificacao;
@@ -30,11 +29,11 @@ public sealed record VinculoDiscenteSnapshot
         Ingresso = ingresso;
     }
 
-    public static Result<VinculoDiscenteSnapshot> Criar(
+    public static Result<VinculoDiscenteCopiado> Criar(
         IdentificacaoDoDiscente identificacao,
         string? nivel,
-        CursoSigaaSnapshot curso,
-        SituacaoAcademicaSnapshot situacao,
+        CursoCopiadoDoSigaa curso,
+        SituacaoAcademicaCopiada situacao,
         PeriodoIngresso ingresso)
     {
         ArgumentNullException.ThrowIfNull(identificacao);
@@ -42,20 +41,20 @@ public sealed record VinculoDiscenteSnapshot
         ArgumentNullException.ThrowIfNull(situacao);
         ArgumentNullException.ThrowIfNull(ingresso);
 
-        VinculoDiscenteSnapshot snapshot = new(identificacao, nivel ?? string.Empty, curso, situacao, ingresso);
+        VinculoDiscenteCopiado dadosCopiados = new(identificacao, nivel ?? string.Empty, curso, situacao, ingresso);
 
-        DomainError? erro = snapshot.ValidarNivel();
+        DomainError? erro = dadosCopiados.ValidarNivel();
 
         return erro is null
-            ? Result<VinculoDiscenteSnapshot>.Success(snapshot)
-            : Result<VinculoDiscenteSnapshot>.Failure(erro);
+            ? Result<VinculoDiscenteCopiado>.Success(dadosCopiados)
+            : Result<VinculoDiscenteCopiado>.Failure(erro);
     }
 
     /// <summary>
     /// Sobrescreve o <c>ToString()</c> sintetizado do record — que, por padrão, enumeraria
     /// Nome e Matrícula em texto claro em qualquer interpolação ou log deste objeto.
     /// </summary>
-    public override string ToString() => $"[VinculoDiscenteSnapshot IdDiscenteSigaa={Identificacao.IdDiscenteSigaa}]";
+    public override string ToString() => $"[VinculoDiscenteCopiado IdDiscenteSigaa={Identificacao.IdDiscenteSigaa}]";
 
     private DomainError? ValidarNivel()
     {
