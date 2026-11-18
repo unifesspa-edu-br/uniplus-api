@@ -15,7 +15,7 @@ verificar_gate() {
 }
 
 for projeto in src/ingresso/Unifesspa.UniPlus.Ingresso.*/*.csproj tests/Unifesspa.UniPlus.Ingresso.*/*.csproj; do
-    verificar_gate "$projeto" ""
+    verificar_gate "$projeto" true
 done
 
 verificar_gate src/portal/Unifesspa.UniPlus.Portal.Domain/Unifesspa.UniPlus.Portal.Domain.csproj true
