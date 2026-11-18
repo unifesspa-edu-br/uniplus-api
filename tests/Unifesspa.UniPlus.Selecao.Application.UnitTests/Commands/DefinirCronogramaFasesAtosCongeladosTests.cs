@@ -71,7 +71,7 @@ public sealed class DefinirCronogramaFasesAtosCongeladosTests
         ConferirRecusaOuAceite(resultado, codigoEsperado);
     }
 
-    // O grafo publicado vem de um processo à parte, porque a gravação seguinte reconcilia a fase no lugar.
+    // A configuração publicada vem de um processo à parte, porque a gravação seguinte reconcilia a fase no lugar.
     [Fact(DisplayName = "A âncora que só a versão publicada tem segue aceita quando o catálogo perde o tipo e o agregado não a tem mais")]
     public async Task Handle_AncoraSoNaVersaoPublicada_CatalogoSemOTipo_Aceita()
     {
@@ -79,7 +79,7 @@ public sealed class DefinirCronogramaFasesAtosCongeladosTests
         ProcessoSeletivo publicado = CenarioDoCronogramaDeFases.NovoProcessoEmRascunho();
         (await cenario.DefinirEmOutroProcessoAsync(publicado, comAncora)).IsSuccess.Should().BeTrue();
         (await cenario.DefinirFasesAsync(comAncora)).IsSuccess.Should().BeTrue();
-        cenario.ComVersaoPublicadaDoGrafo(publicado, ClassificacaoCongeladaComoComum());
+        cenario.ComVersaoPublicadaDeOutroProcesso(publicado, ClassificacaoCongeladaComoComum());
         (await cenario.DefinirFasesAsync(semAncora)).IsSuccess.Should().BeTrue();
         cenario.SemVersaoVigenteDoTipoDeAto(AtoDaClassificacao);
 

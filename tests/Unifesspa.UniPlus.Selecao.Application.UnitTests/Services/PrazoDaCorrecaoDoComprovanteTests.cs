@@ -37,12 +37,12 @@ public sealed class PrazoDaCorrecaoDoComprovanteTests
 
     private static PrazoDaCorrecaoDoComprovante Prazo(DateTimeOffset agora, bool comVersaoDivulgada = true, IResolvedorFusoInstitucional? fuso = null)
     {
-        (VersaoConfiguracao versao, ConfiguracaoPublicada grafo) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
+        (VersaoConfiguracao versao, ConfiguracaoPublicada configuracao) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
         IRegistroCodecsEnvelope registro = Substitute.For<IRegistroCodecsEnvelope>();
         if (comVersaoDivulgada)
         {
-            DivulgacaoDeTeste.ConfigurarDivulgada(processos, registro, versao, grafo);
+            DivulgacaoDeTeste.ConfigurarDivulgada(processos, registro, versao, configuracao);
         }
 
         return new PrazoDaCorrecaoDoComprovante(

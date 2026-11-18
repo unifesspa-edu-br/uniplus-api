@@ -34,13 +34,13 @@ public sealed class SubmeterInscricaoEnderecoEIndisponibilidadeDoGeoTests
     private static async Task<(Result<ReciboDaInscricaoDto> Resultado, IUnitOfWork UnitOfWork)> SubmeterComEnderecoAsync(IConferenciaEnderecoGeo geo, string? cep = "66010000")
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
-        (VersaoConfiguracao versao, ConfiguracaoPublicada grafo, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo();
+        (VersaoConfiguracao versao, ConfiguracaoPublicada configuracao, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo();
         Inscricao existente = NovaInscricao(cpf, "conta-1", versao.Id);
 
-        (IInscricaoRepository inscricaoRepository, IProcessoSeletivoRepository processoRepository, IRegistroCodecsEnvelope registroCodecs) = PortasPara(existente, versao, grafo);
+        (IInscricaoRepository inscricaoRepository, IProcessoSeletivoRepository processoRepository, IRegistroCodecsEnvelope registroCodecs) = PortasPara(existente, versao, configuracao);
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
 
-        InscricaoRequest request = PedidoComEndereco(cpf, grafo, termo, cep);
+        InscricaoRequest request = PedidoComEndereco(cpf, configuracao, termo, cep);
 
         Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([existente.ETag])),
@@ -48,12 +48,12 @@ public sealed class SubmeterInscricaoEnderecoEIndisponibilidadeDoGeoTests
         return (resultado, unitOfWork);
     }
 
-    private static InscricaoRequest PedidoComEndereco(Cpf cpf, ConfiguracaoPublicada grafo, VersaoTermoEscolhida termo, string? cep)
+    private static InscricaoRequest PedidoComEndereco(Cpf cpf, ConfiguracaoPublicada configuracao, VersaoTermoEscolhida termo, string? cep)
     {
         Dictionary<string, JsonElement> respostas = RespostasDoConjuntoBasico(cpf);
         respostas["APELIDO"] = JsonSerializer.SerializeToElement("Nanda");
         respostas["ENDERECO_RESIDENCIAL"] = JsonSerializer.SerializeToElement(new { cep, cidade = new { codigoIbge = "1501402", uf = "PA" } });
-        return new(OfertaDo(grafo), respostas, null, [new AceiteDeTermoInput("TERMO_VERACIDADE", termo.VersaoId, termo.Hash)]);
+        return new(OfertaDo(configuracao), respostas, null, [new AceiteDeTermoInput("TERMO_VERACIDADE", termo.VersaoId, termo.Hash)]);
 
     }
 

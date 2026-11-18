@@ -105,18 +105,18 @@ public sealed class ObterInscricaoQueryHandlerTests
     private static (Inscricao, FluxoDaInscricaoDeTeste) MontarLeitura()
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
-        (VersaoConfiguracao versao, ConfiguracaoPublicada grafo) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
+        (VersaoConfiguracao versao, ConfiguracaoPublicada configuracao) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
         Inscricao existente = Inscricao.Iniciar(ProcessoId, cpf, "conta-1", "https://issuer", versao.Id).Value!;
         IInscricaoRepository inscricoes = Substitute.For<IInscricaoRepository>();
         inscricoes.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
-        return (existente, LeituraNaVersao(inscricoes, versao, grafo));
+        return (existente, LeituraNaVersao(inscricoes, versao, configuracao));
     }
 
-    private static FluxoDaInscricaoDeTeste LeituraNaVersao(IInscricaoRepository inscricoes, VersaoConfiguracao versao, ConfiguracaoPublicada grafo)
+    private static FluxoDaInscricaoDeTeste LeituraNaVersao(IInscricaoRepository inscricoes, VersaoConfiguracao versao, ConfiguracaoPublicada configuracao)
     {
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
         IRegistroCodecsEnvelope codecs = Substitute.For<IRegistroCodecsEnvelope>();
-        DivulgacaoDeTeste.ConfigurarVersao(processos, codecs, versao, grafo);
+        DivulgacaoDeTeste.ConfigurarVersao(processos, codecs, versao, configuracao);
         return new FluxoDaInscricaoDeTeste
         {
             Inscricoes = inscricoes,

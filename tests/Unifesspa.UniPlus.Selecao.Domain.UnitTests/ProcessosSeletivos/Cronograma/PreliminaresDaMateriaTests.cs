@@ -143,15 +143,15 @@ public sealed class PreliminaresDaMateriaTests
         PreliminaresDaMateria.Esperados([fase], [], Guid.CreateVersion7()).Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "O grafo responde às duas perguntas como o cronograma solto")]
+    [Fact(DisplayName = "A configuração publicada responde às duas perguntas como o cronograma solto")]
     public void ConfiguracaoPublicada_RespondeComoOCronogramaSolto()
     {
         ProdutoDaFase preliminar = Preliminar();
         ProdutoDaFase definitivo = Definitivo();
-        ConfiguracaoPublicada grafo = Configuracao([Fase("PROVA", "RESULTADO", preliminar), Fase("RESULTADO", null, definitivo)], []);
+        ConfiguracaoPublicada configuracao = Configuracao([Fase("PROVA", "RESULTADO", preliminar), Fase("RESULTADO", null, definitivo)], []);
 
-        PreliminaresDaMateria.Esperados(grafo, definitivo.Id).Should().Equal(preliminar.Id);
-        PreliminaresDaMateria.DefinitivosQueFecham(grafo, preliminar.Id).Should().Equal(definitivo.Id);
+        PreliminaresDaMateria.Esperados(configuracao, definitivo.Id).Should().Equal(preliminar.Id);
+        PreliminaresDaMateria.DefinitivosQueFecham(configuracao, preliminar.Id).Should().Equal(definitivo.Id);
     }
 
     [Fact(DisplayName = "O preliminar é fechado pelo definitivo da própria fase")]

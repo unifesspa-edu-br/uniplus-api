@@ -167,7 +167,7 @@ internal sealed class InscricaoAdministrativaDeTeste
     private EnvelopeReidratado EnvelopeDoCenario()
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar(NomeDoProcesso);
-        ConfiguracaoPublicada grafo = new ConfiguracaoPublicada(
+        ConfiguracaoPublicada configuracao = new ConfiguracaoPublicada(
             new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, []),
             new AvaliacaoDeclarada([.. processo.Etapas], [.. processo.CriteriosDesempate], processo.Classificacao!),
             new VagasDeclaradas([ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(ofertaCursoOrigemId: OfertaCursoId)], 1, processo.BonusRegional is not null,
@@ -178,7 +178,7 @@ internal sealed class InscricaoAdministrativaDeTeste
             new DivulgacaoETaxaDeclaradas(null, null), null);
 
         return new EnvelopeReidratado(
-            grafo, DadosEdital.Criar("001/2027", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(30), Guid.CreateVersion7()).Value!,
+            configuracao, DadosEdital.Criar("001/2027", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(30), Guid.CreateVersion7()).Value!,
             new string('a', 64), "America/Sao_Paulo", retificacao: null, conformidade: null, new DadosDeCatalogoDaConfiguracaoPublicada(FatosDerivadosCongelados: _derivados));
     }
 

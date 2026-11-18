@@ -141,12 +141,12 @@ internal sealed class CenarioDoCronogramaDeFases
     }
 
     /// <summary>
-    /// Como <see cref="ComVersaoPublicadaQueCongelou"/>, com o grafo vindo de outro processo: a fase é
-    /// reconciliada no lugar, e o grafo publicado tem de sobreviver à edição do processo vivo.
+    /// Como <see cref="ComVersaoPublicadaQueCongelou"/>, com a configuração vinda de outro processo: a fase é
+    /// reconciliada no lugar, e a configuração publicada tem de sobreviver à edição do processo vivo.
     /// </summary>
-    public CenarioDoCronogramaDeFases ComVersaoPublicadaDoGrafo(ProcessoSeletivo grafoPublicado, params TipoDeAtoCongelado[] congelados)
+    public CenarioDoCronogramaDeFases ComVersaoPublicadaDeOutroProcesso(ProcessoSeletivo processoPublicado, params TipoDeAtoCongelado[] congelados)
     {
-        VersaoPublicadaDeTeste.Publicar(Processo, grafoPublicado, Repository, Codecs, congelados);
+        VersaoPublicadaDeTeste.Publicar(Processo, processoPublicado, Repository, Codecs, congelados);
         return this;
     }
 

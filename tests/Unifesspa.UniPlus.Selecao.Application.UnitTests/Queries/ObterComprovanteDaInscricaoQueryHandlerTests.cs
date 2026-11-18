@@ -35,15 +35,15 @@ public sealed class ObterComprovanteDaInscricaoQueryHandlerTests
     private sealed record Cenario(
         IInscricaoRepository Inscricoes, IComprovanteDaInscricaoRepository Comprovantes, IProcessoSeletivoRepository Processos, IRegistroCodecsEnvelope Registro, MontadorDoComprovante Montador);
 
-    private static Cenario Novo(Inscricao inscricao, VersaoConfiguracao? versao = null, ConfiguracaoPublicada? grafo = null)
+    private static Cenario Novo(Inscricao inscricao, VersaoConfiguracao? versao = null, ConfiguracaoPublicada? configuracao = null)
     {
         IInscricaoRepository inscricoes = Substitute.For<IInscricaoRepository>();
         inscricoes.ObterPorIdAsync(inscricao.Id, Arg.Any<CancellationToken>()).Returns(inscricao);
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
         IRegistroCodecsEnvelope registro = Substitute.For<IRegistroCodecsEnvelope>();
-        if (versao is not null && grafo is not null)
+        if (versao is not null && configuracao is not null)
         {
-            DivulgacaoDeTeste.ConfigurarVersao(processos, registro, versao, grafo);
+            DivulgacaoDeTeste.ConfigurarVersao(processos, registro, versao, configuracao);
         }
 
         PrazoDaCorrecaoDoComprovante prazo = new(
@@ -157,9 +157,9 @@ public sealed class ObterComprovanteDaInscricaoQueryHandlerTests
     public async Task Handle_ComprovantePedido_MontaSemOPrazo()
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
-        (VersaoConfiguracao versao, ConfiguracaoPublicada grafo) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
+        (VersaoConfiguracao versao, ConfiguracaoPublicada configuracao) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
         Inscricao inscricao = Iniciar(cpf, "conta-1", versao.Id);
-        Cenario cenario = Novo(inscricao, versao, grafo);
+        Cenario cenario = Novo(inscricao, versao, configuracao);
         cenario.Comprovantes.ObterComprovanteAsync(inscricao.Id, 2, Arg.Any<CancellationToken>()).Returns(Posicao(inscricao, 2, 2));
 
         Result<ComprovanteDaInscricaoDto> resultado = await Ler(cenario, inscricao.Id, 2, Usuario(cpf));
@@ -175,9 +175,9 @@ public sealed class ObterComprovanteDaInscricaoQueryHandlerTests
     public async Task Handle_ComprovanteSubstituido_SemPrazo()
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
-        (VersaoConfiguracao versao, ConfiguracaoPublicada grafo) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
+        (VersaoConfiguracao versao, ConfiguracaoPublicada configuracao) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
         Inscricao inscricao = Iniciar(cpf, "conta-1", versao.Id);
-        Cenario cenario = Novo(inscricao, versao, grafo);
+        Cenario cenario = Novo(inscricao, versao, configuracao);
         cenario.Comprovantes.ObterComprovanteAsync(inscricao.Id, 1, Arg.Any<CancellationToken>()).Returns(Posicao(inscricao, 1, 2));
 
         Result<ComprovanteDaInscricaoDto> resultado = await Ler(cenario, inscricao.Id, 1, Usuario(cpf));

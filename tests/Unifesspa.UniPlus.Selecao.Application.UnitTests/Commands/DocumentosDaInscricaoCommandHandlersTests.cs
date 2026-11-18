@@ -46,7 +46,7 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
     private readonly Guid _versaoId;
     private readonly VersaoConfiguracao _versao;
-    private readonly ConfiguracaoPublicada _grafo;
+    private readonly ConfiguracaoPublicada _configuracao;
     private readonly ICertameDivulgadoRepository _certame = DivulgacaoDeTeste.Certame(ProcessoId);
 
     public DocumentosDaInscricaoCommandHandlersTests()
@@ -58,16 +58,16 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
         _certidao = Exigencia("CERTIDAO", faseDaInscricao.Id);
         _deOutraFase = Exigencia("RESULTADO", outraFase.Id);
 
-        ConfiguracaoPublicada grafo = GrafoComDocumentos(conforme, faseDaInscricao, outraFase);
-        DivulgacaoDeTeste.ConfigurarVersao(_processos, _codecs, versao, grafo);
+        ConfiguracaoPublicada configuracao = ConfiguracaoComDocumentos(conforme, faseDaInscricao, outraFase);
+        DivulgacaoDeTeste.ConfigurarVersao(_processos, _codecs, versao, configuracao);
         _versaoId = versao.Id;
         _versao = versao;
-        _grafo = grafo;
+        _configuracao = configuracao;
 
         ConfigurarRepositorios();
     }
 
-    private ConfiguracaoPublicada GrafoComDocumentos(ConfiguracaoPublicada conforme, FaseCronograma faseDaInscricao, FaseCronograma outraFase)
+    private ConfiguracaoPublicada ConfiguracaoComDocumentos(ConfiguracaoPublicada conforme, FaseCronograma faseDaInscricao, FaseCronograma outraFase)
     {
         NoExigencia folhaLaudo = NoExigencia.CriarFolha(_laudo, 0).Value!;
         NoExigencia folhaCertidao = NoExigencia.CriarFolha(_certidao, 1, repetePorEntidade: Grupo).Value!;
@@ -214,7 +214,7 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
         Inscricao inscricao = Rascunho();
         VersaoConfiguracao divulgada = DivulgacaoDeTeste.VersaoConforme(ProcessoId).Versao;
         DivulgacaoDeTeste.ConfigurarFixadaEDivulgada(
-            _processos, _codecs, _grafo, fixada: (_versao, DivulgacaoDeTeste.FimDoPeriodo), divulgada: (divulgada, DivulgacaoDeTeste.FimDoPeriodo));
+            _processos, _codecs, _configuracao, fixada: (_versao, DivulgacaoDeTeste.FimDoPeriodo), divulgada: (divulgada, DivulgacaoDeTeste.FimDoPeriodo));
 
         (await Iniciar(_laudo)).IsSuccess.Should().BeTrue();
 

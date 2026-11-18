@@ -32,13 +32,13 @@ using static SubmeterDeTeste;
 public sealed class SubmeterInscricaoDocumentosTests
 {
     private readonly VersaoConfiguracao _versao;
-    private readonly ConfiguracaoPublicada _grafo;
+    private readonly ConfiguracaoPublicada _configuracao;
     private readonly VersaoTermoEscolhida _termo;
     private DocumentoExigido _laudo = null!;
     private DocumentoExigido _naoSeAplica = null!;
 
     public SubmeterInscricaoDocumentosTests() =>
-        (_versao, _grafo, _termo) = MontarVersaoComItemObrigatorioETermo(exigencias: Exigencias);
+        (_versao, _configuracao, _termo) = MontarVersaoComItemObrigatorioETermo(exigencias: Exigencias);
 
     [Fact]
     public async Task Handle_DocumentoObrigatorioAusente_RecusaSemRemoverArquivos()
@@ -99,7 +99,7 @@ public sealed class SubmeterInscricaoDocumentosTests
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         Inscricao inscricao = NovaInscricao(cpf, "conta-1", _versao.Id);
-        (IInscricaoRepository inscricoes, IProcessoSeletivoRepository processos, IRegistroCodecsEnvelope codecs) = PortasPara(inscricao, _versao, _grafo);
+        (IInscricaoRepository inscricoes, IProcessoSeletivoRepository processos, IRegistroCodecsEnvelope codecs) = PortasPara(inscricao, _versao, _configuracao);
         (IDocumentoDaInscricaoRepository documentos, ArquivoDaApresentacao fixado, ArquivoDaApresentacao orfao) = MontarDocumentos(inscricao, comLaudo, laudoEmVerificacao);
         Result<ReciboDaInscricaoDto> resultado = await new SubmissaoDeTeste(inscricoes, processos, codecs, Substitute.For<IUnitOfWork>(), UsuarioComCpf(cpf))
         {
@@ -111,7 +111,7 @@ public sealed class SubmeterInscricaoDocumentosTests
 
     private InscricaoRequest Pedido(Cpf cpf, bool semApelido)
     {
-        InscricaoRequest pedido = RequestComApelidoETermoAceito(cpf, _termo, _grafo);
+        InscricaoRequest pedido = RequestComApelidoETermoAceito(cpf, _termo, _configuracao);
         return semApelido ? pedido with { Respostas = pedido.Respostas!.Where(static r => r.Key != "APELIDO").ToDictionary(static r => r.Key, static r => r.Value) } : pedido;
     }
 
