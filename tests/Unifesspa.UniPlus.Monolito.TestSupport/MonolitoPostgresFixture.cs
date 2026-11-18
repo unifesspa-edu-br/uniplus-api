@@ -88,34 +88,11 @@ public abstract class MonolitoPostgresFixtureBase<TFactory> : IAsyncLifetime
     {
         await Task.WhenAll(_postgres.StartAsync(), _rabbitMq.StartAsync(), IniciarDependenciasAsync()).ConfigureAwait(false);
 
-        _rabbitMqEnvVarPrevio = Environment.GetEnvironmentVariable(RabbitMqUriEnvVar);
-        _kafkaEnvVarPrevio = Environment.GetEnvironmentVariable(KafkaBootstrapEnvVar);
-        foreach (string envVar in ConnectionStringEnvVars)
-        {
-            _envVarsPrevios[envVar] = Environment.GetEnvironmentVariable(envVar);
-        }
+        GuardarEnvVarsPrevias();
 
         try
         {
-            foreach (string envVar in ConnectionStringEnvVars)
-            {
-                Environment.SetEnvironmentVariable(envVar, ConnectionString);
-            }
-
-            // Espaço em vez de string.Empty: em runtimes < .NET 9, string.Empty apaga
-            // a variável. O host não configura transporte Kafka em teste, mas
-            // neutralizamos por garantia (o routing Kafka só liga com SR + bootstrap).
-            Environment.SetEnvironmentVariable(KafkaBootstrapEnvVar, " ");
-            Environment.SetEnvironmentVariable(
-                RabbitMqUriEnvVar, $"amqp://uniplus_test:uniplus_test@{_rabbitMq.Hostname}:{_rabbitMq.GetMappedPublicPort(RabbitMqPort)}");
-
-            _factory = CreateFactory(ConnectionString);
-
-            // Força o boot (build + StartAsync): migrations criam os schemas e o
-            // Wolverine provisiona o outbox.
-            _ = _factory.Services;
-
-            await AprovarOCatalogoSemeadoAsync(_factory.Services).ConfigureAwait(false);
+            await IniciarFactoryAsync().ConfigureAwait(false);
         }
         catch
         {
@@ -124,26 +101,71 @@ public abstract class MonolitoPostgresFixtureBase<TFactory> : IAsyncLifetime
         }
     }
 
+    /// <summary>
+    /// Dependências extras (ex.: Mailpit) são liberadas mesmo se um dos Dispose anteriores lançar:
+    /// contêiner órfão sobrevive à suíte.
+    /// </summary>
     public async Task DisposeAsync()
     {
-        // Dependências extras (ex.: Mailpit) são liberadas mesmo se um dos Dispose anteriores lançar:
-        // contêiner órfão sobrevive à suíte.
         try
         {
-            if (_factory is not null)
-            {
-                await _factory.DisposeAsync().ConfigureAwait(false);
-            }
-
-            RestaurarEnvVars();
-
-            await _postgres.DisposeAsync().ConfigureAwait(false);
-            await _rabbitMq.DisposeAsync().ConfigureAwait(false);
+            await LiberarAsync().ConfigureAwait(false);
         }
         finally
         {
             await EncerrarDependenciasAsync().ConfigureAwait(false);
         }
+    }
+
+    private void GuardarEnvVarsPrevias()
+    {
+        _rabbitMqEnvVarPrevio = Environment.GetEnvironmentVariable(RabbitMqUriEnvVar);
+        _kafkaEnvVarPrevio = Environment.GetEnvironmentVariable(KafkaBootstrapEnvVar);
+        foreach (string envVar in ConnectionStringEnvVars)
+        {
+            _envVarsPrevios[envVar] = Environment.GetEnvironmentVariable(envVar);
+        }
+    }
+
+    private void ConfigurarEnvVars()
+    {
+        foreach (string envVar in ConnectionStringEnvVars)
+        {
+            Environment.SetEnvironmentVariable(envVar, ConnectionString);
+        }
+
+        // Espaço em vez de string.Empty: em runtimes < .NET 9, string.Empty apaga
+        // a variável. O host não configura transporte Kafka em teste, mas
+        // neutralizamos por garantia (o routing Kafka só liga com SR + bootstrap).
+        Environment.SetEnvironmentVariable(KafkaBootstrapEnvVar, " ");
+        Environment.SetEnvironmentVariable(
+            RabbitMqUriEnvVar, $"amqp://uniplus_test:uniplus_test@{_rabbitMq.Hostname}:{_rabbitMq.GetMappedPublicPort(RabbitMqPort)}");
+    }
+
+    private async Task IniciarFactoryAsync()
+    {
+        ConfigurarEnvVars();
+
+        _factory = CreateFactory(ConnectionString);
+
+        // Força o boot (build + StartAsync): migrations criam os schemas e o
+        // Wolverine provisiona o outbox.
+        _ = _factory.Services;
+
+        await AprovarOCatalogoSemeadoAsync(_factory.Services).ConfigureAwait(false);
+    }
+
+    private async Task LiberarAsync()
+    {
+        if (_factory is not null)
+        {
+            await _factory.DisposeAsync().ConfigureAwait(false);
+        }
+
+        RestaurarEnvVars();
+
+        await _postgres.DisposeAsync().ConfigureAwait(false);
+        await _rabbitMq.DisposeAsync().ConfigureAwait(false);
     }
 
     /// <summary>
