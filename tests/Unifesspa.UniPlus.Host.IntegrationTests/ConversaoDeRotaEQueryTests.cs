@@ -57,7 +57,12 @@ public sealed class ConversaoDeRotaEQueryTests
         resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
         JsonElement corpo = await Corpo(resposta);
+        ConferirEnvelopeCanonico(corpo);
+        ConferirDetalheSemEcoDoValorRecusado(corpo.GetProperty("detail").GetString()!);
+    }
 
+    private static void ConferirEnvelopeCanonico(JsonElement corpo)
+    {
         corpo.TryGetProperty("code", out JsonElement code).Should().BeTrue(
             "o catálogo de erros é o que o cliente programa contra — sem `code` ele não tem o que ler");
         code.GetString().Should().NotBeNullOrWhiteSpace();
@@ -65,9 +70,10 @@ public sealed class ConversaoDeRotaEQueryTests
         corpo.TryGetProperty("traceId", out JsonElement traceId).Should().BeTrue(
             "sem o traceId o suporte não liga a queixa do cliente ao registro do servidor");
         traceId.GetString().Should().NotBeNullOrWhiteSpace();
+    }
 
-        string detail = corpo.GetProperty("detail").GetString()!;
-
+    private static void ConferirDetalheSemEcoDoValorRecusado(string detail)
+    {
         detail.Should().NotContain("abc",
             "devolver o valor recusado dentro da mensagem é o que transforma a resposta de erro em superfície de " +
             "reflexão de conteúdo do cliente");
@@ -76,13 +82,15 @@ public sealed class ConversaoDeRotaEQueryTests
             "onde não há — o que faltava era o valor caber no tipo, não a declaração do parâmetro");
     }
 
+    /// <summary>
+    /// O outro lado da mudança, e o que ela não pode atropelar: aqui a conversão DEU CERTO — o
+    /// código é texto e chegou como texto — e quem reprovou foi a expressão regular, cuja
+    /// mensagem diz qual é o formato esperado. Trocá-la por uma recusa genérica tiraria do
+    /// cliente a única informação que o faz acertar na segunda tentativa.
+    /// </summary>
     [Fact(DisplayName = "A orientação de formato do parâmetro de rota continua chegando ao cliente")]
     public async Task Ler_QuandoParametroDeRotaReprovaNoFormato_DeveManterAMensagemQueEnsinaACorrigir()
     {
-        // O outro lado da mudança, e o que ela não pode atropelar: aqui a conversão DEU CERTO —
-        // o código é texto e chegou como texto — e quem reprovou foi a expressão regular, cuja
-        // mensagem diz qual é o formato esperado. Trocá-la por uma recusa genérica tiraria do
-        // cliente a única informação que o faz acertar na segunda tentativa.
         using HttpClient client = _fixture.Factory.CreateClient();
 
         using HttpResponseMessage resposta = await client.GetAsync(
@@ -96,13 +104,15 @@ public sealed class ConversaoDeRotaEQueryTests
             "é a mensagem escrita para este parâmetro, e é ela que ensina o cliente a corrigir");
     }
 
+    /// <summary>
+    /// A requisição erra as duas coisas: o código da rota não casa com o formato, e a data da
+    /// query não vira data. Uma recusa genérica de conversão engoliria a única frase que ensina
+    /// a corrigir. Entre afirmar pouco e apagar orientação, a regra é responder por quem tem mais
+    /// a dizer — e aqui quem tem mais a dizer é a validação.
+    /// </summary>
     [Fact(DisplayName = "Conversão e validação falhando juntas preservam a orientação específica")]
     public async Task Ler_QuandoConversaoEValidacaoFalhamJuntas_DeveManterAOrientacaoEspecifica()
     {
-        // A requisição erra as duas coisas: o código da rota não casa com o formato, e a data da
-        // query não vira data. Uma recusa genérica de conversão engoliria a única frase que
-        // ensina a corrigir. Entre afirmar pouco e apagar orientação, a regra é responder por
-        // quem tem mais a dizer — e aqui quem tem mais a dizer é a validação.
         using HttpClient client = _fixture.Factory.CreateClient();
 
         using HttpResponseMessage resposta = await client.GetAsync(

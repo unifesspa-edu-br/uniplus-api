@@ -79,14 +79,7 @@ public sealed class OpenApiPorModuloTests
 
     private async Task<IReadOnlyList<string>> ObterPathsAsync(string modulo)
     {
-        using HttpClient client = _fixture.Factory.CreateClient();
-
-        HttpResponseMessage response = await client.GetAsync(
-            new Uri($"/openapi/{modulo}.json", UriKind.Relative));
-        response.EnsureSuccessStatusCode();
-
-        string body = await response.Content.ReadAsStringAsync();
-        using JsonDocument doc = JsonDocument.Parse(body);
+        using JsonDocument doc = JsonDocument.Parse(await ObterCorpoDoOpenApiAsync(modulo));
 
         if (!doc.RootElement.TryGetProperty("paths", out JsonElement paths))
         {
@@ -94,5 +87,16 @@ public sealed class OpenApiPorModuloTests
         }
 
         return [.. paths.EnumerateObject().Select(p => p.Name)];
+    }
+
+    private async Task<string> ObterCorpoDoOpenApiAsync(string modulo)
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage response = await client.GetAsync(
+            new Uri($"/openapi/{modulo}.json", UriKind.Relative));
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadAsStringAsync();
     }
 }

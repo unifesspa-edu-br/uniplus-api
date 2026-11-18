@@ -52,20 +52,26 @@ public sealed class EnvioDeEmailTests
         string assunto = $"Reenvio {Guid.NewGuid():N}";
         _fixture.Factory.FalhasPendentes = 1;
 
-        // O que garante o "sem perda" é a fila durável: sem o roteamento, a mensagem iria para uma
-        // fila local em memória e o teste de reenvio passaria sem provar o outbox.
-        using (IServiceScope scope = _fixture.Factory.Services.CreateScope())
-        {
-            IMessageBus bus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
-            bus.PreviewSubscriptions(NovaMensagem(assunto)).Select(e => e.Destination?.ToString())
-                .Should().ContainSingle().Which.Should().Be("postgresql://email_envio/");
-        }
+        ConferirRoteadaParaAFilaDuravel(assunto);
 
         await PublicarAsync(assunto);
 
         // A primeira tentativa falha; o Wolverine retoma após o primeiro intervalo da política (1 s).
         JsonElement mensagem = await AguardarMensagemAsync(assunto, TimeSpan.FromSeconds(60));
         mensagem.GetProperty("To")[0].GetProperty("Address").GetString().Should().Be(Destinatario);
+    }
+
+    /// <summary>
+    /// O que garante o "sem perda" é a fila durável: sem o roteamento, a mensagem iria para uma
+    /// fila local em memória e o teste de reenvio passaria sem provar o outbox.
+    /// </summary>
+    private void ConferirRoteadaParaAFilaDuravel(string assunto)
+    {
+        using IServiceScope scope = _fixture.Factory.Services.CreateScope();
+        IMessageBus bus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
+
+        bus.PreviewSubscriptions(NovaMensagem(assunto)).Select(e => e.Destination?.ToString())
+            .Should().ContainSingle().Which.Should().Be("postgresql://email_envio/");
     }
 
     private async Task PublicarAsync(string assunto)
@@ -90,19 +96,30 @@ public sealed class EnvioDeEmailTests
 
         while (DateTime.UtcNow < fim)
         {
-            JsonElement lista = await mailpit.GetFromJsonAsync<JsonElement>("/api/v1/messages");
-            foreach (JsonElement resumo in lista.GetProperty("messages").EnumerateArray())
+            if (await ProcurarMensagemAsync(mailpit, assunto) is { } achada)
             {
-                if (resumo.GetProperty("Subject").GetString() == assunto)
-                {
-                    string id = resumo.GetProperty("ID").GetString()!;
-                    return await mailpit.GetFromJsonAsync<JsonElement>($"/api/v1/message/{id}");
-                }
+                return achada;
             }
 
             await Task.Delay(TimeSpan.FromMilliseconds(500));
         }
 
         throw new TimeoutException($"A mensagem '{assunto}' não chegou ao Mailpit em {limite}.");
+    }
+
+    private static async Task<JsonElement?> ProcurarMensagemAsync(HttpClient mailpit, string assunto)
+    {
+        JsonElement lista = await mailpit.GetFromJsonAsync<JsonElement>("/api/v1/messages");
+
+        foreach (JsonElement resumo in lista.GetProperty("messages").EnumerateArray())
+        {
+            if (resumo.GetProperty("Subject").GetString() == assunto)
+            {
+                string id = resumo.GetProperty("ID").GetString()!;
+                return await mailpit.GetFromJsonAsync<JsonElement>($"/api/v1/message/{id}");
+            }
+        }
+
+        return null;
     }
 }

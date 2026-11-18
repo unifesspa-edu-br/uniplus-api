@@ -90,6 +90,12 @@ public sealed class LeituraInProcessTests
             TipoUnidade.Centro,
             false).Value!;
 
+        await PersistirUnidadeAsync(unidade);
+        return unidade;
+    }
+
+    private async Task PersistirUnidadeAsync(Unidade unidade)
+    {
         // Semeia pelo contexto do container do host — o
         // schema `organizacao` já foi criado pelas migrations on startup no boot.
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
@@ -98,7 +104,5 @@ public sealed class LeituraInProcessTests
 
         dbContext.Unidades.Add(unidade);
         await dbContext.SaveChangesAsync(CancellationToken.None);
-
-        return unidade;
     }
 }

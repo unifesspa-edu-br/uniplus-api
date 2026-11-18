@@ -49,7 +49,15 @@ public sealed class RoteamentoSemColisaoTests
         EndpointDataSource dataSource =
             _fixture.Factory.Services.GetRequiredService<EndpointDataSource>();
 
-        var pares = dataSource.Endpoints
+        IReadOnlyList<string> colisoes = ColisoesEntre(ParesDeMetodoETemplate(dataSource));
+
+        colisoes.Should().BeEmpty(
+            "no monólito modular os 5 módulos compartilham o pipeline de roteamento; "
+            + "o prefixo api/<modulo>/ deve garantir templates únicos por (método, caminho)");
+    }
+
+    private static List<(string Metodo, string Template)> ParesDeMetodoETemplate(EndpointDataSource dataSource) =>
+        [.. dataSource.Endpoints
             .OfType<RouteEndpoint>()
             .SelectMany(endpoint =>
             {
@@ -58,19 +66,13 @@ public sealed class RoteamentoSemColisaoTests
                     ?? ["*"];
                 string template = endpoint.RoutePattern.RawText ?? string.Empty;
                 return metodos.Select(metodo => (Metodo: metodo, Template: template));
-            })
-            .ToList();
+            })];
 
-        IReadOnlyList<string> colisoes = pares
+    private static List<string> ColisoesEntre(List<(string Metodo, string Template)> pares) =>
+        [.. pares
             .GroupBy(p => p)
             .Where(grupo => grupo.Count() > 1)
-            .Select(grupo => $"{grupo.Key.Metodo} {grupo.Key.Template} (x{grupo.Count()})")
-            .ToList();
-
-        colisoes.Should().BeEmpty(
-            "no monólito modular os 5 módulos compartilham o pipeline de roteamento; "
-            + "o prefixo api/<modulo>/ deve garantir templates únicos por (método, caminho)");
-    }
+            .Select(grupo => $"{grupo.Key.Metodo} {grupo.Key.Template} (x{grupo.Count()})")];
 
     [Fact(DisplayName = "Cada módulo expõe rotas sob seu prefixo api/{modulo}/")]
     public void RotasDeModulo_SaoNamespacedPorPrefixo()
@@ -88,6 +90,10 @@ public sealed class RoteamentoSemColisaoTests
         endpoints.Should().OnlyContain(e => HasExpectedRoutePrefix(e));
     }
 
+    /// <summary>
+    /// GET de lista é [AllowAnonymous] e retorna 200 (lista, possivelmente populada por outros
+    /// testes da coleção) — prova que a rota namespaced resolve no processo co-hospedado, não 404.
+    /// </summary>
     [Fact(DisplayName = "Smoke: pipeline HTTP vivo (/health/live 200) e rotas de módulo resolvem (200)")]
     public async Task SmokeHttp_PipelineVivoERotasDeModuloResolvem()
     {
@@ -96,9 +102,6 @@ public sealed class RoteamentoSemColisaoTests
         HttpResponseMessage live = await client.GetAsync(new Uri("/health/live", UriKind.Relative));
         live.StatusCode.Should().Be(HttpStatusCode.OK, "o liveness do monólito deve responder");
 
-        // GET de lista é [AllowAnonymous] e retorna 200 (lista, possivelmente
-        // populada por outros testes da coleção) — prova que a rota namespaced
-        // resolve no processo co-hospedado, não 404.
         HttpResponseMessage campi = await client.GetAsync(
             new Uri("/api/configuracao/campi", UriKind.Relative));
         campi.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -110,17 +113,12 @@ public sealed class RoteamentoSemColisaoTests
 
     private static bool HasExpectedRoutePrefix(RouteEndpoint endpoint)
     {
-        ControllerActionDescriptor? actionDescriptor =
-            endpoint.Metadata.GetMetadata<ControllerActionDescriptor>();
-
-        Assembly? assembly = actionDescriptor?
+        Assembly? assembly = endpoint.Metadata.GetMetadata<ControllerActionDescriptor>()?
             .ControllerTypeInfo
             .Assembly;
         if (assembly is null) return false;
 
-        string moduleName = ApiModuleMetadata.GetRequiredName(assembly);
-        string prefix = $"api/{moduleName}";
-
+        string prefix = $"api/{ApiModuleMetadata.GetRequiredName(assembly)}";
         string template = endpoint.RoutePattern.RawText ?? string.Empty;
 
         return template == prefix || template.StartsWith(
