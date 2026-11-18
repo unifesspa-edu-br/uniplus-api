@@ -62,7 +62,7 @@ public interface IModalidadeRepository
     /// Indica se ESTE <paramref name="codigo"/> é referenciado por <b>outra</b>
     /// modalidade viva (excluindo <paramref name="excluirId"/>) — como
     /// <c>composicao_origem</c> OU como destino/par/fallback em
-    /// <c>remanejamento_args</c> (consulta jsonb). Base do bloqueio de remoção.
+    /// <c>remanejamento_parametros</c> (consulta jsonb). Base do bloqueio de remoção.
     /// </summary>
     Task<bool> EhReferenciadaPorOutraModalidadeVivaAsync(
         string codigo,

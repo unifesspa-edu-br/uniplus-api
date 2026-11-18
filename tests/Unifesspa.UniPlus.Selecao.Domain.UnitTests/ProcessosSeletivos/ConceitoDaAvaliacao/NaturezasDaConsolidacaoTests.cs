@@ -19,9 +19,9 @@ public sealed class NaturezasDaConsolidacaoTests
 {
     private const string HashQualquer = "0000000000000000000000000000000000000000000000000000000000000000";
 
-    private static RegraCatalogo Regra(string codigo, string versao, string esquemaArgs)
+    private static RegraCatalogo Regra(string codigo, string versao, string declaracaoDaRegra)
     {
-        using JsonDocument esquema = JsonDocument.Parse(esquemaArgs);
+        using JsonDocument esquema = JsonDocument.Parse(declaracaoDaRegra);
         using JsonDocument invariantes = JsonDocument.Parse("[]");
         return RegraCatalogo.Criar(codigo, versao, TipoRegra.RegraConsolidacao, esquema.RootElement, invariantes.RootElement, "Edital do processo seletivo");
     }

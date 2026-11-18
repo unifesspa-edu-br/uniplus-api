@@ -6589,11 +6589,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("character varying(30)")
                         .HasColumnName("regra_remanejamento");
 
-                    b.Property<string>("RemanejamentoArgs")
+                    b.Property<string>("RemanejamentoParametros")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("jsonb")
-                        .HasColumnName("remanejamento_args")
+                        .HasColumnName("remanejamento_parametros")
                         .HasDefaultValueSql("'{}'::jsonb");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
@@ -6640,7 +6640,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             IsDeleted = false,
                             NaturezaLegal = "AMPLA",
                             RegraDeAplicabilidade = "[]",
-                            RemanejamentoArgs = "{\"destino\":null,\"par\":null,\"fallback\":null}"
+                            RemanejamentoParametros = "{\"destino\":null,\"par\":null,\"fallback\":null}"
                         },
                         new
                         {
@@ -6654,7 +6654,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             NaturezaLegal = "COTA_RESERVADA",
                             RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"EM\",\"valor\":[\"PRETA\",\"PARDA\"]},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}],[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"IGUAL\",\"valor\":\"INDIGENA\"},{\"fato\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "SEGUE_CASCATA",
-                            RemanejamentoArgs = "{\"destino\":null,\"par\":null,\"fallback\":null}"
+                            RemanejamentoParametros = "{\"destino\":null,\"par\":null,\"fallback\":null}"
                         },
                         new
                         {
@@ -6668,7 +6668,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             NaturezaLegal = "COTA_RESERVADA",
                             RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_Q\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "SEGUE_CASCATA",
-                            RemanejamentoArgs = "{\"destino\":null,\"par\":null,\"fallback\":null}"
+                            RemanejamentoParametros = "{\"destino\":null,\"par\":null,\"fallback\":null}"
                         },
                         new
                         {
@@ -6682,7 +6682,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             NaturezaLegal = "COTA_RESERVADA",
                             RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "SEGUE_CASCATA",
-                            RemanejamentoArgs = "{\"destino\":null,\"par\":null,\"fallback\":null}"
+                            RemanejamentoParametros = "{\"destino\":null,\"par\":null,\"fallback\":null}"
                         },
                         new
                         {
@@ -6696,7 +6696,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             NaturezaLegal = "COTA_RESERVADA",
                             RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "SEGUE_CASCATA",
-                            RemanejamentoArgs = "{\"destino\":null,\"par\":null,\"fallback\":null}"
+                            RemanejamentoParametros = "{\"destino\":null,\"par\":null,\"fallback\":null}"
                         },
                         new
                         {
@@ -6710,7 +6710,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             NaturezaLegal = "COTA_RESERVADA",
                             RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"EM\",\"valor\":[\"PRETA\",\"PARDA\"]},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true}],[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"IGUAL\",\"valor\":\"INDIGENA\"},{\"fato\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "SEGUE_CASCATA",
-                            RemanejamentoArgs = "{\"destino\":null,\"par\":null,\"fallback\":null}"
+                            RemanejamentoParametros = "{\"destino\":null,\"par\":null,\"fallback\":null}"
                         },
                         new
                         {
@@ -6724,7 +6724,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             NaturezaLegal = "COTA_RESERVADA",
                             RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_Q\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "SEGUE_CASCATA",
-                            RemanejamentoArgs = "{\"destino\":null,\"par\":null,\"fallback\":null}"
+                            RemanejamentoParametros = "{\"destino\":null,\"par\":null,\"fallback\":null}"
                         },
                         new
                         {
@@ -6738,7 +6738,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             NaturezaLegal = "COTA_RESERVADA",
                             RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "SEGUE_CASCATA",
-                            RemanejamentoArgs = "{\"destino\":null,\"par\":null,\"fallback\":null}"
+                            RemanejamentoParametros = "{\"destino\":null,\"par\":null,\"fallback\":null}"
                         },
                         new
                         {
@@ -6752,7 +6752,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             NaturezaLegal = "COTA_RESERVADA",
                             RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "SEGUE_CASCATA",
-                            RemanejamentoArgs = "{\"destino\":null,\"par\":null,\"fallback\":null}"
+                            RemanejamentoParametros = "{\"destino\":null,\"par\":null,\"fallback\":null}"
                         },
                         new
                         {
@@ -6767,7 +6767,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             NaturezaLegal = "ACAO_AFIRMATIVA",
                             RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":false},{\"fato\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "DESTINO_UNICO",
-                            RemanejamentoArgs = "{\"destino\":\"AC\",\"par\":null,\"fallback\":null}"
+                            RemanejamentoParametros = "{\"destino\":\"AC\",\"par\":null,\"fallback\":null}"
                         },
                         new
                         {
@@ -6781,7 +6781,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             NaturezaLegal = "ACAO_AFIRMATIVA",
                             RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":false},{\"fato\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_VAGA_POR_ACRESCIMO\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "CRUZADO",
-                            RemanejamentoArgs = "{\"destino\":null,\"par\":\"AC_Q\",\"fallback\":null}"
+                            RemanejamentoParametros = "{\"destino\":null,\"par\":\"AC_Q\",\"fallback\":null}"
                         },
                         new
                         {
@@ -6795,7 +6795,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             NaturezaLegal = "ACAO_AFIRMATIVA",
                             RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":false},{\"fato\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_VAGA_POR_ACRESCIMO\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "CRUZADO",
-                            RemanejamentoArgs = "{\"destino\":null,\"par\":\"AC_I\",\"fallback\":null}"
+                            RemanejamentoParametros = "{\"destino\":null,\"par\":\"AC_I\",\"fallback\":null}"
                         });
                 });
 
@@ -11908,11 +11908,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<string>("Args")
-                        .IsRequired()
-                        .HasColumnType("json")
-                        .HasColumnName("args");
-
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -11920,6 +11915,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<int>("Ordem")
                         .HasColumnType("integer")
                         .HasColumnName("ordem");
+
+                    b.Property<string>("Parametros")
+                        .IsRequired()
+                        .HasColumnType("json")
+                        .HasColumnName("parametros");
 
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")
@@ -14255,10 +14255,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<string>("EsquemaArgs")
+                    b.Property<string>("DeclaracaoDaRegra")
                         .IsRequired()
                         .HasColumnType("jsonb")
-                        .HasColumnName("esquema_args");
+                        .HasColumnName("declaracao_da_regra");
 
                     b.Property<string>("Hash")
                         .IsRequired()
@@ -14307,8 +14307,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "Proposta CEPS + #56; média ponderada NOTA=Σ(nota×peso)/Σpeso",
                             Codigo = "FORMULA-MEDIA-PONDERADA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{\"fonte_pesos\":[\"etapa\",\"peso_area_enem\"]}",
-                            Hash = "a6fdc29bce533ef3cf8acb6cfdd7d67a99104541f6201d227f0d1c7051229ad6",
+                            DeclaracaoDaRegra = "{\"fonte_pesos\":[\"etapa\",\"peso_area_enem\"]}",
+                            Hash = "19e7eb71db8366ffffe886f8cf197182b770ad76cc9412e347de3fa4336fe2a4",
                             Invariantes = "[\"divisor = Σ(peso das etapas classificatória∪ambas)\"]",
                             Tipo = "regra_calculo",
                             Versao = "v1"
@@ -14319,8 +14319,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "Portaria MEC 18/2012 art. 16 — SiSU federal (CEPS não calcula)",
                             Codigo = "CLASSIFICACAO-IMPORTADA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{}",
-                            Hash = "8e6f1f7b705c601991bf0617bbf881e39a3666c641abdfa4c1bd9ce2ecbcc85c",
+                            DeclaracaoDaRegra = "{}",
+                            Hash = "9cfe24c7afcee8fc87daf9f9bbc8a7b80d3a1df7401e24000ef463f43a472782",
                             Invariantes = "[\"sem cálculo local; classificação federal por importação do listão\"]",
                             Tipo = "regra_calculo",
                             Versao = "v1"
@@ -14331,8 +14331,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "Decisão CEPS/PO (gaps 1.1) — truncamento 2 casas (default)",
                             Codigo = "PRECISAO-TRUNCAR",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{\"casas\":\"integer\"}",
-                            Hash = "66cbb932e61982f09fdd1d60a0db8411ea02dedc19bb72d1af23004f1e18360b",
+                            DeclaracaoDaRegra = "{}",
+                            Hash = "3dab0ed7db55a129d6e166d7a29abf872a701ff63e7813e0f0443dc09ddd8525",
                             Invariantes = "[\"trunca na N-ésima casa, sem arredondar\"]",
                             Tipo = "regra_arredondamento",
                             Versao = "v1"
@@ -14343,8 +14343,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "Reprodução de editais antigos (PSE/Convênios)",
                             Codigo = "PRECISAO-ARREDONDAR-CIMA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{\"casas\":\"integer\"}",
-                            Hash = "efc491bf6a242a870c7bf9969048c198db88116ba39e72a44bcf1d5d5aebc4fb",
+                            DeclaracaoDaRegra = "{}",
+                            Hash = "46da4f2755448705ee2105b6dd4f04b8ddac34ae54f1aeca92f62403031755de",
                             Invariantes = "[\"arredonda p/ cima se 3ª casa ≥ 5\"]",
                             Tipo = "regra_arredondamento",
                             Versao = "v1"
@@ -14355,8 +14355,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "Edital por processo (nota mínima eliminatória)",
                             Codigo = "ELIM-NOTA-MINIMA-ETAPA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{\"etapa\":\"text\",\"nota_minima\":\"numeric\"}",
-                            Hash = "b64f643eba9744efc20bf19221bde85c645da32262a7d2ef616f18bd7c2ed5ac",
+                            DeclaracaoDaRegra = "{}",
+                            Hash = "617f3c2475f598a7b603575cc2b15015b3a6cc2da69e6b36f783e24a5f6ce5d3",
                             Invariantes = "[\"nota < mínima na etapa → elimina\"]",
                             Tipo = "regra_eliminacao",
                             Versao = "v1"
@@ -14367,8 +14367,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "Res. 805/2024 art. 5º e Anexo I (ponto de corte por área do ENEM; Redação = 400)",
                             Codigo = "ELIM-CORTE-EM-AREA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{\"area_codigo\":\"text\",\"minimo\":\"numeric\"}",
-                            Hash = "2b664ed9b782ce9e4b47c70063fd2c2f5bc225c74301fcc801600956d856ad4a",
+                            DeclaracaoDaRegra = "{}",
+                            Hash = "cd75036daf99e45f55147484860221ba8318552b5246b9f2c089457cd360d90f",
                             Invariantes = "[\"nota na área < mínimo → elimina\",\"no máximo um corte por área\"]",
                             Tipo = "regra_eliminacao",
                             Versao = "v1"
@@ -14379,8 +14379,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "Res. 805/2024 art. 5º (zero em qualquer área elimina)",
                             Codigo = "ELIM-ZERO-EM-AREA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{}",
-                            Hash = "75f4929b848138c8ed939a182e3664451ce38cd40a136adda438b62e1b6e3fb8",
+                            DeclaracaoDaRegra = "{}",
+                            Hash = "d386e1056176df828c484483cf3d35fe751c39515a156ed4b27fec33ed304c42",
                             Invariantes = "[\"nota zero em qualquer área do ENEM → elimina\"]",
                             Tipo = "regra_eliminacao",
                             Versao = "v1"
@@ -14391,8 +14391,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "Edital (falta em dia de prova do ENEM)",
                             Codigo = "ELIM-FALTA-EM-DIA-DE-PROVA-ENEM",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{}",
-                            Hash = "72c9dc358aaa3e81e2ccb08bc6d9ec3c0842c0a1aec5c001e2526c518bb3f3aa",
+                            DeclaracaoDaRegra = "{}",
+                            Hash = "49975e49b82c3f823938d1c89f15eba026acd1ee00088688b0b5e54107acdc19",
                             Invariantes = "[\"falta em pelo menos um dia de prova da edição do ENEM usada no processo → elimina\",\"sem participação registrada na edição do ENEM indicada pelo candidato equivale a falta\"]",
                             Tipo = "regra_eliminacao",
                             Versao = "v1"
@@ -14403,8 +14403,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "Edital (eliminação do candidato que faltar à etapa)",
                             Codigo = "ELIM-AUSENCIA-NA-ETAPA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{\"etapa_ref\":\"text\"}",
-                            Hash = "679d25bb9ac2d0948473cb183f5b8063a5caf3955a903980d6f3ed2af750035c",
+                            DeclaracaoDaRegra = "{}",
+                            Hash = "945883414c6954eaa0666665d9eb10997b2d73a4ae3c296a4662b4ea44d4c682",
                             Invariantes = "[\"falta à etapa referenciada → elimina\",\"não se aplica à etapa de nota do ENEM\"]",
                             Tipo = "regra_eliminacao",
                             Versao = "v1"
@@ -14415,9 +14415,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "Bônus multiplicativo aplicado à nota final após os pesos das áreas do ENEM, sem teto por padrão",
                             Codigo = "BONUS-MULTIPLICATIVO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{\"fator\":\"numeric\",\"teto\":\"numeric|null\"}",
-                            Hash = "76a46eef115f27a52873a21eeee988a7d6978993ae535c026fa2c2d250d3acd1",
-                            Invariantes = "[\"nota_final × fator, após os pesos; teto opcional\"]",
+                            DeclaracaoDaRegra = "{}",
+                            Hash = "9a0a48e57734722f2165876fd9806b3e69098e6f5252c1d00221c3996ea123f3",
+                            Invariantes = "[\"nota final multiplicada pelo fator, após os pesos; teto opcional\"]",
                             Tipo = "regra_bonus",
                             Versao = "v1"
                         },
@@ -14427,9 +14427,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "Lei 10.741/2003 art. 27 (Estatuto do Idoso)",
                             Codigo = "DESEMPATE-IDOSO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{\"idade_minima\":\"integer\"}",
-                            Hash = "6738b1a9ca4f063f7f215cabb837e055d8abafaf0835f0b3deeed1c97f0becd4",
-                            Invariantes = "[\"prioriza quem satisfaz FAIXA_ETARIA ≥ idade_minima\"]",
+                            DeclaracaoDaRegra = "{}",
+                            Hash = "e2d5aa49299ca4d401b24c4581e2252ef72cd302b41f0e4f37f838d54ee7a323",
+                            Invariantes = "[\"prioriza quem tem idade igual ou superior à idade mínima declarada no critério\"]",
                             Tipo = "criterio_desempate",
                             Versao = "v1"
                         },
@@ -14439,8 +14439,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "Edital (ordem de desempate)",
                             Codigo = "DESEMPATE-MAIOR-NOTA-ETAPA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{\"etapa\":\"text\"}",
-                            Hash = "1a988e6681b2970dc6c568c7372ceaf2f6e5ec0f7061ac47f656e1366a9ecad8",
+                            DeclaracaoDaRegra = "{}",
+                            Hash = "1d007290da9c0dd131f4fad538138bcc830f49ec55b4a494160ba3cf1574d125",
                             Invariantes = "[\"ordena por maior nota da etapa indicada\"]",
                             Tipo = "criterio_desempate",
                             Versao = "v1"
@@ -14451,8 +14451,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "Edital (maior idade cronológica)",
                             Codigo = "DESEMPATE-MAIOR-IDADE",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{}",
-                            Hash = "1efa26eaeffc88baf31ce9e2030c05c9976fae125e9845fe0283168050dc1237",
+                            DeclaracaoDaRegra = "{}",
+                            Hash = "f3e04f52843030533e4c590764155903667ea05cc395a76655ddfd4967f9b4da",
                             Invariantes = "[\"ordena por data de nascimento (nascido mais cedo vence)\"]",
                             Tipo = "criterio_desempate",
                             Versao = "v1"
@@ -14463,9 +14463,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "Edital (critério adicional via fato do candidato — ex.: professor rural)",
                             Codigo = "DESEMPATE-PREDICADO-FATO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{\"fato\":\"text\",\"operador\":\"text\",\"valor\":\"any\"}",
-                            Hash = "d832d910826f25b6b50fd324f2f3cae472440c0e81e082be7c8d4fefe3de3f21",
-                            Invariantes = "[\"prioriza quem satisfaz predicado sobre FatoCandidato; fato deve estar no vocabulário e ser coletado\"]",
+                            DeclaracaoDaRegra = "{}",
+                            Hash = "5bdc4dc67c4cacc8550d0b521704de7adbb176eb1a4cfa62cc320b4354202312",
+                            Invariantes = "[\"prioriza quem atende à condição sobre um dado do candidato; o dado deve estar cadastrado e ser solicitado\"]",
                             Tipo = "criterio_desempate",
                             Versao = "v1"
                         },
@@ -14475,9 +14475,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "Edital (ordem de desempate por nota de área do ENEM)",
                             Codigo = "DESEMPATE-MAIOR-NOTA-AREA-ENEM",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{\"areas\":\"text[]\"}",
-                            Hash = "81fd6b28df7be85dcfdeb6301d849029d1ac7066cd661e2e60e17fe817b74843",
-                            Invariantes = "[\"ordena por maior nota na primeira área da lista; o empate que resta passa à área seguinte\",\"cada área é citada uma única vez, pelo código, e existe em todos os grupos do quadro de pesos por área congelado na classificação\",\"exige classificação baseada em ENEM, calculada pela média ponderada\"]",
+                            DeclaracaoDaRegra = "{}",
+                            Hash = "fa627f59003c26fe75e0797380520790e2d5c85e2c410f9bba903ca1973fb7b4",
+                            Invariantes = "[\"ordena por maior nota na primeira área da lista; o empate que resta passa à área seguinte\",\"cada área é citada uma única vez, pelo código, e existe em todos os grupos do quadro de pesos por área registrado na versão da classificação\",\"exige classificação baseada em ENEM, calculada pela média ponderada\"]",
                             Tipo = "criterio_desempate",
                             Versao = "v1"
                         },
@@ -14487,8 +14487,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "UNI-REQ-0045 — processamento da 1ª opção antes da 2ª",
                             Codigo = "ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{}",
-                            Hash = "2b70a91223c2d03b6e89ce77ae88699dbfa3ed6c9c3e84fae88b8dc3b4c9444b",
+                            DeclaracaoDaRegra = "{}",
+                            Hash = "91d63d7b9ef29893df02e1e7d96261e1dae304926ce9fa44722f3fbd447dae29",
                             Invariantes = "[\"processam-se todas as 1ªs opções de cada curso\",\"a vaga de modalidade não preenchida é remanejada dentro do curso, entre candidatos de 1ª opção\",\"só a vaga que sobra depois do remanejamento vai à 2ª opção, em ordem de nota, sem deslocar aprovado de 1ª opção\",\"quem não é classificado em nenhuma opção vai para a lista de espera\"]",
                             Tipo = "regra_ordem_alocacao",
                             Versao = "v1"
@@ -14499,21 +14499,21 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "Lei 12.711/2012 art. 1º parágrafo único (red. Lei 14.723/2023) — renda familiar bruta per capita ≤ 1 SM (ensino superior); PN MEC 18/2012 art. 6º-7º — apuração da renda mensal per capita + exclusões obrigatórias",
                             Codigo = "RENDA-PER-CAPITA-LEI-12711",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{\"limite_sm\":\"numeric\",\"sm_referencia\":\"numeric (SM congelado na data de início das inscrições)\",\"periodo_apuracao_meses\":\"integer (ex.: 3 últimos meses)\",\"criterio_media_mensal\":\"text (média mensal dos rendimentos brutos)\",\"exclusoes_renda\":\"lista (PN 18/2012 art. 7º)\",\"composicao_nucleo_familiar\":\"quem compõe o núcleo familiar\"}",
-                            Hash = "5a1ad80627e354c03e4d6ef776a45db695a1203cea574a288dbcdf706ca58899",
-                            Invariantes = "[\"média mensal da renda familiar bruta (últimos N meses, após exclusões) ÷ nº de membros do núcleo ≤ limite_sm × sm_referencia\"]",
+                            DeclaracaoDaRegra = "{}",
+                            Hash = "2460afa057fa3154dbd788f2b8ce3770fd1407be1dacff1afb25737548ea7439",
+                            Invariantes = "[\"média mensal da renda familiar bruta no período considerado, após exclusões, dividida pelo número de membros da família deve ser menor ou igual ao limite em salários mínimos multiplicado pelo valor de referência do salário mínimo\"]",
                             Tipo = "regra_elegibilidade",
                             Versao = "v1"
                         },
                         new
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000017"),
-                            BaseLegal = "Portaria MEC 18/2012 art. 11, parágrafo único (red. PN 2.027/2023) — cap nas vagas da oferta + prioridade do inciso III (LB) sobre o inciso IV (LI); art. 10 II (mínimo 50%, piso)",
+                            BaseLegal = "Portaria MEC 18/2012 art. 11, parágrafo único (red. PN 2.027/2023) — reserva limitada às vagas da oferta e prioridade do inciso III (LB) sobre o inciso IV (LI); art. 10 II (mínimo 50%, piso)",
                             Codigo = "RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{\"reconciliacao_federal\":\"CAP_VO + PRIORIDADE_LB (art. 11 §único, embutida em DISTRIBUICAO-LEI-12711)\",\"motores_nao_art10\":\"REDUZIR_DE | REDUZIR_PROPORCIONAL_EM (apenas distribuições institucionais; clamp >=0; VEDADOS à Lei 12.711)\"}",
-                            Hash = "a32d7703bfe58a9c8e8b813f510190079541d2edc7df168767d1dc6d280e252f",
-                            Invariantes = "[\"cap em VO: a reserva nunca excede as vagas da oferta (art. 11 §único I)\",\"prioridade LB>LI: na escassez a LI cede primeiro (art. 11 §único II)\",\"estouro sobre o nominal 50% (VR) e LEGAL — piso (art. 10 II), absorvido pela AC\",\"curso pequeno e determinístico por lei (capa, não bloqueia)\"]",
+                            DeclaracaoDaRegra = "{}",
+                            Hash = "efb16d5af5080f290a4f9c06ae05399f01879b38d8f57838a8f05b09a89a45cb",
+                            Invariantes = "[\"a reserva nunca excede as vagas da oferta (art. 11 §único I)\",\"na falta de vagas, as modalidades de baixa renda têm prioridade sobre as demais (art. 11 §único II)\",\"a reserva pode superar o mínimo legal de 50%, reduzindo as vagas da ampla concorrência (art. 10 II)\",\"a distribuição em cursos com poucas vagas segue o limite previsto em lei, sem impedir a oferta\"]",
                             Tipo = "regra_ajuste_distribuicao_vagas",
                             Versao = "v1"
                         },
@@ -14523,9 +14523,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "Lei 9.784/1999 art. 56 (cabimento do recurso administrativo) e art. 61 (efeito suspensivo por decisão fundamentada); prazo configurável por edital",
                             Codigo = "RECURSO-PRAZO-ANCORADO-EM-ATO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{\"prazo_valor\":\"numeric (> 0) — inteiro quando a unidade é DIAS_UTEIS\",\"prazo_unidade\":\"DIAS_UTEIS|HORAS (sem default — dado do edital; DIAS não é declarável na interposição)\",\"suspensividade_primeira_instancia\":\"{valor:numeric, unidade:HORAS|DIAS|DIAS_UTEIS} | null — null = a pendência na fase não bloqueia atos irreversíveis\",\"suspensividade_segunda_instancia\":\"{valor:numeric, unidade:HORAS|DIAS|DIAS_UTEIS} | null — null = a pendência em instância superior não bloqueia (via judicial, prazo indeterminado)\"}",
-                            Hash = "42cbba27f7e36789437ecb469c74476c99a37baaf66404769774eeff619b9e2d",
-                            Invariantes = "[\"o Uni+ gere apenas a 1ª instância — o julgamento em instância superior (administrativa ou judicial) corre FORA do sistema; a sua existência e o seu desfecho são REGISTRADOS como ato publicado\",\"a suspensividade é configurável por fase e por grau: null = a pendência não bloqueia atos irreversíveis\",\"a janela de suspensividade fecha no julgamento OU no fim do prazo, o que vier primeiro — recurso nunca julgado não trava o certame para sempre\",\"interposição só é aceita com a janela da fase de recurso aberta\",\"não cabe recurso contra resultado definitivo\",\"prazo ancorado no instante de publicação do ato âncora: se o ato atrasa, o prazo desliza junto, sem retificação\",\"a âncora é um produto PRELIMINAR publicado pela própria fase, referenciado pela identidade da publicação e não pelo código do tipo de ato — o mesmo tipo publicado por outra fase do cronograma não é âncora desta\",\"a âncora nunca é um tipo de ato que congela configuração\",\"o prazo de INTERPOSIÇÃO corre exclusivamente em dia útil e admite apenas DIAS_UTEIS em valor inteiro ou HORAS — DIAS corridos é recusado, e fração de dia útil também, cada um com causa própria; nunca aproximado em silêncio\",\"contagem sobre dia útil depende de duas declarações do processo, o calendário de dias úteis vigente da localidade regente e a convenção de contagem — vale para todo prazo de INTERPOSIÇÃO, nas duas unidades, e para a suspensividade em DIAS_UTEIS\",\"a suspensividade em HORAS ou em DIAS corridos não depende de calendário nem de convenção de contagem — conta todos os dias, sem distinguir úteis de não úteis\",\"append-only: julgamento e retificação são NOVO fato, não sobrescrevem o passado\"]",
+                            DeclaracaoDaRegra = "{}",
+                            Hash = "595a2d755e2f9ded25793c6f433964f36f4b9d314ef3a1183e45f57ed4d5bd02",
+                            Invariantes = "[\"o Uni+ gere apenas a 1ª instância — o julgamento em instância superior (administrativa ou judicial) corre FORA do sistema; a sua existência e o seu desfecho são REGISTRADOS como ato publicado\",\"a suspensividade é configurável por fase e por grau: sem prazo de suspensividade, a pendência não impede atos irreversíveis\",\"o período de suspensividade termina no julgamento ou no fim do prazo, o que ocorrer primeiro — recurso sem julgamento não impede o andamento do certame indefinidamente\",\"interposição só é aceita durante o período da fase de recurso\",\"não cabe recurso contra resultado definitivo\",\"o prazo começa no instante da publicação do ato: se a publicação atrasa, o prazo acompanha o atraso, sem retificação\",\"o evento que inicia o prazo é a publicação de um produto preliminar da própria fase, identificado pela publicação e não pelo código do tipo de ato — a publicação do mesmo tipo por outra fase do cronograma não inicia o prazo desta\",\"o evento que inicia o prazo nunca é um ato que registra a configuração da versão publicada\",\"o prazo de interposição corre exclusivamente em dia útil e admite apenas dias úteis em valor inteiro ou horas — dias corridos são recusados, e fração de dia útil também, cada um com causa própria; nunca aproximado em silêncio\",\"contagem sobre dia útil depende de duas declarações do processo, o calendário de dias úteis vigente da localidade regente e a convenção de contagem — vale para todo prazo de interposição, nas duas unidades, e para a suspensividade em dias úteis\",\"a suspensividade em horas ou em dias corridos não depende de calendário nem de convenção de contagem — conta todos os dias, sem distinguir úteis de não úteis\",\"julgamento e retificação são novos fatos e não sobrescrevem os registros anteriores\"]",
                             Tipo = "regra_prazo_recurso",
                             Versao = "v1"
                         },
@@ -14535,9 +14535,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "Portaria MEC nº 704/2025 (DOU 20/10/2025, Seção 1, p. 36-37), art. 2º e Anexo — insere o art. 20-A na Portaria Normativa MEC nº 21/2012; Lei 12.711/2012 art. 3º §1º (red. Lei 14.723/2023)",
                             Codigo = "REMANEJ-CASCATA-LEI-12711",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{\"fallbackCodigo\":\"AC\",\"ordens\":[\n  {\"origem\":\"LB_PPI\",\"destinos\":[\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LB_Q\",\"destinos\":[\"LB_PPI\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LB_PCD\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LB_EP\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LI_PPI\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LI_Q\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LI_PCD\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_EP\"]},\n  {\"origem\":\"LI_EP\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\"]}\n]}",
-                            Hash = "70f96f9fa5b2c5282adba8028070fdf0a82bef99408693d17d913c51d0c5078a",
-                            Invariantes = "[\"oito origens federais, ordem fixa por origem, terminal sempre AC — matriz não recalculada, só aplicada\"]",
+                            DeclaracaoDaRegra = "{\"fallbackCodigo\":\"AC\",\"ordens\":[\n  {\"origem\":\"LB_PPI\",\"destinos\":[\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LB_Q\",\"destinos\":[\"LB_PPI\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LB_PCD\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LB_EP\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LI_PPI\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LI_Q\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LI_PCD\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_EP\"]},\n  {\"origem\":\"LI_EP\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\"]}\n]}",
+                            Hash = "06ec7280bb66571912648d9e6a1c6948745dc7b1dbdc30b3b43ad46c42deb04d",
+                            Invariantes = "[\"oito origens federais, ordem fixa por origem e ampla concorrência como modalidade final — a ordem é aplicada sem recálculo\"]",
                             Tipo = "criterio_remanejamento",
                             Versao = "v1"
                         },
@@ -14547,9 +14547,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "O edital de abertura é o fundamento normativo do prazo de interposição e declara a convenção pela qual ele se conta (UNI-REQ-0095): na ausência de norma específica que fixe outro prazo, o edital estabelece o seu, e o sistema congela e reproduz o declarado sem julgar a escolha. Decisão institucional juridicamente orientada — não é parecer formal nem jurisprudência consolidada. Não dispõe sobre efeito suspensivo, cuja confirmação é dependência própria (UNI-REQ-0117).",
                             Codigo = "CONTAGEM-PRAZO-EXCLUI-DIA-INICIAL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{}",
-                            Hash = "fce95fc44b52a5a93a697b0309659a5af0085f9d39ceac1c3917c7b00b1c0be5",
-                            Invariantes = "[\"âncora fora da meia-noite: a hora da âncora não influencia o fechamento — o dia civil da âncora é excluído por inteiro e a contagem parte do primeiro dia útil seguinte (1 dia útil ancorado sexta 18h, sem feriado no intervalo, fecha no fim de segunda)\",\"âncora em dia não útil: o início desloca para o primeiro dia útil seguinte; o dia da âncora, útil ou não, nunca conta (1 dia útil ancorado domingo 18h, sem feriado no intervalo, fecha no fim de segunda)\",\"em dias úteis: N dias úteis inteiros contados após o dia excluído; a janela fecha na fronteira final do N-ésimo dia útil — dia civil fechado no início e aberto no fim, no fuso congelado\",\"em horas: a contagem começa no primeiro instante do primeiro dia útil seguinte ao dia da âncora e consome apenas horas situadas em dia útil (48h ancoradas sexta 18h, sem feriado no intervalo, começam segunda 00:00 e fecham quarta 00:00)\"]",
+                            DeclaracaoDaRegra = "{}",
+                            Hash = "64e9c6c59b5d9a4e25a6c2fee46689fcc1c2c439aa9d33bd148dd8c74371a562",
+                            Invariantes = "[\"evento que inicia o prazo fora da meia-noite: a hora do evento que inicia o prazo não influencia o fechamento — o dia civil do evento que inicia o prazo é excluído por inteiro e a contagem parte do primeiro dia útil seguinte (1 dia útil iniciado sexta às 18h, sem feriado no intervalo, fecha no fim de segunda)\",\"evento que inicia o prazo em dia não útil: o início desloca para o primeiro dia útil seguinte; o dia do evento que inicia o prazo, útil ou não, nunca conta (1 dia útil iniciado domingo às 18h, sem feriado no intervalo, fecha no fim de segunda)\",\"em dias úteis: N dias úteis inteiros contados após o dia excluído; o prazo termina à meia-noite que inicia o dia seguinte ao N-ésimo dia útil; esse instante não está incluído no prazo, conforme o fuso horário registrado na versão publicada\",\"em horas: a contagem começa no primeiro instante do primeiro dia útil seguinte ao dia do evento que inicia o prazo e consome apenas horas situadas em dia útil (48h iniciadas sexta às 18h, sem feriado no intervalo, começam segunda 00:00 e fecham quarta 00:00)\"]",
                             Tipo = "algoritmo_contagem_prazo",
                             Versao = "v1"
                         },
@@ -14559,9 +14559,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "O edital de abertura é o fundamento normativo do prazo de interposição e declara a convenção pela qual ele se conta (UNI-REQ-0095): na ausência de norma específica que fixe outro prazo, o edital estabelece o seu, e o sistema congela e reproduz o declarado sem julgar a escolha. Decisão institucional juridicamente orientada — não é parecer formal nem jurisprudência consolidada. Não dispõe sobre efeito suspensivo, cuja confirmação é dependência própria (UNI-REQ-0117).",
                             Codigo = "CONTAGEM-PRAZO-HORAS-UTEIS-DESDE-ANCORA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{}",
-                            Hash = "49b637293aaaa71449dcb971fc548c59fc840545d2d1740ac352f858a291105b",
-                            Invariantes = "[\"âncora fora da meia-noite: a contagem parte do instante exato da âncora — a hora do fechamento deriva da hora da âncora, sem deslocamento para fronteira de dia (48h ancoradas sexta 18h, com sábado e domingo não úteis e sem feriado, fecham terça 18h)\",\"âncora em dia não útil: o início não desloca — o relógio não avança em instante situado em dia não útil e o primeiro avanço ocorre no primeiro instante útil seguinte (24h ancoradas domingo 18h, com segunda útil, só começam a consumir segunda 00:00 e fecham terça 00:00)\",\"em horas: consome exatamente o valor declarado em horas situadas em dia útil, atravessando a madrugada de dia útil normalmente; fecha no instante em que o saldo zera\",\"em dias úteis: N dias úteis equivalem a N×24 horas situadas em dia útil consumidas desde a âncora; dia civil de transição de fuso contribui com as horas que realmente tem, nunca um bloco presumido de 24 (1 dia útil ancorado sexta 18h, sem feriado no intervalo, fecha segunda 18h)\"]",
+                            DeclaracaoDaRegra = "{}",
+                            Hash = "1319f925c7af96f337a34e8b705c6a40bd6d124dcc9e7bf9f5f1fd2d43d18cc6",
+                            Invariantes = "[\"evento que inicia o prazo fora da meia-noite: a contagem parte do instante exato do evento que inicia o prazo — a hora do fechamento deriva da hora do evento que inicia o prazo, sem deslocamento para o início de outro dia (48h iniciadas sexta às 18h, com sábado e domingo não úteis e sem feriado, fecham terça 18h)\",\"evento que inicia o prazo em dia não útil: o início não desloca — o relógio não avança em instante situado em dia não útil e o primeiro avanço ocorre no primeiro instante útil seguinte (24h iniciadas domingo às 18h, com segunda útil, só começam a consumir segunda 00:00 e fecham terça 00:00)\",\"em horas: consome exatamente o valor declarado em horas situadas em dia útil, atravessando a madrugada de dia útil normalmente; fecha no instante em que o saldo zera\",\"em dias úteis: N dias úteis equivalem a N×24 horas situadas em dia útil consumidas desde o evento que inicia o prazo; dia civil de transição de fuso contribui com as horas que realmente tem, nunca um bloco presumido de 24 (1 dia útil iniciado sexta às 18h, sem feriado no intervalo, fecha segunda 18h)\"]",
                             Tipo = "algoritmo_contagem_prazo",
                             Versao = "v1"
                         },
@@ -14571,9 +14571,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "O edital de abertura é o fundamento normativo do prazo de interposição e declara a convenção pela qual ele se conta (UNI-REQ-0095): na ausência de norma específica que fixe outro prazo, o edital estabelece o seu, e o sistema congela e reproduz o declarado sem julgar a escolha. Decisão institucional juridicamente orientada — não é parecer formal nem jurisprudência consolidada. Não dispõe sobre efeito suspensivo, cuja confirmação é dependência própria (UNI-REQ-0117).",
                             Codigo = "CONTAGEM-PRAZO-AVANCA-DATA-UTIL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{}",
-                            Hash = "cd4c631492d02126c88a7ca5558992b3ed8a27c80692ecabfb73609293f2a9c8",
-                            Invariantes = "[\"âncora fora da meia-noite: mantém a hora da âncora — a contagem parte do instante exato, sem deslocamento para fronteira de dia (1 dia útil ancorado sexta 18h, com sábado e domingo não úteis e sem feriado, fecha segunda 18h)\",\"âncora em dia não útil: em dias úteis, desloca para o próximo dia útil na mesma hora (âncora domingo 18h conta como segunda 18h, e 1 dia útil fecha terça 18h); em horas não há deslocamento, apenas a não contagem dos instantes de dia não útil\",\"em dias úteis: fecha na mesma hora da âncora, N datas úteis adiante, pulando cada data não útil; se a hora da âncora não existir na data de fechamento por transição de fuso, fecha no primeiro instante válido seguinte\",\"em horas: consome horas situadas em dia útil desde a âncora, sem deslocar o início — nesta unidade a convenção coincide com CONTAGEM-PRAZO-HORAS-UTEIS-DESDE-ANCORA, e a diferença entre as duas está só na unidade dias úteis\"]",
+                            DeclaracaoDaRegra = "{}",
+                            Hash = "47fb025bcfef2680377b57369e6f7e6657677c707f4e8293b979f883401eb094",
+                            Invariantes = "[\"evento que inicia o prazo fora da meia-noite: mantém a hora do evento que inicia o prazo — a contagem parte do instante exato, sem deslocamento para o início de outro dia (1 dia útil iniciado sexta às 18h, com sábado e domingo não úteis e sem feriado, fecha segunda 18h)\",\"evento que inicia o prazo em dia não útil: em dias úteis, desloca para o próximo dia útil na mesma hora (evento que inicia o prazo no domingo às 18h conta como segunda 18h, e 1 dia útil fecha terça 18h); em horas não há deslocamento, apenas a não contagem dos instantes de dia não útil\",\"em dias úteis: fecha na mesma hora do evento que inicia o prazo, N datas úteis adiante, pulando cada data não útil; se a hora do evento que inicia o prazo não existir na data de fechamento por transição de fuso, fecha no primeiro instante válido seguinte\",\"em horas: consome horas situadas em dia útil desde o evento que inicia o prazo, sem deslocar o início — nesta unidade a convenção coincide com a contagem de horas úteis a partir do evento que inicia o prazo; a diferença entre as duas está apenas na contagem em dias úteis\"]",
                             Tipo = "algoritmo_contagem_prazo",
                             Versao = "v1"
                         },
@@ -14583,8 +14583,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "Portaria Normativa MEC nº 18/2012 art. 10 e 11 (red. PN 2.027/2023) — distribuição e arredondamento das vagas reservadas; Lei 12.711/2012 (red. Lei 14.723/2023)",
                             Codigo = "DISTRIBUICAO-LEI-12711",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{\"pr_minimo\":\"numeric (piso 0,5 — art. 10 II; teto 1,0)\",\"modo_arredondamento\":\"teto (ceil) em todas as sub-reservas EXCETO LI_Q (floor) — art. 11\",\"ordem_garantia_minima\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_PCD\",\"LI_EP\"],\"sub_reservas\":[\"PPI\",\"Q\",\"PCD\",\"EP\"],\"entradas_por_edital\":[\"VO_base\",\"PR\",\"ReferenciaReservaDemografica\"],\"modalidades_admitidas\":[\"AC\",\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]}",
-                            Hash = "0c9cb052e8f4fadb46c4205519cf46f915d4a5b09d782d31bd9c01205c3ef4ee",
+                            DeclaracaoDaRegra = "{\"pr_minimo\":\"numeric (piso 0,5 — art. 10 II; teto 1,0)\",\"modo_arredondamento\":\"teto (ceil) em todas as sub-reservas EXCETO LI_Q (floor) — art. 11\",\"ordem_garantia_minima\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_PCD\",\"LI_EP\"],\"sub_reservas\":[\"PPI\",\"Q\",\"PCD\",\"EP\"],\"entradas_por_edital\":[\"VO_base\",\"PR\",\"ReferenciaReservaDemografica\"],\"modalidades_admitidas\":[\"AC\",\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]}",
+                            Hash = "33b7cb12bd7e3d2d98615beddfbe345959e47a9e4f395e45ffd52ccd264cbc5e",
                             Invariantes = "[\"VR=ceil(VO×PR)\",\"VRRI=ceil(VR×0,5)\",\"VRSI=VR−VRRI\",\"sub-reservas ceil EXCETO LI_Q=floor (art. 11)\",\"garantia mín-1 ordenada I-VII condicional à disponibilidade (art. 10 §2º), LI_Q fora\",\"LB_EP≥0 e LI_EP≥0\",\"AC≥0\",\"VR_final+RETIRADAS+AC=VO_base\",\"modalidade fora de modalidades_admitidas é recusada\"]",
                             Tipo = "regra_distribuicao_vagas",
                             Versao = "v1"
@@ -14595,8 +14595,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "Portaria Normativa MEC nº 18/2012 art. 10 e 11 (red. PN 2.027/2023) — distribuição e arredondamento das vagas reservadas; Lei 12.711/2012 (red. Lei 14.723/2023)",
                             Codigo = "DISTRIBUICAO-LEI-12711-COM-AMPLA-CONCORRENCIA-E-PESSOA-COM-DEFICIENCIA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{\"pr_minimo\":\"numeric (piso 0,5 — art. 10 II; teto 1,0)\",\"modo_arredondamento\":\"teto (ceil) em todas as sub-reservas EXCETO LI_Q (floor) — art. 11\",\"ordem_garantia_minima\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_PCD\",\"LI_EP\"],\"sub_reservas\":[\"PPI\",\"Q\",\"PCD\",\"EP\"],\"entradas_por_edital\":[\"VO_base\",\"PR\",\"ReferenciaReservaDemografica\"],\"modalidades_admitidas\":[\"AC\",\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\",\"AC_PCD\"]}",
-                            Hash = "50c9e9dfa2be05960325c6a154d47f0b32704c3c7227740d08c1468af3634d67",
+                            DeclaracaoDaRegra = "{\"pr_minimo\":\"numeric (piso 0,5 — art. 10 II; teto 1,0)\",\"modo_arredondamento\":\"teto (ceil) em todas as sub-reservas EXCETO LI_Q (floor) — art. 11\",\"ordem_garantia_minima\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_PCD\",\"LI_EP\"],\"sub_reservas\":[\"PPI\",\"Q\",\"PCD\",\"EP\"],\"entradas_por_edital\":[\"VO_base\",\"PR\",\"ReferenciaReservaDemografica\"],\"modalidades_admitidas\":[\"AC\",\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\",\"AC_PCD\"]}",
+                            Hash = "5affac48aa7350844e3a1b633263e92e99d0df78de323aedcb065111500a7136",
                             Invariantes = "[\"VR=ceil(VO×PR)\",\"VRRI=ceil(VR×0,5)\",\"VRSI=VR−VRRI\",\"sub-reservas ceil EXCETO LI_Q=floor (art. 11)\",\"garantia mín-1 ordenada I-VII condicional à disponibilidade (art. 10 §2º), LI_Q fora\",\"LB_EP≥0 e LI_EP≥0\",\"AC≥0\",\"VR_final+RETIRADAS+AC=VO_base\",\"AC_PCD retira de AC, como qualquer outra retirada federal\",\"modalidade fora de modalidades_admitidas é recusada\"]",
                             Tipo = "regra_distribuicao_vagas",
                             Versao = "v1"
@@ -14607,8 +14607,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "Res. Unifesspa 532/2021 (vagas PcD/Indígena/Quilombola); Portaria MEC 18/2012 art. 12 (reservas suplementares e outras ações afirmativas)",
                             Codigo = "DISTRIBUICAO-INSTITUCIONAL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{\"quadro_fixo_por_modalidade\":\"objeto {codigo: quantidade} fixado por edital (NÃO art. 10)\",\"aplicacao\":\"quadro institucional não nomeado por regra própria\",\"modalidades_admitidas\":null}",
-                            Hash = "8f4d35f5c49346e23cc09ee4fb5702a6012ee5e87f3238ad3fa072cb72cd7290",
+                            DeclaracaoDaRegra = "{\"quadro_fixo_por_modalidade\":\"objeto {codigo: quantidade} fixado por edital (NÃO art. 10)\",\"aplicacao\":\"quadro institucional não nomeado por regra própria\",\"modalidades_admitidas\":null}",
+                            Hash = "54d9e00fc5545dec85005d7e131f2e9cdf4639fe8e89fe66c0b8883df663a93b",
                             Invariantes = "[\"quadro fixo por edital (não recalculado pelo art. 10)\",\"a soma das quantidades declaradas é o total publicado, e fecha no VO_base\",\"modalidades_admitidas nulo: rol aberto, para o certame institucional que ainda não tem regra própria\"]",
                             Tipo = "regra_distribuicao_vagas",
                             Versao = "v1"
@@ -14619,8 +14619,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "Res. Unifesspa 532/2021-CONSEPE, art. 2º (vagas por acréscimo para candidatos indígenas e quilombolas)",
                             Codigo = "DISTRIBUICAO-POR-ACRESCIMO-INDIGENA-E-QUILOMBOLA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{\"quadro_fixo_por_modalidade\":\"objeto {codigo: quantidade} fixado por edital (NÃO art. 10)\",\"aplicacao\":\"Processo Seletivo Indígena e Quilombola\",\"modalidades_admitidas\":[\"AC_I\",\"AC_Q\"]}",
-                            Hash = "93c600a89c74c5ad32149eb93a27a1b4c2866bf345001a3ccde6d9c7532424e6",
+                            DeclaracaoDaRegra = "{\"quadro_fixo_por_modalidade\":\"objeto {codigo: quantidade} fixado por edital (NÃO art. 10)\",\"aplicacao\":\"Processo Seletivo Indígena e Quilombola\",\"modalidades_admitidas\":[\"AC_I\",\"AC_Q\"]}",
+                            Hash = "56f020a09b0cfd20d4d8f02e10449cfbf9438023b7ef2b4c37657e1977d6d518",
                             Invariantes = "[\"quadro fixo por edital (não recalculado pelo art. 10)\",\"certame exclusivo: não há ampla concorrência\",\"rol composto só de vagas por acréscimo — sem outro conjunto ao qual se somem, a soma delas é o total publicado\"]",
                             Tipo = "regra_distribuicao_vagas",
                             Versao = "v1"
@@ -14631,8 +14631,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "Res. Unifesspa 532/2021-CONSEPE, art. 1º (reserva de vaga para pessoa com deficiência); Portaria MEC 18/2012 art. 12",
                             Codigo = "DISTRIBUICAO-COM-AMPLA-CONCORRENCIA-E-PESSOA-COM-DEFICIENCIA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{\"quadro_fixo_por_modalidade\":\"objeto {codigo: quantidade} fixado por edital (NÃO art. 10)\",\"aplicacao\":\"quadro fixo sem as cotas federais — AC_PCD como reserva de pessoa com deficiência fora do regime federal\",\"modalidades_admitidas\":[\"AC\",\"AC_PCD\"]}",
-                            Hash = "a3a91f6878959362fc9418213a79d6bb816f458ade41cc7751641d1d7413d36c",
+                            DeclaracaoDaRegra = "{\"quadro_fixo_por_modalidade\":\"objeto {codigo: quantidade} fixado por edital (NÃO art. 10)\",\"aplicacao\":\"quadro fixo sem as cotas federais — AC_PCD como reserva de pessoa com deficiência fora do regime federal\",\"modalidades_admitidas\":[\"AC\",\"AC_PCD\"]}",
+                            Hash = "5c822c0575b947c2de85ca22099273db42460438e4bba276104a620960e8a145",
                             Invariantes = "[\"quadro fixo por edital (não recalculado pelo art. 10)\",\"certame sem as cotas da Lei 12.711\",\"AC_PCD retira de AC: o par fecha no VO_base\"]",
                             Tipo = "regra_distribuicao_vagas",
                             Versao = "v1"
@@ -14643,8 +14643,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "Decisão institucional da Unifesspa",
                             Codigo = "CONSOLIDACAO-AVALIACAO-UNICA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{\"corretores_distintos\":1,\"naturezas_do_conceito\":[\"categorico\",\"numerico\"]}",
-                            Hash = "cbf59beccc62ce3ecd2daa14097cc04c7a4d76ae8aed45acd10cbe0e2bca6bd2",
+                            DeclaracaoDaRegra = "{\"corretores_distintos\":1,\"naturezas_do_conceito\":[\"categorico\",\"numerico\"]}",
+                            Hash = "7e1bd389e8de8efe97bcb8af08d4d8930d45f1acf00dca07d947fa6b6a96cf5f",
                             Invariantes = "[\"um só avaliador lança a nota de cada candidato na etapa\",\"a nota lançada é a nota da etapa, sem combinação com outra\"]",
                             Tipo = "regra_consolidacao",
                             Versao = "v1"
@@ -14655,8 +14655,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "UNI-REQ-0097 (dupla correção) e edital do processo seletivo",
                             Codigo = "CONSOLIDACAO-CORRECAO-INDEPENDENTE",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{\"corretores_distintos\":3,\"naturezas_do_conceito\":[\"numerico\"]}",
-                            Hash = "94fe3353ad79b0f23dc3d0c732e8c631a518dd5505ecb17bbaf2c010faa93616",
+                            DeclaracaoDaRegra = "{\"corretores_distintos\":3,\"naturezas_do_conceito\":[\"numerico\"]}",
+                            Hash = "a2c2eca40be800aea8983c8a45aed3b5e350471b03982c3ba1069b220e5ebe1c",
                             Invariantes = "[\"mais de um avaliador corrige cada candidato na etapa, cada um sem conhecer a nota do outro\",\"a nota da etapa é a combinação das correções independentes, na forma que o edital determina\"]",
                             Tipo = "regra_consolidacao",
                             Versao = "v1"
@@ -14667,8 +14667,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "Decisão institucional da Unifesspa",
                             Codigo = "CONSOLIDACAO-CONCEITO-UNANIMIDADE",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{\"corretores_distintos\":2,\"criterio\":\"unanimidade\",\"naturezas_do_conceito\":[\"categorico\"],\"quando_nao_consolida\":\"decisao_da_banca\"}",
-                            Hash = "038cc670688c1cf2c3587c873468a4502dc6fbd13bb9f02293b00087f3f81c34",
+                            DeclaracaoDaRegra = "{\"corretores_distintos\":2,\"criterio\":\"unanimidade\",\"naturezas_do_conceito\":[\"categorico\"],\"quando_nao_consolida\":\"decisao_da_banca\"}",
+                            Hash = "0c10af9a05f0da11e46508bdff914663826487580c78f6a2e2944b3c68cc1325",
                             Invariantes = "[\"cada corretor lança o conceito sem conhecer o dos demais\",\"o conceito da etapa é o valor em que o critério converge: todos os corretores atribuem o mesmo valor\",\"quando o critério não converge, o tratamento que a versão declara é aplicado\"]",
                             Tipo = "regra_consolidacao",
                             Versao = "v1"
@@ -14679,8 +14679,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "Decisão institucional da Unifesspa",
                             Codigo = "CONSOLIDACAO-CONCEITO-MAIORIA-SIMPLES",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{\"corretores_distintos\":3,\"criterio\":\"maioria_simples\",\"naturezas_do_conceito\":[\"categorico\"],\"quando_nao_consolida\":\"novo_corretor\"}",
-                            Hash = "2ab47d111c69de849597c6dccfb9459908ce9a389558447fbbeed72028e0e9d3",
+                            DeclaracaoDaRegra = "{\"corretores_distintos\":3,\"criterio\":\"maioria_simples\",\"naturezas_do_conceito\":[\"categorico\"],\"quando_nao_consolida\":\"novo_corretor\"}",
+                            Hash = "db1fb6e72c023ba45414e6d679990995891c72392e53a8c54c61efa83b6a79db",
                             Invariantes = "[\"cada corretor lança o conceito sem conhecer o dos demais\",\"o conceito da etapa é o valor em que o critério converge: um valor com mais atribuições que cada um dos outros\",\"quando o critério não converge, o tratamento que a versão declara é aplicado\"]",
                             Tipo = "regra_consolidacao",
                             Versao = "v1"
@@ -14691,8 +14691,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "Decisão institucional da Unifesspa",
                             Codigo = "CONSOLIDACAO-CONCEITO-MAIORIA-ABSOLUTA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{\"corretores_distintos\":3,\"criterio\":\"maioria_absoluta\",\"naturezas_do_conceito\":[\"categorico\"],\"quando_nao_consolida\":\"novo_corretor\"}",
-                            Hash = "779b6d9d511a0f9f8f46e474f7e23da4be3a00cfa9256ed5b39428ff39ded2b5",
+                            DeclaracaoDaRegra = "{\"corretores_distintos\":3,\"criterio\":\"maioria_absoluta\",\"naturezas_do_conceito\":[\"categorico\"],\"quando_nao_consolida\":\"novo_corretor\"}",
+                            Hash = "194b514a5de402f43afb4c3b78d4bcc988e7d82f5a9ca59c538df8ebc342995a",
                             Invariantes = "[\"cada corretor lança o conceito sem conhecer o dos demais\",\"o conceito da etapa é o valor em que o critério converge: um valor com mais da metade das atribuições\",\"quando o critério não converge, o tratamento que a versão declara é aplicado\"]",
                             Tipo = "regra_consolidacao",
                             Versao = "v1"
@@ -14703,8 +14703,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "UNI-REQ-0383 (procedimento de recurso por matéria) e UNI-REQ-0097 (correção cega)",
                             Codigo = "PROCEDIMENTO-RECURSO-RECORRECAO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{\"revisa\":\"desempenho avaliado por pessoas\",\"evidencia\":\"nova correção cega do material\",\"corretores\":\"os_da_regra_de_consolidacao_da_etapa\"}",
-                            Hash = "12fbd97326cecd1be695fdff12583b28c547a5e8f45581bb9345c751e0af1f8c",
+                            DeclaracaoDaRegra = "{\"revisa\":\"desempenho avaliado por pessoas\",\"evidencia\":\"nova correção cega do material\",\"corretores\":\"os_da_regra_de_consolidacao_da_etapa\"}",
+                            Hash = "4ce312b49c32f152fc2c73dda209a24cffe2a048f5e6a5c299b2dade0e088c0b",
                             Invariantes = "[\"a revisão é uma nova correção do material, feita sem conhecer a nota anterior\",\"os corretores são os da regra de consolidação da etapa\"]",
                             Tipo = "regra_procedimento_recurso",
                             Versao = "v1"
@@ -14715,8 +14715,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "UNI-REQ-0383 (procedimento de recurso por matéria)",
                             Codigo = "PROCEDIMENTO-RECURSO-CONFERENCIA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{\"revisa\":\"comprovação de um fato e aplicação da pontuação prevista por tabela\",\"evidencia\":\"o documento e a tabela\",\"corretores\":\"os_da_regra_de_consolidacao_da_etapa_quando_ha_consolidacao_humana\"}",
-                            Hash = "96d5cb93c70e98fe9c406e47efd9326ea1bcbe7673cce33c2f7fbdc37ed743da",
+                            DeclaracaoDaRegra = "{\"revisa\":\"comprovação de um fato e aplicação da pontuação prevista por tabela\",\"evidencia\":\"o documento e a tabela\",\"corretores\":\"os_da_regra_de_consolidacao_da_etapa_quando_ha_consolidacao_humana\"}",
+                            Hash = "2cfc01f124953d982ba4fbc6dc749ea2e6b0d470242ccd149354657f1b7ad073",
                             Invariantes = "[\"a revisão confere o documento contra a tabela do edital\",\"há corretores só quando a etapa tem consolidação humana; do contrário, nenhum\"]",
                             Tipo = "regra_procedimento_recurso",
                             Versao = "v1"
@@ -14727,8 +14727,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "UNI-REQ-0383 (procedimento de recurso por matéria) e UNI-REQ-0281",
                             Codigo = "PROCEDIMENTO-RECURSO-CORRECAO-MATERIAL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{\"revisa\":\"erro de registro (transcrição, soma, presença)\",\"evidencia\":\"o registro e a evidência do erro\",\"corretores\":\"nenhum\"}",
-                            Hash = "986fe794c2961f5cffc83831fb9af35360dc1b6f558e2f3eb6f9ae394ed1ce88",
+                            DeclaracaoDaRegra = "{\"revisa\":\"erro de registro (transcrição, soma, presença)\",\"evidencia\":\"o registro e a evidência do erro\",\"corretores\":\"nenhum\"}",
+                            Hash = "6878bc5b9e296e71658e263ecd30a03bb2bfa32bb6b2d225b3dd2b6169a645dc",
                             Invariantes = "[\"a correção tem sempre um motivo da lista da etapa, sem a opção outro\",\"não é saída genérica para o que a derivação da nota não explica\"]",
                             Tipo = "regra_procedimento_recurso",
                             Versao = "v1"
@@ -14739,9 +14739,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "UNI-REQ-0383 (procedimento de recurso por matéria)",
                             Codigo = "PROCEDIMENTO-RECURSO-RECALCULO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{\"revisa\":\"cálculo sobre insumos já conferidos (gabarito, média ponderada do ENEM, classificação)\",\"evidencia\":\"os insumos congelados e o boletim\",\"corretores\":\"nenhum\"}",
-                            Hash = "4c0dbd2782ac794f979b7d76b6752c87b39c36a796f5fa95345d79928f198700",
-                            Invariantes = "[\"o recálculo parte dos insumos congelados, sem nova correção\",\"a nota do ENEM é recalculada à vista do boletim\"]",
+                            DeclaracaoDaRegra = "{\"revisa\":\"cálculo sobre insumos já conferidos (gabarito, média ponderada do ENEM, classificação)\",\"evidencia\":\"os dados registrados na versão publicada e o boletim\",\"corretores\":\"nenhum\"}",
+                            Hash = "3037fb8056047033781e438511c135bdad9bd37aef8d20303a53e138142a6032",
+                            Invariantes = "[\"o recálculo parte dos dados registrados na versão publicada, sem nova correção\",\"a nota do ENEM é recalculada à vista do boletim\"]",
                             Tipo = "regra_procedimento_recurso",
                             Versao = "v1"
                         });
@@ -14790,11 +14790,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<string>("Args")
-                        .IsRequired()
-                        .HasColumnType("json")
-                        .HasColumnName("args");
-
                     b.Property<Guid>("ConfiguracaoClassificacaoId")
                         .HasColumnType("uuid")
                         .HasColumnName("configuracao_classificacao_id");
@@ -14802,6 +14797,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
+
+                    b.Property<string>("Parametros")
+                        .IsRequired()
+                        .HasColumnType("json")
+                        .HasColumnName("parametros");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -20084,7 +20084,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_recursos_da_etapa_etapas_processo_etapa_processo_id");
 
-                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ArgsRegraPrazoRecurso", "Args", b1 =>
+                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ParametrosRegraPrazoRecurso", "Parametros", b1 =>
                         {
                             b1.Property<Guid>("RecursoDaEtapaId")
                                 .HasColumnType("uuid")
@@ -20164,7 +20164,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasConstraintName("fk_recursos_da_etapa_recursos_da_etapa_id");
                         });
 
-                    b.Navigation("Args")
+                    b.Navigation("Parametros")
                         .IsRequired();
 
                     b.Navigation("Regra")
@@ -20247,7 +20247,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_regras_recurso_fase_fases_cronograma_fase_cronograma_id");
 
-                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ArgsRegraPrazoRecurso", "Args", b1 =>
+                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ParametrosRegraPrazoRecurso", "Parametros", b1 =>
                         {
                             b1.Property<Guid>("RegraRecursoFaseId")
                                 .HasColumnType("uuid")
@@ -20327,7 +20327,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasConstraintName("fk_regras_recurso_fase_regras_recurso_fase_id");
                         });
 
-                    b.Navigation("Args")
+                    b.Navigation("Parametros")
                         .IsRequired();
 
                     b.Navigation("Regra")

@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// As naturezas de conceito a que cada versão de regra de consolidação se aplica, lidas do
-/// <c>esquema_args</c> da própria versão, e a conferência da regra escolhida contra o conceito da etapa
+/// <c>declaracao_da_regra</c> da própria versão, e a conferência da regra escolhida contra o conceito da etapa
 /// (ADR-0150). A versão nova de uma regra pode ampliar as naturezas sem alcançar a versão antiga.
 /// </summary>
 public static class NaturezasDaConsolidacao
@@ -33,8 +33,8 @@ public static class NaturezasDaConsolidacao
         ArgumentNullException.ThrowIfNull(regra);
 
         naturezas = [];
-        if (regra.EsquemaArgs.ValueKind != JsonValueKind.Object
-            || !regra.EsquemaArgs.TryGetProperty(ChaveDasNaturezas, out JsonElement declaradas)
+        if (regra.DeclaracaoDaRegra.ValueKind != JsonValueKind.Object
+            || !regra.DeclaracaoDaRegra.TryGetProperty(ChaveDasNaturezas, out JsonElement declaradas)
             || declaradas.ValueKind != JsonValueKind.Array
             || declaradas.GetArrayLength() == 0)
         {
@@ -98,5 +98,5 @@ public static class NaturezasDaConsolidacao
     }
 
     private static ArgumentException EsquemaInvalido(RegraCatalogo regra) =>
-        new($"A regra '{regra.Codigo}' versão '{regra.Versao}' deve declarar '{ChaveDasNaturezas}' no esquema_args como lista não vazia de naturezas de conceito conhecidas.", nameof(regra));
+        new("A regra deve declarar ao menos uma natureza de conceito conhecida.", nameof(regra));
 }

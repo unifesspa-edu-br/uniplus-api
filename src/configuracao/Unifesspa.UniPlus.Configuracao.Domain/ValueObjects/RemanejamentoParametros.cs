@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 /// Parâmetros da regra de remanejamento de uma <see cref="Entities.Modalidade"/>
 /// de concorrência (UNI-REQ-0011): códigos de outras modalidades usados como
 /// destino/par/fallback conforme a <c>RegraRemanejamento</c>. Value object
-/// imutável serializado como <c>jsonb</c> na coluna <c>remanejamento_args</c>.
+/// imutável serializado como <c>jsonb</c> na coluna <c>remanejamento_parametros</c>.
 /// </summary>
 /// <remarks>
 /// <para>As chaves JSON são fixadas por <see cref="JsonPropertyNameAttribute"/>

@@ -24,8 +24,8 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
         return document.RootElement.Clone();
     }
 
-    private static RegraCatalogo RegraDistribuicao(string codigo, string esquemaArgs = "{}") => RegraCatalogo.Criar(
-        codigo, "v1", TipoRegra.RegraDistribuicaoVagas, Json(esquemaArgs), Json("[]"), "base legal");
+    private static RegraCatalogo RegraDistribuicao(string codigo, string declaracaoDaRegra = "{}") => RegraCatalogo.Criar(
+        codigo, "v1", TipoRegra.RegraDistribuicaoVagas, Json(declaracaoDaRegra), Json("[]"), "base legal");
 
     private sealed record Mocks(
         IProcessoSeletivoRepository Repository,
@@ -161,17 +161,9 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
     public async Task Handle_ProcessoInexistente_RetornaNaoEncontrado()
     {
         Guid processoId = Guid.CreateVersion7();
-        // NovosMocks stuba ExisteAsync SÓ para `processoId` — se o handler chamasse
-        // ExisteAsync com outro Guid (ou Guid.Empty), o Substitute cairia no default
-        // (false) por acaso, mascarando o bug; usar o MESMO Guid nos dois lados prova
-        // que o handler de fato repassa query.ProcessoSeletivoId ao repositório.
         Mocks mocks = NovosMocks(processoExiste: false, processoId);
-        SimularDistribuicaoVagasQuery query = new(
-            processoId,
-            [new ConfiguracaoDistribuicaoVagasInput(Guid.CreateVersion7(), 50, 1m, "X", "v1", null, null, null, [Guid.CreateVersion7()], [])]);
-
-        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await SimularDistribuicaoVagasQueryHandler.Handle(
-            query, mocks.Repository, mocks.Resolvedor, CancellationToken.None);
+        ConfiguracaoDistribuicaoVagasInput pedido = new(Guid.CreateVersion7(), 50, 1m, "X", "v1", null, null, null, [Guid.CreateVersion7()], []);
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await SimularAsync(mocks, processoId, pedido);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
@@ -183,27 +175,7 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
     [Fact(DisplayName = "Simulação recusa modalidade fora do rol declarado no esquema da regra")]
     public async Task Handle_ModalidadeForaDoRolDaRegra_Recusa()
     {
-        // Prova a ligação entre catálogo e agregado: o rol vive no esquema_args da regra, e
-        // é o resolvedor que o extrai. Sem esta cobertura, a recusa poderia estar correta no
-        // domínio e nunca ser alcançada, porque ninguém teria passado o rol adiante.
-        Guid processoId = Guid.CreateVersion7();
-        Guid ofertaCursoId = Guid.CreateVersion7();
-        Guid modalidadeId = Guid.CreateVersion7();
-
-        Mocks mocks = NovosMocks(processoExiste: true, processoId);
-        mocks.OfertaCursoReader.ObterPorIdAsync(ofertaCursoId, Arg.Any<CancellationToken>()).Returns(NovaOferta(ofertaCursoId));
-        mocks.RegraCatalogoReader.ObterAsync(RegraDistribuicaoVagasCodigo.Psiq, "v1", Arg.Any<CancellationToken>())
-            .Returns(RegraDistribuicao(RegraDistribuicaoVagasCodigo.Psiq, """{"modalidades_admitidas":["AC_I","AC_Q"]}"""));
-        mocks.ModalidadeReader.ObterPorIdAsync(modalidadeId, Arg.Any<CancellationToken>()).Returns(NovaModalidadeAmpla(modalidadeId));
-
-        SimularDistribuicaoVagasQuery query = new(
-            processoId,
-            [new ConfiguracaoDistribuicaoVagasInput(
-                ofertaCursoId, 10, 1m, RegraDistribuicaoVagasCodigo.Psiq, "v1", null, null, null,
-                [modalidadeId], [new QuantidadeVagaInput(modalidadeId, 10)])]);
-
-        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await SimularDistribuicaoVagasQueryHandler.Handle(
-            query, mocks.Repository, mocks.Resolvedor, CancellationToken.None);
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await SimularModalidadeNaoAdmitidaAsync();
 
         result.IsFailure.Should().BeTrue("AC não está entre as modalidades que o PSIQ admite");
         result.Errors.Should().Contain(e => e.Error.Code == "ConfiguracaoDistribuicaoVagas.ModalidadeNaoAdmitidaPelaRegra");
@@ -217,22 +189,14 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
         Guid modalidadeId = Guid.CreateVersion7();
 
         Mocks mocks = NovosMocks(processoExiste: true, processoId);
-        mocks.OfertaCursoReader.ObterPorIdAsync(ofertaCursoId, Arg.Any<CancellationToken>()).Returns(NovaOferta(ofertaCursoId));
-        mocks.RegraCatalogoReader.ObterAsync(RegraDistribuicaoVagasCodigo.Institucional, "v1", Arg.Any<CancellationToken>())
-            .Returns(RegraDistribuicao(RegraDistribuicaoVagasCodigo.Institucional));
-        mocks.ModalidadeReader.ObterPorIdAsync(modalidadeId, Arg.Any<CancellationToken>()).Returns(NovaModalidadeAmpla(modalidadeId));
+        ConfigurarCatalogoInstitucional(mocks, ofertaCursoId, modalidadeId);
 
-        SimularDistribuicaoVagasQuery query = new(
-            processoId,
-            [new ConfiguracaoDistribuicaoVagasInput(
-                ofertaCursoId, 99999, 1m, RegraDistribuicaoVagasCodigo.Institucional, "v1", null, null, null,
-                [modalidadeId], [new QuantidadeVagaInput(modalidadeId, 99999)])]);
+        ConfiguracaoDistribuicaoVagasInput pedido = new(
+            ofertaCursoId, 99999, 1m, RegraDistribuicaoVagasCodigo.Institucional, "v1", null, null, null,
+            [modalidadeId], [new QuantidadeVagaInput(modalidadeId, 99999)]);
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await SimularAsync(mocks, processoId, pedido);
 
-        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await SimularDistribuicaoVagasQueryHandler.Handle(
-            query, mocks.Repository, mocks.Resolvedor, CancellationToken.None);
-
-        result.IsFailure.Should().BeTrue(
-            "a simulação percorre o mesmo resolvedor da escrita — quem chama a API direto não pode contornar o teto");
+        result.IsFailure.Should().BeTrue();
         result.Errors.Should().Contain(e => e.Error.Code == "ConfiguracaoDistribuicaoVagas.VagasOfertadasBaseAcimaDasVagasAutorizadas");
     }
 
@@ -280,12 +244,8 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
         mocks.RegraCatalogoReader.ObterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns((RegraCatalogo?)null);
 
-        SimularDistribuicaoVagasQuery query = new(
-            processoId,
-            [new ConfiguracaoDistribuicaoVagasInput(Guid.CreateVersion7(), 50, 1m, "INEXISTENTE", "v1", null, null, null, [Guid.CreateVersion7()], [])]);
-
-        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await SimularDistribuicaoVagasQueryHandler.Handle(
-            query, mocks.Repository, mocks.Resolvedor, CancellationToken.None);
+        ConfiguracaoDistribuicaoVagasInput pedido = new(Guid.CreateVersion7(), 50, 1m, "INEXISTENTE", "v1", null, null, null, [Guid.CreateVersion7()], []);
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await SimularAsync(mocks, processoId, pedido);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.RegraDistribuicaoNaoEncontrada");
@@ -294,30 +254,41 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
     [Fact(DisplayName = "Handle com modalidade duplicada traduz o field do domínio (modalidades) para o do payload (modalidadeIds)")]
     public async Task Handle_ModalidadeDuplicada_TraduzFieldDoDominioParaODoPayload()
     {
-        Guid processoId = Guid.CreateVersion7();
-        Guid ofertaCursoId = Guid.CreateVersion7();
-        Guid modalidadeId1 = Guid.CreateVersion7();
-        Guid modalidadeId2 = Guid.CreateVersion7();
-
-        Mocks mocks = NovosMocks(processoExiste: true, processoId);
-        mocks.OfertaCursoReader.ObterPorIdAsync(ofertaCursoId, Arg.Any<CancellationToken>()).Returns(NovaOferta(ofertaCursoId));
-        mocks.RegraCatalogoReader.ObterAsync(RegraDistribuicaoVagasCodigo.Institucional, "v1", Arg.Any<CancellationToken>())
-            .Returns(RegraDistribuicao(RegraDistribuicaoVagasCodigo.Institucional));
-        mocks.ModalidadeReader.ObterPorIdAsync(modalidadeId1, Arg.Any<CancellationToken>()).Returns(NovaModalidadeCotaReservada(modalidadeId1, "IND"));
-        mocks.ModalidadeReader.ObterPorIdAsync(modalidadeId2, Arg.Any<CancellationToken>()).Returns(NovaModalidadeCotaReservada(modalidadeId2, "IND"));
-
-        SimularDistribuicaoVagasQuery query = new(
-            processoId,
-            [new ConfiguracaoDistribuicaoVagasInput(
-                ofertaCursoId, 60, 1m, RegraDistribuicaoVagasCodigo.Institucional, "v1", null, null, null,
-                [modalidadeId1, modalidadeId2], [])]);
-
-        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await SimularDistribuicaoVagasQueryHandler.Handle(
-            query, mocks.Repository, mocks.Resolvedor, CancellationToken.None);
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await SimularModalidadeDuplicadaAsync();
 
         result.IsFailure.Should().BeTrue();
         result.Errors.Should().Contain(e => e.Error.Code == "ConfiguracaoDistribuicaoVagas.ModalidadeDuplicada");
         result.Errors.Should().OnlyContain(e => e.Field == "distribuicaoVagas[0].modalidadeIds");
+    }
+
+    private static Task<Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>> SimularModalidadeNaoAdmitidaAsync()
+    {
+        Guid processoId = Guid.CreateVersion7();
+        Guid ofertaId = Guid.CreateVersion7();
+        Guid modalidadeId = Guid.CreateVersion7();
+        Mocks mocks = NovosMocks(processoExiste: true, processoId);
+        ConfigurarCatalogoInstitucional(mocks, ofertaId, modalidadeId);
+        mocks.RegraCatalogoReader.ObterAsync(RegraDistribuicaoVagasCodigo.Psiq, "v1", Arg.Any<CancellationToken>())
+            .Returns(RegraDistribuicao(RegraDistribuicaoVagasCodigo.Psiq, """{"modalidades_admitidas":["AC_I","AC_Q"]}"""));
+        ConfiguracaoDistribuicaoVagasInput pedido = new(
+            ofertaId, 10, 1m, RegraDistribuicaoVagasCodigo.Psiq, "v1", null, null, null,
+            [modalidadeId], [new QuantidadeVagaInput(modalidadeId, 10)]);
+        return SimularAsync(mocks, processoId, pedido);
+    }
+
+    private static Task<Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>> SimularModalidadeDuplicadaAsync()
+    {
+        Guid processoId = Guid.CreateVersion7();
+        Guid ofertaId = Guid.CreateVersion7();
+        Guid modalidade1 = Guid.CreateVersion7();
+        Guid modalidade2 = Guid.CreateVersion7();
+        Mocks mocks = NovosMocks(processoExiste: true, processoId);
+        ConfigurarCatalogoInstitucional(mocks, ofertaId, modalidade1);
+        mocks.ModalidadeReader.ObterPorIdAsync(modalidade1, Arg.Any<CancellationToken>()).Returns(NovaModalidadeCotaReservada(modalidade1, "IND"));
+        mocks.ModalidadeReader.ObterPorIdAsync(modalidade2, Arg.Any<CancellationToken>()).Returns(NovaModalidadeCotaReservada(modalidade2, "IND"));
+        ConfiguracaoDistribuicaoVagasInput pedido = new(
+            ofertaId, 60, 1m, RegraDistribuicaoVagasCodigo.Institucional, "v1", null, null, null, [modalidade1, modalidade2], []);
+        return SimularAsync(mocks, processoId, pedido);
     }
 
     private static string[] CamposECodigos(Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> resultado) =>

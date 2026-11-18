@@ -64,7 +64,7 @@ internal static class CadastrosVivos
 
     private static RegraCatalogo RegraDesempate(string codigo)
     {
-        // esquema_args precisa ser objeto e invariantes precisa ser array — a factory
+        // declaracao_da_regra precisa ser objeto e invariantes precisa ser array — a factory
         // recusa qualquer outra forma, e um dublê que devolvesse null aqui só apareceria
         // como NullReferenceException lá adiante, na conferência.
         using JsonDocument esquema = JsonDocument.Parse("{}");

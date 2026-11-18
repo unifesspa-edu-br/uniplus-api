@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
 using Microsoft.EntityFrameworkCore;
@@ -18,10 +17,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// entidade filha de <see cref="ConfiguracaoClassificacao"/>, cardinalidade
 /// múltipla.
 /// </summary>
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class RegraEliminacaoConfiguration : IEntityTypeConfiguration<RegraEliminacao>
 {
 
@@ -44,7 +39,7 @@ internal sealed class RegraEliminacaoConfiguration : IEntityTypeConfiguration<Re
         // exige o discriminador "$tipo" como primeira propriedade, e o
         // "jsonb" do Postgres reordena chaves por tamanho na escrita.
         builder.Property(r => r.Parametros)
-            .HasColumnName("args")
+            .HasColumnName("parametros")
             .HasConversion(ParametrosConverter, ParametrosComparer)
             .HasColumnType("json")
             .IsRequired();

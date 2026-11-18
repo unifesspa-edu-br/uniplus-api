@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
 using Microsoft.EntityFrameworkCore;
@@ -17,10 +16,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// Configuração EF Core de <see cref="CriterioDesempate"/> (Story #774) —
 /// entidade filha do agregado <see cref="ProcessoSeletivo"/>.
 /// </summary>
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class CriterioDesempateConfiguration : IEntityTypeConfiguration<CriterioDesempate>
 {
 
@@ -54,7 +49,7 @@ internal sealed class CriterioDesempateConfiguration : IEntityTypeConfiguration<
         // problema — sem custo aqui, já que esta coluna nunca é consultada via
         // operadores jsonb (containment/GIN).
         builder.Property(c => c.Parametros)
-            .HasColumnName("args")
+            .HasColumnName("parametros")
             .HasConversion(ParametrosConverter, ParametrosComparer)
             .HasColumnType("json")
             .IsRequired();

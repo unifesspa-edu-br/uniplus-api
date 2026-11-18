@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
-/// O tratamento que a versão da regra de consolidação declara no <c>esquema_args</c> para quando o critério não
+/// O tratamento que a versão da regra de consolidação declara na <c>declaracao_da_regra</c> para quando o critério não
 /// converge (ADR-0150, emenda 3). Ponto único da leitura da chave, usado por quem lê a declaração do conceito
 /// categórico e por quem conta os corretores em campo.
 /// </summary>
@@ -23,9 +23,9 @@ internal static class TratamentoDaRegraDeConsolidacao
     internal static bool Tentar(RegraCatalogo regra, out TratamentoDaFaltaDeConsolidacao? tratamento)
     {
         tratamento = null;
-        if (regra.EsquemaArgs.ValueKind != JsonValueKind.Object || !regra.EsquemaArgs.TryGetProperty(ChaveDoTratamento, out JsonElement declarado))
+        if (regra.DeclaracaoDaRegra.ValueKind != JsonValueKind.Object || !regra.DeclaracaoDaRegra.TryGetProperty(ChaveDoTratamento, out JsonElement declarado))
         {
-            return regra.EsquemaArgs.ValueKind == JsonValueKind.Object && !regra.EsquemaArgs.TryGetProperty(ChaveDoCriterio, out _);
+            return regra.DeclaracaoDaRegra.ValueKind == JsonValueKind.Object && !regra.DeclaracaoDaRegra.TryGetProperty(ChaveDoCriterio, out _);
         }
 
         string? token = declarado.ValueKind == JsonValueKind.String ? declarado.GetString() : null;

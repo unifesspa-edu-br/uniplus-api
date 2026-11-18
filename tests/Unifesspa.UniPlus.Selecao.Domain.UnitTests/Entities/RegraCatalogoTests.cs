@@ -66,12 +66,12 @@ public sealed class RegraCatalogoTests
         criar.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("tipo");
     }
 
-    [Fact(DisplayName = "Criar recusa esquema_args que não é objeto JSON")]
-    public void Criar_EsquemaArgsNaoObjeto_LancaArgumentException()
+    [Fact(DisplayName = "Criar recusa declaracao_da_regra que não é objeto JSON")]
+    public void Criar_DeclaracaoDaRegraNaoObjeto_LancaArgumentException()
     {
         Action criar = () => RegraCatalogo.Criar("R", "v1", TipoRegra.RegraBonus, Json("[]"), Json("[]"), "base");
 
-        criar.Should().Throw<ArgumentException>().WithParameterName("esquemaArgs");
+        criar.Should().Throw<ArgumentException>().WithParameterName("declaracaoDaRegra");
     }
 
     [Fact(DisplayName = "Criar recusa invariantes que não é array JSON")]

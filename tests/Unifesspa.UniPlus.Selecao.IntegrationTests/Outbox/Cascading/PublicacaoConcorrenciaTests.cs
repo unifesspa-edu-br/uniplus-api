@@ -194,7 +194,7 @@ public sealed class PublicacaoConcorrenciaTests
 
     /// <summary>
     /// A matriz legal completa (8×7), fallback AC, como <c>DestinoRemanejamentoInput</c> —
-    /// mesma forma exigida pelo <c>esquema_args</c> congelado de <c>REMANEJ-CASCATA-LEI-12711
+    /// mesma forma exigida pela declaração da regra de <c>REMANEJ-CASCATA-LEI-12711
     /// v1</c> (cascata de remanejamento de cotas, UNI-REQ-0056, validada pelo handler): cada origem lista as outras 7 federais,
     /// na ordem de <see cref="ModalidadesFederaisLei12711.Codigos"/>.
     /// </summary>

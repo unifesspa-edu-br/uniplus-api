@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
 using Microsoft.EntityFrameworkCore;
@@ -33,15 +32,11 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Seed;
 /// outras tabelas do módulo, como <c>versoes_configuracao</c>, que têm os seus).
 /// </para>
 /// <para>
-/// <c>esquema_args</c> (schema dos parâmetros) e <c>invariantes</c> são
+/// <c>declaracao_da_regra</c> (declaração da versão) e <c>invariantes</c> são
 /// colunas <c>jsonb</c>; o <c>hash</c> content-addressable da definição é
 /// computado no domínio (<c>HashCanonicalComputer.ComputeRegraCatalogo</c>).
 /// </para>
 /// </remarks>
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class RegraCatalogoConfiguration : IEntityTypeConfiguration<RegraCatalogo>
 {
     private const int CodigoMaxLength = 128;
@@ -72,7 +67,7 @@ internal sealed class RegraCatalogoConfiguration : IEntityTypeConfiguration<Regr
             .HasMaxLength(TipoMaxLength)
             .IsRequired();
 
-        builder.Property(r => r.EsquemaArgs)
+        builder.Property(r => r.DeclaracaoDaRegra)
             .HasConversion(JsonElementConverter, JsonElementComparer)
             .HasColumnType("jsonb")
             .IsRequired();
@@ -121,7 +116,7 @@ internal sealed class RegraCatalogoConfiguration : IEntityTypeConfiguration<Regr
             item.Codigo,
             item.Versao,
             item.Tipo,
-            EsquemaArgs = Parse(item.EsquemaArgsJson),
+            DeclaracaoDaRegra = Parse(item.DeclaracaoDaRegraJson),
             Invariantes = Parse(item.InvariantesJson),
             item.BaseLegal,
             Hash = item.ComputarHash(),
@@ -134,7 +129,7 @@ internal sealed class RegraCatalogoConfiguration : IEntityTypeConfiguration<Regr
         new(tipo => tipo.ToCodigo(), codigo => TipoRegraCodigo.FromCodigo(codigo));
 
     /// <summary>
-    /// Serializa o payload jsonb (<c>esquema_args</c>/<c>invariantes</c>) pelo
+    /// Serializa o payload jsonb (<c>declaracao_da_regra</c>/<c>invariantes</c>) pelo
     /// texto bruto do <see cref="JsonElement"/> e o reidrata desanexado do
     /// <see cref="JsonDocument"/> de origem (<see cref="JsonElement.Clone"/>).
     /// </summary>

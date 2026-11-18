@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Configurations;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
 using Microsoft.EntityFrameworkCore;
@@ -17,10 +16,6 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalidade>
 {
     private const int CodigoMaxLength = 60;
@@ -76,10 +71,10 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
             .HasConversion(new AcaoQuandoIndeferidoValueConverter())
             .HasMaxLength(EnumTokenMaxLength);
 
-        // remanejamento_args: value object serializado como jsonb (chaves fixadas por
+        // remanejamento_parametros: value object serializado como jsonb (chaves fixadas por
         // JsonPropertyName — destino/par/fallback). Default '{}' cobre inserts crus.
         builder.Property(m => m.RemanejamentoParametros)
-            .HasColumnName("remanejamento_args")
+            .HasColumnName("remanejamento_parametros")
             .HasConversion(RemanejamentoParametrosConverter, RemanejamentoParametrosComparer)
             .HasColumnType("jsonb")
             .HasDefaultValueSql("'{}'::jsonb")

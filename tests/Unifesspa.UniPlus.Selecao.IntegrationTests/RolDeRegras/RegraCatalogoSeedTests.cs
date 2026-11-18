@@ -42,9 +42,11 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
 
         regras.Should().HaveCount(RegraCatalogoSeed.Itens.Count);
 
-        // A unicidade é por código E versão, como o índice do catálogo: uma regra evolui
-        // publicando versão nova, e as duas convivem — a antiga porque processos publicados a
-        // referenciam, a nova porque é a que passa a valer.
+        ConferirRegrasSemDuplicacao(regras);
+    }
+
+    private static void ConferirRegrasSemDuplicacao(List<RegraCatalogo> regras)
+    {
         regras.Select(r => (r.Codigo, r.Versao)).Should().OnlyHaveUniqueItems();
         regras.Should().Contain(r => r.Codigo == "DISTRIBUICAO-LEI-12711" && r.Tipo == TipoRegra.RegraDistribuicaoVagas);
         regras.Should().Contain(r => r.Codigo == "DISTRIBUICAO-LEI-12711-COM-AMPLA-CONCORRENCIA-E-PESSOA-COM-DEFICIENCIA" && r.Tipo == TipoRegra.RegraDistribuicaoVagas);
@@ -68,15 +70,16 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
             .AsNoTracking()
             .ToListAsync(CancellationToken.None);
 
-        // A normalização jsonb do Postgres pode reordenar chaves/remover espaços;
-        // como o hash canoniza recursivamente, recomputar a partir do estado
-        // materializado deve reproduzir o hash gravado — content-addressability.
+        ConferirHashes(regras);
+    }
+
+    private static void ConferirHashes(List<RegraCatalogo> regras)
+    {
         foreach (RegraCatalogo regra in regras)
         {
-            regra.RecomputeHash().Should().Be(regra.Hash, $"a regra {regra.Codigo} deve ser content-addressable");
+            regra.RecomputeHash().Should().Be(regra.Hash);
         }
 
-        // E o hash gravado deve bater com o computado pela fonte única do seed.
         foreach (RegraCatalogoSeedItem item in RegraCatalogoSeed.Itens)
         {
             RegraCatalogo persistida = regras.Single(r => r.Codigo == item.Codigo && r.Versao == item.Versao);
@@ -84,7 +87,7 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
         }
     }
 
-    [Fact(DisplayName = "esquema_args/invariantes preservam o conteúdo semântico após o round-trip jsonb")]
+    [Fact(DisplayName = "declaracao_da_regra/invariantes preservam o conteúdo semântico após o round-trip jsonb")]
     public async Task Seed_PayloadJsonb_PreservaConteudo()
     {
         await using UniPlusDbContext context = _fixture.CreateDbContext();
@@ -93,8 +96,8 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
             .AsNoTracking()
             .SingleAsync(r => r.Codigo == "BONUS-MULTIPLICATIVO", CancellationToken.None);
 
-        bonus.EsquemaArgs.ValueKind.Should().Be(JsonValueKind.Object);
-        bonus.EsquemaArgs.GetProperty("fator").GetString().Should().Be("numeric");
+        bonus.DeclaracaoDaRegra.ValueKind.Should().Be(JsonValueKind.Object);
+        bonus.DeclaracaoDaRegra.EnumerateObject().Should().BeEmpty();
         bonus.Invariantes.ValueKind.Should().Be(JsonValueKind.Array);
         bonus.Invariantes.GetArrayLength().Should().BeGreaterThan(0);
     }
@@ -102,43 +105,42 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
     [Fact(DisplayName = "v1 e v2 de um mesmo código coexistem (UNIQUE por codigo+versao)")]
     public async Task Codigo_V1EV2_Coexistem()
     {
-        // Este teste muta o banco compartilhado do fixture (insere uma v2). Para
-        // não vazar estado para as demais asserções de contagem do seed (que
-        // exigem exatamente as regras v1 semeadas), a v2 é removida ao final —
-        // a ordem de execução dentro da classe deixa de importar.
-        Guid v2Id;
-        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
-        {
-            using JsonDocument esquema = JsonDocument.Parse("""{"fonte_pesos":["etapa"]}""");
-            using JsonDocument invariantes = JsonDocument.Parse("""["divisor = Σ(peso)"]""");
-
-            RegraCatalogo v2 = RegraCatalogo.Criar(
-                "FORMULA-MEDIA-PONDERADA", "v2", TipoRegra.RegraCalculo,
-                esquema.RootElement, invariantes.RootElement, "Revisão da fórmula (nova versão)");
-            v2Id = v2.Id;
-
-            writeContext.RolDeRegras.Add(v2);
-            await writeContext.SaveChangesAsync(CancellationToken.None);
-        }
-
+        using JsonDocument declaracao = JsonDocument.Parse("""{"fonte_pesos":["etapa"]}""");
+        using JsonDocument invariantes = JsonDocument.Parse("""["divisor = Σ(peso)"]""");
+        RegraCatalogo v2 = RegraCatalogo.Criar(
+            "FORMULA-MEDIA-PONDERADA", "v2", TipoRegra.RegraCalculo,
+            declaracao.RootElement, invariantes.RootElement, "Revisão da fórmula (nova versão)");
         try
         {
-            await using UniPlusDbContext readContext = _fixture.CreateDbContext();
-            List<RegraCatalogo> versoes = await readContext.RolDeRegras
-                .AsNoTracking()
-                .Where(r => r.Codigo == "FORMULA-MEDIA-PONDERADA")
-                .OrderBy(r => r.Versao)
-                .ToListAsync(CancellationToken.None);
-
-            versoes.Select(r => r.Versao).Should().Equal("v1", "v2");
+            await GravarRegraAsync(v2);
+            await ConferirVersoesAsync();
         }
         finally
         {
-            await using UniPlusDbContext cleanupContext = _fixture.CreateDbContext();
-            await cleanupContext.RolDeRegras
-                .Where(r => r.Id == v2Id)
-                .ExecuteDeleteAsync(CancellationToken.None);
+            await RemoverRegraAsync(v2.Id);
         }
+    }
+
+    private async Task GravarRegraAsync(RegraCatalogo regra)
+    {
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
+        context.RolDeRegras.Add(regra);
+        await context.SaveChangesAsync(CancellationToken.None);
+    }
+
+    private async Task ConferirVersoesAsync()
+    {
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
+        List<RegraCatalogo> versoes = await context.RolDeRegras.AsNoTracking()
+            .Where(r => r.Codigo == "FORMULA-MEDIA-PONDERADA")
+            .OrderBy(r => r.Versao).ToListAsync(CancellationToken.None);
+        versoes.Select(r => r.Versao).Should().Equal("v1", "v2");
+    }
+
+    private async Task RemoverRegraAsync(Guid id)
+    {
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
+        await context.RolDeRegras.Where(r => r.Id == id).ExecuteDeleteAsync(CancellationToken.None);
     }
 
     [Fact(DisplayName = "Reader resolve regra por (codigo, versao) e filtra por tipo")]
@@ -170,7 +172,7 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
 
         regra.Should().NotBeNull();
         regra!.Tipo.Should().Be(TipoRegra.RegraEliminacao);
-        regra.EsquemaArgs.EnumerateObject().Should().BeEmpty("a regra não tem parâmetro: o edital só a declara ou não");
+        regra.DeclaracaoDaRegra.EnumerateObject().Should().BeEmpty("a regra não tem parâmetro: o edital só a declara ou não");
         regra.Invariantes.EnumerateArray().Select(i => i.GetString()).Should().Equal(
             "falta em pelo menos um dia de prova da edição do ENEM usada no processo → elimina",
             "sem participação registrada na edição do ENEM indicada pelo candidato equivale a falta");
@@ -187,7 +189,7 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
 
         regra.Should().NotBeNull();
         regra!.Tipo.Should().Be(TipoRegra.RegraEliminacao);
-        regra.EsquemaArgs.EnumerateObject().Select(p => p.Name).Should().BeEquivalentTo("area_codigo", "minimo");
+
         regra.Invariantes.EnumerateArray().Select(i => i.GetString()).Should().Equal(
             "nota na área < mínimo → elimina",
             "no máximo um corte por área");
@@ -204,7 +206,7 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
 
         regra.Should().NotBeNull();
         regra!.Tipo.Should().Be(TipoRegra.RegraEliminacao);
-        regra.EsquemaArgs.EnumerateObject().Select(p => p.Name).Should().Equal("etapa_ref");
+
         regra.Invariantes.EnumerateArray().Select(i => i.GetString()).Should().Equal(
             "falta à etapa referenciada → elimina",
             "não se aplica à etapa de nota do ENEM");
@@ -262,27 +264,20 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
             .Which.Codigo.Should().Be("RECURSO-PRAZO-ANCORADO-EM-ATO");
     }
 
-    [Fact(DisplayName = "O reader resolve as cinco regras de distribuição em v1 única; v2 não existe")]
-    public async Task Reader_ObterAsync_DistribuicaoVagas_SoResolveV1()
+    [Theory(DisplayName = "O leitor resolve cada regra de distribuição apenas em v1")]
+    [InlineData("DISTRIBUICAO-LEI-12711")]
+    [InlineData("DISTRIBUICAO-LEI-12711-COM-AMPLA-CONCORRENCIA-E-PESSOA-COM-DEFICIENCIA")]
+    [InlineData("DISTRIBUICAO-INSTITUCIONAL")]
+    [InlineData("DISTRIBUICAO-POR-ACRESCIMO-INDIGENA-E-QUILOMBOLA")]
+    [InlineData("DISTRIBUICAO-COM-AMPLA-CONCORRENCIA-E-PESSOA-COM-DEFICIENCIA")]
+    public async Task Reader_ObterAsync_DistribuicaoVagas_SoResolveV1(string codigo)
     {
         await using UniPlusDbContext context = _fixture.CreateDbContext();
         RegraCatalogoReader reader = new(context);
-
-        foreach (string codigo in new[]
-        {
-            "DISTRIBUICAO-LEI-12711",
-            "DISTRIBUICAO-LEI-12711-COM-AMPLA-CONCORRENCIA-E-PESSOA-COM-DEFICIENCIA",
-            "DISTRIBUICAO-INSTITUCIONAL",
-            "DISTRIBUICAO-POR-ACRESCIMO-INDIGENA-E-QUILOMBOLA",
-            "DISTRIBUICAO-COM-AMPLA-CONCORRENCIA-E-PESSOA-COM-DEFICIENCIA",
-        })
-        {
-            RegraCatalogo? v1 = await reader.ObterAsync(codigo, "v1", CancellationToken.None);
-            v1.Should().NotBeNull($"{codigo} vive em v1 única — sem produção, o catálogo não carrega v2");
-
-            RegraCatalogo? v2 = await reader.ObterAsync(codigo, "v2", CancellationToken.None);
-            v2.Should().BeNull($"{codigo} não tem v2 — a reescrita para v1 única não deixou versão duplicada");
-        }
+        RegraCatalogo? v1 = await reader.ObterAsync(codigo, "v1", CancellationToken.None);
+        RegraCatalogo? v2 = await reader.ObterAsync(codigo, "v2", CancellationToken.None);
+        v1.Should().NotBeNull();
+        v2.Should().BeNull();
     }
 
     [Theory(DisplayName = "A base legal das regras de ação afirmativa é a Res. 532/2021, sem resolução revogada")]
@@ -351,27 +346,18 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
         NaturezasDaConsolidacao.De(independente).Should().Equal(NaturezaConceito.Numerico);
     }
 
-    [Fact(DisplayName = "As regras de conceito categórico declaram critério, corretores e tratamento, e só a natureza categórica")]
-    public async Task RegraDeConceitoCategorico_DeclaraCriterioCorretoresETratamento()
+    [Theory(DisplayName = "A regra categórica declara critério, corretores, tratamento e natureza")]
+    [InlineData(RegraConsolidacaoCodigo.ConceitoUnanimidade, CriterioDeConsolidacaoDoConceito.Unanimidade, 2, TratamentoDaFaltaDeConsolidacao.DecisaoDaBanca)]
+    [InlineData(RegraConsolidacaoCodigo.ConceitoMaioriaSimples, CriterioDeConsolidacaoDoConceito.MaioriaSimples, 3, TratamentoDaFaltaDeConsolidacao.NovoCorretor)]
+    [InlineData(RegraConsolidacaoCodigo.ConceitoMaioriaAbsoluta, CriterioDeConsolidacaoDoConceito.MaioriaAbsoluta, 3, TratamentoDaFaltaDeConsolidacao.NovoCorretor)]
+    public async Task RegraDeConceitoCategorico_DeclaraCriterioCorretoresETratamento(
+        string codigo, CriterioDeConsolidacaoDoConceito criterio, int corretores, TratamentoDaFaltaDeConsolidacao tratamento)
     {
         await using UniPlusDbContext context = _fixture.CreateDbContext();
         RegraCatalogoReader reader = new(context);
-
-        (string Codigo, CriterioDeConsolidacaoDoConceito Criterio, int Corretores, TratamentoDaFaltaDeConsolidacao Tratamento)[] esperadas =
-        [
-            (RegraConsolidacaoCodigo.ConceitoUnanimidade, CriterioDeConsolidacaoDoConceito.Unanimidade, 2, TratamentoDaFaltaDeConsolidacao.DecisaoDaBanca),
-            (RegraConsolidacaoCodigo.ConceitoMaioriaSimples, CriterioDeConsolidacaoDoConceito.MaioriaSimples, 3, TratamentoDaFaltaDeConsolidacao.NovoCorretor),
-            (RegraConsolidacaoCodigo.ConceitoMaioriaAbsoluta, CriterioDeConsolidacaoDoConceito.MaioriaAbsoluta, 3, TratamentoDaFaltaDeConsolidacao.NovoCorretor),
-        ];
-
-        foreach ((string codigo, CriterioDeConsolidacaoDoConceito criterio, int corretores, TratamentoDaFaltaDeConsolidacao tratamento) in esperadas)
-        {
-            RegraCatalogo regra = (await reader.ObterAsync(codigo, RegraCatalogoSeed.VersaoV1, CancellationToken.None))!;
-
-            DeclaracaoDaConsolidacaoDoConceito.De(regra).Should().Be(
-                new DeclaracaoDaConsolidacaoDoConceito(criterio, corretores, tratamento), codigo);
-            NaturezasDaConsolidacao.De(regra).Should().Equal([NaturezaConceito.Categorico], codigo);
-        }
+        RegraCatalogo regra = (await reader.ObterAsync(codigo, RegraCatalogoSeed.VersaoV1, CancellationToken.None))!;
+        DeclaracaoDaConsolidacaoDoConceito.De(regra).Should().Be(new DeclaracaoDaConsolidacaoDoConceito(criterio, corretores, tratamento));
+        NaturezasDaConsolidacao.De(regra).Should().Equal([NaturezaConceito.Categorico]);
     }
 
     [Fact(DisplayName = "As regras de consolidação numéricas não declaram critério de conceito")]

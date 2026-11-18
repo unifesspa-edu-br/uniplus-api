@@ -56,6 +56,12 @@ A [ADR-0051](0051-apicurio-schema-registry-avro-wolverine.md) define o registro 
 > **Confirmação:** teste de contrato em que cada componente do documento na OpenAPI publicada é o trecho correspondente dos arquivos, com as referências trocadas pela regra, sem componente sobrando ou faltando.
 >
 > **Consequências:** a OpenAPI do módulo cresce o tamanho do esquema. Os geradores de tipo ignoram as condicionais (`if`/`then`/`else`), então o tipo gerado é mais largo que o esquema, e a validação da forma é a da API. A versão seguinte do formato decide o nome dos componentes dela.
+>
+> **Emenda proposta (2026-11-17) — forma dos parâmetros.**
+>
+> A forma dos parâmetros vive somente no esquema do documento. O catálogo guarda apenas o que a versão da regra declara de si. Mudança na forma dos parâmetros exige versão do documento, não da regra.
+>
+> **Confirmação:** teste que compara os códigos das regras de eliminação e desempate no catálogo e no esquema do documento e verifica que a declaração de cada uma está vazia.
 
 ## Consequências
 

@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
-/// O número de corretores distintos que cada versão de regra de consolidação exige, lido do <c>esquema_args</c> da
+/// O número de corretores distintos que cada versão de regra de consolidação exige, lido da <c>declaracao_da_regra</c> da
 /// própria versão (ADR-0150, emendas 1 e 2). É valor fixo da versão, e não parâmetro que o edital preenche: o número
 /// congelado é o da versão que a etapa referencia.
 /// </summary>
@@ -33,8 +33,8 @@ public static class CorretoresDaRegraDeConsolidacao
         corretores = 0;
 
         return regra.Tipo == TipoRegra.RegraConsolidacao
-            && regra.EsquemaArgs.ValueKind == JsonValueKind.Object
-            && regra.EsquemaArgs.TryGetProperty(ChaveDosCorretores, out JsonElement declarados)
+            && regra.DeclaracaoDaRegra.ValueKind == JsonValueKind.Object
+            && regra.DeclaracaoDaRegra.TryGetProperty(ChaveDosCorretores, out JsonElement declarados)
             && declarados.ValueKind == JsonValueKind.Number
             && declarados.TryGetInt32(out corretores)
             && corretores >= 1;
@@ -59,5 +59,5 @@ public static class CorretoresDaRegraDeConsolidacao
     }
 
     private static ArgumentException DeclaracaoInvalida(RegraCatalogo regra) =>
-        new($"A regra '{regra.Codigo}' versão '{regra.Versao}' deve ser de consolidação e declarar '{ChaveDosCorretores}' no esquema_args como inteiro maior ou igual a um.", nameof(regra));
+        new("A regra de consolidação deve declarar uma quantidade inteira de corretores maior ou igual a um.", nameof(regra));
 }

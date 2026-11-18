@@ -17,12 +17,13 @@ O catálogo `regras_do_catalogo` (Story #772) é uma biblioteca de regras tipada
 versionadas e content-addressable que a configuração do Processo Seletivo
 referencia por `(codigo, versao, hash)`. A configuração congelada de um certame
 (`VersaoConfiguracao`, ADR-0104) preserva essa referência para tornar o resultado
-reprodutível e auditável (RN08).
+reprodutível e auditável (RN08). A definição inclui a `declaracao_da_regra`, cujo
+conteúdo integra o hash da regra.
 
 Entre as 18 regras semeadas, `RECURSO-MULTI-INSTANCIA` conflacionava dois
 conceitos: a **gestão** de uma segunda instância de recurso — que o Uni+ não
 exerce, pois o julgamento em instância superior corre fora do sistema — e a
-**janela de suspensividade**, que é real e precisa ficar congelada por edital. O
+**período de suspensividade**, que é real e precisa ficar congelada por edital. O
 nome da regra negava o próprio conteúdo que deveria sobrar depois da correção.
 
 A pergunta é: pode-se **corrigir** uma linha do seed substituindo-a (removê-la e
@@ -67,8 +68,8 @@ a substituição é proibida.
 No caso concreto que motivou esta ADR, `RECURSO-MULTI-INSTANCIA` tinha zero
 referências congeladas (nenhuma `VersaoConfiguracao`, nenhum consumidor de
 `TipoRegra.RegraPrazoRecurso`, sem produção), e por isso foi substituída por
-`RECURSO-PRAZO-ANCORADO-EM-ATO` — que preserva a janela de suspensividade, agora
-por instância, e ancora o prazo no instante de publicação de um ato.
+`RECURSO-PRAZO-ANCORADO-EM-ATO` — que preserva a período de suspensividade, agora
+por instância, e inicia a contagem do prazo na publicação de um ato.
 
 ## Consequências
 
@@ -82,7 +83,7 @@ por instância, e ancora o prazo no instante de publicação de um ato.
 
 ### Negativas
 
-- Cria uma janela em que o comportamento de correção difere (substituição antes,
+- Cria uma período em que o comportamento de correção difere (substituição antes,
   append-only depois) — exige que a verificação seja executada, não presumida.
 - Reusar o `Id` técnico numa substituição pode surpreender quem espera que `Id`
   seja identidade de negócio; a identidade de negócio é `(codigo, versao)`.
@@ -111,7 +112,7 @@ por instância, e ancora o prazo no instante de publicação de um ato.
 
 ### Append-only estrito desde sempre
 
-- Bom, porque a regra é uniforme e não tem janela de exceção.
+- Bom, porque a regra é uniforme e não tem período de exceção.
 - Ruim, porque preserva vocabulário nunca usado como se fosse fato, e o nome
   errado de uma regra ficaria no catálogo para sempre.
 

@@ -104,7 +104,7 @@ Nenhum outro trecho desta ADR muda.
 
 **Decisão.** Distingue-se o que a versão da regra declara do que o edital escolhe.
 
-- **A versão da regra declara, no `esquema_args`, e fixa por versão:** as naturezas de conceito a que se aplica (`naturezas_do_conceito`) e os corretores distintos. A avaliação única aceita as duas naturezas e a correção independente só a numérica. A consolidação categórica, regra nova do rol, declara também o critério (unanimidade, maioria simples ou maioria absoluta) e o tratamento do empate e da falta de unanimidade. Variar um desses valores é versão nova da regra, nunca parâmetro do edital nem valor fixo no código.
+- **A versão da regra declara, no `declaracao_da_regra`, e fixa por versão:** as naturezas de conceito a que se aplica (`naturezas_do_conceito`) e os corretores distintos. A avaliação única aceita as duas naturezas e a correção independente só a numérica. A consolidação categórica, regra nova do rol, declara também o critério (unanimidade, maioria simples ou maioria absoluta) e o tratamento do empate e da falta de unanimidade. Variar um desses valores é versão nova da regra, nunca parâmetro do edital nem valor fixo no código.
 - **O edital escolhe** qual regra e qual versão do rol a etapa referencia. A etapa com regra de consolidação declara conceito, e a regra cujas naturezas não incluem a do conceito é recusada.
 
 **Consequências.** A versão nova de uma regra pode ampliar as naturezas sem alcançar a versão que um edital publicado já congelou. A etapa com regra de consolidação e sem conceito é pendência tolerada em rascunho e cobrada na publicação e na retificação. Cada código de recusa novo tem página no portal de desenvolvedores.
@@ -113,7 +113,7 @@ Nenhum outro trecho desta ADR muda.
 
 **Contexto.** A emenda 2 prevê a consolidação categórica com critério e tratamento declarados pela versão, sem fixar o formato nem o conjunto de tratamentos. A apuração do valor do conceito precisa desses dados lidos do catálogo, e nenhum deles pode ficar fixo no código, porque as bancas variam o critério, o número de corretores e o que fazer quando os corretores não chegam a um valor.
 
-**Decisão.** O rol ganha três regras de consolidação, `CONSOLIDACAO-CONCEITO-UNANIMIDADE`, `CONSOLIDACAO-CONCEITO-MAIORIA-SIMPLES` e `CONSOLIDACAO-CONCEITO-MAIORIA-ABSOLUTA`, aplicáveis só ao conceito categórico. A versão da regra declara no `esquema_args`:
+**Decisão.** O rol ganha três regras de consolidação, `CONSOLIDACAO-CONCEITO-UNANIMIDADE`, `CONSOLIDACAO-CONCEITO-MAIORIA-SIMPLES` e `CONSOLIDACAO-CONCEITO-MAIORIA-ABSOLUTA`, aplicáveis só ao conceito categórico. A versão da regra declara no `declaracao_da_regra`:
 
 - `criterio`: `unanimidade`, `maioria_simples` ou `maioria_absoluta`;
 - `corretores_distintos`: o número de corretores que a versão exige;

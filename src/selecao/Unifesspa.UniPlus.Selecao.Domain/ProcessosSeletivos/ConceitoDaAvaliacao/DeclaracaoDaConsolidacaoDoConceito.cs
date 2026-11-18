@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
-/// O que a versão de uma regra de consolidação de conceito categórico declara no <c>esquema_args</c>: o critério
+/// O que a versão de uma regra de consolidação de conceito categórico declara na <c>declaracao_da_regra</c>: o critério
 /// de apuração, os corretores distintos e o tratamento quando o critério não converge (ADR-0150, emenda 3). É dado
 /// da versão, sem valor fixo no código: o edital só escolhe a versão que referencia.
 /// </summary>
@@ -55,10 +55,10 @@ public sealed record DeclaracaoDaConsolidacaoDoConceito(
     }
 
     private static string? LerTexto(RegraCatalogo regra, string chave) =>
-        regra.EsquemaArgs.TryGetProperty(chave, out JsonElement valor) && valor.ValueKind == JsonValueKind.String
+        regra.DeclaracaoDaRegra.TryGetProperty(chave, out JsonElement valor) && valor.ValueKind == JsonValueKind.String
             ? valor.GetString()
             : null;
 
     private static ArgumentException DeclaracaoInvalida(RegraCatalogo regra) =>
-        new($"A regra '{regra.Codigo}' versão '{regra.Versao}' deve ser de consolidação e declarar '{ChaveDoCriterio}', 'corretores_distintos', 'naturezas_do_conceito' e '{TratamentoDaRegraDeConsolidacao.ChaveDoTratamento}' válidos no esquema_args.", nameof(regra));
+        new("A regra de consolidação deve declarar critério, corretores, naturezas de conceito e tratamento válidos.", nameof(regra));
 }

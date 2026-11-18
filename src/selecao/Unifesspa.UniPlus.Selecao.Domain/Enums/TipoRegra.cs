@@ -77,7 +77,7 @@ public enum TipoRegra
     /// âncora em dia não útil, em horas e em dias úteis; quem <b>executa</b> a
     /// contagem é o motor, que consome a definição pelo par código e versão. O
     /// algoritmo é escolhido pelo edital, não parametrizado
-    /// (<c>esquema_args</c> vazio).
+    /// (<c>declaracao_da_regra</c> vazio).
     /// </summary>
     AlgoritmoContagemPrazo = 12,
 

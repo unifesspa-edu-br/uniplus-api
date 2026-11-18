@@ -1,18 +1,20 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.RolDeRegras;
 
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Infrastructure.DocumentoDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Seed;
 
 /// <summary>
 /// Cobertura da substituição da regra de prazo de recurso (#854): a antiga
 /// <c>RECURSO-MULTI-INSTANCIA</c> — que atribuía ao Uni+ a gestão de uma segunda
 /// instância inexistente — dá lugar a <c>RECURSO-PRAZO-ANCORADO-EM-ATO</c>, que
-/// preserva a janela de suspensividade (por instância) e ancora o prazo num ato
+/// preserva o período de suspensividade (por instância) e inicia o prazo em um ato
 /// publicado. Asserções sobre a fonte única do seed (<see cref="RegraCatalogoSeed.Itens"/>),
 /// sem tocar o banco — a materialização é coberta por <see cref="RegraCatalogoSeedTests"/>.
 /// </summary>
@@ -23,7 +25,7 @@ public sealed class RegraCatalogoSubstituicaoRecursoTests
 
     /// <summary>Hash da regra vigente: amarra a definição do seed ao hash gravado.</summary>
     private const string HashRegraNova =
-        "42cbba27f7e36789437ecb469c74476c99a37baaf66404769774eeff619b9e2d";
+        "595a2d755e2f9ded25793c6f433964f36f4b9d314ef3a1183e45f57ed4d5bd02";
 
     private static RegraCatalogoSeedItem RegraNova() =>
         RegraCatalogoSeed.Itens.Single(i => i.Codigo == CodigoNovo);
@@ -36,7 +38,7 @@ public sealed class RegraCatalogoSubstituicaoRecursoTests
             "a substituição remove RECURSO-MULTI-INSTANCIA em toda versão");
     }
 
-    [Fact(DisplayName = "CA-02 — a regra nova declara prazo ancorado em ato, sem a chave 'instancias'")]
+    [Fact(DisplayName = "CA-02 — a regra nova declara prazo iniciado por ato, sem a chave 'instancias'")]
     public void RegraCatalogoSeed_RecursoPrazoAncorado_EsquemaCorreto()
     {
         RegraCatalogoSeedItem nova = RegraNova();
@@ -44,63 +46,47 @@ public sealed class RegraCatalogoSubstituicaoRecursoTests
         nova.Versao.Should().Be(RegraCatalogoSeed.VersaoV1);
         nova.Tipo.Should().Be(TipoRegra.RegraPrazoRecurso);
 
-        using JsonDocument esquema = JsonDocument.Parse(nova.EsquemaArgsJson);
+        using JsonDocument esquema = JsonDocument.Parse(nova.DeclaracaoDaRegraJson);
         JsonElement raiz = esquema.RootElement;
 
         raiz.ValueKind.Should().Be(JsonValueKind.Object);
-        raiz.TryGetProperty("ato_ancora_codigo", out _).Should().BeFalse(
-            "a âncora deixou de ser parâmetro declarado por código: ela é a identidade do produto " +
-            "preliminar da própria fase, irmã de regra e parâmetros no envelope");
-        raiz.TryGetProperty("suspensividade_primeira_instancia", out _).Should().BeTrue();
-        raiz.TryGetProperty("suspensividade_segunda_instancia", out _).Should().BeTrue();
-        raiz.TryGetProperty("instancias", out _).Should().BeFalse(
-            "a lista de instâncias geridas pelo sistema foi descartada");
-
-        // A âncora sai do esquema de parâmetros, não do enunciado da regra: o que ela é e de
-        // onde o prazo conta continua declarado nas invariantes.
-        nova.InvariantesJson.Should().Contain("ancorado no instante de publicação do ato âncora");
-        nova.InvariantesJson.Should().Contain("produto PRELIMINAR publicado pela própria fase");
+        raiz.EnumerateObject().Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "CA-03 — nenhum campo da regra nova reintroduz a gestão da segunda instância")]
-    public void RegraCatalogoSeed_RecursoPrazoAncorado_NaoGereSegundaInstancia()
+    [Fact(DisplayName = "A regra preserva as condições para o início do prazo")]
+    public void RegraCatalogoSeed_RecursoPrazo_InvariantesPreservadas()
+    {
+        RegraCatalogoSeedItem nova = RegraNova();
+        nova.InvariantesJson.Should().Contain("o prazo começa no instante da publicação do ato");
+        nova.InvariantesJson.Should().Contain("publicação de um produto preliminar da própria fase");
+    }
+
+    [Theory(DisplayName = "Nenhum campo da regra reintroduz a gestão da segunda instância")]
+    [InlineData("instancias")]
+    [InlineData("CONSEPE")]
+    [InlineData("PARALISA")]
+    public void RegraCatalogoSeed_RecursoPrazo_NaoGereSegundaInstancia(string marca)
     {
         RegraCatalogoSeedItem nova = RegraNova();
 
-        // Substrings que identificavam, na regra antiga, a GESTÃO de uma segunda
-        // instância dentro do Uni+ — a lista ordenada de instâncias, o órgão
-        // externo que ela nomeava e a paralisação do processo. Nenhuma pode
-        // ressurgir por acidente na definição da regra nova.
-        string[] marcasDaGestao = ["instancias", "CONSEPE", "PARALISA"];
         string conteudo = string.Join(
             '\n',
-            nova.EsquemaArgsJson,
+            nova.DeclaracaoDaRegraJson,
             nova.InvariantesJson,
             nova.BaseLegal);
 
-        foreach (string marca in marcasDaGestao)
-        {
-            conteudo.Should().NotContainEquivalentOf(
-                marca,
-                $"a correção não pode reintroduzir a gestão da segunda instância ('{marca}')");
-        }
+        conteudo.Should().NotContainEquivalentOf(marca);
     }
 
-    [Fact(DisplayName = "CA-06 — a janela de suspensividade sobrevive, por instância e anulável")]
-    public void RegraCatalogoSeed_RecursoPrazoAncorado_PreservaSuspensividade()
+    [Theory(DisplayName = "O documento admite a ausência dos parâmetros de suspensividade")]
+    [InlineData("suspensividadePrimeiraInstanciaValor", "suspensividadePrimeiraInstanciaUnidade")]
+    [InlineData("suspensividadeSegundaInstanciaValor", "suspensividadeSegundaInstanciaUnidade")]
+    public void EsquemaDoDocumento_Suspensividade_DeclaraCamposOpcionais(string valor, string unidade)
     {
-        RegraCatalogoSeedItem nova = RegraNova();
-
-        using JsonDocument esquema = JsonDocument.Parse(nova.EsquemaArgsJson);
-        JsonElement raiz = esquema.RootElement;
-
-        string primeira = raiz.GetProperty("suspensividade_primeira_instancia").GetString()!;
-        string segunda = raiz.GetProperty("suspensividade_segunda_instancia").GetString()!;
-
-        // CA-06b: o nulo é a desativação — precisa estar declarado como válido nos
-        // dois graus (é a configuração da Habilitação/Ingresso, via judicial).
-        primeira.Should().Contain("null", "null = a pendência na fase não bloqueia atos irreversíveis");
-        segunda.Should().Contain("null", "null = a pendência em instância superior não bloqueia (via judicial)");
+        JsonNode recurso = ArquivosDoEsquema.DoAssembly().PorNome["comuns.schema.json"]["$defs"]!["propriedadesDoRecurso"]!;
+        recurso["properties"]![valor].Should().NotBeNull();
+        recurso["properties"]![unidade].Should().NotBeNull();
+        recurso["required"].Should().BeNull();
     }
 
     [Fact(DisplayName = "CA-09 — o hash da regra nova é estável")]

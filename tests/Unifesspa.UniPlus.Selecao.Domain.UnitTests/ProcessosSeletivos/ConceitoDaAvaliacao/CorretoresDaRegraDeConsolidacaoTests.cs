@@ -14,15 +14,15 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 /// </summary>
 public sealed class CorretoresDaRegraDeConsolidacaoTests
 {
-    private static RegraCatalogo Regra(string codigo, string esquemaArgs, TipoRegra tipo = TipoRegra.RegraConsolidacao)
+    private static RegraCatalogo Regra(string codigo, string declaracaoDaRegra, TipoRegra tipo = TipoRegra.RegraConsolidacao)
     {
-        using JsonDocument esquema = JsonDocument.Parse(esquemaArgs);
+        using JsonDocument esquema = JsonDocument.Parse(declaracaoDaRegra);
         using JsonDocument invariantes = JsonDocument.Parse("[]");
         return RegraCatalogo.Criar(codigo, "v1", tipo, esquema.RootElement, invariantes.RootElement, "Edital do processo seletivo");
     }
 
-    private static RegraCatalogo DeConsolidacao(string esquemaArgs) =>
-        Regra(RegraConsolidacaoCodigo.CorrecaoIndependente, esquemaArgs);
+    private static RegraCatalogo DeConsolidacao(string declaracaoDaRegra) =>
+        Regra(RegraConsolidacaoCodigo.CorrecaoIndependente, declaracaoDaRegra);
 
     [Fact(DisplayName = "A avaliação única exige um corretor")]
     public void De_AvaliacaoUnica_DevolveUm()
@@ -53,11 +53,11 @@ public sealed class CorretoresDaRegraDeConsolidacaoTests
     [InlineData("""{"corretores_distintos":"3"}""")]
     [InlineData("""{"corretores_distintos":null}""")]
     [InlineData("""{"corretores_distintos":3000000000}""")]
-    public void De_DeclaracaoInvalida_Lanca(string esquemaArgs)
+    public void De_DeclaracaoInvalida_Lanca(string declaracaoDaRegra)
     {
-        Func<int> ler = () => CorretoresDaRegraDeConsolidacao.De(DeConsolidacao(esquemaArgs));
+        Func<int> ler = () => CorretoresDaRegraDeConsolidacao.De(DeConsolidacao(declaracaoDaRegra));
 
-        ler.Should().Throw<ArgumentException>().WithMessage("*corretores_distintos*");
+        ler.Should().Throw<ArgumentException>().WithMessage("*corretores*");
     }
 
     [Theory(DisplayName = "Tentar devolve falso para a declaração inválida e o número para a válida, sem lançar")]
@@ -65,9 +65,9 @@ public sealed class CorretoresDaRegraDeConsolidacaoTests
     [InlineData("""{"corretores_distintos":0}""", false, 0)]
     [InlineData("""{"corretores_distintos":"3"}""", false, 0)]
     [InlineData("""{"corretores_distintos":3}""", true, 3)]
-    public void Tentar_DevolveSeADeclaracaoEValida(string esquemaArgs, bool valida, int esperado)
+    public void Tentar_DevolveSeADeclaracaoEValida(string declaracaoDaRegra, bool valida, int esperado)
     {
-        bool declarada = CorretoresDaRegraDeConsolidacao.Tentar(DeConsolidacao(esquemaArgs), out int corretores);
+        bool declarada = CorretoresDaRegraDeConsolidacao.Tentar(DeConsolidacao(declaracaoDaRegra), out int corretores);
 
         declarada.Should().Be(valida);
         corretores.Should().Be(esperado);
@@ -88,9 +88,9 @@ public sealed class CorretoresDaRegraDeConsolidacaoTests
     [InlineData("""{"corretores_distintos":2,"criterio":"unanimidade","naturezas_do_conceito":["categorico"],"quando_nao_consolida":"novo_corretor"}""", 3)]
     [InlineData("""{"corretores_distintos":2,"criterio":"unanimidade","naturezas_do_conceito":["categorico"],"quando_nao_consolida":"decisao_da_banca"}""", 2)]
     [InlineData("""{"corretores_distintos":3,"naturezas_do_conceito":["numerico"]}""", 3)]
-    public void TentarEmCampo_DevolveOsDistintosEOAdicionalDoTratamento(string esquemaArgs, int esperado)
+    public void TentarEmCampo_DevolveOsDistintosEOAdicionalDoTratamento(string declaracaoDaRegra, int esperado)
     {
-        bool lida = CorretoresDaRegraDeConsolidacao.TentarEmCampo(DeConsolidacao(esquemaArgs), out int emCampo);
+        bool lida = CorretoresDaRegraDeConsolidacao.TentarEmCampo(DeConsolidacao(declaracaoDaRegra), out int emCampo);
 
         lida.Should().BeTrue();
         emCampo.Should().Be(esperado);
@@ -105,9 +105,9 @@ public sealed class CorretoresDaRegraDeConsolidacaoTests
     [InlineData("""{"corretores_distintos":3,"quando_nao_consolida":1}""")]
     [InlineData("""{"corretores_distintos":3,"quando_nao_consolida":null}""")]
     [InlineData("""{"corretores_distintos":3,"quando_nao_consolida":["novo_corretor"]}""")]
-    public void TentarEmCampo_DeclaracaoInvalida_Falha(string esquemaArgs)
+    public void TentarEmCampo_DeclaracaoInvalida_Falha(string declaracaoDaRegra)
     {
-        bool lida = CorretoresDaRegraDeConsolidacao.TentarEmCampo(DeConsolidacao(esquemaArgs), out int emCampo);
+        bool lida = CorretoresDaRegraDeConsolidacao.TentarEmCampo(DeConsolidacao(declaracaoDaRegra), out int emCampo);
 
         lida.Should().BeFalse();
         emCampo.Should().Be(0);

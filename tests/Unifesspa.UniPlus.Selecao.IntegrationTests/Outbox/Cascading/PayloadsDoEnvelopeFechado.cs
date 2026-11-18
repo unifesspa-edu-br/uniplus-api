@@ -154,4 +154,59 @@ internal static class PayloadsDoEnvelopeFechado
         regraRecurso = (object?)null,
         unidadeResponsavelId = catalogos.UnidadeId,
     };
+    internal static object[] FatosColetados() =>
+    [
+        new
+        {
+            fatoCodigo = "BAIXA_RENDA", ordem = 0, rotulo = "Baixa renda",
+            tipoRenderizacao = TipoRenderizacaoCodigo.Booleano, obrigatoriedade = "SEMPRE",
+            precondicao = new[] { new[] { new { fato = "COR_RACA", @operador = OperadorCodigo.Igual, valor = "PRETA" } } },
+        },
+        new
+        {
+            fatoCodigo = "EDICAO_ENEM", ordem = 1, rotulo = "Qual edição do ENEM você vai usar?",
+            tipoRenderizacao = TipoRenderizacaoCodigo.SelecaoUnica, obrigatoriedade = "SEMPRE",
+        },
+        .. PerguntasDaReserva(),
+    ];
+
+    private static IEnumerable<object> PerguntasDaReserva()
+    {
+        string[] perguntas =
+            ["CONCORRER_EP", "PCD", "CONCORRER_PCD", "INDIGENA", "QUILOMBOLA", "CONCORRER_PPI", "CONCORRER_Q", "CONCORRER_RENDA"];
+        return perguntas.Select(static (fato, indice) => (object)new
+        {
+            fatoCodigo = fato,
+            ordem = indice + 2,
+            rotulo = fato,
+            tipoRenderizacao = TipoRenderizacaoCodigo.Booleano,
+            obrigatoriedade = "SEMPRE",
+        });
+    }
+
+    internal static object[] RegrasDeDerivacao() =>
+    [
+        new
+        {
+            codigoFato = "EGRESSO_ESCOLA_PUBLICA",
+            regras = new object[] { new { ordem = 0, contribui = (string?)null,
+                quando = new[] { new[] { new { fato = "COR_RACA", @operador = OperadorCodigo.Igual, valor = "PRETA" } } } } },
+        },
+    ];
+
+    internal static object Cascata() => new
+    {
+        regraCodigo = RegraRemanejamentoCodigo.Cascata,
+        regraVersao = "v1",
+        fallbackCodigo = ModalidadesFederaisLei12711.Ac,
+        destinos = DestinosDaCascata(),
+    };
+
+    private static object[] DestinosDaCascata() =>
+        [.. ModalidadesFederaisLei12711.Codigos.SelectMany(static origem =>
+            ModalidadesFederaisLei12711.Codigos.Where(destino => destino != origem)
+                .Select((destino, indice) => (object)new
+                {
+                    modalidadeOrigemCodigo = origem, ordem = indice + 1, modalidadeDestinoCodigo = destino,
+                }))];
 }

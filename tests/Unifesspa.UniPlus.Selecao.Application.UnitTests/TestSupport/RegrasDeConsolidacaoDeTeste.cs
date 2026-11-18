@@ -30,9 +30,9 @@ internal static class RegrasDeConsolidacaoDeTeste
         RegraConsolidacaoCodigo.ConceitoUnanimidade,
         """{"corretores_distintos":2,"criterio":"unanimidade","naturezas_do_conceito":["categorico"],"quando_nao_consolida":"decisao_da_banca"}""");
 
-    public static RegraCatalogo Regra(string codigo, string esquemaArgs, string versao = "v1")
+    public static RegraCatalogo Regra(string codigo, string declaracaoDaRegra, string versao = "v1")
     {
-        using JsonDocument esquema = JsonDocument.Parse(esquemaArgs);
+        using JsonDocument esquema = JsonDocument.Parse(declaracaoDaRegra);
         using JsonDocument invariantes = JsonDocument.Parse("[]");
 
         return RegraCatalogo.Criar(codigo, versao, TipoRegra.RegraConsolidacao, esquema.RootElement, invariantes.RootElement, "Regra de teste");

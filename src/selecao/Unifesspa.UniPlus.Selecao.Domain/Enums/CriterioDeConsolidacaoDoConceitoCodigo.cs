@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// Mapeamento entre <see cref="CriterioDeConsolidacaoDoConceito"/> e o token textual que a regra de
-/// consolidação declara no <c>esquema_args</c> — fonte única da leitura.
+/// consolidação declara no <c>declaracao_da_regra</c> — fonte única da leitura.
 /// </summary>
 public static class CriterioDeConsolidacaoDoConceitoCodigo
 {

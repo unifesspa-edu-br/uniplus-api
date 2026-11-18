@@ -237,7 +237,7 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
     private static async Task AfirmarDiscriminadorGravadoAsync(UniPlusDbContext contexto, Guid regraId)
     {
         string parametrosGravados = await contexto.Database.SqlQuery<string>($"""
-            SELECT args::text AS "Value" FROM selecao.regras_eliminacao WHERE id = {regraId}
+            SELECT parametros::text AS "Value" FROM selecao.regras_eliminacao WHERE id = {regraId}
             """).SingleAsync();
         parametrosGravados.Should().Contain("\"$tipo\":\"faltaEmDiaDeProvaEnem\"",
             "o discriminador gravado é o que a leitura usa para voltar à variante certa");

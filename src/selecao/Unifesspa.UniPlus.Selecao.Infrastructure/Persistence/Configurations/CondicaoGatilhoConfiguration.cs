@@ -45,7 +45,7 @@ public sealed class CondicaoGatilhoConfiguration : IEntityTypeConfiguration<Cond
             .HasMaxLength(OperadorCodigoMaxLength)
             .IsRequired();
 
-        // Mesmo padrão jsonb de RegraCatalogoConfiguration (EsquemaArgs/Invariantes) —
+        // Mesmo padrão jsonb de RegraCatalogoConfiguration (DeclaracaoDaRegra/Invariantes) —
         // serializa pelo texto bruto do JsonElement, reidrata desanexado do JsonDocument
         // de origem.
         builder.Property(c => c.Valor)

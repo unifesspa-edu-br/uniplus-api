@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 /// Parâmetros aplicados de uma <see cref="Entities.RegraEliminacao"/> — os
 /// parâmetros que o admin preenche ao aplicar uma regra do
 /// <c>regras_do_catalogo</c> (<c>tipo=regra_eliminacao</c>), tipados por variante
-/// conforme o <c>esquema_args</c> de cada código.
+/// conforme o esquema do documento da configuração.
 /// Discriminated union no molde de <c>PredicadoObrigatoriedade</c> (ADR-0058)
 /// e de <c>ParametrosCriterioDesempate</c> (Story #774).
 /// </summary>

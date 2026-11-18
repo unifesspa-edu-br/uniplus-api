@@ -32,13 +32,13 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
     /// editar o texto de uma entrada sem regenerar a migration quebra este teste.
     /// </summary>
     private const string HashExcluiDiaInicial =
-        "fce95fc44b52a5a93a697b0309659a5af0085f9d39ceac1c3917c7b00b1c0be5";
+        "64e9c6c59b5d9a4e25a6c2fee46689fcc1c2c439aa9d33bd148dd8c74371a562";
 
     private const string HashHorasUteisDesdeAncora =
-        "49b637293aaaa71449dcb971fc548c59fc840545d2d1740ac352f858a291105b";
+        "1319f925c7af96f337a34e8b705c6a40bd6d124dcc9e7bf9f5f1fd2d43d18cc6";
 
     private const string HashAvancaDataUtil =
-        "cd4c631492d02126c88a7ca5558992b3ed8a27c80692ecabfb73609293f2a9c8";
+        "47fb025bcfef2680377b57369e6f7e6657677c707f4e8293b979f883401eb094";
 
     private static RegraCatalogoSeedItem Item(string codigo) =>
         RegraCatalogoSeed.Itens.Single(i => i.Codigo == codigo);
@@ -116,19 +116,23 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
             "convenções diferentes têm definições — e hashes — diferentes");
     }
 
+    [Fact]
+    public void Seed_ExcluiDiaInicial_ExplicaQuandoTerminaOPrazo()
+    {
+        Invariantes(AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial)
+            .Should().Contain(i => i.Contains("à meia-noite que inicia o dia seguinte", StringComparison.Ordinal)
+                && i.Contains("esse instante não está incluído no prazo", StringComparison.Ordinal));
+    }
+
     [Fact(DisplayName = "A coincidência declarada entre convenções nomeia uma entrada que existe no catálogo")]
     public void Seed_CoincidenciaDeclarada_NomeiaEntradaExistente()
     {
-        // A convenção que avança data útil declara, na invariante de horas, que
-        // nessa unidade coincide com outra entrada — informação de que quem
-        // escolhe depende. Um código errado ali é texto plausível que ninguém
-        // percebe, então o nome citado precisa existir no catálogo.
         string invarianteHoras = Invariantes(AlgoritmoContagemPrazoCodigo.AvancaDataUtil)
             .Single(i => i.StartsWith("em horas:", StringComparison.Ordinal));
 
         invarianteHoras.Should().Contain(
-            AlgoritmoContagemPrazoCodigo.HorasUteisDesdeAncora,
-            "a coincidência em horas é declarada nomeando a outra convenção");
+            "contagem de horas úteis a partir do evento que inicia o prazo",
+            "a coincidência em horas é declarada em linguagem clara");
 
         RegraCatalogoSeed.Itens.Should().Contain(
             i => i.Codigo == AlgoritmoContagemPrazoCodigo.HorasUteisDesdeAncora
@@ -136,39 +140,42 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
             "a convenção citada tem de existir no catálogo, sob o mesmo tipo");
     }
 
-    [Fact(DisplayName = "Cada entrada declara as quatro resoluções, com exemplos nas âncoras canônicas")]
-    public void Seed_DeclaraAsQuatroResolucoes_ComExemplosNasAncorasCanonicas()
+    [Theory(DisplayName = "Cada entrada declara quatro resoluções com exemplos")]
+    [InlineData(AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial)]
+    [InlineData(AlgoritmoContagemPrazoCodigo.HorasUteisDesdeAncora)]
+    [InlineData(AlgoritmoContagemPrazoCodigo.AvancaDataUtil)]
+    public void Seed_DeclaraAsQuatroResolucoes_ComExemplosDeInicioDoPrazo(string codigo)
     {
-        foreach (string codigo in CodigosDeContagem)
-        {
-            RegraCatalogoSeedItem item = Item(codigo);
-            item.Tipo.Should().Be(TipoRegra.AlgoritmoContagemPrazo);
-            item.Versao.Should().Be(RegraCatalogoSeed.VersaoV1);
+        RegraCatalogoSeedItem item = Item(codigo);
+        item.Tipo.Should().Be(TipoRegra.AlgoritmoContagemPrazo);
+        item.Versao.Should().Be(RegraCatalogoSeed.VersaoV1);
+        string[] invariantes = Invariantes(codigo);
+        invariantes.Should().HaveCount(4);
+        invariantes.Should().ContainSingle(i => i.StartsWith("evento que inicia o prazo fora da meia-noite:", StringComparison.Ordinal));
+        invariantes.Should().ContainSingle(i => i.StartsWith("evento que inicia o prazo em dia não útil:", StringComparison.Ordinal));
+        invariantes.Should().ContainSingle(i => i.StartsWith("em horas:", StringComparison.Ordinal));
+        invariantes.Should().ContainSingle(i => i.StartsWith("em dias úteis:", StringComparison.Ordinal));
+        string conteudo = string.Join('\n', invariantes);
+        conteudo.Should().Contain("sexta às 18h").And.Contain("domingo às 18h");
+    }
 
-            string[] invariantes = Invariantes(codigo);
-
-            // As quatro perguntas que distinguem uma convenção da outra
-            // (UNI-REQ-0112), cada uma com resposta própria e explícita.
-            invariantes.Should().HaveCount(4, $"a entrada {codigo} declara as quatro resoluções");
-            invariantes.Should().ContainSingle(i => i.StartsWith("âncora fora da meia-noite:", StringComparison.Ordinal));
-            invariantes.Should().ContainSingle(i => i.StartsWith("âncora em dia não útil:", StringComparison.Ordinal));
-            invariantes.Should().ContainSingle(i => i.StartsWith("em horas:", StringComparison.Ordinal));
-            invariantes.Should().ContainSingle(i => i.StartsWith("em dias úteis:", StringComparison.Ordinal));
-
-            // Intenção e resultado visíveis a quem escolhe: os exemplos
-            // resolvidos nas âncoras canônicas vivem na própria entrada.
-            string conteudo = string.Join('\n', invariantes);
-            conteudo.Should().Contain("sexta 18h", $"a entrada {codigo} resolve a âncora canônica de dia útil fora da meia-noite");
-            conteudo.Should().Contain("domingo 18h", $"a entrada {codigo} resolve a âncora canônica em dia não útil");
-        }
+    [Theory(DisplayName = "As convenções descrevem o início do prazo em linguagem clara")]
+    [InlineData(AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial)]
+    [InlineData(AlgoritmoContagemPrazoCodigo.HorasUteisDesdeAncora)]
+    [InlineData(AlgoritmoContagemPrazoCodigo.AvancaDataUtil)]
+    public void Seed_Invariantes_UsamLinguagemClara(string codigo)
+    {
+        string texto = string.Join(' ', Invariantes(codigo));
+        texto.Should().NotContain("âncora").And.NotContain("janela");
+        texto.Should().Contain("evento que inicia o prazo");
     }
 
     [Fact(DisplayName = "O esquema de parâmetros é vazio: o algoritmo é escolhido, não parametrizado")]
-    public void Seed_EsquemaArgsVazio()
+    public void Seed_DeclaracaoDaRegraVazio()
     {
         foreach (string codigo in CodigosDeContagem)
         {
-            using JsonDocument esquema = JsonDocument.Parse(Item(codigo).EsquemaArgsJson);
+            using JsonDocument esquema = JsonDocument.Parse(Item(codigo).DeclaracaoDaRegraJson);
 
             esquema.RootElement.ValueKind.Should().Be(JsonValueKind.Object);
             esquema.RootElement.EnumerateObject().Should().BeEmpty(
@@ -187,42 +194,27 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
         }
     }
 
-    [Fact(DisplayName = "O fundamento não excede o que a decisão institucional sustenta")]
+    [Fact(DisplayName = "O fundamento declara os limites da decisão")]
     public void BaseLegal_NaoExcedeADecisao()
     {
-        // Antes da decisão, a guarda protegia contra completar o placeholder com citação
-        // aproximada. Agora que há fundamento, o risco inverteu: o texto pode reivindicar
-        // mais autoridade do que a decisão tem. O registro dela declara os próprios limites
-        // — sem parecer formal, sem manifestação direta do procurador, sem precedente
-        // individualizado —, e é isso que se fixa aqui.
         string fundamento = AlgoritmoContagemPrazoCodigo.BaseLegalDeclaradaPeloEdital;
-
-        fundamento.Should().Contain("edital", "é o edital que fixa o prazo e declara a convenção");
-        fundamento.Should().Contain("UNI-REQ-0095", "o texto aponta a decisão que o sustenta");
-        fundamento.Should().Contain("juridicamente orientada",
-            "a qualificação é parte do fundamento, não ressalva de estilo");
-
-        // O texto nega ser jurisprudência, então proibir a palavra reprovaria a negativa
-        // junto com a reivindicação. O que não pode aparecer é a afirmação.
-        fundamento.Should().Contain("não é parecer formal nem jurisprudência consolidada",
-            "o limite do registro é parte do fundamento, não nota de rodapé");
-
-        foreach (string reivindicacao in new[] { "conforme jurisprudência", "segundo jurisprudência", "precedente", "STF", "STJ" })
-        {
-            fundamento.Should().NotContain(
-                reivindicacao,
-                $"'{reivindicacao}' atribuiria à decisão uma autoridade que o próprio registro nega ter");
-        }
-
-        // O art. 59 é regra geral ressalvada disposição específica, e no âmbito do certame
-        // quem prevalece é o edital. Citá-lo aqui inverteria a decisão.
-        foreach (string dispositivo in new[] { "art.", "Art.", "§", "Lei nº", "Decreto" })
-        {
-            fundamento.Should().NotContain(
-                dispositivo,
-                $"citar '{dispositivo}' apresentaria o dispositivo geral como fonte do prazo do certame, invertendo a decisão");
-        }
+        fundamento.Should().Contain("edital").And.Contain("UNI-REQ-0095").And.Contain("juridicamente orientada");
+        fundamento.Should().Contain("não é parecer formal nem jurisprudência consolidada");
     }
+
+    [Theory(DisplayName = "O fundamento não atribui autoridade além da decisão")]
+    [InlineData("conforme jurisprudência")]
+    [InlineData("segundo jurisprudência")]
+    [InlineData("precedente")]
+    [InlineData("STF")]
+    [InlineData("STJ")]
+    [InlineData("art.")]
+    [InlineData("Art.")]
+    [InlineData("§")]
+    [InlineData("Lei nº")]
+    [InlineData("Decreto")]
+    public void BaseLegal_ReivindicacaoNaoSustentada_NaoConsta(string texto) =>
+        AlgoritmoContagemPrazoCodigo.BaseLegalDeclaradaPeloEdital.Should().NotContain(texto);
 
     [Fact(DisplayName = "O fundamento nega dispor sobre efeito suspensivo, em vez de silenciar")]
     public void BaseLegal_NegaDisporSobreEfeitoSuspensivo()

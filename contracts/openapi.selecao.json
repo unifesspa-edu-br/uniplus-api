@@ -25613,7 +25613,7 @@
           "codigo",
           "versao",
           "tipo",
-          "esquemaArgs",
+          "declaracaoDaRegra",
           "invariantes",
           "baseLegal",
           "hash",
@@ -25631,7 +25631,7 @@
           "tipo": {
             "type": "string"
           },
-          "esquemaArgs": {
+          "declaracaoDaRegra": {
             "$ref": "#/components/schemas/JsonElement"
           },
           "invariantes": {

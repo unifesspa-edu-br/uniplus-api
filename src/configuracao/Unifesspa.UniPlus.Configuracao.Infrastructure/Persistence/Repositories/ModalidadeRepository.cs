@@ -10,10 +10,6 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via DI em ConfiguracaoInfrastructureRegistration.")]
 public sealed class ModalidadeRepository : IModalidadeRepository
 {
     private readonly UniPlusDbContext _dbContext;
@@ -82,13 +78,14 @@ public sealed class ModalidadeRepository : IModalidadeRepository
             return Task.FromResult(false);
         }
 
-        CodigoModalidade codigoVo = codigoResult.Value!;
+        return CodigoExisteEntreVivosAsync(codigoResult.Value!, excluirId, cancellationToken);
+    }
 
-        return _dbContext.Modalidades
+    private Task<bool> CodigoExisteEntreVivosAsync(CodigoModalidade codigo, Guid? excluirId, CancellationToken cancellationToken) =>
+        _dbContext.Modalidades
             .AsNoTracking()
             .Where(m => excluirId == null || m.Id != excluirId)
-            .AnyAsync(m => m.Codigo == codigoVo, cancellationToken);
-    }
+            .AnyAsync(m => m.Codigo == codigo, cancellationToken);
 
     public async Task<bool> CodigosVivosExistemAsync(
         IReadOnlyCollection<string> codigos,
@@ -96,21 +93,25 @@ public sealed class ModalidadeRepository : IModalidadeRepository
     {
         ArgumentNullException.ThrowIfNull(codigos);
 
-        var normalizados = codigos
+        List<string> normalizados = NormalizarCodigos(codigos);
+        if (!ConverterCodigos(normalizados, out List<CodigoModalidade> codigosVo))
+        {
+            return false;
+        }
+
+        return codigosVo.Count == 0 || await ContarCodigosVivosAsync(codigosVo, cancellationToken).ConfigureAwait(false) == codigosVo.Count;
+    }
+
+    private static List<string> NormalizarCodigos(IReadOnlyCollection<string> codigos) => codigos
             .Where(c => !string.IsNullOrWhiteSpace(c))
             .Select(c => c.Trim())
             .Distinct(StringComparer.Ordinal)
             .ToList();
 
-        if (normalizados.Count == 0)
-        {
-            return true;
-        }
-
-        // Qualquer código fora do formato canônico não pode ter modalidade viva —
-        // logo "nem todos existem".
-        var codigosVo = new List<CodigoModalidade>(normalizados.Count);
-        foreach (string codigo in normalizados)
+    private static bool ConverterCodigos(List<string> codigos, out List<CodigoModalidade> convertidos)
+    {
+        convertidos = new List<CodigoModalidade>(codigos.Count);
+        foreach (string codigo in codigos)
         {
             Result<CodigoModalidade> resultado = CodigoModalidade.Criar(codigo);
             if (resultado.IsFailure)
@@ -118,19 +119,19 @@ public sealed class ModalidadeRepository : IModalidadeRepository
                 return false;
             }
 
-            codigosVo.Add(resultado.Value!);
+            convertidos.Add(resultado.Value!);
         }
 
-        int encontrados = await _dbContext.Modalidades
+        return true;
+    }
+
+    private Task<int> ContarCodigosVivosAsync(List<CodigoModalidade> codigos, CancellationToken cancellationToken) =>
+        _dbContext.Modalidades
             .AsNoTracking()
-            .Where(m => codigosVo.Contains(m.Codigo))
+            .Where(m => codigos.Contains(m.Codigo))
             .Select(m => m.Codigo)
             .Distinct()
-            .CountAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        return encontrados == codigosVo.Count;
-    }
+            .CountAsync(cancellationToken);
 
     public Task<bool> EhReferenciadaPorOutraModalidadeVivaAsync(
         string codigo,
@@ -139,29 +140,27 @@ public sealed class ModalidadeRepository : IModalidadeRepository
     {
         ArgumentNullException.ThrowIfNull(codigo);
 
-        string codigoNorm = codigo.Trim();
-
-        // Consulta jsonb: composicao_origem OU qualquer campo de remanejamento_args
-        // (destino/par/fallback, extraídos por ->>). SQL cru é necessário porque
-        // RemanejamentoParametros é serializado como jsonb via value converter e o EF não
-        // traduz acesso aos campos internos em LINQ. O query filter global de
-        // soft-delete é aplicado por composição sobre o FromSql.
-        FormattableString sql = $@"
-            SELECT * FROM configuracao.modalidades
-            WHERE composicao_origem = {codigoNorm}
-               OR remanejamento_args ->> 'destino' = {codigoNorm}
-               OR remanejamento_args ->> 'par' = {codigoNorm}
-               OR remanejamento_args ->> 'fallback' = {codigoNorm}";
-
-        IQueryable<Modalidade> consulta = _dbContext.Modalidades
-            .FromSqlInterpolated(sql)
-            .AsNoTracking();
-
+        IQueryable<Modalidade> consulta = ReferenciasAoCodigo(codigo.Trim());
         if (excluirId is { } id)
         {
             consulta = consulta.Where(m => m.Id != id);
         }
 
         return consulta.AnyAsync(cancellationToken);
+    }
+
+    private IQueryable<Modalidade> ReferenciasAoCodigo(string codigoNorm)
+    {
+        // O EF não traduz acesso aos campos internos do JSON; o filtro de exclusão continua aplicado.
+        FormattableString sql = $@"
+            SELECT * FROM configuracao.modalidades
+            WHERE composicao_origem = {codigoNorm}
+               OR remanejamento_parametros ->> 'destino' = {codigoNorm}
+               OR remanejamento_parametros ->> 'par' = {codigoNorm}
+               OR remanejamento_parametros ->> 'fallback' = {codigoNorm}";
+
+        return _dbContext.Modalidades
+            .FromSqlInterpolated(sql)
+            .AsNoTracking();
     }
 }

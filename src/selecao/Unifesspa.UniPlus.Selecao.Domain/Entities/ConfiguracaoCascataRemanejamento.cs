@@ -23,7 +23,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <para>
 /// A forma da cascata de remanejamento de cotas (UNI-REQ-0056) é validada aqui, na borda — ordens únicas/contíguas
 /// por origem, sem destino repetido, limites de tamanho. O <em>conteúdo</em>
-/// (vínculo com a regra versionada da cascata de remanejamento de cotas, UNI-REQ-0056 — o payload bate com o <c>esquema_args</c> da regra
+/// (vínculo com a regra versionada da cascata de remanejamento de cotas, UNI-REQ-0056 — o payload bate com o <c>declaracao_da_regra</c> da regra
 /// referenciada) é responsabilidade do handler da Application, que resolve a
 /// regra no catálogo antes de montar esta entidade.
 /// </para>
@@ -69,18 +69,18 @@ public sealed partial class ConfiguracaoCascataRemanejamento : EntityBase, IPart
             return Result<ConfiguracaoCascataRemanejamento>.ValidationFailure(erros);
         }
 
-        ConfiguracaoCascataRemanejamento cascata = new()
-        {
-            Regra = regra,
-            FallbackCodigo = fallbackCodigo,
-        };
+        ConfiguracaoCascataRemanejamento cascata = new() { Regra = regra, FallbackCodigo = fallbackCodigo };
+        cascata.VincularDestinos(destinos);
+        return Result<ConfiguracaoCascataRemanejamento>.Success(cascata);
+    }
+
+    private void VincularDestinos(IReadOnlyList<DestinoRemanejamento> destinos)
+    {
         foreach (DestinoRemanejamento destino in destinos)
         {
-            destino.VincularCascata(cascata.Id);
-            cascata._destinos.Add(destino);
+            destino.VincularCascata(Id);
+            _destinos.Add(destino);
         }
-
-        return Result<ConfiguracaoCascataRemanejamento>.Success(cascata);
     }
 
     /// <summary>
@@ -98,49 +98,62 @@ public sealed partial class ConfiguracaoCascataRemanejamento : EntityBase, IPart
         List<FieldError> erros = [];
         ValidarFallback(fallbackCodigo, erros);
 
-        HashSet<string> origens = new(StringComparer.Ordinal);
-        foreach (DestinoRemanejamento destino in destinos)
-        {
-            origens.Add(destino.ModalidadeOrigemCodigo);
-        }
-
+        HashSet<string> origens = destinos.Select(d => d.ModalidadeOrigemCodigo).ToHashSet(StringComparer.Ordinal);
         ValidarLimites(destinos.Count, origens.Count, erros);
 
         foreach (string origem in origens)
         {
-            List<DestinoRemanejamento> destinosDaOrigem = [.. destinos
-                .Where(d => string.Equals(d.ModalidadeOrigemCodigo, origem, StringComparison.Ordinal))
-                .OrderBy(d => d.Ordem)];
-
-            List<int> ordens = [.. destinosDaOrigem.Select(d => d.Ordem)];
-            if (ordens.Distinct().Count() != ordens.Count)
-            {
-                erros.Add(new("destinos", new DomainError(
-                    "ConfiguracaoCascataRemanejamento.OrdemDuplicadaNaOrigem",
-                    "Uma origem tem mais de um destino na mesma posição de ordem.")));
-            }
-
-            for (int indice = 0; indice < ordens.Count; indice++)
-            {
-                if (ordens[indice] != indice + 1)
-                {
-                    erros.Add(new("destinos", new DomainError(
-                        "ConfiguracaoCascataRemanejamento.OrdemNaoContigua",
-                        "Uma origem tem uma sequência de ordens não contígua a partir de 1.")));
-                    break;
-                }
-            }
-
-            List<string> destinosCodigos = [.. destinosDaOrigem.Select(d => d.ModalidadeDestinoCodigo)];
-            if (destinosCodigos.Distinct(StringComparer.Ordinal).Count() != destinosCodigos.Count)
-            {
-                erros.Add(new("destinos", new DomainError(
-                    "ConfiguracaoCascataRemanejamento.DestinoDuplicado",
-                    "Uma origem repete o mesmo destino mais de uma vez.")));
-            }
+            ValidarOrigem(origem, destinos, erros);
         }
 
         return erros;
+    }
+
+    private static void ValidarOrigem(
+        string origem, IReadOnlyList<DestinoRemanejamento> destinos, List<FieldError> erros)
+    {
+        List<DestinoRemanejamento> daOrigem = [.. destinos
+            .Where(d => string.Equals(d.ModalidadeOrigemCodigo, origem, StringComparison.Ordinal))
+            .OrderBy(d => d.Ordem)];
+        List<int> ordens = [.. daOrigem.Select(d => d.Ordem)];
+        ValidarOrdensDuplicadas(ordens, erros);
+        ValidarSequenciaContigua(ordens, erros);
+        ValidarDestinosRepetidos(daOrigem, erros);
+    }
+
+    private static void ValidarOrdensDuplicadas(List<int> ordens, List<FieldError> erros)
+    {
+        if (ordens.Distinct().Count() != ordens.Count)
+        {
+            erros.Add(new("destinos", new DomainError(
+                "ConfiguracaoCascataRemanejamento.OrdemDuplicadaNaOrigem",
+                "Uma origem tem mais de um destino na mesma posição de ordem.")));
+        }
+    }
+
+    private static void ValidarSequenciaContigua(List<int> ordens, List<FieldError> erros)
+    {
+        for (int indice = 0; indice < ordens.Count; indice++)
+        {
+            if (ordens[indice] != indice + 1)
+            {
+                erros.Add(new("destinos", new DomainError(
+                    "ConfiguracaoCascataRemanejamento.OrdemNaoContigua",
+                    "Uma origem tem uma sequência de ordens não contígua a partir de 1.")));
+                break;
+            }
+        }
+    }
+
+    private static void ValidarDestinosRepetidos(List<DestinoRemanejamento> destinos, List<FieldError> erros)
+    {
+        List<string> codigos = [.. destinos.Select(d => d.ModalidadeDestinoCodigo)];
+        if (codigos.Distinct(StringComparer.Ordinal).Count() != codigos.Count)
+        {
+            erros.Add(new("destinos", new DomainError(
+                "ConfiguracaoCascataRemanejamento.DestinoDuplicado",
+                "Uma origem repete o mesmo destino mais de uma vez.")));
+        }
     }
 
     /// <summary>
@@ -175,31 +188,44 @@ public sealed partial class ConfiguracaoCascataRemanejamento : EntityBase, IPart
         {
             erros.Add(new("fallbackCodigo", new DomainError(
                 "ConfiguracaoCascataRemanejamento.FallbackObrigatorio",
-                $"O código de fallback é obrigatório, precisa casar com ^[A-Z0-9_]+$ e ter no máximo {FallbackMaxLength} caracteres.")));
+                $"Informe o código do destino final com até {FallbackMaxLength} caracteres, usando letras maiúsculas, números ou sublinhado.")));
         }
     }
 
     private static void ValidarLimites(int totalDestinos, int totalOrigens, List<FieldError> erros)
     {
-        if (totalDestinos == 0)
+        ValidarPresencaDeDestinos(totalDestinos, erros);
+        ValidarQuantidadeDeOrigens(totalOrigens, erros);
+        ValidarQuantidadeDeDestinos(totalDestinos, erros);
+    }
+
+    private static void ValidarPresencaDeDestinos(int total, List<FieldError> erros)
+    {
+        if (total == 0)
         {
             erros.Add(new("destinos", new DomainError(
                 "ConfiguracaoCascataRemanejamento.SemDestinos",
-                "A cascata precisa de ao menos um destino.")));
+                "A ordem de remanejamento precisa de ao menos um destino.")));
         }
+    }
 
-        if (totalOrigens > MaxOrigens)
+    private static void ValidarQuantidadeDeOrigens(int total, List<FieldError> erros)
+    {
+        if (total > MaxOrigens)
         {
             erros.Add(new("destinos", new DomainError(
                 "ConfiguracaoCascataRemanejamento.ExcedeLimiteDeOrigens",
-                $"A cascata não pode declarar mais de {MaxOrigens} origens.")));
+                $"A ordem de remanejamento não pode declarar mais de {MaxOrigens} origens.")));
         }
+    }
 
-        if (totalDestinos > MaxDestinos)
+    private static void ValidarQuantidadeDeDestinos(int total, List<FieldError> erros)
+    {
+        if (total > MaxDestinos)
         {
             erros.Add(new("destinos", new DomainError(
                 "ConfiguracaoCascataRemanejamento.ExcedeLimiteDeDestinos",
-                $"A cascata não pode declarar mais de {MaxDestinos} destinos.")));
+                $"A ordem de remanejamento não pode declarar mais de {MaxDestinos} destinos.")));
         }
     }
 

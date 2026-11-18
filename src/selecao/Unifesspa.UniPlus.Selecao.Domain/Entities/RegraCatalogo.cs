@@ -36,18 +36,13 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </para>
 /// <para>
 /// <strong>Hash content-addressable.</strong> O <see cref="Hash"/> é o SHA-256
-/// canônico da definição COMPLETA (<c>codigo+versao+tipo+esquema_args+invariantes+base_legal</c>).
+/// canônico da definição COMPLETA (<c>codigo+versao+tipo+declaracao_da_regra+invariantes+base_legal</c>).
 /// Mudar qualquer campo definicional mudaria o hash; como a versão é imutável,
 /// o freeze do snapshot é reprodutível por construção.
 /// </para>
 /// <para>
-/// <strong>Fronteira.</strong> A entrada descreve a regra e o
-/// <c>esquema_args</c> (o <em>schema</em> dos parâmetros que o admin preenche e os dados que a
-/// versão declara de si); os <em>parâmetros aplicados</em> são tipados na dimensão que consome a regra
-/// (<see cref="ReferenciaRegra"/> + payload próprio) e validados contra este
-/// esquema. O <em>motor</em> que executa a regra (algoritmo de distribuição,
-/// cálculo da nota) é incremento — consome a definição congelada, não é
-/// modelado aqui.
+/// A declaração contém somente o que a versão da regra declara de si. A forma dos
+/// parâmetros aplicados é definida pelo esquema do documento da configuração.
 /// </para>
 /// </remarks>
 public sealed class RegraCatalogo : EntityBase
@@ -57,10 +52,9 @@ public sealed class RegraCatalogo : EntityBase
     public TipoRegra Tipo { get; private set; }
 
     /// <summary>
-    /// Schema (jsonb, objeto) dos parâmetros que o admin preenche ao aplicar a regra, e o que a própria
-    /// versão declara de si, como as naturezas de conceito a que uma regra de consolidação se aplica.
+    /// O que a versão declara de si, como as naturezas de conceito a que uma regra de consolidação se aplica.
     /// </summary>
-    public JsonElement EsquemaArgs { get; private set; }
+    public JsonElement DeclaracaoDaRegra { get; private set; }
 
     /// <summary>Pré/pós-condições declaradas da regra (jsonb, array).</summary>
     public JsonElement Invariantes { get; private set; }
@@ -79,17 +73,17 @@ public sealed class RegraCatalogo : EntityBase
         string codigo,
         string versao,
         TipoRegra tipo,
-        JsonElement esquemaArgs,
+        JsonElement declaracaoDaRegra,
         JsonElement invariantes,
         string baseLegal)
     {
         Codigo = codigo;
         Versao = versao;
         Tipo = tipo;
-        EsquemaArgs = esquemaArgs;
+        DeclaracaoDaRegra = declaracaoDaRegra;
         Invariantes = invariantes;
         BaseLegal = baseLegal;
-        Hash = ComputeHash();
+        Hash = HashCanonicalComputer.ComputeRegraCatalogo(this);
     }
 
     /// <summary>
@@ -105,7 +99,7 @@ public sealed class RegraCatalogo : EntityBase
         string codigo,
         string versao,
         TipoRegra tipo,
-        JsonElement esquemaArgs,
+        JsonElement declaracaoDaRegra,
         JsonElement invariantes,
         string baseLegal)
     {
@@ -113,14 +107,14 @@ public sealed class RegraCatalogo : EntityBase
         ArgumentException.ThrowIfNullOrWhiteSpace(versao);
         ArgumentException.ThrowIfNullOrWhiteSpace(baseLegal);
         ArgumentOutOfRangeException.ThrowIfEqual(tipo, TipoRegra.Nenhuma);
-        ExigirForma(esquemaArgs, JsonValueKind.Object, nameof(esquemaArgs));
+        ExigirForma(declaracaoDaRegra, JsonValueKind.Object, nameof(declaracaoDaRegra));
         ExigirForma(invariantes, JsonValueKind.Array, nameof(invariantes));
 
         return new RegraCatalogo(
             codigo.Trim(),
             versao.Trim(),
             tipo,
-            esquemaArgs.Clone(),
+            declaracaoDaRegra.Clone(),
             invariantes.Clone(),
             baseLegal.Trim());
     }
@@ -141,13 +135,5 @@ public sealed class RegraCatalogo : EntityBase
     /// determinismo/round-trip (recomputar deve bater com o <see cref="Hash"/>
     /// materializado).
     /// </summary>
-    public string RecomputeHash() => ComputeHash();
-
-    private string ComputeHash() => HashCanonicalComputer.ComputeRegraCatalogo(
-        Codigo,
-        Versao,
-        Tipo,
-        EsquemaArgs,
-        Invariantes,
-        BaseLegal);
+    public string RecomputeHash() => HashCanonicalComputer.ComputeRegraCatalogo(this);
 }

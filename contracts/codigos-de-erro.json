@@ -4629,7 +4629,7 @@
     {
       "codigo": "uniplus.selecao.configuracao_cascata_remanejamento.matriz_divergente_da_regra",
       "status": 422,
-      "titulo": "A cascata informada diverge do esquema_args da regra referenciada"
+      "titulo": "A ordem de remanejamento informada diverge da declaração da regra referenciada"
     },
     {
       "codigo": "uniplus.selecao.configuracao_cascata_remanejamento.ordem_duplicada_na_origem",

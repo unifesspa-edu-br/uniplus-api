@@ -185,9 +185,9 @@ public sealed class LeituraDasRegrasCitadasNaConfiguracaoTests
     [InlineData("""{"corretores_distintos":"3"}""")]
     [InlineData("""{"corretores_distintos":3,"quando_nao_consolida":"sorteio"}""")]
     [InlineData("""{"corretores_distintos":3,"quando_nao_consolida":1}""")]
-    public async Task EsquemaInvalido_VoltaNaoResolvida(string esquemaArgs)
+    public async Task EsquemaInvalido_VoltaNaoResolvida(string declaracaoDaRegra)
     {
-        RegraCatalogo invalida = RegrasDeConsolidacaoDeTeste.Regra(RegraConsolidacaoCodigo.CorrecaoIndependente, esquemaArgs);
+        RegraCatalogo invalida = RegrasDeConsolidacaoDeTeste.Regra(RegraConsolidacaoCodigo.CorrecaoIndependente, declaracaoDaRegra);
         ProcessoSeletivo processo = ProcessoComCorrecaoIndependente.ComRegras(invalida.Referencia());
 
         CorretoresDasEtapas corretores = await Ler(RegrasDeConsolidacaoDeTeste.Catalogo(invalida), processo);

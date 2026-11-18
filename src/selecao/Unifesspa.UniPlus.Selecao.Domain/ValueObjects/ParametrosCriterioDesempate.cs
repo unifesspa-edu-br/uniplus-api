@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// Parâmetros aplicados de um <see cref="Entities.CriterioDesempate"/> — os
 /// parâmetros que o admin preenche ao aplicar uma regra do
 /// <c>regras_do_catalogo</c> (<c>tipo=criterio_desempate</c>), tipados por
-/// variante conforme o <c>esquema_args</c> de cada código. Discriminated union
+/// variante conforme o esquema do documento da configuração. Discriminated union
 /// no molde de <c>PredicadoObrigatoriedade</c> (ADR-0058).
 /// </summary>
 /// <remarks>

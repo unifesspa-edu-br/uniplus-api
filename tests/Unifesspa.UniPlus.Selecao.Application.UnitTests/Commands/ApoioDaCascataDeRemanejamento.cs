@@ -33,6 +33,19 @@ internal static class ApoioDaCascataDeRemanejamento
         Json("""{"fallbackCodigo":"AC","ordens":[{"origem":"LB_PPI","destinos":["LB_Q","LB_PCD"]}]}"""),
         Json("[]"), "ADR-0120");
 
+    internal static RegraCatalogo RegraComDuasOrigens() => RegraCatalogo.Criar(
+        RegraRemanejamentoCodigo.Cascata, "v1", TipoRegra.CriterioRemanejamento,
+        Json("""{"fallbackCodigo":"AC","ordens":[{"origem":"LB_PPI","destinos":["LB_Q"]},{"origem":"LB_Q","destinos":["LB_PPI"]}]}"""),
+        Json("[]"), "ADR-0120");
+
+    internal static RegraCatalogo RegraComOrigemRepetida() => RegraCatalogo.Criar(
+        RegraRemanejamentoCodigo.Cascata, "v1", TipoRegra.CriterioRemanejamento,
+        Json("""{"fallbackCodigo":"AC","ordens":[{"origem":"LB_PPI","destinos":["LB_Q"]},{"origem":"LB_PPI","destinos":["LB_Q"]}]}"""),
+        Json("[]"), "ADR-0120");
+
+    internal static void ConfigurarRegra(Mocks mocks, RegraCatalogo regra) =>
+        mocks.RegraCatalogoReader.ObterAsync(RegraRemanejamentoCodigo.Cascata, "v1", Arg.Any<CancellationToken>()).Returns(regra);
+
     internal sealed record Mocks(
         IProcessoSeletivoRepository Repository, IRegraCatalogoReader RegraCatalogoReader, IUnitOfWork UnitOfWork);
 
@@ -45,6 +58,19 @@ internal static class ApoioDaCascataDeRemanejamento
 
     internal static ProcessoSeletivo NovoProcesso() =>
         ProcessoSeletivo.Criar("PS 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+
+    internal static ProcessoSeletivo NovoProcessoComCascata()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        ConfiguracaoCascataRemanejamento cascata = ConfiguracaoCascataRemanejamento.Criar(
+            ReferenciaRegra.De(RegraRemanejamentoCodigo.Cascata, "v1", HashFixo),
+            "AC", [DestinoRemanejamento.Criar("LB_PPI", 1, "LB_Q").Value!]).Value!;
+        processo.DefinirCascataRemanejamento(cascata).IsSuccess.Should().BeTrue();
+        return processo;
+    }
+
+    internal static DefinirCascataRemanejamentoCommand Comando(Guid processoId, int ordem = 1) => new(
+        processoId, RegraRemanejamentoCodigo.Cascata, "v1", "AC", [new DestinoRemanejamentoInput("LB_PPI", ordem, "LB_Q")]);
 
     public static TheoryData<string?, string?, string?, IReadOnlyList<DestinoRemanejamentoInput>?> CombinacoesParciais() =>
         new()

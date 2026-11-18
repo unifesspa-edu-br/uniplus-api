@@ -47,99 +47,17 @@ internal static class CronogramaEFormularioDoContextoDoEnvelope
     public static Task<HttpResponseMessage> PutCronogramaFasesAsync(this ContextoDoEnvelopeFechado contexto) =>
         contexto.EnviarAsync(HttpMethod.Put, $"{ContextoDoEnvelopeFechado.Rota}/{contexto.ProcessoId}/cronograma-fases", CronogramaDeFases(contexto.Catalogos));
 
-    public static Task<HttpResponseMessage> PutFatosColetadosAsync(this ContextoDoEnvelopeFechado contexto)
-    {
-        // COR_RACA vem da seção do conjunto básico, que a gravação inclui. As perguntas da reserva
-        // de vagas são as que as regras das modalidades ofertadas citam.
-        string[] perguntasDaReserva =
-            ["CONCORRER_EP", "PCD", "CONCORRER_PCD", "INDIGENA", "QUILOMBOLA", "CONCORRER_PPI", "CONCORRER_Q", "CONCORRER_RENDA"];
-        object[] fatos =
-        [
-            new
-            {
-                fatoCodigo = "BAIXA_RENDA",
-                ordem = 0,
-                rotulo = "Baixa renda",
-                tipoRenderizacao = TipoRenderizacaoCodigo.Booleano,
-                obrigatoriedade = "SEMPRE",
-                precondicao = new[] { new[] { new { fato = "COR_RACA", @operador = OperadorCodigo.Igual, valor = "PRETA" } } },
-            },
-            // A classificação é baseada em ENEM: a inscrição pede a edição, entre as declaradas.
-            new
-            {
-                fatoCodigo = "EDICAO_ENEM",
-                ordem = 1,
-                rotulo = "Qual edição do ENEM você vai usar?",
-                tipoRenderizacao = TipoRenderizacaoCodigo.SelecaoUnica,
-                obrigatoriedade = "SEMPRE",
-            },
-            .. perguntasDaReserva.Select(static (fato, indice) => (object)new
-            {
-                fatoCodigo = fato,
-                ordem = indice + 2,
-                rotulo = fato,
-                tipoRenderizacao = TipoRenderizacaoCodigo.Booleano,
-                obrigatoriedade = "SEMPRE",
-            }),
-        ];
-
-        return contexto.EnviarAsync(
+    public static Task<HttpResponseMessage> PutFatosColetadosAsync(this ContextoDoEnvelopeFechado contexto) =>
+        contexto.EnviarAsync(
             HttpMethod.Put, FormularioDeInscricaoHttp.RotaDosItens(contexto.ProcessoId).ToString(),
-            FormularioDeInscricaoHttp.CorpoDosItens(fatos));
-    }
+            FormularioDeInscricaoHttp.CorpoDosItens(FatosColetados()));
 
-    public static Task<HttpResponseMessage> PutRegrasDerivacaoAsync(this ContextoDoEnvelopeFechado contexto)
-    {
-        object[] configuracoes =
-        [
-            new
-            {
-                codigoFato = "EGRESSO_ESCOLA_PUBLICA",
-                regras = new object[]
-                {
-                    new
-                    {
-                        ordem = 0,
-                        contribui = (string?)null,
-                        quando = new[] { new[] { new { fato = "COR_RACA", @operador = OperadorCodigo.Igual, valor = "PRETA" } } },
-                    },
-                },
-            },
-        ];
+    public static Task<HttpResponseMessage> PutRegrasDerivacaoAsync(this ContextoDoEnvelopeFechado contexto) =>
+        contexto.EnviarAsync(HttpMethod.Put, $"{ContextoDoEnvelopeFechado.Rota}/{contexto.ProcessoId}/regras-derivacao", RegrasDeDerivacao());
 
-        return contexto.EnviarAsync(HttpMethod.Put, $"{ContextoDoEnvelopeFechado.Rota}/{contexto.ProcessoId}/regras-derivacao", configuracoes);
-    }
-
-    /// <summary>
-    /// Matriz 8×7, fallback AC — a MESMA forma do <c>esquema_args</c> congelado da regra
-    /// <c>REMANEJ-CASCATA-LEI-12711</c> v1 (<c>RegraCatalogoSeed.cs:169-183</c>): para cada
-    /// origem federal, os destinos são as outras 7, na ordem declarada em
-    /// <see cref="ModalidadesFederaisLei12711.Codigos"/> — sem permutar, porque o handler
-    /// compara célula a célula contra o catálogo, não só a forma.
-    /// </summary>
-    public static Task<HttpResponseMessage> PutCascataRemanejamentoAsync(this ContextoDoEnvelopeFechado contexto)
-    {
-        IReadOnlyList<string> origens = ModalidadesFederaisLei12711.Codigos;
-        List<object> destinos = [];
-        foreach (string origem in origens)
-        {
-            string[] destinosDaOrigem = [.. origens.Where(o => o != origem)];
-            for (int i = 0; i < destinosDaOrigem.Length; i++)
-            {
-                destinos.Add(new { modalidadeOrigemCodigo = origem, ordem = i + 1, modalidadeDestinoCodigo = destinosDaOrigem[i] });
-            }
-        }
-
-        return contexto.EnviarAsync(
-            HttpMethod.Put, $"{ContextoDoEnvelopeFechado.Rota}/{contexto.ProcessoId}/cascata-remanejamento",
-            new
-            {
-                regraCodigo = RegraRemanejamentoCodigo.Cascata,
-                regraVersao = "v1",
-                fallbackCodigo = ModalidadesFederaisLei12711.Ac,
-                destinos,
-            });
-    }
+    public static Task<HttpResponseMessage> PutCascataRemanejamentoAsync(this ContextoDoEnvelopeFechado contexto) =>
+        contexto.EnviarAsync(
+            HttpMethod.Put, $"{ContextoDoEnvelopeFechado.Rota}/{contexto.ProcessoId}/cascata-remanejamento", Cascata());
 
     public static Task<HttpResponseMessage> PutDocumentosExigidosAsync(this ContextoDoEnvelopeFechado contexto, object[] raizes) =>
         contexto.EnviarAsync(HttpMethod.Put, $"{ContextoDoEnvelopeFechado.Rota}/{contexto.ProcessoId}/documentos-exigidos", raizes);

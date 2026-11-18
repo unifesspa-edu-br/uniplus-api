@@ -532,7 +532,7 @@ definir_opcoes_de_curso() {
 
 definir_cascata_remanejamento() {
     log "Definir Cascata de Remanejamento (REMANEJ-CASCATA-LEI-12711)"
-    # A matriz tem de bater exatamente com o esquema_args congelado da regra
+    # A matriz tem de coincidir com a declaração da regra congelada
     # REMANEJ-CASCATA-LEI-12711/v1 (Portaria MEC 704/2025, art. 2º e Anexo) —
     # ver RegraCatalogoSeed.cs, SeedId(19), e é a do Quadro 3 da minuta. Oito
     # origens, sete destinos cada, ordem fixa, terminal sempre AC (fallback,

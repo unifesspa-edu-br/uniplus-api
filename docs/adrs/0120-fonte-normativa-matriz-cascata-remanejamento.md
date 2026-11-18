@@ -19,7 +19,7 @@ sequência **ordenada e semântica** de modalidades de destino, até terminar em
 
 A lei fixa a lógica de agrupamento (perfis reservados → escola pública → ampla concorrência, art. 3º,
 §1º) mas não a ordem célula a célula entre as oito modalidades dentro de cada grupo. Sem essa ordem
-fixada por norma, o `esquema_args` da regra `REMANEJ-CASCATA-LEI-12711` (regras_do_catalogo, Story #772)
+fixada por norma, o `declaracao_da_regra` da regra `REMANEJ-CASCATA-LEI-12711` (regras_do_catalogo, Story #772)
 não tem fonte a citar — e o campo `BaseLegal` do seed é, por convenção do projeto (§ Padrões
 obrigatórios), preenchimento obrigatório antes de qualquer regra normativa entrar em produção.
 
@@ -58,7 +58,7 @@ O fallback terminal é a ampla concorrência (`AC`) em toda linha — confirmado
 inciso I ("sendo, por fim, destinadas aos estudantes em ampla concorrência"), quanto pelo item 2 do
 Anexo ("as vagas restantes serão disponibilizadas aos estudantes da ampla concorrência").
 
-Conferida linha a linha, célula a célula, contra o `esquema_args` que a #575 semeia em
+Conferida linha a linha, célula a célula, contra o `declaracao_da_regra` que a #575 semeia em
 `REMANEJ-CASCATA-LEI-12711 v1` — a matriz é idêntica.
 
 ## Opções consideradas
@@ -68,7 +68,7 @@ lista de espera **do Sisu**. A Unifesspa, ao ofertar vagas fora do Sisu sob o me
 da Lei 12.711/2012 (`DISTRIBUICAO-LEI-12711`), não está automaticamente obrigada a seguir esse Anexo
 por processos seletivos próprios — a matriz precisa de uma decisão de alcance, não só de fonte.
 
-- **A. Restringir a matriz ao Sisu** e deixar processos federais fora do Sisu sem `esquema_args`
+- **A. Restringir a matriz ao Sisu** e deixar processos federais fora do Sisu sem `declaracao_da_regra`
   citável, até que surja norma institucional própria. **Rejeitada:** bloquearia `RN-CASCATA-5` para
   todo processo de regime federal fora do Sisu (ex.: Educação do Campo) sem necessidade — é a mesma
   lei (12.711/2012) e a mesma lógica de agrupamento (art. 3º, §1º) que a matriz do Anexo apenas
@@ -91,11 +91,11 @@ do Sisu, é decisão de negócio nova, registrada como nova versão da regra —
 
 ## Consequências
 
-- `REMANEJ-CASCATA-LEI-12711 v1` (regras_do_catalogo) semeia esta matriz no `esquema_args`, com
+- `REMANEJ-CASCATA-LEI-12711 v1` (regras_do_catalogo) semeia esta matriz no `declaracao_da_regra`, com
   `BaseLegal` citando a Portaria MEC 704/2025 (DOU 20/10/2025, Seção 1, p. 36-37) e a Lei
   12.711/2012 — base legal cita a norma, não a decisão de arquitetura que a documenta.
 - `RN-CASCATA-5` (Story #575) compara o payload aplicado — fallback + todos os destinos — célula a
-  célula contra este `esquema_args`; divergência é recusada, mesmo com a forma da sequência válida.
+  célula contra este `declaracao_da_regra`; divergência é recusada, mesmo com a forma da sequência válida.
 - Uma eventual mudança na lei ou no Anexo da Portaria gera **nova versão** da regra (`v2`), nunca
   reescrita da `v1` já congelada em `VersaoConfiguracao` publicada (RN08, append-only).
 
@@ -136,7 +136,7 @@ a Portaria Normativa MEC nº 21/2012 (Sisu), e é no bloco do art. 2º que o art
 na Portaria Normativa MEC nº 21/2012, não na nº 18/2012.
 
 Esta é uma correção de citação, não uma revisão da decisão: a matriz do Anexo, a opção B (§ "Resultado
-da decisão") e o `esquema_args` de `REMANEJ-CASCATA-LEI-12711 v1` continuam os mesmos — só a norma que
+da decisão") e o `declaracao_da_regra` de `REMANEJ-CASCATA-LEI-12711 v1` continuam os mesmos — só a norma que
 insere o art. 20-A estava mal atribuída. O texto de "Fonte normativa confirmada", "Consequências" e
 "Referências" foi corrigido no lugar para refletir a atribuição certa.
 

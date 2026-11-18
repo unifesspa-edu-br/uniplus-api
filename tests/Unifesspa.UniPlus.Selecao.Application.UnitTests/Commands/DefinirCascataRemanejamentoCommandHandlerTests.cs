@@ -24,7 +24,7 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.ApoioDaCas
 /// (cascata de remanejamento de cotas, UNI-REQ-0056, Story #575): remoção por ausência total, recusa de
 /// presença parcial, resolução da regra no catálogo, e a ordem
 /// forma-antes-de-conteúdo — a factory (cascata de remanejamento de cotas, UNI-REQ-0056) roda antes da
-/// comparação célula a célula contra o <c>esquema_args</c> (cascata de remanejamento de cotas, UNI-REQ-0056),
+/// comparação célula a célula contra o <c>declaracao_da_regra</c> (cascata de remanejamento de cotas, UNI-REQ-0056),
 /// para que um erro de forma nunca seja mascarado por
 /// <c>MatrizDivergenteDaRegra</c>.
 /// </summary>
@@ -46,11 +46,7 @@ public sealed class DefinirCascataRemanejamentoCommandHandlerTests
     [Fact(DisplayName = "Handle com os quatro campos nulos remove a cascata, sem consultar o catálogo de regras")]
     public async Task Handle_TodosOsCamposNulos_Remove()
     {
-        ProcessoSeletivo processo = NovoProcesso();
-        ConfiguracaoCascataRemanejamento cascataExistente = ConfiguracaoCascataRemanejamento.Criar(
-            ReferenciaRegra.De(RegraRemanejamentoCodigo.Cascata, "v1", HashFixo),
-            "AC", [DestinoRemanejamento.Criar("LB_PPI", 1, "LB_Q").Value!]).Value!;
-        processo.DefinirCascataRemanejamento(cascataExistente).IsSuccess.Should().BeTrue();
+        ProcessoSeletivo processo = NovoProcessoComCascata();
 
         Mocks mocks = NovosMocks(processo, processo.Id);
         DefinirCascataRemanejamentoCommand command = new(processo.Id, null, null, null, null);
@@ -97,6 +93,7 @@ public sealed class DefinirCascataRemanejamentoCommandHandlerTests
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ConfiguracaoCascataRemanejamento.RegraNaoEncontrada");
+        result.Error.Message.Should().NotContain(command.RegraCodigo!);
     }
 
     [Fact(DisplayName = "Handle com regra de tipo diferente de criterio_remanejamento recusa com RegraTipoInvalido")]
@@ -106,32 +103,24 @@ public sealed class DefinirCascataRemanejamentoCommandHandlerTests
         Mocks mocks = NovosMocks(processo, processo.Id);
         RegraCatalogo regraTipoErrado = RegraCatalogo.Criar(
             RegraRemanejamentoCodigo.Cascata, "v1", TipoRegra.RegraCalculo, Json("{}"), Json("[]"), "base legal");
-        mocks.RegraCatalogoReader.ObterAsync(RegraRemanejamentoCodigo.Cascata, "v1", Arg.Any<CancellationToken>())
-            .Returns(regraTipoErrado);
-
-        DefinirCascataRemanejamentoCommand command = new(
-            processo.Id, RegraRemanejamentoCodigo.Cascata, "v1", "AC", [new DestinoRemanejamentoInput("LB_PPI", 1, "LB_Q")]);
+        ConfigurarRegra(mocks, regraTipoErrado);
+        DefinirCascataRemanejamentoCommand command = Comando(processo.Id);
 
         Result result = await DefinirCascataRemanejamentoCommandHandler.Handle(
             command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ConfiguracaoCascataRemanejamento.RegraTipoInvalido");
+        result.Error.Message.Should().NotContain(command.RegraCodigo!);
     }
 
-    [Fact(DisplayName = "Handle com ordem inválida (cascata de remanejamento de cotas, UNI-REQ-0056) recusa pela factory, ANTES de comparar contra o esquema_args")]
-    public async Task Handle_OrdemInvalida_RecusaPelaFactoryAntesDoEsquemaArgs()
+    [Fact(DisplayName = "Handle com ordem inválida (cascata de remanejamento de cotas, UNI-REQ-0056) recusa pela factory, ANTES de comparar contra o declaracao_da_regra")]
+    public async Task Handle_OrdemInvalida_RecusaPelaFactoryAntesDoDeclaracaoDaRegra()
     {
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        mocks.RegraCatalogoReader.ObterAsync(RegraRemanejamentoCodigo.Cascata, "v1", Arg.Any<CancellationToken>())
-            .Returns(RegraCascataValida());
-
-        // Ordem 0 é inválida na FORMA (cascata de remanejamento de cotas, UNI-REQ-0056) — mesmo que o resto da matriz
-        // divergisse do esquema_args também, o erro que deve aparecer é o de forma.
-        DefinirCascataRemanejamentoCommand command = new(
-            processo.Id, RegraRemanejamentoCodigo.Cascata, "v1", "AC",
-            [new DestinoRemanejamentoInput("LB_PPI", 0, "LB_Q")]);
+        ConfigurarRegra(mocks, RegraCascataValida());
+        DefinirCascataRemanejamentoCommand command = Comando(processo.Id, ordem: 0);
 
         Result result = await DefinirCascataRemanejamentoCommandHandler.Handle(
             command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);

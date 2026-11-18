@@ -18,15 +18,15 @@ public sealed class DeclaracaoDaConsolidacaoDoConceitoTests
     private const string EsquemaDaUnanimidade =
         """{"corretores_distintos":2,"criterio":"unanimidade","naturezas_do_conceito":["categorico"],"quando_nao_consolida":"novo_corretor"}""";
 
-    private static RegraCatalogo Regra(string codigo, string esquemaArgs, TipoRegra tipo = TipoRegra.RegraConsolidacao)
+    private static RegraCatalogo Regra(string codigo, string declaracaoDaRegra, TipoRegra tipo = TipoRegra.RegraConsolidacao)
     {
-        using JsonDocument esquema = JsonDocument.Parse(esquemaArgs);
+        using JsonDocument esquema = JsonDocument.Parse(declaracaoDaRegra);
         using JsonDocument invariantes = JsonDocument.Parse("[]");
         return RegraCatalogo.Criar(codigo, "v1", tipo, esquema.RootElement, invariantes.RootElement, "Edital do processo seletivo");
     }
 
-    private static RegraCatalogo DeConsolidacao(string esquemaArgs) =>
-        Regra(RegraConsolidacaoCodigo.ConceitoUnanimidade, esquemaArgs);
+    private static RegraCatalogo DeConsolidacao(string declaracaoDaRegra) =>
+        Regra(RegraConsolidacaoCodigo.ConceitoUnanimidade, declaracaoDaRegra);
 
     [Fact(DisplayName = "A unanimidade declara dois corretores e o novo corretor quando os valores divergem")]
     public void De_Unanimidade_DevolveACriterioCorretoresETratamento()
@@ -61,9 +61,9 @@ public sealed class DeclaracaoDaConsolidacaoDoConceitoTests
     [Theory(DisplayName = "A versão numérica, sem critério ou tratamento, não tem declaração")]
     [InlineData("""{"corretores_distintos":3,"naturezas_do_conceito":["numerico"]}""")]
     [InlineData("""{"corretores_distintos":1,"naturezas_do_conceito":["categorico","numerico"]}""")]
-    public void Tentar_RegraNumerica_Falha(string esquemaArgs)
+    public void Tentar_RegraNumerica_Falha(string declaracaoDaRegra)
     {
-        bool declarada = DeclaracaoDaConsolidacaoDoConceito.Tentar(DeConsolidacao(esquemaArgs), out DeclaracaoDaConsolidacaoDoConceito? declaracao);
+        bool declarada = DeclaracaoDaConsolidacaoDoConceito.Tentar(DeConsolidacao(declaracaoDaRegra), out DeclaracaoDaConsolidacaoDoConceito? declaracao);
 
         declarada.Should().BeFalse();
         declaracao.Should().BeNull();
@@ -85,14 +85,14 @@ public sealed class DeclaracaoDaConsolidacaoDoConceitoTests
     [InlineData("""{"corretores_distintos":2,"criterio":"unanimidade","naturezas_do_conceito":["categorico"],"quando_nao_consolida":["novo_corretor"]}""")]
     [InlineData("""{"corretores_distintos":0,"criterio":"unanimidade","naturezas_do_conceito":["categorico"],"quando_nao_consolida":"novo_corretor"}""")]
     [InlineData("""{"corretores_distintos":"2","criterio":"unanimidade","naturezas_do_conceito":["categorico"],"quando_nao_consolida":"novo_corretor"}""")]
-    public void Tentar_DeclaracaoInvalida_FalhaELancaEmDe(string esquemaArgs)
+    public void Tentar_DeclaracaoInvalida_FalhaELancaEmDe(string declaracaoDaRegra)
     {
-        RegraCatalogo regra = DeConsolidacao(esquemaArgs);
+        RegraCatalogo regra = DeConsolidacao(declaracaoDaRegra);
 
         DeclaracaoDaConsolidacaoDoConceito.Tentar(regra, out DeclaracaoDaConsolidacaoDoConceito? declaracao).Should().BeFalse();
         declaracao.Should().BeNull();
         Func<DeclaracaoDaConsolidacaoDoConceito> ler = () => DeclaracaoDaConsolidacaoDoConceito.De(regra);
-        ler.Should().Throw<ArgumentException>().WithMessage("*criterio*");
+        ler.Should().Throw<ArgumentException>().WithMessage("*critério*");
     }
 
     [Fact(DisplayName = "A regra que não é de consolidação não tem declaração, mesmo com as chaves no esquema")]

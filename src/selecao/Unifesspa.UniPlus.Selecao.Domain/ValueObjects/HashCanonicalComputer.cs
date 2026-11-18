@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
@@ -70,9 +71,7 @@ public static class HashCanonicalComputer
     };
 
     /// <summary>
-    /// Computa o hash canônico de uma regra a partir das suas partes
-    /// semânticas. O caller é responsável por passar valores normalizados
-    /// (vocabulário de <c>tipoProcessoCodigo</c>, trim de strings, etc.).
+    /// Calcula o hash canônico a partir dos campos semânticos da regra.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -93,55 +92,30 @@ public static class HashCanonicalComputer
     /// sobre <c>hash</c>.
     /// </para>
     /// </remarks>
-    /// <param name="tipoProcessoCodigo">Código do tipo de processo ou <c>"*"</c> para universal.</param>
-    /// <param name="categoria">Categoria da regra.</param>
-    /// <param name="regraCodigo">Código simbólico da regra (ex.: <c>ETAPA_OBRIGATORIA</c>).</param>
-    /// <param name="predicado">Predicado tipado da regra (variante da discriminated union).</param>
-    /// <param name="baseLegal">Citação legal (ex.: <c>Lei 14.723/2023 art.2º</c>).</param>
-    /// <param name="portariaInternaCodigo">Portaria interna que regulamenta, ou <see langword="null"/>.</param>
-    /// <param name="vigenciaInicio">Início de vigência (UTC, sem hora).</param>
-    /// <param name="vigenciaFim">Fim de vigência, ou <see langword="null"/> para vigência aberta.</param>
-    /// <returns>Hash SHA-256 em hex minúsculo (64 chars).</returns>
-    public static string Compute(
-        string tipoProcessoCodigo,
-        CategoriaObrigatoriedade categoria,
-        string regraCodigo,
-        PredicadoObrigatoriedade predicado,
-        string baseLegal,
-        string? portariaInternaCodigo,
-        DateOnly vigenciaInicio,
-        DateOnly? vigenciaFim)
+    /// <param name="regra">Regra cuja definição será calculada.</param>
+    /// <returns>Hash SHA-256 em hex minúsculo.</returns>
+    public static string Compute(ObrigatoriedadeLegal regra)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(tipoProcessoCodigo);
-        ArgumentException.ThrowIfNullOrWhiteSpace(regraCodigo);
-        ArgumentNullException.ThrowIfNull(predicado);
-        ArgumentException.ThrowIfNullOrWhiteSpace(baseLegal);
-
-        // Serializa o predicado primeiro com o serializer polimórfico do
-        // STJ (atributos [JsonPolymorphic]/[JsonDerivedType] em PredicadoObrigatoriedade)
-        // para que o "$tipo" discriminator entre no payload. O resultado vira
-        // JsonNode e é canonicalizado junto dos outros campos.
-        JsonNode? predicadoNode = JsonSerializer.SerializeToNode(predicado, CanonicalOptions);
-
-        JsonObject payload = new()
-        {
-            ["baseLegal"] = baseLegal,
-            ["categoria"] = JsonValue.Create(categoria.ToString()),
-            ["portariaInternaCodigo"] = portariaInternaCodigo,
-            ["predicado"] = predicadoNode,
-            ["regraCodigo"] = regraCodigo,
-            ["tipoProcessoCodigo"] = tipoProcessoCodigo,
-            ["vigenciaFim"] = vigenciaFim is { } fim ? fim.ToString("O", CultureInfo.InvariantCulture) : null,
-            ["vigenciaInicio"] = vigenciaInicio.ToString("O", CultureInfo.InvariantCulture),
-        };
-
-        return HashCanonicalPayload(payload);
+        ArgumentNullException.ThrowIfNull(regra);
+        return HashCanonicalPayload(DefinicaoDaObrigatoriedadeLegal(regra));
     }
+
+    private static JsonObject DefinicaoDaObrigatoriedadeLegal(ObrigatoriedadeLegal regra) => new()
+    {
+        ["baseLegal"] = regra.BaseLegal,
+        ["categoria"] = regra.Categoria.ToString(),
+        ["portariaInternaCodigo"] = regra.PortariaInternaCodigo,
+        ["predicado"] = JsonSerializer.SerializeToNode(regra.Predicado, CanonicalOptions),
+        ["regraCodigo"] = regra.RegraCodigo,
+        ["tipoProcessoCodigo"] = regra.TipoProcessoCodigo,
+        ["vigenciaFim"] = regra.VigenciaFim is { } fim ? fim.ToString("O", CultureInfo.InvariantCulture) : null,
+        ["vigenciaInicio"] = regra.VigenciaInicio.ToString("O", CultureInfo.InvariantCulture),
+    };
 
     /// <summary>
     /// Computa o hash content-addressable de uma entrada do <c>regras_do_catalogo</c>
     /// (<see cref="Entities.RegraCatalogo"/>) sobre a sua definição COMPLETA:
-    /// <c>codigo</c>+<c>versao</c>+<c>tipo</c>+<c>esquema_args</c>+<c>invariantes</c>+<c>base_legal</c>.
+    /// <c>codigo</c>+<c>versao</c>+<c>tipo</c>+<c>declaracao_da_regra</c>+<c>invariantes</c>+<c>base_legal</c>.
     /// Mudar qualquer campo definicional muda o hash — e a versão de uma regra
     /// é imutável (nova semântica = nova versão), o que dá a reprodutibilidade
     /// do freeze do snapshot (congelamento dos parâmetros na publicação, UNI-REQ-0019) por construção.
@@ -149,34 +123,24 @@ public static class HashCanonicalComputer
     /// <remarks>
     /// Espelha o hash validado do <c>regras_do_catalogo</c> (Postgres real): os
     /// campos de auditoria (<c>created_at/by</c>) e o próprio <c>hash</c> ficam
-    /// de fora; <paramref name="esquemaArgs"/> (objeto) e
-    /// <paramref name="invariantes"/> (array) entram canonicalizados
+    /// de fora; a declaração (objeto) e as invariantes (array) entram canonicalizadas
     /// recursivamente, de modo que a ordem das chaves não altere o resultado.
     /// </remarks>
-    public static string ComputeRegraCatalogo(
-        string codigo,
-        string versao,
-        TipoRegra tipo,
-        JsonElement esquemaArgs,
-        JsonElement invariantes,
-        string baseLegal)
+    public static string ComputeRegraCatalogo(RegraCatalogo regra)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
-        ArgumentException.ThrowIfNullOrWhiteSpace(versao);
-        ArgumentException.ThrowIfNullOrWhiteSpace(baseLegal);
-
-        JsonObject payload = new()
-        {
-            ["baseLegal"] = baseLegal,
-            ["codigo"] = codigo,
-            ["esquemaArgs"] = JsonNode.Parse(esquemaArgs.GetRawText()),
-            ["invariantes"] = JsonNode.Parse(invariantes.GetRawText()),
-            ["tipo"] = tipo.ToCodigo(),
-            ["versao"] = versao,
-        };
-
-        return HashCanonicalPayload(payload);
+        ArgumentNullException.ThrowIfNull(regra);
+        return HashCanonicalPayload(DefinicaoDaRegraDoCatalogo(regra));
     }
+
+    private static JsonObject DefinicaoDaRegraDoCatalogo(RegraCatalogo regra) => new()
+    {
+        ["baseLegal"] = regra.BaseLegal,
+        ["codigo"] = regra.Codigo,
+        ["declaracaoDaRegra"] = JsonNode.Parse(regra.DeclaracaoDaRegra.GetRawText()),
+        ["invariantes"] = JsonNode.Parse(regra.Invariantes.GetRawText()),
+        ["tipo"] = regra.Tipo.ToCodigo(),
+        ["versao"] = regra.Versao,
+    };
 
     /// <summary>
     /// Canonicaliza (reordena chaves recursivamente), serializa com
@@ -200,31 +164,34 @@ public static class HashCanonicalComputer
     {
         ArgumentNullException.ThrowIfNull(node);
 
-        switch (node)
+        return node switch
         {
-            case JsonObject obj:
-                JsonObject ordered = new();
-                foreach (KeyValuePair<string, JsonNode?> kvp in obj
-                    .OrderBy(static p => p.Key, StringComparer.Ordinal))
-                {
-                    ordered[kvp.Key] = kvp.Value is null ? null : CanonicalizeRecursive(kvp.Value);
-                }
-                return ordered;
+            JsonObject obj => CanonicalizeObject(obj),
+            JsonArray array => CanonicalizeArray(array),
+            _ => node.Parent is null ? node : node.DeepClone(),
+        };
+    }
 
-            case JsonArray arr:
-                JsonArray rewritten = [];
-                foreach (JsonNode? item in arr)
-                {
-                    rewritten.Add(item is null ? null : CanonicalizeRecursive(item));
-                }
-                return rewritten;
-
-            default:
-                // Para JsonValue (primitivos), reusar o nó é seguro porque ele
-                // ainda não tem parent — o caller acabou de criá-lo via JsonObject
-                // literal. Caso seja reparented, .DeepClone garante isolamento.
-                return node.Parent is null ? node : node.DeepClone();
+    private static JsonObject CanonicalizeObject(JsonObject obj)
+    {
+        JsonObject ordered = new();
+        foreach (KeyValuePair<string, JsonNode?> property in obj.OrderBy(static p => p.Key, StringComparer.Ordinal))
+        {
+            ordered[property.Key] = property.Value is null ? null : CanonicalizeRecursive(property.Value);
         }
+
+        return ordered;
+    }
+
+    private static JsonArray CanonicalizeArray(JsonArray array)
+    {
+        JsonArray rewritten = [];
+        foreach (JsonNode? item in array)
+        {
+            rewritten.Add(item is null ? null : CanonicalizeRecursive(item));
+        }
+
+        return rewritten;
     }
 
     /// <summary>
