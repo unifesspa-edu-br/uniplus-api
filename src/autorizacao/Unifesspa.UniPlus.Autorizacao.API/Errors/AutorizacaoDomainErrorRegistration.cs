@@ -14,7 +14,7 @@ public sealed class AutorizacaoDomainErrorRegistration : IDomainErrorRegistratio
         .. ErrosDoTermo.Mapeamentos(),
         .. ErrosDaRevisao.Mapeamentos(),
         .. ErrosDaProvidencia.Mapeamentos(),
-        .. ErrosDaMigracao.Mapeamentos(),
+        .. ErrosDaRevisaoDasConcessoes.Mapeamentos(),
         .. ErrosDaReclassificacao.Mapeamentos(),
     ];
 }

@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Configurations;
 
-using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -13,10 +12,6 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>Configuração EF Core da concessão de acesso.</summary>
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class ConcessaoConfiguration : IEntityTypeConfiguration<Concessao>
 {
     private const int IdentidadeMaxLength = 255;
@@ -53,9 +48,9 @@ internal sealed class ConcessaoConfiguration : IEntityTypeConfiguration<Concessa
         {
             tabela.HasCheckConstraint(
                 "ck_concessoes_revogacao_completa",
-                "(revogada_em IS NULL AND revogada_por_emissor IS NULL AND revogada_por_conta_id IS NULL AND motivo_revogacao IS NULL AND revogada_pela_janela_id IS NULL)"
-                + " OR (revogada_em IS NOT NULL AND revogada_por_emissor IS NOT NULL AND revogada_por_conta_id IS NOT NULL AND motivo_revogacao IS NOT NULL AND revogada_pela_janela_id IS NULL)"
-                + " OR (revogada_em IS NOT NULL AND revogada_por_emissor IS NULL AND revogada_por_conta_id IS NULL AND motivo_revogacao IS NOT NULL AND revogada_pela_janela_id IS NOT NULL)");
+                "(revogada_em IS NULL AND revogada_por_emissor IS NULL AND revogada_por_conta_id IS NULL AND motivo_revogacao IS NULL AND revogada_pela_revisao_id IS NULL)"
+                + " OR (revogada_em IS NOT NULL AND revogada_por_emissor IS NOT NULL AND revogada_por_conta_id IS NOT NULL AND motivo_revogacao IS NOT NULL AND revogada_pela_revisao_id IS NULL)"
+                + " OR (revogada_em IS NOT NULL AND revogada_por_emissor IS NULL AND revogada_por_conta_id IS NULL AND motivo_revogacao IS NOT NULL AND revogada_pela_revisao_id IS NOT NULL)");
             tabela.HasCheckConstraint(
                 "ck_concessoes_escopo_unidade",
                 "(escopo_tipo = 'unidade') = (unidade_id IS NOT NULL)");
@@ -94,11 +89,11 @@ internal sealed class ConcessaoConfiguration : IEntityTypeConfiguration<Concessa
             .HasForeignKey(c => c.PerfilId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // A revogação pela janela de migração é do mesmo perfil da concessão.
-        builder.HasOne<JanelaDeMigracao>()
+        // A revogação pela revisão das concessões é do mesmo perfil da concessão.
+        builder.HasOne<RevisaoDasConcessoesDoPerfil>()
             .WithMany()
-            .HasForeignKey(c => new { c.RevogadaPelaJanelaId, c.PerfilId })
-            .HasConstraintName("fk_concessoes_janela_de_migracao_que_revogou")
+            .HasForeignKey(c => new { c.RevogadaPelaRevisaoId, c.PerfilId })
+            .HasConstraintName("fk_concessoes_revisao_que_revogou")
             .HasPrincipalKey(j => new { j.Id, j.PerfilId })
             .OnDelete(DeleteBehavior.Restrict);
 

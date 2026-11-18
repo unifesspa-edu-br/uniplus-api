@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 
 using Unifesspa.UniPlus.Authorization.Abstractions;
-using Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.RevisoesDasConcessoes;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;

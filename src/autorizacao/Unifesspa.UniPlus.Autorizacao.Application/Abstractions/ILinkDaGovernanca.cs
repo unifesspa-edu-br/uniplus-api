@@ -12,8 +12,8 @@ public interface ILinkDaGovernanca
     /// <summary>A tela da versão do perfil.</summary>
     string DaVersao(Guid perfilId, Guid versaoId);
 
-    /// <summary>A tela da janela de migração do perfil.</summary>
-    string DaJanela(Guid perfilId);
+    /// <summary>A tela da revisão das concessões do perfil.</summary>
+    string DaRevisao(Guid perfilId);
 
     /// <summary>
     /// A tela dos pedidos da pessoa, aberta a quem entrou no Uni+. Os avisos ao beneficiário apontam para ela porque a

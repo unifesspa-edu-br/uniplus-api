@@ -29,10 +29,10 @@ public sealed class ConcessaoPendenteDeMigrarTests
     {
         var cenario = new CenarioDeMigracao(protegido: false);
         Concessao migrada = cenario.Conceder(Leandro);
-        JanelaDeMigracao janela = cenario.Abrir();
+        RevisaoDasConcessoesDoPerfil revisao = cenario.Abrir();
         migrada.MigrarParaVersao(cenario.VersaoAntiga, cenario.VersaoNova!);
 
-        migrada.PendenteDeMigrarPara(janela.VersaoAlvoId, Depois).Should().BeFalse();
+        migrada.PendenteDeMigrarPara(revisao.VersaoAlvoId, Depois).Should().BeFalse();
     }
 
     [Fact(DisplayName = "A concessão revogada não está pendente de migrar")]
@@ -57,17 +57,17 @@ public sealed class ConcessaoPendenteDeMigrarTests
         vencida.PendenteDeMigrarPara(cenario.VersaoNova.Id, Depois).Should().BeFalse();
     }
 
-    [Fact(DisplayName = "A elegibilidade da janela é a pendência da concessão mais o perfil da janela")]
+    [Fact(DisplayName = "A elegibilidade da revisão é a pendência da concessão mais o perfil da revisão")]
     public void Elegivel_ConcessaoDeOutroPerfil_PendenteMasNaoElegivel()
     {
         var cenario = new CenarioDeMigracao(protegido: false);
         Concessao doPerfil = cenario.Conceder(Leandro);
         var outro = new CenarioDeMigracao(protegido: false);
         Concessao deOutroPerfil = outro.Conceder(Isabella);
-        JanelaDeMigracao janela = cenario.Abrir();
+        RevisaoDasConcessoesDoPerfil revisao = cenario.Abrir();
 
-        janela.Elegivel(doPerfil, Depois).Should().Be(doPerfil.PendenteDeMigrarPara(janela.VersaoAlvoId, Depois)).And.BeTrue();
-        deOutroPerfil.PendenteDeMigrarPara(janela.VersaoAlvoId, Depois).Should().BeTrue();
-        janela.Elegivel(deOutroPerfil, Depois).Should().BeFalse();
+        revisao.Elegivel(doPerfil, Depois).Should().Be(doPerfil.PendenteDeMigrarPara(revisao.VersaoAlvoId, Depois)).And.BeTrue();
+        deOutroPerfil.PendenteDeMigrarPara(revisao.VersaoAlvoId, Depois).Should().BeTrue();
+        revisao.Elegivel(deOutroPerfil, Depois).Should().BeFalse();
     }
 }

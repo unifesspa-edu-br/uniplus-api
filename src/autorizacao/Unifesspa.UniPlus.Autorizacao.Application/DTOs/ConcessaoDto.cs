@@ -2,8 +2,8 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 
 /// <summary>Concessão de acesso como a API a expõe. Traz o nome de exibição de quem age, nunca o CPF.</summary>
 /// <param name="Versao">Número da versão do perfil a que a concessão está presa, e não o da em vigor; nulo no perfil de governança.</param>
-/// <param name="RevogadaPor">Quem revogou; nulo enquanto a concessão não foi revogada e na revogação pela janela de migração, que é do sistema.</param>
-/// <param name="RevogadaPelaJanelaId">A janela de migração que revogou a concessão; nula quando a revogação foi de uma pessoa.</param>
+/// <param name="RevogadaPor">Quem revogou; nulo enquanto a concessão não foi revogada e na revogação pela revisão das concessões, que é do sistema.</param>
+/// <param name="RevogadaPelaRevisaoId">A revisão das concessões que revogou a concessão; nula quando a revogação foi de uma pessoa.</param>
 /// <param name="ValidaAte">Fim da vigência, quando a concessão é por prazo.</param>
 /// <param name="Ativa">Derivada da revogação e da vigência no momento da leitura.</param>
 public sealed record ConcessaoDto(
@@ -17,7 +17,7 @@ public sealed record ConcessaoDto(
     DateTimeOffset? ValidaAte,
     DateTimeOffset? RevogadaEm,
     IdentidadeDto? RevogadaPor,
-    Guid? RevogadaPelaJanelaId,
+    Guid? RevogadaPelaRevisaoId,
     string? MotivoRevogacao,
     bool Ativa);
 

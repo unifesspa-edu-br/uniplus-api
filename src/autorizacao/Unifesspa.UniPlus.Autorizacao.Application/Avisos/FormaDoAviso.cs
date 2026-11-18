@@ -19,5 +19,5 @@ public enum FormaDoAviso
     SemConcessaoAMigrar = 5,
 
     /// <summary>A migração terminou porque não restou concessão pendente.</summary>
-    JanelaConcluida = 6,
+    RevisaoConcluida = 6,
 }

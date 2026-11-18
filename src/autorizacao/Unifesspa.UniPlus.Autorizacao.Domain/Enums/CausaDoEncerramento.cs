@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 /// <summary>O que encerrou uma concessão, derivado na leitura.</summary>
 public enum CausaDoEncerramento
 {
-    /// <summary>A concessão foi revogada, por uma pessoa ou pela janela de migração.</summary>
+    /// <summary>A concessão foi revogada, por uma pessoa ou pela revisão das concessões.</summary>
     Revogada = 1,
 
     /// <summary>A vigência da concessão chegou ao fim, sem ato gravado.</summary>

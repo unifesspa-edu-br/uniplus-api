@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.CenarioDaGovernancaDaVersao;
 
 /// <summary>
-/// Quem só consulta as versões de perfil, como o Encarregado de dados, lê o perfil, o documento, a janela, a contenção, a
+/// Quem só consulta as versões de perfil, como o Encarregado de dados, lê o perfil, o documento, a revisão, a contenção, a
 /// reclassificação e as divergências, com a leitura registrada pela consulta; as filas de decisão continuam de quem decide
 /// a etapa. Cecília Moura só consulta.
 /// </summary>

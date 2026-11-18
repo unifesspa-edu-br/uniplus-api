@@ -40,7 +40,7 @@ public static class PerfilErrorCodes
     public const string MesmoDecisorNasDuasEtapas = "Perfil.MesmoDecisorNasDuasEtapas";
     public const string SemPermissaoNaEtapa = "Perfil.SemPermissaoNaEtapa";
     public const string LeituraNegada = "Perfil.LeituraNegada";
-    public const string JanelaDeMigracaoAberta = "Perfil.JanelaDeMigracaoAberta";
+    public const string RevisaoDasConcessoesAberta = "Perfil.RevisaoDasConcessoesAberta";
     public const string JaSuspenso = "Perfil.JaSuspenso";
     public const string NaoSuspenso = "Perfil.NaoSuspenso";
     public const string RetomadaPorQuemSuspendeu = "Perfil.RetomadaPorQuemSuspendeu";

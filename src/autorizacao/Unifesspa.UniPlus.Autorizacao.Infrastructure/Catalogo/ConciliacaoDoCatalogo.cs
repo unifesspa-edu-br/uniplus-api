@@ -78,7 +78,7 @@ public sealed class ConciliacaoDoCatalogo
     {
         await TravarPerfisComunsAsync(cancellationToken).ConfigureAwait(false);
 
-        // O instante vale o de depois das travas: a espera por elas pode atravessar o prazo de uma janela.
+        // O instante vale o de depois das travas: a espera por elas pode atravessar o prazo de uma revisão.
         DateTimeOffset agora = _relogio.GetUtcNow();
         ImplantacaoDasPermissoes novo = await GravarAImplantacaoAsync(agora, cancellationToken).ConfigureAwait(false);
 

@@ -34,9 +34,9 @@ public static class AutorizacaoDbSets
 
         public DbSet<Concessao> Concessoes => contexto.Set<Concessao>();
 
-        public DbSet<JanelaDeMigracao> JanelasDeMigracao => contexto.Set<JanelaDeMigracao>();
+        public DbSet<RevisaoDasConcessoesDoPerfil> RevisoesDasConcessoes => contexto.Set<RevisaoDasConcessoesDoPerfil>();
 
-        public DbSet<LoteDaMigracao> LotesDaMigracao => contexto.Set<LoteDaMigracao>();
+        public DbSet<EnvioDeDecisoesDaRevisao> EnviosDeDecisoes => contexto.Set<EnvioDeDecisoesDaRevisao>();
 
         public DbSet<MigracaoDaConcessao> MigracoesDasConcessoes => contexto.Set<MigracaoDaConcessao>();
 

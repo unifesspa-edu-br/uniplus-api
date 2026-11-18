@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 
-/// <summary>A etapa em que a decisão sobre uma concessão da janela foi tomada.</summary>
+/// <summary>A etapa em que a decisão sobre uma concessão da revisão foi tomada.</summary>
 public enum EtapaDaMigracao
 {
     /// <summary>A gestão de acessos, sempre a primeira.</summary>

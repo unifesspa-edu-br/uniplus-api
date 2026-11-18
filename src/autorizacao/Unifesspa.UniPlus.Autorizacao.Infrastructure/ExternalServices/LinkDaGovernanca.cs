@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 
 /// <summary>
 /// Os links da governança de perfis na Configuração: <c>{endereço}/acessos/perfis/{id}</c> e
-/// <c>{endereço}/acessos/perfis/{id}/versoes/{versaoId}</c>, <c>{endereço}/acessos/perfis/{id}/janela</c>,
+/// <c>{endereço}/acessos/perfis/{id}/versoes/{versaoId}</c>, <c>{endereço}/acessos/perfis/{id}/revisao-das-concessoes</c>,
 /// <c>{endereço}/acessos/pedidos</c>, <c>{endereço}/acessos/pedidos/novo</c> e
 /// <c>{endereço}/acessos/providencias/{id}</c>.
 /// </summary>
@@ -25,7 +25,7 @@ public sealed class LinkDaGovernanca : ILinkDaGovernanca
 
     public string DaVersao(Guid perfilId, Guid versaoId) => $"{DoPerfil(perfilId)}/versoes/{versaoId}";
 
-    public string DaJanela(Guid perfilId) => $"{DoPerfil(perfilId)}/janela";
+    public string DaRevisao(Guid perfilId) => $"{DoPerfil(perfilId)}/revisao-das-concessoes";
 
     // Provisório: a tela das concessões exige administrá-las, e o beneficiário comum não a abre (uniplus-web#1457).
     public string DosPedidos() => $"{_base}/acessos/pedidos";

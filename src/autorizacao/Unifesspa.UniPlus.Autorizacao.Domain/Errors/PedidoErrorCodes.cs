@@ -36,7 +36,7 @@ public static class PedidoErrorCodes
     public const string CursorInvalido = "Pedido.CursorInvalido";
     public const string FiltroDeSituacaoInvalido = "Pedido.FiltroDeSituacaoInvalido";
     public const string PerfilSemVersaoEmVigor = "Pedido.PerfilSemVersaoEmVigor";
-    public const string PerfilEmJanelaDeMigracao = "Pedido.PerfilEmJanelaDeMigracao";
+    public const string PerfilEmRevisaoDasConcessoes = "Pedido.PerfilEmRevisaoDasConcessoes";
     public const string SemTermoVigente = "Pedido.SemTermoVigente";
     public const string TermoDivergente = "Pedido.TermoDivergente";
     public const string ApresentacaoDoTermoInvalida = "Pedido.ApresentacaoDoTermoInvalida";

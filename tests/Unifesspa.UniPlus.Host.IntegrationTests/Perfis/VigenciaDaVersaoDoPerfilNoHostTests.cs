@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text.Json;
 
@@ -13,10 +12,6 @@ using Unifesspa.UniPlus.Verificador.Contratos;
 
 /// <summary>A entrada em vigor da versão: troca de vigência sob os índices parciais, resultado repetido e as recusas que dependem do nome e das concessões.</summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class VigenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoHostTestBase
 {
     public VigenciaDaVersaoDoPerfilNoHostTests(MonolitoDaInstalacaoFixture fixture)
@@ -67,37 +62,31 @@ public sealed class VigenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoHostT
         string nomeNovo = Nome();
         Envio versao = await CriarVersaoAsync(gestor, original.PerfilId, nomeNovo, Consultar);
         await ConfirmarEnvioAsync(gestor, versao);
-        (await EnviarAsync(gestor, HttpMethod.Post, RotaPerfis, Dados(nomeNovo, Consultar))).StatusCode.Should().Be(HttpStatusCode.Created);
-        await InjetarResultadoAsync(versao.DocumentoId, VeredictoDaVerificacao.Verificado);
-        await AguardarAsync(async () => await SituacaoDoDocumentoAsync(gestor, original.PerfilId) == "verificado", "o documento não foi verificado");
+        await OcuparNomeEVerificarAsync(gestor, nomeNovo, versao);
 
         using HttpClient gestao = await GestaoAsync();
         using HttpResponseMessage recusa = await AprovarBrutoAsync(gestao, versao, EtapaGestao);
 
         await ConferirRecusaDoPerfilAsync(recusa, HttpStatusCode.Conflict, "nome_duplicado");
-        JsonElement perfil = await LerAsync(gestor, $"{RotaPerfis}/{original.PerfilId}");
-        perfil.GetProperty("composicaoEmVigor").GetProperty("numero").GetInt32().Should().Be(1);
-        perfil.GetProperty("versaoPendente").GetProperty("versaoId").GetGuid().Should().Be(versao.VersaoId);
+        await ConferirVersaoPendenteAsync(gestor, original.PerfilId, versao.VersaoId);
     }
 
-    [Fact(DisplayName = "Concessão surgida antes da aprovação não impede a vigência da versão que amplia: abre a janela de migração")]
-    public async Task ConcessaoAntesDaAprovacao_EntraEmVigorEAbreAJanela()
+    [Fact(DisplayName = "Concessão surgida antes da aprovação não impede a vigência da versão que amplia: abre a revisão das concessões")]
+    public async Task ConcessaoAntesDaAprovacao_EntraEmVigorEAbreARevisao()
     {
         await ResetarAsync();
         using HttpClient gestor = await GestorAsync();
         Envio original = await CriarPerfilAsync(gestor, Consultar);
         await EnviarEVerificarAsync(gestor, original);
         Envio ampliada = await CriarVersaoAsync(gestor, original.PerfilId, Nome(), Consultar, Sensivel);
-        await ConfirmarEnvioAsync(gestor, ampliada);
-        await InjetarResultadoAsync(ampliada.DocumentoId, VeredictoDaVerificacao.Verificado);
-        await AguardarAsync(async () => await SituacaoDoDocumentoAsync(gestor, original.PerfilId) == "verificado", "o documento não foi verificado");
+        await ConfirmarEVerificarAsync(gestor, ampliada);
         await SemearConcessaoAsync(Leandro, original.PerfilId, EscopoDaConcessao.DaUnidade(await SemearUnidadeAsync()));
 
         await AprovarAteAVigenciaAsync(gestor, ampliada);
 
         JsonElement perfil = await LerAsync(gestor, $"{RotaPerfis}/{original.PerfilId}");
         perfil.GetProperty("composicaoEmVigor").GetProperty("numero").GetInt32().Should().Be(2);
-        perfil.GetProperty("janela").GetProperty("situacao").GetString().Should().Be("aberta");
+        perfil.GetProperty("revisaoDasConcessoes").GetProperty("situacao").GetString().Should().Be("aberta");
     }
 
     [Fact(DisplayName = "Concessão posterior à entrada em vigor não impede a próxima ampliação: a versão é criada pendente")]
@@ -130,12 +119,7 @@ public sealed class VigenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoHostT
         using HttpResponseMessage remocao = await RemoverBrutoAsync(gestor, original.PerfilId, [Sensivel]);
         JsonElement reduzida = await CorpoAsync(remocao, HttpStatusCode.OK);
 
-        (await ConcessoesAsync(Leandro, original.PerfilId)).Should().ContainSingle().Which.VersaoId
-            .Should().Be(reduzida.GetProperty("composicaoEmVigor").GetProperty("versaoId").GetGuid());
-        JsonElement lido = await LerAsync(betina, $"{Rota}/{pedido}");
-        lido.GetProperty("situacao").GetString().Should().Be("aguardando_gestor");
-        lido.GetProperty("versao").GetInt32().Should().Be(2);
-        lido.GetProperty("trocasDeVersao").EnumerateArray().Single().GetProperty("desfecho").GetString().Should().Be("versao_atualizada");
+        await ConferirAtualizacaoAsync(betina, original.PerfilId, pedido, reduzida);
     }
 
     [Fact(DisplayName = "A entrada em vigor com acréscimo devolve o pedido ativo e avisa o solicitante")]
@@ -152,9 +136,49 @@ public sealed class VigenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoHostT
 
         await EnviarEVerificarAsync(gestor, ampliada);
 
+        await ConferirDevolucaoAsync(betina, pedido);
+    }
+    private static async Task ConferirVersaoPendenteAsync(HttpClient gestor, Guid perfilId, Guid versaoId)
+    {
+        JsonElement perfil = await LerAsync(gestor, $"{RotaPerfis}/{perfilId}");
+        perfil.GetProperty("composicaoEmVigor").GetProperty("numero").GetInt32().Should().Be(1);
+        perfil.GetProperty("versaoPendente").GetProperty("versaoId").GetGuid().Should().Be(versaoId);
+    }
+
+    private async Task OcuparNomeEVerificarAsync(HttpClient gestor, string nome, Envio versao)
+    {
+        (await EnviarAsync(gestor, HttpMethod.Post, RotaPerfis, Dados(nome, Consultar))).StatusCode.Should().Be(HttpStatusCode.Created);
+        await VerificarDocumentoAsync(gestor, versao);
+    }
+
+    private async Task ConfirmarEVerificarAsync(HttpClient gestor, Envio envio)
+    {
+        await ConfirmarEnvioAsync(gestor, envio);
+        await VerificarDocumentoAsync(gestor, envio);
+    }
+
+    private async Task VerificarDocumentoAsync(HttpClient gestor, Envio envio)
+    {
+        await InjetarResultadoAsync(envio.DocumentoId, VeredictoDaVerificacao.Verificado);
+        await AguardarAsync(async () => await SituacaoDoDocumentoAsync(gestor, envio.PerfilId) == "verificado", "o documento não foi verificado");
+    }
+
+    private async Task ConferirAtualizacaoAsync(HttpClient betina, Guid perfilId, Guid pedido, JsonElement reduzida)
+    {
+        (await ConcessoesAsync(Leandro, perfilId)).Should().ContainSingle().Which.VersaoId
+            .Should().Be(reduzida.GetProperty("composicaoEmVigor").GetProperty("versaoId").GetGuid());
+        JsonElement lido = await LerAsync(betina, $"{Rota}/{pedido}");
+        lido.GetProperty("situacao").GetString().Should().Be("aguardando_gestor");
+        lido.GetProperty("versao").GetInt32().Should().Be(2);
+        lido.GetProperty("trocasDeVersao").EnumerateArray().Single().GetProperty("desfecho").GetString().Should().Be("versao_atualizada");
+    }
+
+    private static async Task ConferirDevolucaoAsync(HttpClient betina, Guid pedido)
+    {
         JsonElement lido = await LerAsync(betina, $"{Rota}/{pedido}");
         lido.GetProperty("situacao").GetString().Should().Be("devolvido");
         lido.GetProperty("versao").GetInt32().Should().Be(1);
         lido.GetProperty("trocasDeVersao").EnumerateArray().Single().GetProperty("desfecho").GetString().Should().Be("devolvido");
     }
+
 }

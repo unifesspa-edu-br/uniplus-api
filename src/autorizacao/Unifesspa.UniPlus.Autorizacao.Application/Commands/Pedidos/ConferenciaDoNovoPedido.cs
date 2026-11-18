@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
-using Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.RevisoesDasConcessoes;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;

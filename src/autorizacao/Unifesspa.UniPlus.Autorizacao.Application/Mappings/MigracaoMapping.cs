@@ -4,7 +4,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 
-/// <summary>A decisão da janela de migração como evento da trilha da concessão.</summary>
+/// <summary>A decisão da revisão das concessões como evento da trilha da concessão.</summary>
 public static class MigracaoMapping
 {
     public static EventoDaTrilhaDto ToEvento(DecisaoDaMigracao decisao)
@@ -23,5 +23,5 @@ public static class MigracaoMapping
     }
 
     private static string Detalhe(DecisaoDaMigracao decisao) =>
-        $"Etapa: {decisao.Etapa.ToCodigo()}. Janela: {decisao.JanelaId}.";
+        $"Etapa: {decisao.Etapa.ToCodigo()}. Revisão: {decisao.RevisaoId}.";
 }

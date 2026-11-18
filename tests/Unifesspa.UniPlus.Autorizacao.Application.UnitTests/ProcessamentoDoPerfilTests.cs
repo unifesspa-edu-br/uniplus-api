@@ -6,12 +6,12 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands;
-using Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.RevisoesDasConcessoes;
 using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class ProcessamentoDoPerfilTests
 {
-    private static readonly MaterializarJanelaVencidaCommand Comando = new(Guid.NewGuid());
+    private static readonly MaterializarRevisaoVencidaCommand Comando = new(Guid.NewGuid());
 
     private readonly ICommandBus _bus = Substitute.For<ICommandBus>();
     private readonly List<Exception?> _falhas = [];

@@ -95,8 +95,8 @@ public sealed class VersoesDoPerfilTests
         {
         }
 
-        public Cenario(bool janelaAberta, params Perfil[] perfis)
-            : this(PerfisDeTeste.Autor, perfis, janelaAberta)
+        public Cenario(bool revisaoAberta, params Perfil[] perfis)
+            : this(PerfisDeTeste.Autor, perfis, revisaoAberta)
         {
         }
 
@@ -115,14 +115,14 @@ public sealed class VersoesDoPerfilTests
         {
         }
 
-        private Cenario(Identidade? autor, Perfil[] perfis, bool janelaAberta, Exception? falha = null)
+        private Cenario(Identidade? autor, Perfil[] perfis, bool revisaoAberta, Exception? falha = null)
         {
             Perfis = new PerfisNaMemoria(perfis);
             Unidade = new UnidadeDeTrabalho { Falha = falha };
             Armazenamento = new Armazenamento();
             Versoes = new VersoesDoPerfil(
                 new OperacaoSobreOPerfil(Perfis, Unidade, new CenarioDaGovernancaDaVersao.RelogioFixo(PerfisDeTeste.Instante.AddHours(1))),
-                new LeitorDoContextoDaVersao(Perfis, new JanelasNaMemoria(janelaAberta), TimeProvider.System),
+                new LeitorDoContextoDaVersao(Perfis, new RevisoesNaMemoria(revisaoAberta), TimeProvider.System),
                 new EnvioDoDocumento(new EnvioDoPdf(Armazenamento), TimeProvider.System),
                 new AutoriaDaOperacao(new Usuario(autor), TimeProvider.System, new ConcessoesNaMemoria()),
                 Catalogo);

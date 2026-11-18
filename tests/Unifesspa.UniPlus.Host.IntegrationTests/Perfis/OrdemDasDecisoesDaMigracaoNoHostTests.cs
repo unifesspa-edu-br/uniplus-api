@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 /// registradas, mesmo quando a registrada por último tem o identificador menor.
 /// </summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
-public sealed class OrdemDasDecisoesDaMigracaoNoHostTests : JanelaDeMigracaoNoHostTestBase
+public sealed class OrdemDasDecisoesDaMigracaoNoHostTests : RevisaoDasConcessoesNoHostTestBase
 {
     private const string Reverter = """
         UPDATE autorizacao.decisoes_da_migracao
@@ -22,7 +22,7 @@ public sealed class OrdemDasDecisoesDaMigracaoNoHostTests : JanelaDeMigracaoNoHo
         WHERE concessao_id = {0}
         """;
 
-    public OrdemDasDecisoesDaMigracaoNoHostTests(MonolitoDaInstalacaoFixture fixture, HostDaJanelaDeMigracao hostDaClasse)
+    public OrdemDasDecisoesDaMigracaoNoHostTests(MonolitoDaInstalacaoFixture fixture, HostDaRevisaoDasConcessoes hostDaClasse)
         : base(fixture, hostDaClasse)
     {
     }
@@ -30,7 +30,7 @@ public sealed class OrdemDasDecisoesDaMigracaoNoHostTests : JanelaDeMigracaoNoHo
     [Fact(DisplayName = "Com o mesmo instante, as decisões da migração saem na trilha pela ordem de registro, e não pelo identificador")]
     public async Task MesmoInstante_PelaOrdemDeRegistro()
     {
-        JanelaAberta cenario = await AbrirJanelaAsync(Leandro);
+        RevisaoAberta cenario = await AbrirRevisaoAsync(Leandro);
         Guid concessao = cenario.Concessoes[Leandro];
         await DecidirEmDuasEtapasAsync(cenario.PerfilId, concessao);
         await ExecutarSqlAsync(Reverter, concessao, new DateTimeOffset(2027, 3, 10, 12, 0, 0, TimeSpan.Zero).AddTicks(1_234_560));
@@ -47,10 +47,10 @@ public sealed class OrdemDasDecisoesDaMigracaoNoHostTests : JanelaDeMigracaoNoHo
     {
         using HttpClient gestao = await GestaoAsync();
         using HttpClient protecao = await ProtecaoAsync();
-        using HttpResponseMessage lote = await EnviarLoteAsync(gestao, perfilId, [Decisao(concessao, "migrar")]);
-        (await CorpoAsync(lote, HttpStatusCode.OK)).Should().NotBeNull();
+        using HttpResponseMessage envio = await EnviarDecisoesDaGestaoAsync(gestao, perfilId, [Decisao(concessao, "migrar")]);
+        (await CorpoAsync(envio, HttpStatusCode.OK)).Should().NotBeNull();
         using HttpResponseMessage etapa = await EnviarAsync(
-            protecao, HttpMethod.Post, RotaDaJanela(perfilId, "/protecao-de-dados"), new { decisoes = new[] { Decisao(concessao, "migrar") } });
+            protecao, HttpMethod.Post, RotaDaRevisao(perfilId, "/protecao-de-dados"), new { decisoes = new[] { Decisao(concessao, "migrar") } });
         (await CorpoAsync(etapa, HttpStatusCode.OK)).Should().NotBeNull();
     }
 }

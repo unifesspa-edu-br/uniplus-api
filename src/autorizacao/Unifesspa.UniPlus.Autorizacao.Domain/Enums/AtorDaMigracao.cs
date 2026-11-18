@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 
-/// <summary>Quem tomou a decisão da janela: uma pessoa ou o sistema.</summary>
+/// <summary>Quem tomou a decisão da revisão: uma pessoa ou o sistema.</summary>
 public enum AtorDaMigracao
 {
     Humano = 1,

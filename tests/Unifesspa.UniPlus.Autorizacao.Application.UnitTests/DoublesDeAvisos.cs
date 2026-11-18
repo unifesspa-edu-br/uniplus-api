@@ -81,7 +81,7 @@ internal static class DoublesDeAvisos
 
         public string DaVersao(Guid perfilId, Guid versaoId) => $"{DoPerfil(perfilId)}/versoes/{versaoId}";
 
-        public string DaJanela(Guid perfilId) => $"{DoPerfil(perfilId)}/janela";
+        public string DaRevisao(Guid perfilId) => $"{DoPerfil(perfilId)}/revisao-das-concessoes";
 
         public string DosPedidos() => "https://uniplus.test/configuracao/acessos/pedidos";
 

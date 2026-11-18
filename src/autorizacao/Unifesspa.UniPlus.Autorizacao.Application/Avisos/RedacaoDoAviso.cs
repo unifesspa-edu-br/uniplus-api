@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Kernel.Extensions;
 internal static class RedacaoDoAviso
 {
     private static readonly FrozenDictionary<TipoDeAviso, TextoDoAviso> Textos = TextosDosAvisosDaVersao.Todos
-        .Concat(TextosDaJanela.Todos)
+        .Concat(TextosDaRevisao.Todos)
         .Concat(TextosDosAvisosDaContencao.Todos)
         .Concat(TextosDosAvisosDeReclassificacaoEDivergencia.Todos)
         .Concat(TextosDoAvisoDeTermoExigido.Todos)
@@ -45,7 +45,7 @@ internal static class RedacaoDoAviso
         Textos.TryGetValue(tipo, out TextoDoAviso? texto) ? texto : throw new ArgumentOutOfRangeException(nameof(tipo), tipo, null);
 
     private static string Abertura(ModeloDeAviso modelo) =>
-        modelo.Forma is { } forma && TextosDaJanela.PorForma.TryGetValue((modelo.Tipo, forma), out string? daForma)
+        modelo.Forma is { } forma && TextosDaRevisao.PorForma.TryGetValue((modelo.Tipo, forma), out string? daForma)
             ? daForma
             : TextoDe(modelo.Tipo).Abertura;
 

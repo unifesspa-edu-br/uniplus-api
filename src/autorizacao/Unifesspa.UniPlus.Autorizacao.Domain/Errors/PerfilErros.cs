@@ -97,9 +97,9 @@ public static class PerfilErros
         PerfilErrorCodes.PermissaoReservada,
         "A versão reúne permissão reservada aos perfis de governança.");
 
-    public static DomainError JanelaDeMigracaoAberta() => new(
-        PerfilErrorCodes.JanelaDeMigracaoAberta,
-        "O perfil está em janela de migração e não aceita outra versão pendente até o fim dela.");
+    public static DomainError RevisaoDasConcessoesAberta() => new(
+        PerfilErrorCodes.RevisaoDasConcessoesAberta,
+        "O perfil está em revisão das concessões e não aceita outra versão pendente até o fim dela.");
 
     public static DomainError JaSuspenso() => new(
         PerfilErrorCodes.JaSuspenso,

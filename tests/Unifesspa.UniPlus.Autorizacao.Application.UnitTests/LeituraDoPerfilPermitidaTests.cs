@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
-using Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.RevisoesDasConcessoes;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Application.Permissoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Perfis;
@@ -108,9 +108,9 @@ public sealed class LeituraDoPerfilPermitidaTests
 
     private static Task<Result<PerfilDto>> Obter(Guid perfilId, IVerificadorDeAcesso verificador, IPerfilRepository perfis)
     {
-        IJanelaDeMigracaoRepository janelas = Substitute.For<IJanelaDeMigracaoRepository>();
-        LeitorDaMigracao leitor = new(janelas, Substitute.For<ICatalogoDePermissoesConsultavel>(), TimeProvider.System);
-        DetalheDoPerfil detalhe = new(perfis, Catalogo, new LeituraDaJanela(janelas, leitor, TimeProvider.System), Substitute.For<IUserContext>());
+        IRevisaoDasConcessoesRepository revisoes = Substitute.For<IRevisaoDasConcessoesRepository>();
+        LeitorDaMigracao leitor = new(revisoes, Substitute.For<ICatalogoDePermissoesConsultavel>(), TimeProvider.System);
+        DetalheDoPerfil detalhe = new(perfis, Catalogo, new LeituraDaRevisaoDasConcessoes(revisoes, leitor, TimeProvider.System), Substitute.For<IUserContext>());
 
         return ObterPerfilQueryHandler.Handle(new ObterPerfilQuery(perfilId), verificador, detalhe, CancellationToken.None);
     }

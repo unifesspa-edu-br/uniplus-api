@@ -56,7 +56,7 @@ public interface IReclassificacaoRepository
     Task<IReadOnlyList<ConcessaoComAPermissao>> ListarConcessoesComAPermissaoAsync(
         Guid perfilId, CodigoDePermissao codigo, DateTimeOffset agora, bool bloquearParaLeituraCompartilhada, CancellationToken cancellationToken = default);
 
-    /// <summary>As versões do perfil em uso: a vigente, as das concessões não revogadas e a de destino de janela aberta.</summary>
+    /// <summary>As versões do perfil em uso: a vigente, as das concessões não revogadas e a de destino de revisão aberta.</summary>
     Task<IReadOnlyList<Guid>> ListarVersoesEmUsoAsync(Guid perfilId, CancellationToken cancellationToken = default);
 
     /// <summary>Entre as versões, as cujo documento instituidor a pessoa leu.</summary>

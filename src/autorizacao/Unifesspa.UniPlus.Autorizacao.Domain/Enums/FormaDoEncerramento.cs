@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 
-/// <summary>Como a janela de migração terminou.</summary>
+/// <summary>Como a revisão das concessões terminou.</summary>
 public enum FormaDoEncerramento
 {
     /// <summary>Não restou concessão pendente.</summary>

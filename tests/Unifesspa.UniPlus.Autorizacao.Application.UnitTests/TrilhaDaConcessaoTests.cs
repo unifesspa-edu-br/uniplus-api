@@ -25,7 +25,7 @@ public sealed class TrilhaDaConcessaoTests
     private const string Solicitar = "autorizacao:providencias:solicitar";
 
     private readonly IRevisaoDeAcessosRepository _revisoes = Substitute.For<IRevisaoDeAcessosRepository>();
-    private readonly IJanelaDeMigracaoRepository _janelas = Substitute.For<IJanelaDeMigracaoRepository>();
+    private readonly IRevisaoDasConcessoesRepository _revisoesDasConcessoes = Substitute.For<IRevisaoDasConcessoesRepository>();
     private readonly IProvidenciaRepository _providencias = Substitute.For<IProvidenciaRepository>();
     private readonly IEventosDaOrigem _origem = Substitute.For<IEventosDaOrigem>();
     private readonly IConcessaoRepository _concessoes = Substitute.For<IConcessaoRepository>();
@@ -91,5 +91,5 @@ public sealed class TrilhaDaConcessaoTests
     }
 
     private TrilhaDaConcessao Trilha() =>
-        new(_revisoes, _janelas, _providencias, [_origem], new CenarioDaGovernancaDaVersao.RelogioFixo(ProvidenciaBuilder.Agora.AddHours(1)));
+        new(_revisoes, _revisoesDasConcessoes, _providencias, [_origem], new CenarioDaGovernancaDaVersao.RelogioFixo(ProvidenciaBuilder.Agora.AddHours(1)));
 }

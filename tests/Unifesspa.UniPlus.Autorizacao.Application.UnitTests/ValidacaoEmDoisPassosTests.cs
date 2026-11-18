@@ -5,8 +5,8 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
-using Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.RevisoesDasConcessoes;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
@@ -52,7 +52,7 @@ public sealed class ValidacaoEmDoisPassosTests
         concessoes.ObterParaConcederAsync(perfil.Id, Arg.Any<CancellationToken>()).Returns(perfil);
 
         return new ConferenciaDoNovoPedido(
-            new PerfilParaPedir(concessoes, Substitute.For<IJanelaDeMigracaoRepository>(), TimeProvider.System),
+            new PerfilParaPedir(concessoes, Substitute.For<IRevisaoDasConcessoesRepository>(), TimeProvider.System),
             Substitute.For<ILeitorDeUnidade>(),
             ApoioDoPedido.Dominios,
             ApoioDoPedido.Catalogo,

@@ -182,46 +182,46 @@ internal static class DoublesDePerfis
         public Task<int> ContarGestoresAtivosAsync(Guid perfilId, Guid exceto, DateTimeOffset agora, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
     }
 
-    internal sealed class JanelasNaMemoria(bool aberta = false, JanelaDeMigracao? ultima = null) : IJanelaDeMigracaoRepository
+    internal sealed class RevisoesNaMemoria(bool aberta = false, RevisaoDasConcessoesDoPerfil? ultima = null) : IRevisaoDasConcessoesRepository
     {
-        public List<JanelaDeMigracao> Adicionadas { get; } = [];
+        public List<RevisaoDasConcessoesDoPerfil> Adicionadas { get; } = [];
 
-        public Task AdicionarAsync(JanelaDeMigracao janela, CancellationToken cancellationToken = default)
+        public Task AdicionarAsync(RevisaoDasConcessoesDoPerfil revisao, CancellationToken cancellationToken = default)
         {
-            Adicionadas.Add(janela);
+            Adicionadas.Add(revisao);
 
             return Task.CompletedTask;
         }
 
-        public Task<JanelaDeMigracao?> ObterNaoEncerradaParaAlterarAsync(Guid perfilId, CancellationToken cancellationToken = default) =>
-            Task.FromResult<JanelaDeMigracao?>(null);
+        public Task<RevisaoDasConcessoesDoPerfil?> ObterNaoEncerradaParaAlterarAsync(Guid perfilId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<RevisaoDasConcessoesDoPerfil?>(null);
 
-        public Task<JanelaDeMigracao?> ObterUltimaParaLeituraAsync(Guid perfilId, CancellationToken cancellationToken = default) =>
+        public Task<RevisaoDasConcessoesDoPerfil?> ObterUltimaParaLeituraAsync(Guid perfilId, CancellationToken cancellationToken = default) =>
             Task.FromResult(ultima);
 
-        public Task<bool> TemJanelaAbertaAsync(Guid perfilId, DateTimeOffset agora, CancellationToken cancellationToken = default) =>
+        public Task<bool> TemRevisaoAbertaAsync(Guid perfilId, DateTimeOffset agora, CancellationToken cancellationToken = default) =>
             Task.FromResult(aberta);
 
-        public Task<bool> TemJanelaPorMaterializarAsync(Guid perfilId, DateTimeOffset agora, CancellationToken cancellationToken = default) =>
+        public Task<bool> TemRevisaoPorEncerrarAsync(Guid perfilId, DateTimeOffset agora, CancellationToken cancellationToken = default) =>
             Task.FromResult(false);
 
-        public Task<IReadOnlyList<Concessao>> ObterConcessoesDaJanelaAsync(Guid perfilId, DateTimeOffset desde, CancellationToken cancellationToken = default) =>
+        public Task<IReadOnlyList<Concessao>> ObterConcessoesDaRevisaoAsync(Guid perfilId, DateTimeOffset desde, CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<Concessao>>([]);
 
-        public Task<IReadOnlyList<Concessao>> ListarConcessoesDaJanelaAsync(Guid perfilId, DateTimeOffset desde, CancellationToken cancellationToken = default) =>
+        public Task<IReadOnlyList<Concessao>> ListarConcessoesDaRevisaoAsync(Guid perfilId, DateTimeOffset desde, CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<Concessao>>([]);
 
         public Task<IReadOnlyDictionary<Guid, IReadOnlyList<string>>> ObterComposicoesAsync(
             IReadOnlyCollection<Guid> concessaoIds, DateTimeOffset agora, CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyDictionary<Guid, IReadOnlyList<string>>>(new Dictionary<Guid, IReadOnlyList<string>>());
 
-        public Task<IReadOnlyList<JanelaDeMigracao>> ListarAbertasParaLeituraAsync(DateTimeOffset agora, CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<JanelaDeMigracao>>([]);
+        public Task<IReadOnlyList<RevisaoDasConcessoesDoPerfil>> ListarAbertasParaLeituraAsync(DateTimeOffset agora, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<RevisaoDasConcessoesDoPerfil>>([]);
 
         public Task<IReadOnlyList<Concessao>> ListarConcessoesAtivasDosPerfisAsync(IReadOnlyCollection<Guid> perfilIds, CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<Concessao>>([]);
 
-        public Task<IReadOnlyList<Guid>> ListarPerfisComJanelaNaoEncerradaAsync(CancellationToken cancellationToken = default) =>
+        public Task<IReadOnlyList<Guid>> ListarPerfisComRevisaoNaoEncerradaAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<Guid>>([]);
 
         public Task<IReadOnlyList<DecisaoDaMigracao>> ListarDecisoesDaConcessaoAsync(Guid concessaoId, CancellationToken cancellationToken = default) =>

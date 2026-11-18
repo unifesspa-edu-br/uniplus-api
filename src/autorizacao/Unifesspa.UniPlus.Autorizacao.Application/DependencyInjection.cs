@@ -9,13 +9,13 @@ using Unifesspa.UniPlus.Autorizacao.Application.Avisos;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Concessoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Instalacoes;
-using Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Providencias;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Reclassificacoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.ResultadosDaVerificacao;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Revisoes;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.RevisoesDasConcessoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Termos;
 using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 using Unifesspa.UniPlus.Autorizacao.Application.Monitoramento;
@@ -142,14 +142,14 @@ public static class AutorizacaoApplicationServiceRegistration
         AdicionarDecisoesDaVersao(services);
         AdicionarEfeitosDaVersao(services);
         AdicionarEmissaoDeAvisos(services);
-        AdicionarJanelaDeMigracao(services);
+        AdicionarRevisaoDasConcessoes(services);
         AdicionarReclassificacoes(services);
     }
 
     private static void AdicionarFilas(IServiceCollection services)
     {
         services.AddScoped<FilaDeVersoesDaEtapa>();
-        services.AddScoped<FilaDeJanelasDaEtapa>();
+        services.AddScoped<FilaDeRevisoesDasConcessoesDaEtapa>();
     }
 
     private static void AdicionarDecisoesDaVersao(IServiceCollection services)
@@ -173,24 +173,24 @@ public static class AutorizacaoApplicationServiceRegistration
     private static void AdicionarEmissaoDeAvisos(IServiceCollection services)
     {
         services.AddScoped<EmissorDeAvisos>();
-        services.AddScoped<AvisosDosEfeitosDaJanela>();
+        services.AddScoped<AvisosDosEfeitosDaRevisao>();
         services.AddScoped<GruposDaGovernanca>();
         services.AddScoped<AvisoDeEtapaApta>();
     }
 
-    private static void AdicionarJanelaDeMigracao(IServiceCollection services)
+    private static void AdicionarRevisaoDasConcessoes(IServiceCollection services)
     {
         services.AddScoped<LeitorDaMigracao>();
         services.AddScoped<MigracaoSobreOPerfil>();
         services.AddScoped<AutorizacaoDaMigracao>();
-        services.AddScoped<DecisoesDaJanela>();
-        services.AddScoped<EfeitosDaJanelaNaTroca>();
-        services.AddScoped<AvisosDaJanela>();
-        services.AddScoped<ProcessamentoDaJanela>();
-        services.AddScoped<ProcessamentoDasJanelas>();
+        services.AddScoped<DecisoesDaRevisao>();
+        services.AddScoped<EfeitosDaRevisaoNaTroca>();
+        services.AddScoped<AvisosDaRevisao>();
+        services.AddScoped<ProcessamentoDaRevisao>();
+        services.AddScoped<ProcessamentoDasRevisoesDasConcessoes>();
         services.AddScoped<MaterializacaoPrevia>();
         services.AddScoped<PerfilParaPedir>();
-        services.AddScoped<LeituraDaJanela>();
+        services.AddScoped<LeituraDaRevisaoDasConcessoes>();
         services.AddScoped<DetalheDoPerfil>();
     }
 

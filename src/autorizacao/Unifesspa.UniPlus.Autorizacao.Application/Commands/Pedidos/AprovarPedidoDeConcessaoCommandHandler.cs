@@ -3,13 +3,13 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
-using Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.RevisoesDasConcessoes;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Handler da aprovação; a regra da etapa é de <see cref="AprovacaoDoPedido"/>. A janela de migração vencida e ainda não
+/// Handler da aprovação; a regra da etapa é de <see cref="AprovacaoDoPedido"/>. A revisão das concessões vencida e ainda não
 /// materializada é materializada antes das travas: sem isso, a concessão antiga continuaria não revogada e a nova
 /// esbarraria nela; só quem decide alguma etapa provoca essa gravação, e quem não decide segue para a recusa de acesso
 /// do <c>Handle</c>.

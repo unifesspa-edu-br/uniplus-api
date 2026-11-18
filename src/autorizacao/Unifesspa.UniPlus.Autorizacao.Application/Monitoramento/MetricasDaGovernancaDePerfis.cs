@@ -4,10 +4,10 @@ using System.Diagnostics.Metrics;
 
 /// <summary>O que a amostragem leu do estado da governança de perfis.</summary>
 /// <param name="VersoesVencendo">Versões pendentes que expiram nas próximas 48 horas.</param>
-/// <param name="JanelasAbertas">Janelas de migração efetivamente abertas.</param>
+/// <param name="RevisoesAbertas">Revisões das concessões efetivamente abertas.</param>
 /// <param name="ReclassificacoesPendentes">Reclassificações sem a liberação de todas as etapas exigidas.</param>
 /// <param name="Divergencias">Divergências registradas na conferência do catálogo em vigor.</param>
-public sealed record AmostraDaGovernanca(long VersoesVencendo, long JanelasAbertas, long ReclassificacoesPendentes, long Divergencias);
+public sealed record AmostraDaGovernanca(long VersoesVencendo, long RevisoesAbertas, long ReclassificacoesPendentes, long Divergencias);
 
 /// <summary>
 /// As métricas da governança de perfis: o estado que a amostragem lê do banco, guardado com <see cref="Interlocked"/> e
@@ -22,7 +22,7 @@ public sealed class MetricasDaGovernancaDePerfis : IDisposable
     private readonly Counter<long> _avisosSemDestinatario;
     private readonly TimeProvider _relogio;
     private long _versoesVencendo;
-    private long _janelasAbertas;
+    private long _revisoesAbertas;
     private long _reclassificacoesPendentes;
     private long _divergencias;
     private long _ultimaAmostraEmTicks;
@@ -53,7 +53,7 @@ public sealed class MetricasDaGovernancaDePerfis : IDisposable
         ArgumentNullException.ThrowIfNull(amostra);
 
         Interlocked.Exchange(ref _versoesVencendo, amostra.VersoesVencendo);
-        Interlocked.Exchange(ref _janelasAbertas, amostra.JanelasAbertas);
+        Interlocked.Exchange(ref _revisoesAbertas, amostra.RevisoesAbertas);
         Interlocked.Exchange(ref _reclassificacoesPendentes, amostra.ReclassificacoesPendentes);
         Interlocked.Exchange(ref _divergencias, amostra.Divergencias);
         Interlocked.Exchange(ref _ultimaAmostraEmTicks, _relogio.GetUtcNow().UtcTicks);
@@ -66,7 +66,7 @@ public sealed class MetricasDaGovernancaDePerfis : IDisposable
         _medidor.CreateObservableGauge(
             "uniplus.autorizacao.versoes_pendentes.vencendo", () => Interlocked.Read(ref _versoesVencendo), description: "Versões pendentes que expiram nas próximas 48 horas");
         _medidor.CreateObservableGauge(
-            "uniplus.autorizacao.janelas_abertas", () => Interlocked.Read(ref _janelasAbertas), description: "Janelas de migração efetivamente abertas");
+            "uniplus.autorizacao.revisoes_abertas", () => Interlocked.Read(ref _revisoesAbertas), description: "Revisões das concessões efetivamente abertas");
         _medidor.CreateObservableGauge(
             "uniplus.autorizacao.reclassificacoes_pendentes", () => Interlocked.Read(ref _reclassificacoesPendentes), description: "Reclassificações sem a liberação de todas as etapas exigidas");
         _medidor.CreateObservableGauge(

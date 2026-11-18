@@ -1,9 +1,8 @@
 namespace Unifesspa.UniPlus.Autorizacao.API;
 
-using System.Diagnostics.CodeAnalysis;
 
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
-using Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.RevisoesDasConcessoes;
 
 using Wolverine;
 
@@ -13,10 +12,6 @@ using Wolverine;
 /// A unidade de trabalho é declarada uma vez, em <c>MonolitoCodegenRegistration</c>. Composto pelo host no
 /// <c>configureRouting</c>; o helper compartilhado permanece agnóstico dos tipos do módulo.
 /// </summary>
-[SuppressMessage(
-    "Design",
-    "CA1515:Consider making public types internal",
-    Justification = "Referenciado pelo composition root (host do monólito modular) fora deste assembly.")]
 public static class AutorizacaoCodegenRegistration
 {
     /// <summary>Aplica os opt-ins de codegen da Autorização ao <paramref name="opts"/>.</summary>

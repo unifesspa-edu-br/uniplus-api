@@ -4,21 +4,21 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 
 /// <summary>Uma decisão pedida sobre uma concessão; a decisão nula ou que não é migrar nem recusar é inválida.</summary>
-public sealed record ItemDoLote(Guid ConcessaoId, ResultadoDaMigracao? Decisao);
+public sealed record ItemDoEnvio(Guid ConcessaoId, ResultadoDaMigracao? Decisao);
 
-/// <summary>O lote da gestão de acessos: uma decisão por concessão e a confirmação de que recusar revoga.</summary>
-public sealed record PedidoDoLote(IReadOnlyList<ItemDoLote> Itens, bool ConfirmouExclusao);
+/// <summary>O envio de decisões da gestão de acessos: uma decisão por concessão e a confirmação de que recusar revoga.</summary>
+public sealed record PedidoDoEnvio(IReadOnlyList<ItemDoEnvio> Itens, bool ConfirmouExclusao);
 
-/// <summary>A decisão sobre a concessão retida, que outra pessoa toma depois do lote.</summary>
+/// <summary>A decisão sobre a concessão retida, que outra pessoa toma depois do envio de decisões.</summary>
 public sealed record PedidoDaRetida(Guid ConcessaoId, ResultadoDaMigracao? Decisao, bool ConfirmouExclusao);
 
 /// <summary>A remessa do Representante do controlador: uma ou várias concessões que aguardam a etapa de proteção de dados.</summary>
-public sealed record PedidoDaEtapaDaProtecao(IReadOnlyList<ItemDoLote> Itens, bool ConfirmouExclusao);
+public sealed record PedidoDaEtapaDaProtecao(IReadOnlyList<ItemDoEnvio> Itens, bool ConfirmouExclusao);
 
 /// <summary>O que uma pessoa decidiu sobre uma concessão e em que etapa, para a trilha.</summary>
 /// <param name="Envio">O envio que produziu a decisão; nulo na decisão da retida.</param>
 public sealed record DecisaoHumana(
-    EtapaDaMigracao Etapa, ResultadoDaMigracao Resultado, AutoriaDaVersao Autoria, LoteDaMigracao? Envio);
+    EtapaDaMigracao Etapa, ResultadoDaMigracao Resultado, AutoriaDaVersao Autoria, EnvioDeDecisoesDaRevisao? Envio);
 
-/// <summary>Quem encerra a janela antes do prazo e por quê.</summary>
+/// <summary>Quem encerra a revisão antes do prazo e por quê.</summary>
 public sealed record EncerramentoManual(AutoriaDaVersao Autoria, string? Motivo);

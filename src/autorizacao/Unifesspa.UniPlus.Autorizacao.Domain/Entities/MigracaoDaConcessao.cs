@@ -4,12 +4,12 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 
 /// <summary>
-/// Onde uma concessão da versão anterior está na janela de migração, desde o envio do lote da gestão: uma linha por
-/// concessão e por janela. As situações finais não mudam mais; a concessão que ainda não tem linha aguarda o lote.
+/// Onde uma concessão da versão anterior está na revisão das concessões, desde o envio das decisões da gestão: uma linha por
+/// concessão e por revisão. As situações finais não mudam mais; a concessão que ainda não tem linha aguarda o envio de decisões.
 /// </summary>
 public sealed class MigracaoDaConcessao : EntityBase
 {
-    public Guid JanelaId { get; private init; }
+    public Guid RevisaoId { get; private init; }
 
     public Guid PerfilId { get; private init; }
 
@@ -28,10 +28,10 @@ public sealed class MigracaoDaConcessao : EntityBase
     }
 
     internal static MigracaoDaConcessao Criar(
-        Guid janelaId, Guid perfilId, Guid concessaoId, SituacaoDaMigracao situacao, bool exigeProtecaoDeDados, DateTimeOffset instante) =>
+        Guid revisaoId, Guid perfilId, Guid concessaoId, SituacaoDaMigracao situacao, bool exigeProtecaoDeDados, DateTimeOffset instante) =>
         new()
         {
-            JanelaId = janelaId,
+            RevisaoId = revisaoId,
             PerfilId = perfilId,
             ConcessaoId = concessaoId,
             Situacao = situacao,

@@ -18,10 +18,6 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 /// modular: OpenAPI doc, erros de domínio, Application e Infrastructure. O que é compartilhado entre módulos
 /// (auth, CORS, cache, observabilidade, mapper de erros) e o wiring do Wolverine ficam no host.
 /// </summary>
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Design",
-    "CA1515:Consider making public types internal",
-    Justification = "Referenciado pelo composition root (host do monólito modular) fora deste assembly.")]
 public static class AutorizacaoModuleRegistration
 {
     public static IServiceCollection AddAutorizacaoModule(
@@ -47,7 +43,7 @@ public static class AutorizacaoModuleRegistration
     private static void AddRotinas(IServiceCollection services)
     {
         services.AddHostedService<ExpiracaoDasVersoesPendentesHostedService>();
-        services.AddHostedService<JanelasDeMigracaoHostedService>();
+        services.AddHostedService<RevisoesDasConcessoesHostedService>();
         services.AddHostedService<AmostragemDaGovernancaHostedService>();
     }
 
