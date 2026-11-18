@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.IntegrationTests.RegistrosDeAcesso;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http.Headers;
 
@@ -20,40 +19,57 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 /// Diogo Souza é gestor de acessos.
 /// </summary>
 [Collection(AutorizacaoEndpointCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class ClienteOidcDoAcessoTests
 {
     private readonly AutorizacaoEndpointFixture _fixture;
 
     public ClienteOidcDoAcessoTests(AutorizacaoEndpointFixture fixture) => _fixture = fixture;
 
-    [Theory(DisplayName = "O registro do acesso traz o azp do token e, sem ele, o cliente vai nulo com o acesso permitido")]
+    [Theory(DisplayName = "O registro do acesso traz o cliente OIDC do token, inclusive quando ausente")]
     [InlineData("selecao-web")]
     [InlineData(null)]
     public async Task Acesso_RegistraOClienteDoToken(string? azp)
     {
-        await ConcessoesDeTeste.ConcederGovernancaAsync(_fixture.Factory.Services, "diogo.souza", TipoDeGovernanca.GestorDeAcessos);
-        using HttpClient diogo = _fixture.Factory.CreateClient();
-        diogo.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
-            TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        diogo.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, "diogo.souza");
-        diogo.DefaultRequestHeaders.Add(TestAuthHandler.NameHeader, "diogo.souza");
-        diogo.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, "teste@unifesspa.edu.br");
-        string correlacao = $"req-{Guid.NewGuid():N}";
-        diogo.DefaultRequestHeaders.Add(CorrelationIdMiddleware.HeaderName, correlacao);
-        if (azp is not null)
+        using CenarioDeAcesso cenario = new(_fixture, azp);
+        await cenario.ExecutarAsync();
+        cenario.Resposta.StatusCode.Should().Be(HttpStatusCode.OK, await cenario.Resposta.Content.ReadAsStringAsync());
+        cenario.Decisoes.Should().NotBeEmpty().And.OnlyContain(r => r.ClienteOidc == azp && r.Permitido);
+    }
+
+    private sealed class CenarioDeAcesso : IDisposable
+    {
+        private readonly AutorizacaoEndpointFixture _fixture;
+        private readonly HttpClient _cliente;
+        private readonly string _correlacao = $"req-{Guid.NewGuid():N}";
+
+        public CenarioDeAcesso(AutorizacaoEndpointFixture fixture, string? azp)
         {
-            diogo.DefaultRequestHeaders.Add(TestAuthHandler.ClienteOidcHeader, azp);
+            _fixture = fixture;
+            _cliente = fixture.Factory.CreateClient();
+            _cliente.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
+            _cliente.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, "diogo.souza");
+            _cliente.DefaultRequestHeaders.Add(TestAuthHandler.NameHeader, "diogo.souza");
+            _cliente.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, "teste@unifesspa.edu.br");
+            _cliente.DefaultRequestHeaders.Add(CorrelationIdMiddleware.HeaderName, _correlacao);
+            if (azp is not null)
+                _cliente.DefaultRequestHeaders.Add(TestAuthHandler.ClienteOidcHeader, azp);
         }
 
-        using HttpResponseMessage resposta = await diogo.GetAsync(new Uri("/api/autorizacao/concessoes", UriKind.Relative));
+        public HttpResponseMessage Resposta { get; private set; } = null!;
+        public List<RegistroDecisaoAcesso> Decisoes { get; private set; } = [];
 
-        resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
-        List<RegistroDecisaoAcesso> doAcesso = [.. _fixture.Factory.Services.GetRequiredService<RegistroDeDecisoesDeTeste>()
-            .Registrados.Where(r => r.RequestId == correlacao)];
-        doAcesso.Should().NotBeEmpty().And.OnlyContain(r => r.ClienteOidc == azp && r.Permitido);
+        public async Task ExecutarAsync()
+        {
+            await ConcessoesDeTeste.ConcederGovernancaAsync(_fixture.Factory.Services, "diogo.souza", TipoDeGovernanca.GestorDeAcessos);
+            Resposta = await _cliente.GetAsync(new Uri("/api/autorizacao/concessoes", UriKind.Relative));
+            Decisoes = [.. _fixture.Factory.Services.GetRequiredService<RegistroDeDecisoesDeTeste>()
+                .Registrados.Where(r => r.RequestId == _correlacao)];
+        }
+
+        public void Dispose()
+        {
+            Resposta?.Dispose();
+            _cliente.Dispose();
+        }
     }
 }
