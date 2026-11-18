@@ -122,6 +122,13 @@ internal static class RespostasDoSigaa
         $"{CodificarSemPreenchimento("""{"alg":"RS512"}"""u8)}"
         + $".{CodificarSemPreenchimento("""{"username":"servico"}"""u8)}.assinatura";
 
+    public static string TokenComCorpo(string corpoJson) =>
+        $"{CodificarSemPreenchimento("""{"alg":"RS512"}"""u8)}.{CodificarCorpo(corpoJson)}.assinatura";
+
+    /// <summary>O JSON informado, codificado como o trecho do meio de um token.</summary>
+    public static string CodificarCorpo(string corpoJson) =>
+        CodificarSemPreenchimento(Encoding.UTF8.GetBytes(corpoJson));
+
     private static string CodificarSemPreenchimento(ReadOnlySpan<byte> conteudo) =>
         Base64Url.EncodeToString(conteudo);
 }

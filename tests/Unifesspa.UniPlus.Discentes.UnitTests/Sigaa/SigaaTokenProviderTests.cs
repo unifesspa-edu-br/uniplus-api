@@ -19,6 +19,10 @@ public sealed class SigaaTokenProviderTests : IDisposable
 
     private readonly List<IDisposable> _descartaveis = [];
 
+    private static string CorpoValidoPor(int segundos) =>
+        RespostasDoSigaa.CodificarCorpo(
+            $$"""{"exp":{{Agora.AddSeconds(segundos).ToUnixTimeSeconds()}},"iat":{{Agora.ToUnixTimeSeconds()}}}""");
+
     public void Dispose()
     {
         foreach (IDisposable descartavel in _descartaveis)
@@ -152,6 +156,83 @@ public sealed class SigaaTokenProviderTests : IDisposable
 
         obtido.Should().Be(token);
         rede.AutenticacoesRealizadas.Should().Be(1);
+    }
+
+    public static readonly TheoryData<string> TokensSemInstantesLegiveis = new()
+    {
+        RespostasDoSigaa.TokenComCorpo("{}"),
+        RespostasDoSigaa.TokenComCorpo("""{"iat":1700000000}"""),
+        RespostasDoSigaa.TokenComCorpo("""{"exp":99999999999999999999}"""),
+        RespostasDoSigaa.TokenComCorpo("""{"exp":1.5}"""),
+        $"cabecalho.{RespostasDoSigaa.CodificarCorpo("{}")}",
+    };
+
+    public static readonly TheoryData<string, int> TokensLidosPeloTrechoCerto = new()
+    {
+        { $"cabecalho.{CorpoValidoPor(600)}", 600 },
+        { $"cabecalho.{CorpoValidoPor(600)}.assinatura", 600 },
+        { $"cabecalho.{CorpoValidoPor(600)}.assinatura.sobra", 600 },
+        { RespostasDoSigaa.TokenComCorpo($$"""{"exp":{{Agora.AddSeconds(900).ToUnixTimeSeconds()}},"iat":99999999999999999999}"""), 900 },
+    };
+
+    public static readonly TheoryData<string> TokensComTipoJsonErrado = new()
+    {
+        RespostasDoSigaa.TokenComCorpo("""{"exp":"abc"}"""),
+        RespostasDoSigaa.TokenComCorpo("""{"exp":null}"""),
+        RespostasDoSigaa.TokenComCorpo("""{"exp":{}}"""),
+        RespostasDoSigaa.TokenComCorpo("""{"exp":true}"""),
+        RespostasDoSigaa.TokenComCorpo("""{"exp":1,"iat":"abc"}"""),
+        RespostasDoSigaa.TokenComCorpo("""{"exp":1,"iat":null}"""),
+        RespostasDoSigaa.TokenComCorpo("[1]"),
+        RespostasDoSigaa.TokenComCorpo("5"),
+        RespostasDoSigaa.TokenComCorpo("\"texto\""),
+        RespostasDoSigaa.TokenComCorpo("null"),
+    };
+
+    [Theory]
+    [MemberData(nameof(TokensSemInstantesLegiveis))]
+    public async Task Token_sem_instantes_legiveis_vale_pela_validade_assumida(string token)
+    {
+        RedeSimulada rede = new((_, _) => RespostasDoSigaa.ComToken(token));
+        SigaaTokenProvider provedor = Montar(rede, out RelogioControlado relogio);
+
+        await provedor.ObterAsync(CancellationToken.None);
+        await ObterDepoisDeAsync(provedor, relogio, TimeSpan.FromSeconds(3539));
+        rede.AutenticacoesRealizadas.Should().Be(1, "a validade assumida é de uma hora, menos a margem");
+
+        await ObterDepoisDeAsync(provedor, relogio, TimeSpan.FromSeconds(1));
+        rede.AutenticacoesRealizadas.Should().Be(2);
+    }
+
+    [Theory]
+    [MemberData(nameof(TokensLidosPeloTrechoCerto))]
+    public async Task Os_instantes_sao_lidos_do_trecho_que_vem_depois_do_primeiro_ponto(string token, int validade)
+    {
+        RedeSimulada rede = new((_, _) => RespostasDoSigaa.ComToken(token));
+        SigaaTokenProvider provedor = Montar(rede, out RelogioControlado relogio);
+
+        await provedor.ObterAsync(CancellationToken.None);
+        await ObterDepoisDeAsync(provedor, relogio, TimeSpan.FromSeconds(validade - 61));
+        rede.AutenticacoesRealizadas.Should().Be(1, "falta um segundo para entrar na margem de renovação");
+
+        await ObterDepoisDeAsync(provedor, relogio, TimeSpan.FromSeconds(1));
+        rede.AutenticacoesRealizadas.Should().Be(2);
+    }
+
+    /// <summary>
+    /// Instante com tipo JSON que não é número, ou corpo que não é objeto, não cai na validade
+    /// assumida: a leitura lança, e a autenticação falha com a exceção da própria leitura.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(TokensComTipoJsonErrado))]
+    public async Task Token_com_tipo_json_errado_continua_lancando(string token)
+    {
+        RedeSimulada rede = new((_, _) => RespostasDoSigaa.ComToken(token));
+        SigaaTokenProvider provedor = Montar(rede, out RelogioControlado _);
+
+        Func<Task> obter = () => provedor.ObterAsync(CancellationToken.None);
+
+        await obter.Should().ThrowExactlyAsync<InvalidOperationException>();
     }
 
     /// <summary>
