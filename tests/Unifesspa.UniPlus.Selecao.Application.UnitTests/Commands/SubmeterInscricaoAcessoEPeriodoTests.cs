@@ -122,10 +122,10 @@ public sealed class SubmeterInscricaoAcessoEPeriodoTests
     public async Task Handle_PeriodoProrrogadoPelaRetificacao_Submete()
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
-        (VersaoConfiguracao fixada, ConfiguracaoPublicada grafo, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo();
+        (VersaoConfiguracao fixada, ConfiguracaoPublicada configuracao, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo();
         VersaoConfiguracao divulgada = VersaoDivulgadaQueProrroga();
 
-        Result<ReciboDaInscricaoDto> resultado = await SubmeterNoPeriodoProrrogadoAsync(cpf, NovaInscricao(cpf, "conta-1", fixada.Id), (fixada, divulgada, grafo, termo));
+        Result<ReciboDaInscricaoDto> resultado = await SubmeterNoPeriodoProrrogadoAsync(cpf, NovaInscricao(cpf, "conta-1", fixada.Id), (fixada, divulgada, configuracao, termo));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -135,8 +135,8 @@ public sealed class SubmeterInscricaoAcessoEPeriodoTests
         // A versão divulgada existe e o período está aberto; só a versão fixada pela inscrição sumiu.
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
         IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
-        (VersaoConfiguracao divulgada, ConfiguracaoPublicada grafo, _) = MontarVersaoComItemObrigatorioETermo();
-        DivulgacaoDeTeste.ConfigurarDivulgada(processoRepository, registroCodecs, divulgada, grafo);
+        (VersaoConfiguracao divulgada, ConfiguracaoPublicada configuracao, _) = MontarVersaoComItemObrigatorioETermo();
+        DivulgacaoDeTeste.ConfigurarDivulgada(processoRepository, registroCodecs, divulgada, configuracao);
         processoRepository.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([]);
 
         return (processoRepository, registroCodecs);
@@ -165,12 +165,12 @@ public sealed class SubmeterInscricaoAcessoEPeriodoTests
     }
 
     private static (IProcessoSeletivoRepository Processos, IRegistroCodecsEnvelope Codecs) VersoesDoPeriodoProrrogado(
-        VersaoConfiguracao fixada, VersaoConfiguracao divulgada, ConfiguracaoPublicada grafo)
+        VersaoConfiguracao fixada, VersaoConfiguracao divulgada, ConfiguracaoPublicada configuracao)
     {
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
         IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
         DivulgacaoDeTeste.ConfigurarFixadaEDivulgada(
-            processoRepository, registroCodecs, grafo,
+            processoRepository, registroCodecs, configuracao,
             fixada: (fixada, DivulgacaoDeTeste.FimDoPeriodo),
             divulgada: (divulgada, DivulgacaoDeTeste.FimDoPeriodo.AddDays(30)));
 

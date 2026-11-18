@@ -45,7 +45,7 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
         return contexto;
     }
 
-    private sealed class CenarioDeDescarte(VersaoConfiguracao fixada, VersaoConfiguracao divulgada, ConfiguracaoPublicada grafo)
+    private sealed class CenarioDeDescarte(VersaoConfiguracao fixada, VersaoConfiguracao divulgada, ConfiguracaoPublicada configuracao)
     {
         public IInscricaoRepository Inscricoes { get; } = Substitute.For<IInscricaoRepository>();
         public IProcessoSeletivoRepository Processos { get; } = Substitute.For<IProcessoSeletivoRepository>();
@@ -57,7 +57,7 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
             DateTimeOffset? agora = null, IDocumentoDaInscricaoRepository? documentos = null)
         {
             Inscricoes.ObterAtivaPorProcessoECpfAsync(ProcessoId, Dono, Arg.Any<CancellationToken>()).Returns(rascunho);
-            DivulgacaoDeTeste.ConfigurarFixadaEDivulgada(Processos, Codecs, grafo,
+            DivulgacaoDeTeste.ConfigurarFixadaEDivulgada(Processos, Codecs, configuracao,
                 fixada: (fixada, DivulgacaoDeTeste.FimDoPeriodo), divulgada: (divulgada, DivulgacaoDeTeste.FimDoPeriodo));
             Result resultado = await DescartarRascunhoDaInscricaoCommandHandler.Handle(
                 new DescartarRascunhoDaInscricaoCommand(ProcessoId, PrecondicaoIfMatch.DeTags([precondicao(rascunho)])),
@@ -77,8 +77,8 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
         Func<Inscricao, string> precondicao, Func<Guid, Inscricao>? rascunho = null, string contaId = "conta-1", DateTimeOffset? agora = null,
         IDocumentoDaInscricaoRepository? documentos = null)
     {
-        (VersaoConfiguracao versao, ConfiguracaoPublicada grafo) = SalvarDeTeste.MontarVersaoComItem(Item);
-        return new CenarioDeDescarte(versao, versao, grafo).Descartar(precondicao, (rascunho ?? NovoRascunho)(versao.Id), contaId, agora, documentos);
+        (VersaoConfiguracao versao, ConfiguracaoPublicada configuracao) = SalvarDeTeste.MontarVersaoComItem(Item);
+        return new CenarioDeDescarte(versao, versao, configuracao).Descartar(precondicao, (rascunho ?? NovoRascunho)(versao.Id), contaId, agora, documentos);
     }
 
     [Fact(DisplayName = "Descartar o próprio rascunho com o If-Match corrente remove a inscrição e grava")]
@@ -163,10 +163,10 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
     [Fact(DisplayName = "Rascunho em versão anterior à divulgada é descartado com o ETag que a leitura devolve")]
     public async Task Handle_RetificacaoDivulgadaDepoisDoRascunho_ConfereOETagDoRascunhoAdotado()
     {
-        (VersaoConfiguracao fixada, ConfiguracaoPublicada grafo) = SalvarDeTeste.MontarVersaoComItem(Item);
+        (VersaoConfiguracao fixada, ConfiguracaoPublicada configuracao) = SalvarDeTeste.MontarVersaoComItem(Item);
         (VersaoConfiguracao divulgada, _) = SalvarDeTeste.MontarVersaoComItem(Item);
 
-        (Result resultado, IInscricaoRepository repositorio, _) = await new CenarioDeDescarte(fixada, divulgada, grafo).Descartar(
+        (Result resultado, IInscricaoRepository repositorio, _) = await new CenarioDeDescarte(fixada, divulgada, configuracao).Descartar(
             r => DivulgacaoDeTeste.ETagDepoisDeAdotar(r, divulgada), NovoRascunho(fixada.Id));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);

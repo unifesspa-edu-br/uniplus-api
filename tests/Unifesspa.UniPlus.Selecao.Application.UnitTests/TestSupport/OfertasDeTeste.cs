@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 
-using Unifesspa.UniPlus.Testes.Compartilhado;
-
 using System.Text.Json;
 
 using Unifesspa.UniPlus.Regras.Enums;
@@ -10,11 +8,12 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Processos de duas ofertas de curso com conjuntos de modalidades diferentes: a ampla (<c>AC</c>)
 /// vale para todos, e cada modalidade de ação afirmativa, para quem responde o fato dado com o valor
-/// dado. Monta o grafo congelado direto, sem passar pela configuração do processo.
+/// dado. Monta a configuração publicada diretamente, sem passar pela configuração do processo.
 /// </summary>
 internal static class OfertasDeTeste
 {
@@ -33,18 +32,18 @@ internal static class OfertasDeTeste
             new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 10 * codigos.Length, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)), Modalidades = [.. codigos.Select(Modalidade)] },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoSnapshot.Criar($"OFERTA_{ofertaCursoId.ToString("N")[..12].ToUpperInvariant()}", cursoNome, "Bacharelado", "Campus Universitário de Marabá", ["MATUTINO"]).Value! }).Value!;
 
-    /// <summary>O mesmo grafo, com a distribuição de vagas dada no lugar da que ele tinha.</summary>
-    public static ConfiguracaoPublicada ComDistribuicao(ConfiguracaoPublicada grafo, params ConfiguracaoDistribuicaoVagas[] distribuicao) =>
-        Reconstruir(grafo, distribuicao, grafo.Vagas.NumeroDeOpcoesDeCurso);
+    /// <summary>A mesma configuração, com a distribuição de vagas dada no lugar da que ela tinha.</summary>
+    public static ConfiguracaoPublicada ComDistribuicao(ConfiguracaoPublicada configuracao, params ConfiguracaoDistribuicaoVagas[] distribuicao) =>
+        Reconstruir(configuracao, distribuicao, configuracao.Vagas.NumeroDeOpcoesDeCurso);
 
-    /// <summary>O mesmo grafo, declarando quantas opções de curso a inscrição admite.</summary>
-    public static ConfiguracaoPublicada ComOpcoesDeCurso(ConfiguracaoPublicada grafo, int numeroDeOpcoesDeCurso) =>
-        Reconstruir(grafo, [.. grafo.Vagas.DistribuicaoVagas], numeroDeOpcoesDeCurso);
+    /// <summary>A mesma configuração, declarando quantas opções de curso a inscrição admite.</summary>
+    public static ConfiguracaoPublicada ComOpcoesDeCurso(ConfiguracaoPublicada configuracao, int numeroDeOpcoesDeCurso) =>
+        Reconstruir(configuracao, [.. configuracao.Vagas.DistribuicaoVagas], numeroDeOpcoesDeCurso);
 
     private static ConfiguracaoPublicada Reconstruir(
-        ConfiguracaoPublicada grafo, ConfiguracaoDistribuicaoVagas[] distribuicao, int? numeroDeOpcoesDeCurso) =>
-        ConfiguracaoPublicadaDeTeste.ComVagas(grafo, new VagasDeclaradas(distribuicao, numeroDeOpcoesDeCurso,
-            grafo.Vagas.AplicaBonusRegional, grafo.Vagas.BonusRegional, grafo.Vagas.Cascata, grafo.Vagas.AtendimentoEspecializado));
+        ConfiguracaoPublicada configuracao, ConfiguracaoDistribuicaoVagas[] distribuicao, int? numeroDeOpcoesDeCurso) =>
+        ConfiguracaoPublicadaDeTeste.ComVagas(configuracao, new VagasDeclaradas(distribuicao, numeroDeOpcoesDeCurso,
+            configuracao.Vagas.AplicaBonusRegional, configuracao.Vagas.BonusRegional, configuracao.Vagas.Cascata, configuracao.Vagas.AtendimentoEspecializado));
 
     private static ModalidadeSelecionada Modalidade(string codigo) =>
         ModalidadeSelecionada.Criar(

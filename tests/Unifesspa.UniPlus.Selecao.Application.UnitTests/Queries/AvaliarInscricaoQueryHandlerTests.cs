@@ -63,29 +63,29 @@ public sealed class AvaliarInscricaoQueryHandlerTests
     private static FluxoDaInscricaoDeTeste MontarAvaliacao(Guid? gravada)
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
-        (VersaoConfiguracao versao, ConfiguracaoPublicada grafoBase) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
-        ConfiguracaoPublicada grafo = OfertasDeTeste.ComDistribuicao(
-            grafoBase, OfertasDeTeste.Distribuicao(OfertaA, "AC"), OfertasDeTeste.Distribuicao(OfertaB, "AC", "AC_FEM"));
+        (VersaoConfiguracao versao, ConfiguracaoPublicada configuracaoBase) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
+        ConfiguracaoPublicada configuracao = OfertasDeTeste.ComDistribuicao(
+            configuracaoBase, OfertasDeTeste.Distribuicao(OfertaA, "AC"), OfertasDeTeste.Distribuicao(OfertaB, "AC", "AC_FEM"));
         Inscricao inscricao = Inscricao.Iniciar(ProcessoId, cpf, "conta-1", "https://issuer", versao.Id).Value!;
-        SalvarOferta(inscricao, gravada, grafo);
+        SalvarOferta(inscricao, gravada, configuracao);
         IInscricaoRepository inscricoes = Substitute.For<IInscricaoRepository>();
         inscricoes.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(inscricao);
-        return FluxoNaVersao(inscricoes, versao, grafo, cpf);
+        return FluxoNaVersao(inscricoes, versao, configuracao, cpf);
     }
 
-    private static void SalvarOferta(Inscricao inscricao, Guid? gravada, ConfiguracaoPublicada grafo)
+    private static void SalvarOferta(Inscricao inscricao, Guid? gravada, ConfiguracaoPublicada configuracao)
     {
         if (gravada is { } oferta)
         {
-            inscricao.Salvar(PreenchimentoDoCandidato.ParaValidacao(OpcoesDeCursoDaInscricao.Reidratar(oferta, null), new Dictionary<string, JsonElement>(), new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), []), ContextoDaVersaoFixadaResolver.Admitidas(grafo) with { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond }, PrecondicaoIfMatch.DeTags([inscricao.ETag])).IsSuccess.Should().BeTrue();
+            inscricao.Salvar(PreenchimentoDoCandidato.ParaValidacao(OpcoesDeCursoDaInscricao.Reidratar(oferta, null), new Dictionary<string, JsonElement>(), new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), []), ContextoDaVersaoFixadaResolver.Admitidas(configuracao) with { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond }, PrecondicaoIfMatch.DeTags([inscricao.ETag])).IsSuccess.Should().BeTrue();
         }
     }
 
-    private static FluxoDaInscricaoDeTeste FluxoNaVersao(IInscricaoRepository inscricoes, VersaoConfiguracao versao, ConfiguracaoPublicada grafo, Cpf cpf)
+    private static FluxoDaInscricaoDeTeste FluxoNaVersao(IInscricaoRepository inscricoes, VersaoConfiguracao versao, ConfiguracaoPublicada configuracao, Cpf cpf)
     {
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
         IRegistroCodecsEnvelope codecs = Substitute.For<IRegistroCodecsEnvelope>();
-        DivulgacaoDeTeste.ConfigurarVersao(processos, codecs, versao, grafo);
+        DivulgacaoDeTeste.ConfigurarVersao(processos, codecs, versao, configuracao);
         return new FluxoDaInscricaoDeTeste
         {
             Inscricoes = inscricoes,

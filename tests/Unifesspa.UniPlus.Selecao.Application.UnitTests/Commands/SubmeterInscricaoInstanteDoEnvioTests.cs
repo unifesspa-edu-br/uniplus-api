@@ -34,9 +34,9 @@ public sealed class SubmeterInscricaoInstanteDoEnvioTests
         "DATA_DO_EVENTO", 1, "Data do evento", TipoRenderizacao.Data, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL",
         restricoes: [new FaixaDeData(minima: null, LimiteDeData.NoEnvio(anos: 0, dias: 0))], hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
 
-    private static InscricaoRequest RequestComDataDoEvento(Cpf cpf, VersaoTermoEscolhida termo, ConfiguracaoPublicada grafo, string dataDoEvento)
+    private static InscricaoRequest RequestComDataDoEvento(Cpf cpf, VersaoTermoEscolhida termo, ConfiguracaoPublicada configuracao, string dataDoEvento)
     {
-        InscricaoRequest request = RequestComApelidoETermoAceito(cpf, termo, grafo);
+        InscricaoRequest request = RequestComApelidoETermoAceito(cpf, termo, configuracao);
         Dictionary<string, JsonElement> respostas = new(request.Respostas!, StringComparer.Ordinal)
         {
             ["DATA_DO_EVENTO"] = JsonSerializer.SerializeToElement(dataDoEvento),

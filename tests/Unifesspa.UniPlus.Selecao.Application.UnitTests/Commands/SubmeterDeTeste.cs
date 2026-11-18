@@ -85,13 +85,13 @@ internal static class SubmeterDeTeste
     }
 
     internal static (IInscricaoRepository Inscricoes, IProcessoSeletivoRepository Processos, IRegistroCodecsEnvelope Codecs) PortasPara(
-        Inscricao inscricao, VersaoConfiguracao versao, ConfiguracaoPublicada grafo)
+        Inscricao inscricao, VersaoConfiguracao versao, ConfiguracaoPublicada configuracao)
     {
         IInscricaoRepository inscricoes = Substitute.For<IInscricaoRepository>();
         inscricoes.ObterAtivaPorProcessoECpfAsync(inscricao.ProcessoSeletivoId, inscricao.Titular.Cpf, Arg.Any<CancellationToken>()).Returns(inscricao);
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
         IRegistroCodecsEnvelope codecs = Substitute.For<IRegistroCodecsEnvelope>();
-        DivulgacaoDeTeste.ConfigurarVersao(processos, codecs, versao, grafo);
+        DivulgacaoDeTeste.ConfigurarVersao(processos, codecs, versao, configuracao);
         return (inscricoes, processos, codecs);
     }
 

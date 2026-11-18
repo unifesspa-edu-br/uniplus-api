@@ -37,11 +37,11 @@ internal sealed class FormularioASubmeterDeTeste
     public FormularioASubmeterDeTeste(IReadOnlyList<FatoColetado> itens, IReadOnlyList<GrupoColetado>? grupos, Action<ProcessoSeletivo>? ajustar = null)
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
-        (VersaoConfiguracao versao, ConfiguracaoPublicada grafo, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo(itens, grupos, ajustar);
+        (VersaoConfiguracao versao, ConfiguracaoPublicada configuracao, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo(itens, grupos, ajustar);
         _inscricao = SubmeterDeTeste.NovaInscricao(cpf, "conta-1", versao.Id);
-        _pedido = RequestComApelidoETermoAceito(cpf, termo, grafo);
+        _pedido = RequestComApelidoETermoAceito(cpf, termo, configuracao);
         _inscricoes.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(_inscricao);
-        DivulgacaoDeTeste.ConfigurarVersao(_processos, _codecs, versao, grafo);
+        DivulgacaoDeTeste.ConfigurarVersao(_processos, _codecs, versao, configuracao);
     }
 
     public string? NomeSocialDaConta { get; init; }

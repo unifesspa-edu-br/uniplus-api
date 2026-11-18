@@ -59,13 +59,13 @@ internal static class DivulgacaoDeTeste
     }
 
     /// <summary>
-    /// Uma versão publicada do processo conforme de teste, legível pelo contexto da versão fixada: o
-    /// grafo do processo e o bloco de documentos exigidos, sem referência temporal.
+    /// Uma versão publicada do processo conforme de teste, legível pelo contexto da versão fixada: a
+    /// configuração do processo e o bloco de documentos exigidos, sem referência temporal.
     /// </summary>
     public static (VersaoConfiguracao Versao, ConfiguracaoPublicada Configuracao) VersaoConforme(Guid processoId) =>
         (VersaoSemReferenciaTemporal(processoId), ConfiguracaoDe(ProcessoSeletivoConformeBuilder.Criar("PS 2026 — Inscrição")));
 
-    /// <summary>O grafo da configuração do próprio processo, com o formulário, os fatos e os grupos que ele declara.</summary>
+    /// <summary>A configuração publicada do próprio processo, com o formulário, os fatos e os grupos que ele declara.</summary>
     public static ConfiguracaoPublicada ConfiguracaoDe(ProcessoSeletivo processo) => new ConfiguracaoPublicada(
             new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, [.. processo.CronogramaFases]),
             new AvaliacaoDeclarada([.. processo.Etapas], [.. processo.CriteriosDesempate], processo.Classificacao!),
@@ -87,10 +87,10 @@ internal static class DivulgacaoDeTeste
 
     /// <summary>A versão é a fixada pela inscrição e a divulgada pelo certame.</summary>
     public static void ConfigurarVersao(
-        IProcessoSeletivoRepository processoRepository, IRegistroCodecsEnvelope registroCodecs, VersaoConfiguracao versao, ConfiguracaoPublicada grafo)
+        IProcessoSeletivoRepository processoRepository, IRegistroCodecsEnvelope registroCodecs, VersaoConfiguracao versao, ConfiguracaoPublicada configuracao)
     {
         processoRepository.ObterVersoesAsync(versao.ProcessoSeletivoId, Arg.Any<CancellationToken>()).Returns([versao]);
-        ConfigurarDivulgada(processoRepository, registroCodecs, versao, grafo);
+        ConfigurarDivulgada(processoRepository, registroCodecs, versao, configuracao);
     }
 
     /// <summary>A versão é só a divulgada pelo certame, com o período publicado até <paramref name="fimDoPeriodo"/>.</summary>
@@ -98,11 +98,11 @@ internal static class DivulgacaoDeTeste
         IProcessoSeletivoRepository processoRepository,
         IRegistroCodecsEnvelope registroCodecs,
         VersaoConfiguracao versao,
-        ConfiguracaoPublicada grafo,
+        ConfiguracaoPublicada configuracao,
         DateTimeOffset? fimDoPeriodo = null)
     {
         processoRepository.ObterVersoesPorAtoCriadorAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([versao]);
-        ConfigurarReidratacao(registroCodecs, versao, grafo, fimDoPeriodo ?? FimDoPeriodo);
+        ConfigurarReidratacao(registroCodecs, versao, configuracao, fimDoPeriodo ?? FimDoPeriodo);
     }
 
     /// <summary>
@@ -112,21 +112,21 @@ internal static class DivulgacaoDeTeste
     public static void ConfigurarFixadaEDivulgada(
         IProcessoSeletivoRepository processoRepository,
         IRegistroCodecsEnvelope registroCodecs,
-        ConfiguracaoPublicada grafo,
+        ConfiguracaoPublicada configuracao,
         (VersaoConfiguracao Versao, DateTimeOffset FimDoPeriodo) fixada,
         (VersaoConfiguracao Versao, DateTimeOffset FimDoPeriodo) divulgada)
     {
         processoRepository.ObterVersoesAsync(fixada.Versao.ProcessoSeletivoId, Arg.Any<CancellationToken>())
             .Returns([fixada.Versao, divulgada.Versao]);
-        ConfigurarReidratacao(registroCodecs, fixada.Versao, grafo, fixada.FimDoPeriodo);
-        ConfigurarDivulgada(processoRepository, registroCodecs, divulgada.Versao, grafo, divulgada.FimDoPeriodo);
+        ConfigurarReidratacao(registroCodecs, fixada.Versao, configuracao, fixada.FimDoPeriodo);
+        ConfigurarDivulgada(processoRepository, registroCodecs, divulgada.Versao, configuracao, divulgada.FimDoPeriodo);
     }
 
     private static void ConfigurarReidratacao(
-        IRegistroCodecsEnvelope registroCodecs, VersaoConfiguracao versao, ConfiguracaoPublicada grafo, DateTimeOffset fimDoPeriodo)
+        IRegistroCodecsEnvelope registroCodecs, VersaoConfiguracao versao, ConfiguracaoPublicada configuracao, DateTimeOffset fimDoPeriodo)
     {
         EnvelopeReidratado envelopeReidratado = new(
-            grafo, DadosEdital.Criar("001/2026", InicioDoPeriodo, fimDoPeriodo, Guid.CreateVersion7()).Value!,
+            configuracao, DadosEdital.Criar("001/2026", InicioDoPeriodo, fimDoPeriodo, Guid.CreateVersion7()).Value!,
             new string('a', 64), "America/Belem", retificacao: null, conformidade: null, dadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada());
 
         registroCodecs.Capacidades.Returns([new CapacidadeCodec("0.0.22", TemEncoder: true, TemDecoder: true, MotivoDaRecusa: null)]);

@@ -128,20 +128,20 @@ public sealed class ContextoDaVersaoFixadaResolverTests
     private static async Task<Result<ContextoDaVersaoFixada>> ResolverAsync(
         int numeroDeOpcoes, Guid? primeira, Guid? segunda, string[] ofertaA, string[] ofertaB)
     {
-        (VersaoConfiguracao versao, ConfiguracaoPublicada grafoBase) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
-        ConfiguracaoPublicada grafo = OfertasDeTeste.ComOpcoesDeCurso(
-            OfertasDeTeste.ComDistribuicao(grafoBase, OfertasDeTeste.Distribuicao(OfertaA, ofertaA), OfertasDeTeste.Distribuicao(OfertaB, ofertaB)),
+        (VersaoConfiguracao versao, ConfiguracaoPublicada configuracaoBase) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
+        ConfiguracaoPublicada configuracao = OfertasDeTeste.ComOpcoesDeCurso(
+            OfertasDeTeste.ComDistribuicao(configuracaoBase, OfertasDeTeste.Distribuicao(OfertaA, ofertaA), OfertasDeTeste.Distribuicao(OfertaB, ofertaB)),
             numeroDeOpcoes);
 
-        return await ResolverConfiguracaoAsync(versao, grafo, primeira, segunda);
+        return await ResolverConfiguracaoAsync(versao, configuracao, primeira, segunda);
     }
 
     private static async Task<Result<ContextoDaVersaoFixada>> ResolverConfiguracaoAsync(
-        VersaoConfiguracao versao, ConfiguracaoPublicada grafo, Guid? primeira, Guid? segunda)
+        VersaoConfiguracao versao, ConfiguracaoPublicada configuracao, Guid? primeira, Guid? segunda)
     {
         IProcessoSeletivoRepository repositorio = Substitute.For<IProcessoSeletivoRepository>();
         IRegistroCodecsEnvelope codecs = Substitute.For<IRegistroCodecsEnvelope>();
-        DivulgacaoDeTeste.ConfigurarVersao(repositorio, codecs, versao, grafo);
+        DivulgacaoDeTeste.ConfigurarVersao(repositorio, codecs, versao, configuracao);
         Result<ContextoDaVersaoFixada> contexto = await new ContextoDaVersaoFixadaResolver(repositorio, codecs)
             .ResolverAsync(versao.Id, ProcessoId, primeira, segunda, CancellationToken.None);
         contexto.IsSuccess.Should().BeTrue(contexto.Error?.Message);
@@ -168,9 +168,9 @@ public sealed class ContextoDaVersaoFixadaResolverTests
     private static async Task<ResultadoDaAvaliacaoDaInscricao> AvaliarAsync(
         Guid? ofertaEscolhida, string[] ofertaA, string[]? ofertaB)
     {
-        (VersaoConfiguracao versao, ConfiguracaoPublicada grafoBase) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
-        ConfiguracaoPublicada grafo = OfertasDeTeste.ComDistribuicao(grafoBase, DistribuicaoDasOfertas(ofertaA, ofertaB));
-        Result<ContextoDaVersaoFixada> contexto = await ResolverConfiguracaoAsync(versao, grafo, ofertaEscolhida, null);
+        (VersaoConfiguracao versao, ConfiguracaoPublicada configuracaoBase) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
+        ConfiguracaoPublicada configuracao = OfertasDeTeste.ComDistribuicao(configuracaoBase, DistribuicaoDasOfertas(ofertaA, ofertaB));
+        Result<ContextoDaVersaoFixada> contexto = await ResolverConfiguracaoAsync(versao, configuracao, ofertaEscolhida, null);
 
         Result<ResultadoDaAvaliacaoDaInscricao> avaliacao = AvaliacaoDaInscricao.Avaliar(
             contexto.Value!.Configuracao,

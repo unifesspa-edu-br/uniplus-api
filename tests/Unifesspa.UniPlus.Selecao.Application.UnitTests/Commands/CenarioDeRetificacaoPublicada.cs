@@ -29,14 +29,14 @@ internal sealed class CenarioDeRetificacaoPublicada
     private readonly DependenciasDosHandlersQueCongelam _handlers;
     private readonly Dictionary<string, TipoDeAtoCongelado> _tiposCongelados = new(StringComparer.Ordinal);
     private readonly VersaoConfiguracao _versao;
-    private readonly ConfiguracaoPublicada _grafoPublicado;
+    private readonly ConfiguracaoPublicada _configuracaoPublicada;
     private readonly EixosDeVersaoPublicada _congelado;
 
-    private CenarioDeRetificacaoPublicada(ProcessoSeletivo processo, VersaoConfiguracao versao, ConfiguracaoPublicada grafoPublicado, EixosDeVersaoPublicada congelado)
+    private CenarioDeRetificacaoPublicada(ProcessoSeletivo processo, VersaoConfiguracao versao, ConfiguracaoPublicada configuracaoPublicada, EixosDeVersaoPublicada congelado)
     {
         _handlers = DependenciasDosHandlersQueCongelam.Para(processo);
         _versao = versao;
-        _grafoPublicado = grafoPublicado;
+        _configuracaoPublicada = configuracaoPublicada;
         _congelado = congelado;
         _handlers.Codecs = Substitute.For<IRegistroCodecsEnvelope>();
         _handlers.CatalogoDeFatos = Substitute.For<IFatoCandidatoReader>();
@@ -136,7 +136,7 @@ internal sealed class CenarioDeRetificacaoPublicada
 
     private EnvelopeReidratado EnvelopeDaVersaoComAFase(FaseCronograma fase)
     {
-        ConfiguracaoPublicada grafo = new ConfiguracaoPublicada(
+        ConfiguracaoPublicada configuracao = new ConfiguracaoPublicada(
             new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, [fase]),
             new AvaliacaoDeclarada([.. Processo.Etapas], [.. Processo.CriteriosDesempate], Processo.Classificacao!),
             new VagasDeclaradas([.. Processo.DistribuicaoVagas], 1, Processo.BonusRegional is not null,
@@ -147,7 +147,7 @@ internal sealed class CenarioDeRetificacaoPublicada
             new DivulgacaoETaxaDeclaradas(null, null), null);
 
         return new EnvelopeReidratado(
-            grafo, DadosEdital.Criar("001/2026", Agora, Agora.AddDays(30), Guid.CreateVersion7()).Value!,
+            configuracao, DadosEdital.Criar("001/2026", Agora, Agora.AddDays(30), Guid.CreateVersion7()).Value!,
             ProcessoSeletivoConformeBuilder.HashFixo, "America/Sao_Paulo", retificacao: null, conformidade: null, new DadosDeCatalogoDaConfiguracaoPublicada());
     }
 
@@ -162,7 +162,7 @@ internal sealed class CenarioDeRetificacaoPublicada
     private void ConfigurarCodecs(bool reidratavel)
     {
         EnvelopeReidratado envelope = new(
-            _grafoPublicado, DadosDoEdital(), ProcessoSeletivoConformeBuilder.HashFixo, "America/Sao_Paulo", retificacao: null, conformidade: null,
+            _configuracaoPublicada, DadosDoEdital(), ProcessoSeletivoConformeBuilder.HashFixo, "America/Sao_Paulo", retificacao: null, conformidade: null,
             dadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(
                 MetadadosFatosCongelados: new Dictionary<string, MetadadoFatoCongelado> { [Fato] = MetadadoCongelado(_congelado) },
                 TiposDeAtoCongelados: _tiposCongelados));

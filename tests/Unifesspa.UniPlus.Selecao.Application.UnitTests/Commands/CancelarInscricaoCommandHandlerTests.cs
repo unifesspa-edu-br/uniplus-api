@@ -45,7 +45,7 @@ public sealed class CancelarInscricaoCommandHandlerTests
     private static async Task<(Result Resultado, Inscricao Inscricao, IUnitOfWork UnitOfWork)> Cancelar(
         Func<Guid, Inscricao> inscricao, DateTimeOffset agora, string contaId = "conta-1", string? motivo = null)
     {
-        (VersaoConfiguracao versao, ConfiguracaoPublicada grafo) = SalvarDeTeste.MontarVersaoComItem(Item);
+        (VersaoConfiguracao versao, ConfiguracaoPublicada configuracao) = SalvarDeTeste.MontarVersaoComItem(Item);
         Inscricao existente = inscricao(versao.Id);
         IInscricaoRepository repositorio = Substitute.For<IInscricaoRepository>();
         repositorio.ObterAtivaPorProcessoECpfAsync(ProcessoId, Dono, Arg.Any<CancellationToken>()).Returns(existente);
@@ -54,16 +54,16 @@ public sealed class CancelarInscricaoCommandHandlerTests
         Result resultado = await CancelarInscricaoCommandHandler.Handle(
             new CancelarInscricaoCommand(ProcessoId, motivo, PrecondicaoIfMatch.DeTags([existente.ETag])),
             new InscricaoDoDono(repositorio, Usuario(contaId)),
-            new CancelamentoDaInscricaoPeloTitular(Periodo(versao, grafo), repositorio, Usuario(contaId), new RelogioFixo(agora)),
+            new CancelamentoDaInscricaoPeloTitular(Periodo(versao, configuracao), repositorio, Usuario(contaId), new RelogioFixo(agora)),
             unitOfWork, CancellationToken.None);
         return (resultado, existente, unitOfWork);
     }
 
-    private static PeriodoDaInscricaoResolver Periodo(VersaoConfiguracao versao, ConfiguracaoPublicada grafo)
+    private static PeriodoDaInscricaoResolver Periodo(VersaoConfiguracao versao, ConfiguracaoPublicada configuracao)
     {
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
         IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
-        DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
+        DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, configuracao);
         return new PeriodoDaInscricaoResolver(DivulgacaoDeTeste.Certame(ProcessoId), processoRepository, registroCodecs, DivulgacaoDeTeste.Fuso());
     }
 
