@@ -73,18 +73,12 @@ internal sealed class OrigensOptionsValidator : IValidateOptions<OrigensOptions>
             ? [falha]
             : [];
 
-    private static string? FalhaDoEndereco(string valor, string campo)
+    private static string? FalhaDoEndereco(Uri? valor, string campo) => valor switch
     {
-        if (string.IsNullOrWhiteSpace(valor))
-        {
-            return $"Origens:{campo} é obrigatório.";
-        }
-
-        return Uri.TryCreate(valor, UriKind.Absolute, out Uri? endereco)
-            && (endereco.Scheme == Uri.UriSchemeHttp || endereco.Scheme == Uri.UriSchemeHttps)
-            ? null
-            : $"Origens:{campo} precisa ser um endereço http ou https absoluto.";
-    }
+        null => $"Origens:{campo} é obrigatório.",
+        { IsAbsoluteUri: true, Scheme: "http" or "https" } => null,
+        _ => $"Origens:{campo} precisa ser um endereço http ou https absoluto.",
+    };
 
     private static string? PeloMenos(int valor, int minimo, string campo) =>
         valor < minimo ? $"Origens:{campo} precisa ser pelo menos {minimo}." : null;
