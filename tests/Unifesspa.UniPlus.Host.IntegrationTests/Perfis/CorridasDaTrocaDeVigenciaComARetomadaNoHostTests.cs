@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 
 using AwesomeAssertions;
@@ -8,15 +7,11 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 
 /// <summary>
-/// A troca de vigência e a decisão de uma etapa da retomada disputam a trava do perfil, e a composição em vigor no
-/// instante da decisão define quantas etapas a suspensão exige. O teste segura a trava, enfileira as duas chamadas nas
+/// A troca de vigência e a decisão de uma etapa da retomada disputam o bloqueio do perfil, e a composição em vigor no
+/// instante da decisão define quantas etapas a suspensão exige. O teste segura o bloqueio, enfileira as duas chamadas nas
 /// duas ordens possíveis e confere que cada ordem termina num estado coerente.
 /// </summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class CorridasDaTrocaDeVigenciaComARetomadaNoHostTests : ContencaoDoPerfilNoHostTestBase
 {
     public CorridasDaTrocaDeVigenciaComARetomadaNoHostTests(MonolitoDaInstalacaoFixture fixture)
@@ -31,7 +26,7 @@ public sealed class CorridasDaTrocaDeVigenciaComARetomadaNoHostTests : Contencao
         using HttpClient protecao = await ProtecaoAsync();
         using HttpClient betina = await ClienteComPermissoesAsync(Betina, AprovarFuncional);
 
-        HttpResponseMessage[] respostas = await EmFilaSobATravaAsync(
+        HttpResponseMessage[] respostas = await EmFilaSobOBloqueioAsync(
             perfilId, () => AprovarBrutoAsync(protecao, acrescimo, EtapaProtecao), () => RetomarAsync(betina, perfilId, EtapaGestao));
 
         respostas.Select(r => r.StatusCode).Should().AllBeEquivalentTo(HttpStatusCode.OK);
@@ -48,7 +43,7 @@ public sealed class CorridasDaTrocaDeVigenciaComARetomadaNoHostTests : Contencao
         using HttpClient protecao = await ProtecaoAsync();
         using HttpClient betina = await ClienteComPermissoesAsync(Betina, AprovarFuncional);
 
-        HttpResponseMessage[] respostas = await EmFilaSobATravaAsync(
+        HttpResponseMessage[] respostas = await EmFilaSobOBloqueioAsync(
             perfilId, () => RetomarAsync(betina, perfilId, EtapaGestao), () => AprovarBrutoAsync(protecao, acrescimo, EtapaProtecao));
 
         respostas.Select(r => r.StatusCode).Should().AllBeEquivalentTo(HttpStatusCode.OK);
@@ -66,7 +61,7 @@ public sealed class CorridasDaTrocaDeVigenciaComARetomadaNoHostTests : Contencao
         using HttpClient marlene = await ProtecaoAsync();
         Guid perfilId = await SuspensoProtegidoComGestaoDecididaAsync(diogo);
 
-        HttpResponseMessage[] respostas = await EmFilaSobATravaAsync(
+        HttpResponseMessage[] respostas = await EmFilaSobOBloqueioAsync(
             perfilId, () => RemoverPermissoesAsync(diogo, perfilId, Consultar), () => RetomarAsync(marlene, perfilId, EtapaProtecao));
 
         respostas[0].StatusCode.Should().Be(HttpStatusCode.OK);
@@ -84,7 +79,7 @@ public sealed class CorridasDaTrocaDeVigenciaComARetomadaNoHostTests : Contencao
         using HttpClient marlene = await ProtecaoAsync();
         Guid perfilId = await SuspensoProtegidoComGestaoDecididaAsync(diogo);
 
-        HttpResponseMessage[] respostas = await EmFilaSobATravaAsync(
+        HttpResponseMessage[] respostas = await EmFilaSobOBloqueioAsync(
             perfilId, () => RetomarAsync(marlene, perfilId, EtapaProtecao), () => RemoverPermissoesAsync(diogo, perfilId, Consultar));
 
         respostas.Select(r => r.StatusCode).Should().AllBeEquivalentTo(HttpStatusCode.OK);

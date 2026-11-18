@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text.Json;
 
@@ -12,10 +11,6 @@ using Unifesspa.UniPlus.Verificador.Contratos;
 
 /// <summary>O ciclo da versão do perfil pelo host real: o PDF sobe ao MinIO pela URL assinada, o veredicto volta pela fila e a versão entra em vigor, ou é recusada, só então.</summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class CicloDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoHostTestBase
 {
     private const string MotivoDaDesativacao = "Perfil fora de uso.";
@@ -25,28 +20,51 @@ public sealed class CicloDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoHostTest
     {
     }
 
-    [Fact(DisplayName = "Perfil novo não é pedível até a vigência: criar, enviar, verificar, vigente e pedível")]
-    public async Task Ciclo_CriarEnviarVerificar_TornaOPerfilPedivel()
+    [Fact(DisplayName = "O perfil só pode ser pedido após a primeira versão entrar em vigor")]
+    public async Task Ciclo_PrimeiraVersao_PermitePedirPerfil()
     {
         await ResetarAsync();
         using HttpClient gestor = await GestorAsync();
         using HttpClient betina = Cliente(Betina);
-        Guid unidade = await SemearUnidadeAsync();
-        Envio envio = await CriarPerfilAsync(gestor, Consultar);
+        using var cenario = new CenarioDaPrimeiraVersao(this, gestor, betina);
 
-        (await ParaPedirAsync(betina)).Should().NotContain(envio.PerfilId);
-        using HttpResponseMessage antes = await CriarBrutoAsync(betina, envio.PerfilId, unidade, Leandro.Email);
-        await ConferirRecusaAsync(antes, HttpStatusCode.UnprocessableEntity, "perfil_sem_versao_em_vigor");
+        await cenario.ExecutarAsync();
 
-        await EnviarEVerificarAsync(gestor, envio);
+        cenario.PerfisAntes.Should().NotContain(cenario.Envio.PerfilId);
+        await ConferirRecusaAsync(cenario.RespostaAntes, HttpStatusCode.UnprocessableEntity, "perfil_sem_versao_em_vigor");
+        cenario.PerfisDepois.Should().Contain(cenario.Envio.PerfilId);
+        cenario.RespostaDepois.StatusCode.Should().Be(HttpStatusCode.Created, await cenario.RespostaDepois.Content.ReadAsStringAsync());
+        cenario.Perfil.GetProperty("composicaoEmVigor").GetProperty("numero").GetInt32().Should().Be(1);
+        cenario.Perfil.GetProperty("composicaoEmVigor").GetProperty("protocolo").GetString().Should().Be(Protocolo);
+        cenario.Perfil.GetProperty("versaoPendente").ValueKind.Should().Be(JsonValueKind.Null);
+    }
 
-        (await ParaPedirAsync(betina)).Should().Contain(envio.PerfilId);
-        using HttpResponseMessage depois = await CriarBrutoAsync(betina, envio.PerfilId, unidade, Leandro.Email);
-        depois.StatusCode.Should().Be(HttpStatusCode.Created, await depois.Content.ReadAsStringAsync());
-        JsonElement perfil = await LerAsync(gestor, $"{RotaPerfis}/{envio.PerfilId}");
-        perfil.GetProperty("composicaoEmVigor").GetProperty("numero").GetInt32().Should().Be(1);
-        perfil.GetProperty("composicaoEmVigor").GetProperty("protocolo").GetString().Should().Be(Protocolo);
-        perfil.GetProperty("versaoPendente").ValueKind.Should().Be(JsonValueKind.Null);
+    private sealed class CenarioDaPrimeiraVersao(CicloDaVersaoDoPerfilNoHostTests teste, HttpClient gestor, HttpClient betina) : IDisposable
+    {
+        public Envio Envio { get; private set; } = null!;
+        public Guid[] PerfisAntes { get; private set; } = [];
+        public Guid[] PerfisDepois { get; private set; } = [];
+        public HttpResponseMessage RespostaAntes { get; private set; } = null!;
+        public HttpResponseMessage RespostaDepois { get; private set; } = null!;
+        public JsonElement Perfil { get; private set; }
+
+        public void Dispose()
+        {
+            RespostaAntes?.Dispose();
+            RespostaDepois?.Dispose();
+        }
+
+        public async Task ExecutarAsync()
+        {
+            Guid unidade = await teste.SemearUnidadeAsync();
+            Envio = await CriarPerfilAsync(gestor, Consultar);
+            PerfisAntes = await ParaPedirAsync(betina);
+            RespostaAntes = await teste.CriarBrutoAsync(betina, Envio.PerfilId, unidade, Leandro.Email);
+            await teste.EnviarEVerificarAsync(gestor, Envio);
+            PerfisDepois = await ParaPedirAsync(betina);
+            RespostaDepois = await teste.CriarBrutoAsync(betina, Envio.PerfilId, unidade, Leandro.Email);
+            Perfil = await LerAsync(gestor, $"{RotaPerfis}/{Envio.PerfilId}");
+        }
     }
 
     [Fact(DisplayName = "Cancelar a primeira versão e criar outra: a nova primeira versão pode mudar o alcance e entra em vigor")]
@@ -102,7 +120,7 @@ public sealed class CicloDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoHostTest
     }
 
     [Fact(DisplayName = "Repetir a criação com a mesma chave devolve a mesma URL e não cria outro perfil")]
-    public async Task Envio_ReplayDaCriacao_NaoDuplica()
+    public async Task Envio_RepeticaoDaCriacao_NaoDuplica()
     {
         await ResetarAsync();
         using HttpClient gestor = await GestorAsync();
@@ -116,28 +134,44 @@ public sealed class CicloDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoHostTest
         LerEnvio(await CorpoAsync(repeticao, HttpStatusCode.Created)).Should().Be(LerEnvio(await CorpoAsync(primeira, HttpStatusCode.Created)));
     }
 
-    [Fact(DisplayName = "Desativar antes do resultado: a pendente entra em vigor e o perfil segue desativado e não pedível")]
-    public async Task Desativar_AntesDoResultado_EntraEmVigorSemFicarPedivel()
+    [Fact(DisplayName = "A desativação antes do resultado preserva a vigência sem permitir pedidos")]
+    public async Task Desativar_AntesDoResultado_EntraEmVigorSemPoderSerPedido()
     {
         await ResetarAsync();
         using HttpClient gestor = await GestorAsync();
         using HttpClient betina = Cliente(Betina);
-        Envio envio = await CriarPerfilAsync(gestor, Consultar);
-        await ConfirmarEnvioAsync(gestor, envio);
-        (await EnviarAsync(gestor, HttpMethod.Post, $"{RotaPerfis}/{envio.PerfilId}/desativacao", new { motivo = MotivoDaDesativacao })).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        using var cenario = new CenarioDaDesativacao(this, gestor, betina);
 
-        await InjetarResultadoAsync(envio.DocumentoId, VeredictoDaVerificacao.Verificado);
-        await AguardarAsync(async () => await SituacaoDoDocumentoAsync(gestor, envio.PerfilId) == "verificado", "o documento não foi verificado");
+        await cenario.ExecutarAsync();
 
-        await AprovarAteAVigenciaAsync(gestor, envio);
-
-        await AguardarAsync(async () => await TemVigenteAsync(gestor, envio.PerfilId), "a pendente não entrou em vigor");
-        JsonElement perfil = await LerAsync(gestor, $"{RotaPerfis}/{envio.PerfilId}");
-        perfil.GetProperty("ativo").GetBoolean().Should().BeFalse();
-        (await ParaPedirAsync(betina)).Should().NotContain(envio.PerfilId);
+        cenario.Resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        cenario.Perfil.GetProperty("ativo").GetBoolean().Should().BeFalse();
+        cenario.PerfisParaPedir.Should().NotContain(cenario.Envio.PerfilId);
     }
 
-    [Fact(DisplayName = "Desativar depois do resultado tira o perfil da lista de pedíveis sem tirar a composição em vigor")]
+    private sealed class CenarioDaDesativacao(CicloDaVersaoDoPerfilNoHostTests teste, HttpClient gestor, HttpClient betina) : IDisposable
+    {
+        public Envio Envio { get; private set; } = null!;
+        public HttpResponseMessage Resposta { get; private set; } = null!;
+        public JsonElement Perfil { get; private set; }
+        public Guid[] PerfisParaPedir { get; private set; } = [];
+
+        public void Dispose() => Resposta?.Dispose();
+
+        public async Task ExecutarAsync()
+        {
+            Envio = await CriarPerfilAsync(gestor, Consultar);
+            await ConfirmarEnvioAsync(gestor, Envio);
+            Resposta = await EnviarAsync(gestor, HttpMethod.Post, $"{RotaPerfis}/{Envio.PerfilId}/desativacao", new { motivo = MotivoDaDesativacao });
+            await teste.VerificarDocumentoAsync(gestor, Envio);
+            await teste.AprovarAteAVigenciaAsync(gestor, Envio);
+            await AguardarAsync(async () => await TemVigenteAsync(gestor, Envio.PerfilId), "a pendente não entrou em vigor");
+            Perfil = await LerAsync(gestor, $"{RotaPerfis}/{Envio.PerfilId}");
+            PerfisParaPedir = await ParaPedirAsync(betina);
+        }
+    }
+
+    [Fact(DisplayName = "Desativar depois do resultado tira o perfil da lista de perfis que podem ser pedidos sem tirar a composição em vigor")]
     public async Task Desativar_DepoisDoResultado_SaiDaLista()
     {
         await ResetarAsync();
@@ -153,23 +187,47 @@ public sealed class CicloDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoHostTest
         (await TemVigenteAsync(gestor, envio.PerfilId)).Should().BeTrue();
     }
 
-    [Fact(DisplayName = "A leitura do documento verificado grava a trilha e a de documento não verificado não grava")]
-    public async Task Leitura_VerificadaGravaATrilha_NaoVerificadaNao()
+    [Fact(DisplayName = "A leitura de documento verificado grava a trilha e impede o cache")]
+    public async Task LeituraVerificada_GravaTrilhaEImpedeCache()
     {
         await ResetarAsync();
         using HttpClient gestor = await GestorAsync();
-        Envio verificado = await CriarPerfilAsync(gestor, Consultar);
-        await EnviarEVerificarAsync(gestor, verificado);
-        Envio pendente = await CriarPerfilAsync(gestor, Consultar);
-        string rota(Envio e) => $"{RotaPerfis}/{e.PerfilId}/versoes/{e.VersaoId}/documento";
+        using var cenario = new CenarioDeLeituraVerificada(this, gestor);
+        await cenario.ExecutarAsync();
 
-        using HttpResponseMessage negada = await gestor.GetAsync(new Uri(rota(pendente), UriKind.Relative));
-        using HttpResponseMessage lida = await gestor.GetAsync(new Uri(rota(verificado), UriKind.Relative));
+        cenario.Resposta.StatusCode.Should().Be(HttpStatusCode.OK, await cenario.Resposta.Content.ReadAsStringAsync());
+        cenario.Resposta.Headers.CacheControl!.NoStore.Should().BeTrue();
+        (await LeiturasAsync(cenario.Envio.DocumentoId)).Should().Be(1);
+    }
+
+    private sealed class CenarioDeLeituraVerificada(CicloDaVersaoDoPerfilNoHostTests teste, HttpClient gestor) : IDisposable
+    {
+        public Envio Envio { get; private set; } = null!;
+        public HttpResponseMessage Resposta { get; private set; } = null!;
+
+        public async Task ExecutarAsync()
+        {
+            Envio = await CriarPerfilAsync(gestor, Consultar);
+            await teste.EnviarEVerificarAsync(gestor, Envio);
+            Resposta = await gestor.GetAsync(new Uri(RotaDoDocumento(Envio), UriKind.Relative));
+        }
+
+        public void Dispose() => Resposta?.Dispose();
+    }
+
+    [Fact(DisplayName = "A leitura de documento não verificado é recusada e não grava trilha")]
+    public async Task LeituraNaoVerificada_RecusaENaoGravaTrilha()
+    {
+        await ResetarAsync();
+        using HttpClient gestor = await GestorAsync();
+        Envio pendente = await CriarPerfilAsync(gestor, Consultar);
+
+        using HttpResponseMessage negada = await gestor.GetAsync(new Uri(RotaDoDocumento(pendente), UriKind.Relative));
 
         negada.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        lida.StatusCode.Should().Be(HttpStatusCode.OK, await lida.Content.ReadAsStringAsync());
-        lida.Headers.CacheControl!.NoStore.Should().BeTrue();
-        (await LeiturasAsync(verificado.DocumentoId)).Should().Be(1);
         (await LeiturasAsync(pendente.DocumentoId)).Should().Be(0);
     }
+
+    private static string RotaDoDocumento(Envio envio) =>
+        $"{RotaPerfis}/{envio.PerfilId}/versoes/{envio.VersaoId}/documento";
 }

@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text.Json;
 
@@ -10,10 +9,6 @@ using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 
 /// <summary>A leitura do documento pela proteção de dados, a fila de cada etapa e a idempotência da decisão.</summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class DocumentoEFilaDaVersaoNoHostTests : AprovacaoDaVersaoNoHostTestBase
 {
     private const string RotaDaFila = "/api/autorizacao/versoes-de-perfil";
@@ -72,14 +67,22 @@ public sealed class DocumentoEFilaDaVersaoNoHostTests : AprovacaoDaVersaoNoHostT
         JsonElement daFilaDoAutor = await ItemDaFilaAsync(diogo, proposta.PerfilId);
         JsonElement daFilaDeOutraPessoa = await ItemDaFilaAsync(isabella, proposta.PerfilId);
 
-        daFilaDoAutor.GetProperty("propostaPorQuemLe").GetBoolean().Should().BeTrue();
-        daFilaDoAutor.GetProperty("versao").GetProperty("propostaPorQuemLe").GetBoolean().Should().BeTrue();
-        daFilaDeOutraPessoa.GetProperty("propostaPorQuemLe").GetBoolean().Should().BeFalse();
-        daFilaDeOutraPessoa.GetProperty("versao").GetProperty("propostaPorQuemLe").GetBoolean().Should().BeFalse();
-        (await PerfilAsync(diogo, proposta.PerfilId)).GetProperty("versaoPendente").GetProperty("propostaPorQuemLe").GetBoolean().Should().BeTrue();
-        (await PerfilAsync(isabella, proposta.PerfilId)).GetProperty("versaoPendente").GetProperty("propostaPorQuemLe").GetBoolean().Should().BeFalse();
+        ConferirPropostaPorQuemLe(daFilaDoAutor, esperada: true);
+        ConferirPropostaPorQuemLe(daFilaDeOutraPessoa, esperada: false);
+        await ConferirPendenteNoPerfilAsync(diogo, proposta.PerfilId, esperada: true);
+        await ConferirPendenteNoPerfilAsync(isabella, proposta.PerfilId, esperada: false);
         daFilaDoAutor.GetRawText().Should().NotContain(Diogo.ContaId.ToString());
     }
+
+    private static void ConferirPropostaPorQuemLe(JsonElement itemDaFila, bool esperada)
+    {
+        itemDaFila.GetProperty("propostaPorQuemLe").GetBoolean().Should().Be(esperada);
+        itemDaFila.GetProperty("versao").GetProperty("propostaPorQuemLe").GetBoolean().Should().Be(esperada);
+    }
+
+    private static async Task ConferirPendenteNoPerfilAsync(HttpClient leitor, Guid perfilId, bool esperada) =>
+        (await PerfilAsync(leitor, perfilId)).GetProperty("versaoPendente").GetProperty("propostaPorQuemLe")
+            .GetBoolean().Should().Be(esperada);
 
     [Fact(DisplayName = "A fila recusa quem não tem a permissão da etapa e a etapa que não existe")]
     public async Task Fila_RecusaSemPermissaoEEtapaInvalida()
@@ -96,7 +99,7 @@ public sealed class DocumentoEFilaDaVersaoNoHostTests : AprovacaoDaVersaoNoHostT
     }
 
     [Fact(DisplayName = "Repetir a aprovação com a mesma chave devolve a mesma resposta e grava uma decisão só")]
-    public async Task Aprovacao_ReplayNaoDuplica()
+    public async Task Aprovacao_RepeticaoNaoDuplica()
     {
         await ResetarAsync();
         using HttpClient diogo = await GestorAsync();

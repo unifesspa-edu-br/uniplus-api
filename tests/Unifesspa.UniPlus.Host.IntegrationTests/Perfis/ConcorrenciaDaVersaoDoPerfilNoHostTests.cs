@@ -17,8 +17,8 @@ using Unifesspa.UniPlus.Verificador.Contratos;
 using Wolverine.Tracking;
 
 /// <summary>
-/// As operações sobre o perfil seguem a mesma ordem de travas, então duas transações concorrentes se resolvem pela que
-/// trava primeiro. Cada teste segura uma transação aberta, espera o banco registrar a outra bloqueada e só então
+/// As operações sobre o perfil seguem a mesma ordem de bloqueios, então duas transações concorrentes se resolvem pela que
+/// bloqueia primeiro. Cada teste segura uma transação aberta, espera o banco registrar a outra bloqueada e só então
 /// confirma, de modo que a ordem é a decidida pelo teste e não pela sorte do agendador.
 /// </summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
@@ -29,8 +29,8 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
     {
     }
 
-    [Fact(DisplayName = "A concessão que vence a trava não impede a aprovação da etapa da gestão: a versão segue pendente da proteção de dados")]
-    public async Task ConcessaoVenceATrava_AprovacaoDaGestaoSegue()
+    [Fact(DisplayName = "A concessão que vence o bloqueio não impede a aprovação da etapa da gestão: a versão segue pendente da proteção de dados")]
+    public async Task ConcessaoVenceOBloqueio_AprovacaoDaGestaoSegue()
     {
         (Envio original, Envio ampliada) = await PerfilComAmpliadaVerificadaAsync();
         Guid unidade = await SemearUnidadeAsync();
@@ -48,8 +48,8 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
         (await VigenciasAsync(original.PerfilId)).Should().ContainSingle(v => v.Aberta && v.VersaoId == original.VersaoId);
     }
 
-    [Fact(DisplayName = "A aprovação final que vence a trava faz a concessão ser avaliada contra a composição nova", Skip = "Intermitente na suíte completa: a transação retida termina antes de a segunda operação disputar a trava (#2305).")]
-    public async Task AprovacaoVenceATrava_ConcessaoLeAComposicaoNova()
+    [Fact(DisplayName = "A aprovação final que vence o bloqueio faz a concessão ser avaliada contra a composição nova", Skip = "Intermitente na suíte completa: a transação retida termina antes de a segunda operação disputar o bloqueio (#2305).")]
+    public async Task AprovacaoVenceOBloqueio_ConcessaoLeAComposicaoNova()
     {
         (Envio original, Envio ampliada) = await PerfilComAmpliadaVerificadaAsync();
         Guid unidade = await SemearUnidadeAsync();
@@ -58,7 +58,7 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
         await AprovarAsync(gestao, ampliada, EtapaGestao);
         Task<Perfil>? concessao = null;
 
-        HttpResponseMessage[] respostas = await EmFilaSobATravaAsync(
+        HttpResponseMessage[] respostas = await EmFilaSobOBloqueioAsync(
             original.PerfilId, () => AprovarBrutoAsync(protecao, ampliada, EtapaProtecao), NaFila(() => concessao = ConcederEmTransacaoAsync(original.PerfilId, EscopoDaConcessao.DaUnidade(unidade))));
 
         respostas[0].StatusCode.Should().Be(HttpStatusCode.OK, await respostas[0].Content.ReadAsStringAsync());
@@ -74,7 +74,7 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
         using HttpClient primeira = await GestaoAsync();
         using HttpClient segunda = await ClienteComPermissoesAsync(Betina, AprovarFuncional);
 
-        HttpResponseMessage[] respostas = await EmFilaSobATravaAsync(
+        HttpResponseMessage[] respostas = await EmFilaSobOBloqueioAsync(
             original.PerfilId,
             () => AprovarBrutoAsync(primeira, ampliada, EtapaGestao),
             () => AprovarBrutoAsync(segunda, ampliada, EtapaGestao));
@@ -92,7 +92,7 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
         using HttpClient recusadora = await GestaoAsync();
         using HttpClient aprovador = await ClienteComPermissoesAsync(Betina, AprovarFuncional);
 
-        HttpResponseMessage[] respostas = await EmFilaSobATravaAsync(
+        HttpResponseMessage[] respostas = await EmFilaSobOBloqueioAsync(
             original.PerfilId,
             () => RecusarBrutoAsync(recusadora, ampliada, EtapaGestao),
             () => AprovarBrutoAsync(aprovador, ampliada, EtapaGestao));
@@ -111,7 +111,7 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
         using HttpClient gestor = await GestorAsync();
         using HttpClient gestao = await GestaoAsync();
 
-        HttpResponseMessage[] respostas = await EmFilaSobATravaAsync(
+        HttpResponseMessage[] respostas = await EmFilaSobOBloqueioAsync(
             original.PerfilId,
             () => RemoverBrutoAsync(gestor, original.PerfilId, [Consultar]),
             () => AprovarBrutoAsync(gestao, ampliada, EtapaGestao));
@@ -123,7 +123,7 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
         DescartarTodas(respostas);
     }
 
-    [Fact(DisplayName = "Aprovação e expiração simultâneas: a versão vencida expira e nunca entra em vigor", Skip = "Intermitente na suíte completa: a transação retida termina antes de a segunda operação disputar a trava (#2305).")]
+    [Fact(DisplayName = "Aprovação e expiração simultâneas: a versão vencida expira e nunca entra em vigor", Skip = "Intermitente na suíte completa: a transação retida termina antes de a segunda operação disputar o bloqueio (#2305).")]
     public async Task AprovacaoEExpiracaoSimultaneas_ExpiraSemEntrarEmVigor()
     {
         (Envio original, Envio ampliada) = await PerfilComAmpliadaVerificadaAsync();
@@ -131,7 +131,7 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
         using HttpClient gestao = await GestaoAsync();
         Task<int>? expiracao = null;
 
-        HttpResponseMessage[] respostas = await EmFilaSobATravaAsync(
+        HttpResponseMessage[] respostas = await EmFilaSobOBloqueioAsync(
             original.PerfilId, () => AprovarBrutoAsync(gestao, ampliada, EtapaGestao), NaFila(() => expiracao = ExpirarPendentesAsync()));
 
         await ConferirRecusaDoPerfilAsync(respostas[0], HttpStatusCode.UnprocessableEntity, "versao_expirada");
@@ -180,19 +180,11 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
         return perfil;
     }
 
-    private static void DescartarTodas(HttpResponseMessage[] respostas)
-    {
-        foreach (HttpResponseMessage resposta in respostas)
-        {
-            resposta.Dispose();
-        }
-    }
-
-    // A segunda operação da fila: começa e espera as duas sessões disputarem a trava do perfil.
+    // A segunda operação da fila: começa e espera as duas sessões disputarem o bloqueio do perfil.
     private Func<Task<HttpResponseMessage>> NaFila(Action iniciar) => async () =>
     {
         iniciar();
-        await AguardarFilaDaTravaAsync(2);
+        await AguardarFilaDoBloqueioAsync(2);
         return new HttpResponseMessage(HttpStatusCode.OK);
     };
 

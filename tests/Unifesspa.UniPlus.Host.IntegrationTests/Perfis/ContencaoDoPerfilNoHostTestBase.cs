@@ -114,14 +114,6 @@ public abstract class ContencaoDoPerfilNoHostTestBase : AprovacaoDaVersaoNoHostT
         return resposta.StatusCode;
     }
 
-    private protected static void DescartarTodas(HttpResponseMessage[] respostas)
-    {
-        foreach (HttpResponseMessage resposta in respostas)
-        {
-            resposta.Dispose();
-        }
-    }
-
     private protected async Task<IReadOnlyList<string>> TitularesAsync(string permissao)
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();

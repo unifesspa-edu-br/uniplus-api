@@ -1,23 +1,17 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 
 using AwesomeAssertions;
 
-
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 
 /// <summary>
-/// A contenção segue a ordem de travas das demais operações sobre o perfil: o teste segura a trava, enfileira as
+/// A contenção segue a ordem de bloqueios das demais operações sobre o perfil: o teste segura o bloqueio, enfileira as
 /// chamadas na ordem que quer e solta. A chave de idempotência repete a resposta sem repetir o efeito, e o conflito de
 /// concorrência de uma operação com chave vira recusa, sem aviso (ADR-0119).
 /// </summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class ConcorrenciaDaContencaoNoHostTests : ContencaoDoPerfilNoHostTestBase, IClassFixture<HostComConflitoNaGravacao>
 {
     private readonly HostComConflitoNaGravacao _hostDaClasse;
@@ -36,7 +30,7 @@ public sealed class ConcorrenciaDaContencaoNoHostTests : ContencaoDoPerfilNoHost
         using HttpClient isabella = await GestaoAsync();
         Guid perfilId = await PerfilComumComConcessaoAsync(diogo);
 
-        HttpResponseMessage[] respostas = await EmFilaSobATravaAsync(
+        HttpResponseMessage[] respostas = await EmFilaSobOBloqueioAsync(
             perfilId, () => SuspenderAsync(diogo, perfilId), () => SuspenderAsync(isabella, perfilId));
 
         respostas[0].StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -55,7 +49,7 @@ public sealed class ConcorrenciaDaContencaoNoHostTests : ContencaoDoPerfilNoHost
         Guid perfilId = await PerfilProtegidoComConcessaoAsync(diogo);
         await SuspenderComSucessoAsync(diogo, perfilId);
 
-        HttpResponseMessage[] respostas = await EmFilaSobATravaAsync(
+        HttpResponseMessage[] respostas = await EmFilaSobOBloqueioAsync(
             perfilId, () => RetomarAsync(isabella, perfilId, EtapaGestao), () => RetomarAsync(marlene, perfilId, EtapaProtecao));
 
         respostas.Select(r => r.StatusCode).Should().AllBeEquivalentTo(HttpStatusCode.OK);
@@ -74,7 +68,7 @@ public sealed class ConcorrenciaDaContencaoNoHostTests : ContencaoDoPerfilNoHost
         Guid perfilId = await PerfilProtegidoComConcessaoAsync(diogo);
         await SuspenderComSucessoAsync(diogo, perfilId);
 
-        HttpResponseMessage[] respostas = await EmFilaSobATravaAsync(
+        HttpResponseMessage[] respostas = await EmFilaSobOBloqueioAsync(
             perfilId, () => RetomarAsync(isabella, perfilId, EtapaGestao), () => RetomarAsync(betina, perfilId, EtapaGestao));
 
         respostas[0].StatusCode.Should().Be(HttpStatusCode.OK);
@@ -92,7 +86,7 @@ public sealed class ConcorrenciaDaContencaoNoHostTests : ContencaoDoPerfilNoHost
         Guid perfilId = await PerfilComumComConcessaoAsync(diogo);
         await SuspenderComSucessoAsync(diogo, perfilId);
 
-        HttpResponseMessage[] respostas = await EmFilaSobATravaAsync(
+        HttpResponseMessage[] respostas = await EmFilaSobOBloqueioAsync(
             perfilId, () => RetomarAsync(isabella, perfilId, EtapaGestao), () => RetomarAsync(betina, perfilId, EtapaGestao));
 
         respostas[0].StatusCode.Should().Be(HttpStatusCode.OK);
@@ -101,26 +95,36 @@ public sealed class ConcorrenciaDaContencaoNoHostTests : ContencaoDoPerfilNoHost
         DescartarTodas(respostas);
     }
 
-    [Fact(DisplayName = "A concessão que espera a suspensão nasce bloqueada: a decisão de acesso não lhe dá permissão")]
-    public async Task ConcessaoEsperaASuspensao_NasceBloqueada()
+    [Fact(DisplayName = "A concessão aprovada depois da suspensão nasce sem permissões")]
+    public async Task ConcessaoEsperaASuspensao_NasceSemPermissoes()
     {
-        await PrepararAsync();
-        Guid perfilId = await SemearPerfilAsync("Acompanhamento de números", Consultar);
-        Guid unidade = await SemearUnidadeAsync();
-        using HttpClient diogo = await GestorAsync();
-        using HttpClient betina = Cliente(Betina);
-        Guid pedido = await CriarAsync(betina, perfilId, unidade, null);
+        using var cenario = new CenarioDeSuspensaoEAprovacao(this);
+        await cenario.ExecutarAsync();
+        cenario.Respostas[0].StatusCode.Should().Be(HttpStatusCode.NoContent);
+        cenario.Respostas[1].StatusCode.Should().Be(HttpStatusCode.OK, await cenario.Respostas[1].Content.ReadAsStringAsync());
+        (await ConcessoesAsync(Betina, cenario.PerfilId)).Should().ContainSingle();
+        (await PermissoesDaConcessaoAsync(cenario.PerfilId, Betina)).Should().BeEmpty();
+    }
 
-        HttpResponseMessage[] respostas = await EmFilaSobATravaAsync(
-            perfilId,
-            () => SuspenderAsync(diogo, perfilId),
-            () => EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{pedido}/aprovacoes"));
+    private sealed class CenarioDeSuspensaoEAprovacao(ConcorrenciaDaContencaoNoHostTests teste) : IDisposable
+    {
+        public Guid PerfilId { get; private set; }
+        public HttpResponseMessage[] Respostas { get; private set; } = [];
 
-        respostas[0].StatusCode.Should().Be(HttpStatusCode.NoContent);
-        respostas[1].StatusCode.Should().Be(HttpStatusCode.OK, await respostas[1].Content.ReadAsStringAsync());
-        (await ConcessoesAsync(Betina, perfilId)).Should().ContainSingle();
-        (await PermissoesDaConcessaoAsync(perfilId, Betina)).Should().BeEmpty();
-        DescartarTodas(respostas);
+        public async Task ExecutarAsync()
+        {
+            await teste.PrepararAsync();
+            PerfilId = await teste.SemearPerfilAsync("Acompanhamento de números", Consultar);
+            using HttpClient diogo = await teste.GestorAsync();
+            Guid unidade = await teste.SemearUnidadeAsync();
+            using HttpClient betina = teste.Cliente(Betina);
+            Guid pedido = await teste.CriarAsync(betina, PerfilId, unidade, null);
+            Respostas = await teste.EmFilaSobOBloqueioAsync(
+                PerfilId, () => SuspenderAsync(diogo, PerfilId),
+                () => EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{pedido}/aprovacoes"));
+        }
+
+        public void Dispose() => DescartarTodas(Respostas);
     }
 
     [Fact(DisplayName = "A mesma chave de idempotência repete a resposta e a suspensão acontece uma vez")]

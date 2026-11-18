@@ -32,22 +32,11 @@ public abstract class AprovacaoDaVersaoNoHostTestBase : VersoesDoPerfilNoHostTes
     private protected static Task<JsonElement> PerfilAsync(HttpClient cliente, Guid perfilId) =>
         LerAsync(cliente, $"{RotaPerfis}/{perfilId}");
 
-    /// <summary>Cria o perfil e o leva à vigência pelo caminho real, aprovando as etapas que a composição pede.</summary>
-    private protected async Task<Envio> PerfilVigenteAsync(HttpClient criador, params string[] permissoes)
-    {
-        Envio envio = await CriarPerfilAsync(criador, permissoes);
-        await EnviarEVerificarAsync(criador, envio);
-
-        return envio;
-    }
-
     /// <summary>Cria a versão do perfil e a deixa com o documento verificado, pronta para a primeira decisão.</summary>
     private protected async Task<Envio> PendenteVerificadaAsync(HttpClient criador, Guid perfilId, params string[] permissoes)
     {
         Envio envio = await CriarVersaoAsync(criador, perfilId, Nome(), permissoes);
-        await ConfirmarEnvioAsync(criador, envio);
-        await InjetarResultadoAsync(envio.DocumentoId, VeredictoDaVerificacao.Verificado);
-        await AguardarAsync(async () => await SituacaoDoDocumentoAsync(criador, perfilId) == "verificado", "o documento não foi verificado");
+        await ConfirmarEVerificarAsync(criador, envio);
 
         return envio;
     }

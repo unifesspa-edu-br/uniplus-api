@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
 
-using System.Diagnostics.CodeAnalysis;
 
 using AwesomeAssertions;
 
@@ -21,10 +20,6 @@ using Wolverine.EntityFrameworkCore;
 /// deixa um registro só, e duas emissões com chaves sobrepostas em ordens inversas não entram em deadlock.
 /// </summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class EmissaoDeAvisosNoHostTests
 {
     private const string Emissor = "https://idp.test/realms/unifesspa";
@@ -40,27 +35,60 @@ public sealed class EmissaoDeAvisosNoHostTests
         _fixture = fixture;
     }
 
-    [Fact(DisplayName = "Duas transações que emitem o mesmo aviso deixam um registro e um envelope no outbox, e a perdedora conclui sem mensagem nem erro")]
-    public async Task Corrida_MesmaChave_UmRegistroEUmEnvelope()
+    [Fact(DisplayName = "Duas transações deixam um registro e um envelope, entregue após a confirmação")]
+    public async Task Corrida_MesmaChave_EntregaEnvelope()
     {
-        Guid fato = Guid.CreateVersion7();
-        int envelopesAntes = await EnvelopesDeEmailAsync();
-        await using TransacaoRetidaDeTeste primeira = await TransacaoRetidaDeTeste.AbrirAsync(_fixture.Factory.Services);
-        await using TransacaoRetidaDeTeste segunda = await TransacaoRetidaDeTeste.AbrirAsync(_fixture.Factory.Services);
+        await using CenarioDeEmissaoConcorrente cenario = new();
+        await cenario.ExecutarAsync(this);
 
-        IReadOnlyList<EnviarEmail> daPrimeira = await EmitirNoOutboxAsync(primeira, fato, [Leandro]);
-        Task<IReadOnlyList<EnviarEmail>> daSegunda = EmitirNoOutboxAsync(segunda, fato, [Leandro]);
-        await primeira.AguardarBloqueioAsync();
-        await primeira.ConfirmarAsync();
-        IReadOnlyList<EnviarEmail> perdedora = await daSegunda;
-        await segunda.ConfirmarAsync();
+        cenario.Vencedora.Should().ContainSingle();
+        cenario.Perdedora.Should().BeEmpty();
+        (await RegistrosAsync(cenario.Fato)).Should().Be(1);
+        (await EnvelopesDeEmailAsync()).Should().Be(cenario.EnvelopesAntes + 1, "só a vencedora deixou envelope");
+        await cenario.Primeira.Servicos.GetRequiredService<IDbContextOutbox<UniPlusDbContext>>().FlushOutgoingMessagesAsync();
+        await PedidosDeConcessaoTestBase.AguardarAsync(
+            async () => await EnvelopesDeEmailAsync() <= cenario.EnvelopesAntes, "o envelope não foi entregue");
+    }
 
-        daPrimeira.Should().ContainSingle();
-        perdedora.Should().BeEmpty();
-        (await RegistrosAsync(fato)).Should().Be(1);
-        (await EnvelopesDeEmailAsync()).Should().Be(envelopesAntes + 1, "só a vencedora deixou envelope");
-        await primeira.Servicos.GetRequiredService<IDbContextOutbox<UniPlusDbContext>>().FlushOutgoingMessagesAsync();
-        await PedidosDeConcessaoTestBase.AguardarAsync(async () => await EnvelopesDeEmailAsync() <= envelopesAntes, "o envelope não foi entregue");
+    private sealed class CenarioDeEmissaoConcorrente : IAsyncDisposable
+    {
+        public Guid Fato { get; } = Guid.CreateVersion7();
+        public int EnvelopesAntes { get; private set; }
+        public TransacaoRetidaDeTeste Primeira { get; private set; } = null!;
+        public TransacaoRetidaDeTeste Segunda { get; private set; } = null!;
+        public IReadOnlyList<EnviarEmail> Vencedora { get; private set; } = [];
+        public IReadOnlyList<EnviarEmail> Perdedora { get; private set; } = [];
+
+        public async Task ExecutarAsync(EmissaoDeAvisosNoHostTests teste)
+        {
+            EnvelopesAntes = await teste.EnvelopesDeEmailAsync();
+            Primeira = await TransacaoRetidaDeTeste.AbrirAsync(teste._fixture.Factory.Services);
+            Segunda = await TransacaoRetidaDeTeste.AbrirAsync(teste._fixture.Factory.Services);
+            Vencedora = await EmitirNoOutboxAsync(Primeira, Fato, [Leandro]);
+            Task<IReadOnlyList<EnviarEmail>> segunda = EmitirNoOutboxAsync(Segunda, Fato, [Leandro]);
+            await Primeira.AguardarBloqueioAsync();
+            await Primeira.ConfirmarAsync();
+            Perdedora = await segunda;
+            await Segunda.ConfirmarAsync();
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            try
+            {
+                if (Segunda is not null)
+                {
+                    await Segunda.DisposeAsync();
+                }
+            }
+            finally
+            {
+                if (Primeira is not null)
+                {
+                    await Primeira.DisposeAsync();
+                }
+            }
+        }
     }
 
     [Fact(DisplayName = "Duas emissões com chaves sobrepostas em ordens inversas concluem sem deadlock, e cada chave sai uma vez")]

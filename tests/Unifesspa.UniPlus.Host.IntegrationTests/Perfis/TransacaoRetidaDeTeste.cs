@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// Transação do módulo Autorização mantida aberta pelo teste, com o escopo de serviços que a usa. Dá a ordem das
-/// travas que duas operações concorrentes teriam, sem gancho no código de produção: o teste decide quando cada uma
+/// bloqueios que duas operações concorrentes teriam, sem gancho no código de produção: o teste decide quando cada uma
 /// confirma e espera o banco registrar a outra bloqueada.
 /// </summary>
 internal sealed class TransacaoRetidaDeTeste : IAsyncDisposable
@@ -47,7 +47,7 @@ internal sealed class TransacaoRetidaDeTeste : IAsyncDisposable
     /// <summary>
     /// Espera o banco registrar o número de sessões bloqueadas por esta transação, direta ou indiretamente (na fila atrás de
     /// outra que ela bloqueia), no banco do teste: a operação concorrente chegou ao ponto da disputa. Sessões presas em
-    /// outras travas, de outros testes, não contam. Esgotado o prazo, a falha traz o estado da transação e das esperas.
+    /// outras bloqueios, de outros testes, não contam. Esgotado o prazo, a falha traz o estado da transação e das esperas.
     /// </summary>
     public async Task AguardarBloqueioAsync(int sessoes = 1)
     {
@@ -81,31 +81,11 @@ internal sealed class TransacaoRetidaDeTeste : IAsyncDisposable
             .SingleAsync();
     }
 
-    private async Task<string> DiagnosticarAsync() =>
-        $"{await DiagnosticarOBancoAsync()} {await DiagnosticarAConexaoRetidaAsync()}";
-
-    private async Task<string> DiagnosticarOBancoAsync()
+    private async Task<string> DiagnosticarAsync()
     {
-        await using AsyncServiceScope escopo = _escopo.ServiceProvider.GetRequiredService<IServiceScopeFactory>().CreateAsyncScope();
-
-        return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database
-            .SqlQuery<string>($"""
-                SELECT 'Transação retida (pid ' || {_pid} || '): '
-                    || coalesce((SELECT 'estado=' || state || ', xact_start=' || coalesce(xact_start::text, 'nenhuma')
-                                 FROM pg_stat_activity WHERE pid = {_pid}), 'sessão encerrada')
-                    || '. Início da sessão: guardado=' || {_inicioDaSessao} || ', atual='
-                    || coalesce((SELECT backend_start::text FROM pg_stat_activity WHERE pid = {_pid}), 'nenhuma')
-                    || ', postmaster=' || pg_postmaster_start_time()::text
-                    || '. Sessões do banco em espera: '
-                    || coalesce((SELECT string_agg(pid || ' ' || wait_event_type || '/' || wait_event
-                                    || ' bloqueada_por=' || pg_blocking_pids(pid)::text, '; ')
-                                 FROM pg_stat_activity
-                                 WHERE datname = current_database() AND wait_event_type IS NOT NULL AND state <> 'idle'), 'nenhuma')
-                    || '. Bloqueadas pela transação: ' || (SELECT count(*) FROM pg_stat_activity
-                                 WHERE datname = current_database() AND {_pid} = ANY(pg_blocking_pids(pid)))
-                    AS "Value"
-                """)
-            .SingleAsync();
+        DiagnosticoDasSessoes diagnostico = new(_escopo.ServiceProvider, _pid, _inicioDaSessao);
+        return $"{await diagnostico.LerAsync()}. Bloqueadas pela transação: {await ContarBloqueadasAsync()} "
+            + $"{await DiagnosticarAConexaoRetidaAsync()}";
     }
 
     private async Task<string> DiagnosticarAConexaoRetidaAsync()

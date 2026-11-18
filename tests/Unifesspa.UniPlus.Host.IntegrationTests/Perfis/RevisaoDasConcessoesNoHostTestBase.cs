@@ -98,16 +98,8 @@ public abstract class RevisaoDasConcessoesNoHostTestBase : AprovacaoDaVersaoNoHo
     /// </summary>
     private protected async Task EntregarAsync(Func<Task> acao)
     {
-        IListeningAgent daFixture = AgenteDaFila(Fixture.Factory.Services);
-        await daFixture.PauseAsync(TimeSpan.FromMinutes(10));
-        try
-        {
-            await AcompanharEntregaAsync(acao);
-        }
-        finally
-        {
-            await daFixture.StartAsync();
-        }
+        await using PausaDosAgentes pausa = await PausaDosAgentes.PausarAsync([AgenteDaFila(Fixture.Factory.Services)]);
+        await AcompanharEntregaAsync(acao);
     }
 
     private Task<ITrackedSession> AcompanharEntregaAsync(Func<Task> acao) =>
@@ -128,7 +120,7 @@ public abstract class RevisaoDasConcessoesNoHostTestBase : AprovacaoDaVersaoNoHo
     {
         IListeningAgent[] agentes = [AgenteDaFila(Fixture.Factory.Services), AgenteDaFila(Host.Services)];
         (string conexao, string fila) = EnderecoDaFila();
-        await PausarAgentesAsync(agentes);
+        await using PausaDosAgentes pausa = await PausaDosAgentes.PausarAsync(agentes);
 
         try
         {
@@ -138,7 +130,7 @@ public abstract class RevisaoDasConcessoesNoHostTestBase : AprovacaoDaVersaoNoHo
         }
         finally
         {
-            await LimparEIniciarAgentesAsync(conexao, fila, agentes);
+            await ExecutarNaFilaAsync(conexao, $"DELETE FROM {fila}");
         }
     }
 
@@ -150,32 +142,10 @@ public abstract class RevisaoDasConcessoesNoHostTestBase : AprovacaoDaVersaoNoHo
         return (conexao, fila);
     }
 
-    private static async Task PausarAgentesAsync(IListeningAgent[] agentes)
-    {
-        foreach (IListeningAgent agente in agentes)
-        {
-            await agente.PauseAsync(TimeSpan.FromMinutes(10));
-        }
-    }
-
     private static async Task LimparEExecutarAsync(string conexao, string fila, Func<Task> acao)
     {
         await ExecutarNaFilaAsync(conexao, $"DELETE FROM {fila}");
         await acao();
-    }
-
-    private static async Task LimparEIniciarAgentesAsync(string conexao, string fila, IListeningAgent[] agentes)
-    {
-        await ExecutarNaFilaAsync(conexao, $"DELETE FROM {fila}");
-        await IniciarAgentesAsync(agentes);
-    }
-
-    private static async Task IniciarAgentesAsync(IListeningAgent[] agentes)
-    {
-        foreach (IListeningAgent agente in agentes)
-        {
-            await agente.StartAsync();
-        }
     }
 
     private static IListeningAgent AgenteDaFila(IServiceProvider servicos) =>

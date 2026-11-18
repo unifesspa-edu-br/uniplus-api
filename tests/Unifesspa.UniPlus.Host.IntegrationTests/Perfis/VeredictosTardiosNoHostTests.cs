@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
 using AwesomeAssertions;
@@ -14,10 +13,6 @@ using Unifesspa.UniPlus.Verificador.Contratos;
 /// nenhuma vigência nasce. O mesmo resultado entregue de novo é ignorado.
 /// </summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class VeredictosTardiosNoHostTests : VersoesDoPerfilNoHostTestBase
 {
     public VeredictosTardiosNoHostTests(MonolitoDaInstalacaoFixture fixture)
@@ -25,32 +20,52 @@ public sealed class VeredictosTardiosNoHostTests : VersoesDoPerfilNoHostTestBase
     {
     }
 
-    [Theory(DisplayName = "Veredicto tardio de versão cancelada ou recusada só grava o documento, e o replay é ignorado")]
+    [Theory(DisplayName = "O veredicto tardio grava o documento sem reabrir a versão e sua repetição é ignorada")]
     [InlineData(VeredictoDaVerificacao.Verificado, "cancelada")]
     [InlineData(VeredictoDaVerificacao.Recusado, "cancelada")]
     [InlineData(VeredictoDaVerificacao.ReenvioNecessario, "cancelada")]
     [InlineData(VeredictoDaVerificacao.Verificado, "recusada")]
     [InlineData(VeredictoDaVerificacao.Recusado, "recusada")]
     [InlineData(VeredictoDaVerificacao.ReenvioNecessario, "recusada")]
-    public async Task VeredictoTardio_SoGravaODocumento(VeredictoDaVerificacao veredicto, string situacaoDaVersao)
+    public async Task VeredictoTardio_GravaDocumentoSemReabrirVersao(VeredictoDaVerificacao veredicto, string situacao)
     {
         await ResetarAsync();
         using HttpClient gestor = await GestorAsync();
+        var cenario = new CenarioDoVeredicto(this, gestor, veredicto, situacao);
+        await cenario.ExecutarAsync();
+
+        cenario.Primeiro.Should().Be(DesfechoDoResultadoDaVersao.Aplicado);
+        cenario.Repeticao.Should().Be(DesfechoDoResultadoDaVersao.Ignorado);
+        cenario.Documento.Should().Be(veredicto == VeredictoDaVerificacao.Verificado ? "verificado" : "recusado");
+        (await SituacaoNoBancoAsync(cenario.Envio.DocumentoId)).Should().Be(cenario.Documento);
+        (await SituacaoDaVersaoNoBancoAsync(cenario.Envio.VersaoId)).Should().Be(situacao);
+        (await VigenciasAsync(cenario.Envio.PerfilId)).Should().BeEmpty();
+        (await LerAsync(gestor, $"{RotaPerfis}/{cenario.Envio.PerfilId}")).GetProperty("composicaoEmVigor").ValueKind.Should().Be(JsonValueKind.Null);
+    }
+
+    private sealed class CenarioDoVeredicto(VeredictosTardiosNoHostTests teste, HttpClient gestor, VeredictoDaVerificacao veredicto, string situacao)
+    {
+        public Envio Envio { get; private set; } = null!;
+        public DesfechoDoResultadoDaVersao Primeiro { get; private set; }
+        public DesfechoDoResultadoDaVersao Repeticao { get; private set; }
+        public string Documento { get; private set; } = string.Empty;
+
+        public async Task ExecutarAsync()
+        {
+            Envio = await teste.PrepararVersaoEncerradaAsync(gestor, situacao);
+            Primeiro = await teste.RegistrarDiretoAsync(Envio.DocumentoId, veredicto);
+            Documento = await teste.SituacaoNoBancoAsync(Envio.DocumentoId);
+            Repeticao = await teste.RegistrarDiretoAsync(Envio.DocumentoId, veredicto);
+        }
+    }
+
+    private async Task<Envio> PrepararVersaoEncerradaAsync(HttpClient gestor, string situacao)
+    {
         Envio envio = await CriarPerfilAsync(gestor, Consultar);
         await ConfirmarEnvioAsync(gestor, envio);
-        await EncerrarVersaoAsync(gestor, envio, situacaoDaVersao);
+        await EncerrarVersaoAsync(gestor, envio, situacao);
 
-        DesfechoDoResultadoDaVersao primeiro = await RegistrarDiretoAsync(envio.DocumentoId, veredicto);
-        string documento = await SituacaoNoBancoAsync(envio.DocumentoId);
-        DesfechoDoResultadoDaVersao replay = await RegistrarDiretoAsync(envio.DocumentoId, veredicto);
-
-        primeiro.Should().Be(DesfechoDoResultadoDaVersao.Aplicado);
-        replay.Should().Be(DesfechoDoResultadoDaVersao.Ignorado);
-        documento.Should().Be(veredicto == VeredictoDaVerificacao.Verificado ? "verificado" : "recusado");
-        (await SituacaoNoBancoAsync(envio.DocumentoId)).Should().Be(documento);
-        (await SituacaoDaVersaoNoBancoAsync(envio.VersaoId)).Should().Be(situacaoDaVersao);
-        (await VigenciasAsync(envio.PerfilId)).Should().BeEmpty();
-        (await LerAsync(gestor, $"{RotaPerfis}/{envio.PerfilId}")).GetProperty("composicaoEmVigor").ValueKind.Should().Be(JsonValueKind.Null);
+        return envio;
     }
 
     private async Task EncerrarVersaoAsync(HttpClient gestor, Envio envio, string situacao)
