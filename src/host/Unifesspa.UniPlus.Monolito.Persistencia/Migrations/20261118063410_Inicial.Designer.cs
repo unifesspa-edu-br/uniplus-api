@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261118065137_Inicial")]
+    [Migration("20261118063410_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -9328,7 +9328,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("vinculos_de_discentes", "discentes", t =>
                         {
-                            t.HasComment("Réplica local dos vínculos de discentes sincronizados do SIGAA (ADR-0121) — snapshot desnormalizado, sem referência viva a outras tabelas.");
+                            t.HasComment("Réplica local dos vínculos de discentes sincronizados do SIGAA (ADR-0121) — dados copiados, sem consulta automática a outras tabelas.");
                         });
                 });
 

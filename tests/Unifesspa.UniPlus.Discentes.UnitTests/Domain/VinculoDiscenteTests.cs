@@ -9,11 +9,11 @@ public class VinculoDiscenteTests
     [Fact(DisplayName = "VinculoDiscentes.Criar - Deve Gerar Uuid Valido e Instanciar Entidade")]
     public void Criar_DeveGerarUuidValidoEInstanciarEntidade()
     {
-        VinculoDiscente discente = VinculoDiscente.Criar(VinculoDeTeste.Snapshot());
+        VinculoDiscente discente = VinculoDiscente.Criar(VinculoDeTeste.DadosCopiados());
 
         Assert.NotEqual(Guid.Empty, discente.Id);
-        Assert.Equal(50231, discente.Snapshot.Identificacao.IdDiscenteSigaa);
-        Assert.Equal("20142600001", discente.Snapshot.Identificacao.Matricula);
+        Assert.Equal(50231, discente.DadosCopiados.Identificacao.IdDiscenteSigaa);
+        Assert.Equal("20142600001", discente.DadosCopiados.Identificacao.Matricula);
     }
 
     [Fact(DisplayName = "VinculoDiscentes.Reidratar - Deve Manter Guid Original sem Gerar novo ID")]
@@ -21,7 +21,7 @@ public class VinculoDiscenteTests
     {
         Guid idOriginal = Guid.CreateVersion7();
 
-        VinculoDiscente discente = VinculoDiscente.Reidratar(idOriginal, VinculoDeTeste.Snapshot());
+        VinculoDiscente discente = VinculoDiscente.Reidratar(idOriginal, VinculoDeTeste.DadosCopiados());
 
         Assert.Equal(idOriginal, discente.Id);
     }
@@ -29,7 +29,7 @@ public class VinculoDiscenteTests
     [Fact(DisplayName = "VinculoDiscentes.ToString - Nao Deve Expor Dados Pessoais")]
     public void ToString_NaoDeveExporDadosPessoais()
     {
-        VinculoDiscente discente = VinculoDiscente.Criar(VinculoDeTeste.Snapshot());
+        VinculoDiscente discente = VinculoDiscente.Criar(VinculoDeTeste.DadosCopiados());
 
         string resultado = discente.ToString();
 
@@ -41,10 +41,10 @@ public class VinculoDiscenteTests
         Assert.Contains(discente.Id.ToString(), resultado);
     }
 
-    [Fact(DisplayName = "VinculoDiscenteSnapshot.ToString - Nao Deve Expor Nome nem Matricula")]
-    public void VinculoDiscenteSnapshotToString_NaoDeveExporNomeNemMatricula()
+    [Fact(DisplayName = "VinculoDiscenteCopiado.ToString - Nao Deve Expor Nome nem Matricula")]
+    public void VinculoDiscenteCopiadoToString_NaoDeveExporNomeNemMatricula()
     {
-        string resultado = VinculoDeTeste.Snapshot().ToString();
+        string resultado = VinculoDeTeste.DadosCopiados().ToString();
 
         Assert.DoesNotContain("ANA EXEMPLO DE SOUZA", resultado);
         Assert.DoesNotContain("20142600001", resultado);

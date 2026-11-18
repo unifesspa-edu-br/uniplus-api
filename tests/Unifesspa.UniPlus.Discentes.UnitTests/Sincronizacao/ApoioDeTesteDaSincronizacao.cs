@@ -114,7 +114,7 @@ internal sealed class GravadorSimulado : IGravadorDeVinculos
                 new InvalidOperationException("Falha simulada na gravação do lote.")));
         }
 
-        IdentificadoresGravados.AddRange(lote.Select(v => v.Vinculo.Snapshot.Identificacao.IdDiscenteSigaa));
+        IdentificadoresGravados.AddRange(lote.Select(v => v.Vinculo.DadosCopiados.Identificacao.IdDiscenteSigaa));
 
         return Task.FromResult(new DesfechoDaGravacao(TratarTudoComoInalterado
             ? new ResultadoDaGravacao(0, 0, lote.Count)

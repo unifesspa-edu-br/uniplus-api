@@ -21,10 +21,6 @@ using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 /// <see cref="IUniPlusEncryptionService"/>, assíncrono — acontece inteiramente aqui,
 /// nunca num <c>ValueConverter</c> síncrono.
 /// </summary>
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via DI em DiscentesInfrastructureRegistration.")]
 public sealed class VinculoDiscenteRepository : IVinculoDiscenteRepository
 {
     private readonly UniPlusDbContext _dbContext;
@@ -123,7 +119,7 @@ public sealed class VinculoDiscenteRepository : IVinculoDiscenteRepository
         IReadOnlyList<VinculoSincronizavel> lote,
         CancellationToken cancellationToken)
     {
-        long[] identificadores = [.. lote.Select(v => v.Vinculo.Snapshot.Identificacao.IdDiscenteSigaa)];
+        long[] identificadores = [.. lote.Select(v => v.Vinculo.DadosCopiados.Identificacao.IdDiscenteSigaa)];
 
         return _dbContext.VinculosDiscentes
             .Where(r => identificadores.Contains(r.IdDiscenteSigaa))
@@ -176,7 +172,7 @@ public sealed class VinculoDiscenteRepository : IVinculoDiscenteRepository
         Dictionary<long, VinculoDiscenteRecord> existentes,
         CancellationToken cancellationToken)
     {
-        if (!existentes.TryGetValue(item.Vinculo.Snapshot.Identificacao.IdDiscenteSigaa, out VinculoDiscenteRecord? existente))
+        if (!existentes.TryGetValue(item.Vinculo.DadosCopiados.Identificacao.IdDiscenteSigaa, out VinculoDiscenteRecord? existente))
         {
             await InserirAsync(item, cancellationToken).ConfigureAwait(false);
             return new ResultadoDaGravacao(1, 0, 0);
@@ -234,9 +230,9 @@ public sealed class VinculoDiscenteRepository : IVinculoDiscenteRepository
     /// </summary>
     private async Task AtualizarCamposAsync(VinculoDiscenteRecord record, VinculoDiscente entity, CancellationToken cancellationToken)
     {
-        byte[] cpfCiphertext = await CifrarCpfAsync(entity.Snapshot.Identificacao.Cpf, cancellationToken).ConfigureAwait(false);
+        byte[] cpfCiphertext = await CifrarCpfAsync(entity.DadosCopiados.Identificacao.Cpf, cancellationToken).ConfigureAwait(false);
 
-        MapeamentoDoVinculoDiscente.Aplicar(record, entity.Snapshot, cpfCiphertext);
+        MapeamentoDoVinculoDiscente.Aplicar(record, entity.DadosCopiados, cpfCiphertext);
     }
 
     private Task<byte[]> CifrarCpfAsync(Cpf cpf, CancellationToken cancellationToken) =>

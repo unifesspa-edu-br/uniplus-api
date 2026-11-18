@@ -40,8 +40,8 @@ public sealed class VinculoDiscentePersistenceTests : IClassFixture<VinculoDisce
 
         lido.Should().NotBeNull();
         lido!.Id.Should().Be(original.Id);
-        lido.Snapshot.Identificacao.Cpf.Valor.Should().Be(CpfValido);
-        lido.Snapshot.Identificacao.Nome.Should().Be(original.Snapshot.Identificacao.Nome);
+        lido.DadosCopiados.Identificacao.Cpf.Valor.Should().Be(CpfValido);
+        lido.DadosCopiados.Identificacao.Nome.Should().Be(original.DadosCopiados.Identificacao.Nome);
     }
 
     [Fact]
@@ -72,12 +72,12 @@ public sealed class VinculoDiscentePersistenceTests : IClassFixture<VinculoDisce
         VinculoDiscente original = Novo(1005);
         await AdicionarAsync(original);
 
-        await AtualizarAsync(VinculoDiscente.Reidratar(original.Id, Novo(1005, OutroCpfValido).Snapshot));
+        await AtualizarAsync(VinculoDiscente.Reidratar(original.Id, Novo(1005, OutroCpfValido).DadosCopiados));
 
         VinculoDiscente? lido = await LerPorIdAsync(original.Id);
 
         lido.Should().NotBeNull();
-        lido!.Snapshot.Identificacao.Cpf.Valor.Should().Be(OutroCpfValido);
+        lido!.DadosCopiados.Identificacao.Cpf.Valor.Should().Be(OutroCpfValido);
     }
 
     /// <summary>
@@ -86,9 +86,9 @@ public sealed class VinculoDiscentePersistenceTests : IClassFixture<VinculoDisce
     /// período e, por último, o restante do vínculo (identificação e nível).
     /// </summary>
     [Theory]
-    [InlineData(2001, "nome = ''", "Snapshot corrompido")]
-    [InlineData(2002, "matricula = '12A'", "Snapshot corrompido")]
-    [InlineData(2003, "nivel = ''", "Snapshot corrompido")]
+    [InlineData(2001, "nome = ''", "Dados copiados corrompidos")]
+    [InlineData(2002, "matricula = '12A'", "Dados copiados corrompidos")]
+    [InlineData(2003, "nivel = ''", "Dados copiados corrompidos")]
     [InlineData(2004, "curso_nome = ''", "Curso corrompido")]
     [InlineData(2005, "situacao_descricao = ''", "Situação corrompida")]
     [InlineData(2006, "ano_ingresso = 0", "Período corrompido")]

@@ -1320,7 +1320,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_vinculos_de_discentes", x => x.id);
                 },
-                comment: "Réplica local dos vínculos de discentes sincronizados do SIGAA (ADR-0121) — snapshot desnormalizado, sem referência viva a outras tabelas.");
+                comment: "Réplica local dos vínculos de discentes sincronizados do SIGAA (ADR-0121) — dados copiados, sem consulta automática a outras tabelas.");
 
             migrationBuilder.CreateTable(
                 name: "anexos_do_ato",

@@ -4,11 +4,10 @@ using Unifesspa.UniPlus.Discentes.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Dados do curso do vínculo, espelhados do SIGAA (snapshot, não referência viva —
-/// ver ADR-0061). A autoridade sobre esses valores é o sistema de origem; aqui só
-/// se garante integridade estrutural.
+/// Dados do curso do vínculo copiados do SIGAA, conforme a ADR-0061.
+/// O sistema de origem é responsável por esses valores; aqui se confere sua integridade.
 /// </summary>
-public sealed record CursoSigaaSnapshot
+public sealed record CursoCopiadoDoSigaa
 {
     public int Id { get; }
     public string Nome { get; }
@@ -16,7 +15,7 @@ public sealed record CursoSigaaSnapshot
     public int UnidadeId { get; }
     public string UnidadeNome { get; }
 
-    private CursoSigaaSnapshot(int id, string nome, string? codigoEmec, int unidadeId, string unidadeNome)
+    private CursoCopiadoDoSigaa(int id, string nome, string? codigoEmec, int unidadeId, string unidadeNome)
     {
         Id = id;
         Nome = nome;
@@ -25,15 +24,15 @@ public sealed record CursoSigaaSnapshot
         UnidadeNome = unidadeNome;
     }
 
-    public static Result<CursoSigaaSnapshot> Criar(int id, string? nome, string? codigoEmec, int unidadeId, string? unidadeNome)
+    public static Result<CursoCopiadoDoSigaa> Criar(int id, string? nome, string? codigoEmec, int unidadeId, string? unidadeNome)
     {
-        CursoSigaaSnapshot curso = new(id, nome ?? string.Empty, codigoEmec, unidadeId, unidadeNome ?? string.Empty);
+        CursoCopiadoDoSigaa curso = new(id, nome ?? string.Empty, codigoEmec, unidadeId, unidadeNome ?? string.Empty);
 
         DomainError? erro = curso.ValidarObrigatorios() ?? curso.ValidarTamanhos();
 
         return erro is null
-            ? Result<CursoSigaaSnapshot>.Success(curso)
-            : Result<CursoSigaaSnapshot>.Failure(erro);
+            ? Result<CursoCopiadoDoSigaa>.Success(curso)
+            : Result<CursoCopiadoDoSigaa>.Failure(erro);
     }
 
     private DomainError? ValidarObrigatorios()
