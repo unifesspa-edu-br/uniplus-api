@@ -9,8 +9,8 @@
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <AllowMissingPrunePackageData>true</AllowMissingPrunePackageData>
-    <!-- Módulos Verificador, Portal, Ingresso e Autorização sem dívida de métricas: a build falha se elas voltarem a ser descumpridas. -->
-    <MetricasBarradas Condition="$(MSBuildProjectName.StartsWith('Unifesspa.UniPlus.Verificador')) Or $(MSBuildProjectName.StartsWith('Unifesspa.UniPlus.Portal.')) Or $(MSBuildProjectName.StartsWith('Unifesspa.UniPlus.Ingresso.')) Or $(MSBuildProjectName.StartsWith('Unifesspa.UniPlus.Autorizacao.'))">true</MetricasBarradas>
+    <!-- Módulos Verificador, Portal, Ingresso, Autorização e Host sem dívida de métricas: a build falha se elas voltarem a ser descumpridas. -->
+    <MetricasBarradas Condition="$(MSBuildProjectName.StartsWith('Unifesspa.UniPlus.Verificador')) Or $(MSBuildProjectName.StartsWith('Unifesspa.UniPlus.Portal.')) Or $(MSBuildProjectName.StartsWith('Unifesspa.UniPlus.Ingresso.')) Or $(MSBuildProjectName.StartsWith('Unifesspa.UniPlus.Autorizacao.')) Or $(MSBuildProjectName.StartsWith('Unifesspa.UniPlus.Host')) Or $(MSBuildProjectName.StartsWith('Unifesspa.UniPlus.Monolito.'))">true</MetricasBarradas>
     <WarningsNotAsErrors Condition="'$(MetricasBarradas)' != 'true'">$(WarningsNotAsErrors);MA0051;S104;S3776;S1541;S107</WarningsNotAsErrors>
     <ErrorLog>$(MSBuildThisFileDirectory)artifacts/analise/$(MSBuildProjectName).sarif,version=2.1</ErrorLog>
   </PropertyGroup>
