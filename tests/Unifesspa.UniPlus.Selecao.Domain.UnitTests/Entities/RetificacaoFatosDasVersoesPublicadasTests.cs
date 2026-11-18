@@ -187,9 +187,7 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
     {
         FaseCronograma unica = Fase(1, FormularioProcesso.CodigoFaseHabilitacao, coletaInscricao: true);
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: unica);
-        processo.DefinirItens([Item("TEM_RENDA", 0)]).IsSuccess.Should().BeTrue();
-        DefinirHabilitacao(processo, unica);
-        FatosDasVersoesPublicadas publicadas = PublicarComNovosFatos(processo);
+        FatosDasVersoesPublicadas publicadas = PublicarFormulariosNaMesmaFase(processo, unica);
 
         DomainError? recusa = FaseEfetivaDoFato.RecusaDeFaseDoGatilho(processo.Declaracao(), fato, unica.Id, finalidade, SemCatalogo, SemCatalogo, publicadas);
 
@@ -198,6 +196,20 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
         {
             recusa!.Code.Should().Be(FatoAusente);
         }
+    }
+
+    private static FatosDasVersoesPublicadas PublicarFormulariosNaMesmaFase(ProcessoSeletivo processo, FaseCronograma unica)
+    {
+        processo.DefinirItens([Item("TEM_RENDA", 0)]).IsSuccess.Should().BeTrue();
+        processo.DefinirFormulario(
+                FinalidadeFormulario.Habilitacao, unica.Id, null, FormularioDeTeste.Etapas(FinalidadeFormulario.Habilitacao))
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [Item("COMPROVANTE", 0)]).IsSuccess.Should().BeTrue();
+        ConfiguracaoPublicada primeira = VersoesPublicadasDeTeste.DoProcesso(processo);
+        processo.DefinirItens([Item("TEM_RENDA", 0), Item(Novo, 1)]).IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [Item("COMPROVANTE", 0), Item("LAUDO", 1)])
+            .IsSuccess.Should().BeTrue();
+        return VersoesPublicadasDeTeste.SemEixosCongelados([primeira, VersoesPublicadasDeTeste.DoProcesso(processo)]);
     }
 
     // ══════════════════════════════════════════════════════════════════════════════
@@ -255,39 +267,31 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
         FaseCronograma inscricao = Fase(1, "INSCRICAO", coletaInscricao: true);
         FaseCronograma habilitacao = Fase(2, FormularioProcesso.CodigoFaseHabilitacao);
         FaseCronograma matricula = Fase(3, "MATRICULA");
-        ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: inscricao);
-        Result cronograma = processo.DefinirCronogramaFases([inscricao, habilitacao, matricula], []);
-        cronograma.IsSuccess.Should().BeTrue(cronograma.Error?.Message);
+        ProcessoSeletivo processo = ProcessoComFases(inscricao, habilitacao, matricula);
         processo.DefinirItens([Item("TEM_RENDA", 0)], grupos: [Familia(2, "MEMBRO_RENDA")]).IsSuccess.Should().BeTrue();
         if (comHabilitacao)
         {
             DefinirHabilitacao(processo, habilitacao);
         }
 
-        FatosDasVersoesPublicadas publicadas = PublicarComNovoItem(processo);
+        ConfiguracaoPublicada primeira = VersoesPublicadasDeTeste.DoProcesso(processo);
+        processo.DefinirItens([Item("TEM_RENDA", 0), Item(Novo, 1)]).IsSuccess.Should().BeTrue();
+        FatosDasVersoesPublicadas publicadas = VersoesPublicadasDeTeste.SemEixosCongelados([primeira, VersoesPublicadasDeTeste.DoProcesso(processo)]);
         return new Cenario(processo, inscricao, habilitacao, matricula, publicadas);
     }
 
-    private static FatosDasVersoesPublicadas PublicarComNovosFatos(ProcessoSeletivo processo)
+    private static ProcessoSeletivo ProcessoComFases(FaseCronograma inscricao, FaseCronograma habilitacao, FaseCronograma matricula)
     {
-        ConfiguracaoPublicada primeira = VersoesPublicadasDeTeste.DoProcesso(processo);
-        processo.DefinirItens([Item("TEM_RENDA", 0), Item(Novo, 1)]).IsSuccess.Should().BeTrue();
-        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [Item("COMPROVANTE", 0), Item("LAUDO", 1)])
-            .IsSuccess.Should().BeTrue();
-        return VersoesPublicadasDeTeste.SemEixosCongelados([primeira, VersoesPublicadasDeTeste.DoProcesso(processo)]);
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: inscricao);
+        Result cronograma = processo.DefinirCronogramaFases([inscricao, habilitacao, matricula], []);
+        cronograma.IsSuccess.Should().BeTrue(cronograma.Error?.Message);
+        return processo;
     }
 
-    private static FatosDasVersoesPublicadas PublicarComNovoItem(ProcessoSeletivo processo)
-    {
-        ConfiguracaoPublicada primeira = VersoesPublicadasDeTeste.DoProcesso(processo);
-        processo.DefinirItens([Item("TEM_RENDA", 0), Item(Novo, 1)]).IsSuccess.Should().BeTrue();
-        return VersoesPublicadasDeTeste.SemEixosCongelados([primeira, VersoesPublicadasDeTeste.DoProcesso(processo)]);
-    }
-
-    private static void DefinirHabilitacao(ProcessoSeletivo processo, FaseCronograma fase)
+    private static void DefinirHabilitacao(ProcessoSeletivo processo, FaseCronograma habilitacao)
     {
         processo.DefinirFormulario(
-                FinalidadeFormulario.Habilitacao, fase.Id, null, FormularioDeTeste.Etapas(FinalidadeFormulario.Habilitacao))
+                FinalidadeFormulario.Habilitacao, habilitacao.Id, null, FormularioDeTeste.Etapas(FinalidadeFormulario.Habilitacao))
             .IsSuccess.Should().BeTrue();
         processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [Item("COMPROVANTE", 0)]).IsSuccess.Should().BeTrue();
     }
