@@ -40,8 +40,8 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
         // O corpus rico tem seção, termo e grupo exibidos por condição, impedimento, três derivações
         // configuradas e as duas da oferta, que nenhuma regra da inscrição cita e dois agregados sobre a composição familiar, que o
         // envelope congela e nenhuma regra do formulário cita.
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico(variante: 9);
-        EntradaCanonicalizacao entrada = CorpusEnvelope.Entrada(processo);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(variante: 9);
+        EntradaCanonicalizacao entrada = CorpusEnvelopeEntrada.Entrada(processo);
         SnapshotCanonico congelado = CenarioDeFormularioPublicado.Canonicalizar(entrada);
         await _cenario.PublicarEPersistirAsync(processo, entrada.Dados, congelado, entrada.HashDocumento, CorpusEnvelope.Ator);
 
@@ -93,7 +93,7 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
             FatoColetado.Criar("ATENDIMENTO_NO_MUNICIPIO", 1, "Deseja atendimento no município?", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, [
                 CondicaoPrecondicaoFato.Criar(0, "MUNICIPIO_RESIDENCIA", Operador.Igual, JsonSerializer.SerializeToElement("1504208")).Value!,
             ], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ]).IsSuccess.Should().BeTrue();
 
         DefinicaoAvaliavel naPublicacao = DefinicaoAvaliavelDoProcesso.DaConfiguracaoViva(processo, CatalogoComOMunicipio("Município de residência")).Value!;
         const string hashDocumento = "3333333333333333333333333333333333333333333333333333333333333333";
@@ -115,23 +115,29 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
         Municipio(await _cenario.LerPublicadoAsync(processo.Id)).Rotulo.Should().Be("Município de residência", "o publicado lê o rótulo congelado na versão");
     }
 
+    private static FaseCronograma FaseDeHabilitacaoDepoisDasDemais(ProcessoSeletivo processo) => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            Guid.CreateVersion7(), FormularioProcesso.CodigoFaseHabilitacao, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
+            ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            processo.CronogramaFases.Max(static f => f.Ordem) + 1, Inicio: new DateTimeOffset(2026, 5, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 5, 10, 18, 0, 0, TimeSpan.Zero),
+            FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar(FormularioProcesso.CodigoFaseHabilitacao, PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
+
     [Fact(DisplayName = "O pressuposto respondido na inscrição vem com a apresentação congelada dela; o calculado pelo sistema, com o rótulo e o tipo congelados do catálogo")]
     public async Task Handle_Habilitacao_PressupostosComAApresentacaoDaInscricao()
     {
         // A habilitação pede o certificado de quem se declarou preto na inscrição e a declaração de
         // quem é maior de idade, faixa que o sistema calcula da data de nascimento na data de
         // referência dos fatos.
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico(variante: 10);
-        FaseCronograma habilitacao = FaseCronograma.Criar(
-            processo.CronogramaFases.Max(static f => f.Ordem) + 1, Guid.CreateVersion7(), FormularioProcesso.CodigoFaseHabilitacao, OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
-            inicio: new DateTimeOffset(2026, 5, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 5, 10, 18, 0, 0, TimeSpan.Zero),
-            produtos: [ProdutoDaFase.Criar(FormularioProcesso.CodigoFaseHabilitacao, PapelProdutoFase.Definitivo)],
-            faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
-        processo.DefinirCronogramaFases([.. processo.CronogramaFases, habilitacao], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, habilitacao.Id, "Habilitação", FormularioDeTeste.Etapas(), PrecondicaoIfMatch.Ausente)
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(variante: 10);
+        FaseCronograma habilitacao = FaseDeHabilitacaoDepoisDasDemais(processo);
+        processo.DefinirCronogramaFases([.. processo.CronogramaFases, habilitacao], []).IsSuccess.Should().BeTrue();
+        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, habilitacao.Id, "Habilitação", FormularioDeTeste.Etapas())
             .IsSuccess.Should().BeTrue();
         processo.DefinirReferenciaTemporalFatos(
-            ReferenciaTemporalFatos.Criar(ReferenciaTipo.DataEspecifica, new DateOnly(2026, 1, 31), null).Value!, PrecondicaoIfMatch.Curinga)
+            ReferenciaTemporalFatos.Criar(ReferenciaTipo.DataEspecifica, new DateOnly(2026, 1, 31), null).Value!)
             .IsSuccess.Should().BeTrue();
         Result itens = processo.DefinirItens(
         [
@@ -144,7 +150,7 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
         ], finalidade: FinalidadeFormulario.Habilitacao);
         itens.IsSuccess.Should().BeTrue(itens.Error?.Message);
 
-        EntradaCanonicalizacao entrada = CorpusEnvelope.Entrada(processo);
+        EntradaCanonicalizacao entrada = CorpusEnvelopeEntrada.Entrada(processo);
         SnapshotCanonico congelado = CenarioDeFormularioPublicado.Canonicalizar(entrada);
         await _cenario.PublicarEPersistirAsync(processo, entrada.Dados, congelado, entrada.HashDocumento, CorpusEnvelope.Ator);
 

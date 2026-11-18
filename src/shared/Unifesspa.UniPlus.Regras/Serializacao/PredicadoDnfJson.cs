@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -40,39 +41,94 @@ public static class PredicadoDnfJson
             return Falha("O predicado é uma lista de cláusulas.");
         }
 
+        return LerClausulas(json);
+    }
+
+    private static Result<PredicadoDnf> LerClausulas(JsonElement json)
+    {
         List<(int Clausula, CondicaoDnf Condicao)> linhas = [];
-        int indice = 0;
+        int c = 0;
         foreach (JsonElement clausula in json.EnumerateArray())
         {
-            if (clausula.ValueKind != JsonValueKind.Array || clausula.GetArrayLength() == 0)
+            Result lida = LerClausula(clausula, c++, linhas);
+            if (lida.IsFailure)
             {
-                return Falha("Cada cláusula é uma lista não vazia de condições.");
+                return Result<PredicadoDnf>.ValidationFailure(lida.Errors);
             }
-
-            foreach (JsonElement condicao in clausula.EnumerateArray())
-            {
-                if (condicao.ValueKind != JsonValueKind.Object
-                    || !condicao.TryGetProperty("fato", out JsonElement fato) || fato.ValueKind != JsonValueKind.String
-                    || !condicao.TryGetProperty("operador", out JsonElement operador) || operador.ValueKind != JsonValueKind.String
-                    || !condicao.TryGetProperty("valor", out JsonElement valor))
-                {
-                    return Falha("Cada condição tem fato, operador e valor.");
-                }
-
-                Result<CondicaoDnf> criada = CondicaoDnf.Criar(fato.GetString()!, OperadorCodigo.FromCodigo(operador.GetString()), valor);
-                if (criada.IsFailure)
-                {
-                    return Result<PredicadoDnf>.Failure(criada.Error!);
-                }
-
-                linhas.Add((indice, criada.Value!));
-            }
-
-            indice++;
         }
 
         return PredicadoDnf.CriarDeCondicoesAgrupadas(linhas);
     }
+
+    private static Result LerClausula(JsonElement clausula, int c, List<(int Clausula, CondicaoDnf Condicao)> linhas)
+    {
+        if (clausula.ValueKind != JsonValueKind.Array || clausula.GetArrayLength() == 0)
+        {
+            return Result.ValidationFailure([new FieldError($"[{c}]", Erro("Cada cláusula é uma lista não vazia de condições."))]);
+        }
+
+        return LerCondicoes(clausula, c, linhas);
+    }
+
+    private static Result LerCondicoes(JsonElement clausula, int c, List<(int Clausula, CondicaoDnf Condicao)> linhas)
+    {
+        int i = 0;
+        foreach (JsonElement condicao in clausula.EnumerateArray())
+        {
+            Result<CondicaoDnf> criada = LerCondicao(condicao);
+            if (criada.IsFailure)
+            {
+                return Result.ValidationFailure([new FieldError($"[{c}][{i}]{criada.Errors[0].Field}", criada.Error!)]);
+            }
+
+            linhas.Add((c, criada.Value!));
+            i++;
+        }
+
+        return Result.Success();
+    }
+
+    private static Result<CondicaoDnf> LerCondicao(JsonElement condicao)
+    {
+        if (condicao.ValueKind != JsonValueKind.Object)
+        {
+            return CondicaoInvalida("");
+        }
+
+        string? campo = CampoAusente(condicao);
+        if (campo is not null)
+        {
+            return CondicaoInvalida(campo);
+        }
+
+        return CriarCondicao(condicao);
+    }
+
+    private static Result<CondicaoDnf> CriarCondicao(JsonElement condicao)
+    {
+        Result<CondicaoDnf> criada = CondicaoDnf.Criar(condicao.GetProperty("fato").GetString()!,
+            OperadorCodigo.FromCodigo(condicao.GetProperty("operador").GetString()), condicao.GetProperty("valor"));
+        return criada.IsSuccess ? criada : Result<CondicaoDnf>.ValidationFailure(
+            [new FieldError(EntradaDeRegras.CampoDaCondicao(criada.Error!.Code), criada.Error)]);
+    }
+
+    private static string? CampoAusente(JsonElement condicao)
+    {
+        if (!condicao.TryGetProperty("fato", out JsonElement fato) || fato.ValueKind != JsonValueKind.String)
+        {
+            return ".fato";
+        }
+
+        if (!condicao.TryGetProperty("operador", out JsonElement operador) || operador.ValueKind != JsonValueKind.String)
+        {
+            return ".operador";
+        }
+
+        return condicao.TryGetProperty("valor", out _) ? null : ".valor";
+    }
+
+    private static Result<CondicaoDnf> CondicaoInvalida(string campo) =>
+        Result<CondicaoDnf>.ValidationFailure([new FieldError(campo, Erro("Cada condição tem fato, operador e valor."))]);
 
     public static JsonObject ParaJson(Obrigatoriedade obrigatoriedade)
     {
@@ -92,15 +148,16 @@ public static class PredicadoDnfJson
             return Result<Obrigatoriedade>.Failure(Erro("A obrigatoriedade tem tipo SEMPRE, NUNCA ou QUANDO."));
         }
 
+        return LerObrigatoriedade(tipo.GetString(), json);
+    }
+
+    private static Result<Obrigatoriedade> LerObrigatoriedade(string? token, JsonElement json)
+    {
         json.TryGetProperty("predicado", out JsonElement predicado);
         bool temPredicado = predicado.ValueKind is not (JsonValueKind.Undefined or JsonValueKind.Null);
-        string? token = tipo.GetString();
         if (token == ObrigatoriedadeQuando && temPredicado)
         {
-            Result<PredicadoDnf> lido = DeJson(predicado);
-            return lido.IsSuccess
-                ? Result<Obrigatoriedade>.Success(Obrigatoriedade.Quando(lido.Value!))
-                : Result<Obrigatoriedade>.Failure(lido.Error!);
+            return ObrigatoriedadeCondicional(predicado);
         }
 
         return (token, temPredicado) switch
@@ -109,6 +166,14 @@ public static class PredicadoDnfJson
             (ObrigatoriedadeNunca, false) => Result<Obrigatoriedade>.Success(Obrigatoriedade.Nunca),
             _ => Result<Obrigatoriedade>.Failure(Erro("Só a obrigatoriedade QUANDO tem predicado, e ela sempre o tem.")),
         };
+    }
+
+    private static Result<Obrigatoriedade> ObrigatoriedadeCondicional(JsonElement predicado)
+    {
+        Result<PredicadoDnf> lido = DeJson(predicado);
+        return lido.IsSuccess
+            ? Result<Obrigatoriedade>.Success(Obrigatoriedade.Quando(lido.Value!))
+            : Result<Obrigatoriedade>.Failure(lido.Error!);
     }
 
     /// <summary>O impedimento: a condição e a mensagem ao candidato.</summary>
@@ -137,9 +202,14 @@ public static class PredicadoDnfJson
             return Result<Impedimento?>.Failure(Erro("O impedimento tem a condição e a mensagem."));
         }
 
+        return LerImpedimento(quando, mensagem.GetString()!);
+    }
+
+    private static Result<Impedimento?> LerImpedimento(JsonElement quando, string mensagem)
+    {
         Result<PredicadoDnf> lido = DeJson(quando);
         return lido.IsSuccess
-            ? Result<Impedimento?>.Success(new Impedimento(lido.Value!, mensagem.GetString()!))
+            ? Result<Impedimento?>.Success(new Impedimento(lido.Value!, mensagem))
             : Result<Impedimento?>.Failure(lido.Error!);
     }
 
@@ -161,7 +231,8 @@ public static class PredicadoDnfJson
         _ => TipoObrigatoriedade.Nenhuma,
     };
 
-    private static Result<PredicadoDnf> Falha(string mensagem) => Result<PredicadoDnf>.Failure(Erro(mensagem));
+    private static Result<PredicadoDnf> Falha(string mensagem, string campo = "") =>
+        Result<PredicadoDnf>.ValidationFailure([new FieldError(campo, Erro(mensagem))]);
 
     private static DomainError Erro(string mensagem) => new(FormaInvalida, mensagem);
 }

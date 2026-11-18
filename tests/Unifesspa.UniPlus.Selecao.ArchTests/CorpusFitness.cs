@@ -5,6 +5,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -16,66 +17,52 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 internal static class CorpusFitness
 {
     private static ReferenciaRegra Regra(string codigo, char semente) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string(semente, 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string(semente, 64));
 
     internal static EntradaCanonicalizacao Entrada()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Fitness", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Fitness", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
         processo.DefinirEtapas([
             EtapaProcesso.Criar(
-                "Prova Objetiva", CaraterEtapa.Classificatoria,
-                TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-                peso: 1m, ordem: 1).Value!,
-        ], PrecondicaoIfMatch.Ausente);
+                new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: null),
+                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
+        ]);
 
         // Cronograma mínimo (Story #851): UMA fase satisfaz as duas exigências do corpus —
         // AgrupaEtapas (há etapa acima) e ProduzResultado (há vagas ofertadas abaixo).
         processo.DefinirCronogramaFases([
             FaseCronograma.Criar(
-                ordem: 1,
-                faseCanonicaOrigemId: new Guid("44444444-4444-4444-4444-444444444444"),
-                codigo: "RESULTADO_FINAL",
-                origemData: OrigemDataFase.NoEdital,
-                agrupaEtapas: true,
-                permiteComplementacao: false,
-                coletaInscricao: false, coletaSolicitacaoIsencao: false,
-                inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-                produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
-                faseConcluinteCodigo: null,
-                emiteParecerIndividual: false,
-                bancasRequeridas: [],
-                regraRecurso: null,
-                unidadeResponsavel: UnidadesDeTeste.Ceps).Value!,
-        ], [], PrecondicaoIfMatch.Ausente);
+                new OrigemCanonicaDaFase(
+                    OrigemId: new Guid("44444444-4444-4444-4444-444444444444"), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false,
+                    ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+                new DecisoesDeCronogramaDaFase(
+                    Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+                    UnidadeResponsavel: UnidadesDeTeste.Ceps),
+                new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+                bancasRequeridas: []).Value!,
+        ], []);
 
-        processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
+        processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!);
 
         processo.DefinirDistribuicaoVagas([
-            ConfiguracaoDistribuicaoVagas.Criar(
-                ofertaCursoOrigemId: new Guid("11111111-1111-1111-1111-111111111111"),
-                voBase: 40,
-                pr: 1m,
-                regraDistribuicao: Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
-                regraAjuste: null,
-                referenciaDemografica: null,
-                modalidades: [
+            ConfiguracaoDistribuicaoVagas.Criar(new Guid("11111111-1111-1111-1111-111111111111"),
+                new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'), Modalidades = [
                     ModalidadeSelecionada.Criar(
                         new Guid("22222222-2222-2222-2222-222222222222"), "AC", null,
-                        NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, null,
+                        NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas, null,
                         RegraRemanejamentoModalidade.Nenhuma, null, null, null,
                         RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!,
-                ], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!,
-        ], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
+                ] },
+                new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!,
+        ], FatosDeModalidadeDeTeste.DoCatalogo);
 
-        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
-            regraCalculo: Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
-            regraArredondamento: null,
-            casasArredondamento: null,
-            regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
-            regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!, PrecondicaoIfMatch.Ausente);
-        processo.DefinirOpcoesDeCurso(1, PrecondicaoIfMatch.Ausente);
+        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
+            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+        }).Value!);
+        processo.DefinirOpcoesDeCurso(1);
 
         DadosEdital dados = DadosEdital.Criar(
             numero: "001/2026",

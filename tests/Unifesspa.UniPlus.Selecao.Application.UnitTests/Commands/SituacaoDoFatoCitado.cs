@@ -27,6 +27,15 @@ internal sealed record SituacaoDoFatoCitado
     /// <summary>O processo coleta, além do fato citado, um fato que nenhuma versão publicada coletou.</summary>
     public bool ComItemNovo { get; init; }
 
+    /// <summary>O catálogo vivo reclassificou o fato do item novo como derivado, e ele deixou de ser coletável.</summary>
+    public bool ItemNovoReclassificadoNoCatalogo { get; init; }
+
+    /// <summary>A exigência cita também, no gatilho, um fato que o catálogo vivo não tem.</summary>
+    public bool ExigenciaCitaFatoAusenteDoCatalogo { get; init; }
+
+    /// <summary>O catálogo vivo reclassificou o próprio fato citado como derivado, e ele deixou de ser coletável.</summary>
+    public bool FatoCitadoReclassificadoNoCatalogo { get; init; }
+
     public TipoRenderizacao TipoDoItemPublicado => ItemPublicadoComoData ? TipoRenderizacao.Data : TipoRenderizacao.Booleano;
 
     public bool PublicadoDivergeDoProcesso => ItemPublicadoComoData || ComItemNovo;

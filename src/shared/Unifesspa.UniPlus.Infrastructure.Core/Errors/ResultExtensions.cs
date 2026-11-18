@@ -114,25 +114,15 @@ public static class ResultExtensions
     }
 
     /// <summary>
-    /// Os erros por campo (<c>field</c>, <c>code</c>, <c>message</c>), ou <c>null</c> quando nenhuma
-    /// violação tem campo.
+    /// Todas as causas quando há várias ou alguma aponta um campo; caso contrário, nenhuma coleção.
     /// </summary>
     /// <remarks>
-    /// O <c>errors[]</c> é condicional a erro DE CAMPO (ADR-0023), não a status 422 isolado nem a ter
-    /// mais de uma violação. Um <c>Result.Failure</c> comum (ex.: CampusResponsavelNaoEncontrado,
-    /// Snapshot.VigenteAusente) também resolve para 422 por regra de negócio sem ser validação de
-    /// campo, e vira <c>FieldError(null, error)</c> só pela forma interna do <c>Result</c>: não tem
-    /// campo para reportar, então não pode aparecer no array com <c>field: null</c>. O sinal correto
-    /// é a presença de <c>Field</c>, que só existe quando o <c>Result</c> veio de
-    /// <c>ValidationFailure</c>.
+    /// A primeira causa define a resposta. A coleção preserva as demais causas independentes e uma
+    /// causa única com campo, inclusive quando o campo vazio aponta a raiz do documento (ADR-0023).
+    /// Uma única causa sem campo já está descrita na raiz. Cada item sem campo omite a chave field.
     /// </remarks>
     private static object[]? ErrosDeCampo(IReadOnlyList<FieldError> errors, IDomainErrorMapper mapper) =>
-        errors.Any(fieldError => fieldError.Field is not null)
-            ? [.. errors.Select(fieldError => new
-            {
-                field = fieldError.Field,
-                code = DomainErrorProblemDetailsFactory.Resolve(fieldError.Error, mapper).Code,
-                message = fieldError.Error.Message,
-            })]
+        errors.Count > 1 || errors.Any(fieldError => fieldError.Field is not null)
+            ? [.. errors.Select(fieldError => ItemDeErroDeCampo.De(fieldError, mapper))]
             : null;
 }

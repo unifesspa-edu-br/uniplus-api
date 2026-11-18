@@ -25,7 +25,7 @@ public sealed class DefinirCronogramaFasesResolucaoDosCadastrosTests
     {
         CenarioDoCronogramaDeFases cenario = CenarioDoCronogramaDeFases.EmRascunho();
 
-        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync();
+        Result resultado = await cenario.DefinirFasesAsync();
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.CronogramaFasesVazio",
@@ -37,7 +37,7 @@ public sealed class DefinirCronogramaFasesResolucaoDosCadastrosTests
     {
         CenarioDoCronogramaDeFases cenario = CenarioDoCronogramaDeFases.EmRascunho().SemOProcessoNoRepositorio();
 
-        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync();
+        Result resultado = await cenario.DefinirFasesAsync();
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
@@ -50,7 +50,7 @@ public sealed class DefinirCronogramaFasesResolucaoDosCadastrosTests
         cenario.FaseCanonicaReader.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns((FaseCanonicaView?)null);
 
-        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(EntradaDaFase(Guid.CreateVersion7()));
+        Result resultado = await cenario.DefinirFasesAsync(EntradaDaFase(Guid.CreateVersion7()));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("FaseCronograma.FaseCanonicaNaoEncontrada");
@@ -60,10 +60,10 @@ public sealed class DefinirCronogramaFasesResolucaoDosCadastrosTests
     public async Task Handle_FaseConforme_PersisteERetornaSucesso()
     {
         CenarioDoCronogramaDeFases cenario = CenarioDoCronogramaDeFases.EmRascunho().ComTipoDeAto(TipoAtoDaClassificacao());
-        cenario.Processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
+        cenario.Processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!);
         FaseCronogramaInput fase = cenario.CadastrarFase(FaseCanonicaDoResultadoFinal());
 
-        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(fase);
+        Result resultado = await cenario.DefinirFasesAsync(fase);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         cenario.Processo.CronogramaFases.Should().ContainSingle().Which.Codigo.Should().Be("RESULTADO_FINAL");
@@ -76,7 +76,7 @@ public sealed class DefinirCronogramaFasesResolucaoDosCadastrosTests
         CenarioDoCronogramaDeFases cenario = CenarioDoCronogramaDeFases.EmRascunho().ComTipoDeAto(TipoAtoDaClassificacao());
         FaseCronogramaInput fase = FaseComBancaCujaCategoriaSaiuDoCadastro(cenario);
 
-        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(fase);
+        Result resultado = await cenario.DefinirFasesAsync(fase);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle()
@@ -92,7 +92,7 @@ public sealed class DefinirCronogramaFasesResolucaoDosCadastrosTests
         CenarioDoCronogramaDeFases cenario = CenarioDoCronogramaDeFases.EmRascunho().ComTipoDeAto(TipoAtoDoComunicado());
         FaseCronogramaInput[] fases = FasesComPapelIndevidoETipoDeBancaMorto(cenario);
 
-        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(fases);
+        Result resultado = await cenario.DefinirFasesAsync(fases);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
@@ -112,7 +112,7 @@ public sealed class DefinirCronogramaFasesResolucaoDosCadastrosTests
             RegraRecurso = RecursoAncoradoNaClassificacao() with { RegraCodigo = "REGRA_INEXISTENTE" },
         };
 
-        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(fase);
+        Result resultado = await cenario.DefinirFasesAsync(fase);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("fases[0].regraRecurso.regraCodigo");

@@ -19,6 +19,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -114,25 +115,7 @@ public sealed class LeituraDoProcessoEndpointTests : IAsyncLifetime
         betina.Should().Contain([publicado, rascunhoDela]).And.NotContain(rascunhoDosOutros);
     }
 
-    [Fact(DisplayName = "Sob retificação, quem não configura lê o publicado sem a configuração em edição; quem configura a lê inteira")]
-    public async Task SobRetificacao_ConfiguracaoEmEdicaoSoParaQuemConfigura()
-    {
-        Guid processoId = await SemearPublicadoAsync(nameof(SobRetificacao_ConfiguracaoEmEdicaoSoParaQuemConfigura));
-        await ConcederConfigurarAsync(Betina, await UnidadeDoProcessoAsync(processoId));
-        using HttpResponseMessage abertura = await EnviarAsync(
-            null, HttpMethod.Post, $"{Rota}/{processoId}/retificacao-em-curso", "plataforma-admin", new { motivo = "Correção do peso" });
-        abertura.StatusCode.Should().BeOneOf(HttpStatusCode.Created, HttpStatusCode.OK, HttpStatusCode.NoContent);
-
-        using HttpResponseMessage publico = await EnviarAsync(null, HttpMethod.Get, $"{Rota}/{processoId}");
-        using HttpResponseMessage outraUnidade = await EnviarAsync(Leandro, HttpMethod.Get, $"{Rota}/{processoId}");
-        using HttpResponseMessage quemConfigura = await EnviarAsync(Betina, HttpMethod.Get, $"{Rota}/{processoId}");
-
-        (await EtapasAsync(publico)).Should().Be(0);
-        (await EtapasAsync(outraUnidade)).Should().Be(0);
-        (await EtapasAsync(quemConfigura)).Should().BeGreaterThan(0);
-    }
-
-    [Fact(DisplayName = "Mesmo sem retificação, quem não configura lê o publicado só com a identificação e a localidade publicada; quem configura lê tudo")]
+    [Fact(DisplayName = "Quem não configura lê o publicado só com a identificação e a localidade publicada; quem configura lê tudo")]
     public async Task Publicado_ConfiguracaoAdministrativaSoParaQuemConfigura()
     {
         Guid processoId = await SemearPublicadoAsync(nameof(Publicado_ConfiguracaoAdministrativaSoParaQuemConfigura));
@@ -230,15 +213,8 @@ public sealed class LeituraDoProcessoEndpointTests : IAsyncLifetime
         configuracao["localidade"] = new JsonObject { ["codigoIbge"] = LocalidadeNaoDivulgada, ["nome"] = "Marabá", ["uf"] = "PA" };
 
         db.VersoesConfiguracao.Add(VersaoConfiguracao.Suceder(
-            v1,
-            System.Text.Encoding.UTF8.GetBytes(configuracao.ToJsonString()),
-            v1.SchemaVersion,
-            v1.AlgoritmoHash,
-            Guid.CreateVersion7(),
-            v1.AtoCriadorHash,
-            v1.AtoCriadorId,
-            "plataforma-admin",
-            DateTimeOffset.UtcNow));
+            v1, new DocumentoCongelado(System.Text.Encoding.UTF8.GetBytes(configuracao.ToJsonString()), v1.SchemaVersion, v1.AlgoritmoHash, v1.AtoCriadorHash),
+            Guid.CreateVersion7(), "plataforma-admin", DateTimeOffset.UtcNow));
         await db.SaveChangesAsync();
         return v1.HashConfiguracao;
     }
@@ -249,32 +225,6 @@ public sealed class LeituraDoProcessoEndpointTests : IAsyncLifetime
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, corpo);
         using JsonDocument json = JsonDocument.Parse(corpo);
         return [.. json.RootElement.GetProperty("configuracao").EnumerateObject().Select(static p => p.Name)];
-    }
-
-    [Fact(DisplayName = "A localidade alterada na retificação não aparece para quem não configura, que lê a publicada; quem configura lê a alterada")]
-    public async Task SobRetificacao_LocalidadeEditadaNaoVazaParaQuemNaoConfigura()
-    {
-        Guid processoId = await SemearPublicadoAsync(nameof(SobRetificacao_LocalidadeEditadaNaoVazaParaQuemNaoConfigura));
-        await AguardarDivulgacaoAsync(processoId);
-        await ConcederConfigurarAsync(Betina, await UnidadeDoProcessoAsync(processoId));
-        using HttpResponseMessage antes = await EnviarAsync(null, HttpMethod.Get, $"{Rota}/{processoId}");
-        string publicada = await CodigoIbgeAsync(antes);
-        const string Alterada = "1505502";
-        publicada.Should().NotBe(Alterada);
-
-        using HttpResponseMessage abertura = await EnviarAsync(
-            null, HttpMethod.Post, $"{Rota}/{processoId}/retificacao-em-curso", "plataforma-admin", new { motivo = "Troca da localidade" });
-        string etag = abertura.Headers.ETag!.ToString();
-        using HttpResponseMessage edicao = await EnviarAsync(
-            null, HttpMethod.Put, $"{Rota}/{processoId}/localidade", "plataforma-admin",
-            new { codigoIbge = Alterada, nome = "Marabá", uf = "PA" }, etag);
-        edicao.StatusCode.Should().Be(HttpStatusCode.NoContent, await edicao.Content.ReadAsStringAsync());
-
-        using HttpResponseMessage anonimo = await EnviarAsync(null, HttpMethod.Get, $"{Rota}/{processoId}");
-        using HttpResponseMessage quemConfigura = await EnviarAsync(Betina, HttpMethod.Get, $"{Rota}/{processoId}");
-
-        (await CodigoIbgeAsync(anonimo)).Should().Be(publicada);
-        (await CodigoIbgeAsync(quemConfigura)).Should().Be(Alterada);
     }
 
     private static async Task<string> CodigoIbgeAsync(HttpResponseMessage resposta)
@@ -348,7 +298,7 @@ public sealed class LeituraDoProcessoEndpointTests : IAsyncLifetime
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, $"{nome} {Guid.CreateVersion7()}");
+        (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"{nome} {Guid.CreateVersion7()}" });
         return processo.Id;
     }
 
@@ -361,7 +311,7 @@ public sealed class LeituraDoProcessoEndpointTests : IAsyncLifetime
         {
             UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
-                .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}");
+                .SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"{nome} {Guid.CreateVersion7()}" });
             processoId = processo.Id;
             documentoId = documento.Id;
         }
@@ -393,10 +343,10 @@ public sealed class LeituraDoProcessoEndpointTests : IAsyncLifetime
             .Where(p => p.Id == processoId).Select(p => p.UnidadeAdministradoraOrigemId).SingleAsync();
     }
 
-    private Task<HttpResponseMessage> EnviarAsync(string? contaId, HttpMethod metodo, string rota, string? papel = null, object? corpo = null, string? ifMatch = null) =>
-        EnviarCompletoAsync(contaId, metodo, rota, papel, corpo, ifMatch);
+    private Task<HttpResponseMessage> EnviarAsync(string? contaId, HttpMethod metodo, string rota, string? papel = null, object? corpo = null) =>
+        EnviarCompletoAsync(contaId, metodo, rota, papel, corpo);
 
-    private async Task<HttpResponseMessage> EnviarCompletoAsync(string? contaId, HttpMethod metodo, string rota, string? papel, object? corpo, string? ifMatch)
+    private async Task<HttpResponseMessage> EnviarCompletoAsync(string? contaId, HttpMethod metodo, string rota, string? papel, object? corpo)
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         using HttpRequestMessage request = new(metodo, new Uri(rota, UriKind.Relative));
@@ -418,11 +368,6 @@ public sealed class LeituraDoProcessoEndpointTests : IAsyncLifetime
         if (papel is not null)
         {
             request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, papel);
-        }
-
-        if (ifMatch is not null)
-        {
-            request.Headers.TryAddWithoutValidation("If-Match", ifMatch);
         }
 
         if (metodo != HttpMethod.Get)

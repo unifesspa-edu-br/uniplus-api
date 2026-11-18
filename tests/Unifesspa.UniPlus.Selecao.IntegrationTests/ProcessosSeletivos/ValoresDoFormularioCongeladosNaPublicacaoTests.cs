@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -130,51 +131,76 @@ public sealed class ValoresDoFormularioCongeladosNaPublicacaoTests
                 ("PRETA", "Preta.", 1, null));
     }
 
+    private async Task<VersaoConfiguracao> RetificarComACorrecaoDoCatalogoAsync(ProcessoSeletivo processo)
+    {
+        DocumentoAPublicar documento = DocumentoConfirmado(processo);
+        await using UniPlusDbContext writeContext = _cenario.CriarDbContext();
+        ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
+        ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
+        VersaoConfiguracao versaoAtual = (await repository.ObterVersaoAtualAsync(processo.Id, CancellationToken.None))!;
+        VersaoConfiguracao retificacao = Retificar(carregado, versaoAtual, documento);
+
+        await writeContext.DocumentosAPublicar.AddAsync(documento, CancellationToken.None);
+        await repository.AdicionarVersaoConfiguracaoAsync(retificacao, CancellationToken.None);
+        await writeContext.SaveChangesAsync(CancellationToken.None);
+
+        return retificacao;
+    }
+
+    private static DocumentoAPublicar DocumentoConfirmado(ProcessoSeletivo processo)
+    {
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        documento.Confirmar(1024, string.Concat(Enumerable.Repeat("ab01234567", 7))[..64], TimeProvider.System).IsSuccess.Should().BeTrue();
+
+        return documento;
+    }
+
+    private static VersaoConfiguracao Retificar(ProcessoSeletivo carregado, VersaoConfiguracao versaoAtual, DocumentoAPublicar documento)
+    {
+        DadosEdital dados = CenarioDeFormularioPublicado.DadosDoEdital(documento.Id);
+
+        // O catálogo já traz a correção quando a retificação congela.
+        DefinicaoAvaliavel naRetificacao = DefinicaoAvaliavelDoProcesso.DaConfiguracaoViva(carregado, CatalogoComCorRaca([.. CorRacaCorrigida()])).Value!;
+        SnapshotCanonico congelado = CenarioDeFormularioPublicado.Canonicalizar(new EntradaCanonicalizacao(
+            carregado, dados, documento.HashSha256!, FusoInstitucional.ZoneId,
+            new RetificacaoDoEdital(versaoAtual.AtoCriadorId, "Correção do texto das opções"),
+            ValoresSelecionaveisCongelados: naRetificacao.ValoresSelecionaveis,
+            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(carregado), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
+        Result<VersaoConfiguracao> retificar = carregado.Retificar(
+            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, documento.HashSha256!), AtorUsuarioContaId = "integration-test-user", Contagem = CorpusEnvelopeDadosDoEdital.ContextoRico() }, versaoAtual, "Correção do texto das opções");
+        retificar.IsSuccess.Should().BeTrue(retificar.Error?.Message);
+
+        return retificar.Value!;
+    }
+
     [Fact(DisplayName = "A retificação congela a descrição, a orientação e a ordem que o catálogo tem na hora; a versão anterior não muda")]
     public async Task Retificar_ValorCorrigidoNoCatalogo_VersaoNovaCongelaOTextoEAOrdemNovos()
     {
         (ProcessoSeletivo processo, VersaoConfiguracao abertura) =
             await PublicarComCorRacaAsync(nameof(Retificar_ValorCorrigidoNoCatalogo_VersaoNovaCongelaOTextoEAOrdemNovos));
 
-        VersaoConfiguracao retificacao;
-        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
-        documento.Confirmar(1024, string.Concat(Enumerable.Repeat("ab01234567", 7))[..64], TimeProvider.System).IsSuccess.Should().BeTrue();
-        await using (UniPlusDbContext writeContext = _cenario.CriarDbContext())
-        {
-            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
-            ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
-            VersaoConfiguracao versaoAtual = (await repository.ObterVersaoAtualAsync(processo.Id, CancellationToken.None))!;
-            DadosEdital dados = CenarioDeFormularioPublicado.DadosDoEdital(documento.Id);
+        VersaoConfiguracao retificacao = await RetificarComACorrecaoDoCatalogoAsync(processo);
 
-            // O catálogo já traz a correção quando a retificação congela.
-            DefinicaoAvaliavel naRetificacao = DefinicaoAvaliavelDoProcesso.DaConfiguracaoViva(carregado, CatalogoComCorRaca([.. CorRacaCorrigida()])).Value!;
-            SnapshotCanonico congelado = CenarioDeFormularioPublicado.Canonicalizar(new EntradaCanonicalizacao(
-                carregado, dados, documento.HashSha256!, FusoInstitucional.ZoneId,
-                new RetificacaoDoEdital(versaoAtual.AtoCriadorId, "Correção do texto das opções"),
-                ValoresSelecionaveisCongelados: naRetificacao.ValoresSelecionaveis,
-                TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(carregado), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
-            Result<VersaoConfiguracao> retificar = carregado.Retificar(
-                dados, versaoAtual, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-                documento.HashSha256!, "integration-test-user", "Correção do texto das opções", TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
-            retificar.IsSuccess.Should().BeTrue(retificar.Error?.Message);
-            retificacao = retificar.Value!;
+        VersaoConfiguracao aberturaLida = await LerVersaoAsync(abertura.Id);
+        VersaoConfiguracao retificacaoLida = await LerVersaoAsync(retificacao.Id);
 
-            await writeContext.DocumentosAPublicar.AddAsync(documento, CancellationToken.None);
-            await repository.AdicionarVersaoConfiguracaoAsync(retificacao, CancellationToken.None);
-            await writeContext.SaveChangesAsync(CancellationToken.None);
-        }
-
-        await using UniPlusDbContext readContext = _cenario.CriarDbContext();
-        VersaoConfiguracao aberturaLida = await readContext.VersoesConfiguracao.AsNoTracking().SingleAsync(v => v.Id == abertura.Id, CancellationToken.None);
-        VersaoConfiguracao retificacaoLida = await readContext.VersoesConfiguracao.AsNoTracking().SingleAsync(v => v.Id == retificacao.Id, CancellationToken.None);
-
-        Projetados(CenarioDeFormularioPublicado.RegistroCodecs.Reidratar(retificacaoLida).Value!.ValoresSelecionaveisCongelados!["COR_RACA"]!).Should().Equal(
+        CorRacaCongelada(retificacaoLida).Should().Equal(
             ("PRETA", "Preta ou negra.", 0, "Escolha conforme a sua autodeclaração."),
             ("BRANCA", "Branca (corrigida).", 1, null));
-        Projetados(CenarioDeFormularioPublicado.RegistroCodecs.Reidratar(aberturaLida).Value!.ValoresSelecionaveisCongelados!["COR_RACA"]!).Should().Equal(
+        CorRacaCongelada(aberturaLida).Should().Equal(
             ("BRANCA", "Branca.", 0, null),
             ("PRETA", "Preta.", 1, null));
     }
+
+    private async Task<VersaoConfiguracao> LerVersaoAsync(Guid id)
+    {
+        await using UniPlusDbContext readContext = _cenario.CriarDbContext();
+
+        return await readContext.VersoesConfiguracao.AsNoTracking().SingleAsync(v => v.Id == id, CancellationToken.None);
+    }
+
+    private static (string Codigo, string? Descricao, int Ordem, string? Orientacao)[] CorRacaCongelada(VersaoConfiguracao versao) =>
+        Projetados(CenarioDeFormularioPublicado.RegistroCodecs.Reidratar(versao).Value!.ValoresSelecionaveisCongelados!["COR_RACA"]!);
 
     private static IReadOnlyList<FatoCandidatoView> CatalogoComCorRaca(params FatoValorDominioViewItem[] valores) => CatalogoDoConjuntoBasico.Com(
     [

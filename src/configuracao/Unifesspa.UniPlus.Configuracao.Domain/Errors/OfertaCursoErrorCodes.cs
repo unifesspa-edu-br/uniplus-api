@@ -44,4 +44,9 @@ public static class OfertaCursoErrorCodes
     public const string AtoAutorizacaoMecTamanho = "OfertaCurso.AtoAutorizacaoMecTamanho";
 
     public const string NaoEncontrada = "OfertaCurso.NaoEncontrada";
+
+    // Código da oferta, informado pela gestão e único entre as ofertas vivas.
+    public const string CodigoObrigatorio = "OfertaCurso.CodigoObrigatorio";
+    public const string CodigoFormatoInvalido = "OfertaCurso.CodigoFormatoInvalido";
+    public const string CodigoJaEmUso = "OfertaCurso.CodigoJaEmUso";
 }

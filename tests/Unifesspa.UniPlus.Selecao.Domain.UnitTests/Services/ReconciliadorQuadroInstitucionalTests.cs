@@ -14,7 +14,7 @@ public sealed class ReconciliadorQuadroInstitucionalTests
     public void ReduzirDe_TiraODaModalidadeNomeada()
     {
         Result<Reconciliado> resultado = ReconciliadorQuadroInstitucional.Reduzir(
-            ["AC", "AC_PCD"], [38, 4], excesso: 2, new ArgsReduzirDe("AC_PCD"));
+            ["AC", "AC_PCD"], [38, 4], excesso: 2, new ParametrosReduzirDe("AC_PCD"));
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Quantidades.Should().Equal([38, 2]);
@@ -25,7 +25,7 @@ public sealed class ReconciliadorQuadroInstitucionalTests
     public void ReduzirDe_SemSaldo_Recusa()
     {
         Result<Reconciliado> resultado = ReconciliadorQuadroInstitucional.Reduzir(
-            ["AC", "AC_PCD"], [38, 1], excesso: 5, new ArgsReduzirDe("AC_PCD"));
+            ["AC", "AC_PCD"], [38, 1], excesso: 5, new ParametrosReduzirDe("AC_PCD"));
 
         resultado.IsFailure.Should().BeTrue(
             "reduzir o que se pode e devolver um quadro ainda estourado entregaria como reconciliado o que não fecha");
@@ -36,7 +36,7 @@ public sealed class ReconciliadorQuadroInstitucionalTests
     public void Reduzir_ModalidadeForaDoQuadro_Recusa()
     {
         Result<Reconciliado> resultado = ReconciliadorQuadroInstitucional.Reduzir(
-            ["AC"], [42], excesso: 2, new ArgsReduzirDe("LB_PPI"));
+            ["AC"], [42], excesso: 2, new ParametrosReduzirDe("LB_PPI"));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.AjusteReferenciaModalidadeForaDoQuadro");
@@ -47,7 +47,7 @@ public sealed class ReconciliadorQuadroInstitucionalTests
     {
         Result<Reconciliado> resultado = ReconciliadorQuadroInstitucional.Reduzir(
             ["AC", "AC_I", "AC_Q"], [10, 30, 60], excesso: 10,
-            new ArgsReduzirProporcionalEm(["AC_I", "AC_Q"]));
+            new ParametrosReduzirProporcionalEm(["AC_I", "AC_Q"]));
 
         resultado.IsSuccess.Should().BeTrue();
 
@@ -64,7 +64,7 @@ public sealed class ReconciliadorQuadroInstitucionalTests
         // resto decide quem cede a sétima. Sem isso o quadro fecharia com uma vaga a mais.
         Result<Reconciliado> resultado = ReconciliadorQuadroInstitucional.Reduzir(
             ["A", "B", "C"], [10, 10, 10], excesso: 7,
-            new ArgsReduzirProporcionalEm(["A", "B", "C"]));
+            new ParametrosReduzirProporcionalEm(["A", "B", "C"]));
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Quantidades.Sum().Should().Be(23, "30 declaradas menos as 7 do excesso");
@@ -76,7 +76,7 @@ public sealed class ReconciliadorQuadroInstitucionalTests
     public void ReduzirProporcional_SemSaldo_Recusa()
     {
         Result<Reconciliado> resultado = ReconciliadorQuadroInstitucional.Reduzir(
-            ["AC", "AC_I"], [40, 3], excesso: 5, new ArgsReduzirProporcionalEm(["AC_I"]));
+            ["AC", "AC_I"], [40, 3], excesso: 5, new ParametrosReduzirProporcionalEm(["AC_I"]));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.AjusteNaoAbsorveOExcesso");
@@ -86,7 +86,7 @@ public sealed class ReconciliadorQuadroInstitucionalTests
     public void Reduzir_SemExcesso_NaoAltera()
     {
         Result<Reconciliado> resultado = ReconciliadorQuadroInstitucional.Reduzir(
-            ["AC", "AC_PCD"], [38, 2], excesso: 0, new ArgsReduzirDe("AC_PCD"));
+            ["AC", "AC_PCD"], [38, 2], excesso: 0, new ParametrosReduzirDe("AC_PCD"));
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Quantidades.Should().Equal([38, 2]);

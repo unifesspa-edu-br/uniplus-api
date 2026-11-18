@@ -13,6 +13,10 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// o congela junto com a identidade, quando o vínculo da etapa é criado ou trocado.
 /// </para>
 /// <para>
+/// <paramref name="ExigeCorrecaoIndependente"/> diz que as etapas do tipo são corrigidas por mais de um corretor,
+/// cada um independente dos outros. O Seleção o congela com a identidade do tipo e confere contra o que congelou.
+/// </para>
+/// <para>
 /// <paramref name="ConceitosAdmitidos"/> traz os tipos de conceito com que as etapas do tipo podem ser
 /// avaliadas, ordenados pelo código; a lista vazia diz que o tipo não admite nenhum.
 /// </para>
@@ -25,6 +29,7 @@ public sealed record TipoEtapaView(
     bool AdmitePontuacao,
     bool AdmiteEliminacao,
     bool NotaDeOrigemNoEnem,
+    bool ExigeCorrecaoIndependente,
     IReadOnlyList<ConceitoAdmitidoView> ConceitosAdmitidos);
 
 /// <summary>Um tipo de conceito admitido pelo tipo de etapa; a natureza usa o nome do contrato REST (<c>numerico</c> ou <c>categorico</c>).</summary>

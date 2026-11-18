@@ -68,5 +68,23 @@ internal static class BaseLegalBonusRegionalErrorMappings
                 StatusCodes.Status404NotFound,
                 "uniplus.configuracao.base_legal_bonus_regional.nao_encontrado",
                 "Base legal de bônus regional não encontrada")),
+
+        new(BaseLegalBonusRegionalErrorCodes.CodigoFormatoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.base_legal_bonus_regional.codigo_formato_invalido",
+                "Código da base legal de bônus regional fora do formato")),
+
+        new(BaseLegalBonusRegionalErrorCodes.CodigoTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.base_legal_bonus_regional.codigo_tamanho",
+                "Código da base legal de bônus regional passa do tamanho máximo")),
+
+        new(BaseLegalBonusRegionalErrorCodes.CodigoJaExiste,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.configuracao.base_legal_bonus_regional.codigo_ja_existe",
+                "Já existe uma base legal de bônus regional com este código")),
     ];
 }

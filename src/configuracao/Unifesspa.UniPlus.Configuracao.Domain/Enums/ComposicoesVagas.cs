@@ -16,9 +16,9 @@ public static class ComposicoesVagas
 {
     private static readonly Dictionary<ComposicaoVagas, string> ParaToken = new()
     {
-        [ComposicaoVagas.ResidualDoVo] = "RESIDUAL_DO_VO",
-        [ComposicaoVagas.DentroDoVr] = "DENTRO_DO_VR",
-        [ComposicaoVagas.RetiraDe] = "RETIRA_DE",
+        [ComposicaoVagas.RestanteDasVagasOfertadas] = "RESTANTE_DAS_VAGAS_OFERTADAS",
+        [ComposicaoVagas.DentroDaReservaLegal] = "DENTRO_DA_RESERVA_LEGAL",
+        [ComposicaoVagas.RetiradaDeOutraModalidade] = "RETIRADA_DE_OUTRA_MODALIDADE",
         [ComposicaoVagas.SuplementarAoTotal] = "SUPLEMENTAR_AO_TOTAL",
     };
 

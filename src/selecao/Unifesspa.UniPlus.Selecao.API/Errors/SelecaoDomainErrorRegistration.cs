@@ -21,8 +21,10 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         .. ErrosDaColetaDeFatos.Mapeamentos(),
         .. ErrosDaLeituraDoCongelado.Mapeamentos(),
         .. ErrosDoCronograma.Mapeamentos(),
+        .. ErrosDosProcedimentosDeRecurso.Mapeamentos(),
         .. ErrosDaBanca.Mapeamentos(),
         .. ErrosDaFaseDoProcesso.Mapeamentos(),
+        .. ErrosDaHomologacaoDasInscricoes.Mapeamentos(),
         .. ErrosDosMotivosDeDecisao.Mapeamentos(),
     ];
 
@@ -34,5 +36,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         .. ErrosDaArvoreDeExigencias.Mapeamentos(),
         .. ErrosDaAdministracaoDoProcesso.Mapeamentos(),
         .. ErrosDasIntegracoesExternas.Mapeamentos(),
+        .. ErrosDoDocumentoDaConfiguracao.Mapeamentos(),
+        .. ErrosDoRascunhoDeProcessoSeletivo.Mapeamentos(),
     ];
 }

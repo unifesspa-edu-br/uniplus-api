@@ -14,6 +14,9 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// o tipo nasceria declarando que não compõe a nota final sem ninguém ter dito isso.
 /// </para>
 /// <para>
+/// <c>ExigeCorrecaoIndependente</c> também é obrigatório, anulável pelo mesmo motivo.
+/// </para>
+/// <para>
 /// <c>ConceitosAdmitidos</c> traz os códigos dos tipos de conceito que o tipo admite. A lista é obrigatória,
 /// ainda que vazia: ausente é recusada, e não lida como "nenhum conceito".
 /// </para>
@@ -23,5 +26,6 @@ public sealed record CriarTipoEtapaCommand(
     string? Nome,
     bool? AdmitePontuacao,
     bool? AdmiteEliminacao,
+    bool? ExigeCorrecaoIndependente,
     IReadOnlyList<string>? ConceitosAdmitidos,
     string? Descricao = null) : ICommand<Result<Guid>>;

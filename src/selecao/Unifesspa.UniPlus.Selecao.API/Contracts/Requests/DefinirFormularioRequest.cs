@@ -10,8 +10,7 @@ using Unifesspa.UniPlus.Regras.Entradas;
 
 /// <summary>
 /// Corpo de <see cref="FormulariosController.DefinirFormulario"/> — o processo e a finalidade vêm da
-/// rota, e a precondição do header <c>If-Match</c>. A lista de etapas é obrigatória: o formulário
-/// termina sempre na revisão e aceite.
+/// rota. A lista de etapas é obrigatória: o formulário termina sempre na revisão e aceite.
 /// </summary>
 public sealed record DefinirFormularioRequest(
     Guid? FaseId,

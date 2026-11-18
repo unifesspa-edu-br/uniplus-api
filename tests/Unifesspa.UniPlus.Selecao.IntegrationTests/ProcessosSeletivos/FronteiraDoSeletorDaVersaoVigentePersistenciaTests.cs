@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Interceptors;
 using Unifesspa.UniPlus.Monolito.Persistencia;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
@@ -56,39 +57,46 @@ public sealed class FronteiraDoSeletorDaVersaoVigentePersistenciaTests
         sql.Should().NotContain("atos_normativos", "e o ato tampouco — ele entra por VALOR, não por join (ADR-0061)");
     }
 
+    /// <summary>
+    /// O ato é registrado em Publicações por mensagem durável, DEPOIS do commit da publicação (ADR-0108). Entre o 204 e a
+    /// drenagem do outbox, a versão existe e o ato ainda não — e é exatamente aí que o certame precisa continuar
+    /// consultável. A referência é por valor, sem FK (ADR-0061): o seletor não sabe nem pergunta se o ato já existe do
+    /// outro lado.
+    /// </summary>
     [Fact(DisplayName = "Versão cujo ato ainda não foi registrado resolve normalmente — a seleção não espera a fila drenar")]
     public async Task ObterVersaoVigente_AtoAindaNaoRegistrado_AindaResolve()
     {
-        // O ato é registrado em Publicações por mensagem durável, DEPOIS do commit da
-        // publicação (ADR-0108). Entre o 204 e a drenagem do outbox, a versão existe e o ato
-        // ainda não — e é exatamente aí que o certame precisa continuar consultável. A
-        // referência é por valor, sem FK (ADR-0061): o seletor não sabe nem pergunta se o ato
-        // já existe do outro lado.
         ProcessoSeletivo processo = NovoProcessoConforme(nameof(ObterVersaoVigente_AtoAindaNaoRegistrado_AindaResolve));
         DocumentoAPublicar documento = DocumentoConfirmado(processo.Id);
         SnapshotCanonico canonico = Canonicalizar(processo, NovosDados(documento.Id), documento);
-
         Guid atoAindaNaoRegistrado = Guid.CreateVersion7();
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
-            processo.Id, canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash,
-            atoAindaNaoRegistrado, documento.HashSha256!, "integration-test-user", T0);
+            processo.Id, new DocumentoCongelado(canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash, documento.HashSha256!),
+            atoAindaNaoRegistrado, "integration-test-user", T0);
+        await GravarAsync(processo, documento, versao);
 
-        await using (UniPlusDbContext writeContext = _cenario.CriarDbContext())
-        {
-            await writeContext.ProcessosSeletivos.AddAsync(processo, CancellationToken.None);
-            await writeContext.DocumentosAPublicar.AddAsync(documento, CancellationToken.None);
-            await writeContext.VersoesConfiguracao.AddAsync(versao, CancellationToken.None);
-            await writeContext.SaveChangesAsync(CancellationToken.None);
-        }
+        VersaoConfiguracao? vigente = await VigenteAsync(processo.Id, T0.AddDays(1));
 
-        await using UniPlusDbContext context = _cenario.CriarDbContext();
-        ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(context);
-
-        VersaoConfiguracao? vigente = await repository
-            .ObterVersaoVigenteAsync(processo.Id, T0.AddDays(1), CancellationToken.None);
         vigente.Should().NotBeNull("a seleção não depende da existência do ato do outro lado da fila");
         vigente!.Id.Should().Be(versao.Id);
         vigente.AtoCriadorId.Should().Be(atoAindaNaoRegistrado, "a referência por valor ao ato está na própria versão");
+    }
+
+    private async Task GravarAsync(ProcessoSeletivo processo, DocumentoAPublicar documento, VersaoConfiguracao versao)
+    {
+        await using UniPlusDbContext writeContext = _cenario.CriarDbContext();
+        await writeContext.ProcessosSeletivos.AddAsync(processo, CancellationToken.None);
+        await writeContext.DocumentosAPublicar.AddAsync(documento, CancellationToken.None);
+        await writeContext.VersoesConfiguracao.AddAsync(versao, CancellationToken.None);
+        await writeContext.SaveChangesAsync(CancellationToken.None);
+    }
+
+    private async Task<VersaoConfiguracao?> VigenteAsync(Guid processoId, DateTimeOffset instante)
+    {
+        await using UniPlusDbContext context = _cenario.CriarDbContext();
+        ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(context);
+
+        return await repository.ObterVersaoVigenteAsync(processoId, instante, CancellationToken.None);
     }
 
     [Fact(DisplayName = "Seletor não resolve configuração de processo soft-deleted nem de processo inexistente (base do 404)")]

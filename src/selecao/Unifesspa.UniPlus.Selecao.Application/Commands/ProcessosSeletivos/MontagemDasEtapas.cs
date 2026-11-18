@@ -41,38 +41,41 @@ internal static class MontagemDasEtapas
 
     private static Result<EtapaProcesso> MontarEtapa(EtapaConferida conferida, int indice)
     {
-        EtapaProcessoInput etapa = conferida.Declarada;
         Result<TipoEtapaSnapshot> tipo = TipoDaEtapa(conferida);
         if (tipo.IsFailure)
         {
             return Result<EtapaProcesso>.Failure(tipo.Error!);
         }
 
-        Result<EtapaProcesso> montada = conferida.Existente is null
-            ? EtapaProcesso.Criar(
-                etapa.Nome, etapa.Carater, tipo.Value!, etapa.Peso, etapa.NotaMinima, etapa.Ordem,
-                etapa.FaseCodigo, etapa.NotaMaxima, etapa.PassoDoLancamento,
-                conferida.Forma, conferida.Consolidacao,
-                EscritaDasEtapasDoProcesso.ItensDeclarados(etapa), EscritaDasEtapasDoProcesso.NiveisDeclarados(etapa))
-            : Atualizar(conferida, tipo.Value!);
+        Result<EtapaProcesso> montada = conferida.Existente is null ? Criar(conferida, tipo.Value!) : Atualizar(conferida, tipo.Value!);
         return montada.IsSuccess
             ? montada
             : Result<EtapaProcesso>.ValidationFailure(EscritaDasEtapasDoProcesso.ComIndice(montada.Errors, indice));
     }
 
+    private static Result<EtapaProcesso> Criar(EtapaConferida conferida, TipoEtapaSnapshot tipo) =>
+        EtapaProcesso.Criar(
+            IdentificacaoDeclarada(conferida.Declarada, tipo),
+            AvaliacaoDeclarada(conferida),
+            EscritaDasEtapasDoProcesso.ItensDeclarados(conferida.Declarada));
+
     private static Result<EtapaProcesso> Atualizar(EtapaConferida conferida, TipoEtapaSnapshot tipo)
     {
-        EtapaProcessoInput etapa = conferida.Declarada;
         EtapaProcesso existente = conferida.Existente!;
         Result atualizada = existente.AtualizarDados(
-            etapa.Nome, etapa.Carater, tipo, etapa.Peso, etapa.NotaMinima, etapa.Ordem,
-            etapa.FaseCodigo, etapa.NotaMaxima, etapa.PassoDoLancamento,
-            conferida.Forma, conferida.Consolidacao,
-            EscritaDasEtapasDoProcesso.ItensDeclarados(etapa), EscritaDasEtapasDoProcesso.NiveisDeclarados(etapa));
+            IdentificacaoDeclarada(conferida.Declarada, tipo),
+            AvaliacaoDeclarada(conferida),
+            EscritaDasEtapasDoProcesso.ItensDeclarados(conferida.Declarada));
         return atualizada.IsSuccess
             ? Result<EtapaProcesso>.Success(existente)
             : Result<EtapaProcesso>.ValidationFailure(atualizada.Errors);
     }
+
+    private static IdentificacaoDaEtapa IdentificacaoDeclarada(EtapaProcessoInput etapa, TipoEtapaSnapshot tipo) =>
+        new(etapa.Nome, etapa.Carater, tipo, etapa.Ordem, etapa.FaseCodigo);
+
+    private static DeclaracaoDaAvaliacaoDaEtapa AvaliacaoDeclarada(EtapaConferida conferida) =>
+        EscritaDasEtapasDoProcesso.DeclaracaoDaAvaliacao(conferida.Declarada, conferida.Forma, conferida.Consolidacao);
 
     // A etapa que mantém o vínculo mantém o snapshot congelado, com os sinalizadores regravados quando o
     // tipo foi relido porque o caráter mudou; o vínculo novo ou alterado congela o tipo lido.
@@ -82,12 +85,12 @@ internal static class MontagemDasEtapas
         {
             TipoEtapaSnapshot congelado = conferida.Existente!.TipoEtapa;
             return Result<TipoEtapaSnapshot>.Success(conferida.TipoLido is { } relido
-                ? congelado.ComSinalizadores(relido.AdmitePontuacao, relido.AdmiteEliminacao)
+                ? congelado.ComSinalizadores(relido.AdmitePontuacao, relido.AdmiteEliminacao, relido.ExigeCorrecaoIndependente)
                 : congelado);
         }
 
         TipoEtapaView tipo = conferida.TipoLido!;
         return TipoEtapaSnapshot.Criar(
-            tipo.Id, tipo.Codigo, tipo.Nome, tipo.AdmitePontuacao, tipo.AdmiteEliminacao, tipo.NotaDeOrigemNoEnem);
+            tipo.Id, tipo.Codigo, tipo.Nome, tipo.AdmitePontuacao, tipo.AdmiteEliminacao, tipo.NotaDeOrigemNoEnem, tipo.ExigeCorrecaoIndependente);
     }
 }

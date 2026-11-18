@@ -6,13 +6,19 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// <summary>
 /// Repositório da entidade <see cref="OfertaCurso"/> (ADR-0054: banco isolado
 /// <c>uniplus_configuracao</c>). Todas as leituras excluem registros
-/// soft-deleted via query filter por convenção. Não há chave natural única —
-/// o repositório não expõe checagem de unicidade.
+/// soft-deleted via query filter por convenção. O código da oferta é único
+/// entre as vivas.
 /// </summary>
 public interface IOfertaCursoRepository
 {
     /// <summary>Carrega a oferta rastreada pelo contexto, para mutação.</summary>
     Task<OfertaCurso?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Verifica se existe oferta viva com o <paramref name="codigo"/> (com sensibilidade a caixa, sobre o valor normalizado por
+    /// <c>Trim</c>), excluindo opcionalmente <paramref name="excluirId"/> — a própria oferta, na edição.
+    /// </summary>
+    Task<bool> CodigoExisteEntreVivosAsync(string codigo, Guid? excluirId, CancellationToken cancellationToken);
 
     /// <summary>Carrega a oferta para leitura (<c>AsNoTracking</c>) — projeção em DTO.</summary>
     Task<OfertaCurso?> ObterPorIdParaLeituraAsync(Guid id, CancellationToken cancellationToken);

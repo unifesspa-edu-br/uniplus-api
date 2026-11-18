@@ -17,8 +17,21 @@ using static InicioDasFases;
 internal sealed class FasesIniciadasDoProcesso : IFasesIniciadasDoProcesso
 {
     private readonly UniPlusDbContext _context;
+    private readonly TimeProvider _relogio;
+    private readonly IReadOnlyList<IFonteDoInicioNoLugar> _fontes;
 
-    public FasesIniciadasDoProcesso(UniPlusDbContext context) => _context = context;
+    public FasesIniciadasDoProcesso(UniPlusDbContext context, TimeProvider relogio, IEnumerable<IFonteDoInicioNoLugar> fontes)
+    {
+        _context = context;
+        _relogio = relogio;
+        _fontes = [.. fontes];
+    }
+
+    public async Task<FasesIniciadasNoInstante> ObterAgoraAsync(Guid processoId, CancellationToken cancellationToken = default)
+    {
+        DateTimeOffset agora = _relogio.GetUtcNow();
+        return new FasesIniciadasNoInstante(await ObterAsync(processoId, agora, cancellationToken).ConfigureAwait(false), agora);
+    }
 
     public async Task<FasesIniciadas> ObterAsync(Guid processoId, DateTimeOffset agora, CancellationToken cancellationToken = default)
     {
@@ -27,7 +40,10 @@ internal sealed class FasesIniciadasDoProcesso : IFasesIniciadasDoProcesso
         HashSet<Guid> iniciadas = InicioDasFases.Origens(versoes, agora, fatos);
 
         return new FasesIniciadas(
-            UnidadesPublicadas(versoes, iniciadas), CodigosNaVersaoVigente(versoes, iniciadas), EtapasIniciadas(versoes, InicioDasFases.Etapas(versoes, agora, fatos)));
+            UnidadesPublicadas(versoes, iniciadas),
+            CodigosNaVersaoVigente(versoes, iniciadas),
+            EtapasIniciadas(versoes, InicioDasFases.Etapas(versoes, agora, fatos)),
+            InicioDasFases.FasesProdutoras(versoes, agora, fatos));
     }
 
     private static IEnumerable<KeyValuePair<Guid, Guid?>> UnidadesPublicadas(IReadOnlyList<VersaoDasFases> versoes, HashSet<Guid> iniciadas) =>
@@ -70,7 +86,20 @@ internal sealed class FasesIniciadasDoProcesso : IFasesIniciadasDoProcesso
         await AtosAsync(processoId, cancellationToken).ConfigureAwait(false),
         await ExecucoesDeEtapaAsync(processoId, cancellationToken).ConfigureAwait(false),
         await InscricoesAsync(processoId, cancellationToken).ConfigureAwait(false),
-        await EnviosAoInepAsync(processoId, cancellationToken).ConfigureAwait(false));
+        await EnviosAoInepAsync(processoId, cancellationToken).ConfigureAwait(false),
+        await IniciosNoLugarAsync(processoId, cancellationToken).ConfigureAwait(false));
+
+    private async Task<IReadOnlyList<InicioNoLugar>> IniciosNoLugarAsync(Guid processoId, CancellationToken cancellationToken)
+    {
+        List<InicioNoLugar> inicios = [];
+
+        foreach (IFonteDoInicioNoLugar fonte in _fontes)
+        {
+            inicios.AddRange(await fonte.ListarAsync(processoId, cancellationToken).ConfigureAwait(false));
+        }
+
+        return inicios;
+    }
 
     private async Task<IReadOnlyList<EnvioAoInepDaEtapa>> EnviosAoInepAsync(Guid processoId, CancellationToken cancellationToken)
     {
@@ -106,6 +135,8 @@ internal sealed class FasesIniciadasDoProcesso : IFasesIniciadasDoProcesso
         return [.. lotes.Select(static l => new ImportacaoNaEtapa(l.EtapaProcessoId, l.VersaoConfiguracaoId, l.ImportadoEm))];
     }
 
+    // O ato conta como início do lugar pelo instante da divulgação, gravado uma só vez no registro: nenhum estado
+    // posterior do ato retira o fato nem muda o instante.
     private async Task<IReadOnlyList<(string Item, DateTimeOffset Instante)>> AtosAsync(Guid processoId, CancellationToken cancellationToken)
     {
         var atos = await _context.AtosDoProcesso

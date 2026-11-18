@@ -29,17 +29,19 @@ public sealed class EdicaoDoEnemNaInscricaoTests
     private const string ItemDasEdicoes = "classificacao_edicao_enem_nao_declarada";
 
     private static ConfiguracaoClassificacao ClassificacaoImportadaDoEnem() =>
-        ConfiguracaoClassificacao.Criar(
-            ProcessoConformeFactory.Regra(RegraCalculoCodigo.ClassificacaoImportada, "a"), null, null,
-            ProcessoConformeFactory.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"), [],
-            baseadoEmEnem: true, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!;
+        ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = ProcessoConformeFactory.Regra(RegraCalculoCodigo.ClassificacaoImportada, "a"),
+            RegraOrdemAlocacao = ProcessoConformeFactory.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
+            BaseadoEmEnem = true,
+        }).Value!;
 
     private static ProcessoSeletivo ProcessoDoEnem()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        processo.DefinirClassificacao(ClassificacaoImportadaDoEnem(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ClassificacaoImportadaDoEnem()).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeclaradas(
-                EdicaoDoEnem.Fato, [OpcaoDeclaradaFato.Criar(EdicaoDoEnem.Fato, "2026", "ENEM 2026", 0).Value!], PrecondicaoIfMatch.Curinga)
+                EdicaoDoEnem.Fato, [OpcaoDeclaradaFato.Criar(EdicaoDoEnem.Fato, "2026", "ENEM 2026", 0).Value!])
             .IsSuccess.Should().BeTrue();
         return processo;
     }
@@ -51,7 +53,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
             obrigatoriedade ?? Obrigatoriedade.Sempre, exibicao, "PESSOAL", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoDoFatoDeTeste.Descricao, OrigemValoresColeta.OpcoesDoProcesso, etapaCodigo: secao).Value!;
 
     private static bool ItemOk(ProcessoSeletivo processo, string codigo) =>
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
             .Single(i => i.Codigo == codigo).Ok;
 
     private static PredicadoDnf SeCasado() =>
@@ -66,7 +68,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
         ProcessoSeletivo processo = ProcessoDoEnem();
         processo.DefinirItens(comOCampo ? [CampoDaEdicao()] : []).IsSuccess.Should().BeTrue();
 
-        DomainError? pendencia = ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo);
+        DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
 
         (pendencia?.Code).Should().Be(comOCampo ? null : FormularioProcessoErrorCodes.InscricaoSemEdicaoDoEnem);
         ItemOk(processo, ItemDoCampo).Should().Be(comOCampo);
@@ -78,7 +80,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
         ProcessoSeletivo processo = ProcessoDoEnem();
         processo.DefinirItens([CampoDaEdicao(obrigatoriedade: Obrigatoriedade.Quando(SeCasado()))]).IsSuccess.Should().BeTrue();
 
-        ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemEdicaoDoEnem);
+        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemEdicaoDoEnem);
     }
 
     [Fact(DisplayName = "O campo da edição com exibição condicional não pede a edição a todo candidato e é recusado")]
@@ -89,7 +91,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
             [CampoDaEdicao(exibicao: [CondicaoPrecondicaoFato.Criar(0, "ESTADO_CIVIL", Operador.Igual, JsonSerializer.SerializeToElement("CASADO")).Value!])])
             .IsSuccess.Should().BeTrue();
 
-        ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemEdicaoDoEnem);
+        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemEdicaoDoEnem);
     }
 
     [Fact(DisplayName = "O campo da edição numa seção que se esconde não pede a edição a todo candidato e é recusado")]
@@ -103,12 +105,11 @@ public sealed class EdicaoDoEnemNaInscricaoTests
                     FormularioDeTeste.Etapas()[0],
                     EtapaFormulario.Criar(FormularioDeTeste.Secao, 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null, SeCasado()).Value!,
                     EtapaFormulario.Criar("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null).Value!,
-                ],
-                PrecondicaoIfMatch.Curinga)
+                ])
             .IsSuccess.Should().BeTrue();
-        processo.DefinirItens([CampoDaEdicao()], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([CampoDaEdicao()]).IsSuccess.Should().BeTrue();
 
-        ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemEdicaoDoEnem);
+        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemEdicaoDoEnem);
     }
 
     [Fact(DisplayName = "Com o resultado importado, a classificação baseada em ENEM não exige o campo da edição nem as edições admitidas")]
@@ -116,29 +117,30 @@ public sealed class EdicaoDoEnemNaInscricaoTests
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             "PS Importado", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-        processo.DefinirClassificacao(ClassificacaoImportadaDoEnem(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ClassificacaoImportadaDoEnem()).IsSuccess.Should().BeTrue();
 
         IReadOnlyList<ItemConformidade> itens =
-            ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo));
 
         itens.Should().NotContain(i => i.Codigo == ItemDasEdicoes);
         itens.Single(i => i.Codigo == ItemDoCampo).Ok.Should().BeTrue();
     }
 
     private static ConfiguracaoClassificacao ClassificacaoImportadaSemEnem() =>
-        ConfiguracaoClassificacao.Criar(
-            ProcessoConformeFactory.Regra(RegraCalculoCodigo.ClassificacaoImportada, "a"), null, null,
-            ProcessoConformeFactory.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"), [],
-            baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!;
+        ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = ProcessoConformeFactory.Regra(RegraCalculoCodigo.ClassificacaoImportada, "a"),
+            RegraOrdemAlocacao = ProcessoConformeFactory.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
+        }).Value!;
 
     [Fact(DisplayName = "A classificação que deixa de ser baseada em ENEM retira as edições do ENEM declaradas")]
     public void DefinirClassificacao_DeixaDeSerEnem_RetiraAsEdicoes()
     {
         ProcessoSeletivo processo = ProcessoDoEnem();
 
-        processo.DefinirClassificacao(ClassificacaoImportadaSemEnem(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ClassificacaoImportadaSemEnem()).IsSuccess.Should().BeTrue();
 
         processo.OpcoesDoProcesso(EdicaoDoEnem.Fato).Should().BeEmpty();
     }
@@ -147,9 +149,9 @@ public sealed class EdicaoDoEnemNaInscricaoTests
     public void DefinirClassificacao_VoltaAoEnem_ExigeDeclararAsEdicoes()
     {
         ProcessoSeletivo processo = ProcessoDoEnem();
-        processo.DefinirClassificacao(ClassificacaoImportadaSemEnem(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ClassificacaoImportadaSemEnem()).IsSuccess.Should().BeTrue();
 
-        processo.DefinirClassificacao(ClassificacaoImportadaDoEnem(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ClassificacaoImportadaDoEnem()).IsSuccess.Should().BeTrue();
 
         ItemOk(processo, ItemDasEdicoes).Should().BeFalse();
     }
@@ -165,7 +167,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
         Result itens = processo.DefinirItens([CampoDaEdicao(), citaAEdicao]);
         itens.IsSuccess.Should().BeTrue(itens.Error?.Message ?? string.Join("; ", itens.Errors.Select(static e => e.Error.Message)));
 
-        Result resultado = processo.DefinirClassificacao(ClassificacaoImportadaSemEnem(), PrecondicaoIfMatch.Curinga);
+        Result resultado = processo.DefinirClassificacao(ClassificacaoImportadaSemEnem());
 
         resultado.Errors.Should().ContainSingle(e =>
             e.Field == "baseadoEmEnem" && e.Error.Code == OpcaoDeclaradaFatoErrorCodes.ReferenciadaPorExigenciaViva);
@@ -179,30 +181,42 @@ public sealed class EdicaoDoEnemNaInscricaoTests
     {
         ProcessoSeletivo processo = ProcessoDoEnem();
         processo.DefinirItens(comOCampo ? [CampoDaEdicao()] : []).IsSuccess.Should().BeTrue();
-        processo.DefinirClassificacao(ClassificacaoImportadaSemEnem(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ClassificacaoImportadaSemEnem()).IsSuccess.Should().BeTrue();
 
-        DomainError? pendencia = ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo);
+        DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
 
         (pendencia?.Code).Should().Be(comOCampo ? FormularioProcessoErrorCodes.EdicaoDoEnemSemClassificacaoEnem : null);
         ItemOk(processo, "formulario_edicao_enem_sem_classificacao_enem").Should().Be(!comOCampo);
     }
+
+    [Fact(DisplayName = "Sem classificação baseada em ENEM, o campo da edição é recusado só por isso: não acusa também a falta de opções que ele deixou de ter")]
+    public void Publicacao_CampoDaEdicaoSemEnem_NaoAcusaAFaltaDeOpcoes()
+    {
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
+        processo.DefinirClassificacao(ClassificacaoImportadaSemEnem()).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([CampoDaEdicao()]).IsSuccess.Should().BeTrue();
+
+        CondicoesDaCanonicalizacao.Causas(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Select(static causa => causa.Error.Code)
+            .Should().Equal(FormularioProcessoErrorCodes.EdicaoDoEnemSemClassificacaoEnem);
+    }
+
+    private static TermoExigidoFormulario TermoSemFormaDeAceite() => TermoExigidoFormulario.Criar(
+            "DECLARACAO", 0,
+            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Declaração", "Texto", "Base legal", "A_DEFINIR", new string('a', 64)),
+            null, Obrigatoriedade.Sempre).Value!;
 
     [Fact(DisplayName = "Sem ENEM, o campo da edição vem antes do termo sem forma de aceite no checklist, na ordem em que a publicação recusa")]
     public void Checklist_CampoDaEdicaoSemEnem_NaOrdemDaPublicacao()
     {
         ProcessoSeletivo processo = ProcessoDoEnem();
         processo.DefinirItens([CampoDaEdicao()]).IsSuccess.Should().BeTrue();
-        TermoExigidoFormulario termoSemForma = TermoExigidoFormulario.Criar(
-            "DECLARACAO", 0,
-            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "Declaração", "Texto", "Base legal", "A_DEFINIR", new string('a', 64)),
-            null, Obrigatoriedade.Sempre).Value!;
-        processo.DefinirTermos([termoSemForma], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirClassificacao(ClassificacaoImportadaSemEnem(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirTermos([TermoSemFormaDeAceite()]).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ClassificacaoImportadaSemEnem()).IsSuccess.Should().BeTrue();
 
-        List<string> vermelhos = [.. ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+        List<string> vermelhos = [.. ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
             .Where(static i => !i.Ok).Select(static i => i.Codigo)];
 
-        ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo)!.Code
+        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code
             .Should().Be(FormularioProcessoErrorCodes.EdicaoDoEnemSemClassificacaoEnem);
         vermelhos.IndexOf("formulario_edicao_enem_sem_classificacao_enem")
             .Should().BeGreaterThanOrEqualTo(0).And.BeLessThan(vermelhos.IndexOf("termo_exigido_sem_forma_de_aceite"));
@@ -212,7 +226,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
     public void Conformidade_SemFormularioDeInscricao_SoOFormularioFicaVermelho()
     {
         ProcessoSeletivo processo = ProcessoDoEnem();
-        processo.RemoverFormulario(FinalidadeFormulario.Inscricao, PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.RemoverFormulario(FinalidadeFormulario.Inscricao).IsSuccess.Should().BeTrue();
 
         ItemOk(processo, "formulario_inscricao_ausente").Should().BeFalse();
         ItemOk(processo, ItemDoCampo).Should().BeTrue();

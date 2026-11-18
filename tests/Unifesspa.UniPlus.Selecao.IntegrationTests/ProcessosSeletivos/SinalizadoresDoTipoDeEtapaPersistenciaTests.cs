@@ -19,94 +19,139 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 public sealed class SinalizadoresDoTipoDeEtapaPersistenciaTests : IClassFixture<ProcessoSeletivoDbFixture>
 {
     private readonly ProcessoSeletivoDbFixture _fixture;
+    private readonly ApoioDaPersistenciaDoProcessoSeletivo _apoio;
 
     public SinalizadoresDoTipoDeEtapaPersistenciaTests(ProcessoSeletivoDbFixture fixture)
     {
         _fixture = fixture;
+        _apoio = new ApoioDaPersistenciaDoProcessoSeletivo(fixture);
     }
 
     [Fact(DisplayName = "Os sinalizadores congelados e a regravação deles sobre a etapa tracked sobrevivem ao banco")]
     public async Task Sinalizadores_PersistemERegravacaoTambem()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — PSVR", TiposDeProcessoDeTeste.PSVR, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        TipoEtapaSnapshot soElimina = TipoEtapaSnapshot.Criar(
-            Guid.CreateVersion7(), "ANALISE_DOCUMENTAL", "Análise documental", admitePontuacao: false, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
-        EtapaProcesso etapa = EtapaProcesso.Criar("Análise documental", CaraterEtapa.Eliminatoria, soElimina, peso: null, notaMinima: 5m, ordem: 1).Value!;
-        EtapaProcesso prova = EtapaProcesso.Criar("Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(
-            Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 2).Value!;
-        processo.DefinirEtapas([etapa, prova], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        EtapaProcesso etapa = NovaEtapa(
+            "Análise documental", CaraterEtapa.Eliminatoria, TipoDeEtapa("ANALISE_DOCUMENTAL", "Análise documental", pontua: false, elimina: true), 1, Declaracao(peso: null, notaMinima: 5m));
+        EtapaProcesso prova = EtapaDeProvaObjetiva(2);
+        ProcessoSeletivo processo = ProcessoComEtapas("PS 2026 — PSVR", etapa, prova);
+        await _apoio.GravarAsync(processo);
 
-        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
-            await repository.AdicionarAsync(processo, CancellationToken.None);
-            await writeContext.SaveChangesAsync(CancellationToken.None);
-        }
+        await RegravarOsSinalizadoresDaAnaliseDocumentalAsync(processo.Id, etapa.Id);
 
-        await using (UniPlusDbContext configureContext = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(configureContext);
-            ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
-            EtapaProcesso tracked = carregado.Etapas.Single(e => e.Id == etapa.Id);
-
-            tracked.TipoEtapa.AdmitePontuacao.Should().BeFalse();
-            tracked.TipoEtapa.AdmiteEliminacao.Should().BeTrue();
-
-            // O caminho do handler quando o caráter da etapa muda e o tipo relido passou a pontuar.
-            tracked.AtualizarDados(
-                "Análise documental", CaraterEtapa.Ambas, tracked.TipoEtapa.ComSinalizadores(true, true), 1m, 5m, 1)
-                .IsSuccess.Should().BeTrue();
-            await configureContext.SaveChangesAsync(CancellationToken.None);
-        }
-
-        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
-        ProcessoSeletivo recarregado = (await ProcessoSeletivoRepositoryDeTeste.Criar(readContext)
-            .ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
-        TipoEtapaSnapshot regravado = recarregado.Etapas.Single(e => e.Id == etapa.Id).TipoEtapa;
-        regravado.AdmitePontuacao.Should().BeTrue();
-        regravado.AdmiteEliminacao.Should().BeTrue();
-        regravado.Codigo.Should().Be("ANALISE_DOCUMENTAL");
-        regravado.Nome.Should().Be("Análise documental");
-        recarregado.Etapas.Single(e => e.Id == prova.Id).TipoEtapa.AdmitePontuacao.Should().BeTrue();
+        ConferirOsSinalizadoresRegravadosDaAnalise(await RecarregarAsync(processo.Id), etapa.Id, prova.Id);
     }
 
     [Fact(DisplayName = "A nota de origem no ENEM congelada sobrevive ao banco e à regravação dos sinalizadores")]
     public async Task NotaDeOrigemNoEnem_PersisteERegravacaoAPreserva()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2027 — Medicina", TiposDeProcessoDeTeste.PSVR, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        EtapaProcesso doEnem = EtapaProcesso.Criar("Nota do ENEM", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(
-            Guid.CreateVersion7(), "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!, peso: 1m, ordem: 1).Value!;
-        EtapaProcesso prova = EtapaProcesso.Criar("Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(
-            Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 2).Value!;
-        processo.DefinirEtapas([doEnem, prova], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        EtapaProcesso doEnem = NovaEtapa(
+            "Nota do ENEM", CaraterEtapa.Classificatoria, TipoDeEtapa("NOTA_ENEM", "Nota do ENEM", pontua: true, elimina: true, notaDoEnem: true), 1, Declaracao(peso: 1m, notaMinima: null));
+        EtapaProcesso prova = EtapaDeProvaObjetiva(2);
+        ProcessoSeletivo processo = ProcessoComEtapas("PS 2027 — Medicina", doEnem, prova);
+        await _apoio.GravarAsync(processo);
 
-        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
-            await repository.AdicionarAsync(processo, CancellationToken.None);
-            await writeContext.SaveChangesAsync(CancellationToken.None);
-        }
+        await RegravarOsSinalizadoresDaNotaDoEnemAsync(processo.Id, doEnem.Id, prova.Id);
 
-        await using (UniPlusDbContext configureContext = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(configureContext);
-            ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
-            EtapaProcesso tracked = carregado.Etapas.Single(e => e.Id == doEnem.Id);
-
-            tracked.DeclaraNotaDoEnem.Should().BeTrue();
-            carregado.Etapas.Single(e => e.Id == prova.Id).DeclaraNotaDoEnem.Should().BeFalse();
-
-            tracked.AtualizarDados(
-                "Nota do ENEM", CaraterEtapa.Classificatoria, tracked.TipoEtapa.ComSinalizadores(true, false), 1m, null, 1)
-                .IsSuccess.Should().BeTrue();
-            await configureContext.SaveChangesAsync(CancellationToken.None);
-        }
-
-        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
-        ProcessoSeletivo recarregado = (await ProcessoSeletivoRepositoryDeTeste.Criar(readContext)
-            .ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
-        TipoEtapaSnapshot regravado = recarregado.Etapas.Single(e => e.Id == doEnem.Id).TipoEtapa;
+        TipoEtapaSnapshot regravado = TipoDaEtapa(await RecarregarAsync(processo.Id), doEnem.Id);
         regravado.AdmiteEliminacao.Should().BeFalse("a regravação dos sinalizadores chegou ao banco");
         regravado.NotaDeOrigemNoEnem.Should().BeTrue("a regravação dos sinalizadores preserva a identidade");
+    }
+
+    [Fact(DisplayName = "A correção independente congelada sobrevive ao banco e a regravação dos sinalizadores a relê")]
+    public async Task CorrecaoIndependente_PersisteERegravacaoARele()
+    {
+        EtapaProcesso redacao = NovaEtapa(
+            "Redação", CaraterEtapa.Classificatoria, TipoDeEtapa("REDACAO", "Redação", pontua: true, elimina: true, exigeCorrecaoIndependente: true), 1, Declaracao(peso: 1m, notaMinima: null));
+        ProcessoSeletivo processo = ProcessoComEtapas("PS 2028 — Redação", redacao);
+        await _apoio.GravarAsync(processo);
+
+        await ReconfigurarAsync(processo.Id, carregado =>
+        {
+            EtapaProcesso tracked = carregado.Etapas.Single();
+            tracked.TipoEtapa.ExigeCorrecaoIndependente.Should().BeTrue("o sinalizador congelado chegou ao banco");
+            Regravar(tracked, tracked.TipoEtapa.ComSinalizadores(true, true, false), Declaracao(peso: 1m, notaMinima: null));
+        });
+
+        TipoDaEtapa(await RecarregarAsync(processo.Id), redacao.Id).ExigeCorrecaoIndependente.Should().BeFalse("a regravação dos sinalizadores chegou ao banco");
+    }
+
+    private static ProcessoSeletivo ProcessoComEtapas(string nome, params EtapaProcesso[] etapas)
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
+            nome, TiposDeProcessoDeTeste.PSVR, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        processo.DefinirEtapas(etapas).IsSuccess.Should().BeTrue();
+
+        return processo;
+    }
+
+    private static TipoEtapaSnapshot TipoDeEtapa(
+        string codigo, string nome, bool pontua, bool elimina, bool notaDoEnem = false, bool exigeCorrecaoIndependente = false) =>
+        TipoEtapaSnapshot.Criar(
+            Guid.CreateVersion7(), codigo, nome, admitePontuacao: pontua, admiteEliminacao: elimina,
+            notaDeOrigemNoEnem: notaDoEnem, exigeCorrecaoIndependente: exigeCorrecaoIndependente).Value!;
+
+    private static DeclaracaoDaAvaliacaoDaEtapa Declaracao(decimal? peso, decimal? notaMinima) =>
+        new(Peso: peso, NotaMinima: notaMinima, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null);
+
+    private static EtapaProcesso NovaEtapa(string nome, CaraterEtapa carater, TipoEtapaSnapshot tipo, int ordem, DeclaracaoDaAvaliacaoDaEtapa declaracao) =>
+        EtapaProcesso.Criar(new IdentificacaoDaEtapa(Nome: nome, Carater: carater, TipoEtapa: tipo, Ordem: ordem, FaseCodigo: null), declaracao).Value!;
+
+    private static EtapaProcesso EtapaDeProvaObjetiva(int ordem) =>
+        NovaEtapa("Prova", CaraterEtapa.Classificatoria, TipoDeEtapa("PROVA_OBJETIVA", "Prova Objetiva", pontua: true, elimina: true), ordem, Declaracao(peso: 1m, notaMinima: null));
+
+    private static void Regravar(EtapaProcesso tracked, TipoEtapaSnapshot tipo, DeclaracaoDaAvaliacaoDaEtapa declaracao) =>
+        tracked.AtualizarDados(
+            new IdentificacaoDaEtapa(Nome: tracked.Nome, Carater: tracked.Carater, TipoEtapa: tipo, Ordem: tracked.Ordem, FaseCodigo: null),
+            declaracao).IsSuccess.Should().BeTrue();
+
+    private static void ConferirOsSinalizadoresRegravadosDaAnalise(ProcessoSeletivo recarregado, Guid analiseId, Guid provaId)
+    {
+        TipoEtapaSnapshot regravado = TipoDaEtapa(recarregado, analiseId);
+        (regravado.AdmitePontuacao, regravado.AdmiteEliminacao).Should().Be((true, true));
+        (regravado.Codigo, regravado.Nome).Should().Be(("ANALISE_DOCUMENTAL", "Análise documental"));
+        TipoDaEtapa(recarregado, provaId).AdmitePontuacao.Should().BeTrue();
+    }
+
+    private static TipoEtapaSnapshot TipoDaEtapa(ProcessoSeletivo processo, Guid etapaId) =>
+        processo.Etapas.Single(e => e.Id == etapaId).TipoEtapa;
+
+    /// <summary>O caminho do handler quando o caráter da etapa muda e o tipo relido passou a pontuar.</summary>
+    private Task RegravarOsSinalizadoresDaAnaliseDocumentalAsync(Guid processoId, Guid etapaId) =>
+        ReconfigurarAsync(processoId, carregado =>
+        {
+            EtapaProcesso tracked = carregado.Etapas.Single(e => e.Id == etapaId);
+            tracked.TipoEtapa.AdmitePontuacao.Should().BeFalse();
+            tracked.TipoEtapa.AdmiteEliminacao.Should().BeTrue();
+            tracked.AtualizarDados(
+                new IdentificacaoDaEtapa(Nome: tracked.Nome, Carater: CaraterEtapa.Ambas, TipoEtapa: tracked.TipoEtapa.ComSinalizadores(true, true, false), Ordem: tracked.Ordem, FaseCodigo: null),
+                Declaracao(peso: 1m, notaMinima: 5m)).IsSuccess.Should().BeTrue();
+        });
+
+    private Task RegravarOsSinalizadoresDaNotaDoEnemAsync(Guid processoId, Guid doEnemId, Guid provaId) =>
+        ReconfigurarAsync(processoId, carregado =>
+        {
+            EtapaProcesso tracked = carregado.Etapas.Single(e => e.Id == doEnemId);
+            tracked.DeclaraNotaDoEnem.Should().BeTrue();
+            carregado.Etapas.Single(e => e.Id == provaId).DeclaraNotaDoEnem.Should().BeFalse();
+            Regravar(tracked, tracked.TipoEtapa.ComSinalizadores(true, false, false), Declaracao(peso: 1m, notaMinima: null));
+        });
+
+    private async Task ReconfigurarAsync(Guid processoId, Action<ProcessoSeletivo> reconfigurar)
+    {
+        await using UniPlusDbContext configureContext = _fixture.CreateDbContext();
+        ProcessoSeletivo carregado = (await ProcessoSeletivoRepositoryDeTeste.Criar(configureContext)
+            .ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;
+
+        reconfigurar(carregado);
+
+        await configureContext.SaveChangesAsync(CancellationToken.None);
+    }
+
+    private async Task<ProcessoSeletivo> RecarregarAsync(Guid processoId)
+    {
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
+        return (await ProcessoSeletivoRepositoryDeTeste.Criar(readContext).ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;
     }
 }

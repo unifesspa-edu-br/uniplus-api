@@ -62,7 +62,6 @@ public sealed class DefinirRegrasDerivacaoEndpointTests
         HttpResponseMessage resposta = await ctx.PutRegrasAsync(corpo);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        resposta.Headers.ETag.Should().BeNull("em rascunho não há sessão editorial nem ETag");
 
         await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
@@ -247,7 +246,7 @@ public sealed class DefinirRegrasDerivacaoEndpointTests
         {
             UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
-                .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}");
+                .SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"{nome} {Guid.CreateVersion7()}" });
             processoId = processo.Id;
             documentoId = documento.Id;
         }

@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Configuratio
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
@@ -17,6 +18,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<OfertaCurso>
 {
     private const int EnumTokenMaxLength = 30;
+    private const int CodigoMaxLength = CodigoOfertaCurso.TamanhoMaximo;
     private const int EMecCodigoMaxLength = 20;
     private const int CodigoSgaMaxLength = 30;
     private const int BaseLegalMaxLength = 500;
@@ -33,6 +35,7 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
 
         builder.HasKey(o => o.Id);
 
+        builder.Property(o => o.Codigo).HasMaxLength(CodigoMaxLength).IsRequired();
         builder.Property(o => o.CursoId).IsRequired();
         builder.Property(o => o.LocalOfertaId).IsRequired();
 
@@ -123,6 +126,12 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
             .HasForeignKey(o => o.LocalOfertaId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        // O código identifica a oferta viva: oferta removida libera o valor, e o índice decide a corrida entre dois cadastros.
+        builder.HasIndex(o => o.Codigo)
+            .IsUnique()
+            .HasFilter("is_deleted = false")
+            .HasDatabaseName(RestricoesDoBanco.OfertaDeCursoCodigoVivo);
+
         // O Id entra como segunda coluna porque a listagem restrita a um curso
         // ordena pelo nome do curso — constante dentro do recorte —, deixando o
         // Id como única coluna que move o seek de página em página.
@@ -135,6 +144,11 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
 
     private static void ConfigurarChecks(TableBuilder<OfertaCurso> table)
     {
+        // Formato do código (defesa em profundidade contra insert cru): o mesmo que o objeto de valor confere.
+        table.HasCheckConstraint(
+            "ck_ofertas_de_curso_codigo_formato",
+            "codigo ~ '^[A-Z][A-Z0-9_]{1,49}$'");
+
         // Domínios fechados dos enums (defesa em profundidade contra inserts crus).
         table.HasCheckConstraint(
             "ck_ofertas_de_curso_programa_de_oferta",

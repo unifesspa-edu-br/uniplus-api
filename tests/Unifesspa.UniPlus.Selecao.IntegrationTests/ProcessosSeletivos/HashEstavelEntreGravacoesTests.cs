@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
@@ -54,55 +55,31 @@ public sealed class HashEstavelEntreGravacoesTests
     [Fact(DisplayName = "O ato do produto em NFC e em NFD produz os mesmos bytes canônicos")]
     public void AtoEmFormasUnicodeDiferentes_ProduzOsMesmosBytes()
     {
-        // "AVALIAÇÃO" com Ç e Ã compostos (NFC) e decompostos (NFD): mesmo texto para o
-        // operador, sequências de code points diferentes.
         const string EmNfc = "RESULTADO_AVALIAÇÃO";
         const string EmNfd = "RESULTADO_AVALIAÇÃO";
-
-        // As duas literais são indistinguíveis na tela: nada além desta afirmação garante que
-        // o arquivo-fonte ainda carrega a sequência decomposta. Se uma ferramenta normalizar o
-        // arquivo, é aqui que o teste acusa, em vez de passar a valer por nada.
-        EmNfd.Should().NotBe(EmNfc, "a segunda literal tem de estar decomposta no arquivo-fonte");
-
-        // No MESMO processo: o produto declarado em NFC é regravado em NFD. Comparar dois
-        // processos distintos não serviria enquanto o id do produto entrar nos bytes.
+        EmNfd.Should().NotBe(EmNfc, "a literal decomposta precisa continuar diferente no arquivo-fonte");
         ProcessoSeletivo processo = ProcessoComProdutoDeAto(EmNfc);
         byte[] comNfc = Canonicalizar(processo);
 
-        processo.Etapas.Single()
-            .DefinirProdutos([ProdutoDaEtapa.Criar(EmNfd, PapelProdutoFase.Preliminar)])
-            .IsSuccess.Should().BeTrue();
+        processo.Etapas.Single().DefinirProdutos([ProdutoDaEtapa.Criar(EmNfd, PapelProdutoFase.Preliminar)]).IsSuccess.Should().BeTrue();
         byte[] comNfd = Canonicalizar(processo);
 
-        comNfd.Should().Equal(comNfc,
-            "o bloco da fase normaliza para NFC desde sempre; o da etapa não normalizava, e dois "
-            + "textos indistinguíveis na tela produziam hashes diferentes de um lado e iguais do outro");
+        comNfd.Should().Equal(comNfc, "a declaração equivalente do mesmo produto preserva o documento");
     }
 
     [Fact(DisplayName = "O ato gravado em forma decomposta sai do documento em NFC")]
     public void AtoGravadoEmNfd_SaiDoDocumentoEmNfc()
     {
-        // A forma decomposta é DERIVADA, não escrita à mão: duas literais indistinguíveis no
-        // editor viram a mesma string ao primeiro arquivo que alguma ferramenta normalize, e o
-        // teste passaria a valer por nada sem que ninguém percebesse.
         const string EmNfc = "RESULTADO_AVALIAÇÃO";
         string emNfd = EmNfc.Normalize(NormalizationForm.FormD);
-        emNfd.Should().NotBe(EmNfc, "pré-condição: o ato tem acentos, e decompô-los muda os bytes");
-
-        // Numa etapa sem produto algum não há linha com que reconciliar, então o que a etapa
-        // passa a guardar é o texto decomposto — a única forma de exercitar a normalização da
-        // EMISSÃO, que a reconciliação esconde quando já existe linha equivalente.
+        emNfd.Should().NotBe(EmNfc, "decompor os acentos precisa mudar os bytes");
         ProcessoSeletivo processo = ProcessoComProdutoDeAto(emNfd);
-        processo.Etapas.Single().Produtos.Single().AtoCodigo.Should().Be(emNfd,
-            "pré-condição: a etapa guarda a forma decomposta que o cliente declarou");
+        processo.Etapas.Single().Produtos.Single().AtoCodigo.Should().Be(emNfd);
 
         using JsonDocument documento = JsonDocument.Parse(Canonicalizar(processo));
-        string emitido = documento.RootElement
-            .GetProperty("etapas")[0].GetProperty("produtos")[0].GetProperty("atoCodigo").GetString()!;
+        string emitido = documento.RootElement.GetProperty("etapas")[0].GetProperty("produtos")[0].GetProperty("atoCodigo").GetString()!;
 
-        emitido.Should().Be(EmNfc,
-            "o documento canônico emite toda string de negócio em NFC — duas grafias do mesmo "
-            + "ato produziriam hashes diferentes para a mesma configuração");
+        emitido.Should().Be(EmNfc, "a emissão normaliza o texto que ainda está decomposto na entidade");
     }
 
     [Fact(DisplayName = "A unidade responsável da fase entra nos bytes canônicos: regravá-la igual mantém, trocá-la muda")]
@@ -111,21 +88,17 @@ public sealed class HashEstavelEntreGravacoesTests
         ProcessoSeletivo processo = ProcessoComEtapaCompleta();
         byte[] comCeps = Canonicalizar(processo);
 
-        processo.DefinirCronogramaFases([FaseDoCertame(UnidadesDeTeste.Ceps)], [], PrecondicaoIfMatch.Ausente)
+        processo.DefinirCronogramaFases([FaseDoCertame(UnidadesDeTeste.Ceps)], [])
             .IsSuccess.Should().BeTrue();
         Canonicalizar(processo).Should().Equal(comCeps,
             "regravar a fase com a mesma unidade não muda o documento");
 
-        processo.DefinirCronogramaFases([FaseDoCertame(UnidadesDeTeste.Cga)], [], PrecondicaoIfMatch.Ausente)
+        processo.DefinirCronogramaFases([FaseDoCertame(UnidadesDeTeste.Cga)], [])
             .IsSuccess.Should().BeTrue();
         byte[] comCga = Canonicalizar(processo);
 
         comCga.Should().NotEqual(comCeps, "a unidade responsável é conteúdo congelado: trocá-la muda o hash");
-        using JsonDocument envelope = JsonDocument.Parse(comCga);
-        JsonElement unidade = envelope.RootElement.GetProperty("cronogramaFases").GetProperty("fases")[0].GetProperty("unidadeResponsavel");
-        unidade.GetProperty("origemId").GetGuid().Should().Be(UnidadesDeTeste.Cga.OrigemId);
-        unidade.GetProperty("sigla").GetString().Should().Be("CGA");
-        unidade.GetProperty("nome").GetString().Should().Be("Centro de Gestão Acadêmica");
+        ConferirUnidadeNoEnvelope(comCga);
     }
 
     private static byte[] Canonicalizar(ProcessoSeletivo processo) =>
@@ -179,8 +152,8 @@ public sealed class HashEstavelEntreGravacoesTests
     private static RecursoDaEtapa JanelaAncoradaEm(EtapaProcesso etapa, string atoCodigo) =>
         RecursoDaEtapa.Criar(
             AncoraDoRecurso.AtoPublicado,
-            ReferenciaRegra.Criar(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", HashFixo).Value!,
-            new ArgsRegraPrazoRecurso(48m, UnidadePrazo.Horas, null, null, false, null, null),
+            ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", HashFixo),
+            new ParametrosRegraPrazoRecurso(48m, UnidadePrazo.Horas, null, null, false, null, null),
             etapa.Produtos.Single(p => p.Papel == PapelProdutoFase.Preliminar
                 && string.Equals(p.AtoCodigo, atoCodigo, StringComparison.Ordinal)).Id).Value!;
 
@@ -195,57 +168,90 @@ public sealed class HashEstavelEntreGravacoesTests
 
     private static ProcessoSeletivo ProcessoBase()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Hash 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeOrigem,
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
-            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoComAtendimento();
 
+        DefinirOfertaDeAmplaConcorrencia(processo);
 
-        // O canonicalizador exige a configuração que o gate de publicação já teria cobrado.
-        processo.DefinirAtendimentoEspecializado(
-            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente)
-            .IsSuccess.Should().BeTrue();
+        DefinirClassificacaoImportada(processo);
+        processo.DefinirOpcoesDeCurso(1).IsSuccess.Should().BeTrue();
 
-        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
-            ModalidadeOrigem, "AC", null, NaturezaLegalModalidade.Ampla,
-            ComposicaoVagasModalidade.ResidualDoVo, null, RegraRemanejamentoModalidade.Nenhuma,
-            null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!;
-        processo.DefinirDistribuicaoVagas([ConfiguracaoDistribuicaoVagas.Criar(
-            DistribuicaoOrigem, 40, 1m,
-            ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!,
-            null, null, [modalidade], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
-            ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo).Value!, null, null,
-            ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo).Value!, [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirOpcoesDeCurso(1, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        processo.DefinirCronogramaFases([FaseDoCertame(UnidadesDeTeste.Ceps)], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirEtapas([
-            EtapaProcesso.Criar(
-                "Prova Objetiva", CaraterEtapa.Classificatoria,
-                TipoEtapaSnapshot.Criar(TipoEtapaOrigem, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-                peso: 1m, ordem: 1, faseCodigo: "RESULTADO_FINAL").Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        DefinirCronogramaEEtapas(processo);
 
         return processo;
     }
 
     /// <summary>A fase única do certame, sob a unidade dada, sempre por instância nova.</summary>
     private static FaseCronograma FaseDoCertame(UnidadeResponsavelSnapshot unidadeResponsavel) => FaseCronograma.Criar(
-        ordem: 1, faseCanonicaOrigemId: FaseOrigem, codigo: "RESULTADO_FINAL",
-        origemData: OrigemDataFase.NoEdital, agrupaEtapas: true,
-        permiteComplementacao: false, coletaInscricao: true, coletaSolicitacaoIsencao: false,
-        inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-        fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-        produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
-        faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [],
-        regraRecurso: null,
-        unidadeResponsavel: unidadeResponsavel).Value!;
+        new OrigemCanonicaDaFase(
+            OrigemId: FaseOrigem, Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true,
+            ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+            UnidadeResponsavel: unidadeResponsavel),
+        HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(),
+        bancasRequeridas: []).Value!;
 
     private static DadosEdital DadosDeReferencia() => DadosEdital.Criar(
         "001/2026",
         new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
         new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
         DocumentoAPublicar).Value!;
+
+    private static void ConferirUnidadeNoEnvelope(byte[] comCga)
+    {
+        using JsonDocument envelope = JsonDocument.Parse(comCga);
+        JsonElement unidade = envelope.RootElement.GetProperty("cronogramaFases").GetProperty("fases")[0].GetProperty("unidadeResponsavel");
+        unidade.GetProperty("origemId").GetGuid().Should().Be(UnidadesDeTeste.Cga.OrigemId);
+        unidade.GetProperty("sigla").GetString().Should().Be("CGA");
+        unidade.GetProperty("nome").GetString().Should().Be("Centro de Gestão Acadêmica");
+    }
+
+
+    private static void DefinirOfertaDeAmplaConcorrencia(ProcessoSeletivo processo)
+    {
+        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
+            ModalidadeOrigem, "AC", null, NaturezaLegalModalidade.Ampla,
+            ComposicaoVagasModalidade.RestanteDasVagasOfertadas, null, RegraRemanejamentoModalidade.Nenhuma,
+            null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!;
+        processo.DefinirDistribuicaoVagas([ConfiguracaoDistribuicaoVagas.Criar(DistribuicaoOrigem,
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo), Modalidades = [modalidade] },
+            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
+    }
+
+
+    private static void DefinirClassificacaoImportada(ProcessoSeletivo processo)
+    {
+        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo),
+            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo),
+        }).Value!).IsSuccess.Should().BeTrue();
+    }
+
+
+    private static void DefinirCronogramaEEtapas(ProcessoSeletivo processo)
+    {
+        processo.DefinirCronogramaFases([FaseDoCertame(UnidadesDeTeste.Ceps)], []).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([
+            EtapaProcesso.Criar(
+                new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(TipoEtapaOrigem, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
+                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
+        ]).IsSuccess.Should().BeTrue();
+    }
+
+
+    private static ProcessoSeletivo ProcessoComAtendimento()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
+            "PS Hash 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeOrigem,
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+
+        processo.DefinirAtendimentoEspecializado(
+            AtendimentoEspecializado.Criar([], [], []).Value!)
+            .IsSuccess.Should().BeTrue();
+
+        return processo;
+    }
+
 }

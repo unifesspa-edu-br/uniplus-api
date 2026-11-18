@@ -32,7 +32,7 @@ internal static class LeituraDaDivulgacaoETaxa
     /// nunca um <see cref="StringComparer.Ordinal"/> reimplementado), a bicondicional entre
     /// <c>nome_abreviado</c> e <c>regraNomeAbreviado</c>, o identificador de regra conhecido, e a
     /// forma canônica (Trim + NFC) da justificativa. Um bloco cujo conteúdo é exatamente o
-    /// default minimizado reidrata como <see langword="null"/> — a restauração não fabrica
+    /// default minimizado reidrata como <see langword="null"/> — a reidratação não fabrica
     /// entidade para um processo que nunca configurou divulgação.
     /// </remarks>
     internal static ConfiguracaoDivulgacao? LerDivulgacao(LeitorEnvelope leitor, JsonObject payload)

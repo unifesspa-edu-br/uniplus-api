@@ -4,9 +4,9 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// A exigência de documento declara o formulário que a entrega (ADR-0171). Ela só vale num formulário
-/// que o processo tem, obrigatório, para que o candidato sempre o envie, e ligado à mesma fase da
-/// exigência. O formulário que ainda entrega alguma exigência não pode ser removido. As recusas
-/// independentes de uma mesma exigência saem juntas (ADR-0125).
+/// que o processo tem e que é ligado à mesma fase da exigência, obrigatório ou facultativo: o pedido de
+/// isenção, facultativo, exige o comprovante (UNI-REQ-0144). O formulário que ainda entrega alguma
+/// exigência não pode ser removido. As recusas independentes de uma mesma exigência saem juntas (ADR-0125).
 /// </summary>
 public static class ConferenciaDasExigenciasDoFormulario
 {
@@ -47,11 +47,6 @@ public static class ConferenciaDasExigenciasDoFormulario
 
     private static IEnumerable<DomainError> RecusasDoFormularioCitado(ExigenciaDeDocumentoDoFormulario exigencia, FormularioDeclarado formulario)
     {
-        if (!formulario.Obrigatorio)
-        {
-            yield return FormularioFacultativo();
-        }
-
         if (formulario.FaseId != exigencia.FaseId)
         {
             yield return FormularioDeOutraFase();
@@ -61,10 +56,6 @@ public static class ConferenciaDasExigenciasDoFormulario
     private static DomainError FormularioInexistente() => new(
         FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioInexistente,
         "O processo não tem o formulário citado pela exigência de documento.");
-
-    private static DomainError FormularioFacultativo() => new(
-        FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioFacultativo,
-        "A exigência de documento precisa de formulário obrigatório, e o citado é facultativo.");
 
     private static DomainError FormularioDeOutraFase() => new(
         FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioDeOutraFase,

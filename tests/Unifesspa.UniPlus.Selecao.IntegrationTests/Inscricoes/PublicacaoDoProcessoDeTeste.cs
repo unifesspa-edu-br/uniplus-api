@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Opcoes;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -36,33 +37,7 @@ internal static class PublicacaoDoProcessoDeTeste
         // tipo de localidade e UF de naturalidade) — o canonicalizador exige uma entrada não vazia para cada; os
         // valores em si não importam para o que este teste prova (a resolução da versão divulgada e
         // a cifra dos documentos).
-        Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresDoConjuntoBasico = new(StringComparer.Ordinal)
-        {
-            ["NACIONALIDADE"] = [new ValorDominioDeclaradoCongelado("BRASILEIRA", "Nacionalidade brasileira.", 0)],
-            ["ESTADO_CIVIL"] = [new ValorDominioDeclaradoCongelado("SOLTEIRO", "Solteiro(a).", 0)],
-            ["SEXO"] = [new ValorDominioDeclaradoCongelado("FEMININO", "Feminino.", 0)],
-            ["SEXO_CIVIL"] = [new ValorDominioDeclaradoCongelado("FEMININO", "Feminino.", 0)],
-            ["IDENTIDADE_GENERO"] = [new ValorDominioDeclaradoCongelado("PREFIRO_NAO_INFORMAR", "Prefiro não informar.", 0)],
-            ["ORIENTACAO_SEXUAL"] = [new ValorDominioDeclaradoCongelado("PREFIRO_NAO_INFORMAR", "Prefiro não informar.", 0)],
-            ["COR_RACA"] = [new ValorDominioDeclaradoCongelado("NAO_DECLARADO", "Prefere não declarar.", 0)],
-            ["TIPO_ENDERECO"] = [new ValorDominioDeclaradoCongelado("URBANO", "Endereço urbano.", 0)],
-            ["RG_ORGAO_EMISSOR"] = [new ValorDominioDeclaradoCongelado("SSP", "Secretaria de Segurança Pública (SSP)", 0)],
-            ["RG_UF"] = [new ValorDominioDeclaradoCongelado("PA", "Pará.", 0)],
-            ["NATURALIDADE_UF"] = [new ValorDominioDeclaradoCongelado("PA", "Pará.", 0)],
-        };
-
-        foreach ((string campo, IReadOnlyList<ValorDominioDeclaradoCongelado>? valores) in valoresDosCampos ?? new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>())
-        {
-            valoresDoConjuntoBasico[campo] = valores;
-        }
-
-        // O campo cujas opções o processo oferta congela essas opções, pela mesma leitura que o
-        // resolvedor da publicação usa.
-        foreach (FatoColetado campo in processo.Campos.Where(static c => RegrasDasOpcoesDeclaradas.OrigemDasOpcoes(c) == OrigemValoresColeta.OpcoesDoProcesso))
-        {
-            valoresDoConjuntoBasico[campo.FatoCodigo] = [.. processo.OpcoesDoProcesso(campo.FatoCodigo)
-                .Select(static o => new ValorDominioDeclaradoCongelado(o.Codigo, o.Rotulo, o.Ordem))];
-        }
+        Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresDoConjuntoBasico = ValoresDosCampos(processo, valoresDosCampos);
 
         SnapshotCanonico congelado = Canonicalizer.Canonicalizar(
             new EntradaCanonicalizacao(processo, dados, hash64, FusoInstitucional.ZoneId, Retificacao: retificacao, ValoresSelecionaveisCongelados: valoresDoConjuntoBasico, TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
@@ -79,32 +54,42 @@ internal static class PublicacaoDoProcessoDeTeste
         await db.ProcessosSeletivos.AddAsync(processo);
         await db.SaveChangesAsync();
 
-        const string hashDocumento = "3333333333333333333333333333333333333333333333333333333333333333333";
-        string hash64 = hashDocumento[..64];
-        DadosEdital dados = DadosEdital.Criar(
-            "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
-            new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!;
+        DadosEdital dados = DadosDoEdital();
+        SnapshotCanonico congelado = CongelarProcesso(processo, dados, HashDoDocumento, valoresDosCampos);
+        VersaoConfiguracao versao = Publicar(processo, dados, congelado, HashDoDocumento);
+        ProcessoSeletivoRepository processoRepository = ProcessoSeletivoRepositoryDeTeste.Criar(db);
+        await processoRepository.AdicionarVersaoConfiguracaoAsync(versao, CancellationToken.None);
+        await DivulgarAsync(db, processo, versao, dados, HashDoDocumento);
+        await db.SaveChangesAsync();
 
-        SnapshotCanonico congelado = CongelarProcesso(processo, dados, hash64, valoresDosCampos);
+        return (processo.Id, dados);
+    }
 
+    private const string HashDoDocumento = "3333333333333333333333333333333333333333333333333333333333333333";
+
+    private static DadosEdital DadosDoEdital() => DadosEdital.Criar(
+        "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
+        new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!;
+
+    private static VersaoConfiguracao Publicar(ProcessoSeletivo processo, DadosEdital dados, SnapshotCanonico congelado, string hash64)
+    {
         Result<VersaoConfiguracao> publicar = processo.Publicar(
-            dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, hash64,
-            "integration-test-user", TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, hash64), AtorUsuarioContaId = "integration-test-user", Contagem = CorpusEnvelopeDadosDoEdital.ContextoRico(), MotivosEscolhidos = MotivosDoProcessoDeTeste.Cobrindo(processo) });
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
 
-        ProcessoSeletivoRepository processoRepository = ProcessoSeletivoRepositoryDeTeste.Criar(db);
-        await processoRepository.AdicionarVersaoConfiguracaoAsync(publicar.Value!, CancellationToken.None);
+        return publicar.Value!;
+    }
+
+    private static async Task DivulgarAsync(UniPlusDbContext db, ProcessoSeletivo processo, VersaoConfiguracao versao, DadosEdital dados, string hash64)
+    {
         await new CertameDivulgadoRepository(db).AdicionarAsync(
             CertameDivulgado.Criar(
-                processo.Id, publicar.Value!.NumeroVersao, publicar.Value!.AtoCriadorId, hash64, versaoProjecao: "1",
+                processo.Id, versao.NumeroVersao, versao.AtoCriadorId, hash64, versaoProjecao: "1",
                 new FacetasDoCertameDivulgado(
                     processo.IdentificadorLegivel!.Value.Valor, processo.Nome, dados.Numero, ["AC"],
                     dados.PeriodoInscricaoInicio, dados.PeriodoInscricaoFim),
                 """{"nome":"documento"}""", TimeProvider.System.GetUtcNow()),
             CancellationToken.None);
-        await db.SaveChangesAsync();
-
-        return (processo.Id, dados);
     }
 
     /// <summary>Grava <paramref name="retificado"/> como a versão seguinte do processo, sem divulgá-la: a retificação fechada ainda sem publicidade.</summary>
@@ -115,8 +100,8 @@ internal static class PublicacaoDoProcessoDeTeste
         VersaoConfiguracao anterior = (await processos.ObterVersoesAsync(processoId, CancellationToken.None)).MaxBy(static v => v.NumeroVersao)!;
         SnapshotCanonico congelado = CongelarProcesso(retificado, dados, hash, valoresDosCampos: null, new RetificacaoDoEdital(anterior.AtoCriadorId, "Retificação de teste"));
         VersaoConfiguracao sucessora = VersaoConfiguracao.Suceder(
-            anterior, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, Guid.CreateVersion7(), hash,
-            anterior.AtoCriadorId, "integration-test-user", TimeProvider.System.GetUtcNow());
+            anterior, new DocumentoCongelado(congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, hash),
+            Guid.CreateVersion7(), "integration-test-user", TimeProvider.System.GetUtcNow());
         await processos.AdicionarVersaoConfiguracaoAsync(sucessora, CancellationToken.None);
         await db.SaveChangesAsync();
         return sucessora;
@@ -136,4 +121,40 @@ internal static class PublicacaoDoProcessoDeTeste
 
     internal static async Task DivulgarRetificacaoAsync(UniPlusDbContext db, Guid processoId, ProcessoSeletivo retificado, DadosEdital dados) =>
         await DivulgarAsync(db, processoId, await GravarRetificacaoAsync(db, processoId, retificado, dados));
+
+    private static Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> ValoresDoConjuntoBasico() =>
+        new(StringComparer.Ordinal)
+        {
+            ["NACIONALIDADE"] = [new ValorDominioDeclaradoCongelado("BRASILEIRA", "Nacionalidade brasileira.", 0)],
+            ["ESTADO_CIVIL"] = [new ValorDominioDeclaradoCongelado("SOLTEIRO", "Solteiro(a).", 0)],
+            ["SEXO"] = [new ValorDominioDeclaradoCongelado("FEMININO", "Feminino.", 0)],
+            ["SEXO_CIVIL"] = [new ValorDominioDeclaradoCongelado("FEMININO", "Feminino.", 0)],
+            ["IDENTIDADE_GENERO"] = [new ValorDominioDeclaradoCongelado("PREFIRO_NAO_INFORMAR", "Prefiro não informar.", 0)],
+            ["ORIENTACAO_SEXUAL"] = [new ValorDominioDeclaradoCongelado("PREFIRO_NAO_INFORMAR", "Prefiro não informar.", 0)],
+            ["COR_RACA"] = [new ValorDominioDeclaradoCongelado("NAO_DECLARADO", "Prefere não declarar.", 0)],
+            ["TIPO_ENDERECO"] = [new ValorDominioDeclaradoCongelado("URBANO", "Endereço urbano.", 0)],
+            ["RG_ORGAO_EMISSOR"] = [new ValorDominioDeclaradoCongelado("SSP", "Secretaria de Segurança Pública (SSP)", 0)],
+            ["RG_UF"] = [new ValorDominioDeclaradoCongelado("PA", "Pará.", 0)],
+            ["NATURALIDADE_UF"] = [new ValorDominioDeclaradoCongelado("PA", "Pará.", 0)],
+        };
+
+
+    private static Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> ValoresDosCampos(ProcessoSeletivo processo, IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresDosCampos)
+    {
+        Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresDoConjuntoBasico = ValoresDoConjuntoBasico();
+        foreach ((string campo, IReadOnlyList<ValorDominioDeclaradoCongelado>? valores) in valoresDosCampos ?? new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>())
+        {
+            valoresDoConjuntoBasico[campo] = valores;
+        }
+
+        // O campo cujas opções o processo oferta congela essas opções, pela mesma leitura que o
+        // resolvedor da publicação usa.
+        foreach (FatoColetado campo in processo.Campos.Where(static c => RegrasDasOpcoesDeclaradas.OrigemDasOpcoes(c) == OrigemValoresColeta.OpcoesDoProcesso))
+        {
+            valoresDoConjuntoBasico[campo.FatoCodigo] = [.. processo.OpcoesDoProcesso(campo.FatoCodigo)
+                .Select(static o => new ValorDominioDeclaradoCongelado(o.Codigo, o.Rotulo, o.Ordem))];
+        }
+        return valoresDoConjuntoBasico;
+    }
+
 }

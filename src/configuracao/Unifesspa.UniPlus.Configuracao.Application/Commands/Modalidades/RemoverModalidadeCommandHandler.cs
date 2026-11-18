@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <c>SoftDeleteInterceptor</c> — bloqueia (409) as modalidades do catálogo legal fixo
 /// (<c>RemocaoBloqueadaCodigoProtegido</c>) e bloqueia (409) quando ESTA modalidade é
 /// referenciada por OUTRA modalidade viva como <c>composicao_origem</c> ou como
-/// destino/par/fallback em <c>remanejamento_args</c> (integridade referencial
+/// destino/par/fallback em <c>remanejamento_parametros</c> (integridade referencial
 /// intra-banco, invariante 7). Nunca é bloqueada por snapshot-copy de Seleção
 /// (ADR-0061). A auto-referência não bloqueia a própria remoção (checagem exclui o
 /// próprio Id).
@@ -28,31 +28,35 @@ public static class RemoverModalidadeCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        Modalidade? modalidade = await repository
-            .ObterPorIdAsync(command.Id, cancellationToken)
-            .ConfigureAwait(false);
+        Result<Modalidade> resultado = await ObterRemovivelAsync(command.Id, repository, cancellationToken).ConfigureAwait(false);
+        return resultado.IsFailure
+            ? Result.ValidationFailure(resultado.Errors)
+            : await RemoverSeNaoReferenciadaAsync(resultado.Value!, repository, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
+
+    // A proteção das modalidades legais é conferida antes das referências.
+    private static async Task<Result<Modalidade>> ObterRemovivelAsync(
+        Guid id, IModalidadeRepository repository, CancellationToken cancellationToken)
+    {
+        Modalidade? modalidade = await repository.ObterPorIdAsync(id, cancellationToken).ConfigureAwait(false);
         if (modalidade is null)
         {
-            return Result.Failure(new DomainError(
+            return Result<Modalidade>.Failure(new DomainError(
                 ModalidadeErrorCodes.NaoEncontrada,
                 "Modalidade de concorrência não encontrada."));
         }
 
-        // As doze modalidades legais fixas são fixadas em norma: sem as oito cotas da Lei
-        // 12.711/2012 (red. Lei 14.723/2023) e a ampla concorrência não há como configurar a
-        // distribuição de vagas de um edital que aplique a lei, sem AC_PCD não há como reservar
-        // vaga de pessoa com deficiência, e sem AC_I/AC_Q não há PSIQ. A checagem precede a de
-        // referência — é determinística e não vai ao banco.
-        if (modalidade.Codigo.EhLegalFixa)
-        {
-            return Result.Failure(new DomainError(
+        return modalidade.Codigo.EhLegalFixa
+            ? Result<Modalidade>.Failure(new DomainError(
                 ModalidadeErrorCodes.RemocaoBloqueadaCodigoProtegido,
-                "Esta modalidade pertence ao catálogo legal fixo e não pode ser removida."));
-        }
+                "Esta modalidade pertence ao catálogo legal fixo e não pode ser removida."))
+            : Result<Modalidade>.Success(modalidade);
+    }
 
-        // Check-then-act, simétrico ao bloqueio de remoção dos demais cadastros. A
-        // serialização estrita sob concorrência é controle cross-cutting, fora desta
-        // Story. O próprio Id é excluído — auto-referência não bloqueia a remoção.
+    // A consulta exclui o próprio identificador para permitir a autorreferência.
+    private static async Task<Result> RemoverSeNaoReferenciadaAsync(
+        Modalidade modalidade, IModalidadeRepository repository, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
         if (await repository
             .EhReferenciadaPorOutraModalidadeVivaAsync(modalidade.Codigo.Valor, modalidade.Id, cancellationToken)
             .ConfigureAwait(false))
@@ -60,7 +64,7 @@ public static class RemoverModalidadeCommandHandler
             return Result.Failure(new DomainError(
                 ModalidadeErrorCodes.RemocaoBloqueadaPorReferencia,
                 "Não é possível remover uma modalidade referenciada por outra modalidade viva "
-                + "(como origem de composição ou destino/par/fallback de remanejamento)."));
+                + "(como origem de composição, destino, par ou modalidade final do remanejamento)."));
         }
 
         repository.Remover(modalidade);

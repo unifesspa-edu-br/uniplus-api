@@ -25,40 +25,49 @@ internal static class SerializacaoDoBonusEDoAtendimento
 {
     internal static JsonObject SerializarAtendimento(ProcessoSeletivo processo)
     {
-        if (processo.AtendimentoEspecializado is not { } atendimento)
-        {
-            throw new InvalidOperationException(
-                "Canonicalização de processo sem atendimento especializado — o gate de conformidade deveria ter recusado a transição antes deste ponto.");
-        }
+        AtendimentoEspecializado atendimento = AtendimentoDefinido(processo);
 
         return new JsonObject
         {
-            ["condicoes"] = new JsonArray([.. atendimento.Condicoes
-                .OrderBy(static c => c.CondicaoOrigemId)
-                .Select(static c => (JsonNode)new JsonObject
-                {
-                    ["condicaoOrigemId"] = c.CondicaoOrigemId,
-                    ["condicaoCodigo"] = HashCanonicalComputer.NormalizeNfc(c.CondicaoCodigo),
-                    ["condicaoNome"] = HashCanonicalComputer.NormalizeNfc(c.CondicaoNome),
-                })]),
-            ["recursos"] = new JsonArray([.. atendimento.Recursos
-                .OrderBy(static r => r.RecursoOrigemId)
-                .Select(static r => (JsonNode)new JsonObject
-                {
-                    ["recursoOrigemId"] = r.RecursoOrigemId,
-                    ["recursoCodigo"] = r.RecursoCodigo,
-                    ["recursoNome"] = HashCanonicalComputer.NormalizeNfc(r.RecursoNome),
-                })]),
-            ["tiposDeficiencia"] = new JsonArray([.. atendimento.TiposDeficiencia
-                .OrderBy(static t => t.TipoDeficienciaOrigemId)
-                .Select(static t => (JsonNode)new JsonObject
-                {
-                    ["tipoDeficienciaOrigemId"] = t.TipoDeficienciaOrigemId,
-                    ["tipoDeficienciaCodigo"] = t.TipoDeficienciaCodigo,
-                    ["tipoDeficienciaNome"] = HashCanonicalComputer.NormalizeNfc(t.TipoDeficienciaNome),
-                })]),
+            ["condicoes"] = SerializarCondicoes(atendimento.Condicoes),
+            ["recursos"] = SerializarRecursos(atendimento.Recursos),
+            ["tiposDeficiencia"] = SerializarTiposDeDeficiencia(atendimento.TiposDeficiencia),
         };
     }
+
+    private static AtendimentoEspecializado AtendimentoDefinido(ProcessoSeletivo processo) =>
+        processo.AtendimentoEspecializado ?? throw new InvalidOperationException(
+            "Canonicalização de processo sem atendimento especializado — a verificação de conformidade deveria ter recusado a transição antes deste ponto.");
+
+    private static JsonArray SerializarCondicoes(IEnumerable<CondicaoOfertada> condicoes) =>
+        new([.. condicoes
+            .OrderBy(static c => c.CondicaoOrigemId)
+            .Select(static c => (JsonNode)new JsonObject
+            {
+                ["condicaoOrigemId"] = c.CondicaoOrigemId,
+                ["condicaoCodigo"] = HashCanonicalComputer.NormalizeNfc(c.CondicaoCodigo),
+                ["condicaoNome"] = HashCanonicalComputer.NormalizeNfc(c.CondicaoNome),
+            })]);
+
+    private static JsonArray SerializarRecursos(IEnumerable<RecursoOfertado> recursos) =>
+        new([.. recursos
+            .OrderBy(static r => r.RecursoOrigemId)
+            .Select(static r => (JsonNode)new JsonObject
+            {
+                ["recursoOrigemId"] = r.RecursoOrigemId,
+                ["recursoCodigo"] = r.RecursoCodigo,
+                ["recursoNome"] = HashCanonicalComputer.NormalizeNfc(r.RecursoNome),
+            })]);
+
+    private static JsonArray SerializarTiposDeDeficiencia(IEnumerable<DeficienciaAtendida> deficiencias) =>
+        new([.. deficiencias
+            .OrderBy(static t => t.TipoDeficienciaOrigemId)
+            .Select(static t => (JsonNode)new JsonObject
+            {
+                ["tipoDeficienciaOrigemId"] = t.TipoDeficienciaOrigemId,
+                ["tipoDeficienciaCodigo"] = t.TipoDeficienciaCodigo,
+                ["tipoDeficienciaNome"] = HashCanonicalComputer.NormalizeNfc(t.TipoDeficienciaNome),
+            })]);
 
     internal static JsonObject SerializarBonusRegional(ProcessoSeletivo processo)
     {
@@ -67,19 +76,29 @@ internal static class SerializacaoDoBonusEDoAtendimento
             return new JsonObject { ["presente"] = false };
         }
 
-        return new JsonObject
+        JsonObject json = ParametrosDoBonus(bonus);
+        AcrescentarBaseLegalCongelada(json, bonus);
+        return json;
+    }
+
+    private static JsonObject ParametrosDoBonus(ConfiguracaoBonusRegional bonus) =>
+        new()
         {
             ["presente"] = true,
             ["regra"] = EscritaCanonica.SerializarReferenciaRegra(bonus.Regra),
             ["fator"] = HashCanonicalComputer.SerializeDecimalCanonical(bonus.Fator, EscritaCanonica.EscalaPadrao),
             ["teto"] = bonus.Teto is { } teto ? HashCanonicalComputer.SerializeDecimalCanonical(teto, EscritaCanonica.EscalaPadrao) : null,
             ["fatoElegibilidadeCodigo"] = bonus.FatoElegibilidadeCodigo,
-            ["baseLegalBonusRegionalId"] = bonus.BaseLegalBonusRegionalId,
-            ["tipoInstrumento"] = HashCanonicalComputer.NormalizeNfc(bonus.TipoInstrumento),
-            ["identificacao"] = HashCanonicalComputer.NormalizeNfc(bonus.Identificacao),
-            ["descricao"] = HashCanonicalComputer.NormalizeNfc(bonus.Descricao),
-            ["municipios"] = SerializarMunicipiosDoBonus(bonus),
         };
+
+    private static void AcrescentarBaseLegalCongelada(JsonObject json, ConfiguracaoBonusRegional bonus)
+    {
+        json["baseLegalBonusRegionalId"] = bonus.BaseLegalBonusRegionalId;
+        json["baseLegalBonusRegionalCodigo"] = HashCanonicalComputer.NormalizeNfc(bonus.BaseLegalBonusRegionalCodigo);
+        json["tipoInstrumento"] = HashCanonicalComputer.NormalizeNfc(bonus.TipoInstrumento);
+        json["identificacao"] = HashCanonicalComputer.NormalizeNfc(bonus.Identificacao);
+        json["descricao"] = HashCanonicalComputer.NormalizeNfc(bonus.Descricao);
+        json["municipios"] = SerializarMunicipiosDoBonus(bonus);
     }
 
     private static JsonArray SerializarMunicipiosDoBonus(ConfiguracaoBonusRegional bonus) =>

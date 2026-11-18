@@ -70,7 +70,7 @@ public sealed class DivulgacaoNoCommitDaPublicacaoTests
         divulgado.AtosDivulgados.Should().HaveCount(2).And.OnlyContain(e => e.UrlDownload == null);
     }
 
-    [Fact(DisplayName = "Identificador legível em uso recusa a publicação com 409, sem versão, ato, divulgação nem envelope, e preserva o rascunho")]
+    [Fact(DisplayName = "Identificador legível em uso recusa a publicação com 409, sem versão, ato, divulgação nem envelope")]
     public async Task IdentificadorLegivelEmUso_Recusa409SemResiduo()
     {
         CascadingApiFactory api = _fixture.Factory;
@@ -79,7 +79,6 @@ public sealed class DivulgacaoNoCommitDaPublicacaoTests
         (Guid processoId, Guid documentoId) = await SemearProcessoAsync(api, nameof(IdentificadorLegivelEmUso_Recusa409SemResiduo));
         string identificador = await IdentificadorDoProcessoAsync(api, processoId);
         await DivulgarOutroProcessoComOIdentificadorAsync(api, identificador);
-        await SemearRascunhoAsync(api, processoId);
 
         using HttpResponseMessage resposta = await PublicarAsync(client, processoId, documentoId);
 
@@ -259,15 +258,6 @@ public sealed class DivulgacaoNoCommitDaPublicacaoTests
         await db.SaveChangesAsync();
     }
 
-    private static async Task SemearRascunhoAsync(CascadingApiFactory api, Guid processoId)
-    {
-        await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
-        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        db.RascunhosDePublicacao.Add(RascunhoDePublicacao.Criar(
-            processoId, "operador-do-rascunho", """{"ato":{"assinante":"Fulano de Tal"}}""", 1, DateTimeOffset.UtcNow, RascunhoDePublicacao.Prazo).Value!);
-        await db.SaveChangesAsync();
-    }
-
     private static async Task ConferirSemResiduoAsync(CascadingApiFactory api, Guid processoId)
     {
         await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
@@ -275,8 +265,6 @@ public sealed class DivulgacaoNoCommitDaPublicacaoTests
         (await db.VersoesConfiguracao.AsNoTracking().AnyAsync(v => v.ProcessoSeletivoId == processoId)).Should().BeFalse();
         (await db.AtosDoProcesso.AsNoTracking().AnyAsync(a => a.ProcessoSeletivoId == processoId)).Should().BeFalse();
         (await db.CertamesDivulgados.AsNoTracking().AnyAsync(c => c.Id == processoId)).Should().BeFalse();
-        (await db.RascunhosDePublicacao.AsNoTracking().AnyAsync(r => r.ProcessoSeletivoId == processoId)).Should().BeTrue(
-            "a publicação foi recusada, e o operador precisa reencontrar a transcrição que fez");
         (await EnvelopesDoProcessoAsync(api, processoId)).Should().Be(0, "nenhum evento nem mensagem de cópia saiu para um commit que não houve");
     }
 

@@ -22,199 +22,200 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// Cobertura de integração (Postgres real via Testcontainers) do bônus
 /// regional (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015) e dos critérios de desempate (Story #774): persiste e
 /// recarrega as 5 variantes de
-/// <c>ArgsCriterioDesempate</c> (jsonb polimórfico) e o owned type
+/// <c>ParametrosCriterioDesempate</c> (jsonb polimórfico) e o owned type
 /// <c>ReferenciaRegra</c>, e prova a reconfiguração sobre o agregado tracked
 /// (a mesma proteção <c>ValueGeneratedNever</c> dos demais filhos do agregado).
 /// </summary>
 public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSeletivoDbFixture>
 {
     private readonly ProcessoSeletivoDbFixture _fixture;
+    private readonly ApoioDaPersistenciaDoProcessoSeletivo _apoio;
 
     public DesempateBonusPersistenciaTests(ProcessoSeletivoDbFixture fixture)
     {
         _fixture = fixture;
+        _apoio = new ApoioDaPersistenciaDoProcessoSeletivo(fixture);
     }
 
     private static ReferenciaRegra Regra(string codigo, string hashSeed) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string(hashSeed[0], 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string(hashSeed[0], 64));
 
     private static CondicaoDnf CondicaoProfessorRural() =>
         CondicaoDnf.Criar("PROFESSOR_RURAL", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!;
 
-    [Fact(DisplayName = "Persiste e recarrega os 5 critérios de desempate (args polimórficos) e o bônus regional")]
+    [Fact(DisplayName = "Persiste e recarrega os 5 critérios de desempate (parâmetros polimórficos) e o bônus regional")]
     public async Task PersisteERecarrega_DesempateEBonus()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Convênios 2026", TiposDeProcessoDeTeste.PSVR, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        EtapaProcesso etapa = EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!;
-        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
-
-        CriterioDesempate maiorNotaEtapa = CriterioDesempate.Criar(
-            1, Regra(CriterioDesempateCodigo.MaiorNotaEtapa, "a"), new ArgsDesempateMaiorNotaEtapa(etapa.Id)).Value!;
-        CriterioDesempate idoso = CriterioDesempate.Criar(
-            2, Regra(CriterioDesempateCodigo.Idoso, "b"), new ArgsDesempateIdoso(60)).Value!;
-        CriterioDesempate maiorIdade = CriterioDesempate.Criar(
-            3, Regra(CriterioDesempateCodigo.MaiorIdade, "c"), new ArgsDesempateMaiorIdade()).Value!;
-        CriterioDesempate predicadoFato = CriterioDesempate.Criar(
-            4, Regra(CriterioDesempateCodigo.PredicadoFato, "d"), new ArgsDesempatePredicadoFato(CondicaoProfessorRural())).Value!;
-        CriterioDesempate maiorNotaAreaEnem = CriterioDesempate.Criar(
-            5, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, "f"), new ArgsDesempateMaiorNotaAreaEnem(["REDACAO", "MATEMATICA", "LINGUAGENS"])).Value!;
-
-        Result desempateResult = processo.DefinirCriteriosDesempate([maiorNotaEtapa, idoso, maiorIdade, predicadoFato, maiorNotaAreaEnem], PrecondicaoIfMatch.Ausente);
-        desempateResult.IsSuccess.Should().BeTrue();
-
+        ProcessoSeletivo processo = NovoProcesso("PS Convênios 2026");
+        EtapaProcesso etapa = EtapaDeRedacao();
+        processo.DefinirEtapas([etapa]);
         Guid baseLegalId = Guid.CreateVersion7();
-        ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(
-            Regra(RegraBonusCodigo.Multiplicativo, "e"), 1.20m, null, "PEDE_O_ACRESCIMO", baseLegalId,
-            "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
-            [("1504208", "Marabá", "PA")]).Value!;
-        processo.DefinirBonusRegional(aplica: true, bonus: bonus, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCriteriosDesempate(CriteriosDeTodasAsVariantes(etapa.Id)).IsSuccess.Should().BeTrue();
+        processo.DefinirBonusRegional(aplica: true, bonus: BonusMultiplicativo(baseLegalId, 1.20m, null, "PEDE_O_ACRESCIMO", "e")).IsSuccess.Should().BeTrue();
+        await _apoio.GravarAsync(processo);
 
-        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
-            await repository.AdicionarAsync(processo, CancellationToken.None);
-            await writeContext.SaveChangesAsync(CancellationToken.None);
-        }
+        ProcessoSeletivo recarregado = await RecarregarComDesempateEBonusAsync(processo.Id);
 
-        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
-        ProcessoSeletivo? recarregado = await readContext.ProcessosSeletivos
-            .Include(p => p.CriteriosDesempate)
-            .Include(p => p.BonusRegional!).ThenInclude(b => b.Municipios)
-            .FirstOrDefaultAsync(p => p.Id == processo.Id, CancellationToken.None);
-
-        recarregado.Should().NotBeNull();
-        recarregado!.CriteriosDesempate.Should().HaveCount(5);
-
-        CriterioDesempate maiorNotaEtapaRecarregado = recarregado.CriteriosDesempate.Single(c => c.Ordem == 1);
-        maiorNotaEtapaRecarregado.Regra.Codigo.Should().Be(CriterioDesempateCodigo.MaiorNotaEtapa);
-        ((ArgsDesempateMaiorNotaEtapa)maiorNotaEtapaRecarregado.Args).EtapaRef.Should().Be(etapa.Id);
-
-        CriterioDesempate idosoRecarregado = recarregado.CriteriosDesempate.Single(c => c.Ordem == 2);
-        ((ArgsDesempateIdoso)idosoRecarregado.Args).IdadeMinima.Should().Be(60);
-
-        CriterioDesempate maiorIdadeRecarregado = recarregado.CriteriosDesempate.Single(c => c.Ordem == 3);
-        maiorIdadeRecarregado.Args.Should().BeOfType<ArgsDesempateMaiorIdade>();
-
-        CriterioDesempate predicadoFatoRecarregado = recarregado.CriteriosDesempate.Single(c => c.Ordem == 4);
-        ArgsDesempatePredicadoFato predicadoArgs = (ArgsDesempatePredicadoFato)predicadoFatoRecarregado.Args;
-        predicadoArgs.Condicao.Fato.Should().Be("PROFESSOR_RURAL");
-        predicadoArgs.Condicao.Operador.Should().Be(Operador.Igual);
-        predicadoArgs.Condicao.Valor.GetBoolean().Should().BeTrue();
-
-        // A ordem das áreas é a prioridade do desempate e sobrevive ao round-trip do json.
-        CriterioDesempate areaEnemRecarregado = recarregado.CriteriosDesempate.Single(c => c.Ordem == 5);
-        ((ArgsDesempateMaiorNotaAreaEnem)areaEnemRecarregado.Args).Areas.Should().Equal("REDACAO", "MATEMATICA", "LINGUAGENS");
-
-        recarregado.BonusRegional.Should().NotBeNull();
-        recarregado.BonusRegional!.Regra.Codigo.Should().Be(RegraBonusCodigo.Multiplicativo);
-        recarregado.BonusRegional.Fator.Should().Be(1.20m);
-        recarregado.BonusRegional.Teto.Should().BeNull();
-        recarregado.BonusRegional.FatoElegibilidadeCodigo.Should().Be("PEDE_O_ACRESCIMO");
-        recarregado.BonusRegional.BaseLegalBonusRegionalId.Should().Be(baseLegalId);
-        recarregado.BonusRegional.Municipios.Should().ContainSingle(m => m.CodigoIbge == "1504208");
+        recarregado.CriteriosDesempate.Should().HaveCount(5);
+        ConferirOsCriteriosRecarregados(recarregado, etapa.Id);
+        ConferirOBonusRecarregado(recarregado, baseLegalId);
     }
 
     [Fact(DisplayName = "Reconfigurar desempate+bônus sobre o agregado tracked insere os filhos novos, não falha em UPDATE")]
     public async Task ReconfigurarDesempateBonusSobreAgregadoTracked_InsereFilhos()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026 — Reconfig", TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        processo.DefinirEtapas([EtapaProcesso.Criar("Entrevista", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1, faseCodigo: "RESULTADO_FINAL").Value!], PrecondicaoIfMatch.Ausente);
-        processo.DefinirCriteriosDesempate(
-            [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorIdade, "a"), new ArgsDesempateMaiorIdade()).Value!], PrecondicaoIfMatch.Ausente);
-        processo.DefinirBonusRegional(
-            aplica: true, bonus: ConfiguracaoBonusRegional.Criar(
-                Regra(RegraBonusCodigo.Multiplicativo, "b"), 1.10m, null, null, Guid.CreateVersion7(),
-                "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
-                [("1504208", "Marabá", "PA")]).Value!, PrecondicaoIfMatch.Ausente);
+        ProcessoSeletivo processo = NovoProcesso("PSIQ 2026 — Reconfig", TiposDeProcessoDeTeste.PSIQ);
+        processo.DefinirEtapas([EtapaDeRedacao("RESULTADO_FINAL")]);
+        processo.DefinirCriteriosDesempate([CriterioDeMaiorIdade(1, "a")]);
+        processo.DefinirBonusRegional(aplica: true, bonus: BonusMultiplicativo(Guid.CreateVersion7(), 1.10m, null, null, "b"));
+        await _apoio.GravarAsync(processo);
 
-        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
-            await repository.AdicionarAsync(processo, CancellationToken.None);
-            await writeContext.SaveChangesAsync(CancellationToken.None);
-        }
+        await ReconfigurarDesempateEBonusAsync(processo.Id);
 
-        await using (UniPlusDbContext configureContext = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(configureContext);
-            ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
-
-            Result desempateResult = carregado.DefinirCriteriosDesempate(
-            [
-                CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.Idoso, "c"), new ArgsDesempateIdoso(65)).Value!,
-                CriterioDesempate.Criar(2, Regra(CriterioDesempateCodigo.MaiorIdade, "d"), new ArgsDesempateMaiorIdade()).Value!,
-            ], PrecondicaoIfMatch.Ausente);
-            desempateResult.IsSuccess.Should().BeTrue();
-
-            Result bonusResult = carregado.DefinirBonusRegional(
-                aplica: true, bonus: ConfiguracaoBonusRegional.Criar(
-                    Regra(RegraBonusCodigo.Multiplicativo, "e"), 1.30m, 5m, null, Guid.CreateVersion7(),
-                    "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
-                    [("1504208", "Marabá", "PA")]).Value!, PrecondicaoIfMatch.Ausente);
-            bonusResult.IsSuccess.Should().BeTrue();
-
-            await configureContext.SaveChangesAsync(CancellationToken.None);
-        }
-
-        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
-        ProcessoSeletivo? recarregado = await readContext.ProcessosSeletivos
-            .Include(p => p.CriteriosDesempate)
-            .Include(p => p.BonusRegional!).ThenInclude(b => b.Municipios)
-            .FirstOrDefaultAsync(p => p.Id == processo.Id, CancellationToken.None);
-
-        recarregado.Should().NotBeNull();
-        recarregado!.CriteriosDesempate.Should().HaveCount(2);
+        ProcessoSeletivo recarregado = await RecarregarComDesempateEBonusAsync(processo.Id);
+        recarregado.CriteriosDesempate.Should().HaveCount(2);
         recarregado.BonusRegional!.Fator.Should().Be(1.30m);
         recarregado.BonusRegional.Teto.Should().Be(5m);
     }
 
-    [Fact(DisplayName = "Atualizar dados da MESMA etapa (Id preservado) mantém o desempate referenciando-a (INV-B6)")]
+    [Fact(DisplayName = "Atualizar dados da MESMA etapa (Id preservado) mantém o desempate referenciando-a")]
     public async Task AtualizarEtapaMesmoId_MantemDesempateReferenciado()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — PSVR", TiposDeProcessoDeTeste.PSVR, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        EtapaProcesso etapa = EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!;
-        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
-        processo.DefinirCriteriosDesempate(
-            [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaEtapa, "a"), new ArgsDesempateMaiorNotaEtapa(etapa.Id)).Value!], PrecondicaoIfMatch.Ausente);
+        ProcessoSeletivo processo = NovoProcesso("PS 2026 — PSVR");
+        EtapaProcesso etapa = EtapaDeRedacao();
+        processo.DefinirEtapas([etapa]);
+        processo.DefinirCriteriosDesempate([CriterioDeMaiorNotaEtapa(etapa.Id)]);
+        await _apoio.GravarAsync(processo);
 
-        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
-            await repository.AdicionarAsync(processo, CancellationToken.None);
-            await writeContext.SaveChangesAsync(CancellationToken.None);
-        }
+        await AtualizarOsDadosDaEtapaTrackedAsync(processo.Id);
 
-        await using (UniPlusDbContext configureContext = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(configureContext);
-            ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
+        ProcessoSeletivo recarregado = await RecarregarComEtapasEDesempateAsync(processo.Id);
 
-            // Reproduz a reconciliação do DefinirEtapasCommandHandler: o
-            // cliente ecoa o Id lido anteriormente, o handler ATUALIZA a
-            // mesma instância tracked em vez de recriá-la — sem isso, o
-            // etapa_ref do desempate ficaria órfão a cada PUT /etapas.
-            EtapaProcesso etapaTracked = carregado.Etapas.Single();
-            etapaTracked.AtualizarDados("Redação (revisada)", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, 2m, null, 1);
+        ConferirAEtapaRevisadaEODesempateQueAReferencia(recarregado, etapa.Id);
+    }
 
-            Result result = carregado.DefinirEtapas([etapaTracked], PrecondicaoIfMatch.Ausente);
-            result.IsSuccess.Should().BeTrue();
+    private static ProcessoSeletivo NovoProcesso(string nome, TipoProcessoSnapshot? tipo = null) => ProcessoSeletivo.Criar(
+        nome, tipo ?? TiposDeProcessoDeTeste.PSVR, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+        UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+        LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
-            await configureContext.SaveChangesAsync(CancellationToken.None);
-        }
+    private static EtapaProcesso EtapaDeRedacao(string? faseCodigo = null) => EtapaProcesso.Criar(
+        new IdentificacaoDaEtapa(Nome: "Redação", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoProvaObjetiva(), Ordem: 1, FaseCodigo: faseCodigo),
+        DeclaracaoComPeso(1m)).Value!;
 
+    private static TipoEtapaSnapshot TipoProvaObjetiva() =>
+        TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
+
+    private static DeclaracaoDaAvaliacaoDaEtapa DeclaracaoComPeso(decimal peso) =>
+        new(Peso: peso, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null);
+
+    private static CriterioDesempate CriterioDeMaiorNotaEtapa(Guid etapaId) =>
+        CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaEtapa, "a"), new ParametrosDesempateMaiorNotaEtapa(etapaId)).Value!;
+
+    private static CriterioDesempate CriterioDeMaiorIdade(int ordem, string hashSeed) =>
+        CriterioDesempate.Criar(ordem, Regra(CriterioDesempateCodigo.MaiorIdade, hashSeed), new ParametrosDesempateMaiorIdade()).Value!;
+
+    private static CriterioDesempate[] CriteriosDeTodasAsVariantes(Guid etapaId) =>
+    [
+        CriterioDeMaiorNotaEtapa(etapaId),
+        CriterioDesempate.Criar(2, Regra(CriterioDesempateCodigo.Idoso, "b"), new ParametrosDesempateIdoso(60)).Value!,
+        CriterioDeMaiorIdade(3, "c"),
+        CriterioDesempate.Criar(
+            4, Regra(CriterioDesempateCodigo.PredicadoFato, "d"), new ParametrosDesempatePredicadoFato(CondicaoProfessorRural())).Value!,
+        CriterioDesempate.Criar(
+            5, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, "f"), new ParametrosDesempateMaiorNotaAreaEnem(["REDACAO", "MATEMATICA", "LINGUAGENS"])).Value!,
+    ];
+
+    private static ConfiguracaoBonusRegional BonusMultiplicativo(Guid baseLegalId, decimal fator, decimal? teto, string? fatoDeElegibilidade, string hashSeed) =>
+        ConfiguracaoBonusRegional.Criar(
+            Regra(RegraBonusCodigo.Multiplicativo, hashSeed), fator, teto, fatoDeElegibilidade,
+            new BaseLegalCongelada(baseLegalId, "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1504208", "Marabá", "PA")])).Value!;
+
+    private async Task<ProcessoSeletivo> RecarregarComDesempateEBonusAsync(Guid processoId)
+    {
         await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         ProcessoSeletivo? recarregado = await readContext.ProcessosSeletivos
-            .Include(p => p.Etapas)
             .Include(p => p.CriteriosDesempate)
-            .FirstOrDefaultAsync(p => p.Id == processo.Id, CancellationToken.None);
+            .Include(p => p.BonusRegional!).ThenInclude(b => b.Municipios)
+            .FirstOrDefaultAsync(p => p.Id == processoId, CancellationToken.None);
 
         recarregado.Should().NotBeNull();
-        EtapaProcesso etapaAtualizada = recarregado!.Etapas.Single();
-        etapaAtualizada.Id.Should().Be(etapa.Id);
+        return recarregado!;
+    }
+
+    private async Task<ProcessoSeletivo> RecarregarComEtapasEDesempateAsync(Guid processoId)
+    {
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
+        return await readContext.ProcessosSeletivos
+            .Include(p => p.Etapas).Include(p => p.CriteriosDesempate)
+            .SingleAsync(p => p.Id == processoId, CancellationToken.None);
+    }
+
+    private static void ConferirAEtapaRevisadaEODesempateQueAReferencia(ProcessoSeletivo recarregado, Guid etapaId)
+    {
+        EtapaProcesso etapaAtualizada = recarregado.Etapas.Single();
+        etapaAtualizada.Id.Should().Be(etapaId);
         etapaAtualizada.Nome.Should().Be("Redação (revisada)");
         etapaAtualizada.Peso.Should().Be(2m);
+        ((ParametrosDesempateMaiorNotaEtapa)recarregado.CriteriosDesempate.Single().Parametros).EtapaRef.Should().Be(etapaId);
+    }
 
-        CriterioDesempate criterio = recarregado.CriteriosDesempate.Single();
-        ((ArgsDesempateMaiorNotaEtapa)criterio.Args).EtapaRef.Should().Be(etapa.Id);
+    private async Task ReconfigurarDesempateEBonusAsync(Guid processoId)
+    {
+        await using UniPlusDbContext configureContext = _fixture.CreateDbContext();
+        ProcessoSeletivo carregado = (await ProcessoSeletivoRepositoryDeTeste.Criar(configureContext).ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;
+        CriterioDesempate idoso = CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.Idoso, "c"), new ParametrosDesempateIdoso(65)).Value!;
+
+        carregado.DefinirCriteriosDesempate([idoso, CriterioDeMaiorIdade(2, "d")]).IsSuccess.Should().BeTrue();
+        carregado.DefinirBonusRegional(aplica: true, bonus: BonusMultiplicativo(Guid.CreateVersion7(), 1.30m, 5m, null, "e")).IsSuccess.Should().BeTrue();
+
+        await configureContext.SaveChangesAsync(CancellationToken.None);
+    }
+
+    /// <summary>
+    /// Reproduz a reconciliação do DefinirEtapasCommandHandler: o cliente ecoa o Id lido
+    /// anteriormente, o handler ATUALIZA a mesma instância tracked em vez de recriá-la — sem isso,
+    /// o etapa_ref do desempate ficaria órfão a cada PUT /etapas.
+    /// </summary>
+    private async Task AtualizarOsDadosDaEtapaTrackedAsync(Guid processoId)
+    {
+        await using UniPlusDbContext configureContext = _fixture.CreateDbContext();
+        ProcessoSeletivo carregado = (await ProcessoSeletivoRepositoryDeTeste.Criar(configureContext).ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;
+        EtapaProcesso etapaTracked = carregado.Etapas.Single();
+        etapaTracked.AtualizarDados(
+            new IdentificacaoDaEtapa(Nome: "Redação (revisada)", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoProvaObjetiva(), Ordem: 1, FaseCodigo: null),
+            DeclaracaoComPeso(2m));
+
+        carregado.DefinirEtapas([etapaTracked]).IsSuccess.Should().BeTrue();
+
+        await configureContext.SaveChangesAsync(CancellationToken.None);
+    }
+
+    private static void ConferirOsCriteriosRecarregados(ProcessoSeletivo recarregado, Guid etapaId)
+    {
+        CriterioDesempate maiorNotaEtapa = recarregado.CriteriosDesempate.Single(c => c.Ordem == 1);
+        maiorNotaEtapa.Regra.Codigo.Should().Be(CriterioDesempateCodigo.MaiorNotaEtapa);
+        ((ParametrosDesempateMaiorNotaEtapa)maiorNotaEtapa.Parametros).EtapaRef.Should().Be(etapaId);
+        ((ParametrosDesempateIdoso)recarregado.CriteriosDesempate.Single(c => c.Ordem == 2).Parametros).IdadeMinima.Should().Be(60);
+        recarregado.CriteriosDesempate.Single(c => c.Ordem == 3).Parametros.Should().BeOfType<ParametrosDesempateMaiorIdade>();
+
+        ParametrosDesempatePredicadoFato predicado = (ParametrosDesempatePredicadoFato)recarregado.CriteriosDesempate.Single(c => c.Ordem == 4).Parametros;
+        (predicado.Condicao.Fato, predicado.Condicao.Operador, predicado.Condicao.Valor.GetBoolean()).Should().Be(("PROFESSOR_RURAL", Operador.Igual, true));
+
+        // A ordem das áreas é a prioridade do desempate e sobrevive ao round-trip do json.
+        ((ParametrosDesempateMaiorNotaAreaEnem)recarregado.CriteriosDesempate.Single(c => c.Ordem == 5).Parametros).Areas
+            .Should().Equal("REDACAO", "MATEMATICA", "LINGUAGENS");
+    }
+
+    private static void ConferirOBonusRecarregado(ProcessoSeletivo recarregado, Guid baseLegalId)
+    {
+        recarregado.BonusRegional.Should().NotBeNull();
+        ConfiguracaoBonusRegional bonus = recarregado.BonusRegional!;
+        bonus.Regra.Codigo.Should().Be(RegraBonusCodigo.Multiplicativo);
+        bonus.Fator.Should().Be(1.20m);
+        bonus.Teto.Should().BeNull();
+        bonus.FatoElegibilidadeCodigo.Should().Be("PEDE_O_ACRESCIMO");
+        bonus.BaseLegalBonusRegionalId.Should().Be(baseLegalId);
+        bonus.Municipios.Should().ContainSingle(m => m.CodigoIbge == "1504208");
     }
 }

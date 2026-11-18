@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/item-do-formulario.schema.json",
+  "title": "Item do formulário",
+  "description": "Um fato do catálogo coletado pelo formulário. O item aponta o fato pelo código; tipo de renderização, formato, classificação de proteção e demais propriedades do fato vêm do catálogo e não se declaram aqui.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "fatoCodigo"
+  ],
+  "properties": {
+    "fatoCodigo": {
+      "title": "Fato",
+      "description": "Código do fato no catálogo, de 1 a 60 caracteres. Cada fato é coletado por um só formulário do processo.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60,
+      "pattern": "\\S"
+    },
+    "etapaCodigo": {
+      "title": "Etapa",
+      "description": "Código da etapa do tipo SECAO, do mesmo formulário, em que o item aparece. Nulo ou ausente em subitem de grupo.",
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/codigoLocal"
+        }
+      ]
+    },
+    "ordem": {
+      "title": "Ordem",
+      "description": "Posição de apresentação, a partir de 0. Única no formulário entre itens e grupos; o subitem tem ordem própria dentro do grupo.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "rotulo": {
+      "title": "Rótulo",
+      "description": "Texto da pergunta exibido ao candidato, de até 300 caracteres.",
+      "type": "string",
+      "maxLength": 300
+    },
+    "ajuda": {
+      "title": "Ajuda",
+      "description": "Texto de apoio ao preenchimento, de até 1000 caracteres.",
+      "type": "string",
+      "maxLength": 1000
+    },
+    "pedirConfirmacao": {
+      "title": "Pedir confirmação",
+      "description": "Se o candidato deve digitar a resposta duas vezes.",
+      "type": "boolean"
+    },
+    "obrigatoriedade": {
+      "title": "Obrigatoriedade",
+      "description": "Se a resposta é obrigatória sempre, nunca ou só sob uma condição.",
+      "$ref": "predicado.schema.json#/$defs/obrigatoriedade"
+    },
+    "precondicao": {
+      "title": "Precondição",
+      "description": "Condição para o fato ser coletado. Nula ou ausente: é sempre coletado. A lista vazia nunca é verdadeira.",
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "predicado.schema.json#/$defs/predicado"
+        }
+      ]
+    },
+    "restricoes": {
+      "title": "Restrições de valor",
+      "description": "Limites impostos à resposta.",
+      "type": "array",
+      "items": {
+        "$ref": "restricao-de-valor.schema.json"
+      }
+    },
+    "impedimento": {
+      "title": "Impedimento",
+      "description": "Resposta que impede a inscrição, com a mensagem ao candidato. Só no formulário de inscrição e fora de subitem de grupo.",
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/impedimento"
+        }
+      ]
+    },
+    "opcoes": {
+      "title": "Opções declaradas",
+      "description": "Opções de resposta definidas pelo processo, para fato cujos valores vêm do processo. Cada código é único no fato.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/opcao"
+      }
+    }
+  },
+  "$defs": {
+    "codigoLocal": {
+      "title": "Código local",
+      "description": "Código escolhido por quem escreve o formulário, de 1 a 60 caracteres, único no formulário.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60,
+      "pattern": "\\S"
+    },
+    "impedimento": {
+      "title": "Impedimento de inscrição",
+      "description": "Condição sobre a resposta do próprio campo que impede a inscrição.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "quando",
+        "mensagem"
+      ],
+      "properties": {
+        "quando": {
+          "title": "Quando impede",
+          "description": "Predicado que, verdadeiro, impede a inscrição.",
+          "$ref": "predicado.schema.json#/$defs/predicado"
+        },
+        "mensagem": {
+          "title": "Mensagem",
+          "description": "Explicação ao candidato, de 1 a 500 caracteres.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500,
+          "pattern": "\\S"
+        }
+      }
+    },
+    "opcao": {
+      "title": "Opção declarada",
+      "description": "Uma opção de resposta do fato.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "codigo"
+      ],
+      "properties": {
+        "codigo": {
+          "title": "Código",
+          "description": "Código da opção, de 1 a 60 caracteres, único no fato.",
+          "$ref": "#/$defs/codigoLocal"
+        },
+        "rotulo": {
+          "title": "Rótulo",
+          "description": "Texto da opção exibido ao candidato, de até 300 caracteres.",
+          "type": "string",
+          "maxLength": 300
+        }
+      }
+    }
+  }
+}

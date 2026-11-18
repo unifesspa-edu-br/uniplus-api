@@ -27,7 +27,7 @@ internal static class PublicacaoPeloEndpointDeTeste
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
-            .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}");
+            .SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"{nome} {Guid.CreateVersion7()}" });
         return (processo.Id, documento.Id);
     }
 

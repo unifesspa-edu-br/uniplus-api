@@ -36,5 +36,4 @@ public sealed record DefinirCascataRemanejamentoCommand(
     string? RegraCodigo,
     string? RegraVersao,
     string? FallbackCodigo,
-    IReadOnlyList<DestinoRemanejamentoInput>? Destinos,
-    PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;
+    IReadOnlyList<DestinoRemanejamentoInput>? Destinos) : ICommand<Result>;

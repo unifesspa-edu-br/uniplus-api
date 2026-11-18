@@ -19,6 +19,25 @@ public static class RegraConsolidacaoCodigo
     /// </summary>
     public const string CorrecaoIndependente = "CONSOLIDACAO-CORRECAO-INDEPENDENTE";
 
+    /// <summary>
+    /// O conceito categórico da etapa é o valor que todos os corretores atribuem; o que fazer quando eles
+    /// divergem é declarado pela versão da regra.
+    /// </summary>
+    public const string ConceitoUnanimidade = "CONSOLIDACAO-CONCEITO-UNANIMIDADE";
+
+    /// <summary>
+    /// O conceito categórico da etapa é o valor com mais atribuições que cada um dos outros; o tratamento do
+    /// empate é declarado pela versão da regra.
+    /// </summary>
+    public const string ConceitoMaioriaSimples = "CONSOLIDACAO-CONCEITO-MAIORIA-SIMPLES";
+
+    /// <summary>
+    /// O conceito categórico da etapa é o valor com mais da metade das atribuições; o tratamento da falta de
+    /// maioria é declarado pela versão da regra.
+    /// </summary>
+    public const string ConceitoMaioriaAbsoluta = "CONSOLIDACAO-CONCEITO-MAIORIA-ABSOLUTA";
+
     /// <summary>As regras de consolidação semeadas.</summary>
-    public static IReadOnlyList<string> Rol { get; } = [AvaliacaoUnica, CorrecaoIndependente];
+    public static IReadOnlyList<string> Rol { get; } =
+        [AvaliacaoUnica, CorrecaoIndependente, ConceitoUnanimidade, ConceitoMaioriaSimples, ConceitoMaioriaAbsoluta];
 }

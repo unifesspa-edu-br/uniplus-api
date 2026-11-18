@@ -16,11 +16,11 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// Para cada operação do protocolo comum que tem regra de negócio, a chamada que a viola, o código
+/// Para cada operação de escrita que tem regra de negócio, a chamada que a viola, o código
 /// da recusa e a dimensão que a recusa não pode mexer. As operações sem regra declaram o motivo.
 /// </summary>
 internal sealed record ViolacaoDeRegra(
-    Func<ProcessoSeletivo, PrecondicaoIfMatch, Result> Chamar,
+    Func<ProcessoSeletivo, Result> Chamar,
     string Codigo,
     Func<ProcessoSeletivo, object?[]> Dimensao,
     Action<ProcessoSeletivo>? Preparar = null)
@@ -31,120 +31,105 @@ internal sealed record ViolacaoDeRegra(
         [nameof(ProcessoSeletivo.DefinirTaxaInscricao)] = "a fábrica da taxa valida a forma e a ausência é um estado declarável",
         [nameof(ProcessoSeletivo.DefinirCascataRemanejamento)] = "a fábrica da cascata valida a forma e a cobertura é conferida na publicação",
         [nameof(ProcessoSeletivo.DefinirLocalidade)] = "a atribuição é incondicional: a localidade já vem validada pela fábrica",
+        [nameof(ProcessoSeletivo.DefinirIdentificadorLegivel)] = "o identificador é livre no rascunho; a imutabilidade depois da publicação é conferida na retificação",
     };
 
     internal static readonly IReadOnlyDictionary<string, ViolacaoDeRegra> PorOperacao = new Dictionary<string, ViolacaoDeRegra>(StringComparer.Ordinal)
     {
         [nameof(ProcessoSeletivo.DefinirOpcoesDeclaradas)] = new(
-            (p, pre) => p.DefinirOpcoesDeclaradas("FATO_DE_TESTE", [], pre),
+            p => p.DefinirOpcoesDeclaradas("FATO_DE_TESTE", []),
             OpcaoDeclaradaFatoErrorCodes.ListaVazia,
             static p => [.. p.OpcoesDeclaradas]),
         [nameof(ProcessoSeletivo.DefinirEtapas)] = new(
-            (p, pre) => p.DefinirEtapas([EtapaSoEliminatoria()], pre),
+            p => p.DefinirEtapas([EtapaSoEliminatoria()]),
             "ProcessoSeletivo.NenhumaEtapaComponeNota",
             static p => [.. p.Etapas]),
         [nameof(ProcessoSeletivo.DefinirAtendimentoEspecializado)] = new(
-            (p, pre) => p.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!, pre),
+            p => p.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!),
             "ProcessoSeletivo.CondicaoAtendimentoReferenciadaPorExigenciaViva",
             static p => [p.AtendimentoEspecializado],
             Preparar: ExigenciaQueCitaACondicaoPcd),
         [nameof(ProcessoSeletivo.DefinirDistribuicaoVagas)] = new(
-            (p, pre) => p.DefinirDistribuicaoVagas([], FatosDeModalidadeDeTeste.DoCatalogo, pre),
+            p => p.DefinirDistribuicaoVagas([], FatosDeModalidadeDeTeste.DoCatalogo),
             "ProcessoSeletivo.DistribuicaoVagasVazia",
             static p => [.. p.DistribuicaoVagas]),
         [nameof(ProcessoSeletivo.DefinirOpcoesDeCurso)] = new(
-            (p, pre) => p.DefinirOpcoesDeCurso(3, pre),
+            p => p.DefinirOpcoesDeCurso(3),
             ProcessoSeletivoErrorCodes.OpcoesDeCursoInvalido,
             static p => [p.NumeroDeOpcoesDeCurso]),
         [nameof(ProcessoSeletivo.DefinirBonusRegional)] = new(
-            (p, pre) => p.DefinirBonusRegional(aplica: true, bonus: null, pre),
+            p => p.DefinirBonusRegional(aplica: true, bonus: null),
             ProcessoSeletivoErrorCodes.BonusRegionalAplicaSemConfiguracao,
             static p => [p.AplicaBonusRegional, p.BonusRegional]),
         [nameof(ProcessoSeletivo.DefinirCriteriosDesempate)] = new(
-            (p, pre) => p.DefinirCriteriosDesempate([CriterioMaiorIdade(1), CriterioMaiorIdade(1)], pre),
+            p => p.DefinirCriteriosDesempate([CriterioMaiorIdade(1), CriterioMaiorIdade(1)]),
             "ProcessoSeletivo.OrdemDesempateDuplicada",
             static p => [.. p.CriteriosDesempate]),
         [nameof(ProcessoSeletivo.DefinirClassificacao)] = new(
-            (p, pre) => p.DefinirClassificacao(ClassificacaoQueEliminaPorEtapaInexistente(), pre),
+            p => p.DefinirClassificacao(ClassificacaoQueEliminaPorEtapaInexistente()),
             "ProcessoSeletivo.EtapaRefEliminacaoInexistente",
             static p => [p.Classificacao]),
         [nameof(ProcessoSeletivo.DefinirFormulario)] = new(
-            (p, pre) =>
+            p =>
             {
                 FormularioProcesso formulario = p.Formularios.Single(f => f.Finalidade == FinalidadeFormulario.Inscricao);
-                return p.DefinirFormulario(FinalidadeFormulario.Inscricao, Guid.CreateVersion7(), formulario.Titulo, [.. formulario.Etapas], pre);
+                return p.DefinirFormulario(FinalidadeFormulario.Inscricao, Guid.CreateVersion7(), formulario.Titulo, [.. formulario.Etapas]);
             },
             "FormularioProcesso.FaseForaDoCronograma",
             static p => [.. p.Formularios.SelectMany(static f => (object?[])[f.Finalidade, f.FaseId, f.Titulo, .. f.Etapas])]),
         [nameof(ProcessoSeletivo.DefinirTermosDoFormulario)] = new(
-            (p, pre) => p.DefinirTermosDoFormulario(FinalidadeFormulario.Habilitacao, [], pre),
+            p => p.DefinirTermosDoFormulario(FinalidadeFormulario.Habilitacao, []),
             FormularioProcessoErrorCodes.FormularioInexistente,
             static p => [.. p.TermosExigidos]),
         [nameof(ProcessoSeletivo.DefinirCronogramaFases)] = new(
-            (p, pre) => p.DefinirCronogramaFases([ProcessoConformeFactory.FaseConforme(), ProcessoConformeFactory.FaseConforme()], [], pre),
+            p => p.DefinirCronogramaFases([ProcessoConformeFactory.FaseConforme(), ProcessoConformeFactory.FaseConforme()], []),
             "ProcessoSeletivo.OrdemFaseDuplicada",
             static p => [.. p.CronogramaFases]),
         [nameof(ProcessoSeletivo.DefinirDocumentosExigidos)] = new(
-            (p, pre) => p.DefinirDocumentosExigidos([NoExigencia.CriarFolha(Exigencia(Guid.CreateVersion7()), 0).Value!], pre),
+            p => p.DefinirDocumentosExigidos([NoExigencia.CriarFolha(Exigencia(Guid.CreateVersion7()), 0).Value!]),
             "DocumentoExigido.FaseNaoPertenceAoProcesso",
             static p => [.. p.NosExigencia]),
         [nameof(ProcessoSeletivo.DefinirFatosColetados)] = new(
-            (p, pre) => p.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [], pre),
-            "RascunhoRetificacao.FatoJaColetadoRemovido",
+            p => p.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, []),
+            FormularioProcessoErrorCodes.FormularioInexistente,
             static p => [.. p.Campos]),
         [nameof(ProcessoSeletivo.DefinirRegrasDerivacao)] = new(
-            (p, pre) => p.DefinirRegrasDerivacao([Derivado("D1"), Derivado("D1")], pre),
+            p => p.DefinirRegrasDerivacao([Derivado("D1"), Derivado("D1")]),
             "ConfiguracaoDerivacaoFato.CodigoFatoDuplicado",
             static p => [.. p.RegrasDerivacao]),
         [nameof(ProcessoSeletivo.DefinirReferenciaTemporalFatos)] = new(
-            (p, pre) => p.DefinirReferenciaTemporalFatos(ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, Guid.CreateVersion7()).Value!, pre),
+            p => p.DefinirReferenciaTemporalFatos(ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, Guid.CreateVersion7()).Value!),
             "ReferenciaTemporalFatos.FaseNaoPertenceAoProcesso",
             static p => [p.ReferenciaTemporalFatos]),
-        [nameof(ProcessoSeletivo.DefinirIdentificadorLegivel)] = new(
-            (p, pre) =>
-            {
-                if (p.Rascunho is { } sessao)
-                {
-                    typeof(RascunhoRetificacao)
-                        .GetProperty(nameof(RascunhoRetificacao.VersaoBaseComIdentificadorLegivel))!
-                        .SetValue(sessao, true);
-                }
-
-                return p.DefinirIdentificadorLegivel(IdentificadoresDeTeste.Novo(), pre);
-            },
-            ProcessoSeletivoErrorCodes.IdentificadorLegivelImutavel,
-            static p => [p.IdentificadorLegivel]),
         [nameof(ProcessoSeletivo.DefinirAlgoritmoContagemPrazo)] = new(
-            (p, pre) => p.DefinirAlgoritmoContagemPrazo(null!, pre),
+            p => p.DefinirAlgoritmoContagemPrazo(null!),
             "ProcessoSeletivo.AlgoritmoContagemPrazoNaoDeclarado",
             static p => [p.AlgoritmoContagemPrazo]),
     };
 
     private static EtapaProcesso EtapaSoEliminatoria() => EtapaProcesso.Criar(
-        "Entrevista", CaraterEtapa.Eliminatoria,
-        TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-        peso: null, notaMinima: 5m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva).Value!;
+        new IdentificacaoDaEtapa(Nome: "Entrevista", Carater: CaraterEtapa.Eliminatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: null),
+        new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: 5m, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 
     private static CriterioDesempate CriterioMaiorIdade(int ordem) => CriterioDesempate.Criar(
         ordem,
-        ReferenciaRegra.Criar(CriterioDesempateCodigo.MaiorIdade, "v1", new string('f', 64)).Value!,
-        new ArgsDesempateMaiorIdade()).Value!;
+        ReferenciaRegra.De(CriterioDesempateCodigo.MaiorIdade, "v1", new string('f', 64)),
+        new ParametrosDesempateMaiorIdade()).Value!;
 
-    // A regra de eliminação cita uma etapa que o processo não tem (INV-B4).
-    private static ConfiguracaoClassificacao ClassificacaoQueEliminaPorEtapaInexistente() => ConfiguracaoClassificacao.Criar(
-        ReferenciaRegra.Criar(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('a', 64)).Value!,
-        ReferenciaRegra.Criar(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('b', 64)).Value!,
-        2,
-        ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)).Value!,
-        [
+    // A regra de eliminação cita uma etapa que o processo não tem.
+    private static ConfiguracaoClassificacao ClassificacaoQueEliminaPorEtapaInexistente() => ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+    {
+        RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('a', 64)),
+        RegraArredondamento = ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('b', 64)),
+        CasasArredondamento = 2,
+        RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)),
+        RegrasEliminacao = [
             RegraEliminacao.Criar(
-                ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", new string('d', 64)).Value!,
-                new ArgsElimNotaMinimaEtapa(Guid.CreateVersion7(), 4m)).Value!,
+                ReferenciaRegra.De(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", new string('d', 64)),
+                new ParametrosElimNotaMinimaEtapa(Guid.CreateVersion7(), 4m)).Value!,
         ],
-        false,
-        null,
-        [],
-        escalaNotaFinal: 100m).Value!;
+        EscalaNotaFinal = 100m,
+    }).Value!;
 
     private static ConfiguracaoDerivacaoFato Derivado(string codigo) =>
         ConfiguracaoDerivacaoFato.Criar(codigo, [RegraDerivacaoConfigurada.Criar(0, "AC", []).Value!]).Value!;
@@ -161,12 +146,10 @@ internal sealed record ViolacaoDeRegra(
     private static void ExigenciaQueCitaACondicaoPcd(ProcessoSeletivo processo)
     {
         processo.DefinirAtendimentoEspecializado(
-            AtendimentoEspecializado.Criar([CondicaoOfertada.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência")], [], []).Value!,
-            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+            AtendimentoEspecializado.Criar([CondicaoOfertada.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência")], [], []).Value!).IsSuccess.Should().BeTrue();
 
         CondicaoGatilho condicao = CondicaoGatilho.Criar(0, "CONDICAO_ATENDIMENTO", Operador.Igual, JsonSerializer.SerializeToElement("PCD")).Value!;
         processo.DefinirDocumentosExigidos(
-            [NoExigencia.CriarFolha(Exigencia(processo.CronogramaFases.First().Id, condicao), 0).Value!],
-            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+            [NoExigencia.CriarFolha(Exigencia(processo.CronogramaFases.First().Id, condicao), 0).Value!]).IsSuccess.Should().BeTrue();
     }
 }

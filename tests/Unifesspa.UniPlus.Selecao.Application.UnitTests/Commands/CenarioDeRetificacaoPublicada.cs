@@ -21,9 +21,8 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.FatoCitado
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.PublicacaoDeTeste;
 
 /// <summary>
-/// Um processo publicado e as dependências dos dois caminhos que congelam uma retificação: o atalho sem sessão
-/// e o fechamento da sessão. O registro de codecs reidrata a versão publicada real, porque um registro sem
-/// versão faria os testes passarem com a conferência retirada.
+/// Um processo publicado e as dependências do caminho que congela uma retificação. O registro de codecs reidrata a
+/// versão publicada real, porque um registro sem versão faria os testes passarem com a conferência retirada.
 /// </summary>
 internal sealed class CenarioDeRetificacaoPublicada
 {
@@ -54,7 +53,7 @@ internal sealed class CenarioDeRetificacaoPublicada
     public static CenarioDeRetificacaoPublicada Publicado(SituacaoDoFatoCitado? situacao = null)
     {
         SituacaoDoFatoCitado fato = situacao ?? new SituacaoDoFatoCitado();
-        ProcessoSeletivo processo = ProcessoQueColetaOFato(fato.ComItemNovo);
+        ProcessoSeletivo processo = ProcessoQueColetaOFato(fato.ComItemNovo, fato.ExigenciaCitaFatoAusenteDoCatalogo);
         VersaoConfiguracao versao = Publicar(processo);
         CenarioDeRetificacaoPublicada cenario = new(processo, versao, GrafoPublicado(processo, fato), EixosCongelados(fato.DominioCongelado));
         cenario.Configurar(fato);
@@ -62,15 +61,7 @@ internal sealed class CenarioDeRetificacaoPublicada
         return cenario;
     }
 
-    public void AbrirSessao() =>
-        Processo.AbrirRetificacao(
-            "Correção do prazo", _versao, identificadorDaVersaoBase: null,
-            FatosDasVersoesPublicadas.De([_grafoPublicado], [_congelado]), "user-conta-1", Agora)
-            .IsSuccess.Should().BeTrue();
-
     public Task<(Result Resposta, IEnumerable<object> Eventos)> RetificarAsync() => _handlers.RetificarAsync();
-
-    public Task<(Result Resposta, IEnumerable<object> Eventos)> FecharAsync() => _handlers.FecharRetificacaoAsync();
 
     public string ClassificacaoDoItem(string fato) => Processo.FatosColetados.Single(f => f.FatoCodigo == fato).ClassificacaoProtecao;
 
@@ -127,11 +118,11 @@ internal sealed class CenarioDeRetificacaoPublicada
 
     private static FaseCronograma FaseDaProvaComPreliminarEDefinitivo(ProdutoDaFase preliminar) =>
         FaseCronograma.Criar(
-            1, Guid.CreateVersion7(), "PROVA", OrigemDataFase.NoEdital,
-            agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
-            inicio: Agora, fim: Agora.AddDays(10),
-            produtos: [preliminar, ProdutoDaFase.Criar("RESULTADO_PROVA", PapelProdutoFase.Definitivo)],
-            faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+            new OrigemCanonicaDaFase(
+                Guid.CreateVersion7(), "PROVA", OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+            new DecisoesDeCronogramaDaFase(1, Inicio: Agora, Fim: Agora.AddDays(10), FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(Produtos: [preliminar, ProdutoDaFase.Criar("RESULTADO_PROVA", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+            bancasRequeridas: []).Value!;
 
     private static AtoDoProcesso PreliminarJaPublicado(Guid processoId, FaseCronograma fase, ProdutoDaFase preliminar)
     {
@@ -177,7 +168,9 @@ internal sealed class CenarioDeRetificacaoPublicada
     private void ConfigurarCatalogoDeFatos(SituacaoDoFatoCitado fato)
     {
         FatoCandidatoView vivo = FatoDoCatalogo(fato.DominioNoCatalogo, fato.ClassificacaoNoCatalogo);
+        FatoCandidatoView citado = fato.FatoCitadoReclassificadoNoCatalogo ? vivo with { Origem = "DERIVADO" } : vivo;
+        FatoCandidatoView novo = FatoNovoDoCatalogo(vivo);
         _handlers.CatalogoDeFatos.ListarAsync(Arg.Any<CancellationToken>())
-            .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[vivo, FatoNovoDoCatalogo(vivo)]));
+            .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[citado, fato.ItemNovoReclassificadoNoCatalogo ? novo with { Origem = "DERIVADO" } : novo]));
     }
 }

@@ -7,15 +7,17 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
 /// <summary>
-/// O gate da forma de avaliação: a etapa com nota declara como a nota é obtida, a que não tem nota
+/// A conferência da forma de avaliação: a etapa com nota declara como a nota é obtida, a que não tem nota
 /// não declara, e a forma humana exige a regra de consolidação, o passo do lançamento e ao menos
-/// uma banca. É gate, e não recusa de gravação, porque depende do que o grafo diz sobre a etapa.
+/// uma banca. É conferência, e não recusa de gravação, porque depende do que o grafo diz sobre a etapa.
 /// </summary>
 public sealed class ConformidadeAvaliacaoDasEtapasTests
 {
@@ -24,57 +26,30 @@ public sealed class ConformidadeAvaliacaoDasEtapasTests
     private static TipoEtapaSnapshot Tipo() =>
         TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
 
-    private static EtapaProcesso Etapa(
-        string nome,
-        int ordem,
-        FormaDeAvaliacao? forma,
-        CaraterEtapa carater = CaraterEtapa.Classificatoria,
-        decimal? passo = null,
-        bool comRegra = false,
-        bool comBanca = false,
-        IReadOnlyList<ItemDeAvaliacaoDeclarado>? itens = null,
-        IReadOnlyList<NivelDeAtendimento>? escala = null)
-    {
-        EtapaProcesso etapa = EtapaProcesso.Criar(
-            nome, carater, Tipo(), carater == CaraterEtapa.Classificatoria ? 1m : null, null, ordem,
-            notaMaxima: carater == CaraterEtapa.Classificatoria ? 10m : null, passoDoLancamento: passo, formaDeAvaliacao: forma,
-            regraConsolidacao: comRegra
-                ? ProcessoConformeFactory.Regra(RegraConsolidacaoCodigo.AvaliacaoUnica, "b")
-                : null,
-            itensDeAvaliacao: itens, escalaDeAtendimento: escala, faseCodigo: "RESULTADO_FINAL").Value!;
-        if (comBanca)
-        {
-            etapa.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_AVALIADORA", "Banca de teste", BancasDeTeste.Regra())]).IsSuccess.Should().BeTrue();
-        }
-
-        return etapa;
-    }
-
     private static ProcessoSeletivo ProcessoCom(params EtapaProcesso[] etapas)
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        processo.DefinirEtapas(etapas, PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas(etapas).IsSuccess.Should().BeTrue();
         return processo;
     }
 
     private static IEnumerable<ItemConformidade> Vermelhos(ProcessoSeletivo processo) =>
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
             .Where(static i => !i.Ok && i.Dimensao == DimensaoConformidade.Etapas);
 
     private static Result<VersaoConfiguracao> Publicar(ProcessoSeletivo processo) => processo.Publicar(
-        ProcessoConformeFactory.Dados(), "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo, "teste",
-        TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        new CenarioDeCongelamento { Dados = ProcessoConformeFactory.Dados(), Documento = new DocumentoCongelado("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "teste" });
 
     [Fact(DisplayName = "A etapa com nota sem forma de avaliação recusa a publicação; com forma publica")]
     public void EtapaComNotaSemForma_RecusaPublicacao()
     {
-        ProcessoSeletivo semForma = ProcessoCom(Etapa("Prova", 1, forma: null));
+        ProcessoSeletivo semForma = ProcessoCom(new ModeloDeEtapa("Prova") { Ordem = 1, FaseCodigo = "RESULTADO_FINAL", Forma = null }.Criar());
 
         Vermelhos(semForma).Should().ContainSingle().Which.Should().Match<ItemConformidade>(
             i => i.Codigo == "etapa_com_nota_sem_forma_de_avaliacao" && i.Mensagem.Contains("\"Prova\"", StringComparison.Ordinal));
         Publicar(semForma).IsFailure.Should().BeTrue();
 
-        ProcessoSeletivo comForma = ProcessoCom(Etapa("Prova", 1, FormaDeAvaliacao.Objetiva));
+        ProcessoSeletivo comForma = ProcessoCom(new ModeloDeEtapa("Prova") { Ordem = 1, FaseCodigo = "RESULTADO_FINAL" }.Criar());
         Vermelhos(comForma).Should().BeEmpty();
         Publicar(comForma).IsSuccess.Should().BeTrue();
     }
@@ -83,8 +58,8 @@ public sealed class ConformidadeAvaliacaoDasEtapasTests
     public void EtapaSemNotaComForma_RecusaPublicacao()
     {
         ProcessoSeletivo processo = ProcessoCom(
-            Etapa("Prova", 1, FormaDeAvaliacao.Objetiva),
-            Etapa("Análise", 2, FormaDeAvaliacao.Objetiva, CaraterEtapa.Eliminatoria));
+            new ModeloDeEtapa("Prova") { Ordem = 1, FaseCodigo = "RESULTADO_FINAL" }.Criar(),
+            new ModeloDeEtapa("Análise") { Ordem = 2, FaseCodigo = "RESULTADO_FINAL", Carater = CaraterEtapa.Eliminatoria, Peso = null, NotaMaxima = null }.Criar());
 
         Vermelhos(processo).Should().ContainSingle().Which.Should().Match<ItemConformidade>(
             i => i.Codigo == "etapa_sem_nota_com_forma_de_avaliacao" && i.Mensagem.Contains("\"Análise\"", StringComparison.Ordinal));
@@ -93,7 +68,7 @@ public sealed class ConformidadeAvaliacaoDasEtapasTests
     [Fact(DisplayName = "A forma humana exige regra, passo e banca, e a recusa lista tudo o que falta de uma vez")]
     public void EtapaHumanaIncompleta_AcumulaAsPendencias()
     {
-        ProcessoSeletivo processo = ProcessoCom(Etapa("Redação", 1, FormaDeAvaliacao.Humana));
+        ProcessoSeletivo processo = ProcessoCom(new ModeloDeEtapa("Redação") { Ordem = 1, FaseCodigo = "RESULTADO_FINAL", Forma = FormaDeAvaliacao.Humana }.Criar());
 
         Vermelhos(processo).Select(static i => i.Codigo).Should().BeEquivalentTo(
             "etapa_humana_sem_regra_de_consolidacao", "etapa_humana_sem_passo_do_lancamento", "etapa_humana_sem_banca");
@@ -104,8 +79,8 @@ public sealed class ConformidadeAvaliacaoDasEtapasTests
     public void EtapaHumanaSemNota_GeraUmaSoPendencia()
     {
         ProcessoSeletivo processo = ProcessoCom(
-            Etapa("Prova", 1, FormaDeAvaliacao.Objetiva),
-            Etapa("Análise", 2, FormaDeAvaliacao.Humana, CaraterEtapa.Eliminatoria));
+            new ModeloDeEtapa("Prova") { Ordem = 1, FaseCodigo = "RESULTADO_FINAL" }.Criar(),
+            new ModeloDeEtapa("Análise") { Ordem = 2, FaseCodigo = "RESULTADO_FINAL", Carater = CaraterEtapa.Eliminatoria, Peso = null, NotaMaxima = null, Forma = FormaDeAvaliacao.Humana }.Criar());
 
         Vermelhos(processo).Should().ContainSingle().Which.Codigo.Should().Be("etapa_sem_nota_com_forma_de_avaliacao");
     }
@@ -114,7 +89,7 @@ public sealed class ConformidadeAvaliacaoDasEtapasTests
     public void EtapaHumanaCompleta_Publica()
     {
         ProcessoSeletivo processo = ProcessoCom(
-            Etapa("Redação", 1, FormaDeAvaliacao.Humana, passo: 0.5m, comRegra: true, comBanca: true));
+            new ModeloDeEtapa("Redação") { Ordem = 1, FaseCodigo = "RESULTADO_FINAL", Forma = FormaDeAvaliacao.Humana, RegraConsolidacao = ProcessoConformeFactory.Regra(RegraConsolidacaoCodigo.AvaliacaoUnica, "b"), Bancas = [BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_AVALIADORA", "Banca de teste", BancasDeTeste.Regra())], Passo = 0.5m }.Criar());
 
         Vermelhos(processo).Should().BeEmpty();
         Publicar(processo).IsSuccess.Should().BeTrue();
@@ -125,15 +100,13 @@ public sealed class ConformidadeAvaliacaoDasEtapasTests
     [Fact(DisplayName = "A soma das pontuações dos itens diferente da nota máxima recusa a publicação; igual publica")]
     public void ItensForaDaNotaMaxima_RecusaPublicacao()
     {
-        ProcessoSeletivo divergente = ProcessoCom(Etapa(
-            "Prova", 1, FormaDeAvaliacao.Objetiva, itens: [new(null, "Bloco A", 4m), new(null, "Bloco B", 5m)]));
+        ProcessoSeletivo divergente = ProcessoCom(new ModeloDeEtapa("Prova") { Ordem = 1, FaseCodigo = "RESULTADO_FINAL", Itens = [new(null, "Bloco A", 4m), new(null, "Bloco B", 5m)] }.Criar());
 
         Vermelhos(divergente).Should().ContainSingle().Which.Should().Match<ItemConformidade>(
             i => i.Codigo == "etapa_com_itens_fora_da_nota_maxima" && i.Mensagem.Contains("\"Prova\"", StringComparison.Ordinal));
         Publicar(divergente).IsFailure.Should().BeTrue();
 
-        ProcessoSeletivo igual = ProcessoCom(Etapa(
-            "Prova", 1, FormaDeAvaliacao.Objetiva, itens: [new(null, "Bloco A", 4m), new(null, "Bloco B", 6m)]));
+        ProcessoSeletivo igual = ProcessoCom(new ModeloDeEtapa("Prova") { Ordem = 1, FaseCodigo = "RESULTADO_FINAL", Itens = [new(null, "Bloco A", 4m), new(null, "Bloco B", 6m)] }.Criar());
         Vermelhos(igual).Should().BeEmpty();
         Publicar(igual).IsSuccess.Should().BeTrue();
     }
@@ -142,8 +115,8 @@ public sealed class ConformidadeAvaliacaoDasEtapasTests
     public void EtapaSemNotaComItens_RecusaPublicacao()
     {
         ProcessoSeletivo processo = ProcessoCom(
-            Etapa("Prova", 1, FormaDeAvaliacao.Objetiva),
-            Etapa("Análise", 2, forma: null, CaraterEtapa.Eliminatoria, itens: [new(null, "Documentação", 10m)]));
+            new ModeloDeEtapa("Prova") { Ordem = 1, FaseCodigo = "RESULTADO_FINAL" }.Criar(),
+            new ModeloDeEtapa("Análise") { Ordem = 2, FaseCodigo = "RESULTADO_FINAL", Carater = CaraterEtapa.Eliminatoria, Peso = null, NotaMaxima = null, Forma = null, Itens = [new(null, "Documentação", 10m)] }.Criar());
 
         Vermelhos(processo).Should().ContainSingle().Which.Should().Match<ItemConformidade>(
             i => i.Codigo == "etapa_sem_nota_com_itens_de_avaliacao" && i.Mensagem.Contains("\"Análise\"", StringComparison.Ordinal));
@@ -152,16 +125,12 @@ public sealed class ConformidadeAvaliacaoDasEtapasTests
     [Fact(DisplayName = "Com escala de atendimento a etapa humana publica sem passo do lançamento; sem escala o passo continua exigido")]
     public void EtapaHumanaComEscala_DispensaOPasso()
     {
-        ProcessoSeletivo comEscala = ProcessoCom(Etapa(
-            "Entrevista", 1, FormaDeAvaliacao.Humana, comRegra: true, comBanca: true,
-            itens: [new(null, "Postura", 5m), new(null, "Domínio", 5m)], escala: Escala));
+        ProcessoSeletivo comEscala = ProcessoCom(new ModeloDeEtapa("Entrevista") { Ordem = 1, FaseCodigo = "RESULTADO_FINAL", Forma = FormaDeAvaliacao.Humana, RegraConsolidacao = ProcessoConformeFactory.Regra(RegraConsolidacaoCodigo.AvaliacaoUnica, "b"), Bancas = [BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_AVALIADORA", "Banca de teste", BancasDeTeste.Regra())], Itens = [new(null, "Postura", 5m), new(null, "Domínio", 5m)], Escala = Escala }.Criar());
 
         Vermelhos(comEscala).Should().BeEmpty();
         Publicar(comEscala).IsSuccess.Should().BeTrue();
 
-        ProcessoSeletivo semEscala = ProcessoCom(Etapa(
-            "Entrevista", 1, FormaDeAvaliacao.Humana, comRegra: true, comBanca: true,
-            itens: [new(null, "Postura", 5m), new(null, "Domínio", 5m)]));
+        ProcessoSeletivo semEscala = ProcessoCom(new ModeloDeEtapa("Entrevista") { Ordem = 1, FaseCodigo = "RESULTADO_FINAL", Forma = FormaDeAvaliacao.Humana, RegraConsolidacao = ProcessoConformeFactory.Regra(RegraConsolidacaoCodigo.AvaliacaoUnica, "b"), Bancas = [BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_AVALIADORA", "Banca de teste", BancasDeTeste.Regra())], Itens = [new(null, "Postura", 5m), new(null, "Domínio", 5m)] }.Criar());
 
         Vermelhos(semEscala).Should().ContainSingle().Which.Codigo.Should().Be("etapa_humana_sem_passo_do_lancamento");
     }

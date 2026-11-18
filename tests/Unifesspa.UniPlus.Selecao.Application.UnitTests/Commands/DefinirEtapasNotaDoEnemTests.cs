@@ -23,37 +23,13 @@ public sealed class DefinirEtapasNotaDoEnemTests
     public async Task Handle_NotaEnemComRecursoEmAto_RecusaPelaRegraDoEnem()
     {
         ProcessoSeletivo processo = ProcessoSemEtapas();
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
-        ITipoEtapaReader reader = Substitute.For<ITipoEtapaReader>();
-        reader.ObterAtivoPorIdAsync(TipoProvaObjetivaOrigemId, Arg.Any<CancellationToken>())
-            .Returns(new TipoEtapaView(TipoProvaObjetivaOrigemId, "NOTA_ENEM", "Nota do ENEM", null, AdmitePontuacao: true, AdmiteEliminacao: true, NotaDeOrigemNoEnem: true, ConceitosAdmitidos: []));
-        IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
-        regraCatalogoReader.ObterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(RegraCatalogo.Criar(
-                "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1", TipoRegra.RegraPrazoRecurso,
-                JsonDocument.Parse("{}").RootElement, JsonDocument.Parse("[]").RootElement,
-                "Lei 9.784/1999, art. 59").Value!);
+        ITipoEtapaReader reader = ReaderDoTipo(TipoNoCadastro(TipoProvaObjetivaOrigemId, "NOTA_ENEM", "Nota do ENEM", notaDeOrigemNoEnem: true));
+        EtapaProcessoInput etapa = EtapaInput("Nota do ENEM", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1) with { Recursos = [RecursoEmAtoPublicado()] };
+        DefinirEtapasCommand command = new(processo.Id, [etapa]);
 
-        DefinirEtapasCommand command = new(
-            processo.Id,
-            [
-                new EtapaProcessoInput(
-                    "Nota do ENEM", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
-                    Produtos: [],
-                    Recursos:
-                    [
-                        new RecursoDaEtapaInput(
-                            AncoraDoRecurso.AtoPublicado, "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1",
-                            2m, UnidadePrazo.DiasUteis, "RESULTADO_CLASSIFICACAO", null, null, false, null, null),
-                    ], Bancas: []),
-            ],
-            PrecondicaoIfMatch.Ausente);
+        Result result = await Executar(command, RepositorioCom(processo), unitOfWork, reader, regraCatalogoReader: CatalogoComARegraDeRecursoEmAto());
 
-        Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, reader, regraCatalogoReader: regraCatalogoReader);
-
-        result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemComProdutoOuRecursoEmAto");
         unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
     }
@@ -62,59 +38,47 @@ public sealed class DefinirEtapasNotaDoEnemTests
     public async Task Handle_EtapaNova_CongelaANotaDeOrigemNoEnem()
     {
         ProcessoSeletivo processo = ProcessoSemEtapas();
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
-        ITipoEtapaReader reader = Substitute.For<ITipoEtapaReader>();
-        reader.ObterAtivoPorIdAsync(TipoProvaObjetivaOrigemId, Arg.Any<CancellationToken>())
-            .Returns(new TipoEtapaView(TipoProvaObjetivaOrigemId, "NOTA_ENEM", "Nota do ENEM", null, AdmitePontuacao: true, AdmiteEliminacao: true, NotaDeOrigemNoEnem: true, ConceitosAdmitidos: []));
-        reader.ObterAtivoPorIdAsync(TipoRedacaoOrigemId, Arg.Any<CancellationToken>())
-            .Returns(new TipoEtapaView(TipoRedacaoOrigemId, "REDACAO", "Redação", null, AdmitePontuacao: true, AdmiteEliminacao: true, NotaDeOrigemNoEnem: false, ConceitosAdmitidos: []));
+        ITipoEtapaReader reader = ReaderDoTipo(TipoNoCadastro(TipoProvaObjetivaOrigemId, "NOTA_ENEM", "Nota do ENEM", notaDeOrigemNoEnem: true));
+        reader.ObterAtivoPorIdAsync(TipoRedacaoOrigemId, Arg.Any<CancellationToken>()).Returns(TipoNoCadastro(TipoRedacaoOrigemId, "REDACAO", "Redação"));
 
-        DefinirEtapasCommand command = new(
-            processo.Id,
-            [
-                new EtapaProcessoInput("Nota do ENEM", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1, Produtos: [], Bancas: [], Recursos: []),
-                new EtapaProcessoInput("Redação", CaraterEtapa.Classificatoria, TipoRedacaoOrigemId, 1m, null, 2, Produtos: [], Bancas: [], Recursos: []),
-            ],
-            PrecondicaoIfMatch.Ausente);
-
-        Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, reader);
+        Result result = await ExecutarSobre(
+            processo, reader,
+            EtapaInput("Nota do ENEM", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1),
+            EtapaInput("Redação", CaraterEtapa.Classificatoria, TipoRedacaoOrigemId, 1m, null, 2));
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
         processo.Etapas.Single(e => e.TipoEtapaOrigemId == TipoProvaObjetivaOrigemId).DeclaraNotaDoEnem.Should().BeTrue();
         processo.Etapas.Single(e => e.TipoEtapaOrigemId == TipoRedacaoOrigemId).DeclaraNotaDoEnem.Should().BeFalse();
     }
 
-    /// <summary>
-    /// A origem da nota é identidade: mudar o caráter da etapa relê o tipo para regravar os
-    /// sinalizadores, e a origem congelada fica como estava, seja o que for que o cadastro diga.
-    /// </summary>
     [Fact(DisplayName = "Mudar o caráter regrava os sinalizadores e mantém a nota de origem no ENEM congelada")]
     public async Task Handle_CaraterAlterado_MantemANotaDeOrigemNoEnemCongelada()
     {
-        ProcessoSeletivo processo = ProcessoSemEtapas();
-        TipoEtapaSnapshot doEnem = TipoEtapaSnapshot.Criar(
-            TipoProvaObjetivaOrigemId, "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!;
-        EtapaProcesso etapa = EtapaProcesso.Criar("Nota do ENEM", CaraterEtapa.Classificatoria, doEnem, 1m, ordem: 1).Value!;
-        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
-        ITipoEtapaReader reader = Substitute.For<ITipoEtapaReader>();
-        reader.ObterAtivoPorIdAsync(TipoProvaObjetivaOrigemId, Arg.Any<CancellationToken>())
-            .Returns(new TipoEtapaView(TipoProvaObjetivaOrigemId, "NOTA_ENEM", "Nota do ENEM", null, AdmitePontuacao: true, AdmiteEliminacao: true, NotaDeOrigemNoEnem: false, ConceitosAdmitidos: []));
+        TipoEtapaSnapshot doEnem = TipoCongelado(TipoProvaObjetivaOrigemId, "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true);
+        EtapaProcesso etapa = EtapaDoProcesso("Nota do ENEM", CaraterEtapa.Classificatoria, 1, doEnem, 1m);
+        ProcessoSeletivo processo = ProcessoComAsEtapas(etapa);
+        ITipoEtapaReader reader = ReaderDoTipo(TipoNoCadastro(TipoProvaObjetivaOrigemId, "NOTA_ENEM", "Nota do ENEM"));
 
-        DefinirEtapasCommand command = new(
-            processo.Id,
-            [new EtapaProcessoInput("Nota do ENEM", CaraterEtapa.Ambas, TipoProvaObjetivaOrigemId, 1m, 5m, 1, etapa.Id, Produtos: [], Bancas: [], Recursos: [])],
-            PrecondicaoIfMatch.Ausente);
-
-        Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, reader);
+        Result result = await ExecutarSobre(
+            processo, reader, EtapaInput("Nota do ENEM", CaraterEtapa.Ambas, TipoProvaObjetivaOrigemId, 1m, 5m, 1, etapa.Id));
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
         processo.Etapas.Single().TipoEtapa.NotaDeOrigemNoEnem.Should().BeTrue(
             "a regravação dos sinalizadores não alcança a identidade congelada");
         await reader.Received().ObterAtivoPorIdAsync(TipoProvaObjetivaOrigemId, Arg.Any<CancellationToken>());
+    }
+
+    private static RecursoDaEtapaInput RecursoEmAtoPublicado() => new(
+        AncoraDoRecurso.AtoPublicado, "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1",
+        2m, UnidadePrazo.DiasUteis, "RESULTADO_CLASSIFICACAO", null, null, false, null, null);
+
+    private static IRegraCatalogoReader CatalogoComARegraDeRecursoEmAto()
+    {
+        IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
+        regraCatalogoReader.ObterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(RegraCatalogo.Criar(
+                "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1", TipoRegra.RegraPrazoRecurso,
+                JsonDocument.Parse("{}").RootElement, JsonDocument.Parse("[]").RootElement, "Lei 9.784/1999, art. 59"));
+        return regraCatalogoReader;
     }
 }

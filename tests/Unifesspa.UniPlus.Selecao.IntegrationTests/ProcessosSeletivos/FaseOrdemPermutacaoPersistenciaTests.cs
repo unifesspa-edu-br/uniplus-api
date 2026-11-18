@@ -88,11 +88,11 @@ public sealed class FaseOrdemPermutacaoPersistenciaTests(ProcessoSeletivoDbFixtu
             TiposDeProcessoDeTeste.SiSU,
             OrigemCandidatos.InscricaoPropria,
             Guid.CreateVersion7(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
         processo.DefinirCronogramaFases(
-            [Fase(1, "INSCRICAO"), Fase(2, "AVALIACAO")], [], PrecondicaoIfMatch.Ausente)
+            [Fase(1, "INSCRICAO"), Fase(2, "AVALIACAO")], [])
             .IsSuccess.Should().BeTrue();
 
         escrita.ProcessosSeletivos.Add(processo);
@@ -101,9 +101,8 @@ public sealed class FaseOrdemPermutacaoPersistenciaTests(ProcessoSeletivoDbFixtu
     }
 
     private static FaseCronograma Fase(int ordem, string codigo) => FaseCronograma.Criar(
-        ordem, Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao,
-        agrupaEtapas: false, permiteComplementacao: false,
-        coletaInscricao: false, coletaSolicitacaoIsencao: false,
-        inicio: null, fim: null, produtos: [], faseConcluinteCodigo: null,
-        emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+        new OrigemCanonicaDaFase(Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
 }

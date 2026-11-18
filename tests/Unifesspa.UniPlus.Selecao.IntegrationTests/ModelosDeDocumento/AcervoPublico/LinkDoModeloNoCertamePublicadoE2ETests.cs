@@ -80,43 +80,44 @@ public sealed class LinkDoModeloNoCertamePublicadoE2ETests(AcervoPublicoE2EFixtu
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         ModeloDeDocumento? modelo = null;
 
-        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
-            db,
-            $"PS com modelo no acervo {Guid.CreateVersion7()}",
-            complementar: processo =>
-            {
-                modelo = ModeloDeDocumento.IniciarPendente(
-                    processo.Id, "Autodeclaração étnico-racial", "ODT", TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
-                modelo.Confirmar(conteudo.LongLength, hash, TimeProvider.System).IsSuccess.Should().BeTrue();
-                db.ModelosDeDocumento.Add(modelo);
-
-                DocumentoExigido exigencia = DocumentoExigido.Criar(
-                    processo.CronogramaFases.Single().Id,
-                    tipoDocumentoOrigemId: TipoDocumentoSeed.Itens[0].Id,
-                    tipoDocumentoCodigo: "AUTODECLARACAO_ETNICO_RACIAL",
-                    tipoDocumentoNome: "Autodeclaração étnico-racial",
-                    tipoDocumentoCategoria: "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-                    aplicabilidade: Aplicabilidade.Geral,
-                    obrigatorio: true,
-                    consequenciaIndeferimento: null,
-                    condicoes: [],
-                    basesLegais: [DocumentoExigidoBaseLegal.Criar(
-                        "Res. Unifesspa 532/2021, art. 12", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, null).Value!],
-                    idadeMaximaEmissao: null,
-                    formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!,
-                    tamanhoMaximoBytes: null,
-                    modelo: ModeloDaExigencia.Do(modelo).Value!,
-                    finalidade: FinalidadeFormulario.Inscricao).Value!;
-                processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente)
-                    .IsSuccess.Should().BeTrue();
-            });
-
-        IArquivoArmazenadoStorage storage = scope.ServiceProvider.GetRequiredService<IArquivoArmazenadoStorage>();
-        await storage.SalvarConteudoSeladoAsync(modelo!.ObjectKeyConfirmado!, conteudo, modelo.ContentType);
-        await storage.SalvarConteudoSeladoAsync(documento.ObjectKeyConfirmado!, PdfDoEdital, TiposDeMidiaDeDocumento.Pdf);
+        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel
+        {
+            Nome = $"PS com modelo no acervo {Guid.CreateVersion7()}",
+            Complementar = processo => modelo = OferecerModeloConfirmado(db, processo, conteudo, hash),
+        });
+        await SelarOsConteudosNoStorageAsync(scope.ServiceProvider, modelo!, documento, conteudo);
 
         return (processo.Id, documento.Id);
     }
+
+    private static async Task SelarOsConteudosNoStorageAsync(
+        IServiceProvider servicos, ModeloDeDocumento modelo, DocumentoAPublicar documento, byte[] conteudo)
+    {
+        IArquivoArmazenadoStorage storage = servicos.GetRequiredService<IArquivoArmazenadoStorage>();
+        await storage.SalvarConteudoSeladoAsync(modelo.ObjectKeyConfirmado!, conteudo, modelo.ContentType);
+        await storage.SalvarConteudoSeladoAsync(documento.ObjectKeyConfirmado!, PdfDoEdital, TiposDeMidiaDeDocumento.Pdf);
+    }
+
+    private static ModeloDeDocumento OferecerModeloConfirmado(UniPlusDbContext db, ProcessoSeletivo processo, byte[] conteudo, string hash)
+    {
+        ModeloDeDocumento modelo = ModeloDeDocumento.IniciarPendente(
+            processo.Id, "Autodeclaração étnico-racial", "ODT", TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        modelo.Confirmar(conteudo.LongLength, hash, TimeProvider.System).IsSuccess.Should().BeTrue();
+        db.ModelosDeDocumento.Add(modelo);
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaQueOfereceOModelo(processo, modelo), 0).Value!])
+            .IsSuccess.Should().BeTrue();
+
+        return modelo;
+    }
+
+    private static DocumentoExigido ExigenciaQueOfereceOModelo(ProcessoSeletivo processo, ModeloDeDocumento modelo) => DocumentoExigido.Criar(
+        processo.CronogramaFases.Single().Id, tipoDocumentoOrigemId: TipoDocumentoSeed.Itens[0].Id,
+        tipoDocumentoCodigo: "AUTODECLARACAO_ETNICO_RACIAL", tipoDocumentoNome: "Autodeclaração étnico-racial",
+        tipoDocumentoCategoria: "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal, aplicabilidade: Aplicabilidade.Geral,
+        obrigatorio: true, consequenciaIndeferimento: null, condicoes: [],
+        basesLegais: [DocumentoExigidoBaseLegal.Criar("Res. Unifesspa 532/2021, art. 12", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, null).Value!],
+        idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null,
+        modelo: ModeloDaExigencia.Do(modelo).Value!, finalidade: FinalidadeFormulario.Inscricao).Value!;
 
     private static async Task<HttpResponseMessage> PublicarAsync(HttpClient client, Guid processoId, Guid documentoEditalId)
     {

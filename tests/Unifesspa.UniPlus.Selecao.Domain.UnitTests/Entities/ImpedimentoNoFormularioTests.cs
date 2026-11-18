@@ -46,11 +46,10 @@ public sealed class ImpedimentoNoFormularioTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         processo.DefinirFatosColetados(
                 FinalidadeFormulario.Inscricao,
-                [.. FormularioDeTeste.DadosBasicos(), Campo(obrigatorio ? Obrigatoriedade.Sempre : Obrigatoriedade.Nunca)],
-                PrecondicaoIfMatch.Ausente)
+                [.. FormularioDeTeste.DadosBasicos(), Campo(obrigatorio ? Obrigatoriedade.Sempre : Obrigatoriedade.Nunca)])
             .IsSuccess.Should().BeTrue();
 
-        (ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo)?.Code)
+        (CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)?.Code)
             .Should().Be(obrigatorio ? null : ItemFormularioErrorCodes.OpcionalQueAlimentaRegra);
     }
 

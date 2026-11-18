@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 
+using System.Linq.Expressions;
+
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
@@ -38,6 +40,19 @@ public sealed class OfertaCursoRepository : IOfertaCursoRepository
             .FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
     }
 
+    public Task<bool> CodigoExisteEntreVivosAsync(string codigo, Guid? excluirId, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(codigo);
+
+        // Espelha a normalização do código (Trim) e compara com sensibilidade a caixa, como o índice único parcial.
+        string codigoNormalizado = codigo.Trim();
+
+        return _dbContext.OfertasCurso
+            .AsNoTracking()
+            .Where(o => excluirId == null || o.Id != excluirId)
+            .AnyAsync(o => o.Codigo == codigoNormalizado, cancellationToken);
+    }
+
     public Task<OfertaCurso?> ObterPorIdParaLeituraAsync(Guid id, CancellationToken cancellationToken)
     {
         return _dbContext.OfertasCurso
@@ -59,68 +74,74 @@ public sealed class OfertaCursoRepository : IOfertaCursoRepository
     {
         ArgumentNullException.ThrowIfNull(ordenacao);
 
-        IQueryable<OfertaCurso> ofertas = _dbContext.OfertasCurso.AsNoTracking();
+        string? termo = NormalizacaoTextual.PrepararTermoDeBusca(busca);
+        IQueryable<OfertaCursoOrdenada> query = OfertasDoRecorte(cursoId, termo);
+        int? total = await ContarSeSolicitadoAsync(query, includeTotal, cancellationToken).ConfigureAwait(false);
 
-        // Filtro opcional por curso (issue #755): aplicado ANTES do keyset para que
-        // os EXISTS de prev/next herdem o recorte. Index-backed por ix_ofertas_de_curso_curso_id.
+        OrderedKeysetPage<OfertaCursoOrdenada> page = await OrderedKeysetCursor
+            .ApplyAsync(query, OrdenacaoDeCursos.DeOfertas(ordenacao, RecorteDeOferta(termo, cursoId)), afterSortKey, afterId, limit, direction, cancellationToken)
+            .ConfigureAwait(false);
+
+        return ([.. page.Items.Select(static linha => linha.Entidade)], page.Previous, page.Next, total);
+    }
+
+    /// <summary>
+    /// O recorte opcional por curso (issue #755) é aplicado ANTES do keyset para que os EXISTS de prev/next o herdem; é
+    /// apoiado por ix_ofertas_de_curso_curso_id. A busca alcança o curso ofertado pela coluna já normalizada, o código do
+    /// curso, o código da oferta e a sigla da unidade — todos disponíveis sem junção adicional.
+    /// </summary>
+    private IQueryable<OfertaCursoOrdenada> OfertasDoRecorte(Guid? cursoId, string? termo)
+    {
+        IQueryable<OfertaCurso> ofertas = _dbContext.OfertasCurso.AsNoTracking();
         if (cursoId is { } curso)
         {
             ofertas = ofertas.Where(o => o.CursoId == curso);
         }
 
-        // A oferta é ordenada pelo curso que oferta, e não navega até ele — as
-        // colunas do curso vêm desta junção. O filtro de soft-delete de cada lado é
-        // aplicado por convenção, então curso removido não ressuscita oferta.
-        IQueryable<OfertaCursoOrdenada> query =
-            from oferta in ofertas
-            join c in _dbContext.Cursos.AsNoTracking() on oferta.CursoId equals c.Id
-            select new OfertaCursoOrdenada
-            {
-                Id = oferta.Id,
-                NomeOrdenacao = EF.Property<string>(c, CursoConfiguration.NomeOrdenacaoPropriedade),
-                Codigo = c.Codigo,
-                UnidadeSigla = oferta.UnidadeOfertante.Sigla,
-                ProgramaDeOferta = oferta.ProgramaDeOferta,
-                FormatoPedagogico = oferta.FormatoPedagogico,
-                RegimeDeFuncionamento = oferta.RegimeDeFuncionamento,
-                RegimeDeTurno = oferta.RegimeDeTurno,
-                CriadoEm = oferta.CreatedAt,
-                Entidade = oferta,
-            };
-
-        // A busca alcança o curso ofertado pela coluna já normalizada, o código do
-        // curso e a sigla da unidade — as três disponíveis sem junção adicional.
-        string? termo = NormalizacaoTextual.PrepararTermoDeBusca(busca);
-        if (termo is not null)
-        {
-            string padrao = "%" + termo + "%";
-            query = query.Where(o =>
-                EF.Functions.ILike(o.NomeOrdenacao, padrao, EscapeDoLike)
-                || EF.Functions.ILike(FuncoesDaPlataforma.NormalizarParaComparacao(o.Codigo), padrao, EscapeDoLike)
-                || EF.Functions.ILike(FuncoesDaPlataforma.NormalizarParaComparacao(o.UnidadeSigla), padrao, EscapeDoLike));
-        }
-
-        // Contagem sobre a MESMA consulta que produziu a página (ADR-0026): o recorte por
-        // curso, a busca e o filtro de exclusão lógica já estão aplicados, e o keyset ainda
-        // não — um total que prometesse lista diferente da que o filtro traz seria rótulo
-        // que mente. Sem include_total nenhuma contagem é disparada: quem não pede não paga.
-        int? total = includeTotal
-            ? await query.CountAsync(cancellationToken).ConfigureAwait(false)
-            : null;
-
-        OrderedKeysetPage<OfertaCursoOrdenada> page = await OrderedKeysetCursor
-            .ApplyAsync(
-                query,
-                OrdenacaoDeCursos.DeOfertas(ordenacao, RecorteDeOferta(termo, cursoId)),
-                afterSortKey,
-                afterId,
-                limit,
-                direction,
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        return ([.. page.Items.Select(static linha => linha.Entidade)], page.Previous, page.Next, total);
+        IQueryable<OfertaCursoOrdenada> query = ComOrdenacaoDoCurso(ofertas);
+        return termo is null ? query : ComBusca(query, termo);
     }
+
+    /// <summary>
+    /// A oferta é ordenada pelo curso que oferta, e não navega até ele — as colunas do curso vêm desta junção. O filtro de
+    /// soft-delete de cada lado é aplicado por convenção, então curso removido não ressuscita oferta.
+    /// </summary>
+    private IQueryable<OfertaCursoOrdenada> ComOrdenacaoDoCurso(IQueryable<OfertaCurso> ofertas) =>
+        ofertas.Join(_dbContext.Cursos.AsNoTracking(), static oferta => oferta.CursoId, static curso => curso.Id, OfertaComOrdenacaoDoCurso);
+
+    private static readonly Expression<Func<OfertaCurso, Curso, OfertaCursoOrdenada>> OfertaComOrdenacaoDoCurso = (oferta, curso) =>
+        new OfertaCursoOrdenada
+        {
+            Id = oferta.Id,
+            NomeOrdenacao = EF.Property<string>(curso, CursoConfiguration.NomeOrdenacaoPropriedade),
+            Codigo = curso.Codigo,
+            OfertaCodigo = oferta.Codigo,
+            UnidadeSigla = oferta.UnidadeOfertante.Sigla,
+            ProgramaDeOferta = oferta.ProgramaDeOferta,
+            FormatoPedagogico = oferta.FormatoPedagogico,
+            RegimeDeFuncionamento = oferta.RegimeDeFuncionamento,
+            RegimeDeTurno = oferta.RegimeDeTurno,
+            CriadoEm = oferta.CreatedAt,
+            Entidade = oferta,
+        };
+
+    private static IQueryable<OfertaCursoOrdenada> ComBusca(IQueryable<OfertaCursoOrdenada> query, string termo)
+    {
+        string padrao = "%" + termo + "%";
+        return query.Where(o =>
+            EF.Functions.ILike(o.NomeOrdenacao, padrao, EscapeDoLike)
+            || EF.Functions.ILike(FuncoesDaPlataforma.NormalizarParaComparacao(o.Codigo), padrao, EscapeDoLike)
+            || EF.Functions.ILike(FuncoesDaPlataforma.NormalizarParaComparacao(o.OfertaCodigo), padrao, EscapeDoLike)
+            || EF.Functions.ILike(FuncoesDaPlataforma.NormalizarParaComparacao(o.UnidadeSigla), padrao, EscapeDoLike));
+    }
+
+    /// <summary>
+    /// A contagem sai da MESMA consulta que produziu a página (ADR-0026): o recorte por curso, a busca e o filtro de exclusão
+    /// lógica já estão aplicados, e o keyset ainda não — um total que prometesse lista diferente da que o filtro traz seria
+    /// rótulo que mente. Sem include_total nenhuma contagem é disparada: quem não pede não paga.
+    /// </summary>
+    private static async Task<int?> ContarSeSolicitadoAsync(IQueryable<OfertaCursoOrdenada> query, bool incluirTotal, CancellationToken cancellationToken) =>
+        incluirTotal ? await query.CountAsync(cancellationToken).ConfigureAwait(false) : null;
 
     /// <summary>
     /// O que reduziu a coleção antes da paginação — termo pesquisado e curso

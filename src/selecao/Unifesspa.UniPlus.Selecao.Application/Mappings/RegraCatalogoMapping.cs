@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </summary>
 public static class RegraCatalogoMapping
 {
+    /// <summary>Projeta a regra usando o código textual de tipo aceito pelo filtro e usado no hash.</summary>
     public static RegraCatalogoDto ToDto(RegraCatalogo regra)
     {
         ArgumentNullException.ThrowIfNull(regra);
@@ -17,14 +18,12 @@ public static class RegraCatalogoMapping
         return new RegraCatalogoDto(
             Codigo: regra.Codigo,
             Versao: regra.Versao,
-            // O código canônico de wire, não o nome do membro em C#: é o mesmo valor que o
-            // filtro `tipo` aceita e que o hash content-addressable incorpora, então quem
-            // relê um tipo desta resposta e o usa como filtro é atendido.
             Tipo: regra.Tipo.ToCodigo(),
-            EsquemaArgs: regra.EsquemaArgs,
+            DeclaracaoDaRegra: regra.DeclaracaoDaRegra,
             Invariantes: regra.Invariantes,
             BaseLegal: regra.BaseLegal,
             Hash: regra.Hash,
-            ModalidadesAdmitidas: ModalidadesAdmitidasDoEsquemaArgs.Extrair(regra));
+            ModalidadesAdmitidas: ModalidadesAdmitidasDaDeclaracaoDaRegra.Extrair(regra),
+            RamoDaDistribuicao: regra.Tipo == TipoRegra.RegraDistribuicaoVagas ? RegraDistribuicaoVagasCodigo.RamoDe(regra.Codigo) : null);
     }
 }

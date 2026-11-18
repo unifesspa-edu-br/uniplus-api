@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/homologacao.schema.json",
+  "title": "Regra de homologação das inscrições",
+  "description": "Como a fase homologa as inscrições: o resultado que publica a lista e as alternativas de condições. A inscrição é homologada se cumpre todas as condições de ao menos uma alternativa; sem alternativa, toda inscrição enviada é homologada.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "resultadoAtoCodigo": {
+      "title": "Resultado que publica a lista",
+      "description": "Código do tipo de ato que publica a lista de homologadas: produto da própria fase; o definitivo sai nela ou na fase concluinte.",
+      "type": "string",
+      "pattern": "^[A-Z]+(_[A-Z]+)*$",
+      "minLength": 1,
+      "maxLength": 60
+    },
+    "alternativas": {
+      "title": "Alternativas",
+      "description": "Alternativas de condições ligadas por OU; dentro de cada uma, as condições se ligam por E.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/alternativa"
+      }
+    }
+  },
+  "$defs": {
+    "alternativa": {
+      "title": "Alternativa de condições",
+      "description": "Conjunto de condições que, cumpridas todas, homologa a inscrição.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "condicoes": {
+          "title": "Condições",
+          "description": "Condições da alternativa, ao menos uma.",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/condicao"
+          }
+        }
+      }
+    },
+    "condicao": {
+      "title": "Condição de homologação",
+      "description": "Uma condição que a inscrição cumpre para ser homologada.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tipo": {
+          "title": "Tipo da condição",
+          "description": "O que a condição apura, em código maiúsculo com sublinhado. Por ora, o sistema só apura RESULTADO_NO_RETORNO_DO_INEP, o resultado do candidato no retorno do INEP.",
+          "type": "string",
+          "pattern": "^[A-Z]+(_[A-Z]+)*$",
+          "maxLength": 60
+        },
+        "edicaoDoExame": {
+          "title": "Edição do exame",
+          "description": "Ano da edição do exame, de 1998 a 2100.",
+          "type": "integer",
+          "minimum": 1998,
+          "maximum": 2100
+        },
+        "motivoDesfavoravelCodigo": {
+          "title": "Motivo desfavorável",
+          "description": "Código do motivo desfavorável registrado quando a condição não é cumprida.",
+          "$ref": "motivo.schema.json#/$defs/codigoDoMotivo"
+        },
+        "enquadramento": {
+          "title": "Enquadramento",
+          "description": "Predicado que restringe a quem a condição vale; ausente ou nulo, vale para todos.",
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "predicado.schema.json#/$defs/predicado"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -60,7 +60,8 @@ internal static class ProtecaoVigenteDasExigenciasDoProcesso
             new ProtecaoVigenteDasExigencias(
                 ClassificacaoDosDerivados(derivados),
                 ProtecaoDeCadaExigencia(processo, tiposVivos, daVersaoVigente),
-                DerivadosSemProtecaoAprovada(catalogoDeFatos, derivados)),
+                DerivadosSemProtecaoAprovada(catalogoDeFatos, derivados),
+                ExigenciasRecusadasPelaAprovacao(processo, tiposVivos, catalogoDeFatos)),
             derivados);
     }
 
@@ -116,6 +117,21 @@ internal static class ProtecaoVigenteDasExigenciasDoProcesso
                 .Select(static f => f.Codigo)
                 .Where(codigo => !derivados.ContainsKey(codigo)),
             StringComparer.Ordinal);
+
+    private static HashSet<Guid> ExigenciasRecusadasPelaAprovacao(
+        ProcessoSeletivo processo, IReadOnlyDictionary<Guid, TipoDocumentoView> tiposVivos, IReadOnlyList<FatoCandidatoView> catalogoDeFatos)
+    {
+        HashSet<string> fatosPendentes = [.. catalogoDeFatos.Where(static f => !f.ProtecaoAprovada).Select(static f => f.Codigo)];
+
+        return
+        [
+            .. processo.DocumentosExigidos
+                .Where(exigencia => !tiposVivos.TryGetValue(exigencia.TipoDocumentoOrigemId, out TipoDocumentoView? tipo)
+                    || !tipo.ProtecaoAprovada
+                    || exigencia.FatosComprovados.Any(fatosPendentes.Contains))
+                .Select(static exigencia => exigencia.Id),
+        ];
+    }
 
     /// <summary>
     /// O que a versão vigente congelou — as exigências, por id, com o tipo e a proteção, e os fatos

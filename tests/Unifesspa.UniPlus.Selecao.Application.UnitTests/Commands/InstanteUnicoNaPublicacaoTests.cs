@@ -24,7 +24,6 @@ public sealed class InstanteUnicoNaPublicacaoTests
     [Theory(DisplayName = "O comando lê o relógio uma vez e usa o mesmo instante na versão, no ato e no ato entregue à porta")]
     [InlineData(OperacaoQueCongela.Publicar)]
     [InlineData(OperacaoQueCongela.Retificar)]
-    [InlineData(OperacaoQueCongela.FecharRetificacao)]
     public async Task Congelamento_LeORelogioUmaVez_EOInstanteVaiParaAVersaoOAtoEAPorta(OperacaoQueCongela operacao)
     {
         RelogioDeLeituraContada relogio = new(UmaDoisMinutosDepoisDaMeiaNoiteEmBelem);
@@ -44,7 +43,6 @@ public sealed class InstanteUnicoNaPublicacaoTests
     [Theory(DisplayName = "O tipo de ato é consultado no dia do instante em Belém, e a data declarada pelo documento não entra na consulta")]
     [InlineData(OperacaoQueCongela.Publicar)]
     [InlineData(OperacaoQueCongela.Retificar)]
-    [InlineData(OperacaoQueCongela.FecharRetificacao)]
     public async Task Congelamento_ConsultaOTipoNoDiaDoInstanteEmBelem(OperacaoQueCongela operacao)
     {
         DateTimeOffset vinteETresEMeiaEmBelem = InstanteEmBelem.Em(2026, 3, 13, 23, 30);
@@ -73,7 +71,6 @@ public sealed class InstanteUnicoNaPublicacaoTests
     [Theory(DisplayName = "Sem versão do tipo vigente no dia da publicação, a recusa nomeia esse dia e nada é gravado")]
     [InlineData(OperacaoQueCongela.Publicar)]
     [InlineData(OperacaoQueCongela.Retificar)]
-    [InlineData(OperacaoQueCongela.FecharRetificacao)]
     public async Task Congelamento_SemTipoVigenteNoDiaDaPublicacao_RecusaCitandoODia(OperacaoQueCongela operacao)
     {
         CenarioDeRecusaNoCongelamento cenario = Para(operacao);

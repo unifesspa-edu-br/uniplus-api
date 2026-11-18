@@ -13,9 +13,10 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 
 /// <summary>
-/// Reúne, para os gates de publicação e para o checklist, o que Publicações sabe sobre os tipos de
+/// Reúne, para a conferência da configuração e para o checklist, o que Publicações sabe sobre os tipos de
 /// ato únicos por objeto que o processo cita (ADR-0056 — leitura cross-módulo) e os tipos dos atos
-/// que já criaram versão, e recusa o processo que declara o mesmo tipo único mais de uma vez.
+/// que já criaram versão. Só lê: quem recusa o processo que declara o mesmo tipo único mais de uma vez
+/// é a conferência da configuração.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -31,12 +32,12 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 /// <para>
 /// <b>O ato da operação não é relido.</b> O tipo dele já foi conferido no dia da publicação do
 /// ato (<see cref="ConferenciaDoTipoDeAto"/>) e é com essa leitura que o registro decide; reler
-/// o catálogo em outra data abriria um cenário em que o gate enxerga uma unicidade e o registro,
+/// o catálogo em outra data abriria um cenário em que a conferência enxerga uma unicidade e o registro,
 /// outra.
 /// </para>
 /// <para>
 /// <b>As vagas ocupadas vêm do registro local dos atos.</b> O registro do ato da versão é gravado na
-/// mesma transação da versão e do ato em Publicações. Os gates e o checklist leem do mesmo lugar, para
+/// mesma transação da versão e do ato em Publicações. A conferência e o checklist leem do mesmo lugar, para
 /// que concordem; a vaga do objeto no registro central é conferida pela porta de escrita, na gravação.
 /// </para>
 /// </remarks>
@@ -46,8 +47,8 @@ public sealed class ResolucaoDosTiposDeAtoUnicos(
     TimeProvider relogio)
 {
     /// <summary>
-    /// Resolve os tipos únicos da operação e recusa a pendência, tudo num ponto só: o congelamento da versão chama
-    /// isto logo depois do cronograma, antes de canonicalizar, na ordem da raiz. O catálogo é consultado no
+    /// Resolve os tipos únicos da operação, só a leitura: quem recusa o tipo repetido é a conferência da configuração. O
+    /// congelamento da versão chama isto depois do fuso, antes de conferir. O catálogo é consultado no
     /// <paramref name="diaDaPublicacao"/>, o dia civil do instante em que a operação publica.
     /// </summary>
     /// <param name="jaCongelados">
@@ -61,7 +62,7 @@ public sealed class ResolucaoDosTiposDeAtoUnicos(
     /// linhagem), então a pergunta daqui — o tipo de cada ato da linhagem — é uma leitura
     /// própria, e fundi-las só acoplaria dois contratos.
     /// </remarks>
-    internal async Task<Result<TiposDeAtoUnicosPorObjeto>> ConferirAsync(
+    internal async Task<TiposDeAtoUnicosPorObjeto> ParaOperacaoAsync(
         ProcessoSeletivo processo,
         TipoAtoPublicadoView tipoDoAtoDaOperacao,
         IReadOnlyList<Guid> atosDaLinhagem,
@@ -75,18 +76,14 @@ public sealed class ResolucaoDosTiposDeAtoUnicos(
             .ConfigureAwait(false);
         AcrescentarOTipoDoAto(leitura, tipoDoAtoDaOperacao, jaCongelados);
 
-        TiposDeAtoUnicosPorObjeto tipos = TiposDeAtoUnicosPorObjeto.ParaOperacao(
+        return TiposDeAtoUnicosPorObjeto.ParaOperacao(
             leitura.Unicos, ocupados, tipoDoAtoDaOperacao.Codigo, leitura.Classificacoes,
             tipoDoAtoDaOperacao.UnicoPorObjeto, tipoDoAtoDaOperacao.Nome);
-
-        return TiposDeAtoDoCronograma.PendenciaDoTipoDeAtoUnico(EstadoDaConfiguracao.De(processo), tipos) is { } pendencia
-            ? Result<TiposDeAtoUnicosPorObjeto>.Failure(pendencia)
-            : Result<TiposDeAtoUnicosPorObjeto>.Success(tipos);
     }
 
     /// <summary>
     /// Para o checklist, que avalia o processo antes de haver ato da operação: conta as vagas que
-    /// os atos da linhagem já ocupam, como os gates que congelam versão. Sem fuso reconhecido, o dia é o do UTC.
+    /// os atos da linhagem já ocupam, como a conferência que congela versão. Sem fuso reconhecido, o dia é o do UTC.
     /// </summary>
     internal async Task<TiposDeAtoUnicosPorObjeto> ParaChecklistAsync(
         ProcessoSeletivo processo,
@@ -163,7 +160,7 @@ public sealed class ResolucaoDosTiposDeAtoUnicos(
         string? codigoJaConferido,
         IReadOnlyDictionary<string, TipoDeAtoCongelado> jaCongelados) =>
     [
-        .. TiposDeAtoDoCronograma.DeclaracoesDeAtos(EstadoDaConfiguracao.De(processo))
+        .. TiposDeAtoDoCronograma.DeclaracoesDeAtos(processo.Declaracao())
             .Select(static declaracao => declaracao.AtoCodigo)
             .Concat(codigosOcupados)
             .Where(codigo => !string.Equals(codigo, codigoJaConferido, StringComparison.Ordinal) && !jaCongelados.ContainsKey(codigo))

@@ -35,6 +35,11 @@ internal sealed class TipoEtapaConfiguration : IEntityTypeConfiguration<TipoEtap
             t.HasCheckConstraint(
                 "ck_tipos_etapa_nota_de_origem_no_enem_admite_pontuacao",
                 "NOT nota_de_origem_no_enem OR admite_pontuacao");
+
+            // Ninguém corrige a nota que vem do ENEM, então não há correção independente a exigir.
+            t.HasCheckConstraint(
+                "ck_tipos_etapa_correcao_independente_sem_nota_do_enem",
+                "NOT (exige_correcao_independente AND nota_de_origem_no_enem)");
         });
         builder.HasKey(tipo => tipo.Id);
         builder.Property(tipo => tipo.Id).ValueGeneratedNever();
@@ -44,6 +49,7 @@ internal sealed class TipoEtapaConfiguration : IEntityTypeConfiguration<TipoEtap
         builder.Property(tipo => tipo.Ativo).IsRequired();
         builder.Property(tipo => tipo.AdmitePontuacao).IsRequired();
         builder.Property(tipo => tipo.AdmiteEliminacao).IsRequired();
+        builder.Property(tipo => tipo.ExigeCorrecaoIndependente).IsRequired();
 
         // Token de concorrência otimista na coluna de sistema `xmin` do Postgres (shadow property
         // `uint` + IsRowVersion, sem coluna nem migration própria). O PUT substitui o conjunto de

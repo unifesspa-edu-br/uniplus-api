@@ -2,11 +2,10 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.MotivosDoProcesso;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
-using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 
-/// <summary>Retira do processo um motivo escolhido que ainda não consta do edital publicado.</summary>
+/// <summary>Retira de um lugar do processo um motivo escolhido, só em rascunho.</summary>
 public sealed record RetirarMotivoDoProcessoCommand(
     Guid ProcessoSeletivoId,
-    Guid MotivoDeDecisaoId,
-    PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;
+    LugarDaDecisao Lugar,
+    Guid MotivoDeDecisaoId) : ICommand<Result>;

@@ -16,6 +16,16 @@ public interface ITipoBancaReader
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Os tipos de banca vivos (não soft-deleted) dos <paramref name="codigos"/>, numa só
+    /// leitura, ordenados por <c>Codigo</c> ascendente. O código sem tipo vivo — inexistente,
+    /// fora do formato ou removido — não aparece no resultado, e um código repetido no lote
+    /// devolve o tipo uma só vez.
+    /// </summary>
+    Task<IReadOnlyList<TipoBancaView>> ListarVivosPorCodigosAsync(
+        IReadOnlyCollection<string> codigos,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Obtém um tipo de banca pelo <paramref name="id"/>, ou <see langword="null"/>
     /// se inexistente / soft-deleted.
     /// </summary>

@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -26,7 +27,7 @@ internal static class PublicacaoDeTeste
         Assinante: "Diretor do CEPS",
         TipoAtoCodigo: "EDITAL_ABERTURA");
 
-    /// <summary>Processo publicado (para os cenários de Retificar e FecharRetificacao), com a mesma configuração conforme.</summary>
+    /// <summary>Processo publicado (para os cenários de Retificar), com a mesma configuração conforme.</summary>
     public static (ProcessoSeletivo Processo, VersaoConfiguracao VersaoAtual) ProcessoPublicado(byte[]? envelopeCongelado = null)
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
@@ -37,23 +38,11 @@ internal static class PublicacaoDeTeste
     public static VersaoConfiguracao Publicar(ProcessoSeletivo processo, byte[]? envelopeCongelado = null)
     {
         Result<VersaoConfiguracao> versao = processo.Publicar(
-            DadosDoEdital(), envelopeCongelado ?? EnvelopeCongeladoDeTeste.SemAnexos(), "1.1", "canonical-json/sha256@v1",
-            ProcessoSeletivoConformeBuilder.HashFixo, "user-conta-1", new RelogioFixo(Agora),
-            ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = DadosDoEdital(), Documento = new DocumentoCongelado(envelopeCongelado ?? EnvelopeCongeladoDeTeste.SemAnexos(), "1.1", "canonical-json/sha256@v1", ProcessoSeletivoConformeBuilder.HashFixo), AtorUsuarioContaId = "user-conta-1", Relogio = new RelogioFixo(Agora) });
         versao.IsSuccess.Should().BeTrue(versao.Error?.Message);
         processo.DequeueDomainEvents();
 
         return versao.Value!;
-    }
-
-    /// <summary>Abre a sessão editorial de retificação sobre a versão vigente, sem nenhuma outra versão publicada.</summary>
-    public static void AbrirRetificacao(ProcessoSeletivo processo, VersaoConfiguracao versaoAtual)
-    {
-        Result<RascunhoRetificacao> rascunho = processo.AbrirRetificacao(
-            "Correção do prazo", versaoAtual, identificadorDaVersaoBase: null,
-            VersoesPublicadasDeTeste.SoAVigente(processo), "user-conta-1", Agora);
-        rascunho.IsSuccess.Should().BeTrue(rascunho.Error?.Message);
-        processo.DequeueDomainEvents();
     }
 
     public static DadosEdital DadosDoEdital() =>

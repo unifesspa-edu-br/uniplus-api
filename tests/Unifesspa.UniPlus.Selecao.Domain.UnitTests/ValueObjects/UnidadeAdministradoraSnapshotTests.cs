@@ -12,10 +12,12 @@ public sealed class UnidadeAdministradoraSnapshotTests
     public void Criar_Valida_Sucesso()
     {
         Result<UnidadeAdministradoraSnapshot> resultado = UnidadeAdministradoraSnapshot.Criar(
+            "CEPS",
             "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA");
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Sigla.Should().Be("CEPS");
+        resultado.Value!.Codigo.Should().Be("CEPS");
         resultado.Value!.Slug.Should().Be("ceps");
         resultado.Value!.Nome.Should().Be("Centro de Processos Seletivos");
         resultado.Value!.Tipo.Should().Be("ADMINISTRATIVA");
@@ -26,10 +28,22 @@ public sealed class UnidadeAdministradoraSnapshotTests
     public void Criar_ComEspacos_Trima(string entrada, string esperado)
     {
         Result<UnidadeAdministradoraSnapshot> resultado = UnidadeAdministradoraSnapshot.Criar(
+            entrada,
             entrada, "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA");
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Sigla.Should().Be(esperado);
+    }
+
+    [Fact(DisplayName = "O código da Unidade é congelado com as bordas aparadas e é obrigatório")]
+    public void Criar_Codigo_AparadoEObrigatorio()
+    {
+        UnidadeAdministradoraSnapshot.Criar("CEPS", "  COD-01 ", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA")
+            .Value!.Codigo.Should().Be("COD-01");
+
+        Action semCodigo = () => UnidadeAdministradoraSnapshot.Criar("CEPS", " ", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA");
+
+        semCodigo.Should().Throw<ArgumentException>().WithParameterName("codigo");
     }
 
     [Theory(DisplayName = "Sigla, slug, nome ou tipo em branco é defeito de quem chama e lança, sem código público")]
@@ -39,7 +53,7 @@ public sealed class UnidadeAdministradoraSnapshotTests
     [InlineData("tipo", "CEPS", "ceps", "Centro de Processos Seletivos", " ")]
     public void Criar_CampoObrigatorioEmBranco_Lanca(string campo, string sigla, string slug, string nome, string tipo)
     {
-        Action criar = () => UnidadeAdministradoraSnapshot.Criar(sigla, slug, nome, tipo);
+        Action criar = () => UnidadeAdministradoraSnapshot.Criar(sigla, "COD", slug, nome, tipo);
 
         criar.Should().Throw<ArgumentException>().WithParameterName(campo);
     }
@@ -50,6 +64,7 @@ public sealed class UnidadeAdministradoraSnapshotTests
     public void Criar_SemCidade_Sucesso()
     {
         Result<UnidadeAdministradoraSnapshot> resultado = UnidadeAdministradoraSnapshot.Criar(
+            "CEPS",
             "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA");
 
         resultado.IsSuccess.Should().BeTrue();
@@ -62,8 +77,9 @@ public sealed class UnidadeAdministradoraSnapshotTests
     public void Criar_ComCidadeCompleta_Sucesso()
     {
         Result<UnidadeAdministradoraSnapshot> resultado = UnidadeAdministradoraSnapshot.Criar(
+            "CEPS",
             "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA",
-            cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "pa");
+            new CidadeCopiadaDaUnidade("1504208", "Marabá", "pa"));
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.CidadeCodigoIbge.Should().Be("1504208");
@@ -78,8 +94,9 @@ public sealed class UnidadeAdministradoraSnapshotTests
     public void Criar_ComCidadeParcial_Falha(string? codigo, string? nome, string? uf)
     {
         Result<UnidadeAdministradoraSnapshot> resultado = UnidadeAdministradoraSnapshot.Criar(
+            "CEPS",
             "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA",
-            cidadeCodigoIbge: codigo, cidadeNome: nome, cidadeUf: uf);
+            new CidadeCopiadaDaUnidade(codigo, nome, uf));
 
         resultado.IsFailure.Should().BeTrue();
     }
@@ -88,8 +105,9 @@ public sealed class UnidadeAdministradoraSnapshotTests
     public void Criar_ComCidadeUfIncoerente_Falha()
     {
         Result<UnidadeAdministradoraSnapshot> resultado = UnidadeAdministradoraSnapshot.Criar(
+            "CEPS",
             "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA",
-            cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "SP");
+            new CidadeCopiadaDaUnidade("1504208", "Marabá", "SP"));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(CidadeReferenciaErrorCodes.UfIncoerente);

@@ -30,7 +30,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// </remarks>
 public static class DefinirDocumentosExigidosCommandHandler
 {
-    public static async Task<Result<MutacaoAceita>> Handle(
+    public static async Task<Result> Handle(
         DefinirDocumentosExigidosCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         ITipoDocumentoReader tipoDocumentoReader,
@@ -50,29 +50,28 @@ public static class DefinirDocumentosExigidosCommandHandler
             .ConfigureAwait(false);
         if (processo is null)
         {
-            return Result<MutacaoAceita>.Failure(DefinirFormularioCommandHandler.ProcessoNaoEncontrado(command.ProcessoSeletivoId));
+            return Result.Failure(DefinirFormularioCommandHandler.ProcessoNaoEncontrado(command.ProcessoSeletivoId));
         }
 
-        // A precondição precede a resolução de leituras externas (ADR-0110).
-        if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
+        // Fora do rascunho a recusa vem antes de consultar cadastros.
+        if (processo.MutacaoBloqueada() is { } bloqueio)
         {
-            return Result<MutacaoAceita>.Failure(bloqueio);
+            return Result.Failure(bloqueio);
         }
 
         Result definido = await DefinicaoDosDocumentosExigidos.DefinirAsync(
                 processo,
                 command.Raizes,
                 [],
-                command.Precondicao,
                 new CadastrosDosDocumentosExigidos(tipoDocumentoReader, fatoCandidatoReader, modeloDeDocumentoRepository),
                 cancellationToken)
             .ConfigureAwait(false);
         if (definido.IsFailure)
         {
-            return Result<MutacaoAceita>.ValidationFailure(definido.Errors);
+            return Result.ValidationFailure(definido.Errors);
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+        return Result.Success();
     }
 }

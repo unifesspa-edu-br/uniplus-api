@@ -60,10 +60,8 @@ public sealed class CronogramaFasesJanelaComOffsetEndpointTests
     /// semear qualquer um deles aqui faria aquela suíte violar a unicidade dependendo da
     /// ordem de execução.
     /// </remarks>
-    // Fase sem resultado publicado de proposito: o assunto aqui e o offset da janela,
-    // e uma fase que produz resultado exigiria tambem o tipo de ato, ruido que nao
-    // pertence a este teste. Desde que o catalogo de fases passou a nascer semeado,
-    // HOMOLOGACAO chega com produz_resultado verdadeiro e o POST responderia 422.
+    // Fase sem produto declarado de propósito: o assunto aqui é o offset da janela, e uma fase
+    // que produz resultado exigiria também o tipo de ato, ruído que não pertence a este teste.
     private const string CodigoFaseComJanela = "ENSALAMENTO";
 
     private static readonly DateTimeOffset InicioEsperadoUtc = new(2027, 1, 25, 11, 0, 0, TimeSpan.Zero);
@@ -93,8 +91,8 @@ public sealed class CronogramaFasesJanelaComOffsetEndpointTests
         persistida.Fim!.Value.Offset.Should().Be(TimeSpan.Zero);
 
         FaseCronogramaDto lida = await ctx.ObterFaseLidaPelaApiAsync();
-        lida.Inicio.Should().Be(InicioEsperadoUtc, "a leitura devolve o mesmo instante que a gravação recebeu");
-        lida.Fim.Should().Be(FimEsperadoUtc);
+        lida.Cronograma.Inicio.Should().Be(InicioEsperadoUtc, "a leitura devolve o mesmo instante que a gravação recebeu");
+        lida.Cronograma.Fim.Should().Be(FimEsperadoUtc);
     }
 
     [Fact(DisplayName = "Redefinir a MESMA fase com outro offset atualiza o instante — o caminho de reconciliação também normaliza")]
@@ -187,24 +185,26 @@ public sealed class CronogramaFasesJanelaComOffsetEndpointTests
         HttpClient client = api.CreateClient();
 
         Guid faseCanonicaId = await ObterOuCriarFaseCanonicaAsync(api);
-
-        Guid processoId;
-        await using (AsyncServiceScope scope = api.Services.CreateAsyncScope())
-        {
-            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-            ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-                $"PS janela com offset — {nome} {Guid.CreateVersion7()}",
-                TiposDeProcessoDeTeste.SiSU,
-                OrigemCandidatos.InscricaoPropria,
-                Guid.CreateVersion7(),
-                UnidadeAdministradoraSnapshot.Criar(
-                    "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-            await db.ProcessosSeletivos.AddAsync(processo).ConfigureAwait(false);
-            await db.SaveChangesAsync().ConfigureAwait(false);
-            processoId = processo.Id;
-        }
+        Guid processoId = await PersistirProcessoAsync(api, nome);
 
         return new Contexto(api, client, processoId, faseCanonicaId);
+    }
+
+    private static async Task<Guid> PersistirProcessoAsync(CascadingApiFactory api, string nome)
+    {
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
+            $"PS janela com offset — {nome} {Guid.CreateVersion7()}",
+            TiposDeProcessoDeTeste.SiSU,
+            OrigemCandidatos.InscricaoPropria,
+            Guid.CreateVersion7(),
+            UnidadeAdministradoraSnapshot.Criar(
+                "CEPS",
+                "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        await db.ProcessosSeletivos.AddAsync(processo).ConfigureAwait(false);
+        await db.SaveChangesAsync().ConfigureAwait(false);
+        return processo.Id;
     }
 
     /// <summary>
@@ -217,22 +217,23 @@ public sealed class CronogramaFasesJanelaComOffsetEndpointTests
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         UniPlusDbContext config = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
-        // O catálogo de fases vivas é pequeno — materializar é mais barato que
-        // traduzir a comparação do value object Codigo para SQL.
-        List<FaseCanonica> vivas = await config.FasesCanonicas.AsNoTracking()
-            .ToListAsync().ConfigureAwait(false);
-        FaseCanonica? existente = vivas.Find(f =>
-            string.Equals(f.Codigo.Valor, CodigoFaseComJanela, StringComparison.Ordinal));
+        // O catálogo de fases vivas é pequeno — materializar é mais barato que traduzir a comparação do value object Codigo para SQL.
+        List<FaseCanonica> vivas = await config.FasesCanonicas.AsNoTracking().ToListAsync().ConfigureAwait(false);
+        FaseCanonica? existente = vivas.Find(f => string.Equals(f.Codigo.Valor, CodigoFaseComJanela, StringComparison.Ordinal));
         if (existente is not null)
         {
             return existente.Id;
         }
 
+        return await CriarFaseDeEnsalamentoAsync(config);
+    }
+
+    private static async Task<Guid> CriarFaseDeEnsalamentoAsync(UniPlusDbContext config)
+    {
         Result<FaseCanonica> criada = FaseCanonica.Criar(
-            CodigoFaseComJanela, "Ensalamento", null,
-            agrupaEtapas: false, permiteComplementacao: false, baseLegal: null,
-            coletaInscricao: false, coletaSolicitacaoIsencao: false,
-            origemData: "NO_EDITAL");
+            CodigoFaseComJanela, "Ensalamento", null, baseLegal: null, origemData: "NO_EDITAL",
+            sinalizadores: new Unifesspa.UniPlus.Configuracao.Domain.ValueObjects.SinalizadoresDaFase(
+                AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false));
         criada.IsSuccess.Should().BeTrue(criada.Error?.Message);
 
         config.FasesCanonicas.Add(criada.Value!);

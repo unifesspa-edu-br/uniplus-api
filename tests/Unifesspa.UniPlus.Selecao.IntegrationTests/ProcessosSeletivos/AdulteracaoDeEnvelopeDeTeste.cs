@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
@@ -25,7 +26,7 @@ internal static class AdulteracaoDeEnvelopeDeTeste
     public static Result<EnvelopeReidratado> ReidratarComEnvelopeAdulterado(Action<JsonObject> adulterar, bool comArvoreSatisfacao = false)
     {
         byte[] originais = CorpusEnvelope.Codec.Codificar(
-            CorpusEnvelope.Entrada(CorpusEnvelope.ProcessoRico(comArvoreSatisfacao: comArvoreSatisfacao))).Bytes;
+            CorpusEnvelopeEntrada.Entrada(CorpusEnvelopeProcessoRico.ProcessoRico(comArvoreSatisfacao: comArvoreSatisfacao))).Bytes;
 
         // A versão é reconstruída SOBRE os bytes adulterados — o hash bate, e o gate de
         // integridade não é o que os recusa. É a gramática.
@@ -34,14 +35,14 @@ internal static class AdulteracaoDeEnvelopeDeTeste
 
     /// <summary>
     /// Mesmo raciocínio de <see cref="ReidratarComEnvelopeAdulterado"/>, mas sobre o processo de
-    /// referência da golden fixture (<see cref="EnvelopeCanonicoGoldenTests.ProcessoDeReferencia"/>) —
-    /// é ele, não <see cref="CorpusEnvelope.ProcessoRico"/>, quem tem <c>documentosExigidos</c>
+    /// referência da golden fixture (<see cref="EnvelopeDeReferencia.ProcessoDeReferencia"/>) —
+    /// é ele, não <see cref="CorpusEnvelopeProcessoRico.ProcessoRico"/>, quem tem <c>documentosExigidos</c>
     /// populado, e por isso <c>metadadosFatos[].valoresDominioDeclarados</c> só existe aqui.
     /// </summary>
     public static Result<EnvelopeReidratado> ReidratarComEnvelopeDeReferenciaAdulterado(Action<JsonObject> adulterar)
     {
-        ProcessoSeletivo processo = EnvelopeCanonicoGoldenTests.ProcessoDeReferencia();
-        DadosEdital dados = EnvelopeCanonicoGoldenTests.DadosDeReferencia();
+        ProcessoSeletivo processo = EnvelopeDeReferencia.ProcessoDeReferencia();
+        DadosEdital dados = EnvelopeDeReferencia.DadosDeReferencia();
         SnapshotCanonico congelado = CongelarReferencia(processo, dados);
 
         byte[] adulterados = BytesAdulterados(congelado.Bytes, adulterar);
@@ -83,17 +84,16 @@ internal static class AdulteracaoDeEnvelopeDeTeste
 
     private static SnapshotCanonico CongelarReferencia(ProcessoSeletivo processo, DadosEdital dados) =>
         new SnapshotPublicacaoCanonicalizer().Canonicalizar(new EntradaCanonicalizacao(
-            processo, dados, EnvelopeCanonicoGoldenTests.HashFixo, FusoInstitucional.ZoneId,
-            MetadadosFatosCongelados: EnvelopeCanonicoGoldenTests.MetadadosFatosDeReferencia(),
-            ValoresSelecionaveisCongelados: EnvelopeCanonicoGoldenTests.ValoresSelecionaveisDeReferencia(),
+            processo, dados, EnvelopeDeReferencia.HashFixo, FusoInstitucional.ZoneId,
+            MetadadosFatosCongelados: EnvelopeDeReferencia.MetadadosFatosDeReferencia(),
+            ValoresSelecionaveisCongelados: EnvelopeDeReferencia.ValoresSelecionaveisDeReferencia(),
             TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
 
     private static VersaoConfiguracao PublicarSobreBytes(
         ProcessoSeletivo processo, DadosEdital dados, SnapshotCanonico congelado, byte[] bytes)
     {
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
-            dados, bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            EnvelopeCanonicoGoldenTests.HashFixo, CorpusEnvelope.Ator, TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, EnvelopeDeReferencia.HashFixo), AtorUsuarioContaId = CorpusEnvelope.Ator, Contagem = CorpusEnvelopeDadosDoEdital.ContextoRico() });
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         processo.ClearDomainEvents();
 

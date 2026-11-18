@@ -22,16 +22,16 @@ public sealed class CalendarioCongeladoRecusaTests
 {
     private static ProcessoSeletivo ProcessoPublicado()
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
-        CorpusEnvelope.Publicar(processo);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        CorpusEnvelopeEntrada.Publicar(processo);
         return processo;
     }
 
     private static Result<EnvelopeReidratado> ReidratarComBlocoAdulterado(Action<JsonObject> adulterar)
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
-        CorpusEnvelope.Publicar(processo);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        CorpusEnvelopeEntrada.Publicar(processo);
 
         JsonObject payload = JsonNode.Parse(congelado.Bytes)!.AsObject();
         adulterar(payload["calendarioDiasUteis"]!.AsObject());
@@ -39,7 +39,7 @@ public sealed class CalendarioCongeladoRecusaTests
         byte[] adulterados = PerfilCanonicoV1.Instancia.Serializar(payload);
         adulterados.Should().NotEqual(congelado.Bytes, "pré-condição: a mutação tem de mudar os bytes");
 
-        return CorpusEnvelope.Registro.Reidratar(CorpusEnvelope.VersaoDeAbertura(processo, adulterados));
+        return CorpusEnvelope.Registro.Reidratar(CorpusEnvelopeEntrada.VersaoDeAbertura(processo, adulterados));
     }
 
     private static void DeveRecusar(Action<JsonObject> adulterar, string porque)
@@ -118,9 +118,9 @@ public sealed class CalendarioCongeladoRecusaTests
 
     private static Result<EnvelopeReidratado> ReidratarSemCalendarioComRecursoSoNa(string ondeSobra)
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
-        CorpusEnvelope.Publicar(processo);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        CorpusEnvelopeEntrada.Publicar(processo);
 
         JsonObject payload = JsonNode.Parse(congelado.Bytes)!.AsObject();
         payload["calendarioDiasUteis"] = new JsonObject { ["presente"] = false };
@@ -140,7 +140,7 @@ public sealed class CalendarioCongeladoRecusaTests
         }
 
         return CorpusEnvelope.Registro.Reidratar(
-            CorpusEnvelope.VersaoDeAbertura(processo, PerfilCanonicoV1.Instancia.Serializar(payload)));
+            CorpusEnvelopeEntrada.VersaoDeAbertura(processo, PerfilCanonicoV1.Instancia.Serializar(payload)));
     }
 
     [Fact(DisplayName = "Calendário declarado ausente num processo cujo único recurso está numa etapa é recusado")]
@@ -166,10 +166,10 @@ public sealed class CalendarioCongeladoRecusaTests
     public void EnvelopeIntegro_Reidrata()
     {
         ProcessoSeletivo processo = ProcessoPublicado();
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
 
         Result<EnvelopeReidratado> resultado = CorpusEnvelope.Registro.Reidratar(
-            CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes));
+            CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.CalendarioDiasUteis!.DiasNaoUteis.Should().HaveCount(4);
@@ -211,9 +211,9 @@ public sealed class CalendarioCongeladoRecusaTests
     [InlineData("municipioNome", "Maraba\u0301")]
     public void TextoDecomposto_Recusado(string campo, string decomposto)
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
-        CorpusEnvelope.Publicar(processo);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        CorpusEnvelopeEntrada.Publicar(processo);
 
         JsonObject payload = JsonNode.Parse(congelado.Bytes)!.AsObject();
         JsonObject bloco = payload["calendarioDiasUteis"]!.AsObject();
@@ -230,7 +230,7 @@ public sealed class CalendarioCongeladoRecusaTests
         adulterados.Should().NotEqual(congelado.Bytes, "pré-condição: a mutação tem de mudar os bytes");
 
         Result<EnvelopeReidratado> resultado = CorpusEnvelope.Registro.Reidratar(
-            CorpusEnvelope.VersaoDeAbertura(processo, adulterados));
+            CorpusEnvelopeEntrada.VersaoDeAbertura(processo, adulterados));
 
         resultado.IsFailure.Should().BeTrue(
             "o encoder emite estes campos em NFC; aceitar a forma decomposta faria os bytes mudarem na recanonicalização");

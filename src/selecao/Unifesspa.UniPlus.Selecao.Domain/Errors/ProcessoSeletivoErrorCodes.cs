@@ -6,6 +6,9 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Errors;
 /// </summary>
 public static class ProcessoSeletivoErrorCodes
 {
+    /// <summary>A regra citada não corresponde à regra atual do catálogo.</summary>
+    public const string RegraCitadaNaoCorrespondeAoCatalogo = "ProcessoSeletivo.RegraCitadaNaoCorrespondeAoCatalogo";
+
     /// <summary>A pessoa autenticada não tem a permissão na unidade dona; responde 403.</summary>
     public const string SemPermissaoNaUnidade = "ProcessoSeletivo.SemPermissaoNaUnidade";
 
@@ -26,6 +29,18 @@ public static class ProcessoSeletivoErrorCodes
 
     /// <summary>O tipo de documento do vínculo não existe mais no cadastro.</summary>
     public const string TipoDocumentoDoVinculoNaoEncontrado = "DocumentoExigido.TipoDocumentoNaoEncontrado";
+
+    /// <summary>Inscrição própria sem nenhuma fase que homologa as inscrições.</summary>
+    public const string InscricaoPropriaSemHomologacaoDasInscricoes = "ProcessoSeletivo.InscricaoPropriaSemHomologacaoDasInscricoes";
+
+    /// <summary>Inscrição própria com nota importada de exame e sem nenhuma fase que homologa as inscrições.</summary>
+    public const string ImportacaoDeExameSemHomologacaoDasInscricoes = "ProcessoSeletivo.ImportacaoDeExameSemHomologacaoDasInscricoes";
+
+    /// <summary>Importação externa sem nenhuma fase que homologa as inscrições.</summary>
+    public const string ImportacaoExternaSemHomologacaoDasInscricoes = "ProcessoSeletivo.ImportacaoExternaSemHomologacaoDasInscricoes";
+
+    /// <summary>Importação externa cuja fase que homologa as inscrições não tem a janela de recurso entre o preliminar e o definitivo.</summary>
+    public const string ImportacaoExternaSemJanelaDeRecurso = "ProcessoSeletivo.ImportacaoExternaSemJanelaDeRecurso";
 
     public const string CriteriosDesempateEmExcesso = "ProcessoSeletivo.CriteriosDesempateEmExcesso";
 
@@ -59,6 +74,14 @@ public static class ProcessoSeletivoErrorCodes
     public const string ConclusaoDuplicada = "ProcessoSeletivo.ConclusaoDuplicada";
     public const string RetificacaoDesfazCicloRecursalAberto = "ProcessoSeletivo.RetificacaoDesfazCicloRecursalAberto";
     public const string EtapaComPreliminarSemDefinitivo = "ProcessoSeletivo.EtapaComPreliminarSemDefinitivo";
+    public const string TipoProcessoNaoEncontradoOuInativo = "ProcessoSeletivo.TipoProcessoNaoEncontradoOuInativo";
+    public const string UnidadeAdministradoraNaoEncontrada = "ProcessoSeletivo.UnidadeAdministradoraNaoEncontrada";
+    public const string AlgoritmoContagemPrazoNaoEncontrado = "ProcessoSeletivo.AlgoritmoContagemPrazoNaoEncontrado";
+
+    public const string TipoProcessoAusente = "ProcessoSeletivo.TipoProcessoAusente";
+    public const string UnidadeAdministradoraAusente = "ProcessoSeletivo.UnidadeAdministradoraAusente";
+    public const string OrigemCandidatosAusente = "ProcessoSeletivo.OrigemCandidatosAusente";
+
     public const string RemanejamentoIncoerenteComANatureza = "ProcessoSeletivo.RemanejamentoIncoerenteComANatureza";
 
     /// <summary>

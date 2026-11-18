@@ -12,16 +12,11 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// ausência: a localidade existe desde a criação do processo e só pode ser trocada por
 /// outra — um processo sem ela não é estado representável.
 /// </summary>
-/// <remarks>
-/// Exige precondição <c>If-Match</c> porque a edição é admitida sob sessão editorial aberta, onde
-/// o ETag da sessão é o que impede escrita concorrente sobre revisão velha.
-/// </remarks>
 public sealed record DefinirLocalidadeCommand(
     Guid ProcessoSeletivoId,
     string? CodigoIbge,
     string? Nome,
-    string? Uf,
-    PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>
+    string? Uf) : ICommand<Result>
 {
     /// <summary>
     /// Nenhum dos três campos foi informado — distinto de trio informado e incoerente,

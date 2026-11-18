@@ -22,4 +22,16 @@ public interface IOfertaCursoReader
     Task<OfertaCursoView?> ObterPorIdAsync(
         Guid id,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Obtém a oferta de curso viva com o <paramref name="codigo"/>, ou <see langword="null"/> se inexistente, removida ou
+    /// de formato inválido. O valor de busca é normalizado (<c>Trim</c> + NFC) antes da comparação, que é ordinal.
+    /// </summary>
+    /// <remarks>
+    /// Existe para quem cita a oferta pelo código e precisa recusar a referência na escrita: o código é único entre as
+    /// ofertas vivas, e uma referência que nunca vai bater tem de morrer no cadastro.
+    /// </remarks>
+    Task<OfertaCursoView?> ObterVivaPorCodigoAsync(
+        string codigo,
+        CancellationToken cancellationToken = default);
 }

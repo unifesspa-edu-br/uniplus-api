@@ -18,6 +18,7 @@ using System.Text.Json.Serialization;
 /// </remarks>
 public sealed record TermoConsentimentoDto(
     Guid Id,
+    string Codigo,
     string Nome,
     string? TextoRascunho,
     string? BaseLegalRascunho,

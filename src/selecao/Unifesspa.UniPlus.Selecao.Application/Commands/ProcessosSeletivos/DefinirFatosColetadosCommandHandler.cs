@@ -30,7 +30,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 /// </summary>
 public static class DefinirFatosColetadosCommandHandler
 {
-    public static async Task<Result<MutacaoAceita>> Handle(
+    public static async Task<Result> Handle(
         DefinirFatosColetadosCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IFatoCandidatoReader fatoCandidatoReader,
@@ -47,18 +47,15 @@ public static class DefinirFatosColetadosCommandHandler
             .ConfigureAwait(false);
         if (processo is null)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 "ProcessoSeletivo.NaoEncontrado",
                 $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
         }
 
-        // A precondição (e o bloqueio de mutação pós-publicação sem sessão) é conferida AQUI, ANTES
-        // da resolução do vocabulário cross-módulo: um processo publicado sem sessão, ou um cliente
-        // com If-Match defasado, é recusado sem pagar o I/O do reader nem caçar um fato que ele não
-        // errou. O mesmo guard continua dentro de DefinirFatosColetados.
-        if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
+        // Fora do rascunho a recusa vem antes de resolver o vocabulário cross-módulo, sem pagar o I/O do reader.
+        if (processo.MutacaoBloqueada() is { } bloqueio)
         {
-            return Result<MutacaoAceita>.Failure(bloqueio);
+            return Result.Failure(bloqueio);
         }
 
         // Acima do teto a lista não é lida item a item: o validator não confere os itens dela, e a
@@ -66,7 +63,7 @@ public static class DefinirFatosColetadosCommandHandler
         IReadOnlyList<GrupoColetadoInput> grupos = command.Grupos ?? [];
         if (FormaDoItem.ValidarQuantidade(command.QuantidadeNoTeto) is { Count: > 0 } excesso)
         {
-            return Result<MutacaoAceita>.ValidationFailure(excesso);
+            return Result.ValidationFailure(excesso);
         }
 
         // O formulário de inscrição coleta o conjunto básico na seção reservada: o item básico, omitido
@@ -105,35 +102,33 @@ public static class DefinirFatosColetadosCommandHandler
 
         if (erros.Count > 0)
         {
-            return Result<MutacaoAceita>.ValidationFailure(erros);
+            return Result.ValidationFailure(erros);
         }
 
         Result vinculoNovo = ConferenciaDeVinculoNovo.Conferir(
             contexto.Fatos,
-            ReferenciasVivas.Vinculos(EstadoDaConfiguracao.De(processo)),
+            ReferenciasVivas.Vinculos(processo.Declaracao()),
             VinculosDeFatos.De(
                 fatos.Concat(gruposResolvidos.SelectMany(static g => g.Subitens)).Select(static f => f.FatoCodigo),
                 fatos.SelectMany(static f => f.Condicoes).Concat(gruposResolvidos.SelectMany(static g => g.Condicoes))
                     .Select(static c => (c.Fato, c.Valor))));
         if (vinculoNovo.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(vinculoNovo.Error!);
+            return Result.Failure(vinculoNovo.Error!);
         }
 
         // Grupos omitidos ficam como estão no formulário; a lista vazia os remove.
         Result result = processo.DefinirFatosColetados(
-            command.Finalidade, fatos, command.Precondicao, command.Grupos is null && !gruposDeslocadosAGravar ? null : gruposResolvidos);
+            command.Finalidade, fatos, command.Grupos is null && !gruposDeslocadosAGravar ? null : gruposResolvidos);
         if (result.IsFailure)
         {
-            return Result<MutacaoAceita>.ValidationFailure(result.Errors);
+            return Result.ValidationFailure(result.Errors);
         }
 
         // Agregado tracked: a substituição da coleção (Clear + filhos novos com Guid v7) é
         // persistida por change detection no SaveChanges — não chamar DbSet.Update.
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
-        // Em rascunho puro não há sessão: ETagDaSessaoEditorial é nulo e a resposta é 204 sem ETag.
-        // Sob sessão de retificação, a revisão avançou e o ETag novo é devolvido.
-        return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+        return Result.Success();
     }
 }

@@ -12,19 +12,20 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Os dublês das dependências dos handlers que congelam (Publicar, Retificar e FecharRetificacao) que quase
+/// Os dublês das dependências dos handlers que congelam (Publicar e Retificar) que quase
 /// nenhum teste quer descrever: o processo no repositório, o documento do edital confirmado, o catálogo de tipos
 /// de ato, o usuário autenticado e o canonicalizador que devolve um snapshot vazio.
 /// </summary>
 internal static class DublesDoCongelamentoDeTeste
 {
-    public static ISnapshotPublicacaoCanonicalizer CanonicalizerSubstituto(Action<EntradaCanonicalizacao>? captura = null)
+    public static ISnapshotPublicacaoCanonicalizer CanonicalizerSubstituto(Action<EntradaCanonicalizacao>? captura = null, string versao = "1.1")
     {
         ISnapshotPublicacaoCanonicalizer canonicalizer = Substitute.For<ISnapshotPublicacaoCanonicalizer>();
         canonicalizer.Canonicalizar(Arg.Do<EntradaCanonicalizacao>(e => captura?.Invoke(e)))
-            .Returns(new SnapshotCanonico(EnvelopeProjetavelDeTeste.Bytes, "1.1", "canonical-json/sha256@v1"));
+            .Returns(new SnapshotCanonico(EnvelopeProjetavelDeTeste.Bytes, versao, "canonical-json/sha256@v1"));
         return canonicalizer;
     }
 
@@ -37,9 +38,7 @@ internal static class DublesDoCongelamentoDeTeste
 
     public static IDocumentoAPublicarRepository RepositorioDeDocumento(Guid processoSeletivoId, params DocumentoAPublicar[] anexos)
     {
-        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(
-            processoSeletivoId, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
-        documento.Confirmar(1024, ProcessoSeletivoConformeBuilder.HashFixo, TimeProvider.System).IsSuccess.Should().BeTrue();
+        DocumentoAPublicar documento = DocumentoConfirmado(processoSeletivoId);
 
         IDocumentoAPublicarRepository repositorio = Substitute.For<IDocumentoAPublicarRepository>();
         repositorio.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(documento);
@@ -68,4 +67,21 @@ internal static class DublesDoCongelamentoDeTeste
         contexto.UserId.Returns("user-conta-1");
         return contexto;
     }
+
+    public static DocumentoAPublicar DocumentoConfirmado(Guid processoSeletivoId)
+    {
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(
+            processoSeletivoId, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        documento.Confirmar(1024, ProcessoSeletivoConformeBuilder.HashFixo, TimeProvider.System).IsSuccess.Should().BeTrue();
+        return documento;
+    }
+
+
+    public static IDocumentoAPublicarRepository RepositorioDoDocumento(DocumentoAPublicar documento)
+    {
+        IDocumentoAPublicarRepository repositorio = Substitute.For<IDocumentoAPublicarRepository>();
+        repositorio.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
+        return repositorio;
+    }
+
 }

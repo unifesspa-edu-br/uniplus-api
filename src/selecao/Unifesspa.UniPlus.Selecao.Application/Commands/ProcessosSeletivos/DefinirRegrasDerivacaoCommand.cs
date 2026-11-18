@@ -40,11 +40,8 @@ public sealed record ConfiguracaoDerivacaoInput(
 
 /// <summary>
 /// Substitui integralmente as regras que derivam os fatos derivados do processo (Story #985).
-/// Editável em rascunho (pré-publicação) e sob sessão de retificação de um processo publicado
-/// (Story #986). Em rascunho puro a precondição é ignorada (não há sessão nem ETag); sob sessão, o
-/// <c>If-Match</c> é obrigatório e a revisão do rascunho avança.
+/// Editável só em rascunho (pré-publicação).
 /// </summary>
 public sealed record DefinirRegrasDerivacaoCommand(
     Guid ProcessoSeletivoId,
-    IReadOnlyList<ConfiguracaoDerivacaoInput> Configuracoes,
-    PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;
+    IReadOnlyList<ConfiguracaoDerivacaoInput> Configuracoes) : ICommand<Result>;

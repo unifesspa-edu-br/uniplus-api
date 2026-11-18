@@ -12,11 +12,14 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
+
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ApoioDaPoliticaDeOrdenacao;
 
 /// <summary>
 /// Issue #1069 — <b>Prova B</b> da política de ordenação: oráculo de <b>sequência exata</b>, com
@@ -74,7 +77,7 @@ using Xunit;
 /// conteúdo, ADR-0109 D9 — a camada que este arquivo não repete): <c>classificacao.regrasEliminacao</c>
 /// (<see cref="EnvelopeCanonicoGoldenTests.Envelope_IndependeDaOrdemDeCriacao"/>) e os seis conjuntos
 /// da issue #1067 — <c>ocorrenciasEsperadas</c>,
-/// <c>formatosPermitidos.lista</c>, <c>obrigatoriedades</c>, os dois <c>predicado.args</c> e
+/// <c>formatosPermitidos.lista</c>, <c>obrigatoriedades</c>, os dois <c>predicado.parametros</c> e
 /// <c>valoresDominio</c> — todos em <c>OrdenacaoDeConjuntosCanonicosTests</c>. Repetir esses oráculos
 /// aqui duplicaria a fonte da política sem acrescentar cobertura (achado 7.2 do parecer da issue).
 /// </para>
@@ -84,135 +87,8 @@ using Xunit;
 /// mutação de chaves em conflito desta suíte é gerada à parte, com processos mínimos próprios.
 /// </para>
 /// </remarks>
-public sealed partial class PoliticaDeOrdenacaoTests
+public sealed class PoliticaDeOrdenacaoTests
 {
-    private static readonly SnapshotPublicacaoCanonicalizer Canonicalizador = new();
-
-    private static ReferenciaRegra Regra(string codigo, char semente) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string(semente, 64)).Value!;
-
-    private static DadosEdital Dados() => DadosEdital.Criar(
-        numero: "001/2026",
-        periodoInscricaoInicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
-        periodoInscricaoFim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
-        documentoEditalId: Guid.CreateVersion7()).Value!;
-
-    private static EntradaCanonicalizacao Entrada(
-        ProcessoSeletivo processo,
-        IReadOnlyDictionary<string, MetadadoFatoCongelado>? metadadosFatos = null) =>
-        new(processo, Dados(), new string('0', 64), FusoInstitucional.ZoneId, MetadadosFatosCongelados: metadadosFatos,
-            ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados());
-
-    /// <summary>
-    /// Um Guid com só o último dígito hexadecimal variando por <paramref name="sufixo"/> — as
-    /// demais posições fixas garantem que <see cref="Guid.CompareTo(Guid)"/> segue a ordem numérica
-    /// intuitiva do sufixo (mesmo padrão de <c>CorpusEnvelope.EtapaId</c>).
-    /// </summary>
-    private static Guid IdFixo(int sufixo) => new($"a0000000-0000-4000-8000-00000000000{sufixo:x}");
-
-    private static ConfiguracaoDistribuicaoVagas DistribuicaoMinima() => ConfiguracaoDistribuicaoVagas.Criar(
-        ofertaCursoOrigemId: Guid.CreateVersion7(),
-        voBase: 40,
-        pr: 1m,
-        regraDistribuicao: Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
-        regraAjuste: null,
-        referenciaDemografica: null,
-        modalidades: [
-            ModalidadeSelecionada.Criar(
-                Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, null,
-                RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!,
-        ], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
-
-    private static FaseCronograma FaseMinima() => FaseCronograma.Criar(
-        ordem: 1,
-        faseCanonicaOrigemId: Guid.CreateVersion7(),
-        codigo: "INSCRICAO",
-        origemData: OrigemDataFase.NoEdital,
-        agrupaEtapas: true,
-        permiteComplementacao: true,
-        coletaInscricao: true, coletaSolicitacaoIsencao: false,
-        inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-        fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-        produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)],
-        faseConcluinteCodigo: null,
-        emiteParecerIndividual: false,
-        bancasRequeridas: [],
-        regraRecurso: null,
-        unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
-
-    /// <summary>
-    /// Um processo mínimo e válido para <see cref="SnapshotPublicacaoCanonicalizer.Canonicalizar"/>,
-    /// com um parâmetro por coleção sob teste — cada um substitui o default minimalista quando
-    /// informado. Não publica nem valida pendências de conformidade: a canonicalização é pura
-    /// (ADR-0109 D6) e cada teste chama <see cref="Canonicalizador"/> diretamente.
-    /// </summary>
-    private static ProcessoSeletivo Montar(
-        IReadOnlyList<EtapaProcesso>? etapas = null,
-        AtendimentoEspecializado? atendimentoEspecializado = null,
-        IReadOnlyList<CriterioDesempate>? criteriosDesempate = null,
-        IReadOnlyList<FaseCronograma>? cronogramaFases = null,
-        IReadOnlyList<NoExigencia>? documentosExigidos = null,
-        IReadOnlyList<FatoColetado>? fatosColetados = null,
-        IReadOnlyList<ConfiguracaoDerivacaoFato>? regrasDerivacao = null,
-        ConfiguracaoCascataRemanejamento? cascata = null)
-    {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Política de Ordenação", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-
-
-        processo.DefinirAtendimentoEspecializado(
-            atendimentoEspecializado ?? AtendimentoEspecializado.Criar([], [], []).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        processo.DefinirDistribuicaoVagas([DistribuicaoMinima()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        if (criteriosDesempate is not null)
-        {
-            processo.DefinirCriteriosDesempate(criteriosDesempate, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        }
-
-        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
-            regraCalculo: Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
-            regraArredondamento: null,
-            casasArredondamento: null,
-            regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
-            regrasEliminacao: [],
-            baseadoEmEnem: false,
-            resolucaoPesoAreaEnem: null,
-            quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirOpcoesDeCurso(1, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        processo.DefinirCronogramaFases(
-            cronogramaFases ?? [FaseMinima()], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirEtapas(etapas ?? [
-            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1, faseCodigo: (cronogramaFases ?? [FaseMinima()])[0].Codigo).Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        if (documentosExigidos is not null)
-        {
-            processo.DefinirDocumentosExigidos(documentosExigidos, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        }
-
-        if (fatosColetados is not null)
-        {
-            processo.DefinirItens(fatosColetados, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        }
-
-        if (regrasDerivacao is not null)
-        {
-            processo.DefinirRegrasDerivacao(regrasDerivacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        }
-
-        if (cascata is not null)
-        {
-            processo.DefinirCascataRemanejamento(cascata, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        }
-
-        return processo;
-    }
-
     // ── camada 1 — Ordem semântica ──
 
     [Fact(DisplayName = "etapas: Ordem informada governa sobre conteúdo e Id — oráculo de sequência exata")]
@@ -221,8 +97,8 @@ public sealed partial class PoliticaDeOrdenacaoTests
         // Id CONTRÁRIO à Ordem também: Zeta (Ordem 1) recebe o Id MAIOR, Alfa (Ordem 2) o MENOR —
         // se o Id decidisse a posição, o resultado seria [Alfa, Zeta], o mesmo "errado" que o
         // conteúdo (nome) daria.
-        EtapaProcesso zeta = EtapaProcesso.Reidratar(IdFixo(2), "Zeta", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, notaMinima: null, ordem: 1);
-        EtapaProcesso alfa = EtapaProcesso.Reidratar(IdFixo(1), "Alfa", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, notaMinima: null, ordem: 2);
+        EtapaProcesso zeta = EtapaReidratada(IdFixo(2), "Zeta", 1);
+        EtapaProcesso alfa = EtapaReidratada(IdFixo(1), "Alfa", 2);
 
         new[] { zeta, alfa }.OrderBy(static e => e.Nome, StringComparer.Ordinal).Select(static e => e.Nome)
             .Should().Equal(["Alfa", "Zeta"], "pré-condição: ordenar pelo nome (proxy de conteúdo) dá o oposto do oráculo de Ordem abaixo");
@@ -231,7 +107,7 @@ public sealed partial class PoliticaDeOrdenacaoTests
 
         ProcessoSeletivo processo = Montar(etapas: [alfa, zeta]);
 
-        JsonArray etapasJson = EnvelopeCodecRoundTripTests.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["etapas"]!.AsArray();
+        JsonArray etapasJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["etapas"]!.AsArray();
 
         etapasJson.Should().HaveCount(2, "pré-condição: o caminho existe e tem os dois itens sob teste");
         etapasJson.Select(static e => e!["nome"]!.GetValue<string>()).Should().Equal(
@@ -242,15 +118,15 @@ public sealed partial class PoliticaDeOrdenacaoTests
     [Fact(DisplayName = "etapas: sem Ordem, o conteúdo governa sobre o Id — a posição depende do que a etapa diz, não do Guid")]
     public void Etapas_SemOrdem_ConteudoGovernaSobreId()
     {
-        EtapaProcesso zeta = EtapaProcesso.Reidratar(IdFixo(1), "Zeta", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, notaMinima: null, ordem: null);
-        EtapaProcesso alfa = EtapaProcesso.Reidratar(IdFixo(2), "Alfa", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, notaMinima: null, ordem: null);
+        EtapaProcesso zeta = EtapaReidratada(IdFixo(1), "Zeta", null);
+        EtapaProcesso alfa = EtapaReidratada(IdFixo(2), "Alfa", null);
 
         new[] { zeta, alfa }.OrderBy(static e => e.Id).Select(static e => e.Nome)
             .Should().Equal(["Zeta", "Alfa"], "pré-condição: ordenar pelo Id (a política ANTIGA) dá o oposto do oráculo de conteúdo abaixo");
 
         ProcessoSeletivo processo = Montar(etapas: [zeta, alfa]);
 
-        JsonArray etapasJson = EnvelopeCodecRoundTripTests.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["etapas"]!.AsArray();
+        JsonArray etapasJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["etapas"]!.AsArray();
 
         etapasJson.Select(static e => e!["nome"]!.GetValue<string>()).Should().Equal(
             ["Alfa", "Zeta"],
@@ -266,21 +142,31 @@ public sealed partial class PoliticaDeOrdenacaoTests
         // conteudisticamente idênticas, e o ThenBy de CONTEÚDO (não o de Id, que é o objeto real
         // desta prova) desempataria a posição, tornando o teste dependente da ordem de criação dos Guid v7.
         TipoEtapaSnapshot tipoEtapa = TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
-        EtapaProcesso etapaComIdMenor = EtapaProcesso.Reidratar(IdFixo(1), "Prova Objetiva", CaraterEtapa.Classificatoria, tipoEtapa, peso: 1m, notaMinima: null, ordem: null);
-        EtapaProcesso etapaComIdMaior = EtapaProcesso.Reidratar(IdFixo(2), "Prova Objetiva", CaraterEtapa.Classificatoria, tipoEtapa, peso: 1m, notaMinima: null, ordem: null);
+        EtapaProcesso etapaComIdMenor = EtapaReidratada(IdFixo(1), "Prova Objetiva", null, tipoEtapa);
+        EtapaProcesso etapaComIdMaior = EtapaReidratada(IdFixo(2), "Prova Objetiva", null, tipoEtapa);
 
         etapaComIdMenor.Nome.Should().Be(etapaComIdMaior.Nome,
             "pré-condição: as duas etapas são conteudisticamente IDÊNTICAS (mesmo nome/caráter/peso/notaMinima, ambas sem Ordem) — a chave de conteúdo empata e sobra o Id");
 
         ProcessoSeletivo processo = Montar(etapas: [etapaComIdMaior, etapaComIdMenor]);
 
-        JsonArray etapasJson = EnvelopeCodecRoundTripTests.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["etapas"]!.AsArray();
+        JsonArray etapasJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["etapas"]!.AsArray();
 
         etapasJson.Select(static e => e!["id"]!.GetValue<Guid>()).Should().Equal(
             [IdFixo(1), IdFixo(2)],
             "duas etapas classificatórias com o MESMO nome/caráter/peso/notaMinima (o domínio só recusa Ordem INFORMADA duplicada, " +
             "e o índice único do banco admite múltiplos NULL) são aceitas — o Id estabiliza a alcançabilidade dessa duplicata");
     }
+
+    private static FaseCronograma FaseDeInscricao() => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            OrigemId: Guid.CreateVersion7(), Codigo: "INSCRICAO", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: true, ColetaInscricao: true,
+            ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
 
     /// <summary>
     /// Cenário de aceite da issue #1069: um processo cuja classificação vem de <b>nota importada</b>
@@ -295,15 +181,11 @@ public sealed partial class PoliticaDeOrdenacaoTests
         // A fase precisa de agrupaEtapas: false — o bicondicional fase×etapa (CA-14, Story #851)
         // recusa uma fase que agrupa etapas quando o processo não tem etapa pontuada nenhuma; o
         // padrão de Montar() (FaseMinima, agrupaEtapas: true) pressupõe ao menos uma.
-        FaseCronograma faseSemAgruparEtapas = FaseCronograma.Criar(
-            ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "INSCRICAO",
-            origemData: OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: true, coletaInscricao: true, coletaSolicitacaoIsencao: false,
-            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)], faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+        FaseCronograma faseSemAgruparEtapas = FaseDeInscricao();
 
         ProcessoSeletivo processo = Montar(etapas: [], cronogramaFases: [faseSemAgruparEtapas]);
 
-        JsonArray etapasJson = EnvelopeCodecRoundTripTests.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["etapas"]!.AsArray();
+        JsonArray etapasJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["etapas"]!.AsArray();
 
         etapasJson.Should().BeEmpty(
             "um processo classificado por nota importada (RegraCalculoCodigo.ClassificacaoImportada, usado pelo processo mínimo " +
@@ -313,8 +195,8 @@ public sealed partial class PoliticaDeOrdenacaoTests
     [Fact(DisplayName = "criteriosDesempate: Ordem governa sobre o conteúdo da regra — oráculo de sequência exata")]
     public void CriteriosDesempate_OrdemGovernaSobreConteudo()
     {
-        CriterioDesempate criterioIdoso = CriterioDesempate.Criar(2, Regra(CriterioDesempateCodigo.Idoso, 'd'), new ArgsDesempateIdoso(60)).Value!;
-        CriterioDesempate criterioMaiorIdade = CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorIdade, 'a'), new ArgsDesempateMaiorIdade()).Value!;
+        CriterioDesempate criterioIdoso = CriterioDesempate.Criar(2, Regra(CriterioDesempateCodigo.Idoso, 'd'), new ParametrosDesempateIdoso(60)).Value!;
+        CriterioDesempate criterioMaiorIdade = CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorIdade, 'a'), new ParametrosDesempateMaiorIdade()).Value!;
 
         new[] { criterioIdoso, criterioMaiorIdade }.OrderBy(static c => c.Regra.Codigo, StringComparer.Ordinal).Select(static c => c.Regra.Codigo)
             .Should().Equal(
@@ -323,11 +205,23 @@ public sealed partial class PoliticaDeOrdenacaoTests
 
         ProcessoSeletivo processo = Montar(criteriosDesempate: [criterioIdoso, criterioMaiorIdade]);
 
-        JsonArray criteriosJson = EnvelopeCodecRoundTripTests.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["criteriosDesempate"]!.AsArray();
+        JsonArray criteriosJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["criteriosDesempate"]!.AsArray();
 
         criteriosJson.Should().HaveCount(2, "pré-condição: o caminho existe e tem os dois itens sob teste");
         criteriosJson.Select(static c => c!["regra"]!["codigo"]!.GetValue<string>()).Should().Equal(
             [CriterioDesempateCodigo.MaiorIdade, CriterioDesempateCodigo.Idoso],
             "Ordem (1 para MaiorIdade, 2 para Idoso) governa a posição — o código da regra, em ordem alfabética, apontaria para o oposto");
     }
+
+    private static EtapaProcesso EtapaReidratada(Guid id, string nome, int? ordem, TipoEtapaSnapshot? tipoEtapa = null) =>
+        EtapaProcesso.Reidratar(
+            id,
+            new IdentificacaoDaEtapa(
+                Nome: nome,
+                Carater: CaraterEtapa.Classificatoria,
+                TipoEtapa: tipoEtapa ?? TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
+                Ordem: ordem,
+                FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null),
+            itens: null);
 }

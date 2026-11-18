@@ -2,14 +2,16 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.Modalidades;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.Predicados;
+using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Cria uma modalidade de concorrência (UNI-REQ-0011): código (chave natural
 /// imutável), descrição opcional, e os campos de cota como tokens canônicos
 /// UPPER_SNAKE para os enums (<c>NaturezaLegal</c>, <c>ComposicaoVagas</c>,
 /// <c>RegraRemanejamento</c>, <c>AcaoQuandoIndeferido</c>). Quando ausentes,
-/// <c>NaturezaLegal</c> assume AMPLA e <c>ComposicaoVagas</c> assume RESIDUAL_DO_VO.
+/// <c>NaturezaLegal</c> assume AMPLA e <c>ComposicaoVagas</c> assume RESTANTE_DAS_VAGAS_OFERTADAS.
 /// A <c>RegraDeAplicabilidade</c> é o OU de cláusulas, cada uma o E de condições, que diz quem
 /// concorre à modalidade (ADR-0144); a lista vazia é a regra incondicional, e a ausente é recusada.
 /// O ator de auditoria (<c>created_by</c>) é carimbado server-side via
@@ -35,4 +37,10 @@ public sealed record CriarModalidadeCommand(
     string? RemanejamentoFallback = null,
     IReadOnlyList<IReadOnlyList<CondicaoDoPredicadoInput>>? RegraDeAplicabilidade = null,
     string? AcaoQuandoIndeferido = null,
-    string? BaseLegal = null) : ICommand<Result<Guid>>;
+    string? BaseLegal = null) : ICommand<Result<Guid>>
+{
+    /// <summary>Os campos editáveis como o agregado os recebe, com a regra de aplicabilidade já montada.</summary>
+    public DeclaracaoDaModalidade Declaracao(PredicadoDnf? regraDeAplicabilidade) => new(
+        Descricao, NaturezaLegal, ComposicaoVagas, ComposicaoOrigem, RegraRemanejamento, RemanejamentoDestino,
+        RemanejamentoPar, RemanejamentoFallback, regraDeAplicabilidade, AcaoQuandoIndeferido, BaseLegal);
+}

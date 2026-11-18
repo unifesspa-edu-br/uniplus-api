@@ -35,7 +35,7 @@ internal sealed class ConfiguracaoClassificacaoConfiguration : IEntityTypeConfig
         builder.OwnsOne(c => c.RegraCalculo, regra => regra.ConfigurarReferenciaRegra("regra_calculo"));
         builder.Navigation(c => c.RegraCalculo).IsRequired();
 
-        // Opcional (INV-B8): ausente quando RegraCalculo é CLASSIFICACAO-IMPORTADA.
+        // Opcional: ausente quando RegraCalculo é CLASSIFICACAO-IMPORTADA.
         builder.OwnsOne(c => c.RegraArredondamento, regra => regra.ConfigurarReferenciaRegra("regra_arredondamento"));
         builder.Navigation(c => c.RegraArredondamento).IsRequired(false);
 

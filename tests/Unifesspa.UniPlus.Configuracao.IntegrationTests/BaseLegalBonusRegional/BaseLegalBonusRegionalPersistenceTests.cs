@@ -33,65 +33,55 @@ public sealed class BaseLegalBonusRegionalPersistenceTests
     [Fact(DisplayName = "Soft-delete do agregado preserva as linhas de município na tabela filha (owned collection)")]
     public async Task Remover_PreservaMunicipiosNaTabelaFilha()
     {
-        Domain.Entities.BaseLegalBonusRegional baseLegal = Domain.Entities.BaseLegalBonusRegional.Criar(
-            "PORTARIA",
-            "Portaria Unifesspa nº 2514/2023",
-            "Institui inclusão regional",
-            [("1504208", "Marabá", "PA"), ("1501402", "Belém", "PA")]).Value!;
+        Domain.Entities.BaseLegalBonusRegional baseLegal = NovaBaseLegal(("1504208", "Marabá", "PA"), ("1501402", "Belém", "PA"));
+        await Gravar(baseLegal, "admin-a");
 
         await using (UniPlusDbContext ctx = _fixture.CreateDbContext("admin-a"))
         {
-            ctx.BaseLegaisBonus.Add(baseLegal);
+            ctx.BaseLegaisBonus.Remove(await ComMunicipios(ctx).SingleAsync(b => b.Id == baseLegal.Id));
             await ctx.SaveChangesAsync();
         }
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext("admin-a"))
-        {
-            Domain.Entities.BaseLegalBonusRegional tracked = await ctx.BaseLegaisBonus
-                .Include(b => b.Municipios)
-                .SingleAsync(b => b.Id == baseLegal.Id);
-            ctx.BaseLegaisBonus.Remove(tracked);
-            await ctx.SaveChangesAsync();
-        }
-
         await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
-        Domain.Entities.BaseLegalBonusRegional excluido = await readCtx.BaseLegaisBonus
-            .IgnoreQueryFilters()
-            .Include(b => b.Municipios)
-            .SingleAsync(b => b.Id == baseLegal.Id);
-
+        Domain.Entities.BaseLegalBonusRegional excluido = await ComMunicipios(readCtx).IgnoreQueryFilters().SingleAsync(b => b.Id == baseLegal.Id);
         excluido.IsDeleted.Should().BeTrue();
-        excluido.Municipios.Should().HaveCount(2,
+        excluido.Municipios.Select(m => m.CodigoIbge).Should().BeEquivalentTo(["1504208", "1501402"],
             "o soft-delete do agregado não pode apagar fisicamente os municípios da coleção owned");
-        excluido.Municipios.Select(m => m.CodigoIbge).Should().BeEquivalentTo(["1504208", "1501402"]);
     }
 
     [Fact(DisplayName = "Editar só os municípios carimba UpdatedAt e UpdatedBy do agregado")]
     public async Task Atualizar_SoOsMunicipios_CarimbaAuditoriaDoAgregado()
     {
-        Domain.Entities.BaseLegalBonusRegional baseLegal = Domain.Entities.BaseLegalBonusRegional.Criar(
-            "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1504208", "Marabá", "PA")]).Value!;
+        Domain.Entities.BaseLegalBonusRegional baseLegal = NovaBaseLegal(("1504208", "Marabá", "PA"));
+        await Gravar(baseLegal, "admin-a");
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext("admin-a"))
-        {
-            ctx.BaseLegaisBonus.Add(baseLegal);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext("admin-b"))
-        {
-            Domain.Entities.BaseLegalBonusRegional tracked = await ctx.BaseLegaisBonus
-                .Include(b => b.Municipios)
-                .SingleAsync(b => b.Id == baseLegal.Id);
-            tracked.Atualizar(
-                "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
-                [("1504208", "Marabá", "PA"), ("1501402", "Belém", "PA")]).IsSuccess.Should().BeTrue();
-            await ctx.SaveChangesAsync();
-        }
+        await AcrescentarMunicipioComo("admin-b", baseLegal.Id);
 
         await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         Domain.Entities.BaseLegalBonusRegional persistida = await readCtx.BaseLegaisBonus.SingleAsync(b => b.Id == baseLegal.Id);
         persistida.UpdatedBy.Should().Be("admin-b", "mudar só os municípios também é edição da base legal");
         persistida.UpdatedAt.Should().NotBeNull();
+    }
+
+    // O código é único entre as bases legais vivas e o banco do teste é compartilhado: cada teste cadastra um ato próprio.
+    private static Domain.Entities.BaseLegalBonusRegional NovaBaseLegal(params (string?, string?, string?)[] municipios) =>
+        Domain.Entities.BaseLegalBonusRegional.Criar("PORTARIA", $"Portaria Teste {Guid.NewGuid():N}", "Institui inclusão regional", municipios).Value!;
+
+    private static IQueryable<Domain.Entities.BaseLegalBonusRegional> ComMunicipios(UniPlusDbContext ctx) =>
+        ctx.BaseLegaisBonus.Include(b => b.Municipios);
+
+    private async Task AcrescentarMunicipioComo(string usuario, Guid id)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(usuario);
+        Domain.Entities.BaseLegalBonusRegional rastreada = await ComMunicipios(ctx).SingleAsync(b => b.Id == id);
+        (string?, string?, string?)[] dois = [("1504208", "Marabá", "PA"), ("1501402", "Belém", "PA")];
+        rastreada.Atualizar("PORTARIA", rastreada.Identificacao, "Institui inclusão regional", dois).IsSuccess.Should().BeTrue();
+        await ctx.SaveChangesAsync();
+    }
+
+    private async Task Gravar(Domain.Entities.BaseLegalBonusRegional baseLegal, string usuario)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(usuario);
+        ctx.BaseLegaisBonus.Add(baseLegal);
+        await ctx.SaveChangesAsync();
     }
 }

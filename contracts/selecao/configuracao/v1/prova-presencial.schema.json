@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/prova-presencial.schema.json",
+  "title": "Prova presencial",
+  "description": "O que o processo declara da prova presencial: se a tem e, só então, os municípios em que a aplica. A declaração é do próprio processo, nunca deduzida do tipo de processo nem das etapas.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "temProvaPresencial"
+  ],
+  "properties": {
+    "temProvaPresencial": {
+      "title": "Tem prova presencial",
+      "description": "Verdadeiro quando o processo tem prova presencial.",
+      "type": "boolean"
+    },
+    "municipios": {
+      "title": "Municípios de aplicação",
+      "description": "Municípios em que a prova é aplicada, cada um pelo código do IBGE. Vazio sem prova presencial.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/municipio"
+      }
+    }
+  },
+  "if": {
+    "properties": {
+      "temProvaPresencial": {
+        "const": false
+      }
+    }
+  },
+  "then": {
+    "properties": {
+      "municipios": {
+        "maxItems": 0
+      }
+    }
+  },
+  "$defs": {
+    "municipio": {
+      "title": "Município de aplicação",
+      "description": "Um município em que a prova é aplicada: o código do IBGE é a autoridade, e a UF é a do prefixo do código.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "codigoIbge",
+        "uf"
+      ],
+      "properties": {
+        "codigoIbge": {
+          "title": "Código IBGE",
+          "description": "Código do município no IBGE, com 7 dígitos e o prefixo de uma unidade federativa.",
+          "type": "string",
+          "pattern": "^(1[1-7]|2[1-9]|3[1-3]|35|4[1-3]|5[0-3])[0-9]{5}$"
+        },
+        "uf": {
+          "title": "UF",
+          "description": "Sigla da unidade federativa do município.",
+          "type": "string",
+          "pattern": "^[A-Z]{2}$"
+        }
+      }
+    }
+  }
+}

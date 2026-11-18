@@ -1,0 +1,90 @@
+namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+
+using System.Text.Json.Serialization;
+
+using Unifesspa.UniPlus.Regras.ValueObjects;
+
+/// <summary>
+/// Parâmetros aplicados de um <see cref="Entities.CriterioDesempate"/> — os
+/// parâmetros que o admin preenche ao aplicar uma regra do
+/// <c>regras_do_catalogo</c> (<c>tipo=criterio_desempate</c>), tipados por
+/// variante conforme o esquema do documento da configuração. Discriminated union
+/// no molde de <c>PredicadoObrigatoriedade</c> (ADR-0058).
+/// </summary>
+/// <remarks>
+/// <para>
+/// Forma fechada por design: as 5 variantes espelham as 5 regras semeadas em
+/// <c>regras_do_catalogo</c> — <c>DESEMPATE-MAIOR-NOTA-ETAPA</c>,
+/// <c>DESEMPATE-MAIOR-IDADE</c>, <c>DESEMPATE-IDOSO</c>,
+/// <c>DESEMPATE-PREDICADO-FATO</c> e <c>DESEMPATE-MAIOR-NOTA-AREA-ENEM</c>. Uma
+/// regra de desempate nova exige nova variante tipada explícita.
+/// </para>
+/// <para>
+/// <see cref="ParametrosDesempatePredicadoFato"/> reusa literalmente
+/// <see cref="CondicaoDnf"/> (ADR-0111, Story #847) em vez de carregar três
+/// strings soltas — fecha o gap que a modelagem da classificação documentava
+/// (<c>Fato</c> tipado mas não validado contra o vocabulário fechado de
+/// fatos do candidato): <c>CriterioDesempate.Criar</c> agora confere a
+/// condição contra o vocabulário resolvido do catálogo <c>fatos_do_candidato</c>
+/// (#846), fechando a integridade da referência à etapa.
+/// </para>
+/// </remarks>
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "$tipo")]
+[JsonDerivedType(typeof(ParametrosDesempateMaiorNotaEtapa), "maiorNotaEtapa")]
+[JsonDerivedType(typeof(ParametrosDesempateMaiorIdade), "maiorIdade")]
+[JsonDerivedType(typeof(ParametrosDesempateIdoso), "idoso")]
+[JsonDerivedType(typeof(ParametrosDesempatePredicadoFato), "predicadoFato")]
+[JsonDerivedType(typeof(ParametrosDesempateMaiorNotaAreaEnem), "maiorNotaAreaEnem")]
+public abstract record ParametrosCriterioDesempate;
+
+/// <summary>Ordena o subgrupo pela nota da etapa referenciada (deve existir no mesmo processo).</summary>
+public sealed record ParametrosDesempateMaiorNotaEtapa(Guid EtapaRef) : ParametrosCriterioDesempate;
+
+/// <summary>Ordena por data de nascimento — nascido mais cedo vence. Sem parâmetros.</summary>
+public sealed record ParametrosDesempateMaiorIdade : ParametrosCriterioDesempate;
+
+/// <summary>Prioriza quem satisfaz <c>FAIXA_ETARIA ≥ IdadeMinima</c> (Lei 10.741/2003 art. 27).</summary>
+public sealed record ParametrosDesempateIdoso(int IdadeMinima) : ParametrosCriterioDesempate;
+
+/// <summary>Prioriza quem satisfaz a <see cref="CondicaoDnf"/> sobre um fato do candidato (ADR-0111).</summary>
+public sealed record ParametrosDesempatePredicadoFato(CondicaoDnf Condicao) : ParametrosCriterioDesempate;
+
+/// <summary>
+/// Ordena pela maior nota numa área do ENEM, percorrendo <see cref="Areas"/> na ordem
+/// declarada: o empate que resta numa área passa à seguinte.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Guarda só o código de cada área. O rótulo vem da cópia do Peso por Área congelada na
+/// classificação do processo, a única fonte de área no Seleção.
+/// </para>
+/// <para>
+/// A lista é copiada na construção: validada a ordem, quem a entregou não pode mais mudá-la
+/// por baixo do critério. A igualdade é pelo conteúdo, na ordem, como a das variantes de
+/// valor escalar.
+/// </para>
+/// </remarks>
+public sealed record ParametrosDesempateMaiorNotaAreaEnem : ParametrosCriterioDesempate
+{
+    public ParametrosDesempateMaiorNotaAreaEnem(IReadOnlyList<string> areas)
+    {
+        ArgumentNullException.ThrowIfNull(areas);
+        Areas = Array.AsReadOnly([.. areas]);
+    }
+
+    public IReadOnlyList<string> Areas { get; }
+
+    public bool Equals(ParametrosDesempateMaiorNotaAreaEnem? other) =>
+        other is not null && Areas.SequenceEqual(other.Areas, StringComparer.Ordinal);
+
+    public override int GetHashCode()
+    {
+        HashCode hash = default;
+        foreach (string area in Areas)
+        {
+            hash.Add(area, StringComparer.Ordinal);
+        }
+
+        return hash.ToHashCode();
+    }
+}

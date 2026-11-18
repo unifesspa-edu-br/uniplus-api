@@ -51,8 +51,8 @@ public abstract class ObrigatoriedadeLegalAdminTestBase : IAsyncLifetime
     /// A <see cref="CascadingFixture"/> compartilha UM Postgres entre TODAS as classes da
     /// coleção (Story #853 tornou isso perigoso): uma <c>ObrigatoriedadeLegal</c> universal
     /// (<c>"*"</c>) que esta classe cria com vigência aberta sobreviveria para o resto da
-    /// suíte, e o gate legal novo passaria a avaliar TODO <c>Publicar</c>/<c>Retificar</c>/
-    /// <c>FecharRetificacao</c> de OUTRAS classes contra ela — reprovando processos que nunca
+    /// suíte, e o gate legal novo passaria a avaliar TODO <c>Publicar</c>/<c>Retificar</c>
+    /// de OUTRAS classes contra ela — reprovando processos que nunca
     /// tiveram nada a ver com esta suíte. Soft-delete de tudo que esta classe criou
     /// (identificado pelo prefixo <c>TEST_</c> de <see cref="UniqueRegraCodigo"/>) devolve o
     /// catálogo ao estado anterior para a próxima classe da coleção.

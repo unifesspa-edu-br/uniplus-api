@@ -9,11 +9,9 @@ using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
-/// Substitui os termos exigidos pelo formulário de inscrição (UNI-REQ-0086). Editável em rascunho
-/// e sob sessão de retificação, com o mesmo padrão dos demais <c>Definir*</c>.
+/// Substitui os termos exigidos pelo formulário de inscrição (UNI-REQ-0086). Editável só em rascunho.
 /// </summary>
 public sealed record DefinirTermosDoFormularioCommand(
     Guid ProcessoSeletivoId,
     FinalidadeFormulario Finalidade,
-    IReadOnlyList<TermoExigidoInput> Termos,
-    PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;
+    IReadOnlyList<TermoExigidoInput> Termos) : ICommand<Result>;

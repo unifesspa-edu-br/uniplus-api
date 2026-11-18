@@ -111,7 +111,7 @@ public sealed class RecorteDeCompetenciaPersistenciaTests : IClassFixture<Proces
     {
         await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = NovoProcesso($"{nome} {Guid.CreateVersion7()}");
-        processo.DefinirCronogramaFases([Fase(faseCanonicaOrigemId, bancas)], [], PrecondicaoIfMatch.Ausente)
+        processo.DefinirCronogramaFases([Fase(faseCanonicaOrigemId, bancas)], [])
             .IsSuccess.Should().BeTrue();
         await db.ProcessosSeletivos.AddAsync(processo);
         await db.SaveChangesAsync();
@@ -122,34 +122,24 @@ public sealed class RecorteDeCompetenciaPersistenciaTests : IClassFixture<Proces
     {
         await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
-        Result redefinicao = processo.DefinirCronogramaFases([Fase(faseCanonicaOrigemId, bancas)], [], PrecondicaoIfMatch.Curinga);
+        Result redefinicao = processo.DefinirCronogramaFases([Fase(faseCanonicaOrigemId, bancas)], []);
         redefinicao.IsSuccess.Should().BeTrue(redefinicao.Error?.Message);
         await db.SaveChangesAsync();
     }
 
     private static ProcessoSeletivo NovoProcesso(string nome) => ProcessoSeletivo.Criar(
         nome, TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
-        UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+        UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     private static FaseCronograma Fase(Guid faseCanonicaOrigemId, IReadOnlyList<BancaRequerida> bancas) =>
         FaseCronograma.Criar(
-            ordem: 1,
-            faseCanonicaOrigemId: faseCanonicaOrigemId,
-            codigo: "ANALISE_DOCUMENTAL",
-            origemData: OrigemDataFase.NaExecucao,
-            agrupaEtapas: false,
-            permiteComplementacao: false,
-            coletaInscricao: false,
-            coletaSolicitacaoIsencao: false,
-            inicio: null,
-            fim: null,
-            produtos: [],
-            faseConcluinteCodigo: null,
-            emiteParecerIndividual: false,
-            bancasRequeridas: bancas,
-            regraRecurso: null,
-            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+            new OrigemCanonicaDaFase(
+                OrigemId: faseCanonicaOrigemId, Codigo: "ANALISE_DOCUMENTAL", OrigemData: OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
+                ColetaSolicitacaoIsencao: false),
+            new DecisoesDeCronogramaDaFase(Ordem: 1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+            bancasRequeridas: bancas).Value!;
 
     private static async Task<ProcessoSeletivo> CarregarAsync(UniPlusDbContext db, Guid processoId) =>
         await db.ProcessosSeletivos

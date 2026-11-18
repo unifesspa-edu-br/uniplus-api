@@ -10,6 +10,7 @@ using System.Text.Json.Serialization;
 /// </summary>
 public sealed record TermoConsentimentoResumoDto(
     Guid Id,
+    string Codigo,
     string Nome,
     string FormaAceiteRascunho,
     bool Revisado,

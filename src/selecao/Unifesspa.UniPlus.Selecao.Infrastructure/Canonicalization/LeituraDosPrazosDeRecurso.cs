@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Recursos;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -20,7 +21,7 @@ internal static class LeituraDosPrazosDeRecurso
     /// <summary>
     /// O recorte de competência da banca — as categorias de documento que ela julga. Como
     /// as próprias bancas, as categorias não congelam <c>id</c>: nada aponta para a linha
-    /// de fora dela, e a reposição as recria por inteiro.
+    /// de fora dela, e a reidratação as recria por inteiro.
     /// </summary>
     internal static List<CategoriaJulgada> LerRecorteDeCompetencia(LeitorEnvelope leitor, JsonObject bancaItem, string pathPai)
     {
@@ -30,25 +31,34 @@ internal static class LeituraDosPrazosDeRecurso
             return [];
         }
 
+        return LerCategorias(leitor, array, pathPai);
+    }
+
+    private static List<CategoriaJulgada> LerCategorias(LeitorEnvelope leitor, JsonArray array, string pathPai)
+    {
         List<CategoriaJulgada> recorte = [];
         for (int i = 0; i < array.Count; i++)
         {
-            string path = $"{pathPai}.recorteDeCompetencia[{i}]";
-            JsonObject item = leitor.ItemObjeto(array, i, $"{pathPai}.recorteDeCompetencia");
-            leitor.ExigirChaves(item, path, "categoriaDocumentoOrigemId", "codigo");
-
-            Guid categoriaDocumentoOrigemId = leitor.Identificador(item, "categoriaDocumentoOrigemId", path);
-            string codigo = leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.CategoriaDocumentoCodigo);
-
+            CategoriaJulgada? categoria = LerCategoria(leitor, array, i, pathPai);
             if (leitor.Falhou)
             {
                 return [];
             }
 
-            recorte.Add(CategoriaJulgada.Criar(categoriaDocumentoOrigemId, codigo));
+            recorte.Add(categoria!);
         }
 
         return recorte;
+    }
+
+    private static CategoriaJulgada? LerCategoria(LeitorEnvelope leitor, JsonArray array, int indice, string pathPai)
+    {
+        string path = $"{pathPai}.recorteDeCompetencia[{indice}]";
+        JsonObject item = leitor.ItemObjeto(array, indice, $"{pathPai}.recorteDeCompetencia");
+        leitor.ExigirChaves(item, path, "categoriaDocumentoOrigemId", "codigo");
+        Guid id = leitor.Identificador(item, "categoriaDocumentoOrigemId", path);
+        string codigo = leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.CategoriaDocumentoCodigo);
+        return leitor.Falhou ? null : CategoriaJulgada.Criar(id, codigo);
     }
 
     /// <summary>
@@ -58,9 +68,9 @@ internal static class LeituraDosPrazosDeRecurso
     /// <see cref="RegraRecursoFase"/> admite.
     /// </summary>
     /// <remarks>
-    /// O <c>produtoAncoraId</c> é irmão de <c>regra</c> e <c>args</c>, e não campo de
-    /// <c>args</c>: ele não é parâmetro que alguém preencha, e sim a referência que a fase
-    /// deriva do próprio produto preliminar. A restauração o repõe como estava congelado —
+    /// O <c>produtoAncoraId</c> é irmão de <c>regra</c> e <c>parametros</c>, e não campo de
+    /// <c>parametros</c>: ele não é parâmetro que alguém preencha, e sim a referência que a fase
+    /// deriva do próprio produto preliminar. A reidratação o repõe como estava congelado —
     /// é ele que o ato já publicado resolve de volta para achar o prazo que lhe corresponde
     /// (UNI-REQ-0093).
     /// </remarks>
@@ -72,65 +82,82 @@ internal static class LeituraDosPrazosDeRecurso
             return null;
         }
 
-        string path = $"{pathPai}.regraRecurso";
-        leitor.ExigirChaves(bloco, path, "regra", "produtoAncoraId", "args");
+        return LerRegra(leitor, bloco, $"{pathPai}.regraRecurso");
+    }
 
+    private static RegraRecursoFase? LerRegra(LeitorEnvelope leitor, JsonObject bloco, string path)
+    {
+        leitor.ExigirChaves(bloco, path, "regra", "produtoAncoraId", "parametros", "procedimentos");
         ReferenciaRegra regra = leitor.Regra(bloco, "regra", path, RegraPrazoRecursoCodigo.AncoradoEmAto);
-        Guid produtoAncoraId = leitor.Identificador(bloco, "produtoAncoraId", path);
-        JsonObject argsObjeto = leitor.Objeto(bloco, "args", path);
-        if (leitor.Falhou)
+        Guid ancora = leitor.Identificador(bloco, "produtoAncoraId", path);
+        JsonObject objeto = leitor.Objeto(bloco, "parametros", path);
+        return leitor.Falhou ? null : MontarRegra(leitor, bloco, path, regra, ancora, objeto);
+    }
+
+    private static RegraRecursoFase? MontarRegra(LeitorEnvelope leitor, JsonObject bloco, string path,
+        ReferenciaRegra regra, Guid ancora, JsonObject objeto)
+    {
+        ParametrosRegraPrazoRecurso? parametros = LerParametrosDePrazoDeRecurso(leitor, objeto, $"{path}.parametros");
+        if (leitor.Falhou || parametros is null)
         {
             return null;
         }
 
-        ArgsRegraPrazoRecurso? args = LerArgsDePrazoDeRecurso(leitor, argsObjeto, $"{path}.args");
-        if (leitor.Falhou || args is null)
+        ProcedimentosDeRecurso? procedimentos = LeituraDosProcedimentosDeRecurso.Ler(leitor, bloco, path, CodigosDoProcedimentoDeRecurso.DaFase);
+        if (leitor.Falhou || procedimentos is null)
         {
             return null;
         }
 
-        Result<RegraRecursoFase> regraRecurso = RegraRecursoFase.Reidratar(regra, args, produtoAncoraId);
-        return regraRecurso.IsFailure ? leitor.Propagar<RegraRecursoFase>(regraRecurso.Error!) : regraRecurso.Value;
+        Result<RegraRecursoFase> resultado = RegraRecursoFase.Reidratar(regra, parametros, ancora, procedimentos);
+        return resultado.IsFailure ? leitor.Propagar<RegraRecursoFase>(resultado.Errors) : resultado.Value;
     }
 
     /// <summary>
-    /// Lê os args do prazo de recurso — prazo, os dois pares de suspensividade e a declaração de instância superior.
+    /// Lê os parâmetros do prazo de recurso — prazo, os dois pares de suspensividade e a declaração de instância superior.
     /// </summary>
     /// <remarks>
     /// Um lugar só porque fase e etapa carregam o mesmo value object: lê-lo em dois lugares deixaria um deles
-    /// reconstruir os args com as suspensividades nulas, e o que o edital prometeu ao candidato voltaria vazio
+    /// reconstruir os parâmetros com as suspensividades nulas, e o que o edital prometeu ao candidato voltaria vazio
     /// do envelope sem que nada acusasse.
     /// </remarks>
-    internal static ArgsRegraPrazoRecurso? LerArgsDePrazoDeRecurso(
+    internal static ParametrosRegraPrazoRecurso? LerParametrosDePrazoDeRecurso(
         LeitorEnvelope leitor,
-        JsonObject argsObjeto,
-        string argsPath)
+        JsonObject parametrosObjeto,
+        string parametrosPath)
     {
-        leitor.ExigirChaves(
-            argsObjeto, argsPath,
-            "prazoValor", "prazoUnidade",
-            "suspensividadePrimeiraInstanciaValor", "suspensividadePrimeiraInstanciaUnidade",
-            "admiteInstanciaSuperior",
-            "suspensividadeSegundaInstanciaValor", "suspensividadeSegundaInstanciaUnidade");
+        ExigirChavesDosParametros(leitor, parametrosObjeto, parametrosPath);
+        return LerParametros(leitor, parametrosObjeto, parametrosPath);
+    }
 
-        decimal prazoValor = leitor.Decimal(argsObjeto, "prazoValor", EscritaCanonica.EscalaPadrao, argsPath, LimitesDoEnvelope.PrecisaoPrazo);
-        UnidadePrazo prazoUnidade = leitor.Enumeracao<UnidadePrazo>(argsObjeto, "prazoUnidade", argsPath);
-        decimal? suspensividade1Valor = leitor.DecimalOpcional(
-            argsObjeto, "suspensividadePrimeiraInstanciaValor", EscritaCanonica.EscalaPadrao, argsPath, LimitesDoEnvelope.PrecisaoPrazo);
-        UnidadePrazo? suspensividade1Unidade = leitor.EnumeracaoOpcional<UnidadePrazo>(
-            argsObjeto, "suspensividadePrimeiraInstanciaUnidade", argsPath);
-        bool admiteInstanciaSuperior = leitor.Booleano(argsObjeto, "admiteInstanciaSuperior", argsPath);
-        decimal? suspensividade2Valor = leitor.DecimalOpcional(
-            argsObjeto, "suspensividadeSegundaInstanciaValor", EscritaCanonica.EscalaPadrao, argsPath, LimitesDoEnvelope.PrecisaoPrazo);
-        UnidadePrazo? suspensividade2Unidade = leitor.EnumeracaoOpcional<UnidadePrazo>(
-            argsObjeto, "suspensividadeSegundaInstanciaUnidade", argsPath);
+    private static void ExigirChavesDosParametros(LeitorEnvelope leitor, JsonObject objeto, string path) =>
+        leitor.ExigirChaves(objeto, path, "prazoValor", "prazoUnidade",
+            "suspensividadePrimeiraInstanciaValor", "suspensividadePrimeiraInstanciaUnidade",
+            "admiteInstanciaSuperior", "suspensividadeSegundaInstanciaValor", "suspensividadeSegundaInstanciaUnidade");
+
+    private static ParametrosRegraPrazoRecurso? LerParametros(LeitorEnvelope leitor, JsonObject parametrosObjeto, string parametrosPath)
+    {
+        decimal prazoValor = leitor.Decimal(parametrosObjeto, "prazoValor", EscritaCanonica.EscalaPadrao, parametrosPath, LimitesDoEnvelope.PrecisaoPrazo);
+        UnidadePrazo prazoUnidade = leitor.Enumeracao<UnidadePrazo>(parametrosObjeto, "prazoUnidade", parametrosPath);
+        (decimal? valor1, UnidadePrazo? unidade1) = LerSuspensividade(leitor, parametrosObjeto, parametrosPath, "Primeira");
+        bool admiteInstanciaSuperior = leitor.Booleano(parametrosObjeto, "admiteInstanciaSuperior", parametrosPath);
+        (decimal? valor2, UnidadePrazo? unidade2) = LerSuspensividade(leitor, parametrosObjeto, parametrosPath, "Segunda");
 
         return leitor.Falhou
             ? null
-            : new ArgsRegraPrazoRecurso(
+            : new ParametrosRegraPrazoRecurso(
                 prazoValor, prazoUnidade,
-                suspensividade1Valor, suspensividade1Unidade,
+                valor1, unidade1,
                 admiteInstanciaSuperior,
-                suspensividade2Valor, suspensividade2Unidade);
+                valor2, unidade2);
+    }
+
+    private static (decimal? Valor, UnidadePrazo? Unidade) LerSuspensividade(
+        LeitorEnvelope leitor, JsonObject objeto, string path, string instancia)
+    {
+        string prefixo = $"suspensividade{instancia}Instancia";
+        decimal? valor = leitor.DecimalOpcional(objeto, $"{prefixo}Valor", EscritaCanonica.EscalaPadrao, path, LimitesDoEnvelope.PrecisaoPrazo);
+        UnidadePrazo? unidade = leitor.EnumeracaoOpcional<UnidadePrazo>(objeto, $"{prefixo}Unidade", path);
+        return (valor, unidade);
     }
 }

@@ -13,12 +13,12 @@ public sealed class DefinirDistribuicaoVagasCommandValidatorTests
     private readonly DefinirDistribuicaoVagasCommandValidator _validator = new();
 
     private static ConfiguracaoDistribuicaoVagasInput ItemValido() => new(
-        Guid.CreateVersion7(), 50, 0.5m, "DISTRIB-VAGAS-LEI-12711", "v1", null, null, null, [Guid.CreateVersion7()], []);
+        Guid.CreateVersion7(), 50, 0.5m, "DISTRIBUICAO-LEI-12711", "v1", null, null, null, [Guid.CreateVersion7()], []);
 
     [Fact(DisplayName = "Lista de distribuição vazia atravessa a validação de forma — quem recusa é o domínio")]
     public void Validar_ListaVazia_AtravessaOValidator()
     {
-        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [], PrecondicaoIfMatch.Ausente);
+        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), []);
 
         ValidationResult resultado = _validator.Validate(command);
 
@@ -30,44 +30,44 @@ public sealed class DefinirDistribuicaoVagasCommandValidatorTests
     [Fact(DisplayName = "Command válido não gera erros")]
     public void Validar_Valido_SemErros()
     {
-        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [ItemValido()], PrecondicaoIfMatch.Ausente);
+        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [ItemValido()]);
 
         ValidationResult resultado = _validator.Validate(command);
 
         resultado.IsValid.Should().BeTrue();
     }
 
-    [Theory(DisplayName = "Validator passa com VO_base não positivo — a rejeição é do agregado (ConfiguracaoDistribuicaoVagas.Criar, ADR-0125)")]
+    [Theory(DisplayName = "Validator passa com vagas ofertadas base não positivo — a rejeição é do agregado (ConfiguracaoDistribuicaoVagas.Criar, ADR-0125)")]
     [InlineData(0)]
     [InlineData(-1)]
-    public void Aceita_VoBaseInvalidoNoValidator(int voBase)
+    public void Aceita_VagasOfertadasBaseInvalidoNoValidator(int vagasOfertadasBase)
     {
-        ConfiguracaoDistribuicaoVagasInput item = ItemValido() with { VoBase = voBase };
-        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item], PrecondicaoIfMatch.Ausente);
+        ConfiguracaoDistribuicaoVagasInput item = ItemValido() with { VagasOfertadasBase = vagasOfertadasBase };
+        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item]);
 
         ValidationResult resultado = _validator.Validate(command);
 
         resultado.IsValid.Should().BeTrue();
     }
 
-    [Theory(DisplayName = "Validator passa com PR fora de [0,5; 1] — a rejeição é do agregado (ConfiguracaoDistribuicaoVagas.Criar, ADR-0125)")]
+    [Theory(DisplayName = "Validator passa com percentual da reserva legal fora de [0,5; 1] — a rejeição é do agregado (ConfiguracaoDistribuicaoVagas.Criar, ADR-0125)")]
     [InlineData(0.49)]
     [InlineData(1.01)]
-    public void Aceita_PrForaDoLimiteNoValidator(double pr)
+    public void Aceita_PercentualDaReservaLegalForaDoLimiteNoValidator(double pr)
     {
-        ConfiguracaoDistribuicaoVagasInput item = ItemValido() with { Pr = (decimal)pr };
-        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item], PrecondicaoIfMatch.Ausente);
+        ConfiguracaoDistribuicaoVagasInput item = ItemValido() with { PercentualDaReservaLegal = (decimal)pr };
+        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item]);
 
         ValidationResult resultado = _validator.Validate(command);
 
         resultado.IsValid.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Validator falha quando o PR tem mais de 4 casas decimais (arredondaria silenciosamente)")]
-    public void Rejeita_PrComEscalaExcessiva()
+    [Fact(DisplayName = "Validator falha quando o percentual da reserva legal tem mais de 4 casas decimais (arredondaria silenciosamente)")]
+    public void Rejeita_PercentualDaReservaLegalComEscalaExcessiva()
     {
-        ConfiguracaoDistribuicaoVagasInput item = ItemValido() with { Pr = 0.75001m };
-        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item], PrecondicaoIfMatch.Ausente);
+        ConfiguracaoDistribuicaoVagasInput item = ItemValido() with { PercentualDaReservaLegal = 0.75001m };
+        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item]);
 
         ValidationResult resultado = _validator.Validate(command);
 
@@ -78,7 +78,7 @@ public sealed class DefinirDistribuicaoVagasCommandValidatorTests
     public void Aceita_ModalidadeIdsVazioNoValidator()
     {
         ConfiguracaoDistribuicaoVagasInput item = ItemValido() with { ModalidadeIds = [] };
-        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item], PrecondicaoIfMatch.Ausente);
+        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item]);
 
         ValidationResult resultado = _validator.Validate(command);
 
@@ -89,7 +89,7 @@ public sealed class DefinirDistribuicaoVagasCommandValidatorTests
     public void Rejeita_ModalidadeIdsNulo()
     {
         ConfiguracaoDistribuicaoVagasInput item = ItemValido() with { ModalidadeIds = null! };
-        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item], PrecondicaoIfMatch.Ausente);
+        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item]);
 
         ValidationResult resultado = _validator.Validate(command);
 
@@ -100,7 +100,7 @@ public sealed class DefinirDistribuicaoVagasCommandValidatorTests
     [Fact(DisplayName = "Item nulo na lista gera erro, sem lançar exceção")]
     public void Validar_ItemNulo_GeraErro()
     {
-        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [null!], PrecondicaoIfMatch.Ausente);
+        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [null!]);
 
         ValidationResult resultado = _validator.Validate(command);
 
@@ -111,7 +111,7 @@ public sealed class DefinirDistribuicaoVagasCommandValidatorTests
     public void Validar_QuadroNulo_GeraErroSemLancarExcecao()
     {
         ConfiguracaoDistribuicaoVagasInput item = ItemValido() with { Quadro = null! };
-        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item], PrecondicaoIfMatch.Ausente);
+        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item]);
 
         ValidationResult resultado = _validator.Validate(command);
 
@@ -122,25 +122,25 @@ public sealed class DefinirDistribuicaoVagasCommandValidatorTests
     public void Validar_ItemNuloDentroDoQuadro_GeraErroSemLancarExcecao()
     {
         ConfiguracaoDistribuicaoVagasInput item = ItemValido() with { Quadro = [null!] };
-        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item], PrecondicaoIfMatch.Ausente);
+        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item]);
 
         ValidationResult resultado = _validator.Validate(command);
 
         resultado.IsValid.Should().BeFalse();
     }
 
-    [Fact(DisplayName = "Quantidade negativa no quadro gera erro")]
-    public void Validar_QuadroComQuantidadeNegativa_GeraErro()
+    [Fact(DisplayName = "Quantidade negativa no quadro não é recusada pelo validator: a regra é do domínio")]
+    public void Validar_QuadroComQuantidadeNegativa_NaoGeraErro()
     {
         ConfiguracaoDistribuicaoVagasInput item = ItemValido() with
         {
             Quadro = [new QuantidadeVagaInput(Guid.CreateVersion7(), -1)],
         };
-        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item], PrecondicaoIfMatch.Ausente);
+        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item]);
 
         ValidationResult resultado = _validator.Validate(command);
 
-        resultado.IsValid.Should().BeFalse();
+        resultado.IsValid.Should().BeTrue();
     }
 
     [Fact(DisplayName = "ModalidadeId vazio no quadro gera erro")]
@@ -150,7 +150,7 @@ public sealed class DefinirDistribuicaoVagasCommandValidatorTests
         {
             Quadro = [new QuantidadeVagaInput(Guid.Empty, 10)],
         };
-        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item], PrecondicaoIfMatch.Ausente);
+        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item]);
 
         ValidationResult resultado = _validator.Validate(command);
 
@@ -165,7 +165,7 @@ public sealed class DefinirDistribuicaoVagasCommandValidatorTests
         {
             Quadro = [new QuantidadeVagaInput(modalidadeId, 10), new QuantidadeVagaInput(modalidadeId, 20)],
         };
-        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item], PrecondicaoIfMatch.Ausente);
+        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item]);
 
         ValidationResult resultado = _validator.Validate(command);
 
@@ -179,7 +179,7 @@ public sealed class DefinirDistribuicaoVagasCommandValidatorTests
         {
             Quadro = [new QuantidadeVagaInput(Guid.CreateVersion7(), 10)],
         };
-        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item], PrecondicaoIfMatch.Ausente);
+        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item]);
 
         ValidationResult resultado = _validator.Validate(command);
 

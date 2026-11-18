@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProdutosPrevistos;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Mappings;
@@ -19,77 +18,55 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 /// reconhece o item pela identidade estável dele, e não pelo <c>Id</c> do produto na versão. A configuração em rascunho não entra: uma
 /// retificação em curso só passa a valer quando publicada.
 /// </remarks>
-public static class ListarProdutosPrevistosDoProcessoQueryHandler
+public sealed class ListarProdutosPrevistosDoProcessoQueryHandler(
+    GrafoVigenteDoProcesso grafos,
+    IAtoDoProcessoRepository atos,
+    IDocumentoAPublicarRepository documentos,
+    ITipoAtoPublicadoReader tiposDeAto,
+    IResolvedorFusoInstitucional fusos,
+    TimeProvider relogio)
 {
-    public static async Task<Result<ProdutosPrevistosDoProcessoDto>> Handle(
-        ListarProdutosPrevistosDoProcessoQuery query,
-        IProcessoSeletivoRepository processoSeletivoRepository,
-        IAtoDoProcessoRepository atoDoProcessoRepository,
-        IDocumentoAPublicarRepository documentoAPublicarRepository,
-        IRegistroCodecsEnvelope registroCodecs,
-        ITipoAtoPublicadoReader tipoAtoReader,
-        IResolvedorFusoInstitucional resolvedorFuso,
-        TimeProvider timeProvider,
-        CancellationToken cancellationToken)
+    public async Task<Result<ProdutosPrevistosDoProcessoDto>> Handle(
+        ListarProdutosPrevistosDoProcessoQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
-        ArgumentNullException.ThrowIfNull(atoDoProcessoRepository);
-        ArgumentNullException.ThrowIfNull(documentoAPublicarRepository);
-        ArgumentNullException.ThrowIfNull(registroCodecs);
-        ArgumentNullException.ThrowIfNull(tipoAtoReader);
-        ArgumentNullException.ThrowIfNull(resolvedorFuso);
-        ArgumentNullException.ThrowIfNull(timeProvider);
-
-        DateTimeOffset agora = timeProvider.GetUtcNow();
-        Result<GrafoVigente> vigente = await GrafoVigenteDoProcesso
-            .LerAsync(processoSeletivoRepository, registroCodecs, query.ProcessoSeletivoId, agora, cancellationToken)
-            .ConfigureAwait(false);
+        DateTimeOffset agora = relogio.GetUtcNow();
+        Result<GrafoVigente> vigente = await grafos.LerAsync(query.ProcessoSeletivoId, agora, cancellationToken).ConfigureAwait(false);
         if (vigente.IsFailure)
         {
             return Result<ProdutosPrevistosDoProcessoDto>.Failure(vigente.Error!);
         }
+        Result<TimeZoneInfo> fuso = fusos.Resolver();
+        return fuso.IsFailure
+            ? Result<ProdutosPrevistosDoProcessoDto>.Failure(fuso.Error!)
+            : await ProjetarAsync(query.ProcessoSeletivoId, vigente.Value!, fuso.Value!, cancellationToken).ConfigureAwait(false);
+    }
 
-        Result<TimeZoneInfo> fuso = resolvedorFuso.Resolver();
-        if (fuso.IsFailure)
-        {
-            return Result<ProdutosPrevistosDoProcessoDto>.Failure(fuso.Error!);
-        }
-
-        Domain.ValueObjects.GrafoConfiguracao grafo = vigente.Value!.Grafo;
-        IReadOnlyList<AtoDoProcesso> atos = await atoDoProcessoRepository
-            .ListarDoProcessoAsync(query.ProcessoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
-        CadeiasDosProdutosPrevistos cadeias = CadeiasDosProdutosPrevistos.De(atos);
-        AtoDoProcesso[] atosDosProdutos = [.. cadeias.AtosDe(ProjecaoDosProdutosPrevistos.ItensDeclarados(grafo))];
-
-        // Só os documentos dos atos que os itens mostram: o histórico de envios inclui documentos que nenhum ato usou.
-        Guid[] idsDosDocumentos =
-        [
-            .. atosDosProdutos
-                .SelectMany(static a => a.Anexos.Select(static x => x.DocumentoAPublicarId).Append(a.DocumentoPrincipalId))
-                .Distinct(),
-        ];
-        IReadOnlyList<DocumentoAPublicar> documentos = idsDosDocumentos.Length == 0
-            ? []
-            : await documentoAPublicarRepository
-                .ListarDoProcessoAsync(query.ProcessoSeletivoId, idsDosDocumentos, cancellationToken)
-                .ConfigureAwait(false);
-        Dictionary<Guid, DocumentoAPublicar> documentosPorId = documentos.ToDictionary(static d => d.Id);
-
-        IReadOnlyList<TipoAtoPublicadoView> tipos = await tipoAtoReader
-            .ListarVigentesAsync(
-                ProjecaoDosProdutosPrevistos.TiposDeAtoDeclarados(grafo),
-                ResolucaoDosTiposDeAtoUnicos.Hoje(timeProvider, fuso.Value),
-                cancellationToken)
-            .ConfigureAwait(false);
-
+    private async Task<Result<ProdutosPrevistosDoProcessoDto>> ProjetarAsync(
+        Guid processoId, GrafoVigente vigente, TimeZoneInfo fuso, CancellationToken cancellationToken)
+    {
+        IReadOnlyList<AtoDoProcesso> publicados = await atos.ListarDoProcessoAsync(processoId, cancellationToken).ConfigureAwait(false);
+        CadeiasDosProdutosPrevistos cadeias = CadeiasDosProdutosPrevistos.De(publicados);
+        Dictionary<Guid, DocumentoAPublicar> documentosPorId = await LerDocumentosAsync(processoId, vigente.Grafo, cadeias, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<TipoAtoPublicadoView> tipos = await tiposDeAto.ListarVigentesAsync(
+            ProjecaoDosProdutosPrevistos.TiposDeAtoDeclarados(vigente.Grafo),
+            ResolucaoDosTiposDeAtoUnicos.Hoje(relogio, fuso), cancellationToken).ConfigureAwait(false);
         return Result<ProdutosPrevistosDoProcessoDto>.Success(ProjecaoDosProdutosPrevistos.Projetar(
-            vigente.Value.NumeroDaVersao,
-            grafo,
-            cadeias,
+            vigente.NumeroDaVersao, vigente.Grafo, cadeias,
             tipos.GroupBy(static t => t.Codigo, StringComparer.Ordinal)
                 .ToDictionary(static g => g.Key, static g => g.First().Nome, StringComparer.Ordinal),
             ato => AtoDoProcessoMapping.ToDto(ato, documentosPorId)));
+    }
+
+    private async Task<Dictionary<Guid, DocumentoAPublicar>> LerDocumentosAsync(
+        Guid processoId, Domain.ValueObjects.GrafoConfiguracao grafo, CadeiasDosProdutosPrevistos cadeias, CancellationToken cancellationToken)
+    {
+        AtoDoProcesso[] atosDosProdutos = [.. cadeias.AtosDe(ProjecaoDosProdutosPrevistos.ItensDeclarados(grafo))];
+        Guid[] ids = [.. atosDosProdutos
+            .SelectMany(static a => a.Anexos.Select(static x => x.DocumentoAPublicarId).Append(a.DocumentoPrincipalId)).Distinct()];
+        IReadOnlyList<DocumentoAPublicar> encontrados = ids.Length == 0
+            ? []
+            : await documentos.ListarDoProcessoAsync(processoId, ids, cancellationToken).ConfigureAwait(false);
+        return encontrados.ToDictionary(static d => d.Id);
     }
 }

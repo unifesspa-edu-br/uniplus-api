@@ -17,6 +17,8 @@ using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
@@ -52,68 +54,28 @@ internal sealed class CenarioDeFormularioPublicado
         "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)), new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), documentoId).Value!;
 
     private static ReferenciaRegra Regra(string codigo, char semente) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string(semente, 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string(semente, 64));
+
+    private static FaseCronograma FaseDeResultadoFinal() => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true,
+            ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(),
+        bancasRequeridas: []).Value!;
 
     public static ProcessoSeletivo NovoProcessoComFatoDeSelecao(string nome)
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            nome, TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar(
-                "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-
-        processo.DefinirCronogramaFases(
-            [FaseCronograma.Criar(
-                ordem: 1,
-                faseCanonicaOrigemId: Guid.CreateVersion7(),
-                codigo: "RESULTADO_FINAL",
-                origemData: OrigemDataFase.NoEdital,
-                agrupaEtapas: true,
-                permiteComplementacao: false,
-                coletaInscricao: true, coletaSolicitacaoIsencao: false,
-                inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-                produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
-                faseConcluinteCodigo: null,
-                emiteParecerIndividual: false,
-                bancasRequeridas: [],
-                regraRecurso: null,
-                unidadeResponsavel: UnidadesDeTeste.Ceps).Value!],
-            [],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirEtapas([
-            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: "RESULTADO_FINAL").Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        processo.DefinirAtendimentoEspecializado(
-            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021",
-            quantidadeDeclarada: 40).Value!;
-        processo.DefinirDistribuicaoVagas(
-            [ConfiguracaoDistribuicaoVagas.Criar(
-                Guid.CreateVersion7(), 40, 1m, Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'), null, null,
-                [modalidade], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!], FatosDeModalidadeDeTeste.DoCatalogo,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
-            Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'), null, null,
-            Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
-        processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
+        ProcessoSeletivo processo = ProcessoSeletivoPublicacaoSeeder.NovoProcessoConforme(nome);
 
         processo.DefinirItens([
             FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ]).IsSuccess.Should().BeTrue();
 
-        processo.DefinirTitulo("Formulário de Inscrição", PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirTermos([CorpusEnvelope.Termo("DECLARACAO_VERACIDADE", 0)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirTitulo("Formulário de Inscrição").IsSuccess.Should().BeTrue();
+        processo.DefinirTermos([CorpusEnvelopeEntrada.Termo("DECLARACAO_VERACIDADE", 0)])
             .IsSuccess.Should().BeTrue();
 
         return processo;
@@ -128,8 +90,7 @@ internal sealed class CenarioDeFormularioPublicado
         ProcessoSeletivo processo, DadosEdital dados, SnapshotCanonico congelado, string hashDocumento, string ator)
     {
         Result<VersaoConfiguracao> publicar = processo.Publicar(
-            dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            hashDocumento, ator, TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, hashDocumento), AtorUsuarioContaId = ator, Contagem = CorpusEnvelopeDadosDoEdital.ContextoRico(), MotivosEscolhidos = MotivosDoProcessoDeTeste.Cobrindo(processo) });
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
         await PersistirDivulgadoAsync(processo, publicar.Value!, dados);
         return publicar.Value!;
@@ -174,17 +135,21 @@ internal sealed class CenarioDeFormularioPublicado
         await repository.AdicionarAsync(processo, CancellationToken.None);
         await repository.AdicionarVersaoConfiguracaoAsync(versao, CancellationToken.None);
         await new CertameDivulgadoRepository(writeContext).AdicionarAsync(
-            CertameDivulgado.Criar(
-                processo.Id,
-                versao.NumeroVersao,
-                versao.AtoCriadorId,
-                new string('a', 64),
-                versaoProjecao: "1",
-                new FacetasDoCertameDivulgado(
-                    processo.IdentificadorLegivel!.Value.Valor, processo.Nome, dados.Numero, ["AC"], dados.PeriodoInscricaoInicio, dados.PeriodoInscricaoFim),
-                """{"nome":"documento"}""",
-                TimeProvider.System.GetUtcNow()),
+            Divulgacao(processo, versao, dados),
             CancellationToken.None);
         await writeContext.SaveChangesAsync(CancellationToken.None);
     }
+
+    private static CertameDivulgado Divulgacao(ProcessoSeletivo processo, VersaoConfiguracao versao, DadosEdital dados) =>
+        CertameDivulgado.Criar(
+            processo.Id,
+            versao.NumeroVersao,
+            versao.AtoCriadorId,
+            new string('a', 64),
+            versaoProjecao: "1",
+            new FacetasDoCertameDivulgado(
+                processo.IdentificadorLegivel!.Value.Valor, processo.Nome, dados.Numero, ["AC"], dados.PeriodoInscricaoInicio, dados.PeriodoInscricaoFim),
+            """{"nome":"documento"}""",
+            TimeProvider.System.GetUtcNow());
+
 }

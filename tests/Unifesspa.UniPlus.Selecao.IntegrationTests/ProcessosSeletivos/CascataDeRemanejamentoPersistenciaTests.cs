@@ -32,7 +32,7 @@ public sealed class CascataDeRemanejamentoPersistenciaTests
     public async Task Cascata_SobreviveASaveChangesEReload()
     {
         ProcessoSeletivo processo = CenarioDeRetificacaoPersistida.NovoProcessoConforme(nameof(Cascata_SobreviveASaveChangesEReload));
-        processo.DefinirCascataRemanejamento(CenarioDeCascataPersistida.CascataDeDuasOrigens("1"), PrecondicaoIfMatch.Ausente)
+        processo.DefinirCascataRemanejamento(CenarioDeCascataPersistida.CascataDeDuasOrigens("1"))
             .IsSuccess.Should().BeTrue();
 
         await _cenario.PersistirAsync(processo);
@@ -56,14 +56,14 @@ public sealed class CascataDeRemanejamentoPersistenciaTests
     {
         ProcessoSeletivo processo = CenarioDeRetificacaoPersistida.NovoProcessoConforme(nameof(Cascata_SubstituidaDuasVezes_SoASegundaVersaoSobrevive));
         ConfiguracaoCascataRemanejamento primeiraVersao = CenarioDeCascataPersistida.CascataDeDuasOrigens("2");
-        processo.DefinirCascataRemanejamento(primeiraVersao, PrecondicaoIfMatch.Ausente)
+        processo.DefinirCascataRemanejamento(primeiraVersao)
             .IsSuccess.Should().BeTrue();
         Guid idPrimeiraVersao = primeiraVersao.Id;
 
         Guid processoId = processo.Id;
         await _cenario.PersistirAsync(processo);
 
-        // Segunda sessão editorial: substitui a cascata inteira por OUTRA — conteúdo
+        // Segunda gravação: substitui a cascata inteira por OUTRA — conteúdo
         // diferente, origens diferentes, contagem de destinos diferente.
         ConfiguracaoCascataRemanejamento segundaVersao = ConfiguracaoCascataRemanejamento.Criar(
             CenarioDeCascataPersistida.Regra(RegraRemanejamentoCodigo.Cascata, "3"),
@@ -74,7 +74,7 @@ public sealed class CascataDeRemanejamentoPersistenciaTests
         {
             ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(sessao);
             ProcessoSeletivo tracked = (await repository.ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;
-            tracked.DefinirCascataRemanejamento(segundaVersao, PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+            tracked.DefinirCascataRemanejamento(segundaVersao).IsSuccess.Should().BeTrue();
             await sessao.SaveChangesAsync(CancellationToken.None);
         }
 
@@ -109,7 +109,7 @@ public sealed class CascataDeRemanejamentoPersistenciaTests
     {
         ProcessoSeletivo processo = CenarioDeRetificacaoPersistida.NovoProcessoConforme(nameof(Cascata_Removida_SomeComATabelaDeDestinos));
         ConfiguracaoCascataRemanejamento cascata = CenarioDeCascataPersistida.CascataDeDuasOrigens("4");
-        processo.DefinirCascataRemanejamento(cascata, PrecondicaoIfMatch.Ausente)
+        processo.DefinirCascataRemanejamento(cascata)
             .IsSuccess.Should().BeTrue();
         Guid idCascata = cascata.Id;
 
@@ -121,7 +121,7 @@ public sealed class CascataDeRemanejamentoPersistenciaTests
             ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(sessao);
             ProcessoSeletivo tracked = (await repository.ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;
             tracked.Cascata.Should().NotBeNull("pré-condição: a cascata persistiu na sessão anterior");
-            tracked.DefinirCascataRemanejamento(null, PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+            tracked.DefinirCascataRemanejamento(null).IsSuccess.Should().BeTrue();
             await sessao.SaveChangesAsync(CancellationToken.None);
         }
 

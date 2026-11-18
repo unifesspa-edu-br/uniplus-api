@@ -36,7 +36,7 @@ public sealed class IdempotenciaOperationTransformer : IOpenApiOperationTransfor
     /// <summary>
     /// O que o filtro responde, e por quê. Um status que a action <b>já declara</b> não é
     /// tocado — ela pode ter um motivo próprio para o mesmo código (o 409 de
-    /// <c>RascunhoRetificacao.JaAberta</c>, por exemplo), e a descrição dela é a mais
+    /// uma regra de negócio, por exemplo), e a descrição dela é a mais
     /// específica.
     /// </summary>
     private static readonly (string Status, string Descricao)[] RespostasDoFiltro =

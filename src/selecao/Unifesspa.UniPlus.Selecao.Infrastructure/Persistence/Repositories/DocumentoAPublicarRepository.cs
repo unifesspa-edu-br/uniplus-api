@@ -64,6 +64,17 @@ public sealed class DocumentoAPublicarRepository : IDocumentoAPublicarRepository
             .ConfigureAwait(false);
     }
 
+    public async Task<IReadOnlyList<string>> RemoverDoProcessoAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default)
+    {
+        List<DocumentoAPublicar> documentos = await _context.DocumentosAPublicar
+            .Where(d => d.ProcessoSeletivoId == processoSeletivoId)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        _context.DocumentosAPublicar.RemoveRange(documentos);
+        return [.. documentos.SelectMany(ChavesDeObjeto)];
+    }
+
     public async Task AdicionarAsync(DocumentoAPublicar entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
@@ -89,37 +100,42 @@ public sealed class DocumentoAPublicarRepository : IDocumentoAPublicarRepository
     public async Task<IReadOnlyList<ArquivoPendenteVencido>> ListarPendentesVencidosAsync(
         DateTimeOffset agora, int limite, CancellationToken cancellationToken = default)
     {
-        return await _context.DocumentosAPublicar
+        // A chave da cópia gravada é calculada pela entidade e não vira SQL: o lote é materializado e mapeado em memória.
+        List<DocumentoAPublicar> lote = await _context.DocumentosAPublicar
             .AsNoTracking()
             .Where(PendenteVencido(agora))
             .OrderBy(d => d.ExpiraEm)
             .ThenBy(d => d.Id)
             .Take(limite)
-            .Select(d => new ArquivoPendenteVencido(d.Id, d.ObjectKey))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
+
+        return [.. lote.Select(d => new ArquivoPendenteVencido(d.Id, ChavesDeObjeto(d)))];
     }
 
-    public async Task<bool> RemoverSePendenteVencidoAsync(Guid id, DateTimeOffset agora, CancellationToken cancellationToken = default)
+    public async Task<bool> RemoverSePendenteVencidoAsync(
+        Guid id, DateTimeOffset agora, Func<CancellationToken, Task> removerObjetos, CancellationToken cancellationToken = default)
     {
-        int linhasAfetadas = await _context.DocumentosAPublicar
-            .Where(d => d.Id == id)
-            .Where(PendenteVencido(agora))
-            .ExecuteDeleteAsync(cancellationToken)
-            .ConfigureAwait(false);
+        ArgumentNullException.ThrowIfNull(removerObjetos);
 
-        return linhasAfetadas == 1;
+        return await RemocaoDoPendenteVencido.ExecutarAsync(
+            _context.Database,
+            ct => _context.DocumentosAPublicar.Where(d => d.Id == id).Where(PendenteVencido(agora)).ExecuteDeleteAsync(ct),
+            removerObjetos,
+            cancellationToken).ConfigureAwait(false);
     }
 
     public void Remover(DocumentoAPublicar entity)
     {
         ArgumentNullException.ThrowIfNull(entity);
         // Sem soft-delete (EntityBase puro — DocumentoAPublicar não é ISoftDeletable).
-        // Nenhum caso de uso remove documento pela entidade rastreada: o pendente
-        // vencido sai por RemoverSePendenteVencidoAsync, condicionado no banco.
+        // Nenhum caso de uso remove um documento isolado pela entidade rastreada: o pendente vencido sai por
+        // RemoverSePendenteVencidoAsync, condicionado no banco, e os do rascunho excluído por RemoverDoProcessoAsync.
         // Implementado por completude do contrato IRepository<T>.
         _context.DocumentosAPublicar.Remove(entity);
     }
+
+    private static string[] ChavesDeObjeto(DocumentoAPublicar documento) => [documento.ObjectKey, documento.ChaveDaCopiaGravada];
 
     private static Expression<Func<DocumentoAPublicar, bool>> PendenteVencido(DateTimeOffset agora) =>
         d => d.Status == StatusArquivoEnviado.Pendente && d.ExpiraEm <= agora;

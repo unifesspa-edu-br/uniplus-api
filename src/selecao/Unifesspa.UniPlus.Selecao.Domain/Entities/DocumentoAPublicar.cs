@@ -15,8 +15,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// Documento que o administrador envia para o processo publicar — o PDF do edital, o anexo do
 /// edital, o documento de um ato avulso ou de um resultado. Fica no armazenamento privado por envio
-/// direto do cliente (URL pré-assinada de PUT); a API nunca recebe os bytes. Vinculado ao processo
-/// por <see cref="ProcessoSeletivoId"/>, mas não é filho do agregado: tem ciclo de vida e
+/// direto do cliente (URL pré-assinada de PUT); a API nunca recebe os bytes. Ligado à identidade do
+/// processo por <see cref="ProcessoSeletivoId"/>, mas não é filho do agregado: tem ciclo de vida e
 /// repositório próprios. Nasce <see cref="StatusArquivoEnviado.Pendente"/> (URL gerada) e só vira
 /// dado de negócio ao ser <see cref="StatusArquivoEnviado.Confirmado"/> (conteúdo lido, validado e
 /// hasheado no servidor). O confirmado é imutável: um novo envio cria outro registro, com outra
@@ -36,6 +36,11 @@ public sealed class DocumentoAPublicar : EntityBase, IArquivoEnviado
 
     private static readonly byte[] AssinaturaPdf = "%PDF-"u8.ToArray();
 
+    /// <summary>
+    /// A identidade do processo a que o documento serve. Antes da primeira publicação o processo não tem linha e esta é a
+    /// identidade do rascunho, que a publicação mantém como a do processo; por isso não há chave estrangeira, e a
+    /// integridade com o dono é coordenada pelo bloqueio do rascunho.
+    /// </summary>
     public Guid ProcessoSeletivoId { get; private set; }
 
     /// <summary>
@@ -54,7 +59,7 @@ public sealed class DocumentoAPublicar : EntityBase, IArquivoEnviado
     public DateTimeOffset? ConfirmadoEm { get; private set; }
 
     /// <summary>
-    /// Chave selada, gravada só na confirmação — <see langword="null"/> enquanto pendente. Nunca é
+    /// Chave da cópia gravada, só na confirmação — <see langword="null"/> enquanto pendente. Nunca é
     /// alvo de URL pré-assinada de PUT (essas só apontam para <see cref="ObjectKey"/>): a cópia do
     /// conteúdo já validado para esta chave, feita no mesmo passo de <see cref="Confirmar"/>, é o
     /// que torna o documento confirmado imutável de fato — sem ela, o titular da URL de envio
@@ -70,6 +75,13 @@ public sealed class DocumentoAPublicar : EntityBase, IArquivoEnviado
     /// <summary>A recusa do arquivo sem nenhum byte.</summary>
     public static DomainError ArquivoVazio { get; } = new(
         DocumentoAPublicarErrorCodes.ArquivoVazio, "O arquivo enviado está vazio.");
+
+    /// <summary>
+    /// Onde a cópia do arquivo gravada na confirmação fica no armazenamento, calculada desde o documento pendente: a confirmação a grava em
+    /// <see cref="ObjectKeyConfirmado"/> e a remoção a usa também enquanto o documento está pendente, porque a cópia pode já
+    /// existir no armazenamento sem que a confirmação tenha chegado ao banco.
+    /// </summary>
+    public string ChaveDaCopiaGravada => $"selecao/documentos-a-publicar/{ProcessoSeletivoId:D}/{Id:D}/confirmado.{Extensao}";
 
     /// <summary>A extensão do arquivo no formato, sem o ponto.</summary>
     public string Extensao => FormatosDeDocumento.Extensao(Formato);
@@ -163,9 +175,9 @@ public sealed class DocumentoAPublicar : EntityBase, IArquivoEnviado
 
     /// <summary>
     /// Finaliza o documento como confirmado e imutável (passo 3 do fluxo) e determina a
-    /// <see cref="ObjectKeyConfirmado"/> selada. Só a partir de <see cref="StatusArquivoEnviado.Pendente"/>;
+    /// <see cref="ObjectKeyConfirmado"/>, a chave da cópia gravada. Só a partir de <see cref="StatusArquivoEnviado.Pendente"/>;
     /// a validação do conteúdo (<see cref="ValidarConteudo"/>) já passou. Quem chama ainda copia o
-    /// conteúdo validado para a chave selada no armazenamento — este método só decide o estado e o
+    /// conteúdo validado para a chave da cópia gravada no armazenamento — este método só decide o estado e o
     /// nome da chave, sem I/O.
     /// </summary>
     public Result Confirmar(long tamanhoBytes, string hashSha256, TimeProvider clock)
@@ -182,7 +194,7 @@ public sealed class DocumentoAPublicar : EntityBase, IArquivoEnviado
         HashSha256 = hashSha256;
         Status = StatusArquivoEnviado.Confirmado;
         ConfirmadoEm = clock.GetUtcNow();
-        ObjectKeyConfirmado = $"selecao/documentos-a-publicar/{ProcessoSeletivoId:D}/{Id:D}/confirmado.{Extensao}";
+        ObjectKeyConfirmado = ChaveDaCopiaGravada;
         return Result.Success();
     }
 

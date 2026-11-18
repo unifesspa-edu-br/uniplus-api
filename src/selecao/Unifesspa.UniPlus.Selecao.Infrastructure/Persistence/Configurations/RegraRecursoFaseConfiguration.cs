@@ -10,8 +10,8 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// Configuração EF Core de <see cref="RegraRecursoFase"/> (Story #851) — filha 0..1 de
-/// <see cref="FaseCronograma"/>. <see cref="RegraRecursoFase.Args"/> não é polimórfico
-/// (única variante, <c>ArgsRegraPrazoRecurso</c>) — mapeado como owned type de colunas
+/// <see cref="FaseCronograma"/>. <see cref="RegraRecursoFase.Parametros"/> não é polimórfico
+/// (única variante, <c>ParametrosRegraPrazoRecurso</c>) — mapeado como owned type de colunas
 /// normais, no mesmo molde de <c>ReferenciaRegra</c>, não como JSON.
 /// </summary>
 public sealed class RegraRecursoFaseConfiguration : IEntityTypeConfiguration<RegraRecursoFase>
@@ -30,18 +30,18 @@ public sealed class RegraRecursoFaseConfiguration : IEntityTypeConfiguration<Reg
         builder.OwnsOne(r => r.Regra, regra => regra.ConfigurarReferenciaRegra("regra"));
         builder.Navigation(r => r.Regra).IsRequired();
 
-        builder.OwnsOne(r => r.Args, args =>
+        builder.OwnsOne(r => r.Parametros, parametros =>
         {
-            args.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
-            args.Property(x => x.PrazoValor).HasColumnName("prazo_valor").HasPrecision(18, 4).IsRequired();
-            args.Property(x => x.PrazoUnidade).HasColumnName("prazo_unidade").HasConversion<int>().IsRequired();
-            args.Property(x => x.SuspensividadePrimeiraInstanciaValor).HasColumnName("suspensividade_1a_instancia_valor").HasPrecision(18, 4);
-            args.Property(x => x.SuspensividadePrimeiraInstanciaUnidade).HasColumnName("suspensividade_1a_instancia_unidade").HasConversion<int>();
-            args.Property(x => x.AdmiteInstanciaSuperior).HasColumnName("admite_instancia_superior").IsRequired();
-            args.Property(x => x.SuspensividadeSegundaInstanciaValor).HasColumnName("suspensividade_2a_instancia_valor").HasPrecision(18, 4);
-            args.Property(x => x.SuspensividadeSegundaInstanciaUnidade).HasColumnName("suspensividade_2a_instancia_unidade").HasConversion<int>();
+            parametros.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
+            parametros.Property(x => x.PrazoValor).HasColumnName("prazo_valor").HasPrecision(18, 4).IsRequired();
+            parametros.Property(x => x.PrazoUnidade).HasColumnName("prazo_unidade").HasConversion<int>().IsRequired();
+            parametros.Property(x => x.SuspensividadePrimeiraInstanciaValor).HasColumnName("suspensividade_1a_instancia_valor").HasPrecision(18, 4);
+            parametros.Property(x => x.SuspensividadePrimeiraInstanciaUnidade).HasColumnName("suspensividade_1a_instancia_unidade").HasConversion<int>();
+            parametros.Property(x => x.AdmiteInstanciaSuperior).HasColumnName("admite_instancia_superior").IsRequired();
+            parametros.Property(x => x.SuspensividadeSegundaInstanciaValor).HasColumnName("suspensividade_2a_instancia_valor").HasPrecision(18, 4);
+            parametros.Property(x => x.SuspensividadeSegundaInstanciaUnidade).HasColumnName("suspensividade_2a_instancia_unidade").HasConversion<int>();
         });
-        builder.Navigation(r => r.Args).IsRequired();
+        builder.Navigation(r => r.Parametros).IsRequired();
 
         // Coluna crua, sem FK para produtos_da_fase, ao contrário do que DocumentoExigido faz
         // com fases_cronograma. A reconciliação de FaseCronograma.AtualizarDe esvazia e
@@ -51,6 +51,7 @@ public sealed class RegraRecursoFaseConfiguration : IEntityTypeConfiguration<Reg
         // referência é interna ao agregado e nunca atravessa fase: quem a mantém coerente é
         // FaseCronograma, que valida a âncora ao criar e a remapeia ao reconciliar.
         builder.Property(r => r.ProdutoAncoraId).HasColumnName("produto_ancora_id").IsRequired();
+        builder.MapearProcedimentosDeRecurso(r => r.Procedimentos);
 
         // 0..1 por fase — a FK É a chave alternativa que garante a cardinalidade.
         builder.HasIndex(r => r.FaseCronogramaId)

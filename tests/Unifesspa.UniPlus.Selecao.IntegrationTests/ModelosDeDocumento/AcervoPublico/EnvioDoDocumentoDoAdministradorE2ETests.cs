@@ -31,8 +31,7 @@ public sealed class EnvioDoDocumentoDoAdministradorE2ETests(AcervoPublicoE2EFixt
         await using (AsyncServiceScope scope = api.Services.CreateAsyncScope())
         {
             UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-            (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
-                db, $"PS envio do administrador {Guid.CreateVersion7()}");
+            (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"PS envio do administrador {Guid.CreateVersion7()}" });
             processoId = processo.Id;
         }
 

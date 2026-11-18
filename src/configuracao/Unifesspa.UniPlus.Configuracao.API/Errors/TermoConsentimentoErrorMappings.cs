@@ -70,6 +70,24 @@ internal static class TermoConsentimentoErrorMappings
                 "uniplus.configuracao.termo_consentimento.nao_encontrado",
                 "Termo de consentimento não encontrado")),
 
+        new(TermoConsentimentoErrorCodes.CodigoFormatoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.termo_consentimento.codigo_formato_invalido",
+                "Código do termo de consentimento fora do formato")),
+
+        new(TermoConsentimentoErrorCodes.CodigoTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.termo_consentimento.codigo_tamanho",
+                "Código do termo de consentimento passa do tamanho máximo")),
+
+        new(TermoConsentimentoErrorCodes.CodigoJaExiste,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.configuracao.termo_consentimento.codigo_ja_existe",
+                "Já existe um termo de consentimento com este código")),
+
         new(TermoConsentimentoErrorCodes.ConflitoDeConcorrencia,
             new DomainErrorMapping(
                 StatusCodes.Status409Conflict,

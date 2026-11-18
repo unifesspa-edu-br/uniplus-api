@@ -17,7 +17,7 @@ public sealed class CriarPrecedenciaFaseCommandHandlerTests
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     private static CriarPrecedenciaFaseCommand Comando() =>
-        new("INSCRICAO", "HOMOLOGACAO");
+        new("INSCRICAO", "HOMOLOGACAO_INSCRICOES");
 
     [Fact(DisplayName = "Grafo vazio cria a aresta, persiste e retorna o Id")]
     public async Task Handle_GrafoVazio_CriaEPersiste()
@@ -59,7 +59,7 @@ public sealed class CriarPrecedenciaFaseCommandHandlerTests
     public async Task Handle_CodigoFormatoInvalido_RetornaViolacaoDeCampoSemTravarGrafo()
     {
         Result<Guid> resultado = await CriarPrecedenciaFaseCommandHandler.Handle(
-            new CriarPrecedenciaFaseCommand("inscricao", "HOMOLOGACAO"), _repository, _unitOfWork, CancellationToken.None);
+            new CriarPrecedenciaFaseCommand("inscricao", "HOMOLOGACAO_INSCRICOES"), _repository, _unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(PrecedenciaFaseErrorCodes.AntecessoraCodigoFormatoInvalido);
@@ -99,7 +99,7 @@ public sealed class CriarPrecedenciaFaseCommandHandlerTests
     [Fact(DisplayName = "Aresta duplicada no grafo vigente propaga o erro sem persistir")]
     public async Task Handle_ArestaDuplicada_RetornaErroSemPersistir()
     {
-        PrecedenciaFase existente = PrecedenciaFase.Criar("INSCRICAO", "HOMOLOGACAO", false, []).Value!;
+        PrecedenciaFase existente = PrecedenciaFase.Criar("INSCRICAO", "HOMOLOGACAO_INSCRICOES", false, []).Value!;
         _repository.ListarVivasAsync(Arg.Any<CancellationToken>()).Returns((IReadOnlyList<PrecedenciaFase>)[existente]);
 
         Result<Guid> resultado = await CriarPrecedenciaFaseCommandHandler.Handle(
@@ -113,11 +113,11 @@ public sealed class CriarPrecedenciaFaseCommandHandlerTests
     [Fact(DisplayName = "Aresta que fecha ciclo no grafo vigente propaga o erro sem persistir")]
     public async Task Handle_Ciclo_RetornaErroSemPersistir()
     {
-        PrecedenciaFase existente = PrecedenciaFase.Criar("INSCRICAO", "HOMOLOGACAO", false, []).Value!;
+        PrecedenciaFase existente = PrecedenciaFase.Criar("INSCRICAO", "HOMOLOGACAO_INSCRICOES", false, []).Value!;
         _repository.ListarVivasAsync(Arg.Any<CancellationToken>()).Returns((IReadOnlyList<PrecedenciaFase>)[existente]);
 
         Result<Guid> resultado = await CriarPrecedenciaFaseCommandHandler.Handle(
-            new CriarPrecedenciaFaseCommand("HOMOLOGACAO", "INSCRICAO"), _repository, _unitOfWork, CancellationToken.None);
+            new CriarPrecedenciaFaseCommand("HOMOLOGACAO_INSCRICOES", "INSCRICAO"), _repository, _unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(PrecedenciaFaseErrorCodes.CicloDetectado);

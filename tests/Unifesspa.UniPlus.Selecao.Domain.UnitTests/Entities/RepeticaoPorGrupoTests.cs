@@ -26,11 +26,13 @@ public sealed class RepeticaoPorGrupoTests
 
     private static FaseCronograma Fase(int ordem, string codigo, bool coletaInscricao = false, bool coletaIsencao = false) =>
         FaseCronograma.Criar(
-            ordem, Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital,
-            agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: coletaInscricao, coletaSolicitacaoIsencao: coletaIsencao,
-            inicio: new DateTimeOffset(2026, 1, ordem, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, ordem + 1, 0, 0, 0, TimeSpan.Zero),
-            produtos: [ProdutoDaFase.Criar(codigo, PapelProdutoFase.Definitivo)],
-            faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+            new OrigemCanonicaDaFase(
+                Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: coletaInscricao, ColetaSolicitacaoIsencao: coletaIsencao),
+            new DecisoesDeCronogramaDaFase(
+                ordem, Inicio: new DateTimeOffset(2026, 1, ordem, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, ordem + 1, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+                UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar(codigo, PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+            bancasRequeridas: []).Value!;
 
     private static GrupoColetado GrupoDaComposicao() => GrupoColetado.Criar(
         Composicao, 0, FormularioDeTeste.Secao, "Composição familiar", 1, 10, null, Obrigatoriedade.Sempre,
@@ -46,10 +48,10 @@ public sealed class RepeticaoPorGrupoTests
         FaseCronograma inscricao = Fase(1, "INSCRICAO", coletaInscricao: true);
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: inscricao);
         FaseCronograma habilitacao = Fase(2, FormularioProcesso.CodigoFaseHabilitacao);
-        processo.DefinirCronogramaFases([inscricao, habilitacao], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, habilitacao.Id, null, FormularioDeTeste.Etapas(), PrecondicaoIfMatch.Ausente)
+        processo.DefinirCronogramaFases([inscricao, habilitacao], []).IsSuccess.Should().BeTrue();
+        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, habilitacao.Id, null, FormularioDeTeste.Etapas())
             .IsSuccess.Should().BeTrue();
-        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [], PrecondicaoIfMatch.Ausente, [GrupoDaComposicao()])
+        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [], [GrupoDaComposicao()])
             .IsSuccess.Should().BeTrue();
         return (processo, inscricao, habilitacao);
     }
@@ -60,7 +62,7 @@ public sealed class RepeticaoPorGrupoTests
         (ProcessoSeletivo processo, _, FaseCronograma habilitacao) = Processo();
 
         Result resultado = processo.DefinirDocumentosExigidos(
-            [NoExigencia.CriarFolha(Documento(habilitacao.Id, FinalidadeFormulario.Habilitacao), 0, repetePorEntidade: "PESSOAS_JURIDICAS").Value!], PrecondicaoIfMatch.Ausente);
+            [NoExigencia.CriarFolha(Documento(habilitacao.Id, FinalidadeFormulario.Habilitacao), 0, repetePorEntidade: "PESSOAS_JURIDICAS").Value!]);
 
         resultado.Error!.Code.Should().Be("NoExigencia.TipoEntidadeInvalido");
     }
@@ -71,10 +73,10 @@ public sealed class RepeticaoPorGrupoTests
         (ProcessoSeletivo processo, FaseCronograma inscricao, FaseCronograma habilitacao) = Processo();
 
         processo.DefinirDocumentosExigidos(
-                [NoExigencia.CriarFolha(Documento(inscricao.Id, FinalidadeFormulario.Inscricao), 0, repetePorEntidade: Composicao).Value!], PrecondicaoIfMatch.Ausente)
+                [NoExigencia.CriarFolha(Documento(inscricao.Id, FinalidadeFormulario.Inscricao), 0, repetePorEntidade: Composicao).Value!])
             .Error!.Code.Should().Be(DocumentoExigidoErrorCodes.FatoResolvidoEmFasePosterior);
         processo.DefinirDocumentosExigidos(
-                [NoExigencia.CriarFolha(Documento(habilitacao.Id, FinalidadeFormulario.Habilitacao), 0, repetePorEntidade: Composicao).Value!], PrecondicaoIfMatch.Ausente)
+                [NoExigencia.CriarFolha(Documento(habilitacao.Id, FinalidadeFormulario.Habilitacao), 0, repetePorEntidade: Composicao).Value!])
             .IsSuccess.Should().BeTrue();
     }
 
@@ -85,14 +87,14 @@ public sealed class RepeticaoPorGrupoTests
     {
         FaseCronograma compartilhada = Fase(1, "INSCRICAO", coletaInscricao: true, coletaIsencao: true);
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: compartilhada);
-        processo.DefinirCronogramaFases([compartilhada], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirFormulario(FinalidadeFormulario.IsencaoTaxa, compartilhada.Id, null, FormularioDeTeste.Etapas(), PrecondicaoIfMatch.Ausente)
+        processo.DefinirCronogramaFases([compartilhada], []).IsSuccess.Should().BeTrue();
+        processo.DefinirFormulario(FinalidadeFormulario.IsencaoTaxa, compartilhada.Id, null, FormularioDeTeste.Etapas())
             .IsSuccess.Should().BeTrue();
-        processo.DefinirFatosColetados(FinalidadeFormulario.IsencaoTaxa, [], PrecondicaoIfMatch.Ausente, [GrupoDaComposicao()])
+        processo.DefinirFatosColetados(FinalidadeFormulario.IsencaoTaxa, [], [GrupoDaComposicao()])
             .IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirDocumentosExigidos(
-            [NoExigencia.CriarFolha(Documento(compartilhada.Id, finalidade), 0, repetePorEntidade: Composicao).Value!], PrecondicaoIfMatch.Ausente);
+            [NoExigencia.CriarFolha(Documento(compartilhada.Id, finalidade), 0, repetePorEntidade: Composicao).Value!]);
 
         resultado.IsSuccess.Should().Be(aceito, resultado.Error?.Message);
         if (!aceito)
@@ -106,12 +108,12 @@ public sealed class RepeticaoPorGrupoTests
     {
         (ProcessoSeletivo processo, _, FaseCronograma habilitacao) = Processo();
         processo.DefinirDocumentosExigidos(
-                [NoExigencia.CriarFolha(Documento(habilitacao.Id, FinalidadeFormulario.Habilitacao), 0, repetePorEntidade: Composicao).Value!], PrecondicaoIfMatch.Ausente)
+                [NoExigencia.CriarFolha(Documento(habilitacao.Id, FinalidadeFormulario.Habilitacao), 0, repetePorEntidade: Composicao).Value!])
             .IsSuccess.Should().BeTrue();
 
-        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [], PrecondicaoIfMatch.Ausente, []).IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [], []).IsSuccess.Should().BeTrue();
 
-        ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be("NoExigencia.TipoEntidadeInvalido");
+        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be("NoExigencia.TipoEntidadeInvalido");
     }
 
     [Fact(DisplayName = "A folha dentro da subárvore repetida cita os campos do grupo; a de fora, não")]
@@ -122,10 +124,10 @@ public sealed class RepeticaoPorGrupoTests
         DocumentoExigido avulso = Documento(habilitacao.Id, FinalidadeFormulario.Habilitacao);
         NoExigencia repetido = NoExigencia.CriarGrupo(
             TipoNo.GrupoE, 0, null, null, [], [NoExigencia.CriarFolha(certidao, 0).Value!], repetePorEntidade: Composicao).Value!;
-        processo.DefinirDocumentosExigidos([repetido, NoExigencia.CriarFolha(avulso, 1).Value!], PrecondicaoIfMatch.Ausente)
+        processo.DefinirDocumentosExigidos([repetido, NoExigencia.CriarFolha(avulso, 1).Value!])
             .IsSuccess.Should().BeTrue();
 
-        RegrasDasExigencias.CamposDaRepeticao(EstadoDaConfiguracao.De(processo), certidao.Id).Should().BeEquivalentTo(["SOB_GUARDA"]);
-        RegrasDasExigencias.CamposDaRepeticao(EstadoDaConfiguracao.De(processo), avulso.Id).Should().BeEmpty();
+        RegrasDasExigencias.CamposDaRepeticao(processo.Declaracao(), certidao.Id).Should().BeEquivalentTo(["SOB_GUARDA"]);
+        RegrasDasExigencias.CamposDaRepeticao(processo.Declaracao(), avulso.Id).Should().BeEmpty();
     }
 }

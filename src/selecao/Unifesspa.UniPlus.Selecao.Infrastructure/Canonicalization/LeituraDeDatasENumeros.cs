@@ -22,7 +22,7 @@ internal static class LeituraDeDatasENumeros
     /// (<c>NotEqual(default(DateOnly))</c>). <c>DadosEdital.Criar</c>, porém, só checa
     /// <c>fim &gt;= inicio</c> — e <c>0001-01-01</c> satisfaz isso. Como o encoder reemite a
     /// data tal qual, um envelope com o período zerado faria round-trip <b>perfeito</b> e
-    /// restauraria um certame cujo período de inscrição é impossível.
+    /// reidrataria um certame cujo período de inscrição é impossível.
     /// </remarks>
     public static DateOnly Data(this LeitorEnvelope leitor, JsonObject pai, string chave, string path)
     {
@@ -95,38 +95,23 @@ internal static class LeituraDeDatasENumeros
     }
 
     /// <summary>
-    /// Instante opcional na forma canônica (RFC 3339, UTC, sem fração —
-    /// <see cref="HashCanonicalComputer.SerializeInstantCanonical"/>), usado pela janela da
-    /// <c>FaseCronograma</c>. <see langword="null"/> quando a chave é
-    /// <c>null</c> — "sem data" é estado válido para fase cuja data é definida na execução.
+    /// Instante opcional na forma canônica do envelope (<see cref="HashCanonicalComputer.CanonicalInstantFormat"/>),
+    /// usado pela janela da fase e da etapa. <see langword="null"/> quando a chave é <c>null</c> — "sem data" é
+    /// estado válido para fase cuja data é definida na execução.
     /// </summary>
     public static DateTimeOffset? InstanteOpcional(this LeitorEnvelope leitor, JsonObject pai, string chave, string path)
     {
-        if (leitor.Falhou)
-        {
-            return null;
-        }
-
         string? texto = leitor.TextoOpcional(pai, chave, path);
         if (leitor.Falhou || texto is null)
         {
             return null;
         }
 
-        if (!DateTimeOffset.TryParseExact(
-                texto, "yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture,
-                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out DateTimeOffset valor))
-        {
-            return leitor.Malformado<DateTimeOffset?>(
-                $"{path}.{chave}", $"esperado um instante canônico ('yyyy-MM-ddTHH:mm:ssZ'), encontrado '{texto}'.");
-        }
-
-        if (!string.Equals(HashCanonicalComputer.SerializeInstantCanonical(valor), texto, StringComparison.Ordinal))
-        {
-            return leitor.Malformado<DateTimeOffset?>($"{path}.{chave}", "o instante não está na forma canônica.");
-        }
-
-        return valor;
+        return HashCanonicalComputer.TryParseInstantCanonical(texto, out DateTimeOffset valor)
+            ? valor
+            : leitor.Malformado<DateTimeOffset?>(
+                $"{path}.{chave}",
+                $"esperado um instante canônico ('{HashCanonicalComputer.CanonicalInstantFormat}'), encontrado '{texto}'.");
     }
 
     public static bool Booleano(this LeitorEnvelope leitor, JsonObject pai, string chave, string path)

@@ -21,7 +21,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <see cref="RecorteDeCompetencia"/> as duas são a mesma linha repetida. Quando o recorte
 /// é obrigatório e quando dois recortes se confundem é invariante da FASE, que enxerga
 /// todas as bancas de uma vez:
-/// <see cref="FaseCronograma.ViolacoesDoRecorteDeCompetencia(string, System.Collections.Generic.IReadOnlyList{BancaRequerida})"/>.
+/// <see cref="ProcessosSeletivos.Cronograma.RecorteDeCompetenciaDasBancas.Violacoes"/>.
 /// </para>
 /// </remarks>
 public sealed class BancaRequerida : EntityBase

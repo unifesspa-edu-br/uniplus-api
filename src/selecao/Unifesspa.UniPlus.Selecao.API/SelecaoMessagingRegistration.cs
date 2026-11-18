@@ -12,6 +12,7 @@ using Serilog;
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging.SchemaRegistry;
 using Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosDaInscricao;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Application.Commands.Rascunhos;
 using Unifesspa.UniPlus.Selecao.Domain.Events;
 using Unifesspa.UniPlus.Verificador.Contratos;
 
@@ -93,6 +94,7 @@ public static partial class SelecaoMessagingRegistration
 
         ConfigurarFilaDosEventosDoProcesso(opts);
         ConfigurarFilaDaCopiaAoAcervo(opts);
+        ConfigurarFilaDaRemocaoDosArquivosDoRascunho(opts);
         ConfigurarVerificacaoDosArquivos(opts, configuration);
         ConfigurarPublicacaoAvroNoKafka(opts, configuration, srClient);
     }
@@ -114,6 +116,21 @@ public static partial class SelecaoMessagingRegistration
         opts.PublishMessage<CopiarDocumentosDoAtoAoAcervo>().ToPostgresqlQueue("selecao-copia-ao-acervo");
         opts.ListenToPostgresqlQueue("selecao-copia-ao-acervo");
         opts.Policies.Add<ReentregaDaCopiaAoAcervo>();
+    }
+
+    /// <summary>
+    /// A remoção dos objetos do armazenamento de um rascunho excluído sai pelo outbox, na transação que apagou o rascunho
+    /// e os documentos dele, e é entregue só depois de a URL de envio expirar e da tolerância dos pendentes vencidos
+    /// (<see cref="RemoverArquivosDoRascunhoExcluido.Atraso"/>): um <c>PUT</c> pré-assinado ainda pode chegar até lá.
+    /// Fila PostgreSQL, e não local, pelo mesmo motivo da cópia ao acervo: a agenda precisa sobreviver a um reinício.
+    /// </summary>
+    private static void ConfigurarFilaDaRemocaoDosArquivosDoRascunho(WolverineOptions opts)
+    {
+        opts.PublishMessage<RemoverArquivosDoRascunhoExcluido>()
+            .ToPostgresqlQueue("selecao-remocao-arquivos-rascunho")
+            .CustomizeOutgoing(static envelope => envelope.ScheduleDelayed(RemoverArquivosDoRascunhoExcluido.Atraso));
+        opts.ListenToPostgresqlQueue("selecao-remocao-arquivos-rascunho");
+        opts.Policies.Add<ReentregaDaRemocaoDosArquivosDoRascunho>();
     }
 
     /// <summary>

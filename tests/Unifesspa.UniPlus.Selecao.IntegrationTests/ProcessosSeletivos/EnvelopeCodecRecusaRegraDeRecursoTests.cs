@@ -25,7 +25,7 @@ public sealed class EnvelopeCodecRecusaRegraDeRecursoTests
     /// O prazo de interposição em unidade não declarável entra pela reidratação, não pelo
     /// HTTP: quem chega pela API é barrado pelo validator do comando, mas o codec chama
     /// <c>RegraRecursoFase.Criar</c> direto. Sem a invariante na entidade, um envelope com
-    /// <c>Nenhuma</c> — que é o valor zero do enum, e portanto o default de qualquer args
+    /// <c>Nenhuma</c> — que é o valor zero do enum, e portanto o default de qualquer conjunto de parâmetros
     /// construído sem preencher a unidade — reidrataria num agregado cujo prazo não conta
     /// em unidade alguma.
     /// </summary>
@@ -33,7 +33,7 @@ public sealed class EnvelopeCodecRecusaRegraDeRecursoTests
     public void RegraRecursoComPrazoSemUnidadeDeclaravel_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-            ArgsDaRegraDeRecurso(envelope)["prazoUnidade"] = nameof(UnidadePrazo.Nenhuma));
+            ParametrosDaRegraDeRecurso(envelope)["prazoUnidade"] = nameof(UnidadePrazo.Nenhuma));
 
         resultado.IsFailure.Should().BeTrue(
             "a unidade do prazo é o que decide quando a janela do candidato fecha; sem ela o prazo não conta");
@@ -47,7 +47,7 @@ public sealed class EnvelopeCodecRecusaRegraDeRecursoTests
             // O decimal trafega como texto canônico de 4 casas, como o resto do envelope —
             // um número JSON aqui seria recusado pela gramática antes de a entidade opinar,
             // e o teste passaria pelo motivo errado.
-            ArgsDaRegraDeRecurso(envelope)["prazoValor"] = "0.0000");
+            ParametrosDaRegraDeRecurso(envelope)["prazoValor"] = "0.0000");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RegraRecursoFase.PrazoNaoPositivo");
@@ -57,7 +57,7 @@ public sealed class EnvelopeCodecRecusaRegraDeRecursoTests
     public void RegraRecursoComSuspensividadePelaMetade_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-            ArgsDaRegraDeRecurso(envelope)["suspensividadePrimeiraInstanciaUnidade"] = null);
+            ParametrosDaRegraDeRecurso(envelope)["suspensividadePrimeiraInstanciaUnidade"] = null);
 
         resultado.IsFailure.Should().BeTrue(
             "o valor sobreviveu e a unidade sumiu — o par deixou de dizer em que relógio a janela corre");
@@ -76,7 +76,7 @@ public sealed class EnvelopeCodecRecusaRegraDeRecursoTests
     /// assim pela primeira vez.
     /// </para>
     /// <para>
-    /// O decodificador confere forma e precisão dos args, não as invariantes deles. Sem a
+    /// O decodificador confere forma e precisão dos parâmetros, não as invariantes deles. Sem a
     /// validação na reidratação, quem controla os bytes controla o prazo — e o descarte de uma
     /// retificação reporia um certame cujo prazo recursal é zero.
     /// </para>
@@ -85,7 +85,7 @@ public sealed class EnvelopeCodecRecusaRegraDeRecursoTests
     public void RecursoDaEtapaComPrazoZero_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-            ArgsDoRecursoDaEtapa(envelope)["prazoValor"] = "0.0000");
+            ParametrosDoRecursoDaEtapa(envelope)["prazoValor"] = "0.0000");
 
         resultado.IsFailure.Should().BeTrue(
             "prazo não positivo é invariante do domínio, e vale igual em quem escreve e em quem repõe");
@@ -98,7 +98,7 @@ public sealed class EnvelopeCodecRecusaRegraDeRecursoTests
     public void RegraRecursoSemAdmiteInstanciaSuperior_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-            ArgsDaRegraDeRecurso(envelope).Remove("admiteInstanciaSuperior"));
+            ParametrosDaRegraDeRecurso(envelope).Remove("admiteInstanciaSuperior"));
 
         resultado.IsFailure.Should().BeTrue(
             "a ausência lida como falso congelaria o recurso como terminando na 1ª instância sem que o edital o tenha dito");
@@ -250,25 +250,25 @@ public sealed class EnvelopeCodecRecusaRegraDeRecursoTests
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
-    private static JsonObject ArgsDoRecursoDaEtapa(JsonObject envelope) =>
+    private static JsonObject ParametrosDoRecursoDaEtapa(JsonObject envelope) =>
         envelope["etapas"]!.AsArray()
             .Select(e => e!.AsObject())
             .SelectMany(e => e["recursos"]!.AsArray().Select(r => r!.AsObject()))
-            .First(r => r["ancora"]!.GetValue<string>() == "AtoPublicado")["args"]!
+            .First(r => r["ancora"]!.GetValue<string>() == "AtoPublicado")["parametros"]!
             .AsObject();
 
     /// <summary>
-    /// Os <c>args</c> da regra de recurso da única fase do corpus que a declara. Localizada
+    /// Os <c>parametros</c> da regra de recurso da única fase do corpus que a declara. Localizada
     /// pela presença do bloco, não por índice fixo: uma fase nova no corpus deslocaria o
     /// índice e faria os testes acima passarem a adulterar outra coisa.
     /// </summary>
-    private static JsonObject ArgsDaRegraDeRecurso(JsonObject envelope)
+    private static JsonObject ParametrosDaRegraDeRecurso(JsonObject envelope)
     {
         JsonObject fase = envelope["cronogramaFases"]!["fases"]!.AsArray()
             .Select(f => f!.AsObject())
             .Single(f => f["regraRecurso"] is JsonObject);
 
-        return fase["regraRecurso"]!["args"]!.AsObject();
+        return fase["regraRecurso"]!["parametros"]!.AsObject();
     }
 
     private static void AncorarORecursoEmProdutoDeOutraFase(JsonObject envelope)

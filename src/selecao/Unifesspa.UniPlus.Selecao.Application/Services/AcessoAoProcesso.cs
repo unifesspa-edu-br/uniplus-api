@@ -149,20 +149,21 @@ public static class AcessoAoProcesso
     }
 
     /// <summary>
-    /// Decide a permissão sobre o processo. O processo que não existe nunca é permitido: não há unidade dona, e a
-    /// resposta é a mesma de quem não tem a permissão, para não revelar que o processo existe.
+    /// Decide a permissão sobre o processo, ou sobre o rascunho que ainda não virou processo: a unidade dona é a da linha
+    /// de um ou do outro. O que não existe nunca é permitido: não há unidade dona, e a resposta é a mesma de quem não tem
+    /// a permissão, para não revelar que o processo existe.
     /// </summary>
     public static async Task<ResultadoDoAcesso> VerificarAsync(
         IVerificadorDeAcesso verificador,
-        IProcessoSeletivoRepository processos,
+        IUnidadeDonaDoProcesso unidades,
         Guid processoId,
         PermissaoSelecao permissao,
         Func<Guid, ResourceContext> resource,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(processos);
+        ArgumentNullException.ThrowIfNull(unidades);
 
-        Guid? unidade = await processos.ObterUnidadeAdministradoraAsync(processoId, cancellationToken).ConfigureAwait(false);
+        Guid? unidade = await unidades.DoProcessoAsync(processoId, cancellationToken).ConfigureAwait(false);
         return await ExigirNaUnidadeAsync(verificador, unidade, permissao, resource, cancellationToken).ConfigureAwait(false);
     }
 
@@ -284,6 +285,35 @@ public static class AcessoAoProcesso
                 verificador, unidadeId, PermissaoSelecao.ProcessosConfigurar, unidade => ResourceDoProcesso(unidade, processoId),
                 cancellationToken)
             .ConfigureAwait(false) == ResultadoDoAcesso.Permitido;
+
+    /// <summary>
+    /// A recusa do processo que não existe e a de quem não o alcança: a mesma, para o acesso negado não revelar que o
+    /// processo existe.
+    /// </summary>
+    public static DomainError NaoEncontrado(Guid processoId) =>
+        new("ProcessoSeletivo.NaoEncontrado", $"Processo Seletivo {processoId} não encontrado.");
+
+    /// <summary>
+    /// Confere <see cref="PermissaoSelecao.ProcessosConfigurar"/> na unidade que o processo carregado tem agora. O filtro
+    /// da rota decidiu sobre a unidade que a linha tinha antes do handler; se ela mudou nesse intervalo, esta conferência
+    /// impede que a autorização obsoleta alcance o conteúdo. A recusa é a do filtro: <c>404</c> para quem não tem a
+    /// permissão na unidade atual, e as demais recusas de <see cref="Recusa"/>.
+    /// </summary>
+    public static async Task<Result> ExigirConfigurarNaUnidadeAtualAsync(
+        IVerificadorDeAcesso verificador, Guid unidadeId, Guid processoId, CancellationToken cancellationToken)
+    {
+        ResultadoDoAcesso acesso = await ExigirNaUnidadeAsync(
+                verificador, unidadeId, PermissaoSelecao.ProcessosConfigurar,
+                unidade => ResourceDoProcesso(unidade, processoId), cancellationToken)
+            .ConfigureAwait(false);
+
+        return acesso switch
+        {
+            ResultadoDoAcesso.Permitido => Result.Success(),
+            ResultadoDoAcesso.Negado => Result.Failure(NaoEncontrado(processoId)),
+            _ => Result.Failure(Recusa(acesso)),
+        };
+    }
 
     /// <summary>O erro com que um handler recusa o acesso que o ponto de decisão não permitiu.</summary>
     public static DomainError Recusa(ResultadoDoAcesso resultado) => resultado switch

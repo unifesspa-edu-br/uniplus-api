@@ -104,6 +104,8 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             u.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
             u.Property(x => x.Sigla).HasColumnName("unidade_administradora_sigla").HasMaxLength(50).IsRequired()
                 .HasComment("Snapshot-copy da sigla da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
+            u.Property(x => x.Codigo).HasColumnName("unidade_administradora_codigo").HasMaxLength(50).IsRequired()
+                .HasComment("Snapshot-copy do código da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
             u.Property(x => x.Slug).HasColumnName("unidade_administradora_slug").HasMaxLength(64).IsRequired()
                 .HasComment("Snapshot-copy do slug da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
             u.Property(x => x.Nome).HasColumnName("unidade_administradora_nome").HasMaxLength(250).IsRequired()
@@ -331,15 +333,6 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             referencia.Property(r => r.Data).HasColumnName("referencia_temporal_fatos_data");
             referencia.Property(r => r.FaseId).HasColumnName("referencia_temporal_fatos_fase_id");
         });
-
-        // A sessão editorial (ADR-0110 D3) — 1:1, como as demais filhas singulares. Ela é
-        // efêmera (apagada no fechamento e no descarte) e não é evidência forense: a
-        // auditoria com peso jurídico vive na VersaoConfiguracao, que é append-only.
-        builder.HasOne(p => p.Rascunho)
-            .WithOne()
-            .HasForeignKey<RascunhoRetificacao>(r => r.ProcessoSeletivoId)
-            .HasConstraintName("fk_rascunhos_retificacao_processo_seletivo")
-            .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(p => p.Etapas)
             .UsePropertyAccessMode(PropertyAccessMode.Field);

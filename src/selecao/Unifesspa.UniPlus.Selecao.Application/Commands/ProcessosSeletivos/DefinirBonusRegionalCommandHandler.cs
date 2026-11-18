@@ -25,7 +25,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// </remarks>
 public static class DefinirBonusRegionalCommandHandler
 {
-    public static async Task<Result<MutacaoAceita>> Handle(
+    public static async Task<Result> Handle(
         DefinirBonusRegionalCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IRegraCatalogoReader regraCatalogoReader,
@@ -44,124 +44,167 @@ public static class DefinirBonusRegionalCommandHandler
             .ConfigureAwait(false);
         if (processo is null)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 "ProcessoSeletivo.NaoEncontrado",
                 $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
         }
 
-        // A precondição é conferida AQUI, logo depois do 404 e antes das regras de negócio
-        // que este handler avalia (existência de cadastros, coerência de referências): ela
-        // as precede na ordem da ADR-0110 D9. Um cliente com If-Match defasado tem de saber
-        // disso antes de sair caçando um cadastro que ele não errou.
-        //
-        // O que ela NÃO precede é a validação de SCHEMA do payload: o FluentValidation roda
-        // como middleware do Wolverine, antes deste handler, e um command malformado morre
-        // ali com 422 sem que o guard chegue a rodar. É desvio consciente da D9 — corrigi-lo
-        // exigiria carregar o agregado no middleware, o que é pior. O custo é uma rodada
-        // extra para quem erra as DUAS coisas ao mesmo tempo; nenhum estado é corrompido.
-        //
-        // O mesmo guard continua dentro do Definir* do domínio: esta antecipação dá a ordem,
-        // não a garantia.
-        if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
+        // Fora do rascunho a recusa vem antes de consultar cadastros.
+        if (processo.MutacaoBloqueada() is { } bloqueio)
         {
-            return Result<MutacaoAceita>.Failure(bloqueio);
+            return Result.Failure(bloqueio);
         }
 
-        if (!command.Aplica)
+        return command.Aplica
+            ? await AplicarAsync(command, processo, regraCatalogoReader, baseLegalBonusRegionalReader, unitOfWork, cancellationToken)
+                .ConfigureAwait(false)
+            : await NaoAplicarAsync(command, processo, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result> NaoAplicarAsync(
+        DefinirBonusRegionalCommand command,
+        ProcessoSeletivo processo,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
+        if (command.TemConfiguracaoDoBonus)
         {
-            // Qualquer campo do bônus enviado contradiz a declaração: descartá-lo em silêncio
-            // esconderia um payload mal formado.
-            if (command.RegraCodigo is not null || command.RegraVersao is not null || command.Fator is not null
-                || command.Teto is not null || command.FatoElegibilidadeCodigo is not null || command.BaseLegalBonusRegionalId is not null)
-            {
-                return Result<MutacaoAceita>.Failure(new DomainError(
-                    ProcessoSeletivoErrorCodes.BonusRegionalNaoAplicaComConfiguracao,
-                    "O processo que não aplica o bônus regional não pode ter a configuração do bônus."));
-            }
-
-            Result naoAplicaResult = processo.DefinirBonusRegional(aplica: false, bonus: null, command.Precondicao);
-            if (naoAplicaResult.IsFailure)
-            {
-                return Result<MutacaoAceita>.Failure(naoAplicaResult.Error!);
-            }
-
-            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-            return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+            return Result.Failure(new DomainError(
+                ProcessoSeletivoErrorCodes.BonusRegionalNaoAplicaComConfiguracao,
+                "O processo que não aplica o bônus regional não pode ter a configuração do bônus."));
         }
 
-        if (command.RegraCodigo is null)
+        return await DefinirESalvarAsync(processo, aplica: false, bonus: null, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result> AplicarAsync(
+        DefinirBonusRegionalCommand command,
+        ProcessoSeletivo processo,
+        IRegraCatalogoReader regraCatalogoReader,
+        IBaseLegalBonusRegionalReader baseLegalBonusRegionalReader,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
+        ConfiguracaoDeclarada? declarada = ConfiguracaoDeclarada.De(command);
+        if (declarada is null)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
-                ProcessoSeletivoErrorCodes.BonusRegionalAplicaSemConfiguracao,
-                "O processo que aplica o bônus regional precisa da configuração do bônus."));
+            return Result.Failure(RecusaDaDeclaracaoIncompleta(command));
         }
 
-        if (command.RegraVersao is null || command.Fator is null || command.BaseLegalBonusRegionalId is null)
-        {
-            return Result<MutacaoAceita>.Failure(new DomainError(
-                "ConfiguracaoBonusRegional.CamposObrigatorios",
-                "RegraVersao, Fator e BaseLegalBonusRegionalId são obrigatórios quando RegraCodigo é informado."));
-        }
-
-        RegraCatalogo? regra = await regraCatalogoReader
-            .ObterAsync(command.RegraCodigo, command.RegraVersao, cancellationToken)
+        Result<ConfiguracaoBonusRegional> bonus = await ResolverAsync(declarada, regraCatalogoReader, baseLegalBonusRegionalReader, cancellationToken)
             .ConfigureAwait(false);
-        if (regra is null)
+        if (bonus.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
-                "ConfiguracaoBonusRegional.RegraNaoEncontrada",
-                $"Regra de bônus {command.RegraCodigo}/{command.RegraVersao} não encontrada no catálogo de regras."));
+            return Result.ValidationFailure(bonus.Errors);
         }
 
-        if (regra.Tipo != TipoRegra.RegraBonus)
-        {
-            return Result<MutacaoAceita>.Failure(new DomainError(
-                "ConfiguracaoBonusRegional.RegraTipoInvalido",
-                $"A regra {command.RegraCodigo}/{command.RegraVersao} não é do tipo regra_bonus."));
-        }
+        return await DefinirESalvarAsync(processo, aplica: true, bonus.Value, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
 
-        Result<ReferenciaRegra> referenciaRegraResult = ReferenciaRegra.Criar(regra.Codigo, regra.Versao, regra.Hash);
-        if (referenciaRegraResult.IsFailure)
+    private static async Task<Result> DefinirESalvarAsync(
+        ProcessoSeletivo processo, bool aplica, ConfiguracaoBonusRegional? bonus, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
+        Result definido = processo.DefinirBonusRegional(aplica, bonus);
+        if (definido.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(referenciaRegraResult.Error!);
-        }
-
-        // Reader cross-módulo (ADR-0056): o filtro global de soft-delete de Configuração já
-        // faz um Id inexistente e um desativado colapsarem no mesmo null — CA-02 não precisa
-        // distinguir os dois casos.
-        BaseLegalBonusRegionalView? baseLegal = await baseLegalBonusRegionalReader
-            .ObterPorIdAsync(command.BaseLegalBonusRegionalId.Value, cancellationToken)
-            .ConfigureAwait(false);
-        if (baseLegal is null)
-        {
-            return Result<MutacaoAceita>.Failure(new DomainError(
-                "ConfiguracaoBonusRegional.BaseLegalNaoEncontrada",
-                $"Base legal de bônus regional {command.BaseLegalBonusRegionalId} não encontrada ou desativada."));
-        }
-
-        Result<ConfiguracaoBonusRegional> bonusResult = ConfiguracaoBonusRegional.Criar(
-            referenciaRegraResult.Value!,
-            command.Fator.Value,
-            command.Teto,
-            command.FatoElegibilidadeCodigo,
-            baseLegal.Id,
-            baseLegal.TipoInstrumento,
-            baseLegal.Identificacao,
-            baseLegal.Descricao,
-            baseLegal.Municipios.Select(static m => (m.CodigoIbge, m.Nome, m.Uf)));
-        if (bonusResult.IsFailure)
-        {
-            return Result<MutacaoAceita>.ValidationFailure(bonusResult.Errors);
-        }
-
-        Result definirResult = processo.DefinirBonusRegional(aplica: true, bonusResult.Value!, command.Precondicao);
-        if (definirResult.IsFailure)
-        {
-            return Result<MutacaoAceita>.Failure(definirResult.Error!);
+            return Result.Failure(definido.Error!);
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        return Result.Success();
+    }
 
-        return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+    private static async Task<Result<ConfiguracaoBonusRegional>> ResolverAsync(
+        ConfiguracaoDeclarada declarada,
+        IRegraCatalogoReader regraCatalogoReader,
+        IBaseLegalBonusRegionalReader baseLegalBonusRegionalReader,
+        CancellationToken cancellationToken)
+    {
+        Result<ReferenciaRegra> regra = await ResolverRegraAsync(declarada, regraCatalogoReader, cancellationToken).ConfigureAwait(false);
+        if (regra.IsFailure)
+        {
+            return Result<ConfiguracaoBonusRegional>.Failure(regra.Error!);
+        }
+
+        Result<BaseLegalCongelada> baseLegal = await ResolverBaseLegalAsync(declarada.BaseLegalId, baseLegalBonusRegionalReader, cancellationToken)
+            .ConfigureAwait(false);
+        if (baseLegal.IsFailure)
+        {
+            return Result<ConfiguracaoBonusRegional>.Failure(baseLegal.Error!);
+        }
+
+        return ConfiguracaoBonusRegional.Criar(regra.Value!, declarada.Fator, declarada.Teto, declarada.FatoElegibilidadeCodigo, baseLegal.Value!);
+    }
+
+    private static async Task<Result<ReferenciaRegra>> ResolverRegraAsync(
+        ConfiguracaoDeclarada declarada, IRegraCatalogoReader regraCatalogoReader, CancellationToken cancellationToken)
+    {
+        RegraCatalogo? regra = await regraCatalogoReader
+            .ObterAsync(declarada.RegraCodigo, declarada.RegraVersao, cancellationToken)
+            .ConfigureAwait(false);
+
+        return regra switch
+        {
+            null => Falha<ReferenciaRegra>(
+                "ConfiguracaoBonusRegional.RegraNaoEncontrada",
+                $"Regra de bônus {declarada.RegraCodigo}/{declarada.RegraVersao} não encontrada no catálogo de regras."),
+            { Tipo: not TipoRegra.RegraBonus } => Falha<ReferenciaRegra>(
+                "ConfiguracaoBonusRegional.RegraTipoInvalido",
+                $"A regra {declarada.RegraCodigo}/{declarada.RegraVersao} não é do tipo regra_bonus."),
+            _ => Result<ReferenciaRegra>.Success(regra.Referencia()),
+        };
+    }
+
+    /// <summary>
+    /// Reader cross-módulo (ADR-0056): o filtro global de soft-delete de Configuração já faz um Id inexistente e um
+    /// desativado colapsarem no mesmo null — CA-02 não precisa distinguir os dois casos.
+    /// </summary>
+    private static async Task<Result<BaseLegalCongelada>> ResolverBaseLegalAsync(
+        Guid baseLegalId, IBaseLegalBonusRegionalReader baseLegalBonusRegionalReader, CancellationToken cancellationToken)
+    {
+        BaseLegalBonusRegionalView? baseLegal = await baseLegalBonusRegionalReader
+            .ObterPorIdAsync(baseLegalId, cancellationToken)
+            .ConfigureAwait(false);
+
+        return baseLegal is null
+            ? Falha<BaseLegalCongelada>(
+                "ConfiguracaoBonusRegional.BaseLegalNaoEncontrada",
+                $"Base legal de bônus regional {baseLegalId} não encontrada ou desativada.")
+            : Result<BaseLegalCongelada>.Success(Congelar(baseLegal));
+    }
+
+    private static DomainError RecusaDaDeclaracaoIncompleta(DefinirBonusRegionalCommand command) =>
+        command.RegraCodigo is null
+            ? new(
+                ProcessoSeletivoErrorCodes.BonusRegionalAplicaSemConfiguracao,
+                "O processo que aplica o bônus regional precisa da configuração do bônus.")
+            : new(
+                "ConfiguracaoBonusRegional.CamposObrigatorios",
+                "RegraVersao, Fator e BaseLegalBonusRegionalId são obrigatórios quando RegraCodigo é informado.");
+
+    private static Result<T> Falha<T>(string codigo, string mensagem) => Result<T>.Failure(new DomainError(codigo, mensagem));
+
+    private static BaseLegalCongelada Congelar(BaseLegalBonusRegionalView baseLegal) =>
+        new(
+            baseLegal.Id,
+            baseLegal.Codigo,
+            baseLegal.TipoInstrumento,
+            baseLegal.Identificacao,
+            baseLegal.Descricao,
+            [.. baseLegal.Municipios.Select(static m => (m.CodigoIbge, m.Nome, m.Uf))]);
+
+    /// <summary>A configuração do bônus com todos os campos que o processo que o aplica precisa declarar.</summary>
+    private sealed record ConfiguracaoDeclarada(
+        string RegraCodigo,
+        string RegraVersao,
+        decimal Fator,
+        decimal? Teto,
+        string? FatoElegibilidadeCodigo,
+        Guid BaseLegalId)
+    {
+        public static ConfiguracaoDeclarada? De(DefinirBonusRegionalCommand command) =>
+            command is { RegraCodigo: { } codigo, RegraVersao: { } versao, Fator: { } fator, BaseLegalBonusRegionalId: { } baseLegalId }
+                ? new(codigo, versao, fator, command.Teto, command.FatoElegibilidadeCodigo, baseLegalId)
+                : null;
     }
 }

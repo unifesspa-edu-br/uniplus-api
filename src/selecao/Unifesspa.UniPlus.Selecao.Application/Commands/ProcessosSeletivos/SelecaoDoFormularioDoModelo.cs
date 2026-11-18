@@ -24,7 +24,7 @@ internal sealed class SelecaoDoFormularioDoModelo(
     ContextoDoCatalogo contexto,
     RelatorioDaAplicacaoDoModelo relatorio)
 {
-    private readonly IReadOnlySet<string> _vinculados = ReferenciasVivas.Vinculos(EstadoDaConfiguracao.De(processo)).Fatos;
+    private readonly IReadOnlySet<string> _vinculados = ReferenciasVivas.Vinculos(processo.Declaracao()).Fatos;
 
     /// <summary>Copia as partes do formulário; as recusas vêm já na posição do modelo.</summary>
     public FormularioSelecionado Copiar(ConteudoDoModeloInput conteudo)

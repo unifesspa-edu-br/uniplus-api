@@ -27,4 +27,14 @@ public interface IUnidadeReader
     Task<UnidadeView?> ObterPorIdAsync(
         Guid id,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Obtém a Unidade viva que tem hoje o <paramref name="codigo"/>, ou <see langword="null"/> se nenhuma tem:
+    /// código que a Unidade já teve e perdeu, ou de Unidade excluída, não resolve. Lê direto do banco, sem o cache
+    /// de <see cref="ListarAtivasAsync"/>, porque quem resolve por código congela o resultado e não pode congelar
+    /// uma Unidade que o cache ainda mostra com o código antigo.
+    /// </summary>
+    Task<UnidadeView?> ObterPorCodigoAsync(
+        string codigo,
+        CancellationToken cancellationToken = default);
 }

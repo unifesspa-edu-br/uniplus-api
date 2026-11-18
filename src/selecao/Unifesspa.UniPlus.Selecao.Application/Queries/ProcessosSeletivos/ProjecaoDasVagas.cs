@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using Domain.Entities;
 using Domain.Enums;
+using Domain.ProcessosSeletivos.Vagas;
 using Domain.ValueObjects;
 
 using DTOs;
@@ -26,21 +27,32 @@ internal static class ProjecaoDasVagas
     /// definição que poderia divergir em silêncio.
     /// </summary>
     internal static ConfiguracaoDistribuicaoVagasDto ProjetarDistribuicao(ConfiguracaoDistribuicaoVagas configuracao) => new(
-        configuracao.Id,
-        configuracao.OfertaCursoOrigemId,
-        configuracao.VoBase,
-        configuracao.Pr,
+        configuracao.Id, configuracao.OfertaCursoOrigemId, configuracao.VagasOfertadasBase, configuracao.PercentualDaReservaLegal,
         ProjecaoDoProcessoSeletivo.Referencia(configuracao.RegraDistribuicao),
+        RegraDistribuicaoVagasCodigo.RamoDe(configuracao.RegraDistribuicao.Codigo),
         configuracao.RegraAjuste is { } regraAjuste ? ProjecaoDoProcessoSeletivo.Referencia(regraAjuste) : null,
+        configuracao.AjusteDoQuadro,
         configuracao.ReferenciaDemografica is { } demografica ? ProjetarReferenciaDemografica(demografica) : null,
         configuracao.GrupoAreaEnem is { } grupo ? new GrupoAreaEnemSnapshotDto(grupo.Codigo, grupo.Rotulo) : null,
         [.. configuracao.Modalidades.Select(ProjetarModalidade)],
         [.. configuracao.VagasOfertadas.Select(v => new VagaOfertadaDto(v.Id, v.ModalidadeOrigemId, v.ModalidadeCodigo, v.Quantidade))],
-        configuracao.VrNominal,
-        configuracao.VrFinal,
-        configuracao.Estouro,
-        configuracao.CapadoEmVo,
-        configuracao.TotalPublicado);
+        configuracao.TotalDeVagasDoEdital,
+        ConferenciaDoQuadro(configuracao.Quadro),
+        AjusteDoQuadroFixado(configuracao.Quadro));
+
+    private static ConferenciaDaReservaLegalDto? ConferenciaDoQuadro(QuadroDeVagas quadro) =>
+        quadro is QuadroDeVagasDaLeiDeCotas { ConferenciaDaReservaLegal: var conferencia }
+            ? new ConferenciaDaReservaLegalDto(
+                conferencia.ReservaLegalNominal, conferencia.ReservaLegalEfetiva,
+                conferencia.ExcedenteSobreAReservaLegal, conferencia.VagasCortadasPorEscassez)
+            : null;
+
+    private static AjusteDoQuadroFixadoDto? AjusteDoQuadroFixado(QuadroDeVagas quadro) =>
+        quadro is QuadroDeVagasFixadoNoEdital fixado
+            ? new AjusteDoQuadroFixadoDto(
+                [.. fixado.VagasRetiradasNoAjuste.Select(static v => new VagasRetiradasDaModalidadeDto(v.ModalidadeCodigo, v.Quantidade))],
+                fixado.TotalDeVagasRetiradasNoAjuste)
+            : null;
 
     private static ReferenciaReservaDemograficaSnapshotDto ProjetarReferenciaDemografica(ReferenciaReservaDemograficaSnapshot demografica) => new(
         demografica.OrigemId,

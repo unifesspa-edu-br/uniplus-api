@@ -95,7 +95,7 @@ public sealed class HeadersDoContratoExpostosTests
     private sealed class ControllerQueDeclaraLocation
     {
         [EmiteHeader("Location", "Endereço do recurso criado.", Status = "201")]
-        [EmiteETag]
+        [EmiteETag(Descricao = "Selo da representação.")]
         public static void Criar()
         {
         }

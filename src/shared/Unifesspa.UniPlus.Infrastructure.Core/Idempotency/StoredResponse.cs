@@ -21,7 +21,7 @@ internal static class StoredResponse
 
     /// <summary>
     /// Serializa os headers que o replay devolve: Content-Type, Location e ETag. Os demais ficam de fora por dependerem do
-    /// contexto (Set-Cookie, traceId). O ETag é a precondição da chamada seguinte numa sessão editorial (ADR-0110 D5): um
+    /// contexto (Set-Cookie, traceId). O ETag é a precondição da chamada seguinte à inscrição: um
     /// replay que devolvesse 201 sem ele deixaria o cliente sem como mutar. Ele descreve o estado que esta resposta gravada
     /// representa, que é exatamente o que o replay reproduz.
     /// </summary>

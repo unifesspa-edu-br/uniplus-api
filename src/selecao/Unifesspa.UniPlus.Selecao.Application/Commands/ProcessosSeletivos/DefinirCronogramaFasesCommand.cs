@@ -24,6 +24,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// virava <c>false</c> em silêncio, e o edital seria congelado afirmando que o recurso termina
 /// na 1ª instância sem que ninguém tivesse decidido isso.
 /// </param>
+/// <param name="Procedimentos">Como o recurso de cada matéria que a fase produz é revisado.</param>
 public sealed record RegraRecursoFaseInput(
     string RegraCodigo,
     string RegraVersao,
@@ -34,7 +35,8 @@ public sealed record RegraRecursoFaseInput(
     UnidadePrazo? SuspensividadePrimeiraInstanciaUnidade,
     [property: JsonRequired] bool AdmiteInstanciaSuperior,
     decimal? SuspensividadeSegundaInstanciaValor,
-    UnidadePrazo? SuspensividadeSegundaInstanciaUnidade);
+    UnidadePrazo? SuspensividadeSegundaInstanciaUnidade,
+    IReadOnlyList<ProcedimentoDeRecursoInput>? Procedimentos = null);
 
 /// <summary>
 /// Entrada de um produto publicado pela fase, usada por <see cref="FaseCronogramaInput"/>.
@@ -88,6 +90,15 @@ public sealed record BancaRequeridaInput(
 /// a retificação a exigem. O handler a resolve pela porta <c>IResolvedorDaUnidadeResponsavel</c> e congela id, sigla
 /// e nome por valor (snapshot-copy, ADR-0061).
 /// </param>
+/// <param name="TiposDeDecisao">
+/// Os tipos de decisão que a fase declara produzir, como o cliente os escreveu. Ausente ou vazio: nenhum. A
+/// ordem não importa, e a leitura os devolve em ordem canônica. Tirar um tipo mantém os motivos escolhidos daquele tipo: o
+/// congelamento da versão recusa até que sejam retirados ou o tipo volte a ser declarado.
+/// </param>
+/// <param name="RegraDeHomologacao">
+/// A regra com que a fase homologa as inscrições. Ausente: a fase não homologa, e a substituição do cronograma remove a regra
+/// que a fase tinha; o cliente devolve a regra que leu.
+/// </param>
 public sealed record FaseCronogramaInput(
     int Ordem,
     Guid FaseCanonicaId,
@@ -98,7 +109,9 @@ public sealed record FaseCronogramaInput(
     bool EmiteParecerIndividual,
     IReadOnlyList<BancaRequeridaInput> BancasRequeridas,
     RegraRecursoFaseInput? RegraRecurso,
-    Guid? UnidadeResponsavelId = null);
+    Guid? UnidadeResponsavelId = null,
+    IReadOnlyList<string?>? TiposDeDecisao = null,
+    RegraDeHomologacaoInput? RegraDeHomologacao = null);
 
 /// <summary>
 /// Substitui integralmente o cronograma de fases do processo (Story #851, CA-06):
@@ -110,5 +123,4 @@ public sealed record FaseCronogramaInput(
 /// </summary>
 public sealed record DefinirCronogramaFasesCommand(
     Guid ProcessoSeletivoId,
-    IReadOnlyList<FaseCronogramaInput> Fases,
-    PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;
+    IReadOnlyList<FaseCronogramaInput> Fases) : ICommand<Result>;

@@ -32,31 +32,45 @@ internal static class ConferenciaDeColetabilidadeDeFatos
         ProcessoSeletivo processo,
         IReadOnlyDictionary<string, FatoCandidatoView> catalogo)
     {
-        ArgumentNullException.ThrowIfNull(processo);
+        IReadOnlyList<FieldError> recusas = Recusas(NaoColetaveis(processo, catalogo));
+
+        return recusas.Count > 0 ? Result.ValidationFailure(recusas) : Result.Success();
+    }
+
+    /// <summary>
+    /// Todo fato coletado que o catálogo não deixa coletar, com o caminho dele no documento, na ordem do documento: por formulário,
+    /// os itens e depois os campos dos grupos repetíveis, que coletam fato de membro (UNI-REQ-0146).
+    /// </summary>
+    public static IReadOnlyList<ItemNoDocumento> NaoColetaveis(
+        ProcessoSeletivo processo,
+        IReadOnlyDictionary<string, FatoCandidatoView> catalogo)
+    {
         ArgumentNullException.ThrowIfNull(catalogo);
 
-        // O item coleta fato do candidato; o campo de grupo repetível, fato de membro (UNI-REQ-0146).
-        FatoColetado? naoColetavel = processo.FatosColetados
-            .OrderBy(static f => f.Finalidade)
-            .ThenBy(static f => f.Ordem)
-            .FirstOrDefault(f => !catalogo.TryGetValue(f.FatoCodigo, out FatoCandidatoView? fato)
-                || !ConferenciaNoCatalogo.EhColetavel(VocabularioDeFatos.ParaRegras(fato)))
-            ?? processo.GruposColetados
-                .OrderBy(static g => g.Finalidade)
-                .ThenBy(static g => g.Ordem)
-                .SelectMany(static g => g.Subitens.OrderBy(static s => s.Ordem))
-                .FirstOrDefault(f => !catalogo.TryGetValue(f.FatoCodigo, out FatoCandidatoView? fato)
-                    || !ConferenciaNoCatalogo.EhColetavelEmGrupo(VocabularioDeFatos.ParaRegras(fato)));
-
-        if (naoColetavel is not null)
-        {
-            return Result.Failure(new DomainError(
-                FatoColetadoNaoMaisDeclarado,
-                $"O fato coletado '{naoColetavel.FatoCodigo}' não é mais coletável no catálogo de fatos do " +
-                "candidato — declarado, do próprio candidato e respondido em campo —; o catálogo mudou depois que este fato foi " +
-                "vinculado ao formulário, e o congelamento não persiste um vínculo que já não é coletável."));
-        }
-
-        return Result.Success();
+        return
+        [
+            .. ItensDoFormularioNoDocumento.De(processo).SelectMany(formulario => NaoColetaveisDoFormulario(formulario, catalogo)),
+        ];
     }
+
+    private static IEnumerable<ItemNoDocumento> NaoColetaveisDoFormulario(
+        FormularioComOsSeusItens formulario, IReadOnlyDictionary<string, FatoCandidatoView> catalogo) =>
+    [
+        .. formulario.Itens.Where(i => !ColetavelNoCatalogo(i.Item, catalogo, ConferenciaNoCatalogo.EhColetavel)),
+        .. formulario.Grupos.SelectMany(static g => g.Campos).Where(c => !ColetavelNoCatalogo(c.Item, catalogo, ConferenciaNoCatalogo.EhColetavelEmGrupo)),
+    ];
+
+    private static bool ColetavelNoCatalogo(
+        FatoColetado coletado,
+        IReadOnlyDictionary<string, FatoCandidatoView> catalogo,
+        Func<FatoDoCatalogo, bool> coletavel) =>
+        catalogo.TryGetValue(coletado.FatoCodigo, out FatoCandidatoView? fato) && coletavel(VocabularioDeFatos.ParaRegras(fato));
+
+    /// <summary>Uma causa por fato que o catálogo deixou de aceitar, no campo do documento que o cita, na ordem recebida.</summary>
+    public static IReadOnlyList<FieldError> Recusas(IEnumerable<ItemNoDocumento> naoColetaveis) =>
+        [.. naoColetaveis.Select(static n => new FieldError($"{n.Caminho}.fatoCodigo", new DomainError(
+            FatoColetadoNaoMaisDeclarado,
+            $"O fato coletado '{n.Item.FatoCodigo}' não é mais coletável no catálogo de fatos do " +
+            "candidato — declarado, do próprio candidato e respondido em campo —; o catálogo mudou depois que este fato foi " +
+            "vinculado ao formulário, e o congelamento não persiste um vínculo que já não é coletável.")))];
 }

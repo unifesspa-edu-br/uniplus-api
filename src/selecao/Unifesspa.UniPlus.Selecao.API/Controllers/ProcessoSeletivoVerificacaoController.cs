@@ -81,7 +81,7 @@ public sealed class ProcessoSeletivoVerificacaoController : ControllerBase
     /// Consulta a conformidade LEGAL do processo contra o catálogo
     /// <c>ObrigatoriedadeLegal</c> vigente na <paramref name="dataReferencia"/> informada —
     /// recurso distinto de <see cref="ObterConformidade"/> (checklist estrutural), com a
-    /// MESMA fonte que o gate de <c>Publicar</c>/<c>Retificar</c>/<c>FecharRetificacao</c>
+    /// MESMA fonte que a conferência de <c>Publicar</c>/<c>Retificar</c>
     /// usa: a regra que aparece reprovada aqui é a mesma que bloqueia a transição.
     /// <para>
     /// 404 só quando o processo não existe. Quando ele existe mas o rascunho ainda não tem de onde

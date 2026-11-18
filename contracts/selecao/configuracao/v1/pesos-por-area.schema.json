@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/pesos-por-area.schema.json",
+  "title": "Grupo de pesos por área",
+  "description": "Os pesos e cortes das áreas do Enem de um grupo, congelados do catálogo. Campo só de leitura: ignorado na importação, porque é congelado do catálogo pela resolução.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "grupoAreaEnemCodigo": {
+      "title": "Grupo",
+      "description": "Código do grupo de áreas do Enem.",
+      "type": "string",
+      "maxLength": 30
+    },
+    "grupoAreaEnemRotulo": {
+      "title": "Rótulo do grupo",
+      "description": "Rótulo do grupo de áreas do Enem.",
+      "type": "string",
+      "maxLength": 60
+    },
+    "baseLegal": {
+      "title": "Base legal",
+      "description": "Base legal do quadro de pesos do grupo.",
+      "type": "string",
+      "maxLength": 500
+    },
+    "areas": {
+      "title": "Áreas",
+      "description": "Peso e corte de cada área do grupo.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/areaDePeso"
+      }
+    }
+  },
+  "$defs": {
+    "areaDePeso": {
+      "title": "Área do Enem",
+      "description": "Peso e corte de uma área do Enem.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "codigo": {
+          "title": "Código",
+          "description": "Código da área.",
+          "type": "string",
+          "maxLength": 30
+        },
+        "rotulo": {
+          "title": "Rótulo",
+          "description": "Rótulo da área.",
+          "type": "string",
+          "maxLength": 100
+        },
+        "peso": {
+          "title": "Peso",
+          "description": "Peso da área na nota.",
+          "type": "number",
+          "minimum": 0,
+          "multipleOf": 0.0001
+        },
+        "corte": {
+          "title": "Corte",
+          "description": "Nota de corte da área, quando houver.",
+          "type": "number",
+          "minimum": 0,
+          "multipleOf": 0.0001,
+          "maximum": 1000
+        }
+      }
+    }
+  }
+}

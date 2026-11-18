@@ -5,8 +5,10 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -30,12 +32,20 @@ internal sealed class TermoConsentimentoConfiguration : IEntityTypeConfiguration
 
         builder.ToTable(
             "termos_de_consentimento",
-            t => t.HasCheckConstraint(
-                "ck_termos_de_consentimento_forma_aceite_rascunho",
-                $"forma_aceite_rascunho IN ({TokensSql(FormasAceite.TokensCanonicos)})"));
+            t =>
+            {
+                t.HasCheckConstraint(
+                    "ck_termos_de_consentimento_forma_aceite_rascunho",
+                    $"forma_aceite_rascunho IN ({TokensSql(FormasAceite.TokensCanonicos)})");
+                t.HasCheckConstraint("ck_termos_de_consentimento_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9_]{1,99}$'");
+            });
         builder.HasKey(t => t.Id);
 
         builder.Property(t => t.Nome).HasMaxLength(NomeMaxLength).IsRequired();
+        builder.Property(t => t.Codigo)
+            .HasConversion<CodigoTermoConsentimentoValueConverter>()
+            .HasMaxLength(CodigoTermoConsentimento.TamanhoMaximo)
+            .IsRequired();
         builder.Property(t => t.TextoRascunho).HasMaxLength(TextoMaxLength);
         builder.Property(t => t.BaseLegalRascunho).HasMaxLength(BaseLegalMaxLength);
 
@@ -78,6 +88,11 @@ internal sealed class TermoConsentimentoConfiguration : IEntityTypeConfiguration
             .OnDelete(DeleteBehavior.ClientNoAction);
         builder.Navigation(t => t.Versoes)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.HasIndex(t => t.Codigo)
+            .IsUnique()
+            .HasFilter("is_deleted = false")
+            .HasDatabaseName(RestricoesDoBanco.TermoDeConsentimentoCodigoVivo);
 
         builder.HasIndex(t => t.Nome)
             .HasFilter("is_deleted = false")

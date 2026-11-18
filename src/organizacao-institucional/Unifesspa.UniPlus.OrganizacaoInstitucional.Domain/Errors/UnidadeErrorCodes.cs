@@ -9,6 +9,7 @@ public static class UnidadeErrorCodes
     public const string SiglaJaExiste = "Unidade.SiglaJaExiste";
     public const string CodigoObrigatorio = "Unidade.CodigoObrigatorio";
     public const string CodigoTamanho = "Unidade.CodigoTamanho";
+    public const string CodigoFormatoInvalido = "Unidade.CodigoFormatoInvalido";
     public const string CodigoJaExiste = "Unidade.CodigoJaExiste";
     public const string SlugObrigatorio = "Unidade.SlugObrigatorio";
     public const string SlugTamanho = "Unidade.SlugTamanho";

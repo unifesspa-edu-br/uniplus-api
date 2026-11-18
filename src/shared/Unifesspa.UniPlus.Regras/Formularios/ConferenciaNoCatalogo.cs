@@ -156,27 +156,31 @@ public static class ConferenciaNoCatalogo
         ArgumentNullException.ThrowIfNull(existentes);
         ArgumentNullException.ThrowIfNull(propostos);
 
-        // Todos os vínculos novos a desativado saem juntos (ADR-0125), em ordem estável: fatos, depois valores.
-        List<FieldError> erros = [.. propostos.Fatos
-            .Where(fato => !existentes.Fatos.Contains(fato) && catalogo.TryGetValue(fato, out FatoDoCatalogo? doCatalogo) && !doCatalogo.Ativo)
-            .Order(StringComparer.Ordinal)
-            .Select(static fato => new FieldError(string.Empty, new DomainError(
-                VinculoCatalogoErrorCodes.FatoDesativado, $"O fato '{fato}' está desativado no catálogo e não aceita vínculo novo."), fato))];
-        erros.AddRange(propostos.Fatos
-            .Where(fato => !existentes.Fatos.Contains(fato) && catalogo.TryGetValue(fato, out FatoDoCatalogo? doCatalogo) && !doCatalogo.ProtecaoAprovada)
-            .Order(StringComparer.Ordinal)
-            .Select(static fato => new FieldError(string.Empty, new DomainError(
-                VinculoCatalogoErrorCodes.FatoComProtecaoPendente,
-                $"O fato '{fato}' aguarda a aprovação da proteção de dados e não aceita vínculo novo."), fato)));
-        erros.AddRange(propostos.Valores
-            .Where(valor => !existentes.Valores.Contains(valor)
-                && catalogo.TryGetValue(valor.Fato, out FatoDoCatalogo? doCatalogo) && doCatalogo.Valores.Any(v => v.Codigo == valor.Valor && !v.Ativo))
-            .OrderBy(static v => v.Fato, StringComparer.Ordinal)
-            .ThenBy(static v => v.Valor, StringComparer.Ordinal)
-            .Select(static v => new FieldError(string.Empty, new DomainError(
-                VinculoCatalogoErrorCodes.ValorDesativado, $"O valor '{v.Valor}' do fato '{v.Fato}' está desativado no catálogo e não aceita vínculo novo."), $"{v.Fato}.{v.Valor}")));
+        List<FieldError> erros = [.. FatosDesativados(catalogo, existentes, propostos)];
+        erros.AddRange(FatosSemProtecao(catalogo, existentes, propostos));
+        erros.AddRange(ValoresDesativados(catalogo, existentes, propostos));
         return erros.Count > 0 ? Result.ValidationFailure(erros) : Result.Success();
     }
+
+    private static IEnumerable<FieldError> FatosDesativados(
+        IReadOnlyDictionary<string, FatoDoCatalogo> catalogo, VinculosDeFatos existentes, VinculosDeFatos propostos) =>
+        propostos.Fatos.Where(fato => !existentes.Fatos.Contains(fato) && catalogo.TryGetValue(fato, out FatoDoCatalogo? f) && !f.Ativo)
+            .Order(StringComparer.Ordinal).Select(static fato => new FieldError(null, new DomainError(
+                VinculoCatalogoErrorCodes.FatoDesativado, $"O fato '{fato}' está desativado no catálogo e não aceita vínculo novo."), fato));
+
+    private static IEnumerable<FieldError> FatosSemProtecao(
+        IReadOnlyDictionary<string, FatoDoCatalogo> catalogo, VinculosDeFatos existentes, VinculosDeFatos propostos) =>
+        propostos.Fatos.Where(fato => !existentes.Fatos.Contains(fato) && catalogo.TryGetValue(fato, out FatoDoCatalogo? f) && !f.ProtecaoAprovada)
+            .Order(StringComparer.Ordinal).Select(static fato => new FieldError(null, new DomainError(
+                VinculoCatalogoErrorCodes.FatoComProtecaoPendente, $"O fato '{fato}' aguarda a aprovação da proteção de dados e não aceita vínculo novo."), fato));
+
+    private static IEnumerable<FieldError> ValoresDesativados(
+        IReadOnlyDictionary<string, FatoDoCatalogo> catalogo, VinculosDeFatos existentes, VinculosDeFatos propostos) =>
+        propostos.Valores.Where(valor => !existentes.Valores.Contains(valor)
+            && catalogo.TryGetValue(valor.Fato, out FatoDoCatalogo? f) && f.Valores.Any(v => v.Codigo == valor.Valor && !v.Ativo))
+            .OrderBy(static v => v.Fato, StringComparer.Ordinal).ThenBy(static v => v.Valor, StringComparer.Ordinal)
+            .Select(static v => new FieldError(null, new DomainError(
+                VinculoCatalogoErrorCodes.ValorDesativado, $"O valor '{v.Valor}' do fato '{v.Fato}' está desativado no catálogo e não aceita vínculo novo."), $"{v.Fato}.{v.Valor}"));
 
     private static IEnumerable<FieldError> Semantica(
         FatoDoCatalogo alvo,
@@ -193,48 +197,75 @@ public static class ConferenciaNoCatalogo
                 continue;
             }
 
-            string campo = $"restricoes[{indice}]";
-            switch (restricoes[indice])
+            foreach (FieldError erro in SemanticaDaRestricao(restricoes[indice], $"restricoes[{indice}]", alvo, catalogo, vocabulario, dominiosDinamicos))
             {
-                case OpcoesPermitidas opcoes:
-                    for (int entrada = 0; entrada < opcoes.Entradas.Count; entrada++)
-                    {
-                        OpcoesCondicionadas grupo = opcoes.Entradas[entrada];
-                        if (grupo.Quando is { } quando
-                            && PredicadoDnfValidador.ValidarComCausa(quando, vocabulario, null, dominiosDinamicos) is ({ IsFailure: true } condicao, { } causaDaCondicao))
-                        {
-                            yield return new($"{campo}.entradas[{entrada}].quando", condicao.Error!, causaDaCondicao);
-                        }
-
-                        PredicadoDnf pertinencia = PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(
-                            alvo.Codigo, Operador.Em, JsonSerializer.SerializeToElement(grupo.Valores.Order(StringComparer.Ordinal))).Value!)]).Value!;
-                        if (PredicadoDnfValidador.ValidarComCausa(pertinencia, vocabulario, null, dominiosDinamicos) is ({ IsFailure: true } valores, { } causaDosValores))
-                        {
-                            yield return new($"{campo}.entradas[{entrada}].valores", valores.Error!, causaDosValores);
-                        }
-                    }
-
-                    break;
-                case OpcoesDasRespostas respostas
-                    when respostas.Fatos.Any(f => !catalogo.TryGetValue(f, out FatoDoCatalogo? fonte) || !OpcoesDaFonteCabemNoAlvo(alvo, fonte, dominiosDinamicos)):
-                    yield return new($"{campo}.fatos", new DomainError(
-                        ItemFormularioErrorCodes.OpcoesDeOutroDominio,
-                        "As opções formadas pelas respostas vêm de campos de seleção cujas opções são todas opções do campo."),
-                        string.Join(',', respostas.Fatos.Where(f => !catalogo.TryGetValue(f, out FatoDoCatalogo? fonte) || !OpcoesDaFonteCabemNoAlvo(alvo, fonte, dominiosDinamicos)).Order(StringComparer.Ordinal)));
-                    break;
-                case MunicipiosDaUf daUf
-                    when !catalogo.TryGetValue(daUf.FatoUf, out FatoDoCatalogo? uf)
-                        || !string.Equals(uf.FonteValores, DominioDoCatalogo.FonteGeoUf, StringComparison.Ordinal)
-                        || !string.Equals(uf.Cardinalidade, DominioDoCatalogo.Escalar, StringComparison.Ordinal):
-                    yield return new($"{campo}.fatos", new DomainError(
-                        ItemFormularioErrorCodes.UfDoMunicipioInvalida,
-                        "Os municípios da UF citam um campo de UF de resposta única, com as UFs do Geo."),
-                        daUf.FatoUf);
-                    break;
-                default:
-                    break;
+                yield return erro;
             }
         }
+    }
+
+    private static IEnumerable<FieldError> SemanticaDaRestricao(
+        RestricaoValor restricao, string campo, FatoDoCatalogo alvo, IReadOnlyDictionary<string, FatoDoCatalogo> catalogo,
+        IReadOnlyDictionary<string, DescritorFatoCandidato> vocabulario, IReadOnlyDictionary<string, DominioDeValores> dominiosDinamicos)
+    {
+        if (restricao is OpcoesPermitidas opcoes)
+        {
+            return ConferirOpcoes(opcoes, campo, alvo, vocabulario, dominiosDinamicos);
+        }
+
+        return ConferirOutrasRestricoes(restricao, campo, alvo, catalogo, dominiosDinamicos) is { } erro ? [erro] : [];
+    }
+
+    private static FieldError? ConferirOutrasRestricoes(RestricaoValor restricao, string campo, FatoDoCatalogo alvo,
+        IReadOnlyDictionary<string, FatoDoCatalogo> catalogo, IReadOnlyDictionary<string, DominioDeValores> dominiosDinamicos) =>
+        restricao switch
+        {
+            OpcoesDasRespostas respostas when respostas.Fatos.Any(f => !catalogo.TryGetValue(f, out FatoDoCatalogo? fonte) || !OpcoesDaFonteCabemNoAlvo(alvo, fonte, dominiosDinamicos)) =>
+                RecusaDasRespostas(respostas, campo, alvo, catalogo, dominiosDinamicos),
+            MunicipiosDaUf daUf when !catalogo.TryGetValue(daUf.FatoUf, out FatoDoCatalogo? uf)
+                || !string.Equals(uf.FonteValores, DominioDoCatalogo.FonteGeoUf, StringComparison.Ordinal)
+                || !string.Equals(uf.Cardinalidade, DominioDoCatalogo.Escalar, StringComparison.Ordinal) =>
+                new($"{campo}.fatos", new DomainError(ItemFormularioErrorCodes.UfDoMunicipioInvalida,
+                    "Os municípios da UF citam um campo de UF de resposta única, com as UFs do Geo."), daUf.FatoUf),
+            _ => null,
+        };
+
+    private static FieldError RecusaDasRespostas(OpcoesDasRespostas respostas, string campo, FatoDoCatalogo alvo,
+        IReadOnlyDictionary<string, FatoDoCatalogo> catalogo, IReadOnlyDictionary<string, DominioDeValores> dominios) =>
+        new($"{campo}.fatos", new DomainError(ItemFormularioErrorCodes.OpcoesDeOutroDominio,
+            "As opções formadas pelas respostas vêm de campos de seleção cujas opções são todas opções do campo."),
+            string.Join(',', respostas.Fatos.Where(f => !catalogo.TryGetValue(f, out FatoDoCatalogo? fonte) || !OpcoesDaFonteCabemNoAlvo(alvo, fonte, dominios)).Order(StringComparer.Ordinal)));
+
+    private static IEnumerable<FieldError> ConferirOpcoes(
+        OpcoesPermitidas opcoes, string campo, FatoDoCatalogo alvo,
+        IReadOnlyDictionary<string, DescritorFatoCandidato> vocabulario, IReadOnlyDictionary<string, DominioDeValores> dominios)
+    {
+        for (int entrada = 0; entrada < opcoes.Entradas.Count; entrada++)
+        {
+            OpcoesCondicionadas grupo = opcoes.Entradas[entrada];
+            if (grupo.Quando is { } quando
+                && PredicadoDnfValidador.ValidarComCausa(quando, vocabulario, null, dominios) is ({ IsFailure: true } condicao, { } causa, _))
+            {
+                yield return new($"{campo}.entradas[{entrada}].quando", condicao.Error!, causa);
+            }
+
+            if (ConferirValores(grupo, campo, entrada, alvo, vocabulario, dominios) is { } erro)
+            {
+                yield return erro;
+            }
+        }
+    }
+
+    private static FieldError? ConferirValores(OpcoesCondicionadas grupo, string campo, int entrada, FatoDoCatalogo alvo,
+        IReadOnlyDictionary<string, DescritorFatoCandidato> vocabulario, IReadOnlyDictionary<string, DominioDeValores> dominios)
+    {
+        PredicadoDnf pertinencia = PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(
+            alvo.Codigo, Operador.Em, JsonSerializer.SerializeToElement(grupo.Valores.Order(StringComparer.Ordinal))).Value!)]).Value!;
+        if (PredicadoDnfValidador.ValidarComCausa(pertinencia, vocabulario, null, dominios) is ({ IsFailure: true } valores, { } causaDosValores, _))
+        {
+            return new($"{campo}.entradas[{entrada}].valores", valores.Error!, causaDosValores);
+        }
+        return null;
     }
 
     /// <summary>

@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 public sealed class RegraRecursoFaseTests
 {
-    private static ArgsRegraPrazoRecurso ArgsBase(
+    private static ParametrosRegraPrazoRecurso ParametrosBase(
         UnidadePrazo prazoUnidade = UnidadePrazo.Horas,
         decimal prazoValor = 48m,
         UnidadePrazo? susp1Unidade = null,
@@ -31,11 +31,11 @@ public sealed class RegraRecursoFaseTests
             SuspensividadeSegundaInstanciaUnidade: susp2Unidade);
 
     /// <summary>
-    /// Args com um par de suspensividade montado lado a lado, sem a amarração de
-    /// <see cref="ArgsBase"/> entre valor e unidade — é o que permite declarar
+    /// Parâmetros com um par de suspensividade montado lado a lado, sem a amarração de
+    /// <see cref="ParametrosBase"/> entre valor e unidade — é o que permite declarar
     /// deliberadamente meio par.
     /// </summary>
-    private static ArgsRegraPrazoRecurso ArgsComSuspensividade(
+    private static ParametrosRegraPrazoRecurso ParametrosComSuspensividade(
         decimal? susp1Valor,
         UnidadePrazo? susp1Unidade,
         decimal? susp2Valor = null,
@@ -56,13 +56,13 @@ public sealed class RegraRecursoFaseTests
     /// </summary>
     private static readonly Guid ProdutoAncoraId = new("77770000-0000-4000-8000-000000000001");
 
-    private static ReferenciaRegra RegraAncorada() => ReferenciaRegra.Criar(
-        RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)).Value!;
+    private static ReferenciaRegra RegraAncorada() => ReferenciaRegra.De(
+        RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64));
 
     [Fact(DisplayName = "CA-01: referencia a regra por SÍMBOLO (RegraPrazoRecursoCodigo.AncoradoEmAto), não literal solto")]
     public void ReferenciaRegraPorSimbolo()
     {
-        Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(RegraAncorada(), ArgsBase(), ProdutoAncoraId);
+        Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(RegraAncorada(), ParametrosBase(), ProdutoAncoraId);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.Regra.Codigo.Should().Be(RegraPrazoRecursoCodigo.AncoradoEmAto);
@@ -71,10 +71,10 @@ public sealed class RegraRecursoFaseTests
     [Fact(DisplayName = "CA-02 (contraprova): referenciar qualquer OUTRA regra do catálogo é recusado")]
     public void RegraDeTipoIncompativel_Recusa()
     {
-        ReferenciaRegra outraRegra = ReferenciaRegra.Criar(
-            "BONUS-MULTIPLICATIVO", "v1", new string('b', 64)).Value!;
+        ReferenciaRegra outraRegra = ReferenciaRegra.De(
+            "BONUS-MULTIPLICATIVO", "v1", new string('b', 64));
 
-        Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(outraRegra, ArgsBase(), ProdutoAncoraId);
+        Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(outraRegra, ParametrosBase(), ProdutoAncoraId);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RegraRecursoFase.RegraCatalogoInvalida");
@@ -88,28 +88,28 @@ public sealed class RegraRecursoFaseTests
     public void UnidadesDeclaraveis_Aceitas(UnidadePrazo unidade, int valor)
     {
         Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
-            RegraAncorada(), ArgsBase(prazoUnidade: unidade, prazoValor: valor), ProdutoAncoraId);
+            RegraAncorada(), ParametrosBase(prazoUnidade: unidade, prazoValor: valor), ProdutoAncoraId);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!.Args.PrazoUnidade.Should().Be(unidade);
-        resultado.Value.Args.PrazoValor.Should().Be(valor);
+        resultado.Value!.Parametros.PrazoUnidade.Should().Be(unidade);
+        resultado.Value.Parametros.PrazoValor.Should().Be(valor);
     }
 
     [Fact(DisplayName = "Horas com valor fracionário é aceita — a restrição de valor inteiro é da unidade dias úteis")]
     public void HorasFracionarias_Aceitas()
     {
         Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
-            RegraAncorada(), ArgsBase(prazoUnidade: UnidadePrazo.Horas, prazoValor: 1.5m), ProdutoAncoraId);
+            RegraAncorada(), ParametrosBase(prazoUnidade: UnidadePrazo.Horas, prazoValor: 1.5m), ProdutoAncoraId);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!.Args.PrazoValor.Should().Be(1.5m);
+        resultado.Value!.Parametros.PrazoValor.Should().Be(1.5m);
     }
 
     [Fact(DisplayName = "Prazo de interposição em dias CORRIDOS é recusado — a janela não pode encolher por cair em feriado")]
     public void PrazoDeInterposicaoEmDiasCorridos_Recusa()
     {
         Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
-            RegraAncorada(), ArgsBase(prazoUnidade: UnidadePrazo.Dias, prazoValor: 5m), ProdutoAncoraId);
+            RegraAncorada(), ParametrosBase(prazoUnidade: UnidadePrazo.Dias, prazoValor: 5m), ProdutoAncoraId);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RegraRecursoFase.PrazoEmDiasCorridos");
@@ -127,7 +127,7 @@ public sealed class RegraRecursoFaseTests
     public void PrazoDeInterposicaoEmFracaoDeDiaUtil_Recusa(decimal valorFracionario)
     {
         Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
-            RegraAncorada(), ArgsBase(prazoUnidade: UnidadePrazo.DiasUteis, prazoValor: valorFracionario), ProdutoAncoraId);
+            RegraAncorada(), ParametrosBase(prazoUnidade: UnidadePrazo.DiasUteis, prazoValor: valorFracionario), ProdutoAncoraId);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RegraRecursoFase.PrazoEmFracaoDeDiaUtil",
@@ -143,25 +143,25 @@ public sealed class RegraRecursoFaseTests
     public void Suspensividade_AceitaAsTresUnidades(UnidadePrazo? susp1, UnidadePrazo? susp2)
     {
         Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
-            RegraAncorada(), ArgsBase(susp1Unidade: susp1, susp2Unidade: susp2), ProdutoAncoraId);
+            RegraAncorada(), ParametrosBase(susp1Unidade: susp1, susp2Unidade: susp2), ProdutoAncoraId);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!.Args.SuspensividadePrimeiraInstanciaUnidade.Should().Be(susp1);
-        resultado.Value.Args.SuspensividadeSegundaInstanciaUnidade.Should().Be(susp2);
+        resultado.Value!.Parametros.SuspensividadePrimeiraInstanciaUnidade.Should().Be(susp1);
+        resultado.Value.Parametros.SuspensividadeSegundaInstanciaUnidade.Should().Be(susp2);
     }
 
     [Fact(DisplayName = "Suspensividade em dias corridos é congelada com a segunda instância nula — null é valor legítimo, não omissão")]
     public void Suspensividade_DiasCorridos_PrimeiraPreenchidaSegundaNula_Aceita()
     {
         Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
-            RegraAncorada(), ArgsBase(susp1Unidade: UnidadePrazo.Dias, susp2Unidade: null), ProdutoAncoraId);
+            RegraAncorada(), ParametrosBase(susp1Unidade: UnidadePrazo.Dias, susp2Unidade: null), ProdutoAncoraId);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!.Args.SuspensividadePrimeiraInstanciaUnidade.Should().Be(UnidadePrazo.Dias);
-        resultado.Value.Args.SuspensividadePrimeiraInstanciaValor.Should().Be(5m);
-        resultado.Value.Args.SuspensividadeSegundaInstanciaUnidade.Should().BeNull(
+        resultado.Value!.Parametros.SuspensividadePrimeiraInstanciaUnidade.Should().Be(UnidadePrazo.Dias);
+        resultado.Value.Parametros.SuspensividadePrimeiraInstanciaValor.Should().Be(5m);
+        resultado.Value.Parametros.SuspensividadeSegundaInstanciaUnidade.Should().BeNull(
             "null numa instância é valor legítimo — significa que ela não bloqueia (caso normal do Ingresso via judicial)");
-        resultado.Value.Args.SuspensividadeSegundaInstanciaValor.Should().BeNull();
+        resultado.Value.Parametros.SuspensividadeSegundaInstanciaValor.Should().BeNull();
     }
 
     [Theory(DisplayName = "Unidade não declarável na interposição é recusada — Nenhuma é o default do enum, e chega aqui sem ninguém ter declarado nada")]
@@ -170,10 +170,10 @@ public sealed class RegraRecursoFaseTests
     public void PrazoDeInterposicaoSemUnidadeDeclaravel_Recusa(UnidadePrazo unidade)
     {
         Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
-            RegraAncorada(), ArgsBase(prazoUnidade: unidade), ProdutoAncoraId);
+            RegraAncorada(), ParametrosBase(prazoUnidade: unidade), ProdutoAncoraId);
 
         resultado.IsFailure.Should().BeTrue(
-            "Nenhuma vale zero e é o que um ArgsRegraPrazoRecurso construído sem preencher a unidade carrega");
+            "Nenhuma vale zero e é o que um ParametrosRegraPrazoRecurso construído sem preencher a unidade carrega");
         resultado.Error!.Code.Should().Be("RegraRecursoFase.PrazoSemUnidadeDeclaravel");
     }
 
@@ -184,7 +184,7 @@ public sealed class RegraRecursoFaseTests
     public void PrazoDeInterposicaoNaoPositivo_Recusa(decimal valor)
     {
         Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
-            RegraAncorada(), ArgsBase(prazoUnidade: UnidadePrazo.Horas, prazoValor: valor), ProdutoAncoraId);
+            RegraAncorada(), ParametrosBase(prazoUnidade: UnidadePrazo.Horas, prazoValor: valor), ProdutoAncoraId);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RegraRecursoFase.PrazoNaoPositivo");
@@ -198,7 +198,7 @@ public sealed class RegraRecursoFaseTests
     public void PrazoNegativo_RecusaPelaMagnitudeAntesDaUnidade(UnidadePrazo unidade, decimal valor)
     {
         Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
-            RegraAncorada(), ArgsBase(prazoUnidade: unidade, prazoValor: valor), ProdutoAncoraId);
+            RegraAncorada(), ParametrosBase(prazoUnidade: unidade, prazoValor: valor), ProdutoAncoraId);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RegraRecursoFase.PrazoNaoPositivo",
@@ -210,7 +210,7 @@ public sealed class RegraRecursoFaseTests
     public void Suspensividade_ValorSemUnidade_Recusa()
     {
         Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
-            RegraAncorada(), ArgsComSuspensividade(susp1Valor: 5m, susp1Unidade: null), ProdutoAncoraId);
+            RegraAncorada(), ParametrosComSuspensividade(susp1Valor: 5m, susp1Unidade: null), ProdutoAncoraId);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RegraRecursoFase.SuspensividadeIncompleta");
@@ -220,7 +220,7 @@ public sealed class RegraRecursoFaseTests
     public void Suspensividade_UnidadeSemValor_Recusa()
     {
         Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
-            RegraAncorada(), ArgsComSuspensividade(susp1Valor: null, susp1Unidade: UnidadePrazo.Dias), ProdutoAncoraId);
+            RegraAncorada(), ParametrosComSuspensividade(susp1Valor: null, susp1Unidade: UnidadePrazo.Dias), ProdutoAncoraId);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RegraRecursoFase.SuspensividadeIncompleta");
@@ -231,7 +231,7 @@ public sealed class RegraRecursoFaseTests
     {
         Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
             RegraAncorada(),
-            ArgsComSuspensividade(
+            ParametrosComSuspensividade(
                 susp1Valor: 5m, susp1Unidade: UnidadePrazo.Dias,
                 susp2Valor: 3m, susp2Unidade: null), ProdutoAncoraId);
 
@@ -245,7 +245,7 @@ public sealed class RegraRecursoFaseTests
     public void Suspensividade_UnidadeNenhuma_Recusa()
     {
         Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
-            RegraAncorada(), ArgsComSuspensividade(susp1Valor: 5m, susp1Unidade: UnidadePrazo.Nenhuma), ProdutoAncoraId);
+            RegraAncorada(), ParametrosComSuspensividade(susp1Valor: 5m, susp1Unidade: UnidadePrazo.Nenhuma), ProdutoAncoraId);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RegraRecursoFase.SuspensividadeUnidadeNaoDeclaravel");
@@ -258,7 +258,7 @@ public sealed class RegraRecursoFaseTests
     public void Suspensividade_ValorEUnidadeInvalidos_RecusaPelaMagnitude(decimal valor, UnidadePrazo unidade)
     {
         Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
-            RegraAncorada(), ArgsComSuspensividade(susp1Valor: valor, susp1Unidade: unidade), ProdutoAncoraId);
+            RegraAncorada(), ParametrosComSuspensividade(susp1Valor: valor, susp1Unidade: unidade), ProdutoAncoraId);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RegraRecursoFase.SuspensividadeNaoPositiva",
@@ -271,7 +271,7 @@ public sealed class RegraRecursoFaseTests
     public void Suspensividade_ValorNaoPositivo_Recusa(decimal valor)
     {
         Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
-            RegraAncorada(), ArgsComSuspensividade(susp1Valor: valor, susp1Unidade: UnidadePrazo.Dias), ProdutoAncoraId);
+            RegraAncorada(), ParametrosComSuspensividade(susp1Valor: valor, susp1Unidade: UnidadePrazo.Dias), ProdutoAncoraId);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RegraRecursoFase.SuspensividadeNaoPositiva");
@@ -286,7 +286,7 @@ public sealed class RegraRecursoFaseTests
         int? valor, UnidadePrazo? unidade, string codigoEsperado)
     {
         Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
-            RegraAncorada(), ArgsComSuspensividade(susp1Valor: valor, susp1Unidade: unidade), ProdutoAncoraId);
+            RegraAncorada(), ParametrosComSuspensividade(susp1Valor: valor, susp1Unidade: unidade), ProdutoAncoraId);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(codigoEsperado,
@@ -297,11 +297,11 @@ public sealed class RegraRecursoFaseTests
     public void Suspensividade_AmbosOsParesAusentes_Aceita()
     {
         Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
-            RegraAncorada(), ArgsComSuspensividade(susp1Valor: null, susp1Unidade: null), ProdutoAncoraId);
+            RegraAncorada(), ParametrosComSuspensividade(susp1Valor: null, susp1Unidade: null), ProdutoAncoraId);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!.Args.SuspensividadePrimeiraInstanciaValor.Should().BeNull();
-        resultado.Value.Args.SuspensividadeSegundaInstanciaValor.Should().BeNull();
+        resultado.Value!.Parametros.SuspensividadePrimeiraInstanciaValor.Should().BeNull();
+        resultado.Value.Parametros.SuspensividadeSegundaInstanciaValor.Should().BeNull();
     }
 
     [Theory(DisplayName = "Janela que não admite instância superior recusa tempo de bloqueio superior, completo ou pela metade")]
@@ -312,7 +312,7 @@ public sealed class RegraRecursoFaseTests
     {
         Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
             RegraAncorada(),
-            ArgsComSuspensividade(null, null, valor, unidade, admiteInstanciaSuperior: false),
+            ParametrosComSuspensividade(null, null, valor, unidade, admiteInstanciaSuperior: false),
             ProdutoAncoraId);
 
         resultado.IsFailure.Should().BeTrue();
@@ -325,11 +325,11 @@ public sealed class RegraRecursoFaseTests
     {
         Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
             RegraAncorada(),
-            ArgsComSuspensividade(null, null, admiteInstanciaSuperior: true),
+            ParametrosComSuspensividade(null, null, admiteInstanciaSuperior: true),
             ProdutoAncoraId);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!.Args.AdmiteInstanciaSuperior.Should().BeTrue();
-        resultado.Value.Args.SuspensividadeSegundaInstanciaValor.Should().BeNull();
+        resultado.Value!.Parametros.AdmiteInstanciaSuperior.Should().BeTrue();
+        resultado.Value.Parametros.SuspensividadeSegundaInstanciaValor.Should().BeNull();
     }
 }

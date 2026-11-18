@@ -59,7 +59,7 @@ public sealed class TermoConsentimentoConcorrenciaTests
         await using (AsyncServiceScope setupScope = api.Services.CreateAsyncScope())
         {
             UniPlusDbContext db = setupScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-            TermoConsentimento criado = TermoConsentimento.Criar("Termo LGPD", null, null, null).Value!;
+            TermoConsentimento criado = TermoConsentimento.Criar($"Termo LGPD {Guid.NewGuid():N}", null, null, null).Value!;
             db.TermosConsentimento.Add(criado);
             await db.SaveChangesAsync();
             id = criado.Id;

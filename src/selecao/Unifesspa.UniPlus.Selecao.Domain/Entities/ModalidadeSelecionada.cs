@@ -28,7 +28,14 @@ public sealed class ModalidadeSelecionada : EntityBase
     public NaturezaLegalModalidade NaturezaLegal { get; private set; }
     public ComposicaoVagasModalidade ComposicaoVagas { get; private set; }
     public string? ComposicaoOrigemCodigo { get; private set; }
-    public RegraRemanejamentoModalidade RegraRemanejamento { get; private set; }
+    public RegraRemanejamentoModalidade RegraRemanejamento => RegraRemanejamentoModalidadeCodigo.DoTokenGravado(RegraRemanejamentoCodigo);
+
+    /// <summary>
+    /// O token canônico da regra de remanejamento, o mesmo do cadastro de modalidades; nulo quando a
+    /// modalidade não remaneja. Guardado como token para que a coluna aceite o nulo sem um valor inventado.
+    /// </summary>
+    private string? RegraRemanejamentoCodigo { get; init; }
+
     public string? RemanejamentoDestino { get; private set; }
     public string? RemanejamentoPar { get; private set; }
     public string? RemanejamentoFallback { get; private set; }
@@ -54,7 +61,7 @@ public sealed class ModalidadeSelecionada : EntityBase
     /// <summary>
     /// Quantidade de vagas fixada pelo edital para esta modalidade (issue
     /// #848/ADR-0115) — só um campo de transporte. A obrigatoriedade/vedação
-    /// (fixa no ramo institucional e nas composições RETIRA_DE/SUPLEMENTAR_AO_TOTAL;
+    /// (fixa no ramo institucional e nas composições RETIRADA_DE_OUTRA_MODALIDADE/SUPLEMENTAR_AO_TOTAL;
     /// proibida nas calculadas) é validada em
     /// <see cref="ConfiguracaoDistribuicaoVagas.Criar"/>, que é quem conhece o
     /// ramo de distribuição — esta factory não tem essa informação.
@@ -83,8 +90,8 @@ public sealed class ModalidadeSelecionada : EntityBase
     /// <summary>
     /// Cria a modalidade selecionada a partir do snapshot lido de
     /// <c>ModalidadeView</c>, validando as invariantes que dependem só dos
-    /// próprios campos (INV-2, INV-12 e a coerência interna de composição e
-    /// remanejamento).
+    /// próprios campos (natureza, composição e base legal completas, cascata legal da cota
+    /// reservada e a coerência interna de composição e remanejamento).
     /// </summary>
     public static Result<ModalidadeSelecionada> Criar(
         Guid modalidadeOrigemId,
@@ -121,59 +128,52 @@ public sealed class ModalidadeSelecionada : EntityBase
                 "ModalidadeSelecionada.CodigoObrigatorio", "Código da modalidade é obrigatório."));
         }
 
-        if (quantidadeDeclarada is < 0)
-        {
-            return Result<ModalidadeSelecionada>.Failure(new DomainError(
-                "ConfiguracaoDistribuicaoVagas.QuantidadeVagaNegativa",
-                $"A quantidade de vagas declarada para {codigo} não pode ser negativa ({quantidadeDeclarada})."));
-        }
-
-        // INV-2: natureza_legal, composicao_vagas e base_legal completos.
+        // Natureza legal, composição de vagas e base legal completas.
         if (naturezaLegal == NaturezaLegalModalidade.Nenhuma)
         {
             return Result<ModalidadeSelecionada>.Failure(new DomainError(
                 "ModalidadeSelecionada.NaturezaLegalObrigatoria",
-                $"Natureza legal da modalidade {codigo} é obrigatória (INV-2)."));
+                $"Natureza legal da modalidade {codigo} é obrigatória."));
         }
 
         if (composicaoVagas == ComposicaoVagasModalidade.Nenhuma)
         {
             return Result<ModalidadeSelecionada>.Failure(new DomainError(
                 "ModalidadeSelecionada.ComposicaoVagasObrigatoria",
-                $"Composição de vagas da modalidade {codigo} é obrigatória (INV-2)."));
+                $"Composição de vagas da modalidade {codigo} é obrigatória."));
         }
 
         if (string.IsNullOrWhiteSpace(baseLegal))
         {
             return Result<ModalidadeSelecionada>.Failure(new DomainError(
                 "ModalidadeSelecionada.BaseLegalObrigatoria",
-                $"Base legal da modalidade {codigo} é obrigatória (INV-2)."));
+                $"Base legal da modalidade {codigo} é obrigatória."));
         }
 
-        // Coerência RETIRA_DE: exige origem; as demais composições não a têm.
-        bool retiraDe = composicaoVagas == ComposicaoVagasModalidade.RetiraDe;
-        if (retiraDe && string.IsNullOrWhiteSpace(composicaoOrigemCodigo))
+        // Coerência RETIRADA_DE_OUTRA_MODALIDADE: exige origem; as demais composições não a têm.
+        bool retiradaDeOutraModalidade = composicaoVagas == ComposicaoVagasModalidade.RetiradaDeOutraModalidade;
+        if (retiradaDeOutraModalidade && string.IsNullOrWhiteSpace(composicaoOrigemCodigo))
         {
             return Result<ModalidadeSelecionada>.Failure(new DomainError(
                 "ModalidadeSelecionada.ComposicaoOrigemObrigatoria",
-                $"Modalidade {codigo} com composição RETIRA_DE exige o código de origem."));
+                $"Modalidade {codigo} com composição RETIRADA_DE_OUTRA_MODALIDADE exige o código de origem."));
         }
 
-        if (!retiraDe && composicaoOrigemCodigo is not null)
+        if (!retiradaDeOutraModalidade && composicaoOrigemCodigo is not null)
         {
             return Result<ModalidadeSelecionada>.Failure(new DomainError(
                 "ModalidadeSelecionada.ComposicaoOrigemIndevida",
-                $"Modalidade {codigo} só declara código de origem quando a composição é RETIRA_DE."));
+                $"Modalidade {codigo} só declara código de origem quando a composição é RETIRADA_DE_OUTRA_MODALIDADE."));
         }
 
-        // INV-12: cota reservada da Lei 12.711 obriga a cascata legal — o admin
+        // Cota reservada da Lei 12.711 obriga a cascata legal — o admin
         // não pode trocar por destino único ou remanejamento cruzado.
         if (naturezaLegal == NaturezaLegalModalidade.CotaReservada
             && regraRemanejamento != RegraRemanejamentoModalidade.SegueCascata)
         {
             return Result<ModalidadeSelecionada>.Failure(new DomainError(
                 "ModalidadeSelecionada.CotaReservadaExigeCascata",
-                $"Modalidade {codigo} é cota reservada da Lei 12.711 e deve seguir a cascata legal (INV-12)."));
+                $"Modalidade {codigo} é cota reservada da Lei 12.711 e deve seguir a cascata legal."));
         }
 
         // Coerência do remanejamento: cada regra exige seus próprios campos e
@@ -221,7 +221,7 @@ public sealed class ModalidadeSelecionada : EntityBase
             NaturezaLegal = naturezaLegal,
             ComposicaoVagas = composicaoVagas,
             ComposicaoOrigemCodigo = composicaoOrigemCodigo,
-            RegraRemanejamento = regraRemanejamento,
+            RegraRemanejamentoCodigo = regraRemanejamento.ToCodigo(),
             RemanejamentoDestino = remanejamentoDestino,
             RemanejamentoPar = remanejamentoPar,
             RemanejamentoFallback = remanejamentoFallback,

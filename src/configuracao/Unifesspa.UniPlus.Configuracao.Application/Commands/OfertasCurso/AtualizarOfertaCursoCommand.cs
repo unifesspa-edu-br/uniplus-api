@@ -1,10 +1,11 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.OfertasCurso;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Atualiza os atributos editáveis de uma oferta de curso: programa, formato
+/// Atualiza os atributos editáveis de uma oferta de curso: código, programa, formato
 /// pedagógico, regime de funcionamento, regime de turno e turnos, códigos
 /// (e-MEC / SGA), teto de vagas, base legal e ato de autorização. <c>CursoId</c>, <c>LocalOfertaId</c> e a unidade ofertante
 /// (snapshot-copy, ADR-0061) são <b>imutáveis</b> — mudar curso×local×unidade
@@ -22,6 +23,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </remarks>
 public sealed record AtualizarOfertaCursoCommand(
     Guid Id,
+    string? Codigo,
     string? ProgramaDeOferta,
     string? RegimeDeFuncionamento,
     string? RegimeDeTurno,
@@ -31,4 +33,10 @@ public sealed record AtualizarOfertaCursoCommand(
     string? CodigoSga = null,
     int? VagasAnuaisAutorizadas = null,
     string? BaseLegal = null,
-    string? AtoAutorizacaoMec = null) : ICommand<Result>;
+    string? AtoAutorizacaoMec = null) : ICommand<Result>
+{
+    /// <summary>O que a gestão declara da oferta, com o código que a identifica para quem a cita.</summary>
+    public DeclaracaoDaOfertaDeCurso Declaracao() => new(
+        Codigo, ProgramaDeOferta, FormatoPedagogico, RegimeDeFuncionamento, RegimeDeTurno, Turnos,
+        EMecCodigo, CodigoSga, VagasAnuaisAutorizadas, BaseLegal, AtoAutorizacaoMec);
+}

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
@@ -33,6 +34,23 @@ internal sealed class CategoriaDocumentoReader : ICategoriaDocumentoReader
     {
         List<CategoriaDocumento> entidades = await _dbContext.CategoriasDocumento
             .AsNoTracking()
+            .OrderBy(c => c.Codigo)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return [.. entidades.Select(ParaView)];
+    }
+
+    public async Task<IReadOnlyList<CategoriaDocumentoView>> ListarVivasPorCodigosAsync(
+        IReadOnlyCollection<string> codigos,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(codigos);
+
+        List<CodigoCategoriaDocumento> codigosDoLote = CodigosDoLote.Validos(codigos, CodigoCategoriaDocumento.Criar);
+        List<CategoriaDocumento> entidades = await _dbContext.CategoriasDocumento
+            .AsNoTracking()
+            .Where(c => codigosDoLote.Contains(c.Codigo))
             .OrderBy(c => c.Codigo)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);

@@ -45,7 +45,7 @@ public sealed class IdentificadorLegivelCorridaTests : IClassFixture<ProcessoSel
         IProcessoSeletivoRepository repository = RepositorioQueNaoVeAConcorrencia(ctx);
         IUnidadeReader unidadeReader = Substitute.For<IUnidadeReader>();
         unidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns(new UnidadeView(
-            UnidadeId, "CEPS", "ceps", "Centro de Processos Seletivos", null, "ADMINISTRATIVA", false, null,
+            UnidadeId, "CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", null, "ADMINISTRATIVA", false, null,
             "1504208", "Marabá", "PA"));
         ITipoProcessoReader tipoProcessoReader = Substitute.For<ITipoProcessoReader>();
         tipoProcessoReader.ObterAtivoPorIdAsync(TiposDeProcessoDeTeste.SiSU.OrigemId, Arg.Any<CancellationToken>())
@@ -73,8 +73,8 @@ public sealed class IdentificadorLegivelCorridaTests : IClassFixture<ProcessoSel
         await using UniPlusDbContext ctx = _fixture.CreateDbContext();
         IProcessoSeletivoRepository repository = RepositorioQueNaoVeAConcorrencia(ctx);
 
-        Result<MutacaoAceita> resultado = await DefinirIdentificadorLegivelCommandHandler.Handle(
-            new DefinirIdentificadorLegivelCommand(alvo.Id, disputado.Valor, PrecondicaoIfMatch.Ausente),
+        Result resultado = await DefinirIdentificadorLegivelCommandHandler.Handle(
+            new DefinirIdentificadorLegivelCommand(alvo.Id, disputado.Valor),
             repository, ctx, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
@@ -109,7 +109,7 @@ public sealed class IdentificadorLegivelCorridaTests : IClassFixture<ProcessoSel
 
     private static ProcessoSeletivo NovoProcesso(IdentificadorLegivel identificador) => ProcessoSeletivo.Criar(
         "PS Corrida", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-        UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+        UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!,
         identificador);
 

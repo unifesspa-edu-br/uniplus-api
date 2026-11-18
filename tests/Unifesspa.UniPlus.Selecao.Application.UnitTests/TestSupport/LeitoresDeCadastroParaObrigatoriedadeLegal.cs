@@ -25,7 +25,7 @@ internal static class LeitoresDeCadastroParaObrigatoriedadeLegal
             new ReferenciasDoPredicado(tipoEtapaReader, modalidadeReader, tipoDocumentoReader, tipoDeficienciaReader, regraCatalogoReader));
 
     internal static ITipoEtapaReader TipoEtapaReaderAtivo() =>
-        TipoEtapaReaderComResposta(new TipoEtapaView(Guid.CreateVersion7(), TipoEtapaCodigo, "Prova Objetiva", null, true, true, false, []));
+        TipoEtapaReaderComResposta(new TipoEtapaView(Guid.CreateVersion7(), TipoEtapaCodigo, "Prova Objetiva", null, true, true, false, false, []));
 
     /// <summary>Leitor que dá por viva qualquer modalidade consultada — o caso comum dos testes de outro assunto.</summary>
     internal static IModalidadeReader ModalidadeReaderViva()
@@ -62,7 +62,7 @@ internal static class LeitoresDeCadastroParaObrigatoriedadeLegal
     }
 
     private static ModalidadeView ModalidadeViva(string codigo) =>
-        new(Guid.CreateVersion7(), codigo, null, "COTA_RESERVADA", "DENTRO_DO_VR", null, null, null, null, null, PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, null);
+        new(Guid.CreateVersion7(), codigo, null, "COTA_RESERVADA", "DENTRO_DA_RESERVA_LEGAL", null, null, null, null, null, PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, null);
 
     private static TipoDocumentoView TipoDocumentoVivo(string codigo) =>
         new(Guid.CreateVersion7(), codigo, "Documento", "OUTROS", ClassificacaoDeProtecao.Pessoal, "Comprovação documental do candidato.", "CUMPRIMENTO_OBRIGACAO_LEGAL", ProtecaoAprovada: true);

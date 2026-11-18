@@ -16,7 +16,7 @@ public sealed class DefinirCriteriosDesempateCommandValidatorTests
     public void Aceita_ListaVazia()
     {
         ValidationResult result = new DefinirCriteriosDesempateCommandValidator()
-            .Validate(new DefinirCriteriosDesempateCommand(Guid.CreateVersion7(), [], PrecondicaoIfMatch.Ausente));
+            .Validate(new DefinirCriteriosDesempateCommand(Guid.CreateVersion7(), []));
 
         result.IsValid.Should().BeTrue();
     }
@@ -25,7 +25,7 @@ public sealed class DefinirCriteriosDesempateCommandValidatorTests
     public void Rejeita_CriteriosNulo()
     {
         ValidationResult result = new DefinirCriteriosDesempateCommandValidator()
-            .Validate(new DefinirCriteriosDesempateCommand(Guid.CreateVersion7(), null!, PrecondicaoIfMatch.Ausente));
+            .Validate(new DefinirCriteriosDesempateCommand(Guid.CreateVersion7(), null!));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "Criterios");
@@ -37,7 +37,7 @@ public sealed class DefinirCriteriosDesempateCommandValidatorTests
         ValidationResult result = new DefinirCriteriosDesempateCommandValidator().Validate(
             new DefinirCriteriosDesempateCommand(
                 Guid.CreateVersion7(),
-                [new CriterioDesempateInput(0, "DESEMPATE-MAIOR-IDADE", "v1", null, null, null, null, null)], PrecondicaoIfMatch.Ausente));
+                [new CriterioDesempateInput(0, "DESEMPATE-MAIOR-IDADE", "v1", null, null, null, null, null)]));
 
         result.IsValid.Should().BeTrue();
     }
@@ -49,7 +49,7 @@ public sealed class DefinirCriteriosDesempateCommandValidatorTests
             new CriterioDesempateInput(ordem, string.Empty, string.Empty, null, null, null, null, null))];
 
         ValidationResult result = new DefinirCriteriosDesempateCommandValidator().Validate(
-            new DefinirCriteriosDesempateCommand(Guid.CreateVersion7(), criterios, PrecondicaoIfMatch.Ausente));
+            new DefinirCriteriosDesempateCommand(Guid.CreateVersion7(), criterios));
 
         result.IsValid.Should().BeTrue();
     }
@@ -61,7 +61,7 @@ public sealed class DefinirCriteriosDesempateCommandValidatorTests
             new CriterioDesempateInput(ordem, string.Empty, "v1", null, null, null, null, null))];
 
         ValidationResult result = new DefinirCriteriosDesempateCommandValidator().Validate(
-            new DefinirCriteriosDesempateCommand(Guid.CreateVersion7(), criterios, PrecondicaoIfMatch.Ausente));
+            new DefinirCriteriosDesempateCommand(Guid.CreateVersion7(), criterios));
 
         result.Errors.Should().HaveCount(RegrasDoDesempate.CriteriosDesempateMaximo)
             .And.OnlyContain(static e => e.PropertyName.EndsWith(".RegraCodigo", StringComparison.Ordinal));

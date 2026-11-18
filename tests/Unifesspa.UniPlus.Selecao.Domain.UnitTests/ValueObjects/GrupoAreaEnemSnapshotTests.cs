@@ -53,6 +53,17 @@ public sealed class GrupoAreaEnemSnapshotTests
         GrupoAreaEnemSnapshot.Criar("TECNO\0LOGICA", "Tecnológica").Error!.Code.Should().Be("GrupoAreaEnemSnapshot.CaractereInvalido");
     }
 
+    [Fact(DisplayName = "O rótulo com controle bidirecional é recusado na criação, sem ecoar o texto nem o controle")]
+    public void Criar_RotuloComControleBidirecional_RecusaSemEcoar()
+    {
+        Result<GrupoAreaEnemSnapshot> resultado = GrupoAreaEnemSnapshot.Criar("TECNOLOGICA", "Tecno\u202Elógica");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be("GrupoAreaEnemSnapshot.CaractereInvalido");
+        resultado.Error!.Message.Should().NotContain("\u202E").And.NotContain("Tecno");
+        resultado.Value.Should().BeNull();
+    }
+
     [Theory(DisplayName = "Código ou rótulo acima do tamanho da coluna é recusado")]
     [InlineData(31, 10)]
     [InlineData(10, 61)]

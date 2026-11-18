@@ -2,7 +2,9 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.TermosConsentiment
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Application.Abstractions.Persistence;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.CalendariosDiasUteis;
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
@@ -27,43 +29,48 @@ public static class PromoverVersaoTermoConsentimentoCommandHandler
         TermoConsentimento? termo = await repository.ObterPorIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
         if (termo is null)
         {
-            return Result.Failure(new DomainError(
-                TermoConsentimentoErrorCodes.NaoEncontrado,
-                "Termo de consentimento não encontrado."));
+            return Result.Failure(new DomainError(TermoConsentimentoErrorCodes.NaoEncontrado, "Termo de consentimento não encontrado."));
         }
 
-        string promovidoPor = userContext.UserId ?? "system";
-        DateTimeOffset agora = timeProvider.GetUtcNow();
+        return await PromoverEGravarAsync(termo, repository, unitOfWork, userContext.UserId ?? "system", timeProvider, cancellationToken)
+            .ConfigureAwait(false);
+    }
 
-        Result<TermoConsentimentoVersao> promoverResult = termo.Promover(promovidoPor, agora);
-        if (promoverResult.IsFailure)
+    private static async Task<Result> PromoverEGravarAsync(
+        TermoConsentimento termo,
+        ITermoConsentimentoRepository repository,
+        IUnitOfWork unitOfWork,
+        string promovidoPor,
+        TimeProvider timeProvider,
+        CancellationToken cancellationToken)
+    {
+        Result<TermoConsentimentoVersao> promovida = termo.Promover(promovidoPor, timeProvider.GetUtcNow());
+        if (promovida.IsFailure)
         {
-            return Result.Failure(promoverResult.Error!);
+            return Result.Failure(promovida.Error!);
         }
 
-        // Adiciona explicitamente ao DbSet — o EF Core não detecta como Added uma
-        // entidade só inserida na coleção em memória de um agregado já rastreado
-        // (recarregado do banco); ver TermoConsentimento.Promover. Também força um
-        // UPDATE do termo amarrado ao xmin lido na consulta.
-        await repository.AdicionarVersaoAsync(termo, promoverResult.Value!, cancellationToken).ConfigureAwait(false);
+        // Adiciona explicitamente ao DbSet: o EF Core não detecta como Added uma entidade só inserida na
+        // coleção em memória de um agregado já rastreado. Também força um UPDATE do termo amarrado ao xmin lido.
+        await repository.AdicionarVersaoAsync(termo, promovida.Value!, cancellationToken).ConfigureAwait(false);
+        return await SalvarTratandoConflitoDeConcorrenciaAsync(unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
 
+    /// <summary>
+    /// Grava e traduz em conflito a corrida com uma edição concorrente do mesmo rascunho, ou com outra promoção que
+    /// leu o mesmo número de versão (índice único de termo e número): sem o xmin, a versão sairia gravada a partir de
+    /// conteúdo já invalidado. O descarte do rastreamento vem antes de devolver a falha porque o outbox do Wolverine
+    /// chama SaveChangesAsync de novo depois do handler (ADR-0004), e a mesma exceção viraria 500 em vez do 409.
+    /// </summary>
+    private static async Task<Result> SalvarTratandoConflitoDeConcorrenciaAsync(IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
         try
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception ex) when (OptimisticConcurrencyViolation.Is(ex))
+        catch (Exception ex) when (OptimisticConcurrencyViolation.Is(ex)
+            || ConstraintVioladaNaGravacao.NomeDaConstraintViolada(ex) == RestricoesDoBanco.VersaoDoTermoNumeroUnico)
         {
-            // Corrida com uma edição concorrente do MESMO rascunho (ex.: outra
-            // requisição alterou texto/base legal entre a leitura e este commit,
-            // revertendo a revisão) — sem o xmin, a versão sairia gravada a partir
-            // de conteúdo já invalidado. O filtro do `when` garante que outras
-            // exceções propagam intactas.
-            //
-            // Descarta o rastreamento da versão Added e do termo Modified ANTES de
-            // devolver a falha: o outbox do Wolverine chama SaveChangesAsync de novo
-            // depois que este handler retorna (ADR-0004), e sem isso a mesma
-            // DbUpdateConcurrencyException estouraria de novo fora deste catch,
-            // virando 500 em vez do 409 que acabamos de traduzir.
             unitOfWork.DescartarAlteracoesNaoSalvas();
             return Result.Failure(new DomainError(
                 TermoConsentimentoErrorCodes.ConflitoDeConcorrencia,

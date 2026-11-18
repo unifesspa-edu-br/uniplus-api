@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -50,14 +51,17 @@ public static class AtualizarTipoEtapaCommandHandler
     private static async Task<Result<IReadOnlyList<TipoConceito>>> ConferirCampos(
         AtualizarTipoEtapaCommand command, ITipoConceitoRepository conceitos, CancellationToken cancellationToken)
     {
-        Result<(string Nome, string? Descricao, bool AdmitePontuacao, bool AdmiteEliminacao)> campos =
-            TipoEtapa.ValidarCamposEditaveis(
-                command.Nome, command.Descricao, command.AdmitePontuacao, command.AdmiteEliminacao);
+        Result<CamposEditaveisDoTipoDeEtapa> campos = TipoEtapa.ValidarCamposEditaveis(
+            command.Nome, command.Descricao, command.AdmitePontuacao, command.AdmiteEliminacao, command.ExigeCorrecaoIndependente);
         Result<IReadOnlyList<TipoConceito>> admitidos = await ResolucaoDosConceitosAdmitidos
             .Resolver(command.ConceitosAdmitidos, conceitos, cancellationToken).ConfigureAwait(false);
-        FieldError[] erros = [.. campos.Errors, .. admitidos.Errors];
+        FieldError[] erros = [.. campos.Errors, .. admitidos.Errors, .. ViolacoesDosConceitos(command, admitidos)];
         return erros.Length > 0 ? Result<IReadOnlyList<TipoConceito>>.ValidationFailure(erros) : admitidos;
     }
+
+    private static IReadOnlyList<FieldError> ViolacoesDosConceitos(
+        AtualizarTipoEtapaCommand command, Result<IReadOnlyList<TipoConceito>> admitidos) =>
+        admitidos.IsSuccess ? TipoEtapa.ViolacoesDaCorrecaoSemConceito(command.ExigeCorrecaoIndependente, admitidos.Value!) : [];
 
     private static async Task<Result> Aplicar(
         TipoEtapa tipo,
@@ -68,7 +72,8 @@ public static class AtualizarTipoEtapaCommandHandler
     {
         // Com os campos já confirmados, só a regra que depende do próprio tipo pode recusar
         // aqui, e o tipo recusa antes de mutar.
-        Result atualizar = tipo.Atualizar(command.Nome, command.Descricao, command.AdmitePontuacao, command.AdmiteEliminacao);
+        Result atualizar = tipo.Atualizar(
+            command.Nome, command.Descricao, command.AdmitePontuacao, command.AdmiteEliminacao, command.ExigeCorrecaoIndependente);
         if (atualizar.IsFailure)
         {
             return atualizar;

@@ -358,7 +358,7 @@ public sealed class DefinirClassificacaoEndpointTests
         {
             UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder
-                .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}");
+                .SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"{nome} {Guid.CreateVersion7()}" });
             processoId = processo.Id;
         }
 

@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
 // Mapeia ComposicaoVagas ↔ string (varchar) usando o token canônico UPPER_SNAKE
-// (RESIDUAL_DO_VO…), não o nome PascalCase do enum. O comprimento da coluna é
+// (RESTANTE_DAS_VAGAS_OFERTADAS…), não o nome PascalCase do enum. O comprimento da coluna é
 // definido na própria propriedade via HasMaxLength no IEntityTypeConfiguration. A
 // reidratação falha explicitamente (com contexto) caso a coluna seja corrompida
 // fora do fluxo da aplicação, em vez de um valor de enum silenciosamente inválido.

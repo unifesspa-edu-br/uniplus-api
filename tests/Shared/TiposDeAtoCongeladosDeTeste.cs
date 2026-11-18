@@ -16,7 +16,7 @@ internal static class TiposDeAtoCongeladosDeTeste
     {
         ArgumentNullException.ThrowIfNull(processo);
 
-        return TiposDeAtoDoCronograma.DeclaracoesDeAtos(EstadoDaConfiguracao.De(processo))
+        return TiposDeAtoDoCronograma.DeclaracoesDeAtos(processo.Declaracao())
             .GroupBy(static d => d.AtoCodigo, StringComparer.Ordinal)
             .ToDictionary(
                 static g => g.Key,

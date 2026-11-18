@@ -14,23 +14,20 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 /// </summary>
 internal static class EscritaDaEscolha
 {
-    public static async Task<Result<MutacaoAceita>> GravarAsync(
+    public static async Task<Result> GravarAsync(
         ProcessoSeletivo processo, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
         try
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-            return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+            return Result.Success();
         }
         catch (Exception ex) when (OptimisticConcurrencyViolation.Is(ex) || MotivoDeDecisaoUniqueConstraintViolation.EhEscolhaRepetida(ex))
         {
             unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 MotivoDeDecisaoErrorCodes.SituacaoAlteradaConcorrentemente,
                 "Os motivos do processo foram alterados por outra operação. Consulte o estado atual antes de repetir."));
         }
     }
-
-    public static Result<MutacaoAceita> ProcessoNaoEncontrado(Guid id) =>
-        Result<MutacaoAceita>.Failure(new DomainError("ProcessoSeletivo.NaoEncontrado", $"Processo Seletivo {id} não encontrado."));
 }

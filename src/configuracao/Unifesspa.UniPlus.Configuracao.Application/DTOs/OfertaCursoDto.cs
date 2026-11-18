@@ -15,6 +15,7 @@ using System.Text.Json.Serialization;
 /// </summary>
 public sealed record OfertaCursoDto(
     Guid Id,
+    string Codigo,
     Guid CursoId,
     Guid LocalOfertaId,
     UnidadeOfertanteDto UnidadeOfertante,

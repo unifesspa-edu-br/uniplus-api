@@ -17,7 +17,7 @@ public sealed class RemoverPrecedenciaFaseCommandHandlerTests
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     private static PrecedenciaFase Aresta() =>
-        PrecedenciaFase.Criar("INSCRICAO", "HOMOLOGACAO", false, []).Value!;
+        PrecedenciaFase.Criar("INSCRICAO", "HOMOLOGACAO_INSCRICOES", false, []).Value!;
 
     [Fact(DisplayName = "Aresta existente faz soft-delete (Remover + Salvar), nunca bloqueada")]
     public async Task Handle_Existente_FazSoftDelete()

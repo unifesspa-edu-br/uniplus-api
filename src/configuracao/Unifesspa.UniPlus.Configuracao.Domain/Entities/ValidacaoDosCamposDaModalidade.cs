@@ -1,0 +1,114 @@
+namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
+
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Services;
+using Unifesspa.UniPlus.Regras.ValueObjects;
+
+/// <summary>
+/// Validação e normalização dos campos editáveis de <see cref="Modalidade"/>: tokens dos enums, tamanhos e
+/// coerência entre campos, acumulando toda violação em vez de parar na primeira. Sem I/O.
+/// </summary>
+public static class ValidacaoDosCamposDaModalidade
+{
+    private const int DescricaoMaxLength = 300;
+    private const int BaseLegalMaxLength = 500;
+    private const int CodigoReferenciaMaxLength = 60;
+
+    /// <summary>
+    /// Valida só os campos independentes de coerência cruzada (parse dos enums,
+    /// tamanhos), sem I/O — para o handler de atualização falhar rápido antes do
+    /// fetch. <b>Não</b> inclui as três invariantes cruzadas nem a guarda do
+    /// catálogo legal fixo: a guarda depende do <c>Codigo</c> já persistido, e as
+    /// coerências têm de vir depois dela — reportá-las aqui, antes do fetch,
+    /// preemptiria <c>EstruturaProtegidaNaoEditavel</c> com um erro de coerência
+    /// para um payload que também é internamente incoerente. Só
+    /// <see cref="Atualizar"/>, depois do fetch, avalia guarda e coerência na
+    /// ordem certa.
+    /// </summary>
+    public static Result ValidarCamposDoPayload(DeclaracaoDaModalidade declaracao)
+    {
+        ArgumentNullException.ThrowIfNull(declaracao);
+
+        CamposValidadosDaModalidade validados = ValidarCamposIndependentes(declaracao);
+
+        return validados.Recusas.Count == 0 ? Result.Success() : Result.ValidationFailure(validados.Recusas);
+    }
+
+    /// <summary>
+    /// Valida os campos editáveis por completo, acumulando toda violação
+    /// independente — os campos que não cruzam entre si (<see cref="ValidarCamposIndependentes"/>)
+    /// e as três invariantes cruzadas (RetiradaDeOutraModalidade⟺origem, natureza↔regra, parâmetros por
+    /// regra), cada uma só avaliada quando os tokens de que ela depende já foram
+    /// reconhecidos (senão o erro reportado seria derivado de um token inválido,
+    /// não uma incoerência independente — ex.: reportar "SEGUE_CASCATA exigido"
+    /// sobre uma <c>NaturezaLegal</c> que nem chegou a resolver para um valor de
+    /// domínio). Sem I/O — existe também para o handler de atualização falhar
+    /// rápido antes de buscar a modalidade por Id.
+    /// </summary>
+    public static Result<CamposResolvidosDaModalidade> ValidarCampos(DeclaracaoDaModalidade declaracao, CodigoModalidade? codigo = null)
+    {
+        ArgumentNullException.ThrowIfNull(declaracao);
+
+        CamposValidadosDaModalidade validados = ValidarCamposIndependentes(declaracao);
+        List<FieldError> erros = [.. validados.Recusas, .. CoerenciaDosCamposDaModalidade.ValidarCoerencia(validados, codigo)];
+
+        return erros.Count == 0
+            ? Result<CamposResolvidosDaModalidade>.Success(validados.Campos)
+            : Result<CamposResolvidosDaModalidade>.ValidationFailure(erros);
+    }
+
+    /// <summary>
+    /// Valida e normaliza os campos editáveis independentes de qualquer coerência cruzada, acumulando toda
+    /// violação em vez de parar na primeira: tokens dos enums, normalização de texto e tamanhos. Devolve,
+    /// junto das recusas, quais tokens das invariantes cruzadas foram reconhecidos; com o lote de recusas
+    /// vazio, os três são sempre verdadeiros. Sem I/O, e separada da coerência cruzada porque
+    /// <see cref="Modalidade.Atualizar"/> intercala a guarda do catálogo legal fixo entre as duas.
+    /// </summary>
+    internal static CamposValidadosDaModalidade ValidarCamposIndependentes(DeclaracaoDaModalidade declaracao)
+    {
+        string? descricao = NormalizarOpcional(declaracao.Descricao);
+        string? baseLegal = NormalizarOpcional(declaracao.BaseLegal);
+        string? origem = NormalizarOpcional(declaracao.ComposicaoOrigem);
+        TokensResolvidosDaModalidade tokens = TokensResolvidosDaModalidade.De(declaracao);
+        FieldError?[] recusas =
+        [
+            RecusaDeTamanho(descricao, DescricaoMaxLength, "descricao", ModalidadeErrorCodes.DescricaoTamanho, "Descrição da modalidade"),
+            RecusaDeTamanho(baseLegal, BaseLegalMaxLength, "baseLegal", ModalidadeErrorCodes.BaseLegalTamanho, "Base legal da modalidade"),
+            .. tokens.Recusas,
+            RecusaDeTamanho(origem, CodigoReferenciaMaxLength, "composicaoOrigem", ModalidadeErrorCodes.CodigoFormatoInvalido, "Código de origem da composição"),
+            RecusaDaRegraDeAplicabilidade(declaracao.RegraDeAplicabilidade),
+        ];
+        return new([.. recusas.OfType<FieldError>()], tokens.Reconhecidos, CamposResolvidos(declaracao, tokens, descricao, origem, baseLegal));
+    }
+
+    private static CamposResolvidosDaModalidade CamposResolvidos(
+        DeclaracaoDaModalidade declaracao, TokensResolvidosDaModalidade tokens, string? descricao, string? origem, string? baseLegal) =>
+        new(
+            descricao,
+            tokens.Natureza,
+            tokens.Composicao,
+            origem,
+            tokens.Regra,
+            RemanejamentoParametros.Criar(declaracao.RemanejamentoDestino, declaracao.RemanejamentoPar, declaracao.RemanejamentoFallback),
+            declaracao.RegraDeAplicabilidade,
+            tokens.Acao,
+            baseLegal);
+
+    private static FieldError? RecusaDeTamanho(string? valor, int maximo, string campo, string codigoDaRecusa, string rotulo) =>
+        valor is { } texto && texto.Length > maximo
+            ? new FieldError(campo, new DomainError(codigoDaRecusa, $"{rotulo} deve ter no máximo {maximo} caracteres."))
+            : null;
+
+    private static FieldError? RecusaDaRegraDeAplicabilidade(PredicadoDnf? regra) =>
+        regra is null
+            ? new FieldError("regraDeAplicabilidade", new DomainError(
+                ModalidadeErrorCodes.RegraDeAplicabilidadeObrigatoria,
+                "A modalidade precisa da regra que diz quem concorre a ela; a ampla concorrência a declara sem condição."))
+            : null;
+
+    private static string? NormalizarOpcional(string? valor) =>
+        string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
+}

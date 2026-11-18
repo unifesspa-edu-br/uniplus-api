@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/classificacao.schema.json",
+  "title": "Classificação",
+  "description": "Como os candidatos são classificados: o cálculo da nota final, o arredondamento, a ordem de alocação, a eliminação e o desempate.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "regraCalculo": {
+      "title": "Regra de cálculo",
+      "description": "Regra do catálogo que calcula a nota final. A classificação importada dispensa o arredondamento local e as regras de eliminação por corte de nota.",
+      "$ref": "comuns.schema.json#/$defs/referenciaDeRegra"
+    },
+    "regraArredondamento": {
+      "title": "Regra de arredondamento",
+      "description": "Regra do catálogo que arredonda a nota. Ausente quando a classificação é importada.",
+      "$ref": "comuns.schema.json#/$defs/referenciaDeRegra"
+    },
+    "casasArredondamento": {
+      "title": "Casas de arredondamento",
+      "description": "Casas decimais da nota arredondada. Ausente quando a classificação é importada.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "escalaNotaFinal": {
+      "title": "Escala da nota final",
+      "description": "Escala em que a nota final é publicada: 10, 100, 1000. Só se aplica ao cálculo local.",
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "exclusiveMaximum": 100000,
+      "multipleOf": 0.0001
+    },
+    "regraOrdemAlocacao": {
+      "title": "Regra de ordem de alocação",
+      "description": "Regra do catálogo que define a ordem em que as vagas são alocadas.",
+      "$ref": "comuns.schema.json#/$defs/referenciaDeRegra"
+    },
+    "baseadoEmEnem": {
+      "title": "Baseado no Enem",
+      "description": "Se a classificação usa as notas do Enem.",
+      "type": "boolean"
+    },
+    "regrasEliminacao": {
+      "title": "Regras de eliminação",
+      "description": "Regras que eliminam candidatos da classificação.",
+      "type": "array",
+      "items": {
+        "$ref": "eliminacao.schema.json"
+      }
+    },
+    "criteriosDeDesempate": {
+      "title": "Critérios de desempate",
+      "description": "Critérios aplicados em ordem quando as notas empatam.",
+      "type": "array",
+      "items": {
+        "$ref": "desempate.schema.json"
+      }
+    },
+    "resolucaoPesoAreaEnem": {
+      "title": "Resolução do peso por área do Enem",
+      "description": "Código da resolução cujo quadro de pesos por área vale para o processo.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40
+    },
+    "quadroPesoAreaEnem": {
+      "title": "Quadro de pesos por área do Enem",
+      "description": "Os pesos e cortes por área do Enem que a resolução fixa, copiados na exportação. Campo só de leitura: ignorado na importação, porque é congelado do catálogo pela resolução.",
+      "type": "array",
+      "readOnly": true,
+      "items": {
+        "$ref": "pesos-por-area.schema.json"
+      }
+    }
+  }
+}

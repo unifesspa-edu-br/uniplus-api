@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Regras.Services;
 /// </summary>
 public static class DefinirOpcoesDeclaradasCommandHandler
 {
-    public static async Task<Result<MutacaoAceita>> Handle(
+    public static async Task<Result> Handle(
         DefinirOpcoesDeclaradasCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IFatoCandidatoReader fatoCandidatoReader,
@@ -35,15 +35,15 @@ public static class DefinirOpcoesDeclaradasCommandHandler
             .ConfigureAwait(false);
         if (processo is null)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 "ProcessoSeletivo.NaoEncontrado",
                 $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
         }
 
-        // A precondição precede as regras de negócio (ADR-0110 D9), como nos demais Definir*.
-        if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
+        // Fora do rascunho a recusa vem antes de consultar cadastros.
+        if (processo.MutacaoBloqueada() is { } bloqueio)
         {
-            return Result<MutacaoAceita>.Failure(bloqueio);
+            return Result.Failure(bloqueio);
         }
 
         List<FieldError> erros = [];
@@ -63,7 +63,7 @@ public static class DefinirOpcoesDeclaradasCommandHandler
 
         if (erros.Count > 0)
         {
-            return Result<MutacaoAceita>.ValidationFailure(erros);
+            return Result.ValidationFailure(erros);
         }
 
         FatoCandidatoView? fato = await fatoCandidatoReader
@@ -71,14 +71,14 @@ public static class DefinirOpcoesDeclaradasCommandHandler
             .ConfigureAwait(false);
         if (fato is null || !VocabularioDeFatos.OpcoesDoProcesso(fato))
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 OpcaoDeclaradaFatoErrorCodes.FonteNaoEhDoProcesso,
                 "Só se declaram opções para um fato categórico cuja fonte dos valores é o processo."));
         }
 
         if (VinculoDeFato.Usa(fato.Binding, VinculoDeFato.AgregacaoDeGrupo))
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 OpcaoDeclaradaFatoErrorCodes.FonteNaoEhDoProcesso,
                 $"O fato '{fato.Codigo}' é agregado sobre grupo repetível: as opções dele são as do fato de membro."));
         }
@@ -88,14 +88,14 @@ public static class DefinirOpcoesDeclaradasCommandHandler
             .Where(a => string.Equals(a.Value, fato.Codigo, StringComparison.Ordinal))
             .Select(static a => a.Key)];
 
-        Result result = processo.DefinirOpcoesDeclaradas(fato.Codigo, opcoes, command.Precondicao, agregadosDoFato);
+        Result result = processo.DefinirOpcoesDeclaradas(fato.Codigo, opcoes, agregadosDoFato);
         if (result.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(result.Error!);
+            return Result.Failure(result.Error!);
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
-        return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+        return Result.Success();
     }
 }

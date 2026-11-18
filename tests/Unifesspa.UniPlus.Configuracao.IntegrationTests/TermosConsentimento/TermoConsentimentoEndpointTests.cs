@@ -97,7 +97,7 @@ public sealed class TermoConsentimentoEndpointTests
         string token = Guid.NewGuid().ToString("N")[..10];
         string nomeAlvo = $"Termo Alvo {token}";
         await CriarTermoComNome(_fixture.Factory.CreateClient(), nomeAlvo);
-        await CriarTermoComNome(_fixture.Factory.CreateClient(), "Termo Fora Do Filtro");
+        await CriarTermoComNome(_fixture.Factory.CreateClient(), $"Termo Fora Do Filtro {Guid.NewGuid():N}");
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await client.GetAsync(
@@ -116,7 +116,7 @@ public sealed class TermoConsentimentoEndpointTests
         // Duas ocorrências do token → com limit=1 há próxima página (rel=next).
         await CriarTermoComNome(_fixture.Factory.CreateClient(), $"Termo {token} Um");
         await CriarTermoComNome(_fixture.Factory.CreateClient(), $"Termo {token} Dois");
-        await CriarTermoComNome(_fixture.Factory.CreateClient(), "Termo Fora Do Filtro");
+        await CriarTermoComNome(_fixture.Factory.CreateClient(), $"Termo Fora Do Filtro {Guid.NewGuid():N}");
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage primeira = await client.GetAsync(
@@ -201,32 +201,14 @@ public sealed class TermoConsentimentoEndpointTests
         using HttpClient client = _fixture.Factory.CreateClient();
         Guid id = await CriarTermo(client, CorpoVazio());
 
-        HttpResponseMessage editar = await EnviarAdmin(
-            client, HttpMethod.Put, $"{AdminPath}/{id}/rascunho",
-            new { id, textoRascunho = "Texto do termo", baseLegalRascunho = "Lei 13.709/2018", formaAceiteRascunho = (string?)null });
-        editar.StatusCode.Should().Be(HttpStatusCode.NoContent);
-
-        HttpResponseMessage revisar = await EnviarAdmin(client, HttpMethod.Post, $"{AdminPath}/{id}/revisar", null);
-        revisar.StatusCode.Should().Be(HttpStatusCode.NoContent);
-
+        await EditarRascunhoAsync(client, id, "Texto do termo");
+        await RevisarAsync(client, id);
         (await ObterRevisado(client, id)).Should().BeTrue();
-
-        HttpResponseMessage promover = await EnviarAdmin(client, HttpMethod.Post, $"{AdminPath}/{id}/promover", null);
-        promover.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        await PromoverAsync(client, id);
 
         HttpResponseMessage obter = await client.GetAsync(new Uri($"{ColecaoPath}/{id}", UriKind.Relative));
         using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
-        JsonElement versoes = doc.RootElement.GetProperty("versoes");
-        versoes.GetArrayLength().Should().Be(1);
-
-        // A revisão é consumida pela promoção — status volta a EM_ELABORACAO mesmo
-        // sem nenhuma edição posterior do rascunho.
-        doc.RootElement.GetProperty("revisado").GetBoolean().Should().BeFalse();
-
-        // Identificador de autenticação do operador nunca sai na representação
-        // pública (endpoint anônimo) — nem no termo, nem na versão promovida.
-        doc.RootElement.TryGetProperty("revisadoPor", out _).Should().BeFalse();
-        versoes[0].TryGetProperty("promovidaPor", out _).Should().BeFalse();
+        ConferirTermoComUmaVersaoPromovida(doc.RootElement);
     }
 
     [Fact(DisplayName = "Editar rascunho já revisado reverte o status para EM_ELABORACAO")]
@@ -234,16 +216,31 @@ public sealed class TermoConsentimentoEndpointTests
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         Guid id = await CriarTermo(client, CorpoValido());
-        (await EnviarAdmin(client, HttpMethod.Post, $"{AdminPath}/{id}/revisar", null)).StatusCode
-            .Should().Be(HttpStatusCode.NoContent);
+        await RevisarAsync(client, id);
         (await ObterRevisado(client, id)).Should().BeTrue();
 
-        HttpResponseMessage editar = await EnviarAdmin(
-            client, HttpMethod.Put, $"{AdminPath}/{id}/rascunho",
-            new { id, textoRascunho = "Texto ajustado", baseLegalRascunho = "Lei 13.709/2018", formaAceiteRascunho = (string?)null });
-        editar.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        await EditarRascunhoAsync(client, id, "Texto ajustado");
 
         (await ObterRevisado(client, id)).Should().BeFalse("editar o rascunho revisado reverte a marca de revisão");
+    }
+
+    [Fact(DisplayName = "Criar com nome que só difere em acento, caixa ou pontuação retorna 409 com o código de erro CodigoJaExiste")]
+    public async Task Criar_NomeEquivalente_Retorna409()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        string sufixo = Guid.NewGuid().ToString("N");
+        await CriarTermoComNome(client, $"Declaração de veracidade {sufixo}");
+
+        HttpResponseMessage repetido = await EnviarAdmin(client, HttpMethod.Post, AdminPath, new
+        {
+            nome = $"DECLARACAO DE VERACIDADE - {sufixo}!",
+            textoRascunho = (string?)null,
+            baseLegalRascunho = (string?)null,
+            formaAceiteRascunho = (string?)null,
+        });
+
+        repetido.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await LerCodigoDeErro(repetido)).Should().Be("uniplus.configuracao.termo_consentimento.codigo_ja_existe");
     }
 
     [Fact(DisplayName = "Promover sem revisar retorna 422 com o código de erro PromocaoSemRevisao")]
@@ -285,6 +282,48 @@ public sealed class TermoConsentimentoEndpointTests
         HttpResponseMessage response = await EnviarDeleteAdmin(client, id);
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    private static async Task EditarRascunhoAsync(HttpClient client, Guid id, string texto)
+    {
+        using HttpResponseMessage editar = await EnviarAdmin(
+            client, HttpMethod.Put, $"{AdminPath}/{id}/rascunho",
+            new { id, textoRascunho = texto, baseLegalRascunho = "Lei 13.709/2018", formaAceiteRascunho = (string?)null });
+
+        editar.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    private static async Task RevisarAsync(HttpClient client, Guid id)
+    {
+        using HttpResponseMessage revisar = await EnviarAdmin(client, HttpMethod.Post, $"{AdminPath}/{id}/revisar", null);
+        revisar.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    private static async Task PromoverAsync(HttpClient client, Guid id)
+    {
+        using HttpResponseMessage promover = await EnviarAdmin(client, HttpMethod.Post, $"{AdminPath}/{id}/promover", null);
+        promover.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    private static void ConferirTermoComUmaVersaoPromovida(JsonElement termo)
+    {
+        JsonElement versoes = termo.GetProperty("versoes");
+        versoes.GetArrayLength().Should().Be(1);
+        versoes[0].GetProperty("numero").GetInt32().Should().Be(1);
+        termo.GetProperty("codigo").GetString().Should().MatchRegex("^TERMO_EM_BRANCO_[0-9A-F]{32}$");
+
+        // A revisão é consumida pela promoção — status volta a EM_ELABORACAO mesmo
+        // sem nenhuma edição posterior do rascunho.
+        termo.GetProperty("revisado").GetBoolean().Should().BeFalse();
+        ConferirSemIdentificadorDoOperador(termo);
+    }
+
+    // Identificador de autenticação do operador nunca sai na representação
+    // pública (endpoint anônimo) — nem no termo, nem na versão promovida.
+    private static void ConferirSemIdentificadorDoOperador(JsonElement termo)
+    {
+        termo.TryGetProperty("revisadoPor", out _).Should().BeFalse();
+        termo.GetProperty("versoes")[0].TryGetProperty("promovidaPor", out _).Should().BeFalse();
     }
 
     private static object CorpoValido() => new

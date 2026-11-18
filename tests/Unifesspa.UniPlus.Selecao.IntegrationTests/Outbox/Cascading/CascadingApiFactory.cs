@@ -26,6 +26,8 @@ using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 /// convenção (<c>UseUniPlusNpgsqlConventions</c>). Resta apenas o
 /// <see cref="DomainEventCollector"/> que o handler subscritor consome, e o acervo público em
 /// memória: a divulgação publica o documento do edital, e esta fábrica não sobe armazenamento.
+/// As credenciais do armazenamento são de mentira: o Wolverine monta o cliente do MinIO ao gerar o código do handler
+/// que assina a leitura de um documento, e o cliente recusa credencial vazia; nenhuma conexão é aberta.
 /// </remarks>
 [SuppressMessage(
     "Performance",
@@ -37,6 +39,14 @@ public sealed class CascadingApiFactory : MonolitoApiFactory
         : base(connectionString, wolverineEnabled: true)
     {
     }
+
+    protected override IEnumerable<KeyValuePair<string, string?>> OverridesAdicionais() =>
+        new Dictionary<string, string?>
+        {
+            ["Storage:Endpoint"] = "armazenamento-de-teste:9000",
+            ["Storage:AccessKey"] = "teste",
+            ["Storage:SecretKey"] = "teste",
+        };
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {

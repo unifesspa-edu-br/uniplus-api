@@ -16,12 +16,12 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 /// grupo repetível depende do fato de membro.
 /// </para>
 /// <para>
-/// A versão base é a última, a vigente quando a sessão abre. A inscrição guarda dela também o papel
+/// A versão base é a última, a vigente quando a retificação parte. A inscrição guarda dela também o papel
 /// de cada fato, item ou campo de qual grupo, que a retificação não muda.
 /// </para>
 /// <para>
 /// As regras de derivação das versões não entram: o derivado usado por uma finalidade é calculado
-/// pela versão dela, a da sessão; o que varia entre as versões é só quais fatos a finalidade
+/// pela versão dela, a da retificação; o que varia entre as versões é só quais fatos a finalidade
 /// anterior coletou.
 /// </para>
 /// </remarks>
@@ -171,7 +171,7 @@ public sealed class FatosDasVersoesPublicadas
             operacoes);
     }
 
-    /// <summary>Repõe o que foi lido na abertura, como a persistência o guardou.</summary>
+    /// <summary>Reconstitui o que foi lido das versões publicadas, como foi guardado.</summary>
     public static FatosDasVersoesPublicadas Reconstituir(
         IReadOnlyDictionary<FinalidadeFormulario, IReadOnlyCollection<string>> garantidos,
         IReadOnlyCollection<string> itensDaInscricaoNaBase,
@@ -250,74 +250,34 @@ public sealed class FatosDasVersoesPublicadas
     }
 
     /// <summary>
-    /// O primeiro item ou campo de grupo dado que um candidato pode já ter respondido e cujo eixo
-    /// difere do que alguma versão publicada congelou. O que o item guarda é a cópia tirada do
-    /// catálogo quando ele foi definido, então só o item regravado pode trocar de eixo; a
-    /// descrição, a orientação e a ordem de um valor não são eixo.
+    /// Cada fato já coletado cujo metadado, e cada agregado cuja operação, a versão nova congelaria diferente do que alguma versão
+    /// publicada congelou: primeiro os metadados e depois os agregados, cada grupo na ordem de entrada, uma troca por fato.
+    /// Recebe o que a versão nova vai congelar, nunca o catálogo vivo: o fato que a versão nova não cita numa condição não é
+    /// comparado.
     /// </summary>
-    public TrocaDeEixo? PrimeiroItemComEixoTrocado(IEnumerable<FatoColetado> itens, IEnumerable<GrupoColetado> grupos)
-    {
-        ArgumentNullException.ThrowIfNull(itens);
-        ArgumentNullException.ThrowIfNull(grupos);
-
-        foreach (FatoColetado item in itens.Concat(grupos.SelectMany(static g => g.Subitens)))
-        {
-            if (!_eixosDosItens.TryGetValue(item.FatoCodigo, out HashSet<EixosDoItemCongelado>? publicados))
-            {
-                continue;
-            }
-
-            EixosDoItemCongelado novo = EixosDoItemCongelado.De(item);
-            foreach (EixosDoItemCongelado publicado in publicados)
-            {
-                if (TrocaDeEixo.Primeira(item.FatoCodigo, publicado.Eixos(), novo.Eixos()) is { } troca)
-                {
-                    return troca;
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// O primeiro fato já coletado cujo metadado, ou o agregado cuja operação, a sessão congelaria
-    /// diferente do que alguma versão publicada congelou. Recebe o que a versão nova vai congelar,
-    /// nunca o catálogo vivo: o fato que a versão nova não cita numa condição não é comparado.
-    /// </summary>
-    public TrocaDeEixo? PrimeiroEixoCongeladoTrocado(
+    public IReadOnlyList<TrocaDeEixo> EixosCongeladosTrocados(
         IReadOnlyDictionary<string, EixosDoMetadadoCongelado> metadados, IReadOnlyDictionary<string, string> operacaoDosAgregados)
     {
         ArgumentNullException.ThrowIfNull(metadados);
         ArgumentNullException.ThrowIfNull(operacaoDosAgregados);
 
-        foreach ((string fato, EixosDoMetadadoCongelado novo) in metadados.OrderBy(static par => par.Key, StringComparer.Ordinal))
-        {
-            if (!_eixosDosItens.ContainsKey(fato) || !_eixosDosMetadados.TryGetValue(fato, out HashSet<EixosDoMetadadoCongelado>? publicados))
-            {
-                continue;
-            }
-
-            foreach (EixosDoMetadadoCongelado publicado in publicados)
-            {
-                if (TrocaDeEixo.Primeira(fato, publicado.Eixos(), novo.Eixos()) is { } troca)
-                {
-                    return troca;
-                }
-            }
-        }
-
-        foreach ((string agregado, string novo) in operacaoDosAgregados.OrderBy(static par => par.Key, StringComparer.Ordinal))
-        {
-            if (_operacoesDosAgregados.TryGetValue(agregado, out HashSet<string>? publicadas)
-                && publicadas.FirstOrDefault(p => !string.Equals(p, novo, StringComparison.Ordinal)) is { } diferente)
-            {
-                return new TrocaDeEixo(agregado, "operação do agregado", diferente, novo, DeAgregado: true);
-            }
-        }
-
-        return null;
+        return
+        [
+            .. metadados.Select(par => TrocaDoMetadado(par.Key, par.Value)).OfType<TrocaDeEixo>(),
+            .. operacaoDosAgregados.Select(par => TrocaDaOperacao(par.Key, par.Value)).OfType<TrocaDeEixo>(),
+        ];
     }
+
+    private TrocaDeEixo? TrocaDoMetadado(string fato, EixosDoMetadadoCongelado novo) =>
+        _eixosDosItens.ContainsKey(fato) && _eixosDosMetadados.TryGetValue(fato, out HashSet<EixosDoMetadadoCongelado>? publicados)
+            ? publicados.Select(publicado => TrocaDeEixo.Primeira(fato, publicado.Eixos(), novo.Eixos())).OfType<TrocaDeEixo>().FirstOrDefault()
+            : null;
+
+    private TrocaDeEixo? TrocaDaOperacao(string agregado, string novo) =>
+        _operacoesDosAgregados.TryGetValue(agregado, out HashSet<string>? publicadas)
+        && publicadas.FirstOrDefault(publicada => !string.Equals(publicada, novo, StringComparison.Ordinal)) is { } diferente
+            ? new TrocaDeEixo(agregado, "operação do agregado", diferente, novo, DeAgregado: true)
+            : null;
 
     /// <summary>Os itens, os grupos e os campos de grupo que o formulário da finalidade coleta na versão.</summary>
     private static SortedSet<string> Produzidos(GrafoConfiguracao versao, FinalidadeFormulario finalidade)

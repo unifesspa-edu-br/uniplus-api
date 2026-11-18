@@ -6,6 +6,7 @@ using System.Text.Json.Nodes;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
@@ -17,17 +18,17 @@ internal static class VersoesDoEnvelopeDeTeste
 {
     public static ProcessoSeletivo ProcessoPublicado()
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
-        CorpusEnvelope.Publicar(processo);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        CorpusEnvelopeEntrada.Publicar(processo);
         return processo;
     }
 
     public static byte[] BytesDoCorpus() =>
-        CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(CorpusEnvelope.ProcessoRico())).Bytes;
+        CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(CorpusEnvelopeProcessoRico.ProcessoRico())).Bytes;
 
     public static byte[] BytesComRetificacaoDe(Guid atoRetificadoId, string motivo) =>
-        CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(
-            CorpusEnvelope.ProcessoRico(),
+        CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(
+            CorpusEnvelopeProcessoRico.ProcessoRico(),
             new RetificacaoDoEdital(atoRetificadoId, motivo))).Bytes;
 
     public static JsonObject EnvelopeDosBytes(byte[] bytes) =>
@@ -36,7 +37,7 @@ internal static class VersoesDoEnvelopeDeTeste
     public static (VersaoConfiguracao Versao, byte[] Bytes) VersaoRica()
     {
         byte[] bytes = BytesDoCorpus();
-        return (CorpusEnvelope.VersaoDeAbertura(ProcessoPublicado(), bytes), bytes);
+        return (CorpusEnvelopeEntrada.VersaoDeAbertura(ProcessoPublicado(), bytes), bytes);
     }
 
     public static VersaoConfiguracao VersaoComSchema(string schemaVersion) =>
@@ -49,12 +50,12 @@ internal static class VersoesDoEnvelopeDeTeste
         AbrirVersaoDoCorpus(CorpusEnvelope.Codec.SchemaVersion, CorpusEnvelope.Codec.AlgoritmoHash, atoCriadorHash);
 
     public static Result<EnvelopeReidratado> ReidratarComoAbertura(byte[] bytes) =>
-        CorpusEnvelope.Registro.Reidratar(CorpusEnvelope.VersaoDeAbertura(ProcessoPublicado(), bytes));
+        CorpusEnvelope.Registro.Reidratar(CorpusEnvelopeEntrada.VersaoDeAbertura(ProcessoPublicado(), bytes));
 
     public static Result<EnvelopeReidratado> ReidratarComoSucessora(byte[] abertura, byte[] sucessora)
     {
-        VersaoConfiguracao v1 = CorpusEnvelope.VersaoDeAbertura(ProcessoPublicado(), abertura);
-        return CorpusEnvelope.Registro.Reidratar(CorpusEnvelope.VersaoDeRetificacao(v1, sucessora));
+        VersaoConfiguracao v1 = CorpusEnvelopeEntrada.VersaoDeAbertura(ProcessoPublicado(), abertura);
+        return CorpusEnvelope.Registro.Reidratar(CorpusEnvelopeEntrada.VersaoDeRetificacao(v1, sucessora));
     }
 
     /// <summary>
@@ -80,12 +81,6 @@ internal static class VersoesDoEnvelopeDeTeste
 
     private static VersaoConfiguracao AbrirVersaoDoCorpus(string schemaVersion, string algoritmoHash, string atoCriadorHash) =>
         VersaoConfiguracao.Abrir(
-            ProcessoPublicado().Id,
-            BytesDoCorpus(),
-            schemaVersion,
-            algoritmoHash,
-            atoCriadorId: CorpusEnvelope.AtoAbertura,
-            atoCriadorHash: atoCriadorHash,
-            atorUsuarioContaId: CorpusEnvelope.Ator,
-            instante: DateTimeOffset.UnixEpoch);
+            ProcessoPublicado().Id, new DocumentoCongelado(BytesDoCorpus(), schemaVersion, algoritmoHash, atoCriadorHash),
+            atoCriadorId: CorpusEnvelope.AtoAbertura, atorUsuarioContaId: CorpusEnvelope.Ator, instante: DateTimeOffset.UnixEpoch);
 }

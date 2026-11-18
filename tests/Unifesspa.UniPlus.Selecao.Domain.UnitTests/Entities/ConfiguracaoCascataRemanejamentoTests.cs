@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// forma da cascata: ordens únicas/contíguas a partir de 1 por origem,
 /// destinos sem repetição, origem nunca é destino de si mesma, limites de
 /// tamanho e formato dos códigos. O vínculo com a regra versionada da cascata de remanejamento de cotas (UNI-REQ-0056: regra tipada e conteúdo
-/// vinculado ao esquema_args) é responsabilidade do handler, coberta em
+/// vinculado ao declaracao_da_regra) é responsabilidade do handler, coberta em
 /// <c>DefinirCascataRemanejamentoCommandHandlerTests</c>.
 /// </summary>
 public sealed class ConfiguracaoCascataRemanejamentoTests
@@ -21,13 +21,24 @@ public sealed class ConfiguracaoCascataRemanejamentoTests
     private static readonly string HashFixo = string.Concat(Enumerable.Repeat("ab01234567", 7))[..64];
 
     private static ReferenciaRegra RegraCascata() =>
-        ReferenciaRegra.Criar(RegraRemanejamentoCodigo.Cascata, "v1", HashFixo).Value!;
+        ReferenciaRegra.De(RegraRemanejamentoCodigo.Cascata, "v1", HashFixo);
 
     private static DestinoRemanejamento Destino(string origem, int ordem, string destino) =>
         DestinoRemanejamento.Criar(origem, ordem, destino).Value!;
 
     [Fact(DisplayName = "Criar com a matriz legal completa (8 origens × 7 destinos) tem sucesso")]
     public void Criar_MatrizLegalCompleta_Aceita()
+    {
+        List<DestinoRemanejamento> destinos = DestinosDaMatrizCompleta();
+
+        Result<ConfiguracaoCascataRemanejamento> resultado = ConfiguracaoCascataRemanejamento.Criar(RegraCascata(), "AC", destinos);
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.Destinos.Should().HaveCount(56);
+        resultado.Value!.FallbackCodigo.Should().Be("AC");
+    }
+
+    private static List<DestinoRemanejamento> DestinosDaMatrizCompleta()
     {
         string[] origens = ["LB_PPI", "LB_Q", "LB_PCD", "LB_EP", "LI_PPI", "LI_Q", "LI_PCD", "LI_EP"];
         List<DestinoRemanejamento> destinos = [];
@@ -40,11 +51,19 @@ public sealed class ConfiguracaoCascataRemanejamentoTests
             }
         }
 
-        Result<ConfiguracaoCascataRemanejamento> resultado = ConfiguracaoCascataRemanejamento.Criar(RegraCascata(), "AC", destinos);
+        return destinos;
+    }
 
-        resultado.IsSuccess.Should().BeTrue();
-        resultado.Value!.Destinos.Should().HaveCount(56);
-        resultado.Value!.FallbackCodigo.Should().Be("AC");
+    [Fact(DisplayName = "Violações da mesma origem são acumuladas em ordem")]
+    public void ValidarForma_OrdensEDestinoRepetidos_AcumulaEmOrdem()
+    {
+        List<FieldError> erros = ConfiguracaoCascataRemanejamento.ValidarForma(
+            "AC", [Destino("LB_PPI", 2, "LB_Q"), Destino("LB_PPI", 2, "LB_Q")]);
+
+        erros.Select(e => e.Error.Code).Should().Equal(
+            "ConfiguracaoCascataRemanejamento.OrdemDuplicadaNaOrigem",
+            "ConfiguracaoCascataRemanejamento.OrdemNaoContigua",
+            "ConfiguracaoCascataRemanejamento.DestinoDuplicado");
     }
 
     [Fact(DisplayName = "Criar com uma origem e um destino tem sucesso (caso mínimo)")]
@@ -128,6 +147,7 @@ public sealed class ConfiguracaoCascataRemanejamentoTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoCascataRemanejamento.FallbackObrigatorio");
+        resultado.Error.Message.Should().Be("Informe o código do destino final com até 60 caracteres, usando letras maiúsculas, números ou sublinhado.");
     }
 
     [Fact(DisplayName = "Criar com lista de destinos vazia falha (SemDestinos)")]

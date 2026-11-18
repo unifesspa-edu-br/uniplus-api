@@ -61,13 +61,16 @@ public sealed class DocumentoAPublicarTests
         }
         else
         {
-            resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
-            {
-                Field = "tipoDeMidia",
-                Error = new { Code = DocumentoAPublicarErrorCodes.FormatoNaoAceitoParaAFinalidade },
-            });
+            ConferirFormatoNaoAceitoParaAFinalidade(resultado);
         }
     }
+
+    private static void ConferirFormatoNaoAceitoParaAFinalidade(Result<DocumentoAPublicar> resultado) =>
+        resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
+        {
+            Field = "tipoDeMidia",
+            Error = new { Code = DocumentoAPublicarErrorCodes.FormatoNaoAceitoParaAFinalidade },
+        });
 
     [Theory(DisplayName = "Finalidade ausente ou fora do catálogo é recusada")]
     [InlineData(null)]
@@ -85,7 +88,7 @@ public sealed class DocumentoAPublicarTests
         });
     }
 
-    [Theory(DisplayName = "O tipo de mídia define o formato e a extensão da chave de envio e da chave selada")]
+    [Theory(DisplayName = "O tipo de mídia define o formato e a extensão da chave de envio e da chave da cópia gravada")]
     [InlineData(TiposDeMidiaDeDocumento.Pdf, FormatoDeDocumento.Pdf, "pdf")]
     [InlineData(TiposDeMidiaDeDocumento.Docx, FormatoDeDocumento.Docx, "docx")]
     [InlineData(TiposDeMidiaDeDocumento.Odt, FormatoDeDocumento.Odt, "odt")]
@@ -161,6 +164,29 @@ public sealed class DocumentoAPublicarTests
         documento.TamanhoBytes.Should().Be(1024);
         documento.HashSha256.Should().Be("hash-sha256-fake");
         documento.ConfirmadoEm.Should().BeCloseTo(Relogio.GetUtcNow(), TimeSpan.FromSeconds(5));
+    }
+
+    [Fact(DisplayName = "A chave da cópia confirmada é determinística e existe desde o documento pendente")]
+    public void ChaveDaCopiaGravada_DeterministicaDesdeOPendente()
+    {
+        DocumentoAPublicar documento = Pendente(TiposDeMidiaDeDocumento.Pdf);
+
+        documento.ObjectKeyConfirmado.Should().BeNull();
+        documento.ChaveDaCopiaGravada.Should().Be(
+            $"selecao/documentos-a-publicar/{ProcessoSeletivoId:D}/{documento.Id:D}/confirmado.pdf");
+        documento.ChaveDaCopiaGravada.Should().NotBe(documento.ObjectKey);
+    }
+
+    [Fact(DisplayName = "A confirmação grava como chave da cópia a mesma chave que o pendente já calculava")]
+    public void Confirmar_GravaAChaveDaCopiaGravadaCalculadaAntes()
+    {
+        DocumentoAPublicar documento = Pendente(TiposDeMidiaDeDocumento.Docx);
+        string chaveCalculadaAntes = documento.ChaveDaCopiaGravada;
+
+        documento.Confirmar(1024, new string('a', 64), Relogio).IsSuccess.Should().BeTrue();
+
+        documento.ObjectKeyConfirmado.Should().Be(chaveCalculadaAntes);
+        documento.ChaveDaCopiaGravada.Should().Be(chaveCalculadaAntes);
     }
 
     [Fact(DisplayName = "Confirmar um documento já confirmado é recusado (imutabilidade)")]

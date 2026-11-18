@@ -15,11 +15,12 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Projeta no envelope o cronograma: fases, produtos, bancas requeridas e regras de recurso.
+/// Projeta no envelope o cronograma: fases, produtos, bancas requeridas, regras de recurso e regra de homologação das inscrições.
 /// </summary>
 internal static class SerializacaoDoCronograma
 {
@@ -30,33 +31,49 @@ internal static class SerializacaoDoCronograma
     };
 
     private static JsonArray SerializarFasesCronograma(ProcessoSeletivo processo) =>
-        new([.. processo.CronogramaFases
-            .OrderBy(static f => f.Ordem)
-            .ThenBy(static f => f.Id)
+        new([.. OrdemCanonicaDaConfiguracao.Fases(processo.CronogramaFases)
             .Select(static fase => (JsonNode)SerializarFase(fase))]);
 
-    private static JsonObject SerializarFase(FaseCronograma fase) => new()
+    internal static JsonObject SerializarFase(FaseCronograma fase)
     {
-        ["id"] = fase.Id,
-        ["ordem"] = fase.Ordem,
-        ["faseCanonicaOrigemId"] = fase.FaseCanonicaOrigemId,
-        ["codigo"] = HashCanonicalComputer.NormalizeNfc(fase.Codigo),
-        ["origemData"] = fase.OrigemData.ToString(),
-        ["agrupaEtapas"] = fase.AgrupaEtapas,
-        ["permiteComplementacao"] = fase.PermiteComplementacao,
-        ["coletaInscricao"] = fase.ColetaInscricao,
-        ["coletaSolicitacaoIsencao"] = fase.ColetaSolicitacaoIsencao,
-        ["inicio"] = fase.Inicio is { } inicio ? HashCanonicalComputer.SerializeInstantCanonical(inicio) : null,
-        ["fim"] = fase.Fim is { } fim ? HashCanonicalComputer.SerializeInstantCanonical(fim) : null,
-        ["produtos"] = SerializarProdutosDaFase(fase),
-        ["faseConcluinteCodigo"] = fase.FaseConcluinteCodigo is { } concluinte
-            ? HashCanonicalComputer.NormalizeNfc(concluinte)
-            : null,
-        ["emiteParecerIndividual"] = fase.EmiteParecerIndividual,
-        ["bancasRequeridas"] = SerializarBancasRequeridas(fase),
-        ["regraRecurso"] = fase.RegraRecurso is { } regraRecurso ? SerializarRegraRecursoFase(regraRecurso) : null,
-        ["unidadeResponsavel"] = fase.UnidadeResponsavel is { } unidade ? SerializarUnidadeResponsavel(unidade) : null,
-    };
+        JsonObject item = new() { ["id"] = fase.Id, ["bancasRequeridas"] = SerializarBancasRequeridas(fase) };
+        AcrescentarOrigemCanonica(item, fase);
+        AcrescentarDecisoesDeCronograma(item, fase);
+        AcrescentarPublicacoes(item, fase);
+
+        return item;
+    }
+
+    private static void AcrescentarOrigemCanonica(JsonObject item, FaseCronograma fase)
+    {
+        item["faseCanonicaOrigemId"] = fase.FaseCanonicaOrigemId;
+        item["codigo"] = HashCanonicalComputer.NormalizeNfc(fase.Codigo);
+        item["origemData"] = fase.OrigemData.ToString();
+        item["agrupaEtapas"] = fase.AgrupaEtapas;
+        item["permiteComplementacao"] = fase.PermiteComplementacao;
+        item["coletaInscricao"] = fase.ColetaInscricao;
+        item["coletaSolicitacaoIsencao"] = fase.ColetaSolicitacaoIsencao;
+    }
+
+    private static void AcrescentarDecisoesDeCronograma(JsonObject item, FaseCronograma fase)
+    {
+        item["ordem"] = fase.Ordem;
+        item["inicio"] = fase.Inicio is { } inicio ? HashCanonicalComputer.SerializeInstantCanonical(inicio) : null;
+        item["fim"] = fase.Fim is { } fim ? HashCanonicalComputer.SerializeInstantCanonical(fim) : null;
+        item["faseConcluinteCodigo"] = fase.FaseConcluinteCodigo is { } concluinte ? HashCanonicalComputer.NormalizeNfc(concluinte) : null;
+        item["unidadeResponsavel"] = fase.UnidadeResponsavel is { } unidade ? SerializarUnidadeResponsavel(unidade) : null;
+    }
+
+    private static void AcrescentarPublicacoes(JsonObject item, FaseCronograma fase)
+    {
+        item["produtos"] = SerializarProdutosDaFase(fase);
+        item["emiteParecerIndividual"] = fase.EmiteParecerIndividual;
+        item["regraRecurso"] = fase.RegraRecurso is { } regraRecurso ? SerializarRegraRecursoFase(regraRecurso) : null;
+        item["tiposDeDecisao"] = TiposDeDecisaoNoEnvelope.Serializar(fase.TiposDeDecisao);
+        item[RegraDeHomologacaoNoEnvelope.Chave] = fase.RegraDeHomologacao is { } regraDeHomologacao
+            ? RegraDeHomologacaoNoEnvelope.Serializar(regraDeHomologacao)
+            : null;
+    }
 
     private static JsonObject SerializarUnidadeResponsavel(UnidadeResponsavelSnapshot unidade) => new()
     {
@@ -67,9 +84,7 @@ internal static class SerializacaoDoCronograma
 
     private static JsonArray SerializarProdutosDaFase(FaseCronograma fase)
     {
-        IOrderedEnumerable<ProdutoDaFase> ordenados = fase.Produtos
-            .OrderBy(static p => p.AtoCodigo, StringComparer.Ordinal)
-            .ThenBy(static p => p.Papel?.ToString() ?? string.Empty, StringComparer.Ordinal);
+        IOrderedEnumerable<ProdutoDaFase> ordenados = OrdemCanonicaDaConfiguracao.ProdutosDaFase(fase.Produtos);
 
         return new JsonArray([.. ordenados.Select(static p => (JsonNode)new JsonObject
         {
@@ -81,10 +96,8 @@ internal static class SerializacaoDoCronograma
 
     private static JsonArray SerializarBancasRequeridas(FaseCronograma fase)
     {
-        IOrderedEnumerable<(BancaRequerida Banca, JsonObject Item)> ordenadas = fase.BancasRequeridas
-            .Select(static b => (Banca: b, Item: SerializarBancaRequerida(b)))
-            .OrderBy(static par => par.Banca.TipoBancaOrigemId)
-            .ThenBy(static par => par.Banca.Codigo, StringComparer.Ordinal)
+        IOrderedEnumerable<(BancaRequerida Banca, JsonObject Item)> ordenadas = OrdemCanonicaDaConfiguracao
+            .BancasDaFase(fase.BancasRequeridas.Select(static b => (Banca: b, Item: SerializarBancaRequerida(b))), static par => par.Banca)
             .ThenBy(
                 static par => EscritaCanonica.PerfilAtual.Serializar(par.Item),
                 ComparadorLexicograficoDeBytes.Instancia);
@@ -103,8 +116,7 @@ internal static class SerializacaoDoCronograma
 
     private static JsonArray SerializarRecorteDeCompetencia(BancaRequerida banca)
     {
-        IOrderedEnumerable<CategoriaJulgada> ordenadas = banca.RecorteDeCompetencia
-            .OrderBy(static c => c.Codigo, StringComparer.Ordinal);
+        IOrderedEnumerable<CategoriaJulgada> ordenadas = OrdemCanonicaDaConfiguracao.RecorteDeCompetencia(banca.RecorteDeCompetencia);
 
         return new JsonArray([.. ordenadas.Select(static c => (JsonNode)new JsonObject
         {
@@ -117,21 +129,22 @@ internal static class SerializacaoDoCronograma
     {
         ["regra"] = EscritaCanonica.SerializarReferenciaRegra(regraRecurso.Regra),
         ["produtoAncoraId"] = regraRecurso.ProdutoAncoraId,
-        ["args"] = SerializarArgsRegraPrazoRecurso(regraRecurso.Args),
+        ["parametros"] = SerializarParametrosRegraPrazoRecurso(regraRecurso.Parametros),
+        ["procedimentos"] = SerializacaoDosProcedimentosDeRecurso.Serializar(regraRecurso.Procedimentos),
     };
 
-    internal static JsonObject SerializarArgsRegraPrazoRecurso(ArgsRegraPrazoRecurso args) => new()
+    internal static JsonObject SerializarParametrosRegraPrazoRecurso(ParametrosRegraPrazoRecurso parametros) => new()
     {
-        ["prazoValor"] = HashCanonicalComputer.SerializeDecimalCanonical(args.PrazoValor, EscritaCanonica.EscalaPadrao),
-        ["prazoUnidade"] = args.PrazoUnidade.ToString(),
-        ["suspensividadePrimeiraInstanciaValor"] = args.SuspensividadePrimeiraInstanciaValor is { } v1
+        ["prazoValor"] = HashCanonicalComputer.SerializeDecimalCanonical(parametros.PrazoValor, EscritaCanonica.EscalaPadrao),
+        ["prazoUnidade"] = parametros.PrazoUnidade.ToString(),
+        ["suspensividadePrimeiraInstanciaValor"] = parametros.SuspensividadePrimeiraInstanciaValor is { } v1
             ? HashCanonicalComputer.SerializeDecimalCanonical(v1, EscritaCanonica.EscalaPadrao)
             : null,
-        ["suspensividadePrimeiraInstanciaUnidade"] = args.SuspensividadePrimeiraInstanciaUnidade?.ToString(),
-        ["admiteInstanciaSuperior"] = args.AdmiteInstanciaSuperior,
-        ["suspensividadeSegundaInstanciaValor"] = args.SuspensividadeSegundaInstanciaValor is { } v2
+        ["suspensividadePrimeiraInstanciaUnidade"] = parametros.SuspensividadePrimeiraInstanciaUnidade?.ToString(),
+        ["admiteInstanciaSuperior"] = parametros.AdmiteInstanciaSuperior,
+        ["suspensividadeSegundaInstanciaValor"] = parametros.SuspensividadeSegundaInstanciaValor is { } v2
             ? HashCanonicalComputer.SerializeDecimalCanonical(v2, EscritaCanonica.EscalaPadrao)
             : null,
-        ["suspensividadeSegundaInstanciaUnidade"] = args.SuspensividadeSegundaInstanciaUnidade?.ToString(),
+        ["suspensividadeSegundaInstanciaUnidade"] = parametros.SuspensividadeSegundaInstanciaUnidade?.ToString(),
     };
 }

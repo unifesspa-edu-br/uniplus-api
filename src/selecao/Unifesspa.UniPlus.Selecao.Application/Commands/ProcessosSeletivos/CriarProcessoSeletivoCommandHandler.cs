@@ -43,104 +43,85 @@ public static class CriarProcessoSeletivoCommandHandler
         ArgumentNullException.ThrowIfNull(tipoProcessoReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        // O processo nasce na unidade que o comando nomeia, então é contra ela que a permissão se decide, antes de
-        // qualquer leitura: quem não pode configurar naquela unidade não descobre se ela existe ou tem cidade.
+        Result<ProcessoSeletivo> novo = await NovoProcessoAsync(
+            command, processoSeletivoRepository, verificador, unidadeReader, tipoProcessoReader, cancellationToken).ConfigureAwait(false);
+
+        return novo.IsFailure
+            ? Result<Guid>.Failure(novo.Error!)
+            : await GravarAsync(novo.Value!, processoSeletivoRepository, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result<ProcessoSeletivo>> NovoProcessoAsync(
+        CriarProcessoSeletivoCommand command,
+        IProcessoSeletivoRepository processoSeletivoRepository,
+        IVerificadorDeAcesso verificador,
+        IUnidadeReader unidadeReader,
+        ITipoProcessoReader tipoProcessoReader,
+        CancellationToken cancellationToken)
+    {
+        Result<IdentificadorLegivel> identificador = await IdentificadorDeQuemPodeCriarAsync(command, verificador, cancellationToken).ConfigureAwait(false);
+        if (identificador.IsFailure)
+        {
+            return Result<ProcessoSeletivo>.Failure(identificador.Error!);
+        }
+
+        Result<ReferenciasDoNovoProcesso> referencias = await ReferenciasDoNovoProcesso
+            .ResolverAsync(command, unidadeReader, tipoProcessoReader, cancellationToken).ConfigureAwait(false);
+
+        return referencias.IsFailure
+            ? Result<ProcessoSeletivo>.Failure(referencias.Error!)
+            : await CriarSeOIdentificadorEstaLivreAsync(
+                command, identificador.Value!, referencias.Value!, processoSeletivoRepository, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// O processo nasce na unidade que o comando nomeia, então é contra ela que a permissão se decide, antes de
+    /// qualquer leitura: quem não pode configurar naquela unidade não descobre se ela existe ou tem cidade.
+    /// Presença e formato do identificador legível são conferidos antes de qualquer consulta: validação de campo
+    /// vence I/O, e quem erra não precisa esperar pelas leituras seguintes.
+    /// </summary>
+    private static async Task<Result<IdentificadorLegivel>> IdentificadorDeQuemPodeCriarAsync(
+        CriarProcessoSeletivoCommand command, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
+    {
         ResultadoDoAcesso acesso = await AcessoAoProcesso
             .ExigirNaUnidadeAsync(
                 verificador, command.UnidadeAdministradoraOrigemId, PermissaoSelecao.ProcessosConfigurar,
                 unidade => AcessoAoProcesso.ResourceDoProcesso(unidade, processoId: null), cancellationToken)
             .ConfigureAwait(false);
-        if (acesso != ResultadoDoAcesso.Permitido)
-        {
-            return Result<Guid>.Failure(AcessoAoProcesso.Recusa(acesso));
-        }
 
-        // Presença e formato do identificador legível são conferidos antes de qualquer consulta:
-        // validação de campo vence I/O, e quem erra não precisa esperar pelas leituras abaixo.
-        Result<IdentificadorLegivel> identificadorResult = IdentificadorLegivelDeclarado(command.IdentificadorLegivel);
-        if (identificadorResult.IsFailure)
-        {
-            return Result<Guid>.Failure(identificadorResult.Error!);
-        }
+        return acesso == ResultadoDoAcesso.Permitido
+            ? IdentificadorLegivelDeclarado(command.IdentificadorLegivel)
+            : Result<IdentificadorLegivel>.Failure(AcessoAoProcesso.Recusa(acesso));
+    }
 
-        IdentificadorLegivel identificadorLegivel = identificadorResult.Value!;
+    private static async Task<Result<ProcessoSeletivo>> CriarSeOIdentificadorEstaLivreAsync(
+        CriarProcessoSeletivoCommand command,
+        IdentificadorLegivel identificador,
+        ReferenciasDoNovoProcesso referencias,
+        IProcessoSeletivoRepository processoSeletivoRepository,
+        CancellationToken cancellationToken)
+    {
+        bool emUso = await processoSeletivoRepository
+            .IdentificadorLegivelEmUsoAsync(identificador, excluirId: null, cancellationToken).ConfigureAwait(false);
 
-        UnidadeView? unidade = await unidadeReader
-            .ObterPorIdAsync(command.UnidadeAdministradoraOrigemId, cancellationToken)
-            .ConfigureAwait(false);
-        if (unidade is null)
-        {
-            return Result<Guid>.Failure(new DomainError(
-                "ProcessoSeletivo.UnidadeAdministradoraNaoEncontrada",
-                $"Unidade administradora {command.UnidadeAdministradoraOrigemId} não encontrada ou não está mais viva."));
-        }
+        return emUso
+            ? Result<ProcessoSeletivo>.Failure(IdentificadorLegivelEmUso(identificador))
+            : Result<ProcessoSeletivo>.Success(ProcessoSeletivo.Criar(
+                command.Nome, referencias.Tipo, command.OrigemCandidatos, referencias.UnidadeId, referencias.Unidade,
+                referencias.Localidade, identificador));
+    }
 
-        // A cidade da Unidade administradora descreve onde ela fica, e é copiada para o
-        // snapshot dela — não é a localidade que rege a contagem de prazos, que o processo
-        // declara por conta própria (UNI-REQ-0111). A exigência de a Unidade ter cidade
-        // permanece como regra do cadastro dela, e é avaliada aqui porque o snapshot a
-        // carrega; a justificativa original, que a apoiava na contagem de prazo, deixou de
-        // valer quando a localidade passou a ser declarada.
-        if (string.IsNullOrWhiteSpace(unidade.CidadeCodigoIbge))
-        {
-            return Result<Guid>.Failure(new DomainError(
-                "ProcessoSeletivo.UnidadeAdministradoraSemCidade",
-                $"Unidade administradora {command.UnidadeAdministradoraOrigemId} não tem cidade cadastrada — obrigatória para criar processo seletivo."));
-        }
-
-        // Erro nomeado, e não validação de contrato: é este o código que o catálogo
-        // público publica para a causa (uniplus.selecao.processo_seletivo.localidade_ausente).
-        // Exigir os campos no validator devolveria uniplus.validacao e o consumidor perderia
-        // a página que explica a causa.
-        if (command.LocalidadeNaoDeclarada)
-        {
-            return Result<Guid>.Failure(new DomainError(
-                "ProcessoSeletivo.LocalidadeAusente",
-                "A localidade que rege a contagem dos prazos é obrigatória para criar o processo seletivo."));
-        }
-
-        Result<LocalidadeRegente> localidadeResult = LocalidadeRegente.Criar(
-            command.LocalidadeCodigoIbge, command.LocalidadeNome, command.LocalidadeUf);
-        if (localidadeResult.IsFailure)
-        {
-            return Result<Guid>.Failure(localidadeResult.Error!);
-        }
-
-        TipoProcessoView? tipo = await tipoProcessoReader
-            .ObterAtivoPorIdAsync(command.TipoProcessoOrigemId, cancellationToken)
-            .ConfigureAwait(false);
-        if (tipo is null)
-        {
-            return Result<Guid>.Failure(new DomainError(
-                "ProcessoSeletivo.TipoProcessoNaoEncontradoOuInativo",
-                $"Tipo de processo seletivo {command.TipoProcessoOrigemId} não encontrado ou não está ativo."));
-        }
-
-        Result<TipoProcessoSnapshot> tipoSnapshotResult = TipoProcessoSnapshot.Criar(tipo.Id, tipo.Codigo, tipo.Nome);
-        if (tipoSnapshotResult.IsFailure)
-        {
-            return Result<Guid>.Failure(tipoSnapshotResult.Error!);
-        }
-
-        Result<UnidadeAdministradoraSnapshot> snapshotResult = UnidadeAdministradoraSnapshot.Criar(
-            unidade.Sigla, unidade.Slug, unidade.Nome, unidade.Tipo,
-            unidade.CidadeCodigoIbge, unidade.CidadeNome, unidade.CidadeUf);
-        if (snapshotResult.IsFailure)
-        {
-            return Result<Guid>.Failure(snapshotResult.Error!);
-        }
-
-        if (await processoSeletivoRepository
-                .IdentificadorLegivelEmUsoAsync(identificadorLegivel, excluirId: null, cancellationToken)
-                .ConfigureAwait(false))
-        {
-            return Result<Guid>.Failure(IdentificadorLegivelEmUso(identificadorLegivel));
-        }
-
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            command.Nome, tipoSnapshotResult.Value!, command.OrigemCandidatos, unidade.Id, snapshotResult.Value!,
-            localidadeResult.Value!, identificadorLegivel);
-
+    /// <summary>
+    /// Se outro processo gravou o mesmo identificador entre a consulta e esta gravação, o processo recusado sai do
+    /// contexto: sem isso ele continuaria Added no escopo, e uma gravação posterior no mesmo contexto tentaria
+    /// inseri-lo de novo.
+    /// </summary>
+    private static async Task<Result<Guid>> GravarAsync(
+        ProcessoSeletivo processo,
+        IProcessoSeletivoRepository processoSeletivoRepository,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
         await processoSeletivoRepository.AdicionarAsync(processo, cancellationToken).ConfigureAwait(false);
         try
         {
@@ -148,11 +129,8 @@ public static class CriarProcessoSeletivoCommandHandler
         }
         catch (Exception ex) when (EhConflitoDeIdentificadorLegivel(ex))
         {
-            // Outro processo gravou o mesmo identificador entre a consulta acima e esta gravação. O
-            // processo recusado sai do contexto: sem isso ele continuaria Added no escopo, e uma
-            // gravação posterior no mesmo contexto tentaria inseri-lo de novo.
             unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result<Guid>.Failure(IdentificadorLegivelEmUso(identificadorLegivel));
+            return Result<Guid>.Failure(IdentificadorLegivelEmUso(processo.IdentificadorLegivel!.Value));
         }
 
         return Result<Guid>.Success(processo.Id);

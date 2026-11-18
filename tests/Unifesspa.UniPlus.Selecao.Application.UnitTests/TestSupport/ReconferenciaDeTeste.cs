@@ -23,6 +23,6 @@ internal static class ReconferenciaDeTeste
                 copias.Value.FatosJaColetados,
                 new Dictionary<Guid, UnidadeResponsavelSnapshot>(),
                 new ProtecaoVigenteDasExigencias(
-                    new Dictionary<string, ClassificacaoDeProtecao>(), new Dictionary<Guid, ProtecaoDoDocumento>(), new HashSet<string>())));
+                    new Dictionary<string, ClassificacaoDeProtecao>(), new Dictionary<Guid, ProtecaoDoDocumento>(), new HashSet<string>(), new HashSet<Guid>())));
     }
 }

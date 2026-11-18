@@ -27,7 +27,7 @@ public sealed class DefinirCronogramaFasesAncoraDoRecursoTests
             RegraRecurso = RecursoAncoradoNaClassificacao() with { RegraCodigo = RegraDeBonus().Codigo },
         };
 
-        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(fase);
+        Result resultado = await cenario.DefinirFasesAsync(fase);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RegraRecursoFase.RegraCatalogoInvalida");
@@ -39,7 +39,7 @@ public sealed class DefinirCronogramaFasesAncoraDoRecursoTests
         CenarioDoCronogramaDeFases cenario = CenarioComTipoDaClassificacao(TipoAtoDaClassificacao() with { CongelaConfiguracao = true });
         FaseCronogramaInput fase = FaseRecorrivelAncorada(cenario, ProdutoDaClassificacao(PapelProdutoFaseCodigo.Preliminar));
 
-        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(fase);
+        Result resultado = await cenario.DefinirFasesAsync(fase);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.TipoQueCongelaDeclaradoComoResultado");
@@ -51,7 +51,7 @@ public sealed class DefinirCronogramaFasesAncoraDoRecursoTests
         CenarioDoCronogramaDeFases cenario = CenarioComTipoDaClassificacao(TipoAtoDaClassificacao() with { EfeitoIrreversivel = true });
         FaseCronogramaInput fase = FaseRecorrivelAncorada(cenario, ProdutoDaClassificacao(PapelProdutoFaseCodigo.Preliminar));
 
-        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(fase);
+        Result resultado = await cenario.DefinirFasesAsync(fase);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RegraRecursoFase.AncoraEmAtoIrreversivel",
@@ -65,11 +65,11 @@ public sealed class DefinirCronogramaFasesAncoraDoRecursoTests
         FaseCronogramaInput ancorada = FaseRecorrivelAncorada(cenario, ProdutosPreliminarEDefinitivo());
         FaseCronogramaInput fase = ancorada with { RegraRecurso = RecursoAncoradoNaClassificacao() with { AdmiteInstanciaSuperior = true } };
 
-        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(fase);
+        Result resultado = await cenario.DefinirFasesAsync(fase);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         cenario.Processo.CronogramaFases.Should().ContainSingle().Which.Produtos.Should().HaveCount(2);
-        cenario.Processo.CronogramaFases.Single().RegraRecurso!.Args.AdmiteInstanciaSuperior.Should().BeTrue(
+        cenario.Processo.CronogramaFases.Single().RegraRecurso!.Parametros.AdmiteInstanciaSuperior.Should().BeTrue(
             "a declaração é da janela, e o handler a leva do payload, não a fixa");
     }
 
@@ -83,7 +83,7 @@ public sealed class DefinirCronogramaFasesAncoraDoRecursoTests
         FaseCronogramaInput preliminar = FaseDeRecursoSobAClassificacao(cenario, FaseCanonicaRecorrivel(), ordem: 2);
         FaseCronogramaInput conclusiva = cenario.CadastrarFase(FaseCanonicaDoResultadoFinal()) with { Ordem = 3 };
 
-        Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(biopsicossocial, preliminar, conclusiva);
+        Result resultado = await cenario.DefinirFasesAsync(biopsicossocial, preliminar, conclusiva);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         CadaRegraAncoraNoProdutoDaPropriaFase(cenario.Processo);

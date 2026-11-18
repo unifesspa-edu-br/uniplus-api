@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 
 public sealed record BaseLegalBonusRegionalDto(
     Guid Id,
+    string Codigo,
     string TipoInstrumento,
     string Identificacao,
     string Descricao,

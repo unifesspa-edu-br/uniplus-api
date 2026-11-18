@@ -25,7 +25,6 @@ public enum OperacaoQueCongela
 {
     Publicar,
     Retificar,
-    FecharRetificacao,
 }
 
 /// <summary>Um defeito que o processo ou os cadastros podem ter na hora de congelar, cada um com a recusa que lhe cabe.</summary>
@@ -44,8 +43,9 @@ public enum DefeitoDoCongelamento
 }
 
 /// <summary>
-/// Uma operação que congela, sobre um processo conforme, a que os testes acrescentam defeitos. A recusa que vence
-/// quando dois defeitos coincidem é a do portão de maior prioridade.
+/// Uma operação que congela, sobre um processo conforme, a que os testes acrescentam defeitos. O defeito que impede
+/// as conferências seguintes (o estado, o ato, o documento, o catálogo e as leituras) recusa sozinho; os demais se acumulam, na ordem em que a
+/// conferência os julga.
 /// </summary>
 internal sealed class CenarioDeRecusaNoCongelamento
 {
@@ -56,48 +56,47 @@ internal sealed class CenarioDeRecusaNoCongelamento
         [DefeitoDoCongelamento.ProtecaoPendente] = static c => c.Servicos.ComTiposDocumento(TiposDeDocumentoComExigenciaPendente()),
         [DefeitoDoCongelamento.VersoesPublicadasIlegiveis] = static c => c.Servicos.Codecs.Capacidades.Returns([]),
         [DefeitoDoCongelamento.UnidadeExcluida] = static c => c.Servicos.ComUnidades(ResolvedorDeUnidadeDeTeste.Com()),
-        [DefeitoDoCongelamento.Cronograma] = static c => c.Processo.DefinirEtapas([], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue(),
+        [DefeitoDoCongelamento.Cronograma] = static c => c.Processo.DefinirEtapas([]).IsSuccess.Should().BeTrue(),
         [DefeitoDoCongelamento.TiposDeAtoCongelados] = static c => c.CatalogoSemOsTiposDeclarados(),
         [DefeitoDoCongelamento.Anexos] = static c => c.PedirUmAnexoQueNaoExiste(),
         [DefeitoDoCongelamento.ConformidadeLegal] = static c => c.Servicos.ComObrigatoriedadesLegais(RepositorioCom(RegraQueReprova())),
         [DefeitoDoCongelamento.Motivos] = static c => IsencaoDeTeste.HabilitarSemMotivos(c.Processo),
     };
 
-    private static readonly Dictionary<DefeitoDoCongelamento, string> Codigos = new()
+    // Todas as causas que o defeito, sozinho, produz, na ordem: a primeira é a que o cliente vê.
+    private static readonly Dictionary<DefeitoDoCongelamento, string[]> Causas = new()
     {
-        [DefeitoDoCongelamento.Documento] = ConferenciaDoDocumentoDoEdital.NaoEncontrado,
-        [DefeitoDoCongelamento.TipoDeAto] = "ProcessoSeletivo.TipoDeAtoNaoCongelaConfiguracao",
-        [DefeitoDoCongelamento.ProtecaoPendente] = "ProcessoSeletivo.TipoDocumentoComProtecaoPendente",
-        [DefeitoDoCongelamento.VersoesPublicadasIlegiveis] = "EnvelopeCodec.VersaoDesconhecida",
-        [DefeitoDoCongelamento.UnidadeExcluida] = "FaseCronograma.UnidadeResponsavelNaoEncontrada",
-        [DefeitoDoCongelamento.Cronograma] = "ProcessoSeletivo.AvaliacaoSemEtapa",
-        [DefeitoDoCongelamento.TiposDeAtoCongelados] = "ProcessoSeletivo.TipoDeAtoSemVersaoVigente",
-        [DefeitoDoCongelamento.Anexos] = "AnexoDoEdital.NaoEncontrado",
-        [DefeitoDoCongelamento.ConformidadeLegal] = "ProcessoSeletivo.ConformidadeLegalInsuficiente",
-        [DefeitoDoCongelamento.Motivos] = MotivoDeDecisaoErrorCodes.CoberturaInsuficiente,
+        [DefeitoDoCongelamento.Documento] = [ConferenciaDoDocumentoDoEdital.NaoEncontrado],
+        [DefeitoDoCongelamento.TipoDeAto] = ["ProcessoSeletivo.TipoDeAtoNaoCongelaConfiguracao"],
+        [DefeitoDoCongelamento.ProtecaoPendente] = ["ProcessoSeletivo.TipoDocumentoComProtecaoPendente"],
+        [DefeitoDoCongelamento.VersoesPublicadasIlegiveis] = ["EnvelopeCodec.VersaoDesconhecida"],
+        [DefeitoDoCongelamento.UnidadeExcluida] = ["FaseCronograma.UnidadeResponsavelNaoEncontrada"],
+        [DefeitoDoCongelamento.Cronograma] = ["ProcessoSeletivo.AvaliacaoSemEtapa"],
+        [DefeitoDoCongelamento.TiposDeAtoCongelados] = ["ProcessoSeletivo.TipoDeAtoSemVersaoVigente"],
+        [DefeitoDoCongelamento.Anexos] = ["AnexoDoEdital.NaoEncontrado"],
+        [DefeitoDoCongelamento.ConformidadeLegal] = ["ProcessoSeletivo.ConformidadeLegalInsuficiente"],
+        [DefeitoDoCongelamento.Motivos] = [MotivoDeDecisaoErrorCodes.TipoDeDecisaoNaoDeclarado],
     };
 
     private static readonly DefeitoDoCongelamento[] DefeitosDaPublicacao =
     [
         DefeitoDoCongelamento.Documento, DefeitoDoCongelamento.TipoDeAto, DefeitoDoCongelamento.ProtecaoPendente,
-        DefeitoDoCongelamento.UnidadeExcluida, DefeitoDoCongelamento.Cronograma, DefeitoDoCongelamento.TiposDeAtoCongelados,
-        DefeitoDoCongelamento.Anexos, DefeitoDoCongelamento.ConformidadeLegal, DefeitoDoCongelamento.Motivos,
+        DefeitoDoCongelamento.UnidadeExcluida, DefeitoDoCongelamento.Cronograma, DefeitoDoCongelamento.Motivos,
+        DefeitoDoCongelamento.TiposDeAtoCongelados, DefeitoDoCongelamento.Anexos, DefeitoDoCongelamento.ConformidadeLegal,
     ];
 
     private static readonly DefeitoDoCongelamento[] DefeitosDaRetificacao =
     [
         DefeitoDoCongelamento.Documento, DefeitoDoCongelamento.TipoDeAto,
         DefeitoDoCongelamento.ProtecaoPendente, DefeitoDoCongelamento.VersoesPublicadasIlegiveis, DefeitoDoCongelamento.UnidadeExcluida,
-        DefeitoDoCongelamento.TiposDeAtoCongelados, DefeitoDoCongelamento.Anexos, DefeitoDoCongelamento.ConformidadeLegal,
-        DefeitoDoCongelamento.Motivos,
+        DefeitoDoCongelamento.Motivos, DefeitoDoCongelamento.TiposDeAtoCongelados, DefeitoDoCongelamento.Anexos,
+        DefeitoDoCongelamento.ConformidadeLegal,
     ];
 
-    private static readonly DefeitoDoCongelamento[] DefeitosDoFechamento =
+    private static readonly HashSet<DefeitoDoCongelamento> QueRecusamSozinhos =
     [
         DefeitoDoCongelamento.Documento, DefeitoDoCongelamento.TipoDeAto,
-        DefeitoDoCongelamento.ProtecaoPendente, DefeitoDoCongelamento.UnidadeExcluida, DefeitoDoCongelamento.Cronograma,
-        DefeitoDoCongelamento.TiposDeAtoCongelados, DefeitoDoCongelamento.Anexos, DefeitoDoCongelamento.ConformidadeLegal,
-        DefeitoDoCongelamento.Motivos,
+        DefeitoDoCongelamento.VersoesPublicadasIlegiveis, DefeitoDoCongelamento.UnidadeExcluida,
     ];
 
     private readonly OperacaoQueCongela _operacao;
@@ -115,14 +114,13 @@ internal sealed class CenarioDeRecusaNoCongelamento
     public ServicosDoCongelamentoDeTeste Servicos { get; }
 
     public static CenarioDeRecusaNoCongelamento Para(OperacaoQueCongela operacao) =>
-        operacao == OperacaoQueCongela.Publicar ? ParaPublicacao() : ParaProcessoPublicado(operacao);
+        operacao == OperacaoQueCongela.Publicar ? ParaPublicacao() : ParaRetificacao();
 
-    /// <summary>Os defeitos que a operação tem como acrescentar, do portão de maior prioridade ao de menor.</summary>
+    /// <summary>Os defeitos que a operação tem como acrescentar, na ordem em que a conferência os julga.</summary>
     public static IReadOnlyList<DefeitoDoCongelamento> PorPrioridade(OperacaoQueCongela operacao) => operacao switch
     {
         OperacaoQueCongela.Publicar => DefeitosDaPublicacao,
-        OperacaoQueCongela.Retificar => DefeitosDaRetificacao,
-        _ => DefeitosDoFechamento,
+        _ => DefeitosDaRetificacao,
     };
 
     private static CenarioDeRecusaNoCongelamento ParaPublicacao()
@@ -133,18 +131,20 @@ internal sealed class CenarioDeRecusaNoCongelamento
         return new(OperacaoQueCongela.Publicar, publicacao.Processo, publicacao.Servicos);
     }
 
-    private static CenarioDeRecusaNoCongelamento ParaProcessoPublicado(OperacaoQueCongela operacao)
+    private static CenarioDeRecusaNoCongelamento ParaRetificacao()
     {
         CenarioDeRetificacaoPublicada publicado = CenarioDeRetificacaoPublicada.Publicado();
-        if (operacao == OperacaoQueCongela.FecharRetificacao)
-        {
-            publicado.AbrirSessao();
-        }
 
-        return new(operacao, publicado.Processo, publicado.Servicos);
+        return new(OperacaoQueCongela.Retificar, publicado.Processo, publicado.Servicos);
     }
 
-    public static string CodigoDa(DefeitoDoCongelamento defeito) => Codigos[defeito];
+    public static string CodigoDa(DefeitoDoCongelamento defeito) => Causas[defeito][0];
+
+    /// <summary>Os códigos de todas as causas do defeito isolado, na ordem em que a resposta os traz.</summary>
+    public static IReadOnlyList<string> CausasDo(DefeitoDoCongelamento defeito) => Causas[defeito];
+
+    /// <summary>O defeito recusa antes da conferência da configuração e impede o que viria depois: o estado, o ato, o catálogo e as leituras.</summary>
+    public static bool RecusaSozinho(DefeitoDoCongelamento defeito) => QueRecusamSozinhos.Contains(defeito);
 
     public CenarioDeRecusaNoCongelamento Com(DefeitoDoCongelamento defeito)
     {
@@ -157,12 +157,9 @@ internal sealed class CenarioDeRecusaNoCongelamento
     {
         OperacaoQueCongela.Publicar => Servicos.PublicarAsync(
             new PublicarProcessoSeletivoCommand(Processo.Id, "001/2026", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto(), Anexos: _anexos)),
-        OperacaoQueCongela.Retificar => Servicos.RetificarAsync(
+        _ => Servicos.RetificarAsync(
             new RetificarProcessoSeletivoCommand(
                 Processo.Id, "Correção do prazo", "001/2026-R1", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto(), Anexos: _anexos)),
-        _ => Servicos.FecharRetificacaoAsync(
-            new FecharRetificacaoCommand(
-                Processo.Id, "001/2026-R1", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto(), Precondicao: PrecondicaoIfMatch.Curinga, Anexos: _anexos)),
     };
 
     /// <summary>O processo não saiu do estado em que estava: nenhum evento de publicação ficou no agregado.</summary>

@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// Extensões do <see cref="HashCanonicalComputer"/> para o contrato de
 /// canonicalização do snapshot de publicação (ADR-0100, Story #759 T4 #785):
 /// normalização NFC, decimais com escala declarada e arredondamento
-/// half-even, instantes RFC 3339 sem fração, e a persistência dos bytes
+/// half-even, e a persistência dos bytes
 /// canônicos como base do hash (<c>Canonicalizacao_HashReproduzivel</c> do
 /// mapa de testes de #759).
 /// </summary>
@@ -60,20 +60,6 @@ public sealed class HashCanonicalComputerAdr0100Tests
         HashCanonicalComputer.SerializeDecimalCanonical(3.5m, escala: 0).Should().Be("4");
         HashCanonicalComputer.SerializeDecimalCanonical(1.005m, escala: 2).Should().Be("1.00");
         HashCanonicalComputer.SerializeDecimalCanonical(1.015m, escala: 2).Should().Be("1.02");
-    }
-
-    [Fact(DisplayName = "SerializeInstantCanonical: instante com e sem fração de segundo produzem o mesmo hash")]
-    public void SerializeInstantCanonical_ComESemFracao_ProduzMesmoHash()
-    {
-        DateTimeOffset comFracao = new(2026, 7, 8, 10, 30, 45, 123, TimeSpan.Zero);
-        DateTimeOffset semFracao = new(2026, 7, 8, 10, 30, 45, 0, TimeSpan.Zero);
-
-        string serializadoComFracao = HashCanonicalComputer.SerializeInstantCanonical(comFracao);
-        string serializadoSemFracao = HashCanonicalComputer.SerializeInstantCanonical(semFracao);
-
-        serializadoComFracao.Should().Be(serializadoSemFracao,
-            "granularidade de segundo — a fração de milissegundo é truncada, não arredondada para o segundo seguinte");
-        serializadoComFracao.Should().Be("2026-07-08T10:30:45Z");
     }
 
     [Fact(DisplayName = "ComputeSnapshotBytes + ComputeSha256Hex: mesma configuração produz sempre o mesmo hash")]

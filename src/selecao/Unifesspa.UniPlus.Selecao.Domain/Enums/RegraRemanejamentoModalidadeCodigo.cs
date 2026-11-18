@@ -39,4 +39,16 @@ public static class RegraRemanejamentoModalidadeCodigo
         Cruzado => RegraRemanejamentoModalidade.Cruzado,
         _ => RegraRemanejamentoModalidade.Nenhuma,
     };
+
+    /// <summary>
+    /// Lê o token gravado na coluna da modalidade selecionada: nulo é a modalidade que não remaneja, e um
+    /// token fora do vocabulário é defeito do dado gravado, que não vira "não remaneja" em silêncio.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">O token não pertence ao vocabulário do cadastro.</exception>
+    public static RegraRemanejamentoModalidade DoTokenGravado(string? codigo) =>
+        codigo is null
+            ? RegraRemanejamentoModalidade.Nenhuma
+            : FromCodigo(codigo) is var regra && regra != RegraRemanejamentoModalidade.Nenhuma
+                ? regra
+                : throw new ArgumentOutOfRangeException(nameof(codigo), codigo, "Token de remanejamento fora do vocabulário do cadastro.");
 }

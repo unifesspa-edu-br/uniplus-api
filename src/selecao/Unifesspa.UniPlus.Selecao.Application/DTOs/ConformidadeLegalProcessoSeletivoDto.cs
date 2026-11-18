@@ -19,7 +19,7 @@ public sealed record ConformidadeLegalProcessoSeletivoDto(
 
 /// <summary>
 /// Projeção pública de <see cref="RegraAvaliada"/> — mesma fonte que o gate
-/// de <c>Publicar</c>/<c>Retificar</c>/<c>FecharRetificacao</c> usa (CA-16:
+/// de <c>Publicar</c>/<c>Retificar</c> usa (CA-16:
 /// nunca duas leituras em paralelo).
 /// </summary>
 [SuppressMessage(

@@ -29,6 +29,8 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 [Trait("Category", "OutboxCapability")]
 public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
 {
+    private const string PrefixoDosMotivosDoTeste = "TEST_MDP_";
+
     private readonly CascadingFixture _fixture;
 
     public MotivosDoProcessoEndpointTests(CascadingFixture fixture) => _fixture = fixture;
@@ -43,7 +45,7 @@ public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
         await db.Database.ExecuteSqlAsync($"DELETE FROM selecao.motivos_de_decisao WHERE codigo LIKE 'TEST\\_MDP\\_%' ESCAPE '\\'");
     }
 
-    [Fact(DisplayName = "No rascunho, o processo inclui o motivo e a leitura devolve a cópia ainda não congelada")]
+    [Fact(DisplayName = "No rascunho, o processo inclui o motivo na fase e a leitura devolve a cópia no lugar, entrando na versão 1")]
     public async Task Rascunho_Inclui_ListaACopia()
     {
         (Guid processoId, _) = await SemearProcessoAsync(nameof(Rascunho_Inclui_ListaACopia));
@@ -53,10 +55,13 @@ public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
         using HttpResponseMessage inclusao = await IncluirAsync(client, processoId, motivo.Id);
         inclusao.StatusCode.Should().Be(HttpStatusCode.NoContent, await inclusao.Content.ReadAsStringAsync());
 
-        JsonElement escolhido = (await ListarAsync(client, processoId)).Should().ContainSingle().Subject;
+        JsonElement escolhido = (await ListarOsEscolhidosPeloTesteAsync(client, processoId)).Should().ContainSingle().Subject;
         escolhido.GetProperty("codigo").GetString().Should().Be(motivo.Codigo.Valor);
         escolhido.GetProperty("tipo").GetString().Should().Be("HOMOLOGACAO_DAS_INSCRICOES");
-        escolhido.GetProperty("congelado").GetBoolean().Should().BeFalse();
+        escolhido.GetProperty("lugar").GetProperty("faseCanonicaOrigemId").GetGuid().Should().Be(await FaseAsync(processoId));
+        escolhido.GetProperty("lugar").GetProperty("etapaId").ValueKind.Should().Be(JsonValueKind.Null);
+        escolhido.GetProperty("vigencia").GetProperty("versaoDoEditalDeEntrada").GetInt32().Should().Be(1);
+        escolhido.GetProperty("vigencia").GetProperty("versaoDoEditalDeSaida").ValueKind.Should().Be(JsonValueKind.Null);
     }
 
     [Fact(DisplayName = "Incluir motivo desativado é recusado com o código nomeado")]
@@ -85,10 +90,10 @@ public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
         (await CodigoDoErro(recusada)).Should().Be("uniplus.selecao.motivo_de_decisao.motivo_desativado");
     }
 
-    [Fact(DisplayName = "Trocado o motivo desativado depois de escolhido, publica e congela a cópia")]
-    public async Task Publicar_MotivoTrocado_CongelaACopia()
+    [Fact(DisplayName = "Trocado o motivo desativado depois de escolhido, publica e a cópia fica como estava na escolha, mesmo com o cadastro mudado antes e depois da publicação")]
+    public async Task Publicar_MotivoTrocado_MantemACopia()
     {
-        (Guid processoId, Guid documentoId) = await SemearProcessoAsync(nameof(Publicar_MotivoTrocado_CongelaACopia));
+        (Guid processoId, Guid documentoId) = await SemearProcessoAsync(nameof(Publicar_MotivoTrocado_MantemACopia));
         using HttpClient client = Cliente();
         MotivoDeDecisao desativado = await EscolherEDesativarAsync(client, processoId);
         MotivoDeDecisao substituto = await TrocarMotivoDesativadoAsync(client, processoId, desativado);
@@ -97,16 +102,16 @@ public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
         publicada.StatusCode.Should().Be(HttpStatusCode.NoContent, await publicada.Content.ReadAsStringAsync());
 
         await AlterarMotivoAsync(substituto.Id, static m => m.Atualizar("Redação posterior à publicação."));
-        JsonElement congelado = (await ListarAsync(client, processoId)).Should().ContainSingle().Subject;
-        congelado.GetProperty("congelado").GetBoolean().Should().BeTrue();
-        congelado.GetProperty("descricao").GetString().Should().Be("Redação vigente na publicação.",
-            "a cópia congela na publicação: mudar o cadastro depois não muda o processo");
+        JsonElement publicado = (await ListarOsEscolhidosPeloTesteAsync(client, processoId)).Should().ContainSingle().Subject;
+        publicado.GetProperty("vigencia").GetProperty("versaoDoEditalDeEntrada").GetInt32().Should().Be(1);
+        publicado.GetProperty("descricao").GetString().Should().Be(substituto.Descricao,
+            "o processo congela a cópia feita na escolha: mudar o cadastro, antes ou depois da publicação, não muda o processo");
     }
 
-    [Fact(DisplayName = "Depois da publicação, sem retificação, o processo não retira nem inclui motivo")]
-    public async Task Publicado_SemRetificacao_Recusa()
+    [Fact(DisplayName = "Depois da publicação o processo não retira nem inclui motivo")]
+    public async Task Publicado_Recusa()
     {
-        (Guid processoId, Guid documentoId) = await SemearProcessoAsync(nameof(Publicado_SemRetificacao_Recusa));
+        (Guid processoId, Guid documentoId) = await SemearProcessoAsync(nameof(Publicado_Recusa));
         MotivoDeDecisao publicado = await SemearMotivoAsync();
         MotivoDeDecisao novo = await SemearMotivoAsync();
         using HttpClient client = Cliente();
@@ -118,7 +123,72 @@ public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
 
         retirada.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         inclusao.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        (await ListarAsync(client, processoId)).Should().ContainSingle();
+        (await ListarOsEscolhidosPeloTesteAsync(client, processoId)).Should().ContainSingle();
+    }
+
+    [Fact(DisplayName = "Depois da publicação, incluir motivo que o cadastro não tem e retirar o que o processo não escolheu devolvem o bloqueio da publicação")]
+    public async Task Publicado_MotivoAusente_DevolveOBloqueioEmVezDoNaoEncontrado()
+    {
+        (Guid processoId, Guid documentoId) = await SemearProcessoAsync(nameof(Publicado_MotivoAusente_DevolveOBloqueioEmVezDoNaoEncontrado));
+        using HttpClient client = Cliente();
+        (await PublicarAsync(client, processoId, documentoId)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        using HttpResponseMessage inclusao = await IncluirAsync(client, processoId, Guid.CreateVersion7());
+        using HttpResponseMessage retirada = await RetirarAsync(client, processoId, Guid.CreateVersion7());
+
+        inclusao.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await CodigoDoErro(inclusao)).Should().Be("uniplus.selecao.processo_seletivo.mutacao_pos_publicacao_bloqueada");
+        retirada.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await CodigoDoErro(retirada)).Should().Be("uniplus.selecao.processo_seletivo.mutacao_pos_publicacao_bloqueada");
+    }
+
+    [Fact(DisplayName = "A justificativa interna já gravada é lida só por quem configura, nunca pela leitura pública")]
+    public async Task Leitura_JustificativaGravadaPorSql_SoParaQuemConfigura()
+    {
+        Guid processoId = await PublicarComJustificativaGravadaPorSqlAsync();
+        string rota = $"/api/selecao/processos-seletivos/{processoId}";
+        using HttpResponseMessage anonimo = await LerComAcessoAsync($"{rota}/motivos-de-decisao");
+        using HttpResponseMessage candidata = await LerComAcessoAsync($"{rota}/motivos-de-decisao", conta: "candidata-sem-concessao");
+        using HttpResponseMessage publico = await LerComAcessoAsync(rota);
+        using HttpResponseMessage configurador = await LerComAcessoAsync($"{rota}/motivos-de-decisao", papel: "plataforma-admin");
+
+        anonimo.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        candidata.StatusCode.Should().BeOneOf(HttpStatusCode.Forbidden, HttpStatusCode.NotFound);
+        publico.StatusCode.Should().Be(HttpStatusCode.OK);
+        configurador.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await publico.Content.ReadAsStringAsync()).Should().NotContain(JustificativaInterna);
+        (await configurador.Content.ReadAsStringAsync()).Should().Contain(JustificativaInterna);
+    }
+
+    private const string JustificativaInterna = "Fundamento administrativo interno da inclusão.";
+
+    private async Task<Guid> PublicarComJustificativaGravadaPorSqlAsync()
+    {
+        (Guid processoId, Guid documentoId) = await SemearProcessoAsync(nameof(Leitura_JustificativaGravadaPorSql_SoParaQuemConfigura));
+        MotivoDeDecisao motivo = await SemearMotivoAsync();
+        using HttpClient client = Cliente();
+        (await IncluirAsync(client, processoId, motivo.Id)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await PublicarAsync(client, processoId, documentoId)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        int alteradas = await db.Database.ExecuteSqlAsync(
+            $"UPDATE selecao.motivos_do_processo SET justificativa_da_inclusao = {JustificativaInterna} WHERE processo_seletivo_id = {processoId} AND motivo_de_decisao_origem_id = {motivo.Id}");
+        alteradas.Should().Be(1);
+        return processoId;
+    }
+
+    private async Task<HttpResponseMessage> LerComAcessoAsync(string rota, string? conta = null, string? papel = null)
+    {
+        using HttpClient client = Cliente();
+        using HttpRequestMessage pedido = new(HttpMethod.Get, new Uri(rota, UriKind.Relative));
+        if (conta is not null || papel is not null)
+        {
+            pedido.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
+        }
+
+        if (conta is not null) pedido.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, conta);
+        if (papel is not null) pedido.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, papel);
+        return await client.SendAsync(pedido);
     }
 
     private async Task<MotivoDeDecisao> EscolherEDesativarAsync(HttpClient client, Guid processoId)
@@ -134,7 +204,7 @@ public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
         MotivoDeDecisao substituto = await SemearMotivoAsync();
         (await RetirarAsync(client, processoId, desativado.Id)).StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await IncluirAsync(client, processoId, substituto.Id)).StatusCode.Should().Be(HttpStatusCode.NoContent);
-        await AlterarMotivoAsync(substituto.Id, static m => m.Atualizar("Redação vigente na publicação."));
+        await AlterarMotivoAsync(substituto.Id, static m => m.Atualizar("Redação do cadastro depois da escolha."));
         return substituto;
     }
 
@@ -143,7 +213,7 @@ public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
-            .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}");
+            .SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"{nome} {Guid.CreateVersion7()}" });
         return (processo.Id, documento.Id);
     }
 
@@ -151,7 +221,7 @@ public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
     {
         MotivoDeDecisao motivo = MotivoDeDecisao.Criar(new CamposDoMotivo(
             TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes,
-            $"TEST_MDP_{Guid.NewGuid():N}"[..40].ToUpperInvariant(),
+            $"{PrefixoDosMotivosDoTeste}{Guid.NewGuid():N}"[..40].ToUpperInvariant(),
             "Sem resultado no retorno do INEP para a edição indicada",
             null,
             SentidoDoMotivo.Desfavoravel)).Value!;
@@ -184,11 +254,16 @@ public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
 
     private HttpClient Cliente() => _fixture.Factory.CreateClient();
 
-    private static Task<HttpResponseMessage> IncluirAsync(HttpClient client, Guid processoId, Guid motivoId) =>
-        EnviarAsync(client, HttpMethod.Put, $"/api/selecao/processos-seletivos/{processoId}/motivos-de-decisao/{motivoId}", new { justificativa = (string?)null });
+    private async Task<HttpResponseMessage> IncluirAsync(HttpClient client, Guid processoId, Guid motivoId) =>
+        await EnviarAsync(client, HttpMethod.Put, await RotaAsync(processoId, motivoId), new { justificativa = (string?)null });
 
-    private static Task<HttpResponseMessage> RetirarAsync(HttpClient client, Guid processoId, Guid motivoId) =>
-        EnviarAsync(client, HttpMethod.Delete, $"/api/selecao/processos-seletivos/{processoId}/motivos-de-decisao/{motivoId}", corpo: null);
+    private async Task<HttpResponseMessage> RetirarAsync(HttpClient client, Guid processoId, Guid motivoId) =>
+        await EnviarAsync(client, HttpMethod.Delete, await RotaAsync(processoId, motivoId), corpo: null);
+
+    private Task<Guid> FaseAsync(Guid processoId) => LugaresDoProcessoDeTeste.FaseAsync(_fixture.Factory.Services, processoId);
+
+    private async Task<string> RotaAsync(Guid processoId, Guid motivoId) =>
+        LugaresDoProcessoDeTeste.RotaDaFase(processoId, await FaseAsync(processoId), motivoId);
 
     private static Task<HttpResponseMessage> PublicarAsync(HttpClient client, Guid processoId, Guid documentoId) =>
         EnviarAsync(client, HttpMethod.Post, $"/api/selecao/processos-seletivos/{processoId}/publicacao", new
@@ -206,13 +281,14 @@ public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
             },
         });
 
-    private static async Task<IReadOnlyList<JsonElement>> ListarAsync(HttpClient client, Guid processoId)
+    // O processo semeado já escolhe o motivo que a condição da regra de homologação aponta: a leitura confere só os que o teste inclui.
+    private static async Task<IReadOnlyList<JsonElement>> ListarOsEscolhidosPeloTesteAsync(HttpClient client, Guid processoId)
     {
         using HttpRequestMessage request = new(HttpMethod.Get, new Uri($"/api/selecao/processos-seletivos/{processoId}/motivos-de-decisao", UriKind.Relative));
         Autenticar(request);
         using HttpResponseMessage resposta = await client.SendAsync(request);
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
-        return [.. (await resposta.Content.ReadFromJsonAsync<JsonElement>()).EnumerateArray()];
+        return [.. (await resposta.Content.ReadFromJsonAsync<JsonElement>()).EnumerateArray().Where(static e => e.GetProperty("codigo").GetString()!.StartsWith(PrefixoDosMotivosDoTeste, StringComparison.Ordinal))];
     }
 
     private static async Task<HttpResponseMessage> EnviarAsync(HttpClient client, HttpMethod metodo, string url, object? corpo)

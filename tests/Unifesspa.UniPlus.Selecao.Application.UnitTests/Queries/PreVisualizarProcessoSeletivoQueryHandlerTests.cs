@@ -156,7 +156,7 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
             impedimento: new Impedimento(
                 PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("VINCULO_PARFOR", Operador.Igual, Json(true)).Value!)]).Value!,
                 Mensagem), classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
-        processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [.. FormularioDeTeste.DadosBasicos(), parfor], PrecondicaoIfMatch.Ausente)
+        processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [.. FormularioDeTeste.DadosBasicos(), parfor])
             .IsSuccess.Should().BeTrue();
 
         Result<PreVisualizacaoDoProcessoDto> resultado = await HandleAsync(
@@ -252,7 +252,7 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
     private static ProcessoSeletivo ProcessoDeMedicina(int minimoDaComposicao = 1)
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Medicina 2027", out Guid fase);
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, null, FormularioDeTeste.Etapas(FinalidadeFormulario.Habilitacao), PrecondicaoIfMatch.Ausente)
+        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, null, FormularioDeTeste.Etapas(FinalidadeFormulario.Habilitacao))
             .IsSuccess.Should().BeTrue();
         GrupoColetado composicao = GrupoColetado.Criar(
             Composicao, 0, FormularioDeTeste.Secao, "Composição familiar", minimoDaComposicao, null,
@@ -263,12 +263,12 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
                 FatoColetado.Criar("MENOR_SOB_GUARDA", 1, "Menor sob guarda", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
             ],
             FinalidadeFormulario.Habilitacao).Value!;
-        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [], PrecondicaoIfMatch.Ausente, [composicao]).IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [], [composicao]).IsSuccess.Should().BeTrue();
 
         processo.DefinirDistribuicaoVagas(
             [ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(
                 PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, Json("INDIGENA")).Value!)]).Value!)],
-            FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
 
         processo.DefinirDocumentosExigidos(
         [
@@ -284,7 +284,7 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
                 NoExigencia.CriarFolha(Documento(fase, "PASSAPORTE", Condicao(0, "NACIONALIDADE", Operador.Igual, "ESTRANGEIRO")), 1).Value!,
             ]).Value!,
             NoExigencia.CriarFolha(Documento(fase, "COMPROVANTE_DA_MODALIDADE", Condicao(0, "MODALIDADE", Operador.Em, new[] { "AC" })), 5).Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ]).IsSuccess.Should().BeTrue();
         return processo;
     }
 

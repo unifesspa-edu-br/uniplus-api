@@ -38,93 +38,110 @@ public static class AtualizarModalidadeCommandHandler
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
         Result<PredicadoDnf?> regra = RegraDeAplicabilidadeDaEntrada.Montar(command.RegraDeAplicabilidade);
-        PredicadoDnf? regraMontada = regra.IsSuccess ? regra.Value : null;
+        DeclaracaoDaModalidade declaracao = command.Declaracao(regra.IsSuccess ? regra.Value : null);
+        List<FieldError> recusasDoPayload = RecusasDoPayload(regra, declaracao);
 
-        Result preCheck = Modalidade.ValidarCamposDoPayload(
-            command.Descricao,
-            command.NaturezaLegal,
-            command.ComposicaoVagas,
-            command.ComposicaoOrigem,
-            command.RegraRemanejamento,
-            command.RemanejamentoDestino,
-            command.RemanejamentoPar,
-            command.RemanejamentoFallback,
-            regraMontada,
-            command.AcaoQuandoIndeferido,
-            command.BaseLegal);
+        return recusasDoPayload.Count > 0
+            ? Result.ValidationFailure(recusasDoPayload)
+            : await AtualizarAsync(command.Id, declaracao, repository, fatoRepository, precedenciaRepository, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
 
-        List<FieldError> recusasDoPayload = RegraDeAplicabilidadeDaEntrada.ComAsRecusasDaMontagem(
-            regra, preCheck.IsFailure ? preCheck.Errors : []);
-        if (recusasDoPayload.Count > 0)
-        {
-            return Result.ValidationFailure(recusasDoPayload);
-        }
+    private static List<FieldError> RecusasDoPayload(Result<PredicadoDnf?> regra, DeclaracaoDaModalidade declaracao)
+    {
+        Result preCheck = ValidacaoDosCamposDaModalidade.ValidarCamposDoPayload(declaracao);
 
-        Modalidade? modalidade = await repository.ObterPorIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
+        return RegraDeAplicabilidadeDaEntrada.ComAsRecusasDaMontagem(regra, preCheck.IsFailure ? preCheck.Errors : []);
+    }
+
+    private static async Task<Result> AtualizarAsync(
+        Guid id,
+        DeclaracaoDaModalidade declaracao,
+        IModalidadeRepository repository,
+        IFatoCandidatoRepository fatoRepository,
+        IPrecedenciaFaseRepository precedenciaRepository,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
+        Modalidade? modalidade = await repository.ObterPorIdAsync(id, cancellationToken).ConfigureAwait(false);
         if (modalidade is null)
         {
-            return Result.Failure(new DomainError(
-                ModalidadeErrorCodes.NaoEncontrada,
-                "Modalidade de concorrência não encontrada."));
+            return NaoEncontrada();
         }
 
-        // A vigente é lida antes de Atualizar trocá-la: é ela que diz quais fatos e valores
-        // desativados a regra já citava.
+        Result atualizada = await AplicarEConferirAsync(
+            modalidade, declaracao, fatoRepository, precedenciaRepository, unitOfWork, cancellationToken).ConfigureAwait(false);
+
+        return atualizada.IsFailure
+            ? atualizada
+            : await GravarSeAsReferenciasExistemAsync(modalidade, repository, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// A vigente é lida antes de <see cref="Modalidade.Atualizar"/> trocá-la: é ela que diz quais fatos e valores
+    /// desativados a regra já citava. A regra da modalidade legal fixa só muda por semente, e a guarda de
+    /// Atualizar recusa a estrutura inteira: conferi-la contra o catálogo responderia recusa que não se aplica.
+    /// </summary>
+    private static async Task<Result> AplicarEConferirAsync(
+        Modalidade modalidade,
+        DeclaracaoDaModalidade declaracao,
+        IFatoCandidatoRepository fatoRepository,
+        IPrecedenciaFaseRepository precedenciaRepository,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
         PredicadoDnf vigente = modalidade.RegraDeAplicabilidade;
-        Result atualizarResult = modalidade.Atualizar(
-            command.Descricao,
-            command.NaturezaLegal,
-            command.ComposicaoVagas,
-            command.ComposicaoOrigem,
-            command.RegraRemanejamento,
-            command.RemanejamentoDestino,
-            command.RemanejamentoPar,
-            command.RemanejamentoFallback,
-            regraMontada,
-            command.AcaoQuandoIndeferido,
-            command.BaseLegal);
+        Result atualizada = modalidade.Atualizar(declaracao);
 
-        // A regra da modalidade legal fixa só muda por semente, e a guarda de Atualizar recusa a
-        // estrutura inteira: conferi-la contra o catálogo responderia recusa que não se aplica.
-        if (modalidade.Codigo.EhLegalFixa)
+        return modalidade.Codigo.EhLegalFixa
+            ? atualizada
+            : await ConferirContraOCatalogoAsync(
+                atualizada, declaracao.RegraDeAplicabilidade!, vigente, fatoRepository, precedenciaRepository, unitOfWork, cancellationToken)
+                .ConfigureAwait(false);
+    }
+
+    private static async Task<Result> ConferirContraOCatalogoAsync(
+        Result atualizada,
+        PredicadoDnf regra,
+        PredicadoDnf vigente,
+        IFatoCandidatoRepository fatoRepository,
+        IPrecedenciaFaseRepository precedenciaRepository,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
+        CatalogoDeFatos catalogo = await RegraDeAplicabilidadeDaEntrada
+            .CarregarCatalogoAsync(fatoRepository, precedenciaRepository, cancellationToken).ConfigureAwait(false);
+        List<FieldError> erros = atualizada.IsFailure ? [.. atualizada.Errors] : [];
+        erros.AddRange(ConferenciaDaRegraDeAplicabilidade.Conferir(regra, vigente, catalogo));
+        if (erros.Count == 0)
         {
-            if (atualizarResult.IsFailure)
-            {
-                return atualizarResult;
-            }
-        }
-        else
-        {
-            CatalogoDeFatos catalogo = await RegraDeAplicabilidadeDaEntrada
-                .CarregarCatalogoAsync(fatoRepository, precedenciaRepository, cancellationToken).ConfigureAwait(false);
-            List<FieldError> erros = atualizarResult.IsFailure ? [.. atualizarResult.Errors] : [];
-            erros.AddRange(ConferenciaDaRegraDeAplicabilidade.Conferir(regraMontada!, vigente, catalogo));
-            if (erros.Count > 0)
-            {
-                // Atualizar pode ter mutado o agregado rastreado antes da recusa do catálogo.
-                unitOfWork.DescartarAlteracoesNaoSalvas();
-                return Result.ValidationFailure(erros);
-            }
+            return Result.Success();
         }
 
-        // Integridade referencial (invariante 7): todos os códigos citados após a
-        // atualização devem existir como modalidade viva.
-        IReadOnlyCollection<string> referencias = ReferenciasDeModalidade.Coletar(modalidade);
-        if (referencias.Count > 0
-            && !await repository.CodigosVivosExistemAsync(referencias, cancellationToken).ConfigureAwait(false))
+        // Atualizar pode ter mutado o agregado rastreado antes da recusa do catálogo.
+        unitOfWork.DescartarAlteracoesNaoSalvas();
+        return Result.ValidationFailure(erros);
+    }
+
+    /// <summary>
+    /// Integridade referencial (invariante 7): todos os códigos citados após a atualização devem existir como
+    /// modalidade viva. <see cref="Modalidade.Atualizar"/> já mutou o agregado rastreado — descarta antes de
+    /// devolver a falha, senão o save automático do Wolverine persistiria a alteração cuja referência acabou de
+    /// ser recusada.
+    /// </summary>
+    private static async Task<Result> GravarSeAsReferenciasExistemAsync(
+        Modalidade modalidade, IModalidadeRepository repository, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
+        if (!await ReferenciasDeModalidade.TodasExistemAsync(modalidade, repository, cancellationToken).ConfigureAwait(false))
         {
-            // modalidade.Atualizar já mutou o agregado rastreado — descarta antes de
-            // devolver a falha, senão o save automático do Wolverine persistiria a
-            // alteração cuja referência acabou de ser recusada.
             unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result.Failure(new DomainError(
-                ModalidadeErrorCodes.ReferenciaInexistenteOuInativa,
-                "Um ou mais códigos de modalidade referenciados (origem ou remanejamento) "
-                + "não correspondem a modalidades vivas."));
+            return Result.Failure(ReferenciasDeModalidade.RecusaDaReferenciaInexistente());
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
         return Result.Success();
     }
+
+    private static Result NaoEncontrada() =>
+        Result.Failure(new DomainError(ModalidadeErrorCodes.NaoEncontrada, "Modalidade de concorrência não encontrada."));
 }

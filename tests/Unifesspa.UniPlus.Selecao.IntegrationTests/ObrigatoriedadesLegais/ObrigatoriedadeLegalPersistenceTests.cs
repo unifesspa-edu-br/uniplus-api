@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ObrigatoriedadesLegais;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
 using AwesomeAssertions;
@@ -19,10 +18,6 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 /// dos cenários BDD (CA-03 histórico em transação, CA-05 hash determinístico
 /// cross-run, CA-02 UNIQUE parcial) e CA-06 (recomputação via interceptor).
 /// </summary>
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit IClassFixture<T> exige tipo de teste público.")]
 public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<ObrigatoriedadeLegalDbFixture>
 {
     private const string AdminA = "admin-a";
@@ -39,36 +34,23 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
     public async Task Insert_GeraHistoricoNaMesmaTransacao()
     {
         ObrigatoriedadeLegal regra = NovaRegraValida("ETAPA_OBRIGATORIA_INSERT");
+        await GravarAsync(AdminA, regra);
+        await using UniPlusDbContext context = _fixture.CreateDbContext(userId: null);
+        ObrigatoriedadeLegal persistida = await context.ObrigatoriedadesLegais.SingleAsync(o => o.Id == regra.Id);
+        persistida.Hash.Should().Be(regra.Hash);
+        HashCanonicalComputer.IsValidHashShape(persistida.Hash).Should().BeTrue();
+        List<ObrigatoriedadeLegalHistorico> historico = await context.ObrigatoriedadeLegalHistorico
+            .Where(h => h.RegraId == regra.Id).ToListAsync();
+        ConferirHistoricoDaCriacao(historico, regra.Hash);
+    }
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.ObrigatoriedadesLegais.Add(regra);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
-
-        ObrigatoriedadeLegal persisted = await readCtx.ObrigatoriedadesLegais
-            .SingleAsync(o => o.Id == regra.Id)
-            ;
-
-        persisted.Hash.Should().Be(regra.Hash);
-        HashCanonicalComputer.IsValidHashShape(persisted.Hash).Should().BeTrue();
-
-        List<ObrigatoriedadeLegalHistorico> historico = await readCtx.ObrigatoriedadeLegalHistorico
-            .Where(h => h.RegraId == regra.Id)
-            .ToListAsync()
-            ;
-
+    private static void ConferirHistoricoDaCriacao(List<ObrigatoriedadeLegalHistorico> historico, string hash)
+    {
         historico.Should().HaveCount(1);
-        historico[0].Hash.Should().Be(regra.Hash);
+        historico[0].Hash.Should().Be(hash);
         historico[0].SnapshotBy.Should().Be(AdminA);
-        historico[0].ConteudoJson.Should().Contain(regra.Hash,
-            "snapshot canônico deve incluir o hash recomputado da regra");
-        historico[0].ConteudoJson.Should().Contain("\"tipoProcessoCodigo\"",
-            "a chave renomeada precisa estar no payload forense");
-        historico[0].ConteudoJson.Should().NotContain("tipoEditalCodigo",
-            "a chave legada não pode sobreviver no histórico pós-rename");
+        historico[0].ConteudoJson.Should().Contain(hash).And.Contain("\"tipoProcessoCodigo\"");
+        historico[0].ConteudoJson.Should().NotContain("tipoEditalCodigo");
     }
 
     [Fact(DisplayName = "Update gera 2ª linha de histórico e atualiza Hash quando BaseLegal muda")]
@@ -93,25 +75,17 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
     {
         ObrigatoriedadeLegal regra1 = NovaRegraValida("ETAPA_HASH_UNIQUE");
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.ObrigatoriedadesLegais.Add(regra1);
-            await ctx.SaveChangesAsync();
-        }
+        await GravarAsync(AdminA, regra1);
 
-        // Mesma "semântica" mas Id v7 diferente — hash idêntico (CA-05).
         ObrigatoriedadeLegal regra2 = NovaRegraValida("ETAPA_HASH_UNIQUE");
-        regra1.Hash.Should().Be(regra2.Hash,
-            "duas regras com conteúdo semântico idêntico precisam compartilhar hash");
+        regra1.Hash.Should().Be(regra2.Hash);
 
         await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
         ctx2.ObrigatoriedadesLegais.Add(regra2);
 
         Func<Task> act = async () => await ctx2.SaveChangesAsync();
 
-        await act.Should().ThrowAsync<DbUpdateException>()
-            .WithInnerException(typeof(Npgsql.PostgresException))
-            ;
+        await act.Should().ThrowAsync<DbUpdateException>().WithInnerException(typeof(Npgsql.PostgresException));
     }
 
     [Fact(DisplayName = "Soft-delete liberta o slot da UNIQUE — regra nova com mesmo hash é aceita")]
@@ -119,21 +93,8 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
     {
         ObrigatoriedadeLegal regra = NovaRegraValida("ETAPA_HASH_RECYCLE");
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.ObrigatoriedadesLegais.Add(regra);
-            await ctx.SaveChangesAsync();
-        }
-
-        // Soft-delete via SoftDeleteInterceptor.
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ObrigatoriedadeLegal tracked = await ctx.ObrigatoriedadesLegais
-                .SingleAsync(o => o.Id == regra.Id)
-                ;
-            ctx.ObrigatoriedadesLegais.Remove(tracked);
-            await ctx.SaveChangesAsync();
-        }
+        await GravarAsync(AdminA, regra);
+        await RemoverAsync(AdminA, regra.Id);
 
         ObrigatoriedadeLegal regraNova = NovaRegraValida("ETAPA_HASH_RECYCLE");
 
@@ -149,22 +110,9 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
     {
         ObrigatoriedadeLegal regra = NovaRegraValida("ETAPA_SOFT_DELETE_HISTORY");
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.ObrigatoriedadesLegais.Add(regra);
-            await ctx.SaveChangesAsync();
-        }
+        await GravarAsync(AdminA, regra);
+        await RemoverAsync(AdminB, regra.Id);
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
-        {
-            ObrigatoriedadeLegal tracked = await ctx.ObrigatoriedadesLegais
-                .SingleAsync(o => o.Id == regra.Id);
-            ctx.ObrigatoriedadesLegais.Remove(tracked);
-            await ctx.SaveChangesAsync();
-        }
-
-        // Bypass do query filter para verificar o estado real persistido —
-        // após soft-delete, a regra continua no banco com IsDeleted=true.
         await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
 
         List<ObrigatoriedadeLegalHistorico> historico = await readCtx.ObrigatoriedadeLegalHistorico
@@ -172,17 +120,16 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
             .OrderBy(h => h.SnapshotAt)
             .ToListAsync();
 
-        historico.Should().HaveCount(2,
-            "CA-06 exige snapshot por mutação — Insert + soft-delete = 2 linhas");
+        ConferirHistoricoDaRemocao(historico);
+    }
+
+    private static void ConferirHistoricoDaRemocao(List<ObrigatoriedadeLegalHistorico> historico)
+    {
+        historico.Should().HaveCount(2);
         historico[0].SnapshotBy.Should().Be(AdminA);
         historico[1].SnapshotBy.Should().Be(AdminB);
-
-        // jsonb no Postgres normaliza espaçamento ao re-serializar — comparação
-        // por substring com espaço acoplaria o teste ao formato de saída do
-        // banco. Desserializar para verificar a propriedade semântica.
-        using JsonDocument snapshotDeletado = JsonDocument.Parse(historico[1].ConteudoJson);
-        snapshotDeletado.RootElement.GetProperty("isDeleted").GetBoolean().Should().BeTrue(
-            "snapshot do soft-delete deve refletir IsDeleted=true no payload canônico");
+        using JsonDocument snapshot = JsonDocument.Parse(historico[1].ConteudoJson);
+        snapshot.RootElement.GetProperty("isDeleted").GetBoolean().Should().BeTrue();
     }
 
     [Fact(DisplayName = "Hash é determinístico cross-run (CA-05) — mesmo conteúdo persistido por processos diferentes")]
@@ -190,23 +137,8 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
     {
         ObrigatoriedadeLegal regra = NovaRegraValida("ETAPA_DETERMINISTIC");
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.ObrigatoriedadesLegais.Add(regra);
-            await ctx.SaveChangesAsync();
-        }
-
-        // Reconstrói o mesmo conteúdo em uma nova instância e re-computa
-        // o hash sem passar pela persistência — deve bater com o persistido.
-        string hashCalculadoDeNovo = HashCanonicalComputer.Compute(
-            tipoProcessoCodigo: "*",
-            categoria: CategoriaObrigatoriedade.Etapa,
-            regraCodigo: "ETAPA_DETERMINISTIC",
-            predicado: new EtapaObrigatoria("ProvaObjetiva"),
-            baseLegal: "Lei 12.711/2012 art.1º",
-            portariaInternaCodigo: null,
-            vigenciaInicio: new DateOnly(2026, 1, 1),
-            vigenciaFim: null);
+        await GravarAsync(AdminA, regra);
+        string hashCalculadoDeNovo = HashCanonicalComputer.Compute(NovaRegraValida("ETAPA_DETERMINISTIC"));
 
         await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         string persistido = (await readCtx.ObrigatoriedadesLegais
@@ -215,6 +147,14 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
 
         persistido.Should().Be(hashCalculadoDeNovo,
             "o hash do banco precisa bater com o computado fresh — invariante de evidência forense");
+    }
+
+    private async Task RemoverAsync(string usuario, Guid id)
+    {
+        await using UniPlusDbContext context = _fixture.CreateDbContext(usuario);
+        ObrigatoriedadeLegal regra = await context.ObrigatoriedadesLegais.SingleAsync(o => o.Id == id);
+        context.ObrigatoriedadesLegais.Remove(regra);
+        await context.SaveChangesAsync();
     }
 
     [Fact(DisplayName = "Ruleset reúne universal e específico, exclui outro tipo e respeita a data explícita")]

@@ -31,7 +31,7 @@ internal static class LeituraDasExigencias
     /// <summary>
     /// Não valida <c>exigidoNaFaseId</c> contra as fases decodificadas na mesma passagem: a checagem seria
     /// redundante, como a de <see cref="ReferenciaTemporalFatos.FaseId"/>. A resolução acontece no domínio, ao
-    /// restaurar a configuração, que enxerga o mesmo Id congelado que a exigência e a política referenciam.
+    /// reidratar a configuração, que enxerga o mesmo Id congelado que a exigência e a política referenciam.
     /// </summary>
     internal static IReadOnlyList<DocumentoExigido> LerExigencias(LeitorEnvelope leitor, JsonObject bloco)
     {

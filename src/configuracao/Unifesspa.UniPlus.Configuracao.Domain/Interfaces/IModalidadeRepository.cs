@@ -51,7 +51,7 @@ public interface IModalidadeRepository
     /// <summary>
     /// Indica se <b>todos</b> os <paramref name="codigos"/> informados correspondem
     /// a modalidades vivas — integridade referencial dos códigos citados em
-    /// <c>ComposicaoOrigem</c> e <c>RemanejamentoArgs</c>. Coleção vazia retorna
+    /// <c>ComposicaoOrigem</c> e <c>RemanejamentoParametros</c>. Coleção vazia retorna
     /// <see langword="true"/> (nada a validar).
     /// </summary>
     Task<bool> CodigosVivosExistemAsync(
@@ -62,7 +62,7 @@ public interface IModalidadeRepository
     /// Indica se ESTE <paramref name="codigo"/> é referenciado por <b>outra</b>
     /// modalidade viva (excluindo <paramref name="excluirId"/>) — como
     /// <c>composicao_origem</c> OU como destino/par/fallback em
-    /// <c>remanejamento_args</c> (consulta jsonb). Base do bloqueio de remoção.
+    /// <c>remanejamento_parametros</c> (consulta jsonb). Base do bloqueio de remoção.
     /// </summary>
     Task<bool> EhReferenciadaPorOutraModalidadeVivaAsync(
         string codigo,

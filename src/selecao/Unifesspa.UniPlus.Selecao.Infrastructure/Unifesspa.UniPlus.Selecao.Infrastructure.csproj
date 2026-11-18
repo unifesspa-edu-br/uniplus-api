@@ -2,6 +2,10 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Persistence\Scripts\**\*.sql" />
+    <!-- O esquema do documento de configuração viaja dentro do assembly: avaliar um documento nunca consulta o registro
+         de esquemas nem a rede. -->
+    <EmbeddedResource Include="..\..\..\contracts\selecao\configuracao\v1\*.schema.json"
+                      LogicalName="Unifesspa.UniPlus.Selecao.Contratos.Configuracao.v1.%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>
@@ -30,6 +34,8 @@
     <PackageReference Include="Refit" />
     <PackageReference Include="Refit.HttpClientFactory" />
     <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
+    <!-- Avalia o documento de configuração contra o esquema embutido (ADR-0172). -->
+    <PackageReference Include="JsonSchema.Net" />
   </ItemGroup>
 
   <ItemGroup>
@@ -38,9 +44,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Expõe internals (ex.: RegraCatalogoReader) aos testes de integração —
+    <!-- Expõe internals (ex.: RegraCatalogoReader) aos testes de integração e o gerador dos componentes do esquema aos unitários —
          mesmo padrão de Configuracao/OrganizacaoInstitucional/Infrastructure.Core. -->
     <InternalsVisibleTo Include="Unifesspa.UniPlus.Selecao.IntegrationTests" />
+    <InternalsVisibleTo Include="Unifesspa.UniPlus.Selecao.Infrastructure.UnitTests" />
   </ItemGroup>
 
 </Project>

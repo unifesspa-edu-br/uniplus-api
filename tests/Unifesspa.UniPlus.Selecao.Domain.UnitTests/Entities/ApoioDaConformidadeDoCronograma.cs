@@ -9,6 +9,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -21,28 +23,29 @@ internal static class ApoioDaConformidadeDoCronograma
     internal static readonly string HashFixo = new('a', 64);
 
     internal static ReferenciaRegra Regra(string codigo, char semente) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string(semente, 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string(semente, 64));
 
-    internal static ConfiguracaoDistribuicaoVagas Distribuicao(int voBase) =>
-        ConfiguracaoDistribuicaoVagas.Criar(
-            ofertaCursoOrigemId: Guid.CreateVersion7(),
-            voBase: voBase,
-            pr: 1m,
-            regraDistribuicao: Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
-            regraAjuste: null,
-            referenciaDemografica: null,
-            modalidades: [
+    internal static ConfiguracaoDistribuicaoVagas Distribuicao(int vagasOfertadasBase) =>
+        ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
+            new DistribuicaoDeVagasDeclarada
+            {
+                VagasOfertadasBase = vagasOfertadasBase,
+                PercentualDaReservaLegal = 1m,
+                RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
+                Modalidades = [
                 ModalidadeSelecionada.Criar(
                     Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla,
-                    ComposicaoVagasModalidade.ResidualDoVo, null, RegraRemanejamentoModalidade.Nenhuma,
-                    null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: voBase).Value!,
-            ], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
+                    ComposicaoVagasModalidade.RestanteDasVagasOfertadas, null, RegraRemanejamentoModalidade.Nenhuma,
+                    null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: vagasOfertadasBase).Value!,
+            ]
+            },
+            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
     internal static DadosEdital Dados() => DadosEdital.Criar(
         "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)), new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!;
 
     internal static Result<VersaoConfiguracao> Publicar(ProcessoSeletivo processo) => processo.Publicar(
-        Dados(), "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo, "teste", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        new CenarioDeCongelamento { Dados = Dados(), Documento = new DocumentoCongelado("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "teste" });
 
     /// <summary>
     /// Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01) — declarada em
@@ -52,8 +55,7 @@ internal static class ApoioDaConformidadeDoCronograma
     internal static void DeclararNaoCobra(ProcessoSeletivo processo)
     {
         processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!).IsSuccess.Should().BeTrue();
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
     }
 }

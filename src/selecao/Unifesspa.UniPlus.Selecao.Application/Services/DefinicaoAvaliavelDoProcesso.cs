@@ -33,7 +33,7 @@ public sealed record DefinicaoAvaliavel(
 public static class DefinicaoAvaliavelDoProcesso
 {
     /// <summary>
-    /// A definição da configuração viva — rascunho ou sessão de retificação —, com o catálogo vivo. O
+    /// A definição da configuração viva, com o catálogo vivo. O
     /// campo que o catálogo deixou de aceitar é recusado antes, como na publicação.
     /// </summary>
     public static Result<DefinicaoAvaliavel> DaConfiguracaoViva(ProcessoSeletivo processo, IReadOnlyCollection<FatoCandidatoView> catalogo)

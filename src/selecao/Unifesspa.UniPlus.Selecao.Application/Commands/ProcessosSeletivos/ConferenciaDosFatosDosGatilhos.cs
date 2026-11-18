@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// No congelamento, os fatos dos gatilhos de exigência são conferidos de novo contra o processo:
@@ -23,7 +24,7 @@ internal static class ConferenciaDosFatosDosGatilhos
     public const string FatoForaDoProcesso = "PredicadoDnf.FatoNaoColetadoPeloProcesso";
 
     public static DomainError? Conferir(
-        ProcessoSeletivo processo, IReadOnlyDictionary<string, FatoCandidatoView> catalogo)
+        ProcessoSeletivo processo, IReadOnlyDictionary<string, FatoCandidatoView> catalogo, FatosDasVersoesPublicadas? publicadas)
     {
         ArgumentNullException.ThrowIfNull(processo);
         ArgumentNullException.ThrowIfNull(catalogo);
@@ -34,7 +35,7 @@ internal static class ConferenciaDosFatosDosGatilhos
 
         foreach (DocumentoExigido documento in processo.DocumentosExigidos)
         {
-            IReadOnlySet<string> camposDaRepeticao = RegrasDasExigencias.CamposDaRepeticao(EstadoDaConfiguracao.De(processo), documento.Id);
+            IReadOnlySet<string> camposDaRepeticao = RegrasDasExigencias.CamposDaRepeticao(processo.Declaracao(), documento.Id);
             foreach (string fato in documento.Condicoes.Select(static c => c.Fato).Distinct(StringComparer.Ordinal))
             {
                 if (!noProcesso.Contains(fato) && !camposDaRepeticao.Contains(fato))
@@ -44,13 +45,13 @@ internal static class ConferenciaDosFatosDosGatilhos
                         $"O fato '{fato}', citado pelo gatilho de um documento exigido, não é mais coletado nem derivado pelo processo.");
                 }
 
-                if (FaseEfetivaDoFato.RecusaDeFaseDoGatilho(EstadoDaConfiguracao.De(processo), fato, documento.ExigidoNaFaseId, documento.Finalidade, pontoResolucaoPorFato, membroPorAgregado) is { } recusa)
+                if (FaseEfetivaDoFato.RecusaDeFaseDoGatilho(processo.Declaracao(), fato, documento.ExigidoNaFaseId, documento.Finalidade, pontoResolucaoPorFato, membroPorAgregado, publicadas) is { } recusa)
                 {
                     return recusa;
                 }
             }
         }
 
-        return PendenciasDosFatos.PendenciaDeGrupoQueAlimentaAgregado(EstadoDaConfiguracao.De(processo), membroPorAgregado);
+        return PendenciasDosFatos.PendenciaDeGrupoQueAlimentaAgregado(processo.Declaracao(), membroPorAgregado);
     }
 }

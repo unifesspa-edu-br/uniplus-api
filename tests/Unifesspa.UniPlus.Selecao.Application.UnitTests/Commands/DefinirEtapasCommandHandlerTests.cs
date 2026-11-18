@@ -22,69 +22,47 @@ public sealed class DefinirEtapasCommandHandlerTests
     public async Task Handle_ProcessoInexistente_RetornaNaoEncontrado()
     {
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterParaMutacaoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns((ProcessoSeletivo?)null);
-        ITipoEtapaReader tipoEtapaReader = ReaderPadrao();
+        repository.ObterParaMutacaoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((ProcessoSeletivo?)null);
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
-
         DefinirEtapasCommand command = new(
-            Guid.CreateVersion7(),
-            [new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 3m, null, 1, Produtos: [], Bancas: [], Recursos: [])], PrecondicaoIfMatch.Ausente);
+            Guid.CreateVersion7(), [EtapaInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 3m, null, 1)]);
 
-        Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
+        Result result = await Executar(command, repository, unitOfWork);
 
-        result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
+    // O agregado é tracked (ObterParaMutacaoAsync); a persistência é por change detection no SaveChanges —
+    // NÃO se chama DbSet.Update (que marcaria os filhos novos com Guid v7 como Modified → UPDATE inválido).
     [Fact(DisplayName = "Handle com etapas válidas persiste e retorna sucesso (CA-02)")]
     public async Task Handle_EtapasValidas_Persiste()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>())
-            .Returns(processo);
-        ITipoEtapaReader tipoEtapaReader = ReaderPadrao();
+        ProcessoSeletivo processo = ProcessoSemEtapas();
+        IProcessoSeletivoRepository repository = RepositorioCom(processo);
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
+        DefinirEtapasCommand command = new(processo.Id, [EtapaInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 3m, null, 1)]);
 
-        DefinirEtapasCommand command = new(
-            processo.Id,
-            [new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 3m, null, 1, Produtos: [], Bancas: [], Recursos: [])], PrecondicaoIfMatch.Ausente);
-
-        Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
+        Result result = await Executar(command, repository, unitOfWork);
 
         result.IsSuccess.Should().BeTrue();
         processo.Etapas.Should().ContainSingle(e => e.Nome == "Prova Objetiva");
         processo.Etapas.Single().TipoEtapa.Codigo.Should().Be("PROVA_OBJETIVA");
-        // O agregado é tracked (ObterParaMutacaoAsync); a persistência é por
-        // change detection no SaveChanges — NÃO se chama DbSet.Update (que
-        // marcaria os filhos novos com Guid v7 como Modified → UPDATE inválido).
-        repository.DidNotReceive().Atualizar(Arg.Any<Domain.Entities.ProcessoSeletivo>());
+        repository.DidNotReceive().Atualizar(Arg.Any<ProcessoSeletivo>());
         await unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Handle com Id de etapa existente atualiza a MESMA instância (preserva etapa_ref)")]
     public async Task Handle_ComIdExistente_AtualizaMesmaInstancia()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        EtapaProcesso etapaOriginal = EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaProvaObjetiva(), peso: 1m, ordem: 1).Value!;
-        processo.DefinirEtapas([etapaOriginal], PrecondicaoIfMatch.Ausente);
+        EtapaProcesso etapaOriginal = EtapaDeProvaObjetiva("Prova Objetiva");
+        ProcessoSeletivo processo = ProcessoComAEtapa(etapaOriginal);
 
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-        ITipoEtapaReader tipoEtapaReader = ReaderPadrao();
-        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
-
-        DefinirEtapasCommand command = new(
-            processo.Id,
-            [new EtapaProcessoInput("Prova Objetiva (revisada)", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 3m, null, 1, etapaOriginal.Id, Produtos: [], Bancas: [], Recursos: [])], PrecondicaoIfMatch.Ausente);
-
-        Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
+        Result result = await ExecutarSobre(
+            processo, null, EtapaInput("Prova Objetiva (revisada)", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 3m, null, 1, etapaOriginal.Id));
 
         result.IsSuccess.Should().BeTrue();
         EtapaProcesso etapaAtualizada = processo.Etapas.Single();
-        etapaAtualizada.Id.Should().Be(etapaOriginal.Id);
         etapaAtualizada.Should().BeSameAs(etapaOriginal);
         etapaAtualizada.Nome.Should().Be("Prova Objetiva (revisada)");
         etapaAtualizada.Peso.Should().Be(3m);
@@ -93,20 +71,11 @@ public sealed class DefinirEtapasCommandHandlerTests
     [Fact(DisplayName = "Handle sem Id (ou com Id sem correspondência) cria etapa nova")]
     public async Task Handle_SemId_CriaEtapaNova()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        EtapaProcesso etapaOriginal = EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaProvaObjetiva(), peso: 1m, ordem: 1).Value!;
-        processo.DefinirEtapas([etapaOriginal], PrecondicaoIfMatch.Ausente);
+        EtapaProcesso etapaOriginal = EtapaDeProvaObjetiva("Prova Objetiva");
+        ProcessoSeletivo processo = ProcessoComAEtapa(etapaOriginal);
 
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-        ITipoEtapaReader tipoEtapaReader = ReaderPadrao();
-        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
-
-        DefinirEtapasCommand command = new(
-            processo.Id,
-            [new EtapaProcessoInput("Entrevista", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 2m, null, 1, Produtos: [], Bancas: [], Recursos: [])], PrecondicaoIfMatch.Ausente);
-
-        Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
+        Result result = await ExecutarSobre(
+            processo, null, EtapaInput("Entrevista", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 2m, null, 1));
 
         result.IsSuccess.Should().BeTrue();
         EtapaProcesso etapaNova = processo.Etapas.Single();
@@ -117,23 +86,13 @@ public sealed class DefinirEtapasCommandHandlerTests
     [Fact(DisplayName = "A nota máxima e o passo chegam à etapa criada e à etapa atualizada")]
     public async Task Handle_Escala_ChegaACriadaEAAtualizada()
     {
-        ProcessoSeletivo processo = ProcessoSemEtapas();
-        EtapaProcesso existente = EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaProvaObjetiva(), peso: 1m, ordem: 1).Value!;
-        processo.DefinirEtapas([existente], PrecondicaoIfMatch.Ausente);
+        EtapaProcesso existente = EtapaDeProvaObjetiva("Prova Objetiva");
+        ProcessoSeletivo processo = ProcessoComAEtapa(existente);
 
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-
-        DefinirEtapasCommand command = new(
-            processo.Id,
-            [
-                new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1, existente.Id,
-                    Produtos: [], Bancas: [], Recursos: [], NotaMaxima: 10m, PassoDoLancamento: 0.25m),
-                new EtapaProcessoInput("Redação", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 2,
-                    Produtos: [], Bancas: [], Recursos: [], NotaMaxima: 1000m, PassoDoLancamento: 20m),
-            ], PrecondicaoIfMatch.Ausente);
-
-        Result<MutacaoAceita> result = await Executar(command, repository, Substitute.For<IUnitOfWork>(), ReaderPadrao());
+        Result result = await ExecutarSobre(
+            processo, null,
+            EtapaInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1, existente.Id) with { NotaMaxima = 10m, PassoDoLancamento = 0.25m },
+            EtapaInput("Redação", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 2) with { NotaMaxima = 1000m, PassoDoLancamento = 20m });
 
         result.IsSuccess.Should().BeTrue();
         processo.Etapas.Single(e => e.Id == existente.Id).Should().Match<EtapaProcesso>(
@@ -145,47 +104,29 @@ public sealed class DefinirEtapasCommandHandlerTests
     [Fact(DisplayName = "Defeitos de escala em etapas diferentes saem numa só resposta, cada um no seu campo")]
     public async Task Handle_DefeitosDeEscalaEmEtapasDiferentes_Acumula()
     {
-        ProcessoSeletivo processo = ProcessoSemEtapas();
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        Result result = await ExecutarSobre(
+            ProcessoSemEtapas(), null,
+            EtapaInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1) with { NotaMaxima = 0m },
+            EtapaInput("Entrevista", CaraterEtapa.Eliminatoria, TipoProvaObjetivaOrigemId, null, 12m, 2) with { NotaMaxima = 10m });
 
-        DefinirEtapasCommand command = new(
-            processo.Id,
-            [
-                new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
-                    Produtos: [], Bancas: [], Recursos: [], NotaMaxima: 0m),
-                new EtapaProcessoInput("Entrevista", CaraterEtapa.Eliminatoria, TipoProvaObjetivaOrigemId, null, 12m, 2,
-                    Produtos: [], Bancas: [], Recursos: [], NotaMaxima: 10m),
-            ], PrecondicaoIfMatch.Ausente);
-
-        Result<MutacaoAceita> result = await Executar(command, repository, Substitute.For<IUnitOfWork>(), ReaderPadrao());
-
-        result.IsFailure.Should().BeTrue();
         result.Errors.Select(e => e.Field).Should().BeEquivalentTo(["etapas[0].notaMaxima", "etapas[1].notaMinima"]);
     }
 
     [Fact(DisplayName = "Handle com o mesmo Id de etapa repetido no payload é recusado")]
     public async Task Handle_ComIdEtapaRepetido_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        EtapaProcesso etapaOriginal = EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaProvaObjetiva(), peso: 1m, ordem: 1).Value!;
-        processo.DefinirEtapas([etapaOriginal], PrecondicaoIfMatch.Ausente);
-
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-        ITipoEtapaReader tipoEtapaReader = ReaderPadrao();
+        EtapaProcesso etapaOriginal = EtapaDeProvaObjetiva("Prova Objetiva");
+        ProcessoSeletivo processo = ProcessoComAEtapa(etapaOriginal);
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
-
         DefinirEtapasCommand command = new(
             processo.Id,
             [
-                new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1, etapaOriginal.Id, Produtos: [], Bancas: [], Recursos: []),
-                new EtapaProcessoInput("Prova Objetiva (duplicada)", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 2m, null, 2, etapaOriginal.Id, Produtos: [], Bancas: [], Recursos: []),
-            ], PrecondicaoIfMatch.Ausente);
+                EtapaInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1, etapaOriginal.Id),
+                EtapaInput("Prova Objetiva (duplicada)", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 2m, null, 2, etapaOriginal.Id),
+            ]);
 
-        Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
+        Result result = await Executar(command, RepositorioCom(processo), unitOfWork);
 
-        result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.IdEtapaDuplicado");
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
@@ -193,23 +134,17 @@ public sealed class DefinirEtapasCommandHandlerTests
     [Fact(DisplayName = "Handle com ordem de etapa duplicada não persiste (invariante do agregado)")]
     public async Task Handle_OrdemDuplicada_NaoPersiste()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>())
-            .Returns(processo);
-        ITipoEtapaReader tipoEtapaReader = ReaderPadrao();
+        ProcessoSeletivo processo = ProcessoSemEtapas();
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
-
         DefinirEtapasCommand command = new(
             processo.Id,
             [
-                new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 3m, null, 1, Produtos: [], Bancas: [], Recursos: []),
-                new EtapaProcessoInput("Redação", CaraterEtapa.Classificatoria, TipoRedacaoOrigemId, 2m, null, 1, Produtos: [], Bancas: [], Recursos: []),
-            ], PrecondicaoIfMatch.Ausente);
+                EtapaInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 3m, null, 1),
+                EtapaInput("Redação", CaraterEtapa.Classificatoria, TipoRedacaoOrigemId, 2m, null, 1),
+            ]);
 
-        Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
+        Result result = await Executar(command, RepositorioCom(processo), unitOfWork);
 
-        result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.OrdemEtapaDuplicada");
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
         unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
@@ -218,24 +153,21 @@ public sealed class DefinirEtapasCommandHandlerTests
     [Fact(DisplayName = "ADR-0125: violações de forma acumulam entre etapas, com o índice prefixado ao field, ANTES de consultar o tipoEtapaReader")]
     public async Task Handle_DuasEtapasComViolacaoDeForma_AcumulaComIndicePrefixadoESemConsultarReader()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        ProcessoSeletivo processo = ProcessoSemEtapas();
         ITipoEtapaReader tipoEtapaReader = ReaderPadrao();
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
+        DefinirEtapasCommand command = new(processo.Id, EtapasComNomeEmBrancoEPesoZero());
 
-        DefinirEtapasCommand command = new(
-            processo.Id,
-            [
-                new EtapaProcessoInput(" ", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 3m, null, 1, Produtos: [], Bancas: [], Recursos: []),
-                new EtapaProcessoInput("Redação", CaraterEtapa.Classificatoria, TipoRedacaoOrigemId, 0m, null, 2, Produtos: [], Bancas: [], Recursos: []),
-            ], PrecondicaoIfMatch.Ausente);
+        Result result = await Executar(command, RepositorioCom(processo), unitOfWork, tipoEtapaReader);
 
-        Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
-
-        result.IsFailure.Should().BeTrue();
         result.Errors.Select(e => e.Field).Should().BeEquivalentTo(["etapas[0].nome", "etapas[1].peso"]);
         await tipoEtapaReader.DidNotReceiveWithAnyArgs().ObterAtivoPorIdAsync(default, default);
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
+
+    private static EtapaProcessoInput[] EtapasComNomeEmBrancoEPesoZero() =>
+    [
+        EtapaInput(" ", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 3m, null, 1),
+        EtapaInput("Redação", CaraterEtapa.Classificatoria, TipoRedacaoOrigemId, 0m, null, 2),
+    ];
 }

@@ -44,11 +44,11 @@ public sealed class EnvelopeCodecRecusaGramaticaFechadaTests
     [InlineData("distribuicao.0.referenciaDemografica")]
     [InlineData("modalidades.0")]
     [InlineData("criteriosDesempate.0")]
-    [InlineData("criteriosDesempate.0.args")]
+    [InlineData("criteriosDesempate.0.parametros")]
     [InlineData("criteriosDesempate.0.regra")]
-    [InlineData("criteriosDesempate.5.args")]
+    [InlineData("criteriosDesempate.5.parametros")]
     [InlineData("classificacao.regrasEliminacao.0")]
-    [InlineData("classificacao.regrasEliminacao.0.args")]
+    [InlineData("classificacao.regrasEliminacao.0.parametros")]
     [InlineData("classificacao.regrasEliminacao.0.regra")]
     [InlineData("classificacao.regraCalculo")]
     [InlineData("classificacao.quadroPesoAreaEnem.0")]
@@ -87,26 +87,26 @@ public sealed class EnvelopeCodecRecusaGramaticaFechadaTests
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
-    [Fact(DisplayName = "O caso crítico: {presente:false} com args de bônus é RECUSADO, não lido como 'sem bônus'")]
-    public void BonusPresenteFalsoComArgs_Recusa()
+    [Fact(DisplayName = "O caso crítico: {presente:false} com parâmetros de bônus é RECUSADO, não lido como 'sem bônus'")]
+    public void BonusPresenteFalsoComParametros_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(DeclararBonusAusenteMantendoOFator);
 
         resultado.IsFailure.Should().BeTrue(
-            "um bônus 'ausente' que ainda carrega args é envelope contraditório. Lê-lo como 'sem bônus' descartaria " +
+            "um bônus 'ausente' que ainda carrega parâmetros é envelope contraditório. Lê-lo como 'sem bônus' descartaria " +
             "o bônus regional (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015) de um certame publicado, e ninguém veria.");
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
     /// <summary>
-    /// Mesmo raciocínio de <see cref="BonusPresenteFalsoComArgs_Recusa"/>, agora para a
+    /// Mesmo raciocínio de <see cref="BonusPresenteFalsoComParametros_Recusa"/>, agora para a
     /// cascata (Story #575): um leitor que só olhasse <c>presente</c> leria
     /// <c>{"presente":false,"regra":{...},...}</c> como "sem cascata" e descartaria a
     /// sequência legal de remanejamento (cascata de remanejamento de cotas, UNI-REQ-0056) de um certame publicado, sem
     /// deixar rastro — exatamente o modo de falha que <c>ExigirChaves</c> torna impossível.
     /// </summary>
-    [Fact(DisplayName = "O caso crítico: {presente:false} com args de cascata é RECUSADO, não lido como 'sem cascata'")]
-    public void CascataPresenteFalsoComArgs_Recusa()
+    [Fact(DisplayName = "O caso crítico: {presente:false} com parâmetros de cascata é RECUSADO, não lido como 'sem cascata'")]
+    public void CascataPresenteFalsoComParametros_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
         {
@@ -220,9 +220,71 @@ public sealed class EnvelopeCodecRecusaGramaticaFechadaTests
         resultado.Error!.Code.Should().Be(codigoEsperado);
     }
 
-    private static readonly string[] ArgsDoBonusAlemDoFator =
+    [Theory(DisplayName = "O código estável da base legal do bônus fora da gramática do cadastro é recusado no envelope")]
+    [InlineData("minuscula")]
+    [InlineData("COM PONTUACAO!")]
+    [InlineData("1COMECA_POR_DIGITO")]
+    [InlineData("COM-HIFEN")]
+    [InlineData("A")]
+    [InlineData("TERMINA_EM_QUEBRA\n")]
+    public void Bonus_CodigoDaBaseLegalForaDaGramatica_RecusaOEnvelope(string codigo)
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["bonusRegional"]!["baseLegalBonusRegionalCodigo"] = codigo);
+
+        resultado.IsFailure.Should().BeTrue("o código congelado tem de obedecer à gramática que o cadastro impõe");
+    }
+
+    [Theory(DisplayName = "O código estável da base legal do bônus é obrigatório e não vazio no envelope")]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Bonus_CodigoDaBaseLegalAusenteOuVazio_RecusaOEnvelope(bool removerChave)
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            JsonObject bonus = envelope["bonusRegional"]!.AsObject();
+            if (removerChave)
+            {
+                bonus.Remove("baseLegalBonusRegionalCodigo");
+            }
+            else
+            {
+                bonus["baseLegalBonusRegionalCodigo"] = string.Empty;
+            }
+        });
+
+        resultado.IsFailure.Should().BeTrue("o snapshot do bônus sem código estável deixaria o certame sem a referência que o documento resolve");
+    }
+
+    [Theory(DisplayName = "O código do termo e o número da versão ausentes, vazios ou fora do limite são recusados no envelope")]
+    [InlineData("termoCodigo", true, null)]
+    [InlineData("termoCodigo", false, "")]
+    [InlineData("termoCodigo", false, "UM_CODIGO_QUE_PASSA_DO_LIMITE_DO_CATALOGO_PORQUE_TEM_MUITO_MAIS_DE_CEM_CARACTERES_DE_COMPRIMENTO_TOTAL_DO_VALOR")]
+    [InlineData("versaoNumero", true, null)]
+    [InlineData("versaoNumero", false, 0)]
+    [InlineData("versaoNumero", false, -1)]
+    [InlineData("versaoNumero", false, "1")]
+    public void Termo_CodigoENumeroDaVersaoInvalidos_RecusaOEnvelope(string chave, bool removerChave, object? valor)
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            JsonObject termo = envelope["formularios"]!.AsArray().First(f => f!["termos"]!.AsArray().Count > 0)!["termos"]![0]!.AsObject();
+            if (removerChave)
+            {
+                termo.Remove(chave);
+            }
+            else
+            {
+                termo[chave] = JsonValue.Create(valor);
+            }
+        });
+
+        resultado.IsFailure.Should().BeTrue("o termo congelado sem código estável ou com número inválido não é citável pelo documento");
+    }
+
+    private static readonly string[] ParametrosDoBonusAlemDoFator =
     [
-        "regra", "teto", "baseLegalBonusRegionalId", "tipoInstrumento", "identificacao", "descricao", "municipios",
+        "regra", "teto", "baseLegalBonusRegionalId", "baseLegalBonusRegionalCodigo", "tipoInstrumento", "identificacao", "descricao", "municipios",
     ];
 
     /// <summary>Sobra `fator` — a forma "ausente" só admite `presente`.</summary>
@@ -230,7 +292,7 @@ public sealed class EnvelopeCodecRecusaGramaticaFechadaTests
     {
         JsonObject bonus = envelope["bonusRegional"]!.AsObject();
         bonus["presente"] = false;
-        foreach (string chave in ArgsDoBonusAlemDoFator)
+        foreach (string chave in ParametrosDoBonusAlemDoFator)
         {
             bonus.Remove(chave);
         }

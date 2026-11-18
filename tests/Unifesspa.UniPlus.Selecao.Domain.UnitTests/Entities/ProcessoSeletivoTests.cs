@@ -1,34 +1,22 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
-using System.Text.Json;
-
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Enums;
-using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDoProcessoSeletivoEmRascunho;
+
 /// <summary>
-/// Cobertura das invariantes do agregado-raiz <see cref="ProcessoSeletivo"/>
-/// nas fatias F0 (fundação), F2 (distribuição de vagas), F3 (bônus regional e
-/// critérios de desempate) e F4 (classificação): criação em rascunho, etapas
-/// pontuadas + divisor da média, atendimento especializado
-/// (ADR-0067), distribuição de vagas por oferta (Story #773), bônus/desempate
-/// (Story #774) e classificação — 15º bloco canônico (Story #775).
+/// Cobertura das invariantes do agregado-raiz <see cref="ProcessoSeletivo"/> na fundação:
+/// criação em rascunho, etapas pontuadas e divisor da média.
 /// </summary>
 public sealed class ProcessoSeletivoTests
 {
-    private static ProcessoSeletivo NovoProcesso() =>
-        ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-
     [Fact(DisplayName = "Criar inicia o processo em rascunho (CA-01)")]
     public void CriarProcesso_IniciaEmRascunho()
     {
@@ -44,7 +32,7 @@ public sealed class ProcessoSeletivoTests
     [Fact(DisplayName = "Criar sem tipo lanca ArgumentException")]
     public void Criar_SemTipo_Lanca()
     {
-        Action act = () => ProcessoSeletivo.Criar("PS 2026", TiposDeProcessoDeTeste.Nenhum, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        Action act = () => NovoProcesso("PS 2026", TiposDeProcessoDeTeste.Nenhum);
 
         act.Should().Throw<ArgumentException>().WithParameterName("tipoProcesso");
     }
@@ -52,7 +40,7 @@ public sealed class ProcessoSeletivoTests
     [Fact(DisplayName = "Criar sem origem dos candidatos lanca ArgumentException (Story #851 §3.4)")]
     public void Criar_SemOrigemCandidatos_Lanca()
     {
-        Action act = () => ProcessoSeletivo.Criar("PS 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.Nenhuma, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        Action act = () => NovoProcesso("PS 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.Nenhuma);
 
         act.Should().Throw<ArgumentException>().WithParameterName("origemCandidatos");
     }
@@ -60,9 +48,7 @@ public sealed class ProcessoSeletivoTests
     [Fact(DisplayName = "Criar sem unidade administradora (Guid.Empty) lanca ArgumentException (issue #849, CA-04)")]
     public void Criar_SemUnidadeAdministradoraOrigemId_Lanca()
     {
-        Action act = () => ProcessoSeletivo.Criar(
-            "PS 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.Empty,
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        Action act = () => NovoProcesso("PS 2026", TiposDeProcessoDeTeste.SiSU, unidadeAdministradoraOrigemId: Guid.Empty);
 
         act.Should().Throw<ArgumentException>().WithParameterName("unidadeAdministradoraOrigemId");
     }
@@ -71,25 +57,13 @@ public sealed class ProcessoSeletivoTests
     public void CriarProcesso_CongelaUnidadeAdministradora()
     {
         Guid unidadeId = Guid.NewGuid();
-        UnidadeAdministradoraSnapshot snapshot = UnidadeAdministradoraSnapshot
-            .Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!;
+        UnidadeAdministradoraSnapshot snapshot = UnidadeAdministradoraCeps();
 
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             "PS 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, unidadeId, snapshot, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
         processo.UnidadeAdministradoraOrigemId.Should().Be(unidadeId);
         processo.UnidadeAdministradora.Should().BeSameAs(snapshot);
-    }
-
-    [Fact(DisplayName = "SombraParaVerificacao copia a unidade administradora da raiz viva (issue #849)")]
-    public void SombraParaVerificacao_CopiaUnidadeAdministradora()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-
-        ProcessoSeletivo sombra = processo.SombraParaVerificacao();
-
-        sombra.UnidadeAdministradoraOrigemId.Should().Be(processo.UnidadeAdministradoraOrigemId);
-        sombra.UnidadeAdministradora.Should().BeSameAs(processo.UnidadeAdministradora);
     }
 
     [Fact(DisplayName = "Etapa classificatoria ou ambas com peso compõe o divisor da media (CA-02)")]
@@ -99,15 +73,14 @@ public sealed class ProcessoSeletivoTests
 
         Result result = processo.DefinirEtapas(
         [
-            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 3m, ordem: 1).Value!,
-            EtapaProcesso.Criar("Redação", CaraterEtapa.Ambas, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 2m, notaMinima: 5m, ordem: 2).Value!,
-            EtapaProcesso.Criar("Banca de heteroidentificação", CaraterEtapa.Eliminatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, ordem: 3).Value!,
-        ], PrecondicaoIfMatch.Ausente);
+            EtapaDeProva("Prova Objetiva", CaraterEtapa.Classificatoria, 1, 3m, null),
+            EtapaDeProva("Redação", CaraterEtapa.Ambas, 2, 2m, 5m),
+            EtapaDeProva("Banca de heteroidentificação", CaraterEtapa.Eliminatoria, 3, null, null),
+        ]);
 
+        // Só as etapas que pontuam (classificatória/ambas, com peso) entram no divisor: 3 + 2 = 5.
         result.IsSuccess.Should().BeTrue();
-        // Só as etapas que pontuam (classificatória/ambas, com peso) entram
-        // no divisor: 3 + 2 = 5. A eliminatória pura fica fora.
-        EstadoDaConfiguracao.De(processo).CalcularDivisorMedia().Should().Be(5m);
+        processo.Declaracao().Avaliacao.CalcularDivisorMedia().Should().Be(5m);
     }
 
     [Fact(DisplayName = "DefinirEtapas com ordem duplicada é recusado")]
@@ -117,9 +90,9 @@ public sealed class ProcessoSeletivoTests
 
         Result result = processo.DefinirEtapas(
         [
-            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 3m, ordem: 1).Value!,
-            EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 2m, ordem: 1).Value!,
-        ], PrecondicaoIfMatch.Ausente);
+            EtapaDeProva("Prova Objetiva", CaraterEtapa.Classificatoria, 1, 3m, null),
+            EtapaDeProva("Redação", CaraterEtapa.Classificatoria, 1, 2m, null),
+        ]);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.OrdemEtapaDuplicada");
@@ -132,8 +105,8 @@ public sealed class ProcessoSeletivoTests
 
         Result result = processo.DefinirEtapas(
         [
-            EtapaProcesso.Criar("Banca de heteroidentificação", CaraterEtapa.Eliminatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, ordem: 1).Value!,
-        ], PrecondicaoIfMatch.Ausente);
+            EtapaDeProva("Banca de heteroidentificação", CaraterEtapa.Eliminatoria, 1, null, null),
+        ]);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.NenhumaEtapaComponeNota");
@@ -146,8 +119,8 @@ public sealed class ProcessoSeletivoTests
 
         Result result = processo.DefinirEtapas(
         [
-            EtapaProcesso.Criar("Análise de histórico", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: null, ordem: 1).Value!,
-        ], PrecondicaoIfMatch.Ausente);
+            EtapaDeProva("Análise de histórico", CaraterEtapa.Classificatoria, 1, null, null),
+        ]);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.NenhumaEtapaComponeNota");
@@ -157,502 +130,11 @@ public sealed class ProcessoSeletivoTests
     public void DefinirEtapas_Substitui()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirEtapas([EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 3m).Value!], PrecondicaoIfMatch.Ausente);
+        processo.DefinirEtapas([EtapaDeProva("Prova Objetiva", CaraterEtapa.Classificatoria, null, 3m, null)]);
 
-        processo.DefinirEtapas([EtapaProcesso.Criar("Entrevista", CaraterEtapa.Ambas, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m).Value!], PrecondicaoIfMatch.Ausente);
+        processo.DefinirEtapas([EtapaDeProva("Entrevista", CaraterEtapa.Ambas, null, 1m, null)]);
 
         processo.Etapas.Should().HaveCount(1);
         processo.Etapas.Single().Nome.Should().Be("Entrevista");
-    }
-
-    [Fact(DisplayName = "Tipo de deficiencia sob condicao PcD é aceito (CA-06, ADR-0067)")]
-    public void Atendimento_TipoDeficienciaSobPcd_Aceito()
-    {
-        Result<AtendimentoEspecializado> result = AtendimentoEspecializado.Criar(
-            condicoes: [CondicaoOfertada.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência")],
-            recursos: [RecursoOfertado.Criar(Guid.CreateVersion7(), "LEDOR", "Ledor")],
-            tiposDeficiencia: [DeficienciaAtendida.Criar(Guid.CreateVersion7(), "DEFICIENCIA_VISUAL", "Deficiência visual")]);
-
-        result.IsSuccess.Should().BeTrue();
-        result.Value!.TiposDeficiencia.Should().HaveCount(1);
-    }
-
-    [Fact(DisplayName = "Tipo de deficiencia sem condicao PcD é recusado (CA-06, ADR-0067)")]
-    public void Atendimento_TipoDeficiencia_SoSobPcd()
-    {
-        Result<AtendimentoEspecializado> result = AtendimentoEspecializado.Criar(
-            condicoes: [CondicaoOfertada.Criar(Guid.CreateVersion7(), "LACTANTE", "Lactante")],
-            recursos: [],
-            tiposDeficiencia: [DeficienciaAtendida.Criar(Guid.CreateVersion7(), "DEFICIENCIA_VISUAL", "Deficiência visual")]);
-
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("AtendimentoEspecializado.TipoDeficienciaSemCondicaoPcd");
-    }
-
-    [Fact(DisplayName = "Condicao de atendimento duplicada é recusada")]
-    public void Atendimento_CondicaoDuplicada_Recusa()
-    {
-        Guid condicaoId = Guid.CreateVersion7();
-
-        Result<AtendimentoEspecializado> result = AtendimentoEspecializado.Criar(
-            condicoes:
-            [
-                CondicaoOfertada.Criar(condicaoId, "PCD", "Pessoa com deficiência"),
-                CondicaoOfertada.Criar(condicaoId, "PCD", "Pessoa com deficiência"),
-            ],
-            recursos: [],
-            tiposDeficiencia: []);
-
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("AtendimentoEspecializado.CondicaoDuplicada");
-    }
-
-    [Fact(DisplayName = "Recurso de acessibilidade duplicado é recusado")]
-    public void Atendimento_RecursoDuplicado_Recusa()
-    {
-        Guid recursoId = Guid.CreateVersion7();
-
-        Result<AtendimentoEspecializado> result = AtendimentoEspecializado.Criar(
-            condicoes: [],
-            recursos: [RecursoOfertado.Criar(recursoId, "LEDOR", "Ledor"), RecursoOfertado.Criar(recursoId, "LEDOR", "Ledor")],
-            tiposDeficiencia: []);
-
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("AtendimentoEspecializado.RecursoDuplicado");
-    }
-
-    [Fact(DisplayName = "Tipo de deficiencia duplicado é recusado")]
-    public void Atendimento_TipoDeficienciaDuplicado_Recusa()
-    {
-        Guid tipoId = Guid.CreateVersion7();
-
-        Result<AtendimentoEspecializado> result = AtendimentoEspecializado.Criar(
-            condicoes: [CondicaoOfertada.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência")],
-            recursos: [],
-            tiposDeficiencia:
-            [
-                DeficienciaAtendida.Criar(tipoId, "DEFICIENCIA_VISUAL", "Deficiência visual"),
-                DeficienciaAtendida.Criar(tipoId, "DEFICIENCIA_VISUAL", "Deficiência visual"),
-            ]);
-
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("AtendimentoEspecializado.TipoDeficienciaDuplicado");
-    }
-
-    [Fact(DisplayName = "DefinirAtendimentoEspecializado vincula a oferta e as filhas à raiz")]
-    public void DefinirAtendimentoEspecializado_Vincula()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-        AtendimentoEspecializado atendimento = AtendimentoEspecializado.Criar(
-            condicoes: [CondicaoOfertada.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência")],
-            recursos: [RecursoOfertado.Criar(Guid.CreateVersion7(), "PROVA_AMPLIADA", "Prova ampliada")],
-            tiposDeficiencia: []).Value!;
-
-        Result result = processo.DefinirAtendimentoEspecializado(atendimento, PrecondicaoIfMatch.Ausente);
-
-        result.IsSuccess.Should().BeTrue();
-        processo.AtendimentoEspecializado.Should().NotBeNull();
-        processo.AtendimentoEspecializado!.ProcessoSeletivoId.Should().Be(processo.Id);
-        processo.AtendimentoEspecializado.Condicoes.Single().AtendimentoEspecializadoId
-            .Should().Be(atendimento.Id);
-    }
-
-    private static ConfiguracaoDistribuicaoVagas NovaDistribuicao(Guid ofertaCursoId)
-    {
-        ModalidadeSelecionada ampla = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "base legal", quantidadeDeclarada: 50).Value!;
-
-        ReferenciaRegra regra = ReferenciaRegra.Criar(
-            RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!;
-
-        return ConfiguracaoDistribuicaoVagas.Criar(
-            ofertaCursoId, voBase: 50, pr: 1m, regra, regraAjuste: null, referenciaDemografica: null, [ampla], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
-    }
-
-    [Fact(DisplayName = "DefinirDistribuicaoVagas vincula a configuração à raiz (Story #773)")]
-    public void DefinirDistribuicaoVagas_Vincula()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-        ConfiguracaoDistribuicaoVagas configuracao = NovaDistribuicao(Guid.CreateVersion7());
-
-        Result result = processo.DefinirDistribuicaoVagas([configuracao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
-
-        result.IsSuccess.Should().BeTrue();
-        processo.DistribuicaoVagas.Should().ContainSingle();
-        processo.DistribuicaoVagas.Single().ProcessoSeletivoId.Should().Be(processo.Id);
-    }
-
-    [Fact(DisplayName = "DefinirDistribuicaoVagas com AcaoQuandoIndeferido divergente para o mesmo código entre ofertas é recusada (CA-16)")]
-    public void DefinirDistribuicaoVagas_AcaoQuandoIndeferidoDivergente_Falha()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-        ReferenciaRegra regra = ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!;
-
-        static ModalidadeSelecionada Ac(int quantidade) => ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "base legal", quantidadeDeclarada: quantidade).Value!;
-
-        static ModalidadeSelecionada V(string acaoQuandoIndeferido, int quantidade) => ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "V", null, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal,
-            null, RegraRemanejamentoModalidade.DestinoUnico, "AC", null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), acaoQuandoIndeferido, "base legal", quantidadeDeclarada: quantidade).Value!;
-
-        ConfiguracaoDistribuicaoVagas ofertaA = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 10, pr: 1m, regra, regraAjuste: null, referenciaDemografica: null,
-            [V("RECLASSIFICAR_AC", 2), Ac(8)], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
-        ConfiguracaoDistribuicaoVagas ofertaB = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 10, pr: 1m, regra, regraAjuste: null, referenciaDemografica: null,
-            [V("RECLASSIFICAR_REGRA_EDITAL", 2), Ac(8)], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
-
-        Result result = processo.DefinirDistribuicaoVagas([ofertaA, ofertaB], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
-
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("ProcessoSeletivo.AcaoQuandoIndeferidoDivergente");
-    }
-
-    [Fact(DisplayName = "DefinirDistribuicaoVagas com a mesma modalidade copiada com regras diferentes entre ofertas é recusada")]
-    public void DefinirDistribuicaoVagas_RegraDeAplicabilidadeDivergente_Falha()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-        ReferenciaRegra regra = ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!;
-
-        static PredicadoDnf Exige(string fato) => PredicadoDnf.CriarDeCondicoesAgrupadas(
-            [(0, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;
-
-        static ModalidadeSelecionada Ac(int quantidade) => ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "base legal", quantidadeDeclarada: quantidade).Value!;
-
-        static ModalidadeSelecionada V(PredicadoDnf regraDeAplicabilidade) => ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "V", null, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal,
-            null, RegraRemanejamentoModalidade.DestinoUnico, "AC", null, null, regraDeAplicabilidade, null, "base legal", quantidadeDeclarada: 2).Value!;
-
-        ConfiguracaoDistribuicaoVagas ofertaA = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 10, pr: 1m, regra, regraAjuste: null, referenciaDemografica: null,
-            [V(Exige("PCD")), Ac(8)], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
-        ConfiguracaoDistribuicaoVagas ofertaB = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 10, pr: 1m, regra, regraAjuste: null, referenciaDemografica: null,
-            [V(Exige("CONCORRER_PCD")), Ac(8)], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
-
-        Result result = processo.DefinirDistribuicaoVagas([ofertaA, ofertaB], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
-
-        result.IsFailure.Should().BeTrue("uma modalidade tem uma regra só no processo");
-        result.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.RegraDeAplicabilidadeDivergente);
-    }
-
-    [Fact(DisplayName = "DefinirDistribuicaoVagas vazia é recusada")]
-    public void DefinirDistribuicaoVagas_Vazia_Recusa()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-
-        Result result = processo.DefinirDistribuicaoVagas([], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
-
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("ProcessoSeletivo.DistribuicaoVagasVazia");
-    }
-
-    [Fact(DisplayName = "DefinirDistribuicaoVagas com oferta de curso duplicada é recusada")]
-    public void DefinirDistribuicaoVagas_OfertaCursoDuplicada_Recusa()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-        Guid ofertaCursoId = Guid.CreateVersion7();
-
-        Result result = processo.DefinirDistribuicaoVagas(
-        [
-            NovaDistribuicao(ofertaCursoId),
-            NovaDistribuicao(ofertaCursoId),
-        ], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
-
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("ProcessoSeletivo.OfertaCursoDuplicada");
-    }
-
-    private static ReferenciaRegra RegraDesempate(string codigo) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string('a', 64)).Value!;
-
-    [Fact(DisplayName = "DefinirBonusRegional declara que aplica e depois que não aplica, removendo a configuração (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015)")]
-    public void DefinirBonusRegional_DefineERemove()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-        ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(
-            ReferenciaRegra.Criar(RegraBonusCodigo.Multiplicativo, "v1", new string('a', 64)).Value!,
-            1.20m, null, null, Guid.CreateVersion7(), "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
-            [("1504208", "Marabá", "PA")]).Value!;
-
-        processo.DefinirBonusRegional(aplica: true, bonus: bonus, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.BonusRegional.Should().NotBeNull();
-        processo.BonusRegional!.ProcessoSeletivoId.Should().Be(processo.Id);
-
-        processo.DefinirBonusRegional(aplica: false, bonus: null, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.BonusRegional.Should().BeNull();
-    }
-
-    [Fact(DisplayName = "DefinirCriteriosDesempate vincula os critérios em ordem à raiz")]
-    public void DefinirCriteriosDesempate_Vincula()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-        CriterioDesempate idoso = CriterioDesempate.Criar(1, RegraDesempate(CriterioDesempateCodigo.Idoso), new ArgsDesempateIdoso(60)).Value!;
-        CriterioDesempate maiorIdade = CriterioDesempate.Criar(2, RegraDesempate(CriterioDesempateCodigo.MaiorIdade), new ArgsDesempateMaiorIdade()).Value!;
-
-        Result result = processo.DefinirCriteriosDesempate([idoso, maiorIdade], PrecondicaoIfMatch.Ausente);
-
-        result.IsSuccess.Should().BeTrue();
-        processo.CriteriosDesempate.Should().HaveCount(2);
-        processo.CriteriosDesempate.Should().OnlyContain(c => c.ProcessoSeletivoId == processo.Id);
-    }
-
-    [Fact(DisplayName = "DefinirCriteriosDesempate vazia remove todos os critérios (o rascunho aceita)")]
-    public void DefinirCriteriosDesempate_Vazia_RemoveTodos()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-        CriterioDesempate maiorIdade = CriterioDesempate.Criar(1, RegraDesempate(CriterioDesempateCodigo.MaiorIdade), new ArgsDesempateMaiorIdade()).Value!;
-        processo.DefinirCriteriosDesempate([maiorIdade], PrecondicaoIfMatch.Ausente);
-
-        Result result = processo.DefinirCriteriosDesempate([], PrecondicaoIfMatch.Ausente);
-
-        result.IsSuccess.Should().BeTrue();
-        processo.CriteriosDesempate.Should().BeEmpty();
-    }
-
-    [Fact(DisplayName = "DefinirCriteriosDesempate com ordem duplicada é recusado")]
-    public void DefinirCriteriosDesempate_OrdemDuplicada_Recusa()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-        CriterioDesempate a = CriterioDesempate.Criar(1, RegraDesempate(CriterioDesempateCodigo.MaiorIdade), new ArgsDesempateMaiorIdade()).Value!;
-        CriterioDesempate b = CriterioDesempate.Criar(1, RegraDesempate(CriterioDesempateCodigo.Idoso), new ArgsDesempateIdoso(60)).Value!;
-
-        Result result = processo.DefinirCriteriosDesempate([a, b], PrecondicaoIfMatch.Ausente);
-
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("ProcessoSeletivo.OrdemDesempateDuplicada");
-    }
-
-    [Fact(DisplayName = "DefinirCriteriosDesempate com etapa_ref existente no processo tem sucesso (INV-B6)")]
-    public void DefinirCriteriosDesempate_EtapaRefExistente_Sucesso()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-        EtapaProcesso etapa = EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!;
-        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
-
-        CriterioDesempate criterio = CriterioDesempate.Criar(
-            1, RegraDesempate(CriterioDesempateCodigo.MaiorNotaEtapa), new ArgsDesempateMaiorNotaEtapa(etapa.Id)).Value!;
-
-        Result result = processo.DefinirCriteriosDesempate([criterio], PrecondicaoIfMatch.Ausente);
-
-        result.IsSuccess.Should().BeTrue();
-    }
-
-    [Fact(DisplayName = "DefinirCriteriosDesempate com etapa_ref inexistente no processo é recusado (INV-B6)")]
-    public void DefinirCriteriosDesempate_EtapaRefInexistente_Recusa()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirEtapas([EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!], PrecondicaoIfMatch.Ausente);
-
-        CriterioDesempate criterio = CriterioDesempate.Criar(
-            1, RegraDesempate(CriterioDesempateCodigo.MaiorNotaEtapa), new ArgsDesempateMaiorNotaEtapa(Guid.CreateVersion7())).Value!;
-
-        Result result = processo.DefinirCriteriosDesempate([criterio], PrecondicaoIfMatch.Ausente);
-
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaRefDesempateInexistente");
-    }
-
-    [Fact(DisplayName = "DefinirEtapas recusa remover uma etapa referenciada por critério de desempate (INV-B6)")]
-    public void DefinirEtapas_RemoverEtapaReferenciadaPorDesempate_Recusa()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-        EtapaProcesso redacao = EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!;
-        processo.DefinirEtapas([redacao], PrecondicaoIfMatch.Ausente);
-
-        CriterioDesempate criterio = CriterioDesempate.Criar(
-            1, RegraDesempate(CriterioDesempateCodigo.MaiorNotaEtapa), new ArgsDesempateMaiorNotaEtapa(redacao.Id)).Value!;
-        processo.DefinirCriteriosDesempate([criterio], PrecondicaoIfMatch.Ausente);
-
-        // Troca as etapas por uma completamente nova — a antiga (referenciada
-        // pelo desempate) desaparece do conjunto.
-        Result result = processo.DefinirEtapas(
-            [EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!], PrecondicaoIfMatch.Ausente);
-
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaReferenciadaPorDesempate");
-        // A troca é rejeitada por inteiro — a etapa original permanece.
-        processo.Etapas.Should().ContainSingle(e => e.Id == redacao.Id);
-    }
-
-    [Fact(DisplayName = "DefinirEtapas permite manter a mesma etapa referenciada por desempate")]
-    public void DefinirEtapas_MesmaEtapaReferenciadaPorDesempate_Sucesso()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-        EtapaProcesso redacao = EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!;
-        processo.DefinirEtapas([redacao], PrecondicaoIfMatch.Ausente);
-
-        CriterioDesempate criterio = CriterioDesempate.Criar(
-            1, RegraDesempate(CriterioDesempateCodigo.MaiorNotaEtapa), new ArgsDesempateMaiorNotaEtapa(redacao.Id)).Value!;
-        processo.DefinirCriteriosDesempate([criterio], PrecondicaoIfMatch.Ausente);
-
-        // Redefine as etapas incluindo a MESMA instância (mesmo Id) — não deve
-        // ser bloqueado, já que o desempate continua executável.
-        Result result = processo.DefinirEtapas(
-        [
-            redacao,
-            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 2m, ordem: 2).Value!,
-        ], PrecondicaoIfMatch.Ausente);
-
-        result.IsSuccess.Should().BeTrue();
-    }
-
-    private static ConfiguracaoClassificacao NovaClassificacao(
-        IReadOnlyList<RegraEliminacao>? regrasEliminacao = null, bool baseadoEmEnem = false) =>
-        ConfiguracaoClassificacao.Criar(
-            ReferenciaRegra.Criar(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('a', 64)).Value!,
-            ReferenciaRegra.Criar(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('b', 64)).Value!,
-            2,
-            ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)).Value!,
-            regrasEliminacao ?? [],
-            baseadoEmEnem,
-            baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,
-            baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : [], escalaNotaFinal: 100m).Value!;
-
-    [Fact(DisplayName = "DefinirClassificacao vincula a configuração à raiz")]
-    public void DefinirClassificacao_Vincula()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-
-        Result result = processo.DefinirClassificacao(NovaClassificacao(), PrecondicaoIfMatch.Ausente);
-
-        result.IsSuccess.Should().BeTrue();
-        processo.Classificacao.Should().NotBeNull();
-        processo.Classificacao!.ProcessoSeletivoId.Should().Be(processo.Id);
-    }
-
-    [Fact(DisplayName = "DefinirClassificacao com etapa_ref de eliminação existente no processo tem sucesso (INV-B4)")]
-    public void DefinirClassificacao_EtapaRefEliminacaoExistente_Sucesso()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-        EtapaProcesso etapa = EtapaProcesso.Criar("Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!;
-        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
-
-        RegraEliminacao eliminacao = RegraEliminacao.Criar(
-            ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", new string('d', 64)).Value!,
-            new ArgsElimNotaMinimaEtapa(etapa.Id, 4m)).Value!;
-
-        Result result = processo.DefinirClassificacao(NovaClassificacao([eliminacao]), PrecondicaoIfMatch.Ausente);
-
-        result.IsSuccess.Should().BeTrue();
-    }
-
-    [Fact(DisplayName = "DefinirEtapas remover etapa referenciada por eliminação da classificação é recusado (INV-B4 sobrevive)")]
-    public void DefinirEtapas_RemoverEtapaReferenciadaPorClassificacao_Recusa()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-        EtapaProcesso etapa = EtapaProcesso.Criar("Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!;
-        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
-
-        RegraEliminacao eliminacao = RegraEliminacao.Criar(
-            ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", new string('d', 64)).Value!,
-            new ArgsElimNotaMinimaEtapa(etapa.Id, 4m)).Value!;
-        processo.DefinirClassificacao(NovaClassificacao([eliminacao]), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        Result result = processo.DefinirEtapas(
-            [EtapaProcesso.Criar("Entrevista", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!], PrecondicaoIfMatch.Ausente);
-
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaReferenciadaPorClassificacao");
-    }
-
-    [Fact(DisplayName = "DefinirEtapas mantendo a mesma etapa referenciada pela classificação tem sucesso")]
-    public void DefinirEtapas_MesmaEtapaReferenciadaPorClassificacao_Sucesso()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-        EtapaProcesso etapa = EtapaProcesso.Criar("Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!;
-        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
-
-        RegraEliminacao eliminacao = RegraEliminacao.Criar(
-            ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", new string('d', 64)).Value!,
-            new ArgsElimNotaMinimaEtapa(etapa.Id, 4m)).Value!;
-        processo.DefinirClassificacao(NovaClassificacao([eliminacao]), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        Result result = processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
-
-        result.IsSuccess.Should().BeTrue();
-    }
-
-    [Fact(DisplayName = "DefinirClassificacao com etapa_ref de eliminação inexistente no processo é recusado (INV-B4)")]
-    public void DefinirClassificacao_EtapaRefEliminacaoInexistente_Recusa()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirEtapas([EtapaProcesso.Criar("Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!], PrecondicaoIfMatch.Ausente);
-
-        RegraEliminacao eliminacao = RegraEliminacao.Criar(
-            ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", new string('d', 64)).Value!,
-            new ArgsElimNotaMinimaEtapa(Guid.CreateVersion7(), 4m)).Value!;
-
-        Result result = processo.DefinirClassificacao(NovaClassificacao([eliminacao]), PrecondicaoIfMatch.Ausente);
-
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaRefEliminacaoInexistente");
-    }
-
-    // A recusa/aceite de ELIM-CORTE-REDACAO/ELIM-ZERO-EM-AREA por BaseadoEmEnem migrou
-    // para ConfiguracaoClassificacaoTests (#850): depois que Criar passou a validar essa
-    // invariante, não é mais possível construir uma ConfiguracaoClassificacao ENEM-inválida
-    // para passar a DefinirClassificacao — a factory já falha antes. O que permanece aqui é
-    // a prova de indistinguibilidade entre Tipos e a atomicidade tardia via EtapaRef órfão
-    // (INV-B4), que continuam na raiz porque dependem de _etapas.
-
-    [Fact(DisplayName = "DefinirClassificacao produz o mesmo resultado em processos de Tipo diferente com a mesma configuração (indistinguibilidade, #850)")]
-    public void DefinirClassificacao_TiposDiferentesMesmaConfiguracao_ResultadoIdentico()
-    {
-        ProcessoSeletivo psiq = ProcessoSeletivo.Criar("PSIQ 2026", TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        ProcessoSeletivo sisu = ProcessoSeletivo.Criar("SiSU 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-
-        RegraEliminacao EliminacaoEnem() => RegraEliminacao.Criar(
-            ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimCorteEmArea, "v1", new string('e', 64)).Value!,
-            new ArgsElimCorteEmArea("REDACAO", 400m)).Value!;
-
-        Result resultadoPsiq = psiq.DefinirClassificacao(
-            NovaClassificacao([EliminacaoEnem()], baseadoEmEnem: true), PrecondicaoIfMatch.Ausente);
-        Result resultadoSisu = sisu.DefinirClassificacao(
-            NovaClassificacao([EliminacaoEnem()], baseadoEmEnem: true), PrecondicaoIfMatch.Ausente);
-
-        resultadoPsiq.IsSuccess.Should().BeTrue(resultadoPsiq.Error?.Message);
-        resultadoSisu.IsSuccess.Should().Be(resultadoPsiq.IsSuccess,
-            "o rótulo TipoProcesso não pode decidir o resultado — só BaseadoEmEnem, dado igual nos dois processos");
-    }
-
-    [Fact(DisplayName = "ConcorrenciaDuplaAplicavel é falsa sem distribuição de vagas com cota reservada")]
-    public void ConcorrenciaDuplaAplicavel_SemCotaReservada_Falsa()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirDistribuicaoVagas([NovaDistribuicao(Guid.CreateVersion7())], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
-
-        RegrasDaDistribuicaoDeVagas.ConcorrenciaDuplaAplicavel(EstadoDaConfiguracao.De(processo)).Should().BeFalse();
-    }
-
-    [Fact(DisplayName = "ConcorrenciaDuplaAplicavel é derivada (true) quando há modalidade de cota reservada (INV-B7)")]
-    public void ConcorrenciaDuplaAplicavel_ComCotaReservada_Verdadeira()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-
-        ModalidadeSelecionada ampla = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "base legal", quantidadeDeclarada: 30).Value!;
-        ModalidadeSelecionada cotaReservada = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "LB_PPI", null, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDoVr,
-            null, RegraRemanejamentoModalidade.SegueCascata, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.CotaReservada), null, "Lei 12.711/2012 art. 3º", quantidadeDeclarada: 20).Value!;
-
-        // Só para exercitar o cenário mínimo de derivação — INV-6 (8 federais+AC)
-        // não precisa estar satisfeita aqui, já que quem valida isso é
-        // ConfiguracaoDistribuicaoVagas.Criar, não este teste (usa regra
-        // institucional para não disparar essa validação).
-        ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 50, pr: 1m,
-            ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('f', 64)).Value!,
-            regraAjuste: null,
-            referenciaDemografica: null, [ampla, cotaReservada], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
-
-        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
-
-        RegrasDaDistribuicaoDeVagas.ConcorrenciaDuplaAplicavel(EstadoDaConfiguracao.De(processo)).Should().BeTrue();
     }
 }

@@ -13,4 +13,21 @@ public sealed record DomainError(string Code, string Message);
 /// exemplo) quando o campo e o código não bastam para distinguir duas recusas; não vai para o wire.
 /// </para>
 /// </summary>
-public sealed record FieldError(string? Field, DomainError Error, string? Origem = null);
+public sealed record FieldError(string? Field, DomainError Error, string? Origem = null)
+{
+    /// <summary>
+    /// A causa dentro de um contêiner. A causa sem campo (<see langword="null"/>) continua sem campo; a raiz
+    /// relativa (<c>""</c>) passa a ser o caminho do contêiner; um campo interno vira filho dele.
+    /// </summary>
+    public FieldError NoCaminhoDe(string caminho)
+    {
+        ArgumentNullException.ThrowIfNull(caminho);
+
+        return Field switch
+        {
+            null => this,
+            { Length: 0 } => this with { Field = caminho },
+            _ => this with { Field = $"{caminho}.{Field}" },
+        };
+    }
+}

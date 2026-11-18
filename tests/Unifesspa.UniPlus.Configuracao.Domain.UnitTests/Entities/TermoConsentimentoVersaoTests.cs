@@ -18,11 +18,11 @@ public sealed class TermoConsentimentoVersaoTests
         // aceitasse `hash` por parâmetro. A assinatura atual não tem esse
         // parâmetro — o hash só pode vir do cálculo interno.
         TermoConsentimentoVersao versaoA = TermoConsentimentoVersao.Promover(
-            Guid.CreateVersion7(), "Texto do termo", "Lei 13.709/2018", FormaAceite.RegistroDigitalSemLogIp,
+            Guid.CreateVersion7(), 1, "Texto do termo", "Lei 13.709/2018", FormaAceite.RegistroDigitalSemLogIp,
             Agora, "usuario.revisor");
 
         TermoConsentimentoVersao versaoB = TermoConsentimentoVersao.Promover(
-            Guid.CreateVersion7(), "Texto do termo", "Lei 13.709/2018", FormaAceite.RegistroDigitalSemLogIp,
+            Guid.CreateVersion7(), 1, "Texto do termo", "Lei 13.709/2018", FormaAceite.RegistroDigitalSemLogIp,
             Agora, "usuario.revisor");
 
         versaoA.Hash.Should().NotBeNullOrWhiteSpace();
@@ -38,11 +38,11 @@ public sealed class TermoConsentimentoVersaoTests
     public void Promover_ConteudoDiferente_HashDiferente()
     {
         TermoConsentimentoVersao versaoA = TermoConsentimentoVersao.Promover(
-            Guid.CreateVersion7(), "Texto A", "Base legal A", FormaAceite.RegistroDigitalSemLogIp,
+            Guid.CreateVersion7(), 1, "Texto A", "Base legal A", FormaAceite.RegistroDigitalSemLogIp,
             Agora, "usuario.revisor");
 
         TermoConsentimentoVersao versaoB = TermoConsentimentoVersao.Promover(
-            Guid.CreateVersion7(), "Texto B", "Base legal B", FormaAceite.RegistroDigitalSemLogIp,
+            Guid.CreateVersion7(), 1, "Texto B", "Base legal B", FormaAceite.RegistroDigitalSemLogIp,
             Agora, "usuario.revisor");
 
         versaoA.Hash.Should().NotBe(versaoB.Hash);
@@ -55,9 +55,9 @@ public sealed class TermoConsentimentoVersaoTests
         const string decomposto = "declarac\u0327a\u0303o";
 
         TermoConsentimentoVersao decompostaVersao = TermoConsentimentoVersao.Promover(
-            Guid.CreateVersion7(), decomposto, decomposto, FormaAceite.RegistroDigitalSemLogIp, Agora, "usuario.revisor");
+            Guid.CreateVersion7(), 1, decomposto, decomposto, FormaAceite.RegistroDigitalSemLogIp, Agora, "usuario.revisor");
         TermoConsentimentoVersao composta = TermoConsentimentoVersao.Promover(
-            Guid.CreateVersion7(), "declaração", "declaração", FormaAceite.RegistroDigitalSemLogIp, Agora, "usuario.revisor");
+            Guid.CreateVersion7(), 1, "declaração", "declaração", FormaAceite.RegistroDigitalSemLogIp, Agora, "usuario.revisor");
 
         decompostaVersao.Texto.Should().Be("declaração");
         decompostaVersao.BaseLegal.Should().Be("declaração");

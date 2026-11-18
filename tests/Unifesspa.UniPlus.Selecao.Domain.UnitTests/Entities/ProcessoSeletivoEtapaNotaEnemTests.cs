@@ -19,21 +19,27 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 public sealed class ProcessoSeletivoEtapaNotaEnemTests
 {
     private static ProcessoSeletivo NovoProcesso() =>
-        ProcessoSeletivo.Criar("PSVR 2026", TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo.Criar("PSVR 2026", TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     private static EtapaProcesso EtapaNotaEnem(decimal peso = 1m, int ordem = 1) =>
-        EtapaProcesso.Criar("Nota do ENEM", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!, peso: peso, ordem: ordem).Value!;
+        EtapaProcesso.Criar(
+            new IdentificacaoDaEtapa(Nome: "Nota do ENEM", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!, Ordem: ordem, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: peso, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 
     private static EtapaProcesso EtapaRedacao(decimal peso = 1m, int ordem = 2) =>
-        EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "REDACAO", "Redação", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: peso, ordem: ordem).Value!;
+        EtapaProcesso.Criar(
+            new IdentificacaoDaEtapa(Nome: "Redação", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "REDACAO", "Redação", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: ordem, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: peso, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 
     private static EtapaProcesso EtapaNotaEnemForaDaMedia(CaraterEtapa carater, int ordem = 1) =>
-        EtapaProcesso.Criar("Nota do ENEM", carater, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!, peso: null, ordem: ordem).Value!;
+        EtapaProcesso.Criar(
+            new IdentificacaoDaEtapa(Nome: "Nota do ENEM", Carater: carater, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!, Ordem: ordem, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 
     private static ReferenciaRegra RegraDoRecurso =>
-        ReferenciaRegra.Criar(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)).Value!;
+        ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64));
 
-    private static ArgsRegraPrazoRecurso PrazoDoRecurso => new(
+    private static ParametrosRegraPrazoRecurso PrazoDoRecurso => new(
         PrazoValor: 48m, PrazoUnidade: UnidadePrazo.Horas,
         SuspensividadePrimeiraInstanciaValor: null, SuspensividadePrimeiraInstanciaUnidade: null,
         AdmiteInstanciaSuperior: false,
@@ -46,29 +52,28 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
         RecursoDaEtapa.Criar(AncoraDoRecurso.AtoPublicado, RegraDoRecurso, PrazoDoRecurso, Guid.CreateVersion7()).Value!;
 
     private static ReferenciaRegra Regra(string codigo, char semente) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string(semente, 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string(semente, 64));
 
     private static ConfiguracaoClassificacao ClassificacaoMediaPonderada(bool baseadoEmEnem) =>
-        ConfiguracaoClassificacao.Criar(
-            Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'),
-            Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'),
-            2,
-            Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
-            [],
-            baseadoEmEnem,
-            baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,
-            baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : [], escalaNotaFinal: 100m).Value!;
+        ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'),
+            RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'),
+            CasasArredondamento = 2,
+            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+            BaseadoEmEnem = baseadoEmEnem,
+            ResolucaoPesoAreaEnem = baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,
+            QuadroPesoAreaEnem = baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : [],
+            EscalaNotaFinal = 100m,
+        }).Value!;
 
     private static ConfiguracaoClassificacao ClassificacaoImportadaDoEnem() =>
-        ConfiguracaoClassificacao.Criar(
-            Regra(RegraCalculoCodigo.ClassificacaoImportada, 'a'),
-            null,
-            null,
-            Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
-            [],
-            baseadoEmEnem: true,
-            resolucaoPesoAreaEnem: null,
-            quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!;
+        ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'a'),
+            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+            BaseadoEmEnem = true,
+        }).Value!;
 
     [Fact(DisplayName = "A etapa declara nota do ENEM pelo atributo do tipo congelado")]
     public void DeclaraNotaDoEnem_PeloAtributoDoTipo()
@@ -83,9 +88,8 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
     public void DeclaraNotaDoEnem_NaoDependeDoCodigo(string codigo, bool notaDeOrigemNoEnem, bool esperado)
     {
         EtapaProcesso etapa = EtapaProcesso.Criar(
-            "Etapa", CaraterEtapa.Classificatoria,
-            TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), codigo, "Etapa", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem).Value!,
-            peso: 1m, ordem: 1).Value!;
+            new IdentificacaoDaEtapa(Nome: "Etapa", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), codigo, "Etapa", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem).Value!, Ordem: 1, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 
         etapa.DeclaraNotaDoEnem.Should().Be(esperado);
     }
@@ -95,7 +99,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
     {
         ProcessoSeletivo processo = NovoProcesso();
 
-        Result result = processo.DefinirEtapas([EtapaNotaEnem()], PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirEtapas([EtapaNotaEnem()]);
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
     }
@@ -104,12 +108,12 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
     public void DefinirEtapas_ArranjoHibrido_EntraNoDivisor()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirClassificacao(ClassificacaoMediaPonderada(baseadoEmEnem: true), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ClassificacaoMediaPonderada(baseadoEmEnem: true)).IsSuccess.Should().BeTrue();
 
-        Result result = processo.DefinirEtapas([EtapaNotaEnem(peso: 6m), EtapaRedacao(peso: 4m)], PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirEtapas([EtapaNotaEnem(peso: 6m), EtapaRedacao(peso: 4m)]);
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
-        EstadoDaConfiguracao.De(processo).CalcularDivisorMedia().Should().Be(10m);
+        processo.Declaracao().Avaliacao.CalcularDivisorMedia().Should().Be(10m);
     }
 
     [Fact(DisplayName = "Duas etapas de nota do ENEM no mesmo processo são recusadas")]
@@ -117,7 +121,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
     {
         ProcessoSeletivo processo = NovoProcesso();
 
-        Result result = processo.DefinirEtapas([EtapaNotaEnem(ordem: 1), EtapaNotaEnem(ordem: 2)], PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirEtapas([EtapaNotaEnem(ordem: 1), EtapaNotaEnem(ordem: 2)]);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemDuplicada");
@@ -132,7 +136,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
         ProcessoSeletivo processo = NovoProcesso();
         EtapaProcesso redacao = EtapaRedacao();
 
-        Result result = processo.DefinirEtapas([EtapaNotaEnemForaDaMedia(carater), redacao], PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirEtapas([EtapaNotaEnemForaDaMedia(carater), redacao]);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemNaoCompoeNota");
@@ -144,7 +148,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
     {
         ProcessoSeletivo processo = NovoProcesso();
 
-        Result result = processo.DefinirEtapas([EtapaNotaEnemForaDaMedia(CaraterEtapa.Eliminatoria)], PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirEtapas([EtapaNotaEnemForaDaMedia(CaraterEtapa.Eliminatoria)]);
 
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemNaoCompoeNota");
     }
@@ -156,7 +160,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
         EtapaProcesso etapa = EtapaNotaEnem();
         etapa.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA", "Banca de teste")]).IsSuccess.Should().BeTrue();
 
-        Result result = processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirEtapas([etapa]);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemComBanca");
@@ -170,7 +174,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
         etapa.DefinirJanelaEParecer(null, null, emiteParecerIndividual: true).IsSuccess.Should().BeTrue();
         etapa.DefinirRecursos([RecursoPorCiencia()]).IsSuccess.Should().BeTrue();
 
-        Result result = processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirEtapas([etapa]);
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
     }
@@ -180,7 +184,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
     {
         ProcessoSeletivo processo = NovoProcesso();
 
-        Result result = processo.DefinirEtapas([EtapaNotaEnem()], PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirEtapas([EtapaNotaEnem()]);
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
     }
@@ -195,7 +199,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
         EtapaProcesso etapa = EtapaNotaEnem();
         etapa.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", papel)]).IsSuccess.Should().BeTrue();
 
-        Result result = processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirEtapas([etapa]);
 
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemComProdutoOuRecursoEmAto");
         result.Error.Message.Should().Contain("regra de recurso da fase");
@@ -208,7 +212,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
         EtapaProcesso etapa = EtapaNotaEnem();
         etapa.DefinirRecursos([RecursoEmAto()]).IsSuccess.Should().BeTrue();
 
-        Result result = processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirEtapas([etapa]);
 
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemComProdutoOuRecursoEmAto");
     }
@@ -220,28 +224,28 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
         comTudo.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA", "Banca de teste")]).IsSuccess.Should().BeTrue();
         comTudo.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar)]).IsSuccess.Should().BeTrue();
 
-        NovoProcesso().DefinirEtapas([comTudo, EtapaNotaEnem(ordem: 2)], PrecondicaoIfMatch.Ausente)
+        NovoProcesso().DefinirEtapas([comTudo, EtapaNotaEnem(ordem: 2)])
             .Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemDuplicada");
-        NovoProcesso().DefinirEtapas([comTudo], PrecondicaoIfMatch.Ausente)
+        NovoProcesso().DefinirEtapas([comTudo])
             .Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemNaoCompoeNota");
 
         EtapaProcesso comBancaEProduto = EtapaNotaEnem();
         comBancaEProduto.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA", "Banca de teste")]).IsSuccess.Should().BeTrue();
         comBancaEProduto.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar)]).IsSuccess.Should().BeTrue();
-        NovoProcesso().DefinirEtapas([comBancaEProduto], PrecondicaoIfMatch.Ausente)
+        NovoProcesso().DefinirEtapas([comBancaEProduto])
             .Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemComBanca");
     }
 
-    [Fact(DisplayName = "Classificação incoerente sai antes de qualquer outra recusa da etapa do ENEM")]
-    public void DefinirEtapas_ClassificacaoIncoerenteAntesDasDemais()
+    [Fact(DisplayName = "Duas etapas do ENEM sob classificação incoerente: a causa do conjunto das etapas sai antes da classificação")]
+    public void DefinirEtapas_DuplicidadeDoEnem_SaiAntesDaClassificacaoIncoerente()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirClassificacao(ClassificacaoMediaPonderada(baseadoEmEnem: false), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ClassificacaoMediaPonderada(baseadoEmEnem: false)).IsSuccess.Should().BeTrue();
         EtapaProcesso etapa = EtapaNotaEnemForaDaMedia(CaraterEtapa.Eliminatoria);
         etapa.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA", "Banca de teste")]).IsSuccess.Should().BeTrue();
 
-        processo.DefinirEtapas([etapa, EtapaNotaEnem(ordem: 2)], PrecondicaoIfMatch.Ausente)
-            .Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemSemClassificacaoEnem");
+        processo.DefinirEtapas([etapa, EtapaNotaEnem(ordem: 2)])
+            .Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemDuplicada");
     }
 
     [Fact(DisplayName = "Banca e parecer continuam valendo para as demais etapas")]
@@ -252,7 +256,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
         redacao.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA", "Banca de teste")]).IsSuccess.Should().BeTrue();
         redacao.DefinirJanelaEParecer(null, null, emiteParecerIndividual: true).IsSuccess.Should().BeTrue();
 
-        Result result = processo.DefinirEtapas([EtapaNotaEnem(), redacao], PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirEtapas([EtapaNotaEnem(), redacao]);
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
     }
@@ -261,25 +265,36 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
     public void DefinirEtapas_ClassificacaoNaoEnem_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirClassificacao(ClassificacaoMediaPonderada(baseadoEmEnem: false), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ClassificacaoMediaPonderada(baseadoEmEnem: false)).IsSuccess.Should().BeTrue();
 
-        Result result = processo.DefinirEtapas([EtapaNotaEnem()], PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirEtapas([EtapaNotaEnem()]);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemSemClassificacaoEnem");
     }
 
-    [Fact(DisplayName = "Sob classificação que não é ENEM, a recusa aponta a classificação antes da banca — é ela que decide se a etapa pode existir")]
-    public void DefinirEtapas_ClassificacaoNaoEnemEBanca_RecusaPelaClassificacao()
+    [Fact(DisplayName = "Sob classificação que não é ENEM, a banca da etapa do ENEM é recusada antes da classificação, que só é apontada quando é a única causa")]
+    public void DefinirEtapas_ClassificacaoNaoEnemEBanca_RecusaPelaBanca()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirClassificacao(ClassificacaoMediaPonderada(baseadoEmEnem: false), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ClassificacaoMediaPonderada(baseadoEmEnem: false)).IsSuccess.Should().BeTrue();
         EtapaProcesso etapa = EtapaNotaEnem();
         etapa.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA", "Banca de teste")]).IsSuccess.Should().BeTrue();
 
-        Result result = processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirEtapas([etapa]);
 
         result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemComBanca");
+    }
+
+    [Fact(DisplayName = "Sob classificação que não é ENEM, a etapa do ENEM sem outra causa é recusada pela classificação")]
+    public void DefinirEtapas_ClassificacaoNaoEnemSemOutraCausa_RecusaPelaClassificacao()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        processo.DefinirClassificacao(ClassificacaoMediaPonderada(baseadoEmEnem: false)).IsSuccess.Should().BeTrue();
+
+        Result result = processo.DefinirEtapas([EtapaNotaEnem()]);
+
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemSemClassificacaoEnem");
     }
 
@@ -287,10 +302,14 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
     public void DefinirEtapas_DuasEtapasNotaEnem_MensagemNomeiaAsEtapas()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        EtapaProcesso primeira = EtapaProcesso.Criar("ENEM 2024", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!, peso: 1m, ordem: 1).Value!;
-        EtapaProcesso segunda = EtapaProcesso.Criar("ENEM 2025", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!, peso: 1m, ordem: 2).Value!;
+        EtapaProcesso primeira = EtapaProcesso.Criar(
+            new IdentificacaoDaEtapa(Nome: "ENEM 2024", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!, Ordem: 1, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
+        EtapaProcesso segunda = EtapaProcesso.Criar(
+            new IdentificacaoDaEtapa(Nome: "ENEM 2025", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!, Ordem: 2, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 
-        Result result = processo.DefinirEtapas([primeira, segunda], PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirEtapas([primeira, segunda]);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Message.Should().Contain("\"ENEM 2024\"").And.Contain("\"ENEM 2025\"");
@@ -300,9 +319,9 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
     public void DefinirEtapas_ClassificacaoEnemImportada_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirClassificacao(ClassificacaoImportadaDoEnem(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ClassificacaoImportadaDoEnem()).IsSuccess.Should().BeTrue();
 
-        Result result = processo.DefinirEtapas([EtapaNotaEnem()], PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirEtapas([EtapaNotaEnem()]);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemSemClassificacaoEnem");
@@ -312,9 +331,9 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
     public void DefinirClassificacao_NaoEnemComEtapaNotaEnem_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirEtapas([EtapaNotaEnem()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([EtapaNotaEnem()]).IsSuccess.Should().BeTrue();
 
-        Result result = processo.DefinirClassificacao(ClassificacaoMediaPonderada(baseadoEmEnem: false), PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirClassificacao(ClassificacaoMediaPonderada(baseadoEmEnem: false));
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemSemClassificacaoEnem");
@@ -325,9 +344,9 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
     public void DefinirClassificacao_EnemImportadaComEtapaNotaEnem_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirEtapas([EtapaNotaEnem()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([EtapaNotaEnem()]).IsSuccess.Should().BeTrue();
 
-        Result result = processo.DefinirClassificacao(ClassificacaoImportadaDoEnem(), PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirClassificacao(ClassificacaoImportadaDoEnem());
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemSemClassificacaoEnem");
@@ -337,9 +356,9 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
     public void DefinirClassificacao_EnemMediaPonderada_Aceita()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirEtapas([EtapaNotaEnem()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([EtapaNotaEnem()]).IsSuccess.Should().BeTrue();
 
-        Result result = processo.DefinirClassificacao(ClassificacaoMediaPonderada(baseadoEmEnem: true), PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirClassificacao(ClassificacaoMediaPonderada(baseadoEmEnem: true));
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
     }
@@ -348,9 +367,9 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
     public void DefinirClassificacao_SemEtapaNotaEnem_NaoEnem_Aceita()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirEtapas([EtapaRedacao()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([EtapaRedacao()]).IsSuccess.Should().BeTrue();
 
-        Result result = processo.DefinirClassificacao(ClassificacaoMediaPonderada(baseadoEmEnem: false), PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirClassificacao(ClassificacaoMediaPonderada(baseadoEmEnem: false));
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
     }

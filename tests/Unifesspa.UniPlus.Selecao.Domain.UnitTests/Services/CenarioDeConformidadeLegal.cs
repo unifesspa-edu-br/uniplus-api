@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -26,7 +27,7 @@ internal static class CenarioDeConformidadeLegal
             TiposDeProcessoDeTeste.SiSU,
             OrigemCandidatos.InscricaoPropria,
             Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!,
             IdentificadoresDeTeste.Novo());
 
@@ -55,16 +56,16 @@ internal static class CenarioDeConformidadeLegal
 
     internal static void DefinirEtapa(ProcessoSeletivo processo, string nome, TipoEtapaSnapshot tipo) =>
         processo.DefinirEtapas(
-            [EtapaProcesso.Criar(nome, CaraterEtapa.Classificatoria, tipo, peso: 1m, ordem: 1).Value!],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            [EtapaProcesso.Criar(
+                new IdentificacaoDaEtapa(Nome: nome, Carater: CaraterEtapa.Classificatoria, TipoEtapa: tipo, Ordem: 1, FaseCodigo: null),
+                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!]).IsSuccess.Should().BeTrue();
 
     internal static void DefinirAtendimento(ProcessoSeletivo processo, Guid origem, string codigo, string nome) =>
         processo.DefinirAtendimentoEspecializado(
             AtendimentoEspecializado.Criar(
                 [CondicaoOfertada.Criar(Guid.CreateVersion7(), AtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência")],
                 [],
-                [DeficienciaAtendida.Criar(origem, codigo, nome)]).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+                [DeficienciaAtendida.Criar(origem, codigo, nome)]).Value!).IsSuccess.Should().BeTrue();
 
     /// <remarks>
     /// A identidade é parâmetro porque duas ofertas que selecionam a mesma modalidade
@@ -76,7 +77,7 @@ internal static class CenarioDeConformidadeLegal
             codigo: codigo,
             descricao: null,
             naturezaLegal: natureza,
-            composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
+            composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
             composicaoOrigemCodigo: null,
             regraRemanejamento: RemanejamentoDa(natureza),
             remanejamentoDestino: null,
@@ -84,38 +85,38 @@ internal static class CenarioDeConformidadeLegal
             remanejamentoFallback: null,
             regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(natureza),
             acaoQuandoIndeferido: null,
-            baseLegal: "Lei 12.711/2012").Value!;
+            baseLegal: "Lei 12.711/2012",
+            quantidadeDeclarada: VagasPorModalidade).Value!;
 
     private static RegraRemanejamentoModalidade RemanejamentoDa(NaturezaLegalModalidade natureza) =>
         natureza == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueCascata : RegraRemanejamentoModalidade.Nenhuma;
 
+    private const int VagasPorModalidade = 10;
+
     internal static ConfiguracaoDistribuicaoVagas NovaOferta(params ModalidadeSelecionada[] modalidades) =>
-        ConfiguracaoDistribuicaoVagas.Criar(
-            ofertaCursoOrigemId: Guid.CreateVersion7(),
-            voBase: 40,
-            pr: 0.6m,
-            regraDistribuicao: ReferenciaRegra.Criar("DISTRIBUICAO-PADRAO", "v1", new string('a', 64)).Value!,
-            regraAjuste: null,
-            referenciaDemografica: null,
-            modalidades: modalidades,
-            ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
+        ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = VagasPorModalidade * modalidades.Length, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)), Modalidades = modalidades },
+            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
     internal static void DefinirOfertas(ProcessoSeletivo processo, params ConfiguracaoDistribuicaoVagas[] ofertas) =>
-        processo.DefinirDistribuicaoVagas(ofertas, FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Curinga)
+        processo.DefinirDistribuicaoVagas(ofertas, FatosDeModalidadeDeTeste.DoCatalogo)
             .IsSuccess.Should().BeTrue();
 
     internal static void DefinirDocumentos(ProcessoSeletivo processo, params DocumentoExigido[] documentos) =>
         processo.DefinirDocumentosExigidos(
-            [.. documentos.Select(d => NoExigencia.CriarFolha(d, 0).Value!)], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+            [.. documentos.Select(d => NoExigencia.CriarFolha(d, 0).Value!)]).IsSuccess.Should().BeTrue();
 
     /// <summary>Define a fase de envio de documentos e uma oferta com a modalidade; devolve o id da fase.</summary>
     internal static Guid PrepararProcessoComModalidade(ProcessoSeletivo processo, string modalidadeCodigo)
     {
         FaseCronograma fase = FaseCronograma.Criar(
-            1, Guid.CreateVersion7(), "ENVIO_DOCUMENTOS", OrigemDataFase.NaExecucao,
-            agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null, produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            new OrigemCanonicaDaFase(
+                OrigemId: Guid.CreateVersion7(), Codigo: "ENVIO_DOCUMENTOS", OrigemData: OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
+                ColetaSolicitacaoIsencao: false),
+            new DecisoesDeCronogramaDaFase(Ordem: 1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+            bancasRequeridas: []).Value!;
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
         DefinirOfertas(processo, NovaOferta(NovaModalidade(modalidadeCodigo, NaturezaLegalModalidade.CotaReservada)));
         return fase.Id;
     }

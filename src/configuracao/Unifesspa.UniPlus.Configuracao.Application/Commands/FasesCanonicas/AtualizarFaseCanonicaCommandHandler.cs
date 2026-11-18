@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.FasesCanonicas;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
-using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
@@ -10,14 +9,15 @@ using Unifesspa.UniPlus.Governance.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Handler do <see cref="AtualizarFaseCanonicaCommand"/>. Valida antes de I/O só o
-/// que é determinável sem o código persistido (os quatro campos comuns) — as
-/// coerências que dependem do código (<c>AgrupaEtapas</c>,
-/// <c>PermiteComplementacao</c>) só podem ser avaliadas depois do fetch, porque o
-/// comando não carrega o código (imutável). Carrega a fase (404), então chama
-/// <c>Atualizar</c>, que revalida o lote inteiro — inclusive as duas coerências
-/// dependentes — contra o código congelado. Sem integridade referencial — a fase
-/// não é referenciada por FK intra-banco.
+/// Handler do <see cref="AtualizarFaseCanonicaCommand"/>. Antes de buscar a fase, recusa o que o
+/// corpo decide sem o código: os campos comuns e a exclusividade entre coletar inscrição e coletar
+/// solicitação de isenção, para a validação vencer a inexistência (ADR-0125). Encontrada a fase,
+/// <c>Atualizar</c> confere o corpo inteiro contra o código gravado, que o comando não traz por
+/// ser imutável: agrupamento de etapas, complementação documental e marca de solicitação de
+/// isenção. A troca da unidade sugerida é conferida no
+/// cadastro de unidades e acumula com as recusas do agregado; havendo recusa, o que a edição já
+/// mudou na fase rastreada é descartado, porque o SaveChangesAsync do outbox roda depois do
+/// handler mesmo na falha. A fase não é referenciada por chave estrangeira.
 /// </summary>
 public static class AtualizarFaseCanonicaCommandHandler
 {
@@ -33,54 +33,49 @@ public static class AtualizarFaseCanonicaCommandHandler
         ArgumentNullException.ThrowIfNull(unidadeReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        Result<(string Nome, string? Descricao, string? BaseLegal, OrigemDataFase OrigemData)> comuns =
-            FaseCanonica.ValidarCamposComuns(
-                command.Nome, command.Descricao, command.BaseLegal, command.OrigemData);
-        if (comuns.IsFailure)
+        Result recusaDoQueNaoDependeDoCodigo = ValidarOQueNaoDependeDoCodigo(command);
+        if (recusaDoQueNaoDependeDoCodigo.IsFailure)
         {
-            return Result.ValidationFailure(comuns.Errors);
+            return recusaDoQueNaoDependeDoCodigo;
         }
-
         FaseCanonica? fase = await repository.ObterPorIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
-        if (fase is null)
+        return fase is null
+            ? Result.Failure(new DomainError(FaseCanonicaErrorCodes.NaoEncontrada, "Fase canônica não encontrada."))
+            : await AplicarEdicaoAsync(fase, command, unidadeReader, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static Result ValidarOQueNaoDependeDoCodigo(AtualizarFaseCanonicaCommand command) =>
+        FaseCanonica.ValidarOQueNaoDependeDoCodigo(
+            command.Nome, command.Descricao, command.BaseLegal, command.OrigemData, command.Sinalizadores());
+
+    private static async Task<Result> AplicarEdicaoAsync(
+        FaseCanonica fase,
+        AtualizarFaseCanonicaCommand command,
+        IUnidadeReader unidadeReader,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
+        Result<UnidadeSugerida?> unidade = await UnidadeSugeridaResolver
+            .ResolverTrocaAsync(fase.UnidadeSugerida, command.UnidadeSugeridaId, unidadeReader, cancellationToken)
+            .ConfigureAwait(false);
+        Result campos = AtualizarCampos(fase, command);
+        if (campos.IsFailure || unidade.IsFailure)
         {
-            return Result.Failure(new DomainError(
-                FaseCanonicaErrorCodes.NaoEncontrada,
-                "Fase canônica não encontrada."));
+            unitOfWork.DescartarAlteracoesNaoSalvas();
+            return Result.ValidationFailure([.. campos.Errors, .. unidade.Errors]);
         }
 
-        Result atualizarResult = fase.Atualizar(
-            command.Nome,
-            command.Descricao,
-            command.AgrupaEtapas,
-            command.PermiteComplementacao,
-            command.BaseLegal,
-            command.ColetaInscricao,
-            command.ColetaSolicitacaoIsencao,
-            command.OrigemData);
-
-        if (atualizarResult.IsFailure)
-        {
-            return atualizarResult;
-        }
-
-        // Reenviar a unidade já gravada preserva a cópia: a unidade pode ter sido desativada
-        // depois, e isso não deve impedir a edição dos outros campos. Só a troca é conferida.
-        if (command.UnidadeSugeridaId != fase.UnidadeSugeridaOrigemId)
-        {
-            Result<UnidadeSugerida?> unidade = await UnidadeSugeridaResolver
-                .ResolverAsync(command.UnidadeSugeridaId, unidadeReader, cancellationToken)
-                .ConfigureAwait(false);
-            if (unidade.IsFailure)
-            {
-                return Result.ValidationFailure(unidade.Errors);
-            }
-
-            fase.DefinirUnidadeSugerida(unidade.Value);
-        }
-
+        fase.DefinirUnidadeSugerida(unidade.Value);
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
         return Result.Success();
     }
+
+    private static Result AtualizarCampos(FaseCanonica fase, AtualizarFaseCanonicaCommand command) =>
+        fase.Atualizar(
+            command.Nome,
+            command.Descricao,
+            command.BaseLegal,
+            command.OrigemData,
+            command.Sinalizadores());
 }

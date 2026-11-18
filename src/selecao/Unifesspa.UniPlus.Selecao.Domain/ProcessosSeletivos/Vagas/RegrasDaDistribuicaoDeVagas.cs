@@ -5,18 +5,17 @@ using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public static class RegrasDaDistribuicaoDeVagas
 {
     internal static Result ConferirSubstituicao(
-        EstadoDaConfiguracao estado,
+        ConfiguracaoDeclarada configuracao,
         IReadOnlyList<ConfiguracaoDistribuicaoVagas> distribuicao,
         FatosDeModalidade fatosDeModalidade)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
         HashSet<string> novosCodigos = [.. distribuicao.SelectMany(static d => d.Modalidades).Select(static m => m.Codigo)];
 
@@ -27,16 +26,16 @@ public static class RegrasDaDistribuicaoDeVagas
             ?? OfertaDeCursoRepetida(distribuicao)
             ?? (HaAcaoQuandoIndeferidoDivergenteEntreOfertas(distribuicao) ? AcaoQuandoIndeferidoDivergente() : null)
             ?? RegraDeAplicabilidadeDivergenteEntreOfertas(distribuicao)
-            ?? ModalidadeCitadaPorExigenciaViva(estado, fatosDeModalidade, novosCodigos)
-            ?? (OpcoesDeCursoAcimaDasOfertas(estado.NumeroDeOpcoesDeCurso, distribuicao.Count)
+            ?? ModalidadeCitadaPorExigenciaViva(configuracao, fatosDeModalidade, novosCodigos)
+            ?? (OpcoesDeCursoAcimaDasOfertas(configuracao.Vagas.NumeroDeOpcoesDeCurso, distribuicao.Count)
                 ? ErroDeOpcoesDeCursoAcimaDasOfertas()
                 : null);
         return recusa is null ? Result.Success() : Result.Failure(recusa);
     }
 
-    internal static Result ConferirOpcoesDeCurso(EstadoDaConfiguracao estado, int numero)
+    internal static Result ConferirOpcoesDeCurso(ConfiguracaoDeclarada configuracao, int numero)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
         if (numero is < 1 or > ProcessoSeletivo.MaximoDeOpcoesDeCurso)
         {
@@ -45,7 +44,7 @@ public static class RegrasDaDistribuicaoDeVagas
                 "O número de opções de curso deve ser 1 ou 2."))]);
         }
 
-        return OpcoesDeCursoAcimaDasOfertas(numero, estado.DistribuicaoVagas.Count)
+        return OpcoesDeCursoAcimaDasOfertas(numero, configuracao.Vagas.DistribuicaoVagas.Count)
             ? Result.ValidationFailure([new FieldError("numero", ErroDeOpcoesDeCursoAcimaDasOfertas())])
             : Result.Success();
     }
@@ -68,7 +67,7 @@ public static class RegrasDaDistribuicaoDeVagas
     }
 
     // O mesmo código de modalidade não pode ter ações divergentes de vaga quando indeferido em ofertas
-    // distintas. A restauração de envelope congelado reconstrói a distribuição fora desta escrita e
+    // distintas. A reidratação de envelope congelado reconstrói a distribuição fora desta escrita e
     // precisa da mesma checagem, por isso a pergunta é compartilhada.
     private static DomainError AcaoQuandoIndeferidoDivergente() => new(
         "ProcessoSeletivo.AcaoQuandoIndeferidoDivergente",
@@ -77,8 +76,8 @@ public static class RegrasDaDistribuicaoDeVagas
     // Todo fato cujos valores são modalidades referencia por código, então a checagem é precisa: só
     // recusa se um código hoje referenciado por condição viva deixaria de existir.
     private static DomainError? ModalidadeCitadaPorExigenciaViva(
-        EstadoDaConfiguracao estado, FatosDeModalidade fatosDeModalidade, HashSet<string> novosCodigos) =>
-        fatosDeModalidade.Codigos.Any(fato => ReferenciasVivas.ReferenciaDinamicaSeriaInvalidada(estado, fato, novosCodigos))
+        ConfiguracaoDeclarada configuracao, FatosDeModalidade fatosDeModalidade, HashSet<string> novosCodigos) =>
+        fatosDeModalidade.Codigos.Any(fato => ReferenciasVivas.ReferenciaDinamicaSeriaInvalidada(configuracao, fato, novosCodigos))
             ? new DomainError(
                 "ProcessoSeletivo.ModalidadeReferenciadaPorExigenciaViva",
                 "Existe condição de gatilho documental referenciando um código de modalidade que deixaria de ser ofertado — ajuste ou remova a condição antes de redefinir a distribuição de vagas.")
@@ -94,7 +93,7 @@ public static class RegrasDaDistribuicaoDeVagas
         "Com 2 opções de curso, cadastre pelo menos dois cursos.");
 
     /// <summary>
-    /// Aplicabilidade da concorrência dupla (Lei 14.723/2023, INV-B7):
+    /// Aplicabilidade da concorrência dupla (Lei 14.723/2023):
     /// DERIVADA — <see langword="true"/> sse alguma modalidade selecionada em
     /// <see cref="ProcessoSeletivo.DistribuicaoVagas"/> tem
     /// <see cref="NaturezaLegalModalidade.CotaReservada"/>. Nunca um toggle
@@ -102,11 +101,11 @@ public static class RegrasDaDistribuicaoDeVagas
     /// estado corrente para nunca dessincronizar se a distribuição de vagas
     /// mudar depois de a classificação ter sido configurada.
     /// </summary>
-    public static bool ConcorrenciaDuplaAplicavel(EstadoDaConfiguracao estado)
+    public static bool ConcorrenciaDuplaAplicavel(ConfiguracaoDeclarada configuracao)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
-        return estado.DistribuicaoVagas
+        return configuracao.Vagas.DistribuicaoVagas
             .SelectMany(d => d.Modalidades)
             .Any(m => m.NaturezaLegal == NaturezaLegalModalidade.CotaReservada);
     }
@@ -145,8 +144,8 @@ public static class RegrasDaDistribuicaoDeVagas
             : null;
 
     /// <summary>As modalidades ofertadas, uma por código, na ordem do código.</summary>
-    internal static List<ModalidadeSelecionada> ModalidadesOfertadas(EstadoDaConfiguracao estado) =>
-        [.. estado.DistribuicaoVagas
+    internal static List<ModalidadeSelecionada> ModalidadesOfertadas(ConfiguracaoDeclarada configuracao) =>
+        [.. configuracao.Vagas.DistribuicaoVagas
             .SelectMany(static d => d.Modalidades)
             .DistinctBy(static m => m.Codigo, StringComparer.Ordinal)
             .OrderBy(static m => m.Codigo, StringComparer.Ordinal)];

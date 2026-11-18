@@ -9,11 +9,14 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -35,20 +38,23 @@ internal static class ProcessoSeletivoPublicacaoSeeder
     /// </summary>
     internal sealed record Resultado(Guid ProcessoId, Guid AtoId, Guid VersaoId);
 
-    private static ReferenciaRegra Regra(string codigo, char hashChar) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string(hashChar, 64)).Value!;
+    private static ReferenciaRegra Regra(string codigo)
+    {
+        RegraCatalogoSeedItem regra = RegraCatalogoSeed.Itens.Single(r => r.Codigo == codigo && r.Versao == "v1");
+        return ReferenciaRegra.De(codigo, regra.Versao, regra.ComputarHash());
+    }
 
     /// <summary>
     /// Processo com as quatro dimensões estruturalmente obrigatórias
     /// preenchidas (etapas, atendimento, distribuição de vagas, classificação)
     /// — o mínimo que <c>AvaliarConformidade</c> exige para publicar.
     /// </summary>
-    public static ProcessoSeletivo NovoProcessoConforme(string nome, DateTimeOffset? inicioDaFase = null)
+    public static ProcessoSeletivo NovoProcessoConforme(string nome, DateTimeOffset? inicioDaFase = null, FaseCronograma? fase = null)
     {
         ProcessoSeletivo processo = ProcessoVazio(nome);
         DefinirAtendimentoEspecializadoVazio(processo);
-        processo.DefinirDistribuicaoVagas([DistribuicaoDaModalidadeAmpla()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        DefinirClassificacaoImportadaEFaseDeResultadoFinal(processo, inicioDaFase);
+        processo.DefinirDistribuicaoVagas([DistribuicaoDaModalidadeAmpla()], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
+        DefinirClassificacaoImportadaEFaseDeResultadoFinal(processo, inicioDaFase, fase);
 
         DefinirTaxaEFormularioDeInscricao(processo);
         return processo;
@@ -63,20 +69,20 @@ internal static class ProcessoSeletivoPublicacaoSeeder
 
     private static ProcessoSeletivo ProcessoVazio(string nome)
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(nome, TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar(nome, TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
         return processo;
     }
 
     private static void DefinirAtendimentoEspecializadoVazio(ProcessoSeletivo processo) =>
         processo.DefinirAtendimentoEspecializado(
-            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            AtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
 
     private static ModalidadeSelecionada ModalidadeAmplaDeTeste() => ModalidadeSelecionada.Criar(
         modalidadeOrigemId: Guid.CreateVersion7(),
         codigo: "AC",
         descricao: null,
         naturezaLegal: NaturezaLegalModalidade.Ampla,
-        composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
+        composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
         composicaoOrigemCodigo: null,
         regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
         remanejamentoDestino: null,
@@ -87,59 +93,45 @@ internal static class ProcessoSeletivoPublicacaoSeeder
         baseLegal: "Res. Unifesspa 532/2021",
         quantidadeDeclarada: 40).Value!;
 
-    private static ConfiguracaoDistribuicaoVagas DistribuicaoDaModalidadeAmpla() => ConfiguracaoDistribuicaoVagas.Criar(
-        ofertaCursoOrigemId: Guid.CreateVersion7(),
-        voBase: 40,
-        pr: 1m,
-        regraDistribuicao: Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
-        regraAjuste: null,
-        referenciaDemografica: null,
-        modalidades: [ModalidadeAmplaDeTeste()], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
+    private static ConfiguracaoDistribuicaoVagas DistribuicaoDaModalidadeAmpla() => ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
+        new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional), Modalidades = [ModalidadeAmplaDeTeste()] },
+        new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
-    private static void DefinirClassificacaoImportadaEFaseDeResultadoFinal(ProcessoSeletivo processo, DateTimeOffset? inicioDaFase = null)
+    private static void DefinirClassificacaoImportadaEFaseDeResultadoFinal(ProcessoSeletivo processo, DateTimeOffset? inicioDaFase = null, FaseCronograma? fase = null)
     {
         DefinirClassificacaoImportada(processo);
-        DefinirFaseDeResultadoFinalComProvaObjetiva(processo, inicioDaFase);
+        DefinirFaseDeResultadoFinalComProvaObjetiva(processo, inicioDaFase, fase);
     }
 
     private static void DefinirClassificacaoImportada(ProcessoSeletivo processo)
     {
-        ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
-            regraCalculo: Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
-            regraArredondamento: null,
-            casasArredondamento: null,
-            regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
-            regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!;
-        processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada),
+            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria),
+        }).Value!;
+        processo.DefinirClassificacao(classificacao).IsSuccess.Should().BeTrue();
     }
 
-    private static void DefinirFaseDeResultadoFinalComProvaObjetiva(ProcessoSeletivo processo, DateTimeOffset? inicioDaFase = null)
+    private static void DefinirFaseDeResultadoFinalComProvaObjetiva(ProcessoSeletivo processo, DateTimeOffset? inicioDaFase = null, FaseCronograma? fase = null)
     {
-        processo.DefinirCronogramaFases([FaseDeResultadoFinal(inicioDaFase)], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirEtapas([ProvaObjetivaDoResultadoFinal()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase ?? FaseDeResultadoFinal(inicioDaFase)], []).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([ProvaObjetivaDoResultadoFinal()]).IsSuccess.Should().BeTrue();
     }
 
     private static FaseCronograma FaseDeResultadoFinal(DateTimeOffset? inicioDaFase) => FaseCronograma.Criar(
-        ordem: 1,
-        faseCanonicaOrigemId: Guid.CreateVersion7(),
-        codigo: "RESULTADO_FINAL",
-        origemData: OrigemDataFase.NoEdital,
-        agrupaEtapas: true,
-        permiteComplementacao: false,
-        coletaInscricao: true, coletaSolicitacaoIsencao: false,
-        inicio: inicioDaFase ?? new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-        fim: inicioDaFase?.AddDays(30) ?? new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-        produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
-        faseConcluinteCodigo: null,
-        emiteParecerIndividual: false,
-        bancasRequeridas: [],
-        regraRecurso: null,
-        unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+        new OrigemCanonicaDaFase(
+            OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true,
+            ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            Ordem: 1, Inicio: inicioDaFase ?? new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: inicioDaFase?.AddDays(30) ?? new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
+            FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(),
+        bancasRequeridas: []).Value!;
 
     private static EtapaProcesso ProvaObjetivaDoResultadoFinal() => EtapaProcesso.Criar(
-        "Prova Objetiva", CaraterEtapa.Classificatoria,
-        TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-        peso: 1m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: "RESULTADO_FINAL").Value!;
+        new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
+        new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 
     /// <summary>
     /// Não cobra taxa — declaração padrão dos seeders desta classe, que representam processos
@@ -150,8 +142,10 @@ internal static class ProcessoSeletivoPublicacaoSeeder
         Result<ConfiguracaoTaxaInscricao> taxaResult = ConfiguracaoTaxaInscricao.Criar(
             cobra: false, valor: null, fundamentosCodigos: null);
         taxaResult.IsSuccess.Should().BeTrue(taxaResult.Error?.Message);
-        processo.DefinirTaxaInscricao(taxaResult.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirTaxaInscricao(taxaResult.Value!).IsSuccess.Should().BeTrue();
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
+        CriterioDesempate criterio = CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorIdade), new ParametrosDesempateMaiorIdade()).Value!;
+        processo.DefinirCriteriosDesempate([criterio]).IsSuccess.Should().BeTrue();
     }
 
     /// <summary>
@@ -175,12 +169,12 @@ internal static class ProcessoSeletivoPublicacaoSeeder
     {
         ProcessoSeletivo processo = ProcessoVazio(nome);
         DefinirAtendimentoEspecializadoVazio(processo);
-        processo.DefinirDistribuicaoVagas([OfertaFederalCompleta()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([OfertaFederalCompleta()], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
         DefinirClassificacaoImportadaEFaseDeResultadoFinal(processo);
 
         if (comCascata)
         {
-            processo.DefinirCascataRemanejamento(CascataLegalCompleta(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            processo.DefinirCascataRemanejamento(CascataLegalCompleta()).IsSuccess.Should().BeTrue();
         }
 
         DefinirTaxaEFormularioDeInscricao(processo);
@@ -191,36 +185,42 @@ internal static class ProcessoSeletivoPublicacaoSeeder
 
     private static ConfiguracaoDistribuicaoVagas OfertaFederalCompleta()
     {
-        List<ModalidadeSelecionada> modalidades =
-        [
-            ModalidadeSelecionada.Criar(
-                Guid.CreateVersion7(), "AC", "Ampla concorrência",
-                NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, null,
-                RegraRemanejamentoModalidade.Nenhuma, null, null, null,
-                regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), acaoQuandoIndeferido: null,
-                baseLegal: "Lei 12.711/2012 art. 1º").Value!,
-        ];
+        IReadOnlyList<ModalidadeSelecionada> modalidades = ModalidadesDaOfertaFederal();
 
-        foreach (string codigo in ModalidadesFederaisLei12711.Codigos)
-        {
-            modalidades.Add(ModalidadeSelecionada.Criar(
-                Guid.CreateVersion7(), codigo, $"Reserva {codigo}",
-                NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDoVr, null,
-                RegraRemanejamentoModalidade.SegueCascata, null, null, null,
-                regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.CotaReservada), acaoQuandoIndeferido: "RECLASSIFICAR_AC",
-                baseLegal: "Lei 12.711/2012, alterada pela Lei 14.723/2023").Value!);
-        }
-
-        return ConfiguracaoDistribuicaoVagas.Criar(
-            ofertaCursoOrigemId: Guid.CreateVersion7(),
-            voBase: 50,
-            pr: 0.5m,
-            regraDistribuicao: Regra(RegraDistribuicaoVagasCodigo.Lei12711, 'd'),
-            regraAjuste: Regra(RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico, 'e'),
-            referenciaDemografica: ReferenciaReservaDemograficaSnapshot.Criar(
+        return ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
+            new DistribuicaoDeVagasDeclarada
+            {
+                VagasOfertadasBase = 50,
+                PercentualDaReservaLegal = 0.5m,
+                RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Lei12711),
+                RegraDeAjuste = Regra(RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico),
+                ReferenciaDemografica = ReferenciaReservaDemograficaSnapshot.Criar(
                 Guid.CreateVersion7(), "Censo IBGE 2022", 78.55m, 1.20m, 8.40m, "Lei 12.711/2012 art. 3º").Value!,
-            modalidades: modalidades, ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
+                Modalidades = modalidades
+            },
+            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
     }
+
+    private static List<ModalidadeSelecionada> ModalidadesFederais()
+    {
+        List<ModalidadeSelecionada> modalidades = [ModalidadeAmplaFederal()];
+        modalidades.AddRange(ModalidadesFederaisLei12711.Codigos.Select(ModalidadeFederal));
+        return modalidades;
+    }
+
+    private static ModalidadeSelecionada ModalidadeAmplaFederal() => ModalidadeSelecionada.Criar(
+        Guid.CreateVersion7(), "AC", "Ampla concorrência",
+        NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas, null,
+        RegraRemanejamentoModalidade.Nenhuma, null, null, null,
+        regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), acaoQuandoIndeferido: null,
+        baseLegal: "Lei 12.711/2012 art. 1º").Value!;
+
+    private static ModalidadeSelecionada ModalidadeFederal(string codigo) => ModalidadeSelecionada.Criar(
+        Guid.CreateVersion7(), codigo, $"Reserva {codigo}",
+        NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, null,
+        RegraRemanejamentoModalidade.SegueCascata, null, null, null,
+        regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.CotaReservada), acaoQuandoIndeferido: "RECLASSIFICAR_AC",
+        baseLegal: "Lei 12.711/2012, alterada pela Lei 14.723/2023").Value!;
 
     /// <summary>A matriz legal completa (8×7), fallback AC — mesma forma semeada em REMANEJ-CASCATA-LEI-12711 v1.</summary>
     internal static ConfiguracaoCascataRemanejamento CascataLegalCompleta(char semente = 'f')
@@ -237,7 +237,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
         }
 
         return ConfiguracaoCascataRemanejamento.Criar(
-            Regra(RegraRemanejamentoCodigo.Cascata, semente), ModalidadesFederaisLei12711.Ac, destinos).Value!;
+            ReferenciaRegra.De(RegraRemanejamentoCodigo.Cascata, "v1", new string(semente, 64)), ModalidadesFederaisLei12711.Ac, destinos).Value!;
     }
 
     /// <summary>
@@ -275,9 +275,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
             FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
 
         Result<VersaoConfiguracao> publicarResult = processo.Publicar(
-            dados, canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash, documento.HashSha256!,
-            atorUsuarioContaId: "integration-test-user",
-            TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash, documento.HashSha256!), AtorUsuarioContaId = "integration-test-user", Contagem = CorpusEnvelopeDadosDoEdital.ContextoRico() });
         publicarResult.IsSuccess.Should().BeTrue(publicarResult.Error?.Message);
 
         return publicarResult.Value!;
@@ -299,4 +297,27 @@ internal static class ProcessoSeletivoPublicacaoSeeder
         await repository.AdicionarVersaoConfiguracaoAsync(versao, CancellationToken.None);
         await context.SaveChangesAsync(CancellationToken.None);
     }
+
+    private static ModalidadeSelecionada AmplaDaOfertaFederal() => ModalidadeSelecionada.Criar(
+                Guid.CreateVersion7(), "AC", "Ampla concorrência",
+                NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas, null,
+                RegraRemanejamentoModalidade.Nenhuma, null, null, null,
+                regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), acaoQuandoIndeferido: null,
+                baseLegal: "Lei 12.711/2012 art. 1º").Value!;
+
+
+    private static ModalidadeSelecionada CotaDaOfertaFederal(string codigo) => ModalidadeSelecionada.Criar(
+                Guid.CreateVersion7(), codigo, $"Reserva {codigo}",
+                NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, null,
+                RegraRemanejamentoModalidade.SegueCascata, null, null, null,
+                regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.CotaReservada), acaoQuandoIndeferido: "RECLASSIFICAR_AC",
+                baseLegal: "Lei 12.711/2012, alterada pela Lei 14.723/2023").Value!;
+
+
+    private static IReadOnlyList<ModalidadeSelecionada> ModalidadesDaOfertaFederal() =>
+    [
+        AmplaDaOfertaFederal(),
+        .. ModalidadesFederaisLei12711.Codigos.Select(CotaDaOfertaFederal),
+    ];
+
 }

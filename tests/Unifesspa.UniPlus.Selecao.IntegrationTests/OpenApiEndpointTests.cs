@@ -38,27 +38,11 @@ public sealed class OpenApiEndpointTests
     public async Task GetOpenApiDocument_RetornaSpecJsonComMetadataInjetada()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
-
         HttpResponseMessage response = await client.GetAsync(new Uri("/openapi/selecao.json", UriKind.Relative));
-
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        string body = await response.Content.ReadAsStringAsync();
-        using JsonDocument doc = JsonDocument.Parse(body);
-        JsonElement root = doc.RootElement;
-
-        // OpenAPI 3.x — top-level: openapi, info, paths
-        root.GetProperty("openapi").GetString().Should().StartWith("3.");
-        root.GetProperty("info").GetProperty("title").GetString().Should().Be("Uni+ — Módulo Seleção");
-        root.GetProperty("info").GetProperty("version").GetString().Should().Be("1.0.0");
-        root.GetProperty("info").GetProperty("contact").GetProperty("email").GetString()
-            .Should().Be("ctic@unifesspa.edu.br");
-
-        // Servers injetados pelo UniPlusInfoTransformer (Produção, Homologação)
-        JsonElement servers = root.GetProperty("servers");
-        servers.GetArrayLength().Should().Be(2);
-        servers[0].GetProperty("description").GetString().Should().Be("Produção");
-        servers[1].GetProperty("description").GetString().Should().Be("Homologação");
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        ConferirInformacoesDoDocumento(doc.RootElement);
+        ConferirServidoresDoDocumento(doc.RootElement);
     }
 
     [Fact(DisplayName = "Spec runtime de Selecao bate com baseline committed em contracts/")]
@@ -67,24 +51,15 @@ public sealed class OpenApiEndpointTests
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await client.GetAsync(new Uri("/openapi/selecao.json", UriKind.Relative));
         response.EnsureSuccessStatusCode();
-
         string runtimeSpec = NormalizeJson(await response.Content.ReadAsStringAsync());
         string baselinePath = ResolveRepoPath(BaselineRelativePath);
-
         if (string.Equals(Environment.GetEnvironmentVariable(UpdateBaselineEnvVar), "1", StringComparison.Ordinal))
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(baselinePath)!);
-            await File.WriteAllTextAsync(baselinePath, runtimeSpec + "\n");
+            await RegravarBaselineAsync(baselinePath, runtimeSpec);
             return;
         }
 
-        File.Exists(baselinePath).Should().BeTrue(
-            $"baseline {BaselineRelativePath} precisa estar committed; rode `{UpdateBaselineEnvVar}=1 dotnet test --filter SpecRuntime` e commit o arquivo gerado.");
-
-        string committedSpec = NormalizeJson(await File.ReadAllTextAsync(baselinePath));
-
-        runtimeSpec.Should().Be(committedSpec,
-            $"contrato OpenAPI mudou — regerar a baseline com `{UpdateBaselineEnvVar}=1 dotnet test --filter SpecRuntime` e revisar o diff antes de commit (ADR-0030).");
+        await ConferirComABaselineAsync(baselinePath, runtimeSpec);
     }
 
     [Theory(DisplayName = "Os POST de publicação declaram o header Location no 201")]
@@ -104,14 +79,12 @@ public sealed class OpenApiEndpointTests
     [InlineData("/api/selecao/processos-seletivos/{processoSeletivoId}/atos", "post")]
     [InlineData("/api/selecao/processos-seletivos/{id}/publicacao", "post")]
     [InlineData("/api/selecao/processos-seletivos/{id}/retificacoes", "post")]
-    [InlineData("/api/selecao/processos-seletivos/{id}/retificacao-em-curso", "post")]
-    [InlineData("/api/selecao/processos-seletivos/{id}/retificacao-em-curso", "put")]
-    [InlineData("/api/selecao/processos-seletivos/{id}/retificacao-em-curso", "delete")]
-    [InlineData("/api/selecao/processos-seletivos/{id}/retificacao-em-curso/fechamento", "post")]
     [InlineData("/api/selecao/admin/processos-seletivos/{id}/formularios/aplicacoes-de-modelo", "post")]
     [InlineData("/api/selecao/processos-seletivos/{processoSeletivoId}/produtos-previstos/{produtoId}/publicacoes", "post")]
-    [InlineData("/api/selecao/processos-seletivos/{id}/motivos-de-decisao/{motivoDeDecisaoId}", "put")]
-    [InlineData("/api/selecao/processos-seletivos/{id}/motivos-de-decisao/{motivoDeDecisaoId}", "delete")]
+    [InlineData("/api/selecao/processos-seletivos/{id}/fases/{faseCanonicaOrigemId}/motivos-de-decisao/{motivoDeDecisaoId}", "put")]
+    [InlineData("/api/selecao/processos-seletivos/{id}/fases/{faseCanonicaOrigemId}/motivos-de-decisao/{motivoDeDecisaoId}", "delete")]
+    [InlineData("/api/selecao/processos-seletivos/{id}/etapas/{etapaId}/motivos-de-decisao/{motivoDeDecisaoId}", "put")]
+    [InlineData("/api/selecao/processos-seletivos/{id}/etapas/{etapaId}/motivos-de-decisao/{motivoDeDecisaoId}", "delete")]
     [InlineData("/api/selecao/admin/processos-seletivos/{id}/formularios/{finalidade}", "put")]
     [InlineData("/api/selecao/processos-seletivos/{id}/etapas", "put")]
     [InlineData("/api/selecao/processos-seletivos/{id}/classificacao", "put")]
@@ -157,6 +130,60 @@ public sealed class OpenApiEndpointTests
         JsonElement respostas = spec.RootElement.GetProperty("paths").GetProperty(rota).GetProperty("post").GetProperty("responses");
 
         respostas.TryGetProperty("503", out _).Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "O PUT do rascunho publica que substitui o documento inteiro, que o bloco omitido é apagado, que a lista vazia continua presente e que a chave só vale para as partes que o esquema identifica por ela")]
+    public async Task SubstituicaoDoRascunho_PublicaOEfeitoDaOmissao()
+    {
+        using JsonDocument spec = await LerSpecAsync();
+
+        JsonElement operacao = spec.RootElement.GetProperty("paths").GetProperty("/api/selecao/rascunhos-de-processos-seletivos/{id}").GetProperty("put");
+
+        operacao.GetProperty("summary").GetString().Should().NotBeNullOrWhiteSpace();
+        operacao.GetProperty("description").GetString().Should()
+            .Contain("Substitui o documento inteiro")
+            .And.Contain("todo bloco que o corpo não traz é apagado")
+            .And.Contain("Uma lista enviada como [] continua presente e declara nenhum item")
+            .And.Contain("Devolva a chave de cada parte que o esquema identifica por chave")
+            .And.Contain("A distribuição de vagas é identificada por ofertaCursoCodigo e não tem chave")
+            .And.NotContain("a parte sem chave recusa o salvamento")
+            .And.Contain("o envio pode ser repetido");
+    }
+
+    private static void ConferirInformacoesDoDocumento(JsonElement root)
+    {
+        // OpenAPI 3.x — top-level: openapi, info, paths
+        root.GetProperty("openapi").GetString().Should().StartWith("3.");
+        JsonElement info = root.GetProperty("info");
+        info.GetProperty("title").GetString().Should().Be("Uni+ — Módulo Seleção");
+        info.GetProperty("version").GetString().Should().Be("1.0.0");
+        info.GetProperty("contact").GetProperty("email").GetString().Should().Be("ctic@unifesspa.edu.br");
+    }
+
+    // Servers injetados pelo UniPlusInfoTransformer (Produção, Homologação)
+    private static void ConferirServidoresDoDocumento(JsonElement root)
+    {
+        JsonElement servers = root.GetProperty("servers");
+        servers.GetArrayLength().Should().Be(2);
+        servers[0].GetProperty("description").GetString().Should().Be("Produção");
+        servers[1].GetProperty("description").GetString().Should().Be("Homologação");
+    }
+
+    private static async Task RegravarBaselineAsync(string baselinePath, string runtimeSpec)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(baselinePath)!);
+        await File.WriteAllTextAsync(baselinePath, runtimeSpec + "\n");
+    }
+
+    private static async Task ConferirComABaselineAsync(string baselinePath, string runtimeSpec)
+    {
+        File.Exists(baselinePath).Should().BeTrue(
+            $"baseline {BaselineRelativePath} precisa estar committed; rode `{UpdateBaselineEnvVar}=1 dotnet test --filter SpecRuntime` e commit o arquivo gerado.");
+
+        string committedSpec = NormalizeJson(await File.ReadAllTextAsync(baselinePath));
+
+        runtimeSpec.Should().Be(committedSpec,
+            $"contrato OpenAPI mudou — regerar a baseline com `{UpdateBaselineEnvVar}=1 dotnet test --filter SpecRuntime` e revisar o diff antes de commit (ADR-0030).");
     }
 
     private static JsonElement RecusaPorEsperaEsgotada(JsonDocument spec, string rota, string metodo)

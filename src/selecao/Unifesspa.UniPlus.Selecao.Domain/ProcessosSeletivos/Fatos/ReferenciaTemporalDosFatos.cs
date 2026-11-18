@@ -10,7 +10,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Classificacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Opcoes;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Prazos;
@@ -21,12 +20,12 @@ public static class ReferenciaTemporalDosFatos
 {
     private const string FaixaEtaria = "FAIXA_ETARIA";
 
-    internal static DomainError? RecusaDaFaseForaDoCronograma(EstadoDaConfiguracao estado, ReferenciaTemporalFatos? referencia)
+    internal static DomainError? RecusaDaFaseForaDoCronograma(ConfiguracaoDeclarada configuracao, ReferenciaTemporalFatos? referencia)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
         return referencia is { Tipo: ReferenciaTipo.InicioFase or ReferenciaTipo.FimFase } and { FaseId: { } faseId }
-            && !estado.CronogramaFases.Any(f => f.Id == faseId)
+            && !configuracao.Cronograma.CronogramaFases.Any(f => f.Id == faseId)
                 ? new DomainError(
                     "ReferenciaTemporalFatos.FaseNaoPertenceAoProcesso",
                     $"A fase {faseId} não pertence ao cronograma deste processo.")
@@ -49,15 +48,18 @@ public static class ReferenciaTemporalDosFatos
     /// a segunda janela (tipicamente remanejamento) não estende o período declarado no Edital.
     /// </para>
     /// </remarks>
-    public static FaseCronograma? FaseQueAncoraOPeriodoDeInscricao(EstadoDaConfiguracao estado)
+    public static FaseCronograma? FaseQueAncoraOPeriodoDeInscricao(ConfiguracaoDeclarada configuracao)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
-        return estado.CronogramaFases
-            .Where(static f => f.ColetaInscricao)
-            .OrderBy(static f => f.Ordem)
-            .FirstOrDefault();
+        return FaseQueAncoraOPeriodoDeInscricao(configuracao.Cronograma.CronogramaFases, static f => f.ColetaInscricao, static f => f.Ordem);
     }
+
+    /// <summary>A eleição da fase de referência da inscrição sobre qualquer representação de fase: a de menor ordem entre as que coletam inscrição.</summary>
+    internal static TFase? FaseQueAncoraOPeriodoDeInscricao<TFase>(
+        IEnumerable<TFase> fases, Func<TFase, bool> coletaInscricao, Func<TFase, int> ordem)
+        where TFase : class =>
+        fases.Where(coletaInscricao).OrderBy(ordem).FirstOrDefault();
 
     /// <summary>
     /// Pendência de <see cref="ReferenciaTemporalFatos"/>, avaliada depois de
@@ -71,85 +73,61 @@ public static class ReferenciaTemporalDosFatos
     /// <c>Fim</c> definido bloqueiam a publicação. O congelamento da <c>DateOnly</c>
     /// concreta é do congelamento; esta validação só prova que ela É resolvível.
     /// </remarks>
-    internal static DomainError? PendenciaDaReferenciaTemporalFatos(EstadoDaConfiguracao estado)
-    {
-        if (!CitaFaixaEtaria(estado))
-        {
-            return null;
-        }
+    internal static DomainError? PendenciaDaReferenciaTemporalFatos(ConfiguracaoDeclarada configuracao) =>
+        !CitaFaixaEtaria(configuracao) ? null
+        : ReferenciaTemporalFatosAusenteQuandoExigida(configuracao) ? ReferenciaAusente()
+        : ReferenciaTemporalFatosFaseNaoPertenceAoCronograma(configuracao) ? FaseQueAncoraForaDoCronograma()
+        : ReferenciaTemporalFatosExtremoDaFaseAusente(configuracao) ? ExtremoDaFaseAusente(configuracao.Coleta.ReferenciaTemporalFatos!.Tipo)
+        : ReferenciaTemporalFatosFimInscricaoIndisponivel(configuracao) ? FimDaInscricaoIndisponivel()
+        : null;
 
-        if (ReferenciaTemporalFatosAusenteQuandoExigida(estado))
-        {
-            return new DomainError(
-                "ProcessoSeletivo.ReferenciaTemporalFatosAusente",
-                "Uma regra do processo (gatilho de exigência ou regra do formulário) cita FAIXA_ETARIA, mas nenhuma referência temporal de fatos foi configurada — a publicação não pode resolver a idade do candidato sem fallback silencioso (ADR-0111).");
-        }
+    private static DomainError ReferenciaAusente() => new(
+        "ProcessoSeletivo.ReferenciaTemporalFatosAusente",
+        "Uma regra do processo (gatilho de exigência ou regra do formulário) cita FAIXA_ETARIA, mas nenhuma referência temporal de fatos foi configurada — a publicação não pode resolver a idade do candidato sem fallback silencioso (ADR-0111).");
 
-        ReferenciaTemporalFatos referencia = estado.ReferenciaTemporalFatos!;
+    private static DomainError FaseQueAncoraForaDoCronograma() => new(
+        "ProcessoSeletivo.ReferenciaTemporalFatosFaseInexistente",
+        "A fase usada como referência temporal de fatos não pertence (mais) ao cronograma deste processo. Escolha uma fase do cronograma.");
 
-        if (referencia.Tipo is ReferenciaTipo.InicioFase or ReferenciaTipo.FimFase)
-        {
-            if (ReferenciaTemporalFatosFaseNaoPertenceAoCronograma(estado))
-            {
-                return new DomainError(
-                    "ProcessoSeletivo.ReferenciaTemporalFatosFaseInexistente",
-                    "A fase âncora da referência temporal de fatos não pertence (mais) ao cronograma deste processo.");
-            }
+    private static DomainError ExtremoDaFaseAusente(ReferenciaTipo tipo) => new(
+        "ProcessoSeletivo.ReferenciaTemporalFatosExtremoAusente",
+        $"A fase usada como referência temporal de fatos não tem a data de {(tipo == ReferenciaTipo.InicioFase ? "início" : "fim")} definida. Defina-a no cronograma.");
 
-            if (ReferenciaTemporalFatosExtremoDaFaseAusente(estado))
-            {
-                return new DomainError(
-                    "ProcessoSeletivo.ReferenciaTemporalFatosExtremoAusente",
-                    $"A fase âncora da referência temporal de fatos não tem {(referencia.Tipo == ReferenciaTipo.InicioFase ? "Início" : "Fim")} definido — sem fallback silencioso.");
-            }
-        }
-        else if (referencia.Tipo == ReferenciaTipo.FimInscricao)
-        {
-            // Nada no domínio impede MAIS de uma fase com ColetaInscricao: a pergunta certa é
-            // existencial (Any), não posicional.
-            if (ReferenciaTemporalFatosFimInscricaoIndisponivel(estado))
-            {
-                return new DomainError(
-                    "ProcessoSeletivo.ReferenciaTemporalFatosFimInscricaoIndisponivel",
-                    "FIM_INSCRICAO exige uma fase que colete inscrição com Fim definido — sem fallback silencioso.");
-            }
-        }
-
-        // DATA_ESPECIFICA: ReferenciaTemporalFatos.Criar já garante Data presente — nada a checar aqui.
-        return null;
-    }
+    private static DomainError FimDaInscricaoIndisponivel() => new(
+        "ProcessoSeletivo.ReferenciaTemporalFatosFimInscricaoIndisponivel",
+        "FIM_INSCRICAO exige uma fase que colete inscrição com Fim definido — sem fallback silencioso.");
 
     /// <summary>
     /// Alguma regra viva do processo — gatilho de exigência ou regra do formulário — cita a faixa
     /// etária; sem isso, a referência temporal é opcional.
     /// </summary>
-    internal static bool CitaFaixaEtaria(EstadoDaConfiguracao estado) =>
-        ReferenciasVivas.CondicoesVivasComOperador(estado).Any(static c => string.Equals(c.Fato, FaixaEtaria, StringComparison.Ordinal));
+    internal static bool CitaFaixaEtaria(ConfiguracaoDeclarada configuracao) =>
+        ReferenciasVivas.CondicoesVivasComOperador(configuracao).Any(static c => string.Equals(c.Fato, FaixaEtaria, StringComparison.Ordinal));
 
     /// <summary>A fase âncora de InicioFase/FimFase — <see langword="null"/> quando o tipo não usa fase ou ela não pertence (mais) ao cronograma.</summary>
-    internal static FaseCronograma? FaseAncoraDaReferenciaTemporal(EstadoDaConfiguracao estado) =>
-        estado.ReferenciaTemporalFatos is { Tipo: ReferenciaTipo.InicioFase or ReferenciaTipo.FimFase } referencia
-            ? estado.CronogramaFases.FirstOrDefault(f => f.Id == referencia.FaseId)
+    internal static FaseCronograma? FaseAncoraDaReferenciaTemporal(ConfiguracaoDeclarada configuracao) =>
+        configuracao.Coleta.ReferenciaTemporalFatos is { Tipo: ReferenciaTipo.InicioFase or ReferenciaTipo.FimFase } referencia
+            ? configuracao.Cronograma.CronogramaFases.FirstOrDefault(f => f.Id == referencia.FaseId)
             : null;
 
-    internal static bool ReferenciaTemporalFatosAusenteQuandoExigida(EstadoDaConfiguracao estado) =>
-        CitaFaixaEtaria(estado) && estado.ReferenciaTemporalFatos is null;
+    internal static bool ReferenciaTemporalFatosAusenteQuandoExigida(ConfiguracaoDeclarada configuracao) =>
+        CitaFaixaEtaria(configuracao) && configuracao.Coleta.ReferenciaTemporalFatos is null;
 
-    internal static bool ReferenciaTemporalFatosFaseNaoPertenceAoCronograma(EstadoDaConfiguracao estado) =>
-        CitaFaixaEtaria(estado)
-        && estado.ReferenciaTemporalFatos is { Tipo: ReferenciaTipo.InicioFase or ReferenciaTipo.FimFase }
-        && FaseAncoraDaReferenciaTemporal(estado) is null;
+    internal static bool ReferenciaTemporalFatosFaseNaoPertenceAoCronograma(ConfiguracaoDeclarada configuracao) =>
+        CitaFaixaEtaria(configuracao)
+        && configuracao.Coleta.ReferenciaTemporalFatos is { Tipo: ReferenciaTipo.InicioFase or ReferenciaTipo.FimFase }
+        && FaseAncoraDaReferenciaTemporal(configuracao) is null;
 
-    internal static bool ReferenciaTemporalFatosExtremoDaFaseAusente(EstadoDaConfiguracao estado) =>
-        CitaFaixaEtaria(estado)
-        && estado.ReferenciaTemporalFatos is { Tipo: ReferenciaTipo.InicioFase or ReferenciaTipo.FimFase } referencia
-        && FaseAncoraDaReferenciaTemporal(estado) is { } fase
+    internal static bool ReferenciaTemporalFatosExtremoDaFaseAusente(ConfiguracaoDeclarada configuracao) =>
+        CitaFaixaEtaria(configuracao)
+        && configuracao.Coleta.ReferenciaTemporalFatos is { Tipo: ReferenciaTipo.InicioFase or ReferenciaTipo.FimFase } referencia
+        && FaseAncoraDaReferenciaTemporal(configuracao) is { } fase
         && (referencia.Tipo == ReferenciaTipo.InicioFase ? fase.Inicio : fase.Fim) is null;
 
-    internal static bool ReferenciaTemporalFatosFimInscricaoIndisponivel(EstadoDaConfiguracao estado) =>
-        CitaFaixaEtaria(estado)
-        && estado.ReferenciaTemporalFatos is { Tipo: ReferenciaTipo.FimInscricao }
-        && !estado.CronogramaFases.Any(static f => f.ColetaInscricao && f.Fim is not null);
+    internal static bool ReferenciaTemporalFatosFimInscricaoIndisponivel(ConfiguracaoDeclarada configuracao) =>
+        CitaFaixaEtaria(configuracao)
+        && configuracao.Coleta.ReferenciaTemporalFatos is { Tipo: ReferenciaTipo.FimInscricao }
+        && !configuracao.Cronograma.CronogramaFases.Any(static f => f.ColetaInscricao && f.Fim is not null);
 
     /// <summary>
     /// Resolve <see cref="ReferenciaTemporalFatos"/> para a <see cref="DateOnly"/> concreta
@@ -170,24 +148,25 @@ public static class ReferenciaTemporalDosFatos
     /// método escolher a zona sozinho faria o envelope declarar um fuso no bloco de localidade e
     /// calcular a data por outro, congelando o dia civil errado numa versão imutável.
     /// </param>
-    public static DateOnly? ResolverDataReferenciaFatos(EstadoDaConfiguracao estado, TimeZoneInfo fusoHorario)
+    public static DateOnly? ResolverDataReferenciaFatos(ConfiguracaoDeclarada configuracao, TimeZoneInfo fusoHorario)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
         ArgumentNullException.ThrowIfNull(fusoHorario);
 
-        if (!CitaFaixaEtaria(estado))
-        {
-            return null;
-        }
+        return CitaFaixaEtaria(configuracao) ? DataJaProvada(configuracao, fusoHorario) : null;
+    }
 
-        if (estado.ReferenciaTemporalFatos is not { } referencia)
+    /// <summary>A data que a pendência da referência temporal já provou resolvível; só chega aqui quem passou por ela.</summary>
+    private static DateOnly DataJaProvada(ConfiguracaoDeclarada configuracao, TimeZoneInfo fusoHorario)
+    {
+        if (configuracao.Coleta.ReferenciaTemporalFatos is not { } referencia)
         {
             throw new InvalidOperationException(
-                "Resolução de dataReferenciaFatos sem estado.ReferenciaTemporalFatos configurada — PendenciaDaReferenciaTemporalFatos deveria ter recusado a transição antes deste ponto.");
+                "Resolução de dataReferenciaFatos sem configuracao.Coleta.ReferenciaTemporalFatos configurada — PendenciaDaReferenciaTemporalFatos deveria ter recusado a transição antes deste ponto.");
         }
 
-        return DataDaReferencia(estado, referencia, fusoHorario)
+        return DataDaReferencia(configuracao, referencia, fusoHorario)
             ?? throw new InvalidOperationException(
                 "dataReferenciaFatos não resolvível a partir do cronograma — PendenciaDaReferenciaTemporalFatos deveria ter recusado a transição antes deste ponto.");
     }
@@ -198,39 +177,38 @@ public static class ReferenciaTemporalDosFatos
     /// quando a fase que a ancora ainda não tem a data. A publicação usa
     /// <see cref="ResolverDataReferenciaFatos"/>, que recusa o que não resolve.
     /// </summary>
-    public static DateOnly? DataReferenciaFatosEmMontagem(EstadoDaConfiguracao estado, TimeZoneInfo fusoHorario)
+    public static DateOnly? DataReferenciaFatosEmMontagem(ConfiguracaoDeclarada configuracao, TimeZoneInfo fusoHorario)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
         ArgumentNullException.ThrowIfNull(fusoHorario);
-        return CitaFaixaEtaria(estado) && estado.ReferenciaTemporalFatos is { } referencia ? DataDaReferencia(estado, referencia, fusoHorario) : null;
+        return CitaFaixaEtaria(configuracao) && configuracao.Coleta.ReferenciaTemporalFatos is { } referencia ? DataDaReferencia(configuracao, referencia, fusoHorario) : null;
     }
 
-    internal static DateOnly? DataDaReferencia(EstadoDaConfiguracao estado, ReferenciaTemporalFatos referencia, TimeZoneInfo fusoHorario)
-    {
-        if (referencia.Tipo == ReferenciaTipo.DataEspecifica)
-        {
-            return referencia.Data!.Value;
-        }
+    internal static DateOnly? DataDaReferencia(ConfiguracaoDeclarada configuracao, ReferenciaTemporalFatos referencia, TimeZoneInfo fusoHorario) =>
+        referencia.Tipo == ReferenciaTipo.DataEspecifica ? referencia.Data!.Value
+        : InstanteQueAncora(configuracao, referencia) is { } instante ? DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(instante, fusoHorario).DateTime)
+        : null;
 
-        DateTimeOffset? extremo = referencia.Tipo switch
+    /// <summary>O instante da fase ou da inscrição em que a referência se ancora; ausente quando a fase ou o extremo não existe.</summary>
+    private static DateTimeOffset? InstanteQueAncora(ConfiguracaoDeclarada configuracao, ReferenciaTemporalFatos referencia) =>
+        referencia.Tipo switch
         {
-            ReferenciaTipo.InicioFase => estado.CronogramaFases.FirstOrDefault(f => f.Id == referencia.FaseId)?.Inicio,
-            ReferenciaTipo.FimFase => estado.CronogramaFases.FirstOrDefault(f => f.Id == referencia.FaseId)?.Fim,
-            // A coleção de fases preserva a ORDEM DE
-            // ENTRADA de DefinirCronogramaFases, mas o envelope escreve as fases ordenadas
-            // por Ordem (canonicalização determinística) — havendo mais de uma fase de
-            // coleta com Fim, a fase publicada dependeria da ordem em que o caller as
-            // passou, e a reidratação (sempre em ordem de Ordem) poderia escolher outra,
-            // quebrando o round-trip (SombraParaVerificacao). OrderBy(Ordem) torna a escolha
-            // determinística e independente de como a coleção foi populada.
-            ReferenciaTipo.FimInscricao => estado.CronogramaFases
-                .Where(static f => f.ColetaInscricao && f.Fim is not null)
-                .OrderBy(static f => f.Ordem)
-                .FirstOrDefault()?.Fim,
-            _ => throw new InvalidOperationException($"Tipo de estado.ReferenciaTemporalFatos não reconhecido: {referencia.Tipo}."),
+            ReferenciaTipo.InicioFase => FaseAncoraDaReferenciaTemporal(configuracao)?.Inicio,
+            ReferenciaTipo.FimFase => FaseAncoraDaReferenciaTemporal(configuracao)?.Fim,
+            ReferenciaTipo.FimInscricao => FimDaPrimeiraFaseDeInscricaoComFim(configuracao),
+            _ => throw new InvalidOperationException($"Tipo de configuracao.Coleta.ReferenciaTemporalFatos não reconhecido: {referencia.Tipo}."),
         };
 
-        return extremo is { } instante ? DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(instante, fusoHorario).DateTime) : null;
-    }
+    /// <summary>
+    /// O fim da primeira fase, por ordem, que coleta inscrição e tem fim. A coleção de fases preserva a ordem de entrada,
+    /// mas o envelope escreve as fases ordenadas por ordem: havendo mais de uma fase de coleta com fim, a fase publicada
+    /// dependeria da ordem em que o chamador as passou, e a reidratação poderia escolher outra, quebrando o round-trip da
+    /// sombra de verificação. Ordenar torna a escolha determinística.
+    /// </summary>
+    private static DateTimeOffset? FimDaPrimeiraFaseDeInscricaoComFim(ConfiguracaoDeclarada configuracao) =>
+        configuracao.Cronograma.CronogramaFases
+            .Where(static f => f.ColetaInscricao && f.Fim is not null)
+            .OrderBy(static f => f.Ordem)
+            .FirstOrDefault()?.Fim;
 }

@@ -22,6 +22,9 @@ public sealed class TermoConsentimentoVersao : IForensicEntity
 
     public Guid TermoConsentimentoId { get; private init; }
 
+    /// <summary>Número da versão dentro do termo, sequencial a partir de 1: é o que o documento de configuração cita.</summary>
+    public int Numero { get; private init; }
+
     public string Texto { get; private init; } = null!;
 
     public string BaseLegal { get; private init; } = null!;
@@ -37,6 +40,19 @@ public sealed class TermoConsentimentoVersao : IForensicEntity
     // Construtor de materialização do EF Core.
     private TermoConsentimentoVersao()
     {
+    }
+
+    private TermoConsentimentoVersao(
+        Guid termoConsentimentoId, int numero, ConteudoDaVersao conteudo, DateTimeOffset promovidaEm, string promovidaPor)
+    {
+        TermoConsentimentoId = termoConsentimentoId;
+        Numero = numero;
+        Texto = conteudo.Texto;
+        BaseLegal = conteudo.BaseLegal;
+        FormaAceite = conteudo.FormaAceite;
+        Hash = conteudo.Hash;
+        PromovidaEm = promovidaEm;
+        PromovidaPor = promovidaPor;
     }
 
     /// <summary>
@@ -56,31 +72,18 @@ public sealed class TermoConsentimentoVersao : IForensicEntity
     /// </remarks>
     public static TermoConsentimentoVersao Promover(
         Guid termoConsentimentoId,
+        int numero,
         string texto,
         string baseLegal,
         FormaAceite formaAceite,
         DateTimeOffset promovidaEm,
         string promovidaPor)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(texto);
-        ArgumentException.ThrowIfNullOrWhiteSpace(baseLegal);
+        ArgumentOutOfRangeException.ThrowIfLessThan(numero, 1);
+        ConteudoDaVersao conteudo = ConteudoDaVersao.De(texto, baseLegal, formaAceite);
         ArgumentException.ThrowIfNullOrWhiteSpace(promovidaPor);
 
-        texto = texto.Normalize(NormalizationForm.FormC);
-        baseLegal = baseLegal.Normalize(NormalizationForm.FormC);
-        string formaAceiteToken = FormasAceite.ParaTokenCanonico(formaAceite);
-        string hash = CalcularHash(texto, baseLegal, formaAceiteToken);
-
-        return new TermoConsentimentoVersao
-        {
-            TermoConsentimentoId = termoConsentimentoId,
-            Texto = texto,
-            BaseLegal = baseLegal,
-            FormaAceite = formaAceite,
-            Hash = hash,
-            PromovidaEm = promovidaEm,
-            PromovidaPor = promovidaPor,
-        };
+        return new TermoConsentimentoVersao(termoConsentimentoId, numero, conteudo, promovidaEm, promovidaPor);
     }
 
     /// <summary>
@@ -111,5 +114,23 @@ public sealed class TermoConsentimentoVersao : IForensicEntity
         System.Buffers.Binary.BinaryPrimitives.WriteInt32BigEndian(tamanho, bytes.Length);
         buffer.Write(tamanho);
         buffer.Write(bytes);
+    }
+
+    /// <summary>
+    /// O conteúdo da versão como é congelado: texto e base legal em NFC, a forma que o processo seletivo congela, e o hash
+    /// calculado aqui dentro, a partir do próprio conteúdo.
+    /// </summary>
+    private sealed record ConteudoDaVersao(string Texto, string BaseLegal, FormaAceite FormaAceite, string Hash)
+    {
+        public static ConteudoDaVersao De(string texto, string baseLegal, FormaAceite formaAceite)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(texto);
+            ArgumentException.ThrowIfNullOrWhiteSpace(baseLegal);
+
+            string textoNfc = texto.Normalize(NormalizationForm.FormC);
+            string baseLegalNfc = baseLegal.Normalize(NormalizationForm.FormC);
+            string hash = CalcularHash(textoNfc, baseLegalNfc, FormasAceite.ParaTokenCanonico(formaAceite));
+            return new(textoNfc, baseLegalNfc, formaAceite, hash);
+        }
     }
 }

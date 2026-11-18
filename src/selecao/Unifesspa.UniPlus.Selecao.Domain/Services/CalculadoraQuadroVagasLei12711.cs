@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Services;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -15,11 +16,11 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <para>
 /// <strong>Garantia mínima é floor-first, não proporcional add-only.</strong>
 /// Quando a soma das demandas dos 7 grupos garantidos (art. 10 §2º — todos
-/// menos <c>LI_Q</c>, que o art. 11 exclui da garantia) excede <c>VO</c>, o
+/// menos <c>LI_Q</c>, que o art. 11 exclui da garantia) excede as vagas ofertadas base, o
 /// quadro capa em duas passadas: primeiro 1 vaga a cada grupo, na ordem legal,
 /// enquanto houver espaço; só depois o excedente de cada grupo, na mesma
 /// ordem. Uma implementação "proporcional com mínimo, tudo de uma vez" já foi
-/// tentada num protótipo e falhou: em <c>VO=3, PR=1, ppi=100%</c> ela dava
+/// tentada num protótipo e falhou: em <c>3 vagas ofertadas base, percentual da reserva legal de 100% e PPI de 100%</c> ela dava
 /// <c>LB_PPI=2, LB_Q=0, LB_PCD=0</c> — o 2º de PPI vencendo o piso de 1 vaga
 /// de Q e PcD, o que a lei não autoriza. O correto é
 /// <c>LB_PPI=1, LB_Q=1, LB_PCD=1</c>.
@@ -32,20 +33,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </remarks>
 public static class CalculadoraQuadroVagasLei12711
 {
-    private static readonly string[] OrdemGarantiaMinima =
-    [
-        ModalidadesFederaisLei12711.LbPpi,
-        ModalidadesFederaisLei12711.LbQ,
-        ModalidadesFederaisLei12711.LbPcd,
-        ModalidadesFederaisLei12711.LbEp,
-        ModalidadesFederaisLei12711.LiPpi,
-        ModalidadesFederaisLei12711.LiPcd,
-        ModalidadesFederaisLei12711.LiEp,
-    ];
-
-    public static Result<QuadroVagasCalculado> Calcular(
-        int voBase,
-        decimal pr,
+    public static Result<QuadroDeVagasDaLeiDeCotas> Calcular(
+        int vagasOfertadasBase,
+        decimal percentualDaReservaLegal,
         ReferenciaReservaDemograficaSnapshot demografica,
         IReadOnlyDictionary<string, int> retiradas,
         IReadOnlyDictionary<string, int> suplementares)
@@ -54,135 +44,61 @@ public static class CalculadoraQuadroVagasLei12711
         ArgumentNullException.ThrowIfNull(retiradas);
         ArgumentNullException.ThrowIfNull(suplementares);
 
-        Result quantidadesValidas = ValidarQuantidadesNaoNegativas(retiradas, suplementares);
-        if (quantidadesValidas.IsFailure)
-        {
-            return Result<QuadroVagasCalculado>.Failure(quantidadesValidas.Error!);
-        }
-
-        Result semColisao = ValidarColisaoDeChave(retiradas, suplementares);
-        if (semColisao.IsFailure)
-        {
-            return Result<QuadroVagasCalculado>.Failure(semColisao.Error!);
-        }
-
-        int vrNominal = (int)Math.Ceiling(voBase * pr);
-        int vrri = (int)Math.Ceiling(vrNominal * 0.5m);
-        int vrsi = vrNominal - vrri;
-
-        int lbPpi = CeilPercentual(vrri, demografica.PpiPercentual);
-        int lbQ = CeilPercentual(vrri, demografica.QuilombolaPercentual);
-        int lbPcd = CeilPercentual(vrri, demografica.PcdPercentual);
-        int lbEp = Math.Max(0, vrri - lbPpi - lbQ - lbPcd);
-
-        int liPpi = CeilPercentual(vrsi, demografica.PpiPercentual);
-        int liQ = FloorPercentual(vrsi, demografica.QuilombolaPercentual);
-        int liPcd = CeilPercentual(vrsi, demografica.PcdPercentual);
-        int liEp = Math.Max(0, vrsi - liPpi - liQ - liPcd);
-
-        int[] bruto = [lbPpi, lbQ, lbPcd, lbEp, liPpi, liPcd, liEp];
-        int[] demanda = [.. bruto.Select(v => Math.Max(1, v))];
-
-        int totalDemanda = demanda.Sum() + liQ;
-        bool capadoEmVo = totalDemanda > voBase;
-
-        int liQFinal;
-        int[] final;
-        if (capadoEmVo)
-        {
-            final = AlocarComEscassez(demanda, voBase, liQ, out liQFinal);
-        }
-        else
-        {
-            final = demanda;
-            liQFinal = liQ;
-        }
-
-        Dictionary<string, int> quadro = new(StringComparer.Ordinal);
-        for (int i = 0; i < OrdemGarantiaMinima.Length; i++)
-        {
-            quadro[OrdemGarantiaMinima[i]] = final[i];
-        }
-
-        quadro[ModalidadesFederaisLei12711.LiQ] = liQFinal;
-
-        int vrFinal = quadro.Values.Sum();
-        int estouro = Math.Max(0, vrFinal - vrNominal);
-        int retiradasTotal = retiradas.Values.Sum();
-        int suplementaresTotal = suplementares.Values.Sum();
-        int ac = voBase - vrFinal - retiradasTotal;
-
-        if (ac < 0)
-        {
-            return Result<QuadroVagasCalculado>.Failure(new DomainError(
-                "ConfiguracaoDistribuicaoVagas.QuadroAmplaConcorrenciaNegativa",
-                $"A ampla concorrência resultaria negativa ({ac}) para VO={voBase}: ajuste o VO, o PR ou as retiradas."));
-        }
-
-        quadro[ModalidadesFederaisLei12711.Ac] = ac;
-
-        foreach (KeyValuePair<string, int> retirada in retiradas)
-        {
-            quadro[retirada.Key] = retirada.Value;
-        }
-
-        foreach (KeyValuePair<string, int> suplementar in suplementares)
-        {
-            quadro[suplementar.Key] = suplementar.Value;
-        }
-
-        int totalPublicado = voBase + suplementaresTotal;
-
-        return Result<QuadroVagasCalculado>.Success(new QuadroVagasCalculado(
-            quadro, vrNominal, vrFinal, estouro, capadoEmVo, ac, retiradasTotal, suplementaresTotal, totalPublicado));
+        Result colisao = ValidarColisaoDeChave(retiradas, suplementares);
+        return colisao.IsFailure
+            ? Result<QuadroDeVagasDaLeiDeCotas>.Failure(colisao.Error!)
+            : Montar(vagasOfertadasBase, percentualDaReservaLegal, demografica, retiradas, suplementares);
     }
 
-    /// <summary>
-    /// Duas passadas sobre os 7 grupos garantidos, na ordem legal: primeiro o
-    /// piso de 1 vaga a cada grupo enquanto houver espaço; depois o excedente
-    /// de cada grupo, na mesma ordem. <c>LI_Q</c> (fora da garantia) é servido
-    /// por último, com o que sobrar do espaço — nunca mais que o seu bruto por
-    /// piso, e nunca com garantia própria de 1 vaga.
-    /// </summary>
-    private static int[] AlocarComEscassez(int[] demanda, int voBase, int liQBruto, out int liQFinal)
+    private static Result<QuadroDeVagasDaLeiDeCotas> Montar(
+        int vagasOfertadasBase,
+        decimal percentualDaReservaLegal,
+        ReferenciaReservaDemograficaSnapshot demografica,
+        IReadOnlyDictionary<string, int> retiradas,
+        IReadOnlyDictionary<string, int> suplementares)
     {
-        int[] final = new int[demanda.Length];
-        int espaco = voBase;
+        int reservaLegalNominal = (int)Math.Ceiling(vagasOfertadasBase * percentualDaReservaLegal);
+        AlocacaoDasSubReservasFederais alocacao = DemandaDasSubReservasFederais
+            .Calcular(reservaLegalNominal, demografica)
+            .Alocar(vagasOfertadasBase);
+        int ampla = vagasOfertadasBase - alocacao.Total - retiradas.Values.Sum();
 
-        for (int i = 0; i < demanda.Length && espaco > 0; i++)
-        {
-            final[i] = 1;
-            espaco--;
-        }
-
-        for (int i = 0; i < demanda.Length && espaco > 0; i++)
-        {
-            int faltante = demanda[i] - final[i];
-            int concedido = Math.Min(faltante, espaco);
-            final[i] += concedido;
-            espaco -= concedido;
-        }
-
-        liQFinal = Math.Min(liQBruto, espaco);
-        return final;
+        return ampla < 0
+            ? Result<QuadroDeVagasDaLeiDeCotas>.Failure(AmplaConcorrenciaNegativa(ampla, vagasOfertadasBase))
+            : Result<QuadroDeVagasDaLeiDeCotas>.Success(
+                Compor(vagasOfertadasBase, reservaLegalNominal, alocacao, ampla, retiradas, suplementares));
     }
 
-    private static int CeilPercentual(int baseValor, decimal percentual) =>
-        (int)Math.Ceiling(baseValor * percentual / 100m);
-
-    private static int FloorPercentual(int baseValor, decimal percentual) =>
-        (int)Math.Floor(baseValor * percentual / 100m);
-
-    private static Result ValidarQuantidadesNaoNegativas(
-        IReadOnlyDictionary<string, int> retiradas, IReadOnlyDictionary<string, int> suplementares)
+    private static QuadroDeVagasDaLeiDeCotas Compor(
+        int vagasOfertadasBase,
+        int reservaLegalNominal,
+        AlocacaoDasSubReservasFederais alocacao,
+        int ampla,
+        IReadOnlyDictionary<string, int> retiradas,
+        IReadOnlyDictionary<string, int> suplementares)
     {
-        KeyValuePair<string, int>? negativa = retiradas.Concat(suplementares).FirstOrDefault(kv => kv.Value < 0);
-        return negativa is { Key: not null } n
-            ? Result.Failure(new DomainError(
-                "ConfiguracaoDistribuicaoVagas.QuantidadeVagaNegativa",
-                $"A quantidade de vagas de \"{n.Key}\" não pode ser negativa ({n.Value})."))
-            : Result.Success();
+        Dictionary<string, int> quadro = alocacao.PorModalidade();
+        quadro[ModalidadesFederaisLei12711.Ac] = ampla;
+        Acrescentar(quadro, retiradas);
+        Acrescentar(quadro, suplementares);
+
+        return new(
+            [.. quadro.Select(static vaga => new VagasDaModalidade(vaga.Key, vaga.Value))],
+            vagasOfertadasBase + suplementares.Values.Sum(),
+            new ConferenciaDaReservaLegal(reservaLegalNominal, alocacao.Total, alocacao.VagasCortadasPorEscassez));
     }
+
+    private static void Acrescentar(Dictionary<string, int> quadro, IReadOnlyDictionary<string, int> vagas)
+    {
+        foreach (KeyValuePair<string, int> vaga in vagas)
+        {
+            quadro[vaga.Key] = vaga.Value;
+        }
+    }
+
+    private static DomainError AmplaConcorrenciaNegativa(int ampla, int vagasOfertadasBase) => new(
+        "ConfiguracaoDistribuicaoVagas.QuadroAmplaConcorrenciaNegativa",
+        $"A ampla concorrência resultaria negativa ({ampla}) para {vagasOfertadasBase} vagas ofertadas base: ajuste as vagas ofertadas base, o percentual da reserva legal ou as retiradas.");
 
     /// <summary>
     /// Uma retirada ou suplemento cujo código coincide com uma sub-reserva

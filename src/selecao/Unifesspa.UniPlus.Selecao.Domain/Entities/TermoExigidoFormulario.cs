@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// podem depender das respostas do candidato (UNI-REQ-0145).
 /// </summary>
 /// <remarks>
-/// O conteúdo da versão — nome, texto, base legal, forma de aceite e hash — é copiado quando o
+/// O conteúdo da versão — código do termo, número da versão, nome, texto, base legal, forma de aceite e hash — é copiado quando o
 /// termo é escolhido. A versão promovida é imutável no catálogo, então a cópia é o que o edital
 /// congela, e mudar o catálogo depois não altera o processo (ADR-0061).
 /// </remarks>
@@ -19,6 +19,9 @@ public sealed class TermoExigidoFormulario : EntityBase, IParteDoProcesso
 {
     /// <summary>A forma de aceite que o catálogo ainda não definiu: a publicação a recusa.</summary>
     public const string FormaAceiteADefinir = "A_DEFINIR";
+
+    /// <summary>Tamanho máximo do código do termo no catálogo.</summary>
+    public const int TermoCodigoMaxLength = 100;
 
     public Guid ProcessoSeletivoId { get; private set; }
 
@@ -34,6 +37,12 @@ public sealed class TermoExigidoFormulario : EntityBase, IParteDoProcesso
     public Guid TermoId { get; private set; }
 
     public Guid VersaoId { get; private set; }
+
+    /// <summary>Código estável do termo no catálogo, congelado com a versão: é o que o documento de configuração cita.</summary>
+    public string TermoCodigo { get; private set; } = string.Empty;
+
+    /// <summary>Número da versão dentro do termo, congelado com ela, a partir de 1.</summary>
+    public int VersaoNumero { get; private set; }
 
     public string Nome { get; private set; } = string.Empty;
 
@@ -52,6 +61,38 @@ public sealed class TermoExigidoFormulario : EntityBase, IParteDoProcesso
     public Obrigatoriedade Obrigatoriedade { get; private set; } = Obrigatoriedade.Sempre;
 
     private TermoExigidoFormulario() { }
+
+    private TermoExigidoFormulario(
+        string codigo,
+        int ordem,
+        VersaoTermoEscolhida versao,
+        PredicadoDnf? exibicao,
+        Obrigatoriedade obrigatoriedade,
+        FinalidadeFormulario finalidade)
+    {
+        // O envelope congela o código em NFC; normalizar aqui faz a unicidade do formulário e a
+        // do envelope compararem a mesma forma.
+        Codigo = (codigo ?? string.Empty).Trim().Normalize(System.Text.NormalizationForm.FormC);
+        Ordem = ordem;
+        CongelarVersao(versao);
+        Exibicao = exibicao;
+        Obrigatoriedade = obrigatoriedade;
+        // O processo atribui a finalidade ao definir os termos; quem remonta o envelope a informa.
+        Finalidade = finalidade;
+    }
+
+    private void CongelarVersao(VersaoTermoEscolhida versao)
+    {
+        TermoId = versao.TermoId;
+        VersaoId = versao.VersaoId;
+        TermoCodigo = versao.TermoCodigo;
+        VersaoNumero = versao.VersaoNumero;
+        Nome = versao.Nome;
+        Texto = versao.Texto;
+        BaseLegal = versao.BaseLegal;
+        FormaAceite = versao.FormaAceite;
+        HashVersao = versao.Hash;
+    }
 
     /// <summary>Os fatos que as condições do termo citam, sem repetição.</summary>
     public IReadOnlyCollection<string> FatosCitados =>
@@ -85,25 +126,7 @@ public sealed class TermoExigidoFormulario : EntityBase, IParteDoProcesso
             return Result<TermoExigidoFormulario>.ValidationFailure(erros);
         }
 
-        return Result<TermoExigidoFormulario>.Success(new TermoExigidoFormulario
-        {
-            // O envelope congela o código em NFC; normalizar aqui faz a unicidade do formulário e a
-            // do envelope compararem a mesma forma.
-            Codigo = (codigo ?? string.Empty).Trim().Normalize(System.Text.NormalizationForm.FormC),
-            Ordem = ordem,
-            TermoId = versao.TermoId,
-            VersaoId = versao.VersaoId,
-            Nome = versao.Nome,
-            Texto = versao.Texto,
-            BaseLegal = versao.BaseLegal,
-            FormaAceite = versao.FormaAceite,
-            HashVersao = versao.Hash,
-            Exibicao = exibicao,
-            Obrigatoriedade = obrigatoriedade,
-
-            // O processo atribui a finalidade ao definir os termos; quem remonta o envelope a informa.
-            Finalidade = finalidade,
-        });
+        return Result<TermoExigidoFormulario>.Success(new TermoExigidoFormulario(codigo, ordem, versao, exibicao, obrigatoriedade, finalidade));
     }
 
     /// <summary>A forma de aceite ainda não foi definida no catálogo: o termo não pode ser publicado.</summary>
@@ -116,7 +139,7 @@ public sealed class TermoExigidoFormulario : EntityBase, IParteDoProcesso
 
 /// <summary>A versão do catálogo escolhida para o termo, com o conteúdo que o processo congela.</summary>
 public sealed record VersaoTermoEscolhida(
-    Guid TermoId, Guid VersaoId, string Nome, string Texto, string BaseLegal, string FormaAceite, string Hash);
+    Guid TermoId, Guid VersaoId, string TermoCodigo, int VersaoNumero, string Nome, string Texto, string BaseLegal, string FormaAceite, string Hash);
 
 public static class TermoExigidoFormularioErrorCodes
 {

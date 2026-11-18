@@ -139,14 +139,14 @@ public sealed record OpcoesDeCursoCertameDto(int Numero);
 /// O quadro de vagas de uma oferta de curso.
 /// </summary>
 /// <remarks>
-/// Só o quadro e o total publicado. Os campos de conferência da distribuição — nominal, final,
-/// estouro e o corte no volume de oferta — são o rastro aritmético de como o total foi alcançado, e
-/// pertencem à auditoria da distribuição, não ao que o edital comunica.
+/// Só o quadro e o total de vagas do edital. A conferência da reserva legal e as vagas retiradas no
+/// ajuste são o rastro aritmético de como o total foi alcançado, e pertencem à auditoria da
+/// distribuição, não ao que o edital comunica.
 /// </remarks>
 public sealed record QuadroDeVagasCertameDto(
     Guid OfertaCursoOrigemId,
     IReadOnlyList<VagaPorModalidadeCertameDto> Quadro,
-    int TotalPublicado);
+    int TotalDeVagasDoEdital);
 
 /// <summary>Uma fase do cronograma, com a janela que o candidato precisa observar.</summary>
 public sealed record FaseCronogramaCertameDto(

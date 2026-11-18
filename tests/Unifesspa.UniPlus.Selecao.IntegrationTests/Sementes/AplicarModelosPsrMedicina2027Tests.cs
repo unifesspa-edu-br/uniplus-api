@@ -24,6 +24,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -158,10 +159,16 @@ public sealed class AplicarModelosPsrMedicina2027Tests
             SementePsrMedicina2027.TipoProcessoId, SementePsrMedicina2027.TipoProcessoCodigo, "Processo Seletivo Regular Unificado").Value!;
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
-            db, $"Medicina 2027 {Guid.CreateVersion7()}", complementar: p => ComBonusRegionalEAtendimento(p, ofertarAtendimento), tipo: psr);
+        (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"Medicina 2027 {Guid.CreateVersion7()}", Complementar = p => ComBonusRegionalEAtendimento(p, ofertarAtendimento), Tipo = psr });
         return processo.Id;
     }
+
+    private static FaseCronograma FaseDeInscricao() => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(2, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
 
     /// <summary>
     /// O bônus regional com um município, de onde o campo do município do bônus tira as opções; a
@@ -172,24 +179,18 @@ public sealed class AplicarModelosPsrMedicina2027Tests
     private static void ComBonusRegionalEAtendimento(ProcessoSeletivo processo, bool ofertarAtendimento)
     {
         Result distribuida = processo.DefinirDistribuicaoVagas(
-            [ConfiguracaoDistribuicaoVagas.Criar(
-                Guid.CreateVersion7(), 40, 1m,
-                ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!,
-                null, null,
-                [
+            [ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
+                new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)), Modalidades = [
                     Modalidade("AC", NaturezaLegalModalidade.Ampla, PredicadoDnf.SemClausula, 30),
                     Modalidade("LI_EP", NaturezaLegalModalidade.CotaReservada, PredicadoDnf.CriarDeCondicoesAgrupadas(
                         [(0, CondicaoDnf.Criar(OpcaoPelasCotasDaLei.Fato, Operador.Igual, System.Text.Json.JsonSerializer.SerializeToElement(true)).Value!)]).Value!, 10),
-                ],
-                ofertaCurso: Testes.Compartilhado.OfertaCursoDeTeste.Medicina).Value!],
-            Testes.Compartilhado.FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
+                ] },
+                new FatosDaOfertaNoCadastro { OfertaCurso = Testes.Compartilhado.OfertaCursoDeTeste.Medicina }).Value!],
+            Testes.Compartilhado.FatosDeModalidadeDeTeste.DoCatalogo);
         distribuida.IsSuccess.Should().BeTrue(distribuida.Error?.Message);
 
-        ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(
-            ReferenciaRegra.Criar(RegraBonusCodigo.Multiplicativo, "v1", new string('e', 64)).Value!, 1.20m, null, null,
-            Guid.CreateVersion7(), "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
-            [("1504208", "Marabá", "PA")]).Value!;
-        Result definido = processo.DefinirBonusRegional(aplica: true, bonus: bonus, PrecondicaoIfMatch.Ausente);
+        ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", new string('e', 64)), 1.20m, null, null, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1504208", "Marabá", "PA")])).Value!;
+        Result definido = processo.DefinirBonusRegional(aplica: true, bonus: bonus);
         definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
 
         AtendimentoEspecializado atendimento = AtendimentoEspecializado.Criar(
@@ -204,31 +205,31 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         // A classificação pelas notas do ENEM e a edição que a inscrição pergunta: sem ela o formulário
         // não teria o que oferecer.
         Result classificada = processo.DefinirClassificacao(
-            ConfiguracaoClassificacao.Criar(
-                ReferenciaRegra.Criar(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('c', 64)).Value!,
-                ReferenciaRegra.Criar(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('d', 64)).Value!,
-                2,
-                ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('f', 64)).Value!,
-                [], baseadoEmEnem: true, Testes.Compartilhado.QuadroPesoAreaEnemDeTeste.Resolucao, Testes.Compartilhado.QuadroPesoAreaEnemDeTeste.Completo(), escalaNotaFinal: 100m).Value!,
-            PrecondicaoIfMatch.Ausente);
+            ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+            {
+                RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('c', 64)),
+                RegraArredondamento = ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('d', 64)),
+                CasasArredondamento = 2,
+                RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('f', 64)),
+                BaseadoEmEnem = true,
+                ResolucaoPesoAreaEnem = Testes.Compartilhado.QuadroPesoAreaEnemDeTeste.Resolucao,
+                QuadroPesoAreaEnem = Testes.Compartilhado.QuadroPesoAreaEnemDeTeste.Completo(),
+                EscalaNotaFinal = 100m,
+            }).Value!);
         classificada.IsSuccess.Should().BeTrue(classificada.Error?.Message);
         Result edicoes = processo.DefinirOpcoesDeclaradas(
-            EdicaoDoEnem.Fato, [OpcaoDeclaradaFato.Criar(EdicaoDoEnem.Fato, "2025", "ENEM 2025", 0).Value!], PrecondicaoIfMatch.Ausente);
+            EdicaoDoEnem.Fato, [OpcaoDeclaradaFato.Criar(EdicaoDoEnem.Fato, "2025", "ENEM 2025", 0).Value!]);
         edicoes.IsSuccess.Should().BeTrue(edicoes.Error?.Message);
 
         if (ofertarAtendimento)
         {
-            Result ofertada = processo.DefinirAtendimentoEspecializado(atendimento, PrecondicaoIfMatch.Ausente);
+            Result ofertada = processo.DefinirAtendimentoEspecializado(atendimento);
             ofertada.IsSuccess.Should().BeTrue(ofertada.Error?.Message);
         }
 
         // O modelo exige os documentos do atendimento na fase de inscrição do cronograma.
-        FaseCronograma inscricao = FaseCronograma.Criar(
-            2, Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao,
-            agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: true, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
-            produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
-        Result cronograma = processo.DefinirCronogramaFases([.. processo.CronogramaFases, inscricao], [], PrecondicaoIfMatch.Ausente);
+        FaseCronograma inscricao = FaseDeInscricao();
+        Result cronograma = processo.DefinirCronogramaFases([.. processo.CronogramaFases, inscricao], []);
         cronograma.IsSuccess.Should().BeTrue(string.Join("; ", cronograma.Errors.Select(static e => e.Error.Code)) + cronograma.Error?.Message);
     }
 
@@ -239,7 +240,7 @@ public sealed class AplicarModelosPsrMedicina2027Tests
     private static ModalidadeSelecionada Modalidade(string codigo, NaturezaLegalModalidade natureza, PredicadoDnf regra, int vagas) =>
         ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), codigo, null, natureza,
-            natureza == NaturezaLegalModalidade.Ampla ? ComposicaoVagasModalidade.ResidualDoVo : ComposicaoVagasModalidade.SuplementarAoTotal, null,
+            natureza == NaturezaLegalModalidade.Ampla ? ComposicaoVagasModalidade.RestanteDasVagasOfertadas : ComposicaoVagasModalidade.SuplementarAoTotal, null,
             natureza == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueCascata : RegraRemanejamentoModalidade.Nenhuma,
             null, null, null, regra, null, "Lei 12.711/2012", quantidadeDeclarada: vagas).Value!;
 

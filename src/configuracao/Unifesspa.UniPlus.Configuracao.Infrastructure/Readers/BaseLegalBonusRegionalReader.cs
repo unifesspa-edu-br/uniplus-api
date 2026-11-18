@@ -4,8 +4,10 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Implementação de <see cref="IBaseLegalBonusRegionalReader"/> (ADR-0056): leitura
@@ -28,20 +30,38 @@ internal sealed class BaseLegalBonusRegionalReader : IBaseLegalBonusRegionalRead
 
     public async Task<BaseLegalBonusRegionalView?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken)
     {
-        Domain.Entities.BaseLegalBonusRegional? entity = await _dbContext.BaseLegaisBonus
-            .AsNoTracking()
-            .Include(x => x.Municipios)
+        Domain.Entities.BaseLegalBonusRegional? entity = await ComMunicipios()
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken)
             .ConfigureAwait(false);
 
-        if (entity is null)
-            return null;
-
-        return new BaseLegalBonusRegionalView(
-            entity.Id,
-            entity.TipoInstrumento.ToCodigo(),
-            entity.Identificacao,
-            entity.Descricao,
-            entity.Municipios.Select(m => new BaseLegalBonusRegionalMunicipioView(m.CodigoIbge, m.Nome, m.Uf)).ToList().AsReadOnly());
+        return entity is null ? null : Visao(entity);
     }
+
+    public async Task<BaseLegalBonusRegionalView?> ObterPorCodigoAsync(string codigo, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(codigo);
+
+        Result<CodigoBaseLegalBonusRegional> formado = CodigoBaseLegalBonusRegional.Criar(codigo);
+        if (formado.IsFailure)
+        {
+            return null;
+        }
+
+        Domain.Entities.BaseLegalBonusRegional? entity = await ComMunicipios()
+            .FirstOrDefaultAsync(x => x.Codigo == formado.Value, cancellationToken)
+            .ConfigureAwait(false);
+
+        return entity is null ? null : Visao(entity);
+    }
+
+    private IQueryable<Domain.Entities.BaseLegalBonusRegional> ComMunicipios() =>
+        _dbContext.BaseLegaisBonus.AsNoTracking().Include(x => x.Municipios);
+
+    private static BaseLegalBonusRegionalView Visao(Domain.Entities.BaseLegalBonusRegional entity) => new(
+        entity.Id,
+        entity.Codigo.Valor,
+        entity.TipoInstrumento.ToCodigo(),
+        entity.Identificacao,
+        entity.Descricao,
+        entity.Municipios.Select(m => new BaseLegalBonusRegionalMunicipioView(m.CodigoIbge, m.Nome, m.Uf)).ToList().AsReadOnly());
 }

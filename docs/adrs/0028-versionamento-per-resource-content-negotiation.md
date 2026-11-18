@@ -112,6 +112,8 @@ Toda nova versão de recurso e toda transição de fase (deprecated, sunset) ent
 
 A entrada é parte do PR de implementação da versão; PR sem entrada falha em revisão arquitetural.
 
+> **Emenda (2026-11-17) — a versão no pedido.** O `vnd` versiona a resposta; o corpo do pedido é `application/json`. Quando o próprio formato do corpo é versionado, como o documento da configuração da [ADR-0172](0172-esquema-json-versionado-do-documento-de-configuracao.md) com `versaoFormato`, a versão vai dentro do corpo e não se repete no cabeçalho. Um corpo de pedido versionado por cabeçalho, se um dia for necessário, pede ADR própria. Consequência: uma só fonte de versão por corpo e contrato uniforme entre módulos.
+
 ### Esta ADR não decide
 
 - Implementação concreta do `MediaTypeVersionFormatter` (input/output formatter custom no MVC, middleware, ou content-type policy) — decisão de implementação na slice pilot.

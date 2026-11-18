@@ -88,7 +88,7 @@ public sealed class ConfiguracaoTaxaInscricaoTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().HaveCount(2,
-            "valor e fundamentos são famílias independentes — o cliente não pode descobrir uma de cada vez");
+            "valor e fundamentos são assuntos independentes — o cliente não pode descobrir uma de cada vez");
         resultado.Errors.Should().Contain(e => e.Field == "valor" && e.Error.Code == "ConfiguracaoTaxaInscricao.ValorObrigatorioQuandoCobra");
         resultado.Errors.Should().Contain(e => e.Field == "fundamentos" && e.Error.Code == "ConfiguracaoTaxaInscricao.FundamentoObrigatorioQuandoCobra");
     }

@@ -28,7 +28,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Entities;
 /// recurso que lhe corresponde.
 /// </para>
 /// </remarks>
-public sealed class ProdutoDaFase : EntityBase
+public sealed class ProdutoDaFase : EntityBase, IProdutoPublicado
 {
     public Guid FaseCronogramaId { get; private set; }
 
@@ -84,8 +84,9 @@ public sealed class ProdutoDaFase : EntityBase
 
     /// <summary>
     /// Retarget do papel na instância <b>rastreada</b>, usado pela reconciliação por
-    /// <see cref="AtoCodigo"/> de <see cref="FaseCronograma.AtualizarDe"/> — ver o
-    /// <c>&lt;remarks&gt;</c> de lá sobre por que o índice único proíbe recriar a linha.
+    /// <see cref="AtoCodigo"/> (<see cref="Services.ProdutosPublicados"/>) que
+    /// <see cref="FaseCronograma.AtualizarDe"/> aplica — ver o <c>&lt;remarks&gt;</c> de lá sobre
+    /// por que o índice único proíbe recriar a linha.
     /// </summary>
-    internal void AtualizarPapel(PapelProdutoFase? papel) => Papel = papel;
+    void IProdutoPublicado.AtualizarPapel(PapelProdutoFase? papel) => Papel = papel;
 }

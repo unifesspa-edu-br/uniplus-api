@@ -32,61 +32,75 @@ internal static class SerializacaoDaClassificacao
             {
                 ["ordem"] = criterio.Ordem,
                 ["regra"] = EscritaCanonica.SerializarReferenciaRegra(criterio.Regra),
-                ["args"] = SerializarArgsCriterioDesempate(criterio.Args),
+                ["parametros"] = SerializarParametrosCriterioDesempate(criterio.Parametros),
             });
         }
 
         return array;
     }
 
-    private static JsonObject SerializarArgsCriterioDesempate(ArgsCriterioDesempate args) => args switch
+    private static JsonObject SerializarParametrosCriterioDesempate(ParametrosCriterioDesempate parametros) => parametros switch
     {
-        ArgsDesempateMaiorNotaEtapa maiorNotaEtapa => new JsonObject { ["etapaRef"] = maiorNotaEtapa.EtapaRef },
-        ArgsDesempateMaiorIdade => [],
-        ArgsDesempateIdoso idoso => new JsonObject { ["idadeMinima"] = idoso.IdadeMinima },
-        ArgsDesempatePredicadoFato predicadoFato => new JsonObject
-        {
-            ["fato"] = HashCanonicalComputer.NormalizeNfc(predicadoFato.Condicao.Fato),
-            ["operador"] = predicadoFato.Condicao.Operador.ToCodigo(),
-            ["valor"] = SerializacaoDosPredicados.SerializarValorDeAtomo(predicadoFato.Condicao.Operador, predicadoFato.Condicao.Valor),
-        },
-        ArgsDesempateMaiorNotaAreaEnem maiorNotaAreaEnem => new JsonObject
-        {
-            ["areas"] = new JsonArray([.. maiorNotaAreaEnem.Areas.Select(static area => (JsonNode?)JsonValue.Create(HashCanonicalComputer.NormalizeNfc(area)))]),
-        },
-        _ => throw new InvalidOperationException($"Variante de {nameof(ArgsCriterioDesempate)} não reconhecida: {args.GetType()}."),
+        ParametrosDesempateMaiorNotaEtapa maiorNotaEtapa => new JsonObject { ["etapaRef"] = maiorNotaEtapa.EtapaRef },
+        ParametrosDesempateMaiorIdade => [],
+        ParametrosDesempateIdoso idoso => new JsonObject { ["idadeMinima"] = idoso.IdadeMinima },
+        ParametrosDesempatePredicadoFato predicadoFato => SerializarPredicadoDoDesempate(predicadoFato.Condicao),
+        ParametrosDesempateMaiorNotaAreaEnem maiorNotaAreaEnem => SerializarAreasDoDesempate(maiorNotaAreaEnem.Areas),
+        _ => throw new InvalidOperationException($"Variante de {nameof(ParametrosCriterioDesempate)} não reconhecida: {parametros.GetType()}."),
+    };
+
+    private static JsonObject SerializarPredicadoDoDesempate(CondicaoDnf condicao) => new()
+    {
+        ["fato"] = HashCanonicalComputer.NormalizeNfc(condicao.Fato),
+        ["operador"] = condicao.Operador.ToCodigo(),
+        ["valor"] = SerializacaoDosPredicados.SerializarValorDeAtomo(condicao.Operador, condicao.Valor),
+    };
+
+    private static JsonObject SerializarAreasDoDesempate(IEnumerable<string> areas) => new()
+    {
+        ["areas"] = new JsonArray([.. areas.Select(static area => (JsonNode?)JsonValue.Create(HashCanonicalComputer.NormalizeNfc(area)))]),
     };
 
     internal static JsonObject SerializarClassificacao(ProcessoSeletivo processo)
     {
-        if (processo.Classificacao is not { } classificacao)
-        {
-            throw new InvalidOperationException(
-                "Canonicalização de processo sem configuração de classificação — o gate de conformidade deveria ter recusado a transição antes deste ponto.");
-        }
+        ConfiguracaoClassificacao classificacao = ClassificacaoDefinida(processo);
 
         return new JsonObject
         {
             ["regraCalculo"] = EscritaCanonica.SerializarReferenciaRegra(classificacao.RegraCalculo),
-            ["regraArredondamento"] = classificacao.RegraArredondamento is { } arredondamento
-                ? EscritaCanonica.SerializarReferenciaRegra(arredondamento)
-                : null,
+            ["regraArredondamento"] = SerializarRegraDeArredondamento(classificacao.RegraArredondamento),
             ["casasArredondamento"] = classificacao.CasasArredondamento,
-            ["escalaNotaFinal"] = classificacao.EscalaNotaFinal is { } escalaNotaFinal ? HashCanonicalComputer.SerializeDecimalCanonical(escalaNotaFinal, ConfiguracaoClassificacao.EscalaNotaFinalEscala) : null,
+            ["escalaNotaFinal"] = SerializarEscalaDaNotaFinal(classificacao.EscalaNotaFinal),
             ["regraOrdemAlocacao"] = EscritaCanonica.SerializarReferenciaRegra(classificacao.RegraOrdemAlocacao),
             ["baseadoEmEnem"] = classificacao.BaseadoEmEnem,
-            ["regrasEliminacao"] = EscritaCanonica.OrdenarPorConteudo(classificacao.RegrasEliminacao
-                .Select(static r => new JsonObject
-                {
-                    ["regra"] = EscritaCanonica.SerializarReferenciaRegra(r.Regra),
-                    ["args"] = SerializarArgsRegraEliminacao(r.Args),
-                })),
-            ["resolucaoPesoAreaEnem"] = classificacao.ResolucaoPesoAreaEnem is { } resolucao
-                ? HashCanonicalComputer.NormalizeNfc(resolucao)
-                : null,
+            ["regrasEliminacao"] = SerializarRegrasDeEliminacao(classificacao.RegrasEliminacao),
+            ["resolucaoPesoAreaEnem"] = SerializarResolucaoDosPesos(classificacao.ResolucaoPesoAreaEnem),
             ["quadroPesoAreaEnem"] = SerializarQuadroPesoAreaEnem(classificacao.QuadroPesoAreaEnem),
         };
     }
+
+    private static ConfiguracaoClassificacao ClassificacaoDefinida(ProcessoSeletivo processo) =>
+        processo.Classificacao ?? throw new InvalidOperationException(
+            "Canonicalização de processo sem configuração de classificação — a verificação de conformidade deveria ter recusado a transição antes deste ponto.");
+
+    private static JsonObject? SerializarRegraDeArredondamento(ReferenciaRegra? arredondamento) =>
+        arredondamento is { } regra ? EscritaCanonica.SerializarReferenciaRegra(regra) : null;
+
+    private static string? SerializarEscalaDaNotaFinal(decimal? escalaNotaFinal) =>
+        escalaNotaFinal is { } escala
+            ? HashCanonicalComputer.SerializeDecimalCanonical(escala, ConfiguracaoClassificacao.EscalaNotaFinalEscala)
+            : null;
+
+    private static JsonArray SerializarRegrasDeEliminacao(IEnumerable<RegraEliminacao> regras) =>
+        EscritaCanonica.OrdenarPorConteudo(regras
+            .Select(static r => new JsonObject
+            {
+                ["regra"] = EscritaCanonica.SerializarReferenciaRegra(r.Regra),
+                ["parametros"] = SerializarParametrosRegraEliminacao(r.Parametros),
+            }));
+
+    private static string? SerializarResolucaoDosPesos(string? resolucao) =>
+        resolucao is null ? null : HashCanonicalComputer.NormalizeNfc(resolucao);
 
     private static JsonArray SerializarQuadroPesoAreaEnem(IEnumerable<GrupoPesoAreaEnemCongelado> quadro) =>
         new([.. quadro
@@ -106,20 +120,20 @@ internal static class SerializacaoDaClassificacao
                     })]),
             })]);
 
-    private static JsonObject SerializarArgsRegraEliminacao(ArgsRegraEliminacao args) => args switch
+    private static JsonObject SerializarParametrosRegraEliminacao(ParametrosRegraEliminacao parametros) => parametros switch
     {
-        ArgsElimAusenciaNaEtapa ausencia => new JsonObject { ["etapaRef"] = ausencia.EtapaRef },
-        ArgsElimNotaMinimaEtapa notaMinima => new JsonObject
+        ParametrosElimAusenciaNaEtapa ausencia => new JsonObject { ["etapaRef"] = ausencia.EtapaRef },
+        ParametrosElimNotaMinimaEtapa notaMinima => new JsonObject
         {
             ["etapaRef"] = notaMinima.EtapaRef,
             ["notaMinima"] = HashCanonicalComputer.SerializeDecimalCanonical(notaMinima.NotaMinima, EscritaCanonica.EscalaPadrao),
         },
-        ArgsElimCorteEmArea corteEmArea => new JsonObject
+        ParametrosElimCorteEmArea corteEmArea => new JsonObject
         {
             ["areaCodigo"] = HashCanonicalComputer.NormalizeNfc(corteEmArea.AreaCodigo),
             ["minimo"] = HashCanonicalComputer.SerializeDecimalCanonical(corteEmArea.Minimo, EscritaCanonica.EscalaPadrao),
         },
-        ArgsElimZeroEmArea or ArgsElimFaltaEmDiaDeProvaEnem => [],
-        _ => throw new InvalidOperationException($"Variante de {nameof(ArgsRegraEliminacao)} não reconhecida: {args.GetType()}."),
+        ParametrosElimZeroEmArea or ParametrosElimFaltaEmDiaDeProvaEnem => [],
+        _ => throw new InvalidOperationException($"Variante de {nameof(ParametrosRegraEliminacao)} não reconhecida: {parametros.GetType()}."),
     };
 }

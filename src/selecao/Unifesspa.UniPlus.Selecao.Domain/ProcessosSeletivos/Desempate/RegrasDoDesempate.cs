@@ -4,8 +4,9 @@ using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Classificacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public static class RegrasDoDesempate
@@ -17,11 +18,11 @@ public static class RegrasDoDesempate
     /// </summary>
     public const int CriteriosDesempateMaximo = 20;
 
-    internal static Result ConferirSubstituicao(EstadoDaConfiguracao estado, IReadOnlyList<CriterioDesempate> criterios)
+    internal static Result ConferirSubstituicao(ConfiguracaoDeclarada configuracao, IReadOnlyList<CriterioDesempate> criterios)
     {
-        List<FieldError> erros = ConferirCriteriosDesempate(estado, [.. criterios.Select(CriterioDesempateInformado.De)]);
+        List<FieldError> erros = ConferirCriteriosDesempate(configuracao, [.. criterios.Select(CriterioDesempateInformado.De)]);
         return erros.Count > 0
-            ? Result.ValidationFailure(AnexarAreasAceitasDoDesempate(estado, erros))
+            ? Result.ValidationFailure(AnexarAreasAceitasDoDesempate(configuracao, erros))
             : Result.Success();
     }
 
@@ -50,63 +51,65 @@ public static class RegrasDoDesempate
 
     /// <summary>
     /// As invariantes que um critério de desempate só cumpre diante do processo — ordem única,
-    /// <c>etapa_ref</c> existente (INV-B6) e área do ENEM presente no quadro de pesos por área
+    /// <c>etapa_ref</c> existente e área do ENEM presente no quadro de pesos por área
     /// da classificação —, acumuladas (ADR-0125), cada uma no campo do item:
     /// <c>criterios[i].ordem</c>, <c>criterios[i].etapaRef</c>, <c>criterios[i].areas[j]</c> e
     /// <c>criterios[i].regraCodigo</c> quando a classificação não tem quadro.
     /// </summary>
     /// <param name="criterios">
     /// Na posição que cada critério ocupa no comando, inclusive a do critério que o próprio
-    /// <see cref="CriterioDesempate"/> recusou: a ordem vem sempre do comando, e os args, quando
+    /// <see cref="CriterioDesempate"/> recusou: a ordem vem sempre do comando, e os parâmetros, quando
     /// foi possível montá-los. Assim a ordem duplicada e a área fora do quadro saem junto com a
     /// recusa do item, e não só na tentativa seguinte.
     /// </param>
-    public static List<FieldError> ConferirCriteriosDesempate(EstadoDaConfiguracao estado, IReadOnlyList<CriterioDesempateInformado> criterios)
+    public static List<FieldError> ConferirCriteriosDesempate(ConfiguracaoDeclarada configuracao, IReadOnlyList<CriterioDesempateInformado> criterios)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
         ArgumentNullException.ThrowIfNull(criterios);
 
-        List<FieldError> erros = ConferirQuantidadeDeCriteriosDesempate(criterios.Count);
-        if (erros.Count > 0)
-        {
-            return erros;
-        }
+        List<FieldError> excesso = ConferirQuantidadeDeCriteriosDesempate(criterios.Count);
 
-        HashSet<int> ordensVistas = [];
-        for (int indice = 0; indice < criterios.Count; indice++)
-        {
-            CriterioDesempateInformado criterio = criterios[indice];
-            if (!ordensVistas.Add(criterio.Ordem))
-            {
-                erros.Add(new(CampoDoCriterioDesempate(indice, "ordem"), new DomainError(
-                    "ProcessoSeletivo.OrdemDesempateDuplicada",
-                    "Cada critério de desempate deve ter uma ordem única dentro do processo.")));
-            }
+        return excesso.Count > 0
+            ? excesso
+            : [.. OrdensRepetidas(criterios), .. EtapasCitadasInexistentes(criterios, configuracao.Avaliacao.Etapas), .. RecusasDasAreasCitadas(criterios, configuracao.Avaliacao.Classificacao)];
+    }
 
-            if (criterio.Args is ArgsDesempateMaiorNotaEtapa args && !estado.Etapas.Any(e => e.Id == args.EtapaRef))
-            {
-                erros.Add(new(CampoDoCriterioDesempate(indice, "etapaRef"), new DomainError(
-                    "ProcessoSeletivo.EtapaRefDesempateInexistente",
-                    $"O critério de desempate na ordem {criterio.Ordem} referencia a etapa {args.EtapaRef}, que não existe neste processo (INV-B6).")));
-            }
-        }
+    // Uma recusa por critério que repete uma ordem já vista, da segunda ocorrência em diante.
+    private static IEnumerable<FieldError> OrdensRepetidas(IReadOnlyList<CriterioDesempateInformado> criterios) =>
+        criterios
+            .Select(static (criterio, indice) => (criterio, indice))
+            .GroupBy(static par => par.criterio.Ordem)
+            .SelectMany(static grupo => grupo.Skip(1))
+            .OrderBy(static par => par.indice)
+            .Select(static par => new FieldError(CampoDoCriterioDesempate(par.indice, "ordem"), new DomainError(
+                "ProcessoSeletivo.OrdemDesempateDuplicada",
+                "Cada critério de desempate deve ter uma ordem única dentro do processo.")));
 
-        // O desempate é gravado antes da classificação no fluxo de configuração: num processo
-        // novo ela ainda é nula aqui, e só então a coerência com o quadro de pesos por área
-        // fica para DefinirClassificacao conferir.
-        List<ViolacaoDoDesempatePorArea> contraOQuadro = ConferirDesempatePorAreaContraOQuadro(criterios, estado.Classificacao);
+    private static IEnumerable<FieldError> EtapasCitadasInexistentes(IReadOnlyList<CriterioDesempateInformado> criterios, IEnumerable<EtapaProcesso> etapas) =>
+        criterios
+            .Select(static (criterio, indice) => (criterio, indice))
+            .Where(par => par.criterio.EtapaCitada is { } etapa && !etapas.Any(e => e.Id == etapa))
+            .Select(static par => new FieldError(
+                CampoDoCriterioDesempate(par.indice, "etapaRef"),
+                ReferenciaAEtapaInexistente.PeloDesempate(par.criterio.Ordem, par.criterio.EtapaCitada!.Value)));
 
-        // A área citada por outro critério e também fora do quadro recebe só a recusa do
-        // quadro, que traz a lista de aceitas: o mesmo campo não recebe duas.
-        erros.AddRange(AreasCitadasPorOutroCriterio(criterios)
-            .Where(v => !contraOQuadro.Any(q => q.IndiceCriterio == v.IndiceCriterio && q.IndiceArea == v.IndiceArea))
-            .Select(static v => new FieldError(CampoDoCriterioDesempate(v.IndiceCriterio, $"areas[{v.IndiceArea}]"), v.Erro)));
+    // O desempate é gravado antes da classificação no fluxo de configuração: num processo novo ela ainda é nula aqui, e
+    // só então a coerência com o quadro de pesos por área fica para DefinirClassificacao conferir. A área citada por
+    // outro critério e também fora do quadro recebe só a recusa do quadro, que traz a lista de aceitas: o mesmo campo
+    // não recebe duas.
+    private static IEnumerable<FieldError> RecusasDasAreasCitadas(IReadOnlyList<CriterioDesempateInformado> criterios, ConfiguracaoClassificacao? classificacao)
+    {
+        List<ViolacaoDoDesempatePorArea> contraOQuadro = ConferirDesempatePorAreaContraOQuadro(criterios, classificacao);
 
-        erros.AddRange(contraOQuadro.Select(static v => new FieldError(
-            CampoDoCriterioDesempate(v.IndiceCriterio, v.IndiceArea is { } indiceArea ? $"areas[{indiceArea}]" : "regraCodigo"),
-            v.Erro)));
-
-        return erros;
+        return
+        [
+            .. AreasCitadasPorOutroCriterio(criterios)
+                .Where(v => !contraOQuadro.Any(q => q.IndiceCriterio == v.IndiceCriterio && q.IndiceArea == v.IndiceArea))
+                .Select(static v => new FieldError(CampoDoCriterioDesempate(v.IndiceCriterio, $"areas[{v.IndiceArea}]"), v.Erro)),
+            .. contraOQuadro.Select(static v => new FieldError(
+                CampoDoCriterioDesempate(v.IndiceCriterio, v.IndiceArea is { } indiceArea ? $"areas[{indiceArea}]" : "regraCodigo"),
+                v.Erro)),
+        ];
     }
 
     /// <summary>
@@ -134,40 +137,34 @@ public static class RegrasDoDesempate
         IReadOnlyList<CriterioDesempateInformado> criterios,
         ConfiguracaoClassificacao? classificacao)
     {
-        List<ViolacaoDoDesempatePorArea> violacoes = [];
-        if (classificacao is null || !criterios.Any(static c => c.Args is ArgsDesempateMaiorNotaAreaEnem))
+        if (classificacao is null || !criterios.Any(static c => c.ComparaAreaDoEnem))
         {
-            return violacoes;
+            return [];
         }
 
-        bool temQuadro = classificacao.TemQuadroPesoAreaEnem;
-        HashSet<string> aceitas = temQuadro ? AreasAceitasNoDesempate(classificacao) : [];
-
-        for (int indice = 0; indice < criterios.Count; indice++)
-        {
-            if (criterios[indice] is not { Args: ArgsDesempateMaiorNotaAreaEnem args } criterio)
-            {
-                continue;
-            }
-
-            if (!temQuadro)
-            {
-                violacoes.Add(new(indice, criterio.Ordem, null, null, new DomainError(
-                    DesempatePorAreaEnemErrorCodes.SemQuadro,
-                    $"O critério de desempate na ordem {criterio.Ordem} compara a nota por área do ENEM e exige classificação baseada em ENEM, calculada pela média ponderada, com o quadro de pesos por área congelado.")));
-                continue;
-            }
-
-            foreach ((int indiceArea, string codigo) in CriterioDesempate.ConferirAreas(args.Areas).BemFormadas.Where(area => !aceitas.Contains(area.Codigo)))
-            {
-                violacoes.Add(new(indice, criterio.Ordem, indiceArea, codigo, new DomainError(
-                    DesempatePorAreaEnemErrorCodes.ForaDoQuadro,
-                    $"A área {codigo}, citada pelo critério de desempate na ordem {criterio.Ordem}, não está em todos os grupos do quadro de pesos por área da classificação.")));
-            }
-        }
-
-        return violacoes;
+        return classificacao.TemQuadroPesoAreaEnem
+            ? AreasForaDoQuadro(criterios, AreasAceitasNoDesempate(classificacao))
+            : CriteriosSemQuadro(criterios);
     }
+
+    private static List<ViolacaoDoDesempatePorArea> AreasForaDoQuadro(IReadOnlyList<CriterioDesempateInformado> criterios, HashSet<string> aceitas) =>
+    [
+        .. criterios.SelectMany((criterio, indice) => criterio.AreasCitadas
+            .Where(area => !aceitas.Contains(area.Codigo))
+            .Select(area => new ViolacaoDoDesempatePorArea(indice, criterio.Ordem, area.IndiceArea, area.Codigo, new DomainError(
+                DesempatePorAreaEnemErrorCodes.ForaDoQuadro,
+                $"A área {area.Codigo}, citada pelo critério de desempate na ordem {criterio.Ordem}, não está em todos os grupos do quadro de pesos por área da classificação.")))),
+    ];
+
+    private static List<ViolacaoDoDesempatePorArea> CriteriosSemQuadro(IReadOnlyList<CriterioDesempateInformado> criterios) =>
+    [
+        .. criterios
+            .Select(static (criterio, indice) => (criterio, indice))
+            .Where(static par => par.criterio.ComparaAreaDoEnem)
+            .Select(static par => new ViolacaoDoDesempatePorArea(par.indice, par.criterio.Ordem, null, null, new DomainError(
+                DesempatePorAreaEnemErrorCodes.SemQuadro,
+                $"O critério de desempate na ordem {par.criterio.Ordem} compara a nota por área do ENEM e exige classificação baseada em ENEM, calculada pela média ponderada, com o quadro de pesos por área congelado."))),
+    ];
 
     /// <summary>
     /// Cada área é citada por um critério de desempate só: depois do primeiro que a compara,
@@ -178,35 +175,27 @@ public static class RegrasDoDesempate
     internal static List<ViolacaoDoDesempatePorArea> AreasCitadasPorOutroCriterio(IReadOnlyList<CriterioDesempateInformado> criterios)
     {
         List<ViolacaoDoDesempatePorArea> violacoes = [];
-        Dictionary<string, int> citadas = new(StringComparer.Ordinal);
-        foreach (int indice in Enumerable.Range(0, criterios.Count).OrderBy(i => criterios[i].Ordem))
+        Dictionary<string, int> ordemDaPrimeira = new(StringComparer.Ordinal);
+        foreach (CitacaoDeArea citacao in CitacaoDeArea.NaOrdemDoDesempate(criterios))
         {
-            if (criterios[indice] is not { Args: ArgsDesempateMaiorNotaAreaEnem args } criterio)
+            if (!ordemDaPrimeira.TryAdd(citacao.Codigo, citacao.Ordem))
             {
-                continue;
-            }
-
-            foreach ((int indiceArea, string codigo) in CriterioDesempate.ConferirAreas(args.Areas).BemFormadas)
-            {
-                if (citadas.TryGetValue(codigo, out int ordemAnterior))
-                {
-                    violacoes.Add(new(indice, criterio.Ordem, indiceArea, codigo, new DomainError(
-                        DesempatePorAreaEnemErrorCodes.AreaCitadaPorOutroCriterio,
-                        $"A área {codigo} já é comparada pelo critério de desempate na ordem {ordemAnterior}, e cada área é citada por um critério só.")));
-                    continue;
-                }
-
-                citadas.Add(codigo, criterio.Ordem);
+                violacoes.Add(CitacaoRepetida(citacao, ordemDaPrimeira[citacao.Codigo]));
             }
         }
 
         return violacoes;
     }
 
+    private static ViolacaoDoDesempatePorArea CitacaoRepetida(CitacaoDeArea citacao, int ordemAnterior) =>
+        new(citacao.IndiceCriterio, citacao.Ordem, citacao.IndiceArea, citacao.Codigo, new DomainError(
+            DesempatePorAreaEnemErrorCodes.AreaCitadaPorOutroCriterio,
+            $"A área {citacao.Codigo} já é comparada pelo critério de desempate na ordem {ordemAnterior}, e cada área é citada por um critério só."));
+
     /// <summary>
     /// A ordem de áreas mal formada — vazia, acima do teto, com código fora da forma ou
     /// repetido —, pela mesma regra de <see cref="CriterioDesempate.Criar"/>. Os critérios
-    /// gravados e os restaurados já passaram por ela; conferi-la aqui serve ao gate, para o
+    /// gravados e os reidratados já passaram por ela; conferi-la aqui serve à conferência do congelamento, para o
     /// critério que chega por outro caminho.
     /// </summary>
     internal static List<ViolacaoDoDesempatePorArea> OrdensDeAreasMalFormadas(List<CriterioDesempateInformado> criterios)
@@ -214,12 +203,12 @@ public static class RegrasDoDesempate
         List<ViolacaoDoDesempatePorArea> violacoes = [];
         for (int indice = 0; indice < criterios.Count; indice++)
         {
-            if (criterios[indice] is not { Args: ArgsDesempateMaiorNotaAreaEnem args } criterio)
+            if (criterios[indice] is not { Parametros: ParametrosDesempateMaiorNotaAreaEnem parametros } criterio)
             {
                 continue;
             }
 
-            violacoes.AddRange(CriterioDesempate.ConferirAreas(args.Areas).Erros.Select(erro => new ViolacaoDoDesempatePorArea(
+            violacoes.AddRange(CriterioDesempate.ConferirAreas(parametros.Areas).Erros.Select(erro => new ViolacaoDoDesempatePorArea(
                 indice, criterio.Ordem, null, null,
                 erro.Error with { Message = $"{erro.Error.Message} Critério de desempate na ordem {criterio.Ordem}." })));
         }
@@ -228,7 +217,7 @@ public static class RegrasDoDesempate
     }
 
     internal static HashSet<string> AreasAceitasNoDesempate(ConfiguracaoClassificacao classificacao) =>
-        ConfiguracaoClassificacao.AreasEmTodosOsGrupos(classificacao.QuadroPesoAreaEnem);
+        ConferenciasDoQuadroDePesosPorArea.AreasEmTodosOsGrupos(classificacao.QuadroPesoAreaEnem);
 
     /// <summary>
     /// Toda área recusada — pela forma ou por estar fora do quadro — deixa o operador sem saber
@@ -253,16 +242,16 @@ public static class RegrasDoDesempate
     /// Anexa a lista de áreas aceitas às recusas de área do desempate — as da criação de cada
     /// critério e as da conferência contra o processo — já reunidas por quem as acumulou.
     /// </summary>
-    public static List<FieldError> AnexarAreasAceitasDoDesempate(EstadoDaConfiguracao estado, IEnumerable<FieldError> erros)
+    public static List<FieldError> AnexarAreasAceitasDoDesempate(ConfiguracaoDeclarada configuracao, IEnumerable<FieldError> erros)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
-        return AnexarAreasAceitas(erros, estado.Classificacao);
+        return AnexarAreasAceitas(erros, configuracao.Avaliacao.Classificacao);
     }
 
     internal static DomainError ComAreasAceitas(DomainError erro, ConfiguracaoClassificacao? classificacao) =>
         classificacao is not null && classificacao.TemQuadroPesoAreaEnem
-            ? erro with { Message = $"{erro.Message} Áreas aceitas: {ConfiguracaoClassificacao.ListarAreas(classificacao.QuadroPesoAreaEnem, AreasAceitasNoDesempate(classificacao))}." }
+            ? erro with { Message = $"{erro.Message} Áreas aceitas: {ConferenciasDoQuadroDePesosPorArea.ListarAreas(classificacao.QuadroPesoAreaEnem, AreasAceitasNoDesempate(classificacao))}." }
             : erro;
 
     /// <summary>
@@ -295,13 +284,13 @@ public static class RegrasDoDesempate
     /// surge sem quadro, que é pendência da resolução
     /// (<see cref="ItensEstruturaisDeConformidade.ItensDaMediaPelosPesosPorAreaDoEnem"/>): repeti-la aqui daria duas pendências
     /// pela mesma causa, uma delas longe de onde se corrige. A gravação do desempate e a
-    /// restauração recusam pela regra inteira.
+    /// reidratação recusam pela regra inteira.
     /// </summary>
-    internal static List<ViolacaoDoDesempatePorArea> ConferirDesempatePorAreaParaPublicar(EstadoDaConfiguracao estado)
+    internal static List<ViolacaoDoDesempatePorArea> ConferirDesempatePorAreaParaPublicar(ConfiguracaoDeclarada configuracao)
     {
-        List<CriterioDesempateInformado> criterios = EmOrdem(estado.CriteriosDesempate);
-        IEnumerable<ViolacaoDoDesempatePorArea> contraOQuadro = ConferirDesempatePorAreaContraOQuadro(criterios, estado.Classificacao);
-        if (estado.Classificacao is { CalculaPelosPesosPorAreaDoEnem: true })
+        List<CriterioDesempateInformado> criterios = EmOrdem(configuracao.Avaliacao.CriteriosDesempate);
+        IEnumerable<ViolacaoDoDesempatePorArea> contraOQuadro = ConferirDesempatePorAreaContraOQuadro(criterios, configuracao.Avaliacao.Classificacao);
+        if (configuracao.Avaliacao.Classificacao is { CalculaPelosPesosPorAreaDoEnem: true })
         {
             contraOQuadro = contraOQuadro.Where(static violacao => violacao.Erro.Code != DesempatePorAreaEnemErrorCodes.SemQuadro);
         }

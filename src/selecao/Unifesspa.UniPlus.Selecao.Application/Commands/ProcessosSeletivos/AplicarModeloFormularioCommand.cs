@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// finalidade do modelo é criado ou substituído por inteiro. Só em rascunho; mudar o modelo depois
 /// não muda o processo.
 /// </summary>
-public sealed record AplicarModeloFormularioCommand(Guid ProcessoSeletivoId, Guid ModeloId, PrecondicaoIfMatch Precondicao)
+public sealed record AplicarModeloFormularioCommand(Guid ProcessoSeletivoId, Guid ModeloId)
     : ICommand<Result<AplicacaoDeModeloDto>>;
 
 /// <summary>O corpo da aplicação: o modelo escolhido.</summary>

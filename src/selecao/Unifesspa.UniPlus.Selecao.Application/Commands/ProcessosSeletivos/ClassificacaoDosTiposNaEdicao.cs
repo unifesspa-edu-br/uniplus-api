@@ -13,9 +13,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// versão publicada, quando o tipo já foi declarado, e a do catálogo de hoje só para o tipo novo.
 /// </summary>
 /// <remarks>
-/// É a mesma regra da retificação e do seu fechamento. Sem ela, mudar o catálogo depois da publicação
-/// faria a edição recusar o que o fechamento da sessão aceita, e o processo publicado deixaria de poder
-/// ser retificado. A versão é lida na primeira consulta, e não antes: a edição que não toca produto não
+/// É a mesma regra da retificação. A versão é lida na primeira consulta, e não antes: a edição que não toca produto não
 /// depende dela. Uma versão que o codec não lê é recusada com a falha do codec, nunca resolvida pelo
 /// catálogo de hoje. Um processo sem versão publicada não tem o que congelar, e todo tipo é novo.
 /// </remarks>

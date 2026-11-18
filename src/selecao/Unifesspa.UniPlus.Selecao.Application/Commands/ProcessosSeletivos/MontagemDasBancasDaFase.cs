@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Domain.Entities;
 using Domain.Errors;
-using Domain.ProcessosSeletivos.Bancas;
 using Domain.ValueObjects;
 
 using Kernel.Results;
@@ -51,14 +50,9 @@ internal sealed class MontagemDasBancasDaFase(CadastrosDasFases cadastros)
         BancaRequeridaInput declarada, TipoBancaView tipo, List<CategoriaJulgada> recorte, string campo)
     {
         Result<RegraDeDeliberacao?> regra = MontagemDaRegraDeDeliberacao.Montar(declarada.RegraDeDeliberacao, campo);
-        List<FieldError> recusas = [.. regra.Errors];
-        if (ExigenciaDeBancaDeRecurso.RecorteNaDeclaracao(tipo.Codigo, recorte.Count) is { } recorteIndevido)
-        {
-            recusas.Add(new FieldError($"{campo}.categoriasDocumentoIds", recorteIndevido));
-        }
 
-        return recusas.Count > 0
-            ? Result<BancaRequerida>.ValidationFailure(recusas)
+        return regra.Errors.Count > 0
+            ? Result<BancaRequerida>.ValidationFailure(regra.Errors)
             : Result<BancaRequerida>.Success(BancaRequerida.Criar(tipo.Id, tipo.Codigo, tipo.Nome, recorte, regra.Value));
     }
 

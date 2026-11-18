@@ -67,6 +67,13 @@ public sealed class TipoEtapa : EntityBase, IAuditableEntity
     // cadastro, e nenhuma escrita da API o altera.
     public bool NotaDeOrigemNoEnem { get; private set; }
 
+    // Diz que as etapas deste tipo são corrigidas por mais de um corretor, cada um com a
+    // sua correção independente da dos outros, e que a divergência entre elas se resolve
+    // por regra. Quem congela a etapa copia este valor; ele não é inferido do código do
+    // tipo. Não vale para a nota que vem do ENEM, que ninguém corrige, e exige que o tipo
+    // admita ao menos um conceito, porque é o conceito que a correção independente atribui.
+    public bool ExigeCorrecaoIndependente { get; private set; }
+
     /// <summary>Os tipos de conceito com que as etapas deste tipo podem ser avaliadas, ordenados pelo código.</summary>
     public IReadOnlyList<TipoConceito> ConceitosAdmitidos =>
         [.. _conceitosAdmitidos.OrderBy(static conceito => conceito.Codigo, StringComparer.Ordinal)];
@@ -93,59 +100,79 @@ public sealed class TipoEtapa : EntityBase, IAuditableEntity
     }
 
     /// <summary>
-    /// Valida os campos editáveis — nome, descrição e o par de caracteres admitidos —,
-    /// acumulando toda violação independente em vez de parar na primeira, sem mutar nada. O
-    /// código não participa: é imutável, então <see cref="Atualizar"/> e seu
-    /// handler nunca precisam revalidá-lo.
+    /// Valida os campos editáveis — nome, descrição, o par de caracteres admitidos e a exigência
+    /// de correção independente —, acumulando toda violação independente em vez de parar na
+    /// primeira, sem mutar nada. O código não participa: é imutável, então <see cref="Atualizar"/>
+    /// e seu handler nunca precisam revalidá-lo.
     /// </summary>
     /// <remarks>
-    /// Os dois sinalizadores chegam anuláveis para que campo ausente no payload seja recusado
+    /// Os sinalizadores chegam anuláveis para que campo ausente no payload seja recusado
     /// aqui, com erro de domínio por campo, em vez de virar <c>false</c> em silêncio: um tipo
     /// nasceria declarando que não compõe nota sem ninguém ter dito isso.
     /// </remarks>
-    public static Result<(string Nome, string? Descricao, bool AdmitePontuacao, bool AdmiteEliminacao)> ValidarCamposEditaveis(
-        string? nome, string? descricao, bool? admitePontuacao, bool? admiteEliminacao)
+    public static Result<CamposEditaveisDoTipoDeEtapa> ValidarCamposEditaveis(
+        string? nome, string? descricao, bool? admitePontuacao, bool? admiteEliminacao, bool? exigeCorrecaoIndependente)
     {
         List<FieldError> erros = [];
         string? nomeNormalizado = CampoNome.Obrigatorio(nome, "nome", TipoEtapaErrorCodes.NomeObrigatorio, erros);
         string? descricaoNormalizada = CampoDescricao.Opcional(descricao, "descricao", erros);
-        ConferirDeclaracoes(admitePontuacao, admiteEliminacao, erros);
-        ConferirCaraterAdmitido(admitePontuacao, admiteEliminacao, erros);
+        erros.AddRange(ViolacoesDoCarater(admitePontuacao, admiteEliminacao));
+        erros.AddRange(ViolacoesDaCorrecaoIndependente(exigeCorrecaoIndependente));
 
         return erros.Count > 0
-            ? Result<(string, string?, bool, bool)>.ValidationFailure(erros)
-            : Result<(string, string?, bool, bool)>.Success(
-                (nomeNormalizado!, descricaoNormalizada, admitePontuacao!.Value, admiteEliminacao!.Value));
+            ? Result<CamposEditaveisDoTipoDeEtapa>.ValidationFailure(erros)
+            : Result<CamposEditaveisDoTipoDeEtapa>.Success(new CamposEditaveisDoTipoDeEtapa(
+                nomeNormalizado!, descricaoNormalizada, admitePontuacao!.Value, admiteEliminacao!.Value, exigeCorrecaoIndependente!.Value));
     }
 
-    private static void ConferirDeclaracoes(bool? admitePontuacao, bool? admiteEliminacao, List<FieldError> erros)
+    /// <summary>
+    /// A recusa que depende da junção dos conceitos admitidos, e por isso não cabe em
+    /// <see cref="ValidarCamposEditaveis"/>: exigir correção independente sem admitir nenhum conceito.
+    /// </summary>
+    public static IReadOnlyList<FieldError> ViolacoesDaCorrecaoSemConceito(
+        bool? exigeCorrecaoIndependente, IReadOnlyCollection<TipoConceito> conceitosAdmitidos)
+    {
+        ArgumentNullException.ThrowIfNull(conceitosAdmitidos);
+        return exigeCorrecaoIndependente == true && conceitosAdmitidos.Count == 0
+            ? [Violacao("conceitosAdmitidos", TipoEtapaErrorCodes.CorrecaoIndependenteSemConceito, "O tipo de etapa que exige correção independente deve admitir ao menos um tipo de conceito.")]
+            : [];
+    }
+
+    private static FieldError[] ViolacoesDoCarater(bool? admitePontuacao, bool? admiteEliminacao) =>
+        [.. SinalizadoresAusentes(admitePontuacao, admiteEliminacao), .. TipoSemCarater(admitePontuacao, admiteEliminacao)];
+
+    private static IEnumerable<FieldError> SinalizadoresAusentes(bool? admitePontuacao, bool? admiteEliminacao)
     {
         if (admitePontuacao is null)
         {
-            erros.Add(new("admitePontuacao", new DomainError(
-                TipoEtapaErrorCodes.AdmitePontuacaoObrigatorio,
-                "É obrigatório declarar se o tipo de etapa admite compor a nota final.")));
+            yield return Violacao("admitePontuacao", TipoEtapaErrorCodes.AdmitePontuacaoObrigatorio, "É obrigatório declarar se o tipo de etapa admite compor a nota final.");
         }
 
         if (admiteEliminacao is null)
         {
-            erros.Add(new("admiteEliminacao", new DomainError(
-                TipoEtapaErrorCodes.AdmiteEliminacaoObrigatorio,
-                "É obrigatório declarar se o tipo de etapa admite eliminar candidato.")));
+            yield return Violacao("admiteEliminacao", TipoEtapaErrorCodes.AdmiteEliminacaoObrigatorio, "É obrigatório declarar se o tipo de etapa admite eliminar candidato.");
         }
     }
 
-    // Um tipo que não compõe nota nem elimina não configura etapa nenhuma: toda etapa do certame declara um
-    // caráter, e nenhum caráter sobraria para escolher.
-    private static void ConferirCaraterAdmitido(bool? admitePontuacao, bool? admiteEliminacao, List<FieldError> erros)
+    // Um tipo que não compõe nota nem elimina não configura etapa nenhuma: toda etapa
+    // do certame declara um caráter, e nenhum caráter sobraria para escolher.
+    private static IEnumerable<FieldError> TipoSemCarater(bool? admitePontuacao, bool? admiteEliminacao)
     {
         if (admitePontuacao == false && admiteEliminacao == false)
         {
-            erros.Add(new("admitePontuacao", new DomainError(
-                TipoEtapaErrorCodes.SemCaraterAdmitido,
-                "O tipo de etapa deve admitir compor a nota final, eliminar candidato, ou os dois.")));
+            yield return Violacao("admitePontuacao", TipoEtapaErrorCodes.SemCaraterAdmitido, "O tipo de etapa deve admitir compor a nota final, eliminar candidato, ou os dois.");
         }
     }
+
+    private static IEnumerable<FieldError> ViolacoesDaCorrecaoIndependente(bool? exigeCorrecaoIndependente)
+    {
+        if (exigeCorrecaoIndependente is null)
+        {
+            yield return Violacao("exigeCorrecaoIndependente", TipoEtapaErrorCodes.ExigeCorrecaoIndependenteObrigatorio, "É obrigatório declarar se o tipo de etapa exige correção independente.");
+        }
+    }
+
+    private static FieldError Violacao(string campo, string codigo, string mensagem) => new(campo, new DomainError(codigo, mensagem));
 
     /// <summary>
     /// Cria um novo TipoEtapa. Revalida código, nome e descrição, acumulando toda
@@ -153,68 +180,71 @@ public sealed class TipoEtapa : EntityBase, IAuditableEntity
     /// handler.
     /// </summary>
     public static Result<TipoEtapa> Criar(
-        string? codigo, string? nome, string? descricao, bool? admitePontuacao, bool? admiteEliminacao)
+        string? codigo, string? nome, string? descricao, bool? admitePontuacao, bool? admiteEliminacao, bool? exigeCorrecaoIndependente)
     {
-        List<FieldError> erros = [];
-
         Result<string> codigoResult = ValidarCodigo(codigo);
-        if (codigoResult.IsFailure)
-        {
-            erros.AddRange(codigoResult.Errors);
-        }
+        Result<CamposEditaveisDoTipoDeEtapa> camposResult =
+            ValidarCamposEditaveis(nome, descricao, admitePontuacao, admiteEliminacao, exigeCorrecaoIndependente);
+        FieldError[] erros = [.. codigoResult.Errors, .. camposResult.Errors];
 
-        Result<(string Nome, string? Descricao, bool AdmitePontuacao, bool AdmiteEliminacao)> camposResult =
-            ValidarCamposEditaveis(nome, descricao, admitePontuacao, admiteEliminacao);
-        if (camposResult.IsFailure)
-        {
-            erros.AddRange(camposResult.Errors);
-        }
+        return erros.Length > 0
+            ? Result<TipoEtapa>.ValidationFailure(erros)
+            : Result<TipoEtapa>.Success(Novo(codigoResult.Value!, camposResult.Value!));
+    }
 
-        if (erros.Count > 0)
-        {
-            return Result<TipoEtapa>.ValidationFailure(erros);
-        }
+    private static TipoEtapa Novo(string codigo, CamposEditaveisDoTipoDeEtapa campos)
+    {
+        TipoEtapa tipo = new() { Codigo = codigo, Ativo = true };
+        tipo.Aplicar(campos);
+        return tipo;
+    }
 
-        return Result<TipoEtapa>.Success(new TipoEtapa
-        {
-            Codigo = codigoResult.Value!,
-            Nome = camposResult.Value.Nome,
-            Descricao = camposResult.Value.Descricao,
-            Ativo = true,
-            AdmitePontuacao = camposResult.Value.AdmitePontuacao,
-            AdmiteEliminacao = camposResult.Value.AdmiteEliminacao,
-        });
+    private void Aplicar(CamposEditaveisDoTipoDeEtapa campos)
+    {
+        Nome = campos.Nome;
+        Descricao = campos.Descricao;
+        AdmitePontuacao = campos.AdmitePontuacao;
+        AdmiteEliminacao = campos.AdmiteEliminacao;
+        ExigeCorrecaoIndependente = campos.ExigeCorrecaoIndependente;
     }
 
     /// <summary>
     /// Atualiza apenas os campos editáveis; o código e a origem da nota permanecem imutáveis.
-    /// Acumula as violações dos campos com a que depende do próprio tipo.
+    /// Acumula as violações dos campos com as que dependem do próprio tipo.
     /// </summary>
-    public Result Atualizar(string? nome, string? descricao, bool? admitePontuacao, bool? admiteEliminacao)
+    public Result Atualizar(
+        string? nome, string? descricao, bool? admitePontuacao, bool? admiteEliminacao, bool? exigeCorrecaoIndependente)
     {
-        Result<(string Nome, string? Descricao, bool AdmitePontuacao, bool AdmiteEliminacao)> campos =
-            ValidarCamposEditaveis(nome, descricao, admitePontuacao, admiteEliminacao);
-        List<FieldError> erros = campos.IsFailure ? [.. campos.Errors] : [];
-
-        // A etapa de nota do ENEM compõe a média; sem pontuação, nenhuma etapa deste tipo
-        // poderia ser configurada.
-        if (NotaDeOrigemNoEnem && admitePontuacao == false)
-        {
-            erros.Add(new("admitePontuacao", new DomainError(
-                TipoEtapaErrorCodes.NotaDeOrigemNoEnemExigePontuacao,
-                "O tipo de etapa com nota de origem no ENEM deve admitir compor a nota final.")));
-        }
-
-        if (erros.Count > 0)
+        Result<CamposEditaveisDoTipoDeEtapa> campos =
+            ValidarCamposEditaveis(nome, descricao, admitePontuacao, admiteEliminacao, exigeCorrecaoIndependente);
+        FieldError[] erros = [.. campos.Errors, .. ViolacoesDaOrigemDaNota(admitePontuacao, exigeCorrecaoIndependente)];
+        if (erros.Length > 0)
         {
             return Result.ValidationFailure(erros);
         }
 
-        Nome = campos.Value.Nome;
-        Descricao = campos.Value.Descricao;
-        AdmitePontuacao = campos.Value.AdmitePontuacao;
-        AdmiteEliminacao = campos.Value.AdmiteEliminacao;
+        Aplicar(campos.Value!);
         return Result.Success();
+    }
+
+    // A etapa de nota do ENEM compõe a média; sem pontuação, nenhuma etapa deste tipo poderia ser
+    // configurada. E ninguém a corrige, então não há correção independente a exigir.
+    private IEnumerable<FieldError> ViolacoesDaOrigemDaNota(bool? admitePontuacao, bool? exigeCorrecaoIndependente)
+    {
+        if (!NotaDeOrigemNoEnem)
+        {
+            yield break;
+        }
+
+        if (admitePontuacao == false)
+        {
+            yield return Violacao("admitePontuacao", TipoEtapaErrorCodes.NotaDeOrigemNoEnemExigePontuacao, "O tipo de etapa com nota de origem no ENEM deve admitir compor a nota final.");
+        }
+
+        if (exigeCorrecaoIndependente == true)
+        {
+            yield return Violacao("exigeCorrecaoIndependente", TipoEtapaErrorCodes.CorrecaoIndependenteComNotaDeOrigemNoEnem, "O tipo de etapa com nota de origem no ENEM não admite correção independente.");
+        }
     }
 
     /// <summary>

@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Errors;
 
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 using AwesomeAssertions;
@@ -39,6 +40,12 @@ public sealed class ResultExtensionsTests
         "uniplus.selecao.edital.recusado_apos_gravacao",
         "Edital recusado depois da gravação",
         RecusaAposGravacao: true);
+
+    private static readonly DomainErrorMapping MappingPrimeiraCausa =
+        new(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo.primeira_causa", "Primeira causa");
+
+    private static readonly DomainErrorMapping MappingSegundaCausa =
+        new(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo.segunda_causa", "Segunda causa");
 
     // ─── Status HTTP correto ───────────────────────────────────────────────
 
@@ -160,6 +167,9 @@ public sealed class ResultExtensionsTests
     /// uma violação — uma única Sigla vazia ainda é erro de validação e o cliente precisa achar o
     /// field sem tratar "erro único" como caso especial.
     /// </remarks>
+
+    // ADR-0023: uma única causa com campo ainda vai em errors[], para o cliente achar o
+    // field sem tratar "erro único" como caso especial.
     [Fact]
     public void ToActionResult_ComValidationFailureDeUmErro_DeveConterExtensionErrorsComUmElemento()
     {
@@ -169,9 +179,9 @@ public sealed class ResultExtensionsTests
 
         ProblemDetails problem = ExtrairProblemDetails(resultado.ToActionResult(mapper));
 
-        dynamic[] erros = ItensDeErrors(problem);
-        ((int)erros.Length).Should().Be(1);
-        ((string)erros[0].field).Should().Be("Sigla");
+        ItemDeErroDeCampo[] erros = ItensDeErrors(problem);
+        erros.Length.Should().Be(1);
+        erros[0].Field.Should().Be("Sigla");
     }
 
     [Fact]
@@ -200,8 +210,55 @@ public sealed class ResultExtensionsTests
         ProblemDetails problem = ExtrairProblemDetails(resultado.ToActionResult(mapper));
 
         problem.Status.Should().Be(StatusCodes.Status409Conflict);
-        dynamic[] erros = ItensDeErrors(problem);
-        ((string)erros[0].field).Should().Be("Sigla");
+        ItemDeErroDeCampo[] erros = ItensDeErrors(problem);
+        erros[0].Field.Should().Be("Sigla");
+    }
+
+    [Fact]
+    public void ToActionResult_ComCausaSemCampoEOutraComCampo_DeveSerializarACausaSemAChaveField()
+    {
+        IDomainErrorMapper mapper = CriarMapper(("Processo.CausaDoDocumento", MappingValidacao), ("Processo.CausaSemCampo", MappingValidacao));
+        Result resultado = Result.ValidationFailure(
+        [
+            new FieldError("/cronograma/fases/2/unidadeResponsavelCodigo", new DomainError("Processo.CausaDoDocumento", "A fase precisa de unidade.")),
+            new FieldError(null, new DomainError("Processo.CausaSemCampo", "A causa não aponta o documento.")),
+        ]);
+
+        using JsonDocument serializado = JsonDocument.Parse(JsonSerializer.Serialize(ExtrairProblemDetails(resultado.ToActionResult(mapper)).Extensions["errors"]));
+        JsonElement[] causas = [.. serializado.RootElement.EnumerateArray()];
+
+        causas[0].GetProperty("field").GetString().Should().Be("/cronograma/fases/2/unidadeResponsavelCodigo");
+        causas[1].TryGetProperty("field", out _).Should().BeFalse("a causa que não aponta o documento sai sem a chave field, e não com field nulo");
+    }
+
+    [Fact]
+    public void ToActionResult_ComDuasCausasSemCampo_DeveSerializarOsDoisItensSemAChaveFieldERaizIgualAPrimeira()
+    {
+        IDomainErrorMapper mapper = CriarMapper(("Processo.PrimeiraCausa", MappingPrimeiraCausa), ("Processo.SegundaCausa", MappingSegundaCausa));
+        Result resultado = Result.ValidationFailure(
+        [
+            new FieldError(null, new DomainError("Processo.PrimeiraCausa", "A primeira causa não aponta campo.")),
+            new FieldError(null, new DomainError("Processo.SegundaCausa", "A segunda causa não aponta campo.")),
+        ]);
+
+        ProblemDetails problem = ExtrairProblemDetails(resultado.ToActionResult(mapper));
+
+        JsonElement[] causas = ItensSerializados(problem);
+        causas.Should().HaveCount(2);
+        causas.Any(static causa => causa.TryGetProperty("field", out _)).Should().BeFalse("a causa sem campo sai sem a chave field");
+        problem.Extensions["code"].Should().Be(causas[0].GetProperty("code").GetString()).And.Be(MappingPrimeiraCausa.Code);
+    }
+
+    [Fact]
+    public void ToActionResult_ComUmaCausaComCampoRaizRelativo_DeveManterOItemComCampoVazio()
+    {
+        IDomainErrorMapper mapper = CriarMapper(("Processo.CausaDoDocumento", MappingValidacao));
+        Result resultado = Result.ValidationFailure(
+            [new FieldError(string.Empty, new DomainError("Processo.CausaDoDocumento", "A raiz do documento é inválida."))]);
+
+        ProblemDetails problem = ExtrairProblemDetails(resultado.ToActionResult(mapper));
+
+        ErrosDoCorpo(problem).Select(static erro => erro.Field).Should().Equal(string.Empty);
     }
 
     // ─── Conflito retentável (ADR-0134) ────────────────────────────────────
@@ -298,12 +355,12 @@ public sealed class ResultExtensionsTests
 
         ProblemDetails problem = ExtrairProblemDetails(ViolacoesDeSiglaENome().ToActionResult(mapper));
 
-        dynamic[] erros = ItensDeErrors(problem);
-        ((int)erros.Length).Should().Be(2);
-        ((string)erros[0].field).Should().Be("Sigla");
-        ((string)erros[0].code).Should().Be("uniplus.configuracao.campus.sigla_obrigatoria");
-        ((string)erros[1].field).Should().Be("Nome");
-        ((string)erros[1].code).Should().Be("uniplus.configuracao.campus.nome_obrigatorio");
+        ItemDeErroDeCampo[] erros = ItensDeErrors(problem);
+        erros.Length.Should().Be(2);
+        erros[0].Field.Should().Be("Sigla");
+        erros[0].Code.Should().Be("uniplus.configuracao.campus.sigla_obrigatoria");
+        erros[1].Field.Should().Be("Nome");
+        erros[1].Code.Should().Be("uniplus.configuracao.campus.nome_obrigatorio");
     }
 
     [Fact]
@@ -357,6 +414,16 @@ public sealed class ResultExtensionsTests
 
     // ─── Helpers ──────────────────────────────────────────────────────────
 
+
+    private static JsonElement[] ItensSerializados(ProblemDetails problem)
+    {
+        using JsonDocument serializado = JsonDocument.Parse(JsonSerializer.Serialize(problem.Extensions["errors"]));
+        return [.. serializado.RootElement.EnumerateArray().Select(static item => item.Clone())];
+    }
+
+    private static ItemDeErroDeCampo[] ErrosDoCorpo(ProblemDetails problem) =>
+        [.. ((System.Collections.IEnumerable)problem.Extensions["errors"]!).Cast<ItemDeErroDeCampo>()];
+
     private static StubDomainErrorMapper CriarMapper(params (string Code, DomainErrorMapping Mapping)[] entradas)
     {
         Dictionary<string, DomainErrorMapping> dict = entradas
@@ -377,11 +444,11 @@ public sealed class ResultExtensionsTests
             new FieldError("Nome", new DomainError("Campus.NomeObrigatorio", "Nome do Campus é obrigatório.")),
         ]);
 
-    private static dynamic[] ItensDeErrors(ProblemDetails problem)
+    private static ItemDeErroDeCampo[] ItensDeErrors(ProblemDetails problem)
     {
         object? erros = problem.Extensions["errors"];
         erros.Should().NotBeNull();
-        return ((System.Collections.IEnumerable)erros!).Cast<dynamic>().ToArray();
+        return ((System.Collections.IEnumerable)erros!).Cast<ItemDeErroDeCampo>().ToArray();
     }
 
     private static ProblemDetails ExtrairProblemDetails(IActionResult actionResult)

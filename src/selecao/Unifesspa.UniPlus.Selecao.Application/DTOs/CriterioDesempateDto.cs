@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
-/// Projeção de leitura de um critério de desempate (Story #774). Os args
+/// Projeção de leitura de um critério de desempate (Story #774). Os parâmetros
 /// além de <see cref="Regra"/> refletem a mesma forma flat de
 /// <c>CriterioDesempateInput</c> — apenas o(s) relevante(s) para o código da
 /// regra referenciada vem(êm) preenchido(s).

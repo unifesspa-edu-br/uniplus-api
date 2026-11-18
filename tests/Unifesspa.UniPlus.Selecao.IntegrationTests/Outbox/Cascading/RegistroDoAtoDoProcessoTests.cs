@@ -269,7 +269,7 @@ public sealed class RegistroDoAtoDoProcessoTests
         await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
-            .SemearAsync(db, $"Atos do processo {Guid.CreateVersion7()}");
+            .SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"Atos do processo {Guid.CreateVersion7()}" });
         return (processo.Id, documento.Id);
     }
 

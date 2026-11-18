@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Errors;
+using Domain.ProcessosSeletivos.Etapas;
 using Domain.ValueObjects;
 
 using Kernel.Results;
@@ -80,13 +81,14 @@ internal sealed class ConferenciaDaAvaliacaoDasEtapas(LeituraMemoizada<(string C
     }
 
     private static List<FieldError> ValidarAvaliacao(EtapaConferida etapa, FormaDeAvaliacao? forma, string? regraConsolidacaoCodigo) =>
-        EtapaProcesso.ValidarAvaliacao(
+        CoerenciaDaAvaliacaoDaEtapa.Validar(new AvaliacaoParaCoerencia(
             etapa.NotaDeOrigemNoEnem,
-            etapa.Declarada.PassoDoLancamento,
             forma,
             regraConsolidacaoCodigo,
-            declaraItens: etapa.Declarada.ItensDeAvaliacao is { Count: > 0 },
-            declaraEscala: etapa.Declarada.EscalaDeAtendimento is { Count: > 0 });
+            etapa.Declarada.PassoDoLancamento,
+            DeclaraItens: etapa.Declarada.ItensDeAvaliacao is { Count: > 0 },
+            DeclaraEscala: etapa.Declarada.EscalaDeAtendimento is { Count: > 0 },
+            ExigeCorrecaoIndependente: etapa.ExigeCorrecaoIndependente));
 
     // A referência da regra sai do catálogo; a etapa sem regra declarada fica sem consolidação.
     private async Task<(EtapaConferida Etapa, IReadOnlyList<FieldError> Recusas)> ComConsolidacaoAsync(
@@ -111,25 +113,21 @@ internal sealed class ConferenciaDaAvaliacaoDasEtapas(LeituraMemoizada<(string C
         if (regra is null || regra.Tipo != TipoRegra.RegraConsolidacao)
         {
             return Result<ReferenciaRegra>.ValidationFailure([new("regraConsolidacao", new DomainError(
-                EtapaProcesso.RegraDeConsolidacaoInvalida,
+                EtapaProcessoErrorCodes.RegraDeConsolidacaoInvalida,
                 $"A regra {codigo}/{versao}, declarada pela etapa '{etapa.Nome}', não é uma regra de consolidação do catálogo."))]);
         }
 
-        Result<ReferenciaRegra> referencia = ReferenciaRegra.Criar(regra.Codigo, regra.Versao, regra.Hash);
-        return referencia.IsSuccess
-            ? referencia
-            : Result<ReferenciaRegra>.ValidationFailure(
-                [.. referencia.Errors.Select(erro => new FieldError("regraConsolidacao", erro.Error))]);
+        return Result<ReferenciaRegra>.Success(regra.Referencia());
     }
 
     private static FieldError RecusaDaFormaDesconhecida(EtapaProcessoInput etapa) =>
         new("formaDeAvaliacao", new DomainError(
-            EtapaProcesso.FormaDeAvaliacaoDesconhecida,
+            EtapaProcessoErrorCodes.FormaDeAvaliacaoDesconhecida,
             $"A forma de avaliação '{etapa.FormaDeAvaliacao}', declarada pela etapa '{etapa.Nome}', não existe — use '{FormaDeAvaliacaoCodigo.Objetiva}' ou '{FormaDeAvaliacaoCodigo.Humana}'."));
 
     private static FieldError RecusaDoParIncompleto(EtapaProcessoInput etapa, bool temCodigo) =>
         new("regraConsolidacao", new DomainError(
-            EtapaProcesso.RegraDeConsolidacaoInvalida,
+            EtapaProcessoErrorCodes.RegraDeConsolidacaoInvalida,
             $"A regra de consolidação da etapa '{etapa.Nome}' precisa de código e versão juntos: falta {(temCodigo ? "a versão" : "o código")}."));
 
     private readonly record struct DeclaracaoDaAvaliacao(FormaDeAvaliacao? Forma, (string Codigo, string Versao)? Regra);

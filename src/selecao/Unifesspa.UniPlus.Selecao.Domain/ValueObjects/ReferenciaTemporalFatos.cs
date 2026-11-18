@@ -111,15 +111,4 @@ public sealed record ReferenciaTemporalFatos
 
         return Criar(tipo, data, faseId);
     }
-
-    /// <summary>
-    /// Corrige <see cref="FaseId"/> quando a reconciliação de <c>AplicarGrafo</c>
-    /// (restauração da configuração congelada) reusa a instância VIVA de
-    /// <see cref="Entities.FaseCronograma"/> em vez da decodificada (Ordem, não Id — ver
-    /// <see cref="Entities.FaseCronograma.AtualizarDe"/>). Bypassa <see cref="Criar"/>
-    /// deliberadamente: a coerência tudo-ou-nada já foi verificada quando esta instância foi
-    /// criada, e o remapeamento troca só o ponteiro, nunca o <see cref="Tipo"/> (Story #554,
-    /// PR #903, achado de revisão).
-    /// </summary>
-    internal ReferenciaTemporalFatos ComFaseIdRemapeada(Guid faseId) => new(Tipo, Data, faseId);
 }

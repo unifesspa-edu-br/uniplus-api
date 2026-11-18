@@ -47,6 +47,8 @@ public sealed class MotivoDeDecisaoTests
     [InlineData(TipoMotivoDeDecisao.Heteroidentificacao)]
     [InlineData(TipoMotivoDeDecisao.AvaliacaoBiopsicossocial)]
     [InlineData(TipoMotivoDeDecisao.Classificacao)]
+    [InlineData(TipoMotivoDeDecisao.GabaritoDaProva)]
+    [InlineData(TipoMotivoDeDecisao.NotaDaEtapa)]
     public void Criar_TipoSemSubclassificacao_RecusaADeclarada(TipoMotivoDeDecisao tipo)
     {
         Result<MotivoDeDecisao> resultado = Criar(tipo, "DOCUMENTO_ILEGIVEL", FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Desfavoravel);

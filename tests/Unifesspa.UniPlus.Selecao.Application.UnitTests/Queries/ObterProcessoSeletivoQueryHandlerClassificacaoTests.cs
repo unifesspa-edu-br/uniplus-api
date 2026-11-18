@@ -13,6 +13,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport.CenariosDeDefinirEtapas;
+
 /// <summary>
 /// Cobertura de <see cref="ObterProcessoSeletivoQueryHandler"/> para o bloco de
 /// classificação — em particular <see cref="ConfiguracaoClassificacao.BaseadoEmEnem"/>
@@ -79,24 +81,8 @@ public sealed class ObterProcessoSeletivoQueryHandlerClassificacaoTests
 
     private static async Task<ConfiguracaoClassificacaoDto?> ObterDtoComClassificacaoAsync(bool baseadoEmEnem)
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Query Classificação", TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-
-        ReferenciaRegra regraCalculo = ReferenciaRegra.Criar(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('a', 64)).Value!;
-        ReferenciaRegra regraArredondamento = ReferenciaRegra.Criar(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('b', 64)).Value!;
-        ReferenciaRegra regraOrdemAlocacao = ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)).Value!;
-
-        ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
-            regraCalculo, regraArredondamento, casasArredondamento: 2, regraOrdemAlocacao, [],
-            baseadoEmEnem,
-            baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,
-            baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : [],
-            escalaNotaFinal: 100m).Value!;
-
-        Result resultado = processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente);
-        resultado.IsSuccess.Should().BeTrue();
-
+        ProcessoSeletivo processo = ProcessoSemEtapas();
+        processo.DefinirClassificacao(ClassificacaoDeTeste(baseadoEmEnem)).IsSuccess.Should().BeTrue();
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
 
@@ -105,4 +91,17 @@ public sealed class ObterProcessoSeletivoQueryHandlerClassificacaoTests
 
         return dto?.Classificacao;
     }
+
+    private static ConfiguracaoClassificacao ClassificacaoDeTeste(bool baseadoEmEnem) =>
+        ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('a', 64)),
+            RegraArredondamento = ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('b', 64)),
+            CasasArredondamento = 2,
+            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)),
+            BaseadoEmEnem = baseadoEmEnem,
+            ResolucaoPesoAreaEnem = baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,
+            QuadroPesoAreaEnem = baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : [],
+            EscalaNotaFinal = 100m,
+        }).Value!;
 }

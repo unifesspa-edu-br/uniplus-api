@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>
@@ -29,6 +30,9 @@ public interface ITermoConsentimentoRepository
         PaginationDirection direction,
         string? searchTerm,
         CancellationToken cancellationToken);
+
+    /// <summary>Se algum termo vivo já tem o código: a conferência prévia da criação, que o índice único decide na corrida.</summary>
+    Task<bool> CodigoExisteAsync(CodigoTermoConsentimento codigo, CancellationToken cancellationToken);
 
     Task AdicionarAsync(TermoConsentimento termo, CancellationToken cancellationToken);
 

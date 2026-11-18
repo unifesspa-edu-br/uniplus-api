@@ -5,9 +5,13 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
-public sealed partial class EtapaProcessoTests
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioEtapaProcesso;
+
+public sealed class EtapaProcessoTests
 {
     // ── A identidade do que não mudou sobrevive à regravação ──
     //
@@ -18,8 +22,7 @@ public sealed partial class EtapaProcessoTests
     [Fact(DisplayName = "Regravar o mesmo par ato e papel preserva o Id do produto")]
     public void DefinirProdutos_MesmoAtoEPapel_PreservaOId()
     {
-        EtapaProcesso etapa = EtapaProcesso.Criar(
-            "Prova Objetiva", CaraterEtapa.Ambas, TipoEtapaProvaObjetiva(), peso: 1m).Value!;
+        EtapaProcesso etapa = EtapaDeProvaObjetivaParaAmbosOsCarateres();
 
         etapa.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar)])
             .IsSuccess.Should().BeTrue();
@@ -37,8 +40,7 @@ public sealed partial class EtapaProcessoTests
     [Fact(DisplayName = "Regravar a mesma banca preserva o Id")]
     public void DefinirBancas_MesmoCodigo_PreservaOId()
     {
-        EtapaProcesso etapa = EtapaProcesso.Criar(
-            "Prova Objetiva", CaraterEtapa.Ambas, TipoEtapaProvaObjetiva(), peso: 1m).Value!;
+        EtapaProcesso etapa = EtapaDeProvaObjetivaParaAmbosOsCarateres();
 
         Guid tipoBanca = Guid.CreateVersion7();
         etapa.DefinirBancas([BancaDaEtapa.Criar(tipoBanca, "BANCA_TECNICA", "Banca de teste")]).IsSuccess.Should().BeTrue();
@@ -53,8 +55,7 @@ public sealed partial class EtapaProcessoTests
     [Fact(DisplayName = "O mesmo tipo de ato com o mesmo papel duas vezes na etapa é recusado")]
     public void DefinirProdutos_MesmoTipoEMesmoPapel_Recusa()
     {
-        EtapaProcesso etapa = EtapaProcesso.Criar(
-            "Prova Objetiva", CaraterEtapa.Ambas, TipoEtapaProvaObjetiva(), peso: 1m).Value!;
+        EtapaProcesso etapa = EtapaDeProvaObjetivaParaAmbosOsCarateres();
 
         Result resultado = etapa.DefinirProdutos([
             ProdutoDaEtapa.Criar("GABARITO", PapelProdutoFase.Preliminar),
@@ -68,8 +69,7 @@ public sealed partial class EtapaProcessoTests
     [Fact(DisplayName = "O mesmo tipo de ato uma vez como preliminar e uma como definitivo na etapa é aceito")]
     public void DefinirProdutos_MesmoTipoComCadaPapel_Aceita()
     {
-        EtapaProcesso etapa = EtapaProcesso.Criar(
-            "Prova Objetiva", CaraterEtapa.Ambas, TipoEtapaProvaObjetiva(), peso: 1m).Value!;
+        EtapaProcesso etapa = EtapaDeProvaObjetivaParaAmbosOsCarateres();
 
         etapa.DefinirProdutos([
             ProdutoDaEtapa.Criar("GABARITO", PapelProdutoFase.Preliminar),
@@ -80,8 +80,7 @@ public sealed partial class EtapaProcessoTests
     [Fact(DisplayName = "Produto que sai da declaração some, e o que entra ganha Id próprio")]
     public void DefinirProdutos_ParQueMuda_TrocaDeLinha()
     {
-        EtapaProcesso etapa = EtapaProcesso.Criar(
-            "Prova Objetiva", CaraterEtapa.Ambas, TipoEtapaProvaObjetiva(), peso: 1m).Value!;
+        EtapaProcesso etapa = EtapaDeProvaObjetivaParaAmbosOsCarateres();
 
         etapa.DefinirProdutos([
             ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
@@ -101,13 +100,15 @@ public sealed partial class EtapaProcessoTests
         etapa.Produtos.Should().ContainSingle(p => p.AtoCodigo == "GABARITO");
     }
 
-    private static TipoEtapaSnapshot TipoEtapaProvaObjetiva() =>
-        TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
+    private static EtapaProcesso EtapaDeProvaObjetivaParaAmbosOsCarateres() =>
+        EtapaProcesso.Criar(
+            new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Ambas, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: null, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 
     // ── Como a nota da etapa é obtida ──
 
     private static ReferenciaRegra RegraDeConsolidacao(string codigo = RegraConsolidacaoCodigo.AvaliacaoUnica) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string('c', 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string('c', 64));
 
     private static TipoEtapaSnapshot TipoEtapaDoEnem() =>
         TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!;
@@ -118,10 +119,10 @@ public sealed partial class EtapaProcessoTests
     public void Criar_RegraDeConsolidacaoForaDaFormaHumana_Recusa(FormaDeAvaliacao? forma)
     {
         Result<EtapaProcesso> resultado = EtapaProcesso.Criar(
-            "Redação", CaraterEtapa.Classificatoria, TipoEtapaProvaObjetiva(), peso: 1m,
-            formaDeAvaliacao: forma, regraConsolidacao: RegraDeConsolidacao());
+            new IdentificacaoDaEtapa(Nome: "Redação", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: null, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: forma, RegraConsolidacao: RegraDeConsolidacao(), EscalaDeAtendimento: null));
 
-        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EtapaProcesso.RegraDeConsolidacaoForaDaFormaHumana);
+        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EtapaProcessoErrorCodes.RegraDeConsolidacaoForaDaFormaHumana);
         resultado.Errors[0].Field.Should().Be("regraConsolidacao");
     }
 
@@ -129,10 +130,10 @@ public sealed partial class EtapaProcessoTests
     public void Criar_PassoNaFormaObjetiva_Recusa()
     {
         Result<EtapaProcesso> resultado = EtapaProcesso.Criar(
-            "Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaProvaObjetiva(), peso: 1m,
-            notaMaxima: 10m, passoDoLancamento: 0.5m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva);
+            new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: null, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: 0.5m, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null));
 
-        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EtapaProcesso.PassoNaFormaObjetiva);
+        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EtapaProcessoErrorCodes.PassoNaFormaObjetiva);
         resultado.Errors[0].Field.Should().Be("passoDoLancamento");
     }
 
@@ -140,13 +141,13 @@ public sealed partial class EtapaProcessoTests
     public void Criar_FormaERegraNaEtapaDoEnem_Recusa()
     {
         Result<EtapaProcesso> resultado = EtapaProcesso.Criar(
-            "Nota do ENEM", CaraterEtapa.Classificatoria, TipoEtapaDoEnem(), peso: 1m,
-            formaDeAvaliacao: FormaDeAvaliacao.Humana, regraConsolidacao: RegraDeConsolidacao());
+            new IdentificacaoDaEtapa(Nome: "Nota do ENEM", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaDoEnem(), Ordem: null, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: RegraDeConsolidacao(), EscalaDeAtendimento: null));
 
         resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
-            ("formaDeAvaliacao", EtapaProcesso.AvaliacaoNaEtapaDoEnem),
-            ("regraConsolidacao", EtapaProcesso.AvaliacaoNaEtapaDoEnem),
+            ("formaDeAvaliacao", EtapaProcessoErrorCodes.AvaliacaoNaEtapaDoEnem),
+            ("regraConsolidacao", EtapaProcessoErrorCodes.AvaliacaoNaEtapaDoEnem),
         ]);
     }
 
@@ -154,29 +155,29 @@ public sealed partial class EtapaProcessoTests
     public void Criar_RegraForaDoRolDeConsolidacao_Recusa()
     {
         Result<EtapaProcesso> resultado = EtapaProcesso.Criar(
-            "Redação", CaraterEtapa.Classificatoria, TipoEtapaProvaObjetiva(), peso: 1m,
-            formaDeAvaliacao: FormaDeAvaliacao.Humana, regraConsolidacao: RegraDeConsolidacao("PRECISAO-TRUNCAR"));
+            new IdentificacaoDaEtapa(Nome: "Redação", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: null, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: RegraDeConsolidacao("PRECISAO-TRUNCAR"), EscalaDeAtendimento: null));
 
-        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EtapaProcesso.RegraDeConsolidacaoInvalida);
+        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EtapaProcessoErrorCodes.RegraDeConsolidacaoInvalida);
     }
 
     [Fact(DisplayName = "Em rascunho, a forma humana sem regra e sem passo é gravada: a falta só recusa a publicação")]
     public void Criar_FormaHumanaSemRegraESemPasso_Grava()
     {
         EtapaProcesso.Criar(
-            "Redação", CaraterEtapa.Classificatoria, TipoEtapaProvaObjetiva(), peso: 1m,
-            formaDeAvaliacao: FormaDeAvaliacao.Humana).IsSuccess.Should().BeTrue();
+            new IdentificacaoDaEtapa(Nome: "Redação", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: null, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: null, EscalaDeAtendimento: null)).IsSuccess.Should().BeTrue();
         EtapaProcesso.Criar(
-            "Redação", CaraterEtapa.Classificatoria, TipoEtapaProvaObjetiva(), peso: 1m,
-            notaMaxima: 10m, passoDoLancamento: 0.5m, formaDeAvaliacao: FormaDeAvaliacao.Humana,
-            regraConsolidacao: RegraDeConsolidacao(RegraConsolidacaoCodigo.CorrecaoIndependente)).IsSuccess.Should().BeTrue();
+            new IdentificacaoDaEtapa(Nome: "Redação", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: null, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: 0.5m, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: RegraDeConsolidacao(RegraConsolidacaoCodigo.CorrecaoIndependente), EscalaDeAtendimento: null)).IsSuccess.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Criar com dados válidos tem sucesso")]
     public void Criar_DadosValidos_Sucesso()
     {
         Result<EtapaProcesso> resultado = EtapaProcesso.Criar(
-            "Prova Objetiva", CaraterEtapa.Ambas, TipoEtapaProvaObjetiva(), peso: 3m, notaMinima: 5m, ordem: 1);
+            new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Ambas, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 3m, NotaMinima: 5m, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null));
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Nome.Should().Be("Prova Objetiva");
@@ -186,7 +187,8 @@ public sealed partial class EtapaProcessoTests
     public void Criar_SemCamposOpcionais_Sucesso()
     {
         Result<EtapaProcesso> resultado = EtapaProcesso.Criar(
-            "Análise de histórico", CaraterEtapa.Eliminatoria, TipoEtapaProvaObjetiva());
+            new IdentificacaoDaEtapa(Nome: "Análise de histórico", Carater: CaraterEtapa.Eliminatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: null, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null));
 
         resultado.IsSuccess.Should().BeTrue();
     }
@@ -195,7 +197,8 @@ public sealed partial class EtapaProcessoTests
     public void Criar_NomeVazio_Falha()
     {
         Result<EtapaProcesso> resultado = EtapaProcesso.Criar(
-            "   ", CaraterEtapa.Classificatoria, TipoEtapaProvaObjetiva());
+            new IdentificacaoDaEtapa(Nome: "   ", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: null, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Error.Code).Should().Contain("EtapaProcesso.NomeObrigatorio");
@@ -205,7 +208,8 @@ public sealed partial class EtapaProcessoTests
     public void Criar_NomeAcimaDoLimite_Falha()
     {
         Result<EtapaProcesso> resultado = EtapaProcesso.Criar(
-            new string('a', EtapaProcesso.NomeMaxLength + 1), CaraterEtapa.Classificatoria, TipoEtapaProvaObjetiva());
+            new IdentificacaoDaEtapa(Nome: new string('a', EtapaProcesso.NomeMaxLength + 1), Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: null, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Error.Code).Should().Contain("EtapaProcesso.NomeTamanho");
@@ -215,7 +219,8 @@ public sealed partial class EtapaProcessoTests
     public void Criar_CaraterNenhum_Falha()
     {
         Result<EtapaProcesso> resultado = EtapaProcesso.Criar(
-            "Prova Objetiva", CaraterEtapa.Nenhum, TipoEtapaProvaObjetiva());
+            new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Nenhum, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: null, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Error.Code).Should().Contain("EtapaProcesso.CaraterObrigatorio");
@@ -228,7 +233,8 @@ public sealed partial class EtapaProcessoTests
         // padrão) — sem esta checagem, "carater": 4 bindaria como (CaraterEtapa)4 e passaria
         // pela checagem de Nenhum, sendo persistido como valor indefinido.
         Result<EtapaProcesso> resultado = EtapaProcesso.Criar(
-            "Prova Objetiva", (CaraterEtapa)4, TipoEtapaProvaObjetiva());
+            new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: (CaraterEtapa)4, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: null, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Error.Code).Should().Contain("EtapaProcesso.CaraterObrigatorio");
@@ -238,7 +244,8 @@ public sealed partial class EtapaProcessoTests
     public void Criar_PesoInvalido_Falha()
     {
         Result<EtapaProcesso> resultado = EtapaProcesso.Criar(
-            "Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaProvaObjetiva(), peso: 0m);
+            new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: null, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 0m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Error.Code).Should().Contain("EtapaProcesso.PesoInvalido");
@@ -248,7 +255,8 @@ public sealed partial class EtapaProcessoTests
     public void Criar_NotaMinimaInvalida_Falha()
     {
         Result<EtapaProcesso> resultado = EtapaProcesso.Criar(
-            "Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaProvaObjetiva(), notaMinima: -1m);
+            new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: null, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: -1m, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Error.Code).Should().Contain("EtapaProcesso.NotaMinimaInvalida");
@@ -261,9 +269,10 @@ public sealed partial class EtapaProcessoTests
     [InlineData(null, -0.5, "EtapaProcesso.PassoDoLancamentoInvalido", "passoDoLancamento")]
     public void ValidarFormaBasica_EscalaNaoPositiva_Recusa(double? notaMaxima, double? passo, string codigo, string campo)
     {
-        List<FieldError> erros = EtapaProcesso.ValidarFormaBasica(
-            "Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, notaMinima: null, ordem: 1,
-            notaMaxima: (decimal?)notaMaxima, passoDoLancamento: (decimal?)passo);
+        List<FieldError> erros = ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica(
+            "Prova Objetiva", CaraterEtapa.Classificatoria, ordem: 1,
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: (decimal?)notaMaxima, PassoDoLancamento: (decimal?)passo, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null),
+            itens: null);
 
         erros.Should().ContainSingle().Which.Error.Code.Should().Be(codigo);
         erros[0].Field.Should().Be(campo);
@@ -272,10 +281,14 @@ public sealed partial class EtapaProcessoTests
     [Fact(DisplayName = "Nota mínima acima da nota máxima é recusada, e igual é aceita")]
     public void ValidarFormaBasica_NotaMinimaContraNotaMaxima_RecusaSoAcima()
     {
-        List<FieldError> acima = EtapaProcesso.ValidarFormaBasica(
-            "Entrevista", CaraterEtapa.Eliminatoria, peso: null, notaMinima: 10.5m, ordem: 1, notaMaxima: 10m);
-        List<FieldError> igual = EtapaProcesso.ValidarFormaBasica(
-            "Entrevista", CaraterEtapa.Eliminatoria, peso: null, notaMinima: 10m, ordem: 1, notaMaxima: 10m);
+        List<FieldError> acima = ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica(
+            "Entrevista", CaraterEtapa.Eliminatoria, ordem: 1,
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: 10.5m, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null),
+            itens: null);
+        List<FieldError> igual = ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica(
+            "Entrevista", CaraterEtapa.Eliminatoria, ordem: 1,
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: 10m, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null),
+            itens: null);
 
         acima.Should().ContainSingle().Which.Error.Code.Should().Be("EtapaProcesso.NotaMinimaAcimaDaNotaMaxima");
         acima[0].Field.Should().Be("notaMinima");
@@ -291,9 +304,10 @@ public sealed partial class EtapaProcessoTests
     [InlineData(10, 4, false)]
     public void ValidarFormaBasica_NotaMaximaContraPasso_RecusaForaDoMultiplo(double notaMaxima, double passo, bool aceita)
     {
-        List<FieldError> erros = EtapaProcesso.ValidarFormaBasica(
-            "Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, notaMinima: null, ordem: 1,
-            notaMaxima: (decimal)notaMaxima, passoDoLancamento: (decimal)passo);
+        List<FieldError> erros = ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica(
+            "Prova Objetiva", CaraterEtapa.Classificatoria, ordem: 1,
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: (decimal)notaMaxima, PassoDoLancamento: (decimal)passo, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null),
+            itens: null);
 
         if (aceita)
         {
@@ -308,28 +322,35 @@ public sealed partial class EtapaProcessoTests
     [Fact(DisplayName = "Escala parcial é aceita na gravação: sem passo, ou sem nota máxima")]
     public void ValidarFormaBasica_EscalaParcial_Aceita()
     {
-        EtapaProcesso.ValidarFormaBasica(
-            "Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, notaMinima: null, ordem: 1, notaMaxima: 10m)
+        ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica(
+            "Prova Objetiva", CaraterEtapa.Classificatoria, ordem: 1,
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null),
+            itens: null)
             .Should().BeEmpty();
-        EtapaProcesso.ValidarFormaBasica(
-            "Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, notaMinima: null, ordem: 1, passoDoLancamento: 0.5m)
+        ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica(
+            "Prova Objetiva", CaraterEtapa.Classificatoria, ordem: 1,
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: 0.5m, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null),
+            itens: null)
             .Should().BeEmpty();
     }
 
     [Fact(DisplayName = "A nota mínima não precisa ser múltipla do passo")]
     public void ValidarFormaBasica_NotaMinimaForaDoPasso_Aceita()
     {
-        EtapaProcesso.ValidarFormaBasica(
-            "Entrevista", CaraterEtapa.Eliminatoria, peso: null, notaMinima: 5.1m, ordem: 1,
-            notaMaxima: 10m, passoDoLancamento: 0.5m)
+        ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica(
+            "Entrevista", CaraterEtapa.Eliminatoria, ordem: 1,
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: 5.1m, NotaMaxima: 10m, PassoDoLancamento: 0.5m, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null),
+            itens: null)
             .Should().BeEmpty();
     }
 
     [Fact(DisplayName = "Nota mínima já recusada por outro motivo não é comparada de novo com a nota máxima")]
     public void ValidarFormaBasica_NotaMinimaJaRecusada_NaoRepeteAComparacao()
     {
-        List<FieldError> erros = EtapaProcesso.ValidarFormaBasica(
-            "Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, notaMinima: 12m, ordem: 1, notaMaxima: 10m);
+        List<FieldError> erros = ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica(
+            "Prova Objetiva", CaraterEtapa.Classificatoria, ordem: 1,
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: 12m, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null),
+            itens: null);
 
         erros.Should().ContainSingle().Which.Error.Code.Should().Be("EtapaProcesso.NotaMinimaSemCaraterQueElimina");
     }

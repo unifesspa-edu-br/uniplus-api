@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -23,15 +24,14 @@ public sealed class OpcoesDeCursoTests
     private const string CodigoAcimaDasOfertas = "uniplus.selecao.processo_seletivo.opcoes_de_curso_acima_das_ofertas";
     private const string MensagemAcimaDasOfertas = "Com 2 opções de curso, cadastre pelo menos dois cursos.";
 
-    private static IEnumerable<string> Vermelhos(ProcessoSeletivo processo) => ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+    private static IEnumerable<string> Vermelhos(ProcessoSeletivo processo) => ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
         .Where(static i => !i.Ok)
         .Select(static i => i.Codigo);
 
     private static void DefinirOfertas(ProcessoSeletivo processo, int quantidade) =>
         processo.DefinirDistribuicaoVagas(
             [.. Enumerable.Range(0, quantidade).Select(static _ => ProcessoConformeFactory.Oferta())],
-            FatosDeModalidadeDeTeste.DoCatalogo,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
 
     private static ProcessoSeletivo ProcessoComOfertas(int quantidade, bool declararOpcoes = false)
     {
@@ -39,7 +39,7 @@ public sealed class OpcoesDeCursoTests
         DefinirOfertas(processo, quantidade);
         if (declararOpcoes)
         {
-            processo.DefinirOpcoesDeCurso(2, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            processo.DefinirOpcoesDeCurso(2).IsSuccess.Should().BeTrue();
         }
 
         return processo;
@@ -50,7 +50,7 @@ public sealed class OpcoesDeCursoTests
     {
         ProcessoSeletivo processo = ProcessoComOfertas(1);
 
-        processo.DefinirOpcoesDeCurso(1, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirOpcoesDeCurso(1).IsSuccess.Should().BeTrue();
 
         processo.NumeroDeOpcoesDeCurso.Should().Be(1);
     }
@@ -60,7 +60,7 @@ public sealed class OpcoesDeCursoTests
     {
         ProcessoSeletivo processo = ProcessoComOfertas(1);
 
-        Result resultado = processo.DefinirOpcoesDeCurso(2, PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirOpcoesDeCurso(2);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle();
@@ -77,7 +77,7 @@ public sealed class OpcoesDeCursoTests
     {
         ProcessoSeletivo processo = ProcessoComOfertas(2);
 
-        Result resultado = processo.DefinirOpcoesDeCurso(numero, PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirOpcoesDeCurso(numero);
 
         resultado.Errors.Should().ContainSingle();
         resultado.Errors[0].Field.Should().Be("numero");
@@ -91,7 +91,7 @@ public sealed class OpcoesDeCursoTests
         ProcessoSeletivo processo = ProcessoComOfertas(2, declararOpcoes: true);
 
         Result resultado = processo.DefinirDistribuicaoVagas(
-            [ProcessoConformeFactory.Oferta()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
+            [ProcessoConformeFactory.Oferta()], FatosDeModalidadeDeTeste.DoCatalogo);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle();
@@ -105,7 +105,7 @@ public sealed class OpcoesDeCursoTests
     {
         ProcessoSeletivo processo = ProcessoComOfertas(2, declararOpcoes: true);
 
-        Result resultado = processo.DefinirDistribuicaoVagas([], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirDistribuicaoVagas([], FatosDeModalidadeDeTeste.DoCatalogo);
 
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.DistribuicaoVagasVazia");
     }
@@ -113,22 +113,24 @@ public sealed class OpcoesDeCursoTests
     [Fact(DisplayName = "2 opções sem distribuição gravada são aceitas, e o mínimo de cursos passa a ser cobrado quando há distribuição")]
     public void DuasOpcoesSemDistribuicao_AceitaEApontaAteHaverOfertas()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Opções", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
-            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSemOfertas();
 
-        processo.DefinirOpcoesDeCurso(2, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirOpcoesDeCurso(2).IsSuccess.Should().BeTrue();
 
         Vermelhos(processo).Should().Contain("distribuicao_vagas_ausente").And.NotContain("opcoes_de_curso_acima_das_ofertas",
             "sem distribuição gravada a pendência é a da distribuição ausente");
 
-        processo.DefinirDistribuicaoVagas([ProcessoConformeFactory.Oferta()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente)
+        processo.DefinirDistribuicaoVagas([ProcessoConformeFactory.Oferta()], FatosDeModalidadeDeTeste.DoCatalogo)
             .Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.OpcoesDeCursoAcimaDasOfertas);
 
         DefinirOfertas(processo, 2);
         Vermelhos(processo).Should().NotContain("opcoes_de_curso_acima_das_ofertas");
     }
+
+    private static ProcessoSeletivo ProcessoSemDistribuicao() => ProcessoSeletivo.Criar(
+        "PS Opções", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+        UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+        LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
     [Fact(DisplayName = "Publicar sem declarar o número de opções é recusado, e declarar libera")]
     public void SemDeclararONumero_RecusaPublicarEDeclararLibera()
@@ -136,61 +138,50 @@ public sealed class OpcoesDeCursoTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(declararOpcoesDeCurso: false);
 
         Vermelhos(processo).Should().Equal("opcoes_de_curso_nao_declaradas");
-        ChecklistDeConformidade.PendenciaDeConformidade(EstadoDaConfiguracao.De(processo))!.Message.Should().Contain("Número de opções de curso");
+        CausasDeConformidadeDeTeste.De(processo).Should().ContainSingle().Which.Error.Message.Should().Contain("Número de opções de curso");
 
-        processo.DefinirOpcoesDeCurso(1, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirOpcoesDeCurso(1).IsSuccess.Should().BeTrue();
 
         Vermelhos(processo).Should().BeEmpty();
-        ChecklistDeConformidade.PendenciaDeConformidade(EstadoDaConfiguracao.De(processo)).Should().BeNull();
+        CausasDeConformidadeDeTeste.De(processo).Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "Estado com mais opções que cursos não publica: o gate recusa e o item acusa")]
+    [Fact(DisplayName = "Estado com mais opções que cursos não publica: a conferência recusa e o item acusa")]
     public void MaisOpcoesQueCursos_NaoPublica()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        // O EF hidrata a linha sem passar por DefinirOpcoesDeCurso: o gate precisa recusar o
+        // O EF hidrata a linha sem passar por DefinirOpcoesDeCurso: a conferência precisa recusar o
         // estado inconsistente que uma escrita fora do domínio deixou.
         Hidratar(processo, 2);
 
         Vermelhos(processo).Should().Equal("opcoes_de_curso_acima_das_ofertas");
-        ChecklistDeConformidade.PendenciaDeConformidade(EstadoDaConfiguracao.De(processo))!.Message.Should().Contain("Opções de curso");
+        CausasDeConformidadeDeTeste.De(processo).Should().ContainSingle().Which.Error.Message.Should().Contain("Opções de curso");
     }
 
-    [Fact(DisplayName = "A regra vale na retificação: o fechamento recusa o estado com mais opções que cursos")]
-    public void Retificacao_FecharComMaisOpcoesQueCursos_Recusa()
+    // A retificação também confere, para o estado que um caminho fora do agregado deixasse.
+    [Fact(DisplayName = "A regra vale na retificação: ela recusa o estado com mais opções que cursos")]
+    public void Retificacao_ComMaisOpcoesQueCursos_Recusa()
     {
         ProcessoSeletivo processo = ProcessoPublicadoComDuasOpcoes(out VersaoConfiguracao versaoAbertura);
-        processo.AbrirRetificacao(
-            "Reduzir cursos", versaoAbertura, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo),
-            "user-conta-123", DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
-
-        // A sessão não deixa chegar aí pelas operações do agregado: a distribuição de 1 oferta é recusada.
-        processo.DefinirDistribuicaoVagas(
-            [ProcessoConformeFactory.Oferta()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Curinga)
-            .Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.OpcoesDeCursoAcimaDasOfertas);
-
-        // E o fechamento também confere, para o estado que um caminho fora do agregado deixasse.
         Hidratar(processo, 2, ofertas: 1);
 
-        Result<VersaoConfiguracao> fechamento = processo.FecharRetificacao(
-            DadosEdital.Criar("001/2026", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(30), Guid.CreateVersion7()).Value!,
-            versaoAbertura, Encoding.UTF8.GetBytes("{}"), "1.0", "canonical-json/sha256@v1", new string('a', 64), "user-conta-123",
-            PrecondicaoIfMatch.Curinga, TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        Result<VersaoConfiguracao> retificacao = processo.Retificar(
+            new CenarioDeCongelamento { Dados = DadosEdital.Criar("001/2026", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(30), Guid.CreateVersion7()).Value!, Documento = new DocumentoCongelado(Encoding.UTF8.GetBytes("{}"), "1.0", "canonical-json/sha256@v1", new string('a', 64)) },
+            versaoAbertura,
+            "Reduzir cursos");
 
-        fechamento.IsFailure.Should().BeTrue();
-        fechamento.Error!.Message.Should().Contain("Opções de curso");
+        retificacao.IsFailure.Should().BeTrue();
+        retificacao.Error!.Message.Should().Contain("Opções de curso");
     }
 
     private static ProcessoSeletivo ProcessoPublicadoComDuasOpcoes(out VersaoConfiguracao versaoAbertura)
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(declararOpcoesDeCurso: false);
         DefinirOfertas(processo, 2);
-        processo.DefinirOpcoesDeCurso(2, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirOpcoesDeCurso(2).IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
-            DadosEdital.Criar("001/2026", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(30), Guid.CreateVersion7()).Value!,
-            Encoding.UTF8.GetBytes("{}"), "1.0", "canonical-json/sha256@v1", new string('a', 64), "user-conta-123",
-            TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = DadosEdital.Criar("001/2026", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(30), Guid.CreateVersion7()).Value!, Documento = new DocumentoCongelado(Encoding.UTF8.GetBytes("{}"), "1.0", "canonical-json/sha256@v1", new string('a', 64)) });
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         versaoAbertura = publicacao.Value!;
         processo.ClearDomainEvents();
@@ -220,11 +211,22 @@ public sealed class OpcoesDeCursoTests
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             "PS Opções", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
-        processo.DefinirOpcoesDeCurso(1, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirOpcoesDeCurso(1).IsSuccess.Should().BeTrue();
 
         Vermelhos(processo).Should().NotContain("opcoes_de_curso_acima_das_ofertas");
     }
+
+    private static ProcessoSeletivo ProcessoSemOfertas()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
+            "PS Opções", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+
+        return processo;
+    }
+
 }

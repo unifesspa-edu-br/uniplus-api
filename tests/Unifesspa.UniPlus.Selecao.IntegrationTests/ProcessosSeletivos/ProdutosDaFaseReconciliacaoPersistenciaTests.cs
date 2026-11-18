@@ -42,8 +42,7 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
             ProcessoSeletivo processo = NovoProcesso($"PS produtos {Guid.CreateVersion7()}");
             processo.DefinirCronogramaFases(
                 [Fase(faseCanonicaOrigemId, [ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", papel: null)])],
-                [],
-                PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+                []).IsSuccess.Should().BeTrue();
 
             await db.ProcessosSeletivos.AddAsync(processo);
             await db.SaveChangesAsync();
@@ -64,8 +63,7 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
                     ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Preliminar),
                     ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo),
                 ])],
-                [],
-                PrecondicaoIfMatch.Curinga);
+                []);
 
             redefinicao.IsSuccess.Should().BeTrue(redefinicao.Error?.Message);
             await db.SaveChangesAsync();
@@ -105,8 +103,7 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
             ProcessoSeletivo processo = NovoProcesso($"PS matéria {Guid.CreateVersion7()}");
             processo.DefinirCronogramaFases(
                 [Fase(faseCanonicaOrigemId, [ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo)])],
-                [],
-                PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+                []).IsSuccess.Should().BeTrue();
 
             await db.ProcessosSeletivos.AddAsync(processo);
             await db.SaveChangesAsync();
@@ -125,8 +122,7 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
                     ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Preliminar),
                     ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo),
                 ])],
-                [],
-                PrecondicaoIfMatch.Curinga);
+                []);
 
             redefinicao.IsSuccess.Should().BeTrue(redefinicao.Error?.Message);
             await db.SaveChangesAsync();
@@ -161,8 +157,7 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
                     ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Preliminar),
                     ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo),
                 ])],
-                [],
-                PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+                []).IsSuccess.Should().BeTrue();
 
             await db.ProcessosSeletivos.AddAsync(processo);
             await db.SaveChangesAsync();
@@ -174,8 +169,7 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
             ProcessoSeletivo processo = await CarregarAsync(db, processoId);
             processo.DefinirCronogramaFases(
                 [Fase(faseCanonicaOrigemId, [ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo)])],
-                [],
-                PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+                []).IsSuccess.Should().BeTrue();
 
             await db.SaveChangesAsync();
         }
@@ -191,27 +185,17 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
 
     private static ProcessoSeletivo NovoProcesso(string nome) => ProcessoSeletivo.Criar(
         nome, TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
-        UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+        UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     private static FaseCronograma Fase(Guid faseCanonicaOrigemId, IReadOnlyList<ProdutoDaFase> produtos) =>
         FaseCronograma.Criar(
-            ordem: 1,
-            faseCanonicaOrigemId: faseCanonicaOrigemId,
-            codigo: "HOMOLOGACAO",
-            origemData: OrigemDataFase.NaExecucao,
-            agrupaEtapas: false,
-            permiteComplementacao: false,
-            coletaInscricao: false,
-            coletaSolicitacaoIsencao: false,
-            inicio: null,
-            fim: null,
-            produtos: produtos,
-            faseConcluinteCodigo: null,
-            emiteParecerIndividual: false,
-            bancasRequeridas: [],
-            regraRecurso: null,
-            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+            new OrigemCanonicaDaFase(
+                OrigemId: faseCanonicaOrigemId, Codigo: "HOMOLOGACAO_INSCRICOES", OrigemData: OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
+                ColetaSolicitacaoIsencao: false),
+            new DecisoesDeCronogramaDaFase(Ordem: 1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(Produtos: produtos, EmiteParecerIndividual: false, RegraRecurso: null),
+            bancasRequeridas: []).Value!;
 
     private static async Task<ProcessoSeletivo> CarregarAsync(UniPlusDbContext db, Guid processoId) =>
         await db.ProcessosSeletivos

@@ -56,21 +56,14 @@ public sealed class ProcessoSeletivoOfertaEClassificacaoController : ControllerB
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
-    [EmiteETag]
     public async Task<IActionResult> DefinirCriteriosDesempate(
         Guid id,
         [FromBody] IReadOnlyList<CriterioDesempateInput> criterios,
-        [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
-        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
-            return malformada!;
-
-        Result<MutacaoAceita> resultado = await _commandBus.Send(
-            new DefinirCriteriosDesempateCommand(id, criterios, precondicao), cancellationToken);
-        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
+        Result resultado = await _commandBus.Send(
+            new DefinirCriteriosDesempateCommand(id, criterios), cancellationToken);
+        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>
@@ -85,24 +78,17 @@ public sealed class ProcessoSeletivoOfertaEClassificacaoController : ControllerB
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
-    [EmiteETag]
     public async Task<IActionResult> DefinirBonusRegional(
         Guid id,
         [FromBody] DefinirBonusRegionalRequest request,
-        [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
-            return malformada!;
-
-        Result<MutacaoAceita> resultado = await _commandBus.Send(
-            new DefinirBonusRegionalCommand(id, request.Aplica, request.RegraCodigo, request.RegraVersao, request.Fator, request.Teto, request.FatoElegibilidadeCodigo, request.BaseLegalBonusRegionalId, precondicao),
+        Result resultado = await _commandBus.Send(
+            new DefinirBonusRegionalCommand(id, request.Aplica, request.RegraCodigo, request.RegraVersao, request.Fator, request.Teto, request.FatoElegibilidadeCodigo, request.BaseLegalBonusRegionalId),
             cancellationToken);
-        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
+        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>
@@ -117,24 +103,17 @@ public sealed class ProcessoSeletivoOfertaEClassificacaoController : ControllerB
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
-    [EmiteETag]
     public async Task<IActionResult> DefinirOpcoesDeCurso(
         Guid id,
         [FromBody] DefinirOpcoesDeCursoRequest request,
-        [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
-            return malformada!;
-
-        Result<MutacaoAceita> resultado = await _commandBus.Send(
-            new DefinirOpcoesDeCursoCommand(id, request.Numero, precondicao),
+        Result resultado = await _commandBus.Send(
+            new DefinirOpcoesDeCursoCommand(id, request.Numero),
             cancellationToken);
-        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
+        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>
@@ -148,24 +127,17 @@ public sealed class ProcessoSeletivoOfertaEClassificacaoController : ControllerB
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
-    [EmiteETag]
     public async Task<IActionResult> DefinirTaxaInscricao(
         Guid id,
         [FromBody] DefinirTaxaInscricaoRequest request,
-        [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
-            return malformada!;
-
-        Result<MutacaoAceita> resultado = await _commandBus.Send(
-            new DefinirTaxaInscricaoCommand(id, request.Cobra, request.Valor, request.Fundamentos, precondicao),
+        Result resultado = await _commandBus.Send(
+            new DefinirTaxaInscricaoCommand(id, request.Cobra, request.Valor, request.Fundamentos),
             cancellationToken);
-        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
+        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>
@@ -180,24 +152,17 @@ public sealed class ProcessoSeletivoOfertaEClassificacaoController : ControllerB
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
-    [EmiteETag]
     public async Task<IActionResult> DefinirConfiguracaoDivulgacao(
         Guid id,
         [FromBody] DefinirConfiguracaoDivulgacaoRequest request,
-        [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
-            return malformada!;
-
-        Result<MutacaoAceita> resultado = await _commandBus.Send(
-            new DefinirConfiguracaoDivulgacaoCommand(id, request.CamposPublicos, request.Justificativa, precondicao),
+        Result resultado = await _commandBus.Send(
+            new DefinirConfiguracaoDivulgacaoCommand(id, request.CamposPublicos, request.Justificativa),
             cancellationToken);
-        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
+        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>
@@ -212,24 +177,17 @@ public sealed class ProcessoSeletivoOfertaEClassificacaoController : ControllerB
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
-    [EmiteETag]
     public async Task<IActionResult> DefinirCascataRemanejamento(
         Guid id,
         [FromBody] DefinirCascataRemanejamentoRequest request,
-        [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
-            return malformada!;
-
-        Result<MutacaoAceita> resultado = await _commandBus.Send(
-            new DefinirCascataRemanejamentoCommand(id, request.RegraCodigo, request.RegraVersao, request.FallbackCodigo, request.Destinos, precondicao),
+        Result resultado = await _commandBus.Send(
+            new DefinirCascataRemanejamentoCommand(id, request.RegraCodigo, request.RegraVersao, request.FallbackCodigo, request.Destinos),
             cancellationToken);
-        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
+        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>
@@ -245,21 +203,14 @@ public sealed class ProcessoSeletivoOfertaEClassificacaoController : ControllerB
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
-    [EmiteETag]
     public async Task<IActionResult> DefinirClassificacao(
         Guid id,
         [FromBody] DefinirClassificacaoRequest request,
-        [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
-            return malformada!;
-
-        Result<MutacaoAceita> resultado = await _commandBus.Send(
+        Result resultado = await _commandBus.Send(
             new DefinirClassificacaoCommand(
                 id,
                 request.RegraCalculoCodigo,
@@ -272,9 +223,8 @@ public sealed class ProcessoSeletivoOfertaEClassificacaoController : ControllerB
                 request.RegrasEliminacao,
                 request.BaseadoEmEnem,
                 request.ResolucaoPesoAreaEnem,
-                request.EscalaNotaFinal,
-                precondicao),
+                request.EscalaNotaFinal),
             cancellationToken);
-        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
+        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 }

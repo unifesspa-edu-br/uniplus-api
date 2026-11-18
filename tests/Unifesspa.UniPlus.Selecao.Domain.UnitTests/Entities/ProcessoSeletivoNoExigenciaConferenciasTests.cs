@@ -1,0 +1,237 @@
+namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
+
+using AwesomeAssertions;
+
+using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
+
+/// <summary>
+/// Cobertura das conferências de publicação/escrita ESTENDIDAS ao nó de grupo <c>OU</c>/<c>N-de</c>
+/// com consequência própria (Story #920, tasks §1.5a): base legal ≥1 <c>RESOLVIDO</c>,
+/// <c>REMOVE_VANTAGEM</c> exige vantagem viva, e <c>PENDENCIA_REENVIO</c>×<c>PermiteComplementacao</c>
+/// forward (na escrita da árvore) e reverso (ao redefinir o cronograma) — os mesmos quatro
+/// conferências que já existiam para <see cref="DocumentoExigido"/> (folha), agora também para
+/// <see cref="NoExigencia"/> do tipo <see cref="TipoNo.GrupoOu"/>.
+/// </summary>
+public sealed class ProcessoSeletivoNoExigenciaConferenciasTests
+{
+    private static readonly FormatosPermitidos Qualquer = FormatosPermitidos.Criar(true, null).Value!;
+
+    private static ProcessoSeletivo NovoProcesso() =>
+        ProcessoSeletivo.Criar("PS Conferências de Grupo", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+
+    private static FaseCronograma NovaFase(Guid faseCanonicaOrigemId, bool permiteComplementacao) => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            faseCanonicaOrigemId, "INSCRICAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: permiteComplementacao, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
+
+    private static DocumentoExigido DocumentoQualquer(Guid faseId, FinalidadeFormulario? finalidade = null) => DocumentoExigido.Criar(
+        faseId, Guid.CreateVersion7(), "COD", "Nome", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral,
+        obrigatorio: false, consequenciaIndeferimento: null, [], [], null, Qualquer, null, finalidade: finalidade).Value!;
+
+    private static NoExigenciaBaseLegal BaseLegal(StatusBaseLegal status) =>
+        NoExigenciaBaseLegal.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.Federal, status, null).Value!;
+
+    [Fact(DisplayName = "Grupo com REMOVE_VANTAGEM sem vantagem viva bloqueia PendenciaPreCanonicalizacao")]
+    public void Grupo_RemoveVantagemSemVantagemViva_Bloqueia()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = NovaFase(Guid.CreateVersion7(), permiteComplementacao: true);
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
+
+        NoExigencia folha = NoExigencia.CriarFolha(DocumentoQualquer(fase.Id), 0).Value!;
+        NoExigencia grupo = NoExigencia.CriarGrupo(
+            TipoNo.GrupoOu, 0, 1, "REMOVE_VANTAGEM", [BaseLegal(StatusBaseLegal.Resolvido)], [folha]).Value!;
+
+        processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
+
+        DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
+
+        pendencia.Should().NotBeNull();
+        pendencia!.Code.Should().Be("NoExigencia.RemoveVantagemSemVantagemViva");
+    }
+
+    [Fact(DisplayName = "Grupo com consequência e base legal só PENDENTE reprova o checklist de conformidade")]
+    public void Grupo_ComConsequenciaEBaseLegalPendente_ReprovaConformidade()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = NovaFase(Guid.CreateVersion7(), permiteComplementacao: true);
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
+
+        NoExigencia folha = NoExigencia.CriarFolha(DocumentoQualquer(fase.Id), 0).Value!;
+        NoExigencia grupo = NoExigencia.CriarGrupo(
+            TipoNo.GrupoOu, 0, 1, "ELIMINA", [BaseLegal(StatusBaseLegal.Pendente)], [folha]).Value!;
+
+        processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
+
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
+            .Should().Contain(item => item.Codigo == "exigencias_base_legal_nao_resolvida" && !item.Ok);
+    }
+
+    [Fact(DisplayName = "Grupo com consequência e base legal RESOLVIDO aprova o checklist de conformidade")]
+    public void Grupo_ComConsequenciaEBaseLegalResolvida_AprovaConformidade()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = NovaFase(Guid.CreateVersion7(), permiteComplementacao: true);
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
+
+        NoExigencia folha = NoExigencia.CriarFolha(DocumentoQualquer(fase.Id), 0).Value!;
+        NoExigencia grupo = NoExigencia.CriarGrupo(
+            TipoNo.GrupoOu, 0, 1, "ELIMINA", [BaseLegal(StatusBaseLegal.Resolvido)], [folha]).Value!;
+
+        processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
+
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
+            .Should().Contain(item => item.Codigo == "exigencias_base_legal_nao_resolvida" && item.Ok);
+    }
+
+    [Fact(DisplayName = "PENDENCIA_REENVIO em grupo numa fase sem PermiteComplementacao é recusado (forward)")]
+    public void Grupo_PendenciaReenvioSemComplementacao_RecusaForward()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = NovaFase(Guid.CreateVersion7(), permiteComplementacao: false);
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
+
+        NoExigencia folha = NoExigencia.CriarFolha(DocumentoQualquer(fase.Id), 0).Value!;
+        NoExigencia grupo = NoExigencia.CriarGrupo(TipoNo.GrupoOu, 0, 1, "PENDENCIA_REENVIO", [], [folha]).Value!;
+
+        Result resultado = processo.DefinirDocumentosExigidos([grupo]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("DocumentoExigido.PendenciaReenvioExigeComplementacao");
+    }
+
+    [Fact(DisplayName = "Retirar PermiteComplementacao de fase referenciada por grupo PENDENCIA_REENVIO é recusado (reverso)")]
+    public void Grupo_RetirarComplementacaoDeFaseComPendenciaReenvio_RecusaReverso()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        Guid faseCanonicaOrigemId = Guid.CreateVersion7();
+        FaseCronograma faseComComplementacao = NovaFase(faseCanonicaOrigemId, permiteComplementacao: true);
+        processo.DefinirCronogramaFases([faseComComplementacao], []).IsSuccess.Should().BeTrue();
+
+        NoExigencia folha = NoExigencia.CriarFolha(DocumentoQualquer(faseComComplementacao.Id), 0).Value!;
+        NoExigencia grupo = NoExigencia.CriarGrupo(TipoNo.GrupoOu, 0, 1, "PENDENCIA_REENVIO", [], [folha]).Value!;
+        processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
+
+        FaseCronograma faseSemComplementacao = NovaFase(faseCanonicaOrigemId, permiteComplementacao: false);
+        Result resultado = processo.DefinirCronogramaFases([faseSemComplementacao], []);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("FaseCronograma.PendenciaReenvioExigeComplementacao");
+    }
+
+    // ── Story #923: o snapshot conjunto final congela a topologia inteira da árvore
+    // (bloco `arvoreSatisfacao`, bump 1.4) — os três fail-closed que bloqueavam grupo E/OU
+    // (Story #920), cardinalidade qualificada (Story #921) e repetição por entidade (Story
+    // #922) por falta de onde congelar foram REMOVIDOS. Os três casos abaixo, que antes
+    // bloqueavam `PendenciaPreCanonicalizacao`, agora publicam normalmente. ──
+
+    [Fact(DisplayName = "Folha solteira com quantidadeMinima > 1 não bloqueia PendenciaPreCanonicalizacao")]
+    public void FolhaSolteira_QuantidadeMinimaMaiorQueUm_NaoBloqueia()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = NovaFase(Guid.CreateVersion7(), permiteComplementacao: true);
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
+
+        NoExigencia folha = NoExigencia.CriarFolha(DocumentoQualquer(fase.Id), 0, quantidadeMinima: 2).Value!;
+        processo.DefinirDocumentosExigidos([folha]).IsSuccess.Should().BeTrue();
+
+        DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
+
+        pendencia.Should().BeNull(pendencia?.Message);
+    }
+
+    [Fact(DisplayName = "Folha solteira com chaveDistincao não bloqueia PendenciaPreCanonicalizacao")]
+    public void FolhaSolteira_ComChaveDistincao_NaoBloqueia()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = NovaFase(Guid.CreateVersion7(), permiteComplementacao: true);
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
+
+        NoExigencia folha = NoExigencia.CriarFolha(
+            DocumentoQualquer(fase.Id), 0, quantidadeMinima: 1,
+            chaveDistincao: ChaveDistincao.Ocorrencia).Value!;
+        processo.DefinirDocumentosExigidos([folha]).IsSuccess.Should().BeTrue();
+
+        DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
+
+        pendencia.Should().BeNull(pendencia?.Message);
+    }
+
+    [Fact(DisplayName = "Folha solteira com cardinalidade padrão (1, sem chave) continua publicável")]
+    public void FolhaSolteira_CardinalidadePadrao_NaoBloqueia()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = NovaFase(Guid.CreateVersion7(), permiteComplementacao: true);
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
+
+        NoExigencia folha = NoExigencia.CriarFolha(DocumentoQualquer(fase.Id), 0).Value!;
+        processo.DefinirDocumentosExigidos([folha]).IsSuccess.Should().BeTrue();
+
+        DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
+
+        pendencia.Should().BeNull();
+    }
+
+    private static FaseCronograma FaseDeInscricao() => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: true, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
+
+    private static void DefinirComposicaoFamiliarNaInscricao(ProcessoSeletivo processo, FaseCronograma fase)
+    {
+        GrupoColetado composicao = GrupoColetado.Criar(
+            "COMPOSICAO_FAMILIAR", 0, FormularioDeTeste.Secao, "Composição familiar", 1, 10, null, Obrigatoriedade.Sempre,
+            [FatoColetado.Criar("MAIOR_IDADE", 0, "Maior de idade", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!]).Value!;
+        Result formulario = processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase.Id, null, FormularioDeTeste.Etapas());
+        formulario.IsSuccess.Should().BeTrue(formulario.Error?.Message);
+        processo.DefinirItens([], grupos: [composicao]).IsSuccess.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Folha solteira repetePorEntidade não bloqueia PendenciaPreCanonicalizacao")]
+    public void FolhaSolteira_RepetePorEntidade_NaoBloqueia()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = FaseDeInscricao();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
+        DefinirComposicaoFamiliarNaInscricao(processo, fase);
+        NoExigencia folha = NoExigencia.CriarFolha(
+            DocumentoQualquer(fase.Id, FinalidadeFormulario.Inscricao), 0, repetePorEntidade: "COMPOSICAO_FAMILIAR").Value!;
+        processo.DefinirDocumentosExigidos([folha]).IsSuccess.Should().BeTrue();
+
+        DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
+
+        pendencia.Should().BeNull(pendencia?.Message);
+    }
+
+    [Fact(DisplayName = "Grupo E/OU com filhos aplicáveis não bloqueia PendenciaPreCanonicalizacao")]
+    public void Grupo_ComFilhos_NaoBloqueia()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = NovaFase(Guid.CreateVersion7(), permiteComplementacao: true);
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
+
+        NoExigencia folha = NoExigencia.CriarFolha(DocumentoQualquer(fase.Id), 0).Value!;
+        NoExigencia grupo = NoExigencia.CriarGrupo(
+            TipoNo.GrupoOu, 0, 1, "ELIMINA", [BaseLegal(StatusBaseLegal.Resolvido)], [folha]).Value!;
+        processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
+
+        DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
+
+        pendencia.Should().BeNull(pendencia?.Message);
+    }
+}

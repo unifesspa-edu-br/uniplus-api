@@ -21,6 +21,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -215,58 +216,82 @@ public sealed class IniciarInscricaoCommandHandlerTests
 
     private static Cenario MontarCriacao(Cpf cpf)
     {
-        ProcessoSeletivo processoBase = ProcessoSeletivoConformeBuilder.Criar("PS 2026 — Inscrição");
-        GrupoColetado grupoComDocumento = GrupoColetado.Criar(
-            "COMPOSICAO_FAMILIAR", 0, etapaCodigo: null, "Composição familiar",
-            minimo: 0, maximo: null, exibicao: null, Obrigatoriedade.Sempre,
-            [FatoColetado.Criar(
-                "RG_NUMERO_MEMBRO", 0, "RG do membro", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null,
-                classificacaoProtecao: "IDENTIFICADOR", formato: "LIVRE", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!],
-            FinalidadeFormulario.Inscricao).Value!;
-
-        GrafoConfiguracao grafo = new(
-            [.. processoBase.Etapas], processoBase.AtendimentoEspecializado!, [.. processoBase.DistribuicaoVagas],
-            processoBase.BonusRegional, [.. processoBase.CriteriosDesempate], processoBase.Classificacao!,
-            [.. processoBase.CronogramaFases], [.. processoBase.DocumentosExigidos], [], null,
-            fatosColetados:
-            [
-                FatoColetado.Criar("RG_NUMERO", 0, "RG", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null, classificacaoProtecao: "IDENTIFICADOR", formato: "LIVRE", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-                FatoColetado.Criar("NOME_SOCIAL", 1, "Nome social", TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", formato: "LIVRE", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-            ],
-            formularios: [.. processoBase.Formularios],
-            gruposColetados: [grupoComDocumento],
-            numeroDeOpcoesDeCurso: 1);
-
-        VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
-            ProcessoId, Encoding.UTF8.GetBytes("""{"documentosExigidos":{"dataReferenciaFatos":null}}"""), "0.0.22", "canonical-json/sha256@v1",
-            Guid.CreateVersion7(), new string('a', 64), "user-conta-1", DataHoraFixa);
-
-        CertameDivulgado divulgado = CertameDivulgado.Criar(
-            ProcessoId, numeroVersao: 1, AtoDaDivulgacao, new string('a', 64), versaoProjecao: "1",
-            new FacetasDoCertameDivulgado("certame-inscricao", "Certame", "001/2026", ["AC"], DataHoraFixa, DataHoraFixa.AddDays(30)),
-            """{"nome":"documento"}""", DataHoraFixa);
-
-        EnvelopeReidratado envelopeReidratado = new(
+        GrafoConfiguracao grafo = GrafoComDocumentoNoGrupo(ProcessoSeletivoConformeBuilder.Criar("PS 2026 — Inscrição"));
+        VersaoConfiguracao versao = VersaoDoCenario();
+        EnvelopeReidratado envelope = new(
             grafo,
             DadosEdital.Criar("001/2026", DivulgacaoDeTeste.InicioDoPeriodo, DivulgacaoDeTeste.FimDoPeriodo, Guid.CreateVersion7()).Value!,
             new string('a', 64), "America/Belem", retificacao: null, conformidade: null);
 
-        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
-        inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns((Inscricao?)null);
+        return new Cenario(InscricoesSemAtiva(cpf), DivulgadosCom(DivulgadoDoCenario()), ProcessosCom(versao), CodecsQueLem(versao, envelope), versao);
+    }
 
-        ICertameDivulgadoRepository divulgadoRepository = Substitute.For<ICertameDivulgadoRepository>();
-        divulgadoRepository.ObterParaLeituraAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns(divulgado);
+    private static FatoColetado Fato(string codigo, int ordem, string rotulo, Obrigatoriedade obrigatoriedade, string classificacao) =>
+        FatoColetado.Criar(
+            codigo, ordem, rotulo, TipoRenderizacao.Texto, obrigatoriedade, null, classificacaoProtecao: classificacao, formato: "LIVRE",
+            hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
 
-        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        processoRepository.ObterVersoesPorAtoCriadorAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
-            .Returns([versao]);
-        processoRepository.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([versao]);
+    private static GrupoColetado GrupoComDocumento() => GrupoColetado.Criar(
+        "COMPOSICAO_FAMILIAR", 0, etapaCodigo: null, "Composição familiar",
+        minimo: 0, maximo: null, exibicao: null, Obrigatoriedade.Sempre,
+        [Fato("RG_NUMERO_MEMBRO", 0, "RG do membro", Obrigatoriedade.Sempre, "IDENTIFICADOR")],
+        FinalidadeFormulario.Inscricao).Value!;
 
-        IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
-        registroCodecs.Capacidades.Returns([new CapacidadeCodec("0.0.22", TemEncoder: true, TemDecoder: true, MotivoDaRecusa: null)]);
-        registroCodecs.Reidratar(versao).Returns(Result<EnvelopeReidratado>.Success(envelopeReidratado));
+    private static GrafoConfiguracao GrafoComDocumentoNoGrupo(ProcessoSeletivo processoBase) => new(
+        [.. processoBase.Etapas], processoBase.AtendimentoEspecializado!, [.. processoBase.DistribuicaoVagas],
+        processoBase.BonusRegional, [.. processoBase.CriteriosDesempate], processoBase.Classificacao!,
+        [.. processoBase.CronogramaFases], [.. processoBase.DocumentosExigidos], [], null,
+        fatosColetados:
+        [
+            Fato("RG_NUMERO", 0, "RG", Obrigatoriedade.Sempre, "IDENTIFICADOR"),
+            Fato("NOME_SOCIAL", 1, "Nome social", Obrigatoriedade.Nunca, "PESSOAL"),
+        ],
+        formularios: [.. processoBase.Formularios],
+        gruposColetados: [GrupoComDocumento()],
+        numeroDeOpcoesDeCurso: 1);
 
-        return new Cenario(inscricaoRepository, divulgadoRepository, processoRepository, registroCodecs, versao);
+    private static VersaoConfiguracao VersaoDoCenario() => VersaoConfiguracao.Abrir(
+        ProcessoId,
+        new DocumentoCongelado(Encoding.UTF8.GetBytes("""{"documentosExigidos":{"dataReferenciaFatos":null}}"""), "0.0.22", "canonical-json/sha256@v1", new string('a', 64)),
+        Guid.CreateVersion7(), "user-conta-1", DataHoraFixa);
+
+    private static CertameDivulgado DivulgadoDoCenario() => CertameDivulgado.Criar(
+        ProcessoId, numeroVersao: 1, AtoDaDivulgacao, new string('a', 64), versaoProjecao: "1",
+        new FacetasDoCertameDivulgado("certame-inscricao", "Certame", "001/2026", ["AC"], DataHoraFixa, DataHoraFixa.AddDays(30)),
+        """{"nome":"documento"}""", DataHoraFixa);
+
+    private static IInscricaoRepository InscricoesSemAtiva(Cpf cpf)
+    {
+        IInscricaoRepository inscricoes = Substitute.For<IInscricaoRepository>();
+        inscricoes.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns((Inscricao?)null);
+
+        return inscricoes;
+    }
+
+    private static ICertameDivulgadoRepository DivulgadosCom(CertameDivulgado divulgado)
+    {
+        ICertameDivulgadoRepository divulgados = Substitute.For<ICertameDivulgadoRepository>();
+        divulgados.ObterParaLeituraAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns(divulgado);
+
+        return divulgados;
+    }
+
+    private static IProcessoSeletivoRepository ProcessosCom(VersaoConfiguracao versao)
+    {
+        IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
+        processos.ObterVersoesPorAtoCriadorAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([versao]);
+        processos.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([versao]);
+
+        return processos;
+    }
+
+    private static IRegistroCodecsEnvelope CodecsQueLem(VersaoConfiguracao versao, EnvelopeReidratado envelope)
+    {
+        IRegistroCodecsEnvelope codecs = Substitute.For<IRegistroCodecsEnvelope>();
+        codecs.Capacidades.Returns([new CapacidadeCodec("0.0.22", TemEncoder: true, TemDecoder: true, MotivoDaRecusa: null)]);
+        codecs.Reidratar(versao).Returns(Result<EnvelopeReidratado>.Success(envelope));
+
+        return codecs;
     }
 
     private static Task<Result<InscricaoDto>> Iniciar(Cenario cenario, Cpf cpf, TimeProvider relogio) =>

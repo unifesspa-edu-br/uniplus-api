@@ -20,5 +20,13 @@ public sealed record DefinirBonusRegionalCommand(
     decimal? Fator,
     decimal? Teto,
     string? FatoElegibilidadeCodigo,
-    Guid? BaseLegalBonusRegionalId,
-    PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;
+    Guid? BaseLegalBonusRegionalId) : ICommand<Result>
+{
+    /// <summary>
+    /// Qualquer campo do bônus enviado: com <see cref="Aplica"/> falso ele contradiz a declaração, e descartá-lo em silêncio
+    /// esconderia um payload mal formado.
+    /// </summary>
+    public bool TemConfiguracaoDoBonus =>
+        RegraCodigo is not null || RegraVersao is not null || Fator is not null
+        || Teto is not null || FatoElegibilidadeCodigo is not null || BaseLegalBonusRegionalId is not null;
+}

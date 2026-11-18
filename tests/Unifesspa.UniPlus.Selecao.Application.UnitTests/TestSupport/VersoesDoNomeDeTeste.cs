@@ -35,21 +35,26 @@ internal static class VersoesDoNomeDeTeste
         Guid processoId, params (VersaoConfiguracao Versao, Result<EnvelopeReidratado> Envelope)[] versoes)
     {
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
-        processos.ObterUnidadeAdministradoraAsync(processoId, Arg.Any<CancellationToken>()).Returns(DecisoesDeAcessoDeTeste.UnidadeDona);
         processos.ObterUnidadeENomeAsync(processoId, Arg.Any<CancellationToken>())
             .Returns(new UnidadeENomeDoProcesso(DecisoesDeAcessoDeTeste.UnidadeDona, "PSR 2027"));
         IReadOnlyList<VersaoConfiguracao> todas = [.. versoes.Select(static v => v.Versao)];
         processos.ObterVersoesAsync(processoId, Arg.Any<CancellationToken>()).Returns(todas);
 
+        return (processos, CodecsQueReidratam(versoes));
+    }
+
+    private static IRegistroCodecsEnvelope CodecsQueReidratam(
+        params (VersaoConfiguracao Versao, Result<EnvelopeReidratado> Envelope)[] versoes)
+    {
         IRegistroCodecsEnvelope codecs = Substitute.For<IRegistroCodecsEnvelope>();
         IReadOnlyList<CapacidadeCodec> capacidades =
-            [.. todas.Select(static v => v.SchemaVersion).Distinct().Select(static s => new CapacidadeCodec(s, TemEncoder: true, TemDecoder: true, MotivoDaRecusa: null))];
+            [.. versoes.Select(static v => v.Versao.SchemaVersion).Distinct().Select(static s => new CapacidadeCodec(s, TemEncoder: true, TemDecoder: true, MotivoDaRecusa: null))];
         codecs.Capacidades.Returns(capacidades);
         foreach ((VersaoConfiguracao versao, Result<EnvelopeReidratado> envelope) in versoes)
         {
             codecs.Reidratar(versao).Returns(envelope);
         }
 
-        return (processos, codecs);
+        return codecs;
     }
 }

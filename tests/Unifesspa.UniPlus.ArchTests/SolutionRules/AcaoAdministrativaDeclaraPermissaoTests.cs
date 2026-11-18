@@ -26,6 +26,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Selecao.API.Authorization;
 using Unifesspa.UniPlus.Selecao.API.Controllers;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Application.Commands.Rascunhos;
 using Unifesspa.UniPlus.Selecao.Application.Queries.CampoDaInscricao;
 using Unifesspa.UniPlus.Selecao.Application.Queries.DocumentosDaInscricao;
 using Unifesspa.UniPlus.Selecao.Application.Queries.InscricoesDoProcesso;
@@ -47,6 +48,8 @@ public sealed class AcaoAdministrativaDeclaraPermissaoTests
     {
         // A criação do processo depende da unidade informada no corpo, porque o processo ainda não existe.
         [Acao(typeof(ProcessoSeletivoController), nameof(ProcessoSeletivoController.Criar))] = typeof(CriarProcessoSeletivoCommand),
+        // A criação do rascunho depende da unidade que o documento informa, porque o rascunho ainda não existe.
+        [Acao(typeof(RascunhosDeProcessosSeletivosController), nameof(RascunhosDeProcessosSeletivosController.Criar))] = typeof(CriarRascunhoDeProcessoSeletivoCommand),
         // O detalhe, a revelação de um campo e o acesso ao arquivo dependem da inscrição (e, no campo, da classificação congelada do fato
         // e, no arquivo, da da exigência), e a recusa responde o mesmo 404 do que não existe.
         [Acao(typeof(InscricoesDoProcessoController), nameof(InscricoesDoProcessoController.Obter))] = typeof(ObterInscricaoAdministrativaQuery),

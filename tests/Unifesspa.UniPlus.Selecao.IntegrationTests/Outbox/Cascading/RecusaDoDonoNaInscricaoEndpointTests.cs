@@ -101,7 +101,7 @@ public sealed class RecusaDoDonoNaInscricaoEndpointTests
     {
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, $"Dono da inscrição {Guid.CreateVersion7()}");
+        (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"Dono da inscrição {Guid.CreateVersion7()}" });
         Inscricao rascunho = Inscricao.Iniciar(processo.Id, PersonasDeTeste.FernandaDrumond, Dono, TestAuthHandler.DefaultIssuer, Guid.CreateVersion7()).Value!;
         await escopo.ServiceProvider.GetRequiredService<IInscricaoRepository>().AdicionarAsync(rascunho);
         await escopo.ServiceProvider.GetRequiredService<IUnitOfWork>().SalvarAlteracoesAsync();

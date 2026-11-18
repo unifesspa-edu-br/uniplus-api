@@ -25,8 +25,9 @@ public sealed class ItensDeAvaliacaoPersistenciaTests(ProcessoSeletivoDbFixture 
 
     private static EtapaProcesso Entrevista(TipoEtapaSnapshot tipo, IReadOnlyList<ItemDeAvaliacaoDeclarado> itens, IReadOnlyList<NivelDeAtendimento>? escala) =>
         EtapaProcesso.Criar(
-            "Entrevista", CaraterEtapa.Classificatoria, tipo, peso: 1m, ordem: 1, notaMaxima: 10m,
-            formaDeAvaliacao: FormaDeAvaliacao.Humana, itensDeAvaliacao: itens, escalaDeAtendimento: escala).Value!;
+            new IdentificacaoDaEtapa(Nome: "Entrevista", Carater: CaraterEtapa.Classificatoria, TipoEtapa: tipo, Ordem: 1, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: null, EscalaDeAtendimento: escala),
+            itens).Value!;
 
     [Fact(DisplayName = "Os itens e a escala gravados voltam com o mesmo id, e a regravação com o id troca o rótulo na mesma linha")]
     public async Task ItensEEscala_SobrevivemAoBancoEARegravacaoPreservaOId()
@@ -38,13 +39,13 @@ public sealed class ItensDeAvaliacaoPersistenciaTests(ProcessoSeletivoDbFixture 
         {
             ProcessoSeletivo processo = ProcessoSeletivo.Criar(
                 $"Certame de itens {Guid.CreateVersion7()}", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.CreateVersion7(),
-                UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+                UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
                 LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
             EtapaProcesso etapa = Entrevista(
                 tipo,
                 [new(null, "Clareza", 4m), new(null, "Domínio", 6m)],
                 [new("Não atendeu", 0m), new("Atendeu", 1m), new("Atendeu parcialmente", 0.5m)]);
-            processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            processo.DefinirEtapas([etapa]).IsSuccess.Should().BeTrue();
 
             escrita.ProcessosSeletivos.Add(processo);
             await escrita.SaveChangesAsync();
@@ -60,10 +61,9 @@ public sealed class ItensDeAvaliacaoPersistenciaTests(ProcessoSeletivoDbFixture 
             idDaClareza = etapa.ItensDeAvaliacao.Single(static i => i.Rotulo == "Clareza").Id;
 
             etapa.AtualizarDados(
-                etapa.Nome, etapa.Carater, etapa.TipoEtapa, etapa.Peso, etapa.NotaMinima, etapa.Ordem, etapa.FaseCodigo,
-                etapa.NotaMaxima, etapa.PassoDoLancamento, etapa.FormaDeAvaliacao, etapa.RegraConsolidacao,
-                [new(idDaClareza, "Objetividade", 4m), new(null, "Postura", 6m)],
-                etapa.EscalaDeAtendimento).IsSuccess.Should().BeTrue();
+                new IdentificacaoDaEtapa(Nome: etapa.Nome, Carater: etapa.Carater, TipoEtapa: etapa.TipoEtapa, Ordem: etapa.Ordem, FaseCodigo: etapa.FaseCodigo),
+                new DeclaracaoDaAvaliacaoDaEtapa(Peso: etapa.Peso, NotaMinima: etapa.NotaMinima, NotaMaxima: etapa.NotaMaxima, PassoDoLancamento: etapa.PassoDoLancamento, FormaDeAvaliacao: etapa.FormaDeAvaliacao, RegraConsolidacao: etapa.RegraConsolidacao, EscalaDeAtendimento: etapa.EscalaDeAtendimento),
+                [new(idDaClareza, "Objetividade", 4m), new(null, "Postura", 6m)]).IsSuccess.Should().BeTrue();
             await regravacao.SaveChangesAsync();
         }
 

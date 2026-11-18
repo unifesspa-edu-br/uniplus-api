@@ -11,14 +11,16 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// <summary>
 /// Os cadastros que a edição do cronograma consulta. A unidade responsável e a categoria de documento são
 /// lidas uma vez por chave, porque um cronograma real repete a mesma categoria em bancas de fases
-/// diferentes; a fase canônica, o tipo de banca e a regra são lidos a cada uso.
+/// diferentes; a fase canônica, o tipo de banca e a regra são lidos a cada uso. O catálogo de fatos, de que o
+/// enquadramento da regra de homologação depende, é lido uma vez por edição.
 /// </summary>
 internal sealed class CadastrosDasFases(
     IFaseCanonicaReader faseCanonicaReader,
     IResolvedorDaUnidadeResponsavel unidadeResponsavelResolvedor,
     ITipoBancaReader tipoBancaReader,
     ICategoriaDocumentoReader categoriaDocumentoReader,
-    IRegraCatalogoReader regraCatalogoReader)
+    IRegraCatalogoReader regraCatalogoReader,
+    IFatoCandidatoReader fatoCandidatoReader)
 {
     public IFaseCanonicaReader FasesCanonicas { get; } = faseCanonicaReader;
 
@@ -31,4 +33,8 @@ internal sealed class CadastrosDasFases(
 
     public LeituraMemoizada<Guid, CategoriaDocumentoView> Categorias { get; } =
         new((categoriaId, cancellationToken) => categoriaDocumentoReader.ObterPorIdAsync(categoriaId, cancellationToken));
+
+    public LeituraMemoizada<ProcessoSeletivo, ContextoDoCatalogo> Catalogos { get; } =
+        new(async (processo, cancellationToken) => ContextoDoCatalogo.De(
+            processo, await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false)));
 }

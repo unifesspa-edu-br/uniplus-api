@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/cascata-de-remanejamento.schema.json",
+  "title": "Cascata de remanejamento",
+  "description": "A ordem em que as vagas não preenchidas de uma modalidade passam a outras. No máximo uma cascata por processo; sem o objeto, o processo não tem cascata.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "regra": {
+      "title": "Regra de remanejamento",
+      "description": "Regra do catálogo que define o remanejamento.",
+      "$ref": "comuns.schema.json#/$defs/referenciaDeRegra"
+    },
+    "fallbackCodigo": {
+      "title": "Modalidade de destino final",
+      "description": "Código da modalidade que recebe as vagas quando nenhum destino da cascata as absorve, em geral a ampla concorrência.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60,
+      "pattern": "^[A-Z0-9_]+$"
+    },
+    "destinos": {
+      "title": "Destinos",
+      "description": "Os destinos de cada modalidade de origem, até 56 no total e até 8 origens distintas.",
+      "type": "array",
+      "maxItems": 56,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "modalidadeOrigemCodigo",
+          "ordem",
+          "modalidadeDestinoCodigo"
+        ],
+        "properties": {
+          "modalidadeOrigemCodigo": {
+            "title": "Modalidade de origem",
+            "description": "Código da modalidade que cede as vagas.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60,
+            "pattern": "^[A-Z0-9_]+$"
+          },
+          "ordem": {
+            "title": "Ordem",
+            "description": "Posição do destino na cascata da origem, a partir de 1. A ordem é semântica: decide quem recebe primeiro.",
+            "type": "integer",
+            "minimum": 1
+          },
+          "modalidadeDestinoCodigo": {
+            "title": "Modalidade de destino",
+            "description": "Código da modalidade que recebe as vagas.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60,
+            "pattern": "^[A-Z0-9_]+$"
+          }
+        }
+      }
+    }
+  }
+}

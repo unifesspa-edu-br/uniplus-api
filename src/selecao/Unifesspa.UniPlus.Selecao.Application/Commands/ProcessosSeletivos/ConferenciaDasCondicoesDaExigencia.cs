@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using System.Text.Json;
 
 using Domain.Entities;
-using Domain.ProcessosSeletivos.Edicao;
 using Domain.ProcessosSeletivos.Exigencias;
 using Domain.Services;
 using Domain.ValueObjects;
@@ -45,7 +44,7 @@ internal static class ConferenciaDasCondicoesDaExigencia
     // qual se repete, avaliados em cada ocorrência (ADR-0138). Fora dela, o campo de membro não está no
     // universo e é recusado.
     private static HashSet<string> UniversoDaFolha(ProcessoSeletivo processo, FatosDoGatilho fatos, string? grupoDaRepeticao) =>
-        new(fatos.Resolviveis.Concat(RegrasDasExigencias.CamposDoGrupo(EstadoDaConfiguracao.De(processo), grupoDaRepeticao)), StringComparer.Ordinal);
+        new(fatos.Resolviveis.Concat(RegrasDasExigencias.CamposDoGrupo(processo.Declaracao(), grupoDaRepeticao)), StringComparer.Ordinal);
 
     private static Result<IReadOnlyList<CondicaoGatilho>> Montar(
         IReadOnlyList<CondicaoGatilhoInput> declaradas, FatosDoGatilho fatos, IReadOnlySet<string> universo)
@@ -118,11 +117,11 @@ internal static class ConferenciaDasCondicoesDaExigencia
     private static Result ConferirGateDeFase(
         IReadOnlyList<CondicaoGatilho> condicoes, ItemDocumentoExigidoInput folha, ProcessoSeletivo processo, FatosDoGatilho fatos)
     {
-        EstadoDaConfiguracao estado = EstadoDaConfiguracao.De(processo);
+        ConfiguracaoDeclarada configuracao = processo.Declaracao();
         FinalidadeFormulario? finalidade = EscritaDaExigencia.FinalidadeDoToken(folha.Finalidade);
         DomainError? recusa = condicoes
             .Select(c => FaseEfetivaDoFato.RecusaDeFaseDoGatilho(
-                estado, c.Fato, folha.ExigidoNaFaseId, finalidade, fatos.PontoResolucaoPorFato, fatos.MembroPorAgregado))
+                configuracao, c.Fato, folha.ExigidoNaFaseId, finalidade, fatos.PontoResolucaoPorFato, fatos.MembroPorAgregado))
             .FirstOrDefault(static r => r is not null);
         return recusa is null ? Result.Success() : Result.Failure(recusa);
     }

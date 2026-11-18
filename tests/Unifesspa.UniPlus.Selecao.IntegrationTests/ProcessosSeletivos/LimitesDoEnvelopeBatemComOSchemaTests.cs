@@ -58,6 +58,7 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         // Story #1466 — bônus regional referencia Base Legal tipada (snapshot congelado).
         ("TipoInstrumentoNormativo", LimitesDoEnvelope.TipoInstrumentoNormativo, typeof(ConfiguracaoBonusRegional), nameof(ConfiguracaoBonusRegional.TipoInstrumento)),
         ("FatoElegibilidadeBonusRegional", LimitesDoEnvelope.FatoElegibilidadeBonusRegional, typeof(ConfiguracaoBonusRegional), nameof(ConfiguracaoBonusRegional.FatoElegibilidadeCodigo)),
+        ("CodigoBaseLegalBonusRegional", LimitesDoEnvelope.CodigoBaseLegalBonusRegional, typeof(ConfiguracaoBonusRegional), nameof(ConfiguracaoBonusRegional.BaseLegalBonusRegionalCodigo)),
         ("IdentificacaoBaseLegalBonusRegional", LimitesDoEnvelope.IdentificacaoBaseLegalBonusRegional, typeof(ConfiguracaoBonusRegional), nameof(ConfiguracaoBonusRegional.Identificacao)),
         ("DescricaoBaseLegalBonusRegional", LimitesDoEnvelope.DescricaoBaseLegalBonusRegional, typeof(ConfiguracaoBonusRegional), nameof(ConfiguracaoBonusRegional.Descricao)),
         ("MunicipioBonusRegionalCodigoIbge", LimitesDoEnvelope.MunicipioBonusRegionalCodigoIbge, typeof(ConfiguracaoBonusRegionalMunicipio), nameof(ConfiguracaoBonusRegionalMunicipio.CodigoIbge)),
@@ -120,6 +121,7 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         ("TextoEtapaFormulario", LimitesDoEnvelope.TextoEtapaFormulario, typeof(EtapaFormulario), nameof(EtapaFormulario.Aviso)),
         ("CodigoModeloDeFormulario", LimitesDoEnvelope.CodigoModeloDeFormulario, typeof(FormularioProcesso), nameof(FormularioProcesso.ModeloOrigemCodigo)),
         ("CodigoTermoExigido", LimitesDoEnvelope.CodigoTermoExigido, typeof(TermoExigidoFormulario), nameof(TermoExigidoFormulario.Codigo)),
+        ("CodigoDoTermoNoCatalogo", LimitesDoEnvelope.CodigoDoTermoNoCatalogo, typeof(TermoExigidoFormulario), nameof(TermoExigidoFormulario.TermoCodigo)),
         ("NomeDoTermo", LimitesDoEnvelope.NomeDoTermo, typeof(TermoExigidoFormulario), nameof(TermoExigidoFormulario.Nome)),
         ("TextoDoTermo", LimitesDoEnvelope.TextoDoTermo, typeof(TermoExigidoFormulario), nameof(TermoExigidoFormulario.Texto)),
         ("BaseLegalDoTermo", LimitesDoEnvelope.BaseLegalDoTermo, typeof(TermoExigidoFormulario), nameof(TermoExigidoFormulario.BaseLegal)),
@@ -151,7 +153,7 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         ("PrecisaoEtapa", LimitesDoEnvelope.PrecisaoEtapa, 4, typeof(ItemDeAvaliacao), nameof(ItemDeAvaliacao.PontuacaoMaxima)),
         ("PrecisaoBonus", LimitesDoEnvelope.PrecisaoBonus, 4, typeof(ConfiguracaoBonusRegional), nameof(ConfiguracaoBonusRegional.Fator)),
         ("PrecisaoBonus", LimitesDoEnvelope.PrecisaoBonus, 4, typeof(ConfiguracaoBonusRegional), nameof(ConfiguracaoBonusRegional.Teto)),
-        ("PrecisaoPr", LimitesDoEnvelope.PrecisaoPr, 4, typeof(ConfiguracaoDistribuicaoVagas), nameof(ConfiguracaoDistribuicaoVagas.Pr)),
+        ("PrecisaoPr", LimitesDoEnvelope.PrecisaoPr, 4, typeof(ConfiguracaoDistribuicaoVagas), nameof(ConfiguracaoDistribuicaoVagas.PercentualDaReservaLegal)),
         ("PrecisaoTaxaInscricao", LimitesDoEnvelope.PrecisaoTaxaInscricao, ConfiguracaoTaxaInscricao.ValorEscala, typeof(ConfiguracaoTaxaInscricao), nameof(ConfiguracaoTaxaInscricao.Valor)),
         ("PrecisaoPesoAreaEnem", LimitesDoEnvelope.PrecisaoPesoAreaEnem, 4, typeof(AreaPesoAreaEnemCongelada), nameof(AreaPesoAreaEnemCongelada.Peso)),
         ("PrecisaoCorteAreaEnem", LimitesDoEnvelope.PrecisaoCorteAreaEnem, 4, typeof(AreaPesoAreaEnemCongelada), nameof(AreaPesoAreaEnemCongelada.Corte)),
@@ -263,132 +265,122 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
     {
         using UniPlusDbContext contexto = ContextoSoParaOModelo();
 
-        IEntityType demografica = contexto.Model
-            .FindEntityType(typeof(ConfiguracaoDistribuicaoVagas))!
-            .GetNavigations()
-            .Single(n => n.Name == nameof(ConfiguracaoDistribuicaoVagas.ReferenciaDemografica))
-            .TargetEntityType;
+        ConferirAReferenciaDemografica(contexto);
+        ConferirOGrupoDeAreaEnem(contexto);
+        ConferirOPrazoDoRecursoDaFase(contexto);
+        ConferirOPrazoDoRecursoDaEtapa(contexto);
+        ConferirAUnidadeAdministradora(contexto);
+        ConferirOTipoDaEtapa(contexto);
+    }
+
+    private static IEntityType OwnedDe<TDono>(UniPlusDbContext contexto, string navegacao) =>
+        contexto.Model.FindEntityType(typeof(TDono))!.GetNavigations().Single(n => n.Name == navegacao).TargetEntityType;
+
+    private static void ConferirAReferenciaDemografica(UniPlusDbContext contexto)
+    {
+        IEntityType demografica = OwnedDe<ConfiguracaoDistribuicaoVagas>(contexto, nameof(ConfiguracaoDistribuicaoVagas.ReferenciaDemografica));
 
         demografica.FindProperty(nameof(ReferenciaReservaDemograficaSnapshot.CensoReferencia))!.GetMaxLength()
             .Should().Be(LimitesDoEnvelope.CensoReferencia);
 
-        IEntityType grupoAreaEnem = contexto.Model
-            .FindEntityType(typeof(ConfiguracaoDistribuicaoVagas))!
-            .GetNavigations()
-            .Single(n => n.Name == nameof(ConfiguracaoDistribuicaoVagas.GrupoAreaEnem))
-            .TargetEntityType;
-
-        grupoAreaEnem.FindProperty(nameof(GrupoAreaEnemSnapshot.Codigo))!.GetMaxLength()
-            .Should().Be(LimitesDoEnvelope.GrupoAreaEnemCodigo);
-        grupoAreaEnem.FindProperty(nameof(GrupoAreaEnemSnapshot.Rotulo))!.GetMaxLength()
-            .Should().Be(LimitesDoEnvelope.GrupoAreaEnemRotulo);
-
-        // O mesmo snapshot do grupo, no quadro de pesos por área congelado na classificação.
-        IEntityType grupoDoQuadro = contexto.Model
-            .FindEntityType(typeof(GrupoPesoAreaEnemCongelado))!
-            .GetNavigations()
-            .Single(n => n.Name == nameof(GrupoPesoAreaEnemCongelado.GrupoAreaEnem))
-            .TargetEntityType;
-
-        grupoDoQuadro.FindProperty(nameof(GrupoAreaEnemSnapshot.Codigo))!.GetMaxLength()
-            .Should().Be(LimitesDoEnvelope.GrupoAreaEnemCodigo);
-        grupoDoQuadro.FindProperty(nameof(GrupoAreaEnemSnapshot.Rotulo))!.GetMaxLength()
-            .Should().Be(LimitesDoEnvelope.GrupoAreaEnemRotulo);
-
-        foreach (string percentual in new[]
-        {
-            nameof(ReferenciaReservaDemograficaSnapshot.PpiPercentual),
-            nameof(ReferenciaReservaDemograficaSnapshot.QuilombolaPercentual),
-            nameof(ReferenciaReservaDemograficaSnapshot.PcdPercentual),
-        })
+        foreach (string percentual in PercentuaisDaReferenciaDemografica)
         {
             demografica.FindProperty(percentual)!.GetPrecision()
                 .Should().Be(LimitesDoEnvelope.PrecisaoPercentual, $"LimitesDoEnvelope.PrecisaoPercentual espelha a coluna de {percentual}");
         }
+    }
 
-        // Story #851 — as precisões do prazo de interposição e das duas suspensividades.
-        IEntityType argsPrazoRecurso = contexto.Model
-            .FindEntityType(typeof(RegraRecursoFase))!
-            .GetNavigations()
-            .Single(n => n.Name == nameof(RegraRecursoFase.Args))
-            .TargetEntityType;
+    private static void ConferirOGrupoDeAreaEnem(UniPlusDbContext contexto)
+    {
+        IEntityType grupoDaOferta = OwnedDe<ConfiguracaoDistribuicaoVagas>(contexto, nameof(ConfiguracaoDistribuicaoVagas.GrupoAreaEnem));
+        // O mesmo snapshot do grupo, no quadro de pesos por área congelado na classificação.
+        IEntityType grupoDoQuadro = OwnedDe<GrupoPesoAreaEnemCongelado>(contexto, nameof(GrupoPesoAreaEnemCongelado.GrupoAreaEnem));
 
-        foreach (string campoPrazo in new[]
+        foreach (IEntityType grupo in new[] { grupoDaOferta, grupoDoQuadro })
         {
-            nameof(ArgsRegraPrazoRecurso.PrazoValor),
-            nameof(ArgsRegraPrazoRecurso.SuspensividadePrimeiraInstanciaValor),
-            nameof(ArgsRegraPrazoRecurso.SuspensividadeSegundaInstanciaValor),
-        })
+            grupo.FindProperty(nameof(GrupoAreaEnemSnapshot.Codigo))!.GetMaxLength().Should().Be(LimitesDoEnvelope.GrupoAreaEnemCodigo);
+            grupo.FindProperty(nameof(GrupoAreaEnemSnapshot.Rotulo))!.GetMaxLength().Should().Be(LimitesDoEnvelope.GrupoAreaEnemRotulo);
+        }
+    }
+
+    // Story #851 — as precisões do prazo de interposição e das duas suspensividades.
+    private static void ConferirOPrazoDoRecursoDaFase(UniPlusDbContext contexto)
+    {
+        IEntityType parametros = OwnedDe<RegraRecursoFase>(contexto, nameof(RegraRecursoFase.Parametros));
+
+        foreach (string campoPrazo in CamposDePrazoDoRecurso)
         {
-            IProperty coluna = argsPrazoRecurso.FindProperty(campoPrazo)!;
+            IProperty coluna = parametros.FindProperty(campoPrazo)!;
             coluna.GetPrecision()
                 .Should().Be(LimitesDoEnvelope.PrecisaoPrazo, $"LimitesDoEnvelope.PrecisaoPrazo espelha a coluna de {campoPrazo}");
             coluna.GetScale().Should().Be(EscalaDoPrazo);
         }
+    }
 
-        // Os prazos da janela recursal da ETAPA precisam das mesmas precisões que os da fase: o
-        // decodificador do envelope usa uma constante só para os dois lados, então uma coluna
-        // mais estreita aqui produz envelope que ele aprova e o INSERT recusa.
-        IEntityType recursoDaEtapa = contexto.Model.FindEntityType(typeof(RecursoDaEtapa))!;
+    /// <summary>
+    /// Os prazos do período recursal da ETAPA precisam das mesmas precisões que os da fase: o
+    /// decodificador do envelope usa uma constante só para os dois lados, então uma coluna
+    /// mais estreita aqui produz envelope que ele aprova e o INSERT recusa.
+    /// </summary>
+    private static void ConferirOPrazoDoRecursoDaEtapa(UniPlusDbContext contexto)
+    {
+        IEntityType parametros = OwnedDe<RecursoDaEtapa>(contexto, nameof(RecursoDaEtapa.Parametros));
 
-        IEntityType argsDoRecursoDaEtapa = recursoDaEtapa
-            .GetNavigations()
-            .Single(n => n.Name == nameof(RecursoDaEtapa.Args))
-            .TargetEntityType;
-
-        foreach (string campoPrazo in new[]
+        foreach (string campoPrazo in CamposDePrazoDoRecurso)
         {
-            nameof(ArgsRegraPrazoRecurso.PrazoValor),
-            nameof(ArgsRegraPrazoRecurso.SuspensividadePrimeiraInstanciaValor),
-            nameof(ArgsRegraPrazoRecurso.SuspensividadeSegundaInstanciaValor),
-        })
-        {
-            IProperty coluna = argsDoRecursoDaEtapa.FindProperty(campoPrazo)!;
+            IProperty coluna = parametros.FindProperty(campoPrazo)!;
             coluna.GetPrecision()
                 .Should().Be(LimitesDoEnvelope.PrecisaoPrazo, $"LimitesDoEnvelope.PrecisaoPrazo espelha a coluna de {campoPrazo} em recursos_da_etapa");
             coluna.GetScale().Should().Be(EscalaDoPrazo,
                 $"a escala de {campoPrazo} é o que o decodificador aceita; uma coluna com menos casas ARREDONDA o prazo " +
                 "em silêncio, e a prova de round-trip não enxerga arredondamento — só o valor restaurado sai diferente do congelado");
         }
+    }
 
-        // Issue #849 — Unidade administradora (identidadesUnidade).
-        IEntityType unidadeAdministradora = contexto.Model
-            .FindEntityType(typeof(ProcessoSeletivo))!
-            .GetNavigations()
-            .Single(n => n.Name == nameof(ProcessoSeletivo.UnidadeAdministradora))
-            .TargetEntityType;
+    private static readonly string[] PercentuaisDaReferenciaDemografica =
+    [
+        nameof(ReferenciaReservaDemograficaSnapshot.PpiPercentual),
+        nameof(ReferenciaReservaDemograficaSnapshot.QuilombolaPercentual),
+        nameof(ReferenciaReservaDemograficaSnapshot.PcdPercentual),
+    ];
 
-        unidadeAdministradora.FindProperty(nameof(UnidadeAdministradoraSnapshot.Sigla))!.GetMaxLength()
-            .Should().Be(LimitesDoEnvelope.UnidadeAdministradoraSigla, "LimitesDoEnvelope.UnidadeAdministradoraSigla espelha a coluna de Sigla");
-        unidadeAdministradora.FindProperty(nameof(UnidadeAdministradoraSnapshot.Slug))!.GetMaxLength()
-            .Should().Be(LimitesDoEnvelope.UnidadeAdministradoraSlug, "LimitesDoEnvelope.UnidadeAdministradoraSlug espelha a coluna de Slug");
-        unidadeAdministradora.FindProperty(nameof(UnidadeAdministradoraSnapshot.Nome))!.GetMaxLength()
-            .Should().Be(LimitesDoEnvelope.UnidadeAdministradoraNome, "LimitesDoEnvelope.UnidadeAdministradoraNome espelha a coluna de Nome");
-        unidadeAdministradora.FindProperty(nameof(UnidadeAdministradoraSnapshot.Tipo))!.GetMaxLength()
-            .Should().Be(LimitesDoEnvelope.UnidadeAdministradoraTipo, "LimitesDoEnvelope.UnidadeAdministradoraTipo espelha a coluna de Tipo");
+    private static readonly string[] CamposDePrazoDoRecurso =
+    [
+        nameof(ParametrosRegraPrazoRecurso.PrazoValor),
+        nameof(ParametrosRegraPrazoRecurso.SuspensividadePrimeiraInstanciaValor),
+        nameof(ParametrosRegraPrazoRecurso.SuspensividadeSegundaInstanciaValor),
+    ];
 
-        // Issue #1114 — cidade da Unidade administradora (opcional all-or-nothing).
-        unidadeAdministradora.FindProperty(nameof(UnidadeAdministradoraSnapshot.CidadeCodigoIbge))!.GetMaxLength()
-            .Should().Be(LimitesDoEnvelope.UnidadeAdministradoraCidadeCodigoIbge, "LimitesDoEnvelope.UnidadeAdministradoraCidadeCodigoIbge espelha a coluna de CidadeCodigoIbge");
-        unidadeAdministradora.FindProperty(nameof(UnidadeAdministradoraSnapshot.CidadeNome))!.GetMaxLength()
-            .Should().Be(LimitesDoEnvelope.UnidadeAdministradoraCidadeNome, "LimitesDoEnvelope.UnidadeAdministradoraCidadeNome espelha a coluna de CidadeNome");
-        unidadeAdministradora.FindProperty(nameof(UnidadeAdministradoraSnapshot.CidadeUf))!.GetMaxLength()
-            .Should().Be(LimitesDoEnvelope.UnidadeAdministradoraCidadeUf, "LimitesDoEnvelope.UnidadeAdministradoraCidadeUf espelha a coluna de CidadeUf");
+    // Issue #849 — Unidade administradora (identidadesUnidade); issue #1114 — cidade (opcional, tudo ou nada).
+    private static void ConferirAUnidadeAdministradora(UniPlusDbContext contexto)
+    {
+        IEntityType unidade = OwnedDe<ProcessoSeletivo>(contexto, nameof(ProcessoSeletivo.UnidadeAdministradora));
 
-        // Issue #1071 — snapshot de tipo de etapa (tipoEtapa aninhado em cada item de etapas).
-        // Diferente do bloco de topo tipoProcesso (só forma, nunca reidratado), este valor É
-        // persistido ao restaurar uma versão — por isso precisa da mesma disciplina de limite.
-        IEntityType tipoEtapa = contexto.Model
-            .FindEntityType(typeof(EtapaProcesso))!
-            .GetNavigations()
-            .Single(n => n.Name == nameof(EtapaProcesso.TipoEtapa))
-            .TargetEntityType;
+        ConferirOLimiteDaColuna(unidade, nameof(UnidadeAdministradoraSnapshot.Sigla), LimitesDoEnvelope.UnidadeAdministradoraSigla, "UnidadeAdministradoraSigla");
+        ConferirOLimiteDaColuna(unidade, nameof(UnidadeAdministradoraSnapshot.Codigo), LimitesDoEnvelope.UnidadeAdministradoraCodigo, "UnidadeAdministradoraCodigo");
+        ConferirOLimiteDaColuna(unidade, nameof(UnidadeAdministradoraSnapshot.Slug), LimitesDoEnvelope.UnidadeAdministradoraSlug, "UnidadeAdministradoraSlug");
+        ConferirOLimiteDaColuna(unidade, nameof(UnidadeAdministradoraSnapshot.Nome), LimitesDoEnvelope.UnidadeAdministradoraNome, "UnidadeAdministradoraNome");
+        ConferirOLimiteDaColuna(unidade, nameof(UnidadeAdministradoraSnapshot.Tipo), LimitesDoEnvelope.UnidadeAdministradoraTipo, "UnidadeAdministradoraTipo");
+        ConferirOLimiteDaColuna(unidade, nameof(UnidadeAdministradoraSnapshot.CidadeCodigoIbge), LimitesDoEnvelope.UnidadeAdministradoraCidadeCodigoIbge, "UnidadeAdministradoraCidadeCodigoIbge");
+        ConferirOLimiteDaColuna(unidade, nameof(UnidadeAdministradoraSnapshot.CidadeNome), LimitesDoEnvelope.UnidadeAdministradoraCidadeNome, "UnidadeAdministradoraCidadeNome");
+        ConferirOLimiteDaColuna(unidade, nameof(UnidadeAdministradoraSnapshot.CidadeUf), LimitesDoEnvelope.UnidadeAdministradoraCidadeUf, "UnidadeAdministradoraCidadeUf");
+    }
+
+    // Issue #1071 — o tipo da etapa aninhado em cada item de etapas é persistido ao restaurar uma versão,
+    // por isso precisa da mesma disciplina de limite (diferente do bloco de topo tipoProcesso, só de forma).
+    private static void ConferirOTipoDaEtapa(UniPlusDbContext contexto)
+    {
+        IEntityType tipoEtapa = OwnedDe<EtapaProcesso>(contexto, nameof(EtapaProcesso.TipoEtapa));
 
         tipoEtapa.FindProperty(nameof(TipoEtapaSnapshot.Codigo))!.GetMaxLength()
             .Should().Be(LimitesDoEnvelope.TipoEtapaCodigo, "LimitesDoEnvelope.TipoEtapaCodigo espelha a coluna tipo_etapa_codigo");
         tipoEtapa.FindProperty(nameof(TipoEtapaSnapshot.Nome))!.GetMaxLength()
             .Should().Be(LimitesDoEnvelope.TipoEtapaNome, "LimitesDoEnvelope.TipoEtapaNome espelha a coluna tipo_etapa_nome");
     }
+
+    private static void ConferirOLimiteDaColuna(IEntityType entidade, string propriedade, int limite, string constante) =>
+        entidade.FindProperty(propriedade)!.GetMaxLength()
+            .Should().Be(limite, $"LimitesDoEnvelope.{constante} espelha a coluna de {propriedade}");
 
     /// <summary>
     /// E o inverso: <b>toda</b> constante de <c>LimitesDoEnvelope</c> é exercida por algum
@@ -409,7 +401,7 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
             .. Precisoes.Select(static p => p.Nome),
             // Exercidas em OwnedTypes_BatemComOSchema.
             "RegraCodigo", "RegraVersao", "CensoReferencia", "PrecisaoPercentual", "PrecisaoPrazo",
-            "UnidadeAdministradoraSigla", "UnidadeAdministradoraSlug", "UnidadeAdministradoraNome", "UnidadeAdministradoraTipo",
+            "UnidadeAdministradoraSigla", "UnidadeAdministradoraCodigo", "UnidadeAdministradoraSlug", "UnidadeAdministradoraNome", "UnidadeAdministradoraTipo",
             "UnidadeAdministradoraCidadeCodigoIbge", "UnidadeAdministradoraCidadeNome", "UnidadeAdministradoraCidadeUf",
             "TipoEtapaCodigo", "TipoEtapaNome",
             "GrupoAreaEnemCodigo", "GrupoAreaEnemRotulo",

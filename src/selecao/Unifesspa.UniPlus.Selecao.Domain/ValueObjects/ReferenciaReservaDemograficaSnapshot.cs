@@ -52,7 +52,7 @@ public sealed record ReferenciaReservaDemograficaSnapshot
         {
             return Result<ReferenciaReservaDemograficaSnapshot>.Failure(new DomainError(
                 "ReferenciaReservaDemograficaSnapshot.PercentualInvalido",
-                "Os percentuais demográficos devem estar entre 0 e 100 (INV-5)."));
+                "Os percentuais demográficos devem estar entre 0 e 100."));
         }
 
         if (string.IsNullOrWhiteSpace(baseLegal))

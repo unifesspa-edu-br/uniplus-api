@@ -10,8 +10,8 @@ using Kernel.Results;
 internal static class InterrupcaoDaFase
 {
     /// <summary>
-    /// A interrupção entra no lote COM CAMPO. Um erro sem campo sairia no wire como <c>"field": null</c>,
-    /// que a ADR-0023 não admite: cada elemento de <c>errors[]</c> declara o caminho do que falhou.
+    /// A interrupção entra no lote com o campo do insumo que falta, para que o cliente veja qual insumo
+    /// recusou o cronograma, e não só que o lote foi interrompido.
     /// </summary>
     public static Result<T> Com<T>(string campo, DomainError erro) =>
         Result<T>.ValidationFailure([new FieldError(campo, erro)]);

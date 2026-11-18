@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public static class PendenciasDaDistribuicaoDeVagas
 {
@@ -12,9 +12,9 @@ public static class PendenciasDaDistribuicaoDeVagas
     /// candidato no processo, e não por curso: num processo em que um curso oferta cota e outro não,
     /// quem optou pelas cotas perderia, no curso sem cota, a ação afirmativa que lá lhe caberia.
     /// </summary>
-    internal static DomainError? PendenciaDasCotasDaLeiEntreOfertas(EstadoDaConfiguracao estado)
+    internal static DomainError? PendenciaDasCotasDaLeiEntreOfertas(ConfiguracaoDeclarada configuracao)
     {
-        List<HashSet<string>> cotasPorOferta = [.. estado.DistribuicaoVagas.Select(static d => new HashSet<string>(
+        List<HashSet<string>> cotasPorOferta = [.. configuracao.Vagas.DistribuicaoVagas.Select(static d => new HashSet<string>(
             d.Modalidades.Where(static m => m.NaturezaLegal == NaturezaLegalModalidade.CotaReservada).Select(static m => m.Codigo),
             StringComparer.Ordinal))];
         return cotasPorOferta.Count > 1 && cotasPorOferta.Skip(1).Any(c => !c.SetEquals(cotasPorOferta[0]))
@@ -30,10 +30,10 @@ public static class PendenciasDaDistribuicaoDeVagas
     /// optou pelas cotas só tem reserva de pessoa com deficiência se o processo também ofertar a cota
     /// da lei para ela.
     /// </summary>
-    internal static DomainError? PendenciaDaReservaPcdSemCotaPcdDaLei(EstadoDaConfiguracao estado)
+    internal static DomainError? PendenciaDaReservaPcdSemCotaPcdDaLei(ConfiguracaoDeclarada configuracao)
     {
-        HashSet<string> ofertadas = new(RegrasDaDistribuicaoDeVagas.ModalidadesOfertadas(estado).Select(static m => m.Codigo), StringComparer.Ordinal);
-        bool ofertaCotaDaLei = RegrasDaDistribuicaoDeVagas.ModalidadesOfertadas(estado).Exists(static m => m.NaturezaLegal == NaturezaLegalModalidade.CotaReservada);
+        HashSet<string> ofertadas = new(RegrasDaDistribuicaoDeVagas.ModalidadesOfertadas(configuracao).Select(static m => m.Codigo), StringComparer.Ordinal);
+        bool ofertaCotaDaLei = RegrasDaDistribuicaoDeVagas.ModalidadesOfertadas(configuracao).Exists(static m => m.NaturezaLegal == NaturezaLegalModalidade.CotaReservada);
         return ofertaCotaDaLei
             && ofertadas.Contains(ModalidadesFederaisLei12711.AcPcd)
             && !ofertadas.Contains(ModalidadesFederaisLei12711.LiPcd)

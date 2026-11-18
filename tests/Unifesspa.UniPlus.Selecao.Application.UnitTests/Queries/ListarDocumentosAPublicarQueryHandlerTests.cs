@@ -15,13 +15,16 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 
 /// <summary>
-/// Cobertura da leitura dos documentos do Edital: o pendente e o confirmado
-/// convivem na mesma resposta, o processo sem documento não se confunde com o
-/// processo inexistente, e nenhum endereço de storage atravessa a projeção.
+/// Cobertura da leitura dos documentos do dono — processo ou rascunho: o pendente e o confirmado convivem na mesma
+/// resposta, o dono sem documento não se confunde com o dono inexistente, e nenhum endereço de storage atravessa a
+/// projeção.
 /// </summary>
 public sealed class ListarDocumentosAPublicarQueryHandlerTests
 {
     private const string HashFixo = "9f2c1e0b7a4d5c6e8f0a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60";
+
+    private readonly IUnidadeDonaDoProcesso _donos = Substitute.For<IUnidadeDonaDoProcesso>();
+    private readonly IDocumentoAPublicarRepository _documentos = Substitute.For<IDocumentoAPublicarRepository>();
 
     private static DocumentoAPublicar NovoPendente(Guid processoSeletivoId) =>
         DocumentoAPublicar.IniciarPendente(processoSeletivoId, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
@@ -33,6 +36,35 @@ public sealed class ListarDocumentosAPublicarQueryHandlerTests
         return documento;
     }
 
+    private Task<Result<ListarDocumentosAPublicarResult>> ListarAsync(
+        Guid processoSeletivoId, Guid? unidadeDona, params DocumentoAPublicar[] documentosDoRepositorio)
+    {
+        _donos.DoProcessoAsync(processoSeletivoId, Arg.Any<CancellationToken>()).Returns(unidadeDona);
+        _documentos.ListarPorProcessoAsync(processoSeletivoId, Arg.Any<FinalidadeDoDocumento?>(), Arg.Any<CancellationToken>())
+            .Returns(documentosDoRepositorio);
+
+        return ListarDocumentosAPublicarQueryHandler.Handle(
+            new ListarDocumentosAPublicarQuery(processoSeletivoId), _donos, _documentos, CancellationToken.None);
+    }
+
+    private static void ConferirProjecaoDoPendente(DocumentoAPublicarDto item, DocumentoAPublicar pendente)
+    {
+        item.Status.Should().Be("Pendente");
+        item.ProcessoSeletivoId.Should().Be(pendente.ProcessoSeletivoId);
+        item.ExpiraEm.Should().Be(pendente.ExpiraEm);
+        item.TamanhoBytes.Should().BeNull();
+        item.HashSha256.Should().BeNull();
+        item.ConfirmadoEm.Should().BeNull();
+    }
+
+    private static void ConferirProjecaoDoConfirmado(DocumentoAPublicarDto item, DocumentoAPublicar confirmado)
+    {
+        item.Status.Should().Be("Confirmado");
+        item.TamanhoBytes.Should().Be(4096);
+        item.HashSha256.Should().Be(HashFixo);
+        item.ConfirmadoEm.Should().Be(confirmado.ConfirmadoEm);
+    }
+
     [Fact(DisplayName = "Pendente e confirmado voltam na mesma lista, na ordem do repositório, com os metadados de confirmação nulos só no pendente")]
     public async Task Handle_PendenteEConfirmado_ProjetaCadaEstadoComOsMetadadosQueEleTem()
     {
@@ -40,101 +72,57 @@ public sealed class ListarDocumentosAPublicarQueryHandlerTests
         DocumentoAPublicar confirmado = NovoConfirmado(processoSeletivoId, tamanhoBytes: 4096);
         DocumentoAPublicar pendente = NovoPendente(processoSeletivoId);
 
-        IDocumentoAPublicarRepository documentos = Substitute.For<IDocumentoAPublicarRepository>();
-        IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
-        documentos.ListarPorProcessoAsync(processoSeletivoId, Arg.Any<FinalidadeDoDocumento?>(), Arg.Any<CancellationToken>())
-            .Returns([pendente, confirmado]);
-        processos.ExisteAsync(processoSeletivoId, Arg.Any<CancellationToken>()).Returns(true);
+        Result<ListarDocumentosAPublicarResult> resultado = await ListarAsync(processoSeletivoId, Guid.CreateVersion7(), pendente, confirmado);
 
-        Result<ListarDocumentosAPublicarResult> resultado = await ListarDocumentosAPublicarQueryHandler.Handle(
-            new ListarDocumentosAPublicarQuery(processoSeletivoId),
-            documentos,
-            processos,
-            CancellationToken.None);
-
-        resultado.IsSuccess.Should().BeTrue();
-
-        // A ordem é decidida pela consulta, no repositório; o handler apenas
-        // projeta. Reordenar aqui desfaria a ordenação que o contrato promete.
+        // A ordem é decidida pela consulta, no repositório; o handler apenas projeta.
         DocumentoAPublicarDto[] items = [.. resultado.Value!.Items];
         items.Select(i => i.Id).Should().Equal(pendente.Id, confirmado.Id);
-
-        DocumentoAPublicarDto itemPendente = items[0];
-        itemPendente.Status.Should().Be("Pendente");
-        itemPendente.ProcessoSeletivoId.Should().Be(processoSeletivoId);
-        itemPendente.ExpiraEm.Should().Be(pendente.ExpiraEm);
-        itemPendente.TamanhoBytes.Should().BeNull();
-        itemPendente.HashSha256.Should().BeNull();
-        itemPendente.ConfirmadoEm.Should().BeNull();
-
-        DocumentoAPublicarDto itemConfirmado = items[1];
-        itemConfirmado.Status.Should().Be("Confirmado");
-        itemConfirmado.TamanhoBytes.Should().Be(4096);
-        itemConfirmado.HashSha256.Should().Be(HashFixo);
-        itemConfirmado.ConfirmadoEm.Should().Be(confirmado.ConfirmadoEm);
+        ConferirProjecaoDoPendente(items[0], pendente);
+        ConferirProjecaoDoConfirmado(items[1], confirmado);
     }
 
     [Fact(DisplayName = "Processo existente sem documento devolve lista vazia, não 404")]
     public async Task Handle_ProcessoExistenteSemDocumento_DevolveListaVazia()
     {
-        Guid processoSeletivoId = Guid.CreateVersion7();
-        IDocumentoAPublicarRepository documentos = Substitute.For<IDocumentoAPublicarRepository>();
-        IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
-        documentos.ListarPorProcessoAsync(processoSeletivoId, Arg.Any<FinalidadeDoDocumento?>(), Arg.Any<CancellationToken>()).Returns([]);
-        processos.ExisteAsync(processoSeletivoId, Arg.Any<CancellationToken>()).Returns(true);
-
-        Result<ListarDocumentosAPublicarResult> resultado = await ListarDocumentosAPublicarQueryHandler.Handle(
-            new ListarDocumentosAPublicarQuery(processoSeletivoId),
-            documentos,
-            processos,
-            CancellationToken.None);
+        Result<ListarDocumentosAPublicarResult> resultado = await ListarAsync(Guid.CreateVersion7(), Guid.CreateVersion7());
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Items.Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "Processo inexistente recusa com ProcessoSeletivo.NaoEncontrado em vez de lista vazia")]
-    public async Task Handle_ProcessoInexistente_Recusa()
+    [Fact(DisplayName = "Dono inexistente recusa com ProcessoSeletivo.NaoEncontrado em vez de lista vazia, sem ler documento")]
+    public async Task Handle_DonoInexistente_RecusaSemLerDocumentos()
+    {
+        Result<ListarDocumentosAPublicarResult> resultado = await ListarAsync(Guid.CreateVersion7(), unidadeDona: null);
+
+        resultado.IsSuccess.Should().BeFalse();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
+        await _documentos.DidNotReceive().ListarPorProcessoAsync(
+            Arg.Any<Guid>(), Arg.Any<FinalidadeDoDocumento?>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Processo fora de alcance recusa mesmo tendo documento — o documento sobrevive à exclusão lógica do processo")]
+    public async Task Handle_ProcessoInvisivelComDocumento_Recusa()
     {
         Guid processoSeletivoId = Guid.CreateVersion7();
-        IDocumentoAPublicarRepository documentos = Substitute.For<IDocumentoAPublicarRepository>();
-        IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
-        documentos.ListarPorProcessoAsync(processoSeletivoId, Arg.Any<FinalidadeDoDocumento?>(), Arg.Any<CancellationToken>()).Returns([]);
-        processos.ExisteAsync(processoSeletivoId, Arg.Any<CancellationToken>()).Returns(false);
 
-        Result<ListarDocumentosAPublicarResult> resultado = await ListarDocumentosAPublicarQueryHandler.Handle(
-            new ListarDocumentosAPublicarQuery(processoSeletivoId),
-            documentos,
-            processos,
-            CancellationToken.None);
+        // A linha do processo excluído logicamente e os documentos continuam no banco; só o filtro global, que a porta
+        // aplica, tira o processo de alcance. Ter documento, portanto, não prova que o dono existe.
+        Result<ListarDocumentosAPublicarResult> resultado = await ListarAsync(processoSeletivoId, null, NovoPendente(processoSeletivoId));
 
         resultado.IsSuccess.Should().BeFalse();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
     }
 
-    [Fact(DisplayName = "Processo fora de alcance recusa mesmo tendo documento — a chave estrangeira sobrevive à exclusão lógica")]
-    public async Task Handle_ProcessoInvisivelComDocumento_Recusa()
+    [Fact(DisplayName = "Rascunho, que tem unidade dona e nenhuma linha de processo, lista os documentos")]
+    public async Task Handle_RascunhoComDono_ListaOsDocumentos()
     {
-        Guid processoSeletivoId = Guid.CreateVersion7();
-        IDocumentoAPublicarRepository documentos = Substitute.For<IDocumentoAPublicarRepository>();
-        IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
+        Guid rascunhoId = Guid.CreateVersion7();
+        DocumentoAPublicar pendente = NovoPendente(rascunhoId);
 
-        // O processo é excluído logicamente: a linha continua no banco, as
-        // chaves estrangeiras seguem íntegras e os documentos continuam
-        // apontando para ele — só o filtro global tira o processo de alcance.
-        // Ter documento, portanto, não prova que o processo é visível.
-        documentos.ListarPorProcessoAsync(processoSeletivoId, Arg.Any<FinalidadeDoDocumento?>(), Arg.Any<CancellationToken>())
-            .Returns([NovoPendente(processoSeletivoId)]);
-        processos.ExisteAsync(processoSeletivoId, Arg.Any<CancellationToken>()).Returns(false);
+        Result<ListarDocumentosAPublicarResult> resultado = await ListarAsync(rascunhoId, Guid.CreateVersion7(), pendente);
 
-        Result<ListarDocumentosAPublicarResult> resultado = await ListarDocumentosAPublicarQueryHandler.Handle(
-            new ListarDocumentosAPublicarQuery(processoSeletivoId),
-            documentos,
-            processos,
-            CancellationToken.None);
-
-        resultado.IsSuccess.Should().BeFalse();
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
+        resultado.Value!.Items.Select(i => i.Id).Should().Equal(pendente.Id);
     }
 
     [Fact(DisplayName = "O contrato do documento não tem onde carregar chave de objeto nem URL de storage")]
@@ -144,11 +132,9 @@ public sealed class ListarDocumentosAPublicarQueryHandlerTests
             .GetProperties(BindingFlags.Public | BindingFlags.Instance)
             .Select(p => p.Name)];
 
-        // A entidade guarda ObjectKey e ObjectKeyConfirmado, e o início do
-        // upload emite uma URL pre-assinada que continua válida até o TTL
-        // expirar. Qualquer um desses no DTO entregaria a quem lê a lista o
-        // poder de sobrescrever o objeto — por isso a ausência é asserida, e
-        // não apenas pretendida pela projeção.
+        // A entidade guarda ObjectKey e ObjectKeyConfirmado, e o início do upload emite uma URL pre-assinada que
+        // continua válida até o TTL expirar: qualquer um desses no DTO entregaria a quem lê a lista o poder de
+        // sobrescrever o objeto.
         membros.Should().NotContain(nome =>
             nome.Contains("ObjectKey", StringComparison.OrdinalIgnoreCase)
             || nome.Contains("Url", StringComparison.OrdinalIgnoreCase));

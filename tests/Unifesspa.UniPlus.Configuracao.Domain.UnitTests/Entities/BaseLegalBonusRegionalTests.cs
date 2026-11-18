@@ -218,4 +218,55 @@ public sealed class BaseLegalBonusRegionalTests
         entity.Municipios.Should().HaveCount(1);
         entity.Municipios[0].CodigoIbge.Should().Be(MunicipioValido.CodigoIbge);
     }
+
+    [Fact(DisplayName = "Criar forma o código estável a partir do tipo e da identificação")]
+    public void Criar_FormaOCodigo()
+    {
+        BaseLegalBonusRegional entity = BaseLegalBonusRegional.Criar(
+            "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Descricao", [MunicipioValido]).Value!;
+
+        entity.Codigo.Valor.Should().Be("PORTARIA_UNIFESSPA_NO_2514_2023");
+    }
+
+    [Fact(DisplayName = "Atualizar tipo e identificação mantém o código da criação")]
+    public void Atualizar_MantemOCodigo()
+    {
+        BaseLegalBonusRegional entity = BaseLegalBonusRegional.Criar("LEI", "Lei 123", "Descricao", [MunicipioValido]).Value!;
+
+        Result result = entity.Atualizar("DECRETO", "Decreto 999", "Outra descricao", [MunicipioValido]);
+
+        result.IsSuccess.Should().BeTrue();
+        entity.TipoInstrumento.Should().Be(TipoInstrumentoNormativo.Decreto);
+        entity.Identificacao.Should().Be("Decreto 999");
+        entity.Codigo.Valor.Should().Be("LEI_123");
+    }
+
+    [Fact(DisplayName = "Identificação válida cujo código passa do limite é recusada citando o limite, junto com as demais recusas")]
+    public void Criar_CodigoLongoAcumulaComAsDemaisRecusas()
+    {
+        string identificacaoLonga = new('A', 150);
+
+        Result<BaseLegalBonusRegional> result = BaseLegalBonusRegional.Criar("LEI", identificacaoLonga, "Descricao", []);
+
+        result.IsFailure.Should().BeTrue();
+        result.Errors.Select(e => e.Error.Code).Should().Contain(
+            [BaseLegalBonusRegionalErrorCodes.SemMunicipios, BaseLegalBonusRegionalErrorCodes.CodigoTamanho]);
+        result.Errors.Single(e => e.Error.Code == BaseLegalBonusRegionalErrorCodes.CodigoTamanho).Error.Message.Should().Contain("100");
+    }
+
+    [Fact(DisplayName = "Identificação sem letra nem dígito é recusada pelo código")]
+    public void Criar_IdentificacaoSoComPontuacao_RecusaOCodigo()
+    {
+        Result<BaseLegalBonusRegional> result = BaseLegalBonusRegional.Criar("LEI", "§§ //", "Descricao", [MunicipioValido]);
+
+        result.Errors.Select(e => e.Error.Code).Should().Contain(BaseLegalBonusRegionalErrorCodes.CodigoFormatoInvalido);
+    }
+
+    [Fact(DisplayName = "Com o tipo inválido não há código a formar e só o tipo é recusado")]
+    public void Criar_TipoInvalido_NaoTentaOCodigo()
+    {
+        Result<BaseLegalBonusRegional> result = BaseLegalBonusRegional.Criar("XYZ", "Lei 1", "Descricao", [MunicipioValido]);
+
+        result.Errors.Select(e => e.Error.Code).Should().ContainSingle().Which.Should().Be(BaseLegalBonusRegionalErrorCodes.TipoInstrumentoInvalido);
+    }
 }

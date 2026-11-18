@@ -13,18 +13,8 @@ internal static class EmissaoDeVersao
     /// <summary>Abre a versão 1 do processo.</summary>
     internal static (VersaoConfiguracao Versao, ProcessoPublicadoEvent Evento) Abrir(Guid processoId, PedidoDeCongelamento pedido)
     {
-        DateTimeOffset instante = pedido.Instante;
-        DocumentoCongelado documento = pedido.Documento;
-
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
-            processoId,
-            documento.Canonico,
-            documento.SchemaVersion,
-            documento.AlgoritmoHash,
-            atoCriadorId: NovoIdDeAto(instante),
-            atoCriadorHash: documento.HashDocumento,
-            pedido.AtorUsuarioContaId,
-            instante);
+            processoId, pedido.Documento, NovoIdDeAto(pedido.Instante), pedido.AtorUsuarioContaId, pedido.Instante);
 
         return (versao, EventoDe(processoId, versao));
     }
@@ -37,19 +27,10 @@ internal static class EmissaoDeVersao
     internal static (VersaoConfiguracao Versao, ProcessoPublicadoEvent Evento) Suceder(
         Guid processoId, VersaoConfiguracao versaoAtual, PedidoDeCongelamento pedido)
     {
-        DateTimeOffset instante = pedido.Instante < versaoAtual.VigenteAPartirDe ? versaoAtual.VigenteAPartirDe : pedido.Instante;
-        DocumentoCongelado documento = pedido.Documento;
+        DateTimeOffset instante = versaoAtual.VigenciaDaSucessora(pedido.Instante);
 
         VersaoConfiguracao versao = VersaoConfiguracao.Suceder(
-            versaoAtual,
-            documento.Canonico,
-            documento.SchemaVersion,
-            documento.AlgoritmoHash,
-            atoCriadorId: NovoIdDeAto(instante),
-            atoCriadorHash: documento.HashDocumento,
-            atoCriadorRetificaId: versaoAtual.AtoCriadorId,
-            pedido.AtorUsuarioContaId,
-            instante);
+            versaoAtual, pedido.Documento, NovoIdDeAto(instante), pedido.AtorUsuarioContaId, instante);
 
         return (versao, EventoDe(processoId, versao));
     }

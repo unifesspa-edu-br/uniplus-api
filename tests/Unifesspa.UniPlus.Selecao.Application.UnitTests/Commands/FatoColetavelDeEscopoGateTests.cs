@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -40,7 +41,7 @@ public sealed class FatoColetavelDeEscopoGateTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         // ProcessoSeletivoConformeBuilder já oferta atendimento vazio (sem condições) — só falta o fato coletável.
-        processo.DefinirItens([FatoCondicaoAtendimentoSemOferta()], PrecondicaoIfMatch.Ausente)
+        processo.DefinirItens([FatoCondicaoAtendimentoSemOferta()])
             .IsSuccess.Should().BeTrue();
         ISnapshotPublicacaoCanonicalizer canonicalizer = CanonicalizerSubstituto();
 
@@ -48,33 +49,6 @@ public sealed class FatoColetavelDeEscopoGateTests
 
         AfirmarRecusaDoFatoSemOferta(resposta, eventos, canonicalizer);
         processo.Status.Should().Be(StatusProcesso.Rascunho, "a publicação recusada não transita o processo");
-    }
-
-    // RetificarProcessoSeletivoCommandHandler não aceita novo FatoColetado/AtendimentoEspecializado
-    // como input — re-versiona o estado JÁ existente do agregado sob um novo ato, e exige
-    // Rascunho nulo (abre e fecha uma sessão efêmera internamente). Como este gate é interno
-    // ao agregado (sem leitura cross-módulo, ao contrário da coletabilidade de fatos), não há
-    // "drift" possível entre a publicação original e uma chamada de Retificar sem sessão
-    // aberta: se o estado violasse o gate, a publicação original já teria recusado. O caminho
-    // válido para reabrir e violar o gate é a sessão de retificação explícita — coberto abaixo
-    // por FecharRetificacaoCommandHandler, que fecha pela mesma sucessão de TransicoesDaVersao (mesmo gate).
-
-    [Fact(DisplayName = "FecharRetificacao_ComFatoColetavelSemOferta_RecusaESessaoPermaneceAberta — recusa não destrói a sessão editorial")]
-    public async Task FecharRetificacao_ComFatoColetavelSemOferta_RecusaESessaoPermaneceAberta()
-    {
-        (ProcessoSeletivo processo, VersaoConfiguracao versaoAtual) = ProcessoPublicadoSemFatoColetado();
-        PublicacaoDeTeste.AbrirRetificacao(processo, versaoAtual);
-        processo.DefinirItens([FatoCondicaoAtendimentoSemOferta()], PrecondicaoIfMatch.Curinga)
-            .IsSuccess.Should().BeTrue();
-        ISnapshotPublicacaoCanonicalizer canonicalizer = CanonicalizerSubstituto();
-
-        (Result resposta, IEnumerable<object> eventos) = await ServicosSemOferta(processo, canonicalizer)
-            .ComVersaoVigente(processo, versaoAtual)
-            .FecharRetificacaoAsync(processo.Id);
-
-        AfirmarRecusaDoFatoSemOferta(resposta, eventos, canonicalizer);
-        processo.Rascunho.Should().NotBeNull(
-            "uma recusa de fato coletável sem oferta não destrói a sessão editorial — o administrador corrige e tenta de novo");
     }
 
     private static ServicosDoCongelamentoDeTeste ServicosSemOferta(ProcessoSeletivo processo, ISnapshotPublicacaoCanonicalizer canonicalizer) =>
@@ -157,8 +131,7 @@ public sealed class FatoColetavelDeEscopoGateTests
             "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)), new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!;
 
         VersaoConfiguracao versao = processo.Publicar(
-            dados, EnvelopeCongeladoDeTeste.SemAnexos(), "1.1", "canonical-json/sha256@v1", HashFixo, "user-conta-1",
-            new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Value!;
+            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(EnvelopeCongeladoDeTeste.SemAnexos(), "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "user-conta-1", Relogio = new RelogioFixo(Agora) }).Value!;
         processo.DequeueDomainEvents();
 
         return (processo, versao);

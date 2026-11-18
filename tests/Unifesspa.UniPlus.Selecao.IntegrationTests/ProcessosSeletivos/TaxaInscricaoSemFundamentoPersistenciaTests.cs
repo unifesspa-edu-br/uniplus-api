@@ -12,6 +12,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -37,23 +39,25 @@ public sealed class TaxaInscricaoSemFundamentoPersistenciaTests : IClassFixture<
     public TaxaInscricaoSemFundamentoPersistenciaTests(ProcessoSeletivoDbFixture fixture) =>
         _fixture = fixture;
 
+    // O estado gravado por quem configurou a taxa antes de a regra existir: a fábrica recusa produzi-lo hoje,
+    // mas o EF hidrata a linha direto da coluna.
     [Fact(DisplayName = "Configuração hidratada com cobrança e lista de fundamentos vazia marca o item vermelho e recusa a publicação (issue #1310)")]
     public async Task CobraSemFundamento_ItemVermelhoEPublicacaoRecusada()
     {
         Guid processoId = await SemearProcessoQueCobraComFundamentoAsync(
             $"PS 1310 {Guid.CreateVersion7()}");
-
-        // O estado gravado por quem configurou a taxa antes de a regra existir: a fábrica recusa
-        // produzi-lo hoje, mas o EF hidrata a linha direto da coluna.
         await AdulterarFundamentosAsync(processoId, "[]");
-
         await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
         processo.ConfiguracaoTaxaInscricao!.Cobra.Should().BeTrue(
             "a adulteração mexe só nos fundamentos — a cobrança continua declarada");
+        AfirmarFundamentoVermelhoEPublicacaoRecusada(processo);
+    }
 
-        IReadOnlyList<ItemConformidade> checklist = ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+    private static void AfirmarFundamentoVermelhoEPublicacaoRecusada(ProcessoSeletivo processo)
+    {
+        IReadOnlyList<ItemConformidade> checklist = ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo));
 
         checklist.Should().ContainSingle(i => i.Codigo == "taxa_inscricao_sem_fundamento_de_isencao")
             .Which.Ok.Should().BeFalse(
@@ -96,7 +100,7 @@ public sealed class TaxaInscricaoSemFundamentoPersistenciaTests : IClassFixture<
         await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
             .Should().ContainSingle(i => i.Codigo == "taxa_inscricao_sem_fundamento_de_isencao")
             .Which.Ok.Should().BeTrue();
 
@@ -106,14 +110,7 @@ public sealed class TaxaInscricaoSemFundamentoPersistenciaTests : IClassFixture<
     }
 
     private static Result<VersaoConfiguracao> Publicar(ProcessoSeletivo processo) => processo.Publicar(
-        DadosEdital.Criar("001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)), new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!,
-        "{}"u8.ToArray(),
-        "1.1",
-        "canonical-json/sha256@v1",
-        HashFixo,
-        "integration-test-user",
-        TimeProvider.System,
-        ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        new CenarioDeCongelamento { Dados = DadosEdital.Criar("001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)), new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!, Documento = new DocumentoCongelado("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "integration-test-user", MotivosEscolhidos = MotivosDoProcessoDeTeste.Cobrindo(processo) });
 
     /// <summary>
     /// Processo estruturalmente publicável cuja taxa é declarada pelo caminho legítimo — com
@@ -124,50 +121,14 @@ public sealed class TaxaInscricaoSemFundamentoPersistenciaTests : IClassFixture<
     {
         await using UniPlusDbContext db = _fixture.CreateDbContext();
 
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            nome, TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
-            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-
-        // A fase conforme agrupa etapas, e a bicondicional do cronograma exige que exista etapa
-        // pontuada quando alguma fase as agrupa.
-        processo.DefinirCronogramaFases([FaseConforme()], [], PrecondicaoIfMatch.Ausente)
-            .IsSuccess.Should().BeTrue();
-        processo.DefinirEtapas([
-            EtapaProcesso.Criar(
-                "Prova Objetiva", CaraterEtapa.Classificatoria,
-                TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-                peso: 1m, notaMinima: null, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: "RESULTADO_FINAL").Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        processo.DefinirAtendimentoEspecializado(
-            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente)
-            .IsSuccess.Should().BeTrue();
-
-        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021",
-            quantidadeDeclarada: 40).Value!;
-        processo.DefinirDistribuicaoVagas(
-            [ConfiguracaoDistribuicaoVagas.Criar(
-                Guid.CreateVersion7(), 40, 1m, Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
-                null, null, [modalidade], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!], FatosDeModalidadeDeTeste.DoCatalogo,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        processo.DefinirClassificacao(
-            ConfiguracaoClassificacao.Criar(
-                Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'), null, null,
-                Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ProcessoSeletivo processo = ProcessoSeletivoPublicacaoSeeder.NovoProcessoConforme(nome, fase: FaseConforme());
 
         Result<ConfiguracaoTaxaInscricao> taxa = ConfiguracaoTaxaInscricao.Criar(
             cobra: true, valor: 100m,
             fundamentosCodigos: [FundamentoIsencaoCodigo.CadastroUnico]);
         taxa.IsSuccess.Should().BeTrue(taxa.Error?.Message);
-        processo.DefinirTaxaInscricao(taxa.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
+        processo.DefinirTaxaInscricao(taxa.Value!).IsSuccess.Should().BeTrue();
 
-        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         await db.ProcessosSeletivos.AddAsync(processo);
         await db.SaveChangesAsync();
 
@@ -180,11 +141,7 @@ public sealed class TaxaInscricaoSemFundamentoPersistenciaTests : IClassFixture<
         await conexao.OpenAsync();
 
         await using NpgsqlCommand comando = new(
-            """
-            UPDATE selecao.configuracoes_taxa_inscricao
-               SET fundamentos = @fundamentos::jsonb
-             WHERE processo_seletivo_id = @processo
-            """,
+AtualizacaoDosFundamentos,
             conexao);
         comando.Parameters.AddWithValue("fundamentos", fundamentosJson);
         comando.Parameters.AddWithValue("processo", processoId);
@@ -208,22 +165,28 @@ public sealed class TaxaInscricaoSemFundamentoPersistenciaTests : IClassFixture<
             .FirstAsync(p => p.Id == processoId);
 
     private static ReferenciaRegra Regra(string codigo, char semente) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string(semente, 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string(semente, 64));
 
     private static FaseCronograma FaseConforme() => FaseCronograma.Criar(
-        ordem: 1,
-        faseCanonicaOrigemId: Guid.CreateVersion7(),
-        codigo: "RESULTADO_FINAL",
-        origemData: OrigemDataFase.NoEdital,
-        agrupaEtapas: true,
-        permiteComplementacao: false,
-        coletaInscricao: true, coletaSolicitacaoIsencao: false,
-        inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-        fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-        produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
-        faseConcluinteCodigo: null,
-        emiteParecerIndividual: false,
-        bancasRequeridas: [],
-        regraRecurso: null,
-        unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+        new OrigemCanonicaDaFase(
+            OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true,
+            ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(
+            Produtos: [ProdutoDaFase.Criar(HomologacaoDasInscricoesDeTeste.ResultadoDaFase, PapelProdutoFase.Definitivo)],
+            EmiteParecerIndividual: false,
+            RegraRecurso: null,
+            TiposDeDecisao: [TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa, TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes],
+            RegraDeHomologacao: HomologacaoDasInscricoesDeTeste.Regra()),
+        bancasRequeridas: []).Value!;
+
+    private const string AtualizacaoDosFundamentos =
+            """
+            UPDATE selecao.configuracoes_taxa_inscricao
+               SET fundamentos = @fundamentos::jsonb
+             WHERE processo_seletivo_id = @processo
+            """;
+
 }

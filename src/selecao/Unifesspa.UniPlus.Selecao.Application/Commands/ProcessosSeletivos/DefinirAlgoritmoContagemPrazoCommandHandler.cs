@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 /// </remarks>
 public static class DefinirAlgoritmoContagemPrazoCommandHandler
 {
-    public static async Task<Result<MutacaoAceita>> Handle(
+    public static async Task<Result> Handle(
         DefinirAlgoritmoContagemPrazoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IRegraCatalogoReader regraCatalogoReader,
@@ -37,19 +37,19 @@ public static class DefinirAlgoritmoContagemPrazoCommandHandler
             .ConfigureAwait(false);
         if (processo is null)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 "ProcessoSeletivo.NaoEncontrado",
                 $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
         }
 
-        if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
+        if (processo.MutacaoBloqueada() is { } bloqueio)
         {
-            return Result<MutacaoAceita>.Failure(bloqueio);
+            return Result.Failure(bloqueio);
         }
 
         if (command.AlgoritmoNaoDeclarado)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 "ProcessoSeletivo.AlgoritmoContagemPrazoNaoDeclarado",
                 "A convenção de contagem dos prazos é obrigatória — informe código e versão."));
         }
@@ -59,26 +59,19 @@ public static class DefinirAlgoritmoContagemPrazoCommandHandler
             .ConfigureAwait(false);
         if (regraCatalogo is null || regraCatalogo.Tipo != TipoRegra.AlgoritmoContagemPrazo)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 "ProcessoSeletivo.AlgoritmoContagemPrazoNaoEncontrado",
                 $"A regra {command.Codigo}/{command.Versao} não é uma entrada de algoritmo de contagem do catálogo de regras."));
         }
 
-        Result<ReferenciaRegra> referenciaResult = ReferenciaRegra.Criar(
-            regraCatalogo.Codigo, regraCatalogo.Versao, regraCatalogo.Hash);
-        if (referenciaResult.IsFailure)
-        {
-            return Result<MutacaoAceita>.Failure(referenciaResult.Error!);
-        }
-
-        Result definirResult = processo.DefinirAlgoritmoContagemPrazo(referenciaResult.Value!, command.Precondicao);
+        Result definirResult = processo.DefinirAlgoritmoContagemPrazo(regraCatalogo.Referencia());
         if (definirResult.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(definirResult.Error!);
+            return Result.Failure(definirResult.Error!);
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
-        return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+        return Result.Success();
     }
 }

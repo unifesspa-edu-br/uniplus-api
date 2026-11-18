@@ -11,6 +11,7 @@ public static class BaseLegalBonusRegionalMapping
         ArgumentNullException.ThrowIfNull(entity);
         return new BaseLegalBonusRegionalDto(
             entity.Id,
+            entity.Codigo.Valor,
             entity.TipoInstrumento.ToCodigo(),
             entity.Identificacao,
             entity.Descricao,

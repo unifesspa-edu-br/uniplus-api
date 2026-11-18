@@ -66,17 +66,13 @@ public sealed class VocabularioDaLeituraDoProcessoTests
         ProcessoSeletivo processo = NovoProcesso();
         Result definida = processo.DefinirEtapas(
             [EtapaProcesso.Criar(
-                "Prova objetiva",
-                CaraterEtapa.Classificatoria,
-                TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-                peso: 1m,
-                ordem: 1).Value!],
-            PrecondicaoIfMatch.Curinga);
+                new IdentificacaoDaEtapa(Nome: "Prova objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: null),
+                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!]);
         definida.IsSuccess.Should().BeTrue(definida.Error?.Message);
 
         JsonElement json = await ProjetarERSerializarAsync(processo);
 
-        json.GetProperty("etapas")[0].GetProperty("carater").GetString().Should().Be("classificatoria",
+        json.GetProperty("etapas")[0].GetProperty("identificacao").GetProperty("carater").GetString().Should().Be("classificatoria",
             "`EtapaProcessoInput.carater` aceita este token — reenviar o GET direto no PUT não pode "
             + "exigir que o cliente traduza a grafia no caminho");
     }
@@ -100,18 +96,18 @@ public sealed class VocabularioDaLeituraDoProcessoTests
         regras.ObterAsync(RegraDistribuicaoVagasCodigo.Institucional, "v1", Arg.Any<CancellationToken>())
             .Returns(RegraCatalogo.Criar(
                 RegraDistribuicaoVagasCodigo.Institucional, "v1", TipoRegra.RegraDistribuicaoVagas,
-                Json("{}"), Json("[]"), "base legal").Value!);
+                Json("{}"), Json("[]"), "base legal"));
         IOfertaCursoReader ofertas = Substitute.For<IOfertaCursoReader>();
         ofertas.ObterPorIdAsync(ofertaCursoId, Arg.Any<CancellationToken>()).Returns(new OfertaCursoView(
-            ofertaCursoId, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(),
+            ofertaCursoId, "MEDICINA_MARABA", Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(),
             "CTIC", "Centro de Tecnologia", "CAMPUS", "REGULAR", "PRESENCIAL", "EXTENSIVO",
             "REGULAR", ["MATUTINO"], null, null, 100, null, null, null, "Medicina", "Bacharelado"));
         IModalidadeReader modalidades = Substitute.For<IModalidadeReader>();
 
-        // Ampla concorrência: o catálogo publica `AMPLA`/`RESIDUAL_DO_VO` e NÃO publica regra
+        // Ampla concorrência: o catálogo publica `AMPLA`/`RESTANTE_DAS_VAGAS_OFERTADAS` e NÃO publica regra
         // de remanejamento — a modalidade que não remaneja é representada por ausência.
         modalidades.ObterPorIdAsync(modalidadeId, Arg.Any<CancellationToken>()).Returns(new ModalidadeView(
-            modalidadeId, "AC", "Ampla concorrência", "AMPLA", "RESIDUAL_DO_VO",
+            modalidadeId, "AC", "Ampla concorrência", "AMPLA", "RESTANTE_DAS_VAGAS_OFERTADAS",
             null, null, null, null, null, PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, "Lei 12.711/2012"));
 
         Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> simulada = await SimularDistribuicaoVagasQueryHandler.Handle(
@@ -120,15 +116,15 @@ public sealed class VocabularioDaLeituraDoProcessoTests
                 [new ConfiguracaoDistribuicaoVagasInput(
                     ofertaCursoId, 60, 1m, RegraDistribuicaoVagasCodigo.Institucional, "v1", null, null, null,
                     [modalidadeId], [new QuantidadeVagaInput(modalidadeId, 60)])]),
-            repository, regras, ofertas, modalidades,
-            Substitute.For<IReferenciaReservaDemograficaReader>(), CancellationToken.None);
+            repository, new ConfiguracaoDistribuicaoVagasResolver(regras, ofertas, modalidades, Substitute.For<IReferenciaReservaDemograficaReader>()),
+            CancellationToken.None);
         simulada.IsSuccess.Should().BeTrue(simulada.Error?.Message);
 
         JsonElement modalidade = Serializar(simulada.Value!)[0].GetProperty("modalidades")[0];
 
         modalidade.GetProperty("naturezaLegal").GetString().Should().Be("AMPLA",
             "o catálogo descreve esta mesma modalidade com este token, e o cliente cruza as duas rotas");
-        modalidade.GetProperty("composicaoVagas").GetString().Should().Be("RESIDUAL_DO_VO");
+        modalidade.GetProperty("composicaoVagas").GetString().Should().Be("RESTANTE_DAS_VAGAS_OFERTADAS");
         modalidade.GetProperty("regraRemanejamento").ValueKind.Should().Be(JsonValueKind.Null,
             "a origem representa 'não remaneja' por ausência do campo, não por um token próprio");
     }
@@ -138,7 +134,7 @@ public sealed class VocabularioDaLeituraDoProcessoTests
         TiposDeProcessoDeTeste.SiSU,
         OrigemCandidatos.InscricaoPropria,
         Guid.CreateVersion7(),
-        UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+        UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     private static async Task<JsonElement> ProjetarERSerializarAsync(ProcessoSeletivo processo)

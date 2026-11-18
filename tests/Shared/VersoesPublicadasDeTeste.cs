@@ -11,12 +11,11 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 internal static class VersoesPublicadasDeTeste
 {
-    private static readonly ConfiguracaoClassificacao ClassificacaoMinima = ConfiguracaoClassificacao.Criar(
-        regraCalculo: Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
-        regraArredondamento: null,
-        casasArredondamento: null,
-        regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
-        regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!;
+    private static readonly ConfiguracaoClassificacao ClassificacaoMinima = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+    {
+        RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
+        RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+    }).Value!;
 
     /// <summary>Uma versão publicada com estes formulários, itens e grupos.</summary>
     public static GrafoConfiguracao Versao(
@@ -41,5 +40,5 @@ internal static class VersoesPublicadasDeTeste
             [.. versoes.Select(static _ => new EixosDeVersaoPublicada(new Dictionary<string, EixosDoMetadadoCongelado>(), new Dictionary<string, string>()))]);
 
     private static ReferenciaRegra Regra(string codigo, char semente) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string(semente, 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string(semente, 64));
 }

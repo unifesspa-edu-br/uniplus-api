@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -35,7 +36,7 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
         ProcessoSeletivo processo = ProcessoComAmplaEReservaPcd();
         processo.DefinirItens([Booleano("PCD", 0), Booleano("CONCORRER_PCD", 1)]).IsSuccess.Should().BeTrue();
 
-        ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo).Should().BeNull(
+        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo).Should().BeNull(
             "sem cota da lei ofertada, ninguém optou pelas cotas, e a regra cita só o que a inscrição pergunta");
     }
 
@@ -68,8 +69,7 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
             Modalidade("AC", NaturezaLegalModalidade.Ampla, PredicadoDnf.SemClausula),
             Modalidade("LI_EP", NaturezaLegalModalidade.CotaReservada, Exige((OpcaoPelasCotasDaLei.Fato, true))));
         processo.DefinirRegrasDerivacao(
-            [ConfiguracaoDerivacaoFato.Criar(OrigemEscolar.FatoEgresso, [RegraDerivacaoConfigurada.Criar(0, null, null).Value!]).Value!],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            [ConfiguracaoDerivacaoFato.Criar(OrigemEscolar.FatoEgresso, [RegraDerivacaoConfigurada.Criar(0, null, null).Value!]).Value!]).IsSuccess.Should().BeTrue();
         processo.DefinirItens([Booleano(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 0)], finalidade: finalidade).IsSuccess.Should().BeTrue();
 
         Item(processo, ItemFatoNaoColetado).Ok.Should().Be(esperadoOk,
@@ -85,18 +85,27 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
         Ofertar(processo,
             Modalidade("AC", NaturezaLegalModalidade.Ampla, PredicadoDnf.SemClausula),
             Modalidade("LI_EP", NaturezaLegalModalidade.CotaReservada, Exige((OpcaoPelasCotasDaLei.Fato, true))));
-        List<FatoColetado> itens = [Booleano(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 0)];
-        if (perguntaAOrigemEscolar)
-        {
-            itens.Add(Booleano(OrigemEscolar.FatoOndeCursou, 1));
-            itens.Add(Booleano(OrigemEscolar.FatoFormaDeConclusao, 2));
-        }
+        List<FatoColetado> itens = CamposDaOrigemEscolar(perguntaAOrigemEscolar);
 
         processo.DefinirItens(itens, finalidade: FinalidadeFormulario.Inscricao).IsSuccess.Should().BeTrue();
 
         processo.RegrasDerivacao.Should().BeEmpty("o processo não aplicou modelo nem configurou derivação");
         Item(processo, ItemFatoNaoColetado).Ok.Should().Be(esperadoOk,
             "o egresso, de que a opção pelas cotas depende, vem pela regra do sistema, que cita a origem escolar");
+    }
+
+    private static void AfirmarRecusaDoCampoDeMembro(DomainError? recusa, bool esperadoAceito)
+    {
+        if (esperadoAceito)
+        {
+            recusa.Should().BeNull("o grupo da inscrição pergunta o campo de que o agregado é calculado");
+            return;
+        }
+
+        recusa!.Code.Should().Be(ProcessoSeletivoErrorCodes.RegraDeModalidadeCitaFatoNaoColetado);
+        recusa.Message.Should().Contain("modalidade X", "a recusa nomeia a modalidade");
+        recusa.Message.Should().Contain($"'{CampoDeMembro}'", "a recusa nomeia o campo que a inscrição não pergunta");
+        recusa.Message.Should().NotContain(AgregadoDoGrupo, "o agregado não é campo que o operador ponha no formulário");
     }
 
     [Theory(DisplayName = "A regra que cita agregado sobre grupo é aceita quando um grupo da inscrição pergunta o campo de membro, e a recusa nomeia esse campo")]
@@ -111,21 +120,11 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
         processo.DefinirItens([], finalidade: FinalidadeFormulario.Inscricao).IsSuccess.Should().BeTrue();
         processo.DefinirItens([], finalidade: finalidadeDoGrupo, grupos: [GrupoComOCampoDeMembro(finalidadeDoGrupo)]).IsSuccess.Should().BeTrue();
 
-        DomainError? recusa = ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), ComOAgregado);
+        DomainError? recusa = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo, CadastrosDeTeste.Com(fatosDeModalidade: ComOAgregado, motivosEscolhidos: MotivosDoProcessoDeTeste.Cobrindo(processo)));
 
-        if (esperadoAceito)
-        {
-            recusa.Should().BeNull("o grupo da inscrição pergunta o campo de que o agregado é calculado");
-        }
-        else
-        {
-            recusa!.Code.Should().Be(ProcessoSeletivoErrorCodes.RegraDeModalidadeCitaFatoNaoColetado);
-            recusa.Message.Should().Contain("modalidade X", "a recusa nomeia a modalidade");
-            recusa.Message.Should().Contain($"'{CampoDeMembro}'", "a recusa nomeia o campo que a inscrição não pergunta");
-            recusa.Message.Should().NotContain(AgregadoDoGrupo, "o agregado não é campo que o operador ponha no formulário");
-        }
+        AfirmarRecusaDoCampoDeMembro(recusa, esperadoAceito);
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, ComOAgregado, TiposDeAtoUnicosDeTeste.Nenhum)
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Com(fatosDeModalidade: ComOAgregado, motivosEscolhidos: MotivosDoProcessoDeTeste.Cobrindo(processo)))
             .Single(i => i.Codigo == ItemFatoNaoColetado).Ok.Should().Be(esperadoAceito);
     }
 
@@ -134,7 +133,7 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             "PS SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
         Ofertar(processo,
             Modalidade("AC", NaturezaLegalModalidade.Ampla, PredicadoDnf.SemClausula),
@@ -152,7 +151,7 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
         Ofertar(processo, Modalidade("AC", NaturezaLegalModalidade.Ampla, PredicadoDnf.SemClausula), Modalidade("LI_EP", NaturezaLegalModalidade.CotaReservada, PredicadoDnf.SemClausula));
 
         Item(processo, ItemNatureza).Ok.Should().BeFalse();
-        ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo)!.Code
+        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code
             .Should().Be(ProcessoSeletivoErrorCodes.RegraIncoerenteComANatureza);
     }
 
@@ -195,7 +194,7 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
             RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), null, "base legal", quantidadeDeclarada: 10).Value!;
         Ofertar(processo, Modalidade("AC", NaturezaLegalModalidade.Ampla, PredicadoDnf.SemClausula), semRemanejamento);
 
-        ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo)!.Code
+        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code
             .Should().Be(ProcessoSeletivoErrorCodes.RemanejamentoIncoerenteComANatureza);
     }
 
@@ -225,20 +224,19 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
             finalidade).Value!;
 
     private static ItemConformidade Item(ProcessoSeletivo processo, string codigo) =>
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Single(i => i.Codigo == codigo);
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Single(i => i.Codigo == codigo);
 
     private static void Ofertar(ProcessoSeletivo processo, params ModalidadeSelecionada[] modalidades) =>
         processo.DefinirDistribuicaoVagas(
-            [ConfiguracaoDistribuicaoVagas.Criar(
-                Guid.CreateVersion7(), 10 * modalidades.Length, 1m,
-                ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!,
-                null, null, modalidades, ofertaCurso: OfertaCursoDeTeste.Medicina).Value!],
-            FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            [ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
+                new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 10 * modalidades.Length, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)), Modalidades = modalidades },
+                new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!],
+            FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
 
     private static ModalidadeSelecionada Modalidade(string codigo, NaturezaLegalModalidade natureza, PredicadoDnf regra) =>
         ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), codigo, null, natureza,
-            natureza == NaturezaLegalModalidade.Ampla ? ComposicaoVagasModalidade.ResidualDoVo : ComposicaoVagasModalidade.SuplementarAoTotal, null,
+            natureza == NaturezaLegalModalidade.Ampla ? ComposicaoVagasModalidade.RestanteDasVagasOfertadas : ComposicaoVagasModalidade.SuplementarAoTotal, null,
             natureza switch
             {
                 NaturezaLegalModalidade.CotaReservada => RegraRemanejamentoModalidade.SegueCascata,
@@ -253,4 +251,17 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
     private static PredicadoDnf Exige(params (string Fato, bool Valor)[] atomos) =>
         PredicadoDnf.CriarDeCondicoesAgrupadas([.. atomos.Select(static a => (0, CondicaoDnf.Criar(
             a.Fato, Operador.Igual, JsonSerializer.SerializeToElement(a.Valor)).Value!))]).Value!;
+
+    private static List<FatoColetado> CamposDaOrigemEscolar(bool perguntaAOrigemEscolar)
+    {
+        List<FatoColetado> itens = [Booleano(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 0)];
+        if (perguntaAOrigemEscolar)
+        {
+            itens.Add(Booleano(OrigemEscolar.FatoOndeCursou, 1));
+            itens.Add(Booleano(OrigemEscolar.FatoFormaDeConclusao, 2));
+        }
+
+        return itens;
+    }
+
 }

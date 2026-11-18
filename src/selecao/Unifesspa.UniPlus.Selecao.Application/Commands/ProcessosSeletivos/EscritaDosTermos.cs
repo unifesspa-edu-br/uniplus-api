@@ -92,7 +92,7 @@ internal static class EscritaDosTermos
             Result<TermoExigidoFormulario> termo = TermoExigidoFormulario.Criar(
                 entrada.Codigo,
                 entrada.Ordem,
-                new VersaoTermoEscolhida(versao.TermoId, versao.VersaoId, versao.Nome, versao.Texto, versao.BaseLegal, versao.FormaAceite, versao.Hash),
+                new VersaoTermoEscolhida(versao.TermoId, versao.VersaoId, versao.Codigo, versao.Numero, versao.Nome, versao.Texto, versao.BaseLegal, versao.FormaAceite, versao.Hash),
                 exibicao,
                 obrigatoriedade);
             if (termo.IsSuccess)

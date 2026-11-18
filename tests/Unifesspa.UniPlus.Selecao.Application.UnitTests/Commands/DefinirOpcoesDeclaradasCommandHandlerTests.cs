@@ -28,7 +28,7 @@ public sealed class DefinirOpcoesDeclaradasCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             "PS Opções", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         IProcessoSeletivoRepository repositorio = Substitute.For<IProcessoSeletivoRepository>();
         repositorio.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
@@ -38,8 +38,8 @@ public sealed class DefinirOpcoesDeclaradasCommandHandlerTests
             : new FatoCandidatoView(Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", "Descrição do fato.", "CATEGORICO", "DECLARADO",
                 "ESCALAR", ["PRETA"], "INSCRICAO", binding, null, fonte, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true));
 
-        Result<MutacaoAceita> resultado = await DefinirOpcoesDeclaradasCommandHandler.Handle(
-            new DefinirOpcoesDeclaradasCommand(processo.Id, "COR_RACA", [new OpcaoDeclaradaInput("PRETA", "Preta")], PrecondicaoIfMatch.Ausente),
+        Result resultado = await DefinirOpcoesDeclaradasCommandHandler.Handle(
+            new DefinirOpcoesDeclaradasCommand(processo.Id, "COR_RACA", [new OpcaoDeclaradaInput("PRETA", "Preta")]),
             repositorio, reader, Substitute.For<IUnitOfWork>(), CancellationToken.None);
 
         resultado.Error!.Code.Should().Be("OpcaoDeclaradaFato.FonteNaoEhDoProcesso");
@@ -51,10 +51,10 @@ public sealed class DefinirOpcoesDeclaradasCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             "PS Opções", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirOpcoesDeclaradas(
-            "CATEGORIA_RENDA", [OpcaoDeclaradaFato.Criar("CATEGORIA_RENDA", "RURAL", "Rural", 0).Value!], PrecondicaoIfMatch.Ausente)
+            "CATEGORIA_RENDA", [OpcaoDeclaradaFato.Criar("CATEGORIA_RENDA", "RURAL", "Rural", 0).Value!])
             .IsSuccess.Should().BeTrue();
         processo.DefinirRegrasDerivacao(
         [
@@ -63,7 +63,7 @@ public sealed class DefinirOpcoesDeclaradasCommandHandlerTests
                 RegraDerivacaoConfigurada.Criar(0, "SIM",
                     [CondicaoRegraDerivacao.Criar(0, "CATEGORIAS_RENDA_FAMILIA", Operador.Em, JsonSerializer.SerializeToElement(new[] { "RURAL" })).Value!]).Value!,
             ]).Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ]).IsSuccess.Should().BeTrue();
         IProcessoSeletivoRepository repositorio = Substitute.For<IProcessoSeletivoRepository>();
         repositorio.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
         FatoCandidatoView membro = new(Guid.CreateVersion7(), "CATEGORIA_RENDA", "Categoria de renda", "Descrição do fato.", "CATEGORICO", "DECLARADO",
@@ -77,8 +77,8 @@ public sealed class DefinirOpcoesDeclaradasCommandHandlerTests
                 "DERIVADO", "MULTIVALORADO", null, "HABILITACAO", "AGREGACAO_GRUPO:CATEGORIA_RENDA", null, "PROCESSO", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
         ]));
 
-        Result<MutacaoAceita> resultado = await DefinirOpcoesDeclaradasCommandHandler.Handle(
-            new DefinirOpcoesDeclaradasCommand(processo.Id, "CATEGORIA_RENDA", [new OpcaoDeclaradaInput("URBANA", "Urbana")], PrecondicaoIfMatch.Ausente),
+        Result resultado = await DefinirOpcoesDeclaradasCommandHandler.Handle(
+            new DefinirOpcoesDeclaradasCommand(processo.Id, "CATEGORIA_RENDA", [new OpcaoDeclaradaInput("URBANA", "Urbana")]),
             repositorio, reader, Substitute.For<IUnitOfWork>(), CancellationToken.None);
 
         resultado.Error!.Code.Should().Be(OpcaoDeclaradaFatoErrorCodes.ReferenciadaPorExigenciaViva);

@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 
 /// <summary>
 /// A exigência de documento declara o formulário que a entrega (ADR-0171). Ela só é aceita num
-/// formulário que existe, obrigatório e ligado à mesma fase da exigência, e o formulário que ainda
+/// formulário que existe e é ligado à mesma fase da exigência, obrigatório ou facultativo, e o formulário que ainda
 /// tem exigência não pode ser removido.
 /// </summary>
 public sealed class ConferenciaDasExigenciasDoFormularioTests
@@ -42,13 +42,13 @@ public sealed class ConferenciaDasExigenciasDoFormularioTests
             recusa.Field == "exigencias[0].codigoDoFormulario" && recusa.Error.Code == FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioInexistente);
     }
 
-    [Fact(DisplayName = "A exigência em formulário facultativo é recusada: o candidato pode não o enviar")]
-    public void FormularioFacultativo_Recusa()
+    [Fact(DisplayName = "O pedido de isenção, facultativo, exige o comprovante: a exigência em formulário facultativo da mesma fase não tem recusa (UNI-REQ-0144)")]
+    public void PedidoDeIsencaoFacultativo_ExigeComprovante_SemRecusa()
     {
         IReadOnlyList<FieldError> recusas = ConferenciaDasExigenciasDoFormulario.Conferir(
-            [Formulario("DADOS_COMPLEMENTARES", FaseDaInscricao, obrigatorio: false)], [Exigencia("DADOS_COMPLEMENTARES", FaseDaInscricao)]);
+            [Formulario("ISENCAO_TAXA", FaseDaInscricao, obrigatorio: false)], [Exigencia("ISENCAO_TAXA", FaseDaInscricao)]);
 
-        recusas.Should().ContainSingle().Which.Error.Code.Should().Be(FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioFacultativo);
+        recusas.Should().BeEmpty();
     }
 
     [Fact(DisplayName = "A exigência de uma fase em formulário de outra fase é recusada")]
@@ -60,39 +60,37 @@ public sealed class ConferenciaDasExigenciasDoFormularioTests
         recusas.Should().ContainSingle().Which.Error.Code.Should().Be(FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioDeOutraFase);
     }
 
+    [Fact(DisplayName = "A exigência em formulário facultativo de outra fase é recusada pela fase, não pela obrigatoriedade")]
+    public void FormularioFacultativoDeOutraFase_Recusa()
+    {
+        IReadOnlyList<FieldError> recusas = ConferenciaDasExigenciasDoFormulario.Conferir(
+            [Formulario("ISENCAO_TAXA", FaseDaInscricao, obrigatorio: false)], [Exigencia("ISENCAO_TAXA", FaseDaHabilitacao)]);
+
+        recusas.Should().ContainSingle().Which.Error.Code.Should().Be(FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioDeOutraFase);
+    }
+
     [Fact(DisplayName = "As recusas de cada exigência se acumulam com as das demais, na ordem das exigências")]
     public void Recusas_SeAcumulam()
     {
         IReadOnlyList<FieldError> recusas = ConferenciaDasExigenciasDoFormulario.Conferir(
-            [Formulario("INSCRICAO", FaseDaInscricao), Formulario("DADOS_COMPLEMENTARES", FaseDaInscricao, obrigatorio: false)],
-            [Exigencia("AUSENTE", FaseDaInscricao), Exigencia("DADOS_COMPLEMENTARES", FaseDaInscricao), Exigencia("INSCRICAO", FaseDaHabilitacao)]);
+            [Formulario("INSCRICAO", FaseDaInscricao)],
+            [Exigencia("AUSENTE", FaseDaInscricao), Exigencia("INSCRICAO", FaseDaInscricao), Exigencia("INSCRICAO", FaseDaHabilitacao)]);
 
         recusas.Select(static recusa => (recusa.Field, recusa.Error.Code)).Should().Equal(
             ("exigencias[0].codigoDoFormulario", FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioInexistente),
-            ("exigencias[1].codigoDoFormulario", FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioFacultativo),
             ("exigencias[2].codigoDoFormulario", FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioDeOutraFase));
-    }
-
-    [Fact(DisplayName = "O formulário facultativo e de outra fase tem as duas recusas na mesma exigência")]
-    public void FacultativoEDeOutraFase_AcumulaAsDuasRecusas()
-    {
-        IReadOnlyList<FieldError> recusas = ConferenciaDasExigenciasDoFormulario.Conferir(
-            [Formulario("DADOS_COMPLEMENTARES", FaseDaInscricao, obrigatorio: false)], [Exigencia("DADOS_COMPLEMENTARES", FaseDaHabilitacao)]);
-
-        recusas.Select(static recusa => recusa.Error.Code).Should().Equal(
-            FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioFacultativo, FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioDeOutraFase);
     }
 
     [Fact(DisplayName = "Com código repetido, a recusa não depende da ordem dos formulários")]
     public void CodigoRepetido_RecusaIndependeDaOrdem()
     {
-        FormularioDeclarado obrigatorio = Formulario("DADOS", FaseDaInscricao);
-        FormularioDeclarado facultativo = Formulario("DADOS", FaseDaInscricao, obrigatorio: false);
+        FormularioDeclarado daInscricao = Formulario("DADOS", FaseDaInscricao);
+        FormularioDeclarado daHabilitacao = Formulario("DADOS", FaseDaHabilitacao);
         ExigenciaDeDocumentoDoFormulario[] exigencias = [Exigencia("DADOS", FaseDaInscricao)];
 
-        ConferenciaDasExigenciasDoFormulario.Conferir([obrigatorio, facultativo], exigencias).Select(static recusa => recusa.Error.Code)
-            .Should().Equal(ConferenciaDasExigenciasDoFormulario.Conferir([facultativo, obrigatorio], exigencias).Select(static recusa => recusa.Error.Code))
-            .And.Equal(FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioFacultativo);
+        ConferenciaDasExigenciasDoFormulario.Conferir([daInscricao, daHabilitacao], exigencias).Select(static recusa => recusa.Error.Code)
+            .Should().Equal(ConferenciaDasExigenciasDoFormulario.Conferir([daHabilitacao, daInscricao], exigencias).Select(static recusa => recusa.Error.Code))
+            .And.Equal(FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioDeOutraFase);
     }
 
     [Fact(DisplayName = "As mensagens das recusas não repetem o código recusado")]

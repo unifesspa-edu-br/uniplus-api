@@ -14,31 +14,15 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.CenarioDeRecusaNoCongelamento;
 
 /// <summary>
-/// O caminho do handler até a gravação em cada ato que congela uma versão: o rascunho de publicação só morre depois do
-/// flush que gravou a versão, e o flush que viola a unicidade ou falha o preserva.
+/// O caminho do handler até a gravação em cada ato que congela uma versão: a resposta e os eventos do sucesso, e a recusa ou a falha
+/// do flush que grava a versão.
 /// </summary>
 public sealed class CaminhoDaGravacaoNosHandlersTests
 {
     private const string IndiceDoNumeroDaVersao = "ux_versoes_configuracao_processo_numero";
 
     public static TheoryData<OperacaoQueCongela> Atos() =>
-        [OperacaoQueCongela.Publicar, OperacaoQueCongela.Retificar, OperacaoQueCongela.FecharRetificacao];
-
-    [Theory(DisplayName = "No sucesso o handler remove o rascunho do processo no rastreador, antes do flush que o apaga com o ato")]
-    [MemberData(nameof(Atos))]
-    public async Task Sucesso_RemoveORascunhoNaMesmaGravacao(OperacaoQueCongela operacao)
-    {
-        CenarioDeRecusaNoCongelamento cenario = Para(operacao);
-
-        (Result resposta, _) = await cenario.ExecutarAsync();
-
-        resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
-        Received.InOrder(() =>
-        {
-            _ = cenario.Servicos.Rascunhos.RemoverDoProcessoAsync(cenario.Processo.Id, Arg.Any<CancellationToken>());
-            _ = cenario.Servicos.UnitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-        });
-    }
+        [OperacaoQueCongela.Publicar, OperacaoQueCongela.Retificar];
 
     [Theory(DisplayName = "No sucesso os eventos são os do agregado e a cópia dos documentos do ato gravado, e nenhuma mensagem de registro")]
     [MemberData(nameof(Atos))]
@@ -56,9 +40,9 @@ public sealed class CaminhoDaGravacaoNosHandlersTests
         eventos.Where(static e => e is not CopiarDocumentosDoAtoAoAcervo).Should().OnlyContain(static e => e is IDomainEvent);
     }
 
-    [Theory(DisplayName = "O flush que viola a unicidade do número da versão recusa e descarta o rastreamento, com a remoção do rascunho")]
+    [Theory(DisplayName = "O flush que viola a unicidade do número da versão recusa e descarta o rastreamento")]
     [MemberData(nameof(Atos))]
-    public async Task UnicidadeNoFlush_DescartaARemocaoDoRascunho(OperacaoQueCongela operacao)
+    public async Task UnicidadeNoFlush_DescartaORastreamento(OperacaoQueCongela operacao)
     {
         CenarioDeRecusaNoCongelamento cenario = Para(operacao);
         cenario.Servicos.UnitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
@@ -71,7 +55,7 @@ public sealed class CaminhoDaGravacaoNosHandlersTests
         cenario.Servicos.UnitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
     }
 
-    [Theory(DisplayName = "A falha do flush propaga ao Wolverine, que desfaz a transação com a remoção do rascunho")]
+    [Theory(DisplayName = "A falha do flush propaga ao Wolverine, que desfaz a transação")]
     [MemberData(nameof(Atos))]
     public async Task FalhaNoFlush_Propaga(OperacaoQueCongela operacao)
     {

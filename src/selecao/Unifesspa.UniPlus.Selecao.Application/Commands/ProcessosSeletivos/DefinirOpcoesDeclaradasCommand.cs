@@ -13,8 +13,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 public sealed record DefinirOpcoesDeclaradasCommand(
     Guid ProcessoSeletivoId,
     string FatoCodigo,
-    IReadOnlyList<OpcaoDeclaradaInput> Opcoes,
-    PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;
+    IReadOnlyList<OpcaoDeclaradaInput> Opcoes) : ICommand<Result>;
 
 /// <summary>Uma opção declarada: o código que a resposta cita e o rótulo exibido.</summary>
 public sealed record OpcaoDeclaradaInput(string Codigo, string Rotulo);

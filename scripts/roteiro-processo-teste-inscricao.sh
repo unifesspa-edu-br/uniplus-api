@@ -277,7 +277,8 @@ setup_configuracao() {
     if [ -z "$OFERTA_CURSO_ID" ]; then
         OFERTA_CURSO_ID=$(post_tolerante "/api/configuracao/admin/ofertas-curso" "{
             \"cursoId\": \"$CURSO_ID\", \"localOfertaId\": \"$LOCAL_OFERTA_ID\",
-            \"unidadeOfertanteOrigemId\": \"$UNIDADE_OFERTANTE_ID\", \"programaDeOferta\": \"REGULAR\",
+            \"unidadeOfertanteOrigemId\": \"$UNIDADE_OFERTANTE_ID\", \"codigo\": \"OFERTA_MEDICINA_MATUTINO\",
+            \"programaDeOferta\": \"REGULAR\",
             \"regimeDeFuncionamento\": \"EXTENSIVO\", \"formatoPedagogico\": \"PRESENCIAL\",
             \"regimeDeTurno\": \"REGULAR\", \"turnos\": [\"MATUTINO\"],
             \"eMecCodigo\": null, \"codigoSga\": null, \"vagasAnuaisAutorizadas\": null,
@@ -510,9 +511,9 @@ definir_distribuicao_vagas() {
         --argjson ofertas "$(printf '%s\n' "${ofertas[@]}" | jq -R . | jq -sc .)" \
         --arg reserva "$RESERVA_DEMOGRAFICA_ID" --argjson modalidades "$modalidades" '
         [$ofertas[] | {
-            ofertaCursoId: ., voBase: 30, pr: 0.5,
-            regraDistribuicaoCodigo: "DISTRIB-VAGAS-LEI-12711-COM-AC-PCD", regraDistribuicaoVersao: "v1",
-            regraAjusteCodigo: "RECONCILIACAO-VAGAS-ART11-PU", regraAjusteVersao: "v1",
+            ofertaCursoId: ., vagasOfertadasBase: 30, percentualDaReservaLegal: 0.5,
+            regraDistribuicaoCodigo: "DISTRIBUICAO-LEI-12711-COM-AMPLA-CONCORRENCIA-E-PESSOA-COM-DEFICIENCIA", regraDistribuicaoVersao: "v1",
+            regraAjusteCodigo: "RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO", regraAjusteVersao: "v1",
             referenciaReservaDemograficaId: $reserva,
             modalidadeIds: $modalidades,
             quadro: [{modalidadeId: "70da1000-0000-7000-8000-000000000010", quantidade: 2}]
@@ -531,7 +532,7 @@ definir_opcoes_de_curso() {
 
 definir_cascata_remanejamento() {
     log "Definir Cascata de Remanejamento (REMANEJ-CASCATA-LEI-12711)"
-    # A matriz tem de bater exatamente com o esquema_args congelado da regra
+    # A matriz tem de coincidir com a declaração da regra congelada
     # REMANEJ-CASCATA-LEI-12711/v1 (Portaria MEC 704/2025, art. 2º e Anexo) —
     # ver RegraCatalogoSeed.cs, SeedId(19), e é a do Quadro 3 da minuta. Oito
     # origens, sete destinos cada, ordem fixa, terminal sempre AC (fallback,
@@ -660,7 +661,11 @@ definir_cronograma_fases() {
             \"inicio\": \"$inicio_resultado\", \"fim\": \"$fim_resultado\",
             \"produtos\": [{\"atoCodigo\": \"RESULTADO_CLASSIFICACAO\", \"papel\": \"DEFINITIVO\"}],
             \"faseConcluinteCodigo\": null, \"emiteParecerIndividual\": false,
-            \"bancasRequeridas\": [], \"regraRecurso\": null
+            \"bancasRequeridas\": [], \"regraRecurso\": null, \"tiposDeDecisao\": [\"HOMOLOGACAO_DAS_INSCRICOES\"],
+            \"regraDeHomologacao\": {
+                \"resultadoAtoCodigo\": \"RESULTADO_CLASSIFICACAO\",
+                \"alternativas\": [{\"condicoes\": [{\"tipo\": \"RESULTADO_NO_RETORNO_DO_INEP\", \"edicaoDoExame\": 2026, \"motivoDesfavoravelCodigo\": \"SEM_RESULTADO_INEP\"}]}]
+            }
         },
         {
             \"ordem\": 3, \"faseCanonicaId\": \"$FASE_HABILITACAO_ID\",
@@ -683,6 +688,49 @@ definir_cronograma_fases() {
     fases=$(jq -c --arg unidade "$UNIDADE_ID" 'map(. + {unidadeResponsavelId: $unidade})' <<< "$fases")
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/cronograma-fases" "$fases" >/dev/null
     ok "cronograma definido — inscrição de $inicio_inscricao a $fim_inscricao"
+}
+
+buscar_motivo_da_homologacao() {
+    local caminho='/api/selecao/motivos-de-decisao?tipo=HOMOLOGACAO_DAS_INSCRICOES&limit=100'
+    local cabecalhos resposta codigo corpo motivo proxima
+    cabecalhos=$(mktemp)
+    while [ -n "$caminho" ]; do
+        resposta=$(curl -sS -D "$cabecalhos" -w '\n%{http_code}' "$API_URL$caminho" \
+            -H "Authorization: Bearer $TOKEN") || { rm -f "$cabecalhos"; return 1; }
+        codigo=$(tail -n1 <<< "$resposta")
+        corpo=$(sed '$d' <<< "$resposta")
+        if [ "$codigo" != "200" ]; then
+            rm -f "$cabecalhos"
+            fail "GET $caminho → $codigo: $corpo"
+        fi
+        motivo=$(jq -r '[.[] | select(.codigo == "SEM_RESULTADO_INEP" and .sentido == "DESFAVORAVEL") | .id][0] // empty' <<< "$corpo")
+        if [ -n "$motivo" ]; then
+            rm -f "$cabecalhos"
+            printf '%s\n' "$motivo"
+            return
+        fi
+        proxima=$(tr -d '\r' < "$cabecalhos" | grep -i '^link:' | tr ',' '\n' \
+            | grep 'rel="next"' | sed -n 's/.*<[^>?]*?\([^>]*\)>.*/\1/p' || true)
+        caminho="${proxima:+/api/selecao/motivos-de-decisao?$proxima}"
+    done
+    rm -f "$cabecalhos"
+}
+
+escolher_motivo_da_homologacao() {
+    log "Escolher o motivo desfavorável da homologação das inscrições"
+    local motivo_id
+    motivo_id=$(post_tolerante "/api/selecao/admin/motivos-de-decisao" '{
+        "tipo": "HOMOLOGACAO_DAS_INSCRICOES", "codigo": "SEM_RESULTADO_INEP",
+        "descricao": "Sem resultado no retorno do INEP para a edição indicada",
+        "subclassificacao": null, "sentido": "DESFAVORAVEL"
+    }')
+    if [ -z "$motivo_id" ]; then
+        motivo_id=$(buscar_motivo_da_homologacao)
+    fi
+    exigir_id "motivo da homologação" "$motivo_id"
+    api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/fases/$FASE_RESULTADO_ID/motivos-de-decisao/$motivo_id" \
+        '{"justificativa": null}' >/dev/null
+    ok "motivo da homologação escolhido"
 }
 
 aplicar_modelo_inscricao() {
@@ -896,6 +944,7 @@ main() {
     definir_edicoes_enem
     definir_taxa_inscricao
     definir_cronograma_fases
+    escolher_motivo_da_homologacao
     aplicar_modelo_inscricao
     vincular_fase_do_formulario
     definir_documentos_exigidos

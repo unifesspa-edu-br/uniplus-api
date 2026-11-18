@@ -39,6 +39,7 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
     public static TheoryData<string, string, string, PermissaoSelecao> RecursosDoProcesso => new()
     {
         { "formulários", "PUT", "/api/selecao/admin/processos-seletivos/{p}/formularios/INSCRICAO", PermissaoSelecao.ProcessosConfigurar },
+        { "cronograma de fases", "PUT", "/api/selecao/processos-seletivos/{p}/cronograma-fases", PermissaoSelecao.ProcessosConfigurar },
         { "modelos de documento", "POST", "/api/selecao/processos-seletivos/{p}/modelos-de-documento", PermissaoSelecao.ProcessosConfigurar },
         { "produtos previstos", "GET", "/api/selecao/processos-seletivos/{p}/produtos-previstos", PermissaoSelecao.ProcessosAcompanhar },
         { "atos (consulta)", "GET", "/api/selecao/processos-seletivos/{p}/atos", PermissaoSelecao.ProcessosAcompanhar },
@@ -162,7 +163,7 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, $"Acesso por permissão {Guid.CreateVersion7()}");
+        (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"Acesso por permissão {Guid.CreateVersion7()}" });
         Guid unidade = await db.ProcessosSeletivos.AsNoTracking()
             .Where(p => p.Id == processo.Id).Select(p => p.UnidadeAdministradoraOrigemId).SingleAsync();
         return (processo.Id, unidade);
@@ -183,6 +184,13 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
             request.Content = JsonContent.Create(new { });
         }
 
+        IdentificarConta(request, contaId, papel);
+
+        return await client.SendAsync(request);
+    }
+
+    private static void IdentificarConta(HttpRequestMessage request, string? contaId, string? papel)
+    {
         if (contaId is not null)
         {
             request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
@@ -192,7 +200,5 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
                 request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, papel);
             }
         }
-
-        return await client.SendAsync(request);
     }
 }

@@ -33,7 +33,7 @@ internal static class TiposDeEtapaSeeder
         }
 
         Result<TipoEtapa> tipo = TipoEtapa.Criar(
-            codigo, "Entrevista", null, admitePontuacao: true, admiteEliminacao: true);
+            codigo, "Entrevista", null, admitePontuacao: true, admiteEliminacao: true, exigeCorrecaoIndependente: false);
         if (tipo.IsFailure)
         {
             throw new InvalidOperationException(

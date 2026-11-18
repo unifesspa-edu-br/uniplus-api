@@ -53,6 +53,8 @@ internal sealed class OfertaCursoOrdenada : IIdentificavel
 
     public string Codigo { get; init; } = string.Empty;
 
+    public string OfertaCodigo { get; init; } = string.Empty;
+
     public string UnidadeSigla { get; init; } = string.Empty;
 
     public ProgramaDeOferta ProgramaDeOferta { get; init; }

@@ -254,7 +254,7 @@ public sealed class Inscricao : EntityBase
     }
 
     /// <summary>
-    /// O ETag forte da revisão corrente — identidade da inscrição dentro dele (mesmo motivo do ETag de <see cref="RascunhoRetificacao"/>: ABA sem ela)
+    /// O ETag forte da revisão corrente — identidade da inscrição dentro dele (sem ela, descartar e recriar reinicia a revisão e um ETag antigo valeria na nova: ABA)
     /// e a versão do formulário, porque o rascunho adotado na memória e o gravado podem estar na mesma revisão em versões diferentes.
     /// </summary>
     public string ETag => $"\"{Id}:{Revisao}:{VersaoFormularioId}\"";

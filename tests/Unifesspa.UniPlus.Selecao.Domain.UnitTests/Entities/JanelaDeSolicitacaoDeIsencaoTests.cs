@@ -8,7 +8,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -20,6 +19,9 @@ using Xunit;
 /// </summary>
 public sealed class JanelaDeSolicitacaoDeIsencaoTests
 {
+    private static DomainError? PendenciaDoCronograma(ConfiguracaoDeclarada configuracao, TimeZoneInfo? fuso) =>
+        CronogramaDoProcesso.Do(configuracao.Cronograma.CronogramaFases).ConferirCompletude(fuso) is [var primeira, ..] ? primeira.Error : null;
+
     private static readonly TimeZoneInfo Belem = TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId);
     private static readonly DateTimeOffset AberturaDasInscricoes = InstanteEmBelem.Em(2026, 3, 2);
     private static readonly DateTimeOffset FimDasInscricoes = InstanteEmBelem.Em(2026, 3, 31, 23, 59, 59);
@@ -108,10 +110,10 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
         pendencia!.Code.Should().Be("ProcessoSeletivo.JanelaDeIsencaoSemPrazo");
     }
 
-    [Fact(DisplayName = "A janela irregular fica vermelha no checklist, e não só na publicação")]
-    public void JanelaIrregular_ItemVermelhoNoChecklist()
+    [Fact(DisplayName = "A janela irregular fica pendente no painel de conformidade, e não só na publicação")]
+    public void JanelaIrregular_ItemPendenteNoPainel()
     {
-        // O checklist é bicondicional com os gates: sem o item, o preflight diria que está tudo
+        // O painel de conformidade coincide com as conferências: sem o item, o preflight diria que está tudo
         // pronto instantes antes de a publicação recusar o mesmo processo.
         ProcessoSeletivo processo = ProcessoComCronograma([
             FaseDeInscricao(AberturaDasInscricoes, FimDasInscricoes),
@@ -121,11 +123,11 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
         var contexto = new ContextoDeContagemDePrazos(
             CalendarioVigente: null, FusoInstitucional: Belem);
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), contexto, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Com(contexto, motivosEscolhidos: MotivosDoProcessoDeTeste.Cobrindo(processo)))
             .Should().Contain(i => i.Codigo == "cronograma_janela_de_isencao" && !i.Ok);
     }
 
-    [Fact(DisplayName = "Sem zona resolvida o gate lança, em vez de aceitar janela de um dia")]
+    [Fact(DisplayName = "Sem zona resolvida a conferência lança, em vez de aceitar janela de um dia")]
     public void SemFusoResolvido_NaoAceitaJanelaCurta()
     {
         // Tratar a ausência do fuso como permissão transformaria um defeito de instalação em
@@ -135,7 +137,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
             FaseDeIsencao(AberturaDasInscricoes, InstanteEmBelem.Em(2026, 3, 3, 23, 59, 59)),
         ]);
 
-        Action semZona = () => PendenciasDoCronograma.PendenciaDoCronograma(EstadoDaConfiguracao.De(processo), null);
+        Action semZona = () => PendenciaDoCronograma(processo.Declaracao(), null);
 
         semZona.Should().Throw<InvalidOperationException>();
     }
@@ -147,14 +149,14 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
         // a que se referir — mas os cinco dias independem da inscrição.
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             "PS Importado", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
         processo.DefinirCronogramaFases(
             [FaseDeIsencao(AberturaDasInscricoes, InstanteEmBelem.Em(2026, 3, 3, 23, 59, 59))],
-            [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            []).IsSuccess.Should().BeTrue();
 
-        PendenciasDoCronograma.PendenciaDoCronograma(EstadoDaConfiguracao.De(processo), Belem)!.Code
+        PendenciaDoCronograma(processo.Declaracao(), Belem)!.Code
             .Should().Be("ProcessoSeletivo.JanelaDeIsencaoMenorQueCincoDias");
     }
 
@@ -164,7 +166,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
         ProcessoSeletivo processo = ProcessoComCronograma(
             [FaseDeInscricao(AberturaDasInscricoes, FimDasInscricoes)]);
 
-        PendenciasDoCronograma.PendenciaDoCronograma(EstadoDaConfiguracao.De(processo), Belem).Should().BeNull();
+        PendenciaDoCronograma(processo.Declaracao(), Belem).Should().BeNull();
     }
 
     private static DomainError? Avaliar(
@@ -179,38 +181,40 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
             FaseDeIsencao(aberturaIsencao, fimIsencao, recurso),
         ]);
 
-        return PendenciasDoCronograma.PendenciaDoCronograma(EstadoDaConfiguracao.De(processo), Belem);
+        return PendenciaDoCronograma(processo.Declaracao(), Belem);
     }
 
     private static FaseCronograma FaseDeInscricao(DateTimeOffset inicio, DateTimeOffset fim) =>
         FaseCronograma.Criar(
-            ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "INSCRICAO",
-            origemData: OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false,
-            coletaInscricao: true, coletaSolicitacaoIsencao: false, inicio: inicio, fim: fim,
-            produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+            new OrigemCanonicaDaFase(
+                OrigemId: Guid.CreateVersion7(), Codigo: "INSCRICAO", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true,
+                ColetaSolicitacaoIsencao: false),
+            new DecisoesDeCronogramaDaFase(Ordem: 1, Inicio: inicio, Fim: fim, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+            bancasRequeridas: []).Value!;
 
     private static FaseCronograma FaseDeIsencao(
         DateTimeOffset? inicio, DateTimeOffset? fim, RegraRecursoFase? recurso = null) =>
         FaseCronograma.Criar(
-            ordem: 2, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "SOLICITACAO_ISENCAO",
-            origemData: OrigemDataFase.NaExecucao, agrupaEtapas: false, permiteComplementacao: false,
-            coletaInscricao: false, coletaSolicitacaoIsencao: true, inicio: inicio, fim: fim,
-            produtos:
-            [
-                ProdutoDaFase.Reidratar(ProdutoPreliminarId, "RESULTADO_ISENCAO", PapelProdutoFase.Preliminar),
-                ProdutoDaFase.Criar("RESULTADO_ISENCAO", PapelProdutoFase.Definitivo),
-            ],
-            faseConcluinteCodigo: null,
-            emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: recurso ?? RecursoEmDiasUteis(2m), unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+            new OrigemCanonicaDaFase(
+                OrigemId: Guid.CreateVersion7(), Codigo: "SOLICITACAO_ISENCAO", OrigemData: OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
+                ColetaSolicitacaoIsencao: true),
+            new DecisoesDeCronogramaDaFase(Ordem: 2, Inicio: inicio, Fim: fim, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(
+                Produtos: [
+                    ProdutoDaFase.Reidratar(ProdutoPreliminarId, "RESULTADO_ISENCAO", PapelProdutoFase.Preliminar),
+                    ProdutoDaFase.Criar("RESULTADO_ISENCAO", PapelProdutoFase.Definitivo),
+                ],
+                EmiteParecerIndividual: false,
+                RegraRecurso: recurso ?? RecursoEmDiasUteis(2m)),
+            bancasRequeridas: []).Value!;
 
     /// <summary>Produto preliminar da fase de isenção — a âncora que a regra de recurso declara.</summary>
     private static readonly Guid ProdutoPreliminarId = new("77770000-0000-4000-8000-000000000003");
 
     private static RegraRecursoFase RecursoEmDiasUteis(decimal prazo) => RegraRecursoFase.Criar(
-        ReferenciaRegra.Criar(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('d', 64)).Value!,
-        new ArgsRegraPrazoRecurso(
+        ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('d', 64)),
+        new ParametrosRegraPrazoRecurso(
             PrazoValor: prazo,
             PrazoUnidade: UnidadePrazo.DiasUteis,
             SuspensividadePrimeiraInstanciaValor: null,
@@ -224,10 +228,10 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             "PS Isenção", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
-        processo.DefinirCronogramaFases(fases, [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases(fases, []).IsSuccess.Should().BeTrue();
 
         return processo;
     }

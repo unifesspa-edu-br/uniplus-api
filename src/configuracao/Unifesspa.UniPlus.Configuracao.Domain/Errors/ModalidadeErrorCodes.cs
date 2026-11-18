@@ -23,9 +23,9 @@ public static class ModalidadeErrorCodes
     public const string ComposicaoVagasInvalida = "Modalidade.ComposicaoVagasInvalida";
     public const string RegraRemanejamentoInvalida = "Modalidade.RegraRemanejamentoInvalida";
     public const string NaturezaRemanejamentoIncoerente = "Modalidade.NaturezaRemanejamentoIncoerente";
-    public const string OrigemObrigatoriaParaRetiraDe = "Modalidade.OrigemObrigatoriaParaRetiraDe";
-    public const string OrigemApenasParaRetiraDe = "Modalidade.OrigemApenasParaRetiraDe";
-    public const string ArgumentoRemanejamentoObrigatorio = "Modalidade.ArgumentoRemanejamentoObrigatorio";
+    public const string OrigemObrigatoriaParaRetiradaDeOutraModalidade = "Modalidade.OrigemObrigatoriaParaRetiradaDeOutraModalidade";
+    public const string OrigemApenasParaRetiradaDeOutraModalidade = "Modalidade.OrigemApenasParaRetiradaDeOutraModalidade";
+    public const string ParametrosRemanejamentoObrigatorio = "Modalidade.ParametrosRemanejamentoObrigatorio";
     public const string AcaoIndeferimentoInvalida = "Modalidade.AcaoIndeferimentoInvalida";
     public const string ReferenciaInexistenteOuInativa = "Modalidade.ReferenciaInexistenteOuInativa";
     public const string RemocaoBloqueadaPorReferencia = "Modalidade.RemocaoBloqueadaPorReferencia";

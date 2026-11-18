@@ -57,26 +57,31 @@ public sealed class ModeloDeDocumentoRepository : IModeloDeDocumentoRepository
             .ConfigureAwait(false);
 
     public async Task<IReadOnlyList<ArquivoPendenteVencido>> ListarPendentesVencidosAsync(
-        DateTimeOffset agora, int limite, CancellationToken cancellationToken = default) =>
-        await _context.ModelosDeDocumento
+        DateTimeOffset agora, int limite, CancellationToken cancellationToken = default)
+    {
+        // A chave da cópia gravada é calculada pela entidade e não vira SQL: o lote é materializado e mapeado em memória.
+        List<ModeloDeDocumento> lote = await _context.ModelosDeDocumento
             .AsNoTracking()
             .Where(PendenteVencido(agora))
             .OrderBy(m => m.ExpiraEm)
             .ThenBy(m => m.Id)
             .Take(limite)
-            .Select(m => new ArquivoPendenteVencido(m.Id, m.ObjectKey))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-    public async Task<bool> RemoverSePendenteVencidoAsync(Guid id, DateTimeOffset agora, CancellationToken cancellationToken = default)
-    {
-        int linhasAfetadas = await _context.ModelosDeDocumento
-            .Where(m => m.Id == id)
-            .Where(PendenteVencido(agora))
-            .ExecuteDeleteAsync(cancellationToken)
-            .ConfigureAwait(false);
+        return [.. lote.Select(m => new ArquivoPendenteVencido(m.Id, [m.ObjectKey, m.ChaveDaCopiaGravada]))];
+    }
 
-        return linhasAfetadas == 1;
+    public async Task<bool> RemoverSePendenteVencidoAsync(
+        Guid id, DateTimeOffset agora, Func<CancellationToken, Task> removerObjetos, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(removerObjetos);
+
+        return await RemocaoDoPendenteVencido.ExecutarAsync(
+            _context.Database,
+            ct => _context.ModelosDeDocumento.Where(m => m.Id == id).Where(PendenteVencido(agora)).ExecuteDeleteAsync(ct),
+            removerObjetos,
+            cancellationToken).ConfigureAwait(false);
     }
 
     public void Remover(ModeloDeDocumento entity)

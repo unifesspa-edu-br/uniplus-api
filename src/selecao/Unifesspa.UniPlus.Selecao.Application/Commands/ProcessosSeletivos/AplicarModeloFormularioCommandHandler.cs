@@ -41,7 +41,7 @@ public static class AplicarModeloFormularioCommandHandler
         }
 
         // O estado do processo é conferido antes de qualquer leitura externa.
-        if (processo.RecusaDeAplicarModelo(command.Precondicao) is { } recusaDeEstado)
+        if (processo.MutacaoBloqueada() is { } recusaDeEstado)
         {
             return Result<AplicacaoDeModeloDto>.Failure(recusaDeEstado);
         }
@@ -56,7 +56,7 @@ public static class AplicarModeloFormularioCommandHandler
             fatoCandidatoReader,
             termoConsentimentoReader,
             new CadastrosDosDocumentosExigidos(tipoDocumentoReader, fatoCandidatoReader, modeloDeDocumentoRepository));
-        return await new AplicacaoDoModeloDeFormulario(processo, modelo.Value!, command.Precondicao, cadastros, unitOfWork)
+        return await new AplicacaoDoModeloDeFormulario(processo, modelo.Value!, cadastros, unitOfWork)
             .AplicarAsync(cancellationToken).ConfigureAwait(false);
     }
 

@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// </summary>
 public static class DefinirAtendimentoEspecializadoCommandHandler
 {
-    public static async Task<Result<MutacaoAceita>> Handle(
+    public static async Task<Result> Handle(
         DefinirAtendimentoEspecializadoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         ICondicaoAtendimentoReader condicaoAtendimentoReader,
@@ -39,27 +39,15 @@ public static class DefinirAtendimentoEspecializadoCommandHandler
             .ConfigureAwait(false);
         if (processo is null)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 "ProcessoSeletivo.NaoEncontrado",
                 $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
         }
 
-        // A precondição é conferida AQUI, logo depois do 404 e antes das regras de negócio
-        // que este handler avalia (existência de cadastros, coerência de referências): ela
-        // as precede na ordem da ADR-0110 D9. Um cliente com If-Match defasado tem de saber
-        // disso antes de sair caçando um cadastro que ele não errou.
-        //
-        // O que ela NÃO precede é a validação de SCHEMA do payload: o FluentValidation roda
-        // como middleware do Wolverine, antes deste handler, e um command malformado morre
-        // ali com 422 sem que o guard chegue a rodar. É desvio consciente da D9 — corrigi-lo
-        // exigiria carregar o agregado no middleware, o que é pior. O custo é uma rodada
-        // extra para quem erra as DUAS coisas ao mesmo tempo; nenhum estado é corrompido.
-        //
-        // O mesmo guard continua dentro do Definir* do domínio: esta antecipação dá a ordem,
-        // não a garantia.
-        if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
+        // Fora do rascunho a recusa vem antes de consultar cadastros.
+        if (processo.MutacaoBloqueada() is { } bloqueio)
         {
-            return Result<MutacaoAceita>.Failure(bloqueio);
+            return Result.Failure(bloqueio);
         }
 
         // Validação sempre precede I/O (ADR-0125, ponto 5): confirma unicidade dos IDs crus
@@ -69,7 +57,7 @@ public static class DefinirAtendimentoEspecializadoCommandHandler
             command.CondicaoIds, command.RecursoIds, command.TipoDeficienciaIds);
         if (idsErros.Count > 0)
         {
-            return Result<MutacaoAceita>.ValidationFailure(idsErros);
+            return Result.ValidationFailure(idsErros);
         }
 
         List<CondicaoOfertada> condicoes = [];
@@ -80,7 +68,7 @@ public static class DefinirAtendimentoEspecializadoCommandHandler
                 .ConfigureAwait(false);
             if (condicao is null)
             {
-                return Result<MutacaoAceita>.Failure(new DomainError(
+                return Result.Failure(new DomainError(
                     "AtendimentoEspecializado.CondicaoNaoEncontrada",
                     $"Condição de atendimento {condicaoId} não encontrada ou não está mais viva."));
             }
@@ -96,7 +84,7 @@ public static class DefinirAtendimentoEspecializadoCommandHandler
                 .ConfigureAwait(false);
             if (recurso is null)
             {
-                return Result<MutacaoAceita>.Failure(new DomainError(
+                return Result.Failure(new DomainError(
                     "AtendimentoEspecializado.RecursoNaoEncontrado",
                     $"Recurso de acessibilidade {recursoId} não encontrado ou não está mais vivo."));
             }
@@ -112,7 +100,7 @@ public static class DefinirAtendimentoEspecializadoCommandHandler
                 .ConfigureAwait(false);
             if (tipo is null)
             {
-                return Result<MutacaoAceita>.Failure(new DomainError(
+                return Result.Failure(new DomainError(
                     "AtendimentoEspecializado.TipoDeficienciaNaoEncontrado",
                     $"Tipo de deficiência {tipoDeficienciaId} não encontrado ou não está mais vivo."));
             }
@@ -124,13 +112,13 @@ public static class DefinirAtendimentoEspecializadoCommandHandler
             AtendimentoEspecializado.Criar(condicoes, recursos, tiposDeficiencia);
         if (atendimentoResult.IsFailure)
         {
-            return Result<MutacaoAceita>.ValidationFailure(atendimentoResult.Errors);
+            return Result.ValidationFailure(atendimentoResult.Errors);
         }
 
-        Result result = processo.DefinirAtendimentoEspecializado(atendimentoResult.Value!, command.Precondicao);
+        Result result = processo.DefinirAtendimentoEspecializado(atendimentoResult.Value!);
         if (result.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(result.Error!);
+            return Result.Failure(result.Error!);
         }
 
         // Agregado tracked (ObterParaMutacaoAsync): o novo atendimento e suas
@@ -139,6 +127,6 @@ public static class DefinirAtendimentoEspecializadoCommandHandler
         // emitindo UPDATE de linhas nunca inseridas.
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
-        return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+        return Result.Success();
     }
 }

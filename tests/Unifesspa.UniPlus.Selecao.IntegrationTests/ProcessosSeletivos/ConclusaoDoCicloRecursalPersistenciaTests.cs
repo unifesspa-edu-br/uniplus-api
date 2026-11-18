@@ -12,12 +12,14 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// A bicondicional entre o gate de publicação e o item de conformidade da conclusão do ciclo
+/// A coincidência entre a conferência de publicação e o item de conformidade da conclusão do ciclo
 /// recursal. <c>DefinirCronogramaFases</c> recusa a fase que publica preliminar sem conclusão
 /// alcançável, mas esse estado é <b>materializável</b>: o EF hidrata os produtos direto das
 /// linhas, sem passar pela fábrica, e uma configuração gravada antes da regra volta ao agregado
@@ -38,23 +40,25 @@ public sealed class ConclusaoDoCicloRecursalPersistenciaTests : IClassFixture<Pr
     public ConclusaoDoCicloRecursalPersistenciaTests(ProcessoSeletivoDbFixture fixture) =>
         _fixture = fixture;
 
+    // O único produto da fase deixa de ser a definitiva e passa a ser preliminar: a fase abre um ciclo recursal que nada conclui,
+    // estado que a fábrica recusa produzir hoje.
     [Fact(DisplayName = "Fase hidratada publicando só preliminar, sem conclusão declarada, marca o item vermelho e recusa a publicação")]
     public async Task PreliminarSemConclusao_ItemVermelhoEPublicacaoRecusada()
     {
         Guid processoId = await SemearProcessoConformeAsync($"PS 1426 {Guid.CreateVersion7()}");
-
-        // O único produto da fase deixa de ser a definitiva e passa a ser preliminar: a fase
-        // abre um ciclo recursal que nada conclui — estado que a fábrica recusa produzir hoje.
         await RebaixarProdutoParaPreliminarAsync(processoId);
-
         await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
         processo.CronogramaFases.Should().ContainSingle()
             .Which.Produtos.Should().ContainSingle()
             .Which.Papel.Should().Be(PapelProdutoFase.Preliminar);
+        AfirmarConclusaoVermelhaEPublicacaoRecusada(processo);
+    }
 
-        IReadOnlyList<ItemConformidade> checklist = ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+    private static void AfirmarConclusaoVermelhaEPublicacaoRecusada(ProcessoSeletivo processo)
+    {
+        IReadOnlyList<ItemConformidade> checklist = ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo));
 
         checklist.Should().ContainSingle(i => i.Codigo == "cronograma_conclusao_do_ciclo_recursal")
             .Which.Ok.Should().BeFalse(
@@ -78,7 +82,7 @@ public sealed class ConclusaoDoCicloRecursalPersistenciaTests : IClassFixture<Pr
         await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
             .Should().ContainSingle(i => i.Codigo == "cronograma_conclusao_do_ciclo_recursal")
             .Which.Ok.Should().BeTrue();
 
@@ -87,19 +91,16 @@ public sealed class ConclusaoDoCicloRecursalPersistenciaTests : IClassFixture<Pr
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
     }
 
-    private static Result<VersaoConfiguracao> Publicar(ProcessoSeletivo processo) => processo.Publicar(
-        DadosEdital.Criar(
+    private static Result<VersaoConfiguracao> Publicar(ProcessoSeletivo processo) => processo.Publicar(new CenarioDeCongelamento
+    {
+        Dados = DadosEdital.Criar(
             "001/2026",
             new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
             new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
             Guid.CreateVersion7()).Value!,
-        "{}"u8.ToArray(),
-        "1.1",
-        "canonical-json/sha256@v1",
-        HashFixo,
-        "teste",
-        TimeProvider.System,
-        ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        Documento = new DocumentoCongelado("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo),
+        AtorUsuarioContaId = "teste",
+    });
 
     /// <summary>
     /// Processo estruturalmente publicável cuja fase publica a definitiva da matéria — o único
@@ -109,46 +110,8 @@ public sealed class ConclusaoDoCicloRecursalPersistenciaTests : IClassFixture<Pr
     {
         await using UniPlusDbContext db = _fixture.CreateDbContext();
 
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            nome, TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
-            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivoPublicacaoSeeder.NovoProcessoConforme(nome);
 
-        processo.DefinirCronogramaFases([FaseConforme()], [], PrecondicaoIfMatch.Ausente)
-            .IsSuccess.Should().BeTrue();
-        processo.DefinirEtapas([
-            EtapaProcesso.Criar(
-                "Prova Objetiva", CaraterEtapa.Classificatoria,
-                TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-                peso: 1m, notaMinima: null, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: "RESULTADO_FINAL").Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        processo.DefinirAtendimentoEspecializado(
-            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente)
-            .IsSuccess.Should().BeTrue();
-
-        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021",
-            quantidadeDeclarada: 40).Value!;
-        processo.DefinirDistribuicaoVagas(
-            [ConfiguracaoDistribuicaoVagas.Criar(
-                Guid.CreateVersion7(), 40, 1m, Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
-                null, null, [modalidade], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!], FatosDeModalidadeDeTeste.DoCatalogo,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        processo.DefinirClassificacao(
-            ConfiguracaoClassificacao.Criar(
-                Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'), null, null,
-                Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
-
-        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         await db.ProcessosSeletivos.AddAsync(processo);
         await db.SaveChangesAsync();
 
@@ -161,13 +124,7 @@ public sealed class ConclusaoDoCicloRecursalPersistenciaTests : IClassFixture<Pr
         await conexao.OpenAsync();
 
         await using NpgsqlCommand comando = new(
-            """
-            UPDATE selecao.produtos_da_fase p
-               SET papel = @preliminar
-              FROM selecao.fases_cronograma f
-             WHERE p.fase_cronograma_id = f.id
-               AND f.processo_seletivo_id = @processo
-            """,
+AtualizacaoDoPapelDoProduto,
             conexao);
         comando.Parameters.AddWithValue("preliminar", (int)PapelProdutoFase.Preliminar);
         comando.Parameters.AddWithValue("processo", processoId);
@@ -191,23 +148,25 @@ public sealed class ConclusaoDoCicloRecursalPersistenciaTests : IClassFixture<Pr
             .FirstAsync(p => p.Id == processoId);
 
     private static ReferenciaRegra Regra(string codigo, char semente) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string(semente, 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string(semente, 64));
 
     private static FaseCronograma FaseConforme() => FaseCronograma.Criar(
-        ordem: 1,
-        faseCanonicaOrigemId: Guid.CreateVersion7(),
-        codigo: "RESULTADO_FINAL",
-        origemData: OrigemDataFase.NoEdital,
-        agrupaEtapas: true,
-        permiteComplementacao: false,
-        coletaInscricao: true,
-        coletaSolicitacaoIsencao: false,
-        inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-        fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-        produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
-        faseConcluinteCodigo: null,
-        emiteParecerIndividual: false,
-        bancasRequeridas: [],
-        regraRecurso: null,
-        unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+        new OrigemCanonicaDaFase(
+            OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true,
+            ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(),
+        bancasRequeridas: []).Value!;
+
+    private const string AtualizacaoDoPapelDoProduto =
+            """
+            UPDATE selecao.produtos_da_fase p
+               SET papel = @preliminar
+              FROM selecao.fases_cronograma f
+             WHERE p.fase_cronograma_id = f.id
+               AND f.processo_seletivo_id = @processo
+            """;
+
 }

@@ -43,7 +43,7 @@ internal static class LeituraDeEnumsEListas
 
     /// <summary>
     /// Variante opcional de <see cref="Enumeracao{TEnum}"/> — usada pelos pares de
-    /// suspensividade de <c>ArgsRegraPrazoRecurso</c>, em que
+    /// suspensividade de <c>ParametrosRegraPrazoRecurso</c>, em que
     /// <see langword="null"/> é valor legítimo ("esta instância não bloqueia").
     /// </summary>
     public static TEnum? EnumeracaoOpcional<TEnum>(this LeitorEnvelope leitor, JsonObject pai, string chave, string path)
@@ -73,8 +73,8 @@ internal static class LeituraDeEnumsEListas
     /// <para>
     /// <b>A guarda recusa; ela não normaliza.</b> Aparar o espaço aqui mudaria o valor em
     /// relação aos bytes congelados, a recanonicalização produziria bytes distintos, e a
-    /// prova de round-trip <b>recusaria o descarte de um certame legítimo</b> — trocando um
-    /// dado sujo por um certame sem descarte. O envelope ou está na forma que o cadastro
+    /// prova de round-trip <b>recusaria a leitura de um certame legítimo</b> — trocando um
+    /// dado sujo por um certame ilegível. O envelope ou está na forma que o cadastro
     /// produz, ou não é reidratável.
     /// </para>
     /// </remarks>
@@ -160,15 +160,15 @@ internal static class LeituraDeEnumsEListas
     /// fazer o mesmo, e a razão é o próprio congelamento: a referência é <b>snapshot-copy
     /// por valor</b> (ADR-0061), e a regra que ela cita <b>pode ter sido retirada ou
     /// versionada</b> depois da publicação. Exigir que ela ainda exista tornaria
-    /// <b>irreidratável</b> um certame legitimamente publicado — o descarte da sessão
-    /// editorial dele passaria a falhar, e a configuração congelada, que é a evidência
+    /// <b>irreidratável</b> um certame legitimamente publicado — a retificação dele
+    /// passaria a falhar, e a configuração congelada, que é a evidência
     /// jurídica, ficaria inalcançável. O passado não se reinterpreta contra o catálogo de
     /// hoje (congelamento dos parâmetros na publicação, UNI-REQ-0019).
     /// </para>
     /// <para>
     /// O que resta verificável <b>sem</b> estado vivo é o que se verifica: o código pertence
     /// ao rol da forma <c>1.1</c>, a versão e o código não são brancos e cabem nas colunas, e
-    /// o hash tem o shape content-addressable (<c>ReferenciaRegra.Criar</c>). A prova de que
+    /// o hash tem o shape content-addressable (<c>ReferenciaRegra.De</c>). A prova de que
     /// a tripla <i>existiu</i> é o hash do <b>envelope</b>, que cobre os três campos.
     /// </para>
     /// </remarks>
@@ -251,7 +251,6 @@ internal static class LeituraDeEnumsEListas
                 $"O hash em '{path}' não é um SHA-256 em hexadecimal minúsculo (64 caracteres).");
         }
 
-        Result<ReferenciaRegra> referencia = ReferenciaRegra.Criar(codigo, versao, hash);
-        return referencia.IsFailure ? leitor.Propagar<ReferenciaRegra>(referencia.Error!) : referencia.Value!;
+        return ReferenciaRegra.De(codigo, versao, hash);
     }
 }

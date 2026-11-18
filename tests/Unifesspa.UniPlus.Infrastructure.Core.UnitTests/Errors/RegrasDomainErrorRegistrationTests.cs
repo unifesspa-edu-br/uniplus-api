@@ -9,17 +9,16 @@ using Microsoft.Extensions.Options;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Errors;
-using Unifesspa.UniPlus.Regras.Serializacao;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
-/// O registro das regras expõe exatamente a tabela esperada, mantida em arquivo à parte para que
+/// O registro das regras expõe a tabela esperada e a recusa de enquadramento da homologação, para que
 /// a prova não dependa do próprio registro nem do catálogo publicado, e não expõe os códigos que
 /// nenhuma resposta HTTP alcança.
 /// </summary>
 public sealed class RegrasDomainErrorRegistrationTests
 {
-    private const int QuantidadeDeMapeamentos = 93;
+    private const int QuantidadeDeMapeamentos = 94;
     private const string BaseUriDoCatalogo = "https://unifesspa-edu-br.github.io/uniplus-developers/erros/";
     private const string CodigoDoErroNaoMapeado = "uniplus.erro_nao_mapeado";
 
@@ -28,7 +27,6 @@ public sealed class RegrasDomainErrorRegistrationTests
     public static readonly TheoryData<string> ChavesQueNaoAlcancamAResposta = new()
     {
         "PredicadoDnf.DominioDinamicoNaoFornecido",
-        PredicadoDnfJson.FormaInvalida,
         RestricaoValorErrorCodes.FormaJsonInvalida,
         DerivacaoDoFatoErrorCodes.SemRegras,
         DerivacaoDoFatoErrorCodes.DependenciasIncoerentes,
@@ -38,7 +36,11 @@ public sealed class RegrasDomainErrorRegistrationTests
     [Fact(DisplayName = "O registro mapeia exatamente a tabela esperada, sem perder nem acrescentar código")]
     public void GetMappings_RegistroDasRegras_PreservaATabelaEsperada()
     {
-        MapeamentoEsperado[] esperado = LerTabelaEsperada();
+        MapeamentoEsperado[] esperado =
+        [
+            .. LerTabelaEsperada(),
+            new("PredicadoDnf.FormaJsonInvalida", 422, "uniplus.predicado_dnf.forma_json_invalida", "O predicado ou a obrigatoriedade não tem a forma esperada"),
+        ];
 
         MapeamentoEsperado[] obtido = [.. MapeamentosDoRegistro().Select(static par =>
             new MapeamentoEsperado(par.Key, par.Value.Status, par.Value.Code, par.Value.Title))];

@@ -4,6 +4,7 @@ using Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Recursos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -35,13 +36,16 @@ public sealed class RecursoDaEtapa : EntityBase
     public ReferenciaRegra Regra { get; private set; } = null!;
 
     /// <summary>Prazo de interposição e suspensividade, como o catálogo os tipa.</summary>
-    public ArgsRegraPrazoRecurso Args { get; private set; } = null!;
+    public ParametrosRegraPrazoRecurso Parametros { get; private set; } = null!;
 
     /// <summary>
     /// O produto preliminar em que o prazo ancora — obrigatório na âncora de ato publicado,
     /// vazio na de ciência individual, que não tem publicação a referenciar.
     /// </summary>
     public Guid ProdutoAncoraId { get; private set; }
+
+    /// <summary>Como o recurso de cada matéria que a etapa produz é revisado; vazio quando nenhum foi declarado.</summary>
+    public ProcedimentosDeRecurso Procedimentos { get; private set; } = ProcedimentosDeRecurso.Nenhum;
 
     private RecursoDaEtapa() { }
 
@@ -53,64 +57,74 @@ public sealed class RecursoDaEtapa : EntityBase
     public static Result<RecursoDaEtapa> Criar(
         AncoraDoRecurso ancora,
         ReferenciaRegra regra,
-        ArgsRegraPrazoRecurso args,
-        Guid produtoAncoraId)
+        ParametrosRegraPrazoRecurso parametros,
+        Guid produtoAncoraId,
+        ProcedimentosDeRecurso? procedimentos = null)
     {
         ArgumentNullException.ThrowIfNull(regra);
-        ArgumentNullException.ThrowIfNull(args);
+        ArgumentNullException.ThrowIfNull(parametros);
 
-        if (!Enum.IsDefined(ancora) || ancora == AncoraDoRecurso.Nenhuma)
+        List<FieldError> erros = Validar(ancora, regra, parametros);
+        if (erros.Count > 0)
         {
-            return Result<RecursoDaEtapa>.ValidationFailure([new("ancora", new DomainError(
-                "RecursoDaEtapa.AncoraObrigatoria",
-                "Declare de que instante o prazo corre: da publicação do ato ou da ciência do candidato."))]);
+            return Result<RecursoDaEtapa>.ValidationFailure(erros);
         }
 
-        // Só a regra de prazo ancorado em ato, como na fase — e não qualquer entrada do catálogo
-        // cujo tipo seja "regra de prazo de recurso", que é a checagem que o handler faz. O
-        // decodificador do envelope exige este código exato ao reidratar a janela recursal da
-        // etapa: aceitar outro aqui produziria um certame publicável cujo envelope não volta,
-        // e o descarte da retificação deixaria de ser possível. A defesa fica no domínio para
-        // valer também fora do caminho do handler, como a reidratação.
-        if (regra.Codigo != RegraPrazoRecursoCodigo.AncoradoEmAto)
-        {
-            return Result<RecursoDaEtapa>.Failure(new DomainError(
-                "RecursoDaEtapa.RegraCatalogoInvalida",
-                $"A janela recursal da etapa só referencia a regra {RegraPrazoRecursoCodigo.AncoradoEmAto} — recebido '{regra.Codigo}'."));
-        }
+        return Result<RecursoDaEtapa>.Success(Novo(ancora, regra, parametros, produtoAncoraId, procedimentos));
+    }
 
-        // As mesmas invariantes que a regra da fase prova sobre os args — prazo estritamente
-        // positivo, em dia útil ou hora, sem fração de dia útil, e cada par de suspensividade
-        // inteiro ou inteiramente ausente. A janela da etapa recorre nas mesmas condições; o
-        // que muda entre as duas é a ÂNCORA, e ela não alcança estas regras.
-        if (ValidacaoDosArgumentosDoRecurso.Validar(args) is { } recusa)
-        {
-            return Result<RecursoDaEtapa>.Failure(ErroDosArgumentos(recusa));
-        }
-
-        return Result<RecursoDaEtapa>.Success(new RecursoDaEtapa
+    private static RecursoDaEtapa Novo(AncoraDoRecurso ancora, ReferenciaRegra regra,
+        ParametrosRegraPrazoRecurso parametros, Guid produtoAncoraId, ProcedimentosDeRecurso? procedimentos) => new()
         {
             Ancora = ancora,
             Regra = regra,
-            Args = args,
+            Parametros = parametros,
             ProdutoAncoraId = produtoAncoraId,
-        });
+            Procedimentos = procedimentos ?? ProcedimentosDeRecurso.Nenhum,
+        };
+
+    private static List<FieldError> Validar(AncoraDoRecurso ancora, ReferenciaRegra regra, ParametrosRegraPrazoRecurso parametros)
+    {
+        List<FieldError> erros = [];
+        AdicionarRecusa(erros, "ancora", ValidarAncora(ancora));
+        AdicionarRecusa(erros, null, ValidarRegra(regra));
+        erros.AddRange(ValidacaoDosParametrosDoRecurso.Validar(parametros)
+            .Select(static recusa => new FieldError(null, ErroDosParametros(recusa))));
+        return erros;
     }
+
+    private static void AdicionarRecusa(List<FieldError> erros, string? campo, DomainError? recusa)
+    {
+        if (recusa is not null)
+        {
+            erros.Add(new(campo, recusa));
+        }
+    }
+
+    private static DomainError? ValidarAncora(AncoraDoRecurso ancora) =>
+        Enum.IsDefined(ancora) && ancora != AncoraDoRecurso.Nenhuma ? null : new DomainError(
+            "RecursoDaEtapa.AncoraObrigatoria",
+            "Declare de que instante o prazo corre: da publicação do ato ou da ciência do candidato.");
+
+    private static DomainError? ValidarRegra(ReferenciaRegra regra) =>
+        regra.Codigo == RegraPrazoRecursoCodigo.AncoradoEmAto ? null : new DomainError(
+            "RecursoDaEtapa.RegraCatalogoInvalida",
+            "A regra indicada não permite contar o prazo de recurso a partir de uma publicação.");
 
     /// <summary>
     /// Traduz o motivo da recusa no código de erro desta entidade — literal, para que a
     /// cobertura do registro de erros o alcance.
     /// </summary>
-    private static DomainError ErroDosArgumentos(RecusaDosArgumentosDoRecurso recusa) => recusa.Motivo switch
+    private static DomainError ErroDosParametros(RecusaDosParametrosDoRecurso recusa) => recusa.Motivo switch
     {
-        MotivoDaRecusaDosArgumentos.PrazoNaoPositivo => new("RecursoDaEtapa.PrazoNaoPositivo", recusa.Mensagem),
-        MotivoDaRecusaDosArgumentos.PrazoEmDiasCorridos => new("RecursoDaEtapa.PrazoEmDiasCorridos", recusa.Mensagem),
-        MotivoDaRecusaDosArgumentos.PrazoSemUnidadeDeclaravel => new("RecursoDaEtapa.PrazoSemUnidadeDeclaravel", recusa.Mensagem),
-        MotivoDaRecusaDosArgumentos.PrazoEmFracaoDeDiaUtil => new("RecursoDaEtapa.PrazoEmFracaoDeDiaUtil", recusa.Mensagem),
-        MotivoDaRecusaDosArgumentos.SuspensividadeNaoPositiva => new("RecursoDaEtapa.SuspensividadeNaoPositiva", recusa.Mensagem),
-        MotivoDaRecusaDosArgumentos.SuspensividadeUnidadeNaoDeclaravel => new("RecursoDaEtapa.SuspensividadeUnidadeNaoDeclaravel", recusa.Mensagem),
-        MotivoDaRecusaDosArgumentos.SuspensividadeIncompleta => new("RecursoDaEtapa.SuspensividadeIncompleta", recusa.Mensagem),
-        MotivoDaRecusaDosArgumentos.SuspensividadeSuperiorSemInstanciaSuperior => new("RecursoDaEtapa.SuspensividadeSuperiorSemInstanciaSuperior", recusa.Mensagem),
+        MotivoDaRecusaDosParametros.PrazoNaoPositivo => new("RecursoDaEtapa.PrazoNaoPositivo", recusa.Mensagem),
+        MotivoDaRecusaDosParametros.PrazoEmDiasCorridos => new("RecursoDaEtapa.PrazoEmDiasCorridos", recusa.Mensagem),
+        MotivoDaRecusaDosParametros.PrazoSemUnidadeDeclaravel => new("RecursoDaEtapa.PrazoSemUnidadeDeclaravel", recusa.Mensagem),
+        MotivoDaRecusaDosParametros.PrazoEmFracaoDeDiaUtil => new("RecursoDaEtapa.PrazoEmFracaoDeDiaUtil", recusa.Mensagem),
+        MotivoDaRecusaDosParametros.SuspensividadeNaoPositiva => new("RecursoDaEtapa.SuspensividadeNaoPositiva", recusa.Mensagem),
+        MotivoDaRecusaDosParametros.SuspensividadeUnidadeNaoDeclaravel => new("RecursoDaEtapa.SuspensividadeUnidadeNaoDeclaravel", recusa.Mensagem),
+        MotivoDaRecusaDosParametros.SuspensividadeIncompleta => new("RecursoDaEtapa.SuspensividadeIncompleta", recusa.Mensagem),
+        MotivoDaRecusaDosParametros.SuspensividadeSuperiorSemInstanciaSuperior => new("RecursoDaEtapa.SuspensividadeSuperiorSemInstanciaSuperior", recusa.Mensagem),
         _ => throw new ArgumentOutOfRangeException(nameof(recusa), recusa.Motivo, "Motivo de recusa desconhecido."),
     };
 
@@ -122,9 +136,9 @@ public sealed class RecursoDaEtapa : EntityBase
     /// <para>
     /// Reidratar não é caminho de confiança. O argumento de que "o envelope já provou a forma
     /// quando foi congelado" vale para envelope que este código gerou, e é exatamente o que não
-    /// se pode supor de um envelope truncado, corrompido ou editado — e o descarte de uma
-    /// retificação repõe a configuração a partir dele. Sem estas conferências, quem controlasse
-    /// os bytes reporia um certame com prazo recursal zero: uma janela que abre e nunca fecha.
+    /// se pode supor de um envelope truncado, corrompido ou editado — e a retificação lê a
+    /// configuração a partir dele. Sem estas conferências, quem controlasse os bytes
+    /// reidrataria um certame com prazo recursal zero: uma janela que abre e nunca fecha.
     /// </para>
     /// <para>
     /// A validação é <b>delegada a <see cref="Criar"/></b> em vez de repetida aqui, para que
@@ -135,47 +149,43 @@ public sealed class RecursoDaEtapa : EntityBase
     /// </para>
     /// </remarks>
     public static Result<RecursoDaEtapa> Reidratar(
-        Guid id, AncoraDoRecurso ancora, ReferenciaRegra regra, ArgsRegraPrazoRecurso args, Guid produtoAncoraId)
+        Guid id,
+        AncoraDoRecurso ancora,
+        ReferenciaRegra regra,
+        ParametrosRegraPrazoRecurso parametros,
+        Guid produtoAncoraId,
+        ProcedimentosDeRecurso procedimentos)
     {
         ArgumentNullException.ThrowIfNull(regra);
-        ArgumentNullException.ThrowIfNull(args);
-        if (id == Guid.Empty)
-        {
-            throw new ArgumentException("O recurso reidratado deve declarar o Id congelado no envelope.", nameof(id));
-        }
-
-        Result<RecursoDaEtapa> validada = Criar(ancora, regra, args, produtoAncoraId);
+        ArgumentNullException.ThrowIfNull(parametros);
+        ArgumentNullException.ThrowIfNull(procedimentos);
+        ExigirId(id);
+        Result<RecursoDaEtapa> validada = Criar(ancora, regra, parametros, produtoAncoraId, procedimentos);
         if (validada.IsFailure)
         {
             return validada;
         }
 
-        return Result<RecursoDaEtapa>.Success(new RecursoDaEtapa
-        {
-            Id = id,
-            Ancora = ancora,
-            Regra = regra,
-            Args = args,
-            ProdutoAncoraId = produtoAncoraId,
-        });
+        return Result<RecursoDaEtapa>.Success(ComId(validada.Value!, id));
     }
 
-    /// <summary>
-    /// Repõe o que a versão congelada declarava, preservando a linha. Não revalida: o envelope
-    /// já provou a forma quando foi congelado, e uma regra criada depois não pode tornar a
-    /// reposição impossível — mesma postura de <see cref="Reidratar"/>.
-    /// </summary>
-    internal void ReporDadosCongelados(
-        AncoraDoRecurso ancora, ReferenciaRegra regra, ArgsRegraPrazoRecurso args, Guid produtoAncoraId)
+    private static void ExigirId(Guid id)
     {
-        ArgumentNullException.ThrowIfNull(regra);
-        ArgumentNullException.ThrowIfNull(args);
-
-        Ancora = ancora;
-        Regra = regra;
-        Args = args;
-        ProdutoAncoraId = produtoAncoraId;
+        if (id == Guid.Empty)
+        {
+            throw new ArgumentException("O recurso reidratado deve declarar o Id congelado no envelope.", nameof(id));
+        }
     }
+
+    private static RecursoDaEtapa ComId(RecursoDaEtapa recurso, Guid id) => new()
+    {
+        Id = id,
+        Ancora = recurso.Ancora,
+        Regra = recurso.Regra,
+        Parametros = recurso.Parametros,
+        ProdutoAncoraId = recurso.ProdutoAncoraId,
+        Procedimentos = recurso.Procedimentos,
+    };
 
     internal void VincularEtapa(Guid etapaProcessoId) => EtapaProcessoId = etapaProcessoId;
 }

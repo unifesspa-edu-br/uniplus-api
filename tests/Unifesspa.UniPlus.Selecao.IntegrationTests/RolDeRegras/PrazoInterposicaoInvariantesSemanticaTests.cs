@@ -1,9 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.RolDeRegras;
 
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Selecao.Infrastructure.DocumentoDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Seed;
 
 /// <summary>
@@ -35,15 +37,6 @@ public sealed class PrazoInterposicaoInvariantesSemanticaTests
         return [.. documento.RootElement.EnumerateArray().Select(e => e.GetString()!)];
     }
 
-    private static string EsquemaDoPrazoUnidade()
-    {
-        RegraCatalogoSeedItem regra = RegraCatalogoSeed.Itens.Single(
-            i => string.Equals(i.Codigo, CodigoDaRegra, StringComparison.Ordinal));
-
-        using JsonDocument esquema = JsonDocument.Parse(regra.EsquemaArgsJson);
-        return esquema.RootElement.GetProperty("prazo_unidade").GetString()!;
-    }
-
     /// <summary>
     /// Localiza a invariante que trata de um assunto, para que a falha aponte a frase
     /// ausente em vez de "nenhum item da lista bate".
@@ -61,20 +54,20 @@ public sealed class PrazoInterposicaoInvariantesSemanticaTests
     [Fact(DisplayName = "As invariantes declaram as DUAS unidades válidas da interposição: dias úteis em valor inteiro, e horas")]
     public void Invariantes_DeclaramAsUnidadesValidasDaInterposicao()
     {
-        string invariante = InvarianteQueFala("INTERPOSIÇÃO corre exclusivamente em dia útil", "que a interposição corre sobre dia útil");
+        string invariante = InvarianteQueFala("interposição corre exclusivamente em dia útil", "que a interposição corre sobre dia útil");
 
-        invariante.Should().Contain("DIAS_UTEIS",
-            "a unidade principal precisa estar nomeada pelo token do domínio, como o rol grafa os demais");
+        invariante.Should().Contain("dias úteis",
+            "a unidade principal precisa estar declarada por extenso");
         invariante.Should().Contain("inteiro", "dias úteis só é declarável em valor inteiro");
-        invariante.Should().Contain("HORAS", "horas é a segunda unidade declarável, para prazo menor que um dia");
+        invariante.Should().Contain("horas", "horas é a segunda unidade declarável, para prazo menor que um dia");
     }
 
     [Fact(DisplayName = "As invariantes declaram a recusa de dia corrido e a de fração como causas distintas")]
     public void Invariantes_DeclaramAsDuasRecusas()
     {
-        string invariante = InvarianteQueFala("INTERPOSIÇÃO corre exclusivamente em dia útil", "as recusas do prazo de interposição");
+        string invariante = InvarianteQueFala("interposição corre exclusivamente em dia útil", "as recusas do prazo de interposição");
 
-        invariante.Should().Contain("DIAS corridos é recusado",
+        invariante.Should().Contain("dias corridos são recusados",
             "dia corrido encolheria a janela sempre que calhasse de cair em feriado");
         invariante.Should().Contain("fração de dia útil",
             "fração não tem leitura unívoca e é recusada por conta própria");
@@ -93,14 +86,14 @@ public sealed class PrazoInterposicaoInvariantesSemanticaTests
             "sem convenção declarada, duas leituras legítimas fecham a janela em instantes diferentes");
         invariante.Should().Contain("nas duas unidades",
             "a interposição em horas também depende — só as horas situadas em dia útil avançam o relógio");
-        invariante.Should().Contain("suspensividade em DIAS_UTEIS",
+        invariante.Should().Contain("suspensividade em dias úteis",
             "a suspensividade em dias úteis é a outra contagem que depende");
     }
 
     [Fact(DisplayName = "As invariantes declaram que a suspensividade em horas ou dias corridos NÃO depende de calendário nem de convenção")]
     public void Invariantes_DeclaramAIndependenciaDaSuspensividadeCorrida()
     {
-        string invariante = InvarianteQueFala("suspensividade em HORAS ou em DIAS corridos", "que a suspensividade corrida é independente");
+        string invariante = InvarianteQueFala("suspensividade em horas ou em dias corridos", "que a suspensividade corrida é independente");
 
         invariante.Should().Contain("não depende de calendário nem de convenção de contagem",
             "declarar a independência evita que o gate seja lido como universal");
@@ -108,15 +101,30 @@ public sealed class PrazoInterposicaoInvariantesSemanticaTests
             "é essa a razão da independência, e ela precisa estar escrita, não subentendida");
     }
 
-    [Fact(DisplayName = "O esquema de args declara DIAS_UTEIS e HORAS na interposição, e diz que dia corrido não é declarável ali")]
-    public void EsquemaArgs_DeclaraAsUnidadesDaInterposicao()
+    [Fact(DisplayName = "As invariantes descrevem a publicação que inicia o prazo em linguagem clara")]
+    public void Invariantes_DescrevemPublicacaoQueIniciaOPrazo()
     {
-        string prazoUnidade = EsquemaDoPrazoUnidade();
+        string texto = string.Join(' ', Invariantes());
+        texto.Should().NotContain("âncora").And.NotContain("janela").And.NotContain("append-only");
+        texto.Should().Contain("publicação de um produto preliminar da própria fase");
+        texto.Should().Contain("julgamento e retificação são novos fatos");
+    }
 
-        prazoUnidade.Should().Contain("DIAS_UTEIS");
-        prazoUnidade.Should().Contain("HORAS");
-        prazoUnidade.Should().Contain("DIAS não é declarável na interposição",
-            "o esquema descreve o que o edital pode declarar; sem a ressalva, DIAS pareceria aceitável por estar no vocabulário");
+    [Fact(DisplayName = "As invariantes explicam a ausência de prazo de suspensividade")]
+    public void Invariantes_SemPrazoDeSuspensividade_DeclaramConsequencia()
+    {
+        string invariante = InvarianteQueFala("sem prazo de suspensividade", "a ausência de prazo de suspensividade");
+        invariante.Should().Contain("a pendência não impede atos irreversíveis");
+        invariante.Should().NotContain("null");
+    }
+
+    [Fact(DisplayName = "O documento admite horas e dias úteis no prazo de interposição")]
+    public void EsquemaDoDocumento_DeclaraAsUnidadesDaInterposicao()
+    {
+        JsonNode unidade = ArquivosDoEsquema.DoAssembly().PorNome["comuns.schema.json"]
+            ["$defs"]!["propriedadesDoRecurso"]!["properties"]!["prazoUnidade"]!;
+        unidade["enum"]!.AsArray().Select(item => item!.GetValue<string>())
+            .Should().BeEquivalentTo("horas", "diasUteis");
     }
 
     [Fact(DisplayName = "Nenhuma invariante ainda afirma a política revogada de que dias úteis é recusado na interposição")]

@@ -66,7 +66,7 @@ public sealed class InstanteDaQueryDoSnapshotVigenteEndpointTests
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder
-            .SemearAsync(db, $"Instante em microssegundos {Guid.CreateVersion7()}");
+            .SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"Instante em microssegundos {Guid.CreateVersion7()}" });
 
         return processo.Id;
     }

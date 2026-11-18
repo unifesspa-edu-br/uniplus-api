@@ -1,0 +1,13 @@
+namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+
+/// <summary>
+/// O que o edital decide sobre quando a fase ocorre, onde ela conclui o ciclo recursal e quem
+/// responde por ela. É entrada de fábrica de vida curta, só dados: a janela chega no offset que o
+/// cliente escolheu, e quem a fixa em UTC é a <see cref="Entities.FaseCronograma"/>.
+/// </summary>
+public sealed record DecisoesDeCronogramaDaFase(
+    int Ordem,
+    DateTimeOffset? Inicio,
+    DateTimeOffset? Fim,
+    string? FaseConcluinteCodigo,
+    UnidadeResponsavelSnapshot? UnidadeResponsavel);

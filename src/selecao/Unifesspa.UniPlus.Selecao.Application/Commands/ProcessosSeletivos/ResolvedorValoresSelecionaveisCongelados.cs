@@ -16,6 +16,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Opcoes;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 
+using ValoresDoCampo = System.Collections.Generic.IReadOnlyList<Unifesspa.UniPlus.Selecao.Application.Abstractions.ValorDominioDeclaradoCongelado>;
+
 /// <summary>
 /// Resolve, para cada <see cref="FatoColetado"/> do processo, os valores que o candidato pode
 /// escolher (UNI-REQ-0072) — a chave que falta hoje no envelope público: <c>fatosColetados[]</c>
@@ -25,14 +27,14 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 /// <remarks>
 /// <para>
 /// Uma entrada por <see cref="FatoColetado"/>, sempre — não só pelos de seleção. Para
-/// <c>BOOLEANO</c>/<c>NUMERO</c> o valor é <see langword="null"/> (a bicondicional de
+/// <c>BOOLEANO</c>/<c>NUMERO</c> o valor é <see langword="null"/> (a mesma correspondência de
 /// <c>SerializarFatosColetados</c>); para <c>SELECAO_UNICA</c>/<c>SELECAO_MULTIPLA</c> é a lista
 /// — possivelmente vazia, nunca ausente. É este dicionário completo, e não um parcial só com os
-/// fatos de seleção, que o decoder reproduz ao reidratar (D5), então o encoder trata os dois
-/// caminhos (publicação nova e recanonicalização pós-restauração) pela MESMA forma.
+/// fatos de seleção, que o decoder reproduz ao reidratar, então o encoder trata os dois
+/// caminhos (publicação nova e retificação) pela MESMA forma.
 /// </para>
 /// <para>
-/// Três origens para o valor de um fato categórico coletado (UNI-REQ-0072 §2, ADR-0136). O
+/// Três origens para o valor de um fato categórico coletado (UNI-REQ-0072, ADR-0136). O
 /// catálogo de fonte GLOBAL (COR_RACA, SEXO, NACIONALIDADE — <c>ValoresDominioDeclarados</c>) é
 /// filtrado: entram os valores ativos e os desativados que uma condição do processo já cita, porque
 /// desativar recusa só vínculo novo (ADR-0136). Para as demais, decide a origem copiada para o
@@ -43,189 +45,181 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 /// <c>VocabularioDeFatos.MunicipiosDoBonus</c>.
 /// </para>
 /// <para>
-/// Não faz I/O próprio — recebe o catálogo já lido UMA vez pelo handler (D4-bis), o mesmo
+/// Não faz I/O próprio — recebe o catálogo já lido UMA vez pelo handler, o mesmo
 /// compartilhado com a conferência de coletabilidade e o resolvedor de metadado de fato.
 /// </para>
 /// </remarks>
 internal static class ResolvedorValoresSelecionaveisCongelados
 {
+    private static readonly IReadOnlySet<string> NenhumFatoExcluido = new HashSet<string>(StringComparer.Ordinal);
 
-    public static Result<IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>> Resolver(
+    public static Result<IReadOnlyDictionary<string, ValoresDoCampo?>> Resolver(
         ProcessoSeletivo processo,
-        IReadOnlyDictionary<string, FatoCandidatoView> catalogo)
+        IReadOnlyDictionary<string, FatoCandidatoView> catalogo) =>
+        Resolver(processo, catalogo, NenhumFatoExcluido);
+
+    /// <summary>
+    /// Resolve os campos do processo, menos os dos fatos excluídos (os que o catálogo deixou de aceitar, recusados pela
+    /// conferência de coletabilidade). A recusa de cada campo que não resolve é acumulada, na ordem do documento, e depois
+    /// vêm as respostas fora das opções, conferidas sobre os campos que resolveram.
+    /// </summary>
+    internal static Result<IReadOnlyDictionary<string, ValoresDoCampo?>> Resolver(
+        ProcessoSeletivo processo,
+        IReadOnlyDictionary<string, FatoCandidatoView> catalogo,
+        IReadOnlySet<string> fatosExcluidos)
     {
         ArgumentNullException.ThrowIfNull(processo);
         ArgumentNullException.ThrowIfNull(catalogo);
+        ArgumentNullException.ThrowIfNull(fatosExcluidos);
 
-        Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresPorFato = new(StringComparer.Ordinal);
-        IReadOnlySet<(string Fato, string Valor)> valoresCitados = ReferenciasVivas.Vinculos(EstadoDaConfiguracao.De(processo)).Valores;
-        foreach (FatoColetado fato in processo.Campos)
-        {
-            if (!fato.TipoRenderizacao.EhSelecao())
-            {
-                valoresPorFato[fato.FatoCodigo] = null;
-                continue;
-            }
+        IReadOnlyDictionary<string, string> caminhos = ItensDoFormularioNoDocumento.CaminhosPorFato(processo);
+        CamposResolvidos campos = new ResolucaoDosCampos(processo, catalogo, caminhos).ResolverTodos(fatosExcluidos);
+        IReadOnlyList<FieldError> recusas = [.. campos.Recusas, .. RespostasForaDasOpcoes(processo, campos.Valores, caminhos)];
 
-            if (!catalogo.TryGetValue(fato.FatoCodigo, out FatoCandidatoView? fatoNoCatalogo))
-            {
-                // Defesa em profundidade — inalcançável em uso normal: ConferenciaDeColetabilidadeDeFatos
-                // já recusou, no mesmo congelamento e sobre o MESMO catálogo, um fato coletado que não
-                // resolve. Chegar aqui sem resolver seria os dois passos operando sobre catálogos
-                // diferentes — o que D4-bis existe para impedir.
-                throw new InvalidOperationException(
-                    $"O fato coletado '{fato.FatoCodigo}' não resolve no catálogo — a conferência de " +
-                    "coletabilidade deveria tê-lo recusado antes deste ponto.");
-            }
-
-            Result<IReadOnlyList<ValorDominioDeclaradoCongelado>> valoresDoFato =
-                ResolverValoresDoFato(fato, fatoNoCatalogo, processo, valoresCitados);
-            if (valoresDoFato.IsFailure)
-            {
-                return Result<IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>>.Failure(
-                    valoresDoFato.Error!);
-            }
-
-            valoresPorFato[fato.FatoCodigo] = valoresDoFato.Value;
-        }
-
-        if (RespostaForaDasOpcoes(processo, valoresPorFato) is { } foraDasOpcoes)
-        {
-            return Result<IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>>.Failure(foraDasOpcoes);
-        }
-
-        return Result<IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>>.Success(valoresPorFato);
+        return recusas.Count > 0
+            ? Result<IReadOnlyDictionary<string, ValoresDoCampo?>>.ValidationFailure(recusas)
+            : Result<IReadOnlyDictionary<string, ValoresDoCampo?>>.Success(campos.Valores);
     }
 
     /// <summary>
     /// Toda resposta de um campo que forma as opções de outro precisa ser opção desse outro. As
     /// opções que o processo declara podem mudar depois de os campos serem definidos, e é aqui que
-    /// as ofertas dos dois campos congelam juntas.
+    /// as ofertas dos dois campos congelam juntas. Confere os campos que resolveram, na ordem do documento, e aponta as
+    /// restrições do campo que forma as opções.
     /// </summary>
-    private static DomainError? RespostaForaDasOpcoes(
-        ProcessoSeletivo processo,
-        Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresPorFato)
-    {
-        foreach (FatoColetado alvo in processo.Campos)
-        {
-            if (alvo.Restricoes.OfType<OpcoesDasRespostas>().SingleOrDefault() is not { } respostas)
-            {
-                continue;
-            }
+    private static IEnumerable<FieldError> RespostasForaDasOpcoes(
+        ProcessoSeletivo processo, IReadOnlyDictionary<string, ValoresDoCampo?> valoresPorFato, IReadOnlyDictionary<string, string> caminhos) =>
+        ItensDoFormularioNoDocumento.EmOrdemDoDocumento(processo).Select(static c => c.Item)
+            .Where(alvo => valoresPorFato.ContainsKey(alvo.FatoCodigo))
+            .SelectMany(alvo => alvo.Restricoes.OfType<OpcoesDasRespostas>().Take(1)
+                .SelectMany(respostas => FontesForaDasOpcoes(alvo, respostas, valoresPorFato, $"{caminhos[alvo.FatoCodigo]}.restricoes")));
 
-            HashSet<string> oferta = [.. (valoresPorFato[alvo.FatoCodigo] ?? []).Select(static v => v.Codigo)];
-            foreach (string fonte in respostas.Fatos)
+    private static IEnumerable<FieldError> FontesForaDasOpcoes(
+        FatoColetado alvo, OpcoesDasRespostas respostas, IReadOnlyDictionary<string, ValoresDoCampo?> valoresPorFato, string campo)
+    {
+        HashSet<string> oferta = [.. (valoresPorFato[alvo.FatoCodigo] ?? []).Select(static v => v.Codigo)];
+
+        return respostas.Fatos
+            .Where(f => valoresPorFato.GetValueOrDefault(f) is { } daFonte && daFonte.Any(v => !oferta.Contains(v.Codigo)))
+            .Select(fonte => new FieldError(campo, new DomainError(
+                ItemFormularioErrorCodes.OpcoesDeOutroDominio,
+                $"As opções do campo '{fonte}' formam as opções do campo '{alvo.FatoCodigo}', mas nem todas são opções dele.")));
+    }
+
+    private sealed record CamposResolvidos(IReadOnlyDictionary<string, ValoresDoCampo?> Valores, IReadOnlyList<FieldError> Recusas);
+
+    /// <summary>
+    /// Os valores de cada campo do processo, resolvidos sobre o catálogo lido uma vez. A recusa de cada campo é acumulada no
+    /// <c>fatoCodigo</c> do campo no documento, e o fato que o catálogo não resolve é defeito de quem chamou, não do processo.
+    /// </summary>
+    private sealed class ResolucaoDosCampos(
+        ProcessoSeletivo processo, IReadOnlyDictionary<string, FatoCandidatoView> catalogo, IReadOnlyDictionary<string, string> caminhos)
+    {
+        private readonly IReadOnlySet<(string Fato, string Valor)> _valoresCitados = ReferenciasVivas.Vinculos(processo.Declaracao()).Valores;
+
+        public CamposResolvidos ResolverTodos(IReadOnlySet<string> fatosExcluidos)
+        {
+            Dictionary<string, ValoresDoCampo?> resolvidos = new(StringComparer.Ordinal);
+            List<FieldError> recusas = [];
+            foreach (FatoColetado fato in ItensDoFormularioNoDocumento.EmOrdemDoDocumento(processo).Select(static c => c.Item).Where(f => !fatosExcluidos.Contains(f.FatoCodigo)))
             {
-                if (valoresPorFato.GetValueOrDefault(fonte) is { } daFonte && daFonte.Any(v => !oferta.Contains(v.Codigo)))
+                Result<ValoresDoCampo?> doCampo = ResolverCampo(fato);
+                recusas.AddRange(doCampo.Errors);
+                if (doCampo.IsSuccess)
                 {
-                    return new DomainError(
-                        ItemFormularioErrorCodes.OpcoesDeOutroDominio,
-                        $"As opções do campo '{fonte}' formam as opções do campo '{alvo.FatoCodigo}', mas nem todas são opções dele.");
+                    resolvidos[fato.FatoCodigo] = doCampo.Value;
                 }
             }
+
+            return new CamposResolvidos(resolvidos, recusas);
         }
 
-        return null;
-    }
-
-    /// <summary>
-    /// Não é defesa em profundidade: um fato categórico DECLARADO de cardinalidade escalar/
-    /// multivalorada, sem <c>ValoresDominioDeclarados</c> no catálogo e com código diferente dos
-    /// dois categóricos de escopo-processo hoje conhecidos, é alcançável por dado — um fato novo
-    /// no catálogo (migration futura), vinculado como <c>SELECAO_UNICA</c>/<c>SELECAO_MULTIPLA</c>
-    /// porque <see cref="CoerenciaDoCampo"/> só confere domínio/cardinalidade, não a origem dos
-    /// valores. A conferência de coletabilidade (o fato existe e é coletável) não recusa esse
-    /// caso — por isso ele devolve <see cref="DomainError"/>, não lança.
-    /// </summary>
-    private static Result<IReadOnlyList<ValorDominioDeclaradoCongelado>> ResolverValoresDoFato(
-        FatoColetado fato, FatoCandidatoView fatoNoCatalogo, ProcessoSeletivo processo,
-        IReadOnlySet<(string Fato, string Valor)> valoresCitados)
-    {
-        string fatoCodigo = fato.FatoCodigo;
-        Result<IReadOnlyList<ValorDominioDeclaradoCongelado>> resolvido =
-            ResolverOrigemDosValores(fato, fatoNoCatalogo, processo, valoresCitados);
-        if (resolvido.IsFailure)
+        private Result<ValoresDoCampo?> ResolverCampo(FatoColetado fato)
         {
-            return resolvido;
+            if (!fato.TipoRenderizacao.EhSelecao())
+            {
+                return Result<ValoresDoCampo?>.Success(null);
+            }
+
+            Result<ValoresDoCampo> origem = ResolverOrigemDosValores(fato, NoCatalogo(fato));
+
+            return origem.IsFailure
+                ? Result<ValoresDoCampo?>.ValidationFailure([new FieldError($"{caminhos[fato.FatoCodigo]}.fatoCodigo", origem.Error!)])
+                : Result<ValoresDoCampo?>.Success(origem.Value);
         }
 
-        // Defesa em profundidade (issue #1077): o caminho esperado para um fato de escopo-processo
-        // (CONDICAO_ATENDIMENTO/RECURSO_ACESSIBILIDADE) sem nenhum valor ofertado é
-        // ProcessoSeletivo.PendenciaDeFatoColetadoSemValoresOfertados, avaliado ANTES deste
-        // resolvedor rodar (PendenciaPreCanonicalizacao precede a canonicalização, ADR-0109 D5).
-        // Chegar aqui com lista vazia significaria o gate e este resolvedor operando sobre
-        // estados diferentes — o resolvedor nunca pode devolver sucesso com lista vazia, mesmo
-        // que um chamador futuro esqueça de invocar o gate.
-        if (resolvido.Value!.Count == 0)
+        // Inalcançável em uso normal: a conferência de coletabilidade já recusou, no mesmo congelamento e sobre o MESMO catálogo,
+        // o fato coletado que não resolve. Chegar aqui sem resolver seria os dois passos operando sobre catálogos diferentes.
+        private FatoCandidatoView NoCatalogo(FatoColetado fato) =>
+            catalogo.TryGetValue(fato.FatoCodigo, out FatoCandidatoView? fatoNoCatalogo)
+                ? fatoNoCatalogo
+                : throw new InvalidOperationException(
+                    $"O fato coletado '{fato.FatoCodigo}' não resolve no catálogo — a conferência de coletabilidade deveria tê-lo recusado antes deste ponto.");
+
+        // A origem é a copiada para o campo, a mesma que o agregado confere na publicação: o rascunho a recopia do catálogo ao
+        // publicar, e depois de congelada ela não muda mais. O catálogo só responde pelo campo cuja origem é ele.
+        private Result<ValoresDoCampo> ResolverOrigemDosValores(FatoColetado fato, FatoCandidatoView fatoNoCatalogo) =>
+            RegrasDasOpcoesDeclaradas.OrigemDasOpcoes(fato) switch
+            {
+                OrigemValoresColeta.OpcoesDoProcesso => Result<ValoresDoCampo>.Success(OpcoesDoProcesso(fato)),
+                OrigemValoresColeta.MunicipiosDoBonus => Result<ValoresDoCampo>.Success(MunicipiosDoBonus()),
+                OrigemValoresColeta.UnidadesFederativas => Result<ValoresDoCampo>.Success(UnidadesFederativas()),
+                _ => DoCatalogo(fato, fatoNoCatalogo),
+            };
+
+        private ValoresDoCampo OpcoesDoProcesso(FatoColetado fato) =>
+            [.. processo.OpcoesDoProcesso(fato.FatoCodigo).Select(static o => new ValorDominioDeclaradoCongelado(o.Codigo, o.Rotulo, o.Ordem))];
+
+        private ValoresDoCampo MunicipiosDoBonus() =>
+            [.. VocabularioDeFatos.MunicipiosDoBonus(processo)
+                .Select(static (m, ordem) => new ValorDominioDeclaradoCongelado(m.CodigoIbge, $"{m.Nome}/{m.Uf}", ordem))];
+
+        private static ValoresDoCampo UnidadesFederativas() =>
+            [.. ReferenciaCidadeGeo.UnidadesFederativas.Select(static (uf, ordem) => new ValorDominioDeclaradoCongelado(uf.Sigla, uf.Nome, ordem))];
+
+        private Result<ValoresDoCampo> DoCatalogo(FatoColetado fato, FatoCandidatoView fatoNoCatalogo) =>
+            fatoNoCatalogo.ValoresDominioDeclarados is { Count: > 0 }
+                ? Declarados(fatoNoCatalogo)
+                : Result<ValoresDoCampo>.Failure(SemTiposDeDeficiencia(fatoNoCatalogo) ?? SemOrigemDeValores(fato.FatoCodigo));
+
+        // Ordenação canônica própria: o encoder não pode depender de o catálogo já vir ordenado, porque o catálogo valida
+        // unicidade de Codigo, não de Ordem, e duas configurações equivalentes com empate produziriam bytes distintos sem o
+        // desempate por código.
+        private Result<ValoresDoCampo> Declarados(FatoCandidatoView fatoNoCatalogo)
         {
-            return Result<IReadOnlyList<ValorDominioDeclaradoCongelado>>.Failure(new DomainError(
-                "ProcessoSeletivo.FatoColetadoSemValoresOfertados",
-                $"O fato coletado '{fatoCodigo}' é de seleção, mas resolveu zero valores selecionáveis."));
-        }
-
-        return resolvido;
-    }
-
-    /// <summary>
-    /// O fato cujos valores são os tipos do cadastro de tipos de deficiência não tem o que oferecer
-    /// quando o cadastro não tem tipo vivo: a recusa diz onde corrigir, e não cai na de fonte desconhecida.
-    /// </summary>
-    private static DomainError? SemTiposDeDeficiencia(FatoCandidatoView fatoNoCatalogo) =>
-        string.Equals(fatoNoCatalogo.FonteValores, DominioDoCatalogo.FonteTiposDeficiencia, StringComparison.Ordinal)
-            ? new DomainError(
-                "ProcessoSeletivo.FatoColetadoSemValoresOfertados",
-                $"O fato coletado '{fatoNoCatalogo.Codigo}' oferece os tipos do cadastro de tipos de deficiência, e o cadastro não tem nenhum tipo ativo.")
-            : null;
-
-    private static Result<IReadOnlyList<ValorDominioDeclaradoCongelado>> ResolverOrigemDosValores(
-        FatoColetado fato, FatoCandidatoView fatoNoCatalogo, ProcessoSeletivo processo,
-        IReadOnlySet<(string Fato, string Valor)> valoresCitados)
-    {
-        string fatoCodigo = fato.FatoCodigo;
-
-        // A origem é a copiada para o campo, a mesma que o agregado confere na publicação: o
-        // rascunho a recopia do catálogo ao publicar, e depois de congelada ela não muda mais. O
-        // catálogo só responde pelo campo cuja origem é ele.
-        switch (RegrasDasOpcoesDeclaradas.OrigemDasOpcoes(fato))
-        {
-            case OrigemValoresColeta.OpcoesDoProcesso:
-                return Result<IReadOnlyList<ValorDominioDeclaradoCongelado>>.Success([.. processo.OpcoesDoProcesso(fatoCodigo)
-                    .Select(static o => new ValorDominioDeclaradoCongelado(o.Codigo, o.Rotulo, o.Ordem))]);
-            case OrigemValoresColeta.MunicipiosDoBonus:
-                return Result<IReadOnlyList<ValorDominioDeclaradoCongelado>>.Success([.. VocabularioDeFatos.MunicipiosDoBonus(processo)
-                    .Select(static (m, ordem) => new ValorDominioDeclaradoCongelado(m.CodigoIbge, $"{m.Nome}/{m.Uf}", ordem))]);
-            case OrigemValoresColeta.UnidadesFederativas:
-                return Result<IReadOnlyList<ValorDominioDeclaradoCongelado>>.Success([.. ReferenciaCidadeGeo.UnidadesFederativas
-                    .Select(static (uf, ordem) => new ValorDominioDeclaradoCongelado(uf.Sigla, uf.Nome, ordem))]);
-            case OrigemValoresColeta.Catalogo:
-            default:
-                break;
-        }
-
-        if (fatoNoCatalogo.ValoresDominioDeclarados is { Count: > 0 })
-        {
-            IReadOnlyList<FatoValorDominioViewItem> vigentes = VocabularioDeFatos.ValoresVigentes(fatoNoCatalogo, valoresCitados);
-            // Ordenação canônica própria (D2): o encoder não pode depender de o catálogo já vir
-            // ordenado — FatoCandidato.AdicionarValorDominio valida unicidade de Codigo, não de
-            // Ordem, e duas configurações equivalentes com empate produziriam bytes distintos sem
-            // o desempate por código.
-            IReadOnlyList<ValorDominioDeclaradoCongelado> valores = [.. vigentes
+            ValoresDoCampo valores = [.. VocabularioDeFatos.ValoresVigentes(fatoNoCatalogo, _valoresCitados)
                 .OrderBy(static v => v.Ordem)
                 .ThenBy(static v => v.Codigo, StringComparer.Ordinal)
                 .Select(static v => new ValorDominioDeclaradoCongelado(v.Codigo, v.Descricao, v.Ordem, v.Orientacao))];
-            return valores.Count == 0 && SemTiposDeDeficiencia(fatoNoCatalogo) is { } soRemovidos
-                ? Result<IReadOnlyList<ValorDominioDeclaradoCongelado>>.Failure(soRemovidos)
-                : Result<IReadOnlyList<ValorDominioDeclaradoCongelado>>.Success(valores);
+
+            return valores.Count == 0
+                ? Result<ValoresDoCampo>.Failure(SemValoresVigentes(fatoNoCatalogo))
+                : Result<ValoresDoCampo>.Success(valores);
         }
 
-        if (SemTiposDeDeficiencia(fatoNoCatalogo) is { } semTipos)
-        {
-            return Result<IReadOnlyList<ValorDominioDeclaradoCongelado>>.Failure(semTipos);
-        }
+        /// <summary>
+        /// O fato cujos valores são os tipos do cadastro de tipos de deficiência não tem o que oferecer
+        /// quando o cadastro não tem tipo vivo: a recusa diz onde corrigir, e não cai na de fonte desconhecida.
+        /// </summary>
+        private static DomainError? SemTiposDeDeficiencia(FatoCandidatoView fatoNoCatalogo) =>
+            string.Equals(fatoNoCatalogo.FonteValores, DominioDoCatalogo.FonteTiposDeficiencia, StringComparison.Ordinal)
+                ? new DomainError(
+                    "ProcessoSeletivo.FatoColetadoSemValoresOfertados",
+                    $"O fato coletado '{fatoNoCatalogo.Codigo}' oferece os tipos do cadastro de tipos de deficiência, e o cadastro não tem nenhum tipo ativo.")
+                : null;
 
-        return Result<IReadOnlyList<ValorDominioDeclaradoCongelado>>.Failure(new DomainError(
-            "ProcessoSeletivo.FatoDeSelecaoSemOrigemDeValores",
-            $"O fato coletado '{fatoCodigo}' está vinculado como seleção, mas o catálogo não declara valores de "
-            + "domínio para ele e a fonte dos seus valores não é o processo nem o bônus regional — não há de onde derivar os valores selecionáveis."));
+        // O fato do catálogo sem nenhum valor vigente não tem o que oferecer. A oferta vazia do processo e a do bônus regional
+        // são da conferência da configuração, que a recusa uma vez só.
+        private static DomainError SemValoresVigentes(FatoCandidatoView fatoNoCatalogo) =>
+            SemTiposDeDeficiencia(fatoNoCatalogo)
+            ?? new DomainError(
+                "ProcessoSeletivo.FatoColetadoSemValoresOfertados",
+                $"O fato coletado '{fatoNoCatalogo.Codigo}' é de seleção, mas resolveu zero valores selecionáveis.");
+
+        private static DomainError SemOrigemDeValores(string fatoCodigo) =>
+            new(
+                "ProcessoSeletivo.FatoDeSelecaoSemOrigemDeValores",
+                $"O fato coletado '{fatoCodigo}' está vinculado como seleção, mas o catálogo não declara valores de domínio para ele "
+                + "e a fonte dos seus valores não é o processo nem o bônus regional — não há de onde derivar os valores selecionáveis.");
     }
 }

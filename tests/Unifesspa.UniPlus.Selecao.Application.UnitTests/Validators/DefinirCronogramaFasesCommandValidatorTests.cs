@@ -45,13 +45,12 @@ public sealed class DefinirCronogramaFasesCommandValidatorTests
 
     private static DefinirCronogramaFasesCommand Comando(RegraRecursoFaseInput regraRecurso) => new(
         Guid.CreateVersion7(),
-        [FaseValida(regraRecurso)],
-        PrecondicaoIfMatch.Ausente);
+        [FaseValida(regraRecurso)]);
 
     [Fact(DisplayName = "Lista de fases vazia atravessa a validação de forma — quem recusa é o domínio")]
     public void Aceita_ListaDeFasesVazia_ParaODominioRecusar()
     {
-        DefinirCronogramaFasesCommand comando = new(Guid.CreateVersion7(), [], PrecondicaoIfMatch.Ausente);
+        DefinirCronogramaFasesCommand comando = new(Guid.CreateVersion7(), []);
 
         ValidationResult resultado = new DefinirCronogramaFasesCommandValidator().Validate(comando);
 
@@ -84,7 +83,7 @@ public sealed class DefinirCronogramaFasesCommandValidatorTests
         };
 
         ValidationResult resultado = new DefinirCronogramaFasesCommandValidator()
-            .Validate(new DefinirCronogramaFasesCommand(Guid.CreateVersion7(), [fase], PrecondicaoIfMatch.Ausente));
+            .Validate(new DefinirCronogramaFasesCommand(Guid.CreateVersion7(), [fase]));
 
         resultado.IsValid.Should().BeFalse();
         resultado.Errors.Should().Contain(e => e.ErrorMessage.StartsWith(recusaEsperada, StringComparison.Ordinal));
@@ -105,7 +104,7 @@ public sealed class DefinirCronogramaFasesCommandValidatorTests
             : FaseValida() with { BancasRequeridas = [null!] };
 
         ValidationResult resultado = new DefinirCronogramaFasesCommandValidator()
-            .Validate(new DefinirCronogramaFasesCommand(Guid.CreateVersion7(), [fase], PrecondicaoIfMatch.Ausente));
+            .Validate(new DefinirCronogramaFasesCommand(Guid.CreateVersion7(), [fase]));
 
         resultado.IsValid.Should().BeFalse();
         resultado.Errors.Should().Contain(e => e.ErrorMessage.Contains("não pode ser nulo", StringComparison.Ordinal));
@@ -156,7 +155,7 @@ public sealed class DefinirCronogramaFasesCommandValidatorTests
             EmiteParecerIndividual: false,
             BancasRequeridas: [],
             RegraRecurso: null);
-        DefinirCronogramaFasesCommand command = new(Guid.CreateVersion7(), [fase], PrecondicaoIfMatch.Ausente);
+        DefinirCronogramaFasesCommand command = new(Guid.CreateVersion7(), [fase]);
 
         ValidationResult resultado = new DefinirCronogramaFasesCommandValidator().Validate(command);
 

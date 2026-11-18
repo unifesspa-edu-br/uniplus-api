@@ -18,7 +18,11 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </remarks>
 internal static class ResolucaoDoPeriodoDeInscricao
 {
-    internal static Result<DadosEdital> Resolver(
+    /// <returns>
+    /// O edital com o período resolvido, ou nulo quando a fase que ancora o período está sem janela: não há período a
+    /// resolver, e a conferência da configuração recusa a fase.
+    /// </returns>
+    internal static Result<DadosEdital>? Resolver(
         ProcessoSeletivo processo,
         string? numero,
         DateTimeOffset? periodoInscricaoInicioInformado,
@@ -27,37 +31,36 @@ internal static class ResolucaoDoPeriodoDeInscricao
         IReadOnlyList<AnexoDoEdital> anexos)
     {
         ArgumentNullException.ThrowIfNull(processo);
+        FaseCronograma? ancora = ReferenciaTemporalDosFatos.FaseQueAncoraOPeriodoDeInscricao(processo.Declaracao());
+        (DateTimeOffset? Inicio, DateTimeOffset? Fim) informado = (periodoInscricaoInicioInformado, periodoInscricaoFimInformado);
 
-        FaseCronograma? ancora = ReferenciaTemporalDosFatos.FaseQueAncoraOPeriodoDeInscricao(EstadoDaConfiguracao.De(processo));
+        return ancora is null
+            ? SemFaseDeColeta(numero, informado, documentoEditalId, anexos)
+            : DaJanelaDaFase(ancora, numero, informado, documentoEditalId, anexos);
+    }
 
-        if (ancora is null)
-        {
-            // Sem fase de coleta não há divergência possível, e o período continua sendo o que
-            // o ato declara — é o caso do certame cujos candidatos vêm de importação externa.
-            if (periodoInscricaoInicioInformado is not { } inicioInformado
-                || periodoInscricaoFimInformado is not { } fimInformado)
-            {
-                return Result<DadosEdital>.Failure(new DomainError(
-                    "ProcessoSeletivo.PeriodoInscricaoObrigatorioSemFaseDeColeta",
-                    "O processo não tem fase do cronograma que colete inscrição, então o período de inscrição precisa ser informado na publicação."));
-            }
+    // Sem fase de coleta não há divergência possível, e o período continua sendo o que o ato declara: é o caso do certame
+    // cujos candidatos vêm de importação externa.
+    private static Result<DadosEdital> SemFaseDeColeta(
+        string? numero, (DateTimeOffset? Inicio, DateTimeOffset? Fim) informado, Guid documentoEditalId, IReadOnlyList<AnexoDoEdital> anexos) =>
+        informado is { Inicio: { } inicio, Fim: { } fim }
+            ? DadosEdital.Criar(numero, inicio, fim, documentoEditalId, anexos)
+            : Result<DadosEdital>.Failure(new DomainError(
+                "ProcessoSeletivo.PeriodoInscricaoObrigatorioSemFaseDeColeta",
+                "O processo não tem fase do cronograma que colete inscrição, então o período de inscrição precisa ser informado na publicação."));
 
-            return DadosEdital.Criar(numero, inicioInformado, fimInformado, documentoEditalId, anexos);
-        }
-
-        if (periodoInscricaoInicioInformado is not null || periodoInscricaoFimInformado is not null)
+    private static Result<DadosEdital>? DaJanelaDaFase(
+        FaseCronograma ancora, string? numero, (DateTimeOffset? Inicio, DateTimeOffset? Fim) informado, Guid documentoEditalId, IReadOnlyList<AnexoDoEdital> anexos)
+    {
+        if (informado.Inicio is not null || informado.Fim is not null)
         {
             return Result<DadosEdital>.Failure(new DomainError(
                 "ProcessoSeletivo.PeriodoInscricaoNaoInformavel",
                 $"O período de inscrição vem da janela da fase '{ancora.Codigo}' do cronograma e não pode ser informado na publicação."));
         }
 
-        if (ancora.Inicio is not { } inicio || ancora.Fim is not { } fim)
-        {
-            throw new InvalidOperationException(
-                $"A fase '{ancora.Codigo}' coleta inscrição e está sem janela — PendenciaDoCronograma deveria ter recusado a transição antes deste ponto.");
-        }
-
-        return DadosEdital.Criar(numero, inicio, fim, documentoEditalId, anexos);
+        return ancora is { Inicio: { } inicio, Fim: { } fim }
+            ? DadosEdital.Criar(numero, inicio, fim, documentoEditalId, anexos)
+            : null;
     }
 }

@@ -22,7 +22,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
     [Fact(DisplayName = "Passa com lista de fatos vazia — zera a coleta")]
     public void Aceita_ListaVazia()
     {
-        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, [], PrecondicaoIfMatch.Ausente));
+        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, []));
 
         result.IsValid.Should().BeTrue();
     }
@@ -30,7 +30,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
     [Fact(DisplayName = "Passa com fato sem pré-condição (null)")]
     public void Aceita_FatoSemPrecondicao()
     {
-        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, [new FatoColetadoInput("COR_RACA", 0, "Cor ou raça", "SELECAO_UNICA", "NUNCA", null)], PrecondicaoIfMatch.Ausente));
+        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, [new FatoColetadoInput("COR_RACA", 0, "Cor ou raça", "SELECAO_UNICA", "NUNCA", null)]));
 
         result.IsValid.Should().BeTrue();
     }
@@ -38,7 +38,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
     [Fact(DisplayName = "Falha quando a lista de fatos é nula (payload malformado)")]
     public void Rejeita_FatosNulo()
     {
-        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, null!, PrecondicaoIfMatch.Ausente));
+        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, null!));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "Itens");
@@ -47,7 +47,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
     [Fact(DisplayName = "Passa com código do fato vazio no validator — a rejeição é do agregado (FatoColetado.Criar)")]
     public void Aceita_FatoCodigoVazioNoValidator()
     {
-        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, [new FatoColetadoInput("", 0, "Rótulo", "SELECAO_UNICA", "NUNCA", null)], PrecondicaoIfMatch.Ausente));
+        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, [new FatoColetadoInput("", 0, "Rótulo", "SELECAO_UNICA", "NUNCA", null)]));
 
         result.IsValid.Should().BeTrue();
     }
@@ -55,7 +55,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
     [Fact(DisplayName = "Passa com rótulo vazio no validator — a rejeição é do agregado (FatoColetado.Criar)")]
     public void Aceita_RotuloVazioNoValidator()
     {
-        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, [new FatoColetadoInput("COR_RACA", 0, "", "SELECAO_UNICA", "NUNCA", null)], PrecondicaoIfMatch.Ausente));
+        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, [new FatoColetadoInput("COR_RACA", 0, "", "SELECAO_UNICA", "NUNCA", null)]));
 
         result.IsValid.Should().BeTrue();
     }
@@ -63,7 +63,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
     [Fact(DisplayName = "Passa com rótulo acima de 300 caracteres no validator — o limite é conferido pelo agregado (FatoColetado.Criar)")]
     public void Aceita_RotuloExcedeLimiteNoValidator()
     {
-        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, [new FatoColetadoInput("COR_RACA", 0, new string('a', 301), "SELECAO_UNICA", "NUNCA", null)], PrecondicaoIfMatch.Ausente));
+        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, [new FatoColetadoInput("COR_RACA", 0, new string('a', 301), "SELECAO_UNICA", "NUNCA", null)]));
 
         result.IsValid.Should().BeTrue();
     }
@@ -71,7 +71,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
     [Fact(DisplayName = "Passa com ordem negativa no validator — a rejeição é do agregado (FatoColetado.Criar)")]
     public void Aceita_OrdemNegativaNoValidator()
     {
-        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, [new FatoColetadoInput("COR_RACA", -1, "Cor ou raça", "SELECAO_UNICA", "NUNCA", null)], PrecondicaoIfMatch.Ausente));
+        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, [new FatoColetadoInput("COR_RACA", -1, "Cor ou raça", "SELECAO_UNICA", "NUNCA", null)]));
 
         result.IsValid.Should().BeTrue();
     }
@@ -79,7 +79,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
     [Fact(DisplayName = "Falha quando a pré-condição presente é uma lista externa vazia (ausência é null)")]
     public void Rejeita_PrecondicaoListaExternaVazia()
     {
-        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, [new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", [])], PrecondicaoIfMatch.Ausente));
+        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, [new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", [])]));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "Itens[0].Precondicao");
@@ -88,7 +88,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
     [Fact(DisplayName = "Falha quando a pré-condição tem uma cláusula interna vazia")]
     public void Rejeita_PrecondicaoClausulaVazia()
     {
-        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, [new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", [[]])], PrecondicaoIfMatch.Ausente));
+        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, [new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", [[]])]));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "Itens[0].Precondicao");
@@ -97,7 +97,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
     [Fact(DisplayName = "Falha quando a pré-condição tem uma condição nula ([[null]])")]
     public void Rejeita_PrecondicaoCondicaoNula()
     {
-        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, [new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", [[null!]])], PrecondicaoIfMatch.Ausente));
+        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, [new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", [[null!]])]));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "Itens[0].Precondicao");
@@ -106,7 +106,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
     [Fact(DisplayName = "Passa com pré-condição bem-formada (uma cláusula, uma condição)")]
     public void Aceita_PrecondicaoBemFormada()
     {
-        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, [new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", [[Condicao("COR_RACA")]])], PrecondicaoIfMatch.Ausente));
+        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, [new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", [[Condicao("COR_RACA")]])]));
 
         result.IsValid.Should().BeTrue();
     }
@@ -116,7 +116,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
     {
         FatoColetadoInput[] itens = [.. Enumerable.Repeat<FatoColetadoInput>(null!, FormaDoItem.MaximoDeItens + 1)];
 
-        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, itens, PrecondicaoIfMatch.Ausente));
+        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, itens));
 
         result.IsValid.Should().BeTrue();
     }
@@ -145,7 +145,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
         };
 
         ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(
-            Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, [], PrecondicaoIfMatch.Ausente, [adulterado!]));
+            Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, [], [adulterado!]));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().OnlyContain(e => e.PropertyName.StartsWith("Grupos[0]", StringComparison.Ordinal));
@@ -157,7 +157,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
         GrupoColetadoInput[] grupos = [.. Enumerable.Repeat<GrupoColetadoInput>(null!, FormaDoItem.MaximoDeItens + 1)];
 
         ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(
-            Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, [], PrecondicaoIfMatch.Ausente, grupos));
+            Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, [], grupos));
 
         result.IsValid.Should().BeTrue();
     }

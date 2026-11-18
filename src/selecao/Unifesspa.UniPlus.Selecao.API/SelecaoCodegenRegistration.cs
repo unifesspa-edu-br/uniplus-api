@@ -164,9 +164,5 @@ public static class SelecaoCodegenRegistration
         // banca julga é snapshot-copy do cadastro de Configuração. Mesmo motivo dos demais
         // readers cross-módulo acima — o concreto é internal a Configuracao.Infrastructure.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<ICategoriaDocumentoReader>();
-
-        // As fases iniciadas do processo, lidas na versão publicada pela edição do cronograma: concreto
-        // internal na Infrastructure de Seleção, mesmo motivo acima.
-        opts.CodeGeneration.AlwaysUseServiceLocationFor<IFasesIniciadasDoProcesso>();
     }
 }

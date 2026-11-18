@@ -158,7 +158,7 @@ public static class ObterConformidadeLegalProcessoSeletivoQueryHandler
         DateTimeOffset? periodoInscricaoInformado,
         IResolvedorFusoInstitucional resolvedorFuso)
     {
-        FaseCronograma? ancora = ReferenciaTemporalDosFatos.FaseQueAncoraOPeriodoDeInscricao(EstadoDaConfiguracao.De(processo));
+        FaseCronograma? ancora = ReferenciaTemporalDosFatos.FaseQueAncoraOPeriodoDeInscricao(processo.Declaracao());
 
         DateTimeOffset inicio;
         if (ancora is null)

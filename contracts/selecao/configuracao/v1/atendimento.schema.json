@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/atendimento.schema.json",
+  "title": "Atendimento especializado",
+  "description": "O que o processo oferece a candidatos com necessidades de atendimento: as condições atendidas, os recursos de acessibilidade e os tipos de deficiência. Cada item é citado pelo código do catálogo.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "condicoes": {
+      "title": "Condições",
+      "description": "Condições de atendimento que o processo oferece.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/condicao"
+      }
+    },
+    "recursos": {
+      "title": "Recursos",
+      "description": "Recursos de acessibilidade que o processo oferece.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/recurso"
+      }
+    },
+    "tiposDeficiencia": {
+      "title": "Tipos de deficiência",
+      "description": "Tipos de deficiência que o atendimento do processo cobre.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/tipoDeficiencia"
+      }
+    }
+  },
+  "$defs": {
+    "condicao": {
+      "title": "Condição de atendimento",
+      "description": "Uma condição de atendimento que o processo oferece.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "condicaoCodigo"
+      ],
+      "properties": {
+        "condicaoCodigo": {
+          "title": "Código",
+          "description": "Código estável no catálogo: maiúscula inicial, depois maiúsculas, dígitos e sublinhado, de 2 a 50 caracteres.",
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]{1,49}$"
+        },
+        "condicaoNome": {
+          "title": "Nome",
+          "description": "Nome no catálogo, copiado na exportação. Campo só de leitura: ignorado na importação, porque vem do catálogo pelo código.",
+          "type": "string",
+          "maxLength": 200,
+          "readOnly": true
+        }
+      }
+    },
+    "recurso": {
+      "title": "Recurso de acessibilidade",
+      "description": "Um recurso de acessibilidade que o processo oferece.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recursoCodigo"
+      ],
+      "properties": {
+        "recursoCodigo": {
+          "title": "Código",
+          "description": "Código estável no catálogo: maiúscula inicial, depois maiúsculas, dígitos e sublinhado, de 2 a 50 caracteres.",
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]{1,49}$"
+        },
+        "recursoNome": {
+          "title": "Nome",
+          "description": "Nome no catálogo, copiado na exportação. Campo só de leitura: ignorado na importação, porque vem do catálogo pelo código.",
+          "type": "string",
+          "maxLength": 200,
+          "readOnly": true
+        }
+      }
+    },
+    "tipoDeficiencia": {
+      "title": "Tipo de deficiência",
+      "description": "Um tipo de deficiência que o atendimento cobre.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tipoDeficienciaCodigo"
+      ],
+      "properties": {
+        "tipoDeficienciaCodigo": {
+          "title": "Código",
+          "description": "Código estável no catálogo: maiúscula inicial, depois maiúsculas, dígitos e sublinhado, de 2 a 50 caracteres.",
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]{1,49}$"
+        },
+        "tipoDeficienciaNome": {
+          "title": "Nome",
+          "description": "Nome no catálogo, copiado na exportação. Campo só de leitura: ignorado na importação, porque vem do catálogo pelo código.",
+          "type": "string",
+          "maxLength": 200,
+          "readOnly": true
+        }
+      }
+    }
+  }
+}

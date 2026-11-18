@@ -13,8 +13,8 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// <param name="Codigo">Código classificatório, chave natural da modalidade (ex.: "LB_PPI").</param>
 /// <param name="Descricao">Descrição livre opcional.</param>
 /// <param name="NaturezaLegal">Natureza jurídica (token; ex.: "COTA_RESERVADA").</param>
-/// <param name="ComposicaoVagas">Forma de composição das vagas (token; ex.: "RETIRA_DE").</param>
-/// <param name="ComposicaoOrigem">Código da modalidade de origem (só em RETIRA_DE), ou null.</param>
+/// <param name="ComposicaoVagas">Forma de composição das vagas (token; ex.: "RETIRADA_DE_OUTRA_MODALIDADE").</param>
+/// <param name="ComposicaoOrigem">Código da modalidade de origem (só em RETIRADA_DE_OUTRA_MODALIDADE), ou null.</param>
 /// <param name="RegraRemanejamento">Regra de remanejamento (token) ou null.</param>
 /// <param name="RemanejamentoDestino">Código de destino único (regra DESTINO_UNICO) ou null.</param>
 /// <param name="RemanejamentoPar">Código par (regra CRUZADO) ou null.</param>

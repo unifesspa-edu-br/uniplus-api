@@ -24,29 +24,34 @@ public sealed class RecopiarAoCongelarTests
         FatoColetado item = processo.FatosColetados.First(static f => f.Formato is not null);
         UnidadeResponsavelSnapshot renomeada = new(UnidadesDeTeste.Ceps.OrigemId, "NOVA", "Unidade renomeada");
 
-        Result recopiado = processo.RecopiarAoCongelar(new CopiasDoCongelamento(
-            new Dictionary<string, CopiaDoItemNoCatalogo>
-            {
-                [item.FatoCodigo] = new(OrigemValoresColeta.Catalogo, null, item.ClassificacaoProtecao, item.HipoteseLegal, item.FinalidadeTratamento, item.Descricao, null),
-            },
-            new HashSet<string>(StringComparer.Ordinal),
-            new Dictionary<Guid, UnidadeResponsavelSnapshot> { [renomeada.OrigemId] = renomeada },
-            new ProtecaoVigenteDasExigencias(
-                new Dictionary<string, ClassificacaoDeProtecao>(),
-                new Dictionary<Guid, ProtecaoDoDocumento> { [exigencia.Id] = ProtecaoDoDocumentoDeTeste.De(ClassificacaoDeProtecao.Pessoal) },
-                new HashSet<string>())));
+        Result recopiado = processo.RecopiarAoCongelar(CopiasComCatalogoIncoerente(item, renomeada, exigencia));
 
         recopiado.IsFailure.Should().BeTrue();
         processo.CronogramaFases.Single().UnidadeResponsavelSigla.Should().Be(UnidadesDeTeste.Ceps.Sigla);
         exigencia.ClassificacaoProtecao.Should().Be(ClassificacaoDeProtecao.Sensivel);
     }
 
+    private static CopiasDoCongelamento CopiasComCatalogoIncoerente(FatoColetado item, UnidadeResponsavelSnapshot renomeada, DocumentoExigido exigencia) => new(
+        new Dictionary<string, CopiaDoItemNoCatalogo>
+        {
+            [item.FatoCodigo] = new(OrigemValoresColeta.Catalogo, null, item.ClassificacaoProtecao, item.HipoteseLegal, item.FinalidadeTratamento, item.Descricao, null),
+        },
+        new HashSet<string>(StringComparer.Ordinal),
+        new Dictionary<Guid, UnidadeResponsavelSnapshot> { [renomeada.OrigemId] = renomeada },
+        new ProtecaoVigenteDasExigencias(
+            new Dictionary<string, ClassificacaoDeProtecao>(),
+            new Dictionary<Guid, ProtecaoDoDocumento> { [exigencia.Id] = ProtecaoDoDocumentoDeTeste.De(ClassificacaoDeProtecao.Pessoal) },
+            new HashSet<string>(),
+            new HashSet<Guid>()));
+
     private static FaseCronograma FaseDeInscricao() => FaseCronograma.Criar(
-        1, Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NoEdital,
-        agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: true, coletaSolicitacaoIsencao: false,
-        inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero),
-        produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)],
-        faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+        new OrigemCanonicaDaFase(
+            Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
 
     private static DocumentoExigido ExigenciaSensivel(ProcessoSeletivo processo, FaseCronograma fase)
     {
@@ -54,7 +59,7 @@ public sealed class RecopiarAoCongelarTests
             fase.Id, Guid.CreateVersion7(), "LAUDO_MEDICO", "LAUDO_MEDICO", "SAUDE", ProtecaoDoDocumentoDeTeste.De(ClassificacaoDeProtecao.Sensivel),
             Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null, [], [], null,
             FormatosPermitidos.Criar(true, null).Value!, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!])
             .IsSuccess.Should().BeTrue();
         return processo.DocumentosExigidos.Single();
     }

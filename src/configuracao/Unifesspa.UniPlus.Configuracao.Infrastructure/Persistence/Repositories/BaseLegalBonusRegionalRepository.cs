@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
@@ -23,6 +24,12 @@ public sealed class BaseLegalBonusRegionalRepository : IBaseLegalBonusRegionalRe
         return _dbContext.BaseLegaisBonus
             .Include(x => x.Municipios)
             .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
+    }
+
+    public Task<bool> CodigoExisteAsync(CodigoBaseLegalBonusRegional codigo, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(codigo);
+        return _dbContext.BaseLegaisBonus.AsNoTracking().AnyAsync(x => x.Codigo == codigo, cancellationToken);
     }
 
     public async Task<IReadOnlyList<BaseLegalBonusRegional>> ListarVivasParaLeituraAsync(CancellationToken cancellationToken) =>

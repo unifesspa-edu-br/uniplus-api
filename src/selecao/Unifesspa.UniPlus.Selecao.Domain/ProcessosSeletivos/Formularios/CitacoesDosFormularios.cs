@@ -5,8 +5,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Retificacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public static class CitacoesDosFormularios
@@ -22,11 +22,11 @@ public static class CitacoesDosFormularios
     /// agregado: um ciclo volta como erro nomeado, nunca lança. O congelamento do grafo no envelope e
     /// a recusa de publicação por ciclo são da fatia de determinismo (§7).
     /// </summary>
-    public static Result<GrafoDependenciaConjunta> ConstruirGrafoDependencia(EstadoDaConfiguracao estado)
+    public static Result<GrafoDependenciaConjunta> ConstruirGrafoDependencia(ConfiguracaoDeclarada configuracao)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
-        return GrafoDependenciaConjunta.Construir([.. estado.Itens], estado.DerivacoesEfetivas(), estado.DocumentosExigidos, estado.Formularios, estado.TermosExigidos, estado.GruposColetados);
+        return GrafoDependenciaConjunta.Construir([.. configuracao.Coleta.Itens], configuracao.DerivacoesEfetivas(), configuracao.Exigencias.DocumentosExigidos, configuracao.Coleta.Formularios, configuracao.Coleta.TermosExigidos, configuracao.Coleta.GruposColetados);
     }
 
     /// <summary>Os fatos coletados pela inscrição, que os formulários das outras finalidades podem citar.</summary>
@@ -34,12 +34,11 @@ public static class CitacoesDosFormularios
         new(fatos.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao).Select(static f => f.FatoCodigo), StringComparer.Ordinal);
 
     /// <summary>
-    /// Sob retificação, a primeira citação que usa, de outra finalidade, fato que o formulário dela
-    /// não coletou em todas as versões publicadas (UNI-REQ-0144): quem preencheu aquele formulário
-    /// numa versão anterior pode não o ter informado. Vale para o fato citado e para todo fato de que
-    /// ele depende: pela regra de derivação viva, pelo mecanismo do derivado do sistema ou, no
-    /// agregado sobre grupo repetível, pelo fato de membro. Fora da sessão, nula: nenhum candidato
-    /// preencheu versão anterior.
+    /// A primeira citação que usa, de outra finalidade, fato que o formulário dela não coletou em todas
+    /// as versões publicadas (UNI-REQ-0144): quem preencheu aquele formulário numa versão anterior pode
+    /// não o ter informado. Vale para o fato citado e para todo fato de que ele depende: pela regra de
+    /// derivação viva, pelo mecanismo do derivado do sistema ou, no agregado sobre grupo repetível, pelo
+    /// fato de membro.
     /// </summary>
     /// <param name="citacoes">Cada fato citado, com quem o cita, como a mensagem o nomeia.</param>
     /// <param name="finalidadePropria">
@@ -47,26 +46,22 @@ public static class CitacoesDosFormularios
     /// quem cita não tem finalidade própria, e então todo fato de formulário precisa estar garantido.
     /// </param>
     internal static DomainError? CitacaoNaoGarantida(
-        EstadoDaConfiguracao estado,
+        ConfiguracaoDeclarada configuracao,
+        FatosDasVersoesPublicadas publicadas,
         IEnumerable<(string Citante, string Citado)> citacoes,
         FinalidadeFormulario? finalidadePropria,
         IReadOnlyDictionary<string, string> membroPorAgregado)
     {
-        if (estado.Rascunho?.FatosDasVersoesPublicadas is not { } publicadas)
-        {
-            return null;
-        }
-
         foreach ((string citante, string citado) in citacoes)
         {
-            if (FatoNaoGarantido(estado, citado, finalidadePropria, publicadas, membroPorAgregado, []) is { } naoGarantido)
+            if (FatoNaoGarantido(configuracao, citado, finalidadePropria, publicadas, membroPorAgregado, []) is { } naoGarantido)
             {
                 string anterior = EstruturaFormulario.ParaToken(naoGarantido.Produtora);
                 string sujeito = string.Equals(citado, naoGarantido.Fato, StringComparison.Ordinal)
                     ? $"O fato '{citado}', citado por {citante}, não"
                     : $"O fato '{citado}', citado por {citante}, depende de '{naoGarantido.Fato}', que não";
                 return new DomainError(
-                    "RascunhoRetificacao.FatoAusenteDeVersaoPublicada",
+                    RetificacaoErrorCodes.FatoAusenteDeVersaoPublicada,
                     $"{sujeito} é coletado pelo formulário de {anterior} em todas as versões publicadas do edital: quem preencheu esse formulário numa versão anterior não o informou.");
             }
         }
@@ -79,14 +74,14 @@ public static class CitacoesDosFormularios
     /// dele. O fato coletado encerra a busca: ele não depende de outro.
     /// </summary>
     internal static (string Fato, FinalidadeFormulario Produtora)? FatoNaoGarantido(
-        EstadoDaConfiguracao estado,
+        ConfiguracaoDeclarada configuracao,
         string fato,
         FinalidadeFormulario? finalidadePropria,
         FatosDasVersoesPublicadas publicadas,
         IReadOnlyDictionary<string, string> membroPorAgregado,
         HashSet<string> emAvaliacao)
     {
-        if (estado.Campos.FirstOrDefault(f => string.Equals(f.FatoCodigo, fato, StringComparison.Ordinal)) is { } coletado)
+        if (configuracao.Coleta.Campos.FirstOrDefault(f => string.Equals(f.FatoCodigo, fato, StringComparison.Ordinal)) is { } coletado)
         {
             return coletado.Finalidade != finalidadePropria && !publicadas.Garante(coletado.Finalidade, fato)
                 ? (fato, coletado.Finalidade)
@@ -98,9 +93,9 @@ public static class CitacoesDosFormularios
             return null;
         }
 
-        foreach (string dependencia in FaseEfetivaDoFato.DependenciasDoFato(estado, fato, membroPorAgregado))
+        foreach (string dependencia in FaseEfetivaDoFato.DependenciasDoFato(configuracao, fato, membroPorAgregado))
         {
-            if (FatoNaoGarantido(estado, dependencia, finalidadePropria, publicadas, membroPorAgregado, emAvaliacao) is { } naoGarantido)
+            if (FatoNaoGarantido(configuracao, dependencia, finalidadePropria, publicadas, membroPorAgregado, emAvaliacao) is { } naoGarantido)
             {
                 return naoGarantido;
             }
@@ -115,39 +110,46 @@ public static class CitacoesDosFormularios
         citacoes.Select(c => ($"{c.Dono} do formulário de {EstruturaFormulario.ParaToken(finalidade)}", c.Citado));
 
     /// <summary>
-    /// Sob retificação, a regra de formulário que usa, de outra finalidade, fato fora do que o
-    /// formulário dela coletou em todas as versões publicadas. A conferência das escritas alcança o que
-    /// cada uma escreve; esta alcança o que mudou depois, inclusive a regra de derivação que passou a
-    /// fazer um derivado citado depender de fato novo.
+    /// A regra de formulário que usa, de outra finalidade, fato fora do que o formulário dela coletou em
+    /// todas as versões publicadas. Alcança o que o documento novo declara, inclusive a regra de
+    /// derivação que passou a fazer um derivado citado depender de fato novo. Sem versão publicada,
+    /// nenhum candidato preencheu versão anterior e não há o que conferir.
     /// </summary>
-    internal static DomainError? PendenciaDeFatoAusenteDeVersaoPublicada(EstadoDaConfiguracao estado) =>
-        estado.Formularios
-            .Select(formulario => CitacaoNaoGarantida(
-                estado,
-                DoFormulario(
-                    formulario.Finalidade,
-                    CitacoesDoFormulario(
-                        estado,
-                        formulario,
-                        [.. estado.Itens.Where(f => f.Finalidade == formulario.Finalidade)],
-                        [.. GruposDaFinalidade(estado, formulario.Finalidade)])
-                    .Select(static c => (c.Dono, c.Citado))),
+    internal static DomainError? PendenciaDeFatoAusenteDeVersaoPublicada(ConfiguracaoDeclarada configuracao, FatosDasVersoesPublicadas? publicadas) =>
+        publicadas is null
+            ? null
+            : configuracao.Coleta.Formularios
+                .Select(formulario => CitacaoNaoGarantidaDoFormulario(configuracao, publicadas, formulario))
+                .FirstOrDefault(static recusa => recusa is not null);
+
+    private static DomainError? CitacaoNaoGarantidaDoFormulario(
+        ConfiguracaoDeclarada configuracao, FatosDasVersoesPublicadas publicadas, FormularioProcesso formulario) =>
+        CitacaoNaoGarantida(
+            configuracao,
+            publicadas,
+            DoFormulario(
                 formulario.Finalidade,
-                SemCatalogo))
-            .FirstOrDefault(static recusa => recusa is not null);
+                CitacoesDoFormulario(
+                    configuracao,
+                    formulario,
+                    [.. configuracao.Coleta.Itens.Where(f => f.Finalidade == formulario.Finalidade)],
+                    [.. GruposDaFinalidade(configuracao, formulario.Finalidade)])
+                .Select(static c => (c.Dono, c.Citado))),
+            formulario.Finalidade,
+            SemCatalogo);
 
     /// <summary>
     /// Trocar os itens da inscrição não pode tirar um fato que uma regra de outra finalidade cita,
     /// direta ou por um derivado: ela passaria a depender de uma resposta que ninguém pede. Só a
     /// citação que a troca invalida é recusada; a que já era inválida fica para a publicação.
     /// </summary>
-    internal static DomainError? CitacaoQueFicariaOrfa(EstadoDaConfiguracao estado, IReadOnlyCollection<FatoColetado> novosDaInscricao) =>
+    internal static DomainError? CitacaoQueFicariaOrfa(ConfiguracaoDeclarada configuracao, IReadOnlyCollection<FatoColetado> novosDaInscricao) =>
         CitacoesQueFicariamOrfas(
-            estado,
+            configuracao,
             // Os itens novos ainda não têm a finalidade vinculada: valem pelo código.
             new HashSet<string>(novosDaInscricao.Select(static f => f.FatoCodigo), StringComparer.Ordinal),
-            outra => [.. estado.Itens.Where(f => f.Finalidade == outra)],
-            DependenciasDasDerivacoes(estado)).FirstOrDefault();
+            outra => [.. configuracao.Coleta.Itens.Where(f => f.Finalidade == outra)],
+            DependenciasDasDerivacoes(configuracao)).FirstOrDefault();
 
     /// <summary>
     /// As citações das outras finalidades que uma mudança na inscrição, nos itens delas ou nas
@@ -155,21 +157,21 @@ public static class CitacoesDosFormularios
     /// que a mudança invalida.
     /// </summary>
     internal static IEnumerable<DomainError> CitacoesQueFicariamOrfas(
-        EstadoDaConfiguracao estado,
+        ConfiguracaoDeclarada configuracao,
         IReadOnlySet<string> daInscricaoDepois,
         Func<FinalidadeFormulario, FatoColetado[]> itensDepois,
         IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoesDepois)
     {
-        HashSet<string> atuais = FatosDaInscricao(estado.Itens);
-        Dictionary<string, IReadOnlyCollection<string>> derivacoesAntes = DependenciasDasDerivacoes(estado);
-        foreach (FormularioProcesso formulario in estado.Formularios.Where(static f => f.Finalidade != FinalidadeFormulario.Inscricao))
+        HashSet<string> atuais = FatosDaInscricao(configuracao.Coleta.Itens);
+        Dictionary<string, IReadOnlyCollection<string>> derivacoesAntes = DependenciasDasDerivacoes(configuracao);
+        foreach (FormularioProcesso formulario in configuracao.Coleta.Formularios.Where(static f => f.Finalidade != FinalidadeFormulario.Inscricao))
         {
             FinalidadeFormulario outra = formulario.Finalidade;
             FatoColetado[] itens = itensDepois(outra);
-            GrupoColetado[] grupos = [.. GruposDaFinalidade(estado, outra)];
-            DependenciasDoFormulario antes = DependenciasDe(outra, estado.Itens.Where(f => f.Finalidade == outra), atuais, derivacoesAntes);
+            GrupoColetado[] grupos = [.. GruposDaFinalidade(configuracao, outra)];
+            DependenciasDoFormulario antes = DependenciasDe(outra, configuracao.Coleta.Itens.Where(f => f.Finalidade == outra), atuais, derivacoesAntes);
             DependenciasDoFormulario depois = DependenciasDe(outra, itens, daInscricaoDepois, derivacoesDepois);
-            foreach ((string dono, long posicao, string citado) in CitacoesDoFormulario(estado, formulario, itens, grupos))
+            foreach ((string dono, long posicao, string citado) in CitacoesDoFormulario(configuracao, formulario, itens, grupos))
             {
                 if (antes.Conferir(citado, posicao) is null && depois.Conferir(citado, posicao) is not null)
                 {
@@ -186,7 +188,7 @@ public static class CitacoesDosFormularios
     /// dos grupos dados, a exibição das seções e as condições dos termos da finalidade.
     /// </summary>
     internal static IEnumerable<(string Dono, long Posicao, string Citado)> CitacoesDoFormulario(
-        EstadoDaConfiguracao estado,
+        ConfiguracaoDeclarada configuracao,
         FormularioProcesso formulario, FatoColetado[] itens, GrupoColetado[] grupos) =>
         CitacoesDosCampos(itens, grupos)
             .Concat(formulario.Etapas.SelectMany(secao => CitacoesDaSecao(secao)
@@ -197,7 +199,7 @@ public static class CitacoesDosFormularios
                         itens.Select(static i => i.ParaGrafo()),
                         grupos.Select(static g => g.ParaGrafo())),
                     c.Citado))))
-            .Concat(estado.TermosExigidos.Where(t => t.Finalidade == formulario.Finalidade)
+            .Concat(configuracao.Coleta.TermosExigidos.Where(t => t.Finalidade == formulario.Finalidade)
                 .SelectMany(static termo => CitacoesDoTermo(termo).Select(static c => (c.Dono, DependenciasDoFormulario.PosicaoDosTermos, c.Citado))));
 
     /// <summary>As citações das regras dos itens e dos grupos, cada uma na posição do item ou do grupo que cita.</summary>
@@ -243,8 +245,8 @@ public static class CitacoesDosFormularios
     }
 
     /// <summary>Os grupos repetíveis do formulário da finalidade.</summary>
-    internal static IEnumerable<GrupoColetado> GruposDaFinalidade(EstadoDaConfiguracao estado, FinalidadeFormulario finalidade) =>
-        estado.GruposColetados.Where(g => g.Finalidade == finalidade);
+    internal static IEnumerable<GrupoColetado> GruposDaFinalidade(ConfiguracaoDeclarada configuracao, FinalidadeFormulario finalidade) =>
+        configuracao.Coleta.GruposColetados.Where(g => g.Finalidade == finalidade);
 
     /// <summary>A quantidade que o teto do formulário conta: cada item, cada grupo e cada campo de grupo.</summary>
     internal static int QuantidadeNoTeto(int itens, IEnumerable<GrupoColetado> grupos) =>
@@ -298,9 +300,9 @@ public static class CitacoesDosFormularios
     /// inscrição, quando o formulário é de outra finalidade; e os derivados por regra desses.
     /// </summary>
     internal static DependenciasDoFormulario DependenciasDe(
-        EstadoDaConfiguracao estado,
+        ConfiguracaoDeclarada configuracao,
         FinalidadeFormulario finalidade, IEnumerable<FatoColetado> itens, IReadOnlySet<string> daInscricao) =>
-        DependenciasDe(finalidade, itens, daInscricao, DependenciasDasDerivacoes(estado));
+        DependenciasDe(finalidade, itens, daInscricao, DependenciasDasDerivacoes(configuracao));
 
     internal static DependenciasDoFormulario DependenciasDe(
         FinalidadeFormulario finalidade,
@@ -312,8 +314,8 @@ public static class CitacoesDosFormularios
             finalidade == FinalidadeFormulario.Inscricao ? new HashSet<string>(StringComparer.Ordinal) : daInscricao,
             derivacoes);
 
-    internal static Dictionary<string, IReadOnlyCollection<string>> DependenciasDasDerivacoes(EstadoDaConfiguracao estado) =>
-        MapaDeDerivacoes(estado.DerivacoesEfetivas());
+    internal static Dictionary<string, IReadOnlyCollection<string>> DependenciasDasDerivacoes(ConfiguracaoDeclarada configuracao) =>
+        MapaDeDerivacoes(configuracao.DerivacoesEfetivas());
 
     /// <summary>
     /// As dependências de cada derivado que uma regra do formulário pode citar: os derivados por regra

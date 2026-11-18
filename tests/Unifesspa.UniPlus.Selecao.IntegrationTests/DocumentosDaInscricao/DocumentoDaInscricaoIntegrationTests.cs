@@ -139,8 +139,8 @@ public sealed class DocumentoDaInscricaoIntegrationTests : IClassFixture<Inscric
         await emVerificacao.ColocarEmVerificacaoAsync();
         DateTimeOffset depoisDoPrazo = DateTimeOffset.UtcNow.AddDays(1);
 
-        (await pendente.Repositorio.RemoverSePendenteVencidoAsync(pendente.Arquivo.Id, depoisDoPrazo)).Should().BeTrue();
-        (await emVerificacao.Repositorio.RemoverSePendenteVencidoAsync(emVerificacao.Arquivo.Id, depoisDoPrazo)).Should().BeFalse();
+        (await pendente.Repositorio.RemoverSePendenteVencidoAsync(pendente.Arquivo.Id, depoisDoPrazo, static _ => Task.CompletedTask)).Should().BeTrue();
+        (await emVerificacao.Repositorio.RemoverSePendenteVencidoAsync(emVerificacao.Arquivo.Id, depoisDoPrazo, static _ => Task.CompletedTask)).Should().BeFalse();
 
         await using UniPlusDbContext leitura = _db.CreateDbContext();
         (await leitura.ArquivosDaApresentacao.AnyAsync(a => a.Id == pendente.Arquivo.Id)).Should().BeFalse();

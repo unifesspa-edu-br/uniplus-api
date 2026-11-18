@@ -193,6 +193,7 @@ public sealed class TipoEtapaConceitosAdmitidosEndpointTests
         ["nome"] = "Etapa avaliada por conceito",
         ["admitePontuacao"] = true,
         ["admiteEliminacao"] = true,
+        ["exigeCorrecaoIndependente"] = false,
         ["conceitosAdmitidos"] = conceitos,
     };
 

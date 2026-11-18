@@ -9,8 +9,6 @@ using DTOs;
 
 using Kernel.Results;
 
-using Unifesspa.UniPlus.Configuracao.Contracts;
-
 /// <summary>
 /// Handler do <see cref="SimularDistribuicaoVagasQuery"/> (issue #1282):
 /// resolve cada oferta contra os mesmos cadastros vivos e o mesmo catálogo
@@ -25,71 +23,39 @@ public static class SimularDistribuicaoVagasQueryHandler
     public static async Task<Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>> Handle(
         SimularDistribuicaoVagasQuery query,
         IProcessoSeletivoRepository processoSeletivoRepository,
-        IRegraCatalogoReader regraCatalogoReader,
-        IOfertaCursoReader ofertaCursoReader,
-        IModalidadeReader modalidadeReader,
-        IReferenciaReservaDemograficaReader referenciaReservaDemograficaReader,
+        ConfiguracaoDistribuicaoVagasResolver resolvedor,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
-        ArgumentNullException.ThrowIfNull(regraCatalogoReader);
-        ArgumentNullException.ThrowIfNull(ofertaCursoReader);
-        ArgumentNullException.ThrowIfNull(modalidadeReader);
-        ArgumentNullException.ThrowIfNull(referenciaReservaDemograficaReader);
 
-        bool existe = await processoSeletivoRepository
-            .ExisteAsync(query.ProcessoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
-        if (!existe)
-        {
-            return Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>.Failure(new DomainError(
-                "ProcessoSeletivo.NaoEncontrado",
-                $"Processo Seletivo {query.ProcessoSeletivoId} não encontrado."));
-        }
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagas>> simulada =
+            await SimularAsync(query, processoSeletivoRepository, resolvedor, cancellationToken).ConfigureAwait(false);
 
-        // Mesma ordem do comando de escrita (ADR-0125): forma de VoBase/PR de
-        // TODAS as ofertas antes de qualquer I/O cross-módulo.
-        List<FieldError> formaErros = [];
-        for (int indice = 0; indice < query.DistribuicaoVagas.Count; indice++)
-        {
-            ConfiguracaoDistribuicaoVagasInput itemForma = query.DistribuicaoVagas[indice];
-            formaErros.AddRange(ConfiguracaoDistribuicaoVagas
-                .ValidarFormaBasica(itemForma.VoBase, itemForma.Pr, itemForma.ModalidadeIds.Count)
-                .Select(erro => erro.Field is null ? erro : erro with { Field = $"distribuicaoVagas[{indice}].{ConfiguracaoDistribuicaoVagasResolver.TraduzirFieldDoDominio(erro.Field)}" }));
-        }
-
-        if (formaErros.Count > 0)
-        {
-            return Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>.ValidationFailure(formaErros);
-        }
-
-        List<ConfiguracaoDistribuicaoVagasDto> simulacao = [];
-        for (int indice = 0; indice < query.DistribuicaoVagas.Count; indice++)
-        {
-            Result<ConfiguracaoDistribuicaoVagas> resultado = await ConfiguracaoDistribuicaoVagasResolver.ResolverDistribuicaoAsync(
-                query.DistribuicaoVagas[indice],
-                regraCatalogoReader,
-                ofertaCursoReader,
-                modalidadeReader,
-                referenciaReservaDemograficaReader,
-                cancellationToken).ConfigureAwait(false);
-
-            if (resultado.IsFailure)
-            {
-                IReadOnlyList<FieldError> errosComIndice = [.. resultado.Errors
-                    .Select(erro => erro.Field is null ? erro : erro with { Field = $"distribuicaoVagas[{indice}].{ConfiguracaoDistribuicaoVagasResolver.TraduzirFieldDoDominio(erro.Field)}" })];
-                return Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>.ValidationFailure(errosComIndice);
-            }
-
-            // Nunca tocado por SalvarAlteracoesAsync — os Guids em
-            // resultado.Value!.Id (e de cada VagaOfertada) são efêmeros,
-            // gerados em memória por ConfiguracaoDistribuicaoVagas.Criar/
-            // VagaOfertada.Criar (EntityBase.Id = Guid.CreateVersion7()),
-            // nunca persistidos.
-            simulacao.Add(ProjecaoDasVagas.ProjetarDistribuicao(resultado.Value!));
-        }
-
-        return Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>.Success(simulacao);
+        // Nunca tocadas por SalvarAlteracoesAsync: os Guids da configuração e de cada VagaOfertada são
+        // efêmeros, gerados em memória, e nunca persistidos.
+        return simulada.IsFailure
+            ? Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>.ValidationFailure(simulada.Errors)
+            : Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>.Success(
+                [.. simulada.Value!.Select(ProjecaoDasVagas.ProjetarDistribuicao)]);
     }
+
+    private static async Task<Result<IReadOnlyList<ConfiguracaoDistribuicaoVagas>>> SimularAsync(
+        SimularDistribuicaoVagasQuery query,
+        IProcessoSeletivoRepository processoSeletivoRepository,
+        ConfiguracaoDistribuicaoVagasResolver resolvedor,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
+        ArgumentNullException.ThrowIfNull(resolvedor);
+
+        if (!await processoSeletivoRepository.ExisteAsync(query.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false))
+        {
+            return Result<IReadOnlyList<ConfiguracaoDistribuicaoVagas>>.Failure(ProcessoNaoEncontrado(query.ProcessoSeletivoId));
+        }
+
+        return await resolvedor.ResolverTodasAsync(query.DistribuicaoVagas, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static DomainError ProcessoNaoEncontrado(Guid processoSeletivoId) =>
+        new("ProcessoSeletivo.NaoEncontrado", $"Processo Seletivo {processoSeletivoId} não encontrado.");
 }

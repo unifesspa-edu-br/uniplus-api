@@ -22,7 +22,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 /// </summary>
 public static class DefinirTermosDoFormularioCommandHandler
 {
-    public static async Task<Result<MutacaoAceita>> Handle(
+    public static async Task<Result> Handle(
         DefinirTermosDoFormularioCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IFatoCandidatoReader fatoCandidatoReader,
@@ -41,20 +41,20 @@ public static class DefinirTermosDoFormularioCommandHandler
             .ConfigureAwait(false);
         if (processo is null)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 "ProcessoSeletivo.NaoEncontrado",
                 $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
         }
 
-        // A precondição precede a resolução de leituras externas (ADR-0110 D9).
-        if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
+        // Fora do rascunho a recusa vem antes de consultar cadastros.
+        if (processo.MutacaoBloqueada() is { } bloqueio)
         {
-            return Result<MutacaoAceita>.Failure(bloqueio);
+            return Result.Failure(bloqueio);
         }
 
         if (command.Termos is not { } entradas)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 TermoExigidoFormularioErrorCodes.EntradaMalformada, "A lista de termos é obrigatória; a lista vazia remove os termos."));
         }
 
@@ -79,26 +79,26 @@ public static class DefinirTermosDoFormularioCommandHandler
 
         if (erros.Count > 0)
         {
-            return Result<MutacaoAceita>.ValidationFailure(erros);
+            return Result.ValidationFailure(erros);
         }
 
         Result vinculoNovo = ConferenciaDeVinculoNovo.Conferir(
             contexto.Fatos,
-            ReferenciasVivas.Vinculos(EstadoDaConfiguracao.De(processo)),
+            ReferenciasVivas.Vinculos(processo.Declaracao()),
             VinculosDeFatos.De([], termos.SelectMany(static t => t.Condicoes).Select(static c => (c.Fato, c.Valor))));
         if (vinculoNovo.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(vinculoNovo.Error!);
+            return Result.Failure(vinculoNovo.Error!);
         }
 
-        Result definir = processo.DefinirTermosDoFormulario(command.Finalidade, termos, command.Precondicao);
+        Result definir = processo.DefinirTermosDoFormulario(command.Finalidade, termos);
         if (definir.IsFailure)
         {
-            return Result<MutacaoAceita>.ValidationFailure(definir.Errors);
+            return Result.ValidationFailure(definir.Errors);
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
-        return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+        return Result.Success();
     }
 }

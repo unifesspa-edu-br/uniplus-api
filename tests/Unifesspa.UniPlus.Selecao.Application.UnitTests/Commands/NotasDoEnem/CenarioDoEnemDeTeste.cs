@@ -85,15 +85,17 @@ internal sealed class CenarioDoEnemDeTeste
         DivulgacaoDeTeste.ConfigurarDivulgada(Processos, Codecs, _versaoDivulgada, _grafo, fim);
 
     private static ConfiguracaoClassificacao ClassificacaoPelosPesosDoEnem() =>
-        ConfiguracaoClassificacao.Criar(
-            regraCalculo: ReferenciaRegra.Criar(RegraCalculoCodigo.FormulaMediaPonderada, "v1", ProcessoSeletivoConformeBuilder.HashFixo).Value!,
-            regraArredondamento: ReferenciaRegra.Criar(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", ProcessoSeletivoConformeBuilder.HashFixo).Value!,
-            casasArredondamento: 2,
-            regraOrdemAlocacao: ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", ProcessoSeletivoConformeBuilder.HashFixo).Value!,
-            regrasEliminacao: [],
-            baseadoEmEnem: true,
-            resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao,
-            quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo(), escalaNotaFinal: 100m).Value!;
+        ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", ProcessoSeletivoConformeBuilder.HashFixo),
+            RegraArredondamento = ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", ProcessoSeletivoConformeBuilder.HashFixo),
+            CasasArredondamento = 2,
+            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", ProcessoSeletivoConformeBuilder.HashFixo),
+            BaseadoEmEnem = true,
+            ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
+            QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
+            EscalaNotaFinal = 100m,
+        }).Value!;
 
     /// <summary>O processo vivo não pode ser lido: o escopo é o da versão divulgada.</summary>
     public void ProcessoVivoNaoFoiConsultado() =>
@@ -101,10 +103,6 @@ internal sealed class CenarioDoEnemDeTeste
 
     private static EtapaProcesso Etapa(string nome, string tipo, bool notaDeOrigemNoEnem) =>
         EtapaProcesso.Criar(
-            nome,
-            CaraterEtapa.Classificatoria,
-            TipoEtapaSnapshot.Criar(
-                CadastrosVivos.IdentidadeDe(tipo), tipo, nome, admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: notaDeOrigemNoEnem).Value!,
-            peso: 1m,
-            ordem: 1, notaMaxima: 10m, formaDeAvaliacao: notaDeOrigemNoEnem ? null : FormaDeAvaliacao.Objetiva).Value!;
+            new IdentificacaoDaEtapa(Nome: nome, Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(CadastrosVivos.IdentidadeDe(tipo), tipo, nome, admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: notaDeOrigemNoEnem).Value!, Ordem: 1, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: notaDeOrigemNoEnem ? null : FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 }

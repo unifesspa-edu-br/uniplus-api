@@ -18,7 +18,6 @@ internal static class DefinicaoDosDocumentosExigidos
         ProcessoSeletivo processo,
         IReadOnlyList<NoExigenciaInput> entradas,
         IReadOnlyList<NoExigencia> mantidas,
-        PrecondicaoIfMatch precondicao,
         CadastrosDosDocumentosExigidos cadastros,
         CancellationToken cancellationToken)
     {
@@ -43,7 +42,7 @@ internal static class DefinicaoDosDocumentosExigidos
             .MontarRaizesAsync(entradas, ProximaOrdemDaRaiz(mantidas), cancellationToken).ConfigureAwait(false);
         return raizes.IsFailure
             ? Result.ValidationFailure(raizes.Errors)
-            : DefinirNoProcesso(processo, mantidas, raizes.Value!, contexto.Fatos, precondicao);
+            : DefinirNoProcesso(processo, mantidas, raizes.Value!, contexto.Fatos);
     }
 
     private static int ProximaOrdemDaRaiz(IReadOnlyList<NoExigencia> mantidas) =>
@@ -53,8 +52,7 @@ internal static class DefinicaoDosDocumentosExigidos
         ProcessoSeletivo processo,
         IReadOnlyList<NoExigencia> mantidas,
         List<NoExigencia> raizes,
-        FatosDoGatilho? fatos,
-        PrecondicaoIfMatch precondicao)
+        FatosDoGatilho? fatos)
     {
         Result vinculoNovo = fatos is null ? Result.Success() : ConferenciaDosVinculosDasExigencias.Conferir(processo, fatos, raizes);
         if (vinculoNovo.IsFailure)
@@ -62,7 +60,7 @@ internal static class DefinicaoDosDocumentosExigidos
             return vinculoNovo;
         }
 
-        Result definida = processo.DefinirDocumentosExigidos([.. mantidas, .. raizes], precondicao);
+        Result definida = processo.DefinirDocumentosExigidos([.. mantidas, .. raizes]);
         return definida.IsFailure ? Result.Failure(definida.Error!) : Result.Success();
     }
 

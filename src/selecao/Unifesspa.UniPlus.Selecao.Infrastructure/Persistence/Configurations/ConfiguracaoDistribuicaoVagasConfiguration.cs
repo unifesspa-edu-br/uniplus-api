@@ -36,22 +36,43 @@ internal sealed class ConfiguracaoDistribuicaoVagasConfiguration : IEntityTypeCo
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("configuracoes_de_vagas");
+        builder.ToTable("configuracoes_de_vagas", QuadroDeVagasDaConfiguracao.RestricoesDoQuadro);
         builder.HasKey(c => c.Id);
         builder.Property(c => c.Id).ValueGeneratedNever();
 
-        builder.Property(c => c.VoBase).IsRequired();
-        builder.Property(c => c.Pr).HasPrecision(5, 4).IsRequired();
+        QuadroDeVagasDaConfiguracao.ConfigurarColunas(builder);
+        ConfigurarRegras(builder);
+        ConfigurarSnapshots(builder);
+        ConfigurarFilhas(builder);
 
-        // ReferenciaRegra (VO do catálogo de regras, Story #772) embutida por valor —
-        // a regra de distribuição aplicada (codigo+versao+hash), congelada no
-        // momento em que o admin configurou. EF materializa via o construtor
-        // privado (constructor binding), já que o VO não expõe setters.
+        // UNIQUE parcial: uma configuração de distribuição por oferta de curso dentro do mesmo processo
+        // (INV do agregado, ProcessoSeletivo.OfertaCursoDuplicada).
+        builder.HasIndex(c => new { c.ProcessoSeletivoId, c.OfertaCursoOrigemId })
+            .IsUnique()
+            .HasDatabaseName("ux_configuracoes_de_vagas_processo_oferta");
+    }
+
+    // A referência de regra (VO do catálogo) embutida por valor: codigo, versao e hash congelados no momento
+    // em que o admin configurou. A regra de ajuste é obrigatória na Lei de Cotas e opcional no quadro fixado.
+    private static void ConfigurarRegras(EntityTypeBuilder<ConfiguracaoDistribuicaoVagas> builder)
+    {
         builder.OwnsOne(c => c.RegraDistribuicao, regra => regra.ConfigurarReferenciaRegra("regra_distribuicao"));
         builder.Navigation(c => c.RegraDistribuicao).IsRequired();
 
-        // ReferenciaReservaDemograficaSnapshot — opcional (só na Lei 12.711,
-        // INV-5). Colunas nulas quando a distribuição é institucional.
+        builder.OwnsOne(c => c.RegraAjuste, regraAjuste => regraAjuste.ConfigurarReferenciaRegra("regra_ajuste"));
+        builder.Navigation(c => c.RegraAjuste).IsRequired(false);
+    }
+
+    private static void ConfigurarSnapshots(EntityTypeBuilder<ConfiguracaoDistribuicaoVagas> builder)
+    {
+        ConfigurarReferenciaDemografica(builder);
+        ConfigurarGrupoAreaEnem(builder);
+        ConfigurarOfertaCurso(builder);
+    }
+
+    // Só na Lei 12.711: colunas nulas quando a distribuição é de quadro fixado.
+    private static void ConfigurarReferenciaDemografica(EntityTypeBuilder<ConfiguracaoDistribuicaoVagas> builder)
+    {
         builder.OwnsOne(c => c.ReferenciaDemografica, demografica =>
         {
             demografica.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
@@ -63,9 +84,11 @@ internal sealed class ConfiguracaoDistribuicaoVagasConfiguration : IEntityTypeCo
             demografica.Property(d => d.BaseLegal).HasColumnName("referencia_demografica_base_legal").HasMaxLength(BaseLegalMaxLength);
         });
         builder.Navigation(c => c.ReferenciaDemografica).IsRequired(false);
+    }
 
-        // Grupo de área do ENEM do curso da oferta, com código e rótulo, congelado por
-        // valor (ADR-0061). Colunas nulas quando o curso não o declara.
+    // Grupo de área do ENEM do curso da oferta, com código e rótulo, congelado por valor (ADR-0061).
+    private static void ConfigurarGrupoAreaEnem(EntityTypeBuilder<ConfiguracaoDistribuicaoVagas> builder)
+    {
         builder.OwnsOne(c => c.GrupoAreaEnem, grupo =>
         {
             grupo.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
@@ -79,12 +102,19 @@ internal sealed class ConfiguracaoDistribuicaoVagasConfiguration : IEntityTypeCo
                 .HasComment("Rótulo do grupo de área do ENEM do curso da oferta, congelado por valor junto do código na definição da distribuição. Nulo quando o curso não declara grupo.");
         });
         builder.Navigation(c => c.GrupoAreaEnem).IsRequired(false);
+    }
 
-        // O que nomeia a oferta para o candidato, congelado por valor (ADR-0061). Colunas nulas
-        // só em distribuição definida antes de a oferta ser nomeada aqui.
+    // O que nomeia a oferta para o candidato, congelado por valor (ADR-0061). Colunas nulas só em
+    // distribuição definida antes de a oferta ser nomeada aqui.
+    private static void ConfigurarOfertaCurso(EntityTypeBuilder<ConfiguracaoDistribuicaoVagas> builder)
+    {
         builder.OwnsOne(c => c.OfertaCurso, oferta =>
         {
             oferta.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
+            oferta.Property(o => o.Codigo)
+                .HasColumnName("oferta_curso_codigo")
+                .HasMaxLength(OfertaCursoSnapshot.CodigoMaxLength)
+                .HasComment("Código da oferta de curso, congelado por valor do cadastro na definição da distribuição.");
             oferta.Property(o => o.CursoNome)
                 .HasColumnName("oferta_curso_nome")
                 .HasMaxLength(OfertaCursoSnapshot.CursoNomeMaxLength)
@@ -102,39 +132,24 @@ internal sealed class ConfiguracaoDistribuicaoVagasConfiguration : IEntityTypeCo
                 .HasComment("Turnos que a oferta ocupa (tokens), congelados por valor do cadastro na definição da distribuição.");
         });
         builder.Navigation(c => c.OfertaCurso).IsRequired(false);
+    }
 
-        // RegraAjuste (issue #848/ADR-0115) — obrigatória no ramo federal, opcional
-        // no institucional (quadro fixo não reconcilia).
-        builder.OwnsOne(c => c.RegraAjuste, regraAjuste => regraAjuste.ConfigurarReferenciaRegra("regra_ajuste"));
-        builder.Navigation(c => c.RegraAjuste).IsRequired(false);
-
-        // Coleção filha: entidade própria com FK para a raiz (nunca owned types).
+    // Coleções filhas: entidades próprias com FK para a raiz (nunca owned types), substituídas por inteiro a
+    // cada redefinição. O quadro de vagas é derivado e se materializa junto da declaração (ADR-0115).
+    private static void ConfigurarFilhas(EntityTypeBuilder<ConfiguracaoDistribuicaoVagas> builder)
+    {
         builder.HasMany(c => c.Modalidades)
             .WithOne()
             .HasForeignKey(m => m.ConfiguracaoDistribuicaoVagasId)
             .HasConstraintName("fk_modalidades_selecionadas_configuracao_de_vagas")
             .OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(c => c.Modalidades).UsePropertyAccessMode(PropertyAccessMode.Field);
 
-        builder.Navigation(c => c.Modalidades)
-            .UsePropertyAccessMode(PropertyAccessMode.Field);
-
-        // O quadro de vagas (issue #848/ADR-0115) — output derivado, materializado
-        // dentro da mesma factory que os insumos (ADR-0115), nunca por comando
-        // separado. Mesma forma de mapeamento das Modalidades: entidade própria,
-        // FK para a raiz, substituída por inteiro a cada redefinição.
         builder.HasMany(c => c.VagasOfertadas)
             .WithOne()
             .HasForeignKey(v => v.ConfiguracaoDistribuicaoVagasId)
             .HasConstraintName("fk_vagas_ofertadas_configuracao_de_vagas")
             .OnDelete(DeleteBehavior.Cascade);
-
-        builder.Navigation(c => c.VagasOfertadas)
-            .UsePropertyAccessMode(PropertyAccessMode.Field);
-
-        // UNIQUE parcial: uma configuração de distribuição por oferta de curso
-        // dentro do mesmo processo (INV do agregado, ProcessoSeletivo.OfertaCursoDuplicada).
-        builder.HasIndex(c => new { c.ProcessoSeletivoId, c.OfertaCursoOrigemId })
-            .IsUnique()
-            .HasDatabaseName("ux_configuracoes_de_vagas_processo_oferta");
+        builder.Navigation(c => c.VagasOfertadas).UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }

@@ -27,7 +27,7 @@ using Unifesspa.UniPlus.Regras.Serializacao;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
-/// Avalia a configuração viva do processo — rascunho ou sessão de retificação, nunca o envelope
+/// Avalia a configuração viva do processo — o rascunho, nunca o envelope
 /// publicado — contra um perfil simulado de candidato: o que cada formulário mostra e exige e os
 /// documentos que a árvore de exigências pediria (UNI-REQ-0144, UNI-REQ-0145, UNI-REQ-0064).
 /// </summary>

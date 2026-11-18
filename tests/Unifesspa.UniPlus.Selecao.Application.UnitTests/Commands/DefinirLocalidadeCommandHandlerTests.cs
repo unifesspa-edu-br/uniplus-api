@@ -26,16 +26,16 @@ public sealed class DefinirLocalidadeCommandHandlerTests
 
     private static ProcessoSeletivo NovoProcesso() => ProcessoSeletivo.Criar(
         "PS 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-        UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+        UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     [Fact(DisplayName = "Handle com processo inexistente retorna ProcessoSeletivo.NaoEncontrado")]
     public async Task Handle_ProcessoInexistente_RetornaNaoEncontrado()
     {
         Mocks mocks = NovosMocks(null, Guid.CreateVersion7());
-        DefinirLocalidadeCommand command = new(Guid.CreateVersion7(), "1501402", "Belém", "PA", PrecondicaoIfMatch.Ausente);
+        DefinirLocalidadeCommand command = new(Guid.CreateVersion7(), "1501402", "Belém", "PA");
 
-        Result<MutacaoAceita> result = await DefinirLocalidadeCommandHandler.Handle(
+        Result result = await DefinirLocalidadeCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
@@ -47,9 +47,9 @@ public sealed class DefinirLocalidadeCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirLocalidadeCommand command = new(processo.Id, "1501402", "Belém", "PA", PrecondicaoIfMatch.Ausente);
+        DefinirLocalidadeCommand command = new(processo.Id, "1501402", "Belém", "PA");
 
-        Result<MutacaoAceita> result = await DefinirLocalidadeCommandHandler.Handle(
+        Result result = await DefinirLocalidadeCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
@@ -68,12 +68,12 @@ public sealed class DefinirLocalidadeCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirLocalidade(
-            LocalidadeRegente.Criar("1504208", "Maraba sem acento", "PA").Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            LocalidadeRegente.Criar("1504208", "Maraba sem acento", "PA").Value!).IsSuccess.Should().BeTrue();
 
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirLocalidadeCommand command = new(processo.Id, "1504208", "Marabá", "PA", PrecondicaoIfMatch.Ausente);
+        DefinirLocalidadeCommand command = new(processo.Id, "1504208", "Marabá", "PA");
 
-        Result<MutacaoAceita> result = await DefinirLocalidadeCommandHandler.Handle(
+        Result result = await DefinirLocalidadeCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
@@ -85,9 +85,9 @@ public sealed class DefinirLocalidadeCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirLocalidadeCommand command = new(processo.Id, null, null, null, PrecondicaoIfMatch.Ausente);
+        DefinirLocalidadeCommand command = new(processo.Id, null, null, null);
 
-        Result<MutacaoAceita> result = await DefinirLocalidadeCommandHandler.Handle(
+        Result result = await DefinirLocalidadeCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
@@ -101,9 +101,9 @@ public sealed class DefinirLocalidadeCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirLocalidadeCommand command = new(processo.Id, "1504208", "Marabá", "SP", PrecondicaoIfMatch.Ausente);
+        DefinirLocalidadeCommand command = new(processo.Id, "1504208", "Marabá", "SP");
 
-        Result<MutacaoAceita> result = await DefinirLocalidadeCommandHandler.Handle(
+        Result result = await DefinirLocalidadeCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();

@@ -33,7 +33,7 @@ public sealed record ArvoreExigenciasCongelada
     }
 
     /// <summary>
-    /// A floresta da configuração viva do processo — rascunho ou sessão de retificação —, para a
+    /// A floresta da configuração viva do processo — o rascunho —, para a
     /// pré-visualização: mostra o que a configuração em edição exigiria, não o que foi publicado.
     /// </summary>
     public static ArvoreExigenciasCongelada DaConfiguracaoViva(ProcessoSeletivo processo)

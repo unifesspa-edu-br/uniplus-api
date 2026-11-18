@@ -10,6 +10,8 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -26,15 +28,15 @@ public sealed class DefinirConfiguracaoDivulgacaoCommandHandlerTests
 
     private static ProcessoSeletivo NovoProcesso() => ProcessoSeletivo.Criar(
         "PS 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-        UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+        UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
     [Fact(DisplayName = "Handle com processo inexistente retorna ProcessoSeletivo.NaoEncontrado")]
     public async Task Handle_ProcessoInexistente_RetornaNaoEncontrado()
     {
         Mocks mocks = NovosMocks(null, Guid.CreateVersion7());
-        DefinirConfiguracaoDivulgacaoCommand command = new(Guid.CreateVersion7(), null, null, PrecondicaoIfMatch.Ausente);
+        DefinirConfiguracaoDivulgacaoCommand command = new(Guid.CreateVersion7(), null, null);
 
-        Result<MutacaoAceita> result = await DefinirConfiguracaoDivulgacaoCommandHandler.Handle(
+        Result result = await DefinirConfiguracaoDivulgacaoCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
@@ -46,13 +48,12 @@ public sealed class DefinirConfiguracaoDivulgacaoCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirConfiguracaoDivulgacao(
-            ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome_abreviado"], null).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome_abreviado"], null).Value!).IsSuccess.Should().BeTrue();
 
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirConfiguracaoDivulgacaoCommand command = new(processo.Id, null, null, PrecondicaoIfMatch.Ausente);
+        DefinirConfiguracaoDivulgacaoCommand command = new(processo.Id, null, null);
 
-        Result<MutacaoAceita> result = await DefinirConfiguracaoDivulgacaoCommandHandler.Handle(
+        Result result = await DefinirConfiguracaoDivulgacaoCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
@@ -66,9 +67,9 @@ public sealed class DefinirConfiguracaoDivulgacaoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(processo, processo.Id);
         DefinirConfiguracaoDivulgacaoCommand command = new(
-            processo.Id, ["numero_inscricao", "nome"], "Ampliação para dar transparência ao resultado.", PrecondicaoIfMatch.Ausente);
+            processo.Id, ["numero_inscricao", "nome"], "Ampliação para dar transparência ao resultado.");
 
-        Result<MutacaoAceita> result = await DefinirConfiguracaoDivulgacaoCommandHandler.Handle(
+        Result result = await DefinirConfiguracaoDivulgacaoCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
@@ -83,9 +84,9 @@ public sealed class DefinirConfiguracaoDivulgacaoCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirConfiguracaoDivulgacaoCommand command = new(processo.Id, ["numero_inscricao", "cpf"], null, PrecondicaoIfMatch.Ausente);
+        DefinirConfiguracaoDivulgacaoCommand command = new(processo.Id, ["numero_inscricao", "cpf"], null);
 
-        Result<MutacaoAceita> result = await DefinirConfiguracaoDivulgacaoCommandHandler.Handle(
+        Result result = await DefinirConfiguracaoDivulgacaoCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
@@ -99,119 +100,27 @@ public sealed class DefinirConfiguracaoDivulgacaoCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirConfiguracaoDivulgacao(
-            ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome_abreviado"], null).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome_abreviado"], null).Value!).IsSuccess.Should().BeTrue();
 
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirConfiguracaoDivulgacaoCommand command = new(processo.Id, ["numero_inscricao"], null, PrecondicaoIfMatch.Ausente);
+        DefinirConfiguracaoDivulgacaoCommand command = new(processo.Id, ["numero_inscricao"], null);
 
-        Result<MutacaoAceita> result = await DefinirConfiguracaoDivulgacaoCommandHandler.Handle(
+        Result result = await DefinirConfiguracaoDivulgacaoCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         processo.ConfiguracaoDivulgacao!.CamposPublicos.Should().Equal("numero_inscricao");
     }
 
-    /// <summary>
-    /// Monta um processo minimamente conforme e já publicado (mesmo par exigido pelo gate de
-    /// conformidade de <see cref="ProcessoSeletivo.Publicar"/>) — replicado aqui, mesmo molde
-    /// de <see cref="DefinirBonusRegionalCommandHandlerTests.NovoProcessoPublicado"/>, para
-    /// exercitar o bloqueio de mutação pós-publicação SEM sessão editorial (CA-06).
-    /// </summary>
-    private static ProcessoSeletivo NovoProcessoPublicado()
+    [Fact(DisplayName = "Handle com processo já publicado propaga MutacaoPosPublicacaoBloqueada e NÃO persiste (CA-06)")]
+    public async Task Handle_ProcessoPublicado_PropagaBloqueioENaoPersiste()
     {
-        ProcessoSeletivo processo = NovoProcesso();
-
-        processo.DefinirAtendimentoEspecializado(
-            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        string hashFixo = string.Concat(Enumerable.Repeat("ab01234567", 7))[..64];
-        ReferenciaRegra regraDistribuicao = ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", hashFixo).Value!;
-        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
-            modalidadeOrigemId: Guid.CreateVersion7(),
-            codigo: "AC",
-            descricao: null,
-            naturezaLegal: NaturezaLegalModalidade.Ampla,
-            composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
-            composicaoOrigemCodigo: null,
-            regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
-            remanejamentoDestino: null,
-            remanejamentoPar: null,
-            remanejamentoFallback: null,
-            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
-            acaoQuandoIndeferido: null,
-            baseLegal: "Res. Unifesspa 532/2021",
-            quantidadeDeclarada: 40).Value!;
-        ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
-            ofertaCursoOrigemId: Guid.CreateVersion7(),
-            voBase: 40,
-            pr: 1m,
-            regraDistribuicao: regraDistribuicao,
-            regraAjuste: null,
-            referenciaDemografica: null,
-            modalidades: [modalidade], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        ReferenciaRegra regraCalculo = ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", hashFixo).Value!;
-        ReferenciaRegra regraOrdemAlocacao = ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", hashFixo).Value!;
-        ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
-            regraCalculo: regraCalculo,
-            regraArredondamento: null,
-            casasArredondamento: null,
-            regraOrdemAlocacao: regraOrdemAlocacao,
-            regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!;
-        processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        FaseCronograma faseConforme = FaseCronograma.Criar(
-            ordem: 1,
-            faseCanonicaOrigemId: Guid.CreateVersion7(),
-            codigo: "RESULTADO_FINAL",
-            origemData: OrigemDataFase.NoEdital,
-            agrupaEtapas: true,
-            permiteComplementacao: false,
-            coletaInscricao: true, coletaSolicitacaoIsencao: false,
-            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-            fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
-            faseConcluinteCodigo: null,
-            emiteParecerIndividual: false,
-            bancasRequeridas: [],
-            regraRecurso: null,
-            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
-        processo.DefinirCronogramaFases([faseConforme], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirEtapas([
-            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: "RESULTADO_FINAL").Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
-        processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
-
-        DadosEdital dados = DadosEdital.Criar(
-            numero: "001/2026",
-            periodoInscricaoInicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
-            periodoInscricaoFim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
-            documentoEditalId: Guid.CreateVersion7()).Value!;
-        byte[] bytesCanonicos = System.Text.Encoding.UTF8.GetBytes(
-            new System.Text.Json.Nodes.JsonObject { ["status"] = "ok" }.ToJsonString());
-        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
-        processo.Publicar(dados, bytesCanonicos, "1.0", "canonical-json/sha256@v1", hashFixo, "user-conta-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
-            .IsSuccess.Should().BeTrue();
-
-        return processo;
-    }
-
-    [Fact(DisplayName = "Handle com processo já publicado (SEM sessão editorial) propaga MutacaoPosPublicacaoBloqueada e NÃO persiste (CA-06)")]
-    public async Task Handle_ProcessoPublicadoSemSessao_PropagaBloqueioENaoPersiste()
-    {
-        ProcessoSeletivo processo = NovoProcessoPublicado();
+        ProcessoSeletivo processo = ApoioDaCascataDeRemanejamento.NovoProcessoPublicado();
         Mocks mocks = NovosMocks(processo, processo.Id);
         DefinirConfiguracaoDivulgacaoCommand command = new(
-            processo.Id, ["numero_inscricao", "nome_abreviado"], null, PrecondicaoIfMatch.Ausente);
+            processo.Id, ["numero_inscricao", "nome_abreviado"], null);
 
-        Result<MutacaoAceita> result = await DefinirConfiguracaoDivulgacaoCommandHandler.Handle(
+        Result result = await DefinirConfiguracaoDivulgacaoCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();

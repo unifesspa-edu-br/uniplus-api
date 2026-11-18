@@ -18,7 +18,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Classificacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
@@ -33,10 +32,10 @@ internal static class RegrasDoAtendimentoEspecializado
 {
     // Condição e recurso são citados por código, não por Guid: só recusa se o novo conjunto de
     // condições e recursos ofertados deixar de conter um código hoje referenciado por condição viva.
-    internal static DomainError? Recusa(EstadoDaConfiguracao estado, AtendimentoEspecializado atendimento)
+    internal static DomainError? Recusa(ConfiguracaoDeclarada configuracao, AtendimentoEspecializado atendimento)
     {
         HashSet<string> novosCodigos = [.. atendimento.Condicoes.Select(c => c.CondicaoCodigo)];
-        if (ReferenciasVivas.ReferenciaDinamicaSeriaInvalidada(estado, AtendimentoEspecializado.FatoCondicaoAtendimento, novosCodigos))
+        if (ReferenciasVivas.ReferenciaDinamicaSeriaInvalidada(configuracao, AtendimentoEspecializado.FatoCondicaoAtendimento, novosCodigos))
         {
             return new DomainError(
                 "ProcessoSeletivo.CondicaoAtendimentoReferenciadaPorExigenciaViva",
@@ -44,7 +43,7 @@ internal static class RegrasDoAtendimentoEspecializado
         }
 
         HashSet<string> novosRecursos = [.. atendimento.Recursos.Select(static r => r.RecursoCodigo)];
-        return ReferenciasVivas.ReferenciaDinamicaSeriaInvalidada(estado, AtendimentoEspecializado.FatoRecursoAcessibilidade, novosRecursos)
+        return ReferenciasVivas.ReferenciaDinamicaSeriaInvalidada(configuracao, AtendimentoEspecializado.FatoRecursoAcessibilidade, novosRecursos)
             ? new DomainError(
                 ProcessoSeletivoErrorCodes.RecursoAcessibilidadeReferenciadoPorCondicaoViva,
                 "Existe condição referenciando um código de recurso de acessibilidade que deixaria de ser ofertado — ajuste ou remova a condição antes de redefinir o atendimento especializado.")

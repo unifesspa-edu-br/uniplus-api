@@ -2,10 +2,15 @@ namespace Unifesspa.UniPlus.Configuracao.Application.UnitTests.Commands;
 
 using AwesomeAssertions;
 
+using Microsoft.EntityFrameworkCore;
+
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.OfertasCurso;
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
+using Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
@@ -27,14 +32,16 @@ public sealed class AtualizarOfertaCursoCommandHandlerTests
 
     private static OfertaCurso OfertaExistente(UnidadeOfertante? unidade = null) =>
         OfertaCurso.Criar(
-            CursoId, LocalOfertaId, unidade ?? Unidade(), "REGULAR", "PRESENCIAL",
-            "EXTENSIVO", "REGULAR", ["MATUTINO"], "123456", "ENG-01", 40, null, null).Value!;
+            CursoId, LocalOfertaId, unidade ?? Unidade(),
+            new DeclaracaoDaOfertaDeCurso(
+                "ENF_BACHARELADO_MARABA", "REGULAR", "PRESENCIAL", "EXTENSIVO", "REGULAR", ["MATUTINO"], "123456", "ENG-01", 40)).Value!;
 
     private static AtualizarOfertaCursoCommand Comando(
         Guid id,
+        string codigo = "ENF_BACH_MARABA",
         string programa = "REGULAR",
         string? baseLegal = null) =>
-        new(id, programa, RegimeDeFuncionamento: "EXTENSIVO", RegimeDeTurno: "INTEGRAL",
+        new(id, codigo, programa, RegimeDeFuncionamento: "EXTENSIVO", RegimeDeTurno: "INTEGRAL",
             Turnos: ["NOTURNO", "VESPERTINO"],
             FormatoPedagogico: "EAD", EMecCodigo: "654321", CodigoSga: "ENG-02",
             VagasAnuaisAutorizadas: 60, BaseLegal: baseLegal, AtoAutorizacaoMec: null);
@@ -98,6 +105,54 @@ public sealed class AtualizarOfertaCursoCommandHandlerTests
         resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.ProgramaDeOfertaInvalido);
         await _repository.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Atualização troca o código da oferta e mantém a identidade")]
+    public async Task Handle_TrocaDeCodigo_PersisteMantendoOId()
+    {
+        OfertaCurso oferta = OfertaExistente();
+        Guid id = oferta.Id;
+        _repository.ObterPorIdAsync(id, Arg.Any<CancellationToken>()).Returns(oferta);
+
+        Result resultado = await AtualizarOfertaCursoCommandHandler.Handle(
+            Comando(id, codigo: "ENF_BACH_MARABA"), _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue();
+        oferta.Codigo.Should().Be("ENF_BACH_MARABA");
+        oferta.Id.Should().Be(id);
+        await _repository.Received(1).CodigoExisteEntreVivosAsync("ENF_BACH_MARABA", id, Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Código de outra oferta viva é recusado com CodigoJaEmUso, sem persistir")]
+    public async Task Handle_CodigoDeOutraOferta_RetornaConflito()
+    {
+        OfertaCurso oferta = OfertaExistente();
+        _repository.ObterPorIdAsync(oferta.Id, Arg.Any<CancellationToken>()).Returns(oferta);
+        _repository.CodigoExisteEntreVivosAsync("ENF_BACH_MARABA", oferta.Id, Arg.Any<CancellationToken>()).Returns(true);
+
+        Result resultado = await AtualizarOfertaCursoCommandHandler.Handle(
+            Comando(oferta.Id), _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.CodigoJaEmUso);
+        oferta.Codigo.Should().Be("ENF_BACHARELADO_MARABA", "a recusa vem antes de qualquer mutação");
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Corrida no índice único do código: a violação vira CodigoJaEmUso e o rastreamento é descartado")]
+    public async Task Handle_ViolacaoDoIndiceDoCodigo_RetornaConflitoEDescarta()
+    {
+        OfertaCurso oferta = OfertaExistente();
+        _repository.ObterPorIdAsync(oferta.Id, Arg.Any<CancellationToken>()).Returns(oferta);
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
+            .ThrowsAsync(new DbUpdateException(
+                "violação sintética de teste",
+                PostgresExceptionFactory.Create("23505", RestricoesDoBanco.OfertaDeCursoCodigoVivo)));
+
+        Result resultado = await AtualizarOfertaCursoCommandHandler.Handle(
+            Comando(oferta.Id), _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.CodigoJaEmUso);
+        _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
     }
 
     [Fact(DisplayName = "Atualizar preserva curso, local e unidade ofertante (imutáveis — não trafegam no comando)")]

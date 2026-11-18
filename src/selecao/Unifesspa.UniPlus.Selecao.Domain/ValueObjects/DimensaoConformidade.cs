@@ -43,4 +43,28 @@ public static class DimensaoConformidade
     /// pode estar inteiramente coerente e a contagem continuar indeterminada.
     /// </summary>
     public const string ContagemDePrazos = "contagem_de_prazos";
+
+    private static readonly Dictionary<string, string> BlocosDoDocumento = new(StringComparer.Ordinal)
+    {
+        [Identificacao] = "identificacao",
+        [ContagemDePrazos] = "identificacao",
+        [AtendimentoEspecializado] = "atendimento",
+        [DistribuicaoVagas] = "distribuicaoVagas",
+        [Classificacao] = "classificacao",
+        [Desempate] = "classificacao",
+        [Cronograma] = "cronograma",
+        [Etapas] = "etapas",
+        [TaxaInscricao] = "taxaDeInscricao",
+        [ExigenciasDocumentais] = "documentosExigidos",
+        [CascataRemanejamento] = "cascataRemanejamento",
+        [ColetaDeFatos] = "coleta",
+        [BonusRegional] = "bonusRegional",
+    };
+
+    /// <summary>O bloco do documento de configuração em que a pendência da dimensão se corrige.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">A dimensão não é uma das conhecidas.</exception>
+    public static string BlocoDoDocumento(string dimensao) =>
+        dimensao is not null && BlocosDoDocumento.TryGetValue(dimensao, out string? bloco)
+            ? bloco
+            : throw new ArgumentOutOfRangeException(nameof(dimensao), dimensao, "Dimensão de conformidade desconhecida.");
 }

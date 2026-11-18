@@ -64,22 +64,18 @@ public sealed class BancaDaEtapa : EntityBase
     }
 
     /// <summary>
-    /// Alinha nome e regra desta linha viva aos da declaração que a substitui: a etapa reaproveita a
-    /// linha de mesmo código, e o que não é a origem do tipo precisa acompanhá-la.
+    /// Assume a declaração que substitui esta linha, preservando o <see cref="EntityBase.Id"/>: a etapa
+    /// reaproveita a linha de mesmo código, porque o código é a chave do índice único da etapa e sair e
+    /// voltar sob ele colidiria dentro da própria transação.
     /// </summary>
-    internal void Redeclarar(BancaDaEtapa declarada)
+    internal void AssumirDeclaracao(BancaDaEtapa declarada)
     {
         ArgumentNullException.ThrowIfNull(declarada);
 
+        TipoBancaOrigemId = declarada.TipoBancaOrigemId;
         Nome = declarada.Nome;
         RegraDeDeliberacao = declarada.RegraDeDeliberacao;
     }
-
-    /// <summary>
-    /// Repõe o tipo de origem preservando a linha — o código é a chave do índice único da
-    /// etapa, e sair e voltar sob o mesmo código colidiria dentro da própria transação.
-    /// </summary>
-    internal void ReporOrigem(Guid tipoBancaOrigemId) => TipoBancaOrigemId = tipoBancaOrigemId;
 
     internal void VincularEtapa(Guid etapaProcessoId) => EtapaProcessoId = etapaProcessoId;
 }

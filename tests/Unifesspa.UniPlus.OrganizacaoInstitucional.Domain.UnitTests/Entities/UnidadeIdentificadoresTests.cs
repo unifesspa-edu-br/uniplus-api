@@ -90,4 +90,68 @@ public sealed class UnidadeIdentificadoresTests
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Sigla.Should().Be("CEPS");
     }
+
+    private static IdentificadoresDaUnidade ComCodigo(string codigo) => new(UnidadeDeTeste.SlugDoCeps.Valor, "CEPS", codigo, null);
+
+    private static Result AtualizarOCodigo(string codigo) =>
+        UnidadeDeTeste.Criar().Value!.Atualizar(
+            "Centro de Processos Seletivos",
+            new MudancaDeIdentificadores(ComCodigo(codigo), UnidadeDeTeste.InicioDaVigencia.AddMonths(1), null),
+            CidadeDaUnidade.Nenhuma,
+            null,
+            null,
+            TipoUnidade.Centro,
+            false);
+
+    [Theory(DisplayName = "Criar recusa no campo codigo o código fora do formato que o documento de configuração aceita")]
+    [InlineData("CEPS/01")]
+    [InlineData("CEPS 01")]
+    [InlineData(".CEPS")]
+    [InlineData("-CEPS")]
+    [InlineData("ÇEPS")]
+    [InlineData("7d6c1f3e-0a5b-4c2d-9e8f-1a2b3c4d5e6f")]
+    public void Criar_ComCodigoForaDoFormato_RecusaNoCampoCodigo(string codigo)
+    {
+        Result<Unidade> resultado = UnidadeDeTeste.Criar(ComCodigo(codigo));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Select(static causa => (causa.Field, causa.Error.Code)).Should().Equal(("codigo", UnidadeErrorCodes.CodigoFormatoInvalido));
+    }
+
+    [Theory(DisplayName = "Atualizar recusa no campo codigo o código fora do formato que o documento de configuração aceita")]
+    [InlineData("CEPS/01")]
+    [InlineData("CEPS 01")]
+    [InlineData(".CEPS")]
+    [InlineData("-CEPS")]
+    [InlineData("ÇEPS")]
+    [InlineData("7d6c1f3e-0a5b-4c2d-9e8f-1a2b3c4d5e6f")]
+    public void Atualizar_ComCodigoForaDoFormato_RecusaNoCampoCodigo(string codigo)
+    {
+        Result resultado = AtualizarOCodigo(codigo);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Select(static causa => (causa.Field, causa.Error.Code)).Should().Equal(("codigo", UnidadeErrorCodes.CodigoFormatoInvalido));
+    }
+
+    [Theory(DisplayName = "Criar aceita o código com letras, números, ponto, hífen e sublinhado")]
+    [InlineData("CEPS")]
+    [InlineData("CEPS.01")]
+    [InlineData("CEPS-01")]
+    [InlineData("CEPS_01")]
+    [InlineData("11.01.04")]
+    public void Criar_ComCodigoNoFormato_Aceita(string codigo) =>
+        UnidadeDeTeste.Criar(ComCodigo(codigo)).Value!.Codigo.Should().Be(codigo);
+
+    [Theory(DisplayName = "Atualizar aceita o código com letras, números, ponto, hífen e sublinhado")]
+    [InlineData("CEPS")]
+    [InlineData("CEPS.01")]
+    [InlineData("CEPS-01")]
+    [InlineData("CEPS_01")]
+    [InlineData("11.01.04")]
+    public void Atualizar_ComCodigoNoFormato_Aceita(string codigo) =>
+        AtualizarOCodigo(codigo).IsSuccess.Should().BeTrue();
+
+    [Fact(DisplayName = "O código acima do tamanho é recusado como tamanho, e não como formato")]
+    public void Criar_ComCodigoMuitoLongo_RecusaPeloTamanho() =>
+        UnidadeDeTeste.Criar(ComCodigo(new string('A', 51))).Error!.Code.Should().Be(UnidadeErrorCodes.CodigoTamanho);
 }

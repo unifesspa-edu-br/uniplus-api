@@ -93,32 +93,31 @@ public sealed class RegrasCatalogoEndpointTests : IAsyncLifetime
             _fixture.Factory.Services, Leandro, perfil, EscopoDaConcessao.DaUnidade(Guid.CreateVersion7()));
     }
 
-    [Fact(DisplayName = "GET /regras-catalogo devolve entradas com código, versão, tipo, esquema de argumentos, hash e _links")]
+    [Fact(DisplayName = "GET /regras-catalogo devolve entradas com código, versão, tipo, declaração, hash e _links")]
     public async Task Listar_DevolveARepresentacaoCompleta()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
 
         using JsonDocument doc = await ListarAsync(client, "?limit=5");
 
-        JsonElement primeira = doc.RootElement.EnumerateArray().First();
-        primeira.GetProperty("codigo").GetString().Should().NotBeNullOrWhiteSpace();
-        primeira.GetProperty("versao").GetString().Should().NotBeNullOrWhiteSpace();
-        primeira.GetProperty("tipo").GetString().Should().NotBeNullOrWhiteSpace();
-        primeira.GetProperty("hash").GetString().Should().HaveLength(64);
-        primeira.GetProperty("baseLegal").GetString().Should().NotBeNull();
+        ConferirRepresentacao(doc.RootElement.EnumerateArray().First());
+    }
 
-        // esquemaArgs e invariantes atravessam como JSON, não como texto escapado — o cliente
-        // não precisa desserializar de novo o que já era JSON.
-        primeira.GetProperty("esquemaArgs").ValueKind.Should().NotBe(JsonValueKind.String);
-        primeira.GetProperty("invariantes").ValueKind.Should().NotBe(JsonValueKind.String);
-
-        primeira.GetProperty("_links").GetProperty("self").GetString()
-            .Should().Contain("/versoes/", "o self aponta para a versão, que é o que um rascunho referencia");
+    private static void ConferirRepresentacao(JsonElement regra)
+    {
+        regra.GetProperty("codigo").GetString().Should().NotBeNullOrWhiteSpace();
+        regra.GetProperty("versao").GetString().Should().NotBeNullOrWhiteSpace();
+        regra.GetProperty("tipo").GetString().Should().NotBeNullOrWhiteSpace();
+        regra.GetProperty("hash").GetString().Should().HaveLength(64);
+        regra.GetProperty("baseLegal").GetString().Should().NotBeNull();
+        regra.GetProperty("declaracaoDaRegra").ValueKind.Should().NotBe(JsonValueKind.String);
+        regra.GetProperty("invariantes").ValueKind.Should().NotBe(JsonValueKind.String);
+        regra.GetProperty("_links").GetProperty("self").GetString().Should().Contain("/versoes/");
     }
 
     /// <summary>
     /// O rol chega ao cliente como campo tipado, não como leitura de dentro de
-    /// <c>esquemaArgs</c> — o esquema é aberto por contrato, e ler uma chave nomeada de dentro
+    /// <c>declaracaoDaRegra</c> — o esquema é aberto por contrato, e ler uma chave nomeada de dentro
     /// dele criaria acoplamento que nenhum gate protege.
     /// </summary>
     [Fact(DisplayName = "modalidadesAdmitidas: rol fechado como array tipado, rol aberto como null")]
@@ -129,7 +128,12 @@ public sealed class RegrasCatalogoEndpointTests : IAsyncLifetime
         using JsonDocument doc = await ListarAsync(
             client, $"?tipo={TipoRegraCodigo.RegraDistribuicaoVagas}&limit=10");
 
-        JsonElement[] regras = [.. doc.RootElement.EnumerateArray()];
+        ConferirModalidadesAdmitidas(doc.RootElement);
+    }
+
+    private static void ConferirModalidadesAdmitidas(JsonElement resultado)
+    {
+        JsonElement[] regras = [.. resultado.EnumerateArray()];
 
         JsonElement psiq = regras.Single(r => r.GetProperty("codigo").GetString() == RegraDistribuicaoVagasCodigo.Psiq);
         JsonElement modalidadesPsiq = psiq.GetProperty("modalidadesAdmitidas");
@@ -140,6 +144,32 @@ public sealed class RegrasCatalogoEndpointTests : IAsyncLifetime
         JsonElement institucional = regras.Single(r => r.GetProperty("codigo").GetString() == RegraDistribuicaoVagasCodigo.Institucional);
         institucional.GetProperty("modalidadesAdmitidas").ValueKind.Should().Be(
             JsonValueKind.Null, "rol aberto — a regra institucional não restringe o conjunto");
+    }
+
+    [Fact(DisplayName = "ramoDaDistribuicao: a regra de distribuição diz o ramo do quadro; regra de outro tipo vem com null")]
+    public async Task Listar_ExpoeORamoDaDistribuicao()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        using JsonDocument distribuicao = await ListarAsync(
+            client, $"?tipo={TipoRegraCodigo.RegraDistribuicaoVagas}&limit=10");
+        using JsonDocument desempate = await ListarAsync(client, $"?tipo={TipoRegraCodigo.CriterioDesempate}");
+
+        ConferirRamosDeDistribuicao(distribuicao.RootElement);
+        desempate.RootElement.EnumerateArray()
+            .Should().AllSatisfy(r => r.GetProperty("ramoDaDistribuicao").ValueKind.Should().Be(JsonValueKind.Null));
+    }
+
+    private static void ConferirRamosDeDistribuicao(JsonElement resultado)
+    {
+        Dictionary<string, string?> ramoPorRegra = resultado.EnumerateArray().ToDictionary(
+            static r => r.GetProperty("codigo").GetString()!, static r => r.GetProperty("ramoDaDistribuicao").GetString(), StringComparer.Ordinal);
+        ramoPorRegra.Values.Should().AllSatisfy(static ramo => ramo.Should().NotBeNull("toda regra de distribuição pertence a um dos dois ramos"));
+        ramoPorRegra[RegraDistribuicaoVagasCodigo.Lei12711].Should().Be("LEI_DE_COTAS");
+        ramoPorRegra[RegraDistribuicaoVagasCodigo.Lei12711ComAcPcd].Should().Be("LEI_DE_COTAS");
+        ramoPorRegra[RegraDistribuicaoVagasCodigo.Institucional].Should().Be("QUADRO_FIXADO_NO_EDITAL");
+        ramoPorRegra[RegraDistribuicaoVagasCodigo.Psiq].Should().Be("QUADRO_FIXADO_NO_EDITAL");
+        ramoPorRegra[RegraDistribuicaoVagasCodigo.ComAcPcd].Should().Be("QUADRO_FIXADO_NO_EDITAL");
     }
 
     [Fact(DisplayName = "O filtro aceita o mesmo código de tipo que a resposta devolve — quem relê um valor da API e o usa como filtro é atendido")]
