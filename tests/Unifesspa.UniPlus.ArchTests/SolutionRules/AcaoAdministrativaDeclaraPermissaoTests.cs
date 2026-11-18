@@ -29,6 +29,7 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Queries.CampoDaInscricao;
 using Unifesspa.UniPlus.Selecao.Application.Queries.DocumentosDaInscricao;
 using Unifesspa.UniPlus.Selecao.Application.Queries.InscricoesDoProcesso;
+using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
 /// <summary>
 /// Toda action de qualquer módulo que não é anônima nem identificada por política de identidade declara a permissão
@@ -108,6 +109,16 @@ public sealed class AcaoAdministrativaDeclaraPermissaoTests
     };
 
     /// <summary>
+    /// A consulta de indicadores depende do estado: processo publicado exige acompanhamento na unidade, enquanto
+    /// rascunho segue a leitura restrita a quem configura. A decisão fica no serviço de Application, que carrega o estado.
+    /// </summary>
+    private static readonly Dictionary<string, Type> DecididasNoServico = new(StringComparer.Ordinal)
+    {
+        [Acao(typeof(IndicadoresDoProcessoController), nameof(IndicadoresDoProcessoController.Obter))] =
+            typeof(IObterIndicadoresDoProcesso),
+    };
+
+    /// <summary>
     /// Actions de qualquer pessoa autenticada: pedir acesso não dá acesso, porque o filtro é a aprovação; o aceite é só
     /// do beneficiário nomeado, conferido pelo e-mail verificado do token; anexar e cancelar são só do solicitante,
     /// antes da primeira decisão; o termo de responsabilidade, texto institucional sem dado pessoal, é lido por quem vai
@@ -181,10 +192,21 @@ public sealed class AcaoAdministrativaDeclaraPermissaoTests
     private static void ConferirAsListasFechadas(IReadOnlyList<Type> controllers)
     {
         HashSet<string> acoes = [.. controllers.SelectMany(static t => ControllersDaSolucao.AcoesDe(t).Select(a => Acao(t, a.Name)))];
-        DecididasNoHandler.Keys.Concat(DePessoaAutenticada).Concat(DoTitular).Should().BeSubsetOf(acoes,
+        DecididasNoHandler.Keys.Concat(DecididasNoServico.Keys).Concat(DePessoaAutenticada).Concat(DoTitular).Should().BeSubsetOf(acoes,
             "a lista fechada só nomeia actions que existem; action removida ou renomeada sai da lista");
         DecididasNoHandler.Values.Should().AllSatisfy(static mensagem => HandlerDe(mensagem)
             .GetParameters().Should().Contain(static p => RecebeOPontoDeDecisao(p.ParameterType)));
+        DecididasNoServico.Values.Should().AllSatisfy(ConferirServicoQueDecideAcesso);
+    }
+
+    private static void ConferirServicoQueDecideAcesso(Type porta)
+    {
+        List<Type> implementacoes = [.. ControllersDaSolucao.TiposCarregaveis(porta.Assembly)
+            .Where(tipo => !tipo.IsAbstract && porta.IsAssignableFrom(tipo))];
+        implementacoes.Should().ContainSingle($"a porta {porta.Name} deve ter uma implementação");
+        implementacoes[0].GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+            .SelectMany(static construtor => construtor.GetParameters())
+            .Should().Contain(static parametro => parametro.ParameterType == typeof(IVerificadorDeAcesso));
     }
 
     /// <summary>O ponto de decisão chega ao handler direto ou pelo serviço de aplicação que o recebe no construtor.</summary>
@@ -196,7 +218,8 @@ public sealed class AcaoAdministrativaDeclaraPermissaoTests
         => [.. controllers.SelectMany(static t => ControllersDaSolucao.AcoesDe(t)
             .Select(a => (Acao: a, Nome: Acao(t, a.Name)))
             .Where(a => !Anonima(t, a.Acao) && !PorPoliticaDeIdentidade(t, a.Acao)
-                && !DeclaraDecisao(t, a.Acao) && !DecididasNoHandler.ContainsKey(a.Nome) && !DePessoaAutenticada.Contains(a.Nome) && !DoTitular.Contains(a.Nome))
+                && !DeclaraDecisao(t, a.Acao) && !DecididasNoHandler.ContainsKey(a.Nome) && !DecididasNoServico.ContainsKey(a.Nome)
+                && !DePessoaAutenticada.Contains(a.Nome) && !DoTitular.Contains(a.Nome))
             .Select(static a => a.Nome))];
 
     /// <summary>Chave da action com o nome completo do controller: controller homônimo de outro módulo não herda a exceção.</summary>

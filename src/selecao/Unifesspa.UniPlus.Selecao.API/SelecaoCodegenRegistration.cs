@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
+using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Infrastructure.ExternalServices;
 
@@ -140,6 +141,10 @@ public static class SelecaoCodegenRegistration
         // Designação de banca: a porta nasce de uma implementação interna do host e o módulo que guarda as designações a
         // substitui por fábrica; a verificação que a usa chega ao handler pelo ponto de decisão.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IDesignacaoDeBanca>();
+
+        // Os indicadores usam uma implementação interna para manter a orquestração encapsulada na Application;
+        // o Wolverine resolve essa porta registrada por DI em vez de tentar gerar um construtor para o concreto.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IObterIndicadoresDoProcesso>();
     }
 
     private static void OptInDasLeiturasDoCronograma(WolverineOptions opts)
