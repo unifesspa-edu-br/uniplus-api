@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.IntegrationTests.Perfis;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text.Json;
 
@@ -18,10 +17,6 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>O que o banco garante sozinho na contenção do perfil: tabelas, unicidade do que está aberto, coerência de cada registro e ordem única da trilha.</summary>
 [Collection(AutorizacaoEndpointCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
 {
     private const string Motivo = "Uso indevido apontado pela gestão.";
@@ -31,7 +26,7 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
     {
     }
 
-    [Fact(DisplayName = "A migration cria as quatro tabelas da contenção, a sequência da trilha e nenhuma chave estrangeira para fora do schema")]
+    [Fact(DisplayName = "A migration cria as quatro tabelas da contenção e a sequência da trilha")]
     public async Task Migration_CriaTabelasESequencia()
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
@@ -46,6 +41,16 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
             SELECT count(*)::int AS "Value" FROM information_schema.sequences
             WHERE sequence_schema = 'autorizacao' AND sequence_name = 'ordem_da_trilha_de_contencao'
             """).SingleAsync();
+        tabelas.Should().Be(4);
+        sequencias.Should().Be(1);
+    }
+
+    [Fact(DisplayName = "A migration não cria chave estrangeira da contenção para outro schema")]
+    public async Task Migration_NaoCriaFkParaForaDaContencao()
+    {
+        await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+
         int fkParaFora = await db.Database.SqlQuery<int>($"""
             SELECT count(*)::int AS "Value"
             FROM pg_constraint c
@@ -56,28 +61,34 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
               AND na.nspname <> 'autorizacao'
             """).SingleAsync();
 
-        tabelas.Should().Be(4);
-        sequencias.Should().Be(1);
         fkParaFora.Should().Be(0);
     }
 
-    [Fact(DisplayName = "O banco barra duas suspensões abertas e duas desativações abertas do mesmo perfil, mas admite outra depois de fechar")]
-    public async Task Banco_BarraDuplicidadeDoQueEstaAberto()
+    [Fact(DisplayName = "O banco barra outra suspensão aberta do mesmo perfil, mas admite outra depois de fechar")]
+    public async Task Banco_BarraSuspensaoAbertaDuplicada()
     {
         Guid perfil = await SemearPerfilVigenteAsync(ConsultarCatalogo);
         Guid suspensao = await InserirSuspensaoAsync(perfil);
-        Guid desativacao = await InserirDesativacaoAsync(perfil);
-
+        await InserirDesativacaoAsync(perfil);
         Func<Task> outraSuspensao = () => InserirSuspensaoAsync(perfil);
-        Func<Task> outraDesativacao = () => InserirDesativacaoAsync(perfil);
 
         await outraSuspensao.Should().ThrowAsync<Npgsql.PostgresException>();
-        await outraDesativacao.Should().ThrowAsync<Npgsql.PostgresException>();
         await ExecutarAsync("UPDATE autorizacao.suspensoes_do_perfil SET retomada_em = now() WHERE id = {0}", suspensao);
+        await InserirSuspensaoAsync(perfil);
+    }
+
+    [Fact(DisplayName = "O banco barra outra desativação aberta do mesmo perfil, mas admite outra depois de fechar")]
+    public async Task Banco_BarraDesativacaoAbertaDuplicada()
+    {
+        Guid perfil = await SemearPerfilVigenteAsync(ConsultarCatalogo);
+        await InserirSuspensaoAsync(perfil);
+        Guid desativacao = await InserirDesativacaoAsync(perfil);
+        Func<Task> outraDesativacao = () => InserirDesativacaoAsync(perfil);
+
+        await outraDesativacao.Should().ThrowAsync<Npgsql.PostgresException>();
         await ExecutarAsync(
             "UPDATE autorizacao.desativacoes_do_perfil SET reativada_em = now(), reativada_por_emissor = 'e', reativada_por_conta_id = 's', motivo_da_reativacao = 'm' WHERE id = {0}",
             desativacao);
-        await InserirSuspensaoAsync(perfil);
         await InserirDesativacaoAsync(perfil);
     }
 
@@ -153,50 +164,72 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
         await acao.Should().ThrowAsync<Npgsql.PostgresException>();
     }
 
-    [Fact(DisplayName = "A gravação síncrona numera o registro novo da trilha pela sequence, como a assíncrona")]
+    [Fact(DisplayName = "A gravação síncrona numera o registro novo da trilha")]
     public async Task Trilha_GravacaoSincrona_NumeraORegistro()
     {
         Guid perfilId = await SemearPerfilVigenteAsync(ConsultarCatalogo);
-        await using (AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope())
-        {
-            IServiceProvider servicos = scope.ServiceProvider;
-            Perfil perfil = (await servicos.GetRequiredService<IPerfilRepository>().ObterParaEditarAsync(perfilId))!;
-            perfil.Suspender(
-                new Identidade("https://idp.test/realms/unifesspa", "diogo.souza", "Diogo Souza"),
-                EtapaDaVersao.GestaoDeAcessos,
-                Motivo,
-                DateTimeOffset.UtcNow,
-                servicos.GetRequiredService<ICatalogoDePermissoesConsultavel>());
+        await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
+        await SuspenderAsync(scope.ServiceProvider, perfilId);
+        scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().SaveChanges();
 
-            servicos.GetRequiredService<UniPlusDbContext>().SaveChanges();
-        }
-
-        (string Tipo, long Ordem)[] registros = await OrdemDosRegistrosAsync(perfilId);
-
-        registros.Should().ContainSingle().Which.Ordem.Should().BePositive();
+        (await OrdemDosRegistrosAsync(perfilId)).Should().ContainSingle().Which.Ordem.Should().BePositive();
     }
 
-    [Fact(DisplayName = "A ordem da trilha é única e crescente entre as quatro tabelas, na ordem em que as operações aconteceram")]
+    [Fact(DisplayName = "A gravação assíncrona numera o registro novo da trilha")]
+    public async Task Trilha_GravacaoAssincrona_NumeraORegistro()
+    {
+        Guid perfilId = await SemearPerfilVigenteAsync(ConsultarCatalogo);
+        await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
+        await SuspenderAsync(scope.ServiceProvider, perfilId);
+        await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().SaveChangesAsync();
+
+        (await OrdemDosRegistrosAsync(perfilId)).Should().ContainSingle().Which.Ordem.Should().BePositive();
+    }
+
+    private static async Task SuspenderAsync(IServiceProvider servicos, Guid perfilId)
+    {
+        Perfil perfil = (await servicos.GetRequiredService<IPerfilRepository>().ObterParaEditarAsync(perfilId))!;
+        perfil.Suspender(
+            new Identidade("https://idp.test/realms/unifesspa", "diogo.souza", "Diogo Souza"),
+            EtapaDaVersao.GestaoDeAcessos,
+            Motivo,
+            DateTimeOffset.UtcNow,
+            servicos.GetRequiredService<ICatalogoDePermissoesConsultavel>());
+    }
+
+    [Fact(DisplayName = "A ordem da trilha é única, crescente e corresponde à leitura")]
     public async Task Trilha_OrdemUnicaEntreAsTabelas()
     {
-        using HttpClient diogo = await ClienteDoGestorAsync();
-        using HttpClient isabella = await ClienteDeOutroGestorAsync();
-        Guid perfil = await SemearPerfilVigenteAsync(ConsultarCatalogo);
-
-        await ConferirAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{perfil}/suspensao", new { motivo = Motivo }), HttpStatusCode.NoContent);
-        await ConferirAsync(
-            await EnviarAsync(isabella, HttpMethod.Post, $"{Rota}/{perfil}/suspensao/retomada", new { etapa = "gestao_de_acessos", motivo = Motivo }),
-            HttpStatusCode.OK);
-        await ConferirAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{perfil}/desativacao", new { motivo = Motivo }), HttpStatusCode.NoContent);
-        await ConferirAsync(await EnviarAsync(isabella, HttpMethod.Post, $"{Rota}/{perfil}/reativacao", new { motivo = Motivo }), HttpStatusCode.NoContent);
-
-        (string Tipo, long Ordem)[] registros = await OrdemDosRegistrosAsync(perfil);
-
-        registros.Select(r => r.Ordem).Should().BeInAscendingOrder().And.OnlyHaveUniqueItems();
-        registros.Select(r => r.Tipo).Should().Equal(
+        CenarioDaTrilha cenario = new(this);
+        await cenario.ExecutarAsync();
+        cenario.Registros.Select(r => r.Ordem).Should().BeInAscendingOrder().And.OnlyHaveUniqueItems();
+        cenario.Registros.Select(r => r.Tipo).Should().Equal(
             "suspensao", "decisao_da_retomada", "retomada", "desativacao", "reativacao");
-        using JsonDocument trilha = JsonDocument.Parse(await (await diogo.GetAsync(new Uri($"{Rota}/{perfil}/contencao", UriKind.Relative))).Content.ReadAsStringAsync());
-        trilha.RootElement.EnumerateArray().Select(r => r.GetProperty("tipo").GetString()).Should().Equal(registros.Select(r => r.Tipo));
+        cenario.Trilha.EnumerateArray().Select(r => r.GetProperty("tipo").GetString())
+            .Should().Equal(cenario.Registros.Select(r => r.Tipo));
+    }
+
+    private sealed class CenarioDaTrilha(PersistenciaDaContencaoTests testes)
+    {
+        public (string Tipo, long Ordem)[] Registros { get; private set; } = [];
+        public JsonElement Trilha { get; private set; }
+
+        public async Task ExecutarAsync()
+        {
+            using HttpClient diogo = await testes.ClienteDoGestorAsync();
+            using HttpClient isabella = await testes.ClienteDeOutroGestorAsync();
+            Guid perfil = await testes.SemearPerfilVigenteAsync(ConsultarCatalogo);
+            await ConferirAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{perfil}/suspensao", new { motivo = Motivo }), HttpStatusCode.NoContent);
+            await ConferirAsync(
+                await EnviarAsync(isabella, HttpMethod.Post, $"{Rota}/{perfil}/suspensao/retomada", new { etapa = "gestao_de_acessos", motivo = Motivo }),
+                HttpStatusCode.OK);
+            await ConferirAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{perfil}/desativacao", new { motivo = Motivo }), HttpStatusCode.NoContent);
+            await ConferirAsync(await EnviarAsync(isabella, HttpMethod.Post, $"{Rota}/{perfil}/reativacao", new { motivo = Motivo }), HttpStatusCode.NoContent);
+            Registros = await testes.OrdemDosRegistrosAsync(perfil);
+            using HttpResponseMessage resposta = await diogo.GetAsync(new Uri($"{Rota}/{perfil}/contencao", UriKind.Relative));
+            using JsonDocument trilha = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+            Trilha = trilha.RootElement.Clone();
+        }
     }
 
     private static string Literal(string? valor) => valor is null ? "NULL" : $"'{valor}'";

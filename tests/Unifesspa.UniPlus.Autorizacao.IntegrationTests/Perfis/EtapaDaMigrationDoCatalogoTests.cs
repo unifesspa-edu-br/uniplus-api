@@ -21,11 +21,12 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 [Collection(AutorizacaoEndpointCollection.Name)]
 public sealed class EtapaDaMigrationDoCatalogoTests : PerfilEndpointTestBase, IDisposable
 {
-    private readonly List<IServiceScope> _escopos = [];
+    private readonly IServiceScope _escopo;
 
     public EtapaDaMigrationDoCatalogoTests(AutorizacaoEndpointFixture fixture)
         : base(fixture)
     {
+        _escopo = Fixture.Factory.Services.CreateScope();
     }
 
     [Fact(DisplayName = "No Job ApplyAndExit a etapa roda sem migration pendente e o Job termina com sucesso")]
@@ -88,13 +89,7 @@ public sealed class EtapaDaMigrationDoCatalogoTests : PerfilEndpointTestBase, ID
         (await ImpressaoAtualAsync()).Should().Be(Fixture.Factory.Services.GetRequiredService<Unifesspa.UniPlus.Authorization.Catalogo.CatalogoDaAplicacao>().Impressao);
     }
 
-    public void Dispose()
-    {
-        foreach (IServiceScope escopo in _escopos)
-        {
-            escopo.Dispose();
-        }
-    }
+    public void Dispose() => _escopo.Dispose();
 
     private Task ImplantarCatalogoDeOutraImpressaoAsync() =>
         ExecutarAsync(
@@ -109,10 +104,7 @@ public sealed class EtapaDaMigrationDoCatalogoTests : PerfilEndpointTestBase, ID
 
     private IHost Montar(Func<IServiceProvider, CancellationToken, Task> etapa)
     {
-        IServiceScope escopo = Fixture.Factory.Services.CreateScope();
-        _escopos.Add(escopo);
-        DbContextOptions<MonolitoDbContext> opcoes = escopo.ServiceProvider.GetRequiredService<DbContextOptions<MonolitoDbContext>>();
-
+        DbContextOptions<MonolitoDbContext> opcoes = _escopo.ServiceProvider.GetRequiredService<DbContextOptions<MonolitoDbContext>>();
         return new HostBuilder()
             .ConfigureServices(services =>
             {

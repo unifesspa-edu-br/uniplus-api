@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.IntegrationTests.Perfis;
 
-using System.Diagnostics.CodeAnalysis;
-
 using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
@@ -12,10 +10,6 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>O que o banco garante sozinho: schema sem chave estrangeira para fora, unicidade de vigente, pendente, vigência aberta e documento vivo.</summary>
 [Collection(AutorizacaoEndpointCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class PersistenciaDoPerfilTests : PerfilEndpointTestBase
 {
     public PersistenciaDoPerfilTests(AutorizacaoEndpointFixture fixture)
@@ -23,7 +17,7 @@ public sealed class PersistenciaDoPerfilTests : PerfilEndpointTestBase
     {
     }
 
-    [Fact(DisplayName = "A migration cria o schema autorizacao sem chave estrangeira para outro schema")]
+    [Fact(DisplayName = "A migration não cria chave estrangeira para outro schema")]
     public async Task Migration_NaoCriaFkEntreSchemas()
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
@@ -38,6 +32,15 @@ public sealed class PersistenciaDoPerfilTests : PerfilEndpointTestBase
             JOIN pg_namespace na ON na.oid = alvo.relnamespace
             WHERE c.contype = 'f' AND no.nspname = 'autorizacao' AND na.nspname <> 'autorizacao'
             """).SingleAsync();
+        fkParaFora.Should().Be(0);
+    }
+
+    [Fact(DisplayName = "A migration cria as tabelas do perfil")]
+    public async Task Migration_CriaTabelasDoPerfil()
+    {
+        await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+
         int tabelas = await db.Database.SqlQuery<int>($"""
             SELECT count(*)::int AS "Value" FROM information_schema.tables
             WHERE table_schema = 'autorizacao'
@@ -47,7 +50,6 @@ public sealed class PersistenciaDoPerfilTests : PerfilEndpointTestBase
             """).SingleAsync();
 
         tabelas.Should().Be(10);
-        fkParaFora.Should().Be(0);
     }
 
     [Fact(DisplayName = "O banco barra duas versões vigentes, duas pendentes e duas vigências abertas do mesmo perfil")]
