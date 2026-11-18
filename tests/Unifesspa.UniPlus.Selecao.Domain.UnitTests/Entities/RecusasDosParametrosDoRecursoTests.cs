@@ -1,9 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
+
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+
 using Xunit;
 
 public sealed class RecusasDosParametrosDoRecursoTests

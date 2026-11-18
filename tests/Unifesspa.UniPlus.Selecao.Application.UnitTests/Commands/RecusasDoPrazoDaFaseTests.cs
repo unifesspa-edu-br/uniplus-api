@@ -1,10 +1,13 @@
 namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 
 using AwesomeAssertions;
+
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+
 using Xunit;
+
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.FasesDoCronogramaDeTeste;
 
 public sealed class RecusasDoPrazoDaFaseTests

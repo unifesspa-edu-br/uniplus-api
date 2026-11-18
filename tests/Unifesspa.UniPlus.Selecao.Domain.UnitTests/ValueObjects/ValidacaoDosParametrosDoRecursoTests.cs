@@ -1,22 +1,31 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ValueObjects;
 
 using AwesomeAssertions;
+
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+
 using Xunit;
 
 public sealed class ValidacaoDosParametrosDoRecursoTests
 {
     private static readonly ParametrosRegraPrazoRecurso Valido = new(1m, UnidadePrazo.Horas, null, null, false, null, null);
 
+    private static ParametrosRegraPrazoRecurso ParametrosComCausasIndependentes => Valido with
+    {
+        PrazoValor = 0,
+        PrazoUnidade = UnidadePrazo.Nenhuma,
+        SuspensividadePrimeiraInstanciaValor = 0,
+        SuspensividadePrimeiraInstanciaUnidade = UnidadePrazo.Nenhuma,
+        AdmiteInstanciaSuperior = true,
+        SuspensividadeSegundaInstanciaValor = 0,
+        SuspensividadeSegundaInstanciaUnidade = UnidadePrazo.Nenhuma
+    };
+
     [Fact]
     public void Validar_CausasIndependentes_RetornaEmOrdemComPrecedencia()
     {
-        ParametrosRegraPrazoRecurso parametros = Valido with { PrazoValor = 0, PrazoUnidade = UnidadePrazo.Nenhuma,
-            SuspensividadePrimeiraInstanciaValor = 0, SuspensividadePrimeiraInstanciaUnidade = UnidadePrazo.Nenhuma,
-            AdmiteInstanciaSuperior = true, SuspensividadeSegundaInstanciaValor = 0, SuspensividadeSegundaInstanciaUnidade = UnidadePrazo.Nenhuma };
-
-        ValidacaoDosParametrosDoRecurso.Validar(parametros).Select(static recusa => recusa.Motivo).Should().Equal(
+        ValidacaoDosParametrosDoRecurso.Validar(ParametrosComCausasIndependentes).Select(static recusa => recusa.Motivo).Should().Equal(
             MotivoDaRecusaDosParametros.PrazoNaoPositivo,
             MotivoDaRecusaDosParametros.SuspensividadeNaoPositiva,
             MotivoDaRecusaDosParametros.SuspensividadeNaoPositiva);

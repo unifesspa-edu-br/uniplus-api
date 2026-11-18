@@ -75,13 +75,13 @@ public sealed class RecursoDaEtapa : EntityBase
 
     private static RecursoDaEtapa Novo(AncoraDoRecurso ancora, ReferenciaRegra regra,
         ParametrosRegraPrazoRecurso parametros, Guid produtoAncoraId, ProcedimentosDeRecurso? procedimentos) => new()
-    {
-        Ancora = ancora,
-        Regra = regra,
-        Parametros = parametros,
-        ProdutoAncoraId = produtoAncoraId,
-        Procedimentos = procedimentos ?? ProcedimentosDeRecurso.Nenhum,
-    };
+        {
+            Ancora = ancora,
+            Regra = regra,
+            Parametros = parametros,
+            ProdutoAncoraId = produtoAncoraId,
+            Procedimentos = procedimentos ?? ProcedimentosDeRecurso.Nenhum,
+        };
 
     private static List<FieldError> Validar(AncoraDoRecurso ancora, ReferenciaRegra regra, ParametrosRegraPrazoRecurso parametros)
     {

@@ -1,10 +1,14 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 
 using System.Text.Json.Nodes;
+
 using AwesomeAssertions;
+
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
+
 using Xunit;
+
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.AdulteracaoDeEnvelopeDeTeste;
 
 public sealed class EnvelopeCodecRecusasDosPrazosTests
