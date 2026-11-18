@@ -1056,10 +1056,12 @@ organizacao.instituicoes.updated_at: Interno
 organizacao.instituicoes.updated_by: Pessoal
 organizacao.instituicoes.website: Interno
 organizacao.unidades.alias: Interno
+organizacao.unidades.alias_para_busca: Interno
 organizacao.unidades.cidade_codigo_ibge: Interno
 organizacao.unidades.cidade_nome: Interno
 organizacao.unidades.cidade_uf: Interno
 organizacao.unidades.codigo: Interno
+organizacao.unidades.codigo_para_busca: Interno
 organizacao.unidades.created_at: Interno
 organizacao.unidades.created_by: Pessoal
 organizacao.unidades.deleted_at: Interno
@@ -1067,8 +1069,11 @@ organizacao.unidades.deleted_by: Pessoal
 organizacao.unidades.id: Interno
 organizacao.unidades.is_deleted: Interno
 organizacao.unidades.nome: Interno
+organizacao.unidades.nome_para_busca: Interno
 organizacao.unidades.sigla: Interno
+organizacao.unidades.sigla_para_busca: Interno
 organizacao.unidades.slug: Interno
+organizacao.unidades.slug_para_busca: Interno
 organizacao.unidades.tipo: Interno
 organizacao.unidades.unidade_academica: Interno
 organizacao.unidades.unidade_superior_id: Interno

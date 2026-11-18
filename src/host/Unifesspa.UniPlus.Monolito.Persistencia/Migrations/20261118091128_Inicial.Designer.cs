@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261118063410_Inicial")]
+    [Migration("20261118091128_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -9839,6 +9839,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("alias");
 
+                    b.Property<string>("AliasParaBusca")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("alias_para_busca")
+                        .HasComputedColumnSql("plataforma.normalizar_para_comparacao(alias)", true)
+                        .HasComment("Forma normalizada de alias (sem acento e em minúsculas, pela função da plataforma), gerada pelo banco; a busca textual da Unidade compara contra ela.")
+                        .UseCollation("C");
+
                     b.Property<string>("CidadeCodigoIbge")
                         .HasMaxLength(7)
                         .HasColumnType("character(7)")
@@ -9864,6 +9873,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("codigo");
+
+                    b.Property<string>("CodigoParaBusca")
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("codigo_para_busca")
+                        .HasComputedColumnSql("plataforma.normalizar_para_comparacao(codigo)", true)
+                        .HasComment("Forma normalizada de codigo (sem acento e em minúsculas, pela função da plataforma), gerada pelo banco; a busca textual da Unidade compara contra ela.")
+                        .UseCollation("C");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -9892,17 +9911,47 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("character varying(250)")
                         .HasColumnName("nome");
 
+                    b.Property<string>("NomeParaBusca")
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)")
+                        .HasColumnName("nome_para_busca")
+                        .HasComputedColumnSql("plataforma.normalizar_para_comparacao(nome)", true)
+                        .HasComment("Forma normalizada de nome (sem acento e em minúsculas, pela função da plataforma), gerada pelo banco; a busca textual da Unidade compara contra ela.")
+                        .UseCollation("C");
+
                     b.Property<string>("Sigla")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("sigla");
 
+                    b.Property<string>("SiglaParaBusca")
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("sigla_para_busca")
+                        .HasComputedColumnSql("plataforma.normalizar_para_comparacao(sigla)", true)
+                        .HasComment("Forma normalizada de sigla (sem acento e em minúsculas, pela função da plataforma), gerada pelo banco; a busca textual da Unidade compara contra ela.")
+                        .UseCollation("C");
+
                     b.Property<string>("Slug")
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
                         .HasColumnName("slug");
+
+                    b.Property<string>("SlugParaBusca")
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("slug_para_busca")
+                        .HasComputedColumnSql("plataforma.normalizar_para_comparacao(slug)", true)
+                        .HasComment("Forma normalizada de slug (sem acento e em minúsculas, pela função da plataforma), gerada pelo banco; a busca textual da Unidade compara contra ela.")
+                        .UseCollation("C");
 
                     b.Property<string>("Tipo")
                         .IsRequired()
@@ -9941,20 +9990,50 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.HasIndex("Alias")
                         .HasDatabaseName("ix_unidades_alias");
 
+                    b.HasIndex("AliasParaBusca")
+                        .HasDatabaseName("ix_unidades_alias_para_busca_trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("AliasParaBusca"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("AliasParaBusca"), new[] { "gin_trgm_ops" });
+
                     b.HasIndex("Codigo")
                         .IsUnique()
                         .HasDatabaseName("ix_unidades_codigo_vivo")
                         .HasFilter("is_deleted = false");
+
+                    b.HasIndex("CodigoParaBusca")
+                        .HasDatabaseName("ix_unidades_codigo_para_busca_trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("CodigoParaBusca"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("CodigoParaBusca"), new[] { "gin_trgm_ops" });
+
+                    b.HasIndex("NomeParaBusca")
+                        .HasDatabaseName("ix_unidades_nome_para_busca_trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("NomeParaBusca"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("NomeParaBusca"), new[] { "gin_trgm_ops" });
 
                     b.HasIndex("Sigla")
                         .IsUnique()
                         .HasDatabaseName("ix_unidades_sigla_vivo")
                         .HasFilter("is_deleted = false");
 
+                    b.HasIndex("SiglaParaBusca")
+                        .HasDatabaseName("ix_unidades_sigla_para_busca_trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("SiglaParaBusca"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("SiglaParaBusca"), new[] { "gin_trgm_ops" });
+
                     b.HasIndex("Slug")
                         .IsUnique()
                         .HasDatabaseName("ix_unidades_slug_vivo")
                         .HasFilter("is_deleted = false");
+
+                    b.HasIndex("SlugParaBusca")
+                        .HasDatabaseName("ix_unidades_slug_para_busca_trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("SlugParaBusca"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("SlugParaBusca"), new[] { "gin_trgm_ops" });
 
                     b.HasIndex("UnidadeSuperiorId")
                         .HasDatabaseName("ix_unidades_superior_id");

@@ -1274,6 +1274,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     cidade_uf = table.Column<string>(type: "character(2)", fixedLength: true, maxLength: 2, nullable: true, comment: "UF da cidade (display cache) — snapshot do Geo no momento do cadastro/atualização."),
                     created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    alias_para_busca = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true, computedColumnSql: "plataforma.normalizar_para_comparacao(alias)", stored: true, comment: "Forma normalizada de alias (sem acento e em minúsculas, pela função da plataforma), gerada pelo banco; a busca textual da Unidade compara contra ela.", collation: "C"),
+                    codigo_para_busca = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, computedColumnSql: "plataforma.normalizar_para_comparacao(codigo)", stored: true, comment: "Forma normalizada de codigo (sem acento e em minúsculas, pela função da plataforma), gerada pelo banco; a busca textual da Unidade compara contra ela.", collation: "C"),
+                    nome_para_busca = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: false, computedColumnSql: "plataforma.normalizar_para_comparacao(nome)", stored: true, comment: "Forma normalizada de nome (sem acento e em minúsculas, pela função da plataforma), gerada pelo banco; a busca textual da Unidade compara contra ela.", collation: "C"),
+                    sigla_para_busca = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, computedColumnSql: "plataforma.normalizar_para_comparacao(sigla)", stored: true, comment: "Forma normalizada de sigla (sem acento e em minúsculas, pela função da plataforma), gerada pelo banco; a busca textual da Unidade compara contra ela.", collation: "C"),
+                    slug_para_busca = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false, computedColumnSql: "plataforma.normalizar_para_comparacao(slug)", stored: true, comment: "Forma normalizada de slug (sem acento e em minúsculas, pela função da plataforma), gerada pelo banco; a busca textual da Unidade compara contra ela.", collation: "C"),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     is_deleted = table.Column<bool>(type: "boolean", nullable: false),
@@ -7271,6 +7276,22 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 column: "alias");
 
             migrationBuilder.CreateIndex(
+                name: "ix_unidades_alias_para_busca_trgm",
+                schema: "organizacao",
+                table: "unidades",
+                column: "alias_para_busca")
+                .Annotation("Npgsql:IndexMethod", "gin")
+                .Annotation("Npgsql:IndexOperators", new[] { "gin_trgm_ops" });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_unidades_codigo_para_busca_trgm",
+                schema: "organizacao",
+                table: "unidades",
+                column: "codigo_para_busca")
+                .Annotation("Npgsql:IndexMethod", "gin")
+                .Annotation("Npgsql:IndexOperators", new[] { "gin_trgm_ops" });
+
+            migrationBuilder.CreateIndex(
                 name: "ix_unidades_codigo_vivo",
                 schema: "organizacao",
                 table: "unidades",
@@ -7279,12 +7300,36 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 filter: "is_deleted = false");
 
             migrationBuilder.CreateIndex(
+                name: "ix_unidades_nome_para_busca_trgm",
+                schema: "organizacao",
+                table: "unidades",
+                column: "nome_para_busca")
+                .Annotation("Npgsql:IndexMethod", "gin")
+                .Annotation("Npgsql:IndexOperators", new[] { "gin_trgm_ops" });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_unidades_sigla_para_busca_trgm",
+                schema: "organizacao",
+                table: "unidades",
+                column: "sigla_para_busca")
+                .Annotation("Npgsql:IndexMethod", "gin")
+                .Annotation("Npgsql:IndexOperators", new[] { "gin_trgm_ops" });
+
+            migrationBuilder.CreateIndex(
                 name: "ix_unidades_sigla_vivo",
                 schema: "organizacao",
                 table: "unidades",
                 column: "sigla",
                 unique: true,
                 filter: "is_deleted = false");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_unidades_slug_para_busca_trgm",
+                schema: "organizacao",
+                table: "unidades",
+                column: "slug_para_busca")
+                .Annotation("Npgsql:IndexMethod", "gin")
+                .Annotation("Npgsql:IndexOperators", new[] { "gin_trgm_ops" });
 
             migrationBuilder.CreateIndex(
                 name: "ix_unidades_slug_vivo",
