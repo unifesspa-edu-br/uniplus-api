@@ -1,5 +1,5 @@
 ---
-status: "accepted"
+status: "superseded by ADR-0171"
 date: "2026-09-29"
 decision-makers:
   - "Tech Lead"
@@ -11,6 +11,8 @@ informed:
 ---
 
 # ADR-0137: Formulários por finalidade no processo e modelos de formulário por tipo de processo
+
+> **Superada.** O processo deixou de ter um formulário por finalidade fixa: cada formulário é identificado por código no processo, ligado a uma fase do cronograma e obrigatório ou facultativo, como decide a **[ADR-0171](0171-formularios-do-processo-ligados-as-fases.md)**, que mantém desta ADR as regras no item, o produtor único, os termos congelados, os modelos aplicados por cópia e a emenda às ADRs 0109 e 0110. Leia esta ADR como registro histórico do raciocínio, não como contrato.
 
 ## Contexto e enunciado do problema
 
