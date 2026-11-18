@@ -37,7 +37,7 @@ public sealed class ResumoDoConteudoTests
     [Fact]
     public void Resumo_do_vinculo_completo_tem_o_valor_que_ja_esta_guardado()
     {
-        string resumo = DecodificarUm(Completo()).ResumoDoConteudo;
+        string resumo = DecodificarUm(Completo()).ResumoDoConteudo.Valor;
 
         resumo.Should().Be("d85ee9e32e72d3827a3c238042f5deadcef88a28a2e3bed6c950ba1b7a19a2aa");
     }
@@ -60,16 +60,16 @@ public sealed class ResumoDoConteudoTests
         VinculoDiscentePayload segundo = ComSituacao(
             s => s with { Descricao = "AT", SituacaoVinculo = $"R{Caractere}X" });
 
-        DecodificarUm(segundo).ResumoDoConteudo.Should().NotBe(
-            DecodificarUm(primeiro).ResumoDoConteudo,
+        DecodificarUm(segundo).ResumoDoConteudo.Valor.Should().NotBe(
+            DecodificarUm(primeiro).ResumoDoConteudo.Valor,
             "vínculos com conteúdos diferentes precisam ter resumos diferentes");
     }
 
     [Fact]
     public void Mesmo_conteudo_produz_o_mesmo_resumo()
     {
-        string primeiro = DecodificarUm(Completo()).ResumoDoConteudo;
-        string segundo = DecodificarUm(Completo()).ResumoDoConteudo;
+        string primeiro = DecodificarUm(Completo()).ResumoDoConteudo.Valor;
+        string segundo = DecodificarUm(Completo()).ResumoDoConteudo.Valor;
 
         segundo.Should().Be(primeiro, "sem isso a sincronização reescreveria tudo todo dia");
     }
@@ -80,8 +80,8 @@ public sealed class ResumoDoConteudoTests
         string nomeDoCampo,
         VinculoDiscentePayload alterado)
     {
-        string original = DecodificarUm(Completo()).ResumoDoConteudo;
-        string depois = DecodificarUm(alterado).ResumoDoConteudo;
+        string original = DecodificarUm(Completo()).ResumoDoConteudo.Valor;
+        string depois = DecodificarUm(alterado).ResumoDoConteudo.Valor;
 
         depois.Should().NotBe(
             original,
@@ -99,8 +99,8 @@ public sealed class ResumoDoConteudoTests
     [Fact]
     public void Resumo_nao_cobre_o_cpf_para_nao_desfazer_a_cifra_em_repouso()
     {
-        string original = DecodificarUm(Completo()).ResumoDoConteudo;
-        string comOutroCpf = DecodificarUm(Completo() with { Cpf = "11144477735" }).ResumoDoConteudo;
+        string original = DecodificarUm(Completo()).ResumoDoConteudo.Valor;
+        string comOutroCpf = DecodificarUm(Completo() with { Cpf = "11144477735" }).ResumoDoConteudo.Valor;
 
         comOutroCpf.Should().Be(
             original,
@@ -110,8 +110,8 @@ public sealed class ResumoDoConteudoTests
     [Fact]
     public void Resumo_distingue_campo_ausente_de_campo_vazio()
     {
-        string comAusente = DecodificarUm(ComCurso(c => c with { CodigoEmec = null })).ResumoDoConteudo;
-        string comVazio = DecodificarUm(ComCurso(c => c with { CodigoEmec = "" })).ResumoDoConteudo;
+        string comAusente = DecodificarUm(ComCurso(c => c with { CodigoEmec = null })).ResumoDoConteudo.Valor;
+        string comVazio = DecodificarUm(ComCurso(c => c with { CodigoEmec = "" })).ResumoDoConteudo.Valor;
 
         comVazio.Should().NotBe(comAusente, "ausência e vazio são estados diferentes na origem");
     }

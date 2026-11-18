@@ -44,10 +44,10 @@ public sealed class VinculoDiscenteRepository : IVinculoDiscenteRepository
         return record is null ? null : await ParaDominioAsync(record, cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task<VinculoDiscente?> ObterPorIdSigaaAsync(long idDiscenteSigaa, CancellationToken cancellationToken = default)
+    public async Task<VinculoDiscente?> ObterPorIdSigaaAsync(IdDoDiscenteNoSigaa idDiscenteSigaa, CancellationToken cancellationToken = default)
     {
         VinculoDiscenteRecord? record = await _dbContext.VinculosDiscentes
-            .FirstOrDefaultAsync(r => r.IdDiscenteSigaa == idDiscenteSigaa, cancellationToken)
+            .FirstOrDefaultAsync(r => r.IdDiscenteSigaa == idDiscenteSigaa.Valor, cancellationToken)
             .ConfigureAwait(false);
 
         return record is null ? null : await ParaDominioAsync(record, cancellationToken).ConfigureAwait(false);
@@ -119,7 +119,7 @@ public sealed class VinculoDiscenteRepository : IVinculoDiscenteRepository
         IReadOnlyList<VinculoSincronizavel> lote,
         CancellationToken cancellationToken)
     {
-        long[] identificadores = [.. lote.Select(v => v.Vinculo.DadosCopiados.Identificacao.IdDiscenteSigaa)];
+        long[] identificadores = [.. lote.Select(v => v.Vinculo.DadosCopiados.Identificacao.IdDiscenteSigaa.Valor)];
 
         return _dbContext.VinculosDiscentes
             .Where(r => identificadores.Contains(r.IdDiscenteSigaa))
@@ -172,13 +172,13 @@ public sealed class VinculoDiscenteRepository : IVinculoDiscenteRepository
         Dictionary<long, VinculoDiscenteRecord> existentes,
         CancellationToken cancellationToken)
     {
-        if (!existentes.TryGetValue(item.Vinculo.DadosCopiados.Identificacao.IdDiscenteSigaa, out VinculoDiscenteRecord? existente))
+        if (!existentes.TryGetValue(item.Vinculo.DadosCopiados.Identificacao.IdDiscenteSigaa.Valor, out VinculoDiscenteRecord? existente))
         {
             await InserirAsync(item, cancellationToken).ConfigureAwait(false);
             return new ResultadoDaGravacao(1, 0, 0);
         }
 
-        if (string.Equals(existente.ResumoDoConteudo, item.ResumoDoConteudo, StringComparison.Ordinal))
+        if (string.Equals(existente.ResumoDoConteudo, item.ResumoDoConteudo.Valor, StringComparison.Ordinal))
         {
             return new ResultadoDaGravacao(0, 0, 1);
         }
@@ -191,7 +191,7 @@ public sealed class VinculoDiscenteRepository : IVinculoDiscenteRepository
     {
         VinculoDiscenteRecord novo = await ParaRegistroNovoAsync(item.Vinculo, cancellationToken).ConfigureAwait(false);
 
-        novo.ResumoDoConteudo = item.ResumoDoConteudo;
+        novo.ResumoDoConteudo = item.ResumoDoConteudo.Valor;
         _dbContext.VinculosDiscentes.Add(novo);
     }
 
@@ -201,7 +201,7 @@ public sealed class VinculoDiscenteRepository : IVinculoDiscenteRepository
         CancellationToken cancellationToken)
     {
         await AtualizarCamposAsync(existente, item.Vinculo, cancellationToken).ConfigureAwait(false);
-        existente.ResumoDoConteudo = item.ResumoDoConteudo;
+        existente.ResumoDoConteudo = item.ResumoDoConteudo.Valor;
     }
 
     private async Task<VinculoDiscente> ParaDominioAsync(VinculoDiscenteRecord record, CancellationToken cancellationToken)

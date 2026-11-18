@@ -12,8 +12,8 @@ public class VinculoDiscenteTests
         VinculoDiscente discente = VinculoDiscente.Criar(VinculoDeTeste.DadosCopiados());
 
         Assert.NotEqual(Guid.Empty, discente.Id);
-        Assert.Equal(50231, discente.DadosCopiados.Identificacao.IdDiscenteSigaa);
-        Assert.Equal("20142600001", discente.DadosCopiados.Identificacao.Matricula);
+        Assert.Equal(50231, discente.DadosCopiados.Identificacao.IdDiscenteSigaa.Valor);
+        Assert.Equal("20142600001", discente.DadosCopiados.Identificacao.Matricula.Valor);
     }
 
     [Fact(DisplayName = "VinculoDiscentes.Reidratar - Deve Manter Guid Original sem Gerar novo ID")]

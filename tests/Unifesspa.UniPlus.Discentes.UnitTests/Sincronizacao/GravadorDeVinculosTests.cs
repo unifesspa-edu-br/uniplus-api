@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Discentes.Domain.Entities;
 using Unifesspa.UniPlus.Discentes.Domain.Interfaces;
+using Unifesspa.UniPlus.Discentes.Domain.ValueObjects;
 using Unifesspa.UniPlus.Discentes.Infrastructure.Sincronizacao;
 
 /// <summary>
@@ -81,7 +82,7 @@ public sealed class GravadorDeVinculosTests
         public Task<VinculoDiscente?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default) =>
             Task.FromResult<VinculoDiscente?>(null);
 
-        public Task<VinculoDiscente?> ObterPorIdSigaaAsync(long idDiscenteSigaa, CancellationToken cancellationToken = default) =>
+        public Task<VinculoDiscente?> ObterPorIdSigaaAsync(IdDoDiscenteNoSigaa idDiscenteSigaa, CancellationToken cancellationToken = default) =>
             Task.FromResult<VinculoDiscente?>(null);
 
         public Task AdicionarAsync(VinculoDiscente entity, CancellationToken cancellationToken = default) =>

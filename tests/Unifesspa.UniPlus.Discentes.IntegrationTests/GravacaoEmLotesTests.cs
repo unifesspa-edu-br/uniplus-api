@@ -118,7 +118,7 @@ public sealed class GravacaoEmLotesTests : IClassFixture<VinculoDiscenteDbFixtur
         contexto.ChangeTracker.Clear();
 
         ResultadoDaGravacao segunda = await GravarEConfirmarAsync(
-            contexto, [Sincronizavel(9_301, nome: "OUTRO NOME", resumo: "resumo-diferente")]);
+            contexto, [Sincronizavel(9_301, nome: "OUTRO NOME", conteudo: "conteudo-diferente")]);
 
         segunda.Atualizados.Should().Be(1);
         (await LerAsync(9_301))!.Nome.Should().Be("OUTRO NOME");
@@ -137,7 +137,7 @@ public sealed class GravacaoEmLotesTests : IClassFixture<VinculoDiscenteDbFixtur
         contexto.ChangeTracker.Clear();
 
         VinculoDiscenteRepository repositorio = new(contexto, _fixture.Encryption);
-        VinculoDiscente doBanco = (await repositorio.ObterPorIdSigaaAsync(9_401))!;
+        VinculoDiscente doBanco = (await repositorio.ObterPorIdSigaaAsync(IdNoSigaa(9_401)))!;
         await repositorio.AtualizarAsync(doBanco);
         await contexto.SaveChangesAsync();
 

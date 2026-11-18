@@ -26,10 +26,10 @@ public sealed class MapeamentoDoVinculoDiscenteTests
         MapeamentoDoVinculoDiscente.Aplicar(registro, dadosCopiados, CpfCifrado);
 
         registro.CpfCiphertext.Should().Equal(CpfCifrado);
-        registro.IdDiscenteSigaa.Should().Be(dadosCopiados.Identificacao.IdDiscenteSigaa);
-        registro.Matricula.Should().Be(dadosCopiados.Identificacao.Matricula);
-        registro.Nome.Should().Be(dadosCopiados.Identificacao.Nome);
-        registro.Nivel.Should().Be(dadosCopiados.Nivel);
+        registro.IdDiscenteSigaa.Should().Be(dadosCopiados.Identificacao.IdDiscenteSigaa.Valor);
+        registro.Matricula.Should().Be(dadosCopiados.Identificacao.Matricula.Valor);
+        registro.Nome.Should().Be(dadosCopiados.Identificacao.Nome.Valor);
+        registro.Nivel.Should().Be(dadosCopiados.Nivel.Valor);
     }
 
     [Fact]
@@ -40,11 +40,11 @@ public sealed class MapeamentoDoVinculoDiscenteTests
 
         MapeamentoDoVinculoDiscente.Aplicar(registro, dadosCopiados, CpfCifrado);
 
-        registro.CursoId.Should().Be(dadosCopiados.Curso.Id);
-        registro.CursoNome.Should().Be(dadosCopiados.Curso.Nome);
-        registro.CursoCodigoEmec.Should().Be(dadosCopiados.Curso.CodigoEmec);
-        registro.CursoUnidadeId.Should().Be(dadosCopiados.Curso.UnidadeId);
-        registro.CursoUnidadeNome.Should().Be(dadosCopiados.Curso.UnidadeNome);
+        registro.CursoId.Should().Be(dadosCopiados.Curso.Id.Valor);
+        registro.CursoNome.Should().Be(dadosCopiados.Curso.Nome.Valor);
+        registro.CursoCodigoEmec.Should().Be(dadosCopiados.Curso.CodigoEmec?.Valor);
+        registro.CursoUnidadeId.Should().Be(dadosCopiados.Curso.Unidade.Id.Valor);
+        registro.CursoUnidadeNome.Should().Be(dadosCopiados.Curso.Unidade.Nome.Valor);
     }
 
     [Fact]
@@ -55,9 +55,9 @@ public sealed class MapeamentoDoVinculoDiscenteTests
 
         MapeamentoDoVinculoDiscente.Aplicar(registro, dadosCopiados, CpfCifrado);
 
-        registro.SituacaoId.Should().Be(dadosCopiados.Situacao.Id);
-        registro.SituacaoDescricao.Should().Be(dadosCopiados.Situacao.Descricao);
-        registro.SituacaoVinculo.Should().Be(dadosCopiados.Situacao.Vinculo);
+        registro.SituacaoId.Should().Be(dadosCopiados.Situacao.Id.Valor);
+        registro.SituacaoDescricao.Should().Be(dadosCopiados.Situacao.Descricao.Valor);
+        registro.SituacaoVinculo.Should().Be(dadosCopiados.Situacao.Qualificador?.Valor);
         registro.AnoIngresso.Should().Be(dadosCopiados.Ingresso.Ano);
         registro.PeriodoIngresso.Should().Be(dadosCopiados.Ingresso.Periodo);
     }
@@ -77,7 +77,7 @@ public sealed class MapeamentoDoVinculoDiscenteTests
         VinculoDiscente lido = MapeamentoDoVinculoDiscente.ParaDominio(registro, VinculoDeTeste.CpfDeTeste());
 
         registro.SituacaoVinculo.Should().Be("ATV");
-        lido.DadosCopiados.Situacao.Vinculo.Should().Be("ATV");
+        lido.DadosCopiados.Situacao.Qualificador!.Valor.Should().Be("ATV");
     }
 
     [Fact]

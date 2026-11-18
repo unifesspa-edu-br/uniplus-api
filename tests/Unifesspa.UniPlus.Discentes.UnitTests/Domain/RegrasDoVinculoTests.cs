@@ -72,7 +72,7 @@ public sealed class RegrasDoVinculoTests
     [InlineData("12 3", false)]
     public void Matricula_so_aceita_digitos(string valor, bool esperado)
     {
-        IdentificacaoDoDiscente.ApenasDigitos(valor).Should().Be(esperado);
+        MatriculaDoDiscente.ApenasDigitos(valor).Should().Be(esperado);
     }
 
     [Theory]

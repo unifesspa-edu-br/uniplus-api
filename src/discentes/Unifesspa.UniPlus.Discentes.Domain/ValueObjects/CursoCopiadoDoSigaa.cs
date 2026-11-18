@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Discentes.Domain.ValueObjects;
 
-using Unifesspa.UniPlus.Discentes.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -9,63 +8,35 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public sealed record CursoCopiadoDoSigaa
 {
-    public int Id { get; }
-    public string Nome { get; }
-    public string? CodigoEmec { get; }
-    public int UnidadeId { get; }
-    public string UnidadeNome { get; }
+    public IdDoCursoNoSigaa Id { get; }
+    public NomeDoCurso Nome { get; }
+    public CodigoEmecDoCursoNaReplica? CodigoEmec { get; }
+    public UnidadeNoSigaa Unidade { get; }
 
-    private CursoCopiadoDoSigaa(int id, string nome, string? codigoEmec, int unidadeId, string unidadeNome)
+    private CursoCopiadoDoSigaa(
+        IdDoCursoNoSigaa id,
+        NomeDoCurso nome,
+        CodigoEmecDoCursoNaReplica? codigoEmec,
+        UnidadeNoSigaa unidade)
     {
         Id = id;
         Nome = nome;
         CodigoEmec = codigoEmec;
-        UnidadeId = unidadeId;
-        UnidadeNome = unidadeNome;
+        Unidade = unidade;
     }
 
     public static Result<CursoCopiadoDoSigaa> Criar(int id, string? nome, string? codigoEmec, int unidadeId, string? unidadeNome)
     {
-        CursoCopiadoDoSigaa curso = new(id, nome ?? string.Empty, codigoEmec, unidadeId, unidadeNome ?? string.Empty);
+        Result<IdDoCursoNoSigaa> idDoCurso = IdDoCursoNoSigaa.Criar(id);
+        Result<IdDaUnidadeNoSigaa> idDaUnidade = IdDaUnidadeNoSigaa.Criar(unidadeId);
+        DomainError? erro = idDoCurso.Error ?? NomeDoCurso.RecusarSeVazio(nome)
+            ?? idDaUnidade.Error ?? NomeDaUnidade.RecusarSeVazio(unidadeNome);
+        if (erro is not null)
+            return Result<CursoCopiadoDoSigaa>.Failure(erro);
 
-        DomainError? erro = curso.ValidarObrigatorios() ?? curso.ValidarTamanhos();
-
-        return erro is null
-            ? Result<CursoCopiadoDoSigaa>.Success(curso)
-            : Result<CursoCopiadoDoSigaa>.Failure(erro);
-    }
-
-    private DomainError? ValidarObrigatorios()
-    {
-        if (Id <= 0)
-            return new DomainError("Curso.IdInvalido", "Id do curso deve ser positivo.");
-
-        if (string.IsNullOrWhiteSpace(Nome))
-            return new DomainError("Curso.NomeVazio", "Nome do curso é obrigatório.");
-
-        if (UnidadeId <= 0)
-            return new DomainError("Curso.UnidadeIdInvalido", "Id da unidade deve ser positivo.");
-
-        if (string.IsNullOrWhiteSpace(UnidadeNome))
-            return new DomainError("Curso.UnidadeNomeVazio", "Nome da unidade é obrigatório.");
-
-        return null;
-    }
-
-    private DomainError? ValidarTamanhos()
-    {
-        if (Nome.Length > LimitesDaReplica.NomeDoCurso)
-            return new DomainError(
-                DiscentesErrorCodes.Curso.NomeLongo, "Nome do curso excede o que a réplica comporta.");
-
-        if (CodigoEmec is { Length: > LimitesDaReplica.CodigoEmecDoCurso })
-            return new DomainError(
-                DiscentesErrorCodes.Curso.CodigoEmecLongo, "Código e-MEC excede o que a réplica comporta.");
-
-        if (UnidadeNome.Length > LimitesDaReplica.NomeDaUnidade)
-            return new DomainError(
-                DiscentesErrorCodes.Curso.UnidadeNomeLongo, "Nome da unidade excede o que a réplica comporta.");
-
-        return null;
+        return NomeDoCurso.Criar(nome).Encadear(nomeDoCurso =>
+            CodigoEmecDoCursoNaReplica.Criar(codigoEmec).Encadear(emec =>
+                NomeDaUnidade.Criar(unidadeNome).Compor(nomeDaUnidade =>
+                    new CursoCopiadoDoSigaa(idDoCurso.Value!, nomeDoCurso, emec, new UnidadeNoSigaa(idDaUnidade.Value!, nomeDaUnidade)))));
     }
 }

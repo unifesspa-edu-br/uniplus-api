@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Discentes.IntegrationTests;
 
+using System.Text;
+
 using Unifesspa.UniPlus.Discentes.Domain.Entities;
 using Unifesspa.UniPlus.Discentes.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
@@ -16,11 +18,20 @@ internal static class VinculoDeTeste
     public static VinculoDiscente Novo(long idDeOrigem, string cpf = CpfValido, string nome = "DISCENTE DE TESTE") =>
         VinculoDiscente.Criar(DadosCopiados(idDeOrigem, cpf, nome));
 
+    /// <summary>
+    /// O vínculo pronto para gravar; o resumo é o do <paramref name="conteudo"/> informado, ou
+    /// de um conteúdo próprio do vínculo quando não se informa.
+    /// </summary>
     public static VinculoSincronizavel Sincronizavel(
         long idDeOrigem,
         string nome = "DISCENTE DE TESTE",
-        string? resumo = null) =>
-        new(Novo(idDeOrigem, nome: nome), resumo ?? $"resumo-de-{idDeOrigem}");
+        string? conteudo = null) =>
+        new(Novo(idDeOrigem, nome: nome), ResumoDe(conteudo ?? $"conteudo-de-{idDeOrigem}"));
+
+    public static IdDoDiscenteNoSigaa IdNoSigaa(long idDeOrigem) => Valor(IdDoDiscenteNoSigaa.Criar(idDeOrigem));
+
+    private static ResumoSha256 ResumoDe(string conteudo) =>
+        ResumoSha256.DoConteudo(Encoding.UTF8.GetBytes(conteudo));
 
     private static VinculoDiscenteCopiado DadosCopiados(long idDeOrigem, string cpf, string nome)
     {
