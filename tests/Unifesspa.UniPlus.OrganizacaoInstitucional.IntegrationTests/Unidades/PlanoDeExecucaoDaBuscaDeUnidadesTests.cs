@@ -23,8 +23,8 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.Repo
 /// </summary>
 /// <remarks>
 /// A consulta é a que o EF emite para o recorte da busca, com os parâmetros ligados: literal embutido daria outro
-/// plano. Com <c>enable_seqscan = off</c> o plano mostra que os índices <b>podem</b> ser usados; não prova que o
-/// planejador os escolhe no uso normal, que depende do volume e das estatísticas. O volume da amostra e o
+/// plano. Com varreduras sequenciais desativadas e custo elevado por entrada de índice, o plano mostra que os índices
+/// <b>podem</b> ser usados; não prova que o planejador os escolhe no uso normal. O volume da amostra e o
 /// <c>ANALYZE</c> existem para que as estatísticas reflitam uma tabela com milhares de linhas, e o termo é raro nela.
 /// </remarks>
 public sealed class PlanoDeExecucaoDaBuscaDeUnidadesTests : IClassFixture<UnidadeDbFixture>, IAsyncLifetime
@@ -105,7 +105,7 @@ public sealed class PlanoDeExecucaoDaBuscaDeUnidadesTests : IClassFixture<Unidad
         await using NpgsqlConnection conexao = new(_fixture.ConnectionString);
         await conexao.OpenAsync(CancellationToken.None);
 
-        await using (NpgsqlCommand desligar = new("SET enable_seqscan = off", conexao))
+        await using (NpgsqlCommand desligar = new("SET enable_seqscan = off; SET cpu_index_tuple_cost = 1", conexao))
         {
             await desligar.ExecuteNonQueryAsync(CancellationToken.None);
         }
