@@ -36,9 +36,9 @@ public sealed class EnvelopeLidoConjuntosOrdenadosTests
     private static EntradaCanonicalizacao EntradaDosSeisConjuntos(ProcessoSeletivo processo) =>
         new(
             processo, DadosDeEditalDoEnvelope(), "3333333333333333333333333333333333333333333333333333333333333333", FusoInstitucional.ZoneId,
-            Conformidade: ConformidadeComArgumentosEmOrdemNaoAlfabetica(), MetadadosFatosCongelados: MetadadosComValoresEmOrdemNaoAlfabetica(),
+            null, ConformidadeComArgumentosEmOrdemNaoAlfabetica(), new DadosDeCatalogoDaConfiguracaoPublicada(MetadadosFatosCongelados: MetadadosComValoresEmOrdemNaoAlfabetica(),
             ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(),
-            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao);
+            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
 
     private sealed record SequenciasNoJson(
         IReadOnlyList<string> Ocorrencias,
@@ -124,12 +124,12 @@ public sealed class EnvelopeLidoConjuntosOrdenadosTests
             ["predicado"]!["parametros"]!;
     private static void ConferirSequenciasDecodificadas(EnvelopeReidratado envelope, SequenciasNoJson noJson)
     {
-        envelope.Grafo.NosExigencia.Single().OcorrenciasEsperadas.Should().Equal(
+        envelope.Configuracao.Exigencias.NosExigencia.Single().Distincao!.OcorrenciasEsperadas.Should().Equal(
             noJson.Ocorrencias, "o decoder tem de preservar a sequência que leu — nunca recalculá-la");
-        envelope.Grafo.DocumentosExigidos.Single().FormatosPermitidos.Lista!
+        envelope.Configuracao.Exigencias.DocumentosExigidos.Single().FormatosPermitidos.Lista!
             .Select(static f => f.Formato.ToCodigo()).Should().Equal(noJson.Formatos);
         envelope.Conformidade!.Regras.Select(static r => r.RegraCodigo).Should().Equal(noJson.RegraCodigos);
-        envelope.MetadadosFatosCongelados!["COR_RACA"].ValoresDominio.Should().Equal(noJson.ValoresDominio);
+        envelope.DadosDeCatalogo.MetadadosFatosCongelados!["COR_RACA"].ValoresDominio.Should().Equal(noJson.ValoresDominio);
         ((ModalidadesMinimas)PredicadoDaRegra(envelope, "REGRA-MODALIDADES-MINIMAS")).Codigos.Should().Equal(noJson.Codigos);
         ((AtendimentoDisponivel)PredicadoDaRegra(envelope, "REGRA-ATENDIMENTO-DISPONIVEL")).Necessidades.Should().Equal(noJson.Necessidades);
     }

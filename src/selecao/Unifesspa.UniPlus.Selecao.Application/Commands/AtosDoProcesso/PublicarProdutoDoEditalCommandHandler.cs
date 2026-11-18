@@ -7,22 +7,7 @@ using DTOs;
 
 using Unifesspa.UniPlus.Kernel.Results;
 
-/// <summary>
-/// Publica um item que a versão vigente do edital declara: confere o que o edital exige, grava o registro
-/// do ato do processo com o item e o entrega à porta de escrita do registro central, na mesma transação
-/// (ADR-0170).
-/// </summary>
-/// <remarks>
-/// <para>
-/// O item conta como publicado assim que a transação confirma: o definitivo que espera o preliminar passa a
-/// poder sair, e a segunda publicação do item é recusada.
-/// </para>
-/// <para>
-/// A primeira publicação do item é a que não corrige ato algum, e o índice único por processo e item a
-/// garante contra a corrida. A correção leva o mesmo item e aponta a publicação corrigida, e por isso não
-/// esbarra na unicidade; a versão que vale é a cabeça da cadeia de correções.
-/// </para>
-/// </remarks>
+/// <summary>Publica um produto declarado pela versão vigente do edital.</summary>
 public static class PublicarProdutoDoEditalCommandHandler
 {
     public static async Task<(Result<AtoPublicadoDto> Resposta, IEnumerable<object> Eventos)> Handle(

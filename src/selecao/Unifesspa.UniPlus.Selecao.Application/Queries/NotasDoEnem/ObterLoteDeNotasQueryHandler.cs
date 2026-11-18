@@ -19,24 +19,28 @@ public static class ObterLoteDeNotasQueryHandler
 {
     public static async Task<Result<LoteDeNotasDoEnemDto>> Handle(
         ObterLoteDeNotasQuery query,
-        ICertameDivulgadoRepository certameDivulgadoRepository,
-        IProcessoSeletivoRepository processoSeletivoRepository,
-        IRegistroCodecsEnvelope registroCodecs,
+        ResolvedorDoEscopoDeNotasDoEnem escopos,
         ILoteDeNotasDoEnemRepository lotes,
+        DetalheDoLoteDeNotasMontador detalhes,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
+        ArgumentNullException.ThrowIfNull(escopos);
         ArgumentNullException.ThrowIfNull(lotes);
+        ArgumentNullException.ThrowIfNull(detalhes);
 
-        Result<EscopoDeNotasDoEnem> escopo = await ResolvedorDoEscopoDeNotasDoEnem
+        Result<EscopoDeNotasDoEnem> escopo = await escopos
             .ResolverAsync(
                 query.ProcessoSeletivoId, query.EtapaProcessoId, query.Edicao, exigeNotaDoEnem: false,
-                certameDivulgadoRepository, processoSeletivoRepository, registroCodecs, cancellationToken)
+                cancellationToken)
             .ConfigureAwait(false);
-        if (escopo.IsFailure)
-        {
-            return Result<LoteDeNotasDoEnemDto>.Failure(escopo.Error!);
-        }
+        return escopo.IsFailure ? Result<LoteDeNotasDoEnemDto>.Failure(escopo.Error!)
+            : await ConsultarAsync(query, lotes, detalhes, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result<LoteDeNotasDoEnemDto>> ConsultarAsync(ObterLoteDeNotasQuery query,
+        ILoteDeNotasDoEnemRepository lotes, DetalheDoLoteDeNotasMontador detalhes, CancellationToken cancellationToken)
+    {
 
         LoteDeNotasDoEnem? lote = await lotes
             .ObterComOcorrenciasAsync(query.ProcessoSeletivoId, query.EtapaProcessoId, query.Edicao, query.LoteId, cancellationToken)
@@ -48,12 +52,18 @@ public static class ObterLoteDeNotasQueryHandler
                 "O lote informado não pertence a esta edição do processo."));
         }
 
+        return await MontarAsync(query, lote, lotes, detalhes, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result<LoteDeNotasDoEnemDto>> MontarAsync(ObterLoteDeNotasQuery query,
+        LoteDeNotasDoEnem lote, ILoteDeNotasDoEnemRepository lotes, DetalheDoLoteDeNotasMontador detalhes, CancellationToken cancellationToken)
+    {
         LoteDeNotasDoEnem? vigente = await lotes
             .ObterVigenteAsync(query.ProcessoSeletivoId, query.EtapaProcessoId, query.Edicao, cancellationToken)
             .ConfigureAwait(false);
 
-        return Result<LoteDeNotasDoEnemDto>.Success(await DetalheDoLoteDeNotasMontador
-            .MontarAsync(lotes, lote, vigente?.Id == lote.Id, processoSeletivoRepository, registroCodecs, cancellationToken)
+        return Result<LoteDeNotasDoEnemDto>.Success(await detalhes
+            .MontarAsync(lote, vigente?.Id == lote.Id, cancellationToken)
             .ConfigureAwait(false));
     }
 }

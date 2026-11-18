@@ -20,6 +20,7 @@ using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.DTOs.Comprovantes;
 using Unifesspa.UniPlus.Selecao.Application.Queries.Inscricoes;
 using Unifesspa.UniPlus.Selecao.Application.Services;
+using Unifesspa.UniPlus.Selecao.Application.Services.Inscricoes;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -48,16 +49,34 @@ internal sealed class CenarioDeInscricaoPublicada
     public UniPlusDbContext CriarDbContext() => _fixture.CreateDbContext();
 
     public InscricaoRepository NovoRepositorioDeInscricao(UniPlusDbContext db) =>
-        new(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+        RepositoriosDaInscricaoDeTeste.Inscricoes(db, _fixture);
+
+    public ComprovanteDaInscricaoRepository NovoRepositorioDeComprovantes(UniPlusDbContext db) =>
+        RepositoriosDaInscricaoDeTeste.Comprovantes(db, _fixture);
+
+    public async Task<(Guid ProcessoId, InscricaoDto Inscricao)> PublicarEIniciarAsync(UniPlusDbContext db, ProcessoSeletivo processo, Cpf cpf)
+    {
+        (Guid processoId, _) = await PublicacaoDoProcessoDeTeste.PublicarEDivulgarAsync(db, processo);
+        Result<InscricaoDto> iniciar = await IniciarRascunhoAsync(db, processoId, UsuarioComCpf(cpf));
+        iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
+        return (processoId, iniciar.Value!);
+    }
+
+    public static async Task<ContextoDaVersaoFixada> ContextoAsync(UniPlusDbContext db, Guid versaoId, Guid processoId)
+    {
+        Result<ContextoDaVersaoFixada> contexto = await new ContextoDaVersaoFixadaResolver(ProcessoSeletivoRepositoryDeTeste.Criar(db), RegistroCodecs)
+            .ResolverAsync(versaoId, processoId, ofertaCursoId: null, null, CancellationToken.None);
+        contexto.IsSuccess.Should().BeTrue(contexto.Error?.Message);
+        return contexto.Value!;
+    }
 
     /// <summary>Inicia a inscrição do usuário no processo publicado, sem conferência de endereço pelo geo.</summary>
     public async Task<Result<InscricaoDto>> IniciarRascunhoAsync(
         UniPlusDbContext db, Guid processoId, IUserContext usuario, IConferenciaEnderecoGeo? geo = null) =>
-        await IniciarInscricaoCommandHandler.Handle(
-            new IniciarInscricaoCommand(processoId),
-            NovoRepositorioDeInscricao(db), new CertameDivulgadoRepository(db),
-            ProcessoSeletivoRepositoryDeTeste.Criar(db), Substitute.For<IDocumentoDaInscricaoRepository>(), RegistroCodecs, Fuso(), geo ?? Substitute.For<IConferenciaEnderecoGeo>(), EnderecosSemCopia(),
-            DentroDoPeriodo, db, usuario, CancellationToken.None);
+        await IniciarInscricaoCommandHandler.Handle(new IniciarInscricaoCommand(processoId), NovoRepositorioDeInscricao(db), usuario,
+            new InicioDaInscricao(NovoRepositorioDeInscricao(db), new CertameDivulgadoRepository(db), ProcessoSeletivoRepositoryDeTeste.Criar(db),
+                new PeriodoDaInscricaoResolver(new CertameDivulgadoRepository(db), ProcessoSeletivoRepositoryDeTeste.Criar(db), RegistroCodecs, Fuso()), usuario, DentroDoPeriodo),
+            Leitura(db, geo ?? Substitute.For<IConferenciaEnderecoGeo>()), db, CancellationToken.None);
 
     /// <summary>Inicia a inscrição da Fernanda no processo publicado e devolve o ETag com que ela é enviada.</summary>
     public async Task<string> IniciarComoFernandaAsync(UniPlusDbContext db, Guid processoId)
@@ -68,48 +87,49 @@ internal sealed class CenarioDeInscricaoPublicada
     }
 
     public async Task<Result<InscricaoDto>> ObterAsync(UniPlusDbContext db, Guid processoId, IUserContext usuario) =>
-        await ObterInscricaoQueryHandler.Handle(
-            new ObterInscricaoQuery(processoId), new InscricaoAtivaDoCandidato(NovoRepositorioDeInscricao(db)),
-            new ConsultaDaInscricaoDoCandidato(
-                new CertameDivulgadoRepository(db), ProcessoSeletivoRepositoryDeTeste.Criar(db), Substitute.For<IDocumentoDaInscricaoRepository>(),
-                RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), EnderecosSemCopia()),
-            usuario, DentroDoPeriodo, CancellationToken.None);
+        await ObterInscricaoQueryHandler.Handle(new ObterInscricaoQuery(processoId), new InscricaoDoDono(NovoRepositorioDeInscricao(db), usuario), Leitura(db), CancellationToken.None);
+
+    private static LeituraDaInscricao Leitura(UniPlusDbContext db, IConferenciaEnderecoGeo? geo = null) =>
+        new(new VersaoDaInscricaoResolver(new CertameDivulgadoRepository(db), ProcessoSeletivoRepositoryDeTeste.Criar(db), RegistroCodecs),
+            new ContextoDaVersaoFixadaResolver(ProcessoSeletivoRepositoryDeTeste.Criar(db), RegistroCodecs),
+            new DocumentosEnviadosDaInscricao(Substitute.For<IDocumentoDaInscricaoRepository>()),
+            new PreparacaoDaAvaliacaoDaInscricao(geo ?? Substitute.For<IConferenciaEnderecoGeo>()), EnderecosSemCopia(), Fuso(), DentroDoPeriodo);
 
     public async Task<Result<FormularioRenderizavelDto>> ObterFormularioAsync(UniPlusDbContext db, Guid processoId, IUserContext usuario) =>
         await ObterFormularioDaInscricaoQueryHandler.Handle(
-            new ObterFormularioDaInscricaoQuery(processoId), new InscricaoAtivaDoCandidato(NovoRepositorioDeInscricao(db)),
-            new FormularioDaInscricao(VersaoDaInscricaoDe(db), RegistroCodecs), usuario, CancellationToken.None);
+            new ObterFormularioDaInscricaoQuery(processoId), NovoRepositorioDeInscricao(db),
+            new CertameDivulgadoRepository(db), ProcessoSeletivoRepositoryDeTeste.Criar(db), RegistroCodecs, usuario,
+            CancellationToken.None);
 
     public async Task<Result<AvaliacaoDaInscricaoDto>> AvaliarAsync(
-        UniPlusDbContext db, Guid processoId, IUserContext usuario, Dictionary<string, JsonElement>? respostas) =>
-        await AvaliarInscricaoQueryHandler.Handle(
-            new AvaliarInscricaoQuery(processoId, new AvaliacaoDaInscricaoRequest(respostas, null)),
-            new InscricaoAtivaDoCandidato(NovoRepositorioDeInscricao(db)), PeriodoDe(db), AvaliacaoDe(db), usuario, DentroDoPeriodo, CancellationToken.None);
+        UniPlusDbContext db, Guid processoId, IUserContext usuario, Dictionary<string, JsonElement>? respostas,
+        Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>>? grupos = null, Guid? faseId = null) =>
+        await AvaliarInscricaoQueryHandler.Handle(new AvaliarInscricaoQuery(processoId, new AvaliacaoDaInscricaoRequest(respostas, grupos), faseId), NovoRepositorioDeInscricao(db), usuario,
+            new ConsultaDaAvaliacaoDaInscricao(new PeriodoDaInscricaoResolver(new CertameDivulgadoRepository(db), ProcessoSeletivoRepositoryDeTeste.Criar(db), RegistroCodecs, Fuso()),
+                new VersaoDaInscricaoResolver(new CertameDivulgadoRepository(db), ProcessoSeletivoRepositoryDeTeste.Criar(db), RegistroCodecs), new ContextoDaVersaoFixadaResolver(ProcessoSeletivoRepositoryDeTeste.Criar(db), RegistroCodecs),
+                new DocumentosEnviadosDaInscricao(Substitute.For<IDocumentoDaInscricaoRepository>()), new PreparacaoDaAvaliacaoDaInscricao(Substitute.For<IConferenciaEnderecoGeo>()), Fuso(), EnderecosSemCopia()), DentroDoPeriodo, CancellationToken.None);
 
-    public async Task<Result<ReciboDaInscricaoDto>> EnviarAsync(UniPlusDbContext db, Guid processoId, InscricaoRequest pedido, string etag, string numero) =>
+    public async Task<Result<ReciboDaInscricaoDto>> EnviarAsync(UniPlusDbContext db, Guid processoId, InscricaoRequest pedido, string etag, string numero,
+        IComprovanteDaInscricaoRepository? comprovantes = null, IDocumentoDaInscricaoRepository? documentos = null) =>
         await SubmeterInscricaoCommandHandler.Handle(
             new SubmeterInscricaoCommand(processoId, pedido, PrecondicaoIfMatch.DeTags([etag])),
-            new InscricaoAtivaDoCandidato(NovoRepositorioDeInscricao(db)), PeriodoDe(db), EnvioDe(db, numero),
-            UsuarioComCpf(PersonasDeTeste.FernandaDrumond), DentroDoPeriodo, CancellationToken.None);
+            new InscricaoDoDono(NovoRepositorioDeInscricao(db), UsuarioComCpf(PersonasDeTeste.FernandaDrumond)),
+            Submissao(db, numero, comprovantes, documentos), db, CancellationToken.None);
 
-    internal static VersaoDaInscricao VersaoDaInscricaoDe(UniPlusDbContext db) =>
-        new(new CertameDivulgadoRepository(db), ProcessoSeletivoRepositoryDeTeste.Criar(db), RegistroCodecs);
-
-    private EnvioDaInscricao EnvioDe(UniPlusDbContext db, string numero)
+    private SubmissaoDaInscricao Submissao(UniPlusDbContext db, string numero,
+        IComprovanteDaInscricaoRepository? comprovantes, IDocumentoDaInscricaoRepository? repositorioDeDocumentos)
     {
-        IDocumentoDaInscricaoRepository documentos = Substitute.For<IDocumentoDaInscricaoRepository>();
-        IInscricaoRepository inscricoes = NovoRepositorioDeInscricao(db);
-        return new EnvioDaInscricao(
-            new PreparoDoEnvio(VersaoDaInscricaoDe(db)),
-            new AvaliacaoDoEnvio(GeoQueConfirma(), Fuso(), documentos),
-            new GravacaoDoEnvio(inscricoes, documentos, GeradorQueDevolve(numero), new GravacaoDaInscricao(inscricoes, db)));
+        IProcessoSeletivoRepository processos = ProcessoSeletivoRepositoryDeTeste.Criar(db);
+        ICertameDivulgadoRepository certames = new CertameDivulgadoRepository(db);
+        DocumentosEnviadosDaInscricao documentos = new(repositorioDeDocumentos ?? Substitute.For<IDocumentoDaInscricaoRepository>());
+        IConferenciaEnderecoGeo geo = GeoQueConfirma();
+        return new SubmissaoDaInscricao(
+            new PreparacaoDoEnvioDaInscricao(new PeriodoDaInscricaoResolver(certames, processos, RegistroCodecs, Fuso()),
+                new VersaoDaInscricaoResolver(certames, processos, RegistroCodecs), new ContextoDaVersaoFixadaResolver(processos, RegistroCodecs), DentroDoPeriodo),
+            new ConferenciaDoEnvioDaInscricao(new ConferenciaDoEnderecoDaInscricao(geo), new ConferenciaDosMunicipiosDaInscricao(geo),
+                documentos, Fuso(), UsuarioComCpf(PersonasDeTeste.FernandaDrumond)),
+            new RegistroDoEnvioDaInscricao(NovoRepositorioDeInscricao(db), comprovantes ?? NovoRepositorioDeComprovantes(db), GeradorQueDevolve(numero), documentos));
     }
-
-    internal static PeriodoDaInscricao PeriodoDe(UniPlusDbContext db) =>
-        new(new CertameDivulgadoRepository(db), ProcessoSeletivoRepositoryDeTeste.Criar(db), RegistroCodecs, Fuso());
-
-    internal static AvaliacaoDaInscricaoDoCandidato AvaliacaoDe(UniPlusDbContext db) =>
-        new(VersaoDaInscricaoDe(db), Fuso(), Substitute.For<IDocumentoDaInscricaoRepository>(), Substitute.For<IConferenciaEnderecoGeo>(), EnderecosSemCopia());
 
     public async Task<Result<InscricaoDto>> SalvarAsync(
         UniPlusDbContext db, Guid processoId, InscricaoRequest pedido, string etag, IConferenciaEnderecoGeo? geo = null)
@@ -129,9 +149,9 @@ internal sealed class CenarioDeInscricaoPublicada
     public async Task<(Inscricao Inscricao, IReadOnlyList<ComprovanteInscricao> Comprovantes)> RelerAsync(Guid processoId)
     {
         await using UniPlusDbContext leitura = _fixture.CreateDbContext();
-        InscricaoRepository repositorio = new(leitura, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+        InscricaoRepository repositorio = RepositoriosDaInscricaoDeTeste.Inscricoes(leitura, _fixture);
         Inscricao inscricao = (await repositorio.ObterAtivaPorProcessoECpfAsync(processoId, PersonasDeTeste.FernandaDrumond, CancellationToken.None))!;
-        return (inscricao, await repositorio.ObterComprovantesAsync([inscricao.Id], CancellationToken.None));
+        return (inscricao, await NovoRepositorioDeComprovantes(leitura).ObterComprovantesAsync([inscricao.Id], CancellationToken.None));
     }
 
     public async Task<List<(int Posicao, int Origem, string Codigo)>> LinhasDaModalidadeAsync(Guid inscricaoId)
@@ -144,6 +164,11 @@ internal sealed class CenarioDeInscricaoPublicada
             WHERE inscricao_id = @id AND fato_codigo = 'MODALIDADE' ORDER BY posicao
             """;
         command.Parameters.AddWithValue("id", inscricaoId);
+        return await LerLinhasDaModalidadeAsync(command);
+    }
+
+    private static async Task<List<(int, int, string)>> LerLinhasDaModalidadeAsync(NpgsqlCommand command)
+    {
         List<(int, int, string)> linhas = [];
         await using NpgsqlDataReader reader = await command.ExecuteReaderAsync();
         while (await reader.ReadAsync())
@@ -180,31 +205,9 @@ internal sealed class CenarioDeInscricaoPublicada
 
     internal static InscricaoRequest PedidoDeEnvio(ProcessoSeletivo processo, IReadOnlyDictionary<string, JsonElement> doProcesso)
     {
-        Dictionary<string, JsonElement> respostas = new(StringComparer.Ordinal)
-        {
-            ["NOME"] = JsonSerializer.SerializeToElement(PersonasDeTeste.NomeFernandaDrumond),
-            ["DESEJA_NOME_SOCIAL"] = JsonSerializer.SerializeToElement(false),
-            ["NACIONALIDADE"] = JsonSerializer.SerializeToElement("BRASILEIRA"),
-            ["CPF"] = JsonSerializer.SerializeToElement(PersonasDeTeste.FernandaDrumond.Valor),
-            ["RG_NUMERO"] = JsonSerializer.SerializeToElement("1234567"),
-            ["RG_ORGAO_EMISSOR"] = JsonSerializer.SerializeToElement("SSP"),
-            ["RG_UF"] = JsonSerializer.SerializeToElement("PA"),
-            ["RG_DATA_EMISSAO"] = JsonSerializer.SerializeToElement("2010-01-01"),
-            ["DATA_NASCIMENTO"] = JsonSerializer.SerializeToElement("2000-01-01"),
-            ["NATURALIDADE_UF"] = JsonSerializer.SerializeToElement("PA"),
-            ["NATURALIDADE_MUNICIPIO"] = JsonSerializer.SerializeToElement("1504208"),
-            ["NOME_MAE"] = JsonSerializer.SerializeToElement("Maria Drumond"),
-            ["ESTADO_CIVIL"] = JsonSerializer.SerializeToElement("SOLTEIRO"),
-            ["SEXO"] = JsonSerializer.SerializeToElement("FEMININO"),
-            ["SEXO_CIVIL"] = JsonSerializer.SerializeToElement("FEMININO"),
-            ["IDENTIDADE_GENERO"] = JsonSerializer.SerializeToElement("PREFIRO_NAO_INFORMAR"),
-            ["ORIENTACAO_SEXUAL"] = JsonSerializer.SerializeToElement("PREFIRO_NAO_INFORMAR"),
-            ["COR_RACA"] = JsonSerializer.SerializeToElement("NAO_DECLARADO"),
-            ["EMAIL"] = JsonSerializer.SerializeToElement("fernanda.drumond@example.com"),
-            ["TELEFONE"] = JsonSerializer.SerializeToElement("94999999999"),
-            ["TIPO_ENDERECO"] = JsonSerializer.SerializeToElement("URBANO"),
-            ["ENDERECO_RESIDENCIAL"] = JsonSerializer.SerializeToElement(new { cep = "68500000", cidade = new { codigoIbge = "1504208", uf = "PA" } }),
-        };
+        Dictionary<string, JsonElement> respostas = RespostasDeIdentificacao();
+        AcrescentarDeclaracoesPessoais(respostas);
+        AcrescentarContatos(respostas);
         foreach ((string fato, JsonElement valor) in doProcesso)
         {
             respostas[fato] = valor;
@@ -214,6 +217,45 @@ internal sealed class CenarioDeInscricaoPublicada
         return new InscricaoRequest(
             processo.DistribuicaoVagas.Single().OfertaCursoOrigemId,
             respostas,
+            GruposDoPedido(),
+            [new AceiteDeTermoInput(termo.Codigo, termo.VersaoId, termo.HashVersao)]);
+    }
+
+    private static Dictionary<string, JsonElement> RespostasDeIdentificacao() => new(StringComparer.Ordinal)
+    {
+        ["NOME"] = JsonSerializer.SerializeToElement(PersonasDeTeste.NomeFernandaDrumond),
+        ["DESEJA_NOME_SOCIAL"] = JsonSerializer.SerializeToElement(false),
+        ["NACIONALIDADE"] = JsonSerializer.SerializeToElement("BRASILEIRA"),
+        ["CPF"] = JsonSerializer.SerializeToElement(PersonasDeTeste.FernandaDrumond.Valor),
+        ["RG_NUMERO"] = JsonSerializer.SerializeToElement("1234567"),
+        ["RG_ORGAO_EMISSOR"] = JsonSerializer.SerializeToElement("SSP"),
+        ["RG_UF"] = JsonSerializer.SerializeToElement("PA"),
+        ["RG_DATA_EMISSAO"] = JsonSerializer.SerializeToElement("2010-01-01"),
+        ["DATA_NASCIMENTO"] = JsonSerializer.SerializeToElement("2000-01-01"),
+        ["NATURALIDADE_UF"] = JsonSerializer.SerializeToElement("PA"),
+        ["NATURALIDADE_MUNICIPIO"] = JsonSerializer.SerializeToElement("1504208"),
+    };
+
+    private static void AcrescentarDeclaracoesPessoais(Dictionary<string, JsonElement> respostas)
+    {
+        respostas["NOME_MAE"] = JsonSerializer.SerializeToElement("Maria Drumond");
+        respostas["ESTADO_CIVIL"] = JsonSerializer.SerializeToElement("SOLTEIRO");
+        respostas["SEXO"] = JsonSerializer.SerializeToElement("FEMININO");
+        respostas["SEXO_CIVIL"] = JsonSerializer.SerializeToElement("FEMININO");
+        respostas["IDENTIDADE_GENERO"] = JsonSerializer.SerializeToElement("PREFIRO_NAO_INFORMAR");
+        respostas["ORIENTACAO_SEXUAL"] = JsonSerializer.SerializeToElement("PREFIRO_NAO_INFORMAR");
+        respostas["COR_RACA"] = JsonSerializer.SerializeToElement("NAO_DECLARADO");
+    }
+
+    private static void AcrescentarContatos(Dictionary<string, JsonElement> respostas)
+    {
+        respostas["EMAIL"] = JsonSerializer.SerializeToElement("fernanda.drumond@example.com");
+        respostas["TELEFONE"] = JsonSerializer.SerializeToElement("94999999999");
+        respostas["TIPO_ENDERECO"] = JsonSerializer.SerializeToElement("URBANO");
+        respostas["ENDERECO_RESIDENCIAL"] = JsonSerializer.SerializeToElement(new { cep = "68500000", cidade = new { codigoIbge = "1504208", uf = "PA" } });
+    }
+
+    private static Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>> GruposDoPedido() =>
             new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>>(StringComparer.Ordinal)
             {
                 ["COMPOSICAO_FAMILIAR"] =
@@ -224,9 +266,7 @@ internal sealed class CenarioDeInscricaoPublicada
                         ["PARENTESCO"] = JsonSerializer.SerializeToElement("Mãe"),
                     }),
                 ],
-            },
-            [new AceiteDeTermoInput(termo.Codigo, termo.VersaoId, termo.HashVersao)]);
-    }
+            };
 
     internal static IConferenciaEnderecoGeo GeoQueConfirma()
     {

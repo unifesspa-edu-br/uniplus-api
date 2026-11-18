@@ -18,7 +18,7 @@ public sealed class EixosDoItemNaRetificacaoTests
         CenarioDeRetificacaoPublicada cenario = CenarioDeRetificacaoPublicada.Publicado();
         VersaoConfiguracao vigente = (await cenario.Servicos.Repositorio.ObterVersaoAtualAsync(cenario.Processo.Id, CancellationToken.None))!;
         EnvelopeReidratado publicado = cenario.Servicos.Codecs.Reidratar(vigente).Value!;
-        EixosDoItemCongelado eixos = EixosDoItemCongelado.De(publicado.Grafo.FatosColetados.Single(static f => f.FatoCodigo == Fato));
+        EixosDoItemCongelado eixos = EixosDoItemCongelado.De(publicado.Configuracao.Coleta.Itens.Single(static f => f.FatoCodigo == Fato));
 
         (Result resposta, _) = await cenario.RetificarAsync();
 

@@ -9,7 +9,6 @@ using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
-using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 /// <summary>
 /// O arquivo de outra pessoa recebe a recusa do inexistente. O GET aparece na auditoria do armazenamento com a
@@ -19,21 +18,20 @@ public static partial class ObterAcessoDoArquivoDoCandidatoQueryHandler
 {
     public static async Task<Result<AcessoArquivoDoCandidatoDto>> Handle(
         ObterAcessoDoArquivoDoCandidatoQuery query,
-        IInscricaoRepository inscricaoRepository,
-        IDocumentoDaInscricaoRepository documentoRepository,
+        AcessoAoDocumentoDaInscricao acesso,
         EmissaoDoAcessoAoArquivo emissao,
         IUserContext userContext,
         ILogger logger,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        ArgumentNullException.ThrowIfNull(documentoRepository);
+        ArgumentNullException.ThrowIfNull(acesso);
         ArgumentNullException.ThrowIfNull(emissao);
         ArgumentNullException.ThrowIfNull(userContext);
 
-        Result<ArquivoDaApresentacao> encontrado = await AcessoAoDocumentoDaInscricao
+        Result<ArquivoDaApresentacao> encontrado = await acesso
             .ResolverArquivoDoDonoAsync(
-                query.ProcessoSeletivoId, query.ArquivoId, userContext, inscricaoRepository, documentoRepository, cancellationToken)
+                query.ProcessoSeletivoId, query.ArquivoId, cancellationToken)
             .ConfigureAwait(false);
 
         return encontrado.IsFailure

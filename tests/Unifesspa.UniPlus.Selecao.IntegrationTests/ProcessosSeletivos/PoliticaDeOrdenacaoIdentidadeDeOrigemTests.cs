@@ -52,18 +52,13 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
         FaseCronograma faseZeta = FaseDeZetaFase();
         FaseCronograma faseAlfa = FaseDeAlfaFase();
 
-        new[] { faseZeta, faseAlfa }.OrderBy(static f => f.Codigo, StringComparer.Ordinal).Select(static f => f.Codigo)
-            .Should().Equal(["ALFA_FASE", "ZETA_FASE"], "pré-condição: ordenar pelo código (proxy de conteúdo) dá o oposto do oráculo de Ordem abaixo");
-        new[] { faseZeta, faseAlfa }.OrderBy(static f => f.Id).Select(static f => f.Codigo)
-            .Should().Equal(["ALFA_FASE", "ZETA_FASE"], "pré-condição: ordenar pelo Id dá o oposto do oráculo de Ordem abaixo");
+        ConferirCronogramaContrario(faseZeta, faseAlfa);
 
         ProcessoSeletivo processo = Montar(cronogramaFases: [faseAlfa, faseZeta]);
 
         JsonArray fasesJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["cronogramaFases"]!["fases"]!.AsArray();
 
-        fasesJson.Select(static f => f!["codigo"]!.GetValue<string>()).Should().Equal(
-            ["ZETA_FASE", "ALFA_FASE"],
-            "Ordem (1 para ZETA_FASE, 2 para ALFA_FASE) governa a posição — o código, em ordem alfabética, apontaria para o oposto");
+        fasesJson.Select(static f => f!["codigo"]!.GetValue<string>()).Should().Equal(["ZETA_FASE", "ALFA_FASE"]);
     }
 
     [Fact(DisplayName = "cronogramaFases.fases[].bancasRequeridas: identidade de origem governa sobre o conteúdo — oráculo de sequência exata")]
@@ -73,13 +68,11 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
         BancaRequerida bancaComOrigemMaior = BancaRequerida.Criar(IdFixo(2), "ALFA_BANCA", "Banca de teste", []);
 
         new[] { bancaComOrigemMenor, bancaComOrigemMaior }.OrderBy(static b => b.Codigo, StringComparer.Ordinal).Select(static b => b.Codigo)
-            .Should().Equal(["ALFA_BANCA", "ZETA_BANCA"], "pré-condição: ordenar pelo código (proxy de conteúdo) dá o oposto do oráculo de identidade abaixo");
+            .Should().Equal(["ALFA_BANCA", "ZETA_BANCA"]);
 
         JsonArray bancasJson = BancasRequeridasEnvelopadas(FaseComAsBancas("INSCRICAO", bancaComOrigemMaior, bancaComOrigemMenor));
 
-        bancasJson.Select(static b => b!["codigo"]!.GetValue<string>()).Should().Equal(
-            ["ZETA_BANCA", "ALFA_BANCA"],
-            "a identidade de origem (TipoBancaOrigemId) governa a posição — o código, em ordem alfabética, apontaria para o oposto");
+        bancasJson.Select(static b => b!["codigo"]!.GetValue<string>()).Should().Equal(["ZETA_BANCA", "ALFA_BANCA"]);
     }
 
     // (TipoBancaOrigemId, Codigo) empata: as duas bancas são do MESMO tipo, que é o
@@ -99,9 +92,7 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
 
         bancasJson
             .Select(static b => b!["recorteDeCompetencia"]!.AsArray()[0]!["codigo"]!.GetValue<string>())
-            .Should().Equal(
-                ["ETNICO_RACIAL", "RENDA"],
-                "empatado o par (identidade de origem, código), os bytes do próprio item desempatam — e é a banca do recorte ETNICO_RACIAL que vem primeiro, embora tenha sido declarada por último");
+            .Should().Equal(["ETNICO_RACIAL", "RENDA"]);
     }
 
     // O id de origem é identidade técnica e não pode vazar para dentro do hash: dois
@@ -119,9 +110,7 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
 
         JsonArray recorteJson = BancasRequeridasEnvelopadas(FaseComAsBancas("ANALISE", banca))[0]!["recorteDeCompetencia"]!.AsArray();
 
-        recorteJson.Select(static c => c!["codigo"]!.GetValue<string>()).Should().Equal(
-            ["ALFA_CATEGORIA", "ZETA_CATEGORIA"],
-            "o código da categoria é a chave natural do recorte e governa a posição, apesar da ordem de declaração");
+        recorteJson.Select(static c => c!["codigo"]!.GetValue<string>()).Should().Equal(["ALFA_CATEGORIA", "ZETA_CATEGORIA"]);
     }
 
     private static FaseCronograma FaseComAsBancas(string codigo, params BancaRequerida[] bancas) => FaseCronograma.Criar(
@@ -145,16 +134,14 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
         FatoColetado fatoAlfa = FatoColetado.Criar("ALFA_FATO", 1, "Rótulo Alfa", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
 
         new[] { fatoZeta, fatoAlfa }.OrderBy(static f => f.FatoCodigo, StringComparer.Ordinal).Select(static f => f.FatoCodigo)
-            .Should().Equal(["ALFA_FATO", "ZETA_FATO"], "pré-condição: ordenar pelo FatoCodigo (proxy de conteúdo) dá o oposto do oráculo de Ordem abaixo");
+            .Should().Equal(["ALFA_FATO", "ZETA_FATO"]);
 
         ProcessoSeletivo processo = Montar(fatosColetados: [fatoAlfa, fatoZeta]);
 
         JsonArray fatosJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["fatosColetados"]!.AsArray();
 
         // O formulário de inscrição traz também a seção do conjunto básico, que vem antes.
-        fatosJson.Select(static f => f!["fatoCodigo"]!.GetValue<string>()).Where(static c => c is "ZETA_FATO" or "ALFA_FATO").Should().Equal(
-            ["ZETA_FATO", "ALFA_FATO"],
-            "Ordem (0 para ZETA_FATO, 1 para ALFA_FATO) governa a posição — o FatoCodigo, em ordem alfabética, apontaria para o oposto");
+        fatosJson.Select(static f => f!["fatoCodigo"]!.GetValue<string>()).Where(static c => c is "ZETA_FATO" or "ALFA_FATO").Should().Equal(["ZETA_FATO", "ALFA_FATO"]);
     }
 
     [Fact(DisplayName = "regrasDerivacao[].regras: Ordem governa sobre o conteúdo (Contribui) — oráculo de sequência exata")]
@@ -164,16 +151,14 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
         RegraDerivacaoConfigurada regraAlfa = RegraDerivacaoConfigurada.Criar(1, "ALFA_VALOR", null).Value!;
 
         new[] { regraZeta, regraAlfa }.OrderBy(static r => r.Contribui, StringComparer.Ordinal).Select(static r => r.Contribui)
-            .Should().Equal(["ALFA_VALOR", "ZETA_VALOR"], "pré-condição: ordenar por Contribui (proxy de conteúdo) dá o oposto do oráculo de Ordem abaixo");
+            .Should().Equal(["ALFA_VALOR", "ZETA_VALOR"]);
 
         ConfiguracaoDerivacaoFato config = ConfiguracaoDerivacaoFato.Criar("FATO_TESTE", [regraAlfa, regraZeta]).Value!;
         ProcessoSeletivo processo = Montar(regrasDerivacao: [config]);
 
         JsonArray regrasJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["regrasDerivacao"]![0]!["regras"]!.AsArray();
 
-        regrasJson.Select(static r => r!["contribui"]!.GetValue<string>()).Should().Equal(
-            ["ZETA_VALOR", "ALFA_VALOR"],
-            "Ordem (0 para ZETA_VALOR, 1 para ALFA_VALOR) governa a posição — Contribui, em ordem alfabética, apontaria para o oposto");
+        regrasJson.Select(static r => r!["contribui"]!.GetValue<string>()).Should().Equal(["ZETA_VALOR", "ALFA_VALOR"]);
     }
 
     [Fact(DisplayName = "cascataRemanejamento.ordens[].destinos: Ordem governa sobre o conteúdo, dentro da mesma origem — oráculo de sequência exata")]
@@ -182,20 +167,17 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
         DestinoRemanejamento destinoZeta = DestinoRemanejamento.Criar("ORIGEM_TESTE", 1, "ZETA_DEST").Value!;
         DestinoRemanejamento destinoAlfa = DestinoRemanejamento.Criar("ORIGEM_TESTE", 2, "ALFA_DEST").Value!;
 
-        new[] { destinoZeta, destinoAlfa }.OrderBy(static d => d.ModalidadeDestinoCodigo, StringComparer.Ordinal).Select(static d => d.ModalidadeDestinoCodigo)
-            .Should().Equal(["ALFA_DEST", "ZETA_DEST"], "pré-condição: ordenar pelo código do destino (proxy de conteúdo) dá o oposto do oráculo de Ordem abaixo");
+        ConferirDestinosContrarios(destinoZeta, destinoAlfa);
 
         ConfiguracaoCascataRemanejamento cascata = ConfiguracaoCascataRemanejamento.Criar(
             Regra(RegraRemanejamentoCodigo.Cascata, 'e'), "FALLBACK_TESTE", [destinoAlfa, destinoZeta]).Value!;
 
-        ProcessoSeletivo processo = Montar(cascata: cascata);
+        ProcessoSeletivo processo = MontarComCascata(cascata);
 
         JsonArray destinosJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))
             ["cascataRemanejamento"]!["ordens"]![0]!["destinos"]!.AsArray();
 
-        destinosJson.Select(static d => d!.GetValue<string>()).Should().Equal(
-            ["ZETA_DEST", "ALFA_DEST"],
-            "Ordem (1 para ZETA_DEST, 2 para ALFA_DEST) governa a posição dentro da origem — o código, em ordem alfabética, apontaria para o oposto");
+        destinosJson.Select(static d => d!.GetValue<string>()).Should().Equal(["ZETA_DEST", "ALFA_DEST"]);
     }
 
     [Fact(DisplayName = "cascataRemanejamento.ordens: as origens ordenam pelo código, ordinal — não pela ordem física de entrada")]
@@ -209,14 +191,12 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
         ConfiguracaoCascataRemanejamento cascata = ConfiguracaoCascataRemanejamento.Criar(
             Regra(RegraRemanejamentoCodigo.Cascata, 'f'), "FALLBACK_TESTE", [destinoDaZeta, destinoDaAlfa]).Value!;
 
-        ProcessoSeletivo processo = Montar(cascata: cascata);
+        ProcessoSeletivo processo = MontarComCascata(cascata);
 
         JsonArray ordensJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["cascataRemanejamento"]!["ordens"]!.AsArray();
 
         ordensJson.Should().HaveCount(2, "pré-condição: duas origens distintas sob teste");
-        ordensJson.Select(static o => o!["origem"]!.GetValue<string>()).Should().Equal(
-            ["ALFA_ORIGEM", "ZETA_ORIGEM"],
-            "as origens ordenam por código, ordinal — não pela ordem física de entrada, que era [ZETA_ORIGEM, ALFA_ORIGEM]");
+        ordensJson.Select(static o => o!["origem"]!.GetValue<string>()).Should().Equal(["ALFA_ORIGEM", "ZETA_ORIGEM"]);
     }
 
     /// <summary>
@@ -228,70 +208,57 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
     public void ArvoreSatisfacao_RaizesEFilhos_OrdemGovernaSobreConteudo()
     {
         FaseCronograma fase = FaseMinima();
-
-        DocumentoExigido docRaizFolha = DocumentoExigido.Criar(
-            fase.Id, Guid.CreateVersion7(), "RAIZ_ZETA", "Documento raiz solteira", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, [], [], null,
-            FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
-
-        // Exigência e nó reidratados com Id FIXO e CONTRÁRIO à Ordem — não Guid.CreateVersion7(),
-        // que alinharia acidentalmente os Ids com a ordem de criação (e, por tabela, com a Ordem
-        // esperada): o filho ZETA (Ordem 0, deve vir PRIMEIRO) recebe o Id MAIOR; o filho ALFA
-        // (Ordem 1, deve vir SEGUNDO) recebe o Id MENOR, tanto na exigência quanto no nó.
-        DocumentoExigido docFilhoZeta = DocumentoExigido.Reidratar(
-            IdFixo(2), fase.Id, Guid.CreateVersion7(), "FILHO_ZETA", "Documento filho zeta", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
-            condicoes: [], basesLegais: [], idadeMaximaEmissao: null,
-            formatosPermitidos: FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao);
-        DocumentoExigido docFilhoAlfa = DocumentoExigido.Reidratar(
-            IdFixo(1), fase.Id, Guid.CreateVersion7(), "FILHO_ALFA", "Documento filho alfa", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
-            condicoes: [], basesLegais: [], idadeMaximaEmissao: null,
-            formatosPermitidos: FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao);
-
-        NoExigencia raizFolha = NoExigencia.CriarFolha(docRaizFolha, ordem: 1).Value!;
-        // filhoZeta tem Ordem MENOR (0) mas Id do nó MAIOR — a chave em conflito que distingue
-        // "Ordem governa" de "identidade técnica (Id) governa".
-        NoExigencia filhoZeta = NoExigencia.Reidratar(
-            IdFixo(4), TipoNo.Folha, ordem: 0, docFilhoZeta.Id, docFilhoZeta,
-            quantidadeMinima: NoExigencia.QuantidadeMinimaPadrao, consequencia: null, chaveDistincao: null,
-            dataReferencia: null, ocorrenciasEsperadas: null, repetePorEntidade: null, basesLegais: [], filhos: []);
-        NoExigencia filhoAlfa = NoExigencia.Reidratar(
-            IdFixo(3), TipoNo.Folha, ordem: 1, docFilhoAlfa.Id, docFilhoAlfa,
-            quantidadeMinima: NoExigencia.QuantidadeMinimaPadrao, consequencia: null, chaveDistincao: null,
-            dataReferencia: null, ocorrenciasEsperadas: null, repetePorEntidade: null, basesLegais: [], filhos: []);
-
-        // Dois irmãos — não um: duas raízes de um filho cada deixaria "filhos" trivial. Inseridos na
-        // ordem física ERRADA (Alfa antes de Zeta).
-        NoExigencia raizGrupo = NoExigencia.CriarGrupo(
-            TipoNo.GrupoOu, ordem: 0, quantidadeMinima: 1, consequencia: null, basesLegais: [],
-            filhos: [filhoAlfa, filhoZeta]).Value!;
-
-        new[] { raizFolha, raizGrupo }.OrderBy(static r => r.Tipo.ToCodigo(), StringComparer.Ordinal).Select(static r => r.Tipo.ToCodigo())
-            .Should().Equal(["FOLHA", "OU"], "pré-condição: ordenar pelo tipo (proxy de conteúdo) dá o oposto do oráculo de Ordem das raízes");
-        // Pré-condição calculada sobre o MESMO campo que arvoreSatisfacao[].filhos[] realmente
-        // emite para o nó (o Id, técnico) — não sobre TipoDocumentoCodigo, que esse caminho não
-        // emite: um mutante que ordenasse os filhos pelo Id do nó produziria exatamente esta
-        // sequência oposta.
-        new[] { filhoAlfa, filhoZeta }.OrderBy(static f => f.Id).Select(static f => f.DocumentoExigidoId)
-            .Should().Equal(
-                [docFilhoAlfa.Id, docFilhoZeta.Id],
-                "pré-condição: ordenar pelo Id do nó (identidade técnica, não conteúdo) dá o oposto do oráculo de Ordem dos filhos abaixo");
-
-        // Inseridas na ordem física ERRADA (folha, cuja Ordem é maior, antes do grupo).
+        NoExigencia raizFolha = RaizSolteira(fase);
+        NoExigencia filhoZeta = FolhaComIdentidade(fase, 2, 4, 0, "FILHO_ZETA");
+        NoExigencia filhoAlfa = FolhaComIdentidade(fase, 1, 3, 1, "FILHO_ALFA");
+        NoExigencia raizGrupo = NoExigencia.CriarGrupo(TipoNo.GrupoOu, 0, 1, null, [], [filhoAlfa, filhoZeta]).Value!;
+        ConferirEntradasContrariasAOrdem(raizFolha, raizGrupo, filhoAlfa, filhoZeta);
         ProcessoSeletivo processo = Montar(cronogramaFases: [fase], documentosExigidos: [raizFolha, raizGrupo]);
+        JsonArray arvore = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["arvoreSatisfacao"]!.AsArray();
+        arvore.Should().HaveCount(2);
+        arvore.Select(static r => r!["tipo"]!.GetValue<string>()).Should().Equal(["OU", "FOLHA"]);
+        JsonArray filhos = arvore[0]!["filhos"]!.AsArray();
+        filhos.Should().HaveCount(2);
+        filhos.Select(static f => f!["exigenciaId"]!.GetValue<Guid>()).Should().Equal([filhoZeta.DocumentoExigidoId!.Value, filhoAlfa.DocumentoExigidoId!.Value]);
+    }
 
-        JsonArray arvoreJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["arvoreSatisfacao"]!.AsArray();
+    private static NoExigencia RaizSolteira(FaseCronograma fase)
+    {
+        DocumentoExigido documento = DocumentoExigido.Criar(
+            fase.Id, Guid.CreateVersion7(), "RAIZ_ZETA", "Documento raiz solteira", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
+            Aplicabilidade.Geral, false, null, [], [], null, FormatosPermitidos.Criar(true, null).Value!, null,
+            finalidade: FinalidadeFormulario.Inscricao).Value!;
+        return NoExigencia.CriarFolha(documento, 1).Value!;
+    }
 
-        arvoreJson.Should().HaveCount(2, "pré-condição: duas raízes, como o cenário exige");
-        arvoreJson.Select(static r => r!["tipo"]!.GetValue<string>()).Should().Equal(
-            ["OU", "FOLHA"],
-            "Ordem (0 para o grupo OU, 1 para a folha solteira) governa a posição das raízes — o tipo, em ordem alfabética, apontaria para o oposto");
+    private static NoExigencia FolhaComIdentidade(FaseCronograma fase, int idDocumento, int idNo, int ordem, string codigo)
+    {
+        DocumentoExigido documento = DocumentoExigido.Reidratar(IdFixo(idDocumento), fase.Id, Guid.CreateVersion7(),
+            codigo, "Documento filho", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral, false, null,
+            [], [], null, FormatosPermitidos.Criar(true, null).Value!, null, finalidade: FinalidadeFormulario.Inscricao);
+        return NoExigencia.ReidratarFolha(IdFixo(idNo), ordem, documento, NoExigencia.QuantidadeMinimaPadrao, null, null);
+    }
 
-        JsonArray filhosJson = arvoreJson[0]!["filhos"]!.AsArray();
-        filhosJson.Should().HaveCount(2, "pré-condição: dois irmãos, não um — com um só, 'filhos' seria trivial");
-        filhosJson.Select(static f => f!["exigenciaId"]!.GetValue<Guid>()).Should().Equal(
-            [docFilhoZeta.Id, docFilhoAlfa.Id],
-            "Ordem (0 para o filho ZETA, 1 para o filho ALFA) governa a posição dos irmãos — o Id do nó, contrário à Ordem, apontaria para o oposto");
+    private static void ConferirEntradasContrariasAOrdem(NoExigencia folha, NoExigencia grupo, NoExigencia alfa, NoExigencia zeta)
+    {
+        // A ordenação pelo tipo das raízes ou pelo Id dos filhos deve divergir da ordem declarada.
+        new[] { folha, grupo }.OrderBy(static r => r.Tipo.ToCodigo(), StringComparer.Ordinal).Select(static r => r.Tipo.ToCodigo())
+            .Should().Equal(["FOLHA", "OU"]);
+        new[] { alfa, zeta }.OrderBy(static f => f.Id).Select(static f => f.DocumentoExigidoId)
+            .Should().Equal([alfa.DocumentoExigidoId, zeta.DocumentoExigidoId]);
+    }
+    private static void ConferirCronogramaContrario(FaseCronograma faseZeta, FaseCronograma faseAlfa)
+    {
+        new[] { faseZeta, faseAlfa }.OrderBy(static f => f.Codigo, StringComparer.Ordinal).Select(static f => f.Codigo)
+            .Should().Equal(["ALFA_FASE", "ZETA_FASE"]);
+        new[] { faseZeta, faseAlfa }.OrderBy(static f => f.Id).Select(static f => f.Codigo)
+            .Should().Equal(["ALFA_FASE", "ZETA_FASE"]);
+
+    }
+    private static void ConferirDestinosContrarios(DestinoRemanejamento destinoZeta, DestinoRemanejamento destinoAlfa)
+    {
+        new[] { destinoZeta, destinoAlfa }.OrderBy(static d => d.ModalidadeDestinoCodigo, StringComparer.Ordinal).Select(static d => d.ModalidadeDestinoCodigo)
+            .Should().Equal(["ALFA_DEST", "ZETA_DEST"]);
+
     }
 }

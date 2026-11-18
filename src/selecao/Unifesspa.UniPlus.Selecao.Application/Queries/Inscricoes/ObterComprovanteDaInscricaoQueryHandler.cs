@@ -10,8 +10,6 @@ using Kernel.Results;
 using Services;
 using Services.Comprovantes;
 
-using Unifesspa.UniPlus.Application.Abstractions.Authentication;
-
 /// <summary>
 /// Devolve o comprovante de um envio da inscrição, pronto para exibir. A ordem das recusas é fixa: o dono primeiro, para que a
 /// inscrição alheia responda como inexistente; depois a inscrição cancelada, que não tem comprovante; só então se lê e se decifra
@@ -21,31 +19,32 @@ public static class ObterComprovanteDaInscricaoQueryHandler
 {
     public static async Task<Result<ComprovanteDaInscricaoDto>> Handle(
         ObterComprovanteDaInscricaoQuery query,
-        IInscricaoRepository inscricaoRepository,
+        IComprovanteDaInscricaoRepository comprovanteRepository,
         MontadorDoComprovante montador,
-        IUserContext userContext,
+        InscricaoDoDono inscricaoDoDono,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        ArgumentNullException.ThrowIfNull(inscricaoRepository);
+        ArgumentNullException.ThrowIfNull(comprovanteRepository);
         ArgumentNullException.ThrowIfNull(montador);
+        ArgumentNullException.ThrowIfNull(inscricaoDoDono);
 
-        Result<Inscricao> dona = await InscricaoDoDono
-            .ObterAsync(query.InscricaoId, inscricaoRepository, userContext, cancellationToken).ConfigureAwait(false);
+        Result<Inscricao> dona = await inscricaoDoDono
+            .ObterAsync(query.InscricaoId, cancellationToken).ConfigureAwait(false);
 
         return dona.IsFailure
             ? Result<ComprovanteDaInscricaoDto>.Failure(dona.Error!)
-            : await LerAsync(dona.Value!, query.Numero, inscricaoRepository, montador, cancellationToken).ConfigureAwait(false);
+            : await LerAsync(dona.Value!, query.Numero, comprovanteRepository, montador, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<Result<ComprovanteDaInscricaoDto>> LerAsync(
-        Inscricao inscricao, int numero, IInscricaoRepository inscricaoRepository, MontadorDoComprovante montador, CancellationToken cancellationToken)
+        Inscricao inscricao, int numero, IComprovanteDaInscricaoRepository comprovanteRepository, MontadorDoComprovante montador, CancellationToken cancellationToken)
     {
         if (inscricao.ConferirComprovanteEmitivel() is { } cancelada)
         {
             return Result<ComprovanteDaInscricaoDto>.Failure(cancelada);
         }
 
-        return await ComprovanteDoNumero.MontarAsync(inscricao, numero, inscricaoRepository, montador, cancellationToken).ConfigureAwait(false);
+        return await ComprovanteDoNumero.MontarAsync(inscricao, numero, comprovanteRepository, montador, cancellationToken).ConfigureAwait(false);
     }
 }

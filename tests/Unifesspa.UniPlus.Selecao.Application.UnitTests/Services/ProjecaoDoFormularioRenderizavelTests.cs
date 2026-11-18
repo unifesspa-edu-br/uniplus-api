@@ -103,21 +103,7 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
     [Fact(DisplayName = "O campo de seleção traz os valores na ordem de apresentação, com a orientação congelada; o de texto, o formato e nenhum valor")]
     public void Projetar_Campos_TrazemValoresEFormato()
     {
-        Configuracao configuracao = new(
-            [Formulario(FinalidadeFormulario.Inscricao)],
-            [
-                Campo("COR_RACA", 0, TipoRenderizacao.SelecaoUnica, FinalidadeFormulario.Inscricao),
-                Campo("NOME_SOCIAL", 1, TipoRenderizacao.Texto, FinalidadeFormulario.Inscricao, formato: "NOME_PESSOA"),
-            ],
-            [],
-            [])
-        {
-            Valores = new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal)
-            {
-                ["COR_RACA"] = [new("PRETA", "Preta", 1, "Passa pela heteroidentificação."), new("BRANCA", "Branca", 0), new("AMARELA", "Amarela", 1)],
-                ["NOME_SOCIAL"] = null,
-            },
-        };
+        Configuracao configuracao = ConfiguracaoComValores();
 
         FormularioRenderizavel formulario = configuracao.Projetar(FinalidadeFormulario.Inscricao)!;
 
@@ -133,27 +119,7 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
     [Fact(DisplayName = "O pressuposto respondido em outro formulário traz a apresentação dele; o agregado de grupo de outro formulário e o derivado do sistema dizem de que são calculados")]
     public void Projetar_Pressupostos_DescritosPelaOrigem()
     {
-        GrupoColetado familia = GrupoColetado.Criar(
-            "COMPOSICAO_FAMILIAR", 1, Secao, "Composição familiar", 0, null, null, Obrigatoriedade.Nunca,
-            [Campo("TRABALHADOR_RURAL", 0, TipoRenderizacao.Booleano, FinalidadeFormulario.Inscricao, etapa: null)],
-            FinalidadeFormulario.Inscricao).Value!;
-        Configuracao configuracao = new(
-            [Formulario(FinalidadeFormulario.Inscricao), Formulario(FinalidadeFormulario.Habilitacao)],
-            [
-                Campo("COR_RACA", 0, TipoRenderizacao.SelecaoUnica, FinalidadeFormulario.Inscricao),
-                Campo("CERTIFICADO", 0, TipoRenderizacao.Booleano, FinalidadeFormulario.Habilitacao, quando: [("COR_RACA", "PRETA")]),
-                Campo("DECLARACAO_RURAL", 1, TipoRenderizacao.Booleano, FinalidadeFormulario.Habilitacao, quando: [("RURAL_NA_FAMILIA", true)]),
-                Campo("DECLARACAO_MAIORIDADE", 2, TipoRenderizacao.Booleano, FinalidadeFormulario.Habilitacao, quando: [("FAIXA_ETARIA", 18)]),
-            ],
-            [familia],
-            [])
-        {
-            Valores = new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal)
-            {
-                ["COR_RACA"] = [new("PRETA", "Preta", 0)],
-            },
-            Agregados = [new DefinicaoAgregado("RURAL_NA_FAMILIA", "COMPOSICAO_FAMILIAR", "TRABALHADOR_RURAL", OperacaoAgregado.Existe)],
-        };
+        Configuracao configuracao = ConfiguracaoComPressupostos();
 
         IReadOnlyList<PressupostoRenderizavel> pressupostos = configuracao.Projetar(FinalidadeFormulario.Habilitacao)!.Pressupostos;
 
@@ -165,7 +131,36 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
             ]);
     }
 
-    /// <summary>A configuração de um processo, como o grafo reidratado ou a configuração viva a dão à projeção.</summary>
+    private static Configuracao ConfiguracaoComValores() => new(
+        [Formulario(FinalidadeFormulario.Inscricao)],
+        [Campo("COR_RACA", 0, TipoRenderizacao.SelecaoUnica, FinalidadeFormulario.Inscricao),
+         Campo("NOME_SOCIAL", 1, TipoRenderizacao.Texto, FinalidadeFormulario.Inscricao, formato: "NOME_PESSOA")], [], [])
+    {
+        Valores = new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal)
+        {
+            ["COR_RACA"] = [new("PRETA", "Preta", 1, "Passa pela heteroidentificação."), new("BRANCA", "Branca", 0), new("AMARELA", "Amarela", 1)],
+            ["NOME_SOCIAL"] = null,
+        },
+    };
+
+    private static Configuracao ConfiguracaoComPressupostos() => new(
+        [Formulario(FinalidadeFormulario.Inscricao), Formulario(FinalidadeFormulario.Habilitacao)],
+        [Campo("COR_RACA", 0, TipoRenderizacao.SelecaoUnica, FinalidadeFormulario.Inscricao),
+         Campo("CERTIFICADO", 0, TipoRenderizacao.Booleano, FinalidadeFormulario.Habilitacao, quando: [("COR_RACA", "PRETA")]),
+         Campo("DECLARACAO_RURAL", 1, TipoRenderizacao.Booleano, FinalidadeFormulario.Habilitacao, quando: [("RURAL_NA_FAMILIA", true)]),
+         Campo("DECLARACAO_MAIORIDADE", 2, TipoRenderizacao.Booleano, FinalidadeFormulario.Habilitacao, quando: [("FAIXA_ETARIA", 18)])],
+        [Familia()], [])
+    {
+        Valores = new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal) { ["COR_RACA"] = [new("PRETA", "Preta", 0)] },
+        Agregados = [new DefinicaoAgregado("RURAL_NA_FAMILIA", "COMPOSICAO_FAMILIAR", "TRABALHADOR_RURAL", OperacaoAgregado.Existe)],
+    };
+
+    private static GrupoColetado Familia() => GrupoColetado.Criar(
+        "COMPOSICAO_FAMILIAR", 1, Secao, "Composição familiar", 0, null, null, Obrigatoriedade.Nunca,
+        [Campo("TRABALHADOR_RURAL", 0, TipoRenderizacao.Booleano, FinalidadeFormulario.Inscricao, etapa: null)],
+        FinalidadeFormulario.Inscricao).Value!;
+
+    /// <summary>A configuração de um processo, como a configuração publicada ou a configuração viva a dão à projeção.</summary>
     private sealed record Configuracao(
         IReadOnlyList<FormularioProcesso> Formularios,
         IReadOnlyList<FatoColetado> Fatos,
@@ -181,18 +176,27 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
         {
             ProcessoSeletivo estrutura = ProcessoSeletivoConformeBuilder.Criar("PS 2026 — SiSU");
             EnvelopeReidratado envelope = new(
-                new GrafoConfiguracao(
-                    [.. estrutura.Etapas], estrutura.AtendimentoEspecializado!, [.. estrutura.DistribuicaoVagas], estrutura.BonusRegional,
-                    [.. estrutura.CriteriosDesempate], estrutura.Classificacao!, [.. estrutura.CronogramaFases], [.. estrutura.DocumentosExigidos], [], null,
-                    fatosColetados: Fatos, formularios: Formularios, termosExigidos: Termos, gruposColetados: Grupos,
-            numeroDeOpcoesDeCurso: 1),
+                ConfiguracaoPublicadaDe(estrutura),
                 DadosEdital.Criar(
                     "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), Guid.CreateVersion7()).Value!,
                 new string('a', 64), "America/Sao_Paulo", retificacao: null, conformidade: null,
-                valoresSelecionaveisCongelados: Valores, agregadosDosGrupos: Agregados);
+                dadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(ValoresSelecionaveisCongelados: Valores, AgregadosDosGrupos: Agregados));
 
             return ProjecaoDoFormularioRenderizavel.Projetar(
                 finalidade, DefinicaoAvaliavelDoProcesso.DoCongelado(envelope).Value!, Formularios, Fatos, Grupos, Termos, dataReferenciaFatos: null);
+        }
+
+        private ConfiguracaoPublicada ConfiguracaoPublicadaDe(ProcessoSeletivo estrutura)
+        {
+            return new ConfiguracaoPublicada(
+                new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, [.. estrutura.CronogramaFases]),
+                new AvaliacaoDeclarada([.. estrutura.Etapas], [.. estrutura.CriteriosDesempate], estrutura.Classificacao!),
+                new VagasDeclaradas([.. estrutura.DistribuicaoVagas], 1, estrutura.BonusRegional is not null,
+                    estrutura.BonusRegional, null, estrutura.AtendimentoEspecializado!),
+                new ExigenciasDeclaradas([.. estrutura.DocumentosExigidos], []),
+                new ColetaDeclarada(ConfiguracaoPublicadaDeTeste.CamposDaColeta(Fatos, Grupos), Grupos, Formularios, Termos,
+                    [], [], null),
+                new DivulgacaoETaxaDeclaradas(null, null), null);
         }
     }
 

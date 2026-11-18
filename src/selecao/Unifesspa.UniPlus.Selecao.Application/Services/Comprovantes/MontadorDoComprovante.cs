@@ -66,7 +66,7 @@ public sealed class MontadorDoComprovante
     private async Task<Result<EnvelopeReidratado>> EnvelopeFixadoAsync(Inscricao inscricao, CancellationToken cancellationToken)
     {
         Result<VersaoConfiguracao> versao = await VersaoFixadaDaInscricaoResolver
-            .ResolverAsync(inscricao.VersaoFormularioId, inscricao.ProcessoSeletivoId, _processoSeletivoRepository, cancellationToken)
+            .ResolverAsync(inscricao.Formulario.VersaoFormularioId, inscricao.ProcessoSeletivoId, _processoSeletivoRepository, cancellationToken)
             .ConfigureAwait(false);
 
         return versao.IsFailure

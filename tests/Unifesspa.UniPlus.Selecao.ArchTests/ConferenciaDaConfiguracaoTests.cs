@@ -22,18 +22,15 @@ public sealed class ConferenciaDaConfiguracaoTests
 {
     private static readonly Architecture Arquitetura = new ArchLoader().LoadAssemblies(typeof(ProcessoSeletivo).Assembly).Build();
 
-    private static readonly System.Type[] TiposDaConfiguracaoDeclarada =
+    private static readonly Architecture ArquiteturaDosConsumidores = new ArchLoader().LoadAssemblies(
+        typeof(ProcessoSeletivo).Assembly,
+        typeof(Application.Commands.ProcessosSeletivos.CriarProcessoSeletivoCommand).Assembly,
+        typeof(API.Controllers.InscricoesController).Assembly).Build();
+
+    private static readonly System.Type[] TiposDosBlocos =
     [
-        typeof(ConfiguracaoDeclarada),
-        typeof(IdentidadeDoProcessoDeclarada),
-        typeof(CronogramaDeclarado),
-        typeof(AvaliacaoDeclarada),
-        typeof(VagasDeclaradas),
-        typeof(ExigenciasDeclaradas),
-        typeof(ColetaDeclarada),
-        typeof(DivulgacaoETaxaDeclaradas),
-        typeof(OrigemNoDocumento),
-        typeof(ParteRecusada),
+        typeof(IdentidadeDoProcessoDeclarada), typeof(CronogramaDeclarado), typeof(AvaliacaoDeclarada),
+        typeof(VagasDeclaradas), typeof(ExigenciasDeclaradas), typeof(ColetaDeclarada), typeof(DivulgacaoETaxaDeclaradas),
     ];
 
     [Fact(DisplayName = "A configuração apta a congelar não tem construtor público")]
@@ -47,15 +44,25 @@ public sealed class ConferenciaDaConfiguracaoTests
         regra.Check(Arquitetura);
     }
 
-    [Fact(DisplayName = "A configuração declarada e os blocos dela não têm construtor público")]
-    public void ConfiguracaoDeclarada_ENosBlocos_NaoTemConstrutorPublico()
+    [Fact(DisplayName = "A configuração declarada e a origem da leitura não têm construtor público")]
+    public void ConfiguracaoDeclarada_EOrigem_NaoTemConstrutorPublico()
     {
         IArchRule regra = MethodMembers()
-            .That().AreConstructors().And().AreDeclaredIn(TiposDaConfiguracaoDeclarada)
+            .That().AreConstructors().And().AreDeclaredIn(typeof(ConfiguracaoDeclarada), typeof(OrigemNoDocumento), typeof(ParteRecusada))
             .Should().NotBePublic()
             .Because("a configuração declarada só nasce da raiz, com cópias das coleções do agregado, ou da leitura do documento");
 
         regra.Check(Arquitetura);
+    }
+
+    [Fact(DisplayName = "Application e API não constroem os blocos da configuração declarada")]
+    public void BlocosDaConfiguracao_NaoSaoConstruidosNaApplicationNemNaApi()
+    {
+        IArchRule regra = Types().That().ResideInNamespaceMatching(@"^Unifesspa\.UniPlus\.Selecao\.(Application|API)(\.|$)")
+            .Should().NotCallAny(MethodMembers().That().AreConstructors().And().AreDeclaredIn(TiposDosBlocos))
+            .Because("a raiz e a leitura do envelope montam os blocos; os casos de uso apenas os consomem");
+
+        regra.Check(ArquiteturaDosConsumidores);
     }
 
     [Fact(DisplayName = "A adoção da fase e da etapa lidas do documento, sem conferência, não é pública")]

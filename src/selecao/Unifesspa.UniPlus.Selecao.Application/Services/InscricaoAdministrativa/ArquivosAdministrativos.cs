@@ -14,11 +14,11 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public static class ArquivosAdministrativos
 {
     public static IReadOnlyList<ArquivoAdministrativoDto> Montar(
-        IReadOnlyList<ApresentacaoDeDocumento> apresentacoes, IReadOnlyList<ArquivoDaApresentacao> arquivos, GrafoConfiguracao grafo)
+        IReadOnlyList<ApresentacaoDeDocumento> apresentacoes, IReadOnlyList<ArquivoDaApresentacao> arquivos, ConfiguracaoPublicada configuracaoPublicada)
     {
         ArgumentNullException.ThrowIfNull(apresentacoes);
         ArgumentNullException.ThrowIfNull(arquivos);
-        ArgumentNullException.ThrowIfNull(grafo);
+        ArgumentNullException.ThrowIfNull(configuracaoPublicada);
 
         Dictionary<Guid, ApresentacaoDeDocumento> porId = apresentacoes.ToDictionary(static a => a.Id);
 
@@ -28,13 +28,13 @@ public static class ArquivosAdministrativos
                 .Where(a => a.ConfirmadoEm is not null && porId.ContainsKey(a.ApresentacaoId))
                 .OrderBy(static a => a.ConfirmadoEm)
                 .ThenBy(static a => a.Id)
-                .Select(a => Arquivo(a, porId[a.ApresentacaoId], grafo)),
+                .Select(a => Arquivo(a, porId[a.ApresentacaoId], configuracaoPublicada)),
         ];
     }
 
-    private static ArquivoAdministrativoDto Arquivo(ArquivoDaApresentacao arquivo, ApresentacaoDeDocumento apresentacao, GrafoConfiguracao grafo)
+    private static ArquivoAdministrativoDto Arquivo(ArquivoDaApresentacao arquivo, ApresentacaoDeDocumento apresentacao, ConfiguracaoPublicada configuracaoPublicada)
     {
-        (ClassificacaoDeProtecao classificacao, string? hipoteseLegal) = ProtecaoCongeladaDaExigencia(grafo, apresentacao.ExigenciaId);
+        (ClassificacaoDeProtecao classificacao, string? hipoteseLegal) = ProtecaoCongeladaDaExigencia(configuracaoPublicada, apresentacao.ExigenciaId);
 
         return new ArquivoAdministrativoDto(classificacao, hipoteseLegal)
         {
@@ -51,9 +51,9 @@ public static class ArquivosAdministrativos
     }
 
     private static (ClassificacaoDeProtecao Classificacao, string? HipoteseLegal) ProtecaoCongeladaDaExigencia(
-        GrafoConfiguracao grafo, Guid exigenciaId)
+        ConfiguracaoPublicada configuracaoPublicada, Guid exigenciaId)
     {
-        DocumentoExigido? exigencia = grafo.DocumentosExigidos.FirstOrDefault(d => d.Id == exigenciaId);
+        DocumentoExigido? exigencia = configuracaoPublicada.Exigencias.DocumentosExigidos.FirstOrDefault(d => d.Id == exigenciaId);
 
         return (
             exigencia?.ClassificacaoProtecao ?? ClassificacaoDeProtecao.Nenhuma,

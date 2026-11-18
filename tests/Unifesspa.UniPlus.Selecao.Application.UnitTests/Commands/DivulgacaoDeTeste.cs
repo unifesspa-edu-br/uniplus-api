@@ -62,18 +62,19 @@ internal static class DivulgacaoDeTeste
     /// Uma versão publicada do processo conforme de teste, legível pelo contexto da versão fixada: o
     /// grafo do processo e o bloco de documentos exigidos, sem referência temporal.
     /// </summary>
-    public static (VersaoConfiguracao Versao, GrafoConfiguracao Grafo) VersaoConforme(Guid processoId) =>
-        (VersaoSemReferenciaTemporal(processoId), GrafoDe(ProcessoSeletivoConformeBuilder.Criar("PS 2026 — Inscrição")));
+    public static (VersaoConfiguracao Versao, ConfiguracaoPublicada Configuracao) VersaoConforme(Guid processoId) =>
+        (VersaoSemReferenciaTemporal(processoId), ConfiguracaoDe(ProcessoSeletivoConformeBuilder.Criar("PS 2026 — Inscrição")));
 
     /// <summary>O grafo da configuração do próprio processo, com o formulário, os fatos e os grupos que ele declara.</summary>
-    public static GrafoConfiguracao GrafoDe(ProcessoSeletivo processo) => new(
-        [.. processo.Etapas], processo.AtendimentoEspecializado!, [.. processo.DistribuicaoVagas],
-        processo.BonusRegional, [.. processo.CriteriosDesempate], processo.Classificacao!,
-        [.. processo.CronogramaFases], [.. processo.DocumentosExigidos], [], null,
-        fatosColetados: [.. processo.FatosColetados],
-        formularios: [.. processo.Formularios],
-        gruposColetados: [.. processo.GruposColetados],
-        numeroDeOpcoesDeCurso: 1);
+    public static ConfiguracaoPublicada ConfiguracaoDe(ProcessoSeletivo processo) => new ConfiguracaoPublicada(
+            new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, [.. processo.CronogramaFases]),
+            new AvaliacaoDeclarada([.. processo.Etapas], [.. processo.CriteriosDesempate], processo.Classificacao!),
+            new VagasDeclaradas([.. processo.DistribuicaoVagas], 1, processo.BonusRegional is not null,
+                processo.BonusRegional, null, processo.AtendimentoEspecializado!),
+            new ExigenciasDeclaradas([.. processo.DocumentosExigidos], []),
+            new ColetaDeclarada(ConfiguracaoPublicadaDeTeste.CamposDaColeta([.. processo.FatosColetados], [.. processo.GruposColetados]), [.. processo.GruposColetados], [.. processo.Formularios], [],
+                [], [], null),
+            new DivulgacaoETaxaDeclaradas(null, null), null);
 
     /// <summary>
     /// A versão cujo bloco de documentos exigidos não declara referência temporal: o processo de teste não a tem, e o
@@ -86,7 +87,7 @@ internal static class DivulgacaoDeTeste
 
     /// <summary>A versão é a fixada pela inscrição e a divulgada pelo certame.</summary>
     public static void ConfigurarVersao(
-        IProcessoSeletivoRepository processoRepository, IRegistroCodecsEnvelope registroCodecs, VersaoConfiguracao versao, GrafoConfiguracao grafo)
+        IProcessoSeletivoRepository processoRepository, IRegistroCodecsEnvelope registroCodecs, VersaoConfiguracao versao, ConfiguracaoPublicada grafo)
     {
         processoRepository.ObterVersoesAsync(versao.ProcessoSeletivoId, Arg.Any<CancellationToken>()).Returns([versao]);
         ConfigurarDivulgada(processoRepository, registroCodecs, versao, grafo);
@@ -97,7 +98,7 @@ internal static class DivulgacaoDeTeste
         IProcessoSeletivoRepository processoRepository,
         IRegistroCodecsEnvelope registroCodecs,
         VersaoConfiguracao versao,
-        GrafoConfiguracao grafo,
+        ConfiguracaoPublicada grafo,
         DateTimeOffset? fimDoPeriodo = null)
     {
         processoRepository.ObterVersoesPorAtoCriadorAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([versao]);
@@ -111,7 +112,7 @@ internal static class DivulgacaoDeTeste
     public static void ConfigurarFixadaEDivulgada(
         IProcessoSeletivoRepository processoRepository,
         IRegistroCodecsEnvelope registroCodecs,
-        GrafoConfiguracao grafo,
+        ConfiguracaoPublicada grafo,
         (VersaoConfiguracao Versao, DateTimeOffset FimDoPeriodo) fixada,
         (VersaoConfiguracao Versao, DateTimeOffset FimDoPeriodo) divulgada)
     {
@@ -122,11 +123,11 @@ internal static class DivulgacaoDeTeste
     }
 
     private static void ConfigurarReidratacao(
-        IRegistroCodecsEnvelope registroCodecs, VersaoConfiguracao versao, GrafoConfiguracao grafo, DateTimeOffset fimDoPeriodo)
+        IRegistroCodecsEnvelope registroCodecs, VersaoConfiguracao versao, ConfiguracaoPublicada grafo, DateTimeOffset fimDoPeriodo)
     {
         EnvelopeReidratado envelopeReidratado = new(
             grafo, DadosEdital.Criar("001/2026", InicioDoPeriodo, fimDoPeriodo, Guid.CreateVersion7()).Value!,
-            new string('a', 64), "America/Belem", retificacao: null, conformidade: null);
+            new string('a', 64), "America/Belem", retificacao: null, conformidade: null, dadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada());
 
         registroCodecs.Capacidades.Returns([new CapacidadeCodec("0.0.22", TemEncoder: true, TemDecoder: true, MotivoDaRecusa: null)]);
         registroCodecs.Reidratar(versao).Returns(Result<EnvelopeReidratado>.Success(envelopeReidratado));

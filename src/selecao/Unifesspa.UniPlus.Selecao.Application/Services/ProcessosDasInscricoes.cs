@@ -66,19 +66,14 @@ public sealed class ProcessosDasInscricoes
     {
         ArgumentNullException.ThrowIfNull(inscricoes);
 
-        return ContextoDaVersaoFixadaResolver.OfertasDasVersoesAsync(
-            inscricoes.Select(static i => (i.ProcessoSeletivoId, i.VersaoFormularioId)),
-            _processoSeletivoRepository,
-            _registroCodecs,
-            cancellationToken);
+        return new ContextoDaVersaoFixadaResolver(_processoSeletivoRepository, _registroCodecs).OfertasDasVersoesAsync(inscricoes.Select(static i => (i.ProcessoSeletivoId, i.Formulario.VersaoFormularioId)), cancellationToken);
     }
 
     private async Task<SituacaoDoProcessoDaInscricao> SituacaoAsync(Guid processo, DateTimeOffset agora, CancellationToken cancellationToken)
     {
         CertameDivulgado? divulgado = await _certameDivulgadoRepository
             .ObterParaLeituraAsync(processo, cancellationToken).ConfigureAwait(false);
-        bool abertas = await PeriodoDaInscricaoResolver.ConferirAsync(
-            processo, _certameDivulgadoRepository, _processoSeletivoRepository, _registroCodecs, _resolvedorFuso, agora, cancellationToken)
+        bool abertas = await new PeriodoDaInscricaoResolver(_certameDivulgadoRepository, _processoSeletivoRepository, _registroCodecs, _resolvedorFuso).ConferirAsync(processo, agora, cancellationToken)
             .ConfigureAwait(false) is null;
 
         return new SituacaoDoProcessoDaInscricao(divulgado?.Nome, abertas);

@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
-using System.ComponentModel;
 using System.Text.Json;
 
 using Domain.Entities;
@@ -47,66 +46,60 @@ public sealed record OcorrenciaDeGrupoInscricaoInput(string Id, IReadOnlyDiction
 public sealed record AceiteDeTermoInput(string Codigo, Guid VersaoId, string HashVersao);
 
 /// <summary>
-/// A inscrição do dono do token: respostas, aceites, oferta escolhida e situação, na versão do
-/// formulário em que está a inscrição (UNI-REQ-0084). Os números de documento <c>Identificador</c>
-/// declarados (RG, documento do estrangeiro) voltam dentro de <see cref="Respostas"/>, decifrados
-/// pelo repositório — só para o próprio dono; o CPF nunca aparece aqui porque já está no token, e o
-/// comprovante o devolve mascarado. <see cref="Derivados"/> é o que o sistema calculou das
-/// respostas na última submissão. <see cref="Avaliacao"/> é a avaliação das respostas gravadas, a
-/// mesma que a consulta do candidato devolve — calculada a cada leitura, nunca gravada (ADR-0143).
-/// <see cref="OfertaCursoId"/> e <see cref="OfertaCursoSegundaOpcaoId"/> são a 1ª e a 2ª opção de curso.
-/// <see cref="NumeroDeOpcoesDeCurso"/> e <see cref="Ofertas"/> são os da versão em que está a inscrição, e não os do
-/// processo vivo: no rascunho, uma retificação divulgada muda as opções; depois do primeiro envio, não muda.
+/// A inscrição do dono do token, com formulário e escolhas da versão correspondente.
+/// A avaliação é calculada a cada leitura e o CPF não é incluído (ADR-0143).
 /// </summary>
-public sealed record InscricaoDto(
-    Guid Id,
-    Guid ProcessoSeletivoId,
-    SituacaoInscricao Situacao,
-    string? NumeroInscricao,
-    Guid VersaoFormularioId,
-    Guid? OfertaCursoId,
-    Guid? OfertaCursoSegundaOpcaoId,
-    int NumeroDeOpcoesDeCurso,
-    IReadOnlyList<OfertaDeCursoCertameDto> Ofertas,
-    [property: Description("As respostas por código do fato. O município vem como texto, o código IBGE, no rascunho, e como objeto { \"codigo\", \"rotulo\" } na inscrição enviada, com o nome que o Geo conferiu no envio.")]
-    IReadOnlyDictionary<string, JsonElement> Respostas,
-    [property: Description("O que o sistema calculou das respostas. O município de residência vem na mesma forma do município das respostas: { \"codigo\", \"rotulo\" } na inscrição enviada.")]
-    IReadOnlyDictionary<string, JsonElement> Derivados,
-    IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>> Grupos,
-    IReadOnlyList<AceiteDeTermoInput> Aceites,
-    string ETag,
-    AvaliacaoDaInscricaoDto Avaliacao)
+public sealed record InscricaoDto
 {
-    /// <summary>Projeta o agregado no contrato — <c>Grupos</c>/<c>Aceites</c> do domínio têm a mesma forma, em tipos próprios do contrato (não acopla um ao outro).</summary>
-    /// <param name="numeroDeOpcoesDeCurso">O número de opções da versão em que está a inscrição.</param>
-    /// <param name="ofertas">As ofertas da versão em que está a inscrição.</param>
+    public required Guid Id { get; init; }
+    public required Guid ProcessoSeletivoId { get; init; }
+    public required SituacaoInscricao Situacao { get; init; }
+    public required string? NumeroInscricao { get; init; }
+    public required FormularioDaInscricaoDto Formulario { get; init; }
+    public required EscolhasDeCursoDaInscricaoDto EscolhasDeCurso { get; init; }
+    public required string ETag { get; init; }
+    public required AvaliacaoDaInscricaoDto Avaliacao { get; init; }
+
+    /// <summary>Projeta o agregado e os dados da versão no contrato da inscrição.</summary>
     public static InscricaoDto De(
         Inscricao inscricao, AvaliacaoDaInscricaoDto avaliacao, int numeroDeOpcoesDeCurso, IReadOnlyList<OfertaDeCursoCertameDto> ofertas)
     {
         ArgumentNullException.ThrowIfNull(inscricao);
         ArgumentNullException.ThrowIfNull(avaliacao);
-        ArgumentNullException.ThrowIfNull(ofertas);
 
-        return new InscricaoDto(
-            inscricao.Id,
-            inscricao.ProcessoSeletivoId,
-            inscricao.Situacao,
-            inscricao.NumeroInscricao,
-            inscricao.VersaoFormularioId,
-            inscricao.OfertaCursoId,
-            inscricao.OfertaCursoSegundaOpcaoId,
+        return new InscricaoDto
+        {
+            Id = inscricao.Id,
+            ProcessoSeletivoId = inscricao.ProcessoSeletivoId,
+            Situacao = inscricao.Estado.Situacao,
+            NumeroInscricao = inscricao.Estado.NumeroInscricao,
+            Formulario = FormularioDe(inscricao),
+            EscolhasDeCurso = EscolhasDe(inscricao, numeroDeOpcoesDeCurso, ofertas),
+            ETag = inscricao.ETag,
+            Avaliacao = avaliacao,
+        };
+    }
+
+    private static FormularioDaInscricaoDto FormularioDe(Inscricao inscricao) => new(
+        inscricao.Formulario.VersaoFormularioId,
+        inscricao.Formulario.Preenchimento.Respostas,
+        inscricao.Formulario.Derivados,
+        inscricao.Formulario.Preenchimento.Grupos.ToDictionary(
+            static g => g.Key,
+            g => (IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>)
+                [.. g.Value.Select(static o => new OcorrenciaDeGrupoInscricaoInput(o.Id, o.Respostas))],
+            StringComparer.Ordinal),
+        [.. inscricao.Formulario.Preenchimento.Aceites.Select(static a => new AceiteDeTermoInput(a.Codigo, a.VersaoId, a.HashVersao))]);
+
+    private static EscolhasDeCursoDaInscricaoDto EscolhasDe(
+        Inscricao inscricao, int numeroDeOpcoesDeCurso, IReadOnlyList<OfertaDeCursoCertameDto> ofertas)
+    {
+        ArgumentNullException.ThrowIfNull(ofertas);
+        return new EscolhasDeCursoDaInscricaoDto(
+            inscricao.Formulario.Preenchimento.Opcoes.Primeira,
+            inscricao.Formulario.Preenchimento.Opcoes.Segunda,
             numeroDeOpcoesDeCurso,
-            ofertas,
-            inscricao.Respostas,
-            inscricao.Derivados,
-            inscricao.Grupos.ToDictionary(
-                static g => g.Key,
-                g => (IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>)
-                    [.. g.Value.Select(static o => new OcorrenciaDeGrupoInscricaoInput(o.Id, o.Respostas))],
-                StringComparer.Ordinal),
-            [.. inscricao.Aceites.Select(static a => new AceiteDeTermoInput(a.Codigo, a.VersaoId, a.HashVersao))],
-            inscricao.ETag,
-            avaliacao);
+            ofertas);
     }
 }
 
@@ -115,25 +108,28 @@ public sealed record InscricaoDto(
 /// lista, então a lista não repete o nome nem o CPF dele: o que distingue uma inscrição da outra é o
 /// processo e o curso escolhido.
 /// </summary>
-/// <param name="InscricaoId">A identidade da inscrição: o processo pode ter mais de uma, uma cancelada e a ativa, e o comprovante se lê por ela.</param>
-/// <param name="NomeDoProcesso">O nome do processo como está divulgado; nulo se ele deixou de ser público.</param>
-/// <param name="OpcoesDeCurso">Os cursos escolhidos, em ordem, como a versão da inscrição os nomeia; vazio enquanto o rascunho não escolheu nenhum.</param>
-/// <param name="CanceladaEm">O instante do cancelamento, quando cancelada.</param>
-/// <param name="MotivoDoCancelamento">O motivo do cancelamento, quando cancelada.</param>
-/// <param name="Acoes">O que o candidato pode fazer agora com a inscrição, pelo período e pela situação.</param>
-/// <param name="NumeroDoUltimoComprovante">O número do comprovante que vale, o último emitido, para abrir o comprovante da inscrição; nulo sem comprovantes e na inscrição cancelada, cujo comprovante a rota recusa.</param>
-public sealed record MinhaInscricaoDto(
-    Guid InscricaoId,
-    Guid ProcessoSeletivoId,
-    string? NomeDoProcesso,
-    string? NumeroInscricao,
-    SituacaoInscricao Situacao,
-    IReadOnlyList<OpcaoDeCursoDaInscricaoDto> OpcoesDeCurso,
-    DateTimeOffset? CanceladaEm,
-    string? MotivoDoCancelamento,
-    AcoesDaInscricaoDto Acoes,
-    int? NumeroDoUltimoComprovante)
+/// <remarks>
+/// <para>InscricaoId: A identidade da inscrição: o processo pode ter mais de uma, uma cancelada e a ativa, e o comprovante se lê por ela.</para>
+/// <para>NomeDoProcesso: O nome do processo como está divulgado; nulo se ele deixou de ser público.</para>
+/// <para>OpcoesDeCurso: Os cursos escolhidos, em ordem, como a versão da inscrição os nomeia; vazio enquanto o rascunho não escolheu nenhum.</para>
+/// <para>CanceladaEm: O instante do cancelamento, quando cancelada.</para>
+/// <para>MotivoDoCancelamento: O motivo do cancelamento, quando cancelada.</para>
+/// <para>Acoes: O que o candidato pode fazer agora com a inscrição, pelo período e pela situação.</para>
+/// <para>NumeroDoUltimoComprovante: O número do comprovante que vale, o último emitido, para abrir o comprovante da inscrição; nulo sem comprovantes e na inscrição cancelada, cujo comprovante a rota recusa.</para>
+/// </remarks>
+public sealed record MinhaInscricaoDto
 {
+    public required Guid InscricaoId { get; init; }
+    public required Guid ProcessoSeletivoId { get; init; }
+    public required string? NomeDoProcesso { get; init; }
+    public required string? NumeroInscricao { get; init; }
+    public required SituacaoInscricao Situacao { get; init; }
+    public required IReadOnlyList<OpcaoDeCursoDaInscricaoDto> OpcoesDeCurso { get; init; }
+    public required DateTimeOffset? CanceladaEm { get; init; }
+    public required string? MotivoDoCancelamento { get; init; }
+    public required AcoesDaInscricaoDto Acoes { get; init; }
+    public required int? NumeroDoUltimoComprovante { get; init; }
+
     /// <param name="inscricoesAbertas">Se o processo está no período de inscrição neste instante.</param>
     /// <param name="emissoes">Os instantes de emissão dos comprovantes da inscrição, em ordem de emissão.</param>
     /// <param name="ofertasDaVersao">As ofertas de curso da versão em que a inscrição está, com o nome congelado na publicação.</param>
@@ -143,11 +139,24 @@ public sealed record MinhaInscricaoDto(
         ArgumentNullException.ThrowIfNull(inscricao);
         ArgumentNullException.ThrowIfNull(emissoes);
 
-        return new MinhaInscricaoDto(
-            inscricao.Id, inscricao.ProcessoSeletivoId, nomeDoProcesso, inscricao.NumeroInscricao, inscricao.Situacao,
-            OpcoesDe(inscricao, ofertasDaVersao), inscricao.CanceladaEm, inscricao.MotivoDoCancelamento,
-            AcoesDa(inscricao, inscricoesAbertas), UltimoComprovanteLegivel(inscricao, emissoes));
+        return MontarItemDaLista(inscricao, nomeDoProcesso, inscricoesAbertas, emissoes, ofertasDaVersao);
     }
+
+    private static MinhaInscricaoDto MontarItemDaLista(
+        Inscricao inscricao, string? nomeDoProcesso, bool inscricoesAbertas, IReadOnlyList<DateTimeOffset> emissoes, IReadOnlyList<OfertaDeCursoCertameDto> ofertasDaVersao) =>
+        new()
+        {
+            InscricaoId = inscricao.Id,
+            ProcessoSeletivoId = inscricao.ProcessoSeletivoId,
+            NomeDoProcesso = nomeDoProcesso,
+            NumeroInscricao = inscricao.Estado.NumeroInscricao,
+            Situacao = inscricao.Estado.Situacao,
+            OpcoesDeCurso = OpcoesDe(inscricao, ofertasDaVersao),
+            CanceladaEm = inscricao.Estado.Cancelamento?.CanceladaEm,
+            MotivoDoCancelamento = inscricao.Estado.Cancelamento?.MotivoDoCancelamento,
+            Acoes = AcoesDa(inscricao, inscricoesAbertas),
+            NumeroDoUltimoComprovante = UltimoComprovanteLegivel(inscricao, emissoes),
+        };
 
     private static AcoesDaInscricaoDto AcoesDa(Inscricao inscricao, bool inscricoesAbertas)
     {
@@ -163,11 +172,9 @@ public sealed record MinhaInscricaoDto(
     private static List<OpcaoDeCursoDaInscricaoDto> OpcoesDe(Inscricao inscricao, IReadOnlyList<OfertaDeCursoCertameDto> ofertas)
     {
         List<OpcaoDeCursoDaInscricaoDto> opcoes = [];
-        foreach (Guid? escolhida in new[] { inscricao.OfertaCursoId, inscricao.OfertaCursoSegundaOpcaoId })
+        foreach (Guid? escolhida in new[] { inscricao.Formulario.Preenchimento.Opcoes.Primeira, inscricao.Formulario.Preenchimento.Opcoes.Segunda })
         {
-            OfertaDeCursoCertameDto? oferta = escolhida is { } id
-                ? ofertas.FirstOrDefault(o => o.OfertaCursoOrigemId == id)
-                : null;
+            OfertaDeCursoCertameDto? oferta = ofertas.FirstOrDefault(o => o.OfertaCursoOrigemId == escolhida);
             if (oferta is null)
             {
                 break;

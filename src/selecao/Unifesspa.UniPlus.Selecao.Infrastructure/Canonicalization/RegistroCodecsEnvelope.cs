@@ -54,12 +54,24 @@ public sealed class RegistroCodecsEnvelope : IRegistroCodecsEnvelope
         ArgumentException.ThrowIfNullOrWhiteSpace(schemaVersionDeEmissaoCorrente);
 
         IEnvelopeCodec[] materializados = [.. codecs];
-        if (materializados.Length == 0)
+        ConferirCodecs(materializados);
+        _codecs = materializados.ToDictionary(static c => c.SchemaVersion, StringComparer.Ordinal);
+        ConferirEmissaoCorrente(schemaVersionDeEmissaoCorrente);
+        SchemaVersionDeEmissaoCorrente = schemaVersionDeEmissaoCorrente;
+    }
+
+    private static void ConferirCodecs(IEnvelopeCodec[] codecs)
+    {
+        if (codecs.Length == 0)
         {
             throw new ArgumentException("Um registro de codecs vazio não reidrata envelope nenhum.", nameof(codecs));
         }
+        ConferirVersoesUnicas(codecs);
+    }
 
-        string? repetida = materializados
+    private static void ConferirVersoesUnicas(IEnvelopeCodec[] codecs)
+    {
+        string? repetida = codecs
             .GroupBy(static c => c.SchemaVersion, StringComparer.Ordinal)
             .FirstOrDefault(static grupo => grupo.Count() > 1)?.Key;
         if (repetida is not null)
@@ -68,9 +80,10 @@ public sealed class RegistroCodecsEnvelope : IRegistroCodecsEnvelope
                 $"A versão '{repetida}' aparece em mais de um codec — qual deles reidrata um envelope dela seria indeterminado.",
                 nameof(codecs));
         }
+    }
 
-        _codecs = materializados.ToDictionary(static c => c.SchemaVersion, StringComparer.Ordinal);
-
+    private void ConferirEmissaoCorrente(string schemaVersionDeEmissaoCorrente)
+    {
         if (!_codecs.TryGetValue(schemaVersionDeEmissaoCorrente, out IEnvelopeCodec? corrente))
         {
             throw new ArgumentException(
@@ -78,6 +91,11 @@ public sealed class RegistroCodecsEnvelope : IRegistroCodecsEnvelope
                 nameof(schemaVersionDeEmissaoCorrente));
         }
 
+        ConferirCodecCompleto(corrente, schemaVersionDeEmissaoCorrente);
+    }
+
+    private static void ConferirCodecCompleto(IEnvelopeCodec corrente, string schemaVersionDeEmissaoCorrente)
+    {
         if (!corrente.TemEncoder || !corrente.TemDecoder)
         {
             throw new ArgumentException(
@@ -85,8 +103,6 @@ public sealed class RegistroCodecsEnvelope : IRegistroCodecsEnvelope
                 "tudo o que ela congelar seria ilegível; sem encoder, seria irreverificável.",
                 nameof(schemaVersionDeEmissaoCorrente));
         }
-
-        SchemaVersionDeEmissaoCorrente = schemaVersionDeEmissaoCorrente;
     }
 
     public string SchemaVersionDeEmissaoCorrente { get; }
@@ -110,42 +126,62 @@ public sealed class RegistroCodecsEnvelope : IRegistroCodecsEnvelope
                 $"conhecidas: {string.Join(", ", _codecs.Keys.Order(StringComparer.Ordinal))}."));
         }
 
+        return ReidratarComCodec(versao, codec);
+    }
+
+    private static Result<EnvelopeReidratado> ReidratarComCodec(VersaoConfiguracao versao, IEnvelopeCodec codec)
+    {
+        if (ConferirCapacidades(versao, codec) is { } capacidade)
+        {
+            return Result<EnvelopeReidratado>.Failure(capacidade);
+        }
+        if (ConferirEvidencia(versao, codec) is { } evidencia)
+        {
+            return Result<EnvelopeReidratado>.Failure(evidencia);
+        }
+        Result<EnvelopeReidratado> decodificado = codec.Decodificar(versao);
+        return decodificado.IsFailure ? decodificado : SincronizarArvoreComDocumentosExigidos(decodificado.Value!);
+    }
+
+    private static DomainError? ConferirCapacidades(VersaoConfiguracao versao, IEnvelopeCodec codec)
+    {
         // Reidratável ⟺ encoder E decoder. Decoder sem encoder reidrataria sem PROVAR a
         // fidelidade — e é a prova, não a reconstrução, que impede o descarte silencioso.
         if (!codec.TemDecoder || !codec.TemEncoder)
         {
-            return Result<EnvelopeReidratado>.Failure(new DomainError(
+            return new DomainError(
                 ErrosCodecEnvelope.VersaoNaoReidratavel,
-                codec.MotivoDaRecusa ?? $"A versão '{codec.SchemaVersion}' do envelope não é reidratável."));
+                codec.MotivoDaRecusa ?? $"A versão '{codec.SchemaVersion}' do envelope não é reidratável.");
         }
 
+        return ConferirAlgoritmo(versao, codec);
+    }
+
+    private static DomainError? ConferirAlgoritmo(VersaoConfiguracao versao, IEnvelopeCodec codec)
+    {
         if (!string.Equals(versao.AlgoritmoHash, codec.AlgoritmoHash, StringComparison.Ordinal))
         {
-            return Result<EnvelopeReidratado>.Failure(new DomainError(
+            return new DomainError(
                 ErrosCodecEnvelope.AlgoritmoNaoSuportado,
                 $"A versão de configuração declara o algoritmo '{versao.AlgoritmoHash}', mas o codec " +
-                $"'{codec.SchemaVersion}' emite '{codec.AlgoritmoHash}'."));
+                $"'{codec.SchemaVersion}' emite '{codec.AlgoritmoHash}'.");
         }
 
-        // O gate. Antes de qualquer parse: os bytes produzem o hash persistido? O digest é o
-        // do PERFIL daquela versão — o algoritmo faz parte da evidência, e conferi-lo com
-        // outro seria comparar a prova consigo mesma pela régua errada.
+        return null;
+    }
+
+    private static DomainError? ConferirEvidencia(VersaoConfiguracao versao, IEnvelopeCodec codec)
+    {
         string hash = codec.Perfil.HashHex(versao.ConfiguracaoCongeladaCanonica);
         if (!string.Equals(hash, versao.HashConfiguracao, StringComparison.Ordinal))
         {
-            return Result<EnvelopeReidratado>.Failure(new DomainError(
+            return new DomainError(
                 ErrosCodecEnvelope.IntegridadeViolada,
                 "Os bytes congelados não produzem o hash registrado na versão de configuração — " +
-                "a evidência não prova o que diz provar, e não se reidrata configuração a partir dela."));
+                "a evidência não prova o que diz provar, e não se reidrata configuração a partir dela.");
         }
 
-        if (VerificarFormaCanonica(codec.Perfil, versao.ConfiguracaoCongeladaCanonica) is { } malformado)
-        {
-            return Result<EnvelopeReidratado>.Failure(malformado);
-        }
-
-        Result<EnvelopeReidratado> decodificado = codec.Decodificar(versao);
-        return decodificado.IsFailure ? decodificado : SincronizarArvoreComDocumentosExigidos(decodificado.Value!);
+        return VerificarFormaCanonica(codec.Perfil, versao.ConfiguracaoCongeladaCanonica);
     }
 
     /// <summary>
@@ -159,16 +195,8 @@ public sealed class RegistroCodecsEnvelope : IRegistroCodecsEnvelope
     /// </summary>
     private static Result<EnvelopeReidratado> SincronizarArvoreComDocumentosExigidos(EnvelopeReidratado envelope)
     {
-        GrafoConfiguracao grafo = envelope.Grafo;
-        if (grafo.DocumentosExigidos.Count == 0)
-        {
-            return Result<EnvelopeReidratado>.Success(envelope);
-        }
-
-        HashSet<Guid> cobertas = [.. grafo.NosExigencia
-            .Where(static n => n.Tipo == TipoNo.Folha)
-            .Select(static n => n.DocumentoExigidoId!.Value)];
-        DocumentoExigido? orfa = grafo.DocumentosExigidos.FirstOrDefault(d => !cobertas.Contains(d.Id));
+        ConfiguracaoPublicada configuracao = envelope.Configuracao;
+        DocumentoExigido? orfa = ExigenciaSemFolha(configuracao);
         if (orfa is not null)
         {
             return Result<EnvelopeReidratado>.Failure(new DomainError(
@@ -178,6 +206,14 @@ public sealed class RegistroCodecsEnvelope : IRegistroCodecsEnvelope
         }
 
         return Result<EnvelopeReidratado>.Success(envelope);
+    }
+
+    private static DocumentoExigido? ExigenciaSemFolha(ConfiguracaoPublicada configuracao)
+    {
+        HashSet<Guid> cobertas = [.. configuracao.Exigencias.NosExigencia
+            .Where(static n => n.Tipo == TipoNo.Folha)
+            .Select(static n => n.DocumentoExigidoId!.Value)];
+        return configuracao.Exigencias.DocumentosExigidos.FirstOrDefault(d => !cobertas.Contains(d.Id));
     }
 
     /// <summary>
@@ -203,45 +239,38 @@ public sealed class RegistroCodecsEnvelope : IRegistroCodecsEnvelope
     /// </remarks>
     private static DomainError? VerificarFormaCanonica(IPerfilCanonico perfil, byte[] bytes)
     {
-        JsonNode? node;
+        Result<JsonObject> objeto = LerObjeto(bytes);
+        return objeto.IsFailure ? objeto.Error : VerificarSerializacao(perfil, objeto.Value!, bytes);
+    }
+
+    private static Result<JsonObject> LerObjeto(byte[] bytes)
+    {
         try
         {
-            node = JsonNode.Parse(bytes, nodeOptions: null, OpcoesDocumento);
+            return JsonNode.Parse(bytes, nodeOptions: null, OpcoesDocumento) is JsonObject payload
+                ? Result<JsonObject>.Success(payload)
+                : Result<JsonObject>.Failure(new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, "Os bytes congelados não são um objeto JSON."));
         }
         catch (JsonException excecao)
         {
-            return new DomainError(
-                ErrosCodecEnvelope.EnvelopeMalformado,
-                $"Os bytes congelados não são um JSON válido e sem chaves duplicadas: {excecao.Message}");
+            return Result<JsonObject>.Failure(new DomainError(ErrosCodecEnvelope.EnvelopeMalformado,
+                $"Os bytes congelados não são um JSON válido e sem chaves duplicadas: {excecao.Message}"));
         }
+    }
 
-        if (node is not JsonObject payload)
-        {
-            return new DomainError(
-                ErrosCodecEnvelope.EnvelopeMalformado,
-                "Os bytes congelados não são um objeto JSON.");
-        }
-
-        byte[] recanonicalizado;
+    private static DomainError? VerificarSerializacao(IPerfilCanonico perfil, JsonObject payload, byte[] bytes)
+    {
         try
         {
-            recanonicalizado = perfil.Serializar(payload);
+            return perfil.Serializar(payload).AsSpan().SequenceEqual(bytes) ? null
+                : new DomainError(ErrosCodecEnvelope.IntegridadeViolada,
+                    "Os bytes congelados não estão na forma canônica (ADR-0100) — reserializá-los produz bytes distintos.");
         }
         catch (PayloadForaDoPerfilCanonicoException excecao)
         {
-            // Um perfil estrito recusa o que não sabe representar. Vindo da LEITURA, isso é
-            // envelope malformado — recusa nomeada —, e não falha não tratada: quem grava a
-            // coluna à mão consegue produzir exatamente esse payload.
-            return new DomainError(
-                ErrosCodecEnvelope.EnvelopeMalformado,
+            return new DomainError(ErrosCodecEnvelope.EnvelopeMalformado,
                 $"Os bytes congelados contêm o que o perfil '{perfil.Algoritmo}' não representa: {excecao.Message}");
         }
-
-        return recanonicalizado.AsSpan().SequenceEqual(bytes)
-            ? null
-            : new DomainError(
-                ErrosCodecEnvelope.IntegridadeViolada,
-                "Os bytes congelados não estão na forma canônica (ADR-0100) — reserializá-los produz bytes distintos.");
     }
 
     public Result<SnapshotCanonico> Recodificar(string schemaVersion, EntradaCanonicalizacao entrada)
@@ -256,6 +285,11 @@ public sealed class RegistroCodecsEnvelope : IRegistroCodecsEnvelope
                 $"A versão '{schemaVersion}' do envelope não está no registro de codecs."));
         }
 
+        return CodificarComCodec(codec, schemaVersion, entrada);
+    }
+
+    private static Result<SnapshotCanonico> CodificarComCodec(IEnvelopeCodec codec, string schemaVersion, EntradaCanonicalizacao entrada)
+    {
         if (!codec.TemEncoder)
         {
             return Result<SnapshotCanonico>.Failure(new DomainError(

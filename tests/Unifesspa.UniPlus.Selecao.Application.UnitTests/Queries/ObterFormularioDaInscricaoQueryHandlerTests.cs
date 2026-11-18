@@ -48,10 +48,10 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
     {
         ProcessoSeletivo processoBase = ProcessoSeletivoConformeBuilder.Criar("PS 2026 — Formulário da inscrição");
         EnvelopeReidratado envelope = new(
-            GrafoComFormulario(processoBase, FormularioDeInscricao(faseDoBloco, finalidade)),
+            ConfiguracaoComFormulario(processoBase, FormularioDeInscricao(faseDoBloco, finalidade)),
             DadosEdital.Criar(
                 "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), Guid.CreateVersion7()).Value!,
-            new string('a', 64), "America/Belem", retificacao: null, conformidade: null);
+            new string('a', 64), "America/Belem", retificacao: null, conformidade: null, dadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada());
 
         return (VersaoComExigencias(exigencias), envelope);
     }
@@ -65,11 +65,15 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
             EtapaFormulario.Criar("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null).Value!,
         ]).Value!;
 
-    private static GrafoConfiguracao GrafoComFormulario(ProcessoSeletivo processoBase, FormularioProcesso formulario) => new(
-        [.. processoBase.Etapas], processoBase.AtendimentoEspecializado!, [.. processoBase.DistribuicaoVagas],
-        processoBase.BonusRegional, [.. processoBase.CriteriosDesempate], processoBase.Classificacao!,
-        [.. processoBase.CronogramaFases], [.. processoBase.DocumentosExigidos], [], null, formularios: [formulario],
-        numeroDeOpcoesDeCurso: 1);
+    private static ConfiguracaoPublicada ConfiguracaoComFormulario(ProcessoSeletivo processoBase, FormularioProcesso formulario) => new ConfiguracaoPublicada(
+            new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, [.. processoBase.CronogramaFases]),
+            new AvaliacaoDeclarada([.. processoBase.Etapas], [.. processoBase.CriteriosDesempate], processoBase.Classificacao!),
+            new VagasDeclaradas([.. processoBase.DistribuicaoVagas], 1, processoBase.BonusRegional is not null,
+                processoBase.BonusRegional, null, processoBase.AtendimentoEspecializado!),
+            new ExigenciasDeclaradas([.. processoBase.DocumentosExigidos], []),
+            new ColetaDeclarada([], [], [formulario], [],
+                [], [], null),
+            new DivulgacaoETaxaDeclaradas(null, null), null);
 
     private static VersaoConfiguracao VersaoComExigencias(string exigencias) => VersaoConfiguracao.Abrir(
         ProcessoId,
@@ -88,7 +92,8 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
 
     private static Task<Result<FormularioRenderizavelDto>> Obter(PortasDaInscricaoDeTeste portas, IUserContext usuario) =>
         ObterFormularioDaInscricaoQueryHandler.Handle(
-            new ObterFormularioDaInscricaoQuery(ProcessoId), portas.InscricaoAtiva(), portas.Formulario(), usuario, CancellationToken.None);
+            new ObterFormularioDaInscricaoQuery(ProcessoId), portas.Inscricoes, DivulgacaoDeTeste.Certame(ProcessoId),
+            portas.Processos, portas.Codecs, usuario, CancellationToken.None);
 
     private static Inscricao Rascunho(Cpf cpf, VersaoConfiguracao versao) =>
         Inscricao.Iniciar(ProcessoId, cpf, "conta-1", "https://issuer", versao.Id).Value!;
@@ -195,5 +200,23 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
         Result<FormularioRenderizavelDto> resultado = await Obter(portas, UsuarioComCpf(cpf));
 
         resultado.Value!.FaseId.Should().Be(FaseDoBloco);
+    }
+
+    private static Task<Result<FormularioRenderizavelDto>> Consultar(Cpf cpf, VersaoConfiguracao versao, EnvelopeReidratado envelope)
+    {
+        IInscricaoRepository inscricoes = Substitute.For<IInscricaoRepository>();
+        inscricoes.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>())
+            .Returns(Inscricao.Iniciar(ProcessoId, cpf, "conta-1", "https://issuer", versao.Id).Value!);
+        return ObterFormularioDaInscricaoQueryHandler.Handle(
+            new ObterFormularioDaInscricaoQuery(ProcessoId), inscricoes, DivulgacaoDeTeste.Certame(ProcessoId),
+            ProcessosComVersao(versao), RegistroReidratando(envelope), UsuarioComCpf(cpf), CancellationToken.None);
+    }
+
+    private static IProcessoSeletivoRepository ProcessosComVersao(VersaoConfiguracao versao)
+    {
+        IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
+        processos.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([versao]);
+        processos.ObterVersoesPorAtoCriadorAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([versao]);
+        return processos;
     }
 }

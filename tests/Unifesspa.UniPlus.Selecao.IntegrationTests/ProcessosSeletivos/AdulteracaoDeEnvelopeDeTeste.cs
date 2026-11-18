@@ -83,11 +83,7 @@ internal static class AdulteracaoDeEnvelopeDeTeste
     }
 
     private static SnapshotCanonico CongelarReferencia(ProcessoSeletivo processo, DadosEdital dados) =>
-        new SnapshotPublicacaoCanonicalizer().Canonicalizar(new EntradaCanonicalizacao(
-            processo, dados, EnvelopeDeReferencia.HashFixo, FusoInstitucional.ZoneId,
-            MetadadosFatosCongelados: EnvelopeDeReferencia.MetadadosFatosDeReferencia(),
-            ValoresSelecionaveisCongelados: EnvelopeDeReferencia.ValoresSelecionaveisDeReferencia(),
-            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
+        new SnapshotPublicacaoCanonicalizer().Canonicalizar(new EntradaCanonicalizacao(processo, dados, EnvelopeDeReferencia.HashFixo, FusoInstitucional.ZoneId, Retificacao: null, Conformidade: null, DadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(MetadadosFatosCongelados: EnvelopeDeReferencia.MetadadosFatosDeReferencia(), ValoresSelecionaveisCongelados: EnvelopeDeReferencia.ValoresSelecionaveisDeReferencia(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)));
 
     private static VersaoConfiguracao PublicarSobreBytes(
         ProcessoSeletivo processo, DadosEdital dados, SnapshotCanonico congelado, byte[] bytes)

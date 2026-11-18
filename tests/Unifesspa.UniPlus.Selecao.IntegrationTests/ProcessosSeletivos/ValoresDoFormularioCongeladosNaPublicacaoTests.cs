@@ -67,14 +67,29 @@ public sealed class ValoresDoFormularioCongeladosNaPublicacaoTests
     {
         ProcessoSeletivo processo = CenarioDeFormularioPublicado.NovoProcessoComFatoDeSelecao(
             nameof(Handle_ComPostgresReal_ReproduzOsValoresCongeladosEmLeiturasIndependentes));
+        await PublicarComValoresCongeladosAsync(processo);
 
+        // Leituras independentes, sem catálogo, reproduzem os bytes persistidos.
+        FormularioRenderizavelDto primeira = await _cenario.LerPublicadoAsync(processo.Id);
+        FormularioRenderizavelDto segunda = await _cenario.LerPublicadoAsync(processo.Id);
+
+        ConferirLeituras(primeira, segunda);
+    }
+
+    private async Task PublicarComValoresCongeladosAsync(ProcessoSeletivo processo)
+    {
         const string hashDocumento = "2222222222222222222222222222222222222222222222222222222222222222";
         DadosEdital dados = CenarioDeFormularioPublicado.DadosDoEdital(Guid.CreateVersion7());
 
-        // As SEIS categorias do IBGE — o vocabulário completo que o catálogo declarava íntegro
-        // no instante da publicação. É este dicionário, e só ele, que o formulário lido depois
-        // tem de reproduzir — nunca uma consulta nova ao catálogo vivo.
-        Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis = new(StringComparer.Ordinal)
+        Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis = ValoresDeCorRaca();
+
+        SnapshotCanonico congelado = CenarioDeFormularioPublicado.Canonicalizar(new EntradaCanonicalizacao(processo, dados, hashDocumento, FusoInstitucional.ZoneId, Retificacao: null, Conformidade: null, DadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(valoresSelecionaveis), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)));
+        await _cenario.PublicarEPersistirAsync(processo, dados, congelado, hashDocumento, "integration-test-user");
+    }
+
+    // As seis categorias do catálogo no instante da publicação.
+    private static Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> ValoresDeCorRaca() =>
+        new(StringComparer.Ordinal)
         {
             ["COR_RACA"] = [
                 new ValorDominioDeclaradoCongelado("BRANCA", "Autodeclaração de cor/raça branca.", 0),
@@ -86,18 +101,8 @@ public sealed class ValoresDoFormularioCongeladosNaPublicacaoTests
             ],
         };
 
-        SnapshotCanonico congelado = CenarioDeFormularioPublicado.Canonicalizar(new EntradaCanonicalizacao(
-            processo, dados, hashDocumento, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(valoresSelecionaveis),
-            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
-        await _cenario.PublicarEPersistirAsync(processo, dados, congelado, hashDocumento, "integration-test-user");
-
-        // Duas leituras INDEPENDENTES — dois DbContext distintos, a mesma separação que existe
-        // entre duas requisições HTTP de fato diferentes. Nenhum leitor de catálogo é injetado:
-        // se a resposta dependesse de qualquer estado externo ao byte persistido — cache, campo
-        // estático, ordem de execução — as duas leituras poderiam divergir entre si.
-        FormularioRenderizavelDto primeira = await _cenario.LerPublicadoAsync(processo.Id);
-        FormularioRenderizavelDto segunda = await _cenario.LerPublicadoAsync(processo.Id);
-
+    private static void ConferirLeituras(FormularioRenderizavelDto primeira, FormularioRenderizavelDto segunda)
+    {
         CampoRenderizavel corRaca = primeira.FatosColetados.Single(f => f.FatoCodigo == "COR_RACA");
         corRaca.ValoresSelecionaveis.Should().NotBeNull();
         corRaca.ValoresSelecionaveis!.Select(v => v.Codigo).Should().Equal(
@@ -161,11 +166,7 @@ public sealed class ValoresDoFormularioCongeladosNaPublicacaoTests
 
         // O catálogo já traz a correção quando a retificação congela.
         DefinicaoAvaliavel naRetificacao = DefinicaoAvaliavelDoProcesso.DaConfiguracaoViva(carregado, CatalogoComCorRaca([.. CorRacaCorrigida()])).Value!;
-        SnapshotCanonico congelado = CenarioDeFormularioPublicado.Canonicalizar(new EntradaCanonicalizacao(
-            carregado, dados, documento.HashSha256!, FusoInstitucional.ZoneId,
-            new RetificacaoDoEdital(versaoAtual.AtoCriadorId, "Correção do texto das opções"),
-            ValoresSelecionaveisCongelados: naRetificacao.ValoresSelecionaveis,
-            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(carregado), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
+        SnapshotCanonico congelado = CenarioDeFormularioPublicado.Canonicalizar(new EntradaCanonicalizacao(carregado, dados, documento.HashSha256!, FusoInstitucional.ZoneId, new RetificacaoDoEdital(versaoAtual.AtoCriadorId, "Correção do texto das opções"), Conformidade: null, DadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(ValoresSelecionaveisCongelados: naRetificacao.ValoresSelecionaveis, TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(carregado), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)));
         Result<VersaoConfiguracao> retificar = carregado.Retificar(
             new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, documento.HashSha256!), AtorUsuarioContaId = "integration-test-user", Contagem = CorpusEnvelopeDadosDoEdital.ContextoRico() }, versaoAtual, "Correção do texto das opções");
         retificar.IsSuccess.Should().BeTrue(retificar.Error?.Message);
@@ -200,7 +201,7 @@ public sealed class ValoresDoFormularioCongeladosNaPublicacaoTests
     }
 
     private static (string Codigo, string? Descricao, int Ordem, string? Orientacao)[] CorRacaCongelada(VersaoConfiguracao versao) =>
-        Projetados(CenarioDeFormularioPublicado.RegistroCodecs.Reidratar(versao).Value!.ValoresSelecionaveisCongelados!["COR_RACA"]!);
+        Projetados(CenarioDeFormularioPublicado.RegistroCodecs.Reidratar(versao).Value!.DadosDeCatalogo.ValoresSelecionaveisCongelados!["COR_RACA"]!);
 
     private static IReadOnlyList<FatoCandidatoView> CatalogoComCorRaca(params FatoValorDominioViewItem[] valores) => CatalogoDoConjuntoBasico.Com(
     [
@@ -231,9 +232,7 @@ public sealed class ValoresDoFormularioCongeladosNaPublicacaoTests
         const string hashDocumento = "4444444444444444444444444444444444444444444444444444444444444444";
         DadosEdital dados = CenarioDeFormularioPublicado.DadosDoEdital(Guid.CreateVersion7());
         DefinicaoAvaliavel naPublicacao = DefinicaoAvaliavelDoProcesso.DaConfiguracaoViva(processo, CatalogoComCorRaca([.. CorRacaComoCadastrada()])).Value!;
-        SnapshotCanonico congelado = CenarioDeFormularioPublicado.Canonicalizar(new EntradaCanonicalizacao(
-            processo, dados, hashDocumento, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: naPublicacao.ValoresSelecionaveis,
-            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
+        SnapshotCanonico congelado = CenarioDeFormularioPublicado.Canonicalizar(new EntradaCanonicalizacao(processo, dados, hashDocumento, FusoInstitucional.ZoneId, Retificacao: null, Conformidade: null, DadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(ValoresSelecionaveisCongelados: naPublicacao.ValoresSelecionaveis, TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)));
         VersaoConfiguracao versao = await _cenario.PublicarEPersistirAsync(processo, dados, congelado, hashDocumento, "integration-test-user");
         return (processo, versao);
     }

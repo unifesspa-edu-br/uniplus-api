@@ -23,74 +23,73 @@ public static class DocumentosAusentesDaInscricao
     {
         ArgumentNullException.ThrowIfNull(arvore);
         ArgumentNullException.ThrowIfNull(resultado);
-
         Dictionary<(Guid No, string Entidade), EstadoSatisfacao> porEntidade = resultado.EstadosPorEntidade
             .ToDictionary(static e => (e.NoExigenciaId, e.EntidadeId), static e => e.Estado);
         List<DocumentoAusente> ausentes = [];
         foreach (NoExigencia raiz in arvore.Raizes.OrderBy(static r => r.Ordem))
         {
-            Percorrer(raiz, null);
+            Percorrer(raiz, null, resultado, porEntidade, ausentes);
         }
-
         return ausentes;
-
-        void Percorrer(NoExigencia no, string? entidadeId)
-        {
-            if (no.RepetePorEntidade is not null && entidadeId is null)
-            {
-                foreach (string ocorrencia in porEntidade.Keys.Where(k => k.No == no.Id).Select(static k => k.Entidade).Order(StringComparer.Ordinal))
-                {
-                    Percorrer(no, ocorrencia);
-                }
-
-                return;
-            }
-
-            EstadoSatisfacao estado = EstadoDe(no, entidadeId);
-            if (no.Tipo == TipoNo.GrupoE)
-            {
-                // O E impossível por um OU irmão não esconde o que falta nos outros filhos.
-                if (estado is not (EstadoSatisfacao.Pendente or EstadoSatisfacao.Impossivel))
-                {
-                    return;
-                }
-
-                foreach (NoExigencia filho in no.Filhos.OrderBy(static f => f.Ordem))
-                {
-                    Percorrer(filho, entidadeId);
-                }
-
-                return;
-            }
-
-            if (!NaoAtendido(estado))
-            {
-                return;
-            }
-
-            // A folha, ou o grupo "um ou outro" ainda não atendido: falta o que o grupo tem de pendente e
-            // obrigatório; sem nenhuma alternativa obrigatória, o grupo não recusa.
-            DocumentoExigido[] faltantes = [.. no.AchatarComDescendentes()
-                .Where(n => n.Tipo == TipoNo.Folha && ConferivelPelasApresentacoes(n))
-                .Where(n => NaoAtendido(EstadoDe(n, entidadeId)))
-                .Select(static n => n.DocumentoExigido!)
-                .Where(static d => d.Obrigatorio && d.Finalidade == FinalidadeFormulario.Inscricao)];
-            if (faltantes.Length > 0)
-            {
-                ausentes.Add(new DocumentoAusente(faltantes, entidadeId));
-            }
-        }
-
-        EstadoSatisfacao EstadoDe(NoExigencia no, string? entidadeId) =>
-            entidadeId is null
-                ? resultado.EstadosPorNo.GetValueOrDefault(no.Id, EstadoSatisfacao.Indeterminado)
-                : porEntidade.GetValueOrDefault((no.Id, entidadeId), EstadoSatisfacao.Indeterminado);
     }
 
-    /// <summary>A folha que conta apresentações, ou apresentações distintas: o envio registra só isso, e não o espaço de cada arquivo.</summary>
-    private static bool ConferivelPelasApresentacoes(NoExigencia folha) =>
-        folha.ChaveDistincao is null || (folha.ChaveDistincao == ChaveDistincao.Ocorrencia && folha.OcorrenciasEsperadas is null);
+    private static void Percorrer(NoExigencia no, string? entidadeId, ResultadoResolucaoArvore resultado,
+        Dictionary<(Guid No, string Entidade), EstadoSatisfacao> porEntidade, List<DocumentoAusente> ausentes)
+    {
+        if (no.RepetePorEntidade is not null && entidadeId is null)
+        {
+            foreach (string ocorrencia in porEntidade.Keys.Where(k => k.No == no.Id).Select(static k => k.Entidade).Order(StringComparer.Ordinal))
+            {
+                Percorrer(no, ocorrencia, resultado, porEntidade, ausentes);
+            }
+            return;
+        }
+        PercorrerNoEscopo(no, entidadeId, resultado, porEntidade, ausentes);
+    }
 
-    /// <summary>Só o pendente falta: o indeterminado (ainda não se sabe se se aplica), o não aplicável e o impossível — que enviar mais nada resolve — não recusam.</summary>
-    private static bool NaoAtendido(EstadoSatisfacao estado) => estado == EstadoSatisfacao.Pendente;
+    private static void PercorrerNoEscopo(NoExigencia no, string? entidadeId, ResultadoResolucaoArvore resultado,
+        Dictionary<(Guid No, string Entidade), EstadoSatisfacao> porEntidade, List<DocumentoAusente> ausentes)
+    {
+        if (no.Tipo == TipoNo.GrupoE)
+        {
+            PercorrerGrupoE(no, entidadeId, resultado, porEntidade, ausentes);
+            return;
+        }
+        if (EstadoDe(no, entidadeId, resultado, porEntidade) == EstadoSatisfacao.Pendente)
+        {
+            RegistrarAusentes(no, entidadeId, resultado, porEntidade, ausentes);
+        }
+    }
+
+    private static void PercorrerGrupoE(NoExigencia no, string? entidadeId, ResultadoResolucaoArvore resultado,
+        Dictionary<(Guid No, string Entidade), EstadoSatisfacao> porEntidade, List<DocumentoAusente> ausentes)
+    {
+        if (EstadoDe(no, entidadeId, resultado, porEntidade) is not (EstadoSatisfacao.Pendente or EstadoSatisfacao.Impossivel))
+        {
+            return;
+        }
+        foreach (NoExigencia filho in no.Filhos.OrderBy(static f => f.Ordem))
+        {
+            Percorrer(filho, entidadeId, resultado, porEntidade, ausentes);
+        }
+    }
+
+    private static void RegistrarAusentes(NoExigencia no, string? entidadeId, ResultadoResolucaoArvore resultado,
+        Dictionary<(Guid No, string Entidade), EstadoSatisfacao> porEntidade, List<DocumentoAusente> ausentes)
+    {
+        DocumentoExigido[] faltantes = [.. no.AchatarComDescendentes()
+            .Where(static n => n.Tipo == TipoNo.Folha && (n.Distincao is null || n.Distincao.ConferivelPelaContagem))
+            .Where(n => EstadoDe(n, entidadeId, resultado, porEntidade) == EstadoSatisfacao.Pendente)
+            .Select(static n => n.DocumentoExigido!)
+            .Where(static d => d.Obrigatorio && d.Finalidade == FinalidadeFormulario.Inscricao)];
+        if (faltantes.Length > 0)
+        {
+            ausentes.Add(new DocumentoAusente(faltantes, entidadeId));
+        }
+    }
+
+    private static EstadoSatisfacao EstadoDe(NoExigencia no, string? entidadeId, ResultadoResolucaoArvore resultado,
+        Dictionary<(Guid No, string Entidade), EstadoSatisfacao> porEntidade) => entidadeId is null
+        ? resultado.EstadosPorNo.GetValueOrDefault(no.Id, EstadoSatisfacao.Indeterminado)
+        : porEntidade.GetValueOrDefault((no.Id, entidadeId), EstadoSatisfacao.Indeterminado);
 }

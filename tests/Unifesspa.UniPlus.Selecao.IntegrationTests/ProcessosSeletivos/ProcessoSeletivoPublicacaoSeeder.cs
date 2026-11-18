@@ -271,8 +271,8 @@ internal static class ProcessoSeletivoPublicacaoSeeder
         DadosEdital dados = DadosDoEdital(documento);
         SnapshotCanonico canonico = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
             processo, dados, documento.HashSha256!, FusoInstitucional.ZoneId,
-            ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo),
-            FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
+            Retificacao: null, Conformidade: null, DadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo),
+            FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)));
 
         Result<VersaoConfiguracao> publicarResult = processo.Publicar(
             new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash, documento.HashSha256!), AtorUsuarioContaId = "integration-test-user", Contagem = CorpusEnvelopeDadosDoEdital.ContextoRico() });

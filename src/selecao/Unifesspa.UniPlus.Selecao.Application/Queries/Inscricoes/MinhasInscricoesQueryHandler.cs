@@ -23,12 +23,14 @@ public static class MinhasInscricoesQueryHandler
     public static async Task<Result<IReadOnlyList<MinhaInscricaoDto>>> Handle(
         MinhasInscricoesQuery query,
         IInscricaoRepository inscricaoRepository,
+        IComprovanteDaInscricaoRepository comprovanteRepository,
         ProcessosDasInscricoes processos,
         IUserContext userContext,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(inscricaoRepository);
+        ArgumentNullException.ThrowIfNull(comprovanteRepository);
         ArgumentNullException.ThrowIfNull(processos);
         ArgumentNullException.ThrowIfNull(userContext);
 
@@ -37,7 +39,7 @@ public static class MinhasInscricoesQueryHandler
         return doDono.IsFailure
             ? Result<IReadOnlyList<MinhaInscricaoDto>>.Failure(doDono.Error!)
             : Result<IReadOnlyList<MinhaInscricaoDto>>.Success(
-                await ListarAsync(doDono.Value!, inscricaoRepository, processos, cancellationToken).ConfigureAwait(false));
+                await ListarAsync(doDono.Value!, comprovanteRepository, processos, cancellationToken).ConfigureAwait(false));
     }
 
     /// <summary>
@@ -57,7 +59,7 @@ public static class MinhasInscricoesQueryHandler
         }
 
         IReadOnlyList<Inscricao> inscricoes = await inscricaoRepository.ObterTodasPorCpfAsync(cpf.Value!, cancellationToken).ConfigureAwait(false);
-        return Result<IReadOnlyList<Inscricao>>.Success([.. inscricoes.Where(i => i.ConferirDono(userContext.UserId) is null)]);
+        return Result<IReadOnlyList<Inscricao>>.Success([.. inscricoes.Where(i => i.Titular.ConferirDono(userContext.UserId) is null)]);
     }
 
     private static DomainError? ContaAusenteNoToken(IUserContext userContext) =>
@@ -66,9 +68,9 @@ public static class MinhasInscricoesQueryHandler
             : null;
 
     private static async Task<IReadOnlyList<MinhaInscricaoDto>> ListarAsync(
-        IReadOnlyList<Inscricao> inscricoes, IInscricaoRepository inscricaoRepository, ProcessosDasInscricoes processos, CancellationToken cancellationToken)
+        IReadOnlyList<Inscricao> inscricoes, IComprovanteDaInscricaoRepository comprovanteRepository, ProcessosDasInscricoes processos, CancellationToken cancellationToken)
     {
-        ILookup<Guid, DateTimeOffset> emissoes = await EmissoesPorInscricaoAsync(inscricoes, inscricaoRepository, cancellationToken).ConfigureAwait(false);
+        ILookup<Guid, DateTimeOffset> emissoes = await EmissoesPorInscricaoAsync(inscricoes, comprovanteRepository, cancellationToken).ConfigureAwait(false);
         Dictionary<Guid, SituacaoDoProcessoDaInscricao> situacoes = await processos.SituacoesAsync(inscricoes, cancellationToken).ConfigureAwait(false);
         Dictionary<Guid, IReadOnlyList<OfertaDeCursoCertameDto>> ofertas = await processos.OfertasDasVersoesAsync(inscricoes, cancellationToken).ConfigureAwait(false);
 
@@ -79,12 +81,12 @@ public static class MinhasInscricoesQueryHandler
                 situacoes[i.ProcessoSeletivoId].Nome,
                 situacoes[i.ProcessoSeletivoId].InscricoesAbertas,
                 [.. emissoes[i.Id]],
-                ofertas.GetValueOrDefault(i.VersaoFormularioId, []))),
+                ofertas.GetValueOrDefault(i.Formulario.VersaoFormularioId, []))),
         ];
     }
 
     private static async Task<ILookup<Guid, DateTimeOffset>> EmissoesPorInscricaoAsync(
-        IReadOnlyList<Inscricao> inscricoes, IInscricaoRepository inscricaoRepository, CancellationToken cancellationToken) =>
-        (await inscricaoRepository.ObterEmissoesAsync([.. inscricoes.Select(static i => i.Id)], cancellationToken).ConfigureAwait(false))
+        IReadOnlyList<Inscricao> inscricoes, IComprovanteDaInscricaoRepository comprovanteRepository, CancellationToken cancellationToken) =>
+        (await comprovanteRepository.ObterEmissoesAsync([.. inscricoes.Select(static i => i.Id)], cancellationToken).ConfigureAwait(false))
             .ToLookup(static e => e.InscricaoId, static e => e.Instante);
 }

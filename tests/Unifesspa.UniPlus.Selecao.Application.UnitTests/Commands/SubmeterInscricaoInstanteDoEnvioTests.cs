@@ -34,7 +34,7 @@ public sealed class SubmeterInscricaoInstanteDoEnvioTests
         "DATA_DO_EVENTO", 1, "Data do evento", TipoRenderizacao.Data, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL",
         restricoes: [new FaixaDeData(minima: null, LimiteDeData.NoEnvio(anos: 0, dias: 0))], hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
 
-    private static InscricaoRequest RequestComDataDoEvento(Cpf cpf, VersaoTermoEscolhida termo, GrafoConfiguracao grafo, string dataDoEvento)
+    private static InscricaoRequest RequestComDataDoEvento(Cpf cpf, VersaoTermoEscolhida termo, ConfiguracaoPublicada grafo, string dataDoEvento)
     {
         InscricaoRequest request = RequestComApelidoETermoAceito(cpf, termo, grafo);
         Dictionary<string, JsonElement> respostas = new(request.Respostas!, StringComparer.Ordinal)
@@ -47,45 +47,23 @@ public sealed class SubmeterInscricaoInstanteDoEnvioTests
     [Fact(DisplayName = "O relógio que vira o dia durante o envio não muda o dia de que a faixa de data se conta")]
     public async Task Handle_ViradaDoDiaDuranteOEnvio_AvaliaNoDiaDoInstanteUnico()
     {
-        Cpf cpf = PersonasDeTeste.FernandaDrumond;
-        (VersaoConfiguracao versao, GrafoConfiguracao grafo, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo([DataAteOEnvio]);
-        Inscricao existente = NovaInscricao(cpf, "conta-1", versao.Id);
-
-        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
-        inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
-        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
-        DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
-        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
+        CenarioDoEnvioDeTeste cenario = new(PersonasDeTeste.FernandaDrumond, MontarVersaoComItemObrigatorioETermo([DataAteOEnvio]));
 
         // 23:59:59,9 de 15/01 em Belém; cada leitura seguinte do relógio já cai em 16/01.
-        Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
-            new SubmeterInscricaoCommand(ProcessoId, RequestComDataDoEvento(cpf, termo, grafo, "2026-01-16"), PrecondicaoIfMatch.DeTags([existente.ETag])),
-            inscricaoRepository, processoRepository, registroCodecs, unitOfWork, UsuarioComCpf(cpf),
-            portas: new PortasDoEnvioDeTeste(Relogio: new RelogioQueAvanca(new DateTimeOffset(2026, 1, 16, 2, 59, 59, 900, TimeSpan.Zero), TimeSpan.FromMilliseconds(200))));
+        Result<ReciboDaInscricaoDto> resultado = await cenario.SubmeterAsync(RequestComDataDoEvento(cenario.Cpf, cenario.Termo, cenario.Configuracao, "2026-01-16"), relogio: new RelogioQueAvanca(new DateTimeOffset(2026, 1, 16, 2, 59, 59, 900, TimeSpan.Zero), TimeSpan.FromMilliseconds(200)));
 
         resultado.Errors.Should().ContainSingle(static e => e.Field == "DATA_DO_EVENTO" && e.Error.Code == InscricaoErrorCodes.DataForaDaFaixa)
             .Which.Error.Message.Should().Be("Informe uma data até 15/01/2026.");
-        await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        await cenario.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "O comprovante leva o mesmo instante com que o envio foi avaliado")]
     public async Task Handle_Envio_ComprovanteLevaOInstanteDaAvaliacao()
     {
-        Cpf cpf = PersonasDeTeste.FernandaDrumond;
-        (VersaoConfiguracao versao, GrafoConfiguracao grafo, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo([DataAteOEnvio]);
-        Inscricao existente = NovaInscricao(cpf, "conta-1", versao.Id);
+        CenarioDoEnvioDeTeste cenario = new(PersonasDeTeste.FernandaDrumond, MontarVersaoComItemObrigatorioETermo([DataAteOEnvio]));
 
-        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
-        inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
-        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
-        DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
-
-        Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
-            new SubmeterInscricaoCommand(ProcessoId, RequestComDataDoEvento(cpf, termo, grafo, "2026-01-15"), PrecondicaoIfMatch.DeTags([existente.ETag])),
-            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<IUnitOfWork>(), UsuarioComCpf(cpf),
-            portas: new PortasDoEnvioDeTeste(Relogio: new RelogioQueAvanca(new DateTimeOffset(2026, 1, 16, 2, 59, 59, 900, TimeSpan.Zero), TimeSpan.FromMilliseconds(200))));
+        Result<ReciboDaInscricaoDto> resultado = await cenario.SubmeterAsync(RequestComDataDoEvento(cenario.Cpf, cenario.Termo, cenario.Configuracao, "2026-01-15"),
+            relogio: new RelogioQueAvanca(new DateTimeOffset(2026, 1, 16, 2, 59, 59, 900, TimeSpan.Zero), TimeSpan.FromMilliseconds(200)));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.Instante.Should().Be(new DateTimeOffset(2026, 1, 16, 2, 59, 59, 900, TimeSpan.Zero));
@@ -94,26 +72,14 @@ public sealed class SubmeterInscricaoInstanteDoEnvioTests
     [Fact(DisplayName = "A correção da inscrição enviada conta a faixa de data do instante da correção")]
     public async Task Handle_Correcao_ContaAFaixaDoNovoEnvio()
     {
-        Cpf cpf = PersonasDeTeste.FernandaDrumond;
-        (VersaoConfiguracao versao, GrafoConfiguracao grafo, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo([DataAteOEnvio]);
-        Inscricao existente = NovaInscricao(cpf, "conta-1", versao.Id);
+        CenarioDoEnvioDeTeste cenario = new(PersonasDeTeste.FernandaDrumond, MontarVersaoComItemObrigatorioETermo([DataAteOEnvio]));
 
-        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
-        inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
-        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
-        DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
-
-        Result<ReciboDaInscricaoDto> envio = await SubmeterAsync(
-            new SubmeterInscricaoCommand(ProcessoId, RequestComDataDoEvento(cpf, termo, grafo, "2026-01-15"), PrecondicaoIfMatch.DeTags([existente.ETag])),
-            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<IUnitOfWork>(), UsuarioComCpf(cpf),
-            portas: new PortasDoEnvioDeTeste(Relogio: new RelogioFixo(new DateTimeOffset(2026, 1, 15, 12, 0, 0, TimeSpan.Zero))));
+        Result<ReciboDaInscricaoDto> envio = await cenario.SubmeterAsync(RequestComDataDoEvento(cenario.Cpf, cenario.Termo, cenario.Configuracao, "2026-01-15"),
+            relogio: new RelogioFixo(new DateTimeOffset(2026, 1, 15, 12, 0, 0, TimeSpan.Zero)));
         envio.IsSuccess.Should().BeTrue(envio.Error?.Message);
 
-        Result<ReciboDaInscricaoDto> correcao = await SubmeterAsync(
-            new SubmeterInscricaoCommand(ProcessoId, RequestComDataDoEvento(cpf, termo, grafo, "2026-01-16"), PrecondicaoIfMatch.DeTags([existente.ETag])),
-            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<IUnitOfWork>(), UsuarioComCpf(cpf),
-            portas: new PortasDoEnvioDeTeste(Relogio: new RelogioFixo(new DateTimeOffset(2026, 1, 16, 12, 0, 0, TimeSpan.Zero))));
+        Result<ReciboDaInscricaoDto> correcao = await cenario.SubmeterAsync(RequestComDataDoEvento(cenario.Cpf, cenario.Termo, cenario.Configuracao, "2026-01-16"),
+            relogio: new RelogioFixo(new DateTimeOffset(2026, 1, 16, 12, 0, 0, TimeSpan.Zero)));
 
         correcao.IsSuccess.Should().BeTrue(correcao.Error?.Message);
     }

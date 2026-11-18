@@ -18,7 +18,7 @@ public sealed class GrafoLidoPersistenciaTests(ProcessoSeletivoDbFixture fixture
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(origem));
         VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(origem, congelado.Bytes);
         EnvelopeReidratado lido = ApoioDoEnvelopeCodec.Reidratado(versao);
-        ProcessoSeletivo candidata = ProcessoDoGrafoLidoDeTeste.Criar(origem, lido.Grafo);
+        ProcessoSeletivo candidata = ProcessoDoGrafoLidoDeTeste.Criar(origem, lido.Configuracao);
         await GravarAsync(candidata);
         await using UniPlusDbContext db = fixture.CreateDbContext();
         ProcessoSeletivo relido = (await ProcessoSeletivoRepositoryDeTeste.Criar(db)

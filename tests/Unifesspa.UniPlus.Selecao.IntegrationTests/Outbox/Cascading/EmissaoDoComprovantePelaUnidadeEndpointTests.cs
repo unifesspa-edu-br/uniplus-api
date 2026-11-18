@@ -67,9 +67,9 @@ public sealed class EmissaoDoComprovantePelaUnidadeEndpointTests : IAsyncLifetim
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, corpo);
         resposta.Content.Headers.ContentType!.MediaType.Should().Be(Media);
         using JsonDocument json = JsonDocument.Parse(corpo);
-        json.RootElement.GetProperty("inscricaoId").GetGuid().Should().Be(cenario.Enviada);
+        json.RootElement.GetProperty("inscricao").GetProperty("inscricaoId").GetGuid().Should().Be(cenario.Enviada);
         json.RootElement.GetProperty("candidato").GetProperty("cpfMascarado").GetString().Should().Be(PersonasDeTeste.FernandaDrumond.Mascarado);
-        json.RootElement.TryGetProperty("cancelamento", out JsonElement cancelamento).Should().BeTrue();
+        json.RootElement.GetProperty("inscricao").TryGetProperty("cancelamento", out JsonElement cancelamento).Should().BeTrue();
         cancelamento.ValueKind.Should().Be(JsonValueKind.Null);
         corpo.Should().NotContain(PersonasDeTeste.FernandaDrumond.Valor);
     }
@@ -84,7 +84,7 @@ public sealed class EmissaoDoComprovantePelaUnidadeEndpointTests : IAsyncLifetim
 
         string corpo = await resposta.Content.ReadAsStringAsync();
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, corpo);
-        JsonElement cancelamento = JsonDocument.Parse(corpo).RootElement.GetProperty("cancelamento");
+        JsonElement cancelamento = JsonDocument.Parse(corpo).RootElement.GetProperty("inscricao").GetProperty("cancelamento");
         cancelamento.GetProperty("aviso").GetString().Should().Be(AvisoDaCancelada);
         cancelamento.GetProperty("canceladaEm").GetDateTimeOffset().Should().Be(CanceladaEm);
         cancelamento.GetProperty("motivo").GetString().Should().Be("Mudei de curso");
@@ -100,7 +100,7 @@ public sealed class EmissaoDoComprovantePelaUnidadeEndpointTests : IAsyncLifetim
 
         string corpo = await resposta.Content.ReadAsStringAsync();
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, corpo);
-        JsonElement cancelamento = JsonDocument.Parse(corpo).RootElement.GetProperty("cancelamento");
+        JsonElement cancelamento = JsonDocument.Parse(corpo).RootElement.GetProperty("inscricao").GetProperty("cancelamento");
         cancelamento.GetProperty("motivo").ValueKind.Should().Be(JsonValueKind.Null);
         cancelamento.GetProperty("aviso").GetString().Should().Be(AvisoDaCancelada);
     }
@@ -220,50 +220,61 @@ public sealed class EmissaoDoComprovantePelaUnidadeEndpointTests : IAsyncLifetim
     private async Task<Cenario> SemearAsync()
     {
         CascadingApiFactory api = _fixture.Factory;
-        await TiposDeAtoSeeder.SemearAsync(api.Services);
-        using HttpClient client = api.CreateClient();
-        (Guid processoId, _) = await PublicarAtoAvulsoEndpointTests.PublicarEditalAsync(api, client);
+        Guid processoId = await PublicarAsync();
         await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         Guid versaoId = await db.VersoesConfiguracao.AsNoTracking().Where(v => v.ProcessoSeletivoId == processoId).Select(v => v.Id).SingleAsync();
         Guid unidadeId = await db.ProcessosSeletivos.AsNoTracking().Where(p => p.Id == processoId).Select(p => p.UnidadeAdministradoraOrigemId).SingleAsync();
         IInscricaoRepository repositorio = escopo.ServiceProvider.GetRequiredService<IInscricaoRepository>();
-        Guid enviada = await SemearInscricaoAsync(repositorio, processoId, versaoId, SituacaoInscricao.Submetida, motivo: null);
-        Guid cancelada = await SemearInscricaoAsync(repositorio, processoId, versaoId, SituacaoInscricao.Cancelada, "Mudei de curso");
-        Guid semMotivo = await SemearInscricaoAsync(repositorio, processoId, versaoId, SituacaoInscricao.Cancelada, motivo: null);
+        Guid enviada = await SemearInscricaoAsync(repositorio, escopo.ServiceProvider.GetRequiredService<IComprovanteDaInscricaoRepository>(), processoId, versaoId, SituacaoInscricao.Submetida, motivo: null);
+        Guid cancelada = await SemearInscricaoAsync(repositorio, escopo.ServiceProvider.GetRequiredService<IComprovanteDaInscricaoRepository>(), processoId, versaoId, SituacaoInscricao.Cancelada, "Mudei de curso");
+        Guid semMotivo = await SemearInscricaoAsync(repositorio, escopo.ServiceProvider.GetRequiredService<IComprovanteDaInscricaoRepository>(), processoId, versaoId, SituacaoInscricao.Cancelada, motivo: null);
         await escopo.ServiceProvider.GetRequiredService<IUnitOfWork>().SalvarAlteracoesAsync();
 
         return new Cenario(processoId, unidadeId, enviada, cancelada, semMotivo);
     }
 
     private static async Task<Guid> SemearInscricaoAsync(
-        IInscricaoRepository repositorio, Guid processoId, Guid versaoId, SituacaoInscricao situacao, string? motivo)
+        IInscricaoRepository repositorio, IComprovanteDaInscricaoRepository comprovantes, Guid processoId, Guid versaoId, SituacaoInscricao situacao, string? motivo)
+    {
+        Inscricao inscricao = InscricaoNaSituacao(processoId, versaoId, situacao, motivo);
+        await repositorio.AdicionarAsync(inscricao);
+        await comprovantes.AdicionarComprovanteAsync(Comprovante(inscricao.Id));
+
+        return inscricao.Id;
+    }
+
+    private sealed record Cenario(Guid ProcessoId, Guid UnidadeId, Guid Enviada, Guid Cancelada, Guid CanceladaSemMotivo);
+    private static Inscricao InscricaoNaSituacao(Guid processoId, Guid versaoId, SituacaoInscricao situacao, string? motivo)
     {
         bool cancelada = situacao == SituacaoInscricao.Cancelada;
-        Inscricao inscricao = Inscricao.Reidratar(
-            Guid.CreateVersion7(), processoId, PersonasDeTeste.FernandaDrumond, Titular, TestAuthHandler.DefaultIssuer, situacao, versaoId, null, null,
-            "000321", cancelada ? CanceladaEm : null, cancelada ? Titular : null, motivo,
-            new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["CPF"] = JsonSerializer.SerializeToElement(PersonasDeTeste.FernandaDrumond.Valor) },
-            new Dictionary<string, JsonElement>(StringComparer.Ordinal),
-            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [],
-            new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal)
-            {
-                ["CPF"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: true),
-            },
-            revisao: 1, DateTimeOffset.UtcNow, null);
-        await repositorio.AdicionarAsync(inscricao);
-        await repositorio.AdicionarComprovanteAsync(ComprovanteInscricao.Emitir(
-            inscricao.Id, "000321", DateTimeOffset.UtcNow, null,
+        return Inscricao.Reidratar(Guid.CreateVersion7(), processoId,
+            TitularDaInscricao.Reidratar(PersonasDeTeste.FernandaDrumond, Titular, TestAuthHandler.DefaultIssuer),
+            EstadoDaInscricao.Reidratar(situacao, "000321", CancelamentoDaInscricao.Reidratar(cancelada ? CanceladaEm : null, cancelada ? Titular : null, motivo)),
+            FormularioDaInscricao.Reidratar(versaoId, PreenchimentoDoCandidato.Criar(OpcoesDeCursoDaInscricao.Reidratar(null, null), new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["CPF"] = JsonSerializer.SerializeToElement(PersonasDeTeste.FernandaDrumond.Valor) }, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), []),
+                new Dictionary<string, JsonElement>(StringComparer.Ordinal), new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal)
+                {
+                    ["CPF"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: true),
+                }), 1, new Unifesspa.UniPlus.Selecao.Domain.ValueObjects.DatasDeGravacaoDaInscricao(default, null));
+    }
+
+    private static ComprovanteInscricao Comprovante(Guid inscricaoId) =>
+        ComprovanteInscricao.Emitir(
+            inscricaoId, "000321", DateTimeOffset.UtcNow, null,
             new Dictionary<string, JsonElement>(StringComparer.Ordinal)
             {
                 ["NOME"] = JsonSerializer.SerializeToElement(PersonasDeTeste.NomeFernandaDrumond),
                 ["DESEJA_NOME_SOCIAL"] = JsonSerializer.SerializeToElement(false),
             },
             new Dictionary<string, JsonElement>(StringComparer.Ordinal),
-            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [], []));
+            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [], []);
 
-        return inscricao.Id;
+    private async Task<Guid> PublicarAsync()
+    {
+        CascadingApiFactory api = _fixture.Factory;
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
+        using HttpClient client = api.CreateClient();
+        (Guid processoId, _) = await PublicarAtoAvulsoEndpointTests.PublicarEditalAsync(api, client);
+        return processoId;
     }
-
-    private sealed record Cenario(Guid ProcessoId, Guid UnidadeId, Guid Enviada, Guid Cancelada, Guid CanceladaSemMotivo);
 }

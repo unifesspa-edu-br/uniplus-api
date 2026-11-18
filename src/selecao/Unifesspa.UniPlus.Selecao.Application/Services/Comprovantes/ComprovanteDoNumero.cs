@@ -16,20 +16,20 @@ internal static class ComprovanteDoNumero
     public static async Task<Result<ComprovanteDaInscricaoDto>> MontarAsync(
         Inscricao inscricao,
         int numero,
-        IInscricaoRepository inscricaoRepository,
+        IComprovanteDaInscricaoRepository comprovanteRepository,
         MontadorDoComprovante montador,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(inscricao);
-        ArgumentNullException.ThrowIfNull(inscricaoRepository);
+        ArgumentNullException.ThrowIfNull(comprovanteRepository);
         ArgumentNullException.ThrowIfNull(montador);
 
-        ComprovanteNaPosicao? posicao = await inscricaoRepository
+        ComprovanteNaPosicao? posicao = await comprovanteRepository
             .ObterComprovanteAsync(inscricao.Id, numero, cancellationToken).ConfigureAwait(false);
 
         return posicao is null
             ? Result<ComprovanteDaInscricaoDto>.Failure(new DomainError(
-                InscricaoErrorCodes.ComprovanteNaoEncontrado, $"A inscrição não tem o comprovante número {numero}."))
+                InscricaoErrorCodes.ComprovanteNaoEncontrado, "O comprovante solicitado não foi encontrado."))
             : await montador.MontarAsync(inscricao, posicao, cancellationToken).ConfigureAwait(false);
     }
 }

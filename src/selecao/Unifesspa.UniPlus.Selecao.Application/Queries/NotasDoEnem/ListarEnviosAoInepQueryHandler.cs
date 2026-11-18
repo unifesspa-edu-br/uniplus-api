@@ -16,27 +16,26 @@ public static class ListarEnviosAoInepQueryHandler
 {
     public static async Task<Result<IReadOnlyList<GeracaoDeEnvioDto>>> Handle(
         ListarEnviosAoInepQuery query,
-        ICertameDivulgadoRepository certameDivulgadoRepository,
-        IProcessoSeletivoRepository processoSeletivoRepository,
-        IRegistroCodecsEnvelope registroCodecs,
+        ResolvedorDoEscopoDeNotasDoEnem escopos,
         IGeracaoDeEnvioAoInepRepository geracoes,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        ArgumentNullException.ThrowIfNull(certameDivulgadoRepository);
-        ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
-        ArgumentNullException.ThrowIfNull(registroCodecs);
+        ArgumentNullException.ThrowIfNull(escopos);
         ArgumentNullException.ThrowIfNull(geracoes);
 
-        Result<EscopoDeNotasDoEnem> escopo = await ResolvedorDoEscopoDeNotasDoEnem
+        Result<EscopoDeNotasDoEnem> escopo = await escopos
             .ResolverAsync(
                 query.ProcessoSeletivoId, query.EtapaProcessoId, query.Edicao, exigeNotaDoEnem: false,
-                certameDivulgadoRepository, processoSeletivoRepository, registroCodecs, cancellationToken)
+                cancellationToken)
             .ConfigureAwait(false);
-        if (escopo.IsFailure)
-        {
-            return Result<IReadOnlyList<GeracaoDeEnvioDto>>.Failure(escopo.Error!);
-        }
+        return escopo.IsFailure ? Result<IReadOnlyList<GeracaoDeEnvioDto>>.Failure(escopo.Error!)
+            : await ConsultarAsync(query, geracoes, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result<IReadOnlyList<GeracaoDeEnvioDto>>> ConsultarAsync(ListarEnviosAoInepQuery query,
+        IGeracaoDeEnvioAoInepRepository geracoes, CancellationToken cancellationToken)
+    {
 
         IReadOnlyList<GeracaoDeEnvioAoInep> historico = await geracoes
             .ListarAsync(query.ProcessoSeletivoId, query.EtapaProcessoId, query.Edicao, cancellationToken)

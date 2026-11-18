@@ -31,41 +31,56 @@ internal static class VersoesDoProcessoNaListagem
     {
         IReadOnlyList<VersaoConfiguracao> versoes = await processoRepository
             .ObterVersoesAsync(processoSeletivoId, cancellationToken).ConfigureAwait(false);
-        Dictionary<Guid, IReadOnlyDictionary<Guid, string>> nomesPorVersao = [];
-        if (versoes.Count == 0)
-        {
-            return new LeituraDasVersoes(ClassificacaoDeProtecao.Sensivel, null, nomesPorVersao);
-        }
+        return versoes.Count == 0
+            ? new LeituraDasVersoes(ClassificacaoDeProtecao.Sensivel, null, new Dictionary<Guid, IReadOnlyDictionary<Guid, string>>())
+            : LerVersoes(versoes, registroCodecs);
+    }
 
+    private static LeituraDasVersoes LerVersoes(IReadOnlyList<VersaoConfiguracao> versoes, IRegistroCodecsEnvelope registroCodecs)
+    {
+        Dictionary<Guid, IReadOnlyDictionary<Guid, string>> nomesPorVersao = [];
         ClassificacaoDeProtecao maisAlta = ClassificacaoDeProtecao.Nenhuma;
         List<string> basesLegais = [];
         bool resolvida = true;
         foreach (VersaoConfiguracao versao in versoes)
         {
-            Result<EnvelopeReidratado> envelope = ContextoDaVersaoFixadaResolver.Reidratar(versao, registroCodecs);
-            if (envelope.IsFailure)
-            {
-                maisAlta = ClassificacaoDeProtecao.Sensivel;
-                resolvida = false;
-                continue;
-            }
-
-            FatosDaVersao fatos = FatosDaVersao.De(envelope.Value!);
-            ClassificacaoDeProtecao daVersao = fatos.ClassificacaoDoNome();
-            maisAlta = daVersao > maisAlta ? daVersao : maisAlta;
-            if (fatos.BaseLegalDoNome() is { } baseLegal)
-            {
-                basesLegais.Add(baseLegal);
-            }
-            else
-            {
-                resolvida = false;
-            }
-
-            nomesPorVersao[versao.Id] = OfertasEscolhidas.NomesDe(ContextoDaVersaoFixadaResolver.OfertasDaVersao(envelope.Value!.Grafo));
+            LerVersao(versao, registroCodecs, nomesPorVersao, basesLegais, ref maisAlta, ref resolvida);
         }
 
         return new LeituraDasVersoes(maisAlta, resolvida ? string.Join("; ", basesLegais.Distinct(StringComparer.Ordinal)) : null, nomesPorVersao);
+    }
+
+    private static void LerVersao(
+        VersaoConfiguracao versao, IRegistroCodecsEnvelope registroCodecs,
+        Dictionary<Guid, IReadOnlyDictionary<Guid, string>> nomesPorVersao, List<string> basesLegais,
+        ref ClassificacaoDeProtecao maisAlta, ref bool resolvida)
+    {
+        Result<EnvelopeReidratado> envelope = ContextoDaVersaoFixadaResolver.Reidratar(versao, registroCodecs);
+        if (envelope.IsFailure)
+        {
+            maisAlta = ClassificacaoDeProtecao.Sensivel;
+            resolvida = false;
+            return;
+        }
+
+        ConferirProtecao(envelope.Value!, basesLegais, ref maisAlta, ref resolvida);
+        nomesPorVersao[versao.Id] = OfertasEscolhidas.NomesDe(ContextoDaVersaoFixadaResolver.OfertasDaVersao(envelope.Value!.Configuracao));
+    }
+
+    private static void ConferirProtecao(
+        EnvelopeReidratado envelope, List<string> basesLegais, ref ClassificacaoDeProtecao maisAlta, ref bool resolvida)
+    {
+        FatosDaVersao fatos = FatosDaVersao.De(envelope);
+        ClassificacaoDeProtecao daVersao = fatos.ClassificacaoDoNome();
+        maisAlta = daVersao > maisAlta ? daVersao : maisAlta;
+        if (fatos.BaseLegalDoNome() is { } baseLegal)
+        {
+            basesLegais.Add(baseLegal);
+        }
+        else
+        {
+            resolvida = false;
+        }
     }
 }
 

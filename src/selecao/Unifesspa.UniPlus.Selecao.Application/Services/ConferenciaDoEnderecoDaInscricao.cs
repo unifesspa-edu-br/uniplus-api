@@ -15,9 +15,9 @@ using Kernel.Results;
 /// é o geral da cidade, o candidato descreveu o logradouro e o bairro. O nível da resolução e a cidade
 /// vêm do Geo, nunca do que o navegador mandou (<c>nivelResolucao</c> e <c>origem</c> são ignorados).
 /// As regras que não precisam do Geo — CEP presente com 8 dígitos e o limite do complemento — são do
-/// agregado (<c>Inscricao.RecusasDoEndereco</c>).
+/// agregado (<c>PreenchimentoDoCandidato.RecusasDoEndereco</c>).
 /// </summary>
-public static class ConferenciaDoEnderecoDaInscricao
+public sealed class ConferenciaDoEnderecoDaInscricao(IConferenciaEnderecoGeo conferencia)
 {
     /// <summary>
     /// Confere cada endereço respondido. O Geo fora do ar nunca vira "CEP não encontrado": ao enviar, o endereço
@@ -26,60 +26,77 @@ public static class ConferenciaDoEnderecoDaInscricao
     /// rascunho continua salvável.
     /// </summary>
     /// <param name="aoEnviar">Envio: exige logradouro e bairro no CEP geral e não tolera Geo fora do ar.</param>
-    public static async Task<ConferenciaDosEnderecos> ConferirAsync(
+    public async Task<ConferenciaDosEnderecos> ConferirAsync(
         IReadOnlyDictionary<string, JsonElement> respostas,
         RespostasAdmitidas admitidas,
-        IConferenciaEnderecoGeo conferencia,
         bool aoEnviar,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(respostas);
         ArgumentNullException.ThrowIfNull(admitidas);
         ArgumentNullException.ThrowIfNull(conferencia);
-
         List<FieldError> recusas = [];
         Dictionary<string, CepResolvido> resolvidos = new(StringComparer.Ordinal);
-        foreach ((string codigo, DefinicaoDaResposta definicao) in admitidas.Definicoes)
+        foreach ((string codigo, EnderecoDeclarado endereco) in EnderecosConferiveis(respostas, admitidas))
         {
-            if (definicao.Tipo != TipoDoValorDeResposta.Endereco
-                || !respostas.TryGetValue(codigo, out JsonElement valor)
-                || !EnderecoDeclarado.TentarLer(valor, out EnderecoDeclarado endereco)
-                || endereco.CepSomenteDigitos is not { } cep)
+            DomainError? indisponivel = await ConferirEnderecoAsync(codigo, endereco, aoEnviar, recusas, resolvidos, cancellationToken).ConfigureAwait(false);
+            if (indisponivel is not null)
             {
-                continue;
-            }
-
-            Result<CepResolvido> resolvido = await conferencia.ResolverCepAsync(cep, cancellationToken).ConfigureAwait(false);
-            if (resolvido.IsFailure)
-            {
-                if (resolvido.Error!.Code == ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel)
-                {
-                    if (aoEnviar)
-                    {
-                        return new ConferenciaDosEnderecos(recusas, resolvidos, resolvido.Error);
-                    }
-
-                    continue;
-                }
-
-                recusas.Add(new FieldError(codigo, new DomainError(
-                    InscricaoErrorCodes.EnderecoCepNaoEncontrado,
-                    "CEP não encontrado. Confira o seu CEP na busca dos Correios; se o seu bairro não tem CEP próprio, use o CEP geral da sua cidade e descreva o endereço real no complemento.")));
-                continue;
-            }
-
-            int recusasAntes = recusas.Count;
-            recusas.AddRange(RecusasDoCep(codigo, endereco, resolvido.Value!, aoEnviar));
-            if (recusas.Count == recusasAntes)
-            {
-                resolvidos[codigo] = resolvido.Value!;
+                return new ConferenciaDosEnderecos(recusas, resolvidos, indisponivel);
             }
         }
-
         return new ConferenciaDosEnderecos(recusas, resolvidos, GeoIndisponivel: null);
     }
 
-    private static IEnumerable<FieldError> RecusasDoCep(string codigo, EnderecoDeclarado endereco, CepResolvido resolvido, bool aoEnviar)
+    private static IEnumerable<(string Codigo, EnderecoDeclarado Endereco)> EnderecosConferiveis(
+        IReadOnlyDictionary<string, JsonElement> respostas, RespostasAdmitidas admitidas)
+    {
+        foreach ((string codigo, DefinicaoDaResposta definicao) in admitidas.Definicoes)
+        {
+            if (definicao.Tipo == TipoDoValorDeResposta.Endereco
+                && respostas.TryGetValue(codigo, out JsonElement valor)
+                && EnderecoDeclarado.TentarLer(valor, out EnderecoDeclarado endereco)
+                && endereco.CepSomenteDigitos is not null)
+            {
+                yield return (codigo, endereco);
+            }
+        }
+    }
+
+    private async Task<DomainError?> ConferirEnderecoAsync(
+        string codigo, EnderecoDeclarado endereco, bool aoEnviar, List<FieldError> recusas,
+        Dictionary<string, CepResolvido> resolvidos, CancellationToken cancellationToken)
+    {
+        Result<CepResolvido> resolvido = await conferencia.ResolverCepAsync(endereco.CepSomenteDigitos!, cancellationToken).ConfigureAwait(false);
+        if (resolvido.IsFailure)
+        {
+            return RecusarCepNaoResolvido(codigo, resolvido.Error!, aoEnviar, recusas);
+        }
+        int recusasAntes = recusas.Count;
+        recusas.AddRange(RecusasDoCep(codigo, endereco, resolvido.Value!, aoEnviar));
+        if (recusas.Count == recusasAntes)
+        {
+            resolvidos[codigo] = resolvido.Value!;
+        }
+        return null;
+    }
+
+    private static DomainError? RecusarCepNaoResolvido(string codigo, DomainError erro, bool aoEnviar, List<FieldError> recusas)
+    {
+        if (erro.Code == ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel)
+        {
+            return aoEnviar ? erro : null;
+        }
+        recusas.Add(new FieldError(codigo, new DomainError(
+            InscricaoErrorCodes.EnderecoCepNaoEncontrado,
+            "CEP não encontrado. Confira o seu CEP na busca dos Correios; se o seu bairro não tem CEP próprio, use o CEP geral da sua cidade e descreva o endereço real no complemento.")));
+        return null;
+    }
+
+    private static IEnumerable<FieldError> RecusasDoCep(string codigo, EnderecoDeclarado endereco, CepResolvido resolvido, bool aoEnviar) =>
+        RecusasDaCidade(codigo, endereco, resolvido).Concat(aoEnviar ? RecusasDaConfirmacao(codigo, endereco, resolvido) : []);
+
+    private static IEnumerable<FieldError> RecusasDaCidade(string codigo, EnderecoDeclarado endereco, CepResolvido resolvido)
     {
         if (endereco.CidadeCodigoIbge is { Length: > 0 } cidade
             && (!string.Equals(cidade, resolvido.CodigoIbge, StringComparison.Ordinal)
@@ -90,26 +107,22 @@ public static class ConferenciaDoEnderecoDaInscricao
                 "O CEP informado pertence a outra cidade que a do seu endereço. Confira o CEP e a cidade."));
         }
 
-        if (!aoEnviar)
-        {
-            yield break;
-        }
+    }
 
-        // O número que o Geo não resolve de forma exata pode ser erro de digitação: o endereço só vale com a confirmação explícita.
-        // Sem a confirmação só ela é cobrada: logradouro e bairro só valem a pena depois que o candidato confirma o CEP.
+    private static IEnumerable<FieldError> RecusasDaConfirmacao(string codigo, EnderecoDeclarado endereco, CepResolvido resolvido)
+    {
+        // A confirmação do CEP impreciso precede a exigência de logradouro e bairro.
         if (resolvido.ExigeConfirmacao && endereco.CepConfirmado is not true)
         {
-            yield return new FieldError(codigo, new DomainError(
+            return [new FieldError(codigo, new DomainError(
                 InscricaoErrorCodes.EnderecoCepNaoConfirmado,
-                "O CEP informado não corresponde a uma rua cadastrada nos Correios. Confira o número; se o seu endereço usa o CEP geral da cidade ou do bairro, confirme no formulário."));
-            yield break;
+                "O CEP informado não corresponde a uma rua cadastrada nos Correios. Confira o número; se o seu endereço usa o CEP geral da cidade ou do bairro, confirme no formulário."))];
         }
+        return resolvido.ExigeLogradouroEBairro ? RecusasDoLogradouroEBairro(codigo, endereco) : [];
+    }
 
-        if (!resolvido.ExigeLogradouroEBairro)
-        {
-            yield break;
-        }
-
+    private static IEnumerable<FieldError> RecusasDoLogradouroEBairro(string codigo, EnderecoDeclarado endereco)
+    {
         if (string.IsNullOrWhiteSpace(endereco.Logradouro))
         {
             yield return new FieldError(codigo, new DomainError(

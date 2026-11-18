@@ -31,7 +31,7 @@ internal sealed record FatosDaVersao(
         ArgumentNullException.ThrowIfNull(envelope);
 
         Dictionary<string, Dictionary<string, string>> declaradas = OpcoesDeclaradasPorFato(envelope);
-        Dictionary<string, FatoDoProcesso> derivados = envelope.FatosDerivadosCongelados.ToDictionary(
+        Dictionary<string, FatoDoProcesso> derivados = envelope.DadosDeCatalogo.FatosDerivadosCongelados!.ToDictionary(
             static d => d.Key, d => Derivado(d.Value, envelope), StringComparer.Ordinal);
 
         return new FatosDaVersao(
@@ -41,7 +41,7 @@ internal sealed record FatosDaVersao(
     private static Dictionary<string, Dictionary<string, string>> OpcoesDeclaradasPorFato(EnvelopeReidratado envelope)
     {
         Dictionary<string, Dictionary<string, string>> doProcesso = [];
-        foreach (OpcaoDeclaradaFato opcao in envelope.Grafo.OpcoesDeclaradas)
+        foreach (OpcaoDeclaradaFato opcao in envelope.Configuracao.Coleta.OpcoesDeclaradas)
         {
             if (!doProcesso.TryGetValue(opcao.FatoCodigo, out Dictionary<string, string>? porCodigo))
             {
@@ -73,7 +73,7 @@ internal sealed record FatosDaVersao(
 
     private static Dictionary<string, FatoDoProcesso> ColetadosForaDeGrupo(
         EnvelopeReidratado envelope, Dictionary<string, Dictionary<string, string>> declaradas) =>
-        envelope.Grafo.FatosColetados
+        envelope.Configuracao.Coleta.Itens
             .Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao && f.GrupoColetadoId is null)
             .GroupBy(static f => f.FatoCodigo, StringComparer.Ordinal)
             .ToDictionary(static g => g.Key, g => Coletado(g.First(), declaradas, envelope), StringComparer.Ordinal);
@@ -81,7 +81,7 @@ internal sealed record FatosDaVersao(
     private static List<GrupoDoProcesso> GruposDaInscricao(
         EnvelopeReidratado envelope, Dictionary<string, Dictionary<string, string>> declaradas) =>
     [
-        .. envelope.Grafo.GruposColetados
+        .. envelope.Configuracao.Coleta.GruposColetados
             .Where(static g => g.Finalidade == FinalidadeFormulario.Inscricao)
             .Select(g => new GrupoDoProcesso(
                 g.Codigo, g.Rotulo, g.EtapaCodigo, g.Ordem,
@@ -91,7 +91,7 @@ internal sealed record FatosDaVersao(
     ];
 
     private static Dictionary<string, string> TitulosDasEtapas(EnvelopeReidratado envelope) =>
-        envelope.Grafo.Formularios
+        envelope.Configuracao.Coleta.Formularios
             .Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao)
             .SelectMany(static f => f.Etapas)
             .ToDictionary(static e => e.Codigo, static e => e.Titulo, StringComparer.Ordinal);
@@ -211,7 +211,7 @@ internal sealed record FatosDaVersao(
     private static Dictionary<string, string> DescricoesDoDominio(string fatoCodigo, EnvelopeReidratado envelope)
     {
         Dictionary<string, string> descricoes = new(StringComparer.Ordinal);
-        if (envelope.ValoresSelecionaveisCongelados?.GetValueOrDefault(fatoCodigo) is { } valores)
+        if (envelope.DadosDeCatalogo.ValoresSelecionaveisCongelados?.GetValueOrDefault(fatoCodigo) is { } valores)
         {
             foreach (ValorDominioDeclaradoCongelado valor in valores)
             {
@@ -219,15 +219,19 @@ internal sealed record FatosDaVersao(
             }
         }
 
-        if (envelope.MetadadosFatosCongelados?.GetValueOrDefault(fatoCodigo)?.ValoresDominioDeclarados is { } declarados)
+        ComplementarDescricoes(fatoCodigo, envelope, descricoes);
+        return descricoes;
+    }
+
+    private static void ComplementarDescricoes(string fatoCodigo, EnvelopeReidratado envelope, Dictionary<string, string> descricoes)
+    {
+        if (envelope.DadosDeCatalogo.MetadadosFatosCongelados?.GetValueOrDefault(fatoCodigo)?.ValoresDominioDeclarados is { } declarados)
         {
             foreach (ValorDominioDeclaradoCongelado valor in declarados)
             {
                 descricoes.TryAdd(valor.Codigo, valor.Descricao ?? valor.Codigo);
             }
         }
-
-        return descricoes;
     }
 
     private static bool EhCpf(string fatoCodigo, string? formato) =>

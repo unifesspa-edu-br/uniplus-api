@@ -35,7 +35,7 @@ internal static class SalvarDeTeste
         return contexto;
     }
 
-    internal static (VersaoConfiguracao Versao, GrafoConfiguracao Grafo) MontarVersaoComItem(
+    internal static (VersaoConfiguracao Versao, ConfiguracaoPublicada Configuracao) MontarVersaoComItem(
         FatoColetado item, IReadOnlyList<GrupoColetado>? grupos = null)
     {
         ProcessoSeletivo processoBase = ProcessoSeletivoConformeBuilder.Criar("PS 2026 — Salvar rascunho");
@@ -45,28 +45,17 @@ internal static class SalvarDeTeste
         // (RecorteDaFinalidade filtra por etapa de FormularioProcesso, não por EtapaProcesso do
         // certame) — por isso o grafo leva processoBase.Formularios, que FormularioDeTeste.DefinirItens
         // já colocou o item dentro da seção "DADOS" da finalidade Inscrição.
-        return (DivulgacaoDeTeste.VersaoSemReferenciaTemporal(ProcessoId), DivulgacaoDeTeste.GrafoDe(processoBase));
+        return (DivulgacaoDeTeste.VersaoSemReferenciaTemporal(ProcessoId), DivulgacaoDeTeste.ConfiguracaoDe(processoBase));
     }
 
     internal static Task<Result<InscricaoDto>> Handle(
-        SalvarInscricaoCommand command,
-        IInscricaoRepository inscricoes,
-        IProcessoSeletivoRepository processos,
-        IDocumentoDaInscricaoRepository documentos,
-        ICertameDivulgadoRepository certames,
-        IRegistroCodecsEnvelope codecs,
-        IResolvedorFusoInstitucional fuso,
-        IConferenciaEnderecoGeo geo,
-        EnderecosDosDocumentosDoAto enderecos,
-        IUnitOfWork unitOfWork,
-        IUserContext userContext,
-        TimeProvider relogio,
-        CancellationToken cancellationToken) =>
-        SalvarInscricaoCommandHandler.Handle(
-            command,
-            new RascunhoDoCandidato(new InscricaoAtivaDoCandidato(inscricoes), certames, processos, codecs, fuso, relogio),
-            new SalvamentoDoRascunho(geo, inscricoes, unitOfWork),
-            new RespostaDoRascunho(documentos, geo, enderecos),
-            userContext,
-            cancellationToken);
+        SalvarInscricaoCommand command, RascunhoDoCandidato rascunho, IInscricaoRepository inscricoes,
+        IUnitOfWork unitOfWork, IUserContext usuario, IConferenciaEnderecoGeo? conferencia = null)
+    {
+        IConferenciaEnderecoGeo geo = conferencia ?? Substitute.For<IConferenciaEnderecoGeo>();
+        return SalvarInscricaoCommandHandler.Handle(
+            command, rascunho, new SalvamentoDoRascunho(geo, inscricoes, unitOfWork),
+            new RespostaDoRascunho(Substitute.For<IDocumentoDaInscricaoRepository>(), geo, DivulgacaoDeTeste.Enderecos()),
+            usuario, CancellationToken.None);
+    }
 }

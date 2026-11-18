@@ -17,24 +17,26 @@ public static class ListarLotesDeNotasQueryHandler
 {
     public static async Task<Result<IReadOnlyList<LoteDeNotasDoEnemDto>>> Handle(
         ListarLotesDeNotasQuery query,
-        ICertameDivulgadoRepository certameDivulgadoRepository,
-        IProcessoSeletivoRepository processoSeletivoRepository,
-        IRegistroCodecsEnvelope registroCodecs,
+        ResolvedorDoEscopoDeNotasDoEnem escopos,
         ILoteDeNotasDoEnemRepository lotes,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
+        ArgumentNullException.ThrowIfNull(escopos);
         ArgumentNullException.ThrowIfNull(lotes);
 
-        Result<EscopoDeNotasDoEnem> escopo = await ResolvedorDoEscopoDeNotasDoEnem
+        Result<EscopoDeNotasDoEnem> escopo = await escopos
             .ResolverAsync(
                 query.ProcessoSeletivoId, query.EtapaProcessoId, query.Edicao, exigeNotaDoEnem: false,
-                certameDivulgadoRepository, processoSeletivoRepository, registroCodecs, cancellationToken)
+                cancellationToken)
             .ConfigureAwait(false);
-        if (escopo.IsFailure)
-        {
-            return Result<IReadOnlyList<LoteDeNotasDoEnemDto>>.Failure(escopo.Error!);
-        }
+        return escopo.IsFailure ? Result<IReadOnlyList<LoteDeNotasDoEnemDto>>.Failure(escopo.Error!)
+            : await ConsultarAsync(query, lotes, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result<IReadOnlyList<LoteDeNotasDoEnemDto>>> ConsultarAsync(ListarLotesDeNotasQuery query,
+        ILoteDeNotasDoEnemRepository lotes, CancellationToken cancellationToken)
+    {
 
         IReadOnlyList<LoteDeNotasDoEnem> historico = await lotes
             .ListarAsync(query.ProcessoSeletivoId, query.EtapaProcessoId, query.Edicao, cancellationToken)

@@ -7,136 +7,63 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// O envelope de uma <see cref="VersaoConfiguracao"/> reconstruído de volta em
-/// entidades: o grafo das <b>seis dimensões</b> mais tudo o que a recanonicalização
+/// entidades: a configuração publicada das <b>seis dimensões</b> e os dados que a recanonicalização
 /// dele exige.
 /// </summary>
 /// <remarks>
-/// Os três acompanhantes do grafo não são luxo — são o que torna a recanonicalização
-/// <b>provável</b>. O envelope não é função só da configuração: o bloco
+/// Os dados que acompanham a configuração permitem reproduzir a canonicalização. O bloco
 /// <c>periodo</c> e o <c>hashesEdital</c> vêm dos <see cref="DadosEdital"/> e do hash
 /// do documento, e a versão <c>N &gt; 1</c> carrega o 18º bloco <c>retificacao</c>.
-/// Reidratar só o grafo deixaria a prova de fidelidade impossível de escrever.
+/// Reidratar só a configuração não permite conferir a fidelidade do envelope.
 /// </remarks>
 public sealed class EnvelopeReidratado
 {
     public EnvelopeReidratado(
-        GrafoConfiguracao grafo,
+        ConfiguracaoPublicada configuracao,
         DadosEdital dados,
         string hashDocumento,
         string fusoHorario,
         RetificacaoDoEdital? retificacao,
         ResultadoConformidade? conformidade,
-        IReadOnlyDictionary<string, MetadadoFatoCongelado>? metadadosFatosCongelados = null,
-        IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresSelecionaveisCongelados = null,
-        CalendarioDiasUteisCongelado? calendarioDiasUteis = null,
-        IReadOnlyList<DefinicaoAgregado>? agregadosDosGrupos = null,
-        IReadOnlyDictionary<string, ApresentacaoDoFato>? apresentacaoDosPressupostos = null,
-        IReadOnlyDictionary<string, TipoDeAtoCongelado>? tiposDeAtoCongelados = null,
-        IReadOnlyDictionary<string, FatoDerivadoCongelado>? fatosDerivadosCongelados = null)
+        DadosDeCatalogoDaConfiguracaoPublicada dadosDeCatalogo)
     {
-        ArgumentNullException.ThrowIfNull(grafo);
+        ArgumentNullException.ThrowIfNull(configuracao);
         ArgumentNullException.ThrowIfNull(dados);
         ArgumentException.ThrowIfNullOrWhiteSpace(hashDocumento);
         ArgumentException.ThrowIfNullOrWhiteSpace(fusoHorario);
+        ArgumentNullException.ThrowIfNull(dadosDeCatalogo);
 
-        Grafo = grafo;
+        Configuracao = configuracao;
         Dados = dados;
         HashDocumento = hashDocumento;
         FusoHorario = fusoHorario;
         Retificacao = retificacao;
         Conformidade = conformidade;
-        MetadadosFatosCongelados = metadadosFatosCongelados;
-        ValoresSelecionaveisCongelados = valoresSelecionaveisCongelados;
-        CalendarioDiasUteis = calendarioDiasUteis;
-        AgregadosDosGrupos = agregadosDosGrupos ?? [];
-        ApresentacaoDosPressupostos = apresentacaoDosPressupostos ?? new Dictionary<string, ApresentacaoDoFato>(StringComparer.Ordinal);
-        TiposDeAtoCongelados = tiposDeAtoCongelados ?? new Dictionary<string, TipoDeAtoCongelado>(StringComparer.Ordinal);
-        FatosDerivadosCongelados = fatosDerivadosCongelados ?? new Dictionary<string, FatoDerivadoCongelado>(StringComparer.Ordinal);
+        DadosDeCatalogo = CompletarDadosDeCatalogo(dadosDeCatalogo);
     }
 
-    /// <summary>
-    /// Os fatos derivados do catálogo como a versão os congelou, por código — fora de
-    /// <see cref="GrafoConfiguracao"/> pela mesma razão que <see cref="TiposDeAtoCongelados"/>: é dado
-    /// de catálogo, e o derivado não é coletado por item do agregado vivo.
-    /// </summary>
-    public IReadOnlyDictionary<string, FatoDerivadoCongelado> FatosDerivadosCongelados { get; }
-
-    /// <summary>
-    /// A classificação, na versão, de cada tipo de ato que o cronograma declara, por código — fora de
-    /// <see cref="GrafoConfiguracao"/> pela mesma razão que <see cref="MetadadosFatosCongelados"/>: é
-    /// dado de catálogo, e não propriedade do agregado vivo.
-    /// </summary>
-    public IReadOnlyDictionary<string, TipoDeAtoCongelado> TiposDeAtoCongelados { get; }
-
-    /// <summary>
-    /// A apresentação — rótulo e tipo de campo do catálogo — de cada fato que as regras citam e nenhum
-    /// formulário do processo pergunta, por código; fora de <see cref="GrafoConfiguracao"/> pela mesma
-    /// razão que <see cref="AgregadosDosGrupos"/>: é dado de catálogo.
-    /// </summary>
-    public IReadOnlyDictionary<string, ApresentacaoDoFato> ApresentacaoDosPressupostos { get; }
-
-    /// <summary>
-    /// Os agregados congelados junto dos grupos repetíveis — fora de <see cref="GrafoConfiguracao"/>
-    /// pela mesma razão que <see cref="ValoresSelecionaveisCongelados"/>: o fato de membro e a
-    /// operação são dado de catálogo, não configuração do agregado vivo.
-    /// </summary>
-    public IReadOnlyList<DefinicaoAgregado> AgregadosDosGrupos { get; }
-
-    /// <summary>
-    /// Calendário de dias úteis <b>congelado nesta versão</b>, e não o vigente hoje. Como o fuso,
-    /// acompanha o grafo sem entrar nele: não é estado do agregado, e sim contexto da
-    /// canonicalização.
-    /// <para>
-    /// A razão de voltar por aqui é mais forte que a do fuso. O dataset que originou este bloco
-    /// pode ter deixado de ser vigente e sido <b>removido</b> do cadastro; recanonicalizar contra
-    /// o vigente não produziria apenas bytes diferentes — não haveria como recuperar a lista que
-    /// esta versão congelou, e a prova de fidelidade ficaria impossível de repetir.
-    /// </para>
-    /// </summary>
-    public CalendarioDiasUteisCongelado? CalendarioDiasUteis { get; }
-
-    public GrafoConfiguracao Grafo { get; }
+    public ConfiguracaoPublicada Configuracao { get; }
 
     public DadosEdital Dados { get; }
 
     public string HashDocumento { get; }
 
-    /// <summary>
-    /// Fuso institucional <b>congelado nesta versão</b>, e não o vigente hoje. Acompanha o grafo em
-    /// vez de entrar nele porque não é estado do agregado — não há propriedade de fuso na
-    /// raiz. Ele volta à recanonicalização porque <c>dataReferenciaFatos</c> é recalculada ao provar
-    /// a fidelidade: convertida sob o fuso de hoje, a mesma versão produziria bytes diferentes
-    /// depois que o padrão institucional mudasse, e a prova byte a byte deixaria de valer.
-    /// </summary>
     public string FusoHorario { get; }
 
-    /// <summary><see langword="null"/> na versão 1 — o envelope de abertura não tem o 18º bloco.</summary>
     public RetificacaoDoEdital? Retificacao { get; }
 
-    /// <summary>
-    /// Evidência forense da conformidade legal congelada (Story #853, §3.4/CA-18) — fora
-    /// de <see cref="GrafoConfiguracao"/> porque o processo não tem propriedade "Conformidade";
-    /// serve à paridade contra o cadastro vivo.
-    /// </summary>
     public ResultadoConformidade? Conformidade { get; }
 
-    /// <summary>
-    /// Metadado de fato do candidato congelado (Story #919, congelamento dos parâmetros na publicação, UNI-REQ-0019), por <c>Codigo</c> —
-    /// fora de <see cref="GrafoConfiguracao"/> pela MESMA razão que <see cref="Conformidade"/>:
-    /// não está no agregado vivo (<see cref="Domain.Entities.CondicaoGatilho"/>
-    /// continua só com o trio bruto <c>{fato, operador, valor}</c>); acompanha o envelope para
-    /// alimentar a recanonicalização.
-    /// </summary>
-    public IReadOnlyDictionary<string, MetadadoFatoCongelado>? MetadadosFatosCongelados { get; }
+    /// <summary>Dados do catálogo preservados na versão publicada.</summary>
+    public DadosDeCatalogoDaConfiguracaoPublicada DadosDeCatalogo { get; }
 
-    /// <summary>
-    /// Os valores selecionáveis de cada fato coletado congelado, por <c>FatoCodigo</c> — fora de
-    /// <see cref="GrafoConfiguracao"/> pela MESMA razão que <see cref="MetadadosFatosCongelados"/>:
-    /// os valores são dado de CATÁLOGO (ou da oferta do processo), não configuração persistida no
-    /// agregado vivo — <see cref="Domain.Entities.FatoColetado"/> não ganha propriedade por isso,
-    /// e este dicionário acompanha o envelope para alimentar a recanonicalização.
-    /// </summary>
-    public IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? ValoresSelecionaveisCongelados { get; }
+    private static DadosDeCatalogoDaConfiguracaoPublicada CompletarDadosDeCatalogo(DadosDeCatalogoDaConfiguracaoPublicada dados) => dados with
+    {
+        AgregadosDosGrupos = dados.AgregadosDosGrupos ?? [],
+        ApresentacaoDosPressupostos = dados.ApresentacaoDosPressupostos ?? new Dictionary<string, ApresentacaoDoFato>(StringComparer.Ordinal),
+        TiposDeAtoCongelados = dados.TiposDeAtoCongelados ?? new Dictionary<string, TipoDeAtoCongelado>(StringComparer.Ordinal),
+        FatosDerivadosCongelados = dados.FatosDerivadosCongelados ?? new Dictionary<string, FatoDerivadoCongelado>(StringComparer.Ordinal),
+    };
 }
 
 /// <summary>

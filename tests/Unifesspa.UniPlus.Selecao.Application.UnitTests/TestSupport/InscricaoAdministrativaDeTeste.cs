@@ -62,23 +62,28 @@ internal sealed class InscricaoAdministrativaDeTeste
     public SituacaoInscricao Situacao { get; }
 
     public InscricaoAdministrativaDeTeste Fato(
-        string codigo, string classificacao, TipoRenderizacao tipo, JsonElement? resposta, string? secao = "DADOS", int ordem = 0,
-        string hipoteseLegal = Hipotese, string? formato = null, string? ajuda = null, string? componente = null, string? descricao = null,
-        OrigemValoresColeta origemValores = OrigemValoresColeta.Catalogo, IReadOnlyList<RestricaoValor>? restricoes = null)
+        string codigo, string classificacao, TipoRenderizacao tipo, JsonElement? resposta,
+        string? secao = "DADOS", int ordem = 0, string? formato = null) =>
+        Fato(codigo, classificacao, tipo, resposta, new MetadadosDoFatoDeTeste { Secao = secao, Ordem = ordem, Formato = formato });
+
+    public InscricaoAdministrativaDeTeste Fato(
+        string codigo, string classificacao, TipoRenderizacao tipo, JsonElement? resposta, MetadadosDoFatoDeTeste metadados)
     {
-        Result<FatoColetado> fato = FatoColetado.Criar(
-            codigo, ordem, $"Rótulo de {codigo}", tipo, Obrigatoriedade.Nunca, null, classificacao, hipoteseLegal,
-            ProtecaoDoFatoDeTeste.Finalidade, descricao ?? $"Descrição de {codigo}", origemValores, secao,
-            FinalidadeFormulario.Inscricao, formato ?? (tipo == TipoRenderizacao.Texto ? "LIVRE" : null), ajuda, restricoes: restricoes, componenteExibicao: componente);
-        _fatos.Add(fato.IsSuccess
-            ? fato.Value!
-            : throw new InvalidOperationException(string.Join("; ", fato.Errors.Select(e => e.Error.Message))));
+        _fatos.Add(CriarFato(codigo, classificacao, tipo, metadados));
         if (resposta is { } valor)
         {
             _respostas[codigo] = valor;
         }
-
         return this;
+    }
+
+    private static FatoColetado CriarFato(string codigo, string classificacao, TipoRenderizacao tipo, MetadadosDoFatoDeTeste metadados)
+    {
+        Result<FatoColetado> fato = FatoColetado.Criar(codigo, metadados.Ordem, $"Rótulo de {codigo}", tipo, Obrigatoriedade.Nunca, null,
+            classificacao, metadados.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, metadados.Descricao ?? $"Descrição de {codigo}",
+            metadados.OrigemValores, metadados.Secao, FinalidadeFormulario.Inscricao, metadados.Formato ?? (tipo == TipoRenderizacao.Texto ? "LIVRE" : null),
+            metadados.Ajuda, restricoes: metadados.Restricoes, componenteExibicao: metadados.Componente);
+        return fato.IsSuccess ? fato.Value! : throw new InvalidOperationException(string.Join("; ", fato.Errors.Select(e => e.Error.Message)));
     }
 
     /// <summary>Um grupo repetível do formulário, com as ocorrências que o candidato respondeu.</summary>
@@ -99,10 +104,7 @@ internal sealed class InscricaoAdministrativaDeTeste
 
     public InscricaoAdministrativaDeTeste Exigencia(string codigo, ClassificacaoDeProtecao classificacao, bool noEnvelope = true, bool comArquivo = true)
     {
-        DocumentoExigido exigencia = DocumentoExigido.Criar(
-            _faseId, Guid.CreateVersion7(), codigo, $"Documento {codigo}", "CATEGORIA", ProtecaoDoDocumentoDeTeste.De(classificacao),
-            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, [], [], null,
-            FormatosPermitidos.Criar(false, [("PDF", null)]).Value!, null).Value!;
+        DocumentoExigido exigencia = CriarExigencia(codigo, classificacao);
         if (noEnvelope)
         {
             _exigencias.Add(exigencia);
@@ -110,15 +112,28 @@ internal sealed class InscricaoAdministrativaDeTeste
 
         if (comArquivo)
         {
-            ApresentacaoDeDocumento apresentacao = ApresentacaoDeDocumento.Criar(InscricaoId, exigencia, null);
-            ArquivoDaApresentacao arquivo = ArquivoDaApresentacao.IniciarPendente(
-                apresentacao.Id, InscricaoId, exigencia, "application/pdf", 1024, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
-            arquivo.Confirmar("\"etag\"", TimeProvider.System);
-            arquivo.RegistrarVerificado(1024, new string('c', 64), FormatoPermitido.Pdf);
-            _arquivos.Add((exigencia, arquivo, apresentacao));
+            AdicionarArquivoDaExigencia(exigencia);
         }
 
         return this;
+    }
+
+    private DocumentoExigido CriarExigencia(string codigo, ClassificacaoDeProtecao classificacao)
+    {
+        return DocumentoExigido.Criar(
+            _faseId, Guid.CreateVersion7(), codigo, $"Documento {codigo}", "CATEGORIA", ProtecaoDoDocumentoDeTeste.De(classificacao),
+            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, [], [], null,
+            FormatosPermitidos.Criar(false, [("PDF", null)]).Value!, null).Value!;
+    }
+
+    private void AdicionarArquivoDaExigencia(DocumentoExigido exigencia)
+    {
+        ApresentacaoDeDocumento apresentacao = ApresentacaoDeDocumento.Criar(InscricaoId, exigencia, null);
+        ArquivoDaApresentacao arquivo = ArquivoDaApresentacao.IniciarPendente(
+            apresentacao.Id, InscricaoId, exigencia, "application/pdf", 1024, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        arquivo.Confirmar("\"etag\"", TimeProvider.System);
+        arquivo.RegistrarVerificado(1024, new string('c', 64), FormatoPermitido.Pdf);
+        _arquivos.Add((exigencia, arquivo, apresentacao));
     }
 
     /// <summary>O instante em que o candidato enviou a inscrição; vários instantes são os reenvios.</summary>
@@ -152,15 +167,19 @@ internal sealed class InscricaoAdministrativaDeTeste
     private EnvelopeReidratado EnvelopeDoCenario()
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar(NomeDoProcesso);
-        GrafoConfiguracao grafo = new(
-            [.. processo.Etapas], processo.AtendimentoEspecializado!, [ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(ofertaCursoOrigemId: OfertaCursoId)], processo.BonusRegional,
-            [.. processo.CriteriosDesempate], processo.Classificacao!, [], _exigencias, [], null,
-            fatosColetados: _fatos, gruposColetados: _grupos, numeroDeOpcoesDeCurso: 1,
-            formularios: [FormularioProcesso.Criar(FinalidadeFormulario.Inscricao, _faseId, null, FormularioDeTeste.Etapas()).Value!]);
+        ConfiguracaoPublicada grafo = new ConfiguracaoPublicada(
+            new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, []),
+            new AvaliacaoDeclarada([.. processo.Etapas], [.. processo.CriteriosDesempate], processo.Classificacao!),
+            new VagasDeclaradas([ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(ofertaCursoOrigemId: OfertaCursoId)], 1, processo.BonusRegional is not null,
+                processo.BonusRegional, null, processo.AtendimentoEspecializado!),
+            new ExigenciasDeclaradas(_exigencias, []),
+            new ColetaDeclarada(ConfiguracaoPublicadaDeTeste.CamposDaColeta(_fatos, _grupos), _grupos, [FormularioProcesso.Criar(FinalidadeFormulario.Inscricao, _faseId, null, FormularioDeTeste.Etapas()).Value!], [],
+                [], [], null),
+            new DivulgacaoETaxaDeclaradas(null, null), null);
 
         return new EnvelopeReidratado(
             grafo, DadosEdital.Criar("001/2027", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(30), Guid.CreateVersion7()).Value!,
-            new string('a', 64), "America/Sao_Paulo", retificacao: null, conformidade: null, fatosDerivadosCongelados: _derivados);
+            new string('a', 64), "America/Sao_Paulo", retificacao: null, conformidade: null, new DadosDeCatalogoDaConfiguracaoPublicada(FatosDerivadosCongelados: _derivados));
     }
 
     private IProcessoSeletivoRepository ProcessosCom(VersaoConfiguracao versao)
@@ -190,16 +209,16 @@ internal sealed class InscricaoAdministrativaDeTeste
         inscricoes.ObterVinculoAsync(InscricaoId, Arg.Any<CancellationToken>())
             .Returns(new VinculoDaInscricao(InscricaoId, ProcessoId, Situacao, versao.Id, OfertaCursoId, null));
         inscricoes.ObterPorIdAsync(InscricaoId, Arg.Any<CancellationToken>()).Returns(InscricaoReidratada(versao));
-        inscricoes.ObterPrimeirosEnviosAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(PrimeirosEnvios());
+        SubmeterDeTeste.ComprovantesDe(inscricoes).ObterPrimeirosEnviosAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(PrimeirosEnvios());
 
         return inscricoes;
     }
 
-    private Inscricao InscricaoReidratada(VersaoConfiguracao versao) => Inscricao.Reidratar(
-        InscricaoId, ProcessoId, _cpf, "conta-candidato", "https://idp.test", Situacao, versao.Id, OfertaCursoId, null,
-        Situacao == SituacaoInscricao.Rascunho ? null : "000001", _cancelamento?.Em, _cancelamento is null ? null : "conta-candidato", _cancelamento?.Motivo,
-        _respostas, _derivadas, _ocorrencias, [], new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal),
-        revisao: 1, DateTimeOffset.UtcNow, null);
+    private Inscricao InscricaoReidratada(VersaoConfiguracao versao) => Inscricao.Reidratar(InscricaoId, ProcessoId,
+            TitularDaInscricao.Reidratar(_cpf, "conta-candidato", "https://idp.test"),
+            EstadoDaInscricao.Reidratar(Situacao, Situacao == SituacaoInscricao.Rascunho ? null : "000001", CancelamentoDaInscricao.Reidratar(_cancelamento?.Em, _cancelamento is null ? null : "conta-candidato", _cancelamento?.Motivo)),
+            FormularioDaInscricao.Reidratar(versao.Id, PreenchimentoDoCandidato.Criar(OpcoesDeCursoDaInscricao.Reidratar(OfertaCursoId, null), _respostas, _ocorrencias, []),
+                _derivadas, new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal)), 1, new Unifesspa.UniPlus.Selecao.Domain.ValueObjects.DatasDeGravacaoDaInscricao(default, null));
 
     private Dictionary<Guid, DateTimeOffset> PrimeirosEnvios() => _envios.Count == 0
         ? []
@@ -217,5 +236,8 @@ internal sealed class InscricaoAdministrativaDeTeste
     }
 
     public sealed record Mundo(
-        IProcessoSeletivoRepository Processos, IInscricaoRepository Inscricoes, IDocumentoDaInscricaoRepository Documentos, IRegistroCodecsEnvelope Codecs);
+        IProcessoSeletivoRepository Processos, IInscricaoRepository Inscricoes, IDocumentoDaInscricaoRepository Documentos, IRegistroCodecsEnvelope Codecs)
+    {
+        public IComprovanteDaInscricaoRepository Comprovantes => SubmeterDeTeste.ComprovantesDe(Inscricoes);
+    }
 }

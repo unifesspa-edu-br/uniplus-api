@@ -47,6 +47,12 @@ public static class DefinicaoAvaliavelDoProcesso
             return Result<DefinicaoAvaliavel>.Failure(naoColetavel.Error!);
         }
 
+        return ResolverOfertaDaConfiguracaoViva(processo, porCodigo);
+    }
+
+    private static Result<DefinicaoAvaliavel> ResolverOfertaDaConfiguracaoViva(ProcessoSeletivo processo,
+        IReadOnlyDictionary<string, FatoCandidatoView> porCodigo)
+    {
         Result<IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>> oferta =
             ResolvedorValoresSelecionaveisCongelados.Resolver(processo, porCodigo);
         if (oferta.IsFailure)
@@ -54,6 +60,13 @@ public static class DefinicaoAvaliavelDoProcesso
             return Result<DefinicaoAvaliavel>.Failure(oferta.Error!);
         }
 
+        return ComOfertaDaConfiguracaoViva(processo, porCodigo, oferta.Value!);
+    }
+
+    private static Result<DefinicaoAvaliavel> ComOfertaDaConfiguracaoViva(ProcessoSeletivo processo,
+        IReadOnlyDictionary<string, FatoCandidatoView> porCodigo,
+        IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> oferta)
+    {
         Result<IReadOnlyList<DerivacaoDoFato>> derivacoes = Derivacoes(processo, porCodigo);
         if (derivacoes.IsFailure)
         {
@@ -64,12 +77,20 @@ public static class DefinicaoAvaliavelDoProcesso
             processo.Formularios, processo.FatosColetados, processo.GruposColetados, processo.TermosExigidos,
             derivacoes.Value!, AgregadosDosGrupos(processo.GruposColetados, porCodigo));
 
+        Result<IReadOnlyDictionary<string, ApresentacaoDoFato>> apresentacao = ApresentarPressupostos(definicao, processo, porCodigo);
+        return apresentacao.IsFailure ? Result<DefinicaoAvaliavel>.Failure(apresentacao.Error!)
+            : Result<DefinicaoAvaliavel>.Success(new(definicao, Ofertados(oferta), oferta, apresentacao.Value!));
+    }
+
+    private static Result<IReadOnlyDictionary<string, ApresentacaoDoFato>> ApresentarPressupostos(DefinicaoFormulario definicao,
+        ProcessoSeletivo processo, IReadOnlyDictionary<string, FatoCandidatoView> porCodigo)
+    {
         Dictionary<string, ApresentacaoDoFato> apresentacao = new(StringComparer.Ordinal);
         foreach (string codigo in PressupostosNaoPerguntados(definicao, processo.Formularios, processo.FatosColetados))
         {
             if (!porCodigo.TryGetValue(codigo, out FatoCandidatoView? fato))
             {
-                return Result<DefinicaoAvaliavel>.Failure(new DomainError(
+                return Result<IReadOnlyDictionary<string, ApresentacaoDoFato>>.Failure(new DomainError(
                     "ProcessoSeletivo.PressupostoSemCadastro",
                     $"O fato '{codigo}', que as regras de um formulário citam, não está no catálogo de fatos do candidato."));
             }
@@ -77,7 +98,7 @@ public static class DefinicaoAvaliavelDoProcesso
             apresentacao[codigo] = VocabularioDeFatos.Apresentacao(fato);
         }
 
-        return Result<DefinicaoAvaliavel>.Success(new DefinicaoAvaliavel(definicao, Ofertados(oferta.Value!), oferta.Value!, apresentacao));
+        return Result<IReadOnlyDictionary<string, ApresentacaoDoFato>>.Success(apresentacao);
     }
 
     /// <summary>
@@ -92,26 +113,39 @@ public static class DefinicaoAvaliavelDoProcesso
     {
         ArgumentNullException.ThrowIfNull(envelope);
 
-        GrafoConfiguracao grafo = envelope.Grafo;
+        ConfiguracaoPublicada configuracaoPublicada = envelope.Configuracao;
+        Result<IReadOnlyList<DerivacaoDoFato>> derivacoes = DerivacoesDoCongelado(configuracaoPublicada, ofertasDeCurso);
+        return derivacoes.IsFailure ? Result<DefinicaoAvaliavel>.Failure(derivacoes.Error!)
+            : MontarDoCongelado(envelope, derivacoes.Value!);
+    }
+
+    private static Result<IReadOnlyList<DerivacaoDoFato>> DerivacoesDoCongelado(ConfiguracaoPublicada configuracaoPublicada, IReadOnlyCollection<Guid>? ofertasDeCurso)
+    {
         List<DerivacaoDoFato> derivacoes = [];
-        foreach (ConfiguracaoDerivacaoFato configuracao in grafo.DerivacoesEfetivas(ofertasDeCurso).OrderBy(static c => c.CodigoFato, StringComparer.Ordinal))
+        foreach (ConfiguracaoDerivacaoFato configuracao in configuracaoPublicada.DerivacoesEfetivas(ofertasDeCurso).OrderBy(static c => c.CodigoFato, StringComparer.Ordinal))
         {
             Result<DerivacaoDoFato> derivacao = configuracao.ParaDerivacaoDoFato(Contribuicoes(configuracao));
             if (derivacao.IsFailure)
             {
-                return Result<DefinicaoAvaliavel>.Failure(derivacao.Error!);
+                return Result<IReadOnlyList<DerivacaoDoFato>>.Failure(derivacao.Error!);
             }
 
             derivacoes.Add(derivacao.Value!);
         }
 
+        return Result<IReadOnlyList<DerivacaoDoFato>>.Success(derivacoes);
+    }
+
+    private static Result<DefinicaoAvaliavel> MontarDoCongelado(EnvelopeReidratado envelope, IReadOnlyList<DerivacaoDoFato> derivacoes)
+    {
+        ConfiguracaoPublicada configuracaoPublicada = envelope.Configuracao;
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores =
-            envelope.ValoresSelecionaveisCongelados ?? new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal);
+            envelope.DadosDeCatalogo.ValoresSelecionaveisCongelados ?? new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal);
         DefinicaoFormulario definicao = DefinicaoDoProcesso.Montar(
-            grafo.Formularios, grafo.FatosColetados, grafo.GruposColetados, grafo.TermosExigidos, derivacoes, envelope.AgregadosDosGrupos);
+            configuracaoPublicada.Coleta.Formularios, [.. configuracaoPublicada.Coleta.Itens], configuracaoPublicada.Coleta.GruposColetados, configuracaoPublicada.Coleta.TermosExigidos, derivacoes, envelope.DadosDeCatalogo.AgregadosDosGrupos!);
 
         return Result<DefinicaoAvaliavel>.Success(
-            new DefinicaoAvaliavel(definicao, Ofertados(valores), valores, envelope.ApresentacaoDosPressupostos));
+            new DefinicaoAvaliavel(definicao, Ofertados(valores), valores, envelope.DadosDeCatalogo.ApresentacaoDosPressupostos!));
     }
 
     /// <summary>
@@ -150,12 +184,16 @@ public static class DefinicaoAvaliavelDoProcesso
     {
         Dictionary<string, DominioDeValores> dominios = VocabularioDeFatos.DominiosDinamicos(processo, catalogo.Values);
         List<DerivacaoDoFato> derivacoes = [];
-        foreach (ConfiguracaoDerivacaoFato configuracao in processo.DerivacoesEfetivas().OrderBy(static c => c.CodigoFato, StringComparer.Ordinal))
+        return DerivacoesOrdenadas(processo.DerivacoesEfetivas(), catalogo, dominios, derivacoes);
+    }
+
+    private static Result<IReadOnlyList<DerivacaoDoFato>> DerivacoesOrdenadas(
+        IEnumerable<ConfiguracaoDerivacaoFato> configuracoes, IReadOnlyDictionary<string, FatoCandidatoView> catalogo,
+        IReadOnlyDictionary<string, DominioDeValores> dominios, List<DerivacaoDoFato> derivacoes)
+    {
+        foreach (ConfiguracaoDerivacaoFato configuracao in configuracoes.OrderBy(static c => c.CodigoFato, StringComparer.Ordinal))
         {
-            IReadOnlyCollection<string> dominio =
-                catalogo.TryGetValue(configuracao.CodigoFato, out FatoCandidatoView? fato) && VocabularioDeFatos.DominioDeContribuicao(fato, dominios) is { } doCatalogo
-                    ? doCatalogo
-                    : Contribuicoes(configuracao);
+            IReadOnlyCollection<string> dominio = DominioDeContribuicao(configuracao, catalogo, dominios);
             Result<DerivacaoDoFato> derivacao = configuracao.ParaDerivacaoDoFato(dominio);
             if (derivacao.IsFailure)
             {
@@ -167,6 +205,11 @@ public static class DefinicaoAvaliavelDoProcesso
 
         return Result<IReadOnlyList<DerivacaoDoFato>>.Success(derivacoes);
     }
+
+    private static IReadOnlyCollection<string> DominioDeContribuicao(ConfiguracaoDerivacaoFato configuracao,
+        IReadOnlyDictionary<string, FatoCandidatoView> catalogo, IReadOnlyDictionary<string, DominioDeValores> dominios) =>
+        catalogo.TryGetValue(configuracao.CodigoFato, out FatoCandidatoView? fato)
+            && VocabularioDeFatos.DominioDeContribuicao(fato, dominios) is { } doCatalogo ? doCatalogo : Contribuicoes(configuracao);
 
     /// <summary>Os códigos que as regras da derivação contribuem.</summary>
     private static string[] Contribuicoes(ConfiguracaoDerivacaoFato configuracao) =>

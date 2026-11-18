@@ -30,21 +30,4 @@ internal sealed class PortasDaInscricaoDeTeste(Guid processoId)
 
     public InscricaoAtivaDoCandidato InscricaoAtiva() => new(Inscricoes);
 
-    public VersaoDaInscricao Versao() => new(DivulgacaoDeTeste.Certame(processoId), Processos, Codecs);
-
-    public PeriodoDaInscricao Periodo() => new(DivulgacaoDeTeste.Certame(processoId), Processos, Codecs, DivulgacaoDeTeste.Fuso());
-
-    public GravacaoDaInscricao Gravacao() => new(Inscricoes, UnitOfWork);
-
-    public DescarteDoRascunho Descarte(TimeProvider relogio) => new(Versao(), Inscricoes, Documentos, UnitOfWork, relogio);
-
-    public FormularioDaInscricao Formulario() => new(Versao(), Codecs);
-
-    public AvaliacaoDaInscricaoDoCandidato Avaliacao() =>
-        new(Versao(), DivulgacaoDeTeste.Fuso(), Documentos, Substitute.For<IConferenciaEnderecoGeo>(), DivulgacaoDeTeste.Enderecos());
-
-    public ConsultaDaInscricaoDoCandidato Consulta() =>
-        new(
-            DivulgacaoDeTeste.Certame(processoId), Processos, Documentos, Codecs, DivulgacaoDeTeste.Fuso(),
-            Substitute.For<IConferenciaEnderecoGeo>(), DivulgacaoDeTeste.Enderecos());
 }

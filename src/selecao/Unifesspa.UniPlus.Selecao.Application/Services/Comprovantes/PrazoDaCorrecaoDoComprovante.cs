@@ -48,7 +48,7 @@ public sealed class PrazoDaCorrecaoDoComprovante
     {
         ArgumentNullException.ThrowIfNull(inscricao);
 
-        if (!vale || inscricao.Situacao == SituacaoInscricao.Cancelada)
+        if (!vale || inscricao.Estado.Situacao == SituacaoInscricao.Cancelada)
         {
             return null;
         }
@@ -56,10 +56,12 @@ public sealed class PrazoDaCorrecaoDoComprovante
         Result<VersaoDivulgada> divulgada = await VersaoDivulgadaResolver
             .ResolverAsync(inscricao.ProcessoSeletivoId, _certameDivulgadoRepository, _processoSeletivoRepository, cancellationToken)
             .ConfigureAwait(false);
-        Result<JanelaDaInscricao> janela = divulgada.IsFailure
-            ? Result<JanelaDaInscricao>.Failure(divulgada.Error!)
-            : PeriodoDaInscricaoResolver.JanelaDa(divulgada.Value!.Versao, _registroCodecs);
+        return divulgada.IsFailure ? null : PrazoDaVersao(inscricao, divulgada.Value!);
+    }
 
+    private PrazoDaCorrecaoDto? PrazoDaVersao(Inscricao inscricao, VersaoDivulgada divulgada)
+    {
+        Result<JanelaDaInscricao> janela = PeriodoDaInscricaoResolver.JanelaDa(divulgada.Versao, _registroCodecs);
         return janela.IsFailure ? null : Prazo(inscricao, janela.Value!);
     }
 

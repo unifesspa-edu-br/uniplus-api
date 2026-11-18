@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.Application.Services;
 
 using Domain.Entities;
 using Domain.Enums;
-using Domain.Interfaces;
 using Domain.ValueObjects;
 
 using DTOs;
@@ -24,18 +23,9 @@ public sealed class ArquivosDaInscricao
     /// <summary>Os arquivos que têm apresentação, em qualquer situação, sem rastreamento.</summary>
     public IReadOnlyList<ArquivoDaApresentacao> Arquivos { get; }
 
-    public static async Task<ArquivosDaInscricao> CarregarAsync(
-        IDocumentoDaInscricaoRepository repositorio, Guid inscricaoId, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(repositorio);
-
-        Dictionary<Guid, ApresentacaoDeDocumento> apresentacoes = (await repositorio
-            .ListarApresentacoesDaInscricaoAsync(inscricaoId, cancellationToken).ConfigureAwait(false)).ToDictionary(static a => a.Id);
-        ArquivoDaApresentacao[] arquivos = [.. (await repositorio
-            .ListarArquivosDaInscricaoAsync(inscricaoId, cancellationToken).ConfigureAwait(false))
-            .Where(a => apresentacoes.ContainsKey(a.ApresentacaoId))];
-        return new ArquivosDaInscricao(apresentacoes, arquivos);
-    }
+    internal static ArquivosDaInscricao Criar(
+        IReadOnlyDictionary<Guid, ApresentacaoDeDocumento> apresentacoes, IReadOnlyList<ArquivoDaApresentacao> arquivos) =>
+        new(apresentacoes, arquivos);
 
     public ApresentacaoDeDocumento ApresentacaoDe(ArquivoDaApresentacao arquivo)
     {

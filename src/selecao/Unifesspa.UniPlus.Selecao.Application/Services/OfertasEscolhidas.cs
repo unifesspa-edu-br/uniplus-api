@@ -58,30 +58,25 @@ public static class OfertasEscolhidas
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(registroCodecs);
 
-        Dictionary<Guid, IReadOnlyList<OfertaEscolhidaDto>> resultado = [];
         if (inscritos.Count == 0)
         {
-            return resultado;
+            return new Dictionary<Guid, IReadOnlyList<OfertaEscolhidaDto>>();
         }
+        Dictionary<Guid, IReadOnlyList<OfertaDeCursoCertameDto>> ofertasPorVersao = await new ContextoDaVersaoFixadaResolver(processoSeletivoRepository, registroCodecs)
+            .OfertasDasVersoesAsync(inscritos.Values.Select(e => (processoSeletivoId, e.VersaoFormularioId)), cancellationToken).ConfigureAwait(false);
+        return MontarPorInscrito(inscritos, ofertasPorVersao.ToDictionary(static v => v.Key, static v => NomesDe(v.Value)));
+    }
 
-        Dictionary<Guid, IReadOnlyList<OfertaDeCursoCertameDto>> ofertasPorVersao = await ContextoDaVersaoFixadaResolver
-            .OfertasDasVersoesAsync(
-                inscritos.Values.Select(e => (processoSeletivoId, e.VersaoFormularioId)),
-                processoSeletivoRepository,
-                registroCodecs,
-                cancellationToken)
-            .ConfigureAwait(false);
-        Dictionary<Guid, Dictionary<Guid, string>> nomesPorVersao = ofertasPorVersao.ToDictionary(
-            static v => v.Key, static v => NomesDe(v.Value));
-
+    private static Dictionary<Guid, IReadOnlyList<OfertaEscolhidaDto>> MontarPorInscrito(
+        IReadOnlyDictionary<Guid, InscritoDoLote> inscritos, Dictionary<Guid, Dictionary<Guid, string>> nomesPorVersao)
+    {
+        Dictionary<Guid, IReadOnlyList<OfertaEscolhidaDto>> resultado = [];
         foreach ((Guid inscricaoId, InscritoDoLote inscrito) in inscritos)
         {
             IReadOnlyDictionary<Guid, string> nomes = nomesPorVersao.TryGetValue(inscrito.VersaoFormularioId, out Dictionary<Guid, string>? daVersao)
-                ? daVersao
-                : new Dictionary<Guid, string>();
+                ? daVersao : new Dictionary<Guid, string>();
             resultado[inscricaoId] = Montar(inscrito.PrimeiraOpcao, inscrito.SegundaOpcao, nomes);
         }
-
         return resultado;
     }
 

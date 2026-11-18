@@ -67,8 +67,7 @@ public sealed class RascunhoDoCandidato(
         }
 
         DateTimeOffset instante = relogio.GetUtcNow();
-        DomainError? recusa = await PeriodoDaInscricaoResolver.ConferirAsync(
-            processoSeletivoId, certames, processos, codecs, fuso, instante, cancellationToken).ConfigureAwait(false);
+        DomainError? recusa = await new PeriodoDaInscricaoResolver(certames, processos, codecs, fuso).ConferirAsync(processoSeletivoId, instante, cancellationToken).ConfigureAwait(false);
         recusa ??= inscricao.Value!.ConferirAindaEmRascunho();
         return recusa is null ? Result<InscricaoNoPeriodo>.Success(new InscricaoNoPeriodo(inscricao.Value!, instante)) : Result<InscricaoNoPeriodo>.Failure(recusa);
     }
@@ -76,12 +75,10 @@ public sealed class RascunhoDoCandidato(
     private async Task<Result<ContextoDaVersaoFixada>> ContextoDaVersaoAsync(
         Guid processoSeletivoId, InscricaoRequest request, Inscricao inscricao, CancellationToken cancellationToken)
     {
-        Result adotada = await VersaoDaInscricaoResolver.AdotarAsync(inscricao, certames, processos, codecs, cancellationToken).ConfigureAwait(false);
+        Result adotada = await new VersaoDaInscricaoResolver(certames, processos, codecs).AdotarAsync(inscricao, cancellationToken).ConfigureAwait(false);
         return adotada.IsFailure
             ? Result<ContextoDaVersaoFixada>.ValidationFailure(adotada.Errors)
-            : await ContextoDaVersaoFixadaResolver.ResolverAsync(
-                inscricao.VersaoFormularioId, processoSeletivoId, processos, codecs,
-                request.OfertaCursoId, request.OfertaCursoSegundaOpcaoId, cancellationToken).ConfigureAwait(false);
+            : await new ContextoDaVersaoFixadaResolver(processos, codecs).ResolverAsync(inscricao.Formulario.VersaoFormularioId, processoSeletivoId, request.OfertaCursoId, request.OfertaCursoSegundaOpcaoId, cancellationToken).ConfigureAwait(false);
     }
 
     private Result<PedidoDoRascunho> PedidoDoCorpo(InscricaoRequest request, InscricaoNoPeriodo inscricao, ContextoDaVersaoFixada contexto)
@@ -106,7 +103,7 @@ public sealed class RascunhoDoCandidato(
     /// </summary>
     private static Result<PedidoDoRascunho> ComAIdentidadeDasOcorrenciasConferida(PedidoDoRascunho pedido)
     {
-        List<FieldError> repetidas = [.. Inscricao.RecusasDeForma(pedido.Corpo.Respostas, pedido.Corpo.Grupos, pedido.Contexto.Admitidas)
+        List<FieldError> repetidas = [.. PreenchimentoDoCandidato.RecusasDeForma(pedido.Corpo.Respostas, pedido.Corpo.Grupos, pedido.Contexto.Admitidas)
             .Where(static r => r.Error.Code == InscricaoErrorCodes.GrupoIdDuplicado)];
         return repetidas.Count > 0 ? Result<PedidoDoRascunho>.ValidationFailure(repetidas) : Result<PedidoDoRascunho>.Success(pedido);
     }

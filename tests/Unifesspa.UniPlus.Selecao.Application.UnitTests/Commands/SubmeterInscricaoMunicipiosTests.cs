@@ -45,9 +45,9 @@ public sealed class SubmeterInscricaoMunicipiosTests
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         string esperado = ValorDeMunicipio.Gravado(Belem, "Belém").GetRawText();
-        inscricao.Respostas["NATURALIDADE_MUNICIPIO"].GetRawText().Should().Be(esperado);
-        inscricao.Derivados["MUNICIPIO_RESIDENCIA"].GetRawText().Should().Be(esperado);
-        inscricao.Respostas["ENDERECO_RESIDENCIAL"].GetProperty("cidade").GetProperty("nome").GetString().Should().Be("Belém");
+        inscricao.Formulario.Preenchimento.Respostas["NATURALIDADE_MUNICIPIO"].GetRawText().Should().Be(esperado);
+        inscricao.Formulario.Derivados["MUNICIPIO_RESIDENCIA"].GetRawText().Should().Be(esperado);
+        inscricao.Formulario.Preenchimento.Respostas["ENDERECO_RESIDENCIAL"].GetProperty("cidade").GetProperty("nome").GetString().Should().Be("Belém");
         Emitido(inscricao).TodasAsRespostas()["NATURALIDADE_MUNICIPIO"].GetRawText().Should().Be(esperado);
     }
 
@@ -60,7 +60,7 @@ public sealed class SubmeterInscricaoMunicipiosTests
             [], [locais], Texto(), OcorrenciaMunicipal(Belem), geo: GeoQueConhece());
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        inscricao.Grupos["LOCAIS"].Single().Respostas["LOCAL_MUNICIPIO"].GetRawText().Should().Be(ValorDeMunicipio.Gravado(Belem, "Belém").GetRawText());
+        inscricao.Formulario.Preenchimento.Grupos["LOCAIS"].Single().Respostas["LOCAL_MUNICIPIO"].GetRawText().Should().Be(ValorDeMunicipio.Gravado(Belem, "Belém").GetRawText());
     }
 
     [Fact(DisplayName = "O município de outra UF dentro de grupo é recusado no caminho do subitem, com uma recusa só")]
@@ -116,25 +116,23 @@ public sealed class SubmeterInscricaoMunicipiosTests
     {
         Dictionary<string, JsonElement> respostas = Texto(
             ("NACIONALIDADE", "ESTRANGEIRO"), ("PASSAPORTE_NUMERO", "FX1234567"), ("RNM_NUMERO", "V1234567"), ("NATURALIDADE_MUNICIPIO", "1599999"));
-        IConferenciaEnderecoGeo geo = Substitute.For<IConferenciaEnderecoGeo>();
-        geo.ConferirMunicipioAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Result<string>.Success("Belém"));
-        geo.ConferirCepAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Result<string>.Success("Belém"));
-        geo.ResolverCepAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Result<CepResolvido>.Success(new CepResolvido(Belem, "Belém", "PA", "logradouro")));
+        IConferenciaEnderecoGeo geo = GeoQueConfirmaBelem();
 
-        (Result<ReciboDaInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
-            [], null, respostas, geo: geo, remover: ["RG_NUMERO", "RG_ORGAO_EMISSOR", "RG_UF", "RG_DATA_EMISSAO"]);
+        (Result<ReciboDaInscricaoDto> resultado, Inscricao inscricao) = await new FormularioASubmeterDeTeste([], null)
+        {
+            Geo = geo,
+            Ausentes = ["RG_NUMERO", "RG_ORGAO_EMISSOR", "RG_UF", "RG_DATA_EMISSAO"],
+        }.SubmeterAsync(respostas);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        inscricao.Respostas.Should().NotContainKey("NATURALIDADE_MUNICIPIO");
+        inscricao.Formulario.Preenchimento.Respostas.Should().NotContainKey("NATURALIDADE_MUNICIPIO");
         await geo.DidNotReceive().ConferirMunicipioAsync("1599999", Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "O endereço sem código de cidade, ou com o nome do navegador, fica com a cidade que o Geo resolveu pelo CEP")]
     public async Task Handle_EnderecosConferidos_GravamACidadeDoGeo()
     {
-        FatoColetado comercial = FatoColetado.Criar(
-            "ENDERECO_COMERCIAL", 6, "Endereço comercial", TipoRenderizacao.Endereco, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL",
-            hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetado comercial = EnderecoComercial();
         Dictionary<string, JsonElement> respostas = Texto();
         respostas["ENDERECO_RESIDENCIAL"] = JsonSerializer.SerializeToElement(new { cep = "66010000", cidade = new { nome = "SSA" } });
         respostas["ENDERECO_COMERCIAL"] = JsonSerializer.SerializeToElement(new { cep = "66010000", cidade = new { codigoIbge = Belem, nome = "BEL", uf = "PA" } });
@@ -142,14 +140,10 @@ public sealed class SubmeterInscricaoMunicipiosTests
         (Result<ReciboDaInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync([comercial], null, respostas, geo: GeoQueConhece());
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        foreach (string endereco in new[] { "ENDERECO_RESIDENCIAL", "ENDERECO_COMERCIAL" })
-        {
-            JsonElement cidade = inscricao.Respostas[endereco].GetProperty("cidade");
-            (cidade.GetProperty("codigoIbge").GetString(), cidade.GetProperty("nome").GetString(), cidade.GetProperty("uf").GetString())
-                .Should().Be((Belem, "Belém", "PA"), endereco);
-        }
+        ConferirCidade(inscricao, "ENDERECO_RESIDENCIAL");
+        ConferirCidade(inscricao, "ENDERECO_COMERCIAL");
 
-        inscricao.Derivados["MUNICIPIO_RESIDENCIA"].GetRawText().Should().Be(ValorDeMunicipio.Gravado(Belem, "Belém").GetRawText());
+        inscricao.Formulario.Derivados["MUNICIPIO_RESIDENCIA"].GetRawText().Should().Be(ValorDeMunicipio.Gravado(Belem, "Belém").GetRawText());
     }
 
     [Fact(DisplayName = "As recusas do agregado, como o CPF de outra pessoa, saem junto das demais na resposta única")]
@@ -183,31 +177,46 @@ public sealed class SubmeterInscricaoMunicipiosTests
     [Fact(DisplayName = "Corrigir a inscrição sem reenviar a naturalidade confere o município gravado de novo e regrava o nome")]
     public async Task Handle_SegundoEnvioSemANaturalidade_RegravaONome()
     {
-        Cpf cpf = PersonasDeTeste.FernandaDrumond;
-        (VersaoConfiguracao versao, GrafoConfiguracao grafo, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo();
-        Inscricao existente = NovaInscricao(cpf, "conta-1", versao.Id);
-        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
-        inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
-        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
-        DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
-        (await SubmeterAsync(
-            new SubmeterInscricaoCommand(ProcessoId, RequestComApelidoETermoAceito(cpf, termo, grafo), PrecondicaoIfMatch.DeTags([existente.ETag])),
-            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<IUnitOfWork>(), UsuarioComCpf(cpf), GeoQueConhece()))
+        CenarioDoEnvioDeTeste cenario = new(PersonasDeTeste.FernandaDrumond, MontarVersaoComItemObrigatorioETermo());
+        (await cenario.SubmeterAsync(geo: GeoQueConhece()))
             .IsSuccess.Should().BeTrue();
 
-        InscricaoRequest comNovoApelido = RequestComApelidoETermoAceito(cpf, termo, grafo, apelido: "Nandinha");
-        InscricaoRequest correcao = comNovoApelido with
+        InscricaoRequest correcao = CorrecaoSemNaturalidade(cenario);
+        FakeConferenciaEnderecoGeo geo = GeoQueConhece();
+
+        Result<ReciboDaInscricaoDto> corrigida = await cenario.SubmeterAsync(correcao, geo: geo);
+
+        corrigida.IsSuccess.Should().BeTrue(corrigida.Error?.Message);
+        cenario.Inscricao.Formulario.Preenchimento.Respostas["NATURALIDADE_MUNICIPIO"].GetRawText().Should().Be(ValorDeMunicipio.Gravado(Belem, "Belém").GetRawText());
+    }
+    private static IConferenciaEnderecoGeo GeoQueConfirmaBelem()
+    {
+        IConferenciaEnderecoGeo geo = Substitute.For<IConferenciaEnderecoGeo>();
+        geo.ConferirMunicipioAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Result<string>.Success("Belém"));
+        geo.ConferirCepAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Result<string>.Success("Belém"));
+        geo.ResolverCepAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Result<CepResolvido>.Success(new CepResolvido(Belem, "Belém", "PA", "logradouro")));
+        return geo;
+    }
+
+    private static FatoColetado EnderecoComercial() =>
+        FatoColetado.Criar(
+            "ENDERECO_COMERCIAL", 6, "Endereço comercial", TipoRenderizacao.Endereco, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL",
+            hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+
+    private static void ConferirCidade(Inscricao inscricao, string endereco)
+    {
+        JsonElement cidade = inscricao.Formulario.Preenchimento.Respostas[endereco].GetProperty("cidade");
+        (cidade.GetProperty("codigoIbge").GetString(), cidade.GetProperty("nome").GetString(), cidade.GetProperty("uf").GetString())
+            .Should().Be((Belem, "Belém", "PA"), endereco);
+    }
+
+    private static InscricaoRequest CorrecaoSemNaturalidade(CenarioDoEnvioDeTeste cenario)
+    {
+        InscricaoRequest comNovoApelido = RequestComApelidoETermoAceito(cenario.Cpf, cenario.Termo, cenario.Configuracao, apelido: "Nandinha");
+        return comNovoApelido with
         {
             Respostas = comNovoApelido.Respostas!.Where(static r => r.Key != "NATURALIDADE_MUNICIPIO").ToDictionary(static r => r.Key, static r => r.Value, StringComparer.Ordinal),
         };
-        FakeConferenciaEnderecoGeo geo = GeoQueConhece();
-
-        Result<ReciboDaInscricaoDto> corrigida = await SubmeterAsync(
-            new SubmeterInscricaoCommand(ProcessoId, correcao, PrecondicaoIfMatch.DeTags([existente.ETag])),
-            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<IUnitOfWork>(), UsuarioComCpf(cpf), geo);
-
-        corrigida.IsSuccess.Should().BeTrue(corrigida.Error?.Message);
-        existente.Respostas["NATURALIDADE_MUNICIPIO"].GetRawText().Should().Be(ValorDeMunicipio.Gravado(Belem, "Belém").GetRawText());
     }
+
 }

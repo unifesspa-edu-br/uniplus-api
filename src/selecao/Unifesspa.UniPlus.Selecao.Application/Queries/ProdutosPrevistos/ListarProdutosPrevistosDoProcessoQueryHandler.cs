@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 /// retificação em curso só passa a valer quando publicada.
 /// </remarks>
 public sealed class ListarProdutosPrevistosDoProcessoQueryHandler(
-    GrafoVigenteDoProcesso grafos,
+    ConfiguracaoVigenteDoProcesso grafos,
     IAtoDoProcessoRepository atos,
     IDocumentoAPublicarRepository documentos,
     ITipoAtoPublicadoReader tiposDeAto,
@@ -31,7 +31,7 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandler(
     {
         ArgumentNullException.ThrowIfNull(query);
         DateTimeOffset agora = relogio.GetUtcNow();
-        Result<GrafoVigente> vigente = await grafos.LerAsync(query.ProcessoSeletivoId, agora, cancellationToken).ConfigureAwait(false);
+        Result<ConfiguracaoVigente> vigente = await grafos.LerAsync(query.ProcessoSeletivoId, agora, cancellationToken).ConfigureAwait(false);
         if (vigente.IsFailure)
         {
             return Result<ProdutosPrevistosDoProcessoDto>.Failure(vigente.Error!);
@@ -43,23 +43,23 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandler(
     }
 
     private async Task<Result<ProdutosPrevistosDoProcessoDto>> ProjetarAsync(
-        Guid processoId, GrafoVigente vigente, TimeZoneInfo fuso, CancellationToken cancellationToken)
+        Guid processoId, ConfiguracaoVigente vigente, TimeZoneInfo fuso, CancellationToken cancellationToken)
     {
         IReadOnlyList<AtoDoProcesso> publicados = await atos.ListarDoProcessoAsync(processoId, cancellationToken).ConfigureAwait(false);
         CadeiasDosProdutosPrevistos cadeias = CadeiasDosProdutosPrevistos.De(publicados);
-        Dictionary<Guid, DocumentoAPublicar> documentosPorId = await LerDocumentosAsync(processoId, vigente.Grafo, cadeias, cancellationToken).ConfigureAwait(false);
+        Dictionary<Guid, DocumentoAPublicar> documentosPorId = await LerDocumentosAsync(processoId, vigente.Configuracao, cadeias, cancellationToken).ConfigureAwait(false);
         IReadOnlyList<TipoAtoPublicadoView> tipos = await tiposDeAto.ListarVigentesAsync(
-            ProjecaoDosProdutosPrevistos.TiposDeAtoDeclarados(vigente.Grafo),
+            ProjecaoDosProdutosPrevistos.TiposDeAtoDeclarados(vigente.Configuracao),
             ResolucaoDosTiposDeAtoUnicos.Hoje(relogio, fuso), cancellationToken).ConfigureAwait(false);
         return Result<ProdutosPrevistosDoProcessoDto>.Success(ProjecaoDosProdutosPrevistos.Projetar(
-            vigente.NumeroDaVersao, vigente.Grafo, cadeias,
+            vigente.NumeroDaVersao, vigente.Configuracao, cadeias,
             tipos.GroupBy(static t => t.Codigo, StringComparer.Ordinal)
                 .ToDictionary(static g => g.Key, static g => g.First().Nome, StringComparer.Ordinal),
             ato => AtoDoProcessoMapping.ToDto(ato, documentosPorId)));
     }
 
     private async Task<Dictionary<Guid, DocumentoAPublicar>> LerDocumentosAsync(
-        Guid processoId, Domain.ValueObjects.GrafoConfiguracao grafo, CadeiasDosProdutosPrevistos cadeias, CancellationToken cancellationToken)
+        Guid processoId, Domain.ValueObjects.ConfiguracaoPublicada grafo, CadeiasDosProdutosPrevistos cadeias, CancellationToken cancellationToken)
     {
         AtoDoProcesso[] atosDosProdutos = [.. cadeias.AtosDe(ProjecaoDosProdutosPrevistos.ItensDeclarados(grafo))];
         Guid[] ids = [.. atosDosProdutos

@@ -35,7 +35,7 @@ public sealed class ConciliacaoDosDocumentosIntegrationTests : IClassFixture<Ins
         await ApresentacaoComArquivosAsync(repositorio, inscricaoId, laudo, confirmados: 1, verificar: false);
         await context.SaveChangesAsync();
 
-        ArquivosDaInscricao arquivos = await ArquivosDaInscricao.CarregarAsync(repositorio, inscricaoId, CancellationToken.None);
+        ArquivosDaInscricao arquivos = await new DocumentosEnviadosDaInscricao(repositorio).CarregarAsync(inscricaoId, CancellationToken.None);
 
         arquivos.ApresentacoesVerificadas().Should().ContainSingle()
             .Which.Value.Should().ContainSingle().Which.Id.Should().Be(confirmada.Id);
@@ -49,32 +49,41 @@ public sealed class ConciliacaoDosDocumentosIntegrationTests : IClassFixture<Ins
         ApresentacaoDeDocumento frenteEVerso = await ApresentacaoComArquivosAsync(repositorio, inscricaoId, laudo, confirmados: 2);
         ApresentacaoDeDocumento jaEnviada = await ApresentacaoComArquivosAsync(repositorio, inscricaoId, laudo, confirmados: 1);
         await context.SaveChangesAsync();
-        foreach (ArquivoDaApresentacao arquivo in await repositorio.ListarArquivosDaInscricaoAsync(inscricaoId))
-        {
-            if (arquivo.ApresentacaoId == jaEnviada.Id)
-            {
-                ArquivoDaApresentacao rastreado = (await repositorio.ObterArquivoAsync(arquivo.Id))!;
-                rastreado.MarcarComoConstanteDeEnvio();
-            }
-        }
-
+        await MarcarComoJaEnviadaAsync(repositorio, inscricaoId, jaEnviada.Id);
         await context.SaveChangesAsync();
 
-        // Nenhuma exigência se aplica mais na versão fixada.
-        await DocumentosEnviadosDaInscricao.ConciliarNoEnvioAsync(
-            repositorio, await ArquivosDaInscricao.CarregarAsync(repositorio, inscricaoId, CancellationToken.None),
-            FormularioDeTeste.AvaliacaoSemOcultos, [], DateTimeOffset.UtcNow, CancellationToken.None);
-        await context.SaveChangesAsync();
+        await ConciliarSemExigenciasAsync(context, repositorio, inscricaoId);
 
         await using UniPlusDbContext leitura = _db.CreateDbContext();
         (await leitura.ApresentacoesDeDocumento.Where(a => a.InscricaoId == inscricaoId).Select(static a => a.Id).ToListAsync())
             .Should().BeEquivalentTo([jaEnviada.Id], "a apresentação cujos arquivos saíram vai junto, e a que já constou de um envio fica");
     }
 
+    private static async Task ConciliarSemExigenciasAsync(UniPlusDbContext context, DocumentoDaInscricaoRepository repositorio, Guid inscricaoId)
+    {
+        DocumentosEnviadosDaInscricao documentos = new(repositorio);
+        ArquivosDaInscricao arquivos = await documentos.CarregarAsync(inscricaoId, CancellationToken.None);
+        await documentos.ConciliarNoEnvioAsync(arquivos, FormularioDeTeste.AvaliacaoSemOcultos, [], DateTimeOffset.UtcNow, CancellationToken.None);
+        await context.SaveChangesAsync();
+    }
+
+    private static async Task MarcarComoJaEnviadaAsync(DocumentoDaInscricaoRepository repositorio, Guid inscricaoId, Guid apresentacaoId)
+    {
+        foreach (ArquivoDaApresentacao arquivo in await repositorio.ListarArquivosDaInscricaoAsync(inscricaoId))
+        {
+            if (arquivo.ApresentacaoId == apresentacaoId)
+            {
+                ArquivoDaApresentacao rastreado = (await repositorio.ObterArquivoAsync(arquivo.Id))!;
+                rastreado.MarcarComoConstanteDeEnvio();
+            }
+        }
+
+    }
+
     private async Task<(UniPlusDbContext Context, Guid InscricaoId, DocumentoExigido Laudo)> InscricaoComLaudoAsync()
     {
         UniPlusDbContext context = _db.CreateDbContext();
-        InscricaoRepository inscricoes = new(context, _db.Encryption, _db.BlindIndex, TimeProvider.System);
+        InscricaoRepository inscricoes = RepositoriosDaInscricaoDeTeste.Inscricoes(context, _db);
         Inscricao inscricao = Inscricao.Iniciar(Guid.CreateVersion7(), PersonasDeTeste.FernandaDrumond, "conta-1", "https://issuer", Guid.CreateVersion7()).Value!;
         await inscricoes.AdicionarAsync(inscricao);
         await context.SaveChangesAsync();
@@ -93,20 +102,26 @@ public sealed class ConciliacaoDosDocumentosIntegrationTests : IClassFixture<Ins
         await repositorio.AdicionarApresentacaoAsync(apresentacao);
         for (int i = 0; i < Math.Max(confirmados, 1); i++)
         {
-            ArquivoDaApresentacao arquivo = ArquivoDaApresentacao.IniciarPendente(
-                apresentacao.Id, inscricaoId, laudo, "application/pdf", 1024, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
-            if (i < confirmados)
-            {
-                arquivo.Confirmar("\"etag\"", TimeProvider.System);
-                if (verificar)
-                {
-                    arquivo.RegistrarVerificado(1024, new string('a', 64), FormatoPermitido.Pdf);
-                }
-            }
-
+            ArquivoDaApresentacao arquivo = CriarArquivo(apresentacao, inscricaoId, laudo, i < confirmados, verificar);
             await repositorio.AdicionarArquivoAsync(arquivo);
         }
 
         return apresentacao;
+    }
+    private static ArquivoDaApresentacao CriarArquivo(
+        ApresentacaoDeDocumento apresentacao, Guid inscricaoId, DocumentoExigido laudo, bool confirmar, bool verificar)
+    {
+        ArquivoDaApresentacao arquivo = ArquivoDaApresentacao.IniciarPendente(
+                apresentacao.Id, inscricaoId, laudo, "application/pdf", 1024, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        if (confirmar)
+        {
+            arquivo.Confirmar("\"etag\"", TimeProvider.System);
+            if (verificar)
+            {
+                arquivo.RegistrarVerificado(1024, new string('a', 64), FormatoPermitido.Pdf);
+            }
+        }
+
+        return arquivo;
     }
 }

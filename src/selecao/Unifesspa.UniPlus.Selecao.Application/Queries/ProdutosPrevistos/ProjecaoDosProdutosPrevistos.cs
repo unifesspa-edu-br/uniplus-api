@@ -36,34 +36,34 @@ internal static class ProjecaoDosProdutosPrevistos
     internal sealed record Declarado(Guid Id, string AtoCodigo, PapelProdutoFase? Papel, IdentidadeDoItemDoEdital Item);
 
     /// <summary>Os códigos dos tipos de ato que o cronograma declara publicar.</summary>
-    public static IReadOnlyList<string> TiposDeAtoDeclarados(GrafoConfiguracao grafo)
+    public static IReadOnlyList<string> TiposDeAtoDeclarados(ConfiguracaoPublicada configuracaoPublicada)
     {
-        ArgumentNullException.ThrowIfNull(grafo);
+        ArgumentNullException.ThrowIfNull(configuracaoPublicada);
 
         return
         [
-            .. grafo.CronogramaFases.SelectMany(static f => f.Produtos.Select(static p => p.AtoCodigo))
-                .Concat(grafo.Etapas.SelectMany(static e => e.Produtos.Select(static p => p.AtoCodigo)))
+            .. configuracaoPublicada.Cronograma.CronogramaFases.SelectMany(static f => f.Produtos.Select(static p => p.AtoCodigo))
+                .Concat(configuracaoPublicada.Avaliacao.Etapas.SelectMany(static e => e.Produtos.Select(static p => p.AtoCodigo)))
                 .Distinct(StringComparer.Ordinal),
         ];
     }
 
     /// <summary>O produto que o cronograma declara com o identificador dado; nulo quando a versão não o declara.</summary>
-    internal static Declarado? ProdutoDeclarado(GrafoConfiguracao grafo, Guid produtoId)
+    internal static Declarado? ProdutoDeclarado(ConfiguracaoPublicada configuracaoPublicada, Guid produtoId)
     {
-        ArgumentNullException.ThrowIfNull(grafo);
+        ArgumentNullException.ThrowIfNull(configuracaoPublicada);
 
-        return grafo.CronogramaFases.SelectMany(static f => f.Produtos.Select(p => DeclaradoDaFase(f, p)))
-            .Concat(grafo.Etapas.SelectMany(static e => e.Produtos.Select(p => DeclaradoDaEtapa(e, p))))
+        return configuracaoPublicada.Cronograma.CronogramaFases.SelectMany(static f => f.Produtos.Select(p => DeclaradoDaFase(f, p)))
+            .Concat(configuracaoPublicada.Avaliacao.Etapas.SelectMany(static e => e.Produtos.Select(p => DeclaradoDaEtapa(e, p))))
             .FirstOrDefault(p => p.Id == produtoId);
     }
 
     /// <summary>As identidades dos itens que o cronograma declara publicar.</summary>
-    public static IReadOnlyList<IdentidadeDoItemDoEdital> ItensDeclarados(GrafoConfiguracao grafo)
+    public static IReadOnlyList<IdentidadeDoItemDoEdital> ItensDeclarados(ConfiguracaoPublicada configuracaoPublicada)
     {
-        ArgumentNullException.ThrowIfNull(grafo);
+        ArgumentNullException.ThrowIfNull(configuracaoPublicada);
 
-        return [.. IdentidadeDoItemDoEdital.Dos(grafo.CronogramaFases, grafo.Etapas).Values.Distinct()];
+        return [.. IdentidadeDoItemDoEdital.Dos(configuracaoPublicada.Cronograma.CronogramaFases, configuracaoPublicada.Avaliacao.Etapas).Values.Distinct()];
     }
 
     private static Declarado DeclaradoDaFase(FaseCronograma fase, ProdutoDaFase produto) =>
@@ -74,68 +74,64 @@ internal static class ProjecaoDosProdutosPrevistos
 
     public static ProdutosPrevistosDoProcessoDto Projetar(
         int numeroDaVersao,
-        GrafoConfiguracao grafo,
+        ConfiguracaoPublicada configuracaoPublicada,
         CadeiasDosProdutosPrevistos cadeias,
         IReadOnlyDictionary<string, string> tiposVigentes,
         Func<AtoDoProcesso, AtoDoProcessoDto> projetarAto)
     {
-        ArgumentNullException.ThrowIfNull(grafo);
+        ArgumentNullException.ThrowIfNull(configuracaoPublicada);
         ArgumentNullException.ThrowIfNull(cadeias);
         ArgumentNullException.ThrowIfNull(tiposVigentes);
         ArgumentNullException.ThrowIfNull(projetarAto);
 
-        EtapaComProdutosPrevistosDto Etapa(EtapaProcesso etapa) => new(
-            etapa.Id,
-            etapa.Nome,
-            etapa.Ordem,
-            Produtos([.. etapa.Produtos.Select(p => DeclaradoDaEtapa(etapa, p))], grafo, cadeias, tiposVigentes, projetarAto));
-
-        FaseComProdutosPrevistosDto Fase(FaseCronograma fase) => new(
-            fase.Id,
-            fase.Codigo,
-            fase.Ordem,
-            Produtos([.. fase.Produtos.Select(p => DeclaradoDaFase(fase, p))], grafo, cadeias, tiposVigentes, projetarAto),
-            [.. grafo.Etapas
-                .Where(e => string.Equals(e.FaseCodigo, fase.Codigo, StringComparison.Ordinal))
-                .OrderBy(static e => e.Ordem ?? int.MaxValue)
-                .ThenBy(static e => e.Nome, StringComparer.Ordinal)
-                .Select(Etapa)]);
-
         return new ProdutosPrevistosDoProcessoDto(
             numeroDaVersao,
-            PoliticaDeDivulgacaoDaVersao(grafo),
-            [.. grafo.CronogramaFases.OrderBy(static f => f.Ordem).Select(Fase)],
-            [.. grafo.Etapas
+            PoliticaDeDivulgacaoDaVersao(configuracaoPublicada),
+            [.. configuracaoPublicada.Cronograma.CronogramaFases.OrderBy(static f => f.Ordem).Select(f => Fase(f, configuracaoPublicada, cadeias, tiposVigentes, projetarAto))],
+            [.. configuracaoPublicada.Avaliacao.Etapas
                 .Where(static e => e.FaseCodigo is null)
                 .OrderBy(static e => e.Ordem ?? int.MaxValue)
                 .ThenBy(static e => e.Nome, StringComparer.Ordinal)
-                .Select(Etapa)]);
+                .Select(e => Etapa(e, configuracaoPublicada, cadeias, tiposVigentes, projetarAto))]);
     }
+
+    private static EtapaComProdutosPrevistosDto Etapa(EtapaProcesso etapa, ConfiguracaoPublicada configuracaoPublicada,
+        CadeiasDosProdutosPrevistos cadeias, IReadOnlyDictionary<string, string> tiposVigentes,
+        Func<AtoDoProcesso, AtoDoProcessoDto> projetarAto) => new(etapa.Id, etapa.Nome, etapa.Ordem,
+        Produtos([.. etapa.Produtos.Select(p => DeclaradoDaEtapa(etapa, p))], configuracaoPublicada, cadeias, tiposVigentes, projetarAto));
+
+    private static FaseComProdutosPrevistosDto Fase(FaseCronograma fase, ConfiguracaoPublicada configuracaoPublicada,
+        CadeiasDosProdutosPrevistos cadeias, IReadOnlyDictionary<string, string> tiposVigentes,
+        Func<AtoDoProcesso, AtoDoProcessoDto> projetarAto) => new(fase.Id, fase.Codigo, fase.Ordem,
+        Produtos([.. fase.Produtos.Select(p => DeclaradoDaFase(fase, p))], configuracaoPublicada, cadeias, tiposVigentes, projetarAto),
+        [.. configuracaoPublicada.Avaliacao.Etapas.Where(e => string.Equals(e.FaseCodigo, fase.Codigo, StringComparison.Ordinal))
+            .OrderBy(static e => e.Ordem ?? int.MaxValue).ThenBy(static e => e.Nome, StringComparer.Ordinal)
+            .Select(e => Etapa(e, configuracaoPublicada, cadeias, tiposVigentes, projetarAto))]);
 
     /// <summary>
     /// A política de divulgação do certame como a versão congelou, e não como o cadastro está hoje.
     /// Sem configuração explícita vale o piso minimizado: só o número de inscrição.
     /// </summary>
-    internal static ConfiguracaoDivulgacaoDto PoliticaDeDivulgacaoDaVersao(GrafoConfiguracao grafo)
+    internal static ConfiguracaoDivulgacaoDto PoliticaDeDivulgacaoDaVersao(ConfiguracaoPublicada configuracaoPublicada)
     {
-        ArgumentNullException.ThrowIfNull(grafo);
+        ArgumentNullException.ThrowIfNull(configuracaoPublicada);
 
-        return grafo.ConfiguracaoDivulgacao is { } configuracao
+        return configuracaoPublicada.DivulgacaoETaxa.ConfiguracaoDivulgacao is { } configuracao
             ? new ConfiguracaoDivulgacaoDto(configuracao.CamposPublicos, configuracao.Justificativa)
             : new ConfiguracaoDivulgacaoDto([ConfiguracaoDivulgacao.NumeroInscricao], null);
     }
 
     private static List<ProdutoPrevistoDto> Produtos(
         List<Declarado> declarados,
-        GrafoConfiguracao grafo,
+        ConfiguracaoPublicada configuracaoPublicada,
         CadeiasDosProdutosPrevistos cadeias,
         IReadOnlyDictionary<string, string> tiposVigentes,
         Func<AtoDoProcesso, AtoDoProcessoDto> projetarAto) =>
-        [.. declarados.Select(d => Produto(d, grafo, cadeias, tiposVigentes, projetarAto))];
+        [.. declarados.Select(d => Produto(d, configuracaoPublicada, cadeias, tiposVigentes, projetarAto))];
 
     private static ProdutoPrevistoDto Produto(
         Declarado produto,
-        GrafoConfiguracao grafo,
+        ConfiguracaoPublicada configuracaoPublicada,
         CadeiasDosProdutosPrevistos cadeias,
         IReadOnlyDictionary<string, string> tiposVigentes,
         Func<AtoDoProcesso, AtoDoProcessoDto> projetarAto)
@@ -143,8 +139,7 @@ internal static class ProjecaoDosProdutosPrevistos
         AtoDoProcesso? primeira = cadeias.PrimeiraPublicacaoDe(produto.Item);
         SituacaoDoProdutoPrevisto situacao = SituacaoDe(primeira);
         bool tipoVigente = tiposVigentes.ContainsKey(produto.AtoCodigo);
-        ImpedimentoDoProdutoDto? impedimento = ImpedimentoDe(produto, situacao, grafo, cadeias, tipoVigente);
-
+        ImpedimentoDoProdutoDto? impedimento = ImpedimentoDe(produto, situacao, configuracaoPublicada, cadeias, tipoVigente);
         return new ProdutoPrevistoDto(
             produto.Id,
             produto.AtoCodigo,
@@ -168,7 +163,7 @@ internal static class ProjecaoDosProdutosPrevistos
     internal static ImpedimentoDoProdutoDto? ImpedimentoDe(
         Declarado produto,
         SituacaoDoProdutoPrevisto situacao,
-        GrafoConfiguracao grafo,
+        ConfiguracaoPublicada configuracaoPublicada,
         CadeiasDosProdutosPrevistos cadeias,
         bool tipoVigente)
     {
@@ -177,7 +172,7 @@ internal static class ProjecaoDosProdutosPrevistos
             return new(ImpedimentoDoProduto.JaPublicado, MensagemDoItemJaPublicado);
         }
 
-        if (produto.Papel == PapelProdutoFase.Definitivo && ImpedimentoDoPreliminar(produto, grafo, cadeias) is { } doPreliminar)
+        if (produto.Papel == PapelProdutoFase.Definitivo && ImpedimentoDoPreliminar(produto, configuracaoPublicada, cadeias) is { } doPreliminar)
         {
             return doPreliminar;
         }
@@ -187,10 +182,10 @@ internal static class ProjecaoDosProdutosPrevistos
             : new(ImpedimentoDoProduto.TipoDeAtoNaoVigente, $"O tipo de ato '{produto.AtoCodigo}' não tem versão vigente no catálogo de Publicações.");
     }
 
-    private static ImpedimentoDoProdutoDto? ImpedimentoDoPreliminar(Declarado definitivo, GrafoConfiguracao grafo, CadeiasDosProdutosPrevistos cadeias)
+    private static ImpedimentoDoProdutoDto? ImpedimentoDoPreliminar(Declarado definitivo, ConfiguracaoPublicada configuracaoPublicada, CadeiasDosProdutosPrevistos cadeias)
     {
-        Dictionary<Guid, IdentidadeDoItemDoEdital> itens = IdentidadeDoItemDoEdital.Dos(grafo.CronogramaFases, grafo.Etapas);
-        foreach (Guid preliminarId in PreliminaresDaMateria.Esperados(grafo, definitivo.Id))
+        Dictionary<Guid, IdentidadeDoItemDoEdital> itens = IdentidadeDoItemDoEdital.Dos(configuracaoPublicada.Cronograma.CronogramaFases, configuracaoPublicada.Avaliacao.Etapas);
+        foreach (Guid preliminarId in PreliminaresDaMateria.Esperados(configuracaoPublicada, definitivo.Id))
         {
             if (cadeias.PrimeiraPublicacaoDe(itens[preliminarId]) is null)
             {

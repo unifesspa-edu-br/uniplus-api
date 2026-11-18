@@ -37,16 +37,7 @@ public sealed class ComprovanteDoTitularTests
 
         ComprovanteDaInscricaoDto dto = Montar(inscricao, comprovante, Envelope([Texto("APELIDO", "Como prefere ser chamada")]), numero: 1, total: 3);
 
-        dto.InscricaoId.Should().Be(inscricao.Id);
-        dto.Numero.Should().Be(1);
-        dto.Total.Should().Be(3);
-        dto.Vale.Should().BeFalse();
-        dto.NumeroAnterior.Should().BeNull();
-        dto.NumeroSeguinte.Should().Be(2);
-        dto.NomeDoProcesso.Should().Be("PSS Medicina 2027");
-        dto.Envio.NumeroInscricao.Should().Be("00000001");
-        dto.Envio.EnviadoEm.Should().Be(Instante);
-        dto.Envio.HashIntegridade.Should().Be(comprovante.HashIntegridade);
+        ConferirCabecalho(dto, inscricao, comprovante);
         TodosOsItens(dto).Should().ContainSingle(i => i.Rotulo == "Como prefere ser chamada").Which.Valor!.Value.GetString().Should().Be("Nanda");
     }
 
@@ -57,8 +48,8 @@ public sealed class ComprovanteDoTitularTests
 
         ComprovanteDaInscricaoDto dto = Montar(inscricao, Emitir(inscricao, Respostas()), Envelope());
 
-        dto.Envio.FusoHorario.Id.Should().Be(FusoInstitucional.ZoneId);
-        dto.Envio.FusoHorario.Nome.Should().Be(FusoInstitucional.Nome);
+        dto.Inscricao.Envio.FusoHorario.Id.Should().Be(FusoInstitucional.ZoneId);
+        dto.Inscricao.Envio.FusoHorario.Nome.Should().Be(FusoInstitucional.Nome);
     }
 
     [Fact(DisplayName = "O último comprovante vale e não aponta seguinte; o do meio aponta os dois vizinhos")]
@@ -71,11 +62,11 @@ public sealed class ComprovanteDoTitularTests
         ComprovanteDaInscricaoDto ultimo = Montar(inscricao, comprovante, envelope, numero: 3, total: 3);
         ComprovanteDaInscricaoDto meio = Montar(inscricao, comprovante, envelope, numero: 2, total: 3);
 
-        ultimo.Vale.Should().BeTrue();
-        ultimo.NumeroAnterior.Should().Be(2);
-        ultimo.NumeroSeguinte.Should().BeNull();
-        meio.Vale.Should().BeFalse();
-        (meio.NumeroAnterior, meio.NumeroSeguinte).Should().Be((1, 3));
+        ultimo.Inscricao.Vale.Should().BeTrue();
+        ultimo.Inscricao.NumeroAnterior.Should().Be(2);
+        ultimo.Inscricao.NumeroSeguinte.Should().BeNull();
+        meio.Inscricao.Vale.Should().BeFalse();
+        (meio.Inscricao.NumeroAnterior, meio.Inscricao.NumeroSeguinte).Should().Be((1, 3));
     }
 
     [Fact(DisplayName = "O cartão traz o nome civil, o nome social só de quem usa e o CPF mascarado")]
@@ -103,12 +94,7 @@ public sealed class ComprovanteDoTitularTests
         ComprovanteInscricao comprovante = Emitir(inscricao, Respostas(
             ("NOME", PersonasDeTeste.NomeFernandaDrumond), ("DESEJA_NOME_SOCIAL", true), ("NOME_SOCIAL", PersonasDeTeste.NomeSocialFernandaDrumond),
             ("APELIDO", "Nanda")));
-        string[] rotulosDoNome =
-        [
-            RotuloDoBasico(ConjuntoBasicoDaInscricao.Nome),
-            RotuloDoBasico(ConjuntoBasicoDaInscricao.DesejaNomeSocial),
-            RotuloDoBasico(ConjuntoBasicoDaInscricao.NomeSocial),
-        ];
+        string[] rotulosDoNome = RotulosDoNome();
 
         ComprovanteDaInscricaoDto dto = Montar(
             inscricao, comprovante, Envelope(BasicosE(Texto("APELIDO", "Apelido", ordem: FormularioDeTeste.PrimeiraOrdemDeInscricao))));
@@ -129,12 +115,7 @@ public sealed class ComprovanteDoTitularTests
 
         ComprovanteDaInscricaoDto dto = Montar(inscricao, comprovante, envelope);
 
-        SecaoDoComprovanteDto basicos = dto.Secoes.Single(static s => s.Codigo == ConjuntoBasicoDaInscricao.CodigoDaSecao);
-        basicos.Itens.Select(static i => i.Rotulo).Should().Equal(RotuloDoBasico("IDENTIDADE_GENERO"), RotuloDoBasico("ORIENTACAO_SEXUAL"));
-        basicos.Itens[0].Valor!.Value.GetProperty("codigo").GetString().Should().Be("CIS");
-        basicos.Itens[1].Valor!.Value.GetProperty("codigo").GetString().Should().Be("HETEROSSEXUAL");
-        dto.Secoes.Where(static s => s.Codigo != ConjuntoBasicoDaInscricao.CodigoDaSecao).SelectMany(static s => s.Itens)
-            .Select(static i => i.Rotulo).Should().Equal("Apelido");
+        ConferirItensSensiveis(dto);
     }
 
     [Fact(DisplayName = "O CPF e o número do documento respondidos não saem em claro em nenhum lugar do comprovante")]
@@ -156,16 +137,66 @@ public sealed class ComprovanteDoTitularTests
     [Fact(DisplayName = "As ocorrências do grupo se chamam Você (candidato) e Integrante n, na ordem do envio")]
     public void Montar_TitulosDasOcorrencias()
     {
+        GrupoColetado composicao = GrupoDeComposicao();
+        Inscricao inscricao = UmaInscricao();
+        Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos = OcorrenciasDaFamilia();
+
+        ComprovanteDaInscricaoDto dto = Montar(inscricao, Emitir(inscricao, Respostas(), grupos: grupos), Envelope(grupos: [composicao]));
+
+        dto.Formulario.Secoes.SelectMany(static s => s.Grupos).Single().Ocorrencias.Select(static o => o.Titulo)
+            .Should().Equal("Integrante 1", "Você (candidato)", "Integrante 2");
+    }
+
+    private static void ConferirCabecalho(ComprovanteDaInscricaoDto dto, Inscricao inscricao, ComprovanteInscricao comprovante)
+    {
+        dto.Inscricao.InscricaoId.Should().Be(inscricao.Id);
+        dto.Inscricao.Numero.Should().Be(1);
+        dto.Inscricao.Total.Should().Be(3);
+        dto.Inscricao.Vale.Should().BeFalse();
+        dto.Inscricao.NumeroAnterior.Should().BeNull();
+        dto.Inscricao.NumeroSeguinte.Should().Be(2);
+        dto.Processo.NomeDoProcesso.Should().Be("PSS Medicina 2027");
+        dto.Inscricao.Envio.NumeroInscricao.Should().Be("00000001");
+        dto.Inscricao.Envio.EnviadoEm.Should().Be(Instante);
+        dto.Inscricao.Envio.HashIntegridade.Should().Be(comprovante.HashIntegridade);
+    }
+
+
+    private static string[] RotulosDoNome() =>
+    [
+        RotuloDoBasico(ConjuntoBasicoDaInscricao.Nome),
+        RotuloDoBasico(ConjuntoBasicoDaInscricao.DesejaNomeSocial),
+        RotuloDoBasico(ConjuntoBasicoDaInscricao.NomeSocial),
+    ];
+
+
+    private static void ConferirItensSensiveis(ComprovanteDaInscricaoDto dto)
+    {
+        SecaoDoComprovanteDto basicos = dto.Formulario.Secoes.Single(static s => s.Codigo == ConjuntoBasicoDaInscricao.CodigoDaSecao);
+        basicos.Itens.Select(static i => i.Rotulo).Should().Equal(RotuloDoBasico("IDENTIDADE_GENERO"), RotuloDoBasico("ORIENTACAO_SEXUAL"));
+        basicos.Itens[0].Valor!.Value.GetProperty("codigo").GetString().Should().Be("CIS");
+        basicos.Itens[1].Valor!.Value.GetProperty("codigo").GetString().Should().Be("HETEROSSEXUAL");
+        dto.Formulario.Secoes.Where(static s => s.Codigo != ConjuntoBasicoDaInscricao.CodigoDaSecao).SelectMany(static s => s.Itens)
+            .Select(static i => i.Rotulo).Should().Equal("Apelido");
+    }
+
+
+    private static GrupoColetado GrupoDeComposicao()
+    {
         FatoColetado parentesco = FatoColetado.Criar(
             "PARENTESCO", 0, "Parentesco", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", formato: "LIVRE",
             hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade,
             descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
-        GrupoColetado composicao = GrupoColetado.Criar(
+        return GrupoColetado.Criar(
             "COMPOSICAO_FAMILIAR", 1, FormularioDeTeste.Secao, "Composição familiar", minimo: 1, maximo: null, exibicao: null,
             Obrigatoriedade.Nunca, [parentesco, Texto("NOME_MEMBRO", "Nome do membro", 1)],
             FinalidadeFormulario.Inscricao, incluiCandidato: true).Value!;
-        Inscricao inscricao = UmaInscricao();
-        Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos = new(StringComparer.Ordinal)
+    }
+
+
+    private static Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> OcorrenciasDaFamilia()
+    {
+        return new(StringComparer.Ordinal)
         {
             ["COMPOSICAO_FAMILIAR"] =
             [
@@ -174,10 +205,6 @@ public sealed class ComprovanteDoTitularTests
                 new("m3", Respostas(("PARENTESCO", "IRMAO"), ("NOME_MEMBRO", PersonasDeTeste.NomeKevinCarvalho))),
             ],
         };
-
-        ComprovanteDaInscricaoDto dto = Montar(inscricao, Emitir(inscricao, Respostas(), grupos: grupos), Envelope(grupos: [composicao]));
-
-        dto.Secoes.SelectMany(static s => s.Grupos).Single().Ocorrencias.Select(static o => o.Titulo)
-            .Should().Equal("Integrante 1", "Você (candidato)", "Integrante 2");
     }
+
 }

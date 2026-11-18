@@ -146,7 +146,7 @@ public sealed class ColetabilidadeDeFatosGateTests
             processo, ReaderCom(FatoAtendimentoNoMunicipio(), FatoMunicipioDeResidencia("Município de residência")), canonicalizer);
 
         resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
-        entrada!.ApresentacaoDosPressupostos.Should().ContainKey("MUNICIPIO_RESIDENCIA")
+        entrada!.DadosDeCatalogo.ApresentacaoDosPressupostos.Should().ContainKey("MUNICIPIO_RESIDENCIA")
             .WhoseValue.Should().Be(new ApresentacaoDoFato("MUNICIPIO_RESIDENCIA", "Município de residência", "MUNICIPIO"));
     }
 

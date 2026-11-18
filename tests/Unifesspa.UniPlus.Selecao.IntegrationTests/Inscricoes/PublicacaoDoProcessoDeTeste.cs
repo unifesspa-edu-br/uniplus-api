@@ -31,18 +31,46 @@ internal static class PublicacaoDoProcessoDeTeste
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresDosCampos,
         RetificacaoDoEdital? retificacao = null)
     {
-        // O conjunto básico do candidato (sempre presente num formulário de inscrição) traz onze
-        // fatos de seleção (nacionalidade, órgão emissor e UF do RG, estado civil, sexo, sexo civil, identidade de
-        // gênero, orientação sexual, cor/raça,
-        // tipo de localidade e UF de naturalidade) — o canonicalizador exige uma entrada não vazia para cada; os
-        // valores em si não importam para o que este teste prova (a resolução da versão divulgada e
-        // a cifra dos documentos).
-        Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresDoConjuntoBasico = ValoresDosCampos(processo, valoresDosCampos);
+        Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresDoConjuntoBasico = ValoresDoConjuntoBasico();
+        foreach ((string campo, IReadOnlyList<ValorDominioDeclaradoCongelado>? valores) in valoresDosCampos ?? new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>())
+        {
+            valoresDoConjuntoBasico[campo] = valores;
+        }
 
-        SnapshotCanonico congelado = Canonicalizer.Canonicalizar(
-            new EntradaCanonicalizacao(processo, dados, hash64, FusoInstitucional.ZoneId, Retificacao: retificacao, ValoresSelecionaveisCongelados: valoresDoConjuntoBasico, TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
+        AcrescentarOpcoesDoProcesso(processo, valoresDoConjuntoBasico);
+        return Canonicalizer.Canonicalizar(
+            new EntradaCanonicalizacao(processo, dados, hash64, FusoInstitucional.ZoneId, Retificacao: retificacao, Conformidade: null, DadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(ValoresSelecionaveisCongelados: valoresDoConjuntoBasico, TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)));
+    }
 
-        return congelado;
+    // Cada fato de seleção do conjunto básico precisa de uma entrada não vazia.
+    private static Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> ValoresDoConjuntoBasico()
+    {
+        return new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal)
+        {
+            ["NACIONALIDADE"] = [new ValorDominioDeclaradoCongelado("BRASILEIRA", "Nacionalidade brasileira.", 0)],
+            ["ESTADO_CIVIL"] = [new ValorDominioDeclaradoCongelado("SOLTEIRO", "Solteiro(a).", 0)],
+            ["SEXO"] = [new ValorDominioDeclaradoCongelado("FEMININO", "Feminino.", 0)],
+            ["SEXO_CIVIL"] = [new ValorDominioDeclaradoCongelado("FEMININO", "Feminino.", 0)],
+            ["IDENTIDADE_GENERO"] = [new ValorDominioDeclaradoCongelado("PREFIRO_NAO_INFORMAR", "Prefiro não informar.", 0)],
+            ["ORIENTACAO_SEXUAL"] = [new ValorDominioDeclaradoCongelado("PREFIRO_NAO_INFORMAR", "Prefiro não informar.", 0)],
+            ["COR_RACA"] = [new ValorDominioDeclaradoCongelado("NAO_DECLARADO", "Prefere não declarar.", 0)],
+            ["TIPO_ENDERECO"] = [new ValorDominioDeclaradoCongelado("URBANO", "Endereço urbano.", 0)],
+            ["RG_ORGAO_EMISSOR"] = [new ValorDominioDeclaradoCongelado("SSP", "Secretaria de Segurança Pública (SSP)", 0)],
+            ["RG_UF"] = [new ValorDominioDeclaradoCongelado("PA", "Pará.", 0)],
+            ["NATURALIDADE_UF"] = [new ValorDominioDeclaradoCongelado("PA", "Pará.", 0)],
+        };
+    }
+
+    private static void AcrescentarOpcoesDoProcesso(
+        ProcessoSeletivo processo, Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresDoConjuntoBasico)
+    {
+        // O campo cujas opções o processo oferta congela essas opções, pela mesma leitura que o
+        // resolvedor da publicação usa.
+        foreach (FatoColetado campo in processo.Campos.Where(static c => RegrasDasOpcoesDeclaradas.OrigemDasOpcoes(c) == OrigemValoresColeta.OpcoesDoProcesso))
+        {
+            valoresDoConjuntoBasico[campo.FatoCodigo] = [.. processo.OpcoesDoProcesso(campo.FatoCodigo)
+                .Select(static o => new ValorDominioDeclaradoCongelado(o.Codigo, o.Rotulo, o.Ordem))];
+        }
     }
 
     /// <summary>Publica e divulga o processo com os repositórios de produção, no mesmo <paramref name="db"/>.</summary>
@@ -121,40 +149,4 @@ internal static class PublicacaoDoProcessoDeTeste
 
     internal static async Task DivulgarRetificacaoAsync(UniPlusDbContext db, Guid processoId, ProcessoSeletivo retificado, DadosEdital dados) =>
         await DivulgarAsync(db, processoId, await GravarRetificacaoAsync(db, processoId, retificado, dados));
-
-    private static Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> ValoresDoConjuntoBasico() =>
-        new(StringComparer.Ordinal)
-        {
-            ["NACIONALIDADE"] = [new ValorDominioDeclaradoCongelado("BRASILEIRA", "Nacionalidade brasileira.", 0)],
-            ["ESTADO_CIVIL"] = [new ValorDominioDeclaradoCongelado("SOLTEIRO", "Solteiro(a).", 0)],
-            ["SEXO"] = [new ValorDominioDeclaradoCongelado("FEMININO", "Feminino.", 0)],
-            ["SEXO_CIVIL"] = [new ValorDominioDeclaradoCongelado("FEMININO", "Feminino.", 0)],
-            ["IDENTIDADE_GENERO"] = [new ValorDominioDeclaradoCongelado("PREFIRO_NAO_INFORMAR", "Prefiro não informar.", 0)],
-            ["ORIENTACAO_SEXUAL"] = [new ValorDominioDeclaradoCongelado("PREFIRO_NAO_INFORMAR", "Prefiro não informar.", 0)],
-            ["COR_RACA"] = [new ValorDominioDeclaradoCongelado("NAO_DECLARADO", "Prefere não declarar.", 0)],
-            ["TIPO_ENDERECO"] = [new ValorDominioDeclaradoCongelado("URBANO", "Endereço urbano.", 0)],
-            ["RG_ORGAO_EMISSOR"] = [new ValorDominioDeclaradoCongelado("SSP", "Secretaria de Segurança Pública (SSP)", 0)],
-            ["RG_UF"] = [new ValorDominioDeclaradoCongelado("PA", "Pará.", 0)],
-            ["NATURALIDADE_UF"] = [new ValorDominioDeclaradoCongelado("PA", "Pará.", 0)],
-        };
-
-
-    private static Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> ValoresDosCampos(ProcessoSeletivo processo, IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresDosCampos)
-    {
-        Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresDoConjuntoBasico = ValoresDoConjuntoBasico();
-        foreach ((string campo, IReadOnlyList<ValorDominioDeclaradoCongelado>? valores) in valoresDosCampos ?? new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>())
-        {
-            valoresDoConjuntoBasico[campo] = valores;
-        }
-
-        // O campo cujas opções o processo oferta congela essas opções, pela mesma leitura que o
-        // resolvedor da publicação usa.
-        foreach (FatoColetado campo in processo.Campos.Where(static c => RegrasDasOpcoesDeclaradas.OrigemDasOpcoes(c) == OrigemValoresColeta.OpcoesDoProcesso))
-        {
-            valoresDoConjuntoBasico[campo.FatoCodigo] = [.. processo.OpcoesDoProcesso(campo.FatoCodigo)
-                .Select(static o => new ValorDominioDeclaradoCongelado(o.Codigo, o.Rotulo, o.Ordem))];
-        }
-        return valoresDoConjuntoBasico;
-    }
-
 }

@@ -41,7 +41,7 @@ internal sealed class CenarioDeVersaoVigentePersistida
     public UniPlusDbContext CriarDbContext() => _fixture.CreateDbContext();
 
     public static SnapshotCanonico Canonicalizar(ProcessoSeletivo processo, DadosEdital dados, DocumentoAPublicar documento) =>
-        Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dados, documento.HashSha256!, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
+        Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dados, documento.HashSha256!, FusoInstitucional.ZoneId, Retificacao: null, Conformidade: null, DadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)));
 
     /// <summary>
     /// Publica a abertura e retifica em seguida, avançando o relógio entre as duas. Devolve as duas
@@ -105,10 +105,7 @@ internal sealed class CenarioDeVersaoVigentePersistida
         ProcessoSeletivo carregado, VersaoConfiguracao versaoAtual, DocumentoAPublicar documento, TimeProvider clock)
     {
         DadosEdital dados = NovosDados(documento.Id);
-        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
-            carregado, dados, documento.HashSha256!, FusoInstitucional.ZoneId,
-            new RetificacaoDoEdital(versaoAtual.AtoCriadorId, "Correção do prazo de inscrição"), ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(),
-            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(carregado), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
+        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(carregado, dados, documento.HashSha256!, FusoInstitucional.ZoneId, new RetificacaoDoEdital(versaoAtual.AtoCriadorId, "Correção do prazo de inscrição"), Conformidade: null, DadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(carregado), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)));
         Result<VersaoConfiguracao> retificar = carregado.Retificar(
             new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash, documento.HashSha256!), AtorUsuarioContaId = "integration-test-user", Relogio = clock, Contagem = CorpusEnvelopeDadosDoEdital.ContextoRico() }, versaoAtual, "Correção do prazo de inscrição");
         retificar.IsSuccess.Should().BeTrue(retificar.Error?.Message);

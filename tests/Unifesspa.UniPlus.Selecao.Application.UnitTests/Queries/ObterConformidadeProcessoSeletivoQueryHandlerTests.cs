@@ -317,17 +317,23 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
     private static IRegistroCodecsEnvelope CodecsQueReidratamO(ProcessoSeletivo processo, VersaoConfiguracao versao, TipoDeAtoCongelado congelado)
     {
         IRegistroCodecsEnvelope codecs = Substitute.For<IRegistroCodecsEnvelope>();
-        codecs.Reidratar(versao).Returns(Result<EnvelopeReidratado>.Success(new EnvelopeReidratado(
-            new GrafoConfiguracao(
-                [.. processo.Etapas], AtendimentoEspecializado.Criar([], [], []).Value!, [.. processo.DistribuicaoVagas], processo.BonusRegional,
-                [.. processo.CriteriosDesempate], ClassificacaoImportada(),
-                [.. processo.CronogramaFases], [.. processo.DocumentosExigidos], [], null,
-                numeroDeOpcoesDeCurso: 1),
-            DadosEdital.Criar("001/2027", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(30), Guid.CreateVersion7()).Value!,
-            new string('a', 64), "America/Sao_Paulo", retificacao: null, conformidade: null,
-            tiposDeAtoCongelados: new Dictionary<string, TipoDeAtoCongelado>(StringComparer.Ordinal) { [congelado.Codigo] = congelado })));
+        codecs.Reidratar(versao).Returns(Result<EnvelopeReidratado>.Success(EnvelopeDo(processo, congelado)));
         return codecs;
     }
+
+    private static EnvelopeReidratado EnvelopeDo(ProcessoSeletivo processo, TipoDeAtoCongelado congelado) =>
+        new(new ConfiguracaoPublicada(
+            new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, [.. processo.CronogramaFases]),
+            new AvaliacaoDeclarada([.. processo.Etapas], [.. processo.CriteriosDesempate], ClassificacaoImportada()),
+            new VagasDeclaradas([.. processo.DistribuicaoVagas], 1, processo.BonusRegional is not null,
+                processo.BonusRegional, null, AtendimentoEspecializado.Criar([], [], []).Value!),
+            new ExigenciasDeclaradas([.. processo.DocumentosExigidos], []),
+            new ColetaDeclarada([], [], [], [],
+                [], [], null),
+            new DivulgacaoETaxaDeclaradas(null, null), null),
+            DadosEdital.Criar("001/2027", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(30), Guid.CreateVersion7()).Value!,
+            new string('a', 64), "America/Sao_Paulo", retificacao: null, conformidade: null,
+            new DadosDeCatalogoDaConfiguracaoPublicada(TiposDeAtoCongelados: new Dictionary<string, TipoDeAtoCongelado>(StringComparer.Ordinal) { [congelado.Codigo] = congelado }));
 
     private static ConfiguracaoClassificacao ClassificacaoImportada() =>
         ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao

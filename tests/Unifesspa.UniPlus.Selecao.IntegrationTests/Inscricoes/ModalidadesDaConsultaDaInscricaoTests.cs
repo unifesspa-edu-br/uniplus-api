@@ -42,11 +42,27 @@ public sealed class ModalidadesDaConsultaDaInscricaoTests
             true, "FALTA_RESPONDER", [],
             [new PendenciaDaAvaliacaoDto("CONCORRER_PCD", "Você quer concorrer às vagas para pessoa com deficiência?", FormularioDeTeste.Secao)]));
 
-        Result<AvaliacaoDaInscricaoDto> concorre = await _cenario.AvaliarAsync(db, processoId, fernanda, new(StringComparer.Ordinal)
+        await ConferirModalidadesAsync(db, processoId, fernanda);
+
+        await ConferirQueConsultaNaoGravouAsync(iniciar.Value!);
+    }
+
+    private async Task ConferirQueConsultaNaoGravouAsync(InscricaoDto inscricao)
+    {
+        await using UniPlusDbContext leitura = _cenario.CriarDbContext();
+        Inscricao gravada = (await _cenario.NovoRepositorioDeInscricao(leitura)
+            .ObterPorIdAsync(inscricao.Id))!;
+        gravada.Formulario.Preenchimento.Respostas.Should().NotContainKey("CONCORRER_PCD", "a consulta não grava nada");
+        gravada.ETag.Should().Be(inscricao.ETag, "nenhuma consulta muda a revisão da inscrição");
+    }
+
+    private async Task ConferirModalidadesAsync(UniPlusDbContext db, Guid processoId, IUserContext usuario)
+    {
+        Result<AvaliacaoDaInscricaoDto> concorre = await _cenario.AvaliarAsync(db, processoId, usuario, new(StringComparer.Ordinal)
         {
             ["CONCORRER_PCD"] = JsonSerializer.SerializeToElement(true),
         });
-        Result<AvaliacaoDaInscricaoDto> naoConcorre = await _cenario.AvaliarAsync(db, processoId, fernanda, new(StringComparer.Ordinal)
+        Result<AvaliacaoDaInscricaoDto> naoConcorre = await _cenario.AvaliarAsync(db, processoId, usuario, new(StringComparer.Ordinal)
         {
             ["CONCORRER_PCD"] = JsonSerializer.SerializeToElement(false),
         });
@@ -56,12 +72,6 @@ public sealed class ModalidadesDaConsultaDaInscricaoTests
         concorre.Value!.Modalidades.Itens.Should().Equal(new ModalidadeDaInscricaoDto("AC", "AC", 0));
         naoConcorre.Value!.Modalidades.Situacao.Should().Be("NAO_CONCORRE");
         naoConcorre.Value!.Modalidades.Itens.Should().BeEmpty();
-
-        await using UniPlusDbContext leitura = _cenario.CriarDbContext();
-        Inscricao gravada = (await _cenario.NovoRepositorioDeInscricao(leitura)
-            .ObterPorIdAsync(iniciar.Value!.Id))!;
-        gravada.Respostas.Should().NotContainKey("CONCORRER_PCD", "a consulta não grava nada");
-        gravada.ETag.Should().Be(iniciar.Value!.ETag, "nenhuma consulta muda a revisão da inscrição");
     }
 
     [Fact(DisplayName = "Sobre o processo que só oferta a ampla, incondicional, a consulta diz que o candidato concorre a ela")]
@@ -105,11 +115,16 @@ public sealed class ModalidadesDaConsultaDaInscricaoTests
         Result<InscricaoDto> iniciar = await _cenario.IniciarRascunhoAsync(db, processoId, fernanda);
         iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
 
-        ModalidadesDaInscricaoDto comCotas = (await _cenario.AvaliarAsync(db, processoId, fernanda,
+        await ConferirModalidadesDaLeiAsync(db, processoId, fernanda);
+    }
+
+    private async Task ConferirModalidadesDaLeiAsync(UniPlusDbContext db, Guid processoId, IUserContext usuario)
+    {
+        ModalidadesDaInscricaoDto comCotas = (await _cenario.AvaliarAsync(db, processoId, usuario,
             RespostasDaOrigemEDasCotas(OrigemEscolar.SomentePublica, ep: true, ppi: true, renda: true))).Value!.Modalidades;
-        ModalidadesDaInscricaoDto semCotas = (await _cenario.AvaliarAsync(db, processoId, fernanda,
+        ModalidadesDaInscricaoDto semCotas = (await _cenario.AvaliarAsync(db, processoId, usuario,
             RespostasDaOrigemEDasCotas(OrigemEscolar.SomentePublica, ep: false, ppi: false, renda: false))).Value!.Modalidades;
-        ModalidadesDaInscricaoDto semOrigem = (await _cenario.AvaliarAsync(db, processoId, fernanda,
+        ModalidadesDaInscricaoDto semOrigem = (await _cenario.AvaliarAsync(db, processoId, usuario,
             RespostasDaOrigemEDasCotas(ondeCursou: null, ep: true, ppi: false, renda: false))).Value!.Modalidades;
 
         comCotas.Situacao.Should().Be("CONCORRE");
@@ -129,18 +144,23 @@ public sealed class ModalidadesDaConsultaDaInscricaoTests
         Result<InscricaoDto> iniciar = await _cenario.IniciarRascunhoAsync(db, processoId, fernanda);
         iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
 
-        Result<InscricaoDto> salvar = await _cenario.SalvarAsync(
-            db, processoId,
-            new InscricaoRequest(null, new Dictionary<string, JsonElement>(StringComparer.Ordinal)
-            {
-                ["CONCORRER_PCD"] = JsonSerializer.SerializeToElement(true),
-            }, null, null),
-            iniciar.Value!.ETag, Substitute.For<IConferenciaEnderecoGeo>());
+        Result<InscricaoDto> salvar = await SalvarRespostaAsync(db, processoId, iniciar.Value!.ETag);
         Result<InscricaoDto> ler = await _cenario.ObterAsync(db, processoId, fernanda);
 
         salvar.IsSuccess.Should().BeTrue(salvar.Error?.Message);
         ModalidadesDaInscricaoDto concorre = new(true, "CONCORRE", [new ModalidadeDaInscricaoDto("AC", "AC", 0)], []);
         salvar.Value!.Avaliacao.Modalidades.Should().BeEquivalentTo(concorre);
         ler.Value!.Avaliacao.Modalidades.Should().BeEquivalentTo(concorre);
+    }
+
+    private async Task<Result<InscricaoDto>> SalvarRespostaAsync(UniPlusDbContext db, Guid processoId, string etag)
+    {
+        return await _cenario.SalvarAsync(
+            db, processoId,
+            new InscricaoRequest(null, new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+            {
+                ["CONCORRER_PCD"] = JsonSerializer.SerializeToElement(true),
+            }, null, null),
+            etag, Substitute.For<IConferenciaEnderecoGeo>());
     }
 }

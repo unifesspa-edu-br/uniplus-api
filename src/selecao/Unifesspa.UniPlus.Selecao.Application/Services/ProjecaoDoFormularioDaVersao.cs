@@ -51,7 +51,7 @@ public static class ProjecaoDoFormularioDaVersao
             : ProjetarFormulario(lida.Value!, finalidade, acervoDaComprovacao);
     }
 
-    private sealed record ConfiguracaoLida(JsonObject Envelope, GrafoConfiguracao Grafo, DefinicaoAvaliavel Avaliavel);
+    private sealed record ConfiguracaoLida(JsonObject Envelope, ConfiguracaoPublicada Configuracao, DefinicaoAvaliavel Avaliavel);
 
     private static Result<ConfiguracaoLida> LerConfiguracao(VersaoConfiguracao versao, IRegistroCodecsEnvelope registroCodecs)
     {
@@ -75,7 +75,7 @@ public static class ProjecaoDoFormularioDaVersao
         Result<DefinicaoAvaliavel> avaliavel = DefinicaoAvaliavelDoProcesso.DoCongelado(reidratado.Value!);
         return avaliavel.IsFailure
             ? Result<ConfiguracaoLida>.Failure(avaliavel.Error!)
-            : Result<ConfiguracaoLida>.Success(new ConfiguracaoLida(envelope, reidratado.Value!.Grafo, avaliavel.Value!));
+            : Result<ConfiguracaoLida>.Success(new ConfiguracaoLida(envelope, reidratado.Value!.Configuracao, avaliavel.Value!));
     }
 
     private static Result<JsonObject> LerEnvelope(VersaoConfiguracao versao, IRegistroCodecsEnvelope registroCodecs)
@@ -111,9 +111,9 @@ public static class ProjecaoDoFormularioDaVersao
             return ProjecaoDoCertamePublicado.Recusar<FormularioRenderizavelDto?>("referenciaTemporalDosFatos");
         }
 
-        GrafoConfiguracao grafo = lida.Grafo;
+        ConfiguracaoPublicada configuracaoPublicada = lida.Configuracao;
         return ProjecaoDoFormularioRenderizavel.Projetar(
-                finalidade, lida.Avaliavel, grafo.Formularios, grafo.FatosColetados, grafo.GruposColetados, grafo.TermosExigidos,
+                finalidade, lida.Avaliavel, configuracaoPublicada.Coleta.Formularios, [.. configuracaoPublicada.Coleta.Itens], configuracaoPublicada.Coleta.GruposColetados, configuracaoPublicada.Coleta.TermosExigidos,
                 dataReferenciaFatos) is { } formulario
             ? ComporFormulario(lida, finalidade, formulario, acervoDaComprovacao)
             : Result<FormularioRenderizavelDto?>.Success(null);
@@ -122,7 +122,7 @@ public static class ProjecaoDoFormularioDaVersao
     private static Result<FormularioRenderizavelDto?> ComporFormulario(
         ConfiguracaoLida lida, FinalidadeFormulario finalidade, FormularioRenderizavel formulario, DocumentosDoAtoNoAcervo? acervoDaComprovacao)
     {
-        FormularioProcesso doFormulario = lida.Grafo.Formularios.First(f => f.Finalidade == finalidade);
+        FormularioProcesso doFormulario = lida.Configuracao.Coleta.Formularios.First(f => f.Finalidade == finalidade);
         List<ExigenciaDocumentalCertameDto>? comprovacao = null;
         if (acervoDaComprovacao is not null
             && !TentarComprovacaoDocumental(lida.Envelope, doFormulario, formulario.Finalidade, acervoDaComprovacao, out comprovacao))
@@ -143,9 +143,9 @@ public static class ProjecaoDoFormularioDaVersao
             return (null, null);
         }
 
-        ConfiguracaoAvaliavel configuracao = ConfiguracaoAvaliavelDoProcesso.DoCongelado(lida.Grafo, lida.Avaliavel);
+        ConfiguracaoAvaliavel configuracao = ConfiguracaoAvaliavelDoProcesso.DoCongelado(lida.Configuracao, lida.Avaliavel);
         DependenciasDaAvaliacao daAvaliacao = Domain.Services.AvaliacaoDaInscricao.Dependencias(configuracao);
-        DependenciasDaAvaliacao doFator = Domain.Services.AvaliacaoDaInscricao.DependenciasDoFator(configuracao, lida.Grafo.BonusRegional);
+        DependenciasDaAvaliacao doFator = Domain.Services.AvaliacaoDaInscricao.DependenciasDoFator(configuracao, lida.Configuracao.Vagas.BonusRegional);
         return (new DependenciasDaAvaliacaoDto(daAvaliacao.Fatos, daAvaliacao.Grupos), new DependenciasDaAvaliacaoDto(doFator.Fatos, doFator.Grupos));
     }
 

@@ -35,20 +35,14 @@ public sealed class MontadorDoComprovanteTests
         Inscricao inscricao = Inscricao.Iniciar(ProcessoId, PersonasDeTeste.FernandaDrumond, "conta-1", "https://issuer", primeira.Id).Value!;
         ComprovanteNaPosicao posicao = new(Emitir(inscricao, Respostas(("APELIDO", "Nanda"))), 1, 2);
 
-        IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
-        processos.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([primeira, retificada]);
-        processos.ObterNomeAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns("PSS Medicina 2027");
-        processos.ObterNomeDaUnidadeAdministradoraAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns("Centro de Processos Seletivos");
-        IRegistroCodecsEnvelope registro = Substitute.For<IRegistroCodecsEnvelope>();
-        registro.Capacidades.Returns([new CapacidadeCodec(primeira.SchemaVersion, TemEncoder: true, TemDecoder: true, MotivoDaRecusa: null)]);
-        registro.Reidratar(primeira).Returns(Result<EnvelopeReidratado>.Success(Envelope([Texto("APELIDO", "Apelido")])));
-        registro.Reidratar(retificada).Returns(Result<EnvelopeReidratado>.Success(Envelope([Texto("APELIDO", "Como prefere ser chamada")])));
+        IProcessoSeletivoRepository processos = ProcessosComVersoes(primeira, retificada);
+        IRegistroCodecsEnvelope registro = RegistroComVersoes(primeira, retificada);
 
         Result<ComprovanteDaInscricaoDto> resultado = await NovoMontador(processos, registro).MontarAsync(inscricao, posicao, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         TodosOsItens(resultado.Value!).Should().ContainSingle().Which.Rotulo.Should().Be("Apelido");
-        resultado.Value!.UnidadeAdministradora.Should().Be("Centro de Processos Seletivos");
+        resultado.Value!.Processo.UnidadeAdministradora.Should().Be("Centro de Processos Seletivos");
         registro.DidNotReceive().Reidratar(retificada);
     }
 
@@ -65,4 +59,23 @@ public sealed class MontadorDoComprovanteTests
 
         resultado.Error!.Code.Should().Be("Snapshot.VigenteAusente");
     }
+
+    private static IProcessoSeletivoRepository ProcessosComVersoes(VersaoConfiguracao primeira, VersaoConfiguracao retificada)
+    {
+        IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
+        processos.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([primeira, retificada]);
+        processos.ObterNomeAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns("PSS Medicina 2027");
+        processos.ObterNomeDaUnidadeAdministradoraAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns("Centro de Processos Seletivos");
+        return processos;
+    }
+
+    private static IRegistroCodecsEnvelope RegistroComVersoes(VersaoConfiguracao primeira, VersaoConfiguracao retificada)
+    {
+        IRegistroCodecsEnvelope registro = Substitute.For<IRegistroCodecsEnvelope>();
+        registro.Capacidades.Returns([new CapacidadeCodec(primeira.SchemaVersion, TemEncoder: true, TemDecoder: true, MotivoDaRecusa: null)]);
+        registro.Reidratar(primeira).Returns(Result<EnvelopeReidratado>.Success(Envelope([Texto("APELIDO", "Apelido")])));
+        registro.Reidratar(retificada).Returns(Result<EnvelopeReidratado>.Success(Envelope([Texto("APELIDO", "Como prefere ser chamada")])));
+        return registro;
+    }
+
 }

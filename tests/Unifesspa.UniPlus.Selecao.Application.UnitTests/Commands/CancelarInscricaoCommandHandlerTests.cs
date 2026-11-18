@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Inscricoes;
 using Unifesspa.UniPlus.Selecao.Application.Services;
+using Unifesspa.UniPlus.Selecao.Application.Services.Inscricoes;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -44,16 +45,26 @@ public sealed class CancelarInscricaoCommandHandlerTests
     private static async Task<(Result Resultado, Inscricao Inscricao, IUnitOfWork UnitOfWork)> Cancelar(
         Func<Guid, Inscricao> inscricao, DateTimeOffset agora, string contaId = "conta-1", string? motivo = null)
     {
-        (VersaoConfiguracao versao, GrafoConfiguracao grafo) = SalvarDeTeste.MontarVersaoComItem(Item);
+        (VersaoConfiguracao versao, ConfiguracaoPublicada grafo) = SalvarDeTeste.MontarVersaoComItem(Item);
         Inscricao existente = inscricao(versao.Id);
-        PortasDaInscricaoDeTeste portas = new(ProcessoId);
-        portas.ComInscricao(Dono, existente);
-        DivulgacaoDeTeste.ConfigurarFixadaEDivulgada(
-            portas.Processos, portas.Codecs, grafo, (versao, DivulgacaoDeTeste.FimDoPeriodo), (versao, DivulgacaoDeTeste.FimDoPeriodo));
+        IInscricaoRepository repositorio = Substitute.For<IInscricaoRepository>();
+        repositorio.ObterAtivaPorProcessoECpfAsync(ProcessoId, Dono, Arg.Any<CancellationToken>()).Returns(existente);
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
+
         Result resultado = await CancelarInscricaoCommandHandler.Handle(
             new CancelarInscricaoCommand(ProcessoId, motivo, PrecondicaoIfMatch.DeTags([existente.ETag])),
-            portas.InscricaoAtiva(), portas.Periodo(), portas.Gravacao(), Usuario(contaId), new RelogioFixo(agora), CancellationToken.None);
-        return (resultado, existente, portas.UnitOfWork);
+            new InscricaoDoDono(repositorio, Usuario(contaId)),
+            new CancelamentoDaInscricaoPeloTitular(Periodo(versao, grafo), repositorio, Usuario(contaId), new RelogioFixo(agora)),
+            unitOfWork, CancellationToken.None);
+        return (resultado, existente, unitOfWork);
+    }
+
+    private static PeriodoDaInscricaoResolver Periodo(VersaoConfiguracao versao, ConfiguracaoPublicada grafo)
+    {
+        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
+        IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
+        DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
+        return new PeriodoDaInscricaoResolver(DivulgacaoDeTeste.Certame(ProcessoId), processoRepository, registroCodecs, DivulgacaoDeTeste.Fuso());
     }
 
     [Fact(DisplayName = "Cancelar a inscrição enviada, com as inscrições abertas, grava o cancelamento com o ator e o motivo")]
@@ -63,10 +74,10 @@ public sealed class CancelarInscricaoCommandHandlerTests
             DescartarRascunhoDaInscricaoCommandHandlerTests.Enviada, DivulgacaoDeTeste.DentroDoPeriodo, motivo: "Desisti");
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        inscricao.Situacao.Should().Be(SituacaoInscricao.Cancelada);
-        inscricao.CanceladaPor.Should().Be("conta-1");
-        inscricao.CanceladaEm.Should().Be(DivulgacaoDeTeste.DentroDoPeriodo);
-        inscricao.MotivoDoCancelamento.Should().Be("Desisti");
+        inscricao.Estado.Situacao.Should().Be(SituacaoInscricao.Cancelada);
+        inscricao.Estado.Cancelamento?.CanceladaPor.Should().Be("conta-1");
+        inscricao.Estado.Cancelamento?.CanceladaEm.Should().Be(DivulgacaoDeTeste.DentroDoPeriodo);
+        inscricao.Estado.Cancelamento?.MotivoDoCancelamento.Should().Be("Desisti");
         await unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -77,7 +88,7 @@ public sealed class CancelarInscricaoCommandHandlerTests
             DescartarRascunhoDaInscricaoCommandHandlerTests.Enviada, DivulgacaoDeTeste.DentroDoPeriodo.AddMonths(1));
 
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.ForaDoPeriodo);
-        inscricao.Situacao.Should().Be(SituacaoInscricao.Submetida);
+        inscricao.Estado.Situacao.Should().Be(SituacaoInscricao.Submetida);
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -109,6 +120,6 @@ public sealed class CancelarInscricaoCommandHandlerTests
             DescartarRascunhoDaInscricaoCommandHandlerTests.Enviada, DivulgacaoDeTeste.DentroDoPeriodo, contaId: "conta-outro");
 
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.DonoDivergente);
-        inscricao.Situacao.Should().Be(SituacaoInscricao.Submetida);
+        inscricao.Estado.Situacao.Should().Be(SituacaoInscricao.Submetida);
     }
 }

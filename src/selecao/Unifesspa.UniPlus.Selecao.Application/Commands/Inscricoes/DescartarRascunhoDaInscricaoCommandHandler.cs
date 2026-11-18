@@ -5,50 +5,36 @@ using Domain.Entities;
 using Kernel.Results;
 
 using Services;
+using Services.Inscricoes;
 
-using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
-/// <summary>
-/// Remove fisicamente o rascunho do dono do token. O rascunho não tem número nem comprovante, e guardar
-/// dado pessoal sem finalidade contraria a LGPD, e por isso os arquivos de documento saem também do
-/// armazenamento; a inscrição enviada nunca passa por aqui.
-/// </summary>
+/// <summary>Remove o rascunho do titular e confirma a remoção junto da agenda de limpeza dos arquivos.</summary>
 public static class DescartarRascunhoDaInscricaoCommandHandler
 {
     public static async Task<Result> Handle(
-        DescartarRascunhoDaInscricaoCommand command,
-        InscricaoAtivaDoCandidato inscricaoAtiva,
-        PeriodoDaInscricao periodo,
-        DescarteDoRascunho descarte,
-        IUserContext userContext,
-        TimeProvider timeProvider,
-        CancellationToken cancellationToken)
+        DescartarRascunhoDaInscricaoCommand command, InscricaoDoDono dono,
+        DescarteDaInscricao descarte, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
-        ArgumentNullException.ThrowIfNull(inscricaoAtiva);
-        ArgumentNullException.ThrowIfNull(periodo);
+        ArgumentNullException.ThrowIfNull(dono);
         ArgumentNullException.ThrowIfNull(descarte);
-        ArgumentNullException.ThrowIfNull(timeProvider);
-
-        Result<Inscricao> inscricao = await inscricaoAtiva
-            .ObterAsync(command.ProcessoSeletivoId, userContext, "descartar a inscrição", cancellationToken).ConfigureAwait(false);
+        ArgumentNullException.ThrowIfNull(unitOfWork);
+        Result<Inscricao> inscricao = await dono.ObterAtivaAsync(command.ProcessoSeletivoId, "descartar a inscrição", cancellationToken).ConfigureAwait(false);
         return inscricao.IsFailure
             ? Result.Failure(inscricao.Error!)
-            : await DescartarNoPeriodoAsync(command, inscricao.Value!, periodo, descarte, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+            : await DescartarEConfirmarAsync(inscricao.Value!, command, descarte, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async Task<Result> DescartarNoPeriodoAsync(
-        DescartarRascunhoDaInscricaoCommand command,
-        Inscricao inscricao,
-        PeriodoDaInscricao periodo,
-        DescarteDoRascunho descarte,
-        DateTimeOffset instante,
-        CancellationToken cancellationToken)
+    private static async Task<Result> DescartarEConfirmarAsync(
+        Inscricao inscricao, DescartarRascunhoDaInscricaoCommand command,
+        DescarteDaInscricao descarte, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
-        // Com as inscrições encerradas o rascunho não tem ação (AcoesPermitidas): a mesma regra da lista.
-        DomainError? foraDoPeriodo = await periodo.ConferirAsync(command.ProcessoSeletivoId, instante, cancellationToken).ConfigureAwait(false);
-        return foraDoPeriodo is not null
-            ? Result.Failure(foraDoPeriodo)
-            : await descarte.DescartarAsync(inscricao, command.Precondicao, cancellationToken).ConfigureAwait(false);
+        Result resultado = await descarte.DescartarAsync(inscricao, command.Precondicao, cancellationToken).ConfigureAwait(false);
+        if (resultado.IsSuccess)
+        {
+            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        return resultado;
     }
 }

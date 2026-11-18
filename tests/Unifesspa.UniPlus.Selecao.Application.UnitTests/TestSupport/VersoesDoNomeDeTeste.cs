@@ -17,7 +17,10 @@ internal static class VersoesDoNomeDeTeste
     public static (VersaoConfiguracao Versao, Result<EnvelopeReidratado> Envelope) VersaoComNome(string classificacao, string hipotese)
     {
         InscricaoAdministrativaDeTeste mundo = new InscricaoAdministrativaDeTeste(PersonasDeTeste.FernandaDrumond)
-            .Fato("NOME", classificacao, TipoRenderizacao.Texto, null, hipoteseLegal: hipotese);
+            .Fato("NOME", classificacao, TipoRenderizacao.Texto, null, new MetadadosDoFatoDeTeste
+            {
+                HipoteseLegal = hipotese,
+            });
         InscricaoAdministrativaDeTeste.Mundo montado = mundo.Montar();
         VersaoConfiguracao versao = montado.Processos.ObterVersoesAsync(mundo.ProcessoId, default).Result[0];
 
@@ -26,7 +29,7 @@ internal static class VersoesDoNomeDeTeste
 
     /// <summary>A oferta de curso que a versão nomeia.</summary>
     public static Guid OfertaDa(Result<EnvelopeReidratado> envelope) =>
-        envelope.Value!.Grafo.DistribuicaoVagas.Single().OfertaCursoOrigemId;
+        envelope.Value!.Configuracao.Vagas.DistribuicaoVagas.Single().OfertaCursoOrigemId;
 
     public static (VersaoConfiguracao Versao, Result<EnvelopeReidratado> Envelope) VersaoIlegivel() =>
         (VersaoComNome("PESSOAL", Hipotese).Versao, Result<EnvelopeReidratado>.Failure(new DomainError("Codec.Ilegivel", "Versão ilegível.")));

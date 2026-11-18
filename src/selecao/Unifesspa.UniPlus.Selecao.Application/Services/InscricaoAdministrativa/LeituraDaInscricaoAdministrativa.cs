@@ -16,22 +16,26 @@ public sealed class LeituraDaInscricaoAdministrativa
 {
     private readonly IProcessoSeletivoRepository _processos;
     private readonly IInscricaoRepository _inscricoes;
+    private readonly IComprovanteDaInscricaoRepository _comprovantes;
     private readonly IDocumentoDaInscricaoRepository _documentos;
     private readonly IRegistroCodecsEnvelope _registroCodecs;
 
     public LeituraDaInscricaoAdministrativa(
         IProcessoSeletivoRepository processos,
         IInscricaoRepository inscricoes,
+        IComprovanteDaInscricaoRepository comprovantes,
         IDocumentoDaInscricaoRepository documentos,
         IRegistroCodecsEnvelope registroCodecs)
     {
         ArgumentNullException.ThrowIfNull(processos);
         ArgumentNullException.ThrowIfNull(inscricoes);
+        ArgumentNullException.ThrowIfNull(comprovantes);
         ArgumentNullException.ThrowIfNull(documentos);
         ArgumentNullException.ThrowIfNull(registroCodecs);
 
         _processos = processos;
         _inscricoes = inscricoes;
+        _comprovantes = comprovantes;
         _documentos = documentos;
         _registroCodecs = registroCodecs;
     }
@@ -71,20 +75,20 @@ public sealed class LeituraDaInscricaoAdministrativa
             : new ConteudoDaInscricao(
                 inscricao,
                 envelope,
-                await ArquivosAsync(inscricao.Id, envelope.Grafo, cancellationToken).ConfigureAwait(false),
+                await ArquivosAsync(inscricao.Id, envelope.Configuracao, cancellationToken).ConfigureAwait(false),
                 await PrimeiroEnvioAsync(inscricao.Id, projecao, cancellationToken).ConfigureAwait(false),
                 await NumeroDoUltimoComprovanteAsync(inscricao.Id, cancellationToken).ConfigureAwait(false));
     }
 
     private async Task<IReadOnlyList<ArquivoAdministrativoDto>> ArquivosAsync(
-        Guid inscricaoId, GrafoConfiguracao grafo, CancellationToken cancellationToken)
+        Guid inscricaoId, ConfiguracaoPublicada configuracaoPublicada, CancellationToken cancellationToken)
     {
         IReadOnlyList<ApresentacaoDeDocumento> apresentacoes = await _documentos
             .ListarApresentacoesDaInscricaoAsync(inscricaoId, cancellationToken).ConfigureAwait(false);
         IReadOnlyList<ArquivoDaApresentacao> arquivos = await _documentos
             .ListarArquivosDaInscricaoAsync(inscricaoId, cancellationToken).ConfigureAwait(false);
 
-        return ArquivosAdministrativos.Montar(apresentacoes, arquivos, grafo);
+        return ArquivosAdministrativos.Montar(apresentacoes, arquivos, configuracaoPublicada);
     }
 
     private async Task<DateTimeOffset?> PrimeiroEnvioAsync(Guid inscricaoId, ProjecaoDaInscricao projecao, CancellationToken cancellationToken)
@@ -94,7 +98,7 @@ public sealed class LeituraDaInscricaoAdministrativa
             return null;
         }
 
-        IReadOnlyDictionary<Guid, DateTimeOffset> envios = await _inscricoes
+        IReadOnlyDictionary<Guid, DateTimeOffset> envios = await _comprovantes
             .ObterPrimeirosEnviosAsync([inscricaoId], cancellationToken).ConfigureAwait(false);
 
         return envios.TryGetValue(inscricaoId, out DateTimeOffset primeiro) ? primeiro : null;
@@ -105,7 +109,7 @@ public sealed class LeituraDaInscricaoAdministrativa
     /// </summary>
     private async Task<int?> NumeroDoUltimoComprovanteAsync(Guid inscricaoId, CancellationToken cancellationToken)
     {
-        IReadOnlyList<EmissaoDoComprovante> emissoes = await _inscricoes
+        IReadOnlyList<EmissaoDoComprovante> emissoes = await _comprovantes
             .ObterEmissoesAsync([inscricaoId], cancellationToken).ConfigureAwait(false);
 
         return ComprovanteNaPosicao.NumeroDoUltimo(emissoes.Count);

@@ -21,17 +21,16 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// conferência roda depois dela; o município de campo cuja UF a avaliação não resolveu não é conferido, porque o campo
 /// já tem recusa.
 /// </summary>
-public static class ConferenciaDosMunicipiosDaInscricao
+public sealed class ConferenciaDosMunicipiosDaInscricao(IConferenciaEnderecoGeo conferencia)
 {
     /// <param name="camposRecusados">Os campos que já têm recusa: o município deles não é conferido.</param>
-    public static async Task<ResultadoDaConferenciaDosMunicipios> ConferirAsync(
+    public async Task<ResultadoDaConferenciaDosMunicipios> ConferirAsync(
         DefinicaoFormulario definicao,
         RespostasAdmitidas admitidas,
         AvaliacaoFormulario avaliacao,
         IReadOnlyDictionary<string, JsonElement> respostas,
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos,
         IReadOnlySet<string> camposRecusados,
-        IConferenciaEnderecoGeo conferencia,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(definicao);
@@ -45,32 +44,8 @@ public static class ConferenciaDosMunicipiosDaInscricao
         Dictionary<string, string> ufDoMunicipio = UfDeCadaCampoDeMunicipio(definicao, admitidas);
         ApuracaoDosMunicipios apuracao = new(conferencia, camposRecusados);
 
-        foreach (AvaliacaoItem item in avaliacao.Itens.Where(i => ufDoMunicipio.ContainsKey(i.FatoCodigo)))
-        {
-            await apuracao.ConferirAsync(
-                item.FatoCodigo, respostas, avaliacao.Fatos, avaliacao.Fatos, ufDoMunicipio[item.FatoCodigo], cancellationToken).ConfigureAwait(false);
-        }
-
-        foreach (AvaliacaoGrupo grupo in avaliacao.Grupos.Where(g => g.Estado != EstadoFato.NaoAplicavel && grupos.ContainsKey(g.Codigo)))
-        {
-            // O id repetido já é recusa de forma do envio; a conferência fica com a primeira ocorrência de cada id.
-            Dictionary<string, OcorrenciaDeGrupoInscricao> respondidaPorId = [];
-            foreach (OcorrenciaDeGrupoInscricao ocorrenciaRespondida in grupos[grupo.Codigo])
-            {
-                respondidaPorId.TryAdd(ocorrenciaRespondida.Id, ocorrenciaRespondida);
-            }
-
-            foreach (AvaliacaoOcorrencia ocorrencia in grupo.Ocorrencias.Where(o => respondidaPorId.ContainsKey(o.Id)))
-            {
-                foreach (AvaliacaoItem subitem in ocorrencia.Itens.Where(i => ufDoMunicipio.ContainsKey(i.FatoCodigo)))
-                {
-                    await apuracao.ConferirAsync(
-                        subitem.FatoCodigo, respondidaPorId[ocorrencia.Id].Respostas, ocorrencia.Fatos, avaliacao.Fatos,
-                        ufDoMunicipio[subitem.FatoCodigo], cancellationToken, caminho: $"{grupo.Codigo}.{ocorrencia.Id}").ConfigureAwait(false);
-                }
-            }
-        }
-
+        await apuracao.ConferirItensAsync(avaliacao, respostas, ufDoMunicipio, cancellationToken).ConfigureAwait(false);
+        await apuracao.ConferirGruposAsync(avaliacao, grupos, ufDoMunicipio, cancellationToken).ConfigureAwait(false);
         return apuracao.Resultado();
     }
 
@@ -103,6 +78,46 @@ public static class ConferenciaDosMunicipiosDaInscricao
 
         public ResultadoDaConferenciaDosMunicipios Resultado() => new(_recusas, _nomes, GeoIndisponivel);
 
+        public async Task ConferirItensAsync(
+            AvaliacaoFormulario avaliacao, IReadOnlyDictionary<string, JsonElement> respostas,
+            Dictionary<string, string> ufDoMunicipio, CancellationToken cancellationToken)
+        {
+            foreach (AvaliacaoItem item in avaliacao.Itens.Where(i => ufDoMunicipio.ContainsKey(i.FatoCodigo)))
+            {
+                await ConferirAsync(item.FatoCodigo, respostas, avaliacao.Fatos, avaliacao.Fatos,
+                    ufDoMunicipio[item.FatoCodigo], cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        public async Task ConferirGruposAsync(
+            AvaliacaoFormulario avaliacao, IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos,
+            Dictionary<string, string> ufDoMunicipio, CancellationToken cancellationToken)
+        {
+            foreach (AvaliacaoGrupo grupo in avaliacao.Grupos.Where(g => g.Estado != EstadoFato.NaoAplicavel && grupos.ContainsKey(g.Codigo)))
+            {
+                Dictionary<string, OcorrenciaDeGrupoInscricao> respondidas = [];
+                foreach (OcorrenciaDeGrupoInscricao respondida in grupos[grupo.Codigo])
+                {
+                    respondidas.TryAdd(respondida.Id, respondida);
+                }
+                await ConferirOcorrenciasAsync(grupo, respondidas, avaliacao.Fatos, ufDoMunicipio, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        private async Task ConferirOcorrenciasAsync(
+            AvaliacaoGrupo grupo, Dictionary<string, OcorrenciaDeGrupoInscricao> respondidas,
+            IReadOnlyDictionary<string, FatoResolvido> fatosDoCandidato, Dictionary<string, string> ufDoMunicipio, CancellationToken cancellationToken)
+        {
+            foreach (AvaliacaoOcorrencia ocorrencia in grupo.Ocorrencias.Where(o => respondidas.ContainsKey(o.Id)))
+            {
+                foreach (AvaliacaoItem item in ocorrencia.Itens.Where(i => ufDoMunicipio.ContainsKey(i.FatoCodigo)))
+                {
+                    await ConferirAsync(item.FatoCodigo, respondidas[ocorrencia.Id].Respostas, ocorrencia.Fatos, fatosDoCandidato,
+                        ufDoMunicipio[item.FatoCodigo], cancellationToken, caminho: $"{grupo.Codigo}.{ocorrencia.Id}").ConfigureAwait(false);
+                }
+            }
+        }
+
         /// <summary>Confere o município do campo; com o Geo já fora do ar, as demais conferências não valem a espera.</summary>
         public async Task ConferirAsync(
             string fatoCodigo,
@@ -114,21 +129,33 @@ public static class ConferenciaDosMunicipiosDaInscricao
             string? caminho = null)
         {
             string campo = caminho is null ? fatoCodigo : $"{caminho}.{fatoCodigo}";
-            if (GeoIndisponivel is not null
-                || camposRecusados.Contains(campo)
-                || !fatosDoEscopo.TryGetValue(fatoCodigo, out FatoResolvido? fato) || fato.Estado == EstadoFato.NaoAplicavel
-                || !respostasDoEscopo.TryGetValue(fatoCodigo, out JsonElement resposta) || ValorDeMunicipio.Codigo(resposta) is not { } codigo
+            if (GeoIndisponivel is not null || camposRecusados.Contains(campo)
+                || MunicipioConferivel(fatoCodigo, respostasDoEscopo, fatosDoEscopo) is not { } codigo
                 || UfResolvida(fatoDaUf, fatosDoEscopo, fatosDoCandidato) is not { } uf)
             {
                 return;
             }
+            Result<string> conferido = await MunicipioConferidoAsync(codigo, uf, cancellationToken).ConfigureAwait(false);
+            Registrar(codigo, campo, conferido);
+        }
 
+        private static string? MunicipioConferivel(
+            string fatoCodigo, IReadOnlyDictionary<string, JsonElement> respostas, IReadOnlyDictionary<string, FatoResolvido> fatos) =>
+            fatos.TryGetValue(fatoCodigo, out FatoResolvido? fato) && fato.Estado != EstadoFato.NaoAplicavel
+                && respostas.TryGetValue(fatoCodigo, out JsonElement resposta) ? ValorDeMunicipio.Codigo(resposta) : null;
+
+        private async Task<Result<string>> MunicipioConferidoAsync(string codigo, string uf, CancellationToken cancellationToken)
+        {
             if (!_conferidos.TryGetValue((codigo, uf), out Result<string>? conferido))
             {
                 conferido = await conferencia.ConferirMunicipioAsync(codigo, uf, cancellationToken).ConfigureAwait(false);
                 _conferidos[(codigo, uf)] = conferido;
             }
+            return conferido;
+        }
 
+        private void Registrar(string codigo, string campo, Result<string> conferido)
+        {
             if (conferido.IsSuccess)
             {
                 _nomes[codigo] = conferido.Value!;

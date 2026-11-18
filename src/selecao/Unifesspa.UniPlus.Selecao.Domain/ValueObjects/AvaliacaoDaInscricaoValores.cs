@@ -6,9 +6,11 @@ using Entities;
 
 using Enums;
 
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
 /// <summary>
 /// A configuração do processo que a avaliação da inscrição lê — a congelada na versão que a inscrição
@@ -57,43 +59,35 @@ public sealed record EntradaDaAvaliacaoDaInscricao(
     /// </summary>
     /// <param name="definicoes">A definição de cada resposta e de cada fato conhecido, pelo código do fato; diz quais são município.</param>
     public static EntradaDaAvaliacaoDaInscricao Montar(
-        IReadOnlyDictionary<string, DefinicaoDaResposta> definicoes,
-        IReadOnlyDictionary<string, JsonElement> respostas,
-        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaRespondida>> grupos,
-        IReadOnlyDictionary<string, FatoResolvido> fatosConhecidos,
-        IReadOnlySet<string> etapasConcluidas,
-        EnvioDasRespostas? envio,
-        IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes,
-        bool naFaseDaInscricao = false)
+        IReadOnlyDictionary<string, DefinicaoDaResposta> definicoes, EntradaDaAvaliacaoDaInscricao entrada)
     {
         ArgumentNullException.ThrowIfNull(definicoes);
-        ArgumentNullException.ThrowIfNull(respostas);
-        ArgumentNullException.ThrowIfNull(grupos);
-        ArgumentNullException.ThrowIfNull(fatosConhecidos);
-
-        bool EhMunicipio(string fatoCodigo) => definicoes.TryGetValue(fatoCodigo, out DefinicaoDaResposta? definicao) && definicao.EhMunicipio;
-
-        Dictionary<string, JsonElement> ComoCodigos(IReadOnlyDictionary<string, JsonElement> valores) =>
-            valores.ToDictionary(
-                v => v.Key, v => EhMunicipio(v.Key) ? ValorDeMunicipio.ComoCodigo(v.Value) : v.Value, StringComparer.Ordinal);
-
-        return new EntradaDaAvaliacaoDaInscricao(
-            ComoCodigos(respostas),
-            grupos.ToDictionary(
-                static g => g.Key,
-                g => (IReadOnlyList<OcorrenciaRespondida>)[.. g.Value.Select(o => new OcorrenciaRespondida(o.Id, ComoCodigos(o.Respostas)))],
-                StringComparer.Ordinal),
-            fatosConhecidos.ToDictionary(
-                f => f.Key,
-                f => EhMunicipio(f.Key) && f.Value is { Estado: EstadoFato.Resolvido, Valor: { } valor }
-                    ? FatoResolvido.Resolvido(ValorDeMunicipio.ComoCodigo(valor))
-                    : f.Value,
-                StringComparer.Ordinal),
-            etapasConcluidas,
-            envio,
-            apresentacoes,
-            naFaseDaInscricao);
+        ArgumentNullException.ThrowIfNull(entrada);
+        ArgumentNullException.ThrowIfNull(entrada.Respostas, nameof(entrada));
+        ArgumentNullException.ThrowIfNull(entrada.Grupos, nameof(entrada));
+        ArgumentNullException.ThrowIfNull(entrada.FatosConhecidos, nameof(entrada));
+        return entrada with
+        {
+            Respostas = ComoCodigos(definicoes, entrada.Respostas),
+            Grupos = entrada.Grupos.ToDictionary(static g => g.Key,
+                g => (IReadOnlyList<OcorrenciaRespondida>)[.. g.Value.Select(o => new OcorrenciaRespondida(o.Id, ComoCodigos(definicoes, o.Respostas)))], StringComparer.Ordinal),
+            FatosConhecidos = entrada.FatosConhecidos.ToDictionary(static f => f.Key,
+                f => ComoCodigo(definicoes, f.Key, f.Value), StringComparer.Ordinal),
+        };
     }
+
+    private static Dictionary<string, JsonElement> ComoCodigos(
+        IReadOnlyDictionary<string, DefinicaoDaResposta> definicoes, IReadOnlyDictionary<string, JsonElement> valores) =>
+        valores.ToDictionary(static v => v.Key,
+            v => EhMunicipio(definicoes, v.Key) ? ValorDeMunicipio.ComoCodigo(v.Value) : v.Value, StringComparer.Ordinal);
+
+    private static FatoResolvido ComoCodigo(IReadOnlyDictionary<string, DefinicaoDaResposta> definicoes, string codigo, FatoResolvido fato) =>
+        EhMunicipio(definicoes, codigo) && fato is { Estado: EstadoFato.Resolvido, Valor: { } valor }
+            ? FatoResolvido.Resolvido(ValorDeMunicipio.ComoCodigo(valor)) : fato;
+
+    private static bool EhMunicipio(IReadOnlyDictionary<string, DefinicaoDaResposta> definicoes, string codigo) =>
+        definicoes.TryGetValue(codigo, out DefinicaoDaResposta? definicao) && definicao.EhMunicipio;
+
 }
 
 /// <summary>
@@ -121,7 +115,29 @@ public sealed record ResultadoDaAvaliacaoDaInscricao(
 public sealed record DocumentosDaInscricao(
     IReadOnlyList<DocumentoAvaliado> Itens,
     IReadOnlyDictionary<Guid, IReadOnlyList<PendenciaDaAvaliacao>> PendenciasPorFase,
-    IReadOnlyList<DocumentoAusente> Ausentes);
+    IReadOnlyList<DocumentoAusente> Ausentes)
+{
+    /// <summary>Cada ausência obrigatória recusa o envio; arquivo ainda em verificação pede espera (UNI-REQ-0028).</summary>
+    public IEnumerable<FieldError> RecusasDosAusentes(IReadOnlySet<(Guid ExigenciaId, string? OcorrenciaId)>? emVerificacao = null) =>
+        Ausentes.Select(ausente => RecusaDoAusente(ausente, emVerificacao));
+
+    private static FieldError RecusaDoAusente(DocumentoAusente ausente, IReadOnlySet<(Guid ExigenciaId, string? OcorrenciaId)>? emVerificacao)
+    {
+        string campo = $"documentos.{ausente.Alternativas[0].Id}" + (ausente.OcorrenciaId is { } ocorrencia ? $".{ocorrencia}" : string.Empty);
+        return new FieldError(campo, emVerificacao is not null && ausente.Alternativas.Any(d => emVerificacao.Contains((d.Id, ausente.OcorrenciaId)))
+            ? new DomainError(InscricaoErrorCodes.DocumentoObrigatorioEmVerificacao,
+                "Aguarde a verificação completa dos documentos obrigatórios para enviar a inscrição.")
+            : RecusaDaFalta(ausente));
+    }
+
+    private static DomainError RecusaDaFalta(DocumentoAusente ausente)
+    {
+        string nomes = string.Join(" ou ", ausente.Alternativas.Select(static d => d.TipoDocumentoNome));
+        return new DomainError(InscricaoErrorCodes.DocumentoObrigatorioAusente, ausente.Alternativas.Count == 1
+            ? $"Envie o documento obrigatório: {nomes}."
+            : $"Envie os documentos obrigatórios conforme o edital: {nomes}.");
+    }
+}
 
 /// <summary>
 /// Um documento obrigatório que falta: a exigência, ou as alternativas de um grupo "um ou outro" de que

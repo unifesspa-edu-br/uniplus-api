@@ -38,7 +38,18 @@ internal static class FormularioDoEnvioDeTeste
     /// documento de estrangeiro), órgão emissor da lista (sem o nome do outro órgão), não deseja nome
     /// social, tipo de endereço urbano (sem comunidade).
     /// </summary>
-    internal static Dictionary<string, JsonElement> RespostasDoConjuntoBasico(Cpf cpf) => new(StringComparer.Ordinal)
+    internal static Dictionary<string, JsonElement> RespostasDoConjuntoBasico(Cpf cpf)
+    {
+        Dictionary<string, JsonElement> respostas = RespostasDeIdentificacao(cpf);
+        foreach ((string codigo, JsonElement valor) in RespostasComplementares())
+        {
+            respostas.Add(codigo, valor);
+        }
+
+        return respostas;
+    }
+
+    private static Dictionary<string, JsonElement> RespostasDeIdentificacao(Cpf cpf) => new(StringComparer.Ordinal)
     {
         ["NOME"] = JsonSerializer.SerializeToElement(PersonasDeTeste.NomeFernandaDrumond),
         ["DESEJA_NOME_SOCIAL"] = JsonSerializer.SerializeToElement(false),
@@ -53,6 +64,10 @@ internal static class FormularioDoEnvioDeTeste
         ["NATURALIDADE_MUNICIPIO"] = JsonSerializer.SerializeToElement("1501402"),
         ["NOME_MAE"] = JsonSerializer.SerializeToElement("Maria Drumond"),
         ["ESTADO_CIVIL"] = JsonSerializer.SerializeToElement("SOLTEIRO"),
+    };
+
+    private static Dictionary<string, JsonElement> RespostasComplementares() => new(StringComparer.Ordinal)
+    {
         ["SEXO"] = JsonSerializer.SerializeToElement("FEMININO"),
         ["SEXO_CIVIL"] = JsonSerializer.SerializeToElement("FEMININO"),
         ["IDENTIDADE_GENERO"] = JsonSerializer.SerializeToElement("PREFIRO_NAO_INFORMAR"),
@@ -73,7 +88,7 @@ internal static class FormularioDoEnvioDeTeste
     /// finalidade; <paramref name="outrosItens"/> e <paramref name="grupos"/> entram na mesma seção, e
     /// <paramref name="ajustar"/> muda o processo antes de a versão o congelar.
     /// </summary>
-    internal static (VersaoConfiguracao Versao, GrafoConfiguracao Grafo, VersaoTermoEscolhida Termo) MontarVersaoComItemObrigatorioETermo(
+    internal static (VersaoConfiguracao Versao, ConfiguracaoPublicada Configuracao, VersaoTermoEscolhida Termo) MontarVersaoComItemObrigatorioETermo(
         IReadOnlyList<FatoColetado>? outrosItens = null, IReadOnlyList<GrupoColetado>? grupos = null, Action<ProcessoSeletivo>? ajustar = null,
         Func<ProcessoSeletivo, (IReadOnlyList<DocumentoExigido> Documentos, IReadOnlyList<NoExigencia> Nos)>? exigencias = null)
     {
@@ -87,7 +102,7 @@ internal static class FormularioDoEnvioDeTeste
             "o termo não cita fato nenhum, então não tem citação pendente de garantir");
         ajustar?.Invoke(processoBase);
 
-        return (VersaoComDataDeReferenciaFixa(), GrafoDoProcesso(processoBase, exigencias), versaoDoTermo);
+        return (VersaoComDataDeReferenciaFixa(), ConfiguracaoDoProcesso(processoBase, exigencias), versaoDoTermo);
     }
 
     internal static FatoColetado ItemApelidoObrigatorio() => FatoColetado.Criar(
@@ -97,21 +112,21 @@ internal static class FormularioDoEnvioDeTeste
     internal static TermoExigidoFormulario TermoDeVeracidade(VersaoTermoEscolhida versaoDoTermo) => TermoExigidoFormulario.Criar(
         "TERMO_VERACIDADE", 0, versaoDoTermo, exibicao: null, Obrigatoriedade.Sempre, FinalidadeFormulario.Inscricao).Value!;
 
-    internal static GrafoConfiguracao GrafoDoProcesso(
+    internal static ConfiguracaoPublicada ConfiguracaoDoProcesso(
         ProcessoSeletivo processoBase, Func<ProcessoSeletivo, (IReadOnlyList<DocumentoExigido> Documentos, IReadOnlyList<NoExigencia> Nos)>? exigencias)
     {
         (IReadOnlyList<DocumentoExigido> documentos, IReadOnlyList<NoExigencia> nos) =
             exigencias?.Invoke(processoBase) ?? ([.. processoBase.DocumentosExigidos], []);
 
-        return new GrafoConfiguracao(
-            [.. processoBase.Etapas], processoBase.AtendimentoEspecializado!, [.. processoBase.DistribuicaoVagas],
-            processoBase.BonusRegional, [.. processoBase.CriteriosDesempate], processoBase.Classificacao!,
-            [.. processoBase.CronogramaFases], documentos, nos, null,
-            fatosColetados: [.. processoBase.FatosColetados],
-            formularios: [.. processoBase.Formularios],
-            termosExigidos: [.. processoBase.TermosExigidos],
-            gruposColetados: [.. processoBase.GruposColetados],
-            numeroDeOpcoesDeCurso: 1);
+        return new ConfiguracaoPublicada(
+            new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, [.. processoBase.CronogramaFases]),
+            new AvaliacaoDeclarada([.. processoBase.Etapas], [.. processoBase.CriteriosDesempate], processoBase.Classificacao!),
+            new VagasDeclaradas([.. processoBase.DistribuicaoVagas], 1, processoBase.BonusRegional is not null,
+                processoBase.BonusRegional, null, processoBase.AtendimentoEspecializado!),
+            new ExigenciasDeclaradas(documentos, nos),
+            new ColetaDeclarada(ConfiguracaoPublicadaDeTeste.CamposDaColeta([.. processoBase.FatosColetados], [.. processoBase.GruposColetados]), [.. processoBase.GruposColetados], [.. processoBase.Formularios], [.. processoBase.TermosExigidos],
+                [], [], null),
+            new DivulgacaoETaxaDeclaradas(null, null), null);
     }
 
     // documentosExigidos.dataReferenciaFatos congelada: o conjunto básico traz DATA_NASCIMENTO,
@@ -122,14 +137,14 @@ internal static class FormularioDoEnvioDeTeste
         Guid.CreateVersion7(), "user-conta-1", new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero));
 
     internal static InscricaoRequest RequestComApelidoETermoAceito(
-        Cpf cpf, VersaoTermoEscolhida termo, GrafoConfiguracao grafo, string apelido = "Nanda")
+        Cpf cpf, VersaoTermoEscolhida termo, ConfiguracaoPublicada configuracao, string apelido = "Nanda")
     {
         Dictionary<string, JsonElement> respostas = RespostasDoConjuntoBasico(cpf);
         respostas["APELIDO"] = JsonSerializer.SerializeToElement(apelido);
-        return new(OfertaDo(grafo), respostas, null, [new AceiteDeTermoInput("TERMO_VERACIDADE", termo.VersaoId, termo.Hash)]);
+        return new(OfertaDo(configuracao), respostas, null, [new AceiteDeTermoInput("TERMO_VERACIDADE", termo.VersaoId, termo.Hash)]);
     }
 
-    internal static Guid OfertaDo(GrafoConfiguracao grafo) => grafo.DistribuicaoVagas[0].OfertaCursoOrigemId;
+    internal static Guid OfertaDo(ConfiguracaoPublicada configuracao) => configuracao.Vagas.DistribuicaoVagas[0].OfertaCursoOrigemId;
 
     /// <summary>Um booleano que, respondido "não", esconde o que depende dele.</summary>
     internal static FatoColetado Pergunta(string fato, int ordem) => FatoColetado.Criar(

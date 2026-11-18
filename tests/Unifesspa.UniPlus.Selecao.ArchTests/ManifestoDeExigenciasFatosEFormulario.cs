@@ -11,6 +11,11 @@ internal static class ManifestoDeExigenciasFatosEFormulario
 {
     internal static readonly Dictionary<Type, (string[] Congeladas, (string Propriedade, string Motivo)[] Excluidas)> Entradas = new()
     {
+        [typeof(ExigenciasDeclaradas)] = (["DocumentosExigidos", "NosExigencia"], []),
+        [typeof(ColetaDeclarada)] = (
+            ["Campos", "GruposColetados", "Formularios", "TermosExigidos", "OpcoesDeclaradas", "RegrasDerivacao", "ReferenciaTemporalFatos"],
+            [("Itens", "Projeção de Campos que exclui os campos de grupos repetíveis.")]),
+
         // Documentos exigidos (Story #554, PR #903) — exigencias[] real, CA-09 (exigenciaId
         // estável). Aplicabilidade entra porque é o que o resolvedor (PR #903, fora deste
         // bloco) consome para correlacionar apresentação↔exigência.
@@ -41,12 +46,16 @@ internal static class ManifestoDeExigenciasFatosEFormulario
         [typeof(NoExigencia)] = (
             [
                 "NoPaiId", "Ordem", "Tipo", "DocumentoExigidoId", "QuantidadeMinima", "Consequencia", "Filhos",
-                "BasesLegais", "ChaveDistincao", "DataReferencia", "OcorrenciasEsperadas", "RepetePorEntidade",
+                "BasesLegais", "Distincao", "RepetePorEntidade",
             ],
             [
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
                 ("DocumentoExigido", "Navegação da folha — o envelope congela DocumentoExigidoId (como `exigenciaId`, referenciando documentosExigidos.exigencias[]), não o objeto/conteúdo duplicado."),
             ]),
+
+        [typeof(DistincaoDasApresentacoes)] = (
+            ["Chave", "DataReferencia", "OcorrenciasEsperadas"],
+            [("ConferivelPelaContagem", "Derivada da chave e da ausência de ocorrências esperadas; não acrescenta conteúdo ao envelope.")]),
 
         [typeof(NoExigenciaBaseLegal)] = (
             ["Referencia", "Abrangencia", "Status", "Observacao"],

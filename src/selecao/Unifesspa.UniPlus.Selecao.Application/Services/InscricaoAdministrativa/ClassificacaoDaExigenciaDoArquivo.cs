@@ -46,9 +46,7 @@ public sealed class ClassificacaoDaExigenciaDoArquivo
 
     private async Task<ClassificacaoDeProtecao?> CongeladaAsync(Guid exigenciaId, VinculoDaInscricao inscricao, CancellationToken cancellationToken)
     {
-        Result<ContextoDaVersaoFixada> contexto = await ContextoDaVersaoFixadaResolver.ResolverAsync(
-            inscricao.VersaoFormularioId, inscricao.ProcessoSeletivoId, _processos, _registroCodecs,
-            inscricao.OfertaCursoId, inscricao.OfertaCursoSegundaOpcaoId, cancellationToken).ConfigureAwait(false);
+        Result<ContextoDaVersaoFixada> contexto = await new ContextoDaVersaoFixadaResolver(_processos, _registroCodecs).ResolverAsync(inscricao.VersaoFormularioId, inscricao.ProcessoSeletivoId, inscricao.OfertaCursoId, inscricao.OfertaCursoSegundaOpcaoId, cancellationToken).ConfigureAwait(false);
 
         return contexto.IsSuccess
             && ExigenciaDaInscricao.Localizar(contexto.Value!.Configuracao.Arvore, exigenciaId) is { } localizada

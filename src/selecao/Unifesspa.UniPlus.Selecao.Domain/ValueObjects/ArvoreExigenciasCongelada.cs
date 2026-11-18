@@ -22,8 +22,8 @@ public sealed record ArvoreExigenciasCongelada
     public IReadOnlyList<NoExigencia> Raizes { get; }
 
     /// <summary>
-    /// Constrói a floresta a partir do grafo já reidratado de uma versão publicada —
-    /// <c>EnvelopeReidratado.Grafo.NosExigencia</c> (só as raízes, <c>NoPaiId == null</c>),
+    /// Constrói a floresta a partir da configuração reidratada de uma versão publicada —
+    /// <c>EnvelopeReidratado.Configuracao.Exigencias.NosExigencia</c> (só as raízes, <c>NoPaiId == null</c>),
     /// nunca <c>ProcessoSeletivo.NosExigencia</c> (a coleção viva plana).
     /// </summary>
     public static ArvoreExigenciasCongelada DeGrafoReidratado(IReadOnlyList<NoExigencia> raizes)

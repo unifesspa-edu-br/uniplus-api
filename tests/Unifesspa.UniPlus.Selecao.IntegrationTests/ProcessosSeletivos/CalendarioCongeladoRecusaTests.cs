@@ -124,23 +124,19 @@ public sealed class CalendarioCongeladoRecusaTests
 
         JsonObject payload = JsonNode.Parse(congelado.Bytes)!.AsObject();
         payload["calendarioDiasUteis"] = new JsonObject { ["presente"] = false };
-        if (ondeSobra == "etapa")
-        {
-            foreach (JsonNode? fase in payload["cronogramaFases"]!["fases"]!.AsArray())
-            {
-                fase!.AsObject()["regraRecurso"] = null;
-            }
-        }
-        else
-        {
-            foreach (JsonNode? etapa in payload["etapas"]!.AsArray())
-            {
-                etapa!.AsObject()["recursos"] = new JsonArray();
-            }
-        }
-
+        RemoverRecursos(payload, ondeSobra);
         return CorpusEnvelope.Registro.Reidratar(
             CorpusEnvelopeEntrada.VersaoDeAbertura(processo, PerfilCanonicoV1.Instancia.Serializar(payload)));
+    }
+
+    private static void RemoverRecursos(JsonObject payload, string ondeSobra)
+    {
+        bool recursoNaEtapa = ondeSobra == "etapa";
+        JsonArray itens = recursoNaEtapa ? payload["cronogramaFases"]!["fases"]!.AsArray() : payload["etapas"]!.AsArray();
+        foreach (JsonNode? item in itens)
+        {
+            item!.AsObject()[recursoNaEtapa ? "regraRecurso" : "recursos"] = recursoNaEtapa ? null : new JsonArray();
+        }
     }
 
     [Fact(DisplayName = "Calendário declarado ausente num processo cujo único recurso está numa etapa é recusado")]
@@ -172,7 +168,7 @@ public sealed class CalendarioCongeladoRecusaTests
             CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!.CalendarioDiasUteis!.DiasNaoUteis.Should().HaveCount(4);
+        resultado.Value!.DadosDeCatalogo.CalendarioDiasUteis!.DiasNaoUteis.Should().HaveCount(4);
     }
 
     [Fact(DisplayName = "Bloco presente com lista vazia é recusado")]
@@ -217,21 +213,19 @@ public sealed class CalendarioCongeladoRecusaTests
 
         JsonObject payload = JsonNode.Parse(congelado.Bytes)!.AsObject();
         JsonObject bloco = payload["calendarioDiasUteis"]!.AsObject();
-        if (campo == "versaoDataset")
-        {
-            bloco[campo] = decomposto;
-        }
-        else
-        {
-            Dia(bloco, "MUNICIPAL")[campo] = decomposto;
-        }
+        JsonObject destino = campo == "versaoDataset" ? bloco : Dia(bloco, "MUNICIPAL");
+        destino[campo] = decomposto;
 
         byte[] adulterados = System.Text.Encoding.UTF8.GetBytes(payload.ToJsonString());
         adulterados.Should().NotEqual(congelado.Bytes, "pré-condição: a mutação tem de mudar os bytes");
 
+        ConferirRecusaDeTextoDecomposto(processo, adulterados);
+    }
+
+    private static void ConferirRecusaDeTextoDecomposto(ProcessoSeletivo processo, byte[] adulterados)
+    {
         Result<EnvelopeReidratado> resultado = CorpusEnvelope.Registro.Reidratar(
             CorpusEnvelopeEntrada.VersaoDeAbertura(processo, adulterados));
-
         resultado.IsFailure.Should().BeTrue(
             "o encoder emite estes campos em NFC; aceitar a forma decomposta faria os bytes mudarem na recanonicalização");
     }

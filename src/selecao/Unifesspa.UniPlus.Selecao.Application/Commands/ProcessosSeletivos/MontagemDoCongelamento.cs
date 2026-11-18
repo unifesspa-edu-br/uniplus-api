@@ -16,7 +16,10 @@ public sealed class MontagemDoCongelamento(ISnapshotPublicacaoCanonicalizer cano
     internal PedidoDeCongelamento Montar(ConfiguracaoConferida conferida, DateTimeOffset instante)
     {
         EntradaCanonicalizacao entrada = conferida.Entrada;
-        SnapshotCanonico canonico = canonicalizer.Canonicalizar(entrada with { CalendarioDiasUteis = conferida.Cadastros.ContagemDePrazos.CalendarioVigente });
+        SnapshotCanonico canonico = canonicalizer.Canonicalizar(entrada with
+        {
+            DadosDeCatalogo = entrada.DadosDeCatalogo with { CalendarioDiasUteis = conferida.Cadastros.ContagemDePrazos.CalendarioVigente },
+        });
 
         return new PedidoDeCongelamento
         {

@@ -67,9 +67,9 @@ public sealed class VersoesDoDocumentoPersistidasTests(ProcessoSeletivoDbFixture
         await using UniPlusDbContext db = fixture.CreateDbContext();
         EnvelopeReidratado anterior = ApoioDoEnvelopeCodec.Reidratado(await LerAsync(db, abertura.Id));
         EnvelopeReidratado atual = ApoioDoEnvelopeCodec.Reidratado(await LerAsync(db, sucessora.Id));
-        anterior.Grafo.IdentificadorLegivel.Should().BeNull();
-        atual.Grafo.IdentificadorLegivel.Should().Be(declarado);
-        ConferenciaDoIdentificadorDaRetificacao.Conferir(atual.Grafo.IdentificadorLegivel, IdentificadoresDeTeste.Novo())
+        anterior.Configuracao.IdentificadorLegivel.Should().BeNull();
+        atual.Configuracao.IdentificadorLegivel.Should().Be(declarado);
+        ConferenciaDoIdentificadorDaRetificacao.Conferir(atual.Configuracao.IdentificadorLegivel, IdentificadoresDeTeste.Novo())
             .Should().ContainSingle().Which.Error.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentificadorLegivelImutavel);
     }
 

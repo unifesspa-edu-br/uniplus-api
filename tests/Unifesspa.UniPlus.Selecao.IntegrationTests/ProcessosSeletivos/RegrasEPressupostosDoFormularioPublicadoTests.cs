@@ -47,21 +47,37 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
 
         FormularioRenderizavelDto lido = await _cenario.LerPublicadoAsync(processo.Id);
 
+        RecorteDaFinalidade esperado = RecorteEsperado(processo, entrada);
+        ConferirRegras(lido, esperado);
+        ConferirConteudo(lido, esperado, processo);
+    }
+
+    private static RecorteDaFinalidade RecorteEsperado(ProcessoSeletivo processo, EntradaCanonicalizacao entrada)
+    {
         // A mesma montagem sobre a configuração viva, antes de passar pelo envelope: o que o front
         // interpreta é o que a configuração declarou.
-        EnvelopeReidratado vivo = new(
-            new GrafoConfiguracao(
-                [.. processo.Etapas], processo.AtendimentoEspecializado!, [.. processo.DistribuicaoVagas], processo.BonusRegional,
-                [.. processo.CriteriosDesempate], processo.Classificacao!, [.. processo.CronogramaFases], [.. processo.DocumentosExigidos], [], null,
-                fatosColetados: [.. processo.FatosColetados], regrasDerivacao: [.. processo.RegrasDerivacao], formularios: [.. processo.Formularios],
-                termosExigidos: [.. processo.TermosExigidos], gruposColetados: [.. processo.GruposColetados],
-            numeroDeOpcoesDeCurso: 1),
-            entrada.Dados, entrada.HashDocumento, entrada.FusoHorario, retificacao: null, conformidade: null,
-            valoresSelecionaveisCongelados: entrada.ValoresSelecionaveisCongelados, agregadosDosGrupos: entrada.AgregadosDosGrupos, apresentacaoDosPressupostos: entrada.ApresentacaoDosPressupostos);
+        EnvelopeReidratado vivo = EnvelopeVivo(processo, entrada);
         DefinicaoAvaliavel daConfiguracao = DefinicaoAvaliavelDoProcesso.DoCongelado(vivo).Value!;
-        RecorteDaFinalidade esperado = RecorteDaFinalidade.De(
+        return RecorteDaFinalidade.De(
             daConfiguracao.Definicao, DefinicaoDoProcesso.CodigoDaEtapa(FinalidadeFormulario.Inscricao, null), daConfiguracao.Ofertas);
+    }
 
+    private static EnvelopeReidratado EnvelopeVivo(ProcessoSeletivo processo, EntradaCanonicalizacao entrada) =>
+        new(
+            new ConfiguracaoPublicada(
+            new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, [.. processo.CronogramaFases]),
+            new AvaliacaoDeclarada([.. processo.Etapas], [.. processo.CriteriosDesempate], processo.Classificacao!),
+            new VagasDeclaradas([.. processo.DistribuicaoVagas], 1, processo.BonusRegional is not null,
+                processo.BonusRegional, null, processo.AtendimentoEspecializado!),
+            new ExigenciasDeclaradas([.. processo.DocumentosExigidos], []),
+            new ColetaDeclarada(ConfiguracaoPublicadaDeTeste.CamposDaColeta([.. processo.FatosColetados], [.. processo.GruposColetados]), [.. processo.GruposColetados], [.. processo.Formularios], [.. processo.TermosExigidos],
+                [], [.. processo.RegrasDerivacao], null),
+            new DivulgacaoETaxaDeclaradas(null, null), null),
+            entrada.Dados, entrada.HashDocumento, entrada.FusoHorario, retificacao: null, conformidade: null,
+            dadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(ValoresSelecionaveisCongelados: entrada.DadosDeCatalogo.ValoresSelecionaveisCongelados, AgregadosDosGrupos: entrada.DadosDeCatalogo.AgregadosDosGrupos, ApresentacaoDosPressupostos: entrada.DadosDeCatalogo.ApresentacaoDosPressupostos));
+
+    private static void ConferirRegras(FormularioRenderizavelDto lido, RecorteDaFinalidade esperado)
+    {
         // O envelope guarda as condições na ordem canônica: a equivalência é a da avaliação, em cada
         // combinação das respostas que as regras da inscrição citam.
         foreach ((string? corRaca, string? renda, bool rural) in
@@ -75,7 +91,10 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
                 JsonSerializer.Serialize(esperado.Regras.Avaliar(entradaDaAvaliacao).Value, JsonSerializerOptions.Web),
                 $"o envelope preserva cada regra, a oferta e os agregados (cor {corRaca ?? "sem resposta"}, renda {renda ?? "sem resposta"}, campo {rural})");
         }
+    }
 
+    private static void ConferirConteudo(FormularioRenderizavelDto lido, RecorteDaFinalidade esperado, ProcessoSeletivo processo)
+    {
         lido.Pressupostos.Select(static p => p.FatoCodigo).Should().Equal(esperado.Pressupostos);
         lido.Regras.Agregados.Should().BeEmpty("nenhuma regra da inscrição cita os agregados da composição familiar");
         lido.Regras.Etapas.Should().Contain(e => e.Exibicao != null, "a seção de pertencimento só aparece para quem se declarou preto");
@@ -87,23 +106,9 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
     public async Task Handle_PressupostoDerivado_ApresentacaoCongeladaNaPublicacao()
     {
         ProcessoSeletivo processo = CenarioDeFormularioPublicado.NovoProcessoComFatoDeSelecao(nameof(Handle_PressupostoDerivado_ApresentacaoCongeladaNaPublicacao));
-        processo.DefinirItens(
-        [
-            FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-            FatoColetado.Criar("ATENDIMENTO_NO_MUNICIPIO", 1, "Deseja atendimento no município?", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, [
-                CondicaoPrecondicaoFato.Criar(0, "MUNICIPIO_RESIDENCIA", Operador.Igual, JsonSerializer.SerializeToElement("1504208")).Value!,
-            ], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-        ]).IsSuccess.Should().BeTrue();
+        DefinirFatosDoMunicipio(processo);
 
-        DefinicaoAvaliavel naPublicacao = DefinicaoAvaliavelDoProcesso.DaConfiguracaoViva(processo, CatalogoComOMunicipio("Município de residência")).Value!;
-        const string hashDocumento = "3333333333333333333333333333333333333333333333333333333333333333";
-        DadosEdital dados = CenarioDeFormularioPublicado.DadosDoEdital(Guid.CreateVersion7());
-        SnapshotCanonico congelado = CenarioDeFormularioPublicado.Canonicalizar(new EntradaCanonicalizacao(
-            processo, dados, hashDocumento, FusoInstitucional.ZoneId,
-            ValoresSelecionaveisCongelados: naPublicacao.ValoresSelecionaveis,
-            ApresentacaoDosPressupostos: naPublicacao.ApresentacaoDosPressupostos,
-            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
-        await _cenario.PublicarEPersistirAsync(processo, dados, congelado, hashDocumento, "integration-test-user");
+        await PublicarComMunicipioAsync(processo);
 
         PressupostoRenderizavel publicado = Municipio(await _cenario.LerPublicadoAsync(processo.Id));
         (publicado.Rotulo, publicado.TipoRenderizacao).Should().Be(("Município de residência", "MUNICIPIO"));
@@ -113,6 +118,26 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
 
         Municipio(rascunho).Rotulo.Should().Be("Cidade onde mora", "o rascunho lê o catálogo vivo");
         Municipio(await _cenario.LerPublicadoAsync(processo.Id)).Rotulo.Should().Be("Município de residência", "o publicado lê o rótulo congelado na versão");
+    }
+
+    private async Task PublicarComMunicipioAsync(ProcessoSeletivo processo)
+    {
+        DefinicaoAvaliavel naPublicacao = DefinicaoAvaliavelDoProcesso.DaConfiguracaoViva(processo, CatalogoComOMunicipio("Município de residência")).Value!;
+        const string hashDocumento = "3333333333333333333333333333333333333333333333333333333333333333";
+        DadosEdital dados = CenarioDeFormularioPublicado.DadosDoEdital(Guid.CreateVersion7());
+        SnapshotCanonico congelado = CenarioDeFormularioPublicado.Canonicalizar(new EntradaCanonicalizacao(processo, dados, hashDocumento, FusoInstitucional.ZoneId, Retificacao: null, Conformidade: null, DadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(ValoresSelecionaveisCongelados: naPublicacao.ValoresSelecionaveis, ApresentacaoDosPressupostos: naPublicacao.ApresentacaoDosPressupostos, TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)));
+        await _cenario.PublicarEPersistirAsync(processo, dados, congelado, hashDocumento, "integration-test-user");
+    }
+
+    private static void DefinirFatosDoMunicipio(ProcessoSeletivo processo)
+    {
+        processo.DefinirItens(
+        [
+            FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
+            FatoColetado.Criar("ATENDIMENTO_NO_MUNICIPIO", 1, "Deseja atendimento no município?", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, [
+                CondicaoPrecondicaoFato.Criar(0, "MUNICIPIO_RESIDENCIA", Operador.Igual, JsonSerializer.SerializeToElement("1504208")).Value!,
+            ], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
+        ]).IsSuccess.Should().BeTrue();
     }
 
     private static FaseCronograma FaseDeHabilitacaoDepoisDasDemais(ProcessoSeletivo processo) => FaseCronograma.Criar(
@@ -132,23 +157,7 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
         // quem é maior de idade, faixa que o sistema calcula da data de nascimento na data de
         // referência dos fatos.
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(variante: 10);
-        FaseCronograma habilitacao = FaseDeHabilitacaoDepoisDasDemais(processo);
-        processo.DefinirCronogramaFases([.. processo.CronogramaFases, habilitacao], []).IsSuccess.Should().BeTrue();
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, habilitacao.Id, "Habilitação", FormularioDeTeste.Etapas())
-            .IsSuccess.Should().BeTrue();
-        processo.DefinirReferenciaTemporalFatos(
-            ReferenciaTemporalFatos.Criar(ReferenciaTipo.DataEspecifica, new DateOnly(2026, 1, 31), null).Value!)
-            .IsSuccess.Should().BeTrue();
-        Result itens = processo.DefinirItens(
-        [
-            FatoColetado.Criar("CERTIFICADO_EMITIDO", 0, "Certificado emitido", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, [
-                CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
-            ], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-            FatoColetado.Criar("DECLARACAO_MAIORIDADE", 1, "Declaração de maioridade", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, [
-                CondicaoPrecondicaoFato.Criar(0, "FAIXA_ETARIA", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!,
-            ], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-        ], finalidade: FinalidadeFormulario.Habilitacao);
-        itens.IsSuccess.Should().BeTrue(itens.Error?.Message);
+        DefinirHabilitacao(processo);
 
         EntradaCanonicalizacao entrada = CorpusEnvelopeEntrada.Entrada(processo);
         SnapshotCanonico congelado = CenarioDeFormularioPublicado.Canonicalizar(entrada);
@@ -156,6 +165,11 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
 
         FormularioRenderizavelDto lido = await _cenario.LerPublicadoAsync(processo.Id, FinalidadeFormulario.Habilitacao);
 
+        ConferirPressupostosDaHabilitacao(lido);
+    }
+
+    private static void ConferirPressupostosDaHabilitacao(FormularioRenderizavelDto lido)
+    {
         lido.Pressupostos.Select(static p => p.FatoCodigo).Should().Equal("COR_RACA", "FAIXA_ETARIA");
         PressupostoRenderizavel corRaca = lido.Pressupostos[0];
         corRaca.Rotulo.Should().Be("Cor ou raça");
@@ -166,6 +180,32 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
         faixaEtaria.TipoRenderizacao.Should().Be("NUMERO");
         faixaEtaria.CalculadoDe.Should().Equal(["DATA_NASCIMENTO"]);
         lido.DataReferenciaFatos.Should().Be(new DateOnly(2026, 1, 31), "a âncora da faixa etária é a congelada na publicação");
+    }
+
+    private static void DefinirHabilitacao(ProcessoSeletivo processo)
+    {
+        FaseCronograma habilitacao = FaseDeHabilitacaoDepoisDasDemais(processo);
+        processo.DefinirCronogramaFases([.. processo.CronogramaFases, habilitacao], []).IsSuccess.Should().BeTrue();
+        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, habilitacao.Id, "Habilitação", FormularioDeTeste.Etapas())
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirReferenciaTemporalFatos(
+            ReferenciaTemporalFatos.Criar(ReferenciaTipo.DataEspecifica, new DateOnly(2026, 1, 31), null).Value!)
+            .IsSuccess.Should().BeTrue();
+        DefinirItensDaHabilitacao(processo);
+    }
+
+    private static void DefinirItensDaHabilitacao(ProcessoSeletivo processo)
+    {
+        Result itens = processo.DefinirItens(
+        [
+            FatoColetado.Criar("CERTIFICADO_EMITIDO", 0, "Certificado emitido", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, [
+                CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
+            ], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
+            FatoColetado.Criar("DECLARACAO_MAIORIDADE", 1, "Declaração de maioridade", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, [
+                CondicaoPrecondicaoFato.Criar(0, "FAIXA_ETARIA", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!,
+            ], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
+        ], finalidade: FinalidadeFormulario.Habilitacao);
+        itens.IsSuccess.Should().BeTrue(itens.Error?.Message);
     }
 
     private static PressupostoRenderizavel Municipio(FormularioRenderizavelDto formulario) =>
@@ -196,15 +236,18 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
 
         return new EntradaAvaliacaoFormulario(
             respostas, new HashSet<string>(StringComparer.Ordinal), new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), Envio: null,
-            new Dictionary<string, IReadOnlyList<OcorrenciaRespondida>>(StringComparer.Ordinal)
-            {
-                ["COMPOSICAO_FAMILIAR"] =
-                [
-                    new("membro-1", new Dictionary<string, JsonElement>(StringComparer.Ordinal)
-                    {
-                        ["TRABALHADOR_RURAL"] = JsonSerializer.SerializeToElement(trabalhaNoCampo),
-                    }),
-                ],
-            });
+            Ocorrencias(trabalhaNoCampo));
     }
+
+    private static Dictionary<string, IReadOnlyList<OcorrenciaRespondida>> Ocorrencias(bool trabalhaNoCampo) =>
+        new(StringComparer.Ordinal)
+        {
+            ["COMPOSICAO_FAMILIAR"] =
+            [
+                new("membro-1", new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+                {
+                    ["TRABALHADOR_RURAL"] = JsonSerializer.SerializeToElement(trabalhaNoCampo),
+                }),
+            ],
+        };
 }

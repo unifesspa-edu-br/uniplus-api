@@ -14,7 +14,7 @@ internal sealed class CaminhosDoDocumentoNoEsquema
 
     internal static string DiretorioPublicado { get; } = Path.Join(AppContext.BaseDirectory, "Contratos", "selecao-configuracao", "v1");
 
-    internal static CaminhosDoDocumentoNoEsquema Publicado { get; } = new(DiretorioPublicado);
+    internal static CaminhosDoDocumentoNoEsquema Publicado => new(DiretorioPublicado);
 
     private readonly Dictionary<string, JsonNode> _arquivos = new(StringComparer.Ordinal);
     private readonly string _diretorio;

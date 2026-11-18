@@ -95,7 +95,7 @@ public sealed class CenarioDaPublicacaoDoProdutoDoEdital
             new PreparacaoDaPublicacaoDoProdutoDoEdital(
                 new ConferenciaDoProcessoDivulgado(Processos, Divulgados),
                 new LeituraDoInstanteDoComando(relogio ?? new RelogioFixo(Agora), new ResolvedorFusoDeTeste()),
-                new ConferenciaDoProdutoDoEdital(new GrafoVigenteDoProcesso(Processos, Codecs),
+                new ConferenciaDoProdutoDoEdital(new ConfiguracaoVigenteDoProcesso(Processos, Codecs),
                     new ConferenciaDoTipoDeAto(Tipos), Atos, new ConferenciaDoAtoCorrigido(Atos, Processos), Usuario),
                 new ConferenciaDosDocumentosDoAto(Documentos, Atos)),
             new PublicacaoDoAtoDoProcesso(Atos, Registro, UnitOfWork), CancellationToken.None);
@@ -117,15 +117,21 @@ public sealed class CenarioDaPublicacaoDoProdutoDoEdital
             ProcessoId, new DocumentoCongelado([1], Versao, "canonical-json/sha256@v1", new string('a', 64)),
             Guid.CreateVersion7(), "sub", Agora);
         Processos.ObterVersaoVigenteAsync(ProcessoId, Agora, Arg.Any<CancellationToken>()).Returns(versao);
-        Codecs.Reidratar(versao).Returns(_ => Result<EnvelopeReidratado>.Success(new EnvelopeReidratado(
-            new GrafoConfiguracao(
-                [.. processo.Etapas], processo.AtendimentoEspecializado!, [.. processo.DistribuicaoVagas],
-                processo.BonusRegional, [.. processo.CriteriosDesempate], processo.Classificacao!,
-                fases, [.. processo.DocumentosExigidos], [], null, numeroDeOpcoesDeCurso: 1),
-            DadosEdital.Criar("001/2027", Agora, Agora.AddDays(30), Guid.CreateVersion7()).Value!,
-            new string('a', 64), "America/Sao_Paulo", retificacao: null, conformidade: null,
-            tiposDeAtoCongelados: new Dictionary<string, TipoDeAtoCongelado>(StringComparer.Ordinal) { [Materia] = Congelado })));
+        Codecs.Reidratar(versao).Returns(_ => Result<EnvelopeReidratado>.Success(Envelope(processo, fases)));
     }
+
+    private EnvelopeReidratado Envelope(ProcessoSeletivo processo, IReadOnlyList<FaseCronograma> fases) =>
+        new(new ConfiguracaoPublicada(
+            new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, fases),
+            new AvaliacaoDeclarada([.. processo.Etapas], [.. processo.CriteriosDesempate], processo.Classificacao!),
+            new VagasDeclaradas([.. processo.DistribuicaoVagas], 1, processo.BonusRegional is not null,
+                processo.BonusRegional, null, processo.AtendimentoEspecializado!),
+            new ExigenciasDeclaradas([.. processo.DocumentosExigidos], []),
+            new ColetaDeclarada([], [], [], [],
+                [], [], null),
+            new DivulgacaoETaxaDeclaradas(null, null), null),
+            DadosEdital.Criar("001/2027", Agora, Agora.AddDays(30), Guid.CreateVersion7()).Value!,
+            new string('a', 64), "America/Sao_Paulo", retificacao: null, conformidade: null, dadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(TiposDeAtoCongelados: new Dictionary<string, TipoDeAtoCongelado>(StringComparer.Ordinal) { [Materia] = Congelado }));
 
     public static FaseCronograma Fase(string codigo, int ordem, params ProdutoDaFase[] produtos) =>
         FaseQueConclui(codigo, ordem, null, produtos);

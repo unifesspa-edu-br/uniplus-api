@@ -39,7 +39,6 @@ public static class SelecaoApplicationServiceRegistration
         AddAvaliacaoDaConformidade(services);
         AddAcessoAoCampoEAoDocumentoDaInscricao(services);
         AddSalvamentoDoRascunho(services);
-        AddInscricaoDoCandidato(services);
         AddRotinaPeriodicaEPortaDePermissao(services);
         AddRascunhoDoProcessoSeletivo(services);
 
@@ -86,26 +85,10 @@ public static class SelecaoApplicationServiceRegistration
     // Salvar o rascunho: as portas entram por construtor de cada serviço, e o handler os recebe prontos, sem service location.
     private static void AddSalvamentoDoRascunho(IServiceCollection services)
     {
+        services.AddScoped<InscricaoAtivaDoCandidato>();
         services.AddScoped<RascunhoDoCandidato>();
         services.AddScoped<SalvamentoDoRascunho>();
         services.AddScoped<RespostaDoRascunho>();
-    }
-
-    // Os papéis da inscrição do candidato: as portas entram por construtor, e o handler recebe os serviços prontos.
-    private static void AddInscricaoDoCandidato(IServiceCollection services)
-    {
-        services.AddScoped<InscricaoAtivaDoCandidato>();
-        services.AddScoped<PeriodoDaInscricao>();
-        services.AddScoped<VersaoDaInscricao>();
-        services.AddScoped<GravacaoDaInscricao>();
-        services.AddScoped<DescarteDoRascunho>();
-        services.AddScoped<AvaliacaoDaInscricaoDoCandidato>();
-        services.AddScoped<ConsultaDaInscricaoDoCandidato>();
-        services.AddScoped<FormularioDaInscricao>();
-        services.AddScoped<PreparoDoEnvio>();
-        services.AddScoped<AvaliacaoDoEnvio>();
-        services.AddScoped<GravacaoDoEnvio>();
-        services.AddScoped<EnvioDaInscricao>();
     }
 
     // A leitura do documento só guarda o esquema, que é singleton; os serviços que decidem acesso ou leem cadastro e repositório são do escopo,
@@ -142,7 +125,7 @@ public static class SelecaoApplicationServiceRegistration
         services.AddScoped<ConferenciaDoAtoCorrigido>();
         services.AddScoped<ConferenciaDosDocumentosDoAto>();
         services.AddScoped<PreparacaoDaPublicacaoDoAtoAvulso>();
-        services.AddScoped<GrafoVigenteDoProcesso>();
+        services.AddScoped<ConfiguracaoVigenteDoProcesso>();
         services.AddScoped<ConferenciaDoProdutoDoEdital>();
         services.AddScoped<PreparacaoDaPublicacaoDoProdutoDoEdital>();
     }

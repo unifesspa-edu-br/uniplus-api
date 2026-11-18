@@ -34,18 +34,15 @@ public sealed class SubmeterInscricaoOfertaEModalidadeTests
     [Fact(DisplayName = "O envio com a oferta A concorre só às modalidades da oferta A, mesmo com o rascunho gravado na oferta B")]
     public async Task Handle_OfertaDoCorpo_ConcorreSoAsModalidadesDaOfertaEnviada()
     {
-        Cpf cpf = PersonasDeTeste.FernandaDrumond;
-        (VersaoConfiguracao versao, GrafoConfiguracao grafoBase, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo();
+        (VersaoConfiguracao versao, ConfiguracaoPublicada grafoBase, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo();
         Guid ofertaA = Guid.CreateVersion7();
         Guid ofertaB = Guid.CreateVersion7();
-        GrafoConfiguracao grafo = OfertasDeTeste.ComDistribuicao(
+        ConfiguracaoPublicada grafo = OfertasDeTeste.ComDistribuicao(
             grafoBase, OfertasDeTeste.Distribuicao(ofertaA, "AC"), OfertasDeTeste.Distribuicao(ofertaB, "AC", "AC_FEM"));
-        Inscricao existente = NovaInscricao(cpf, "conta-1", versao.Id);
-        existente.Salvar(
-            ofertaB, null, new Dictionary<string, JsonElement>(), new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), [],
-            Unifesspa.UniPlus.Selecao.Application.Services.ContextoDaVersaoFixadaResolver.Admitidas(grafo) with { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond }, PrecondicaoIfMatch.DeTags([existente.ETag])).IsSuccess.Should().BeTrue();
+        Inscricao existente = NovaInscricao(PersonasDeTeste.FernandaDrumond, "conta-1", versao.Id);
+        SalvarRascunho(existente, ofertaB, grafo);
 
-        Result<ReciboDaInscricaoDto> daOfertaA = await SubmeterNaOfertaAsync(cpf, versao, grafo, termo, existente, ofertaA);
+        Result<ReciboDaInscricaoDto> daOfertaA = await SubmeterNaOfertaAsync(PersonasDeTeste.FernandaDrumond, versao, grafo, termo, existente, ofertaA);
 
         daOfertaA.IsSuccess.Should().BeTrue(daOfertaA.Error?.Message);
         Emitido(existente).OfertaCursoId.Should().Be(ofertaA);
@@ -57,10 +54,10 @@ public sealed class SubmeterInscricaoOfertaEModalidadeTests
     public async Task Handle_OfertaDoCorpo_ConcorreAsModalidadesDaPropriaOferta()
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
-        (VersaoConfiguracao versao, GrafoConfiguracao grafoBase, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo();
+        (VersaoConfiguracao versao, ConfiguracaoPublicada grafoBase, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo();
         Guid ofertaA = Guid.CreateVersion7();
         Guid ofertaB = Guid.CreateVersion7();
-        GrafoConfiguracao grafo = OfertasDeTeste.ComDistribuicao(
+        ConfiguracaoPublicada grafo = OfertasDeTeste.ComDistribuicao(
             grafoBase, OfertasDeTeste.Distribuicao(ofertaA, "AC"), OfertasDeTeste.Distribuicao(ofertaB, "AC", "AC_FEM"));
 
         Inscricao inscricao = NovaInscricao(cpf, "conta-1", versao.Id);
@@ -74,10 +71,10 @@ public sealed class SubmeterInscricaoOfertaEModalidadeTests
     public async Task Handle_DuasOpcoes_ConcorreAsModalidadesDeCadaOferta()
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
-        (VersaoConfiguracao versao, GrafoConfiguracao grafoBase, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo();
+        (VersaoConfiguracao versao, ConfiguracaoPublicada grafoBase, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo();
         Guid direito = Guid.CreateVersion7();
         Guid computacao = Guid.CreateVersion7();
-        GrafoConfiguracao grafo = OfertasDeTeste.ComOpcoesDeCurso(
+        ConfiguracaoPublicada grafo = OfertasDeTeste.ComOpcoesDeCurso(
             OfertasDeTeste.ComDistribuicao(grafoBase, OfertasDeTeste.Distribuicao(direito, "AC", "AC_FEM"), OfertasDeTeste.Distribuicao(computacao, "AC")),
             numeroDeOpcoesDeCurso: 2);
 
@@ -85,21 +82,17 @@ public sealed class SubmeterInscricaoOfertaEModalidadeTests
         Result<ReciboDaInscricaoDto> resultado = await SubmeterNaOfertaAsync(cpf, versao, grafo, termo, inscricao, direito, computacao);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        ComprovanteInscricao comprovante = Emitido(inscricao);
-        comprovante.OfertaCursoId.Should().Be(direito);
-        comprovante.OfertaCursoSegundaOpcaoId.Should().Be(computacao);
-        comprovante.Modalidades!.Select(static m => m.Codigo).Should().Equal("AC", "AC_FEM");
-        comprovante.ModalidadesSegundaOpcao!.Select(static m => m.Codigo).Should().Equal("AC");
+        ConferirDuasOpcoes(Emitido(inscricao), direito, computacao);
     }
 
     [Fact(DisplayName = "A 2ª opção é recusada quando a versão que a inscrição fixou declara uma opção só")]
     public async Task Handle_SegundaOpcaoEmVersaoFixadaDeUmaOpcao_Recusa()
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
-        (VersaoConfiguracao versao, GrafoConfiguracao grafoBase, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo();
+        (VersaoConfiguracao versao, ConfiguracaoPublicada grafoBase, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo();
         Guid direito = Guid.CreateVersion7();
         Guid computacao = Guid.CreateVersion7();
-        GrafoConfiguracao grafo = OfertasDeTeste.ComDistribuicao(
+        ConfiguracaoPublicada grafo = OfertasDeTeste.ComDistribuicao(
             grafoBase, OfertasDeTeste.Distribuicao(direito, "AC"), OfertasDeTeste.Distribuicao(computacao, "AC"));
 
         Inscricao inscricao = NovaInscricao(cpf, "conta-1", versao.Id);
@@ -110,7 +103,7 @@ public sealed class SubmeterInscricaoOfertaEModalidadeTests
     }
 
     private static async Task<Result<ReciboDaInscricaoDto>> SubmeterNaOfertaAsync(
-        Cpf cpf, VersaoConfiguracao versao, GrafoConfiguracao grafo, VersaoTermoEscolhida termo, Inscricao inscricao, Guid ofertaEnviada,
+        Cpf cpf, VersaoConfiguracao versao, ConfiguracaoPublicada grafo, VersaoTermoEscolhida termo, Inscricao inscricao, Guid ofertaEnviada,
         Guid? segundaOpcaoEnviada = null)
     {
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
@@ -120,17 +113,18 @@ public sealed class SubmeterInscricaoOfertaEModalidadeTests
         DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
 
         // A candidata responde o que faz valer a modalidade de ação afirmativa da oferta B.
-        InscricaoRequest request = RequestComApelidoETermoAceito(cpf, termo, grafo) with
-        {
-            OfertaCursoId = ofertaEnviada,
-            OfertaCursoSegundaOpcaoId = segundaOpcaoEnviada,
-        };
+        InscricaoRequest request = PedidoDaOferta(cpf, termo, grafo, ofertaEnviada, segundaOpcaoEnviada);
         Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([inscricao.ETag])),
             inscricaoRepository, processoRepository, registroCodecs, Substitute.For<IUnitOfWork>(), UsuarioComCpf(cpf));
         Guardar(inscricao, inscricaoRepository);
         return resultado;
     }
+
+    private static void SalvarRascunho(Inscricao inscricao, Guid oferta, ConfiguracaoPublicada grafo) =>
+        inscricao.Salvar(PreenchimentoDoCandidato.ParaValidacao(OpcoesDeCursoDaInscricao.Reidratar(oferta, null), new Dictionary<string, JsonElement>(), new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), []),
+            Unifesspa.UniPlus.Selecao.Application.Services.ContextoDaVersaoFixadaResolver.Admitidas(grafo) with { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond },
+            PrecondicaoIfMatch.DeTags([inscricao.ETag])).IsSuccess.Should().BeTrue();
 
     /// <summary>A ampla concorrência só para quem quer concorrer às vagas de pessoa com deficiência: a modalidade decide pela resposta.</summary>
     private static void AmplaSoComDeficiencia(ProcessoSeletivo processo) =>
@@ -149,8 +143,8 @@ public sealed class SubmeterInscricaoOfertaEModalidadeTests
 
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("CONCORRER_PCD");
         resultado.Errors[0].Error.Code.Should().Be(InscricaoErrorCodes.NenhumaModalidade);
-        inscricao.Situacao.Should().Be(Domain.Enums.SituacaoInscricao.Rascunho);
-        inscricao.Comprovantes.Should().BeEmpty();
+        inscricao.Estado.Situacao.Should().Be(Domain.Enums.SituacaoInscricao.Rascunho);
+        GravouComprovante(inscricao).Should().BeFalse("a recusa não grava comprovante");
     }
 
     [Fact(DisplayName = "Com o Geo fora do ar, a modalidade decidida em que o candidato não concorre a nenhuma segue como recusa 422")]
@@ -189,8 +183,8 @@ public sealed class SubmeterInscricaoOfertaEModalidadeTests
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         Emitido(inscricao).Modalidades.Should().Equal(new ModalidadeDeConcorrencia("AC", "AC", 0));
-        inscricao.Derivados["MODALIDADE"].EnumerateArray().Select(static v => v.GetString()).Should().Equal("AC");
-        inscricao.Comprovantes.Should().ContainSingle().Which.IntegridadeConfere().Should().BeTrue();
+        inscricao.Formulario.Derivados["MODALIDADE"].EnumerateArray().Select(static v => v.GetString()).Should().Equal("AC");
+        Emitido(inscricao).IntegridadeConfere().Should().BeTrue();
     }
 
     [Fact(DisplayName = "A modalidade enviada pelo candidato é recusada e nunca gravada")]
@@ -206,7 +200,18 @@ public sealed class SubmeterInscricaoOfertaEModalidadeTests
             ajustar: AmplaSoComDeficiencia);
 
         resultado.Errors.Should().Contain(e => e.Field == "MODALIDADE" && e.Error.Code == InscricaoErrorCodes.FatoForaDoFormulario);
-        inscricao.Derivados.Should().NotContainKey("MODALIDADE");
-        inscricao.Respostas.Should().NotContainKey("MODALIDADE");
+        inscricao.Formulario.Derivados.Should().NotContainKey("MODALIDADE");
+        inscricao.Formulario.Preenchimento.Respostas.Should().NotContainKey("MODALIDADE");
+    }
+
+    private static InscricaoRequest PedidoDaOferta(Cpf cpf, VersaoTermoEscolhida termo, ConfiguracaoPublicada grafo, Guid primeira, Guid? segunda) =>
+        RequestComApelidoETermoAceito(cpf, termo, grafo) with { OfertaCursoId = primeira, OfertaCursoSegundaOpcaoId = segunda };
+
+    private static void ConferirDuasOpcoes(ComprovanteInscricao comprovante, Guid direito, Guid computacao)
+    {
+        comprovante.OfertaCursoId.Should().Be(direito);
+        comprovante.OfertaCursoSegundaOpcaoId.Should().Be(computacao);
+        comprovante.Modalidades!.Select(static m => m.Codigo).Should().Equal("AC", "AC_FEM");
+        comprovante.ModalidadesSegundaOpcao!.Select(static m => m.Codigo).Should().Equal("AC");
     }
 }

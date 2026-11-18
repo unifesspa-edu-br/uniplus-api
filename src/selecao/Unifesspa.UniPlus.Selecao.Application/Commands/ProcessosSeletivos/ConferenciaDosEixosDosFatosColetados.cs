@@ -23,7 +23,7 @@ internal static class ConferenciaDosEixosDosFatosColetados
     public static EixosDeVersaoPublicada DaVersao(EnvelopeReidratado versao)
     {
         ArgumentNullException.ThrowIfNull(versao);
-        return Congelado(versao.MetadadosFatosCongelados, versao.AgregadosDosGrupos);
+        return Congelado(versao.DadosDeCatalogo.MetadadosFatosCongelados, versao.DadosDeCatalogo.AgregadosDosGrupos!);
     }
 
     /// <summary>Uma causa por item trocado, na ordem recebida, depois por metadado e por operação de agregado.</summary>

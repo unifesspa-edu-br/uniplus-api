@@ -9,34 +9,32 @@ using DTOs;
 using DTOs.NotasDoEnem;
 
 /// <summary>Monta o lote com as ocorrências e os ausentes, para a importação e para a consulta.</summary>
-public static class DetalheDoLoteDeNotasMontador
+public sealed class DetalheDoLoteDeNotasMontador(ILoteDeNotasDoEnemRepository lotes,
+    IProcessoSeletivoRepository processoSeletivoRepository, IRegistroCodecsEnvelope registroCodecs)
 {
     /// <summary>
     /// O lote com as ocorrências e os ausentes. Todos os inscritos citados saem de uma só leitura das
     /// inscrições do lote, sem consulta por ocorrência nem por inscrito.
     /// </summary>
-    public static async Task<LoteDeNotasDoEnemDto> MontarAsync(
-        ILoteDeNotasDoEnemRepository lotes,
+    public async Task<LoteDeNotasDoEnemDto> MontarAsync(
         LoteDeNotasDoEnem lote,
         bool vigente,
-        IProcessoSeletivoRepository processoSeletivoRepository,
-        IRegistroCodecsEnvelope registroCodecs,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(lotes);
         ArgumentNullException.ThrowIfNull(lote);
 
         IReadOnlyDictionary<Guid, IReadOnlyList<string>> ausentes = await lotes
             .ObterAusentesDoLoteAsync(lote.Id, cancellationToken)
             .ConfigureAwait(false);
 
-        Guid[] inscricaoIds =
-        [
-            .. lote.Ocorrencias.Where(static o => o.InscricaoId is not null).Select(static o => o.InscricaoId!.Value)
-                .Concat(ausentes.Keys)
-                .Distinct(),
-        ];
+        return await MontarComAusentesAsync(lote, vigente, ausentes, cancellationToken).ConfigureAwait(false);
+    }
 
+    private async Task<LoteDeNotasDoEnemDto> MontarComAusentesAsync(LoteDeNotasDoEnem lote, bool vigente,
+        IReadOnlyDictionary<Guid, IReadOnlyList<string>> ausentes, CancellationToken cancellationToken)
+    {
+        Guid[] inscricaoIds = [.. lote.Ocorrencias.Where(static o => o.InscricaoId is not null)
+            .Select(static o => o.InscricaoId!.Value).Concat(ausentes.Keys).Distinct()];
         IReadOnlyDictionary<Guid, InscritoDoLote> inscritos = await lotes.ObterInscritosAsync(inscricaoIds, cancellationToken).ConfigureAwait(false);
         IReadOnlyDictionary<Guid, IReadOnlyList<OfertaEscolhidaDto>> ofertas = await OfertasEscolhidas
             .ResolverAsync(lote.ProcessoSeletivoId, inscritos, processoSeletivoRepository, registroCodecs, cancellationToken)

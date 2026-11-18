@@ -41,6 +41,11 @@ internal sealed class ClassificacaoDosTiposNaEdicao(
             return Result<ClassificacaoDoTipoDeAto?>.Success(null);
         }
 
+        return ClassificacaoDoTipo(codigo, envelope);
+    }
+
+    private static Result<ClassificacaoDoTipoDeAto?> ClassificacaoDoTipo(string codigo, EnvelopeReidratado envelope)
+    {
         IReadOnlyDictionary<string, TipoDeAtoCongelado> congelados = CongelamentoDosTiposDeAto
             .DoEnvelope(Result<EnvelopeReidratado>.Success(envelope)).Value!;
         return Result<ClassificacaoDoTipoDeAto?>.Success(
@@ -59,7 +64,7 @@ internal sealed class ClassificacaoDosTiposNaEdicao(
             return Result<bool>.Failure(versao.Error!);
         }
 
-        bool jaPublicada = versao.Value?.Grafo.CronogramaFases.Any(fase =>
+        bool jaPublicada = versao.Value?.Configuracao.Cronograma.CronogramaFases.Any(fase =>
             string.Equals(fase.Codigo, faseCodigo, StringComparison.Ordinal)
             && fase.RegraRecurso is { } regra
             && fase.Produtos.Any(p => p.Id == regra.ProdutoAncoraId && string.Equals(p.AtoCodigo, atoCodigo, StringComparison.Ordinal))) ?? false;
@@ -75,7 +80,7 @@ internal sealed class ClassificacaoDosTiposNaEdicao(
             return Result<bool>.Failure(versao.Error!);
         }
 
-        bool jaPublicada = versao.Value?.Grafo.Etapas.Any(etapa =>
+        bool jaPublicada = versao.Value?.Configuracao.Avaliacao.Etapas.Any(etapa =>
             etapa.Id == etapaId
             && etapa.Recursos.Any(recurso => etapa.Produtos.Any(p =>
                 p.Id == recurso.ProdutoAncoraId && string.Equals(p.AtoCodigo, atoCodigo, StringComparison.Ordinal)))) ?? false;
@@ -92,18 +97,14 @@ internal sealed class ClassificacaoDosTiposNaEdicao(
         VersaoConfiguracao? versaoAtual = await processoSeletivoRepository
             .ObterVersaoAtualAsync(processoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
-        if (versaoAtual is null)
-        {
-            _versaoPublicada = Result<EnvelopeReidratado?>.Success(null);
-        }
-        else
-        {
-            Result<EnvelopeReidratado> reidratada = registroCodecs.Reidratar(versaoAtual);
-            _versaoPublicada = reidratada.IsFailure
-                ? Result<EnvelopeReidratado?>.Failure(reidratada.Error!)
-                : Result<EnvelopeReidratado?>.Success(reidratada.Value);
-        }
-
+        _versaoPublicada = versaoAtual is null ? Result<EnvelopeReidratado?>.Success(null) : Reidratar(versaoAtual);
         return _versaoPublicada;
+    }
+
+    private Result<EnvelopeReidratado?> Reidratar(VersaoConfiguracao versao)
+    {
+        Result<EnvelopeReidratado> reidratada = registroCodecs.Reidratar(versao);
+        return reidratada.IsFailure ? Result<EnvelopeReidratado?>.Failure(reidratada.Error!)
+            : Result<EnvelopeReidratado?>.Success(reidratada.Value);
     }
 }

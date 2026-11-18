@@ -1,197 +1,53 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosDaInscricao;
 
-using Abstractions;
-
 using Domain.Entities;
-using Domain.Errors;
-using Domain.Interfaces;
 
 using DTOs;
 
 using Kernel.Results;
 
 using Services;
+using Services.Inscricoes;
 
-using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
-/// <summary>
-/// Handler de <see cref="IniciarEnvioDeDocumentoDaInscricaoCommand"/>: confere o dono, o período e a
-/// exigência na árvore congelada da versão da inscrição, cria o arquivo pendente e devolve a URL
-/// pré-assinada de PUT, de validade curta (<see cref="PrazosDoArquivoEnviado.Envio"/>).
-/// </summary>
+/// <summary>Confere o acesso do titular e confirma a apresentação e o arquivo pendente na mesma transação.</summary>
 public static class IniciarEnvioDeDocumentoDaInscricaoCommandHandler
 {
     public static async Task<Result<IniciarEnvioDeDocumentoDaInscricaoDto>> Handle(
-        IniciarEnvioDeDocumentoDaInscricaoCommand command,
-        IInscricaoRepository inscricaoRepository,
-        IProcessoSeletivoRepository processoSeletivoRepository,
-        ICertameDivulgadoRepository certameDivulgadoRepository,
-        IRegistroCodecsEnvelope registroCodecs,
-        IResolvedorFusoInstitucional resolvedorFuso,
-        IDocumentoDaInscricaoRepository documentoRepository,
-        IArquivoDoCandidatoStorage storage,
-        IUnitOfWork unitOfWork,
-        IUserContext userContext,
-        TimeProvider timeProvider,
-        CancellationToken cancellationToken)
+        IniciarEnvioDeDocumentoDaInscricaoCommand command, AcessoAoDocumentoDaInscricao acesso,
+        InicioDoEnvioDeDocumento inicio, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
-        ArgumentNullException.ThrowIfNull(inscricaoRepository);
-        ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
-        ArgumentNullException.ThrowIfNull(certameDivulgadoRepository);
-        ArgumentNullException.ThrowIfNull(documentoRepository);
-        ArgumentNullException.ThrowIfNull(storage);
+        ArgumentNullException.ThrowIfNull(acesso);
+        ArgumentNullException.ThrowIfNull(inicio);
         ArgumentNullException.ThrowIfNull(unitOfWork);
-        ArgumentNullException.ThrowIfNull(timeProvider);
+        Result<Inscricao> inscricao = await acesso.ResolverInscricaoAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
+        return inscricao.IsFailure
+            ? Result<IniciarEnvioDeDocumentoDaInscricaoDto>.Failure(inscricao.Error!)
+            : await IniciarEConfirmarAsync(inscricao.Value!, command, inicio, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
 
-        Result<Inscricao> acesso = await AcessoAoDocumentoDaInscricao
-            .ResolverInscricaoAsync(
-                command.ProcessoSeletivoId, userContext, inscricaoRepository, processoSeletivoRepository,
-                certameDivulgadoRepository, registroCodecs, resolvedorFuso, timeProvider, cancellationToken)
-            .ConfigureAwait(false);
-        if (acesso.IsFailure)
-        {
-            return Result<IniciarEnvioDeDocumentoDaInscricaoDto>.Failure(acesso.Error!);
-        }
+    private static async Task<Result<IniciarEnvioDeDocumentoDaInscricaoDto>> IniciarEConfirmarAsync(
+        Inscricao inscricao, IniciarEnvioDeDocumentoDaInscricaoCommand command,
+        InicioDoEnvioDeDocumento inicio, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
+        Result<IniciarEnvioDeDocumentoDaInscricaoDto> resultado = await inicio.IniciarAsync(inscricao, command, cancellationToken).ConfigureAwait(false);
+        return resultado.IsFailure ? resultado : await ConfirmarAsync(resultado, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
 
-        Inscricao inscricao = acesso.Value!;
-
-        // O rascunho acompanha a versão divulgada: a exigência que o candidato vê é a dela.
-        int revisaoLida = inscricao.Revisao;
-        Result adotada = await VersaoDaInscricaoResolver
-            .AdotarAsync(inscricao, certameDivulgadoRepository, processoSeletivoRepository, registroCodecs, cancellationToken)
-            .ConfigureAwait(false);
-        if (adotada.IsFailure)
-        {
-            return Result<IniciarEnvioDeDocumentoDaInscricaoDto>.Failure(adotada.Error!);
-        }
-
-        // A adoção da versão é gravada junto do envio pendente: a exigência só vale na versão em que a
-        // inscrição fica. Sem adoção, a revisão é disputada direto. Nos dois casos o descarte, o envio e o
-        // cancelamento concorrentes falham por concorrência em vez de apagar a inscrição sem agendar a chave.
-        if (inscricao.Revisao != revisaoLida)
-        {
-            await inscricaoRepository.AtualizarAsync(inscricao, cancellationToken).ConfigureAwait(false);
-        }
-        else if (!await inscricaoRepository.TentarAvancarRevisaoAsync(inscricao.Id, revisaoLida, apenasRascunho: false, cancellationToken).ConfigureAwait(false))
-        {
-            return Result<IniciarEnvioDeDocumentoDaInscricaoDto>.Failure(AcessoAoDocumentoDaInscricao.InscricaoAlterada);
-        }
-
-        Result<ContextoDaVersaoFixada> contexto = await ContextoDaVersaoFixadaResolver.ResolverAsync(
-            inscricao.VersaoFormularioId, command.ProcessoSeletivoId, processoSeletivoRepository, registroCodecs,
-            inscricao.OfertaCursoId, inscricao.OfertaCursoSegundaOpcaoId, cancellationToken).ConfigureAwait(false);
-        if (contexto.IsFailure)
-        {
-            return Result<IniciarEnvioDeDocumentoDaInscricaoDto>.Failure(contexto.Error!);
-        }
-
-        ExigenciaDaInscricao.Localizada? localizada = ExigenciaDaInscricao.Localizar(contexto.Value!.Configuracao.Arvore, command.ExigenciaId);
-        if (localizada is null)
-        {
-            return Result<IniciarEnvioDeDocumentoDaInscricaoDto>.Failure(new DomainError(
-                DocumentoDaInscricaoErrorCodes.ExigenciaNaoEncontrada, "A exigência não existe na versão desta inscrição."));
-        }
-
-        // Só a exigência da fase que coleta a inscrição recebe arquivo; a de outra fase não é do candidato aqui.
-        if (!contexto.Value!.Configuracao.Fases.Any(f => f.ColetaInscricao && f.Id == localizada.Exigencia.ExigidoNaFaseId))
-        {
-            return Result<IniciarEnvioDeDocumentoDaInscricaoDto>.Failure(new DomainError(
-                DocumentoDaInscricaoErrorCodes.ExigenciaNaoEncontrada, "A exigência não é da fase de inscrição desta versão."));
-        }
-
-        if (OcorrenciaInvalida(inscricao, localizada.GrupoRepetido, command.OcorrenciaId) is { } ocorrenciaInvalida)
-        {
-            return Result<IniciarEnvioDeDocumentoDaInscricaoDto>.Failure(ocorrenciaInvalida);
-        }
-
-        Result<ApresentacaoDeDocumento> apresentacao = await ResolverApresentacaoAsync(command, inscricao, localizada.Exigencia, documentoRepository, cancellationToken)
-            .ConfigureAwait(false);
-        if (apresentacao.IsFailure)
-        {
-            return Result<IniciarEnvioDeDocumentoDaInscricaoDto>.Failure(apresentacao.Error!);
-        }
-
-        Result<ArquivoDaApresentacao> pendente = ArquivoDaApresentacao.IniciarPendente(
-            apresentacao.Value!.Id, inscricao.Id, localizada.Exigencia, command.TipoDeMidia, command.TamanhoBytes, timeProvider, PrazosDoArquivoEnviado.Envio);
-        if (pendente.IsFailure)
-        {
-            return Result<IniciarEnvioDeDocumentoDaInscricaoDto>.ValidationFailure(pendente.Errors);
-        }
-
-        ArquivoDaApresentacao arquivo = pendente.Value!;
-
-        // A URL sai antes de persistir: se o armazenamento falhar, nada é gravado.
-        string urlUpload = await storage
-            .GerarUrlUploadAsync(arquivo.ObjectKey, arquivo.TipoDeMidia, PrazosDoArquivoEnviado.Envio, cancellationToken)
-            .ConfigureAwait(false);
-
-        if (command.ApresentacaoId is null)
-        {
-            await documentoRepository.AdicionarApresentacaoAsync(apresentacao.Value!, cancellationToken).ConfigureAwait(false);
-        }
-
-        await documentoRepository.AdicionarArquivoAsync(arquivo, cancellationToken).ConfigureAwait(false);
+    private static async Task<Result<IniciarEnvioDeDocumentoDaInscricaoDto>> ConfirmarAsync(
+        Result<IniciarEnvioDeDocumentoDaInscricaoDto> resultado, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
         try
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+            return resultado;
         }
         catch (Exception ex) when (OptimisticConcurrencyViolation.Is(ex))
         {
-            // Com Idempotency-Key o handler captura e descarta o rastreamento (ADR-0119).
             unitOfWork.DescartarAlteracoesNaoSalvas();
             return Result<IniciarEnvioDeDocumentoDaInscricaoDto>.Failure(AcessoAoDocumentoDaInscricao.InscricaoAlterada);
         }
-
-        return Result<IniciarEnvioDeDocumentoDaInscricaoDto>.Success(new IniciarEnvioDeDocumentoDaInscricaoDto(
-            arquivo.Id, apresentacao.Value!.Id, new Uri(urlUpload, UriKind.Absolute), arquivo.TipoDeMidia, arquivo.ExpiraEm));
-    }
-
-    /// <summary>
-    /// A exigência que se repete pede a ocorrência de uma das que a inscrição tem no grupo; a que não
-    /// se repete não admite ocorrência.
-    /// </summary>
-    private static DomainError? OcorrenciaInvalida(Inscricao inscricao, string? grupoRepetido, string? ocorrenciaId)
-    {
-        bool valida = grupoRepetido is null
-            ? string.IsNullOrWhiteSpace(ocorrenciaId)
-            : inscricao.Grupos.TryGetValue(grupoRepetido, out IReadOnlyList<OcorrenciaDeGrupoInscricao>? ocorrencias)
-                && ocorrencias.Any(o => string.Equals(o.Id, ocorrenciaId, StringComparison.Ordinal));
-        return valida
-            ? null
-            : new DomainError(
-                DocumentoDaInscricaoErrorCodes.OcorrenciaInvalida,
-                grupoRepetido is null
-                    ? "Esta exigência não se repete: não informe a ocorrência."
-                    : "Esta exigência vale por ocorrência: informe uma ocorrência que a inscrição tenha.");
-    }
-
-    /// <summary>
-    /// Uma apresentação só é reaproveitada quando a requisição traz o id dela e ela é desta inscrição,
-    /// desta exigência e desta ocorrência; sem o id, abre-se uma nova — a frente e o verso que o cliente
-    /// não junta não escolhem uma apresentação por conta própria.
-    /// </summary>
-    private static async Task<Result<ApresentacaoDeDocumento>> ResolverApresentacaoAsync(
-        IniciarEnvioDeDocumentoDaInscricaoCommand command,
-        Inscricao inscricao,
-        DocumentoExigido exigencia,
-        IDocumentoDaInscricaoRepository documentoRepository,
-        CancellationToken cancellationToken)
-    {
-        if (command.ApresentacaoId is not { } id)
-        {
-            return Result<ApresentacaoDeDocumento>.Success(
-                ApresentacaoDeDocumento.Criar(inscricao.Id, exigencia, string.IsNullOrWhiteSpace(command.OcorrenciaId) ? null : command.OcorrenciaId));
-        }
-
-        ApresentacaoDeDocumento? existente = await documentoRepository.ObterApresentacaoAsync(id, cancellationToken).ConfigureAwait(false);
-        return existente is not null
-            && existente.InscricaoId == inscricao.Id
-            && existente.ExigenciaId == command.ExigenciaId
-            && string.Equals(existente.OcorrenciaId, string.IsNullOrWhiteSpace(command.OcorrenciaId) ? null : command.OcorrenciaId, StringComparison.Ordinal)
-                ? Result<ApresentacaoDeDocumento>.Success(existente)
-                : Result<ApresentacaoDeDocumento>.Failure(new DomainError(
-                    DocumentoDaInscricaoErrorCodes.ApresentacaoNaoEncontrada, "Apresentação não encontrada para esta exigência."));
     }
 }

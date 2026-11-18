@@ -154,12 +154,12 @@ internal static class ProtecaoVigenteDasExigenciasDoProcesso
         return vigente.IsFailure
             ? null
             : new CongeladoNaVersaoVigente(
-                vigente.Value!.Grafo.DocumentosExigidos.ToDictionary(
+                vigente.Value!.Configuracao.Exigencias.DocumentosExigidos.ToDictionary(
                     static e => e.Id,
                     static e => new ExigenciaCongelada(
                         e.TipoDocumentoOrigemId,
                         new ProtecaoDoDocumento(e.ClassificacaoProtecao, e.FinalidadeTratamento, e.HipoteseLegal))),
-                vigente.Value!.FatosDerivadosCongelados);
+                vigente.Value!.DadosDeCatalogo.FatosDerivadosCongelados!);
     }
 }
 

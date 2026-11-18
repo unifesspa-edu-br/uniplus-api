@@ -42,9 +42,7 @@ public sealed class SalvamentoDoRascunho(IConferenciaEnderecoGeo geo, IInscricao
             return Result.ValidationFailure(recusas);
         }
 
-        Result salvar = pedido.Inscricao.Salvar(
-            request.OfertaCursoId, request.OfertaCursoSegundaOpcaoId, pedido.Corpo.Respostas, pedido.Corpo.Grupos, pedido.Corpo.Aceites,
-            pedido.Contexto.Admitidas with { NomeCivilDoLogin = userContext.NomeCompleto, NomeSocialDoLogin = userContext.NomeSocial }, precondicao);
+        Result salvar = pedido.Inscricao.Salvar(PreenchimentoDoCandidato.ParaValidacao(OpcoesDeCursoDaInscricao.Reidratar(request.OfertaCursoId, request.OfertaCursoSegundaOpcaoId), pedido.Corpo.Respostas, pedido.Corpo.Grupos, pedido.Corpo.Aceites), pedido.Contexto.Admitidas with { NomeCivilDoLogin = userContext.NomeCompleto, NomeSocialDoLogin = userContext.NomeSocial }, precondicao);
         return salvar.IsFailure ? Result.ValidationFailure(salvar.Errors) : await GravarAsync(pedido.Inscricao, cancellationToken).ConfigureAwait(false);
     }
 
@@ -68,8 +66,7 @@ public sealed class SalvamentoDoRascunho(IConferenciaEnderecoGeo geo, IInscricao
             return doFormulario;
         }
 
-        ConferenciaDosEnderecos doEndereco = await ConferenciaDoEnderecoDaInscricao
-            .ConferirAsync(pedido.Corpo.Respostas, pedido.Contexto.Admitidas, geo, aoEnviar: false, cancellationToken)
+        ConferenciaDosEnderecos doEndereco = await new ConferenciaDoEnderecoDaInscricao(geo).ConferirAsync(pedido.Corpo.Respostas, pedido.Contexto.Admitidas, aoEnviar: false, cancellationToken)
             .ConfigureAwait(false);
         return doEndereco.Recusas;
     }
@@ -82,14 +79,14 @@ public sealed class SalvamentoDoRascunho(IConferenciaEnderecoGeo geo, IInscricao
     private static IReadOnlyList<FieldError> RecusasDoFormulario(PedidoDoRascunho pedido)
     {
         Result<ResultadoDaAvaliacaoDaInscricao> avaliacao = AvaliacaoDaInscricao.Avaliar(pedido.Contexto.Configuracao, EntradaDaAvaliacaoDaInscricao.Montar(
-            DerivadosDoSistemaInscricao.ComOsDerivados(pedido.Contexto.Admitidas.Definicoes),
+            DerivadosDoSistemaInscricao.ComOsDerivados(pedido.Contexto.Admitidas.Definicoes), new EntradaDaAvaliacaoDaInscricao(
             pedido.Corpo.Respostas,
             InscricaoRequestMapper.ParaAvaliacao(pedido.Corpo.Grupos),
             new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
             new HashSet<string>(StringComparer.Ordinal),
             pedido.Envio,
             EntradaDaAvaliacaoDaInscricao.SemApresentacoes,
-            naFaseDaInscricao: true));
+            NaFaseDaInscricao: true)));
         return avaliacao.IsFailure ? avaliacao.Errors : RecusasEstruturais(AvaliacaoDaInscricao.DaInscricao(avaliacao.Value!.Formulario), pedido.Envio.Dia);
     }
 

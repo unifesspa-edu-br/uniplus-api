@@ -42,41 +42,27 @@ internal static class CorpusEnvelopeDocumentos
     /// </remarks>
     internal static IReadOnlyList<NoExigencia> ArvoreSatisfacaoRica(int variante, bool permutar)
     {
-        Guid faseInscricaoId = FaseInscricao(variante).Id;
+        return Ordem([FolhaDeHistorico(variante), GrupoDeRenda(variante, permutar)], permutar);
+    }
 
-        DocumentoExigido historicoEscolar = DocumentoExigidoRico(
-            DocumentoExigidoIdFixo(1, variante), faseInscricaoId, TipoDocumentoOrigemIdFixo(1), "HISTORICO_ESCOLAR",
-            "Histórico escolar do ensino médio", "ACADEMICO", obrigatorio: true);
-        DocumentoExigido declaracaoImpostoRenda = DocumentoExigidoRico(
-            DocumentoExigidoIdFixo(2, variante), faseInscricaoId, TipoDocumentoOrigemIdFixo(2), "DECLARACAO_IMPOSTO_RENDA",
-            "Declaração de Imposto de Renda", "RENDA", obrigatorio: false);
-        DocumentoExigido extratoBancario = DocumentoExigidoRico(
-            DocumentoExigidoIdFixo(3, variante), faseInscricaoId, TipoDocumentoOrigemIdFixo(3), "EXTRATO_BANCARIO",
-            "Extrato bancário dos últimos três meses", "RENDA", obrigatorio: false);
+    private static NoExigencia FolhaDeHistorico(int variante)
+    {
+        DocumentoExigido historico = DocumentoExigidoRico(DocumentoExigidoIdFixo(1, variante), FaseInscricao(variante).Id,
+            TipoDocumentoOrigemIdFixo(1), "HISTORICO_ESCOLAR", "Histórico escolar do ensino médio", "ACADEMICO", obrigatorio: true);
+        return NoExigencia.ReidratarFolha(NoExigenciaIdFixo(1, variante), 0, historico, NoExigencia.QuantidadeMinimaPadrao, null, null);
+    }
 
-        NoExigencia raizSolteira = NoExigencia.Reidratar(
-            NoExigenciaIdFixo(1, variante), TipoNo.Folha, ordem: 0,
-            documentoExigidoId: historicoEscolar.Id, documentoExigido: historicoEscolar,
-            quantidadeMinima: NoExigencia.QuantidadeMinimaPadrao, consequencia: null, chaveDistincao: null,
-            dataReferencia: null, ocorrenciasEsperadas: null, repetePorEntidade: null, basesLegais: [], filhos: []);
-        NoExigencia filhoDeclaracao = NoExigencia.Reidratar(
-            NoExigenciaIdFixo(2, variante), TipoNo.Folha, ordem: 0,
-            documentoExigidoId: declaracaoImpostoRenda.Id, documentoExigido: declaracaoImpostoRenda,
-            quantidadeMinima: NoExigencia.QuantidadeMinimaPadrao, consequencia: null, chaveDistincao: null,
-            dataReferencia: null, ocorrenciasEsperadas: null, repetePorEntidade: null, basesLegais: [], filhos: []);
-        NoExigencia filhoExtrato = NoExigencia.Reidratar(
-            NoExigenciaIdFixo(3, variante), TipoNo.Folha, ordem: 1,
-            documentoExigidoId: extratoBancario.Id, documentoExigido: extratoBancario,
-            quantidadeMinima: NoExigencia.QuantidadeMinimaPadrao, consequencia: null, chaveDistincao: null,
-            dataReferencia: null, ocorrenciasEsperadas: null, repetePorEntidade: null, basesLegais: [], filhos: []);
-        NoExigencia grupoRenda = NoExigencia.Reidratar(
-            NoExigenciaIdFixo(4, variante), TipoNo.GrupoOu, ordem: 1,
-            documentoExigidoId: null, documentoExigido: null,
-            quantidadeMinima: 1, consequencia: null, chaveDistincao: null, dataReferencia: null,
-            ocorrenciasEsperadas: null, repetePorEntidade: null, basesLegais: [],
-            filhos: Ordem([filhoDeclaracao, filhoExtrato], permutar));
-
-        return Ordem([raizSolteira, grupoRenda], permutar);
+    private static NoExigencia GrupoDeRenda(int variante, bool permutar)
+    {
+        Guid fase = FaseInscricao(variante).Id;
+        DocumentoExigido declaracao = DocumentoExigidoRico(DocumentoExigidoIdFixo(2, variante), fase, TipoDocumentoOrigemIdFixo(2),
+            "DECLARACAO_IMPOSTO_RENDA", "Declaração de Imposto de Renda", "RENDA", obrigatorio: false);
+        DocumentoExigido extrato = DocumentoExigidoRico(DocumentoExigidoIdFixo(3, variante), fase, TipoDocumentoOrigemIdFixo(3),
+            "EXTRATO_BANCARIO", "Extrato bancário dos últimos três meses", "RENDA", obrigatorio: false);
+        NoExigencia filhoDeclaracao = NoExigencia.ReidratarFolha(NoExigenciaIdFixo(2, variante), 0, declaracao, 1, null, null);
+        NoExigencia filhoExtrato = NoExigencia.ReidratarFolha(NoExigenciaIdFixo(3, variante), 1, extrato, 1, null, null);
+        return NoExigencia.ReidratarGrupo(NoExigenciaIdFixo(4, variante), 1, new CombinacaoDoGrupo(TipoNo.GrupoOu, 1, null),
+            [], Ordem([filhoDeclaracao, filhoExtrato], permutar), null);
     }
 
     internal static Guid TipoDocumentoOrigemIdFixo(int indice) =>

@@ -66,7 +66,7 @@ public sealed class DocumentoDaInscricaoIntegrationTests : IClassFixture<Inscric
 
     private async Task<Inscricao> GravarInscricaoAsync(UniPlusDbContext context)
     {
-        InscricaoRepository inscricoes = new(context, _db.Encryption, _db.BlindIndex, TimeProvider.System);
+        InscricaoRepository inscricoes = RepositoriosDaInscricaoDeTeste.Inscricoes(context, _db);
         Inscricao inscricao = Inscricao.Iniciar(Guid.CreateVersion7(), PersonasDeTeste.FernandaDrumond, "conta-1", "https://issuer", Guid.CreateVersion7()).Value!;
         await inscricoes.AdicionarAsync(inscricao);
         return inscricao;

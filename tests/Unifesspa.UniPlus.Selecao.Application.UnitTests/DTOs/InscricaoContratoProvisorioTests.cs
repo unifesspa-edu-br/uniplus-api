@@ -7,8 +7,6 @@ using System.Text.Json.Serialization;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
-using Unifesspa.UniPlus.Selecao.Application.DTOs.Comprovantes;
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
@@ -32,26 +30,7 @@ public sealed class InscricaoContratoProvisorioTests
     [Fact(DisplayName = "InscricaoRequest: o exemplo do rascunho desserializa com as duas opções de curso, respostas, grupo e aceite")]
     public void InscricaoRequest_ExemploDoRascunho_Desserializa()
     {
-        const string Exemplo = """
-        {
-            "ofertaCursoId": "0199e000-0000-7000-8000-000000000001",
-            "ofertaCursoSegundaOpcaoId": "0199e000-0000-7000-8000-000000000003",
-            "respostas": {
-                "NOME_SOCIAL": "Ariel Drumond",
-                "RG_NUMERO": "1234567"
-            },
-            "grupos": {
-                "COMPOSICAO_FAMILIAR": [
-                    { "id": "membro-1", "respostas": { "PARENTESCO": "MAE" } }
-                ]
-            },
-            "aceites": [
-                { "codigo": "TERMO_VERACIDADE", "versaoId": "0199e000-0000-7000-8000-000000000002", "hashVersao": "sha256-abc" }
-            ]
-        }
-        """;
-
-        InscricaoRequest? request = JsonSerializer.Deserialize<InscricaoRequest>(Exemplo, Opcoes);
+        InscricaoRequest? request = JsonSerializer.Deserialize<InscricaoRequest>(ExemplosDoContratoDeInscricao.Rascunho, Opcoes);
 
         request.Should().NotBeNull();
         request!.OfertaCursoId.Should().Be(Guid.Parse("0199e000-0000-7000-8000-000000000001"));
@@ -65,107 +44,62 @@ public sealed class InscricaoContratoProvisorioTests
     [Fact(DisplayName = "InscricaoDto: o exemplo da inscrição submetida serializa em camelCase, com a situação como texto")]
     public void InscricaoDto_ExemploSubmetida_SerializaEmCamelCase()
     {
-        InscricaoDto dto = new(
-            Id: Guid.Parse("0199e000-0000-7000-8000-000000000010"),
-            ProcessoSeletivoId: Guid.Parse("0199e000-0000-7000-8000-000000000011"),
-            Situacao: SituacaoInscricao.Submetida,
-            NumeroInscricao: "000123",
-            VersaoFormularioId: Guid.Parse("0199e000-0000-7000-8000-000000000012"),
-            OfertaCursoId: Guid.Parse("0199e000-0000-7000-8000-000000000001"),
-            OfertaCursoSegundaOpcaoId: Guid.Parse("0199e000-0000-7000-8000-000000000003"),
-            NumeroDeOpcoesDeCurso: 2,
-            Ofertas:
-            [
-                new OfertaDeCursoCertameDto(Guid.Parse("0199e000-0000-7000-8000-000000000001"), "Direito", "Bacharelado", "Campus de Marabá", ["MATUTINO"]),
-                new OfertaDeCursoCertameDto(Guid.Parse("0199e000-0000-7000-8000-000000000003"), "Engenharia da Computação", "Bacharelado", "Campus de Marabá", ["VESPERTINO"]),
-            ],
-            Respostas: new Dictionary<string, JsonElement>(StringComparer.Ordinal)
-            {
-                ["NOME_SOCIAL"] = JsonSerializer.SerializeToElement(PersonasDeTeste.NomeSocialFernandaDrumond),
-                ["RG_NUMERO"] = JsonSerializer.SerializeToElement("1234567"),
-            },
-            Derivados: new Dictionary<string, JsonElement>(StringComparer.Ordinal),
-            Grupos: new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>>(StringComparer.Ordinal),
-            Aceites: [new AceiteDeTermoInput("TERMO_VERACIDADE", Guid.Parse("0199e000-0000-7000-8000-000000000002"), "sha256-abc")],
-            ETag: "\"42\"",
-            Avaliacao: new AvaliacaoDaInscricaoDto(new ModalidadesDaInscricaoDto(
-                Derivada: true, Situacao: "CONCORRE", [new ModalidadeDaInscricaoDto("AC", "Ampla concorrência", 0)], []),
-                new DocumentosDaInscricaoDto([])));
-
-        JsonNode json = JsonSerializer.SerializeToNode(dto, Opcoes)!;
+        JsonNode json = JsonSerializer.SerializeToNode(ExemplosDoContratoDeInscricao.Inscricao, Opcoes)!;
 
         json["situacao"]!.GetValue<string>().Should().Be("submetida", "enums serializam em camelCase, como o host configura");
         json["numeroInscricao"]!.GetValue<string>().Should().Be("000123");
-        json["respostas"]!["RG_NUMERO"]!.GetValue<string>().Should().Be("1234567",
+        json["formulario"]!["respostas"]!["RG_NUMERO"]!.GetValue<string>().Should().Be("1234567",
             "o RG volta dentro de respostas, decifrado — não existe campo próprio de documento no contrato");
+    }
+
+    [Fact]
+    public void InscricaoDto_Exemplo_NaoExpoeCpf()
+    {
+        JsonNode json = JsonSerializer.SerializeToNode(ExemplosDoContratoDeInscricao.Inscricao, Opcoes)!;
+
         json.AsObject().Should().NotContainKey("cpf", "o CPF nunca sai no contrato: já está no token, e o comprovante o devolve mascarado");
-        json["ofertaCursoSegundaOpcaoId"]!.GetValue<string>().Should().Be("0199e000-0000-7000-8000-000000000003");
-        json["numeroDeOpcoesDeCurso"]!.GetValue<int>().Should().Be(2, "o número vem da versão fixada da inscrição");
-        json["ofertas"]!.AsArray().Should().HaveCount(2, "o portal escolhe a opção entre as ofertas da versão fixada, não do certame vivo");
+    }
+
+    [Fact]
+    public void InscricaoDto_Exemplo_MostraEscolhasDaVersaoFixada()
+    {
+        JsonNode json = JsonSerializer.SerializeToNode(ExemplosDoContratoDeInscricao.Inscricao, Opcoes)!;
+
+        json["escolhasDeCurso"]!["ofertaCursoSegundaOpcaoId"]!.GetValue<string>().Should().Be("0199e000-0000-7000-8000-000000000003");
+        json["escolhasDeCurso"]!["numeroDeOpcoesDeCurso"]!.GetValue<int>().Should().Be(2, "o número vem da versão fixada da inscrição");
+        json["escolhasDeCurso"]!["ofertas"]!.AsArray().Should().HaveCount(2, "o portal escolhe a opção entre as ofertas da versão fixada, não do certame vivo");
     }
 
     [Fact(DisplayName = "ComprovanteDaInscricaoDto: o exemplo traz o cartão do candidato sem número de documento e o arquivo sem nome nem local")]
     public void ComprovanteDaInscricaoDto_Exemplo_NaoCarregaDocumento()
     {
-        ComprovanteDaInscricaoDto dto = new()
-        {
-            InscricaoId = Guid.Parse("0199e000-0000-7000-8000-000000000012"),
-            Numero = 1,
-            Total = 2,
-            Vale = false,
-            NumeroSeguinte = 2,
-            ProcessoSeletivoId = Guid.Parse("0199e000-0000-7000-8000-000000000011"),
-            NomeDoProcesso = "PSS Medicina 2027",
-            IdentificadorDoProcesso = "pss-medicina-2027",
-            UnidadeAdministradora = "Centro de Processos Seletivos",
-            Envio = new EnvioDoComprovanteDto("000123", new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero), FusoHorarioDto.Institucional, "sha256-def"),
-            Candidato = new CandidatoDoComprovanteDto(PersonasDeTeste.NomeFernandaDrumond, PersonasDeTeste.NomeSocialFernandaDrumond, UsaNomeSocial: true, PersonasDeTeste.FernandaDrumond.Mascarado),
-            PrazoDaCorrecao = new PrazoDaCorrecaoDto(new DateTimeOffset(2026, 10, 20, 12, 0, 0, TimeSpan.Zero), FusoHorarioDto.Institucional, Aberto: true),
-            NumeroDeOpcoesDeCurso = 1,
-            OpcoesDeCurso = [],
-            Secoes = [],
-            Derivados = [],
-            TermosAceitos = [],
-            Documentos =
-            [
-                new DocumentoDoComprovanteDto(
-                    "Laudo médico", "Você (candidato)", true, "Satisfeita",
-                    "Sem o documento Laudo médico, a vantagem que você pleiteia não será concedida.",
-                    [new ArquivoDoComprovanteDto(new string('a', 64), 2048, "PDF")]),
-            ],
-        };
+        JsonNode json = JsonSerializer.SerializeToNode(ExemplosDoContratoDeInscricao.Comprovante, Opcoes)!;
 
-        JsonNode json = JsonSerializer.SerializeToNode(dto, Opcoes)!;
-
+        json.AsObject().Select(static p => p.Key).Should().BeEquivalentTo(["candidato", "inscricao", "processo", "escolhasDeCurso", "formulario"]);
         json.AsObject().Should().NotContainKey("rgNumero").And.NotContainKey("documentoEstrangeiroNumero").And.NotContainKey("cpf");
-        JsonNode arquivo = json["documentos"]![0]!["arquivos"]![0]!;
+        JsonNode arquivo = json["formulario"]!["documentos"]![0]!["arquivos"]![0]!;
         arquivo.AsObject().Select(static p => p.Key).Should().BeEquivalentTo(["hashSha256", "tamanhoBytes", "formato"],
             "o comprovante identifica o arquivo sem revelar nome nem local de armazenamento");
-        json["envio"]!["hashIntegridade"]!.GetValue<string>().Should().Be("sha256-def");
+        json["inscricao"]!["envio"]!["hashIntegridade"]!.GetValue<string>().Should().Be("sha256-def");
         json["candidato"]!["cpfMascarado"]!.GetValue<string>().Should().Be(PersonasDeTeste.FernandaDrumond.Mascarado);
-        json["numeroAnterior"].Should().BeNull("o primeiro comprovante não tem anterior");
-        json["vale"]!.GetValue<bool>().Should().BeFalse();
-        json["prazoDaCorrecao"]!["aberto"]!.GetValue<bool>().Should().BeTrue();
+        json["inscricao"]!["numeroAnterior"].Should().BeNull("o primeiro comprovante não tem anterior");
+        json["inscricao"]!["vale"]!.GetValue<bool>().Should().BeFalse();
+        json["inscricao"]!["prazoDaCorrecao"]!["aberto"]!.GetValue<bool>().Should().BeTrue();
     }
 
     [Fact(DisplayName = "MinhaInscricaoDto: o exemplo mostra os cursos escolhidos e não repete nome nem CPF do titular")]
     public void MinhaInscricaoDto_Exemplo_MostraOsCursosEscolhidos()
     {
-        MinhaInscricaoDto dto = new(
-            InscricaoId: Guid.Parse("0199e000-0000-7000-8000-000000000012"),
-            ProcessoSeletivoId: Guid.Parse("0199e000-0000-7000-8000-000000000011"),
-            NomeDoProcesso: "PSS Medicina 2027",
-            NumeroInscricao: "000123",
-            Situacao: SituacaoInscricao.Submetida,
-            OpcoesDeCurso: [new OpcaoDeCursoDaInscricaoDto(1, "Medicina", "Bacharelado"), new OpcaoDeCursoDaInscricaoDto(2, "Direito", "Bacharelado")],
-            CanceladaEm: null,
-            MotivoDoCancelamento: null,
-            Acoes: new AcoesDaInscricaoDto(PodeContinuar: false, PodeCorrigir: true, PodeCancelar: true, PodeDescartar: false),
-            NumeroDoUltimoComprovante: 1);
-
-        JsonNode json = JsonSerializer.SerializeToNode(dto, Opcoes)!;
+        JsonNode json = JsonSerializer.SerializeToNode(ExemplosDoContratoDeInscricao.MinhaInscricao, Opcoes)!;
 
         json["opcoesDeCurso"]!.AsArray().Select(static o => o!["cursoNome"]!.GetValue<string>()).Should().Equal("Medicina", "Direito");
+    }
+
+    [Fact]
+    public void MinhaInscricaoDto_Exemplo_NaoExpoeDadosDoTitular()
+    {
+        JsonNode json = JsonSerializer.SerializeToNode(ExemplosDoContratoDeInscricao.MinhaInscricao, Opcoes)!;
+
         json.AsObject().Should().NotContainKey("nomePreferido").And.NotContainKey("cpfMascarado");
     }
 }

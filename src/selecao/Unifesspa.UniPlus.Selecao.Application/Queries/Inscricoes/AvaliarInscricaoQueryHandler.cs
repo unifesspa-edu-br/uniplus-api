@@ -1,57 +1,45 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Queries.Inscricoes;
 
 using Domain.Entities;
+using Domain.Interfaces;
 
 using DTOs;
 
+using Kernel.Domain.ValueObjects;
 using Kernel.Results;
 
 using Services;
+using Services.Inscricoes;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 
-/// <summary>
-/// Avalia, sem gravar, as respostas que o dono do token tem na tela, mescladas ao que a inscrição
-/// gravou. A consulta é prévia: nunca recusa por restrição, obrigatoriedade ou opção fora da oferta —
-/// isso é do envio —, só pela forma do corpo, quando uma ocorrência de grupo não tem identidade
-/// própria. Responde só ao titular, dentro do período da inscrição, como o rascunho.
-/// </summary>
+/// <summary>Avalia o preenchimento da tela depois de conferir o titular da inscrição ativa.</summary>
 public static class AvaliarInscricaoQueryHandler
 {
     public static async Task<Result<AvaliacaoDaInscricaoDto>> Handle(
-        AvaliarInscricaoQuery query,
-        InscricaoAtivaDoCandidato inscricaoAtiva,
-        PeriodoDaInscricao periodo,
-        AvaliacaoDaInscricaoDoCandidato avaliacao,
-        IUserContext userContext,
-        TimeProvider timeProvider,
-        CancellationToken cancellationToken)
+        AvaliarInscricaoQuery query, IInscricaoRepository inscricoes, IUserContext usuario,
+        ConsultaDaAvaliacaoDaInscricao consulta, TimeProvider timeProvider, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        ArgumentNullException.ThrowIfNull(inscricaoAtiva);
-        ArgumentNullException.ThrowIfNull(periodo);
-        ArgumentNullException.ThrowIfNull(avaliacao);
+        ArgumentNullException.ThrowIfNull(inscricoes);
+        ArgumentNullException.ThrowIfNull(usuario);
+        ArgumentNullException.ThrowIfNull(consulta);
         ArgumentNullException.ThrowIfNull(timeProvider);
-
-        Result<Inscricao> inscricao = await inscricaoAtiva
-            .ObterAsync(query.ProcessoSeletivoId, userContext, "consultar a inscrição", cancellationToken).ConfigureAwait(false);
-        return inscricao.IsFailure
-            ? Result<AvaliacaoDaInscricaoDto>.Failure(inscricao.Error!)
-            : await AvaliarNoPeriodoAsync(query, inscricao.Value!, periodo, avaliacao, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+        Result<Inscricao> acesso = await ObterInscricaoAsync(query.ProcessoSeletivoId, inscricoes, usuario, cancellationToken).ConfigureAwait(false);
+        return acesso.IsFailure
+            ? Result<AvaliacaoDaInscricaoDto>.Failure(acesso.Error!)
+            : await consulta.AvaliarAsync(acesso.Value!, query, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
     }
 
-    private static async Task<Result<AvaliacaoDaInscricaoDto>> AvaliarNoPeriodoAsync(
-        AvaliarInscricaoQuery query,
-        Inscricao inscricao,
-        PeriodoDaInscricao periodo,
-        AvaliacaoDaInscricaoDoCandidato avaliacao,
-        DateTimeOffset instante,
-        CancellationToken cancellationToken)
+    private static async Task<Result<Inscricao>> ObterInscricaoAsync(
+        Guid processoId, IInscricaoRepository inscricoes, IUserContext usuario, CancellationToken cancellationToken)
     {
-        // O mesmo instante confere o período e é o envio de que se contam os limites da faixa de data.
-        DomainError? foraDoPeriodo = await periodo.ConferirAsync(query.ProcessoSeletivoId, instante, cancellationToken).ConfigureAwait(false);
-        return foraDoPeriodo is not null
-            ? Result<AvaliacaoDaInscricaoDto>.Failure(foraDoPeriodo)
-            : await avaliacao.AvaliarAsync(inscricao, query, instante, cancellationToken).ConfigureAwait(false);
+        if (usuario.Cpf is not { } cpfDoToken || Cpf.Criar(cpfDoToken) is not { IsSuccess: true } cpf)
+        {
+            return Result<Inscricao>.Failure(new DomainError("Inscricao.CpfAusenteNoToken",
+                "O token não traz um claim cpf válido — só um candidato autenticado com CPF pode consultar a inscrição."));
+        }
+        Inscricao? inscricao = await inscricoes.ObterAtivaPorProcessoECpfAsync(processoId, cpf.Value!, cancellationToken).ConfigureAwait(false);
+        return InscricaoDoDono.DoDono(inscricao, usuario);
     }
 }

@@ -37,6 +37,6 @@ public sealed class EnvelopeLidoCulturaEIdentificadorTests
         ApoioDoEnvelopeCodec.Envelope(congelado)["identificadorLegivel"].Should().BeNull();
         processo.DefinirIdentificadorLegivel(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.IdentificadorLegivel.Criar("processo-com-identificador").Value).IsSuccess.Should().BeTrue();
         EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo, CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
-        lido.Grafo.IdentificadorLegivel.Should().BeNull();
+        lido.Configuracao.IdentificadorLegivel.Should().BeNull();
     }
 }

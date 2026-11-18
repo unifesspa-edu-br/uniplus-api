@@ -9,65 +9,21 @@ using System.ComponentModel;
 /// </summary>
 public sealed record ComprovanteDaInscricaoDto
 {
-    /// <summary>A inscrição a que o comprovante pertence.</summary>
-    public required Guid InscricaoId { get; init; }
-
-    /// <summary>A posição do comprovante na ordem de emissão, a partir de 1: o número com que se lê em <c>GET .../comprovantes/{numero}</c>.</summary>
-    public required int Numero { get; init; }
-
-    /// <summary>Quantos comprovantes a inscrição emitiu.</summary>
-    public required int Total { get; init; }
-
-    /// <summary>Se é o último emitido, o que vale; os anteriores foram substituídos por correção.</summary>
-    public required bool Vale { get; init; }
-
-    /// <summary>O número do comprovante anterior; nulo no primeiro.</summary>
-    public int? NumeroAnterior { get; init; }
-
-    /// <summary>O número do comprovante seguinte; nulo no último.</summary>
-    public int? NumeroSeguinte { get; init; }
-
-    /// <summary>O processo seletivo da inscrição.</summary>
-    public required Guid ProcessoSeletivoId { get; init; }
-
-    /// <summary>O nome do processo seletivo.</summary>
-    public required string NomeDoProcesso { get; init; }
-
-    /// <summary>O identificador legível do processo (o do endereço público do certame), o congelado na versão em que a inscrição foi enviada; nulo se a versão não o declara.</summary>
-    public string? IdentificadorDoProcesso { get; init; }
-
-    /// <summary>O nome da unidade administradora do processo, o que ficou congelado na criação do processo.</summary>
-    public required string UnidadeAdministradora { get; init; }
-
-    /// <summary>O envio que o comprovante registra.</summary>
-    public required EnvioDoComprovanteDto Envio { get; init; }
-
-    /// <summary>O cancelamento da inscrição; nulo enquanto ela está enviada. Só a emissão pela unidade alcança a inscrição cancelada.</summary>
-    public CancelamentoNoComprovanteDto? Cancelamento { get; init; }
-
     /// <summary>O titular da inscrição.</summary>
     public required CandidatoDoComprovanteDto Candidato { get; init; }
 
-    /// <summary>Até quando o candidato pode corrigir a inscrição; nulo quando este não é o comprovante que vale ou o prazo não pôde ser lido.</summary>
-    public PrazoDaCorrecaoDto? PrazoDaCorrecao { get; init; }
+    /// <summary>Os dados da inscrição e do envio.</summary>
+    public required InscricaoNoComprovanteDto Inscricao { get; init; }
 
-    /// <summary>Quantas opções de curso a versão da inscrição admite, para dizer que a 2ª não foi declarada.</summary>
-    public required int NumeroDeOpcoesDeCurso { get; init; }
+    /// <summary>Os dados do processo seletivo.</summary>
+    public required ProcessoNoComprovanteDto Processo { get; init; }
 
-    /// <summary>Os cursos escolhidos neste envio, em ordem, com as modalidades em que o candidato concorre.</summary>
-    public required IReadOnlyList<OpcaoDeCursoDoComprovanteDto> OpcoesDeCurso { get; init; }
+    /// <summary>As escolhas de curso do envio.</summary>
+    public required EscolhasDeCursoNoComprovanteDto EscolhasDeCurso { get; init; }
 
-    /// <summary>As respostas do formulário agrupadas por seção, na ordem de coleta.</summary>
-    public required IReadOnlyList<SecaoDoComprovanteDto> Secoes { get; init; }
+    /// <summary>Os dados do formulário enviado.</summary>
+    public required FormularioNoComprovanteDto Formulario { get; init; }
 
-    /// <summary>O que o sistema calculou das respostas neste envio.</summary>
-    public required IReadOnlyList<ItemDoComprovanteDto> Derivados { get; init; }
-
-    /// <summary>Os termos que o candidato aceitou neste envio.</summary>
-    public required IReadOnlyList<TermoAceitoDoComprovanteDto> TermosAceitos { get; init; }
-
-    /// <summary>As exigências documentais neste envio, com o que o candidato precisa guardar de cada arquivo.</summary>
-    public required IReadOnlyList<DocumentoDoComprovanteDto> Documentos { get; init; }
 }
 
 /// <summary>O envio que o comprovante registra: o número da inscrição, o instante, a zona em que ele se lê e o código de verificação.</summary>

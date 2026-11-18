@@ -5779,7 +5779,7 @@
     {
       "codigo": "uniplus.selecao.idade_maxima_emissao.campos_incoerentes_com_ausencia",
       "status": 422,
-      "titulo": "Data e a fase âncora só são aceitas quando a idade máxima de emissão está definida"
+      "titulo": "Data e a fase que inicia a contagem só são aceitas quando a idade máxima de emissão está definida"
     },
     {
       "codigo": "uniplus.selecao.idade_maxima_emissao.campos_incompletos",
@@ -5794,17 +5794,17 @@
     {
       "codigo": "uniplus.selecao.idade_maxima_emissao.fase_extremo_ausente",
       "status": 422,
-      "titulo": "A fase âncora da idade máxima de emissão não tem o extremo (início/fim) definido"
+      "titulo": "A fase que inicia a contagem da idade máxima de emissão não tem definida a data de início ou de término usada na contagem; defina essa data na fase"
     },
     {
       "codigo": "uniplus.selecao.idade_maxima_emissao.fase_incoerente_com_tipo",
       "status": 422,
-      "titulo": "A fase âncora só é aceita (e é exigida) quando o tipo é INICIO_FASE ou FIM_FASE"
+      "titulo": "A fase que inicia a contagem só é aceita (e é exigida) quando o tipo é INICIO_FASE ou FIM_FASE"
     },
     {
       "codigo": "uniplus.selecao.idade_maxima_emissao.fase_nao_pertence_ao_processo",
       "status": 422,
-      "titulo": "A fase âncora da idade máxima de emissão não pertence ao cronograma deste processo"
+      "titulo": "A fase que inicia a contagem da idade máxima de emissão não pertence ao cronograma deste processo; escolha uma fase do cronograma"
     },
     {
       "codigo": "uniplus.selecao.idade_maxima_emissao.valor_invalido",
@@ -6514,7 +6514,7 @@
     {
       "codigo": "uniplus.selecao.no_exigencia.quantidade_minima_de_folha_invalida",
       "status": 422,
-      "titulo": "quantidadeMinima de uma folha, quando presente, deve estar entre 1 e 366"
+      "titulo": "A quantidade mínima de apresentações deve estar entre 1 e 366"
     },
     {
       "codigo": "uniplus.selecao.no_exigencia.quantidade_minima_excede_janela_representavel",
@@ -6529,7 +6529,7 @@
     {
       "codigo": "uniplus.selecao.no_exigencia.quantidade_minima_proibida_em_grupo_e",
       "status": 422,
-      "titulo": "Um grupo E não tem cardinalidade própria — quantidadeMinima é proibida"
+      "titulo": "Quantidade mínima de documentos não permitida em grupo E"
     },
     {
       "codigo": "uniplus.selecao.no_exigencia.remove_vantagem_sem_vantagem_viva",

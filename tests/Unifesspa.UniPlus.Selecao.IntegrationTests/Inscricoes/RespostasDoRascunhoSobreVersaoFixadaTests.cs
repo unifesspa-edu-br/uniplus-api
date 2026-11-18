@@ -35,171 +35,150 @@ public sealed class RespostasDoRascunhoSobreVersaoFixadaTests
 
     public RespostasDoRascunhoSobreVersaoFixadaTests(InscricaoDbFixture fixture) => _cenario = new CenarioDeInscricaoPublicada(fixture);
 
-    [Fact(DisplayName = "O conjunto básico publicado recusa o nascimento depois do envio com os limites do dia, sem gravar o rascunho")]
+    [Fact(DisplayName = "O rascunho recusa o nascimento posterior ao envio e não grava a resposta")]
     public async Task Salvar_SobreVersaoFixadaReal_RecusaONascimentoNoFuturo()
     {
         ProcessoSeletivo processo = NovoProcessoDeInscricao(nameof(Salvar_SobreVersaoFixadaReal_RecusaONascimentoNoFuturo));
-
-        await using UniPlusDbContext writeContext = _cenario.CriarDbContext();
-        (Guid processoId, _) = await PublicarEDivulgarAsync(writeContext, processo);
-
-        Result<InscricaoDto> iniciar = await _cenario.IniciarRascunhoAsync(writeContext, processoId, UsuarioComCpf(PersonasDeTeste.FernandaDrumond));
-        iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
-
-        InscricaoRequest request = new(
-            null,
-            new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["DATA_NASCIMENTO"] = JsonSerializer.SerializeToElement("2027-01-10") },
-            null,
-            null);
-        Result<InscricaoDto> salvar = await _cenario.SalvarAsync(
-            writeContext, processoId, request, iniciar.Value!.ETag, Substitute.For<IConferenciaEnderecoGeo>());
-
+        await using UniPlusDbContext escrita = _cenario.CriarDbContext();
+        (Guid processoId, InscricaoDto iniciar) = await _cenario.PublicarEIniciarAsync(escrita, processo, PersonasDeTeste.FernandaDrumond);
+        Result<InscricaoDto> salvar = await _cenario.SalvarAsync(escrita, processoId, PedidoComResposta("DATA_NASCIMENTO", "2027-01-10"),
+            iniciar.ETag, Substitute.For<IConferenciaEnderecoGeo>());
         salvar.Errors.Should().ContainSingle(static e => e.Field == "DATA_NASCIMENTO" && e.Error.Code == InscricaoErrorCodes.DataForaDaFaixa)
             .Which.Error.Message.Should().Be("Informe uma data entre 15/01/1906 e 15/01/2026.");
-
-        await using UniPlusDbContext readContext = _cenario.CriarDbContext();
-        Inscricao? gravada = await _cenario.NovoRepositorioDeInscricao(readContext)
-            .ObterPorIdAsync(iniciar.Value!.Id);
-        gravada!.Respostas.Should().NotContainKey("DATA_NASCIMENTO", "a resposta recusada não é gravada no rascunho");
+        await ConferirRespostaAusenteAsync(iniciar.Id, "DATA_NASCIMENTO");
     }
 
-    [Fact(DisplayName = "A confirmação do CEP de faixa fica gravada no endereço da inscrição e volta na leitura")]
+    private static InscricaoRequest PedidoComResposta(string fato, string valor) =>
+        new(null, new Dictionary<string, JsonElement>(StringComparer.Ordinal) { [fato] = JsonSerializer.SerializeToElement(valor) }, null, null);
+
+    private async Task ConferirRespostaAusenteAsync(Guid inscricaoId, string fato)
+    {
+        await using UniPlusDbContext leitura = _cenario.CriarDbContext();
+        Inscricao? inscricao = await _cenario.NovoRepositorioDeInscricao(leitura).ObterPorIdAsync(inscricaoId);
+        inscricao!.Formulario.Preenchimento.Respostas.Should().NotContainKey(fato);
+    }
+
+    [Fact(DisplayName = "O rascunho grava e relê a confirmação do CEP de faixa")]
     public async Task Salvar_EnderecoComCepConfirmado_GravaEReleAConfirmacao()
     {
         ProcessoSeletivo processo = NovoProcessoDeInscricao(nameof(Salvar_EnderecoComCepConfirmado_GravaEReleAConfirmacao));
-
-        await using UniPlusDbContext writeContext = _cenario.CriarDbContext();
-        (Guid processoId, _) = await PublicarEDivulgarAsync(writeContext, processo);
-
-        InscricaoRepository inscricaoRepository = _cenario.NovoRepositorioDeInscricao(writeContext);
-        Result<InscricaoDto> iniciar = await _cenario.IniciarRascunhoAsync(writeContext, processoId, UsuarioComCpf(PersonasDeTeste.KevinCarvalho));
-        iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
-
-        Inscricao inscricao = (await inscricaoRepository.ObterPorIdAsync(iniciar.Value!.Id))!;
-        RespostasAdmitidas admitidas = (await ContextoDaVersaoFixadaResolver.ResolverAsync(
-            inscricao.VersaoFormularioId, processoId, ProcessoSeletivoRepositoryDeTeste.Criar(writeContext), RegistroCodecs, ofertaCursoId: null, null, CancellationToken.None))
-            .Value!.Admitidas with
-        { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond };
-
-        Result salvar = inscricao.Salvar(
-            null, null,
-            new Dictionary<string, JsonElement>(StringComparer.Ordinal)
-            {
-                ["ENDERECO_RESIDENCIAL"] = JsonSerializer.SerializeToElement(new
-                {
-                    cep = "68627476",
-                    logradouro = "Rua Brigadeiro Eduardo Gomes",
-                    bairro = "Laércio Cabeline",
-                    cidade = new { codigoIbge = "1505502", nome = "Paragominas", uf = "PA" },
-                    cepConfirmado = true,
-                }),
-            },
-            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal),
-            [],
-            admitidas,
-            PrecondicaoIfMatch.DeTags([inscricao.ETag]));
-        salvar.IsSuccess.Should().BeTrue(salvar.Error?.Message);
-
-        await inscricaoRepository.AtualizarAsync(inscricao, CancellationToken.None);
-        await writeContext.SaveChangesAsync(CancellationToken.None);
-
-        await using UniPlusDbContext readContext = _cenario.CriarDbContext();
-        InscricaoRepository readRepository = _cenario.NovoRepositorioDeInscricao(readContext);
-        Inscricao lida = (await readRepository.ObterPorIdAsync(inscricao.Id))!;
-        lida.Respostas["ENDERECO_RESIDENCIAL"].GetProperty("cepConfirmado").GetBoolean().Should().BeTrue();
+        await using UniPlusDbContext escrita = _cenario.CriarDbContext();
+        (Guid processoId, InscricaoDto iniciar) = await _cenario.PublicarEIniciarAsync(escrita, processo, PersonasDeTeste.KevinCarvalho);
+        InscricaoRepository repositorio = _cenario.NovoRepositorioDeInscricao(escrita);
+        Inscricao inscricao = (await repositorio.ObterPorIdAsync(iniciar.Id))!;
+        ContextoDaVersaoFixada contexto = await ContextoAsync(escrita, inscricao.Formulario.VersaoFormularioId, processoId);
+        SalvarEnderecoConfirmado(inscricao, contexto.Admitidas);
+        await repositorio.AtualizarAsync(inscricao, CancellationToken.None);
+        await escrita.SaveChangesAsync(CancellationToken.None);
+        await ConferirCepConfirmadoAsync(inscricao.Id);
     }
 
-    [Fact(DisplayName = "Sobre a versão fixada, a inscrição grava o telefone do conjunto básico só com os dígitos")]
+    private static void SalvarEnderecoConfirmado(Inscricao inscricao, RespostasAdmitidas admitidas)
+    {
+        Result salvo = inscricao.Salvar(PreenchimentoDoCandidato.ParaValidacao(OpcoesDeCursoDaInscricao.Reidratar(null, null), new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["ENDERECO_RESIDENCIAL"] = EnderecoConfirmado() }, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), []), admitidas with { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond }, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
+        salvo.IsSuccess.Should().BeTrue(salvo.Error?.Message);
+    }
+
+    private static JsonElement EnderecoConfirmado() => JsonSerializer.SerializeToElement(new
+    {
+        cep = "68627476",
+        logradouro = "Rua Brigadeiro Eduardo Gomes",
+        bairro = "Laércio Cabeline",
+        cidade = new { codigoIbge = "1505502", nome = "Paragominas", uf = "PA" },
+        cepConfirmado = true,
+    });
+
+    private async Task ConferirCepConfirmadoAsync(Guid inscricaoId)
+    {
+        await using UniPlusDbContext leitura = _cenario.CriarDbContext();
+        Inscricao inscricao = (await _cenario.NovoRepositorioDeInscricao(leitura).ObterPorIdAsync(inscricaoId))!;
+        inscricao.Formulario.Preenchimento.Respostas["ENDERECO_RESIDENCIAL"].GetProperty("cepConfirmado").GetBoolean().Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "O telefone da versão fixada é gravado apenas com dígitos")]
     public async Task Telefone_SobreVersaoFixada_GravaSoOsDigitos()
     {
         ProcessoSeletivo processo = NovoProcessoDeInscricao(nameof(Telefone_SobreVersaoFixada_GravaSoOsDigitos));
-
-        await using UniPlusDbContext writeContext = _cenario.CriarDbContext();
-        (Guid processoId, _) = await PublicarEDivulgarAsync(writeContext, processo);
-
-        Result<InscricaoDto> iniciar = await _cenario.IniciarRascunhoAsync(writeContext, processoId, UsuarioComCpf(PersonasDeTeste.FernandaDrumond));
-        iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
-
-        await using UniPlusDbContext readContext = _cenario.CriarDbContext();
-        Result<ContextoDaVersaoFixada> contexto = await ContextoDaVersaoFixadaResolver.ResolverAsync(
-            iniciar.Value!.VersaoFormularioId, processoId, ProcessoSeletivoRepositoryDeTeste.Criar(readContext), RegistroCodecs, ofertaCursoId: null, null, CancellationToken.None);
-        contexto.IsSuccess.Should().BeTrue(contexto.Error?.Message);
-
-        InscricaoRepository repositorio = _cenario.NovoRepositorioDeInscricao(readContext);
-        Inscricao inscricao = (await repositorio.ObterPorIdAsync(iniciar.Value!.Id))!;
-        inscricao.Salvar(
-            null, null,
-            new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["TELEFONE"] = JsonSerializer.SerializeToElement("(94) 3322-1234") },
-            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal),
-            [], contexto.Value!.Admitidas with { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond }, PrecondicaoIfMatch.DeTags([inscricao.ETag])).IsSuccess.Should().BeTrue();
-
-        inscricao.Respostas["TELEFONE"].GetString().Should().Be("9433221234",
-            "o formato do telefone congelado na versão chega à definição da resposta, que grava a forma canônica");
+        await using UniPlusDbContext escrita = _cenario.CriarDbContext();
+        (Guid processoId, InscricaoDto iniciar) = await _cenario.PublicarEIniciarAsync(escrita, processo, PersonasDeTeste.FernandaDrumond);
+        await using UniPlusDbContext leitura = _cenario.CriarDbContext();
+        ContextoDaVersaoFixada contexto = await ContextoAsync(leitura, iniciar.Formulario.VersaoFormularioId, processoId);
+        Inscricao inscricao = (await _cenario.NovoRepositorioDeInscricao(leitura).ObterPorIdAsync(iniciar.Id))!;
+        SalvarTelefone(inscricao, contexto.Admitidas);
+        inscricao.Formulario.Preenchimento.Respostas["TELEFONE"].GetString().Should().Be("9433221234");
     }
 
-    [Fact(DisplayName = "O rascunho guarda a resposta ao item que outra resposta esconde, e o envio a descarta da inscrição gravada e do comprovante, que continua íntegro")]
+    private static void SalvarTelefone(Inscricao inscricao, RespostasAdmitidas admitidas) =>
+        inscricao.Salvar(PreenchimentoDoCandidato.ParaValidacao(OpcoesDeCursoDaInscricao.Reidratar(null, null), new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["TELEFONE"] = JsonSerializer.SerializeToElement("(94) 3322-1234") }, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), []), admitidas with { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond }, PrecondicaoIfMatch.DeTags([inscricao.ETag])).IsSuccess.Should().BeTrue();
+
+    [Fact(DisplayName = "O envio retira a resposta oculta do rascunho e do comprovante, preservando a integridade")]
     public async Task Envio_SobreVersaoFixadaReal_DescartaARespostaDoItemOculto()
     {
-        FatoColetado precisa = FatoColetado.Criar(
-            "PRECISA_ATENDIMENTO", 1, "Você precisa de atendimento especializado?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null,
-            classificacaoProtecao: "SENSIVEL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
-        FatoColetado condicao = FatoColetado.Criar(
-            "CONDICAO_DESCRITA", 2, "Descreva a sua condição", TipoRenderizacao.Texto, Obrigatoriedade.Nunca,
-            [CondicaoPrecondicaoFato.Criar(0, "PRECISA_ATENDIMENTO", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!],
-            classificacaoProtecao: "SENSIVEL", formato: "LIVRE", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
-        ProcessoSeletivo processo = NovoProcessoDeInscricao(
-            nameof(Envio_SobreVersaoFixadaReal_DescartaARespostaDoItemOculto), camposAdicionais: [precisa, condicao]);
+        ProcessoSeletivo processo = ProcessoComCondicao();
+        await using UniPlusDbContext escrita = _cenario.CriarDbContext();
+        (Guid processoId, InscricaoDto iniciar) = await _cenario.PublicarEIniciarAsync(escrita, processo, PersonasDeTeste.FernandaDrumond);
+        Inscricao inscricao = (await _cenario.NovoRepositorioDeInscricao(escrita).ObterPorIdAsync(iniciar.Id))!;
+        ContextoDaVersaoFixada contexto = await ContextoAsync(escrita, inscricao.Formulario.VersaoFormularioId, processoId);
+        await SalvarCondicaoOcultaAsync(escrita, inscricao, contexto);
+        await EnviarOcultandoAsync(inscricao.Id, contexto);
+        await ConferirEnvioSemRespostaOcultaAsync(inscricao.Id);
+    }
 
-        await using UniPlusDbContext writeContext = _cenario.CriarDbContext();
-        (Guid processoId, _) = await PublicarEDivulgarAsync(writeContext, processo);
-        InscricaoRepository inscricaoRepository = _cenario.NovoRepositorioDeInscricao(writeContext);
-        Result<InscricaoDto> iniciar = await _cenario.IniciarRascunhoAsync(writeContext, processoId, UsuarioComCpf(PersonasDeTeste.FernandaDrumond));
-        iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
+    private static ProcessoSeletivo ProcessoComCondicao() =>
+        NovoProcessoDeInscricao(nameof(Envio_SobreVersaoFixadaReal_DescartaARespostaDoItemOculto), camposAdicionais: [PrecisaDeAtendimento(), DescricaoDaCondicao()]);
 
-        Inscricao inscricao = (await inscricaoRepository.ObterPorIdAsync(iniciar.Value!.Id))!;
-        ContextoDaVersaoFixada contexto = (await ContextoDaVersaoFixadaResolver.ResolverAsync(
-            inscricao.VersaoFormularioId, processoId, ProcessoSeletivoRepositoryDeTeste.Criar(writeContext), RegistroCodecs, ofertaCursoId: null, null, CancellationToken.None))
-            .Value!;
+    private static FatoColetado PrecisaDeAtendimento() => FatoColetado.Criar(
+        "PRECISA_ATENDIMENTO", 1, "Você precisa de atendimento especializado?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null,
+        classificacaoProtecao: "SENSIVEL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
 
-        // O candidato disse "sim", descreveu a condição e voltou para "não": a descrição fica no rascunho.
-        inscricao.Salvar(
-            null, null,
-            new Dictionary<string, JsonElement>(StringComparer.Ordinal)
-            {
-                ["PRECISA_ATENDIMENTO"] = JsonSerializer.SerializeToElement(false),
-                ["CONDICAO_DESCRITA"] = JsonSerializer.SerializeToElement("Lactante"),
-            },
-            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [], contexto.Admitidas with { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond },
-            PrecondicaoIfMatch.DeTags([inscricao.ETag])).IsSuccess.Should().BeTrue();
-        await inscricaoRepository.AtualizarAsync(inscricao, CancellationToken.None);
-        await writeContext.SaveChangesAsync(CancellationToken.None);
+    private static FatoColetado DescricaoDaCondicao() => FatoColetado.Criar(
+        "CONDICAO_DESCRITA", 2, "Descreva a sua condição", TipoRenderizacao.Texto, Obrigatoriedade.Nunca,
+        [CondicaoPrecondicaoFato.Criar(0, "PRECISA_ATENDIMENTO", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!],
+        classificacaoProtecao: "SENSIVEL", formato: "LIVRE", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal,
+        finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
 
-        await using UniPlusDbContext envioContext = _cenario.CriarDbContext();
-        InscricaoRepository envioRepository = _cenario.NovoRepositorioDeInscricao(envioContext);
-        Inscricao rascunho = (await envioRepository.ObterPorIdAsync(inscricao.Id))!;
-        rascunho.Respostas.Should().ContainKey("CONDICAO_DESCRITA", "o rascunho guarda a resposta oculta, para o candidato poder voltar atrás");
+    private async Task SalvarCondicaoOcultaAsync(UniPlusDbContext db, Inscricao inscricao, ContextoDaVersaoFixada contexto)
+    {
+        inscricao.Salvar(PreenchimentoDoCandidato.ParaValidacao(OpcoesDeCursoDaInscricao.Reidratar(null, null), new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+        {
+            ["PRECISA_ATENDIMENTO"] = JsonSerializer.SerializeToElement(false),
+            ["CONDICAO_DESCRITA"] = JsonSerializer.SerializeToElement("Lactante"),
+        }, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), []), contexto.Admitidas with { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond }, PrecondicaoIfMatch.DeTags([inscricao.ETag])).IsSuccess.Should().BeTrue();
+        await _cenario.NovoRepositorioDeInscricao(db).AtualizarAsync(inscricao, CancellationToken.None);
+        await db.SaveChangesAsync(CancellationToken.None);
+    }
 
+    private async Task EnviarOcultandoAsync(Guid inscricaoId, ContextoDaVersaoFixada contexto)
+    {
+        await using UniPlusDbContext envio = _cenario.CriarDbContext();
+        InscricaoRepository repositorio = _cenario.NovoRepositorioDeInscricao(envio);
+        Inscricao inscricao = (await repositorio.ObterPorIdAsync(inscricaoId))!;
+        inscricao.Formulario.Preenchimento.Respostas.Should().ContainKey("CONDICAO_DESCRITA");
+        ComprovanteInscricao comprovante = EmitirComprovante(inscricao, contexto);
+        await repositorio.AtualizarAsync(inscricao, CancellationToken.None);
+        await _cenario.NovoRepositorioDeComprovantes(envio).AdicionarComprovanteAsync(comprovante, CancellationToken.None);
+        await envio.SaveChangesAsync(CancellationToken.None);
+    }
+
+    private static ComprovanteInscricao EmitirComprovante(Inscricao inscricao, ContextoDaVersaoFixada contexto)
+    {
         ResultadoDaAvaliacaoDaInscricao avaliacao = AvaliacaoDaInscricao.Avaliar(contexto.Configuracao, new EntradaDaAvaliacaoDaInscricao(
-            rascunho.Respostas,
-            new Dictionary<string, IReadOnlyList<OcorrenciaRespondida>>(StringComparer.Ordinal),
-            new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
-            AvaliacaoDaInscricao.CodigosDasEtapasDaInscricao(contexto.Configuracao.Definicao),
+            inscricao.Formulario.Preenchimento.Respostas, new Dictionary<string, IReadOnlyList<OcorrenciaRespondida>>(StringComparer.Ordinal),
+            new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), AvaliacaoDaInscricao.CodigosDasEtapasDaInscricao(contexto.Configuracao.Definicao),
             Envio: null, Apresentacoes: EntradaDaAvaliacaoDaInscricao.SemApresentacoes)).Value!;
-        ComprovanteInscricao comprovante = rascunho.Submeter(
-            "000901", contexto.Admitidas.OfertasDeCurso.Single(), null, new Dictionary<string, JsonElement>(StringComparer.Ordinal),
-            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [], contexto.Admitidas with { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond }, avaliacao,
-            new Dictionary<string, JsonElement>(StringComparer.Ordinal), DerivadosDoSistemaInscricao.DefinicoesDasRespostas,
-            PrecondicaoIfMatch.DeTags([rascunho.ETag]), DentroDoPeriodo.GetUtcNow(), []).Value!;
-        await envioRepository.AtualizarAsync(rascunho, CancellationToken.None);
-        await envioRepository.AdicionarComprovanteAsync(comprovante, CancellationToken.None);
-        await envioContext.SaveChangesAsync(CancellationToken.None);
+        return inscricao.Submeter("000901",
+            PreenchimentoDoCandidato.Criar(OpcoesDeCursoDaInscricao.Reidratar(contexto.Admitidas.OfertasDeCurso.Single(), null), new Dictionary<string, JsonElement>(StringComparer.Ordinal), new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), []), contexto.Admitidas with { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond },
+            new ApuracaoDoEnvio(avaliacao, new Dictionary<string, JsonElement>(StringComparer.Ordinal), DerivadosDoSistemaInscricao.DefinicoesDasRespostas, [], null), PrecondicaoIfMatch.DeTags([inscricao.ETag]), DentroDoPeriodo.GetUtcNow()).Value!;
+    }
 
-        await using UniPlusDbContext readContext = _cenario.CriarDbContext();
-        InscricaoRepository leitura = _cenario.NovoRepositorioDeInscricao(readContext);
-        Inscricao enviada = (await leitura.ObterPorIdAsync(inscricao.Id))!;
-        enviada.Respostas.Should().ContainKey("PRECISA_ATENDIMENTO").And.NotContainKey("CONDICAO_DESCRITA");
-        ComprovanteInscricao gravado = (await leitura.ObterComprovantesAsync([inscricao.Id], CancellationToken.None)).Single();
-        gravado.Respostas.Should().NotContainKey("CONDICAO_DESCRITA");
-        gravado.IntegridadeConfere().Should().BeTrue("o hash cobre só o que foi gravado");
+    private async Task ConferirEnvioSemRespostaOcultaAsync(Guid inscricaoId)
+    {
+        await using UniPlusDbContext leitura = _cenario.CriarDbContext();
+        InscricaoRepository repositorio = _cenario.NovoRepositorioDeInscricao(leitura);
+        Inscricao inscricao = (await repositorio.ObterPorIdAsync(inscricaoId))!;
+        inscricao.Formulario.Preenchimento.Respostas.Should().ContainKey("PRECISA_ATENDIMENTO").And.NotContainKey("CONDICAO_DESCRITA");
+        ComprovanteInscricao comprovante = (await _cenario.NovoRepositorioDeComprovantes(leitura).ObterComprovantesAsync([inscricaoId], CancellationToken.None)).Single();
+        comprovante.Respostas.Should().NotContainKey("CONDICAO_DESCRITA");
+        comprovante.IntegridadeConfere().Should().BeTrue();
     }
 }

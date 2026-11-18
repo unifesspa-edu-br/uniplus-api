@@ -30,6 +30,7 @@ public static class EmitirComprovanteDaInscricaoQueryHandler
         IVerificadorDeAcesso verificador,
         IProcessoSeletivoRepository processoRepository,
         IInscricaoRepository inscricaoRepository,
+        IComprovanteDaInscricaoRepository comprovanteRepository,
         MontadorDoComprovante montador,
         CancellationToken cancellationToken)
     {
@@ -38,18 +39,27 @@ public static class EmitirComprovanteDaInscricaoQueryHandler
         ArgumentNullException.ThrowIfNull(processoRepository);
         ArgumentNullException.ThrowIfNull(inscricaoRepository);
         ArgumentNullException.ThrowIfNull(montador);
+        ArgumentNullException.ThrowIfNull(comprovanteRepository);
 
+        DomainError? recusa = await ConferirAcessoAsync(query, verificador, processoRepository, inscricaoRepository, cancellationToken).ConfigureAwait(false);
+
+        return recusa is not null
+            ? Result<ComprovanteDaInscricaoDto>.Failure(recusa)
+            : await EmitirAsync(query, inscricaoRepository, comprovanteRepository, montador, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<DomainError?> ConferirAcessoAsync(
+        EmitirComprovanteDaInscricaoQuery query, IVerificadorDeAcesso verificador,
+        IProcessoSeletivoRepository processoRepository, IInscricaoRepository inscricaoRepository, CancellationToken cancellationToken)
+    {
         ConferenciaDoVinculo conferencia = await AcessoAInscricao
             .ConferirVinculoAsync(processoRepository, inscricaoRepository, query.ProcessoSeletivoId, query.InscricaoId, cancellationToken)
             .ConfigureAwait(false);
 
-        DomainError? recusa = conferencia is Vinculo vinculo
+        return conferencia is Vinculo vinculo
             ? await RecusaDoAcessoAsync(verificador, vinculo, query, cancellationToken).ConfigureAwait(false)
             : await RecusaDoInexistenteAsync(verificador, conferencia, query, cancellationToken).ConfigureAwait(false);
 
-        return recusa is not null
-            ? Result<ComprovanteDaInscricaoDto>.Failure(recusa)
-            : await EmitirAsync(query, inscricaoRepository, montador, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<DomainError?> RecusaDoInexistenteAsync(
@@ -87,12 +97,13 @@ public static class EmitirComprovanteDaInscricaoQueryHandler
     }
 
     private static async Task<Result<ComprovanteDaInscricaoDto>> EmitirAsync(
-        EmitirComprovanteDaInscricaoQuery query, IInscricaoRepository inscricaoRepository, MontadorDoComprovante montador, CancellationToken cancellationToken)
+        EmitirComprovanteDaInscricaoQuery query, IInscricaoRepository inscricaoRepository,
+        IComprovanteDaInscricaoRepository comprovanteRepository, MontadorDoComprovante montador, CancellationToken cancellationToken)
     {
         Inscricao? inscricao = await inscricaoRepository.ObterPorIdAsync(query.InscricaoId, cancellationToken).ConfigureAwait(false);
 
         return inscricao is null
             ? Result<ComprovanteDaInscricaoDto>.Failure(AcessoAInscricao.NaoEncontradaNoProcesso)
-            : await ComprovanteDoNumero.MontarAsync(inscricao, query.Numero, inscricaoRepository, montador, cancellationToken).ConfigureAwait(false);
+            : await ComprovanteDoNumero.MontarAsync(inscricao, query.Numero, comprovanteRepository, montador, cancellationToken).ConfigureAwait(false);
     }
 }

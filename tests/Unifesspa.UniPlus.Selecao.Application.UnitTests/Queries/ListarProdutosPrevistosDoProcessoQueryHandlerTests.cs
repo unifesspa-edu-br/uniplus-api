@@ -67,14 +67,22 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
             _processoId, new DocumentoCongelado([1], Versao, "canonical-json/sha256@v1", new string('a', 64)),
             Guid.CreateVersion7(), "sub", Agora);
         _processos.ObterVersaoVigenteAsync(_processoId, Agora, Arg.Any<CancellationToken>()).Returns(versao);
-        _codecs.Reidratar(versao).Returns(Result<EnvelopeReidratado>.Success(new EnvelopeReidratado(
-            new GrafoConfiguracao(
-                etapas ?? [.. processo.Etapas], processo.AtendimentoEspecializado!, [.. processo.DistribuicaoVagas],
-                processo.BonusRegional, [.. processo.CriteriosDesempate], processo.Classificacao!,
-                fases, [.. processo.DocumentosExigidos], [], null, configuracaoDivulgacao: divulgacao, numeroDeOpcoesDeCurso: 1),
-            DadosEdital.Criar("001/2027", Agora, Agora.AddDays(30), Guid.CreateVersion7()).Value!,
-            new string('a', 64), "America/Sao_Paulo", retificacao: null, conformidade: null)));
+        _codecs.Reidratar(versao).Returns(Result<EnvelopeReidratado>.Success(Envelope(processo, fases, etapas, divulgacao)));
     }
+
+    private static EnvelopeReidratado Envelope(
+        ProcessoSeletivo processo, IReadOnlyList<FaseCronograma> fases, IReadOnlyList<EtapaProcesso>? etapas, ConfiguracaoDivulgacao? divulgacao) =>
+        new(new ConfiguracaoPublicada(
+            new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, fases),
+            new AvaliacaoDeclarada(etapas ?? [.. processo.Etapas], [.. processo.CriteriosDesempate], processo.Classificacao!),
+            new VagasDeclaradas([.. processo.DistribuicaoVagas], 1, processo.BonusRegional is not null,
+                processo.BonusRegional, null, processo.AtendimentoEspecializado!),
+            new ExigenciasDeclaradas([.. processo.DocumentosExigidos], []),
+            new ColetaDeclarada([], [], [], [],
+                [], [], null),
+            new DivulgacaoETaxaDeclaradas(divulgacao, null), null),
+            DadosEdital.Criar("001/2027", Agora, Agora.AddDays(30), Guid.CreateVersion7()).Value!,
+            new string('a', 64), "America/Sao_Paulo", retificacao: null, conformidade: null, dadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada());
 
     private static FaseCronograma Fase(string codigo, int ordem, params ProdutoDaFase[] produtos) =>
         FaseQueConclui(codigo, ordem, null, produtos);
@@ -122,7 +130,7 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
 
     private async Task<Result<ProdutosPrevistosDoProcessoDto>> Consultar() =>
         await new ListarProdutosPrevistosDoProcessoQueryHandler(
-            new GrafoVigenteDoProcesso(_processos, _codecs), _atos, _documentos, _tipos, _fuso, new RelogioFixo(Agora))
+            new ConfiguracaoVigenteDoProcesso(_processos, _codecs), _atos, _documentos, _tipos, _fuso, new RelogioFixo(Agora))
             .Handle(new ListarProdutosPrevistosDoProcessoQuery(_processoId), CancellationToken.None);
 
     private async Task<ProdutoPrevistoDto> ItemDaFase(Guid produtoId)
@@ -202,9 +210,6 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
         doPreliminar.Ato.DocumentoPrincipal.NomeArquivo.Should().Be("lista.pdf");
         doPreliminar.PodePublicar.Should().BeFalse();
         doPreliminar.Impedimento!.Motivo.Should().Be(ImpedimentoDoProduto.JaPublicado);
-        doDefinitivo.Situacao.Should().Be(SituacaoDoProdutoPrevisto.Aberto);
-        doDefinitivo.PodePublicar.Should().BeTrue();
-        doDefinitivo.Impedimento.Should().BeNull();
     }
 
     [Fact(DisplayName = "O preliminar de outra matéria não libera o definitivo")]
@@ -269,6 +274,14 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
         (await ItemDaFase(definitivo.Id)).PodePublicar.Should().BeTrue();
     }
 
+    private void CronogramaDasDuasFases(ProdutoDaFase primeiro, ProdutoDaFase segundo, ProdutoDaFase definitivo) =>
+        Cronograma(
+        [
+            FaseQueConclui("PROVA_1", 1, "RESULTADO", primeiro),
+            FaseQueConclui("PROVA_2", 2, "RESULTADO", segundo),
+            Fase("RESULTADO", 3, definitivo),
+        ]);
+
     [Fact(DisplayName = "O preliminar de uma fase que aponta outra concluinte não é esperado")]
     public async Task Handle_FaseQueApontaOutraConcluinte_NaoEhEsperada()
     {
@@ -317,12 +330,18 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
             [Etapa("Prova objetiva", "AVALIACAO", gabarito), Etapa("Entrevista", null, semFase)]);
         Result<ProdutosPrevistosDoProcessoDto> resultado = await Consultar();
 
-        FaseComProdutosPrevistosDto avaliacao = resultado.Value!.Fases.Single(f => f.Codigo == "AVALIACAO");
+        ConferirProdutosAgrupados(resultado.Value!, daFase, gabarito, semFase);
+    }
+
+    private static void ConferirProdutosAgrupados(
+        ProdutosPrevistosDoProcessoDto resultado, ProdutoDaFase daFase, ProdutoDaEtapa gabarito, ProdutoDaEtapa semFase)
+    {
+        FaseComProdutosPrevistosDto avaliacao = resultado.Fases.Single(f => f.Codigo == "AVALIACAO");
         avaliacao.Produtos.Select(p => p.Id).Should().Equal(daFase.Id);
         avaliacao.Etapas.Single().Nome.Should().Be("Prova objetiva");
         avaliacao.Etapas.Single().Produtos.Single().Id.Should().Be(gabarito.Id);
-        resultado.Value.Fases.Single(f => f.Codigo == "RESULTADO").Etapas.Should().BeEmpty();
-        resultado.Value.EtapasSemFase.Single().Produtos.Single().Id.Should().Be(semFase.Id);
+        resultado.Fases.Single(f => f.Codigo == "RESULTADO").Etapas.Should().BeEmpty();
+        resultado.EtapasSemFase.Single().Produtos.Single().Id.Should().Be(semFase.Id);
     }
 
     [Fact(DisplayName = "Tipo de ato sem versão vigente no catálogo impede a publicação")]

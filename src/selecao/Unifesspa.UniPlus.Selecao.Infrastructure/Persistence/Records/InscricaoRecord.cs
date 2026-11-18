@@ -16,8 +16,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <c>(ProcessoSeletivoId, CpfIndice)</c> e o cruzamento com o INEP; não é dado exibido. As respostas ficam em <see cref="RespostaDaInscricaoRecord"/>,
 /// <see cref="EnderecoDaInscricaoRecord"/>, <see cref="OcorrenciaDeGrupoDaInscricaoRecord"/> e
 /// <see cref="AceiteDaInscricaoRecord"/> (ADR-0141). A tradução para/de
-/// <see cref="Domain.Entities.Inscricao"/> é responsabilidade exclusiva do
-/// <c>InscricaoRepository</c>, nunca de um <c>ValueConverter</c>.
+/// <see cref="Domain.Entities.Inscricao"/> é da fronteira do repositório da inscrição
+/// (<c>TraducaoDaInscricao</c>), nunca de um <c>ValueConverter</c>.
 /// </remarks>
 public sealed class InscricaoRecord : IIdentificavel
 {

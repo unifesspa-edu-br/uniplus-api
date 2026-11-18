@@ -35,23 +35,23 @@ public static class ConfiguracaoAvaliavelDoProcesso
             processo.Formularios);
     }
 
-    /// <param name="grafo">O grafo congelado da versão.</param>
+    /// <param name="configuracao">A configuração publicada da versão.</param>
     /// <param name="avaliavel">A definição avaliável, montada para as mesmas <paramref name="ofertasDeCurso"/>.</param>
     /// <param name="ofertasDeCurso">As ofertas de curso escolhidas; vazia, ou ausente, quando ainda não há escolha.</param>
     public static ConfiguracaoAvaliavel DoCongelado(
-        GrafoConfiguracao grafo, DefinicaoAvaliavel avaliavel, IReadOnlyCollection<Guid>? ofertasDeCurso = null)
+        ConfiguracaoPublicada configuracao, DefinicaoAvaliavel avaliavel, IReadOnlyCollection<Guid>? ofertasDeCurso = null)
     {
-        ArgumentNullException.ThrowIfNull(grafo);
+        ArgumentNullException.ThrowIfNull(configuracao);
         ArgumentNullException.ThrowIfNull(avaliavel);
 
         return new ConfiguracaoAvaliavel(
             avaliavel.Definicao,
             avaliavel.Ofertas,
-            ArvoreExigenciasCongelada.DeGrafoReidratado([.. grafo.NosExigencia.Where(static n => n.NoPaiId is null)]),
-            grafo.FatosColetados,
-            grafo.GruposColetados,
-            [.. DerivacoesDaOferta.DistribuicaoDasOfertas(grafo.DistribuicaoVagas, ofertasDeCurso ?? []).SelectMany(static d => d.Modalidades)],
-            grafo.CronogramaFases,
-            grafo.Formularios);
+            ArvoreExigenciasCongelada.DeGrafoReidratado([.. configuracao.Exigencias.NosExigencia.Where(static n => n.NoPaiId is null)]),
+            [.. configuracao.Coleta.Itens],
+            configuracao.Coleta.GruposColetados,
+            [.. DerivacoesDaOferta.DistribuicaoDasOfertas(configuracao.Vagas.DistribuicaoVagas, ofertasDeCurso ?? []).SelectMany(static d => d.Modalidades)],
+            configuracao.Cronograma.CronogramaFases,
+            configuracao.Coleta.Formularios);
     }
 }

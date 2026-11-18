@@ -68,7 +68,7 @@ internal static class ConsultaAdministrativaDeTeste
                 persona.Verificador,
                 new ProjetorDeItens(persona.Verificador, Substitute.For<IDecisoesDaRequisicao>()),
                 new PortaDePermissaoPorPar<PermissaoSelecao>()),
-            new LeituraDaInscricaoAdministrativa(mundo.Processos, mundo.Inscricoes, mundo.Documentos, mundo.Codecs),
+            new LeituraDaInscricaoAdministrativa(mundo.Processos, mundo.Inscricoes, mundo.Comprovantes, mundo.Documentos, mundo.Codecs),
             CancellationToken.None);
 
     public static IEnumerable<ItemDeRespostaDto> ItensDe(InscricaoAdministrativaDto dto) => dto.Secoes.SelectMany(static s => s.Itens);

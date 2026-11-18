@@ -58,20 +58,20 @@ internal static class ConferenciaDoCicloRecursalAberto
             return Result.Failure(publicada.Error!);
         }
 
-        GrafoConfiguracao grafo = publicada.Value!.Grafo;
+        ConfiguracaoPublicada configuracaoPublicada = publicada.Value!.Configuracao;
         IReadOnlyList<FieldError> recusas = ConferenciaDoDominio.Conferir(
-            grafo.CronogramaFases, grafo.Etapas, processo.CronogramaFases, processo.Etapas, ItensPublicados(atos, grafo));
+            configuracaoPublicada.Cronograma.CronogramaFases, configuracaoPublicada.Avaliacao.Etapas, processo.CronogramaFases, processo.Etapas, ItensPublicados(atos, configuracaoPublicada));
 
         return recusas.Count == 0 ? Result.Success() : Result.ValidationFailure(PonteiroNoDocumento.Converter(recusas, OrigemNoDocumento.Identidade));
     }
 
-    private static HashSet<IdentidadeDoItemDoEdital> ItensPublicados(IReadOnlyList<AtoDoProcesso> atos, GrafoConfiguracao publicado)
+    private static HashSet<IdentidadeDoItemDoEdital> ItensPublicados(IReadOnlyList<AtoDoProcesso> atos, ConfiguracaoPublicada publicado)
     {
         CadeiasDosProdutosPrevistos cadeias = CadeiasDosProdutosPrevistos.De(atos);
 
         return
         [
-            .. IdentidadeDoItemDoEdital.Dos(publicado.CronogramaFases, publicado.Etapas).Values
+            .. IdentidadeDoItemDoEdital.Dos(publicado.Cronograma.CronogramaFases, publicado.Avaliacao.Etapas).Values
                 .Where(item => cadeias.PrimeiraPublicacaoDe(item) is not null),
         ];
     }

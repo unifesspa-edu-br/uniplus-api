@@ -25,25 +25,7 @@ internal static class LeituraDaArvoreDeSatisfacao
         LeitorEnvelope leitor, JsonObject payload, IReadOnlyDictionary<Guid, DocumentoExigido> exigenciasPorId)
     {
         JsonArray array = leitor.Array(payload, "arvoreSatisfacao", "$");
-        if (leitor.Falhou)
-        {
-            return [];
-        }
-
-        List<NoExigencia> raizes = [];
-        for (int i = 0; i < array.Count; i++)
-        {
-            JsonObject item = leitor.ItemObjeto(array, i, "arvoreSatisfacao");
-            NoExigencia? no = LerNo(leitor, item, $"arvoreSatisfacao[{i}]", exigenciasPorId);
-            if (leitor.Falhou)
-            {
-                return [];
-            }
-
-            raizes.Add(no!);
-        }
-
-        return raizes;
+        return leitor.Falhou ? [] : LerNos(leitor, array, "arvoreSatisfacao", exigenciasPorId) ?? [];
     }
 
     /// <summary>
@@ -53,7 +35,7 @@ internal static class LeituraDaArvoreDeSatisfacao
     /// repostos ao lado da árvore. <c>exigenciaId</c> resolve contra
     /// <paramref name="exigenciasPorId"/> — presente sse <c>tipo</c> é <c>FOLHA</c> (checagem
     /// simétrica à de <see cref="NoExigencia.CriarFolha"/>/<see cref="NoExigencia.CriarGrupo"/>,
-    /// aqui como forma, não semântica: <see cref="NoExigencia.Reidratar"/> não revalida).
+    /// aqui como forma, não semântica: <see cref="NoExigencia.ReidratarFolha"/> não revalida).
     /// </summary>
     internal static NoExigencia? LerNo(
         LeitorEnvelope leitor, JsonObject item, string path, IReadOnlyDictionary<Guid, DocumentoExigido> exigenciasPorId)
@@ -63,30 +45,71 @@ internal static class LeituraDaArvoreDeSatisfacao
             "id", "ordem", "tipo", "exigenciaId", "quantidadeMinima", "consequencia", "basesLegais",
             "chaveDistincao", "dataReferencia", "ocorrenciasEsperadas", "repetePorEntidade", "filhos");
 
+        return leitor.Falhou ? null : LerConteudoDoNo(leitor, item, path, exigenciasPorId);
+    }
+
+    private static NoExigencia? LerConteudoDoNo(
+        LeitorEnvelope leitor, JsonObject item, string path, IReadOnlyDictionary<Guid, DocumentoExigido> exigenciasPorId)
+    {
         DeclaracaoDoNo d = LerDeclaracao(leitor, item, path);
-        if (leitor.Falhou)
-        {
-            return null;
-        }
-
-        IReadOnlyList<string>? ocorrenciasEsperadas = LerOcorrenciasEsperadasDeNo(leitor, item, path);
-        IReadOnlyList<NoExigenciaBaseLegal> basesLegais = leitor.Falhou ? [] : LerBasesLegaisDeNo(leitor, item, path);
-        if (leitor.Falhou)
-        {
-            return null;
-        }
-
-        if (!ResolverReferencias(leitor, d, path, exigenciasPorId, out TipoNo tipo, out ChaveDistincao? chaveDistincao, out DocumentoExigido? documentoExigido))
+        if (leitor.Falhou || !LerColecoesDoNo(leitor, item, path, d)
+            || !ResolverReferencias(leitor, d, exigenciasPorId, out TipoNo tipo, out ChaveDistincao? chave, out DocumentoExigido? documento))
         {
             return null;
         }
 
         List<NoExigencia>? filhos = LerFilhos(leitor, item, path, exigenciasPorId);
-        return filhos is null
+        return filhos is null || !ConferirFormaDoNo(leitor, d, filhos, tipo)
             ? null
-            : NoExigencia.Reidratar(
-                d.Id, tipo, d.Ordem, d.ExigenciaId, documentoExigido, d.QuantidadeMinima, d.Consequencia,
-                chaveDistincao, d.DataReferencia, ocorrenciasEsperadas, d.RepetePorEntidadeCodigo, basesLegais, filhos);
+            : ReidratarNo(d, tipo, chave, documento, filhos);
+    }
+
+    private static NoExigencia ReidratarNo(
+        DeclaracaoDoNo d, TipoNo tipo, ChaveDistincao? chave, DocumentoExigido? documento, IReadOnlyList<NoExigencia> filhos) =>
+        tipo == TipoNo.Folha
+            ? NoExigencia.ReidratarFolha(d.Id, d.Ordem, documento!, d.QuantidadeMinima,
+                DistincaoDasApresentacoes.Reidratar(chave, d.DataReferencia, d.OcorrenciasEsperadas), d.RepetePorEntidadeCodigo)
+            : NoExigencia.ReidratarGrupo(d.Id, d.Ordem, new CombinacaoDoGrupo(tipo, d.QuantidadeMinima, d.Consequencia),
+                d.BasesLegais, filhos, d.RepetePorEntidadeCodigo);
+
+    private static bool LerColecoesDoNo(LeitorEnvelope leitor, JsonObject item, string path, DeclaracaoDoNo d)
+    {
+        d.OcorrenciasEsperadas = LerOcorrenciasEsperadasDeNo(leitor, item, path);
+        d.BasesLegais = leitor.Falhou ? [] : LerBasesLegaisDeNo(leitor, item, path);
+        return !leitor.Falhou;
+    }
+
+    private static bool ConferirFormaDoNo(
+        LeitorEnvelope leitor, DeclaracaoDoNo d, IReadOnlyList<NoExigencia> filhos, TipoNo tipo)
+    {
+        string? campo = tipo == TipoNo.Folha ? CampoIncompativelDaFolha(d, filhos) : CampoIncompativelDoGrupo(d);
+        return campo is null || RecusarSemRetorno(leitor, campo);
+    }
+
+    private static string? CampoIncompativelDaFolha(DeclaracaoDoNo d, IReadOnlyList<NoExigencia> filhos)
+    {
+        if (d.Consequencia is not null)
+        {
+            return "A regra de documento não pode ter consequência própria. Remova a consequência.";
+        }
+        if (d.BasesLegais.Count > 0)
+        {
+            return "A regra de documento não pode ter base legal própria. Remova a base legal.";
+        }
+        return filhos.Count > 0 ? "A regra de documento não pode conter outros itens. Remova os itens." : null;
+    }
+
+    private static string? CampoIncompativelDoGrupo(DeclaracaoDoNo d)
+    {
+        if (d.ChaveDistincaoCodigo is not null)
+        {
+            return "A forma de distinguir apresentações só pode ser informada em uma regra de documento. Remova-a deste item.";
+        }
+        if (d.DataReferencia is not null)
+        {
+            return "A data de referência das apresentações só pode ser informada em uma regra de documento. Remova-a deste item.";
+        }
+        return d.OcorrenciasEsperadas is not null ? "As ocorrências esperadas só podem ser informadas em uma regra de documento. Remova-as deste item." : null;
     }
 
     private static DeclaracaoDoNo LerDeclaracao(LeitorEnvelope leitor, JsonObject item, string path) => new()
@@ -105,7 +128,6 @@ internal static class LeituraDaArvoreDeSatisfacao
     private static bool ResolverReferencias(
         LeitorEnvelope leitor,
         DeclaracaoDoNo d,
-        string path,
         IReadOnlyDictionary<Guid, DocumentoExigido> exigenciasPorId,
         out TipoNo tipo,
         out ChaveDistincao? chave,
@@ -116,15 +138,15 @@ internal static class LeituraDaArvoreDeSatisfacao
         tipo = TipoNoCodigo.FromCodigo(d.TipoCodigo);
         if (tipo == TipoNo.Nenhum)
         {
-            leitor.Recusar<object>($"'{path}.tipo' não reconhecido: '{d.TipoCodigo}'.");
+            leitor.Recusar<object>("O tipo de regra informado não é reconhecido. Corrija o tipo informado.");
             return false;
         }
 
-        return ResolverChaveDeDistincao(leitor, d.ChaveDistincaoCodigo, path, out chave)
-            && ResolverDocumento(leitor, tipo, d, path, exigenciasPorId, out documento);
+        return ResolverChaveDeDistincao(leitor, d.ChaveDistincaoCodigo, out chave)
+            && ResolverDocumento(leitor, tipo, d, exigenciasPorId, out documento);
     }
 
-    private static bool ResolverChaveDeDistincao(LeitorEnvelope leitor, string? codigo, string path, out ChaveDistincao? chave)
+    private static bool ResolverChaveDeDistincao(LeitorEnvelope leitor, string? codigo, out ChaveDistincao? chave)
     {
         chave = null;
         if (codigo is null)
@@ -138,7 +160,7 @@ internal static class LeituraDaArvoreDeSatisfacao
             return true;
         }
 
-        leitor.Recusar<object>($"'{path}.chaveDistincao' não reconhecida: '{codigo}'.");
+        leitor.Recusar<object>("A forma de distinguir apresentações não é reconhecida. Corrija a forma de distinção na regra de documento.");
         return false;
     }
 
@@ -146,25 +168,32 @@ internal static class LeituraDaArvoreDeSatisfacao
         LeitorEnvelope leitor,
         TipoNo tipo,
         DeclaracaoDoNo d,
-        string path,
         IReadOnlyDictionary<Guid, DocumentoExigido> exigenciasPorId,
         out DocumentoExigido? documento)
     {
         documento = null;
         if (tipo != TipoNo.Folha)
         {
-            return d.ExigenciaId is null || RecusarSemRetorno(leitor, $"'{path}': nó '{d.TipoCodigo}' não pode ter 'exigenciaId'.");
+            return d.ExigenciaId is null || RecusarSemRetorno(leitor, "A composição de regras não pode indicar um documento. Remova o documento deste item.");
         }
 
-        if (d.ExigenciaId is not { } idDaExigencia)
+        return ResolverDocumentoDaFolha(leitor, d.ExigenciaId, exigenciasPorId, out documento);
+    }
+
+    private static bool ResolverDocumentoDaFolha(
+        LeitorEnvelope leitor, Guid? exigenciaId,
+        IReadOnlyDictionary<Guid, DocumentoExigido> exigenciasPorId, out DocumentoExigido? documento)
+    {
+        documento = null;
+        if (exigenciaId is not { } idDaExigencia)
         {
-            return RecusarSemRetorno(leitor, $"'{path}': nó FOLHA sem 'exigenciaId'.");
+            return RecusarSemRetorno(leitor, "A regra de documento precisa indicar um documento. Informe o documento exigido.");
         }
 
         return exigenciasPorId.TryGetValue(idDaExigencia, out documento)
             || RecusarSemRetorno(
                 leitor,
-                $"'{path}.exigenciaId' ({idDaExigencia}) não corresponde a nenhuma exigência em 'documentosExigidos.exigencias'.");
+                "O documento indicado na regra não consta entre os documentos exigidos. Informe um documento exigido.");
     }
 
     private static bool RecusarSemRetorno(LeitorEnvelope leitor, string mensagem)
@@ -176,26 +205,26 @@ internal static class LeituraDaArvoreDeSatisfacao
     private static List<NoExigencia>? LerFilhos(
         LeitorEnvelope leitor, JsonObject item, string path, IReadOnlyDictionary<Guid, DocumentoExigido> exigenciasPorId)
     {
-        JsonArray filhosArray = leitor.Array(item, "filhos", path);
-        if (leitor.Falhou)
-        {
-            return null;
-        }
+        JsonArray filhos = leitor.Array(item, "filhos", path);
+        return leitor.Falhou ? null : LerNos(leitor, filhos, $"{path}.filhos", exigenciasPorId);
+    }
 
-        List<NoExigencia> filhos = [];
-        for (int i = 0; i < filhosArray.Count; i++)
+    private static List<NoExigencia>? LerNos(
+        LeitorEnvelope leitor, JsonArray array, string path, IReadOnlyDictionary<Guid, DocumentoExigido> exigenciasPorId)
+    {
+        List<NoExigencia> nos = [];
+        for (int i = 0; i < array.Count; i++)
         {
-            JsonObject filhoItem = leitor.ItemObjeto(filhosArray, i, $"{path}.filhos");
-            NoExigencia? filho = LerNo(leitor, filhoItem, $"{path}.filhos[{i}]", exigenciasPorId);
+            JsonObject item = leitor.ItemObjeto(array, i, path);
+            NoExigencia? no = LerNo(leitor, item, $"{path}[{i}]", exigenciasPorId);
             if (leitor.Falhou)
             {
                 return null;
             }
-
-            filhos.Add(filho!);
+            nos.Add(no!);
         }
 
-        return filhos;
+        return nos;
     }
 
     private sealed class DeclaracaoDoNo
@@ -217,6 +246,10 @@ internal static class LeituraDaArvoreDeSatisfacao
         public DateOnly? DataReferencia { get; init; }
 
         public string? RepetePorEntidadeCodigo { get; init; }
+
+        public IReadOnlyList<string>? OcorrenciasEsperadas { get; set; }
+
+        public IReadOnlyList<NoExigenciaBaseLegal> BasesLegais { get; set; } = [];
     }
 
     /// <summary>Mesma técnica de <c>LeituraDosMetadadosDosFatos.LerValoresDominio</c> para o campo nulo-ou-array.</summary>
@@ -245,16 +278,16 @@ internal static class LeituraDaArvoreDeSatisfacao
     internal static IReadOnlyList<NoExigenciaBaseLegal> LerBasesLegaisDeNo(LeitorEnvelope leitor, JsonObject item, string pathPai)
     {
         JsonArray array = leitor.Array(item, "basesLegais", pathPai);
-        if (leitor.Falhou)
-        {
-            return [];
-        }
+        return leitor.Falhou ? [] : LerBasesLegaisDoArray(leitor, array, $"{pathPai}.basesLegais");
+    }
 
+    private static List<NoExigenciaBaseLegal> LerBasesLegaisDoArray(LeitorEnvelope leitor, JsonArray array, string path)
+    {
         List<NoExigenciaBaseLegal> basesLegais = [];
         for (int i = 0; i < array.Count; i++)
         {
             NoExigenciaBaseLegal? baseLegal = LerBaseLegalDoNo(
-                leitor, leitor.ItemObjeto(array, i, $"{pathPai}.basesLegais"), $"{pathPai}.basesLegais[{i}]");
+                leitor, leitor.ItemObjeto(array, i, path), $"{path}[{i}]");
             if (baseLegal is null)
             {
                 return [];

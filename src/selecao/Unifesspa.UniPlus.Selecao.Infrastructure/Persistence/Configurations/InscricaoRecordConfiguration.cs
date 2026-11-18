@@ -80,7 +80,7 @@ internal sealed class InscricaoRecordConfiguration : IEntityTypeConfiguration<In
 
         builder.Property(i => i.MotivoDoCancelamento)
             .ClassificaComo(ClassificacaoDeProtecao.Pessoal)
-            .HasMaxLength(Domain.Entities.Inscricao.TamanhoMaximoDoMotivoDoCancelamento)
+            .HasMaxLength(Domain.ValueObjects.CancelamentoDaInscricao.TamanhoMaximoDoMotivoDoCancelamento)
             .HasComment("O motivo do cancelamento; 'a pedido do candidato' quando o candidato não o disse. Nulo se não foi cancelada.");
 
         // Token de concorrência (ADR-0119): a checagem em memória de Inscricao.ConferirPrecondicao

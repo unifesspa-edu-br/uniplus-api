@@ -145,18 +145,8 @@ public sealed record FatoDerivadoCongelado(
 /// (ADR-0042). Só regras aprovadas chegam aqui: se qualquer uma reprovasse, o handler já
 /// teria recusado a transição antes de canonicalizar.
 /// </param>
-/// <param name="MetadadosFatosCongelados">
-/// Metadado congelado (Story #919, congelamento dos parâmetros na publicação, UNI-REQ-0019) de cada fato do candidato citado em alguma
-/// <see cref="Domain.Entities.CondicaoGatilho"/> de algum <see cref="Domain.Entities.DocumentoExigido"/>
-/// vivo do processo, por <c>Codigo</c> — montado pelo handler via
-/// <c>IFatoCandidatoReader</c> (o canonicalizador não injeta reader cross-módulo,
-/// ADR-0042). <see langword="null"/> quando nenhuma condição existe no processo (nada a
-/// congelar); o handler garante, ANTES de canonicalizar, que todo fato referenciado
-/// resolve — o canonicalizador confia no dicionário recebido e não o revalida contra
-/// <see cref="Domain.Entities.ProcessoSeletivo.DocumentosExigidos"/> (mesmo tratamento
-/// que <paramref name="Conformidade"/> já recebe).
-/// </param>
-/// <param name="ValoresSelecionaveisCongelados">
+/// <param name="DadosDeCatalogo">Dados dos cadastros copiados para a versão publicada.</param>
+/// <remarks>
 /// Os valores que o candidato pode escolher para cada <see cref="Domain.Entities.FatoColetado"/>
 /// do processo, por <c>FatoCodigo</c> — montado pelo handler via <c>IFatoCandidatoReader</c> e
 /// pelo atendimento especializado do próprio processo (o canonicalizador não injeta reader nem lê
@@ -166,7 +156,7 @@ public sealed record FatoDerivadoCongelado(
 /// canonicalizar, e o canonicalizador LANÇA se um fato de seleção não tiver entrada (defesa em
 /// profundidade contra um handler que esqueceu de passar o valor, nunca publicando um seletor
 /// vazio por omissão).
-/// </param>
+/// </remarks>
 public sealed record EntradaCanonicalizacao(
     ProcessoSeletivo Processo,
     DadosEdital Dados,
@@ -179,45 +169,9 @@ public sealed record EntradaCanonicalizacao(
     /// mudaria de resultado quando o padrão institucional mudasse.
     /// </summary>
     string FusoHorario,
-    RetificacaoDoEdital? Retificacao = null,
-    ResultadoConformidade? Conformidade = null,
-    IReadOnlyDictionary<string, MetadadoFatoCongelado>? MetadadosFatosCongelados = null,
-    IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? ValoresSelecionaveisCongelados = null,
-    /// <summary>
-    /// Calendário de dias úteis copiado por valor da leitura vigente (UNI-REQ-0080), ou
-    /// <see langword="null"/> quando o certame não tem contagem que distinga dia útil e a
-    /// publicação prosseguiu sem ele.
-    /// <para>
-    /// Na recodificação de uma versão já publicada é o calendário <b>congelado nela</b> que volta
-    /// aqui, nunca o vigente — pelo mesmo motivo do fuso: a prova byte a byte mudaria de resultado
-    /// quando o cadastro ganhasse dataset novo, e a versão deixaria de reproduzir a própria
-    /// contagem.
-    /// </para>
-    /// </summary>
-    CalendarioDiasUteisCongelado? CalendarioDiasUteis = null,
-    /// <summary>
-    /// Os agregados do catálogo sobre os grupos repetíveis do processo — o fato de membro e a
-    /// operação de cada um —, congelados junto do grupo. Na recodificação, são os congelados na
-    /// versão que voltam aqui, porque o catálogo pode ter mudado.
-    /// </summary>
-    IReadOnlyList<DefinicaoAgregado>? AgregadosDosGrupos = null,
-    /// <summary>
-    /// A apresentação — rótulo e tipo de campo do catálogo — de cada fato que as regras dos
-    /// formulários citam e nenhum formulário do processo pergunta. Na recodificação, é a congelada
-    /// na versão que volta aqui.
-    /// </summary>
-    IReadOnlyDictionary<string, ApresentacaoDoFato>? ApresentacaoDosPressupostos = null,
-    /// <summary>
-    /// A classificação de cada tipo de ato que o cronograma declara, nas fases e nas etapas, por
-    /// código — a do catálogo na publicação. Na recodificação, é a congelada na versão que volta
-    /// aqui, porque o catálogo pode ter mudado.
-    /// </summary>
-    IReadOnlyDictionary<string, TipoDeAtoCongelado>? TiposDeAtoCongelados = null,
-    /// <summary>
-    /// Os fatos derivados do catálogo, por código — o do catálogo na publicação, e na retificação o que
-    /// a versão vigente já congelou. Na recodificação, é o congelado na versão que volta aqui.
-    /// </summary>
-    IReadOnlyDictionary<string, FatoDerivadoCongelado>? FatosDerivadosCongelados = null);
+    RetificacaoDoEdital? Retificacao,
+    ResultadoConformidade? Conformidade,
+    DadosDeCatalogoDaConfiguracaoPublicada DadosDeCatalogo);
 
 /// <summary>
 /// Porta da projeção canônica do envelope de congelamento (ADR-0100, ADR-0109).

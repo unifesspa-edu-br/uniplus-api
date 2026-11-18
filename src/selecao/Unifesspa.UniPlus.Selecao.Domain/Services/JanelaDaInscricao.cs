@@ -19,12 +19,12 @@ public sealed record JanelaDaInscricao(DateTimeOffset Inicio, DateTimeOffset Fim
     /// A janela da versão publicada. Sem formulário de inscrição, o processo não recebe inscrição
     /// pelo sistema, como o de resultado importado.
     /// </summary>
-    public static Result<JanelaDaInscricao> Da(GrafoConfiguracao grafo, DadosEdital dados)
+    public static Result<JanelaDaInscricao> Da(ConfiguracaoPublicada configuracao, DadosEdital dados)
     {
-        ArgumentNullException.ThrowIfNull(grafo);
+        ArgumentNullException.ThrowIfNull(configuracao);
         ArgumentNullException.ThrowIfNull(dados);
 
-        if (!grafo.Formularios.Any(static f => f.Finalidade == FinalidadeFormulario.Inscricao))
+        if (configuracao.Coleta.FormularioDe(FinalidadeFormulario.Inscricao) is null)
         {
             return Result<JanelaDaInscricao>.Failure(new DomainError(
                 InscricaoErrorCodes.ProcessoSemInscricao,
@@ -46,14 +46,11 @@ public sealed record JanelaDaInscricao(DateTimeOffset Inicio, DateTimeOffset Fim
                 $"As inscrições deste processo seletivo começam em {Formatar(Inicio, fuso)} e vão até {Formatar(Fim, fuso)}, no horário de {FusoInstitucional.Nome}.");
         }
 
-        if (Encerrou(agora))
-        {
-            return new DomainError(
+        return Encerrou(agora)
+            ? new DomainError(
                 InscricaoErrorCodes.ForaDoPeriodo,
-                $"As inscrições deste processo seletivo se encerraram em {Formatar(Fim, fuso)}, no horário de {FusoInstitucional.Nome}.");
-        }
-
-        return null;
+                $"As inscrições deste processo seletivo se encerraram em {Formatar(Fim, fuso)}, no horário de {FusoInstitucional.Nome}.")
+            : null;
     }
 
     /// <summary>

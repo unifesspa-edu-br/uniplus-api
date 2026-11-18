@@ -28,16 +28,16 @@ public sealed class PrazoDaCorrecaoDoComprovanteTests
 
     private static Inscricao Enviada()
     {
-        return Inscricao.Reidratar(
-            Guid.CreateVersion7(), ProcessoId, PersonasDeTeste.FernandaDrumond, "conta-1", "https://issuer", SituacaoInscricao.Submetida, Guid.CreateVersion7(), null, null,
-            "000123", null, null, null,
-            new Dictionary<string, JsonElement>(), new Dictionary<string, JsonElement>(),
-            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), [], new Dictionary<string, DefinicaoDaResposta>(), 1, DateTimeOffset.UtcNow, null);
+        return Inscricao.Reidratar(Guid.CreateVersion7(), ProcessoId,
+            TitularDaInscricao.Reidratar(PersonasDeTeste.FernandaDrumond, "conta-1", "https://issuer"),
+            EstadoDaInscricao.Reidratar(SituacaoInscricao.Submetida, "000123", CancelamentoDaInscricao.Reidratar(null, null, null)),
+            FormularioDaInscricao.Reidratar(Guid.CreateVersion7(), PreenchimentoDoCandidato.Criar(OpcoesDeCursoDaInscricao.Reidratar(null, null), new Dictionary<string, JsonElement>(), new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), []),
+                new Dictionary<string, JsonElement>(), new Dictionary<string, DefinicaoDaResposta>()), 1, new Unifesspa.UniPlus.Selecao.Domain.ValueObjects.DatasDeGravacaoDaInscricao(default, null));
     }
 
     private static PrazoDaCorrecaoDoComprovante Prazo(DateTimeOffset agora, bool comVersaoDivulgada = true, IResolvedorFusoInstitucional? fuso = null)
     {
-        (VersaoConfiguracao versao, GrafoConfiguracao grafo) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
+        (VersaoConfiguracao versao, ConfiguracaoPublicada grafo) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
         IRegistroCodecsEnvelope registro = Substitute.For<IRegistroCodecsEnvelope>();
         if (comVersaoDivulgada)
@@ -60,11 +60,11 @@ public sealed class PrazoDaCorrecaoDoComprovanteTests
     [Fact(DisplayName = "A inscrição cancelada não traz prazo da correção, ainda que o comprovante seja o que vale")]
     public async Task Ler_InscricaoCancelada_Nulo()
     {
-        Inscricao cancelada = Inscricao.Reidratar(
-            Guid.CreateVersion7(), ProcessoId, PersonasDeTeste.FernandaDrumond, "conta-1", "https://issuer", SituacaoInscricao.Cancelada, Guid.CreateVersion7(), null, null,
-            "000123", DivulgacaoDeTeste.DentroDoPeriodo, "conta-1", null,
-            new Dictionary<string, JsonElement>(), new Dictionary<string, JsonElement>(),
-            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), [], new Dictionary<string, DefinicaoDaResposta>(), 2, DateTimeOffset.UtcNow, null);
+        Inscricao cancelada = Inscricao.Reidratar(Guid.CreateVersion7(), ProcessoId,
+            TitularDaInscricao.Reidratar(PersonasDeTeste.FernandaDrumond, "conta-1", "https://issuer"),
+            EstadoDaInscricao.Reidratar(SituacaoInscricao.Cancelada, "000123", CancelamentoDaInscricao.Reidratar(DivulgacaoDeTeste.DentroDoPeriodo, "conta-1", null)),
+            FormularioDaInscricao.Reidratar(Guid.CreateVersion7(), PreenchimentoDoCandidato.Criar(OpcoesDeCursoDaInscricao.Reidratar(null, null), new Dictionary<string, JsonElement>(), new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), []),
+                new Dictionary<string, JsonElement>(), new Dictionary<string, DefinicaoDaResposta>()), 2, new Unifesspa.UniPlus.Selecao.Domain.ValueObjects.DatasDeGravacaoDaInscricao(default, null));
 
         PrazoDaCorrecaoDto? prazo = await Prazo(DivulgacaoDeTeste.DentroDoPeriodo).LerAsync(cancelada, vale: true, CancellationToken.None);
 

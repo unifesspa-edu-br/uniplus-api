@@ -100,9 +100,9 @@ public sealed class ObterInscricaoAdministrativaCamposEArquivosTests
         comInterno.SubmetidaEm.Should().Be(primeiro);
         semInterno.SubmetidaEm.Should().BeNull();
         JsonSerializer.Serialize(semInterno).Should().NotContain("submetidaEm");
-        await mundoDeDiogo.Inscricoes.Received(1).ObterPrimeirosEnviosAsync(
+        await mundoDeDiogo.Comprovantes.Received(1).ObterPrimeirosEnviosAsync(
             Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Single() == cenario.InscricaoId), Arg.Any<CancellationToken>());
-        await mundoDeKevin.Inscricoes.DidNotReceiveWithAnyArgs().ObterPrimeirosEnviosAsync(default!, default);
+        await mundoDeKevin.Comprovantes.DidNotReceiveWithAnyArgs().ObterPrimeirosEnviosAsync(default!, default);
     }
 
     [Theory(DisplayName = "A leitura diz se quem consulta pode emitir o comprovante, pela mesma permissão que a emissão exige e sem depender das de dado")]
@@ -130,13 +130,13 @@ public sealed class ObterInscricaoAdministrativaCamposEArquivosTests
     {
         InscricaoAdministrativaDeTeste cenario = new(PersonasDeTeste.FernandaDrumond, situacao);
         InscricaoAdministrativaDeTeste.Mundo mundo = cenario.Montar();
-        mundo.Inscricoes.ObterEmissoesAsync(
+        mundo.Comprovantes.ObterEmissoesAsync(
             Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Single() == cenario.InscricaoId), Arg.Any<CancellationToken>()).Returns(EmissoesDe(cenario, emitidos));
 
         InscricaoAdministrativaDto dto = await ConsultarComo("leandro.viana", PermissaoSelecao.InscricoesConsultar, cenario, mundo);
 
         dto.NumeroDoUltimoComprovante.Should().Be(esperado);
-        await mundo.Inscricoes.DidNotReceiveWithAnyArgs().ObterComprovanteAsync(default, default, default);
+        await mundo.Comprovantes.DidNotReceiveWithAnyArgs().ObterComprovanteAsync(default, default, default);
     }
 
     private static InscricaoAdministrativaDeTeste AvaliacaoDeKevin() =>

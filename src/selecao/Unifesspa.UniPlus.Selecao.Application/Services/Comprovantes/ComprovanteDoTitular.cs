@@ -12,26 +12,42 @@ internal static class ComprovanteDoTitular
     {
         ArgumentNullException.ThrowIfNull(insumos);
 
-        FatosDaVersao fatos = FatosDaVersao.De(insumos.Envelope);
-
         return new()
         {
-            InscricaoId = insumos.Inscricao.Id,
-            Numero = insumos.Posicao.Numero,
-            Total = insumos.Posicao.Total,
-            Vale = insumos.Posicao.Vale,
-            NumeroAnterior = insumos.Posicao.NumeroAnterior,
-            NumeroSeguinte = insumos.Posicao.NumeroSeguinte,
-            ProcessoSeletivoId = insumos.Inscricao.ProcessoSeletivoId,
-            NomeDoProcesso = insumos.NomeDoProcesso,
-            IdentificadorDoProcesso = insumos.Envelope.Grafo.IdentificadorLegivel?.Valor,
-            UnidadeAdministradora = insumos.NomeDaUnidadeAdministradora,
-            Envio = EnvioDoComprovante.De(insumos),
-            Cancelamento = insumos.Cancelamento,
             Candidato = CandidatoDoComprovante.De(insumos),
-            PrazoDaCorrecao = insumos.Prazo,
-            NumeroDeOpcoesDeCurso = OpcoesDeCursoDoComprovante.NumeroDeOpcoes(insumos),
-            OpcoesDeCurso = OpcoesDeCursoDoComprovante.De(insumos),
+            Inscricao = MontarInscricao(insumos),
+            Processo = MontarProcesso(insumos),
+            EscolhasDeCurso = OpcoesDeCursoDoComprovante.Montar(insumos),
+            Formulario = MontarFormulario(insumos),
+        };
+    }
+
+    private static InscricaoNoComprovanteDto MontarInscricao(InsumosDoComprovante insumos) => new()
+    {
+        InscricaoId = insumos.Inscricao.Id,
+        Numero = insumos.Posicao.Numero,
+        Total = insumos.Posicao.Total,
+        Vale = insumos.Posicao.Vale,
+        NumeroAnterior = insumos.Posicao.NumeroAnterior,
+        NumeroSeguinte = insumos.Posicao.NumeroSeguinte,
+        Envio = EnvioDoComprovante.De(insumos),
+        Cancelamento = insumos.Cancelamento,
+        PrazoDaCorrecao = insumos.Prazo,
+    };
+
+    private static ProcessoNoComprovanteDto MontarProcesso(InsumosDoComprovante insumos) => new()
+    {
+        ProcessoSeletivoId = insumos.Inscricao.ProcessoSeletivoId,
+        NomeDoProcesso = insumos.NomeDoProcesso,
+        IdentificadorDoProcesso = insumos.Envelope.Configuracao.IdentificadorLegivel?.Valor,
+        UnidadeAdministradora = insumos.NomeDaUnidadeAdministradora,
+    };
+
+    private static FormularioNoComprovanteDto MontarFormulario(InsumosDoComprovante insumos)
+    {
+        FatosDaVersao fatos = FatosDaVersao.De(insumos.Envelope);
+        return new()
+        {
             Secoes = ItensDoComprovante.Secoes(insumos, fatos),
             Derivados = ItensDoComprovante.Derivados(insumos, fatos),
             TermosAceitos = TermosEDocumentosDoComprovante.Termos(insumos),

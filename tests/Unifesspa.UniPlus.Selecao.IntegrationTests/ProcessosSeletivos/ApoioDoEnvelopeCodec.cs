@@ -78,8 +78,11 @@ internal static class ApoioDoEnvelopeCodec
         string[] partes = caminho.Split('.');
         JsonNode atual = PaiDoCampo(raiz, partes);
 
-        string chave = partes[^1];
+        MutarNo(atual, partes[^1], caminho, valorNovo);
+    }
 
+    private static void MutarNo(JsonNode atual, string chave, string caminho, string valorNovo)
+    {
         if (int.TryParse(chave, CultureInfo.InvariantCulture, out int posicao))
         {
             TrocarElemento(atual.AsArray(), posicao, valorNovo, caminho);
@@ -158,11 +161,7 @@ internal static class ApoioDoEnvelopeCodec
     {
         Result<SnapshotCanonico> recodificado = CorpusEnvelope.Registro.Recodificar(
             versao.SchemaVersion,
-            new EntradaCanonicalizacao(
-                processo, envelope.Dados, envelope.HashDocumento, FusoInstitucional.ZoneId, envelope.Retificacao, envelope.Conformidade,
-                envelope.MetadadosFatosCongelados, envelope.ValoresSelecionaveisCongelados,
-                envelope.CalendarioDiasUteis, envelope.AgregadosDosGrupos, envelope.ApresentacaoDosPressupostos,
-                TiposDeAtoCongelados: envelope.TiposDeAtoCongelados, FatosDerivadosCongelados: envelope.FatosDerivadosCongelados));
+            new EntradaCanonicalizacao(processo, envelope.Dados, envelope.HashDocumento, FusoInstitucional.ZoneId, envelope.Retificacao, envelope.Conformidade, DadosDeCatalogo: envelope.DadosDeCatalogo));
         recodificado.IsSuccess.Should().BeTrue(recodificado.Error?.Message);
 
         return recodificado.Value!;

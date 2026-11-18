@@ -27,8 +27,7 @@ public sealed class ObterInscricaoAdministrativaMontagemDosItensTests
     [Fact(DisplayName = "A ajuda do formulário e o nome do catálogo não saem no contrato administrativo: rótulo e descrição vêm do que o processo congelou")]
     public async Task Item_TrazRotuloEDescricaoCongelados_SemAjuda()
     {
-        InscricaoAdministrativaDeTeste cenario = new InscricaoAdministrativaDeTeste(PersonasDeTeste.FernandaDrumond)
-            .Fato("NOME", "PESSOAL", TipoRenderizacao.Texto, Texto("Fernanda"), ajuda: "Digite o nome como no documento", descricao: "Nome civil do candidato");
+        InscricaoAdministrativaDeTeste cenario = ComAjudaEDescricao();
 
         InscricaoAdministrativaDto dto = await ConsultarDto(cenario, ComDadosPessoais());
 
@@ -44,7 +43,10 @@ public sealed class ObterInscricaoAdministrativaMontagemDosItensTests
     public async Task Componente_DeclaradoValeSobreOResto()
     {
         InscricaoAdministrativaDeTeste cenario = new InscricaoAdministrativaDeTeste(PersonasDeTeste.FernandaDrumond)
-            .Fato("RENDA_FAMILIAR_PER_CAPITA", "PESSOAL", TipoRenderizacao.Numero, JsonSerializer.SerializeToElement(1234.56m), componente: "MOEDA");
+            .Fato("RENDA_FAMILIAR_PER_CAPITA", "PESSOAL", TipoRenderizacao.Numero, JsonSerializer.SerializeToElement(1234.56m), new MetadadosDoFatoDeTeste
+            {
+                Componente = "MOEDA",
+            });
 
         InscricaoAdministrativaDto dto = await ConsultarDto(cenario, ComDadosPessoais());
 
@@ -73,7 +75,10 @@ public sealed class ObterInscricaoAdministrativaMontagemDosItensTests
     public async Task Uf_SaiPeloNome(string valor)
     {
         InscricaoAdministrativaDeTeste cenario = new InscricaoAdministrativaDeTeste(PersonasDeTeste.FernandaDrumond)
-            .Fato("NATURALIDADE_UF", "PESSOAL", TipoRenderizacao.SelecaoUnica, Texto(valor), origemValores: OrigemValoresColeta.UnidadesFederativas);
+            .Fato("NATURALIDADE_UF", "PESSOAL", TipoRenderizacao.SelecaoUnica, Texto(valor), new MetadadosDoFatoDeTeste
+            {
+                OrigemValores = OrigemValoresColeta.UnidadesFederativas,
+            });
 
         InscricaoAdministrativaDto dto = await ConsultarDto(cenario, ComDadosPessoais());
 
@@ -129,7 +134,10 @@ public sealed class ObterInscricaoAdministrativaMontagemDosItensTests
 
     private static InscricaoAdministrativaDeTeste CenarioComMunicipio(JsonElement salvador) =>
         new InscricaoAdministrativaDeTeste(PersonasDeTeste.ErickIsaacRamos)
-            .Fato("NATURALIDADE_MUNICIPIO", "PESSOAL", TipoRenderizacao.Municipio, salvador, restricoes: [new MunicipiosDaUf("NATURALIDADE_UF")])
+            .Fato("NATURALIDADE_MUNICIPIO", "PESSOAL", TipoRenderizacao.Municipio, salvador, new MetadadosDoFatoDeTeste
+            {
+                Restricoes = [new MunicipiosDaUf("NATURALIDADE_UF")],
+            })
             .Grupo(GrupoDeLocais(), new OcorrenciaDeGrupoInscricao("local-1", new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["LOCAL_MUNICIPIO"] = salvador }))
             .Derivado("MUNICIPIO_RESIDENCIA", "Município de residência", "CATEGORICO", "PESSOAL", salvador);
 
@@ -141,4 +149,13 @@ public sealed class ObterInscricaoAdministrativaMontagemDosItensTests
                 InscricaoAdministrativaDeTeste.Hipotese, ProtecaoDoFatoDeTeste.Finalidade, "Município do local",
                 restricoes: [new MunicipiosDaUf("NATURALIDADE_UF")]).Value!],
             FinalidadeFormulario.Inscricao).Value!;
+    private static InscricaoAdministrativaDeTeste ComAjudaEDescricao()
+    {
+        return new InscricaoAdministrativaDeTeste(PersonasDeTeste.FernandaDrumond)
+            .Fato("NOME", "PESSOAL", TipoRenderizacao.Texto, Texto("Fernanda"), new MetadadosDoFatoDeTeste
+            {
+                Ajuda = "Digite o nome como no documento",
+                Descricao = "Nome civil do candidato",
+            });
+    }
 }

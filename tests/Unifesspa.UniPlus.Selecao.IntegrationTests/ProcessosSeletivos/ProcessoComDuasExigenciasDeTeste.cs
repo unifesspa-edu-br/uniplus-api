@@ -150,7 +150,7 @@ internal static class ProcessoComDuasExigenciasDeTeste
 
     private static SnapshotCanonico Congelar(ProcessoSeletivo processo, DadosEdital dados) =>
         new SnapshotPublicacaoCanonicalizer().Canonicalizar(
-            new EntradaCanonicalizacao(processo, dados, HashDocumento, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
+            new EntradaCanonicalizacao(processo, dados, HashDocumento, FusoInstitucional.ZoneId, Retificacao: null, Conformidade: null, DadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)));
 
     private static VersaoConfiguracao Publicar(ProcessoSeletivo processo, DadosEdital dados, SnapshotCanonico congelado, byte[] bytes)
     {
