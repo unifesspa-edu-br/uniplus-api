@@ -85,10 +85,10 @@ public sealed class Concessao : EntityBase
     public string? MotivoRevogacao { get; private set; }
 
     /// <summary>
-    /// A janela de migração que revogou a concessão, pelo sistema; nula quando a revogação foi de uma pessoa ou a
-    /// concessão está ativa. A pessoa que recusou a migração fica na trilha da janela.
+    /// A revisão das concessões que revogou a concessão, pelo sistema; nula quando a revogação foi de uma pessoa ou a
+    /// concessão está ativa. A pessoa que recusou a migração fica na trilha da revisão.
     /// </summary>
-    public Guid? RevogadaPelaJanelaId { get; private set; }
+    public Guid? RevogadaPelaRevisaoId { get; private set; }
 
     public Identidade Beneficiario => new(BeneficiarioEmissor, BeneficiarioContaId, BeneficiarioNome);
 
@@ -256,10 +256,10 @@ public sealed class Concessao : EntityBase
             $"O motivo da revogação é obrigatório e deve ter até {MotivoInformado.MaximoDeCaracteres} caracteres."));
 
     /// <summary>
-    /// Revoga a concessão pelo sistema, em nome da janela de migração que a encerrou ou a recusou. Quem chama trava a
+    /// Revoga a concessão pelo sistema, em nome da revisão das concessões que a encerrou ou a recusou. Quem chama trava a
     /// concessão e confere que não está revogada.
     /// </summary>
-    public void RevogarPelaMigracao(Guid janelaId, string motivo, DateTimeOffset instante)
+    public void RevogarPelaMigracao(Guid revisaoId, string motivo, DateTimeOffset instante)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(motivo);
 
@@ -269,7 +269,7 @@ public sealed class Concessao : EntityBase
         }
 
         RevogadaEm = instante;
-        RevogadaPelaJanelaId = janelaId;
+        RevogadaPelaRevisaoId = revisaoId;
         MotivoRevogacao = motivo;
     }
 

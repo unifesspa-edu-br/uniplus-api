@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
 
-using System.Diagnostics.CodeAnalysis;
 
 using AwesomeAssertions;
 
@@ -19,10 +18,6 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Observability;
 /// módulo e disparada pelo relógio do teste, e a passada entrega o estado às métricas do host.
 /// </summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class RotinaDaAmostragemDaGovernancaNoHostTests
 {
     private readonly MonolitoDaInstalacaoFixture _fixture;
@@ -48,7 +43,7 @@ public sealed class RotinaDaAmostragemDaGovernancaNoHostTests
         await rotina.StopAsync(CancellationToken.None);
 
         coletor.Ultima("uniplus.autorizacao.amostra.idade").Should().BeLessThan(30);
-        coletor.Coletar("uniplus.autorizacao.janelas_abertas").Should().NotBeEmpty();
+        coletor.Coletar("uniplus.autorizacao.revisoes_abertas").Should().NotBeEmpty();
     }
 
     private static PeriodicJobHostedService Montar(IServiceProvider servicos, TimeProvider relogio, TaskCompletionSource passada)

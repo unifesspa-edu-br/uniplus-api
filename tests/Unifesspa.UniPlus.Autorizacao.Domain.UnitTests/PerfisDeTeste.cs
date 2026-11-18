@@ -33,7 +33,7 @@ public static class PerfisDeTeste
 
     public static readonly DateTimeOffset Instante = new(2026, 11, 9, 12, 0, 0, TimeSpan.Zero);
 
-    public static readonly ContextoDaVersao SemContexto = new(NomeEmUsoPorOutroPerfil: false, JanelaDeMigracaoAberta: false);
+    public static readonly ContextoDaVersao SemContexto = new(NomeEmUsoPorOutroPerfil: false, RevisaoDasConcessoesAberta: false);
 
     public const string MotivoDaContencao = "Uso indevido apontado pela gestão.";
 

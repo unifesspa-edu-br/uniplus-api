@@ -79,7 +79,7 @@ public sealed class PerfilAprovacaoTests
     }
 
     [Fact(DisplayName = "Ter concessão do perfil não impede decidir e a trilha registra o fato")]
-    public void Aprovar_DecisorComJanelaAberta_RegistraNaTrilha()
+    public void Aprovar_DecisorComRevisaoAberta_RegistraNaTrilha()
     {
         Perfil perfil = PendenteVerificada([Consultar]);
 
@@ -368,7 +368,7 @@ public sealed class PerfilAprovacaoTests
         }
     }
 
-    private static readonly ContextoDaVersao NomeEmUso = new(NomeEmUsoPorOutroPerfil: true, JanelaDeMigracaoAberta: false);
+    private static readonly ContextoDaVersao NomeEmUso = new(NomeEmUsoPorOutroPerfil: true, RevisaoDasConcessoesAberta: false);
 
     private Perfil PendenteVerificada(string[] permissoes)
     {

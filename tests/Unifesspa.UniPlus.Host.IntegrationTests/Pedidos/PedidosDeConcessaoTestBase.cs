@@ -211,7 +211,7 @@ public abstract class PedidosDeConcessaoTestBase
     private protected async Task ResetarAsync()
     {
         await Fixture.ProvisionarBucketsAsync();
-        await DescartarJanelasAsync();
+        await DescartarRevisoesAsync();
         await ExecutarSqlAsync("DELETE FROM autorizacao.itens_da_revisao");
         await ExecutarSqlAsync("DELETE FROM autorizacao.revisoes_de_acessos");
         await ExecutarSqlAsync("DELETE FROM autorizacao.leituras_do_anexo_do_pedido");
@@ -243,15 +243,15 @@ public abstract class PedidosDeConcessaoTestBase
         await scope.ServiceProvider.GetRequiredService<ExpiracaoDasVersoesPendentes>().ExecutarAsync(CancellationToken.None);
     }
 
-    /// <summary>Apaga as janelas de migração, com as linhas, as decisões e as concessões que elas revogaram.</summary>
-    private protected async Task DescartarJanelasAsync()
+    /// <summary>Apaga as revisões das concessões, com as linhas, as decisões e as concessões que elas revogaram.</summary>
+    private protected async Task DescartarRevisoesAsync()
     {
         await ExecutarSqlAsync("DELETE FROM autorizacao.decisoes_da_migracao");
         await ExecutarSqlAsync("DELETE FROM autorizacao.migracoes_da_concessao");
         await ApagarFatosDasConcessoesAsync();
-        await ExecutarSqlAsync("DELETE FROM autorizacao.concessoes WHERE revogada_pela_janela_id IS NOT NULL");
-        await ExecutarSqlAsync("DELETE FROM autorizacao.lotes_da_migracao");
-        await ExecutarSqlAsync("DELETE FROM autorizacao.janelas_de_migracao");
+        await ExecutarSqlAsync("DELETE FROM autorizacao.concessoes WHERE revogada_pela_revisao_id IS NOT NULL");
+        await ExecutarSqlAsync("DELETE FROM autorizacao.envios_de_decisoes");
+        await ExecutarSqlAsync("DELETE FROM autorizacao.revisoes_das_concessoes");
     }
 
     /// <summary>

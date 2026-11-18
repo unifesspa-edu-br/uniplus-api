@@ -1,9 +1,9 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 
-/// <summary>Situação de uma concessão dentro da janela de migração, desde que o lote da gestão foi enviado.</summary>
+/// <summary>Situação de uma concessão dentro da revisão das concessões, desde que as decisões da gestão foram enviadas.</summary>
 public enum SituacaoDaMigracao
 {
-    /// <summary>A concessão é do próprio gestor que enviou o lote: outro gestor a decide.</summary>
+    /// <summary>A concessão é do próprio gestor que enviou as decisões: outro gestor a decide.</summary>
     Retida = 1,
 
     /// <summary>A gestão migrou, e a proteção de dados ainda decide.</summary>
@@ -15,7 +15,7 @@ public enum SituacaoDaMigracao
     /// <summary>Final: a concessão foi recusada e revogada.</summary>
     Recusada = 4,
 
-    /// <summary>Final: ninguém decidiu até o fim da janela, e a concessão foi revogada.</summary>
+    /// <summary>Final: ninguém decidiu até o fim da revisão, e a concessão foi revogada.</summary>
     NaoMigrada = 5,
 
     /// <summary>Final: a concessão saiu da lista antes da decisão, por revogação ou vencimento.</summary>

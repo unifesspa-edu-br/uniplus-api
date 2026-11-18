@@ -62,7 +62,7 @@ public sealed class ConsultasDoEncarregadoNoHostTests : PedidosDeConcessaoTestBa
     [InlineData("GET", "/api/autorizacao/pedidos-de-concessao?fila=gestor")]
     [InlineData("GET", "/api/autorizacao/pedidos-de-concessao?fila=protecao_de_dados")]
     [InlineData("GET", "/api/autorizacao/versoes-de-perfil?fila=protecao_de_dados")]
-    [InlineData("GET", "/api/autorizacao/janelas-de-migracao?etapa=protecao_de_dados")]
+    [InlineData("GET", "/api/autorizacao/revisoes-de-concessoes?etapa=protecao_de_dados")]
     [InlineData("GET", "/api/autorizacao/reclassificacoes?etapa=protecao_de_dados")]
     [InlineData("POST", "/api/autorizacao/revisoes")]
     [InlineData("POST", "/api/configuracao/admin/protecao-do-catalogo")]

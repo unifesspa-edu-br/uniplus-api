@@ -4,7 +4,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 
 /// <summary>
 /// Depois da primeira designação, a instituição não fica sem nenhuma pessoa com concessão vigente de Representante do
-/// controlador, porque sem ela param a etapa da proteção de dados dos pedidos, as versões protegidas de perfil, a janela
+/// controlador, porque sem ela param a etapa da proteção de dados dos pedidos, as versões protegidas de perfil, a revisão
 /// de migração e a proteção do catálogo de tipos de documento e de fatos do candidato (UNI-REQ-0394). A troca se faz
 /// designando primeiro quem substitui e revogando depois. A primeira designação não depende desta regra: ela entra pela
 /// dispensa, quando não há Representante vigente (ADR-0162).

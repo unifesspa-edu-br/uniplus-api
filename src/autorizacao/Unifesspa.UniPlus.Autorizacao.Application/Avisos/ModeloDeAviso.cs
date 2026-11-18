@@ -19,7 +19,7 @@ public sealed record ContagensDoAviso(int? Pendentes = null, int? Aguardando = n
 /// <param name="Permissoes">Os nomes das permissões a que o aviso se refere, como o catálogo os dá.</param>
 /// <param name="Link">O endereço da tela autenticada em que a pessoa age.</param>
 /// <param name="Contagens">As quantidades de concessões, quando o aviso as traz.</param>
-/// <param name="Prazo">O fim da janela de migração ou o vencimento da versão, quando o aviso é de um prazo.</param>
+/// <param name="Prazo">O fim da revisão das concessões ou o vencimento da versão, quando o aviso é de um prazo.</param>
 /// <param name="Mudanca">O que mudou na permissão, em texto fixo do vocabulário canônico, quando o aviso é da reclassificação.</param>
 /// <param name="Etapa">A etapa de aprovação a que o aviso se refere, quando há.</param>
 /// <param name="Forma">Como o fato aconteceu, quando o texto depende disso.</param>

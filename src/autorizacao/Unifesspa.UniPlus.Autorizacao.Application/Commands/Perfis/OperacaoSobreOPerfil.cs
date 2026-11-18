@@ -113,7 +113,7 @@ public sealed class OperacaoSobreOPerfil
         ExecutarComPerfilExclusivoAsync(perfilId, operacao, SalvarComChaveAsync, cancellationToken);
 
     /// <summary>
-    /// A mesma operação com avisos, sem chave de idempotência, como a rotina da janela e a materialização que antecede
+    /// A mesma operação com avisos, sem chave de idempotência, como a rotina da revisão e a materialização que antecede
     /// uma operação: o conflito de concorrência não é capturado e propaga.
     /// </summary>
     public Task<GravacaoDaOperacao<T>> ExecutarComAvisosSemChaveAsync<T>(
@@ -136,6 +136,15 @@ public sealed class OperacaoSobreOPerfil
             return GravacaoDaOperacao<T>.Sem(Result<T>.Failure(PerfilHandlerErros.NaoEncontrado(perfilId)));
         }
 
+        return await ExecutarComPerfilAsync(perfil, operacao, salvar, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<GravacaoDaOperacao<T>> ExecutarComPerfilAsync<T>(
+        Perfil perfil,
+        Func<Perfil, ContextoDaOperacao, Task<DesfechoDaOperacao<T>>> operacao,
+        Func<DesfechoDaOperacao<T>, CancellationToken, Task<GravacaoDaOperacao<T>>> salvar,
+        CancellationToken cancellationToken)
+    {
         ContextoDaOperacao contexto = MaterializarOPrazo(perfil);
         DesfechoDaOperacao<T> desfecho = await operacao(perfil, contexto).ConfigureAwait(false);
 

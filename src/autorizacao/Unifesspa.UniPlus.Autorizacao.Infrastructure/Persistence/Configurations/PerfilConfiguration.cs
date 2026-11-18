@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Configurations;
 
-using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -15,10 +14,6 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// Configuração EF Core do perfil de acesso, das permissões próprias dos perfis de governança e do vínculo com as
 /// versões e vigências, com a carga dos dois perfis de governança.
 /// </summary>
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class PerfilConfiguration : IEntityTypeConfiguration<Perfil>
 {
     /// <summary>Propriedade de sombra usada só para a unicidade do nome sem distinção de caixa.</summary>
@@ -129,7 +124,7 @@ internal sealed class PerfilConfiguration : IEntityTypeConfiguration<Perfil>
             {
                 Id = RepresentanteDoControladorId,
                 Nome = "Representante do controlador",
-                Descricao = "Decide, em nome da Unifesspa, a segunda etapa dos pedidos com dado pessoal, as versões protegidas de perfil, a janela de migração e a proteção do catálogo, e conduz a revisão periódica dos acessos.",
+                Descricao = "Decide, em nome da Unifesspa, a segunda etapa dos pedidos com dado pessoal, as versões protegidas de perfil, a revisão das concessões e a proteção do catálogo, e conduz a revisão periódica dos acessos.",
                 Ativo = true,
                 Governanca = (TipoDeGovernanca?)TipoDeGovernanca.RepresentanteDoControlador,
                 CreatedAt = CargaInicial,
@@ -138,7 +133,7 @@ internal sealed class PerfilConfiguration : IEntityTypeConfiguration<Perfil>
             {
                 Id = EncarregadoDeDadosId,
                 Nome = "Encarregado de dados",
-                Descricao = "Acompanha o tratamento de dados pessoais na gestão de acessos: consulta pedidos, concessões, revisões, versões de perfil, janela de migração e catálogo, registra manifestação técnica na proteção do catálogo e solicita providências sobre concessões, sem aprovar, recusar nem revogar.",
+                Descricao = "Acompanha o tratamento de dados pessoais na gestão de acessos: consulta pedidos, concessões, revisões, versões de perfil, revisão das concessões e catálogo, registra manifestação técnica na proteção do catálogo e solicita providências sobre concessões, sem aprovar, recusar nem revogar.",
                 Ativo = true,
                 Governanca = (TipoDeGovernanca?)TipoDeGovernanca.EncarregadoDeDados,
                 CreatedAt = CargaInicial,

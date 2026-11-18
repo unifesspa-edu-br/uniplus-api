@@ -21,7 +21,7 @@ public sealed class MetricasDaGovernancaDePerfisTests
         await amostragem.ExecutarAsync(CancellationToken.None);
 
         coletor.Ultima("uniplus.autorizacao.versoes_pendentes.vencendo").Should().Be(3);
-        coletor.Ultima("uniplus.autorizacao.janelas_abertas").Should().Be(2);
+        coletor.Ultima("uniplus.autorizacao.revisoes_abertas").Should().Be(2);
         coletor.Ultima("uniplus.autorizacao.reclassificacoes_pendentes").Should().Be(5);
         coletor.Ultima("uniplus.autorizacao.divergencias_da_governanca").Should().Be(1);
         coletor.Ultima("uniplus.autorizacao.amostra.idade").Should().Be(0);
@@ -46,7 +46,7 @@ public sealed class MetricasDaGovernancaDePerfisTests
 
         metricas.AvisoSemDestinatario("versao_encerrada");
         metricas.AvisoSemDestinatario("versao_encerrada");
-        metricas.AvisoSemDestinatario("lote_enviado_com_recusas");
+        metricas.AvisoSemDestinatario("decisoes_enviadas_com_recusas");
 
         coletor.Soma("uniplus.autorizacao.avisos_sem_destinatario", "tipo", "versao_encerrada").Should().Be(2);
     }

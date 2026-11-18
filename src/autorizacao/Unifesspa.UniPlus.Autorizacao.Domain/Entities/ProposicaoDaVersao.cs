@@ -147,9 +147,9 @@ public static class ProposicaoDaVersao
 
     private static DomainError? RecusaDoContexto(ContextoDaVersao contexto)
     {
-        if (contexto.JanelaDeMigracaoAberta)
+        if (contexto.RevisaoDasConcessoesAberta)
         {
-            return PerfilErros.JanelaDeMigracaoAberta();
+            return PerfilErros.RevisaoDasConcessoesAberta();
         }
 
         return contexto.NomeEmUsoPorOutroPerfil ? PerfilErros.NomeDuplicado() : null;

@@ -137,81 +137,6 @@
       "titulo": "A instalação não está na situação que este passo exige"
     },
     {
-      "codigo": "uniplus.autorizacao.migracao.concessao_fora_da_etapa",
-      "status": 422,
-      "titulo": "A concessão não aguarda esta etapa"
-    },
-    {
-      "codigo": "uniplus.autorizacao.migracao.concessao_ja_decidida",
-      "status": 409,
-      "titulo": "A concessão já foi decidida"
-    },
-    {
-      "codigo": "uniplus.autorizacao.migracao.decisao_da_propria_concessao",
-      "status": 422,
-      "titulo": "Ninguém decide a própria concessão"
-    },
-    {
-      "codigo": "uniplus.autorizacao.migracao.exclusao_nao_confirmada",
-      "status": 422,
-      "titulo": "A exclusão da lista exige confirmação"
-    },
-    {
-      "codigo": "uniplus.autorizacao.migracao.janela_em_encerramento",
-      "status": 409,
-      "titulo": "A janela de migração está sendo encerrada; repita a operação"
-    },
-    {
-      "codigo": "uniplus.autorizacao.migracao.janela_encerrada",
-      "status": 422,
-      "titulo": "A janela de migração já terminou"
-    },
-    {
-      "codigo": "uniplus.autorizacao.migracao.janela_nao_encontrada",
-      "status": 404,
-      "titulo": "Janela de migração não encontrada"
-    },
-    {
-      "codigo": "uniplus.autorizacao.migracao.lote_incompleto",
-      "status": 422,
-      "titulo": "O lote não decide todas as concessões da versão anterior"
-    },
-    {
-      "codigo": "uniplus.autorizacao.migracao.lote_invalido",
-      "status": 422,
-      "titulo": "Lote inválido"
-    },
-    {
-      "codigo": "uniplus.autorizacao.migracao.lote_ja_enviado",
-      "status": 409,
-      "titulo": "O lote já foi enviado para esta janela"
-    },
-    {
-      "codigo": "uniplus.autorizacao.migracao.lote_nao_enviado",
-      "status": 422,
-      "titulo": "O lote da gestão de acessos ainda não foi enviado"
-    },
-    {
-      "codigo": "uniplus.autorizacao.migracao.mesma_pessoa_nas_duas_etapas",
-      "status": 422,
-      "titulo": "A mesma pessoa não decide as duas etapas"
-    },
-    {
-      "codigo": "uniplus.autorizacao.migracao.motivo_invalido",
-      "status": 422,
-      "titulo": "Motivo ausente ou longo demais"
-    },
-    {
-      "codigo": "uniplus.autorizacao.migracao.prazo_encerrado",
-      "status": 422,
-      "titulo": "O prazo da janela de migração terminou"
-    },
-    {
-      "codigo": "uniplus.autorizacao.migracao.sem_permissao_na_etapa",
-      "status": 403,
-      "titulo": "Acesso negado: a operação exige a permissão da etapa"
-    },
-    {
       "codigo": "uniplus.autorizacao.pedido.anexo_invalido",
       "status": 422,
       "titulo": "Anexo do pedido inválido"
@@ -327,9 +252,9 @@
       "titulo": "O perfil mudou depois da aprovação do gestor"
     },
     {
-      "codigo": "uniplus.autorizacao.pedido.perfil_em_janela_de_migracao",
+      "codigo": "uniplus.autorizacao.pedido.perfil_em_revisao_das_concessoes",
       "status": 422,
-      "titulo": "O perfil está em janela de migração: o pedido só pode ser feito depois que ela terminar"
+      "titulo": "O perfil está em revisão das concessões: o pedido só pode ser feito depois que ela terminar"
     },
     {
       "codigo": "uniplus.autorizacao.pedido.perfil_inativo",
@@ -462,11 +387,6 @@
       "titulo": "O perfil já está suspenso"
     },
     {
-      "codigo": "uniplus.autorizacao.perfil.janela_de_migracao_aberta",
-      "status": 422,
-      "titulo": "O perfil tem janela de migração aberta: nova versão só depois que ela terminar"
-    },
-    {
       "codigo": "uniplus.autorizacao.perfil.mesmo_decisor_nas_duas_etapas",
       "status": 422,
       "titulo": "A mesma pessoa não decide as duas etapas"
@@ -525,6 +445,11 @@
       "codigo": "uniplus.autorizacao.perfil.retomada_por_quem_suspendeu",
       "status": 422,
       "titulo": "Quem suspendeu o perfil não decide a retomada"
+    },
+    {
+      "codigo": "uniplus.autorizacao.perfil.revisao_das_concessoes_aberta",
+      "status": 422,
+      "titulo": "O perfil tem revisão das concessões aberta: nova versão só depois que ela terminar"
     },
     {
       "codigo": "uniplus.autorizacao.perfil.sem_permissao",
@@ -745,6 +670,81 @@
       "codigo": "uniplus.autorizacao.revisao.nao_encontrada",
       "status": 404,
       "titulo": "Revisão de acessos não encontrada"
+    },
+    {
+      "codigo": "uniplus.autorizacao.revisao_das_concessoes.concessao_fora_da_etapa",
+      "status": 422,
+      "titulo": "A concessão não aguarda esta etapa"
+    },
+    {
+      "codigo": "uniplus.autorizacao.revisao_das_concessoes.concessao_ja_decidida",
+      "status": 409,
+      "titulo": "A concessão já foi decidida"
+    },
+    {
+      "codigo": "uniplus.autorizacao.revisao_das_concessoes.decisao_da_propria_concessao",
+      "status": 422,
+      "titulo": "Ninguém decide a própria concessão"
+    },
+    {
+      "codigo": "uniplus.autorizacao.revisao_das_concessoes.decisoes_incompletas",
+      "status": 422,
+      "titulo": "O envio não decide todas as concessões da versão anterior"
+    },
+    {
+      "codigo": "uniplus.autorizacao.revisao_das_concessoes.decisoes_invalidas",
+      "status": 422,
+      "titulo": "Decisões inválidas"
+    },
+    {
+      "codigo": "uniplus.autorizacao.revisao_das_concessoes.decisoes_ja_enviadas",
+      "status": 409,
+      "titulo": "As decisões já foram enviadas para esta revisão"
+    },
+    {
+      "codigo": "uniplus.autorizacao.revisao_das_concessoes.decisoes_nao_enviadas",
+      "status": 422,
+      "titulo": "As decisões da gestão de acessos ainda não foram enviadas"
+    },
+    {
+      "codigo": "uniplus.autorizacao.revisao_das_concessoes.exclusao_nao_confirmada",
+      "status": 422,
+      "titulo": "A exclusão da lista exige confirmação"
+    },
+    {
+      "codigo": "uniplus.autorizacao.revisao_das_concessoes.mesma_pessoa_nas_duas_etapas",
+      "status": 422,
+      "titulo": "A mesma pessoa não decide as duas etapas"
+    },
+    {
+      "codigo": "uniplus.autorizacao.revisao_das_concessoes.motivo_invalido",
+      "status": 422,
+      "titulo": "Motivo ausente ou longo demais"
+    },
+    {
+      "codigo": "uniplus.autorizacao.revisao_das_concessoes.prazo_encerrado",
+      "status": 422,
+      "titulo": "O prazo da revisão das concessões terminou"
+    },
+    {
+      "codigo": "uniplus.autorizacao.revisao_das_concessoes.revisao_em_encerramento",
+      "status": 409,
+      "titulo": "A revisão das concessões está sendo encerrada; repita a operação"
+    },
+    {
+      "codigo": "uniplus.autorizacao.revisao_das_concessoes.revisao_encerrada",
+      "status": 422,
+      "titulo": "A revisão das concessões já terminou"
+    },
+    {
+      "codigo": "uniplus.autorizacao.revisao_das_concessoes.revisao_nao_encontrada",
+      "status": 404,
+      "titulo": "Revisão das concessões não encontrada"
+    },
+    {
+      "codigo": "uniplus.autorizacao.revisao_das_concessoes.sem_permissao_na_etapa",
+      "status": 403,
+      "titulo": "Acesso negado: a operação exige a permissão da etapa"
     },
     {
       "codigo": "uniplus.autorizacao.termo.ato_invalido",

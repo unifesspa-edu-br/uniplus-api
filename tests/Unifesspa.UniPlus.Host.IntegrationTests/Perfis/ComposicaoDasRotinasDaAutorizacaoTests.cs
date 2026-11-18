@@ -15,12 +15,12 @@ using Unifesspa.UniPlus.Host.IntegrationTests.Email;
 /// <summary>A ordem de registro é a ordem em que o host inicia as rotinas; não garante que elas não rodem ao mesmo tempo.</summary>
 public sealed class ComposicaoDasRotinasDaAutorizacaoTests
 {
-    [Fact(DisplayName = "As rotinas da Autorização são registradas na ordem: expiração das versões, janelas de migração, amostragem da governança")]
+    [Fact(DisplayName = "As rotinas da Autorização são registradas na ordem: expiração das versões, revisão das concessões, amostragem da governança")]
     public void Rotinas_SaoRegistradasNaOrdemDeInicio()
     {
         NomesDasRotinas(Modulo()).Should().Equal(
             "ExpiracaoDasVersoesPendentesHostedService",
-            "JanelasDeMigracaoHostedService",
+            "RevisoesDasConcessoesHostedService",
             "AmostragemDaGovernancaHostedService");
     }
 
@@ -41,7 +41,7 @@ public sealed class ComposicaoDasRotinasDaAutorizacaoTests
 
         provedor.GetRequiredService<MeterProvider>().ForceFlush();
 
-        exportador.UltimaExportacao.Should().Contain(m => m.Instrumento == "uniplus.autorizacao.janelas_abertas");
+        exportador.UltimaExportacao.Should().Contain(m => m.Instrumento == "uniplus.autorizacao.revisoes_abertas");
     }
 
     private static ServiceCollection Modulo()

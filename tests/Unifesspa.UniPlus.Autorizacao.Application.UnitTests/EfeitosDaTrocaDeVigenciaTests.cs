@@ -101,14 +101,14 @@ public sealed class EfeitosDaTrocaDeVigenciaTests
 
         pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.Devolvido);
         pedido.Andamento.EncerradoEm.Should().NotBeNull();
-        avisos.Should().HaveCount(2).And.OnlyContain(a => a.Finalidade == "perfil.pedido_devolvido_pela_janela");
+        avisos.Should().HaveCount(2).And.OnlyContain(a => a.Finalidade == "perfil.pedido_devolvido_pela_revisao");
         avisos.Select(a => a.Destinatario).Should().BeEquivalentTo([Betina.Email, Leandro.Email]);
         avisos.Should().AllSatisfy(ConferirAvisoDeDevolucao);
     }
 
     private static void ConferirAvisoDeDevolucao(EnviarEmail aviso) =>
         aviso.CorpoTexto.Should().Contain("Faça o pedido de novo depois que o perfil for atualizado")
-            .And.NotContain(Betina.Nome!).And.NotContain(Leandro.Nome!).And.NotContain(Justificativa).And.NotContain("janela");
+            .And.NotContain(Betina.Nome!).And.NotContain(Leandro.Nome!).And.NotContain(Justificativa).And.NotContain("revisao");
 
     [Fact(DisplayName = "O pedido de outro perfil e o pedido já encerrado ficam como estão")]
     public async Task PedidoDeOutroPerfilEEncerrado_FicamInalterados()
@@ -143,7 +143,7 @@ public sealed class EfeitosDaTrocaDeVigenciaTests
         Concessao[]? concessoes = null, PedidoDeConcessao[]? pedidos = null, TitularComEmail[]? titulares = null) =>
         new(
             new ConcessoesNaMemoria(paraMigrar: concessoes ?? [], titulares: titulares ?? []),
-            CenarioDaGovernancaDaVersao.JanelaDaTroca(new JanelasNaMemoria(), new CenarioDaGovernancaDaVersao.RegistroDeAvisosNaMemoria(), TimeProvider.System),
+            CenarioDaGovernancaDaVersao.RevisaoDaTroca(new RevisoesNaMemoria(), new CenarioDaGovernancaDaVersao.RegistroDeAvisosNaMemoria(), TimeProvider.System),
             CenarioDaGovernancaDaVersao.AvisosDosEfeitos(new CenarioDaGovernancaDaVersao.RegistroDeAvisosNaMemoria()),
             new ReavaliacaoDosPedidosNaTroca(
                 new PedidosAtivosNaMemoria(pedidos ?? []),

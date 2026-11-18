@@ -12,7 +12,7 @@ public sealed class RedacaoDosAvisosTests
 {
     private const string Perfil = "Análise de atendimento";
     private const string Representante = "Representante do controlador";
-    private const string Link = "https://uniplus.test/acessos/perfis/1/janela";
+    private const string Link = "https://uniplus.test/acessos/perfis/1/revisao";
 
     public static TheoryData<TipoDeAviso> Tipos => [.. Enum.GetValues<TipoDeAviso>()];
 
@@ -31,15 +31,15 @@ public sealed class RedacaoDosAvisosTests
     [Fact(DisplayName = "O prazo vai em horário de Brasília")]
     public void Prazo_EmHorarioDeBrasilia()
     {
-        string corpo = RedacaoDoAviso.CorpoEmTexto(Modelo(TipoDeAviso.JanelaDeMigracaoFaltam24Horas));
+        string corpo = RedacaoDoAviso.CorpoEmTexto(Modelo(TipoDeAviso.RevisaoDasConcessoesFaltam24Horas));
 
         corpo.Should().Contain("Prazo: 12/11/2026 00:00 (Brasília)").And.Contain("Horas restantes: 24");
     }
 
-    [Fact(DisplayName = "O aviso de lote com recusas traz as quantidades e não traz beneficiário, CPF nem motivo")]
-    public void LoteComRecusas_SemDadoPessoal()
+    [Fact(DisplayName = "O aviso de decisões enviadas com recusas traz as quantidades e não traz beneficiário, CPF nem motivo")]
+    public void DecisoesEnviadasComRecusas_SemDadoPessoal()
     {
-        ModeloDeAviso modelo = Modelo(TipoDeAviso.LoteEnviadoComRecusas, new ContagensDoAviso(Revogadas: 2));
+        ModeloDeAviso modelo = Modelo(TipoDeAviso.DecisoesEnviadasComRecusas, new ContagensDoAviso(Revogadas: 2));
 
         foreach (string corpo in new[] { RedacaoDoAviso.CorpoEmTexto(modelo), RedacaoDoAviso.CorpoEmHtml(modelo), RedacaoDoAviso.Assunto(modelo.Tipo) })
         {

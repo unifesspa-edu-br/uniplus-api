@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 
 using AwesomeAssertions;
@@ -22,10 +21,6 @@ using Unifesspa.UniPlus.Verificador.Contratos;
 /// falha fechada com 503, sem gravar nada; a instância nova aprova em seguida e a entrada em vigor grava a reclassificação.
 /// </summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class AprovacaoContraAConciliacaoNoHostTests : ReclassificacaoNoHostTestBase, IClassFixture<HostComCatalogoAnterior>
 {
     private readonly HostComCatalogoAnterior _hostDaClasse;
@@ -90,22 +85,22 @@ public sealed class AprovacaoContraAConciliacaoNoHostTests : ReclassificacaoNoHo
         await ConferirAsync(nova.PerfilId);
     }
 
-    [Theory(DisplayName = "O lote da janela de migração e a conciliação, em qualquer ordem, deixam a concessão migrada com a permissão suspensa")]
+    [Theory(DisplayName = "O envio de decisões da revisão das concessões e a conciliação, em qualquer ordem, deixam a concessão migrada com a permissão suspensa")]
     [InlineData(true)]
     [InlineData(false)]
-    public async Task LoteDaJanela_ContraAConciliacao(bool lotePrimeiro)
+    public async Task EnvioDaRevisao_ContraAConciliacao(bool envioPrimeiro)
     {
-        (Envio envio, Guid concessao) = await JanelaAbertaAsync();
+        (Envio envio, Guid concessao) = await RevisaoAbertaAsync();
         using HttpClient gestao = await GestaoAsync();
-        (HttpStatusCode Status, string Corpo) lote = default;
-        Func<Task> migrar = async () => lote = await LerRespostaAsync(EnviarAsync(
-            gestao, HttpMethod.Post, $"{RotaPerfis}/{envio.PerfilId}/janela/lote",
+        (HttpStatusCode Status, string Corpo) resultadoDoEnvio = default;
+        Func<Task> migrar = async () => resultadoDoEnvio = await LerRespostaAsync(EnviarAsync(
+            gestao, HttpMethod.Post, $"{RotaPerfis}/{envio.PerfilId}/revisao-das-concessoes/decisoes",
             new { decisoes = new[] { new { concessaoId = concessao, decisao = "migrar" } }, confirmacaoDeExclusao = false }));
 
-        await EmFilaAsync(envio.PerfilId, Ordenar(migrar, lotePrimeiro));
+        await EmFilaAsync(envio.PerfilId, Ordenar(migrar, envioPrimeiro));
 
         _instanciaAnterior = false;
-        lote.Status.Should().Be(HttpStatusCode.OK, lote.Corpo);
+        resultadoDoEnvio.Status.Should().Be(HttpStatusCode.OK, resultadoDoEnvio.Corpo);
         (await ReclassificacoesAsync(envio.PerfilId)).Should().Be(1);
         (await OrigemDaBaseAsync(concessao, Consultar)).Should().Be("migracao");
         (await PermissoesAsync(Leandro, envio.PerfilId)).Should().Equal(Consultar);
@@ -206,7 +201,7 @@ public sealed class AprovacaoContraAConciliacaoNoHostTests : ReclassificacaoNoHo
         await AguardarAsync(async () => await SituacaoDoDocumentoAsync(criador, envio.PerfilId) == "verificado", "o documento não foi verificado");
     }
 
-    private async Task<(Envio Envio, Guid Concessao)> JanelaAbertaAsync()
+    private async Task<(Envio Envio, Guid Concessao)> RevisaoAbertaAsync()
     {
         await EntrarNaInstanciaAnteriorAsync();
         using HttpClient gestor = await GestorAsync();

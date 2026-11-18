@@ -63,7 +63,7 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
 
         IReadOnlyList<EnviarEmail> avisos = await TrocarComposicaoAsync(perfil, "teste:atendimento:analisar", "teste:laudos:consultar");
 
-        avisos.Where(a => a.Finalidade == "perfil.pedido_devolvido_pela_janela").Select(a => a.Destinatario).Should().BeEquivalentTo([Betina.Email, Leandro.Email]);
+        avisos.Where(a => a.Finalidade == "perfil.pedido_devolvido_pela_revisao").Select(a => a.Destinatario).Should().BeEquivalentTo([Betina.Email, Leandro.Email]);
         JsonElement devolvido = await LerAsync(Cliente(Betina), $"{Rota}/{id}");
         (devolvido.GetProperty("situacao").GetString(), devolvido.GetProperty("versao").GetInt32()).Should().Be(("devolvido", 1));
         devolvido.GetProperty("encerradoEm").ValueKind.Should().NotBe(JsonValueKind.Null);

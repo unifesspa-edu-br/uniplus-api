@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Pedidos;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text.Json;
 
@@ -22,10 +21,6 @@ using Wolverine.Tracking;
 /// nada ficando quando ela falha por uma restrição do banco.
 /// </summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class AvisosDaTrocaDeVersaoNoHostTests : AprovacaoDaVersaoNoHostTestBase
 {
     private const string Catalogo = "autorizacao:permissoes:consultar-catalogo";
@@ -49,7 +44,7 @@ public sealed class AvisosDaTrocaDeVersaoNoHostTests : AprovacaoDaVersaoNoHostTe
         await EntregarPelaFilaAsync(versao2.DocumentoId);
         ITrackedSession sessao = await RastrearAsync(() => AprovarAteAVigenciaAsync(gestor, versao2));
 
-        sessao.Sent.MessagesOf<EnviarEmail>().Where(m => m.Finalidade == "perfil.pedido_devolvido_pela_janela").Should().HaveCount(2, "o solicitante e o beneficiário");
+        sessao.Sent.MessagesOf<EnviarEmail>().Where(m => m.Finalidade == "perfil.pedido_devolvido_pela_revisao").Should().HaveCount(2, "o solicitante e o beneficiário");
         sessao.Sent.MessagesOf<EnviarEmail>().Should().ContainSingle(m => m.Finalidade == "perfil.versao_encerrada", "a versão anterior saiu sem concessão a migrar");
         await AguardarAvisoAsync(Betina, pedido, Devolvido);
         await AguardarAvisoAsync(Leandro, pedido, Devolvido);

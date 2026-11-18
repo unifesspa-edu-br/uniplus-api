@@ -26,7 +26,7 @@ public sealed class OperacaoSobreOPerfilTests
         unidade.Descartes.Should().Be(0);
     }
 
-    [Fact(DisplayName = "A operação com avisos e sem chave, como a rotina da janela, deixa o conflito de concorrência propagar")]
+    [Fact(DisplayName = "A operação com avisos e sem chave, como a rotina da revisão, deixa o conflito de concorrência propagar")]
     public async Task ComAvisosSemChave_ConflitoDeConcorrencia_Propaga()
     {
         Perfil perfil = PerfisDeTeste.Pendente("Analista", "Descrição válida.", [Consultar], new CatalogoDeTeste());

@@ -11,7 +11,7 @@ public enum TipoDeGovernanca
 
     /// <summary>
     /// Decide, em nome da instituição, a segunda etapa dos pedidos com dado pessoal ou sensível, as versões protegidas,
-    /// a janela de migração e a proteção do catálogo (ADR-0162).
+    /// a revisão das concessões e a proteção do catálogo (ADR-0162).
     /// </summary>
     RepresentanteDoControlador = 2,
 

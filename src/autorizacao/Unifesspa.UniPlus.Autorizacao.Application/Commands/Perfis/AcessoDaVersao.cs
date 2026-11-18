@@ -9,10 +9,10 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// O que o solicitante pode fazer na governança das versões de um perfil: decidir cada etapa da aprovação, manter perfis
-/// e ler o perfil, o documento, a janela, a contenção, a reclassificação e as divergências, o que quem só consulta as
-/// versões, como o Encarregado de dados, também faz, sem decidir. Cada capacidade é avaliada pelo ponto de decisão único,
-/// sem registrar: quem usa o resultado grava a decisão que governou o desfecho, para que a trilha traga a real e não uma
-/// negativa de uma permissão que a pessoa nem precisava ter.
+/// e ler o perfil, o documento, a revisão, a contenção, a reclassificação e as divergências, o que quem só consulta as
+/// versões, como o Encarregado de dados, também faz, sem decidir. Cada capacidade é avaliada pelo ponto de decisão único, sem registrar: quem usa o resultado grava
+/// a decisão que governou o desfecho, para que a trilha traga a real e não uma negativa de uma permissão que a pessoa nem
+/// precisava ter.
 /// </summary>
 internal static class AcessoDaVersao
 {
@@ -68,7 +68,7 @@ internal static class AcessoDaVersao
         AvaliarLeituraAsync(verificador, perfilId, ResourceTiposAutorizacao.Perfil, [PermissaoDeManter, PermissaoDaProtecaoDeDados, PermissaoDeConsultar], cancellationToken);
 
     /// <summary>
-    /// Se a pessoa lê o perfil ou a janela de migração dele: quem mantém perfis, aprova por qualquer das etapas ou consulta
+    /// Se a pessoa lê o perfil ou a revisão das concessões dele: quem mantém perfis, aprova por qualquer das etapas ou consulta
     /// as versões. Sem <paramref name="perfilId"/>, a leitura é da coleção. Registra o desfecho de uma só vez, as
     /// permissões que habilitaram ou, se nenhuma habilitou, as negativas.
     /// </summary>

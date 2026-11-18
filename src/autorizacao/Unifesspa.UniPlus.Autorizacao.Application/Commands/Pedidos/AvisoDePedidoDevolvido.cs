@@ -34,7 +34,7 @@ public sealed class AvisoDePedidoDevolvido
         ArgumentNullException.ThrowIfNull(pedido);
         ArgumentNullException.ThrowIfNull(versao);
 
-        ModeloDeAviso modelo = new(TipoDeAviso.PedidoDevolvidoPelaJanela, perfilNome, versao.Numero, [], _link.Para(pedido.Id));
+        ModeloDeAviso modelo = new(TipoDeAviso.PedidoDevolvidoPelaRevisao, perfilNome, versao.Numero, [], _link.Para(pedido.Id));
         DestinatarioDoAviso[] partes =
         [
             new(pedido.Solicitante.Identidade, pedido.Solicitante.Email ?? string.Empty),

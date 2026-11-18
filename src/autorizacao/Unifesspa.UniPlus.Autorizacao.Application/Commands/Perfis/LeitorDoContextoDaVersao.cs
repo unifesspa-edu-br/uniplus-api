@@ -10,17 +10,17 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 public sealed class LeitorDoContextoDaVersao
 {
     private readonly IPerfilRepository _perfis;
-    private readonly IJanelaDeMigracaoRepository _janelas;
+    private readonly IRevisaoDasConcessoesRepository _revisoes;
     private readonly TimeProvider _clock;
 
-    public LeitorDoContextoDaVersao(IPerfilRepository perfis, IJanelaDeMigracaoRepository janelas, TimeProvider clock)
+    public LeitorDoContextoDaVersao(IPerfilRepository perfis, IRevisaoDasConcessoesRepository revisoes, TimeProvider clock)
     {
         ArgumentNullException.ThrowIfNull(perfis);
-        ArgumentNullException.ThrowIfNull(janelas);
+        ArgumentNullException.ThrowIfNull(revisoes);
         ArgumentNullException.ThrowIfNull(clock);
 
         _perfis = perfis;
-        _janelas = janelas;
+        _revisoes = revisoes;
         _clock = clock;
     }
 
@@ -31,5 +31,5 @@ public sealed class LeitorDoContextoDaVersao
     public async Task<ContextoDaVersao> LerAsync(Guid perfilId, string nome, CancellationToken cancellationToken) =>
         new(
             await NomeEmUsoPorOutroAsync(nome, perfilId, cancellationToken).ConfigureAwait(false),
-            await _janelas.TemJanelaAbertaAsync(perfilId, _clock.GetUtcNow(), cancellationToken).ConfigureAwait(false));
+            await _revisoes.TemRevisaoAbertaAsync(perfilId, _clock.GetUtcNow(), cancellationToken).ConfigureAwait(false));
 }

@@ -28,7 +28,7 @@ public static class ConcessaoMapping
             c.ValidaAte,
             c.RevogadaEm,
             RevogadaPorPessoa(c),
-            c.RevogadaPelaJanelaId,
+            c.RevogadaPelaRevisaoId,
             c.MotivoRevogacao,
             c.EstaAtiva(agora));
 
@@ -61,15 +61,15 @@ public static class ConcessaoMapping
 
         if (c.RevogadaEm is { } revogadaEm)
         {
-            yield return c.RevogadaPelaJanelaId is null
+            yield return c.RevogadaPelaRevisaoId is null
                 ? new EventoDaTrilhaDto("revogada", revogadaEm, RevogadaPorPessoa(c), c.MotivoRevogacao)
                 : new EventoDaTrilhaDto("revogada_pela_migracao", revogadaEm, null, c.MotivoRevogacao, "sistema");
         }
     }
 
-    // A revogação pela janela de migração é do sistema: não há pessoa a expor, e quem recusou fica na trilha da janela.
+    // A revogação pela revisão das concessões é do sistema: não há pessoa a expor, e quem recusou fica na trilha da revisão.
     private static IdentidadeDto? RevogadaPorPessoa(Concessao c) =>
-        c.RevogadaEm is null || c.RevogadaPelaJanelaId is not null
+        c.RevogadaEm is null || c.RevogadaPelaRevisaoId is not null
             ? null
             : new IdentidadeDto(c.RevogadaPorEmissor!, c.RevogadaPorContaId!, c.RevogadaPorNome);
 }

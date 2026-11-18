@@ -31,7 +31,7 @@ internal static class ErrosDoPerfil
         new(PerfilErrorCodes.VersaoNaoEncontrada, new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.autorizacao.perfil.versao_nao_encontrada", "Versão do perfil não encontrada")),
         new(PerfilErrorCodes.VersaoNaoPendente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.versao_nao_pendente", "A versão não está pendente")),
         new(PerfilErrorCodes.ProtocoloInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.protocolo_invalido", "Protocolo do documento inválido")),
-        new(PerfilErrorCodes.JanelaDeMigracaoAberta, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.janela_de_migracao_aberta", "O perfil tem janela de migração aberta: nova versão só depois que ela terminar")),
+        new(PerfilErrorCodes.RevisaoDasConcessoesAberta, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.revisao_das_concessoes_aberta", "O perfil tem revisão das concessões aberta: nova versão só depois que ela terminar")),
         new(PerfilErrorCodes.Inativo, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.inativo", "Perfil desativado não aceita versão nova")),
     ];
 

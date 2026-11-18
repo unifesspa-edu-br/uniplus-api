@@ -1,15 +1,15 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 
-/// <summary>O que uma decisão da janela de migração fez com a concessão.</summary>
+/// <summary>O que uma decisão da revisão das concessões fez com a concessão.</summary>
 public enum ResultadoDaMigracao
 {
     Migrar = 1,
     Recusar = 2,
 
-    /// <summary>O sistema reteve a concessão do próprio gestor que enviou o lote.</summary>
+    /// <summary>O sistema reteve a concessão do próprio gestor que enviou as decisões.</summary>
     Reter = 3,
 
-    /// <summary>O sistema encerrou a concessão que ninguém decidiu até o fim da janela.</summary>
+    /// <summary>O sistema encerrou a concessão que ninguém decidiu até o fim da revisão.</summary>
     NaoMigrada = 4,
 
     /// <summary>O sistema tirou da lista a concessão que foi revogada ou venceu antes da decisão.</summary>

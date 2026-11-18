@@ -7,8 +7,8 @@ using NSubstitute;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Autorizacao.Apoio;
-using Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.RevisoesDasConcessoes;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
@@ -44,7 +44,7 @@ public sealed class AutorizacaoDaMigracaoTests
 
         Result<AutoriaDaVersao> resultado = await Autorizacao(PerfisDeTeste.Gestor).AutorizarAsync(PerfilId, EtapaDaVersao.ProtecaoDeDados, verificador, CancellationToken.None);
 
-        resultado.Error!.Code.Should().Be(MigracaoErrorCodes.SemPermissaoNaEtapa);
+        resultado.Error!.Code.Should().Be(RevisaoDasConcessoesErrorCodes.SemPermissaoNaEtapa);
         TrilhaDeAcesso.Do(verificador).Should().ContainSingle(entrada => entrada.Permissao == Protecao).Which.Resultado.Should().Be(ResultadoDoAcesso.Negado);
         await _concessoes.DidNotReceiveWithAnyArgs().TemConcessaoAtivaDoPerfilAsync(default!, default, default, default);
     }

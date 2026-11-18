@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Configurations;
 
-using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -12,11 +11,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
-/// <summary>Configuração EF Core da situação de cada concessão na janela de migração.</summary>
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
+/// <summary>Configuração EF Core da situação de cada concessão na revisão das concessões.</summary>
 internal sealed class MigracaoDaConcessaoConfiguration : IEntityTypeConfiguration<MigracaoDaConcessao>
 {
     private const int SituacaoMaxLength = 40;
@@ -38,14 +33,14 @@ internal sealed class MigracaoDaConcessaoConfiguration : IEntityTypeConfiguratio
         builder.Property(m => m.ExigeProtecaoDeDados).IsRequired();
         builder.Property(m => m.AtualizadaEm).IsRequired();
 
-        // A concessão é do mesmo perfil da janela: a chave composta impede a linha de apontar para a de outro perfil.
+        // A concessão é do mesmo perfil da revisão: a chave composta impede a linha de apontar para a de outro perfil.
         builder.HasOne<Concessao>()
             .WithMany()
             .HasForeignKey(m => new { m.PerfilId, m.ConcessaoId })
             .HasPrincipalKey(c => new { c.PerfilId, c.Id })
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(m => new { m.JanelaId, m.ConcessaoId }).IsUnique().HasDatabaseName("ux_migracoes_da_concessao_janela_concessao");
+        builder.HasIndex(m => new { m.RevisaoId, m.ConcessaoId }).IsUnique().HasDatabaseName("ux_migracoes_da_concessao_revisao_concessao");
         builder.Property<uint>("Version").IsRowVersion();
     }
 

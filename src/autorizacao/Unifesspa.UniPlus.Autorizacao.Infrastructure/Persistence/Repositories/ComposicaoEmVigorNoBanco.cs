@@ -16,8 +16,8 @@ using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 /// comum sem vigência aberta, ou a concessão comum sem versão, não dá permissão alguma. Espelha <c>Perfil.ComposicaoEmVigor</c>.
 /// </summary>
 /// <remarks>
-/// A composição (<c>CodigosDasConcessoes</c>) é o que a versão da concessão dá e não olha a suspensão; a janela de
-/// migração a lê assim, porque o lote é aceito durante a suspensão. O acesso a compõe com a suspensão do perfil na
+/// A composição (<c>CodigosDasConcessoes</c>) é o que a versão da concessão dá e não olha a suspensão; a revisão de
+/// migração a lê assim, porque o envio de decisões é aceito durante a suspensão. O acesso a compõe com a suspensão do perfil na
 /// mesma instrução: o perfil comum suspenso não dá permissão alguma, nem às concessões migradas, mas a concessão continua
 /// listada. O perfil de governança não se suspende, e o ramo dele não muda. Sem cache entre requisições; quando o cache da
 /// ADR-0085 existir, a suspensão terá de invalidá-lo pela marca de revogação.
@@ -26,7 +26,7 @@ internal static class ComposicaoEmVigorNoBanco
 {
     /// <summary>
     /// Cada concessão informada com cada código que a composição lhe dá, em uma só instrução SQL; a concessão sem
-    /// permissão aparece uma vez, com o código nulo. Não olha a suspensão: é o que a janela de migração compara.
+    /// permissão aparece uma vez, com o código nulo. Não olha a suspensão: é o que a revisão das concessões compara.
     /// </summary>
     public static IQueryable<LinhaDaConcessao> ComCodigosEmVigor(
         this UniPlusDbContext context, IQueryable<Concessao> concessoes, DateTimeOffset agora) =>
@@ -138,7 +138,7 @@ internal static class ComposicaoEmVigorNoBanco
 
     // O código vale enquanto nenhuma vigência já aberta, de versão mais nova que a da concessão, deixou de reuni-lo:
     // a permissão que saiu não volta pela versão antiga, mesmo que uma versão posterior a recoloque. A concessão que
-    // a janela de migração do perfil deixou para trás, por prazo vencido ou encerramento, não dá código algum, sem
+    // a revisão das concessões do perfil deixou para trás, por prazo vencido ou encerramento, não dá código algum, sem
     // depender de a rotina já ter revogado.
     private static IQueryable<CodigoDaConcessao> CodigosDasVersoes(
         this UniPlusDbContext context, IQueryable<Concessao> concessoes, DateTimeOffset agora) =>
@@ -158,12 +158,12 @@ internal static class ComposicaoEmVigorNoBanco
             DeUnidadeNaVersao = x.DeUnidade,
         };
 
-    // A concessão cujo perfil tem vigência aberta e que a janela de migração do perfil não deixou para trás, por prazo
+    // A concessão cujo perfil tem vigência aberta e que a revisão das concessões do perfil não deixou para trás, por prazo
     // vencido ou encerramento, sem depender de a rotina já ter revogado.
     private static IQueryable<Concessao> ComVersaoEmVigor(
         this UniPlusDbContext context, IQueryable<Concessao> concessoes, DateTimeOffset agora) =>
         concessoes.Where(c => context.Set<VigenciaDoPerfil>().Any(g => g.PerfilId == c.PerfilId && g.Ate == null)
-            && !context.Set<JanelaDeMigracao>().Any(j => j.PerfilId == c.PerfilId && (j.EncerradaEm != null || j.Prazo <= agora)
+            && !context.Set<RevisaoDasConcessoesDoPerfil>().Any(j => j.PerfilId == c.PerfilId && (j.EncerradaEm != null || j.TerminaEm <= agora)
                 && context.Set<VersaoDoPerfil>().Any(v => v.Id == c.VersaoId && v.Numero < j.NumeroDaVersaoNova)));
 }
 

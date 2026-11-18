@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 
 using AwesomeAssertions;
@@ -14,10 +13,6 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// a mudança de escopo suspende a cada mudança, e a troca de versão mantém, encerra ou não traz a base.
 /// </summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class BasesDaReclassificacaoNoHostTests : ReclassificacaoNoHostTestBase
 {
     public BasesDaReclassificacaoNoHostTests(MonolitoDaInstalacaoFixture fixture)
@@ -105,17 +100,17 @@ public sealed class BasesDaReclassificacaoNoHostTests : ReclassificacaoNoHostTes
 
         await TrocarComposicaoAsync(perfil.Perfil, Sensivel);
         await TrocarComposicaoAsync(perfil.Perfil, Sensivel, Consultar);
-        await MigrarNaJanelaAsync(perfil.Perfil, perfil.De(Leandro));
+        await MigrarNaRevisaoAsync(perfil.Perfil, perfil.De(Leandro));
 
         (await OrigemDaBaseAsync(perfil.De(Leandro), Consultar)).Should().Be("saida");
         (await PermissoesAsync(Leandro, perfil.Perfil)).Should().BeEquivalentTo(Consultar, Sensivel);
     }
 
-    private async Task MigrarNaJanelaAsync(Guid perfil, Guid concessao)
+    private async Task MigrarNaRevisaoAsync(Guid perfil, Guid concessao)
     {
         using HttpClient gestao = await GestaoAsync();
         using HttpResponseMessage lote = await EnviarAsync(
-            gestao, HttpMethod.Post, $"{RotaPerfis}/{perfil}/janela/lote", new { decisoes = new[] { new { concessaoId = concessao, decisao = "migrar" } }, confirmacaoDeExclusao = false });
+            gestao, HttpMethod.Post, $"{RotaPerfis}/{perfil}/revisao-das-concessoes/decisoes", new { decisoes = new[] { new { concessaoId = concessao, decisao = "migrar" } }, confirmacaoDeExclusao = false });
         lote.StatusCode.Should().Be(HttpStatusCode.OK, await lote.Content.ReadAsStringAsync());
     }
 

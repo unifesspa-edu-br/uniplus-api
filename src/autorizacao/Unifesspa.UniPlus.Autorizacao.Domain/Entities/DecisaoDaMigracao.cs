@@ -5,7 +5,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 
 /// <summary>
-/// Decisão sobre uma concessão da janela de migração, de uma pessoa ou do sistema. Só se acrescenta, nunca se altera: é
+/// Decisão sobre uma concessão da revisão das concessões, de uma pessoa ou do sistema. Só se acrescenta, nunca se altera: é
 /// evidência forense (ADR-0063), com quem decidiu, a etapa, a composição avaliada e se quem decidiu
 /// tem o perfil, que é o risco que a ADR-0157 aceita. O decisor humano e o sistema ficam em ramos separados.
 /// </summary>
@@ -13,16 +13,16 @@ public sealed class DecisaoDaMigracao : IForensicEntity
 {
     public Guid Id { get; private init; } = Guid.CreateVersion7();
 
-    public Guid JanelaId { get; private set; }
+    public Guid RevisaoId { get; private set; }
 
     public Guid PerfilId { get; private set; }
 
     public Guid ConcessaoId { get; private set; }
 
-    /// <summary>O lote da gestão a que a decisão pertence; nulo só na decisão do sistema de uma janela sem lote.</summary>
-    public Guid? LoteDeOrigemId { get; private set; }
+    /// <summary>O envio de decisões da gestão a que a decisão pertence; nulo só na decisão do sistema de uma revisão sem envio de decisões.</summary>
+    public Guid? EnvioDeOrigemId { get; private set; }
 
-    public EtapaDaMigracao? LoteDeOrigemEtapa { get; private set; }
+    public EtapaDaMigracao? EnvioDeOrigemEtapa { get; private set; }
 
     /// <summary>O envio que produziu a decisão; nulo na retenção, na decisão da retida e nas do sistema.</summary>
     public Guid? EnvioId { get; private set; }
@@ -49,13 +49,13 @@ public sealed class DecisaoDaMigracao : IForensicEntity
 
     public string[] AcrescimoAvaliado { get; private set; } = [];
 
-    public DateTimeOffset Prazo { get; private set; }
+    public DateTimeOffset TerminaEm { get; private set; }
 
     public DateTimeOffset Instante { get; private set; }
 
     /// <summary>
     /// A ordem em que as decisões foram registradas, dada pelo banco: desempata duas decisões da mesma concessão do mesmo
-    /// instante, que o lote da janela serializa sob a trava das concessões.
+    /// instante, que o envio de decisões da revisão serializa sob o bloqueio das concessões.
     /// </summary>
     public long OrdemDeRegistro { get; private set; }
 
@@ -68,9 +68,9 @@ public sealed class DecisaoDaMigracao : IForensicEntity
     }
 
     internal static DecisaoDaMigracao Humana(
-        JanelaDeMigracao janela, Guid concessaoId, DecisaoHumana decisao, ComposicaoDoLote composicao, DateTimeOffset instante)
+        RevisaoDasConcessoesDoPerfil revisao, Guid concessaoId, DecisaoHumana decisao, ComposicaoDoEnvio composicao, DateTimeOffset instante)
     {
-        DecisaoDaMigracao nova = Nova(janela, concessaoId, composicao, instante);
+        DecisaoDaMigracao nova = Nova(revisao, concessaoId, composicao, instante);
         nova.Etapa = decisao.Etapa;
         nova.Resultado = decisao.Resultado;
         nova.Ator = AtorDaMigracao.Humano;
@@ -85,9 +85,9 @@ public sealed class DecisaoDaMigracao : IForensicEntity
     }
 
     internal static DecisaoDaMigracao DoSistema(
-        JanelaDeMigracao janela, Guid concessaoId, ResultadoDaMigracao resultado, ComposicaoDoLote composicao, DateTimeOffset instante)
+        RevisaoDasConcessoesDoPerfil revisao, Guid concessaoId, ResultadoDaMigracao resultado, ComposicaoDoEnvio composicao, DateTimeOffset instante)
     {
-        DecisaoDaMigracao nova = Nova(janela, concessaoId, composicao, instante);
+        DecisaoDaMigracao nova = Nova(revisao, concessaoId, composicao, instante);
         nova.Etapa = resultado == ResultadoDaMigracao.Reter ? EtapaDaMigracao.GestaoDeAcessos : EtapaDaMigracao.Sistema;
         nova.Resultado = resultado;
         nova.Ator = AtorDaMigracao.Sistema;
@@ -96,18 +96,18 @@ public sealed class DecisaoDaMigracao : IForensicEntity
     }
 
     private static DecisaoDaMigracao Nova(
-        JanelaDeMigracao janela, Guid concessaoId, ComposicaoDoLote composicao, DateTimeOffset instante) =>
+        RevisaoDasConcessoesDoPerfil revisao, Guid concessaoId, ComposicaoDoEnvio composicao, DateTimeOffset instante) =>
         new()
         {
-            JanelaId = janela.Id,
-            PerfilId = janela.PerfilId,
+            RevisaoId = revisao.Id,
+            PerfilId = revisao.PerfilId,
             ConcessaoId = concessaoId,
-            LoteDeOrigemId = janela.LoteDaGestao?.Id,
-            LoteDeOrigemEtapa = janela.LoteDaGestao?.Etapa,
-            VersaoAvaliadaId = janela.VersaoAlvoId,
+            EnvioDeOrigemId = revisao.EnvioDaGestao?.Id,
+            EnvioDeOrigemEtapa = revisao.EnvioDaGestao?.Etapa,
+            VersaoAvaliadaId = revisao.VersaoAlvoId,
             ComposicaoAvaliada = [.. composicao.Avaliada],
             AcrescimoAvaliado = [.. composicao.Acrescimo],
-            Prazo = janela.Prazo,
+            TerminaEm = revisao.TerminaEm,
             Instante = instante,
         };
 }

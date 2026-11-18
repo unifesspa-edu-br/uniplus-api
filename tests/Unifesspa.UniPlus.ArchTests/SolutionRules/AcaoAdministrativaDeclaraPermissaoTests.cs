@@ -10,11 +10,11 @@ using Unifesspa.UniPlus.ArchTests.Fixtures;
 using Unifesspa.UniPlus.ArchTests.TestSupport;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.API.Controllers;
-using Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Reclassificacoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Revisoes;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.RevisoesDasConcessoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Reclassificacoes;
@@ -75,14 +75,14 @@ public sealed class AcaoAdministrativaDeclaraPermissaoTests
         // manutenção seguem no atributo.
         [Acao(typeof(PerfisController), nameof(PerfisController.Listar))] = typeof(ListarPerfisQuery),
         [Acao(typeof(PerfisController), nameof(PerfisController.ObterPorId))] = typeof(ObterPerfilQuery),
-        // A janela de migração: o lote, a retida e o encerramento são da gestão de acessos, a etapa da proteção de dados é
-        // da proteção de dados, e a leitura é de quem mantém perfis ou aprova por qualquer das duas etapas.
-        [Acao(typeof(JanelaDeMigracaoController), nameof(JanelaDeMigracaoController.Obter))] = typeof(ObterJanelaDoPerfilQuery),
-        [Acao(typeof(JanelaDeMigracaoController), nameof(JanelaDeMigracaoController.Fila))] = typeof(ListarFilaDeJanelasQuery),
-        [Acao(typeof(JanelaDeMigracaoController), nameof(JanelaDeMigracaoController.EnviarLote))] = typeof(EnviarLoteDaJanelaCommand),
-        [Acao(typeof(JanelaDeMigracaoController), nameof(JanelaDeMigracaoController.DecidirRetida))] = typeof(DecidirRetidaDaJanelaCommand),
-        [Acao(typeof(JanelaDeMigracaoController), nameof(JanelaDeMigracaoController.DecidirProtecaoDeDados))] = typeof(DecidirEtapaDaProtecaoDaJanelaCommand),
-        [Acao(typeof(JanelaDeMigracaoController), nameof(JanelaDeMigracaoController.Encerrar))] = typeof(EncerrarJanelaDoPerfilCommand),
+        // Na revisão das concessões, o envio de decisões, a retida e o encerramento são da gestão de acessos. A proteção
+        // de dados decide sua etapa; a leitura é de quem mantém perfis ou aprova por qualquer das duas etapas.
+        [Acao(typeof(RevisaoDasConcessoesController), nameof(RevisaoDasConcessoesController.Obter))] = typeof(ObterRevisaoDasConcessoesDoPerfilQuery),
+        [Acao(typeof(RevisaoDasConcessoesController), nameof(RevisaoDasConcessoesController.Fila))] = typeof(ListarFilaDeRevisoesDasConcessoesQuery),
+        [Acao(typeof(RevisaoDasConcessoesController), nameof(RevisaoDasConcessoesController.EnviarDecisoesDaGestao))] = typeof(EnviarDecisoesDaRevisaoCommand),
+        [Acao(typeof(RevisaoDasConcessoesController), nameof(RevisaoDasConcessoesController.DecidirRetida))] = typeof(DecidirRetidaDaRevisaoCommand),
+        [Acao(typeof(RevisaoDasConcessoesController), nameof(RevisaoDasConcessoesController.DecidirProtecaoDeDados))] = typeof(DecidirEtapaDaProtecaoDaRevisaoCommand),
+        [Acao(typeof(RevisaoDasConcessoesController), nameof(RevisaoDasConcessoesController.Encerrar))] = typeof(EncerrarRevisaoDoPerfilCommand),
         // A contenção do perfil: suspender e retomar pedem manter perfis ou a proteção de dados, e a etapa da retomada
         // define qual vale; a leitura da trilha é de quem tem uma das duas.
         [Acao(typeof(ContencaoDoPerfilController), nameof(ContencaoDoPerfilController.Suspender))] = typeof(SuspenderPerfilCommand),

@@ -9,8 +9,8 @@ using NSubstitute;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Authorization.Contracts;
-using Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.RevisoesDasConcessoes;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Application.Permissoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Perfis;
@@ -399,7 +399,7 @@ public sealed class GovernancaDaVersaoTests
         (await GovernarVersaoDoPerfilCommandHandler.Handle(
             new AprovarVersaoDoPerfilCommand(perfil.Id, versaoId, EtapaGestao), cenario.Aprovacoes, cenario.Verificador, CancellationToken.None)).Resposta.IsSuccess,
         (await GovernarVersaoDoPerfilCommandHandler.Handle(
-            new RemoverPermissoesDoPerfilCommand(perfil.Id, new RemoverPermissoesRequest([A], "Motivo.", null)), cenario.Remocao, SemJanelaPorMaterializar(), CancellationToken.None)).Resposta.IsSuccess,
+            new RemoverPermissoesDoPerfilCommand(perfil.Id, new RemoverPermissoesRequest([A], "Motivo.", null)), cenario.Remocao, SemRevisaoPorMaterializar(), CancellationToken.None)).Resposta.IsSuccess,
     ];
 
     private static Task<Result<IReadOnlyList<ItemDaFilaDeVersoesDto>>> Fila(
@@ -417,10 +417,10 @@ public sealed class GovernancaDaVersaoTests
     private static TitularDaPermissao Titular(Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects.Identidade pessoa) =>
         new(pessoa.Emissor, pessoa.ContaId, $"{pessoa.ContaId}@uniplus-test.local");
 
-    private static MaterializacaoPrevia SemJanelaPorMaterializar()
+    private static MaterializacaoPrevia SemRevisaoPorMaterializar()
     {
         using ServiceProvider provedor = new ServiceCollection().BuildServiceProvider();
 
-        return new MaterializacaoPrevia(new JanelasNaMemoria(), provedor.GetRequiredService<IServiceScopeFactory>(), TimeProvider.System);
+        return new MaterializacaoPrevia(new RevisoesNaMemoria(), provedor.GetRequiredService<IServiceScopeFactory>(), TimeProvider.System);
     }
 }

@@ -31,7 +31,7 @@ public sealed class EmissorDeAvisosTests : IDisposable
 
     private static PedidoDeAviso Pedido(params DestinatarioDoAviso[] destinatarios) =>
         new(
-            new ModeloDeAviso(TipoDeAviso.LoteEnviadoComRecusas, "Análise de atendimento", 2, [], "https://uniplus.test/janela"),
+            new ModeloDeAviso(TipoDeAviso.DecisoesEnviadasComRecusas, "Análise de atendimento", 2, [], "https://uniplus.test/revisao"),
             Guid.NewGuid(),
             string.Empty,
             destinatarios,
@@ -46,7 +46,7 @@ public sealed class EmissorDeAvisosTests : IDisposable
             Pedido(new DestinatarioDoAviso(Pedro, "endereco-invalido")), CancellationToken.None);
 
         emitidos.Should().BeEmpty();
-        coletor.Soma("uniplus.autorizacao.avisos_sem_destinatario", "tipo", "lote_enviado_com_recusas").Should().Be(1);
+        coletor.Soma("uniplus.autorizacao.avisos_sem_destinatario", "tipo", "decisoes_enviadas_com_recusas").Should().Be(1);
     }
 
     [Fact(DisplayName = "O aviso sem destinatário válido não chama o registro")]
@@ -69,7 +69,7 @@ public sealed class EmissorDeAvisosTests : IDisposable
         await _emissor.EmitirAsync(pedido, CancellationToken.None);
         await _emissor.EmitirAsync(pedido, CancellationToken.None);
 
-        coletor.Soma("uniplus.autorizacao.avisos_sem_destinatario", "tipo", "lote_enviado_com_recusas").Should().Be(2);
+        coletor.Soma("uniplus.autorizacao.avisos_sem_destinatario", "tipo", "decisoes_enviadas_com_recusas").Should().Be(2);
     }
 
     [Fact(DisplayName = "O aviso com destinatário chama o registro uma vez, com os identificadores em ordem, e não soma no contador")]
@@ -84,8 +84,8 @@ public sealed class EmissorDeAvisosTests : IDisposable
         await emissor.EmitirAsync(pedido, CancellationToken.None);
 
         await registro.Received(1).RegistrarAsync(
-            "lote_enviado_com_recusas", pedido.FatoId, Arg.Is<IReadOnlyList<Guid>>(ids => ids.Count == 2 && ids.SequenceEqual(ids.Order())), Arg.Any<CancellationToken>());
-        coletor.Soma("uniplus.autorizacao.avisos_sem_destinatario", "tipo", "lote_enviado_com_recusas").Should().Be(0);
+            "decisoes_enviadas_com_recusas", pedido.FatoId, Arg.Is<IReadOnlyList<Guid>>(ids => ids.Count == 2 && ids.SequenceEqual(ids.Order())), Arg.Any<CancellationToken>());
+        coletor.Soma("uniplus.autorizacao.avisos_sem_destinatario", "tipo", "decisoes_enviadas_com_recusas").Should().Be(0);
     }
 
     [Fact(DisplayName = "Duas identidades com o mesmo endereço recebem uma mensagem só")]

@@ -18,7 +18,7 @@ using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.CenarioDaGovern
 public sealed class AcessoDaVersaoTests
 {
     private static readonly Guid PerfilId = Guid.NewGuid();
-    private static readonly DomainError SemPermissao = MigracaoErros.SemPermissaoNaEtapa();
+    private static readonly DomainError SemPermissao = RevisaoDasConcessoesErros.SemPermissaoNaEtapa();
 
     [Fact(DisplayName = "Conferir a etapa sem autor identificado recusa pelo autor e não registra nada")]
     public async Task ConferirEtapa_SemAutor_RecusaPeloAutorSemRegistrar()

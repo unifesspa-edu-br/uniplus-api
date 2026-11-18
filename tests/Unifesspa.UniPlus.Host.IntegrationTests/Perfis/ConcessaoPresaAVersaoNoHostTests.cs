@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
 
-using System.Diagnostics.CodeAnalysis;
 
 using AwesomeAssertions;
 
@@ -25,10 +24,6 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 /// depois, lida no banco pelo mesmo ponto que a decisão e os titulares usam.
 /// </summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class ConcessaoPresaAVersaoNoHostTests : PedidosDeConcessaoTestBase, IAsyncLifetime
 {
     private const string A = "teste:inscricoes:operar";
@@ -72,7 +67,7 @@ public sealed class ConcessaoPresaAVersaoNoHostTests : PedidosDeConcessaoTestBas
         Guid perfil = await PerfilComConcessaoAsync([A, B]);
 
         await TrocarComposicaoAsync(perfil, A, B, C);
-        await DescartarJanelasAsync();
+        await DescartarRevisoesAsync();
         await TrocarComposicaoAsync(perfil, A, C);
         await TrocarComposicaoAsync(perfil, A, B, C);
 

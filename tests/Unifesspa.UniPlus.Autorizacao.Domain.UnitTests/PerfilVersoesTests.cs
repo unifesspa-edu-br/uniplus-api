@@ -20,8 +20,8 @@ public sealed class PerfilVersoesTests
     private const string Motivo = "Versão proposta por engano.";
 
     private static readonly CatalogoDeTeste Catalogo = new();
-    private static readonly ContextoDaVersao ComJanelaAberta = new(NomeEmUsoPorOutroPerfil: false, JanelaDeMigracaoAberta: true);
-    private static readonly ContextoDaVersao NomeEmUso = new(NomeEmUsoPorOutroPerfil: true, JanelaDeMigracaoAberta: false);
+    private static readonly ContextoDaVersao ComRevisaoAberta = new(NomeEmUsoPorOutroPerfil: false, RevisaoDasConcessoesAberta: true);
+    private static readonly ContextoDaVersao NomeEmUso = new(NomeEmUsoPorOutroPerfil: true, RevisaoDasConcessoesAberta: false);
 
     [Fact(DisplayName = "Versão em vigor troca a vigência: a anterior se encerra, a nova abre e o nome acompanha")]
     public void EntrarEmVigor_SegundaVersao_TrocaAVigencia()
@@ -99,20 +99,20 @@ public sealed class PerfilVersoesTests
         perfil.Versoes.Should().ContainSingle();
     }
 
-    [Fact(DisplayName = "Acrescentar permissão a perfil com concessão não exige condição extra: a janela de migração cuida das concessões")]
+    [Fact(DisplayName = "Acrescentar permissão a perfil com concessão não exige condição extra: a revisão das concessões cuida das concessões")]
     public void CriarVersao_AcrescimoComConcessao_Aceita() =>
         TentarCriar(PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], Catalogo), "Analista", [Consultar, Dados, Publicar])
             .IsSuccess.Should().BeTrue();
 
-    [Fact(DisplayName = "Com a janela de migração aberta a versão nova é recusada, com ou sem acréscimo")]
-    public void CriarVersao_ComJanelaAberta_Recusa()
+    [Fact(DisplayName = "Com a revisão das concessões aberta a versão nova é recusada, com ou sem acréscimo")]
+    public void CriarVersao_ComRevisaoAberta_Recusa()
     {
         Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], Catalogo);
 
-        CodigosDaRecusa(TentarCriar(perfil, "Analista", [Consultar, Publicar], ComJanelaAberta))
-            .Should().Equal(PerfilErrorCodes.JanelaDeMigracaoAberta);
-        CodigosDaRecusa(TentarCriar(perfil, "Analista", [Consultar], ComJanelaAberta))
-            .Should().Equal(PerfilErrorCodes.JanelaDeMigracaoAberta);
+        CodigosDaRecusa(TentarCriar(perfil, "Analista", [Consultar, Publicar], ComRevisaoAberta))
+            .Should().Equal(PerfilErrorCodes.RevisaoDasConcessoesAberta);
+        CodigosDaRecusa(TentarCriar(perfil, "Analista", [Consultar], ComRevisaoAberta))
+            .Should().Equal(PerfilErrorCodes.RevisaoDasConcessoesAberta);
     }
 
     [Fact(DisplayName = "Sem versão vigente a versão nova é uma nova primeira versão: o alcance e o nome podem mudar")]

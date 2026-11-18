@@ -22,7 +22,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
-/// Os perfis de governança não têm versão, aprovação nem janela, e a composição deles só muda pela carga do modelo. Reúnem
+/// Os perfis de governança não têm versão, aprovação nem revisão, e a composição deles só muda pela carga do modelo. Reúnem
 /// permissões do módulo de autorização e, de outros módulos, só as reservadas à governança: uma permissão comum de outro
 /// módulo chegaria a todos os gestores, Representantes ou Encarregados sem passar pela aprovação que os perfis comuns
 /// exigem. O perfil comum, por sua vez, nunca reúne permissão reservada.

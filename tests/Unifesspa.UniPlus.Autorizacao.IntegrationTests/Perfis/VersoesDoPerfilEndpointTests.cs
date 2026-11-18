@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.IntegrationTests.Perfis;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text.Json;
 
@@ -12,10 +11,6 @@ using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
 
 /// <summary>Criação e cancelamento de versões do perfil pelo endpoint real, com as recusas que dependem das concessões do perfil.</summary>
 [Collection(AutorizacaoEndpointCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class VersoesDoPerfilEndpointTests : PerfilEndpointTestBase
 {
     public VersoesDoPerfilEndpointTests(AutorizacaoEndpointFixture fixture)
@@ -89,7 +84,7 @@ public sealed class VersoesDoPerfilEndpointTests : PerfilEndpointTestBase
         outroAlcance.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
-    [Fact(DisplayName = "Perfil com concessão aceita versão que acrescenta permissão sensível: as concessões migram na janela da vigência")]
+    [Fact(DisplayName = "Perfil com concessão aceita versão que acrescenta permissão sensível: as concessões migram na revisão da vigência")]
     public async Task CriarVersao_ComConcessao_AmpliarASensibilidade_Aceita()
     {
         using HttpClient diogo = await ClienteDoGestorAsync();
