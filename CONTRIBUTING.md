@@ -464,13 +464,29 @@ Essas regras são aplicadas automaticamente via GitHub aos colaboradores sem per
 
 | Elemento | Convenção | Exemplo |
 |---|---|---|
-| Classes, métodos, propriedades | PascalCase (inglês) | `CandidatoService`, `CalcularNotaFinal()` |
-| Variáveis locais, parâmetros | camelCase (inglês) | `candidatoId`, `notaFinal` |
+| Classes, métodos, propriedades, constantes | PascalCase; o idioma de cada palavra segue a regra de [idioma dos nomes](#idioma-dos-nomes) | `CandidatoService`, `CalcularNotaFinal()`, `AddRedisOptions` |
+| Variáveis locais, parâmetros | camelCase; mesmo critério | `candidatoId`, `notaFinal`, `options` |
 | Interfaces | `I` + PascalCase | `ICandidatoRepository` |
 | Tabelas (EF Core) | `snake_case`, núcleo no plural, até 30 caracteres ([guia do banco](docs/guia-banco-de-dados.md#2-naming-convention), [ADR-0054](docs/adrs/0054-naming-convention-e-strategy-migrations.md)) | `candidatos`, `inscricoes`, `aceites_do_termo` |
 | Identificadores de banco (FK, índice, restrição) | até 63 bytes; o nome que o EF deriva e passa disso ganha nome explícito, por extenso, e o ArchTest reprova o que faltar ([guia do banco](docs/guia-banco-de-dados.md#2-naming-convention)) | `fk_rascunhos_publicacao_processo_seletivo` |
 | Strings user-facing | pt-BR | `"Inscrição realizada com sucesso"` |
 | Mensagens de erro da API | pt-BR | `"CPF já cadastrado neste processo"` |
+
+### Idioma dos nomes
+
+O projeto mistura os dois idiomas de propósito: traduzir certos termos técnicos soa estranho, e anglicizar o vocabulário do negócio também. O critério é a **naturalidade**: o nome é o que a equipe diria em voz alta, sem tradução à força e sem anglicismo à força.
+
+**Inglês: termo técnico consagrado.** Nome de biblioteca, de protocolo, de padrão da linguagem ou da plataforma, e tudo o que aponta para um tipo que já existe em inglês: *binder*, *provider*, *formatter*, *handler*, *middleware*, *options*, *cache*, *health check*, *token*, *endpoint*, o verbo `Add*`/`Use*` de injeção de dependência, `Try*` com `out`, `To*` de conversão. Exemplos: `AddRedisOptions`, `PageRequestReader`, `TryParseSecurityProtocol`.
+
+**pt-BR: conceito do negócio e palavra da regra do projeto.** Entidade, valor, regra, recusa, estado, e a palavra que a ADR, o requisito ou a mensagem de erro usa: `ProcessoSeletivo`, `CodigoDePermissao`, `TermoDeBusca`, `RecusarLimiteForaDoIntervalo`, `ExigirAcervoConfiguradoForaDoDesenvolvimento`.
+
+**Mistura palavra a palavra é permitida** quando cada palavra está do seu lado: `RegistroDeAcessoKafkaOptions` (conceito + termos da plataforma), `ObterTokenEmCacheValido`, `FalhaDoEnderecoDoToken`. Não se escreve um termo consagrado traduzido (`LeitorDaPaginaPedida` para o leitor de `PageRequest`, `OpcoesDoRedis` para `RedisOptions`), nem um conceito do projeto em inglês (`PermissionCode` no lugar de `CodigoDePermissao`).
+
+**Em dúvida:** (1) o nome aponta para um tipo ou termo que já existe em inglês? então inglês; (2) é palavra que aparece em ADR, requisito ou mensagem de erro do projeto? então pt-BR; (3) qual a equipe diria sem estranhar? Esse.
+
+**O que a regra não muda:** nome de propriedade de `*Options`, membro de enum lido da configuração e chave `Secao:Chave` (são contrato de configuração e não se renomeiam por idioma); código de erro e texto de mensagem (ADR-0023, ADR-0125); strings voltadas ao usuário (pt-BR); nome de teste, que descreve o comportamento em pt-BR.
+
+A regra vale para código novo ou alterado; não é motivo para renomear código que não foi tocado.
 
 ### Código que se explica
 

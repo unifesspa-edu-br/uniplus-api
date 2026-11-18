@@ -286,4 +286,4 @@ A regra é a mesma que proíbe citar ferramenta de IA ou processo de revisão em
 
 - Documentação e strings user-facing em **português do Brasil**
 - Termos técnicos em inglês mantidos sem tradução (API, CQRS, Wolverine, etc.)
-- Nomes de código (classes, métodos, variáveis) em português para domínio, inglês para infra
+- Nomes de código seguem a naturalidade: termos técnicos consagrados em inglês e conceitos do projeto em pt-BR, conforme [Idioma dos nomes](CONTRIBUTING.md#idioma-dos-nomes).
