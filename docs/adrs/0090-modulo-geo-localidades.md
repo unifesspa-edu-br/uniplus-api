@@ -91,3 +91,12 @@ Há ainda a pergunta de **como** os demais módulos consomem localidades: por le
 - Aplica a [ADR-0054](0054-naming-convention-e-strategy-migrations.md) (bancos isolados por módulo) ao contexto transversal de localidades.
 - Contrasta com a [ADR-0056](0056-modulo-configuracao-e-read-side-via-reader.md): aqui o consumo é por composição no cliente, não por leitor read-side.
 - O mecanismo de georreferência do módulo é fixado na [ADR-0091](0091-postgis-georreferencia-nts.md); a isenção de soft-delete do reference data, na [ADR-0092](0092-etl-carga-dne-reference-data.md).
+
+## Emenda (2026-11-15) — município que decide regra é conferido no servidor
+
+A composição no cliente continua o padrão da referência de localidade. Quando o município decide regra do processo seletivo, como a elegibilidade (ADR-0136) ou o local de aplicação da prova presencial (UNI-REQ-0407), a Seleção confere o código do IBGE no Geo pelo servidor, por porta própria e em falha fechada: o Geo sem resposta nunca vale como município conferido.
+
+- **Natureza da chamada.** É chamada ao contrato público do Geo, sem leitor read-side, sem dependência de compilação e sem cópia do cadastro.
+- **Rascunho e publicação.** A conferência não impede salvar nem importar o rascunho, que recebe o resultado como diagnóstico. Ela impede publicar e retificar enquanto o Geo não responder, e a publicação confere de novo, sem confiar no resultado de antes.
+- **Congelamento.** A versão congela o código, com o nome e a UF que o Geo devolveu na conferência.
+- **Limite técnico.** O número de municípios conferidos por processo tem teto configurável, que protege o Geo de requisições em massa; o padrão é de 100.
