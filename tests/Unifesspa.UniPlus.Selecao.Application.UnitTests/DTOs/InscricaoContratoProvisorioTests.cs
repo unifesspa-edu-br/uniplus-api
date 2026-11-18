@@ -70,6 +70,23 @@ public sealed class InscricaoContratoProvisorioTests
         json["escolhasDeCurso"]!["ofertas"]!.AsArray().Should().HaveCount(2, "o portal escolhe a opção entre as ofertas da versão fixada, não do certame vivo");
     }
 
+    [Fact]
+    public void InscricaoDto_SemSegundaOpcaoEPreenchimento_ConservaPartesNoJson()
+    {
+        InscricaoDto exemplo = ExemplosDoContratoDeInscricao.Inscricao;
+        InscricaoDto dto = exemplo with
+        {
+            Formulario = exemplo.Formulario with { Grupos = new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>>(StringComparer.Ordinal), Aceites = [] },
+            EscolhasDeCurso = exemplo.EscolhasDeCurso with { OfertaCursoSegundaOpcaoId = null },
+        };
+        JsonNode json = JsonSerializer.SerializeToNode(dto, Opcoes)!;
+        json.AsObject().Select(static p => p.Key).Should().BeEquivalentTo(
+            ["id", "processoSeletivoId", "situacao", "numeroInscricao", "formulario", "escolhasDeCurso", "eTag", "avaliacao"]);
+        json["formulario"]!["grupos"]!.AsObject().Should().BeEmpty();
+        json["formulario"]!["aceites"]!.AsArray().Should().BeEmpty();
+        json["escolhasDeCurso"]!["ofertaCursoSegundaOpcaoId"].Should().BeNull();
+    }
+
     [Fact(DisplayName = "ComprovanteDaInscricaoDto: o exemplo traz o cartão do candidato sem número de documento e o arquivo sem nome nem local")]
     public void ComprovanteDaInscricaoDto_Exemplo_NaoCarregaDocumento()
     {
