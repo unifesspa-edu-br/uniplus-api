@@ -7,19 +7,15 @@ using System;
 /// Mapeia a seção <c>Sigaa</c> da configuração.
 /// </summary>
 /// <remarks>
-/// <see cref="Senha"/> é credencial de sistema institucional e por isso não tem chave
-/// correspondente em nenhum arquivo versionado — nem vazia. Chega ao processo pela
-/// variável de ambiente <c>Sigaa__Senha</c>, populada a partir do cofre pelo operador de
-/// segredos do cluster; em máquina de desenvolvimento, por <c>dotnet user-secrets</c>.
+/// A senha, em <see cref="Credenciais"/>, é credencial de sistema institucional e por isso
+/// não tem chave correspondente em nenhum arquivo versionado — nem vazia. Chega ao processo
+/// pela variável de ambiente <c>Sigaa__Senha</c>, populada a partir do cofre pelo
+/// operador de segredos do cluster; em máquina de desenvolvimento, por <c>dotnet user-secrets</c>.
+/// Toda duração é um <see cref="TimeSpan"/> e se escreve como <c>hh:mm:ss</c>.
 /// </remarks>
 public sealed class SigaaOptions
 {
     public const string SectionName = "Sigaa";
-
-    /// <summary>
-    /// Limite que a origem impõe ao tamanho de página. Pedir mais que isso é recusado por ela.
-    /// </summary>
-    public const int MaximoItensPorPagina = 200;
 
     /// <summary>
     /// Endereço base da API, sem o caminho do recurso
@@ -27,89 +23,21 @@ public sealed class SigaaOptions
     /// </summary>
     public Uri? BaseUrl { get; init; }
 
-    /// <summary>
-    /// Usuário de serviço que autentica a sincronização.
-    /// </summary>
+    /// <summary>Usuário de serviço do SIGAA (chave <c>Sigaa:Usuario</c>).</summary>
     public string Usuario { get; init; } = string.Empty;
 
-    /// <summary>
-    /// Senha do usuário de serviço.
-    /// </summary>
+    /// <summary>Senha do usuário de serviço (chave <c>Sigaa:Senha</c>); em execução real vem do cofre.</summary>
     public string Senha { get; init; } = string.Empty;
 
-    /// <summary>
-    /// Quantos vínculos pedir por página, limitado a <see cref="MaximoItensPorPagina"/>.
-    /// </summary>
-    public int ItensPorPagina { get; init; } = MaximoItensPorPagina;
+    /// <summary>As credenciais montadas a partir de <see cref="Usuario"/> e <see cref="Senha"/>; não é uma chave de configuração.</summary>
+    public CredenciaisDoSigaa Credenciais => new(Usuario, Senha);
 
-    /// <summary>
-    /// Quantas páginas buscar ao mesmo tempo. Um significa varredura sequencial.
-    /// </summary>
-    public int GrauDeParalelismo { get; init; } = 5;
+    /// <summary>Quanto vale o token e quando renová-lo.</summary>
+    public ParametrosDoTokenDoSigaa Token { get; init; } = new();
 
-    /// <summary>
-    /// Validade assumida para o token quando ele não permite descobrir a própria
-    /// expiração. É rede de segurança, não o caminho normal.
-    /// </summary>
-    public int ValidadeAssumidaDoTokenEmSegundos { get; init; } = 3600;
+    /// <summary>Tempos limite, retentativas e interrupção por falhas das chamadas.</summary>
+    public ResilienciaDoSigaa Resiliencia { get; init; } = new();
 
-    /// <summary>
-    /// Limite da validade aceita para um token, qualquer que seja a que ele declare. Protege
-    /// contra uma expiração absurda vinda da origem fixar um token morto indefinidamente.
-    /// </summary>
-    public int ValidadeMaximaDoTokenEmSegundos { get; init; } = 86_400;
-
-    /// <summary>
-    /// Margem antes da expiração em que o token é renovado, para que uma requisição não
-    /// saia com um token que vence no caminho.
-    /// </summary>
-    public int MargemDeRenovacaoDoTokenEmSegundos { get; init; } = 60;
-
-    /// <summary>
-    /// Tempo limite de uma tentativa isolada.
-    /// </summary>
-    public int TimeoutPorTentativaEmSegundos { get; init; } = 30;
-
-    /// <summary>
-    /// Tempo limite da operação inteira, incluindo as retentativas. Precisa ser
-    /// estritamente menor que o tempo limite do próprio cliente HTTP, senão o
-    /// cancelamento observado vem do cliente e o diagnóstico aponta a causa errada.
-    /// </summary>
-    public int TimeoutTotalEmSegundos { get; init; } = 120;
-
-    /// <summary>
-    /// Quantas vezes repetir uma requisição que falhou por causa transitória.
-    /// </summary>
-    public int MaximoDeRetentativas { get; init; } = 3;
-
-    /// <summary>
-    /// Espera antes da primeira repetição. As seguintes crescem a partir dela, com
-    /// variação aleatória para que várias páginas que falharam juntas não voltem todas no
-    /// mesmo instante.
-    /// </summary>
-    public int EsperaBaseEntreTentativasEmMilissegundos { get; init; } = 500;
-
-    /// <summary>
-    /// Quantas chamadas precisam ocorrer na janela de amostragem antes de a interrupção por
-    /// falhas considerar abrir. O padrão da biblioteca pressupõe tráfego de API pública
-    /// e nunca seria alcançado por uma sincronização diária de poucas dezenas de páginas.
-    /// </summary>
-    public int ChamadasMinimasParaAvaliarInterrupcao { get; init; } = 10;
-
-    /// <summary>
-    /// Janela em que as falhas são contadas para decidir a interrupção por falhas. Precisa ser
-    /// pelo menos o dobro do limite de uma tentativa: uma janela que mal comporta uma
-    /// tentativa não chega a formar amostra, e a interrupção nunca teria como reagir.
-    /// </summary>
-    public int JanelaDeAmostragemDaInterrupcaoEmSegundos { get; init; } = 120;
-
-    /// <summary>
-    /// Proporção de falhas na janela a partir da qual a interrupção por falhas é acionada.
-    /// </summary>
-    public double ProporcaoDeFalhaParaInterromper { get; init; } = 0.5;
-
-    /// <summary>
-    /// Quanto tempo a interrupção por falhas dura antes de deixar passar uma chamada de prova.
-    /// </summary>
-    public int DuracaoDaInterrupcaoEmSegundos { get; init; } = 15;
+    /// <summary>Tamanho da página e quantas páginas buscar ao mesmo tempo.</summary>
+    public PaginacaoDoSigaa Paginacao { get; init; } = new();
 }

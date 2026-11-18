@@ -28,8 +28,10 @@ internal sealed class SigaaOptionsValidator : IValidateOptions<SigaaOptions>
         + "variável de ambiente Sigaa__Senha, populada a partir do cofre; em máquina de "
         + "desenvolvimento, de user-secrets. Nunca de arquivo versionado.";
 
+    private static readonly TimeSpan UmSegundo = TimeSpan.FromSeconds(1);
+
     private static readonly string PaginaForaDoLimiteDaOrigem =
-        $"Sigaa:ItensPorPagina precisa estar entre 1 e {SigaaOptions.MaximoItensPorPagina}, "
+        $"Sigaa:Paginacao:ItensPorPagina precisa estar entre 1 e {PaginacaoDoSigaa.MaximoItensPorPagina}, "
         + "que é o limite imposto pela origem.";
 
     /// <summary>
@@ -38,10 +40,10 @@ internal sealed class SigaaOptionsValidator : IValidateOptions<SigaaOptions>
     /// falha junto das outras de configuração, antes de o processo se declarar pronto.
     /// </summary>
     private const string EsperaNegativaEntreTentativas =
-        "Sigaa:EsperaBaseEntreTentativasEmMilissegundos não pode ser negativa.";
+        "Sigaa:Resiliencia:EsperaBaseEntreTentativas não pode ser negativa.";
 
     private const string TimeoutTotalMenorQueODaTentativa =
-        "Sigaa:TimeoutTotalEmSegundos não pode ser menor que o limite de uma tentativa "
+        "Sigaa:Resiliencia:TimeoutTotal não pode ser menor que o limite de uma tentativa "
         + "isolada — a operação inteira precisa comportar ao menos a primeira delas.";
 
     /// <summary>
@@ -51,12 +53,12 @@ internal sealed class SigaaOptionsValidator : IValidateOptions<SigaaOptions>
     /// por chamada, em fila.
     /// </summary>
     private const string MargemNaoCabeNaValidadeMaxima =
-        "Sigaa:MargemDeRenovacaoDoTokenEmSegundos precisa ser menor que a validade máxima "
+        "Sigaa:Token:MargemDeRenovacao precisa ser menor que a validade máxima "
         + "do token — do contrário todo token nasceria vencido e cada requisição renovaria.";
 
     private const string MargemNaoCabeNaValidadeAssumida =
-        "Sigaa:MargemDeRenovacaoDoTokenEmSegundos precisa ser menor que "
-        + "Sigaa:ValidadeAssumidaDoTokenEmSegundos — quando a expiração do token não é "
+        "Sigaa:Token:MargemDeRenovacao precisa ser menor que "
+        + "Sigaa:Token:ValidadeAssumida — quando a expiração do token não é "
         + "legível, vale a validade assumida, e uma margem que a consome inteira faz "
         + "todo token nascer vencido.";
 
@@ -66,9 +68,24 @@ internal sealed class SigaaOptionsValidator : IValidateOptions<SigaaOptions>
     /// e diz o que ajustar.
     /// </summary>
     private const string JanelaMenorQueODobroDaTentativa =
-        "Sigaa:JanelaDeAmostragemDaInterrupcaoEmSegundos precisa ser pelo menos o dobro de "
-        + "Sigaa:TimeoutPorTentativaEmSegundos — numa janela que mal comporta uma "
+        "Sigaa:Resiliencia:JanelaDeAmostragemDaInterrupcao precisa ser pelo menos o dobro de "
+        + "Sigaa:Resiliencia:TimeoutPorTentativa — numa janela que mal comporta uma "
         + "tentativa não se forma amostra, e a interrupção por falhas nunca reagiria.";
+
+    private static readonly (Func<ResilienciaDoSigaa, bool> Invalida, string Mensagem)[] RegrasDaInterrupcao =
+    [
+        (r => r.ChamadasMinimasParaAvaliarInterrupcao < 1,
+            "Sigaa:Resiliencia:ChamadasMinimasParaAvaliarInterrupcao precisa ser pelo menos 1."),
+        (r => r.JanelaDeAmostragemDaInterrupcao < UmSegundo,
+            "Sigaa:Resiliencia:JanelaDeAmostragemDaInterrupcao precisa ser pelo menos 1 segundo."),
+        (r => r.JanelaDeAmostragemDaInterrupcao >= UmSegundo
+            && r.JanelaDeAmostragemDaInterrupcao < r.TimeoutPorTentativa * 2,
+            JanelaMenorQueODobroDaTentativa),
+        (r => r.ProporcaoDeFalhaParaInterromper is <= 0 or > 1,
+            "Sigaa:Resiliencia:ProporcaoDeFalhaParaInterromper precisa estar entre 0 (exclusivo) e 1."),
+        (r => r.DuracaoDaInterrupcao < UmSegundo,
+            "Sigaa:Resiliencia:DuracaoDaInterrupcao precisa ser pelo menos 1 segundo."),
+    ];
 
     /// <summary>
     /// As conferências, na ordem em que as falhas aparecem na mensagem.
@@ -82,8 +99,7 @@ internal sealed class SigaaOptionsValidator : IValidateOptions<SigaaOptions>
         FalhasDosTempos,
         FalhasDosLimitesDoToken,
         FalhasDaMargemDeRenovacao,
-        FalhasDaAmostragemDaInterrupcao,
-        FalhasDoDisparoDaInterrupcao,
+        FalhasDaInterrupcao,
     ];
 
     public ValidateOptionsResult Validate(string? name, SigaaOptions options)
@@ -113,12 +129,12 @@ internal sealed class SigaaOptionsValidator : IValidateOptions<SigaaOptions>
 
     private static IEnumerable<string> FalhasDaCredencial(SigaaOptions options)
     {
-        if (string.IsNullOrWhiteSpace(options.Usuario))
+        if (string.IsNullOrWhiteSpace(options.Credenciais.Usuario))
         {
             yield return "Sigaa:Usuario é obrigatório.";
         }
 
-        if (string.IsNullOrWhiteSpace(options.Senha))
+        if (string.IsNullOrWhiteSpace(options.Credenciais.Senha))
         {
             yield return SenhaAusente;
         }
@@ -126,25 +142,25 @@ internal sealed class SigaaOptionsValidator : IValidateOptions<SigaaOptions>
 
     private static IEnumerable<string> FalhasDaPaginacao(SigaaOptions options)
     {
-        if (options.ItensPorPagina is < 1 or > SigaaOptions.MaximoItensPorPagina)
+        if (options.Paginacao.ItensPorPagina is < 1 or > PaginacaoDoSigaa.MaximoItensPorPagina)
         {
             yield return PaginaForaDoLimiteDaOrigem;
         }
 
-        if (options.GrauDeParalelismo < 1)
+        if (options.Paginacao.GrauDeParalelismo < 1)
         {
-            yield return "Sigaa:GrauDeParalelismo precisa ser pelo menos 1.";
+            yield return "Sigaa:Paginacao:GrauDeParalelismo precisa ser pelo menos 1.";
         }
     }
 
     private static IEnumerable<string> FalhasDasRetentativas(SigaaOptions options)
     {
-        if (options.MaximoDeRetentativas < 0)
+        if (options.Resiliencia.MaximoDeRetentativas < 0)
         {
-            yield return "Sigaa:MaximoDeRetentativas não pode ser negativo.";
+            yield return "Sigaa:Resiliencia:MaximoDeRetentativas não pode ser negativo.";
         }
 
-        if (options.EsperaBaseEntreTentativasEmMilissegundos < 0)
+        if (options.Resiliencia.EsperaBaseEntreTentativas < TimeSpan.Zero)
         {
             yield return EsperaNegativaEntreTentativas;
         }
@@ -152,12 +168,12 @@ internal sealed class SigaaOptionsValidator : IValidateOptions<SigaaOptions>
 
     private static IEnumerable<string> FalhasDosTempos(SigaaOptions options)
     {
-        if (options.TimeoutPorTentativaEmSegundos < 1)
+        if (options.Resiliencia.TimeoutPorTentativa < UmSegundo)
         {
-            yield return "Sigaa:TimeoutPorTentativaEmSegundos precisa ser pelo menos 1.";
+            yield return "Sigaa:Resiliencia:TimeoutPorTentativa precisa ser pelo menos 1 segundo.";
         }
 
-        if (options.TimeoutTotalEmSegundos < options.TimeoutPorTentativaEmSegundos)
+        if (options.Resiliencia.TimeoutTotal < options.Resiliencia.TimeoutPorTentativa)
         {
             yield return TimeoutTotalMenorQueODaTentativa;
         }
@@ -165,62 +181,43 @@ internal sealed class SigaaOptionsValidator : IValidateOptions<SigaaOptions>
 
     private static IEnumerable<string> FalhasDosLimitesDoToken(SigaaOptions options)
     {
-        if (options.MargemDeRenovacaoDoTokenEmSegundos < 0)
+        if (options.Token.MargemDeRenovacao < TimeSpan.Zero)
         {
-            yield return "Sigaa:MargemDeRenovacaoDoTokenEmSegundos não pode ser negativa.";
+            yield return "Sigaa:Token:MargemDeRenovacao não pode ser negativa.";
         }
 
-        if (options.ValidadeAssumidaDoTokenEmSegundos < 1)
+        if (options.Token.ValidadeAssumida < UmSegundo)
         {
-            yield return "Sigaa:ValidadeAssumidaDoTokenEmSegundos precisa ser pelo menos 1.";
+            yield return "Sigaa:Token:ValidadeAssumida precisa ser pelo menos 1 segundo.";
         }
 
-        if (options.ValidadeMaximaDoTokenEmSegundos < 1)
+        if (options.Token.ValidadeMaxima < UmSegundo)
         {
-            yield return "Sigaa:ValidadeMaximaDoTokenEmSegundos precisa ser pelo menos 1.";
+            yield return "Sigaa:Token:ValidadeMaxima precisa ser pelo menos 1 segundo.";
         }
     }
 
     private static IEnumerable<string> FalhasDaMargemDeRenovacao(SigaaOptions options)
     {
-        if (options.MargemDeRenovacaoDoTokenEmSegundos >= options.ValidadeMaximaDoTokenEmSegundos)
+        if (options.Token.MargemDeRenovacao >= options.Token.ValidadeMaxima)
         {
             yield return MargemNaoCabeNaValidadeMaxima;
         }
 
-        if (options.MargemDeRenovacaoDoTokenEmSegundos >= options.ValidadeAssumidaDoTokenEmSegundos)
+        if (options.Token.MargemDeRenovacao >= options.Token.ValidadeAssumida)
         {
             yield return MargemNaoCabeNaValidadeAssumida;
         }
     }
 
-    private static IEnumerable<string> FalhasDaAmostragemDaInterrupcao(SigaaOptions options)
+    private static IEnumerable<string> FalhasDaInterrupcao(SigaaOptions options)
     {
-        if (options.ChamadasMinimasParaAvaliarInterrupcao < 1)
+        foreach ((Func<ResilienciaDoSigaa, bool> invalida, string mensagem) in RegrasDaInterrupcao)
         {
-            yield return "Sigaa:ChamadasMinimasParaAvaliarInterrupcao precisa ser pelo menos 1.";
-        }
-
-        if (options.JanelaDeAmostragemDaInterrupcaoEmSegundos < 1)
-        {
-            yield return "Sigaa:JanelaDeAmostragemDaInterrupcaoEmSegundos precisa ser pelo menos 1.";
-        }
-        else if (options.JanelaDeAmostragemDaInterrupcaoEmSegundos < options.TimeoutPorTentativaEmSegundos * 2)
-        {
-            yield return JanelaMenorQueODobroDaTentativa;
-        }
-    }
-
-    private static IEnumerable<string> FalhasDoDisparoDaInterrupcao(SigaaOptions options)
-    {
-        if (options.ProporcaoDeFalhaParaInterromper is <= 0 or > 1)
-        {
-            yield return "Sigaa:ProporcaoDeFalhaParaInterromper precisa estar entre 0 (exclusivo) e 1.";
-        }
-
-        if (options.DuracaoDaInterrupcaoEmSegundos < 1)
-        {
-            yield return "Sigaa:DuracaoDaInterrupcaoEmSegundos precisa ser pelo menos 1.";
+            if (invalida(options.Resiliencia))
+            {
+                yield return mensagem;
+            }
         }
     }
 }

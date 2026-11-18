@@ -201,11 +201,11 @@ public sealed class SigaaClientCadeiaDeEnvioTests : IDisposable
         new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                [$"{SigaaOptions.SectionName}:{nameof(SigaaOptions.BaseUrl)}"] = Endereco,
-                [$"{SigaaOptions.SectionName}:{nameof(SigaaOptions.Usuario)}"] = "servico",
-                [$"{SigaaOptions.SectionName}:{nameof(SigaaOptions.Senha)}"] = "segredo",
-                [$"{SigaaOptions.SectionName}:{nameof(SigaaOptions.MaximoDeRetentativas)}"] = "1",
-                [$"{SigaaOptions.SectionName}:{nameof(SigaaOptions.EsperaBaseEntreTentativasEmMilissegundos)}"] = "0",
+                [OpcoesDoSigaa.Chave(ChavesDoSigaa.BaseUrl)] = Endereco,
+                [OpcoesDoSigaa.Chave(ChavesDoSigaa.Usuario)] = "servico",
+                [OpcoesDoSigaa.Chave(ChavesDoSigaa.Senha)] = "segredo",
+                [OpcoesDoSigaa.Chave(ChavesDoSigaa.MaximoDeRetentativas)] = "1",
+                [OpcoesDoSigaa.Chave(ChavesDoSigaa.EsperaBaseEntreTentativas)] = OpcoesDoSigaa.Segundos(0),
             })
             .Build();
 

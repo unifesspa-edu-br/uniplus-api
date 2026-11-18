@@ -1,12 +1,9 @@
 namespace Unifesspa.UniPlus.Discentes.Infrastructure.Sigaa.Authentication;
 
 using System;
-using System.Buffers.Text;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http;
 using System.Net.Http.Json;
-using System.Text;
-using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
@@ -45,7 +42,7 @@ internal sealed partial class SigaaTokenProvider : IDisposable
     private readonly TimeProvider _relogio;
     private readonly SemaphoreSlim _acessoExclusivo = new(initialCount: 1, maxCount: 1);
 
-    private string? _token;
+    private TokenDeAcesso? _token;
     private DateTimeOffset _expiraEm;
     private bool _descartado;
 
@@ -69,9 +66,9 @@ internal sealed partial class SigaaTokenProvider : IDisposable
     /// <summary>
     /// Devolve um token válido, renovando-o se o atual já venceu ou está prestes a vencer.
     /// </summary>
-    public async Task<string> ObterAsync(CancellationToken cancellationToken)
+    public async Task<TokenDeAcesso> ObterAsync(CancellationToken cancellationToken)
     {
-        if (TentarReaproveitar(out string? vigente))
+        if (TentarReaproveitar(out TokenDeAcesso? vigente))
         {
             return vigente;
         }
@@ -96,12 +93,12 @@ internal sealed partial class SigaaTokenProvider : IDisposable
     /// a outra, o token que a primeira delas acabou de renovar — e cada uma renovaria de
     /// novo, transformando uma renovação em tantas quantas estivessem em voo.
     /// </remarks>
-    public void Descartar(string tokenRecusado)
+    public void Descartar(TokenDeAcesso tokenRecusado)
     {
         _acessoExclusivo.Wait();
         try
         {
-            if (string.Equals(_token, tokenRecusado, StringComparison.Ordinal))
+            if (Equals(_token, tokenRecusado))
             {
                 _token = null;
                 _expiraEm = default;
@@ -117,14 +114,14 @@ internal sealed partial class SigaaTokenProvider : IDisposable
     /// Outra requisição pode ter renovado enquanto esta esperava o acesso exclusivo; só se o token
     /// guardado ainda não serve é que se autentica de novo.
     /// </summary>
-    private async Task<string> ReaproveitarOuRenovarAsync(CancellationToken cancellationToken)
+    private async Task<TokenDeAcesso> ReaproveitarOuRenovarAsync(CancellationToken cancellationToken)
     {
-        if (TentarReaproveitar(out string? renovadoPorOutra))
+        if (TentarReaproveitar(out TokenDeAcesso? renovadoPorOutra))
         {
             return renovadoPorOutra;
         }
 
-        string novo = await AutenticarAsync(cancellationToken).ConfigureAwait(false);
+        TokenDeAcesso novo = await AutenticarAsync(cancellationToken).ConfigureAwait(false);
         TimeSpan validade = CalcularValidade(novo);
 
         Guardar(novo, validade);
@@ -132,20 +129,19 @@ internal sealed partial class SigaaTokenProvider : IDisposable
         return novo;
     }
 
-    private void Guardar(string token, TimeSpan validade)
+    private void Guardar(TokenDeAcesso token, TimeSpan validade)
     {
         _token = token;
         _expiraEm = _relogio.GetUtcNow().Add(validade);
 
-        LogTokenRenovado(_logger, _opcoes.Usuario, (int)validade.TotalSeconds);
+        LogTokenRenovado(_logger, _opcoes.Credenciais.Usuario, (int)validade.TotalSeconds);
     }
 
-    private bool TentarReaproveitar([NotNullWhen(true)] out string? token)
+    private bool TentarReaproveitar([NotNullWhen(true)] out TokenDeAcesso? token)
     {
-        string? guardado = _token;
-        TimeSpan margem = TimeSpan.FromSeconds(_opcoes.MargemDeRenovacaoDoTokenEmSegundos);
+        TokenDeAcesso? guardado = _token;
 
-        if (guardado is not null && _relogio.GetUtcNow() < _expiraEm - margem)
+        if (guardado is not null && _relogio.GetUtcNow() < _expiraEm - _opcoes.Token.MargemDeRenovacao)
         {
             token = guardado;
             return true;
@@ -164,14 +160,14 @@ internal sealed partial class SigaaTokenProvider : IDisposable
     /// periódica que a fábrica faz para que mudanças de endereço do servidor sejam
     /// percebidas.
     /// </remarks>
-    private async Task<string> AutenticarAsync(CancellationToken cancellationToken)
+    private async Task<TokenDeAcesso> AutenticarAsync(CancellationToken cancellationToken)
     {
         using HttpClient cliente = _clientes.CreateClient(NomeDoClienteHttp);
 
         using HttpResponseMessage resposta = await cliente
             .PostAsJsonAsync(
                 "authentication_token",
-                new PedidoDeAutenticacao(_opcoes.Usuario, _opcoes.Senha),
+                new PedidoDeAutenticacao(_opcoes.Credenciais.Usuario, _opcoes.Credenciais.Senha),
                 cancellationToken)
             .ConfigureAwait(false);
 
@@ -188,14 +184,14 @@ internal sealed partial class SigaaTokenProvider : IDisposable
 
             // O corpo da recusa não é registrado: ele ecoa o que foi enviado, incluindo o
             // usuário, e num erro da origem pode trazer dado de quem está sendo consultado.
-            LogAutenticacaoRecusada(_logger, _opcoes.Usuario, status);
+            LogAutenticacaoRecusada(_logger, _opcoes.Credenciais.Usuario, status);
 
             throw new SigaaAutenticacaoException(
                 $"A API do SIGAA recusou a autenticação do usuário de serviço com status {status}.");
         }
     }
 
-    private static async Task<string> LerTokenAsync(
+    private static async Task<TokenDeAcesso> LerTokenAsync(
         HttpResponseMessage resposta,
         CancellationToken cancellationToken)
     {
@@ -203,13 +199,10 @@ internal sealed partial class SigaaTokenProvider : IDisposable
             .ReadFromJsonAsync<RespostaDeAutenticacao>(cancellationToken)
             .ConfigureAwait(false);
 
-        if (conteudo is null || string.IsNullOrWhiteSpace(conteudo.Token))
-        {
-            throw new SigaaAutenticacaoException(
-                "A API do SIGAA respondeu à autenticação sem devolver um token.");
-        }
-
-        return conteudo.Token;
+        return TokenDeAcesso.Criar(conteudo?.Token).Match(
+            token => token,
+            _ => throw new SigaaAutenticacaoException(
+                "A API do SIGAA respondeu à autenticação sem devolver um token."));
     }
 
     /// <summary>
@@ -223,96 +216,37 @@ internal sealed partial class SigaaTokenProvider : IDisposable
     /// dois, vale a validade assumida na configuração. O resultado é sempre limitado pelo
     /// limite configurado.
     /// </remarks>
-    private TimeSpan CalcularValidade(string token)
+    private TimeSpan CalcularValidade(TokenDeAcesso token)
     {
-        TimeSpan assumida = TimeSpan.FromSeconds(
-            Math.Min(_opcoes.ValidadeAssumidaDoTokenEmSegundos, _opcoes.ValidadeMaximaDoTokenEmSegundos));
+        ParametrosDoTokenDoSigaa parametros = _opcoes.Token;
+        TimeSpan assumida = Menor(parametros.ValidadeAssumida, parametros.ValidadeMaxima);
 
-        if (LerValidadeDeclarada(token) is not { } segundos)
+        if (LerValidadeDeclarada(token) is not { } declarada)
         {
             LogValidadeIndisponivel(_logger);
             return assumida;
         }
 
-        return segundos > 0
-            ? TimeSpan.FromSeconds(Math.Min(segundos, _opcoes.ValidadeMaximaDoTokenEmSegundos))
-            : assumida;
+        return declarada > TimeSpan.Zero ? Menor(declarada, parametros.ValidadeMaxima) : assumida;
     }
+
+    private static TimeSpan Menor(TimeSpan primeiro, TimeSpan segundo) => primeiro < segundo ? primeiro : segundo;
 
     /// <summary>
-    /// Os segundos de validade que o token declara, ou nulo quando ele não os declara de
-    /// forma legível.
+    /// A validade que o token declara, em segundos inteiros, ou nulo quando ele não a declara
+    /// de forma legível.
     /// </summary>
-    /// <remarks>
-    /// Os instantes vêm de fora e podem estar em qualquer escala — uma expiração gravada em
-    /// milissegundos, por exemplo, estoura a faixa de datas representáveis. Isso é mais um
-    /// caso de validade ilegível, e não pode impedir o token de chegar à origem: quem o
-    /// valida é ela.
-    /// </remarks>
-    private long? LerValidadeDeclarada(string token)
+    private TimeSpan? LerValidadeDeclarada(TokenDeAcesso token)
     {
-        if (LerInstantes(token) is not { } instantes || !instantes.EstaNaFaixaDeDatas())
+        if (!token.TentarLerInstantesDeclarados(out DateTimeOffset expiraEm, out DateTimeOffset? emitidoEm))
         {
             return null;
         }
 
-        return instantes.EmitidoEm is { } emissao
-            ? instantes.ExpiraEm - emissao
-            : (long)(DateTimeOffset.FromUnixTimeSeconds(instantes.ExpiraEm) - _relogio.GetUtcNow()).TotalSeconds;
+        TimeSpan declarada = expiraEm - (emitidoEm ?? _relogio.GetUtcNow());
+
+        return TimeSpan.FromSeconds((long)declarada.TotalSeconds);
     }
-
-    /// <summary>
-    /// Lê os instantes de expiração e emissão declarados no token, sem verificar a
-    /// assinatura — a verificação é da origem, e o que se busca aqui é só o momento de
-    /// renovar.
-    /// </summary>
-    private static InstantesDoToken? LerInstantes(string token) =>
-        token.Split('.') is [_, { Length: > 0 } corpo, ..] ? DecodificarInstantes(corpo) : null;
-
-    /// <summary>
-    /// Decodifica o trecho do meio do token. Apesar do nome, a decodificação lança quando
-    /// encontra caractere fora do alfabeto — o valor de retorno cobre só o caso de destino
-    /// pequeno demais. Sem esta captura, um token que não seja um dos três trechos
-    /// separados por ponto derrubaria a autenticação inteira, em vez de apenas deixar a
-    /// validade indisponível.
-    /// </summary>
-    private static InstantesDoToken? DecodificarInstantes(string corpo)
-    {
-        try
-        {
-            return ExtrairInstantes(corpo);
-        }
-        catch (FormatException)
-        {
-            return null;
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
-    }
-
-    private static InstantesDoToken? ExtrairInstantes(string corpo)
-    {
-        byte[] bytes = new byte[Base64Url.GetMaxDecodedLength(corpo.Length)];
-
-        if (!Base64Url.TryDecodeFromChars(corpo, bytes, out int escritos))
-        {
-            return null;
-        }
-
-        using JsonDocument documento = JsonDocument.Parse(bytes.AsMemory(0, escritos));
-        JsonElement raiz = documento.RootElement;
-
-        return raiz.TryGetProperty("exp", out JsonElement expiracao) && expiracao.TryGetInt64(out long expiraEm)
-            ? new InstantesDoToken(expiraEm, LerEmissao(raiz))
-            : null;
-    }
-
-    private static long? LerEmissao(JsonElement raiz) =>
-        raiz.TryGetProperty("iat", out JsonElement emissao) && emissao.TryGetInt64(out long emitidoEm)
-            ? emitidoEm
-            : null;
 
     public void Dispose()
     {
@@ -348,22 +282,5 @@ internal sealed partial class SigaaTokenProvider : IDisposable
     {
         [JsonPropertyName("token")]
         public string Token { get; init; } = string.Empty;
-    }
-
-    /// <summary>
-    /// Os instantes que o token declara, em segundos desde a época; a emissão pode faltar.
-    /// </summary>
-    private readonly record struct InstantesDoToken(long ExpiraEm, long? EmitidoEm)
-    {
-        /// <summary>
-        /// Diz se os instantes declarados cabem na faixa de datas que se consegue
-        /// representar.
-        /// </summary>
-        public bool EstaNaFaixaDeDatas() =>
-            CabeNaFaixa(ExpiraEm) && (EmitidoEm is not { } emissao || CabeNaFaixa(emissao));
-
-        private static bool CabeNaFaixa(long segundosDesdeAEpoca) =>
-            segundosDesdeAEpoca >= DateTimeOffset.MinValue.ToUnixTimeSeconds()
-            && segundosDesdeAEpoca <= DateTimeOffset.MaxValue.ToUnixTimeSeconds();
     }
 }

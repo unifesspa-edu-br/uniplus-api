@@ -98,8 +98,8 @@ public sealed class VarreduraPaginadaTests
         int itensPorPagina)
     {
         SigaaOptions opcoes = OpcoesDoSigaa.Com(
-            (nameof(SigaaOptions.ItensPorPagina), itensPorPagina.ToString(CultureInfo.InvariantCulture)),
-            (nameof(SigaaOptions.GrauDeParalelismo), "2"));
+            (ChavesDoSigaa.ItensPorPagina, itensPorPagina.ToString(CultureInfo.InvariantCulture)),
+            (ChavesDoSigaa.GrauDeParalelismo, "2"));
 
         SigaaVinculoDiscenteClient cliente = new(api, Options.Create(opcoes));
 

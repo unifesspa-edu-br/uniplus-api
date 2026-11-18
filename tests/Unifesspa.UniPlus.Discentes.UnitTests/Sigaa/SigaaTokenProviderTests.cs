@@ -37,8 +37,8 @@ public sealed class SigaaTokenProviderTests : IDisposable
         RedeSimulada rede = RedeComTokenQueExpiraEm(Agora.AddHours(1));
         SigaaTokenProvider provedor = Montar(rede, out RelogioControlado _);
 
-        string primeiro = await provedor.ObterAsync(CancellationToken.None);
-        string segundo = await provedor.ObterAsync(CancellationToken.None);
+        TokenDeAcesso primeiro = await provedor.ObterAsync(CancellationToken.None);
+        TokenDeAcesso segundo = await provedor.ObterAsync(CancellationToken.None);
 
         segundo.Should().Be(primeiro);
         rede.AutenticacoesRealizadas.Should().Be(1, "o token guardado ainda vale");
@@ -50,8 +50,8 @@ public sealed class SigaaTokenProviderTests : IDisposable
         RedeSimulada rede = RedeComTokenQueExpiraEm(Agora.AddMinutes(10));
         SigaaTokenProvider provedor = Montar(rede, out RelogioControlado relogio);
 
-        string primeiro = await provedor.ObterAsync(CancellationToken.None);
-        string segundo = await ObterDepoisDeAsync(provedor, relogio, TimeSpan.FromMinutes(10));
+        TokenDeAcesso primeiro = await provedor.ObterAsync(CancellationToken.None);
+        TokenDeAcesso segundo = await ObterDepoisDeAsync(provedor, relogio, TimeSpan.FromMinutes(10));
 
         segundo.Should().NotBe(primeiro);
         rede.AutenticacoesRealizadas.Should().Be(2);
@@ -62,8 +62,8 @@ public sealed class SigaaTokenProviderTests : IDisposable
     {
         RedeSimulada rede = new((_, _) => RespostasDoSigaa.ComToken(RespostasDoSigaa.TokenSemValidade()));
         SigaaTokenProvider provedor = Montar(rede, out RelogioControlado relogio, OpcoesDoSigaa.Com(
-            (nameof(SigaaOptions.ValidadeAssumidaDoTokenEmSegundos), "600"),
-            (nameof(SigaaOptions.MargemDeRenovacaoDoTokenEmSegundos), "60")));
+            (ChavesDoSigaa.ValidadeAssumidaDoToken, OpcoesDoSigaa.Segundos(600)),
+            (ChavesDoSigaa.MargemDeRenovacaoDoToken, OpcoesDoSigaa.Segundos(60))));
 
         await provedor.ObterAsync(CancellationToken.None);
 
@@ -82,8 +82,8 @@ public sealed class SigaaTokenProviderTests : IDisposable
     {
         RedeSimulada rede = RedeComTokenQueExpiraEm(Agora.AddYears(100));
         SigaaTokenProvider provedor = Montar(rede, out RelogioControlado relogio, OpcoesDoSigaa.Com(
-            (nameof(SigaaOptions.ValidadeMaximaDoTokenEmSegundos), "300"),
-            (nameof(SigaaOptions.MargemDeRenovacaoDoTokenEmSegundos), "30")));
+            (ChavesDoSigaa.ValidadeMaximaDoToken, OpcoesDoSigaa.Segundos(300)),
+            (ChavesDoSigaa.MargemDeRenovacaoDoToken, OpcoesDoSigaa.Segundos(30))));
 
         await provedor.ObterAsync(CancellationToken.None);
         await ObterDepoisDeAsync(provedor, relogio, TimeSpan.FromMinutes(5));
@@ -103,12 +103,12 @@ public sealed class SigaaTokenProviderTests : IDisposable
         RedeSimulada rede = RedeComTokenQueExpiraEm(Agora.AddHours(1));
         SigaaTokenProvider provedor = Montar(rede, out RelogioControlado _);
 
-        string vencido = await provedor.ObterAsync(CancellationToken.None);
+        TokenDeAcesso vencido = await provedor.ObterAsync(CancellationToken.None);
         provedor.Descartar(vencido);
-        string renovado = await provedor.ObterAsync(CancellationToken.None);
+        TokenDeAcesso renovado = await provedor.ObterAsync(CancellationToken.None);
 
         provedor.Descartar(vencido);
-        string depois = await provedor.ObterAsync(CancellationToken.None);
+        TokenDeAcesso depois = await provedor.ObterAsync(CancellationToken.None);
 
         depois.Should().Be(renovado, "o descarte do token velho não pode derrubar o já renovado");
         rede.AutenticacoesRealizadas.Should().Be(2, "houve exatamente uma renovação, não uma por requisição");
@@ -131,9 +131,9 @@ public sealed class SigaaTokenProviderTests : IDisposable
         RedeSimulada rede = new((_, _) => RespostasDoSigaa.ComToken(tokenEstranho));
         SigaaTokenProvider provedor = Montar(rede, out RelogioControlado _);
 
-        string obtido = await provedor.ObterAsync(CancellationToken.None);
+        TokenDeAcesso obtido = await provedor.ObterAsync(CancellationToken.None);
 
-        obtido.Should().Be(tokenEstranho, "o token é repassado como veio; quem o valida é a origem");
+        obtido.Segredo.Should().Be(tokenEstranho, "o token é repassado como veio; quem o valida é a origem");
     }
 
     /// <summary>
@@ -151,10 +151,10 @@ public sealed class SigaaTokenProviderTests : IDisposable
         RedeSimulada rede = new((_, _) => RespostasDoSigaa.ComToken(token));
         SigaaTokenProvider provedor = Montar(rede, out RelogioControlado relogio);
 
-        string obtido = await provedor.ObterAsync(CancellationToken.None);
+        TokenDeAcesso obtido = await provedor.ObterAsync(CancellationToken.None);
         await ObterDepoisDeAsync(provedor, relogio, TimeSpan.FromMinutes(1));
 
-        obtido.Should().Be(token);
+        obtido.Segredo.Should().Be(token);
         rede.AutenticacoesRealizadas.Should().Be(1);
     }
 
@@ -295,7 +295,7 @@ public sealed class SigaaTokenProviderTests : IDisposable
         new((_, indice) =>
             RespostasDoSigaa.ComToken(RespostasDoSigaa.TokenCom(Agora, expiraEm, $"t{indice}")));
 
-    private static async Task<string> ObterDepoisDeAsync(
+    private static async Task<TokenDeAcesso> ObterDepoisDeAsync(
         SigaaTokenProvider provedor,
         RelogioControlado relogio,
         TimeSpan quanto)

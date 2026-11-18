@@ -22,7 +22,7 @@ using Unifesspa.UniPlus.Discentes.Infrastructure.Sigaa.Contracts;
 internal sealed class SigaaVinculoDiscenteClient : ISigaaVinculoDiscenteClient
 {
     private readonly ISigaaVinculoDiscenteApi _api;
-    private readonly SigaaOptions _opcoes;
+    private readonly PaginacaoDoSigaa _paginacao;
 
     public SigaaVinculoDiscenteClient(ISigaaVinculoDiscenteApi api, IOptions<SigaaOptions> opcoes)
     {
@@ -30,7 +30,7 @@ internal sealed class SigaaVinculoDiscenteClient : ISigaaVinculoDiscenteClient
         ArgumentNullException.ThrowIfNull(opcoes);
 
         _api = api;
-        _opcoes = opcoes.Value;
+        _paginacao = opcoes.Value.Paginacao;
     }
 
     public async Task<PaginaDeVinculos> ObterPaginaAsync(
@@ -71,7 +71,7 @@ internal sealed class SigaaVinculoDiscenteClient : ISigaaVinculoDiscenteClient
             filtro.Nivel,
             filtro.AnoIngressoMinimo,
             filtro.Situacoes is { Count: > 0 } ? filtro.Situacoes : null,
-            _opcoes.ItensPorPagina,
+            _paginacao.ItensPorPagina,
             pagina,
             cancellationToken);
 
@@ -118,7 +118,7 @@ internal sealed class SigaaVinculoDiscenteClient : ISigaaVinculoDiscenteClient
     /// </summary>
     private int PaginasPrevistas(PaginaDeVinculos primeira) =>
         primeira.TotalDeItensNaOrigem is { } total
-            ? (int)Math.Ceiling(total / (double)_opcoes.ItensPorPagina)
+            ? (int)Math.Ceiling(total / (double)_paginacao.ItensPorPagina)
             : 0;
 
     /// <remarks>
@@ -135,7 +135,7 @@ internal sealed class SigaaVinculoDiscenteClient : ISigaaVinculoDiscenteClient
     {
         if (numeroDaUltima < previstas)
         {
-            int fim = Math.Min(numeroDaUltima + _opcoes.GrauDeParalelismo, previstas);
+            int fim = Math.Min(numeroDaUltima + _paginacao.GrauDeParalelismo, previstas);
             return await ObterEmParaleloAsync(filtro, numeroDaUltima + 1, fim, cancellationToken)
                 .ConfigureAwait(false);
         }
@@ -164,5 +164,5 @@ internal sealed class SigaaVinculoDiscenteClient : ISigaaVinculoDiscenteClient
     /// </remarks>
     private bool TemProximaPagina(VisaoHydra? visao, int itensNaPagina) =>
         visao?.Proxima is { Length: > 0 }
-        || (visao is null && itensNaPagina >= _opcoes.ItensPorPagina);
+        || (visao is null && itensNaPagina >= _paginacao.ItensPorPagina);
 }

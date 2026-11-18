@@ -98,7 +98,7 @@ public sealed class SigaaOptionsPelaInicializacaoTests
 
         SigaaOptions opcoes = provedor.GetRequiredService<IOptions<SigaaOptions>>().Value;
 
-        opcoes.Usuario.Should().Be("servico");
+        opcoes.Credenciais.Usuario.Should().Be("servico");
     }
 
     private static ServiceProvider Registrar(string endereco, string senha)
@@ -106,9 +106,9 @@ public sealed class SigaaOptionsPelaInicializacaoTests
         IConfiguration configuracao = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["Sigaa:BaseUrl"] = endereco,
-                ["Sigaa:Usuario"] = "servico",
-                ["Sigaa:Senha"] = senha,
+                [OpcoesDoSigaa.Chave(ChavesDoSigaa.BaseUrl)] = endereco,
+                [OpcoesDoSigaa.Chave(ChavesDoSigaa.Usuario)] = "servico",
+                [OpcoesDoSigaa.Chave(ChavesDoSigaa.Senha)] = senha,
             })
             .Build();
 

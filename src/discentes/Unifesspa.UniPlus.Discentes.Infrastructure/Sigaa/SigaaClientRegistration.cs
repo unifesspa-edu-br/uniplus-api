@@ -170,7 +170,7 @@ public static class SigaaClientRegistration
         SigaaOptions opcoes = provedor.GetRequiredService<IOptions<SigaaOptions>>().Value;
 
         cliente.BaseAddress = opcoes.BaseUrl;
-        cliente.Timeout = TimeSpan.FromSeconds(opcoes.TimeoutTotalEmSegundos * 2);
+        cliente.Timeout = opcoes.Resiliencia.TimeoutTotal * 2;
     }
 
     /// <summary>
@@ -182,14 +182,13 @@ public static class SigaaClientRegistration
         HttpStandardResilienceOptions opcoes,
         IServiceProvider provedor)
     {
-        SigaaOptions sigaa = provedor.GetRequiredService<IOptions<SigaaOptions>>().Value;
+        ResilienciaDoSigaa resiliencia = provedor.GetRequiredService<IOptions<SigaaOptions>>().Value.Resiliencia;
 
         opcoes.Retry.MaxRetryAttempts = 2;
-        opcoes.AttemptTimeout.Timeout = TimeSpan.FromSeconds(sigaa.TimeoutPorTentativaEmSegundos);
-        opcoes.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(sigaa.TimeoutTotalEmSegundos);
-        opcoes.CircuitBreaker.SamplingDuration =
-            TimeSpan.FromSeconds(sigaa.JanelaDeAmostragemDaInterrupcaoEmSegundos);
-        opcoes.CircuitBreaker.MinimumThroughput = sigaa.ChamadasMinimasParaAvaliarInterrupcao;
+        opcoes.AttemptTimeout.Timeout = resiliencia.TimeoutPorTentativa;
+        opcoes.TotalRequestTimeout.Timeout = resiliencia.TimeoutTotal;
+        opcoes.CircuitBreaker.SamplingDuration = resiliencia.JanelaDeAmostragemDaInterrupcao;
+        opcoes.CircuitBreaker.MinimumThroughput = resiliencia.ChamadasMinimasParaAvaliarInterrupcao;
     }
 
     /// <summary>
@@ -213,33 +212,33 @@ public static class SigaaClientRegistration
         ResiliencePipelineBuilder<HttpResponseMessage> construtor,
         ResilienceHandlerContext contexto)
     {
-        SigaaOptions sigaa = LerOpcoes(contexto);
+        ResilienciaDoSigaa resiliencia = LerOpcoes(contexto).Resiliencia;
 
         construtor.TimeProvider = contexto.ServiceProvider.GetRequiredService<TimeProvider>();
         construtor
-            .AddTimeout(TimeSpan.FromSeconds(sigaa.TimeoutTotalEmSegundos))
-            .AddRetry(Retentativa(sigaa))
-            .AddCircuitBreaker(InterrupcaoPorFalhas(sigaa))
-            .AddTimeout(TimeSpan.FromSeconds(sigaa.TimeoutPorTentativaEmSegundos));
+            .AddTimeout(resiliencia.TimeoutTotal)
+            .AddRetry(Retentativa(resiliencia))
+            .AddCircuitBreaker(InterrupcaoPorFalhas(resiliencia))
+            .AddTimeout(resiliencia.TimeoutPorTentativa);
     }
 
-    private static HttpRetryStrategyOptions Retentativa(SigaaOptions sigaa) =>
+    private static HttpRetryStrategyOptions Retentativa(ResilienciaDoSigaa resiliencia) =>
         new()
         {
-            MaxRetryAttempts = sigaa.MaximoDeRetentativas,
-            Delay = TimeSpan.FromMilliseconds(sigaa.EsperaBaseEntreTentativasEmMilissegundos),
+            MaxRetryAttempts = resiliencia.MaximoDeRetentativas,
+            Delay = resiliencia.EsperaBaseEntreTentativas,
             BackoffType = DelayBackoffType.Exponential,
             UseJitter = true,
             ShouldRetryAfterHeader = true,
         };
 
-    private static HttpCircuitBreakerStrategyOptions InterrupcaoPorFalhas(SigaaOptions sigaa) =>
+    private static HttpCircuitBreakerStrategyOptions InterrupcaoPorFalhas(ResilienciaDoSigaa resiliencia) =>
         new()
         {
-            SamplingDuration = TimeSpan.FromSeconds(sigaa.JanelaDeAmostragemDaInterrupcaoEmSegundos),
-            MinimumThroughput = sigaa.ChamadasMinimasParaAvaliarInterrupcao,
-            FailureRatio = sigaa.ProporcaoDeFalhaParaInterromper,
-            BreakDuration = TimeSpan.FromSeconds(sigaa.DuracaoDaInterrupcaoEmSegundos),
+            SamplingDuration = resiliencia.JanelaDeAmostragemDaInterrupcao,
+            MinimumThroughput = resiliencia.ChamadasMinimasParaAvaliarInterrupcao,
+            FailureRatio = resiliencia.ProporcaoDeFalhaParaInterromper,
+            BreakDuration = resiliencia.DuracaoDaInterrupcao,
         };
 
     private static SigaaOptions LerOpcoes(ResilienceHandlerContext contexto) =>

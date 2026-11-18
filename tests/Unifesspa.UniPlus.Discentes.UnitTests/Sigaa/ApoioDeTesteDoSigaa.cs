@@ -122,6 +122,10 @@ internal static class RespostasDoSigaa
         $"{CodificarSemPreenchimento("""{"alg":"RS512"}"""u8)}"
         + $".{CodificarSemPreenchimento("""{"username":"servico"}"""u8)}.assinatura";
 
+    /// <summary>
+    /// Token cujo trecho do meio é exatamente o JSON informado, qualquer que seja o seu
+    /// formato — inclusive os que a origem não emitiria.
+    /// </summary>
     public static string TokenComCorpo(string corpoJson) =>
         $"{CodificarSemPreenchimento("""{"alg":"RS512"}"""u8)}.{CodificarCorpo(corpoJson)}.assinatura";
 
@@ -134,6 +138,32 @@ internal static class RespostasDoSigaa
 }
 
 /// <summary>
+/// As chaves de configuração do SIGAA, relativas à seção <c>Sigaa</c>.
+/// </summary>
+internal static class ChavesDoSigaa
+{
+    public const string BaseUrl = nameof(SigaaOptions.BaseUrl);
+    public const string Usuario = nameof(SigaaOptions.Usuario);
+    public const string Senha = nameof(SigaaOptions.Senha);
+    public const string ItensPorPagina = $"{nameof(SigaaOptions.Paginacao)}:{nameof(PaginacaoDoSigaa.ItensPorPagina)}";
+    public const string GrauDeParalelismo = $"{nameof(SigaaOptions.Paginacao)}:{nameof(PaginacaoDoSigaa.GrauDeParalelismo)}";
+    public const string ValidadeAssumidaDoToken = $"{nameof(SigaaOptions.Token)}:{nameof(ParametrosDoTokenDoSigaa.ValidadeAssumida)}";
+    public const string ValidadeMaximaDoToken = $"{nameof(SigaaOptions.Token)}:{nameof(ParametrosDoTokenDoSigaa.ValidadeMaxima)}";
+    public const string MargemDeRenovacaoDoToken = $"{nameof(SigaaOptions.Token)}:{nameof(ParametrosDoTokenDoSigaa.MargemDeRenovacao)}";
+    public const string TimeoutPorTentativa = $"{nameof(SigaaOptions.Resiliencia)}:{nameof(ResilienciaDoSigaa.TimeoutPorTentativa)}";
+    public const string TimeoutTotal = $"{nameof(SigaaOptions.Resiliencia)}:{nameof(ResilienciaDoSigaa.TimeoutTotal)}";
+    public const string MaximoDeRetentativas = $"{nameof(SigaaOptions.Resiliencia)}:{nameof(ResilienciaDoSigaa.MaximoDeRetentativas)}";
+    public const string EsperaBaseEntreTentativas = $"{nameof(SigaaOptions.Resiliencia)}:{nameof(ResilienciaDoSigaa.EsperaBaseEntreTentativas)}";
+    public const string ChamadasMinimasParaAvaliarInterrupcao =
+        $"{nameof(SigaaOptions.Resiliencia)}:{nameof(ResilienciaDoSigaa.ChamadasMinimasParaAvaliarInterrupcao)}";
+    public const string JanelaDeAmostragemDaInterrupcao =
+        $"{nameof(SigaaOptions.Resiliencia)}:{nameof(ResilienciaDoSigaa.JanelaDeAmostragemDaInterrupcao)}";
+    public const string ProporcaoDeFalhaParaInterromper =
+        $"{nameof(SigaaOptions.Resiliencia)}:{nameof(ResilienciaDoSigaa.ProporcaoDeFalhaParaInterromper)}";
+    public const string DuracaoDaInterrupcao = $"{nameof(SigaaOptions.Resiliencia)}:{nameof(ResilienciaDoSigaa.DuracaoDaInterrupcao)}";
+}
+
+/// <summary>
 /// Configuração do SIGAA como o operador a entrega: chaves de texto lidas pelo binder, e
 /// não propriedades preenchidas à mão. Parte de uma configuração válida e deixa o teste
 /// trocar só o que quer provar.
@@ -142,18 +172,18 @@ internal static class OpcoesDoSigaa
 {
     private static readonly Dictionary<string, string?> Validas = new()
     {
-        [Chave(nameof(SigaaOptions.BaseUrl))] = "https://sigaa.exemplo.test",
-        [Chave(nameof(SigaaOptions.Usuario))] = "servico",
-        [Chave(nameof(SigaaOptions.Senha))] = "segredo",
+        [Chave(ChavesDoSigaa.BaseUrl)] = "https://sigaa.exemplo.test",
+        [Chave(ChavesDoSigaa.Usuario)] = "servico",
+        [Chave(ChavesDoSigaa.Senha)] = "segredo",
     };
 
-    public static SigaaOptions Com(params (string Propriedade, string? Valor)[] alteracoes)
+    public static SigaaOptions Com(params (string Caminho, string? Valor)[] alteracoes)
     {
         Dictionary<string, string?> valores = new(Validas);
 
-        foreach ((string propriedade, string? valor) in alteracoes)
+        foreach ((string caminho, string? valor) in alteracoes)
         {
-            valores[Chave(propriedade)] = valor;
+            valores[Chave(caminho)] = valor;
         }
 
         return new ConfigurationBuilder()
@@ -163,5 +193,10 @@ internal static class OpcoesDoSigaa
             .Get<SigaaOptions>() ?? new SigaaOptions();
     }
 
-    private static string Chave(string propriedade) => $"{SigaaOptions.SectionName}:{propriedade}";
+    /// <summary>A chave completa de configuração, a partir do caminho dentro da seção.</summary>
+    public static string Chave(string caminho) => $"{SigaaOptions.SectionName}:{caminho}";
+
+    /// <summary>Uma duração no texto que o operador escreve, <c>hh:mm:ss</c>.</summary>
+    public static string Segundos(double segundos) =>
+        TimeSpan.FromSeconds(segundos).ToString("c", System.Globalization.CultureInfo.InvariantCulture);
 }
