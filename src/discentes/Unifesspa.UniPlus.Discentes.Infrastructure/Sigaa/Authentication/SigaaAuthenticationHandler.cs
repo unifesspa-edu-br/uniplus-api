@@ -44,7 +44,7 @@ internal sealed class SigaaAuthenticationHandler : DelegatingHandler
         ArgumentNullException.ThrowIfNull(request);
         ExigirRequisicaoSemCorpo(request);
 
-        string token = await _tokens.ObterAsync(cancellationToken).ConfigureAwait(false);
+        TokenDeAcesso token = await _tokens.ObterAsync(cancellationToken).ConfigureAwait(false);
         HttpResponseMessage resposta = await EnviarComAsync(request, token, cancellationToken)
             .ConfigureAwait(false);
 
@@ -66,10 +66,10 @@ internal sealed class SigaaAuthenticationHandler : DelegatingHandler
 
     private Task<HttpResponseMessage> EnviarComAsync(
         HttpRequestMessage request,
-        string token,
+        TokenDeAcesso token,
         CancellationToken cancellationToken)
     {
-        request.Headers.Authorization = new AuthenticationHeaderValue(EsquemaBearer, token);
+        request.Headers.Authorization = new AuthenticationHeaderValue(EsquemaBearer, token.Segredo);
 
         return base.SendAsync(request, cancellationToken);
     }
@@ -77,7 +77,7 @@ internal sealed class SigaaAuthenticationHandler : DelegatingHandler
     private async Task<HttpResponseMessage> RenovarEReenviarAsync(
         HttpRequestMessage request,
         HttpResponseMessage recusada,
-        string tokenRecusado,
+        TokenDeAcesso tokenRecusado,
         CancellationToken cancellationToken)
     {
         // A recusa é descartada explicitamente: sem isso a conexão fica presa até a
@@ -87,7 +87,7 @@ internal sealed class SigaaAuthenticationHandler : DelegatingHandler
 
         _tokens.Descartar(tokenRecusado);
 
-        string renovado = await _tokens.ObterAsync(cancellationToken).ConfigureAwait(false);
+        TokenDeAcesso renovado = await _tokens.ObterAsync(cancellationToken).ConfigureAwait(false);
 
         // Uma única repetição. Se a origem recusar de novo, o problema não é o token
         // vencido — é a credencial ou a permissão, e insistir vira laço.
