@@ -38,17 +38,17 @@ public sealed class RevisaoDasConcessoesPrazoNoHostTests : RevisaoDasConcessoesN
         (await TemConcessaoAtivaAsync(Leandro, cenario.PerfilId)).Should().BeFalse();
     }
 
-    [Fact(DisplayName = "O envio que espera a trava de uma concessão e atravessa o prazo encontra a revisão encerrada e não migra")]
+    [Fact(DisplayName = "O envio que espera o bloqueio de uma concessão e atravessa o prazo encontra a revisão encerrada e não migra")]
     public async Task Envio_AtravessaOPrazoNaEsperaDaConcessao_EhRecusado()
     {
         RevisaoAberta cenario = await AbrirRevisaoAsync(Leandro);
         Guid concessao = cenario.Concessoes[Leandro];
         using HttpClient gestao = await GestaoAsync();
-        await using TransacaoRetidaDeTeste trava = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
-        await trava.Servicos.GetRequiredService<UniPlusDbContext>().Database.ExecuteSqlRawAsync(
+        await using TransacaoRetidaDeTeste bloqueio = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
+        await bloqueio.Servicos.GetRequiredService<UniPlusDbContext>().Database.ExecuteSqlRawAsync(
             "SELECT 1 FROM autorizacao.concessoes WHERE id = {0} FOR UPDATE", concessao);
 
-        using HttpResponseMessage resposta = await EnviarAposOPrazoAsync(gestao, cenario.PerfilId, concessao, trava);
+        using HttpResponseMessage resposta = await EnviarAposOPrazoAsync(gestao, cenario.PerfilId, concessao, bloqueio);
 
         await ConferirRecusaDaMigracaoAsync(resposta, HttpStatusCode.UnprocessableEntity, "prazo_encerrado");
         SituacaoDe(await RevisaoAsync(gestao, cenario.PerfilId), concessao).Should().Be("nao_migrada");
@@ -89,7 +89,7 @@ public sealed class RevisaoDasConcessoesPrazoNoHostTests : RevisaoDasConcessoesN
             .Should().BeEquivalentTo([cenario.Concessoes[Leandro]]).And.NotContain(posterior);
     }
 
-    [Fact(DisplayName = "O envio que chega depois do prazo grava o encerramento e é recusado, com a mesma resposta no replay")]
+    [Fact(DisplayName = "O envio que chega depois do prazo grava o encerramento e é recusado, com a mesma resposta na repetição")]
     public async Task Envio_DepoisDoPrazo_GravaORecusa()
     {
         RevisaoAberta cenario = await AbrirRevisaoAsync(Leandro);
@@ -98,10 +98,10 @@ public sealed class RevisaoDasConcessoesPrazoNoHostTests : RevisaoDasConcessoesN
         Relogio.Avancar(DepoisDoPrazo);
 
         using HttpResponseMessage primeira = await EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar")], chave: chave);
-        using HttpResponseMessage replay = await EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar")], chave: chave);
+        using HttpResponseMessage repeticao = await EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar")], chave: chave);
 
         await ConferirRecusaDaMigracaoAsync(primeira, HttpStatusCode.UnprocessableEntity, "prazo_encerrado");
-        await ConferirRecusaDaMigracaoAsync(replay, HttpStatusCode.UnprocessableEntity, "prazo_encerrado");
+        await ConferirRecusaDaMigracaoAsync(repeticao, HttpStatusCode.UnprocessableEntity, "prazo_encerrado");
         JsonElement revisao = await RevisaoAsync(gestao, cenario.PerfilId);
         revisao.GetProperty("situacao").GetString().Should().Be("encerrada");
         SituacaoDe(revisao, cenario.Concessoes[Leandro]).Should().Be("nao_migrada");
@@ -129,7 +129,7 @@ public sealed class RevisaoDasConcessoesPrazoNoHostTests : RevisaoDasConcessoesN
         using HttpClient gestao = await GestaoAsync();
         object[] decisoes = [Decisao(cenario.Concessoes[Leandro], "migrar")];
 
-        HttpResponseMessage[] respostas = await EmFilaSobATravaAsync(
+        HttpResponseMessage[] respostas = await EmFilaSobOBloqueioAsync(
             cenario.PerfilId,
             () => EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, decisoes),
             () => EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, decisoes));
@@ -138,12 +138,12 @@ public sealed class RevisaoDasConcessoesPrazoNoHostTests : RevisaoDasConcessoesN
         await ConferirRecusaDaMigracaoAsync(respostas[1], HttpStatusCode.Conflict, "decisoes_ja_enviadas");
         DescartarRespostas(respostas);
     }
-    private async Task<HttpResponseMessage> EnviarAposOPrazoAsync(HttpClient gestao, Guid perfilId, Guid concessao, TransacaoRetidaDeTeste trava)
+    private async Task<HttpResponseMessage> EnviarAposOPrazoAsync(HttpClient gestao, Guid perfilId, Guid concessao, TransacaoRetidaDeTeste bloqueio)
     {
         Task<HttpResponseMessage> envio = EnviarDecisoesDaGestaoAsync(gestao, perfilId, [Decisao(concessao, "migrar")]);
-        await trava.AguardarBloqueioAsync();
+        await bloqueio.AguardarBloqueioAsync();
         Relogio.Avancar(DepoisDoPrazo);
-        await trava.ConfirmarAsync();
+        await bloqueio.ConfirmarAsync();
         return await envio;
     }
 

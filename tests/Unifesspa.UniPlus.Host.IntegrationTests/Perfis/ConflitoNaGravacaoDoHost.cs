@@ -12,20 +12,13 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 /// </summary>
 internal sealed class ConflitoNaGravacaoDoHost
 {
-    private readonly Lock _trava = new();
-    private (string Sql, object[] Parametros)? _regravacao;
+    private readonly RegravacaoProgramada _regravacao = new();
 
     public void Armar(Guid documentoId) =>
         Armar("UPDATE autorizacao.documentos_da_versao SET updated_at = now() WHERE id = {0}", documentoId);
 
     /// <summary>Arma a instrução que regrava a linha na próxima gravação; os parâmetros seguem a sintaxe <c>{0}</c> do EF.</summary>
-    public void Armar(string sql, params object[] parametros)
-    {
-        lock (_trava)
-        {
-            _regravacao = (sql, parametros);
-        }
-    }
+    public void Armar(string sql, params object[] parametros) => _regravacao.Armar(sql, parametros);
 
     /// <summary>Instala a unidade de trabalho que provoca o conflito no lugar da registrada pelo módulo.</summary>
     public void Instalar(IServiceCollection services)
@@ -39,22 +32,39 @@ internal sealed class ConflitoNaGravacaoDoHost
 
     private async Task ProvocarAsync(IServiceProvider servicos, CancellationToken cancellationToken)
     {
-        (string Sql, object[] Parametros) regravacao;
-        lock (_trava)
+        if (_regravacao.Tomar() is not { } instrucao)
         {
-            if (_regravacao is not { } armada)
-            {
-                return;
-            }
-
-            regravacao = armada;
-            _regravacao = null;
+            return;
         }
 
         await using AsyncServiceScope escopo = servicos.CreateAsyncScope();
         await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database
-            .ExecuteSqlRawAsync(regravacao.Sql, regravacao.Parametros, cancellationToken)
+            .ExecuteSqlRawAsync(instrucao.Sql, instrucao.Parametros, cancellationToken)
             .ConfigureAwait(false);
+    }
+
+    private sealed class RegravacaoProgramada
+    {
+        private readonly Lock _bloqueio = new();
+        private (string Sql, object[] Parametros)? _instrucao;
+
+        public void Armar(string sql, object[] parametros)
+        {
+            lock (_bloqueio)
+            {
+                _instrucao = (sql, parametros);
+            }
+        }
+
+        public (string Sql, object[] Parametros)? Tomar()
+        {
+            lock (_bloqueio)
+            {
+                (string Sql, object[] Parametros)? instrucao = _instrucao;
+                _instrucao = null;
+                return instrucao;
+            }
+        }
     }
 
     private sealed class UnidadeComConflito(IUnitOfWork interna, ConflitoNaGravacaoDoHost conflito, IServiceProvider servicos)

@@ -31,7 +31,7 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
     private protected const string EtapaProtecao = "protecao_de_dados";
     private protected const string Protocolo = "23479.000123/2026-11";
 
-    private TransacaoRetidaDeTeste? _travaDaFila;
+    private TransacaoRetidaDeTeste? _bloqueioDaFila;
 
     private protected VersoesDoPerfilNoHostTestBase(MonolitoDaInstalacaoFixture fixture)
         : base(fixture)
@@ -98,12 +98,41 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
     /// </summary>
     private protected async Task EnviarEVerificarAsync(HttpClient criador, Envio envio)
     {
+        await ConfirmarEVerificarAsync(criador, envio);
+        await AprovarAteAVigenciaAsync(criador, envio);
+    }
+
+    /// <summary>Cria o perfil e o leva à vigência pelo caminho real, aprovando as etapas que a composição pede.</summary>
+    private protected async Task<Envio> PerfilVigenteAsync(HttpClient criador, params string[] permissoes)
+    {
+        Envio envio = await CriarPerfilAsync(criador, permissoes);
+        await EnviarEVerificarAsync(criador, envio);
+
+        return envio;
+    }
+
+    /// <summary>Quem criou confirma o envio e o veredicto "verificado" chega ao documento da versão.</summary>
+    private protected async Task ConfirmarEVerificarAsync(HttpClient criador, Envio envio)
+    {
         await ConfirmarEnvioAsync(criador, envio);
+        await VerificarDocumentoAsync(criador, envio);
+    }
+
+    /// <summary>O veredicto "verificado" chega pela fila e o perfil passa a mostrá-lo.</summary>
+    private protected async Task VerificarDocumentoAsync(HttpClient criador, Envio envio)
+    {
         await InjetarResultadoAsync(envio.DocumentoId, VeredictoDaVerificacao.Verificado);
         await AguardarAsync(
             async () => await SituacaoDoDocumentoAsync(criador, envio.PerfilId) == "verificado",
             $"o documento da versão {envio.VersaoId} não foi verificado");
-        await AprovarAteAVigenciaAsync(criador, envio);
+    }
+
+    private protected static void DescartarTodas(HttpResponseMessage[] respostas)
+    {
+        foreach (HttpResponseMessage resposta in respostas)
+        {
+            resposta.Dispose();
+        }
     }
 
     /// <summary>Aprova a gestão e, se a versão ainda espera a proteção de dados, essa também; confere a vigência.</summary>
@@ -133,38 +162,38 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
     }
 
     /// <summary>
-    /// Dispara as chamadas na ordem dada contra o mesmo perfil travado pelo teste: cada uma só entra depois de a anterior
-    /// ficar à espera da trava, então a fila do banco é a ordem declarada. Solta a trava e devolve as respostas na ordem.
+    /// Dispara as chamadas na ordem dada contra o mesmo perfil bloqueado pelo teste: cada uma só entra depois de a anterior
+    /// ficar à espera do bloqueio, então a fila do banco é a ordem declarada. Solta o bloqueio e devolve as respostas na ordem.
     /// </summary>
-    private protected async Task<HttpResponseMessage[]> EmFilaSobATravaAsync(Guid perfilId, params Func<Task<HttpResponseMessage>>[] chamadas)
+    private protected async Task<HttpResponseMessage[]> EmFilaSobOBloqueioAsync(Guid perfilId, params Func<Task<HttpResponseMessage>>[] chamadas)
     {
-        await using TransacaoRetidaDeTeste trava = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
-        _travaDaFila = trava;
-        await trava.Servicos.GetRequiredService<UniPlusDbContext>().Database.ExecuteSqlRawAsync(
+        await using TransacaoRetidaDeTeste bloqueio = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
+        _bloqueioDaFila = bloqueio;
+        await bloqueio.Servicos.GetRequiredService<UniPlusDbContext>().Database.ExecuteSqlRawAsync(
             "SELECT 1 FROM autorizacao.perfis WHERE id = {0} FOR UPDATE", perfilId);
 
-        List<Task<HttpResponseMessage>> disparadas = await DispararEmFilaAsync(trava, chamadas);
-        await trava.ConfirmarAsync();
+        List<Task<HttpResponseMessage>> disparadas = await DispararEmFilaAsync(bloqueio, chamadas);
+        await bloqueio.ConfirmarAsync();
 
         return await Task.WhenAll(disparadas);
     }
 
     private static async Task<List<Task<HttpResponseMessage>>> DispararEmFilaAsync(
-        TransacaoRetidaDeTeste trava, Func<Task<HttpResponseMessage>>[] chamadas)
+        TransacaoRetidaDeTeste bloqueio, Func<Task<HttpResponseMessage>>[] chamadas)
     {
         List<Task<HttpResponseMessage>> disparadas = [];
         foreach (Func<Task<HttpResponseMessage>> chamada in chamadas)
         {
             disparadas.Add(chamada());
-            await trava.AguardarBloqueioAsync(disparadas.Count);
+            await bloqueio.AguardarBloqueioAsync(disparadas.Count);
         }
 
         return disparadas;
     }
 
-    /// <summary>Dentro de uma chamada de <see cref="EmFilaSobATravaAsync"/>: espera o número de sessões bloqueadas pela trava que o teste segura.</summary>
-    private protected Task AguardarFilaDaTravaAsync(int sessoes) =>
-        (_travaDaFila ?? throw new InvalidOperationException("Não há trava retida pelo teste.")).AguardarBloqueioAsync(sessoes);
+    /// <summary>Dentro de uma chamada de <see cref="EmFilaSobOBloqueioAsync"/>: espera o número de sessões bloqueadas pelo bloqueio que o teste segura.</summary>
+    private protected Task AguardarFilaDoBloqueioAsync(int sessoes) =>
+        (_bloqueioDaFila ?? throw new InvalidOperationException("Não há bloqueio retido pelo teste.")).AguardarBloqueioAsync(sessoes);
 
     private protected static async Task<JsonElement> AprovarAsync(HttpClient cliente, Envio envio, string etapa)
     {
@@ -321,7 +350,7 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
         return await db.Database.SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM autorizacao.versoes_do_perfil WHERE perfil_id = {perfilId} AND situacao = 'vigente'").SingleAsync();
     }
 
-    /// <summary>Concede o perfil na transação do chamador, pela mesma leitura travada da concessão real, e devolve o perfil avaliado.</summary>
+    /// <summary>Concede o perfil na transação do chamador, pela mesma leitura bloqueada da concessão real, e devolve o perfil avaliado.</summary>
     private protected static async Task<Perfil> ConcederAsync(IServiceProvider servicos, Persona beneficiario, Guid perfilId, EscopoDaConcessao escopo)
     {
         IConcessaoRepository repositorio = servicos.GetRequiredService<IConcessaoRepository>();

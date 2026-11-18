@@ -7,7 +7,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 
 /// <summary>
-/// A suspensão e o envio da revisão das concessões disputam a trava do perfil: o teste a segura, enfileira as duas chamadas
+/// A suspensão e o envio da revisão das concessões disputam o bloqueio do perfil: o teste a segura, enfileira as duas chamadas
 /// nas duas ordens e confere que uma espera a outra, sem ciclo, e que o estado final é o mesmo.
 /// </summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
@@ -25,7 +25,7 @@ public sealed class ConcorrenciaDaSuspensaoComARevisaoNoHostTests : RevisaoDasCo
         using HttpClient diogo = await GestorAsync();
         using HttpClient gestao = await GestaoAsync();
 
-        HttpResponseMessage[] respostas = await EmFilaSobATravaAsync(
+        HttpResponseMessage[] respostas = await EmFilaSobOBloqueioAsync(
             cenario.PerfilId,
             () => ChamadasDaContencao.SuspenderAsync(diogo, cenario.PerfilId),
             () => EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar")]));
@@ -40,7 +40,7 @@ public sealed class ConcorrenciaDaSuspensaoComARevisaoNoHostTests : RevisaoDasCo
         using HttpClient diogo = await GestorAsync();
         using HttpClient gestao = await GestaoAsync();
 
-        HttpResponseMessage[] respostas = await EmFilaSobATravaAsync(
+        HttpResponseMessage[] respostas = await EmFilaSobOBloqueioAsync(
             cenario.PerfilId,
             () => EnviarDecisoesDaGestaoAsync(gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar")]),
             () => ChamadasDaContencao.SuspenderAsync(diogo, cenario.PerfilId));

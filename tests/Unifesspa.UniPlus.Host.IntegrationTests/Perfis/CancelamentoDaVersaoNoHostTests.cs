@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text.Json;
 
@@ -14,10 +13,6 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>O cancelamento e a expiração da versão pendente do perfil pela API e pela rotina.</summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class CancelamentoDaVersaoNoHostTests : AprovacaoDaVersaoNoHostTestBase
 {
     public CancelamentoDaVersaoNoHostTests(MonolitoDaInstalacaoFixture fixture)
@@ -133,15 +128,27 @@ public sealed class CancelamentoDaVersaoNoHostTests : AprovacaoDaVersaoNoHostTes
         (await SituacaoDaUltimaEncerradaAsync(diogo, vigente.PerfilId)).Should().Be("expirada");
     }
 
-    [Fact(DisplayName = "Aprovar a versão vencida grava a expiração e repetir a chamada devolve a mesma recusa")]
-    public async Task AprovarVencida_GravaAExpiracaoEOReplayRepete()
+    [Fact(DisplayName = "Aprovar a versão vencida grava a expiração sem registrar decisão")]
+    public async Task AprovarVencida_GravaAExpiracao()
     {
         await ResetarAsync();
         using HttpClient diogo = await GestorAsync();
         using HttpClient isabella = await GestaoAsync();
-        Envio vigente = await PerfilVigenteAsync(diogo, Consultar);
-        Envio versao = await PendenteVerificadaAsync(diogo, vigente.PerfilId, Consultar);
-        await ExecutarSqlAsync("UPDATE autorizacao.versoes_do_perfil SET expira_em = now() - interval '1 second' WHERE id = {0}", versao.VersaoId);
+        Envio versao = await PrepararVersaoVencidaAsync(diogo);
+
+        using HttpResponseMessage resposta = await AprovarBrutoAsync(isabella, versao, EtapaGestao);
+
+        await ConferirRecusaDoPerfilAsync(resposta, HttpStatusCode.UnprocessableEntity, "versao_expirada");
+        await ConferirExpiracaoSemDecisoesAsync(versao);
+    }
+
+    [Fact(DisplayName = "Repetir a aprovação vencida devolve a mesma recusa")]
+    public async Task AprovarVencida_RepeticaoDevolveMesmaRecusa()
+    {
+        await ResetarAsync();
+        using HttpClient diogo = await GestorAsync();
+        using HttpClient isabella = await GestaoAsync();
+        Envio versao = await PrepararVersaoVencidaAsync(diogo);
         string chave = Guid.NewGuid().ToString();
 
         using HttpResponseMessage primeira = await AprovarBrutoAsync(isabella, versao, EtapaGestao, chave);
@@ -150,8 +157,22 @@ public sealed class CancelamentoDaVersaoNoHostTests : AprovacaoDaVersaoNoHostTes
         await ConferirRecusaDoPerfilAsync(primeira, HttpStatusCode.UnprocessableEntity, "versao_expirada");
         await ConferirRecusaDoPerfilAsync(repeticao, HttpStatusCode.UnprocessableEntity, "versao_expirada");
         repeticao.Headers.Contains("Idempotency-Replayed").Should().BeTrue();
+        await ConferirExpiracaoSemDecisoesAsync(versao);
+    }
+
+    private async Task ConferirExpiracaoSemDecisoesAsync(Envio versao)
+    {
         (await SituacaoDaVersaoNoBancoAsync(versao.VersaoId)).Should().Be("expirada");
         (await DecisoesAsync(versao.VersaoId)).Should().BeEmpty("a expiração não é decisão de ninguém");
+    }
+
+    private async Task<Envio> PrepararVersaoVencidaAsync(HttpClient gestor)
+    {
+        Envio vigente = await PerfilVigenteAsync(gestor, Consultar);
+        Envio versao = await PendenteVerificadaAsync(gestor, vigente.PerfilId, Consultar);
+        await ExecutarSqlAsync("UPDATE autorizacao.versoes_do_perfil SET expira_em = now() - interval '1 second' WHERE id = {0}", versao.VersaoId);
+
+        return versao;
     }
 
     private async Task<int> ExpirarAsync()

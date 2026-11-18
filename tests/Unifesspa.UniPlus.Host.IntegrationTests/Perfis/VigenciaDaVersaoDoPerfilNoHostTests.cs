@@ -151,18 +151,6 @@ public sealed class VigenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoHostT
         await VerificarDocumentoAsync(gestor, versao);
     }
 
-    private async Task ConfirmarEVerificarAsync(HttpClient gestor, Envio envio)
-    {
-        await ConfirmarEnvioAsync(gestor, envio);
-        await VerificarDocumentoAsync(gestor, envio);
-    }
-
-    private async Task VerificarDocumentoAsync(HttpClient gestor, Envio envio)
-    {
-        await InjetarResultadoAsync(envio.DocumentoId, VeredictoDaVerificacao.Verificado);
-        await AguardarAsync(async () => await SituacaoDoDocumentoAsync(gestor, envio.PerfilId) == "verificado", "o documento não foi verificado");
-    }
-
     private async Task ConferirAtualizacaoAsync(HttpClient betina, Guid perfilId, Guid pedido, JsonElement reduzida)
     {
         (await ConcessoesAsync(Leandro, perfilId)).Should().ContainSingle().Which.VersaoId
