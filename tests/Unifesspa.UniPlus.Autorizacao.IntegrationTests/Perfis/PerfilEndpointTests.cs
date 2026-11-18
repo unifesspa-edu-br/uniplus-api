@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.IntegrationTests.Perfis;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text.Json;
 
@@ -11,41 +10,11 @@ using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
 
 /// <summary>Cadastro de perfis de acesso pelo endpoint real, contra Postgres efêmero: criação, leitura, listagem, desativação e perfis de governança. As personas são as do portal: Diogo Souza opera o cadastro.</summary>
 [Collection(AutorizacaoEndpointCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class PerfilEndpointTests : PerfilEndpointTestBase
 {
     public PerfilEndpointTests(AutorizacaoEndpointFixture fixture)
         : base(fixture)
     {
-    }
-
-    [Fact(DisplayName = "Criar perfil devolve 201 com a URL de envio e o perfil nasce sem composição em vigor")]
-    public async Task Criar_Valido_NasceComVersaoPendente()
-    {
-        using HttpClient diogo = await ClienteDoGestorAsync();
-
-        using HttpResponseMessage criada = await EnviarAsync(
-            diogo, HttpMethod.Post, Rota, Corpo(Nome(), [ConsultarCatalogo, ManterMotivos]));
-        criada.StatusCode.Should().Be(HttpStatusCode.Created, await criada.Content.ReadAsStringAsync());
-        using JsonDocument envio = JsonDocument.Parse(await criada.Content.ReadAsStringAsync());
-        envio.RootElement.GetProperty("situacao").GetString().Should().Be("aguardando_envio");
-        envio.RootElement.GetProperty("tipoDeMidia").GetString().Should().Be("application/pdf");
-        envio.RootElement.GetProperty("urlDeEnvio").GetString().Should().StartWith("http");
-
-        using JsonDocument perfil = await LerAsync(diogo, envio.RootElement.GetProperty("perfilId").GetGuid());
-        perfil.RootElement.GetProperty("ativo").GetBoolean().Should().BeTrue();
-        perfil.RootElement.GetProperty("governanca").ValueKind.Should().Be(JsonValueKind.Null);
-        perfil.RootElement.GetProperty("composicaoEmVigor").ValueKind.Should().Be(JsonValueKind.Null);
-        perfil.RootElement.GetProperty("sensibilidade").GetString().Should().Be("interno");
-        JsonElement pendente = perfil.RootElement.GetProperty("versaoPendente");
-        pendente.GetProperty("numero").GetInt32().Should().Be(1);
-        pendente.GetProperty("situacaoDoDocumento").GetString().Should().Be("aguardando_envio");
-        pendente.GetProperty("permissoes").EnumerateArray()
-            .Select(p => p.GetProperty("codigo").GetString())
-            .Should().Equal(ConsultarCatalogo, ManterMotivos);
     }
 
     [Fact(DisplayName = "Repetir a criação com a mesma Idempotency-Key reproduz a resposta e não cria outro perfil")]

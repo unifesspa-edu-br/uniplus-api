@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.IntegrationTests.Perfis;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 
 using AwesomeAssertions;
@@ -10,10 +9,6 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>Documento instituidor da versão pelo endpoint real: reemissão da URL, confirmação do envio, novo documento e leitura.</summary>
 [Collection(AutorizacaoEndpointCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class DocumentoDaVersaoEndpointTests : PerfilEndpointTestBase
 {
     public DocumentoDaVersaoEndpointTests(AutorizacaoEndpointFixture fixture)
@@ -25,20 +20,39 @@ public sealed class DocumentoDaVersaoEndpointTests : PerfilEndpointTestBase
     public async Task Documento_ReemiteEConfirma()
     {
         using HttpClient diogo = await ClienteDoGestorAsync();
-        using HttpResponseMessage criada = await EnviarAsync(diogo, HttpMethod.Post, Rota, Corpo(Nome(), [ConsultarCatalogo]));
-        Envio envio = LerEnvio(await criada.Content.ReadAsStringAsync());
-        string rota = $"{Rota}/{envio.PerfilId}/versoes/{envio.VersaoId}/documento";
+        using CenarioDeConfirmacao cenario = new(diogo);
+        await cenario.ExecutarAsync();
+        cenario.Reemitida.StatusCode.Should().Be(HttpStatusCode.Created);
+        LerEnvio(await cenario.Reemitida.Content.ReadAsStringAsync()).DocumentoId.Should().Be(cenario.Envio.DocumentoId);
+        cenario.Confirmada.StatusCode.Should().Be(HttpStatusCode.OK, await cenario.Confirmada.Content.ReadAsStringAsync());
+        (await cenario.Confirmada.Content.ReadAsStringAsync()).Should().Contain("em_verificacao");
+        cenario.ReemitidaDepois.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await cenario.ReemitidaDepois.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.documento_nao_aguarda_envio");
+    }
 
-        using HttpResponseMessage reemitida = await EnviarAsync(diogo, HttpMethod.Post, $"{rota}/envio");
-        using HttpResponseMessage confirmada = await EnviarAsync(diogo, HttpMethod.Post, $"{rota}/confirmacao", new { etag = "\"etag-de-teste\"" });
-        using HttpResponseMessage reemitidaDepois = await EnviarAsync(diogo, HttpMethod.Post, $"{rota}/envio");
+    private sealed class CenarioDeConfirmacao(HttpClient cliente) : IDisposable
+    {
+        public Envio Envio { get; private set; } = null!;
+        public HttpResponseMessage Reemitida { get; private set; } = null!;
+        public HttpResponseMessage Confirmada { get; private set; } = null!;
+        public HttpResponseMessage ReemitidaDepois { get; private set; } = null!;
 
-        reemitida.StatusCode.Should().Be(HttpStatusCode.Created);
-        LerEnvio(await reemitida.Content.ReadAsStringAsync()).DocumentoId.Should().Be(envio.DocumentoId);
-        confirmada.StatusCode.Should().Be(HttpStatusCode.OK, await confirmada.Content.ReadAsStringAsync());
-        (await confirmada.Content.ReadAsStringAsync()).Should().Contain("em_verificacao");
-        reemitidaDepois.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        (await reemitidaDepois.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.documento_nao_aguarda_envio");
+        public async Task ExecutarAsync()
+        {
+            using HttpResponseMessage criada = await EnviarAsync(cliente, HttpMethod.Post, Rota, Corpo(Nome(), [ConsultarCatalogo]));
+            Envio = LerEnvio(await criada.Content.ReadAsStringAsync());
+            string rota = $"{Rota}/{Envio.PerfilId}/versoes/{Envio.VersaoId}/documento";
+            Reemitida = await EnviarAsync(cliente, HttpMethod.Post, $"{rota}/envio");
+            Confirmada = await EnviarAsync(cliente, HttpMethod.Post, $"{rota}/confirmacao", new { etag = "\"etag-de-teste\"" });
+            ReemitidaDepois = await EnviarAsync(cliente, HttpMethod.Post, $"{rota}/envio");
+        }
+
+        public void Dispose()
+        {
+            Reemitida?.Dispose();
+            Confirmada?.Dispose();
+            ReemitidaDepois?.Dispose();
+        }
     }
 
     [Fact(DisplayName = "Confirmar sem ETag devolve 422 e o documento segue aguardando o envio")]
