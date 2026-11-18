@@ -14,6 +14,8 @@ using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.NotasDoEnem;
 using Unifesspa.UniPlus.Selecao.Application.DTOs.NotasDoEnem;
+using Unifesspa.UniPlus.Selecao.Application.Services;
+using Unifesspa.UniPlus.Selecao.Application.Services.NotasDoEnem;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -61,10 +63,20 @@ public sealed class ImportarNotasDoEnemCommandHandlerTests
 
     private Task<Result<ImportacaoDeNotasDto>> Importar(
         byte[] conteudo, string leiaute = "INEP_ENEM_RETORNO", DateTimeOffset? agora = null) =>
-        ImportarNotasDoEnemCommandHandler.Handle(
+        Importar(
             new ImportarNotasDoEnemCommand(_cenario.ProcessoId, _cenario.EtapaDoEnem.Id, Edicao, leiaute, "v1", conteudo),
-            _cenario.Certame, _cenario.Processos, _cenario.Codecs, _inscritos, _indices, _lotes, _unitOfWork, _usuario,
-            new ResolvedorFusoDeTeste(), new RelogioFixo(agora ?? CenarioDoEnemDeTeste.DepoisDoEncerramento), NullLogger.Instance, CancellationToken.None);
+            agora ?? CenarioDoEnemDeTeste.DepoisDoEncerramento);
+
+    private Task<Result<ImportacaoDeNotasDto>> Importar(ImportarNotasDoEnemCommand command, DateTimeOffset agora)
+    {
+        ResolvedorDoEscopoDeNotasDoEnem escopos = new(_cenario.Certame, _cenario.Processos, _cenario.Codecs);
+        RelogioFixo relogio = new(agora);
+        ResolvedorFusoDeTeste fuso = new();
+        PreparacaoDaImportacaoDeNotas preparacao = new(escopos, _indices, fuso, relogio);
+        DetalheDoLoteDeNotasMontador detalhes = new(_lotes, _cenario.Processos, _cenario.Codecs);
+        ImportacaoDasNotasDoEnem importacao = new(escopos, _lotes, _inscritos, _usuario, fuso, detalhes, NullLogger<ImportacaoDasNotasDoEnem>.Instance);
+        return ImportarNotasDoEnemCommandHandler.Handle(command, preparacao, importacao, _cenario.Processos, _unitOfWork, relogio, CancellationToken.None);
+    }
 
     private static byte[] Arquivo(params int[] pessoas) => Bytes([.. pessoas.Select(i => Linha(Pessoas[i], i + 1))]);
 
@@ -102,10 +114,9 @@ public sealed class ImportarNotasDoEnemCommandHandlerTests
         (await Importar(Arquivo(0), leiaute: "INEP_ENEM_ENVIO")).Error!.Code.Should().Be(NotasDoEnemErrorCodes.LeiauteIndisponivel);
         (await Importar([])).Error!.Code.Should().Be(NotasDoEnemErrorCodes.ArquivoVazio);
 
-        Result<ImportacaoDeNotasDto> outraEtapa = await ImportarNotasDoEnemCommandHandler.Handle(
+        Result<ImportacaoDeNotasDto> outraEtapa = await Importar(
             new ImportarNotasDoEnemCommand(_cenario.ProcessoId, _cenario.EtapaSemEnem.Id, Edicao, "INEP_ENEM_RETORNO", "v1", Arquivo(0)),
-            _cenario.Certame, _cenario.Processos, _cenario.Codecs, _inscritos, _indices, _lotes, _unitOfWork, _usuario,
-            new ResolvedorFusoDeTeste(), new RelogioFixo(CenarioDoEnemDeTeste.DepoisDoEncerramento), NullLogger.Instance, CancellationToken.None);
+            CenarioDoEnemDeTeste.DepoisDoEncerramento);
         outraEtapa.Error!.Code.Should().Be(NotasDoEnemErrorCodes.EtapaSemNotaDoEnem);
 
         await _indices.DidNotReceiveWithAnyArgs().CalcularAsync(default!, default);

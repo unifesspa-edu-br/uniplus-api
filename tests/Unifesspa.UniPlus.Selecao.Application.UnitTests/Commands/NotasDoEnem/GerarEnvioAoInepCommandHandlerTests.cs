@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.NotasDoEnem;
 using Unifesspa.UniPlus.Selecao.Application.DTOs.NotasDoEnem;
+using Unifesspa.UniPlus.Selecao.Application.Services.NotasDoEnem;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -39,13 +40,20 @@ public sealed class GerarEnvioAoInepCommandHandlerTests
 
     private Task<Result<EnvioAoInepGeradoDto>> Gerar(
         Guid? etapa = null, string edicao = Edicao, string? leiaute = "INEP_ENEM_ENVIO", string? versao = "v1", DateTimeOffset? agora = null) =>
-        GerarEnvioAoInepCommandHandler.Handle(
+        Gerar(
             new GerarEnvioAoInepCommand(_cenario.ProcessoId, etapa ?? _cenario.EtapaDoEnem.Id, edicao, leiaute, versao),
-            _cenario.Certame, _cenario.Processos, _cenario.Codecs, _inscritos, _geracoes, _unitOfWork, _usuario,
-            new ResolvedorFusoDeTeste(), new RelogioFixo(agora ?? CenarioDoEnemDeTeste.DepoisDoEncerramento), NullLogger.Instance, CancellationToken.None);
+            _cenario.Certame, agora ?? CenarioDoEnemDeTeste.DepoisDoEncerramento);
 
     private void Inscritos(params string[] cpfs) =>
         _inscritos.ListarCpfsAsync(_cenario.ProcessoId, Edicao, Arg.Any<CancellationToken>()).Returns(cpfs);
+
+    private Task<Result<EnvioAoInepGeradoDto>> Gerar(GerarEnvioAoInepCommand command, ICertameDivulgadoRepository certame, DateTimeOffset agora)
+    {
+        ResolvedorDoEscopoDeNotasDoEnem escopos = new(certame, _cenario.Processos, _cenario.Codecs);
+        GeracaoDoEnvioAoInep geracao = new(escopos, _inscritos, _geracoes, _usuario, new ResolvedorFusoDeTeste());
+        return GerarEnvioAoInepCommandHandler.Handle(command, geracao, _cenario.Processos, _unitOfWork,
+            new RelogioFixo(agora), NullLogger.Instance, CancellationToken.None);
+    }
 
     [Fact(DisplayName = "gera o arquivo com os CPFs em ordem crescente e registra a geração só com o total")]
     public async Task Gerar_CaminhoFeliz()
@@ -109,10 +117,9 @@ public sealed class GerarEnvioAoInepCommandHandlerTests
     {
         Selecao.Domain.Interfaces.ICertameDivulgadoRepository semDivulgacao = Substitute.For<Selecao.Domain.Interfaces.ICertameDivulgadoRepository>();
 
-        Result<EnvioAoInepGeradoDto> resultado = await GerarEnvioAoInepCommandHandler.Handle(
+        Result<EnvioAoInepGeradoDto> resultado = await Gerar(
             new GerarEnvioAoInepCommand(_cenario.ProcessoId, _cenario.EtapaDoEnem.Id, Edicao, "INEP_ENEM_ENVIO", "v1"),
-            semDivulgacao, _cenario.Processos, _cenario.Codecs, _inscritos, _geracoes, _unitOfWork, _usuario,
-            new ResolvedorFusoDeTeste(), new RelogioFixo(CenarioDoEnemDeTeste.DepoisDoEncerramento), NullLogger.Instance, CancellationToken.None);
+            semDivulgacao, CenarioDoEnemDeTeste.DepoisDoEncerramento);
 
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
     }

@@ -32,7 +32,7 @@ public sealed class RespostaDoRascunho(IDocumentoDaInscricaoRepository documento
     {
         ArgumentNullException.ThrowIfNull(pedido);
 
-        ArquivosDaInscricao arquivos = await ArquivosDaInscricao.CarregarAsync(documentos, pedido.Inscricao.Id, cancellationToken).ConfigureAwait(false);
+        ArquivosDaInscricao arquivos = await new DocumentosEnviadosDaInscricao(documentos).CarregarAsync(pedido.Inscricao.Id, cancellationToken).ConfigureAwait(false);
         Result<ResultadoDaAvaliacaoDaInscricao> avaliada = await AvaliarOGravadoAsync(pedido, arquivos, cancellationToken).ConfigureAwait(false);
         return avaliada.IsFailure
             ? Result<InscricaoDto>.ValidationFailure(avaliada.Errors)
@@ -41,13 +41,12 @@ public sealed class RespostaDoRascunho(IDocumentoDaInscricaoRepository documento
 
     private async Task<Result<ResultadoDaAvaliacaoDaInscricao>> AvaliarOGravadoAsync(
         PedidoDoRascunho pedido, ArquivosDaInscricao arquivos, CancellationToken cancellationToken) =>
-        await PreparacaoDaAvaliacaoDaInscricao.AvaliarAsync(
+        await new PreparacaoDaAvaliacaoDaInscricao(geo).AvaliarAsync(
             pedido.Inscricao,
             pedido.Contexto,
             new Dictionary<string, JsonElement>(StringComparer.Ordinal),
             new Dictionary<string, IReadOnlyList<OcorrenciaRespondida>>(StringComparer.Ordinal),
             pedido.Envio,
-            geo,
             arquivos,
             cancellationToken).ConfigureAwait(false);
 

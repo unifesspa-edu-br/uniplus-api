@@ -32,10 +32,11 @@ public sealed class EnvelopeLidoArvoreDeSatisfacaoTests
         new(
             processo, EnvelopeDeReferencia.DadosDeReferencia(), EnvelopeDeReferencia.HashFixo,
             FusoInstitucional.ZoneId,
+            null, null, new DadosDeCatalogoDaConfiguracaoPublicada(
             MetadadosFatosCongelados: EnvelopeDeReferencia.MetadadosFatosDeReferencia(),
             ValoresSelecionaveisCongelados: EnvelopeDeReferencia.ValoresSelecionaveisDeReferencia(),
             TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo),
-            FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao);
+            FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
     [Fact(DisplayName = "Round-trip 1.4 — árvore com grupo OU, folha com cardinalidade qualificada e folha repetePorEntidade reproduz os bytes")]
     public void Reidratar_ArvoreComGrupoCardinalidadeERepeticao_ReproduzOsBytes()
     {
@@ -48,7 +49,7 @@ public sealed class EnvelopeLidoArvoreDeSatisfacaoTests
         VersaoConfiguracao v1 = Publicado(processo, entrada, congelado, "user-conta-arvore");
         EnvelopeReidratado reidratado = FidelidadeDoEnvelopeDeTeste.Conferir(processo, v1, congelado);
         ConferirQueOModeloDaExigenciaSobreviveuAoDecoder(reidratado, comprovanteRenda);
-        ConferirArvoreRecarregada(ProcessoDoGrafoLidoDeTeste.Criar(processo, reidratado.Grafo));
+        ConferirArvoreRecarregada(ProcessoDoGrafoLidoDeTeste.Criar(processo, reidratado.Configuracao));
     }
 
     private static void DefinirArvoreDeSatisfacao(ProcessoSeletivo processo, FaseCronograma fase, DocumentoExigido comprovanteRenda)
@@ -61,8 +62,8 @@ public sealed class EnvelopeLidoArvoreDeSatisfacaoTests
     private static EntradaCanonicalizacao EntradaDaArvore(ProcessoSeletivo processo) =>
         new(
             processo, DadosDeEditalDoEnvelope(), "2222222222222222222222222222222222222222222222222222222222222222", FusoInstitucional.ZoneId,
-            ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(),
-            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao);
+            null, null, new DadosDeCatalogoDaConfiguracaoPublicada(ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(),
+            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
     private static DocumentoExigido DocumentoDeRgSemObrigatoriedade(FaseCronograma fase) =>
         DocumentoExigido.Criar(
             fase.Id, Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
@@ -98,7 +99,7 @@ public sealed class EnvelopeLidoArvoreDeSatisfacaoTests
     }
     private static void ConferirQueOModeloDaExigenciaSobreviveuAoDecoder(
         EnvelopeReidratado reidratado, DocumentoExigido comprovanteRenda) =>
-        reidratado.Grafo.DocumentosExigidos.Single(static d => d.TipoDocumentoCodigo == "COMPROVANTE_RENDA").Modelo
+        reidratado.Configuracao.Exigencias.DocumentosExigidos.Single(static d => d.TipoDocumentoCodigo == "COMPROVANTE_RENDA").Modelo
             .Should().Be(comprovanteRenda.Modelo);
 
     private static void ConferirArvoreRecarregada(ProcessoSeletivo processo)
@@ -108,15 +109,15 @@ public sealed class EnvelopeLidoArvoreDeSatisfacaoTests
         raiz.Consequencia.Should().Be("ELIMINA");
         raiz.BasesLegais.Should().ContainSingle().Which.Referencia.Should().Be("Res. Unifesspa 532/2021, art. 12");
         raiz.Filhos.Should().HaveCount(2);
-        ConferirFolhaDeRgRecarregada(raiz.Filhos.Should().ContainSingle(static f => f.ChaveDistincao != null).Which);
+        ConferirFolhaDeRgRecarregada(raiz.Filhos.Should().ContainSingle(static f => f.Distincao != null).Which);
         ConferirFolhaDeRendaRecarregada(raiz.Filhos.Should().ContainSingle(static f => f.RepetePorEntidade != null).Which);
     }
 
     private static void ConferirFolhaDeRgRecarregada(NoExigencia folha)
     {
         folha.QuantidadeMinima.Should().Be(3);
-        folha.ChaveDistincao.Should().Be(ChaveDistincao.CompetenciaMensal);
-        folha.DataReferencia.Should().Be(new DateOnly(2026, 3, 31));
+        folha.Distincao!.Chave.Should().Be(ChaveDistincao.CompetenciaMensal);
+        folha.Distincao!.DataReferencia.Should().Be(new DateOnly(2026, 3, 31));
         folha.DocumentoExigido.Should().NotBeNull();
         folha.DocumentoExigido!.TipoDocumentoCodigo.Should().Be("RG");
     }

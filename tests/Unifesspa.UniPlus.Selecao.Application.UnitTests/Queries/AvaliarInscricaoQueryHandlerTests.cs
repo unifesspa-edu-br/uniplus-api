@@ -49,51 +49,54 @@ public sealed class AvaliarInscricaoQueryHandlerTests
 
     private static async Task<AvaliacaoDaInscricaoDto> AvaliarAsync(Guid? gravada, Guid? noCorpo)
     {
-        Cpf cpf = PersonasDeTeste.FernandaDrumond;
-        (VersaoConfiguracao versao, GrafoConfiguracao grafo) = VersaoComDuasOfertas();
-        PortasDaInscricaoDeTeste portas = new(ProcessoId);
-        portas.ComInscricao(cpf, InscricaoComOfertaGravada(versao, grafo, gravada));
-        DivulgacaoDeTeste.ConfigurarVersao(portas.Processos, portas.Codecs, versao, grafo);
-
-        Result<AvaliacaoDaInscricaoDto> resultado = await AvaliarInscricaoQueryHandler.Handle(
-            new AvaliarInscricaoQuery(ProcessoId, CorpoDaAvaliacao(noCorpo)),
-            portas.InscricaoAtiva(), portas.Periodo(), portas.Avaliacao(), UsuarioComCpf(cpf), DivulgacaoDeTeste.Relogio, CancellationToken.None);
-
+        FluxoDaInscricaoDeTeste fluxo = MontarAvaliacao(gravada);
+        AvaliacaoDaInscricaoRequest corpo = new(
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+            {
+                [OfertasDeTeste.FatoDaAcaoAfirmativa] = JsonSerializer.SerializeToElement(OfertasDeTeste.ValorDaAcaoAfirmativa),
+            }, null, noCorpo);
+        Result<AvaliacaoDaInscricaoDto> resultado = await fluxo.AvaliarAsync(new AvaliarInscricaoQuery(ProcessoId, corpo), CancellationToken.None);
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         return resultado.Value!;
     }
 
-    private static (VersaoConfiguracao Versao, GrafoConfiguracao Grafo) VersaoComDuasOfertas()
+    private static FluxoDaInscricaoDeTeste MontarAvaliacao(Guid? gravada)
     {
-        (VersaoConfiguracao versao, GrafoConfiguracao grafoBase) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
-        GrafoConfiguracao grafo = OfertasDeTeste.ComDistribuicao(
+        Cpf cpf = PersonasDeTeste.FernandaDrumond;
+        (VersaoConfiguracao versao, ConfiguracaoPublicada grafoBase) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
+        ConfiguracaoPublicada grafo = OfertasDeTeste.ComDistribuicao(
             grafoBase, OfertasDeTeste.Distribuicao(OfertaA, "AC"), OfertasDeTeste.Distribuicao(OfertaB, "AC", "AC_FEM"));
-        return (versao, grafo);
+        Inscricao inscricao = Inscricao.Iniciar(ProcessoId, cpf, "conta-1", "https://issuer", versao.Id).Value!;
+        SalvarOferta(inscricao, gravada, grafo);
+        IInscricaoRepository inscricoes = Substitute.For<IInscricaoRepository>();
+        inscricoes.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(inscricao);
+        return FluxoNaVersao(inscricoes, versao, grafo, cpf);
     }
 
-    private static Inscricao InscricaoComOfertaGravada(VersaoConfiguracao versao, GrafoConfiguracao grafo, Guid? gravada)
+    private static void SalvarOferta(Inscricao inscricao, Guid? gravada, ConfiguracaoPublicada grafo)
     {
-        Inscricao inscricao = Inscricao.Iniciar(ProcessoId, PersonasDeTeste.FernandaDrumond, "conta-1", "https://issuer", versao.Id).Value!;
         if (gravada is { } oferta)
         {
-            inscricao.Salvar(
-                oferta, null, new Dictionary<string, JsonElement>(), new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), [],
-                ContextoDaVersaoFixadaResolver.Admitidas(grafo) with { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond }, PrecondicaoIfMatch.DeTags([inscricao.ETag])).IsSuccess.Should().BeTrue();
+            inscricao.Salvar(PreenchimentoDoCandidato.ParaValidacao(OpcoesDeCursoDaInscricao.Reidratar(oferta, null), new Dictionary<string, JsonElement>(), new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), []), ContextoDaVersaoFixadaResolver.Admitidas(grafo) with { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond }, PrecondicaoIfMatch.DeTags([inscricao.ETag])).IsSuccess.Should().BeTrue();
         }
-
-        return inscricao;
     }
 
-    private static AvaliacaoDaInscricaoRequest CorpoDaAvaliacao(Guid? oferta) =>
-        new(
-            new Dictionary<string, JsonElement>(StringComparer.Ordinal)
-            {
-                [OfertasDeTeste.FatoDaAcaoAfirmativa] = JsonSerializer.SerializeToElement(OfertasDeTeste.ValorDaAcaoAfirmativa),
-            },
-            null,
-            oferta);
+    private static FluxoDaInscricaoDeTeste FluxoNaVersao(IInscricaoRepository inscricoes, VersaoConfiguracao versao, ConfiguracaoPublicada grafo, Cpf cpf)
+    {
+        IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
+        IRegistroCodecsEnvelope codecs = Substitute.For<IRegistroCodecsEnvelope>();
+        DivulgacaoDeTeste.ConfigurarVersao(processos, codecs, versao, grafo);
+        return new FluxoDaInscricaoDeTeste
+        {
+            Inscricoes = inscricoes,
+            Processos = processos,
+            Codecs = codecs,
+            Certames = DivulgacaoDeTeste.Certame(ProcessoId),
+            Usuario = Usuario(cpf),
+        };
+    }
 
-    private static IUserContext UsuarioComCpf(Cpf cpf)
+    private static IUserContext Usuario(Cpf cpf)
     {
         IUserContext usuario = Substitute.For<IUserContext>();
         usuario.Cpf.Returns(cpf.Valor);

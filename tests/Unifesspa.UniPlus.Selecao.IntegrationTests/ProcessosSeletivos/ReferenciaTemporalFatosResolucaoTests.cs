@@ -39,21 +39,101 @@ public sealed class ReferenciaTemporalFatosResolucaoTests
         periodoInscricaoFim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
         documentoEditalId: Guid.CreateVersion7()).Value!;
 
+    private static FaseCronograma FaseDeResultadoFinal() => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true,
+            ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
+
     private static ProcessoSeletivo NovoProcessoConformeComGatilhoPorFaixaEtaria(out Guid faseId)
     {
-        ProcessoSeletivo processo = ProcessoSeletivoPublicacaoSeeder.NovoProcessoConforme("PS ReferenciaTemporalFatos 2026");
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS ReferenciaTemporalFatos 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
-        FaseCronograma fase = processo.CronogramaFases.Single();
+        DefinirAtendimentoEDistribuicao(processo);
+        DefinirClassificacao(processo);
+
+        FaseCronograma fase = FaseDeResultadoFinal();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
+        DefinirEtapa(processo);
         faseId = fase.Id;
 
-        DocumentoExigido exigencia = DeclaracaoDeMaioridade(fase.Id);
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!]).IsSuccess.Should().BeTrue();
+        DefinirExigencia(processo, faseId);
 
         return processo;
     }
 
+    private static void DefinirAtendimentoEDistribuicao(ProcessoSeletivo processo)
+    {
+        processo.DefinirAtendimentoEspecializado(
+            AtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
+        DefinirDistribuicao(processo);
+    }
+
+    private static void DefinirDistribuicao(ProcessoSeletivo processo)
+    {
+        ModalidadeSelecionada modalidade = ModalidadeAmpla();
+        ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo), Modalidades = [modalidade] },
+            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
+        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
+    }
+
+    private static ModalidadeSelecionada ModalidadeAmpla() => ModalidadeSelecionada.Criar(
+        modalidadeOrigemId: Guid.CreateVersion7(), codigo: "AC", descricao: null,
+        naturezaLegal: NaturezaLegalModalidade.Ampla,
+        composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
+        composicaoOrigemCodigo: null, regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
+        remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
+        regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
+        acaoQuandoIndeferido: null, baseLegal: "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!;
+
+    private static void DefinirClassificacao(ProcessoSeletivo processo)
+    {
+        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo),
+            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo),
+        }).Value!).IsSuccess.Should().BeTrue();
+        processo.DefinirOpcoesDeCurso(1).IsSuccess.Should().BeTrue();
+    }
+
+    private static void DefinirEtapa(ProcessoSeletivo processo)
+    {
+        processo.DefinirEtapas([
+            EtapaProcesso.Criar(
+                new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
+                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
+        ]).IsSuccess.Should().BeTrue();
+    }
+
+    private static void DefinirExigencia(ProcessoSeletivo processo, Guid faseId)
+    {
+        CondicaoGatilho condicao = CondicaoGatilho.Criar(
+            0, "FAIXA_ETARIA", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!;
+        DocumentoExigidoBaseLegal baseLegal = DocumentoExigidoBaseLegal.Criar(
+            "Lei 12.711/2012, art. 3º", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!;
+        DocumentoExigido exigencia = ExigenciaDeMaioridade(faseId, condicao, baseLegal);
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!]).IsSuccess.Should().BeTrue();
+    }
+
+    private static DocumentoExigido ExigenciaDeMaioridade(Guid faseId, CondicaoGatilho condicao, DocumentoExigidoBaseLegal baseLegal) =>
+        DocumentoExigido.Criar(
+            faseId,
+            tipoDocumentoOrigemId: Guid.CreateVersion7(),
+            tipoDocumentoCodigo: "DECLARACAO_MAIORIDADE",
+            tipoDocumentoNome: "Declaração de maioridade",
+            tipoDocumentoCategoria: "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
+            aplicabilidade: Aplicabilidade.Condicional,
+            obrigatorio: true,
+            consequenciaIndeferimento: null,
+            condicoes: [condicao], basesLegais: [baseLegal], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
+
     private static SnapshotCanonico Canonicalizar(ProcessoSeletivo processo) =>
-        Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
+        Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId, Retificacao: null, Conformidade: null, DadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)));
 
     private static string? DataReferenciaFatos(SnapshotCanonico snapshot)
     {
@@ -65,57 +145,27 @@ public sealed class ReferenciaTemporalFatosResolucaoTests
     public void RetificacaoMudaPolitica_PreservaDataReferenciaFatosCongeladaDaVersaoAnterior()
     {
         ProcessoSeletivo processo = NovoProcessoConformeComGatilhoPorFaixaEtaria(out _);
-        SnapshotCanonico congeladoV1 = CongelarNaData(processo, new DateOnly(2026, 1, 15));
+        processo.DefinirReferenciaTemporalFatos(
+            ReferenciaTemporalFatos.Criar(ReferenciaTipo.DataEspecifica, new DateOnly(2026, 1, 15), null).Value!).IsSuccess.Should().BeTrue();
+
+        SnapshotCanonico congeladoV1 = Canonicalizar(processo);
         DataReferenciaFatos(congeladoV1).Should().Be("2026-01-15");
 
-        SnapshotCanonico congeladoV2 = CongelarNaData(processo, new DateOnly(2026, 2, 20));
-        DataReferenciaFatos(congeladoV2).Should().Be("2026-02-20",
-            "pré-condição: o congelamento SEGUINTE resolve a política vigente no momento em que congela");
+        ConferirDataDaRetificacao(processo);
 
         DataReferenciaFatos(congeladoV1).Should().Be("2026-01-15",
             "B-03: cada VersaoConfiguracao congela sua PRÓPRIA política — o envelope V1, já congelado, é " +
             "imutável (ADR-0104); a retificação que mudou a política para produzir V2 não o reabre nem o altera");
     }
 
-    private static DocumentoExigido DeclaracaoDeMaioridade(Guid faseId)
+    private static void ConferirDataDaRetificacao(ProcessoSeletivo processo)
     {
-        CondicaoGatilho condicao = GatilhoDeMaioridade();
-        DocumentoExigidoBaseLegal baseLegal = BaseLegalDaMaioridade();
-        DocumentoExigido exigencia = DocumentoExigido.Criar(
-            faseId,
-            tipoDocumentoOrigemId: Guid.CreateVersion7(),
-            tipoDocumentoCodigo: "DECLARACAO_MAIORIDADE",
-            tipoDocumentoNome: "Declaração de maioridade",
-            tipoDocumentoCategoria: "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            aplicabilidade: Aplicabilidade.Condicional,
-            obrigatorio: true,
-            consequenciaIndeferimento: null,
-            condicoes: [condicao], basesLegais: [baseLegal], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
-        return exigencia;
+        // Retificação: a política muda para uma DATA_ESPECIFICA diferente.
+        processo.DefinirReferenciaTemporalFatos(
+            ReferenciaTemporalFatos.Criar(ReferenciaTipo.DataEspecifica, new DateOnly(2026, 2, 20), null).Value!).IsSuccess.Should().BeTrue();
+
+        SnapshotCanonico congeladoV2 = Canonicalizar(processo);
+        DataReferenciaFatos(congeladoV2).Should().Be("2026-02-20",
+            "pré-condição: o congelamento SEGUINTE resolve a política vigente no momento em que congela");
     }
-
-
-    private static CondicaoGatilho GatilhoDeMaioridade()
-    {
-        CondicaoGatilho condicao = CondicaoGatilho.Criar(
-            0, "FAIXA_ETARIA", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!;
-        return condicao;
-    }
-
-
-    private static DocumentoExigidoBaseLegal BaseLegalDaMaioridade()
-    {
-        DocumentoExigidoBaseLegal baseLegal = DocumentoExigidoBaseLegal.Criar(
-            "Lei 12.711/2012, art. 3º", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!;
-        return baseLegal;
-    }
-
-
-    private static SnapshotCanonico CongelarNaData(ProcessoSeletivo processo, DateOnly data)
-    {
-        processo.DefinirReferenciaTemporalFatos(ReferenciaTemporalFatos.Criar(ReferenciaTipo.DataEspecifica, data, null).Value!)
-            .IsSuccess.Should().BeTrue();
-        return Canonicalizar(processo);
-    }
-
 }

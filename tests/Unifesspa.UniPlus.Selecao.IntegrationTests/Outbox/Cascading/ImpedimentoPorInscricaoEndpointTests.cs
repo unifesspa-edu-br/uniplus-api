@@ -148,24 +148,7 @@ public sealed class ImpedimentoPorInscricaoEndpointTests : IAsyncLifetime
 
         if (inscricaoDeBetina is { } situacao)
         {
-            bool cancelada = situacao == SituacaoInscricao.Cancelada;
-            Inscricao inscricao = Inscricao.Reidratar(
-                Guid.CreateVersion7(), processo.Id, PersonasDeTeste.FernandaDrumond, Betina, emissor ?? TestAuthHandler.DefaultIssuer, situacao,
-                Guid.CreateVersion7(), null, null,
-                situacao == SituacaoInscricao.Rascunho ? null : "000001",
-                cancelada ? DateTimeOffset.UtcNow : null, cancelada ? Betina : null, cancelada ? "a pedido do candidato" : null,
-                new Dictionary<string, System.Text.Json.JsonElement>(StringComparer.Ordinal)
-                {
-                    ["CPF"] = System.Text.Json.JsonSerializer.SerializeToElement(PersonasDeTeste.FernandaDrumond.Valor),
-                },
-                new Dictionary<string, System.Text.Json.JsonElement>(StringComparer.Ordinal),
-                new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal),
-                [],
-                new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal)
-                {
-                    ["CPF"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: true),
-                },
-                revisao: 1, DateTimeOffset.UtcNow, null);
+            Inscricao inscricao = InscricaoDeBetina(processo.Id, situacao, emissor);
             await scope.ServiceProvider.GetRequiredService<IInscricaoRepository>().AdicionarAsync(inscricao);
             await scope.ServiceProvider.GetRequiredService<IUnitOfWork>().SalvarAlteracoesAsync();
         }
@@ -193,6 +176,39 @@ public sealed class ImpedimentoPorInscricaoEndpointTests : IAsyncLifetime
             request.Content = JsonContent.Create(corpo);
         }
 
+        PrepararHeaders(request, metodo, candidata);
+
+        return await client.SendAsync(request);
+    }
+
+    private static Inscricao InscricaoDeBetina(Guid processoId, SituacaoInscricao situacao, string? emissor) =>
+        Inscricao.Reidratar(Guid.CreateVersion7(), processoId,
+            TitularDaInscricao.Reidratar(PersonasDeTeste.FernandaDrumond, Betina, emissor ?? TestAuthHandler.DefaultIssuer),
+            EstadoDeBetina(situacao), FormularioDoCpf(), 1, new Unifesspa.UniPlus.Selecao.Domain.ValueObjects.DatasDeGravacaoDaInscricao(default, null));
+
+    private static EstadoDaInscricao EstadoDeBetina(SituacaoInscricao situacao)
+    {
+        bool cancelada = situacao == SituacaoInscricao.Cancelada;
+        return EstadoDaInscricao.Reidratar(situacao, situacao == SituacaoInscricao.Rascunho ? null : "000001",
+            CancelamentoDaInscricao.Reidratar(cancelada ? DateTimeOffset.UtcNow : null, cancelada ? Betina : null,
+                cancelada ? "a pedido do candidato" : null));
+    }
+
+    private static FormularioDaInscricao FormularioDoCpf() =>
+        FormularioDaInscricao.Reidratar(Guid.CreateVersion7(),
+            PreenchimentoDoCandidato.Criar(OpcoesDeCursoDaInscricao.Reidratar(null, null),
+                new Dictionary<string, System.Text.Json.JsonElement>(StringComparer.Ordinal)
+                {
+                    ["CPF"] = System.Text.Json.JsonSerializer.SerializeToElement(PersonasDeTeste.FernandaDrumond.Valor),
+                }, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), []),
+            new Dictionary<string, System.Text.Json.JsonElement>(StringComparer.Ordinal),
+            new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal)
+            {
+                ["CPF"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: true),
+            });
+
+    private static void PrepararHeaders(HttpRequestMessage request, HttpMethod metodo, bool candidata)
+    {
         request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
         request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, Betina);
         if (candidata)
@@ -205,6 +221,5 @@ public sealed class ImpedimentoPorInscricaoEndpointTests : IAsyncLifetime
             request.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
         }
 
-        return await client.SendAsync(request);
     }
 }

@@ -29,10 +29,10 @@ internal sealed class CenarioDeRetificacaoPublicada
     private readonly DependenciasDosHandlersQueCongelam _handlers;
     private readonly Dictionary<string, TipoDeAtoCongelado> _tiposCongelados = new(StringComparer.Ordinal);
     private readonly VersaoConfiguracao _versao;
-    private readonly GrafoConfiguracao _grafoPublicado;
+    private readonly ConfiguracaoPublicada _grafoPublicado;
     private readonly EixosDeVersaoPublicada _congelado;
 
-    private CenarioDeRetificacaoPublicada(ProcessoSeletivo processo, VersaoConfiguracao versao, GrafoConfiguracao grafoPublicado, EixosDeVersaoPublicada congelado)
+    private CenarioDeRetificacaoPublicada(ProcessoSeletivo processo, VersaoConfiguracao versao, ConfiguracaoPublicada grafoPublicado, EixosDeVersaoPublicada congelado)
     {
         _handlers = DependenciasDosHandlersQueCongelam.Para(processo);
         _versao = versao;
@@ -55,7 +55,7 @@ internal sealed class CenarioDeRetificacaoPublicada
         SituacaoDoFatoCitado fato = situacao ?? new SituacaoDoFatoCitado();
         ProcessoSeletivo processo = ProcessoQueColetaOFato(fato.ComItemNovo, fato.ExigenciaCitaFatoAusenteDoCatalogo);
         VersaoConfiguracao versao = Publicar(processo);
-        CenarioDeRetificacaoPublicada cenario = new(processo, versao, GrafoPublicado(processo, fato), EixosCongelados(fato.DominioCongelado));
+        CenarioDeRetificacaoPublicada cenario = new(processo, versao, ConfiguracaoPublicadaDe(processo, fato), EixosCongelados(fato.DominioCongelado));
         cenario.Configurar(fato);
 
         return cenario;
@@ -111,7 +111,7 @@ internal sealed class CenarioDeRetificacaoPublicada
         _handlers.Atos.ListarDoProcessoAsync(Processo.Id, Arg.Any<CancellationToken>()).Returns([PreliminarJaPublicado(Processo.Id, fase, preliminar)]);
     }
 
-    private static GrafoConfiguracao GrafoPublicado(ProcessoSeletivo processo, SituacaoDoFatoCitado fato) =>
+    private static ConfiguracaoPublicada ConfiguracaoPublicadaDe(ProcessoSeletivo processo, SituacaoDoFatoCitado fato) =>
         fato.PublicadoDivergeDoProcesso
             ? VersoesPublicadasDeTeste.DoProcesso(ProcessoSoComOItemPublicado(fato.TipoDoItemPublicado))
             : VersoesPublicadasDeTeste.DoProcesso(processo);
@@ -136,14 +136,19 @@ internal sealed class CenarioDeRetificacaoPublicada
 
     private EnvelopeReidratado EnvelopeDaVersaoComAFase(FaseCronograma fase)
     {
-        GrafoConfiguracao grafo = new(
-            [.. Processo.Etapas], Processo.AtendimentoEspecializado!, [.. Processo.DistribuicaoVagas], Processo.BonusRegional,
-            [.. Processo.CriteriosDesempate], Processo.Classificacao!, [fase], [.. Processo.DocumentosExigidos], [], null,
-            numeroDeOpcoesDeCurso: 1);
+        ConfiguracaoPublicada grafo = new ConfiguracaoPublicada(
+            new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, [fase]),
+            new AvaliacaoDeclarada([.. Processo.Etapas], [.. Processo.CriteriosDesempate], Processo.Classificacao!),
+            new VagasDeclaradas([.. Processo.DistribuicaoVagas], 1, Processo.BonusRegional is not null,
+                Processo.BonusRegional, null, Processo.AtendimentoEspecializado!),
+            new ExigenciasDeclaradas([.. Processo.DocumentosExigidos], []),
+            new ColetaDeclarada([], [], [], [],
+                [], [], null),
+            new DivulgacaoETaxaDeclaradas(null, null), null);
 
         return new EnvelopeReidratado(
             grafo, DadosEdital.Criar("001/2026", Agora, Agora.AddDays(30), Guid.CreateVersion7()).Value!,
-            ProcessoSeletivoConformeBuilder.HashFixo, "America/Sao_Paulo", retificacao: null, conformidade: null);
+            ProcessoSeletivoConformeBuilder.HashFixo, "America/Sao_Paulo", retificacao: null, conformidade: null, new DadosDeCatalogoDaConfiguracaoPublicada());
     }
 
     private void Configurar(SituacaoDoFatoCitado fato)
@@ -158,8 +163,9 @@ internal sealed class CenarioDeRetificacaoPublicada
     {
         EnvelopeReidratado envelope = new(
             _grafoPublicado, DadosDoEdital(), ProcessoSeletivoConformeBuilder.HashFixo, "America/Sao_Paulo", retificacao: null, conformidade: null,
-            metadadosFatosCongelados: new Dictionary<string, MetadadoFatoCongelado> { [Fato] = MetadadoCongelado(_congelado) },
-            tiposDeAtoCongelados: _tiposCongelados);
+            dadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(
+                MetadadosFatosCongelados: new Dictionary<string, MetadadoFatoCongelado> { [Fato] = MetadadoCongelado(_congelado) },
+                TiposDeAtoCongelados: _tiposCongelados));
         _handlers.Codecs.Capacidades.Returns(reidratavel ? [new CapacidadeCodec(_versao.SchemaVersion, true, true, null)] : []);
         _handlers.Codecs.Reidratar(_versao).Returns(Result<EnvelopeReidratado>.Success(envelope));
     }

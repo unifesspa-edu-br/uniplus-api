@@ -73,29 +73,6 @@ public interface IInscricaoRepository
     Task RemoverAsync(Inscricao entity, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// O comprovante que ocupa a posição <paramref name="numero"/> na ordem de emissão da inscrição (o instante, e o id para
-    /// desempatar), com o total emitido. Só ele é lido e decifrado; <see langword="null"/> quando a posição não existe.
-    /// </summary>
-    Task<ComprovanteNaPosicao?> ObterComprovanteAsync(Guid inscricaoId, int numero, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Quando cada inscrição emitiu cada comprovante, em ordem de emissão, lido só por projeção, sem carregar nem decifrar o
-    /// conteúdo. A posição de cada emissão na sua inscrição é o número do comprovante.
-    /// </summary>
-    Task<IReadOnlyList<EmissaoDoComprovante>> ObterEmissoesAsync(
-        IReadOnlyCollection<Guid> inscricoes, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// O instante do primeiro envio de cada inscrição, o menor instante entre os comprovantes, lido só por projeção, sem
-    /// carregar nem decifrar o conteúdo deles. A inscrição sem comprovante não consta.
-    /// </summary>
-    Task<IReadOnlyDictionary<Guid, DateTimeOffset>> ObterPrimeirosEnviosAsync(
-        IReadOnlyCollection<Guid> inscricoes, CancellationToken cancellationToken = default);
-
-    /// <summary>Grava o comprovante emitido por <see cref="Inscricao.Submeter"/> — nunca pela navegação do agregado.</summary>
-    Task AdicionarComprovanteAsync(ComprovanteInscricao comprovante, CancellationToken cancellationToken = default);
-
-    /// <summary>
     /// Avança a revisão da inscrição só se ela ainda está na <paramref name="revisaoLida"/> e não foi
     /// cancelada — <c>UPDATE ... WHERE id = @id AND revisao = @lida AND situacao &lt;&gt; Cancelada</c>, sem
     /// passar pelo change tracker, na transação do handler. É como a mutação de um arquivo de documento

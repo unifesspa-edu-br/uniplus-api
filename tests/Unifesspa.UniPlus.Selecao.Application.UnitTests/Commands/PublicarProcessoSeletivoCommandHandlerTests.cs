@@ -24,8 +24,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.DublesDoCongelamentoDeTeste;
-
 /// <summary>
 /// Cobertura do congelamento de metadado de fato (Story #919, congelamento dos parâmetros na publicação, UNI-REQ-0019) em
 /// <see cref="PublicarProcessoSeletivoCommandHandler"/>: o resultado da resolução alimenta
@@ -34,12 +32,12 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.DublesDoCo
 /// </summary>
 /// <remarks>
 /// Desde a issue #1059 (D4-bis), <see cref="IFatoCandidatoReader.ListarAsync"/> é consultado
-/// UMA vez por congelamento, sempre — mesmo sem condição de gatilho — porque o gate de valor
+/// UMA vez por congelamento, sempre — mesmo sem condição de gatilho — porque a verificação de valor
 /// inativo do domínio precisa do catálogo inteiro independente de o processo ter fato coletado
 /// ou gatilho. É esse catálogo compartilhado, não mais <c>ObterPorCodigoAsync</c> por código,
 /// que <see cref="ResolvedorMetadadosFatosCongelados"/> agora consulta.
 /// </remarks>
-public sealed class PublicarProcessoSeletivoCommandHandlerTests
+public sealed partial class PublicarProcessoSeletivoCommandHandlerTests
 {
     private static readonly string HashFixo = string.Concat(Enumerable.Repeat("ab01234567", 7))[..64];
 
@@ -86,24 +84,77 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
 
     private static (Mocks Mocks, DocumentoAPublicar Documento) NovosMocks(ProcessoSeletivo processo, Action<EntradaCanonicalizacao>? captura = null)
     {
-        DocumentoAPublicar documento = DocumentoConfirmado(processo.Id);
-        IObrigatoriedadeLegalRepository obrigatoriedades = Substitute.For<IObrigatoriedadeLegalRepository>();
-        obrigatoriedades.ObterVigentesParaTipoProcessoAsync(Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>()).Returns([]);
-        IFatoCandidatoReader fatos = Substitute.For<IFatoCandidatoReader>();
-        fatos.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Fatos);
+        IProcessoSeletivoRepository processoRepository = RepositorioDoProcesso(processo);
+        DocumentoAPublicar documento = DocumentoDeTeste(processo);
+        IDocumentoAPublicarRepository documentoRepository = RepositorioDoDocumento(documento);
+
         return (new Mocks(
-            RepositorioDoProcesso(processo),
-            RepositorioDoDocumento(documento),
-            CanonicalizerSubstituto(captura, versao: "1.3"),
-            TipoDeAtoReader(),
-            obrigatoriedades,
-            fatos), documento);
+            processoRepository,
+            documentoRepository,
+            CanonicalizerDeTeste(captura),
+            TipoDeAtoDeTeste(),
+            ObrigatoriedadesDeTeste(),
+            CatalogoDeTeste()), documento);
+    }
+
+    private static IProcessoSeletivoRepository RepositorioDoProcesso(ProcessoSeletivo processo)
+    {
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        return repository;
+    }
+
+    private static DocumentoAPublicar DocumentoDeTeste(ProcessoSeletivo processo)
+    {
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        documento.Confirmar(1024, HashFixo, TimeProvider.System).IsSuccess.Should().BeTrue();
+        return documento;
+    }
+
+    private static IDocumentoAPublicarRepository RepositorioDoDocumento(DocumentoAPublicar documento)
+    {
+        IDocumentoAPublicarRepository repository = Substitute.For<IDocumentoAPublicarRepository>();
+        repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
+        return repository;
+    }
+
+    private static ISnapshotPublicacaoCanonicalizer CanonicalizerDeTeste(Action<EntradaCanonicalizacao>? captura)
+    {
+        ISnapshotPublicacaoCanonicalizer canonicalizer = Substitute.For<ISnapshotPublicacaoCanonicalizer>();
+        canonicalizer.Canonicalizar(Arg.Do<EntradaCanonicalizacao>(e => captura?.Invoke(e)))
+            .Returns(new SnapshotCanonico(EnvelopeProjetavelDeTeste.Bytes, "1.3", "canonical-json/sha256@v1"));
+        return canonicalizer;
+    }
+
+    private static ITipoAtoPublicadoReader TipoDeAtoDeTeste()
+    {
+        ITipoAtoPublicadoReader reader = Substitute.For<ITipoAtoPublicadoReader>().ComQualquerTipoDeclarado();
+        reader.ObterVigenteAsync("EDITAL_ABERTURA", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(new TipoAtoPublicadoView(
+                Codigo: "EDITAL_ABERTURA", Nome: "Edital de abertura",
+                CongelaConfiguracao: true, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: false));
+        return reader;
+    }
+
+    private static IFatoCandidatoReader CatalogoDeTeste()
+    {
+        IFatoCandidatoReader reader = Substitute.For<IFatoCandidatoReader>();
+        reader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Fatos);
+        return reader;
+    }
+
+    private static IObrigatoriedadeLegalRepository ObrigatoriedadesDeTeste()
+    {
+        IObrigatoriedadeLegalRepository repository = Substitute.For<IObrigatoriedadeLegalRepository>();
+        repository.ObterVigentesParaTipoProcessoAsync(
+            Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>()).Returns([]);
+        return repository;
     }
 
     /// <summary>
-    /// A leitura do calendário vigente é <b>uma por handler</b>: a mesma resposta alimenta o gate
+    /// A leitura do calendário vigente é <b>uma por handler</b>: a mesma resposta alimenta a verificação
     /// da raiz e o bloco congelado do envelope. Duas leituras abririam a janela em que o dataset
-    /// muda entre validar e congelar, e a versão publicada carregaria um calendário que o gate
+    /// muda entre validar e congelar, e a versão publicada carregaria um calendário que a verificação
     /// não aprovou — defeito que nenhuma asserção sobre o resultado pegaria, porque num teste
     /// comum as duas leituras devolveriam o mesmo valor.
     /// </summary>
@@ -214,279 +265,5 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
             Ato: new DadosDoAto(
                 Orgao: "CEPS", Serie: "EDITAL", Ano: 2026, DataDoAto: new DateOnly(2026, 1, 1),
                 Assinante: "Diretor do CEPS", TipoAtoCodigo: "EDITAL_ABERTURA"));
-
-    [Fact(DisplayName = "Fato reclassificado de PESSOAL para IDENTIFICADOR no catálogo publica como IDENTIFICADOR e a resposta é cifrada")]
-    public async Task Handle_FatoReclassificadoNoCatalogo_PublicaComAClassificacaoViva()
-    {
-        ProcessoSeletivo processo = NovoProcessoConforme(out _);
-        FatoColetado cpf = TrocarAProtecaoDoCpf(processo);
-        DefinicaoDaResposta.De(cpf.TipoRenderizacao, cpf.ClassificacaoProtecao, fatoCodigo: "CPF").Cifrada.Should().BeFalse("a cópia velha não cifra");
-
-        (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo);
-
-        (Result resposta, IEnumerable<object> _) = await HandleAsync(mocks, processo, documento);
-
-        resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
-        cpf.ClassificacaoProtecao.Should().Be("IDENTIFICADOR");
-        DefinicaoDaResposta.De(cpf.TipoRenderizacao, cpf.ClassificacaoProtecao, fatoCodigo: "CPF").Cifrada.Should().BeTrue();
-    }
-
-    private static void CatalogoComCorRacaDoProcesso(Mocks mocks) =>
-        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns([
-            .. CatalogoDoConjuntoBasico.Fatos.Where(static f => f.Codigo != "COR_RACA"),
-            CatalogoDoConjuntoBasico.Fatos.Single(static f => f.Codigo == "COR_RACA") with { FonteValores = "PROCESSO" },
-        ]);
-
-    [Fact(DisplayName = "A cópia recopiada do catálogo é a que os gates avaliam: fonte passada a PROCESSO recusa pelo gate de oferta")]
-    public async Task Handle_FonteDeValoresMudaNoCatalogo_OsGatesAvaliamACopiaNova()
-    {
-        ProcessoSeletivo processo = NovoProcessoConforme(out _);
-        (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo);
-        CatalogoComCorRacaDoProcesso(mocks);
-
-        (Result resposta, IEnumerable<object> _) = await HandleAsync(mocks, processo, documento);
-
-        resposta.IsFailure.Should().BeTrue();
-        resposta.Error!.Code.Should().Be("ProcessoSeletivo.FatoColetadoSemValoresOfertados");
-        resposta.Error.Message.Should().Contain("não declara nenhuma opção");
-        mocks.Canonicalizer.DidNotReceiveWithAnyArgs().Canonicalizar(default!);
-    }
-
-    [Fact(DisplayName = "A publicação recusada por gate posterior à recópia descarta o que a recópia mudou")]
-    public async Task Handle_RecusaPosteriorARecopia_DescartaAsAlteracoes()
-    {
-        ProcessoSeletivo processo = NovoProcessoConforme(out _);
-        (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo);
-        CatalogoComCorRacaDoProcesso(mocks);
-        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
-
-        (Result resposta, IEnumerable<object> _) = await HandleAsync(mocks, processo, documento, unitOfWork: unitOfWork);
-
-        resposta.IsFailure.Should().BeTrue();
-        unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
-        await unitOfWork.DidNotReceiveWithAnyArgs().SalvarAlteracoesAsync(default);
-    }
-
-    [Fact(DisplayName = "Booleano que vira categórico no catálogo recusa a publicação do item booleano, nomeando o campo")]
-    public async Task Handle_BooleanoQueViraCategorico_RecusaOItem()
-    {
-        ProcessoSeletivo processo = NovoProcessoConforme(out _);
-        FatoColetado item = processo.FatosColetados.Single(static f => f.FatoCodigo == "DESEJA_NOME_SOCIAL");
-        item.TipoRenderizacao.Should().Be(TipoRenderizacao.Booleano);
-        (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo);
-        TornarNomeSocialCategorico(mocks);
-
-        (Result resposta, IEnumerable<object> _) = await HandleAsync(mocks, processo, documento);
-
-        resposta.IsFailure.Should().BeTrue();
-        resposta.Error!.Code.Should().Be("ItemFormulario.TipoRenderizacaoIncoerenteComDominio");
-        resposta.Error.Message.Should().Contain(item.Rotulo).And.Contain("Regrave o item");
-        mocks.Canonicalizer.DidNotReceiveWithAnyArgs().Canonicalizar(default!);
-    }
-
-    [Fact(DisplayName = "Sem condição de gatilho, MetadadosFatosCongelados é null mesmo com o catálogo consultado")]
-    public async Task Handle_SemCondicaoDeGatilho_MetadadosENulo()
-    {
-        ProcessoSeletivo processo = NovoProcessoConforme(out _);
-
-        EntradaCanonicalizacao? entradaCapturada = null;
-        (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo, e => entradaCapturada = e);
-
-        (Result resposta, IEnumerable<object> _) = await HandleAsync(mocks, processo, documento);
-
-        resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
-        ConferirMetadadosAusentes(entradaCapturada);
-        _ = await mocks.FatoCandidatoReader.Received(1).ListarAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact(DisplayName = "Com condição de gatilho resolvida, MetadadosFatosCongelados carrega o metadado do fato citado")]
-    public async Task Handle_ComCondicaoDeGatilhoResolvida_ResolveMetadadoDoFato()
-    {
-        // A modalidade do candidato vem da ampla concorrência que o processo oferta.
-        ProcessoSeletivo processo = ProcessoComExigenciaDaModalidade();
-
-        EntradaCanonicalizacao? entradaCapturada = null;
-        (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo, e => entradaCapturada = e);
-        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
-            .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[FatoModalidade() with { PontoResolucao = "RESULTADO_FINAL" }]));
-
-        (Result resposta, IEnumerable<object> _) = await HandleAsync(mocks, processo, documento);
-
-        resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
-        ConferirMetadadosDaModalidade(entradaCapturada);
-    }
-
-    [Fact(DisplayName = "A publicação é recusada quando o fato do gatilho ou o tipo da exigência estão sem a proteção aprovada")]
-    public async Task Handle_ItemSemProtecaoAprovada_Recusa()
-    {
-        ProcessoSeletivo processo = ProcessoComExigenciaDaModalidade();
-
-        (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo);
-        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
-            .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[FatoModalidade() with { PontoResolucao = "RESULTADO_FINAL", ProtecaoAprovada = false }]));
-        ITipoDocumentoReader tipos = TiposDeDocumentoComProtecaoPendente();
-
-        (Result resposta, IEnumerable<object> eventos) = await HandleAsync(mocks, processo, documento, tipos: tipos);
-
-        resposta.Errors.Select(static e => e.Error.Code).Should().BeEquivalentTo(
-            "ProcessoSeletivo.TipoDocumentoComProtecaoPendente", "ProcessoSeletivo.FatoComProtecaoPendente");
-        eventos.Should().BeEmpty();
-        mocks.Canonicalizer.DidNotReceiveWithAnyArgs().Canonicalizar(default!);
-    }
-
-    [Fact(DisplayName = "Gatilho que cita fato que o processo deixou de derivar recusa a publicação")]
-    public async Task Handle_GatilhoCitaFatoForaDoProcesso_Recusa()
-    {
-        const string derivado = "REGIME_DE_VAGA";
-        ProcessoSeletivo processo = NovoProcessoConforme(out Guid faseId);
-        ExigirDocumentoPorFatoRemovido(processo, faseId, derivado);
-
-        (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo);
-        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
-            .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[
-                FatoModalidade() with { Codigo = derivado, Binding = $"REGRA_DERIVACAO:{derivado}", PontoResolucao = "RESULTADO_FINAL" }]));
-
-        (Result resposta, IEnumerable<object> _) = await HandleAsync(mocks, processo, documento);
-
-        resposta.Error!.Code.Should().Be("PredicadoDnf.FatoNaoColetadoPeloProcesso");
-        processo.Status.Should().Be(StatusProcesso.Rascunho);
-    }
-
-    [Fact(DisplayName = "Derivado citado por gatilho herda a fase da dependência que o gatilho não cita")]
-    public async Task Handle_DerivadoComDependenciaForaDoCronograma_Recusa()
-    {
-        ProcessoSeletivo processo = NovoProcessoConforme(out Guid faseId);
-        OfertarModalidadePorRendaExigindoDocumento(processo, faseId);
-
-        (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo);
-        FatoCandidatoView temRenda = FatoRendaDaHabilitacao();
-        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
-            .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[FatoModalidade() with { PontoResolucao = "RESULTADO_FINAL" }, temRenda]));
-
-        (Result resposta, IEnumerable<object> _) = await HandleAsync(mocks, processo, documento);
-
-        resposta.Error!.Code.Should().Be(DocumentoExigidoErrorCodes.PontoResolucaoForaDoCronograma);
-    }
-
-    [Fact(DisplayName = "Código de fato que não resolve no catálogo aborta a publicação ANTES de canonicalizar")]
-    public async Task Handle_CodigoDeFatoNaoResolve_AbortaAntesDeCanonicalizar()
-    {
-        ProcessoSeletivo processo = NovoProcessoConforme(out Guid faseId);
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComGatilhoPorFato(faseId, "FATO_INEXISTENTE"), 0).Value!])
-            .IsSuccess.Should().BeTrue();
-
-        // O catálogo (D4-bis) não conhece "FATO_INEXISTENTE": NovosMocks traz só o conjunto básico.
-        (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo);
-
-        (Result resposta, IEnumerable<object> eventos) = await HandleAsync(mocks, processo, documento);
-
-        resposta.IsFailure.Should().BeTrue();
-        resposta.Error!.Code.Should().Be("ProcessoSeletivo.FatoCongeladoNaoEncontrado");
-        _ = mocks.Canonicalizer.DidNotReceive().Canonicalizar(Arg.Any<EntradaCanonicalizacao>());
-        eventos.Should().BeEmpty();
-        processo.Status.Should().Be(StatusProcesso.Rascunho, "a publicação recusada não transita o processo");
-    }
-
-    private static FatoColetado TrocarAProtecaoDoCpf(ProcessoSeletivo processo)
-    {
-        FatoColetado cpfDoCatalogoAntigo = processo.FatosColetados.Single(static f => f.FatoCodigo == "CPF");
-        FatoColetado cpf = FatoColetado.Criar(
-            "CPF", cpfDoCatalogoAntigo.Ordem, cpfDoCatalogoAntigo.Rotulo, cpfDoCatalogoAntigo.TipoRenderizacao, cpfDoCatalogoAntigo.Obrigatoriedade, null, "PESSOAL", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoDoFatoDeTeste.Descricao,
-            cpfDoCatalogoAntigo.OrigemValores, cpfDoCatalogoAntigo.EtapaCodigo, formato: cpfDoCatalogoAntigo.Formato).Value!;
-        processo.DefinirItens([.. processo.FatosColetados.Select(f => f.FatoCodigo == "CPF" ? cpf : f)]).IsSuccess.Should().BeTrue();
-        return cpf;
-    }
-
-
-    private static void TornarNomeSocialCategorico(Mocks mocks)
-    {
-        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns([
-            .. CatalogoDoConjuntoBasico.Fatos.Where(static f => f.Codigo != "DESEJA_NOME_SOCIAL"),
-            CatalogoDoConjuntoBasico.Fatos.Single(static f => f.Codigo == "DESEJA_NOME_SOCIAL") with { Dominio = "CATEGORICO" },
-        ]);
-    }
-
-
-    private static void ConferirMetadadosAusentes(EntradaCanonicalizacao? entradaCapturada)
-    {
-        entradaCapturada.Should().NotBeNull();
-        entradaCapturada!.MetadadosFatosCongelados.Should().BeNull(
-            "nenhuma condição de gatilho existe no processo — nada a congelar, mesmo o catálogo tendo sido lido " +
-            "para o gate de valor inativo (D4-bis)");
-    }
-
-
-    private static void ConferirMetadadosDaModalidade(EntradaCanonicalizacao? entradaCapturada)
-    {
-        entradaCapturada.Should().NotBeNull();
-        entradaCapturada!.MetadadosFatosCongelados.Should().NotBeNull();
-        entradaCapturada.MetadadosFatosCongelados.Should().ContainKey("MODALIDADE");
-        MetadadoFatoCongelado metadado = entradaCapturada.MetadadosFatosCongelados!["MODALIDADE"];
-        metadado.Dominio.Should().Be("CATEGORICO");
-        metadado.Origem.Should().Be("DERIVADO");
-        metadado.Cardinalidade.Should().Be("MULTIVALORADO");
-        metadado.PontoResolucao.Should().Be("RESULTADO_FINAL");
-        metadado.Binding.Should().Be("REGRA_DERIVACAO:MODALIDADE");
-        metadado.ValoresDominioDeclarados.Should().BeNull("MODALIDADE é escopo-processo — os valores vêm da oferta do processo, não de FatoValorDominio");
-    }
-
-
-    private static ITipoDocumentoReader TiposDeDocumentoComProtecaoPendente()
-    {
-        ITipoDocumentoReader tipos = Substitute.For<ITipoDocumentoReader>();
-        tipos.ListarVivosAsync(Arg.Any<CancellationToken>()).Returns([CadastrosVivos.TipoDocumento("LAUDO_MEDICO") with { ProtecaoAprovada = false }]);
-
-        return tipos;
-    }
-
-
-    private static void ExigirDocumentoPorFatoRemovido(ProcessoSeletivo processo, Guid faseId, string derivado)
-    {
-        processo.DefinirRegrasDerivacao(
-            [ConfiguracaoDerivacaoFato.Criar(derivado, [RegraDerivacaoConfigurada.Criar(0, "AC", null).Value!]).Value!]).IsSuccess.Should().BeTrue();
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComGatilhoPorFato(faseId, derivado), 0).Value!])
-            .IsSuccess.Should().BeTrue();
-        processo.DefinirRegrasDerivacao([]).IsSuccess.Should().BeTrue();
-
-    }
-
-
-    private static void OfertarModalidadePorRendaExigindoDocumento(ProcessoSeletivo processo, Guid faseId)
-    {
-        processo.DefinirItens(
-            [FatoColetado.Criar("TEM_RENDA", 0, "Tem renda?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!]).IsSuccess.Should().BeTrue();
-        processo.DefinirDistribuicaoVagas(
-            [ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(PredicadoDnf.CriarDeCondicoesAgrupadas(
-                [(0, CondicaoDnf.Criar("TEM_RENDA", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!)],
-            FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComGatilhoPorFato(faseId, "MODALIDADE"), 0).Value!])
-            .IsSuccess.Should().BeTrue();
-
-    }
-
-
-    private static FatoCandidatoView FatoRendaDaHabilitacao()
-    {
-        FatoCandidatoView temRenda = FatoModalidade() with
-        {
-            Codigo = "TEM_RENDA",
-            Dominio = "BOOLEANO",
-            Origem = "DECLARADO",
-            Cardinalidade = "ESCALAR",
-            PontoResolucao = "HABILITACAO",
-            Binding = "CAMPO_FORMULARIO:TEM_RENDA",
-            FonteValores = null,
-        };
-        return temRenda;
-    }
-
-
-    private static ProcessoSeletivo ProcessoComExigenciaDaModalidade()
-    {
-        ProcessoSeletivo processo = NovoProcessoConforme(out Guid faseId);
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComGatilhoPorFato(faseId, "MODALIDADE"), 0).Value!])
-            .IsSuccess.Should().BeTrue();
-        return processo;
-    }
 
 }

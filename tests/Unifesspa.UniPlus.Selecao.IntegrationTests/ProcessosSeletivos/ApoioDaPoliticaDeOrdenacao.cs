@@ -35,8 +35,8 @@ internal static class ApoioDaPoliticaDeOrdenacao
     internal static EntradaCanonicalizacao Entrada(
         ProcessoSeletivo processo,
         IReadOnlyDictionary<string, MetadadoFatoCongelado>? metadadosFatos = null) =>
-        new(processo, Dados(), new string('0', 64), FusoInstitucional.ZoneId, MetadadosFatosCongelados: metadadosFatos,
-            ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados());
+        new(processo, Dados(), new string('0', 64), FusoInstitucional.ZoneId, Retificacao: null, Conformidade: null, DadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(MetadadosFatosCongelados: metadadosFatos,
+            ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados()));
 
     /// <summary>
     /// Um Guid com só o último dígito hexadecimal variando por <paramref name="sufixo"/> — as
@@ -82,14 +82,30 @@ internal static class ApoioDaPoliticaDeOrdenacao
         IReadOnlyList<FaseCronograma>? cronogramaFases = null,
         IReadOnlyList<NoExigencia>? documentosExigidos = null,
         IReadOnlyList<FatoColetado>? fatosColetados = null,
-        IReadOnlyList<ConfiguracaoDerivacaoFato>? regrasDerivacao = null,
-        ConfiguracaoCascataRemanejamento? cascata = null)
+        IReadOnlyList<ConfiguracaoDerivacaoFato>? regrasDerivacao = null)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             "PS Política de Ordenação", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
 
+        ConfigurarClassificacao(processo, atendimentoEspecializado, criteriosDesempate);
+        ConfigurarCronograma(processo, cronogramaFases, etapas);
+        ConfigurarColeta(processo, documentosExigidos, fatosColetados, regrasDerivacao);
+        return processo;
+    }
+
+    internal static ProcessoSeletivo MontarComCascata(ConfiguracaoCascataRemanejamento cascata)
+    {
+        ProcessoSeletivo processo = Montar();
+        processo.DefinirCascataRemanejamento(cascata).IsSuccess.Should().BeTrue();
+        return processo;
+    }
+
+    private static void ConfigurarClassificacao(
+        ProcessoSeletivo processo, AtendimentoEspecializado? atendimentoEspecializado,
+        IReadOnlyList<CriterioDesempate>? criteriosDesempate)
+    {
         processo.DefinirAtendimentoEspecializado(
             atendimentoEspecializado ?? AtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
 
@@ -100,13 +116,22 @@ internal static class ApoioDaPoliticaDeOrdenacao
             processo.DefinirCriteriosDesempate(criteriosDesempate).IsSuccess.Should().BeTrue();
         }
 
+        DefinirClassificacao(processo);
+    }
+
+    private static void DefinirClassificacao(ProcessoSeletivo processo)
+    {
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
             RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
             RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
         }).Value!).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeCurso(1).IsSuccess.Should().BeTrue();
+    }
 
+    private static void ConfigurarCronograma(
+        ProcessoSeletivo processo, IReadOnlyList<FaseCronograma>? cronogramaFases, IReadOnlyList<EtapaProcesso>? etapas)
+    {
         processo.DefinirCronogramaFases(
             cronogramaFases ?? [FaseMinima()], []).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas(etapas ?? [
@@ -114,7 +139,12 @@ internal static class ApoioDaPoliticaDeOrdenacao
                 new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: (cronogramaFases ?? [FaseMinima()])[0].Codigo),
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
         ]).IsSuccess.Should().BeTrue();
+    }
 
+    private static void ConfigurarColeta(
+        ProcessoSeletivo processo, IReadOnlyList<NoExigencia>? documentosExigidos,
+        IReadOnlyList<FatoColetado>? fatosColetados, IReadOnlyList<ConfiguracaoDerivacaoFato>? regrasDerivacao)
+    {
         if (documentosExigidos is not null)
         {
             processo.DefinirDocumentosExigidos(documentosExigidos).IsSuccess.Should().BeTrue();
@@ -124,17 +154,14 @@ internal static class ApoioDaPoliticaDeOrdenacao
         {
             processo.DefinirItens(fatosColetados).IsSuccess.Should().BeTrue();
         }
+        DefinirRegrasDerivacao(processo, regrasDerivacao);
+    }
 
+    private static void DefinirRegrasDerivacao(ProcessoSeletivo processo, IReadOnlyList<ConfiguracaoDerivacaoFato>? regrasDerivacao)
+    {
         if (regrasDerivacao is not null)
         {
             processo.DefinirRegrasDerivacao(regrasDerivacao).IsSuccess.Should().BeTrue();
         }
-
-        if (cascata is not null)
-        {
-            processo.DefinirCascataRemanejamento(cascata).IsSuccess.Should().BeTrue();
-        }
-
-        return processo;
     }
 }

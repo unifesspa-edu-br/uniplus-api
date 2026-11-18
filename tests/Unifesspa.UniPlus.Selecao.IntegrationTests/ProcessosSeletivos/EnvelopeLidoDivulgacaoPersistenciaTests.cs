@@ -20,9 +20,9 @@ public sealed class EnvelopeLidoDivulgacaoPersistenciaTests(ProcessoSeletivoDbFi
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
         VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
         EnvelopeReidratado lido = ApoioDoEnvelopeCodec.Reidratado(versao);
-        lido.Grafo.ConfiguracaoDivulgacao.Should().BeNull();
+        lido.Configuracao.DivulgacaoETaxa.ConfiguracaoDivulgacao.Should().BeNull();
         Guid linha = await PersistirPadraoExplicitoAsync(processo);
-        await RemoverLinhaAsync(processo.Id, lido.Grafo.ConfiguracaoDivulgacao);
+        await RemoverLinhaAsync(processo.Id, lido.Configuracao.DivulgacaoETaxa.ConfiguracaoDivulgacao);
         await ConferirAusenciaEBytesAsync(processo.Id, linha, versao, lido, congelado);
     }
 

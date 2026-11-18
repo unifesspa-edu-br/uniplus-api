@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs.Comprovantes;
 using Unifesspa.UniPlus.Selecao.Application.Queries.Inscricoes;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Application.Services.Comprovantes;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -32,9 +33,9 @@ public sealed class ObterComprovanteDaInscricaoQueryHandlerTests
     private static readonly DateTimeOffset Instante = new(2026, 1, 15, 12, 0, 0, TimeSpan.Zero);
 
     private sealed record Cenario(
-        IInscricaoRepository Inscricoes, IProcessoSeletivoRepository Processos, IRegistroCodecsEnvelope Registro, MontadorDoComprovante Montador);
+        IInscricaoRepository Inscricoes, IComprovanteDaInscricaoRepository Comprovantes, IProcessoSeletivoRepository Processos, IRegistroCodecsEnvelope Registro, MontadorDoComprovante Montador);
 
-    private static Cenario Novo(Inscricao inscricao, VersaoConfiguracao? versao = null, GrafoConfiguracao? grafo = null)
+    private static Cenario Novo(Inscricao inscricao, VersaoConfiguracao? versao = null, ConfiguracaoPublicada? grafo = null)
     {
         IInscricaoRepository inscricoes = Substitute.For<IInscricaoRepository>();
         inscricoes.ObterPorIdAsync(inscricao.Id, Arg.Any<CancellationToken>()).Returns(inscricao);
@@ -48,7 +49,7 @@ public sealed class ObterComprovanteDaInscricaoQueryHandlerTests
         PrazoDaCorrecaoDoComprovante prazo = new(
             Substitute.For<ICertameDivulgadoRepository>(), processos, registro, Substitute.For<IResolvedorFusoInstitucional>(), TimeProvider.System);
 
-        return new Cenario(inscricoes, processos, registro, new MontadorDoComprovante(processos, registro, prazo, new CancelamentoDoComprovante(DivulgacaoDeTeste.Fuso())));
+        return new Cenario(inscricoes, Substitute.For<IComprovanteDaInscricaoRepository>(), processos, registro, new MontadorDoComprovante(processos, registro, prazo, new CancelamentoDoComprovante(DivulgacaoDeTeste.Fuso())));
     }
 
     private static IUserContext Usuario(Cpf cpf, string contaId = "conta-1")
@@ -62,11 +63,11 @@ public sealed class ObterComprovanteDaInscricaoQueryHandlerTests
     private static Inscricao Iniciar(Cpf cpf, string contaId, Guid versaoId) =>
         Inscricao.Iniciar(ProcessoId, cpf, contaId, "https://issuer", versaoId).Value!;
 
-    private static Inscricao Cancelada(Cpf cpf) => Inscricao.Reidratar(
-        Guid.CreateVersion7(), ProcessoId, cpf, "conta-1", "https://issuer", SituacaoInscricao.Cancelada, Guid.CreateVersion7(), null, null,
-        "000123", Instante, "conta-1", "a pedido do candidato",
-        new Dictionary<string, JsonElement>(), new Dictionary<string, JsonElement>(),
-        new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), [], new Dictionary<string, DefinicaoDaResposta>(), 2, Instante, null);
+    private static Inscricao Cancelada(Cpf cpf) => Inscricao.Reidratar(Guid.CreateVersion7(), ProcessoId,
+            TitularDaInscricao.Reidratar(cpf, "conta-1", "https://issuer"),
+            EstadoDaInscricao.Reidratar(SituacaoInscricao.Cancelada, "000123", CancelamentoDaInscricao.Reidratar(Instante, "conta-1", "a pedido do candidato")),
+            FormularioDaInscricao.Reidratar(Guid.CreateVersion7(), PreenchimentoDoCandidato.Criar(OpcoesDeCursoDaInscricao.Reidratar(null, null), new Dictionary<string, JsonElement>(), new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), []),
+                new Dictionary<string, JsonElement>(), new Dictionary<string, DefinicaoDaResposta>()), 2, new Unifesspa.UniPlus.Selecao.Domain.ValueObjects.DatasDeGravacaoDaInscricao(default, null));
 
     private static ComprovanteNaPosicao Posicao(Inscricao inscricao, int numero, int total) => new(
         ComprovanteInscricao.Emitir(
@@ -76,7 +77,7 @@ public sealed class ObterComprovanteDaInscricaoQueryHandlerTests
 
     private static Task<Result<ComprovanteDaInscricaoDto>> Ler(Cenario cenario, Guid inscricaoId, int numero, IUserContext usuario) =>
         ObterComprovanteDaInscricaoQueryHandler.Handle(
-            new ObterComprovanteDaInscricaoQuery(inscricaoId, numero), cenario.Inscricoes, cenario.Montador, usuario, CancellationToken.None);
+            new ObterComprovanteDaInscricaoQuery(inscricaoId, numero), cenario.Comprovantes, cenario.Montador, new InscricaoDoDono(cenario.Inscricoes, usuario), CancellationToken.None);
 
     [Fact(DisplayName = "Sem o claim cpf no token, recusa sem consultar repositório nenhum")]
     public async Task Handle_SemCpfNoToken_Recusa()
@@ -100,7 +101,7 @@ public sealed class ObterComprovanteDaInscricaoQueryHandlerTests
         Result<ComprovanteDaInscricaoDto> resultado = await Ler(cenario, deOutro.Id, 1, Usuario(PersonasDeTeste.FernandaDrumond));
 
         resultado.Error!.Code.Should().Be("Inscricao.NaoEncontrada");
-        await cenario.Inscricoes.DidNotReceiveWithAnyArgs().ObterComprovanteAsync(default, default, default);
+        await cenario.Comprovantes.DidNotReceiveWithAnyArgs().ObterComprovanteAsync(default, default, default);
     }
 
     [Fact(DisplayName = "O mesmo CPF com outra conta é recusado como dono divergente")]
@@ -124,7 +125,7 @@ public sealed class ObterComprovanteDaInscricaoQueryHandlerTests
         Result<ComprovanteDaInscricaoDto> resultado = await Ler(cenario, cancelada.Id, 1, Usuario(cpf));
 
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.ComprovanteDeInscricaoCancelada);
-        await cenario.Inscricoes.DidNotReceiveWithAnyArgs().ObterComprovanteAsync(default, default, default);
+        await cenario.Comprovantes.DidNotReceiveWithAnyArgs().ObterComprovanteAsync(default, default, default);
         await cenario.Processos.DidNotReceiveWithAnyArgs().ObterVersoesAsync(default, default);
     }
 
@@ -144,44 +145,45 @@ public sealed class ObterComprovanteDaInscricaoQueryHandlerTests
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         Inscricao inscricao = Iniciar(cpf, "conta-1", Guid.CreateVersion7());
         Cenario cenario = Novo(inscricao);
-        cenario.Inscricoes.ObterComprovanteAsync(inscricao.Id, 9, Arg.Any<CancellationToken>()).Returns((ComprovanteNaPosicao?)null);
+        cenario.Comprovantes.ObterComprovanteAsync(inscricao.Id, 9, Arg.Any<CancellationToken>()).Returns((ComprovanteNaPosicao?)null);
 
         Result<ComprovanteDaInscricaoDto> resultado = await Ler(cenario, inscricao.Id, 9, Usuario(cpf));
 
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.ComprovanteNaoEncontrado);
+        resultado.Error.Message.Should().Be("O comprovante solicitado não foi encontrado.");
     }
 
     [Fact(DisplayName = "O comprovante pedido sai montado com a posição dele, e o prazo ausente não derruba o documento")]
     public async Task Handle_ComprovantePedido_MontaSemOPrazo()
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
-        (VersaoConfiguracao versao, GrafoConfiguracao grafo) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
+        (VersaoConfiguracao versao, ConfiguracaoPublicada grafo) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
         Inscricao inscricao = Iniciar(cpf, "conta-1", versao.Id);
         Cenario cenario = Novo(inscricao, versao, grafo);
-        cenario.Inscricoes.ObterComprovanteAsync(inscricao.Id, 2, Arg.Any<CancellationToken>()).Returns(Posicao(inscricao, 2, 2));
+        cenario.Comprovantes.ObterComprovanteAsync(inscricao.Id, 2, Arg.Any<CancellationToken>()).Returns(Posicao(inscricao, 2, 2));
 
         Result<ComprovanteDaInscricaoDto> resultado = await Ler(cenario, inscricao.Id, 2, Usuario(cpf));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!.Numero.Should().Be(2);
-        resultado.Value.Vale.Should().BeTrue();
-        resultado.Value.PrazoDaCorrecao.Should().BeNull("o prazo é informação acessória: sem o certame divulgado, o comprovante sai sem ele");
-        await cenario.Inscricoes.Received(1).ObterComprovanteAsync(inscricao.Id, 2, Arg.Any<CancellationToken>());
+        resultado.Value!.Inscricao.Numero.Should().Be(2);
+        resultado.Value.Inscricao.Vale.Should().BeTrue();
+        resultado.Value.Inscricao.PrazoDaCorrecao.Should().BeNull("o prazo é informação acessória: sem o certame divulgado, o comprovante sai sem ele");
+        await cenario.Comprovantes.Received(1).ObterComprovanteAsync(inscricao.Id, 2, Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "O comprovante que não vale não traz prazo da correção")]
     public async Task Handle_ComprovanteSubstituido_SemPrazo()
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
-        (VersaoConfiguracao versao, GrafoConfiguracao grafo) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
+        (VersaoConfiguracao versao, ConfiguracaoPublicada grafo) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
         Inscricao inscricao = Iniciar(cpf, "conta-1", versao.Id);
         Cenario cenario = Novo(inscricao, versao, grafo);
-        cenario.Inscricoes.ObterComprovanteAsync(inscricao.Id, 1, Arg.Any<CancellationToken>()).Returns(Posicao(inscricao, 1, 2));
+        cenario.Comprovantes.ObterComprovanteAsync(inscricao.Id, 1, Arg.Any<CancellationToken>()).Returns(Posicao(inscricao, 1, 2));
 
         Result<ComprovanteDaInscricaoDto> resultado = await Ler(cenario, inscricao.Id, 1, Usuario(cpf));
 
-        resultado.Value!.Vale.Should().BeFalse();
-        resultado.Value.NumeroSeguinte.Should().Be(2);
-        resultado.Value.PrazoDaCorrecao.Should().BeNull();
+        resultado.Value!.Inscricao.Vale.Should().BeFalse();
+        resultado.Value.Inscricao.NumeroSeguinte.Should().Be(2);
+        resultado.Value.Inscricao.PrazoDaCorrecao.Should().BeNull();
     }
 }

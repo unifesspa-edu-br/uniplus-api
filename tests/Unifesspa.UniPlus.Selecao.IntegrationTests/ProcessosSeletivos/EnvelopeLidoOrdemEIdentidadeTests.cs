@@ -37,7 +37,7 @@ public sealed class EnvelopeLidoOrdemEIdentidadeTests
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
         EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo, CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
-        lido.Grafo.Etapas.Select(e => e.Id).Should().Equal(ApoioDoEnvelopeCodec.Envelope(congelado)["etapas"]!.AsArray()
+        lido.Configuracao.Avaliacao.Etapas.Select(e => e.Id).Should().Equal(ApoioDoEnvelopeCodec.Envelope(congelado)["etapas"]!.AsArray()
             .Select(e => Guid.Parse(e!["id"]!.GetValue<string>(), CultureInfo.InvariantCulture)));
     }
 
@@ -49,12 +49,12 @@ public sealed class EnvelopeLidoOrdemEIdentidadeTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         ProcessoSeletivo candidato = ProcessoSeletivo.Criar(processo.Nome, processo.TipoProcesso, processo.OrigemCandidatos,
             processo.UnidadeAdministradoraOrigemId, processo.UnidadeAdministradora, processo.Localidade, processo.IdentificadorLegivel!.Value);
-        candidato.DefinirCronogramaFases(resultado.Value!.Grafo.CronogramaFases, []).IsSuccess.Should().BeTrue();
-        candidato.DefinirEtapas(resultado.Value.Grafo.Etapas).IsSuccess.Should().BeTrue();
-        Result recusa = candidato.DefinirCriteriosDesempate(resultado.Value.Grafo.CriteriosDesempate);
+        candidato.DefinirCronogramaFases(resultado.Value!.Configuracao.Cronograma.CronogramaFases, []).IsSuccess.Should().BeTrue();
+        candidato.DefinirEtapas(resultado.Value.Configuracao.Avaliacao.Etapas).IsSuccess.Should().BeTrue();
+        Result recusa = candidato.DefinirCriteriosDesempate(resultado.Value.Configuracao.Avaliacao.CriteriosDesempate);
         recusa.IsFailure.Should().BeTrue();
         recusa.Error!.Code.Should().Be("ProcessoSeletivo.EtapaRefDesempateInexistente");
-        Result eliminacao = candidato.DefinirClassificacao(resultado.Value.Grafo.Classificacao);
+        Result eliminacao = candidato.DefinirClassificacao(resultado.Value.Configuracao.Avaliacao.Classificacao!);
         eliminacao.IsFailure.Should().BeTrue();
         eliminacao.Error!.Code.Should().Be("ProcessoSeletivo.EtapaRefEliminacaoInexistente");
     }

@@ -10,12 +10,12 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 internal static class ProcessoDoGrafoLidoDeTeste
 {
-    internal static ProcessoSeletivo Criar(ProcessoSeletivo origem, GrafoConfiguracao grafo)
+    internal static ProcessoSeletivo Criar(ProcessoSeletivo origem, ConfiguracaoPublicada grafo)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             origem.Nome, origem.TipoProcesso, origem.OrigemCandidatos,
             origem.UnidadeAdministradoraOrigemId, origem.UnidadeAdministradora,
-            grafo.Localidade ?? origem.Localidade, grafo.IdentificadorLegivel ?? origem.IdentificadorLegivel!.Value);
+            grafo.Cronograma.Localidade ?? origem.Localidade, grafo.IdentificadorLegivel ?? origem.IdentificadorLegivel!.Value);
         DefinirCronogramaEOferta(processo, grafo);
         DefinirClassificacao(processo, grafo);
         DefinirFormularios(processo, grafo);
@@ -26,57 +26,57 @@ internal static class ProcessoDoGrafoLidoDeTeste
     private static void Aceita(Result resultado) =>
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
 
-    private static void DefinirCronogramaEOferta(ProcessoSeletivo processo, GrafoConfiguracao grafo)
+    private static void DefinirCronogramaEOferta(ProcessoSeletivo processo, ConfiguracaoPublicada grafo)
     {
-        Aceita(processo.DefinirCronogramaFases(grafo.CronogramaFases, []));
-        Aceita(processo.DefinirEtapas(grafo.Etapas));
-        Aceita(processo.DefinirAtendimentoEspecializado(grafo.AtendimentoEspecializado));
-        Aceita(processo.DefinirDistribuicaoVagas(grafo.DistribuicaoVagas, FatosDeModalidadeDeTeste.DoCatalogo));
-        if (grafo.NumeroDeOpcoesDeCurso is { } numero)
+        Aceita(processo.DefinirCronogramaFases(grafo.Cronograma.CronogramaFases, []));
+        Aceita(processo.DefinirEtapas(grafo.Avaliacao.Etapas));
+        Aceita(processo.DefinirAtendimentoEspecializado(grafo.Vagas.AtendimentoEspecializado!));
+        Aceita(processo.DefinirDistribuicaoVagas(grafo.Vagas.DistribuicaoVagas, FatosDeModalidadeDeTeste.DoCatalogo));
+        if (grafo.Vagas.NumeroDeOpcoesDeCurso is { } numero)
         {
             Aceita(processo.DefinirOpcoesDeCurso(numero));
         }
     }
 
-    private static void DefinirClassificacao(ProcessoSeletivo processo, GrafoConfiguracao grafo)
+    private static void DefinirClassificacao(ProcessoSeletivo processo, ConfiguracaoPublicada grafo)
     {
-        Aceita(processo.DefinirClassificacao(grafo.Classificacao));
-        Aceita(processo.DefinirCriteriosDesempate(grafo.CriteriosDesempate));
-        Aceita(processo.DefinirBonusRegional(grafo.BonusRegional is not null, grafo.BonusRegional));
-        Aceita(processo.DefinirCascataRemanejamento(grafo.CascataRemanejamento));
-        Aceita(processo.DefinirConfiguracaoDivulgacao(grafo.ConfiguracaoDivulgacao));
-        Aceita(processo.DefinirTaxaInscricao(grafo.ConfiguracaoTaxaInscricao));
-        Aceita(processo.DefinirRegrasDerivacao(grafo.RegrasDerivacao));
+        Aceita(processo.DefinirClassificacao(grafo.Avaliacao.Classificacao!));
+        Aceita(processo.DefinirCriteriosDesempate(grafo.Avaliacao.CriteriosDesempate));
+        Aceita(processo.DefinirBonusRegional(grafo.Vagas.BonusRegional is not null, grafo.Vagas.BonusRegional));
+        Aceita(processo.DefinirCascataRemanejamento(grafo.Vagas.Cascata));
+        Aceita(processo.DefinirConfiguracaoDivulgacao(grafo.DivulgacaoETaxa.ConfiguracaoDivulgacao));
+        Aceita(processo.DefinirTaxaInscricao(grafo.DivulgacaoETaxa.ConfiguracaoTaxaInscricao));
+        Aceita(processo.DefinirRegrasDerivacao(grafo.Coleta.RegrasDerivacao));
     }
 
-    private static void DefinirFormularios(ProcessoSeletivo processo, GrafoConfiguracao grafo)
+    private static void DefinirFormularios(ProcessoSeletivo processo, ConfiguracaoPublicada grafo)
     {
-        foreach (FormularioProcesso formulario in grafo.Formularios.OrderBy(f => f.Finalidade))
+        foreach (FormularioProcesso formulario in grafo.Coleta.Formularios.OrderBy(f => f.Finalidade))
         {
             Aceita(processo.DefinirFormulario(formulario.Finalidade, formulario.FaseId, formulario.Titulo,
-                [.. formulario.Etapas], [.. grafo.FatosColetados.Where(f => f.Finalidade == formulario.Finalidade)]));
+                [.. formulario.Etapas], [.. grafo.Coleta.Itens.Where(f => f.Finalidade == formulario.Finalidade)]));
             DefinirColeta(processo, grafo, formulario.Finalidade);
         }
 
-        foreach (IGrouping<string, OpcaoDeclaradaFato> opcoes in grafo.OpcoesDeclaradas.GroupBy(o => o.FatoCodigo))
+        foreach (IGrouping<string, OpcaoDeclaradaFato> opcoes in grafo.Coleta.OpcoesDeclaradas.GroupBy(o => o.FatoCodigo))
         {
             Aceita(processo.DefinirOpcoesDeclaradas(opcoes.Key, [.. opcoes]));
         }
     }
 
-    private static void DefinirColeta(ProcessoSeletivo processo, GrafoConfiguracao grafo, FinalidadeFormulario finalidade)
+    private static void DefinirColeta(ProcessoSeletivo processo, ConfiguracaoPublicada grafo, FinalidadeFormulario finalidade)
     {
         Aceita(processo.DefinirFatosColetados(finalidade,
-            [.. grafo.FatosColetados.Where(f => f.Finalidade == finalidade)],
-            [.. grafo.GruposColetados.Where(g => g.Finalidade == finalidade)]));
-        Aceita(processo.DefinirTermosDoFormulario(finalidade, [.. grafo.TermosExigidos.Where(t => t.Finalidade == finalidade)]));
+            [.. grafo.Coleta.Itens.Where(f => f.Finalidade == finalidade)],
+            [.. grafo.Coleta.GruposColetados.Where(g => g.Finalidade == finalidade)]));
+        Aceita(processo.DefinirTermosDoFormulario(finalidade, [.. grafo.Coleta.TermosExigidos.Where(t => t.Finalidade == finalidade)]));
     }
 
-    private static void DefinirExigenciasEIdentificacao(ProcessoSeletivo processo, GrafoConfiguracao grafo)
+    private static void DefinirExigenciasEIdentificacao(ProcessoSeletivo processo, ConfiguracaoPublicada grafo)
     {
-        Aceita(processo.DefinirReferenciaTemporalFatos(grafo.ReferenciaTemporalFatos));
-        Aceita(processo.DefinirDocumentosExigidos([.. grafo.NosExigencia.Where(n => n.NoPaiId is null)]));
-        if (grafo.AlgoritmoContagemPrazo is { } algoritmo)
+        Aceita(processo.DefinirReferenciaTemporalFatos(grafo.Coleta.ReferenciaTemporalFatos));
+        Aceita(processo.DefinirDocumentosExigidos([.. grafo.Exigencias.NosExigencia.Where(n => n.NoPaiId is null)]));
+        if (grafo.Cronograma.AlgoritmoContagemPrazo is { } algoritmo)
         {
             Aceita(processo.DefinirAlgoritmoContagemPrazo(algoritmo));
         }

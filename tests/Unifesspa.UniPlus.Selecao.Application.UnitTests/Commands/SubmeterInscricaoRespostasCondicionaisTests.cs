@@ -31,6 +31,20 @@ using static SubmeterDeTeste;
 /// </summary>
 public sealed class SubmeterInscricaoRespostasCondicionaisTests
 {
+    [Fact]
+    public async Task Handle_GrupoForaComJsonDescartado_RecusaGrupo()
+    {
+        JsonDocument documento = JsonDocument.Parse("\"valor\"");
+        JsonElement valor = documento.RootElement;
+        documento.Dispose();
+        Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>> grupos = new()
+        {
+            ["FORA"] = [new("1", new Dictionary<string, JsonElement> { ["CAMPO"] = valor })],
+        };
+        (Result<ReciboDaInscricaoDto> resultado, _) = await SubmeterComAsync([], null, new Dictionary<string, JsonElement>(), grupos);
+        resultado.Errors.Should().Contain(e => e.Error.Code == InscricaoErrorCodes.GrupoForaDoFormulario);
+    }
+
     /// <summary>Um texto opcional que só aparece com <paramref name="pergunta"/> respondida "sim".</summary>
     private static FatoColetado SoComSim(string fato, int ordem, string pergunta) => FatoColetado.Criar(
         fato, ordem, fato, TipoRenderizacao.Texto, Obrigatoriedade.Nunca,
@@ -51,7 +65,7 @@ public sealed class SubmeterInscricaoRespostasCondicionaisTests
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         Emitido(inscricao).TodasAsRespostas().Should().ContainKey("PRECISA_ATENDIMENTO").And.NotContainKey("CONDICAO_DESCRITA");
-        inscricao.Respostas.Should().NotContainKey("CONDICAO_DESCRITA", "a inscrição enviada guarda só o que se aplica");
+        inscricao.Formulario.Preenchimento.Respostas.Should().NotContainKey("CONDICAO_DESCRITA", "a inscrição enviada guarda só o que se aplica");
     }
 
     [Fact(DisplayName = "Com sim e a conta sem nome social, o envio recusa o campo só com a orientação do Meu perfil, no lugar da obrigatoriedade genérica")]
@@ -63,7 +77,7 @@ public sealed class SubmeterInscricaoRespostasCondicionaisTests
 
         resultado.Errors.Where(e => e.Field == "NOME_SOCIAL").Select(static e => e.Error.Code)
             .Should().Equal(InscricaoErrorCodes.NomeSocialAusenteNaConta);
-        inscricao.Comprovantes.Should().BeEmpty();
+        GravouComprovante(inscricao).Should().BeFalse("a recusa não grava comprovante");
     }
 
     [Fact(DisplayName = "Com sim e o nome social da conta, o envio passa e grava o nome social")]
@@ -79,7 +93,7 @@ public sealed class SubmeterInscricaoRespostasCondicionaisTests
             nomeSocialDaConta: PersonasDeTeste.NomeSocialFernandaDrumond);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        inscricao.Respostas.Should().ContainKey("NOME_SOCIAL");
+        inscricao.Formulario.Preenchimento.Respostas.Should().ContainKey("NOME_SOCIAL");
     }
 
     [Fact(DisplayName = "Com não, o envio passa e não grava o nome social, ainda que a conta tenha um")]
@@ -95,23 +109,16 @@ public sealed class SubmeterInscricaoRespostasCondicionaisTests
             nomeSocialDaConta: PersonasDeTeste.NomeSocialFernandaDrumond);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        inscricao.Respostas.Should().NotContainKey("NOME_SOCIAL");
+        inscricao.Formulario.Preenchimento.Respostas.Should().NotContainKey("NOME_SOCIAL");
         Emitido(inscricao).TodasAsRespostas().Should().NotContainKey("NOME_SOCIAL");
     }
 
     [Fact(DisplayName = "O grupo que outra resposta esconde é descartado inteiro no envio")]
     public async Task Handle_GrupoOculto_EDescartadoInteiro()
     {
-        GrupoColetado dependentes = GrupoColetado.Criar(
-            "DEPENDENTES", 2, FormularioDeTeste.Secao, "Dependentes", minimo: 0, maximo: null,
-            PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("TEM_DEPENDENTES", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!,
-            Obrigatoriedade.Nunca,
-            [FatoColetado.Criar("NOME_DEPENDENTE", 0, "Nome", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", formato: "LIVRE", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!],
-            FinalidadeFormulario.Inscricao).Value!;
-
         (Result<ReciboDaInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
             [Pergunta("TEM_DEPENDENTES", 1)],
-            [dependentes],
+            [GrupoDeDependentes()],
             new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["TEM_DEPENDENTES"] = JsonSerializer.SerializeToElement(false) },
             new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>>(StringComparer.Ordinal)
             {
@@ -120,33 +127,42 @@ public sealed class SubmeterInscricaoRespostasCondicionaisTests
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         Emitido(inscricao).Grupos.Should().NotContainKey("DEPENDENTES");
-        inscricao.Grupos.Should().NotContainKey("DEPENDENTES");
+        inscricao.Formulario.Preenchimento.Grupos.Should().NotContainKey("DEPENDENTES");
     }
 
     [Fact(DisplayName = "No grupo que aparece, a resposta ao subitem que a ocorrência esconde é descartada, e a dos demais subitens fica")]
     public async Task Handle_SubitemOcultoNaOcorrencia_EDescartado()
     {
-        GrupoColetado composicao = GrupoColetado.Criar(
-            "COMPOSICAO_FAMILIAR", 1, FormularioDeTeste.Secao, "Composição familiar", minimo: 0, maximo: null, exibicao: null,
-            Obrigatoriedade.Nunca,
-            [Pergunta("MEMBRO_TEM_RENDA", 0), SoComSim("RENDA_DO_MEMBRO", 1, "MEMBRO_TEM_RENDA")],
-            FinalidadeFormulario.Inscricao).Value!;
-
         (Result<ReciboDaInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
             [],
-            [composicao],
+            [GrupoDeComposicao()],
             new Dictionary<string, JsonElement>(StringComparer.Ordinal),
-            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>>(StringComparer.Ordinal)
-            {
-                ["COMPOSICAO_FAMILIAR"] = [new("membro-1", new Dictionary<string, JsonElement>(StringComparer.Ordinal)
-                {
-                    ["MEMBRO_TEM_RENDA"] = JsonSerializer.SerializeToElement(false),
-                    ["RENDA_DO_MEMBRO"] = JsonSerializer.SerializeToElement("1500"),
-                })],
-            });
+            RespostasDaComposicao());
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         Emitido(inscricao).Grupos["COMPOSICAO_FAMILIAR"].Single().Respostas.Should().ContainKey("MEMBRO_TEM_RENDA").And.NotContainKey("RENDA_DO_MEMBRO");
-        inscricao.Grupos["COMPOSICAO_FAMILIAR"].Single().Respostas.Should().NotContainKey("RENDA_DO_MEMBRO");
+        inscricao.Formulario.Preenchimento.Grupos["COMPOSICAO_FAMILIAR"].Single().Respostas.Should().NotContainKey("RENDA_DO_MEMBRO");
     }
+
+    private static GrupoColetado GrupoDeDependentes() => GrupoColetado.Criar(
+        "DEPENDENTES", 2, FormularioDeTeste.Secao, "Dependentes", minimo: 0, maximo: null,
+        PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("TEM_DEPENDENTES", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!,
+        Obrigatoriedade.Nunca,
+        [FatoColetado.Criar("NOME_DEPENDENTE", 0, "Nome", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", formato: "LIVRE", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!],
+        FinalidadeFormulario.Inscricao).Value!;
+
+    private static GrupoColetado GrupoDeComposicao() => GrupoColetado.Criar(
+        "COMPOSICAO_FAMILIAR", 1, FormularioDeTeste.Secao, "Composição familiar", minimo: 0, maximo: null, exibicao: null,
+        Obrigatoriedade.Nunca,
+        [Pergunta("MEMBRO_TEM_RENDA", 0), SoComSim("RENDA_DO_MEMBRO", 1, "MEMBRO_TEM_RENDA")],
+        FinalidadeFormulario.Inscricao).Value!;
+
+    private static Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>> RespostasDaComposicao() => new(StringComparer.Ordinal)
+    {
+        ["COMPOSICAO_FAMILIAR"] = [new("membro-1", new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+        {
+            ["MEMBRO_TEM_RENDA"] = JsonSerializer.SerializeToElement(false),
+            ["RENDA_DO_MEMBRO"] = JsonSerializer.SerializeToElement("1500"),
+        })],
+    };
 }

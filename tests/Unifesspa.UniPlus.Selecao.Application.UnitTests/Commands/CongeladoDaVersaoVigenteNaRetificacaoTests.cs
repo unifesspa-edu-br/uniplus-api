@@ -41,6 +41,6 @@ public sealed class CongeladoDaVersaoVigenteNaRetificacaoTests
     }
 
     private static void ConferirClassificacaoCongeladaDaVersaoVigente(CenarioDeRetificacaoPublicada cenario) =>
-        cenario.EntradaCanonicalizada!.TiposDeAtoCongelados![AtoDaClassificacao].Should().Be(
+        cenario.EntradaCanonicalizada!.DadosDeCatalogo.TiposDeAtoCongelados![AtoDaClassificacao].Should().Be(
             new TipoDeAtoCongelado(AtoDaClassificacao, UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false));
 }

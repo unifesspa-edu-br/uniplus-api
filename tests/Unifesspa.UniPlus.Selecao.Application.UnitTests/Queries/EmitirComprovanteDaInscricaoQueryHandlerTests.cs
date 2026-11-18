@@ -22,7 +22,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-
 /// <summary>
 /// A unidade emite o comprovante de qualquer inscrição do processo, inclusive a cancelada, se alcança as inscrições e tem a
 /// permissão de emitir. O comprovante só é lido depois das duas decisões.
@@ -40,7 +39,7 @@ public sealed class EmitirComprovanteDaInscricaoQueryHandlerTests
     {
         InscricaoAdministrativaDeTeste.Mundo mundo = cenario.Montar();
         Inscricao inscricao = (await mundo.Inscricoes.ObterPorIdAsync(cenario.InscricaoId, CancellationToken.None))!;
-        mundo.Inscricoes.ObterComprovanteAsync(cenario.InscricaoId, 1, Arg.Any<CancellationToken>())
+        mundo.Comprovantes.ObterComprovanteAsync(cenario.InscricaoId, 1, Arg.Any<CancellationToken>())
             .Returns(new ComprovanteNaPosicao(ComprovanteDeTeste.Emitir(inscricao, ComprovanteDeTeste.Respostas()), 1, 1));
         return mundo;
     }
@@ -56,7 +55,7 @@ public sealed class EmitirComprovanteDaInscricaoQueryHandlerTests
 
         return EmitirComprovanteDaInscricaoQueryHandler.Handle(
             new EmitirComprovanteDaInscricaoQuery(processoId, inscricaoId, numero),
-            persona.Verificador, mundo.Processos, mundo.Inscricoes, montador, CancellationToken.None);
+            persona.Verificador, mundo.Processos, mundo.Inscricoes, mundo.Comprovantes, montador, CancellationToken.None);
     }
 
     [Fact(DisplayName = "Com consultar e emitir, a inscrição enviada sai sem cancelamento")]
@@ -67,8 +66,8 @@ public sealed class EmitirComprovanteDaInscricaoQueryHandlerTests
         Result<ComprovanteDaInscricaoDto> resultado = await Pedir(await Montar(cenario), ComAsDuas(), cenario.ProcessoId, cenario.InscricaoId);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!.InscricaoId.Should().Be(cenario.InscricaoId);
-        resultado.Value.Cancelamento.Should().BeNull();
+        resultado.Value!.Inscricao.InscricaoId.Should().Be(cenario.InscricaoId);
+        resultado.Value.Inscricao.Cancelamento.Should().BeNull();
     }
 
     [Fact(DisplayName = "A inscrição cancelada também sai, identificada como cancelada com a data e sem prazo de correção")]
@@ -80,9 +79,9 @@ public sealed class EmitirComprovanteDaInscricaoQueryHandlerTests
         Result<ComprovanteDaInscricaoDto> resultado = await Pedir(await Montar(cenario), ComAsDuas(), cenario.ProcessoId, cenario.InscricaoId);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!.Cancelamento.Should().Be(new CancelamentoNoComprovanteDto(
+        resultado.Value!.Inscricao.Cancelamento.Should().Be(new CancelamentoNoComprovanteDto(
             CanceladaEm, "Mudei de curso", "Documento sem validade: inscrição cancelada em 07/11/2026 às 22:32:05"));
-        resultado.Value.PrazoDaCorrecao.Should().BeNull();
+        resultado.Value.Inscricao.PrazoDaCorrecao.Should().BeNull();
     }
 
     [Fact(DisplayName = "A cancelada sem motivo sai com o motivo nulo")]
@@ -93,7 +92,7 @@ public sealed class EmitirComprovanteDaInscricaoQueryHandlerTests
 
         Result<ComprovanteDaInscricaoDto> resultado = await Pedir(await Montar(cenario), ComAsDuas(), cenario.ProcessoId, cenario.InscricaoId);
 
-        resultado.Value!.Cancelamento!.Motivo.Should().BeNull();
+        resultado.Value!.Inscricao.Cancelamento!.Motivo.Should().BeNull();
     }
 
     [Fact(DisplayName = "Consultar sem emitir recusa com 403 e não lê o comprovante")]
@@ -106,7 +105,7 @@ public sealed class EmitirComprovanteDaInscricaoQueryHandlerTests
             mundo, Diogo(PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosSensiveisConsultar), cenario.ProcessoId, cenario.InscricaoId);
 
         resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.SemPermissaoNaUnidade);
-        await mundo.Inscricoes.DidNotReceiveWithAnyArgs().ObterComprovanteAsync(default, default, default);
+        await mundo.Comprovantes.DidNotReceiveWithAnyArgs().ObterComprovanteAsync(default, default, default);
     }
 
     [Fact(DisplayName = "Emitir sem consultar as inscrições responde o 404 da inscrição que não se alcança, sem ler o comprovante")]
@@ -119,7 +118,7 @@ public sealed class EmitirComprovanteDaInscricaoQueryHandlerTests
             mundo, Diogo(PermissaoSelecao.InscricoesEmitirComprovante), cenario.ProcessoId, cenario.InscricaoId);
 
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.NaoEncontrada);
-        await mundo.Inscricoes.DidNotReceiveWithAnyArgs().ObterComprovanteAsync(default, default, default);
+        await mundo.Comprovantes.DidNotReceiveWithAnyArgs().ObterComprovanteAsync(default, default, default);
     }
 
     [Theory(DisplayName = "A inscrição de outro processo e a inexistente respondem 404 mesmo a quem tem as duas permissões")]
@@ -135,7 +134,7 @@ public sealed class EmitirComprovanteDaInscricaoQueryHandlerTests
         Result<ComprovanteDaInscricaoDto> resultado = await Pedir(mundo, ComAsDuas(), processo, inscricao);
 
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.NaoEncontrada);
-        await mundo.Inscricoes.DidNotReceiveWithAnyArgs().ObterComprovanteAsync(default, default, default);
+        await mundo.Comprovantes.DidNotReceiveWithAnyArgs().ObterComprovanteAsync(default, default, default);
     }
 
     [Fact(DisplayName = "O comprovante que a inscrição não tem responde comprovante não encontrado")]

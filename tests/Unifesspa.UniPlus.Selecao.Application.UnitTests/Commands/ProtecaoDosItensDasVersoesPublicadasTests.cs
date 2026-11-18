@@ -28,7 +28,7 @@ public sealed class ProtecaoDosItensDasVersoesPublicadasTests
     {
         CenarioDeRetificacaoPublicada cenario = CenarioDeRetificacaoPublicada.Publicado();
         EnvelopeReidratado publicado = await PrepararHistoricoAsync(cenario, duasVersoes);
-        FatoColetado itemPublicado = publicado.Grafo.FatosColetados.Single(static f => f.FatoCodigo == Fato);
+        FatoColetado itemPublicado = publicado.Configuracao.Coleta.Itens.Single(static f => f.FatoCodigo == Fato);
         (string hipotese, string finalidade) = (itemPublicado.HipoteseLegal, itemPublicado.FinalidadeTratamento);
         await CorrigirCatalogoAsync(cenario);
 
@@ -47,7 +47,7 @@ public sealed class ProtecaoDosItensDasVersoesPublicadasTests
     {
         CenarioDeRetificacaoPublicada cenario = CenarioDeRetificacaoPublicada.Publicado(new SituacaoDoFatoCitado { ComItemNovo = true });
         EnvelopeReidratado publicado = await PrepararHistoricoAsync(cenario, duasVersoes: false);
-        publicado.Grafo.FatosColetados.Should().NotContain(static f => f.FatoCodigo == FatoNovo);
+        publicado.Configuracao.Coleta.Itens.Should().NotContain(static f => f.FatoCodigo == FatoNovo);
         await CorrigirCatalogoAsync(cenario);
 
         (Result resposta, _) = await cenario.RetificarAsync();
@@ -86,7 +86,7 @@ public sealed class ProtecaoDosItensDasVersoesPublicadasTests
         EnvelopeReidratado historico = new(
             Unifesspa.UniPlus.Testes.Compartilhado.VersoesPublicadasDeTeste.DoProcesso(antigo),
             vigente.Dados, vigente.HashDocumento, vigente.FusoHorario, null, null,
-            metadadosFatosCongelados: vigente.MetadadosFatosCongelados);
+            new DadosDeCatalogoDaConfiguracaoPublicada(vigente.DadosDeCatalogo.MetadadosFatosCongelados));
         cenario.Servicos.Codecs.Reidratar(versoes[0]).Returns(Result<EnvelopeReidratado>.Success(historico));
     }
 

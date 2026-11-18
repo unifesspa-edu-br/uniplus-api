@@ -61,14 +61,53 @@ public sealed class ParidadeExigenciasDocumentaisTests
         processo.DefinirAtendimentoEspecializado(
             AtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
 
-        DefinirOfertaDeAmplaConcorrencia(processo);
-        DefinirClassificacaoImportada(processo);
-        processo.DefinirOpcoesDeCurso(1).IsSuccess.Should().BeTrue();
+        DefinirDistribuicao(processo);
 
-        DefinirCronogramaEEtapas(processo);
+        DefinirClassificacao(processo);
+
+        DefinirCronograma(processo);
 
         return processo;
     }
+
+    private static void DefinirDistribuicao(ProcessoSeletivo processo)
+    {
+        ModalidadeSelecionada modalidade = ModalidadeAmpla();
+        ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo), Modalidades = [modalidade] },
+            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
+        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
+    }
+
+    private static void DefinirClassificacao(ProcessoSeletivo processo)
+    {
+        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo),
+            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo),
+        }).Value!).IsSuccess.Should().BeTrue();
+        processo.DefinirOpcoesDeCurso(1).IsSuccess.Should().BeTrue();
+    }
+
+    private static void DefinirCronograma(ProcessoSeletivo processo)
+    {
+        FaseCronograma fase = FaseDeResultadoFinal();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([
+            EtapaProcesso.Criar(
+                new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
+                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
+        ]).IsSuccess.Should().BeTrue();
+    }
+
+    private static ModalidadeSelecionada ModalidadeAmpla() => ModalidadeSelecionada.Criar(
+        modalidadeOrigemId: Guid.CreateVersion7(), codigo: "AC", descricao: null,
+        naturezaLegal: NaturezaLegalModalidade.Ampla,
+        composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
+        composicaoOrigemCodigo: null, regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
+        remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
+        regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
+        acaoQuandoIndeferido: null, baseLegal: "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!;
 
     private static DocumentoExigido ExigenciaGeral(Guid exigidoNaFaseId, string tipoDocumentoCodigo) => DocumentoExigido.Criar(
         exigidoNaFaseId,
@@ -82,7 +121,7 @@ public sealed class ParidadeExigenciasDocumentaisTests
         condicoes: [], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
 
     private static SnapshotCanonico Canonicalizar(ProcessoSeletivo processo) =>
-        Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
+        Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId, Retificacao: null, Conformidade: null, DadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)));
 
     private static JsonObject Envelope(SnapshotCanonico snapshot) =>
         JsonNode.Parse(System.Text.Encoding.UTF8.GetString(snapshot.Bytes))!.AsObject();
@@ -98,15 +137,25 @@ public sealed class ParidadeExigenciasDocumentaisTests
         DocumentoExigido exigenciaA = ExigenciaGeral(faseId, "IDENTIDADE");
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigenciaA, 0).Value!]).IsSuccess.Should().BeTrue();
 
-        JsonObject envelope = Envelope(Canonicalizar(processo));
+        SnapshotCanonico congelado = Canonicalizar(processo);
+        JsonObject envelope = Envelope(congelado);
         ExigenciasCongeladas(envelope).Should().BeEquivalentTo([exigenciaA.Id]);
 
+        ConferirInclusaoPosterior(processo, faseId, exigenciaA, envelope);
+    }
+
+    private static void ConferirInclusaoPosterior(ProcessoSeletivo processo, Guid faseId, DocumentoExigido exigenciaA, JsonObject envelope)
+    {
+        // O envelope acima já está congelado (bytes fixos, como VersaoConfiguracao.Abrir
+        // produziria) — o que acontece DEPOIS na configuração viva nunca o altera.
         DocumentoExigido exigenciaB = ExigenciaGeral(faseId, "COMPROVANTE_RESIDENCIA");
         processo.DefinirDocumentosExigidos(
             [NoExigencia.CriarFolha(exigenciaA, 0).Value!, NoExigencia.CriarFolha(exigenciaB, 1).Value!]).IsSuccess.Should().BeTrue();
-        processo.DocumentosExigidos.Select(static d => d.Id).Should().Contain(exigenciaB.Id);
+        processo.DocumentosExigidos.Select(static d => d.Id).Should().Contain(exigenciaB.Id,
+            "pré-condição: a exigência B está viva no agregado");
 
-        ExigenciasCongeladas(envelope).Should().NotContain(exigenciaB.Id);
+        ExigenciasCongeladas(envelope).Should().NotContain(exigenciaB.Id,
+            "órfã viva (CA-11): configurada depois do congelamento, não tem — e nunca terá — item correspondente NESTE envelope");
     }
 
     [Fact(DisplayName = "CA-11: exigência removida da configuração viva permanece no envelope já congelado — órfã congelada")]
@@ -119,63 +168,23 @@ public sealed class ParidadeExigenciasDocumentaisTests
         processo.DefinirDocumentosExigidos(
             [NoExigencia.CriarFolha(exigenciaA, 0).Value!, NoExigencia.CriarFolha(exigenciaB, 1).Value!]).IsSuccess.Should().BeTrue();
 
-        JsonObject envelopeV1 = Envelope(Canonicalizar(processo));
+        SnapshotCanonico congeladoV1 = Canonicalizar(processo);
+        JsonObject envelopeV1 = Envelope(congeladoV1);
         ExigenciasCongeladas(envelopeV1).Should().BeEquivalentTo([exigenciaA.Id, exigenciaB.Id]);
 
+        ConferirRemocaoPosterior(processo, exigenciaA, exigenciaB, envelopeV1);
+    }
+
+    private static void ConferirRemocaoPosterior(ProcessoSeletivo processo, DocumentoExigido exigenciaA, DocumentoExigido exigenciaB, JsonObject envelopeV1)
+    {
+        // Retificação que remove B (ex.: exigência cadastrada por engano) — só na
+        // configuração VIVA; o envelope V1, já congelado, é outro objeto, imutável.
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigenciaA, 0).Value!]).IsSuccess.Should().BeTrue();
-        processo.DocumentosExigidos.Select(static d => d.Id).Should().NotContain(exigenciaB.Id);
+        processo.DocumentosExigidos.Select(static d => d.Id).Should().NotContain(exigenciaB.Id,
+            "pré-condição: B não está mais viva no agregado");
 
-        ExigenciasCongeladas(envelopeV1).Should().Contain(exigenciaB.Id);
+        ExigenciasCongeladas(envelopeV1).Should().Contain(exigenciaB.Id,
+            "órfã congelada (CA-11): o envelope V1 é append-only (ADR-0104) — remover a exigência da configuração " +
+            "viva não apaga o item já congelado em versões anteriores");
     }
-
-    private static void DefinirOfertaDeAmplaConcorrencia(ProcessoSeletivo processo)
-    {
-        ModalidadeSelecionada modalidade = ModalidadeAmpla();
-        ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo), Modalidades = [modalidade] },
-            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
-    }
-
-
-    private static ModalidadeSelecionada ModalidadeAmpla()
-    {
-        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
-            modalidadeOrigemId: Guid.CreateVersion7(),
-            codigo: "AC",
-            descricao: null,
-            naturezaLegal: NaturezaLegalModalidade.Ampla,
-            composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            composicaoOrigemCodigo: null,
-            regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
-            remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
-            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
-            acaoQuandoIndeferido: null,
-            baseLegal: "Res. Unifesspa 532/2021",
-            quantidadeDeclarada: 40).Value!;
-        return modalidade;
-    }
-
-
-    private static void DefinirClassificacaoImportada(ProcessoSeletivo processo)
-    {
-        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
-        {
-            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo),
-            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo),
-        }).Value!).IsSuccess.Should().BeTrue();
-    }
-
-
-    private static void DefinirCronogramaEEtapas(ProcessoSeletivo processo)
-    {
-        FaseCronograma fase = FaseDeResultadoFinal();
-        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
-        processo.DefinirEtapas([
-            EtapaProcesso.Criar(
-                new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
-                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
-        ]).IsSuccess.Should().BeTrue();
-    }
-
 }

@@ -34,7 +34,7 @@ public sealed class JanelaDaInscricaoTests
         processo.DefinirCronogramaFases([FaseDeInscricao()], []).IsSuccess.Should().BeTrue();
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
 
-        return JanelaDaInscricao.Da(Grafo(processo), Dados(publicadaDe, publicadaAte)).Value!;
+        return JanelaDaInscricao.Da(Configuracao(processo), Dados(publicadaDe, publicadaAte)).Value!;
     }
 
     private static FaseCronograma FaseDeInscricao() => FaseCronograma.Criar(
@@ -49,12 +49,15 @@ public sealed class JanelaDaInscricaoTests
     private static DadosEdital Dados(DateTimeOffset de, DateTimeOffset ate) =>
         DadosEdital.Criar("01/2026", de, ate, Guid.CreateVersion7()).Value!;
 
-    private static GrafoConfiguracao Grafo(ProcessoSeletivo processo) => new(
-        [], AtendimentoEspecializado.Criar([], [], []).Value!, [], null, [],
-        VersoesPublicadasDeTeste.DoProcesso(processo).Classificacao, [.. processo.CronogramaFases], [], [], null,
-        formularios: [.. processo.Formularios],
-        localidade: processo.Localidade,
-            numeroDeOpcoesDeCurso: 1);
+    private static ConfiguracaoPublicada Configuracao(ProcessoSeletivo processo) => new ConfiguracaoPublicada(
+            new CronogramaDeclarado(processo.Localidade, null, [.. processo.CronogramaFases]),
+            new AvaliacaoDeclarada([], [], VersoesPublicadasDeTeste.DoProcesso(processo).Avaliacao.Classificacao),
+            new VagasDeclaradas([], 1, false,
+                null, null, AtendimentoEspecializado.Criar([], [], []).Value!),
+            new ExigenciasDeclaradas([], []),
+            new ColetaDeclarada([], [], [.. processo.Formularios], [],
+                [], [], null),
+            new DivulgacaoETaxaDeclaradas(null, null), null);
 
     [Theory(DisplayName = "No início, no fim e entre os dois, a inscrição está no período")]
     [InlineData(0)]
@@ -104,7 +107,7 @@ public sealed class JanelaDaInscricaoTests
     [Fact(DisplayName = "A versão sem formulário de inscrição não recebe inscrição pelo sistema")]
     public void Da_SemFormularioDeInscricao_Recusa()
     {
-        GrafoConfiguracao semFormulario = VersoesPublicadasDeTeste.Versao([], []);
+        ConfiguracaoPublicada semFormulario = VersoesPublicadasDeTeste.Versao([], []);
 
         Result<JanelaDaInscricao> janela = JanelaDaInscricao.Da(semFormulario, Dados(Abertura, Encerramento));
 

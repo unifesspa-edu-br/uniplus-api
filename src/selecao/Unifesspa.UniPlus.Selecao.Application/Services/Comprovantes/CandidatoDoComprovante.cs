@@ -24,7 +24,7 @@ internal static class CandidatoDoComprovante
             Texto(respostas, ConjuntoBasicoDaInscricao.Nome) ?? string.Empty,
             usaNomeSocial ? Texto(respostas, ConjuntoBasicoDaInscricao.NomeSocial) : null,
             usaNomeSocial,
-            insumos.Inscricao.Cpf.Mascarado);
+            insumos.Inscricao.Titular.Cpf.Mascarado);
     }
 
     /// <summary>As respostas sem os fatos do nome, que o cartão do titular já mostra.</summary>

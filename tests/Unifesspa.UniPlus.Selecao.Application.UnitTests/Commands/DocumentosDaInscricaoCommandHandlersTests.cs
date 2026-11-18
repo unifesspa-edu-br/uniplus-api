@@ -13,6 +13,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosDaInscricao;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using Unifesspa.UniPlus.Selecao.Application.Services;
+using Unifesspa.UniPlus.Selecao.Application.Services.Inscricoes;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -44,32 +46,45 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
     private readonly Guid _versaoId;
     private readonly VersaoConfiguracao _versao;
-    private readonly GrafoConfiguracao _grafo;
+    private readonly ConfiguracaoPublicada _grafo;
     private readonly ICertameDivulgadoRepository _certame = DivulgacaoDeTeste.Certame(ProcessoId);
 
     public DocumentosDaInscricaoCommandHandlersTests()
     {
-        (VersaoConfiguracao versao, GrafoConfiguracao conforme) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
+        (VersaoConfiguracao versao, ConfiguracaoPublicada conforme) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
         FaseCronograma faseDaInscricao = Fase(1, "INSCRICAO", coletaInscricao: true);
         FaseCronograma outraFase = Fase(2, "RESULTADO_FINAL", coletaInscricao: false);
         _laudo = Exigencia("LAUDO", faseDaInscricao.Id);
         _certidao = Exigencia("CERTIDAO", faseDaInscricao.Id);
         _deOutraFase = Exigencia("RESULTADO", outraFase.Id);
 
-        // O laudo é uma folha simples; a certidão vale por ocorrência do grupo de dependentes.
-        NoExigencia folhaLaudo = NoExigencia.CriarFolha(_laudo, 0).Value!;
-        NoExigencia folhaCertidao = NoExigencia.CriarFolha(_certidao, 1, repetePorEntidade: Grupo).Value!;
-        NoExigencia folhaOutraFase = NoExigencia.CriarFolha(_deOutraFase, 2).Value!;
-        GrafoConfiguracao grafo = new(
-            conforme.Etapas, conforme.AtendimentoEspecializado, conforme.DistribuicaoVagas, conforme.BonusRegional, conforme.CriteriosDesempate,
-            conforme.Classificacao, [faseDaInscricao, outraFase], [_laudo, _certidao, _deOutraFase], [folhaLaudo, folhaCertidao, folhaOutraFase], null,
-            fatosColetados: conforme.FatosColetados, formularios: conforme.Formularios, gruposColetados: conforme.GruposColetados,
-            numeroDeOpcoesDeCurso: 1);
+        ConfiguracaoPublicada grafo = GrafoComDocumentos(conforme, faseDaInscricao, outraFase);
         DivulgacaoDeTeste.ConfigurarVersao(_processos, _codecs, versao, grafo);
         _versaoId = versao.Id;
         _versao = versao;
         _grafo = grafo;
 
+        ConfigurarRepositorios();
+    }
+
+    private ConfiguracaoPublicada GrafoComDocumentos(ConfiguracaoPublicada conforme, FaseCronograma faseDaInscricao, FaseCronograma outraFase)
+    {
+        NoExigencia folhaLaudo = NoExigencia.CriarFolha(_laudo, 0).Value!;
+        NoExigencia folhaCertidao = NoExigencia.CriarFolha(_certidao, 1, repetePorEntidade: Grupo).Value!;
+        NoExigencia folhaOutraFase = NoExigencia.CriarFolha(_deOutraFase, 2).Value!;
+        return new ConfiguracaoPublicada(
+            new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, [faseDaInscricao, outraFase]),
+            new AvaliacaoDeclarada(conforme.Avaliacao.Etapas, conforme.Avaliacao.CriteriosDesempate, conforme.Avaliacao.Classificacao),
+            new VagasDeclaradas(conforme.Vagas.DistribuicaoVagas, 1, conforme.Vagas.BonusRegional is not null,
+                conforme.Vagas.BonusRegional, null, conforme.Vagas.AtendimentoEspecializado),
+            new ExigenciasDeclaradas([_laudo, _certidao, _deOutraFase], [folhaLaudo, folhaCertidao, folhaOutraFase]),
+            new ColetaDeclarada(ConfiguracaoPublicadaDeTeste.CamposDaColeta(conforme.Coleta.Itens, conforme.Coleta.GruposColetados), conforme.Coleta.GruposColetados, conforme.Coleta.Formularios, [],
+                [], [], null),
+            new DivulgacaoETaxaDeclaradas(null, null), null);
+    }
+
+    private void ConfigurarRepositorios()
+    {
         _storage.GerarUrlUploadAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
             .Returns("https://armazenamento.exemplo/envio");
         _inscricoes.TentarAvancarRevisaoAsync(Arg.Any<Guid>(), Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<CancellationToken>()).Returns(true);
@@ -96,11 +111,11 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
         {
             [Grupo] = [.. dependentes.Select(id => new OcorrenciaDeGrupoInscricao(id, new Dictionary<string, System.Text.Json.JsonElement>(StringComparer.Ordinal)))],
         };
-        Inscricao inscricao = Inscricao.Reidratar(
-            Guid.CreateVersion7(), ProcessoId, Dono, "conta-1", "https://issuer", SituacaoInscricao.Rascunho, _versaoId, null, null, null,
-            null, null, null, new Dictionary<string, System.Text.Json.JsonElement>(StringComparer.Ordinal),
-            new Dictionary<string, System.Text.Json.JsonElement>(StringComparer.Ordinal), grupos, [],
-            new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal), revisao: 3, DateTimeOffset.UnixEpoch, null);
+        Inscricao inscricao = Inscricao.Reidratar(Guid.CreateVersion7(), ProcessoId,
+            TitularDaInscricao.Reidratar(Dono, "conta-1", "https://issuer"),
+            EstadoDaInscricao.Reidratar(SituacaoInscricao.Rascunho, null, CancelamentoDaInscricao.Reidratar(null, null, null)),
+            FormularioDaInscricao.Reidratar(_versaoId, PreenchimentoDoCandidato.Criar(OpcoesDeCursoDaInscricao.Reidratar(null, null), new Dictionary<string, System.Text.Json.JsonElement>(StringComparer.Ordinal), grupos, []),
+                new Dictionary<string, System.Text.Json.JsonElement>(StringComparer.Ordinal), new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal)), 3, new Unifesspa.UniPlus.Selecao.Domain.ValueObjects.DatasDeGravacaoDaInscricao(default, null));
         _inscricoes.ObterAtivaPorProcessoECpfAsync(ProcessoId, Dono, Arg.Any<CancellationToken>()).Returns(inscricao);
         return inscricao;
     }
@@ -115,22 +130,27 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
 
     private Task<Result<IniciarEnvioDeDocumentoDaInscricaoDto>> Iniciar(
         DocumentoExigido exigencia, string? ocorrenciaId = null, Guid? apresentacaoId = null, DateTimeOffset? agora = null) =>
-        IniciarEnvioDeDocumentoDaInscricaoCommandHandler.Handle(
-            new IniciarEnvioDeDocumentoDaInscricaoCommand(ProcessoId, exigencia.Id, ocorrenciaId, apresentacaoId, "application/pdf", 2048),
-            _inscricoes, _processos, _certame, _codecs, DivulgacaoDeTeste.Fuso(), _documentos, _storage, _unitOfWork, Usuario(),
-            new RelogioFixo(agora ?? DivulgacaoDeTeste.DentroDoPeriodo), CancellationToken.None);
+        IniciarEnvioDeDocumentoDaInscricaoCommandHandler.Handle(new IniciarEnvioDeDocumentoDaInscricaoCommand(ProcessoId, exigencia.Id, ocorrenciaId, apresentacaoId, "application/pdf", 2048),
+            Acesso(relogio: new RelogioFixo(agora ?? DivulgacaoDeTeste.DentroDoPeriodo)),
+            new InicioDoEnvioDeDocumento(new VersaoDaInscricaoResolver(_certame, _processos, _codecs),
+                new ContextoDaVersaoFixadaResolver(_processos, _codecs), _inscricoes, _documentos, _storage, new RelogioFixo(agora ?? DivulgacaoDeTeste.DentroDoPeriodo)),
+            _unitOfWork, CancellationToken.None);
 
-    private Task<(Result<ArquivoDaApresentacaoDto> Resposta, IEnumerable<object> Mensagens)> Confirmar(Guid arquivoId) =>
-        ConfirmarEnvioDeDocumentoDaInscricaoCommandHandler.Handle(
-            new ConfirmarEnvioDeDocumentoDaInscricaoCommand(ProcessoId, arquivoId, "\"etag-do-put\""),
-            _inscricoes, _processos, _certame, _codecs, DivulgacaoDeTeste.Fuso(), _documentos, _unitOfWork,
-            Options.Create(new ReconciliacaoDaVerificacaoOptions()), Usuario(), DivulgacaoDeTeste.Relogio, CancellationToken.None);
+    private Task<(Result<ArquivoDaApresentacaoDto> Resposta, IEnumerable<object> Mensagens)> Confirmar(Guid arquivoId, IUserContext? usuario = null) =>
+        ConfirmarEnvioDeDocumentoDaInscricaoCommandHandler.Handle(new ConfirmarEnvioDeDocumentoDaInscricaoCommand(ProcessoId, arquivoId, "\"etag-do-put\""),
+            Acesso(usuario), Confirmacao(), _unitOfWork, CancellationToken.None);
+
+    private AcessoAoDocumentoDaInscricao Acesso(IUserContext? usuario = null, TimeProvider? relogio = null) =>
+        new(_inscricoes, _documentos, usuario ?? Usuario(),
+            new PeriodoDaInscricaoResolver(_certame, _processos, _codecs, DivulgacaoDeTeste.Fuso()), relogio ?? DivulgacaoDeTeste.Relogio);
+
+    private ConfirmacaoDoEnvioDeDocumento Confirmacao() =>
+        new(_inscricoes, _documentos, new DocumentosEnviadosDaInscricao(_documentos),
+            Options.Create(new ReconciliacaoDaVerificacaoOptions()), DivulgacaoDeTeste.Relogio);
 
     private Task<Result> Remover(Guid arquivoId) =>
-        RemoverArquivoDaInscricaoCommandHandler.Handle(
-            new RemoverArquivoDaInscricaoCommand(ProcessoId, arquivoId),
-            _inscricoes, _processos, _certame, _codecs, DivulgacaoDeTeste.Fuso(), _documentos, _unitOfWork,
-            Usuario(), DivulgacaoDeTeste.Relogio, CancellationToken.None);
+        RemoverArquivoDaInscricaoCommandHandler.Handle(new RemoverArquivoDaInscricaoCommand(ProcessoId, arquivoId), Acesso(),
+            new RemocaoDoArquivoDaInscricao(_inscricoes, _documentos, DivulgacaoDeTeste.Relogio), _unitOfWork, CancellationToken.None);
 
     private ArquivoDaApresentacao ArquivoPendente(Inscricao inscricao, TimeProvider? relogio = null)
     {
@@ -142,6 +162,20 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
         _documentos.ListarApresentacoesDaInscricaoAsync(inscricao.Id, Arg.Any<CancellationToken>()).Returns([apresentacao]);
         _documentos.ListarArquivosDaInscricaoAsync(inscricao.Id, Arg.Any<CancellationToken>()).Returns([arquivo]);
         return arquivo;
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("inválido")]
+    public async Task Confirmar_CpfAusenteOuInvalido_RecusaSemLerInscricao(string? cpf)
+    {
+        IUserContext usuario = Substitute.For<IUserContext>();
+        usuario.Cpf.Returns(cpf);
+        (Result<ArquivoDaApresentacaoDto> resposta, IEnumerable<object> mensagens) = await Confirmar(Guid.CreateVersion7(), usuario);
+        resposta.Error!.Code.Should().Be("Inscricao.CpfAusenteNoToken");
+        mensagens.Should().BeEmpty();
+        await _inscricoes.DidNotReceiveWithAnyArgs().ObterAtivaPorProcessoECpfAsync(default, default!, default);
+        await _unitOfWork.DidNotReceiveWithAnyArgs().SalvarAlteracoesAsync(default);
     }
 
     [Fact(DisplayName = "Iniciar o envio de uma exigência da versão da inscrição cria a apresentação e o arquivo pendente e devolve a URL")]
@@ -184,7 +218,7 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
 
         (await Iniciar(_laudo)).IsSuccess.Should().BeTrue();
 
-        inscricao.VersaoFormularioId.Should().Be(divulgada.Id);
+        inscricao.Formulario.VersaoFormularioId.Should().Be(divulgada.Id);
         await _inscricoes.Received(1).AtualizarAsync(inscricao, Arg.Any<CancellationToken>());
         await _inscricoes.DidNotReceive().TentarAvancarRevisaoAsync(Arg.Any<Guid>(), Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
     }
@@ -298,10 +332,8 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
         Inscricao inscricao = Rascunho();
         ArquivoDaApresentacao arquivo = ArquivoPendente(inscricao);
 
-        (Result<ArquivoDaApresentacaoDto> resposta, IEnumerable<object> mensagens) = await ConfirmarEnvioDeDocumentoDaInscricaoCommandHandler.Handle(
-            new ConfirmarEnvioDeDocumentoDaInscricaoCommand(ProcessoId, arquivo.Id, "  "),
-            _inscricoes, _processos, _certame, _codecs, DivulgacaoDeTeste.Fuso(), _documentos, _unitOfWork,
-            Options.Create(new ReconciliacaoDaVerificacaoOptions()), Usuario(), DivulgacaoDeTeste.Relogio, CancellationToken.None);
+        (Result<ArquivoDaApresentacaoDto> resposta, IEnumerable<object> mensagens) = await ConfirmarEnvioDeDocumentoDaInscricaoCommandHandler.Handle(new ConfirmarEnvioDeDocumentoDaInscricaoCommand(ProcessoId, arquivo.Id, "  "),
+            Acesso(), Confirmacao(), _unitOfWork, CancellationToken.None);
 
         resposta.Error!.Code.Should().Be(DocumentoDaInscricaoErrorCodes.ETagObrigatorio);
         mensagens.Should().BeEmpty();
@@ -345,15 +377,20 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
         (Result<ArquivoDaApresentacaoDto> resposta, IEnumerable<object> mensagens) = await Confirmar(arquivo.Id);
 
         resposta.IsSuccess.Should().BeTrue();
-        resposta.Value!.Situacao.Should().Be(SituacaoDoArquivoDoCandidato.EmVerificacao);
-        resposta.Value.Mensagem.Should().Be("Arquivo em verificação. Isso costuma levar poucos segundos.");
-        resposta.Value.Rotulo.Should().Be("Arquivo 1");
-        resposta.Value.NomeParaDownload.Should().BeNull("o hash só existe depois da verificação");
+        ConferirRespostaDaConfirmacao(resposta.Value!);
         mensagens.Should().ContainSingle().Which.Should().Be(new PedidoDeVerificacaoDeArquivo(
             arquivo.Id, arquivo.ObjectKey, "\"etag-do-put\"", arquivo.ChaveDefinitivaPrevista, FormatoDoArquivo.Pdf, arquivo.TamanhoMaximoBytes));
         _documentos.Received(1).Atualizar(arquivo);
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
         await _storage.ReceivedWithAnyArgs(0).RemoverDefinitivoAsync(default!, default);
+    }
+
+    private static void ConferirRespostaDaConfirmacao(ArquivoDaApresentacaoDto resposta)
+    {
+        resposta.Situacao.Should().Be(SituacaoDoArquivoDoCandidato.EmVerificacao);
+        resposta.Mensagem.Should().Be("Arquivo em verificação. Isso costuma levar poucos segundos.");
+        resposta.Rotulo.Should().Be("Arquivo 1");
+        resposta.NomeParaDownload.Should().BeNull("o hash só existe depois da verificação");
     }
 
     [Fact(DisplayName = "Remover o arquivo pendente do rascunho apaga o registro e não agenda nada: o bucket de envio expira sozinho")]

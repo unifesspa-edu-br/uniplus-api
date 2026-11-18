@@ -26,7 +26,6 @@ public sealed class PropriedadesDeReferenciaDeRegraTests
             "DistribuicaoDeVagasDeclarada.RegraDeDistribuicao",
             "EtapaDeclarada.RegraConsolidacao",
             "EtapaProcesso.RegraConsolidacao",
-            "GrafoConfiguracao.AlgoritmoContagemPrazo",
             "IdentificacaoLida.AlgoritmoDeContagem",
             "ProcedimentoDeRecursoDeclarado.Regra",
             "ProcessoSeletivo.AlgoritmoContagemPrazo",

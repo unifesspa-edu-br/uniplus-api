@@ -152,13 +152,13 @@ public sealed class ConferenciaDaConfiguracaoAoCongelar(
         ProcessoSeletivo processo, AtoEDocumentoConferidos ato, OrigemDoCongelamento origem, LeiturasDoCongelamento lidos, OperacaoConferida daOperacao) =>
         new(
             processo, daOperacao.Documentos.Dados!, ato.Documento.HashSha256!, lidos.Fuso.Id,
-            Retificacao: origem.Retificacao,
-            Conformidade: daOperacao.Documentos.Conformidade,
-            MetadadosFatosCongelados: daOperacao.Fatos.Metadados,
-            ValoresSelecionaveisCongelados: daOperacao.Fatos.Valores,
-            AgregadosDosGrupos: daOperacao.Fatos.Agregados,
-            ApresentacaoDosPressupostos: daOperacao.Fatos.Avaliavel!.ApresentacaoDosPressupostos,
-            TiposDeAtoCongelados: daOperacao.Documentos.TiposDeAto,
-            FatosDerivadosCongelados: lidos.Recopiado.Protecao.FatosDerivados);
+            origem.Retificacao, daOperacao.Documentos.Conformidade,
+            new DadosDeCatalogoDaConfiguracaoPublicada(
+                MetadadosFatosCongelados: daOperacao.Fatos.Metadados,
+                ValoresSelecionaveisCongelados: daOperacao.Fatos.Valores,
+                AgregadosDosGrupos: daOperacao.Fatos.Agregados,
+                ApresentacaoDosPressupostos: daOperacao.Fatos.Avaliavel!.ApresentacaoDosPressupostos,
+                TiposDeAtoCongelados: daOperacao.Documentos.TiposDeAto,
+                FatosDerivadosCongelados: lidos.Recopiado.Protecao.FatosDerivados));
 
 }

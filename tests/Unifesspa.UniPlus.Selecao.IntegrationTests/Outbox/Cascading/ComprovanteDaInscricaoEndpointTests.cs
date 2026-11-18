@@ -103,27 +103,12 @@ public sealed class ComprovanteDaInscricaoEndpointTests
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"Comprovante {Guid.CreateVersion7()}" });
-        Cpf cpf = PersonasDeTeste.FernandaDrumond;
-        bool cancelada = situacao == SituacaoInscricao.Cancelada;
-        Inscricao inscricao = Inscricao.Reidratar(
-            Guid.CreateVersion7(), processo.Id, cpf, Dono, TestAuthHandler.DefaultIssuer, situacao, Guid.CreateVersion7(), null, null,
-            "000001", cancelada ? DateTimeOffset.UtcNow : null, cancelada ? Dono : null, cancelada ? "a pedido do candidato" : null,
-            new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["CPF"] = JsonSerializer.SerializeToElement(cpf.Valor) },
-            new Dictionary<string, JsonElement>(StringComparer.Ordinal),
-            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [],
-            new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal)
-            {
-                ["CPF"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: true),
-            },
-            revisao: 1, DateTimeOffset.UtcNow, null);
+        Inscricao inscricao = InscricaoNaSituacao(processo.Id, situacao);
         IInscricaoRepository repositorio = escopo.ServiceProvider.GetRequiredService<IInscricaoRepository>();
         await repositorio.AdicionarAsync(inscricao);
         if (comComprovante)
         {
-            await repositorio.AdicionarComprovanteAsync(ComprovanteInscricao.Emitir(
-                inscricao.Id, "000001", DateTimeOffset.UtcNow, null,
-                new Dictionary<string, JsonElement>(StringComparer.Ordinal), new Dictionary<string, JsonElement>(StringComparer.Ordinal),
-                new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [], []));
+            await escopo.ServiceProvider.GetRequiredService<IComprovanteDaInscricaoRepository>().AdicionarComprovanteAsync(Comprovante(inscricao.Id));
         }
 
         await escopo.ServiceProvider.GetRequiredService<IUnitOfWork>().SalvarAlteracoesAsync();
@@ -142,4 +127,23 @@ public sealed class ComprovanteDaInscricaoEndpointTests
 
         return await client.SendAsync(request);
     }
+    private static Inscricao InscricaoNaSituacao(Guid processoId, SituacaoInscricao situacao)
+    {
+        Cpf cpf = PersonasDeTeste.FernandaDrumond;
+        bool cancelada = situacao == SituacaoInscricao.Cancelada;
+        return Inscricao.Reidratar(Guid.CreateVersion7(), processoId,
+            TitularDaInscricao.Reidratar(cpf, Dono, TestAuthHandler.DefaultIssuer),
+            EstadoDaInscricao.Reidratar(situacao, "000001", CancelamentoDaInscricao.Reidratar(cancelada ? DateTimeOffset.UtcNow : null, cancelada ? Dono : null, cancelada ? "a pedido do candidato" : null)),
+            FormularioDaInscricao.Reidratar(Guid.CreateVersion7(), PreenchimentoDoCandidato.Criar(OpcoesDeCursoDaInscricao.Reidratar(null, null), new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["CPF"] = JsonSerializer.SerializeToElement(cpf.Valor) }, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), []),
+                new Dictionary<string, JsonElement>(StringComparer.Ordinal), new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal)
+                {
+                    ["CPF"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: true),
+                }), 1, new Unifesspa.UniPlus.Selecao.Domain.ValueObjects.DatasDeGravacaoDaInscricao(default, null));
+    }
+
+    private static ComprovanteInscricao Comprovante(Guid inscricaoId) =>
+        ComprovanteInscricao.Emitir(
+                inscricaoId, "000001", DateTimeOffset.UtcNow, null,
+                new Dictionary<string, JsonElement>(StringComparer.Ordinal), new Dictionary<string, JsonElement>(StringComparer.Ordinal),
+                new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [], []);
 }

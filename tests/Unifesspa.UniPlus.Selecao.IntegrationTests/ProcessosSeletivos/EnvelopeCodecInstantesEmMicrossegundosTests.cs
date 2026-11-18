@@ -33,8 +33,8 @@ public sealed class EnvelopeCodecInstantesEmMicrossegundosTests
         {
             "periodo.inicio" => [envelope.Dados.PeriodoInscricaoInicio],
             "periodo.fim" => [envelope.Dados.PeriodoInscricaoFim],
-            "cronogramaFases.fases.0.inicio" => [envelope.Grafo.CronogramaFases[0].Inicio],
-            _ => [envelope.Grafo.CronogramaFases[0].Fim],
+            "cronogramaFases.fases.0.inicio" => [envelope.Configuracao.Cronograma.CronogramaFases[0].Inicio],
+            _ => [envelope.Configuracao.Cronograma.CronogramaFases[0].Fim],
         };
         lidos.Should().Equal(esperado);
     }
@@ -46,7 +46,7 @@ public sealed class EnvelopeCodecInstantesEmMicrossegundosTests
     {
         EnvelopeReidratado envelope = ReidratarMutado(mutado => mutado["etapas"]!.AsArray()[0]![chave] = instante);
 
-        EtapaProcesso etapa = envelope.Grafo.Etapas[0];
+        EtapaProcesso etapa = envelope.Configuracao.Avaliacao.Etapas[0];
         (chave == "inicio" ? etapa.Inicio : etapa.Fim).Should().Be(DateTimeOffset.Parse(instante, CultureInfo.InvariantCulture));
     }
 

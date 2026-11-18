@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.DocumentosDaInscricao;
 using Unifesspa.UniPlus.Selecao.Application.Services;
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -77,13 +78,17 @@ public sealed class ObterAcessoDoArquivoDoCandidatoQueryHandlerTests
         usuario.UserId.Returns(contaId);
         return ObterAcessoDoArquivoDoCandidatoQueryHandler.Handle(
             new ObterAcessoDoArquivoDoCandidatoQuery(processoId ?? ProcessoId, arquivoId),
-            _inscricoes,
-            _documentos,
+            Acesso(usuario),
             new EmissaoDoAcessoAoArquivo(_documentos, _storage, new RelogioFixo(DateTimeOffset.UnixEpoch)),
             usuario,
             NullLogger.Instance,
             CancellationToken.None);
     }
+
+    private AcessoAoDocumentoDaInscricao Acesso(IUserContext usuario) =>
+        new(_inscricoes, _documentos, usuario,
+            new PeriodoDaInscricaoResolver(Substitute.For<ICertameDivulgadoRepository>(), Substitute.For<IProcessoSeletivoRepository>(),
+                Substitute.For<IRegistroCodecsEnvelope>(), DivulgacaoDeTeste.Fuso()), DivulgacaoDeTeste.Relogio);
 
     [Fact(DisplayName = "O arquivo verificado do dono devolve a URL assinada na chave definitiva, com o nome de download que a listagem informa")]
     public async Task Verificado_DoDono_DevolveAUrl()

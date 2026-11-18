@@ -63,47 +63,32 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
                 "ProcessoSeletivo.NaoEncontrado", $"Processo Seletivo {query.ProcessoSeletivoId} não encontrado."));
         }
 
-        PreVisualizacaoDoProcessoInput simulacao = query.Simulacao ?? new(null, null, null, null);
+        return await AvaliarAsync(processo, query.Simulacao ?? new(null, null, null, null), fatoCandidatoReader, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result<PreVisualizacaoDoProcessoDto>> AvaliarAsync(
+        ProcessoSeletivo processo, PreVisualizacaoDoProcessoInput simulacao, IFatoCandidatoReader fatos, CancellationToken cancellationToken)
+    {
         (Dictionary<string, IReadOnlyList<OcorrenciaRespondida>> ocorrencias, List<FieldError> erros) = OcorrenciasRecebidas.Ler(
             simulacao.Grupos?.Select(static g => KeyValuePair.Create(
-                g.Key, (IReadOnlyList<OcorrenciaRecebida>?)g.Value?.Select(static o => new OcorrenciaRecebida(o?.Id, o?.Respostas)).ToList())),
-            OcorrenciaInvalida);
-
-        IReadOnlyList<FatoCandidatoView> fatosDoCatalogo = await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false);
-        Result<DefinicaoAvaliavel> montada = DefinicaoAvaliavelDoProcesso.DaConfiguracaoViva(processo, fatosDoCatalogo);
-        if (montada.IsFailure)
-        {
-            return Result<PreVisualizacaoDoProcessoDto>.Failure(montada.Error!);
-        }
-
-        if (erros.Count > 0)
-        {
-            return Result<PreVisualizacaoDoProcessoDto>.ValidationFailure(erros);
-        }
-
+                g.Key, (IReadOnlyList<OcorrenciaRecebida>?)g.Value?.Select(static o => new OcorrenciaRecebida(o?.Id, o?.Respostas)).ToList())), OcorrenciaInvalida);
+        IReadOnlyList<FatoCandidatoView> catalogo = await fatos.ListarAsync(cancellationToken).ConfigureAwait(false);
+        Result<DefinicaoAvaliavel> montada = DefinicaoAvaliavelDoProcesso.DaConfiguracaoViva(processo, catalogo);
+        if (montada.IsFailure) return Result<PreVisualizacaoDoProcessoDto>.Failure(montada.Error!);
+        if (erros.Count > 0) return Result<PreVisualizacaoDoProcessoDto>.ValidationFailure(erros);
         Result<ResultadoDaAvaliacaoDaInscricao> avaliada = AvaliacaoDaInscricao.Avaliar(
-            ConfiguracaoAvaliavelDoProcesso.DaConfiguracaoViva(processo, montada.Value!),
-            EntradaDaAvaliacaoDaInscricao.Montar(
-                DefinicoesDasRespostas(processo),
-                simulacao.Respostas ?? new Dictionary<string, JsonElement>(),
-                ocorrencias,
-                RespostaDeCampo.ComoFatosConhecidos(simulacao.Pressupostos),
-                new HashSet<string>(
-                    (simulacao.EtapasConcluidas ?? [])
-                        .Where(static e => e is not null)
-                        .Select(static e => DefinicaoDoProcesso.CodigoDaEtapa(EstruturaFormulario.FinalidadeDoToken(e.Finalidade), e.Etapa)),
-                    StringComparer.Ordinal),
-                envio: null,
-                apresentacoes: EntradaDaAvaliacaoDaInscricao.SemApresentacoes));
-        if (avaliada.IsFailure)
-        {
-            return Result<PreVisualizacaoDoProcessoDto>.Failure(avaliada.Error!);
-        }
-
-        return Result<PreVisualizacaoDoProcessoDto>.Success(new PreVisualizacaoDoProcessoDto(
-            Formularios(processo, avaliada.Value!.Formulario),
-            [.. avaliada.Value!.Documentos.Itens.Select(Documento)]));
+            ConfiguracaoAvaliavelDoProcesso.DaConfiguracaoViva(processo, montada.Value!), Entrada(processo, simulacao, ocorrencias));
+        return avaliada.IsFailure ? Result<PreVisualizacaoDoProcessoDto>.Failure(avaliada.Error!)
+            : Result<PreVisualizacaoDoProcessoDto>.Success(new(Formularios(processo, avaliada.Value!.Formulario), [.. avaliada.Value.Documentos.Itens.Select(Documento)]));
     }
+
+    private static EntradaDaAvaliacaoDaInscricao Entrada(ProcessoSeletivo processo, PreVisualizacaoDoProcessoInput simulacao,
+        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaRespondida>> ocorrencias) =>
+        EntradaDaAvaliacaoDaInscricao.Montar(DefinicoesDasRespostas(processo), new EntradaDaAvaliacaoDaInscricao(
+            simulacao.Respostas ?? new Dictionary<string, JsonElement>(), ocorrencias, RespostaDeCampo.ComoFatosConhecidos(simulacao.Pressupostos),
+            new HashSet<string>((simulacao.EtapasConcluidas ?? []).Where(static e => e is not null)
+                .Select(static e => DefinicaoDoProcesso.CodigoDaEtapa(EstruturaFormulario.FinalidadeDoToken(e.Finalidade), e.Etapa)), StringComparer.Ordinal),
+            Envio: null, Apresentacoes: EntradaDaAvaliacaoDaInscricao.SemApresentacoes));
 
     /// <summary>A definição da resposta de cada fato e subitem que o processo coleta, em qualquer formulário, e a dos derivados do sistema.</summary>
     private static IReadOnlyDictionary<string, DefinicaoDaResposta> DefinicoesDasRespostas(ProcessoSeletivo processo)
@@ -126,26 +111,22 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
 
         return [.. processo.Formularios.OrderBy(static f => f.Finalidade).Select(formulario => new FormularioSimuladoDto(
             EstruturaFormulario.ParaToken(formulario.Finalidade),
-            [.. avaliacao.Itens
-                .Where(i => itemPorFato[i.FatoCodigo].Finalidade == formulario.Finalidade)
-                .Select(i => Item(i, itemPorFato[i.FatoCodigo]))],
-            [.. avaliacao.Grupos
-                .Where(g => grupoPorCodigo[g.Codigo].Finalidade == formulario.Finalidade)
-                .Select(g => new GrupoSimuladoDto(
-                    g.Codigo, grupoPorCodigo[g.Codigo].EtapaCodigo, g.Visivel.ToCodigo(), g.Obrigatorio.ToCodigo(),
-                    g.ContagemValida, g.OcorrenciaDoCandidatoValida,
-                    [.. g.Ocorrencias.Select(o => new OcorrenciaSimuladaDto(o.Id, [.. o.Itens.Select(i => Item(
-                        i, grupoPorCodigo[g.Codigo].Subitens.Single(s => s.FatoCodigo == i.FatoCodigo), grupoPorCodigo[g.Codigo].EtapaCodigo))]))]))],
-            [.. avaliacao.Termos
-                .Where(t => termoPorCodigo[t.Codigo].Finalidade == formulario.Finalidade)
+            [.. avaliacao.Itens.Where(i => itemPorFato[i.FatoCodigo].Finalidade == formulario.Finalidade).Select(i => Item(i, itemPorFato[i.FatoCodigo]))],
+            [.. avaliacao.Grupos.Where(g => grupoPorCodigo[g.Codigo].Finalidade == formulario.Finalidade).Select(g => Grupo(g, grupoPorCodigo[g.Codigo]))],
+            [.. avaliacao.Termos.Where(t => termoPorCodigo[t.Codigo].Finalidade == formulario.Finalidade)
                 .Select(t => new TermoSimuladoDto(termoPorCodigo[t.Codigo].Codigo, t.Visivel.ToCodigo(), t.Obrigatorio.ToCodigo()))],
-            [.. formulario.Etapas
-                .Where(static e => e.Tipo == TipoEtapaFormulario.Secao)
-                .OrderBy(static e => e.Ordem)
-                .Select(e => new SecaoSimuladaDto(
-                    e.Codigo,
-                    avaliacao.Etapas.Single(a => a.Codigo == DefinicaoDoProcesso.CodigoDaEtapa(formulario.Finalidade, e.Codigo)).Visivel.ToCodigo()))]))];
+            Secoes(formulario, avaliacao)))];
     }
+
+    private static GrupoSimuladoDto Grupo(AvaliacaoGrupo grupo, GrupoColetado coletado) => new(
+        grupo.Codigo, coletado.EtapaCodigo, grupo.Visivel.ToCodigo(), grupo.Obrigatorio.ToCodigo(), grupo.ContagemValida, grupo.OcorrenciaDoCandidatoValida,
+        [.. grupo.Ocorrencias.Select(o => new OcorrenciaSimuladaDto(o.Id,
+            [.. o.Itens.Select(i => Item(i, coletado.Subitens.Single(s => s.FatoCodigo == i.FatoCodigo), coletado.EtapaCodigo))]))]);
+
+    private static List<SecaoSimuladaDto> Secoes(FormularioProcesso formulario, AvaliacaoFormulario avaliacao) =>
+        [.. formulario.Etapas.Where(static e => e.Tipo == TipoEtapaFormulario.Secao).OrderBy(static e => e.Ordem)
+            .Select(e => new SecaoSimuladaDto(e.Codigo,
+                avaliacao.Etapas.Single(a => a.Codigo == DefinicaoDoProcesso.CodigoDaEtapa(formulario.Finalidade, e.Codigo)).Visivel.ToCodigo()))];
 
     /// <summary>O item avaliado; o campo de grupo segue a seção do grupo.</summary>
     private static ItemSimuladoDto Item(AvaliacaoItem item, FatoColetado campo, string? etapaDoGrupo = null) => new(

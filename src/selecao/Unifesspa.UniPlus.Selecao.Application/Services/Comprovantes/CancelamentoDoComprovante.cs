@@ -29,20 +29,21 @@ public sealed class CancelamentoDoComprovante
     {
         ArgumentNullException.ThrowIfNull(inscricao);
 
-        if (inscricao.CanceladaEm is not { } canceladaEm)
+        if (inscricao.Estado.Cancelamento?.CanceladaEm is not { } canceladaEm)
         {
             return Result<CancelamentoNoComprovanteDto?>.Success(null);
         }
 
         Result<TimeZoneInfo> fuso = _resolvedorFuso.Resolver();
-        if (fuso.IsFailure)
-        {
-            return Result<CancelamentoNoComprovanteDto?>.Failure(fuso.Error!);
-        }
+        return fuso.IsFailure
+            ? Result<CancelamentoNoComprovanteDto?>.Failure(fuso.Error!)
+            : Result<CancelamentoNoComprovanteDto?>.Success(
+                new CancelamentoNoComprovanteDto(canceladaEm, inscricao.Estado.Cancelamento?.MotivoDoCancelamento, Aviso(canceladaEm, fuso.Value!)));
+    }
 
-        string instante = TimeZoneInfo.ConvertTime(canceladaEm, fuso.Value!).ToString("dd/MM/yyyy 'às' HH:mm:ss", CultureInfo.InvariantCulture);
-
-        return Result<CancelamentoNoComprovanteDto?>.Success(
-            new CancelamentoNoComprovanteDto(canceladaEm, inscricao.MotivoDoCancelamento, $"Documento sem validade: inscrição cancelada em {instante}"));
+    private static string Aviso(DateTimeOffset canceladaEm, TimeZoneInfo fuso)
+    {
+        string instante = TimeZoneInfo.ConvertTime(canceladaEm, fuso).ToString("dd/MM/yyyy 'às' HH:mm:ss", CultureInfo.InvariantCulture);
+        return $"Documento sem validade: inscrição cancelada em {instante}";
     }
 }

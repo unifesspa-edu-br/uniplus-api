@@ -3,6 +3,8 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.NotasDoEnem;
 using Domain.Services;
 using Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
+
 /// <summary>
 /// O que a apuração da nota lê do edital divulgado: o grupo de área de cada oferta de curso e os
 /// pesos das áreas de cada grupo, ambos congelados na versão divulgada.
@@ -15,21 +17,19 @@ public sealed record EditalParaApuracaoDaNota(
     /// A publicação exige grupo de área em toda oferta e o grupo no quadro de pesos quando a nota
     /// vem do ENEM com cálculo local; uma oferta sem grupo aqui é versão divulgada fora desse contrato.
     /// </summary>
-    public static EditalParaApuracaoDaNota De(GrafoConfiguracao grafo)
+    public static EditalParaApuracaoDaNota De(ConfiguracaoPublicada configuracaoPublicada)
     {
-        ArgumentNullException.ThrowIfNull(grafo);
+        ArgumentNullException.ThrowIfNull(configuracaoPublicada);
 
-        Dictionary<Guid, string> grupoPorOferta = grafo.DistribuicaoVagas
+        Dictionary<Guid, string> grupos = configuracaoPublicada.Vagas.DistribuicaoVagas
             .DistinctBy(static o => o.OfertaCursoOrigemId)
             .ToDictionary(
                 static o => o.OfertaCursoOrigemId,
                 static o => o.GrupoAreaEnem?.Codigo
                     ?? throw new InvalidOperationException("Há oferta sem grupo de área do ENEM no edital divulgado cuja nota vem do ENEM."));
-
-        Dictionary<string, IReadOnlyList<PesoDaArea>> quadro = grafo.Classificacao.QuadroPesoAreaEnem.ToDictionary(
-            static g => g.GrupoAreaEnem.Codigo,
-            static g => (IReadOnlyList<PesoDaArea>)[.. g.Areas.Select(static a => new PesoDaArea(a.Codigo, a.Peso))]);
-
-        return new EditalParaApuracaoDaNota(grupoPorOferta, quadro);
+        ConfiguracaoClassificacao classificacao = configuracaoPublicada.Avaliacao.Classificacao
+            ?? throw new InvalidOperationException("A configuração publicada não declarou a classificação para apurar as notas do Enem.");
+        return new EditalParaApuracaoDaNota(grupos, classificacao.QuadroPesoAreaEnem.ToDictionary(static g => g.GrupoAreaEnem.Codigo,
+            static g => (IReadOnlyList<PesoDaArea>)[.. g.Areas.Select(static a => new PesoDaArea(a.Codigo, a.Peso))]));
     }
 }

@@ -99,18 +99,11 @@ internal static class EnvelopeDeReferencia
         DadosEdital dados,
         IReadOnlyDictionary<string, MetadadoFatoCongelado>? metadados = null,
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresSelecionaveis = null) =>
-        new(
-            processo, dados, HashFixo, FusoInstitucional.ZoneId,
-            MetadadosFatosCongelados: metadados, ValoresSelecionaveisCongelados: valoresSelecionaveis,
-            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao);
+        new(processo, dados, HashFixo, FusoInstitucional.ZoneId, Retificacao: null, Conformidade: null, DadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(MetadadosFatosCongelados: metadados, ValoresSelecionaveisCongelados: valoresSelecionaveis,
+            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
 
     internal static SnapshotCanonico CanonicalizarReferencia() =>
-        Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
-            ProcessoDeReferencia(), DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId,
-            MetadadosFatosCongelados: MetadadosFatosDeReferencia(),
-            ValoresSelecionaveisCongelados: ValoresSelecionaveisDeReferencia(),
-            ApresentacaoDosPressupostos: CorpusEnvelopeEntrada.ApresentacaoRica,
-            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(ProcessoDeReferencia()), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
+        Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(ProcessoDeReferencia(), DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId, Retificacao: null, Conformidade: null, DadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(MetadadosFatosCongelados: MetadadosFatosDeReferencia(), ValoresSelecionaveisCongelados: ValoresSelecionaveisDeReferencia(), ApresentacaoDosPressupostos: CorpusEnvelopeEntrada.ApresentacaoRica, TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(ProcessoDeReferencia()), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)));
 
     /// <summary>
     /// O agregado de referência COM a cascata de remanejamento configurada (Story #575) — a matriz
@@ -120,11 +113,7 @@ internal static class EnvelopeDeReferencia
     /// <c>presente:true</c> do bloco <c>cascataRemanejamento</c>.
     /// </summary>
     internal static SnapshotCanonico CanonicalizarReferenciaComCascata() =>
-        Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
-            ProcessoDeReferenciaComCascata(), DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId,
-            MetadadosFatosCongelados: MetadadosFatosDeReferencia(),
-            ValoresSelecionaveisCongelados: ValoresSelecionaveisDeReferencia(),
-            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(ProcessoDeReferenciaComCascata()), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
+        Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(ProcessoDeReferenciaComCascata(), DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId, Retificacao: null, Conformidade: null, DadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(MetadadosFatosCongelados: MetadadosFatosDeReferencia(), ValoresSelecionaveisCongelados: ValoresSelecionaveisDeReferencia(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(ProcessoDeReferenciaComCascata()), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)));
 
     internal static JsonObject EnvelopeComoObjeto() =>
         JsonNode.Parse(Encoding.UTF8.GetString(CanonicalizarReferencia().Bytes))!.AsObject();

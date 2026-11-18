@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 internal static class ComprovantesDeTeste
 {
     public static async Task<IReadOnlyList<ComprovanteInscricao>> ObterComprovantesAsync(
-        this IInscricaoRepository repositorio, IReadOnlyCollection<Guid> inscricoes, CancellationToken cancellationToken = default)
+        this IComprovanteDaInscricaoRepository repositorio, IReadOnlyCollection<Guid> inscricoes, CancellationToken cancellationToken = default)
     {
         List<ComprovanteInscricao> comprovantes = [];
         foreach (Guid inscricao in inscricoes)

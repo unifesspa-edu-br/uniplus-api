@@ -24,7 +24,7 @@ public sealed class EnvelopeLidoPredicadosTests
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
         EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo,
             CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
-        IReadOnlyCollection<CondicaoGatilho> condicoes = lido.Grafo.DocumentosExigidos.Single().Condicoes;
+        IReadOnlyCollection<CondicaoGatilho> condicoes = lido.Configuracao.Exigencias.DocumentosExigidos.Single().Condicoes;
         condicoes.Select(c => c.Clausula).Distinct().Should().BeEquivalentTo([0, 1, 2]);
         condicoes.GroupBy(c => c.Clausula).Should().ContainSingle(g => g.Count() == 2)
             .Which.Select(c => c.Fato).Should().BeEquivalentTo("FATO_A", "FATO_B");
@@ -56,10 +56,10 @@ public sealed class EnvelopeLidoPredicadosTests
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
         EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo,
             CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
-        lido.Grafo.CronogramaFases.Single().Id.Should().Be(fase.Id);
-        lido.Grafo.ReferenciaTemporalFatos!.Tipo.Should().Be(ReferenciaTipo.FimFase);
-        lido.Grafo.ReferenciaTemporalFatos.FaseId.Should().Be(fase.Id);
-        lido.Grafo.DocumentosExigidos.Single().Condicoes.Should().ContainSingle().Which.Fato.Should().Be("FAIXA_ETARIA");
+        lido.Configuracao.Cronograma.CronogramaFases.Single().Id.Should().Be(fase.Id);
+        lido.Configuracao.Coleta.ReferenciaTemporalFatos!.Tipo.Should().Be(ReferenciaTipo.FimFase);
+        lido.Configuracao.Coleta.ReferenciaTemporalFatos.FaseId.Should().Be(fase.Id);
+        lido.Configuracao.Exigencias.DocumentosExigidos.Single().Condicoes.Should().ContainSingle().Which.Fato.Should().Be("FAIXA_ETARIA");
     }
 
     private static CondicaoGatilho Condicao(int clausula, string fato, string valor) =>

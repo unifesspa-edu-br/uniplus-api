@@ -5,19 +5,16 @@ using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// A inscrição de que o token é dono, pelo id: a de outro CPF responde como inexistente, porque o id não confirma a existência da
-/// inscrição de ninguém, e o mesmo CPF com outro <c>contaId</c> é identidade trocada (<see cref="Inscricao.ConferirDono"/>).
+/// inscrição de ninguém, e o mesmo CPF com outro <c>contaId</c> é identidade trocada (<see cref="TitularDaInscricao.ConferirDono"/>).
 /// </summary>
-internal static class InscricaoDoDono
+public sealed class InscricaoDoDono(IInscricaoRepository inscricaoRepository, IUserContext userContext)
 {
-    public static async Task<Result<Inscricao>> ObterAsync(
-        Guid inscricaoId, IInscricaoRepository inscricaoRepository, IUserContext userContext, CancellationToken cancellationToken)
+    public async Task<Result<Inscricao>> ObterAsync(Guid inscricaoId, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(inscricaoRepository);
-        ArgumentNullException.ThrowIfNull(userContext);
-
         Result<Cpf> cpf = CpfDoToken(userContext, "acessar as próprias inscrições");
         if (cpf.IsFailure)
         {
@@ -25,14 +22,28 @@ internal static class InscricaoDoDono
         }
 
         Inscricao? inscricao = await inscricaoRepository.ObterPorIdAsync(inscricaoId, cancellationToken).ConfigureAwait(false);
-        return DoDono(inscricao is not null && inscricao.Cpf == cpf.Value! ? inscricao : null, userContext);
+        return DoDono(inscricao is not null && inscricao.Titular.Cpf == cpf.Value! ? inscricao : null, userContext);
+    }
+
+    /// <summary>A inscrição ativa do candidato no processo, com a identidade da conta conferida.</summary>
+    public async Task<Result<Inscricao>> ObterAtivaAsync(Guid processoSeletivoId, string acao, CancellationToken cancellationToken)
+    {
+        Result<Cpf> cpf = CpfDoToken(userContext, acao);
+        if (cpf.IsFailure)
+        {
+            return Result<Inscricao>.Failure(cpf.Error!);
+        }
+
+        Inscricao? inscricao = await inscricaoRepository
+            .ObterAtivaPorProcessoECpfAsync(processoSeletivoId, cpf.Value!, cancellationToken).ConfigureAwait(false);
+        return DoDono(inscricao, userContext);
     }
 
     /// <summary>A inscrição como do dono do token: ausente responde como inexistente e a de outra conta é identidade trocada.</summary>
-    public static Result<Inscricao> DoDono(Inscricao? inscricao, IUserContext userContext) =>
+    internal static Result<Inscricao> DoDono(Inscricao? inscricao, IUserContext userContext) =>
         inscricao is null
             ? Result<Inscricao>.Failure(Inscricao.NaoEncontrada)
-            : inscricao.ConferirDono(userContext.UserId ?? string.Empty) is { } erroDono
+            : inscricao.Titular.ConferirDono(userContext.UserId ?? string.Empty) is { } erroDono
                 ? Result<Inscricao>.Failure(erroDono)
                 : Result<Inscricao>.Success(inscricao);
 
@@ -40,7 +51,7 @@ internal static class InscricaoDoDono
     /// O CPF do token, ou a recusa de quem chega sem o claim ou com um que não é CPF; <paramref name="acao"/> diz o que o
     /// candidato tentava fazer, para a mensagem orientar.
     /// </summary>
-    public static Result<Cpf> CpfDoToken(IUserContext userContext, string acao)
+    internal static Result<Cpf> CpfDoToken(IUserContext userContext, string acao)
     {
         if (userContext.Cpf is not { } cpfDoToken)
         {

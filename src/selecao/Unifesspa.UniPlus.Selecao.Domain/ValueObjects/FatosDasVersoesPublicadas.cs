@@ -100,7 +100,19 @@ public sealed class FatosDasVersoesPublicadas
     /// de eixo do metadado e da operação do agregado nunca fique sem ser alimentada em silêncio.
     /// </summary>
     public static FatosDasVersoesPublicadas De(
-        IReadOnlyList<GrafoConfiguracao> versoes, IReadOnlyList<EixosDeVersaoPublicada> congeladoPorVersao)
+        IReadOnlyList<ConfiguracaoPublicada> versoes, IReadOnlyList<EixosDeVersaoPublicada> congeladoPorVersao)
+    {
+        ConferirVersoes(versoes, congeladoPorVersao);
+        ConfiguracaoPublicada versaoBase = versoes[^1];
+        return new FatosDasVersoesPublicadas(GarantidosDasVersoes(versoes),
+            new SortedSet<string>(versaoBase.Coleta.Itens.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao)
+                .Select(static f => f.FatoCodigo), StringComparer.Ordinal), GruposDaInscricao(versaoBase),
+            EixosDosItensDasVersoes(versoes),
+            PorChave(congeladoPorVersao.SelectMany(static v => v.Metadados)),
+            PorChave(congeladoPorVersao.SelectMany(static v => v.OperacaoDosAgregados)));
+    }
+
+    private static void ConferirVersoes(IReadOnlyList<ConfiguracaoPublicada> versoes, IReadOnlyList<EixosDeVersaoPublicada> congeladoPorVersao)
     {
         ArgumentNullException.ThrowIfNull(versoes);
         ArgumentNullException.ThrowIfNull(congeladoPorVersao);
@@ -113,62 +125,57 @@ public sealed class FatosDasVersoesPublicadas
         {
             throw new ArgumentException("A retificação é aberta sobre ao menos uma versão publicada.", nameof(versoes));
         }
+    }
 
+    private static SortedDictionary<string, SortedSet<string>> GruposDaInscricao(ConfiguracaoPublicada versao) => new(
+        versao.Coleta.GruposColetados.Where(static g => g.Finalidade == FinalidadeFormulario.Inscricao)
+            .ToDictionary(static g => g.Codigo, static g => new SortedSet<string>(g.Subitens.Select(static s => s.FatoCodigo), StringComparer.Ordinal)),
+        StringComparer.Ordinal);
+
+    private static SortedDictionary<FinalidadeFormulario, SortedSet<string>> GarantidosDasVersoes(IReadOnlyList<ConfiguracaoPublicada> versoes)
+    {
         SortedDictionary<FinalidadeFormulario, SortedSet<string>> garantidos = [];
-        foreach (GrafoConfiguracao versao in versoes)
+        foreach (ConfiguracaoPublicada versao in versoes)
         {
-            foreach (FinalidadeFormulario finalidade in versao.Formularios.Select(static f => f.Finalidade))
+            AcumularGarantidos(versao, garantidos);
+        }
+        return garantidos;
+    }
+
+    private static void AcumularGarantidos(ConfiguracaoPublicada versao, SortedDictionary<FinalidadeFormulario, SortedSet<string>> garantidos)
+    {
+        foreach (FinalidadeFormulario finalidade in versao.Coleta.Formularios.Select(static f => f.Finalidade))
+        {
+            SortedSet<string> produzidos = Produzidos(versao, finalidade);
+            if (garantidos.TryGetValue(finalidade, out SortedSet<string>? acumulado))
             {
-                SortedSet<string> produzidos = Produzidos(versao, finalidade);
-                if (garantidos.TryGetValue(finalidade, out SortedSet<string>? acumulado))
-                {
-                    acumulado.IntersectWith(produzidos);
-                }
-                else
-                {
-                    garantidos[finalidade] = produzidos;
-                }
+                acumulado.IntersectWith(produzidos);
+            }
+            else
+            {
+                garantidos[finalidade] = produzidos;
             }
         }
+    }
 
-        Dictionary<string, HashSet<EixosDoItemCongelado>> eixosDosItens = new(StringComparer.Ordinal);
-        foreach (GrafoConfiguracao versao in versoes)
+    private static Dictionary<string, HashSet<EixosDoItemCongelado>> EixosDosItensDasVersoes(IReadOnlyList<ConfiguracaoPublicada> versoes)
+    {
+        Dictionary<string, HashSet<EixosDoItemCongelado>> eixos = new(StringComparer.Ordinal);
+        foreach (FatoColetado item in versoes.SelectMany(static v => v.Coleta.Campos))
         {
-            foreach (FatoColetado item in versao.FatosColetados.Concat(versao.GruposColetados.SelectMany(static g => g.Subitens)))
-            {
-                Acrescentar(eixosDosItens, item.FatoCodigo, EixosDoItemCongelado.De(item));
-            }
+            Acrescentar(eixos, item.FatoCodigo, EixosDoItemCongelado.De(item));
         }
+        return eixos;
+    }
 
-        Dictionary<string, HashSet<EixosDoMetadadoCongelado>> eixosDosMetadados = new(StringComparer.Ordinal);
-        Dictionary<string, HashSet<string>> operacoes = new(StringComparer.Ordinal);
-        foreach (EixosDeVersaoPublicada congelado in congeladoPorVersao)
+    private static Dictionary<string, HashSet<T>> PorChave<T>(IEnumerable<KeyValuePair<string, T>> pares)
+    {
+        Dictionary<string, HashSet<T>> acumulados = new(StringComparer.Ordinal);
+        foreach ((string chave, T valor) in pares)
         {
-            foreach ((string fato, EixosDoMetadadoCongelado eixos) in congelado.Metadados)
-            {
-                Acrescentar(eixosDosMetadados, fato, eixos);
-            }
-
-            foreach ((string agregado, string operacao) in congelado.OperacaoDosAgregados)
-            {
-                Acrescentar(operacoes, agregado, operacao);
-            }
+            Acrescentar(acumulados, chave, valor);
         }
-
-        GrafoConfiguracao versaoBase = versoes[^1];
-        return new FatosDasVersoesPublicadas(
-            garantidos,
-            new SortedSet<string>(
-                versaoBase.FatosColetados.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao).Select(static f => f.FatoCodigo),
-                StringComparer.Ordinal),
-            new SortedDictionary<string, SortedSet<string>>(
-                versaoBase.GruposColetados
-                    .Where(static g => g.Finalidade == FinalidadeFormulario.Inscricao)
-                    .ToDictionary(static g => g.Codigo, static g => new SortedSet<string>(g.Subitens.Select(static s => s.FatoCodigo), StringComparer.Ordinal)),
-                StringComparer.Ordinal),
-            eixosDosItens,
-            eixosDosMetadados,
-            operacoes);
+        return acumulados;
     }
 
     /// <summary>Reconstitui o que foi lido das versões publicadas, como foi guardado.</summary>
@@ -233,6 +240,11 @@ public sealed class FatosDasVersoesPublicadas
             return item;
         }
 
+        return PrimeiroDoGrupoQueDeixaDeSerColetado(camposPorGrupo);
+    }
+
+    private string? PrimeiroDoGrupoQueDeixaDeSerColetado(Dictionary<string, HashSet<string>> camposPorGrupo)
+    {
         foreach ((string grupo, SortedSet<string> campos) in _gruposDaInscricaoNaBase)
         {
             if (!camposPorGrupo.TryGetValue(grupo, out HashSet<string>? enviados))
@@ -280,11 +292,11 @@ public sealed class FatosDasVersoesPublicadas
             : null;
 
     /// <summary>Os itens, os grupos e os campos de grupo que o formulário da finalidade coleta na versão.</summary>
-    private static SortedSet<string> Produzidos(GrafoConfiguracao versao, FinalidadeFormulario finalidade)
+    private static SortedSet<string> Produzidos(ConfiguracaoPublicada versao, FinalidadeFormulario finalidade)
     {
-        IEnumerable<GrupoColetado> grupos = versao.GruposColetados.Where(g => g.Finalidade == finalidade);
+        IEnumerable<GrupoColetado> grupos = versao.Coleta.GruposColetados.Where(g => g.Finalidade == finalidade);
         return new SortedSet<string>(
-            versao.FatosColetados.Where(f => f.Finalidade == finalidade).Select(static f => f.FatoCodigo)
+            versao.Coleta.Itens.Where(f => f.Finalidade == finalidade).Select(static f => f.FatoCodigo)
                 .Concat(grupos.Select(static g => g.Codigo))
                 .Concat(grupos.SelectMany(static g => g.Subitens).Select(static s => s.FatoCodigo)),
             StringComparer.Ordinal);

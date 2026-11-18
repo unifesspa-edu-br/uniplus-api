@@ -40,7 +40,8 @@ public sealed record ContextoDaVersaoFixada(
     ConfiguracaoAvaliavel? ConfiguracaoDaSegundaOpcao,
     IReadOnlyList<OfertaDeCursoCertameDto> OfertasDeCurso);
 
-public static class ContextoDaVersaoFixadaResolver
+public sealed class ContextoDaVersaoFixadaResolver(
+    IProcessoSeletivoRepository processoSeletivoRepository, IRegistroCodecsEnvelope registroCodecs)
 {
     /// <param name="ofertaCursoId">
     /// A oferta de curso da 1ª opção que a inscrição escolhe — a gravada, ou a que o corpo da requisição
@@ -51,11 +52,8 @@ public static class ContextoDaVersaoFixadaResolver
     /// opções: a recusa da 2ª fora disso é do agregado, não da avaliação.
     /// </param>
     /// <remarks>Lê <paramref name="versaoFormularioId"/> como está: o rascunho já tem de ter adotado a divulgada (<see cref="VersaoDaInscricaoResolver.AdotarAsync"/>).</remarks>
-    public static async Task<Result<ContextoDaVersaoFixada>> ResolverAsync(
-        Guid versaoFormularioId,
+    public async Task<Result<ContextoDaVersaoFixada>> ResolverAsync(Guid versaoFormularioId,
         Guid processoSeletivoId,
-        Domain.Interfaces.IProcessoSeletivoRepository processoSeletivoRepository,
-        IRegistroCodecsEnvelope registroCodecs,
         Guid? ofertaCursoId,
         Guid? ofertaCursoSegundaOpcaoId,
         CancellationToken cancellationToken)
@@ -68,58 +66,50 @@ public static class ContextoDaVersaoFixadaResolver
             return Result<ContextoDaVersaoFixada>.Failure(resolvida.Error!);
         }
 
-        VersaoConfiguracao versao = resolvida.Value!;
+        Result<EnvelopeReidratado> reidratado = Reidratar(resolvida.Value!, registroCodecs);
+        return reidratado.IsFailure
+            ? Result<ContextoDaVersaoFixada>.Failure(reidratado.Error!)
+            : DoEnvelope(resolvida.Value!, reidratado.Value!, ofertaCursoId, ofertaCursoSegundaOpcaoId);
+    }
 
-        Result<EnvelopeReidratado> reidratado = Reidratar(versao, registroCodecs);
-        if (reidratado.IsFailure)
-        {
-            return Result<ContextoDaVersaoFixada>.Failure(reidratado.Error!);
-        }
-
-        GrafoConfiguracao grafo = reidratado.Value!.Grafo;
-        RespostasAdmitidas admitidas = Admitidas(grafo);
-
-        // Oferta que o processo não conhece vale como escolha nenhuma, e a 2ª só conta quando o agregado a
-        // admite: quem recusa o resto é ele, e a avaliação não mostra modalidades de uma opção que a
-        // inscrição não pode ter.
-        Guid? primeiraAvaliavel = ofertaCursoId is { } escolhida && admitidas.OfertasDeCurso.Contains(escolhida) ? escolhida : null;
-        Guid? segundaAvaliavel = Inscricao.SegundaOpcaoAdmissivel(primeiraAvaliavel, ofertaCursoSegundaOpcaoId, admitidas)
-            ? ofertaCursoSegundaOpcaoId
-            : null;
-        Result<ConfiguracaoDaOpcao> daPrimeira = ConfiguracaoDasOfertas(reidratado.Value!, primeiraAvaliavel is { } primeira ? [primeira] : []);
+    private static Result<ContextoDaVersaoFixada> DoEnvelope(
+        VersaoConfiguracao versao, EnvelopeReidratado envelope, Guid? ofertaCursoId, Guid? ofertaCursoSegundaOpcaoId)
+    {
+        RespostasAdmitidas admitidas = Admitidas(envelope.Configuracao);
+        Guid? primeira = ofertaCursoId is { } escolhida && admitidas.OfertasDeCurso.Contains(escolhida) ? escolhida : null;
+        Guid? segunda = OpcoesDeCursoDaInscricao.SegundaAdmissivel(primeira, ofertaCursoSegundaOpcaoId, admitidas) ? ofertaCursoSegundaOpcaoId : null;
+        Result<ConfiguracaoDaOpcao> daPrimeira = ConfiguracaoDasOfertas(envelope, primeira is { } id ? [id] : []);
         if (daPrimeira.IsFailure)
         {
             return Result<ContextoDaVersaoFixada>.Failure(daPrimeira.Error!);
         }
+        return segunda is { } segundaId
+            ? DaSegundaOpcao(versao, envelope, admitidas, daPrimeira.Value!, primeira!.Value, segundaId)
+            : ComReferenciaDosFatos(versao, envelope, admitidas, daPrimeira.Value!, daPrimeira.Value!.Configuracao, null);
+    }
 
-        ConfiguracaoDaOpcao dasEscolhidas = daPrimeira.Value!;
-        ConfiguracaoAvaliavel? daSegunda = null;
-        if (segundaAvaliavel is { } segunda)
-        {
-            Result<ConfiguracaoDaOpcao> uniao = ConfiguracaoDasOfertas(reidratado.Value!, [primeiraAvaliavel!.Value, segunda]);
-            Result<ConfiguracaoDaOpcao> soASegunda = ConfiguracaoDasOfertas(reidratado.Value!, [segunda]);
-            if (uniao.IsFailure || soASegunda.IsFailure)
-            {
-                return Result<ContextoDaVersaoFixada>.Failure((uniao.IsFailure ? uniao : soASegunda).Error!);
-            }
+    private static Result<ContextoDaVersaoFixada> DaSegundaOpcao(
+        VersaoConfiguracao versao, EnvelopeReidratado envelope, RespostasAdmitidas admitidas,
+        ConfiguracaoDaOpcao daPrimeira, Guid primeira, Guid segunda)
+    {
+        Result<ConfiguracaoDaOpcao> uniao = ConfiguracaoDasOfertas(envelope, [primeira, segunda]);
+        Result<ConfiguracaoDaOpcao> soASegunda = ConfiguracaoDasOfertas(envelope, [segunda]);
+        return uniao.IsFailure || soASegunda.IsFailure
+            ? Result<ContextoDaVersaoFixada>.Failure((uniao.IsFailure ? uniao : soASegunda).Error!)
+            : ComReferenciaDosFatos(versao, envelope, admitidas, uniao.Value!, daPrimeira.Configuracao, soASegunda.Value!.Configuracao);
+    }
 
-            dasEscolhidas = uniao.Value!;
-            daSegunda = soASegunda.Value!.Configuracao;
-        }
-
+    private static Result<ContextoDaVersaoFixada> ComReferenciaDosFatos(
+        VersaoConfiguracao versao, EnvelopeReidratado envelope, RespostasAdmitidas admitidas,
+        ConfiguracaoDaOpcao dasEscolhidas, ConfiguracaoAvaliavel daPrimeira, ConfiguracaoAvaliavel? daSegunda)
+    {
         Result<DateOnly?> dataReferencia = ProjecaoDoFormularioDaVersao.ResolverDataReferenciaFatos(versao);
-        if (dataReferencia.IsFailure)
-        {
-            return Result<ContextoDaVersaoFixada>.Failure(dataReferencia.Error!);
-        }
-
-        IReadOnlyCollection<TermoExigidoFormulario> termos =
-            [.. reidratado.Value!.Grafo.TermosExigidos.Where(static t => t.Finalidade == FinalidadeFormulario.Inscricao)];
-
-        return Result<ContextoDaVersaoFixada>.Success(new ContextoDaVersaoFixada(
-            termos, dataReferencia.Value, dasEscolhidas.Avaliavel.Ofertas, admitidas,
-            dasEscolhidas.Configuracao, versao.AtoCriadorId,
-            daPrimeira.Value!.Configuracao, daSegunda, OfertasDaVersao(grafo)));
+        return dataReferencia.IsFailure
+            ? Result<ContextoDaVersaoFixada>.Failure(dataReferencia.Error!)
+            : Result<ContextoDaVersaoFixada>.Success(new ContextoDaVersaoFixada(
+                [.. envelope.Configuracao.Coleta.TermosExigidos.Where(static t => t.Finalidade == FinalidadeFormulario.Inscricao)],
+                dataReferencia.Value, dasEscolhidas.Avaliavel.Ofertas, admitidas, dasEscolhidas.Configuracao,
+                versao.AtoCriadorId, daPrimeira, daSegunda, OfertasDaVersao(envelope.Configuracao)));
     }
 
     /// <summary>O envelope congelado da versão, lido pelo codec que sabe ler a versão de esquema dele.</summary>
@@ -143,7 +133,7 @@ public static class ContextoDaVersaoFixadaResolver
         return avaliavel.IsFailure
             ? Result<ConfiguracaoDaOpcao>.Failure(avaliavel.Error!)
             : Result<ConfiguracaoDaOpcao>.Success(new ConfiguracaoDaOpcao(
-                avaliavel.Value!, ConfiguracaoAvaliavelDoProcesso.DoCongelado(envelope.Grafo, avaliavel.Value!, ofertasDeCurso)));
+                avaliavel.Value!, ConfiguracaoAvaliavelDoProcesso.DoCongelado(envelope.Configuracao, avaliavel.Value!, ofertasDeCurso)));
     }
 
     /// <summary>
@@ -151,10 +141,7 @@ public static class ContextoDaVersaoFixadaResolver
     /// as versões lidas uma vez e cada versão é reidratada uma vez. Versão que não se lê não derruba o
     /// resultado: fica de fora.
     /// </summary>
-    public static async Task<Dictionary<Guid, IReadOnlyList<OfertaDeCursoCertameDto>>> OfertasDasVersoesAsync(
-        IEnumerable<(Guid ProcessoSeletivoId, Guid VersaoFormularioId)> versoesPedidas,
-        IProcessoSeletivoRepository processoSeletivoRepository,
-        IRegistroCodecsEnvelope registroCodecs,
+    public async Task<Dictionary<Guid, IReadOnlyList<OfertaDeCursoCertameDto>>> OfertasDasVersoesAsync(IEnumerable<(Guid ProcessoSeletivoId, Guid VersaoFormularioId)> versoesPedidas,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(versoesPedidas);
@@ -167,32 +154,37 @@ public static class ContextoDaVersaoFixadaResolver
             IReadOnlyList<VersaoConfiguracao> versoes = await processoSeletivoRepository
                 .ObterVersoesAsync(doProcesso.Key, cancellationToken)
                 .ConfigureAwait(false);
-            foreach ((_, Guid versaoId) in doProcesso)
-            {
-                VersaoConfiguracao? versao = versoes.FirstOrDefault(v => v.Id == versaoId);
-                if (versao is null)
-                {
-                    continue;
-                }
-
-                Result<EnvelopeReidratado> reidratado = Reidratar(versao, registroCodecs);
-                if (reidratado.IsSuccess)
-                {
-                    ofertas[versaoId] = OfertasDaVersao(reidratado.Value!.Grafo);
-                }
-            }
+            AcrescentarOfertas(doProcesso.Select(static v => v.VersaoFormularioId), versoes, ofertas);
         }
 
         return ofertas;
     }
 
-    public static List<OfertaDeCursoCertameDto> OfertasDaVersao(GrafoConfiguracao grafo)
+    private void AcrescentarOfertas(
+        IEnumerable<Guid> pedidas, IReadOnlyList<VersaoConfiguracao> versoes, Dictionary<Guid, IReadOnlyList<OfertaDeCursoCertameDto>> ofertas)
     {
-        ArgumentNullException.ThrowIfNull(grafo);
+        foreach (Guid versaoId in pedidas)
+        {
+            VersaoConfiguracao? versao = versoes.FirstOrDefault(v => v.Id == versaoId);
+            if (versao is null)
+            {
+                continue;
+            }
+            Result<EnvelopeReidratado> reidratado = Reidratar(versao, registroCodecs);
+            if (reidratado.IsSuccess)
+            {
+                ofertas[versaoId] = OfertasDaVersao(reidratado.Value!.Configuracao);
+            }
+        }
+    }
+
+    public static List<OfertaDeCursoCertameDto> OfertasDaVersao(ConfiguracaoPublicada configuracaoPublicada)
+    {
+        ArgumentNullException.ThrowIfNull(configuracaoPublicada);
 
         return
         [
-            .. grafo.DistribuicaoVagas
+            .. configuracaoPublicada.Vagas.DistribuicaoVagas
                 .Where(static d => d.OfertaCurso is not null)
                 .OrderBy(static d => d.OfertaCursoOrigemId.ToString(), StringComparer.Ordinal)
                 .Select(static d => new OfertaDeCursoCertameDto(
@@ -200,23 +192,23 @@ public static class ContextoDaVersaoFixadaResolver
         ];
     }
 
-    public static RespostasAdmitidas Admitidas(GrafoConfiguracao grafo)
+    public static RespostasAdmitidas Admitidas(ConfiguracaoPublicada configuracaoPublicada)
     {
-        ArgumentNullException.ThrowIfNull(grafo);
+        ArgumentNullException.ThrowIfNull(configuracaoPublicada);
 
         return new RespostasAdmitidas(
-            DefinicoesDasRespostasDaInscricao(grafo),
-            FatosDeNivelSuperiorDaInscricao(grafo),
-            SubitensDosGruposDaInscricao(grafo),
-            grafo.DistribuicaoVagas.Select(static d => d.OfertaCursoOrigemId).ToHashSet(),
-            TermosDaInscricao(grafo),
-            NumeroDeOpcoesDeCurso: grafo.NumeroDeOpcoesDeCurso ?? 1);
+            DefinicoesDasRespostasDaInscricao(configuracaoPublicada),
+            FatosDeNivelSuperiorDaInscricao(configuracaoPublicada),
+            SubitensDosGruposDaInscricao(configuracaoPublicada),
+            configuracaoPublicada.Vagas.DistribuicaoVagas.Select(static d => d.OfertaCursoOrigemId).ToHashSet(),
+            TermosDaInscricao(configuracaoPublicada),
+            NumeroDeOpcoesDeCurso: configuracaoPublicada.Vagas.NumeroDeOpcoesDeCurso ?? 1);
     }
 
-    private static Dictionary<string, TermoAdmitido> TermosDaInscricao(GrafoConfiguracao grafo)
+    private static Dictionary<string, TermoAdmitido> TermosDaInscricao(ConfiguracaoPublicada configuracaoPublicada)
     {
         Dictionary<string, TermoAdmitido> termos = new(StringComparer.Ordinal);
-        foreach (TermoExigidoFormulario termo in grafo.TermosExigidos.Where(static t => t.Finalidade == FinalidadeFormulario.Inscricao))
+        foreach (TermoExigidoFormulario termo in configuracaoPublicada.Coleta.TermosExigidos.Where(static t => t.Finalidade == FinalidadeFormulario.Inscricao))
         {
             termos.TryAdd(termo.Codigo, new TermoAdmitido(termo.VersaoId, termo.HashVersao));
         }
@@ -224,14 +216,10 @@ public static class ContextoDaVersaoFixadaResolver
         return termos;
     }
 
-    private static Dictionary<string, DefinicaoDaResposta> DefinicoesDasRespostasDaInscricao(GrafoConfiguracao grafo)
+    private static Dictionary<string, DefinicaoDaResposta> DefinicoesDasRespostasDaInscricao(ConfiguracaoPublicada configuracaoPublicada)
     {
         Dictionary<string, DefinicaoDaResposta> definicoes = new(StringComparer.Ordinal);
-        IEnumerable<FatoColetado> coletados = grafo.FatosColetados
-            .Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao)
-            .Concat(grafo.GruposColetados
-                .Where(static g => g.Finalidade == FinalidadeFormulario.Inscricao)
-                .SelectMany(static g => g.Subitens));
+        IEnumerable<FatoColetado> coletados = configuracaoPublicada.Coleta.Campos.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao);
         foreach (FatoColetado fato in coletados)
         {
             definicoes.TryAdd(fato.FatoCodigo, DefinicaoDaResposta.De(fato.TipoRenderizacao, fato.ClassificacaoProtecao, fato.Formato, fato.FatoCodigo));
@@ -240,16 +228,16 @@ public static class ContextoDaVersaoFixadaResolver
         return definicoes;
     }
 
-    private static HashSet<string> FatosDeNivelSuperiorDaInscricao(GrafoConfiguracao grafo) =>
-        grafo.FatosColetados
+    private static HashSet<string> FatosDeNivelSuperiorDaInscricao(ConfiguracaoPublicada configuracaoPublicada) =>
+        configuracaoPublicada.Coleta.Itens
             .Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao)
             .Select(static f => f.FatoCodigo)
             .ToHashSet(StringComparer.Ordinal);
 
-    private static Dictionary<string, IReadOnlySet<string>> SubitensDosGruposDaInscricao(GrafoConfiguracao grafo)
+    private static Dictionary<string, IReadOnlySet<string>> SubitensDosGruposDaInscricao(ConfiguracaoPublicada configuracaoPublicada)
     {
         Dictionary<string, IReadOnlySet<string>> subitens = new(StringComparer.Ordinal);
-        foreach (GrupoColetado grupo in grafo.GruposColetados.Where(static g => g.Finalidade == FinalidadeFormulario.Inscricao))
+        foreach (GrupoColetado grupo in configuracaoPublicada.Coleta.GruposColetados.Where(static g => g.Finalidade == FinalidadeFormulario.Inscricao))
         {
             subitens.TryAdd(grupo.Codigo, grupo.Subitens.Select(static s => s.FatoCodigo).ToHashSet(StringComparer.Ordinal));
         }

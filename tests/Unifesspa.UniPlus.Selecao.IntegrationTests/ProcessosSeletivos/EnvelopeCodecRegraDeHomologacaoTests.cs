@@ -100,5 +100,5 @@ public sealed class EnvelopeCodecRegraDeHomologacaoTests
         envelope["cronogramaFases"]!["fases"]!.AsArray().Single(fase => fase!["codigo"]!.GetValue<string>() == codigo)!.AsObject();
 
     private static FaseCronograma FaseReidratada(EnvelopeReidratado envelope, string codigo) =>
-        envelope.Grafo.CronogramaFases.Single(fase => fase.Codigo == codigo);
+        envelope.Configuracao.Cronograma.CronogramaFases.Single(fase => fase.Codigo == codigo);
 }

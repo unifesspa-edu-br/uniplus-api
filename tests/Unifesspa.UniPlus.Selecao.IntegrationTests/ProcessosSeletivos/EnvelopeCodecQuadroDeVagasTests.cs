@@ -49,7 +49,7 @@ public sealed class EnvelopeCodecQuadroDeVagasTests
         Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes));
 
         reidratado.IsSuccess.Should().BeTrue($"a distribuição reduzida tem de voltar do envelope: {reidratado.Error?.Code} {reidratado.Error?.Message}");
-        ConferirQueVoltouIgual(publicada, reidratado.Value!.Grafo.DistribuicaoVagas.Single());
+        ConferirQueVoltouIgual(publicada, reidratado.Value!.Configuracao.Vagas.DistribuicaoVagas.Single());
     }
 
     private static void ConferirQueVoltouIgual(ConfiguracaoDistribuicaoVagas publicada, ConfiguracaoDistribuicaoVagas relida)

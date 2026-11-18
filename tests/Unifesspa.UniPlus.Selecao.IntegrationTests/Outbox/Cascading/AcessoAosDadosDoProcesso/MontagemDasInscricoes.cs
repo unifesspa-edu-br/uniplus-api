@@ -36,7 +36,7 @@ internal sealed class MontagemDasInscricoes(CascadingFixture fixture)
         IServiceProvider sp = escopo.ServiceProvider;
         IInscricaoRepository inscricoes = sp.GetRequiredService<IInscricaoRepository>();
         IDocumentoDaInscricaoRepository documentos = sp.GetRequiredService<IDocumentoDaInscricaoRepository>();
-        (Guid fernanda, ArquivosDaInscricao arquivos) = await AdicionarFernandaAsync(inscricoes, documentos, processo);
+        (Guid fernanda, ArquivosDaInscricao arquivos) = await AdicionarFernandaAsync(inscricoes, sp.GetRequiredService<IComprovanteDaInscricaoRepository>(), documentos, processo);
         RascunhoDeInscricao rascunho = await AdicionarRascunhoAsync(inscricoes, documentos, processo);
         Guid erick = await AdicionarEnviadaAsync(inscricoes, processo, CpfDeErick, "conta-erick", FatosDoCenario.PassaporteDeErick);
         Guid servidora = await AdicionarEnviadaAsync(inscricoes, processo, CpfDeHelena, PersonasDoAcesso.Caroline, null);
@@ -50,20 +50,19 @@ internal sealed class MontagemDasInscricoes(CascadingFixture fixture)
         Cpf.Criar(PersonasDeTeste.Candidatas.Single(c => c.Nome.StartsWith(primeiroNome, StringComparison.Ordinal)).Cpf).Value!;
 
     private static async Task<(Guid Id, ArquivosDaInscricao Arquivos)> AdicionarFernandaAsync(
-        IInscricaoRepository inscricoes, IDocumentoDaInscricaoRepository documentos, ProcessoPublicado processo)
+        IInscricaoRepository inscricoes, IComprovanteDaInscricaoRepository comprovantes, IDocumentoDaInscricaoRepository documentos, ProcessoPublicado processo)
     {
         Inscricao inscricao = Inscricao.Iniciar(processo.Id, PersonasDeTeste.FernandaDrumond, "conta-fernanda", "https://idp.test", processo.VersaoId).Value!;
         Result<ComprovanteInscricao> submissao = Submeter(inscricao);
         submissao.IsSuccess.Should().BeTrue(string.Join("; ", submissao.Errors.Select(e => e.Error.Message)));
         await inscricoes.AdicionarAsync(inscricao);
-        await inscricoes.AdicionarComprovanteAsync(submissao.Value!);
+        await comprovantes.AdicionarComprovanteAsync(submissao.Value!);
         return (inscricao.Id, await AdicionarArquivosAsync(documentos, inscricao.Id, processo));
     }
 
-    private static Result<ComprovanteInscricao> Submeter(Inscricao inscricao) => inscricao.Submeter(
-        "000001", null, null, RespostasDeFernanda(), SemGrupos(), [], AdmitidasDoNome(), FormularioDeTeste.AvaliacaoSemOcultos,
-        new Dictionary<string, JsonElement>(StringComparer.Ordinal), new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal),
-        PrecondicaoIfMatch.DeTags([inscricao.ETag]), DateTimeOffset.UtcNow, []);
+    private static Result<ComprovanteInscricao> Submeter(Inscricao inscricao) => inscricao.Submeter("000001",
+            PreenchimentoDoCandidato.Criar(OpcoesDeCursoDaInscricao.Reidratar(null, null), RespostasDeFernanda(), SemGrupos(), []), AdmitidasDoNome(),
+            new ApuracaoDoEnvio(FormularioDeTeste.AvaliacaoSemOcultos, new Dictionary<string, JsonElement>(StringComparer.Ordinal), new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal), [], null), PrecondicaoIfMatch.DeTags([inscricao.ETag]), DateTimeOffset.UtcNow);
 
     private static async Task<ArquivosDaInscricao> AdicionarArquivosAsync(
         IDocumentoDaInscricaoRepository documentos, Guid inscricaoId, ProcessoPublicado processo)
@@ -118,10 +117,11 @@ internal sealed class MontagemDasInscricoes(CascadingFixture fixture)
     private static Inscricao Submetida(
         ProcessoPublicado processo, Cpf cpf, string contaId, string numero, Dictionary<string, JsonElement> respostas,
         Dictionary<string, DefinicaoDaResposta> definicoes, Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos) =>
-        Inscricao.Reidratar(
-            Guid.CreateVersion7(), processo.Id, cpf, contaId, TestAuthHandler.DefaultIssuer, SituacaoInscricao.Submetida, processo.VersaoId, null, null,
-            numero, null, null, null, respostas, new Dictionary<string, JsonElement>(StringComparer.Ordinal), grupos, [], definicoes,
-            revisao: 1, DateTimeOffset.UtcNow, null);
+        Inscricao.Reidratar(Guid.CreateVersion7(), processo.Id,
+            TitularDaInscricao.Reidratar(cpf, contaId, TestAuthHandler.DefaultIssuer),
+            EstadoDaInscricao.Reidratar(SituacaoInscricao.Submetida, numero, CancelamentoDaInscricao.Reidratar(null, null, null)),
+            FormularioDaInscricao.Reidratar(processo.VersaoId, PreenchimentoDoCandidato.Criar(OpcoesDeCursoDaInscricao.Reidratar(null, null), respostas, grupos, []),
+                new Dictionary<string, JsonElement>(StringComparer.Ordinal), definicoes), 1, new Unifesspa.UniPlus.Selecao.Domain.ValueObjects.DatasDeGravacaoDaInscricao(default, null));
 
     private static Dictionary<string, JsonElement> RespostasDoCpf(Cpf cpf) => new(StringComparer.Ordinal)
     {

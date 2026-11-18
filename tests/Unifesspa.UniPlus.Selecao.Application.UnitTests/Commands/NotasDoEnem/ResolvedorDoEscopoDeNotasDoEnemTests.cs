@@ -17,9 +17,9 @@ public sealed class ResolvedorDoEscopoDeNotasDoEnemTests
     private readonly CenarioDoEnemDeTeste _cenario = new(semFormularioDeInscricao: true, Edicao);
 
     private Task<Result<EscopoDeNotasDoEnem>> Resolver(bool exigeNotaDoEnem) =>
-        ResolvedorDoEscopoDeNotasDoEnem.ResolverAsync(
+        new ResolvedorDoEscopoDeNotasDoEnem(_cenario.Certame, _cenario.Processos, _cenario.Codecs).ResolverAsync(
             _cenario.ProcessoId, _cenario.EtapaDoEnem.Id, Edicao, exigeNotaDoEnem,
-            _cenario.Certame, _cenario.Processos, _cenario.Codecs, CancellationToken.None);
+            CancellationToken.None);
 
     [Fact(DisplayName = "a consulta de histórico resolve o escopo de processo sem formulário de inscrição, sem janela")]
     public async Task Consulta_ProcessoSemInscricao_Resolve()

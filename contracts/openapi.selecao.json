@@ -13275,128 +13275,28 @@
       },
       "ComprovanteDaInscricaoDto": {
         "required": [
-          "inscricaoId",
-          "numero",
-          "total",
-          "vale",
-          "processoSeletivoId",
-          "nomeDoProcesso",
-          "unidadeAdministradora",
-          "envio",
           "candidato",
-          "numeroDeOpcoesDeCurso",
-          "opcoesDeCurso",
-          "secoes",
-          "derivados",
-          "termosAceitos",
-          "documentos"
+          "inscricao",
+          "processo",
+          "escolhasDeCurso",
+          "formulario"
         ],
         "type": "object",
         "properties": {
-          "inscricaoId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "numero": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "total": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "vale": {
-            "type": "boolean"
-          },
-          "numeroAnterior": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          },
-          "numeroSeguinte": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          },
-          "processoSeletivoId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "nomeDoProcesso": {
-            "type": "string"
-          },
-          "identificadorDoProcesso": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "unidadeAdministradora": {
-            "type": "string"
-          },
-          "envio": {
-            "$ref": "#/components/schemas/EnvioDoComprovanteDto"
-          },
-          "cancelamento": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/CancelamentoNoComprovanteDto"
-              }
-            ]
-          },
           "candidato": {
             "$ref": "#/components/schemas/CandidatoDoComprovanteDto"
           },
-          "prazoDaCorrecao": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/PrazoDaCorrecaoDto"
-              }
-            ]
+          "inscricao": {
+            "$ref": "#/components/schemas/InscricaoNoComprovanteDto"
           },
-          "numeroDeOpcoesDeCurso": {
-            "type": "integer",
-            "format": "int32"
+          "processo": {
+            "$ref": "#/components/schemas/ProcessoNoComprovanteDto"
           },
-          "opcoesDeCurso": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/OpcaoDeCursoDoComprovanteDto"
-            }
+          "escolhasDeCurso": {
+            "$ref": "#/components/schemas/EscolhasDeCursoNoComprovanteDto"
           },
-          "secoes": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SecaoDoComprovanteDto"
-            }
-          },
-          "derivados": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ItemDoComprovanteDto"
-            }
-          },
-          "termosAceitos": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/TermoAceitoDoComprovanteDto"
-            }
-          },
-          "documentos": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DocumentoDoComprovanteDto"
-            }
+          "formulario": {
+            "$ref": "#/components/schemas/FormularioNoComprovanteDto"
           }
         }
       },
@@ -19515,6 +19415,60 @@
           }
         }
       },
+      "EscolhasDeCursoDaInscricaoDto": {
+        "required": [
+          "ofertaCursoId",
+          "ofertaCursoSegundaOpcaoId",
+          "numeroDeOpcoesDeCurso",
+          "ofertas"
+        ],
+        "type": "object",
+        "properties": {
+          "ofertaCursoId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "ofertaCursoSegundaOpcaoId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "numeroDeOpcoesDeCurso": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ofertas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfertaDeCursoCertameDto"
+            }
+          }
+        }
+      },
+      "EscolhasDeCursoNoComprovanteDto": {
+        "required": [
+          "numeroDeOpcoesDeCurso",
+          "opcoesDeCurso"
+        ],
+        "type": "object",
+        "properties": {
+          "numeroDeOpcoesDeCurso": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "opcoesDeCurso": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OpcaoDeCursoDoComprovanteDto"
+            }
+          }
+        }
+      },
       "EtapaCertameDto": {
         "required": [
           "nome",
@@ -20500,6 +20454,45 @@
           }
         }
       },
+      "FormularioDaInscricaoDto": {
+        "required": [
+          "versaoFormularioId",
+          "respostas",
+          "derivados",
+          "grupos",
+          "aceites"
+        ],
+        "type": "object",
+        "properties": {
+          "versaoFormularioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "respostas": {
+            "type": "object",
+            "description": "As respostas por c\u00F3digo do fato. O munic\u00EDpio vem como texto, o c\u00F3digo IBGE, no rascunho, e como objeto { \u0022codigo\u0022, \u0022rotulo\u0022 } na inscri\u00E7\u00E3o enviada, com o nome que o Geo conferiu no envio."
+          },
+          "derivados": {
+            "type": "object",
+            "description": "O que o sistema calculou das respostas. O munic\u00EDpio de resid\u00EAncia vem na mesma forma do munic\u00EDpio das respostas: { \u0022codigo\u0022, \u0022rotulo\u0022 } na inscri\u00E7\u00E3o enviada."
+          },
+          "grupos": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/OcorrenciaDeGrupoInscricaoInput"
+              }
+            }
+          },
+          "aceites": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AceiteDeTermoInput"
+            }
+          }
+        }
+      },
       "FormularioDto": {
         "required": [
           "finalidade",
@@ -20565,6 +20558,41 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/GrupoColetadoDto"
+            }
+          }
+        }
+      },
+      "FormularioNoComprovanteDto": {
+        "required": [
+          "secoes",
+          "derivados",
+          "termosAceitos",
+          "documentos"
+        ],
+        "type": "object",
+        "properties": {
+          "secoes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SecaoDoComprovanteDto"
+            }
+          },
+          "derivados": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemDoComprovanteDto"
+            }
+          },
+          "termosAceitos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TermoAceitoDoComprovanteDto"
+            }
+          },
+          "documentos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDoComprovanteDto"
             }
           }
         }
@@ -21805,15 +21833,8 @@
           "processoSeletivoId",
           "situacao",
           "numeroInscricao",
-          "versaoFormularioId",
-          "ofertaCursoId",
-          "ofertaCursoSegundaOpcaoId",
-          "numeroDeOpcoesDeCurso",
-          "ofertas",
-          "respostas",
-          "derivados",
-          "grupos",
-          "aceites",
+          "formulario",
+          "escolhasDeCurso",
           "eTag",
           "avaliacao"
         ],
@@ -21836,62 +21857,81 @@
               "string"
             ]
           },
-          "versaoFormularioId": {
-            "type": "string",
-            "format": "uuid"
+          "formulario": {
+            "$ref": "#/components/schemas/FormularioDaInscricaoDto"
           },
-          "ofertaCursoId": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "uuid"
-          },
-          "ofertaCursoSegundaOpcaoId": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "uuid"
-          },
-          "numeroDeOpcoesDeCurso": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "ofertas": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/OfertaDeCursoCertameDto"
-            }
-          },
-          "respostas": {
-            "type": "object",
-            "description": "As respostas por c\u00F3digo do fato. O munic\u00EDpio vem como texto, o c\u00F3digo IBGE, no rascunho, e como objeto { \u0022codigo\u0022, \u0022rotulo\u0022 } na inscri\u00E7\u00E3o enviada, com o nome que o Geo conferiu no envio."
-          },
-          "derivados": {
-            "type": "object",
-            "description": "O que o sistema calculou das respostas. O munic\u00EDpio de resid\u00EAncia vem na mesma forma do munic\u00EDpio das respostas: { \u0022codigo\u0022, \u0022rotulo\u0022 } na inscri\u00E7\u00E3o enviada."
-          },
-          "grupos": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/OcorrenciaDeGrupoInscricaoInput"
-              }
-            }
-          },
-          "aceites": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AceiteDeTermoInput"
-            }
+          "escolhasDeCurso": {
+            "$ref": "#/components/schemas/EscolhasDeCursoDaInscricaoDto"
           },
           "eTag": {
             "type": "string"
           },
           "avaliacao": {
             "$ref": "#/components/schemas/AvaliacaoDaInscricaoDto"
+          }
+        }
+      },
+      "InscricaoNoComprovanteDto": {
+        "required": [
+          "inscricaoId",
+          "numero",
+          "total",
+          "vale",
+          "envio"
+        ],
+        "type": "object",
+        "properties": {
+          "inscricaoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "numero": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "vale": {
+            "type": "boolean"
+          },
+          "numeroAnterior": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "numeroSeguinte": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "envio": {
+            "$ref": "#/components/schemas/EnvioDoComprovanteDto"
+          },
+          "cancelamento": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CancelamentoNoComprovanteDto"
+              }
+            ]
+          },
+          "prazoDaCorrecao": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PrazoDaCorrecaoDto"
+              }
+            ]
           }
         }
       },
@@ -24520,6 +24560,32 @@
             "format": "uuid"
           },
           "nome": {
+            "type": "string"
+          }
+        }
+      },
+      "ProcessoNoComprovanteDto": {
+        "required": [
+          "processoSeletivoId",
+          "nomeDoProcesso",
+          "unidadeAdministradora"
+        ],
+        "type": "object",
+        "properties": {
+          "processoSeletivoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nomeDoProcesso": {
+            "type": "string"
+          },
+          "identificadorDoProcesso": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "unidadeAdministradora": {
             "type": "string"
           }
         }

@@ -16,14 +16,13 @@ using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 /// divulgada, e não da fixada pela inscrição, porque a retificação que prorroga o prazo vale para quem
 /// já iniciou.
 /// </summary>
-public static class PeriodoDaInscricaoResolver
+public sealed class PeriodoDaInscricaoResolver(
+    ICertameDivulgadoRepository certameDivulgadoRepository,
+    IProcessoSeletivoRepository processoSeletivoRepository,
+    IRegistroCodecsEnvelope registroCodecs,
+    IResolvedorFusoInstitucional resolvedorFuso)
 {
-    public static async Task<DomainError?> ConferirAsync(
-        Guid processoSeletivoId,
-        ICertameDivulgadoRepository certameDivulgadoRepository,
-        IProcessoSeletivoRepository processoSeletivoRepository,
-        IRegistroCodecsEnvelope registroCodecs,
-        IResolvedorFusoInstitucional resolvedorFuso,
+    public async Task<DomainError?> ConferirAsync(Guid processoSeletivoId,
         DateTimeOffset instante,
         CancellationToken cancellationToken)
     {
@@ -32,14 +31,11 @@ public static class PeriodoDaInscricaoResolver
             .ConfigureAwait(false);
         return divulgada.IsFailure
             ? divulgada.Error
-            : Conferir(divulgada.Value!.Versao, registroCodecs, resolvedorFuso, instante);
+            : Conferir(divulgada.Value!.Versao, instante);
     }
 
     /// <summary>A mesma conferência sobre a versão divulgada já resolvida por quem chama.</summary>
-    public static DomainError? Conferir(
-        VersaoConfiguracao versaoDivulgada,
-        IRegistroCodecsEnvelope registroCodecs,
-        IResolvedorFusoInstitucional resolvedorFuso,
+    public DomainError? Conferir(VersaoConfiguracao versaoDivulgada,
         DateTimeOffset instante)
     {
         ArgumentNullException.ThrowIfNull(resolvedorFuso);
@@ -66,6 +62,6 @@ public static class PeriodoDaInscricaoResolver
 
         return reidratado.IsFailure
             ? Result<JanelaDaInscricao>.Failure(reidratado.Error!)
-            : JanelaDaInscricao.Da(reidratado.Value!.Grafo, reidratado.Value!.Dados);
+            : JanelaDaInscricao.Da(reidratado.Value!.Configuracao, reidratado.Value!.Dados);
     }
 }

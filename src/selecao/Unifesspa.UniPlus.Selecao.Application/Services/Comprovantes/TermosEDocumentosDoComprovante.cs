@@ -27,7 +27,7 @@ internal static class TermosEDocumentosDoComprovante
     public static IReadOnlyList<TermoAceitoDoComprovanteDto> Termos(InsumosDoComprovante insumos)
     {
         Dictionary<string, string> nomes = [];
-        foreach (TermoExigidoFormulario termo in insumos.Envelope.Grafo.TermosExigidos.Where(static t => t.Finalidade == FinalidadeFormulario.Inscricao))
+        foreach (TermoExigidoFormulario termo in insumos.Envelope.Configuracao.Coleta.TermosExigidos.Where(static t => t.Finalidade == FinalidadeFormulario.Inscricao))
         {
             nomes.TryAdd(termo.Codigo, termo.Nome);
         }

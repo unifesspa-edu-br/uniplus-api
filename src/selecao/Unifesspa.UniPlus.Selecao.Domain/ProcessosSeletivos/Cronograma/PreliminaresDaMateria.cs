@@ -27,16 +27,16 @@ public static class PreliminaresDaMateria
     /// Os identificadores dos produtos preliminares que o definitivo <paramref name="definitivoId"/>
     /// espera, ou lista vazia quando o cronograma não declara preliminar para a matéria dele.
     /// </summary>
-    public static IReadOnlyList<Guid> Esperados(GrafoConfiguracao grafo, Guid definitivoId)
+    public static IReadOnlyList<Guid> Esperados(ConfiguracaoPublicada configuracao, Guid definitivoId)
     {
-        ArgumentNullException.ThrowIfNull(grafo);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
-        return Esperados(grafo.CronogramaFases, grafo.Etapas, definitivoId);
+        return Esperados(configuracao.Cronograma.CronogramaFases, configuracao.Avaliacao.Etapas, definitivoId);
     }
 
     /// <summary>
-    /// A mesma pergunta de <see cref="Esperados(GrafoConfiguracao, Guid)"/> sobre um cronograma que
-    /// ainda não virou grafo, como o do processo em edição.
+    /// A mesma pergunta de <see cref="Esperados(ConfiguracaoPublicada, Guid)"/> sobre um cronograma que
+    /// pertence ao processo em edição.
     /// </summary>
     public static IReadOnlyList<Guid> Esperados(
         IReadOnlyCollection<FaseCronograma> fases,
@@ -84,16 +84,16 @@ public static class PreliminaresDaMateria
     /// <paramref name="preliminarId"/>, ou lista vazia quando nenhum definitivo o espera. É a pergunta
     /// inversa de <see cref="Esperados"/>, respondida por ela, para que o pareamento continue num só lugar.
     /// </summary>
-    public static IReadOnlyList<Guid> DefinitivosQueFecham(GrafoConfiguracao grafo, Guid preliminarId)
+    public static IReadOnlyList<Guid> DefinitivosQueFecham(ConfiguracaoPublicada configuracao, Guid preliminarId)
     {
-        ArgumentNullException.ThrowIfNull(grafo);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
-        return DefinitivosQueFecham(grafo.CronogramaFases, grafo.Etapas, preliminarId);
+        return DefinitivosQueFecham(configuracao.Cronograma.CronogramaFases, configuracao.Avaliacao.Etapas, preliminarId);
     }
 
     /// <summary>
-    /// A mesma pergunta de <see cref="DefinitivosQueFecham(GrafoConfiguracao, Guid)"/> sobre um
-    /// cronograma que ainda não virou grafo.
+    /// A mesma pergunta de <see cref="DefinitivosQueFecham(ConfiguracaoPublicada, Guid)"/> sobre um
+    /// cronograma do processo em edição.
     /// </summary>
     public static IReadOnlyList<Guid> DefinitivosQueFecham(
         IReadOnlyCollection<FaseCronograma> fases,

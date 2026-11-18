@@ -5,7 +5,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 /// <summary>A oferta do processo: a distribuição de vagas, o número de opções de curso, o bônus regional, a cascata e o atendimento especializado.</summary>
 public sealed class VagasDeclaradas
 {
-    internal VagasDeclaradas(
+    public VagasDeclaradas(
         IReadOnlyList<ConfiguracaoDistribuicaoVagas> distribuicaoVagas,
         int? numeroDeOpcoesDeCurso,
         bool? aplicaBonusRegional,
@@ -13,7 +13,8 @@ public sealed class VagasDeclaradas
         ConfiguracaoCascataRemanejamento? cascata,
         AtendimentoEspecializado? atendimentoEspecializado)
     {
-        DistribuicaoVagas = distribuicaoVagas;
+        ArgumentNullException.ThrowIfNull(distribuicaoVagas);
+        DistribuicaoVagas = [.. distribuicaoVagas];
         NumeroDeOpcoesDeCurso = numeroDeOpcoesDeCurso;
         AplicaBonusRegional = aplicaBonusRegional;
         BonusRegional = bonusRegional;

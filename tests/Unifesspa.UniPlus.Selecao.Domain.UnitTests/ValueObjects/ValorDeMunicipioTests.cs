@@ -50,15 +50,26 @@ public sealed class ValorDeMunicipioTests
     {
         JsonElement gravado = ValorDeMunicipio.Gravado("2927408", "Salvador");
         JsonElement endereco = Json("{\"cep\":\"40000000\"}");
-        Dictionary<string, DefinicaoDaResposta> definicoes = new(StringComparer.Ordinal)
-        {
-            ["NATURALIDADE_MUNICIPIO"] = new(TipoDoValorDeResposta.Municipio, Multivalorado: false, Identificador: false),
-            ["MUNICIPIO_RESIDENCIA"] = new(TipoDoValorDeResposta.Municipio, Multivalorado: false, Identificador: false),
-            ["ENDERECO_RESIDENCIAL"] = new(TipoDoValorDeResposta.Endereco, Multivalorado: false, Identificador: false),
-        };
+        EntradaDaAvaliacaoDaInscricao original = ComMunicipiosGravados(gravado, endereco);
+        EntradaDaAvaliacaoDaInscricao entrada = EntradaDaAvaliacaoDaInscricao.Montar(Definicoes(), original);
 
-        EntradaDaAvaliacaoDaInscricao entrada = EntradaDaAvaliacaoDaInscricao.Montar(
-            definicoes,
+        entrada.Respostas["NATURALIDADE_MUNICIPIO"].GetString().Should().Be("2927408");
+        entrada.Respostas["ENDERECO_RESIDENCIAL"].GetRawText().Should().Be(endereco.GetRawText());
+        entrada.Grupos["LOCAIS"].Single().Respostas["NATURALIDADE_MUNICIPIO"].GetString().Should().Be("2927408");
+        entrada.FatosConhecidos["MUNICIPIO_RESIDENCIA"].Valor!.Value.GetString().Should().Be("2927408");
+        entrada.FatosConhecidos["UF_RESIDENCIA"].Estado.Should().Be(EstadoFato.Indeterminado);
+        original.Respostas["NATURALIDADE_MUNICIPIO"].GetRawText().Should().Be(gravado.GetRawText());
+    }
+
+    private static Dictionary<string, DefinicaoDaResposta> Definicoes() => new(StringComparer.Ordinal)
+    {
+        ["NATURALIDADE_MUNICIPIO"] = new(TipoDoValorDeResposta.Municipio, Multivalorado: false, Identificador: false),
+        ["MUNICIPIO_RESIDENCIA"] = new(TipoDoValorDeResposta.Municipio, Multivalorado: false, Identificador: false),
+        ["ENDERECO_RESIDENCIAL"] = new(TipoDoValorDeResposta.Endereco, Multivalorado: false, Identificador: false),
+    };
+
+    private static EntradaDaAvaliacaoDaInscricao ComMunicipiosGravados(JsonElement gravado, JsonElement endereco) =>
+        new(
             new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["NATURALIDADE_MUNICIPIO"] = gravado, ["ENDERECO_RESIDENCIAL"] = endereco },
             new Dictionary<string, IReadOnlyList<OcorrenciaRespondida>>(StringComparer.Ordinal)
             {
@@ -70,13 +81,8 @@ public sealed class ValorDeMunicipioTests
                 ["UF_RESIDENCIA"] = FatoResolvido.Indeterminado(),
             },
             new HashSet<string>(StringComparer.Ordinal),
-            envio: null,
+            Envio: null,
             EntradaDaAvaliacaoDaInscricao.SemApresentacoes);
 
-        entrada.Respostas["NATURALIDADE_MUNICIPIO"].GetString().Should().Be("2927408");
-        entrada.Respostas["ENDERECO_RESIDENCIAL"].GetRawText().Should().Be(endereco.GetRawText());
-        entrada.Grupos["LOCAIS"].Single().Respostas["NATURALIDADE_MUNICIPIO"].GetString().Should().Be("2927408");
-        entrada.FatosConhecidos["MUNICIPIO_RESIDENCIA"].Valor!.Value.GetString().Should().Be("2927408");
-        entrada.FatosConhecidos["UF_RESIDENCIA"].Estado.Should().Be(EstadoFato.Indeterminado);
-    }
+
 }

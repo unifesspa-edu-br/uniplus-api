@@ -193,12 +193,11 @@ public sealed class AcessoAFaseDoProcessoEndpointTests : IAsyncLifetime
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
         Cpf cpf = Cpf.Criar(PersonasDeTeste.Candidatas.First(static c => c.Nome.StartsWith("Helena", StringComparison.Ordinal)).Cpf).Value!;
-        Inscricao inscricao = Inscricao.Reidratar(
-            Guid.CreateVersion7(), publicado.ProcessoId, cpf, contaId, TestAuthHandler.DefaultIssuer, SituacaoInscricao.Submetida, publicado.VersaoId, null, null,
-            "000002", null, null, null, new Dictionary<string, JsonElement>(StringComparer.Ordinal),
-            new Dictionary<string, JsonElement>(StringComparer.Ordinal),
-            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [],
-            new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal), revisao: 1, DateTimeOffset.UtcNow, null);
+        Inscricao inscricao = Inscricao.Reidratar(Guid.CreateVersion7(), publicado.ProcessoId,
+            TitularDaInscricao.Reidratar(cpf, contaId, TestAuthHandler.DefaultIssuer),
+            EstadoDaInscricao.Reidratar(SituacaoInscricao.Submetida, "000002", CancelamentoDaInscricao.Reidratar(null, null, null)),
+            FormularioDaInscricao.Reidratar(publicado.VersaoId, PreenchimentoDoCandidato.Criar(OpcoesDeCursoDaInscricao.Reidratar(null, null), new Dictionary<string, JsonElement>(StringComparer.Ordinal), new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), []),
+                new Dictionary<string, JsonElement>(StringComparer.Ordinal), new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal)), 1, new Unifesspa.UniPlus.Selecao.Domain.ValueObjects.DatasDeGravacaoDaInscricao(default, null));
         await scope.ServiceProvider.GetRequiredService<IInscricaoRepository>().AdicionarAsync(inscricao);
         await scope.ServiceProvider.GetRequiredService<IUnitOfWork>().SalvarAlteracoesAsync();
     }

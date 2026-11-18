@@ -34,26 +34,27 @@ public sealed class SubmeterInscricaoEnderecoEIndisponibilidadeDoGeoTests
     private static async Task<(Result<ReciboDaInscricaoDto> Resultado, IUnitOfWork UnitOfWork)> SubmeterComEnderecoAsync(IConferenciaEnderecoGeo geo, string? cep = "66010000")
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
-        (VersaoConfiguracao versao, GrafoConfiguracao grafo, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo();
+        (VersaoConfiguracao versao, ConfiguracaoPublicada grafo, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo();
         Inscricao existente = NovaInscricao(cpf, "conta-1", versao.Id);
 
-        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
-        inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
-
-        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
-        DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
+        (IInscricaoRepository inscricaoRepository, IProcessoSeletivoRepository processoRepository, IRegistroCodecsEnvelope registroCodecs) = PortasPara(existente, versao, grafo);
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
 
-        Dictionary<string, JsonElement> respostas = RespostasDoConjuntoBasico(cpf);
-        respostas["APELIDO"] = JsonSerializer.SerializeToElement("Nanda");
-        respostas["ENDERECO_RESIDENCIAL"] = JsonSerializer.SerializeToElement(new { cep, cidade = new { codigoIbge = "1501402", uf = "PA" } });
-        InscricaoRequest request = new(OfertaDo(grafo), respostas, null, [new AceiteDeTermoInput("TERMO_VERACIDADE", termo.VersaoId, termo.Hash)]);
+        InscricaoRequest request = PedidoComEndereco(cpf, grafo, termo, cep);
 
         Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, processoRepository, registroCodecs, unitOfWork, UsuarioComCpf(cpf), geo);
         return (resultado, unitOfWork);
+    }
+
+    private static InscricaoRequest PedidoComEndereco(Cpf cpf, ConfiguracaoPublicada grafo, VersaoTermoEscolhida termo, string? cep)
+    {
+        Dictionary<string, JsonElement> respostas = RespostasDoConjuntoBasico(cpf);
+        respostas["APELIDO"] = JsonSerializer.SerializeToElement("Nanda");
+        respostas["ENDERECO_RESIDENCIAL"] = JsonSerializer.SerializeToElement(new { cep, cidade = new { codigoIbge = "1501402", uf = "PA" } });
+        return new(OfertaDo(grafo), respostas, null, [new AceiteDeTermoInput("TERMO_VERACIDADE", termo.VersaoId, termo.Hash)]);
+
     }
 
     [Fact(DisplayName = "CEP que o Geo não encontra recusa o envio no campo do endereço, sem gravar")]
@@ -157,8 +158,11 @@ public sealed class SubmeterInscricaoEnderecoEIndisponibilidadeDoGeoTests
     [Fact(DisplayName = "Campo obrigatório em definitivo e vazio, com o Geo fora do ar, é recusa que conta: 422 com a recusa do campo")]
     public async Task Handle_ObrigatorioEmDefinitivoVazioComGeoForaDoAr_Recusa422()
     {
-        (Result<ReciboDaInscricaoDto> resultado, _) = await SubmeterComAsync(
-            [ObrigatorioSoParaQuemMoraEm("9999999")], null, Texto(), geo: GeoQueConhece().Indisponivel(), remover: ["NOME_MAE"]);
+        (Result<ReciboDaInscricaoDto> resultado, _) = await new FormularioASubmeterDeTeste([ObrigatorioSoParaQuemMoraEm("9999999")], null)
+        {
+            Geo = GeoQueConhece().Indisponivel(),
+            Ausentes = ["NOME_MAE"],
+        }.SubmeterAsync(Texto());
 
         resultado.Errors.Should().ContainSingle(e => e.Field == "NOME_MAE" && e.Error.Code == InscricaoErrorCodes.ItemObrigatorioAusente);
         resultado.Errors.Should().NotContain(e => e.Field == "OUTRA_REGIAO");

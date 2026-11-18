@@ -128,17 +128,22 @@ public sealed class ContextoDaVersaoFixadaResolverTests
     private static async Task<Result<ContextoDaVersaoFixada>> ResolverAsync(
         int numeroDeOpcoes, Guid? primeira, Guid? segunda, string[] ofertaA, string[] ofertaB)
     {
-        (VersaoConfiguracao versao, GrafoConfiguracao grafoBase) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
-        GrafoConfiguracao grafo = OfertasDeTeste.ComOpcoesDeCurso(
+        (VersaoConfiguracao versao, ConfiguracaoPublicada grafoBase) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
+        ConfiguracaoPublicada grafo = OfertasDeTeste.ComOpcoesDeCurso(
             OfertasDeTeste.ComDistribuicao(grafoBase, OfertasDeTeste.Distribuicao(OfertaA, ofertaA), OfertasDeTeste.Distribuicao(OfertaB, ofertaB)),
             numeroDeOpcoes);
 
+        return await ResolverConfiguracaoAsync(versao, grafo, primeira, segunda);
+    }
+
+    private static async Task<Result<ContextoDaVersaoFixada>> ResolverConfiguracaoAsync(
+        VersaoConfiguracao versao, ConfiguracaoPublicada grafo, Guid? primeira, Guid? segunda)
+    {
         IProcessoSeletivoRepository repositorio = Substitute.For<IProcessoSeletivoRepository>();
         IRegistroCodecsEnvelope codecs = Substitute.For<IRegistroCodecsEnvelope>();
         DivulgacaoDeTeste.ConfigurarVersao(repositorio, codecs, versao, grafo);
-
-        Result<ContextoDaVersaoFixada> contexto = await ContextoDaVersaoFixadaResolver.ResolverAsync(
-            versao.Id, ProcessoId, repositorio, codecs, primeira, segunda, CancellationToken.None);
+        Result<ContextoDaVersaoFixada> contexto = await new ContextoDaVersaoFixadaResolver(repositorio, codecs)
+            .ResolverAsync(versao.Id, ProcessoId, primeira, segunda, CancellationToken.None);
         contexto.IsSuccess.Should().BeTrue(contexto.Error?.Message);
         return contexto;
     }
@@ -151,16 +156,7 @@ public sealed class ContextoDaVersaoFixadaResolverTests
 
         Result<ResultadoDaAvaliacaoDaInscricao> avaliacao = AvaliacaoDaInscricaoPorOpcao.Avaliar(
             contexto.Value!,
-            new EntradaDaAvaliacaoDaInscricao(
-                new Dictionary<string, JsonElement>(StringComparer.Ordinal)
-                {
-                    [OfertasDeTeste.FatoDaAcaoAfirmativa] = JsonSerializer.SerializeToElement(OfertasDeTeste.ValorDaAcaoAfirmativa),
-                },
-                new Dictionary<string, IReadOnlyList<OcorrenciaRespondida>>(StringComparer.Ordinal),
-                new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
-                new HashSet<string>(StringComparer.Ordinal),
-                Envio: null, Apresentacoes: EntradaDaAvaliacaoDaInscricao.SemApresentacoes,
-                NaFaseDaInscricao: true));
+            EntradaDaCandidata());
         avaliacao.IsSuccess.Should().BeTrue(avaliacao.Error?.Message);
         return avaliacao.Value!;
     }
@@ -172,26 +168,22 @@ public sealed class ContextoDaVersaoFixadaResolverTests
     private static async Task<ResultadoDaAvaliacaoDaInscricao> AvaliarAsync(
         Guid? ofertaEscolhida, string[] ofertaA, string[]? ofertaB)
     {
-        List<ConfiguracaoDistribuicaoVagas> distribuicao = [OfertasDeTeste.Distribuicao(OfertaA, ofertaA)];
-        if (ofertaB is not null)
-        {
-            distribuicao.Add(OfertasDeTeste.Distribuicao(OfertaB, ofertaB));
-        }
-
-        (VersaoConfiguracao versao, GrafoConfiguracao grafoBase) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
-        GrafoConfiguracao grafo = OfertasDeTeste.ComDistribuicao(grafoBase, [.. distribuicao]);
-
-        IProcessoSeletivoRepository repositorio = Substitute.For<IProcessoSeletivoRepository>();
-        IRegistroCodecsEnvelope codecs = Substitute.For<IRegistroCodecsEnvelope>();
-        DivulgacaoDeTeste.ConfigurarVersao(repositorio, codecs, versao, grafo);
-
-        Result<ContextoDaVersaoFixada> contexto = await ContextoDaVersaoFixadaResolver.ResolverAsync(
-            versao.Id, ProcessoId, repositorio, codecs, ofertaEscolhida, null, CancellationToken.None);
-        contexto.IsSuccess.Should().BeTrue(contexto.Error?.Message);
+        (VersaoConfiguracao versao, ConfiguracaoPublicada grafoBase) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
+        ConfiguracaoPublicada grafo = OfertasDeTeste.ComDistribuicao(grafoBase, DistribuicaoDasOfertas(ofertaA, ofertaB));
+        Result<ContextoDaVersaoFixada> contexto = await ResolverConfiguracaoAsync(versao, grafo, ofertaEscolhida, null);
 
         Result<ResultadoDaAvaliacaoDaInscricao> avaliacao = AvaliacaoDaInscricao.Avaliar(
             contexto.Value!.Configuracao,
-            new EntradaDaAvaliacaoDaInscricao(
+            EntradaDaCandidata());
+        avaliacao.IsSuccess.Should().BeTrue(avaliacao.Error?.Message);
+        return avaliacao.Value!;
+    }
+    private static ConfiguracaoDistribuicaoVagas[] DistribuicaoDasOfertas(string[] ofertaA, string[]? ofertaB) =>
+        ofertaB is null ? [OfertasDeTeste.Distribuicao(OfertaA, ofertaA)]
+            : [OfertasDeTeste.Distribuicao(OfertaA, ofertaA), OfertasDeTeste.Distribuicao(OfertaB, ofertaB)];
+
+    private static EntradaDaAvaliacaoDaInscricao EntradaDaCandidata() =>
+new EntradaDaAvaliacaoDaInscricao(
                 new Dictionary<string, JsonElement>(StringComparer.Ordinal)
                 {
                     [OfertasDeTeste.FatoDaAcaoAfirmativa] = JsonSerializer.SerializeToElement(OfertasDeTeste.ValorDaAcaoAfirmativa),
@@ -200,8 +192,6 @@ public sealed class ContextoDaVersaoFixadaResolverTests
                 new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
                 new HashSet<string>(StringComparer.Ordinal),
                 Envio: null, Apresentacoes: EntradaDaAvaliacaoDaInscricao.SemApresentacoes,
-                NaFaseDaInscricao: true));
-        avaliacao.IsSuccess.Should().BeTrue(avaliacao.Error?.Message);
-        return avaliacao.Value!;
-    }
+                NaFaseDaInscricao: true);
+
 }

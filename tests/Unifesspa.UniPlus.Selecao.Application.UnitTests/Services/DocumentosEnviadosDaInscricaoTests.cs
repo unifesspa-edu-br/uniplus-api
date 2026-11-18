@@ -43,8 +43,7 @@ public sealed class DocumentosEnviadosDaInscricaoTests
                 new Dictionary<Guid, IReadOnlyList<PendenciaDaAvaliacao>>(), []),
         };
 
-        await DocumentosEnviadosDaInscricao.ConciliarNoEnvioAsync(
-            cenario.Repositorio, await Carregar(cenario), avaliacao, [], DateTimeOffset.UnixEpoch, CancellationToken.None);
+        await new DocumentosEnviadosDaInscricao(cenario.Repositorio).ConciliarNoEnvioAsync(await Carregar(cenario), avaliacao, [], DateTimeOffset.UnixEpoch, CancellationToken.None);
 
         cenario.Arquivo.ConstouDeEnvio.Should().BeFalse();
         await cenario.Repositorio.DidNotReceiveWithAnyArgs().RemoverArquivoAsync(default!, default);
@@ -122,12 +121,11 @@ public sealed class DocumentosEnviadosDaInscricaoTests
                 []),
         };
         ArquivosDaInscricao arquivos = await Carregar(cenario);
-        await DocumentosEnviadosDaInscricao.ConciliarNoEnvioAsync(
-            cenario.Repositorio, arquivos, avaliacao, arquivos.Verificados(), DateTimeOffset.UnixEpoch, CancellationToken.None);
+        await new DocumentosEnviadosDaInscricao(cenario.Repositorio).ConciliarNoEnvioAsync(arquivos, avaliacao, arquivos.Verificados(), DateTimeOffset.UnixEpoch, CancellationToken.None);
     }
 
     private static Task<ArquivosDaInscricao> Carregar(Cenario cenario) =>
-        ArquivosDaInscricao.CarregarAsync(cenario.Repositorio, InscricaoId, CancellationToken.None);
+        new DocumentosEnviadosDaInscricao(cenario.Repositorio).CarregarAsync(InscricaoId, CancellationToken.None);
 
     private static DocumentoExigido Exigencia() =>
         DocumentoExigido.Criar(

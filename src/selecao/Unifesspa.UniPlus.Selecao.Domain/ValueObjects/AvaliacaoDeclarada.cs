@@ -5,10 +5,12 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 /// <summary>O eixo de pontuação do processo: as etapas, os critérios de desempate e a classificação.</summary>
 public sealed class AvaliacaoDeclarada
 {
-    internal AvaliacaoDeclarada(IReadOnlyList<EtapaProcesso> etapas, IReadOnlyList<CriterioDesempate> criteriosDesempate, ConfiguracaoClassificacao? classificacao)
+    public AvaliacaoDeclarada(IReadOnlyList<EtapaProcesso> etapas, IReadOnlyList<CriterioDesempate> criteriosDesempate, ConfiguracaoClassificacao? classificacao)
     {
-        Etapas = etapas;
-        CriteriosDesempate = criteriosDesempate;
+        ArgumentNullException.ThrowIfNull(etapas);
+        ArgumentNullException.ThrowIfNull(criteriosDesempate);
+        Etapas = [.. etapas];
+        CriteriosDesempate = [.. criteriosDesempate];
         Classificacao = classificacao;
     }
 

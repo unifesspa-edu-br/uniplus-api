@@ -1,11 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.NotasDoEnem;
 
-using System.Text.RegularExpressions;
-
-using Abstractions;
-
-using Domain.Entities;
-using Domain.Errors;
 using Domain.Interfaces;
 using Domain.Leiautes;
 
@@ -15,107 +9,47 @@ using Kernel.Results;
 
 using Microsoft.Extensions.Logging;
 
-using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Services.NotasDoEnem;
+
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
-/// <summary>
-/// Gera o arquivo de envio ao INEP e registra a geração. Os CPFs vão só no arquivo devolvido: o
-/// registro guarda quem, quando, a edição, o leiaute e o total. O arquivo lista os CPFs em ordem
-/// crescente, para que a mesma edição gere o mesmo arquivo.
-/// </summary>
+/// <summary>Confere o leiaute, bloqueia o processo e confirma a evidência do envio ao INEP.</summary>
 public static partial class GerarEnvioAoInepCommandHandler
 {
-    public static async Task<Result<EnvioAoInepGeradoDto>> Handle(
-        GerarEnvioAoInepCommand command,
-        ICertameDivulgadoRepository certameDivulgadoRepository,
-        IProcessoSeletivoRepository processoSeletivoRepository,
-        IRegistroCodecsEnvelope registroCodecs,
-        IInscritosDaEdicaoDoEnem inscritos,
-        IGeracaoDeEnvioAoInepRepository geracoes,
-        IUnitOfWork unitOfWork,
-        IUserContext userContext,
-        IResolvedorFusoInstitucional resolvedorFuso,
-        TimeProvider timeProvider,
-        ILogger logger,
-        CancellationToken cancellationToken)
+    public static async Task<Result<EnvioAoInepGeradoDto>> Handle(GerarEnvioAoInepCommand command,
+        GeracaoDoEnvioAoInep geracao, IProcessoSeletivoRepository processos, IUnitOfWork unitOfWork,
+        TimeProvider relogio, ILogger logger, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
-        ArgumentNullException.ThrowIfNull(certameDivulgadoRepository);
-        ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
-        ArgumentNullException.ThrowIfNull(registroCodecs);
-        ArgumentNullException.ThrowIfNull(inscritos);
-        ArgumentNullException.ThrowIfNull(geracoes);
+        ArgumentNullException.ThrowIfNull(geracao);
+        ArgumentNullException.ThrowIfNull(processos);
         ArgumentNullException.ThrowIfNull(unitOfWork);
-        ArgumentNullException.ThrowIfNull(userContext);
-        ArgumentNullException.ThrowIfNull(resolvedorFuso);
-        ArgumentNullException.ThrowIfNull(timeProvider);
+        ArgumentNullException.ThrowIfNull(relogio);
         ArgumentNullException.ThrowIfNull(logger);
-
-        Result<ILeiauteDeArquivoDoInep> leiaute = ResolvedorDoEscopoDeNotasDoEnem
-            .ObterLeiaute(command.LeiauteCodigo, command.LeiauteVersao, TipoDeLeiauteDoInep.Envio);
-        if (leiaute.IsFailure)
-        {
-            return Result<EnvioAoInepGeradoDto>.Failure(leiaute.Error!);
-        }
-
-        // A trava serializa o envio contra a publicação: o escopo e o encerramento das inscrições são
-        // conferidos sob ela, e o instante também é lido sob ela, para que o registro siga a ordem em
-        // que os envios gravam.
-        await processoSeletivoRepository.TravarAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
-        DateTimeOffset agora = timeProvider.GetUtcNow();
-
-        Result<EscopoDeNotasDoEnem> escopo = await ResolvedorDoEscopoDeNotasDoEnem
-            .ResolverAsync(
-                command.ProcessoSeletivoId, command.EtapaProcessoId, command.Edicao, exigeNotaDoEnem: true,
-                certameDivulgadoRepository, processoSeletivoRepository, registroCodecs, cancellationToken)
-            .ConfigureAwait(false);
-        if (escopo.IsFailure)
-        {
-            return Result<EnvioAoInepGeradoDto>.Failure(escopo.Error!);
-        }
-
-        if (ResolvedorDoEscopoDeNotasDoEnem.ConferirInscricoesEncerradas(escopo.Value!, agora, resolvedorFuso) is { } inscricoesAbertas)
-        {
-            return Result<EnvioAoInepGeradoDto>.Failure(inscricoesAbertas);
-        }
-
-        IReadOnlyList<string> cpfs = await inscritos
-            .ListarCpfsAsync(command.ProcessoSeletivoId, command.Edicao, cancellationToken)
-            .ConfigureAwait(false);
-        if (cpfs.Count == 0)
-        {
-            return Result<EnvioAoInepGeradoDto>.Failure(new DomainError(
-                NotasDoEnemErrorCodes.EdicaoSemInscritos,
-                "Nenhuma inscrição enviada escolheu esta edição, então não há CPF a enviar ao INEP."));
-        }
-
-        byte[] arquivo = EscritorDeArquivoDeEnvio.Escrever(
-            (LeiauteDeEnvioDoInep)leiaute.Value!, [.. cpfs.Order(StringComparer.Ordinal)]);
-
-        GeracaoDeEnvioAoInep geracao = GeracaoDeEnvioAoInep.Registrar(
-            command.ProcessoSeletivoId,
-            command.EtapaProcessoId,
-            command.Edicao,
-            leiaute.Value!.Codigo,
-            leiaute.Value.Versao,
-            leiaute.Value.Hash,
-            userContext.UserId ?? string.Empty,
-            agora,
-            cpfs.Count,
-            userContext.NomeCompleto);
-        await geracoes.AdicionarAsync(geracao, cancellationToken).ConfigureAwait(false);
-        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-
-        LogEnvioGerado(logger, geracao.Id, command.ProcessoSeletivoId, geracao.TotalDeCpfs);
-
-        return Result<EnvioAoInepGeradoDto>.Success(
-            new EnvioAoInepGeradoDto(arquivo, NomeDoArquivo(command.Edicao), geracao.Id, geracao.TotalDeCpfs));
+        Result<ILeiauteDeArquivoDoInep> leiaute = ResolvedorDoEscopoDeNotasDoEnem.ObterLeiaute(command.LeiauteCodigo, command.LeiauteVersao, TipoDeLeiauteDoInep.Envio);
+        Result<EnvioAoInepGeradoDto> resultado = leiaute.IsFailure ? Result<EnvioAoInepGeradoDto>.Failure(leiaute.Error!)
+            : await GerarSobBloqueioAsync(command, leiaute.Value!, geracao, processos, relogio, cancellationToken).ConfigureAwait(false);
+        return await ConfirmarAsync(resultado, command.ProcessoSeletivoId, unitOfWork, logger, cancellationToken).ConfigureAwait(false);
     }
 
-    private static string NomeDoArquivo(string edicao) => $"envio-inep-enem-{NaoSeguro().Replace(edicao, "_")}.txt";
+    private static async Task<Result<EnvioAoInepGeradoDto>> GerarSobBloqueioAsync(GerarEnvioAoInepCommand command,
+        ILeiauteDeArquivoDoInep leiaute, GeracaoDoEnvioAoInep geracao, IProcessoSeletivoRepository processos,
+        TimeProvider relogio, CancellationToken cancellationToken)
+    {
+        await processos.TravarAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
+        return await geracao.GerarAsync(command, leiaute, relogio.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+    }
 
-    [GeneratedRegex("[^A-Za-z0-9_-]")]
-    private static partial Regex NaoSeguro();
+    private static async Task<Result<EnvioAoInepGeradoDto>> ConfirmarAsync(Result<EnvioAoInepGeradoDto> resultado,
+        Guid processoId, IUnitOfWork unitOfWork, ILogger logger, CancellationToken cancellationToken)
+    {
+        if (resultado.IsSuccess)
+        {
+            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+            LogEnvioGerado(logger, resultado.Value!.GeracaoId, processoId, resultado.Value.TotalDeCpfs);
+        }
+        return resultado;
+    }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Envio ao INEP {GeracaoId} gerado para o processo {ProcessoId} com {TotalDeCpfs} CPFs")]
     private static partial void LogEnvioGerado(ILogger logger, Guid geracaoId, Guid processoId, int totalDeCpfs);

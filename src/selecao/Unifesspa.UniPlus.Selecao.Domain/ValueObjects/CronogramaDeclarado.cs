@@ -8,11 +8,12 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 /// </summary>
 public sealed class CronogramaDeclarado
 {
-    internal CronogramaDeclarado(LocalidadeRegente? localidade, ReferenciaRegra? algoritmoContagemPrazo, IReadOnlyList<FaseCronograma> cronogramaFases)
+    public CronogramaDeclarado(LocalidadeRegente? localidade, ReferenciaRegra? algoritmoContagemPrazo, IReadOnlyList<FaseCronograma> cronogramaFases)
     {
+        ArgumentNullException.ThrowIfNull(cronogramaFases);
         Localidade = localidade;
         AlgoritmoContagemPrazo = algoritmoContagemPrazo;
-        CronogramaFases = cronogramaFases;
+        CronogramaFases = [.. cronogramaFases];
     }
 
     public LocalidadeRegente? Localidade { get; }

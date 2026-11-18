@@ -53,15 +53,46 @@ public sealed class ConfiguracaoDivulgacaoCanonicalizacaoTests
             "PS Divulgação 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
-        DefinirCronogramaEEtapas(processo);
-        processo.DefinirAtendimentoEspecializado(
-            AtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([FaseDeResultadoFinal()],
+            []).IsSuccess.Should().BeTrue();
+        DefinirEtapaEAtendimento(processo);
 
-        DefinirOfertaDeAmplaConcorrencia(processo);
-        DefinirClassificacaoImportada(processo);
-        processo.DefinirOpcoesDeCurso(1).IsSuccess.Should().BeTrue();
+        DefinirDistribuicao(processo);
+
+        DefinirClassificacaoEOpcoes(processo);
 
         return processo;
+    }
+
+    private static void DefinirClassificacaoEOpcoes(ProcessoSeletivo processo)
+    {
+        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo),
+            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo),
+        }).Value!).IsSuccess.Should().BeTrue();
+        processo.DefinirOpcoesDeCurso(1).IsSuccess.Should().BeTrue();
+    }
+
+    private static void DefinirEtapaEAtendimento(ProcessoSeletivo processo)
+    {
+        processo.DefinirEtapas([
+            EtapaProcesso.Criar(
+                new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
+                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
+        ]).IsSuccess.Should().BeTrue();
+        processo.DefinirAtendimentoEspecializado(
+            AtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
+    }
+
+    private static void DefinirDistribuicao(ProcessoSeletivo processo)
+    {
+        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
+            Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
+            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!;
+        processo.DefinirDistribuicaoVagas([ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo), Modalidades = [modalidade] },
+            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
     }
 
     private static DadosEdital DadosDeReferencia() => DadosEdital.Criar(
@@ -78,7 +109,8 @@ public sealed class ConfiguracaoDivulgacaoCanonicalizacaoTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
 
-        SnapshotCanonico canonico = Canonicalizar(processo);
+        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(
+            new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId, Retificacao: null, Conformidade: null, DadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)));
 
         JsonObject esperado = new()
         {
@@ -95,72 +127,38 @@ public sealed class ConfiguracaoDivulgacaoCanonicalizacaoTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
 
-        // A entrada decomposta difere do literal pré-composto esperado.
-        string justificativaDecombinada = "  Divulgação ampliada.  ";
-        string justificativaPreComposta = "Divulgação ampliada.";
+        DefinirDivulgacaoComJustificativaDecombinada(processo);
 
-        processo.DefinirConfiguracaoDivulgacao(
-            ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome_abreviado"], justificativaDecombinada).Value!).IsSuccess.Should().BeTrue();
+        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(
+            new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId, Retificacao: null, Conformidade: null, DadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)));
 
-        SnapshotCanonico canonico = Canonicalizar(processo);
-
-        JsonObject esperado = DivulgacaoEsperadaComNomeAbreviado(justificativaPreComposta);
+        JsonObject esperado = BlocoEsperado("Divulgação ampliada.");
 
         SerializarParaComparacao(ExtrairBlocoDivulgacao(canonico.Bytes)).Should().Equal(SerializarParaComparacao(esperado));
     }
 
-    private static void DefinirCronogramaEEtapas(ProcessoSeletivo processo)
+    private static void DefinirDivulgacaoComJustificativaDecombinada(ProcessoSeletivo processo)
     {
-        processo.DefinirCronogramaFases([FaseDeResultadoFinal()],
-            []).IsSuccess.Should().BeTrue();
-        processo.DefinirEtapas([
-            EtapaProcesso.Criar(
-                new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
-                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
-        ]).IsSuccess.Should().BeTrue();
+        // "ç" e "ã" DECOMBINADOS (c + U+0327, a + U+0303) nas bordas com espaço — a forma
+        // pré-composta no esperado é o que fecha a prova de que ALGUM ponto do caminho
+        // (entidade e/ou encoder) aplica NFC: uma entrada só-ASCII produziria os mesmos bytes
+        // com ou sem normalização, e não testaria nada.
+        string justificativaDecombinada = "  Divulgação ampliada.  ";
+
+        processo.DefinirConfiguracaoDivulgacao(
+            ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome_abreviado"], justificativaDecombinada).Value!).IsSuccess.Should().BeTrue();
     }
 
-
-    private static void DefinirOfertaDeAmplaConcorrencia(ProcessoSeletivo processo)
+    private static JsonObject BlocoEsperado(string justificativaPreComposta)
     {
-        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!;
-        processo.DefinirDistribuicaoVagas([ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo), Modalidades = [modalidade] },
-            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
-    }
-
-
-    private static void DefinirClassificacaoImportada(ProcessoSeletivo processo)
-    {
-        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
-        {
-            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo),
-            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo),
-        }).Value!).IsSuccess.Should().BeTrue();
-    }
-
-
-    private static JsonObject DivulgacaoEsperadaComNomeAbreviado(string justificativaPreComposta)
-    {
-        JsonObject esperado = new()
+        // Literal, escrito à mão — independente de qualquer chamada de normalização do encoder
+        // ou da entidade.
+        return new JsonObject()
         {
             ["camposPublicos"] = new JsonArray(
                 JsonValue.Create(ConfiguracaoDivulgacao.NomeAbreviado), JsonValue.Create(ConfiguracaoDivulgacao.NumeroInscricao)),
             ["regraNomeAbreviado"] = RegrasDeNomeAbreviado.Vigente,
             ["justificativa"] = justificativaPreComposta,
         };
-
-        return esperado;
     }
-
-
-    private static SnapshotCanonico Canonicalizar(ProcessoSeletivo processo)
-    {
-        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(
-            new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
-        return canonico;
-    }
-
 }

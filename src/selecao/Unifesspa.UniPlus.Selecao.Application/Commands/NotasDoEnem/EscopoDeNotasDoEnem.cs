@@ -26,7 +26,7 @@ public sealed record EscopoDeNotasDoEnem(
     Guid EtapaProcessoId,
     string EdicaoCodigo,
     Guid VersaoConfiguracaoId,
-    GrafoConfiguracao Grafo,
+    ConfiguracaoPublicada Configuracao,
     JanelaDaInscricao? Inscricao);
 
 /// <summary>
@@ -35,72 +35,59 @@ public sealed record EscopoDeNotasDoEnem(
 /// inscrevem-se na versão que o público vê.
 /// Processo sem versão divulgada é recusado.
 /// </summary>
-public static class ResolvedorDoEscopoDeNotasDoEnem
+public sealed class ResolvedorDoEscopoDeNotasDoEnem(
+    ICertameDivulgadoRepository certameDivulgadoRepository,
+    IProcessoSeletivoRepository processoSeletivoRepository,
+    IRegistroCodecsEnvelope registroCodecs)
 {
     /// <param name="exigeNotaDoEnem">
     /// Verdadeiro para quem grava (envio e importação). A consulta de histórico dispensa: listar o
     /// que há numa etapa que não recebe nota do ENEM devolve só uma lista vazia.
     /// </param>
-    public static async Task<Result<EscopoDeNotasDoEnem>> ResolverAsync(
-        Guid processoSeletivoId,
-        Guid etapaProcessoId,
-        string edicaoCodigo,
-        bool exigeNotaDoEnem,
-        ICertameDivulgadoRepository certameDivulgadoRepository,
-        IProcessoSeletivoRepository processoSeletivoRepository,
-        IRegistroCodecsEnvelope registroCodecs,
-        CancellationToken cancellationToken)
+    public async Task<Result<EscopoDeNotasDoEnem>> ResolverAsync(
+        Guid processoSeletivoId, Guid etapaProcessoId, string edicaoCodigo,
+        bool exigeNotaDoEnem, CancellationToken cancellationToken)
     {
-        Result<VersaoDivulgada> divulgada = await VersaoDivulgadaResolver
-            .ResolverAsync(processoSeletivoId, certameDivulgadoRepository, processoSeletivoRepository, cancellationToken)
-            .ConfigureAwait(false);
+        Result<VersaoDivulgada> divulgada = await VersaoDivulgadaResolver.ResolverAsync(
+            processoSeletivoId, certameDivulgadoRepository, processoSeletivoRepository, cancellationToken).ConfigureAwait(false);
         if (divulgada.IsFailure)
         {
             return Result<EscopoDeNotasDoEnem>.Failure(divulgada.Error!);
         }
-
         Result<EnvelopeReidratado> envelope = ContextoDaVersaoFixadaResolver.Reidratar(divulgada.Value!.Versao, registroCodecs);
-        if (envelope.IsFailure)
+        return envelope.IsFailure
+            ? Result<EscopoDeNotasDoEnem>.Failure(envelope.Error!)
+            : Montar(processoSeletivoId, etapaProcessoId, edicaoCodigo, exigeNotaDoEnem, divulgada.Value.Versao.Id, envelope.Value!);
+    }
+
+    private static Result<EscopoDeNotasDoEnem> Montar(
+        Guid processoId, Guid etapaId, string edicao, bool exigeNota, Guid versaoId, EnvelopeReidratado envelope)
+    {
+        if (ConferirEtapaEEdicao(envelope.Configuracao, etapaId, edicao, exigeNota) is { } recusa)
         {
-            return Result<EscopoDeNotasDoEnem>.Failure(envelope.Error!);
+            return Result<EscopoDeNotasDoEnem>.Failure(recusa);
         }
+        // O histórico também atende a processos sem inscrição pelo sistema.
+        Result<JanelaDaInscricao>? janela = exigeNota ? JanelaDaInscricao.Da(envelope.Configuracao, envelope.Dados) : null;
+        return janela is { IsFailure: true }
+            ? Result<EscopoDeNotasDoEnem>.Failure(janela.Error!)
+            : Result<EscopoDeNotasDoEnem>.Success(new(processoId, etapaId, edicao, versaoId, envelope.Configuracao, janela?.Value));
+    }
 
-        GrafoConfiguracao grafo = envelope.Value!.Grafo;
-
-        EtapaProcesso? etapa = grafo.Etapas.FirstOrDefault(e => e.Id == etapaProcessoId);
+    private static DomainError? ConferirEtapaEEdicao(ConfiguracaoPublicada configuracaoPublicada, Guid etapaId, string edicao, bool exigeNota)
+    {
+        EtapaProcesso? etapa = configuracaoPublicada.Avaliacao.Etapas.FirstOrDefault(e => e.Id == etapaId);
         if (etapa is null)
         {
-            return Falha<EscopoDeNotasDoEnem>(NotasDoEnemErrorCodes.EtapaNaoEncontrada, "A etapa informada não pertence a este processo seletivo.");
+            return new(NotasDoEnemErrorCodes.EtapaNaoEncontrada, "A etapa informada não pertence a este processo seletivo.");
         }
-
-        if (exigeNotaDoEnem && !etapa.DeclaraNotaDoEnem)
+        if (exigeNota && !etapa.DeclaraNotaDoEnem)
         {
-            return Falha<EscopoDeNotasDoEnem>(NotasDoEnemErrorCodes.EtapaSemNotaDoEnem, "A etapa informada não recebe a nota do ENEM.");
+            return new(NotasDoEnemErrorCodes.EtapaSemNotaDoEnem, "A etapa informada não recebe a nota do ENEM.");
         }
-
-        bool edicaoAdmitida = grafo.OpcoesDeclaradas.Any(o =>
-            string.Equals(o.FatoCodigo, EdicaoDoEnem.Fato, StringComparison.Ordinal)
-            && string.Equals(o.Codigo, edicaoCodigo, StringComparison.Ordinal));
-        if (!edicaoAdmitida)
-        {
-            return Falha<EscopoDeNotasDoEnem>(NotasDoEnemErrorCodes.EdicaoNaoAdmitida, "A edição informada não é uma das edições do ENEM que o processo admite.");
-        }
-
-        // Só a gravação depende do encerramento das inscrições: a consulta de histórico não pode quebrar
-        // num processo que não recebe inscrição pelo sistema.
-        JanelaDaInscricao? inscricao = null;
-        if (exigeNotaDoEnem)
-        {
-            Result<JanelaDaInscricao> janela = JanelaDaInscricao.Da(grafo, envelope.Value.Dados);
-            if (janela.IsFailure)
-            {
-                return Result<EscopoDeNotasDoEnem>.Failure(janela.Error!);
-            }
-
-            inscricao = janela.Value!;
-        }
-
-        return Result<EscopoDeNotasDoEnem>.Success(new EscopoDeNotasDoEnem(processoSeletivoId, etapaProcessoId, edicaoCodigo, divulgada.Value!.Versao.Id, grafo, inscricao));
+        return configuracaoPublicada.Coleta.OpcoesDeclaradas.Any(o => string.Equals(o.FatoCodigo, EdicaoDoEnem.Fato, StringComparison.Ordinal)
+            && string.Equals(o.Codigo, edicao, StringComparison.Ordinal))
+            ? null : new(NotasDoEnemErrorCodes.EdicaoNaoAdmitida, "A edição informada não é uma das edições do ENEM que o processo admite.");
     }
 
     /// <summary>

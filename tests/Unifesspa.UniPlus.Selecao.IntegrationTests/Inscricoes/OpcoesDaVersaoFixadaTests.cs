@@ -28,64 +28,51 @@ public sealed class OpcoesDaVersaoFixadaTests
 
     public OpcoesDaVersaoFixadaTests(InscricaoDbFixture fixture) => _cenario = new CenarioDeInscricaoPublicada(fixture);
 
-    [Fact(DisplayName = "A versão fixada oferece ao campo de recurso de acessibilidade só os recursos da oferta do processo, e a submissão recusa o que ela não oferta")]
+    [Fact(DisplayName = "A versão fixada recusa o recurso de acessibilidade fora da oferta do processo")]
     public async Task RecursoDeAcessibilidade_ForaDaOfertaDoProcesso_ERecusado()
+    {
+        ProcessoSeletivo processo = ProcessoComRecurso();
+        await using UniPlusDbContext escrita = _cenario.CriarDbContext();
+        (Guid processoId, InscricaoDto iniciar) = await _cenario.PublicarEIniciarAsync(escrita, processo, PersonasDeTeste.FernandaDrumond);
+        await using UniPlusDbContext leitura = _cenario.CriarDbContext();
+        ContextoDaVersaoFixada contexto = await ContextoAsync(leitura, iniciar.Formulario.VersaoFormularioId, processoId);
+        contexto.Ofertas[AtendimentoEspecializado.FatoRecursoAcessibilidade].Should().BeEquivalentTo(["SALA_AMAMENTACAO"]);
+        RecusasDosRecursos(contexto).Should().ContainSingle(e => e.Field == AtendimentoEspecializado.FatoRecursoAcessibilidade
+            && e.Error.Code == "Inscricao.RespostaInvalida");
+    }
+
+    private static ProcessoSeletivo ProcessoComRecurso()
     {
         FatoColetado campoRecurso = FatoColetado.Criar(
             AtendimentoEspecializado.FatoRecursoAcessibilidade, 1, "De qual recurso de acessibilidade você vai precisar?",
-            TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, null, classificacaoProtecao: "SENSIVEL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+            TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, null, classificacaoProtecao: "SENSIVEL",
+            hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
         AtendimentoEspecializado atendimento = AtendimentoEspecializado.Criar(
             [], [RecursoOfertado.Criar(Guid.CreateVersion7(), "SALA_AMAMENTACAO", "Sala para amamentação")], []).Value!;
-        ProcessoSeletivo processo = NovoProcessoDeInscricao(
-            nameof(RecursoDeAcessibilidade_ForaDaOfertaDoProcesso_ERecusado), atendimento, [campoRecurso]);
+        return NovoProcessoDeInscricao(nameof(RecursoDeAcessibilidade_ForaDaOfertaDoProcesso_ERecusado), atendimento, [campoRecurso]);
+    }
 
-        await using UniPlusDbContext writeContext = _cenario.CriarDbContext();
-        (Guid processoId, _) = await PublicarEDivulgarAsync(writeContext, processo);
-
-        Result<InscricaoDto> iniciar = await _cenario.IniciarRascunhoAsync(writeContext, processoId, UsuarioComCpf(PersonasDeTeste.FernandaDrumond));
-        iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
-
-        await using UniPlusDbContext readContext = _cenario.CriarDbContext();
-        Result<ContextoDaVersaoFixada> contexto = await ContextoDaVersaoFixadaResolver.ResolverAsync(
-            iniciar.Value!.VersaoFormularioId, processoId, ProcessoSeletivoRepositoryDeTeste.Criar(readContext), RegistroCodecs, ofertaCursoId: null, null, CancellationToken.None);
-        contexto.IsSuccess.Should().BeTrue(contexto.Error?.Message);
-        contexto.Value!.Ofertas[AtendimentoEspecializado.FatoRecursoAcessibilidade].Should().BeEquivalentTo(["SALA_AMAMENTACAO"]);
-
-        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.RecusasDeOpcaoForaDaOferta(
+    private static IReadOnlyList<FieldError> RecusasDosRecursos(ContextoDaVersaoFixada contexto) =>
+        VeredictoDeSubmissao.RecusasDeOpcaoForaDaOferta(
             new Dictionary<string, JsonElement>(StringComparer.Ordinal)
             {
                 [AtendimentoEspecializado.FatoRecursoAcessibilidade] = JsonSerializer.SerializeToElement(new[] { "SALA_AMAMENTACAO", "INTERPRETE_LIBRAS" }),
-            },
-            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal),
-            contexto.Value.Ofertas);
+            }, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), contexto.Ofertas);
 
-        recusas.Should().ContainSingle(e => e.Field == AtendimentoEspecializado.FatoRecursoAcessibilidade
-            && e.Error.Code == "Inscricao.RespostaInvalida", "o intérprete de Libras não está na oferta deste processo");
-    }
-
-    [Fact(DisplayName = "A versão fixada oferece ao órgão emissor do RG a lista congelada, e a submissão recusa o órgão fora dela")]
+    [Fact(DisplayName = "A versão fixada recusa o órgão emissor fora da lista congelada")]
     public async Task OrgaoEmissor_ForaDaListaCongelada_ERecusado()
     {
         ProcessoSeletivo processo = NovoProcessoDeInscricao(nameof(OrgaoEmissor_ForaDaListaCongelada_ERecusado));
-
-        await using UniPlusDbContext writeContext = _cenario.CriarDbContext();
-        (Guid processoId, _) = await PublicarEDivulgarAsync(writeContext, processo);
-
-        Result<InscricaoDto> iniciar = await _cenario.IniciarRascunhoAsync(writeContext, processoId, UsuarioComCpf(PersonasDeTeste.FernandaDrumond));
-        iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
-
-        await using UniPlusDbContext readContext = _cenario.CriarDbContext();
-        Result<ContextoDaVersaoFixada> contexto = await ContextoDaVersaoFixadaResolver.ResolverAsync(
-            iniciar.Value!.VersaoFormularioId, processoId, ProcessoSeletivoRepositoryDeTeste.Criar(readContext), RegistroCodecs, ofertaCursoId: null, null, CancellationToken.None);
-        contexto.IsSuccess.Should().BeTrue(contexto.Error?.Message);
-
-        IReadOnlyList<FieldError> RecusasDe(string orgao) => VeredictoDeSubmissao.RecusasDeOpcaoForaDaOferta(
-            new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["RG_ORGAO_EMISSOR"] = JsonSerializer.SerializeToElement(orgao) },
-            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal),
-            contexto.Value!.Ofertas);
-
-        RecusasDe("SSP").Should().BeEmpty();
-        RecusasDe("PA").Should().ContainSingle(static e => e.Field == "RG_ORGAO_EMISSOR" && e.Error.Code == InscricaoErrorCodes.RespostaInvalida,
-            "a UF não é órgão emissor");
+        await using UniPlusDbContext escrita = _cenario.CriarDbContext();
+        (Guid processoId, InscricaoDto iniciar) = await _cenario.PublicarEIniciarAsync(escrita, processo, PersonasDeTeste.FernandaDrumond);
+        await using UniPlusDbContext leitura = _cenario.CriarDbContext();
+        ContextoDaVersaoFixada contexto = await ContextoAsync(leitura, iniciar.Formulario.VersaoFormularioId, processoId);
+        RecusasDoOrgao(contexto, "SSP").Should().BeEmpty();
+        RecusasDoOrgao(contexto, "PA").Should().ContainSingle(static e => e.Field == "RG_ORGAO_EMISSOR" && e.Error.Code == InscricaoErrorCodes.RespostaInvalida);
     }
+
+    private static IReadOnlyList<FieldError> RecusasDoOrgao(ContextoDaVersaoFixada contexto, string orgao) =>
+        VeredictoDeSubmissao.RecusasDeOpcaoForaDaOferta(
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["RG_ORGAO_EMISSOR"] = JsonSerializer.SerializeToElement(orgao) },
+            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), contexto.Ofertas);
 }

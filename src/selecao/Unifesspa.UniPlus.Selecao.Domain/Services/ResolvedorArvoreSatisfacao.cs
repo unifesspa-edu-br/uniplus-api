@@ -1,229 +1,173 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Services;
 
-using System.Linq;
-using System.Text.Json;
-
-using Entities;
-
-using Enums;
-
-using Kernel.Results;
-
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
-using ValueObjects;
-
-/// <summary>
-/// Resolve, para um candidato, o veredicto de cada nó de uma <see cref="ArvoreExigenciasCongelada"/>
-/// — estado de satisfação de 5 valores (<see cref="EstadoSatisfacao"/>, compondo com o gatilho
-/// ternário da folha) e as consequências que VIGORAM pela fronteira ativa (Story #920). Substitui
-/// <c>ResolvedorExigenciasDocumentais</c> (grupo plano) — mesmos princípios: puro, erros nomeados
-/// nunca resultado vazio (ADR-0076), nunca chamado dentro da transação de publicação.
-/// </summary>
-/// <remarks>
-/// Álgebra (spec <c>documentos-exigidos-composicao</c>, requirements "Álgebra ternária de
-/// satisfação" e "Consequência por nó e fronteira ativa de emissão"):
-/// <list type="bullet">
-/// <item><b>E</b>: filhos <see cref="EstadoSatisfacao.NaoAplicavel"/> são ignorados; todos
-/// não-aplicáveis ⇒ não-aplicável; senão <see cref="EstadoSatisfacao.Impossivel"/> se algum
-/// restante impossível; satisfeito se todos restantes satisfeitos; pendente se algum restante
-/// pendente; senão indeterminado.</item>
-/// <item><b>OU/N-de</b> (mínimo N): todos não-aplicáveis ⇒ não-aplicável; satisfeito se
-/// ≥N satisfeitos; senão, M = satisfeitos+pendentes+indeterminados (máximo atingível) — impossível
-/// se M&lt;N; indeterminado se algum indeterminado; senão pendente.</item>
-/// <item><b>Fronteira ativa</b> (raiz→baixo): satisfeito/não-aplicável suprime a subárvore; folha
-/// pendente/indeterminada/impossível emite a própria consequência; OU/N-de opaco pendente emite a
-/// SUA própria (filhos viram só pendência de orientação, não vigente); E transparente não emite e
-/// desce para os filhos não satisfeitos e não-não-aplicáveis (nunca pai e filho juntos).</item>
-/// <item><b>Repetição por entidade</b> (Story #922, ADR-0138): uma subárvore <c>repetePorEntidade</c>
-/// é avaliada UMA VEZ POR OCORRÊNCIA do grupo repetível que ela nomeia — fatos do candidato
-/// mesclados com os campos da ocorrência (sujeito trocado, mesmo motor de gatilho), apresentações
-/// filtradas por <c>entidade_id</c>. O agregado sobe como um <c>E</c> entre instâncias (todas
-/// precisam satisfazer); sem instância declarada, a subárvore é não-aplicável. A fronteira emite
-/// UMA consequência por instância pendente, tagueada com <c>entidade_id</c> — nunca um valor
-/// global único (perderia QUAL instância está pendente). Repetição não aninha (validado no
-/// cadastro, <see cref="NoExigencia.CriarGrupo"/>).</item>
-/// </list>
-/// </remarks>
-public static class ResolvedorArvoreSatisfacao
+/// <summary>Resolve a satisfação e as consequências da árvore congelada para um candidato.</summary>
+public sealed class ResolvedorArvoreSatisfacao
 {
+    private readonly IReadOnlyDictionary<string, FatoResolvido> _fatos;
+    private readonly IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> _apresentacoes;
+    private readonly IReadOnlyDictionary<string, IReadOnlyList<InstanciaEntidade>> _instancias;
+    private readonly IReadOnlySet<Guid> _bloqueadas;
+    private readonly Dictionary<Guid, EstadoSatisfacao> _estados = [];
+    private readonly Dictionary<Guid, StatusResolucaoExigencia> _status = [];
+    private readonly Dictionary<Guid, List<InstanciaResolvida>> _resolvidas = [];
+    private readonly HashSet<Guid> _suprimidos = [];
+    private readonly List<ConsequenciaEmitida> _consequencias = [];
+    private readonly List<PendenciaDeOrientacao> _pendencias = [];
+
+    private ResolvedorArvoreSatisfacao(
+        IReadOnlyDictionary<string, FatoResolvido> fatos,
+        IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes,
+        IReadOnlyDictionary<string, IReadOnlyList<InstanciaEntidade>> instancias, IReadOnlySet<Guid> bloqueadas)
+    {
+        _fatos = fatos;
+        _apresentacoes = apresentacoes;
+        _instancias = instancias;
+        _bloqueadas = bloqueadas;
+    }
+
     public static Result<ResultadoResolucaoArvore> Resolver(
-        ArvoreExigenciasCongelada arvore,
-        IReadOnlyDictionary<string, FatoResolvido> fatosResolvidos,
+        ArvoreExigenciasCongelada arvore, IReadOnlyDictionary<string, FatoResolvido> fatosResolvidos,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoesPorExigenciaId,
-        IReadOnlyDictionary<string, IReadOnlyList<InstanciaEntidade>>? instanciasPorGrupo = null,
-        IReadOnlySet<Guid>? exigenciasBloqueadas = null)
+        IReadOnlyDictionary<string, IReadOnlyList<InstanciaEntidade>>? instanciasPorGrupo = null, IReadOnlySet<Guid>? exigenciasBloqueadas = null)
     {
         ArgumentNullException.ThrowIfNull(arvore);
         ArgumentNullException.ThrowIfNull(fatosResolvidos);
         ArgumentNullException.ThrowIfNull(apresentacoesPorExigenciaId);
-
-        IReadOnlyDictionary<string, IReadOnlyList<InstanciaEntidade>> instancias = InstanciasOuNenhuma(instanciasPorGrupo);
-        if (ConferenciaDaEntradaDaArvore.Pendencia(arvore, instancias) is { } pendencia)
-        {
-            return Result<ResultadoResolucaoArvore>.Failure(pendencia);
-        }
-
-        return Result<ResultadoResolucaoArvore>.Success(ResolverRaizes(
-            arvore, fatosResolvidos, apresentacoesPorExigenciaId, instancias, BloqueadasOuNenhuma(exigenciasBloqueadas)));
+        IReadOnlyDictionary<string, IReadOnlyList<InstanciaEntidade>> instancias = instanciasPorGrupo
+            ?? new Dictionary<string, IReadOnlyList<InstanciaEntidade>>(StringComparer.Ordinal);
+        DomainError? recusa = RecusaDaArvore(arvore) ?? RecusaDasInstancias(instancias);
+        return recusa is not null ? Result<ResultadoResolucaoArvore>.Failure(recusa)
+            : Result<ResultadoResolucaoArvore>.Success(new ResolvedorArvoreSatisfacao(
+                fatosResolvidos, apresentacoesPorExigenciaId, instancias, exigenciasBloqueadas ?? new HashSet<Guid>()).Avaliar(arvore!));
     }
 
-    private static ResultadoResolucaoArvore ResolverRaizes(
-        ArvoreExigenciasCongelada arvore,
-        IReadOnlyDictionary<string, FatoResolvido> fatos,
-        IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes,
-        IReadOnlyDictionary<string, IReadOnlyList<InstanciaEntidade>> instanciasPorGrupo,
-        IReadOnlySet<Guid> bloqueadas)
+    private static DomainError? RecusaDaArvore(ArvoreExigenciasCongelada arvore)
     {
-        PercursoDaArvore percurso = new(bloqueadas);
+        List<NoExigencia> folhas = [.. arvore.Raizes.SelectMany(static r => r.AchatarComDescendentes()).Where(static n => n.Tipo == TipoNo.Folha)];
+        return RecusaDasFolhas(folhas) ?? (arvore.Raizes.Any(ContemRepeticaoAninhada)
+            ? EstruturaInvalida("A árvore congelada tem repetição por entidade aninhada — uma subárvore repetePorEntidade não pode conter outra.") : null);
+    }
+
+    private static DomainError? RecusaDasFolhas(List<NoExigencia> folhas)
+    {
+        if (folhas.Any(static n => n.DocumentoExigidoId is null || n.DocumentoExigido is null))
+        {
+            return EstruturaInvalida("A árvore congelada tem folha sem DocumentoExigido — toda folha precisa envolver uma exigência.");
+        }
+        return folhas.Select(static n => n.DocumentoExigidoId).Distinct().Count() != folhas.Count
+            ? EstruturaInvalida("A árvore congelada tem exigenciaId repetido entre folhas — cada exigência precisa de identidade única.") : null;
+    }
+
+    private static DomainError EstruturaInvalida(string mensagem) => new("ResolvedorArvoreSatisfacao.ArvoreEstruturalmenteInvalida", mensagem);
+
+    private static DomainError? RecusaDasInstancias(IReadOnlyDictionary<string, IReadOnlyList<InstanciaEntidade>> instancias)
+    {
+        foreach (IReadOnlyList<InstanciaEntidade> ocorrencias in instancias.Values)
+        {
+            if (ocorrencias.Any(static i => string.IsNullOrWhiteSpace(i.EntidadeId)))
+            {
+                return new("ResolvedorArvoreSatisfacao.InstanciaEntidadeInvalida", "Uma ocorrência do grupo tem EntidadeId vazio ou em branco.");
+            }
+            if (ocorrencias.Select(static i => i.EntidadeId).Distinct(StringComparer.Ordinal).Count() != ocorrencias.Count)
+            {
+                return new("ResolvedorArvoreSatisfacao.InstanciaEntidadeInvalida", "Duas ou mais ocorrências do grupo declaram o mesmo EntidadeId — cada ocorrência precisa de identidade única.");
+            }
+        }
+        return null;
+    }
+
+    private ResultadoResolucaoArvore Avaliar(ArvoreExigenciasCongelada arvore)
+    {
         foreach (NoExigencia raiz in arvore.Raizes)
         {
-            EstadoSatisfacao estadoRaiz = ResolverNo(
-                raiz, fatos, apresentacoes, instanciasPorGrupo, bloqueadas,
-                percurso.Estados, percurso.StatusPorExigencia, percurso.InstanciasResolvidasPorNo);
-            percurso.Fechar(raiz, estadoRaiz);
+            EstadoSatisfacao estado = ResolverNo(raiz);
+            CalcularEmissionBlocked(raiz, _estados, _bloqueadas, _suprimidos);
+            EmitirFronteira(raiz, estado);
         }
-
-        return percurso.Resultado();
+        return new(_estados, _status, _consequencias, _pendencias, StatusPorEntidade(), EstadosPorEntidade(), _suprimidos);
     }
 
-    // A fronteira de disponibilidade por candidato: uma exigência cujo fato gatilho ainda não alcançou a
-    // fronteira (produtor não executado ou gate de fase não satisfeito) está BLOQUEADA. BLOQUEADO não é um
-    // 6º estado da árvore — é máscara+projeção: a folha projeta-se em INDETERMINADO na agregação (mantém o
-    // pai pendente) E tem a emissão suprimida pelo predicado recursivo emissionBlocked. Ausência = nada
-    // bloqueado (a resolução no ponto devido, sem fronteira a mascarar).
-    private static IReadOnlySet<Guid> BloqueadasOuNenhuma(IReadOnlySet<Guid>? exigenciasBloqueadas) =>
-        exigenciasBloqueadas ?? new HashSet<Guid>();
+    private List<StatusPorEntidade> StatusPorEntidade() => [.. _resolvidas.Values.SelectMany(static r => r)
+        .SelectMany(static i => i.StatusDescendentes.Select(par => new StatusPorEntidade(par.Key, i.EntidadeId, par.Value)))];
 
-    private static IReadOnlyDictionary<string, IReadOnlyList<InstanciaEntidade>> InstanciasOuNenhuma(
-        IReadOnlyDictionary<string, IReadOnlyList<InstanciaEntidade>>? instanciasPorGrupo) =>
-        instanciasPorGrupo ?? new Dictionary<string, IReadOnlyList<InstanciaEntidade>>(StringComparer.Ordinal);
+    private List<EstadoPorEntidade> EstadosPorEntidade() => [.. _resolvidas.Values.SelectMany(static r => r)
+        .SelectMany(static i => i.EstadosDescendentes.Select(par => new EstadoPorEntidade(par.Key, i.EntidadeId, par.Value)))];
 
-    private static EstadoSatisfacao ResolverNo(
-        NoExigencia no,
-        IReadOnlyDictionary<string, FatoResolvido> fatos,
-        IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes,
-        IReadOnlyDictionary<string, IReadOnlyList<InstanciaEntidade>> instanciasPorGrupo,
-        IReadOnlySet<Guid> bloqueadas,
-        Dictionary<Guid, EstadoSatisfacao> estados,
-        Dictionary<Guid, StatusResolucaoExigencia> statusPorExigencia,
-        Dictionary<Guid, List<InstanciaResolvida>> instanciasResolvidasPorNo)
+    private EstadoSatisfacao ResolverNo(NoExigencia no)
     {
-        EstadoSatisfacao estado = no.RepetePorEntidade is { } grupo
-            ? ResolverNoRepetido(no, grupo, fatos, apresentacoes, instanciasPorGrupo, bloqueadas, instanciasResolvidasPorNo)
-            : no.Tipo == TipoNo.Folha
-                ? ResolucaoDaFolha.Resolver(no, fatos, apresentacoes, bloqueadas, statusPorExigencia)
-                : ResolverGrupo(no, fatos, apresentacoes, instanciasPorGrupo, bloqueadas, estados, statusPorExigencia, instanciasResolvidasPorNo);
-
-        estados[no.Id] = estado;
+        EstadoSatisfacao estado = no.RepetePorEntidade is { } grupo ? ResolverNoRepetido(no, grupo) : ResolverNoSemRepeticao(no);
+        _estados[no.Id] = estado;
         return estado;
     }
 
-    /// <summary>
-    /// Story #922 — resolve uma subárvore <c>repetePorEntidade</c> UMA VEZ POR INSTÂNCIA
-    /// declarada, com dicionários LOCAIS por instância (nunca os globais — o estado de um
-    /// descendente dentro da repetição é inerentemente por-instância, não um valor único).
-    /// </summary>
-    private static EstadoSatisfacao ResolverNoRepetido(
-        NoExigencia no,
-        string grupo,
-        IReadOnlyDictionary<string, FatoResolvido> fatosCandidato,
-        IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes,
-        IReadOnlyDictionary<string, IReadOnlyList<InstanciaEntidade>> instanciasPorGrupo,
-        IReadOnlySet<Guid> bloqueadas,
-        Dictionary<Guid, List<InstanciaResolvida>> instanciasResolvidasPorNo)
+    private EstadoSatisfacao ResolverNoSemRepeticao(NoExigencia no) => no.Tipo == TipoNo.Folha ? ResolverFolha(no) : ResolverGrupo(no);
+
+    private EstadoSatisfacao ResolverNoRepetido(NoExigencia no, string grupo)
     {
-        IReadOnlyList<InstanciaEntidade> instancias = instanciasPorGrupo.GetValueOrDefault(grupo, []);
-        if (instancias.Count == 0)
-        {
-            // Nenhuma instância declarada: nada a multiplicar — mesmo raciocínio de um grupo
-            // cujos filhos são todos não-aplicáveis.
-            instanciasResolvidasPorNo[no.Id] = [];
-            return EstadoSatisfacao.NaoAplicavel;
-        }
-
-        List<InstanciaResolvida> resolvidas = [];
-        foreach (InstanciaEntidade instancia in instancias)
-        {
-            Dictionary<string, FatoResolvido> fatosDaInstancia = MesclarFatosDeEntidade(fatosCandidato, instancia.Atributos);
-            IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoesDaInstancia =
-                FiltrarApresentacoesPorEntidade(apresentacoes, instancia.EntidadeId);
-
-            Dictionary<Guid, EstadoSatisfacao> estadosDaInstancia = [];
-            Dictionary<Guid, StatusResolucaoExigencia> statusDaInstancia = [];
-            // Aninhamento já é recusado no cadastro (NoExigencia.CriarGrupo) — nenhum
-            // descendente aqui dentro pode ser, ele mesmo, repetePorEntidade; um dicionário
-            // vazio é seguro (nunca populado nesta subárvore).
-            Dictionary<Guid, List<InstanciaResolvida>> semRepeticaoAninhada = [];
-            // A fronteira de disponibilidade vale também dentro da repetição: a folha bloqueada de uma
-            // ocorrência projeta indeterminado e não emite, como fora dela.
-            EstadoSatisfacao estadoInstancia = no.Tipo == TipoNo.Folha
-                ? ResolucaoDaFolha.Resolver(no, fatosDaInstancia, apresentacoesDaInstancia, bloqueadas, statusDaInstancia)
-                : ResolverGrupo(
-                    no, fatosDaInstancia, apresentacoesDaInstancia, instanciasPorGrupo, bloqueadas,
-                    estadosDaInstancia, statusDaInstancia, semRepeticaoAninhada);
-            estadosDaInstancia[no.Id] = estadoInstancia;
-
-            HashSet<Guid> suprimidosDaInstancia = [];
-            FronteiraDeEmissao.CalcularEmissionBlocked(no, estadosDaInstancia, bloqueadas, suprimidosDaInstancia, naInstancia: true);
-            resolvidas.Add(new InstanciaResolvida(
-                instancia.EntidadeId, estadoInstancia, estadosDaInstancia, statusDaInstancia, suprimidosDaInstancia));
-        }
-
-        instanciasResolvidasPorNo[no.Id] = resolvidas;
-
-        // Agregação entre instâncias: a subárvore só está satisfeita quando TODAS as instâncias
-        // declaradas satisfazem — mesma álgebra do E (o ramo "todas não-aplicáveis" não ocorre
-        // aqui na prática, já tratado como caso "zero instâncias" acima; ResolverE cobre por
-        // defesa em profundidade mesmo assim).
+        List<InstanciaResolvida> resolvidas = [.. _instancias.GetValueOrDefault(grupo, []).Select(i => ResolverInstancia(no, i))];
+        _resolvidas[no.Id] = resolvidas;
         return ResolverE([.. resolvidas.Select(static r => r.Estado)]);
     }
 
-    private static Dictionary<string, FatoResolvido> MesclarFatosDeEntidade(
-        IReadOnlyDictionary<string, FatoResolvido> fatosCandidato, IReadOnlyDictionary<string, FatoResolvido> atributosDaInstancia)
+    private InstanciaResolvida ResolverInstancia(NoExigencia no, InstanciaEntidade instancia)
     {
-        Dictionary<string, FatoResolvido> mesclado = new(fatosCandidato, StringComparer.Ordinal);
-        foreach (KeyValuePair<string, FatoResolvido> atributo in atributosDaInstancia)
-        {
-            mesclado[atributo.Key] = atributo.Value;
-        }
+        ResolvedorArvoreSatisfacao resolvedor = new(MesclarFatosDeEntidade(_fatos, instancia.Atributos),
+            FiltrarApresentacoesPorEntidade(_apresentacoes, instancia.EntidadeId), _instancias, _bloqueadas);
+        EstadoSatisfacao estado = resolvedor.ResolverNoSemRepeticao(no);
+        resolvedor._estados[no.Id] = estado;
+        CalcularEmissionBlocked(no, resolvedor._estados, _bloqueadas, resolvedor._suprimidos, naInstancia: true);
+        return new(instancia.EntidadeId, estado, resolvedor._estados, resolvedor._status, resolvedor._suprimidos);
+    }
 
-        return mesclado;
+    private static Dictionary<string, FatoResolvido> MesclarFatosDeEntidade(
+        IReadOnlyDictionary<string, FatoResolvido> fatos, IReadOnlyDictionary<string, FatoResolvido> atributos)
+    {
+        Dictionary<string, FatoResolvido> mesclados = new(fatos, StringComparer.Ordinal);
+        foreach (KeyValuePair<string, FatoResolvido> atributo in atributos)
+        {
+            mesclados[atributo.Key] = atributo.Value;
+        }
+        return mesclados;
     }
 
     private static Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> FiltrarApresentacoesPorEntidade(
-        IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes, string entidadeId)
-    {
-        Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> filtradas = [];
-        foreach (KeyValuePair<Guid, IReadOnlyList<ApresentacaoDocumento>> par in apresentacoes)
-        {
-            List<ApresentacaoDocumento> daEntidade = [.. par.Value.Where(a => a.EntidadeId == entidadeId)];
-            if (daEntidade.Count > 0)
-            {
-                filtradas[par.Key] = daEntidade;
-            }
-        }
+        IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes, string entidadeId) => apresentacoes
+        .Select(par => (par.Key, DaEntidade: (IReadOnlyList<ApresentacaoDocumento>)par.Value.Where(a => a.EntidadeId == entidadeId).ToList()))
+        .Where(static par => par.DaEntidade.Count > 0).ToDictionary(static par => par.Key, static par => par.DaEntidade);
 
-        return filtradas;
+    private EstadoSatisfacao ResolverFolha(NoExigencia no)
+    {
+        DocumentoExigido documento = no.DocumentoExigido!;
+        Ternario aplicavel = _bloqueadas.Contains(documento.Id) ? Ternario.Indeterminado : documento.AplicavelPara(_fatos);
+        if (aplicavel != Ternario.Verdadeiro)
+        {
+            return RegistrarInaplicabilidade(documento.Id, aplicavel);
+        }
+        int quantidade = no.QuantidadeMinima ?? NoExigencia.QuantidadeMinimaPadrao;
+        List<ApresentacaoDocumento> distintas = [.. _apresentacoes.GetValueOrDefault(documento.Id, []).DistinctBy(static a => a.Id)];
+        bool satisfeita = no.Distincao?.AtendidaPor(distintas, quantidade) ?? distintas.Count >= quantidade;
+        _status[documento.Id] = satisfeita ? StatusResolucaoExigencia.Satisfeita : StatusResolucaoExigencia.Pendente;
+        return satisfeita ? EstadoSatisfacao.Satisfeito : EstadoSatisfacao.Pendente;
     }
 
-    private static EstadoSatisfacao ResolverGrupo(
-        NoExigencia no,
-        IReadOnlyDictionary<string, FatoResolvido> fatos,
-        IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes,
-        IReadOnlyDictionary<string, IReadOnlyList<InstanciaEntidade>> instanciasPorGrupo,
-        IReadOnlySet<Guid> bloqueadas,
-        Dictionary<Guid, EstadoSatisfacao> estados,
-        Dictionary<Guid, StatusResolucaoExigencia> statusPorExigencia,
-        Dictionary<Guid, List<InstanciaResolvida>> instanciasResolvidasPorNo)
+    private EstadoSatisfacao RegistrarInaplicabilidade(Guid documentoId, Ternario aplicavel)
     {
-        List<EstadoSatisfacao> estadosFilhos = [.. no.Filhos.Select(filho =>
-            ResolverNo(filho, fatos, apresentacoes, instanciasPorGrupo, bloqueadas, estados, statusPorExigencia, instanciasResolvidasPorNo))];
+        _status[documentoId] = aplicavel == Ternario.Indeterminado
+            ? StatusResolucaoExigencia.AplicabilidadeIndeterminada : StatusResolucaoExigencia.NaoAplicavel;
+        return aplicavel == Ternario.Indeterminado ? EstadoSatisfacao.Indeterminado : EstadoSatisfacao.NaoAplicavel;
+    }
 
-        return no.Tipo == TipoNo.GrupoE
-            ? ResolverE(estadosFilhos)
-            : ResolverOu(estadosFilhos, no.QuantidadeMinima ?? NoExigencia.QuantidadeMinimaPadrao);
+    private EstadoSatisfacao ResolverGrupo(NoExigencia no)
+    {
+        List<EstadoSatisfacao> filhos = [.. no.Filhos.Select(ResolverNo)];
+        return no.Tipo == TipoNo.GrupoE ? ResolverE(filhos) : ResolverOu(filhos, no.QuantidadeMinima ?? NoExigencia.QuantidadeMinimaPadrao);
     }
 
     private static EstadoSatisfacao ResolverE(IReadOnlyList<EstadoSatisfacao> filhos)
@@ -233,23 +177,15 @@ public static class ResolvedorArvoreSatisfacao
         {
             return EstadoSatisfacao.NaoAplicavel;
         }
-
-        if (restantes.Any(static e => e == EstadoSatisfacao.Impossivel))
+        if (restantes.Contains(EstadoSatisfacao.Impossivel))
         {
             return EstadoSatisfacao.Impossivel;
         }
-
         if (restantes.All(static e => e == EstadoSatisfacao.Satisfeito))
         {
             return EstadoSatisfacao.Satisfeito;
         }
-
-        if (restantes.Any(static e => e == EstadoSatisfacao.Pendente))
-        {
-            return EstadoSatisfacao.Pendente;
-        }
-
-        return EstadoSatisfacao.Indeterminado;
+        return restantes.Contains(EstadoSatisfacao.Pendente) ? EstadoSatisfacao.Pendente : EstadoSatisfacao.Indeterminado;
     }
 
     private static EstadoSatisfacao ResolverOu(IReadOnlyList<EstadoSatisfacao> filhos, int quantidadeMinima)
@@ -258,22 +194,147 @@ public static class ResolvedorArvoreSatisfacao
         {
             return EstadoSatisfacao.NaoAplicavel;
         }
-
         int satisfeitos = filhos.Count(static e => e == EstadoSatisfacao.Satisfeito);
         if (satisfeitos >= quantidadeMinima)
         {
             return EstadoSatisfacao.Satisfeito;
         }
-
         int pendentes = filhos.Count(static e => e == EstadoSatisfacao.Pendente);
         int indeterminados = filhos.Count(static e => e == EstadoSatisfacao.Indeterminado);
-        int maximoAtingivel = satisfeitos + pendentes + indeterminados;
-
-        if (maximoAtingivel < quantidadeMinima)
-        {
-            return EstadoSatisfacao.Impossivel;
-        }
-
-        return indeterminados > 0 ? EstadoSatisfacao.Indeterminado : EstadoSatisfacao.Pendente;
+        return satisfeitos + pendentes + indeterminados < quantidadeMinima ? EstadoSatisfacao.Impossivel
+            : indeterminados > 0 ? EstadoSatisfacao.Indeterminado : EstadoSatisfacao.Pendente;
     }
+
+    private static bool CalcularEmissionBlocked(NoExigencia no, IReadOnlyDictionary<Guid, EstadoSatisfacao> estados,
+        IReadOnlySet<Guid> bloqueadas, HashSet<Guid> suprimidos, bool naInstancia = false)
+    {
+        if (no.RepetePorEntidade is not null && !naInstancia)
+        {
+            return false;
+        }
+        EstadoSatisfacao estado = estados[no.Id];
+        bool bloqueado = no.Tipo == TipoNo.Folha ? EhPendenteOuPior(estado) && bloqueadas.Contains(no.DocumentoExigido!.Id)
+            : GrupoComEmissaoBloqueada(no, estados, bloqueadas, suprimidos, naInstancia);
+        if (bloqueado)
+        {
+            suprimidos.Add(no.Id);
+        }
+        return bloqueado;
+    }
+
+    private static bool GrupoComEmissaoBloqueada(NoExigencia no, IReadOnlyDictionary<Guid, EstadoSatisfacao> estados,
+        IReadOnlySet<Guid> bloqueadas, HashSet<Guid> suprimidos, bool naInstancia)
+    {
+        List<bool> decisivos = [];
+        foreach (NoExigencia filho in no.Filhos)
+        {
+            bool bloqueado = CalcularEmissionBlocked(filho, estados, bloqueadas, suprimidos, naInstancia);
+            if (EhPendenteOuPior(estados[filho.Id]))
+            {
+                decisivos.Add(bloqueado);
+            }
+        }
+        return estados[no.Id] is EstadoSatisfacao.Pendente or EstadoSatisfacao.Indeterminado && decisivos.Count > 0 && decisivos.All(static b => b);
+    }
+
+    private void EmitirFronteira(NoExigencia no, EstadoSatisfacao estado)
+    {
+        if (!EhPendenteOuPior(estado) || _suprimidos.Contains(no.Id))
+        {
+            return;
+        }
+        if (no.RepetePorEntidade is not null)
+        {
+            foreach (InstanciaResolvida instancia in _resolvidas.GetValueOrDefault(no.Id, []))
+            {
+                EmitirInstancia(no, instancia);
+            }
+            return;
+        }
+        EmitirFronteiraNormal(no, _estados, _suprimidos, _consequencias, _pendencias);
+    }
+
+    private void EmitirInstancia(NoExigencia no, InstanciaResolvida instancia)
+    {
+        if (!EhPendenteOuPior(instancia.Estado) || instancia.NosEmissaoSuprimida.Contains(no.Id))
+        {
+            return;
+        }
+        List<ConsequenciaEmitida> consequencias = [];
+        List<PendenciaDeOrientacao> pendencias = [];
+        EmitirFronteiraNormal(no, instancia.EstadosDescendentes, instancia.NosEmissaoSuprimida, consequencias, pendencias);
+        _consequencias.AddRange(consequencias.Select(c => c with { EntidadeId = instancia.EntidadeId }));
+        _pendencias.AddRange(pendencias.Select(p => p with { EntidadeId = instancia.EntidadeId }));
+    }
+
+    private void EmitirFronteiraNormal(NoExigencia no, IReadOnlyDictionary<Guid, EstadoSatisfacao> estados,
+        IReadOnlySet<Guid> suprimidos, List<ConsequenciaEmitida> consequencias, List<PendenciaDeOrientacao> pendencias)
+    {
+        switch (no.Tipo)
+        {
+            case TipoNo.Folha:
+                EmitirFolha(no, consequencias);
+                break;
+            case TipoNo.GrupoOu:
+                EmitirGrupoOu(no, estados, suprimidos, consequencias, pendencias);
+                break;
+            case TipoNo.GrupoE:
+                EmitirGrupoE(no, estados, suprimidos, consequencias, pendencias);
+                break;
+        }
+    }
+
+    private static void EmitirFolha(NoExigencia no, List<ConsequenciaEmitida> consequencias)
+    {
+        if (no.DocumentoExigido!.ConsequenciaIndeferimento is { } consequencia)
+        {
+            consequencias.Add(new(no.Id, TipoNo.Folha, consequencia));
+        }
+    }
+
+    private void EmitirGrupoE(NoExigencia no, IReadOnlyDictionary<Guid, EstadoSatisfacao> estados,
+        IReadOnlySet<Guid> suprimidos, List<ConsequenciaEmitida> consequencias, List<PendenciaDeOrientacao> pendencias)
+    {
+        foreach (NoExigencia filho in no.Filhos.Where(f => EhPendenteOuPior(estados[f.Id])))
+        {
+            EmitirDescendente(filho, estados, suprimidos, consequencias, pendencias);
+        }
+    }
+
+    private static void EmitirGrupoOu(NoExigencia no, IReadOnlyDictionary<Guid, EstadoSatisfacao> estados,
+        IReadOnlySet<Guid> suprimidos, List<ConsequenciaEmitida> consequencias, List<PendenciaDeOrientacao> pendencias)
+    {
+        if (no.Consequencia is { } consequencia)
+        {
+            consequencias.Add(new(no.Id, TipoNo.GrupoOu, consequencia));
+        }
+        foreach (NoExigencia filho in no.Filhos.Where(f => EhPendenteOuPior(estados[f.Id]) && !suprimidos.Contains(f.Id)))
+        {
+            pendencias.Add(new(filho.Id));
+        }
+    }
+
+    private void EmitirDescendente(NoExigencia filho, IReadOnlyDictionary<Guid, EstadoSatisfacao> estados,
+        IReadOnlySet<Guid> suprimidos, List<ConsequenciaEmitida> consequencias, List<PendenciaDeOrientacao> pendencias)
+    {
+        if (suprimidos.Contains(filho.Id))
+        {
+            return;
+        }
+        if (filho.RepetePorEntidade is not null)
+        {
+            EmitirFronteira(filho, estados[filho.Id]);
+        }
+        else { EmitirFronteiraNormal(filho, estados, suprimidos, consequencias, pendencias); }
+    }
+
+    private static bool EhPendenteOuPior(EstadoSatisfacao estado) => estado is EstadoSatisfacao.Pendente or EstadoSatisfacao.Indeterminado or EstadoSatisfacao.Impossivel;
+
+    private static bool ContemRepeticaoAninhada(NoExigencia no) =>
+        (no.RepetePorEntidade is not null && no.Filhos.Any(ContemRepeticaoOuDescendente)) || no.Filhos.Any(ContemRepeticaoAninhada);
+
+    private static bool ContemRepeticaoOuDescendente(NoExigencia no) => no.RepetePorEntidade is not null || no.Filhos.Any(ContemRepeticaoOuDescendente);
+
+    private sealed record InstanciaResolvida(string EntidadeId, EstadoSatisfacao Estado,
+        Dictionary<Guid, EstadoSatisfacao> EstadosDescendentes, Dictionary<Guid, StatusResolucaoExigencia> StatusDescendentes, IReadOnlySet<Guid> NosEmissaoSuprimida);
 }

@@ -14,7 +14,6 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.Inscricoes;
-using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -40,10 +39,25 @@ public sealed class DocumentosDaConsultaDaInscricaoTests
     [Fact(DisplayName = "Sobre o processo publicado, a consulta diz por fase os documentos do candidato: o geral, o do gatilho, um por membro e o que depende da convocação")]
     public async Task Consulta_DocumentosDaInscricao_PorFase()
     {
+        ProcessoSeletivo processo = ProcessoComDocumentos();
+        Guid fase = processo.CronogramaFases.Single().Id;
+        await using UniPlusDbContext db = _cenario.CriarDbContext();
+        (Guid processoId, _) = await PublicarEDivulgarAsync(db, processo);
+        IUserContext fernanda = UsuarioComCpf(PersonasDeTeste.FernandaDrumond);
+        (await _cenario.IniciarRascunhoAsync(db, processoId, fernanda)).IsSuccess.Should().BeTrue();
+
+        await ConferirConsultasAsync(db, processoId, fernanda, fase);
+
+        Result<FormularioRenderizavelDto> formulario = await _cenario.ObterFormularioAsync(db, processoId, fernanda);
+        formulario.Value!.DependenciasDaAvaliacao!.Fatos.Should().Contain("DECLARA_RENDA", "a resposta que decide o gatilho muda a avaliação");
+    }
+
+    private static ProcessoSeletivo ProcessoComDocumentos()
+    {
         const string declaraRenda = "DECLARA_RENDA";
         const string familia = "COMPOSICAO_FAMILIAR";
         ProcessoSeletivo processo = NovoProcessoDeInscricao(
-            nameof(Consulta_DocumentosDaInscricao_PorFase),
+            nameof(DocumentosDaConsultaDaInscricaoTests),
             camposAdicionais:
             [
                 FatoColetado.Criar(
@@ -51,6 +65,12 @@ public sealed class DocumentosDaConsultaDaInscricaoTests
                     classificacaoProtecao: "PESSOAL", etapaCodigo: FormularioDeTeste.Secao, finalidade: FinalidadeFormulario.Inscricao, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
             ]);
         Guid fase = processo.CronogramaFases.Single().Id;
+        DefinirDocumentos(processo, fase, familia, declaraRenda);
+        return processo;
+    }
+
+    private static void DefinirDocumentos(ProcessoSeletivo processo, Guid fase, string familia, string declaraRenda)
+    {
         DocumentoExigido identidade = Exigencia(fase, "RG", []);
         DocumentoExigido renda = Exigencia(fase, "COMPROVANTE_RENDA", [(declaraRenda, JsonSerializer.SerializeToElement(true))]);
         DocumentoExigido doMembro = Exigencia(fase, "RG_DO_MEMBRO", []);
@@ -62,42 +82,41 @@ public sealed class DocumentosDaConsultaDaInscricaoTests
                 NoExigencia.CriarFolha(doMembro, 2, repetePorEntidade: familia).Value!,
                 NoExigencia.CriarFolha(daConvocacao, 3).Value!,
             ]).IsSuccess.Should().BeTrue();
-        await using UniPlusDbContext db = _cenario.CriarDbContext();
-        (Guid processoId, _) = await PublicarEDivulgarAsync(db, processo);
-        IUserContext fernanda = UsuarioComCpf(PersonasDeTeste.FernandaDrumond);
-        (await _cenario.IniciarRascunhoAsync(db, processoId, fernanda)).IsSuccess.Should().BeTrue();
+    }
 
+    private async Task ConferirConsultasAsync(UniPlusDbContext db, Guid processoId, IUserContext fernanda, Guid fase)
+    {
         DocumentosDaInscricaoDto pendente = (await AvaliarDocumentosAsync(db, processoId, fernanda, null, [], fase)).Value!.Documentos;
         DocumentosDaInscricaoDto enquadra = (await AvaliarDocumentosAsync(db, processoId, fernanda, true, ["m1", "m2"], fase)).Value!.Documentos;
         DocumentosDaInscricaoDto naoEnquadra = (await AvaliarDocumentosAsync(db, processoId, fernanda, false, [], fase)).Value!.Documentos;
+        ConferirDocumentosPendentes(pendente);
+        ConferirDocumentosDaFamilia(enquadra);
+        Situacoes(naoEnquadra).Select(static d => d.Tipo).Should().NotContain("COMPROVANTE_RENDA");
         Result<AvaliacaoDaInscricaoDto> faseDesconhecida = await AvaliarDocumentosAsync(db, processoId, fernanda, null, [], Guid.CreateVersion7());
+        faseDesconhecida.Error!.Code.Should().Be(InscricaoErrorCodes.FaseNaoEncontrada);
+    }
 
+    private static void ConferirDocumentosPendentes(DocumentosDaInscricaoDto pendente)
+    {
         Situacoes(pendente).Should().Equal(
-            [("RG", null, "PENDENTE"), ("COMPROVANTE_RENDA", null, "PODE_SER_EXIGIDO"), ("CERTIDAO", null, "DEPENDE_DE_FASE_POSTERIOR")],
-            "sem a resposta o comprovante pode ser exigido; sem membro, nada por membro; a convocação só existe depois da inscrição");
-        pendente.Fases.Single().Pendencias.Select(static p => p.FatoCodigo).Should().Equal(declaraRenda);
+            [("RG", null, "PENDENTE"), ("COMPROVANTE_RENDA", null, "PODE_SER_EXIGIDO"), ("CERTIDAO", null, "DEPENDE_DE_FASE_POSTERIOR")]);
+        pendente.Fases.Single().Pendencias.Select(static p => p.FatoCodigo).Should().Equal("DECLARA_RENDA");
+    }
+
+    private static void ConferirDocumentosDaFamilia(DocumentosDaInscricaoDto enquadra)
+    {
         Situacoes(enquadra).Should().Equal(
             [("RG", null, "PENDENTE"), ("COMPROVANTE_RENDA", null, "PENDENTE"), ("RG_DO_MEMBRO", "m1", "PENDENTE"), ("RG_DO_MEMBRO", "m2", "PENDENTE"),
              ("CERTIDAO", null, "DEPENDE_DE_FASE_POSTERIOR")]);
         enquadra.Fases.Single().Documentos.Where(static d => d.TipoDocumentoCodigo == "RG_DO_MEMBRO")
-            .Should().OnlyContain(d => d.GrupoCodigo == familia);
-        Situacoes(naoEnquadra).Select(static d => d.Tipo).Should().NotContain("COMPROVANTE_RENDA", "quem não declara renda não apresenta o comprovante");
-        faseDesconhecida.Error!.Code.Should().Be(InscricaoErrorCodes.FaseNaoEncontrada);
-
-        Result<FormularioRenderizavelDto> formulario = await _cenario.ObterFormularioAsync(db, processoId, fernanda);
-        formulario.Value!.DependenciasDaAvaliacao!.Fatos.Should().Contain(declaraRenda, "a resposta que decide o gatilho muda a avaliação");
+            .Should().OnlyContain(d => d.GrupoCodigo == "COMPOSICAO_FAMILIAR");
     }
 
     private static IEnumerable<(string Tipo, string? Ocorrencia, string Situacao)> Situacoes(DocumentosDaInscricaoDto documentos) =>
         documentos.Fases.Single().Documentos.Select(static d => (d.TipoDocumentoCodigo, d.OcorrenciaId, d.Situacao));
 
     private async Task<Result<AvaliacaoDaInscricaoDto>> AvaliarDocumentosAsync(
-        UniPlusDbContext db, Guid processoId, IUserContext usuario, bool? declaraRenda, string[] membros, Guid faseId) =>
-        await AvaliarInscricaoQueryHandler.Handle(
-            new AvaliarInscricaoQuery(processoId, new AvaliacaoDaInscricaoRequest(RespostasDaAvaliacao(declaraRenda), GrupoDaComposicaoFamiliar(membros)), faseId),
-            new InscricaoAtivaDoCandidato(_cenario.NovoRepositorioDeInscricao(db)), PeriodoDe(db), AvaliacaoDe(db), usuario, DentroDoPeriodo, CancellationToken.None);
-
-    private static Dictionary<string, JsonElement> RespostasDaAvaliacao(bool? declaraRenda)
+        UniPlusDbContext db, Guid processoId, IUserContext usuario, bool? declaraRenda, string[] membros, Guid faseId)
     {
         Dictionary<string, JsonElement> respostas = new(StringComparer.Ordinal);
         if (declaraRenda is { } valor)
@@ -105,14 +124,12 @@ public sealed class DocumentosDaConsultaDaInscricaoTests
             respostas["DECLARA_RENDA"] = JsonSerializer.SerializeToElement(valor);
         }
 
-        return respostas;
-    }
-
-    private static Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>> GrupoDaComposicaoFamiliar(string[] membros) =>
-        new(StringComparer.Ordinal)
+        Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>> grupos = new(StringComparer.Ordinal)
         {
             ["COMPOSICAO_FAMILIAR"] = [.. membros.Select(static m => new OcorrenciaDeGrupoInscricaoInput(m, new Dictionary<string, JsonElement>(StringComparer.Ordinal)))],
         };
+        return await _cenario.AvaliarAsync(db, processoId, usuario, respostas, grupos, faseId);
+    }
 
     private static DocumentoExigido Exigencia(Guid fase, string tipo, (string Fato, JsonElement Valor)[] gatilho) =>
         DocumentoExigido.Criar(

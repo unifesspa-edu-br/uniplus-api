@@ -39,7 +39,7 @@ internal static class CoerenciaEntreBlocos
             LeituraDosValoresDeDominio.ReconstruirOpcoesDeclaradas(itensEDeGrupos, blocos.Coleta.ValoresSelecionaveis);
         return opcoesDeclaradas.IsFailure
             ? Result<EnvelopeReidratado>.Failure(opcoesDeclaradas.Error!)
-            : Result<EnvelopeReidratado>.Success(Montar(blocos, todosOsNos, opcoesDeclaradas.Value!));
+            : Result<EnvelopeReidratado>.Success(Montar(blocos, todosOsNos, itensEDeGrupos, opcoesDeclaradas.Value!));
     }
 
     private static DomainError? PrimeiraIncoerencia(
@@ -87,26 +87,16 @@ internal static class CoerenciaEntreBlocos
     }
 
     private static EnvelopeReidratado Montar(
-        BlocosDoEnvelope blocos, IReadOnlyList<NoExigencia> todosOsNos, IReadOnlyList<OpcaoDeclaradaFato> opcoesDeclaradas)
+        BlocosDoEnvelope blocos, IReadOnlyList<NoExigencia> todosOsNos, IReadOnlyList<FatoColetado> campos, IReadOnlyList<OpcaoDeclaradaFato> opcoesDeclaradas)
     {
-        GrafoConfiguracao grafo = new(
-            blocos.Configuracao.Etapas, blocos.Configuracao.Atendimento!, blocos.Configuracao.Distribuicao, blocos.Configuracao.Bonus, blocos.Configuracao.Desempate, blocos.Configuracao.Classificacao!, blocos.Configuracao.CronogramaFases,
-            blocos.Documentos.DocumentosExigidos, todosOsNos, blocos.Documentos.ReferenciaTemporalFatos, blocos.Coleta.FatosColetados, blocos.Coleta.RegrasDerivacao,
-            cascataRemanejamento: blocos.Configuracao.Cascata,
-            formularios: blocos.Documentos.Formularios,
-            termosExigidos: blocos.Documentos.TermosExigidos,
-            configuracaoDivulgacao: blocos.Publicacao.Divulgacao,
-            configuracaoTaxaInscricao: blocos.Publicacao.TaxaInscricao,
-            localidade: blocos.Publicacao.Localidade,
-            numeroDeOpcoesDeCurso: blocos.Publicacao.NumeroDeOpcoesDeCurso,
-            algoritmoContagemPrazo: blocos.Publicacao.AlgoritmoContagemPrazo,
-            identificadorLegivel: blocos.Publicacao.IdentificadorLegivel,
-            opcoesDeclaradas: opcoesDeclaradas,
-            gruposColetados: blocos.Coleta.GruposColetados);
+        ConfiguracaoPublicada configuracao = ConfiguracaoPublicadaDoEnvelope.Montar(blocos, todosOsNos, campos, opcoesDeclaradas);
         return new EnvelopeReidratado(
-            grafo, blocos.Configuracao.Dados!, blocos.Configuracao.HashDocumento, blocos.Publicacao.FusoHorario!, blocos.Retificacao, blocos.Documentos.Conformidade,
-            blocos.Documentos.MetadadosFatosCongelados, blocos.Coleta.ValoresSelecionaveis, blocos.Publicacao.CalendarioDiasUteis, blocos.Coleta.AgregadosDosGrupos,
-            blocos.Coleta.ApresentacaoDosPressupostos, blocos.Coleta.TiposDeAtoCongelados, blocos.Coleta.FatosDerivadosCongelados);
+            configuracao, blocos.Configuracao.Dados!, blocos.Configuracao.HashDocumento, blocos.Publicacao.FusoHorario!,
+            blocos.Retificacao, blocos.Documentos.Conformidade,
+            new DadosDeCatalogoDaConfiguracaoPublicada(
+                blocos.Documentos.MetadadosFatosCongelados, blocos.Coleta.ValoresSelecionaveis,
+                blocos.Publicacao.CalendarioDiasUteis, blocos.Coleta.AgregadosDosGrupos,
+                blocos.Coleta.ApresentacaoDosPressupostos, blocos.Coleta.TiposDeAtoCongelados, blocos.Coleta.FatosDerivadosCongelados));
     }
 
     /// <summary>
@@ -122,18 +112,23 @@ internal static class CoerenciaEntreBlocos
             .Concat(grupos.Select(static g => (g.Finalidade, g.ParaEstrutura())));
         foreach (IGrouping<FinalidadeFormulario, ItemEstrutura> itens in itensEGrupos.GroupBy(static p => p.Finalidade, static p => p.Item))
         {
-            if (!porFinalidade.TryGetValue(itens.Key, out FormularioProcesso? formulario))
+            if (ConferirItensDaFinalidade(porFinalidade, itens) is { } recusa)
             {
-                return new DomainError(ErrosCodecEnvelope.EnvelopeMalformado,
-                    $"'fatosColetados' tem itens de {EstruturaFormulario.ParaToken(itens.Key)}, que não tem formulário no envelope.");
-            }
-
-            if (EstruturaFormulario.ValidarItens(formulario.Estrutura, [.. itens]) is [{ } primeiro, ..])
-            {
-                return new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, $"'fatosColetados': {primeiro.Error.Message}");
+                return recusa;
             }
         }
 
         return null;
+    }
+    private static DomainError? ConferirItensDaFinalidade(Dictionary<FinalidadeFormulario, FormularioProcesso> porFinalidade,
+        IGrouping<FinalidadeFormulario, ItemEstrutura> itens)
+    {
+        if (!porFinalidade.TryGetValue(itens.Key, out FormularioProcesso? formulario))
+        {
+            return new DomainError(ErrosCodecEnvelope.EnvelopeMalformado,
+                $"'fatosColetados' tem itens de {EstruturaFormulario.ParaToken(itens.Key)}, que não tem formulário no envelope.");
+        }
+        return EstruturaFormulario.ValidarItens(formulario.Estrutura, [.. itens]) is [{ } primeiro, ..]
+            ? new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, $"'fatosColetados': {primeiro.Error.Message}") : null;
     }
 }

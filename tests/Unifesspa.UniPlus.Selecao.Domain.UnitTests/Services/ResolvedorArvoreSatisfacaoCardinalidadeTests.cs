@@ -13,15 +13,10 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-using static ArvoreDeTeste;
+using static ApoioDaArvoreDeSatisfacao;
 
-/// <summary>
-/// Cardinalidade qualificada das folhas no <see cref="ResolvedorArvoreSatisfacao"/>: contagem de apresentações e chave de distinção.
-/// </summary>
 public sealed class ResolvedorArvoreSatisfacaoCardinalidadeTests
 {
-    // ── Cardinalidade qualificada (Story #921) ───────────────────────────────────────────
-
     [Fact(DisplayName = "Folha sem chaveDistincao: contagem bruta — 2 apresentações satisfazem N=2")]
     public void Cardinalidade_SemChave_ContagemBrutaSatisfaz()
     {
@@ -110,14 +105,7 @@ public sealed class ResolvedorArvoreSatisfacaoCardinalidadeTests
             documento, 0, quantidadeMinima: 2, chaveDistincao: ChaveDistincao.Ocorrencia,
             ocorrenciasEsperadas: ["eleicao_2026_1", "eleicao_2026_2"]).Value!;
         Guid idApresentacao = Guid.CreateVersion7();
-        Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes = new()
-        {
-            [documento.Id] =
-            [
-                new ApresentacaoDocumento(idApresentacao, "eleicao_2026_1"),
-                new ApresentacaoDocumento(idApresentacao, "eleicao_2026_2"),
-            ],
-        };
+        Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes = MesmaApresentacao(documento, idApresentacao, "eleicao_2026_1", "eleicao_2026_2");
 
         Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz), apresentacoes: apresentacoes);
 
@@ -170,14 +158,7 @@ public sealed class ResolvedorArvoreSatisfacaoCardinalidadeTests
         NoExigencia raiz = NoExigencia.CriarFolha(
             documento, 0, quantidadeMinima: 2, chaveDistincao: ChaveDistincao.Ocorrencia).Value!;
         Guid idApresentacao = Guid.CreateVersion7();
-        Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes = new()
-        {
-            [documento.Id] =
-            [
-                new ApresentacaoDocumento(idApresentacao, "eleicao_x"),
-                new ApresentacaoDocumento(idApresentacao, "eleicao_y"),
-            ],
-        };
+        Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes = MesmaApresentacao(documento, idApresentacao, "eleicao_x", "eleicao_y");
 
         Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz), apresentacoes: apresentacoes);
 
@@ -199,4 +180,10 @@ public sealed class ResolvedorArvoreSatisfacaoCardinalidadeTests
 
         resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Pendente);
     }
+
+    // ── Repetição por entidade (Story #922) ──────────────────────────────────────────────
+
+    private static Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> MesmaApresentacao(
+        DocumentoExigido documento, Guid id, params string[] chaves) =>
+        new() { [documento.Id] = [.. chaves.Select(chave => new ApresentacaoDocumento(id, chave))] };
 }

@@ -16,10 +16,10 @@ public sealed class EnvelopeLidoCascataEUnidadeTests
         EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo,
             CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
 
-        lido.Grafo.CascataRemanejamento.Should().NotBeNull();
-        lido.Grafo.CascataRemanejamento!.FallbackCodigo.Should().Be("AC");
-        lido.Grafo.CascataRemanejamento.Destinos.Should().HaveCount(56);
-        lido.Grafo.CascataRemanejamento.Destinos.Select(d => (d.ModalidadeOrigemCodigo, d.Ordem, d.ModalidadeDestinoCodigo))
+        lido.Configuracao.Vagas.Cascata.Should().NotBeNull();
+        lido.Configuracao.Vagas.Cascata!.FallbackCodigo.Should().Be("AC");
+        lido.Configuracao.Vagas.Cascata.Destinos.Should().HaveCount(56);
+        lido.Configuracao.Vagas.Cascata.Destinos.Select(d => (d.ModalidadeOrigemCodigo, d.Ordem, d.ModalidadeDestinoCodigo))
             .Should().BeEquivalentTo(processo.Cascata!.Destinos.Select(d => (d.ModalidadeOrigemCodigo, d.Ordem, d.ModalidadeDestinoCodigo)));
     }
 
@@ -33,7 +33,7 @@ public sealed class EnvelopeLidoCascataEUnidadeTests
         EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo,
             CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
 
-        lido.Grafo.CascataRemanejamento.Should().BeNull();
+        lido.Configuracao.Vagas.Cascata.Should().BeNull();
     }
 
     [Fact]
@@ -48,7 +48,7 @@ public sealed class EnvelopeLidoCascataEUnidadeTests
 
         EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo,
             CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
-        ProcessoSeletivo candidata = ProcessoDoGrafoLidoDeTeste.Criar(processo, lido.Grafo);
+        ProcessoSeletivo candidata = ProcessoDoGrafoLidoDeTeste.Criar(processo, lido.Configuracao);
         candidata.UnidadeAdministradoraOrigemId.Should().Be(processo.UnidadeAdministradoraOrigemId);
         candidata.UnidadeAdministradora.Sigla.Should().Be(processo.UnidadeAdministradora.Sigla);
     }

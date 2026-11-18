@@ -23,12 +23,31 @@ internal static class CorpusFitness
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Fitness", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
+        DefinirEtapa(processo);
+        DefinirCronograma(processo);
+        processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!);
+        DefinirVagas(processo);
+        DefinirClassificacao(processo);
+        DadosEdital dados = DadosEdital.Criar(
+            numero: "001/2026",
+            periodoInscricaoInicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
+            periodoInscricaoFim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
+            documentoEditalId: new Guid("33333333-3333-3333-3333-333333333333")).Value!;
+
+        return new EntradaCanonicalizacao(processo, dados, new string('a', 64), FusoInstitucional.ZoneId, Retificacao: null, Conformidade: null, DadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada());
+    }
+
+    private static void DefinirEtapa(ProcessoSeletivo processo)
+    {
         processo.DefinirEtapas([
             EtapaProcesso.Criar(
                 new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: null),
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
         ]);
+    }
 
+    private static void DefinirCronograma(ProcessoSeletivo processo)
+    {
         // Cronograma mínimo (Story #851): UMA fase satisfaz as duas exigências do corpus —
         // AgrupaEtapas (há etapa acima) e ProduzResultado (há vagas ofertadas abaixo).
         processo.DefinirCronogramaFases([
@@ -42,9 +61,10 @@ internal static class CorpusFitness
                 new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
                 bancasRequeridas: []).Value!,
         ], []);
+    }
 
-        processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!);
-
+    private static void DefinirVagas(ProcessoSeletivo processo)
+    {
         processo.DefinirDistribuicaoVagas([
             ConfiguracaoDistribuicaoVagas.Criar(new Guid("11111111-1111-1111-1111-111111111111"),
                 new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'), Modalidades = [
@@ -56,20 +76,15 @@ internal static class CorpusFitness
                 ] },
                 new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!,
         ], FatosDeModalidadeDeTeste.DoCatalogo);
+    }
 
+    private static void DefinirClassificacao(ProcessoSeletivo processo)
+    {
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
             RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
             RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
         }).Value!);
         processo.DefinirOpcoesDeCurso(1);
-
-        DadosEdital dados = DadosEdital.Criar(
-            numero: "001/2026",
-            periodoInscricaoInicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
-            periodoInscricaoFim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
-            documentoEditalId: new Guid("33333333-3333-3333-3333-333333333333")).Value!;
-
-        return new EntradaCanonicalizacao(processo, dados, new string('a', 64), FusoInstitucional.ZoneId);
     }
 }

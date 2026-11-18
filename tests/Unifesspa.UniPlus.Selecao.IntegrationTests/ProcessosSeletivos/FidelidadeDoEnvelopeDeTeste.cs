@@ -15,7 +15,7 @@ internal static class FidelidadeDoEnvelopeDeTeste
     internal static EnvelopeReidratado Conferir(ProcessoSeletivo processo, VersaoConfiguracao versao, SnapshotCanonico congelado)
     {
         EnvelopeReidratado envelope = ApoioDoEnvelopeCodec.Reidratado(versao);
-        ProcessoSeletivo lido = ProcessoDoGrafoLidoDeTeste.Criar(processo, envelope.Grafo);
+        ProcessoSeletivo lido = ProcessoDoGrafoLidoDeTeste.Criar(processo, envelope.Configuracao);
         SnapshotCanonico recodificado = Recodificar(lido, versao, envelope);
         recodificado.Bytes.Should().Equal(congelado.Bytes);
         recodificado.SchemaVersion.Should().Be(congelado.SchemaVersion);
@@ -28,10 +28,7 @@ internal static class FidelidadeDoEnvelopeDeTeste
         Result<SnapshotCanonico> recodificado = CorpusEnvelope.Registro.Recodificar(
             versao.SchemaVersion,
             new EntradaCanonicalizacao(processo, envelope.Dados, envelope.HashDocumento, envelope.FusoHorario,
-                envelope.Retificacao, envelope.Conformidade, envelope.MetadadosFatosCongelados,
-                envelope.ValoresSelecionaveisCongelados, envelope.CalendarioDiasUteis,
-                envelope.AgregadosDosGrupos, envelope.ApresentacaoDosPressupostos,
-                envelope.TiposDeAtoCongelados, envelope.FatosDerivadosCongelados));
+                envelope.Retificacao, envelope.Conformidade, envelope.DadosDeCatalogo));
         recodificado.IsSuccess.Should().BeTrue(recodificado.Error?.Message);
         return recodificado.Value!;
     }
@@ -43,7 +40,7 @@ internal static class FidelidadeDoEnvelopeDeTeste
         byte[] alterados = Alterar(original, caminho, valor);
         VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, alterados);
         EnvelopeReidratado envelope = ApoioDoEnvelopeCodec.Reidratado(versao);
-        ProcessoSeletivo lido = ProcessoDoGrafoLidoDeTeste.Criar(processo, envelope.Grafo);
+        ProcessoSeletivo lido = ProcessoDoGrafoLidoDeTeste.Criar(processo, envelope.Configuracao);
         byte[] recodificados = Recodificar(lido, versao, envelope).Bytes;
         recodificados.Should().NotEqual(original.Bytes);
         if (!ordena)

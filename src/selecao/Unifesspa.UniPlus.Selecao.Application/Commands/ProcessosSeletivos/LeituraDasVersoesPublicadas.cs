@@ -50,7 +50,7 @@ public sealed class LeituraDasVersoesPublicadas(IProcessoSeletivoRepository proc
     }
 
     private static FatosDasVersoesPublicadas Fatos(List<EnvelopeReidratado> reidratadas) => FatosDasVersoesPublicadas.De(
-        [.. reidratadas.Select(static r => r.Grafo)],
+        [.. reidratadas.Select(static r => r.Configuracao)],
         [.. reidratadas.Select(ConferenciaDosEixosDosFatosColetados.DaVersao)]);
 
     private Result<EnvelopeReidratado> ReidratarVersao(VersaoConfiguracao versao) =>

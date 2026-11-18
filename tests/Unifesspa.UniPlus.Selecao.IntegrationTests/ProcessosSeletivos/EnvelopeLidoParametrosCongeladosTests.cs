@@ -22,14 +22,11 @@ public sealed class EnvelopeLidoParametrosCongeladosTests
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
         MetadadoFatoCongelado metadado = new("COR_RACA", "CATEGORICO", "DECLARADO", "ESCALAR", "INSCRICAO",
             "CAMPO_FORMULARIO:COR_RACA", ["VALOR_CONGELADO"], null);
-        EntradaCanonicalizacao entrada = CorpusEnvelopeEntrada.Entrada(processo) with
-        {
-            MetadadosFatosCongelados = new Dictionary<string, MetadadoFatoCongelado>(StringComparer.Ordinal) { ["COR_RACA"] = metadado },
-        };
+        EntradaCanonicalizacao entrada = EntradaComMetadado(processo, metadado);
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(entrada);
         EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo,
             CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
-        lido.MetadadosFatosCongelados!["COR_RACA"].Should().BeEquivalentTo(metadado);
+        lido.DadosDeCatalogo.MetadadosFatosCongelados!["COR_RACA"].Should().BeEquivalentTo(metadado);
         typeof(EnvelopeCodec).GetConstructors().Should().OnlyContain(c => c.GetParameters().Length == 0);
         typeof(RegistroCodecsEnvelope).GetConstructors().SelectMany(c => c.GetParameters())
             .Should().NotContain(p => p.ParameterType.Name == "IFatoCandidatoReader");
@@ -56,14 +53,11 @@ public sealed class EnvelopeLidoParametrosCongeladosTests
         {
             ["CONDICAO_ATENDIMENTO"] = [new("LACTANTE", "Lactante", 0), new(AtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência", 1)],
         };
-        EntradaCanonicalizacao entrada = CorpusEnvelopeEntrada.Entrada(processo) with
-        {
-            ValoresSelecionaveisCongelados = CatalogoDoConjuntoBasico.ComValoresCongelados(valores),
-        };
+        EntradaCanonicalizacao entrada = EntradaComValores(processo, valores);
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(entrada);
         EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo,
             CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
-        ConferirValores(lido.ValoresSelecionaveisCongelados!);
+        ConferirValores(lido.DadosDeCatalogo.ValoresSelecionaveisCongelados!);
     }
 
     private static void DefinirCondicaoDeAtendimento(ProcessoSeletivo processo) =>
@@ -91,4 +85,23 @@ public sealed class EnvelopeLidoParametrosCongeladosTests
             ("LACTANTE", "Lactante", 0), (AtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência", 1));
         valores.Should().ContainKey("RENDA");
     }
+    private static EntradaCanonicalizacao EntradaComMetadado(ProcessoSeletivo processo, MetadadoFatoCongelado metadado) =>
+        CorpusEnvelopeEntrada.Entrada(processo) with
+        {
+            DadosDeCatalogo = CorpusEnvelopeEntrada.Entrada(processo).DadosDeCatalogo with
+            {
+                MetadadosFatosCongelados = new Dictionary<string, MetadadoFatoCongelado>(StringComparer.Ordinal) { ["COR_RACA"] = metadado },
+            },
+        };
+
+    private static EntradaCanonicalizacao EntradaComValores(
+        ProcessoSeletivo processo, IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores) =>
+        CorpusEnvelopeEntrada.Entrada(processo) with
+        {
+            DadosDeCatalogo = CorpusEnvelopeEntrada.Entrada(processo).DadosDeCatalogo with
+            {
+                ValoresSelecionaveisCongelados = CatalogoDoConjuntoBasico.ComValoresCongelados(valores),
+            },
+        };
+
 }

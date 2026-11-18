@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Services;
 
-using Abstractions;
-
 using Domain.Entities;
 using Domain.Errors;
 using Domain.Interfaces;
@@ -11,80 +9,48 @@ using Kernel.Domain.ValueObjects;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 /// <summary>
 /// O que os passos do documento da inscrição conferem antes de tudo. No envio: a inscrição ativa é a do dono
 /// do token e as inscrições estão abertas. Na leitura do que já foi enviado: o arquivo é do dono do token. Quem não tem inscrição no processo recebe a
 /// mesma recusa de quem pede um arquivo que não é dele: nada revela dado de outra pessoa.
 /// </summary>
-public static class AcessoAoDocumentoDaInscricao
+public sealed class AcessoAoDocumentoDaInscricao(
+    IInscricaoRepository inscricaoRepository, IDocumentoDaInscricaoRepository documentoRepository,
+    IUserContext userContext, PeriodoDaInscricaoResolver periodo, TimeProvider timeProvider)
 {
-    public static async Task<Result<Inscricao>> ResolverInscricaoAsync(
-        Guid processoSeletivoId,
-        IUserContext userContext,
-        IInscricaoRepository inscricaoRepository,
-        IProcessoSeletivoRepository processoSeletivoRepository,
-        ICertameDivulgadoRepository certameDivulgadoRepository,
-        IRegistroCodecsEnvelope registroCodecs,
-        IResolvedorFusoInstitucional resolvedorFuso,
-        TimeProvider timeProvider,
-        CancellationToken cancellationToken)
+    public async Task<Result<Inscricao>> ResolverInscricaoAsync(Guid processoSeletivoId, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(timeProvider);
-
-        Result<Inscricao> doDono = await ResolverInscricaoDoDonoAsync(processoSeletivoId, userContext, inscricaoRepository, cancellationToken)
-            .ConfigureAwait(false);
+        Result<Inscricao> doDono = await ResolverInscricaoDoDonoAsync(processoSeletivoId, cancellationToken).ConfigureAwait(false);
         if (doDono.IsFailure)
         {
             return doDono;
         }
-
-        DomainError? foraDoPeriodo = await PeriodoDaInscricaoResolver.ConferirAsync(
-            processoSeletivoId, certameDivulgadoRepository, processoSeletivoRepository, registroCodecs, resolvedorFuso,
-            timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+        DomainError? foraDoPeriodo = await periodo.ConferirAsync(processoSeletivoId, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
         return foraDoPeriodo is not null ? Result<Inscricao>.Failure(foraDoPeriodo) : doDono;
     }
 
-    private static async Task<Result<Inscricao>> ResolverInscricaoDoDonoAsync(
-        Guid processoSeletivoId,
-        IUserContext userContext,
-        IInscricaoRepository inscricaoRepository,
-        CancellationToken cancellationToken)
+    private async Task<Result<Inscricao>> ResolverInscricaoDoDonoAsync(Guid processoSeletivoId, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(userContext);
-        ArgumentNullException.ThrowIfNull(inscricaoRepository);
-
         Result<Cpf> cpf = CpfDoToken(userContext);
         if (cpf.IsFailure)
         {
             return Result<Inscricao>.Failure(cpf.Error!);
         }
-
-        Inscricao? inscricao = await inscricaoRepository
-            .ObterAtivaPorProcessoECpfAsync(processoSeletivoId, cpf.Value!, cancellationToken)
-            .ConfigureAwait(false);
-        if (inscricao is null)
-        {
-            return Result<Inscricao>.Failure(Inscricao.NaoEncontrada);
-        }
-
-        return inscricao.ConferirDono(userContext.UserId ?? string.Empty) is { } erroDono
-            ? Result<Inscricao>.Failure(erroDono)
-            : Result<Inscricao>.Success(inscricao);
+        Inscricao? inscricao = await inscricaoRepository.ObterAtivaPorProcessoECpfAsync(processoSeletivoId, cpf.Value!, cancellationToken).ConfigureAwait(false);
+        return InscricaoDoDono.DoDono(inscricao, userContext);
     }
 
     /// <summary>
     /// O arquivo da inscrição, ou a recusa neutra: o arquivo inexistente e o de outra inscrição são
     /// indistinguíveis.
     /// </summary>
-    public static async Task<Result<ArquivoDaApresentacao>> ResolverArquivoAsync(
-        Guid arquivoId, Inscricao inscricao, IDocumentoDaInscricaoRepository repositorio, CancellationToken cancellationToken)
+    public async Task<Result<ArquivoDaApresentacao>> ResolverArquivoAsync(
+        Guid arquivoId, Inscricao inscricao, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(inscricao);
-        ArgumentNullException.ThrowIfNull(repositorio);
 
-        ArquivoDaApresentacao? arquivo = await repositorio.ObterArquivoAsync(arquivoId, cancellationToken).ConfigureAwait(false);
+        ArquivoDaApresentacao? arquivo = await documentoRepository.ObterArquivoAsync(arquivoId, cancellationToken).ConfigureAwait(false);
         return arquivo is null || arquivo.InscricaoId != inscricao.Id
             ? Result<ArquivoDaApresentacao>.Failure(ArquivoNaoEncontrado)
             : Result<ArquivoDaApresentacao>.Success(arquivo);
@@ -96,34 +62,22 @@ public static class AcessoAoDocumentoDaInscricao
     /// O dono é o <c>contaId</c> e o CPF do token juntos, como nas demais leituras. O arquivo inexistente, o de outro
     /// processo e o de outra pessoa recebem a mesma recusa.
     /// </summary>
-    public static async Task<Result<ArquivoDaApresentacao>> ResolverArquivoDoDonoAsync(
-        Guid processoSeletivoId,
-        Guid arquivoId,
-        IUserContext userContext,
-        IInscricaoRepository inscricaoRepository,
-        IDocumentoDaInscricaoRepository documentoRepository,
-        CancellationToken cancellationToken)
+    public async Task<Result<ArquivoDaApresentacao>> ResolverArquivoDoDonoAsync(
+        Guid processoSeletivoId, Guid arquivoId, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(userContext);
-        ArgumentNullException.ThrowIfNull(inscricaoRepository);
-        ArgumentNullException.ThrowIfNull(documentoRepository);
-
         Result<Cpf> cpf = CpfDoToken(userContext);
-        if (cpf.IsFailure)
-        {
-            return Result<ArquivoDaApresentacao>.Failure(cpf.Error!);
-        }
+        return cpf.IsFailure
+            ? Result<ArquivoDaApresentacao>.Failure(cpf.Error!)
+            : await ResolverArquivoDoCpfAsync(processoSeletivoId, arquivoId, cpf.Value!, cancellationToken).ConfigureAwait(false);
+    }
 
+    private async Task<Result<ArquivoDaApresentacao>> ResolverArquivoDoCpfAsync(
+        Guid processoSeletivoId, Guid arquivoId, Cpf cpf, CancellationToken cancellationToken)
+    {
         ArquivoDaApresentacao? arquivo = await documentoRepository.ObterArquivoAsync(arquivoId, cancellationToken).ConfigureAwait(false);
-        Inscricao? inscricao = arquivo is null
-            ? null
-            : await inscricaoRepository.ObterPorIdAsync(arquivo.InscricaoId, cancellationToken).ConfigureAwait(false);
-
-        return arquivo is not null
-            && inscricao is not null
-            && inscricao.ProcessoSeletivoId == processoSeletivoId
-            && inscricao.Cpf == cpf.Value
-            && inscricao.ConferirDono(userContext.UserId) is null
+        Inscricao? inscricao = arquivo is null ? null : await inscricaoRepository.ObterPorIdAsync(arquivo.InscricaoId, cancellationToken).ConfigureAwait(false);
+        return arquivo is not null && inscricao is not null && inscricao.ProcessoSeletivoId == processoSeletivoId
+            && inscricao.Titular.Cpf == cpf && inscricao.Titular.ConferirDono(userContext.UserId) is null
                 ? Result<ArquivoDaApresentacao>.Success(arquivo)
                 : Result<ArquivoDaApresentacao>.Failure(ArquivoNaoEncontrado);
     }

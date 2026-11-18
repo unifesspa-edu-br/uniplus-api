@@ -42,7 +42,7 @@ internal static class CongelamentoDosTiposDeAto
 
         return publicada.IsFailure
             ? Result<IReadOnlyDictionary<string, TipoDeAtoCongelado>>.Failure(publicada.Error!)
-            : Result<IReadOnlyDictionary<string, TipoDeAtoCongelado>>.Success(publicada.Value!.TiposDeAtoCongelados);
+            : Result<IReadOnlyDictionary<string, TipoDeAtoCongelado>>.Success(publicada.Value!.DadosDeCatalogo.TiposDeAtoCongelados!);
     }
 
     public static Result<IReadOnlyDictionary<string, TipoDeAtoCongelado>> Resolver(
@@ -51,21 +51,35 @@ internal static class CongelamentoDosTiposDeAto
     {
         ArgumentNullException.ThrowIfNull(processo);
         ArgumentNullException.ThrowIfNull(tipos);
+        return CongelarTodos(processo, tipos);
+    }
 
+    private static Result<IReadOnlyDictionary<string, TipoDeAtoCongelado>> CongelarTodos(
+        ProcessoSeletivo processo, TiposDeAtoUnicosPorObjeto tipos)
+    {
         Dictionary<string, TipoDeAtoCongelado> congelados = new(StringComparer.Ordinal);
         foreach (string codigo in TiposDeAtoDoCronograma.DeclaracoesDeAtos(processo.Declaracao()).Select(static d => d.AtoCodigo).Distinct(StringComparer.Ordinal))
         {
-            if (tipos.ClassificacaoDe(codigo) is not { } classificacao)
+            Result<TipoDeAtoCongelado> congelado = Congelar(codigo, tipos);
+            if (congelado.IsFailure)
             {
-                return Result<IReadOnlyDictionary<string, TipoDeAtoCongelado>>.Failure(new DomainError(
-                    "ProcessoSeletivo.TipoDeAtoSemVersaoVigente",
-                    $"Não há versão vigente do tipo de ato '{codigo}', declarado no cronograma, e a publicação congela a classificação de cada tipo declarado."));
+                return Result<IReadOnlyDictionary<string, TipoDeAtoCongelado>>.Failure(congelado.Error!);
             }
-
-            congelados[codigo] = new TipoDeAtoCongelado(
-                codigo, tipos.EhUnico(codigo), classificacao.EhResultado, classificacao.CongelaConfiguracao);
+            congelados[codigo] = congelado.Value!;
         }
 
         return Result<IReadOnlyDictionary<string, TipoDeAtoCongelado>>.Success(congelados);
+    }
+
+    private static Result<TipoDeAtoCongelado> Congelar(string codigo, TiposDeAtoUnicosPorObjeto tipos)
+    {
+        if (tipos.ClassificacaoDe(codigo) is not { } classificacao)
+        {
+            return Result<TipoDeAtoCongelado>.Failure(new DomainError(
+                "ProcessoSeletivo.TipoDeAtoSemVersaoVigente",
+                $"Não há versão vigente do tipo de ato '{codigo}', declarado no cronograma, e a publicação congela a classificação de cada tipo declarado."));
+        }
+        return Result<TipoDeAtoCongelado>.Success(new TipoDeAtoCongelado(
+            codigo, tipos.EhUnico(codigo), classificacao.EhResultado, classificacao.CongelaConfiguracao));
     }
 }

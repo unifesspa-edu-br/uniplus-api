@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 
-using System.Text;
 using System.Text.Json;
 
 using Microsoft.EntityFrameworkCore;
@@ -10,7 +9,6 @@ using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Pagination;
-using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -30,36 +28,38 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
 /// sincroniza as linhas pela chave natural — ocorrência, fato e posição —, então uma linha que não
 /// mudou continua a mesma e nenhuma colide com o índice único dentro da mesma gravação.
 /// </remarks>
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via DI em SelecaoInfrastructureRegistration.")]
 public sealed class InscricaoRepository : IInscricaoRepository
 {
     private readonly UniPlusDbContext _dbContext;
     private readonly IUniPlusEncryptionService _encryption;
-    private readonly IUniPlusBlindIndexService _blindIndex;
     private readonly CalculadorDoIndiceCegoDoCpf _indiceDoCpf;
     private readonly TimeProvider _timeProvider;
-    private readonly SensiveisDoComprovante _sensiveis;
+    private readonly IComprovanteDaInscricaoRepository _comprovantes;
+    private readonly ValorGravadoDaResposta _valores;
+    private readonly TraducaoDaInscricao _traducao;
+    private readonly SincronizacaoDasLinhasDaInscricao _sincronizacao;
 
     public InscricaoRepository(
         UniPlusDbContext dbContext,
         IUniPlusEncryptionService encryption,
         IUniPlusBlindIndexService blindIndex,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        IComprovanteDaInscricaoRepository comprovantes)
     {
         ArgumentNullException.ThrowIfNull(dbContext);
         ArgumentNullException.ThrowIfNull(encryption);
         ArgumentNullException.ThrowIfNull(blindIndex);
         ArgumentNullException.ThrowIfNull(timeProvider);
+        ArgumentNullException.ThrowIfNull(comprovantes);
 
         _dbContext = dbContext;
         _encryption = encryption;
-        _blindIndex = blindIndex;
         _indiceDoCpf = new CalculadorDoIndiceCegoDoCpf(blindIndex);
         _timeProvider = timeProvider;
-        _sensiveis = new SensiveisDoComprovante(encryption, blindIndex);
+        _comprovantes = comprovantes;
+        _valores = new ValorGravadoDaResposta(encryption);
+        _traducao = new TraducaoDaInscricao(_valores);
+        _sincronizacao = new SincronizacaoDasLinhasDaInscricao(dbContext);
     }
 
     public async Task<Inscricao?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -116,65 +116,24 @@ public sealed class InscricaoRepository : IInscricaoRepository
 
         if (grupoCodigo is null)
         {
-            Guid? raiz = await _dbContext.RespostasDaInscricao
-                .AsNoTracking()
-                .Where(r => r.InscricaoId == inscricaoId
-                    && r.FatoCodigo == fatoCodigo
-                    && r.OcorrenciaId == null
-                    && r.Origem == OrigemDaResposta.Informada
-                    && r.ValorCifrado != null)
-                .Select(static r => (Guid?)r.Id)
-                .FirstOrDefaultAsync(cancellationToken)
-                .ConfigureAwait(false);
-
-            return raiz is { } id ? new RespostaIdentificadora(id) : null;
+            return await RespostaIdentificadoraAsync(inscricaoId, fatoCodigo, null, cancellationToken).ConfigureAwait(false);
         }
 
-        if (ocorrenciaId is null)
-        {
-            return null;
-        }
+        Guid? ocorrencia = ocorrenciaId is null
+            ? null
+            : await OcorrenciaDoGrupoAsync(inscricaoId, grupoCodigo, ocorrenciaId, cancellationToken).ConfigureAwait(false);
 
-        Guid? ocorrencia = await _dbContext.OcorrenciasDeGrupoDaInscricao
-            .AsNoTracking()
-            .Where(o => o.InscricaoId == inscricaoId && o.GrupoCodigo == grupoCodigo && o.MembroId == ocorrenciaId)
-            .Select(static o => (Guid?)o.Id)
-            .FirstOrDefaultAsync(cancellationToken)
-            .ConfigureAwait(false);
-        if (ocorrencia is null)
-        {
-            return null;
-        }
-
-        Guid? resposta = await _dbContext.RespostasDaInscricao
-            .AsNoTracking()
-            .Where(r => r.InscricaoId == inscricaoId
-                && r.FatoCodigo == fatoCodigo
-                && r.OcorrenciaId == ocorrencia
-                && r.Origem == OrigemDaResposta.Informada
-                && r.ValorCifrado != null)
-            .Select(static r => (Guid?)r.Id)
-            .FirstOrDefaultAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        return resposta is { } respostaId ? new RespostaIdentificadora(respostaId) : null;
+        return ocorrencia is null
+            ? null
+            : await RespostaIdentificadoraAsync(inscricaoId, fatoCodigo, ocorrencia, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<string?> LerIdentificadorAsync(Guid respostaId, CancellationToken cancellationToken = default)
     {
-        byte[] cifrado = await _dbContext.RespostasDaInscricao
-            .AsNoTracking()
-            .Where(r => r.Id == respostaId)
-            .Select(static r => r.ValorCifrado)
-            .FirstOrDefaultAsync(cancellationToken)
-            .ConfigureAwait(false)
-            ?? throw new InvalidOperationException($"A resposta identificadora {respostaId} não está cifrada.");
-
-        byte[] plano = await _encryption
-            .DecryptAsync(SelecaoEncryptionKeys.IdentificadoresAesGcm, cifrado, cancellationToken)
+        byte[] cifrado = await ValorCifradoDaRespostaAsync(respostaId, cancellationToken).ConfigureAwait(false);
+        JsonElement valor = await _valores
+            .DecifrarAsync(SelecaoEncryptionKeys.IdentificadoresAesGcm, cifrado, cancellationToken)
             .ConfigureAwait(false);
-
-        JsonElement valor = JsonSerializer.Deserialize<JsonElement>(plano);
 
         return valor.ValueKind switch
         {
@@ -182,20 +141,6 @@ public sealed class InscricaoRepository : IInscricaoRepository
             JsonValueKind.Null or JsonValueKind.Undefined => null,
             _ => valor.GetRawText(),
         };
-    }
-
-    public async Task<IReadOnlyDictionary<Guid, DateTimeOffset>> ObterPrimeirosEnviosAsync(
-        IReadOnlyCollection<Guid> inscricoes, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(inscricoes);
-
-        return await _dbContext.ComprovantesInscricao
-            .AsNoTracking()
-            .Where(c => inscricoes.Contains(c.InscricaoId))
-            .GroupBy(static c => c.InscricaoId)
-            .Select(static g => new { InscricaoId = g.Key, Primeiro = g.Min(static c => c.Instante) })
-            .ToDictionaryAsync(static g => g.InscricaoId, static g => g.Primeiro, cancellationToken)
-            .ConfigureAwait(false);
     }
 
     public async Task<(IReadOnlyList<ResumoDaInscricaoDoProcesso> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarEnviadasDoProcessoAsync(
@@ -215,37 +160,7 @@ public sealed class InscricaoRepository : IInscricaoRepository
             .ApplyAsync(enviadas, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
 
-        Guid[] ids = [.. pagina.Items.Select(static r => r.Id)];
-
-        Dictionary<Guid, string> nomes = lerNome
-            ? await NomeDeExibicaoDaInscricao
-                .LerAsync(_dbContext.RespostasDaInscricao, ids, cancellationToken)
-                .ConfigureAwait(false)
-            : [];
-
-        IReadOnlyDictionary<Guid, DateTimeOffset> primeirosEnvios = await ObterPrimeirosEnviosAsync(ids, cancellationToken)
-            .ConfigureAwait(false);
-
-        Dictionary<Guid, string> cpfs = lerCpf
-            ? await CpfDaInscricao
-                .LerAsync(_dbContext.RespostasDaInscricao.Where(r => ids.Contains(r.InscricaoId)), _encryption, cancellationToken)
-                .ConfigureAwait(false)
-            : [];
-
-        List<ResumoDaInscricaoDoProcesso> resumos = new(pagina.Items.Count);
-        foreach (InscricaoRecord record in pagina.Items)
-        {
-            resumos.Add(new ResumoDaInscricaoDoProcesso(
-                record.Id,
-                record.NumeroInscricao,
-                record.Situacao,
-                record.VersaoFormularioId,
-                record.OfertaCursoId,
-                record.OfertaCursoSegundaOpcaoId,
-                nomes.GetValueOrDefault(record.Id),
-                lerCpf ? ReidratarCpf(CpfDaInscricao.Exigir(cpfs, record.Id)) : null,
-                primeirosEnvios.TryGetValue(record.Id, out DateTimeOffset primeiro) ? primeiro : null));
-        }
+        List<ResumoDaInscricaoDoProcesso> resumos = await ResumosAsync(pagina.Items, lerNome, lerCpf, cancellationToken).ConfigureAwait(false);
 
         return (resumos, pagina.PrevAfterId, pagina.NextAfterId);
     }
@@ -255,11 +170,12 @@ public sealed class InscricaoRepository : IInscricaoRepository
         ArgumentNullException.ThrowIfNull(entity);
 
         InscricaoRecord record = new() { Id = entity.Id, CreatedAt = _timeProvider.GetUtcNow() };
-        LinhasDaInscricao desejadas = await LinhasDeAsync(entity, cancellationToken).ConfigureAwait(false);
-        await AtualizarCamposAsync(record, entity, cancellationToken).ConfigureAwait(false);
+        LinhasDaInscricao desejadas = await _traducao.LinhasAsync(entity, cancellationToken).ConfigureAwait(false);
+        byte[] cpfIndice = await ComputarIndiceAsync(entity.Titular.Cpf, cancellationToken).ConfigureAwait(false);
+        TraducaoDaInscricao.PreencherRegistro(record, entity, cpfIndice);
 
         _dbContext.Inscricoes.Add(record);
-        Sincronizar(LinhasDaInscricao.Vazias, desejadas);
+        _sincronizacao.Sincronizar(LinhasDaInscricao.Vazias, desejadas);
     }
 
     public async Task AtualizarAsync(Inscricao entity, CancellationToken cancellationToken = default)
@@ -270,12 +186,13 @@ public sealed class InscricaoRepository : IInscricaoRepository
             .FirstAsync(r => r.Id == entity.Id, cancellationToken)
             .ConfigureAwait(false);
 
-        LinhasDaInscricao desejadas = await LinhasDeAsync(entity, cancellationToken).ConfigureAwait(false);
-        await AtualizarCamposAsync(record, entity, cancellationToken).ConfigureAwait(false);
+        LinhasDaInscricao desejadas = await _traducao.LinhasAsync(entity, cancellationToken).ConfigureAwait(false);
+        byte[] cpfIndice = await ComputarIndiceAsync(entity.Titular.Cpf, cancellationToken).ConfigureAwait(false);
+        TraducaoDaInscricao.PreencherRegistro(record, entity, cpfIndice);
         record.UpdatedAt = _timeProvider.GetUtcNow();
 
-        LinhasDaInscricao atuais = await CarregarLinhasAsync([entity.Id], cancellationToken).ConfigureAwait(false);
-        Sincronizar(atuais, desejadas);
+        LinhasDaInscricao atuais = await LinhasDaInscricao.CarregarAsync(_dbContext, [entity.Id], cancellationToken).ConfigureAwait(false);
+        _sincronizacao.Sincronizar(atuais, desejadas);
     }
 
     public async Task RemoverAsync(Inscricao entity, CancellationToken cancellationToken = default)
@@ -293,38 +210,6 @@ public sealed class InscricaoRepository : IInscricaoRepository
         _dbContext.Inscricoes.Remove(record);
     }
 
-    public async Task<ComprovanteNaPosicao?> ObterComprovanteAsync(
-        Guid inscricaoId, int numero, CancellationToken cancellationToken = default)
-    {
-        IQueryable<ComprovanteInscricao> daInscricao = _dbContext.ComprovantesInscricao.AsNoTracking().Where(c => c.InscricaoId == inscricaoId);
-        int total = await daInscricao.CountAsync(cancellationToken).ConfigureAwait(false);
-        if (numero < 1 || numero > total)
-        {
-            return null;
-        }
-
-        ComprovanteInscricao comprovante = await EmOrdemDeEmissao(daInscricao).Skip(numero - 1).Take(1)
-            .SingleAsync(cancellationToken).ConfigureAwait(false);
-        await _sensiveis.RestaurarAsync(comprovante, cancellationToken).ConfigureAwait(false);
-
-        return new ComprovanteNaPosicao(comprovante, numero, total);
-    }
-
-    public async Task<IReadOnlyList<EmissaoDoComprovante>> ObterEmissoesAsync(
-        IReadOnlyCollection<Guid> inscricoes, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(inscricoes);
-
-        return await EmOrdemDeEmissao(_dbContext.ComprovantesInscricao.AsNoTracking().Where(c => inscricoes.Contains(c.InscricaoId)))
-            .Select(static c => new EmissaoDoComprovante(c.InscricaoId, c.Instante))
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-    }
-
-    /// <summary>A ordem que dá o número público do comprovante: o instante da emissão e, no empate, o identificador.</summary>
-    private static IOrderedQueryable<ComprovanteInscricao> EmOrdemDeEmissao(IQueryable<ComprovanteInscricao> comprovantes) =>
-        comprovantes.OrderBy(static c => c.Instante).ThenBy(static c => c.Id);
-
     public async Task<bool> TentarAvancarRevisaoAsync(
         Guid id, int revisaoLida, bool apenasRascunho, CancellationToken cancellationToken = default)
     {
@@ -340,448 +225,97 @@ public sealed class InscricaoRepository : IInscricaoRepository
         return linhasAfetadas == 1;
     }
 
-    public async Task AdicionarComprovanteAsync(ComprovanteInscricao comprovante, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(comprovante);
+    private async Task<byte[]> ValorCifradoDaRespostaAsync(Guid respostaId, CancellationToken cancellationToken) =>
+        await _dbContext.RespostasDaInscricao
+            .AsNoTracking()
+            .Where(r => r.Id == respostaId)
+            .Select(static r => r.ValorCifrado)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false)
+            ?? throw new InvalidOperationException($"A resposta identificadora {respostaId} não está cifrada.");
 
-        await _sensiveis.GuardarAsync(comprovante, cancellationToken).ConfigureAwait(false);
-        _dbContext.ComprovantesInscricao.Add(comprovante);
+    private async Task<Guid?> OcorrenciaDoGrupoAsync(
+        Guid inscricaoId, string grupoCodigo, string membroId, CancellationToken cancellationToken) =>
+        await _dbContext.OcorrenciasDeGrupoDaInscricao
+            .AsNoTracking()
+            .Where(o => o.InscricaoId == inscricaoId && o.GrupoCodigo == grupoCodigo && o.MembroId == membroId)
+            .Select(static o => (Guid?)o.Id)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+    private async Task<RespostaIdentificadora?> RespostaIdentificadoraAsync(
+        Guid inscricaoId, string fatoCodigo, Guid? ocorrencia, CancellationToken cancellationToken)
+    {
+        Guid? resposta = await _dbContext.RespostasDaInscricao
+            .AsNoTracking()
+            .Where(r => r.InscricaoId == inscricaoId
+                && r.FatoCodigo == fatoCodigo
+                && r.OcorrenciaId == ocorrencia
+                && r.Origem == OrigemDaResposta.Informada
+                && r.ValorCifrado != null)
+            .Select(static r => (Guid?)r.Id)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return resposta is { } respostaId ? new RespostaIdentificadora(respostaId) : null;
     }
 
-    /// <summary>A chave da categoria da resposta cifrada: documento ou dado sensível de cifra individual.</summary>
-    private static string ChaveDaResposta(string fatoCodigo) =>
-        DefinicaoDaResposta.EhFatoComCifraIndividual(fatoCodigo) ? SelecaoEncryptionKeys.SensiveisAesGcm : SelecaoEncryptionKeys.IdentificadoresAesGcm;
+    private async Task<List<ResumoDaInscricaoDoProcesso>> ResumosAsync(
+        IReadOnlyList<InscricaoRecord> itens, bool lerNome, bool lerCpf, CancellationToken cancellationToken)
+    {
+        Guid[] ids = [.. itens.Select(static r => r.Id)];
+
+        Dictionary<Guid, string> nomes = await NomesAsync(ids, lerNome, cancellationToken).ConfigureAwait(false);
+        IReadOnlyDictionary<Guid, DateTimeOffset> primeirosEnvios = await _comprovantes.ObterPrimeirosEnviosAsync(ids, cancellationToken).ConfigureAwait(false);
+        Dictionary<Guid, string> cpfs = await CpfsAsync(ids, lerCpf, cancellationToken).ConfigureAwait(false);
+
+        return [.. itens.Select(r => ResumoDe(r, nomes, cpfs, primeirosEnvios, lerCpf))];
+    }
+
+    private async Task<Dictionary<Guid, string>> NomesAsync(Guid[] ids, bool lerNome, CancellationToken cancellationToken) =>
+        lerNome
+            ? await NomeDeExibicaoDaInscricao.LerAsync(_dbContext.RespostasDaInscricao, ids, cancellationToken).ConfigureAwait(false)
+            : [];
+
+    private async Task<Dictionary<Guid, string>> CpfsAsync(Guid[] ids, bool lerCpf, CancellationToken cancellationToken) =>
+        lerCpf
+            ? await CpfDaInscricao
+                .LerAsync(_dbContext.RespostasDaInscricao.Where(r => ids.Contains(r.InscricaoId)), _encryption, cancellationToken)
+                .ConfigureAwait(false)
+            : [];
+
+    private static ResumoDaInscricaoDoProcesso ResumoDe(
+        InscricaoRecord record,
+        Dictionary<Guid, string> nomes,
+        Dictionary<Guid, string> cpfs,
+        IReadOnlyDictionary<Guid, DateTimeOffset> primeirosEnvios,
+        bool lerCpf) =>
+        new(
+            record.Id,
+            record.NumeroInscricao,
+            record.Situacao,
+            record.VersaoFormularioId,
+            record.OfertaCursoId,
+            record.OfertaCursoSegundaOpcaoId,
+            nomes.GetValueOrDefault(record.Id),
+            lerCpf ? CpfDaInscricao.Revalidar(CpfDaInscricao.Exigir(cpfs, record.Id)) : null,
+            primeirosEnvios.TryGetValue(record.Id, out DateTimeOffset primeiro) ? primeiro : null);
 
     private async Task<List<Inscricao>> ParaDominioAsync(List<InscricaoRecord> records, CancellationToken cancellationToken)
     {
-        LinhasDaInscricao linhas = await CarregarLinhasAsync([.. records.Select(static r => r.Id)], cancellationToken).ConfigureAwait(false);
+        LinhasDaInscricao linhas = await LinhasDaInscricao
+            .CarregarAsync(_dbContext, [.. records.Select(static r => r.Id)], cancellationToken)
+            .ConfigureAwait(false);
 
         List<Inscricao> inscricoes = new(records.Count);
         foreach (InscricaoRecord record in records)
         {
-            inscricoes.Add(await ParaDominioAsync(record, linhas.Da(record.Id), cancellationToken).ConfigureAwait(false));
+            inscricoes.Add(await _traducao.InscricaoAsync(record, linhas.Da(record.Id), cancellationToken).ConfigureAwait(false));
         }
 
         return inscricoes;
     }
 
-    private async Task<Inscricao> ParaDominioAsync(InscricaoRecord record, LinhasDaInscricao linhas, CancellationToken cancellationToken)
-    {
-        Dictionary<Guid, OcorrenciaDeGrupoDaInscricaoRecord> ocorrencias = linhas.Ocorrencias.ToDictionary(static o => o.Id);
-        Dictionary<string, JsonElement> respostas = new(StringComparer.Ordinal);
-        Dictionary<string, JsonElement> derivados = new(StringComparer.Ordinal);
-        Dictionary<Guid, Dictionary<string, JsonElement>> respostasPorOcorrencia = ocorrencias.Keys
-            .ToDictionary(static id => id, static _ => new Dictionary<string, JsonElement>(StringComparer.Ordinal));
-        Dictionary<string, DefinicaoDaResposta> definicoes = new(StringComparer.Ordinal);
-
-        Dictionary<string, JsonElement> Destino(Guid? ocorrenciaId, OrigemDaResposta origem) =>
-            ocorrenciaId is { } id ? respostasPorOcorrencia[id] : origem == OrigemDaResposta.Derivada ? derivados : respostas;
-
-        foreach (IGrouping<(Guid? OcorrenciaId, string FatoCodigo), RespostaDaInscricaoRecord> fato in linhas.Respostas
-            .GroupBy(static r => (r.OcorrenciaId, r.FatoCodigo)))
-        {
-            RespostaDaInscricaoRecord primeira = fato.First();
-            bool multivalorado = primeira.Posicao is not null;
-            List<JsonElement> valores = [];
-            foreach (RespostaDaInscricaoRecord linha in fato.OrderBy(static r => r.Posicao))
-            {
-                valores.Add(await ValorDaLinhaAsync(linha, cancellationToken).ConfigureAwait(false));
-            }
-
-            Destino(fato.Key.OcorrenciaId, primeira.Origem)[fato.Key.FatoCodigo] =
-                multivalorado ? JsonSerializer.SerializeToElement(valores) : valores[0];
-            bool cifrada = primeira.ValorCifrado is not null;
-            bool cifraIndividual = cifrada && DefinicaoDaResposta.EhFatoComCifraIndividual(fato.Key.FatoCodigo);
-            definicoes.TryAdd(fato.Key.FatoCodigo, new DefinicaoDaResposta(primeira.Tipo, multivalorado, cifrada && !cifraIndividual, null, cifraIndividual));
-        }
-
-        foreach (EnderecoDaInscricaoRecord endereco in linhas.Enderecos)
-        {
-            Destino(endereco.OcorrenciaId, endereco.Origem)[endereco.FatoCodigo] = ParaEndereco(endereco).ParaJson();
-            definicoes.TryAdd(endereco.FatoCodigo, new DefinicaoDaResposta(TipoDoValorDeResposta.Endereco, Multivalorado: false, Identificador: false));
-        }
-
-        Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos = linhas.Ocorrencias
-            .OrderBy(static o => o.Ordem)
-            .GroupBy(static o => o.GrupoCodigo, StringComparer.Ordinal)
-            .ToDictionary(
-                static g => g.Key,
-                g => (IReadOnlyList<OcorrenciaDeGrupoInscricao>)
-                    [.. g.Select(o => new OcorrenciaDeGrupoInscricao(o.MembroId, respostasPorOcorrencia[o.Id]))],
-                StringComparer.Ordinal);
-
-        List<AceiteDeTermo> aceites =
-        [
-            .. linhas.Aceites.OrderBy(static a => a.Ordem).Select(static a => new AceiteDeTermo(a.TermoCodigo, a.VersaoId, a.HashVersao)),
-        ];
-
-        Cpf cpf = respostas.TryGetValue(ConjuntoBasicoDaInscricao.Cpf, out JsonElement cpfRespondido) && cpfRespondido.ValueKind == JsonValueKind.String
-            ? ReidratarCpf(cpfRespondido.GetString()!)
-            : throw new InvalidOperationException($"A inscrição {record.Id} não tem a resposta do CPF.");
-
-        return Inscricao.Reidratar(
-            record.Id, record.ProcessoSeletivoId, cpf, record.ContaId, record.EmissorToken, record.Situacao,
-            record.VersaoFormularioId, record.OfertaCursoId, record.OfertaCursoSegundaOpcaoId, record.NumeroInscricao,
-            record.CanceladaEm, record.CanceladaPor, record.MotivoDoCancelamento,
-            respostas, derivados, grupos, aceites, definicoes,
-            record.Revisao, record.CreatedAt, record.UpdatedAt);
-    }
-
-    private async Task<JsonElement> ValorDaLinhaAsync(RespostaDaInscricaoRecord linha, CancellationToken cancellationToken)
-    {
-        if (linha.ValorCifrado is { } cifrado)
-        {
-            byte[] plano = await _encryption
-                .DecryptAsync(ChaveDaResposta(linha.FatoCodigo), cifrado, cancellationToken)
-                .ConfigureAwait(false);
-            return JsonSerializer.Deserialize<JsonElement>(plano);
-        }
-
-        return linha.Tipo switch
-        {
-            TipoDoValorDeResposta.Booleano => JsonSerializer.SerializeToElement(linha.ValorBooleano!.Value),
-            TipoDoValorDeResposta.Numero => JsonSerializer.SerializeToElement(linha.ValorNumero!.Value),
-            TipoDoValorDeResposta.Codigo => JsonSerializer.SerializeToElement(linha.ValorCodigo!),
-            TipoDoValorDeResposta.Municipio => linha.ValorRotulo is { } rotulo
-                ? ValorDeMunicipio.Gravado(linha.ValorCodigo!, rotulo)
-                : JsonSerializer.SerializeToElement(linha.ValorCodigo!),
-            TipoDoValorDeResposta.Texto => JsonSerializer.SerializeToElement(linha.ValorTexto!),
-            TipoDoValorDeResposta.Data => JsonSerializer.SerializeToElement(linha.ValorData!.Value),
-            _ => throw new InvalidOperationException($"A resposta {linha.Id} tem um tipo sem coluna de valor ({linha.Tipo})."),
-        };
-    }
-
-    private static EnderecoDeclarado ParaEndereco(EnderecoDaInscricaoRecord e) => new(
-        e.Cep, e.Logradouro, e.Numero, e.Complemento, e.Bairro, e.Distrito,
-        e.MunicipioCodigoIbge, e.MunicipioNome, e.Uf, e.Latitude, e.Longitude, e.NivelResolucao, e.Procedencia, e.CepConfirmado);
-
-    /// <summary>
-    /// As linhas que a inscrição deve ter. Cifra antes de qualquer mutação do que o ChangeTracker
-    /// rastreia: se a cifragem falhar, nada fica pela metade para um <c>SaveChangesAsync</c> gravar.
-    /// </summary>
-    private async Task<LinhasDaInscricao> LinhasDeAsync(Inscricao entity, CancellationToken cancellationToken)
-    {
-        LinhasDaInscricao linhas = new([], [], [], []);
-
-        await AcrescentarAsync(linhas, entity, entity.Respostas, null, OrigemDaResposta.Informada, cancellationToken).ConfigureAwait(false);
-        await AcrescentarAsync(linhas, entity, entity.Derivados, null, OrigemDaResposta.Derivada, cancellationToken).ConfigureAwait(false);
-
-        int ordem = 0;
-        foreach ((string grupoCodigo, IReadOnlyList<OcorrenciaDeGrupoInscricao> ocorrencias) in entity.Grupos)
-        {
-            foreach (OcorrenciaDeGrupoInscricao ocorrencia in ocorrencias)
-            {
-                OcorrenciaDeGrupoDaInscricaoRecord registro = new()
-                {
-                    Id = Guid.CreateVersion7(),
-                    InscricaoId = entity.Id,
-                    GrupoCodigo = grupoCodigo,
-                    MembroId = ocorrencia.Id,
-                    Ordem = ordem++,
-                };
-                linhas.Ocorrencias.Add(registro);
-                await AcrescentarAsync(linhas, entity, ocorrencia.Respostas, registro.Id, OrigemDaResposta.Informada, cancellationToken)
-                    .ConfigureAwait(false);
-            }
-        }
-
-        linhas.Aceites.AddRange(entity.Aceites.Select((a, i) => new AceiteDaInscricaoRecord
-        {
-            Id = Guid.CreateVersion7(),
-            InscricaoId = entity.Id,
-            Ordem = i,
-            TermoCodigo = a.Codigo,
-            VersaoId = a.VersaoId,
-            HashVersao = a.HashVersao,
-        }));
-
-        return linhas;
-    }
-
-    private async Task AcrescentarAsync(
-        LinhasDaInscricao linhas,
-        Inscricao entity,
-        IReadOnlyDictionary<string, JsonElement> respostas,
-        Guid? ocorrenciaId,
-        OrigemDaResposta origem,
-        CancellationToken cancellationToken)
-    {
-        foreach ((string codigo, JsonElement valor) in respostas)
-        {
-            if (!entity.DefinicoesDasRespostas.TryGetValue(codigo, out DefinicaoDaResposta? definicao))
-            {
-                throw new InvalidOperationException($"A inscrição {entity.Id} tem resposta de '{codigo}' sem definição da resposta.");
-            }
-
-            if (definicao.Tipo == TipoDoValorDeResposta.Endereco)
-            {
-                if (definicao.Identificador || !EnderecoDeclarado.TentarLer(valor, out EnderecoDeclarado endereco))
-                {
-                    throw new InvalidOperationException($"A resposta de '{codigo}' da inscrição {entity.Id} não é um endereço gravável.");
-                }
-
-                linhas.Enderecos.Add(new EnderecoDaInscricaoRecord
-                {
-                    Id = Guid.CreateVersion7(),
-                    InscricaoId = entity.Id,
-                    OcorrenciaId = ocorrenciaId,
-                    FatoCodigo = codigo,
-                    Origem = origem,
-                    Cep = endereco.Cep,
-                    Logradouro = endereco.Logradouro,
-                    Numero = endereco.Numero,
-                    Complemento = endereco.Complemento,
-                    Bairro = endereco.Bairro,
-                    Distrito = endereco.Distrito,
-                    MunicipioCodigoIbge = endereco.CidadeCodigoIbge,
-                    MunicipioNome = endereco.CidadeNome,
-                    Uf = endereco.CidadeUf,
-                    Latitude = endereco.Latitude,
-                    Longitude = endereco.Longitude,
-                    NivelResolucao = endereco.NivelResolucao,
-                    Procedencia = endereco.Procedencia,
-                    CepConfirmado = endereco.CepConfirmado,
-                });
-                continue;
-            }
-
-            JsonElement[] valores = definicao.Multivalorado ? [.. valor.EnumerateArray()] : [valor];
-            for (int posicao = 0; posicao < valores.Length; posicao++)
-            {
-                RespostaDaInscricaoRecord linha = new()
-                {
-                    Id = Guid.CreateVersion7(),
-                    InscricaoId = entity.Id,
-                    OcorrenciaId = ocorrenciaId,
-                    FatoCodigo = codigo,
-                    Posicao = definicao.Multivalorado ? posicao : null,
-                    Origem = origem,
-                    Tipo = definicao.Tipo,
-                };
-                await PreencherValorAsync(linha, valores[posicao], definicao, entity, cancellationToken).ConfigureAwait(false);
-                linhas.Respostas.Add(linha);
-            }
-        }
-    }
-
-    private async Task PreencherValorAsync(
-        RespostaDaInscricaoRecord linha, JsonElement valor, DefinicaoDaResposta definicao, Inscricao entity, CancellationToken cancellationToken)
-    {
-        (string Codigo, string? Rotulo)? municipio = definicao.EhMunicipio ? MunicipioGravavel(entity, linha.FatoCodigo, valor) : null;
-        if (definicao.Cifrada)
-        {
-            linha.ValorCifrado = await _encryption
-                .EncryptAsync(ChaveDaResposta(linha.FatoCodigo), Encoding.UTF8.GetBytes(valor.GetRawText()), cancellationToken)
-                .ConfigureAwait(false);
-            return;
-        }
-
-        switch (definicao.Tipo)
-        {
-            case TipoDoValorDeResposta.Booleano:
-                linha.ValorBooleano = valor.GetBoolean();
-                break;
-            case TipoDoValorDeResposta.Numero:
-                linha.ValorNumero = valor.GetDecimal();
-                break;
-            case TipoDoValorDeResposta.Codigo:
-                linha.ValorCodigo = valor.GetString();
-                break;
-            case TipoDoValorDeResposta.Municipio:
-                (linha.ValorCodigo, linha.ValorRotulo) = municipio!.Value;
-                break;
-            case TipoDoValorDeResposta.Texto:
-                linha.ValorTexto = valor.GetString();
-                break;
-            case TipoDoValorDeResposta.Data:
-                linha.ValorData = DateOnly.ParseExact(valor.GetString()!, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
-                break;
-            default:
-                throw new InvalidOperationException($"O tipo {definicao.Tipo} não tem coluna de valor.");
-        }
-    }
-
-    /// <summary>
-    /// O município na forma que a situação da inscrição grava: só o código no rascunho, e o código com o nome conferido na
-    /// inscrição enviada. A forma trocada é defeito de quem chama, e não resposta do candidato.
-    /// </summary>
-    private static (string Codigo, string? Rotulo) MunicipioGravavel(Inscricao entity, string fatoCodigo, JsonElement valor) =>
-        ValorDeMunicipio.TentarLer(valor, out string codigo, out string? rotulo) && (rotulo is null) == entity.EhRascunho
-            ? (codigo, rotulo)
-            : throw new InvalidOperationException(
-                $"A resposta de '{fatoCodigo}' da inscrição {entity.Id} não tem a forma de município que a situação {entity.Situacao} grava.");
-
-    private async Task<LinhasDaInscricao> CarregarLinhasAsync(IReadOnlyCollection<Guid> inscricoes, CancellationToken cancellationToken)
-    {
-        List<RespostaDaInscricaoRecord> respostas = await _dbContext.RespostasDaInscricao
-            .Where(r => inscricoes.Contains(r.InscricaoId)).ToListAsync(cancellationToken).ConfigureAwait(false);
-        List<EnderecoDaInscricaoRecord> enderecos = await _dbContext.EnderecosDaInscricao
-            .Where(e => inscricoes.Contains(e.InscricaoId)).ToListAsync(cancellationToken).ConfigureAwait(false);
-        List<OcorrenciaDeGrupoDaInscricaoRecord> ocorrencias = await _dbContext.OcorrenciasDeGrupoDaInscricao
-            .Where(o => inscricoes.Contains(o.InscricaoId)).ToListAsync(cancellationToken).ConfigureAwait(false);
-        List<AceiteDaInscricaoRecord> aceites = await _dbContext.AceitesDaInscricao
-            .Where(a => inscricoes.Contains(a.InscricaoId)).ToListAsync(cancellationToken).ConfigureAwait(false);
-
-        return new LinhasDaInscricao(respostas, enderecos, ocorrencias, aceites);
-    }
-
-    /// <summary>
-    /// Leva as linhas atuais às desejadas: a ocorrência casa pelo grupo e pelo membro, a resposta
-    /// pela ocorrência, pelo fato e pela posição, o aceite pela ordem.
-    /// </summary>
-    private void Sincronizar(LinhasDaInscricao atuais, LinhasDaInscricao desejadas)
-    {
-        Dictionary<Guid, Guid> idDaOcorrencia = [];
-        Dictionary<(string, string), OcorrenciaDeGrupoDaInscricaoRecord> ocorrenciasAtuais =
-            atuais.Ocorrencias.ToDictionary(static o => (o.GrupoCodigo, o.MembroId));
-        foreach (OcorrenciaDeGrupoDaInscricaoRecord desejada in desejadas.Ocorrencias)
-        {
-            if (ocorrenciasAtuais.Remove((desejada.GrupoCodigo, desejada.MembroId), out OcorrenciaDeGrupoDaInscricaoRecord? atual))
-            {
-                atual.Ordem = desejada.Ordem;
-                idDaOcorrencia[desejada.Id] = atual.Id;
-            }
-            else
-            {
-                _dbContext.OcorrenciasDeGrupoDaInscricao.Add(desejada);
-                idDaOcorrencia[desejada.Id] = desejada.Id;
-            }
-        }
-
-        foreach (RespostaDaInscricaoRecord resposta in desejadas.Respostas.Where(static r => r.OcorrenciaId is not null))
-        {
-            resposta.OcorrenciaId = idDaOcorrencia[resposta.OcorrenciaId!.Value];
-        }
-
-        foreach (EnderecoDaInscricaoRecord endereco in desejadas.Enderecos.Where(static e => e.OcorrenciaId is not null))
-        {
-            endereco.OcorrenciaId = idDaOcorrencia[endereco.OcorrenciaId!.Value];
-        }
-
-        SincronizarPorChave(
-            _dbContext.RespostasDaInscricao, atuais.Respostas, desejadas.Respostas,
-            static r => (r.OcorrenciaId, r.FatoCodigo, r.Posicao),
-            static (de, para) =>
-            {
-                para.Origem = de.Origem;
-                para.Tipo = de.Tipo;
-                para.ValorBooleano = de.ValorBooleano;
-                para.ValorNumero = de.ValorNumero;
-                para.ValorCodigo = de.ValorCodigo;
-                para.ValorRotulo = de.ValorRotulo;
-                para.ValorTexto = de.ValorTexto;
-                para.ValorData = de.ValorData;
-                para.ValorCifrado = de.ValorCifrado;
-            });
-
-        SincronizarPorChave(
-            _dbContext.EnderecosDaInscricao, atuais.Enderecos, desejadas.Enderecos,
-            static e => (e.OcorrenciaId, e.FatoCodigo),
-            static (de, para) =>
-            {
-                para.Origem = de.Origem;
-                para.Cep = de.Cep;
-                para.Logradouro = de.Logradouro;
-                para.Numero = de.Numero;
-                para.Complemento = de.Complemento;
-                para.Bairro = de.Bairro;
-                para.Distrito = de.Distrito;
-                para.MunicipioCodigoIbge = de.MunicipioCodigoIbge;
-                para.MunicipioNome = de.MunicipioNome;
-                para.Uf = de.Uf;
-                para.Latitude = de.Latitude;
-                para.Longitude = de.Longitude;
-                para.NivelResolucao = de.NivelResolucao;
-                para.Procedencia = de.Procedencia;
-                para.CepConfirmado = de.CepConfirmado;
-            });
-
-        SincronizarPorChave(
-            _dbContext.AceitesDaInscricao, atuais.Aceites, desejadas.Aceites,
-            static a => a.Ordem,
-            static (de, para) =>
-            {
-                para.TermoCodigo = de.TermoCodigo;
-                para.VersaoId = de.VersaoId;
-                para.HashVersao = de.HashVersao;
-            });
-
-        _dbContext.OcorrenciasDeGrupoDaInscricao.RemoveRange(ocorrenciasAtuais.Values);
-    }
-
-    private static void SincronizarPorChave<TRecord, TChave>(
-        DbSet<TRecord> conjunto,
-        IReadOnlyList<TRecord> atuais,
-        IReadOnlyList<TRecord> desejadas,
-        Func<TRecord, TChave> chave,
-        Action<TRecord, TRecord> copiar)
-        where TRecord : class
-        where TChave : notnull
-    {
-        Dictionary<TChave, TRecord> porChave = atuais.ToDictionary(chave);
-        foreach (TRecord desejada in desejadas)
-        {
-            if (porChave.Remove(chave(desejada), out TRecord? atual))
-            {
-                copiar(desejada, atual);
-            }
-            else
-            {
-                conjunto.Add(desejada);
-            }
-        }
-
-        conjunto.RemoveRange(porChave.Values);
-    }
-
-    /// <summary>
-    /// Não toca <c>CreatedAt</c>/<c>UpdatedAt</c>: quem o EF rastreia é <see cref="InscricaoRecord"/>,
-    /// que não herda <c>EntityBase</c> — o carimbo é de quem chama.
-    /// </summary>
-    private async Task AtualizarCamposAsync(InscricaoRecord record, Inscricao entity, CancellationToken cancellationToken)
-    {
-        byte[] cpfIndice = await ComputarIndiceAsync(entity.Cpf, cancellationToken).ConfigureAwait(false);
-
-        record.ProcessoSeletivoId = entity.ProcessoSeletivoId;
-        record.CpfIndice = cpfIndice;
-        record.ContaId = entity.ContaId;
-        record.EmissorToken = entity.EmissorToken;
-        record.Situacao = entity.Situacao;
-        record.VersaoFormularioId = entity.VersaoFormularioId;
-        record.OfertaCursoId = entity.OfertaCursoId;
-        record.OfertaCursoSegundaOpcaoId = entity.OfertaCursoSegundaOpcaoId;
-        record.NumeroInscricao = entity.NumeroInscricao;
-        record.CanceladaEm = entity.CanceladaEm;
-        record.CanceladaPor = entity.CanceladaPor;
-        record.MotivoDoCancelamento = entity.MotivoDoCancelamento;
-        record.Revisao = entity.Revisao;
-    }
-
     private Task<byte[]> ComputarIndiceAsync(Cpf cpf, CancellationToken cancellationToken) =>
         _indiceDoCpf.ComputarAsync(cpf.Valor, cancellationToken);
-
-    /// <summary>
-    /// Revalida o CPF decifrado contra a regra de domínio — dado corrompido no banco ou chave de
-    /// cifragem incorreta falha alto, em vez de produzir um <see cref="Cpf"/> inválido em silêncio
-    /// (mesmo padrão de <c>VinculoDiscenteRepository</c>).
-    /// </summary>
-    private static Cpf ReidratarCpf(string valor) =>
-        Cpf.Criar(valor).Match(
-            cpf => cpf,
-            erro => throw new InvalidOperationException($"CPF da resposta da inscrição falhou a revalidação de domínio ({erro.Code})."));
-
-    private sealed record LinhasDaInscricao(
-        List<RespostaDaInscricaoRecord> Respostas,
-        List<EnderecoDaInscricaoRecord> Enderecos,
-        List<OcorrenciaDeGrupoDaInscricaoRecord> Ocorrencias,
-        List<AceiteDaInscricaoRecord> Aceites)
-    {
-        public static LinhasDaInscricao Vazias => new([], [], [], []);
-
-        public LinhasDaInscricao Da(Guid inscricaoId) => new(
-            [.. Respostas.Where(r => r.InscricaoId == inscricaoId)],
-            [.. Enderecos.Where(e => e.InscricaoId == inscricaoId)],
-            [.. Ocorrencias.Where(o => o.InscricaoId == inscricaoId)],
-            [.. Aceites.Where(a => a.InscricaoId == inscricaoId)]);
-    }
 }

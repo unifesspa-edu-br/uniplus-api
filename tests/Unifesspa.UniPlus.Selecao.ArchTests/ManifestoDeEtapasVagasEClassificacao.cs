@@ -11,6 +11,12 @@ internal static class ManifestoDeEtapasVagasEClassificacao
 {
     internal static readonly Dictionary<Type, (string[] Congeladas, (string Propriedade, string Motivo)[] Excluidas)> Entradas = new()
     {
+        [typeof(AvaliacaoDeclarada)] = (["Etapas", "CriteriosDesempate", "Classificacao"], []),
+        [typeof(VagasDeclaradas)] = (
+            ["DistribuicaoVagas", "NumeroDeOpcoesDeCurso", "BonusRegional", "Cascata", "AtendimentoEspecializado"],
+            [("AplicaBonusRegional", "A configuração publicada deriva o sinalizador da presença do bônus congelado."),
+             ("HaVagasOfertadas", "Derivada das quantidades de vagas declaradas nas ofertas.")]),
+
         [typeof(BancaDaEtapa)] = (
             ["TipoBancaOrigemId", "Codigo", "Nome", "RegraDeDeliberacao"],
             [("EtapaProcessoId", "FK interna — reconstruída junto com o grafo.")]),

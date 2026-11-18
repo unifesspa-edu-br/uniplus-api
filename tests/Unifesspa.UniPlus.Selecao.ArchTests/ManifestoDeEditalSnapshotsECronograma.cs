@@ -12,6 +12,9 @@ internal static class ManifestoDeEditalSnapshotsECronograma
 {
     internal static readonly Dictionary<Type, (string[] Congeladas, (string Propriedade, string Motivo)[] Excluidas)> Entradas = new()
     {
+        [typeof(CronogramaDeclarado)] = (["Localidade", "AlgoritmoContagemPrazo", "CronogramaFases"], []),
+        [typeof(DivulgacaoETaxaDeclaradas)] = (["ConfiguracaoDivulgacao", "ConfiguracaoTaxaInscricao"], []),
+
         [typeof(DadosEdital)] = (
             ["Numero", "PeriodoInscricaoInicio", "PeriodoInscricaoFim", "DocumentoEditalId", "Anexos"],
             []),
@@ -144,7 +147,7 @@ internal static class ManifestoDeEditalSnapshotsECronograma
             ],
             []),
 
-        // Conformidade legal (Story #853) — não pende de GrafoConfiguracao (não é reposta no
+        // Conformidade legal (Story #853) — não pende de ConfiguracaoPublicada (não é reposta no
         // agregado vivo); alcançada a partir de EnvelopeReidratado.Conformidade, semeada
         // manualmente no traversal como DadosEdital já era.
         [typeof(ResultadoConformidade)] = (

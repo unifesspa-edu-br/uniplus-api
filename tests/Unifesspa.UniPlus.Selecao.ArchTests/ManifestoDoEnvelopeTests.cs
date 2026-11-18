@@ -113,7 +113,7 @@ public sealed class ManifestoDoEnvelopeTests
     /// <summary>
     /// O manifesto não pode <b>ele mesmo</b> ser uma lista escrita à mão que alguém esquece
     /// de estender: os tipos são <b>descobertos</b> a partir do
-    /// <see cref="GrafoConfiguracao"/>, e cada um que aparecer tem de estar declarado.
+    /// <see cref="ConfiguracaoPublicada"/>, e cada um que aparecer tem de estar declarado.
     /// </summary>
     /// <remarks>
     /// Sem isto, o manifesto teria o mesmo ponto cego que ele existe para fechar — uma
@@ -125,7 +125,7 @@ public sealed class ManifestoDoEnvelopeTests
     public void TodoTipoDoGrafo_EstaNoManifesto()
     {
         HashSet<Type> alcancados = [];
-        AlcancarAsPropriedadesDe(typeof(GrafoConfiguracao), alcancados);
+        AlcancarAsPropriedadesDe(typeof(ConfiguracaoPublicada), alcancados);
 
         // DadosEdital e ResultadoConformidade não pendem do grafo — entram na canonicalização por fora
         // (bloco `periodo` + `hashesEdital`; `documentosExigidos.obrigatoriedades[]`), mas são igualmente

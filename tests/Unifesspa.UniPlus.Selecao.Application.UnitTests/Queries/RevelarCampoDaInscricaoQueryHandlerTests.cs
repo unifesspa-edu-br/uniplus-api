@@ -216,7 +216,7 @@ public sealed class RevelarCampoDaInscricaoQueryHandlerTests
     private static Task<Result<CampoReveladoDto>> Revelar(
         InscricaoAdministrativaDeTeste cenario, InscricaoAdministrativaDeTeste.Mundo mundo, IVerificadorDeAcesso verificador, Guid? inscricaoId = null)
     {
-        LeituraDaInscricaoAdministrativa leitura = new(mundo.Processos, mundo.Inscricoes, mundo.Documentos, mundo.Codecs);
+        LeituraDaInscricaoAdministrativa leitura = new(mundo.Processos, mundo.Inscricoes, mundo.Comprovantes, mundo.Documentos, mundo.Codecs);
 
         return RevelarCampoDaInscricaoQueryHandler.Handle(
             new RevelarCampoDaInscricaoQuery(cenario.ProcessoId, inscricaoId ?? cenario.InscricaoId, "CPF", null),

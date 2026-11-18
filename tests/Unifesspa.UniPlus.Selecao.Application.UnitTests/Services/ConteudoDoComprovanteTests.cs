@@ -36,9 +36,9 @@ public sealed class ConteudoDoComprovanteTests
         Inscricao inscricao = UmaInscricao();
         ComprovanteInscricao comprovante = Emitir(inscricao, Respostas());
 
-        Montar(inscricao, comprovante, Envelope(identificador: IdentificadorLegivel.Criar("pss-medicina-2027").Value)).IdentificadorDoProcesso
+        Montar(inscricao, comprovante, Envelope(identificador: IdentificadorLegivel.Criar("pss-medicina-2027").Value)).Processo.IdentificadorDoProcesso
             .Should().Be("pss-medicina-2027");
-        Montar(inscricao, comprovante, Envelope()).IdentificadorDoProcesso.Should().BeNull();
+        Montar(inscricao, comprovante, Envelope()).Processo.IdentificadorDoProcesso.Should().BeNull();
     }
 
     [Fact(DisplayName = "O número de opções vem da versão, e as opções, do comprovante: versão de duas e comprovante de uma saem com uma só")]
@@ -50,8 +50,8 @@ public sealed class ConteudoDoComprovanteTests
 
         ComprovanteDaInscricaoDto dto = Montar(inscricao, umaEscolha, Envelope(ofertas: ofertas, numeroDeOpcoes: 2));
 
-        dto.NumeroDeOpcoesDeCurso.Should().Be(2);
-        dto.OpcoesDeCurso.Should().ContainSingle().Which.Ordem.Should().Be(1);
+        dto.EscolhasDeCurso.NumeroDeOpcoesDeCurso.Should().Be(2);
+        dto.EscolhasDeCurso.OpcoesDeCurso.Should().ContainSingle().Which.Ordem.Should().Be(1);
     }
 
     [Fact(DisplayName = "A versão que declara uma só opção diz isso no comprovante")]
@@ -61,7 +61,7 @@ public sealed class ConteudoDoComprovanteTests
 
         ComprovanteDaInscricaoDto dto = Montar(inscricao, Emitir(inscricao, Respostas(), opcoes: (Direito, null)), Envelope(ofertas: [OfertasDeTeste.Distribuicao(Direito, "AC")]));
 
-        dto.NumeroDeOpcoesDeCurso.Should().Be(1);
+        dto.EscolhasDeCurso.NumeroDeOpcoesDeCurso.Should().Be(1);
     }
 
     [Fact(DisplayName = "As modalidades saem por opção de curso, com o nome que o envio registrou, e a segunda opção só leva as dela")]
@@ -75,10 +75,10 @@ public sealed class ConteudoDoComprovanteTests
 
         ComprovanteDaInscricaoDto dto = Montar(inscricao, comprovante, Envelope(ofertas: ofertas, numeroDeOpcoes: 2));
 
-        dto.OpcoesDeCurso.Select(static o => o.Ordem).Should().Equal(1, 2);
-        dto.OpcoesDeCurso[0].Modalidades!.Select(static m => (m.Codigo, m.Nome)).Should().Equal(("AC", "Ampla concorrência"), ("AC_FEM", "Ampla concorrência feminina"));
-        dto.OpcoesDeCurso[1].Modalidades.Should().BeNull();
-        dto.Derivados.Should().BeEmpty("a modalidade não é um dado apurado do formulário: sai na opção de curso");
+        dto.EscolhasDeCurso.OpcoesDeCurso.Select(static o => o.Ordem).Should().Equal(1, 2);
+        dto.EscolhasDeCurso.OpcoesDeCurso[0].Modalidades!.Select(static m => (m.Codigo, m.Nome)).Should().Equal(("AC", "Ampla concorrência"), ("AC_FEM", "Ampla concorrência feminina"));
+        dto.EscolhasDeCurso.OpcoesDeCurso[1].Modalidades.Should().BeNull();
+        dto.Formulario.Derivados.Should().BeEmpty("a modalidade não é um dado apurado do formulário: sai na opção de curso");
     }
 
     [Fact(DisplayName = "O comprovante antigo mostra o curso que ele registrou, mesmo depois de a oferta trocar de nome")]
@@ -90,7 +90,7 @@ public sealed class ConteudoDoComprovanteTests
         ComprovanteDaInscricaoDto dto = Montar(
             inscricao, antigo, Envelope(ofertas: [OfertasDeTeste.DistribuicaoDoCurso(Direito, "Medicina", "AC")]));
 
-        dto.OpcoesDeCurso.Should().ContainSingle().Which.Nome.Should().Contain("Medicina");
+        dto.EscolhasDeCurso.OpcoesDeCurso.Should().ContainSingle().Which.Nome.Should().Contain("Medicina");
     }
 
     [Fact(DisplayName = "O estado de residência sai pelo nome do estado, e não pela sigla")]
@@ -102,7 +102,7 @@ public sealed class ConteudoDoComprovanteTests
         ComprovanteDaInscricaoDto dto = Montar(
             inscricao, comprovante, Envelope(derivados: Derivados(Derivado("UF_RESIDENCIA", "Estado de residência", "CATEGORICO"))));
 
-        ItemDoComprovanteDto estado = dto.Derivados.Should().ContainSingle(d => d.Rotulo == "Estado de residência").Subject;
+        ItemDoComprovanteDto estado = dto.Formulario.Derivados.Should().ContainSingle(d => d.Rotulo == "Estado de residência").Subject;
         estado.Valor!.Value.GetProperty("rotulo").GetString().Should().Be("Pará");
     }
 
@@ -115,7 +115,7 @@ public sealed class ConteudoDoComprovanteTests
 
         ComprovanteDaInscricaoDto dto = Montar(inscricao, comprovante, Envelope(derivados: Derivados(faixaEtaria)));
 
-        ItemDoComprovanteDto idade = dto.Derivados.Should().ContainSingle().Subject;
+        ItemDoComprovanteDto idade = dto.Formulario.Derivados.Should().ContainSingle().Subject;
         idade.Rotulo.Should().Be(faixaEtaria.Nome);
         idade.Valor!.Value.ValueKind.Should().Be(JsonValueKind.String);
         idade.Valor!.Value.GetString().Should().Be("26");
@@ -125,22 +125,15 @@ public sealed class ConteudoDoComprovanteTests
     public void Montar_Documentos_SituacaoPorExtenso()
     {
         Inscricao inscricao = UmaInscricao();
-        ComprovanteInscricao comprovante = ComprovanteComDocumentos(
-            inscricao,
-            Documento("Laudo", SituacaoDoDocumentoCodigo.Satisfeita, new ArquivoDoComprovante(new string('a', 64), 2048, "PDF")),
-            Documento("Histórico", SituacaoDoDocumentoCodigo.Pendente),
-            Documento("Renda", DocumentosDoComprovante.SituacaoDispensada),
-            Documento("Diploma", SituacaoDoDocumentoCodigo.DependeDeFasePosterior),
-            Documento("Declaração", SituacaoDoDocumentoCodigo.PodeSerExigido),
-            Documento("Outro", "SITUACAO_NOVA"));
+        ComprovanteInscricao comprovante = ComprovanteComSituacoes(inscricao);
 
         ComprovanteDaInscricaoDto dto = Montar(inscricao, comprovante, Envelope());
 
-        dto.Documentos.Select(static d => d.Situacao).Should().Equal(
+        dto.Formulario.Documentos.Select(static d => d.Situacao).Should().Equal(
             "Atendido", "Pendente", "Dispensado", "Pode ser exigido, conforme uma fase posterior do processo",
             "Pode ser exigido, conforme as respostas", "A confirmar");
-        dto.Documentos[0].Arquivos.Should().Equal(new ArquivoDoComprovanteDto(new string('a', 64), 2048, "PDF"));
-        dto.Documentos[0].Consequencia.Should().Be("Sem o documento, a vantagem não é concedida.");
+        dto.Formulario.Documentos[0].Arquivos.Should().Equal(new ArquivoDoComprovanteDto(new string('a', 64), 2048, "PDF"));
+        dto.Formulario.Documentos[0].Consequencia.Should().Be("Sem o documento, a vantagem não é concedida.");
     }
 
     [Fact(DisplayName = "O termo sai com o nome da versão da inscrição; o termo que a versão não tem sai pelo código")]
@@ -155,7 +148,7 @@ public sealed class ConteudoDoComprovanteTests
 
         ComprovanteDaInscricaoDto dto = Montar(inscricao, comprovante, Envelope());
 
-        dto.TermosAceitos.Should().ContainSingle().Which.Should().Be(
+        dto.Formulario.TermosAceitos.Should().ContainSingle().Which.Should().Be(
             new TermoAceitoDoComprovanteDto("TERMO_VERACIDADE", "TERMO_VERACIDADE", versaoDoTermo, new string('b', 64)));
     }
 
@@ -166,4 +159,17 @@ public sealed class ConteudoDoComprovanteTests
         ComprovanteInscricao.Emitir(
             inscricao.Id, "00000001", Instante, null, Respostas(), new Dictionary<string, JsonElement>(),
             new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), [], documentos);
+
+    private static ComprovanteInscricao ComprovanteComSituacoes(Inscricao inscricao)
+    {
+        return ComprovanteComDocumentos(
+            inscricao,
+            Documento("Laudo", SituacaoDoDocumentoCodigo.Satisfeita, new ArquivoDoComprovante(new string('a', 64), 2048, "PDF")),
+            Documento("Histórico", SituacaoDoDocumentoCodigo.Pendente),
+            Documento("Renda", DocumentosDoComprovante.SituacaoDispensada),
+            Documento("Diploma", SituacaoDoDocumentoCodigo.DependeDeFasePosterior),
+            Documento("Declaração", SituacaoDoDocumentoCodigo.PodeSerExigido),
+            Documento("Outro", "SITUACAO_NOVA"));
+    }
+
 }

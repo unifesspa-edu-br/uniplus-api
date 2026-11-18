@@ -33,13 +33,7 @@ internal static class CorpusEnvelopeEntrada
         RetificacaoDoEdital? retificacao = null,
         ResultadoConformidade? conformidade = null,
         bool permutarValoresSelecionaveis = false) =>
-        new(
-            processo, DadosRicos(), HashDocumento, FusoInstitucional.ZoneId, retificacao, conformidade,
-            ValoresSelecionaveisCongelados: ValoresSelecionaveisRicos(permutarValoresSelecionaveis),
-            CalendarioDiasUteis: CalendarioRico(),
-            AgregadosDosGrupos: AgregadosRicos,
-            ApresentacaoDosPressupostos: ApresentacaoRica,
-            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao);
+        new(processo, DadosRicos(), HashDocumento, FusoInstitucional.ZoneId, retificacao, conformidade, DadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(ValoresSelecionaveisCongelados: ValoresSelecionaveisRicos(permutarValoresSelecionaveis), CalendarioDiasUteis: CalendarioRico(), AgregadosDosGrupos: AgregadosRicos, ApresentacaoDosPressupostos: ApresentacaoRica, TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
 
     /// <summary>
     /// A apresentação de dois derivados do sistema: o município, que o domínio categórico do Geo dá como

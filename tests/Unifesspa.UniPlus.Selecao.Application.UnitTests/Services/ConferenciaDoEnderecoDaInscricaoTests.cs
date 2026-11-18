@@ -53,7 +53,7 @@ public sealed class ConferenciaDoEnderecoDaInscricaoTests
 
     private static Task<ConferenciaDosEnderecos> ConferirAsync(
         Dictionary<string, JsonElement> respostas, FakeConferenciaEnderecoGeo geo, bool aoEnviar) =>
-        ConferenciaDoEnderecoDaInscricao.ConferirAsync(respostas, Admitidas, geo, aoEnviar);
+        new ConferenciaDoEnderecoDaInscricao(geo).ConferirAsync(respostas, Admitidas, aoEnviar);
 
     [Theory(DisplayName = "CEP que o Geo não encontra é recusado com a orientação dos Correios e do CEP geral, ao salvar e ao enviar")]
     [InlineData(false)]

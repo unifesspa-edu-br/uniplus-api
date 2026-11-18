@@ -45,7 +45,7 @@ public sealed class RotuloDosArquivosDoCandidatoTests
     {
         _repositorio.ListarApresentacoesDaInscricaoAsync(InscricaoId, Arg.Any<CancellationToken>()).Returns([.. _apresentacoes]);
         _repositorio.ListarArquivosDaInscricaoAsync(InscricaoId, Arg.Any<CancellationToken>()).Returns([.. _arquivos]);
-        return (await ArquivosDaInscricao.CarregarAsync(_repositorio, InscricaoId, CancellationToken.None)).ParaOCandidato();
+        return (await new DocumentosEnviadosDaInscricao(_repositorio).CarregarAsync(InscricaoId, CancellationToken.None)).ParaOCandidato();
     }
 
     [Fact(DisplayName = "A posição do arquivo conta por exigência e ocorrência, na ordem da confirmação, e o nome de download leva o início do hash")]

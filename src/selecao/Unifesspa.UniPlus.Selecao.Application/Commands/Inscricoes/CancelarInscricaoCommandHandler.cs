@@ -1,62 +1,50 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.Inscricoes;
 
 using Domain.Entities;
+using Domain.Errors;
 
 using Kernel.Results;
 
 using Services;
+using Services.Inscricoes;
 
-using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
-/// <summary>
-/// Cancela a inscrição enviada do dono do token. Só com as inscrições abertas: a janela vem da versão
-/// divulgada, a mesma do envio. Fora do período a recusa é sempre a do período, porque é o estado final: a
-/// orientação de descartar ou de iniciar outra só vale com as inscrições abertas.
-/// </summary>
+/// <summary>Cancela a inscrição do titular e confirma a alteração na mesma transação.</summary>
 public static class CancelarInscricaoCommandHandler
 {
     public static async Task<Result> Handle(
-        CancelarInscricaoCommand command,
-        InscricaoAtivaDoCandidato inscricaoAtiva,
-        PeriodoDaInscricao periodo,
-        GravacaoDaInscricao gravacao,
-        IUserContext userContext,
-        TimeProvider timeProvider,
-        CancellationToken cancellationToken)
+        CancelarInscricaoCommand command, InscricaoDoDono dono, CancelamentoDaInscricaoPeloTitular cancelamento,
+        IUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
-        ArgumentNullException.ThrowIfNull(inscricaoAtiva);
-        ArgumentNullException.ThrowIfNull(periodo);
-        ArgumentNullException.ThrowIfNull(gravacao);
-        ArgumentNullException.ThrowIfNull(userContext);
-        ArgumentNullException.ThrowIfNull(timeProvider);
-
-        Result<Inscricao> inscricao = await inscricaoAtiva
-            .ObterAsync(command.ProcessoSeletivoId, userContext, "cancelar a inscrição", cancellationToken).ConfigureAwait(false);
-        return inscricao.IsFailure
-            ? Result.Failure(inscricao.Error!)
-            : await CancelarAsync(command, inscricao.Value!, periodo, gravacao, userContext, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+        ArgumentNullException.ThrowIfNull(dono);
+        ArgumentNullException.ThrowIfNull(cancelamento);
+        ArgumentNullException.ThrowIfNull(unitOfWork);
+        Result<Inscricao> inscricao = await dono.ObterAtivaAsync(command.ProcessoSeletivoId, "cancelar a inscrição", cancellationToken).ConfigureAwait(false);
+        return inscricao.IsFailure ? Result.Failure(inscricao.Error!)
+            : await CancelarEConfirmarAsync(inscricao.Value!, command, cancelamento, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async Task<Result> CancelarAsync(
-        CancelarInscricaoCommand command,
-        Inscricao inscricao,
-        PeriodoDaInscricao periodo,
-        GravacaoDaInscricao gravacao,
-        IUserContext userContext,
-        DateTimeOffset instante,
-        CancellationToken cancellationToken)
+    private static async Task<Result> CancelarEConfirmarAsync(
+        Inscricao inscricao, CancelarInscricaoCommand command, CancelamentoDaInscricaoPeloTitular cancelamento,
+        IUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
-        DomainError? recusa = await periodo.ConferirAsync(command.ProcessoSeletivoId, instante, cancellationToken).ConfigureAwait(false)
-            ?? inscricao.ConferirCancelamento();
-        if (recusa is not null)
-        {
-            return Result.Failure(recusa);
-        }
+        Result resultado = await cancelamento.CancelarAsync(inscricao, command, cancellationToken).ConfigureAwait(false);
+        return resultado.IsFailure ? resultado : await ConfirmarAsync(unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
 
-        Result cancelada = inscricao.Cancelar(command.Motivo, userContext.UserId!, instante, command.Precondicao);
-        return cancelada.IsFailure
-            ? cancelada
-            : await gravacao.SalvarAsync(inscricao, comprovante: null, cancellationToken).ConfigureAwait(false);
+    private static async Task<Result> ConfirmarAsync(IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+            return Result.Success();
+        }
+        catch (Exception ex) when (OptimisticConcurrencyViolation.Is(ex))
+        {
+            unitOfWork.DescartarAlteracoesNaoSalvas();
+            return Result.Failure(new DomainError(InscricaoErrorCodes.ConflitoDeConcorrencia, "Esta inscrição foi alterada concorrentemente. Tente novamente."));
+        }
     }
 }

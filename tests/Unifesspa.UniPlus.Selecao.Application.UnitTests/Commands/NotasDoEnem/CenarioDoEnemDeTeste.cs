@@ -45,7 +45,7 @@ internal sealed class CenarioDoEnemDeTeste
     public static DateTimeOffset DepoisDoEncerramento { get; } = DivulgacaoDeTeste.FimDoPeriodo.AddDays(1);
 
     private readonly VersaoConfiguracao _versaoDivulgada;
-    private readonly GrafoConfiguracao _grafo;
+    private readonly ConfiguracaoPublicada _configuracao;
 
     public CenarioDoEnemDeTeste(params string[] edicoesDivulgadas)
         : this(semFormularioDeInscricao: false, edicoesDivulgadas)
@@ -57,32 +57,36 @@ internal sealed class CenarioDoEnemDeTeste
         EtapaDoEnem = Etapa("Nota do ENEM", "NOTA_ENEM", notaDeOrigemNoEnem: true);
         EtapaSemEnem = Etapa("Prova objetiva", "PROVA_OBJETIVA", notaDeOrigemNoEnem: false);
 
-        (_, GrafoConfiguracao modelo) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
-        OpcaoDeclaradaFato[] opcoes =
-        [
-            .. edicoesDivulgadas.Select((e, i) => OpcaoDeclaradaFato.Criar(EdicaoDoEnem.Fato, e, $"ENEM {e}", i + 1).Value!),
-        ];
-        GrafoConfiguracao grafo = new(
-            [EtapaDoEnem, EtapaSemEnem], modelo.AtendimentoEspecializado,
-            [
-                ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(grupoAreaEnem: ("TECNOLOGICA", "Tecnológica"), ofertaCursoOrigemId: OfertaTecnologica),
-                ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(grupoAreaEnem: ("HUMANISTICA_I", "Humanística I"), ofertaCursoOrigemId: OfertaHumanistica),
-            ],
-            modelo.BonusRegional, [.. modelo.CriteriosDesempate], ClassificacaoPelosPesosDoEnem(), [.. modelo.CronogramaFases], [.. modelo.DocumentosExigidos], [], null,
-            fatosColetados: [.. modelo.FatosColetados], formularios: [.. modelo.Formularios.Where(f => !semFormularioDeInscricao || f.Finalidade != FinalidadeFormulario.Inscricao)], gruposColetados: [.. modelo.GruposColetados],
-            opcoesDeclaradas: opcoes, numeroDeOpcoesDeCurso: 1);
-
+        ConfiguracaoPublicada configuracao = MontarConfiguracao(semFormularioDeInscricao, edicoesDivulgadas);
         (VersaoConfiguracao versao, _) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
         VersaoId = versao.Id;
         Certame = DivulgacaoDeTeste.Certame(ProcessoId);
-        DivulgacaoDeTeste.ConfigurarDivulgada(Processos, Codecs, versao, grafo);
+        DivulgacaoDeTeste.ConfigurarDivulgada(Processos, Codecs, versao, configuracao);
         _versaoDivulgada = versao;
-        _grafo = grafo;
+        _configuracao = configuracao;
     }
+
+    private ConfiguracaoPublicada MontarConfiguracao(bool semFormularioDeInscricao, string[] edicoesDivulgadas)
+    {
+        (_, ConfiguracaoPublicada modelo) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
+        OpcaoDeclaradaFato[] opcoes = [.. edicoesDivulgadas.Select((e, i) => OpcaoDeclaradaFato.Criar(EdicaoDoEnem.Fato, e, $"ENEM {e}", i + 1).Value!)];
+        return new ConfiguracaoPublicada(
+            new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, [.. modelo.Cronograma.CronogramaFases]),
+            new AvaliacaoDeclarada([EtapaDoEnem, EtapaSemEnem], [.. modelo.Avaliacao.CriteriosDesempate], ClassificacaoPelosPesosDoEnem()),
+            VagasDoEnem(modelo), new ExigenciasDeclaradas([.. modelo.Exigencias.DocumentosExigidos], []),
+            new ColetaDeclarada(ConfiguracaoPublicadaDeTeste.CamposDaColeta([.. modelo.Coleta.Itens], [.. modelo.Coleta.GruposColetados]), [.. modelo.Coleta.GruposColetados], [.. modelo.Coleta.Formularios.Where(f => !semFormularioDeInscricao || f.Finalidade != FinalidadeFormulario.Inscricao)], [], opcoes, [], null),
+            new DivulgacaoETaxaDeclaradas(null, null), null);
+    }
+
+    private VagasDeclaradas VagasDoEnem(ConfiguracaoPublicada modelo) => new(
+        [
+            ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(grupoAreaEnem: ("TECNOLOGICA", "Tecnológica"), ofertaCursoOrigemId: OfertaTecnologica),
+            ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(grupoAreaEnem: ("HUMANISTICA_I", "Humanística I"), ofertaCursoOrigemId: OfertaHumanistica),
+        ], 1, modelo.Vagas.BonusRegional is not null, modelo.Vagas.BonusRegional, null, modelo.Vagas.AtendimentoEspecializado);
 
     /// <summary>Uma retificação divulgada prorrogou as inscrições até o instante.</summary>
     public void ProrrogarInscricoesAte(DateTimeOffset fim) =>
-        DivulgacaoDeTeste.ConfigurarDivulgada(Processos, Codecs, _versaoDivulgada, _grafo, fim);
+        DivulgacaoDeTeste.ConfigurarDivulgada(Processos, Codecs, _versaoDivulgada, _configuracao, fim);
 
     private static ConfiguracaoClassificacao ClassificacaoPelosPesosDoEnem() =>
         ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao

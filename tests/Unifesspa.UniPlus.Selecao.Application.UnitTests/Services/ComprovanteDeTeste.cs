@@ -42,20 +42,22 @@ internal static class ComprovanteDeTeste
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS 2026 — Comprovante");
         processo.DefinirItens([.. itens ?? []], grupos: grupos).IsSuccess.Should().BeTrue();
-        GrafoConfiguracao grafo = new(
-            [.. processo.Etapas], processo.AtendimentoEspecializado!, [.. ofertas ?? [.. processo.DistribuicaoVagas]],
-            processo.BonusRegional, [.. processo.CriteriosDesempate], processo.Classificacao!,
-            [.. processo.CronogramaFases], [.. processo.DocumentosExigidos], [], null,
-            fatosColetados: [.. processo.FatosColetados],
-            formularios: [.. processo.Formularios],
-            gruposColetados: [.. processo.GruposColetados],
-            numeroDeOpcoesDeCurso: numeroDeOpcoes,
-            identificadorLegivel: identificador);
-
+        ConfiguracaoPublicada configuracao = ConfiguracaoDoProcesso(processo, ofertas, numeroDeOpcoes, identificador);
         return new EnvelopeReidratado(
-            grafo, DadosEdital.Criar("001/2026", DivulgacaoDeTeste.InicioDoPeriodo, DivulgacaoDeTeste.FimDoPeriodo, Guid.CreateVersion7()).Value!,
-            new string('a', 64), "America/Belem", retificacao: null, conformidade: null, fatosDerivadosCongelados: derivados);
+            configuracao, DadosEdital.Criar("001/2026", DivulgacaoDeTeste.InicioDoPeriodo, DivulgacaoDeTeste.FimDoPeriodo, Guid.CreateVersion7()).Value!,
+            new string('a', 64), "America/Belem", retificacao: null, conformidade: null, new DadosDeCatalogoDaConfiguracaoPublicada(FatosDerivadosCongelados: derivados));
     }
+
+    private static ConfiguracaoPublicada ConfiguracaoDoProcesso(ProcessoSeletivo processo, IReadOnlyList<ConfiguracaoDistribuicaoVagas>? ofertas,
+        int numeroDeOpcoes, IdentificadorLegivel? identificador) => new(
+            new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, [.. processo.CronogramaFases]),
+            new AvaliacaoDeclarada([.. processo.Etapas], [.. processo.CriteriosDesempate], processo.Classificacao!),
+            new VagasDeclaradas([.. ofertas ?? [.. processo.DistribuicaoVagas]], numeroDeOpcoes, processo.BonusRegional is not null,
+                processo.BonusRegional, null, processo.AtendimentoEspecializado!),
+            new ExigenciasDeclaradas([.. processo.DocumentosExigidos], []),
+            new ColetaDeclarada(ConfiguracaoPublicadaDeTeste.CamposDaColeta([.. processo.FatosColetados], [.. processo.GruposColetados]), [.. processo.GruposColetados], [.. processo.Formularios], [],
+                [], [], null),
+            new DivulgacaoETaxaDeclaradas(null, null), identificador);
 
     public static ComprovanteInscricao Emitir(
         Inscricao inscricao,
@@ -79,5 +81,5 @@ internal static class ComprovanteDeTeste
         Inscricao.Iniciar(Guid.CreateVersion7(), cpf ?? PersonasDeTeste.FernandaDrumond, "conta-1", "https://issuer", Guid.CreateVersion7()).Value!;
 
     public static IEnumerable<ItemDoComprovanteDto> TodosOsItens(ComprovanteDaInscricaoDto dto) =>
-        dto.Secoes.SelectMany(static s => s.Itens);
+        dto.Formulario.Secoes.SelectMany(static s => s.Itens);
 }

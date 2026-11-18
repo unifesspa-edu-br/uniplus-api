@@ -23,11 +23,11 @@ public sealed class CancelamentoDoComprovanteTests
     // 08/11/2026 01:32:05 em UTC é 07/11/2026 22:32:05 em Belém: o dia civil muda com a zona.
     private static readonly DateTimeOffset CanceladaEm = new(2026, 11, 8, 1, 32, 5, TimeSpan.Zero);
 
-    private static Inscricao Cancelada(string? motivo) => Inscricao.Reidratar(
-        Guid.CreateVersion7(), Guid.CreateVersion7(), PersonasDeTeste.FernandaDrumond, "conta-1", "https://issuer", SituacaoInscricao.Cancelada,
-        Guid.CreateVersion7(), null, null, "000123", CanceladaEm, "conta-1", motivo,
-        new Dictionary<string, JsonElement>(), new Dictionary<string, JsonElement>(),
-        new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), [], new Dictionary<string, DefinicaoDaResposta>(), 2, CanceladaEm, null);
+    private static Inscricao Cancelada(string? motivo) => Inscricao.Reidratar(Guid.CreateVersion7(), Guid.CreateVersion7(),
+            TitularDaInscricao.Reidratar(PersonasDeTeste.FernandaDrumond, "conta-1", "https://issuer"),
+            EstadoDaInscricao.Reidratar(SituacaoInscricao.Cancelada, "000123", CancelamentoDaInscricao.Reidratar(CanceladaEm, "conta-1", motivo)),
+            FormularioDaInscricao.Reidratar(Guid.CreateVersion7(), PreenchimentoDoCandidato.Criar(OpcoesDeCursoDaInscricao.Reidratar(null, null), new Dictionary<string, JsonElement>(), new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), []),
+                new Dictionary<string, JsonElement>(), new Dictionary<string, DefinicaoDaResposta>()), 2, new Unifesspa.UniPlus.Selecao.Domain.ValueObjects.DatasDeGravacaoDaInscricao(default, null));
 
     private static CancelamentoDoComprovante Novo(IResolvedorFusoInstitucional? fuso = null) => new(fuso ?? DivulgacaoDeTeste.Fuso());
 

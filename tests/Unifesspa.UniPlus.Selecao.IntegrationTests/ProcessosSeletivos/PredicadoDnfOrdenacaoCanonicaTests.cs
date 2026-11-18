@@ -58,7 +58,7 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
         documentoEditalId: Guid.CreateVersion7()).Value!;
 
     private static EntradaCanonicalizacao Entrada(ProcessoSeletivo processo) =>
-        new(processo, Dados(), new string('0', 64), FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados());
+        new(processo, Dados(), new string('0', 64), FusoInstitucional.ZoneId, Retificacao: null, Conformidade: null, DadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados()));
 
     internal static JsonElement Escalar(string valor) => JsonSerializer.SerializeToElement(valor);
 
@@ -188,39 +188,11 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
     [Fact(DisplayName = "condicaoGatilho: trocar os ordinais entre cláusulas inteiras, preservando a partição, produz os MESMOS bytes")]
     public void CondicaoGatilho_TrocaDeOrdinaisEntreClausulas_ProduzMesmosBytes()
     {
-        CondicaoGatilho a1 = CondicaoGatilho.Criar(1, "FATO_A", Operador.Igual, Escalar("valorA")).Value!;
-        CondicaoGatilho b1 = CondicaoGatilho.Criar(1, "FATO_B", Operador.Igual, Escalar("valorB")).Value!;
-        CondicaoGatilho c1 = CondicaoGatilho.Criar(2, "FATO_C", Operador.Igual, Escalar("valorC")).Value!;
-        // Config 1: clausula 1 = {FATO_A, FATO_B}; clausula 2 = {FATO_C}.
+        (CondicaoGatilho[] primeira, CondicaoGatilho[] segunda) = CondicoesComOrdinaisTrocados();
+        ConferirMenorOrdinal(primeira, segunda);
 
-        CondicaoGatilho c2 = CondicaoGatilho.Criar(1, "FATO_C", Operador.Igual, Escalar("valorC")).Value!;
-        CondicaoGatilho b2 = CondicaoGatilho.Criar(2, "FATO_B", Operador.Igual, Escalar("valorB")).Value!;
-        CondicaoGatilho a2 = CondicaoGatilho.Criar(2, "FATO_A", Operador.Igual, Escalar("valorA")).Value!;
-        // Config 2: MESMA partição — {FATO_A, FATO_B} e {FATO_C} — mas os ordinais 1 e 2 trocados
-        // de cláusula, e listados em ordem diferente.
-
-        // Pré-condição do discriminante: ordenar pelo ordinal (a política ANTIGA) dá clausulas em
-        // ordem OPOSTA entre as duas configs — é isso que prova que o teste discrimina de fato.
-        static string ClausulaDeMenorOrdinal(IEnumerable<CondicaoGatilho> condicoes) => condicoes
-            .GroupBy(static c => c.Clausula)
-            .OrderBy(static g => g.Key)
-            .First()
-            .Select(static c => c.Fato)
-            .OrderBy(static f => f, StringComparer.Ordinal)
-            .First();
-
-        ClausulaDeMenorOrdinal([a1, b1, c1]).Should().Be("FATO_A",
-            "pré-condição: em config 1, a cláusula de MENOR ordinal (1) é a conjunção FATO_A e FATO_B");
-        ClausulaDeMenorOrdinal([c2, b2, a2]).Should().Be("FATO_C",
-            "pré-condição do discriminante: em config 2, a cláusula de MENOR ordinal (1) é só FATO_C — " +
-            "o OPOSTO de config 1. Ordenar pelo ordinal (política antiga) produziria arrays em ordem " +
-            "trocada para o mesmo predicado");
-
-        ProcessoSeletivo processoUm = MontarProcessoComGatilho([a1, b1, c1]);
-        ProcessoSeletivo processoDois = MontarProcessoComGatilho([c2, b2, a2]);
-
-        JsonNode gatilhoUm = CondicaoGatilhoDoEnvelope(Canonicalizador.Canonicalizar(Entrada(processoUm)));
-        JsonNode gatilhoDois = CondicaoGatilhoDoEnvelope(Canonicalizador.Canonicalizar(Entrada(processoDois)));
+        JsonNode gatilhoUm = GatilhoDasCondicoes(primeira);
+        JsonNode gatilhoDois = GatilhoDasCondicoes(segunda);
 
         OrdenacaoDeConjuntosCanonicosTests.BytesDoFragmento(gatilhoDois).Should().Equal(
             OrdenacaoDeConjuntosCanonicosTests.BytesDoFragmento(gatilhoUm),
@@ -241,26 +213,10 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
     [Fact(DisplayName = "condicaoGatilho: agrupamentos DIFERENTES dos mesmos átomos produzem bytes DIFERENTES — a correção não achata as cláusulas")]
     public void CondicaoGatilho_AgrupamentosDistintosDosMesmosAtomos_ProduzBytesDiferentes()
     {
-        CondicaoGatilho a1 = CondicaoGatilho.Criar(10, "FATO_A", Operador.Igual, Escalar("valorA")).Value!;
-        CondicaoGatilho b1 = CondicaoGatilho.Criar(10, "FATO_B", Operador.Igual, Escalar("valorB")).Value!;
-        CondicaoGatilho c1 = CondicaoGatilho.Criar(20, "FATO_C", Operador.Igual, Escalar("valorC")).Value!;
-        // P1 = (FATO_A E FATO_B) OU (FATO_C)
+        (CondicaoGatilho[] primeira, CondicaoGatilho[] segunda) = CondicoesComAgrupamentosDistintos();
 
-        CondicaoGatilho a2 = CondicaoGatilho.Criar(10, "FATO_A", Operador.Igual, Escalar("valorA")).Value!;
-        CondicaoGatilho c2 = CondicaoGatilho.Criar(10, "FATO_C", Operador.Igual, Escalar("valorC")).Value!;
-        CondicaoGatilho b2 = CondicaoGatilho.Criar(20, "FATO_B", Operador.Igual, Escalar("valorB")).Value!;
-        // P2 = (FATO_A E FATO_C) OU (FATO_B) — MESMOS três átomos, agrupamento DIFERENTE.
-
-        ProcessoSeletivo processoUm = MontarProcessoComGatilho([a1, b1, c1]);
-        ProcessoSeletivo processoDois = MontarProcessoComGatilho([a2, c2, b2]);
-
-        JsonNode gatilhoUm = CondicaoGatilhoDoEnvelope(Canonicalizador.Canonicalizar(Entrada(processoUm)));
-        JsonNode gatilhoDois = CondicaoGatilhoDoEnvelope(Canonicalizador.Canonicalizar(Entrada(processoDois)));
-
-        static IReadOnlyList<(string Fato, string Valor)> AtomosAchatados(JsonNode gatilho) => [.. gatilho.AsArray()
-            .SelectMany(static clausula => clausula!.AsArray())
-            .Select(static atomo => (atomo!["fato"]!.GetValue<string>(), atomo["valor"]!.GetValue<string>()))
-            .OrderBy(static atomo => atomo.Item1, StringComparer.Ordinal)];
+        JsonNode gatilhoUm = GatilhoDasCondicoes(primeira);
+        JsonNode gatilhoDois = GatilhoDasCondicoes(segunda);
 
         AtomosAchatados(gatilhoDois).Should().Equal(AtomosAchatados(gatilhoUm),
             "pré-condição do discriminante: os dois predicados têm exatamente o MESMO multiconjunto de " +
@@ -289,20 +245,14 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
     [InlineData(Operador.NaoEm)]
     public void CondicaoGatilho_AlternativasDePertencimento_OrdenamPelaChaveDeConteudo(Operador operador)
     {
-        CondicaoGatilho condicaoUm = CondicaoGatilho.Criar(
-            0, "COR_RACA", operador, Alternativas("PRETA", "PARDA", "AMARELA")).Value!;
-        JsonNode gatilhoUm = CondicaoGatilhoDoEnvelope(
-            Canonicalizador.Canonicalizar(Entrada(MontarProcessoComGatilho([condicaoUm]))));
+        JsonNode gatilhoUm = GatilhoDeAlternativas(operador, Alternativas("PRETA", "PARDA", "AMARELA"));
 
         gatilhoUm[0]![0]!["valor"]!.AsArray().Select(static v => v!.GetValue<string>()).Should().Equal(
             ["AMARELA", "PARDA", "PRETA"],
             "'A' (0x41) < 'PA' (0x50 0x41) < 'PR' (0x50 0x52) — ordem alfabética ASCII simples, escrita à mão");
 
         // CA-02 — a entrada permutada produz os MESMOS bytes.
-        CondicaoGatilho condicaoDois = CondicaoGatilho.Criar(
-            0, "COR_RACA", operador, Alternativas("AMARELA", "PRETA", "PARDA")).Value!;
-        JsonNode gatilhoDois = CondicaoGatilhoDoEnvelope(
-            Canonicalizador.Canonicalizar(Entrada(MontarProcessoComGatilho([condicaoDois]))));
+        JsonNode gatilhoDois = GatilhoDeAlternativas(operador, Alternativas("AMARELA", "PRETA", "PARDA"));
 
         OrdenacaoDeConjuntosCanonicosTests.BytesDoFragmento(gatilhoDois).Should().Equal(
             OrdenacaoDeConjuntosCanonicosTests.BytesDoFragmento(gatilhoUm),
@@ -323,30 +273,95 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
     [InlineData(Operador.NaoEm)]
     public void CriterioDesempatePredicadoFato_AlternativasDePertencimento_OrdenamPelaChaveDeConteudo(Operador operador)
     {
-        ProcessoSeletivo MontarComDesempate(JsonElement valor)
-        {
-            ProcessoSeletivo processo = MontarProcessoComGatilho([]);
-            ParametrosDesempatePredicadoFato parametros = new(CondicaoDnf.Criar("COR_RACA", operador, valor).Value!);
-            processo.DefinirCriteriosDesempate(
-                [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.PredicadoFato, 'e'), parametros).Value!]).IsSuccess.Should().BeTrue();
-            return processo;
-        }
-
-        JsonNode ParametrosDoEnvelope(SnapshotCanonico snapshot) =>
-            ApoioDoEnvelopeCodec.Envelope(snapshot)["criteriosDesempate"]![0]!["parametros"]!["valor"]!;
-
-        JsonNode valorUm = ParametrosDoEnvelope(
-            Canonicalizador.Canonicalizar(Entrada(MontarComDesempate(Alternativas("PRETA", "PARDA")))));
+        JsonNode valorUm = ArgsDoEnvelope(
+            Canonicalizador.Canonicalizar(Entrada(MontarComDesempate(operador, Alternativas("PRETA", "PARDA")))));
 
         valorUm.AsArray().Select(static v => v!.GetValue<string>()).Should().Equal(
             ["PARDA", "PRETA"], "'PA' (0x50 0x41) < 'PR' (0x50 0x52) — ordem alfabética ASCII simples");
 
-        JsonNode valorDois = ParametrosDoEnvelope(
-            Canonicalizador.Canonicalizar(Entrada(MontarComDesempate(Alternativas("PARDA", "PRETA")))));
+        JsonNode valorDois = ArgsDoEnvelope(
+            Canonicalizador.Canonicalizar(Entrada(MontarComDesempate(operador, Alternativas("PARDA", "PRETA")))));
 
         OrdenacaoDeConjuntosCanonicosTests.BytesDoFragmento(valorDois).Should().Equal(
             OrdenacaoDeConjuntosCanonicosTests.BytesDoFragmento(valorUm),
             "['PRETA','PARDA'] e ['PARDA','PRETA'] são a MESMA alternativa em ordens diferentes — o " +
             "consumidor de desempate tem de ordenar pela chave de conteúdo, não só o método consolidado");
+    }
+
+    private static string ClausulaDeMenorOrdinal(IEnumerable<CondicaoGatilho> condicoes) => condicoes
+            .GroupBy(static c => c.Clausula)
+            .OrderBy(static g => g.Key)
+            .First()
+            .Select(static c => c.Fato)
+            .OrderBy(static f => f, StringComparer.Ordinal)
+            .First();
+
+    private static void ConferirMenorOrdinal(CondicaoGatilho[] primeira, CondicaoGatilho[] segunda)
+    {
+        // Pré-condição do discriminante: ordenar pelo ordinal (a política ANTIGA) dá clausulas em
+        // ordem OPOSTA entre as duas configs — é isso que prova que o teste discrimina de fato.
+        ClausulaDeMenorOrdinal(primeira).Should().Be("FATO_A",
+            "pré-condição: em config 1, a cláusula de MENOR ordinal (1) é a conjunção FATO_A e FATO_B");
+        ClausulaDeMenorOrdinal(segunda).Should().Be("FATO_C",
+            "pré-condição do discriminante: em config 2, a cláusula de MENOR ordinal (1) é só FATO_C — " +
+            "o OPOSTO de config 1. Ordenar pelo ordinal (política antiga) produziria arrays em ordem " +
+            "trocada para o mesmo predicado");
+    }
+
+    private static (CondicaoGatilho[] Primeira, CondicaoGatilho[] Segunda) CondicoesComOrdinaisTrocados()
+    {
+        CondicaoGatilho a1 = CondicaoGatilho.Criar(1, "FATO_A", Operador.Igual, Escalar("valorA")).Value!;
+        CondicaoGatilho b1 = CondicaoGatilho.Criar(1, "FATO_B", Operador.Igual, Escalar("valorB")).Value!;
+        CondicaoGatilho c1 = CondicaoGatilho.Criar(2, "FATO_C", Operador.Igual, Escalar("valorC")).Value!;
+        // Config 1: clausula 1 = {FATO_A, FATO_B}; clausula 2 = {FATO_C}.
+
+        CondicaoGatilho c2 = CondicaoGatilho.Criar(1, "FATO_C", Operador.Igual, Escalar("valorC")).Value!;
+        CondicaoGatilho b2 = CondicaoGatilho.Criar(2, "FATO_B", Operador.Igual, Escalar("valorB")).Value!;
+        CondicaoGatilho a2 = CondicaoGatilho.Criar(2, "FATO_A", Operador.Igual, Escalar("valorA")).Value!;
+        // Config 2: MESMA partição — {FATO_A, FATO_B} e {FATO_C} — mas os ordinais 1 e 2 trocados
+        // de cláusula, e listados em ordem diferente.
+
+        return ([a1, b1, c1], [c2, b2, a2]);
+    }
+
+    private static (CondicaoGatilho[] Primeira, CondicaoGatilho[] Segunda) CondicoesComAgrupamentosDistintos()
+    {
+        CondicaoGatilho a1 = CondicaoGatilho.Criar(10, "FATO_A", Operador.Igual, Escalar("valorA")).Value!;
+        CondicaoGatilho b1 = CondicaoGatilho.Criar(10, "FATO_B", Operador.Igual, Escalar("valorB")).Value!;
+        CondicaoGatilho c1 = CondicaoGatilho.Criar(20, "FATO_C", Operador.Igual, Escalar("valorC")).Value!;
+        // P1 = (FATO_A E FATO_B) OU (FATO_C)
+
+        CondicaoGatilho a2 = CondicaoGatilho.Criar(10, "FATO_A", Operador.Igual, Escalar("valorA")).Value!;
+        CondicaoGatilho c2 = CondicaoGatilho.Criar(10, "FATO_C", Operador.Igual, Escalar("valorC")).Value!;
+        CondicaoGatilho b2 = CondicaoGatilho.Criar(20, "FATO_B", Operador.Igual, Escalar("valorB")).Value!;
+        // P2 = (FATO_A E FATO_C) OU (FATO_B) — MESMOS três átomos, agrupamento DIFERENTE.
+
+        return ([a1, b1, c1], [a2, c2, b2]);
+    }
+
+    private static IReadOnlyList<(string Fato, string Valor)> AtomosAchatados(JsonNode gatilho) => [.. gatilho.AsArray()
+            .SelectMany(static clausula => clausula!.AsArray())
+            .Select(static atomo => (atomo!["fato"]!.GetValue<string>(), atomo["valor"]!.GetValue<string>()))
+            .OrderBy(static atomo => atomo.Item1, StringComparer.Ordinal)];
+
+    private static ProcessoSeletivo MontarComDesempate(Operador operador, JsonElement valor)
+    {
+        ProcessoSeletivo processo = MontarProcessoComGatilho([]);
+        ParametrosDesempatePredicadoFato args = new(CondicaoDnf.Criar("COR_RACA", operador, valor).Value!);
+        processo.DefinirCriteriosDesempate(
+            [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.PredicadoFato, 'e'), args).Value!]).IsSuccess.Should().BeTrue();
+        return processo;
+    }
+
+    private static JsonNode ArgsDoEnvelope(SnapshotCanonico snapshot) =>
+        ApoioDoEnvelopeCodec.Envelope(snapshot)["criteriosDesempate"]![0]!["parametros"]!["valor"]!;
+
+    private static JsonNode GatilhoDasCondicoes(CondicaoGatilho[] condicoes) =>
+        CondicaoGatilhoDoEnvelope(Canonicalizador.Canonicalizar(Entrada(MontarProcessoComGatilho(condicoes))));
+
+    private static JsonNode GatilhoDeAlternativas(Operador operador, JsonElement alternativas)
+    {
+        CondicaoGatilho condicao = CondicaoGatilho.Criar(0, "COR_RACA", operador, alternativas).Value!;
+        return GatilhoDasCondicoes([condicao]);
     }
 }

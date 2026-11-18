@@ -45,8 +45,15 @@ public sealed class PreliminaresDaMateriaTests
     private static TipoEtapaSnapshot TipoDaEtapa() => TipoEtapaSnapshot.Criar(
         Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
 
-    private static GrafoConfiguracao Grafo(FaseCronograma[] fases, EtapaProcesso[] etapas) => new(
-        etapas, AtendimentoEspecializado.Criar([], [], []).Value!, [], null, [], Classificacao(), fases, [], [], null, numeroDeOpcoesDeCurso: 1);
+    private static ConfiguracaoPublicada Configuracao(FaseCronograma[] fases, EtapaProcesso[] etapas) => new ConfiguracaoPublicada(
+            new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, fases),
+            new AvaliacaoDeclarada(etapas, [], Classificacao()),
+            new VagasDeclaradas([], 1, false,
+                null, null, AtendimentoEspecializado.Criar([], [], []).Value!),
+            new ExigenciasDeclaradas([], []),
+            new ColetaDeclarada([], [], [], [],
+                [], [], null),
+            new DivulgacaoETaxaDeclaradas(null, null), null);
 
     private static ConfiguracaoClassificacao Classificacao() => ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
     {
@@ -137,11 +144,11 @@ public sealed class PreliminaresDaMateriaTests
     }
 
     [Fact(DisplayName = "O grafo responde às duas perguntas como o cronograma solto")]
-    public void Grafo_RespondeComoOCronogramaSolto()
+    public void ConfiguracaoPublicada_RespondeComoOCronogramaSolto()
     {
         ProdutoDaFase preliminar = Preliminar();
         ProdutoDaFase definitivo = Definitivo();
-        GrafoConfiguracao grafo = Grafo([Fase("PROVA", "RESULTADO", preliminar), Fase("RESULTADO", null, definitivo)], []);
+        ConfiguracaoPublicada grafo = Configuracao([Fase("PROVA", "RESULTADO", preliminar), Fase("RESULTADO", null, definitivo)], []);
 
         PreliminaresDaMateria.Esperados(grafo, definitivo.Id).Should().Equal(preliminar.Id);
         PreliminaresDaMateria.DefinitivosQueFecham(grafo, preliminar.Id).Should().Equal(definitivo.Id);

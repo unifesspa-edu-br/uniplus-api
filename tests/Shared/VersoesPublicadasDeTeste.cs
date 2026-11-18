@@ -18,15 +18,19 @@ internal static class VersoesPublicadasDeTeste
     }).Value!;
 
     /// <summary>Uma versão publicada com estes formulários, itens e grupos.</summary>
-    public static GrafoConfiguracao Versao(
-        IEnumerable<FormularioProcesso> formularios, IEnumerable<FatoColetado> itens, IEnumerable<GrupoColetado>? grupos = null) => new(
-        [], AtendimentoEspecializado.Criar([], [], []).Value!, [], null, [], ClassificacaoMinima, [], [], [], null,
-        fatosColetados: [.. itens],
-        formularios: [.. formularios],
-        gruposColetados: [.. grupos ?? []]);
+    public static ConfiguracaoPublicada Versao(
+        IEnumerable<FormularioProcesso> formularios, IEnumerable<FatoColetado> itens, IEnumerable<GrupoColetado>? grupos = null) => new ConfiguracaoPublicada(
+            new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, []),
+            new AvaliacaoDeclarada([], [], ClassificacaoMinima),
+            new VagasDeclaradas([], null, false,
+                null, null, AtendimentoEspecializado.Criar([], [], []).Value!),
+            new ExigenciasDeclaradas([], []),
+            new ColetaDeclarada(ConfiguracaoPublicadaDeTeste.CamposDaColeta([.. itens], [.. grupos ?? []]), [.. grupos ?? []], [.. formularios], [],
+                [], [], null),
+            new DivulgacaoETaxaDeclaradas(null, null), null);
 
     /// <summary>A versão que o processo publicaria agora, com os formulários, os itens e os grupos que ele tem.</summary>
-    public static GrafoConfiguracao DoProcesso(ProcessoSeletivo processo) =>
+    public static ConfiguracaoPublicada DoProcesso(ProcessoSeletivo processo) =>
         Versao(processo.Formularios, processo.FatosColetados, processo.GruposColetados);
 
     /// <summary>O processo publicado uma vez só, com o que ele tem agora.</summary>
@@ -34,7 +38,7 @@ internal static class VersoesPublicadasDeTeste
         SemEixosCongelados([DoProcesso(processo)]);
 
     /// <summary>As versões lidas sem o que cada uma congelou além dos itens: a guarda de metadado e de agregado não tem o que comparar.</summary>
-    public static FatosDasVersoesPublicadas SemEixosCongelados(IReadOnlyList<GrafoConfiguracao> versoes) =>
+    public static FatosDasVersoesPublicadas SemEixosCongelados(IReadOnlyList<ConfiguracaoPublicada> versoes) =>
         FatosDasVersoesPublicadas.De(
             versoes,
             [.. versoes.Select(static _ => new EixosDeVersaoPublicada(new Dictionary<string, EixosDoMetadadoCongelado>(), new Dictionary<string, string>()))]);

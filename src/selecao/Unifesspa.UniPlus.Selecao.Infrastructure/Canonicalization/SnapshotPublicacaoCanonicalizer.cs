@@ -54,6 +54,13 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     {
         ExigirHashDoDocumento(entrada);
 
+        JsonObject payload = Projetar(entrada);
+        byte[] bytes = EscritaCanonica.PerfilAtual.Serializar(payload);
+        return new SnapshotCanonico(bytes, SchemaVersionAtual, EscritaCanonica.PerfilAtual.Algoritmo);
+    }
+
+    private static JsonObject Projetar(EntradaCanonicalizacao entrada)
+    {
         JsonObject payload = [];
         ProjetarEdital(payload, entrada);
         ProjetarVagas(payload, entrada.Processo);
@@ -61,8 +68,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         ProjetarExigenciasEFormularios(payload, entrada);
         ProjetarFatos(payload, entrada);
 
-        byte[] bytes = EscritaCanonica.PerfilAtual.Serializar(payload);
-        return new SnapshotCanonico(bytes, SchemaVersionAtual, EscritaCanonica.PerfilAtual.Algoritmo);
+        return payload;
     }
 
     private static void ExigirHashDoDocumento(EntradaCanonicalizacao entrada)
@@ -81,11 +87,11 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         payload["periodo"] = SerializarPeriodo(entrada.Dados);
         payload["hashesEdital"] = SerializacaoDoEdital.SerializarHashesEdital(entrada.Dados, entrada.HashDocumento);
         payload["identificadorLegivel"] = processo.IdentificadorLegivel?.Valor;
-        payload["apresentacaoDosPressupostos"] = SerializacaoDoEdital.SerializarApresentacaoDosPressupostos(entrada.ApresentacaoDosPressupostos);
-        payload["tiposDeAto"] = SerializacaoDoEdital.SerializarTiposDeAto(entrada.TiposDeAtoCongelados);
+        payload["apresentacaoDosPressupostos"] = SerializacaoDoEdital.SerializarApresentacaoDosPressupostos(entrada.DadosDeCatalogo.ApresentacaoDosPressupostos);
+        payload["tiposDeAto"] = SerializacaoDoEdital.SerializarTiposDeAto(entrada.DadosDeCatalogo.TiposDeAtoCongelados);
         payload["localidade"] = SerializacaoDoEdital.SerializarLocalidade(processo, entrada.FusoHorario);
         payload["algoritmoContagemPrazo"] = SerializacaoDoEdital.SerializarAlgoritmoContagemPrazo(processo);
-        payload["calendarioDiasUteis"] = SerializacaoDoEdital.SerializarCalendarioDiasUteis(entrada.CalendarioDiasUteis);
+        payload["calendarioDiasUteis"] = SerializacaoDoEdital.SerializarCalendarioDiasUteis(entrada.DadosDeCatalogo.CalendarioDiasUteis);
         payload["identidadesUnidade"] = SerializacaoDoEdital.SerializarIdentidadesUnidade(processo);
         ProjetarRetificacao(payload, entrada.Retificacao);
     }
@@ -129,7 +135,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     {
         ProcessoSeletivo processo = entrada.Processo;
         TimeZoneInfo fusoDaVersao = TimeZoneInfo.FindSystemTimeZoneById(entrada.FusoHorario);
-        payload["documentosExigidos"] = SerializacaoDasExigencias.SerializarDocumentosExigidos(processo, entrada.Conformidade, entrada.MetadadosFatosCongelados, fusoDaVersao);
+        payload["documentosExigidos"] = SerializacaoDasExigencias.SerializarDocumentosExigidos(processo, entrada.Conformidade, entrada.DadosDeCatalogo.MetadadosFatosCongelados, fusoDaVersao);
         payload["arvoreSatisfacao"] = SerializacaoDasExigencias.SerializarArvoreSatisfacao(processo);
         payload["formularios"] = SerializacaoDosFormularios.SerializarFormularios(processo);
         payload["divulgacao"] = SerializacaoDaDivulgacaoEDaTaxa.SerializarDivulgacao(processo);
@@ -139,12 +145,12 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     private static void ProjetarFatos(JsonObject payload, EntradaCanonicalizacao entrada)
     {
         ProcessoSeletivo processo = entrada.Processo;
-        payload["fatosColetados"] = SerializacaoDosFatos.SerializarFatosColetados(processo.FatosColetados, entrada.ValoresSelecionaveisCongelados);
-        payload["gruposColetados"] = SerializacaoDosFatos.SerializarGruposColetados(processo.GruposColetados, entrada.ValoresSelecionaveisCongelados, entrada.AgregadosDosGrupos);
+        payload["fatosColetados"] = SerializacaoDosFatos.SerializarFatosColetados(processo.FatosColetados, entrada.DadosDeCatalogo.ValoresSelecionaveisCongelados);
+        payload["gruposColetados"] = SerializacaoDosFatos.SerializarGruposColetados(processo.GruposColetados, entrada.DadosDeCatalogo.ValoresSelecionaveisCongelados, entrada.DadosDeCatalogo.AgregadosDosGrupos);
         payload["regrasDerivacao"] = SerializacaoDosFatos.SerializarRegrasDerivacao(processo.RegrasDerivacao);
         payload["grafoDependencia"] = SerializacaoDosFatos.SerializarGrafoDependencia(processo);
         payload["versaoInterpretador"] = MotorDerivacao.VersaoSemantica;
-        payload["fatosDerivados"] = SerializacaoDosFatos.SerializarFatosDerivados(entrada.FatosDerivadosCongelados);
+        payload["fatosDerivados"] = SerializacaoDosFatos.SerializarFatosDerivados(entrada.DadosDeCatalogo.FatosDerivadosCongelados);
     }
 
     private static JsonObject SerializarTipoProcesso(ProcessoSeletivo processo) => new()

@@ -41,19 +41,19 @@ public static class MontadorDaInscricaoAdministrativa
             Inscricao inscricao = conteudo.Inscricao;
 
             return new CamposFixosVisiveis(
-                projecao.Fixo<SituacaoInscricao>(nameof(InscricaoAdministrativaDto.Situacao), inscricao.Situacao),
+                projecao.Fixo<SituacaoInscricao>(nameof(InscricaoAdministrativaDto.Situacao), inscricao.Estado.Situacao),
                 projecao.Permite(nameof(InscricaoAdministrativaDto.Ofertas)) ? OfertasDaInscricao(inscricao, conteudo.Envelope) : null,
-                projecao.Fixo(nameof(InscricaoAdministrativaDto.NumeroInscricao), inscricao.NumeroInscricao),
+                projecao.Fixo(nameof(InscricaoAdministrativaDto.NumeroInscricao), inscricao.Estado.NumeroInscricao),
                 conteudo.PrimeiroEnvio,
-                projecao.Fixo<DateTimeOffset>(nameof(InscricaoAdministrativaDto.CanceladaEm), inscricao.CanceladaEm),
-                projecao.Fixo(nameof(InscricaoAdministrativaDto.MotivoDoCancelamento), inscricao.MotivoDoCancelamento));
+                projecao.Fixo<DateTimeOffset>(nameof(InscricaoAdministrativaDto.CanceladaEm), inscricao.Estado.Cancelamento?.CanceladaEm),
+                projecao.Fixo(nameof(InscricaoAdministrativaDto.MotivoDoCancelamento), inscricao.Estado.Cancelamento?.MotivoDoCancelamento));
         }
 
         private static IReadOnlyList<OfertaEscolhidaDto> OfertasDaInscricao(Inscricao inscricao, EnvelopeReidratado envelope) =>
             OfertasEscolhidas.Montar(
-                inscricao.OfertaCursoId,
-                inscricao.OfertaCursoSegundaOpcaoId,
-                OfertasEscolhidas.NomesDe(ContextoDaVersaoFixadaResolver.OfertasDaVersao(envelope.Grafo)));
+                inscricao.Formulario.Preenchimento.Opcoes.Primeira,
+                inscricao.Formulario.Preenchimento.Opcoes.Segunda,
+                OfertasEscolhidas.NomesDe(ContextoDaVersaoFixadaResolver.OfertasDaVersao(envelope.Configuracao)));
     }
 
     private sealed record ItensVisiveis(
@@ -67,8 +67,8 @@ public static class MontadorDaInscricaoAdministrativa
             FatosDaVersao fatos = FatosDaVersao.De(conteudo.Envelope);
 
             return new ItensVisiveis(
-                ItensDaInscricao.Permitidas(ItensDaInscricao.Secoes(inscricao.Respostas, inscricao.Grupos, fatos, projecao.PodeRevelar), projecao.Decisoes),
-                ItensDaInscricao.Visiveis(ItensDaInscricao.Derivados(inscricao.Derivados, fatos), projecao.Decisoes),
+                ItensDaInscricao.Permitidas(ItensDaInscricao.Secoes(inscricao.Formulario.Preenchimento.Respostas, inscricao.Formulario.Preenchimento.Grupos, fatos, projecao.PodeRevelar), projecao.Decisoes),
+                ItensDaInscricao.Visiveis(ItensDaInscricao.Derivados(inscricao.Formulario.Derivados, fatos), projecao.Decisoes),
                 [.. conteudo.Arquivos.Where(projecao.Decisoes.ItemSai)]);
         }
     }

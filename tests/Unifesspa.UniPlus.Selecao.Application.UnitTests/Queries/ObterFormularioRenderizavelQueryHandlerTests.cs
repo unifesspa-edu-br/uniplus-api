@@ -20,6 +20,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cobertura do <see cref="ObterFormularioRenderizavelQueryHandler"/> (Story #559/#1059): a
@@ -156,14 +157,18 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS 2026 — SiSU");
         return new EnvelopeReidratado(
-            new GrafoConfiguracao(
-                [.. processo.Etapas], processo.AtendimentoEspecializado!, [.. processo.DistribuicaoVagas],
-                processo.BonusRegional, [.. processo.CriteriosDesempate], processo.Classificacao!,
-                [.. processo.CronogramaFases], [.. processo.DocumentosExigidos], [], null, formularios: formularios,
-            numeroDeOpcoesDeCurso: 1),
+            new ConfiguracaoPublicada(
+            new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, [.. processo.CronogramaFases]),
+            new AvaliacaoDeclarada([.. processo.Etapas], [.. processo.CriteriosDesempate], processo.Classificacao!),
+            new VagasDeclaradas([.. processo.DistribuicaoVagas], 1, processo.BonusRegional is not null,
+                processo.BonusRegional, null, processo.AtendimentoEspecializado!),
+            new ExigenciasDeclaradas([.. processo.DocumentosExigidos], []),
+            new ColetaDeclarada([], [], formularios, [],
+                [], [], null),
+            new DivulgacaoETaxaDeclaradas(null, null), null),
             DadosEdital.Criar(
                 "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), Guid.CreateVersion7()).Value!,
-            new string('a', 64), "America/Sao_Paulo", retificacao: null, conformidade: null);
+            new string('a', 64), "America/Sao_Paulo", retificacao: null, conformidade: null, new DadosDeCatalogoDaConfiguracaoPublicada());
     }
 
     /// <summary>Um formulário só com blocos: o de comprovação documental, quando pedido, e o de revisão e aceite.</summary>
@@ -309,13 +314,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
     {
         Guid faseHabilitacao = Guid.Parse("0199a000-0000-7000-8000-0000000000f2");
         Guid faseInscricao = Guid.Parse("0199a000-0000-7000-8000-0000000000f1");
-        string envelope = $$"""
-            {"documentosExigidos": {"dataReferenciaFatos": null, "exigencias": [
-              {{Exigencia("Documento de identidade", "Geral", faseHabilitacao, "HABILITACAO")}},
-              {{Exigencia("Comprovante de inscrição", "Geral", faseInscricao, "INSCRICAO")}},
-              {{Exigencia("Autodeclaração étnico-racial", "Condicional", faseHabilitacao, "HABILITACAO", Modelo)}}
-            ] } }
-            """;
+        string envelope = ExigenciasDasFases(faseHabilitacao, faseInscricao);
         EnvelopeReidratado reidratado = EnvelopeCom(
             Formulario(FinalidadeFormulario.Habilitacao, faseHabilitacao, comComprovacao: true),
             Formulario(FinalidadeFormulario.Inscricao, faseInscricao, comComprovacao: false));
@@ -324,23 +323,35 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
         Result<FormularioRenderizavelDto> habilitacao = await HandleAsync(processoId, envelope, reidratado, FinalidadeFormulario.Habilitacao);
         Result<FormularioRenderizavelDto> inscricao = await HandleAsync(processoId, envelope, reidratado, FinalidadeFormulario.Inscricao);
 
-        habilitacao.Value!.ComprovacaoDocumental!.Select(static e => (e.Rotulo, e.Aplicabilidade)).Should().Equal(
-            [("Documento de identidade", "Geral"), ("Autodeclaração étnico-racial", "Condicional")],
-            "só as exigências da fase da habilitação, na ordem congelada");
-        habilitacao.Value.ComprovacaoDocumental!.Select(static e => e.Modelo).Should().BeEquivalentTo(
-            [
-                null,
-                new ModeloDocumentalCertameDto(
-                    "Autodeclaração.odt",
-                    "ODT",
-                    new string('a', 64),
-                    new Uri(
-                        $"https://acervo.teste/selecao/processos-seletivos/{processoId:D}/atos/{AtoDaDivulgacao:D}"
-                        + $"/modelos-de-documento/0199a000-0000-7000-8000-0000000000aa/{new string('a', 64)}.odt")),
-            ],
-            "a exigência com modelo o traz com o endereço no acervo do ato da divulgação, sem o id do cadastro como campo; a sem modelo, nulo");
+        ConferirComprovacaoDaHabilitacao(habilitacao.Value!, processoId);
         inscricao.Value!.ComprovacaoDocumental.Should().BeNull("o formulário de inscrição não tem o bloco");
     }
+
+    private static void ConferirComprovacaoDaHabilitacao(FormularioRenderizavelDto habilitacao, Guid processoId)
+    {
+        habilitacao.ComprovacaoDocumental!.Select(static e => (e.Rotulo, e.Aplicabilidade)).Should().Equal(
+            [("Documento de identidade", "Geral"), ("Autodeclaração étnico-racial", "Condicional")],
+            "só as exigências da fase da habilitação, na ordem congelada");
+        habilitacao.ComprovacaoDocumental!.Select(static e => e.Modelo).Should().BeEquivalentTo(
+            [
+                null,
+                ModeloNoAcervo(processoId),
+            ],
+            "a exigência com modelo o traz com o endereço no acervo do ato da divulgação, sem o id do cadastro como campo; a sem modelo, nulo");
+    }
+
+    private static ModeloDocumentalCertameDto ModeloNoAcervo(Guid processoId) => new(
+        "Autodeclaração.odt", "ODT", new string('a', 64),
+        new Uri($"https://acervo.teste/selecao/processos-seletivos/{processoId:D}/atos/{AtoDaDivulgacao:D}"
+            + $"/modelos-de-documento/0199a000-0000-7000-8000-0000000000aa/{new string('a', 64)}.odt"));
+
+    private static string ExigenciasDasFases(Guid faseHabilitacao, Guid faseInscricao) => $$"""
+            {"documentosExigidos": {"dataReferenciaFatos": null, "exigencias": [
+              {{Exigencia("Documento de identidade", "Geral", faseHabilitacao, "HABILITACAO")}},
+              {{Exigencia("Comprovante de inscrição", "Geral", faseInscricao, "INSCRICAO")}},
+              {{Exigencia("Autodeclaração étnico-racial", "Condicional", faseHabilitacao, "HABILITACAO", Modelo)}}
+            ] } }
+            """;
 
     [Fact(DisplayName = "Antes de a cópia ao acervo registrar o endereço do ato, o modelo da comprovação não traz endereço")]
     public async Task Handle_AntesDaCopiaAoAcervo_ModeloSemEndereco()
@@ -372,13 +383,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
     public async Task Handle_BlocoDeComprovacaoNaFaseCompartilhada_ListaSoAsExigenciasDaFinalidade()
     {
         Guid fase = Guid.Parse("0199a000-0000-7000-8000-0000000000f1");
-        string envelope = $$"""
-            {"documentosExigidos": {"dataReferenciaFatos": null, "exigencias": [
-              {{Exigencia("Documento de identidade", "Geral", fase, "INSCRICAO")}},
-              {{Exigencia("Comprovante de renda", "Geral", fase, "ISENCAO_TAXA")}},
-              {{Exigencia("Laudo da banca", "Geral", fase, null)}}
-            ] } }
-            """;
+        string envelope = ExigenciasDaFaseCompartilhada(fase);
         EnvelopeReidratado reidratado = EnvelopeCom(
             Formulario(FinalidadeFormulario.Inscricao, fase, comComprovacao: true),
             Formulario(FinalidadeFormulario.IsencaoTaxa, fase, comComprovacao: true));
@@ -390,6 +395,14 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
         inscricao.Value!.ComprovacaoDocumental!.Select(static e => e.Rotulo).Should().Equal("Documento de identidade");
         isencao.Value!.ComprovacaoDocumental!.Select(static e => e.Rotulo).Should().Equal("Comprovante de renda");
     }
+
+    private static string ExigenciasDaFaseCompartilhada(Guid fase) => $$"""
+            {"documentosExigidos": {"dataReferenciaFatos": null, "exigencias": [
+              {{Exigencia("Documento de identidade", "Geral", fase, "INSCRICAO")}},
+              {{Exigencia("Comprovante de renda", "Geral", fase, "ISENCAO_TAXA")}},
+              {{Exigencia("Laudo da banca", "Geral", fase, null)}}
+            ] } }
+            """;
 
     [Theory(DisplayName = "Com o bloco de comprovação, fase ou finalidade ausente ou malformada recusa a versão em vez de omitir documento")]
     [InlineData(false, "\"0199a000-0000-7000-8000-0000000000f2\"", "\"finalidade\": \"HABILITACAO\",")]
@@ -414,6 +427,23 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
         resultado.Error!.Code.Should().Be("CertamePublicado.EnvelopeInesperado");
     }
 
+    private const string EnvelopeFormaCorrente = """
+            {
+              "documentosExigidos": {"dataReferenciaFatos": null}, "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": "Formulário de Inscrição", "modeloOrigem": null, "etapas": [
+                  {"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null},
+                  {"codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}
+                ], "termos": []}],
+              "gruposColetados": [], "fatosColetados": []
+            }
+            """;
+
+    private const string EnvelopeComReidratacaoRecusada = """
+            {
+              "documentosExigidos": {"dataReferenciaFatos": null}, "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": null, "modeloOrigem": null, "etapas": [], "termos": []}],
+              "gruposColetados": [], "fatosColetados": []
+            }
+            """;
+
     private const string Modelo = """
         {"modeloId": "0199a000-0000-7000-8000-0000000000aa", "nomeArquivo": "Autodeclaração.odt", "formato": "ODT", "hashSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
         """;
@@ -434,17 +464,8 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
     [Fact(DisplayName = "Versão aposentada com bytes de forma corrente recusa com EnvelopeCodec.VersaoDesconhecida, sem tentar decidir pela forma")]
     public async Task Handle_VersaoAposentadaComFormaCorrente_RetornaVersaoDesconhecida()
     {
-        const string envelopeFormaCorrente = """
-            {
-              "documentosExigidos": {"dataReferenciaFatos": null}, "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": "Formulário de Inscrição", "modeloOrigem": null, "etapas": [
-                  {"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null},
-                  {"codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}
-                ], "termos": []}],
-              "gruposColetados": [], "fatosColetados": []
-            }
-            """;
         Guid processoId = Guid.CreateVersion7();
-        IProcessoSeletivoRepository repository = MockComVersaoVigente(processoId, envelopeFormaCorrente, VersaoAposentada);
+        IProcessoSeletivoRepository repository = MockComVersaoVigente(processoId, EnvelopeFormaCorrente, VersaoAposentada);
 
         Result<FormularioRenderizavelDto> resultado = await HandleAsync(repository, processoId);
 
@@ -458,27 +479,27 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
     [Fact(DisplayName = "Versão cujos bytes não se provam não serve formulário: a recusa da reidratação aflora")]
     public async Task Handle_ReidratacaoRecusada_AfloraARecusa()
     {
-        const string envelope = """
-            {
-              "documentosExigidos": {"dataReferenciaFatos": null}, "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": null, "modeloOrigem": null, "etapas": [], "termos": []}],
-              "gruposColetados": [], "fatosColetados": []
-            }
-            """;
         Guid processoId = Guid.CreateVersion7();
-        IRegistroCodecsEnvelope registro = CriarRegistroReconhecendo(VersaoCorrenteReconhecida);
-        registro.Reidratar(Arg.Any<VersaoConfiguracao>()).Returns(
-            Result<EnvelopeReidratado>.Failure(new DomainError("EnvelopeCodec.HashDivergente", "Os bytes não batem com o hash.")));
+        IRegistroCodecsEnvelope registro = RegistroComHashDivergente();
 
         ICertameDivulgadoRepository divulgacao = RepositorioComDivulgacao(processoId);
         Result<FormularioRenderizavelDto> resultado = await ObterFormularioRenderizavelQueryHandler.Handle(
             new ObterFormularioRenderizavelQuery(processoId, FinalidadeFormulario.Inscricao),
-            MockComVersaoVigente(processoId, envelope),
+            MockComVersaoVigente(processoId, EnvelopeComReidratacaoRecusada),
             divulgacao,
             registro,
             Enderecos(divulgacao),
             CancellationToken.None);
 
         resultado.Error!.Code.Should().Be("EnvelopeCodec.HashDivergente", "as regras saem da reidratação, e uma versão que não se prova não é servida");
+    }
+
+    private static IRegistroCodecsEnvelope RegistroComHashDivergente()
+    {
+        IRegistroCodecsEnvelope registro = CriarRegistroReconhecendo(VersaoCorrenteReconhecida);
+        registro.Reidratar(Arg.Any<VersaoConfiguracao>()).Returns(
+            Result<EnvelopeReidratado>.Failure(new DomainError("EnvelopeCodec.HashDivergente", "Os bytes não batem com o hash.")));
+        return registro;
     }
 
     /// <summary>

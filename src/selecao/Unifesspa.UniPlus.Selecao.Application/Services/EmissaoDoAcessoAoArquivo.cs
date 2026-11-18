@@ -52,8 +52,7 @@ public sealed class EmissaoDoAcessoAoArquivo
     /// <summary>O nome que a listagem da inscrição informa para o arquivo: o download usa o mesmo nome que a tela mostra.</summary>
     private async Task<string?> NomeParaDownloadAsync(ArquivoDaApresentacao arquivo, CancellationToken cancellationToken)
     {
-        ArquivosDaInscricao daInscricao = await ArquivosDaInscricao
-            .CarregarAsync(_documentos, arquivo.InscricaoId, cancellationToken).ConfigureAwait(false);
+        ArquivosDaInscricao daInscricao = await new DocumentosEnviadosDaInscricao(_documentos).CarregarAsync(arquivo.InscricaoId, cancellationToken).ConfigureAwait(false);
         return daInscricao.ParaOCandidato().SingleOrDefault(a => a.ArquivoId == arquivo.Id)?.NomeParaDownload;
     }
 

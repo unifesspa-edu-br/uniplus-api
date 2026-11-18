@@ -50,24 +50,12 @@ public sealed class ComprovanteDaInscricaoPublicadaEndpointTests
         using HttpResponseMessage resposta = await ObterAsync(inscricaoId, 1);
 
         string corpo = await resposta.Content.ReadAsStringAsync();
-        resposta.StatusCode.Should().Be(HttpStatusCode.OK, corpo);
-        resposta.Content.Headers.ContentType!.MediaType.Should().Be("application/vnd.uniplus.comprovante-inscricao.v1+json");
+        ConferirRespostaDeComprovante(resposta, corpo);
         using JsonDocument json = JsonDocument.Parse(corpo);
         JsonElement raiz = json.RootElement;
-        raiz.GetProperty("inscricaoId").GetGuid().Should().Be(inscricaoId);
-        (raiz.GetProperty("numero").GetInt32(), raiz.GetProperty("total").GetInt32(), raiz.GetProperty("vale").GetBoolean()).Should().Be((1, 1, true));
-        raiz.GetProperty("processoSeletivoId").GetGuid().Should().Be(processoId);
-        raiz.GetProperty("envio").GetProperty("numeroInscricao").GetString().Should().Be("000321");
-        raiz.GetProperty("envio").GetProperty("fusoHorario").GetProperty("id").GetString().Should().NotBeNullOrEmpty();
-        raiz.GetProperty("candidato").GetProperty("cpfMascarado").GetString().Should().Be(PersonasDeTeste.FernandaDrumond.Mascarado);
-        raiz.GetProperty("candidato").GetProperty("nomeCivil").GetString().Should().Be(PersonasDeTeste.NomeFernandaDrumond);
-        foreach (string lista in new[] { "opcoesDeCurso", "secoes", "derivados", "termosAceitos", "documentos" })
-        {
-            raiz.GetProperty(lista).ValueKind.Should().Be(JsonValueKind.Array, $"{lista} é obrigatório no contrato");
-        }
+        ConferirIdentificacaoDoComprovante(raiz, inscricaoId, processoId);
 
-        raiz.GetProperty("numeroDeOpcoesDeCurso").GetInt32().Should().BeGreaterThan(0);
-        raiz.GetProperty("unidadeAdministradora").GetString().Should().Be(await NomeDaUnidadeCongeladaAsync(processoId));
+        raiz.GetProperty("processo").GetProperty("unidadeAdministradora").GetString().Should().Be(await NomeDaUnidadeCongeladaAsync(processoId));
         corpo.Should().NotContain(PersonasDeTeste.FernandaDrumond.Valor);
     }
 
@@ -75,9 +63,7 @@ public sealed class ComprovanteDaInscricaoPublicadaEndpointTests
     public async Task EnvioRepetidoComAMesmaChave_DevolveOMesmoReciboEUmSoComprovante()
     {
         (Guid processoId, _) = await PublicarAsync(fimDasInscricoes: new DateTimeOffset(2099, 12, 31, 0, 0, 0, TimeSpan.Zero));
-        using HttpResponseMessage iniciada = await EnviarAsync(HttpMethod.Post, $"/api/selecao/processos-seletivos/{processoId}/inscricao", "inscricao", null, null, null);
-        JsonElement rascunho = await iniciada.Content.ReadFromJsonAsync<JsonElement>();
-        iniciada.StatusCode.Should().Be(HttpStatusCode.OK, rascunho.ToString());
+        JsonElement rascunho = await IniciarAsync(processoId);
         Guid inscricaoId = rascunho.GetProperty("id").GetGuid();
         object pedido = PedidoDeEnvio(rascunho);
         string chave = Guid.CreateVersion7().ToString("N");
@@ -86,15 +72,7 @@ public sealed class ComprovanteDaInscricaoPublicadaEndpointTests
         using HttpResponseMessage primeira = await EnviarAsync(HttpMethod.Post, $"/api/selecao/processos-seletivos/{processoId}/inscricao/submissao", "recibo-da-inscricao", pedido, etag, chave);
         using HttpResponseMessage repetida = await EnviarAsync(HttpMethod.Post, $"/api/selecao/processos-seletivos/{processoId}/inscricao/submissao", "recibo-da-inscricao", pedido, etag, chave);
 
-        string reciboDaPrimeira = await primeira.Content.ReadAsStringAsync();
-        primeira.StatusCode.Should().Be(HttpStatusCode.OK, reciboDaPrimeira);
-        repetida.StatusCode.Should().Be(HttpStatusCode.OK);
-        (await repetida.Content.ReadAsStringAsync()).Should().Be(reciboDaPrimeira);
-        JsonElement recibo = JsonDocument.Parse(reciboDaPrimeira).RootElement;
-        recibo.GetProperty("inscricaoId").GetGuid().Should().Be(inscricaoId);
-        recibo.GetProperty("numeroDoComprovante").GetInt32().Should().Be(1);
-        await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-        (await escopo.ServiceProvider.GetRequiredService<IInscricaoRepository>().ObterEmissoesAsync([inscricaoId])).Should().HaveCount(1);
+        await ConferirReciboRepetidoAsync(primeira, repetida, inscricaoId);
     }
 
     [Fact(DisplayName = "O candidato percorre o ciclo da inscrição pela borda: lê, avalia, salva, envia, cancela e descarta o novo rascunho")]
@@ -105,15 +83,7 @@ public sealed class ComprovanteDaInscricaoPublicadaEndpointTests
         JsonElement rascunho = await LerAsync(await EnviarAsync(HttpMethod.Post, rota, "inscricao", null, null, null));
         object pedido = PedidoDeEnvio(rascunho);
 
-        (await EnviarAsync(HttpMethod.Get, rota, "inscricao", null, null, null)).StatusCode.Should().Be(HttpStatusCode.OK);
-        (await EnviarAsync(HttpMethod.Get, $"{rota}/formulario", "formulario-inscricao", null, null, null)).StatusCode.Should().Be(HttpStatusCode.OK);
-        (await EnviarAsync(HttpMethod.Post, $"{rota}/avaliacoes", "avaliacao-da-inscricao", pedido, null, null)).StatusCode.Should().Be(HttpStatusCode.OK);
-        JsonElement salvo = await LerAsync(await EnviarAsync(HttpMethod.Put, rota, "inscricao", pedido, rascunho.GetProperty("eTag").GetString(), null));
-        using HttpResponseMessage semPrecondicao = await EnviarAsync(HttpMethod.Post, $"{rota}/submissao", "recibo-da-inscricao", pedido, null, null);
-        semPrecondicao.StatusCode.Should().Be(HttpStatusCode.PreconditionRequired);
-        (await EnviarAsync(HttpMethod.Post, $"{rota}/submissao", "recibo-da-inscricao", pedido, salvo.GetProperty("eTag").GetString(), null))
-            .StatusCode.Should().Be(HttpStatusCode.OK);
-
+        await AvaliarSalvarEEnviarAsync(rota, rascunho, pedido);
         JsonElement enviada = await LerAsync(await EnviarAsync(HttpMethod.Get, rota, "inscricao", null, null, null));
         using HttpResponseMessage cancelada = await EnviarAsync(HttpMethod.Post, $"{rota}/cancelamento", "inscricao", null, enviada.GetProperty("eTag").GetString(), null);
         cancelada.StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -124,7 +94,7 @@ public sealed class ComprovanteDaInscricaoPublicadaEndpointTests
 
     private static object PedidoDeEnvio(JsonElement rascunho) => new
     {
-        ofertaCursoId = rascunho.GetProperty("ofertas")[0].GetProperty("ofertaCursoOrigemId").GetGuid(),
+        ofertaCursoId = rascunho.GetProperty("escolhasDeCurso").GetProperty("ofertas")[0].GetProperty("ofertaCursoOrigemId").GetGuid(),
         respostas = RespostasDoEnvio(),
         grupos = new { },
         aceites = Array.Empty<object>(),
@@ -138,7 +108,7 @@ public sealed class ComprovanteDaInscricaoPublicadaEndpointTests
         return corpo;
     }
 
-    private static Dictionary<string, object?> RespostasDoEnvio() => new(StringComparer.Ordinal)
+    private static Dictionary<string, object?> RespostasDeIdentificacao() => new(StringComparer.Ordinal)
     {
         ["NOME"] = PersonasDeTeste.NomeFernandaDrumond,
         ["DESEJA_NOME_SOCIAL"] = false,
@@ -152,6 +122,10 @@ public sealed class ComprovanteDaInscricaoPublicadaEndpointTests
         ["NATURALIDADE_UF"] = "PA",
         ["NATURALIDADE_MUNICIPIO"] = "1504208",
         ["NOME_MAE"] = "Maria Drumond",
+    };
+
+    private static Dictionary<string, object?> RespostasComplementares() => new(StringComparer.Ordinal)
+    {
         ["ESTADO_CIVIL"] = "SOLTEIRO",
         ["SEXO"] = "FEMININO",
         ["SEXO_CIVIL"] = "FEMININO",
@@ -163,6 +137,17 @@ public sealed class ComprovanteDaInscricaoPublicadaEndpointTests
         ["TIPO_ENDERECO"] = "URBANO",
         ["ENDERECO_RESIDENCIAL"] = new { cep = "68500000", cidade = new { codigoIbge = "1504208", uf = "PA" } },
     };
+
+    private static Dictionary<string, object?> RespostasDoEnvio()
+    {
+        Dictionary<string, object?> respostas = RespostasDeIdentificacao();
+        foreach ((string codigo, object? valor) in RespostasComplementares())
+        {
+            respostas.Add(codigo, valor);
+        }
+
+        return respostas;
+    }
 
     private async Task<(Guid ProcessoId, Guid VersaoId)> PublicarAsync(DateTimeOffset? fimDasInscricoes)
     {
@@ -180,28 +165,10 @@ public sealed class ComprovanteDaInscricaoPublicadaEndpointTests
     private async Task<Guid> SemearEnviadaAsync(Guid processoId, Guid versaoId)
     {
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-        Inscricao inscricao = Inscricao.Reidratar(
-            Guid.CreateVersion7(), processoId, PersonasDeTeste.FernandaDrumond, Dono, TestAuthHandler.DefaultIssuer, SituacaoInscricao.Submetida, versaoId, null, null,
-            "000321", null, null, null,
-            new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["CPF"] = JsonSerializer.SerializeToElement(PersonasDeTeste.FernandaDrumond.Valor) },
-            new Dictionary<string, JsonElement>(StringComparer.Ordinal),
-            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [],
-            new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal)
-            {
-                ["CPF"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: true),
-            },
-            revisao: 1, DateTimeOffset.UtcNow, null);
+        Inscricao inscricao = InscricaoEnviada(processoId, versaoId);
         IInscricaoRepository repositorio = escopo.ServiceProvider.GetRequiredService<IInscricaoRepository>();
         await repositorio.AdicionarAsync(inscricao);
-        await repositorio.AdicionarComprovanteAsync(ComprovanteInscricao.Emitir(
-            inscricao.Id, "000321", DateTimeOffset.UtcNow, null,
-            new Dictionary<string, JsonElement>(StringComparer.Ordinal)
-            {
-                ["NOME"] = JsonSerializer.SerializeToElement(PersonasDeTeste.NomeFernandaDrumond),
-                ["DESEJA_NOME_SOCIAL"] = JsonSerializer.SerializeToElement(false),
-            },
-            new Dictionary<string, JsonElement>(StringComparer.Ordinal),
-            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [], []));
+        await escopo.ServiceProvider.GetRequiredService<IComprovanteDaInscricaoRepository>().AdicionarComprovanteAsync(Comprovante(inscricao.Id));
         await escopo.ServiceProvider.GetRequiredService<IUnitOfWork>().SalvarAlteracoesAsync();
 
         return inscricao.Id;
@@ -232,11 +199,103 @@ public sealed class ComprovanteDaInscricaoPublicadaEndpointTests
         await using WebApplicationFactory<HostAssemblyMarker> host = HostComGeoQueConfirma();
         using HttpClient client = host.CreateClient();
         using HttpRequestMessage request = new(metodo, new Uri(rota, UriKind.Relative));
+        PrepararRequest(request, recurso);
+        AdicionarCorpoEPrecondicoes(request, corpo, ifMatch, metodo, chave);
+
+        return await client.SendAsync(request);
+    }
+    private static Inscricao InscricaoEnviada(Guid processoId, Guid versaoId)
+    {
+        return Inscricao.Reidratar(Guid.CreateVersion7(), processoId,
+            TitularDaInscricao.Reidratar(PersonasDeTeste.FernandaDrumond, Dono, TestAuthHandler.DefaultIssuer),
+            EstadoDaInscricao.Reidratar(SituacaoInscricao.Submetida, "000321", CancelamentoDaInscricao.Reidratar(null, null, null)),
+            FormularioDaInscricao.Reidratar(versaoId, PreenchimentoDoCandidato.Criar(OpcoesDeCursoDaInscricao.Reidratar(null, null), new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["CPF"] = JsonSerializer.SerializeToElement(PersonasDeTeste.FernandaDrumond.Valor) }, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), []),
+                new Dictionary<string, JsonElement>(StringComparer.Ordinal), new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal)
+                {
+                    ["CPF"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: true),
+                }), 1, new Unifesspa.UniPlus.Selecao.Domain.ValueObjects.DatasDeGravacaoDaInscricao(default, null));
+    }
+
+    private static ComprovanteInscricao Comprovante(Guid inscricaoId) =>
+        ComprovanteInscricao.Emitir(
+            inscricaoId, "000321", DateTimeOffset.UtcNow, null,
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+            {
+                ["NOME"] = JsonSerializer.SerializeToElement(PersonasDeTeste.NomeFernandaDrumond),
+                ["DESEJA_NOME_SOCIAL"] = JsonSerializer.SerializeToElement(false),
+            },
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal),
+            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [], []);
+
+    private static void ConferirIdentificacaoDoComprovante(JsonElement raiz, Guid inscricaoId, Guid processoId)
+    {
+        JsonElement inscricao = raiz.GetProperty("inscricao");
+        inscricao.GetProperty("inscricaoId").GetGuid().Should().Be(inscricaoId);
+        (inscricao.GetProperty("numero").GetInt32(), inscricao.GetProperty("total").GetInt32(), inscricao.GetProperty("vale").GetBoolean()).Should().Be((1, 1, true));
+        raiz.GetProperty("processo").GetProperty("processoSeletivoId").GetGuid().Should().Be(processoId);
+        inscricao.GetProperty("envio").GetProperty("numeroInscricao").GetString().Should().Be("000321");
+        inscricao.GetProperty("envio").GetProperty("fusoHorario").GetProperty("id").GetString().Should().NotBeNullOrEmpty();
+        raiz.GetProperty("candidato").GetProperty("cpfMascarado").GetString().Should().Be(PersonasDeTeste.FernandaDrumond.Mascarado);
+        raiz.GetProperty("candidato").GetProperty("nomeCivil").GetString().Should().Be(PersonasDeTeste.NomeFernandaDrumond);
+        ConferirListasDoComprovante(raiz);
+        raiz.GetProperty("escolhasDeCurso").GetProperty("numeroDeOpcoesDeCurso").GetInt32().Should().BeGreaterThan(0);
+    }
+
+    private static void ConferirListasDoComprovante(JsonElement raiz)
+    {
+        raiz.GetProperty("escolhasDeCurso").GetProperty("opcoesDeCurso").ValueKind.Should().Be(JsonValueKind.Array);
+        JsonElement formulario = raiz.GetProperty("formulario");
+        foreach (string lista in new[] { "secoes", "derivados", "termosAceitos", "documentos" })
+        {
+            formulario.GetProperty(lista).ValueKind.Should().Be(JsonValueKind.Array, $"{lista} é obrigatório no contrato");
+        }
+    }
+
+    private async Task<JsonElement> IniciarAsync(Guid processoId)
+    {
+        using HttpResponseMessage iniciada = await EnviarAsync(HttpMethod.Post, $"/api/selecao/processos-seletivos/{processoId}/inscricao", "inscricao", null, null, null);
+        JsonElement rascunho = await iniciada.Content.ReadFromJsonAsync<JsonElement>();
+        iniciada.StatusCode.Should().Be(HttpStatusCode.OK, rascunho.ToString());
+        return rascunho;
+    }
+
+    private async Task ConferirReciboRepetidoAsync(HttpResponseMessage primeira, HttpResponseMessage repetida, Guid inscricaoId)
+    {
+        string reciboDaPrimeira = await primeira.Content.ReadAsStringAsync();
+        primeira.StatusCode.Should().Be(HttpStatusCode.OK, reciboDaPrimeira);
+        repetida.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await repetida.Content.ReadAsStringAsync()).Should().Be(reciboDaPrimeira);
+        JsonElement recibo = JsonDocument.Parse(reciboDaPrimeira).RootElement;
+        recibo.GetProperty("inscricaoId").GetGuid().Should().Be(inscricaoId);
+        recibo.GetProperty("numeroDoComprovante").GetInt32().Should().Be(1);
+        await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
+        (await escopo.ServiceProvider.GetRequiredService<IComprovanteDaInscricaoRepository>().ObterEmissoesAsync([inscricaoId])).Should().HaveCount(1);
+    }
+
+    private async Task AvaliarSalvarEEnviarAsync(string rota, JsonElement rascunho, object pedido)
+    {
+        (await EnviarAsync(HttpMethod.Get, rota, "inscricao", null, null, null)).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await EnviarAsync(HttpMethod.Get, $"{rota}/formulario", "formulario-inscricao", null, null, null)).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await EnviarAsync(HttpMethod.Post, $"{rota}/avaliacoes", "avaliacao-da-inscricao", pedido, null, null)).StatusCode.Should().Be(HttpStatusCode.OK);
+        JsonElement salvo = await LerAsync(await EnviarAsync(HttpMethod.Put, rota, "inscricao", pedido, rascunho.GetProperty("eTag").GetString(), null));
+        using HttpResponseMessage semPrecondicao = await EnviarAsync(HttpMethod.Post, $"{rota}/submissao", "recibo-da-inscricao", pedido, null, null);
+        semPrecondicao.StatusCode.Should().Be(HttpStatusCode.PreconditionRequired);
+        (await EnviarAsync(HttpMethod.Post, $"{rota}/submissao", "recibo-da-inscricao", pedido, salvo.GetProperty("eTag").GetString(), null))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+
+    }
+
+    private static void PrepararRequest(HttpRequestMessage request, string recurso)
+    {
         request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
         request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, Dono);
         request.Headers.TryAddWithoutValidation(TestAuthHandler.CpfHeader, PersonasDeTeste.FernandaDrumond.Valor);
         request.Headers.TryAddWithoutValidation(TestAuthHandler.NameHeader, PersonasDeTeste.NomeFernandaDrumond);
         request.Headers.TryAddWithoutValidation("Accept", $"application/vnd.uniplus.{recurso}.v1+json");
+    }
+
+    private static void AdicionarCorpoEPrecondicoes(HttpRequestMessage request, object? corpo, string? ifMatch, HttpMethod metodo, string? chave)
+    {
         if (corpo is not null)
         {
             request.Content = JsonContent.Create(corpo);
@@ -251,7 +310,11 @@ public sealed class ComprovanteDaInscricaoPublicadaEndpointTests
         {
             request.Headers.TryAddWithoutValidation("Idempotency-Key", chave ?? Guid.CreateVersion7().ToString("N"));
         }
+    }
 
-        return await client.SendAsync(request);
+    private static void ConferirRespostaDeComprovante(HttpResponseMessage resposta, string corpo)
+    {
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK, corpo);
+        resposta.Content.Headers.ContentType!.MediaType.Should().Be(Media);
     }
 }

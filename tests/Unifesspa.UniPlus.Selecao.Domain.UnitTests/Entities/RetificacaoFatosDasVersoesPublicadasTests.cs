@@ -188,15 +188,8 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
         FaseCronograma unica = Fase(1, FormularioProcesso.CodigoFaseHabilitacao, coletaInscricao: true);
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: unica);
         processo.DefinirItens([Item("TEM_RENDA", 0)]).IsSuccess.Should().BeTrue();
-        processo.DefinirFormulario(
-                FinalidadeFormulario.Habilitacao, unica.Id, null, FormularioDeTeste.Etapas(FinalidadeFormulario.Habilitacao))
-            .IsSuccess.Should().BeTrue();
-        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [Item("COMPROVANTE", 0)]).IsSuccess.Should().BeTrue();
-        GrafoConfiguracao primeira = VersoesPublicadasDeTeste.DoProcesso(processo);
-        processo.DefinirItens([Item("TEM_RENDA", 0), Item(Novo, 1)]).IsSuccess.Should().BeTrue();
-        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [Item("COMPROVANTE", 0), Item("LAUDO", 1)])
-            .IsSuccess.Should().BeTrue();
-        FatosDasVersoesPublicadas publicadas = VersoesPublicadasDeTeste.SemEixosCongelados([primeira, VersoesPublicadasDeTeste.DoProcesso(processo)]);
+        DefinirHabilitacao(processo, unica);
+        FatosDasVersoesPublicadas publicadas = PublicarComNovosFatos(processo);
 
         DomainError? recusa = FaseEfetivaDoFato.RecusaDeFaseDoGatilho(processo.Declaracao(), fato, unica.Id, finalidade, SemCatalogo, SemCatalogo, publicadas);
 
@@ -268,16 +261,35 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
         processo.DefinirItens([Item("TEM_RENDA", 0)], grupos: [Familia(2, "MEMBRO_RENDA")]).IsSuccess.Should().BeTrue();
         if (comHabilitacao)
         {
-            processo.DefinirFormulario(
-                    FinalidadeFormulario.Habilitacao, habilitacao.Id, null, FormularioDeTeste.Etapas(FinalidadeFormulario.Habilitacao))
-                .IsSuccess.Should().BeTrue();
-            processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [Item("COMPROVANTE", 0)]).IsSuccess.Should().BeTrue();
+            DefinirHabilitacao(processo, habilitacao);
         }
 
-        GrafoConfiguracao primeira = VersoesPublicadasDeTeste.DoProcesso(processo);
-        processo.DefinirItens([Item("TEM_RENDA", 0), Item(Novo, 1)]).IsSuccess.Should().BeTrue();
-        FatosDasVersoesPublicadas publicadas = VersoesPublicadasDeTeste.SemEixosCongelados([primeira, VersoesPublicadasDeTeste.DoProcesso(processo)]);
+        FatosDasVersoesPublicadas publicadas = PublicarComNovoItem(processo);
         return new Cenario(processo, inscricao, habilitacao, matricula, publicadas);
+    }
+
+    private static FatosDasVersoesPublicadas PublicarComNovosFatos(ProcessoSeletivo processo)
+    {
+        ConfiguracaoPublicada primeira = VersoesPublicadasDeTeste.DoProcesso(processo);
+        processo.DefinirItens([Item("TEM_RENDA", 0), Item(Novo, 1)]).IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [Item("COMPROVANTE", 0), Item("LAUDO", 1)])
+            .IsSuccess.Should().BeTrue();
+        return VersoesPublicadasDeTeste.SemEixosCongelados([primeira, VersoesPublicadasDeTeste.DoProcesso(processo)]);
+    }
+
+    private static FatosDasVersoesPublicadas PublicarComNovoItem(ProcessoSeletivo processo)
+    {
+        ConfiguracaoPublicada primeira = VersoesPublicadasDeTeste.DoProcesso(processo);
+        processo.DefinirItens([Item("TEM_RENDA", 0), Item(Novo, 1)]).IsSuccess.Should().BeTrue();
+        return VersoesPublicadasDeTeste.SemEixosCongelados([primeira, VersoesPublicadasDeTeste.DoProcesso(processo)]);
+    }
+
+    private static void DefinirHabilitacao(ProcessoSeletivo processo, FaseCronograma fase)
+    {
+        processo.DefinirFormulario(
+                FinalidadeFormulario.Habilitacao, fase.Id, null, FormularioDeTeste.Etapas(FinalidadeFormulario.Habilitacao))
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [Item("COMPROVANTE", 0)]).IsSuccess.Should().BeTrue();
     }
 
     private static ItemConformidade ItemDoChecklist(Cenario cenario) =>

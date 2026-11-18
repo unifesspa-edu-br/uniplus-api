@@ -27,8 +27,7 @@ public sealed class ArquivosVerificadosNoMesmoInstanteTests
         ApresentacaoDeDocumento apresentacao = ApresentacaoDeDocumento.Criar(InscricaoId, laudo, null);
         ArquivoDaApresentacao[] verificados = [Verificado(apresentacao, laudo, relogio), Verificado(apresentacao, laudo, relogio)];
 
-        ArquivosDaInscricao arquivos = await ArquivosDaInscricao.CarregarAsync(
-            Repositorio(apresentacao, [.. verificados.OrderByDescending(a => a.Id)]), InscricaoId, CancellationToken.None);
+        ArquivosDaInscricao arquivos = await new DocumentosEnviadosDaInscricao(Repositorio(apresentacao, [.. verificados.OrderByDescending(a => a.Id)])).CarregarAsync(InscricaoId, CancellationToken.None);
 
         arquivos.Verificados().Select(a => a.ArquivoId).Should().Equal(verificados.Select(a => a.Id).Order());
     }
