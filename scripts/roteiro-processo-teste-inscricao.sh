@@ -185,7 +185,7 @@ setup_publicacoes() {
     post_tolerante "/api/publicacoes/admin/tipos-ato" '{
         "codigo": "EDITAL_ABERTURA", "nome": "Edital de abertura",
         "congelaConfiguracao": true, "unicoPorObjeto": true,
-        "efeitoIrreversivel": false, "publicavelComoAvulso": false, "exigeAtoCorrigido": false, "vigenciaInicio": "2020-01-01",
+        "efeitoIrreversivel": false, "ehResultado": false, "publicavelComoAvulso": false, "exigeAtoCorrigido": false, "vigenciaInicio": "2020-01-01",
         "vigenciaFim": null, "baseLegal": null
     }' >/dev/null
     post_tolerante "/api/publicacoes/admin/tipos-ato" '{
@@ -239,8 +239,7 @@ criar_unidade() {
         \"codigo\": \"$sigla\", \"unidadeSuperiorId\": null,
         \"tipo\": \"$tipo\", \"unidadeAcademica\": $academica,
         \"vigenciaInicio\": \"2020-01-01\", \"vigenciaFim\": null,
-        \"cidadeCodigoIbge\": \"1504208\", \"cidadeNome\": \"Marabá\", \"cidadeUf\": \"PA\",
-        \"origem\": \"criadoNoUniPlus\"
+        \"cidadeCodigoIbge\": \"1504208\", \"cidadeNome\": \"Marabá\", \"cidadeUf\": \"PA\"
     }")
     [ -z "$id" ] && id=$(api_get "/api/organizacao/unidades?limit=100" | jq -r --arg c "$sigla" '.[] | select(.codigo==$c) | .id' | head -1)
     exigir_id "unidade $sigla" "$id"
@@ -728,8 +727,7 @@ escolher_motivo_da_homologacao() {
         motivo_id=$(buscar_motivo_da_homologacao)
     fi
     exigir_id "motivo da homologação" "$motivo_id"
-    api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/fases/$FASE_RESULTADO_ID/motivos-de-decisao/$motivo_id" \
-        '{"justificativa": null}' >/dev/null
+    api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/fases/$FASE_RESULTADO_ID/motivos-de-decisao/$motivo_id" >/dev/null
     ok "motivo da homologação escolhido"
 }
 
@@ -890,7 +888,7 @@ conferir_resultado() {
     log "Conferindo o resultado"
     local snapshot formulario tentativa
     snapshot=$(api_get "/api/selecao/processos-seletivos/$PROCESSO_ID/snapshot-vigente")
-    echo "$snapshot" | jq -r '{numero, divulgacao: .configuracao.divulgacao} // .' >&2
+    echo "$snapshot" | jq -r '{identificadorLegivel: .configuracao.identificadorLegivel, divulgacao: .configuracao.divulgacao}' >&2
 
     # A projeção da vitrine é assíncrona — alguns segundos depois do 204.
     for tentativa in 1 2 3 4 5; do
