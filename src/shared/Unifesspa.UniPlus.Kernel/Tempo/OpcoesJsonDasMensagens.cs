@@ -3,11 +3,15 @@ namespace Unifesspa.UniPlus.Kernel.Tempo;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 /// <summary>
-/// O contrato de instantes das mensagens que os processos trocam por JSON: todo instante é lido em microssegundos,
-/// como o banco o persiste, e todo instante não anulável é obrigatório no corpo. Sem a obrigatoriedade, uma mensagem
-/// sem o instante seria aceita com <see cref="DateTimeOffset.MinValue"/>, e o consumidor decidiria sobre um instante
-/// que ninguém informou. A mensagem sem o instante é recusada na leitura, antes de chegar ao consumidor.
+/// O contrato JSON das mensagens que os processos trocam: todo enum que declara código circula pelo código, e a leitura
+/// recusa o código desconhecido (<see cref="CodigoDeContratoJsonConverterFactory"/>); todo instante é lido em
+/// microssegundos, como o banco o persiste, e todo instante não anulável é obrigatório no corpo. Sem a
+/// obrigatoriedade, uma mensagem sem o instante seria aceita com <see cref="DateTimeOffset.MinValue"/>, e o consumidor
+/// decidiria sobre um instante que ninguém informou. A mensagem sem o instante é recusada na leitura, antes de chegar ao
+/// consumidor.
 /// </summary>
 /// <remarks>
 /// A obrigatoriedade vale para a propriedade que o serializador consegue preencher (<c>set</c> ou <c>init</c>, o que
@@ -23,6 +27,8 @@ public static class OpcoesJsonDasMensagens
         ArgumentNullException.ThrowIfNull(opcoes);
 
         opcoes.Converters.Add(new InstanteEmMicrossegundosJsonConverter());
+        // À frente de qualquer conversor de enum por nome: o serializador usa o primeiro conversor que aceita o tipo.
+        opcoes.Converters.Insert(0, new CodigoDeContratoJsonConverterFactory());
         opcoes.TypeInfoResolver = (opcoes.TypeInfoResolver ?? new DefaultJsonTypeInfoResolver())
             .WithAddedModifier(ExigirInstanteNaoAnulavel);
     }
