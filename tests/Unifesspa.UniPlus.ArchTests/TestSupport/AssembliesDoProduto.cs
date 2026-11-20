@@ -17,6 +17,7 @@ internal static class AssembliesDoProduto
         typeof(Unifesspa.UniPlus.Kernel.Domain.Cidades.CidadeReferenciaErrorCodes).Assembly,
         typeof(Unifesspa.UniPlus.Regras.Entradas.EntradaDeRegras).Assembly,
         typeof(Unifesspa.UniPlus.Host.DesignTimeServices).Assembly,
+        typeof(Unifesspa.UniPlus.Monolito.Persistencia.MonolitoDbContext).Assembly,
         typeof(Unifesspa.UniPlus.Verificador.Antivirus.ClamdClient).Assembly,
         typeof(Unifesspa.UniPlus.Verificador.Contratos.DestinoDoResultado).Assembly,
         typeof(Unifesspa.UniPlus.Autorizacao.API.AutorizacaoApiAssemblyMarker).Assembly,
