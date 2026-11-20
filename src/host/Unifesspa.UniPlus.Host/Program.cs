@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Cors;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Email;
 using Unifesspa.UniPlus.Infrastructure.Core.HealthChecks;
+using Unifesspa.UniPlus.Infrastructure.Core.Hosting;
 using Unifesspa.UniPlus.Infrastructure.Core.Logging;
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
@@ -66,6 +67,9 @@ builder.Services.Configure<Microsoft.AspNetCore.Mvc.MvcOptions>(
     options => options.Conventions.Add(new Unifesspa.UniPlus.Infrastructure.Core.Routing.ModuleRoutePrefixConvention()));
 
 // --- Cross-cutting compartilhado (registrado uma vez no host) ---
+// Confere os códigos dos enums de todo projeto do Uni+ que o host alcança, antes de o host iniciar o servidor HTTP, os
+// consumidores e o runtime do Wolverine (ADR-0176).
+builder.Services.AddConferenciaDosEnumsDeContrato(typeof(Program).Assembly);
 builder.Services.AddDomainErrorMapper(builder.Configuration);
 builder.Services.AddUniPlusEncryption(builder.Configuration);
 builder.Services.AddCursorPagination(builder.Configuration);

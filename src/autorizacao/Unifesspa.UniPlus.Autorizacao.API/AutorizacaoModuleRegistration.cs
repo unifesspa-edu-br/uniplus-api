@@ -9,11 +9,9 @@ using Unifesspa.UniPlus.Autorizacao.API.Errors;
 using Unifesspa.UniPlus.Autorizacao.API.Rotinas;
 using Unifesspa.UniPlus.Autorizacao.Application;
 using Unifesspa.UniPlus.Autorizacao.Application.Monitoramento;
-using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
 /// Registro self-describing do módulo Autorização para o composition root do monólito
@@ -39,13 +37,12 @@ public static class AutorizacaoModuleRegistration
         return services;
     }
 
-    // O que o módulo publica para fora: o documento OpenAPI 3.1 (ADR-0030), com spec em /openapi/autorizacao.json, o
-    // mapeamento dos erros de domínio e os códigos dos enums. Uma declaração de código inválida impede a subida do módulo.
+    // O que o módulo publica para fora: o documento OpenAPI 3.1 (ADR-0030), com spec em /openapi/autorizacao.json, e o
+    // mapeamento dos erros de domínio. A conferência dos códigos dos enums é do executável que compõe o módulo.
     private static void AddContratoPublicado(IServiceCollection services, IConfiguration configuration)
     {
         services.AddUniPlusOpenApi(AutorizacaoApiAssemblyMarker.ModuleName, configuration);
         services.AddSingleton<IDomainErrorRegistration, AutorizacaoDomainErrorRegistration>();
-        EnumsDeContrato.ConferirEnumsDe([typeof(SituacaoDoAcessoDoPerfil).Assembly]);
     }
 
     private static void AddRotinas(IServiceCollection services)
