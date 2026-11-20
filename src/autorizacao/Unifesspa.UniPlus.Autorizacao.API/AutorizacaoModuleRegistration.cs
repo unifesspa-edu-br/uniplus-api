@@ -45,7 +45,7 @@ public static class AutorizacaoModuleRegistration
     {
         services.AddUniPlusOpenApi(AutorizacaoApiAssemblyMarker.ModuleName, configuration);
         services.AddSingleton<IDomainErrorRegistration, AutorizacaoDomainErrorRegistration>();
-        EnumsDeContrato.ConferirEnumsDe(typeof(SituacaoDoAcessoDoPerfil).Assembly);
+        EnumsDeContrato.ConferirEnumsDe([typeof(SituacaoDoAcessoDoPerfil).Assembly]);
     }
 
     private static void AddRotinas(IServiceCollection services)

@@ -10,20 +10,38 @@ using System.Runtime.ExceptionServices;
 public static class EnumsDeContrato
 {
     /// <summary>
-    /// Confere todos os enums do assembly em que algum membro declara <see cref="CodigoDeContratoAttribute"/>, juntando
-    /// os defeitos de todos eles.
+    /// Confere todos os enums, em todos os assemblies recebidos, em que algum membro declara
+    /// <see cref="CodigoDeContratoAttribute"/>, juntando os defeitos de todos eles numa só exceção. O assembly que
+    /// aparece mais de uma vez é conferido uma vez só.
     /// </summary>
     /// <exception cref="CodigosDeContratoInvalidosException">Algum enum é inválido.</exception>
-    public static void ConferirEnumsDe(Assembly assembly)
+    public static void ConferirEnumsDe(IEnumerable<Assembly> assemblies)
     {
-        ArgumentNullException.ThrowIfNull(assembly);
+        ArgumentNullException.ThrowIfNull(assemblies);
 
-        List<string> defeitos = [.. assembly.GetTypes().Where(DeclaraCodigos).SelectMany(DefeitosDe)];
+        List<string> defeitos =
+        [
+            .. assemblies.Distinct().SelectMany(static a => a.GetTypes()).Where(EhEnumQueDeclaraCodigo).SelectMany(DefeitosDe),
+        ];
 
         if (defeitos.Count > 0)
         {
             throw new CodigosDeContratoInvalidosException(defeitos);
         }
+    }
+
+    /// <summary>
+    /// Diz se o tipo é um enum em que algum membro declara <see cref="CodigoDeContratoAttribute"/>. O enum em que só
+    /// parte dos membros declara também conta: é a conferência que acusa os membros sem código. O tipo anulável de um
+    /// enum não é enum: quem varre propriedades desembrulha o tipo antes de perguntar.
+    /// </summary>
+    public static bool EhEnumQueDeclaraCodigo(Type tipo)
+    {
+        ArgumentNullException.ThrowIfNull(tipo);
+
+        return tipo.IsEnum
+            && tipo.GetFields(BindingFlags.Public | BindingFlags.Static)
+                .Any(static campo => campo.IsDefined(typeof(CodigoDeContratoAttribute), inherit: false));
     }
 
     /// <summary>Os códigos declarados pelo enum, na ordem em que ele declara os membros.</summary>
@@ -85,9 +103,4 @@ public static class EnumsDeContrato
             throw;
         }
     }
-
-    private static bool DeclaraCodigos(Type tipo) =>
-        tipo.IsEnum
-        && tipo.GetFields(BindingFlags.Public | BindingFlags.Static)
-            .Any(static campo => campo.IsDefined(typeof(CodigoDeContratoAttribute), inherit: false));
 }
