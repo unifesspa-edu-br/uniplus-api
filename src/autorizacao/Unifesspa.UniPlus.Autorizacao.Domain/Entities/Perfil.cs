@@ -102,6 +102,27 @@ public sealed class Perfil : EntityBase
     public bool TemComposicaoEmVigor => Governanca is not null || VersaoVigente is not null;
 
     /// <summary>
+    /// A suspensão aberta prevalece sobre a composição em vigor. A desativação não altera a situação.
+    /// </summary>
+    public SituacaoDoAcessoDoPerfil SituacaoDoAcesso
+    {
+        get
+        {
+            if (SuspensaoAberta is not null)
+            {
+                return SituacaoDoAcessoDoPerfil.Suspenso;
+            }
+
+            if (TemComposicaoEmVigor)
+            {
+                return SituacaoDoAcessoDoPerfil.EmVigor;
+            }
+
+            return SituacaoDoAcessoDoPerfil.SemVersaoEmVigor;
+        }
+    }
+
+    /// <summary>
     /// Códigos das permissões em vigor, ordenados: as da versão vigente no perfil comum, as próprias no perfil de
     /// governança, nenhuma no perfil comum sem vigente. É a única leitura das permissões que decide acesso.
     /// </summary>

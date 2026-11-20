@@ -40,6 +40,17 @@ public sealed class OpenApiEndpointTests : IClassFixture<AutorizacaoApiFactory>
         root.GetProperty("info").GetProperty("version").GetString().Should().Be("1.0.0");
     }
 
+    [Fact(DisplayName = "O componente da situação do acesso explica que a situação é do perfil, e não de cada concessão")]
+    public async Task SituacaoDoAcesso_ExplicaQueEDoPerfilENaoDaConcessao()
+    {
+        using HttpResponseMessage response = await ObterDocumentoAsync();
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+        JsonElement componente = doc.RootElement.GetProperty("components").GetProperty("schemas").GetProperty("SituacaoDoAcessoDoPerfil");
+
+        componente.GetProperty("description").GetString().Should().Contain("não de cada concessão");
+    }
+
     [Fact(DisplayName = "Spec runtime de Autorização bate com baseline committed em contracts/")]
     public async Task SpecRuntime_DeveCasarComBaselineCommitted()
     {

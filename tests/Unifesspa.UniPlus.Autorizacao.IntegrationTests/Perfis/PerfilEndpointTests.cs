@@ -125,6 +125,7 @@ public sealed class PerfilEndpointTests : PerfilEndpointTestBase
         perfil.RootElement.GetProperty("governanca").GetString().Should().Be("gestor-de-acessos");
         perfil.RootElement.GetProperty("composicaoEmVigor").GetProperty("versaoId").ValueKind.Should().Be(JsonValueKind.Null);
         perfil.RootElement.GetProperty("composicaoEmVigor").GetProperty("permissoes").GetArrayLength().Should().BePositive();
+        perfil.RootElement.GetProperty("situacaoDoAcesso").GetProperty("codigo").GetString().Should().Be("em_vigor");
     }
 
     [Fact(DisplayName = "Desativar e reativar alternam o estado do perfil")]
@@ -143,7 +144,7 @@ public sealed class PerfilEndpointTests : PerfilEndpointTestBase
         (await LerAsync(diogo, id)).RootElement.GetProperty("ativo").GetBoolean().Should().BeTrue();
     }
 
-    [Fact(DisplayName = "A listagem resume o perfil com a presença de versão vigente e pendente")]
+    [Fact(DisplayName = "A listagem resume o perfil com a situação do acesso e a presença de versão pendente")]
     public async Task Listar_ResumeAsVersoes()
     {
         using HttpClient diogo = await ClienteDoGestorAsync();
@@ -153,11 +154,54 @@ public sealed class PerfilEndpointTests : PerfilEndpointTestBase
         JsonElement[] itens = await ListarTudoAsync(diogo);
 
         JsonElement vigente = itens.Single(i => i.GetProperty("id").GetGuid() == comVigente);
-        vigente.GetProperty("temVersaoVigente").GetBoolean().Should().BeTrue();
+        vigente.GetProperty("situacaoDoAcesso").GetProperty("codigo").GetString().Should().Be("em_vigor");
+        vigente.GetProperty("situacaoDoAcesso").GetProperty("rotulo").GetString().Should().NotBeNullOrWhiteSpace();
+        vigente.TryGetProperty("temVersaoVigente", out _).Should().BeFalse();
         vigente.GetProperty("temVersaoPendente").GetBoolean().Should().BeFalse();
         JsonElement pendente = itens.Single(i => i.GetProperty("id").GetGuid() == semVigente);
-        pendente.GetProperty("temVersaoVigente").GetBoolean().Should().BeFalse();
+        pendente.GetProperty("situacaoDoAcesso").GetProperty("codigo").GetString().Should().Be("sem_versao_em_vigor");
         pendente.GetProperty("temVersaoPendente").GetBoolean().Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Perfil suspenso aparece como suspenso na listagem e no detalhe")]
+    public async Task PerfilSuspenso_AparecemComoSuspenso()
+    {
+        using HttpClient diogo = await ClienteDoGestorAsync();
+        Guid id = await SemearPerfilVigenteAsync(ConsultarCatalogo);
+        await SuspenderAsync(diogo, id);
+
+        await ConferirSuspensoAsync(diogo, id, ativo: true);
+    }
+
+    [Fact(DisplayName = "Perfil suspenso e desativado aparece como suspenso na listagem e no detalhe")]
+    public async Task PerfilSuspensoEDesativado_AparecemComoSuspenso()
+    {
+        using HttpClient diogo = await ClienteDoGestorAsync();
+        Guid id = await SemearPerfilVigenteAsync(ConsultarCatalogo);
+        await SuspenderAsync(diogo, id);
+        using HttpResponseMessage desativada = await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/desativacao", new { motivo = "Desativado para o teste." });
+        desativada.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        await ConferirSuspensoAsync(diogo, id, ativo: false);
+    }
+
+    private static async Task SuspenderAsync(HttpClient gestor, Guid id)
+    {
+        using HttpResponseMessage suspensa = await EnviarAsync(gestor, HttpMethod.Post, $"{Rota}/{id}/suspensao", new { motivo = "Suspenso para o teste." });
+        suspensa.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    private static async Task ConferirSuspensoAsync(HttpClient gestor, Guid id, bool ativo)
+    {
+        using JsonDocument detalhe = await LerAsync(gestor, id);
+        JsonElement listado = (await ListarTudoAsync(gestor)).Single(i => i.GetProperty("id").GetGuid() == id);
+
+        foreach (JsonElement perfil in new[] { detalhe.RootElement, listado })
+        {
+            perfil.GetProperty("ativo").GetBoolean().Should().Be(ativo);
+            perfil.GetProperty("situacaoDoAcesso").GetProperty("codigo").GetString().Should().Be("suspenso");
+            perfil.GetProperty("suspensao").ValueKind.Should().Be(JsonValueKind.Object);
+        }
     }
 
     [Fact(DisplayName = "Perfil inexistente devolve 404 com o código de erro")]

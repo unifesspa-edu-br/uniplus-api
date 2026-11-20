@@ -1,9 +1,13 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+
 /// <summary>Perfil de acesso como a API o expõe.</summary>
 /// <param name="Nome">O nome corrente: o da versão vigente ou, sem vigente, o da pendente.</param>
 /// <param name="Governanca">Papel de governança do perfil de sistema (<c>gestor-de-acessos</c>, <c>representante-do-controlador</c> ou <c>encarregado-de-dados</c>); nulo nos perfis comuns.</param>
 /// <param name="Sensibilidade">A mais alta entre as permissões da composição em vigor (sem vigente, da pendente), derivada do catálogo.</param>
+/// <param name="SituacaoDoAcesso">Situação do acesso do perfil, como o enum <see cref="SituacaoDoAcessoDoPerfil"/> a explica.</param>
 /// <param name="ComposicaoEmVigor">O que decide acesso hoje; nulo no perfil comum sem versão vigente.</param>
 /// <param name="VersaoPendente">A versão que espera a aprovação; nula quando não há.</param>
 /// <param name="UltimaVersaoEncerradaSemVigor">Preenchida quando a versão mais recente do perfil terminou sem entrar em vigor.</param>
@@ -16,6 +20,7 @@ public sealed record PerfilDto(
     bool Ativo,
     string? Governanca,
     string Sensibilidade,
+    CodigoComRotulo<SituacaoDoAcessoDoPerfil> SituacaoDoAcesso,
     ComposicaoEmVigorDto? ComposicaoEmVigor,
     VersaoPendenteDto? VersaoPendente,
     UltimaVersaoEncerradaSemVigorDto? UltimaVersaoEncerradaSemVigor,
@@ -24,7 +29,7 @@ public sealed record PerfilDto(
     RevisaoDoPerfilDto? RevisaoDasConcessoes = null);
 
 /// <summary>Perfil de acesso como a listagem o resume.</summary>
-/// <param name="TemVersaoVigente">O perfil comum tem composição em vigor; o de governança dispensa a versão e a tem sempre.</param>
+/// <param name="SituacaoDoAcesso">Situação do acesso do perfil, como o enum <see cref="SituacaoDoAcessoDoPerfil"/> a explica.</param>
 /// <param name="TemVersaoPendente">Há versão esperando a aprovação.</param>
 /// <param name="Suspensao">A suspensão aberta; nula quando o perfil não está suspenso.</param>
 /// <param name="DesativadoDesde">Quando o perfil foi desativado; nulo quando está ativo.</param>
@@ -35,7 +40,7 @@ public sealed record PerfilListadoDto(
     bool Ativo,
     string? Governanca,
     string Sensibilidade,
-    bool TemVersaoVigente,
+    CodigoComRotulo<SituacaoDoAcessoDoPerfil> SituacaoDoAcesso,
     bool TemVersaoPendente,
     SuspensaoDoPerfilDto? Suspensao,
     DateTimeOffset? DesativadoDesde);

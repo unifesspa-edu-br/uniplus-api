@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Authorization.Enums;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
@@ -23,6 +24,7 @@ public static class PerfilMapping
             perfil.Ativo,
             perfil.Governanca?.ToCodigo(),
             ValoresCanonicos.De(SensibilidadeDoPerfil(perfil, catalogo)),
+            CodigoComRotulo<SituacaoDoAcessoDoPerfil>.De(perfil.SituacaoDoAcesso),
             ComposicaoDe(perfil, catalogo),
             VersaoMapping.PendenteDe(perfil, catalogo, leitor),
             VersaoMapping.UltimaEncerradaSemVigorDe(perfil),
@@ -37,7 +39,7 @@ public static class PerfilMapping
             perfil.Ativo,
             perfil.Governanca?.ToCodigo(),
             ValoresCanonicos.De(SensibilidadeDoPerfil(perfil, catalogo)),
-            perfil.TemComposicaoEmVigor,
+            CodigoComRotulo<SituacaoDoAcessoDoPerfil>.De(perfil.SituacaoDoAcesso),
             perfil.VersaoPendente is not null,
             SuspensaoDe(perfil, catalogo),
             perfil.DesativacaoAberta?.DesativadaEm);
