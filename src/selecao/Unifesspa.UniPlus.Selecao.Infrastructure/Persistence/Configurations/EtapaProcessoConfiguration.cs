@@ -11,11 +11,12 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaProcesso>
 {
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    private static readonly JsonSerializerOptions JsonOptions = OpcoesJsonDeDocumento.Criar(new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
 
     private static readonly ValueConverter<IReadOnlyList<NivelDeAtendimento>?, string> EscalaConverter =
         new(

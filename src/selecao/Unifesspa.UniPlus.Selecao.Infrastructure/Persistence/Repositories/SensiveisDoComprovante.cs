@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Cryptography;
 
@@ -14,6 +15,8 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Cryptography;
 /// </summary>
 internal sealed class SensiveisDoComprovante
 {
+    private static readonly JsonSerializerOptions OpcoesJson = OpcoesJsonDeDocumento.Criar(new());
+
     private readonly IUniPlusEncryptionService _encryption;
     private readonly IUniPlusBlindIndexService _blindIndex;
 
@@ -34,7 +37,7 @@ internal sealed class SensiveisDoComprovante
             return;
         }
 
-        byte[] plano = JsonSerializer.SerializeToUtf8Bytes(comprovante.RespostasSensiveis);
+        byte[] plano = JsonSerializer.SerializeToUtf8Bytes(comprovante.RespostasSensiveis, OpcoesJson);
         byte[] cifrados = await _encryption
             .EncryptAsync(SelecaoEncryptionKeys.SensiveisAesGcm, plano, cancellationToken).ConfigureAwait(false);
         comprovante.GuardarSensiveisCifrados(cifrados, await HmacAsync(comprovante.Id, plano, cancellationToken).ConfigureAwait(false));
@@ -56,6 +59,11 @@ internal sealed class SensiveisDoComprovante
         byte[] plano = await _encryption.DecryptAsync(SelecaoEncryptionKeys.SensiveisAesGcm, cifrados, cancellationToken).ConfigureAwait(false);
         await ConferirVinculoAsync(comprovante.Id, plano, hmac, cancellationToken).ConfigureAwait(false);
         comprovante.RestaurarSensiveis(Ler(comprovante.Id, plano));
+        ConferirIntegridade(comprovante);
+    }
+
+    private static void ConferirIntegridade(ComprovanteInscricao comprovante)
+    {
         if (!comprovante.IntegridadeConfere())
         {
             throw new InvalidOperationException($"Os fatos sensíveis restaurados do comprovante {comprovante.Id} não são os que o hash dele cobre.");
@@ -72,7 +80,7 @@ internal sealed class SensiveisDoComprovante
     }
 
     private static Dictionary<string, JsonElement> Ler(Guid comprovanteId, byte[] plano) =>
-        JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(plano)
+        JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(plano, OpcoesJson)
         ?? throw new InvalidOperationException($"As respostas sensíveis do comprovante {comprovanteId} decifradas não são um objeto JSON.");
 
     /// <summary>O HMAC do id do comprovante e dos valores sensíveis, exatamente como foram cifrados.</summary>

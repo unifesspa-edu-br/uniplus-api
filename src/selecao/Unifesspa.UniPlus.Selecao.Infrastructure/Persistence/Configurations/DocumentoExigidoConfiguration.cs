@@ -13,6 +13,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
@@ -42,7 +43,7 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
     private const int IdadeMaximaUnidadeMaxLength = 10;
     private const int IdadeMaximaReferenciaTipoMaxLength = 20;
 
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    private static readonly JsonSerializerOptions JsonOptions = OpcoesJsonDeDocumento.Criar(new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
 
     public void Configure(EntityTypeBuilder<DocumentoExigido> builder)
     {

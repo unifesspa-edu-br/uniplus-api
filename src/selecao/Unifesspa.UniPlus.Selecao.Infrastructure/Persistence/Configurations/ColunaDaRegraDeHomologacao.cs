@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Serializacao;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -29,12 +30,12 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscrico
 /// </remarks>
 internal static class ColunaDaRegraDeHomologacao
 {
-    private static readonly JsonSerializerOptions Opcoes = new(JsonSerializerDefaults.Web)
+    private static readonly JsonSerializerOptions Opcoes = OpcoesJsonDeDocumento.Criar(new(JsonSerializerDefaults.Web)
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
         AllowDuplicateProperties = false,
-    };
+    });
 
     private static readonly string[] ChavesDoAtomo = ["fato", "operador", "valor"];
 

@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +8,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -17,13 +17,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// Configuração EF Core de <see cref="ConfiguracaoTaxaInscricao"/> (issue #1112) — entidade 1:1
 /// do agregado <see cref="ProcessoSeletivo"/>.
 /// </summary>
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class ConfiguracaoTaxaInscricaoConfiguration : IEntityTypeConfiguration<ConfiguracaoTaxaInscricao>
 {
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    private static readonly JsonSerializerOptions JsonOptions = OpcoesJsonDeDocumento.Criar(new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
 
     public void Configure(EntityTypeBuilder<ConfiguracaoTaxaInscricao> builder)
     {

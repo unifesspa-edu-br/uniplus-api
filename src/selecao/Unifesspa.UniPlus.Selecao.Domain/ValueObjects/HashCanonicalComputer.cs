@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
@@ -59,16 +60,17 @@ public static class HashCanonicalComputer
     /// <see cref="JsonStringEnumConverter"/> garante que <see cref="CategoriaObrigatoriedade"/>
     /// e enums futuros entrem no payload pelo nome textual, não pelo ordinal — a
     /// renumeração de enum (acrescentar valor no meio) não muda o hash de regras
-    /// existentes, preservando o histórico de auditoria.
+    /// existentes, preservando o histórico de auditoria. O enum que declara código de contrato entra pelo código
+    /// declarado, porque o conversor de códigos fica à frente do <see cref="JsonStringEnumConverter"/>.
     /// </para>
     /// </remarks>
-    public static readonly JsonSerializerOptions CanonicalOptions = new()
+    public static readonly JsonSerializerOptions CanonicalOptions = OpcoesJsonDeDocumento.Criar(new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         WriteIndented = false,
         Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) },
-    };
+    });
 
     /// <summary>
     /// Calcula o hash canônico a partir dos campos semânticos da regra.

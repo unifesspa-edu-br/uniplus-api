@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -19,12 +20,10 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
 /// documento, e as respostas de cifra individual vão cifradas em <c>SensiveisCifrados</c> pelo
 /// repositório — o EF não cifra, porque a cifra é assíncrona.
 /// </summary>
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class ComprovanteInscricaoConfiguration : IEntityTypeConfiguration<ComprovanteInscricao>
 {
+    private static readonly JsonSerializerOptions OpcoesJson = OpcoesJsonDeDocumento.Criar(new());
+
     public void Configure(EntityTypeBuilder<ComprovanteInscricao> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -117,52 +116,52 @@ internal sealed class ComprovanteInscricaoConfiguration : IEntityTypeConfigurati
     }
 
     private static readonly ValueConverter<IReadOnlyDictionary<string, JsonElement>, string> RespostasConverter =
-        new(valor => JsonSerializer.Serialize(valor, (JsonSerializerOptions?)null),
-            json => JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json, (JsonSerializerOptions?)null)!);
+        new(valor => JsonSerializer.Serialize(valor, OpcoesJson),
+            json => JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json, OpcoesJson)!);
 
     private static readonly ValueComparer<IReadOnlyDictionary<string, JsonElement>> RespostasComparer =
         new(
-            (a, b) => JsonSerializer.Serialize(a, (JsonSerializerOptions?)null) == JsonSerializer.Serialize(b, (JsonSerializerOptions?)null),
-            v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null).GetHashCode(StringComparison.Ordinal),
-            v => JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(JsonSerializer.Serialize(v, (JsonSerializerOptions?)null), (JsonSerializerOptions?)null)!);
+            (a, b) => JsonSerializer.Serialize(a, OpcoesJson) == JsonSerializer.Serialize(b, OpcoesJson),
+            v => JsonSerializer.Serialize(v, OpcoesJson).GetHashCode(StringComparison.Ordinal),
+            v => JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(JsonSerializer.Serialize(v, OpcoesJson), OpcoesJson)!);
 
     private static readonly ValueConverter<IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>, string> GruposConverter =
-        new(valor => JsonSerializer.Serialize(valor, (JsonSerializerOptions?)null),
-            json => JsonSerializer.Deserialize<Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>>(json, (JsonSerializerOptions?)null)!);
+        new(valor => JsonSerializer.Serialize(valor, OpcoesJson),
+            json => JsonSerializer.Deserialize<Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>>(json, OpcoesJson)!);
 
     private static readonly ValueComparer<IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>> GruposComparer =
         new(
-            (a, b) => JsonSerializer.Serialize(a, (JsonSerializerOptions?)null) == JsonSerializer.Serialize(b, (JsonSerializerOptions?)null),
-            v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null).GetHashCode(StringComparison.Ordinal),
-            v => JsonSerializer.Deserialize<Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>>(JsonSerializer.Serialize(v, (JsonSerializerOptions?)null), (JsonSerializerOptions?)null)!);
+            (a, b) => JsonSerializer.Serialize(a, OpcoesJson) == JsonSerializer.Serialize(b, OpcoesJson),
+            v => JsonSerializer.Serialize(v, OpcoesJson).GetHashCode(StringComparison.Ordinal),
+            v => JsonSerializer.Deserialize<Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>>(JsonSerializer.Serialize(v, OpcoesJson), OpcoesJson)!);
 
     private static readonly ValueConverter<IReadOnlyList<ModalidadeDeConcorrencia>?, string?> ModalidadesConverter =
-        new(valor => valor == null ? null : JsonSerializer.Serialize(valor, (JsonSerializerOptions?)null),
-            json => json == null ? null : JsonSerializer.Deserialize<List<ModalidadeDeConcorrencia>>(json, (JsonSerializerOptions?)null));
+        new(valor => valor == null ? null : JsonSerializer.Serialize(valor, OpcoesJson),
+            json => json == null ? null : JsonSerializer.Deserialize<List<ModalidadeDeConcorrencia>>(json, OpcoesJson));
 
     private static readonly ValueComparer<IReadOnlyList<ModalidadeDeConcorrencia>?> ModalidadesComparer =
         new(
-            (a, b) => JsonSerializer.Serialize(a, (JsonSerializerOptions?)null) == JsonSerializer.Serialize(b, (JsonSerializerOptions?)null),
-            v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null).GetHashCode(StringComparison.Ordinal),
-            v => v == null ? null : JsonSerializer.Deserialize<List<ModalidadeDeConcorrencia>>(JsonSerializer.Serialize(v, (JsonSerializerOptions?)null), (JsonSerializerOptions?)null));
+            (a, b) => JsonSerializer.Serialize(a, OpcoesJson) == JsonSerializer.Serialize(b, OpcoesJson),
+            v => JsonSerializer.Serialize(v, OpcoesJson).GetHashCode(StringComparison.Ordinal),
+            v => v == null ? null : JsonSerializer.Deserialize<List<ModalidadeDeConcorrencia>>(JsonSerializer.Serialize(v, OpcoesJson), OpcoesJson));
 
     private static readonly ValueConverter<IReadOnlyList<AceiteDeTermo>, string> AceitesConverter =
-        new(valor => JsonSerializer.Serialize(valor, (JsonSerializerOptions?)null),
-            json => JsonSerializer.Deserialize<List<AceiteDeTermo>>(json, (JsonSerializerOptions?)null)!);
+        new(valor => JsonSerializer.Serialize(valor, OpcoesJson),
+            json => JsonSerializer.Deserialize<List<AceiteDeTermo>>(json, OpcoesJson)!);
 
     private static readonly ValueComparer<IReadOnlyList<AceiteDeTermo>> AceitesComparer =
         new(
-            (a, b) => JsonSerializer.Serialize(a, (JsonSerializerOptions?)null) == JsonSerializer.Serialize(b, (JsonSerializerOptions?)null),
-            v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null).GetHashCode(StringComparison.Ordinal),
-            v => JsonSerializer.Deserialize<List<AceiteDeTermo>>(JsonSerializer.Serialize(v, (JsonSerializerOptions?)null), (JsonSerializerOptions?)null)!);
+            (a, b) => JsonSerializer.Serialize(a, OpcoesJson) == JsonSerializer.Serialize(b, OpcoesJson),
+            v => JsonSerializer.Serialize(v, OpcoesJson).GetHashCode(StringComparison.Ordinal),
+            v => JsonSerializer.Deserialize<List<AceiteDeTermo>>(JsonSerializer.Serialize(v, OpcoesJson), OpcoesJson)!);
 
     private static readonly ValueConverter<IReadOnlyList<DocumentoDoComprovante>, string> DocumentosConverter =
-        new(valor => JsonSerializer.Serialize(valor, (JsonSerializerOptions?)null),
-            json => JsonSerializer.Deserialize<List<DocumentoDoComprovante>>(json, (JsonSerializerOptions?)null)!);
+        new(valor => JsonSerializer.Serialize(valor, OpcoesJson),
+            json => JsonSerializer.Deserialize<List<DocumentoDoComprovante>>(json, OpcoesJson)!);
 
     private static readonly ValueComparer<IReadOnlyList<DocumentoDoComprovante>> DocumentosComparer =
         new(
-            (a, b) => JsonSerializer.Serialize(a, (JsonSerializerOptions?)null) == JsonSerializer.Serialize(b, (JsonSerializerOptions?)null),
-            v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null).GetHashCode(StringComparison.Ordinal),
-            v => JsonSerializer.Deserialize<List<DocumentoDoComprovante>>(JsonSerializer.Serialize(v, (JsonSerializerOptions?)null), (JsonSerializerOptions?)null)!);
+            (a, b) => JsonSerializer.Serialize(a, OpcoesJson) == JsonSerializer.Serialize(b, OpcoesJson),
+            v => JsonSerializer.Serialize(v, OpcoesJson).GetHashCode(StringComparison.Ordinal),
+            v => JsonSerializer.Deserialize<List<DocumentoDoComprovante>>(JsonSerializer.Serialize(v, OpcoesJson), OpcoesJson)!);
 }
