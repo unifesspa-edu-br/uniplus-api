@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 // Mapeia NomeSocial ↔ JSON (jsonb no Postgres) com payload {"nomeCivil","nome"}.
@@ -15,11 +16,11 @@ using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 // do Postgres (`->'nomeCivil'`) sem custo significativo em volumes do CEPS.
 public sealed class NomeSocialValueConverter : ValueConverter<NomeSocial, string>
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
+    private static readonly JsonSerializerOptions JsonOptions = OpcoesJsonDeDocumento.Criar(new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         DefaultIgnoreCondition = JsonIgnoreCondition.Never,
-    };
+    });
 
     public NomeSocialValueConverter()
         : base(
