@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.ArchTests.Hosting;
 
-using System.Diagnostics.CodeAnalysis;
-
 using AwesomeAssertions;
 
 using Microsoft.AspNetCore.Hosting;
@@ -10,9 +8,6 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
-
-using Unifesspa.UniPlus.Host;
-using Unifesspa.UniPlus.Portal.API;
 
 /// <summary>
 /// Fitness test (uniplus-api#419) que trava a invariante de ordem dos
@@ -48,18 +43,10 @@ using Unifesspa.UniPlus.Portal.API;
 /// captura do <see cref="IServiceCollection"/> via <c>ConfigureServices</c>
 /// callback — sem passar pelo pipeline de remoção.</para>
 /// </remarks>
-[Collection(HostsDoProdutoIniciadosEmTeste.Nome)]
 public sealed class MigrationBeforeWolverineRuntimeOrderTests
 {
-    private readonly MigrationOrderFixture _fixture;
-
-    public MigrationBeforeWolverineRuntimeOrderTests(MigrationOrderFixture fixture)
-    {
-        _fixture = fixture;
-    }
-
     public static TheoryData<string> EntryPointKeys =>
-        new(MigrationOrderFixture.RegisteredKeys);
+        new(HostsDoProdutoIniciados.Executaveis);
 
     /// <summary>
     /// DbContexts cuja migration on startup CADA entry point deve registrar. O
@@ -70,8 +57,8 @@ public sealed class MigrationBeforeWolverineRuntimeOrderTests
     /// </summary>
     private static readonly Dictionary<string, string[]> MigrationContextsEsperados = new(StringComparer.Ordinal)
     {
-        [MigrationOrderFixture.UniPlusKey] = ["MonolitoDbContext"],
-        [MigrationOrderFixture.PortalKey] = ["PortalDbContext"],
+        [HostsDoProdutoIniciados.UniPlus] = ["MonolitoDbContext"],
+        [HostsDoProdutoIniciados.Portal] = ["PortalDbContext"],
     };
 
     [Theory(DisplayName = "MigrationHostedService precede WolverineRuntime no IServiceCollection (2 entry points executáveis)")]
@@ -79,7 +66,7 @@ public sealed class MigrationBeforeWolverineRuntimeOrderTests
     public void MigrationRegistradaAntesDeWolverineRuntime(string entryPointKey)
     {
         List<ServiceDescriptor> hostedServices = [..
-            _fixture.GetCapturedSnapshot(entryPointKey).Where(d => d.ServiceType == typeof(IHostedService))];
+            HostsDoProdutoIniciados.Obter(entryPointKey).RegistrosDeServico.Where(d => d.ServiceType == typeof(IHostedService))];
 
         ConferirQueCadaContextoEsperadoTemMigration(hostedServices, entryPointKey);
         int wolverineIndex = ConferirQueOWolverineEstaRegistrado(hostedServices, entryPointKey);
@@ -90,7 +77,7 @@ public sealed class MigrationBeforeWolverineRuntimeOrderTests
     [MemberData(nameof(EntryPointKeys))]
     public void HostOptions_ServicesStartConcurrently_FicaFalse(string entryPointKey)
     {
-        IServiceProvider provider = _fixture.GetCapturedServiceProvider(entryPointKey);
+        IServiceProvider provider = HostsDoProdutoIniciados.Obter(entryPointKey).ProvedorDeServicos;
 
         HostOptions hostOptions = provider.GetRequiredService<IOptions<HostOptions>>().Value;
 
@@ -142,90 +129,6 @@ public sealed class MigrationBeforeWolverineRuntimeOrderTests
                 + "que toquem tabelas do módulo (uniplus-api#419). No entry point "
                 + entryPointKey + ", AddDbContextMigrationsOnStartup<TContext>() precisa preceder UseWolverineOutboxCascading "
                 + "(no host UniPlus, o AddMonolitoPersistencia precede o UseWolverineOutboxCascading consolidado).");
-    }
-}
-
-/// <summary>
-/// Fixture xUnit que materializa as 2 <see cref="WebApplicationFactory{T}"/>
-/// (uma por entry point executável: UniPlus/Portal) uma única vez por coleção
-/// de testes, preservando o custo de inicialização do host. As factories são
-/// <c>IDisposable</c> via composição — não há herança custom (evita pattern
-/// Dispose(bool) sobre tipo abstrato).
-/// </summary>
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit ICollectionFixture<T> exige tipo público para a fixture compartilhada.")]
-public sealed class MigrationOrderFixture : IDisposable
-{
-    public const string UniPlusKey = "UniPlus";
-    public const string PortalKey = "Portal";
-
-    public static IReadOnlyCollection<string> RegisteredKeys { get; } =
-        [UniPlusKey, PortalKey];
-
-    /// <summary>
-    /// Env vars sintéticas aplicadas process-wide via static ctor. Replica o
-    /// pattern do <c>ApiFactoryBase</c> (observabilidade) e dos sentinelas que
-    /// usam <c>Host.CreateDefaultBuilder</c> — em minimal API, overrides via
-    /// <c>ConfigureAppConfiguration</c> chegam tarde demais.
-    /// </summary>
-    static MigrationOrderFixture()
-    {
-        DefinirConnectionStringsSinteticas();
-        DefinirIntegracoesExternas();
-    }
-
-    private static void DefinirConnectionStringsSinteticas()
-    {
-        // Connection strings sintéticas — UseWolverineOutboxCascading e
-        // AddDbContextMigrationsOnStartup registram services lazy; a conexão
-        // só seria tentada no IHostedService.StartAsync, que este teste não
-        // dispara (apenas Build do host para capturar IServiceCollection).
-        // O host UniPlus lê UniPlusDb (contexto único dos módulos e outbox consolidado).
-        // O Portal lê a sua própria.
-        const string fake = "Host=fitness-not-real;Database=fake;Username=u;Password=p";
-        Environment.SetEnvironmentVariable("ConnectionStrings__UniPlusDb", fake);
-        Environment.SetEnvironmentVariable("ConnectionStrings__PortalDb", fake);
-    }
-
-    private static void DefinirIntegracoesExternas()
-    {
-        // Desliga Kafka — sem isto Wolverine tenta iniciar transporte.
-        Environment.SetEnvironmentVariable("Kafka__BootstrapServers", " ");
-
-        // O registro de acesso exige o próprio Kafka para o host subir; o produtor não conecta ao ser construído.
-        Environment.SetEnvironmentVariable("RegistroDeAcesso__Kafka__BootstrapServers", "localhost:9092");
-
-        // O valor do registro de acesso é Avro, e o host exige o Schema Registry para subir; o cliente não conecta ao ser construído.
-        Environment.SetEnvironmentVariable("SchemaRegistry__Url", "http://localhost:8081/apis/ccompat/v7");
-
-        // OpenTelemetry exporter em loop contra localhost:4317 polui logs do
-        // CI mesmo sem afetar correção. Desliga consistente com ApiFactoryBase.
-        Environment.SetEnvironmentVariable("Observability__Enabled", "false");
-    }
-
-    private readonly CapturingFactory<HostAssemblyMarker> _uniplusFactory = new();
-    private readonly CapturingFactory<PortalApiAssemblyMarker> _portalFactory = new();
-
-    public IReadOnlyList<ServiceDescriptor> GetCapturedSnapshot(string entryPointKey) => entryPointKey switch
-    {
-        UniPlusKey => _uniplusFactory.CapturedSnapshot,
-        PortalKey => _portalFactory.CapturedSnapshot,
-        _ => throw new ArgumentOutOfRangeException(nameof(entryPointKey)),
-    };
-
-    public IServiceProvider GetCapturedServiceProvider(string entryPointKey) => entryPointKey switch
-    {
-        UniPlusKey => _uniplusFactory.Services,
-        PortalKey => _portalFactory.Services,
-        _ => throw new ArgumentOutOfRangeException(nameof(entryPointKey)),
-    };
-
-    public void Dispose()
-    {
-        _uniplusFactory.Dispose();
-        _portalFactory.Dispose();
     }
 }
 
