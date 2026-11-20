@@ -8,8 +8,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-using Unifesspa.UniPlus.Application.Abstractions.Contratos;
 using Unifesspa.UniPlus.Infrastructure.Core.UnitTests.OpenApi.Apoio;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 using static Unifesspa.UniPlus.Infrastructure.Core.UnitTests.OpenApi.Apoio.ModeloDeCodigosDeTeste;
 

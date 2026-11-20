@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
 
-using Unifesspa.UniPlus.Application.Abstractions.Contratos;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
 /// O campo de pedido ou o parâmetro de consulta marcado com <see cref="AceitaCodigosDeAttribute{TEnum}"/>: o enum cujos

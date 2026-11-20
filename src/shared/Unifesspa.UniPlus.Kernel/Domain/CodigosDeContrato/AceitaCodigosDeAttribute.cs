@@ -1,6 +1,4 @@
-namespace Unifesspa.UniPlus.Application.Abstractions.Contratos;
-
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+namespace Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
 /// Declara que o campo de pedido ou o parâmetro de consulta aceita os códigos de um enum que declara

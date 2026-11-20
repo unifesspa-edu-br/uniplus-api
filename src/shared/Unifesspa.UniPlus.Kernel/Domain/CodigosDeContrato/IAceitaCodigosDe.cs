@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Application.Abstractions.Contratos;
+namespace Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
 /// O que <see cref="AceitaCodigosDeAttribute{TEnum}"/> declara, para quem publica o contrato e só tem o atributo em mãos,

@@ -5,7 +5,6 @@ using System.Text.Json.Serialization;
 
 using Microsoft.AspNetCore.Mvc;
 
-using Unifesspa.UniPlus.Application.Abstractions.Contratos;
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
