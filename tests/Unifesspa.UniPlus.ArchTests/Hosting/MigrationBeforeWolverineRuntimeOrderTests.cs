@@ -48,11 +48,8 @@ using Unifesspa.UniPlus.Portal.API;
 /// captura do <see cref="IServiceCollection"/> via <c>ConfigureServices</c>
 /// callback — sem passar pelo pipeline de remoção.</para>
 /// </remarks>
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit IClassFixture<T> exige tipo público para a fixture compartilhada.")]
-public sealed class MigrationBeforeWolverineRuntimeOrderTests : IClassFixture<MigrationOrderFixture>
+[Collection(HostsDoProdutoIniciadosEmTeste.Nome)]
+public sealed class MigrationBeforeWolverineRuntimeOrderTests
 {
     private readonly MigrationOrderFixture _fixture;
 
@@ -81,40 +78,12 @@ public sealed class MigrationBeforeWolverineRuntimeOrderTests : IClassFixture<Mi
     [MemberData(nameof(EntryPointKeys))]
     public void MigrationRegistradaAntesDeWolverineRuntime(string entryPointKey)
     {
-        IReadOnlyList<ServiceDescriptor> snapshot = _fixture.GetCapturedSnapshot(entryPointKey);
-
         List<ServiceDescriptor> hostedServices = [..
-            snapshot.Where(d => d.ServiceType == typeof(IHostedService))];
+            _fixture.GetCapturedSnapshot(entryPointKey).Where(d => d.ServiceType == typeof(IHostedService))];
 
-        // Cobertura: todo DbContext esperado para este entry point precisa de um
-        // MigrationHostedService<TContext>. Travado ANTES da ordem para que perder
-        // o registro falhe com mensagem direcional (e não apenas afrouxe
-        // silenciosamente a invariante #419).
-        string[] contextsRegistrados = [.. hostedServices
-            .Select(d => MigrationOrderHeuristics.GetMigrationContextName(d.ImplementationType))
-            .Where(nome => nome is not null)
-            .Select(nome => nome!)];
-
-        contextsRegistrados.Should().BeEquivalentTo(
-            MigrationContextsEsperados[entryPointKey],
-            because: "o entry point " + entryPointKey + " deve registrar AddDbContextMigrationsOnStartup<TContext> "
-                + "para exatamente estes DbContexts (uniplus-api#419). No host UniPlus, o AddMonolitoPersistencia contribui o "
-                + "MigrationHostedService do contexto único — se ele sumir, o schema dos módulos não é aplicado antes do Wolverine.");
-
-        int wolverineIndex = hostedServices.FindIndex(MigrationOrderHeuristics.IsWolverineRuntime);
-        // FindLastIndex: a invariante exige que TODAS as migrations do entry point
-        // precedam o Wolverine — basta a última preceder.
-        int ultimaMigrationIndex = hostedServices.FindLastIndex(d =>
-            MigrationOrderHeuristics.IsMigrationHostedService(d.ImplementationType));
-
-        wolverineIndex.Should().BeGreaterThanOrEqualTo(0,
-            "WolverineRuntime IHostedService precisa estar registrado no Program.cs do entry point " + entryPointKey);
-        ultimaMigrationIndex.Should().BeLessThan(
-            wolverineIndex,
-            because: "Schema EF do domínio precisa estar aplicado antes do WolverineRuntime aceitar envelopes "
-                + "que toquem tabelas do módulo (uniplus-api#419). No entry point "
-                + entryPointKey + ", AddDbContextMigrationsOnStartup<TContext>() precisa preceder UseWolverineOutboxCascading "
-                + "(no host UniPlus, o AddMonolitoPersistencia precede o UseWolverineOutboxCascading consolidado).");
+        ConferirQueCadaContextoEsperadoTemMigration(hostedServices, entryPointKey);
+        int wolverineIndex = ConferirQueOWolverineEstaRegistrado(hostedServices, entryPointKey);
+        ConferirQueAsMigrationsPrecedemOWolverine(hostedServices, wolverineIndex, entryPointKey);
     }
 
     [Theory(DisplayName = "HostOptions.ServicesStartConcurrently permanece false (premissa da ordem)")]
@@ -132,19 +101,61 @@ public sealed class MigrationBeforeWolverineRuntimeOrderTests : IClassFixture<Mi
                 + "Se ligado, MigrationHostedService e WolverineRuntime começam em paralelo "
                 + "e a invariante de #419 não é mais garantida pela ordem de registro.");
     }
+
+    // Cobertura: todo DbContext esperado para este entry point precisa de um
+    // MigrationHostedService<TContext>. Travado ANTES da ordem para que perder
+    // o registro falhe com mensagem direcional (e não apenas afrouxe
+    // silenciosamente a invariante #419).
+    private static void ConferirQueCadaContextoEsperadoTemMigration(List<ServiceDescriptor> hostedServices, string entryPointKey)
+    {
+        string[] contextsRegistrados = [.. hostedServices
+            .Select(d => MigrationOrderHeuristics.GetMigrationContextName(d.ImplementationType))
+            .OfType<string>()];
+
+        contextsRegistrados.Should().BeEquivalentTo(
+            MigrationContextsEsperados[entryPointKey],
+            because: "o entry point " + entryPointKey + " deve registrar AddDbContextMigrationsOnStartup<TContext> "
+                + "para exatamente estes DbContexts (uniplus-api#419). No host UniPlus, o AddMonolitoPersistencia contribui o "
+                + "MigrationHostedService do contexto único — se ele sumir, o schema dos módulos não é aplicado antes do Wolverine.");
+    }
+
+    private static int ConferirQueOWolverineEstaRegistrado(List<ServiceDescriptor> hostedServices, string entryPointKey)
+    {
+        int wolverineIndex = hostedServices.FindIndex(MigrationOrderHeuristics.IsWolverineRuntime);
+
+        wolverineIndex.Should().BeGreaterThanOrEqualTo(0,
+            "WolverineRuntime IHostedService precisa estar registrado no Program.cs do entry point " + entryPointKey);
+
+        return wolverineIndex;
+    }
+
+    // FindLastIndex: a invariante exige que TODAS as migrations do entry point
+    // precedam o Wolverine — basta a última preceder.
+    private static void ConferirQueAsMigrationsPrecedemOWolverine(List<ServiceDescriptor> hostedServices, int wolverineIndex, string entryPointKey)
+    {
+        int ultimaMigrationIndex = hostedServices.FindLastIndex(d =>
+            MigrationOrderHeuristics.IsMigrationHostedService(d.ImplementationType));
+
+        ultimaMigrationIndex.Should().BeLessThan(
+            wolverineIndex,
+            because: "Schema EF do domínio precisa estar aplicado antes do WolverineRuntime aceitar envelopes "
+                + "que toquem tabelas do módulo (uniplus-api#419). No entry point "
+                + entryPointKey + ", AddDbContextMigrationsOnStartup<TContext>() precisa preceder UseWolverineOutboxCascading "
+                + "(no host UniPlus, o AddMonolitoPersistencia precede o UseWolverineOutboxCascading consolidado).");
+    }
 }
 
 /// <summary>
 /// Fixture xUnit que materializa as 2 <see cref="WebApplicationFactory{T}"/>
-/// (uma por entry point executável: UniPlus/Portal) uma única vez por test
-/// class, preservando o custo de inicialização do host. As factories são
+/// (uma por entry point executável: UniPlus/Portal) uma única vez por coleção
+/// de testes, preservando o custo de inicialização do host. As factories são
 /// <c>IDisposable</c> via composição — não há herança custom (evita pattern
 /// Dispose(bool) sobre tipo abstrato).
 /// </summary>
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
-    Justification = "xUnit IClassFixture<T> exige tipo público para a fixture compartilhada.")]
+    Justification = "xUnit ICollectionFixture<T> exige tipo público para a fixture compartilhada.")]
 public sealed class MigrationOrderFixture : IDisposable
 {
     public const string UniPlusKey = "UniPlus";
@@ -251,21 +262,23 @@ internal sealed class CapturingFactory<TEntryPoint> : WebApplicationFactory<TEnt
             _capturedSnapshot = [.. services];
         });
 
-        builder.ConfigureTestServices(services =>
+        builder.ConfigureTestServices(RemoverMigrationEWolverine);
+    }
+
+    // Remove MigrationHostedService e WolverineRuntime para permitir
+    // Start do host sem tentar conectar contra Postgres sintético.
+    // O snapshot já guardou a ordem original — esta remoção só
+    // afeta o IServiceProvider materializado por get_Services.
+    private static void RemoverMigrationEWolverine(IServiceCollection services)
+    {
+        ServiceDescriptor[] toRemove = [.. services
+            .Where(d => d.ServiceType == typeof(IHostedService)
+                && (MigrationOrderHeuristics.IsMigrationHostedService(d.ImplementationType)
+                    || MigrationOrderHeuristics.IsWolverineRuntime(d)))];
+        foreach (ServiceDescriptor descriptor in toRemove)
         {
-            // Remove MigrationHostedService e WolverineRuntime para permitir
-            // Start do host sem tentar conectar contra Postgres sintético.
-            // O snapshot acima já guardou a ordem original — esta remoção só
-            // afeta o IServiceProvider materializado por get_Services.
-            ServiceDescriptor[] toRemove = [.. services
-                .Where(d => d.ServiceType == typeof(IHostedService)
-                    && (MigrationOrderHeuristics.IsMigrationHostedService(d.ImplementationType)
-                        || MigrationOrderHeuristics.IsWolverineRuntime(d)))];
-            foreach (ServiceDescriptor descriptor in toRemove)
-            {
-                services.Remove(descriptor);
-            }
-        });
+            services.Remove(descriptor);
+        }
     }
 
     private IReadOnlyList<ServiceDescriptor> Materialize()
