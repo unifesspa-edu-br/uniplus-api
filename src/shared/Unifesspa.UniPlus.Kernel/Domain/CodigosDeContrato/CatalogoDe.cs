@@ -50,7 +50,7 @@ public static class CatalogoDe<TEnum>
     public static TEnum Obter(string codigo) =>
         TentarObter(codigo, out TEnum valor)
             ? valor
-            : throw new ArgumentException($"O código '{codigo}' não existe em {typeof(TEnum).Name}.", nameof(codigo));
+            : throw new ArgumentException($"O código informado não existe em {typeof(TEnum).Name}.", nameof(codigo));
 
     internal static CodigoDeclarado Declarado(TEnum valor) =>
         Carregada.Value.PorValor.TryGetValue(valor, out CodigoDeclarado? declarado)

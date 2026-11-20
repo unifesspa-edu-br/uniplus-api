@@ -78,10 +78,10 @@ public sealed class CatalogoDeTests
     public void Obter_CodigoValido_DevolveOValor() =>
         CatalogoDe<Cor>.Obter("verde_claro").Should().Be(Cor.VerdeClaro);
 
-    [Fact(DisplayName = "Obter lança quando o código não existe")]
+    [Fact(DisplayName = "Obter lança quando o código não existe, sem repetir o código recebido")]
     public void Obter_CodigoInexistente_Lanca() =>
         FluentActions.Invoking(() => CatalogoDe<Cor>.Obter("roxo"))
-            .Should().Throw<ArgumentException>().Which.Message.Should().Contain("roxo").And.Contain(nameof(Cor));
+            .Should().Throw<ArgumentException>().Which.Message.Should().Contain(nameof(Cor)).And.NotContain("roxo");
 
     [Fact(DisplayName = "Valor fora do enum não tem código")]
     public void ValorForaDoEnum_Lanca()
