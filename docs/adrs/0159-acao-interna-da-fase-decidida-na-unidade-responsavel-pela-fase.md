@@ -35,7 +35,7 @@ Hoje toda decisão de acesso da Seleção monta o resource com a unidade dona. A
 - A Seleção monta o resource da ação da fase com a unidade da fase no lugar da dona, sempre com o `ProcessoId`, para que o impedimento por inscrição valha. A etapa decide pela unidade da fase que a contém. A ação que por natureza não tem fase decide na dona.
 - A unidade da fase e a fase de uma etapa são lidas do envelope da versão publicada vigente, nunca das entidades vivas durante a sessão de retificação. A troca de unidade de uma fase que não começou passa a valer quando a retificação fecha.
 - A ação de fase cuja fase não se resolve (inexistente, de outro processo ou sem unidade na versão vigente) recebe o 404 do resource inexistente, sem recorrer à dona, sem consultar o ponto de decisão e sem registro. A negativa por falta de permissão na unidade da fase e o impedimento por inscrição são registrados; a consulta de capacidade não registra; a falha ao publicar a negativa responde 503 ([ADR-0153](0153-projecao-por-protecao.md)).
-- A publicação e a retificação recusam a etapa que não declara a fase; o rascunho a aceita. A retificação que troca a unidade de uma fase iniciada é recusada. Fase iniciada é a que tem a janela publicada começada ou, sem janela, a que já tem ato ou registro; a encerrada conta como iniciada (UNI-REQ-0332 e UNI-REQ-0333).
+- A publicação e a retificação recusam a etapa que não declara a fase; o rascunho a aceita. A retificação que troca a unidade de uma fase iniciada é recusada. <!-- Cláusula alterada pela Emenda 1 (2026-11-20), no fim deste documento: o início da fase passa a ter condições. -->Fase iniciada é a que tem a janela publicada começada ou, sem janela, a que já tem ato ou registro; a encerrada conta como iniciada (UNI-REQ-0332 e UNI-REQ-0333).
 - A permissão `selecao:documentos-da-fase:publicar` entra no catálogo ([ADR-0151](0151-catalogo-de-permissoes-em-codigo-por-modulo.md)) e é concedida pelo fluxo da [ADR-0152](0152-governanca-das-concessoes-de-acesso.md).
 
 ## Consequências
@@ -71,4 +71,9 @@ Testes diretos da peça de decisão e dos leitores da versão vigente, e teste d
 
 ## Mais informações
 
+- Emendada pela [ADR-0177](0177-efeito-suspensivo-por-periodo-segunda-instancia-e-guarda-da-vaga.md): a fase iniciada é a que começou pela condição de início.
 - Complementa a [ADR-0079](0079-hierarquia-institucional-sem-heranca-de-permissao.md), a [ADR-0104](0104-versao-configuracao-como-agregado-proprio.md), a [ADR-0113](0113-fase-x-etapa-eixo-temporal-e-eixo-de-pontuacao.md) e a [ADR-0153](0153-projecao-por-protecao.md).
+
+## Emenda 1 (2026-11-20) — a fase iniciada é a que começou pela condição de início
+
+A [ADR-0177](0177-efeito-suspensivo-por-periodo-segunda-instancia-e-guarda-da-vaga.md) diz que a fase só começa no primeiro fato que pode iniciá-la, a data ou o primeiro ato, quando as condições aplicáveis valem: a fase anterior está concluída, com todos os seus definitivos próprios (ou, se não publica definitivo, com o período encerrado, inclusive prorrogado ou segurado), condição dispensada só nas fases de períodos sobrepostos, e nenhuma suspensão por efeito suspensivo a bloqueia. Fase iniciada passa a ser a que começou assim: o período cuja data chegou sem que a condição valha, ou o ato que a condição não admite, não a inicia. A fase não iniciada nessa situação ainda aceita a troca de unidade pela retificação; a encerrada continua contando como iniciada. O resto desta ADR permanece.

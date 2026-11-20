@@ -65,6 +65,7 @@ anterior. A verificação é mecânica — cruza-se o conjunto de `VersaoConfigu
 com o `(codigo, versao)` que se pretende substituir; havendo qualquer referência,
 a substituição é proibida.
 
+<!-- Cláusula alterada pela Emenda 3 (2026-11-20), no fim deste documento: sai o prazo de efeito suspensivo por instância da regra de prazo. -->
 No caso concreto que motivou esta ADR, `RECURSO-MULTI-INSTANCIA` tinha zero
 referências congeladas (nenhuma `VersaoConfiguracao`, nenhum consumidor de
 `TipoRegra.RegraPrazoRecurso`, sem produção), e por isso foi substituída por
@@ -161,3 +162,7 @@ por valor sem FK, ADR-0061) como uma única operação legítima enquanto não h
 ## Emenda 2 (2026-11-13) — a guarda do append-only é conferida no banco
 
 Com a migration única e os scripts, a guarda de que nenhum gatilho incide sobre o `regras_do_catalogo` passa a ser um teste de integração que confere o catálogo do banco depois da subida; o append-only continua por referência congelada. Ver [ADR-0170](0170-contexto-de-persistencia-unico-para-os-modulos-do-monolito.md).
+
+## Emenda 3 (2026-11-20) — a regra de prazo deixa de registrar efeito suspensivo por instância
+
+A [ADR-0177](0177-efeito-suspensivo-por-periodo-segunda-instancia-e-guarda-da-vaga.md) tira da regra `RECURSO-PRAZO-ANCORADO-EM-ATO` o prazo de efeito suspensivo por instância, que o sistema não usava para calcular quanto dura o bloqueio e só comparava ao conferir a retificação; ao sair o campo, essa parte da comparação deixa de existir, e a forma de comparar, na retificação, as novas declarações da configuração do recurso fica para o detalhamento da issue que as cria. Em seu lugar, a configuração do recurso declara a escolha do efeito suspensivo e a guarda da vaga, e o prazo de interposição da 2ª instância. A decisão desta ADR sobre o caso concreto permanece como registro. A correção da regra segue a fronteira desta ADR e foi conferida: nenhuma versão publicada da configuração a referencia. A migration inicial só semeia a linha da regra no catálogo, nenhuma versão de configuração é semeada, e testes e exemplos citam o código sem serem versão publicada. A regra é, portanto, corrigida por substituição, com o mesmo código e a mesma versão. A partir da primeira versão publicada que a referenciar, vale o append-only estrito.

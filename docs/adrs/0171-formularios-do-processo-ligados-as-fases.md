@@ -38,8 +38,10 @@ Com a finalidade fixa, a mesma marca é ao mesmo tempo a identidade do formulár
 - **Fase:** o formulário fica ligado a uma fase do cronograma do processo e só é publicado se essa fase existe. Uma fase pode ter mais de um formulário.
 - **Obrigatoriedade:** cada formulário é obrigatório ou facultativo. O que a fase é (inscrição, janela de isenção, habilitação) vem do cronograma, e não do formulário.
 - **Pertença:** campos, grupos, termos e exigências de documento pertencem a um formulário do processo. A exigência de documento declara o formulário que a entrega, e não a finalidade, como pedia a emenda de 2026-10-04 da ADR-0137.
+<!-- Cláusula alterada pela Emenda 1 (2026-11-20), no fim deste documento: o pedido de isenção reaproveita a resposta do formulário obrigatório da inscrição já enviado, mesmo com a isenção antes na ordem. -->
 - **Reaproveitamento:** um formulário só usa respostas de formulário obrigatório já enviado, da mesma fase ou de fase anterior; a regra de alcance é uma só para todos os formulários.
 - **Fato conhecido no ponto de uso:** o ponto de uso de uma exigência de documento é o formulário que a entrega, e o de uma regra de campo, de etapa ou de termo é o formulário dono. Um fato é conhecido no ponto quando (1) o produtor é o próprio formulário do ponto ou um que ele alcança, (2) a fase do catálogo para o fato é igual ou anterior ao momento do ponto e (3) o derivado tem todas as dependências conhecidas no ponto, pelas mesmas condições; o ciclo de dependência não é conhecido. A resposta de formulário facultativo vale só dentro dele.
+<!-- Cláusula alterada pela Emenda 1 (2026-11-20), no fim deste documento: sai a regra automática que punha a isenção no momento da inscrição. -->
 - **Momento da fase:** é a ordem dela no cronograma, e a fase da janela de isenção ordenada antes da fase de inscrição com que abre tem o momento dessa inscrição, porque a janela é contemporânea dela; a ordenada depois mantém a própria ordem. Toda comparação entre fases usa o momento, e nunca o código ou o nome da fase.
 - **Exigência:** vale em formulário obrigatório ou facultativo da mesma fase da exigência; o pedido de isenção da taxa, facultativo, exige o comprovante dele.
 - **Modelos:** o modelo de formulário declara se serve à fase que coleta inscrição, caso em que traz o conjunto básico, e se é obrigatório; o processo parte dessa declaração e pode ajustá-la.
@@ -79,3 +81,12 @@ Com a finalidade fixa, a mesma marca é ao mesmo tempo a identidade do formulár
 - Substitui a [ADR-0137](0137-formularios-por-finalidade-e-modelos-por-tipo-de-processo.md).
 - UNI-REQ-0017, UNI-REQ-0084, UNI-REQ-0144 e UNI-REQ-0145.
 - [ADR-0061](0061-copia-por-valor-em-vez-de-referencia.md), [ADR-0109](0109-envelope-canonico-v2-do-congelamento.md) e [ADR-0110](0110-retificacao-como-sessao-editorial.md).
+
+## Emenda 1 (2026-11-20) — o momento da fase não tem exceção para a isenção, e o reaproveitamento segue o envio
+
+A decisão permanece. A [ADR-0177](0177-efeito-suspensivo-por-periodo-segunda-instancia-e-guarda-da-vaga.md) retirou a regra automática que punha a isenção no momento da inscrição, e **prevalece sobre o texto anterior** dos itens "Reaproveitamento" e "Momento da fase":
+
+- O momento da fase é a posição dela no cronograma mais a marca "no mesmo momento da anterior" (Emenda 6 da [ADR-0113](0113-fase-x-etapa-eixo-temporal-e-eixo-de-pontuacao.md)), sem exceção para a isenção.
+- O reaproveitamento de resposta segue o envio já feito: o pedido de isenção reaproveita a resposta do formulário obrigatório da inscrição já enviado, mesmo quando a isenção está antes na ordem, porque só abre depois desse envio (UNI-REQ-0149). A exigência documental continua sujeita à ordem derivada.
+- A exigência de documento segue a ordem derivada do cronograma (UNI-REQ-0144 e UNI-REQ-0077).
+- Toda comparação entre fases continua usando o momento, e nunca o código ou o nome da fase.
