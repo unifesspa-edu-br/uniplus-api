@@ -44,11 +44,13 @@
 
   <ItemGroup>
     <Compile Include="../Shared/DecisaoDeAcessoDeTeste.cs" Link="DecisaoDeAcessoDeTeste.cs" />
+    <Compile Include="../Shared/EnumsDeCodigoDeContratoDeTeste.cs" Link="EnumsDeCodigoDeContratoDeTeste.cs" />
     <Compile Include="../Shared/ExecutavelComEnumsDefeituosos.cs" Link="ExecutavelComEnumsDefeituosos.cs" />
     <Compile Include="../Shared/SondaDeInicioDoHost.cs" Link="SondaDeInicioDoHost.cs" />
     <Compile Include="../Shared/RegraDeNomeDeTabela.cs" Link="RegraDeNomeDeTabela.cs" />
     <Compile Include="../Shared/RegraDeTamanhoDeIdentificador.cs" Link="RegraDeTamanhoDeIdentificador.cs" />
     <Compile Include="../Shared/RelogioFixo.cs" Link="RelogioFixo.cs" />
+    <Compile Include="../Shared/SerializacaoDosCodigosNasMensagensTestsBase.cs" Link="SerializacaoDosCodigosNasMensagensTestsBase.cs" />
     <Compile Include="../Unifesspa.UniPlus.IntegrationTests.Fixtures/Observability/ColetorDeMedidas.cs" Link="Apoio/ColetorDeMedidas.cs" />
     <Using Include="Xunit" />
   </ItemGroup>
