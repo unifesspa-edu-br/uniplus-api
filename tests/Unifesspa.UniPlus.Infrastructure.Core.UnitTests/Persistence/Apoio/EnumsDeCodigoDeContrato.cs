@@ -11,6 +11,15 @@ public enum FormatoDeAula
     Remoto = 2,
 }
 
+public enum SituacaoDaTurma
+{
+    [CodigoDeContrato("aberta", "Aberta")]
+    Aberta = 1,
+
+    [CodigoDeContrato("encerrada", "Encerrada")]
+    Encerrada = 2,
+}
+
 public enum TurnoDeAula
 {
     Manha = 1,

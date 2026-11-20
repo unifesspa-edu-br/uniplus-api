@@ -22,6 +22,13 @@ internal static class ComposicaoDoModelo
             () => modelBuilder.ApplyConfigurationsFromAssembly(typeof(IdempotencyEntry).Assembly));
         RegistrarFuncoesDaPlataforma(modelBuilder);
 
+        AplicarConvencoesDoModeloCompleto(modelBuilder);
+    }
+
+    // As convenções varrem todos os tipos do modelo, então rodam depois que os módulos e a plataforma registraram os seus.
+    private static void AplicarConvencoesDoModeloCompleto(ModelBuilder modelBuilder)
+    {
+        modelBuilder.ConfigurarConversaoDosEnumsDeContrato();
         modelBuilder.AplicarFiltroGlobalSoftDelete();
     }
 
