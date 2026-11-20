@@ -127,21 +127,21 @@ public sealed class OpcoesJsonDasMensagensTests
     }
 
     [Fact(DisplayName = "O código vence o conversor de enum por nome que as opções já tinham")]
-    public void Aplicar_ComConversorDeEnumPorNomeJaRegistrado_EscreveOCodigo()
+    public void Configurar_ComConversorDeEnumPorNomeJaRegistrado_EscreveOCodigo()
     {
         JsonSerializerOptions opcoes = new() { Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() } };
 
-        OpcoesJsonDasMensagens.Aplicar(opcoes);
+        OpcoesJsonDasMensagens.Configurar(opcoes);
 
         JsonSerializer.Serialize(new ComCorEscolhida(Cor.VerdeClaro), opcoes).Should().Be("""{"Escolhida":"verde_claro"}""");
     }
 
-    [Fact(DisplayName = "Aplicar preserva o resolvedor que as opções já tinham")]
-    public void Aplicar_PreservaOResolvedorExistente()
+    [Fact(DisplayName = "Configurar preserva o resolvedor que as opções já tinham")]
+    public void Configurar_PreservaOResolvedorExistente()
     {
         JsonSerializerOptions opcoes = new() { TypeInfoResolver = new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver() };
 
-        OpcoesJsonDasMensagens.Aplicar(opcoes);
+        OpcoesJsonDasMensagens.Configurar(opcoes);
 
         Action ler = () => JsonSerializer.Deserialize<Evento>("{\"nome\":\"a\"}", opcoes);
         ler.Should().Throw<JsonException>();
@@ -150,7 +150,7 @@ public sealed class OpcoesJsonDasMensagensTests
     private static JsonSerializerOptions Criar()
     {
         JsonSerializerOptions opcoes = new(JsonSerializerDefaults.Web);
-        OpcoesJsonDasMensagens.Aplicar(opcoes);
+        OpcoesJsonDasMensagens.Configurar(opcoes);
         return opcoes;
     }
 

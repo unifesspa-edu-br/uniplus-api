@@ -8,11 +8,10 @@ using System.Text.Json.Serialization;
 /// enum sem código não é convertido aqui e continua com o conversor que já o atendia.
 /// </summary>
 /// <remarks>
-/// Registre a fábrica antes de qualquer conversor de enum por nome, como <see cref="JsonStringEnumConverter"/>: o
-/// serializador usa o primeiro conversor que aceita o tipo. Esta fábrica serve ao documento lido por máquina; a resposta
-/// HTTP publica o enum no formato da resposta e não a registra.
+/// Só <see cref="OpcoesJsonDeDocumento"/> a instala, e é ele que garante a posição à frente de qualquer conversor de enum
+/// por nome. A resposta HTTP publica o enum no formato da resposta e não a instala.
 /// </remarks>
-public sealed class CodigoDeContratoJsonConverterFactory : JsonConverterFactory
+internal sealed class CodigoDeContratoJsonConverterFactory : JsonConverterFactory
 {
     /// <inheritdoc />
     public override bool CanConvert(Type typeToConvert) =>
