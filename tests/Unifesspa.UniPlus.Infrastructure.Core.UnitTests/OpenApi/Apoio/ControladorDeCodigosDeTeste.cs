@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.OpenApi.Apoio;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
-using Unifesspa.UniPlus.Application.Abstractions.Contratos;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 using static Unifesspa.UniPlus.Infrastructure.Core.UnitTests.OpenApi.Apoio.ModeloDeCodigosDeTeste;
 
