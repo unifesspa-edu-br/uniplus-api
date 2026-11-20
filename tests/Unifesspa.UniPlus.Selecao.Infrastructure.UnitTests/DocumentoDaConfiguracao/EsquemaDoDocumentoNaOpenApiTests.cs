@@ -66,6 +66,18 @@ public sealed class EsquemaDoDocumentoNaOpenApiTests
             .NotBeSameAs(segundo.Components!.Schemas![EsquemaPublicadoDoDocumento.Componente]);
     }
 
+    [Fact(DisplayName = "Um componente que o documento já tem com o nome de um do esquema faz a geração falhar, em vez de ser trocado")]
+    public async Task Transformar_ComponenteExistenteComOMesmoNome_Falha()
+    {
+        OpenApiSchema existente = new();
+        OpenApiDocument documento = new() { Components = new OpenApiComponents { Schemas = new Dictionary<string, IOpenApiSchema> { [EsquemaPublicadoDoDocumento.Componente] = existente } } };
+
+        Func<Task> geracao = () => Transformar(documento);
+
+        (await geracao.Should().ThrowAsync<InvalidOperationException>()).Which.Message.Should().Contain($"'{EsquemaPublicadoDoDocumento.Componente}'");
+        documento.Components!.Schemas![EsquemaPublicadoDoDocumento.Componente].Should().BeSameAs(existente);
+    }
+
     [Fact(DisplayName = "O documento é obrigatório")]
     public async Task DocumentoNulo_Lanca()
     {
