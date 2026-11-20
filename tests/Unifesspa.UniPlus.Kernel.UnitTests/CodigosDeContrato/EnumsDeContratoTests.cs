@@ -93,6 +93,28 @@ public sealed class EnumsDeContratoTests
         FluentActions.Invoking(() => EnumsDeContrato.ConferirEnumsDe([assembly])).Should().NotThrow();
     }
 
+    [Fact(DisplayName = "A conferência do executável alcança e junta os defeitos dos enums de uma referência dele")]
+    public void ConferirNoExecutavel_EnumDefeituosoNumaReferencia_LancaComOsDefeitos()
+    {
+        Assembly executavel = EnumsCriadosEmExecucao.ExecutavelQueReferencia(typeof(Cor));
+
+        FluentActions.Invoking(() => EnumsDeContrato.ConferirNoExecutavel(executavel))
+            .Should().Throw<CodigosDeContratoInvalidosException>().Which.Defeitos
+            .Should().Contain(d => d.StartsWith($"{nameof(ComCodigoRepetido)}.", StringComparison.Ordinal));
+    }
+
+    [Fact(DisplayName = "A conferência do executável cujas referências do Uni+ não têm defeito não lança")]
+    public void ConferirNoExecutavel_ReferenciasSemDefeito_NaoLanca()
+    {
+        Assembly executavel = EnumsCriadosEmExecucao.ExecutavelQueReferencia(typeof(AssembliesDoUniPlus));
+
+        FluentActions.Invoking(() => EnumsDeContrato.ConferirNoExecutavel(executavel)).Should().NotThrow();
+    }
+
+    [Fact(DisplayName = "A conferência do executável nulo é recusada")]
+    public void ConferirNoExecutavel_ExecutavelNulo_Recusa() =>
+        FluentActions.Invoking(() => EnumsDeContrato.ConferirNoExecutavel(null!)).Should().Throw<ArgumentNullException>();
+
     [Theory(DisplayName = "Só o enum em que algum membro declara código é enum que declara código")]
     [InlineData(typeof(Cor), true)]
     [InlineData(typeof(SemAtributoEmUmMembro), true)]

@@ -4,11 +4,25 @@ using System.Reflection;
 using System.Runtime.ExceptionServices;
 
 /// <summary>
-/// Entrada sem tipo genérico para quem só tem o <see cref="Type"/> do enum em mãos, como a conferência na subida de um
-/// módulo e a publicação do contrato.
+/// Entrada sem tipo genérico para quem só tem o <see cref="Type"/> do enum em mãos, como a conferência na subida e a
+/// publicação do contrato.
 /// </summary>
 public static class EnumsDeContrato
 {
+    /// <summary>
+    /// Confere os enums do executável e de todo assembly que <see cref="AssembliesDoUniPlus.AlcancadosAPartirDe"/>
+    /// alcança a partir dele, juntando os defeitos numa só exceção. É a operação que a subida de cada executável chama;
+    /// <see cref="ConferirEnumsDe"/> segue sendo a que confere uma lista de assemblies.
+    /// </summary>
+    /// <remarks>
+    /// Os limites do alcance estão em <see cref="AssembliesDoUniPlus"/>. Ler os tipos de cada assembly pode carregar tipos
+    /// antes do que a execução carregaria, e a falha de carga sobe sem tratamento.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException">O executável é nulo.</exception>
+    /// <exception cref="CodigosDeContratoInvalidosException">Algum enum é inválido.</exception>
+    public static void ConferirNoExecutavel(Assembly executavel) =>
+        ConferirEnumsDe(AssembliesDoUniPlus.AlcancadosAPartirDe(executavel));
+
     /// <summary>
     /// Confere todos os enums, em todos os assemblies recebidos, em que algum membro declara
     /// <see cref="CodigoDeContratoAttribute"/>, juntando os defeitos de todos eles numa só exceção. O assembly que
