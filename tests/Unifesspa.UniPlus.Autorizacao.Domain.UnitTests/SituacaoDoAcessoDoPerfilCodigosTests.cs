@@ -23,5 +23,5 @@ public sealed class SituacaoDoAcessoDoPerfilCodigosTests
 
     [Fact(DisplayName = "Os códigos de contrato dos enums do domínio da autorização passam na conferência da subida")]
     public void ConferirEnumsDe_DominioDaAutorizacao_Passa() =>
-        FluentActions.Invoking(() => EnumsDeContrato.ConferirEnumsDe(typeof(SituacaoDoAcessoDoPerfil).Assembly)).Should().NotThrow();
+        FluentActions.Invoking(() => EnumsDeContrato.ConferirEnumsDe([typeof(SituacaoDoAcessoDoPerfil).Assembly])).Should().NotThrow();
 }
