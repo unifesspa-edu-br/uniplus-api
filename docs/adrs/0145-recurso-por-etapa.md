@@ -39,6 +39,7 @@ O código já dá produtos e janelas de recurso à etapa, desde as migrations de
 - **Uma janela por fato recorrível.** Cada resultado preliminar e a ciência individual abrem uma janela só; dois prazos para o mesmo fato seriam ambíguos.
 - **Etapa com nota do ENEM.** Ninguém publica nem atribui a nota na etapa: o resultado é publicado pela fase, e o recurso coletivo sobre a lista geral é o da regra de recurso da fase. Na etapa cabe só o recurso individual, ancorado na ciência do candidato.
 
+<!-- Cláusula alterada pela Emenda 1 (2026-11-20), no fim deste documento: sai o prazo configurável do efeito suspensivo por instância, e a instância superior passa a ter o prazo para apresentar recurso à Câmara, distinto dele. -->
 **Instância superior (decisão do líder técnico de 18/10/2026).** Cada janela de recurso, da fase ou da etapa, declara se admite recurso em instância superior. Sem instância superior, a janela não tem tempo de bloqueio superior, e o registro de recurso superior contra ela é recusado. A declaração vale para a janela, não para o processo: o mesmo edital pode ter janelas com e sem instância superior. Ela convive com a suspensividade da instância superior assim: se a janela não admite instância superior, a suspensividade superior é proibida; se admite, a suspensividade superior vazia continua significando que a pendência não bloqueia.
 
 A declaração é um campo novo congelado no envelope da publicação, o que muda o envelope canônico e o hash ([ADR-0100](0100-canonicalizacao-hash-snapshot-publicacao.md)). A implementação e a nova versão do envelope são da uniplus-api#1991.
@@ -85,3 +86,11 @@ O domínio recusa janela de etapa com âncora inválida ou duplicada, e o proces
 - UNI-REQ-0080, UNI-REQ-0081, UNI-REQ-0115.
 - Implementação da instância superior: uniplus-api#1991.
 - Emendada pela [ADR-0158](0158-recurso-quem-recorre-ciclo-banca-e-decisoes.md): todo recurso abre pela publicação confirmada de um ato, e a ciência individual sai do recurso, inclusive na etapa com nota do ENEM, cujo recurso passa a ser o da fase; cada janela declara quem pode recorrer.
+
+## Emenda 1 (2026-11-20) — escolha do efeito suspensivo e prazo da 2ª instância
+
+A decisão "B" permanece. A [ADR-0177](0177-efeito-suspensivo-por-periodo-segunda-instancia-e-guarda-da-vaga.md) muda dois pontos desta ADR, e **prevalece sobre o texto anterior** onde divergir:
+
+- **Efeito suspensivo.** A configuração do recurso deixa de declarar prazo de efeito suspensivo, por instância ou não. Passa a declarar uma escolha só para a 1ª instância, obrigatória e sem valor padrão: todos os recursos, nenhum ou decisão da unidade em cada recurso. Também declara a guarda da vaga da 1ª instância, que não pode ser "não guarda" na configuração do recurso que admite instância superior: a publicação a recusa. O recurso de 2ª instância sempre tem efeito suspensivo e sempre guarda a vaga, sem escolha.
+- **Instância superior.** A configuração do recurso que a admite declara o prazo de interposição da 2ª instância, com as mesmas unidades e a mesma contagem do prazo da 1ª; a que não admite não o declara, e a declaração é recusada. A configuração do recurso que admite instância superior exige uma banca de 2ª instância, que julga o recurso no Uni+. Deixa de valer a regra de que o efeito suspensivo superior vazio significa que a pendência não bloqueia, e o requisito UNI-REQ-0080 deixa de afirmar que a instância superior não tem prazo.
+- **Retificação.** A escolha do efeito suspensivo e a guarda da vaga da 1ª instância seguem a versão vigente quando o período para apresentar recurso abriu; o direito e o prazo da 2ª instância seguem a versão vigente quando o indeferimento foi publicado ao candidato, e não a da abertura do primeiro período para apresentar recurso.

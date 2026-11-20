@@ -88,6 +88,7 @@ permanece 100% CRUD-administrado, e os valores reais das quatorze fases são um
 ato operacional pós-deploy via endpoint admin — a mesma política já vigente para
 `DonoTipico`/`AgrupaEtapas`/`PermiteComplementacao`.
 <!-- Cláusula revogada pela Emenda 1 (2026-09-01), no fim deste documento. -->
+<!-- Cláusula ampliada pela Emenda 6 (2026-11-20), no fim deste documento: a ordem entre fases também vale no início da fase. -->
 
 A precedência entre fases é **dado de cadastro, não código**: `PrecedenciaFase`
 (Configuração, novo cadastro) declara arestas `(AntecessoraCodigo,
@@ -316,6 +317,18 @@ A fase canônica chamada `HOMOLOGACAO` homologa as inscrições, e o cadastro j�
 
 A mudança é de nome, não de comportamento: a precedência `INSCRICAO` antes da homologação, o agrupamento de etapas e a complementação permitida continuam como estavam, com o código novo. Não há dado a migrar: a migration única é gerada de novo com o catálogo semeado já com o código novo, e o código antigo deixa de ser canônico, de modo que o cadastro de fases o recusa.
 
+## Emenda 6 (2026-11-20) — a ordem entre fases vale no início da fase
+
+A ordem entre fases, conferida na publicação do cronograma contra a precedência de cadastro desta ADR, passa a ter efeito também quando a fase começa. A [ADR-0177](0177-efeito-suspensivo-por-periodo-segunda-instancia-e-guarda-da-vaga.md) decide: a fase só começa no primeiro fato que pode iniciá-la, a data ou o primeiro ato, quando as condições aplicáveis valem: a fase anterior está concluída, isto é, com todos os seus definitivos próprios publicados, e nenhuma suspensão por efeito suspensivo a bloqueia. A primeira condição é dispensada só nas fases de períodos sobrepostos; a anterior que não publica definitivo conta como concluída no fim do seu período, inclusive prorrogado ou segurado, desde que a fase tenha começado: a que não começou não se conclui pelo fim do período e aguarda a prorrogação, mesmo que a última condição de início deixe de valer. A fase começa no maior entre esse primeiro fato e os instantes das condições aplicáveis: a publicação do definitivo da anterior e o fim da suspensão.
+
+"Fase anterior" é a imediatamente anterior na ordem do cronograma, no cronograma publicado; havendo várias marcadas para acontecer ao mesmo tempo, a fase espera todas, cada uma com os definitivos que declara publicar ou, se não publica definitivo, encerrada. O cadastro de precedência não é consultado depois da publicação, salvo na retificação que altera o cronograma, em que a precedência é reconferida sobre o cadastro vigente.
+
+**As fases que acontecem ao mesmo tempo são declaradas pelo edital.** Cada fase do cronograma pode trazer a marca opcional "no mesmo momento da anterior"; a posição na lista continua sendo a ordem. Só acontece ao mesmo tempo o que o edital marcar: sai a regra automática que punha a solicitação de isenção para acontecer ao mesmo tempo que a inscrição. Fases ligadas por precedência não podem ser marcadas para acontecer ao mesmo tempo, e a primeira fase não pode ter a marca; a publicação recusa a marca nesses casos. A fase sem resultado definitivo precisa ter data final no cronograma, sem a qual a publicação é recusada com orientação.
+
+Há uma exceção à primeira condição: as **fases de períodos sobrepostos** no cronograma publicado, o que só é possível onde a precedência permite a sobreposição. A sobreposição de datas só dispensa a espera pelo definitivo: a fase posterior na ordem do cronograma, com datas sobrepostas, continua sujeita à suspensão. Isso não se confunde com a marca "no mesmo momento da anterior", que define a ordem: a fase marcada junto com a origem não é posterior a ela, e a suspensão nascida na origem não a alcança.
+
+**Cada fase publica o próprio definitivo.** O ciclo de recurso da fase, do preliminar ao definitivo, fecha dentro dela, como na etapa. Deixa de existir a fase que publica o definitivo de outra, a fase concluinte do ciclo. Cada resultado preliminar da fase tem, na mesma fase, o definitivo correspondente, do mesmo lugar e do mesmo tipo de ato, nos papéis complementares de preliminar e de definitivo da publicação prevista da fase. Quem precisa de uma fase no meio do ciclo estende o período da fase de origem até o definitivo e declara sobreposta a fase do meio. O resto desta ADR permanece.
+
 ## Mais informações
 
 - ADR-0056 — Módulo Configuração e read-side cross-módulo via `IXxxReader`.
@@ -327,4 +340,5 @@ A mudança é de nome, não de comportamento: a precedência `INSCRICAO` antes d
 - UNI-REQ-0064 — Fases canônicas e tipos de banca.
 - Issue #851 — Cronograma de Fases do Processo Seletivo.
 - Emendada pela [ADR-0158](0158-recurso-quem-recorre-ciclo-banca-e-decisoes.md): a regra de recurso da fase também declara quem pode recorrer e exige banca de análise de recursos.
+- Emendada pela [ADR-0177](0177-efeito-suspensivo-por-periodo-segunda-instancia-e-guarda-da-vaga.md): a ordem entre fases vale no início da fase; fases de períodos sobrepostos são as que dispensam a espera, e cada fase publica o próprio definitivo.
 - [ADR-0159](0159-acao-interna-da-fase-decidida-na-unidade-responsavel-pela-fase.md) — o dono institucional da fase é a unidade em que a ação interna da fase é decidida.
