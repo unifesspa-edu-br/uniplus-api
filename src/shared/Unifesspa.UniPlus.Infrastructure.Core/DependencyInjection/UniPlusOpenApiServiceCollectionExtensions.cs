@@ -98,6 +98,7 @@ public static class UniPlusOpenApiServiceCollectionExtensions
     {
         services.TryAddSingleton<UniPlusSchemaTransformer>();
         services.TryAddSingleton<InstanteSchemaTransformer>();
+        services.TryAddSingleton<CodigoComRotuloSchemaTransformer>();
         return services;
     }
 
@@ -136,5 +137,7 @@ public static class UniPlusOpenApiServiceCollectionExtensions
     {
         options.AddSchemaTransformer<UniPlusSchemaTransformer>();
         options.AddSchemaTransformer<InstanteSchemaTransformer>();
+        options.AddSchemaTransformer<CodigoComRotuloSchemaTransformer>();
+        options.CreateSchemaReferenceId = new NomesDosComponentes().Nome;
     }
 }
