@@ -125,11 +125,22 @@ aprovar_versao_do_perfil() {
         "/api/autorizacao/perfis/$1/versoes/$2/aprovacao" '{"etapa": "gestao_de_acessos"}' >/dev/null
 }
 
-# Retoma a versão pendente que uma execução interrompida deixou com o documento já enviado. $1=perfil $2=nome
+# O detalhe do perfil, lido e conferido; interrompe o roteiro se a leitura falha ou a resposta não é um detalhe de perfil.
+# A listagem informa a situação do acesso, que um perfil suspenso muda; quem diz se há versão em vigor é o detalhe. $1=perfil
+detalhe_do_perfil() {
+    local detalhe
+    detalhe=$(como "a leitura do perfil $1" "$(token_de "${LISTA_DE_GESTORES[0]}" "$SENHA_GESTORES")" GET "/api/autorizacao/perfis/$1") \
+        || fail "a leitura do perfil $1 falhou."
+    jq -e 'type == "object" and has("composicaoEmVigor")' <<< "$detalhe" >/dev/null \
+        || fail "a resposta da leitura do perfil $1 não é um detalhe de perfil válido."
+    printf '%s\n' "$detalhe"
+}
+
+# Retoma a versão pendente que uma execução interrompida deixou com o documento já enviado, a partir do detalhe do perfil
+# que o chamador já leu. $1=perfil $2=nome $3=detalhe do perfil
 retomar_versao_pendente() {
     local pendente
-    pendente=$(como "a leitura do perfil '$2'" "$(token_de "${LISTA_DE_GESTORES[0]}" "$SENHA_GESTORES")" GET "/api/autorizacao/perfis/$1" \
-        | jq -c '.versaoPendente // empty')
+    pendente=$(jq -c '.versaoPendente // empty' <<< "$3")
     case "$(jq -r '.situacaoDoDocumento // empty' <<< "$pendente")" in
         em_verificacao | verificado) aprovar_versao_do_perfil "$1" "$(jq -r '.versaoId' <<< "$pendente")" "$2" ;;
         *) fail "o perfil '$2' existe sem versão em vigor e sem documento enviado. Cancele a versão pendente na tela de perfis ou recrie a base." ;;
@@ -159,8 +170,13 @@ perfil_do_roteiro() {
     elif ! jq -e '.ativo' <<< "$listado" >/dev/null; then
         fail "o perfil '$nome' existe, mas está desativado. Reative-o na tela de perfis ou recrie a base."
     else
-        jq -e '.temVersaoVigente' <<< "$listado" >/dev/null || retomar_versao_pendente "$(jq -r '.id' <<< "$listado")" "$nome"
-        jq -r '.id' <<< "$listado"
+        local id detalhe
+        id=$(jq -r '.id' <<< "$listado")
+        detalhe=$(detalhe_do_perfil "$id") || exit 1
+        if jq -e '.composicaoEmVigor == null' <<< "$detalhe" >/dev/null; then
+            retomar_versao_pendente "$id" "$nome" "$detalhe"
+        fi
+        printf '%s\n' "$id"
     fi
 }
 

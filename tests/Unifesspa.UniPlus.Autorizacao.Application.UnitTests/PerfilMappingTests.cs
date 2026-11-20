@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.UnitTests;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Authorization.Enums;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
@@ -157,7 +158,7 @@ public sealed class PerfilMappingTests
 
         PerfilDto dto = PerfilMapping.ToDto(perfil, Catalogo, PerfisDeTeste.Autor);
 
-        dto.Should().BeEquivalentTo(EsperadoDe(perfil, "interno", PerfisDeTeste.Autor));
+        dto.Should().BeEquivalentTo(EsperadoDe(perfil, "interno", SituacaoDoAcessoDoPerfil.EmVigor, PerfisDeTeste.Autor));
     }
 
     [Fact(DisplayName = "O perfil sem vigente cuja única versão foi cancelada expõe a última versão encerrada sem vigor")]
@@ -169,7 +170,7 @@ public sealed class PerfilMappingTests
         PerfilDto dto = PerfilMapping.ToDto(perfil, Catalogo);
 
         dto.UltimaVersaoEncerradaSemVigor.Should().NotBeNull();
-        dto.Should().BeEquivalentTo(EsperadoDe(perfil, "publico", null));
+        dto.Should().BeEquivalentTo(EsperadoDe(perfil, "publico", SituacaoDoAcessoDoPerfil.SemVersaoEmVigor, null));
     }
 
     internal static Perfil PerfilComVigenteEPendente()
@@ -186,9 +187,9 @@ public sealed class PerfilMappingTests
         return perfil;
     }
 
-    private static PerfilDto EsperadoDe(Perfil perfil, string sensibilidade, Identidade? leitor) =>
+    private static PerfilDto EsperadoDe(Perfil perfil, string sensibilidade, SituacaoDoAcessoDoPerfil situacaoDoAcesso, Identidade? leitor) =>
         new(
-            perfil.Id, perfil.Nome, perfil.Descricao, true, null, sensibilidade,
+            perfil.Id, perfil.Nome, perfil.Descricao, true, null, sensibilidade, CodigoComRotulo<SituacaoDoAcessoDoPerfil>.De(situacaoDoAcesso),
             perfil.VersaoVigente is { } vigente ? VersaoMapping.VigenteDe(perfil, vigente, Catalogo) : null,
             VersaoMapping.PendenteDe(perfil, Catalogo, leitor),
             VersaoMapping.UltimaEncerradaSemVigorDe(perfil),
