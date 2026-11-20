@@ -21,14 +21,18 @@ public sealed class CodigoDeContratoValueConverterTests
     public void ConvertFromProvider_CodigoDeclarado_DevolveOValor(string codigo, FormatoDeAula formatoEsperado) =>
         _conversor.ConvertFromProvider(codigo).Should().Be(formatoEsperado);
 
-    [Theory(DisplayName = "A leitura de código que o enum não declara falha, sem valor substituto")]
+    [Theory(DisplayName = "A leitura de código que o enum não declara falha, sem valor substituto e sem repetir o código")]
     [InlineData("inexistente")]
     [InlineData("Presencial")]
     [InlineData("EM_SALA")]
     [InlineData(" em_sala")]
-    [InlineData("")]
     public void ConvertFromProvider_CodigoQueOEnumNaoDeclara_Lanca(string codigo) =>
         FluentActions.Invoking(() => _conversor.ConvertFromProvider(codigo))
+            .Should().Throw<ArgumentException>().Which.Message.Should().Contain(nameof(FormatoDeAula)).And.NotContain(codigo);
+
+    [Fact(DisplayName = "A leitura de código vazio falha, sem valor substituto")]
+    public void ConvertFromProvider_CodigoVazio_Lanca() =>
+        FluentActions.Invoking(() => _conversor.ConvertFromProvider(string.Empty))
             .Should().Throw<ArgumentException>().Which.Message.Should().Contain(nameof(FormatoDeAula));
 
     [Fact(DisplayName = "A escrita de valor que não é membro do enum falha, sem código inventado")]
