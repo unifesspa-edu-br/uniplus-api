@@ -5,12 +5,13 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>Um predicado numa coluna <c>jsonb</c>, na forma de <see cref="PredicadoDnfGravado"/>.</summary>
 internal static class PredicadoDnfColunaJson
 {
-    private static readonly JsonSerializerOptions Opcoes = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions Opcoes = OpcoesJsonDeDocumento.Criar(new(JsonSerializerDefaults.Web));
 
     public static readonly ValueConverter<PredicadoDnf, string> Converter =
         new(predicado => Serializar(predicado), json => Desserializar(json));

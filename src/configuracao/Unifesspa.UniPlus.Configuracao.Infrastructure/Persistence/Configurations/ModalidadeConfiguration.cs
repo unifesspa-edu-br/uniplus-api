@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalidade>
@@ -25,10 +26,10 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
     private const int BaseLegalMaxLength = 500;
     private const int AuditUserMaxLength = 255;
 
-    private static readonly JsonSerializerOptions JsonOptions = new()
+    private static readonly JsonSerializerOptions JsonOptions = OpcoesJsonDeDocumento.Criar(new()
     {
         WriteIndented = false,
-    };
+    });
 
     public void Configure(EntityTypeBuilder<Modalidade> builder)
     {

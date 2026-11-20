@@ -5,6 +5,7 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
@@ -13,7 +14,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </summary>
 internal static class RegrasPadraoJson
 {
-    private static readonly JsonSerializerOptions Opcoes = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions Opcoes = OpcoesJsonDeDocumento.Criar(new(JsonSerializerDefaults.Web));
 
     public static readonly ValueConverter<IReadOnlyList<RegraDerivacao>, string> Converter =
         new(regras => Serializar(regras), json => Desserializar(json));
