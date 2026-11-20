@@ -1,6 +1,6 @@
 ---
-status: "proposed"
-date: "2026-11-17"
+status: "accepted"
+date: "2026-11-19"
 decision-makers:
   - "Tech Lead"
 consulted: []
