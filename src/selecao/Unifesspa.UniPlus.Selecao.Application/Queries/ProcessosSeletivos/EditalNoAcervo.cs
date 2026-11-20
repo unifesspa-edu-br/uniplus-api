@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
 using Domain.Entities;
 
+using DTOs;
+
 /// <summary>
 /// O ato cujo registro a divulgação materializa, com o que o endereço do edital no acervo precisa
 /// dele.
@@ -29,4 +31,10 @@ internal sealed record AtoDaDivulgacao(Guid Id, int Ano, string TipoCodigo)
 /// <param name="HashSha256">Hash do documento, o que o edital congelou.</param>
 /// <param name="Chave">A chave no acervo.</param>
 /// <param name="NomeDeApresentacao">Nome com que o arquivo é salvo por quem o baixa.</param>
-internal sealed record EditalNoAcervo(Guid DocumentoEditalId, string HashSha256, string Chave, string NomeDeApresentacao);
+internal sealed record EditalNoAcervo(Guid DocumentoEditalId, string HashSha256, string Chave, string NomeDeApresentacao)
+{
+    /// <summary>O edital como o contrato público o divulga: o endereço é o da <see cref="Chave"/> no acervo.</summary>
+    /// <param name="enderecoNoAcervo">O endereço público de uma chave do acervo.</param>
+    internal DocumentoEditalCertameDto NoContratoPublico(Func<string, Uri> enderecoNoAcervo) =>
+        new(DocumentoEditalId, HashSha256, enderecoNoAcervo(Chave));
+}

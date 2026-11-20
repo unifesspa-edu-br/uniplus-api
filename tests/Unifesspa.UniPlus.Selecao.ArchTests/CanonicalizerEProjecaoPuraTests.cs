@@ -52,6 +52,9 @@ public sealed class CanonicalizerEProjecaoPuraTests
     private static readonly string[] NomesDaProjecaoDoCertame =
     [
         "ProjecaoDoCertamePublicado",
+        "IdentidadeDoCertame",
+        "OfertaDoCertame",
+        "ParticipacaoNoCertame",
         "PrimitivasDaProjecao",
         "LeituraDoDocumentoDivulgado",
         "LeituraDoCertameEdital",
