@@ -5,13 +5,12 @@ using System.Text.Json.Serialization.Metadata;
 
 using Microsoft.AspNetCore.OpenApi;
 
-using Unifesspa.UniPlus.Application.Abstractions.Respostas;
-
 /// <summary>
-/// Dá o nome de cada componente do documento OpenAPI. O código com rótulo de um enum leva o nome do enum, sem o tipo
-/// genérico; os demais tipos ficam no nome padrão. O tipo e a sua versão anulável são o mesmo tipo. Dois tipos diferentes
-/// nunca recebem o mesmo nome: a geração do documento falha, em vez de publicar um componente que serve a tipos
-/// diferentes.
+/// Dá o nome de cada componente do documento OpenAPI, um objeto por documento: o dono de um nome vale só dentro dele. O
+/// código com rótulo de um enum leva o nome do enum, o código com descrição leva o nome do enum seguido de
+/// <c>ComDescricao</c>, e os códigos aceitos do enum levam o nome do enum seguido de <c>Codigo</c>; os demais tipos ficam
+/// no nome padrão. O tipo e a sua versão anulável são o mesmo tipo. Dois tipos diferentes nunca recebem o mesmo nome: a
+/// geração do documento falha, em vez de publicar um componente que serve a tipos diferentes.
 /// </summary>
 internal sealed class NomesDosComponentes
 {
@@ -21,9 +20,7 @@ internal sealed class NomesDosComponentes
     {
         ArgumentNullException.ThrowIfNull(tipo);
 
-        string? nome = EhCodigoComRotulo(tipo.Type)
-            ? tipo.Type.GetGenericArguments()[0].Name
-            : OpenApiOptions.CreateDefaultSchemaReferenceId(tipo);
+        string? nome = FormatoDeCodigo.De(tipo.Type)?.NomeDoComponente ?? OpenApiOptions.CreateDefaultSchemaReferenceId(tipo);
 
         if (nome is not null)
         {
@@ -33,8 +30,17 @@ internal sealed class NomesDosComponentes
         return nome;
     }
 
-    private static bool EhCodigoComRotulo(Type tipo) =>
-        tipo is { IsGenericType: true } && tipo.GetGenericTypeDefinition() == typeof(CodigoComRotulo<>);
+    /// <summary>O nome do componente dos códigos aceitos do enum, que passa a ser do enum.</summary>
+    /// <exception cref="InvalidOperationException">Outro tipo do documento já tem esse nome.</exception>
+    public string NomeDosCodigos(Type enumDeContrato)
+    {
+        ArgumentNullException.ThrowIfNull(enumDeContrato);
+
+        string nome = $"{enumDeContrato.Name}Codigo";
+        ExigirNomeDeUmSoTipo(nome, enumDeContrato);
+
+        return nome;
+    }
 
     private void ExigirNomeDeUmSoTipo(string nome, Type tipo)
     {

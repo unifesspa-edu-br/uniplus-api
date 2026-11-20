@@ -27,13 +27,21 @@ public static class UniPlusOpenApiServiceCollectionExtensions
         return services
             .AddOpcoesDoOpenApi(configuration)
             .AddTransformersDoOpenApi()
-            .AddOpenApi(documentName, options =>
-            {
-                AdicionarTransformersDeDocumento(options);
-                AdicionarTransformersDeOperacao(options);
-                AdicionarTransformersDeCorpoEDeResposta(options);
-                AdicionarTransformersDeSchema(options);
-            });
+            .AddOpenApi(documentName, ConfigurarDocumento);
+    }
+
+    // Os nomes dos componentes e os componentes dos códigos pertencem a um documento: cada um tem o seu, para que o mesmo
+    // nome possa ser de tipos diferentes em documentos diferentes.
+    private static void ConfigurarDocumento(OpenApiOptions options)
+    {
+        NomesDosComponentes nomes = new();
+        ComponentesDosCodigos codigos = new(nomes);
+
+        options.CreateSchemaReferenceId = nomes.Nome;
+        AdicionarTransformersDeDocumento(options, codigos);
+        AdicionarTransformersDeOperacao(options, codigos);
+        AdicionarTransformersDeCorpoEDeResposta(options);
+        AdicionarTransformersDeSchema(options, codigos);
     }
 
     private static IServiceCollection AddOpcoesDoOpenApi(this IServiceCollection services, IConfiguration configuration)
@@ -98,19 +106,21 @@ public static class UniPlusOpenApiServiceCollectionExtensions
     {
         services.TryAddSingleton<UniPlusSchemaTransformer>();
         services.TryAddSingleton<InstanteSchemaTransformer>();
-        services.TryAddSingleton<CodigoComRotuloSchemaTransformer>();
         return services;
     }
 
-    private static void AdicionarTransformersDeDocumento(OpenApiOptions options)
+    private static void AdicionarTransformersDeDocumento(OpenApiOptions options, ComponentesDosCodigos codigos)
     {
         options.AddDocumentTransformer<UniPlusInfoTransformer>();
         options.AddDocumentTransformer<BearerSecuritySchemeDocumentTransformer>();
         options.AddDocumentTransformer<PaginationOrphanSchemaDocumentTransformer>();
         options.AddDocumentTransformer<ProblemDetailsExtensionsDocumentTransformer>();
+
+        // Depois de quem registrou: os transformers de schema já viram todo tipo do documento, e este escreve as referências.
+        options.AddDocumentTransformer(codigos);
     }
 
-    private static void AdicionarTransformersDeOperacao(OpenApiOptions options)
+    private static void AdicionarTransformersDeOperacao(OpenApiOptions options, ComponentesDosCodigos codigos)
     {
         options.AddOperationTransformer<UniPlusOperationTransformer>();
         options.AddOperationTransformer<CursorPaginationOperationTransformer>();
@@ -119,6 +129,7 @@ public static class UniPlusOpenApiServiceCollectionExtensions
         options.AddOperationTransformer<IdempotenciaOperationTransformer>();
         options.AddOperationTransformer<EsperaEsgotadaPelaTravaOperationTransformer>();
         options.AddOperationTransformer<AuthorizationOperationTransformer>();
+        options.AddOperationTransformer(new AceitaCodigosDeOperationTransformer(codigos));
     }
 
     private static void AdicionarTransformersDeCorpoEDeResposta(OpenApiOptions options)
@@ -133,11 +144,11 @@ public static class UniPlusOpenApiServiceCollectionExtensions
         options.AddOperationTransformer<VendorMediaTypeOperationTransformer>();
     }
 
-    private static void AdicionarTransformersDeSchema(OpenApiOptions options)
+    private static void AdicionarTransformersDeSchema(OpenApiOptions options, ComponentesDosCodigos codigos)
     {
         options.AddSchemaTransformer<UniPlusSchemaTransformer>();
         options.AddSchemaTransformer<InstanteSchemaTransformer>();
-        options.AddSchemaTransformer<CodigoComRotuloSchemaTransformer>();
-        options.CreateSchemaReferenceId = new NomesDosComponentes().Nome;
+        options.AddSchemaTransformer(new FormatosDeCodigoSchemaTransformer(codigos));
+        options.AddSchemaTransformer(new AceitaCodigosDeSchemaTransformer(codigos));
     }
 }
