@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using FluentValidation.Results;
 
+using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Validators.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -14,7 +15,7 @@ public sealed class DefinirRegrasDerivacaoCommandValidatorTests
 {
     private static readonly DefinirRegrasDerivacaoCommandValidator Validator = new();
 
-    private static CondicaoDerivacaoInput Condicao() =>
+    private static CondicaoPrecondicaoInput Condicao() =>
         new("COR_RACA", "IGUAL", JsonSerializer.SerializeToElement("PRETA"));
 
     private static DefinirRegrasDerivacaoCommand Comando(params RegraDerivacaoInput[] regras) =>

@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Regras.Entradas;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 using Unifesspa.UniPlus.Regras.Enums;
@@ -7,6 +8,8 @@ using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Serializacao;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+
+using Linhas = System.Collections.Generic.List<(int Clausula, Unifesspa.UniPlus.Regras.ValueObjects.CondicaoDnf Condicao)>;
 
 /// <summary>
 /// A forma das regras do formulário vindas da escrita — predicado, obrigatoriedade e restrição de
@@ -23,7 +26,7 @@ public static class EntradaDeRegras
             return Result<PredicadoDnf?>.Success(null);
         }
 
-        Result<List<(int Clausula, CondicaoDnf Condicao)>> linhas = CondicoesPorClausula(clausulas);
+        Result<List<(int Clausula, CondicaoDnf Condicao)>> linhas = Condicoes(clausulas);
         if (linhas.IsFailure)
         {
             return Result<PredicadoDnf?>.ValidationFailure(linhas.Errors);
@@ -33,66 +36,54 @@ public static class EntradaDeRegras
         return predicado.IsSuccess ? Result<PredicadoDnf?>.Success(predicado.Value) : Result<PredicadoDnf?>.Failure(predicado.Error!);
     }
 
-    private static Result<List<(int Clausula, CondicaoDnf Condicao)>> CondicoesPorClausula(
-        IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>> clausulas)
+    /// <summary>
+    /// As condições da entrada, cada uma com a posição da cláusula. É a única leitura de condição vinda do pedido: acumula
+    /// as recusas de todas as cláusulas e condições, cada uma no caminho <c>[cláusula][condição].campo</c>. A lista nula
+    /// é a ausência de condição.
+    /// </summary>
+    public static Result<List<(int Clausula, CondicaoDnf Condicao)>> Condicoes(
+        IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput?>?>? clausulas)
     {
-        List<(int Clausula, CondicaoDnf Condicao)> linhas = [];
-        for (int c = 0; c < clausulas.Count; c++)
+        Linhas linhas = [];
+        List<FieldError> erros = [];
+        for (int c = 0; c < (clausulas?.Count ?? 0); c++)
         {
-            Result<List<CondicaoDnf>> condicoes = CondicoesDaClausula(clausulas[c]);
-            if (condicoes.IsFailure)
-            {
-                return Result<List<(int Clausula, CondicaoDnf Condicao)>>.ValidationFailure(
-                    [.. condicoes.Errors.Select(erro => erro with { Field = $"[{c}]{erro.Field}" })]);
-            }
-
-            linhas.AddRange(condicoes.Value!.Select(condicao => (c, condicao)));
+            LerClausula(clausulas![c], c, linhas, erros);
         }
 
-        return Result<List<(int Clausula, CondicaoDnf Condicao)>>.Success(linhas);
+        return erros.Count > 0
+            ? Result<List<(int Clausula, CondicaoDnf Condicao)>>.ValidationFailure(erros)
+            : Result<List<(int Clausula, CondicaoDnf Condicao)>>.Success(linhas);
     }
 
-    private static Result<List<CondicaoDnf>> CondicoesDaClausula(IReadOnlyList<CondicaoPrecondicaoInput>? condicoes)
+    private static void LerClausula(IReadOnlyList<CondicaoPrecondicaoInput?>? condicoes, int clausula, Linhas linhas, List<FieldError> erros)
     {
         if (condicoes is not { Count: > 0 })
         {
-            return Result<List<CondicaoDnf>>.ValidationFailure([new FieldError("", new DomainError("ClausulaDnf.ClausulaVazia", "Uma cláusula deve ter ao menos uma condição."))]);
+            erros.Add(new($"[{clausula}]", new DomainError("ClausulaDnf.ClausulaVazia", "Uma cláusula deve ter ao menos uma condição.")));
+            return;
         }
 
-        return CriarCondicoes(condicoes);
+        LerCondicoes(condicoes, clausula, linhas, erros);
     }
 
-    private static Result<List<CondicaoDnf>> CriarCondicoes(IReadOnlyList<CondicaoPrecondicaoInput> condicoes)
+    private static void LerCondicoes(IReadOnlyList<CondicaoPrecondicaoInput?> condicoes, int clausula, Linhas linhas, List<FieldError> erros)
     {
-        List<CondicaoDnf> criadas = [];
         for (int i = 0; i < condicoes.Count; i++)
         {
-            Result<CondicaoDnf> criada = CriarCondicao(condicoes[i]);
-            if (criada.IsFailure)
+            Result<CondicaoDnf> lida = LerCondicao(condicoes[i]);
+            erros.AddRange(lida.Errors.Select(erro => erro.NoCaminhoDe($"[{clausula}][{i}]")));
+            if (lida.IsSuccess)
             {
-                return Result<List<CondicaoDnf>>.ValidationFailure(
-                    [new FieldError($"[{i}]{CampoDaCondicao(criada.Error!.Code)}", criada.Error)]);
+                linhas.Add((clausula, lida.Value!));
             }
-
-            criadas.Add(criada.Value!);
         }
-
-        return Result<List<CondicaoDnf>>.Success(criadas);
     }
 
-    private static Result<CondicaoDnf> CriarCondicao(CondicaoPrecondicaoInput? condicao) =>
+    private static Result<CondicaoDnf> LerCondicao(CondicaoPrecondicaoInput? condicao) =>
         condicao is null
-            ? Result<CondicaoDnf>.Failure(new DomainError(PredicadoDnfErrorCodes.CondicaoNula, "O predicado contém uma condição nula."))
-            : CondicaoDnf.Criar(condicao.Fato, OperadorCodigo.FromCodigo(condicao.Operador), condicao.Valor);
-
-    /// <summary>Campo da condição identificado pela recusa de forma.</summary>
-    public static string CampoDaCondicao(string codigo) => codigo switch
-    {
-        "CondicaoDnf.FatoObrigatorio" => ".fato",
-        "CondicaoDnf.OperadorInvalido" => ".operador",
-        "CondicaoDnf.FormaIncoerenteComOperador" => ".valor",
-        _ => "",
-    };
+            ? Result<CondicaoDnf>.ValidationFailure([new FieldError("", new DomainError(PredicadoDnfErrorCodes.CondicaoNula, "O predicado contém uma condição nula."))])
+            : CondicaoDnf.CriarInformada(condicao.Fato, condicao.Operador, condicao.Valor);
 
     /// <summary>
     /// A obrigatoriedade do token e do predicado: <c>SEMPRE</c> e <c>NUNCA</c> sem predicado,
@@ -280,7 +271,7 @@ public static class EntradaDeRegras
         predicado is null
             ? null
             : [.. predicado.Clausulas.Select(static c => (IReadOnlyList<CondicaoPrecondicaoInput>)
-                [.. c.Condicoes.Select(static k => new CondicaoPrecondicaoInput(k.Fato, k.Operador.ToCodigo(), k.Valor))])];
+                [.. c.Condicoes.Select(static k => new CondicaoPrecondicaoInput(k.Fato, k.Operador.Codigo(), k.Valor))])];
 
     /// <summary>O token da obrigatoriedade; o predicado do <c>QUANDO</c> vai à parte (<see cref="ParaEntrada(PredicadoDnf?)"/>).</summary>
     public static string ParaEntrada(Formularios.Obrigatoriedade obrigatoriedade)

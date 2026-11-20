@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Mappings;
 
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
@@ -11,6 +12,6 @@ internal static class PredicadoDnfMapping
     {
         ArgumentNullException.ThrowIfNull(predicado);
         return [.. predicado.Clausulas.Select(static c => (IReadOnlyList<CondicaoDoPredicadoDto>)
-            [.. c.Condicoes.Select(static d => new CondicaoDoPredicadoDto(d.Fato, d.Operador.ToCodigo(), d.Valor))])];
+            [.. c.Condicoes.Select(static d => new CondicaoDoPredicadoDto(d.Fato, d.Operador.Codigo(), d.Valor))])];
     }
 }

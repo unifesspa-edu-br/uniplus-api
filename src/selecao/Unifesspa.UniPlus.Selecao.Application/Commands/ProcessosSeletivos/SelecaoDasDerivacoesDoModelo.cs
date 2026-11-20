@@ -152,10 +152,8 @@ internal sealed class SelecaoDasDerivacoesDoModelo(
         new($"derivacoes[{codigo}]", new DomainError(codigoDoErro, mensagem));
 
     // O predicado da regra padrão na forma da entrada de derivação; a regra âncora não tem condição.
-    private static IReadOnlyList<IReadOnlyList<CondicaoDerivacaoInput>>? Quando(PredicadoDnf quando) =>
-        EntradaDeRegras.ParaEntrada(quando) is { Count: > 0 } clausulas
-            ? [.. clausulas.Select(static c => (IReadOnlyList<CondicaoDerivacaoInput>)[.. c.Select(static k => new CondicaoDerivacaoInput(k.Fato, k.Operador, k.Valor))])]
-            : null;
+    private static IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? Quando(PredicadoDnf quando) =>
+        EntradaDeRegras.ParaEntrada(quando) is { Count: > 0 } clausulas ? clausulas : null;
 
     // O que a visita a um derivado citado decidiu: copiá-lo do catálogo, recusá-lo, ou só seguir para os
     // derivados que ele cita.

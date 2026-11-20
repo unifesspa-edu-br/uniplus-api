@@ -10,6 +10,7 @@ using DTOs;
 
 using Mappings;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -100,9 +101,9 @@ internal static class ProjecaoDaColeta
             .OrderBy(static g => g.Key)
             .Select(g => (IReadOnlyList<TCondicao>)[.. g
                 .OrderBy(static c => c.Fato, StringComparer.Ordinal)
-                .ThenBy(static c => c.Operador.ToCodigo(), StringComparer.Ordinal)
+                .ThenBy(static c => c.Operador.Codigo(), StringComparer.Ordinal)
                 .ThenBy(static c => c.Valor.GetRawText(), StringComparer.Ordinal)
-                .Select(c => criar(c.Fato, c.Operador.ToCodigo(), c.Valor))])];
+                .Select(c => criar(c.Fato, c.Operador.Codigo(), c.Valor))])];
     }
 
     // Sem a referência temporal, um FIM_FASE ou DATA_ESPECIFICA salvo desapareceria do agregado, e o
@@ -170,7 +171,7 @@ internal static class ProjecaoDaColeta
         condicao.Id,
         condicao.Clausula,
         condicao.Fato,
-        condicao.Operador.ToCodigo(),
+        condicao.Operador.Codigo(),
         condicao.Valor.GetRawText());
 
     private static IdadeMaximaEmissaoDto? ProjetarIdadeMaximaDeEmissao(IdadeMaximaEmissao? idade) =>

@@ -93,54 +93,50 @@ public sealed record ClausulaDnf
         // adaptador descuidado não deve derrubar a avaliação inteira, e "não sei" é a leitura
         // conservadora de uma entrada sem conteúdo — nunca "não se aplica", que dispensaria a
         // exigência por um defeito de montagem.
-        if (!fatosResolvidos.TryGetValue(condicao.Fato, out FatoResolvido? fato) || fato is null)
-        {
-            return EstadoAtomo.Indeterminado;
-        }
+        FatoResolvido? fato = fatosResolvidos.GetValueOrDefault(condicao.Fato);
 
-        if (fato.Estado == EstadoFato.NaoAplicavel)
-        {
-            return EstadoAtomo.NaoAplicavel;
-        }
+        return fato is { Estado: EstadoFato.Resolvido, Valor: { } valorCandidato }
+            ? AvaliarValor(condicao, valorCandidato)
+            : EstadoSemValorParaComparar(fato);
+    }
+
+    private static EstadoAtomo EstadoSemValorParaComparar(FatoResolvido? fato) => fato?.Estado switch
+    {
+        EstadoFato.NaoAplicavel => EstadoAtomo.NaoAplicavel,
 
         // Opcional em branco com a etapa concluída (UNI-REQ-0074): não há valor a comparar nem a
         // negar, então a condição é falsa para todo operador, inclusive DIFERENTE e NAO_EM — quem
         // não respondeu não satisfaz "diferente de X" por omissão.
-        if (fato.Estado == EstadoFato.NaoInformado)
-        {
-            return EstadoAtomo.Falso;
-        }
+        EstadoFato.NaoInformado => EstadoAtomo.Falso,
+        _ => EstadoAtomo.Indeterminado,
+    };
 
-        if (fato.Estado != EstadoFato.Resolvido || fato.Valor is not { } valorCandidato)
-        {
-            return EstadoAtomo.Indeterminado;
-        }
+    // Diferente/NaoEm são avaliados como a negação de Igual/Em: o resultado base é
+    // calculado sobre o operador positivo correspondente, e só invertido quando
+    // efetivamente resolvido (Ternario.Verdadeiro/Falso) — Indeterminado nunca inverte.
+    private static EstadoAtomo AvaliarValor(CondicaoDnf condicao, JsonElement valorCandidato)
+    {
+        Ternario resultadoBase = AvaliarOperadorBase(OperadorPositivo(condicao.Operador), valorCandidato, condicao.Valor);
 
-        // Diferente/NaoEm são avaliados como a negação de Igual/Em: o resultado base é
-        // calculado sobre o operador positivo correspondente, e só invertido quando
-        // efetivamente resolvido (Ternario.Verdadeiro/Falso) — Indeterminado nunca inverte.
-        Operador operadorBase = condicao.Operador switch
-        {
-            Operador.Igual => Operador.Igual,
-            Operador.Em => Operador.Em,
-            Operador.MaiorIgual => Operador.MaiorIgual,
-            Operador.MenorIgual => Operador.MenorIgual,
-            Operador.Diferente => Operador.Igual,
-            Operador.NaoEm => Operador.Em,
-            Operador.Nenhuma => throw new ArgumentOutOfRangeException(
-                nameof(condicao), condicao.Operador, "Operador.Nenhuma é sentinela e não é avaliável."),
-            _ => throw new ArgumentOutOfRangeException(nameof(condicao), condicao.Operador, "Operador desconhecido."),
-        };
-
-        Ternario resultadoBase = AvaliarOperadorBase(operadorBase, valorCandidato, condicao.Valor);
-        bool negar = condicao.Operador is Operador.Diferente or Operador.NaoEm;
-        if (!negar || resultadoBase == Ternario.Indeterminado)
-        {
-            return TernarioParaAtomo(resultadoBase);
-        }
-
-        return resultadoBase == Ternario.Verdadeiro ? EstadoAtomo.Falso : EstadoAtomo.Verdadeiro;
+        return condicao.Operador is Operador.Diferente or Operador.NaoEm
+            ? NegacaoDoAtomo(resultadoBase)
+            : TernarioParaAtomo(resultadoBase);
     }
+
+    private static Operador OperadorPositivo(Operador operador) => operador switch
+    {
+        Operador.Diferente => Operador.Igual,
+        Operador.NaoEm => Operador.Em,
+        Operador.Igual or Operador.Em or Operador.MaiorIgual or Operador.MenorIgual => operador,
+        _ => throw new ArgumentOutOfRangeException(nameof(operador), operador, "Operador desconhecido."),
+    };
+
+    private static EstadoAtomo NegacaoDoAtomo(Ternario resultadoBase) => resultadoBase switch
+    {
+        Ternario.Verdadeiro => EstadoAtomo.Falso,
+        Ternario.Falso => EstadoAtomo.Verdadeiro,
+        _ => EstadoAtomo.Indeterminado,
+    };
 
     /// <summary>
     /// Converte o resultado da comparação de valores — que é ternária, porque

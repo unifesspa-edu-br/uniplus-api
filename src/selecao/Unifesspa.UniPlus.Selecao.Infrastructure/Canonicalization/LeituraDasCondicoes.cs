@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -128,30 +129,20 @@ internal static class LeituraDasCondicoes
             return false;
         }
 
-        for (int i = 0; i < condicoesDaClausula.Count; i++)
+        List<LinhaDoPredicado> linhas = [];
+        return LerLinhas(leitor, condicoesDaClausula, clausula, clausulaPath, linhas) && linhas.TrueForAll(linha => AdicionarGatilho(leitor, linha, condicoes));
+    }
+
+    private static bool AdicionarGatilho(LeitorEnvelope leitor, LinhaDoPredicado linha, List<CondicaoGatilho> condicoes)
+    {
+        Result<CondicaoGatilho> condicao = CondicaoGatilho.Criar(linha.Clausula, linha.Fato, linha.Operador, linha.Valor);
+        if (condicao.IsFailure)
         {
-            string condicaoPath = $"{clausulaPath}[{i}]";
-            JsonObject condicaoItem = leitor.ItemObjeto(condicoesDaClausula, i, clausulaPath);
-            leitor.ExigirChaves(condicaoItem, condicaoPath, "fato", "operador", "valor");
-
-            string fato = leitor.TextoNaoVazio(condicaoItem, "fato", condicaoPath, LimitesDoEnvelope.Fato);
-            string operadorCodigo = leitor.TextoNaoVazio(condicaoItem, "operador", condicaoPath);
-            JsonElement valor = leitor.Valor(condicaoItem, "valor", condicaoPath);
-            if (leitor.Falhou)
-            {
-                return false;
-            }
-
-            Result<CondicaoGatilho> condicao = CondicaoGatilho.Criar(clausula, fato, OperadorCodigo.FromCodigo(operadorCodigo), valor);
-            if (condicao.IsFailure)
-            {
-                leitor.Propagar<CondicaoGatilho>(condicao.Error!);
-                return false;
-            }
-
-            condicoes.Add(condicao.Value!);
+            leitor.Propagar<CondicaoGatilho>(condicao.Error!);
+            return false;
         }
 
+        condicoes.Add(condicao.Value!);
         return true;
     }
 
@@ -191,8 +182,7 @@ internal static class LeituraDasCondicoes
     /// Um predicado DNF <c>{fato, operador, valor}</c> (pré-condição de fato ou <c>quando</c> de
     /// regra), na mesma forma do gatilho: array de cláusulas (OU), cada uma array de condições (E).
     /// Ausente/nulo = sem condição. Mesma disciplina de <c>LerCondicaoGatilho</c> —
-    /// a factory revalida a forma; token de operador não reconhecido vira <c>Nenhuma</c>, que a
-    /// factory rejeita como falha de domínio.
+    /// a factory revalida a forma; código de operador fora do catálogo recusa o envelope.
     /// </summary>
     internal static IReadOnlyList<LinhaDoPredicado> LerDnf(LeitorEnvelope leitor, JsonObject item, string chave, string pathPai)
     {
@@ -240,23 +230,55 @@ internal static class LeituraDasCondicoes
             return false;
         }
 
+        return LerLinhas(leitor, condicoesDaClausula, clausula, clausulaPath, condicoes);
+    }
+
+    private static bool LerLinhas(LeitorEnvelope leitor, JsonArray condicoesDaClausula, int clausula, string clausulaPath, List<LinhaDoPredicado> linhas)
+    {
         for (int i = 0; i < condicoesDaClausula.Count; i++)
         {
-            string condicaoPath = $"{clausulaPath}[{i}]";
-            JsonObject condicaoItem = leitor.ItemObjeto(condicoesDaClausula, i, clausulaPath);
-            leitor.ExigirChaves(condicaoItem, condicaoPath, "fato", "operador", "valor");
-
-            string fato = leitor.TextoNaoVazio(condicaoItem, "fato", condicaoPath, LimitesDoEnvelope.Fato);
-            string operadorCodigo = leitor.TextoNaoVazio(condicaoItem, "operador", condicaoPath);
-            JsonElement valor = leitor.Valor(condicaoItem, "valor", condicaoPath);
-            if (leitor.Falhou)
+            if (LerLinha(leitor, condicoesDaClausula, i, clausula, clausulaPath) is not { } linha)
             {
                 return false;
             }
 
-            condicoes.Add((clausula, fato, OperadorCodigo.FromCodigo(operadorCodigo), valor));
+            linhas.Add(linha);
         }
 
         return true;
+    }
+
+    private static LinhaDoPredicado? LerLinha(LeitorEnvelope leitor, JsonArray condicoes, int indice, int clausula, string clausulaPath)
+    {
+        string condicaoPath = $"{clausulaPath}[{indice}]";
+        JsonObject condicao = leitor.ItemObjeto(condicoes, indice, clausulaPath);
+        leitor.ExigirChaves(condicao, condicaoPath, "fato", "operador", "valor");
+
+        string fato = leitor.TextoNaoVazio(condicao, "fato", condicaoPath, LimitesDoEnvelope.Fato);
+        Operador operador = LerOperador(leitor, condicao, condicaoPath);
+        JsonElement valor = leitor.Valor(condicao, "valor", condicaoPath);
+
+        return leitor.Falhou ? null : (clausula, fato, operador, valor);
+    }
+
+    /// <summary>
+    /// O operador congelado no envelope é o código declarado no enum. O código fora do catálogo, como o de um formato
+    /// antigo, recusa o envelope: ele não é lido.
+    /// </summary>
+    internal static Operador LerOperador(LeitorEnvelope leitor, JsonObject condicao, string condicaoPath)
+    {
+        string codigo = leitor.TextoNaoVazio(condicao, "operador", condicaoPath);
+        if (leitor.Falhou)
+        {
+            return default;
+        }
+
+        if (CatalogoDe<Operador>.TentarObter(codigo, out Operador operador))
+        {
+            return operador;
+        }
+
+        string aceitos = string.Join(", ", CatalogoDe<Operador>.Todos().Select(static d => d.Codigo));
+        return leitor.Malformado<Operador>($"{condicaoPath}.operador", $"o operador não é um dos códigos aceitos: {aceitos}.");
     }
 }

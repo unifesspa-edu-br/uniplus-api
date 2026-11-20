@@ -14,13 +14,13 @@ using Domain.ValueObjects;
 
 using DTOs;
 
-using Kernel.Domain.CodigosDeContrato;
 using Kernel.Results;
 
 using Services;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;

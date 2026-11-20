@@ -13,7 +13,6 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
-using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Configuração EF Core de <see cref="CondicaoGatilho"/> (Story #554, PR #896) — entidade
@@ -38,10 +37,9 @@ public sealed class CondicaoGatilhoConfiguration : IEntityTypeConfiguration<Cond
         builder.Property(c => c.Clausula).IsRequired();
         builder.Property(c => c.Fato).HasMaxLength(FatoMaxLength).IsRequired();
 
-        // Mesmo mapeamento canônico de OperadorCodigo usado no wire — nunca enum.ToString()
-        // cru (ADR-0111): a coluna carrega o mesmo token IGUAL/EM/MAIOR_IGUAL/MENOR_IGUAL.
+        // A convenção do modelo grava o código declarado no enum (ADR-0176), o mesmo token
+        // IGUAL/EM/MAIOR_IGUAL/MENOR_IGUAL do wire; aqui só o tamanho da coluna.
         builder.Property(c => c.Operador)
-            .HasConversion(OperadorConverter)
             .HasMaxLength(OperadorCodigoMaxLength)
             .IsRequired();
 
@@ -55,9 +53,6 @@ public sealed class CondicaoGatilhoConfiguration : IEntityTypeConfiguration<Cond
     }
 
     private const int OperadorCodigoMaxLength = 20;
-
-    private static readonly ValueConverter<Operador, string> OperadorConverter =
-        new(operador => operador.ToCodigo(), codigo => OperadorCodigo.FromCodigo(codigo));
 
     private static readonly ValueConverter<JsonElement, string> JsonElementConverter =
         new(element => element.GetRawText(), json => Parse(json));

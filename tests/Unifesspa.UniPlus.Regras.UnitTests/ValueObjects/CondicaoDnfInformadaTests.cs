@@ -1,0 +1,71 @@
+namespace Unifesspa.UniPlus.Regras.UnitTests.ValueObjects;
+
+using System.Text.Json;
+
+using AwesomeAssertions;
+
+using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.ValueObjects;
+
+public sealed class CondicaoDnfInformadaTests
+{
+    private static JsonElement Json(string bruto)
+    {
+        using JsonDocument documento = JsonDocument.Parse(bruto);
+        return documento.RootElement.Clone();
+    }
+
+    private static (string? Campo, string Codigo)[] Recusas(Result<CondicaoDnf> resultado) =>
+        [.. resultado.Errors.Select(static e => (e.Field, e.Error.Code))];
+
+    [Theory(DisplayName = "Cada código de operador declarado cria a condição com o operador dele")]
+    [InlineData("IGUAL", Operador.Igual, "true")]
+    [InlineData("EM", Operador.Em, "[\"A\"]")]
+    [InlineData("MAIOR_IGUAL", Operador.MaiorIgual, "18")]
+    [InlineData("MENOR_IGUAL", Operador.MenorIgual, "60")]
+    [InlineData("DIFERENTE", Operador.Diferente, "true")]
+    [InlineData("NAO_EM", Operador.NaoEm, "[\"A\"]")]
+    public void CriarInformada_CodigoDeclarado_CriaComOOperador(string codigo, Operador esperado, string valor)
+    {
+        Result<CondicaoDnf> resultado = CondicaoDnf.CriarInformada(" FATO ", codigo, Json(valor));
+
+        resultado.IsSuccess.Should().BeTrue();
+        (resultado.Value!.Fato, resultado.Value.Operador).Should().Be(("FATO", esperado));
+    }
+
+    [Fact(DisplayName = "O operador desconhecido e o fato em branco saem juntos, cada um no seu campo")]
+    public void CriarInformada_FatoEmBrancoEOperadorDesconhecido_AcumulaAsDuasRecusas() =>
+        Recusas(CondicaoDnf.CriarInformada("  ", "QUASE_IGUAL", Json("true")))
+            .Should().Equal(("fato", "CondicaoDnf.FatoObrigatorio"), ("operador", "CondicaoDnf.OperadorInvalido"));
+
+    [Fact(DisplayName = "O operador ausente é recusado como o desconhecido")]
+    public void CriarInformada_OperadorAusente_RecusaOOperador() =>
+        Recusas(CondicaoDnf.CriarInformada("FATO", null, Json("true")))
+            .Should().Equal(("operador", "CondicaoDnf.OperadorInvalido"));
+
+    [Fact(DisplayName = "A forma do valor só é conferida quando o operador foi lido")]
+    public void CriarInformada_OperadorDesconhecidoEValorIncoerente_NaoConfereOValor() =>
+        Recusas(CondicaoDnf.CriarInformada("FATO", "QUASE_IGUAL", Json("[1]")))
+            .Should().Equal(("operador", "CondicaoDnf.OperadorInvalido"));
+
+    [Fact(DisplayName = "O valor incoerente com o operador lido é recusado no campo do valor")]
+    public void CriarInformada_ValorIncoerenteComOOperador_RecusaOValor() =>
+        Recusas(CondicaoDnf.CriarInformada("FATO", "EM", Json("\"A\"")))
+            .Should().Equal(("valor", "CondicaoDnf.FormaIncoerenteComOperador"));
+
+    [Fact(DisplayName = "O fato em branco e o valor incoerente saem juntos quando o operador é conhecido")]
+    public void CriarInformada_FatoEmBrancoEValorIncoerente_AcumulaAsDuasRecusas() =>
+        Recusas(CondicaoDnf.CriarInformada("", "IGUAL", Json("[1]")))
+            .Should().Equal(("fato", "CondicaoDnf.FatoObrigatorio"), ("valor", "CondicaoDnf.FormaIncoerenteComOperador"));
+
+    [Fact(DisplayName = "A mensagem do operador desconhecido lista os códigos aceitos e não repete o valor recebido")]
+    public void CriarInformada_OperadorDesconhecido_ListaOsAceitosENaoRepeteOValor()
+    {
+        Result<CondicaoDnf> resultado = CondicaoDnf.CriarInformada("FATO", "QUASE_IGUAL", Json("true"));
+
+        string mensagem = resultado.Error!.Message;
+        mensagem.Should().Contain("IGUAL, EM, MAIOR_IGUAL, MENOR_IGUAL, DIFERENTE, NAO_EM");
+        mensagem.Should().NotContain("QUASE_IGUAL");
+    }
+}

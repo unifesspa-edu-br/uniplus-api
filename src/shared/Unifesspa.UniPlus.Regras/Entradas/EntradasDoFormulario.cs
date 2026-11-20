@@ -3,6 +3,9 @@ namespace Unifesspa.UniPlus.Regras.Entradas;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
+
 /// <summary>
 /// Uma condição da pré-condição de um fato coletado — a tripla
 /// <c>{ Fato, Operador, Valor }</c> na forma flat do wire de comando. Idêntica em forma à
@@ -10,7 +13,7 @@ using System.Text.Json.Serialization;
 /// (<c>IGUAL</c>, <c>EM</c>, …) e o <see cref="Valor"/> é o valor JSON já tipado (string,
 /// booleano, número ou array para <c>EM</c>/<c>NAO_EM</c>).
 /// </summary>
-public sealed record CondicaoPrecondicaoInput(string Fato, string Operador, JsonElement Valor);
+public sealed record CondicaoPrecondicaoInput(string Fato, [AceitaCodigosDe<Operador>] string? Operador, JsonElement Valor);
 
 /// <summary>
 /// Uma restrição sobre o valor respondido no item, pelo <see cref="Tipo"/>: <c>FAIXA_NUMERICA</c>

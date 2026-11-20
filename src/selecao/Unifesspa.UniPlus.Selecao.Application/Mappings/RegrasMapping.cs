@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Mappings;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Serializacao;
@@ -55,6 +56,6 @@ internal static class RegrasMapping
     {
         ArgumentNullException.ThrowIfNull(predicado);
         return [.. predicado.Clausulas.Select(static c => (IReadOnlyList<CondicaoPrecondicaoDto>)
-            [.. c.Condicoes.Select(static d => new CondicaoPrecondicaoDto(d.Fato, d.Operador.ToCodigo(), d.Valor))])];
+            [.. c.Condicoes.Select(static d => new CondicaoPrecondicaoDto(d.Fato, d.Operador.Codigo(), d.Valor))])];
     }
 }

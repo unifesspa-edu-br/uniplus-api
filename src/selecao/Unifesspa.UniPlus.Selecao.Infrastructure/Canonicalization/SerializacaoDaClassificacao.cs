@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -52,7 +53,7 @@ internal static class SerializacaoDaClassificacao
     private static JsonObject SerializarPredicadoDoDesempate(CondicaoDnf condicao) => new()
     {
         ["fato"] = HashCanonicalComputer.NormalizeNfc(condicao.Fato),
-        ["operador"] = condicao.Operador.ToCodigo(),
+        ["operador"] = condicao.Operador.Codigo(),
         ["valor"] = SerializacaoDosPredicados.SerializarValorDeAtomo(condicao.Operador, condicao.Valor),
     };
 

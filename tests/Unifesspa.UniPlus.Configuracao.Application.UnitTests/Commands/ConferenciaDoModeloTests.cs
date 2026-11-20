@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
@@ -227,7 +228,7 @@ public sealed class ConferenciaDoModeloTests
     private static FatoColetadoInput Item(string fato, int ordem, string tipo = "BOOLEANO") => new(fato, ordem, fato, tipo, "SEMPRE", null);
 
     private static Condicoes Citando(string fato) =>
-        [[new CondicaoPrecondicaoInput(fato, OperadorCodigo.Igual, JsonSerializer.SerializeToElement(true))]];
+        [[new CondicaoPrecondicaoInput(fato, Operador.Igual.Codigo(), JsonSerializer.SerializeToElement(true))]];
 
     private static FatoCandidato Declarado(string codigo, EscopoFato escopo = EscopoFato.Candidato, bool desativado = false, bool aprovado = true)
     {

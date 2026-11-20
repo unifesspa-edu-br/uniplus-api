@@ -12,13 +12,12 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
-using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Configuração EF Core de <see cref="CondicaoRegraDerivacao"/> (Story #927) — entidade filha de
 /// <see cref="RegraDerivacaoConfigurada"/>, <c>EntityBase</c> puro (sem soft-delete). Mesmo mapeamento de
-/// <see cref="CondicaoGatilhoConfiguration"/>: o operador vai para a coluna pelo token canônico do
-/// wire, nunca por <c>enum.ToString()</c>, e o valor é <c>jsonb</c> serializado pelo texto bruto.
+/// <see cref="CondicaoGatilhoConfiguration"/>: o operador vai para a coluna pelo código declarado no enum
+/// e o valor é <c>jsonb</c> serializado pelo texto bruto.
 /// </summary>
 public sealed class CondicaoRegraDerivacaoConfiguration : IEntityTypeConfiguration<CondicaoRegraDerivacao>
 {
@@ -39,7 +38,6 @@ public sealed class CondicaoRegraDerivacaoConfiguration : IEntityTypeConfigurati
         builder.Property(c => c.Fato).HasMaxLength(FatoMaxLength).IsRequired();
 
         builder.Property(c => c.Operador)
-            .HasConversion(OperadorConverter)
             .HasMaxLength(OperadorCodigoMaxLength)
             .IsRequired();
 
@@ -48,9 +46,6 @@ public sealed class CondicaoRegraDerivacaoConfiguration : IEntityTypeConfigurati
             .HasColumnType("jsonb")
             .IsRequired();
     }
-
-    private static readonly ValueConverter<Operador, string> OperadorConverter =
-        new(operador => operador.ToCodigo(), codigo => OperadorCodigo.FromCodigo(codigo));
 
     private static readonly ValueConverter<JsonElement, string> JsonElementConverter =
         new(element => element.GetRawText(), json => Parse(json));

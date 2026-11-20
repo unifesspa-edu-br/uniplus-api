@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Testes.Compartilhado;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -320,7 +321,7 @@ internal static class FormularioDeTeste
         Obrigatoriedade obrigatoriedade = EntradaDeRegras.Obrigatoriedade(
             entrada.Obrigatoriedade, EntradaDeRegras.Predicado(entrada.PredicadoObrigatoriedade).Value)!;
         CondicaoPrecondicaoFato[] precondicoes = [.. (entrada.Precondicao ?? []).SelectMany((clausula, indice) => clausula.Select(c =>
-            CondicaoPrecondicaoFato.Criar(indice, c.Fato, OperadorCodigo.FromCodigo(c.Operador), c.Valor).Value!))];
+            CondicaoPrecondicaoFato.Criar(indice, c.Fato, CatalogoDe<Operador>.Obter(c.Operador!), c.Valor).Value!))];
         return FatoColetado.Criar(
             entrada.FatoCodigo, entrada.Ordem, entrada.Rotulo, TipoRenderizacaoCodigo.FromCodigo(entrada.TipoRenderizacao), obrigatoriedade, precondicoes,
             ClassificacaoDosFatos.GetValueOrDefault(entrada.FatoCodigo, "PESSOAL"), ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoDoFatoDeTeste.Descricao,

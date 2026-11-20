@@ -1,20 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using System.Text.Json;
-
 using Domain.ValueObjects;
 
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
-using Unifesspa.UniPlus.Regras.Enums;
-
-/// <summary>
-/// Uma condição do predicado <c>quando</c> de uma regra de derivação — a tripla
-/// <c>{ Fato, Operador, Valor }</c> na forma flat do wire. O <see cref="Operador"/> é o código
-/// canônico UPPER_SNAKE e o <see cref="Valor"/> é o valor JSON já tipado.
-/// </summary>
-public sealed record CondicaoDerivacaoInput(string Fato, string Operador, JsonElement Valor);
+using Unifesspa.UniPlus.Regras.Entradas;
 
 /// <summary>
 /// Uma regra de derivação: quando o predicado <see cref="Quando"/> é verdadeiro, a regra contribui
@@ -28,7 +19,7 @@ public sealed record CondicaoDerivacaoInput(string Fato, string Operador, JsonEl
 public sealed record RegraDerivacaoInput(
     int Ordem,
     string? Contribui,
-    IReadOnlyList<IReadOnlyList<CondicaoDerivacaoInput>>? Quando);
+    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? Quando);
 
 /// <summary>
 /// A configuração de derivação de um fato: o código do fato derivado e a lista de regras que o

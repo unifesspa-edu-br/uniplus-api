@@ -28,13 +28,19 @@ public sealed class CondicaoDnfTests
         resultado.Error!.Code.Should().Be("CondicaoDnf.FatoObrigatorio");
     }
 
-    [Fact(DisplayName = "CondicaoDnf_Rejeita_Operador_Sentinela")]
-    public void CondicaoDnf_Rejeita_Operador_Sentinela()
+    [Theory(DisplayName = "CondicaoDnf informada rejeita o operador que não é código declarado")]
+    [InlineData("")]
+    [InlineData("igual")]
+    [InlineData(" IGUAL")]
+    [InlineData("Igual")]
+    [InlineData("0")]
+    [InlineData("NENHUMA")]
+    public void CriarInformada_OperadorForaDoCatalogo_RejeitaComOperadorInvalido(string operador)
     {
-        Result<CondicaoDnf> resultado = CondicaoDnf.Criar("SEXO", Operador.Nenhuma, Json("\"FEMININO\""));
+        Result<CondicaoDnf> resultado = CondicaoDnf.CriarInformada("SEXO", operador, Json("\"FEMININO\""));
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("CondicaoDnf.OperadorInvalido");
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("operador", "CondicaoDnf.OperadorInvalido"));
     }
 
     [Theory(DisplayName = "CondicaoDnf aceita as seis variantes válidas de operador com valor coerente")]

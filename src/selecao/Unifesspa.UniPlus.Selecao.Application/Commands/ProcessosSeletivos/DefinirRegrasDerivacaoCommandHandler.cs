@@ -8,6 +8,7 @@ using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
@@ -230,7 +231,7 @@ public static class DefinirRegrasDerivacaoCommandHandler
 
     /// <summary>
     /// Monta e valida uma regra. A regra <b>âncora</b> (sem condições, sempre verdadeira) tem
-    /// <c>Quando</c> nulo. Cada condição valida a forma (<see cref="CondicaoDnf.Criar"/>) e, no
+    /// <c>Quando</c> nulo. As condições vêm de <see cref="EntradaDeRegras.Condicoes"/> e, no
     /// conjunto, a semântica do predicado (<see cref="PredicadoDnfValidador"/>) — fato citado no
     /// vocabulário, disponível na configuração final, operador × domínio, valor × domínio.
     /// </summary>
@@ -240,52 +241,49 @@ public static class DefinirRegrasDerivacaoCommandHandler
         IReadOnlySet<string> universo,
         IReadOnlyDictionary<string, DominioDeValores> dominiosDinamicos)
     {
-        List<(int Clausula, CondicaoDnf Condicao)> linhas = [];
+        Result<List<(int Clausula, CondicaoDnf Condicao)>> linhas = EntradaDeRegras.Condicoes(regraInput.Quando);
+        Result<List<CondicaoRegraDerivacao>> condicoes = linhas.IsFailure
+            ? Result<List<CondicaoRegraDerivacao>>.Failure(linhas.Error!)
+            : CondicoesDaRegra(linhas.Value!);
+        Result validacao = condicoes.IsFailure ? Result.Failure(condicoes.Error!) : ConferirPredicado(linhas.Value!, vocabulario, universo, dominiosDinamicos);
+
+        return validacao.IsFailure
+            ? Result<RegraDerivacaoConfigurada>.Failure(validacao.Error!)
+            : RegraDerivacaoConfigurada.Criar(regraInput.Ordem, regraInput.Contribui, condicoes.Value!);
+    }
+
+    private static Result<List<CondicaoRegraDerivacao>> CondicoesDaRegra(List<(int Clausula, CondicaoDnf Condicao)> linhas)
+    {
         List<CondicaoRegraDerivacao> condicoes = [];
-        IReadOnlyList<IReadOnlyList<CondicaoDerivacaoInput>> quando = regraInput.Quando ?? [];
-        for (int clausula = 0; clausula < quando.Count; clausula++)
+        foreach ((int clausula, CondicaoDnf condicao) in linhas)
         {
-            foreach (CondicaoDerivacaoInput condicaoInput in quando[clausula])
+            Result<CondicaoRegraDerivacao> criada = CondicaoRegraDerivacao.Criar(clausula, condicao.Fato, condicao.Operador, condicao.Valor);
+            if (criada.IsFailure)
             {
-                // Defesa em profundidade: uma condição nula (JSON `[[null]]`) já é barrada pelo
-                // validator (400), mas nunca deve virar NullReferenceException/500 aqui.
-                if (condicaoInput is null)
-                {
-                    return Result<RegraDerivacaoConfigurada>.Failure(new DomainError(
-                        CondicaoRegraDerivacaoErrorCodes.ClausulaInvalida,
-                        "O predicado da regra contém uma condição nula."));
-                }
-
-                Operador operador = OperadorCodigo.FromCodigo(condicaoInput.Operador);
-
-                Result<CondicaoRegraDerivacao> condicaoResult =
-                    CondicaoRegraDerivacao.Criar(clausula, condicaoInput.Fato, operador, condicaoInput.Valor);
-                if (condicaoResult.IsFailure)
-                {
-                    return Result<RegraDerivacaoConfigurada>.Failure(condicaoResult.Error!);
-                }
-
-                condicoes.Add(condicaoResult.Value!);
-                linhas.Add((clausula, CondicaoDnf.Criar(condicaoInput.Fato, operador, condicaoInput.Valor).Value!));
+                return Result<List<CondicaoRegraDerivacao>>.Failure(criada.Error!);
             }
+
+            condicoes.Add(criada.Value!);
         }
 
-        if (linhas.Count > 0)
-        {
-            Result<PredicadoDnf> predicadoResult = PredicadoDnf.CriarDeCondicoesAgrupadas(linhas);
-            if (predicadoResult.IsFailure)
-            {
-                return Result<RegraDerivacaoConfigurada>.Failure(predicadoResult.Error!);
-            }
+        return Result<List<CondicaoRegraDerivacao>>.Success(condicoes);
+    }
 
-            Result validacao = PredicadoDnfValidador.Validar(predicadoResult.Value!, vocabulario, universo, dominiosDinamicos);
-            if (validacao.IsFailure)
-            {
-                return Result<RegraDerivacaoConfigurada>.Failure(validacao.Error!);
-            }
+    private static Result ConferirPredicado(
+        List<(int Clausula, CondicaoDnf Condicao)> linhas,
+        IReadOnlyDictionary<string, DescritorFatoCandidato> vocabulario,
+        IReadOnlySet<string> universo,
+        IReadOnlyDictionary<string, DominioDeValores> dominiosDinamicos)
+    {
+        if (linhas.Count == 0)
+        {
+            return Result.Success();
         }
 
-        return RegraDerivacaoConfigurada.Criar(regraInput.Ordem, regraInput.Contribui, condicoes);
+        Result<PredicadoDnf> predicado = PredicadoDnf.CriarDeCondicoesAgrupadas(linhas);
+        return predicado.IsFailure
+            ? Result.Failure(predicado.Error!)
+            : PredicadoDnfValidador.Validar(predicado.Value!, vocabulario, universo, dominiosDinamicos);
     }
 
     private static async Task<(

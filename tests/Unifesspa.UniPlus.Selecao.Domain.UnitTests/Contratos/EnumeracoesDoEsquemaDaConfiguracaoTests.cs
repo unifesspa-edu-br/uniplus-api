@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -42,7 +43,7 @@ public sealed class EnumeracoesDoEsquemaDaConfiguracaoTests
         (Comuns, "/$defs/produto/properties/papel", () => Codigos<PapelProdutoFase>(static v => ((PapelProdutoFase?)v).ToCodigo()!)),
         (Comuns, $"{Recurso}/suspensividadePrimeiraInstanciaUnidade", () => Nomes<UnidadePrazo>().Append<string?>(null)),
         (Comuns, $"{Recurso}/suspensividadeSegundaInstanciaUnidade", () => Nomes<UnidadePrazo>().Append<string?>(null)),
-        (Predicado, "/$defs/condicao/properties/operador", () => Codigos<Operador>(static v => v.ToCodigo())),
+        (Predicado, "/$defs/condicao/properties/operador", () => Codigos<Operador>(static v => v.Codigo())),
         (Predicado, "/$defs/obrigatoriedade/properties/tipo", () => [PredicadoDnfJson.ObrigatoriedadeSempre, PredicadoDnfJson.ObrigatoriedadeNunca, PredicadoDnfJson.ObrigatoriedadeQuando]),
         (Predicado, "/$defs/baseLegal/properties/abrangencia", () => Codigos<TipoAbrangencia>(static v => v.ToCodigo())),
         (Predicado, "/$defs/baseLegal/properties/status", () => Codigos<StatusBaseLegal>(static v => v.ToCodigo())),

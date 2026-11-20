@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Configuracao.Application.Commands.ModelosFormulario;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
@@ -236,7 +237,7 @@ public sealed class ConteudoLidoTests
     private static FatoColetadoInput Item(string fato, int ordem) => new(fato, ordem, fato, "BOOLEANO", "SEMPRE", null, EtapaCodigo: null);
 
     private static Condicoes Quando(string fato) =>
-        [[new CondicaoPrecondicaoInput(fato, OperadorCodigo.Igual, JsonSerializer.SerializeToElement(true))]];
+        [[new CondicaoPrecondicaoInput(fato, Operador.Igual.Codigo(), JsonSerializer.SerializeToElement(true))]];
 
     private static PredicadoDnf Predicado(string fato) =>
         PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;

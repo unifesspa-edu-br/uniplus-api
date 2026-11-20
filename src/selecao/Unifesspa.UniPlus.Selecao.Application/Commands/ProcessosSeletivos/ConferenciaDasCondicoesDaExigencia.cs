@@ -69,8 +69,8 @@ internal static class ConferenciaDasCondicoesDaExigencia
         List<(int Clausula, CondicaoDnf Condicao)> linhas = [];
         foreach (CondicaoGatilhoInput declarada in declaradas)
         {
-            Result<CondicaoDnf> condicao = CondicaoDnf.Criar(
-                declarada.Fato, OperadorCodigo.FromCodigo(declarada.Operador), InterpretarValor(declarada.Valor));
+            Result<CondicaoDnf> condicao = CondicaoDnf.CriarInformada(
+                declarada.Fato, declarada.Operador, InterpretarValor(declarada.Valor));
             if (condicao.IsFailure)
             {
                 return Result<List<(int Clausula, CondicaoDnf Condicao)>>.Failure(condicao.Error!);

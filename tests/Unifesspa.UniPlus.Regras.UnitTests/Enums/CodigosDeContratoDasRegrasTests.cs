@@ -49,6 +49,45 @@ public sealed class CodigosDeContratoDasRegrasTests
                 [EstadoFato.NaoInformado] = "Não informado",
             });
 
+    [Fact(DisplayName = "Cada operador tem o número e o código que o contrato publica")]
+    public void Codigo_DeCadaOperador_EOQueOContratoPublica() =>
+        Enum.GetValues<Operador>().ToDictionary(static v => (int)v, static v => v.Codigo())
+            .Should().Equal(new Dictionary<int, string>
+            {
+                [1] = "IGUAL",
+                [2] = "EM",
+                [3] = "MAIOR_IGUAL",
+                [4] = "MENOR_IGUAL",
+                [5] = "DIFERENTE",
+                [6] = "NAO_EM",
+            });
+
+    [Fact(DisplayName = "Cada operador tem o rótulo de negócio")]
+    public void Rotulo_DeCadaOperador_EODeNegocio() =>
+        Enum.GetValues<Operador>().ToDictionary(static v => v, static v => v.Rotulo())
+            .Should().Equal(new Dictionary<Operador, string>
+            {
+                [Operador.Igual] = "igual a",
+                [Operador.Em] = "pertence a",
+                [Operador.MaiorIgual] = "maior ou igual a",
+                [Operador.MenorIgual] = "menor ou igual a",
+                [Operador.Diferente] = "diferente de",
+                [Operador.NaoEm] = "não pertence a",
+            });
+
+    [Fact(DisplayName = "Os operadores admitidos por domínio seguem a matriz da ADR-0111")]
+    public void Admitidos_DeCadaDominio_SeguemAMatriz()
+    {
+        Operador[] booleano = [Operador.Igual, Operador.Diferente];
+        Operador[] numerico = [Operador.Igual, Operador.Diferente, Operador.MaiorIgual, Operador.MenorIgual];
+        Operador[] categorico = [Operador.Igual, Operador.Diferente, Operador.Em, Operador.NaoEm];
+
+        OperadoresDoDominio.Admitidos(TipoDominioFato.Booleano).Should().Equal(booleano);
+        OperadoresDoDominio.Admitidos(TipoDominioFato.Numerico).Should().Equal(numerico);
+        OperadoresDoDominio.Admitidos(TipoDominioFato.CategoricoEstatico).Should().Equal(categorico);
+        OperadoresDoDominio.Admitidos(TipoDominioFato.CategoricoDinamico).Should().Equal(categorico);
+    }
+
     [Fact(DisplayName = "Os códigos de contrato dos enums das regras passam na conferência da subida")]
     public void ConferirEnumsDe_ProjetoDasRegras_Passa() =>
         FluentActions.Invoking(() => EnumsDeContrato.ConferirEnumsDe([typeof(Ternario).Assembly])).Should().NotThrow();

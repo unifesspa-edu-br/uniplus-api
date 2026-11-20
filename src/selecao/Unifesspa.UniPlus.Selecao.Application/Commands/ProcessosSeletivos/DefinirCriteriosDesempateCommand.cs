@@ -5,6 +5,7 @@ using Domain.ValueObjects;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
@@ -28,7 +29,7 @@ public sealed record CriterioDesempateInput(
     Guid? EtapaRef,
     int? IdadeMinima,
     string? Fato,
-    string? Operador,
+    [AceitaCodigosDe<Operador>] string? Operador,
     string? Valor,
     IReadOnlyList<string>? Areas = null);
 

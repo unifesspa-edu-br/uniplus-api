@@ -7,16 +7,17 @@ using Domain.ValueObjects;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Entrada de uma condição do gatilho DNF (Story #554, PR #896), usada por
 /// <see cref="ItemDocumentoExigidoInput"/>. <see cref="Operador"/>/<see cref="Valor"/>
 /// seguem o mesmo formato flat de wire de <c>CriterioDesempateInput</c> (tokens
-/// canônicos <see cref="Regras.Enums.OperadorCodigo"/>; <see cref="Valor"/> é texto,
+/// canônicos declarados em <see cref="Regras.Enums.Operador"/>; <see cref="Valor"/> é texto,
 /// interpretado como JSON quando possível).
 /// </summary>
-public sealed record CondicaoGatilhoInput(int Clausula, string Fato, string Operador, string Valor);
+public sealed record CondicaoGatilhoInput(int Clausula, string Fato, [AceitaCodigosDe<Operador>] string? Operador, string Valor);
 
 /// <summary>
 /// Entrada de uma base legal (Story #554, PR #898, issue #549, ADR-0074), usada por

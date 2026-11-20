@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -44,7 +45,7 @@ internal static class SerializacaoDosPredicados
             clausulas.Add(EscritaCanonica.OrdenarPorConteudo(clausula.Select(static c => new JsonObject
             {
                 ["fato"] = HashCanonicalComputer.NormalizeNfc(c.Fato),
-                ["operador"] = c.Operador.ToCodigo(),
+                ["operador"] = c.Operador.Codigo(),
                 ["valor"] = SerializarValorDeAtomo(c.Operador, c.Valor),
             })));
         }
@@ -65,7 +66,7 @@ internal static class SerializacaoDosPredicados
             if (JsonNode.Parse(item.GetRawText()) is not JsonValue alternativa)
             {
                 throw new InvalidOperationException(
-                    $"O operador {operador.ToCodigo()} carrega uma alternativa que não é um valor escalar — " +
+                    $"O operador {operador.Codigo()} carrega uma alternativa que não é um valor escalar — " +
                     "PredicadoDnfValidador já deveria ter recusado a condição antes da publicação.");
             }
 

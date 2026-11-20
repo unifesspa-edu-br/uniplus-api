@@ -21,6 +21,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
@@ -160,7 +161,7 @@ internal static class PayloadsDoEnvelopeFechado
         {
             fatoCodigo = "BAIXA_RENDA", ordem = 0, rotulo = "Baixa renda",
             tipoRenderizacao = TipoRenderizacaoCodigo.Booleano, obrigatoriedade = "SEMPRE",
-            precondicao = new[] { new[] { new { fato = "COR_RACA", @operador = OperadorCodigo.Igual, valor = "PRETA" } } },
+            precondicao = new[] { new[] { new { fato = "COR_RACA", @operador = Operador.Igual.Codigo(), valor = "PRETA" } } },
         },
         new
         {
@@ -190,7 +191,7 @@ internal static class PayloadsDoEnvelopeFechado
         {
             codigoFato = "EGRESSO_ESCOLA_PUBLICA",
             regras = new object[] { new { ordem = 0, contribui = (string?)null,
-                quando = new[] { new[] { new { fato = "COR_RACA", @operador = OperadorCodigo.Igual, valor = "PRETA" } } } } },
+                quando = new[] { new[] { new { fato = "COR_RACA", @operador = Operador.Igual.Codigo(), valor = "PRETA" } } } } },
         },
     ];
 

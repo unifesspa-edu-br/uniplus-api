@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Regras.ValueObjects;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 
@@ -15,8 +16,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// <remarks>
 /// <para>
 /// Validação de <b>forma</b>, sem I/O: <see cref="Fato"/> não vazio,
-/// <see cref="Operador"/> um dos valores do domínio fechado (nunca o
-/// sentinela <see cref="Regras.Enums.Operador.Nenhuma"/>), e a forma de
+/// <see cref="Operador"/> um dos valores do domínio fechado, e a forma de
 /// <see cref="Valor"/> coerente com o operador — <see cref="Regras.Enums.Operador.Em"/> e
 /// <see cref="Regras.Enums.Operador.NaoEm"/> (Story #916) exigem array JSON, sem itens de
 /// texto em branco; array <b>vazio</b> é aceito na forma (a semântica de avaliar
@@ -57,37 +57,72 @@ public sealed record CondicaoDnf
 
     /// <summary>
     /// Cria a condição validando a forma — sem I/O e sem conhecimento do
-    /// vocabulário de fatos.
+    /// vocabulário de fatos. Devolve a primeira recusa.
     /// </summary>
     public static Result<CondicaoDnf> Criar(string fato, Operador operador, JsonElement valor)
     {
-        if (string.IsNullOrWhiteSpace(fato))
+        DomainError? recusa = RecusaDoFato(fato) ?? RecusaDaForma(operador, valor);
+
+        return recusa is null
+            ? Result<CondicaoDnf>.Success(new CondicaoDnf(fato.Trim(), operador, valor.Clone()))
+            : Result<CondicaoDnf>.Failure(recusa);
+    }
+
+    /// <summary>
+    /// Cria a condição a partir do que o pedido ou o documento informou: o operador chega como o código que o contrato
+    /// publica. Acumula a recusa do fato e a do operador, e confere a forma do valor só quando o operador foi lido, porque
+    /// a forma depende dele. Cada recusa vem no campo de origem: <c>fato</c>, <c>operador</c> e <c>valor</c>.
+    /// </summary>
+    public static Result<CondicaoDnf> CriarInformada(string? fato, string? operador, JsonElement valor)
+    {
+        Operador? lido = CatalogoDe<Operador>.TentarObter(operador, out Operador encontrado) ? encontrado : null;
+        List<FieldError> erros = [.. RecusasDaCondicaoInformada(fato, lido, valor)];
+
+        return erros.Count == 0 && fato is not null && lido is { } operadorLido
+            ? Result<CondicaoDnf>.Success(new CondicaoDnf(fato.Trim(), operadorLido, valor.Clone()))
+            : Result<CondicaoDnf>.ValidationFailure(erros);
+    }
+
+    private static IEnumerable<FieldError> RecusasDaCondicaoInformada(string? fato, Operador? operador, JsonElement valor)
+    {
+        if (RecusaDoFato(fato) is { } recusaDoFato)
         {
-            return Result<CondicaoDnf>.Failure(new DomainError(
-                "CondicaoDnf.FatoObrigatorio", "O fato da condição é obrigatório."));
+            yield return new("fato", recusaDoFato);
         }
 
-        if (operador == Operador.Nenhuma || !Enum.IsDefined(operador))
+        if (operador is not { } lido)
         {
-            return Result<CondicaoDnf>.Failure(new DomainError(
-                "CondicaoDnf.OperadorInvalido", "O operador da condição não é reconhecido."));
+            yield return new("operador", OperadorNaoReconhecido());
         }
+        else if (RecusaDaForma(lido, valor) is { } recusaDaForma)
+        {
+            yield return new("valor", recusaDaForma);
+        }
+    }
 
+    private static DomainError? RecusaDoFato(string? fato) =>
+        string.IsNullOrWhiteSpace(fato)
+            ? new DomainError("CondicaoDnf.FatoObrigatorio", "O fato da condição é obrigatório.")
+            : null;
+
+    private static DomainError OperadorNaoReconhecido() =>
+        new("CondicaoDnf.OperadorInvalido",
+            $"O operador da condição não é reconhecido. Os operadores aceitos são {string.Join(", ", CatalogoDe<Operador>.Todos().Select(static d => d.Codigo))}.");
+
+    private static DomainError? RecusaDaForma(Operador operador, JsonElement valor)
+    {
         bool ehOperadorDeLista = operador is Operador.Em or Operador.NaoEm;
         bool formaCoerente = ehOperadorDeLista
             ? valor.ValueKind == JsonValueKind.Array && NenhumItemEmBranco(valor)
             : valor.ValueKind is not (JsonValueKind.Array or JsonValueKind.Object) && !EscalarEmBranco(valor);
 
-        if (!formaCoerente)
-        {
-            return Result<CondicaoDnf>.Failure(new DomainError(
+        return formaCoerente
+            ? null
+            : new DomainError(
                 "CondicaoDnf.FormaIncoerenteComOperador",
                 ehOperadorDeLista
                     ? "Os operadores EM e NAO_EM exigem um array JSON, sem itens de texto em branco (array vazio é aceito)."
-                    : "Os operadores IGUAL, DIFERENTE, MAIOR_IGUAL e MENOR_IGUAL exigem um valor JSON escalar não branco."));
-        }
-
-        return Result<CondicaoDnf>.Success(new CondicaoDnf(fato.Trim(), operador, valor.Clone()));
+                    : "Os operadores IGUAL, DIFERENTE, MAIOR_IGUAL e MENOR_IGUAL exigem um valor JSON escalar não branco.");
     }
 
     /// <summary>

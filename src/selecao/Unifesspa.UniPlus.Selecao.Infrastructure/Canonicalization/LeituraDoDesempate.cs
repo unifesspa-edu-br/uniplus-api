@@ -122,14 +122,14 @@ internal static class LeituraDoDesempate
     {
         leitor.ExigirChaves(parametros, path, "fato", "operador", "valor");
         string fato = leitor.TextoNaoVazio(parametros, "fato", path);
-        string operadorCodigo = leitor.TextoNaoVazio(parametros, "operador", path);
+        Operador operador = LeituraDasCondicoes.LerOperador(leitor, parametros, path);
         System.Text.Json.JsonElement valor = leitor.Valor(parametros, "valor", path);
         if (leitor.Falhou)
         {
             return null;
         }
 
-        Result<CondicaoDnf> condicao = CondicaoDnf.Criar(fato, OperadorCodigo.FromCodigo(operadorCodigo), valor);
+        Result<CondicaoDnf> condicao = CondicaoDnf.Criar(fato, operador, valor);
         return condicao.IsFailure
             ? leitor.Propagar<ParametrosCriterioDesempate>(condicao.Error!)
             : new ParametrosDesempatePredicadoFato(condicao.Value!);

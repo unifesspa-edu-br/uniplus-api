@@ -480,7 +480,7 @@ hoje.
 
 Duas fontes rivais ficam explicitamente **descartadas** como critério de ordenação:
 
-- **A numeração do enum `Operador`** é identidade de persistência e reflete a cronologia em que os
+- **A numeração do enum `Operador`** (identidade de persistência até a Emenda 2) e reflete a cronologia em que os
   operadores foram introduzidos, não precedência. Ordenar por valor numérico produziria outra ordem, e
   renumerar o enum para alinhá-lo reescreveria valores já persistidos. A numeração **nunca** é peso de
   ordenação.
@@ -500,3 +500,13 @@ nove originais, os dois acrescentados ao refinar origem e binding (`NACIONALIDAD
 `TIPO_DEFICIENCIA`) e os seis da coleta de fatos de cota. A tabela dos nove permanece válida como
 registro do que esta decisão semeou; a contagem total vive no seed, que é a fonte única, e não deve ser
 repetida como número fixo em texto de ADR.
+
+## Emenda 2 (2026-11-20) — identidade persistida do operador
+
+A identidade persistida do operador é o **código declarado** no próprio enum `Operador` (ADR-0176): `IGUAL`,
+`EM`, `MAIOR_IGUAL`, `MENOR_IGUAL`, `DIFERENTE` e `NAO_EM`. A numeração do enum não é gravada em coluna,
+documento ou envelope e não serve de peso de ordenação; o item 1.4, que chamava a numeração de "identidade de
+persistência", fica substituído por esta emenda. A matriz do item 1.1 é a regra pura `OperadoresDoDominio` do projeto
+compartilhado de regras, usada pelo validador do predicado. O valor desconhecido não vira "nenhum operador": a
+escrita do pedido o recusa como `CondicaoDnf.OperadorInvalido` (422), acumulado com as demais recusas da condição, e a
+leitura do que já foi gravado falha.

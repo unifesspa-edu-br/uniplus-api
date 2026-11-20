@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Regras.Formularios;
 using System.Collections.Frozen;
 using System.Text.Json;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -288,8 +289,8 @@ public static class ConjuntoBasicoDaInscricao
 
     private static List<FatoColetadoInput> MontarItens()
     {
-        IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>> naoEstrangeiro = Quando(Nacionalidade, OperadorCodigo.Diferente, Estrangeiro);
-        IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>> estrangeiro = Quando(Nacionalidade, OperadorCodigo.Igual, Estrangeiro);
+        IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>> naoEstrangeiro = Quando(Nacionalidade, Operador.Diferente.Codigo(), Estrangeiro);
+        IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>> estrangeiro = Quando(Nacionalidade, Operador.Igual.Codigo(), Estrangeiro);
 
         string selecao = TipoRenderizacaoCodigo.SelecaoUnica;
         string texto = TipoRenderizacaoCodigo.Texto;
@@ -306,13 +307,13 @@ public static class ConjuntoBasicoDaInscricao
         [
             new(Nome, 0, "Nome completo", texto, sempre, null),
             new(DesejaNomeSocial, 0, "Deseja usar nome social?", TipoRenderizacaoCodigo.Booleano, sempre, null),
-            new(NomeSocial, 0, "Nome social", texto, sempre, Quando(DesejaNomeSocial, OperadorCodigo.Igual, true), Ajuda: AjudaDoNomeSocial),
+            new(NomeSocial, 0, "Nome social", texto, sempre, Quando(DesejaNomeSocial, Operador.Igual.Codigo(), true), Ajuda: AjudaDoNomeSocial),
             new(Nacionalidade, 0, "Nacionalidade", selecao, sempre, null),
             new(Cpf, 0, "CPF", texto, sempre, null),
             new("RG_NUMERO", 0, "Número do RG", texto, sempre, naoEstrangeiro),
             new(OrgaoEmissor, 0, "Órgão emissor do RG", selecao, sempre, naoEstrangeiro),
             new("RG_ORGAO_EMISSOR_OUTRO", 0, "Nome do órgão emissor", texto, sempre,
-                Quando(OrgaoEmissor, OperadorCodigo.Igual, OutroOrgaoEmissor),
+                Quando(OrgaoEmissor, Operador.Igual.Codigo(), OutroOrgaoEmissor),
                 Restricoes: [new RestricaoValorInput(RestricaoValorJson.TamanhoTexto, Maximo: TamanhoMaximoDoNomeDoOrgaoEmissor)]),
             new("RG_UF", 0, "UF de emissão do RG", selecao, sempre, naoEstrangeiro),
             new("RG_DATA_EMISSAO", 0, "Data de emissão do RG", data, sempre, naoEstrangeiro, Restricoes: dataPlausivel),
@@ -334,7 +335,7 @@ public static class ConjuntoBasicoDaInscricao
             new("TELEFONE", 0, "Telefone", texto, sempre, null),
             new(TipoDeLocalidade, 0, "Tipo de localidade", selecao, sempre, null),
             new("NOME_COMUNIDADE", 0, "Nome da aldeia, comunidade ou quilombo", texto, sempre,
-                Quando(TipoDeLocalidade, OperadorCodigo.Em, LocalidadesComComunidade)),
+                Quando(TipoDeLocalidade, Operador.Em.Codigo(), LocalidadesComComunidade)),
             new("ENDERECO_RESIDENCIAL", 0, "Endereço residencial", TipoRenderizacaoCodigo.Endereco, sempre, null),
         ];
 

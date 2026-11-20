@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Regras.Enums;
 /// <summary>
 /// Mapeamento único entre <see cref="TipoRenderizacao"/> e o código textual canônico
 /// UPPER_SNAKE que entra no envelope canônico de publicação e no wire de comando — mesmo
-/// raciocínio de <see cref="OperadorCodigo"/>. Fonte de verdade única do wire format.
+/// raciocínio do código declarado em <see cref="Operador"/>. Fonte de verdade única do wire format.
 /// </summary>
 public static class TipoRenderizacaoCodigo
 {

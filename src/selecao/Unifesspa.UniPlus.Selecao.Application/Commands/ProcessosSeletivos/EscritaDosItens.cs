@@ -320,41 +320,37 @@ internal static class EscritaDosItens
             return Result<PrecondicaoLida?>.Success(null);
         }
 
-        List<(int Clausula, CondicaoDnf Condicao)> linhas = [];
+        Result<List<(int Clausula, CondicaoDnf Condicao)>> linhas = EntradaDeRegras.Condicoes(precondicao);
+
+        return linhas.IsFailure ? Result<PrecondicaoLida?>.Failure(linhas.Error!) : PrecondicaoDasLinhas(linhas.Value!);
+    }
+
+    private static Result<PrecondicaoLida?> PrecondicaoDasLinhas(List<(int Clausula, CondicaoDnf Condicao)> linhas)
+    {
+        Result<List<CondicaoPrecondicaoFato>> condicoes = CondicoesDeFato(linhas);
+        Result<PredicadoDnf> predicado = condicoes.IsFailure
+            ? Result<PredicadoDnf>.Failure(condicoes.Error!)
+            : PredicadoDnf.CriarDeCondicoesAgrupadas(linhas);
+
+        return predicado.IsFailure
+            ? Result<PrecondicaoLida?>.Failure(predicado.Error!)
+            : Result<PrecondicaoLida?>.Success(new PrecondicaoLida(condicoes.Value!, predicado.Value!));
+    }
+
+    private static Result<List<CondicaoPrecondicaoFato>> CondicoesDeFato(List<(int Clausula, CondicaoDnf Condicao)> linhas)
+    {
         List<CondicaoPrecondicaoFato> condicoes = [];
-        for (int clausula = 0; clausula < precondicao.Count; clausula++)
+        foreach ((int clausula, CondicaoDnf condicao) in linhas)
         {
-            foreach (CondicaoPrecondicaoInput condicaoInput in precondicao[clausula])
+            Result<CondicaoPrecondicaoFato> criada = CondicaoPrecondicaoFato.Criar(clausula, condicao.Fato, condicao.Operador, condicao.Valor);
+            if (criada.IsFailure)
             {
-                // Defesa em profundidade: uma condição nula (JSON `[[null]]`) já é barrada pelo
-                // validator (400), mas nunca deve virar NullReferenceException/500 aqui.
-                if (condicaoInput is null)
-                {
-                    return Result<PrecondicaoLida?>.Failure(new DomainError(
-                        CondicaoPrecondicaoFatoErrorCodes.ClausulaInvalida,
-                        "A pré-condição contém uma condição nula."));
-                }
-
-                Operador operador = OperadorCodigo.FromCodigo(condicaoInput.Operador);
-
-                Result<CondicaoPrecondicaoFato> condicaoResult =
-                    CondicaoPrecondicaoFato.Criar(clausula, condicaoInput.Fato, operador, condicaoInput.Valor);
-                if (condicaoResult.IsFailure)
-                {
-                    return Result<PrecondicaoLida?>.Failure(condicaoResult.Error!);
-                }
-
-                condicoes.Add(condicaoResult.Value!);
-                linhas.Add((clausula, CondicaoDnf.Criar(condicaoInput.Fato, operador, condicaoInput.Valor).Value!));
+                return Result<List<CondicaoPrecondicaoFato>>.Failure(criada.Error!);
             }
+
+            condicoes.Add(criada.Value!);
         }
 
-        Result<PredicadoDnf> predicadoResult = PredicadoDnf.CriarDeCondicoesAgrupadas(linhas);
-        if (predicadoResult.IsFailure)
-        {
-            return Result<PrecondicaoLida?>.Failure(predicadoResult.Error!);
-        }
-
-        return Result<PrecondicaoLida?>.Success(new PrecondicaoLida(condicoes, predicadoResult.Value!));
+        return Result<List<CondicaoPrecondicaoFato>>.Success(condicoes);
     }
 }

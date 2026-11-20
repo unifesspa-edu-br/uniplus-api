@@ -297,15 +297,14 @@ public static class DefinirCriteriosDesempateCommandHandler
     }
 
     /// <summary>
-    /// Com fato, operador e valor presentes, a recusa é do operador desconhecido ou do valor incoerente com ele.
+    /// Com fato, operador e valor presentes, a condição acumula as recusas do operador desconhecido e do valor incoerente com ele, cada uma no seu campo.
     /// </summary>
     private static Result<ParametrosCriterioDesempate> MontarCondicaoDoPredicado(CriterioDesempateInput input)
     {
-        Operador operador = OperadorCodigo.FromCodigo(input.Operador!);
-        Result<CondicaoDnf> condicao = CondicaoDnf.Criar(input.Fato!, operador, InterpretarValor(input.Valor!));
+        Result<CondicaoDnf> condicao = CondicaoDnf.CriarInformada(input.Fato, input.Operador, InterpretarValor(input.Valor!));
         if (condicao.IsFailure)
         {
-            return Recusa(operador == Operador.Nenhuma ? "operador" : "valor", condicao.Error!);
+            return Result<ParametrosCriterioDesempate>.ValidationFailure(condicao.Errors);
         }
 
         return Result<ParametrosCriterioDesempate>.Success(new ParametrosDesempatePredicadoFato(condicao.Value!));

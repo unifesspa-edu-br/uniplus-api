@@ -10,6 +10,7 @@ using DTOs;
 
 using Mappings;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -100,7 +101,7 @@ internal static class ProjecaoDoProcessoSeletivo
             ParametrosDesempatePredicadoFato parametros => new CriterioDesempateDto(
                 criterio.Id, criterio.Ordem, regra, null, null,
                 parametros.Condicao.Fato,
-                parametros.Condicao.Operador.ToCodigo(),
+                parametros.Condicao.Operador.Codigo(),
                 ProjetarValorDaCondicao(parametros.Condicao.Valor),
                 null),
             ParametrosDesempateMaiorNotaAreaEnem parametros => new CriterioDesempateDto(
