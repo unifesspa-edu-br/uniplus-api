@@ -5,6 +5,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Tempo;
+using Unifesspa.UniPlus.Kernel.UnitTests.CodigosDeContrato;
 
 public sealed class OpcoesJsonDasMensagensTests
 {
@@ -106,6 +107,35 @@ public sealed class OpcoesJsonDasMensagensTests
         lido.Should().Be(original);
     }
 
+    [Fact(DisplayName = "O enum com código sai da mensagem pelo código e volta igual")]
+    public void IdaEVolta_EnumComCodigo_SaiEVoltaComoCodigo()
+    {
+        ComCorEscolhida original = new(Cor.VerdeClaro);
+
+        string json = JsonSerializer.Serialize(original, Opcoes);
+
+        json.Should().Be("""{"escolhida":"verde_claro"}""");
+        JsonSerializer.Deserialize<ComCorEscolhida>(json, Opcoes).Should().Be(original);
+    }
+
+    [Fact(DisplayName = "O código desconhecido de enum é recusado na leitura da mensagem com JsonException")]
+    public void Ler_EnumComCodigoDesconhecido_LancaJsonException()
+    {
+        Action ler = () => JsonSerializer.Deserialize<ComCorEscolhida>("""{"escolhida":"roxo"}""", Opcoes);
+
+        ler.Should().Throw<JsonException>().WithMessage($"*{nameof(Cor)}*");
+    }
+
+    [Fact(DisplayName = "O código vence o conversor de enum por nome que as opções já tinham")]
+    public void Aplicar_ComConversorDeEnumPorNomeJaRegistrado_EscreveOCodigo()
+    {
+        JsonSerializerOptions opcoes = new() { Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() } };
+
+        OpcoesJsonDasMensagens.Aplicar(opcoes);
+
+        JsonSerializer.Serialize(new ComCorEscolhida(Cor.VerdeClaro), opcoes).Should().Be("""{"Escolhida":"verde_claro"}""");
+    }
+
     [Fact(DisplayName = "Aplicar preserva o resolvedor que as opções já tinham")]
     public void Aplicar_PreservaOResolvedorExistente()
     {
@@ -129,6 +159,8 @@ public sealed class OpcoesJsonDasMensagensTests
     private sealed record ComPrazoOpcional(string Nome, DateTimeOffset? Prazo);
 
     private sealed record ComEventoAninhado(Evento Evento);
+
+    private sealed record ComCorEscolhida(Cor Escolhida);
 
     private sealed record ComColecaoDeEventos(IReadOnlyList<Evento> Eventos);
 
