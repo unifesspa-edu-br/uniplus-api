@@ -106,3 +106,21 @@ public enum SemAtributoDeDescricao
     [CodigoDeContrato("unico", "Único")]
     Unico = 1,
 }
+
+public enum Prioridade
+{
+    [CodigoDeContrato("baixa", "Baixa")]
+    Baixa = 30,
+
+    [CodigoDeContrato("alta", "Alta")]
+    Alta = 10,
+
+    [CodigoDeContrato("media", "Média")]
+    Media = 20,
+}
+
+public enum SemCodigoDeContrato
+{
+    Primeiro = 1,
+    Segundo = 2,
+}
