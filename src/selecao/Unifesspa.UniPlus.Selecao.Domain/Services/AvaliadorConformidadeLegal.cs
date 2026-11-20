@@ -25,8 +25,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <c>ConfiguracaoBonusRegional</c> é global ao processo, sem lista de
 /// modalidades, tornando a variante incompatível com o agregado real.
 /// <b>Correção sobre o xmldoc de <see cref="PredicadoObrigatoriedade"/></b>:
-/// o padrão "CS8509 sem catch-all" que o projeto usa para <c>enum</c> (ex.
-/// <see cref="Unifesspa.UniPlus.Regras.Enums.TipoDominioFatoCodigo"/>)
+/// o padrão "CS8509 sem catch-all" que o projeto usa para <c>enum</c>
 /// não se aplica aqui — o Roslyn não prova exaustividade de switch sobre uma
 /// hierarquia de classes/records aberta (mesmo com todo derivado
 /// <c>sealed</c>), só sobre o conjunto fechado de valores de um <c>enum</c>.
