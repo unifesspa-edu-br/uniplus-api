@@ -18,16 +18,6 @@ using Wolverine.Runtime.Serialization;
 /// </summary>
 public sealed class SerializacaoDasMensagensNoVerificadorTests
 {
-    private static readonly string[] ConfiguracaoMinima =
-    [
-        "--Verificador:Armazenamento:Endpoint=minio:9000",
-        "--Verificador:Armazenamento:AccessKey=acesso-de-teste",
-        "--Verificador:Armazenamento:SecretKey=segredo-de-teste",
-        "--Verificador:Armazenamento:BucketEnvios=envios",
-        "--Verificador:Armazenamento:BucketArquivos=arquivos",
-        "--Verificador:RabbitMq:Host=rabbit",
-    ];
-
     [Fact(DisplayName = "O serializador do verificador lê o instante com 7 casas truncado em microssegundos")]
     public void Serializador_InstanteComSeteCasas_LidoComSeis()
     {
@@ -53,7 +43,7 @@ public sealed class SerializacaoDasMensagensNoVerificadorTests
 
     private static IMessageSerializer SerializadorDaComposicaoCompleta()
     {
-        using IHost host = PontoDeEntradaDoVerificador.ConstruirSemIniciar(ConfiguracaoMinima);
+        using IHost host = PontoDeEntradaDoVerificador.ConstruirSemIniciar(PontoDeEntradaDoVerificador.ConfiguracaoMinima);
 
         return host.Services.GetRequiredService<IWolverineRuntime>().Options.DefaultSerializer;
     }

@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Verificador.Antivirus;
 using Unifesspa.UniPlus.Verificador.Armazenamento;
 using Unifesspa.UniPlus.Verificador.Configuracao;
+using Unifesspa.UniPlus.Verificador.Hosting;
 using Unifesspa.UniPlus.Verificador.Observabilidade;
 
 using Wolverine;
@@ -21,6 +22,10 @@ HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 builder.Services.Replace(ServiceDescriptor.Singleton<TimeProvider>(RelogioEmMicrossegundos.DoSistema));
 
 builder.Logging.AddJsonConsole();
+
+// Confere os códigos dos enums de todo projeto do Uni+ que o verificador alcança, antes de o host iniciar o runtime do
+// Wolverine e os demais serviços (ADR-0176).
+builder.Services.AddHostedService(_ => new ConferenciaDosEnumsDeContratoNaSubida(typeof(Program).Assembly));
 
 VerificadorOptions opcoes = builder.Configuration.GetSection(VerificadorOptions.SectionName).Get<VerificadorOptions>() ?? new VerificadorOptions();
 ValidateOptionsResult validacao = new ValidadorDasOpcoes().Validate(Options.DefaultName, opcoes);

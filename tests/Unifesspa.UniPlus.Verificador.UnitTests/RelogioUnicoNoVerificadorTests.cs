@@ -13,20 +13,10 @@ using Unifesspa.UniPlus.Kernel.Tempo;
 /// </summary>
 public sealed class RelogioUnicoNoVerificadorTests
 {
-    private static readonly string[] ConfiguracaoMinima =
-    [
-        "--Verificador:Armazenamento:Endpoint=minio:9000",
-        "--Verificador:Armazenamento:AccessKey=acesso-de-teste",
-        "--Verificador:Armazenamento:SecretKey=segredo-de-teste",
-        "--Verificador:Armazenamento:BucketEnvios=envios",
-        "--Verificador:Armazenamento:BucketArquivos=arquivos",
-        "--Verificador:RabbitMq:Host=rabbit",
-    ];
-
     [Fact(DisplayName = "A composição completa do verificador tem um único relógio, o do sistema em microssegundos")]
     public void ComposicaoCompleta_TemUmUnicoRelogioDoSistemaEmMicrossegundos()
     {
-        using IHost host = PontoDeEntradaDoVerificador.ConstruirSemIniciar(ConfiguracaoMinima);
+        using IHost host = PontoDeEntradaDoVerificador.ConstruirSemIniciar(PontoDeEntradaDoVerificador.ConfiguracaoMinima);
 
         IEnumerable<TimeProvider> relogios = host.Services.GetServices<TimeProvider>();
 
