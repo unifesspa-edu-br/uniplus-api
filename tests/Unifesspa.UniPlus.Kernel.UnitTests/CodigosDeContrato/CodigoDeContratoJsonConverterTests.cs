@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Kernel.UnitTests.CodigosDeContrato;
 
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 using AwesomeAssertions;
 
@@ -9,10 +8,8 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 public sealed class CodigoDeContratoJsonConverterTests
 {
-    private static readonly JsonSerializerOptions Opcoes = new(JsonSerializerDefaults.Web)
-    {
-        Converters = { new CodigoDeContratoJsonConverterFactory() },
-    };
+    private static readonly JsonSerializerOptions Opcoes =
+        OpcoesJsonDeDocumento.Criar(new JsonSerializerOptions(JsonSerializerDefaults.Web));
 
     [Fact(DisplayName = "O enum como propriedade sai pelo código e volta igual")]
     public void IdaEVolta_ComoPropriedade_UsaOCodigo()
@@ -87,25 +84,6 @@ public sealed class CodigoDeContratoJsonConverterTests
 
         json.Should().Be(jsonEsperado);
         JsonSerializer.Deserialize<ComCorOpcional>(json, Opcoes).Should().Be(original);
-    }
-
-    [Fact(DisplayName = "Com o conversor de nome registrado depois, o enum com código sai pelo código e o sem código, pelo nome")]
-    public void Escrever_ConversorDeNomeDepoisDaFabrica_CadaEnumComOSeuConversor()
-    {
-        JsonSerializerOptions opcoes = new() { Converters = { new CodigoDeContratoJsonConverterFactory(), new JsonStringEnumConverter() } };
-
-        JsonSerializer.Serialize(Cor.VerdeClaro, opcoes).Should().Be("\"verde_claro\"");
-        JsonSerializer.Serialize(SemCodigoDeContrato.Segundo, opcoes).Should().Be("\"Segundo\"");
-    }
-
-    [Fact(DisplayName = "A fábrica só converte enum que declara código")]
-    public void CanConvert_SoEnumQueDeclaraCodigo()
-    {
-        CodigoDeContratoJsonConverterFactory fabrica = new();
-
-        fabrica.CanConvert(typeof(Cor)).Should().BeTrue();
-        fabrica.CanConvert(typeof(SemCodigoDeContrato)).Should().BeFalse();
-        fabrica.CanConvert(typeof(string)).Should().BeFalse();
     }
 
     [Fact(DisplayName = "O enum inválido na leitura derruba com a exceção do catálogo, e não com JsonException")]

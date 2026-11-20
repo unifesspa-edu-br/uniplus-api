@@ -23,8 +23,8 @@ public static class ConfiguracaoDoWolverine
         ArgumentNullException.ThrowIfNull(opcoes);
         ArgumentNullException.ThrowIfNull(verificador);
 
-        // Mesmo contrato de instantes que a API aplica ao outro lado das filas.
-        opcoes.UseSystemTextJsonForSerialization(OpcoesJsonDasMensagens.Aplicar);
+        // Mesmo contrato de códigos de enum e de instantes que a API aplica ao outro lado das filas.
+        opcoes.UseSystemTextJsonForSerialization(OpcoesJsonDasMensagens.Configurar);
 
         RabbitMqTransportExpression transporte = ConectarAoRabbitMq(opcoes, verificador.RabbitMq);
         OuvirOsPedidos(opcoes, verificador.Paralelismo);
