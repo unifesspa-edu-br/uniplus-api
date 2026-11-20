@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class NomeSocialValueConverterTests
 {
@@ -13,17 +14,24 @@ public sealed class NomeSocialValueConverterTests
     [InlineData("Pessoa de Teste", null, """{"nomeCivil":"Pessoa de Teste","nome":null}""")]
     [InlineData("Pessoa de Teste", "Nome de Teste", """{"nomeCivil":"Pessoa de Teste","nome":"Nome de Teste"}""")]
     public void ConvertToProvider_NomeSocial_GravaOsDoisCampos(string nomeCivil, string? nomeSocial, string documentoEsperado) =>
-        _conversor.ConvertToProvider(NomeSocial.Criar(nomeCivil, nomeSocial).Value!).Should().Be(documentoEsperado);
+        _conversor.ConvertToProvider(NomeSocialValido(nomeCivil, nomeSocial)).Should().Be(documentoEsperado);
 
     [Theory(DisplayName = "A leitura devolve o nome social que foi gravado")]
     [InlineData("Pessoa de Teste", null)]
     [InlineData("Pessoa de Teste", "Nome de Teste")]
     public void ConvertFromProvider_DocumentoGravado_DevolveOMesmoNomeSocial(string nomeCivil, string? nomeSocial)
     {
-        NomeSocial original = NomeSocial.Criar(nomeCivil, nomeSocial).Value!;
+        NomeSocial original = NomeSocialValido(nomeCivil, nomeSocial);
 
         object? lido = _conversor.ConvertFromProvider(_conversor.ConvertToProvider(original));
 
         lido.Should().Be(original);
+    }
+
+    private static NomeSocial NomeSocialValido(string nomeCivil, string? nomeSocial)
+    {
+        Result<NomeSocial> criado = NomeSocial.Criar(nomeCivil, nomeSocial);
+
+        return criado.Value ?? throw new InvalidOperationException($"O nome social do cenário é inválido: {criado.Error?.Message}");
     }
 }

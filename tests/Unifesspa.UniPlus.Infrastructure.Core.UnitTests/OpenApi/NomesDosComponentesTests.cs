@@ -160,7 +160,7 @@ public sealed class NomesDosComponentesTests
     }
 
     private static string[] CodigosDoComponente(DocumentoPublicado documento, string componente) =>
-        [.. documento.Componente(componente)["enum"]!.AsArray().Select(static c => c!.GetValue<string>())];
+        [.. documento.Componente(componente).Campo("enum").Textos()];
 
     private static Task AdicionarComponenteAndamentoCodigoAsync(OpenApiDocument documento, OpenApiDocumentTransformerContext contexto, CancellationToken cancellationToken)
     {

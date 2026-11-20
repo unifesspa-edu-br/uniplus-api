@@ -58,8 +58,8 @@ public sealed class ConversaoDosEnumsDeContratoChamadaNaMontagemDoModeloTests
     [Fact(DisplayName = "Uma composição que não chama a convenção dos enums de contrato é reprovada pela regra")]
     public void Contraprova_ComposicaoQueNaoChamaAConvencao_Reprovada()
     {
-        string semChamada = typeof(FixturesDeConversaoDosEnumsDeContrato.ComposicaoQueNaoConfiguraAConversao).FullName!;
-        string comChamada = typeof(FixturesDeConversaoDosEnumsDeContrato.ComposicaoQueConfiguraAConversao).FullName!;
+        string semChamada = typeof(FixturesDeConversaoDosEnumsDeContrato.ComposicaoQueNaoConfiguraAConversao).NomeCompleto();
+        string comChamada = typeof(FixturesDeConversaoDosEnumsDeContrato.ComposicaoQueConfiguraAConversao).NomeCompleto();
 
         Types().That().HaveFullName(semChamada).GetObjects(ArquiteturaDasTravas.Fixtures).Should().ContainSingle();
         Types().That().HaveFullName(comChamada).GetObjects(ArquiteturaDasTravas.Fixtures).Should().ContainSingle();

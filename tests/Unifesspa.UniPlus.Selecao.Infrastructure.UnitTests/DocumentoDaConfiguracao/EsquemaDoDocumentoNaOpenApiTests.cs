@@ -75,7 +75,8 @@ public sealed class EsquemaDoDocumentoNaOpenApiTests
         Func<Task> geracao = () => Transformar(documento);
 
         (await geracao.Should().ThrowAsync<InvalidOperationException>()).Which.Message.Should().Contain($"'{EsquemaPublicadoDoDocumento.Componente}'");
-        documento.Components!.Schemas![EsquemaPublicadoDoDocumento.Componente].Should().BeSameAs(existente);
+        IOpenApiSchema? mantido = documento.Components?.Schemas?[EsquemaPublicadoDoDocumento.Componente];
+        mantido.Should().BeSameAs(existente);
     }
 
     [Fact(DisplayName = "O documento é obrigatório")]

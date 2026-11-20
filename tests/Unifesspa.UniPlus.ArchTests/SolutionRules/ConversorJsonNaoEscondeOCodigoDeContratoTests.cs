@@ -39,7 +39,7 @@ public sealed class ConversorJsonNaoEscondeOCodigoDeContratoTests
         nameof(FixturesDeConversorJson.SemConversorNoMembroComEnumComCodigo.Campo),
     ];
 
-    private static readonly string FixturesFullName = typeof(FixturesDeConversorJson).FullName!;
+    private static readonly string NomeCompletoDasFixtures = typeof(FixturesDeConversorJson).NomeCompleto();
 
     private static readonly ReflectionAssembly[] AssembliesExaminados = [typeof(FixturesDeConversorJson).Assembly, .. AssembliesDoProduto.Todos];
 
@@ -49,13 +49,13 @@ public sealed class ConversorJsonNaoEscondeOCodigoDeContratoTests
 
     private static readonly HashSet<string> EnumsQueDeclaramCodigo =
     [
-        .. AssembliesExaminados.SelectMany(static a => a.GetTypes()).Where(EnumsDeContrato.EhEnumQueDeclaraCodigo).Select(static t => t.FullName!),
+        .. AssembliesExaminados.SelectMany(static a => a.GetTypes()).Where(EnumsDeContrato.EhEnumQueDeclaraCodigo).Select(static t => t.NomeCompleto()),
     ];
 
     private static readonly IType[] TiposDoProduto =
         [.. Types().That().ResideInAssembly(AssembliesDoProduto.Todos[0], AssembliesDoProduto.Todos[1..]).GetObjects(Arquitetura)];
 
-    private static readonly IType[] TiposDasFixtures = [.. Types().That().HaveFullNameStartingWith(FixturesFullName).GetObjects(Arquitetura)];
+    private static readonly IType[] TiposDasFixtures = [.. Types().That().HaveFullNameStartingWith(NomeCompletoDasFixtures).GetObjects(Arquitetura)];
 
     private static readonly string[] MembrosDasFixturesComConversor = MembrosComConversor(TiposDasFixtures);
 
@@ -77,19 +77,19 @@ public sealed class ConversorJsonNaoEscondeOCodigoDeContratoTests
     [Theory(DisplayName = "O conversor JSON num membro cujo tipo menciona enum com código é reprovado, com o tipo e o membro na mensagem")]
     [MemberData(nameof(MembrosQueEscondemOCodigo))]
     public void Fixtures_ConversorNoMembroQueMencionaEnumComCodigo_Reprova(string tipo, string membro) =>
-        MembrosDasFixturesComConversor.Should().Contain($"{FixturesFullName}+{tipo}.{membro}");
+        MembrosDasFixturesComConversor.Should().Contain($"{NomeCompletoDasFixtures}+{tipo}.{membro}");
 
     [Fact(DisplayName = "O membro sem conversor JSON, que a regra examina, e o conversor num tipo que não menciona enum com código passam")]
     public void Fixtures_ConformesPassam_NosMembros()
     {
         MembrosQueMencionamEnumComCodigo(TiposDasFixtures).Should().Contain(
-            [.. MembrosSemConversor.Select(static membro => $"{FixturesFullName}+{nameof(FixturesDeConversorJson.SemConversorNoMembroComEnumComCodigo)}.{membro}")],
+            [.. MembrosSemConversor.Select(static membro => $"{NomeCompletoDasFixtures}+{nameof(FixturesDeConversorJson.SemConversorNoMembroComEnumComCodigo)}.{membro}")],
             "a regra examina o membro correto e o aceita por não ter o atributo");
 
         MembrosDasFixturesComConversor.Should()
-            .NotContain(static m => m.StartsWith($"{FixturesFullName}+{nameof(FixturesDeConversorJson.SemConversorNoMembroComEnumComCodigo)}.", StringComparison.Ordinal))
-            .And.NotContain(static m => m.StartsWith($"{FixturesFullName}+{nameof(FixturesDeConversorJson.ConversorEmTipoQueNaoMencionaEnumComCodigo)}.", StringComparison.Ordinal))
-            .And.NotContain(static m => m.StartsWith($"{FixturesFullName}+{nameof(FixturesDeConversorJson.ConversorEmEnumSemCodigo)}.", StringComparison.Ordinal));
+            .NotContain(static m => m.StartsWith($"{NomeCompletoDasFixtures}+{nameof(FixturesDeConversorJson.SemConversorNoMembroComEnumComCodigo)}.", StringComparison.Ordinal))
+            .And.NotContain(static m => m.StartsWith($"{NomeCompletoDasFixtures}+{nameof(FixturesDeConversorJson.ConversorEmTipoQueNaoMencionaEnumComCodigo)}.", StringComparison.Ordinal))
+            .And.NotContain(static m => m.StartsWith($"{NomeCompletoDasFixtures}+{nameof(FixturesDeConversorJson.ConversorEmEnumSemCodigo)}.", StringComparison.Ordinal));
     }
 
     [Fact(DisplayName = "Em produção, nenhum membro cujo tipo menciona enum com código leva o conversor JSON")]
@@ -110,13 +110,13 @@ public sealed class ConversorJsonNaoEscondeOCodigoDeContratoTests
     [Fact(DisplayName = "O conversor JSON no próprio enum com código é reprovado, com o tipo na mensagem")]
     public void Fixtures_ConversorNoProprioEnumComCodigo_Reprova() =>
         EnumsDasFixturesComConversor.Should().ContainSingle()
-            .Which.Should().Be($"{FixturesFullName}+{nameof(FixturesDeConversorJson.EstadoComCodigoEConversorNoTipo)}");
+            .Which.Should().Be($"{NomeCompletoDasFixtures}+{nameof(FixturesDeConversorJson.EstadoComCodigoEConversorNoTipo)}");
 
     [Fact(DisplayName = "O enum com código sem conversor e o enum sem código com conversor passam")]
     public void Fixtures_ConformesPassam_NosEnums() =>
         EnumsDasFixturesComConversor.Should()
-            .NotContain($"{FixturesFullName}+{nameof(FixturesDeConversorJson.EstadoComCodigo)}")
-            .And.NotContain($"{FixturesFullName}+{nameof(FixturesDeConversorJson.EstadoSemCodigoComConversorNoTipo)}");
+            .NotContain($"{NomeCompletoDasFixtures}+{nameof(FixturesDeConversorJson.EstadoComCodigo)}")
+            .And.NotContain($"{NomeCompletoDasFixtures}+{nameof(FixturesDeConversorJson.EstadoSemCodigoComConversorNoTipo)}");
 
     [Fact(DisplayName = "Em produção, nenhum enum com código leva o conversor JSON no próprio tipo")]
     public void Produto_EnumComCodigo_NaoLevaConversorJsonNoTipo()

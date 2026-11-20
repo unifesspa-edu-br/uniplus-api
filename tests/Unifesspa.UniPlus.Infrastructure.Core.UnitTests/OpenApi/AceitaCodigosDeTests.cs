@@ -39,10 +39,10 @@ public sealed class AceitaCodigosDeTests
     {
         DocumentoPublicado documento = await Controladores.Value;
 
-        JsonArray alternativas = documento.Propriedade(nameof(PedidoDeFase), "faseOpcional")["oneOf"]!.AsArray();
+        JsonArray alternativas = documento.Propriedade(nameof(PedidoDeFase), "faseOpcional").Campo("oneOf").AsArray();
 
-        alternativas[0]!["type"]!.GetValue<string>().Should().Be("null");
-        DocumentoPublicado.Referencia(alternativas[1]!).Should().Be(ComponenteDosCodigos);
+        alternativas.Elemento(0).Texto("type").Should().Be("null");
+        DocumentoPublicado.Referencia(alternativas.Elemento(1)).Should().Be(ComponenteDosCodigos);
         Obrigatorios(documento, nameof(PedidoDeFase)).Should().NotContain("faseOpcional");
     }
 
@@ -53,8 +53,8 @@ public sealed class AceitaCodigosDeTests
 
         JsonNode colecao = documento.Propriedade(nameof(PedidoDeFase), "fases");
 
-        colecao["type"]!.AsArray().Select(static t => t!.GetValue<string>()).Should().BeEquivalentTo(["null", "array"]);
-        DocumentoPublicado.Referencia(colecao["items"]!).Should().Be(ComponenteDosCodigos);
+        colecao.Campo("type").Textos().Should().BeEquivalentTo(["null", "array"]);
+        DocumentoPublicado.Referencia(colecao.Campo("items")).Should().Be(ComponenteDosCodigos);
         Obrigatorios(documento, nameof(PedidoDeFase)).Should().NotContain("fases");
     }
 
@@ -63,7 +63,7 @@ public sealed class AceitaCodigosDeTests
     {
         DocumentoPublicado documento = await Controladores.Value;
 
-        JsonNode item = documento.Propriedade(nameof(PedidoDeFase), "fases")["items"]!;
+        JsonNode item = documento.Propriedade(nameof(PedidoDeFase), "fases").Campo("items");
 
         item.AsObject().Select(static p => p.Key).Should().Equal("$ref");
     }
@@ -75,8 +75,8 @@ public sealed class AceitaCodigosDeTests
 
         JsonNode vetor = documento.Propriedade(nameof(PedidoDeFase), "fasesObrigatorias");
 
-        vetor["type"]!.GetValue<string>().Should().Be("array");
-        DocumentoPublicado.Referencia(vetor["items"]!).Should().Be(ComponenteDosCodigos);
+        vetor.Texto("type").Should().Be("array");
+        DocumentoPublicado.Referencia(vetor.Campo("items")).Should().Be(ComponenteDosCodigos);
         Obrigatorios(documento, nameof(PedidoDeFase)).Should().Contain("fasesObrigatorias");
     }
 
@@ -85,8 +85,8 @@ public sealed class AceitaCodigosDeTests
     {
         DocumentoPublicado documento = await Controladores.Value;
 
-        documento.Propriedade(nameof(PedidoDeFase), "faseDescrita")["description"]!.GetValue<string>().Should().Be("A fase em que o processo está.");
-        documento.Propriedade(nameof(PedidoDeFase), "faseOpcionalDescrita")["description"]!.GetValue<string>().Should().Be("A fase que o pedido muda, se mudar.");
+        documento.Propriedade(nameof(PedidoDeFase), "faseDescrita").Texto("description").Should().Be("A fase em que o processo está.");
+        documento.Propriedade(nameof(PedidoDeFase), "faseOpcionalDescrita").Texto("description").Should().Be("A fase que o pedido muda, se mudar.");
     }
 
     [Fact(DisplayName = "O campo de pedido e o parâmetro de consulta sem descrição própria não copiam a descrição do enum")]
@@ -95,7 +95,7 @@ public sealed class AceitaCodigosDeTests
         DocumentoPublicado documento = await Controladores.Value;
 
         documento.Propriedade(nameof(PedidoDeFase), "fase")["description"].Should().BeNull();
-        documento.Parametro("/api/fases/direto", "get", "fase")["schema"]!["description"].Should().BeNull();
+        documento.Parametro("/api/fases/direto", "get", "fase").Campo("schema")["description"].Should().BeNull();
     }
 
     [Fact(DisplayName = "O enum com descrição que só aparece em campo de pedido leva a descrição no componente dos códigos, antes da lista")]
@@ -104,7 +104,7 @@ public sealed class AceitaCodigosDeTests
         DocumentoPublicado documento = await RotasMinimas.Value;
 
         documento.Componentes.Should().Contain("FaseCodigo").And.NotContain([nameof(Fase), "FaseComDescricao"]);
-        documento.Componente("FaseCodigo")["description"]!.GetValue<string>().Should().Be(
+        documento.Componente("FaseCodigo").Texto("description").Should().Be(
             "Em que fase o processo está, para todos os códigos.\n\n"
             + "- `inscricao`: Inscrição — A pessoa ainda pode se inscrever.\n- `resultado`: Resultado — O resultado já saiu.");
     }
@@ -117,7 +117,7 @@ public sealed class AceitaCodigosDeTests
         JsonNode livre = documento.Propriedade(nameof(PedidoDeFase), "livre");
 
         DocumentoPublicado.Referencia(livre).Should().BeNull();
-        livre["type"]!.AsArray().Select(static t => t!.GetValue<string>()).Should().BeEquivalentTo(["null", "string"]);
+        livre.Campo("type").Textos().Should().BeEquivalentTo(["null", "string"]);
     }
 
     [Fact(DisplayName = "No registro posicional o atributo vale no parâmetro e na propriedade")]
@@ -126,7 +126,7 @@ public sealed class AceitaCodigosDeTests
         DocumentoPublicado documento = await Controladores.Value;
 
         DocumentoPublicado.Referencia(documento.Propriedade(nameof(PedidoPosicional), "noParametro")).Should().Be(ComponenteDosCodigos);
-        DocumentoPublicado.Referencia(documento.Propriedade(nameof(PedidoPosicional), "naPropriedade")["items"]!).Should().Be(ComponenteDosCodigos);
+        DocumentoPublicado.Referencia(documento.Propriedade(nameof(PedidoPosicional), "naPropriedade").Campo("items")).Should().Be(ComponenteDosCodigos);
     }
 
     [Fact(DisplayName = "O parâmetro do construtor que o serializador usa carrega o atributo")]
@@ -145,7 +145,7 @@ public sealed class AceitaCodigosDeTests
         JsonNode fase = documento.Propriedade(nameof(PedidoComOutraSobrecargaMarcada), "fase");
 
         DocumentoPublicado.Referencia(fase).Should().BeNull();
-        fase["type"]!.GetValue<string>().Should().Be("string");
+        fase.Texto("type").Should().Be("string");
     }
 
     [Fact(DisplayName = "O parâmetro de consulta direto da ação referencia os códigos e continua opcional")]
@@ -155,7 +155,7 @@ public sealed class AceitaCodigosDeTests
 
         JsonNode parametro = documento.Parametro("/api/fases/direto", "get", "fase");
 
-        DocumentoPublicado.Referencia(parametro["schema"]!).Should().Be(ComponenteDosCodigos);
+        DocumentoPublicado.Referencia(parametro.Campo("schema")).Should().Be(ComponenteDosCodigos);
         Obrigatorio(parametro).Should().BeFalse();
     }
 
@@ -166,7 +166,7 @@ public sealed class AceitaCodigosDeTests
 
         JsonNode parametro = documento.Parametro("/api/fases/direto", "get", "faseObrigatoria");
 
-        DocumentoPublicado.Referencia(parametro["schema"]!).Should().Be(ComponenteDosCodigos);
+        DocumentoPublicado.Referencia(parametro.Campo("schema")).Should().Be(ComponenteDosCodigos);
         Obrigatorio(parametro).Should().BeTrue();
     }
 
@@ -175,10 +175,10 @@ public sealed class AceitaCodigosDeTests
     {
         DocumentoPublicado documento = await Controladores.Value;
 
-        JsonNode esquema = documento.Parametro("/api/fases/direto", "get", "fases")["schema"]!;
+        JsonNode esquema = documento.Parametro("/api/fases/direto", "get", "fases").Campo("schema");
 
-        esquema["type"]!.GetValue<string>().Should().Be("array");
-        DocumentoPublicado.Referencia(esquema["items"]!).Should().Be(ComponenteDosCodigos);
+        esquema.Texto("type").Should().Be("array");
+        DocumentoPublicado.Referencia(esquema.Campo("items")).Should().Be(ComponenteDosCodigos);
     }
 
     [Fact(DisplayName = "O parâmetro de consulta de uma propriedade de tipo com [FromQuery] referencia os códigos")]
@@ -188,7 +188,7 @@ public sealed class AceitaCodigosDeTests
 
         JsonNode parametro = documento.Parametro("/api/fases/filtro", "get", "faseDoFiltro");
 
-        DocumentoPublicado.Referencia(parametro["schema"]!).Should().Be(ComponenteDosCodigos);
+        DocumentoPublicado.Referencia(parametro.Campo("schema")).Should().Be(ComponenteDosCodigos);
         Obrigatorio(parametro).Should().BeFalse();
     }
 
@@ -197,11 +197,11 @@ public sealed class AceitaCodigosDeTests
     {
         DocumentoPublicado documento = await Controladores.Value;
 
-        JsonNode direto = documento.Parametro("/api/fases/direto", "get", "livre")["schema"]!;
-        JsonNode doFiltro = documento.Parametro("/api/fases/filtro", "get", "livreDoFiltro")["schema"]!;
+        JsonNode direto = documento.Parametro("/api/fases/direto", "get", "livre").Campo("schema");
+        JsonNode doFiltro = documento.Parametro("/api/fases/filtro", "get", "livreDoFiltro").Campo("schema");
 
         new[] { direto, doFiltro }.Select(DocumentoPublicado.Referencia).Should().OnlyContain(referencia => referencia == null);
-        new[] { direto, doFiltro }.Select(static e => e["type"]!.GetValue<string>()).Should().OnlyContain(tipo => tipo == "string");
+        new[] { direto, doFiltro }.Select(static e => e.Texto("type")).Should().OnlyContain(tipo => tipo == "string");
     }
 
     [Fact(DisplayName = "O parâmetro de uma rota mínima referencia os códigos")]
@@ -209,7 +209,7 @@ public sealed class AceitaCodigosDeTests
     {
         DocumentoPublicado documento = await RotasMinimas.Value;
 
-        DocumentoPublicado.Referencia(documento.Parametro("/parametro", "get", "fase")["schema"]!).Should().Be(ComponenteDosCodigos);
+        DocumentoPublicado.Referencia(documento.Parametro("/parametro", "get", "fase").Campo("schema")).Should().Be(ComponenteDosCodigos);
     }
 
     [Fact(DisplayName = "A propriedade de um tipo de consulta de rota mínima referencia os códigos")]
@@ -217,7 +217,7 @@ public sealed class AceitaCodigosDeTests
     {
         DocumentoPublicado documento = await RotasMinimas.Value;
 
-        DocumentoPublicado.Referencia(documento.Parametro("/consulta", "get", "faseDoFiltro")["schema"]!).Should().Be(ComponenteDosCodigos);
+        DocumentoPublicado.Referencia(documento.Parametro("/consulta", "get", "faseDoFiltro").Campo("schema")).Should().Be(ComponenteDosCodigos);
     }
 
     [Fact(DisplayName = "O atributo em propriedade que não é texto nem coleção de texto faz a geração falhar, citando o campo e o tipo")]
@@ -245,5 +245,5 @@ public sealed class AceitaCodigosDeTests
     private static bool Obrigatorio(JsonNode parametro) => parametro["required"]?.GetValue<bool>() ?? false;
 
     private static IEnumerable<string> Obrigatorios(DocumentoPublicado documento, string componente) =>
-        documento.Componente(componente)["required"]?.AsArray().Select(static n => n!.GetValue<string>()) ?? [];
+        documento.Componente(componente)["required"]?.Textos() ?? [];
 }

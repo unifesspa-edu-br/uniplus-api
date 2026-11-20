@@ -24,9 +24,9 @@ public sealed class CodigosDosEnumsNoDocumentoTests
         JsonNode[] campos =
         [
             documento.Propriedade(nameof(PedidoDeFase), "fase"),
-            documento.Propriedade(nameof(PedidoDeFase), "fases")["items"]!,
-            documento.Parametro("/api/fases/direto", "get", "fase")["schema"]!,
-            documento.Parametro("/api/fases/filtro", "get", "faseDoFiltro")["schema"]!,
+            documento.Propriedade(nameof(PedidoDeFase), "fases").Campo("items"),
+            documento.Parametro("/api/fases/direto", "get", "fase").Campo("schema"),
+            documento.Parametro("/api/fases/filtro", "get", "faseDoFiltro").Campo("schema"),
             documento.Propriedade(nameof(Fase), "codigo"),
             documento.Propriedade("FaseComDescricao", "codigo"),
         ];
@@ -59,9 +59,9 @@ public sealed class CodigosDosEnumsNoDocumentoTests
 
         JsonNode codigos = documento.Componente("FaseCodigo");
 
-        codigos["type"]!.GetValue<string>().Should().Be("string");
-        codigos["enum"]!.AsArray().Select(static c => c!.GetValue<string>()).Should().Equal("inscricao", "resultado");
-        codigos["description"]!.GetValue<string>().Should().Be(
+        codigos.Texto("type").Should().Be("string");
+        codigos.Campo("enum").Textos().Should().Equal("inscricao", "resultado");
+        codigos.Texto("description").Should().Be(
             "Em que fase o processo está, para todos os códigos.\n\n"
             + "- `inscricao`: Inscrição — A pessoa ainda pode se inscrever.\n- `resultado`: Resultado — O resultado já saiu.");
     }

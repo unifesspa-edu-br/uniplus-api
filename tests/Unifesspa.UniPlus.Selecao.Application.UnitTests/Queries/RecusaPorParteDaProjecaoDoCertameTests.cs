@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 
@@ -31,11 +30,10 @@ public sealed class RecusaPorParteDaProjecaoDoCertameTests
     [MemberData(nameof(Partes))]
     public void Projetar_BlocoIlegivel_RecusaCitandoAParte(string bloco, string parte)
     {
-        Result<CertamePublicadoDto> resultado = ProjecaoDoCertameDeTeste.ProjetarComBlocosIlegiveis(bloco);
+        DomainError recusa = ProjecaoDoCertameDeTeste.RecusaPorBlocosIlegiveis(bloco);
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(ProjecaoDoCertamePublicado.CodigoEnvelopeInesperado);
-        resultado.Error.Message.Should().Contain($"'{parte}'");
+        recusa.Code.Should().Be(ProjecaoDoCertamePublicado.CodigoEnvelopeInesperado);
+        recusa.Message.Should().Contain($"'{parte}'");
     }
 
     // A parte "quadro de vagas" contém a palavra da chave "vagas"; a mensagem cita a parte entre aspas, e é nessa forma que a chave vazaria.
@@ -43,9 +41,9 @@ public sealed class RecusaPorParteDaProjecaoDoCertameTests
     [MemberData(nameof(BlocosComChaveInternaDiferente))]
     public void Projetar_BlocoIlegivel_NaoRevelaAChaveInterna(string bloco)
     {
-        Result<CertamePublicadoDto> resultado = ProjecaoDoCertameDeTeste.ProjetarComBlocosIlegiveis(bloco);
+        DomainError recusa = ProjecaoDoCertameDeTeste.RecusaPorBlocosIlegiveis(bloco);
 
-        resultado.Error!.Message.Should().NotContain($"'{bloco}'");
+        recusa.Message.Should().NotContain($"'{bloco}'");
     }
 
     [Fact(DisplayName = "Toda parte pública do certame tem a sua linha nesta suíte, e só as públicas")]

@@ -136,7 +136,7 @@ public sealed class ModelBuilderCodigosDeContratoExtensionsTests
         {
             new ModuloComEnumsDeContrato().AplicarAoModelo(construtor);
             construtor.ConfigurarConversaoDosEnumsDeContrato();
-            depoisDaPrimeiraChamada = construtor.Model.FindEntityType(typeof(Turma))!.FindProperty(nameof(Turma.Modalidade))!.GetValueConverter();
+            depoisDaPrimeiraChamada = construtor.Model.FindEntityType(typeof(Turma))?.FindProperty(nameof(Turma.Modalidade))?.GetValueConverter();
         });
 
         depoisDaPrimeiraChamada.Should().NotBeNull();
@@ -159,10 +159,10 @@ public sealed class ModelBuilderCodigosDeContratoExtensionsTests
             .Should().Throw<ArgumentNullException>();
 
     private static IProperty Propriedade<TEntidade>(IModel modelo, string nome) =>
-        modelo.FindEntityType(typeof(TEntidade))!.FindProperty(nome)!;
+        modelo.Entidade(typeof(TEntidade)).Propriedade(nome);
 
     private static IElementType ElementoDe(IModel modelo, string nome) =>
-        Propriedade<TurmaComListas>(modelo, nome).GetElementType()!;
+        Propriedade<TurmaComListas>(modelo, nome).Elemento();
 
     private static IProperty Escalar(string nome) => Propriedade<Turma>(ModeloCompleto.Value, nome);
 
@@ -171,11 +171,11 @@ public sealed class ModelBuilderCodigosDeContratoExtensionsTests
     private static IProperty DoTipoProprio() => Propriedade<Sala>(ModeloCompleto.Value, nameof(Sala.Uso));
 
     private static IProperty DoTipoComplexo() =>
-        ComplexoDoMaterial().ComplexType.FindProperty(nameof(Material.Formato))!;
+        ComplexoDoMaterial().ComplexType.Propriedade(nameof(Material.Formato));
 
     private static IProperty DoTipoComplexoAninhado() =>
-        ComplexoDoMaterial().ComplexType.FindComplexProperty(nameof(Material.Rodape))!.ComplexType.FindProperty(nameof(Rodape.Impressao))!;
+        ComplexoDoMaterial().ComplexType.PropriedadeComplexa(nameof(Material.Rodape)).ComplexType.Propriedade(nameof(Rodape.Impressao));
 
     private static IComplexProperty ComplexoDoMaterial() =>
-        ModeloCompleto.Value.FindEntityType(typeof(TurmaComMaterial))!.FindComplexProperty(nameof(TurmaComMaterial.Material))!;
+        ModeloCompleto.Value.Entidade(typeof(TurmaComMaterial)).PropriedadeComplexa(nameof(TurmaComMaterial.Material));
 }
