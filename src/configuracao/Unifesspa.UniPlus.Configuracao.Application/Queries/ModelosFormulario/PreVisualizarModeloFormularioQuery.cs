@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -102,16 +103,16 @@ public static class PreVisualizarModeloFormularioQueryHandler
         Dictionary<string, ItemDoModelo> itemPorFato = conteudo.Campos().ToDictionary(static i => i.FatoCodigo, StringComparer.Ordinal);
         return new PreVisualizacaoDoModeloDto(
             [.. avaliacao.Itens.Select(i => Item(i, itemPorFato))],
-            [.. avaliacao.Termos.Select(static t => new TermoPreVisualizadoDto(t.Codigo, t.Visivel.ToCodigo(), t.Obrigatorio.ToCodigo()))],
+            [.. avaliacao.Termos.Select(static t => new TermoPreVisualizadoDto(t.Codigo, t.Visivel.Codigo(), t.Obrigatorio.Codigo()))],
             [.. avaliacao.Grupos.Select(g => Grupo(g, itemPorFato))],
-            [.. avaliacao.Etapas.Select(static e => new SecaoPreVisualizadaDto(e.Codigo, e.Visivel.ToCodigo()))]);
+            [.. avaliacao.Etapas.Select(static e => new SecaoPreVisualizadaDto(e.Codigo, e.Visivel.Codigo()))]);
     }
 
     private static GrupoPreVisualizadoDto Grupo(AvaliacaoGrupo grupo, Dictionary<string, ItemDoModelo> itemPorFato) => new(
         grupo.Codigo,
         grupo.EtapaCodigo,
-        grupo.Visivel.ToCodigo(),
-        grupo.Obrigatorio.ToCodigo(),
+        grupo.Visivel.Codigo(),
+        grupo.Obrigatorio.Codigo(),
         grupo.ContagemValida,
         grupo.OcorrenciaDoCandidatoValida,
         [.. grupo.Ocorrencias.Select(o => new OcorrenciaPreVisualizadaDto(o.Id, [.. o.Itens.Select(i => Item(i, itemPorFato))]))]);
@@ -119,10 +120,10 @@ public static class PreVisualizarModeloFormularioQueryHandler
     private static ItemPreVisualizadoDto Item(AvaliacaoItem item, Dictionary<string, ItemDoModelo> itemPorFato) => new(
         item.FatoCodigo,
         item.EtapaCodigo,
-        item.Visivel.ToCodigo(),
-        item.Obrigatorio.ToCodigo(),
+        item.Visivel.Codigo(),
+        item.Obrigatorio.Codigo(),
         [.. item.RestricoesVioladas.Select(static r => RestricaoValorJson.ParaToken(r.Tipo))],
-        item.Impedido.ToCodigo(),
+        item.Impedido.Codigo(),
         itemPorFato[item.FatoCodigo].Impedimento?.Mensagem,
         item.Opcoes is { } opcoes ? new OpcoesPreVisualizadasDto(opcoes.Codigos, opcoes.Definitivas) : null);
 }

@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Regras.Formularios;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Serializacao;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -21,22 +22,22 @@ public sealed record AvaliacaoPortavel(
     {
         ArgumentNullException.ThrowIfNull(avaliacao);
         return new(
-            [.. avaliacao.Etapas.Select(static e => new EtapaAvaliada(e.Codigo, e.Visivel.ToCodigo()))],
+            [.. avaliacao.Etapas.Select(static e => new EtapaAvaliada(e.Codigo, e.Visivel.Codigo()))],
             [.. avaliacao.Itens.Select(i => Campo(i, avaliacao.Fatos))],
             [.. avaliacao.Grupos.Select(static g => new GrupoAvaliado(
-                g.Codigo, g.EtapaCodigo, g.Visivel.ToCodigo(), g.Obrigatorio.ToCodigo(), g.Estado.ToCodigo(), g.ContagemValida, g.OcorrenciaDoCandidatoValida,
-                [.. g.Ocorrencias.Select(static o => new OcorrenciaAvaliada(o.Id, o.Estado.ToCodigo(), [.. o.Itens.Select(i => Campo(i, o.Fatos))]))]))],
-            [.. avaliacao.Termos.Select(static t => new TermoAvaliado(t.Codigo, t.Visivel.ToCodigo(), t.Obrigatorio.ToCodigo()))]);
+                g.Codigo, g.EtapaCodigo, g.Visivel.Codigo(), g.Obrigatorio.Codigo(), g.Estado.Codigo(), g.ContagemValida, g.OcorrenciaDoCandidatoValida,
+                [.. g.Ocorrencias.Select(static o => new OcorrenciaAvaliada(o.Id, o.Estado.Codigo(), [.. o.Itens.Select(i => Campo(i, o.Fatos))]))]))],
+            [.. avaliacao.Termos.Select(static t => new TermoAvaliado(t.Codigo, t.Visivel.Codigo(), t.Obrigatorio.Codigo()))]);
     }
 
     private static CampoAvaliado Campo(AvaliacaoItem item, IReadOnlyDictionary<string, FatoResolvido> fatos) => new(
         item.FatoCodigo,
         item.EtapaCodigo,
-        fatos.TryGetValue(item.FatoCodigo, out FatoResolvido? fato) ? fato.Estado.ToCodigo() : EstadoFatoCodigo.Indeterminado,
-        item.Visivel.ToCodigo(),
-        item.Obrigatorio.ToCodigo(),
+        fatos.TryGetValue(item.FatoCodigo, out FatoResolvido? fato) ? fato.Estado.Codigo() : EstadoFato.Indeterminado.Codigo(),
+        item.Visivel.Codigo(),
+        item.Obrigatorio.Codigo(),
         [.. item.RestricoesVioladas.Select(static r => RestricaoValorJson.ParaToken(r.Tipo))],
-        item.Impedido.ToCodigo(),
+        item.Impedido.Codigo(),
         item.Opcoes);
 }
 

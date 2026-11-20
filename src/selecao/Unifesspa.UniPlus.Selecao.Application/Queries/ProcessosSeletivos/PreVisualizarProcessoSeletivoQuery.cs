@@ -14,6 +14,7 @@ using Domain.ValueObjects;
 
 using DTOs;
 
+using Kernel.Domain.CodigosDeContrato;
 using Kernel.Results;
 
 using Services;
@@ -114,25 +115,25 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
             [.. avaliacao.Itens.Where(i => itemPorFato[i.FatoCodigo].Finalidade == formulario.Finalidade).Select(i => Item(i, itemPorFato[i.FatoCodigo]))],
             [.. avaliacao.Grupos.Where(g => grupoPorCodigo[g.Codigo].Finalidade == formulario.Finalidade).Select(g => Grupo(g, grupoPorCodigo[g.Codigo]))],
             [.. avaliacao.Termos.Where(t => termoPorCodigo[t.Codigo].Finalidade == formulario.Finalidade)
-                .Select(t => new TermoSimuladoDto(termoPorCodigo[t.Codigo].Codigo, t.Visivel.ToCodigo(), t.Obrigatorio.ToCodigo()))],
+                .Select(t => new TermoSimuladoDto(termoPorCodigo[t.Codigo].Codigo, t.Visivel.Codigo(), t.Obrigatorio.Codigo()))],
             Secoes(formulario, avaliacao)))];
     }
 
     private static GrupoSimuladoDto Grupo(AvaliacaoGrupo grupo, GrupoColetado coletado) => new(
-        grupo.Codigo, coletado.EtapaCodigo, grupo.Visivel.ToCodigo(), grupo.Obrigatorio.ToCodigo(), grupo.ContagemValida, grupo.OcorrenciaDoCandidatoValida,
+        grupo.Codigo, coletado.EtapaCodigo, grupo.Visivel.Codigo(), grupo.Obrigatorio.Codigo(), grupo.ContagemValida, grupo.OcorrenciaDoCandidatoValida,
         [.. grupo.Ocorrencias.Select(o => new OcorrenciaSimuladaDto(o.Id,
             [.. o.Itens.Select(i => Item(i, coletado.Subitens.Single(s => s.FatoCodigo == i.FatoCodigo), coletado.EtapaCodigo))]))]);
 
     private static List<SecaoSimuladaDto> Secoes(FormularioProcesso formulario, AvaliacaoFormulario avaliacao) =>
         [.. formulario.Etapas.Where(static e => e.Tipo == TipoEtapaFormulario.Secao).OrderBy(static e => e.Ordem)
             .Select(e => new SecaoSimuladaDto(e.Codigo,
-                avaliacao.Etapas.Single(a => a.Codigo == DefinicaoDoProcesso.CodigoDaEtapa(formulario.Finalidade, e.Codigo)).Visivel.ToCodigo()))];
+                avaliacao.Etapas.Single(a => a.Codigo == DefinicaoDoProcesso.CodigoDaEtapa(formulario.Finalidade, e.Codigo)).Visivel.Codigo()))];
 
     /// <summary>O item avaliado; o campo de grupo segue a seção do grupo.</summary>
     private static ItemSimuladoDto Item(AvaliacaoItem item, FatoColetado campo, string? etapaDoGrupo = null) => new(
-        item.FatoCodigo, etapaDoGrupo ?? campo.EtapaCodigo, item.Visivel.ToCodigo(), item.Obrigatorio.ToCodigo(),
+        item.FatoCodigo, etapaDoGrupo ?? campo.EtapaCodigo, item.Visivel.Codigo(), item.Obrigatorio.Codigo(),
         [.. item.RestricoesVioladas.Select(static r => RestricaoValorJson.ParaToken(r.Tipo))],
-        item.Impedido.ToCodigo(), campo.Impedimento?.Mensagem,
+        item.Impedido.Codigo(), campo.Impedimento?.Mensagem,
         item.Opcoes is { } opcoes ? new OpcoesSimuladasDto(opcoes.Codigos, opcoes.Definitivas) : null);
 
     private static DocumentoSimuladoDto Documento(DocumentoAvaliado avaliado)
