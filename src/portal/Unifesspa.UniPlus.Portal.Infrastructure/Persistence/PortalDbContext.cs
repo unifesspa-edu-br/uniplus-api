@@ -15,6 +15,7 @@ public sealed class PortalDbContext : DbContext, IUnitOfWork
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(PortalDbContext).Assembly);
+        modelBuilder.ConfigurarConversaoDosEnumsDeContrato();
         // Convenção global de soft-delete (issue #629): aplica `!IsDeleted` a todo
         // tipo ISoftDeletable, após os ApplyConfigurations registrarem os tipos.
         modelBuilder.AplicarFiltroGlobalSoftDelete();
