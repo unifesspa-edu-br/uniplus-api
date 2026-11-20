@@ -10,7 +10,10 @@ using Microsoft.OpenApi;
 
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
+using Unifesspa.UniPlus.Infrastructure.Core.UnitTests.OpenApi.Apoio;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
+using static Unifesspa.UniPlus.Infrastructure.Core.UnitTests.OpenApi.Apoio.ModeloDeCodigosDeTeste;
 
 public sealed class NomesDosComponentesTests
 {
@@ -47,16 +50,25 @@ public sealed class NomesDosComponentesTests
 
     public sealed record ComPassoAnulavel(Passo Atual, Passo? Anterior);
 
+    public sealed record ComTipoDeNomeDosCodigos(CodigoComRotulo<Escola.Andamento> Situacao, AndamentoCodigo Outro);
+
+    public sealed record ComTipoDeNomeComDescricao(CodigoComDescricao<Fase> Situacao, FaseComDescricao Outro);
+
+    // Tipos comuns com o nome que o gerador daria ao componente dos códigos e ao componente com descrição do enum.
+    public sealed record AndamentoCodigo(string Texto);
+
+    public sealed record FaseComDescricao(string Texto);
+
     // Um tipo comum chamado Andamento, que o gerador publicaria com o mesmo nome do componente do enum.
     public sealed record Andamento(string Texto);
 
-    [Fact(DisplayName = "O componente leva o nome do enum, e o mesmo enum em dois campos usa um só componente")]
+    [Fact(DisplayName = "O componente leva o nome do enum, e o mesmo enum em dois campos usa um só componente e um só componente dos códigos")]
     public async Task MesmoEnum_UmSoComponente()
     {
         OpenApiDocument documento = await GerarAsync(app => app.MapGet("/a", () => new DoisCamposComOMesmoTipo(
             CodigoComRotulo<Escola.Andamento>.De(Escola.Andamento.Aberto), CodigoComRotulo<Escola.Andamento>.De(Escola.Andamento.Aberto))));
 
-        ComponentesPublicados(documento).Should().BeEquivalentTo(["DoisCamposComOMesmoTipo", "Andamento"]);
+        ComponentesPublicados(documento).Should().BeEquivalentTo(["DoisCamposComOMesmoTipo", "Andamento", "AndamentoCodigo"]);
     }
 
     [Fact(DisplayName = "O tipo e a sua versão anulável dividem o mesmo componente sem falhar")]
@@ -90,6 +102,73 @@ public sealed class NomesDosComponentesTests
         InvalidOperationException erro = (await geracao.Should().ThrowAsync<InvalidOperationException>()).Which;
 
         erro.Message.Should().Contain("'Andamento'").And.Contain("Escola+Andamento").And.Contain("NomesDosComponentesTests+Andamento");
+    }
+
+    [Fact(DisplayName = "Um tipo comum com o nome do componente dos códigos do enum faz a geração falhar, e a mensagem cita os dois")]
+    public async Task TipoComumComONomeDosCodigos_FalhaComMensagemClara()
+    {
+        Func<Task> geracao = () => GeradorDeDocumentoDeTeste.GerarAsync(app =>
+            app.MapGet("/codigos", () => new ComTipoDeNomeDosCodigos(CodigoComRotulo<Escola.Andamento>.De(Escola.Andamento.Aberto), new AndamentoCodigo("x"))));
+
+        InvalidOperationException erro = (await geracao.Should().ThrowAsync<InvalidOperationException>()).Which;
+
+        erro.Message.Should().Contain("'AndamentoCodigo'").And.Contain("Escola+Andamento").And.Contain("NomesDosComponentesTests+AndamentoCodigo");
+    }
+
+    [Fact(DisplayName = "Um tipo comum com o nome do componente com descrição do enum faz a geração falhar, e a mensagem cita os dois")]
+    public async Task TipoComumComONomeComDescricao_FalhaComMensagemClara()
+    {
+        Func<Task> geracao = () => GeradorDeDocumentoDeTeste.GerarAsync(app =>
+            app.MapGet("/descricao", () => new ComTipoDeNomeComDescricao(CodigoComDescricao<Fase>.De(Fase.Inscricao), new FaseComDescricao("x"))));
+
+        InvalidOperationException erro = (await geracao.Should().ThrowAsync<InvalidOperationException>()).Which;
+
+        erro.Message.Should().Contain("'FaseComDescricao'").And.Contain("ModeloDeCodigosDeTeste+Fase").And.Contain("NomesDosComponentesTests+FaseComDescricao");
+    }
+
+    [Fact(DisplayName = "Um componente que o documento já tem com o nome dos códigos faz a geração falhar, em vez de ser trocado")]
+    public async Task ComponenteJaExistenteComONomeDosCodigos_FalhaEmVezDeSerTrocado()
+    {
+        string documento = $"nomes-{Guid.NewGuid():N}";
+        WebApplicationBuilder builder = GeradorDeDocumentoDeTeste.NovoConstrutor(documento, opcoes => opcoes.AddDocumentTransformer(AdicionarComponenteAndamentoCodigoAsync));
+        await using WebApplication app = builder.Build();
+        app.MapGet("/andamento", () => new RespostaDaEscola(CodigoComRotulo<Escola.Andamento>.De(Escola.Andamento.Aberto)));
+        await app.StartAsync();
+
+        Func<Task> geracao = () => GeradorDeDocumentoDeTeste.PublicarAsync(app, documento);
+
+        InvalidOperationException erro = (await geracao.Should().ThrowAsync<InvalidOperationException>()).Which;
+        erro.Message.Should().Contain("'AndamentoCodigo'").And.Contain("Escola+Andamento");
+    }
+
+    [Fact(DisplayName = "Enums de mesmo nome em documentos diferentes são legítimos: o dono do nome vale por documento")]
+    public async Task EnumsHomonimosEmDocumentosDiferentes_CadaDocumentoTemOSeuComponente()
+    {
+        WebApplicationBuilder builder = GeradorDeDocumentoDeTeste.NovoConstrutor("escola");
+        builder.Services.AddUniPlusOpenApi("oficina", builder.Configuration);
+        await using WebApplication app = builder.Build();
+        app.MapGet("/escola", () => new RespostaDaEscola(CodigoComRotulo<Escola.Andamento>.De(Escola.Andamento.Aberto))).WithGroupName("escola");
+        app.MapGet("/oficina", () => new Oficina.Resposta(CodigoComRotulo<Oficina.Andamento>.De(Oficina.Andamento.Fechado))).WithGroupName("oficina");
+        await app.StartAsync();
+
+        DocumentoPublicado escola = await GeradorDeDocumentoDeTeste.PublicarAsync(app, "escola");
+        DocumentoPublicado oficina = await GeradorDeDocumentoDeTeste.PublicarAsync(app, "oficina");
+
+        CodigosDoComponente(escola, "AndamentoCodigo").Should().Equal("aberto");
+        CodigosDoComponente(oficina, "AndamentoCodigo").Should().Equal("fechado");
+        DocumentoPublicado.Referencia(oficina.Propriedade("Andamento", "codigo")).Should().Be("#/components/schemas/AndamentoCodigo");
+    }
+
+    private static string[] CodigosDoComponente(DocumentoPublicado documento, string componente) =>
+        [.. documento.Componente(componente)["enum"]!.AsArray().Select(static c => c!.GetValue<string>())];
+
+    private static Task AdicionarComponenteAndamentoCodigoAsync(OpenApiDocument documento, OpenApiDocumentTransformerContext contexto, CancellationToken cancellationToken)
+    {
+        documento.Components ??= new OpenApiComponents();
+        documento.Components.Schemas ??= new Dictionary<string, IOpenApiSchema>(StringComparer.Ordinal);
+        documento.Components.Schemas["AndamentoCodigo"] = new OpenApiSchema { Type = JsonSchemaType.String };
+
+        return Task.CompletedTask;
     }
 
     private static IEnumerable<string> ComponentesPublicados(OpenApiDocument documento) =>
