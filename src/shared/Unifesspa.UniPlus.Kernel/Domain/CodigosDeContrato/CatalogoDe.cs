@@ -25,6 +25,13 @@ public static class CatalogoDe<TEnum>
     public static IReadOnlyList<CodigoDeclarado> Todos() => Carregada.Value.Todos;
 
     /// <summary>
+    /// Os valores do enum, na ordem em que ele declara os membros, a mesma de <see cref="Todos"/>. Não é a ordem
+    /// numérica dos valores, que <see cref="Enum.GetValues{TEnum}()"/> devolve.
+    /// </summary>
+    /// <exception cref="CodigosDeContratoInvalidosException">O enum é inválido.</exception>
+    public static IReadOnlyList<TEnum> Valores() => Carregada.Value.Valores;
+
+    /// <summary>
     /// Procura o valor pelo código, por comparação exata: sem aparar espaços nem ignorar maiúsculas. Código nulo, vazio
     /// ou desconhecido devolve <see langword="false"/>.
     /// </summary>
@@ -61,6 +68,7 @@ public static class CatalogoDe<TEnum>
 
         return new Tabela(
             [.. membros.Select(static m => m.Declarado)],
+            [.. membros.Select(static m => m.Valor)],
             membros.ToFrozenDictionary(static m => m.Valor, static m => m.Declarado),
             membros.ToFrozenDictionary(static m => m.Declarado.Codigo, static m => m.Valor, StringComparer.Ordinal));
     }
@@ -82,6 +90,7 @@ public static class CatalogoDe<TEnum>
 
     private sealed record Tabela(
         ImmutableArray<CodigoDeclarado> Todos,
+        ImmutableArray<TEnum> Valores,
         FrozenDictionary<TEnum, CodigoDeclarado> PorValor,
         FrozenDictionary<string, TEnum> PorCodigo);
 }

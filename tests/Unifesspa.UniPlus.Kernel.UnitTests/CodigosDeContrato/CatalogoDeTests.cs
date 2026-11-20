@@ -26,6 +26,33 @@ public sealed class CatalogoDeTests
     public void Todos_NaOrdemDosMembros() =>
         CatalogoDe<Cor>.Todos().Select(static d => d.Codigo).Should().Equal("azul", "verde_claro");
 
+    [Fact(DisplayName = "Os valores vêm na ordem em que o enum os declara, e não na ordem numérica")]
+    public void Valores_NaOrdemDeclarada()
+    {
+        CatalogoDe<Prioridade>.Valores().Should().Equal(Prioridade.Baixa, Prioridade.Alta, Prioridade.Media);
+        Enum.GetValues<Prioridade>().Should().NotEqual(CatalogoDe<Prioridade>.Valores());
+    }
+
+    [Fact(DisplayName = "Os valores seguem a mesma ordem dos códigos declarados")]
+    public void Valores_SeguemAOrdemDosCodigos() =>
+        CatalogoDe<Prioridade>.Valores().Select(static v => v.Codigo())
+            .Should().Equal(CatalogoDe<Prioridade>.Todos().Select(static d => d.Codigo));
+
+    [Fact(DisplayName = "A lista de valores não pode ser alterada por quem a recebe")]
+    public void Valores_NaoPodeSerAlterada()
+    {
+        IReadOnlyList<Prioridade> valores = CatalogoDe<Prioridade>.Valores();
+
+        valores.Should().NotBeAssignableTo<Prioridade[]>();
+        FluentActions.Invoking(() => ((IList<Prioridade>)valores).Clear()).Should().Throw<NotSupportedException>();
+        CatalogoDe<Prioridade>.Valores().Should().HaveCount(3);
+    }
+
+    [Fact(DisplayName = "Os valores de um enum inválido lançam a exceção do catálogo")]
+    public void Valores_EnumInvalido_Lanca() =>
+        FluentActions.Invoking(() => CatalogoDe<ComCodigoRepetido>.Valores())
+            .Should().Throw<CodigosDeContratoInvalidosException>();
+
     [Theory(DisplayName = "O código exato devolve o valor")]
     [InlineData("azul", Cor.Azul)]
     [InlineData("verde_claro", Cor.VerdeClaro)]
