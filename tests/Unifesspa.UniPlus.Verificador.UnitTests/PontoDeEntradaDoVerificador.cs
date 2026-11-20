@@ -13,6 +13,17 @@ using Unifesspa.UniPlus.Verificador.Configuracao;
 /// </summary>
 internal static class PontoDeEntradaDoVerificador
 {
+    /// <summary>As chaves obrigatórias das opções do verificador, com valores de teste que não apontam para serviço algum.</summary>
+    public static readonly string[] ConfiguracaoMinima =
+    [
+        "--Verificador:Armazenamento:Endpoint=minio:9000",
+        "--Verificador:Armazenamento:AccessKey=acesso-de-teste",
+        "--Verificador:Armazenamento:SecretKey=segredo-de-teste",
+        "--Verificador:Armazenamento:BucketEnvios=envios",
+        "--Verificador:Armazenamento:BucketArquivos=arquivos",
+        "--Verificador:RabbitMq:Host=rabbit",
+    ];
+
     public static IHost ConstruirSemIniciar(params string[] argumentos)
     {
         using CapturaDoHostConstruido captura = new();

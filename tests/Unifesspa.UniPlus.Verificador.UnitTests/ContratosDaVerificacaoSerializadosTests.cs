@@ -23,16 +23,6 @@ public sealed class ContratosDaVerificacaoSerializadosTests
 
     private static readonly Guid ArquivoId = Guid.Parse("0f8fad5b-d9cb-469f-a165-70867728950e");
 
-    private static readonly string[] ConfiguracaoMinima =
-    [
-        "--Verificador:Armazenamento:Endpoint=minio:9000",
-        "--Verificador:Armazenamento:AccessKey=acesso-de-teste",
-        "--Verificador:Armazenamento:SecretKey=segredo-de-teste",
-        "--Verificador:Armazenamento:BucketEnvios=envios",
-        "--Verificador:Armazenamento:BucketArquivos=arquivos",
-        "--Verificador:RabbitMq:Host=rabbit",
-    ];
-
     [Fact(DisplayName = "O pedido e o resultado serializados pelo Wolverine do verificador são iguais ao corpo de referência")]
     public void Serializar_PedidoEResultadoReais_IguaisAoCorpoDeReferencia()
     {
@@ -71,7 +61,7 @@ public sealed class ContratosDaVerificacaoSerializadosTests
 
     private static IMessageSerializer SerializadorDaComposicaoCompleta()
     {
-        using IHost host = PontoDeEntradaDoVerificador.ConstruirSemIniciar(ConfiguracaoMinima);
+        using IHost host = PontoDeEntradaDoVerificador.ConstruirSemIniciar(PontoDeEntradaDoVerificador.ConfiguracaoMinima);
 
         return host.Services.GetRequiredService<IWolverineRuntime>().Options.DefaultSerializer;
     }

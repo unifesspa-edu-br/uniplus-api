@@ -25,6 +25,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../Shared/ExecutavelComEnumsDefeituosos.cs" Link="ExecutavelComEnumsDefeituosos.cs" />
+    <Compile Include="../Shared/SondaDeInicioDoHost.cs" Link="SondaDeInicioDoHost.cs" />
     <Using Include="Xunit" />
   </ItemGroup>
 
