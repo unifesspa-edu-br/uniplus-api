@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -26,12 +27,12 @@ internal static class QuadroDeVagasDaConfiguracao
     private const string ColunasDaReservaLegalPresentes =
         "percentual_da_reserva_legal IS NOT NULL AND reserva_legal_nominal IS NOT NULL AND reserva_legal_efetiva IS NOT NULL AND excedente_sobre_reserva_legal IS NOT NULL AND vagas_cortadas_por_escassez IS NOT NULL";
 
-    private static readonly JsonSerializerOptions OpcoesJson = new()
+    private static readonly JsonSerializerOptions OpcoesJson = OpcoesJsonDeDocumento.Criar(new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true,
         WriteIndented = false,
-    };
+    });
 
     // O EF não chama o conversor para nulo: a coluna nula é a ausência do motor e das retiradas.
     private static readonly ValueConverter<ParametrosRegraAjusteDistribuicao?, string?> ConversorDoAjuste =

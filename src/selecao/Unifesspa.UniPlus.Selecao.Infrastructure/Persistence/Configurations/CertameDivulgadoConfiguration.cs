@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -40,15 +41,17 @@ internal sealed class CertameDivulgadoConfiguration : IEntityTypeConfiguration<C
     /// </summary>
     private static readonly string NomeOrdenacaoSql = NormalizacaoTextual.ExpressaoSql("nome");
 
+    private static readonly JsonSerializerOptions OpcoesJson = OpcoesJsonDeDocumento.Criar(new());
+
     private static readonly ValueConverter<IReadOnlyList<AtoDivulgado>, string> AtosConverter =
-        new(valor => JsonSerializer.Serialize(valor, (JsonSerializerOptions?)null),
-            json => JsonSerializer.Deserialize<List<AtoDivulgado>>(json, (JsonSerializerOptions?)null)!);
+        new(valor => JsonSerializer.Serialize(valor, OpcoesJson),
+            json => JsonSerializer.Deserialize<List<AtoDivulgado>>(json, OpcoesJson)!);
 
     private static readonly ValueComparer<IReadOnlyList<AtoDivulgado>> AtosComparer =
         new(
-            (a, b) => JsonSerializer.Serialize(a, (JsonSerializerOptions?)null) == JsonSerializer.Serialize(b, (JsonSerializerOptions?)null),
-            v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null).GetHashCode(StringComparison.Ordinal),
-            v => JsonSerializer.Deserialize<List<AtoDivulgado>>(JsonSerializer.Serialize(v, (JsonSerializerOptions?)null), (JsonSerializerOptions?)null)!);
+            (a, b) => JsonSerializer.Serialize(a, OpcoesJson) == JsonSerializer.Serialize(b, OpcoesJson),
+            v => JsonSerializer.Serialize(v, OpcoesJson).GetHashCode(StringComparison.Ordinal),
+            v => JsonSerializer.Deserialize<List<AtoDivulgado>>(JsonSerializer.Serialize(v, OpcoesJson), OpcoesJson)!);
 
     public void Configure(EntityTypeBuilder<CertameDivulgado> builder)
     {

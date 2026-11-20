@@ -12,11 +12,14 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 public sealed class NoExigenciaConfiguration : IEntityTypeConfiguration<NoExigencia>
 {
     private const int ConsequenciaMaxLength = 30;
+
+    private static readonly JsonSerializerOptions OpcoesJson = OpcoesJsonDeDocumento.Criar(new());
 
     public void Configure(EntityTypeBuilder<NoExigencia> builder)
     {
@@ -133,7 +136,7 @@ public sealed class NoExigenciaConfiguration : IEntityTypeConfiguration<NoExigen
             v => DeserializeOcorrenciasEsperadas(SerializeOcorrenciasEsperadas(v)));
 
     private static string? SerializeOcorrenciasEsperadas(IReadOnlyList<string>? lista) =>
-        lista is null ? null : JsonSerializer.Serialize(lista);
+        lista is null ? null : JsonSerializer.Serialize(lista, OpcoesJson);
     private static List<string>? DeserializeOcorrenciasEsperadas(string? json) =>
-        string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<List<string>>(json);
+        string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<List<string>>(json, OpcoesJson);
 }
