@@ -62,6 +62,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../Shared/ExecutavelComEnumsDefeituosos.cs" Link="ExecutavelComEnumsDefeituosos.cs" />
     <Compile Include="../Shared/RegraSemMetaforaNosNomes.cs" Link="RegraSemMetaforaNosNomes.cs" />
     <Compile Include="../Shared/RegraDeNomeDeTabela.cs" Link="RegraDeNomeDeTabela.cs" />
     <Compile Include="../Shared/RegraDeTamanhoDeIdentificador.cs" Link="RegraDeTamanhoDeIdentificador.cs" />
