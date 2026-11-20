@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Cors;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.HealthChecks;
+using Unifesspa.UniPlus.Infrastructure.Core.Hosting;
 using Unifesspa.UniPlus.Infrastructure.Core.Logging;
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
@@ -32,6 +33,10 @@ const string nomeServicoPortal = UniPlusServiceNames.Portal;
 
 builder.Host.UseSerilog((context, loggerConfig) =>
     loggerConfig.ConfigurarSerilog(context.Configuration, nomeServicoPortal));
+
+// Confere os códigos dos enums de todo projeto do Uni+ que a Portal alcança, antes de o host iniciar o servidor HTTP e o
+// runtime do Wolverine (ADR-0176).
+builder.Services.AddConferenciaDosEnumsDeContrato(typeof(Program).Assembly);
 
 builder.Services.AddControllers();
 

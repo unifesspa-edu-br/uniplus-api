@@ -44,6 +44,8 @@
 
   <ItemGroup>
     <Compile Include="../Shared/DecisaoDeAcessoDeTeste.cs" Link="DecisaoDeAcessoDeTeste.cs" />
+    <Compile Include="../Shared/ExecutavelComEnumsDefeituosos.cs" Link="ExecutavelComEnumsDefeituosos.cs" />
+    <Compile Include="../Shared/SondaDeInicioDoHost.cs" Link="SondaDeInicioDoHost.cs" />
     <Compile Include="../Shared/RegraDeNomeDeTabela.cs" Link="RegraDeNomeDeTabela.cs" />
     <Compile Include="../Shared/RegraDeTamanhoDeIdentificador.cs" Link="RegraDeTamanhoDeIdentificador.cs" />
     <Compile Include="../Shared/RelogioFixo.cs" Link="RelogioFixo.cs" />
