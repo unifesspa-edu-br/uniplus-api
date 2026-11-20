@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 
 /// <summary>
@@ -29,23 +28,23 @@ public sealed class OrdemDasRecusasDaProjecaoDoCertameTests
     [MemberData(nameof(Pares))]
     public void Projetar_DoisBlocosIlegiveis_CitaOPrimeiro(string primeiroBloco, string primeiraParte, string segundoBloco, string segundaParte)
     {
-        Result<CertamePublicadoDto> resultado = ProjecaoDoCertameDeTeste.ProjetarComBlocosIlegiveis(segundoBloco, primeiroBloco);
+        DomainError recusa = ProjecaoDoCertameDeTeste.RecusaPorBlocosIlegiveis(segundoBloco, primeiroBloco);
 
-        resultado.Error!.Message.Should().Contain($"'{primeiraParte}'").And.NotContain($"'{segundaParte}'");
+        recusa.Message.Should().Contain($"'{primeiraParte}'").And.NotContain($"'{segundaParte}'");
     }
 
     [Fact(DisplayName = "O período e a taxa quebrados juntos citam o período de inscrição")]
     public void Projetar_PeriodoETaxaIlegiveis_CitaOPeriodo() =>
-        ProjecaoDoCertameDeTeste.ProjetarComBlocosIlegiveis("taxaInscricao", "periodo")
-            .Error!.Message.Should().Contain("'período de inscrição'");
+        ProjecaoDoCertameDeTeste.RecusaPorBlocosIlegiveis("taxaInscricao", "periodo")
+            .Message.Should().Contain("'período de inscrição'");
 
     [Fact(DisplayName = "As ofertas e as vagas quebradas juntas citam as ofertas")]
     public void Projetar_OfertasEVagasIlegiveis_CitaAsOfertas() =>
-        ProjecaoDoCertameDeTeste.ProjetarComBlocosIlegiveis("vagas", "ofertas")
-            .Error!.Message.Should().Contain("'ofertas'");
+        ProjecaoDoCertameDeTeste.RecusaPorBlocosIlegiveis("vagas", "ofertas")
+            .Message.Should().Contain("'ofertas'");
 
     [Fact(DisplayName = "As unidades ilegíveis citam a unidade administradora, e não o documento do edital que também as lê")]
     public void Projetar_UnidadesIlegiveis_CitaAUnidadeAdministradora() =>
-        ProjecaoDoCertameDeTeste.ProjetarComBlocosIlegiveis("identidadesUnidade")
-            .Error!.Message.Should().Contain("'unidade administradora'").And.NotContain("'documento do edital'");
+        ProjecaoDoCertameDeTeste.RecusaPorBlocosIlegiveis("identidadesUnidade")
+            .Message.Should().Contain("'unidade administradora'").And.NotContain("'documento do edital'");
 }

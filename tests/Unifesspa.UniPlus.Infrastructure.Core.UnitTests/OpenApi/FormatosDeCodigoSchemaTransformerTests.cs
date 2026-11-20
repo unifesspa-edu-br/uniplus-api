@@ -60,8 +60,8 @@ public sealed class FormatosDeCodigoSchemaTransformerTests
 
         JsonNode codigos = documento.Componente("AndamentoCodigo");
 
-        codigos["type"]!.GetValue<string>().Should().Be("string");
-        codigos["enum"]!.AsArray().Select(static c => c!.GetValue<string>()).Should().Equal("em_andamento", "concluido");
+        codigos.Texto("type").Should().Be("string");
+        codigos.Campo("enum").Textos().Should().Equal("em_andamento", "concluido");
     }
 
     [Fact(DisplayName = "A descrição do componente dos códigos traz a descrição do enum, uma linha em branco e um item de lista por código, com o rótulo e, quando há, a descrição")]
@@ -69,7 +69,7 @@ public sealed class FormatosDeCodigoSchemaTransformerTests
     {
         DocumentoPublicado documento = await DocumentoGerado.Value;
 
-        documento.Componente("AndamentoCodigo")["description"]!.GetValue<string>().Should().Be(
+        documento.Componente("AndamentoCodigo").Texto("description").Should().Be(
             "Como anda o trabalho, para todos os códigos.\n\n- `em_andamento`: Em andamento — Ainda há o que fazer.\n- `concluido`: Concluído");
     }
 
@@ -87,7 +87,7 @@ public sealed class FormatosDeCodigoSchemaTransformerTests
         DocumentoPublicado documento = await DocumentoGerado.Value;
 
         documento.Componente(nameof(Etapa))["description"].Should().BeNull();
-        documento.Componente("EtapaCodigo")["description"]!.GetValue<string>().Should().Be("- `unica`: Única");
+        documento.Componente("EtapaCodigo").Texto("description").Should().Be("- `unica`: Única");
     }
 
     [Fact(DisplayName = "O rótulo é publicado como texto livre")]
@@ -97,7 +97,7 @@ public sealed class FormatosDeCodigoSchemaTransformerTests
 
         JsonNode rotulo = documento.Propriedade(nameof(Andamento), "rotulo");
 
-        rotulo["type"]!.GetValue<string>().Should().Be("string");
+        rotulo.Texto("type").Should().Be("string");
         rotulo["enum"].Should().BeNull();
     }
 
@@ -106,7 +106,7 @@ public sealed class FormatosDeCodigoSchemaTransformerTests
     {
         DocumentoPublicado documento = await DocumentoGerado.Value;
 
-        documento.Componente(nameof(Andamento))["required"]!.AsArray().Select(static n => n!.GetValue<string>()).Should().BeEquivalentTo(["codigo", "rotulo"]);
+        documento.Componente(nameof(Andamento)).Campo("required").Textos().Should().BeEquivalentTo(["codigo", "rotulo"]);
     }
 
     [Fact(DisplayName = "O texto de outra propriedade chamada codigo não recebe a lista de códigos")]
@@ -128,8 +128,8 @@ public sealed class FormatosDeCodigoSchemaTransformerTests
         JsonNode componente = documento.Componente("FaseComDescricao");
 
         documento.Componentes.Should().Contain([nameof(Fase), "FaseComDescricao", "FaseCodigo"]);
-        componente["properties"]!.AsObject().Select(static p => p.Key).Should().Equal("codigo", "rotulo", "descricao");
-        componente["required"]!.AsArray().Select(static n => n!.GetValue<string>()).Should().BeEquivalentTo(["codigo", "rotulo", "descricao"]);
+        componente.Campo("properties").AsObject().Select(static p => p.Key).Should().Equal("codigo", "rotulo", "descricao");
+        componente.Campo("required").Textos().Should().BeEquivalentTo(["codigo", "rotulo", "descricao"]);
     }
 
     [Fact(DisplayName = "O código com descrição referencia os mesmos códigos do código com rótulo, e a descrição é texto não anulável")]
@@ -139,7 +139,7 @@ public sealed class FormatosDeCodigoSchemaTransformerTests
 
         DocumentoPublicado.Referencia(documento.Propriedade("FaseComDescricao", "codigo")).Should().Be("#/components/schemas/FaseCodigo");
         DocumentoPublicado.Referencia(documento.Propriedade(nameof(Fase), "codigo")).Should().Be("#/components/schemas/FaseCodigo");
-        documento.Propriedade("FaseComDescricao", "descricao")["type"]!.GetValue<string>().Should().Be("string");
+        documento.Propriedade("FaseComDescricao", "descricao").Texto("type").Should().Be("string");
     }
 
     [Fact(DisplayName = "O componente do código com descrição não tem descrição: a descrição do enum fica no componente dos códigos")]

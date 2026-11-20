@@ -24,7 +24,8 @@ internal static class ProjecaoDoCertameDeTeste
     internal static readonly string HashDaConfiguracao = new('c', 64);
 
     internal static JsonObject Envelope() =>
-        (JsonObject)JsonNode.Parse(Encoding.UTF8.GetString(EnvelopeProjetavelDeTeste.Bytes))!;
+        JsonNode.Parse(Encoding.UTF8.GetString(EnvelopeProjetavelDeTeste.Bytes))?.AsObject()
+        ?? throw new InvalidOperationException("O envelope de referência do teste está vazio.");
 
     internal static Uri EnderecoNoAcervo(string chave) => new($"https://acervo.teste/{chave}");
 
@@ -37,8 +38,8 @@ internal static class ProjecaoDoCertameDeTeste
     {
         Result<CertamePublicadoDto> resultado = Projetar(envelope);
 
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        return resultado.Value!;
+        return resultado.Value
+            ?? throw new InvalidOperationException($"A projeção do envelope falhou: {resultado.Error?.Message}");
     }
 
     /// <summary>Projeta o envelope de referência com cada bloco indicado trocado por um número, que nenhuma parte aceita.</summary>
@@ -51,5 +52,14 @@ internal static class ProjecaoDoCertameDeTeste
         }
 
         return Projetar(envelope);
+    }
+
+    /// <summary>A recusa da projeção quando os blocos indicados estão ilegíveis.</summary>
+    internal static DomainError RecusaPorBlocosIlegiveis(params string[] blocos)
+    {
+        Result<CertamePublicadoDto> resultado = ProjetarComBlocosIlegiveis(blocos);
+
+        resultado.IsFailure.Should().BeTrue();
+        return resultado.Error ?? throw new InvalidOperationException("A projeção recusou sem informar o erro.");
     }
 }

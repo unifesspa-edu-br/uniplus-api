@@ -29,7 +29,11 @@ internal sealed class ConversorDasAnotacoesEmJson : ValueConverter<List<Anotacao
     public ConversorDasAnotacoesEmJson()
         : base(
             anotacoes => JsonSerializer.Serialize(anotacoes, (JsonSerializerOptions?)null),
-            json => JsonSerializer.Deserialize<List<Anotacao>>(json, (JsonSerializerOptions?)null)!)
+            json => LerAnotacoes(json))
     {
     }
+
+    private static List<Anotacao> LerAnotacoes(string json) =>
+        JsonSerializer.Deserialize<List<Anotacao>>(json, (JsonSerializerOptions?)null)
+        ?? throw new InvalidOperationException("O documento das anotações está nulo.");
 }
