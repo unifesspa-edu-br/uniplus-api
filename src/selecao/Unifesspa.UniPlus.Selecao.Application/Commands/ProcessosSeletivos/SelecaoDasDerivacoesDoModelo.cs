@@ -84,23 +84,11 @@ internal sealed class SelecaoDasDerivacoesDoModelo(
     /// <summary>Resolve as derivações a copiar contra o universo de fatos da configuração final.</summary>
     public DerivacoesResolvidas Resolver(List<ConfiguracaoDerivacaoInput> aCopiar, IReadOnlySet<string> universo)
     {
-        List<ConfiguracaoDerivacaoFato> derivacoes = [];
-        List<FieldError> recusas = [];
-        foreach (ConfiguracaoDerivacaoInput derivacao in aCopiar)
-        {
-            Result<ConfiguracaoDerivacaoFato> resolvida = DefinirRegrasDerivacaoCommandHandler.ResolverConfiguracao(
-                derivacao, contexto.Fatos, contexto.Vocabulario, universo, contexto.DominiosDinamicos);
-            if (resolvida.IsSuccess)
-            {
-                derivacoes.Add(resolvida.Value!);
-            }
-            else
-            {
-                recusas.AddRange(resolvida.Errors.Select(e => e with { Field = $"derivacoes[{derivacao.CodigoFato}]" }));
-            }
-        }
+        List<ResolucaoDaDerivacao> resolucoes = [.. aCopiar.Select(d => DerivacaoInformada.De(d).Resolver(contexto, universo))];
+        List<FieldError> recusas = [.. ResolucaoDasDerivacoes.RecusasPorGrupo(
+            resolucoes, (erro, i) => erro with { Field = $"derivacoes[{aCopiar[i].CodigoFato}]" })];
 
-        return new DerivacoesResolvidas(derivacoes, recusas);
+        return new DerivacoesResolvidas([.. resolucoes.Select(static r => r.Configuracao).OfType<ConfiguracaoDerivacaoFato>()], recusas);
     }
 
     // Mantém o que o processo grava e o que a oferta deriva. A regra do sistema que as derivações efetivas
@@ -151,7 +139,7 @@ internal sealed class SelecaoDasDerivacoesDoModelo(
     private static FieldError Recusa(string codigo, string codigoDoErro, string mensagem) =>
         new($"derivacoes[{codigo}]", new DomainError(codigoDoErro, mensagem));
 
-    // O predicado da regra padrão na forma da entrada de derivação; a regra âncora não tem condição.
+    // O predicado da regra padrão na forma da entrada de derivação; a regra incondicional não tem condição.
     private static IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? Quando(PredicadoDnf quando) =>
         EntradaDeRegras.ParaEntrada(quando) is { Count: > 0 } clausulas ? clausulas : null;
 

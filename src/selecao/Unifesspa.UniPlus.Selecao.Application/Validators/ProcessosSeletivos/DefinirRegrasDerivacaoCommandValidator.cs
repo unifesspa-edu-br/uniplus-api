@@ -5,18 +5,14 @@ using Commands.ProcessosSeletivos;
 using FluentValidation;
 
 /// <summary>
-/// Três checagens sem equivalente no agregado (ADR-0125): <c>ProcessoSeletivoId</c> é
-/// identificador de rota; as listas de configurações e de regras — e cada item delas — não
-/// podem ser nulas, porque o handler as desreferencia sem checagem defensiva
-/// (<c>configInput.Regras.Count</c> na primeira passada, achado de revisão: <c>RuleForEach</c>
-/// não reporta a coleção nula em si, só seus itens — a ausência dela exige o <c>NotNull</c>
-/// explícito abaixo, distinto do <c>NotEmpty</c> removido). Código do fato/presença de
-/// regras/unicidade de ordem/regras com e sem código (via
-/// <c>ConfiguracaoDerivacaoFato.ValidarFormaBasica</c>) e ordem/contribuição em branco (via
-/// <c>RegraDerivacaoConfigurada.ValidarFormaBasica</c>) já têm equivalente completo no domínio
-/// e ficaram fora daqui. A forma do predicado <c>quando</c> permanece: não tem equivalente em
-/// <c>RegraDerivacaoConfigurada.Criar</c>, que só recebe a lista já montada — a montagem e a checagem de forma bruta acontecem na Application
-/// (<c>DefinirRegrasDerivacaoCommandHandler</c>), que resolve o vocabulário cross-módulo.
+/// Confere o que o agregado e a leitura das condições não alcançam (ADR-0125): <c>ProcessoSeletivoId</c> é
+/// identificador de rota; as listas de configurações e de regras, e cada item delas, não podem ser nulos, porque o
+/// código que as lê as percorre sem checagem defensiva; e o predicado <c>quando</c> não pode ser uma lista externa
+/// vazia, pois a regra incondicional tem <c>quando</c> nulo. O restante da forma é recusado adiante:
+/// código do fato, presença de regras, unicidade de ordem e regras com e sem código por
+/// <c>ConfiguracaoDerivacaoFato.ValidarFormaBasica</c>; ordem e contribuição por
+/// <c>RegraDerivacaoConfigurada.ValidarFormaBasica</c>; cláusula vazia e condição nula por
+/// <c>EntradaDeRegras.Condicoes</c>.
 /// </summary>
 public sealed class DefinirRegrasDerivacaoCommandValidator : AbstractValidator<DefinirRegrasDerivacaoCommand>
 {
@@ -35,32 +31,36 @@ public sealed class DefinirRegrasDerivacaoCommandValidator : AbstractValidator<D
             .NotNull()
             .WithMessage("Item de configuração de derivação não pode ser nulo.");
 
-        RuleForEach(x => x.Configuracoes).ChildRules(config =>
-        {
-            // RuleForEach abaixo só reporta ITEM nulo dentro da lista — a lista em si sendo nula
-            // passa batido por ele (achado de revisão): sem este NotNull explícito, um payload
-            // com Regras nulo chegaria à primeira passada do handler e estouraria em
-            // configInput.Regras.Count antes de qualquer validação rodar.
-            config.RuleFor(c => c.Regras)
-                .NotNull()
-                .WithMessage("Lista de regras de derivação é obrigatória.");
+        RuleForEach(x => x.Configuracoes).SetValidator(new ConfiguracaoDerivacaoInputValidator());
+    }
+}
 
-            config.RuleForEach(c => c.Regras)
-                .NotNull()
-                .WithMessage("Item de regra de derivação não pode ser nulo.");
+internal sealed class ConfiguracaoDerivacaoInputValidator : AbstractValidator<ConfiguracaoDerivacaoInput>
+{
+    public ConfiguracaoDerivacaoInputValidator()
+    {
+        // RuleForEach só reporta item nulo dentro da lista; a lista nula exige o NotNull explícito, senão
+        // um payload com Regras nulo estouraria ao ser percorrido.
+        RuleFor(c => c.Regras)
+            .NotNull()
+            .WithMessage("Lista de regras de derivação é obrigatória.");
 
-            config.RuleForEach(c => c.Regras).ChildRules(regra =>
-            {
-                // Regra âncora (incondicional) tem Quando null. Uma lista externa vazia, uma
-                // cláusula interna vazia ou uma condição nula deixariam a semântica DNF ambígua ou
-                // fariam o handler desreferenciar um item nulo — a âncora é representada por null.
-                regra.RuleFor(r => r.Quando)
-                    .Must(quando => quando is null
-                        || (quando.Count > 0 && quando.All(static clausula =>
-                            clausula is { Count: > 0 } && clausula.All(static condicao => condicao is not null))))
-                    .WithMessage("O predicado 'quando', quando presente, não pode ser uma lista vazia, conter "
-                        + "cláusulas vazias ou condições nulas — uma regra incondicional (âncora) tem 'quando' null.");
-            });
-        });
+        RuleForEach(c => c.Regras)
+            .NotNull()
+            .WithMessage("Item de regra de derivação não pode ser nulo.");
+
+        RuleForEach(c => c.Regras).SetValidator(new RegraDerivacaoInputValidator());
+    }
+}
+
+internal sealed class RegraDerivacaoInputValidator : AbstractValidator<RegraDerivacaoInput>
+{
+    public RegraDerivacaoInputValidator()
+    {
+        // A regra incondicional tem Quando nulo; a lista externa vazia deixaria o predicado ambíguo.
+        RuleFor(r => r.Quando)
+            .Must(static quando => quando is null || quando.Count > 0)
+            .WithMessage("O predicado 'quando', quando presente, não pode ser uma lista vazia — "
+                + "uma regra incondicional tem 'quando' nulo.");
     }
 }
