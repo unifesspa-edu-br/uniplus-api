@@ -10879,19 +10879,21 @@
         "type": "object",
         "properties": {
           "codigo": {
-            "enum": [
-              "suspenso",
-              "em_vigor",
-              "sem_versao_em_vigor"
-            ],
-            "type": "string",
-            "description": "\u0060suspenso\u0060: Suspenso \u2014 H\u00E1 suspens\u00E3o aberta: nenhuma concess\u00E3o do perfil d\u00E1 acesso at\u00E9 a retomada.\n\u0060em_vigor\u0060: Em vigor \u2014 Sem suspens\u00E3o e com permiss\u00F5es valendo. O perfil de governan\u00E7a est\u00E1 sempre em vigor.\n\u0060sem_versao_em_vigor\u0060: Sem vers\u00E3o em vigor \u2014 Sem suspens\u00E3o e sem vers\u00E3o aprovada valendo."
+            "$ref": "#/components/schemas/SituacaoDoAcessoDoPerfilCodigo"
           },
           "rotulo": {
             "type": "string"
           }
-        },
-        "description": "Situa\u00E7\u00E3o do acesso do perfil, e n\u00E3o de cada concess\u00E3o: com o perfil em vigor, uma concess\u00E3o ainda pode n\u00E3o dar acesso por prazo vencido, revis\u00E3o das concess\u00F5es em andamento ou permiss\u00E3o suspensa por reclassifica\u00E7\u00E3o. A desativa\u00E7\u00E3o do perfil n\u00E3o altera a situa\u00E7\u00E3o."
+        }
+      },
+      "SituacaoDoAcessoDoPerfilCodigo": {
+        "enum": [
+          "suspenso",
+          "em_vigor",
+          "sem_versao_em_vigor"
+        ],
+        "type": "string",
+        "description": "Situa\u00E7\u00E3o do acesso do perfil, e n\u00E3o de cada concess\u00E3o: com o perfil em vigor, uma concess\u00E3o ainda pode n\u00E3o dar acesso por prazo vencido, revis\u00E3o das concess\u00F5es em andamento ou permiss\u00E3o suspensa por reclassifica\u00E7\u00E3o. A desativa\u00E7\u00E3o do perfil n\u00E3o altera a situa\u00E7\u00E3o.\n\n- \u0060suspenso\u0060: Suspenso \u2014 H\u00E1 suspens\u00E3o aberta: nenhuma concess\u00E3o do perfil d\u00E1 acesso at\u00E9 a retomada.\n- \u0060em_vigor\u0060: Em vigor \u2014 Sem suspens\u00E3o e com permiss\u00F5es valendo. O perfil de governan\u00E7a est\u00E1 sempre em vigor.\n- \u0060sem_versao_em_vigor\u0060: Sem vers\u00E3o em vigor \u2014 Sem suspens\u00E3o e sem vers\u00E3o aprovada valendo."
       },
       "SolicitarProvidenciaRequest": {
         "required": [
