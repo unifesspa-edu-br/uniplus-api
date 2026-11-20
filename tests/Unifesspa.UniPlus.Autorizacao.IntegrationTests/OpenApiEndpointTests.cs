@@ -40,13 +40,13 @@ public sealed class OpenApiEndpointTests : IClassFixture<AutorizacaoApiFactory>
         root.GetProperty("info").GetProperty("version").GetString().Should().Be("1.0.0");
     }
 
-    [Fact(DisplayName = "O componente da situação do acesso explica que a situação é do perfil, e não de cada concessão")]
+    [Fact(DisplayName = "O componente dos códigos da situação do acesso explica que a situação é do perfil, e não de cada concessão")]
     public async Task SituacaoDoAcesso_ExplicaQueEDoPerfilENaoDaConcessao()
     {
         using HttpResponseMessage response = await ObterDocumentoAsync();
         using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
-        JsonElement componente = doc.RootElement.GetProperty("components").GetProperty("schemas").GetProperty("SituacaoDoAcessoDoPerfil");
+        JsonElement componente = doc.RootElement.GetProperty("components").GetProperty("schemas").GetProperty("SituacaoDoAcessoDoPerfilCodigo");
 
         componente.GetProperty("description").GetString().Should().Contain("não de cada concessão");
     }
