@@ -46,6 +46,24 @@ public sealed class CodigosDeContratoDoRecursoTests
         Enum.GetValues<GuardaDaVaga>().Should().OnlyContain(static v => !string.IsNullOrWhiteSpace(v.Rotulo()));
     }
 
+    [Fact(DisplayName = "Todo efeito suspensivo e toda guarda da vaga declaram a descrição que a leitura de opções exige")]
+    public void Descricao_DeCadaOpcaoDoEfeitoEDaGuarda_EstaPreenchida()
+    {
+        Enum.GetValues<EfeitoSuspensivo>().Should().OnlyContain(static v => !string.IsNullOrWhiteSpace(v.Descricao()));
+        Enum.GetValues<GuardaDaVaga>().Should().OnlyContain(static v => !string.IsNullOrWhiteSpace(v.Descricao()));
+    }
+
+    [Fact(DisplayName = "As descrições das opções são as que o operador lê, sem citar código nem termo interno")]
+    public void Descricao_DeCadaOpcao_EhOTextoConfirmado()
+    {
+        EfeitoSuspensivo.SemEfeitoSuspensivo.Descricao().Should().Be(
+            "O recurso não suspende o processo: as fases seguintes começam nas datas do cronograma, mesmo com recurso em análise.");
+        GuardaDaVaga.AteOResultadoDefinitivo.Descricao().Should().Be(
+            "Se quem recorre seria chamado para a vaga, ela fica guardada até a publicação do resultado definitivo.");
+        GuardaDaVaga.NaoGuarda.Descricao().Should().Be(
+            "A vaga não fica guardada durante o recurso. Se o recurso for deferido com a vaga já ocupada, a unidade resolve a situação.");
+    }
+
     [Fact(DisplayName = "Os códigos de contrato dos enums do domínio da Seleção passam na conferência da subida")]
     public void ConferirEnumsDe_DominioDaSelecao_Passa() =>
         FluentActions.Invoking(() => EnumsDeContrato.ConferirEnumsDe([typeof(UnidadePrazo).Assembly])).Should().NotThrow();

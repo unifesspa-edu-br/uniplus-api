@@ -11731,6 +11731,102 @@
           }
         }
       }
+    },
+    "/api/selecao/unidades-do-prazo-de-recurso": {
+      "get": {
+        "tags": [
+          "Vocabularios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.unidade-do-prazo-de-recurso.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnidadePrazo"
+                  }
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/selecao/efeitos-suspensivos": {
+      "get": {
+        "tags": [
+          "Vocabularios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.efeito-suspensivo.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EfeitoSuspensivoComDescricao"
+                  }
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/selecao/guardas-da-vaga": {
+      "get": {
+        "tags": [
+          "Vocabularios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.guarda-da-vaga.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GuardaDaVagaComDescricao"
+                  }
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -19396,7 +19492,26 @@
           "semEfeitoSuspensivo"
         ],
         "type": "string",
-        "description": "- \u0060semEfeitoSuspensivo\u0060: Sem efeito suspensivo"
+        "description": "- \u0060semEfeitoSuspensivo\u0060: Sem efeito suspensivo \u2014 O recurso n\u00E3o suspende o processo: as fases seguintes come\u00E7am nas datas do cronograma, mesmo com recurso em an\u00E1lise."
+      },
+      "EfeitoSuspensivoComDescricao": {
+        "required": [
+          "codigo",
+          "rotulo",
+          "descricao"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/EfeitoSuspensivoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          },
+          "descricao": {
+            "type": "string"
+          }
+        }
       },
       "EncerramentoDaVotacao": {
         "enum": [
@@ -21340,7 +21455,26 @@
           "naoGuarda"
         ],
         "type": "string",
-        "description": "- \u0060ateOResultadoDefinitivo\u0060: Guarda a vaga at\u00E9 o resultado definitivo\n- \u0060naoGuarda\u0060: N\u00E3o guarda a vaga"
+        "description": "- \u0060ateOResultadoDefinitivo\u0060: Guarda a vaga at\u00E9 o resultado definitivo \u2014 Se quem recorre seria chamado para a vaga, ela fica guardada at\u00E9 a publica\u00E7\u00E3o do resultado definitivo.\n- \u0060naoGuarda\u0060: N\u00E3o guarda a vaga \u2014 A vaga n\u00E3o fica guardada durante o recurso. Se o recurso for deferido com a vaga j\u00E1 ocupada, a unidade resolve a situa\u00E7\u00E3o."
+      },
+      "GuardaDaVagaComDescricao": {
+        "required": [
+          "codigo",
+          "rotulo",
+          "descricao"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/GuardaDaVagaCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          },
+          "descricao": {
+            "type": "string"
+          }
+        }
       },
       "IdadeMaximaEmissaoDto": {
         "required": [
