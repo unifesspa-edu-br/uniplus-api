@@ -1,0 +1,116 @@
+[
+  {
+    "nome": "Administração dos cadastros",
+    "descricao": "Mantém os cadastros de configuração da instituição usados pelos processos seletivos.",
+    "alcance": "instituicao",
+    "permissoes": [
+      "configuracao:base-legal-bonus-regional:manter",
+      "configuracao:calendarios-dias-uteis:manter",
+      "configuracao:campi:manter",
+      "configuracao:categorias-documento:manter",
+      "configuracao:condicoes-atendimento:manter",
+      "configuracao:cursos:manter",
+      "configuracao:fases-canonicas:manter",
+      "configuracao:fatos-candidato:consultar",
+      "configuracao:fatos-candidato:manter",
+      "configuracao:locais-oferta:manter",
+      "configuracao:modalidades:manter",
+      "configuracao:modelos-formulario:consultar",
+      "configuracao:modelos-formulario:manter",
+      "configuracao:ofertas-curso:manter",
+      "configuracao:pesos-area-enem:manter",
+      "configuracao:precedencias-fase:manter",
+      "configuracao:recursos-acessibilidade:manter",
+      "configuracao:referencias-reserva-demografica:manter",
+      "configuracao:termos-consentimento:manter",
+      "configuracao:tipos-banca:manter",
+      "configuracao:tipos-conceito:manter",
+      "configuracao:tipos-deficiencia:manter",
+      "configuracao:tipos-documento:manter",
+      "configuracao:tipos-etapa:manter",
+      "configuracao:tipos-processo:consultar",
+      "configuracao:tipos-processo:manter",
+      "selecao:leiautes-inep:consultar",
+      "selecao:motivos-de-decisao:manter",
+      "selecao:obrigatoriedades-legais:manter",
+      "selecao:regras-catalogo:consultar"
+    ]
+  },
+  {
+    "nome": "Consulta sem dados pessoais",
+    "descricao": "Consulta as inscrições da unidade só com os dados e documentos públicos e internos, sem nome nem identificadores.",
+    "alcance": "unidade",
+    "permissoes": [
+      "selecao:dados-internos:consultar",
+      "selecao:dados-publicos:consultar",
+      "selecao:documentos-internos:consultar",
+      "selecao:documentos-publicos:consultar",
+      "selecao:inscricoes:consultar"
+    ]
+  },
+  {
+    "nome": "Coordenação de processo seletivo",
+    "descricao": "Configura, publica e acompanha os processos seletivos da unidade proprietária, sem acesso aos dados dos candidatos.",
+    "alcance": "unidade",
+    "permissoes": [
+      "selecao:processos:acompanhar",
+      "selecao:processos:configurar",
+      "selecao:processos:publicar"
+    ]
+  },
+  {
+    "nome": "Dados e documentos sensíveis",
+    "descricao": "Consulta os dados sensíveis respondidos no formulário e os documentos sensíveis das inscrições da unidade.",
+    "alcance": "unidade",
+    "permissoes": [
+      "selecao:dados-sensiveis:consultar",
+      "selecao:documentos-sensiveis:consultar"
+    ]
+  },
+  {
+    "nome": "Envio ao INEP",
+    "descricao": "Gera o envio de CPFs ao INEP e revela o CPF da inscrição quando necessário.",
+    "alcance": "unidade",
+    "permissoes": [
+      "selecao:dados-identificadores:consultar",
+      "selecao:dados-identificadores:revelar",
+      "selecao:envios-inep:gerar",
+      "selecao:inscricoes:consultar"
+    ]
+  },
+  {
+    "nome": "Equipe de inscrições",
+    "descricao": "Consulta as inscrições da unidade com os dados públicos, internos, pessoais e identificadores (mascarados) e os documentos correspondentes, e importa as notas do ENEM.",
+    "alcance": "unidade",
+    "permissoes": [
+      "selecao:dados-identificadores:consultar",
+      "selecao:dados-internos:consultar",
+      "selecao:dados-pessoais:consultar",
+      "selecao:dados-publicos:consultar",
+      "selecao:documentos-identificadores:consultar",
+      "selecao:documentos-internos:consultar",
+      "selecao:documentos-pessoais:consultar",
+      "selecao:documentos-publicos:consultar",
+      "selecao:inscricoes:consultar",
+      "selecao:notas-enem:importar"
+    ]
+  },
+  {
+    "nome": "Organização institucional",
+    "descricao": "Mantém o cadastro da instituição e das unidades.",
+    "alcance": "instituicao",
+    "permissoes": [
+      "organizacao:instituicao:manter",
+      "organizacao:unidades:manter"
+    ]
+  },
+  {
+    "nome": "Publicações",
+    "descricao": "Registra atos normativos e mantém o catálogo de tipos de ato.",
+    "alcance": "instituicao",
+    "permissoes": [
+      "publicacoes:atos-normativos:registrar",
+      "publicacoes:tipos-ato:manter"
+    ]
+  }
+]
