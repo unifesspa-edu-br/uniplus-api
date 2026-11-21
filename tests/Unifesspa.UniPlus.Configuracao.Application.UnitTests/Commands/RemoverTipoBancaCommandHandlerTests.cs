@@ -17,7 +17,7 @@ public sealed class RemoverTipoBancaCommandHandlerTests
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     private static TipoBanca Banca() =>
-        TipoBanca.Criar("BANCA_ENTREVISTA", "Banca de entrevista", null, null).Value!;
+        TipoBanca.Criar("BANCA_ENTREVISTA", new DeclaracaoDoTipoDeBanca("Banca de entrevista", Papel: "IMPORTA_CANDIDATOS")).Value!;
 
     [Fact(DisplayName = "Tipo de banca existente faz soft-delete (Remover + Salvar), nunca bloqueado")]
     public async Task Handle_Existente_FazSoftDelete()

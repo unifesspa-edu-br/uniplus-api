@@ -57,5 +57,34 @@ internal static class TipoBancaErrorMappings
                 StatusCodes.Status404NotFound,
                 "uniplus.configuracao.tipo_banca.nao_encontrado",
                 "Tipo de banca não encontrado")),
+        new(TipoBancaErrorCodes.PapelObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_banca.papel_obrigatorio",
+                "O papel do tipo de banca é obrigatório")),
+
+        new(TipoBancaErrorCodes.PapelForaDoVocabulario,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_banca.papel_fora_do_vocabulario",
+                "O papel não pertence ao vocabulário de papéis")),
+
+        new(TipoBancaErrorCodes.TipoDeDecisaoForaDoVocabulario,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_banca.tipo_de_decisao_fora_do_vocabulario",
+                "Um tipo de decisão julgado não pertence ao vocabulário")),
+
+        new(TipoBancaErrorCodes.TipoDeDecisaoRepetido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_banca.tipo_de_decisao_repetido",
+                "Um tipo de decisão aparece mais de uma vez")),
+
+        new(TipoBancaErrorCodes.TiposDeDecisaoIncoerentesComOPapel,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_banca.tipos_de_decisao_incoerentes_com_o_papel",
+                "Só o tipo que avalia o mérito declara tipos de decisão, e declara ao menos um")),
     ];
 }

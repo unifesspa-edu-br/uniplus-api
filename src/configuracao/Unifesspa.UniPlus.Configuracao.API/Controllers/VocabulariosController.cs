@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
-/// Vocabulários fechados de <c>TipoBanca</c> e <c>FaseCanonica</c> (UNI-REQ-0139), de
+/// Vocabulários fechados de <c>TipoBanca</c>, do papel da banca e de <c>FaseCanonica</c> (UNI-REQ-0139), de
 /// <c>TipoInstrumentoNormativo</c>, usado pela Base Legal de Bônus Regional, e dos grupos
 /// de área do ENEM, usados pelos cadastros de cursos e de Pesos por Área.
 /// </summary>
@@ -40,9 +40,9 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// semeada (<c>FaseCanonicaSeed</c>), então <c>GET /fases-canonicas</c> quase sempre já
 /// devolveria os quatorze códigos — mas devolveria o <b>cadastro</b>, que uma
 /// remoção lógica esconde e a paginação por cursor obrigaria o cliente a percorrer. O
-/// vocabulário aqui é o código fechado, sempre completo, nunca paginado. Para
-/// <c>TipoBanca</c>, que não tem seed nenhum, essa diferença é a única fonte possível: uma
-/// base nova devolveria zero linhas em <c>GET /tipos-banca</c>.
+/// vocabulário aqui é o código fechado, sempre completo, nunca paginado. O mesmo vale
+/// para <c>TipoBanca</c>: a administração pode remover um tipo semeado, e <c>GET /tipos-banca</c>
+/// devolveria só o que ficou vivo.
 /// </para>
 /// <para>
 /// <b>Rótulo do vocabulário ≠ <c>Nome</c> do cadastro.</b> O rótulo aqui é fixo por código.
@@ -77,6 +77,21 @@ public sealed class VocabulariosController : ControllerBase
             .ConfigureAwait(false);
 
         return Ok(codigos);
+    }
+
+    /// <summary>Lista os papéis que um tipo de banca pode ter, com código e rótulo, na ordem de exibição.</summary>
+    [HttpGet("vocabularios/papeis-de-banca")]
+    [AllowAnonymous]
+    [VendorMediaType(Resource = "codigo-papel-de-banca", Versions = [1])]
+    [ProducesResponseType(typeof(IEnumerable<CodigoComRotulo<PapelDaBanca>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> ListarPapeisDeBanca(CancellationToken cancellationToken)
+    {
+        IReadOnlyList<CodigoComRotulo<PapelDaBanca>> papeis = await _queryBus
+            .Send(new ListarPapeisDeBancaQuery(), cancellationToken)
+            .ConfigureAwait(false);
+
+        return Ok(papeis);
     }
 
     /// <summary>Lista as quatorze fases do conjunto canônico, com código e rótulo.</summary>

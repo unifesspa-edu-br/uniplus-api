@@ -125,7 +125,7 @@ public sealed class DefinirCronogramaFasesResolucaoDosCadastrosTests
         Guid categoriaViva = Guid.CreateVersion7();
         Guid categoriaRemovida = Guid.CreateVersion7();
         cenario.TipoBancaReader.ObterPorIdAsync(tipoBancaId, Arg.Any<CancellationToken>())
-            .Returns(new TipoBancaView(tipoBancaId, TipoDeBanca.AnaliseDocumental, "Banca de análise documental", null, null));
+            .Returns(new TipoBancaView(tipoBancaId, TipoDeBanca.AnaliseDocumental, "Banca de análise documental", null, null, PapelDaBanca.AvaliaOMerito, false, false, [TipoMotivoDeDecisao.AnaliseDocumental, TipoMotivoDeDecisao.IsencaoDaTaxa]));
         cenario.CategoriaDocumentoReader.ObterPorIdAsync(categoriaViva, Arg.Any<CancellationToken>())
             .Returns(new CategoriaDocumentoView(categoriaViva, "RENDA", "Renda", null, 0));
         cenario.CategoriaDocumentoReader.ObterPorIdAsync(categoriaRemovida, Arg.Any<CancellationToken>())

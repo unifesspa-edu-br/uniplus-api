@@ -831,10 +831,14 @@ configuracao.tipos_de_banca.created_by: Pessoal
 configuracao.tipos_de_banca.deleted_at: Interno
 configuracao.tipos_de_banca.deleted_by: Pessoal
 configuracao.tipos_de_banca.descricao: Interno
+configuracao.tipos_de_banca.encerra_recurso_na_primeira_instancia: Interno
+configuracao.tipos_de_banca.exige_duas_ou_mais_bancas: Interno
 configuracao.tipos_de_banca.fase_tipica: Interno
 configuracao.tipos_de_banca.id: Interno
 configuracao.tipos_de_banca.is_deleted: Interno
 configuracao.tipos_de_banca.nome: Interno
+configuracao.tipos_de_banca.papel: Interno
+configuracao.tipos_de_banca.tipos_de_decisao_julgados: Interno
 configuracao.tipos_de_banca.updated_at: Interno
 configuracao.tipos_de_banca.updated_by: Pessoal
 configuracao.tipos_de_deficiencia.codigo: Interno

@@ -103,7 +103,7 @@ public sealed class DefinirEtapasTiposDeDecisaoTests
     {
         ITipoBancaReader cadastro = Substitute.For<ITipoBancaReader>();
         cadastro.ObterPorIdAsync(TipoBancaId, Arg.Any<CancellationToken>())
-            .Returns(new TipoBancaView(TipoBancaId, TipoDeBanca.Entrevista, "Banca de entrevista", null, null));
+            .Returns(new TipoBancaView(TipoBancaId, TipoDeBanca.Entrevista, "Banca de entrevista", null, null, PapelDaBanca.AvaliaOMerito, false, false, [TipoMotivoDeDecisao.NotaDaEtapa]));
         return cadastro;
     }
 

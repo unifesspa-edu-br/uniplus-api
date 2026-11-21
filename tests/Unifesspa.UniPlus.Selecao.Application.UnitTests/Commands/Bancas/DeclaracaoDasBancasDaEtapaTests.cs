@@ -13,8 +13,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed class DeclaracaoDasBancasDaEtapaTests
 {
     private static readonly Guid TipoDaProva = Guid.CreateVersion7();
-    private static readonly TipoBancaView TipoDeEntrevista = new(Guid.CreateVersion7(), TipoDeBanca.Entrevista, "Banca de entrevista", null, null);
-    private static readonly TipoBancaView TipoDeRecursos = new(Guid.CreateVersion7(), TipoDeBanca.AnaliseDeRecursos, "Banca de análise de recursos", null, null);
+    private static readonly TipoBancaView TipoDeEntrevista = new(Guid.CreateVersion7(), TipoDeBanca.Entrevista, "Banca de entrevista", null, null, PapelDaBanca.AvaliaOMerito, false, false, [TipoMotivoDeDecisao.NotaDaEtapa]);
+    private static readonly TipoBancaView TipoDeRecursos = new(Guid.CreateVersion7(), TipoDeBanca.AnaliseDeRecursos, "Banca de análise de recursos", null, null, PapelDaBanca.JulgaAPrimeiraInstancia, false, false, []);
     private static readonly string[] CamposDaPrimeiraEDaTerceiraBanca =
     [
         "bancas[0].regraDeDeliberacao.integrantes",

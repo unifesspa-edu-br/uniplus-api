@@ -1170,6 +1170,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     fase_tipica = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
                     descricao = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
+                    papel = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
+                    exige_duas_ou_mais_bancas = table.Column<bool>(type: "boolean", nullable: false),
+                    encerra_recurso_na_primeira_instancia = table.Column<bool>(type: "boolean", nullable: false),
+                    tipos_de_decisao_julgados = table.Column<string[]>(type: "text[]", nullable: false, defaultValueSql: "'{}'::text[]", comment: "Tipos de decisão que o tipo de banca julga, em ordem alfabética ordinal do código e sem repetição; só o papel que avalia o mérito os declara."),
                     created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
@@ -1182,6 +1186,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_tipos_de_banca", x => x.id);
                     table.CheckConstraint("ck_tipos_de_banca_codigo_canonico", "codigo IN ('BANCA_ANALISE_DOCUMENTAL', 'BANCA_ENTREVISTA', 'BANCA_CORRECAO_REDACOES', 'BANCA_ANALISE_RECURSOS', 'BANCA_HETEROIDENTIFICACAO', 'BANCA_BIOPSICOSSOCIAL', 'BANCA_HOMOLOGACAO_INSCRICOES', 'BANCA_IMPORTACAO_NOTAS_INEP', 'BANCA_IMPORTACAO_CANDIDATOS')");
+                    table.CheckConstraint("ck_tipos_de_banca_decisoes", "tipos_de_decisao_julgados <@ ARRAY['ISENCAO_DA_TAXA', 'HOMOLOGACAO_DAS_INSCRICOES', 'ANALISE_DOCUMENTAL', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'CLASSIFICACAO', 'GABARITO_DA_PROVA', 'NOTA_DA_ETAPA']::text[]");
+                    table.CheckConstraint("ck_tipos_de_banca_papel", "papel IN ('AVALIA_O_MERITO', 'JULGA_A_PRIMEIRA_INSTANCIA', 'IMPORTA_AS_NOTAS_DO_INEP', 'IMPORTA_CANDIDATOS')");
                 });
 
             migrationBuilder.CreateTable(

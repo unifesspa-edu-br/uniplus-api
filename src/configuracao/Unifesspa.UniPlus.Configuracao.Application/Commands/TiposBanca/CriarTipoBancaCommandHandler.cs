@@ -39,7 +39,7 @@ public static class CriarTipoBancaCommandHandler
         ITipoBancaRepository repository,
         CancellationToken cancellationToken)
     {
-        Result<TipoBanca> bancaResult = TipoBanca.Criar(command.Codigo, command.Nome, command.FaseTipica, command.Descricao);
+        Result<TipoBanca> bancaResult = TipoBanca.Criar(command.Codigo, command.Declaracao());
 
         // Unicidade consultada só depois de o agregado passar em todas as regras de campo.
         return bancaResult.IsFailure || !await CodigoJaCadastradoAsync(bancaResult.Value!, repository, cancellationToken).ConfigureAwait(false)

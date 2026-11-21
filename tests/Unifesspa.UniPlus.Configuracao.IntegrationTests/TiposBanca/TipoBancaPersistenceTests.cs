@@ -6,6 +6,8 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Npgsql;
+
 using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
@@ -27,7 +29,7 @@ using Unifesspa.UniPlus.Regras.Enums;
     "Performance",
     "CA1515:Consider making public types internal",
     Justification = "xUnit collection fixture exige tipo de teste público.")]
-public sealed class TipoBancaPersistenceTests
+public sealed class TipoBancaPersistenceTests : IAsyncLifetime
 {
     private const string AdminA = "admin-a";
     private const string AdminB = "admin-b";
@@ -38,6 +40,10 @@ public sealed class TipoBancaPersistenceTests
     {
         _fixture = fixture;
     }
+
+    public Task InitializeAsync() => TiposDeBancaDeTeste.ApagarAsync(_fixture.ConnectionString);
+
+    public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact(DisplayName = "Criar persiste os campos e fica visível pelo leitor cross-módulo")]
     public async Task Insert_PersisteEFicaVisivelPeloReader()
@@ -82,13 +88,79 @@ public sealed class TipoBancaPersistenceTests
     [Fact(DisplayName = "CHECK de banco rejeita código fora do conjunto canônico via SQL cru")]
     public async Task Check_RejeitaCodigoForaDoCanonicoViaSqlCru()
     {
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+        Func<Task> act = () => InserirViaSqlCruAsync("BANCA_LOGISTICA", "AVALIA_O_MERITO", ["NOTA_DA_ETAPA"]);
 
-        Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.tipos_de_banca (id, codigo, nome, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"BANCA_LOGISTICA"}, {"Banca"}, {DateTimeOffset.UtcNow}, {false})");
+        (await act.Should().ThrowAsync<Npgsql.PostgresException>("o CHECK de conjunto canônico impede o INSERT direto"))
+            .Which.ConstraintName.Should().Be("ck_tipos_de_banca_codigo_canonico");
+    }
 
-        await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK de conjunto canônico impede o INSERT direto");
+    [Fact(DisplayName = "CHECK de banco rejeita papel fora do vocabulário via SQL cru")]
+    public async Task Check_RejeitaPapelForaDoVocabularioViaSqlCru()
+    {
+        Func<Task> act = () => InserirViaSqlCruAsync("BANCA_ENTREVISTA", "PAPEL_QUE_NAO_EXISTE", []);
+
+        (await act.Should().ThrowAsync<Npgsql.PostgresException>())
+            .Which.ConstraintName.Should().Be("ck_tipos_de_banca_papel");
+    }
+
+    [Fact(DisplayName = "CHECK de banco rejeita tipo de decisão fora do vocabulário via SQL cru")]
+    public async Task Check_RejeitaTipoDeDecisaoForaDoVocabularioViaSqlCru()
+    {
+        Func<Task> act = () => InserirViaSqlCruAsync("BANCA_ENTREVISTA", "AVALIA_O_MERITO", ["NOTA_DA_ETAPA", "TIPO_QUE_NAO_EXISTE"]);
+
+        (await act.Should().ThrowAsync<Npgsql.PostgresException>())
+            .Which.ConstraintName.Should().Be("ck_tipos_de_banca_decisoes");
+    }
+
+    [Fact(DisplayName = "Papel, as duas marcas verdadeiras e tipos de decisão são gravados pelos códigos de contrato e relidos elemento a elemento")]
+    public async Task Insert_Atuacao_GravaOsCodigosELeOsElementos()
+    {
+        TipoBanca banca = TipoBanca.Criar("BANCA_ANALISE_DOCUMENTAL", new DeclaracaoDoTipoDeBanca(
+            "Banca de análise documental", Papel: "AVALIA_O_MERITO", ExigeDuasOuMaisBancas: true, EncerraRecursoNaPrimeiraInstancia: true,
+            TiposDeDecisaoJulgados: ["ISENCAO_DA_TAXA", "ANALISE_DOCUMENTAL"])).Value!;
+        await GravarAsync(banca, AdminA);
+
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext(userId: null);
+
+        (await TextoGravadoDaAtuacaoAsync(leitura, banca.Id)).Should().Be("AVALIA_O_MERITO|true|true|ANALISE_DOCUMENTAL,ISENCAO_DA_TAXA");
+        (await leitura.TiposBanca.SingleAsync(b => b.Id == banca.Id)).Atuacao.Papel.Should().Be(PapelDaBanca.AvaliaOMerito);
+        DeveLerAAtuacaoDaView((await new TipoBancaReader(leitura).ObterPorIdAsync(banca.Id))!);
+    }
+
+    [Fact(DisplayName = "Trocar a lista de tipos de decisão no lugar, esvaziando e repreenchendo, é detectado e gravado")]
+    public async Task Update_TrocaDaListaNoLugar_EGravada()
+    {
+        TipoBanca banca = TipoBanca.Criar("BANCA_ENTREVISTA", new DeclaracaoDoTipoDeBanca(
+            "Banca de entrevista", Papel: "AVALIA_O_MERITO", TiposDeDecisaoJulgados: ["NOTA_DA_ETAPA"])).Value!;
+        await GravarAsync(banca, AdminA);
+
+        await TrocarOsTiposDeDecisaoAsync(banca.Id, ["CLASSIFICACAO", "NOTA_DA_ETAPA"]);
+
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext(userId: null);
+        (await leitura.TiposBanca.SingleAsync(b => b.Id == banca.Id)).Atuacao.TiposDeDecisaoJulgados
+            .Should().Equal(TipoMotivoDeDecisao.Classificacao, TipoMotivoDeDecisao.NotaDaEtapa);
+    }
+
+    private static Task<string> TextoGravadoDaAtuacaoAsync(UniPlusDbContext leitura, Guid id) =>
+        leitura.Database
+            .SqlQuery<string>($"SELECT papel || '|' || exige_duas_ou_mais_bancas || '|' || encerra_recurso_na_primeira_instancia || '|' || array_to_string(tipos_de_decisao_julgados, ',') AS \"Value\" FROM configuracao.tipos_de_banca WHERE id = {id}")
+            .SingleAsync();
+
+    private static void DeveLerAAtuacaoDaView(TipoBancaView view)
+    {
+        view.Papel.Should().Be(PapelDaBanca.AvaliaOMerito);
+        view.ExigeDuasOuMaisBancas.Should().BeTrue();
+        view.EncerraRecursoNaPrimeiraInstancia.Should().BeTrue();
+        view.TiposDeDecisaoJulgados.Should().Equal(TipoMotivoDeDecisao.AnaliseDocumental, TipoMotivoDeDecisao.IsencaoDaTaxa);
+    }
+
+    private async Task TrocarOsTiposDeDecisaoAsync(Guid id, string[] tipos)
+    {
+        await using UniPlusDbContext edicao = _fixture.CreateDbContext(AdminB);
+        TipoBanca carregada = await edicao.TiposBanca.SingleAsync(b => b.Id == id);
+        carregada.Atualizar(new DeclaracaoDoTipoDeBanca(
+            "Banca de entrevista", Papel: "AVALIA_O_MERITO", TiposDeDecisaoJulgados: tipos)).IsSuccess.Should().BeTrue();
+        await edicao.SaveChangesAsync();
     }
 
     [Theory(DisplayName = "Os tipos de banca acrescentados ao vocabulário são gravados e lidos pelo código de contrato")]
@@ -122,6 +194,19 @@ public sealed class TipoBancaPersistenceTests
         string[] codigos = [.. todos.Select(v => v.Codigo.Codigo())];
         codigos.Should().BeInAscendingOrder("o leitor ordena por código ascendente");
         codigos.Should().NotContain("BANCA_ANALISE_RECURSOS", "a banca soft-deleted não aparece no leitor de vivos");
+    }
+
+    private async Task InserirViaSqlCruAsync(string codigo, string papel, string[] tipos)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await ctx.Database.ExecuteSqlRawAsync(
+            "INSERT INTO configuracao.tipos_de_banca (id, codigo, nome, papel, exige_duas_ou_mais_bancas, encerra_recurso_na_primeira_instancia, tipos_de_decisao_julgados, created_at, is_deleted) VALUES (@id, @codigo, @nome, @papel, false, false, @tipos, @criado, false)",
+            new NpgsqlParameter("id", Guid.CreateVersion7()),
+            new NpgsqlParameter("codigo", codigo),
+            new NpgsqlParameter("nome", "Banca"),
+            new NpgsqlParameter("papel", papel),
+            new NpgsqlParameter("tipos", tipos),
+            new NpgsqlParameter("criado", DateTimeOffset.UtcNow));
     }
 
     private async Task GravarAsync(TipoBanca banca, string usuario)
@@ -164,5 +249,5 @@ public sealed class TipoBancaPersistenceTests
     }
 
     private static TipoBanca Banca(string codigo, string nome, string? faseTipica) =>
-        TipoBanca.Criar(codigo, nome, faseTipica, null).Value!;
+        TipoBanca.Criar(codigo, new DeclaracaoDoTipoDeBanca(nome, faseTipica, Papel: "IMPORTA_CANDIDATOS")).Value!;
 }

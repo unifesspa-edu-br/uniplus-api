@@ -28,7 +28,7 @@ public sealed class LeituraDosCadastrosDaConfiguracaoCitadosTests
     private static FaseCanonicaView Fase(string codigo, string origemData = "NO_EDITAL") =>
         new(Guid.CreateVersion7(), codigo, $"Fase {codigo}", null, false, true, null, true, false, origemData);
 
-    private static TipoBancaView TipoCadastrado(TipoDeBanca tipo) => new(Guid.CreateVersion7(), tipo, $"Banca {tipo.Codigo()}", null, null);
+    private static TipoBancaView TipoCadastrado(TipoDeBanca tipo) => new(Guid.CreateVersion7(), tipo, $"Banca {tipo.Codigo()}", null, null, PapelDaBanca.ImportaCandidatos, false, false, []);
 
     private static CategoriaDocumentoView Categoria(string codigo) => new(Guid.CreateVersion7(), codigo, $"Categoria {codigo}", null, 1);
 
