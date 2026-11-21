@@ -6,15 +6,12 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
-using Npgsql;
-
 using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
-using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
@@ -36,33 +33,27 @@ public sealed class FaseCanonicaPersistenceTests
     private const string AdminB = "admin-b";
 
     private readonly ConfiguracaoDbFixture _fixture;
+    private readonly ApoioDaPersistenciaDeFaseCanonica _apoio;
 
     public FaseCanonicaPersistenceTests(ConfiguracaoDbFixture fixture)
     {
         _fixture = fixture;
+        _apoio = new ApoioDaPersistenciaDeFaseCanonica(fixture);
     }
 
     [Fact(DisplayName = "Criar persiste os campos e fica visível pelo leitor cross-módulo")]
     public async Task Insert_PersisteEFicaVisivelPeloReader()
     {
-        await LiberarSlotDoSeedAsync("INSCRICAO");
+        await _apoio.LiberarSlotDoSeedAsync("INSCRICAO");
         FaseCanonica fase = Fase("INSCRICAO", "Inscrição");
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.FasesCanonicas.Add(fase);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
-        FaseCanonica persistida = await readCtx.FasesCanonicas.SingleAsync(f => f.Id == fase.Id);
+        FaseCanonica persistida = await _apoio.GravarELerDeNovoAsync(AdminA, fase);
 
         persistida.Codigo.Valor.Should().Be("INSCRICAO");
         persistida.CreatedBy.Should().Be(AdminA);
         persistida.IsDeleted.Should().BeFalse();
 
-        var reader = new FaseCanonicaReader(readCtx);
-        FaseCanonicaView? view = await reader.ObterPorIdAsync(fase.Id);
+        FaseCanonicaView? view = await _apoio.ObterPeloLeitorAsync(fase.Id);
         view.Should().NotBeNull();
         view!.Codigo.Should().Be("INSCRICAO");
     }
@@ -70,18 +61,10 @@ public sealed class FaseCanonicaPersistenceTests
     [Fact(DisplayName = "UNIQUE parcial do código rejeita segunda fase viva com mesmo código")]
     public async Task UniquePartial_Codigo_RejeitaDuplicataAtiva()
     {
-        await LiberarSlotDoSeedAsync("ENSALAMENTO");
+        await _apoio.LiberarSlotDoSeedAsync("ENSALAMENTO");
+        await _apoio.GravarAsync(AdminA, Fase("ENSALAMENTO", "Ensalamento"));
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.FasesCanonicas.Add(Fase("ENSALAMENTO", "Ensalamento"));
-            await ctx.SaveChangesAsync();
-        }
-
-        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
-        ctx2.FasesCanonicas.Add(Fase("ENSALAMENTO", "Ensalamento"));
-
-        Func<Task> act = async () => await ctx2.SaveChangesAsync();
+        Func<Task> act = () => _apoio.GravarAsync(AdminA, Fase("ENSALAMENTO", "Ensalamento"));
 
         DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
         Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
@@ -92,40 +75,23 @@ public sealed class FaseCanonicaPersistenceTests
     [Fact(DisplayName = "Soft-delete preserva a trilha e libera o slot da UNIQUE parcial do código")]
     public async Task SoftDelete_LiberaSlot()
     {
-        await LiberarSlotDoSeedAsync("CLASSIFICACAO");
+        await _apoio.LiberarSlotDoSeedAsync("CLASSIFICACAO");
         FaseCanonica fase = Fase("CLASSIFICACAO", "Classificação");
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.FasesCanonicas.Add(fase);
-            await ctx.SaveChangesAsync();
-        }
+        await _apoio.GravarAsync(AdminA, fase);
+        await _apoio.ExcluirAsync(AdminB, fase.Id);
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
-        {
-            FaseCanonica tracked = await ctx.FasesCanonicas.SingleAsync(f => f.Id == fase.Id);
-            ctx.FasesCanonicas.Remove(tracked);
-            await ctx.SaveChangesAsync();
-        }
+        FaseCanonica excluida = await _apoio.LerExcluidaAsync(fase.Id);
+        excluida.IsDeleted.Should().BeTrue();
+        excluida.DeletedBy.Should().Be(AdminB);
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null))
-        {
-            FaseCanonica excluida = await ctx.FasesCanonicas
-                .IgnoreQueryFilters().SingleAsync(f => f.Id == fase.Id);
-            excluida.IsDeleted.Should().BeTrue();
-            excluida.DeletedBy.Should().Be(AdminB);
-        }
-
-        await using UniPlusDbContext ctx3 = _fixture.CreateDbContext(AdminA);
-        ctx3.FasesCanonicas.Add(Fase("CLASSIFICACAO", "Classificação"));
-
-        Func<Task> act = async () => await ctx3.SaveChangesAsync();
+        Func<Task> act = () => _apoio.GravarAsync(AdminA, Fase("CLASSIFICACAO", "Classificação"));
         await act.Should().NotThrowAsync("o slot do código foi liberado pelo soft-delete");
     }
 
     [Fact(DisplayName = "CHECK de banco aceita a fase de solicitação de isenção")]
     public async Task Check_AceitaSolicitacaoIsencao()
     {
-        await LiberarSlotDoSeedAsync(FaseCanonicaCatalogo.CodigoSolicitacaoIsencao);
+        await _apoio.LiberarSlotDoSeedAsync(FaseCanonicaCatalogo.CodigoSolicitacaoIsencao);
 
         FaseCanonica fase = Fase(
             FaseCanonicaCatalogo.CodigoSolicitacaoIsencao, "Solicitação de isenção");
@@ -202,27 +168,13 @@ public sealed class FaseCanonicaPersistenceTests
     [Fact(DisplayName = "Reader.ListarVivosAsync ordena por código ascendente e exclui soft-deleted")]
     public async Task ListarVivos_OrdenaPorCodigoEExcluiSoftDeleted()
     {
-        await LiberarSlotDoSeedAsync("MATRICULA", "HETEROIDENTIFICACAO", "CHAMADA");
+        await _apoio.LiberarSlotDoSeedAsync("MATRICULA", "HETEROIDENTIFICACAO", "CHAMADA");
+        FaseCanonica excluida = Fase("CHAMADA", "Chamada");
+        await _apoio.GravarAsync(
+            AdminA, Fase("MATRICULA", "Matrícula"), Fase("HETEROIDENTIFICACAO", "Heteroidentificação"), excluida);
+        await _apoio.ExcluirAsync(AdminB, excluida.Id);
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.FasesCanonicas.Add(Fase("MATRICULA", "Matrícula"));
-            ctx.FasesCanonicas.Add(Fase("HETEROIDENTIFICACAO", "Heteroidentificação"));
-            ctx.FasesCanonicas.Add(Fase("CHAMADA", "Chamada"));
-            await ctx.SaveChangesAsync();
-        }
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
-        {
-            CodigoFase voExcluido = CodigoFase.Criar("CHAMADA").Value!;
-            FaseCanonica aExcluir = await ctx.FasesCanonicas.SingleAsync(f => f.Codigo == voExcluido);
-            ctx.FasesCanonicas.Remove(aExcluir);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
-        var reader = new FaseCanonicaReader(readCtx);
-        IReadOnlyList<FaseCanonicaView> todos = await reader.ListarVivosAsync();
+        IReadOnlyList<FaseCanonicaView> todos = await _apoio.ListarVivasPeloLeitorAsync();
 
         string[] codigos = [.. todos.Select(v => v.Codigo)];
         codigos.Should().BeInAscendingOrder("o leitor ordena por código ascendente");
@@ -237,30 +189,4 @@ public sealed class FaseCanonicaPersistenceTests
             new SinalizadoresDaFase(
                 AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
                 ColetaSolicitacaoIsencao: codigo == FaseCanonicaCatalogo.CodigoSolicitacaoIsencao)).Value!;
-
-    /// <summary>
-    /// Libera o slot de um código ocupado pelo seed das dezesseis fases, usando o mesmo
-    /// soft-delete que o sistema usa — o índice único é parcial
-    /// (<c>WHERE is_deleted = false</c>), então a linha semeada sai do caminho sem ser
-    /// destruída.
-    /// </summary>
-    /// <remarks>
-    /// Desde que <c>FaseCanonica</c> passou a nascer semeada, todo código do vocabulário
-    /// já tem linha viva ao preparar o banco de teste. Testes que exercitam a criação
-    /// precisam do slot livre; usar o soft-delete em vez de apagar a linha mantém o teste
-    /// sobre o comportamento real do cadastro.
-    /// </remarks>
-    private async Task LiberarSlotDoSeedAsync(params string[] codigos)
-    {
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
-
-        // SQL direto em vez de LINQ: `Codigo` e value object com converter, e um
-        // `Contains` sobre ele nao traduz para SQL. O filtro pelo prefixo do id
-        // restringe o apagamento as linhas do seed.
-        const string comando =
-            "DELETE FROM configuracao.fases_canonicas " +
-            "WHERE id::text LIKE 'f45e0000-0000-7000-8000-%' AND codigo = ANY(@p0)";
-
-        await ctx.Database.ExecuteSqlRawAsync(comando, new NpgsqlParameter("p0", codigos));
-    }
 }
