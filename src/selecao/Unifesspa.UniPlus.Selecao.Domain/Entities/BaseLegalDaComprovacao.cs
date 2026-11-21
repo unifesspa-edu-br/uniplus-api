@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// sua PRÓPRIA base legal 1:N, não derivada das folhas. Duas classes concretas separadas
 /// (sem herança EF/TPH) — decisão deliberada, ver <see cref="NoExigencia"/>.
 /// </summary>
-public sealed class NoExigenciaBaseLegal : EntityBase
+public sealed class BaseLegalDaComprovacao : EntityBase
 {
     public Guid NoExigenciaId { get; private set; }
 
@@ -25,7 +25,7 @@ public sealed class NoExigenciaBaseLegal : EntityBase
 
     public string? Observacao { get; private set; }
 
-    private NoExigenciaBaseLegal() { }
+    private BaseLegalDaComprovacao() { }
 
     /// <summary>
     /// Acumula (ADR-0125) as três checagens — mesmo shape/validação de
@@ -37,38 +37,34 @@ public sealed class NoExigenciaBaseLegal : EntityBase
 
         if (string.IsNullOrWhiteSpace(referencia))
         {
-            erros.Add(new("referencia", new DomainError(
-                "NoExigenciaBaseLegal.ReferenciaObrigatoria",
-                "A referência da base legal é obrigatória.")));
+            erros.Add(new("referencia", new DomainError("BaseLegalDaComprovacao.ReferenciaObrigatoria", "A referência da base legal é obrigatória.")));
         }
-
-        if (abrangencia == TipoAbrangencia.Nenhuma)
-        {
-            erros.Add(new("abrangencia", new DomainError(
-                "NoExigenciaBaseLegal.AbrangenciaObrigatoria",
-                "A abrangência da base legal é obrigatória.")));
-        }
-
-        if (status == StatusBaseLegal.Nenhuma)
-        {
-            erros.Add(new("status", new DomainError(
-                "NoExigenciaBaseLegal.StatusObrigatorio",
-                "O status da base legal é obrigatório.")));
-        }
-
+        ValidarAbrangenciaEStatus(erros, abrangencia, status);
         return erros;
     }
 
-    public static Result<NoExigenciaBaseLegal> Criar(
+    private static void ValidarAbrangenciaEStatus(List<FieldError> erros, TipoAbrangencia abrangencia, StatusBaseLegal status)
+    {
+        if (abrangencia == TipoAbrangencia.Nenhuma)
+        {
+            erros.Add(new("abrangencia", new DomainError("BaseLegalDaComprovacao.AbrangenciaObrigatoria", "A abrangência da base legal é obrigatória.")));
+        }
+        if (status == StatusBaseLegal.Nenhuma)
+        {
+            erros.Add(new("status", new DomainError("BaseLegalDaComprovacao.StatusObrigatorio", "O status da base legal é obrigatório.")));
+        }
+    }
+
+    public static Result<BaseLegalDaComprovacao> Criar(
         string referencia, TipoAbrangencia abrangencia, StatusBaseLegal status, string? observacao)
     {
         List<FieldError> erros = ValidarFormaBasica(referencia, abrangencia, status);
         if (erros.Count > 0)
         {
-            return Result<NoExigenciaBaseLegal>.ValidationFailure(erros);
+            return Result<BaseLegalDaComprovacao>.ValidationFailure(erros);
         }
 
-        return Result<NoExigenciaBaseLegal>.Success(new NoExigenciaBaseLegal
+        return Result<BaseLegalDaComprovacao>.Success(new BaseLegalDaComprovacao
         {
             Referencia = referencia.Trim(),
             Abrangencia = abrangencia,

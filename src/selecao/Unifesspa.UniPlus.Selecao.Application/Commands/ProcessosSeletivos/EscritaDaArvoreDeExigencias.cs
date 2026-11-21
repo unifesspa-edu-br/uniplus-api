@@ -87,7 +87,7 @@ internal static class EscritaDaArvoreDeExigencias
         daFolha
             ? DocumentoExigidoBaseLegal.ValidarFormaBasica(
                 baseLegal.Referencia, EscritaDasBasesLegais.Abrangencia(baseLegal), EscritaDasBasesLegais.Status(baseLegal))
-            : NoExigenciaBaseLegal.ValidarFormaBasica(
+            : BaseLegalDaComprovacao.ValidarFormaBasica(
                 baseLegal.Referencia, EscritaDasBasesLegais.Abrangencia(baseLegal), EscritaDasBasesLegais.Status(baseLegal));
     private static DistincaoDeclarada DistincaoDe(NoExigenciaInput no) =>
         DistincaoDeclarada.Interpretar(no.Distincao()?.Chave, no.Distincao()?.DataReferencia, no.Distincao()?.OcorrenciasEsperadas);

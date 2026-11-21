@@ -66,7 +66,7 @@ internal static class SerializacaoDasExigencias
     private static JsonArray? SerializarOcorrencias(DistincaoDasApresentacoes? distincao) =>
         distincao?.OcorrenciasEsperadas is { } ocorrencias ? EscritaCanonica.TextosEmOrdemCanonica(ocorrencias) : null;
 
-    private static JsonArray SerializarBasesLegaisDeNo(IEnumerable<NoExigenciaBaseLegal> basesLegais) =>
+    private static JsonArray SerializarBasesLegaisDeNo(IEnumerable<BaseLegalDaComprovacao> basesLegais) =>
         EscritaCanonica.OrdenarPorConteudo(basesLegais.Select(static b => new JsonObject
         {
             ["referencia"] = HashCanonicalComputer.NormalizeNfc(b.Referencia),

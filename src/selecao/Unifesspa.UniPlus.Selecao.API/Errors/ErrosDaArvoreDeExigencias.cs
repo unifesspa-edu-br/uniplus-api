@@ -105,9 +105,9 @@ internal static class ErrosDaArvoreDeExigencias
 
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> BaseLegalDoGrupo() =>
     [
-        new("NoExigenciaBaseLegal.ReferenciaObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia_base_legal.referencia_obrigatoria", "A referência da base legal é obrigatória")),
-        new("NoExigenciaBaseLegal.AbrangenciaObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia_base_legal.abrangencia_obrigatoria", "A abrangência da base legal é obrigatória")),
-        new("NoExigenciaBaseLegal.StatusObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia_base_legal.status_obrigatorio", "O status da base legal é obrigatório")),
+        new("BaseLegalDaComprovacao.ReferenciaObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia_base_legal.referencia_obrigatoria", "A referência da base legal é obrigatória")),
+        new("BaseLegalDaComprovacao.AbrangenciaObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia_base_legal.abrangencia_obrigatoria", "A abrangência da base legal é obrigatória")),
+        new("BaseLegalDaComprovacao.StatusObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia_base_legal.status_obrigatorio", "O status da base legal é obrigatório")),
         // Unicidade que o banco garante na escrita normal da árvore de satisfação: ordem única entre as raízes,
         // entre os irmãos de um mesmo nó pai e uma única folha por exigência de documento.
         new("ProcessoSeletivo.OrdemRaizNoExigenciaDuplicada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.ordem_raiz_no_exigencia_duplicada", "Cada raiz da árvore de satisfação deve ter uma ordem única dentro do processo")),

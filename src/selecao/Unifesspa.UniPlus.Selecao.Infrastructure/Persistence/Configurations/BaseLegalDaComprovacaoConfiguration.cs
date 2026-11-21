@@ -11,18 +11,18 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
-/// Configuração EF Core de <see cref="NoExigenciaBaseLegal"/> (Story #920) — mesmo padrão de
+/// Configuração EF Core de <see cref="BaseLegalDaComprovacao"/> (Story #920) — mesmo padrão de
 /// <see cref="DocumentoExigidoBaseLegalConfiguration"/> (duas classes concretas separadas, sem
 /// herança EF/TPH — decisão deliberada, ver <see cref="NoExigencia"/>).
 /// </summary>
-public sealed class NoExigenciaBaseLegalConfiguration : IEntityTypeConfiguration<NoExigenciaBaseLegal>
+public sealed class BaseLegalDaComprovacaoConfiguration : IEntityTypeConfiguration<BaseLegalDaComprovacao>
 {
     private const int ReferenciaMaxLength = 500;
     private const int AbrangenciaCodigoMaxLength = 20;
     private const int StatusCodigoMaxLength = 20;
     private const int ObservacaoMaxLength = 1000;
 
-    public void Configure(EntityTypeBuilder<NoExigenciaBaseLegal> builder)
+    public void Configure(EntityTypeBuilder<BaseLegalDaComprovacao> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
 

@@ -87,7 +87,7 @@ public sealed class NoExigenciaPersistenciaTests : IClassFixture<ProcessoSeletiv
         NoExigencia grupoE = NoExigencia.CriarGrupo(
             TipoNo.GrupoE, 0, null, null, [],
             [NoExigencia.CriarFolha(Documento(faseId), 0).Value!, NoExigencia.CriarFolha(Documento(faseId), 1).Value!]).Value!;
-        NoExigenciaBaseLegal baseLegalDoGrupo = NoExigenciaBaseLegal.Criar(
+        BaseLegalDaComprovacao baseLegalDoGrupo = BaseLegalDaComprovacao.Criar(
             "Res. Unifesspa 532/2021", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!;
 
         return NoExigencia.CriarGrupo(

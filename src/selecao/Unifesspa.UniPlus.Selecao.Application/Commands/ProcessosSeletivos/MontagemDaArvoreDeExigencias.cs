@@ -123,7 +123,7 @@ internal sealed class MontagemDaArvoreDeExigencias(MontagemDoDocumentoExigido do
 
     private static Result<NoExigencia> CriarGrupo(NoExigenciaInput no, int ordem, DeclaracaoDoNoDeExigencia declaracao, IReadOnlyList<NoExigencia> filhos)
     {
-        Result<IReadOnlyList<NoExigenciaBaseLegal>> basesLegais = BasesLegaisDoGrupo(no.BasesLegaisDoGrupo());
+        Result<IReadOnlyList<BaseLegalDaComprovacao>> basesLegais = BasesLegaisDoGrupo(no.BasesLegaisDoGrupo());
         return basesLegais.IsFailure
             ? Result<NoExigencia>.ValidationFailure(basesLegais.Errors)
             : NoExigencia.CriarGrupo(
@@ -134,11 +134,11 @@ internal sealed class MontagemDaArvoreDeExigencias(MontagemDoDocumentoExigido do
         DeclaracaoDoNoDeExigencia.Interpretar(no.Tipo, no.Documento is not null, no.Filhos?.Count ?? 0,
             no.QuantidadeMinima(), no.ConsequenciaDoGrupo(), no.BasesLegaisDoGrupo().Count > 0, DistincaoDe(no));
 
-    private static Result<IReadOnlyList<NoExigenciaBaseLegal>> BasesLegaisDoGrupo(IReadOnlyList<BaseLegalInput> declaradas) =>
+    private static Result<IReadOnlyList<BaseLegalDaComprovacao>> BasesLegaisDoGrupo(IReadOnlyList<BaseLegalInput> declaradas) =>
         EscritaDasBasesLegais.Resolver(
             declaradas,
-            static b => NoExigenciaBaseLegal.ValidarFormaBasica(b.Referencia, EscritaDasBasesLegais.Abrangencia(b), EscritaDasBasesLegais.Status(b)),
-            static b => NoExigenciaBaseLegal.Criar(b.Referencia, EscritaDasBasesLegais.Abrangencia(b), EscritaDasBasesLegais.Status(b), b.Observacao).Value!);
+            static b => BaseLegalDaComprovacao.ValidarFormaBasica(b.Referencia, EscritaDasBasesLegais.Abrangencia(b), EscritaDasBasesLegais.Status(b)),
+            static b => BaseLegalDaComprovacao.Criar(b.Referencia, EscritaDasBasesLegais.Abrangencia(b), EscritaDasBasesLegais.Status(b), b.Observacao).Value!);
     private static DistincaoDeclarada DistincaoDe(NoExigenciaInput no) =>
         DistincaoDeclarada.Interpretar(no.Distincao()?.Chave, no.Distincao()?.DataReferencia, no.Distincao()?.OcorrenciasEsperadas);
 

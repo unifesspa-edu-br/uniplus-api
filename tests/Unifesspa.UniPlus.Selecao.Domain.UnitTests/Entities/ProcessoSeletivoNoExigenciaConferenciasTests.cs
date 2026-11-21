@@ -39,8 +39,8 @@ public sealed class ProcessoSeletivoNoExigenciaConferenciasTests
         faseId, Guid.CreateVersion7(), "COD", "Nome", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral,
         obrigatorio: false, consequenciaIndeferimento: null, [], [], null, Qualquer, null, finalidade: finalidade).Value!;
 
-    private static NoExigenciaBaseLegal BaseLegal(StatusBaseLegal status) =>
-        NoExigenciaBaseLegal.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.Federal, status, null).Value!;
+    private static BaseLegalDaComprovacao BaseLegal(StatusBaseLegal status) =>
+        BaseLegalDaComprovacao.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.Federal, status, null).Value!;
 
     [Fact(DisplayName = "Grupo com REMOVE_VANTAGEM sem vantagem viva bloqueia PendenciaPreCanonicalizacao")]
     public void Grupo_RemoveVantagemSemVantagemViva_Bloqueia()

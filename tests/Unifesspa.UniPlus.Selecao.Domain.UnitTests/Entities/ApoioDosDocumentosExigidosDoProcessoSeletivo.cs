@@ -94,8 +94,8 @@ internal static class ApoioDosDocumentosExigidosDoProcessoSeletivo
     internal static DocumentoExigidoBaseLegal BaseLegalResolvida() => DocumentoExigidoBaseLegal.Criar(
         "Lei 12.711/2012, art. 3º", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!;
 
-    internal static NoExigenciaBaseLegal BaseLegalDoGrupo(StatusBaseLegal status) =>
-        NoExigenciaBaseLegal.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.Federal, status, null).Value!;
+    internal static BaseLegalDaComprovacao BaseLegalDoGrupo(StatusBaseLegal status) =>
+        BaseLegalDaComprovacao.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.Federal, status, null).Value!;
 
     internal static Guid FaseDoResultado(ProcessoSeletivo processo) => processo.CronogramaFases.Single(static f => !f.ColetaInscricao).Id;
 
