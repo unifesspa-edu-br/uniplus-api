@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
-/// Os nove tipos de banca existem ao subir o sistema, cada um com o papel, as marcas e os tipos de decisão que julga,
+/// Os dez tipos de banca existem ao subir o sistema, cada um com o papel, as marcas e os tipos de decisão que julga,
 /// gravados pelo script de sementes do módulo. O banco da coleção é compartilhado com testes que cadastram tipos, então cada
 /// teste parte de uma tabela vazia dentro de uma transação desfeita ao fim.
 /// </summary>
@@ -33,6 +33,7 @@ public sealed class SementeTiposDeBancaTests
         "BANCA_HOMOLOGACAO_INSCRICOES|AVALIA_O_MERITO|false|false|HOMOLOGACAO_DAS_INSCRICOES",
         "BANCA_IMPORTACAO_NOTAS_INEP|IMPORTA_AS_NOTAS_DO_INEP|false|false|",
         "BANCA_IMPORTACAO_CANDIDATOS|IMPORTA_CANDIDATOS|false|false|",
+        "BANCA_ANALISE_RECURSOS_SEGUNDA_INSTANCIA|JULGA_A_SEGUNDA_INSTANCIA|false|false|",
     ];
 
     private readonly ConfiguracaoDbFixture _fixture;
@@ -42,8 +43,8 @@ public sealed class SementeTiposDeBancaTests
         _fixture = fixture;
     }
 
-    [Fact(DisplayName = "O script de sementes grava os nove tipos de banca com o papel, as marcas e os tipos de decisão do cadastro inicial")]
-    public async Task Script_GravaOsNoveTiposComAAtuacao()
+    [Fact(DisplayName = "O script de sementes grava os dez tipos de banca com o papel, as marcas e os tipos de decisão do cadastro inicial")]
+    public async Task Script_GravaOsDezTiposComAAtuacao()
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         await using IDbContextTransaction transacao = await ctx.Database.BeginTransactionAsync();
@@ -68,8 +69,8 @@ public sealed class SementeTiposDeBancaTests
 
         (await LerAsync<string>(ctx, "SELECT nome || '|' || exige_duas_ou_mais_bancas::text AS \"Value\" FROM configuracao.tipos_de_banca WHERE codigo = 'BANCA_ENTREVISTA'"))
             .Should().Equal(["Entrevista da unidade|true"], "a edição da administração não é sobrescrita");
-        (await LerAsync<string>(ctx, TodosOsTipos)).Should().HaveCount(8, "o tipo removido não volta");
-        (await LerAsync<int>(ctx, "SELECT count(*)::int AS \"Value\" FROM configuracao.tipos_de_banca")).Should().Equal([9], "nenhuma linha é duplicada");
+        (await LerAsync<string>(ctx, TodosOsTipos)).Should().HaveCount(9, "o tipo removido não volta");
+        (await LerAsync<int>(ctx, "SELECT count(*)::int AS \"Value\" FROM configuracao.tipos_de_banca")).Should().Equal([10], "nenhuma linha é duplicada");
         await transacao.RollbackAsync();
     }
 

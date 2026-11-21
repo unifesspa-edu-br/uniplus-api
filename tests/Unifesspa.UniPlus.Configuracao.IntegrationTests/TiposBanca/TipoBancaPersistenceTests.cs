@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.TiposBanca;
 
-using System.Diagnostics.CodeAnalysis;
-
 using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
@@ -25,10 +23,6 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// distinto (o vocabulário é fechado).
 /// </summary>
 [Collection(ConfiguracaoDbCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class TipoBancaPersistenceTests : IAsyncLifetime
 {
     private const string AdminA = "admin-a";
@@ -103,6 +97,17 @@ public sealed class TipoBancaPersistenceTests : IAsyncLifetime
             .Which.ConstraintName.Should().Be("ck_tipos_de_banca_papel");
     }
 
+    [Fact(DisplayName = "CHECK de banco aceita o tipo de 2ª instância com o papel que julga o recurso em 2ª instância, sem tipos de decisão")]
+    public async Task Check_AceitaOTipoEOPapelDaSegundaInstanciaViaSqlCru()
+    {
+        await InserirViaSqlCruAsync("BANCA_ANALISE_RECURSOS_SEGUNDA_INSTANCIA", "JULGA_A_SEGUNDA_INSTANCIA", []);
+
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext(userId: null);
+        TipoBanca gravado = await leitura.TiposBanca.SingleAsync(b => b.Codigo == TipoDeBanca.AnaliseDeRecursosDeSegundaInstancia);
+        gravado.Atuacao.Papel.Should().Be(PapelDaBanca.JulgaASegundaInstancia);
+        gravado.Atuacao.TiposDeDecisaoJulgados.Should().BeEmpty();
+    }
+
     [Fact(DisplayName = "CHECK de banco rejeita tipo de decisão fora do vocabulário via SQL cru")]
     public async Task Check_RejeitaTipoDeDecisaoForaDoVocabularioViaSqlCru()
     {
@@ -167,6 +172,7 @@ public sealed class TipoBancaPersistenceTests : IAsyncLifetime
     [InlineData("BANCA_HOMOLOGACAO_INSCRICOES", TipoDeBanca.HomologacaoDasInscricoes)]
     [InlineData("BANCA_IMPORTACAO_NOTAS_INEP", TipoDeBanca.ImportacaoDasNotasDoInep)]
     [InlineData("BANCA_IMPORTACAO_CANDIDATOS", TipoDeBanca.ImportacaoDeCandidatos)]
+    [InlineData("BANCA_ANALISE_RECURSOS_SEGUNDA_INSTANCIA", TipoDeBanca.AnaliseDeRecursosDeSegundaInstancia)]
     public async Task Insert_TipoAcrescentadoAoVocabulario_GravaOCodigoELeOTipo(string codigo, TipoDeBanca esperado)
     {
         TipoBanca banca = Banca(codigo, $"Banca {codigo}", null);

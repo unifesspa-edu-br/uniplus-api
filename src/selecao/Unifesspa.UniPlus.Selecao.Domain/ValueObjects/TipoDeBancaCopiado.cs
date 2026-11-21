@@ -71,7 +71,7 @@ public sealed record TipoDeBancaCopiado
     /// <summary>Se o papel da banca julga recurso.</summary>
     public bool JulgaRecurso => PapeisQueJulgamRecurso.Contem(Papel);
 
-    /// <summary>Se o papel da banca é o de julgar o recurso em 1ª instância: é só o que ordena quem a julga.</summary>
+    /// <summary>Se o papel da banca é o de julgar o recurso em 1ª instância: ordena quem julga essa instância e diz quais etapas a banca dedicada julga para o mínimo de integrantes.</summary>
     public bool JulgaAPrimeiraInstancia => Papel == PapelDaBanca.JulgaAPrimeiraInstancia;
 
     /// <summary>

@@ -36,4 +36,7 @@ public enum TipoDeBanca
 
     [CodigoDeContrato("BANCA_IMPORTACAO_CANDIDATOS", "Banca de importação de candidatos")]
     ImportacaoDeCandidatos = 9,
+
+    [CodigoDeContrato("BANCA_ANALISE_RECURSOS_SEGUNDA_INSTANCIA", "Banca de análise de recursos de 2ª instância")]
+    AnaliseDeRecursosDeSegundaInstancia = 10,
 }

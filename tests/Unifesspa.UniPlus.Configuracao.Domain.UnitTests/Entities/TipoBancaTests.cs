@@ -92,6 +92,7 @@ public sealed class TipoBancaTests
     [InlineData("BANCA_HOMOLOGACAO_INSCRICOES", TipoDeBanca.HomologacaoDasInscricoes)]
     [InlineData("BANCA_IMPORTACAO_NOTAS_INEP", TipoDeBanca.ImportacaoDasNotasDoInep)]
     [InlineData("BANCA_IMPORTACAO_CANDIDATOS", TipoDeBanca.ImportacaoDeCandidatos)]
+    [InlineData("BANCA_ANALISE_RECURSOS_SEGUNDA_INSTANCIA", TipoDeBanca.AnaliseDeRecursosDeSegundaInstancia)]
     public void Criar_CodigoDoVocabulario_Aceita(string codigo, TipoDeBanca esperado)
     {
         Result<TipoBanca> r = Criar(codigo: codigo);
@@ -110,7 +111,8 @@ public sealed class TipoBancaTests
             + "Banca de análise documental; Banca de entrevista; Banca de correção de redações; "
             + "Banca de análise de recursos; Banca de heteroidentificação; "
             + "Banca de avaliação biopsicossocial; Banca de homologação das inscrições; "
-            + "Banca de importação das notas do INEP; Banca de importação de candidatos.");
+            + "Banca de importação das notas do INEP; Banca de importação de candidatos; "
+            + "Banca de análise de recursos de 2ª instância.");
         r.Error!.Message.Should().NotContain("BANCA_LOGISTICA");
     }
 

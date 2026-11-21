@@ -29,6 +29,7 @@ public sealed class AtuacaoDoTipoDeBancaTests
     [InlineData("JULGA_A_PRIMEIRA_INSTANCIA", PapelDaBanca.JulgaAPrimeiraInstancia)]
     [InlineData("IMPORTA_AS_NOTAS_DO_INEP", PapelDaBanca.ImportaAsNotasDoInep)]
     [InlineData("IMPORTA_CANDIDATOS", PapelDaBanca.ImportaCandidatos)]
+    [InlineData("JULGA_A_SEGUNDA_INSTANCIA", PapelDaBanca.JulgaASegundaInstancia)]
     public void Validar_OutroPapelSemTipos_Aceita(string codigo, PapelDaBanca esperado)
     {
         Result<AtuacaoDoTipoDeBanca> r = Validar(codigo);
@@ -63,7 +64,8 @@ public sealed class AtuacaoDoTipoDeBancaTests
         r.Error!.Code.Should().Be(TipoBancaErrorCodes.PapelForaDoVocabulario);
         r.Error.Message.Should().Be(
             "O papel informado não é um dos aceitos. Papéis aceitos: Avalia o mérito; "
-            + "Julga o recurso em 1ª instância; Importa as notas do INEP; Importa candidatos.");
+            + "Julga o recurso em 1ª instância; Importa as notas do INEP; Importa candidatos; "
+            + "Julga o recurso em 2ª instância.");
     }
 
     [Fact(DisplayName = "Tipo de decisão nulo, em branco ou desconhecido é recusado por posição, sem repetir o valor, e o repetido a partir da segunda ocorrência")]
@@ -99,6 +101,7 @@ public sealed class AtuacaoDoTipoDeBancaTests
     [InlineData("JULGA_A_PRIMEIRA_INSTANCIA")]
     [InlineData("IMPORTA_AS_NOTAS_DO_INEP")]
     [InlineData("IMPORTA_CANDIDATOS")]
+    [InlineData("JULGA_A_SEGUNDA_INSTANCIA")]
     public void Validar_OutroPapelComTipos_Incoerente(string papel)
     {
         Result<AtuacaoDoTipoDeBanca> r = Validar(papel, "CLASSIFICACAO");

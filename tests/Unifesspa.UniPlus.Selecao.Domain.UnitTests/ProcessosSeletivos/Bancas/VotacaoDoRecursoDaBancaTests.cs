@@ -38,19 +38,25 @@ public sealed class VotacaoDoRecursoDaBancaTests
 
     private static TipoDeBancaCopiado ComPapel(PapelDaBanca papel) => TiposDeBancaCopiadosDeTeste.Com(TipoDeBanca.AnaliseDeRecursos, papel);
 
-    private static IReadOnlyList<FieldError> RecusasDaFase(PapelDaBanca papel, RegraDeDeliberacao regra)
+    private static IReadOnlyList<FieldError> RecusasDaFase(PapelDaBanca papel, RegraDeDeliberacao regra) =>
+        RecusasDaFase(ComPapel(papel), regra);
+
+    private static IReadOnlyList<FieldError> RecusasDaFase(TipoDeBancaCopiado tipo, RegraDeDeliberacao? regra)
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(
-            fase: ProcessoConformeFactory.FaseConforme(bancas: [BancaRequerida.Criar(ComPapel(papel), [], regra)]));
+            fase: ProcessoConformeFactory.FaseConforme(bancas: [BancaRequerida.Criar(tipo, [], regra)]));
 
         return ConferenciaDasBancas.ConferirRegrasDeDeliberacao(CronogramaDoProcesso.Do(processo.CronogramaFases), EtapasDoProcesso.Das(processo.Etapas));
     }
 
-    private static IReadOnlyList<FieldError> RecusasDaEtapa(PapelDaBanca papel, RegraDeDeliberacao regra)
+    private static IReadOnlyList<FieldError> RecusasDaEtapa(PapelDaBanca papel, RegraDeDeliberacao regra) =>
+        RecusasDaEtapa(ComPapel(papel), regra);
+
+    private static IReadOnlyList<FieldError> RecusasDaEtapa(TipoDeBancaCopiado tipo, RegraDeDeliberacao? regra)
     {
         EtapaProcesso etapa = NovaEtapa("Redação", 1);
         ProcessoSeletivo processo = ProcessoComEtapas(null, etapa);
-        etapa.DefinirBancas([BancaDaEtapa.Criar(ComPapel(papel), regra)]);
+        etapa.DefinirBancas([BancaDaEtapa.Criar(tipo, regra)]);
 
         return ConferenciaDasBancas.ConferirRegrasDeDeliberacao(CronogramaDoProcesso.Do(processo.CronogramaFases), EtapasDoProcesso.Das(processo.Etapas));
     }
@@ -90,6 +96,25 @@ public sealed class VotacaoDoRecursoDaBancaTests
     {
         RecusasDaFase(PapelDaBanca.JulgaAPrimeiraInstancia, AtoIndividualComVotacao()).Should().BeEmpty();
         RecusasDaEtapa(PapelDaBanca.JulgaAPrimeiraInstancia, AtoIndividualComVotacao()).Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "A banca de 2ª instância que declara a votação do recurso inteira por ato individual, na fase e na etapa, não é recusada")]
+    public void BancaDeSegundaInstancia_ComVotacaoInteira_NaoRecusa()
+    {
+        TipoDeBancaCopiado tipo = TiposDeBancaCopiadosDeTeste.DeSegundaInstancia();
+
+        RecusasDaFase(tipo, AtoIndividualComVotacao()).Should().BeEmpty();
+        RecusasDaEtapa(tipo, AtoIndividualComVotacao()).Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "A banca de 2ª instância sem regra de deliberação é recusada por regra de deliberação obrigatória")]
+    public void BancaDeSegundaInstancia_SemRegra_RecusaARegraAusente()
+    {
+        FieldError recusa = RecusasDaFase(TiposDeBancaCopiadosDeTeste.DeSegundaInstancia(), null).Should().ContainSingle().Subject;
+
+        recusa.Field.Should().Be("fases[0].bancasRequeridas[0]");
+        recusa.Error.Code.Should().Be(CodigoDaRecusa);
+        recusa.Error.Message.Should().Be("A banca 'Banca de análise de recursos de 2ª instância 1' da fase 'RESULTADO_FINAL' não declara a regra de deliberação.");
     }
 
     [Theory(DisplayName = "O papel que não julga recurso decide por ato individual sem votação sem ser recusado")]

@@ -81,6 +81,20 @@ public sealed class FaseDeclaradaTests
         fase.Recusas[0].Error.Message.Should().NotContain("RECURSO'").And.Contain("Na fase, a banca");
     }
 
+    [Fact(DisplayName = "Banca de 2ª instância com candidatos atendidos é recusada no campo dos candidatos atendidos, com o papel no detalhe")]
+    public void Declarar_CandidatosAtendidosEmBancaDeSegundaInstancia_RecusaNosCandidatosAtendidos()
+    {
+        BancaRequerida comCandidatosAtendidos = BancaRequerida.Criar(
+            TiposDeBancaCopiadosDeTeste.DeSegundaInstancia(Guid.CreateVersion7()),
+            [CategoriaJulgada.Criar(Guid.CreateVersion7(), "RENDA")]);
+
+        FaseDeclarada fase = new ModeloDeFase("RECURSO", 1) { Bancas = [comCandidatosAtendidos] }.Declarar();
+
+        Recusas(fase).Should().Equal(("bancasRequeridas[0].categoriasDocumentoIds", "Banca.CandidatosAtendidosEmBancaDeRecursos"));
+        fase.Recusas[0].Error.Message.Should().Be(
+            "Na fase, a banca 'Banca de análise de recursos de 2ª instância 1' tem o papel 'Julga o recurso em 2ª instância' e define candidatos atendidos, mas a banca que julga recurso atende todos os candidatos. Retire as categorias de documento dela.");
+    }
+
     [Fact(DisplayName = "A declaração traz as mesmas recusas que a criação da fase para a mesma entrada")]
     public void Declarar_MesmasRecusasQueACriacao()
     {

@@ -20,4 +20,7 @@ public enum PapelDaBanca
 
     [CodigoDeContrato("IMPORTA_CANDIDATOS", "Importa candidatos")]
     ImportaCandidatos = 4,
+
+    [CodigoDeContrato("JULGA_A_SEGUNDA_INSTANCIA", "Julga o recurso em 2ª instância")]
+    JulgaASegundaInstancia = 5,
 }

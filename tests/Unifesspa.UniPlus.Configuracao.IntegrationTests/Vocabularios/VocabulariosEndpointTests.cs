@@ -49,7 +49,7 @@ public sealed class VocabulariosEndpointTests
             new GrupoAreaEnemDto("SAUDE_E_BIOLOGICAS", "Saúde e Biológicas"));
     }
 
-    [Fact(DisplayName = "GET /vocabularios/tipos-banca devolve os nove códigos com rótulo, na ordem publicada, sem exigir autenticação")]
+    [Fact(DisplayName = "GET /vocabularios/tipos-banca devolve os dez códigos com rótulo, na ordem publicada, sem exigir autenticação")]
     public async Task ListarCodigosTipoBanca_DevolveVocabularioCompleto()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -59,10 +59,12 @@ public sealed class VocabulariosEndpointTests
 
         codigos.Select(c => c.Codigo).Should().Equal(CodigosDeTipoBancaNaOrdemPublicada);
         codigos.Should().AllSatisfy(c => c.Rotulo.Should().NotBeNullOrWhiteSpace());
+        codigos.Select(static c => (c.Codigo, c.Rotulo)).Should().Contain(
+            ("BANCA_ANALISE_RECURSOS_SEGUNDA_INSTANCIA", "Banca de análise de recursos de 2ª instância"));
     }
 
-    [Fact(DisplayName = "GET /vocabularios/papeis-de-banca devolve os quatro papéis com código e rótulo, na ordem publicada, sem exigir autenticação")]
-    public async Task ListarPapeisDeBanca_DevolveOsQuatroPapeis()
+    [Fact(DisplayName = "GET /vocabularios/papeis-de-banca devolve os cinco papéis com código e rótulo, na ordem publicada, sem exigir autenticação")]
+    public async Task ListarPapeisDeBanca_DevolveOsCincoPapeis()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
 
@@ -74,7 +76,8 @@ public sealed class VocabulariosEndpointTests
             ("AVALIA_O_MERITO", "Avalia o mérito"),
             ("JULGA_A_PRIMEIRA_INSTANCIA", "Julga o recurso em 1ª instância"),
             ("IMPORTA_AS_NOTAS_DO_INEP", "Importa as notas do INEP"),
-            ("IMPORTA_CANDIDATOS", "Importa candidatos"));
+            ("IMPORTA_CANDIDATOS", "Importa candidatos"),
+            ("JULGA_A_SEGUNDA_INSTANCIA", "Julga o recurso em 2ª instância"));
     }
 
     // Afirmado por extenso, e não derivado do catálogo: é o contrato publicado que está
@@ -91,6 +94,7 @@ public sealed class VocabulariosEndpointTests
         "BANCA_HOMOLOGACAO_INSCRICOES",
         "BANCA_IMPORTACAO_NOTAS_INEP",
         "BANCA_IMPORTACAO_CANDIDATOS",
+        "BANCA_ANALISE_RECURSOS_SEGUNDA_INSTANCIA",
     ];
 
     private static readonly string[] CodigosDeFaseNaOrdemPublicada =

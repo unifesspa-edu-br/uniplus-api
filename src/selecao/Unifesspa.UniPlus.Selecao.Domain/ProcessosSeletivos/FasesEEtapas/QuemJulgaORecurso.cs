@@ -100,7 +100,7 @@ internal static class QuemJulgaORecurso
         return itens.Any(static item => item.Indeterminado && item.Avaliadoras.Count > 0);
     }
 
-    /// <summary>As etapas cujo recurso é julgado, com certeza, pela banca da fase que o papel faz julgar recurso.</summary>
+    /// <summary>As etapas cujo recurso é julgado, com certeza, pela banca da fase dedicada à 1ª instância.</summary>
     internal static IReadOnlyList<EtapaJulgada> EtapasJulgadasPelaFase(IEnumerable<ItemJulgado> itens, FaseDeclarada fase)
     {
         ArgumentNullException.ThrowIfNull(itens);

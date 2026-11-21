@@ -16,7 +16,8 @@ FROM (VALUES
     ('019fee20-7000-7000-8000-000000000006', 'BANCA_BIOPSICOSSOCIAL', 'Banca de avaliação biopsicossocial', 'AVALIA_O_MERITO', true, false, ARRAY['AVALIACAO_BIOPSICOSSOCIAL']::text[], TIMESTAMPTZ '2026-11-21 00:00:00+00', false),
     ('019fee20-7000-7000-8000-000000000007', 'BANCA_HOMOLOGACAO_INSCRICOES', 'Banca de homologação das inscrições', 'AVALIA_O_MERITO', false, false, ARRAY['HOMOLOGACAO_DAS_INSCRICOES']::text[], TIMESTAMPTZ '2026-11-21 00:00:00+00', false),
     ('019fee20-7000-7000-8000-000000000008', 'BANCA_IMPORTACAO_NOTAS_INEP', 'Banca de importação das notas do INEP', 'IMPORTA_AS_NOTAS_DO_INEP', false, false, ARRAY[]::text[], TIMESTAMPTZ '2026-11-21 00:00:00+00', false),
-    ('019fee20-7000-7000-8000-000000000009', 'BANCA_IMPORTACAO_CANDIDATOS', 'Banca de importação de candidatos', 'IMPORTA_CANDIDATOS', false, false, ARRAY[]::text[], TIMESTAMPTZ '2026-11-21 00:00:00+00', false)
+    ('019fee20-7000-7000-8000-000000000009', 'BANCA_IMPORTACAO_CANDIDATOS', 'Banca de importação de candidatos', 'IMPORTA_CANDIDATOS', false, false, ARRAY[]::text[], TIMESTAMPTZ '2026-11-21 00:00:00+00', false),
+    ('019fee20-7000-7000-8000-000000000010', 'BANCA_ANALISE_RECURSOS_SEGUNDA_INSTANCIA', 'Banca de análise de recursos de 2ª instância', 'JULGA_A_SEGUNDA_INSTANCIA', false, false, ARRAY[]::text[], TIMESTAMPTZ '2026-11-21 00:00:00+00', false)
 ) AS semente (id, codigo, nome, papel, exige_duas_ou_mais_bancas, encerra_recurso_na_primeira_instancia, tipos_de_decisao_julgados, created_at, is_deleted)
 WHERE NOT EXISTS (
     SELECT 1

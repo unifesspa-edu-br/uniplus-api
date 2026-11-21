@@ -21,6 +21,7 @@ public sealed class TipoDeBancaCodigosTests
                 [TipoDeBanca.HomologacaoDasInscricoes] = "BANCA_HOMOLOGACAO_INSCRICOES",
                 [TipoDeBanca.ImportacaoDasNotasDoInep] = "BANCA_IMPORTACAO_NOTAS_INEP",
                 [TipoDeBanca.ImportacaoDeCandidatos] = "BANCA_IMPORTACAO_CANDIDATOS",
+                [TipoDeBanca.AnaliseDeRecursosDeSegundaInstancia] = "BANCA_ANALISE_RECURSOS_SEGUNDA_INSTANCIA",
             });
 
     [Fact(DisplayName = "O vocabulário de tipos de banca é publicado na ordem de exibição")]
@@ -34,11 +35,16 @@ public sealed class TipoDeBancaCodigosTests
             TipoDeBanca.AvaliacaoBiopsicossocial,
             TipoDeBanca.HomologacaoDasInscricoes,
             TipoDeBanca.ImportacaoDasNotasDoInep,
-            TipoDeBanca.ImportacaoDeCandidatos);
+            TipoDeBanca.ImportacaoDeCandidatos,
+            TipoDeBanca.AnaliseDeRecursosDeSegundaInstancia);
 
     [Fact(DisplayName = "Todo tipo de banca tem rótulo")]
     public void Rotulo_DeCadaTipo_NaoEstaVazio() =>
         Enum.GetValues<TipoDeBanca>().Should().OnlyContain(static v => !string.IsNullOrWhiteSpace(v.Rotulo()));
+
+    [Fact(DisplayName = "O tipo de banca de análise de recursos de 2ª instância tem o rótulo que o contrato publica")]
+    public void Rotulo_DoTipoDeSegundaInstancia_EOQueOContratoPublica() =>
+        TipoDeBanca.AnaliseDeRecursosDeSegundaInstancia.Rotulo().Should().Be("Banca de análise de recursos de 2ª instância");
 
     [Fact(DisplayName = "O catálogo lê o tipo de banca pelo código exato, e não reconhece caixa diferente, espaço nem texto ausente")]
     public void TentarObter_SoReconheceOCodigoExato()

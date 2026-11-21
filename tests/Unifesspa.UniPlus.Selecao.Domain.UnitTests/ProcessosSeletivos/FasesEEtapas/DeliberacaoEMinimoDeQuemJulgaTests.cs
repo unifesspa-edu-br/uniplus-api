@@ -86,6 +86,45 @@ public sealed class DeliberacaoEMinimoDeQuemJulgaTests
         Deliberacao(fase, etapa).Should().BeEmpty();
     }
 
+    [Fact(DisplayName = "A banca de 2ª instância da fase, sem etapa que ela julgue, tem como mínimo o quórum e não é cobrada dos corretores")]
+    public void BancaDeSegundaInstanciaDaFase_SemEtapaJulgada_MinimoEOQuorum()
+    {
+        BancaRequerida pequena = BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.DeSegundaInstancia(), [], BancasDeTeste.Regra(integrantes: 2, quorum: 2));
+        ModeloDeFase fase = FaseComRecurso(Fase, DaNota, true, pequena);
+        ModeloDeEtapa etapa = DaRegraLida(EtapaNaFase(Fase));
+
+        Minimo(fase, TresCorretores, etapa).Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "A banca de 2ª instância da etapa tem como mínimo o quórum, e não os corretores da etapa")]
+    public void BancaDeSegundaInstanciaDaEtapa_MinimoEOQuorum_NaoRecusa()
+    {
+        BancaDaEtapa pequena = BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.DeSegundaInstancia(), BancasDeTeste.Regra(integrantes: 2, quorum: 2));
+        ModeloDeEtapa etapa = DaRegraLida(EtapaComRecurso("Redação", Fase, DaNota, true, pequena));
+
+        Minimo(new ModeloDeFase(Fase, 1), TresCorretores, etapa).Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "A banca de 2ª instância da etapa, cuja regra de consolidação o catálogo não confirmou, não é recusada por regra não resolvida")]
+    public void BancaDeSegundaInstanciaDaEtapa_RegraNaoResolvida_NaoRecusa()
+    {
+        BancaDaEtapa banca = BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.DeSegundaInstancia(), BancasDeTeste.Regra());
+        ModeloDeEtapa etapa = DaRegraLida(EtapaComRecurso("Redação", Fase, DaNota, true, banca), RegraForaDoCatalogo);
+
+        Minimo(new ModeloDeFase(Fase, 1), TresCorretores, etapa).Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Na fase com a banca dedicada à 1ª instância e a de 2ª instância, só a de 1ª instância é cobrada dos corretores da etapa que ela julga")]
+    public void FaseComAsDuasBancas_SoADePrimeiraInstanciaEJulgaAEtapa()
+    {
+        BancaRequerida primeira = BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.DeRecursos(Guid.CreateVersion7()), [], BancasDeTeste.Regra(integrantes: 2, quorum: 2));
+        BancaRequerida segunda = BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.DeSegundaInstancia(Guid.CreateVersion7()), [], BancasDeTeste.Regra(integrantes: 2, quorum: 2));
+        ModeloDeFase fase = new ModeloDeFase(Fase, 1) with { Bancas = [primeira, segunda] };
+        ModeloDeEtapa etapa = DaRegraLida(EtapaComRecurso("Redação", Fase, DaNota, true));
+
+        Causas(Minimo(fase, TresCorretores, etapa)).Should().Equal(("fases[0].bancasRequeridas[0]", "Banca.IntegrantesAbaixoDoMinimo"));
+    }
+
     [Fact(DisplayName = "A avaliadora de etapa sem recurso, ou cujo item recorrido é de outro tipo de decisão, não é recusada")]
     public void Avaliadora_SemRecursoSobreOSeuItem_NaoRecusa()
     {
@@ -109,6 +148,35 @@ public sealed class DeliberacaoEMinimoDeQuemJulgaTests
         recusa.Error.Message.Should().Contain("julga recurso com o papel 'Julga o recurso em 1ª instância', mas não declara a votação do recurso.");
     }
 
+    [Fact(DisplayName = "A banca de 2ª instância da fase, com papel que julga recurso, decide por ato individual sem votação e é recusada citando o papel")]
+    public void BancaDeSegundaInstanciaDaFase_AtoIndividualSemVotacao_RecusaCitandoOPapel()
+    {
+        BancaRequerida banca = BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.DeSegundaInstancia(), [], AtoIndividualSemVotacao());
+        ModeloDeFase fase = FaseComRecurso(Fase, DaNota, true, banca);
+
+        FieldError recusa = Deliberacao(fase).Should().ContainSingle().Subject;
+
+        recusa.Field.Should().Be("fases[0].bancasRequeridas[0]");
+        recusa.Error.Code.Should().Be("Banca.RegraDeDeliberacaoObrigatoria");
+        recusa.Error.Message.Should().Be(
+            "A banca 'Banca de análise de recursos de 2ª instância 1' da fase 'AVALIACAO' decide por ato individual e julga recurso com o papel 'Julga o recurso em 2ª instância', mas não declara a votação do recurso. Declare o quórum, o critério e o encerramento usados no julgamento do recurso.");
+        ItemDoPainel(ItemDaDeliberacao, Fases(fase), Etapas()).Ok.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "A banca de 2ª instância da etapa, com papel que julga recurso, decide por ato individual sem votação e é recusada citando a posição da etapa")]
+    public void BancaDeSegundaInstanciaDaEtapa_AtoIndividualSemVotacao_RecusaCitandoOPapel()
+    {
+        BancaDaEtapa banca = BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.DeSegundaInstancia(), AtoIndividualSemVotacao());
+        ModeloDeEtapa etapa = EtapaComRecurso("Redação", Fase, DaNota, true, banca);
+
+        FieldError recusa = Deliberacao(new ModeloDeFase(Fase, 1), etapa).Should().ContainSingle().Subject;
+
+        recusa.Field.Should().Be("etapas[0].bancas[0]");
+        recusa.Error.Code.Should().Be("Banca.RegraDeDeliberacaoObrigatoria");
+        recusa.Error.Message.Should().Contain(
+            "da etapa na posição 1 decide por ato individual e julga recurso com o papel 'Julga o recurso em 2ª instância', mas não declara a votação do recurso.");
+    }
+
     [Fact(DisplayName = "Com duas avaliadoras do item, as duas são cobradas da votação do recurso")]
     public void DuasAvaliadoras_AsDuasSaoCobradasDaVotacao()
     {
@@ -130,12 +198,13 @@ public sealed class DeliberacaoEMinimoDeQuemJulgaTests
             ("etapas[0].bancas[1]", "Banca.IntegrantesAbaixoDoMinimo"));
     }
 
-    [Theory(DisplayName = "Só o papel de julgar em 1ª instância ordena quem julga essa instância, e ele também julga recurso para a votação e o mínimo")]
+    [Theory(DisplayName = "Os papéis de 1ª e de 2ª instância julgam recurso para a votação e os candidatos atendidos; só o de 1ª instância ordena quem julga essa instância e traz os corretores para o mínimo")]
     [InlineData(PapelDaBanca.AvaliaOMerito, false, false)]
     [InlineData(PapelDaBanca.ImportaAsNotasDoInep, false, false)]
     [InlineData(PapelDaBanca.ImportaCandidatos, false, false)]
     [InlineData(PapelDaBanca.JulgaAPrimeiraInstancia, true, true)]
-    public void PapelDaCopia_PrimeiraInstanciaEJulgaRecurso(PapelDaBanca papel, bool julgaAPrimeiraInstancia, bool julgaRecurso)
+    [InlineData(PapelDaBanca.JulgaASegundaInstancia, false, true)]
+    public void PapelDaCopia_JulgaRecursoEPrimeiraInstancia(PapelDaBanca papel, bool julgaAPrimeiraInstancia, bool julgaRecurso)
     {
         TipoDeBancaCopiado tipo = TiposDeBancaCopiadosDeTeste.Com(TipoDeBanca.AnaliseDeRecursos, papel);
 

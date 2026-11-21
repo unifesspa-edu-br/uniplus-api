@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// </summary>
 internal static class PapeisQueJulgamRecurso
 {
-    private static readonly FrozenSet<PapelDaBanca> Papeis = new[] { PapelDaBanca.JulgaAPrimeiraInstancia }.ToFrozenSet();
+    private static readonly FrozenSet<PapelDaBanca> Papeis = new[] { PapelDaBanca.JulgaAPrimeiraInstancia, PapelDaBanca.JulgaASegundaInstancia }.ToFrozenSet();
 
     internal static bool Contem(PapelDaBanca papel) => Papeis.Contains(papel);
 }
