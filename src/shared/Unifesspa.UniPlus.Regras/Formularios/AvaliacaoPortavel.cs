@@ -55,7 +55,7 @@ public sealed record AvaliacaoPortavel(
 /// formulário e, no rascunho com campo ainda sem seção, a etapa da finalidade; os blocos que o sistema
 /// monta não têm regra e não entram.
 /// </summary>
-public sealed record EtapaAvaliada(string Codigo, string Visivel);
+public sealed record EtapaAvaliada(string Codigo, [property: AceitaCodigosDe<Ternario>] string Visivel);
 
 /// <summary>
 /// Um campo avaliado: o estado do fato que ele produz, o que as regras do campo resultam e as opções
@@ -64,7 +64,7 @@ public sealed record EtapaAvaliada(string Codigo, string Visivel);
 public sealed record CampoAvaliado(
     string FatoCodigo,
     string EtapaCodigo,
-    string Estado,
+    [property: AceitaCodigosDe<EstadoFato>] string Estado,
     RegrasDoCampoAvaliadas Regras,
     OpcoesVigentes? Opcoes);
 
@@ -73,21 +73,21 @@ public sealed record CampoAvaliado(
 /// viola e se a resposta impede a inscrição.
 /// </summary>
 public sealed record RegrasDoCampoAvaliadas(
-    string Visivel,
-    string Obrigatorio,
+    [property: AceitaCodigosDe<Ternario>] string Visivel,
+    [property: AceitaCodigosDe<Ternario>] string Obrigatorio,
     IReadOnlyList<string> RestricoesVioladas,
-    string Impedido);
+    [property: AceitaCodigosDe<Ternario>] string Impedido);
 
 /// <summary>Um grupo repetível avaliado: o estado da lista, o que as regras resultam e as ocorrências.</summary>
 public sealed record GrupoAvaliado(
     string Codigo,
     string EtapaCodigo,
-    string Estado,
+    [property: AceitaCodigosDe<EstadoFato>] string Estado,
     ExibicaoEObrigatoriedadeAvaliadas Regras,
     OcorrenciasAvaliadas Ocorrencias);
 
 /// <summary>O que as regras de um grupo resultam: se aparece e se é obrigatório.</summary>
-public sealed record ExibicaoEObrigatoriedadeAvaliadas(string Visivel, string Obrigatorio);
+public sealed record ExibicaoEObrigatoriedadeAvaliadas([property: AceitaCodigosDe<Ternario>] string Visivel, [property: AceitaCodigosDe<Ternario>] string Obrigatorio);
 
 /// <summary>
 /// As ocorrências de um grupo avaliadas: se a contagem e a ocorrência do próprio candidato valem, e cada
@@ -99,7 +99,7 @@ public sealed record OcorrenciasAvaliadas(
     IReadOnlyList<OcorrenciaAvaliada> Lista);
 
 /// <summary>Uma ocorrência avaliada: o estado dela e os campos.</summary>
-public sealed record OcorrenciaAvaliada(string Id, string Estado, IReadOnlyList<CampoAvaliado> Campos);
+public sealed record OcorrenciaAvaliada(string Id, [property: AceitaCodigosDe<EstadoFato>] string Estado, IReadOnlyList<CampoAvaliado> Campos);
 
 /// <summary>Um termo avaliado: se aparece e se é obrigatório.</summary>
-public sealed record TermoAvaliado(string Codigo, string Visivel, string Obrigatorio);
+public sealed record TermoAvaliado(string Codigo, [property: AceitaCodigosDe<Ternario>] string Visivel, [property: AceitaCodigosDe<Ternario>] string Obrigatorio);
