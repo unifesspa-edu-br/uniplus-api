@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Domain.Entities;
 using Domain.Interfaces;
-using Domain.Services;
 using Domain.ValueObjects;
 
 using Kernel.Results;
@@ -21,34 +20,14 @@ internal static class DefinicaoDosDocumentosExigidos
         CadastrosDosDocumentosExigidos cadastros,
         CancellationToken cancellationToken)
     {
-        Result forma = ConferirForma(processo, entradas);
-        if (forma.IsFailure)
-        {
-            return forma;
-        }
-
-        ContextoDaMontagemDasExigencias contexto = await LerContextoAsync(processo, entradas, cadastros, cancellationToken).ConfigureAwait(false);
+        List<NoDeEntradaConferido> conferidos = EscritaDaArvoreDeExigencias.Conferir(entradas, processo.GruposColetados);
+        List<NoExigenciaInput> folhas = EscritaDaArvoreDeExigencias.FolhasConferidas(conferidos);
+        ContextoDaMontagemDasExigencias contexto = await LerContextoAsync(processo, folhas, cadastros, cancellationToken).ConfigureAwait(false);
         Result<List<NoExigencia>> raizes = await new MontagemDaArvoreDeExigencias(new MontagemDoDocumentoExigido(contexto))
-            .MontarRaizesAsync(entradas, ProximaOrdemDaRaiz(mantidas), cancellationToken).ConfigureAwait(false);
+            .MontarRaizesAsync(conferidos, ProximaOrdemDaRaiz(mantidas), cancellationToken).ConfigureAwait(false);
         return raizes.IsFailure
             ? Result.ValidationFailure(raizes.Errors)
             : DefinirNoProcesso(processo, mantidas, raizes.Value!, contexto.Fatos);
-    }
-
-    // A forma da árvore inteira vence qualquer leitura externa (ADR-0125). O grupo da repetição vem antes
-    // dos gatilhos: um gatilho que cita campo de grupo inexistente seria recusado como fato fora do
-    // processo, e a recusa que orienta é a do grupo.
-    private static Result ConferirForma(ProcessoSeletivo processo, IReadOnlyList<NoExigenciaInput> entradas)
-    {
-        List<FieldError> formaErros = EscritaDaArvoreDeExigencias.Conferir(entradas);
-        if (formaErros.Count > 0)
-        {
-            return Result.ValidationFailure(formaErros);
-        }
-
-        DomainError? semGrupo = ValidadorRepeticaoPorGrupo.PrimeiroGrupoInexistente(
-            ArvoreDeEntradaDasExigencias.GruposDaRepeticao(entradas), processo.GruposColetados);
-        return semGrupo is null ? Result.Success() : Result.Failure(semGrupo);
     }
 
     private static int ProximaOrdemDaRaiz(IReadOnlyList<NoExigencia> mantidas) =>

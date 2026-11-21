@@ -7,34 +7,44 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 /// <summary>Coerência estrutural entre os descendentes de um grupo de exigências.</summary>
 internal static class ComposicaoDoGrupo
 {
-    internal static DomainError? Recusa(IReadOnlyList<NoExigencia> filhos, string? repetePorEntidade)
-    {
-        return RecusaDaTopologia(filhos) ?? RecusaDaFinalidadeERepeticao(filhos, repetePorEntidade);
-    }
+    internal static DomainError? Recusa(IReadOnlyList<NoExigencia> filhos, string? repetePorEntidade) =>
+        Recusas(filhos, repetePorEntidade).FirstOrDefault()?.Error;
 
-    private static DomainError? RecusaDaTopologia(IReadOnlyList<NoExigencia> filhos)
+    internal static List<FieldError> Recusas(IReadOnlyList<NoExigencia> filhos, string? repetePorEntidade)
     {
-        if (filhos.Count == 0)
+        if (RecusaSeVazio(filhos.Count) is { } vazio)
         {
-            return new("NoExigencia.GrupoVazio", "Um grupo E/OU não pode ter zero filhos.");
+            return [new("filhos", vazio)];
         }
         if (ContemCiclo(filhos))
         {
-            return new("NoExigencia.ArvoreComCiclo", "A árvore de satisfação não pode conter ciclos.");
+            return [new("filhos", new DomainError("NoExigencia.ArvoreComCiclo",
+                "Este grupo contém uma repetição circular de itens. Organize os grupos sem repetir um item dentro de si."))];
         }
-        return FaseComumDosFilhos(filhos) is null
-            ? new("NoExigencia.GrupoComFasesDiferentes", "Todos os nós de um grupo precisam pertencer à mesma fase do cronograma.") : null;
+        return [.. RecusasDasFasesEFinalidades(filhos), .. RecusaDaRepeticao(filhos, repetePorEntidade)];
     }
 
-    private static DomainError? RecusaDaFinalidadeERepeticao(IReadOnlyList<NoExigencia> filhos, string? repetePorEntidade)
+    internal static DomainError? RecusaSeVazio(int quantidadeDeFilhos) => quantidadeDeFilhos == 0
+        ? new("NoExigencia.GrupoVazio", "Este grupo não contém itens. Acrescente ao menos um item ao grupo.") : null;
+
+    private static IEnumerable<FieldError> RecusasDasFasesEFinalidades(IReadOnlyList<NoExigencia> filhos)
     {
+        if (FaseComumDosFilhos(filhos) is null)
+        {
+            yield return new("filhos", new DomainError("NoExigencia.GrupoComFasesDiferentes",
+                "Os itens deste grupo pertencem a fases diferentes. Escolha a mesma fase para todos os itens do grupo."));
+        }
         if (!FinalidadeComumDosFilhos(filhos, out _))
         {
-            return new("NoExigencia.GrupoComFinalidadesDiferentes", "Todos os documentos de um grupo pertencem ao mesmo formulário.");
+            yield return new("filhos", new DomainError("NoExigencia.GrupoComFinalidadesDiferentes",
+                "Os documentos deste grupo pertencem a formulários diferentes. Escolha o mesmo formulário para todos os documentos do grupo."));
         }
-        return repetePorEntidade is not null && filhos.Any(ContemRepeticaoDeEntidade)
-            ? new("NoExigencia.RepeticaoDeEntidadeAninhada", "Uma subárvore repetida por entidade não pode conter outra.") : null;
     }
+
+    private static IEnumerable<FieldError> RecusaDaRepeticao(IReadOnlyList<NoExigencia> filhos, string? repeticao) =>
+        repeticao is not null && filhos.Any(ContemRepeticaoDeEntidade)
+            ? [new("repetePorEntidade", new DomainError("NoExigencia.RepeticaoDeEntidadeAninhada",
+                "Este grupo repete itens que já se repetem por outro grupo. Retire uma das repetições."))] : [];
 
     private static bool ContemRepeticaoDeEntidade(NoExigencia no) =>
         no.RepetePorEntidade is not null || no.Filhos.Any(ContemRepeticaoDeEntidade);

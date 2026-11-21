@@ -12,8 +12,7 @@ using Kernel.Results;
 /// </summary>
 /// <remarks>
 /// Acumula a forma de TODAS as bases do nó numa primeira passada (ADR-0125), indexando o campo, e só se ela
-/// vier limpa constrói as instâncias. O escopo da acumulação é o nó: entre nós a árvore falha no primeiro,
-/// porque acumulá-la inteira exigiria um caminho posicional sem convenção estabelecida.
+/// vier limpa constrói as instâncias. A conferência da árvore também acumula as recusas entre nós.
 /// </remarks>
 internal static class EscritaDasBasesLegais
 {

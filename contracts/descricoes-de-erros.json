@@ -21791,14 +21791,13 @@
         "UNI-REQ-0070"
       ],
       "oQueAconteceu": [
-        "Um nó grupo com `tipo` igual a `E` declara uma ou mais entradas em\n`basesLegais`. A base legal própria de um nó existe para amparar a\nconsequência que esse nó emite — e, como\n[`consequencia_proibida_em_grupo_e`](/erros/uniplus.selecao.no_exigencia.consequencia_proibida_em_grupo_e)\njá recusa, um grupo `E` nunca carrega consequência própria, então também\nnão há o que uma base legal ali ampararia.",
-        "É a última conferência de transparência do grupo `E`, depois de\n[`quantidade_minima_proibida_em_grupo_e`](/erros/uniplus.selecao.no_exigencia.quantidade_minima_proibida_em_grupo_e)\ne de `consequencia_proibida_em_grupo_e`. Sequencial: nunca acumula com\nnenhuma outra causa desta série."
+        "O grupo exige todos os itens (\"E\"), mas informa base legal própria. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
       ],
       "comoResolver": [
-        "Remova `basesLegais` de todo nó com `tipo: \"E\"`. Se a intenção era\ndeclarar base legal para uma consequência própria do grupo, declare-o\ncomo `OU`/N-de com `consequencia` presente."
+        "Retire a base legal do grupo."
       ],
       "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo"
+        "Definição dos documentos exigidos do processo seletivo."
       ]
     },
     {
@@ -21807,14 +21806,13 @@
         "UNI-REQ-0070"
       ],
       "oQueAconteceu": [
-        "Um nó grupo com `tipo` igual a `OU` declara uma ou mais entradas em\n`basesLegais`, mas não declara `consequencia`. A base legal própria de\num grupo `OU`/N-de é o fundamento legal da consequência que **esse\ngrupo** emite — sem consequência declarada, não há o que a base legal\nesteja fundamentando ali.",
-        "É a última conferência do ramo `OU`, depois de\n[`consequencia_invalida`](/erros/uniplus.selecao.no_exigencia.consequencia_invalida)\njá ter passado (ou de `consequencia` estar ausente). Sequencial: nunca\nacumula com nenhuma outra causa desta série."
+        "O grupo tem base legal, mas não tem consequência. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
       ],
       "comoResolver": [
-        "Informe `consequencia` para o grupo que carrega `basesLegais`, ou remova\n`basesLegais` se o grupo não é uma exigência de primeira classe com\nconsequência própria."
+        "Informe a consequência ou retire a base legal."
       ],
       "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo"
+        "Definição dos documentos exigidos do processo seletivo."
       ]
     },
     {
@@ -21823,16 +21821,13 @@
         "UNI-REQ-0068"
       ],
       "oQueAconteceu": [
-        "O campo `chaveDistincao` de um nó folha não corresponde a nenhum dos três\nvalores do catálogo fechado: `COMPETENCIA_MENSAL`, `EXERCICIO_ANUAL` ou\n`OCORRENCIA`. A chave qualifica **como** as apresentações distintas de\numa exigência se distinguem entre si — calendário derivável (as duas\nprimeiras) ou uma lista de ocorrências congeladas (a terceira). Omitir o\ncampo é válido — significa contagem bruta de apresentações, sem\nqualificação nenhuma.",
-        "O código de domínio para essa recusa existe (`!Enum.IsDefined` dentro de\n`CriarFolha`, logo depois de\n[`quantidade_minima_de_folha_invalida`](/erros/uniplus.selecao.no_exigencia.quantidade_minima_de_folha_invalida)) —\nmas **nenhum caminho real chega a executá-lo hoje**, por isso a entrada\né rascunho, não publicada.",
-        "No `PUT` de documentos exigidos, um valor de `chaveDistincao` fora do catálogo recebe `uniplus.validacao`. Na leitura da versão publicada, um código não reconhecido recebe `envelope_codec.envelope_malformado`.",
-        "Esta entrada existe para que o código de domínio, já registrado no\ncatálogo, tenha uma página assim que algum dos dois caminhos for\ndestravado — por exemplo, se a regra de validação de corpo do pedido for\nremovida em favor do guard de domínio já existente, mesmo trabalho da\nADR-0125, rastreada em `uniplus-api#1227`."
+        "O critério informado para distinguir as apresentações do documento não é reconhecido. O campo da resposta indica a posição do item."
       ],
       "comoResolver": [
-        "Informe `chaveDistincao` como um dos três valores do catálogo —\n`COMPETENCIA_MENSAL`, `EXERCICIO_ANUAL` ou `OCORRENCIA` — ou omita o\ncampo se a exigência não precisa distinguir apresentações por um padrão\nespecífico. Hoje, um valor fora do catálogo responde com\n`uniplus.validacao`, não com este código — mas a correção é a mesma."
+        "Escolha \"COMPETENCIA_MENSAL\" para mês, \"EXERCICIO_ANUAL\" para ano ou \"OCORRENCIA\" para ocorrência."
       ],
       "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo"
+        "Definição dos documentos exigidos do processo seletivo."
       ]
     },
     {
@@ -21859,14 +21854,13 @@
         "UNI-REQ-0070"
       ],
       "oQueAconteceu": [
-        "Um nó grupo com `tipo` igual a `OU` declara `consequencia` fora do\nvocabulário fechado de quatro valores: `ELIMINA`, `RECLASSIFICA_AC`,\n`REMOVE_VANTAGEM` ou `PENDENCIA_REENVIO` — o mesmo catálogo usado em\nqualquer outra consequência de indeferimento do módulo Seleção.",
-        "Roda só quando `consequencia` foi de fato informada (o campo é opcional\nem grupo `OU`) e depois de\n[`quantidade_minima_fora_dos_limites`](/erros/uniplus.selecao.no_exigencia.quantidade_minima_fora_dos_limites)\njá ter passado. Sequencial: nunca acumula com nenhuma outra causa desta\nsérie."
+        "A consequência informada para o grupo não é reconhecida. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
       ],
       "comoResolver": [
-        "Informe `consequencia` como um dos quatro valores do vocabulário, ou\nomita o campo se o grupo não emite consequência própria."
+        "Escolha \"ELIMINA\" para retirar a pessoa do processo, \"RECLASSIFICA_AC\" para a ampla concorrência, \"REMOVE_VANTAGEM\" para retirar a vantagem ou \"PENDENCIA_REENVIO\" para permitir reenvio."
       ],
       "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo"
+        "Definição dos documentos exigidos do processo seletivo."
       ]
     },
     {
@@ -21875,14 +21869,13 @@
         "UNI-REQ-0070"
       ],
       "oQueAconteceu": [
-        "Um nó grupo com `tipo` igual a `E` declara `consequencia`. Um grupo `E` é\ntransparente para efeito de consequência: quando ele não está satisfeito,\né cada filho em estado ativo que emite sua própria consequência — o\ngrupo `E` nunca emite uma consequência própria, então declará-la nele\nnão tem efeito nenhum, só confunde quem lê a configuração. Só o grupo\n`OU`/N-de é a unidade opaca que pode carregar consequência de primeira\nclasse.",
-        "Roda depois de\n[`quantidade_minima_proibida_em_grupo_e`](/erros/uniplus.selecao.no_exigencia.quantidade_minima_proibida_em_grupo_e)\ne antes de\n[`base_legal_proibida_em_grupo_e`](/erros/uniplus.selecao.no_exigencia.base_legal_proibida_em_grupo_e),\nas outras conferências de transparência do grupo `E`. Sequencial:\nnunca acumula com nenhuma outra causa desta série."
+        "O grupo exige todos os itens (\"E\"), mas informa uma consequência própria. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
       ],
       "comoResolver": [
-        "Remova `consequencia` de todo nó com `tipo: \"E\"`. Se a intenção era que\no grupo emitisse uma consequência própria, declare-o como `OU`/N-de."
+        "Retire a consequência do grupo."
       ],
       "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo"
+        "Definição dos documentos exigidos do processo seletivo."
       ]
     },
     {
@@ -21891,15 +21884,13 @@
         "UNI-REQ-0068"
       ],
       "oQueAconteceu": [
-        "O campo `dataReferencia` de um nó folha foi informado, mas a\n`chaveDistincao` do nó não é uma das duas chaves de calendário\n(`COMPETENCIA_MENSAL`/`EXERCICIO_ANUAL`) que dependem dela. Cobre dois\ncenários:",
-        "- `chaveDistincao` está **ausente** — sem qualificação, não há data de referência de\n  calendário para derivar nada.\n- `chaveDistincao` é `OCORRENCIA` — essa chave usa uma lista de\n  identificadores congelados\n  ([`ocorrenciasEsperadas`](/erros/uniplus.selecao.no_exigencia.ocorrencias_esperadas_indevidas_para_chave)),\n  não uma data de referência.",
-        "Só as chaves de calendário (`COMPETENCIA_MENSAL`/`EXERCICIO_ANUAL`) usam\n`dataReferencia` — ver\n[`data_referencia_obrigatoria_para_chave_calendario`](/erros/uniplus.selecao.no_exigencia.data_referencia_obrigatoria_para_chave_calendario),\na conferência inversa. Sequencial: a primeira violação encontrada na\ncriação do nó interrompe o processamento; nunca acumula com nenhuma\noutra causa desta série."
+        "Este documento informa uma data que não cabe no critério escolhido. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
       ],
       "comoResolver": [
-        "Remova `dataReferencia` se `chaveDistincao` estiver ausente ou for\n`OCORRENCIA`. Se a intenção era distinguir apresentações por calendário,\ninforme `chaveDistincao` como `COMPETENCIA_MENSAL` ou `EXERCICIO_ANUAL`."
+        "Informe a data de referência apenas para distinguir por mês ou ano; retire a data deste documento."
       ],
       "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo"
+        "Definição dos documentos exigidos do processo seletivo."
       ]
     },
     {
@@ -21908,14 +21899,58 @@
         "UNI-REQ-0068"
       ],
       "oQueAconteceu": [
-        "Um nó folha com `chaveDistincao` igual a `COMPETENCIA_MENSAL` ou\n`EXERCICIO_ANUAL` não informou `dataReferencia`. As duas chaves de\ncalendário derivam os slots esperados como \"as N unidades regulares\n(meses ou anos) imediatamente anteriores ou iguais à data de referência\" — sem a\ndata de referência, não há como calcular quais unidades são essas.",
-        "É a conferência inversa de\n[`data_referencia_indevida_para_chave`](/erros/uniplus.selecao.no_exigencia.data_referencia_indevida_para_chave).\nRoda como a primeira conferência específica do ramo de chave de calendário,\nantes de\n[`ocorrencias_esperadas_indevidas_para_chave`](/erros/uniplus.selecao.no_exigencia.ocorrencias_esperadas_indevidas_para_chave)\ne de\n[`quantidade_minima_excede_janela_representavel`](/erros/uniplus.selecao.no_exigencia.quantidade_minima_excede_janela_representavel).\nSequencial: a primeira violação encontrada na criação do nó interrompe o\nprocessamento; nunca acumula com nenhuma outra causa desta série."
+        "Este documento é distinguido por mês ou ano e precisa de uma data de referência. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
       ],
       "comoResolver": [
-        "Informe `dataReferencia` para toda folha com `chaveDistincao` igual a\n`COMPETENCIA_MENSAL` ou `EXERCICIO_ANUAL`."
+        "Informe a data de referência."
       ],
       "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo"
+        "Definição dos documentos exigidos do processo seletivo."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.no_exigencia.documento_obrigatorio_em_folha",
+      "requisitos": [
+        "UNI-REQ-0067"
+      ],
+      "oQueAconteceu": [
+        "O item é um documento (\"FOLHA\"), mas não informa qual documento é exigido. O campo da resposta indica a posição do item."
+      ],
+      "comoResolver": [
+        "Escolha o documento no catálogo."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.no_exigencia.documento_proibido_em_grupo",
+      "requisitos": [
+        "UNI-REQ-0067"
+      ],
+      "oQueAconteceu": [
+        "O item reúne exigências, mas informa um documento no próprio grupo. O campo da resposta indica a posição do item."
+      ],
+      "comoResolver": [
+        "Retire o documento do grupo e inclua-o como item separado."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.no_exigencia.filhos_proibidos_em_folha",
+      "requisitos": [
+        "UNI-REQ-0067"
+      ],
+      "oQueAconteceu": [
+        "O item é um documento (\"FOLHA\"), mas reúne outros itens. O campo da resposta indica a posição do item."
+      ],
+      "comoResolver": [
+        "Retire os itens reunidos ou escolha um grupo."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo."
       ]
     },
     {
@@ -21924,29 +21959,26 @@
         "UNI-REQ-0067"
       ],
       "oQueAconteceu": [
-        "Os descendentes de um nó grupo (`E` ou `OU`) não convergem para uma única\nfase do cronograma — a fase de uma folha é herdada do `DocumentoExigido`\nque ela envolve, e um grupo cuja árvore mistura documentos de fases\ndiferentes não tem uma fase comum a atribuir a si mesmo. A fase de um\ngrupo é sempre a fase comum de tudo que está abaixo dele, recursivamente\n— nunca uma escolha independente do grupo.",
-        "Roda depois de\n[`grupo_vazio`](/erros/uniplus.selecao.no_exigencia.grupo_vazio)\ne de\n[`arvore_com_ciclo`](/erros/uniplus.selecao.no_exigencia.arvore_com_ciclo)\njá terem passado — a fase comum só pode ser calculada sobre uma lista de\nfilhos não vazia e sem ciclo. Sequencial: a primeira violação encontrada\nna criação do nó interrompe o processamento; nunca acumula com nenhuma\noutra causa desta série.",
-        "Esta recusa pode ocorrer na definição dos documentos exigidos, pois cada documento informa sua própria fase."
+        "Os itens do grupo pertencem a fases diferentes. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
       ],
       "comoResolver": [
-        "Revise os documentos exigidos que compõem o grupo apontado e confirme\nque todos — folhas e, recursivamente, os grupos aninhados — estão\nassociados à mesma fase do cronograma. Se a intenção era cobrir fases\ndiferentes, isso exige grupos separados, um por fase."
+        "Escolha a mesma fase para todos os itens do grupo."
       ],
       "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo"
+        "Definição dos documentos exigidos do processo seletivo."
       ]
     },
     {
       "codigo": "uniplus.selecao.no_exigencia.grupo_com_finalidades_diferentes",
       "requisitos": [],
       "oQueAconteceu": [
-        "Cada documento exigido pertence a um formulário do candidato (a finalidade): inscrição,\nisenção de taxa ou habilitação. Os documentos de um mesmo grupo (E ou OU) precisam pertencer\ntodos ao mesmo formulário. O grupo apontado mistura documentos de formulários diferentes, ou\ndocumentos com formulário e documentos sem formulário. A inscrição e a isenção podem dividir a\nmesma fase, e por isso a regra olha o formulário, e não só a fase.",
-        "A conferência acontece na criação do grupo, depois de\n[`grupo_com_fases_diferentes`](/erros/uniplus.selecao.no_exigencia.grupo_com_fases_diferentes)\ne antes de\n[`repeticao_de_entidade_aninhada`](/erros/uniplus.selecao.no_exigencia.repeticao_de_entidade_aninhada).\nA primeira violação encontrada interrompe o processamento."
+        "Os documentos do grupo pertencem a formulários diferentes. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
       ],
       "comoResolver": [
-        "Na definição, separe os documentos em grupos distintos, um por formulário, ou ajuste o\nformulário de cada documento para que o grupo tenha só um."
+        "Escolha o mesmo formulário para todos os documentos do grupo."
       ],
       "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo"
+        "Definição dos documentos exigidos do processo seletivo."
       ]
     },
     {
@@ -21955,14 +21987,13 @@
         "UNI-REQ-0067"
       ],
       "oQueAconteceu": [
-        "Um nó grupo (`E` ou `OU`) da árvore de satisfação de documentos foi criado\nsem nenhum filho. Um grupo conector sem filhos não tem o que combinar — é\na raiz de uma exigência vazia, sem documento nenhum por trás.",
-        "É a primeira conferência estrutural dentro da criação de um grupo — roda\nantes de qualquer conferência sobre ciclo ou fase comum. Sequencial: a\nprimeira violação encontrada na criação do nó interrompe o processamento\ndaquele nó; nunca acumula com nenhuma outra causa desta série."
+        "O grupo de exigências não contém itens. O campo da resposta indica a posição do item."
       ],
       "comoResolver": [
-        "Informe ao menos um filho para todo nó `E`/`OU`. Na definição, hoje um\ncorpo do pedido com grupo vazio responde com `uniplus.validacao`, não com este\ncódigo — mas a correção é a mesma."
+        "Acrescente ao menos um item ao grupo."
       ],
       "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo"
+        "Definição dos documentos exigidos do processo seletivo."
       ]
     },
     {
@@ -21971,15 +22002,13 @@
         "UNI-REQ-0068"
       ],
       "oQueAconteceu": [
-        "Um ou mais identificadores da lista `ocorrenciasEsperadas` de um nó\nfolha são vazios ou só espaço em branco. Cada identificador nomeia um\nslot concreto que uma apresentação precisa cobrir (por exemplo, as duas\neleições que o edital determina) — um identificador vazio não nomeia\nslot nenhum.",
-        "Roda depois de\n[`ocorrencias_esperadas_vazia`](/erros/uniplus.selecao.no_exigencia.ocorrencias_esperadas_vazia)\nconfirmar que a lista não é vazia, e antes de\n[`ocorrencias_esperadas_com_ids_duplicados`](/erros/uniplus.selecao.no_exigencia.ocorrencias_esperadas_com_ids_duplicados).\nSequencial: a primeira violação encontrada na criação do nó interrompe\no processamento; nunca acumula com nenhuma outra causa desta série.",
-        "Na leitura de uma versão publicada, um identificador em branco em `ocorrenciasEsperadas` é recusado antes como `envelope_codec.envelope_malformado`."
+        "Uma ocorrência esperada do documento não tem identificador. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
       ],
       "comoResolver": [
-        "Remova os identificadores vazios ou em branco da lista\n`ocorrenciasEsperadas`, ou preencha-os com o nome do slot que\nrepresentam."
+        "Informe identificadores não vazios para as ocorrências esperadas."
       ],
       "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo"
+        "Definição dos documentos exigidos do processo seletivo."
       ]
     },
     {
@@ -21988,14 +22017,13 @@
         "UNI-REQ-0068"
       ],
       "oQueAconteceu": [
-        "A lista `ocorrenciasEsperadas` de um nó folha repete o mesmo\nidentificador em mais de uma posição. Cada identificador nomeia um slot\ndistinto que uma apresentação precisa cobrir — repetido, não há um\nsegundo slot a mais, só uma redundância que confunde a contagem.",
-        "Roda depois de\n[`ocorrencias_esperadas_com_id_vazio`](/erros/uniplus.selecao.no_exigencia.ocorrencias_esperadas_com_id_vazio)\nconfirmar que nenhum identificador é vazio, e antes de\n[`ocorrencias_esperadas_quantidade_minima_divergente`](/erros/uniplus.selecao.no_exigencia.ocorrencias_esperadas_quantidade_minima_divergente).\nSequencial: a primeira violação encontrada na criação do nó interrompe\no processamento; nunca acumula com nenhuma outra causa desta série."
+        "Há ocorrências esperadas com o mesmo identificador. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
       ],
       "comoResolver": [
-        "Remova os identificadores repetidos da lista `ocorrenciasEsperadas`,\nmantendo cada slot uma única vez."
+        "Informe identificadores distintos para as ocorrências esperadas."
       ],
       "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo"
+        "Definição dos documentos exigidos do processo seletivo."
       ]
     },
     {
@@ -22004,15 +22032,13 @@
         "UNI-REQ-0068"
       ],
       "oQueAconteceu": [
-        "O campo `ocorrenciasEsperadas` de um nó folha foi informado, mas a\n`chaveDistincao` do nó não é `OCORRENCIA`. Cobre dois cenários:",
-        "- `chaveDistincao` está **ausente** — sem qualificação, não há slots\n  esperados a declarar.\n- `chaveDistincao` é uma chave de calendário\n  (`COMPETENCIA_MENSAL`/`EXERCICIO_ANUAL`) — essas chaves derivam os\n  slots a partir de\n  [`dataReferencia`](/erros/uniplus.selecao.no_exigencia.data_referencia_indevida_para_chave),\n  não de uma lista congelada.",
-        "Só `OCORRENCIA` usa `ocorrenciasEsperadas`, e mesmo assim como campo\nopcional — presente, exige slots concretos (cada um é uma apresentação\nobrigatória); ausente, cai em distinção pura (bastam N apresentações\ndiferentes, sem exigir quais). Sequencial: a primeira violação\nencontrada na criação do nó interrompe o processamento; nunca acumula\ncom nenhuma outra causa desta série."
+        "O documento informa ocorrências esperadas para outro critério de distinção. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
       ],
       "comoResolver": [
-        "Remova `ocorrenciasEsperadas` se `chaveDistincao` estiver ausente ou for\numa chave de calendário. Se a intenção era declarar uma lista fixa de\nocorrências esperadas, informe `chaveDistincao` como `OCORRENCIA`."
+        "Retire a lista ou escolha a distinção por ocorrência."
       ],
       "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo"
+        "Definição dos documentos exigidos do processo seletivo."
       ]
     },
     {
@@ -22021,14 +22047,13 @@
         "UNI-REQ-0068"
       ],
       "oQueAconteceu": [
-        "Um nó folha com `chaveDistincao` igual a `OCORRENCIA` e\n`ocorrenciasEsperadas` presente declara `quantidadeMinima` diferente do\nnúmero de identificadores da lista. Quando os slots são concretos (a\nlista está presente), cada um é uma apresentação obrigatória — a\ncardinalidade não é uma escolha independente, é derivada do tamanho da\nprópria lista.",
-        "É a última conferência do ramo `OCORRENCIA`, depois de\n[`ocorrencias_esperadas_vazia`](/erros/uniplus.selecao.no_exigencia.ocorrencias_esperadas_vazia),\n[`ocorrencias_esperadas_com_id_vazio`](/erros/uniplus.selecao.no_exigencia.ocorrencias_esperadas_com_id_vazio)\ne\n[`ocorrencias_esperadas_com_ids_duplicados`](/erros/uniplus.selecao.no_exigencia.ocorrencias_esperadas_com_ids_duplicados)\njá terem passado. Sequencial: a primeira violação encontrada na criação\ndo nó interrompe o processamento; nunca acumula com nenhuma outra causa\ndesta série."
+        "A quantidade mínima não coincide com o número de ocorrências esperadas. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
       ],
       "comoResolver": [
-        "Ajuste `quantidadeMinima` para ser igual ao número de identificadores em\n`ocorrenciasEsperadas`, ou ajuste a lista para ter o número de slots que\n`quantidadeMinima` de fato exige."
+        "Ajuste a quantidade ou a lista."
       ],
       "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo"
+        "Definição dos documentos exigidos do processo seletivo."
       ]
     },
     {
@@ -22037,14 +22062,13 @@
         "UNI-REQ-0068"
       ],
       "oQueAconteceu": [
-        "Um nó folha com `chaveDistincao` igual a `OCORRENCIA` declara\n`ocorrenciasEsperadas` como uma lista vazia. A chave `OCORRENCIA` admite\ndois modos — **presente**, com slots concretos a cobrir (cada\nidentificador é uma apresentação obrigatória), ou **ausente**, distinção\npura (bastam N apresentações diferentes, sem exigir quais). Uma lista\nvazia não é nenhum dos dois: não declara slot nenhum, mas também não é\na ausência que sinalizaria distinção pura.",
-        "Roda como a primeira conferência sobre `ocorrenciasEsperadas` dentro do\nramo `OCORRENCIA`, só quando o campo foi de fato informado (`null`\nsegue para o modo de distinção pura sem passar por aqui). Sequencial: a\nprimeira violação encontrada na criação do nó interrompe o\nprocessamento; nunca acumula com nenhuma outra causa desta série."
+        "A lista de ocorrências esperadas do documento está vazia. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
       ],
       "comoResolver": [
-        "Remova o campo `ocorrenciasEsperadas` para usar distinção pura, ou\ninforme ao menos um identificador de ocorrência esperada."
+        "Informe ao menos uma ocorrência esperada ou deixe a lista ausente."
       ],
       "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo"
+        "Definição dos documentos exigidos do processo seletivo."
       ]
     },
     {
@@ -22053,14 +22077,13 @@
         "UNI-REQ-0068"
       ],
       "oQueAconteceu": [
-        "O campo `quantidadeMinima` de um nó folha da árvore de satisfação de\ndocumentos é menor que 1, ou maior que 366. Em folha, `quantidadeMinima`\nconta **apresentações** distintas da mesma exigência — frente e verso do\nmesmo documento contam como uma apresentação só, não duas. O teto de 366\nnão é regra de negócio (o domínio não limita quantas apresentações uma\nexigência pode pedir) — é proteção operacional contra um valor\ndesproporcional que faria o cálculo de competências/exercícios (ver\n[`quantidade_minima_excede_janela_representavel`](/erros/uniplus.selecao.no_exigencia.quantidade_minima_excede_janela_representavel))\npercorrer um calendário absurdamente longo.",
-        "É a primeira conferência de cardinalidade dentro da criação de uma folha —\nroda antes de qualquer conferência sobre `chaveDistincao`. Sequencial: a\nprimeira violação encontrada na criação do nó interrompe o processamento\ndaquele nó; nunca acumula com nenhuma outra causa desta série."
+        "A quantidade mínima de apresentações do documento está fora dos limites permitidos. O campo da resposta indica a posição do item."
       ],
       "comoResolver": [
-        "Informe `quantidadeMinima` como um número inteiro entre 1 e 366, ou\nomita o campo para usar o padrão (1 apresentação). Um valor menor que 1\nno `PUT` responde com `uniplus.validacao`, não com este código — mas a\ncorreção é a mesma."
+        "Informe uma quantidade entre 1 e 366."
       ],
       "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo"
+        "Definição dos documentos exigidos do processo seletivo."
       ]
     },
     {
@@ -22069,14 +22092,13 @@
         "UNI-REQ-0068"
       ],
       "oQueAconteceu": [
-        "Um nó folha com `chaveDistincao` igual a `COMPETENCIA_MENSAL` ou\n`EXERCICIO_ANUAL` declara `quantidadeMinima` grande demais para o\ncalendário representável a partir de `dataReferencia`: as N unidades\nregulares (meses ou anos) imediatamente anteriores ou iguais à data de referência\nrecuariam antes do início do tipo de data usado internamente (ano 1, mês\n1\\) — um ponto que nenhuma data de referência real alcança, mas que o cálculo\nprecisa proteger.",
-        "É a última conferência do ramo de chave de calendário, depois de\n[`data_referencia_obrigatoria_para_chave_calendario`](/erros/uniplus.selecao.no_exigencia.data_referencia_obrigatoria_para_chave_calendario)\ne de\n[`ocorrencias_esperadas_indevidas_para_chave`](/erros/uniplus.selecao.no_exigencia.ocorrencias_esperadas_indevidas_para_chave)\njá terem passado — só é conferida quando já existe `dataReferencia` para\ncalcular o período a partir dela. Sequencial: a primeira violação encontrada\nna criação do nó interrompe o processamento; nunca acumula com nenhuma\noutra causa desta série."
+        "A quantidade mínima alcança datas anteriores ao início do calendário. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
       ],
       "comoResolver": [
-        "Reduza `quantidadeMinima` ou informe uma `dataReferencia` mais recente,\nde modo que as N unidades regulares anteriores à data de referência caibam dentro do\ncalendário. Na prática, isso só ocorre com datas de referência\nextremamente antigas combinadas a quantidades muito grandes."
+        "Reduza a quantidade ou escolha outra data de referência."
       ],
       "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo"
+        "Definição dos documentos exigidos do processo seletivo."
       ]
     },
     {
@@ -22085,14 +22107,13 @@
         "UNI-REQ-0067"
       ],
       "oQueAconteceu": [
-        "Um nó grupo com `tipo` igual a `OU` declara `quantidadeMinima` menor que\n1, ou maior que o número de filhos do próprio grupo. Em `OU`/N-de,\n`quantidadeMinima` conta quantos filhos precisam estar satisfeitos para\no grupo inteiro ser satisfeito — pedir menos de 1 não exige nada, e\npedir mais do que existem filhos é uma exigência que nenhuma combinação\nde respostas jamais cumpre.",
-        "Diferente de um grupo `E` (que nunca tem cardinalidade própria — ver\n[`quantidade_minima_proibida_em_grupo_e`](/erros/uniplus.selecao.no_exigencia.quantidade_minima_proibida_em_grupo_e)),\nesta é a conferência de cardinalidade do ramo `OU`. Roda como a primeira\nconferência específica desse ramo. Sequencial: nunca acumula com nenhuma\noutra causa desta série."
+        "A quantidade mínima do grupo (\"OU\") está fora dos limites permitidos. O campo da resposta indica a posição do item."
       ],
       "comoResolver": [
-        "Ajuste `quantidadeMinima` para um valor entre 1 e o número de filhos do\ngrupo, inclusive. Um valor menor que 1 no `PUT` responde com\n`uniplus.validacao`, não com este código — mas a correção é a mesma."
+        "Informe uma quantidade entre 1 e o número de itens do grupo."
       ],
       "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo"
+        "Definição dos documentos exigidos do processo seletivo."
       ]
     },
     {
@@ -22101,14 +22122,13 @@
         "UNI-REQ-0067"
       ],
       "oQueAconteceu": [
-        "Um nó grupo com `tipo` igual a `E` declara `quantidadeMinima`. Um grupo\n`E` é transparente: todos os filhos precisam ser satisfeitos, sem\nexceção — não há \"quantos filhos bastam\" a configurar, porque a resposta\né sempre \"todos\". Só o grupo `OU`/N-de tem cardinalidade própria (quantos\ndos filhos satisfazem a exigência).",
-        "Roda dentro do ramo específico de `E`, depois das conferências estruturais\ncomuns aos dois tipos de grupo (\n[`grupo_vazio`](/erros/uniplus.selecao.no_exigencia.grupo_vazio),\n[`arvore_com_ciclo`](/erros/uniplus.selecao.no_exigencia.arvore_com_ciclo),\n[`grupo_com_fases_diferentes`](/erros/uniplus.selecao.no_exigencia.grupo_com_fases_diferentes)\ne\n[`repeticao_de_entidade_aninhada`](/erros/uniplus.selecao.no_exigencia.repeticao_de_entidade_aninhada)).\nÉ a primeira conferência de transparência do grupo `E`, antes de\n[`consequencia_proibida_em_grupo_e`](/erros/uniplus.selecao.no_exigencia.consequencia_proibida_em_grupo_e)\ne\n[`base_legal_proibida_em_grupo_e`](/erros/uniplus.selecao.no_exigencia.base_legal_proibida_em_grupo_e).\nSequencial: nunca acumula com nenhuma outra causa desta série."
+        "O grupo exige todos os itens (\"E\"), mas informa uma quantidade mínima. O campo da resposta indica a posição do item."
       ],
       "comoResolver": [
-        "Remova `quantidadeMinima` de todo nó com `tipo: \"E\"`. Se a intenção era\nexigir só uma parte dos filhos, declare o grupo como `OU`/N-de."
+        "Retire a quantidade mínima."
       ],
       "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo"
+        "Definição dos documentos exigidos do processo seletivo."
       ]
     },
     {
@@ -22134,15 +22154,13 @@
         "UNI-REQ-0069"
       ],
       "oQueAconteceu": [
-        "Um nó grupo com `repetePorEntidade` declarado tem, entre seus\ndescendentes (em qualquer profundidade), outro nó que também declara\n`repetePorEntidade`. Uma subárvore marcada como repetível já avalia toda\na sua própria descendência uma vez por instância da entidade — marcar um\ndescendente dela como repetível de novo não tem semântica clara: por\nqual entidade a repetição interna repetiria?",
-        "Como as conferências de ciclo e de fase comum, precisa olhar a árvore\ninteira, não só o nó sendo criado — a construção é bottom-up (filhos e\ngrupos já existem prontos quando o pai é criado), então checar os\ndescendentes já construídos é suficiente para pegar qualquer combinação\nde profundidade: o nó marcado mais próximo da raiz é sempre o último a\nser criado.\nSequencial: a primeira violação encontrada na criação do nó interrompe o\nprocessamento; nunca acumula com nenhuma outra causa desta série.",
-        "Esta recusa pode ocorrer na definição dos documentos exigidos quando há repetição de entidade dentro de outra repetição."
+        "O grupo repete itens que já se repetem por outro grupo. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
       ],
       "comoResolver": [
-        "Remova `repetePorEntidade` de um dos dois nós — o mais externo (mais\npróximo da raiz) ou os descendentes marcados — de modo que só um nó por\nsubárvore declare o tipo de entidade que repete."
+        "Retire uma das repetições."
       ],
       "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo"
+        "Definição dos documentos exigidos do processo seletivo."
       ]
     },
     {
@@ -22152,18 +22170,28 @@
         "UNI-REQ-0146"
       ],
       "oQueAconteceu": [
-        "Um nó da árvore de documentos exigidos (folha ou grupo) declara\n`repetePorEntidade`, mas o valor não é o código de nenhum grupo\nrepetível dos formulários do processo.",
-        "A exigência repetida por entidade (UNI-REQ-0069) é pedida uma vez por\nocorrência de uma lista coletada no formulário — por exemplo, um\ndocumento por membro da composição familiar (UNI-REQ-0146). O campo\n`repetePorEntidade` nomeia essa lista pelo **código do grupo**, o mesmo\ncódigo declarado no grupo do formulário. A lista de pessoas jurídicas\nvinculadas ao candidato também é um grupo do formulário, declarado pelo\nprocesso como qualquer outro; não há tipo de entidade fixo.",
-        "A conferência acontece em dois momentos:",
-        "- **Na definição dos documentos exigidos**, antes de qualquer recusa do\n  gatilho que cite um campo do grupo.\n- **Na publicação e na retificação**, porque o grupo pode ter sido\n  retirado do formulário depois que a exigência foi definida. O mesmo\n  item aparece no checklist de conformidade."
+        "O grupo de repetição informado não existe nos formulários do processo. O campo da resposta indica a posição do item."
       ],
       "comoResolver": [
-        "- Use o código de um grupo repetível que já está num formulário do\n  processo (o `codigo` do grupo no formulário, como `COMPOSICAO_FAMILIAR`).\n- Se a lista ainda não existe, declare primeiro o grupo no formulário da\n  finalidade em que ela é coletada, com os campos de que o gatilho\n  precisa, e depois defina a exigência.\n- Se o grupo foi retirado do formulário, devolva-o ou retire a\n  repetição da exigência.",
-        "O grupo também precisa ser conhecido até a fase em que o documento é\nexigido: repetir, numa exigência da inscrição, por um grupo coletado só\nna habilitação é recusado com\n`uniplus.selecao.documento_exigido.fato_resolvido_em_fase_posterior`."
+        "Escolha um grupo existente nos formulários do processo ou retire a repetição."
       ],
       "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo",
-        "Publicação e retificação do processo seletivo"
+        "Definição dos documentos exigidos do processo seletivo."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.no_exigencia.tipo_invalido",
+      "requisitos": [
+        "UNI-REQ-0067"
+      ],
+      "oQueAconteceu": [
+        "O tipo do item da lista de documentos exigidos não é reconhecido. O campo da resposta indica a posição do item."
+      ],
+      "comoResolver": [
+        "Escolha \"FOLHA\" para um documento, \"E\" para exigir todos os itens ou \"OU\" para exigir uma quantidade deles."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo."
       ]
     },
     {

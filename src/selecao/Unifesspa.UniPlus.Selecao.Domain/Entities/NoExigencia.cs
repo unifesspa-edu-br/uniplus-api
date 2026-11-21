@@ -67,10 +67,13 @@ public sealed class NoExigencia : EntityBase, IParteDoProcesso
         {
             return OrdemInvalida();
         }
-        return quantidade < 1 || quantidade > QuantidadeMinimaDeFolhaMaxima
-            ? new("NoExigencia.QuantidadeMinimaDeFolhaInvalida",
-                $"A quantidade mínima de apresentações deve estar entre 1 e {QuantidadeMinimaDeFolhaMaxima}.") : null;
+        return RecusaDaQuantidadeDaFolha(quantidade);
     }
+
+    internal static DomainError? RecusaDaQuantidadeDaFolha(int quantidade) =>
+        quantidade < 1 || quantidade > QuantidadeMinimaDeFolhaMaxima
+            ? new("NoExigencia.QuantidadeMinimaDeFolhaInvalida",
+                $"A quantidade mínima de apresentações deste documento está fora dos limites. Informe um valor entre 1 e {QuantidadeMinimaDeFolhaMaxima}.") : null;
 
     private static NoExigencia NovaFolha(
         DocumentoExigido documento, int ordem, int? quantidadeMinima, DistincaoDasApresentacoes? distincao, string? repetePorEntidade) => new()
@@ -99,6 +102,13 @@ public sealed class NoExigencia : EntityBase, IParteDoProcesso
         Result<CombinacaoDoGrupo> combinacao = CombinacaoDoGrupo.Declarar(tipo, quantidadeMinima, consequencia, filhos.Count, basesLegais.Count > 0);
         return combinacao.IsFailure ? Result<NoExigencia>.Failure(combinacao.Error!)
             : Result<NoExigencia>.Success(NovoGrupo(ordem, combinacao.Value!, basesLegais, filhos, repetePorEntidade?.Trim()));
+    }
+
+    /// <summary>Confere as relações entre os itens já montados de um grupo.</summary>
+    public static IReadOnlyList<FieldError> ConferirComposicao(IReadOnlyList<NoExigencia> filhos, string? repetePorEntidade)
+    {
+        ArgumentNullException.ThrowIfNull(filhos);
+        return ComposicaoDoGrupo.Recusas(filhos, repetePorEntidade);
     }
 
     private static void ConferirTipoDeGrupo(TipoNo tipo)

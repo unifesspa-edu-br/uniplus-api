@@ -1,0 +1,7 @@
+# Colisão de códigos no quadro da Lei de Cotas
+
+A recusa `ConfiguracaoDistribuicaoVagas.QuadroChaveColide` protege a calculadora quando chamada diretamente com uma retirada ou um suplemento que usa um código reservado às cotas federais ou à ampla concorrência. Esse cenário não é alcançável pelo PUT da distribuição de vagas, enquanto o catálogo legal fixo mantém sua integridade, e por isso o código não é publicado no catálogo HTTP.
+
+O PUT recebe identificadores de modalidades. `ResolucaoDaDistribuicao` lê código e composição pelo cadastro, e `MontagemDoQuadroDeVagas` entrega à calculadora como retiradas ou suplementos apenas as modalidades com essas composições. O seed define AC como restante das vagas e as oito cotas federais como parte da reserva legal. Seus códigos são reservados: a criação e a remoção pelo cadastro são recusadas, e o agregado impede alterar a composição das modalidades legais fixas.
+
+A guarda continua na calculadora para chamadas internas diretas. O teste `CatalogoLegalDeModalidadesTests` confere que os códigos federais de Seleção pertencem ao conjunto protegido de Configuração; `ModalidadeCadastroInicialTests.Seed_ModalidadesFederais_PresentesEVivas` confere as composições semeadas, e `ModalidadeProtecaoDoCatalogoLegalFixoTests.Atualizar_LegalFixaComposicao_Recusa` confere a proteção da composição. Uma mudança no cadastro ou no caminho de resolução exige reavaliar essa conclusão.

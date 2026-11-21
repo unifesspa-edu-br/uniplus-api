@@ -13,7 +13,7 @@ public sealed class CombinacaoDoGrupoTests
     {
         Result<CombinacaoDoGrupo> resultado = CombinacaoDoGrupo.Declarar(TipoNo.GrupoE, 1, null, 1, false);
 
-        resultado.Error!.Message.Should().Be("Não informe a quantidade mínima de documentos para um grupo E.");
+        resultado.Error!.Message.Should().Be("Este grupo exige todos os itens (\"E\"), mas informa uma quantidade mínima. Retire a quantidade mínima.");
     }
 
     [Theory]

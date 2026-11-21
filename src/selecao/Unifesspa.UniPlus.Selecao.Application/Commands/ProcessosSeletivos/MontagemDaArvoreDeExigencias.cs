@@ -16,31 +16,87 @@ using Kernel.Results;
 internal sealed class MontagemDaArvoreDeExigencias(MontagemDoDocumentoExigido documentos)
 {
     public async Task<Result<List<NoExigencia>>> MontarRaizesAsync(
-        IReadOnlyList<NoExigenciaInput> entradas, int ordemInicial, CancellationToken cancellationToken)
+        IReadOnlyList<NoDeEntradaConferido> entradas, int ordemInicial, CancellationToken cancellationToken)
     {
-        List<NoExigencia> raizes = [];
-        int ordem = ordemInicial;
-        foreach (NoExigenciaInput entrada in entradas)
-        {
-            Result<NoExigencia> raiz = await NoAsync(entrada, ordem++, grupoAncestral: null, cancellationToken).ConfigureAwait(false);
-            if (raiz.IsFailure)
-            {
-                return Result<List<NoExigencia>>.ValidationFailure(raiz.Errors);
-            }
-
-            raizes.Add(raiz.Value!);
-        }
-
-        return Result<List<NoExigencia>>.Success(raizes);
+        NosMontados montados = await MontarNosAsync(entradas, ordemInicial, null, false, cancellationToken).ConfigureAwait(false);
+        return montados.Recusas.Count > 0
+            ? Result<List<NoExigencia>>.ValidationFailure(montados.Recusas) : Result<List<NoExigencia>>.Success(montados.Nos);
     }
 
-    private Task<Result<NoExigencia>> NoAsync(
-        NoExigenciaInput no, int ordem, string? grupoAncestral, CancellationToken cancellationToken)
+    private async Task<NosMontados> MontarNosAsync(
+        IReadOnlyList<NoDeEntradaConferido> entradas, int ordemInicial, string? grupoAncestral, bool repeticaoRecusada, CancellationToken cancellationToken)
     {
-        string? grupoDaRepeticao = grupoAncestral ?? no.RepetePorEntidade;
-        return ArvoreDeEntradaDasExigencias.EhFolha(no)
-            ? FolhaAsync(no, ordem, grupoDaRepeticao, cancellationToken)
-            : GrupoAsync(no, ordem, grupoDaRepeticao, cancellationToken);
+        NosMontados montados = new();
+        for (int indice = 0; indice < entradas.Count; indice++)
+        {
+            NoMontado no = await NoAsync(entradas[indice], ordemInicial + indice, grupoAncestral, repeticaoRecusada, cancellationToken)
+                .ConfigureAwait(false);
+            montados.Adicionar(no);
+        }
+        return montados;
+    }
+
+    private async Task<NoMontado> NoAsync(
+        NoDeEntradaConferido no, int ordem, string? grupoAncestral, bool repeticaoRecusada, CancellationToken cancellationToken)
+    {
+        bool recusada = repeticaoRecusada || NoDeEntradaConferido.RepeticaoRecusada(no);
+        string? grupo = grupoAncestral ?? (recusada ? null : no.Entrada.RepetePorEntidade);
+        NosMontados filhos = await MontarNosAsync(no.Filhos, 0, grupo, recusada, cancellationToken).ConfigureAwait(false);
+        List<FieldError> erros = [.. no.Recusas, .. filhos.Recusas];
+        erros.AddRange(RecusasDaComposicao(no, filhos));
+        if (erros.Count > 0 || !filhos.TodosMontados)
+        {
+            return new(null, erros);
+        }
+        return await MontarNoConferidoAsync(no, ordem, grupo, recusada, filhos.Nos, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static IEnumerable<FieldError> RecusasDaComposicao(NoDeEntradaConferido no, NosMontados filhos)
+    {
+        if (!filhos.TodosMontados || filhos.Nos.Count == 0 || no.Declaracao.Tipo is not (TipoNo.GrupoE or TipoNo.GrupoOu))
+        {
+            return [];
+        }
+        string? repeticao = NoDeEntradaConferido.RepeticaoRecusada(no) ? null : no.Entrada.RepetePorEntidade;
+        return NoExigencia.ConferirComposicao(filhos.Nos, repeticao).Select(erro => NoItem(erro, no.Caminho, no.Indice));
+    }
+
+    private async Task<NoMontado> MontarNoConferidoAsync(
+        NoDeEntradaConferido no, int ordem, string? grupo, bool repeticaoRecusada, List<NoExigencia> filhos, CancellationToken cancellationToken)
+    {
+        if (no.Declaracao.Tipo == TipoNo.Folha && repeticaoRecusada && no.Entrada.Documento?.Condicoes().Count > 0)
+        {
+            return new(null, []);
+        }
+        Result<NoExigencia> resultado = no.Declaracao.Tipo == TipoNo.Folha
+            ? await FolhaAsync(no.Entrada, ordem, grupo, cancellationToken).ConfigureAwait(false)
+            : CriarGrupo(no.Entrada, ordem, no.Declaracao, filhos);
+        return resultado.IsFailure ? new(null, resultado.Errors) : new(resultado.Value, []);
+    }
+
+    private static FieldError NoItem(FieldError erro, string caminho, int indice) =>
+        erro.NoCaminhoDe(caminho) with { Error = erro.Error with { Message = $"No item {indice + 1} da lista: {erro.Error.Message}" } };
+
+    private sealed record NoMontado(NoExigencia? No, IReadOnlyList<FieldError> Recusas);
+
+    private sealed class NosMontados
+    {
+        internal List<NoExigencia> Nos { get; } = [];
+        internal List<FieldError> Recusas { get; } = [];
+        internal bool TodosMontados { get; private set; } = true;
+
+        internal void Adicionar(NoMontado no)
+        {
+            Recusas.AddRange(no.Recusas);
+            if (no.No is { } montado)
+            {
+                Nos.Add(montado);
+            }
+            else
+            {
+                TodosMontados = false;
+            }
+        }
     }
 
     private async Task<Result<NoExigencia>> FolhaAsync(
@@ -48,7 +104,7 @@ internal sealed class MontagemDaArvoreDeExigencias(MontagemDoDocumentoExigido do
     {
         if (no.Documento is not { } folha)
         {
-            return Result<NoExigencia>.Failure(DocumentoAusenteNaFolha());
+            return Result<NoExigencia>.ValidationFailure(DeclaracaoDoNoDeExigencia.Interpretar(no.Tipo, temDocumento: false, no.Filhos?.Count ?? 0, no.QuantidadeMinima(), no.ConsequenciaDoGrupo(), no.BasesLegaisDoGrupo().Count > 0, DistincaoDe(no)).Recusas);
         }
 
         Result<DocumentoExigido> documento = await documentos.MontarAsync(folha, grupoDaRepeticao, cancellationToken).ConfigureAwait(false);
@@ -57,75 +113,33 @@ internal sealed class MontagemDaArvoreDeExigencias(MontagemDoDocumentoExigido do
             : CriarFolha(no, documento.Value!, ordem);
     }
 
-    private static Result<NoExigencia> CriarFolha(NoExigenciaInput no, DocumentoExigido documento, int ordem) =>
-        NoExigencia.CriarFolha(
-            documento,
-            ordem,
-            no.QuantidadeMinima(),
-            no.Distincao()?.Chave is { } chave ? ChaveDistincaoCodigo.FromCodigo(chave) : null,
-            no.Distincao()?.DataReferencia,
-            no.Distincao()?.OcorrenciasEsperadas,
-            no.RepetePorEntidade);
-
-    private async Task<Result<NoExigencia>> GrupoAsync(
-        NoExigenciaInput no, int ordem, string? grupoDaRepeticao, CancellationToken cancellationToken)
+    private static Result<NoExigencia> CriarFolha(NoExigenciaInput no, DocumentoExigido documento, int ordem)
     {
-        TipoNo tipo = TipoDoGrupo(no.Tipo);
-        if (tipo == TipoNo.Nenhum)
-        {
-            return Result<NoExigencia>.Failure(TipoDeNoInvalido(no.Tipo));
-        }
-
-        Result<List<NoExigencia>> filhos = await FilhosAsync(no, grupoDaRepeticao, cancellationToken).ConfigureAwait(false);
-        return filhos.IsFailure
-            ? Result<NoExigencia>.ValidationFailure(filhos.Errors)
-            : CriarGrupo(no, tipo, ordem, filhos.Value!);
+        DeclaracaoDoNoDeExigencia declaracao = Declarar(no);
+        return NoExigencia.CriarFolha(documento, ordem, declaracao.QuantidadeMinima,
+            no.Distincao()?.Chave is { } chave ? ChaveDistincaoCodigo.FromCodigo(chave) : null,
+            no.Distincao()?.DataReferencia, no.Distincao()?.OcorrenciasEsperadas, no.RepetePorEntidade);
     }
 
-    private static Result<NoExigencia> CriarGrupo(NoExigenciaInput no, TipoNo tipo, int ordem, List<NoExigencia> filhos)
+    private static Result<NoExigencia> CriarGrupo(NoExigenciaInput no, int ordem, DeclaracaoDoNoDeExigencia declaracao, IReadOnlyList<NoExigencia> filhos)
     {
         Result<IReadOnlyList<NoExigenciaBaseLegal>> basesLegais = BasesLegaisDoGrupo(no.BasesLegaisDoGrupo());
         return basesLegais.IsFailure
             ? Result<NoExigencia>.ValidationFailure(basesLegais.Errors)
             : NoExigencia.CriarGrupo(
-                tipo, ordem, no.QuantidadeMinima(), no.ConsequenciaDoGrupo(), basesLegais.Value!, filhos, no.RepetePorEntidade);
+                declaracao.Tipo, ordem, declaracao.QuantidadeMinima, declaracao.Consequencia, basesLegais.Value!, filhos, no.RepetePorEntidade);
     }
 
-    private static TipoNo TipoDoGrupo(string tipo) => tipo switch
-    {
-        "E" => TipoNo.GrupoE,
-        "OU" => TipoNo.GrupoOu,
-        _ => TipoNo.Nenhum,
-    };
-
-    private static DomainError DocumentoAusenteNaFolha() =>
-        new("NoExigencia.DocumentoObrigatorioEmFolha", "Um nó do tipo FOLHA precisa declarar 'documento'.");
-
-    private static DomainError TipoDeNoInvalido(string tipo) =>
-        new("NoExigencia.TipoInvalido", $"Tipo de nó '{tipo}' inválido — esperado FOLHA, E ou OU.");
-
-    private async Task<Result<List<NoExigencia>>> FilhosAsync(
-        NoExigenciaInput grupo, string? grupoDaRepeticao, CancellationToken cancellationToken)
-    {
-        List<NoExigencia> filhos = [];
-        int ordem = 0;
-        foreach (NoExigenciaInput filhoInput in grupo.Filhos ?? [])
-        {
-            Result<NoExigencia> filho = await NoAsync(filhoInput, ordem++, grupoDaRepeticao, cancellationToken).ConfigureAwait(false);
-            if (filho.IsFailure)
-            {
-                return Result<List<NoExigencia>>.ValidationFailure(filho.Errors);
-            }
-
-            filhos.Add(filho.Value!);
-        }
-
-        return Result<List<NoExigencia>>.Success(filhos);
-    }
+    private static DeclaracaoDoNoDeExigencia Declarar(NoExigenciaInput no) =>
+        DeclaracaoDoNoDeExigencia.Interpretar(no.Tipo, no.Documento is not null, no.Filhos?.Count ?? 0,
+            no.QuantidadeMinima(), no.ConsequenciaDoGrupo(), no.BasesLegaisDoGrupo().Count > 0, DistincaoDe(no));
 
     private static Result<IReadOnlyList<NoExigenciaBaseLegal>> BasesLegaisDoGrupo(IReadOnlyList<BaseLegalInput> declaradas) =>
         EscritaDasBasesLegais.Resolver(
             declaradas,
             static b => NoExigenciaBaseLegal.ValidarFormaBasica(b.Referencia, EscritaDasBasesLegais.Abrangencia(b), EscritaDasBasesLegais.Status(b)),
             static b => NoExigenciaBaseLegal.Criar(b.Referencia, EscritaDasBasesLegais.Abrangencia(b), EscritaDasBasesLegais.Status(b), b.Observacao).Value!);
+    private static DistincaoDeclarada DistincaoDe(NoExigenciaInput no) =>
+        DistincaoDeclarada.Interpretar(no.Distincao()?.Chave, no.Distincao()?.DataReferencia, no.Distincao()?.OcorrenciasEsperadas);
+
 }
