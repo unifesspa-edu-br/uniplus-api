@@ -1427,6 +1427,52 @@
           "retryable": {
             "type": "boolean",
             "description": "Presente e \u0060true\u0060 quando o conflito descreve uma corrida que j\u00E1 passou: a mesma requisi\u00E7\u00E3o, repetida sem altera\u00E7\u00E3o, pode agora ser aceita. A aus\u00EAncia \u00E9 o default conservador do servidor \u2014 diz que o conflito n\u00E3o foi declarado retent\u00E1vel, n\u00E3o que repetir esteja descartado; nesse caso vale a descri\u00E7\u00E3o da pr\u00F3pria resposta."
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "required": [
+                "code",
+                "message"
+              ],
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string",
+                  "description": "O campo que a viola\u00E7\u00E3o aponta, em nota\u00E7\u00E3o de pontos e colchetes ou como ponteiro JSON quando o corpo \u00E9 um documento. Ausente quando a viola\u00E7\u00E3o n\u00E3o \u00E9 de campo."
+                },
+                "code": {
+                  "type": "string",
+                  "description": "O c\u00F3digo publicado do erro."
+                },
+                "message": {
+                  "type": "string",
+                  "description": "A mensagem do erro, que nunca repete o valor recusado."
+                },
+                "identificadores": {
+                  "type": "array",
+                  "items": {
+                    "required": [
+                      "lista",
+                      "identificador"
+                    ],
+                    "type": "object",
+                    "properties": {
+                      "lista": {
+                        "type": "string",
+                        "description": "O nome da lista, como aparece no caminho do campo."
+                      },
+                      "identificador": {
+                        "type": "string",
+                        "description": "O identificador est\u00E1vel do item: um c\u00F3digo de cat\u00E1logo ou um identificador opaco, nunca dado pessoal."
+                      }
+                    }
+                  },
+                  "description": "O identificador est\u00E1vel de cada item de lista que o campo atravessa, na ordem do caminho, para achar o item mesmo depois de outra grava\u00E7\u00E3o mudar as posi\u00E7\u00F5es. Ausente quando a viola\u00E7\u00E3o n\u00E3o aponta item com identificador; o identificador que j\u00E1 n\u00E3o existe n\u00E3o aponta outro item."
+                }
+              }
+            },
+            "description": "Uma entrada por viola\u00E7\u00E3o, quando a resposta re\u00FAne mais de uma ou quando alguma aponta um campo. A primeira \u00E9 a que descreve a resposta inteira."
           }
         }
       },

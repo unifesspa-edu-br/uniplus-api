@@ -63,9 +63,13 @@ public sealed class ConferenciaDaConfiguracaoAoCongelar(
         Result<ConfiguracaoConferida> conferida = await JulgarAConfiguracaoAsync(processo, edital, ato, origem, cancellationToken).ConfigureAwait(false);
 
         return conferida.IsFailure
-            ? Result<ConfiguracaoConferida>.ValidationFailure(PonteiroNoDocumento.Converter(conferida.Errors, processo.Declaracao().Origem))
+            ? Result<ConfiguracaoConferida>.ValidationFailure(NoDocumento(conferida.Errors, processo.Declaracao()))
             : conferida;
     }
+
+    // Os identificadores se tiram antes da conversão, porque leem o índice canônico que a causa emitiu e o ponteiro o troca pela posição de origem.
+    private static IReadOnlyList<FieldError> NoDocumento(IReadOnlyList<FieldError> causas, ConfiguracaoDeclarada declaracao) =>
+        PonteiroNoDocumento.Converter(IdentificacaoDosItensDaCausa.Identificar(causas, declaracao), declaracao.Origem);
 
     private async Task<Result<ConfiguracaoConferida>> JulgarAConfiguracaoAsync(
         ProcessoSeletivo processo,

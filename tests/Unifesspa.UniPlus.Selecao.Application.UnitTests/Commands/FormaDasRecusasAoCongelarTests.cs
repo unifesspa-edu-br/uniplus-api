@@ -71,7 +71,11 @@ public sealed class FormaDasRecusasAoCongelarTests
         (Result resposta, IEnumerable<object> eventos) = await servicos.PublicarAsync(ComandoDePublicacao(processo));
 
         esperado.Errors.Should().HaveCountGreaterThan(1);
-        resposta.Errors.Should().Equal(PonteiroNoDocumento.Converter(esperado.Errors, OrigemNoDocumento.Identidade));
+        resposta.Errors.Should().BeEquivalentTo(
+            PonteiroNoDocumento.Converter(IdentificacaoDosItensDaCausa.Identificar(esperado.Errors, processo.Declaracao()), OrigemNoDocumento.Identidade),
+            static opcoes => opcoes.WithStrictOrdering());
+        resposta.Errors.Single(static e => e.Error.Code == "FaseCronograma.UnidadeResponsavelNaoEncontrada").Identificadores.Should().Equal(
+            new IdentificadorDoItem("fases", processo.CronogramaFases.Single().Codigo));
         eventos.Should().BeEmpty();
     }
 

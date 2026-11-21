@@ -20,10 +20,10 @@ public sealed class RecursoNaOpenApiTests
     [InlineData("/api/selecao/guardas-da-vaga", "GuardaDaVagaComDescricao", true)]
     public void Vocabulario_EstaNosCaminhosEDevolveALista(string caminho, string componente, bool comDescricao)
     {
-        JsonObject? operacoes = Baseline["paths"]![caminho]?.AsObject();
+        JsonObject operacoes = Baseline["paths"]![caminho]?.AsObject()
+            ?? throw new InvalidOperationException($"{caminho} não está em paths.");
 
-        operacoes.Should().NotBeNull($"{caminho} está em paths");
-        operacoes!.Select(static o => o.Key).Should().Equal("get");
+        operacoes.Select(static o => o.Key).Should().Equal("get");
         operacoes["get"]!.ToJsonString().Should().Contain($"#/components/schemas/{componente}");
         Componentes[componente]!["required"]!.AsArray().Select(static n => n!.GetValue<string>()).Should().Equal(comDescricao ? ["codigo", "rotulo", "descricao"] : ["codigo", "rotulo"]);
     }
@@ -43,5 +43,16 @@ public sealed class RecursoNaOpenApiTests
     {
         Componentes["UnidadePrazoCodigo"]!["type"]!.GetValue<string>().Should().Be("string");
         Componentes["UnidadePrazoCodigo"]!["enum"]!.AsArray().Select(static n => n!.GetValue<string>()).Should().Contain(["horas", "diasUteis"]);
+    }
+
+    [Fact(DisplayName = "O erro do problema publica a lista de erros com o campo, o código, a mensagem e a identificação do item")]
+    public void ProblemDetails_PublicaAIdentificacaoDoItem()
+    {
+        JsonNode erro = Componentes["ProblemDetails"]!["properties"]!["errors"]!["items"]!;
+        JsonNode identificador = erro["properties"]!["identificadores"]!["items"]!;
+
+        erro["required"]!.AsArray().Select(static n => n!.GetValue<string>()).Should().Equal("code", "message");
+        erro["properties"]!.AsObject().Select(static p => p.Key).Should().Equal("field", "code", "message", "identificadores");
+        identificador["required"]!.AsArray().Select(static n => n!.GetValue<string>()).Should().Equal("lista", "identificador");
     }
 }
