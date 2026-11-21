@@ -73,21 +73,26 @@ public sealed class MotivoDeDecisaoRepository : IMotivoDeDecisaoRepository
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
 
-        // Um código fora do formato nunca corresponde a motivo algum. A comparação é pelo value
-        // object inteiro, e não por `.Valor`: o código é persistido por conversor, e o EF não traduz
-        // o acesso à propriedade interna.
+        // Um código fora do formato nunca corresponde a motivo algum.
         Result<CodigoMotivoDecisao> codigoResult = CodigoMotivoDecisao.Criar(codigo);
         if (codigoResult.IsFailure)
         {
             return false;
         }
 
-        CodigoMotivoDecisao codigoVo = codigoResult.Value!;
-        return await _context.MotivosDeDecisao
-            .AsNoTracking()
-            .AnyAsync(m => m.Tipo == tipo && m.Codigo == codigoVo, cancellationToken)
-            .ConfigureAwait(false);
+        return await ExisteMotivoDoTipoComCodigoAsync(tipo, codigoResult.Value!, cancellationToken).ConfigureAwait(false);
     }
+
+    // A comparação é pelo value object inteiro, e não por `.Valor`: o código é persistido por
+    // conversor, e o EF não traduz o acesso à propriedade interna.
+    private async Task<bool> ExisteMotivoDoTipoComCodigoAsync(
+        TipoMotivoDeDecisao tipo,
+        CodigoMotivoDecisao codigo,
+        CancellationToken cancellationToken) =>
+        await _context.MotivosDeDecisao
+            .AsNoTracking()
+            .AnyAsync(m => m.Tipo == tipo && m.Codigo == codigo, cancellationToken)
+            .ConfigureAwait(false);
 
     private static IQueryable<MotivoDeDecisao> Filtrar(IQueryable<MotivoDeDecisao> query, FiltroDosMotivos filtro)
     {
