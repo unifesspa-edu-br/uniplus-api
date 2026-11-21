@@ -7,7 +7,8 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Monta o predicado da entrada: o OU de cláusulas, cada uma o E de condições. A lista nula ou vazia
-/// é o predicado sem cláusula; a cláusula vazia e a condição nula são recusadas.
+/// é o predicado sem cláusula; a cláusula vazia e a condição nula são recusadas. As recusas de todas as
+/// cláusulas e condições saem acumuladas, cada uma no seu caminho <c>[cláusula][condição].campo</c>.
 /// </summary>
 internal static class MontagemDoPredicado
 {
@@ -18,11 +19,14 @@ internal static class MontagemDoPredicado
         Result<List<(int Clausula, CondicaoDnf Condicao)>> linhas = EntradaDeRegras.Condicoes(Entrada(quando));
         if (linhas.IsFailure)
         {
-            return Result<PredicadoDnf>.Failure(linhas.Errors[0].Error.Code == PredicadoDnfErrorCodes.CondicaoNula ? condicaoNula : linhas.Error!);
+            return Result<PredicadoDnf>.ValidationFailure([.. linhas.Errors.Select(recusa => TraduzirCondicaoNula(recusa, condicaoNula))]);
         }
 
         return PredicadoDnf.CriarDeCondicoesAgrupadas(linhas.Value!);
     }
+
+    private static FieldError TraduzirCondicaoNula(FieldError recusa, DomainError condicaoNula) =>
+        recusa.Error.Code == PredicadoDnfErrorCodes.CondicaoNula ? recusa with { Error = condicaoNula } : recusa;
 
     private static IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput?>?> Entrada(
         IReadOnlyList<IReadOnlyList<CondicaoDoPredicadoInput>>? quando) =>

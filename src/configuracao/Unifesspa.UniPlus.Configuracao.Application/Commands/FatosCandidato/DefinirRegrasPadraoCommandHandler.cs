@@ -60,7 +60,7 @@ public static class DefinirRegrasPadraoCommandHandler
             Result<RegraDerivacao> regra = MontarRegra(entradas[i]);
             if (regra.IsFailure)
             {
-                erros.AddRange(regra.Errors.Select(e => new FieldError($"regras[{i}]", e.Error)));
+                erros.AddRange(regra.Errors.Select(e => new FieldError($"regras[{i}]{e.Field}", e.Error)));
             }
             else
             {
@@ -83,7 +83,7 @@ public static class DefinirRegrasPadraoCommandHandler
         Result<PredicadoDnf> predicado = MontagemDoPredicado.Montar(entrada.Quando, RegraNula());
         if (predicado.IsFailure)
         {
-            return Result<RegraDerivacao>.Failure(predicado.Error!);
+            return Result<RegraDerivacao>.ValidationFailure(predicado.Errors);
         }
 
         return entrada.Contribui is null

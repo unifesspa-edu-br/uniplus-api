@@ -197,7 +197,7 @@ public sealed class AtualizarModalidadeCommandHandlerTests
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
             ("descricao", ModalidadeErrorCodes.DescricaoTamanho),
-            ("regraDeAplicabilidade", "ClausulaDnf.ClausulaVazia"),
+            ("regraDeAplicabilidade[0]", "ClausulaDnf.ClausulaVazia"),
         ]);
         await _repository.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }

@@ -297,14 +297,14 @@ internal static class EscritaDosItens
         Result<PrecondicaoLida?> precondicao = LerPrecondicao(input.Precondicao);
         if (precondicao.IsFailure)
         {
-            erros.Add(new("precondicao", precondicao.Error!));
+            erros.AddRange(precondicao.Errors.Select(static e => new FieldError($"precondicao{e.Field}", e.Error)));
         }
 
         erros.AddRange(ConferenciaDoItemNoCatalogo.Semantica(
             view, tipoRenderizacao, precondicao.IsSuccess ? precondicao.Value?.Predicado : null,
             (input.Precondicao ?? []).SelectMany(static c => c).Where(static c => c is not null).Select(static c => c.Fato),
             configuracao.Obrigatoriedade, configuracao.Restricoes, configuracao.Impedimento, contexto));
-        bool precondicaoRecusada = erros.Any(static e => e.Field == "precondicao");
+        bool precondicaoRecusada = erros.Any(static e => e.Field is { } campo && campo.StartsWith("precondicao", StringComparison.Ordinal));
 
         // As recusas do próprio item (coerência das restrições com o campo, autorreferência, ajuda)
         // saem junto das semânticas, no mesmo lote.
@@ -339,7 +339,7 @@ internal static class EscritaDosItens
 
         Result<List<(int Clausula, CondicaoDnf Condicao)>> linhas = EntradaDeRegras.Condicoes(precondicao);
 
-        return linhas.IsFailure ? Result<PrecondicaoLida?>.Failure(linhas.Error!) : PrecondicaoDasLinhas(linhas.Value!);
+        return linhas.IsFailure ? Result<PrecondicaoLida?>.ValidationFailure(linhas.Errors) : PrecondicaoDasLinhas(linhas.Value!);
     }
 
     private static Result<PrecondicaoLida?> PrecondicaoDasLinhas(List<(int Clausula, CondicaoDnf Condicao)> linhas)
