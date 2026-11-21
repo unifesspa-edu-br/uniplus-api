@@ -46,6 +46,23 @@ internal static class TiposDeAtoSeeder
         await db.SaveChangesAsync();
     }
 
+    /// <summary>Semeia tipos de código próprio do cenário, sem congelamento nem unicidade por objeto.</summary>
+    public static async Task SemearTiposAsync(
+        IServiceProvider services, IEnumerable<(string Codigo, string Nome, bool EhResultado)> tipos)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(tipos);
+
+        await using AsyncServiceScope scope = services.CreateAsyncScope();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        foreach ((string codigo, string nome, bool ehResultado) in tipos)
+        {
+            await GarantirAsync(db, codigo, nome, unicoPorObjeto: false, congelaConfiguracao: false, ehResultado: ehResultado);
+        }
+
+        await db.SaveChangesAsync();
+    }
+
     private static async Task GarantirAsync(UniPlusDbContext db, string codigo, string nome, bool unicoPorObjeto, bool congelaConfiguracao = true, bool publicavelComoAvulso = false, bool ehResultado = false)
     {
         if (await db.Set<TipoAtoPublicado>().AnyAsync(t => t.Codigo == codigo))
@@ -53,7 +70,13 @@ internal static class TiposDeAtoSeeder
             return;
         }
 
-        TipoAtoPublicado tipo = TipoAtoPublicado.Criar(
+        await db.Set<TipoAtoPublicado>().AddAsync(
+            NovoTipo(codigo, nome, unicoPorObjeto, congelaConfiguracao, publicavelComoAvulso, ehResultado));
+    }
+
+    private static TipoAtoPublicado NovoTipo(
+        string codigo, string nome, bool unicoPorObjeto, bool congelaConfiguracao, bool publicavelComoAvulso, bool ehResultado) =>
+        TipoAtoPublicado.Criar(
             codigo,
             nome,
             congelaConfiguracao: congelaConfiguracao,
@@ -64,7 +87,4 @@ internal static class TiposDeAtoSeeder
             vigenciaFim: null,
             baseLegal: null,
             publicavelComoAvulso).Value!;
-
-        await db.Set<TipoAtoPublicado>().AddAsync(tipo);
-    }
 }

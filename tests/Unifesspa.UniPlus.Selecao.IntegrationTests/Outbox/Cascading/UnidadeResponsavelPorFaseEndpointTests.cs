@@ -1,30 +1,23 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 
 using System.Net;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
 using System.Text.Json;
 
 using AwesomeAssertions;
 
 using Domain.Entities;
-using Domain.ValueObjects;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-using Unifesspa.UniPlus.Configuracao.Domain.Entities;
-using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
-using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
-using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
-using Unifesspa.UniPlus.Testes.Compartilhado;
+
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.ApoioDoCronogramaDeFasesPeloEndpoint;
 
 /// <summary>
 /// A unidade que responde por cada fase do cronograma, pelo HTTP e contra Postgres real: o
@@ -59,16 +52,8 @@ public sealed class UnidadeResponsavelPorFaseEndpointTests
         HttpResponseMessage resposta = await ctx.PutCronogramaAsync(ceps.Id, cga.Id);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
-
-        IReadOnlyList<FaseCronograma> gravadas = await ctx.ObterFasesGravadasAsync();
-        gravadas[0].UnidadeResponsavelOrigemId.Should().Be(ceps.Id);
-        gravadas[0].UnidadeResponsavelSigla.Should().Be(ceps.Sigla);
-        gravadas[0].UnidadeResponsavelNome.Should().Be(ceps.Nome);
-        gravadas[1].UnidadeResponsavelOrigemId.Should().Be(cga.Id);
-
-        IReadOnlyList<FaseCronogramaDto> lidas = await ctx.ObterFasesLidasPelaApiAsync();
-        lidas[0].Cronograma.UnidadeResponsavel.Should().Be(new UnidadeResponsavelDto(ceps.Id, ceps.Sigla, ceps.Nome));
-        lidas[1].Cronograma.UnidadeResponsavel.Should().Be(new UnidadeResponsavelDto(cga.Id, cga.Sigla, cga.Nome));
+        await AfirmarCopiasGravadasAsync(ctx, ceps, cga);
+        await AfirmarCopiasLidasPelaApiAsync(ctx, ceps, cga);
     }
 
     [Fact(DisplayName = "O rascunho aceita fase sem unidade responsável, e a leitura a devolve nula")]
@@ -148,6 +133,22 @@ public sealed class UnidadeResponsavelPorFaseEndpointTests
         await AfirmarRecusaDaUnidadeAsync(resposta, campo: "fases[0].unidadeResponsavelId");
     }
 
+    private static async Task AfirmarCopiasGravadasAsync(Contexto ctx, Unidade primeira, Unidade segunda)
+    {
+        IReadOnlyList<FaseCronograma> gravadas = await ctx.ObterFasesGravadasAsync();
+        gravadas[0].UnidadeResponsavelOrigemId.Should().Be(primeira.Id);
+        gravadas[0].UnidadeResponsavelSigla.Should().Be(primeira.Sigla);
+        gravadas[0].UnidadeResponsavelNome.Should().Be(primeira.Nome);
+        gravadas[1].UnidadeResponsavelOrigemId.Should().Be(segunda.Id);
+    }
+
+    private static async Task AfirmarCopiasLidasPelaApiAsync(Contexto ctx, Unidade primeira, Unidade segunda)
+    {
+        IReadOnlyList<FaseCronogramaDto> lidas = await ctx.ObterFasesLidasPelaApiAsync();
+        lidas[0].Cronograma.UnidadeResponsavel.Should().Be(new UnidadeResponsavelDto(primeira.Id, primeira.Sigla, primeira.Nome));
+        lidas[1].Cronograma.UnidadeResponsavel.Should().Be(new UnidadeResponsavelDto(segunda.Id, segunda.Sigla, segunda.Nome));
+    }
+
     private static async Task AfirmarRecusaDaUnidadeAsync(HttpResponseMessage resposta, string campo)
     {
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
@@ -162,39 +163,12 @@ public sealed class UnidadeResponsavelPorFaseEndpointTests
     {
         CascadingApiFactory api = _fixture.Factory;
         HttpClient client = api.CreateClient();
-        Guid chamadaId = await ObterFaseCanonicaAsync(api, CodigoFaseDaChamada);
-        Guid listaDeEsperaId = await ObterFaseCanonicaAsync(api, CodigoFaseDaListaDeEspera);
-        Guid processoId = await GravarProcessoDeImportacaoAsync(api, nome);
+        Guid chamadaId = await ObterFaseCanonicaSemeadaAsync(api, CodigoFaseDaChamada);
+        Guid listaDeEsperaId = await ObterFaseCanonicaSemeadaAsync(api, CodigoFaseDaListaDeEspera);
+        Guid processoId = await SemearProcessoEmRascunhoAsync(
+            api, $"PS unidade por fase — {nome}", Unifesspa.UniPlus.Selecao.Domain.Enums.OrigemCandidatos.ImportacaoExterna);
 
         return new Contexto(api, client, processoId, chamadaId, listaDeEsperaId);
-    }
-
-    private static async Task<Guid> GravarProcessoDeImportacaoAsync(CascadingApiFactory api, string nome)
-    {
-        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            $"PS unidade por fase — {nome} {Guid.CreateVersion7()}", TiposDeProcessoDeTeste.SiSU,
-            Unifesspa.UniPlus.Selecao.Domain.Enums.OrigemCandidatos.ImportacaoExterna, Guid.CreateVersion7(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
-            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        await db.ProcessosSeletivos.AddAsync(processo).ConfigureAwait(false);
-        await db.SaveChangesAsync().ConfigureAwait(false);
-        return processo.Id;
-    }
-
-    private static async Task<Guid> ObterFaseCanonicaAsync(CascadingApiFactory api, string codigo)
-    {
-        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        UniPlusDbContext config = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-
-        // O catálogo de fases vivas é pequeno — materializar é mais barato que traduzir a
-        // comparação do value object Codigo para SQL.
-        List<FaseCanonica> vivas = await config.FasesCanonicas.AsNoTracking().ToListAsync().ConfigureAwait(false);
-        FaseCanonica? fase = vivas.Find(f => string.Equals(f.Codigo.Valor, codigo, StringComparison.Ordinal));
-
-        fase.Should().NotBeNull($"'{codigo}' faz parte do catálogo canônico semeado");
-        return fase!.Id;
     }
 
     private sealed record Contexto(
@@ -208,15 +182,7 @@ public sealed class UnidadeResponsavelPorFaseEndpointTests
                 Fase(2, SegundaFaseCanonicaId, segundaUnidadeId),
             ];
 
-            using HttpRequestMessage request = new(
-                HttpMethod.Put,
-                new Uri($"/api/selecao/processos-seletivos/{ProcessoId}/cronograma-fases", UriKind.Relative))
-            {
-                Content = JsonContent.Create(fases),
-            };
-            Autenticar(request);
-            request.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
-            return await Client.SendAsync(request).ConfigureAwait(false);
+            return await EnviarCronogramaAsync(Client, ProcessoId, fases).ConfigureAwait(false);
         }
 
         public async Task<IReadOnlyList<FaseCronograma>> ObterFasesGravadasAsync()
@@ -231,15 +197,8 @@ public sealed class UnidadeResponsavelPorFaseEndpointTests
 
         public async Task<IReadOnlyList<FaseCronogramaDto>> ObterFasesLidasPelaApiAsync()
         {
-            using HttpRequestMessage request = new(
-                HttpMethod.Get,
-                new Uri($"/api/selecao/processos-seletivos/{ProcessoId}", UriKind.Relative));
-            Autenticar(request);
-            using HttpResponseMessage resposta = await Client.SendAsync(request).ConfigureAwait(false);
-            resposta.StatusCode.Should().Be(HttpStatusCode.OK);
-            ProcessoSeletivoDto? processo = await resposta.Content
-                .ReadFromJsonAsync<ProcessoSeletivoDto>(JsonDoContrato.Opcoes).ConfigureAwait(false);
-            return [.. processo!.CronogramaFases.OrderBy(f => f.Cronograma.Ordem)];
+            ProcessoSeletivoDto processo = await LerProcessoPelaApiAsync(Client, ProcessoId).ConfigureAwait(false);
+            return [.. processo.CronogramaFases.OrderBy(f => f.Cronograma.Ordem)];
         }
 
         public async Task<Unidade> SemearUnidadeAsync(string sigla, string nome)
@@ -299,12 +258,5 @@ public sealed class UnidadeResponsavelPorFaseEndpointTests
             regraRecurso = (object?)null,
             unidadeResponsavelId,
         };
-
-        private static void Autenticar(HttpRequestMessage request)
-        {
-            request.Headers.Authorization = new AuthenticationHeaderValue(
-                TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-            request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "plataforma-admin");
-        }
     }
 }
