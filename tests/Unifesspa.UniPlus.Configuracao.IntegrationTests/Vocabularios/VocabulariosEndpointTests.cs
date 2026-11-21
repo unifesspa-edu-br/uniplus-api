@@ -36,14 +36,8 @@ public sealed class VocabulariosEndpointTests
     {
         using HttpClient client = _fixture.Factory.CreateDefaultClient();
 
-        HttpResponseMessage response = await client.GetAsync(
-            new Uri("/api/configuracao/vocabularios/grupos-area-enem", UriKind.Relative));
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        response.Content.Headers.ContentType!.MediaType.Should()
-            .Be("application/vnd.uniplus.codigo-grupo-area-enem.v1+json");
-
-        GrupoAreaEnemDto[] grupos = (await response.Content.ReadFromJsonAsync<GrupoAreaEnemDto[]>())!;
+        GrupoAreaEnemDto[] grupos = await ApoioDosVocabularios.LerAsync<GrupoAreaEnemDto>(
+            client, "grupos-area-enem", "codigo-grupo-area-enem");
 
         // Afirmado por extenso: é o contrato publicado que está sob teste, não a lista do domínio.
         grupos.Should().Equal(
@@ -53,31 +47,28 @@ public sealed class VocabulariosEndpointTests
             new GrupoAreaEnemDto("SAUDE_E_BIOLOGICAS", "Saúde e Biológicas"));
     }
 
+    // Afirmado por extenso, e não derivado do catálogo: é o contrato publicado que está sob teste —
+    // derivá-lo da mesma fonte que o produz faria o teste concordar com qualquer mudança, inclusive
+    // uma remoção acidental de código.
+    private static readonly string[] CodigosDeTipoBancaNaOrdemPublicada =
+    [
+        "BANCA_ANALISE_DOCUMENTAL",
+        "BANCA_ENTREVISTA",
+        "BANCA_CORRECAO_REDACOES",
+        "BANCA_ANALISE_RECURSOS",
+        "BANCA_HETEROIDENTIFICACAO",
+        "BANCA_BIOPSICOSSOCIAL",
+    ];
+
     [Fact(DisplayName = "GET /vocabularios/tipos-banca devolve os seis códigos com nome, na ordem publicada, sem exigir autenticação")]
     public async Task ListarCodigosTipoBanca_DevolveVocabularioCompleto()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        HttpResponseMessage response = await client.GetAsync(
-            new Uri("/api/configuracao/vocabularios/tipos-banca", UriKind.Relative));
+        TipoBancaVocabularioDto[] codigos = await ApoioDosVocabularios.LerAsync<TipoBancaVocabularioDto>(
+            client, "tipos-banca", "codigo-tipo-banca");
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        response.Content.Headers.ContentType!.MediaType.Should()
-            .Be("application/vnd.uniplus.codigo-tipo-banca.v1+json");
-
-        TipoBancaVocabularioDto[] codigos =
-            (await response.Content.ReadFromJsonAsync<TipoBancaVocabularioDto[]>())!;
-
-        // Afirmado por extenso, e não derivado do catálogo: é o contrato publicado que está
-        // sob teste — derivá-lo da mesma fonte que o produz faria o teste concordar com
-        // qualquer mudança, inclusive uma remoção acidental de código.
-        codigos.Select(c => c.Codigo).Should().Equal(
-            "BANCA_ANALISE_DOCUMENTAL",
-            "BANCA_ENTREVISTA",
-            "BANCA_CORRECAO_REDACOES",
-            "BANCA_ANALISE_RECURSOS",
-            "BANCA_HETEROIDENTIFICACAO",
-            "BANCA_BIOPSICOSSOCIAL");
+        codigos.Select(c => c.Codigo).Should().Equal(CodigosDeTipoBancaNaOrdemPublicada);
         codigos.Should().AllSatisfy(c => c.Nome.Should().NotBeNullOrWhiteSpace());
     }
 
@@ -106,46 +97,35 @@ public sealed class VocabulariosEndpointTests
     {
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        HttpResponseMessage response = await client.GetAsync(
-            new Uri("/api/configuracao/vocabularios/fases-canonicas", UriKind.Relative));
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        response.Content.Headers.ContentType!.MediaType.Should()
-            .Be("application/vnd.uniplus.codigo-fase-canonica.v1+json");
-
-        FaseCanonicaVocabularioDto[] codigos =
-            (await response.Content.ReadFromJsonAsync<FaseCanonicaVocabularioDto[]>())!;
+        FaseCanonicaVocabularioDto[] codigos = await ApoioDosVocabularios.LerAsync<FaseCanonicaVocabularioDto>(
+            client, "fases-canonicas", "codigo-fase-canonica");
 
         codigos.Select(c => c.Codigo).Should().Equal(CodigosDeFaseNaOrdemPublicada);
         codigos.Should().AllSatisfy(c => c.Nome.Should().NotBeNullOrWhiteSpace());
     }
+
+    // Afirmado por extenso, pelo mesmo motivo da lista de tipos de banca.
+    private static readonly string[] CodigosDeInstrumentoNormativoNaOrdemPublicada =
+    [
+        "LEI",
+        "DECRETO",
+        "PORTARIA",
+        "RESOLUCAO",
+        "INSTRUCAO_NORMATIVA",
+        "PARECER",
+        "EDITAL",
+    ];
 
     [Fact(DisplayName = "GET /vocabularios/tipos-instrumento-normativo devolve os tipos com código, nome e descrição, na ordem publicada, sem exigir autenticação")]
     public async Task ListarCodigosTipoInstrumentoNormativo_DevolveVocabularioCompleto()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        HttpResponseMessage response = await client.GetAsync(
-            new Uri("/api/configuracao/vocabularios/tipos-instrumento-normativo", UriKind.Relative));
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        response.Content.Headers.ContentType!.MediaType.Should()
-            .Be("application/vnd.uniplus.codigo-tipo-instrumento-normativo.v1+json");
-
         TipoInstrumentoNormativoVocabularioDto[] codigos =
-            (await response.Content.ReadFromJsonAsync<TipoInstrumentoNormativoVocabularioDto[]>())!;
+            await ApoioDosVocabularios.LerAsync<TipoInstrumentoNormativoVocabularioDto>(
+                client, "tipos-instrumento-normativo", "codigo-tipo-instrumento-normativo");
 
-        // Afirmado por extenso, e não derivado do catálogo: é o contrato publicado que está
-        // sob teste — derivá-lo da mesma fonte que o produz faria o teste concordar com
-        // qualquer mudança, inclusive uma remoção acidental de código.
-        codigos.Select(c => c.Codigo).Should().Equal(
-            "LEI",
-            "DECRETO",
-            "PORTARIA",
-            "RESOLUCAO",
-            "INSTRUCAO_NORMATIVA",
-            "PARECER",
-            "EDITAL");
+        codigos.Select(c => c.Codigo).Should().Equal(CodigosDeInstrumentoNormativoNaOrdemPublicada);
         codigos.Should().AllSatisfy(c =>
         {
             c.Nome.Should().NotBeNullOrWhiteSpace();

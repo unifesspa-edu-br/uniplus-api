@@ -42,10 +42,12 @@ public sealed class PrecedenciaFasePersistenceTests
     ];
 
     private readonly ConfiguracaoDbFixture _fixture;
+    private readonly ApoioDaPersistenciaDePrecedenciaFase _apoio;
 
     public PrecedenciaFasePersistenceTests(ConfiguracaoDbFixture fixture)
     {
         _fixture = fixture;
+        _apoio = new ApoioDaPersistenciaDePrecedenciaFase(fixture);
     }
 
     [Fact(DisplayName = "CA-05: o seed materializa as seis arestas canônicas e o reader devolve o grafo")]
@@ -69,22 +71,14 @@ public sealed class PrecedenciaFasePersistenceTests
     {
         PrecedenciaFase aresta = Aresta("ENSALAMENTO", "AVALIACAO");
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.PrecedenciasFase.Add(aresta);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
-        PrecedenciaFase persistida = await readCtx.PrecedenciasFase.SingleAsync(p => p.Id == aresta.Id);
+        PrecedenciaFase persistida = await _apoio.GravarELerDeNovoAsync(AdminA, aresta);
 
         persistida.AntecessoraCodigo.Should().Be("ENSALAMENTO");
         persistida.SucessoraCodigo.Should().Be("AVALIACAO");
         persistida.CreatedBy.Should().Be(AdminA);
         persistida.IsDeleted.Should().BeFalse();
 
-        var reader = new PrecedenciaFaseReader(readCtx);
-        PrecedenciaFaseView? view = await reader.ObterPorIdAsync(aresta.Id);
+        PrecedenciaFaseView? view = await _apoio.ObterPeloLeitorAsync(aresta.Id);
         view.Should().NotBeNull();
         view!.AntecessoraCodigo.Should().Be("ENSALAMENTO");
         view.SucessoraCodigo.Should().Be("AVALIACAO");
@@ -93,16 +87,9 @@ public sealed class PrecedenciaFasePersistenceTests
     [Fact(DisplayName = "UNIQUE parcial do par rejeita segunda aresta viva com o mesmo par")]
     public async Task UniquePartial_Par_RejeitaDuplicataAtiva()
     {
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.PrecedenciasFase.Add(Aresta("CLASSIFICACAO", "CHAMADA"));
-            await ctx.SaveChangesAsync();
-        }
+        await _apoio.GravarAsync(AdminA, Aresta("CLASSIFICACAO", "CHAMADA"));
 
-        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
-        ctx2.PrecedenciasFase.Add(Aresta("CLASSIFICACAO", "CHAMADA"));
-
-        Func<Task> act = async () => await ctx2.SaveChangesAsync();
+        Func<Task> act = () => _apoio.GravarAsync(AdminA, Aresta("CLASSIFICACAO", "CHAMADA"));
 
         DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
         Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
@@ -114,31 +101,14 @@ public sealed class PrecedenciaFasePersistenceTests
     public async Task SoftDelete_LiberaSlot()
     {
         PrecedenciaFase aresta = Aresta("LISTA_ESPERA", "CHAMADA");
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.PrecedenciasFase.Add(aresta);
-            await ctx.SaveChangesAsync();
-        }
+        await _apoio.GravarAsync(AdminA, aresta);
+        await _apoio.ExcluirAsync(AdminB, aresta.Id);
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
-        {
-            PrecedenciaFase tracked = await ctx.PrecedenciasFase.SingleAsync(p => p.Id == aresta.Id);
-            ctx.PrecedenciasFase.Remove(tracked);
-            await ctx.SaveChangesAsync();
-        }
+        PrecedenciaFase excluida = await _apoio.LerExcluidaAsync(aresta.Id);
+        excluida.IsDeleted.Should().BeTrue();
+        excluida.DeletedBy.Should().Be(AdminB);
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null))
-        {
-            PrecedenciaFase excluida = await ctx.PrecedenciasFase
-                .IgnoreQueryFilters().SingleAsync(p => p.Id == aresta.Id);
-            excluida.IsDeleted.Should().BeTrue();
-            excluida.DeletedBy.Should().Be(AdminB);
-        }
-
-        await using UniPlusDbContext ctx3 = _fixture.CreateDbContext(AdminA);
-        ctx3.PrecedenciasFase.Add(Aresta("LISTA_ESPERA", "CHAMADA"));
-
-        Func<Task> act = async () => await ctx3.SaveChangesAsync();
+        Func<Task> act = () => _apoio.GravarAsync(AdminA, Aresta("LISTA_ESPERA", "CHAMADA"));
         await act.Should().NotThrowAsync("o slot do par foi liberado pelo soft-delete");
     }
 
