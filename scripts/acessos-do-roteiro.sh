@@ -36,6 +36,8 @@ SENHA_GESTORES="${SENHA_GESTORES:-$ADMIN_PASS}"
 ESPERA_VERIFICACAO="${ESPERA_VERIFICACAO:-240}"
 PDF_DO_PERFIL="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/edital-de-teste.pdf"
 
+# Descrição do perfil criado; o roteiro dos perfis de operação a troca por perfil.
+DESCRICAO_DO_PERFIL="${DESCRICAO_DO_PERFIL:-Permissões que o roteiro local de processo de teste usa.}"
 PERFIL_INSTITUCIONAL="Roteiro de teste — cadastros institucionais"
 PERFIL_DE_MOTIVOS="Roteiro de teste — motivos de decisão"
 PERMISSOES_INSTITUCIONAIS='[
@@ -118,11 +120,29 @@ enviar_documento_do_perfil() {
         "$(jq -nc --arg etag "${etag//\"/}" '{etag: $etag}')" >/dev/null
 }
 
-# O segundo gestor aprova a versão depois do verificador. $1=perfil $2=versão $3=nome
+# A etapa em que a versão pendente do perfil espera decisão (vazia se não há versão pendente). $1=perfil
+etapa_pendente_do_perfil() {
+    detalhe_do_perfil "$1" | jq -r '.versaoPendente.etapaAtual // empty'
+}
+
+# O segundo gestor aprova a versão depois do verificador. Se o perfil é protegido (traz dado pessoal), a versão ainda
+# espera a aprovação da proteção de dados, que o primeiro Representante do controlador dá. Cada etapa só é decidida se
+# ainda espera decisão, para que uma execução interrompida entre as duas possa continuar. $1=perfil $2=versão $3=nome
 aprovar_versao_do_perfil() {
+    local etapa
     aguardar_documento_do_perfil "$1" "$(token_de "${LISTA_DE_GESTORES[0]}" "$SENHA_GESTORES")"
-    como "a aprovação da versão do perfil '$3' por ${LISTA_DE_GESTORES[1]}" "$(token_de "${LISTA_DE_GESTORES[1]}" "$SENHA_GESTORES")" POST \
-        "/api/autorizacao/perfis/$1/versoes/$2/aprovacao" '{"etapa": "gestao_de_acessos"}' >/dev/null
+    etapa=$(etapa_pendente_do_perfil "$1")
+    if [ "$etapa" = gestao_de_acessos ]; then
+        como "a aprovação da versão do perfil '$3' por ${LISTA_DE_GESTORES[1]}" "$(token_de "${LISTA_DE_GESTORES[1]}" "$SENHA_GESTORES")" POST \
+            "/api/autorizacao/perfis/$1/versoes/$2/aprovacao" '{"etapa": "gestao_de_acessos"}' >/dev/null
+        etapa=$(etapa_pendente_do_perfil "$1")
+    fi
+    if [ "$etapa" = protecao_de_dados ]; then
+        [ "${#LISTA_DE_REPRESENTANTES[@]}" -gt 0 ] || fail "a versão do perfil '$3' espera a proteção de dados, e não há Representante do controlador designado."
+        como "a aprovação da proteção de dados da versão do perfil '$3' por ${LISTA_DE_REPRESENTANTES[0]}" \
+            "$(token_de "${LISTA_DE_REPRESENTANTES[0]}" "$SENHA_REPRESENTANTES")" POST \
+            "/api/autorizacao/perfis/$1/versoes/$2/aprovacao" '{"etapa": "protecao_de_dados"}' >/dev/null
+    fi
 }
 
 # O detalhe do perfil, lido e conferido; interrompe o roteiro se a leitura falha ou a resposta não é um detalhe de perfil.
@@ -152,8 +172,8 @@ criar_perfil_do_roteiro() {
     local nome="$1" permissoes="$2" criador envio perfil
     criador=$(token_de "${LISTA_DE_GESTORES[0]}" "$SENHA_GESTORES")
     envio=$(como "a criação do perfil '$nome' por ${LISTA_DE_GESTORES[0]}" "$criador" POST "/api/autorizacao/perfis" \
-        "$(jq -nc --arg n "$nome" --argjson p "$permissoes" --argjson t "$(stat -c%s "$PDF_DO_PERFIL")" \
-            '{nome: $n, descricao: "Permissões que o roteiro local de processo de teste usa.", permissoes: $p, protocolo: "ROTEIRO-LOCAL-0001/2026", tamanhoDoDocumento: $t}')")
+        "$(jq -nc --arg n "$nome" --arg d "$DESCRICAO_DO_PERFIL" --argjson p "$permissoes" --argjson t "$(stat -c%s "$PDF_DO_PERFIL")" \
+            '{nome: $n, descricao: $d, permissoes: $p, protocolo: "ROTEIRO-LOCAL-0001/2026", tamanhoDoDocumento: $t}')")
     enviar_documento_do_perfil "$envio" "$criador"
     perfil=$(jq -r '.perfilId' <<< "$envio")
     aprovar_versao_do_perfil "$perfil" "$(jq -r '.versaoId' <<< "$envio")" "$nome"
