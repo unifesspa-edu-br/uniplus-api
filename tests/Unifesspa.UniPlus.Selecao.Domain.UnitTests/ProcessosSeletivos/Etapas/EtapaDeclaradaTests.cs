@@ -3,8 +3,10 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Etapas;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -187,15 +189,26 @@ public sealed class EtapaDeclaradaTests
         etapa.Atos.Produtos.Select(static p => p.Posicao).Should().Equal(0, 1, 2);
     }
 
-    [Fact(DisplayName = "As bancas da etapa dizem se há banca e se a de análise de recursos foi declarada")]
-    public void Bancas_DizemSeHaBancaEDeRecursos()
+    [Fact(DisplayName = "As bancas da etapa dizem se há banca, onde cada uma está e com que papel julgam o recurso")]
+    public void Bancas_DizemSeHaBancaEOndeCadaUmaEsta()
     {
         EtapaDeclarada semBanca = new ModeloDeEtapa("Prova").Declarar();
         EtapaDeclarada comRecursos = new ModeloDeEtapa("Prova") { Bancas = [BancasDeTeste.DeRecursosDaEtapa()] }.Declarar();
 
         semBanca.Bancas.TemBancas.Should().BeFalse();
         comRecursos.Bancas.TemBancas.Should().BeTrue();
-        comRecursos.Bancas.TemBancaDeRecursos.Should().BeTrue();
+        comRecursos.Bancas.Declaradas.Should().ContainSingle().Which.Should().Match<BancaDeclarada>(
+            static banca => banca.Posicao == 0 && banca.Tipo.JulgaAPrimeiraInstancia && banca.Regra != null);
+        comRecursos.Bancas.BancasDaSegundaInstancia.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "As bancas da etapa separam, pelo papel copiado e na posição declarada, as que julgam em 2ª instância")]
+    public void Bancas_SeparamAsDaSegundaInstanciaPeloPapel()
+    {
+        EtapaDeclarada etapa = new ModeloDeEtapa("Prova") { Bancas = [BancasDeTeste.DeRecursosDaEtapa(), BancasDeTeste.DaEtapa(TipoDeBanca.AnaliseDeRecursosDeSegundaInstancia)] }.Declarar();
+
+        etapa.Bancas.BancasDaSegundaInstancia.Should().ContainSingle().Which.Should().Match<BancaDeclarada>(
+            static banca => banca.Posicao == 1 && banca.Tipo.JulgaASegundaInstancia && !banca.Tipo.JulgaAPrimeiraInstancia && banca.Tipo.JulgaRecurso);
     }
 
     [Fact(DisplayName = "Declaração nula ou sem identificador é erro de programação")]

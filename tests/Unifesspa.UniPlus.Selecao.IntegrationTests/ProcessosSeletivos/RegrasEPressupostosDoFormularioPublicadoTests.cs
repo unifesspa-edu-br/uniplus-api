@@ -40,7 +40,7 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
         // O corpus rico tem seção, termo e grupo exibidos por condição, impedimento, três derivações
         // configuradas e as duas da oferta, que nenhuma regra da inscrição cita e dois agregados sobre a composição familiar, que o
         // envelope congela e nenhuma regra do formulário cita.
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(variante: 9, comBancaDeHomologacao: true);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(variante: 9, comBancasExigidasNaPublicacao: true);
         EntradaCanonicalizacao entrada = CorpusEnvelopeEntrada.Entrada(processo);
         SnapshotCanonico congelado = CenarioDeFormularioPublicado.Canonicalizar(entrada);
         await _cenario.PublicarEPersistirAsync(processo, entrada.Dados, congelado, entrada.HashDocumento, CorpusEnvelope.Ator);
@@ -156,7 +156,7 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
         // A habilitação pede o certificado de quem se declarou preto na inscrição e a declaração de
         // quem é maior de idade, faixa que o sistema calcula da data de nascimento na data de
         // referência dos fatos.
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(variante: 10, comBancaDeHomologacao: true);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(variante: 10, comBancasExigidasNaPublicacao: true);
         DefinirHabilitacao(processo);
 
         EntradaCanonicalizacao entrada = CorpusEnvelopeEntrada.Entrada(processo);

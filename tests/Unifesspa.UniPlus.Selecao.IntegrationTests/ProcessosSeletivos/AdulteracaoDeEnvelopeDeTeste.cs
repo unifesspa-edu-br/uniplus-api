@@ -41,7 +41,7 @@ internal static class AdulteracaoDeEnvelopeDeTeste
     /// </summary>
     public static Result<EnvelopeReidratado> ReidratarComEnvelopeDeReferenciaAdulterado(Action<JsonObject> adulterar)
     {
-        ProcessoSeletivo processo = EnvelopeDeReferencia.ProcessoDeReferencia(comBancaDeHomologacao: true);
+        ProcessoSeletivo processo = EnvelopeDeReferencia.ProcessoDeReferencia(comBancasExigidasNaPublicacao: true);
         DadosEdital dados = EnvelopeDeReferencia.DadosDeReferencia();
         SnapshotCanonico congelado = CongelarReferencia(processo, dados);
 

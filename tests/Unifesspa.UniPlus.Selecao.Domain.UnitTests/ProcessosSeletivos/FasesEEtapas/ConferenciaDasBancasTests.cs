@@ -197,11 +197,13 @@ public sealed class ConferenciaDasBancasTests
         ConferenciaDasBancas.ConferirMinimoDeIntegrantes(cronograma, Etapas(ComRecurso("AVALIACAO")), NenhumLido).Should().BeEmpty();
     }
 
-    private static readonly string[] OsNoveItens =
+    private static readonly string[] OsOnzeItens =
     [
         "cronograma_banca_de_recursos_sem_candidatos_atendidos",
         "cronograma_recurso_com_banca_que_julga",
         "cronograma_instancia_superior_admitida_pelo_tipo_de_banca",
+        "cronograma_instancia_superior_com_banca_da_segunda_instancia",
+        "cronograma_banca_da_segunda_instancia_com_recurso_para_julgar",
         "cronograma_tipo_de_banca_com_o_minimo_de_bancas",
         "cronograma_homologacao_das_inscricoes_com_banca",
         "cronograma_nota_do_enem_com_banca_de_importacao_das_notas",
@@ -210,14 +212,14 @@ public sealed class ConferenciaDasBancasTests
         "cronograma_banca_com_o_minimo_de_integrantes",
     ];
 
-    [Fact(DisplayName = "Os nove itens saem nesta ordem, verdes quando a configuração das bancas é conforme")]
-    public void Itens_Conformes_NoveVerdesNaOrdem()
+    [Fact(DisplayName = "Os onze itens saem nesta ordem, verdes quando a configuração das bancas é conforme")]
+    public void Itens_Conformes_OnzeVerdesNaOrdem()
     {
         CronogramaDoProcesso cronograma = Fases(QueHomologa(new ModeloDeFase("AVALIACAO", 1) with { Bancas = [BancasDeTeste.DeRecursosDaFase()] }));
 
         IReadOnlyList<ItemConformidade> itens = ConferenciaDasBancas.Itens(OrigemCandidatos.InscricaoPropria, cronograma, Etapas(), NenhumLido);
 
-        itens.Select(static item => item.Codigo).Should().Equal(OsNoveItens);
+        itens.Select(static item => item.Codigo).Should().Equal(OsOnzeItens);
         itens.Should().OnlyContain(static item => item.Ok);
     }
 

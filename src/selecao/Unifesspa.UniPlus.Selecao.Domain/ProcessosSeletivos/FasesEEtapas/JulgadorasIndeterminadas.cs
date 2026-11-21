@@ -28,9 +28,16 @@ internal static class JulgadorasIndeterminadas
         return etapa.ParteRecusadaEm(EtapaDeclarada.ListaDasBancas)
             || etapa.ParteRecusadaEm(EtapaDeclarada.ListaDosRecursos)
             || etapa.TiposDeDecisaoRecusados
-            || FaseDaEtapaPodeTerSidoRecusada(cronograma, etapa)
-            || cronograma.Fases.Any(fase => TemOCodigoDaFase(fase, etapa) && fase.ParteRecusadaEm(FaseDeclarada.ListaDasBancasRequeridas));
+            || BancasDaFaseDaEtapaIncertas(cronograma, etapa);
     }
+
+    /// <summary>
+    /// As bancas da fase em que a etapa acontece não se sabem por inteiro: a fase foi recusada inteira na leitura, e leva consigo as
+    /// bancas que declarou, ou a lista das bancas dela tem parte recusada.
+    /// </summary>
+    internal static bool BancasDaFaseDaEtapaIncertas(CronogramaDoProcesso cronograma, EtapaDeclarada etapa) =>
+        FaseDaEtapaPodeTerSidoRecusada(cronograma, etapa)
+        || cronograma.Fases.Any(fase => TemOCodigoDaFase(fase, etapa) && fase.ParteRecusadaEm(FaseDeclarada.ListaDasBancasRequeridas));
 
     private static bool FaseComParteRecusada(FaseDeclarada fase) =>
         fase.ParteRecusadaEm(FaseDeclarada.ListaDasBancasRequeridas)

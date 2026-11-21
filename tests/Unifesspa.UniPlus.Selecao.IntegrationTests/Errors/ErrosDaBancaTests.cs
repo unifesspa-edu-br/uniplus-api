@@ -35,6 +35,10 @@ public sealed class ErrosDaBancaTests
     [InlineData("Banca.TipoNaoAdmiteInstanciaSuperior", "uniplus.selecao.banca.tipo_nao_admite_instancia_superior")]
     [InlineData("Banca.CandidatosAtendidosEmBancaDeRecursos", "uniplus.selecao.banca.candidatos_atendidos_em_banca_de_recursos")]
     [InlineData("Cronograma.RecursoSemBanca", "uniplus.selecao.cronograma.recurso_sem_banca")]
+    [InlineData("Banca.FaseSemBancaDaSegundaInstancia", "uniplus.selecao.banca.fase_sem_banca_da_segunda_instancia")]
+    [InlineData("Banca.EtapaSemBancaDaSegundaInstancia", "uniplus.selecao.banca.etapa_sem_banca_da_segunda_instancia")]
+    [InlineData("Banca.FaseComBancaDaSegundaInstanciaSemRecursoParaJulgar", "uniplus.selecao.banca.fase_com_banca_da_segunda_instancia_sem_recurso_para_julgar")]
+    [InlineData("Banca.EtapaComBancaDaSegundaInstanciaSemRecursoParaJulgar", "uniplus.selecao.banca.etapa_com_banca_da_segunda_instancia_sem_recurso_para_julgar")]
     public void Recusa_MapeadaPara422ComOCodigoEstavel(string codigoDoDominio, string codigoNoFio)
     {
         bool mapeada = Mapper.TryGetMapping(codigoDoDominio, out DomainErrorMapping? mapeamento);
@@ -44,5 +48,17 @@ public sealed class ErrosDaBancaTests
         mapeamento.Code.Should().Be(codigoNoFio);
         mapeamento.Title.Should().NotBeNullOrWhiteSpace();
         Mapper.GetProblemTypeUri(codigoNoFio).Should().Be(MapperDoModuloDeTeste.BaseUriDeErros + codigoNoFio);
+    }
+
+    [Theory]
+    [InlineData("Banca.FaseSemBancaDaSegundaInstancia", "O recurso admite instância superior, e a fase não prevê banca que o julgue em 2ª instância")]
+    [InlineData("Banca.EtapaSemBancaDaSegundaInstancia", "O recurso admite instância superior, e nem a etapa nem a fase preveem banca que o julgue em 2ª instância")]
+    [InlineData("Banca.FaseComBancaDaSegundaInstanciaSemRecursoParaJulgar", "A fase prevê banca que julga o recurso em 2ª instância, e não há recurso para ela julgar")]
+    [InlineData("Banca.EtapaComBancaDaSegundaInstanciaSemRecursoParaJulgar", "A etapa prevê banca que julga o recurso em 2ª instância, e nenhum recurso da etapa admite instância superior")]
+    public void RecusaDaSegundaInstancia_TemOTituloDoContrato(string codigoDoDominio, string titulo)
+    {
+        Mapper.TryGetMapping(codigoDoDominio, out DomainErrorMapping? mapeamento).Should().BeTrue();
+
+        mapeamento!.Title.Should().Be(titulo);
     }
 }

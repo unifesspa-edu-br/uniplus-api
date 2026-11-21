@@ -24,6 +24,10 @@ internal static class BancasDeTeste
     public static BancaRequerida DeRecursosDaFase() =>
         BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.DeRecursos(OrigemDoTipoDeRecursos), [], Regra());
 
+    /// <summary>A banca de análise de recursos de 2ª instância da fase, com a regra de deliberação declarada.</summary>
+    public static BancaRequerida DeSegundaInstanciaDaFase() =>
+        BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.DeSegundaInstancia(), [], Regra());
+
     /// <summary>A banca de análise de recursos da etapa, com a regra de deliberação declarada.</summary>
     public static BancaDaEtapa DeRecursosDaEtapa(RegraDeDeliberacao? regra = null) =>
         BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.DeRecursos(OrigemDoTipoDeRecursos), regra ?? Regra());

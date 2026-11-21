@@ -49,6 +49,9 @@ internal static class QuemJulgaORecurso
         /// <summary>A banca que avaliou o item e encerra o recurso dele na 1ª instância, se houver.</summary>
         internal BancaDeclarada? AvaliadoraQueEncerra =>
             Avaliadoras.FirstOrDefault(static banca => banca.Tipo.EncerraRecursoNaPrimeiraInstancia);
+
+        /// <summary>Se o recurso admite instância superior sobre este item, que uma avaliadora encerra na 1ª instância: a recusa do recurso.</summary>
+        internal bool InstanciaSuperiorRecusada => Recurso.Recurso.AdmiteInstanciaSuperior && !Indeterminado && AvaliadoraQueEncerra is not null;
     }
 
     /// <summary>Os itens recorridos das fases e depois os das etapas, cada um na posição do lugar e na ordem canônica dos procedimentos.</summary>
@@ -76,7 +79,7 @@ internal static class QuemJulgaORecurso
     internal static IReadOnlyList<FieldError> InstanciaSuperiorNaoAdmitida(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
     [
         .. Itens(cronograma, etapas)
-            .Where(static item => item.Recurso.Recurso.AdmiteInstanciaSuperior && !item.Indeterminado && item.AvaliadoraQueEncerra is not null)
+            .Where(static item => item.InstanciaSuperiorRecusada)
             .GroupBy(static item => item.Recurso)
             .Select(static recurso => RecusaDaInstanciaSuperior(recurso.First())),
     ];

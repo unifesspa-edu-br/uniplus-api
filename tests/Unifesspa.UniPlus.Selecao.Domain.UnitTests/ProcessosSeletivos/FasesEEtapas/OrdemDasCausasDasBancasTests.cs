@@ -21,6 +21,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.FasesEEtapas.ApoioDaSegundaInstancia;
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.FasesEEtapas.CenarioDeProcesso;
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.FasesEEtapas.DeclaracoesAdotadasDeTeste;
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.FasesEEtapas.RecursosParaQuemJulga;
@@ -33,11 +34,16 @@ public sealed class OrdemDasCausasDasBancasTests
 {
     private const string Avaliacao = "AVALIACAO";
     private const string Homologacao = "HOMOLOGACAO_DAS_INSCRICOES";
+    private const string Resultado = "RESULTADO";
 
     private static readonly string[] CausasDasBancas =
     [
         "Cronograma.RecursoSemBanca",
         "Banca.TipoNaoAdmiteInstanciaSuperior",
+        "Banca.FaseSemBancaDaSegundaInstancia",
+        "Banca.EtapaSemBancaDaSegundaInstancia",
+        "Banca.FaseComBancaDaSegundaInstanciaSemRecursoParaJulgar",
+        "Banca.EtapaComBancaDaSegundaInstanciaSemRecursoParaJulgar",
         "Banca.TipoExigeMaisDeUmaBanca",
         "ProcessoSeletivo.HomologacaoDasInscricoesSemBanca",
         "ProcessoSeletivo.NotaDoEnemSemBancaDeImportacaoDasNotas",
@@ -52,6 +58,8 @@ public sealed class OrdemDasCausasDasBancasTests
         "cronograma_banca_de_recursos_sem_candidatos_atendidos",
         "cronograma_recurso_com_banca_que_julga",
         "cronograma_instancia_superior_admitida_pelo_tipo_de_banca",
+        "cronograma_instancia_superior_com_banca_da_segunda_instancia",
+        "cronograma_banca_da_segunda_instancia_com_recurso_para_julgar",
         "cronograma_tipo_de_banca_com_o_minimo_de_bancas",
         "cronograma_homologacao_das_inscricoes_com_banca",
         "cronograma_nota_do_enem_com_banca_de_importacao_das_notas",
@@ -88,16 +96,19 @@ public sealed class OrdemDasCausasDasBancasTests
     {
         BancaRequerida semRegra = BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes), []);
         ModeloDeFase comBancaSemRegra = new ModeloDeFase(Avaliacao, 1) with { Bancas = [semRegra] };
-        ModeloDeFase homologaSemBancaEComRecursoSemJulgador = FaseComRecurso(Homologacao, [Procedimento(TipoMotivoDeDecisao.HomologacaoDasInscricoes)]).Homologando(RegraDaHomologacao) with { Ordem = 2 };
+        ModeloDeFase comBancaDaSegundaInstanciaSemRecurso = new ModeloDeFase(Resultado, 2) with { Bancas = [DaSegundaInstanciaNaFase()] };
+        ModeloDeFase homologaComInstanciaSuperiorSemBancaEComRecursoSemJulgador =
+            FaseComRecurso(Homologacao, [Procedimento(TipoMotivoDeDecisao.HomologacaoDasInscricoes)], true).Homologando(RegraDaHomologacao) with { Ordem = 3 };
 
         return Montar(
-            [comBancaSemRegra, homologaSemBancaEComRecursoSemJulgador],
-            EtapasComDefeitos(),
+            [comBancaSemRegra, comBancaDaSegundaInstanciaSemRecurso, homologaComInstanciaSuperiorSemBancaEComRecursoSemJulgador],
+            [.. EtapasComDefeitos(), .. EtapasDaSegundaInstanciaComDefeitos()],
             ApoioConformidadePublicabilidadeEstrutural.ProcessoConforme().Declaracao());
     }
 
     // A instância superior não admitida, o tipo que exige duas ou mais bancas com os integrantes abaixo do mínimo, e a regra de
-    // consolidação que o catálogo não confirmou.
+    // consolidação que o catálogo não confirmou. A etapa da instância superior não admitida não recebe nenhuma das causas da banca
+    // de 2ª instância.
     private static ModeloDeEtapa[] EtapasComDefeitos()
     {
         ModeloDeEtapa instanciaSuperiorNaoAdmitida = EtapaComRecurso(
@@ -108,6 +119,17 @@ public sealed class OrdemDasCausasDasBancasTests
             EtapaComRecurso("Entrevista", Avaliacao, DaNota, false, NaEtapa(Avaliadora(TipoDeBanca.Entrevista, false, TipoMotivoDeDecisao.NotaDaEtapa))), RegraForaDoCatalogo);
 
         return [instanciaSuperiorNaoAdmitida, minimoDeBancasEDeIntegrantes, regraNaoResolvida];
+    }
+
+    // A banca de 2ª instância numa etapa sem recurso que admita instância superior, e o recurso que admite instância superior em
+    // etapa sem banca de 2ª instância, nem dela nem da fase.
+    private static ModeloDeEtapa[] EtapasDaSegundaInstanciaComDefeitos()
+    {
+        ModeloDeEtapa bancaSemRecurso = EtapaSemRecurso(DaSegundaInstanciaNaEtapa());
+        ModeloDeEtapa recursoSemBanca = EtapaComRecurso(
+            "Documentos", Avaliacao, DaNota, true, NaEtapa(Avaliadora(TipoDeBanca.Entrevista, false, TipoMotivoDeDecisao.NotaDaEtapa)));
+
+        return [bancaSemRecurso, recursoSemBanca];
     }
 
     // A inscrição própria com a nota do ENEM sem a banca de importação das notas, entre a falta de bancas do tipo, na fase, e a banca
@@ -144,15 +166,16 @@ public sealed class OrdemDasCausasDasBancasTests
     {
         (string Codigo, string? Campo)[] causas = CausasDasBancasDe(ImportacaoExternaComTodasAsCausas());
 
-        causas.Should().Equal(
-            ("Cronograma.RecursoSemBanca", "fases[1].bancasRequeridas"),
-            ("Banca.TipoNaoAdmiteInstanciaSuperior", "etapas[0].recursos[0].admiteInstanciaSuperior"),
-            ("Banca.TipoExigeMaisDeUmaBanca", "etapas[1].bancas[0]"),
-            ("ProcessoSeletivo.HomologacaoDasInscricoesSemBanca", "fases[1].bancasRequeridas"),
-            ("ProcessoSeletivo.ImportacaoExternaSemBancaDeImportacaoDeCandidatos", "fases"),
-            ("Banca.RegraDeDeliberacaoObrigatoria", "fases[0].bancasRequeridas[0]"),
-            ("Banca.IntegrantesAbaixoDoMinimo", "etapas[1].bancas[0]"),
-            ("EtapaProcesso.RegraDeConsolidacaoNaoResolvida", "etapas[2].bancas[0]"));
+        causas.Should().Equal(CausasDaImportacaoExterna);
+    }
+
+    [Fact(DisplayName = "A etapa que dispara a instância superior não admitida não recebe a falta nem a sobra da banca de 2ª instância")]
+    public void EtapaDaInstanciaSuperiorNaoAdmitida_SoTemACausaDoTipo()
+    {
+        (string Codigo, string? Campo)[] daEtapa =
+            [.. CausasDasBancasDe(ImportacaoExternaComTodasAsCausas()).Where(static causa => causa.Campo!.StartsWith("etapas[0]", StringComparison.Ordinal))];
+
+        daEtapa.Should().Equal(("Banca.TipoNaoAdmiteInstanciaSuperior", "etapas[0].recursos[0].admiteInstanciaSuperior"));
     }
 
     [Fact(DisplayName = "Na inscrição própria com a nota do ENEM, a falta da banca de importação das notas vem depois do tipo e antes da regra de deliberação")]
@@ -177,10 +200,28 @@ public sealed class OrdemDasCausasDasBancasTests
         daImportacaoExterna.Union(daInscricaoPropria).Should().BeEquivalentTo(CausasDasBancas);
     }
 
+    private static readonly (string Codigo, string? Campo)[] CausasDaImportacaoExterna =
+    [
+        ("Cronograma.RecursoSemBanca", "fases[2].bancasRequeridas"),
+        ("Banca.TipoNaoAdmiteInstanciaSuperior", "etapas[0].recursos[0].admiteInstanciaSuperior"),
+        ("Banca.FaseSemBancaDaSegundaInstancia", "fases[2].bancasRequeridas"),
+        ("Banca.EtapaSemBancaDaSegundaInstancia", "etapas[4].bancas"),
+        ("Banca.FaseComBancaDaSegundaInstanciaSemRecursoParaJulgar", "fases[1].bancasRequeridas[0]"),
+        ("Banca.EtapaComBancaDaSegundaInstanciaSemRecursoParaJulgar", "etapas[3].bancas[0]"),
+        ("Banca.TipoExigeMaisDeUmaBanca", "etapas[1].bancas[0]"),
+        ("ProcessoSeletivo.HomologacaoDasInscricoesSemBanca", "fases[2].bancasRequeridas"),
+        ("ProcessoSeletivo.ImportacaoExternaSemBancaDeImportacaoDeCandidatos", "fases"),
+        ("Banca.RegraDeDeliberacaoObrigatoria", "fases[0].bancasRequeridas[0]"),
+        ("Banca.IntegrantesAbaixoDoMinimo", "etapas[1].bancas[0]"),
+        ("EtapaProcesso.RegraDeConsolidacaoNaoResolvida", "etapas[2].bancas[0]"),
+    ];
+
     private static readonly string[] VermelhosDaImportacaoExterna =
     [
         "cronograma_recurso_com_banca_que_julga",
         "cronograma_instancia_superior_admitida_pelo_tipo_de_banca",
+        "cronograma_instancia_superior_com_banca_da_segunda_instancia",
+        "cronograma_banca_da_segunda_instancia_com_recurso_para_julgar",
         "cronograma_tipo_de_banca_com_o_minimo_de_bancas",
         "cronograma_homologacao_das_inscricoes_com_banca",
         "cronograma_importacao_externa_com_banca_de_importacao_de_candidatos",

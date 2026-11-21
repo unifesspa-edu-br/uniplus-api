@@ -97,6 +97,7 @@ internal static class CausasQueImpedemCongelar
     [
         .. QuemJulgaORecurso.SemBanca(cronograma, etapas),
         .. QuemJulgaORecurso.InstanciaSuperiorNaoAdmitida(cronograma, etapas),
+        .. ConferenciaDaSegundaInstancia.Conferir(cronograma, etapas),
         .. ConferenciaDasBancas.ConferirMinimoDeBancasPorTipo(cronograma, etapas),
         .. ExigenciaDasBancasDaHomologacao.Causas(origem, cronograma, etapas),
         .. ConferenciaDasBancas.ConferirRegrasDeDeliberacao(cronograma, etapas),

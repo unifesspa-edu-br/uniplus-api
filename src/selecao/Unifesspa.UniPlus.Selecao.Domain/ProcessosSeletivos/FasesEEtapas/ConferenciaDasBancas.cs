@@ -31,6 +31,14 @@ public static class ConferenciaDasBancas
             "Cronograma: o recurso que admite instância superior não recai sobre item avaliado por tipo de banca que o encerra na 1ª instância",
             static (_, cronograma, etapas, _) => QuemJulgaORecurso.InstanciaSuperiorNaoAdmitida(cronograma, etapas),
             static (_, cronograma, etapas) => QuemJulgaIndeterminado(cronograma, etapas)),
+        new("cronograma_instancia_superior_com_banca_da_segunda_instancia",
+            "Cronograma: o recurso que admite instância superior tem a banca que o julga em 2ª instância: na fase, a própria fase a prevê; na etapa, ela ou a fase em que acontece",
+            static (_, cronograma, etapas, _) => ConferenciaDaSegundaInstancia.Faltas(cronograma, etapas).Causas,
+            static (_, cronograma, etapas) => ConferenciaDaSegundaInstancia.Faltas(cronograma, etapas).Indeterminado),
+        new("cronograma_banca_da_segunda_instancia_com_recurso_para_julgar",
+            "Cronograma: cada banca que julga o recurso em 2ª instância tem recurso para julgar: na etapa, um recurso da própria etapa que admite instância superior; na fase, o recurso da fase, ou o de uma etapa dela sem banca de 2ª instância própria, que admite instância superior",
+            static (_, cronograma, etapas, _) => ConferenciaDaSegundaInstancia.Sobras(cronograma, etapas).Causas,
+            static (_, cronograma, etapas) => ConferenciaDaSegundaInstancia.Sobras(cronograma, etapas).Indeterminado),
         new("cronograma_tipo_de_banca_com_o_minimo_de_bancas",
             "Cronograma: o tipo de banca que exige duas ou mais bancas tem ao menos duas, na fase ou na etapa e em cada grupo de candidatos atendidos",
             static (_, cronograma, etapas, _) => ConferirMinimoDeBancasPorTipo(cronograma, etapas),
@@ -164,7 +172,7 @@ public static class ConferenciaDasBancas
             posicao, $"{EtapaDeclarada.ListaDasBancas}[{falta.Banca.Posicao}]", MinimoDeBancasPorTipo.Recusa(falta, EtapaNaPosicao(posicao))));
     }
 
-    private static bool FaseOuEtapaRecusadaNaLeitura(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
+    internal static bool FaseOuEtapaRecusadaNaLeitura(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
         cronograma.TemParteRecusadaNaListaDeFases || etapas.LeituraRecusouEtapa;
 
     private static bool ListaDasBancasDasFasesComParteRecusada(CronogramaDoProcesso cronograma) =>

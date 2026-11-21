@@ -13929,6 +13929,86 @@
       ]
     },
     {
+      "codigo": "uniplus.selecao.banca.etapa_com_banca_da_segunda_instancia_sem_recurso_para_julgar",
+      "requisitos": [
+        "UNI-REQ-0454",
+        "UNI-REQ-0491"
+      ],
+      "oQueAconteceu": [
+        "A etapa prevê uma banca com o papel de julgar o recurso em 2ª instância, e nenhum recurso da própria etapa admite instância superior (UNI-REQ-0491). A banca de 2ª instância da etapa julga só os recursos dela; o recurso da fase é julgado pela banca da própria fase. Por isso o recurso da fase admitir instância superior não justifica a banca da etapa.",
+        "O rascunho do processo aceita essa banca, porque é montado aos poucos. A recusa sai na publicação e na retificação em ato único, uma por banca, como o código desta página no corpo da resposta, e não na lista `errors[]`. O campo é `etapas[i].bancas[p]`, em que `i` é a posição da etapa e `p`, a da banca, e a resposta traz a identificação da etapa e a da banca em `identificadores`. Nesse lugar, a recusa de [mais de uma banca de 2ª instância](/erros/uniplus.selecao.banca.etapa_com_mais_de_uma_banca_da_segunda_instancia) não sai.",
+        "A mensagem da resposta cita a etapa pela posição e a banca pelo nome do tipo e pela posição dela: \"A etapa na posição *n* prevê a banca '*tipo e posição*', com o papel 'Julga o recurso em 2ª instância', e nenhum recurso da etapa admite instância superior. A banca de 2ª instância da etapa julga só os recursos dela; a do recurso da fase fica na própria fase. Retire essa banca, ou declare que um recurso da etapa admite instância superior.\""
+      ],
+      "comoResolver": [
+        "Escolha um dos caminhos:",
+        "- retire a banca de 2ª instância da etapa; se o recurso da fase admite instância superior, a banca dele fica na própria fase;\n- ou declare que um recurso da etapa admite instância superior.",
+        "O painel de conformidade aponta a pendência antes da publicação, no item `cronograma_banca_da_segunda_instancia_com_recurso_para_julgar`."
+      ],
+      "ondeAparece": [
+        "- Publicação inicial do processo seletivo\n- Retificação em ato único"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.banca.etapa_sem_banca_da_segunda_instancia",
+      "requisitos": [
+        "UNI-REQ-0274",
+        "UNI-REQ-0454"
+      ],
+      "oQueAconteceu": [
+        "O recurso da etapa declara que admite instância superior, e nem a etapa nem a\nfase em que ela acontece preveem uma banca com o papel de julgar o recurso em 2ª\ninstância (UNI-REQ-0454). Serve a banca de 2ª instância da própria etapa ou a da\nfase da etapa. A banca de análise de recursos de 1ª instância, da etapa ou da\nfase, não atende: a 2ª instância é outra banca, de papel próprio.",
+        "A mensagem cita a etapa pela posição, e não pelo nome, e a fase pelo código. A\nconferência é de completude e roda na publicação e na retificação em ato único.\nA recusa vem como o código desta página no corpo da resposta, e não na lista\n`errors[]`, e aponta o campo `etapas[i].bancas`. O item fica sem conferência, e a\nrecusa não sai, enquanto parte das bancas da etapa, das bancas da fase dela ou\ndos recursos da etapa estiver recusada por outro motivo, ou quando o recurso já\nfoi recusado pelo\n[tipo que não admite instância superior](/erros/uniplus.selecao.banca.tipo_nao_admite_instancia_superior)."
+      ],
+      "comoResolver": [
+        "Escolha um dos caminhos:",
+        "- acrescente à etapa, ou à fase em que ela acontece, uma banca com o papel\n  \"Julga o recurso em 2ª instância\";\n- ou declare que o recurso não admite instância superior.",
+        "O painel de conformidade aponta a pendência antes da publicação, no item\n`cronograma_instancia_superior_com_banca_da_segunda_instancia`."
+      ],
+      "ondeAparece": [
+        "- Publicação inicial do processo seletivo\n- Retificação em ato único"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.banca.fase_com_banca_da_segunda_instancia_sem_recurso_para_julgar",
+      "requisitos": [
+        "UNI-REQ-0454",
+        "UNI-REQ-0491"
+      ],
+      "oQueAconteceu": [
+        "A fase prevê uma banca com o papel de julgar o recurso em 2ª instância, e não há recurso que ela possa julgar (UNI-REQ-0491). A banca de 2ª instância da fase julga o recurso da própria fase e os recursos das etapas dela que não têm banca de 2ª instância própria. Por isso a banca da fase é aceita quando o recurso da fase admite instância superior, ou quando uma etapa da fase tem recurso que admite instância superior e não tem banca de 2ª instância própria. Se todas as etapas com esse recurso já têm a sua banca, a da fase sobra e é recusada.",
+        "O rascunho do processo aceita essa banca, porque é montado aos poucos. A recusa sai na publicação e na retificação em ato único, uma por banca, como o código desta página no corpo da resposta, e não na lista `errors[]`. O campo é `fases[i].bancasRequeridas[p]`, em que `i` é a posição da fase e `p`, a da banca, e a resposta traz o código da fase e a identificação da banca em `identificadores`. Nesse lugar, a recusa de [mais de uma banca de 2ª instância](/erros/uniplus.selecao.banca.fase_com_mais_de_uma_banca_da_segunda_instancia) não sai.",
+        "A mensagem da resposta cita a fase pelo código e a banca pelo nome do tipo e pela posição dela, e tem duas formas:",
+        "- nenhum recurso admite instância superior: \"A fase '*código da fase*' prevê a banca '*tipo e posição*', com o papel 'Julga o recurso em 2ª instância', e nenhum recurso da fase ou das etapas dela admite instância superior. A banca de 2ª instância da fase julga o recurso da fase e os das etapas dela que não têm banca de 2ª instância própria. Retire essa banca, ou declare que o recurso da fase, ou o de uma etapa dela sem banca de 2ª instância própria, admite instância superior.\";\n- só admitem etapas que já têm a sua banca: \"A fase '*código da fase*' prevê a banca '*tipo e posição*', com o papel 'Julga o recurso em 2ª instância', e não há recurso para ela julgar: o recurso da fase não admite instância superior, e cada etapa da fase com recurso que admite instância superior já tem a sua banca de 2ª instância, que o julga. A banca de 2ª instância da fase julga o recurso da fase e os das etapas dela que não têm banca de 2ª instância própria. Retire essa banca; ou retire a banca de 2ª instância de uma dessas etapas, para que a da fase julgue o recurso dela; ou declare que o recurso da fase, ou o de uma etapa dela sem banca de 2ª instância própria, admite instância superior.\""
+      ],
+      "comoResolver": [
+        "Escolha um dos caminhos:",
+        "- retire a banca de 2ª instância da fase;\n- ou retire a banca de 2ª instância de uma etapa da fase com recurso que admite instância superior, para que a banca da fase julgue o recurso dela;\n- ou declare que o recurso da fase, ou o de uma etapa dela sem banca de 2ª instância própria, admite instância superior.",
+        "O painel de conformidade aponta a pendência antes da publicação, no item `cronograma_banca_da_segunda_instancia_com_recurso_para_julgar`."
+      ],
+      "ondeAparece": [
+        "- Publicação inicial do processo seletivo\n- Retificação em ato único"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.banca.fase_sem_banca_da_segunda_instancia",
+      "requisitos": [
+        "UNI-REQ-0274",
+        "UNI-REQ-0454"
+      ],
+      "oQueAconteceu": [
+        "O recurso da fase declara que admite instância superior, e a própria fase não\nprevê uma banca com o papel de julgar o recurso em 2ª instância (UNI-REQ-0454).\nNão servem a banca de uma etapa da fase nem a banca de análise de recursos de 1ª\ninstância: a 2ª instância é outra banca, de papel próprio.",
+        "O papel é registrado na banca quando ela é criada, e a conferência olha esse\npapel, e não o nome do tipo. A configuração não diz qual órgão é a 2ª instância:\nquem a integra é definido na designação da banca.",
+        "A mensagem cita a fase pelo código. A conferência é de completude e roda na\npublicação e na retificação em ato único. A recusa vem como o código desta página\nno corpo da resposta, e não na lista `errors[]`, e aponta o campo\n`fases[i].bancasRequeridas`. O item fica sem conferência, e a recusa não sai,\nenquanto parte das bancas ou dos recursos da fase estiver recusada por outro\nmotivo, ou quando o recurso já foi recusado pelo\n[tipo que não admite instância superior](/erros/uniplus.selecao.banca.tipo_nao_admite_instancia_superior)."
+      ],
+      "comoResolver": [
+        "Escolha um dos caminhos:",
+        "- acrescente à fase uma banca com o papel \"Julga o recurso em 2ª instância\"; ela\n  declara a regra de deliberação do edital e não define candidatos atendidos\n  ([regra obrigatória](/erros/uniplus.selecao.banca.regra_de_deliberacao_obrigatoria),\n  [candidatos atendidos](/erros/uniplus.selecao.banca.candidatos_atendidos_em_banca_de_recursos));\n- ou declare que o recurso não admite instância superior.",
+        "O painel de conformidade aponta a pendência antes da publicação, no item\n`cronograma_instancia_superior_com_banca_da_segunda_instancia`."
+      ],
+      "ondeAparece": [
+        "- Publicação inicial do processo seletivo\n- Retificação em ato único"
+      ]
+    },
+    {
       "codigo": "uniplus.selecao.banca.id_duplicado",
       "requisitos": [
         "UNI-REQ-0470"
