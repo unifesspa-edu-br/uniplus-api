@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.API.Controllers;
 
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,7 +13,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
-/// Vocabulários fechados de <c>TipoBanca</c>, do papel da banca e de <c>FaseCanonica</c> (UNI-REQ-0139), de
+/// Vocabulários fechados de <c>TipoBanca</c>, do papel da banca, dos tipos de decisão que a banca julga e de <c>FaseCanonica</c> (UNI-REQ-0139), de
 /// <c>TipoInstrumentoNormativo</c>, usado pela Base Legal de Bônus Regional, e dos grupos
 /// de área do ENEM, usados pelos cadastros de cursos e de Pesos por Área.
 /// </summary>
@@ -51,10 +50,6 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// </para>
 /// </remarks>
 [ApiController]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class VocabulariosController : ControllerBase
 {
     private readonly IQueryBus _queryBus;
@@ -92,6 +87,21 @@ public sealed class VocabulariosController : ControllerBase
             .ConfigureAwait(false);
 
         return Ok(papeis);
+    }
+
+    /// <summary>Lista os tipos de decisão que um tipo de banca pode julgar, com código e rótulo, na ordem de exibição.</summary>
+    [HttpGet("vocabularios/tipos-de-decisao")]
+    [AllowAnonymous]
+    [VendorMediaType(Resource = "codigo-tipo-de-decisao", Versions = [1])]
+    [ProducesResponseType(typeof(IEnumerable<CodigoComRotulo<TipoMotivoDeDecisao>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> ListarTiposDeDecisao(CancellationToken cancellationToken)
+    {
+        IReadOnlyList<CodigoComRotulo<TipoMotivoDeDecisao>> tipos = await _queryBus
+            .Send(new ListarTiposDeDecisaoQuery(), cancellationToken)
+            .ConfigureAwait(false);
+
+        return Ok(tipos);
     }
 
     /// <summary>Lista as quatorze fases do conjunto canônico, com código e rótulo.</summary>

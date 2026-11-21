@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.Vocabularios;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -20,10 +19,6 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// autenticação, negociam a vendor MIME e não têm par de escrita.
 /// </summary>
 [Collection(ConfiguracaoEndpointCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class VocabulariosEndpointTests
 {
     private readonly ConfiguracaoEndpointFixture _fixture;
@@ -78,6 +73,25 @@ public sealed class VocabulariosEndpointTests
             ("IMPORTA_AS_NOTAS_DO_INEP", "Importa as notas do INEP"),
             ("IMPORTA_CANDIDATOS", "Importa candidatos"),
             ("JULGA_A_SEGUNDA_INSTANCIA", "Julga o recurso em 2ª instância"));
+    }
+
+    [Fact(DisplayName = "GET /vocabularios/tipos-de-decisao devolve os oito tipos de decisão com código e rótulo, na ordem publicada, sem exigir autenticação")]
+    public async Task ListarTiposDeDecisao_DevolveOsOitoTipos()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        CodigoComRotulo<TipoMotivoDeDecisao>[] tipos =
+            await ApoioDosVocabularios.LerAsync<CodigoComRotulo<TipoMotivoDeDecisao>>(client, "tipos-de-decisao", "codigo-tipo-de-decisao");
+
+        tipos.Select(static t => (t.Codigo, t.Rotulo)).Should().Equal(
+            ("ISENCAO_DA_TAXA", "Isenção da taxa"),
+            ("HOMOLOGACAO_DAS_INSCRICOES", "Homologação das inscrições"),
+            ("ANALISE_DOCUMENTAL", "Análise documental"),
+            ("HETEROIDENTIFICACAO", "Heteroidentificação"),
+            ("AVALIACAO_BIOPSICOSSOCIAL", "Avaliação biopsicossocial"),
+            ("CLASSIFICACAO", "Classificação"),
+            ("GABARITO_DA_PROVA", "Gabarito da prova"),
+            ("NOTA_DA_ETAPA", "Nota da etapa"));
     }
 
     // Afirmado por extenso, e não derivado do catálogo: é o contrato publicado que está
@@ -159,6 +173,7 @@ public sealed class VocabulariosEndpointTests
     [Theory(DisplayName = "Vocabulário governado por código não tem rota de escrita — evolução é mudança versionada da API, não cadastro")]
     [InlineData("/api/configuracao/vocabularios/tipos-banca")]
     [InlineData("/api/configuracao/vocabularios/papeis-de-banca")]
+    [InlineData("/api/configuracao/vocabularios/tipos-de-decisao")]
     [InlineData("/api/configuracao/vocabularios/fases-canonicas")]
     [InlineData("/api/configuracao/vocabularios/tipos-instrumento-normativo")]
     [InlineData("/api/configuracao/vocabularios/grupos-area-enem")]
@@ -181,6 +196,7 @@ public sealed class VocabulariosEndpointTests
     [Theory(DisplayName = "Versão inexistente da vendor MIME recusa com 406 em vez de servir a v1 em silêncio")]
     [InlineData("/api/configuracao/vocabularios/tipos-banca", "codigo-tipo-banca")]
     [InlineData("/api/configuracao/vocabularios/papeis-de-banca", "codigo-papel-de-banca")]
+    [InlineData("/api/configuracao/vocabularios/tipos-de-decisao", "codigo-tipo-de-decisao")]
     [InlineData("/api/configuracao/vocabularios/fases-canonicas", "codigo-fase-canonica")]
     [InlineData("/api/configuracao/vocabularios/tipos-instrumento-normativo", "codigo-tipo-instrumento-normativo")]
     [InlineData("/api/configuracao/vocabularios/grupos-area-enem", "codigo-grupo-area-enem")]
