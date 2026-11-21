@@ -42,15 +42,36 @@ public sealed class MontagemDaRegraDeDeliberacaoTests
         ]);
     }
 
-    [Fact(DisplayName = "O ato individual que declara quórum é recusado no campo do quórum")]
-    public void Montar_AtoIndividualComQuorum_RecusaOQuorum()
+    [Fact(DisplayName = "O ato individual sem votação do recurso é montado como veio")]
+    public void Montar_AtoIndividualSemVotacao_MontaARegra()
     {
-        RegraDeDeliberacaoInput declarada = new(ModoDeDeliberacao.AtoIndividual, Integrantes: 1, Suplentes: 0, Quorum: 1);
+        Result<RegraDeDeliberacao?> resultado = MontagemDaRegraDeDeliberacao.Montar(RegrasDeDeliberacaoDeTeste.AtoIndividual(), "bancas[0]");
 
-        Result<RegraDeDeliberacao?> resultado = MontagemDaRegraDeDeliberacao.Montar(declarada, "bancas[0]");
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.Quorum.Should().BeNull();
+    }
 
-        FieldError recusa = resultado.Errors.Should().ContainSingle().Subject;
-        recusa.Field.Should().Be("bancas[0].regraDeDeliberacao.quorum");
-        recusa.Error.Code.Should().Be("Banca.AtoIndividualSemVotacao");
+    [Fact(DisplayName = "O ato individual com a votação do recurso inteira é montado com o quórum declarado")]
+    public void Montar_AtoIndividualComVotacaoInteira_MontaARegraComOQuorum()
+    {
+        Result<RegraDeDeliberacao?> resultado = MontagemDaRegraDeDeliberacao.Montar(
+            RegrasDeDeliberacaoDeTeste.AtoIndividualComVotacaoDoRecurso(), "bancas[0]");
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.QuorumExigido.Should().Be(2);
+    }
+
+    [Fact(DisplayName = "O ato individual que declara só o quórum recusa o critério e o encerramento sob o caminho da banca")]
+    public void Montar_AtoIndividualSoComOQuorum_RecusaOCriterioEOEncerramento()
+    {
+        Result<RegraDeDeliberacao?> resultado = MontagemDaRegraDeDeliberacao.Montar(
+            RegrasDeDeliberacaoDeTeste.AtoIndividualSoComOQuorum(), "fases[0].bancasRequeridas[1]");
+
+        resultado.Errors.Select(static erro => erro.Field).Should().BeEquivalentTo(
+        [
+            "fases[0].bancasRequeridas[1].regraDeDeliberacao.criterio",
+            "fases[0].bancasRequeridas[1].regraDeDeliberacao.encerramento",
+        ]);
+        resultado.Errors.Should().OnlyContain(static erro => erro.Error.Code == "Banca.VotacaoDoRecursoIncompleta");
     }
 }

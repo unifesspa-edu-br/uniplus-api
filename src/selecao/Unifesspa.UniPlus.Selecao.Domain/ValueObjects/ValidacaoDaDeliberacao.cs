@@ -10,11 +10,14 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 /// </summary>
 internal static class ValidacaoDaDeliberacao
 {
+    private const string DetalheDaVotacaoIncompleta =
+        "A banca decide por ato individual e declara só parte da votação usada no julgamento do recurso. Declare o quórum, o critério e o encerramento dessa votação, ou retire todos os campos dela.";
+
     internal static List<FieldError> Violacoes(DeclaracaoDaDeliberacao declarada)
     {
         if (!Enum.IsDefined(declarada.Modo))
         {
-            return [Recusa("modo", BancaErrorCodes.ModoDeDeliberacaoInvalido, "O modo de deliberação deve ser colegiada com votação ou ato individual.")];
+            return [Recusa("modo", BancaErrorCodes.ModoDeDeliberacaoInvalido, "O modo de deliberação deve ser colegiada com votação ou ato individual. No ato individual, a banca pode declarar ao lado a votação usada no julgamento do recurso.")];
         }
 
         List<FieldError> violacoes = [.. DaComposicao(declarada)];
@@ -37,18 +40,48 @@ internal static class ValidacaoDaDeliberacao
         }
     }
 
+    /// <summary>
+    /// O ato individual aceita a deliberação sem votação ou com a votação do recurso inteira: quórum, critério e encerramento
+    /// juntos. A votação pela metade recusa um campo que falta por vez.
+    /// </summary>
     private static IEnumerable<FieldError> DoAtoIndividual(DeclaracaoDaDeliberacao declarada) =>
-        CamposDaVotacao(declarada)
-            .Where(static campo => campo.Declarado)
-            .Select(static campo => Recusa(campo.Nome, BancaErrorCodes.AtoIndividualSemVotacao, "A deliberação por ato individual não declara quórum, critério, desempate, encerramento nem resultado sem unanimidade."));
+        DeclaraAlgoDaVotacao(declarada)
+            ? [.. CamposQueFaltamNaVotacao(declarada).Select(static campo => Recusa(campo, BancaErrorCodes.VotacaoDoRecursoIncompleta, DetalheDaVotacaoIncompleta)), .. DaVotacaoDeclarada(declarada)]
+            : [];
 
-    private static IEnumerable<(string Nome, bool Declarado)> CamposDaVotacao(DeclaracaoDaDeliberacao declarada) =>
+    private static bool DeclaraAlgoDaVotacao(DeclaracaoDaDeliberacao declarada) =>
+        declarada.Quorum.HasValue
+        || declarada.Criterio.HasValue
+        || declarada.Encerramento.HasValue
+        || declarada.Desempate.HasValue
+        || declarada.SemUnanimidade.HasValue;
+
+    private static IEnumerable<string> CamposQueFaltamNaVotacao(DeclaracaoDaDeliberacao declarada)
+    {
+        if (!declarada.Quorum.HasValue)
+        {
+            yield return "quorum";
+        }
+
+        if (!declarada.Criterio.HasValue)
+        {
+            yield return "criterio";
+        }
+
+        if (!declarada.Encerramento.HasValue)
+        {
+            yield return "encerramento";
+        }
+    }
+
+    // As regras de cada campo valem para o que a votação do recurso declarou; o que falta já foi recusado como votação incompleta.
+    private static IEnumerable<FieldError> DaVotacaoDeclarada(DeclaracaoDaDeliberacao declarada) =>
     [
-        ("quorum", declarada.Quorum.HasValue),
-        ("criterio", declarada.Criterio.HasValue),
-        ("desempate", declarada.Desempate.HasValue),
-        ("encerramento", declarada.Encerramento.HasValue),
-        ("semUnanimidade", declarada.SemUnanimidade.HasValue),
+        .. declarada.Quorum.HasValue ? DoQuorum(declarada) : [],
+        .. declarada.Criterio.HasValue ? DoCriterio(declarada) : [],
+        .. declarada.Encerramento.HasValue ? DoEncerramento(declarada) : [],
+        .. DoDesempate(declarada),
+        .. DoResultadoSemUnanimidade(declarada),
     ];
 
     private static IEnumerable<FieldError> DaVotacao(DeclaracaoDaDeliberacao declarada) =>
@@ -73,7 +106,7 @@ internal static class ValidacaoDaDeliberacao
         }
 
         return declarada.Encerramento == EncerramentoDaVotacao.TodosOsTitulares && quorum != declarada.Integrantes
-            ? [Recusa("quorum", BancaErrorCodes.QuorumIncoerente, $"Com o encerramento por todos os titulares, o quórum deve ser igual ao número de integrantes ({declarada.Integrantes}); foi declarado {quorum}.")]
+            ? [Recusa("quorum", BancaErrorCodes.QuorumIncoerente, $"Com o encerramento por todos os titulares, o quórum deve ser igual ao número de integrantes ({declarada.Integrantes}).")]
             : [];
     }
 

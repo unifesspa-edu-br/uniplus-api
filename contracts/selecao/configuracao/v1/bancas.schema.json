@@ -41,7 +41,7 @@
   "$defs": {
     "regraDeDeliberacao": {
       "title": "Regra de deliberação da banca",
-      "description": "Como a banca decide: o modo, a composição e, na votação do colegiado, o quórum, o critério, o desempate e o encerramento. Os campos que o modo não admite ficam ausentes.",
+      "description": "Como a banca decide: o modo, a composição e, quando há votação (no colegiado ou no ato individual que julga o recurso), o quórum, o critério, o desempate e o encerramento. Os campos que o modo não admite ficam ausentes.",
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -67,13 +67,13 @@
         },
         "quorum": {
           "title": "Quórum",
-          "description": "Número mínimo de votos para decidir. Só na votação do colegiado.",
+          "description": "Número mínimo de votos para decidir. Só quando há votação: no colegiado ou no ato individual que julga o recurso.",
           "type": "integer",
           "minimum": 0
         },
         "criterio": {
           "title": "Critério de votação",
-          "description": "Maioria simples, maioria absoluta ou unanimidade. Só na votação do colegiado.",
+          "description": "Maioria simples, maioria absoluta ou unanimidade. Só quando há votação: no colegiado ou no ato individual que julga o recurso.",
           "enum": [
             "maioriaSimples",
             "maioriaAbsoluta",

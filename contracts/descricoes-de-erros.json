@@ -13838,23 +13838,6 @@
       ]
     },
     {
-      "codigo": "uniplus.selecao.banca.ato_individual_sem_votacao",
-      "requisitos": [
-        "UNI-REQ-0338"
-      ],
-      "oQueAconteceu": [
-        "A banca declarada por ato individual (`atoIndividual`) traz ao menos um campo de\nvotação: quórum, critério, desempate, encerramento ou o valor para a unanimidade\nnão alcançada. No ato individual não há quórum nem votação: qualquer pessoa\ntitular designada pratica o ato, e o registro traz a autoria, a data e, quando\nhouver, a justificativa (UNI-REQ-0338). É o modo da banca de homologação das\ninscrições.",
-        "A recusa vem na lista `errors[]` da resposta, no caminho do campo recusado, por exemplo `fases[0].bancasRequeridas[0].regraDeDeliberacao.quorum` na banca da fase e `etapas[0].bancas[0].regraDeDeliberacao.quorum` na banca da etapa."
-      ],
-      "comoResolver": [
-        "Retire os campos de votação e deixe só o modo, o número de integrantes e o de\nsuplentes. Se o edital manda a banca votar, mude o modo para `colegiadaComVotacao`\ne declare os campos dela; ver\n[modo de deliberação inválido](/erros/uniplus.selecao.banca.modo_de_deliberacao_invalido)."
-      ],
-      "ondeAparece": [
-        "Definição do cronograma de fases do processo seletivo",
-        "Definição de etapas do processo seletivo"
-      ]
-    },
-    {
       "codigo": "uniplus.selecao.banca.criterio_obrigatorio",
       "requisitos": [
         "UNI-REQ-0275"
@@ -13974,16 +13957,15 @@
       ],
       "oQueAconteceu": [
         "A regra de deliberação da banca informou um `modo` que não pertence ao vocabulário\nde deliberação. O vocabulário é fechado e tem dois modos:",
-        "- `colegiadaComVotacao`: a banca decide por votação, com quórum, critério de\n  decisão e forma de encerramento (UNI-REQ-0275);\n- `atoIndividual`: sem quórum nem votação, qualquer pessoa titular designada\n  pratica o ato (UNI-REQ-0338).",
-        "O modo escolhido define quais campos da regra existem. Um valor fora do\nvocabulário não permite saber como a banca decide nem o que conferir na\ndeclaração.",
+        "- `colegiadaComVotacao`: a banca decide por votação, com quórum, critério de\n  decisão e forma de encerramento (UNI-REQ-0275);\n- `atoIndividual`: qualquer pessoa titular designada pratica o ato, sem votação\n  (UNI-REQ-0338). Ao lado do ato individual, a banca pode declarar a votação usada no\n  julgamento do recurso.",
+        "O modo escolhido define quais campos da regra existem. A mensagem da resposta diz que o\nmodo deve ser colegiada com votação ou ato individual, e que, no ato individual, a banca\npode declarar ao lado a votação usada no julgamento do recurso. Um valor fora do\nvocabulário não permite saber como a banca decide nem o que conferir na\ndeclaração.",
         "A recusa vem na lista `errors[]` da resposta, no caminho do campo recusado, por exemplo `fases[0].bancasRequeridas[0].regraDeDeliberacao.modo` na banca da fase e `etapas[0].bancas[0].regraDeDeliberacao.modo` na banca da etapa."
       ],
       "comoResolver": [
-        "Informe um dos dois modos. Use `colegiadaComVotacao` quando o edital manda a banca\nvotar e `atoIndividual` quando o edital dá a decisão a quem pratica o ato\nsozinho, como na banca de homologação das inscrições. Depois de corrigido o modo,\nos campos dele são conferidos; no ato individual, a presença de campo de votação\ntem [recusa própria](/erros/uniplus.selecao.banca.ato_individual_sem_votacao)."
+        "Informe um dos dois modos. Use `colegiadaComVotacao` quando o edital manda a banca\nvotar e `atoIndividual` quando o edital dá a decisão a quem pratica o ato\nsozinho, como na banca de homologação das inscrições. Depois de corrigido o modo,\nos campos dele são conferidos; no ato individual, a votação do recurso é aceita, e a\nvotação declarada pela metade tem\n[recusa própria](/erros/uniplus.selecao.banca.votacao_do_recurso_incompleta)."
       ],
       "ondeAparece": [
-        "Definição do cronograma de fases do processo seletivo",
-        "Definição de etapas do processo seletivo"
+        "- Definição do cronograma de fases do processo seletivo\n- Definição de etapas do processo seletivo"
       ]
     },
     {
@@ -14114,6 +14096,27 @@
       "ondeAparece": [
         "Definição do cronograma de fases do processo seletivo",
         "Definição de etapas do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.banca.votacao_do_recurso_incompleta",
+      "requisitos": [
+        "UNI-REQ-0275",
+        "UNI-REQ-0338",
+        "UNI-REQ-0384"
+      ],
+      "oQueAconteceu": [
+        "A banca declarada por ato individual (`atoIndividual`) traz alguns, mas não\ntodos, os campos da votação usada no julgamento do recurso: quórum, critério de\ndecisão e forma de encerramento.",
+        "No ato individual, qualquer pessoa titular designada pratica o ato sem quórum nem\nvotação (UNI-REQ-0338). Ao julgar recurso, porém, a banca delibera com voto e\nquórum (UNI-REQ-0384), e por isso a configuração pode trazer, ao lado do ato\nindividual, a votação do recurso (UNI-REQ-0275). Essa votação vale só para o\njulgamento do recurso. As opções aceitas são:",
+        "- **nenhum campo de votação:** a banca só pratica o ato individual;\n- **quórum, critério e encerramento juntos:** a votação do recurso está completa.",
+        "Declarar só parte deles é recusado, porque o recurso ficaria sem regra para\ndecidir. A recusa traz uma entrada por campo que falta, na lista `errors[]`, no\ncaminho do campo, por exemplo `fases[0].bancasRequeridas[0].regraDeDeliberacao.quorum`\nna banca da fase e `etapas[0].bancas[0].regraDeDeliberacao.quorum` na banca da etapa.\nAs conferências finas de cada campo (quórum no intervalo, desempate, resultado\nsem unanimidade) continuam com recusa própria.",
+        "A publicação exige a votação completa da banca por ato individual que julga\nrecurso: a banca de análise de recursos e a banca avaliadora que julga o recurso\npor não haver dedicada no lugar. A falta, nesse caso, é a recusa de\n[regra de deliberação obrigatória](/erros/uniplus.selecao.banca.regra_de_deliberacao_obrigatoria)."
+      ],
+      "comoResolver": [
+        "Declare os três campos da votação do recurso, ou retire todos. Para os campos,\nver [critério](/erros/uniplus.selecao.banca.criterio_obrigatorio),\n[encerramento](/erros/uniplus.selecao.banca.encerramento_obrigatorio) e\n[quórum](/erros/uniplus.selecao.banca.quorum_fora_do_intervalo). Se o edital manda\na banca votar em todas as decisões, mude o modo para `colegiadaComVotacao`; ver\n[modo de deliberação inválido](/erros/uniplus.selecao.banca.modo_de_deliberacao_invalido)."
+      ],
+      "ondeAparece": [
+        "- Definição do cronograma de fases do processo seletivo\n- Definição de etapas do processo seletivo\n- Leitura do documento de configuração do processo seletivo"
       ]
     },
     {

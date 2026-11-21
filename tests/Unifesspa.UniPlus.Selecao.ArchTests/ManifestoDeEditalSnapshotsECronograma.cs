@@ -122,7 +122,7 @@ internal static class ManifestoDeEditalSnapshotsECronograma
         // envelope: é valor da banca que a carrega.
         [typeof(RegraDeDeliberacao)] = (
             ["Modo", "Integrantes", "Suplentes", "Quorum", "Criterio", "Desempate", "Encerramento", "SemUnanimidade"],
-            [("QuorumExigido", "Derivada de Quorum — o ato individual exige um titular; congelá-la duplicaria a fonte de verdade.")]),
+            [("QuorumExigido", "Derivada de Quorum — sem votação exige um titular; congelá-la duplicaria a fonte de verdade.")]),
 
         // O recorte de competência — o que distingue duas bancas do MESMO tipo na mesma
         // fase. Sem Id no envelope, como a banca que a carrega: nada aponta para a linha de

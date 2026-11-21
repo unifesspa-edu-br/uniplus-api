@@ -17,6 +17,7 @@ public sealed class MontagemDasBancasDaFaseTests
 {
     private static readonly TipoBancaView TipoDocumental = new(Guid.CreateVersion7(), TipoDeBanca.AnaliseDocumental, "Banca de análise documental", null, null, PapelDaBanca.AvaliaOMerito, false, false, [TipoMotivoDeDecisao.AnaliseDocumental, TipoMotivoDeDecisao.IsencaoDaTaxa]);
     private static readonly TipoBancaView TipoDeRecursos = new(Guid.CreateVersion7(), TipoDeBanca.AnaliseDeRecursos, "Banca de análise de recursos", null, null, PapelDaBanca.JulgaAPrimeiraInstancia, false, false, []);
+    private static readonly TipoBancaView TipoDeHomologacao = new(Guid.CreateVersion7(), TipoDeBanca.HomologacaoDasInscricoes, "Banca de homologação das inscrições", null, null, PapelDaBanca.AvaliaOMerito, false, false, [TipoMotivoDeDecisao.HomologacaoDasInscricoes]);
     private static readonly CategoriaDocumentoView CategoriaRenda = new(Guid.CreateVersion7(), "RENDA", "Renda", null, 1);
 
     [Fact(DisplayName = "A banca requerida congela o tipo, o recorte de competência e a regra declarada")]
@@ -98,6 +99,53 @@ public sealed class MontagemDasBancasDaFaseTests
         resultado.Value!.Single().RegraDeDeliberacao.Should().BeNull();
     }
 
+    [Fact(DisplayName = "A banca de homologação que decide só a homologação, em ato individual sem votação, é montada")]
+    public async Task Montar_HomologacaoEmAtoIndividualSemVotacao_Aceita()
+    {
+        BancaRequeridaInput declarada = new(TipoDeHomologacao.Id, [], RegrasDeDeliberacaoDeTeste.AtoIndividual());
+
+        Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(Fase(declarada), 0, CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.Single().RegraDeDeliberacao!.Quorum.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "A banca de homologação em ato individual com a votação do recurso inteira é montada com o quórum")]
+    public async Task Montar_HomologacaoEmAtoIndividualComVotacaoInteira_Aceita()
+    {
+        BancaRequeridaInput declarada = new(TipoDeHomologacao.Id, [], RegrasDeDeliberacaoDeTeste.AtoIndividualComVotacaoDoRecurso());
+
+        Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(Fase(declarada), 0, CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.Single().RegraDeDeliberacao!.QuorumExigido.Should().Be(2);
+    }
+
+    [Fact(DisplayName = "A banca de homologação com a votação do recurso pela metade recusa o campo que falta, no caminho da banca")]
+    public async Task Montar_HomologacaoEmAtoIndividualComVotacaoPelaMetade_RecusaOsCamposQueFaltam()
+    {
+        BancaRequeridaInput declarada = new(TipoDeHomologacao.Id, [], RegrasDeDeliberacaoDeTeste.AtoIndividualSoComOQuorum());
+
+        Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(Fase(declarada), 0, CancellationToken.None);
+
+        resultado.Errors.Select(static erro => erro.Field).Should().BeEquivalentTo(
+        [
+            "fases[0].bancasRequeridas[0].regraDeDeliberacao.criterio",
+            "fases[0].bancasRequeridas[0].regraDeDeliberacao.encerramento",
+        ]);
+        resultado.Errors.Should().OnlyContain(static erro => erro.Error.Code == "Banca.VotacaoDoRecursoIncompleta");
+    }
+
+    [Fact(DisplayName = "A banca de recursos em ato individual com a votação inteira é montada")]
+    public async Task Montar_BancaDeRecursosEmAtoIndividualComVotacaoInteira_Aceita()
+    {
+        BancaRequeridaInput declarada = new(TipoDeRecursos.Id, [], RegrasDeDeliberacaoDeTeste.AtoIndividualComVotacaoDoRecurso());
+
+        Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(Fase(declarada), 0, CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue();
+    }
+
     private static FaseCronogramaInput Fase(params BancaRequeridaInput[] bancas) => new(
         Ordem: 1, FaseCanonicaId: Guid.CreateVersion7(), Inicio: null, Fim: null, Produtos: [],
         EmiteParecerIndividual: false, BancasRequeridas: bancas, RegraRecurso: null);
@@ -115,6 +163,7 @@ public sealed class MontagemDasBancasDaFaseTests
         ITipoBancaReader leitor = Substitute.For<ITipoBancaReader>();
         leitor.ObterPorIdAsync(TipoDocumental.Id, Arg.Any<CancellationToken>()).Returns(TipoDocumental);
         leitor.ObterPorIdAsync(TipoDeRecursos.Id, Arg.Any<CancellationToken>()).Returns(TipoDeRecursos);
+        leitor.ObterPorIdAsync(TipoDeHomologacao.Id, Arg.Any<CancellationToken>()).Returns(TipoDeHomologacao);
         return leitor;
     }
 

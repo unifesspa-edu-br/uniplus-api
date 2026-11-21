@@ -20,7 +20,7 @@ public sealed class ErrosDaBancaTests
     [InlineData("Banca.ModoDeDeliberacaoInvalido", "uniplus.selecao.banca.modo_de_deliberacao_invalido")]
     [InlineData("Banca.IntegrantesInvalidos", "uniplus.selecao.banca.integrantes_invalidos")]
     [InlineData("Banca.SuplentesInvalidos", "uniplus.selecao.banca.suplentes_invalidos")]
-    [InlineData("Banca.AtoIndividualSemVotacao", "uniplus.selecao.banca.ato_individual_sem_votacao")]
+    [InlineData("Banca.VotacaoDoRecursoIncompleta", "uniplus.selecao.banca.votacao_do_recurso_incompleta")]
     [InlineData("Banca.QuorumForaDoIntervalo", "uniplus.selecao.banca.quorum_fora_do_intervalo")]
     [InlineData("Banca.QuorumIncoerente", "uniplus.selecao.banca.quorum_incoerente")]
     [InlineData("Banca.CriterioObrigatorio", "uniplus.selecao.banca.criterio_obrigatorio")]
