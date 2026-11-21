@@ -31,23 +31,13 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
     [Fact(DisplayName = "Sem fase pedida, vêm todas as fases na ordem do cronograma, cada exigência na sua, e a não exigida não vem")]
     public void SemFase_TodasAsFasesSemONaoExigido()
     {
-        DocumentoExigido daInscricao = Documento(FaseDaInscricao, FinalidadeFormulario.Inscricao);
-        DocumentoExigido daIsencao = Documento(FaseDaInscricao, FinalidadeFormulario.IsencaoTaxa);
-        DocumentoExigido dispensado = Documento(FaseDaInscricao, FinalidadeFormulario.Inscricao);
-        DocumentoExigido daHabilitacao = Documento(FaseDaHabilitacao, FinalidadeFormulario.Habilitacao);
+        DocumentosDasDuasFases documentos = DocumentosDasDuasFases.Novos();
 
-        AvaliacaoDaInscricaoDto avaliacao = Projetar(
-            [
-                (daHabilitacao, SituacaoDoDocumento.DependeDeFasePosterior),
-                (daInscricao, SituacaoDoDocumento.Pendente),
-                (daIsencao, SituacaoDoDocumento.PodeSerExigido),
-                (dispensado, SituacaoDoDocumento.NaoExigido),
-            ],
-            faseId: null).Value!;
+        AvaliacaoDaInscricaoDto avaliacao = Projetar(documentos.ComAsSituacoesDaAvaliacao(), faseId: null).Value!;
 
         avaliacao.Documentos.Fases.Select(static f => f.Codigo).Should().Equal("INSCRICAO", "HABILITACAO");
         avaliacao.Documentos.Fases[0].Documentos.Select(static d => (d.ExigenciaId, d.Finalidade, d.Situacao)).Should().Equal(
-            [(daInscricao.Id, "INSCRICAO", "PENDENTE"), (daIsencao.Id, "ISENCAO_TAXA", "PODE_SER_EXIGIDO")],
+            [(documentos.DaInscricao.Id, "INSCRICAO", "PENDENTE"), (documentos.DaIsencao.Id, "ISENCAO_TAXA", "PODE_SER_EXIGIDO")],
             "a isenção na mesma fase aparece como da isenção, e não como exigência da inscrição");
         avaliacao.Documentos.Fases[1].Documentos.Select(static d => d.Situacao).Should().Equal("DEPENDE_DE_FASE_POSTERIOR");
     }
@@ -99,26 +89,18 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
     [Fact(DisplayName = "O documento traz ao portal os formatos, o limite efetivo, a quantidade mínima e os arquivos enviados da própria exigência e ocorrência")]
     public void Documento_TrazOQueOPortalPrecisaParaEnviar()
     {
-        DocumentoExigido laudo = DocumentoExigido.Criar(
-            FaseDaInscricao.Id, Guid.CreateVersion7(), "LAUDO", "Laudo", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral, obrigatorio: true,
-            consequenciaIndeferimento: null, [], [], null, FormatosPermitidos.Criar(false, [("PDF", 1_000_000), ("JPEG", 3_000_000)]).Value!, 2_000_000,
-            finalidade: FinalidadeFormulario.Inscricao).Value!;
-        DocumentoExigido outro = Documento(FaseDaInscricao, FinalidadeFormulario.Inscricao);
-        ArquivoDaApresentacaoDto doLaudo = new(Guid.CreateVersion7(), Guid.CreateVersion7(), laudo.Id, null, "application/pdf", 10, new string('a', 64), DateTimeOffset.UnixEpoch, SituacaoDoArquivoDoCandidato.Verificado, null, "Arquivo 1", null);
-        ArquivoDaApresentacaoDto doOutro = doLaudo with { ArquivoId = Guid.CreateVersion7(), ExigenciaId = outro.Id };
+        ExigenciasComArquivoEnviado cenario = ExigenciasComArquivoEnviado.Novas();
 
-        IReadOnlyList<DocumentoDaInscricaoDto> documentos = Projetar(
-            [(laudo, SituacaoDoDocumento.Satisfeita), (outro, SituacaoDoDocumento.Pendente)], faseId: null, arquivos: [doLaudo, doOutro])
-            .Value!.Documentos.Fases.Single(static f => f.Codigo == "INSCRICAO").Documentos;
+        IReadOnlyList<DocumentoDaInscricaoDto> documentos = cenario.DocumentosDaFaseDaInscricao();
 
-        DocumentoDaInscricaoDto projetado = documentos.Single(d => d.ExigenciaId == laudo.Id);
+        DocumentoDaInscricaoDto projetado = documentos.Single(d => d.ExigenciaId == cenario.Laudo.Id);
         projetado.Situacao.Should().Be("SATISFEITA");
         projetado.FormatosAceitos.Should().Equal("PDF", "JPEG");
         projetado.TamanhoMaximoBytes.Should().Be(1_000_000, "o menor limite efetivo entre os formatos aceitos");
         projetado.QuantidadeMinima.Should().Be(1);
-        projetado.Arquivos.Should().Equal(doLaudo);
-        documentos.Single(d => d.ExigenciaId == outro.Id).FormatosAceitos.Should().Equal("PDF", "JPEG", "PNG");
-        documentos.Single(d => d.ExigenciaId == outro.Id).TamanhoMaximoBytes.Should().Be(ArquivoDaApresentacao.TetoDoSistemaBytes);
+        projetado.Arquivos.Should().Equal(cenario.ArquivoDoLaudo);
+        documentos.Single(d => d.ExigenciaId == cenario.Outro.Id).FormatosAceitos.Should().Equal("PDF", "JPEG", "PNG");
+        documentos.Single(d => d.ExigenciaId == cenario.Outro.Id).TamanhoMaximoBytes.Should().Be(ArquivoDaApresentacao.TetoDoSistemaBytes);
     }
 
     private static Result<AvaliacaoDaInscricaoDto> Projetar(
@@ -127,12 +109,25 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
         IReadOnlyDictionary<Guid, IReadOnlyList<PendenciaDaAvaliacao>>? pendencias = null,
         IReadOnlyList<ArquivoDaApresentacaoDto>? arquivos = null)
     {
-        ResultadoDaAvaliacaoDaInscricao resultado = FormularioDeTeste.AvaliacaoSemOcultos with
+        ResultadoDaAvaliacaoDaInscricao resultado = ResultadoDaAvaliacao(documentos, pendencias);
+        DocumentosDoAtoNoAcervo acervo = new(
+            ProcessoId, AtoId, static chave => new Uri($"https://acervo.teste/{chave}"), Copiados: true);
+
+        return ProjecaoDaAvaliacaoDaInscricao.Projetar(resultado, ContextoDeTeste(), acervo, arquivos ?? [], faseId);
+    }
+
+    private static ResultadoDaAvaliacaoDaInscricao ResultadoDaAvaliacao(
+        IEnumerable<(DocumentoExigido Documento, SituacaoDoDocumento Situacao)> documentos,
+        IReadOnlyDictionary<Guid, IReadOnlyList<PendenciaDaAvaliacao>>? pendencias) =>
+        FormularioDeTeste.AvaliacaoSemOcultos with
         {
             Documentos = new DocumentosDaInscricao(
                 [.. documentos.Select(static d => new DocumentoAvaliado(d.Documento, d.Situacao, null, null, [], null))],
                 pendencias ?? new Dictionary<Guid, IReadOnlyList<PendenciaDaAvaliacao>>(), []),
         };
+
+    private static ContextoDaVersaoFixada ContextoDeTeste()
+    {
         ConfiguracaoAvaliavel configuracao = new(
             new DefinicaoFormulario([], [], []),
             new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
@@ -140,15 +135,19 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
             [], [], [],
             [FaseDaHabilitacao, FaseDaInscricao],
             []);
-        ContextoDaVersaoFixada contexto = new(
-            [], null, new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
-            new RespostasAdmitidas(new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal), new HashSet<string>(StringComparer.Ordinal), new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal), new HashSet<Guid>(), new Dictionary<string, TermoAdmitido>(StringComparer.Ordinal)),
-            configuracao, AtoId, configuracao, null, []);
-        DocumentosDoAtoNoAcervo acervo = new(
-            ProcessoId, AtoId, static chave => new Uri($"https://acervo.teste/{chave}"), Copiados: true);
 
-        return ProjecaoDaAvaliacaoDaInscricao.Projetar(resultado, contexto, acervo, arquivos ?? [], faseId);
+        return new ContextoDaVersaoFixada(
+            [], null, new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal), RespostasAdmitidasVazias(),
+            configuracao, AtoId, configuracao, null, []);
     }
+
+    private static RespostasAdmitidas RespostasAdmitidasVazias() =>
+        new(
+            new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal),
+            new HashSet<string>(StringComparer.Ordinal),
+            new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
+            new HashSet<Guid>(),
+            new Dictionary<string, TermoAdmitido>(StringComparer.Ordinal));
 
     private static DocumentoExigido Documento(FaseCronograma fase, FinalidadeFormulario finalidade, ModeloDaExigencia? modelo = null) =>
         DocumentoExigido.Criar(
@@ -164,4 +163,45 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
             new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase([], EmiteParecerIndividual: false, RegraRecurso: null),
             []);
+
+    /// <summary>Os quatro documentos do cenário: dois da inscrição (um deles de isenção), um dispensado e um da habilitação.</summary>
+    private sealed record DocumentosDasDuasFases(
+        DocumentoExigido DaInscricao, DocumentoExigido DaIsencao, DocumentoExigido Dispensado, DocumentoExigido DaHabilitacao)
+    {
+        internal static DocumentosDasDuasFases Novos() => new(
+            Documento(FaseDaInscricao, FinalidadeFormulario.Inscricao),
+            Documento(FaseDaInscricao, FinalidadeFormulario.IsencaoTaxa),
+            Documento(FaseDaInscricao, FinalidadeFormulario.Inscricao),
+            Documento(FaseDaHabilitacao, FinalidadeFormulario.Habilitacao));
+
+        internal (DocumentoExigido, SituacaoDoDocumento)[] ComAsSituacoesDaAvaliacao() =>
+        [
+            (DaHabilitacao, SituacaoDoDocumento.DependeDeFasePosterior),
+            (DaInscricao, SituacaoDoDocumento.Pendente),
+            (DaIsencao, SituacaoDoDocumento.PodeSerExigido),
+            (Dispensado, SituacaoDoDocumento.NaoExigido),
+        ];
+    }
+
+    /// <summary>Uma exigência com formatos e limites próprios e com arquivo enviado, ao lado de outra sem nenhum dos dois.</summary>
+    private sealed record ExigenciasComArquivoEnviado(DocumentoExigido Laudo, DocumentoExigido Outro, ArquivoDaApresentacaoDto ArquivoDoLaudo)
+    {
+        internal static ExigenciasComArquivoEnviado Novas()
+        {
+            DocumentoExigido laudo = DocumentoExigido.Criar(
+                FaseDaInscricao.Id, Guid.CreateVersion7(), "LAUDO", "Laudo", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral, obrigatorio: true,
+                consequenciaIndeferimento: null, [], [], null, FormatosPermitidos.Criar(false, [("PDF", 1_000_000), ("JPEG", 3_000_000)]).Value!, 2_000_000,
+                finalidade: FinalidadeFormulario.Inscricao).Value!;
+            ArquivoDaApresentacaoDto arquivo = new(Guid.CreateVersion7(), Guid.CreateVersion7(), laudo.Id, null, "application/pdf", 10, new string('a', 64), DateTimeOffset.UnixEpoch, SituacaoDoArquivoDoCandidato.Verificado, null, "Arquivo 1", null);
+
+            return new ExigenciasComArquivoEnviado(laudo, Documento(FaseDaInscricao, FinalidadeFormulario.Inscricao), arquivo);
+        }
+
+        internal IReadOnlyList<DocumentoDaInscricaoDto> DocumentosDaFaseDaInscricao() =>
+            Projetar(
+                [(Laudo, SituacaoDoDocumento.Satisfeita), (Outro, SituacaoDoDocumento.Pendente)],
+                faseId: null,
+                arquivos: [ArquivoDoLaudo, ArquivoDoLaudo with { ArquivoId = Guid.CreateVersion7(), ExigenciaId = Outro.Id }])
+                .Value!.Documentos.Fases.Single(static f => f.Codigo == "INSCRICAO").Documentos;
+    }
 }

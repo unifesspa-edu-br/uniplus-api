@@ -4,16 +4,13 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
-using NSubstitute;
-
-using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Testes.Compartilhado;
+
+using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries.ApoioDaProjecaoDosDocumentosExigidos;
 
 /// <summary>
 /// Cobertura de <see cref="ProjecaoDoProcessoSeletivo.Projetar"/> para
@@ -23,36 +20,16 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// </summary>
 public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
 {
-    private static FaseCronograma FaseQualquer() => FaseCronograma.Criar(
-        new OrigemCanonicaDaFase(
-            Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
-        new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
-        new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
-        bancasRequeridas: []).Value!;
-
     [Theory(DisplayName = "Projeta aplicabilidade no mesmo token de wire aceito pelo validator (GERAL/CONDICIONAL)")]
     [InlineData(Aplicabilidade.Geral, "GERAL")]
     [InlineData(Aplicabilidade.Condicional, "CONDICIONAL")]
     public async Task Handle_Aplicabilidade_EmiteTokenDeWire(Aplicabilidade aplicabilidade, string tokenEsperado)
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Query", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        FaseCronograma fase = FaseQualquer();
-        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
-
         Guid tipoDocumentoOrigemId = Guid.CreateVersion7();
-        DocumentoExigido exigencia = DocumentoExigido.Criar(
-            fase.Id, tipoDocumentoOrigemId, "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            aplicabilidade, obrigatorio: true, consequenciaIndeferimento: null,
-            condicoes: [], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!]).IsSuccess.Should().BeTrue();
 
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        DocumentoExigidoDto projetado = await ProjetarAUnicaExigenciaAsync(
+            new ExigenciaParaProjetar { TipoDocumentoOrigemId = tipoDocumentoOrigemId, Aplicabilidade = aplicabilidade });
 
-        ProcessoSeletivoDto? dto = await ObterProcessoSeletivoQueryHandler.Handle(
-            new ObterProcessoSeletivoQuery(processo.Id), repository, CancellationToken.None);
-
-        DocumentoExigidoDto projetado = dto!.DocumentosExigidos.Should().ContainSingle().Which;
         projetado.Aplicabilidade.Should().Be(tokenEsperado);
         projetado.TipoDocumentoOrigemId.Should().Be(tipoDocumentoOrigemId);
     }
@@ -60,27 +37,8 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
     [Fact(DisplayName = "Projeta Condicoes do gatilho DNF (issue #892) — round-trip GET→PUT sem perda")]
     public async Task Handle_CondicaoGatilho_EmiteTokenDeWireERoundTripDoValor()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Query", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        FaseCronograma fase = FaseQualquer();
-        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
+        DocumentoExigidoDto projetado = await ProjetarAUnicaExigenciaAsync(ExigenciaCondicionalComCondicaoEscalarEMultivalorada());
 
-        CondicaoGatilho condicaoEscalar = CondicaoGatilho.Criar(
-            0, "SEXO", Operador.Igual, JsonSerializer.SerializeToElement("MASCULINO")).Value!;
-        CondicaoGatilho condicaoMultivalorada = CondicaoGatilho.Criar(
-            1, "MODALIDADE", Operador.Em, JsonSerializer.SerializeToElement(new[] { "LB_PPI", "AC" })).Value!;
-        DocumentoExigido exigencia = DocumentoExigido.Criar(
-            fase.Id, Guid.CreateVersion7(), "CERTIDAO_RESERVISTA", "Certidão de reservista", "MILITAR", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
-            condicoes: [condicaoEscalar, condicaoMultivalorada], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!]).IsSuccess.Should().BeTrue();
-
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-
-        ProcessoSeletivoDto? dto = await ObterProcessoSeletivoQueryHandler.Handle(
-            new ObterProcessoSeletivoQuery(processo.Id), repository, CancellationToken.None);
-
-        DocumentoExigidoDto projetado = dto!.DocumentosExigidos.Should().ContainSingle().Which;
         projetado.Condicoes.Should().HaveCount(2);
 
         CondicaoGatilhoDto escalarDto = projetado.Condicoes.Should().ContainSingle(c => c.Fato == "SEXO").Which;
@@ -96,19 +54,12 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
     [Fact(DisplayName = "Projeta ReferenciaTemporalFatos no agregado GET (issue #892) — round-trip GET→PUT")]
     public async Task Handle_ReferenciaTemporalFatos_EmiteTokenDeWire()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Query", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        FaseCronograma fase = FaseQualquer();
-        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
-        ReferenciaTemporalFatos referencia = ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, fase.Id).Value!;
-        processo.DefinirReferenciaTemporalFatos(referencia).IsSuccess.Should().BeTrue();
+        (ProcessoSeletivo processo, FaseCronograma fase) = ProcessoComUmaFase();
+        processo.DefinirReferenciaTemporalFatos(ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, fase.Id).Value!).IsSuccess.Should().BeTrue();
 
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        ProcessoSeletivoDto dto = await ProjetarAsync(processo);
 
-        ProcessoSeletivoDto? dto = await ObterProcessoSeletivoQueryHandler.Handle(
-            new ObterProcessoSeletivoQuery(processo.Id), repository, CancellationToken.None);
-
-        dto!.ReferenciaTemporalFatos.Should().NotBeNull();
+        dto.ReferenciaTemporalFatos.Should().NotBeNull();
         dto.ReferenciaTemporalFatos!.Tipo.Should().Be("FIM_FASE");
         dto.ReferenciaTemporalFatos.FaseId.Should().Be(fase.Id);
         dto.ReferenciaTemporalFatos.Data.Should().BeNull();
@@ -117,41 +68,16 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
     [Fact(DisplayName = "ReferenciaTemporalFatos ausente projeta null no agregado GET (contraprova)")]
     public async Task Handle_SemReferenciaTemporalFatos_ProjetaNulo()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Query", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivoDto dto = await ProjetarAsync(NovoProcesso());
 
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-
-        ProcessoSeletivoDto? dto = await ObterProcessoSeletivoQueryHandler.Handle(
-            new ObterProcessoSeletivoQuery(processo.Id), repository, CancellationToken.None);
-
-        dto!.ReferenciaTemporalFatos.Should().BeNull();
+        dto.ReferenciaTemporalFatos.Should().BeNull();
     }
 
     [Fact(DisplayName = "Story #554/issue #549 (PR #898): projeta BasesLegais — round-trip GET→PUT, inclusive PENDENTE (a projeção 'só RESOLVIDO' é da PR #903, não deste DTO de edição)")]
     public async Task Handle_BasesLegais_EmiteTokenDeWireERoundTrip()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Query", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        FaseCronograma fase = FaseQualquer();
-        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
+        DocumentoExigidoDto projetado = await ProjetarAUnicaExigenciaAsync(ExigenciaComUmaBaseLegalResolvidaEUmaPendente());
 
-        DocumentoExigidoBaseLegal baseResolvida = DocumentoExigidoBaseLegal.Criar(
-            "Lei 12.711/2012, art. 3º", TipoAbrangencia.Federal, StatusBaseLegal.Resolvido, "Observação").Value!;
-        DocumentoExigidoBaseLegal basePendente = DocumentoExigidoBaseLegal.Criar(
-            "Cláusula 5.2 do edital", TipoAbrangencia.InternaEdital, StatusBaseLegal.Pendente, null).Value!;
-        DocumentoExigido exigencia = DocumentoExigido.Criar(
-            fase.Id, Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null,
-            condicoes: [], basesLegais: [baseResolvida, basePendente], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!]).IsSuccess.Should().BeTrue();
-
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-
-        ProcessoSeletivoDto? dto = await ObterProcessoSeletivoQueryHandler.Handle(
-            new ObterProcessoSeletivoQuery(processo.Id), repository, CancellationToken.None);
-
-        DocumentoExigidoDto projetado = dto!.DocumentosExigidos.Should().ContainSingle().Which;
         projetado.BasesLegais.Should().HaveCount(2);
 
         BaseLegalDto resolvidaDto = projetado.BasesLegais.Should().ContainSingle(b => b.Status == "RESOLVIDO").Which;
@@ -167,31 +93,8 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
     [Fact(DisplayName = "Story #554/issue #893 (PR #900): projeta IdadeMaximaEmissao/TamanhoMaximoBytes — round-trip GET→PUT")]
     public async Task Handle_IdadeFormatoTamanho_EmiteTokensDeWire()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Query", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        FaseCronograma fase = FaseQualquer();
-        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
+        DocumentoExigidoDto projetado = await ProjetarAUnicaExigenciaAsync(ExigenciaComIdadeFormatoETamanho());
 
-        // DATA_SUBMISSAO — não exige fase âncora (nem extremo), diferente de INICIO_FASE/
-        // FIM_FASE; FaseQualquer() não declara Fim, então uma âncora de fase aqui
-        // reprovaria por IdadeMaximaEmissao.FaseExtremoAusente (coberto em teste próprio).
-        IdadeMaximaEmissao idade = IdadeMaximaEmissao.Criar(
-            90, UnidadeIdade.Dias, ReferenciaTipoIdadeEmissao.DataSubmissao, null, null).Value!;
-        FormatosPermitidos formatosPermitidos = FormatosPermitidos.Criar(
-            qualquer: false, entradas: [("PDF", null)]).Value!;
-        DocumentoExigido exigencia = DocumentoExigido.Criar(
-            fase.Id, Guid.CreateVersion7(), "COMPROVANTE_RESIDENCIA", "Comprovante de residência", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null,
-            condicoes: [], basesLegais: [],
-            idadeMaximaEmissao: idade, formatosPermitidos: formatosPermitidos, tamanhoMaximoBytes: 5_000_000).Value!;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!]).IsSuccess.Should().BeTrue();
-
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-
-        ProcessoSeletivoDto? dto = await ObterProcessoSeletivoQueryHandler.Handle(
-            new ObterProcessoSeletivoQuery(processo.Id), repository, CancellationToken.None);
-
-        DocumentoExigidoDto projetado = dto!.DocumentosExigidos.Should().ContainSingle().Which;
         projetado.FormatosPermitidos.ValueKind.Should().Be(JsonValueKind.Array);
         projetado.FormatosPermitidos.EnumerateArray().Should().ContainSingle(
             e => e.GetProperty("formato").GetString() == "PDF" && e.GetProperty("tamanhoMaximoBytesMax").ValueKind == JsonValueKind.Null);
@@ -206,22 +109,8 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
     [Fact(DisplayName = "Sem idade/tamanho configurados (FormatosPermitidos=QUALQUER), a projeção emite QUALQUER e o resto null (contraprova)")]
     public async Task Handle_SemIdadeFormatoTamanho_ProjetaNulo()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Query", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        FaseCronograma fase = FaseQualquer();
-        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
-        DocumentoExigido exigencia = DocumentoExigido.Criar(
-            fase.Id, Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null,
-            condicoes: [], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!]).IsSuccess.Should().BeTrue();
+        DocumentoExigidoDto projetado = await ProjetarAUnicaExigenciaAsync(new ExigenciaParaProjetar());
 
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-
-        ProcessoSeletivoDto? dto = await ObterProcessoSeletivoQueryHandler.Handle(
-            new ObterProcessoSeletivoQuery(processo.Id), repository, CancellationToken.None);
-
-        DocumentoExigidoDto projetado = dto!.DocumentosExigidos.Should().ContainSingle().Which;
         projetado.FormatosPermitidos.ValueKind.Should().Be(JsonValueKind.String);
         projetado.FormatosPermitidos.GetString().Should().Be("QUALQUER");
         projetado.TamanhoMaximoBytes.Should().BeNull();
