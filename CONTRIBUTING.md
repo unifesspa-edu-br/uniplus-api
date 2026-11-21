@@ -61,7 +61,7 @@ projeto limpo: API saudável, logins, perfis, processos e Geo):
   Uma migration incremental criada sobre a atual se aplica sobre o dump sem esse problema, mas regere os dumps assim mesmo para a base
   refletir o modelo;
 - **o Keycloak:** realm, clients, `docker/keycloak/personas.json` ou as contas técnicas;
-- **os perfis e as permissões:** o catálogo, os perfis de operação e as concessões estão no dump;
+- **os perfis e as permissões:** o catálogo, os perfis de operação e as concessões estão no dump; o passo a passo para gerar tudo de novo está em [`docs/setup-ambiente-local.md`](docs/setup-ambiente-local.md#gerar-de-novo-a-base-local);
 - **as portas e as credenciais gravadas nos dumps:** `KEYCLOAK_ADMIN`, `KEYCLOAK_ADMIN_PASSWORD`, `KEYCLOAK_PORT`, `MINIO_PORT` e as
   quatro `*_WEB_PORT`. O restaurador recusa a subida quando o `.env` tem outros valores, e a lista dele precisa acompanhar qualquer variável
   nova que entre em dado gravado.

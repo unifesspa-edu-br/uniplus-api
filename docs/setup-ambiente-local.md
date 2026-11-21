@@ -83,6 +83,92 @@ e a base de CEP no Geo. Não há passo extra além de `cp .env.example .env`.
 - **Versão da base:** vale para a migration `Inicial` da `main`. Quando a migration for regerada, os dumps precisam ser gerados de novo.
   Com dumps de outra versão da migration, a API para na subida com a mensagem "tem migration aplicada que esta versão não conhece", que traz o comando `docker compose down -v && docker compose up`; se o volume já era novo, os dumps estão defasados e precisam ser regerados.
 
+### Gerar de novo a base local
+
+A base pronta guarda o banco, o Keycloak e os arquivos do MinIO do dia em que foi gerada. Gere-a de novo, e refaça a prova do
+`docker compose up`, sempre que mudar a migration, o modelo, o Keycloak, os perfis e permissões ou as portas gravadas (lista em
+`CONTRIBUTING.md`, "Base local pronta e o que invalida os dumps"). Os dados novos nascem dos roteiros abaixo, e não de uma geração
+anterior: quem segue estes passos não precisa de nenhum dado gravado antes.
+
+**Antes de começar**
+
+- A migration nova já está gerada e a branch compila (`docs/guia-banco-de-dados.md`, seção 7).
+- Só um ambiente completo por vez na máquina, com as portas padrão do `.env.example`: o restaurador exige `KEYCLOAK_PORT=8080`,
+  `MINIO_PORT=9000` e as quatro `*_WEB_PORT` de 4200 a 4203. Pare qualquer outro ambiente antes de começar.
+- Use um nome de projeto próprio no compose (`-p base-local`), para não apagar os volumes do seu ambiente de trabalho.
+- Tenha `jq` e `curl` instalados e o repositório `uniplus-developers` clonado ao lado deste: o roteiro das notas do ENEM lê
+  `uniplus-developers/src/data/fake-people.json`.
+- A geração sobe o ambiente completo e roda os roteiros: conta como teste pesado. Na geração de prova de 21/11/2026, a subida do ambiente levou cerca de 9 minutos (a maior parte é a construção das imagens),
+  os perfis e as concessões 22 segundos, o processo da Medicina 12 segundos e o processo multicurso 18 segundos; a espera pelo fim do
+  período de inscrição do multicurso (40 minutos) é a maior parte do tempo total. A prova em projeto limpo levou cerca de 1 minuto para subir.
+
+**Passos** (a partir da raiz do repositório)
+
+1. **Subir o ambiente sem o banco antigo.** Copie `docker/.env.example` para `docker/.env`. A sobreposição
+   `docker/base-local/docker-compose.gerar-base-local.yml` faz o Postgres restaurar só o Geo (o `down -v` antes garante volumes vazios; sem ele, uma tentativa anterior deixaria dados antigos): o Keycloak importa o realm do repositório, a API
+   cria o banco do monólito do zero com a migration da branch e o MinIO começa vazio:
+   ```bash
+   cd docker
+   docker compose -p base-local -f docker-compose.yml -f base-local/docker-compose.gerar-base-local.yml down -v   # apaga só os volumes deste projeto
+   docker compose -p base-local -f docker-compose.yml -f base-local/docker-compose.gerar-base-local.yml up -d --build
+   docker wait base-local-ambiente-init-1   # espera o ambiente-init; deve devolver 0
+   cd ..
+   ```
+   O `ambiente-init` cria as 60 personas no Keycloak e instala os dois gestores de acessos. Confira nos logs da API (`docker logs base-local-uniplus-api-1`)
+   que ela aplicou a migration da branch.
+2. **Criar os perfis de operação, as unidades e as concessões.** Rode `scripts/perfis-de-operacao.sh`. Ele lê
+   `scripts/perfis-de-operacao.json` e faz, pela API, o que uma pessoa faria: o primeiro gestor cria cada perfil e envia o PDF que o institui, o
+   segundo gestor aprova a versão e, se o perfil é protegido, um Representante do controlador aprova a proteção de dados; cria as unidades CEPS e
+   CRCA; cada persona pede o seu perfil e aceita o termo, o gestor aprova e, se o perfil é protegido, o outro Representante decide. Rodar de novo
+   não repete o que já existe. Os perfis e as concessões são:
+
+   | Perfil | Alcance | Concedido a |
+   |---|---|---|
+   | Administração dos cadastros, Organização institucional e Publicações | instituição | a persona administradora (`ADMIN_USER`; `diogo.souza` por padrão) |
+   | Coordenação de processo seletivo | unidade CEPS | `betina.neves` |
+   | Equipe de inscrições | unidade CEPS | `isabella.figueiredo`, `kevin.carvalho`, `helena.rezende` |
+   | Equipe de inscrições | unidade CRCA | `breno.novaes` |
+   | Envio ao INEP | unidade CEPS | `kevin.carvalho` |
+   | Dados e documentos sensíveis | unidade CEPS | `helena.rezende` |
+   | Consulta sem dados pessoais | unidade CEPS | `erick.ramos` |
+   | Encarregado de dados (já vem da migration) | instituição | `marlene.martins` |
+
+3. **Criar os dois processos de exemplo,** com a persona administradora e, em cada um, o período de inscrição (data, hora e fuso de Belém):
+   ```bash
+   export ADMIN_USER=diogo.souza
+   # Medicina: a inscrição abriu há 13 dias e fecha daqui a 2 dias.
+   INICIO_INSCRICAO="$(TZ=America/Belem date -d '13 days ago' +%Y-%m-%dT00:00:00-03:00)" \
+   FIM_INSCRICAO="$(TZ=America/Belem date -d '2 days' +%Y-%m-%dT23:59:59-03:00)" \
+     scripts/roteiro-processo-teste-inscricao.sh
+   # Multicurso: a inscrição fecha depois de as personas se inscreverem (aqui, 40 minutos; aumente se o seu computador for lento:
+   # o roteiro para com erro se o período fechar antes da última inscrição).
+   INICIO_INSCRICAO="$(TZ=America/Belem date -d '13 days ago' +%Y-%m-%dT00:00:00-03:00)" \
+   FIM_INSCRICAO="$(TZ=America/Belem date -d '40 minutes' +%Y-%m-%dT%H:%M:%S-03:00)" \
+   NOME_PROCESSO="PSR 2027 — Teste multicurso" IDENTIFICADOR_PROCESSO=psm-teste-multicurso-2027 \
+     scripts/roteiro-processo-teste-notas-do-enem.sh
+   ```
+   Depois do segundo roteiro, espere o fim do período de inscrição do multicurso antes de seguir (o processo só fica "encerrado com inscritos" depois dele). Ele cria os dois processos pela API, com as 56
+   inscrições das personas no multicurso e nenhuma na Medicina.
+4. **Gerar os arquivos.** Pare a API, o verificador de arquivos e o MinIO, para nada gravar durante a cópia
+   (`docker compose -p base-local stop uniplus-api verificador minio`, na pasta `docker`). Depois, na raiz:
+   ```bash
+   docker exec base-local-postgres-1 pg_dump -U uniplus -Fc -d uniplus > docker/base-local/dumps/uniplus.dump
+   docker exec base-local-postgres-1 pg_dump -U uniplus -Fc -d keycloak > docker/base-local/dumps/keycloak.dump
+   pasta="$(mktemp -d)" && docker cp base-local-minio-1:/data/. "$pasta/" && tar czf docker/base-local/minio/minio-data.tar.gz -C "$pasta" . && rm -rf "$pasta"
+   ```
+   Os dois dumps são gravados sempre juntos, porque as concessões guardam o id das contas do Keycloak. O Geo (`geo/geo-api-database.tar.xz`)
+   só é gerado de novo se o banco do Geo mudou.
+5. **Prova em projeto limpo.** Derrube o ambiente com `docker compose -p base-local down -v`, e então rode `cp .env.example .env` e
+   `docker compose up` numa cópia limpa do repositório, com os arquivos novos e outro nome de projeto. Confira e anexe ao PR:
+   - a API responde `/health/ready` com 200, e o Geo responde (um CEP conhecido, como `/api/cep/79096730`, devolve 200 com o token de uma persona);
+   - a migration em `plataforma."__EFMigrationsHistory"` é a da branch;
+   - os 60 acessos de teste existem no Keycloak, e o login de uma persona funciona;
+   - os perfis de operação existem, cada um com ao menos uma concessão ativa, e `diogo.souza` tem o perfil Gestor de acessos;
+   - os dois processos existem, com 56 inscrições no multicurso e nenhuma na Medicina;
+   - o MinIO tem os documentos dos dois processos.
+6. **Atualizar o texto.** O período de inscrição citado em "Base local pronta" depende do dia da geração: atualize-o neste mesmo arquivo, no
+   mesmo PR.
+
 ## Serviços e portas
 
 Cada porta publicada vem de uma variável (coluna "Variável"), com o padrão abaixo. Para trocá-la sem editar
