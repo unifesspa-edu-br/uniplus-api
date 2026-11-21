@@ -17,7 +17,7 @@ public sealed class CodigosCitadosNoDocumentoTests
     private static readonly ParametrosDeclaradosDoRecurso Prazo = new(new PrazoDeclarado(1m, "horas"), false, PrazoDeclarado.Ausente, "semEfeitoSuspensivo", null);
 
     private static FaseNoDocumento Fase(int posicao, string faseCanonica, string? unidade = null) =>
-        new(posicao, $"fase-{posicao}", new(faseCanonica, unidade, null), new(null, null), new([], false, null, null), [], null);
+        new(posicao, $"fase-{posicao}", new(faseCanonica, unidade), new(null, null), new([], false, null, null), [], null);
 
     private static FaseNoDocumento ComProdutos(FaseNoDocumento fase, params string[] atos) =>
         fase with { Publicacoes = fase.Publicacoes with { Produtos = [.. atos.Select(static (ato, posicao) => new ProdutoNoDocumento(posicao, ato, null))] } };

@@ -383,7 +383,7 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
             Guid.CreateVersion7(),
             new OrigemCanonicaDaFase(
                 Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: ordem == 1, ColetaSolicitacaoIsencao: false),
-            new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase([], EmiteParecerIndividual: false, RegraRecurso: null),
             []);
 }

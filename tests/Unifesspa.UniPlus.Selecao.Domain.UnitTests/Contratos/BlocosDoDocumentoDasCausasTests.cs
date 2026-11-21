@@ -83,7 +83,7 @@ public sealed class BlocosDoDocumentoDasCausasTests
 
         string?[] traduzidos =
         [
-            "/cronograma/fases/1/faseCanonicaCodigo", "/cronograma/fases/0/faseConcluinteChave", "/cronograma/fases/0/unidadeResponsavelCodigo",
+            "/cronograma/fases/1/faseCanonicaCodigo", "/cronograma/fases/0/unidadeResponsavelCodigo",
             "/cronograma/fases/0/bancasRequeridas/0/categoriasDocumentoCodigos", "/etapas/1/faseChave", "/etapas/1/chave",
         ];
         causas.Select(static causa => causa.Field).Should().Contain(traduzidos);

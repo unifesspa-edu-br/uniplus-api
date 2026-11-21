@@ -288,7 +288,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
     private static FaseCronograma FaseDeClassificacaoQuePublica(ProdutoDaFase[] produtos) => FaseCronograma.Criar(
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "CLASSIFICACAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
-        new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(produtos, resultado: produtos[0].AtoCodigo),
         bancasRequeridas: []).Value!;
 

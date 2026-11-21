@@ -72,7 +72,6 @@ internal static class CausasQueImpedemCongelar
         .. etapas.Conferir(),
         .. EtapasNoCronograma.ConferirFaseDasEtapas(cronograma, etapas),
         .. EtapasNoCronograma.ConferirJanelaDasEtapas(cronograma, etapas),
-        .. CicloRecursalDoProcesso.Conferir(cronograma, etapas),
     ];
 
     private static IEnumerable<FieldError> Completude(
@@ -83,6 +82,7 @@ internal static class CausasQueImpedemCongelar
         .. cronograma.ConferirCronogramaExigidoPeloProcesso(configuracao.Identidade.OrigemCandidatos, configuracao.Vagas.HaVagasOfertadas),
         .. ExigenciaDaHomologacaoPorOrigem.Causas(configuracao.Identidade.OrigemCandidatos, cronograma, etapas),
         .. cronograma.ConferirCompletude(contexto.FusoInstitucional),
+        .. CicloRecursalDoProcesso.Conferir(cronograma, etapas),
     ];
 
     private static IEnumerable<FieldError> Recursos(ConfiguracaoDeclarada configuracao) =>

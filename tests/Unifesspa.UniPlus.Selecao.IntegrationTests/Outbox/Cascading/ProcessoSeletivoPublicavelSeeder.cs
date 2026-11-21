@@ -43,8 +43,7 @@ internal static class ProcessoSeletivoPublicavelSeeder
             OrigemId: opcoes.OrigemDaFaseDeResultado ?? Guid.CreateVersion7(), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true,
             ColetaSolicitacaoIsencao: opcoes.ColetaSolicitacaoIsencao),
         new DecisoesDeCronogramaDaFase(
-            Ordem: opcoes.OrdemDaFaseDeResultado, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: opcoes.FimDasInscricoes ?? new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
-            UnidadeResponsavel: opcoes.UnidadeResponsavel ?? UnidadesDeTeste.Ceps),
+            Ordem: opcoes.OrdemDaFaseDeResultado, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: opcoes.FimDasInscricoes ?? new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: opcoes.UnidadeResponsavel ?? UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(
             Produtos: opcoes.ProdutosDaFase ?? [ProdutoDaFase.Criar(HomologacaoDasInscricoesDeTeste.ResultadoDaFase, PapelProdutoFase.Definitivo)],
             EmiteParecerIndividual: false,

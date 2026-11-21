@@ -108,7 +108,7 @@ public sealed class EnvelopeLidoFormulariosTests
         new OrigemCanonicaDaFase(Guid.CreateVersion7(), FormularioProcesso.CodigoFaseHabilitacao, OrigemDataFase.NoEdital,
             AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(processo.CronogramaFases.Max(f => f.Ordem) + 1,
-            new DateTimeOffset(2026, 5, 1, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 5, 10, 18, 0, 0, TimeSpan.Zero), null, UnidadesDeTeste.Ceps),
+            new DateTimeOffset(2026, 5, 1, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 5, 10, 18, 0, 0, TimeSpan.Zero), UnidadesDeTeste.Ceps),
         new PublicacoesDaFase([ProdutoDaFase.Criar(FormularioProcesso.CodigoFaseHabilitacao, PapelProdutoFase.Definitivo)], false, null), []).Value!;
 
     private static void DefinirHabilitacao(ProcessoSeletivo processo)

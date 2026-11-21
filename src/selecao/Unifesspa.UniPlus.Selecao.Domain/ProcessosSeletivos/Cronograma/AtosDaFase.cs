@@ -43,8 +43,6 @@ public sealed record AtosDaFase
     public bool PublicaComPapel(string atoCodigo) =>
         Produtos.Any(produto => produto.Papel is not null && string.Equals(produto.AtoCodigo, atoCodigo, StringComparison.Ordinal));
 
-    public bool PublicaResultadoDefinitivoDe(string atoCodigo) => CicloRecursal.PublicaDefinitivoDe(ParesDeAto, atoCodigo);
-
     public IReadOnlyList<string> TiposComCicloAberto() => CicloRecursal.TiposComCicloAberto(ParesDeAto);
 
     public IReadOnlyList<string> TiposFechadosNaPropriaFase() => CicloRecursal.TiposFechadosNoProprioLugar(ParesDeAto);

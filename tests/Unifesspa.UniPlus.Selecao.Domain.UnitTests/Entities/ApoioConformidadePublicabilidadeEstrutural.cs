@@ -115,7 +115,7 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
         Guid? faseCanonicaOrigemId = null, bool semUnidadeResponsavel = false) => FaseCronograma.Criar(
         new OrigemCanonicaDaFase(
             faseCanonicaOrigemId ?? Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, coletaInscricao, coletaSolicitacaoIsencao),
-        new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: semUnidadeResponsavel ? null : UnidadesDeTeste.Ceps),
+        new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, UnidadeResponsavel: semUnidadeResponsavel ? null : UnidadesDeTeste.Ceps),
         publicacoes,
         bancas).Value!;
 

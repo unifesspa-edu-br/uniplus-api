@@ -31,21 +31,19 @@ public sealed class FaseDeclaradaTests
         fase.Janela.Completa.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "O código é aparado, a janela vai a UTC e a concluinte em branco some")]
-    public void Declarar_NormalizaCodigoJanelaEConcluinte()
+    [Fact(DisplayName = "O código é aparado e o período vai a UTC")]
+    public void Declarar_NormalizaCodigoEPeriodo()
     {
         TimeSpan emBelem = TimeSpan.FromHours(-3);
         FaseDeclarada fase = new ModeloDeFase("  RESULTADO  ", 2)
         {
             Inicio = new DateTimeOffset(2026, 3, 2, 9, 0, 0, emBelem),
             Fim = new DateTimeOffset(2026, 3, 3, 9, 0, 0, emBelem),
-            FaseConcluinteCodigo = "   ",
         }.Declarar();
 
         fase.Codigo.Should().Be("RESULTADO");
         fase.Janela.Inicio.Should().Be(new DateTimeOffset(2026, 3, 2, 12, 0, 0, TimeSpan.Zero));
         fase.Janela.Inicio!.Value.Offset.Should().Be(TimeSpan.Zero);
-        fase.FaseConcluinteCodigo.Should().BeNull();
     }
 
     [Fact(DisplayName = "Fase sem unidade responsável declara a ausência sem recusar a declaração")]
@@ -105,7 +103,7 @@ public sealed class FaseDeclaradaTests
         semId.Should().Throw<ArgumentException>();
     }
 
-    [Fact(DisplayName = "Os atos da fase distinguem o ciclo que ela abre, o que fecha sozinha e o definitivo por tipo")]
+    [Fact(DisplayName = "Os atos da fase distinguem o ciclo que ela abre e o que fecha sozinha")]
     public void Atos_DistinguemOCicloRecursal()
     {
         FaseDeclarada fase = new ModeloDeFase("RESULTADO", 3)
@@ -114,8 +112,6 @@ public sealed class FaseDeclaradaTests
 
         fase.Atos.ProduzResultado.Should().BeTrue();
         fase.Atos.PublicaResultadoPreliminar.Should().BeTrue();
-        fase.Atos.PublicaResultadoDefinitivoDe("HOMOLOGACAO").Should().BeTrue();
-        fase.Atos.PublicaResultadoDefinitivoDe("GABARITO").Should().BeFalse();
         fase.Atos.TiposComCicloAberto().Should().Equal("GABARITO");
         fase.Atos.TiposFechadosNaPropriaFase().Should().Equal("CLASSIFICACAO");
         fase.Atos.Produtos.Select(static p => p.Posicao).Should().Equal(0, 1, 2, 3);

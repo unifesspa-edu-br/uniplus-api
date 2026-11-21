@@ -2502,7 +2502,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     coleta_solicitacao_isencao = table.Column<bool>(type: "boolean", nullable: false),
                     inicio = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     fim = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    fase_concluinte_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
                     emite_parecer_individual = table.Column<bool>(type: "boolean", nullable: false),
                     regra_de_homologacao = table.Column<string>(type: "jsonb", nullable: true, comment: "Regra de homologação das inscrições que a fase declara: o resultado que publica a lista e as alternativas de condições, na ordem declarada. Nula quando a fase não homologa."),
                     tipos_de_decisao = table.Column<List<string>>(type: "text[]", nullable: false, defaultValueSql: "'{}'::text[]", comment: "Tipos de decisão que a fase ou a etapa declara produzir, em ordem alfabética ordinal e sem repetição."),

@@ -119,7 +119,7 @@ internal sealed class CenarioDosDocumentosDaInscricaoDeTeste
     {
         ApresentacaoDeDocumento apresentacao = ApresentacaoDeDocumento.Criar(inscricao.Id, Laudo, null);
         ArquivoDaApresentacao arquivo = ArquivoDaApresentacao.IniciarPendente(
-            apresentacao.Id, inscricao.Id, Laudo, "application/pdf", 2048, relogio ?? TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+            apresentacao.Id, inscricao.Id, Laudo, "application/pdf", 2048, relogio ?? DivulgacaoDeTeste.Relogio, PrazosDoArquivoEnviado.Envio).Value!;
         Documentos.ObterArquivoAsync(arquivo.Id, Arg.Any<CancellationToken>()).Returns(arquivo);
         Documentos.ObterApresentacaoAsync(arquivo.ApresentacaoId, Arg.Any<CancellationToken>()).Returns(apresentacao);
         Documentos.ListarApresentacoesDaInscricaoAsync(inscricao.Id, Arg.Any<CancellationToken>()).Returns([apresentacao]);
@@ -131,7 +131,7 @@ internal sealed class CenarioDosDocumentosDaInscricaoDeTeste
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: coletaInscricao, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
-            ordem, Inicio: new DateTimeOffset(2026, 3, 1, 12, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 3, 20, 12, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+            ordem, Inicio: new DateTimeOffset(2026, 3, 1, 12, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 3, 20, 12, 0, 0, TimeSpan.Zero),
             UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar(codigo, PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;

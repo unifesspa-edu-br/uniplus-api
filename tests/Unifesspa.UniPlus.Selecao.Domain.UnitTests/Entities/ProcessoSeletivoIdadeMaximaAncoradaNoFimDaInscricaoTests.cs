@@ -26,7 +26,7 @@ public sealed class ProcessoSeletivoIdadeMaximaAncoradaNoFimDaInscricaoTests
         new OrigemCanonicaDaFase(
             faseCanonicaOrigemId ?? Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true,
             ColetaSolicitacaoIsencao: false),
-        new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: fim, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: fim, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
 

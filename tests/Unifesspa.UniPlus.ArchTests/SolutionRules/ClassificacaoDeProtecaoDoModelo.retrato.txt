@@ -1572,7 +1572,6 @@ selecao.fases_cronograma.coleta_solicitacao_isencao: Interno
 selecao.fases_cronograma.created_at: Interno
 selecao.fases_cronograma.emite_parecer_individual: Interno
 selecao.fases_cronograma.fase_canonica_origem_id: Interno
-selecao.fases_cronograma.fase_concluinte_codigo: Interno
 selecao.fases_cronograma.fim: Interno
 selecao.fases_cronograma.id: Interno
 selecao.fases_cronograma.inicio: Interno

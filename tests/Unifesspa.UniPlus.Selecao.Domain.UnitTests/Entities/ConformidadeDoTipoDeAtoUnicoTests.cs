@@ -46,7 +46,7 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
     private static FaseCronograma FaseQuePublica(int ordem, string codigo, params ProdutoDaFase[] produtos) =>
         FaseCronograma.Criar(
             new OrigemCanonicaDaFase(OrigemId: Guid.CreateVersion7(), Codigo: codigo, OrigemData: OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
-            new DecisoesDeCronogramaDaFase(Ordem: ordem, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new DecisoesDeCronogramaDaFase(Ordem: ordem, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: produtos, EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;
 
@@ -239,13 +239,6 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
         PendenciaDoTipoDeAtoUnico(processo.Declaracao(), ocupadoMasNaoUnico).Should().BeNull();
     }
 
-    private static FaseCronograma FaseQueConclui(int ordem, string codigo, string? concluinte, params ProdutoDaFase[] produtos) =>
-        FaseCronograma.Criar(
-            new OrigemCanonicaDaFase(OrigemId: Guid.CreateVersion7(), Codigo: codigo, OrigemData: OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
-            new DecisoesDeCronogramaDaFase(Ordem: ordem, Inicio: null, Fim: null, FaseConcluinteCodigo: concluinte, UnidadeResponsavel: UnidadesDeTeste.Ceps),
-            new PublicacoesDaFase(Produtos: produtos, EmiteParecerIndividual: false, RegraRecurso: null),
-            bancasRequeridas: []).Value!;
-
     [Fact(DisplayName = "Aviso: o mesmo tipo definitivo em duas fases gera o aviso, com o código estável e as duas fases na mensagem")]
     public void Aviso_MesmoDefinitivoEmDuasFases_GeraAviso()
     {
@@ -282,17 +275,6 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
             FaseQuePublica(1, "HOMOLOGACAO_INSCRICOES",
                 ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Preliminar),
                 ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo)));
-
-        ChecklistDeConformidade.AvaliarAvisos(processo.Declaracao()).Should().BeEmpty();
-    }
-
-    [Fact(DisplayName = "Aviso: um único definitivo da fase concluinte que fecha dois ciclos não gera aviso")]
-    public void Aviso_UmDefinitivoQueFechaDoisCiclos_NaoGeraAviso()
-    {
-        ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
-            FaseQueConclui(1, "ANALISE_A", "CONCLUSAO", ProdutoDaFase.Criar("PARECER", PapelProdutoFase.Preliminar)),
-            FaseQueConclui(2, "ANALISE_B", "CONCLUSAO", ProdutoDaFase.Criar("PARECER", PapelProdutoFase.Preliminar)),
-            FaseQueConclui(3, "CONCLUSAO", null, ProdutoDaFase.Criar("PARECER", PapelProdutoFase.Definitivo)));
 
         ChecklistDeConformidade.AvaliarAvisos(processo.Declaracao()).Should().BeEmpty();
     }

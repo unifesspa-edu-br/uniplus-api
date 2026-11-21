@@ -15,7 +15,6 @@ public sealed class PonteiroNoDocumentoTests
 {
     [Theory(DisplayName = "O campo do corpo do pedido que o documento nomeia diferente vira o ponteiro com o nome do documento e o índice de cada colchete")]
     [InlineData("fases[3].faseCanonicaId", "/cronograma/fases/3/faseCanonicaCodigo")]
-    [InlineData("fases[0].faseConcluinteCodigo", "/cronograma/fases/0/faseConcluinteChave")]
     [InlineData("fases[12].unidadeResponsavel", "/cronograma/fases/12/unidadeResponsavelCodigo")]
     [InlineData("fases[1].bancasRequeridas[4].categoriasDocumentoIds", "/cronograma/fases/1/bancasRequeridas/4/categoriasDocumentoCodigos")]
     [InlineData("fases[0].regraRecurso.procedimentos", "/cronograma/fases/0/regraRecurso/procedimentosDeRecurso")]

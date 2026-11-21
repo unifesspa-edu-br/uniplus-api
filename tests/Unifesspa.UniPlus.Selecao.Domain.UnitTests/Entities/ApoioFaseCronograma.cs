@@ -33,7 +33,7 @@ internal static class ApoioFaseCronograma
             new OrigemCanonicaDaFase(
                 OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_PRELIMINAR", OrigemData: OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
                 ColetaSolicitacaoIsencao: false),
-            new DecisoesDeCronogramaDaFase(Ordem: 1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadesDeTeste.Ceps),
+            new DecisoesDeCronogramaDaFase(Ordem: 1, Inicio: null, Fim: null, UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(produtos, EmiteParecerIndividual: false, regraRecurso),
             bancasRequeridas ?? []);
 

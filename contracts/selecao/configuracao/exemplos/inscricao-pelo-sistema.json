@@ -246,20 +246,23 @@
         "unidadeResponsavelSigla": "CEPS"
       },
       {
-        "chave": "resultado-preliminar",
-        "faseCanonicaCodigo": "RESULTADO_PRELIMINAR",
+        "chave": "resultado-final",
+        "faseCanonicaCodigo": "RESULTADO_FINAL",
         "inicio": "2027-02-01T03:00:00Z",
-        "fim": "2027-02-01T14:00:00Z",
+        "fim": "2027-02-15T14:00:00Z",
         "unidadeResponsavelCodigo": "CEPS",
         "unidadeResponsavelNome": "Centro de Processos Seletivos",
         "unidadeResponsavelSigla": "CEPS",
         "produtos": [
           {
-            "atoCodigo": "RESULTADO_PRELIMINAR",
+            "atoCodigo": "RESULTADO_FINAL",
             "papel": "PRELIMINAR"
+          },
+          {
+            "atoCodigo": "RESULTADO_FINAL",
+            "papel": "DEFINITIVO"
           }
         ],
-        "faseConcluinteChave": "resultado-final",
         "bancasRequeridas": [
           {
             "chave": "banca-analise-de-recursos",
@@ -281,7 +284,7 @@
           "regraVersao": "v1",
           "prazoValor": 2,
           "prazoUnidade": "diasUteis",
-          "atoAncoraCodigo": "RESULTADO_PRELIMINAR",
+          "atoAncoraCodigo": "RESULTADO_FINAL",
           "admiteInstanciaSuperior": false,
           "efeitoSuspensivo": "semEfeitoSuspensivo",
           "guardaDaVaga": "ateOResultadoDefinitivo",
@@ -297,27 +300,12 @@
           "HOMOLOGACAO_DAS_INSCRICOES"
         ],
         "regraDeHomologacao": {
-          "resultadoAtoCodigo": "RESULTADO_PRELIMINAR",
+          "resultadoAtoCodigo": "RESULTADO_FINAL",
           "alternativas": []
         },
         "assinantes": [
           "0196b3c2-8a10-7c3e-b5d2-6f1e4a9c2d71",
           "0196b3c2-8a11-7d02-9e4b-1c7a5f3b8e60"
-        ]
-      },
-      {
-        "chave": "resultado-final",
-        "faseCanonicaCodigo": "RESULTADO_FINAL",
-        "inicio": "2027-02-15T03:00:00Z",
-        "fim": "2027-02-15T14:00:00Z",
-        "unidadeResponsavelCodigo": "CEPS",
-        "unidadeResponsavelNome": "Centro de Processos Seletivos",
-        "unidadeResponsavelSigla": "CEPS",
-        "produtos": [
-          {
-            "atoCodigo": "RESULTADO_FINAL",
-            "papel": "DEFINITIVO"
-          }
         ]
       }
     ]
@@ -373,6 +361,10 @@
         {
           "atoCodigo": "RESULTADO_PRELIMINAR",
           "papel": "PRELIMINAR"
+        },
+        {
+          "atoCodigo": "RESULTADO_PRELIMINAR",
+          "papel": "DEFINITIVO"
         }
       ],
       "bancas": [

@@ -6987,26 +6987,6 @@
       "titulo": "A cascata declara origem que nenhuma oferta do processo marca como SegueCascata"
     },
     {
-      "codigo": "uniplus.selecao.processo_seletivo.conclusao_declarada_em_fase_que_se_conclui",
-      "status": 422,
-      "titulo": "A fase declara a si mesma como concluinte do próprio ciclo recursal"
-    },
-    {
-      "codigo": "uniplus.selecao.processo_seletivo.conclusao_declarada_sem_preliminar",
-      "status": 422,
-      "titulo": "A fase declara uma fase concluinte sem publicar resultado preliminar"
-    },
-    {
-      "codigo": "uniplus.selecao.processo_seletivo.conclusao_duplicada",
-      "status": 422,
-      "titulo": "A fase que fecha o próprio ciclo de um tipo de ato aponta uma concluinte que publica o definitivo do mesmo tipo"
-    },
-    {
-      "codigo": "uniplus.selecao.processo_seletivo.conclusao_nao_declarada",
-      "status": 422,
-      "titulo": "A fase publica resultado preliminar sem a definitiva da matéria e não declara qual fase a conclui"
-    },
-    {
       "codigo": "uniplus.selecao.processo_seletivo.condicao_atendimento_referenciada_por_exigencia_viva",
       "status": 422,
       "titulo": "Existe condição de gatilho documental referenciando um código de condição de atendimento que deixaria de ser ofertado"
@@ -7187,24 +7167,9 @@
       "titulo": "A mesma fase canônica não pode aparecer duas vezes no cronograma"
     },
     {
-      "codigo": "uniplus.selecao.processo_seletivo.fase_concluinte_antecede_a_concluida",
+      "codigo": "uniplus.selecao.processo_seletivo.fase_com_preliminar_sem_definitivo",
       "status": 422,
-      "titulo": "A fase concluinte não pode anteceder na ordem a fase que ela encerra"
-    },
-    {
-      "codigo": "uniplus.selecao.processo_seletivo.fase_concluinte_comeca_antes_da_concluida",
-      "status": 422,
-      "titulo": "O período da fase concluinte começa antes do período da fase que ela encerra; a fase concluinte não pode começar antes da fase que ela encerra"
-    },
-    {
-      "codigo": "uniplus.selecao.processo_seletivo.fase_concluinte_fora_do_cronograma",
-      "status": 422,
-      "titulo": "A fase declarada como concluinte não está no cronograma"
-    },
-    {
-      "codigo": "uniplus.selecao.processo_seletivo.fase_concluinte_sem_resultado_definitivo",
-      "status": 422,
-      "titulo": "A fase declarada como concluinte não publica resultado definitivo"
+      "titulo": "A fase publica resultado preliminar sem o definitivo do mesmo tipo de ato"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.fase_que_coleta_inscricao_sem_janela",
@@ -7215,6 +7180,11 @@
       "codigo": "uniplus.selecao.processo_seletivo.fase_referenciada_por_formulario",
       "status": 422,
       "titulo": "A fase é usada por um formulário e não pode sair do cronograma"
+    },
+    {
+      "codigo": "uniplus.selecao.processo_seletivo.fase_sem_definitivo_sem_data_final",
+      "status": 422,
+      "titulo": "A fase que não publica resultado definitivo precisa declarar a data final do período"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.fase_sem_unidade_responsavel",

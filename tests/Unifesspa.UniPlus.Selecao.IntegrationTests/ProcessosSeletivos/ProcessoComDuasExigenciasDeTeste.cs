@@ -104,7 +104,7 @@ internal static class ProcessoComDuasExigenciasDeTeste
         FaseCronograma fase = FaseCronograma.Criar(
             new OrigemCanonicaDaFase(
                 Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: true, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
-            new DecisoesDeCronogramaDaFase(1, Inicio: InicioDaFase, Fim: FimDaFase, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new DecisoesDeCronogramaDaFase(1, Inicio: InicioDaFase, Fim: FimDaFase, UnidadeResponsavel: UnidadesDeTeste.Ceps),
             HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(resultado: "INSCRICAO"),
             bancasRequeridas: []).Value!;
         processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();

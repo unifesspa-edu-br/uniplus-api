@@ -37,7 +37,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// A prova precisa de Postgres real e de SQL cru: nenhum caminho do domínio produz o estado que
 /// se está defendendo. Semear pelo agregado e adulterar a linha depois é o que reproduz a
 /// hidratação de dado legado — mesmo raciocínio de
-/// <see cref="ConclusaoDoCicloRecursalPersistenciaTests"/>.
+/// <see cref="TaxaInscricaoSemFundamentoPersistenciaTests"/>.
 /// </para>
 /// </remarks>
 public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSeletivoDbFixture>
@@ -313,8 +313,7 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
                 OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true,
                 ColetaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(
-                Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
-                UnidadeResponsavel: UnidadesDeTeste.Ceps),
+                Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(
                 [preliminar, ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], RegraDeRecurso(preliminar.Id, procedimentos)) with
             { TiposDeDecisao = TiposDeDecisaoDaFase() },

@@ -655,14 +655,14 @@ definir_cronograma_fases() {
         {
             \"ordem\": 1, \"faseCanonicaId\": \"$FASE_INSCRICAO_ID\",
             \"inicio\": \"$inicio_inscricao\", \"fim\": \"$fim_inscricao\",
-            \"produtos\": [], \"faseConcluinteCodigo\": null,
+            \"produtos\": [],
             \"emiteParecerIndividual\": false, \"bancasRequeridas\": [], \"regraRecurso\": null
         },
         {
             \"ordem\": 2, \"faseCanonicaId\": \"$FASE_RESULTADO_ID\",
             \"inicio\": \"$inicio_resultado\", \"fim\": \"$fim_resultado\",
             \"produtos\": [{\"atoCodigo\": \"RESULTADO_CLASSIFICACAO\", \"papel\": \"DEFINITIVO\"}],
-            \"faseConcluinteCodigo\": null, \"emiteParecerIndividual\": false,
+            \"emiteParecerIndividual\": false,
             \"bancasRequeridas\": [], \"regraRecurso\": null, \"tiposDeDecisao\": [\"HOMOLOGACAO_DAS_INSCRICOES\"],
             \"regraDeHomologacao\": {
                 \"resultadoAtoCodigo\": \"RESULTADO_CLASSIFICACAO\",
@@ -672,7 +672,7 @@ definir_cronograma_fases() {
         {
             \"ordem\": 3, \"faseCanonicaId\": \"$FASE_HABILITACAO_ID\",
             \"inicio\": \"$inicio_habilitacao\", \"fim\": \"$fim_habilitacao\",
-            \"produtos\": [], \"faseConcluinteCodigo\": null,
+            \"produtos\": [],
             \"emiteParecerIndividual\": false, \"bancasRequeridas\": [], \"regraRecurso\": null
         }
     ]"
@@ -680,7 +680,7 @@ definir_cronograma_fases() {
     # intervalo entre o fim da inscrição e o resultado.
     if [ -n "${FASE_CLASSIFICACAO_ID:-}" ]; then
         fases=$(jq -c --arg fase "$FASE_CLASSIFICACAO_ID" --arg inicio "$(na_data 2027-01-11 00:00:00)" --arg fim "$(na_data 2027-01-12 23:59:59)" '
-            [.[0], {ordem: 2, faseCanonicaId: $fase, inicio: $inicio, fim: $fim, produtos: [], faseConcluinteCodigo: null,
+            [.[0], {ordem: 2, faseCanonicaId: $fase, inicio: $inicio, fim: $fim, produtos: [],
                 emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null}]
             + (.[1:] | map(.ordem += 1))' <<< "$fases")
         fases=$(jq -c --arg inicio "$(na_data 2027-01-13 00:00:00)" '.[2].inicio = $inicio' <<< "$fases")

@@ -14544,7 +14544,6 @@
           "ordem",
           "inicio",
           "fim",
-          "faseConcluinteCodigo",
           "unidadeResponsavel"
         ],
         "type": "object",
@@ -14566,12 +14565,6 @@
               "string"
             ],
             "format": "date-time"
-          },
-          "faseConcluinteCodigo": {
-            "type": [
-              "null",
-              "string"
-            ]
           },
           "unidadeResponsavel": {
             "oneOf": [
@@ -16440,16 +16433,11 @@
           },
           "produtos": {
             "title": "Atos que a fase publica",
-            "description": "Tipos de ato publicados pela fase, como o resultado preliminar. O par tipo de ato e papel n\u00E3o se repete na fase.",
+            "description": "Tipos de ato publicados pela fase, como o resultado preliminar. O par tipo de ato e papel n\u00E3o se repete na fase. A fase que publica o resultado preliminar de um tipo de ato publica nela mesma o definitivo do mesmo tipo.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsProduto"
             }
-          },
-          "faseConcluinteChave": {
-            "title": "Fase que conclui o ciclo",
-            "description": "Chave local da fase do cronograma que conclui o ciclo de recurso desta fase.",
-            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsChave"
           },
           "emiteParecerIndividual": {
             "title": "Emite parecer individual",
@@ -18039,7 +18027,7 @@
         "properties": {
           "resultadoAtoCodigo": {
             "title": "Resultado que publica a lista",
-            "description": "C\u00F3digo do tipo de ato que publica a lista de homologadas: produto da pr\u00F3pria fase; o definitivo sai nela ou na fase concluinte.",
+            "description": "C\u00F3digo do tipo de ato que publica a lista de homologadas: produto da pr\u00F3pria fase. Se a fase publica o preliminar, o definitivo do mesmo tipo sai na pr\u00F3pria fase.",
             "type": "string",
             "pattern": "^[A-Z]\u002B(_[A-Z]\u002B)*$",
             "minLength": 1,
@@ -20247,7 +20235,6 @@
           "inicio",
           "fim",
           "produtos",
-          "faseConcluinteCodigo",
           "emiteParecerIndividual",
           "bancasRequeridas",
           "regraRecurso"
@@ -20281,12 +20268,6 @@
             "items": {
               "$ref": "#/components/schemas/ProdutoDaFaseInput"
             }
-          },
-          "faseConcluinteCodigo": {
-            "type": [
-              "null",
-              "string"
-            ]
           },
           "emiteParecerIndividual": {
             "type": "boolean"

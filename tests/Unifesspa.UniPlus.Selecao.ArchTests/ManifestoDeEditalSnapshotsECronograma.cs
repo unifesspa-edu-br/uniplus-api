@@ -80,7 +80,7 @@ internal static class ManifestoDeEditalSnapshotsECronograma
                 "Ordem", "FaseCanonicaOrigemId", "Codigo", "OrigemData",
                 "AgrupaEtapas", "PermiteComplementacao",
                 "ColetaInscricao", "ColetaSolicitacaoIsencao", "Inicio", "Fim",
-                "Produtos", "FaseConcluinteCodigo", "EmiteParecerIndividual",
+                "Produtos", "EmiteParecerIndividual",
                 "BancasRequeridas", "RegraRecurso", "UnidadeResponsavel", "TiposDeDecisao",
             ],
             [

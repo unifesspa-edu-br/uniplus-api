@@ -131,7 +131,7 @@ internal static class PassosDoEnvelopeFechado
     private static async Task EscolherOMotivoDaHomologacaoAsync(Cenario c)
     {
         Guid motivoId = await MotivosDaHomologacaoSemeados.NoCadastroAsync(c.Api.Services, HomologacaoDasInscricoesDeTeste.MotivoSemResultadoNoInep);
-        Guid faseId = await LugaresDoProcessoDeTeste.FaseAsync(c.Api.Services, c.Ctx.ProcessoId, "RESULTADO_PRELIMINAR");
+        Guid faseId = await LugaresDoProcessoDeTeste.FaseAsync(c.Api.Services, c.Ctx.ProcessoId, "RESULTADO_FINAL");
         await ExecutarPassoAsync(() => c.Ctx.PutMotivoNaFaseAsync(faseId, motivoId), HttpStatusCode.NoContent, "PUT motivo na fase", "/fases/{fase}/motivos-de-decisao/{motivo}");
     }
 

@@ -22,7 +22,7 @@ public sealed class ProcessoSeletivoComplementacaoDaFaseComPendenciaDeReenvioTes
         new OrigemCanonicaDaFase(
             faseCanonicaOrigemId ?? Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: permiteComplementacao, ColetaInscricao: false,
             ColetaSolicitacaoIsencao: false),
-        new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
 

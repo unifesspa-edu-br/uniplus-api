@@ -107,7 +107,7 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false,
             ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
-        new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(
             Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false,
             RegraRecurso: null),
@@ -143,12 +143,12 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
         ExigirPublicacaoRecusada(processo, "ProcessoSeletivo.LocalidadeAusente");
     }
 
-    private static FaseCronograma FasePreliminarDeGabaritoComConcluinte() => FaseCronograma.Criar(
+    private static FaseCronograma FasePreliminarDeGabaritoSemDefinitivo() => FaseCronograma.Criar(
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false,
             ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
-            2, Inicio: null, Fim: null, FaseConcluinteCodigo: "CONCLUSAO_DO_CICLO", UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            2, Inicio: null, Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(
             Produtos: [ProdutoDaFase.Criar("GABARITO", PapelProdutoFase.Preliminar)], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
@@ -159,18 +159,17 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
             .GetValue(processo).Should().BeAssignableTo<List<FaseCronograma>>().Which
             .AddRange(fases);
 
-    [Fact(DisplayName = "Fase que abre o ciclo com um tipo de ato e tem como concluinte a que só fecha outro tipo — item vermelho e Publicar recusa")]
-    public void ConclusaoDoCiclo_ConcluinteComDefinitivoDeOutroTipo_ReprovaNoChecklistENaPublicacao()
+    [Fact(DisplayName = "Fase que publica o preliminar de um tipo de ato sem o definitivo do mesmo tipo — item vermelho e Publicar recusa")]
+    public void FechamentoDoCiclo_PreliminarSemDefinitivoDoMesmoTipo_ReprovaNoChecklistENaPublicacao()
     {
         ProcessoSeletivo processo = ProcessoConforme();
 
-        // O estado só existe em processo materializado do banco: a gravação do cronograma já
-        // o recusa. Sem esta metade, a conferência de publicação ficaria sem prova.
-        MaterializarFases(processo, FasePreliminarDeGabaritoComConcluinte(), FaseFinal(3, "CONCLUSAO_DO_CICLO"));
+        // O fechamento do ciclo é conferido só na publicação; a fase entra como a hidratação do EF a entrega.
+        MaterializarFases(processo, FasePreliminarDeGabaritoSemDefinitivo(), FaseFinal(3, "CONCLUSAO_DO_CICLO"));
 
         SoEstesItensVermelhos(processo, "cronograma_conclusao_do_ciclo_recursal");
 
-        ExigirPublicacaoRecusada(processo, "ProcessoSeletivo.FaseConcluinteSemResultadoDefinitivo");
+        ExigirPublicacaoRecusada(processo, "ProcessoSeletivo.FaseComPreliminarSemDefinitivo");
     }
 
     // Duas pendências ao mesmo tempo, de conferências que Publicar() avalia em ordem conhecida: a convenção de contagem (2º) e a

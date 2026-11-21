@@ -12,8 +12,7 @@ using Xunit;
 
 /// <summary>
 /// Qual preliminar libera qual definitivo no cronograma: o definitivo espera os preliminares do mesmo
-/// tipo de ato no mesmo lugar e os que as fases de origem deixam abertos para a concluinte, e a pergunta
-/// inversa responde com os mesmos pares.
+/// tipo de ato no mesmo lugar, e a pergunta inversa responde com os mesmos pares.
 /// </summary>
 public sealed class PreliminaresDaMateriaTests
 {
@@ -25,10 +24,10 @@ public sealed class PreliminaresDaMateriaTests
 
     private static ProdutoDaFase Definitivo(string ato = Materia) => ProdutoDaFase.Criar(ato, PapelProdutoFase.Definitivo);
 
-    private static FaseCronograma Fase(string codigo, string? faseConcluinteCodigo, params ProdutoDaFase[] produtos) =>
+    private static FaseCronograma Fase(string codigo, params ProdutoDaFase[] produtos) =>
         FaseCronograma.Criar(
             new OrigemCanonicaDaFase(Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
-            new DecisoesDeCronogramaDaFase(1, Inicio: Inicio, Fim: Inicio.AddDays(10), FaseConcluinteCodigo: faseConcluinteCodigo, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new DecisoesDeCronogramaDaFase(1, Inicio: Inicio, Fim: Inicio.AddDays(10), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: produtos, EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;
 
@@ -66,7 +65,7 @@ public sealed class PreliminaresDaMateriaTests
     {
         ProdutoDaFase preliminar = Preliminar();
         ProdutoDaFase definitivo = Definitivo();
-        FaseCronograma fase = Fase("PROVA", null, preliminar, Preliminar(OutraMateria), definitivo);
+        FaseCronograma fase = Fase("PROVA", preliminar, Preliminar(OutraMateria), definitivo);
 
         PreliminaresDaMateria.Esperados([fase], [], definitivo.Id).Should().Equal(preliminar.Id);
     }
@@ -81,63 +80,22 @@ public sealed class PreliminaresDaMateriaTests
         PreliminaresDaMateria.Esperados([], [etapa], definitivo.Id).Should().Equal(preliminar.Id);
     }
 
-    [Fact(DisplayName = "Fase concluinte recebe o ciclo que a fase de origem deixa aberto")]
-    public void Esperados_FaseConcluinte_RecebeOCicloAbertoPelaOutraFase()
+    [Fact(DisplayName = "Duas fases que publicam o mesmo tipo de ato não se ligam: o definitivo de uma não espera o preliminar da outra")]
+    public void Esperados_MesmoTipoEmOutraFase_NaoEspera()
     {
-        ProdutoDaFase preliminar = Preliminar();
-        ProdutoDaFase definitivo = Definitivo();
-        FaseCronograma prova = Fase("PROVA", "RESULTADO", preliminar, Preliminar(OutraMateria), Definitivo(OutraMateria));
-        FaseCronograma resultado = Fase("RESULTADO", null, definitivo);
-
-        PreliminaresDaMateria.Esperados([prova, resultado], [], definitivo.Id).Should().Equal(preliminar.Id);
-    }
-
-    [Fact(DisplayName = "Duas fases com o mesmo tipo e a mesma concluinte fazem o definitivo da concluinte esperar os dois")]
-    public void Esperados_DuasFasesComAMesmaConcluinte_EsperaOsDois()
-    {
-        ProdutoDaFase primeiro = Preliminar();
-        ProdutoDaFase segundo = Preliminar();
-        ProdutoDaFase definitivo = Definitivo();
-        FaseCronograma[] fases = [Fase("PROVA_A", "RESULTADO", primeiro), Fase("PROVA_B", "RESULTADO", segundo), Fase("RESULTADO", null, definitivo)];
-
-        PreliminaresDaMateria.Esperados(fases, [], definitivo.Id).Should().BeEquivalentTo([primeiro.Id, segundo.Id]);
-    }
-
-    [Fact(DisplayName = "A matéria que a fase fecha com o próprio definitivo não chega à concluinte")]
-    public void Esperados_FaseQueFechaOCiclo_NaoEntregaAConcluinte()
-    {
-        ProdutoDaFase preliminar = Preliminar();
-        ProdutoDaFase definitivoDaProva = Definitivo();
+        ProdutoDaFase preliminarDaProva = Preliminar();
         ProdutoDaFase definitivoDoResultado = Definitivo();
-        FaseCronograma[] fases = [Fase("PROVA", "RESULTADO", preliminar, definitivoDaProva), Fase("RESULTADO", null, definitivoDoResultado)];
+        FaseCronograma[] fases = [Fase("PROVA", preliminarDaProva), Fase("RESULTADO", definitivoDoResultado)];
 
         PreliminaresDaMateria.Esperados(fases, [], definitivoDoResultado.Id).Should().BeEmpty();
-        PreliminaresDaMateria.Esperados(fases, [], definitivoDaProva.Id).Should().Equal(preliminar.Id);
-    }
-
-    [Fact(DisplayName = "Ciclo aberto por fase que aponta outra concluinte não chega ao definitivo")]
-    public void Esperados_ConcluinteDiferente_NaoEspera()
-    {
-        ProdutoDaFase definitivo = Definitivo();
-        FaseCronograma[] fases = [Fase("PROVA", "RECURSOS", Preliminar()), Fase("RESULTADO", null, definitivo), Fase("RECURSOS", null)];
-
-        PreliminaresDaMateria.Esperados(fases, [], definitivo.Id).Should().BeEmpty();
-    }
-
-    [Fact(DisplayName = "Preliminar de outro tipo de ato aberto pela fase de origem não chega ao definitivo")]
-    public void Esperados_CicloAbertoDeOutroTipo_NaoEspera()
-    {
-        ProdutoDaFase definitivo = Definitivo();
-        FaseCronograma[] fases = [Fase("PROVA", "RESULTADO", Preliminar(OutraMateria)), Fase("RESULTADO", null, definitivo)];
-
-        PreliminaresDaMateria.Esperados(fases, [], definitivo.Id).Should().BeEmpty();
+        PreliminaresDaMateria.DefinitivosQueFecham(fases, [], preliminarDaProva.Id).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "Produto sem preliminar declarado, ou que o cronograma não conhece, não espera nada")]
     public void Esperados_SemPreliminarDeclarado_EVazio()
     {
         ProdutoDaFase definitivo = Definitivo();
-        FaseCronograma fase = Fase("RESULTADO", null, definitivo);
+        FaseCronograma fase = Fase("RESULTADO", definitivo);
 
         PreliminaresDaMateria.Esperados([fase], [], definitivo.Id).Should().BeEmpty();
         PreliminaresDaMateria.Esperados([fase], [], Guid.CreateVersion7()).Should().BeEmpty();
@@ -148,7 +106,7 @@ public sealed class PreliminaresDaMateriaTests
     {
         ProdutoDaFase preliminar = Preliminar();
         ProdutoDaFase definitivo = Definitivo();
-        ConfiguracaoPublicada configuracao = Configuracao([Fase("PROVA", "RESULTADO", preliminar), Fase("RESULTADO", null, definitivo)], []);
+        ConfiguracaoPublicada configuracao = Configuracao([Fase("PROVA", preliminar, definitivo)], []);
 
         PreliminaresDaMateria.Esperados(configuracao, definitivo.Id).Should().Equal(preliminar.Id);
         PreliminaresDaMateria.DefinitivosQueFecham(configuracao, preliminar.Id).Should().Equal(definitivo.Id);
@@ -159,7 +117,7 @@ public sealed class PreliminaresDaMateriaTests
     {
         ProdutoDaFase preliminar = Preliminar();
         ProdutoDaFase definitivo = Definitivo();
-        FaseCronograma fase = Fase("PROVA", null, preliminar, definitivo, Definitivo(OutraMateria));
+        FaseCronograma fase = Fase("PROVA", preliminar, definitivo, Definitivo(OutraMateria));
 
         PreliminaresDaMateria.DefinitivosQueFecham([fase], [], preliminar.Id).Should().Equal(definitivo.Id);
     }
@@ -173,31 +131,11 @@ public sealed class PreliminaresDaMateriaTests
         PreliminaresDaMateria.DefinitivosQueFecham([], [Etapa(preliminar, definitivo)], preliminar.Id).Should().Equal(definitivo.Id);
     }
 
-    [Fact(DisplayName = "O preliminar que a fase deixa aberto é fechado pelo definitivo da concluinte")]
-    public void DefinitivosQueFecham_PreliminarAberto_ApontaODefinitivoDaConcluinte()
-    {
-        ProdutoDaFase preliminar = Preliminar();
-        ProdutoDaFase definitivo = Definitivo();
-        FaseCronograma[] fases = [Fase("PROVA", "RESULTADO", preliminar), Fase("RESULTADO", null, definitivo)];
-
-        PreliminaresDaMateria.DefinitivosQueFecham(fases, [], preliminar.Id).Should().Equal(definitivo.Id);
-    }
-
-    [Fact(DisplayName = "O preliminar fechado na própria fase não aponta o definitivo da concluinte")]
-    public void DefinitivosQueFecham_PreliminarFechadoNaFase_NaoApontaAConcluinte()
-    {
-        ProdutoDaFase preliminar = Preliminar();
-        ProdutoDaFase definitivoDaProva = Definitivo();
-        FaseCronograma[] fases = [Fase("PROVA", "RESULTADO", preliminar, definitivoDaProva), Fase("RESULTADO", null, Definitivo())];
-
-        PreliminaresDaMateria.DefinitivosQueFecham(fases, [], preliminar.Id).Should().Equal(definitivoDaProva.Id);
-    }
-
     [Fact(DisplayName = "Preliminar sem definitivo que o espere não é fechado por ninguém")]
     public void DefinitivosQueFecham_SemDefinitivo_EVazio()
     {
         ProdutoDaFase preliminar = Preliminar();
-        FaseCronograma fase = Fase("PROVA", null, preliminar, Definitivo(OutraMateria));
+        FaseCronograma fase = Fase("PROVA", preliminar, Definitivo(OutraMateria));
 
         PreliminaresDaMateria.DefinitivosQueFecham([fase], [], preliminar.Id).Should().BeEmpty();
     }

@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.ApoioDoCronogramaDeFasesPeloEndpoint;
 
 /// <summary>
-/// A janela do cronograma de fases informada com offset diferente de UTC (issue #1124),
+/// O período do cronograma de fases informado com deslocamento diferente de UTC (issue #1124),
 /// pelo HTTP e contra Postgres real — o contrato declara <c>inicio</c>/<c>fim</c> como
 /// <c>date-time</c>, e um instante RFC 3339 é inequívoco qualquer que seja o offset com
 /// que o cliente o escreva.
@@ -40,10 +40,10 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.ApoioDo
 [Trait("Category", "Integration")]
 [Trait("Category", "OutboxCapability")]
 [Trait("Category", "OutboxCascading")]
-public sealed class CronogramaFasesJanelaComOffsetEndpointTests
+public sealed class CronogramaFasesPeriodoComDeslocamentoEndpointTests
 {
     /// <summary>
-    /// Fase de origem de data NO_EDITAL — a que exige janela (CA-07 da Story #851) e, por
+    /// Fase de origem de data NO_EDITAL — a que exige período (CA-07 da Story #851) e, por
     /// isso, a que exercita a gravação de <c>inicio</c>/<c>fim</c>. Não produz resultado,
     /// então não arrasta a exigência de ato produzido para o arranjo.
     /// </summary>
@@ -54,29 +54,29 @@ public sealed class CronogramaFasesJanelaComOffsetEndpointTests
     /// semear qualquer um deles aqui faria aquela suíte violar a unicidade dependendo da
     /// ordem de execução.
     /// </remarks>
-    // Fase sem produto declarado de propósito: o assunto aqui é o offset da janela, e uma fase
+    // Fase sem produto declarado de propósito: o assunto aqui é o deslocamento do período, e uma fase
     // que produz resultado exigiria também o tipo de ato, ruído que não pertence a este teste.
-    private const string CodigoFaseComJanela = "ENSALAMENTO";
+    private const string CodigoFaseComPeriodo = "ENSALAMENTO";
 
     private static readonly DateTimeOffset InicioEsperadoUtc = new(2027, 1, 25, 11, 0, 0, TimeSpan.Zero);
     private static readonly DateTimeOffset FimEsperadoUtc = new(2027, 1, 27, 21, 0, 0, TimeSpan.Zero);
 
     private readonly CascadingFixture _fixture;
 
-    public CronogramaFasesJanelaComOffsetEndpointTests(CascadingFixture fixture) => _fixture = fixture;
+    public CronogramaFasesPeriodoComDeslocamentoEndpointTests(CascadingFixture fixture) => _fixture = fixture;
 
-    [Theory(DisplayName = "Janela com offset negativo, positivo ou UTC conclui em 204 e persiste o mesmo instante")]
+    [Theory(DisplayName = "Período com deslocamento negativo, positivo ou UTC conclui em 204 e persiste o mesmo instante")]
     [InlineData("2027-01-25T08:00:00-03:00", "2027-01-27T18:00:00-03:00")]
     [InlineData("2027-01-25T16:30:00+05:30", "2027-01-28T02:30:00+05:30")]
     [InlineData("2027-01-25T11:00:00Z", "2027-01-27T21:00:00Z")]
-    public async Task JanelaComOffset_204EPersisteInstanteEmUtc(string inicio, string fim)
+    public async Task PeriodoComDeslocamento_204EPersisteInstanteEmUtc(string inicio, string fim)
     {
         Contexto ctx = await SemearAsync($"offset {inicio}");
         HttpResponseMessage resposta = await ctx.PutCronogramaFasesAsync(inicio, fim);
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent,
             $"'{inicio}' é um instante válido pelo contrato date-time — o offset é forma de escrita, não erro do cliente");
 
-        AfirmarJanelaPersistidaEmUtc(await ctx.ObterFasePersistidaAsync(), InicioEsperadoUtc, FimEsperadoUtc);
+        AfirmarPeriodoPersistidoEmUtc(await ctx.ObterFasePersistidaAsync(), InicioEsperadoUtc, FimEsperadoUtc);
 
         FaseCronogramaDto lida = await ctx.ObterFaseLidaPelaApiAsync();
         lida.Cronograma.Inicio.Should().Be(InicioEsperadoUtc, "a leitura devolve o mesmo instante que a gravação recebeu");
@@ -95,17 +95,17 @@ public sealed class CronogramaFasesJanelaComOffsetEndpointTests
         HttpResponseMessage segunda = await ctx.PutCronogramaFasesAsync("2027-02-01T05:00:00-03:00", "2027-02-03T15:00:00-03:00");
         segunda.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        AfirmarJanelaPersistidaEmUtc(
+        AfirmarPeriodoPersistidoEmUtc(
             await ctx.ObterFasePersistidaAsync(),
             new DateTimeOffset(2027, 2, 1, 8, 0, 0, TimeSpan.Zero),
             new DateTimeOffset(2027, 2, 3, 18, 0, 0, TimeSpan.Zero));
     }
 
-    private static void AfirmarJanelaPersistidaEmUtc(
+    private static void AfirmarPeriodoPersistidoEmUtc(
         FaseCronograma persistida, DateTimeOffset inicioEsperado, DateTimeOffset fimEsperado)
     {
         persistida.Inicio.Should().Be(inicioEsperado, "o instante informado pelo cliente é preservado");
-        persistida.Inicio!.Value.Offset.Should().Be(TimeSpan.Zero, "a janela é normalizada para UTC antes de persistir");
+        persistida.Inicio!.Value.Offset.Should().Be(TimeSpan.Zero, "o período é normalizado para UTC antes de persistir");
         persistida.Fim.Should().Be(fimEsperado);
         persistida.Fim!.Value.Offset.Should().Be(TimeSpan.Zero);
     }
@@ -134,7 +134,6 @@ public sealed class CronogramaFasesJanelaComOffsetEndpointTests
               "inicio": "{{inicio}}",
               "fim": "{{fim}}",
               "produtos": [],
-              "faseConcluinteCodigo": null,
               "emiteParecerIndividual": false,
               "bancasRequeridas": [],
               "regraRecurso": null
@@ -155,7 +154,7 @@ public sealed class CronogramaFasesJanelaComOffsetEndpointTests
 
         Guid faseCanonicaId = await ObterOuCriarFaseCanonicaAsync(api);
         Guid processoId = await SemearProcessoEmRascunhoAsync(
-            api, $"PS janela com offset — {nome}", OrigemCandidatos.InscricaoPropria);
+            api, $"PS período com deslocamento — {nome}", OrigemCandidatos.InscricaoPropria);
 
         return new Contexto(api, client, processoId, faseCanonicaId);
     }
@@ -167,7 +166,7 @@ public sealed class CronogramaFasesJanelaComOffsetEndpointTests
     /// </summary>
     private static async Task<Guid> ObterOuCriarFaseCanonicaAsync(CascadingApiFactory api)
     {
-        FaseCanonica? existente = await ProcurarFaseCanonicaAsync(api, CodigoFaseComJanela);
+        FaseCanonica? existente = await ProcurarFaseCanonicaAsync(api, CodigoFaseComPeriodo);
         if (existente is not null)
         {
             return existente.Id;
@@ -180,7 +179,7 @@ public sealed class CronogramaFasesJanelaComOffsetEndpointTests
     private static async Task<Guid> CriarFaseDeEnsalamentoAsync(UniPlusDbContext config)
     {
         Result<FaseCanonica> criada = FaseCanonica.Criar(
-            CodigoFaseComJanela, "Ensalamento", null, baseLegal: null, origemData: "NO_EDITAL",
+            CodigoFaseComPeriodo, "Ensalamento", null, baseLegal: null, origemData: "NO_EDITAL",
             sinalizadores: new Unifesspa.UniPlus.Configuracao.Domain.ValueObjects.SinalizadoresDaFase(
                 AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false));
         criada.IsSuccess.Should().BeTrue(criada.Error?.Message);

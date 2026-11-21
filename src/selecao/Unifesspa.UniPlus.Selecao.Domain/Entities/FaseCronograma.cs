@@ -26,8 +26,8 @@ using ValueObjects;
 /// Deriva de <see cref="EntityBase"/> puro (sem soft delete): a configuração em rascunho é substituível
 /// por inteiro (<see cref="ProcessoSeletivo.DefinirCronogramaFases"/>). O que a fase publica é declarado
 /// em <see cref="Produtos"/>, e que o papel só caiba em ato que é resultado no catálogo é I/O, da
-/// Application (ADR-0042). A alcançabilidade da conclusão do ciclo recursal é da raiz, a única que
-/// enxerga o cronograma inteiro.
+/// Application (ADR-0042). O ciclo recursal fecha dentro da própria fase: o preliminar de um tipo de ato
+/// exige o definitivo do mesmo tipo nela.
 /// </remarks>
 public sealed class FaseCronograma : EntityBase, IParteDoProcesso
 {
@@ -95,12 +95,6 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
     public DateTimeOffset? Fim { get; private set; }
 
     /// <summary>
-    /// Código canônico da fase que conclui o ciclo recursal desta, quando a própria fase não publica a
-    /// definitiva da matéria que abriu.
-    /// </summary>
-    public string? FaseConcluinteCodigo { get; private set; }
-
-    /// <summary>
     /// Se a fase promete parecer individual por candidato: o parecer sai na execução, e é dele que o
     /// candidato tira fundamento para recorrer.
     /// </summary>
@@ -125,13 +119,6 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
 
     /// <summary>Encerra ciclo recursal: publica ao menos um resultado definitivo.</summary>
     internal bool PublicaResultadoDefinitivo => CicloRecursal.PublicaComPapel(ParesDeAto(), PapelProdutoFase.Definitivo);
-
-    /// <summary>
-    /// Os tipos de ato cujo preliminar a fase publica sem publicar o definitivo do mesmo tipo:
-    /// são as matérias cujo ciclo recursal ela deixa para a fase concluinte fechar.
-    /// </summary>
-    public IEnumerable<string> TiposComCicloAberto() =>
-        CicloRecursal.TiposComCicloAberto(ParesDeAto());
 
     private IEnumerable<(string AtoCodigo, PapelProdutoFase? Papel)> ParesDeAto() =>
         _produtos.Select(static p => (p.AtoCodigo, p.Papel));
@@ -302,7 +289,7 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
         FaseCanonicaOrigemId, Codigo, OrigemData, AgrupaEtapas, PermiteComplementacao, ColetaInscricao, ColetaSolicitacaoIsencao);
 
     private DecisoesDeCronogramaDaFase DecisoesDeCronograma() =>
-        new(Ordem, Inicio, Fim, FaseConcluinteCodigo, UnidadeResponsavel);
+        new(Ordem, Inicio, Fim, UnidadeResponsavel);
 
     private void DefinirOrigemCanonica(OrigemCanonicaDaFase origem)
     {
@@ -320,7 +307,6 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
         Ordem = cronograma.Ordem;
         Inicio = JanelaDeTempo.EmUtc(cronograma.Inicio);
         Fim = JanelaDeTempo.EmUtc(cronograma.Fim);
-        FaseConcluinteCodigo = CodigoDeFase.Normalizado(cronograma.FaseConcluinteCodigo);
         DefinirUnidadeResponsavel(cronograma.UnidadeResponsavel);
     }
 

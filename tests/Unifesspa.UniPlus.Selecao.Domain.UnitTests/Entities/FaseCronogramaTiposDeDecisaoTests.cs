@@ -25,7 +25,7 @@ public sealed class FaseCronogramaTiposDeDecisaoTests
         Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", origemData,
         AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false);
 
-    private static DecisoesDeCronogramaDaFase Cronograma() => new(1, null, null, null, UnidadesDeTeste.Ceps);
+    private static DecisoesDeCronogramaDaFase Cronograma() => new(1, null, null, UnidadesDeTeste.Ceps);
 
     private static Result<FaseCronograma> Criar(IReadOnlyList<string?>? tipos, OrigemDataFase origemData = OrigemDataFase.NaExecucao) =>
         FaseCronograma.Criar(Origem(origemData), Cronograma(), new PublicacoesDaFase([], false, null, tipos), []);

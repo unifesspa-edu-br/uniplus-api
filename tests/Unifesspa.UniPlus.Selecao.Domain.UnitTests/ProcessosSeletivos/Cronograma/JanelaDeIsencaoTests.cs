@@ -16,7 +16,7 @@ public sealed class JanelaDeIsencaoTests
     private static ModeloDeFase Inscricao() => new ModeloDeFase("INSCRICAO", 1) { ColetaInscricao = true }.Janela(0, 10);
 
     private static ModeloDeFase Isencao(int ordem = 2) =>
-        new ModeloDeFase("ISENCAO", ordem) { ColetaSolicitacaoIsencao = true }.Janela(0, 7);
+        new ModeloDeFase("ISENCAO", ordem) { ColetaSolicitacaoIsencao = true }.Publicando(Definitivo("RESULTADO_ISENCAO")).Janela(0, 7);
 
     private static (string? Campo, string Codigo)[] Completude(TimeZoneInfo? fuso, params FaseDeclarada[] fases) =>
         [.. Cronograma(fases).ConferirCompletude(fuso).Select(static r => (r.Field, r.Error.Code))];

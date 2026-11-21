@@ -18,7 +18,7 @@ internal static class ErrosDoCronograma
         .. DeclaracaoDaFase(),
         .. RecorteDeCompetencia(),
         .. DeclaracaoDaEtapa(),
-        .. ConclusaoDoCicloRecursal(),
+        .. FechamentoDoCicloDeRecurso(),
         .. ProdutosETiposDeAto(),
         .. AncoraDoRecursoDaEtapa(),
         .. PrazoDoRecursoDaEtapa(),
@@ -107,24 +107,15 @@ internal static class ErrosDoCronograma
     ];
 
     /// <summary>
-    /// A conclusão do ciclo recursal por matéria. Cada estado tem código próprio porque a remediação difere: declarar a fase que
-    /// conclui, remover a declaração que não cabe, ou mover a concluinte para depois da fase que ela encerra. A fase que já fecha o
-    /// ciclo de um tipo com o próprio definitivo não pode apontar uma concluinte que o publica também, porque o ciclo teria dois
-    /// definitivos. O ciclo da etapa fecha dentro dela. A retificação confere a configuração nova contra o que já foi publicado: o
-    /// ciclo que o preliminar publicado abriu não pode ficar sem o definitivo que o fecha.
+    /// O fechamento do ciclo de recurso por matéria, dentro da própria fase ou etapa: o preliminar de um tipo de ato exige o
+    /// definitivo do mesmo tipo no mesmo lugar. A retificação confere a configuração nova contra o que já foi publicado: o ciclo
+    /// que o preliminar publicado abriu não pode ficar sem o definitivo que o fecha.
     /// </summary>
-    private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> ConclusaoDoCicloRecursal() =>
+    private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> FechamentoDoCicloDeRecurso() =>
     [
-        new("ProcessoSeletivo.ConclusaoNaoDeclarada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.conclusao_nao_declarada", "A fase publica resultado preliminar sem a definitiva da matéria e não declara qual fase a conclui")),
-        new(ProcessoSeletivoErrorCodes.ConclusaoDuplicada, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.conclusao_duplicada", "A fase que fecha o próprio ciclo de um tipo de ato aponta uma concluinte que publica o definitivo do mesmo tipo")),
+        new(ProcessoSeletivoErrorCodes.FaseComPreliminarSemDefinitivo, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fase_com_preliminar_sem_definitivo", "A fase publica resultado preliminar sem o definitivo do mesmo tipo de ato")),
         new(ProcessoSeletivoErrorCodes.EtapaComPreliminarSemDefinitivo, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.etapa_com_preliminar_sem_definitivo", "A etapa publica resultado preliminar sem o definitivo do mesmo tipo de ato")),
         new(ProcessoSeletivoErrorCodes.RetificacaoDesfazCicloRecursalAberto, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.retificacao_desfaz_ciclo_recursal_aberto", "A retificação retira ou muda de ciclo o preliminar publicado ou o definitivo pendente de uma matéria")),
-        new("ProcessoSeletivo.ConclusaoDeclaradaSemPreliminar", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.conclusao_declarada_sem_preliminar", "A fase declara uma fase concluinte sem publicar resultado preliminar")),
-        new("ProcessoSeletivo.ConclusaoDeclaradaEmFaseQueSeConclui", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.conclusao_declarada_em_fase_que_se_conclui", "A fase declara a si mesma como concluinte do próprio ciclo recursal")),
-        new("ProcessoSeletivo.FaseConcluinteForaDoCronograma", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fase_concluinte_fora_do_cronograma", "A fase declarada como concluinte não está no cronograma")),
-        new("ProcessoSeletivo.FaseConcluinteSemResultadoDefinitivo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fase_concluinte_sem_resultado_definitivo", "A fase declarada como concluinte não publica resultado definitivo")),
-        new("ProcessoSeletivo.FaseConcluinteAntecedeAConcluida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fase_concluinte_antecede_a_concluida", "A fase concluinte não pode anteceder na ordem a fase que ela encerra")),
-        new("ProcessoSeletivo.FaseConcluinteComecaAntesDaConcluida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fase_concluinte_comeca_antes_da_concluida", "O período da fase concluinte começa antes do período da fase que ela encerra; a fase concluinte não pode começar antes da fase que ela encerra")),
     ];
 
     /// <summary>

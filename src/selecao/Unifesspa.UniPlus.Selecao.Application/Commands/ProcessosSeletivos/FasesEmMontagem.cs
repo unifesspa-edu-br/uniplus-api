@@ -199,7 +199,7 @@ internal sealed class FasesEmMontagem
     {
         Result<FaseCronograma> fase = FaseCronograma.Criar(
             OrigemCanonicaDaFaseDoCadastro.De(insumos.Canonica),
-            new(input.Ordem, input.Inicio, input.Fim, input.FaseConcluinteCodigo, insumos.Unidade),
+            new(input.Ordem, input.Inicio, input.Fim, insumos.Unidade),
             new(produtos, input.EmiteParecerIndividual, regraRecurso, input.TiposDeDecisao, regraDeHomologacao),
             insumos.Bancas);
         Acumular(fase, indice);

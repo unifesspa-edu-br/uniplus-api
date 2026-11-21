@@ -36,7 +36,7 @@ internal static class DeclaracoesDoDocumentoLidas
     private static FaseNoDocumento Fase(int posicao, JsonObject fase) => new(
         posicao,
         Texto(fase, "chave")!,
-        new(Texto(fase, "faseCanonicaCodigo")!, Texto(fase, "unidadeResponsavelCodigo"), Texto(fase, "faseConcluinteChave")),
+        new(Texto(fase, "faseCanonicaCodigo")!, Texto(fase, "unidadeResponsavelCodigo")),
         new(Valor<DateTimeOffset>(fase, "inicio"), Valor<DateTimeOffset>(fase, "fim")),
         Publicacoes(fase),
         [.. Itens(fase, "bancasRequeridas").Select(static item => Banca(item.Posicao, item.Item))],

@@ -46,7 +46,7 @@ internal static class ProcessoParaMotivos
         FaseCronograma homologacao = FaseCronograma.Criar(
             new OrigemCanonicaDaFase(
                 Guid.CreateVersion7(), "HOMOLOGACAO_INSCRICOES", OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
-            new DecisoesDeCronogramaDaFase(2, Inicio: InicioDaHomologacao, Fim: InicioDaHomologacao.AddDays(20), FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new DecisoesDeCronogramaDaFase(2, Inicio: InicioDaHomologacao, Fim: InicioDaHomologacao.AddDays(20), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa() with { TiposDeDecisao = [] },
             bancasRequeridas: []).Value!;
 
@@ -116,7 +116,7 @@ internal static class ProcessoParaMotivos
         FaseCronograma.Criar(
             new OrigemCanonicaDaFase(
                 Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: ordem == 1, ColetaSolicitacaoIsencao: coletaIsencao),
-            new DecisoesDeCronogramaDaFase(ordem, Inicio: inicio, Fim: inicio.AddDays(20), FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new DecisoesDeCronogramaDaFase(ordem, Inicio: inicio, Fim: inicio.AddDays(20), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(
                 Produtos: [ProdutoDaFase.Criar(codigo, PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null, TiposDeDecisao: [tipoDeDecisao]),
             bancasRequeridas: []).Value!;

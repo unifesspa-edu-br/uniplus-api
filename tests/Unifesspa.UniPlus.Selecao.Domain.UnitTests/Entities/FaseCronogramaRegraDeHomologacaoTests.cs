@@ -24,7 +24,7 @@ public sealed class FaseCronogramaRegraDeHomologacaoTests
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "HOMOLOGACAO_INSCRICOES", OrigemDataFase.NaExecucao,
             AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
-        new DecisoesDeCronogramaDaFase(1, null, null, null, UnidadesDeTeste.Ceps),
+        new DecisoesDeCronogramaDaFase(1, null, null, UnidadesDeTeste.Ceps),
         new PublicacoesDaFase([ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo)], false, null, tipos, regra),
         []).Value!;
 

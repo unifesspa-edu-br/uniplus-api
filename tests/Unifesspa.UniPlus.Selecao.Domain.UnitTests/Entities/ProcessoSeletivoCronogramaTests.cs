@@ -200,10 +200,10 @@ public sealed class ProcessoSeletivoCronogramaTests
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.PrecedenciaFaseViolada");
     }
 
-    // ── Conclusão do ciclo recursal por matéria — os três estados legítimos e as violações ──
+    // ── Fechamento do ciclo de recurso dentro da fase ──
 
-    [Fact(DisplayName = "Estado 1: fase que NÃO publica preliminar e não declara conclusão é aceita")]
-    public void Conclusao_SemPreliminarESemDeclaracao_Aceita()
+    [Fact(DisplayName = "Fase que publica só o definitivo é aceita")]
+    public void Fechamento_SoDefinitivo_Aceita()
     {
         ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma fase = new ModeloDeFase("RESULTADO_FINAL", 1) { Produtos = Definitiva() }.Criar();
@@ -213,8 +213,8 @@ public sealed class ProcessoSeletivoCronogramaTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
-    [Fact(DisplayName = "Estado 2: fase que publica preliminar E definitiva conclui a si mesma e é aceita sem declarar concluinte")]
-    public void Conclusao_ConcluiASiMesma_Aceita()
+    [Fact(DisplayName = "Fase que publica o preliminar e o definitivo do mesmo tipo de ato é aceita")]
+    public void Fechamento_PreliminarEDefinitivoDoMesmoTipo_Aceita()
     {
         ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma fase = new ModeloDeFase("HOMOLOGACAO_INSCRICOES", 1)
@@ -230,59 +230,14 @@ public sealed class ProcessoSeletivoCronogramaTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
-    [Fact(DisplayName = "Estado 3: fase que publica só preliminar e aponta uma fase posterior que publica definitiva é aceita")]
-    public void Conclusao_ApontaOutraFase_Aceita()
+    [Fact(DisplayName = "A fase que publica só o preliminar é aceita na gravação: o fechamento do ciclo é conferido na publicação")]
+    public void Fechamento_PreliminarSemDefinitivo_AceitaNaGravacao()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        FaseCronograma preliminar = new ModeloDeFase("RESULTADO_PRELIMINAR", 1) { Produtos = Preliminar(), FaseConcluinteCodigo = "RESULTADO_FINAL", Inicio = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero) }.Criar();
-        FaseCronograma definitiva = new ModeloDeFase("RESULTADO_FINAL", 2) { Produtos = Definitiva(), Inicio = new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero) }.Criar();
+        FaseCronograma fase = new ModeloDeFase("RESULTADO_FINAL", 1) { Produtos = Preliminar() }.Criar();
 
-        Result resultado = processo.DefinirCronogramaFases([preliminar, definitiva], []);
+        Result resultado = processo.DefinirCronogramaFases([fase], []);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
-
-    [Fact(DisplayName = "CA-09: fase que publica só preliminar SEM declarar concluinte é recusada")]
-    public void Conclusao_PreliminarSemDeclaracao_Recusa()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-        FaseCronograma fase = new ModeloDeFase("RESULTADO_PRELIMINAR", 1) { Produtos = Preliminar() }.Criar();
-
-        Result resultado = processo.DefinirCronogramaFases([fase], []);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Errors.Should().ContainSingle()
-            .Which.Should().Match<FieldError>(e =>
-                e.Field == "fases[0].faseConcluinteCodigo"
-                && e.Error.Code == "ProcessoSeletivo.ConclusaoNaoDeclarada");
-    }
-
-    [Fact(DisplayName = "CA-10: fase sem concluinte que publica o preliminar de um tipo e só o definitivo de outro é recusada")]
-    public void Conclusao_SemDeclaracaoComDefinitivoDeOutroTipo_Recusa()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-        FaseCronograma fase = FaseComResultadosDeTiposDistintos();
-
-        Result resultado = processo.DefinirCronogramaFases([fase], []);
-
-        resultado.IsFailure.Should().BeTrue();
-        FieldError erro = resultado.Errors.Should().ContainSingle().Subject;
-        erro.Field.Should().Be("fases[0].faseConcluinteCodigo");
-        erro.Error.Code.Should().Be("ProcessoSeletivo.ConclusaoNaoDeclarada");
-        erro.Error.Message.Should().Contain("'RESULTADO_CLASSIFICACAO'");
-    }
-
-    private static FaseCronograma FaseComResultadosDeTiposDistintos()
-    {
-        FaseCronograma fase = new ModeloDeFase("AVALIACAO", 1)
-        {
-            Produtos = [
-                ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
-                ProdutoDaFase.Criar("GABARITO", PapelProdutoFase.Definitivo),
-            ]
-        }.Criar();
-
-        return fase;
-    }
-
 }

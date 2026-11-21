@@ -174,5 +174,5 @@ public sealed class ConferenciaDaRegraDeHomologacaoTests
         Guid.CreateVersion7(), FaseDaRegra, OrigemDataFase.NaExecucao,
         AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false);
 
-    private static DecisoesDeCronogramaDaFase Decisoes() => new(1, null, null, null, UnidadesDeTeste.Ceps);
+    private static DecisoesDeCronogramaDaFase Decisoes() => new(1, null, null, UnidadesDeTeste.Ceps);
 }

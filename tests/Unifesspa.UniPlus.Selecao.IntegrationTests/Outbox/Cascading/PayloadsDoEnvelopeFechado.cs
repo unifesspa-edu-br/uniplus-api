@@ -73,7 +73,7 @@ internal static class PayloadsDoEnvelopeFechado
     internal static object[] CronogramaDeFases(CatalogosSemeados catalogos) =>
     [
         FaseDeInscricao(catalogos),
-        FaseDeResultadoPreliminar(catalogos),
+        FaseDeResultado(catalogos),
         FaseDeAvaliacao(catalogos),
     ];
 
@@ -84,7 +84,6 @@ internal static class PayloadsDoEnvelopeFechado
         inicio = new DateTimeOffset(2026, 3, 2, 0, 0, 0, TimeSpan.Zero),
         fim = new DateTimeOffset(2026, 3, 20, 23, 59, 59, TimeSpan.Zero),
         produtos = Array.Empty<object>(),
-        faseConcluinteCodigo = (string?)null,
         emiteParecerIndividual = false,
         bancasRequeridas = Array.Empty<object>(),
         regraRecurso = (object?)null,
@@ -92,16 +91,15 @@ internal static class PayloadsDoEnvelopeFechado
     };
 
     // A fase publica preliminar e definitiva da mesma matéria, com o mesmo tipo de ato, e por isso
-    // conclui a si mesma — não declara fase concluinte. O tipo é semeado à parte de TiposDeAtoSeeder,
+    // fecha o próprio ciclo de recurso. O tipo é semeado à parte de TiposDeAtoSeeder,
     // que só cobre os atos de abertura e de retificação.
-    internal static object FaseDeResultadoPreliminar(CatalogosSemeados catalogos) => new
+    internal static object FaseDeResultado(CatalogosSemeados catalogos) => new
     {
         ordem = 2,
-        faseCanonicaId = catalogos.FaseResultadoPreliminarId,
+        faseCanonicaId = catalogos.FaseDeResultadoId,
         inicio = new DateTimeOffset(2026, 3, 25, 0, 0, 0, TimeSpan.Zero),
         fim = new DateTimeOffset(2026, 3, 25, 18, 0, 0, TimeSpan.Zero),
         produtos = ProdutosDoResultado(),
-        faseConcluinteCodigo = (string?)null,
         emiteParecerIndividual = true,
         bancasRequeridas = new object[] { BancaDoTipo(catalogos.TipoBancaId) },
         regraRecurso = (object?)null,
@@ -148,7 +146,6 @@ internal static class PayloadsDoEnvelopeFechado
         inicio = new DateTimeOffset(2026, 3, 22, 8, 0, 0, TimeSpan.Zero),
         fim = new DateTimeOffset(2026, 3, 22, 18, 0, 0, TimeSpan.Zero),
         produtos = Array.Empty<object>(),
-        faseConcluinteCodigo = (string?)null,
         emiteParecerIndividual = false,
         bancasRequeridas = Array.Empty<object>(),
         regraRecurso = (object?)null,

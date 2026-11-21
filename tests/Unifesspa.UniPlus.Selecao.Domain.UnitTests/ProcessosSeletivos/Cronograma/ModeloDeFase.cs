@@ -18,8 +18,6 @@ internal sealed record ModeloDeFase(string Codigo, int Ordem)
 
     internal DateTimeOffset? Fim { get; init; }
 
-    internal string? FaseConcluinteCodigo { get; init; }
-
     internal OrigemDataFase OrigemData { get; init; } = OrigemDataFase.NaExecucao;
 
     internal bool ComUnidade { get; init; } = true;
@@ -61,7 +59,7 @@ internal sealed record ModeloDeFase(string Codigo, int Ordem)
         OrigemId, Codigo, OrigemData, AgrupaEtapas, PermiteComplementacao: false, ColetaInscricao, ColetaSolicitacaoIsencao);
 
     internal DecisoesDeCronogramaDaFase Decisoes() =>
-        new(Ordem, Inicio, Fim, FaseConcluinteCodigo, ComUnidade ? UnidadeResponsavel : null);
+        new(Ordem, Inicio, Fim, ComUnidade ? UnidadeResponsavel : null);
 
     internal PublicacoesDaFase Publicacoes() => new(Produtos, EmiteParecerIndividual, RegraRecurso, TiposDeDecisao, RegraDeHomologacao);
 

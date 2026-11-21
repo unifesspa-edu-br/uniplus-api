@@ -189,7 +189,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
             new OrigemCanonicaDaFase(
                 OrigemId: Guid.CreateVersion7(), Codigo: "INSCRICAO", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true,
                 ColetaSolicitacaoIsencao: false),
-            new DecisoesDeCronogramaDaFase(Ordem: 1, Inicio: inicio, Fim: fim, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new DecisoesDeCronogramaDaFase(Ordem: 1, Inicio: inicio, Fim: fim, UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;
 
@@ -199,7 +199,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
             new OrigemCanonicaDaFase(
                 OrigemId: Guid.CreateVersion7(), Codigo: "SOLICITACAO_ISENCAO", OrigemData: OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
                 ColetaSolicitacaoIsencao: true),
-            new DecisoesDeCronogramaDaFase(Ordem: 2, Inicio: inicio, Fim: fim, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new DecisoesDeCronogramaDaFase(Ordem: 2, Inicio: inicio, Fim: fim, UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(
                 Produtos: [
                     ProdutoDaFase.Reidratar(ProdutoPreliminarId, "RESULTADO_ISENCAO", PapelProdutoFase.Preliminar),

@@ -44,8 +44,7 @@ internal static class ProcessoComIsencaoDeTeste
                 OrigemId: Guid.CreateVersion7(), Codigo: CodigoDaFase, OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
                 ColetaSolicitacaoIsencao: true),
             new DecisoesDeCronogramaDaFase(
-                Ordem: 2, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 15, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
-                UnidadeResponsavel: UnidadesDeTeste.Ceps),
+                Ordem: 2, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 15, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(
                 Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null, TiposDeDecisao: tiposDeDecisao),
             bancasRequeridas: []).Value!;

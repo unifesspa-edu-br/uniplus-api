@@ -25,13 +25,6 @@ public sealed class CicloRecursalPorProdutosTests
         CicloRecursal.PublicaComPapel([("COMUNICADO", null)], PapelProdutoFase.Preliminar).Should().BeFalse();
     }
 
-    [Fact(DisplayName = "O definitivo é do tipo de ato, e o de outro tipo não conta")]
-    public void PublicaDefinitivoDe_ComparaOTipo()
-    {
-        CicloRecursal.PublicaDefinitivoDe(Produtos, "GABARITO").Should().BeTrue();
-        CicloRecursal.PublicaDefinitivoDe(Produtos, "RESULTADO").Should().BeFalse();
-    }
-
     [Fact(DisplayName = "Produz resultado quando algum produto tem papel, e o ato sem papel não produz")]
     public void ProduzResultado_ExigePapel()
     {

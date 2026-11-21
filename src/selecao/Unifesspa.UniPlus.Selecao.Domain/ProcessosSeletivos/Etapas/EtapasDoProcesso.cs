@@ -104,7 +104,7 @@ public sealed record EtapasDoProcesso
         "Etapas: as etapas não repetem identificador nem ordem e compõem a nota final",
         Conferir().Count == 0);
 
-    /// <summary>A etapa não tem fase concluinte: o preliminar de um tipo de ato exige o definitivo do mesmo tipo dentro dela.</summary>
+    /// <summary>O preliminar de um tipo de ato exige o definitivo do mesmo tipo dentro da própria etapa.</summary>
     public IReadOnlyList<FieldError> ConferirFechamentoDoCiclo() =>
     [
         .. Etapas.SelectMany(static (etapa, posicao) =>
@@ -146,7 +146,7 @@ public sealed record EtapasDoProcesso
 
     internal static DomainError PreliminarSemDefinitivo(string nomeDaEtapa, string tipo) => new(
         ProcessoSeletivoErrorCodes.EtapaComPreliminarSemDefinitivo,
-        $"A etapa '{nomeDaEtapa}' publica o resultado preliminar do ato '{tipo}' e não publica o definitivo do mesmo tipo — a etapa não tem fase concluinte, e o ciclo dela fecha dentro dela.");
+        $"A etapa '{nomeDaEtapa}' publica o resultado preliminar do ato '{tipo}' e não publica o definitivo do mesmo tipo. Publique o resultado definitivo na própria etapa.");
 
     internal static DomainError EtapaSemFaseDeclarada(string nomeDaEtapa) => new(
         "ProcessoSeletivo.EtapaSemFaseDeclarada",

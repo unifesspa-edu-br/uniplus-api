@@ -26,7 +26,6 @@ public sealed class EntradaDoPreliminarDaFaseTests
         [nameof(FaseCronograma.Inicio)] = () => Fase(decisoes: d => d with { Inicio = Inicio.AddHours(1) }),
         [nameof(FaseCronograma.Fim)] = () => Fase(decisoes: d => d with { Fim = Inicio.AddDays(6) }),
         [nameof(FaseCronograma.UnidadeResponsavelOrigemId)] = () => Fase(decisoes: d => d with { UnidadeResponsavel = UnidadesDeTeste.Cga }),
-        [nameof(FaseCronograma.FaseConcluinteCodigo)] = () => Fase(decisoes: d => d with { FaseConcluinteCodigo = "RESULTADO" }),
         [nameof(FaseCronograma.EmiteParecerIndividual)] = () => Fase(publicacoes: p => p with { EmiteParecerIndividual = true }),
         [nameof(FaseCronograma.OrigemData)] = () => Fase(origem: o => o with { OrigemData = OrigemDataFase.NaExecucao }),
         [nameof(FaseCronograma.AgrupaEtapas)] = () => Fase(origem: o => o with { AgrupaEtapas = true }),
@@ -160,7 +159,7 @@ public sealed class EntradaDoPreliminarDaFaseTests
         IReadOnlyList<BancaRequerida>? bancas = null) =>
         FaseCronograma.Criar(
             Alterar(origem, new OrigemCanonicaDaFase(OrigemDaFase, "PROVA", OrigemDataFase.NoEdital, false, false, false, false)),
-            Alterar(decisoes, new DecisoesDeCronogramaDaFase(1, Inicio, Inicio.AddDays(5), null, UnidadesDeTeste.Ceps)),
+            Alterar(decisoes, new DecisoesDeCronogramaDaFase(1, Inicio, Inicio.AddDays(5), UnidadesDeTeste.Ceps)),
             Alterar(publicacoes, new PublicacoesDaFase([ProdutoDaFase.Criar(Materia, PapelProdutoFase.Preliminar)], false, null)),
             bancas ?? []).Value!;
 

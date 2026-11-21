@@ -67,16 +67,11 @@
         },
         "produtos": {
           "title": "Atos que a fase publica",
-          "description": "Tipos de ato publicados pela fase, como o resultado preliminar. O par tipo de ato e papel não se repete na fase.",
+          "description": "Tipos de ato publicados pela fase, como o resultado preliminar. O par tipo de ato e papel não se repete na fase. A fase que publica o resultado preliminar de um tipo de ato publica nela mesma o definitivo do mesmo tipo.",
           "type": "array",
           "items": {
             "$ref": "comuns.schema.json#/$defs/produto"
           }
-        },
-        "faseConcluinteChave": {
-          "title": "Fase que conclui o ciclo",
-          "description": "Chave local da fase do cronograma que conclui o ciclo de recurso desta fase.",
-          "$ref": "comuns.schema.json#/$defs/chave"
         },
         "emiteParecerIndividual": {
           "title": "Emite parecer individual",

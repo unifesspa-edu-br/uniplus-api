@@ -162,7 +162,6 @@ public sealed class TiposDeDecisaoDaFaseEEtapaEndpointTests
             inicio,
             fim,
             produtos = Array.Empty<object>(),
-            faseConcluinteCodigo = (string?)null,
             emiteParecerIndividual = false,
             bancasRequeridas = Array.Empty<object>(),
             regraRecurso = (object?)null,

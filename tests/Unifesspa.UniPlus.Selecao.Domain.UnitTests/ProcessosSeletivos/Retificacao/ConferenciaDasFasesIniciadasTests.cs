@@ -236,8 +236,7 @@ public sealed class ConferenciaDasFasesIniciadasTests
             new OrigemCanonicaDaFase(
                 Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(
-                ordem, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
-                UnidadeResponsavel: UnidadesDeTeste.Ceps),
+                ordem, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;
 
@@ -245,7 +244,7 @@ public sealed class ConferenciaDasFasesIniciadasTests
         FaseCronograma.Criar(
             new OrigemCanonicaDaFase(
                 atual.FaseCanonicaOrigemId, atual.Codigo, atual.OrigemData, atual.AgrupaEtapas, atual.PermiteComplementacao, atual.ColetaInscricao, atual.ColetaSolicitacaoIsencao),
-            new DecisoesDeCronogramaDaFase(atual.Ordem, atual.Inicio, atual.Fim, atual.FaseConcluinteCodigo, unidade),
+            new DecisoesDeCronogramaDaFase(atual.Ordem, atual.Inicio, atual.Fim, unidade),
             new PublicacoesDaFase([.. atual.Produtos], atual.EmiteParecerIndividual, atual.RegraRecurso),
             [.. atual.BancasRequeridas]).Value!;
 

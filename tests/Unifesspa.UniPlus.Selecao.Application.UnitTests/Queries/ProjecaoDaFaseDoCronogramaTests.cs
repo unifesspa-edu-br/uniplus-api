@@ -38,7 +38,6 @@ public sealed class ProjecaoDaFaseDoCronogramaTests
         Ordem: 3,
         Inicio: Inicio,
         Fim: Fim,
-        FaseConcluinteCodigo: "RESULTADO_FINAL",
         UnidadeResponsavel: unidade);
 
     private static RegraRecursoFase RegraDeRecurso() => RegraRecursoFase.Criar(
@@ -113,7 +112,7 @@ public sealed class ProjecaoDaFaseDoCronogramaTests
             ColetaSolicitacaoIsencao: coletaIsencao));
     }
 
-    [Fact(DisplayName = "O cronograma projeta a posição, a janela, a fase concluinte e a unidade responsável")]
+    [Fact(DisplayName = "O cronograma projeta a posição, o período e a unidade responsável")]
     public void ProjetarFase_Cronograma_ProjetaCadaCampo()
     {
         CronogramaDaFaseDto grupo = ProjecaoDaFaseDoCronograma.ProjetarFase(FaseCompleta()).Cronograma;
@@ -122,7 +121,6 @@ public sealed class ProjecaoDaFaseDoCronogramaTests
             Ordem: 3,
             Inicio: Inicio,
             Fim: Fim,
-            FaseConcluinteCodigo: "RESULTADO_FINAL",
             UnidadeResponsavel: new UnidadeResponsavelDto(UnidadeId, "CEPS", "Centro de Processos Seletivos")));
     }
 

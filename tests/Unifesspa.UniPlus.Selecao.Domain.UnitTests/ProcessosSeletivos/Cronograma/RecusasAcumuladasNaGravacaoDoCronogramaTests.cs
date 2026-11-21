@@ -13,8 +13,8 @@ using Xunit;
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioProcessoSeletivoCronograma;
 
 /// <summary>
-/// A gravação do cronograma acumula as causas de todos os assuntos (ADR-0125), na ordem: a estrutura, a mudança, a precedência,
-/// o ciclo recursal e a janela das etapas. Só a mudança, que casa as fases por origem, deixa de ser avaliada com origem repetida, e
+/// A gravação do cronograma acumula as causas de todos os assuntos (ADR-0125), na ordem: a estrutura, a mudança, a precedência
+/// e o período das etapas. O fechamento do ciclo de recurso é conferido na publicação, e não na gravação. Só a mudança, que casa as fases por origem, deixa de ser avaliada com origem repetida, e
 /// isso nunca vira exceção: a precedência casa por código e é avaliada sempre.
 /// </summary>
 public sealed class RecusasAcumuladasNaGravacaoDoCronogramaTests
@@ -22,7 +22,6 @@ public sealed class RecusasAcumuladasNaGravacaoDoCronogramaTests
     private const string OrdemRepetida = "ProcessoSeletivo.OrdemFaseDuplicada";
     private const string OrigemRepetidaCodigo = "ProcessoSeletivo.FaseCanonicaDuplicada";
     private const string PrecedenciaViolada = "ProcessoSeletivo.PrecedenciaFaseViolada";
-    private const string ConclusaoNaoDeclarada = "ProcessoSeletivo.ConclusaoNaoDeclarada";
     private const string FaseDoFormulario = FormularioProcessoErrorCodes.FaseReferenciadaPorFormulario;
 
     private static string[] Codigos(Result resultado) => [.. resultado.Errors.Select(static causa => causa.Error.Code)];
@@ -36,21 +35,6 @@ public sealed class RecusasAcumuladasNaGravacaoDoCronogramaTests
     private static FaseCronograma[] DuasArestasViolaveis() =>
         [new ModeloDeFase("C", 4).Criar(), new ModeloDeFase("D", 3).Criar(), new ModeloDeFase("E", 6).Criar(), new ModeloDeFase("F", 5).Criar()];
 
-    private static ModeloDeFase AbreOCiclo(string codigo, int ordem) => new ModeloDeFase(codigo, ordem).Publicando(ModeloDeFase.Preliminar("RESULTADO"));
-
-    [Fact(DisplayName = "Estrutura e ciclo recursal inválidos no mesmo cronograma: os dois assuntos saem, a estrutura primeiro")]
-    public void Definir_EstruturaECicloInvalidos_AcumulaOsDoisAssuntos()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-        FaseCronograma[] fases = [AbreOCiclo("A", 1).Criar(), new ModeloDeFase("B", 1).Criar()];
-
-        Result resultado = processo.DefinirCronogramaFases(fases, []);
-
-        resultado.Errors.Select(static causa => (causa.Field, causa.Error.Code)).Should().Equal(
-            ("fases[1].ordem", OrdemRepetida),
-            ("fases[0].faseConcluinteCodigo", ConclusaoNaoDeclarada));
-        processo.CronogramaFases.Should().BeEmpty();
-    }
 
     [Fact(DisplayName = "Origem repetida no cronograma novo, sobre um cronograma já gravado: a estrutura recusa e a mudança não lança")]
     public void Definir_OrigemRepetidaSobreCronogramaGravado_RecusaSemLancar()
@@ -106,17 +90,6 @@ public sealed class RecusasAcumuladasNaGravacaoDoCronogramaTests
 
         Codigos(resultado).Should().Equal(OrigemRepetidaCodigo, FaseDoFormulario, PrecedenciaViolada);
         resultado.Errors[^1].Field.Should().Be("fases[3].ordem");
-    }
-
-    [Fact(DisplayName = "Com a estrutura válida, a precedência e o ciclo recursal acumulam, a precedência primeiro")]
-    public void Definir_PrecedenciaECicloInvalidos_AcumulaOsDoisAssuntos()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-        FaseCronograma[] fases = [AbreOCiclo("HOMOLOGACAO", 1).Criar(), new ModeloDeFase("INSCRICAO", 2).Criar()];
-
-        Result resultado = processo.DefinirCronogramaFases(fases, [new ArestaPrecedencia("INSCRICAO", "HOMOLOGACAO", false)]);
-
-        Codigos(resultado).Should().Equal(PrecedenciaViolada, ConclusaoNaoDeclarada);
     }
 
     [Fact(DisplayName = "O cronograma sem causa é gravado")]

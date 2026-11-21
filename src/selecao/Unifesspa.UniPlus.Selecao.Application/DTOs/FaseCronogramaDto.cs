@@ -89,17 +89,15 @@ public sealed record FaseCanonicaCongeladaDto(
     bool ColetaInscricao,
     bool ColetaSolicitacaoIsencao);
 
-/// <summary>O que o edital decide sobre a fase: a posição, a janela, onde o ciclo recursal conclui e quem responde.</summary>
+/// <summary>O que o edital decide sobre a fase: a posição, o período e quem responde.</summary>
 /// <param name="Ordem">A posição da fase na sequência do cronograma.</param>
 /// <param name="Inicio">O início da janela da fase, ou nulo quando o edital não o fixa.</param>
 /// <param name="Fim">O fim da janela da fase, ou nulo quando o edital não o fixa.</param>
-/// <param name="FaseConcluinteCodigo">O código da fase que conclui o ciclo recursal desta, quando a própria fase não publica a definitiva da matéria que abriu; nulo nos demais casos.</param>
 /// <param name="UnidadeResponsavel">A unidade que responde pela fase, ou nulo enquanto o rascunho ainda não a definiu.</param>
 public sealed record CronogramaDaFaseDto(
     int Ordem,
     DateTimeOffset? Inicio,
     DateTimeOffset? Fim,
-    string? FaseConcluinteCodigo,
     UnidadeResponsavelDto? UnidadeResponsavel);
 
 /// <summary>O que a fase publica e decide: os produtos, o resultado, o parecer, o recurso, os tipos de decisão e a regra de homologação das inscrições.</summary>

@@ -6,6 +6,9 @@ public static class RetificacaoErrorCodes
     /// <summary>A fase concluída mudou: o que ela declara fica integral.</summary>
     public const string FaseConcluidaAlterada = "Retificacao.FaseConcluidaAlterada";
 
+    /// <summary>O término da fase sem definitivo, que já concluiu, foi prorrogado depois que uma fase posterior começou.</summary>
+    public const string ProrrogacaoComFasePosteriorIniciada = "Retificacao.ProrrogacaoComFasePosteriorIniciada";
+
     /// <summary>A fase que já começou teve o início alterado.</summary>
     public const string InicioDeFaseIniciadaAlterado = "Retificacao.InicioDeFaseIniciadaAlterado";
 

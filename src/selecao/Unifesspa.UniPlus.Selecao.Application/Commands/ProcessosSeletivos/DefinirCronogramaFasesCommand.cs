@@ -84,10 +84,6 @@ public sealed record BancaRequeridaInput(
 /// ADR-0061) — o cliente não os declara diretamente.
 /// </summary>
 /// <param name="Produtos">Tudo o que a fase publica, com o papel de cada publicação.</param>
-/// <param name="FaseConcluinteCodigo">
-/// Código canônico da fase que conclui o ciclo recursal desta, quando a própria fase não
-/// publica a definitiva da matéria que abriu.
-/// </param>
 /// <param name="EmiteParecerIndividual">
 /// Se a fase promete parecer individual por candidato — a promessa de que existirá; o
 /// parecer é produzido na execução.
@@ -112,7 +108,6 @@ public sealed record FaseCronogramaInput(
     DateTimeOffset? Inicio,
     DateTimeOffset? Fim,
     IReadOnlyList<ProdutoDaFaseInput> Produtos,
-    string? FaseConcluinteCodigo,
     bool EmiteParecerIndividual,
     IReadOnlyList<BancaRequeridaInput> BancasRequeridas,
     RegraRecursoFaseInput? RegraRecurso,

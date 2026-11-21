@@ -148,7 +148,7 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
             new OrigemCanonicaDaFase(
                 OrigemId: faseCanonicaOrigemId, Codigo: "HOMOLOGACAO_INSCRICOES", OrigemData: OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
                 ColetaSolicitacaoIsencao: false),
-            new DecisoesDeCronogramaDaFase(Ordem: 1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new DecisoesDeCronogramaDaFase(Ordem: 1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: produtos, EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;
 

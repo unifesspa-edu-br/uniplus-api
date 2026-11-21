@@ -34,7 +34,7 @@ internal static class DeclaracoesComDefeitoParaOEsquema
         return
         [
             (invertida with { Bancas = [BancaDeFase("R", "R"), BancaDeFase()] }).Declarar(),
-            new ModeloDeFase("A", 1) { OrigemId = origemRepetida, FaseConcluinteCodigo = "FASE_QUE_NAO_EXISTE", ColetaInscricao = true }.Declarar(),
+            new ModeloDeFase("A", 1) { OrigemId = origemRepetida, ColetaInscricao = true }.Declarar(),
             new ModeloDeFase("I", 3) { ColetaSolicitacaoIsencao = true, Bancas = [BancaDeFase(), BancaDeFase()] }.Declarar(),
             new ModeloDeFase("P", 4) { EmiteParecerIndividual = true }.Declarar(),
         ];

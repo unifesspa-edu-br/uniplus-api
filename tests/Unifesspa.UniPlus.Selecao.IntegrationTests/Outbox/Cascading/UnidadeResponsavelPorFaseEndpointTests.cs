@@ -252,7 +252,6 @@ public sealed class UnidadeResponsavelPorFaseEndpointTests
             inicio = (DateTimeOffset?)null,
             fim = (DateTimeOffset?)null,
             produtos = Array.Empty<object>(),
-            faseConcluinteCodigo = (string?)null,
             emiteParecerIndividual = false,
             bancasRequeridas = Array.Empty<object>(),
             regraRecurso = (object?)null,

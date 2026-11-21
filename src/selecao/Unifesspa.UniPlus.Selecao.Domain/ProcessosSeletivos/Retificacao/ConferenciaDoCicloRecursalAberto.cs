@@ -16,8 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// A matéria, que é o tipo de ato do item, tem o ciclo aberto quando o preliminar da versão publicada foi
 /// publicado e nenhum dos definitivos que o fecham nela foi. Enquanto está aberto, o preliminar e esses
 /// definitivos precisam continuar no cronograma novo, com os mesmos definitivos fechando o ciclo do preliminar.
-/// Retirar um dos dois, mover o definitivo para outro lugar ou trocar a fase concluinte do preliminar desfaz o
-/// ciclo.
+/// Retirar um dos dois ou mover o definitivo para outro lugar desfaz o ciclo.
 /// </para>
 /// <para>
 /// O pareamento entre preliminar e definitivo vem de <see cref="PreliminaresDaMateria"/>, que o cronograma também

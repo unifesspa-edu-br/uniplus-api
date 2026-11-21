@@ -16,7 +16,7 @@ internal static class FaseDeTeste
             new DecisoesDeCronogramaDaFase(
                 ordem, comDatas ? new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero) : null,
                 comDatas ? new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero) : null,
-                FaseConcluinteCodigo: null, UnidadesDeTeste.Ceps),
+                UnidadesDeTeste.Ceps),
             new PublicacoesDaFase([], EmiteParecerIndividual: false, RegraRecurso: null),
             []).Value!;
 }

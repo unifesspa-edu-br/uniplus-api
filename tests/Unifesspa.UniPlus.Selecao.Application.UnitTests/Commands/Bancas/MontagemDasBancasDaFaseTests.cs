@@ -99,7 +99,7 @@ public sealed class MontagemDasBancasDaFaseTests
 
     private static FaseCronogramaInput Fase(params BancaRequeridaInput[] bancas) => new(
         Ordem: 1, FaseCanonicaId: Guid.CreateVersion7(), Inicio: null, Fim: null, Produtos: [],
-        FaseConcluinteCodigo: null, EmiteParecerIndividual: false, BancasRequeridas: bancas, RegraRecurso: null);
+        EmiteParecerIndividual: false, BancasRequeridas: bancas, RegraRecurso: null);
 
     private static MontagemDasBancasDaFase Montagem() => new(new CadastrosDasFases(
         Substitute.For<IFaseCanonicaReader>(),

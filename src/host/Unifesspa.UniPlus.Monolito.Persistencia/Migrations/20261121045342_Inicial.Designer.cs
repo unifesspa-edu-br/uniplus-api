@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261121045316_Inicial")]
+    [Migration("20261121045342_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -12468,11 +12468,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<Guid>("FaseCanonicaOrigemId")
                         .HasColumnType("uuid")
                         .HasColumnName("fase_canonica_origem_id");
-
-                    b.Property<string>("FaseConcluinteCodigo")
-                        .HasMaxLength(60)
-                        .HasColumnType("character varying(60)")
-                        .HasColumnName("fase_concluinte_codigo");
 
                     b.Property<DateTimeOffset?>("Fim")
                         .HasColumnType("timestamp with time zone")

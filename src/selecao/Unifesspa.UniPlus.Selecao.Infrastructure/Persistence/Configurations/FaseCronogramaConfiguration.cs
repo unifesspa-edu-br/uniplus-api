@@ -47,11 +47,6 @@ public sealed class FaseCronogramaConfiguration : IEntityTypeConfiguration<FaseC
 
         builder.MapearRegraDeHomologacao(f => f.RegraDeHomologacao);
 
-        // Referência por CÓDIGO canônico, não por FK: a fase concluinte é outra linha do
-        // MESMO cronograma, e uma FK autorreferente exigiria ordenar os INSERTs de uma
-        // reposição integral — que é como toda escrita do cronograma acontece. A
-        // resolução (existe, publica definitiva, não antecede) é invariante da raiz.
-        builder.Property(f => f.FaseConcluinteCodigo).HasMaxLength(CodigoMaxLength);
         builder.Property(f => f.EmiteParecerIndividual).IsRequired();
         builder.MapearTiposDeDecisao();
 
