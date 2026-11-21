@@ -67,20 +67,16 @@ public static class TipoInstrumentoNormativoCodigo
 
     private static string DescricaoDe(TipoInstrumentoNormativo tipo) => tipo switch
     {
-        TipoInstrumentoNormativo.Lei =>
-            "Ato normativo de maior hierarquia no ordenamento infraconstitucional, emanado do Poder Legislativo.",
-        TipoInstrumentoNormativo.Decreto =>
-            "Ato normativo do Poder Executivo que regulamenta leis ou dispõe sobre matéria de sua competência.",
+        TipoInstrumentoNormativo.Lei => "Ato normativo de maior hierarquia no ordenamento infraconstitucional, emanado do Poder Legislativo.",
+        TipoInstrumentoNormativo.Decreto => "Ato normativo do Poder Executivo que regulamenta leis ou dispõe sobre matéria de sua competência.",
         TipoInstrumentoNormativo.Portaria =>
             "Ato administrativo de autoridade pública que disciplina procedimentos internos ou matéria de competência específica.",
         TipoInstrumentoNormativo.Resolucao =>
             "Ato normativo de órgão colegiado (conselho, câmara, comitê) com efeitos internos ou externos conforme a norma instituidora.",
-        TipoInstrumentoNormativo.InstrucaoNormativa =>
-            "Ato administrativo de caráter técnico-operacional que detalha a execução de normas superiores.",
+        TipoInstrumentoNormativo.InstrucaoNormativa => "Ato administrativo de caráter técnico-operacional que detalha a execução de normas superiores.",
         TipoInstrumentoNormativo.Parecer =>
             "Manifestação técnica ou jurídica de órgão competente que orienta a aplicação de normas — vinculante quando aprovado pela autoridade competente.",
-        TipoInstrumentoNormativo.Edital =>
-            "Ato de convocação do processo seletivo que fixa as regras do certame, inclusive o bônus que ele institui.",
+        TipoInstrumentoNormativo.Edital => "Ato de convocação do processo seletivo que fixa as regras do certame, inclusive o bônus que ele institui.",
         _ => throw new ArgumentOutOfRangeException(nameof(tipo), tipo, "TipoInstrumentoNormativo sem descrição declarada."),
     };
 

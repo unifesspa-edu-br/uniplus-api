@@ -27,31 +27,39 @@ public static class AtualizarPesoAreaEnemCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        IReadOnlyList<AreaInformada>? areas =
-            AreasDoComando.ParaDominio(command.Areas);
-
+        IReadOnlyList<AreaInformada>? areas = AreasDoComando.ParaDominio(command.Areas);
         Result conferenciaDaDeclaracao = PesoAreaEnem.ValidarCamposDoPayload(areas, command.BaseLegal);
 
-        if (conferenciaDaDeclaracao.IsFailure)
-        {
-            return Result.ValidationFailure(conferenciaDaDeclaracao.Errors);
-        }
+        return conferenciaDaDeclaracao.IsFailure
+            ? Result.ValidationFailure(conferenciaDaDeclaracao.Errors)
+            : await AtualizarAsync(command, areas, repository, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
 
-        PesoAreaEnem? peso = await repository
-            .ObterPorIdAsync(command.Id, cancellationToken)
-            .ConfigureAwait(false);
-        if (peso is null)
-        {
-            return Result.Failure(new DomainError(
-                PesoAreaEnemErrorCodes.NaoEncontrado,
-                "Linha de pesos do ENEM não encontrada."));
-        }
+    private static async Task<Result> AtualizarAsync(
+        AtualizarPesoAreaEnemCommand command,
+        IReadOnlyList<AreaInformada>? areas,
+        IPesoAreaEnemRepository repository,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
+        PesoAreaEnem? peso = await repository.ObterPorIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
 
-        Result atualizarResult = peso.Atualizar(areas, command.BaseLegal);
+        return peso is null
+            ? Result.Failure(new DomainError(PesoAreaEnemErrorCodes.NaoEncontrado, "Linha de pesos do ENEM não encontrada."))
+            : await AplicarAsync(peso, areas, command.BaseLegal, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
 
-        if (atualizarResult.IsFailure)
+    private static async Task<Result> AplicarAsync(
+        PesoAreaEnem peso,
+        IReadOnlyList<AreaInformada>? areas,
+        string? baseLegal,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
+        Result atualizado = peso.Atualizar(areas, baseLegal);
+        if (atualizado.IsFailure)
         {
-            return atualizarResult;
+            return atualizado;
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
