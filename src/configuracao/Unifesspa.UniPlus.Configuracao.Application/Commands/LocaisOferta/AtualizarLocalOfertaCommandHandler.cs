@@ -5,19 +5,18 @@ using Unifesspa.UniPlus.Configuracao.Application.Commands.Enderecos;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
-using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Handler do <see cref="AtualizarLocalOfertaCommand"/>. Valida antes de I/O só
+/// Handler do <see cref="AtualizarLocalOfertaCommand"/>. Confere antes de I/O só
 /// o que é determinável sem o registro persistido — tipo, cidade, formato e
-/// coerência do endereço com a cidade do próprio payload, código e-MEC — e só
+/// coerência do endereço com a cidade da própria declaração, código e-MEC — e só
 /// então busca o Local de Oferta por Id (validação sempre vence 404). A
 /// resolução final do endereço (preservando o instante do display cache quando
 /// o conteúdo não muda) só é possível depois do fetch, mas o formato já foi
-/// confirmado válido no pré-check com o mesmo payload e o mesmo instante — não
-/// pode falhar de novo.
+/// confirmado válido na conferência prévia com a mesma declaração e o mesmo
+/// instante — não pode falhar de novo.
 /// </summary>
 public static class AtualizarLocalOfertaCommandHandler
 {
@@ -36,73 +35,56 @@ public static class AtualizarLocalOfertaCommandHandler
         ArgumentNullException.ThrowIfNull(timeProvider);
 
         DateTimeOffset agora = timeProvider.GetUtcNow();
+        Result declaracao = ConferirDeclaracao(command, agora);
 
-        (DomainError? enderecoErroPreCheck, ReferenciaEnderecoGeo? enderecoPreCheck) =
+        return declaracao.IsFailure
+            ? declaracao
+            : await AtualizarAsync(command, repository, campusRepository, unitOfWork, agora, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static Result ConferirDeclaracao(AtualizarLocalOfertaCommand command, DateTimeOffset agora)
+    {
+        (DomainError? enderecoErro, ReferenciaEnderecoGeo? endereco) =
             EnderecoGeoInputMapping.Resolver(command.Endereco, existente: null, agora);
 
-        Result validacaoPreCheck = LocalOferta.ValidarCampos(
-            command.Tipo,
-            command.CidadeCodigoIbge,
-            command.CidadeNome,
-            command.CidadeUf,
-            enderecoErroPreCheck is null ? enderecoPreCheck : null,
-            command.CodigoEmec);
-
-        List<FieldError> errosPreCheck = [.. validacaoPreCheck.Errors];
-        if (enderecoErroPreCheck is not null)
+        Result declaracao = LocalOferta.ValidarDeclaracao(command.Declaracao(enderecoErro is null ? endereco : null));
+        List<FieldError> erros = [.. declaracao.Errors];
+        if (enderecoErro is not null)
         {
-            errosPreCheck.Add(new FieldError("endereco", enderecoErroPreCheck));
+            erros.Add(new FieldError("endereco", enderecoErro));
         }
 
-        if (errosPreCheck.Count > 0)
-        {
-            return Result.ValidationFailure(errosPreCheck);
-        }
+        return erros.Count > 0 ? Result.ValidationFailure(erros) : Result.Success();
+    }
 
+    private static async Task<Result> AtualizarAsync(
+        AtualizarLocalOfertaCommand command,
+        ILocalOfertaRepository repository,
+        ICampusRepository campusRepository,
+        IUnitOfWork unitOfWork,
+        DateTimeOffset agora,
+        CancellationToken cancellationToken)
+    {
         LocalOferta? local = await repository.ObterPorIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
         if (local is null)
         {
-            return Result.Failure(new DomainError(
-                LocalOfertaErrorCodes.NaoEncontrado,
-                "Local de Oferta não encontrado."));
+            return Result.Failure(new DomainError(LocalOfertaErrorCodes.NaoEncontrado, "Local de Oferta não encontrado."));
         }
 
-        if (command.CampusResponsavelId.HasValue
-            && command.CampusResponsavelId != local.CampusResponsavelId
-            && !await campusRepository.ExisteVivoAsync(command.CampusResponsavelId.Value, cancellationToken).ConfigureAwait(false))
+        Result campus = await ConferirCampusResponsavelAsync(command, local, campusRepository, cancellationToken).ConfigureAwait(false);
+
+        return campus.IsFailure
+            ? campus
+            : await GravarAsync(command, local, unitOfWork, agora, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result> GravarAsync(
+        AtualizarLocalOfertaCommand command, LocalOferta local, IUnitOfWork unitOfWork, DateTimeOffset agora, CancellationToken cancellationToken)
+    {
+        Result atualizado = local.Atualizar(command.Declaracao(EnderecoPreservandoOInstante(command, local, agora)), agora);
+        if (atualizado.IsFailure)
         {
-            return Result.Failure(new DomainError(
-                LocalOfertaErrorCodes.CampusResponsavelNaoEncontrado,
-                "O Campus responsável informado não foi encontrado."));
-        }
-
-        // Só recarimba a proveniência/frescura do display cache quando o trio de
-        // cidade efetivamente muda (mesma semântica do Campus).
-        bool cidadeMudou = CidadeReferenciaMudou(command, local);
-        string? cidadeOrigem = cidadeMudou ? ReferenciaCidadeGeo.OrigemGeoApi : local.CidadeOrigem;
-        DateTimeOffset? cidadeAtualizadoEm = cidadeMudou ? agora : local.CidadeDisplayAtualizadoEm;
-
-        // Resolve de novo com o Endereco atual (para preservar o instante do
-        // display cache quando o conteúdo não muda) — o formato já foi confirmado
-        // válido no pré-check acima, com o mesmo payload e o mesmo `agora`, então
-        // esta chamada não pode falhar por formato.
-        (DomainError? enderecoErro, ReferenciaEnderecoGeo? endereco) =
-            EnderecoGeoInputMapping.Resolver(command.Endereco, local.Endereco, agora);
-
-        Result atualizarResult = local.Atualizar(
-            command.Tipo,
-            command.CampusResponsavelId,
-            command.CidadeCodigoIbge,
-            command.CidadeNome,
-            command.CidadeUf,
-            cidadeOrigem,
-            cidadeAtualizadoEm,
-            enderecoErro is null ? endereco : null,
-            command.CodigoEmec);
-
-        if (atualizarResult.IsFailure)
-        {
-            return atualizarResult;
+            return atualizado;
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
@@ -110,8 +92,24 @@ public static class AtualizarLocalOfertaCommandHandler
         return Result.Success();
     }
 
-    private static bool CidadeReferenciaMudou(AtualizarLocalOfertaCommand command, LocalOferta local) =>
-        !string.Equals(command.CidadeCodigoIbge!.Trim(), local.CidadeCodigoIbge, StringComparison.Ordinal)
-        || !string.Equals(command.CidadeNome!.Trim(), local.CidadeNome, StringComparison.Ordinal)
-        || !string.Equals(command.CidadeUf!.Trim(), local.CidadeUf, StringComparison.OrdinalIgnoreCase);
+    private static async Task<Result> ConferirCampusResponsavelAsync(
+        AtualizarLocalOfertaCommand command, LocalOferta local, ICampusRepository campusRepository, CancellationToken cancellationToken)
+    {
+        bool campusMudou = command.CampusResponsavelId.HasValue && command.CampusResponsavelId != local.CampusResponsavelId;
+
+        return campusMudou
+            ? await CampusResponsavelDoLocal.ConferirAsync(command.CampusResponsavelId!.Value, campusRepository, cancellationToken).ConfigureAwait(false)
+            : Result.Success();
+    }
+
+    // O formato do endereço já foi confirmado na conferência prévia, com a mesma declaração e o mesmo instante: esta resolução
+    // só existe para preservar o instante do display cache quando o conteúdo do endereço não muda.
+    private static ReferenciaEnderecoGeo? EnderecoPreservandoOInstante(
+        AtualizarLocalOfertaCommand command, LocalOferta local, DateTimeOffset agora)
+    {
+        (DomainError? enderecoErro, ReferenciaEnderecoGeo? endereco) =
+            EnderecoGeoInputMapping.Resolver(command.Endereco, local.Endereco, agora);
+
+        return enderecoErro is null ? endereco : null;
+    }
 }

@@ -114,9 +114,8 @@ internal static class CatalogosDoEnvelopeFechado
     {
         Curso curso = Curso.Criar($"MED{sufixo}", "Medicina", "Bacharelado", "Graduação", "SAUDE_E_BIOLOGICAS").Value!;
         LocalOferta local = LocalOferta.Criar(
-            TipoLocalOferta.CampusSede, campusResponsavelId: null, cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA",
-            cidadeOrigem: Unifesspa.UniPlus.Kernel.Domain.Cidades.ReferenciaCidadeGeo.OrigemGeoApi,
-            cidadeDisplayAtualizadoEm: DateTimeOffset.UtcNow, endereco: null, codigoEmec: null).Value!;
+            new(TipoLocalOferta.CampusSede, null, "1504208", "Marabá", "PA", null, null),
+            DateTimeOffset.UtcNow).Value!;
         config.Cursos.Add(curso);
         config.LocaisOferta.Add(local);
         await PersistirEAprovarAsync(config);

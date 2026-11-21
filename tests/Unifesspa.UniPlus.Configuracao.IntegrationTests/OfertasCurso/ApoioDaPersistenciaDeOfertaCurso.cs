@@ -88,8 +88,8 @@ internal sealed class ApoioDaPersistenciaDeOfertaCurso
         Curso curso = Curso.Criar(
             CodigoUnico(), "Engenharia Civil", "Bacharelado", "Graduação", null).Value!;
         LocalOferta local = LocalOferta.Criar(
-            TipoLocalOferta.CampusSede, null, "1504208", "Marabá", "PA",
-            ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null).Value!;
+            new(TipoLocalOferta.CampusSede, null, "1504208", "Marabá", "PA", null, null),
+            Agora).Value!;
 
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
         ctx.Cursos.Add(curso);

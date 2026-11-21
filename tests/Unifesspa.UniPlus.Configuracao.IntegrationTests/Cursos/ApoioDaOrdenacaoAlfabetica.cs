@@ -178,8 +178,8 @@ internal sealed class ApoioDaOrdenacaoAlfabetica
     internal async Task<Guid> SemearLocalOfertaAsync()
     {
         LocalOferta local = LocalOferta.Criar(
-            TipoLocalOferta.CampusSede, null, "1504208", "Marabá", "PA",
-            ReferenciaCidadeGeo.OrigemGeoApi, DateTimeOffset.UtcNow, null, null).Value!;
+            new(TipoLocalOferta.CampusSede, null, "1504208", "Marabá", "PA", null, null),
+            DateTimeOffset.UtcNow).Value!;
 
         await PersistirAsync(local);
 

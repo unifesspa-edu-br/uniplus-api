@@ -156,8 +156,8 @@ internal sealed class ApoioDosEndpointsDeOfertaCurso
         Curso curso = Curso.Criar(
             CodigoUnico(), nomeCurso, "Bacharelado", "Graduação", null).Value!;
         LocalOferta local = LocalOferta.Criar(
-            TipoLocalOferta.CampusSede, null, "1504208", "Marabá", "PA",
-            ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null).Value!;
+            new(TipoLocalOferta.CampusSede, null, "1504208", "Marabá", "PA", null, null),
+            Agora).Value!;
 
         await PersistirAsync(curso, local);
 

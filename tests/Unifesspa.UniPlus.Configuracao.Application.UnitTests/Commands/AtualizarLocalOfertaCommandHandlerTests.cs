@@ -21,8 +21,8 @@ public sealed class AtualizarLocalOfertaCommandHandlerTests
 
     private static LocalOferta Existente() =>
         LocalOferta.Criar(
-            TipoLocalOferta.PoloEad, null, "1504208", "Marabá", "PA",
-            ReferenciaCidadeGeo.OrigemGeoApi, TimeProvider.System.GetUtcNow(), null, null).Value!;
+            new(TipoLocalOferta.PoloEad, null, "1504208", "Marabá", "PA", null, null),
+            TimeProvider.System.GetUtcNow()).Value!;
 
     private static AtualizarLocalOfertaCommand Comando(Guid id, Guid? campusId = null) =>
         new(id, TipoLocalOferta.PoloEad, campusId, "1504208", "Marabá", "PA", null, null);
@@ -105,8 +105,8 @@ public sealed class AtualizarLocalOfertaCommandHandlerTests
     {
         Guid campusId = Guid.CreateVersion7();
         LocalOferta existente = LocalOferta.Criar(
-            TipoLocalOferta.PoloEad, campusId, "1504208", "Marabá", "PA",
-            ReferenciaCidadeGeo.OrigemGeoApi, TimeProvider.System.GetUtcNow(), null, null).Value!;
+            new(TipoLocalOferta.PoloEad, campusId, "1504208", "Marabá", "PA", null, null),
+            TimeProvider.System.GetUtcNow()).Value!;
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
 
         Result resultado = await AtualizarLocalOfertaCommandHandler.Handle(

@@ -3,11 +3,13 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.LocaisOferta;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.Enderecos;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Cria um Local de Oferta (modelo flat, ADR-0065). A proveniência do display
-/// cache (<c>cidade_origem</c>) e o instante são carimbados pelo handler. O
+/// cache (<c>cidade_origem</c>) e o instante são definidos pelo local ao ser criado. O
 /// <see cref="Endereco"/> é o endereço estruturado opcional ao Geo via CEP (ADR-0096).
 /// </summary>
 /// <remarks>
@@ -17,7 +19,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <c>[ApiController]</c> interceptaria um campo ausente/nulo com um 400
 /// genérico do ASP.NET, antes de o domínio rodar. <c>Tipo</c> não precisa do
 /// mesmo tratamento: é um <see langword="enum"/> (tipo valor), e um campo
-/// ausente no JSON já desserializa para o sentinela
+/// ausente no JSON já desserializa para
 /// <see cref="TipoLocalOferta.Nenhum"/> (0), que o domínio já recusa.
 /// </remarks>
 public sealed record CriarLocalOfertaCommand(
@@ -27,4 +29,9 @@ public sealed record CriarLocalOfertaCommand(
     string? CidadeNome,
     string? CidadeUf,
     EnderecoGeoInput? Endereco,
-    string? CodigoEmec) : ICommand<Result<Guid>>;
+    string? CodigoEmec) : ICommand<Result<Guid>>
+{
+    /// <summary>A declaração do local com o <paramref name="endereco"/> já resolvido a partir do <see cref="Endereco"/> do payload.</summary>
+    public DeclaracaoDoLocalDeOferta Declaracao(ReferenciaEnderecoGeo? endereco) =>
+        new(Tipo, CampusResponsavelId, CidadeCodigoIbge, CidadeNome, CidadeUf, endereco, CodigoEmec);
+}

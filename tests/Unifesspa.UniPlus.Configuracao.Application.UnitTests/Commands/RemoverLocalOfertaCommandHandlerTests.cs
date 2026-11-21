@@ -20,8 +20,8 @@ public sealed class RemoverLocalOfertaCommandHandlerTests
 
     private static LocalOferta NovoLocal() =>
         LocalOferta.Criar(
-            TipoLocalOferta.PoloEad, null, "1504208", "Marabá", "PA",
-            ReferenciaCidadeGeo.OrigemGeoApi, DateTimeOffset.UnixEpoch, null, null).Value!;
+            new(TipoLocalOferta.PoloEad, null, "1504208", "Marabá", "PA", null, null),
+            DateTimeOffset.UnixEpoch).Value!;
 
     [Fact(DisplayName = "Local inexistente retorna 404 (NaoEncontrado)")]
     public async Task Handle_NaoEncontrado_Retorna404()
