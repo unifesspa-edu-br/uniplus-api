@@ -1,8 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
-using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
-using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -69,48 +67,13 @@ public sealed class PrecedenciaFase : SoftDeletableEntity, IAuditableEntity
     public static Result<(string Antecessora, string Sucessora)> ValidarCodigos(
         string? antecessoraCodigo, string? sucessoraCodigo)
     {
-        List<FieldError> erros = [];
+        Result<string> antecessora = PontaDaPrecedencia.Antecessora.Ler(antecessoraCodigo);
+        Result<string> sucessora = PontaDaPrecedencia.Sucessora.Ler(sucessoraCodigo);
+        FieldError[] recusas = [.. antecessora.Errors, .. sucessora.Errors];
 
-        Result<string> antecessoraResult = ValidarCodigo(
-            antecessoraCodigo,
-            PrecedenciaFaseErrorCodes.AntecessoraCodigoObrigatorio,
-            PrecedenciaFaseErrorCodes.AntecessoraCodigoFormatoInvalido,
-            PrecedenciaFaseErrorCodes.AntecessoraForaDoConjuntoCanonico,
-            "Código da fase antecessora");
-        if (antecessoraResult.IsFailure)
-        {
-            erros.Add(new("antecessoraCodigo", antecessoraResult.Error!));
-        }
-
-        Result<string> sucessoraResult = ValidarCodigo(
-            sucessoraCodigo,
-            PrecedenciaFaseErrorCodes.SucessoraCodigoObrigatorio,
-            PrecedenciaFaseErrorCodes.SucessoraCodigoFormatoInvalido,
-            PrecedenciaFaseErrorCodes.SucessoraForaDoConjuntoCanonico,
-            "Código da fase sucessora");
-        if (sucessoraResult.IsFailure)
-        {
-            erros.Add(new("sucessoraCodigo", sucessoraResult.Error!));
-        }
-
-        if (erros.Count > 0)
-        {
-            return Result<(string, string)>.ValidationFailure(erros);
-        }
-
-        string antecessora = antecessoraResult.Value!;
-        string sucessora = sucessoraResult.Value!;
-
-        // Self-loop não depende do grafo vigente — só compara os dois códigos já
-        // normalizados entre si, por isso pode ser avaliado aqui.
-        if (string.Equals(antecessora, sucessora, StringComparison.Ordinal))
-        {
-            return Result<(string, string)>.Failure(new DomainError(
-                PrecedenciaFaseErrorCodes.SelfLoop,
-                "A fase antecessora não pode ser igual à fase sucessora."));
-        }
-
-        return Result<(string, string)>.Success((antecessora, sucessora));
+        return recusas.Length > 0
+            ? Result<(string, string)>.ValidationFailure(recusas)
+            : ConferirSemPrecedenciaSobreSiMesma(antecessora.Value!, sucessora.Value!);
     }
 
     /// <summary>
@@ -129,33 +92,17 @@ public sealed class PrecedenciaFase : SoftDeletableEntity, IAuditableEntity
     {
         ArgumentNullException.ThrowIfNull(arestasVivas);
 
-        Result<(string Antecessora, string Sucessora)> codigosResult =
-            ValidarCodigos(antecessoraCodigo, sucessoraCodigo);
-        if (codigosResult.IsFailure)
+        Result<(string Antecessora, string Sucessora)> codigos = ValidarCodigos(antecessoraCodigo, sucessoraCodigo);
+        if (codigos.IsFailure)
         {
-            return Result<PrecedenciaFase>.ValidationFailure(codigosResult.Errors);
+            return Result<PrecedenciaFase>.ValidationFailure(codigos.Errors);
         }
 
-        (string antecessora, string sucessora) = codigosResult.Value;
-
-        bool duplicada = arestasVivas.Any(a =>
-            string.Equals(a.AntecessoraCodigo, antecessora, StringComparison.Ordinal)
-            && string.Equals(a.SucessoraCodigo, sucessora, StringComparison.Ordinal));
-        if (duplicada)
-        {
-            return Result<PrecedenciaFase>.Failure(new DomainError(
-                PrecedenciaFaseErrorCodes.ArestaDuplicada,
-                "Já existe uma aresta de precedência viva com este par de fases."));
-        }
-
-        if (FechaCiclo(antecessora, sucessora, arestasVivas))
-        {
-            return Result<PrecedenciaFase>.Failure(new DomainError(
-                PrecedenciaFaseErrorCodes.CicloDetectado,
-                "A aresta informada fecharia um ciclo no grafo de precedências."));
-        }
-
-        return Result<PrecedenciaFase>.Success(new PrecedenciaFase(antecessora, sucessora, permiteSobreposicao));
+        (string antecessora, string sucessora) = codigos.Value;
+        Result grafo = new GrafoDePrecedencias(arestasVivas).Aceita(antecessora, sucessora);
+        return grafo.IsFailure
+            ? Result<PrecedenciaFase>.ValidationFailure(grafo.Errors)
+            : Result<PrecedenciaFase>.Success(new PrecedenciaFase(antecessora, sucessora, permiteSobreposicao));
     }
 
     /// <summary>
@@ -168,67 +115,11 @@ public sealed class PrecedenciaFase : SoftDeletableEntity, IAuditableEntity
         PermiteSobreposicao = permiteSobreposicao;
     }
 
-    /// <summary>
-    /// Detecta se acrescentar a aresta <paramref name="antecessora"/> →
-    /// <paramref name="sucessora"/> fecha um ciclo no grafo formado por
-    /// <paramref name="arestasVivas"/>: verdadeiro sse já existe, no grafo
-    /// vigente, um caminho de <paramref name="sucessora"/> de volta a
-    /// <paramref name="antecessora"/> (busca em profundidade).
-    /// </summary>
-    private static bool FechaCiclo(
-        string antecessora, string sucessora, IReadOnlyList<PrecedenciaFase> arestasVivas)
-    {
-        var visitados = new HashSet<string>(StringComparer.Ordinal);
-        var pilha = new Stack<string>();
-        pilha.Push(sucessora);
-
-        while (pilha.Count > 0)
-        {
-            string atual = pilha.Pop();
-            if (string.Equals(atual, antecessora, StringComparison.Ordinal))
-            {
-                return true;
-            }
-
-            if (!visitados.Add(atual))
-            {
-                continue;
-            }
-
-            foreach (PrecedenciaFase aresta in arestasVivas.Where(
-                a => string.Equals(a.AntecessoraCodigo, atual, StringComparison.Ordinal)))
-            {
-                pilha.Push(aresta.SucessoraCodigo);
-            }
-        }
-
-        return false;
-    }
-
-    private static Result<string> ValidarCodigo(
-        string? valor, string codigoObrigatorio, string codigoFormatoInvalido, string codigoForaDoCanonico, string rotulo)
-    {
-        if (string.IsNullOrWhiteSpace(valor))
-        {
-            return Result<string>.Failure(new DomainError(codigoObrigatorio, $"{rotulo} é obrigatório."));
-        }
-
-        string normalizado = valor.Trim();
-        if (!CodigoFase.EhValido(normalizado))
-        {
-            return Result<string>.Failure(new DomainError(
-                codigoFormatoInvalido,
-                $"{rotulo} deve conter apenas letras maiúsculas e sublinhado (sem hífen e sem dígito)."));
-        }
-
-        if (!FaseCanonicaCatalogo.EhCanonico(normalizado))
-        {
-            // Mensagem genérica de propósito (ADR-0023): nunca ecoar o dado rejeitado.
-            return Result<string>.Failure(new DomainError(
-                codigoForaDoCanonico,
-                $"{rotulo} não pertence ao conjunto canônico."));
-        }
-
-        return Result<string>.Success(normalizado);
-    }
+    // Não depende do grafo vigente: só compara os dois códigos já normalizados entre si.
+    private static Result<(string, string)> ConferirSemPrecedenciaSobreSiMesma(string antecessora, string sucessora) =>
+        string.Equals(antecessora, sucessora, StringComparison.Ordinal)
+            ? Result<(string, string)>.Failure(new DomainError(
+                PrecedenciaFaseErrorCodes.SelfLoop,
+                "A fase antecessora não pode ser igual à fase sucessora."))
+            : Result<(string, string)>.Success((antecessora, sucessora));
 }
