@@ -196,7 +196,7 @@ public sealed class ProcessoSeletivoNoExigenciaConferenciasTests
     {
         GrupoColetado composicao = GrupoColetado.Criar(
             "COMPOSICAO_FAMILIAR", 0, FormularioDeTeste.Secao, "Composição familiar", 1, 10, null, Obrigatoriedade.Sempre,
-            [FatoColetado.Criar("MAIOR_IDADE", 0, "Maior de idade", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!]).Value!;
+            [FatoColetadoDeTeste.Coletando("MAIOR_IDADE", 0).ComRotulo("Maior de idade").ComObrigatoriedade(Obrigatoriedade.Sempre).Construir()]).Value!;
         Result formulario = processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase.Id, null, FormularioDeTeste.Etapas());
         formulario.IsSuccess.Should().BeTrue(formulario.Error?.Message);
         processo.DefinirItens([], grupos: [composicao]).IsSuccess.Should().BeTrue();

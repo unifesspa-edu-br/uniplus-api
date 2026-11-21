@@ -271,14 +271,18 @@ public sealed class ProcessoSeletivoGruposColetadosTests
         UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
-    private static FatoColetado Item(string fato, int ordem, string? citado = null) => FatoColetado.Criar(
-        fato, ordem, fato, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, Precondicao(citado), classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+    private static FatoColetado Item(string fato, int ordem, string? citado = null) => FatoColetadoDeTeste.Coletando(fato, ordem)
+        .ComObrigatoriedade(Obrigatoriedade.Sempre)
+        .ExibidoQuando(Exibicao(citado))
+        .Construir();
 
-    private static FatoColetado Campo(string fato, int ordem, string? citado = null) => FatoColetado.Criar(
-        fato, ordem, fato, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, Precondicao(citado), classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+    private static FatoColetado Campo(string fato, int ordem, string? citado = null) => FatoColetadoDeTeste.Coletando(fato, ordem)
+        .ComObrigatoriedade(Obrigatoriedade.Sempre)
+        .ExibidoQuando(Exibicao(citado))
+        .Construir();
 
-    private static CondicaoPrecondicaoFato[]? Precondicao(string? citado) =>
-        citado is null ? null : [CondicaoPrecondicaoFato.Criar(0, citado, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!];
+    private static PredicadoDnf? Exibicao(string? citado) =>
+        citado is null ? null : ExibicaoDeTeste.Quando(citado, Operador.Igual, true);
 
     private static PredicadoDnf Predicado(string fato, object valor) =>
         PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(valor)).Value!)]).Value!;

@@ -110,9 +110,12 @@ public sealed class ConformidadePublicabilidadeEstruturalTermosEBonusRegionalTes
     // Municípios do bônus regional como opções (issue #1691)
     // ══════════════════════════════════════════════════════════════════════════════════════
 
-    private static FatoColetado FatoMunicipioDoBonus() => FatoColetado.Criar(
-        "MUNICIPIO_EM_AREA_BONUS", 0, "Município", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
-        origemValores: OrigemValoresColeta.MunicipiosDoBonus, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+    private static FatoColetado FatoMunicipioDoBonus() => FatoColetadoDeTeste.Coletando("MUNICIPIO_EM_AREA_BONUS", 0)
+        .ComRotulo("Município")
+        .DoTipo(TipoRenderizacao.SelecaoUnica)
+        .ComObrigatoriedade(Obrigatoriedade.Sempre)
+        .ComOrigem(OrigemValoresColeta.MunicipiosDoBonus)
+        .Construir();
 
     private static ConfiguracaoBonusRegional Bonus(params (string CodigoIbge, string Nome, string Uf)[] municipios) =>
         ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", new string('a', 64)), 1.20m, null, null, new BaseLegalCongelada(Guid.NewGuid(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [.. municipios])).Value!;

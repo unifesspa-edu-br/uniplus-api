@@ -47,10 +47,15 @@ public sealed class EdicaoDoEnemNaInscricaoTests
     }
 
     private static FatoColetado CampoDaEdicao(
-        Obrigatoriedade? obrigatoriedade = null, IReadOnlyList<CondicaoPrecondicaoFato>? exibicao = null, string secao = FormularioDeTeste.Secao) =>
-        FatoColetado.Criar(
-            EdicaoDoEnem.Fato, FormularioDeTeste.PrimeiraOrdemDeInscricao, "Qual edição do ENEM você vai usar?", TipoRenderizacao.SelecaoUnica,
-            obrigatoriedade ?? Obrigatoriedade.Sempre, exibicao, "PESSOAL", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoDoFatoDeTeste.Descricao, OrigemValoresColeta.OpcoesDoProcesso, etapaCodigo: secao).Value!;
+        Obrigatoriedade? obrigatoriedade = null, PredicadoDnf? exibicao = null, string secao = FormularioDeTeste.Secao) =>
+        FatoColetadoDeTeste.Coletando(EdicaoDoEnem.Fato, FormularioDeTeste.PrimeiraOrdemDeInscricao)
+            .ComRotulo("Qual edição do ENEM você vai usar?")
+            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .ComObrigatoriedade(obrigatoriedade ?? Obrigatoriedade.Sempre)
+            .ExibidoQuando(exibicao)
+            .ComOrigem(OrigemValoresColeta.OpcoesDoProcesso)
+            .NaSecao(secao)
+            .Construir();
 
     private static bool ItemOk(ProcessoSeletivo processo, string codigo) =>
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
@@ -88,7 +93,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
     {
         ProcessoSeletivo processo = ProcessoDoEnem();
         processo.DefinirItens(
-            [CampoDaEdicao(exibicao: [CondicaoPrecondicaoFato.Criar(0, "ESTADO_CIVIL", Operador.Igual, JsonSerializer.SerializeToElement("CASADO")).Value!])])
+            [CampoDaEdicao(exibicao: ExibicaoDeTeste.Quando("ESTADO_CIVIL", Operador.Igual, "CASADO"))])
             .IsSuccess.Should().BeTrue();
 
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemEdicaoDoEnem);
@@ -160,10 +165,13 @@ public sealed class EdicaoDoEnemNaInscricaoTests
     public void DefinirClassificacao_EdicaoCitadaPorCondicao_Recusa()
     {
         ProcessoSeletivo processo = ProcessoDoEnem();
-        FatoColetado citaAEdicao = FatoColetado.Criar(
-            "APELIDO", FormularioDeTeste.PrimeiraOrdemDeInscricao + 1, "Apelido", TipoRenderizacao.Texto, Obrigatoriedade.Sempre,
-            [CondicaoPrecondicaoFato.Criar(0, EdicaoDoEnem.Fato, Operador.Igual, JsonSerializer.SerializeToElement("2026")).Value!],
-            "PESSOAL", formato: "LIVRE", etapaCodigo: FormularioDeTeste.Secao, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetado citaAEdicao = FatoColetadoDeTeste.Coletando("APELIDO", FormularioDeTeste.PrimeiraOrdemDeInscricao + 1)
+            .ComRotulo("Apelido")
+            .DeTexto("LIVRE")
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ExibidoQuando(ExibicaoDeTeste.Quando(EdicaoDoEnem.Fato, Operador.Igual, "2026"))
+            .NaSecao(FormularioDeTeste.Secao)
+            .Construir();
         Result itens = processo.DefinirItens([CampoDaEdicao(), citaAEdicao]);
         itens.IsSuccess.Should().BeTrue(itens.Error?.Message ?? string.Join("; ", itens.Errors.Select(static e => e.Error.Message)));
 

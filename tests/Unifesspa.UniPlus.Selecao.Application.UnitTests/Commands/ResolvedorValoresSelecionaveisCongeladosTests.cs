@@ -47,7 +47,12 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirItens(
-            [FatoColetado.Criar("FATO_OPCAO_DE_TESTE", 0, "Fato de opção do processo", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, origemValores: OrigemValoresColeta.OpcoesDoProcesso, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+            [FatoColetadoDeTeste.Coletando("FATO_OPCAO_DE_TESTE", 0)
+                .ComRotulo("Fato de opção do processo")
+                .DoTipo(TipoRenderizacao.SelecaoUnica)
+                .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                .ComOrigem(OrigemValoresColeta.OpcoesDoProcesso)
+                .Construir()], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeclaradas(
             "FATO_OPCAO_DE_TESTE",
             [OpcaoDeclaradaFato.Criar("FATO_OPCAO_DE_TESTE", "2025", "Opção 2025", 0).Value!,
@@ -70,10 +75,18 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirItens(
         [
-            FatoColetado.Criar("OPCAO_CURSO_1", 0, "1ª opção", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
-                origemValores: OrigemValoresColeta.OpcoesDoProcesso, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-            FatoColetado.Criar("OPCAO_LISTA_ESPERA", 1, "Lista de espera", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null,
-                origemValores: OrigemValoresColeta.OpcoesDoProcesso, restricoes: [new OpcoesDasRespostas(["OPCAO_CURSO_1"])], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
+            FatoColetadoDeTeste.Coletando("OPCAO_CURSO_1", 0)
+                .ComRotulo("1ª opção")
+                .DoTipo(TipoRenderizacao.SelecaoUnica)
+                .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                .ComOrigem(OrigemValoresColeta.OpcoesDoProcesso)
+                .Construir(),
+            FatoColetadoDeTeste.Coletando("OPCAO_LISTA_ESPERA", 1)
+                .ComRotulo("Lista de espera")
+                .DoTipo(TipoRenderizacao.SelecaoUnica)
+                .ComOrigem(OrigemValoresColeta.OpcoesDoProcesso)
+                .ComRestricoes(new OpcoesDasRespostas(["OPCAO_CURSO_1"]))
+                .Construir(),
         ], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
         DefinirAsOpcoesDeclaradas(processo, opcoesDaFonte);
 
@@ -117,8 +130,12 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirBonusRegional(aplica: true, bonus: ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", new string('a', 64)), 1.20m, null, null, new BaseLegalCongelada(Guid.NewGuid(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1505536", "Parauapebas", "PA"), ("1504208", "Marabá", "PA"), ("1500131", "Água Azul do Norte", "PA")])).Value!).IsSuccess.Should().BeTrue();
         processo.DefinirItens(
-            [FatoColetado.Criar("MUNICIPIO_EM_AREA_BONUS", 0, "Município", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
-                origemValores: OrigemValoresColeta.MunicipiosDoBonus, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+            [FatoColetadoDeTeste.Coletando("MUNICIPIO_EM_AREA_BONUS", 0)
+                .ComRotulo("Município")
+                .DoTipo(TipoRenderizacao.SelecaoUnica)
+                .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                .ComOrigem(OrigemValoresColeta.MunicipiosDoBonus)
+                .Construir()], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
 
         Dictionary<string, FatoCandidatoView> catalogo = new(StringComparer.Ordinal)
         {
@@ -137,8 +154,12 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirItens(
-            [FatoColetado.Criar("NATURALIDADE_UF", 0, "UF de nascimento", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
-                origemValores: OrigemValoresColeta.UnidadesFederativas, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+            [FatoColetadoDeTeste.Coletando("NATURALIDADE_UF", 0)
+                .ComRotulo("UF de nascimento")
+                .DoTipo(TipoRenderizacao.SelecaoUnica)
+                .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                .ComOrigem(OrigemValoresColeta.UnidadesFederativas)
+                .Construir()], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
 
         Dictionary<string, FatoCandidatoView> catalogo = new(StringComparer.Ordinal)
         {
@@ -159,7 +180,11 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirItens(
-            [FatoColetado.Criar("TIPO_DEFICIENCIA", 0, "Tipo de deficiência", TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, null, classificacaoProtecao: "SENSIVEL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+            [FatoColetadoDeTeste.Coletando("TIPO_DEFICIENCIA", 0)
+                .ComRotulo("Tipo de deficiência")
+                .DoTipo(TipoRenderizacao.SelecaoMultipla)
+                .ComClassificacao("SENSIVEL")
+                .Construir()], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
 
         return processo;
     }
@@ -214,9 +239,9 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
         return processo;
     }
 
-    private static FatoColetado CampoDeSelecao(string codigo, int ordem) => FatoColetado.Criar(
-        codigo, ordem, codigo, TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL",
-        hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+    private static FatoColetado CampoDeSelecao(string codigo, int ordem) => FatoColetadoDeTeste.Coletando(codigo, ordem)
+        .DoTipo(TipoRenderizacao.SelecaoUnica)
+        .Construir();
 
     private static Dictionary<string, FatoCandidatoView> CatalogoSemValores(params string[] fatos) =>
         fatos.ToDictionary(static f => f, static f => FatoCategoricoDeEscopoProcesso(f) with { FonteValores = "GLOBAL" }, StringComparer.Ordinal);
@@ -228,7 +253,10 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
         processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!)
             .IsSuccess.Should().BeTrue();
         processo.DefinirItens(
-            [FatoColetado.Criar("CONDICAO_ATENDIMENTO", 0, "Condição de atendimento", TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+            [FatoColetadoDeTeste.Coletando("CONDICAO_ATENDIMENTO", 0)
+                .ComRotulo("Condição de atendimento")
+                .DoTipo(TipoRenderizacao.SelecaoMultipla)
+                .Construir()], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
 
 
         Result<IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>> resultado = ResolverOsFatos(processo, "CONDICAO_ATENDIMENTO");
@@ -245,7 +273,10 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
             AtendimentoEspecializado.Criar(
                 [CondicaoOfertada.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência")], [], []).Value!).IsSuccess.Should().BeTrue();
         processo.DefinirItens(
-            [FatoColetado.Criar("CONDICAO_ATENDIMENTO", 0, "Condição de atendimento", TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+            [FatoColetadoDeTeste.Coletando("CONDICAO_ATENDIMENTO", 0)
+                .ComRotulo("Condição de atendimento")
+                .DoTipo(TipoRenderizacao.SelecaoMultipla)
+                .Construir()], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
 
         Dictionary<string, FatoCandidatoView> catalogo = new(StringComparer.Ordinal)
         {

@@ -26,12 +26,19 @@ internal static class ProcessoComMatrizDaLeiDeTeste
     /// </summary>
     internal static ProcessoSeletivo ProcessoComAMatrizNormativa(string nome)
     {
-        FatoColetado Booleano(string codigo, int ordem) => FatoColetado.Criar(
-            codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "SENSIVEL",
-            etapaCodigo: FormularioDeTeste.Secao, finalidade: FinalidadeFormulario.Inscricao, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
-        FatoColetado Selecao(string codigo, int ordem) => FatoColetado.Criar(
-            codigo, ordem, $"Rótulo de {codigo}", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL",
-            etapaCodigo: FormularioDeTeste.Secao, finalidade: FinalidadeFormulario.Inscricao, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetado Booleano(string codigo, int ordem) => FatoColetadoDeTeste.Coletando(codigo, ordem)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComClassificacao("SENSIVEL")
+            .NaSecao(FormularioDeTeste.Secao)
+            .DaFinalidade(FinalidadeFormulario.Inscricao)
+            .Construir();
+        FatoColetado Selecao(string codigo, int ordem) => FatoColetadoDeTeste.Coletando(codigo, ordem)
+            .ComRotulo($"Rótulo de {codigo}")
+            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .NaSecao(FormularioDeTeste.Secao)
+            .DaFinalidade(FinalidadeFormulario.Inscricao)
+            .Construir();
 
         ProcessoSeletivo processo = NovoProcessoDeInscricao(
             nome,

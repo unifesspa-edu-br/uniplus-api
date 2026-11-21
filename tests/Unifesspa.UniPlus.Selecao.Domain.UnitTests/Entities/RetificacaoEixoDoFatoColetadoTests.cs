@@ -61,5 +61,5 @@ public sealed class RetificacaoEixoDoFatoColetadoTests
     }
 
     private static FatoColetado Fato(string codigo, int ordem) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, ordem).ComObrigatoriedade(Obrigatoriedade.Sempre).NaSecao(FormularioDeTeste.Secao).Construir();
 }

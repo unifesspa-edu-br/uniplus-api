@@ -215,10 +215,14 @@ public sealed class AvaliacaoDaInscricaoTests
             [(1, CondicaoDnf.Criar(PedeOFator, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;
         DerivacaoDoFato egresso = DerivacaoDoFato.CriarBooleana(
             OrigemEscolar.FatoEgresso, OrigemEscolar.RegrasDoEgresso, OrigemEscolar.DependenciasDoEgresso).Value!;
-        FatoColetado[] campos = [.. perguntas.Select(static (f, ordem) => FatoColetado.Criar(
-            f, ordem, $"Rótulo de {f}", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, "SENSIVEL", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoDoFatoDeTeste.Descricao,
-            f == MunicipioDoBonus ? OrigemValoresColeta.MunicipiosDoBonus : OrigemValoresColeta.Catalogo,
-            etapaCodigo: Secao, finalidade: FinalidadeFormulario.Inscricao).Value!)];
+        FatoColetado[] campos = [.. perguntas.Select(static (f, ordem) => FatoColetadoDeTeste.Coletando(f, ordem)
+            .ComRotulo($"Rótulo de {f}")
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComClassificacao("SENSIVEL")
+            .ComOrigem(f == MunicipioDoBonus ? OrigemValoresColeta.MunicipiosDoBonus : OrigemValoresColeta.Catalogo)
+            .NaSecao(Secao)
+            .DaFinalidade(FinalidadeFormulario.Inscricao)
+            .Construir())];
         ModalidadeSelecionada[] ofertadas = [.. Ofertadas()];
         // Com a modalidade derivada, a oferta tem cota da lei e as derivações efetivas já trazem o
         // egresso pela regra do sistema.
@@ -235,9 +239,12 @@ public sealed class AvaliacaoDaInscricaoTests
         GrupoColetado[] grupos = [];
         if (municipioNoGrupo)
         {
-            FatoColetado membro = FatoColetado.Criar(
-                MunicipioDoBonus, 0, "Município", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, "SENSIVEL", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoDoFatoDeTeste.Descricao,
-                OrigemValoresColeta.MunicipiosDoBonus).Value!;
+            FatoColetado membro = FatoColetadoDeTeste.Coletando(MunicipioDoBonus, 0)
+                .ComRotulo("Município")
+                .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                .ComClassificacao("SENSIVEL")
+                .ComOrigem(OrigemValoresColeta.MunicipiosDoBonus)
+                .Construir();
             grupos = [GrupoColetado.Criar(GrupoDeMunicipios, 1, Secao, "Municípios", 0, 3, null, Obrigatoriedade.Sempre, [membro], FinalidadeFormulario.Inscricao).Value!];
             definicao = new DefinicaoFormulario(
                 [new DefinicaoEtapa(Etapa, null, [.. perguntas.Select(f => new DefinicaoItem(f, null, Obrigatoriedade.Sempre, []))],

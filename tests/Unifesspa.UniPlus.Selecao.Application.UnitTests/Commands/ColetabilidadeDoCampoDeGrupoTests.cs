@@ -27,7 +27,10 @@ public sealed class ColetabilidadeDoCampoDeGrupoTests
             "PS Grupo", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        FatoColetado campo = FatoColetado.Criar("PARENTESCO", 0, "Parentesco", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetado campo = FatoColetadoDeTeste.Coletando("PARENTESCO", 0)
+            .ComRotulo("Parentesco")
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .Construir();
         GrupoColetado grupo = GrupoColetado.Criar(
             "COMPOSICAO", 0, FormularioDeTeste.Secao, "Composição familiar", 0, 5, null, Obrigatoriedade.Nunca, [campo]).Value!;
         processo.DefinirItens([], grupos: [grupo], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();

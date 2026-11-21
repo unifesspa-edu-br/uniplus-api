@@ -164,9 +164,12 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
         // Direto na lista: a gravação e a restauração recusam acima do teto, e a conferência cobre o
         // rascunho que chega por outro caminho.
         ((List<FatoColetado>)typeof(ProcessoSeletivo).GetField("_campos", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(processo)!)
-            .AddRange(Enumerable.Range(0, FormaDoItem.MaximoDeItens + 1).Select(static i => FatoColetado.Criar(
-                $"FATO_{i}", FormularioDeTeste.PrimeiraOrdemDeInscricao + i, "Campo", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null,
-                etapaCodigo: FormularioDeTeste.Secao, finalidade: FinalidadeFormulario.Inscricao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!));
+            .AddRange(Enumerable.Range(0, FormaDoItem.MaximoDeItens + 1).Select(static i => FatoColetadoDeTeste.Coletando($"FATO_{i}", FormularioDeTeste.PrimeiraOrdemDeInscricao + i)
+                .ComRotulo("Campo")
+                .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                .NaSecao(FormularioDeTeste.Secao)
+                .DaFinalidade(FinalidadeFormulario.Inscricao)
+                .Construir()));
 
         SoEstesItensVermelhos(processo, "formulario_itens_em_excesso");
 

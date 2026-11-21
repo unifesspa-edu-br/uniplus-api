@@ -23,9 +23,6 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// </summary>
 public sealed class ObterProcessoSeletivoQueryHandlerColetaDeFatosTests
 {
-    private static CondicaoPrecondicaoFato Precondicao(int clausula, string fato, Operador operador, object valor) =>
-        CondicaoPrecondicaoFato.Criar(clausula, fato, operador, JsonSerializer.SerializeToElement(valor)).Value!;
-
     private static CondicaoRegraDerivacao CondicaoRegra(int clausula, string fato, Operador operador, object valor) =>
         CondicaoRegraDerivacao.Criar(clausula, fato, operador, JsonSerializer.SerializeToElement(valor)).Value!;
 
@@ -46,9 +43,15 @@ public sealed class ObterProcessoSeletivoQueryHandlerColetaDeFatosTests
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Query", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
         // BAIXA_RENDA na ordem 0 (sem pré-condição); COR_RACA na ordem 1 com pré-condição citando o anterior.
-        FatoColetado baixaRenda = FatoColetado.Criar("BAIXA_RENDA", 0, "Baixa renda", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
-        FatoColetado corRaca = FatoColetado.Criar("COR_RACA", 1, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca,
-            [Precondicao(0, "BAIXA_RENDA", Operador.Igual, true)], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetado baixaRenda = FatoColetadoDeTeste.Coletando("BAIXA_RENDA", 0)
+            .ComRotulo("Baixa renda")
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .Construir();
+        FatoColetado corRaca = FatoColetadoDeTeste.Coletando("COR_RACA", 1)
+            .ComRotulo("Cor ou raça")
+            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .ExibidoQuando(ExibicaoDeTeste.Quando("BAIXA_RENDA", Operador.Igual, true))
+            .Construir();
         // Passa fora de ordem de propósito — a projeção é quem ordena.
         processo.DefinirItens([corRaca, baixaRenda], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
 

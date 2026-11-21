@@ -199,9 +199,7 @@ public sealed class SubmeterInscricaoMunicipiosTests
     }
 
     private static FatoColetado EnderecoComercial() =>
-        FatoColetado.Criar(
-            "ENDERECO_COMERCIAL", 6, "Endereço comercial", TipoRenderizacao.Endereco, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL",
-            hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando("ENDERECO_COMERCIAL", 6).ComRotulo("Endereço comercial").DoTipo(TipoRenderizacao.Endereco).Construir();
 
     private static void ConferirCidade(Inscricao inscricao, string endereco)
     {

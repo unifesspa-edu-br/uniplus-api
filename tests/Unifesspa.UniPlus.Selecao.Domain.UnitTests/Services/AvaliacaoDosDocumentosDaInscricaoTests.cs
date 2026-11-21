@@ -354,9 +354,12 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
 
     /// <param name="etapa">A seção do campo; o subitem de grupo segue a do grupo, e não tem a sua.</param>
     private static FatoColetado Campo(string fato, string? etapa = Secao) =>
-        FatoColetado.Criar(
-            fato, 0, $"Rótulo de {fato}", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, "PESSOAL",
-            etapaCodigo: etapa, finalidade: FinalidadeFormulario.Inscricao, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(fato, 0)
+            .ComRotulo($"Rótulo de {fato}")
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .NaSecao(etapa)
+            .DaFinalidade(FinalidadeFormulario.Inscricao)
+            .Construir();
 
     private static DocumentoExigido Condicional(FaseCronograma fase, params (string Fato, bool Valor)[] atomos) =>
         DocumentoExigido.Criar(

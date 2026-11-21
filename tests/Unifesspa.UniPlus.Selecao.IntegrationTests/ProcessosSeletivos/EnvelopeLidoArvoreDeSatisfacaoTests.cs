@@ -82,7 +82,7 @@ public sealed class EnvelopeLidoArvoreDeSatisfacaoTests
         [
             GrupoColetado.Criar(
                 "COMPOSICAO_FAMILIAR", 0, FormularioDeTeste.Secao, "Composição familiar", 1, 10, null, Obrigatoriedade.Sempre,
-                [FatoColetado.Criar("SEM_RENDA", 0, "Sem renda", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!]).Value!,
+                [FatoColetadoDeTeste.Coletando("SEM_RENDA", 0).ComRotulo("Sem renda").ComObrigatoriedade(Obrigatoriedade.Sempre).Construir()]).Value!,
         ]).IsSuccess.Should().BeTrue();
 
     private static NoExigencia RaizGrupoOuDeRgERenda(FaseCronograma fase, DocumentoExigido comprovanteRenda)

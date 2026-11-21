@@ -216,10 +216,14 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
         string? formato = null,
         string? etapa = Secao,
         (string Fato, object Valor)[]? quando = null) =>
-        FatoColetado.Criar(
-            codigo, ordem, codigo, tipo, Obrigatoriedade.Sempre,
-            quando is null ? null : [.. quando.Select(static c => CondicaoPrecondicaoFato.Criar(0, c.Fato, Operador.Igual, JsonSerializer.SerializeToElement(c.Valor)).Value!)],
-            etapaCodigo: etapa, finalidade: finalidade, formato: formato, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, ordem)
+            .DoTipo(tipo)
+            .ComFormato(formato)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ExibidoQuando(quando is null ? null : ExibicaoDeTeste.QuandoTodas([.. quando.Select(static c => (c.Fato, Operador.Igual, c.Valor))]))
+            .NaSecao(etapa)
+            .DaFinalidade(finalidade)
+            .Construir();
 
     private static TermoExigidoFormulario Termo(string codigo, FinalidadeFormulario finalidade) =>
         TermoExigidoFormulario.Criar(

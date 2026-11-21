@@ -144,10 +144,12 @@ public sealed class ObterInscricaoAdministrativaMontagemDosItensTests
     private static GrupoColetado GrupoDeLocais() =>
         GrupoColetado.Criar(
             "LOCAIS", 1, "DADOS", "Locais", minimo: 0, maximo: null, exibicao: null, Obrigatoriedade.Nunca,
-            [FatoColetado.Criar(
-                "LOCAL_MUNICIPIO", 0, "Município do local", TipoRenderizacao.Municipio, Obrigatoriedade.Nunca, null, "PESSOAL",
-                InscricaoAdministrativaDeTeste.Hipotese, ProtecaoDoFatoDeTeste.Finalidade, "Município do local",
-                restricoes: [new MunicipiosDaUf("NATURALIDADE_UF")]).Value!],
+            [FatoColetadoDeTeste.Coletando("LOCAL_MUNICIPIO", 0)
+                .ComRotulo("Município do local")
+                .DoTipo(TipoRenderizacao.Municipio)
+                .ComCopia(ProtecaoDoFatoDeTeste.Copia() with { HipoteseLegal = InscricaoAdministrativaDeTeste.Hipotese, Descricao = "Município do local" })
+                .ComRestricoes(new MunicipiosDaUf("NATURALIDADE_UF"))
+                .Construir()],
             FinalidadeFormulario.Inscricao).Value!;
     private static InscricaoAdministrativaDeTeste ComAjudaEDescricao()
     {

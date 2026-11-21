@@ -116,8 +116,7 @@ public sealed class ValoresSelecionaveisResolverTests
 
     private static FatoCandidatoView PrepararBaixaRenda(ProcessoSeletivo processo)
     {
-        FatoColetado baixaRenda = FatoColetado.Criar(
-            "BAIXA_RENDA", 0, "Baixa renda", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetado baixaRenda = FatoColetadoDeTeste.Coletando("BAIXA_RENDA", 0).ComRotulo("Baixa renda").Construir();
         processo.DefinirItens([baixaRenda]).IsSuccess.Should().BeTrue();
 
         FatoCandidatoView baixaRendaNoCatalogo = new(
@@ -155,8 +154,10 @@ public sealed class ValoresSelecionaveisResolverTests
 
     private static FatoCandidatoView PrepararCondicaoAtendimento(ProcessoSeletivo processo)
     {
-        FatoColetado condicaoAtendimento = FatoColetado.Criar(
-            "CONDICAO_ATENDIMENTO", 0, "Condição de atendimento", TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetado condicaoAtendimento = FatoColetadoDeTeste.Coletando("CONDICAO_ATENDIMENTO", 0)
+            .ComRotulo("Condição de atendimento")
+            .DoTipo(TipoRenderizacao.SelecaoMultipla)
+            .Construir();
         processo.DefinirItens([condicaoAtendimento]).IsSuccess.Should().BeTrue();
 
         FatoCandidatoView condicaoAtendimentoNoCatalogo = new(

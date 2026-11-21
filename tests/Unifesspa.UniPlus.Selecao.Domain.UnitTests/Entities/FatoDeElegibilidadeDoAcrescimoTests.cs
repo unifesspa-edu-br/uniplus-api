@@ -36,10 +36,14 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
             bancasRequeridas: []).Value!;
 
     private static FatoColetado Item(string codigo) =>
-        FatoColetado.Criar(codigo, 0, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, 0).ComObrigatoriedade(Obrigatoriedade.Sempre).NaSecao(FormularioDeTeste.Secao).Construir();
 
     private static FatoColetado Numero(string codigo, int ordem) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Numero, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, ordem)
+            .DoTipo(TipoRenderizacao.Numero)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .NaSecao(FormularioDeTeste.Secao)
+            .Construir();
 
     /// <summary>
     /// Inscrição, isenção e habilitação em fases sucessivas, cada uma com o fato booleano que só ela
@@ -60,7 +64,10 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
 
     private static GrupoColetado GrupoDaInscricao() =>
         GrupoColetado.Criar("COMPOSICAO_FAMILIAR", 2, FormularioDeTeste.Secao, "Composição familiar", 0, 5, null, Obrigatoriedade.Sempre,
-            [FatoColetado.Criar("MEMBRO_PEDE_O_ACRESCIMO", 0, "Membro pede o acréscimo", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!],
+            [FatoColetadoDeTeste.Coletando("MEMBRO_PEDE_O_ACRESCIMO", 0)
+                .ComRotulo("Membro pede o acréscimo")
+                .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                .Construir()],
             FinalidadeFormulario.Inscricao).Value!;
 
     private static void Aplicar(ProcessoSeletivo processo, string? fatoElegibilidade) =>

@@ -26,11 +26,13 @@ public sealed class ResolvedorEstadoFatosTests
 
     private static JsonElement Cor(string valor) => JsonSerializer.SerializeToElement(valor);
 
-    private static CondicaoPrecondicaoFato Cond(string fato, Operador operador, JsonElement valor) =>
-        CondicaoPrecondicaoFato.Criar(0, fato, operador, valor).Value!;
+    private static (string Fato, Operador Operador, object Valor) Cond(string fato, Operador operador, JsonElement valor) => (fato, operador, valor);
 
-    private static FatoColetado Fato(string codigo, int ordem, params CondicaoPrecondicaoFato[] precondicoes) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, precondicoes, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+    private static FatoColetado Fato(string codigo, int ordem, params (string Fato, Operador Operador, object Valor)[] condicoes) =>
+        FatoColetadoDeTeste.Coletando(codigo, ordem)
+            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .ExibidoQuando(condicoes.Length == 0 ? null : ExibicaoDeTeste.QuandoTodas(condicoes))
+            .Construir();
 
     /// <summary>
     /// A tabela normativa de coleta. O gate de escola pública abre as subcotas; a dimensão PcD é a
@@ -103,8 +105,11 @@ public sealed class ResolvedorEstadoFatosTests
         FatoColetado[] fatos =
         [
             Fato("EGRESSO_ESCOLA_PUBLICA", 0),
-            FatoColetado.Criar("COR_RACA", 1, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null,
-                restricoes: [new OpcoesPermitidas([new OpcoesCondicionadas(egresso, ["PRETA"]), new OpcoesCondicionadas(null, ["BRANCA"])])], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
+            FatoColetadoDeTeste.Coletando("COR_RACA", 1)
+                .ComRotulo("Cor ou raça")
+                .DoTipo(TipoRenderizacao.SelecaoUnica)
+                .ComRestricoes(new OpcoesPermitidas([new OpcoesCondicionadas(egresso, ["PRETA"]), new OpcoesCondicionadas(null, ["BRANCA"])]))
+                .Construir(),
         ];
 
         IReadOnlyDictionary<string, FatoResolvido> estados = ResolvedorEstadoFatos.Resolver(
@@ -146,8 +151,16 @@ public sealed class ResolvedorEstadoFatosTests
         FormularioProcesso formulario = FormularioComSecaoDeCotas();
         FatoColetado[] fatos =
         [
-            FatoColetado.Criar("EGRESSO_ESCOLA_PUBLICA", 0, "Egresso", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, etapaCodigo: "DADOS", finalidade: FinalidadeFormulario.Inscricao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-            FatoColetado.Criar("CONCORRER_EP", 1, "Concorrer", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, etapaCodigo: "COTAS", finalidade: FinalidadeFormulario.Inscricao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
+            FatoColetadoDeTeste.Coletando("EGRESSO_ESCOLA_PUBLICA", 0)
+                .ComRotulo("Egresso")
+                .NaSecao("DADOS")
+                .DaFinalidade(FinalidadeFormulario.Inscricao)
+                .Construir(),
+            FatoColetadoDeTeste.Coletando("CONCORRER_EP", 1)
+                .ComRotulo("Concorrer")
+                .NaSecao("COTAS")
+                .DaFinalidade(FinalidadeFormulario.Inscricao)
+                .Construir(),
         ];
 
         IReadOnlyDictionary<string, FatoResolvido> estados = ResolvedorEstadoFatos.Resolver(
@@ -176,11 +189,18 @@ public sealed class ResolvedorEstadoFatosTests
     [Fact(DisplayName = "Itens de dois formulários, com a mesma ordem, resolvem juntos, e o de um cita o fato do outro")]
     public void DoisFormularios_ResolvemJuntos()
     {
-        FatoColetado corRaca = FatoColetado.Criar(
-            "COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, finalidade: FinalidadeFormulario.Inscricao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
-        FatoColetado declaracao = FatoColetado.Criar(
-            "DECLARACAO_PERTENCIMENTO", 0, "Declaração", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre,
-            [Cond("COR_RACA", Operador.Igual, Cor("PRETA"))], finalidade: FinalidadeFormulario.Habilitacao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetado corRaca = FatoColetadoDeTeste.Coletando("COR_RACA", 0)
+            .ComRotulo("Cor ou raça")
+            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .DaFinalidade(FinalidadeFormulario.Inscricao)
+            .Construir();
+        FatoColetado declaracao = FatoColetadoDeTeste.Coletando("DECLARACAO_PERTENCIMENTO", 0)
+            .ComRotulo("Declaração")
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ExibidoQuando(ExibicaoDeTeste.Quando("COR_RACA", Operador.Igual, Cor("PRETA")))
+            .DaFinalidade(FinalidadeFormulario.Habilitacao)
+            .Construir();
 
         IReadOnlyDictionary<string, FatoResolvido> estados = ResolvedorEstadoFatos.Resolver(
             [],

@@ -213,12 +213,19 @@ internal static class EnvelopeDeReferencia
     }
 
     private static FatoColetado FatoCorRaca() =>
-        FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando("COR_RACA", 0)
+            .ComRotulo("Cor ou raça")
+            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .Construir();
 
     private static FatoColetado FatoRendaGatadoPelaCorRaca() =>
-        FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, [
-            CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
-        ], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando("RENDA", 1)
+            .ComRotulo("Faixa de renda familiar")
+            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ExibidoQuando(ExibicaoDeTeste.Quando("COR_RACA", Operador.Igual, "PRETA"))
+            .Construir();
 
     private static FaseCronograma FaseDeInscricao() => FaseCronograma.Criar(
         new OrigemCanonicaDaFase(

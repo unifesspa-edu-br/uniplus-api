@@ -23,11 +23,11 @@ public sealed class GrafoDependenciaConjuntaTests
 {
     private static readonly FormatosPermitidos Qualquer = FormatosPermitidos.Criar(true, null).Value!;
 
-    private static CondicaoPrecondicaoFato Precond(string fato) =>
-        CondicaoPrecondicaoFato.Criar(1, fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!;
-
     private static FatoColetado Declarado(string codigo, int ordem, params string[] citados) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, [.. citados.Select(Precond)], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, ordem)
+            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .ExibidoQuando(ExibicaoDeTeste.QuandoTodas([.. citados.Select(static c => (c, Operador.Igual, (object)true))]))
+            .Construir();
 
     private static ConfiguracaoDerivacaoFato Derivado(string codigo, params string[] citados) =>
         ConfiguracaoDerivacaoFato.Criar(codigo,
@@ -56,7 +56,7 @@ public sealed class GrafoDependenciaConjuntaTests
         PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;
 
     private static FatoColetado NaFinalidade(FinalidadeFormulario finalidade, string codigo, int ordem, string secao) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, etapaCodigo: secao, finalidade: finalidade, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, ordem).NaSecao(secao).DaFinalidade(finalidade).Construir();
 
     private static int Posicao(GrafoDependenciaConjunta grafo, ClasseNoGrafo classe, string codigo) =>
         grafo.OrdemTopologica.ToList().FindIndex(n => n.Classe == classe && n.Codigo == codigo);

@@ -161,7 +161,11 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFatoCommandHandlerTests
 
     private static void ColetarDataDeNascimento(ProcessoSeletivo processo) =>
         processo.DefinirItens(
-            [FatoColetado.Criar("DATA_NASCIMENTO", 0, "Data de nascimento", TipoRenderizacao.Data, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!])
+            [FatoColetadoDeTeste.Coletando("DATA_NASCIMENTO", 0)
+                .ComRotulo("Data de nascimento")
+                .DoTipo(TipoRenderizacao.Data)
+                .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                .Construir()])
             .IsSuccess.Should().BeTrue();
 
     private static FatoCandidatoView FatoSexo() => new(

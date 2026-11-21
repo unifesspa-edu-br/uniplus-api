@@ -138,12 +138,11 @@ public sealed class SubmeterInscricaoEnderecoEIndisponibilidadeDoGeoTests
         resultado.Errors.Should().Contain(e => e.Field == "CPF" && e.Error.Code == InscricaoErrorCodes.CpfDiferenteDoDono);
     }
 
-    private static FatoColetado ObrigatorioSoParaQuemMoraEm(string municipio) => FatoColetado.Criar(
-        "OUTRA_REGIAO", 7, "Outra região", TipoRenderizacao.Texto,
-        Obrigatoriedade.Quando(PredicadoDnf.CriarDeCondicoesAgrupadas(
-            [(0, CondicaoDnf.Criar("MUNICIPIO_RESIDENCIA", Operador.Igual, JsonSerializer.SerializeToElement(municipio)).Value!)]).Value!),
-        null, classificacaoProtecao: "PESSOAL", formato: "LIVRE", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal,
-        finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+    private static FatoColetado ObrigatorioSoParaQuemMoraEm(string municipio) => FatoColetadoDeTeste.Coletando("OUTRA_REGIAO", 7)
+        .ComRotulo("Outra região")
+        .DeTexto("LIVRE")
+        .ComObrigatoriedade(Obrigatoriedade.Quando(PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("MUNICIPIO_RESIDENCIA", Operador.Igual, JsonSerializer.SerializeToElement(municipio)).Value!)]).Value!))
+        .Construir();
 
     [Fact(DisplayName = "Obrigatoriedade que depende da residência com o Geo fora do ar: o envio é recusado como indisponível, e não como campo obrigatório")]
     public async Task Handle_ObrigatoriedadeDependenteDaResidenciaComGeoForaDoAr_Recusa503()
@@ -171,10 +170,12 @@ public sealed class SubmeterInscricaoEnderecoEIndisponibilidadeDoGeoTests
     [Fact(DisplayName = "Campo obrigatório em definitivo e vazio conta como recusa mesmo quando uma restrição dele cita a residência que o Geo deixou indeterminada")]
     public async Task Handle_ObrigatorioVazioComRestricaoSobreAResidencia_ContaComoRecusa()
     {
-        FatoColetado doEstado = FatoColetado.Criar(
-            "LOCAL_NO_ESTADO", 8, "Local no estado", TipoRenderizacao.Municipio, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL",
-            hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao,
-            restricoes: [new MunicipiosDaUf("UF_RESIDENCIA")]).Value!;
+        FatoColetado doEstado = FatoColetadoDeTeste.Coletando("LOCAL_NO_ESTADO", 8)
+            .ComRotulo("Local no estado")
+            .DoTipo(TipoRenderizacao.Municipio)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComRestricoes(new MunicipiosDaUf("UF_RESIDENCIA"))
+            .Construir();
 
         (Result<ReciboDaInscricaoDto> resultado, _) = await SubmeterComAsync([doEstado], null, Texto(), geo: GeoQueConhece().Indisponivel());
 

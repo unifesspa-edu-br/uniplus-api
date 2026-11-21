@@ -86,7 +86,7 @@ internal static class ApoioDosDocumentosExigidos
     /// </summary>
     internal static void ColetarFato(ProcessoSeletivo processo, string codigo, TipoRenderizacao renderizacao = TipoRenderizacao.SelecaoUnica)
     {
-        FatoColetado fato = FatoColetado.Criar(codigo, 0, codigo, renderizacao, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetado fato = FatoColetadoDeTeste.Coletando(codigo, 0).DoTipo(renderizacao).ComObrigatoriedade(Obrigatoriedade.Sempre).Construir();
         processo.DefinirItens([fato]).IsSuccess.Should().BeTrue();
     }
 
@@ -102,7 +102,7 @@ internal static class ApoioDosDocumentosExigidos
     private static GrupoColetado GrupoDaComposicaoFamiliar() =>
         GrupoColetado.Criar(
             "COMPOSICAO_FAMILIAR", 0, FormularioDeTeste.Secao, "Composição familiar", 1, 10, null, Obrigatoriedade.Sempre,
-            [FatoColetado.Criar("MAIOR_IDADE", 0, "Maior de idade", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!]).Value!;
+            [FatoColetadoDeTeste.Coletando("MAIOR_IDADE", 0).ComRotulo("Maior de idade").ComObrigatoriedade(Obrigatoriedade.Sempre).Construir()]).Value!;
 
     private static FatoCandidatoView FatoMaiorIdadeDoMembro() =>
         new(Guid.CreateVersion7(), "MAIOR_IDADE", "Maior de idade", "Descrição do fato.", "BOOLEANO", "DECLARADO", "ESCALAR",

@@ -54,11 +54,10 @@ public sealed class ImpedimentoNoFormularioTests
     }
 
     private static FatoColetado Campo(Obrigatoriedade obrigatoriedade) =>
-        FatoColetado.Criar(
-            Fato, FormularioDeTeste.PrimeiraOrdemDeInscricao, "Vínculo com o PARFOR", TipoRenderizacao.Booleano, obrigatoriedade, null,
-            etapaCodigo: FormularioDeTeste.Secao,
-            impedimento: new Impedimento(
-                PredicadoDnf.CriarDeCondicoesAgrupadas(
-                    [(0, CondicaoDnf.Criar(Fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!,
-                "Quem tem vínculo com o PARFOR não pode se inscrever neste processo."), classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(Fato, FormularioDeTeste.PrimeiraOrdemDeInscricao)
+            .ComRotulo("Vínculo com o PARFOR")
+            .ComObrigatoriedade(obrigatoriedade)
+            .NaSecao(FormularioDeTeste.Secao)
+            .ComImpedimento(new Impedimento(PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(Fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!, "Quem tem vínculo com o PARFOR não pode se inscrever neste processo."))
+            .Construir();
 }

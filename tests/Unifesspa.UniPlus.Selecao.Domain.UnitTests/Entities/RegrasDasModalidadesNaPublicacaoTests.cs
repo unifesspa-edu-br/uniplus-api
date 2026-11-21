@@ -234,7 +234,7 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
 
     private static GrupoColetado GrupoComOCampoDeMembro(FinalidadeFormulario finalidade) =>
         GrupoColetado.Criar("COMPOSICAO_FAMILIAR", 2, FormularioDeTeste.Secao, "Composição familiar", 0, 5, null, Obrigatoriedade.Sempre,
-            [FatoColetado.Criar(CampoDeMembro, 0, "Membro pede", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!],
+            [FatoColetadoDeTeste.Coletando(CampoDeMembro, 0).ComRotulo("Membro pede").ComObrigatoriedade(Obrigatoriedade.Sempre).Construir()],
             finalidade).Value!;
 
     private static ItemConformidade Item(ProcessoSeletivo processo, string codigo) =>
@@ -260,7 +260,7 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
             natureza == NaturezaLegalModalidade.AcaoAfirmativa ? "AC" : null, null, null, regra, null, "base legal", quantidadeDeclarada: 10).Value!;
 
     private static FatoColetado Booleano(string fato, int ordem) =>
-        FatoColetado.Criar(fato, ordem, fato, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "SENSIVEL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(fato, ordem).ComObrigatoriedade(Obrigatoriedade.Sempre).ComClassificacao("SENSIVEL").Construir();
 
     private static PredicadoDnf Exige(params (string Fato, bool Valor)[] atomos) =>
         PredicadoDnf.CriarDeCondicoesAgrupadas([.. atomos.Select(static a => (0, CondicaoDnf.Criar(

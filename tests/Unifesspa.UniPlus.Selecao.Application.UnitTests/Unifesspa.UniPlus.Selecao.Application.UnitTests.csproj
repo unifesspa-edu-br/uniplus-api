@@ -34,6 +34,8 @@
     <Compile Include="../Shared/FatosDeModalidadeDeTeste.cs" Link="FatosDeModalidadeDeTeste.cs" />
     <Compile Include="../Shared/ProtecaoDoDocumentoDeTeste.cs" Link="ProtecaoDoDocumentoDeTeste.cs" />
     <Compile Include="../Shared/ProtecaoDoFatoDeTeste.cs" Link="ProtecaoDoFatoDeTeste.cs" />
+    <Compile Include="../Shared/FatoColetadoDeTeste.cs" Link="FatoColetadoDeTeste.cs" />
+    <Compile Include="../Shared/ExibicaoDeTeste.cs" Link="ExibicaoDeTeste.cs" />
     <Compile Include="../Shared/FatosDerivadosCongeladosDeTeste.cs" Link="FatosDerivadosCongeladosDeTeste.cs" />
     <Compile Include="../Shared/TiposDeAtoUnicosDeTeste.cs" Link="TiposDeAtoUnicosDeTeste.cs" />
     <Compile Include="../Shared/BancasDeTeste.cs" Link="BancasDeTeste.cs" />

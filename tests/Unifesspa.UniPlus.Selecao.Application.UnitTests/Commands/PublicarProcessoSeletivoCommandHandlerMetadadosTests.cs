@@ -44,9 +44,14 @@ public sealed partial class PublicarProcessoSeletivoCommandHandlerTests
     private static FatoColetado ReclassificarCpfComoPessoal(ProcessoSeletivo processo)
     {
         FatoColetado cpfDoCatalogoAntigo = processo.FatosColetados.Single(static f => f.FatoCodigo == "CPF");
-        FatoColetado cpf = FatoColetado.Criar(
-            "CPF", cpfDoCatalogoAntigo.Ordem, cpfDoCatalogoAntigo.Rotulo, cpfDoCatalogoAntigo.TipoRenderizacao, cpfDoCatalogoAntigo.Obrigatoriedade, null, "PESSOAL", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoDoFatoDeTeste.Descricao,
-            cpfDoCatalogoAntigo.OrigemValores, cpfDoCatalogoAntigo.EtapaCodigo, formato: cpfDoCatalogoAntigo.Formato).Value!;
+        FatoColetado cpf = FatoColetadoDeTeste.Coletando("CPF", cpfDoCatalogoAntigo.Ordem)
+            .ComRotulo(cpfDoCatalogoAntigo.Rotulo)
+            .DoTipo(cpfDoCatalogoAntigo.TipoRenderizacao)
+            .ComFormato(cpfDoCatalogoAntigo.Formato)
+            .ComObrigatoriedade(cpfDoCatalogoAntigo.Obrigatoriedade)
+            .ComOrigem(cpfDoCatalogoAntigo.OrigemValores)
+            .NaSecao(cpfDoCatalogoAntigo.EtapaCodigo)
+            .Construir();
         processo.DefinirItens([.. processo.FatosColetados.Select(f => f.FatoCodigo == "CPF" ? cpf : f)]).IsSuccess.Should().BeTrue();
         DefinicaoDaResposta.De(cpf.TipoRenderizacao, cpf.ClassificacaoProtecao, fatoCodigo: "CPF").Cifrada.Should().BeFalse("a cópia velha não cifra");
         return cpf;
@@ -254,7 +259,11 @@ public sealed partial class PublicarProcessoSeletivoCommandHandlerTests
     private static void ConfigurarDependenciaDaModalidade(ProcessoSeletivo processo, Guid faseId)
     {
         processo.DefinirItens(
-            [FatoColetado.Criar("TEM_RENDA", 0, "Tem renda?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!]).IsSuccess.Should().BeTrue();
+            [FatoColetadoDeTeste.Coletando("TEM_RENDA", 0)
+                .ComRotulo("Tem renda?")
+                .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                .NaSecao(FormularioDeTeste.Secao)
+                .Construir()]).IsSuccess.Should().BeTrue();
         processo.DefinirDistribuicaoVagas(
             [ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(PredicadoDnf.CriarDeCondicoesAgrupadas(
                 [(0, CondicaoDnf.Criar("TEM_RENDA", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!)],

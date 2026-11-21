@@ -71,7 +71,11 @@ internal sealed class CenarioDeFormularioPublicado
         ProcessoSeletivo processo = ProcessoSeletivoPublicacaoSeeder.NovoProcessoConforme(nome);
 
         processo.DefinirItens([
-            FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
+            FatoColetadoDeTeste.Coletando("COR_RACA", 0)
+                .ComRotulo("Cor ou raça")
+                .DoTipo(TipoRenderizacao.SelecaoUnica)
+                .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                .Construir(),
         ]).IsSuccess.Should().BeTrue();
 
         processo.DefinirTitulo("Formulário de Inscrição").IsSuccess.Should().BeTrue();

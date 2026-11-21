@@ -125,7 +125,7 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
         item with { Precondicao = [[new CondicaoPrecondicaoInput(fato, operador, JsonSerializer.SerializeToElement(valor))]] };
 
     public static FatoColetado FatoBooleanoJaColetado(string codigo, string rotulo) =>
-        FatoColetado.Criar(codigo, 0, rotulo, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, 0).ComRotulo(rotulo).ComObrigatoriedade(Obrigatoriedade.Sempre).Construir();
 
     public static FatoCandidatoView Declarado(string codigo) =>
         new(Guid.CreateVersion7(), codigo, codigo, "Descrição do fato.", "BOOLEANO", "DECLARADO", "ESCALAR", null, "INSCRICAO", $"CAMPO_FORMULARIO:{codigo}", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);

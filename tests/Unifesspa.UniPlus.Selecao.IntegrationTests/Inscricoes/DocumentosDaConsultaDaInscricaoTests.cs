@@ -60,9 +60,12 @@ public sealed class DocumentosDaConsultaDaInscricaoTests
             nameof(DocumentosDaConsultaDaInscricaoTests),
             camposAdicionais:
             [
-                FatoColetado.Criar(
-                    declaraRenda, 1, "Você declara renda?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null,
-                    classificacaoProtecao: "PESSOAL", etapaCodigo: FormularioDeTeste.Secao, finalidade: FinalidadeFormulario.Inscricao, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
+                FatoColetadoDeTeste.Coletando(declaraRenda, 1)
+                    .ComRotulo("Você declara renda?")
+                    .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                    .NaSecao(FormularioDeTeste.Secao)
+                    .DaFinalidade(FinalidadeFormulario.Inscricao)
+                    .Construir(),
             ]);
         Guid fase = processo.CronogramaFases.Single().Id;
         DefinirDocumentos(processo, fase, familia, declaraRenda);

@@ -90,16 +90,26 @@ public sealed class DesativacaoNoCatalogoTests
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirItens(
-            [FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+            [FatoColetadoDeTeste.Coletando("COR_RACA", 0)
+                .ComRotulo("Cor ou raça")
+                .DoTipo(TipoRenderizacao.SelecaoUnica)
+                .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                .Construir()], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
         Dictionary<string, FatoCandidatoView> catalogo = Catalogo(CorRaca());
 
         ResolvedorValoresSelecionaveisCongelados.Resolver(processo, catalogo).Value!["COR_RACA"]!
             .Select(static v => v.Codigo).Should().Equal("BRANCA", "PARDA");
 
         processo.DefinirItens(
-            [FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-             FatoColetado.Criar("BAIXA_RENDA", 1, "Baixa renda", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca,
-                 [CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+            [FatoColetadoDeTeste.Coletando("COR_RACA", 0)
+                .ComRotulo("Cor ou raça")
+                .DoTipo(TipoRenderizacao.SelecaoUnica)
+                .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                .Construir(),
+             FatoColetadoDeTeste.Coletando("BAIXA_RENDA", 1)
+                 .ComRotulo("Baixa renda")
+                 .ExibidoQuando(ExibicaoDeTeste.Quando("COR_RACA", Operador.Igual, "PRETA"))
+                 .Construir()], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
         catalogo["BAIXA_RENDA"] = new FatoCandidatoView(
             Guid.CreateVersion7(), "BAIXA_RENDA", "Baixa renda", "Descrição do fato.", "BOOLEANO", "DECLARADO", "ESCALAR",
             null, "INSCRICAO", "CAMPO_FORMULARIO:BAIXA_RENDA", null, null, true, "PESSOAL", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);

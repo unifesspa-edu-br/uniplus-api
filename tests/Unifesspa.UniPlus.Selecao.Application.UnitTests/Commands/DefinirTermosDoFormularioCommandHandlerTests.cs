@@ -76,7 +76,11 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirItens(
-            [FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!], FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+            [FatoColetadoDeTeste.Coletando("COR_RACA", 0)
+                .ComRotulo("Cor ou raça")
+                .DoTipo(TipoRenderizacao.SelecaoUnica)
+                .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                .Construir()], FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
         return processo;
     }
 
@@ -90,8 +94,16 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
         {
             processo.DefinirItens(
                 [
-                    FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-                    FatoColetado.Criar("DATA_NASCIMENTO", 1, "Data de nascimento", TipoRenderizacao.Data, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
+                    FatoColetadoDeTeste.Coletando("COR_RACA", 0)
+                        .ComRotulo("Cor ou raça")
+                        .DoTipo(TipoRenderizacao.SelecaoUnica)
+                        .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                        .Construir(),
+                    FatoColetadoDeTeste.Coletando("DATA_NASCIMENTO", 1)
+                        .ComRotulo("Data de nascimento")
+                        .DoTipo(TipoRenderizacao.Data)
+                        .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                        .Construir(),
                 ], FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
         }
 

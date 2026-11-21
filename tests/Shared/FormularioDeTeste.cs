@@ -72,11 +72,10 @@ internal static class FormularioDeTeste
     /// </summary>
     public static IReadOnlyList<FatoColetado> DadosBasicosDeAntesDosDadosDeGenero() =>
     [
-        .. DadosBasicos(["SEXO_CIVIL", "IDENTIDADE_GENERO", "ORIENTACAO_SEXUAL"]).Select(static (fato, ordem) => FatoColetado.Criar(
-            fato.FatoCodigo, ordem, fato.Rotulo, fato.TipoRenderizacao, fato.Obrigatoriedade,
-            [.. fato.Precondicoes.Select(static c => CondicaoPrecondicaoFato.Criar(c.Clausula, c.Fato, c.Operador, c.Valor).Value!)],
-            fato.ClassificacaoProtecao, ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoDoFatoDeTeste.Descricao, fato.OrigemValores, ConjuntoBasicoDaInscricao.CodigoDaSecao, formato: fato.Formato,
-            ajuda: fato.Ajuda, pedirConfirmacao: fato.PedirConfirmacao, restricoes: fato.Restricoes, impedimento: fato.Impedimento).Value!),
+        .. DadosBasicos(["SEXO_CIVIL", "IDENTIDADE_GENERO", "ORIENTACAO_SEXUAL"]).Select(static (fato, ordem) => FatoColetadoDeTeste.Como(fato)
+            .NaOrdem(ordem)
+            .NaSecao(ConjuntoBasicoDaInscricao.CodigoDaSecao)
+            .Construir()),
     ];
 
     /// <summary>Os itens que não são do conjunto básico, que o formulário de inscrição sempre coleta.</summary>
@@ -261,23 +260,18 @@ internal static class FormularioDeTeste
     private static FatoColetado NaSecaoReservada(FatoColetado fato) =>
         string.Equals(fato.EtapaCodigo, ConjuntoBasicoDaInscricao.CodigoDaSecao, StringComparison.Ordinal)
             ? fato
-            : FatoColetado.Criar(
-                fato.FatoCodigo, ConjuntoBasicoDaInscricao.Itens.Single(i => i.FatoCodigo == fato.FatoCodigo).Ordem, fato.Rotulo,
-                fato.TipoRenderizacao, fato.Obrigatoriedade,
-                [.. fato.Precondicoes.Select(static c => CondicaoPrecondicaoFato.Criar(c.Clausula, c.Fato, c.Operador, c.Valor).Value!)],
-                fato.ClassificacaoProtecao, ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoDoFatoDeTeste.Descricao,
-                fato.OrigemValores, ConjuntoBasicoDaInscricao.CodigoDaSecao, formato: fato.Formato, ajuda: fato.Ajuda,
-                pedirConfirmacao: fato.PedirConfirmacao, restricoes: fato.Restricoes, impedimento: fato.Impedimento).Value!;
+            : FatoColetadoDeTeste.Como(fato)
+                .NaOrdem(ConjuntoBasicoDaInscricao.Itens.Single(i => i.FatoCodigo == fato.FatoCodigo).Ordem)
+                .NaSecao(ConjuntoBasicoDaInscricao.CodigoDaSecao)
+                .Construir();
 
     private static FatoColetado NaSecao(FatoColetado fato, int deslocamento) =>
         fato.EtapaCodigo is not null && deslocamento == 0
             ? fato
-            : FatoColetado.Criar(
-                fato.FatoCodigo, fato.Ordem + deslocamento, fato.Rotulo, fato.TipoRenderizacao, fato.Obrigatoriedade,
-                [.. fato.Precondicoes.Select(static c => CondicaoPrecondicaoFato.Criar(c.Clausula, c.Fato, c.Operador, c.Valor).Value!)],
-                fato.ClassificacaoProtecao, ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoDoFatoDeTeste.Descricao,
-                fato.OrigemValores, fato.EtapaCodigo ?? Secao, formato: fato.Formato, ajuda: fato.Ajuda, pedirConfirmacao: fato.PedirConfirmacao,
-                restricoes: fato.Restricoes, impedimento: fato.Impedimento).Value!;
+            : FatoColetadoDeTeste.Como(fato)
+                .NaOrdem(fato.Ordem + deslocamento)
+                .NaSecao(fato.EtapaCodigo ?? Secao)
+                .Construir();
 
     private static GrupoColetado Deslocar(GrupoColetado grupo, int deslocamento) =>
         deslocamento == 0
@@ -316,17 +310,31 @@ internal static class FormularioDeTeste
     };
 
     /// <summary>O item básico na forma do domínio, a partir da entrada do conjunto básico.</summary>
-    private static FatoColetado Basico(FatoColetadoInput entrada)
-    {
-        Obrigatoriedade obrigatoriedade = EntradaDeRegras.Obrigatoriedade(
-            entrada.Obrigatoriedade, EntradaDeRegras.Predicado(entrada.PredicadoObrigatoriedade).Value)!;
-        CondicaoPrecondicaoFato[] precondicoes = [.. (entrada.Precondicao ?? []).SelectMany((clausula, indice) => clausula.Select(c =>
-            CondicaoPrecondicaoFato.Criar(indice, c.Fato, CatalogoDe<Operador>.Obter(c.Operador!), c.Valor).Value!))];
-        return FatoColetado.Criar(
-            entrada.FatoCodigo, entrada.Ordem, entrada.Rotulo, CatalogoDe<TipoRenderizacao>.Obter(entrada.TipoRenderizacao!), obrigatoriedade, precondicoes,
-            ClassificacaoDosFatos.GetValueOrDefault(entrada.FatoCodigo, "PESSOAL"), ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoDoFatoDeTeste.Descricao,
+    private static FatoColetado Basico(FatoColetadoInput entrada) =>
+        FatoColetadoDeTeste.Coletando(entrada.FatoCodigo, entrada.Ordem)
+            .ComRotulo(entrada.Rotulo)
+            .DoTipo(CatalogoDe<TipoRenderizacao>.Obter(entrada.TipoRenderizacao!))
+            .ComObrigatoriedade(ObrigatoriedadeDaEntrada(entrada))
+            .ExibidoQuando(ExibicaoDaEntrada(entrada))
+            .ComCopia(CopiaDoCatalogoDoBasico(entrada))
+            .NaSecao(entrada.EtapaCodigo)
+            .ComAjuda(entrada.Ajuda)
+            .ComRestricoes([.. (entrada.Restricoes ?? []).Select(static r => EntradaDeRegras.Restricao(r).Value!)])
+            .Construir();
+
+    private static Obrigatoriedade ObrigatoriedadeDaEntrada(FatoColetadoInput entrada) =>
+        EntradaDeRegras.Obrigatoriedade(entrada.Obrigatoriedade, EntradaDeRegras.Predicado(entrada.PredicadoObrigatoriedade).Value)!;
+
+    private static CopiaDoItemNoCatalogo CopiaDoCatalogoDoBasico(FatoColetadoInput entrada) =>
+        ProtecaoDoFatoDeTeste.Copia(
+            ClassificacaoDosFatos.GetValueOrDefault(entrada.FatoCodigo, "PESSOAL"),
             entrada.FatoCodigo.EndsWith("_UF", StringComparison.Ordinal) ? Unifesspa.UniPlus.Selecao.Domain.Enums.OrigemValoresColeta.UnidadesFederativas : default,
-            entrada.EtapaCodigo, formato: FormatoDosTextos.GetValueOrDefault(entrada.FatoCodigo), ajuda: entrada.Ajuda,
-            restricoes: [.. (entrada.Restricoes ?? []).Select(static r => EntradaDeRegras.Restricao(r).Value!)]).Value!;
-    }
+            FormatoDosTextos.GetValueOrDefault(entrada.FatoCodigo));
+
+    private static PredicadoDnf? ExibicaoDaEntrada(FatoColetadoInput entrada) =>
+        entrada.Precondicao is not { Count: > 0 } clausulas
+            ? null
+            : PredicadoDnf.CriarDeCondicoesAgrupadas(
+                [.. clausulas.SelectMany((clausula, indice) => clausula.Select(c =>
+                    (indice, CondicaoDnf.Criar(c.Fato, CatalogoDe<Operador>.Obter(c.Operador!), c.Valor).Value!)))]).Value;
 }

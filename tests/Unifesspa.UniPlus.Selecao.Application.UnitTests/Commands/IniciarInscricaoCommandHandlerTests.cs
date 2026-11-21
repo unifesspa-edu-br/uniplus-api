@@ -186,9 +186,12 @@ public sealed class IniciarInscricaoCommandHandlerTests
     }
 
     private static FatoColetado Fato(string codigo, int ordem, string rotulo, Obrigatoriedade obrigatoriedade, string classificacao) =>
-        FatoColetado.Criar(
-            codigo, ordem, rotulo, TipoRenderizacao.Texto, obrigatoriedade, null, classificacaoProtecao: classificacao, formato: "LIVRE",
-            hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, ordem)
+            .ComRotulo(rotulo)
+            .DeTexto("LIVRE")
+            .ComObrigatoriedade(obrigatoriedade)
+            .ComClassificacao(classificacao)
+            .Construir();
 
     private static GrupoColetado GrupoComDocumento() => GrupoColetado.Criar(
         "COMPOSICAO_FAMILIAR", 0, etapaCodigo: null, "Composição familiar",

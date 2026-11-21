@@ -46,10 +46,11 @@ public sealed class SubmeterInscricaoRespostasCondicionaisTests
     }
 
     /// <summary>Um texto opcional que só aparece com <paramref name="pergunta"/> respondida "sim".</summary>
-    private static FatoColetado SoComSim(string fato, int ordem, string pergunta) => FatoColetado.Criar(
-        fato, ordem, fato, TipoRenderizacao.Texto, Obrigatoriedade.Nunca,
-        [CondicaoPrecondicaoFato.Criar(0, pergunta, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!],
-        classificacaoProtecao: "SENSIVEL", formato: "LIVRE", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+    private static FatoColetado SoComSim(string fato, int ordem, string pergunta) => FatoColetadoDeTeste.Coletando(fato, ordem)
+        .DeTexto("LIVRE")
+        .ExibidoQuando(ExibicaoDeTeste.Quando(pergunta, Operador.Igual, true))
+        .ComClassificacao("SENSIVEL")
+        .Construir();
 
     [Fact(DisplayName = "A resposta ao item que outra resposta esconde é descartada no envio: não fica gravada nem sai no comprovante, e o envio passa")]
     public async Task Handle_RespostaDeItemOculto_EDescartadaSemRecusar()
@@ -148,7 +149,7 @@ public sealed class SubmeterInscricaoRespostasCondicionaisTests
         "DEPENDENTES", 2, FormularioDeTeste.Secao, "Dependentes", minimo: 0, maximo: null,
         PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("TEM_DEPENDENTES", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!,
         Obrigatoriedade.Nunca,
-        [FatoColetado.Criar("NOME_DEPENDENTE", 0, "Nome", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", formato: "LIVRE", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!],
+        [FatoColetadoDeTeste.Coletando("NOME_DEPENDENTE", 0).ComRotulo("Nome").DeTexto("LIVRE").ComObrigatoriedade(Obrigatoriedade.Sempre).Construir()],
         FinalidadeFormulario.Inscricao).Value!;
 
     private static GrupoColetado GrupoDeComposicao() => GrupoColetado.Criar(

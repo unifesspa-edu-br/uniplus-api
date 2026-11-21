@@ -123,9 +123,12 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
         EtapaProcesso.Criar(
             new IdentificacaoDaEtapa(Nome: nome, Carater: carater, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: ordem, FaseCodigo: faseCodigo),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: peso, NotaMinima: notaMinima, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
-    internal static FatoColetado FatoDeOpcaoDeTeste() => FatoColetado.Criar(
-        "FATO_OPCAO_DE_TESTE", 0, "Fato de opção do processo", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
-        origemValores: OrigemValoresColeta.OpcoesDoProcesso, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+    internal static FatoColetado FatoDeOpcaoDeTeste() => FatoColetadoDeTeste.Coletando("FATO_OPCAO_DE_TESTE", 0)
+        .ComRotulo("Fato de opção do processo")
+        .DoTipo(TipoRenderizacao.SelecaoUnica)
+        .ComObrigatoriedade(Obrigatoriedade.Sempre)
+        .ComOrigem(OrigemValoresColeta.OpcoesDoProcesso)
+        .Construir();
 
     internal static OpcaoDeclaradaFato Opcao(string codigo, int ordem = 0) =>
         OpcaoDeclaradaFato.Criar("FATO_OPCAO_DE_TESTE", codigo, $"Opção {codigo}", ordem).Value!;

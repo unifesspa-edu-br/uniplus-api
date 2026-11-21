@@ -239,9 +239,6 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
 
     // ── Grafo de dependência conjunto a partir da configuração do agregado (Story #928, §6) ────────
 
-    private static CondicaoPrecondicaoFato Precond(string fato) =>
-        CondicaoPrecondicaoFato.Criar(1, fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!;
-
     private static ConfiguracaoDerivacaoFato DerivadoDe(string codigo, params string[] citados) =>
         ConfiguracaoDerivacaoFato.Criar(codigo,
         [
@@ -256,8 +253,11 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirItens(
         [
-            FatoColetado.Criar("PCD", 0, "PCD", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-            FatoColetado.Criar("CONCORRER_PCD", 1, "CONCORRER_PCD", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, [Precond("PCD")], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
+            FatoColetadoDeTeste.Coletando("PCD", 0).DoTipo(TipoRenderizacao.SelecaoUnica).Construir(),
+            FatoColetadoDeTeste.Coletando("CONCORRER_PCD", 1)
+                .DoTipo(TipoRenderizacao.SelecaoUnica)
+                .ExibidoQuando(ExibicaoDeTeste.Quando("PCD", Operador.Igual, true))
+                .Construir(),
         ]).IsSuccess.Should().BeTrue();
         OfertarModalidades(processo, ("AC", PredicadoDnf.SemClausula), ("AC_PCD", PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(0, CondicaoDnf.Criar("CONCORRER_PCD", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!));

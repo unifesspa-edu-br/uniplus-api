@@ -64,9 +64,13 @@ internal static class ProcessosDeInscricaoDeTeste
     /// </summary>
     internal static ProcessoSeletivo ProcessoQueDerivaAModalidade(string nome)
     {
-        FatoColetado concorrerPcd = FatoColetado.Criar(
-            "CONCORRER_PCD", 1, "Você quer concorrer às vagas para pessoa com deficiência?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null,
-            classificacaoProtecao: "SENSIVEL", etapaCodigo: FormularioDeTeste.Secao, finalidade: FinalidadeFormulario.Inscricao, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetado concorrerPcd = FatoColetadoDeTeste.Coletando("CONCORRER_PCD", 1)
+            .ComRotulo("Você quer concorrer às vagas para pessoa com deficiência?")
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComClassificacao("SENSIVEL")
+            .NaSecao(FormularioDeTeste.Secao)
+            .DaFinalidade(FinalidadeFormulario.Inscricao)
+            .Construir();
         ModalidadeSelecionada ampla = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
             null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, Clausulas([("CONCORRER_PCD", true)]), null, "Res. Unifesspa 532/2021",
@@ -76,9 +80,12 @@ internal static class ProcessosDeInscricaoDeTeste
 
     internal static ProcessoSeletivo ProcessoComFator(string nome, bool comIsencao = false)
     {
-        FatoColetado pedeOFator = FatoColetado.Criar(
-            "PEDE_O_FATOR", 1, "Você solicita o Fator de Atenuação?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null,
-            classificacaoProtecao: "PESSOAL", etapaCodigo: FormularioDeTeste.Secao, finalidade: FinalidadeFormulario.Inscricao, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetado pedeOFator = FatoColetadoDeTeste.Coletando("PEDE_O_FATOR", 1)
+            .ComRotulo("Você solicita o Fator de Atenuação?")
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .NaSecao(FormularioDeTeste.Secao)
+            .DaFinalidade(FinalidadeFormulario.Inscricao)
+            .Construir();
         return NovoProcessoDeInscricao(nome, camposAdicionais: [pedeOFator], fatoDoFator: "PEDE_O_FATOR", comIsencao: comIsencao);
     }
 
@@ -89,20 +96,30 @@ internal static class ProcessosDeInscricaoDeTeste
     internal static ProcessoSeletivo ProcessoComUmCampo(string nome, string fato, Obrigatoriedade obrigatoriedade) =>
         NovoProcessoDeInscricao(nome, camposAdicionais:
         [
-            FatoColetado.Criar(
-                fato, 1, fato, TipoRenderizacao.Texto, obrigatoriedade, null,
-                classificacaoProtecao: "PESSOAL", etapaCodigo: FormularioDeTeste.Secao, formato: "LIVRE", finalidade: FinalidadeFormulario.Inscricao, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
+            FatoColetadoDeTeste.Coletando(fato, 1)
+                .DeTexto("LIVRE")
+                .ComObrigatoriedade(obrigatoriedade)
+                .NaSecao(FormularioDeTeste.Secao)
+                .DaFinalidade(FinalidadeFormulario.Inscricao)
+                .Construir(),
         ]);
 
     /// <summary>O processo que deriva a modalidade da resposta a CONCORRER_PCD e ainda pede <paramref name="fato"/>, obrigatório.</summary>
     internal static ProcessoSeletivo ProcessoQueDerivaAModalidadeComUmCampo(string nome, string fato)
     {
-        FatoColetado concorrerPcd = FatoColetado.Criar(
-            "CONCORRER_PCD", 1, "Você quer concorrer às vagas para pessoa com deficiência?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null,
-            classificacaoProtecao: "SENSIVEL", etapaCodigo: FormularioDeTeste.Secao, finalidade: FinalidadeFormulario.Inscricao, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
-        FatoColetado pedido = FatoColetado.Criar(
-            fato, 2, fato, TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null,
-            classificacaoProtecao: "PESSOAL", etapaCodigo: FormularioDeTeste.Secao, formato: "LIVRE", finalidade: FinalidadeFormulario.Inscricao, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetado concorrerPcd = FatoColetadoDeTeste.Coletando("CONCORRER_PCD", 1)
+            .ComRotulo("Você quer concorrer às vagas para pessoa com deficiência?")
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComClassificacao("SENSIVEL")
+            .NaSecao(FormularioDeTeste.Secao)
+            .DaFinalidade(FinalidadeFormulario.Inscricao)
+            .Construir();
+        FatoColetado pedido = FatoColetadoDeTeste.Coletando(fato, 2)
+            .DeTexto("LIVRE")
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .NaSecao(FormularioDeTeste.Secao)
+            .DaFinalidade(FinalidadeFormulario.Inscricao)
+            .Construir();
         ModalidadeSelecionada ampla = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
             null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, Clausulas([("CONCORRER_PCD", true)]), null, "Res. Unifesspa 532/2021",
@@ -186,9 +203,12 @@ internal static class ProcessosDeInscricaoDeTeste
     {
         GrupoColetado composicaoFamiliar = ComposicaoFamiliar();
 
-        FatoColetado rg = FatoColetado.Criar(
-            "RG_NUMERO", 0, "RG", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null,
-            classificacaoProtecao: "IDENTIFICADOR", formato: "LIVRE", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetado rg = FatoColetadoDeTeste.Coletando("RG_NUMERO", 0)
+            .ComRotulo("RG")
+            .DeTexto("LIVRE")
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComClassificacao("IDENTIFICADOR")
+            .Construir();
         processo.DefinirItens(
             [rg, .. camposAdicionais ?? []],
             grupos: [composicaoFamiliar]).IsSuccess.Should().BeTrue();
@@ -205,18 +225,22 @@ internal static class ProcessosDeInscricaoDeTeste
                 .IsSuccess.Should().BeTrue();
             processo.DefinirFatosColetados(
                     FinalidadeFormulario.IsencaoTaxa,
-                    [FatoColetado.Criar(
-                        "BOLSISTA", 0, "Bolsista", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null,
-                        etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!])
+                    [FatoColetadoDeTeste.Coletando("BOLSISTA", 0)
+                        .ComRotulo("Bolsista")
+                        .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                        .NaSecao(FormularioDeTeste.Secao)
+                        .Construir()])
                 .IsSuccess.Should().BeTrue();
         }
     }
 
 
-    private static FatoColetado CampoTextual(string codigo, int ordem, string nome, string protecao) => FatoColetado.Criar(
-        codigo, ordem, nome, TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null,
-        classificacaoProtecao: protecao, formato: "LIVRE", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal,
-        finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+    private static FatoColetado CampoTextual(string codigo, int ordem, string nome, string protecao) => FatoColetadoDeTeste.Coletando(codigo, ordem)
+        .ComRotulo(nome)
+        .DeTexto("LIVRE")
+        .ComObrigatoriedade(Obrigatoriedade.Sempre)
+        .ComClassificacao(protecao)
+        .Construir();
 
 
     private static ProcessoSeletivo ProcessoComAtendimento(string nome, AtendimentoEspecializado? atendimento)

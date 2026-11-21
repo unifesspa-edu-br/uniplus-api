@@ -168,7 +168,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
     public async Task Handle_CitaOEgressoSuprido_Aceita()
     {
         ProcessoSeletivo processo = ProcessoBase();
-        processo.DefinirItens([FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!])
+        processo.DefinirItens([FatoColetadoDeTeste.Coletando("COR_RACA", 0).ComRotulo("Cor ou raça").DoTipo(TipoRenderizacao.SelecaoUnica).Construir()])
             .IsSuccess.Should().BeTrue();
         processo.DefinirDistribuicaoVagas(
             [ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),

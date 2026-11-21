@@ -183,10 +183,11 @@ public sealed class ComprovanteDoTitularTests
 
     private static GrupoColetado GrupoDeComposicao()
     {
-        FatoColetado parentesco = FatoColetado.Criar(
-            "PARENTESCO", 0, "Parentesco", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", formato: "LIVRE",
-            hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade,
-            descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetado parentesco = FatoColetadoDeTeste.Coletando("PARENTESCO", 0)
+            .ComRotulo("Parentesco")
+            .DeTexto("LIVRE")
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .Construir();
         return GrupoColetado.Criar(
             "COMPOSICAO_FAMILIAR", 1, FormularioDeTeste.Secao, "Composição familiar", minimo: 1, maximo: null, exibicao: null,
             Obrigatoriedade.Nunca, [parentesco, Texto("NOME_MEMBRO", "Nome do membro", 1)],

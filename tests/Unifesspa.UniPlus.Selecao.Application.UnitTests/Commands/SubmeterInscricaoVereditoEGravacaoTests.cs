@@ -198,9 +198,10 @@ public sealed class SubmeterInscricaoVereditoEGravacaoTests
             finalidade: FinalidadeFormulario.IsencaoTaxa).IsSuccess.Should().BeTrue();
     }
 
-    private static FatoColetado RendaDeclarada() => FatoColetado.Criar(
-        "RENDA_DECLARADA", 0, "Renda declarada", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null,
-        classificacaoProtecao: "PESSOAL", formato: "LIVRE", finalidade: FinalidadeFormulario.IsencaoTaxa,
-        hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade,
-        descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+    private static FatoColetado RendaDeclarada() => FatoColetadoDeTeste.Coletando("RENDA_DECLARADA", 0)
+        .ComRotulo("Renda declarada")
+        .DeTexto("LIVRE")
+        .ComObrigatoriedade(Obrigatoriedade.Sempre)
+        .DaFinalidade(FinalidadeFormulario.IsencaoTaxa)
+        .Construir();
 }

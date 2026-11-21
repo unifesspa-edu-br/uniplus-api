@@ -124,8 +124,11 @@ public sealed class ConferenciaDosEixosDosItensPublicadosTests
 
     private static FatoColetado Coletado(
         TipoRenderizacao tipo = TipoRenderizacao.Booleano, string classificacao = "PESSOAL", string rotulo = "Tem renda?", string? ajuda = null, string fato = Fato) =>
-        FatoColetado.Criar(
-            fato, 0, rotulo, tipo, Obrigatoriedade.Sempre, null,
-            classificacaoProtecao: classificacao, ajuda: ajuda, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal,
-            finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(fato, 0)
+            .ComRotulo(rotulo)
+            .DoTipo(tipo)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComClassificacao(classificacao)
+            .ComAjuda(ajuda)
+            .Construir();
 }

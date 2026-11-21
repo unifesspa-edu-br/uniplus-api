@@ -62,10 +62,7 @@ public sealed class CaminhoDasRecusasDeColetabilidadeTests
     private static Dictionary<string, FatoCandidatoView> CatalogoSemNada() => new(StringComparer.Ordinal);
 
     private static FatoColetado Item(string codigo, int ordem) =>
-        FatoColetado.Criar(
-            codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL",
-            hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade,
-            descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, ordem).ComObrigatoriedade(Obrigatoriedade.Sempre).Construir();
 
     private static GrupoColetado Grupo(string codigo, int ordem, params FatoColetado[] campos) =>
         GrupoColetado.Criar(codigo, ordem, FormularioDeTeste.Secao, "Composição familiar", 0, 5, null, Obrigatoriedade.Nunca, campos).Value!;

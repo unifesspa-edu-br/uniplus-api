@@ -219,26 +219,35 @@ internal static class CorpusEnvelopeProcessoRico
         ], permutar), grupos: [ComposicaoFamiliar(permutar)]).IsSuccess.Should().BeTrue();
 
     internal static FatoColetado FatoDeRenda() =>
-        FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, [
-            CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
-        ], impedimento: new Impedimento(
-            PredicadoDnf.CriarDeCondicoesAgrupadas(
-            [
-                (0, CondicaoDnf.Criar("RENDA", Operador.Igual, JsonSerializer.SerializeToElement("ACIMA_10_SM")).Value!),
-                (0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!),
-            ]).Value!,
-            "A renda declarada está acima do limite deste processo."), classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando("RENDA", 1)
+            .ComRotulo("Faixa de renda familiar")
+            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ExibidoQuando(ExibicaoDeTeste.Quando("COR_RACA", Operador.Igual, "PRETA"))
+            .ComImpedimento(new Impedimento(
+                PredicadoDnf.CriarDeCondicoesAgrupadas(
+                [
+                    (0, CondicaoDnf.Criar("RENDA", Operador.Igual, JsonSerializer.SerializeToElement("ACIMA_10_SM")).Value!),
+                    (0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!),
+                ]).Value!,
+                "A renda declarada está acima do limite deste processo."))
+            .Construir();
 
     // A faixa de data com os dois tipos de limite: uma data fixa e o dia do envio deslocado.
     internal static FatoColetado FatoDeConclusaoDoEnsinoMedio() =>
-        FatoColetado.Criar("CONCLUSAO_ENSINO_MEDIO", 4, "Data de conclusão do ensino médio", TipoRenderizacao.Data, Obrigatoriedade.Sempre, null,
-            classificacaoProtecao: "PESSOAL",
-            restricoes: [new FaixaDeData(LimiteDeData.Fixo(new DateOnly(1950, 1, 1)), LimiteDeData.NoEnvio(anos: 0, dias: -1))], hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando("CONCLUSAO_ENSINO_MEDIO", 4)
+            .ComRotulo("Data de conclusão do ensino médio")
+            .DoTipo(TipoRenderizacao.Data)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComRestricoes(new FaixaDeData(LimiteDeData.Fixo(new DateOnly(1950, 1, 1)), LimiteDeData.NoEnvio(anos: 0, dias: -1)))
+            .Construir();
 
     // A opção pelas vagas de escola pública, de que a opção pelas cotas da lei depende.
     internal static FatoColetado FatoDeOpcaoPelaEscolaPublica() =>
-        FatoColetado.Criar(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 5, "Deseja concorrer às vagas de escola pública?",
-            TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 5)
+            .ComRotulo("Deseja concorrer às vagas de escola pública?")
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .Construir();
 
     // Formulário de inscrição (Story #559, UNI-REQ-0086): título e um termo com exibição e
     // obrigatoriedade condicionais — o decoder tem de remontar o termo inteiro.

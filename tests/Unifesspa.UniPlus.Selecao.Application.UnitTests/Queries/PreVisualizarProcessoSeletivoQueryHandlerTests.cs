@@ -150,12 +150,12 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
     {
         const string Mensagem = "Quem tem vínculo com o PARFOR não pode se inscrever neste processo.";
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PSIQ 2027");
-        FatoColetado parfor = FatoColetado.Criar(
-            "VINCULO_PARFOR", FormularioDeTeste.PrimeiraOrdemDeInscricao, "Vínculo com o PARFOR", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null,
-            etapaCodigo: FormularioDeTeste.Secao,
-            impedimento: new Impedimento(
-                PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("VINCULO_PARFOR", Operador.Igual, Json(true)).Value!)]).Value!,
-                Mensagem), classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetado parfor = FatoColetadoDeTeste.Coletando("VINCULO_PARFOR", FormularioDeTeste.PrimeiraOrdemDeInscricao)
+            .ComRotulo("Vínculo com o PARFOR")
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .NaSecao(FormularioDeTeste.Secao)
+            .ComImpedimento(new Impedimento(PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("VINCULO_PARFOR", Operador.Igual, Json(true)).Value!)]).Value!, Mensagem))
+            .Construir();
         processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [.. FormularioDeTeste.DadosBasicos(), parfor])
             .IsSuccess.Should().BeTrue();
 
@@ -259,8 +259,15 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
             PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("COR_RACA", Operador.Em, Json(new[] { "PRETA", "PARDA", "INDIGENA" })).Value!)]).Value!,
             Obrigatoriedade.Sempre,
             [
-                FatoColetado.Criar("CATEGORIA_RENDA", 0, "Categoria de renda", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-                FatoColetado.Criar("MENOR_SOB_GUARDA", 1, "Menor sob guarda", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
+                FatoColetadoDeTeste.Coletando("CATEGORIA_RENDA", 0)
+                    .ComRotulo("Categoria de renda")
+                    .DoTipo(TipoRenderizacao.SelecaoUnica)
+                    .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                    .Construir(),
+                FatoColetadoDeTeste.Coletando("MENOR_SOB_GUARDA", 1)
+                    .ComRotulo("Menor sob guarda")
+                    .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                    .Construir(),
             ],
             FinalidadeFormulario.Habilitacao).Value!;
         processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [], [composicao]).IsSuccess.Should().BeTrue();

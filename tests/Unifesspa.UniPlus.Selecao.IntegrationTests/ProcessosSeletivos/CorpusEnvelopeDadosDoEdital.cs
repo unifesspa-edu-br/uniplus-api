@@ -139,13 +139,23 @@ internal static class CorpusEnvelopeDadosDoEdital
             [(0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!)]).Value!,
         Obrigatoriedade.Nunca,
         Ordem([
-            FatoColetado.Criar("TRABALHADOR_RURAL", 0, "Trabalha no campo", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
+            FatoColetadoDeTeste.Coletando("TRABALHADOR_RURAL", 0)
+                .ComRotulo("Trabalha no campo")
+                .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                .Construir(),
             // Classificação Identificador só para provar que o codec a carrega também em subitem de
             // grupo — não tem relação com o conteúdo real do fato (#1857).
-            FatoColetado.Criar("MENOR_SOB_GUARDA", 1, "Menor sob guarda", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, [
-                CondicaoPrecondicaoFato.Criar(0, "TRABALHADOR_RURAL", Operador.Igual, JsonSerializer.SerializeToElement(false)).Value!,
-            ], classificacaoProtecao: "IDENTIFICADOR", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-            FatoColetado.Criar(CandidatoComoMembro.FatoParentesco, 2, "Parentesco", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
+            FatoColetadoDeTeste.Coletando("MENOR_SOB_GUARDA", 1)
+                .ComRotulo("Menor sob guarda")
+                .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                .ExibidoQuando(ExibicaoDeTeste.Quando("TRABALHADOR_RURAL", Operador.Igual, false))
+                .ComClassificacao("IDENTIFICADOR")
+                .Construir(),
+            FatoColetadoDeTeste.Coletando(CandidatoComoMembro.FatoParentesco, 2)
+                .ComRotulo("Parentesco")
+                .DoTipo(TipoRenderizacao.SelecaoUnica)
+                .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                .Construir(),
         ], permutar),
         incluiCandidato: true).Value!;
 

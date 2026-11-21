@@ -57,7 +57,7 @@ public sealed class OfertaVaziaNoRascunhoTests
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Oferta vazia");
         processo.DefinirItens(
-            [FatoColetado.Criar(Fato, 0, "Condição de atendimento", TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+            [FatoColetadoDeTeste.Coletando(Fato, 0).ComRotulo("Condição de atendimento").DoTipo(TipoRenderizacao.SelecaoMultipla).Construir()], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
 
         return processo;
     }

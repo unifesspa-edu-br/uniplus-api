@@ -323,16 +323,16 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
             bancasRequeridas: []).Value!;
 
     private static FatoColetado Item(string codigo, int ordem) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, ordem).ComObrigatoriedade(Obrigatoriedade.Sempre).NaSecao(FormularioDeTeste.Secao).Construir();
 
     private static FatoColetado Campo(string codigo, int ordem) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, ordem).ComObrigatoriedade(Obrigatoriedade.Sempre).Construir();
 
     private static FatoColetado ItemQueCita(string codigo, int ordem, string citado) =>
-        FatoColetado.Criar(
-            codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Nunca,
-            [CondicaoPrecondicaoFato.Criar(0, citado, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!],
-            etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, ordem)
+            .ExibidoQuando(ExibicaoDeTeste.Quando(citado, Operador.Igual, true))
+            .NaSecao(FormularioDeTeste.Secao)
+            .Construir();
 
     private static GrupoColetado Familia(int ordem, params string[] campos) =>
         GrupoColetado.Criar(

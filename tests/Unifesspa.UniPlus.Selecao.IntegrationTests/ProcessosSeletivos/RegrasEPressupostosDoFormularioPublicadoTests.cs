@@ -133,10 +133,15 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
     {
         processo.DefinirItens(
         [
-            FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-            FatoColetado.Criar("ATENDIMENTO_NO_MUNICIPIO", 1, "Deseja atendimento no município?", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, [
-                CondicaoPrecondicaoFato.Criar(0, "MUNICIPIO_RESIDENCIA", Operador.Igual, JsonSerializer.SerializeToElement("1504208")).Value!,
-            ], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
+            FatoColetadoDeTeste.Coletando("COR_RACA", 0)
+                .ComRotulo("Cor ou raça")
+                .DoTipo(TipoRenderizacao.SelecaoUnica)
+                .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                .Construir(),
+            FatoColetadoDeTeste.Coletando("ATENDIMENTO_NO_MUNICIPIO", 1)
+                .ComRotulo("Deseja atendimento no município?")
+                .ExibidoQuando(ExibicaoDeTeste.Quando("MUNICIPIO_RESIDENCIA", Operador.Igual, "1504208"))
+                .Construir(),
         ]).IsSuccess.Should().BeTrue();
     }
 
@@ -198,12 +203,16 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
     {
         Result itens = processo.DefinirItens(
         [
-            FatoColetado.Criar("CERTIFICADO_EMITIDO", 0, "Certificado emitido", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, [
-                CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
-            ], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-            FatoColetado.Criar("DECLARACAO_MAIORIDADE", 1, "Declaração de maioridade", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, [
-                CondicaoPrecondicaoFato.Criar(0, "FAIXA_ETARIA", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!,
-            ], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
+            FatoColetadoDeTeste.Coletando("CERTIFICADO_EMITIDO", 0)
+                .ComRotulo("Certificado emitido")
+                .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                .ExibidoQuando(ExibicaoDeTeste.Quando("COR_RACA", Operador.Igual, "PRETA"))
+                .Construir(),
+            FatoColetadoDeTeste.Coletando("DECLARACAO_MAIORIDADE", 1)
+                .ComRotulo("Declaração de maioridade")
+                .ComObrigatoriedade(Obrigatoriedade.Sempre)
+                .ExibidoQuando(ExibicaoDeTeste.Quando("FAIXA_ETARIA", Operador.MaiorIgual, 18))
+                .Construir(),
         ], finalidade: FinalidadeFormulario.Habilitacao);
         itens.IsSuccess.Should().BeTrue(itens.Error?.Message);
     }

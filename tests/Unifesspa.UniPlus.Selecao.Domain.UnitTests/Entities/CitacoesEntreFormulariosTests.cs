@@ -165,11 +165,9 @@ public sealed class CitacoesEntreFormulariosTests
     }
 
     private static FatoColetado ItemQueCitaOsDois() =>
-        FatoColetado.Criar(
-            "CONCORRER_EP", 0, "Concorrer", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca,
-            [
-                CondicaoPrecondicaoFato.Criar(0, "REGIME_DE_VAGA", Operador.Igual, JsonSerializer.SerializeToElement("AC")).Value!,
-                CondicaoPrecondicaoFato.Criar(0, "TEM_RENDA", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!,
-            ],
-            etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando("CONCORRER_EP", 0)
+            .ComRotulo("Concorrer")
+            .ExibidoQuando(ExibicaoDeTeste.QuandoTodas(("REGIME_DE_VAGA", Operador.Igual, "AC"), ("TEM_RENDA", Operador.Igual, true)))
+            .NaSecao(FormularioDeTeste.Secao)
+            .Construir();
 }

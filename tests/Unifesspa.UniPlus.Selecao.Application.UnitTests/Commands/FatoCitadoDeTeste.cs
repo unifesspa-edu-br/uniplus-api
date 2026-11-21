@@ -84,7 +84,5 @@ internal static class FatoCitadoDeTeste
     ];
 
     private static FatoColetado ItemColetado(string fato, int ordem, string rotulo, TipoRenderizacao tipo, Obrigatoriedade obrigatoriedade) =>
-        FatoColetado.Criar(
-            fato, ordem, rotulo, tipo, obrigatoriedade, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal,
-            finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(fato, ordem).ComRotulo(rotulo).DoTipo(tipo).ComObrigatoriedade(obrigatoriedade).Construir();
 }

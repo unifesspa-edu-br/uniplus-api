@@ -26,7 +26,7 @@ public sealed class ReconferenciaDasCopiasDoItemTests
         [.. CatalogoDoConjuntoBasico.Fatos.Select(f => f.Codigo == codigo ? altera(f) : f)];
 
     private static FatoColetado Texto(string codigo, int ordem, string formato) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null, "PESSOAL", formato: formato, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, ordem).DeTexto(formato).Construir();
 
     private static HashSet<string> Coletados(params string[] fatos) => new(fatos, StringComparer.Ordinal);
 
@@ -92,9 +92,11 @@ public sealed class ReconferenciaDasCopiasDoItemTests
     public void Aplicar_RestricaoDeOpcoesForaDoDominio_Recusa()
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Cópias do item", out _);
-        FatoColetado corRaca = FatoColetado.Criar(
-            "COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null, "PESSOAL",
-            restricoes: [new OpcoesPermitidas([new OpcoesCondicionadas(null, ["BRANCA", "PRETA"])])], hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetado corRaca = FatoColetadoDeTeste.Coletando("COR_RACA", 0)
+            .ComRotulo("Cor ou raça")
+            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .ComRestricoes(new OpcoesPermitidas([new OpcoesCondicionadas(null, ["BRANCA", "PRETA"])]))
+            .Construir();
         processo.DefinirItens([corRaca]).IsSuccess.Should().BeTrue();
         ReconferenciaDeTeste.Aplicar(processo, CatalogoDoConjuntoBasico.Fatos, null).IsSuccess.Should().BeTrue("o domínio atual tem os dois valores");
 
@@ -139,8 +141,10 @@ public sealed class ReconferenciaDasCopiasDoItemTests
         FatoCandidatoView temRenda = Fato("DESEJA_NOME_SOCIAL") with { Id = Guid.CreateVersion7(), Codigo = "TEM_RENDA", Nome = "Tem renda?", Binding = "CAMPO_FORMULARIO:TEM_RENDA" };
         PredicadoDnf quandoPreta = PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, System.Text.Json.JsonSerializer.SerializeToElement("PRETA")).Value!)]).Value!;
-        FatoColetado item = FatoColetado.Criar(
-            "TEM_RENDA", 100, "Tem renda?", TipoRenderizacao.Booleano, Obrigatoriedade.Quando(quandoPreta), null, "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetado item = FatoColetadoDeTeste.Coletando("TEM_RENDA", 100)
+            .ComRotulo("Tem renda?")
+            .ComObrigatoriedade(Obrigatoriedade.Quando(quandoPreta))
+            .Construir();
         Result definido = processo.DefinirItens([item]);
         definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
         IReadOnlyList<FatoCandidatoView> vigente = CatalogoDoConjuntoBasico.Com([temRenda]);
@@ -178,7 +182,7 @@ public sealed class ReconferenciaDasCopiasDoItemTests
         FatoColetado[] itens = [.. processo.FatosColetados.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao)];
         GrupoColetado grupo = GrupoColetado.Criar(
             "COMPOSICAO_FAMILIAR", itens.Max(static f => f.Ordem) + 1, itens.First().EtapaCodigo, "Composição familiar", 0, 10, quandoPreta, Obrigatoriedade.Nunca,
-            [FatoColetado.Criar("MENOR_SOB_GUARDA", 0, "Menor sob guarda", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!],
+            [FatoColetadoDeTeste.Coletando("MENOR_SOB_GUARDA", 0).ComRotulo("Menor sob guarda").Construir()],
             FinalidadeFormulario.Inscricao).Value!;
         Result definido = processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, itens, [grupo]);
         definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
@@ -208,7 +212,7 @@ public sealed class ReconferenciaDasCopiasDoItemTests
             Nome = "Situação extra",
             Binding = "CAMPO_FORMULARIO:SITUACAO_EXTRA",
         };
-        FatoColetado doOutroFormulario = FatoColetado.Criar("SITUACAO_EXTRA", 0, "Situação extra", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetado doOutroFormulario = FatoColetadoDeTeste.Coletando("SITUACAO_EXTRA", 0).ComRotulo("Situação extra").Construir();
         Result definido = processo.DefinirItens([doOutroFormulario], finalidade: FinalidadeFormulario.Habilitacao);
         definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
         IReadOnlyList<FatoCandidatoView> catalogo = [

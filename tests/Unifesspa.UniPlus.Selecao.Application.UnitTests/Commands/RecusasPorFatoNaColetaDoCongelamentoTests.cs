@@ -123,8 +123,5 @@ public sealed class RecusasPorFatoNaColetaDoCongelamentoTests
         FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     private static FatoColetado ItemDeSelecao(string codigo, int ordem) =>
-        FatoColetado.Criar(
-            codigo, ordem, codigo, TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL",
-            hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade,
-            descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, ordem).DoTipo(TipoRenderizacao.SelecaoUnica).ComObrigatoriedade(Obrigatoriedade.Sempre).Construir();
 }

@@ -30,14 +30,14 @@ public sealed class ProcessoSeletivoFatosColetadosTests
     private static ProcessoSeletivo NovoProcesso() =>
         ProcessoSeletivo.Criar("PS Coleta de Fatos", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
-    private static CondicaoPrecondicaoFato Cond(string fato) =>
-        CondicaoPrecondicaoFato.Criar(0, fato, Operador.Igual, Sim).Value!;
-
     private static FatoColetado Fato(string codigo, int ordem, params string[] cita) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, [.. cita.Select(Cond)], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, ordem)
+            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .ExibidoQuando(ExibicaoDeTeste.QuandoTodas([.. cita.Select(static c => (c, Operador.Igual, (object)true))]))
+            .Construir();
 
     private static FatoColetado Texto(string codigo, int ordem, string? formato) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", formato: formato, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, ordem).DeTexto(formato).Construir();
 
     [Fact(DisplayName = "A recópia do catálogo refaz a cópia do item novo e, no já coletado, só adota a descrição e o componente")]
     public void RecopiarItensDoCatalogo_RecopiaSoOQueNaoFoiColetado()
@@ -114,10 +114,9 @@ public sealed class ProcessoSeletivoFatosColetadosTests
     }
 
     private static FatoColetado ObrigatorioQuando(string codigo, int ordem, string citado, JsonElement? valor = null) =>
-        FatoColetado.Criar(
-            codigo, ordem, codigo, TipoRenderizacao.Booleano,
-            Obrigatoriedade.Quando(PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(citado, Operador.Igual, valor ?? Sim).Value!)]).Value!),
-            null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
+        FatoColetadoDeTeste.Coletando(codigo, ordem)
+            .ComObrigatoriedade(Obrigatoriedade.Quando(PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(citado, Operador.Igual, valor ?? Sim).Value!)]).Value!))
+            .Construir();
 
     [Fact(DisplayName = "Obrigatoriedade QUANDO que cita campo posterior é recusada, como a pré-condição")]
     public void ObrigatoriedadeCitaFatoPosterior_Recusada()
@@ -193,7 +192,10 @@ public sealed class ProcessoSeletivoFatosColetadosTests
     [Fact(DisplayName = "Fato citando a si mesmo é recusado na criação, antes de chegar ao grafo")]
     public void Autorreferencia_Recusada()
     {
-        Result<FatoColetado> resultado = FatoColetado.Criar("PCD", 0, "PCD", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, [Cond("PCD")], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao);
+        Result<FatoColetado> resultado = FatoColetadoDeTeste.Coletando("PCD", 0)
+            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .ExibidoQuando(ExibicaoDeTeste.Quando("PCD", Operador.Igual, true))
+            .Criar();
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ItemFormularioErrorCodes.RegraAutorreferente);
