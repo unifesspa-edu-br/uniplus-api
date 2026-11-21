@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Cronogra
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
@@ -132,13 +133,23 @@ public sealed class FaseDeclaradaTests
         fase.Atos.Produtos.Select(static p => p.Posicao).Should().Equal(0, 1, 2, 3);
     }
 
-    [Fact(DisplayName = "As bancas da fase dizem se a de análise de recursos foi declarada e onde cada uma está")]
+    [Fact(DisplayName = "As bancas da fase dizem onde cada uma está e com que papel julgam o recurso")]
     public void Bancas_DizemOndeEstaACadaUma()
     {
         FaseDeclarada fase = new ModeloDeFase("RECURSO", 1) { Bancas = [BancasDeTeste.DeRecursosDaFase()] }.Declarar();
 
-        fase.Bancas.TemBancaDeRecursos.Should().BeTrue();
         fase.Bancas.Declaradas.Should().ContainSingle().Which.Should().Match<BancaDeclarada>(
-            static banca => banca.Posicao == 0 && banca.Tipo.JulgaRecurso && banca.Regra != null);
+            static banca => banca.Posicao == 0 && banca.Tipo.JulgaAPrimeiraInstancia && banca.Regra != null);
+        fase.Bancas.BancasDaSegundaInstancia.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "As bancas da fase separam, pelo papel copiado e na posição declarada, as que julgam em 2ª instância")]
+    public void Bancas_SeparamAsDaSegundaInstanciaPeloPapel()
+    {
+        BancaRequerida daSegunda = BancasDeTeste.DaFase(TipoDeBanca.AnaliseDeRecursosDeSegundaInstancia);
+        FaseDeclarada fase = new ModeloDeFase("RECURSO", 1) { Bancas = [BancasDeTeste.DeRecursosDaFase(), daSegunda] }.Declarar();
+
+        fase.Bancas.BancasDaSegundaInstancia.Should().ContainSingle().Which.Should().Match<BancaDeclarada>(
+            static banca => banca.Posicao == 1 && banca.Tipo.JulgaASegundaInstancia && !banca.Tipo.JulgaAPrimeiraInstancia && banca.Tipo.JulgaRecurso);
     }
 }

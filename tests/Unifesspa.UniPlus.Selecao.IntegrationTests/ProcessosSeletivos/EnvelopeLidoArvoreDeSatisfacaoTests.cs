@@ -20,7 +20,7 @@ public sealed class EnvelopeLidoArvoreDeSatisfacaoTests
     [Fact(DisplayName = "Round-trip 1.3 — reidratar e recanonicalizar o processo de referência (exigência documental rica + metadadosFatos) reproduz os bytes")]
     public void Reidratar_ProcessoDeReferencia_ReproduzOsBytes()
     {
-        ProcessoSeletivo processo = EnvelopeDeReferencia.ProcessoDeReferencia(comBancaDeHomologacao: true);
+        ProcessoSeletivo processo = EnvelopeDeReferencia.ProcessoDeReferencia(comBancasExigidasNaPublicacao: true);
         EntradaCanonicalizacao entrada = EntradaDeReferencia(processo);
         SnapshotCanonico congelado = new EnvelopeCodec().Codificar(entrada);
         ConferirSchemaCorrente(congelado);

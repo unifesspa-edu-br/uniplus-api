@@ -124,7 +124,8 @@ internal static class ManifestoDeEditalSnapshotsECronograma
             ["OrigemId", "Codigo", "Nome", "Papel", "ExigeDuasOuMaisBancas", "EncerraRecursoNaPrimeiraInstancia", "TiposDeDecisaoJulgados"],
             [("AvaliaOMerito", "Derivada do papel — congelá-la duplicaria a fonte de verdade."),
              ("JulgaRecurso", "Derivada do papel — congelá-la duplicaria a fonte de verdade."),
-             ("JulgaAPrimeiraInstancia", "Derivada do papel — congelá-la duplicaria a fonte de verdade.")]),
+             ("JulgaAPrimeiraInstancia", "Derivada do papel — congelá-la duplicaria a fonte de verdade."),
+             ("JulgaASegundaInstancia", "Derivada do papel — congelá-la duplicaria a fonte de verdade.")]),
 
         // A regra de deliberação da banca, igual na banca da fase e na da etapa. Sem Id no
         // envelope: é valor da banca que a carrega.

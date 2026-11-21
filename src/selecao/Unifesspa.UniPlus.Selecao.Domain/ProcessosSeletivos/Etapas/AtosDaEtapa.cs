@@ -28,6 +28,9 @@ public sealed record AtosDaEtapa
     /// <summary>Os recursos que a etapa abre, na ordem em que o campo <c>recursos[j]</c> os aponta.</summary>
     public IReadOnlyList<RecursoDeclarado> Recursos { get; }
 
+    /// <summary>Se algum recurso da etapa admite instância superior.</summary>
+    public bool TemRecursoComInstanciaSuperior => Recursos.Any(static recurso => recurso.AdmiteInstanciaSuperior);
+
     public bool TemRecursoEmAto { get; }
 
     public IReadOnlyList<(int Posicao, string AtoCodigo, PapelProdutoFase? Papel)> Produtos { get; }

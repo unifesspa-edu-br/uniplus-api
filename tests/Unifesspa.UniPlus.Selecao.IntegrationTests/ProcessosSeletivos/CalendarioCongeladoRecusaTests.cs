@@ -22,14 +22,14 @@ public sealed class CalendarioCongeladoRecusaTests
 {
     private static ProcessoSeletivo ProcessoPublicado()
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(comBancaDeHomologacao: true);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
         CorpusEnvelopeEntrada.Publicar(processo);
         return processo;
     }
 
     private static Result<EnvelopeReidratado> ReidratarComBlocoAdulterado(Action<JsonObject> adulterar)
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(comBancaDeHomologacao: true);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
         CorpusEnvelopeEntrada.Publicar(processo);
 
@@ -118,7 +118,7 @@ public sealed class CalendarioCongeladoRecusaTests
 
     private static Result<EnvelopeReidratado> ReidratarSemCalendarioComRecursoSoNa(string ondeSobra)
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(comBancaDeHomologacao: true);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
         CorpusEnvelopeEntrada.Publicar(processo);
 
@@ -207,7 +207,7 @@ public sealed class CalendarioCongeladoRecusaTests
     [InlineData("municipioNome", "Maraba\u0301")]
     public void TextoDecomposto_Recusado(string campo, string decomposto)
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(comBancaDeHomologacao: true);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
         CorpusEnvelopeEntrada.Publicar(processo);
 

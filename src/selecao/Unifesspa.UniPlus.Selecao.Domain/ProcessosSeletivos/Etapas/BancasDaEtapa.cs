@@ -11,11 +11,11 @@ public sealed record BancasDaEtapa
 
     public bool TemBancas => Declaradas.Count > 0;
 
-    /// <summary>Se alguma banca da etapa tem papel que julga recurso.</summary>
-    public bool TemBancaDeRecursos => Declaradas.Any(static banca => banca.Tipo.JulgaRecurso);
-
     /// <summary>Se alguma banca da etapa atribui a nota ou o parecer: é ela que a etapa da nota do ENEM não admite.</summary>
     public bool TemBancaQueAvalia => Declaradas.Any(static banca => banca.Tipo.AvaliaOMerito);
 
     public IReadOnlyList<BancaDeclarada> Declaradas { get; }
+
+    /// <summary>As bancas da etapa cuja cópia do tipo tem o papel de julgar o recurso em 2ª instância, na posição declarada.</summary>
+    public IReadOnlyList<BancaDeclarada> BancasDaSegundaInstancia => [.. Declaradas.Where(static banca => banca.Tipo.JulgaASegundaInstancia)];
 }

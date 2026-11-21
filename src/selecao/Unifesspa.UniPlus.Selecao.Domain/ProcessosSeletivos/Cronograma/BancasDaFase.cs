@@ -15,10 +15,10 @@ public sealed record BancasDaFase
         Grupos = [.. CandidatosAtendidosPelasBancas.Grupos(bancas).Where(grupo => !recusados.Contains(grupo.Tipo))];
     }
 
-    /// <summary>Se alguma banca da fase tem papel que julga recurso.</summary>
-    public bool TemBancaDeRecursos => Declaradas.Any(static banca => banca.Tipo.JulgaRecurso);
-
     public IReadOnlyList<BancaDeclarada> Declaradas { get; }
+
+    /// <summary>As bancas da fase cuja cópia do tipo tem o papel de julgar o recurso em 2ª instância, na posição declarada.</summary>
+    public IReadOnlyList<BancaDeclarada> BancasDaSegundaInstancia => [.. Declaradas.Where(static banca => banca.Tipo.JulgaASegundaInstancia)];
 
     /// <summary>
     /// Os grupos de bancas que atendem os mesmos candidatos, das posições em <see cref="Declaradas"/>. Os tipos cujos candidatos

@@ -128,7 +128,7 @@ internal static class ApoioDoEnvelopeCodec
 
     internal static EnvelopeReidratado ReidratarMutado(Action<JsonObject> mutar)
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(comBancaDeHomologacao: true);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
         CorpusEnvelopeEntrada.Publicar(processo);
         JsonObject mutado = Envelope(congelado);

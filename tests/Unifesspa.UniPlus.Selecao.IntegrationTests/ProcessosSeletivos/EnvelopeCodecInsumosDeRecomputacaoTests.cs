@@ -48,7 +48,7 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
     {
         ArgumentNullException.ThrowIfNull(caminho);
 
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(comBancaDeHomologacao: true);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
         CorpusEnvelopeEntrada.Publicar(processo);
         JsonObject mutado = Envelope(congelado);

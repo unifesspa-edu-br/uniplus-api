@@ -74,6 +74,9 @@ public sealed record TipoDeBancaCopiado
     /// <summary>Se o papel da banca é o de julgar o recurso em 1ª instância: ordena quem julga essa instância e diz quais etapas a banca dedicada julga para o mínimo de integrantes.</summary>
     public bool JulgaAPrimeiraInstancia => Papel == PapelDaBanca.JulgaAPrimeiraInstancia;
 
+    /// <summary>Se o papel da banca é o de julgar o recurso em 2ª instância: ela não entra na ordem de quem julga a 1ª instância.</summary>
+    public bool JulgaASegundaInstancia => Papel == PapelDaBanca.JulgaASegundaInstancia;
+
     /// <summary>
     /// Se a banca é avaliadora do tipo de decisão: o papel avalia o mérito e o tipo de decisão está entre os que o tipo julga. É o
     /// único critério de quem avaliou um item, para quem julga o recurso dele e para a exigência da banca de cada decisão.

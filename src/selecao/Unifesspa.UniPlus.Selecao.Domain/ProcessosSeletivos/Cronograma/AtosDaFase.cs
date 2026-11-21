@@ -29,6 +29,9 @@ public sealed record AtosDaFase
     /// <summary>O recurso que a fase admite; ausente quando a fase não admite recurso.</summary>
     public RecursoDeclarado? Recurso { get; }
 
+    /// <summary>Se o recurso da fase admite instância superior; a fase sem recurso não admite.</summary>
+    public bool AdmiteInstanciaSuperior => Recurso is { AdmiteInstanciaSuperior: true };
+
     public IReadOnlyList<TipoMotivoDeDecisao> TiposDeDecisao { get; }
 
     public RegraDeHomologacaoDasInscricoes? RegraDeHomologacao { get; }

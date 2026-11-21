@@ -20,6 +20,10 @@ public static class BancaErrorCodes
     public const string CandidatosAtendidosEmBancaDeRecursos = "Banca.CandidatosAtendidosEmBancaDeRecursos";
     public const string TipoExigeMaisDeUmaBanca = "Banca.TipoExigeMaisDeUmaBanca";
     public const string TipoNaoAdmiteInstanciaSuperior = "Banca.TipoNaoAdmiteInstanciaSuperior";
+    public const string FaseSemBancaDaSegundaInstancia = "Banca.FaseSemBancaDaSegundaInstancia";
+    public const string EtapaSemBancaDaSegundaInstancia = "Banca.EtapaSemBancaDaSegundaInstancia";
+    public const string FaseComBancaDaSegundaInstanciaSemRecursoParaJulgar = "Banca.FaseComBancaDaSegundaInstanciaSemRecursoParaJulgar";
+    public const string EtapaComBancaDaSegundaInstanciaSemRecursoParaJulgar = "Banca.EtapaComBancaDaSegundaInstanciaSemRecursoParaJulgar";
     public const string IdDuplicado = "Banca.IdDuplicado";
     public const string RecursoSemBanca = "Cronograma.RecursoSemBanca";
 }

@@ -155,7 +155,7 @@ internal sealed class CenarioDoRecursoPorVersao
         etapa.DefinirRecursos([criado.Value!]).IsSuccess.Should().BeTrue();
     }
 
-    // A fase de resultado com recurso em duas instâncias e a banca de análise de recursos que todo recurso exige.
+    // A fase de resultado com recurso em duas instâncias, a banca de análise de recursos que todo recurso exige e a banca que julga a 2ª instância.
     private static FaseCronograma FaseComRecursoEmDuasInstancias()
     {
         Guid preliminarId = Guid.CreateVersion7();
@@ -168,7 +168,7 @@ internal sealed class CenarioDoRecursoPorVersao
             Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
             UnidadeResponsavel: UnidadesDeTeste.Ceps);
 
-        return FaseCronograma.Criar(origem, periodo, publicacoes, [BancasDeTeste.DaHomologacaoDasInscricoesDaFase(), BancasDeTeste.DeRecursosDaFase()]).Value!;
+        return FaseCronograma.Criar(origem, periodo, publicacoes, [BancasDeTeste.DaHomologacaoDasInscricoesDaFase(), BancasDeTeste.DeRecursosDaFase(), BancasDeTeste.DeSegundaInstanciaDaFase()]).Value!;
     }
 
     private static ProdutoDaFase[] ProdutosDoResultado(Guid preliminarId) =>
