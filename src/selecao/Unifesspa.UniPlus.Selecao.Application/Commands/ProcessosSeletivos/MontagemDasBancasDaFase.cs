@@ -61,12 +61,12 @@ internal sealed class MontagemDasBancasDaFase(CadastrosDasFases cadastros)
         BancaRequeridaInput declarada, string campo, CancellationToken cancellationToken)
     {
         List<CategoriaJulgada> atendidos = [];
-        foreach (Guid categoriaId in declarada.CategoriasDocumentoIds)
+        foreach ((int posicao, Guid categoriaId) in declarada.CategoriasDocumentoIds.Index())
         {
             CategoriaDocumentoView? categoria = await cadastros.Categorias.ObterAsync(categoriaId, cancellationToken).ConfigureAwait(false);
             if (categoria is null)
             {
-                return CategoriaNaoEncontrada(categoriaId, campo);
+                return CategoriaNaoEncontrada($"{campo}.categoriasDocumentoIds[{posicao}]");
             }
 
             atendidos.Add(CategoriaJulgada.Criar(categoria.Id, categoria.Codigo));
@@ -75,8 +75,8 @@ internal sealed class MontagemDasBancasDaFase(CadastrosDasFases cadastros)
         return Result<List<CategoriaJulgada>>.Success(atendidos);
     }
 
-    private static Result<List<CategoriaJulgada>> CategoriaNaoEncontrada(Guid categoriaId, string campo) =>
-        InterrupcaoDaEdicao.Com<List<CategoriaJulgada>>($"{campo}.categoriasDocumentoIds", new DomainError(
+    private static Result<List<CategoriaJulgada>> CategoriaNaoEncontrada(string campoDaCategoria) =>
+        InterrupcaoDaEdicao.Com<List<CategoriaJulgada>>(campoDaCategoria, new DomainError(
             "FaseCronograma.CategoriaDocumentoNaoEncontrada",
-            $"Categoria de documento {categoriaId} não encontrada ou não está mais viva."));
+            "Uma categoria de documento dos candidatos atendidos pela banca não existe ou está desativada no cadastro."));
 }

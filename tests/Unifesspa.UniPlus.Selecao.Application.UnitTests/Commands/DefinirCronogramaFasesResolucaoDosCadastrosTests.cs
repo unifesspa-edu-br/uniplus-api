@@ -83,7 +83,7 @@ public sealed class DefinirCronogramaFasesResolucaoDosCadastrosTests
         resultado.Errors.Should().ContainSingle()
             .Which.Should().Match<FieldError>(e =>
                 e.Error.Code == "FaseCronograma.CategoriaDocumentoNaoEncontrada"
-                && e.Field == "fases[0].bancasRequeridas[0].categoriasDocumentoIds");
+                && e.Field == "fases[0].bancasRequeridas[0].categoriasDocumentoIds[1]");
         cenario.Processo.CronogramaFases.Should().BeEmpty("uma categoria fora do cadastro não pode entrar no edital congelado");
     }
 
