@@ -43,9 +43,9 @@ public sealed class RecusaDeUnidadeNoPrazoDeInterposicaoProblemDetailsTests
         ProblemDetails problem = ProblemDetailsDe(resultado);
 
         problem.Status.Should().Be(StatusCodes.Status422UnprocessableEntity);
-        problem.Extensions["code"].Should().Be("uniplus.selecao.regra_recurso_fase.prazo_em_dias_corridos");
-        problem.Type.Should().Be(BaseUriDeErros + "uniplus.selecao.regra_recurso_fase.prazo_em_dias_corridos");
-        problem.Title.Should().Be("Prazo de interposição em dias corridos não é aceito");
+        problem.Extensions["code"].Should().Be("uniplus.selecao.configuracao_do_recurso_da_fase.prazo_em_dias_corridos");
+        problem.Type.Should().Be(BaseUriDeErros + "uniplus.selecao.configuracao_do_recurso_da_fase.prazo_em_dias_corridos");
+        problem.Title.Should().Be("O prazo do recurso não aceita dias corridos");
         problem.Detail.Should().Be(
             "O prazo de interposição deve ser informado em dias úteis ou horas; dias corridos não são aceitos.");
     }
@@ -58,9 +58,9 @@ public sealed class RecusaDeUnidadeNoPrazoDeInterposicaoProblemDetailsTests
         ProblemDetails problem = ProblemDetailsDe(resultado);
 
         problem.Status.Should().Be(StatusCodes.Status422UnprocessableEntity);
-        problem.Extensions["code"].Should().Be("uniplus.selecao.regra_recurso_fase.prazo_em_fracao_de_dia_util");
-        problem.Type.Should().Be(BaseUriDeErros + "uniplus.selecao.regra_recurso_fase.prazo_em_fracao_de_dia_util");
-        problem.Title.Should().Be("Prazo de interposição em dias úteis exige valor inteiro");
+        problem.Extensions["code"].Should().Be("uniplus.selecao.configuracao_do_recurso_da_fase.prazo_em_fracao_de_dia_util");
+        problem.Type.Should().Be(BaseUriDeErros + "uniplus.selecao.configuracao_do_recurso_da_fase.prazo_em_fracao_de_dia_util");
+        problem.Title.Should().Be("O prazo do recurso em dias úteis exige número inteiro");
         problem.Detail.Should().Contain("horas",
             "quem declarou fração precisa ser levado à saída que serve ao caso dele, que é declarar em horas");
     }

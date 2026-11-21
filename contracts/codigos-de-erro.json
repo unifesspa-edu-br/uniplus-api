@@ -4912,6 +4912,46 @@
       "titulo": "O número de inscrição é o piso da divulgação pública e não pode ser removido"
     },
     {
+      "codigo": "uniplus.selecao.configuracao_do_recurso_da_etapa.prazo_em_dias_corridos",
+      "status": 422,
+      "titulo": "O prazo do recurso não aceita dias corridos"
+    },
+    {
+      "codigo": "uniplus.selecao.configuracao_do_recurso_da_etapa.prazo_em_fracao_de_dia_util",
+      "status": 422,
+      "titulo": "O prazo do recurso em dias úteis exige número inteiro"
+    },
+    {
+      "codigo": "uniplus.selecao.configuracao_do_recurso_da_etapa.prazo_nao_positivo",
+      "status": 422,
+      "titulo": "O prazo do recurso deve ser maior que zero"
+    },
+    {
+      "codigo": "uniplus.selecao.configuracao_do_recurso_da_etapa.prazo_sem_unidade_declaravel",
+      "status": 422,
+      "titulo": "O prazo do recurso precisa declarar dias úteis ou horas"
+    },
+    {
+      "codigo": "uniplus.selecao.configuracao_do_recurso_da_fase.prazo_em_dias_corridos",
+      "status": 422,
+      "titulo": "O prazo do recurso não aceita dias corridos"
+    },
+    {
+      "codigo": "uniplus.selecao.configuracao_do_recurso_da_fase.prazo_em_fracao_de_dia_util",
+      "status": 422,
+      "titulo": "O prazo do recurso em dias úteis exige número inteiro"
+    },
+    {
+      "codigo": "uniplus.selecao.configuracao_do_recurso_da_fase.prazo_nao_positivo",
+      "status": 422,
+      "titulo": "O prazo do recurso deve ser maior que zero"
+    },
+    {
+      "codigo": "uniplus.selecao.configuracao_do_recurso_da_fase.prazo_sem_unidade_declaravel",
+      "status": 422,
+      "titulo": "O prazo do recurso precisa declarar dias úteis ou horas"
+    },
+    {
       "codigo": "uniplus.selecao.configuracao_taxa_inscricao.fundamento_desconhecido",
       "status": 422,
       "titulo": "O fundamento de isenção informado não é conhecido"
@@ -7632,26 +7672,6 @@
       "titulo": "Declare de que instante o prazo corre: da publicação do ato ou da ciência do candidato"
     },
     {
-      "codigo": "uniplus.selecao.recurso_da_etapa.prazo_em_dias_corridos",
-      "status": 422,
-      "titulo": "Prazo de interposição em dias corridos não é aceito"
-    },
-    {
-      "codigo": "uniplus.selecao.recurso_da_etapa.prazo_em_fracao_de_dia_util",
-      "status": 422,
-      "titulo": "Prazo de interposição em dias úteis exige valor inteiro"
-    },
-    {
-      "codigo": "uniplus.selecao.recurso_da_etapa.prazo_nao_positivo",
-      "status": 422,
-      "titulo": "O prazo de interposição deve ser estritamente positivo"
-    },
-    {
-      "codigo": "uniplus.selecao.recurso_da_etapa.prazo_sem_unidade_declaravel",
-      "status": 422,
-      "titulo": "O prazo de interposição precisa declarar dias úteis ou horas"
-    },
-    {
       "codigo": "uniplus.selecao.recurso_da_etapa.procedimento_de_recurso_ausente",
       "status": 422,
       "titulo": "Há decisão sem procedimento de recurso para sua revisão"
@@ -7825,26 +7845,6 @@
       "codigo": "uniplus.selecao.regra_recurso_fase.fase_sem_produto_preliminar",
       "status": 422,
       "titulo": "A fase admite recurso e não publica nenhum produto com papel preliminar"
-    },
-    {
-      "codigo": "uniplus.selecao.regra_recurso_fase.prazo_em_dias_corridos",
-      "status": 422,
-      "titulo": "Prazo de interposição em dias corridos não é aceito"
-    },
-    {
-      "codigo": "uniplus.selecao.regra_recurso_fase.prazo_em_fracao_de_dia_util",
-      "status": 422,
-      "titulo": "Prazo de interposição em dias úteis exige valor inteiro"
-    },
-    {
-      "codigo": "uniplus.selecao.regra_recurso_fase.prazo_nao_positivo",
-      "status": 422,
-      "titulo": "O prazo de interposição deve ser estritamente positivo"
-    },
-    {
-      "codigo": "uniplus.selecao.regra_recurso_fase.prazo_sem_unidade_declaravel",
-      "status": 422,
-      "titulo": "O prazo de interposição precisa declarar dias úteis ou horas"
     },
     {
       "codigo": "uniplus.selecao.regra_recurso_fase.procedimento_de_recurso_ausente",
