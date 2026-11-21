@@ -169,6 +169,21 @@ public sealed record CronogramaDoProcesso
     }
 
     /// <summary>
+    /// O item de que as fases respeitam a precedência do cadastro: a ordem e o período de cada uma. Sem a precedência lida, a
+    /// operação não a pede e o item fica conforme.
+    /// </summary>
+    public ItemConformidade ItemDaPrecedenciaEntreFases(PrecedenciasDosCadastros precedencias)
+    {
+        ArgumentNullException.ThrowIfNull(precedencias);
+
+        return new(
+            "cronograma_precedencia_entre_fases",
+            DimensaoConformidade.Cronograma,
+            "Cronograma: as fases respeitam a precedência do cadastro, na ordem e no período de cada uma",
+            !precedencias.FoiLida || ConferirPrecedencia(precedencias.Arestas).Count == 0);
+    }
+
+    /// <summary>
     /// O preliminar de um tipo de ato exige o definitivo do mesmo tipo na própria fase. A ligação é pelo tipo de ato dentro do mesmo
     /// lugar que o publica, e o alvo do procedimento de recurso não entra: duas fases que publicam o mesmo tipo não se ligam.
     /// </summary>

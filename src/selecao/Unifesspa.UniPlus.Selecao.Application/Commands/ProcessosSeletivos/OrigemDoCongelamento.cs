@@ -51,6 +51,10 @@ internal abstract record OrigemDoCongelamento
     /// <summary>A classificação dos tipos de ato que a versão vigente já congelou, ou a falha do codec ao lê-la.</summary>
     public abstract Result<IReadOnlyDictionary<string, TipoDeAtoCongelado>> TiposJaCongelados();
 
+    /// <summary>As fases do cronograma da versão vigente, reidratadas do registro; nulo quando não há versão publicada.</summary>
+    /// <exception cref="InvalidOperationException">A versão vigente não foi lida: a conferência já a recusou antes de chegar aqui.</exception>
+    public abstract IReadOnlyCollection<FaseCronograma>? FasesDaVersaoPublicada();
+
     /// <summary>
     /// Os anexos da versão vigente; ao pedido sem lista (<paramref name="herdaOsDaVersao"/>), são eles que a versão
     /// nova herda.
@@ -85,6 +89,8 @@ internal sealed record PrimeiraPublicacao : OrigemDoCongelamento
     public override Result<IReadOnlyDictionary<string, TipoDeAtoCongelado>> TiposJaCongelados() =>
         Result<IReadOnlyDictionary<string, TipoDeAtoCongelado>>.Success(new Dictionary<string, TipoDeAtoCongelado>(StringComparer.Ordinal));
 
+    public override IReadOnlyCollection<FaseCronograma>? FasesDaVersaoPublicada() => null;
+
     public override IReadOnlyList<AnexoDoEdital> AnexosVigentes(bool herdaOsDaVersao) => [];
 
     public override Task<Result<FatosDasVersoesPublicadas?>> FatosJaPublicadosAsync(
@@ -116,6 +122,11 @@ internal sealed record RetificacaoDeAtoUnico(BaseDaRetificacao Base) : OrigemDoC
 
     public override Result<IReadOnlyDictionary<string, TipoDeAtoCongelado>> TiposJaCongelados() =>
         CongelamentoDosTiposDeAto.DoEnvelope(Base.VersaoReidratada);
+
+    public override IReadOnlyCollection<FaseCronograma>? FasesDaVersaoPublicada() =>
+        Base.VersaoReidratada.IsSuccess
+            ? Base.VersaoReidratada.Value!.Configuracao.Cronograma.CronogramaFases
+            : throw new InvalidOperationException("A versão vigente não foi lida, e a conferência da precedência não tem com o que comparar o cronograma.");
 
     public override IReadOnlyList<AnexoDoEdital> AnexosVigentes(bool herdaOsDaVersao) =>
         LeituraDoCertameEdital.AnexosDaVersao(Base.VersaoVigente, herdaOsDaVersao);

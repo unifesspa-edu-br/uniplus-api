@@ -130,6 +130,34 @@ public sealed class OrigemDoCongelamentoTests
         fatos.Error!.Code.Should().Be(erroDoCodec.Code);
     }
 
+    [Fact(DisplayName = "A primeira publicação não tem fases de versão publicada com que comparar o cronograma")]
+    public void PrimeiraPublicacao_NaoTemFasesDaVersaoPublicada() =>
+        new PrimeiraPublicacao().FasesDaVersaoPublicada().Should().BeNull();
+
+    [Fact(DisplayName = "A retificação compara o cronograma com as fases da versão vigente que o codec leu")]
+    public async Task Retificacao_TemAsFasesDaVersaoVigente()
+    {
+        (ProcessoSeletivo processo, _) = ProcessoPublicado();
+        ServicosDoCongelamentoDeTeste servicos = ServicosDoCongelamentoDeTeste.Para(processo);
+        VersaoPublicadaDeTeste.Publicar(processo, servicos.Repositorio, servicos.Codecs);
+        VersaoConfiguracao vigente = (await servicos.Repositorio.ObterVersaoAtualAsync(processo.Id, CancellationToken.None))!;
+        OrigemDoCongelamento origem = new RetificacaoDeAtoUnico(Base(vigente, servicos.Codecs));
+
+        origem.FasesDaVersaoPublicada().Should().BeEquivalentTo(processo.CronogramaFases);
+    }
+
+    [Fact(DisplayName = "A versão vigente que o codec não leu não tem fases com que comparar: é falha técnica, e não recusa nem aceite")]
+    public void VersaoIlegivel_NaoTemFasesParaComparar()
+    {
+        (_, VersaoConfiguracao vigente) = ProcessoPublicado();
+        var ilegivel = new BaseDaRetificacao(vigente, MotivoDaRetificacao, Result<EnvelopeReidratado>.Failure(new DomainError("EnvelopeCodec.VersaoDesconhecida", "A versão não é reconhecida.")));
+        OrigemDoCongelamento origem = new RetificacaoDeAtoUnico(ilegivel);
+
+        Func<IReadOnlyCollection<FaseCronograma>?> ler = origem.FasesDaVersaoPublicada;
+
+        ler.Should().Throw<InvalidOperationException>();
+    }
+
     [Fact(DisplayName = "A primeira publicação faz nascer a versão de abertura")]
     public void PrimeiraPublicacao_FazNascerAVersaoDeAbertura() =>
         new PrimeiraPublicacao().NumeroDaVersaoQueNasce.Should().Be(VersaoConfiguracao.NumeroDaAbertura);

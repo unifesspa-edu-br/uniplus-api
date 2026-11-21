@@ -43,12 +43,12 @@ public sealed class ComposicaoDosItensTests
     private static EtapaProcesso EtapaCarregada(string nome, int ordem, string faseCodigo, CaraterEtapa carater = CaraterEtapa.Classificatoria, decimal? peso = 1m) =>
         ApoioDeEtapaReidratada.DeProvaObjetiva(Guid.CreateVersion7(), nome, ordem, faseCodigo, peso ?? 0m, carater: carater);
 
-    [Fact(DisplayName = "O processo conforme tem os trinta itens do cronograma, todos conformes")]
+    [Fact(DisplayName = "O processo conforme tem os trinta e um itens do cronograma, todos conformes")]
     public void Itens_ProcessoConforme_TodosVerdes()
     {
         IReadOnlyList<ItemConformidade> itens = Itens(ApoioDaPublicacaoDoProcessoSeletivo.NovoProcessoConforme());
 
-        itens.Should().HaveCount(30);
+        itens.Should().HaveCount(31);
         Pendentes(itens).Should().BeEmpty();
     }
 
@@ -62,7 +62,7 @@ public sealed class ComposicaoDosItensTests
 
         IReadOnlyList<ItemConformidade> itens = Itens(processo);
 
-        itens.Should().HaveCount(30);
+        itens.Should().HaveCount(31);
         Pendentes(itens).Should().Equal("cronograma_ancora_do_recurso", "cronograma_recurso_com_banca_de_analise");
     }
 
@@ -77,7 +77,7 @@ public sealed class ComposicaoDosItensTests
 
         IReadOnlyList<ItemConformidade> itens = Itens(processo);
 
-        itens.Should().HaveCount(30);
+        itens.Should().HaveCount(31);
         Pendentes(itens).Should().Equal("cronograma_fases_declaradas", "cronograma_etapa_fora_da_janela_da_fase");
     }
 
@@ -89,7 +89,7 @@ public sealed class ComposicaoDosItensTests
 
         IReadOnlyList<ItemConformidade> itens = Itens(processo);
 
-        itens.Should().HaveCount(30);
+        itens.Should().HaveCount(31);
         Pendentes(itens).Should().Equal("etapas_declaradas");
     }
 }
