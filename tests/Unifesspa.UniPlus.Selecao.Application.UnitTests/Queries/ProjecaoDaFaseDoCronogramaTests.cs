@@ -159,6 +159,17 @@ public sealed class ProjecaoDaFaseDoCronogramaTests
             opcoes => opcoes.WithStrictOrdering());
     }
 
+    [Fact(DisplayName = "Os tipos de decisão da fase saem com código e rótulo, em ordem alfabética do código")]
+    public void ProjetarFase_TiposDeDecisao_SaemComCodigoERotulo()
+    {
+        IReadOnlyList<CodigoComRotulo<TipoMotivoDeDecisao>> tipos = ProjecaoDaFaseDoCronograma.ProjetarFase(FaseCompleta()).Publicacoes.TiposDeDecisao;
+
+        tipos.Select(static t => t.Codigo).Should().Equal(
+            TipoMotivoDeDecisao.Classificacao.Codigo(), TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo());
+        tipos.Select(static t => t.Rotulo).Should().Equal(
+            TipoMotivoDeDecisao.Classificacao.Rotulo(), TipoMotivoDeDecisao.IsencaoDaTaxa.Rotulo());
+    }
+
     [Fact(DisplayName = "A fase sem unidade, sem produto e sem regra de recurso mantém os grupos e anula só o que é ausente")]
     public void ProjetarFase_SemUnidadeNemPublicacoes_GruposNuncaNulos()
     {
@@ -203,7 +214,7 @@ public sealed class ProjecaoDaFaseDoCronogramaTests
             new ReferenciaRegraDto(RegraPrazoRecursoCodigo.AncoradoEmAto, "1", new string('a', 64)),
             ParametrosEsperados(),
             []),
-        TiposDeDecisao: [TipoMotivoDeDecisao.Classificacao.Codigo(), TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo()],
+        TiposDeDecisao: [CodigoComRotulo<TipoMotivoDeDecisao>.De(TipoMotivoDeDecisao.Classificacao), CodigoComRotulo<TipoMotivoDeDecisao>.De(TipoMotivoDeDecisao.IsencaoDaTaxa)],
         RegraDeHomologacao: null);
 
     private static RegraDeHomologacaoDasInscricoes RegraDeHomologacao() => RegraDeHomologacaoDasInscricoes.Declarar(

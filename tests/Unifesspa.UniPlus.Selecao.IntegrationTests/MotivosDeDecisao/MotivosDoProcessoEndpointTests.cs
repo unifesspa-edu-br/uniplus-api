@@ -59,7 +59,7 @@ public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
 
         JsonElement escolhido = (await ListarOsEscolhidosPeloTesteAsync(client, processoId)).Should().ContainSingle().Subject;
         escolhido.GetProperty("codigo").GetString().Should().Be(motivo.Codigo.Valor);
-        escolhido.GetProperty("tipo").GetString().Should().Be("HOMOLOGACAO_DAS_INSCRICOES");
+        escolhido.GetProperty("tipo").GetProperty("codigo").GetString().Should().Be("HOMOLOGACAO_DAS_INSCRICOES");
         escolhido.GetProperty("lugar").GetProperty("faseCanonicaOrigemId").GetGuid().Should().Be(await FaseAsync(processoId));
         escolhido.GetProperty("lugar").GetProperty("etapaId").ValueKind.Should().Be(JsonValueKind.Null);
         escolhido.GetProperty("vigencia").GetProperty("versaoDoEditalDeEntrada").GetInt32().Should().Be(1);

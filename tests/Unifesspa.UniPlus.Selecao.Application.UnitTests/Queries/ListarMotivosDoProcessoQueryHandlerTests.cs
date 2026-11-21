@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
@@ -27,14 +28,15 @@ public sealed class ListarMotivosDoProcessoQueryHandlerTests
     public async Task SemVersao_DevolveAEscolhaAtualOrdenada()
     {
         LugarDaDecisao lugar = LugarDaPrimeiraFase(_processo);
-        MotivoDoProcesso classificacao = Escolhido(_processo, lugar, Motivo(TipoMotivoDeDecisao.Classificacao, "NOTA_ZERADA", null));
-        MotivoDoProcesso isencaoB = Escolhido(_processo, lugar, Motivo(codigo: "RENDA_B"));
-        MotivoDoProcesso isencaoA = Escolhido(_processo, lugar, Motivo(codigo: "RENDA_A"));
-        _escolhidos.ListarEscolhaAtualAsync(_processo.Id, Arg.Any<CancellationToken>()).Returns([classificacao, isencaoB, isencaoA]);
+        PrepararEscolhaAtualForaDeOrdem(lugar);
 
         Result<IReadOnlyList<MotivoDoProcessoDto>> lidos = await ListarAsync(numeroDaVersao: null);
 
         lidos.Value!.Select(m => m.Codigo).Should().Equal("RENDA_A", "RENDA_B", "NOTA_ZERADA");
+        lidos.Value!.Select(m => m.Tipo).Should().Equal(
+            CodigoComRotulo<TipoMotivoDeDecisao>.De(TipoMotivoDeDecisao.IsencaoDaTaxa),
+            CodigoComRotulo<TipoMotivoDeDecisao>.De(TipoMotivoDeDecisao.IsencaoDaTaxa),
+            CodigoComRotulo<TipoMotivoDeDecisao>.De(TipoMotivoDeDecisao.Classificacao));
         lidos.Value![0].Lugar.FaseCanonicaOrigemId.Should().Be(lugar.FaseCanonicaOrigemId);
         lidos.Value![0].Vigencia.Should().Be(new VigenciaDoMotivoDto(1, null));
     }
@@ -70,6 +72,14 @@ public sealed class ListarMotivosDoProcessoQueryHandlerTests
 
         lidos.Error!.Code.Should().Be(MotivoDeDecisaoErrorCodes.VersaoNaoPublicada);
         _escolhidos.ReceivedCalls().Should().BeEmpty();
+    }
+
+    private void PrepararEscolhaAtualForaDeOrdem(LugarDaDecisao lugar)
+    {
+        MotivoDoProcesso classificacao = Escolhido(_processo, lugar, Motivo(TipoMotivoDeDecisao.Classificacao, "NOTA_ZERADA", null));
+        MotivoDoProcesso isencaoB = Escolhido(_processo, lugar, Motivo(codigo: "RENDA_B"));
+        MotivoDoProcesso isencaoA = Escolhido(_processo, lugar, Motivo(codigo: "RENDA_A"));
+        _escolhidos.ListarEscolhaAtualAsync(_processo.Id, Arg.Any<CancellationToken>()).Returns([classificacao, isencaoB, isencaoA]);
     }
 
     private Task<Result<IReadOnlyList<MotivoDoProcessoDto>>> ListarAsync(int? numeroDaVersao) =>

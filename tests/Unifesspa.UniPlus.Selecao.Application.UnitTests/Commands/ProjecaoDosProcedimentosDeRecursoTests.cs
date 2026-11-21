@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
@@ -17,6 +18,8 @@ public sealed class ProjecaoDosProcedimentosDeRecursoTests
 {
     private static readonly Guid Item = Guid.Parse("11111111-1111-1111-1111-111111111111");
     private static readonly ReferenciaRegra Regra = ReferenciaRegra.De(RegraProcedimentoRecursoCodigo.Recalculo, "v1", new string('a', 64));
+
+    private static CodigoComRotulo<TipoMotivoDeDecisao> Tipo(TipoMotivoDeDecisao tipo) => CodigoComRotulo<TipoMotivoDeDecisao>.De(tipo);
 
     [Fact(DisplayName = "Sem procedimentos, a leitura é uma lista vazia")]
     public void Nenhum_ListaVazia() =>
@@ -36,9 +39,9 @@ public sealed class ProjecaoDosProcedimentosDeRecursoTests
 
         ReferenciaRegraDto referencia = new(Regra.Codigo, Regra.Versao, Regra.Hash);
         leitura.Should().Equal(
-            new ProcedimentoDeRecursoDto("ANALISE_DOCUMENTAL", new AlvoDoProcedimentoDeRecursoDto(Item, null), referencia, RegraProcedimentoRecursoCodigo.Recorrecao),
-            new ProcedimentoDeRecursoDto("CLASSIFICACAO", new AlvoDoProcedimentoDeRecursoDto(null, AreaDoEnem.Redacao), referencia, RegraProcedimentoRecursoCodigo.Recalculo),
-            new ProcedimentoDeRecursoDto("HOMOLOGACAO_DAS_INSCRICOES", null, referencia, null));
+            new ProcedimentoDeRecursoDto(Tipo(TipoMotivoDeDecisao.AnaliseDocumental), new AlvoDoProcedimentoDeRecursoDto(Item, null), referencia, RegraProcedimentoRecursoCodigo.Recorrecao),
+            new ProcedimentoDeRecursoDto(Tipo(TipoMotivoDeDecisao.Classificacao), new AlvoDoProcedimentoDeRecursoDto(null, AreaDoEnem.Redacao), referencia, RegraProcedimentoRecursoCodigo.Recalculo),
+            new ProcedimentoDeRecursoDto(Tipo(TipoMotivoDeDecisao.HomologacaoDasInscricoes), null, referencia, null));
     }
 
     [Fact(DisplayName = "A sugestão acompanha a forma da janela e não muda a regra declarada")]

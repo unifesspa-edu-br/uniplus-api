@@ -124,7 +124,7 @@ public sealed class DefinirEtapasTiposDeDecisaoTests
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         EtapaProcessoDto dto = ProjecaoDaEtapaDoProcesso.ProjetarEtapa(processo.Etapas.Single());
-        dto.Publicacoes.TiposDeDecisao.Should().Equal(Classificacao, Heteroidentificacao, Isencao);
+        dto.Publicacoes.TiposDeDecisao.Select(static tipo => tipo.Codigo).Should().Equal(Classificacao, Heteroidentificacao, Isencao);
         await unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 

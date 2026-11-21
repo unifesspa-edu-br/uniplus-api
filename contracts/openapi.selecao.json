@@ -23292,7 +23292,7 @@
             "format": "uuid"
           },
           "tipo": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoMotivoDeDecisao"
           },
           "codigo": {
             "type": "string"
@@ -23345,7 +23345,7 @@
             "$ref": "#/components/schemas/LugarDoMotivoDto"
           },
           "tipo": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoMotivoDeDecisao"
           },
           "codigo": {
             "type": "string"
@@ -24799,7 +24799,7 @@
         "type": "object",
         "properties": {
           "tipoDeDecisao": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoMotivoDeDecisao"
           },
           "alvo": {
             "oneOf": [
@@ -25364,7 +25364,7 @@
           "tiposDeDecisao": {
             "type": "array",
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/TipoMotivoDeDecisao"
             }
           }
         }
@@ -25405,7 +25405,7 @@
           "tiposDeDecisao": {
             "type": "array",
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/TipoMotivoDeDecisao"
             }
           },
           "regraDeHomologacao": {

@@ -57,7 +57,7 @@ internal static class ProjecaoDaEtapaDoProcesso
         [.. OrdemCanonicaDaConfiguracao.ProdutosDaEtapa(etapa.Produtos).Select(pr => new ProdutoDaEtapaDto(pr.Id, pr.AtoCodigo, pr.Papel.ToCodigo()))],
         etapa.EmiteParecerIndividual,
         [.. etapa.Recursos.Select(r => ProjetarRecursoDaEtapa(etapa, r))],
-        [.. etapa.TiposDeDecisao.Select(static tipo => tipo.Codigo())]);
+        [.. etapa.TiposDeDecisao.Select(CodigoComRotulo<TipoMotivoDeDecisao>.De)]);
 
     private static BancaDaEtapaDto ProjetarBancaDaEtapa(BancaDaEtapa banca) => new(
         banca.Id,
