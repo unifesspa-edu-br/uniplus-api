@@ -178,14 +178,19 @@ public sealed class GrupoRepetivelEndpointTests
 
     private static object DocumentoDaFolha(ProcessoSeletivo processo, Guid tipoDocumentoId, (string Fato, string Operador, string Valor) condicao) => new
     {
-        exigidoNaFaseId = processo.CronogramaFases.Single().Id,
-        finalidade = "INSCRICAO",
-        tipoDocumentoId,
-        aplicabilidade = "CONDICIONAL",
-        obrigatorio = true,
-        condicoes = new[] { new { clausula = 0, fato = condicao.Fato, operador = condicao.Operador, valor = condicao.Valor } },
-        basesLegais = new[] { new { referencia = "Res. Unifesspa 532/2021", abrangencia = "INTERNA_NORMA", status = "RESOLVIDO" } },
-        formatosPermitidos = "QUALQUER",
+        tipoDocumento = new { id = tipoDocumentoId },
+        momento = new { faseId = processo.CronogramaFases.Single().Id, finalidade = "INSCRICAO" },
+        aplicabilidade = new
+        {
+            tipo = "CONDICIONAL",
+            condicoes = new[] { new { clausula = 0, fato = condicao.Fato, operador = condicao.Operador, valor = condicao.Valor } },
+        },
+        indeferimento = new
+        {
+            obrigatorio = true,
+            basesLegais = new[] { new { referencia = "Res. Unifesspa 532/2021", abrangencia = "INTERNA_NORMA", status = "RESOLVIDO" } },
+        },
+        requisitos = new { formatosPermitidos = "QUALQUER" },
     };
 
     private static Task<HttpResponseMessage> PublicarAsync(HttpClient client, Guid processoId, Guid documentoEditalId) =>

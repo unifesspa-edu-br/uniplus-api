@@ -16,30 +16,20 @@ using Kernel.Results;
 /// </remarks>
 internal static class EscritaDaArvoreDeExigencias
 {
-    public static List<FieldError> Conferir(IReadOnlyList<NoExigenciaInput> nos)
+    public static List<FieldError> Conferir(IReadOnlyList<NoExigenciaInput> nos) =>
+        nos.Select(ConferirNoEDescendentes).FirstOrDefault(static erros => erros.Count > 0) ?? [];
+
+    private static List<FieldError> ConferirNoEDescendentes(NoExigenciaInput no)
     {
-        foreach (NoExigenciaInput no in nos)
-        {
-            List<FieldError> erros = FormaDoNo(no);
-            if (erros.Count == 0)
-            {
-                erros = Conferir(no.Filhos ?? []);
-            }
-
-            if (erros.Count > 0)
-            {
-                return erros;
-            }
-        }
-
-        return [];
+        List<FieldError> erros = FormaDoNo(no);
+        return erros.Count > 0 ? erros : Conferir(no.Filhos ?? []);
     }
 
     private static List<FieldError> FormaDoNo(NoExigenciaInput no)
     {
         bool ehFolha = ArvoreDeEntradaDasExigencias.EhFolha(no);
         List<FieldError> erros = ehFolha && no.Documento is { } documento ? FormaDoDocumento(documento) : [];
-        IReadOnlyList<BaseLegalInput> basesLegais = ehFolha ? no.Documento?.BasesLegais ?? [] : no.BasesLegais ?? [];
+        IReadOnlyList<BaseLegalInput> basesLegais = ehFolha ? no.Documento?.BasesLegais() ?? [] : no.BasesLegaisDoGrupo();
         for (int indice = 0; indice < basesLegais.Count; indice++)
         {
             erros.AddRange(EscritaDasBasesLegais.ComIndice(FormaDaBaseLegal(basesLegais[indice], ehFolha), indice));
@@ -49,13 +39,13 @@ internal static class EscritaDaArvoreDeExigencias
     }
 
     private static List<FieldError> FormaDoDocumento(ItemDocumentoExigidoInput documento) =>
-        DocumentoExigido.ValidarFormaBasica(
-            EscritaDaExigencia.AplicabilidadeDoToken(documento.Aplicabilidade),
-            documento.ConsequenciaIndeferimento,
-            documento.TamanhoMaximoBytes,
-            documento.Condicoes.Count,
-            EscritaDaExigencia.FinalidadeDoToken(documento.Finalidade),
-            documento.FatosComprovados);
+        [.. DocumentoExigido.ValidarFormaBasica(
+            EscritaDaExigencia.AplicabilidadeDoToken(documento.Aplicabilidade()),
+            documento.Consequencia(),
+            documento.TamanhoMaximoBytes(),
+            documento.Condicoes().Count,
+            EscritaDaExigencia.FinalidadeDoToken(documento.Finalidade()),
+            documento.FatosComprovados).Select(EscritaDaExigencia.NoCaminhoDoPedido)];
 
     private static List<FieldError> FormaDaBaseLegal(BaseLegalInput baseLegal, bool daFolha) =>
         daFolha

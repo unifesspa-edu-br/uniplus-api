@@ -2,50 +2,61 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
 using System.Text.Json;
 
-using Unifesspa.UniPlus.Regras.Enums;
-
 /// <summary>
-/// DTO de leitura de <see cref="Domain.Entities.DocumentoExigido"/> (Story #554, PR #895).
-/// Compõe <c>ProcessoSeletivoDto</c> — não há rota aninhada própria de leitura, mesmo
-/// padrão de <c>FaseCronogramaDto</c>.
+/// DTO de leitura de <see cref="Domain.Entities.DocumentoExigido"/>. Compõe <c>ProcessoSeletivoDto</c> — não há
+/// rota aninhada própria de leitura. Tem a mesma forma do pedido (<c>ItemDocumentoExigidoInput</c>), de modo que
+/// o PUT aceita de volta o que o GET devolve; o que o pedido não lê (nome, categoria e proteção do tipo, e a
+/// identidade da exigência) é cópia congelada do tipo de documento e é ignorado na escrita.
 /// </summary>
-/// <remarks>
-/// <see cref="FormatosPermitidos"/> (Story #918) é o mesmo valor JSON polimórfico do
-/// comando (<c>ItemDocumentoExigidoInput.FormatosPermitidos</c>) — a string <c>"QUALQUER"</c>
-/// ou o array de <c>{formato, tamanhoMaximoBytesMax}</c> — round-tripável direto de volta
-/// pelo mesmo PUT, sem transformação do cliente.
-/// </remarks>
-/// <param name="Finalidade">
-/// O formulário a que o documento pertence (<c>INSCRICAO</c>, <c>ISENCAO_TAXA</c> ou
-/// <c>HABILITACAO</c>); nulo quando a fase não responde formulário nenhum.
-/// </param>
-/// <param name="ClassificacaoProtecao">
-/// Proteção do tipo de documento congelada na exigência (<c>PUBLICO</c>, <c>INTERNO</c>,
-/// <c>PESSOAL</c>, <c>IDENTIFICADOR</c> ou <c>SENSIVEL</c>); não volta no PUT, porque é copiada do tipo.
-/// </param>
+/// <param name="Id">Identidade da exigência.</param>
+/// <param name="TipoDocumento">O tipo de documento, com os atributos congelados na exigência.</param>
+/// <param name="Momento">Fase, etapa e formulário em que o documento é coletado.</param>
+/// <param name="Aplicabilidade">A quem a exigência se aplica e sob qual gatilho.</param>
+/// <param name="Indeferimento">A obrigatoriedade, a consequência do indeferimento e as bases legais.</param>
+/// <param name="Requisitos">O que restringe o arquivo enviado.</param>
 /// <param name="FatosComprovados">Os fatos do processo que o documento comprova; voltam no PUT.</param>
 public sealed record DocumentoExigidoDto(
     Guid Id,
-    Guid ExigidoNaFaseId,
-    Guid TipoDocumentoOrigemId,
-    string TipoDocumentoCodigo,
-    string TipoDocumentoNome,
-    string TipoDocumentoCategoria,
-    string Aplicabilidade,
-    bool Obrigatorio,
-    string? ConsequenciaIndeferimento,
-    IReadOnlyList<CondicaoGatilhoDto> Condicoes,
-    IReadOnlyList<BaseLegalDto> BasesLegais,
-    IdadeMaximaEmissaoDto? IdadeMaximaEmissao,
+    TipoDocumentoDaExigenciaDto TipoDocumento,
+    MomentoDaExigenciaDto Momento,
+    AplicabilidadeDaExigenciaDto Aplicabilidade,
+    IndeferimentoDoDocumentoDto Indeferimento,
+    RequisitosDoDocumentoDto Requisitos,
+    IReadOnlyList<string> FatosComprovados);
+
+/// <summary>O tipo de documento do catálogo, copiado por valor na exigência; só <see cref="Id"/> volta no PUT.</summary>
+public sealed record TipoDocumentoDaExigenciaDto(
+    Guid Id, string Codigo, string Nome, string Categoria, ProtecaoDeDadosDto Protecao);
+
+/// <summary>
+/// A proteção de dados congelada na exigência, copiada do tipo de documento (não volta no PUT).
+/// </summary>
+/// <param name="Classificacao"><c>PUBLICO</c>, <c>INTERNO</c>, <c>PESSOAL</c>, <c>IDENTIFICADOR</c> ou <c>SENSIVEL</c>.</param>
+/// <param name="Finalidade">A finalidade do tratamento.</param>
+/// <param name="HipoteseLegal">A hipótese legal do tratamento.</param>
+public sealed record ProtecaoDeDadosDto(string Classificacao, string Finalidade, string HipoteseLegal);
+
+/// <param name="FaseId">Fase do cronograma que exige o documento.</param>
+/// <param name="EtapaId">Etapa da fase que coleta o documento; nula quando é da fase inteira.</param>
+/// <param name="Finalidade">O formulário a que o documento pertence (<c>INSCRICAO</c>, <c>ISENCAO_TAXA</c> ou <c>HABILITACAO</c>); nula quando a fase não responde formulário nenhum.</param>
+public sealed record MomentoDaExigenciaDto(Guid FaseId, Guid? EtapaId, string? Finalidade);
+
+/// <param name="Tipo"><c>GERAL</c> ou <c>CONDICIONAL</c>.</param>
+/// <param name="Condicoes">As condições do gatilho.</param>
+public sealed record AplicabilidadeDaExigenciaDto(string Tipo, IReadOnlyList<CondicaoGatilhoDto> Condicoes);
+
+public sealed record IndeferimentoDoDocumentoDto(bool Obrigatorio, string? Consequencia, IReadOnlyList<BaseLegalDto> BasesLegais);
+
+/// <summary>
+/// O que restringe o arquivo enviado. <see cref="FormatosPermitidos"/> é o mesmo valor JSON polimórfico do
+/// pedido — a string <c>"QUALQUER"</c> ou o array de <c>{formato, tamanhoMaximoBytesMax}</c> —, devolvido sem
+/// transformação para o cliente reenviar.
+/// </summary>
+public sealed record RequisitosDoDocumentoDto(
     JsonElement FormatosPermitidos,
     int? TamanhoMaximoBytes,
-    Guid? ExigidoNaEtapaId,
-    ModeloDaExigenciaDto? Modelo,
-    string? Finalidade,
-    string ClassificacaoProtecao,
-    string FinalidadeTratamento,
-    string HipoteseLegal,
-    IReadOnlyList<string> FatosComprovados);
+    IdadeMaximaEmissaoDto? IdadeMaximaEmissao,
+    ModeloDaExigenciaDto? Modelo);
 
 /// <summary>
 /// O modelo de documento que a exigência oferece ao candidato. O <see cref="ModeloId"/> volta no
@@ -88,11 +99,16 @@ public sealed record NoExigenciaDto(
     Guid Id,
     string Tipo,
     DocumentoExigidoDto? Documento,
-    int? QuantidadeMinima,
-    string? Consequencia,
-    IReadOnlyList<BaseLegalDto> BasesLegais,
+    CardinalidadeQualificadaDto Cardinalidade,
+    IndeferimentoDoGrupoDto Indeferimento,
     IReadOnlyList<NoExigenciaDto> Filhos,
-    string? ChaveDistincao,
-    DateOnly? DataReferencia,
-    IReadOnlyList<string>? OcorrenciasEsperadas,
     string? RepetePorEntidade);
+
+/// <summary>Quantas apresentações o nó pede e como elas se distinguem; a distinção é nula sem qualificação.</summary>
+public sealed record CardinalidadeQualificadaDto(int? QuantidadeMinima, DistincaoDasApresentacoesDto? Distincao);
+
+/// <summary>Como as apresentações se distinguem: a chave, a data de referência e as ocorrências esperadas.</summary>
+public sealed record DistincaoDasApresentacoesDto(string? Chave, DateOnly? DataReferencia, IReadOnlyList<string>? OcorrenciasEsperadas);
+
+/// <summary>A consequência do indeferimento do grupo e as bases legais dela.</summary>
+public sealed record IndeferimentoDoGrupoDto(string? Consequencia, IReadOnlyList<BaseLegalDto> BasesLegais);

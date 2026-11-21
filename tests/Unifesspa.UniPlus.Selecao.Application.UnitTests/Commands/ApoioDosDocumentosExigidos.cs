@@ -56,7 +56,6 @@ internal static class ApoioDosDocumentosExigidos
             mocks.FatoCandidatoReader,
             mocks.Modelos,
             mocks.UnitOfWork,
-            TimeProvider.System,
             CancellationToken.None);
 
     internal static TipoDocumentoView TipoDocumentoResultado(Guid id) =>
@@ -129,11 +128,13 @@ internal static class ApoioDosDocumentosExigidos
     internal sealed record CenarioDaExigencia(ProcessoSeletivo Processo, FaseCronograma Fase, Mocks Mocks, Guid TipoDocumentoId)
     {
         /// <summary>Exigência geral e obrigatória, sem condições nem bases legais, com qualquer formato.</summary>
-        internal ItemDocumentoExigidoInput ItemGeral(JsonElement? formatosPermitidos = null, int? tamanhoMaximoBytes = null) =>
-            new(Fase.Id, TipoDocumentoId, "GERAL", true, null, [], [], null, formatosPermitidos ?? Qualquer, tamanhoMaximoBytes);
+        internal ItemDocumentoExigidoDeTeste ItemGeral(JsonElement? formatosPermitidos = null, int? tamanhoMaximoBytes = null)
+        {
+            ItemDocumentoExigidoDeTeste item = ItemDocumentoExigidoDeTeste.Geral(Fase.Id, TipoDocumentoId).ComTamanhoMaximo(tamanhoMaximoBytes);
+            return formatosPermitidos is { } formatos ? item.ComFormatos(formatos) : item;
+        }
 
-        internal ItemDocumentoExigidoInput ItemCondicional(CondicaoGatilhoInput condicao) =>
-            ItemGeral() with { Aplicabilidade = "CONDICIONAL", Condicoes = [condicao] };
+        internal ItemDocumentoExigidoDeTeste ItemCondicional(CondicaoGatilhoInput condicao) => ItemGeral().Condicional(condicao);
 
         /// <summary>O leitor de tipos passa a devolver o tipo dado para o id do cenário (ou nenhum, quando é <see langword="null"/>).</summary>
         internal CenarioDaExigencia ComTipoDeDocumento(Func<Guid, TipoDocumentoView?> tipo)
@@ -143,9 +144,11 @@ internal static class ApoioDosDocumentosExigidos
         }
 
         internal DefinirDocumentosExigidosCommand Comando(ItemDocumentoExigidoInput item) =>
-            new(Processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)]);
+            new(Processo.Id, [NoExigenciaDeTeste.Folha(item).Construir()]);
 
-        internal Task<Result> DefinirAsync(ItemDocumentoExigidoInput item) => HandleAsync(Mocks, Comando(item));
+        internal DefinirDocumentosExigidosCommand Comando(ItemDocumentoExigidoDeTeste item) => Comando(item.Construir());
+
+        internal Task<Result> DefinirAsync(ItemDocumentoExigidoDeTeste item) => HandleAsync(Mocks, Comando(item));
     }
 
     internal static ProcessoSeletivo NovoProcesso(string nome) =>

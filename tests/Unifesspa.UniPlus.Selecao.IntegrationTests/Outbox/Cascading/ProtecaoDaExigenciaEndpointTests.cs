@@ -289,14 +289,11 @@ public sealed class ProtecaoDaExigenciaEndpointTests
 
         private object DocumentoDaExigencia(Guid tipoDocumentoId, string[] fatosComprovados) => new
         {
-            exigidoNaFaseId = FaseId,
-            finalidade = "INSCRICAO",
-            tipoDocumentoId,
-            aplicabilidade = "GERAL",
-            obrigatorio = false,
-            condicoes = Array.Empty<object>(),
-            basesLegais = Array.Empty<object>(),
-            formatosPermitidos = "QUALQUER",
+            tipoDocumento = new { id = tipoDocumentoId },
+            momento = new { faseId = FaseId, finalidade = "INSCRICAO" },
+            aplicabilidade = new { tipo = "GERAL", condicoes = Array.Empty<object>() },
+            indeferimento = new { obrigatorio = false, basesLegais = Array.Empty<object>() },
+            requisitos = new { formatosPermitidos = "QUALQUER" },
             fatosComprovados,
         };
 

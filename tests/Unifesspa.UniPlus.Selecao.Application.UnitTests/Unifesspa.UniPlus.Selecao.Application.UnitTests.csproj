@@ -41,6 +41,8 @@
     <Compile Include="../Shared/EntradaDaEtapaFormularioDeTeste.cs" Link="EntradaDaEtapaFormularioDeTeste.cs" />
     <Compile Include="../Shared/EntradaDoTermoExigidoDeTeste.cs" Link="EntradaDoTermoExigidoDeTeste.cs" />
     <Compile Include="../Shared/CriterioDesempateDeTeste.cs" Link="CriterioDesempateDeTeste.cs" />
+    <Compile Include="../Shared/ItemDocumentoExigidoDeTeste.cs" Link="ItemDocumentoExigidoDeTeste.cs" />
+    <Compile Include="../Shared/NoExigenciaDeTeste.cs" Link="NoExigenciaDeTeste.cs" />
     <Compile Include="../Shared/TipoEtapaViewDeTeste.cs" Link="TipoEtapaViewDeTeste.cs" />
     <Compile Include="../Shared/BonusRegionalDeTeste.cs" Link="BonusRegionalDeTeste.cs" />
     <Compile Include="../Shared/ExibicaoDeTeste.cs" Link="ExibicaoDeTeste.cs" />

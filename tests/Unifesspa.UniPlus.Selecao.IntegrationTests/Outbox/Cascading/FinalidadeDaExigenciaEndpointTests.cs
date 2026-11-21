@@ -55,14 +55,15 @@ public sealed class FinalidadeDaExigenciaEndpointTests
                 tipo = "FOLHA",
                 documento = new
                 {
-                    exigidoNaFaseId = processo.CronogramaFases.Single().Id,
-                    finalidade = "INSCRICAO",
-                    tipoDocumentoId,
-                    aplicabilidade = "CONDICIONAL",
-                    obrigatorio = true,
-                    condicoes = new[] { new { clausula = 0, fato = bolsista, operador = "IGUAL", valor = "true" } },
-                    basesLegais = Array.Empty<object>(),
-                    formatosPermitidos = "QUALQUER",
+                    tipoDocumento = new { id = tipoDocumentoId },
+                    momento = new { faseId = processo.CronogramaFases.Single().Id, finalidade = "INSCRICAO" },
+                    aplicabilidade = new
+                    {
+                        tipo = "CONDICIONAL",
+                        condicoes = new[] { new { clausula = 0, fato = bolsista, operador = "IGUAL", valor = "true" } },
+                    },
+                    indeferimento = new { obrigatorio = true, basesLegais = Array.Empty<object>() },
+                    requisitos = new { formatosPermitidos = "QUALQUER" },
                 },
             },
         });

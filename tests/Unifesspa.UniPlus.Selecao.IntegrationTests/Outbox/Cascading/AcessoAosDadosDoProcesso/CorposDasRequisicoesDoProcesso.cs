@@ -25,14 +25,11 @@ internal static class CorposDasRequisicoesDoProcesso
         tipo = "FOLHA",
         documento = new
         {
-            exigidoNaFaseId = faseId,
-            finalidade = "INSCRICAO",
-            tipoDocumentoId,
-            aplicabilidade = "GERAL",
-            obrigatorio = false,
-            condicoes = Array.Empty<object>(),
-            basesLegais = Array.Empty<object>(),
-            formatosPermitidos = "QUALQUER",
+            tipoDocumento = new { id = tipoDocumentoId },
+            momento = new { faseId, finalidade = "INSCRICAO" },
+            aplicabilidade = new { tipo = "GERAL", condicoes = Array.Empty<object>() },
+            indeferimento = new { obrigatorio = false, basesLegais = Array.Empty<object>() },
+            requisitos = new { formatosPermitidos = "QUALQUER" },
             fatosComprovados = comprova,
         },
     };

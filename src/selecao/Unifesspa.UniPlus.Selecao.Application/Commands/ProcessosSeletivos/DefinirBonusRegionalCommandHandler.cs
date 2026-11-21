@@ -48,7 +48,7 @@ public static class DefinirBonusRegionalCommandHandler
     }
 
     // Fora do rascunho a recusa vem antes de consultar cadastros.
-    private static async Task<Result<ProcessoSeletivo>> ObterParaEdicaoAsync(
+    internal static async Task<Result<ProcessoSeletivo>> ObterParaEdicaoAsync(
         IProcessoSeletivoRepository repositorio, Guid processoSeletivoId, CancellationToken cancellationToken)
     {
         ProcessoSeletivo? processo = await repositorio.ObterParaMutacaoAsync(processoSeletivoId, cancellationToken).ConfigureAwait(false);

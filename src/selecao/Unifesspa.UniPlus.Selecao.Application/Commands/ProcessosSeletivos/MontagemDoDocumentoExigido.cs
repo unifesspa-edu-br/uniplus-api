@@ -18,11 +18,13 @@ internal sealed class MontagemDoDocumentoExigido(ContextoDaMontagemDasExigencias
         ItemDocumentoExigidoInput folha, string? grupoDaRepeticao, CancellationToken cancellationToken)
     {
         Result<TipoDocumentoView> tipo = await TipoDeDocumentoAsync(folha, cancellationToken).ConfigureAwait(false);
-        if (tipo.IsFailure)
-        {
-            return Result<DocumentoExigido>.ValidationFailure(tipo.Errors);
-        }
+        return tipo.IsFailure
+            ? Result<DocumentoExigido>.ValidationFailure(tipo.Errors)
+            : MontarDoTipo(folha, tipo.Value!, grupoDaRepeticao);
+    }
 
+    private Result<DocumentoExigido> MontarDoTipo(ItemDocumentoExigidoInput folha, TipoDocumentoView tipo, string? grupoDaRepeticao)
+    {
         Result<IReadOnlyList<CondicaoGatilho>> condicoes = Condicoes(folha, grupoDaRepeticao);
         if (condicoes.IsFailure)
         {
@@ -32,28 +34,28 @@ internal sealed class MontagemDoDocumentoExigido(ContextoDaMontagemDasExigencias
         Result<IReadOnlyList<DocumentoExigidoBaseLegal>> basesLegais = BasesLegais(folha);
         return basesLegais.IsFailure
             ? Result<DocumentoExigido>.ValidationFailure(basesLegais.Errors)
-            : Criar(folha, tipo.Value!, condicoes.Value!, basesLegais.Value!);
+            : Criar(folha, tipo, condicoes.Value!, basesLegais.Value!);
     }
 
     private async Task<Result<TipoDocumentoView>> TipoDeDocumentoAsync(ItemDocumentoExigidoInput folha, CancellationToken cancellationToken)
     {
         TipoDocumentoView? tipo = await contexto.TiposDeDocumento
-            .ObterPorIdAsync(folha.TipoDocumentoId, cancellationToken).ConfigureAwait(false);
-        if (tipo is null)
-        {
-            return Result<TipoDocumentoView>.Failure(new DomainError(
+            .ObterPorIdAsync(folha.TipoDocumentoId(), cancellationToken).ConfigureAwait(false);
+        return tipo is null
+            ? Result<TipoDocumentoView>.Failure(new DomainError(
                 "DocumentoExigido.TipoDocumentoNaoEncontrado",
-                $"Tipo de documento {folha.TipoDocumentoId} não encontrado ou não está mais vivo."));
-        }
+                $"Tipo de documento {folha.TipoDocumentoId()} não encontrado ou não está mais vivo."))
+            : VinculoPermitido(tipo);
+    }
 
-        // O tipo sem a proteção aprovada só continua onde o processo já o exige: o vínculo novo é recusado, e
-        // a publicação barra o que ficou pendente depois de vinculado (ADR-0153).
-        return !tipo.ProtecaoAprovada && contexto.Processo.DocumentosExigidos.All(d => d.TipoDocumentoOrigemId != tipo.Id)
+    // O tipo sem a proteção aprovada só continua onde o processo já o exige: o vínculo novo é recusado, e
+    // a publicação barra o que ficou pendente depois de vinculado (ADR-0153).
+    private Result<TipoDocumentoView> VinculoPermitido(TipoDocumentoView tipo) =>
+        !tipo.ProtecaoAprovada && contexto.Processo.DocumentosExigidos.All(d => d.TipoDocumentoOrigemId != tipo.Id)
             ? Result<TipoDocumentoView>.Failure(new DomainError(
                 ProcessoSeletivoErrorCodes.TipoDocumentoNoVinculoComProtecaoPendente,
                 $"O tipo de documento '{tipo.Codigo}' aguarda a aprovação da proteção de dados e não aceita vínculo novo."))
             : Result<TipoDocumentoView>.Success(tipo);
-    }
 
     private Result<IReadOnlyList<CondicaoGatilho>> Condicoes(ItemDocumentoExigidoInput folha, string? grupoDaRepeticao) =>
         contexto.Fatos is { } fatos
@@ -62,37 +64,21 @@ internal sealed class MontagemDoDocumentoExigido(ContextoDaMontagemDasExigencias
 
     private static Result<IReadOnlyList<DocumentoExigidoBaseLegal>> BasesLegais(ItemDocumentoExigidoInput folha) =>
         EscritaDasBasesLegais.Resolver(
-            folha.BasesLegais,
+            folha.BasesLegais(),
             static b => DocumentoExigidoBaseLegal.ValidarFormaBasica(b.Referencia, EscritaDasBasesLegais.Abrangencia(b), EscritaDasBasesLegais.Status(b)),
             static b => DocumentoExigidoBaseLegal.Criar(b.Referencia, EscritaDasBasesLegais.Abrangencia(b), EscritaDasBasesLegais.Status(b), b.Observacao).Value!);
 
     private Result<DocumentoExigido> Criar(
-        ItemDocumentoExigidoInput folha,
-        TipoDocumentoView tipo,
-        IReadOnlyList<CondicaoGatilho> condicoes,
-        IReadOnlyList<DocumentoExigidoBaseLegal> basesLegais)
+        ItemDocumentoExigidoInput folha, TipoDocumentoView tipo, IReadOnlyList<CondicaoGatilho> condicoes, IReadOnlyList<DocumentoExigidoBaseLegal> basesLegais)
     {
         Result<EscritaDasRestricoesDoDocumento> restricoes = EscritaDasRestricoesDoDocumento.Resolver(folha, contexto.Modelos);
         return restricoes.IsFailure
             ? Result<DocumentoExigido>.ValidationFailure(restricoes.Errors)
             : DocumentoExigido.Criar(
-                folha.ExigidoNaFaseId,
-                tipo.Id,
-                tipo.Codigo,
-                tipo.Nome,
-                tipo.Categoria,
+                folha.FaseId(), tipo.Id, tipo.Codigo, tipo.Nome, tipo.Categoria,
                 new ProtecaoDoDocumento(tipo.ClassificacaoProtecao, tipo.FinalidadeTratamento, tipo.HipoteseLegal),
-                EscritaDaExigencia.AplicabilidadeDoToken(folha.Aplicabilidade),
-                folha.Obrigatorio,
-                folha.ConsequenciaIndeferimento,
-                condicoes,
-                basesLegais,
-                restricoes.Value!.Idade,
-                restricoes.Value.Formatos,
-                folha.TamanhoMaximoBytes,
-                folha.ExigidoNaEtapaId,
-                restricoes.Value.Modelo,
-                EscritaDaExigencia.FinalidadeDoToken(folha.Finalidade),
-                folha.FatosComprovados);
+                EscritaDaExigencia.AplicabilidadeDoToken(folha.Aplicabilidade()), folha.Obrigatorio(), folha.Consequencia(),
+                condicoes, basesLegais, restricoes.Value!.Idade, restricoes.Value.Formatos, folha.TamanhoMaximoBytes(),
+                folha.EtapaId(), restricoes.Value.Modelo, EscritaDaExigencia.FinalidadeDoToken(folha.Finalidade()), folha.FatosComprovados);
     }
 }

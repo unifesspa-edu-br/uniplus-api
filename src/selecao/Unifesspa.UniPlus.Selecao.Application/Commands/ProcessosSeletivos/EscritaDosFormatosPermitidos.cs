@@ -57,23 +57,16 @@ internal static class EscritaDosFormatosPermitidos
         return FormatosPermitidos.Criar(qualquer: false, entradas);
     }
 
-    private static Result<(string Formato, int? TamanhoMaximoBytesMax)> ResolverItem(JsonElement item)
+    private static Result<(string Formato, int? TamanhoMaximoBytesMax)> ResolverItem(JsonElement item) => item.ValueKind switch
     {
-        if (item.ValueKind == JsonValueKind.String)
-        {
-            return Result<(string Formato, int? TamanhoMaximoBytesMax)>.Success((item.GetString() ?? string.Empty, null));
-        }
+        JsonValueKind.String => Result<(string Formato, int? TamanhoMaximoBytesMax)>.Success((item.GetString() ?? string.Empty, null)),
+        JsonValueKind.Object => ResolverObjeto(item),
+        _ => Falha("Cada item da lista de formatos permitidos deve ser um texto ou um objeto {formato, tamanhoMaximoBytesMax}."),
+    };
 
-        if (item.ValueKind != JsonValueKind.Object)
-        {
-            return Falha("Cada item da lista de formatos permitidos deve ser um texto ou um objeto {formato, tamanhoMaximoBytesMax}.");
-        }
-
-        string? formato = item.TryGetProperty("formato", out JsonElement formatoElemento)
-            && formatoElemento.ValueKind == JsonValueKind.String
-                ? formatoElemento.GetString()
-                : null;
-        if (formato is null)
+    private static Result<(string Formato, int? TamanhoMaximoBytesMax)> ResolverObjeto(JsonElement item)
+    {
+        if (FormatoDoObjeto(item) is not { } formato)
         {
             return Falha("Cada item da lista de formatos permitidos deve declarar 'formato'.");
         }
@@ -83,6 +76,11 @@ internal static class EscritaDosFormatosPermitidos
             ? Result<(string Formato, int? TamanhoMaximoBytesMax)>.Failure(tamanho.Error!)
             : Result<(string Formato, int? TamanhoMaximoBytesMax)>.Success((formato, tamanho.Value));
     }
+
+    private static string? FormatoDoObjeto(JsonElement item) =>
+        item.TryGetProperty("formato", out JsonElement formato) && formato.ValueKind == JsonValueKind.String
+            ? formato.GetString()
+            : null;
 
     // <c>tamanhoMaximoBytesMax</c> ausente ou <c>null</c> é "sem teto por formato". Qualquer outra forma
     // que não seja um inteiro é malformada: falha nomeada, nunca convertida em silêncio nem deixada

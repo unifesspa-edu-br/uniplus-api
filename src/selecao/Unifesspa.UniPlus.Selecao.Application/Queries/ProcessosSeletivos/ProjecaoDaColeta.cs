@@ -120,16 +120,30 @@ internal static class ProjecaoDaColeta
         referencia is null ? null : new ReferenciaTemporalFatosDto(referencia.Tipo.ToCodigo(), referencia.Data, referencia.FaseId);
 
     internal static DocumentoExigidoDto ProjetarDocumento(DocumentoExigido documento) => new(
-        documento.Id, documento.ExigidoNaFaseId,
-        documento.TipoDocumentoOrigemId, documento.TipoDocumentoCodigo, documento.TipoDocumentoNome, documento.TipoDocumentoCategoria,
-        ProjetarAplicabilidade(documento.Aplicabilidade), documento.Obrigatorio, documento.ConsequenciaIndeferimento,
-        [.. documento.Condicoes.OrderBy(c => c.Clausula).ThenBy(c => c.Id).Select(ProjetarCondicaoDoGatilho)],
-        [.. documento.BasesLegais.OrderBy(b => b.Id).Select(ProjetarBaseLegal)],
-        ProjetarIdadeMaximaDeEmissao(documento.IdadeMaximaEmissao), ProjetarFormatosPermitidos(documento.FormatosPermitidos),
-        documento.TamanhoMaximoBytes, documento.ExigidoNaEtapaId, ProjetarModelo(documento.Modelo),
-        documento.Finalidade is { } finalidade ? EstruturaFormulario.ParaToken(finalidade) : null,
-        ClassificacoesDeProtecao.ParaTokenCanonico(documento.ClassificacaoProtecao),
-        documento.FinalidadeTratamento, documento.HipoteseLegal, [.. documento.FatosComprovados]);
+        documento.Id,
+        new TipoDocumentoDaExigenciaDto(
+            documento.TipoDocumentoOrigemId, documento.TipoDocumentoCodigo, documento.TipoDocumentoNome, documento.TipoDocumentoCategoria,
+            new ProtecaoDeDadosDto(
+                ClassificacoesDeProtecao.ParaTokenCanonico(documento.ClassificacaoProtecao), documento.FinalidadeTratamento, documento.HipoteseLegal)),
+        ProjetarMomento(documento),
+        new AplicabilidadeDaExigenciaDto(
+            ProjetarAplicabilidade(documento.Aplicabilidade),
+            [.. documento.Condicoes.OrderBy(c => c.Clausula).ThenBy(c => c.Id).Select(ProjetarCondicaoDoGatilho)]),
+        new IndeferimentoDoDocumentoDto(
+            documento.Obrigatorio, documento.ConsequenciaIndeferimento, [.. documento.BasesLegais.OrderBy(b => b.Id).Select(ProjetarBaseLegal)]),
+        ProjetarRequisitos(documento),
+        [.. documento.FatosComprovados]);
+
+    private static MomentoDaExigenciaDto ProjetarMomento(DocumentoExigido documento) => new(
+        documento.ExigidoNaFaseId,
+        documento.ExigidoNaEtapaId,
+        documento.Finalidade is { } finalidade ? EstruturaFormulario.ParaToken(finalidade) : null);
+
+    private static RequisitosDoDocumentoDto ProjetarRequisitos(DocumentoExigido documento) => new(
+        ProjetarFormatosPermitidos(documento.FormatosPermitidos),
+        documento.TamanhoMaximoBytes,
+        ProjetarIdadeMaximaDeEmissao(documento.IdadeMaximaEmissao),
+        ProjetarModelo(documento.Modelo));
 
     private static ModeloDaExigenciaDto? ProjetarModelo(ModeloDaExigencia? modelo) => modelo is null ? null
         : new ModeloDaExigenciaDto(modelo.ModeloId, modelo.NomeArquivo, ModeloDeDocumento.TokenDe(modelo.Formato), modelo.HashSha256);
@@ -139,14 +153,13 @@ internal static class ProjecaoDaColeta
         no.Id,
         no.Tipo.ToCodigo(),
         no.Tipo == TipoNo.Folha ? ProjetarDocumento(no.DocumentoExigido!) : null,
-        no.QuantidadeMinima,
-        no.Consequencia,
-        [.. no.BasesLegais.OrderBy(static b => b.Id).Select(ProjetarBaseLegalDoNo)],
+        new CardinalidadeQualificadaDto(no.QuantidadeMinima, ProjetarDistincao(no.Distincao)),
+        new IndeferimentoDoGrupoDto(no.Consequencia, [.. no.BasesLegais.OrderBy(static b => b.Id).Select(ProjetarBaseLegalDoNo)]),
         [.. no.Filhos.OrderBy(static f => f.Ordem).ThenBy(static f => f.Id).Select(ProjetarNo)],
-        no.Distincao?.Chave?.ToCodigo(),
-        no.Distincao?.DataReferencia,
-        no.Distincao?.OcorrenciasEsperadas,
         no.RepetePorEntidade);
+
+    private static DistincaoDasApresentacoesDto? ProjetarDistincao(DistincaoDasApresentacoes? distincao) =>
+        distincao is null ? null : new DistincaoDasApresentacoesDto(distincao.Chave?.ToCodigo(), distincao.DataReferencia, distincao.OcorrenciasEsperadas);
 
     private static BaseLegalDto ProjetarBaseLegalDoNo(NoExigenciaBaseLegal baseLegal) => new(
         baseLegal.Id, baseLegal.Referencia, baseLegal.Abrangencia.ToCodigo(), baseLegal.Status.ToCodigo(), baseLegal.Observacao);

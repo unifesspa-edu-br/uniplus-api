@@ -30,7 +30,7 @@ internal static class ConferenciaDasCondicoesDaExigencia
     public static Result<IReadOnlyList<CondicaoGatilho>> Resolver(
         ItemDocumentoExigidoInput folha, ProcessoSeletivo processo, FatosDoGatilho fatos, string? grupoDaRepeticao)
     {
-        Result<IReadOnlyList<CondicaoGatilho>> condicoes = Montar(folha.Condicoes, fatos, UniversoDaFolha(processo, fatos, grupoDaRepeticao));
+        Result<IReadOnlyList<CondicaoGatilho>> condicoes = Montar(folha.Condicoes(), fatos, UniversoDaFolha(processo, fatos, grupoDaRepeticao));
         if (condicoes.IsFailure || condicoes.Value!.Count == 0)
         {
             return condicoes;
@@ -87,7 +87,7 @@ internal static class ConferenciaDasCondicoesDaExigencia
         CondicaoGatilhoInput declarada, int posicao, List<(int Clausula, CondicaoDnf Condicao)> linhas, List<FieldError> recusas)
     {
         Result<CondicaoDnf> condicao = CondicaoDnf.CriarInformada(declarada.Fato, declarada.Operador, InterpretarValor(declarada.Valor));
-        recusas.AddRange(condicao.Errors.Select(recusa => recusa.NoCaminhoDe($"condicoes[{posicao}]")));
+        recusas.AddRange(condicao.Errors.Select(recusa => recusa.NoCaminhoDe($"{AplicabilidadeDaExigenciaInput.CaminhoDasCondicoes}[{posicao}]")));
         if (condicao.IsSuccess)
         {
             linhas.Add((declarada.Clausula, condicao.Value!));
@@ -130,10 +130,10 @@ internal static class ConferenciaDasCondicoesDaExigencia
         IReadOnlyList<CondicaoGatilho> condicoes, ItemDocumentoExigidoInput folha, ProcessoSeletivo processo, FatosDoGatilho fatos)
     {
         ConfiguracaoDeclarada configuracao = processo.Declaracao();
-        FinalidadeFormulario? finalidade = EscritaDaExigencia.FinalidadeDoToken(folha.Finalidade);
+        FinalidadeFormulario? finalidade = EscritaDaExigencia.FinalidadeDoToken(folha.Finalidade());
         DomainError? recusa = condicoes
             .Select(c => FaseEfetivaDoFato.RecusaDeFaseDoGatilho(
-                configuracao, c.Fato, folha.ExigidoNaFaseId, finalidade, fatos.PontoResolucaoPorFato, fatos.MembroPorAgregado))
+                configuracao, c.Fato, folha.FaseId(), finalidade, fatos.PontoResolucaoPorFato, fatos.MembroPorAgregado))
             .FirstOrDefault(static r => r is not null);
         return recusa is null ? Result.Success() : Result.Failure(recusa);
     }

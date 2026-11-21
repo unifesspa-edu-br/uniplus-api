@@ -62,8 +62,8 @@ public sealed class RecusasAcumuladasDasCondicoesDaEntradaTests
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Contain(
         [
-            ("condicoes[0].fato", FatoNaoInformado),
-            ("condicoes[0].operador", OperadorDesconhecido),
+            ("aplicabilidade.condicoes[0].fato", FatoNaoInformado),
+            ("aplicabilidade.condicoes[0].operador", OperadorDesconhecido),
         ]);
     }
 
@@ -71,18 +71,14 @@ public sealed class RecusasAcumuladasDasCondicoesDaEntradaTests
     public async Task DefinirDocumentosExigidos_GatilhoComDuasCondicoesInvalidas_RecusaCadaUmaNaSuaPosicao()
     {
         CenarioDaExigencia cenario = ProcessoComUmaFase();
-        ItemDocumentoExigidoInput item = cenario.ItemGeral() with
-        {
-            Aplicabilidade = "CONDICIONAL",
-            Condicoes = [new(0, "", "IGUAL", "true"), new(1, "SEXO", "XPTO", "true")],
-        };
+        ItemDocumentoExigidoDeTeste item = cenario.ItemGeral().Condicional(new(0, "", "IGUAL", "true"), new(1, "SEXO", "XPTO", "true"));
 
         Result resultado = await cenario.DefinirAsync(item);
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Contain(
         [
-            ("condicoes[0].fato", FatoNaoInformado),
-            ("condicoes[1].operador", OperadorDesconhecido),
+            ("aplicabilidade.condicoes[0].fato", FatoNaoInformado),
+            ("aplicabilidade.condicoes[1].operador", OperadorDesconhecido),
         ]);
     }
 }

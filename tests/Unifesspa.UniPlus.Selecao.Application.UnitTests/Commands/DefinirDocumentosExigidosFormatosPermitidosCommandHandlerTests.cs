@@ -51,7 +51,7 @@ public sealed class DefinirDocumentosExigidosFormatosPermitidosCommandHandlerTes
     {
         CenarioDaExigencia cenario = ProcessoComUmaFase();
 
-        Result resultado = await cenario.DefinirAsync(cenario.ItemGeral() with { FormatosPermitidos = null });
+        Result resultado = await cenario.DefinirAsync(cenario.ItemGeral().ComFormatos(null));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("FormatosPermitidos.Obrigatorio");
