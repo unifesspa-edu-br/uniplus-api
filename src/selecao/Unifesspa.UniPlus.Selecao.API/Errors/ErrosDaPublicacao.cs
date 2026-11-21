@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.API.Errors;
 using Microsoft.AspNetCore.Http;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
 /// <summary>
 /// Recusas da publicação do processo, da janela de isenção e da cadeia de versões da configuração.
@@ -30,6 +31,7 @@ internal static class ErrosDaPublicacao
         new("ProcessoSeletivo.PeriodoInscricaoNaoInformavel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.periodo_inscricao_nao_informavel", "O período de inscrição vem da janela da fase do cronograma que coleta inscrição e não pode ser informado na publicação")),
         new("ProcessoSeletivo.PeriodoInscricaoObrigatorioSemFaseDeColeta", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.periodo_inscricao_obrigatorio_sem_fase_de_coleta", "O processo não tem fase do cronograma que colete inscrição, então o período precisa ser informado na publicação")),
         new("ProcessoSeletivo.FaseQueColetaInscricaoSemJanela", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fase_que_coleta_inscricao_sem_janela", "A fase que coleta inscrição precisa de início e fim definidos para que o Edital declare o período")),
+        new(ProcessoSeletivoErrorCodes.FaseSemDefinitivoSemDataFinal, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fase_sem_definitivo_sem_data_final", "A fase que não publica resultado definitivo precisa declarar a data final do período")),
     ];
 
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> FasesDoCronogramaNaPublicacao() =>

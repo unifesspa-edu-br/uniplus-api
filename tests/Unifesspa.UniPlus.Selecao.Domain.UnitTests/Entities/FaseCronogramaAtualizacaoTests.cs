@@ -156,7 +156,7 @@ public sealed class FaseCronogramaAtualizacaoTests
     }
 
     [Fact(DisplayName = "A janela da fase viva fica em UTC e o código fica aparado")]
-    public void AtualizarDe_JanelaComOffsetECodigoComEspacos_FicaEmUtcEAparado()
+    public void AtualizarDe_PeriodoComDeslocamentoECodigoComEspacos_FicaEmUtcEAparado()
     {
         FaseCronograma viva = Fase(new());
 
@@ -173,14 +173,13 @@ public sealed class FaseCronogramaAtualizacaoTests
     {
         Ordem = 3,
         Codigo = "RESULTADO_FINAL",
-        FaseConcluinteCodigo = "   ",
         EmiteParecerIndividual = true,
         ColetaInscricao = true,
         Produtos = [Preliminar(Resultado)],
         Unidade = UnidadesDeTeste.Cga,
     });
 
-    [Fact(DisplayName = "A fase viva recebe os demais dados da fase nova, com a concluinte em branco virando ausente")]
+    [Fact(DisplayName = "A fase viva recebe os demais dados da fase nova")]
     public void AtualizarDe_DadosDaFaseNova_SaoCopiadosParaAViva()
     {
         FaseCronograma nova = FaseNovaComDadosDiferentes();
@@ -188,8 +187,8 @@ public sealed class FaseCronogramaAtualizacaoTests
 
         Atualizar(viva, nova);
 
-        (viva.Ordem, viva.FaseConcluinteCodigo, viva.EmiteParecerIndividual, viva.ColetaInscricao)
-            .Should().Be((3, null, true, true));
+        (viva.Ordem, viva.EmiteParecerIndividual, viva.ColetaInscricao)
+            .Should().Be((3, true, true));
         viva.FaseCanonicaOrigemId.Should().Be(nova.FaseCanonicaOrigemId);
         viva.UnidadeResponsavel.Should().Be(UnidadesDeTeste.Cga);
     }

@@ -13,7 +13,7 @@ using Xunit;
 
 using static CenarioDeProcesso;
 
-/// <summary>O ciclo recursal do processo junta o das fases e o das etapas: as fases primeiro, e cada etapa fecha o ciclo dentro dela.</summary>
+/// <summary>O fechamento do ciclo de recurso do processo junta o das fases e o das etapas: as fases primeiro, e cada fase e cada etapa fecham o ciclo dentro de si.</summary>
 public sealed class CicloRecursalDoProcessoTests
 {
     [Fact(DisplayName = "As causas das fases saem antes das das etapas, cada uma na posição de quem a causa")]
@@ -23,7 +23,7 @@ public sealed class CicloRecursalDoProcessoTests
         EtapasDoProcesso etapas = Etapas(new ModeloDeEtapa("Prova") { Produtos = [ModeloDeEtapa.Preliminar("GABARITO")] });
 
         Causas(CicloRecursalDoProcesso.Conferir(cronograma, etapas)).Should().Equal(
-            ("fases[0].faseConcluinteCodigo", "ProcessoSeletivo.ConclusaoNaoDeclarada"),
+            ("fases[0].produtos", "ProcessoSeletivo.FaseComPreliminarSemDefinitivo"),
             ("etapas[0].produtos", "ProcessoSeletivo.EtapaComPreliminarSemDefinitivo"));
     }
 
@@ -48,46 +48,5 @@ public sealed class CicloRecursalDoProcessoTests
         CicloRecursalDoProcesso.Item(conforme, etapaComCausa).Ok.Should().BeFalse();
         CicloRecursalDoProcesso.Item(conforme, Etapas()).Codigo.Should().Be("cronograma_conclusao_do_ciclo_recursal");
         CicloRecursalDoProcesso.Item(conforme, Etapas()).Mensagem.Should().StartWith("Cronograma: a fase ou a etapa que publica resultado preliminar");
-    }
-
-    [Fact(DisplayName = "A concluinte de código compartilhado por duas fases deixa o item vermelho e ecoa a fase que a declara")]
-    public void Item_ConcluinteDeCodigoAmbiguo_Vermelho()
-    {
-        CronogramaDoProcesso cronograma = Fases(
-            new ModeloDeFase("ANALISE", 1) { FaseConcluinteCodigo = "RESULTADO" }.Publicando(ModeloDeFase.Preliminar("RESULTADO")),
-            new ModeloDeFase("RESULTADO", 2).Publicando(ModeloDeFase.Definitivo("RESULTADO")),
-            new ModeloDeFase("RESULTADO", 3).Publicando(ModeloDeFase.Definitivo("RESULTADO")));
-
-        CicloRecursalDoProcesso.Conferir(cronograma, Etapas()).Should().BeEmpty();
-
-        ItemConformidade item = CicloRecursalDoProcesso.Item(cronograma, Etapas());
-
-        item.Ok.Should().BeFalse();
-        item.Mensagem.Should().EndWith(" (fases com concluinte indeterminada: ANALISE)");
-    }
-
-    [Fact(DisplayName = "A janela invertida de uma das duas fases, que impede a comparação de início, deixa o item vermelho")]
-    public void Item_JanelaInvertidaImpedeAComparacao_Vermelho()
-    {
-        ModeloDeFase abre = new ModeloDeFase("ANALISE", 1) { FaseConcluinteCodigo = "RESULTADO" }.Publicando(ModeloDeFase.Preliminar("RESULTADO"));
-        ModeloDeFase conclui = new ModeloDeFase("RESULTADO", 2).Publicando(ModeloDeFase.Definitivo("RESULTADO"));
-
-        CronogramaDoProcesso invertidaNaConcluinte = Fases(abre.Janela(5, 6), conclui.Janela(9, 4));
-        CronogramaDoProcesso invertidaNaQueAbre = Fases(abre.Janela(8, 2), conclui.Janela(3, 9));
-
-        CicloRecursalDoProcesso.Conferir(invertidaNaConcluinte, Etapas()).Should().BeEmpty();
-        CicloRecursalDoProcesso.Item(invertidaNaConcluinte, Etapas()).Ok.Should().BeFalse();
-        CicloRecursalDoProcesso.Item(invertidaNaQueAbre, Etapas()).Mensagem.Should().EndWith(" (fases com concluinte indeterminada: ANALISE)");
-    }
-
-    [Fact(DisplayName = "A concluinte localizada com as janelas comparáveis, ou sem janela declarada, mantém o item verde sem eco")]
-    public void Item_ConcluinteDeterminada_Verde()
-    {
-        ModeloDeFase abre = new ModeloDeFase("ANALISE", 1) { FaseConcluinteCodigo = "RESULTADO" }.Publicando(ModeloDeFase.Preliminar("RESULTADO"));
-        ModeloDeFase conclui = new ModeloDeFase("RESULTADO", 2).Publicando(ModeloDeFase.Definitivo("RESULTADO"));
-
-        CicloRecursalDoProcesso.Item(Fases(abre.Janela(5, 6), conclui.Janela(5, 9)), Etapas()).Ok.Should().BeTrue();
-        CicloRecursalDoProcesso.Item(Fases(abre, conclui), Etapas()).Ok.Should().BeTrue();
-        CicloRecursalDoProcesso.Item(Fases(abre, conclui), Etapas()).Mensagem.Should().NotContain("indeterminada");
     }
 }

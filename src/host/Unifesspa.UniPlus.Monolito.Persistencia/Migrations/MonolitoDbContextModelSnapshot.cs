@@ -12466,11 +12466,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("fase_canonica_origem_id");
 
-                    b.Property<string>("FaseConcluinteCodigo")
-                        .HasMaxLength(60)
-                        .HasColumnType("character varying(60)")
-                        .HasColumnName("fase_concluinte_codigo");
-
                     b.Property<DateTimeOffset?>("Fim")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("fim");

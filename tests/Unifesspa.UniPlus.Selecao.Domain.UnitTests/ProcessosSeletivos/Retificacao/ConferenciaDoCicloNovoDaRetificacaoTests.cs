@@ -288,8 +288,8 @@ public sealed class ConferenciaDoCicloNovoDaRetificacaoTests
     }
 
     /// <summary>
-    /// A versão publicada: inscrição, prova (que publica o preliminar e aponta o resultado como concluinte),
-    /// resultado (que publica o definitivo) e matrícula, em momentos crescentes.
+    /// A versão publicada: inscrição, prova (que publica o preliminar e o definitivo, e fecha o ciclo nela mesma),
+    /// resultado e matrícula, em momentos crescentes.
     /// </summary>
     private sealed class Cronograma
     {
@@ -301,8 +301,8 @@ public sealed class ConferenciaDoCicloNovoDaRetificacaoTests
         internal Cronograma(bool comSegundaMateria = false)
         {
             Inscricao = Fase(1, "INSCRICAO");
-            Prova = Fase(2, "PROVA", faseConcluinteCodigo: "RESULTADO", produtos: comSegundaMateria ? [_preliminar, _preliminarDaSegundaMateria] : [_preliminar]);
-            Resultado = Fase(3, "RESULTADO", produtos: comSegundaMateria ? [_definitivo, _definitivoDaSegundaMateria] : [_definitivo]);
+            Prova = Fase(2, "PROVA", produtos: comSegundaMateria ? [_preliminar, _definitivo, _preliminarDaSegundaMateria, _definitivoDaSegundaMateria] : [_preliminar, _definitivo]);
+            Resultado = Fase(3, "RESULTADO");
             Matricula = Fase(4, "MATRICULA");
         }
 
@@ -320,9 +320,9 @@ public sealed class ConferenciaDoCicloNovoDaRetificacaoTests
 
         internal IdentidadeDoItemDoEdital ItemPreliminarDaSegundaMateria => Item(Prova, _preliminarDaSegundaMateria);
 
-        internal IdentidadeDoItemDoEdital ItemDefinitivo => Item(Resultado, _definitivo);
+        internal IdentidadeDoItemDoEdital ItemDefinitivo => Item(Prova, _definitivo);
 
-        internal IdentidadeDoItemDoEdital ItemDefinitivoDaSegundaMateria => Item(Resultado, _definitivoDaSegundaMateria);
+        internal IdentidadeDoItemDoEdital ItemDefinitivoDaSegundaMateria => Item(Prova, _definitivoDaSegundaMateria);
 
         /// <summary>O cronograma novo em que só as fases dadas têm a janela trocada.</summary>
         internal FaseCronograma[] ComPrazoNovoEm(params FaseCronograma[] fases) =>

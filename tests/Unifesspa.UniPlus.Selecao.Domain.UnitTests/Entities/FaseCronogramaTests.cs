@@ -78,6 +78,18 @@ public sealed class FaseCronogramaTests
         resultado.Value.Fim.Should().BeNull();
     }
 
+    [Fact(DisplayName = "Fase de origem NA_EXECUCAO com a data final e sem início é aceita: só a data fixada no edital exige o período inteiro")]
+    public void Periodo_OrigemNaExecucao_SoComFim_Aceita()
+    {
+        DateTimeOffset fim = new(2026, 1, 31, 0, 0, 0, TimeSpan.Zero);
+
+        Result<FaseCronograma> resultado = Criar(m => m with { OrigemData = OrigemDataFase.NaExecucao, Inicio = null, Fim = fim });
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.Inicio.Should().BeNull();
+        resultado.Value.Fim.Should().Be(fim);
+    }
+
     [Fact(DisplayName = "CA-07: fase com Fim antes do Inicio é recusada (JanelaInvertida) — vale para qualquer OrigemData")]
     public void Janela_FimAntesDoInicio_Recusa()
     {
@@ -127,8 +139,7 @@ public sealed class FaseCronogramaTests
             OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_PRELIMINAR", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
             ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
-            Ordem: 1, Inicio: instanteUtc.ToOffset(TimeSpan.FromHours(-3)), Fim: instanteUtc.AddDays(2).ToOffset(TimeSpan.FromHours(-3)), FaseConcluinteCodigo: null,
-            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            Ordem: 1, Inicio: instanteUtc.ToOffset(TimeSpan.FromHours(-3)), Fim: instanteUtc.AddDays(2).ToOffset(TimeSpan.FromHours(-3)), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []);
 

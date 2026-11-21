@@ -22,7 +22,6 @@ public sealed class FaseCronogramaRecorteDeCompetenciaTests
                     ProdutoDaFase.Criar("GABARITO", PapelProdutoFase.Preliminar),
                     ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
                 ],
-            FaseConcluinteCodigo = "RESULTADO_FINAL",
         });
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -168,7 +167,7 @@ public sealed class FaseCronogramaRecorteDeCompetenciaTests
         ProdutoDaFase gabarito = ProdutoDaFase.Criar("GABARITO", PapelProdutoFase.Preliminar);
         ProdutoDaFase resultadoPreliminar = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar);
 
-        Result<FaseCronograma> resultado = Criar(m => m with { OrigemData = OrigemDataFase.NaExecucao, Produtos = [gabarito, resultadoPreliminar], FaseConcluinteCodigo = "RESULTADO_FINAL", RegraRecurso = Recurso(resultadoPreliminar.Id) });
+        Result<FaseCronograma> resultado = Criar(m => m with { OrigemData = OrigemDataFase.NaExecucao, Produtos = [gabarito, resultadoPreliminar], RegraRecurso = Recurso(resultadoPreliminar.Id) });
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.RegraRecurso!.ProdutoAncoraId.Should().Be(resultadoPreliminar.Id);

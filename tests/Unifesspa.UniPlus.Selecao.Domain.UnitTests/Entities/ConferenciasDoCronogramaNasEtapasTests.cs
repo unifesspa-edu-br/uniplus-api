@@ -123,8 +123,8 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
             .GetValue(etapa).Should().BeAssignableTo<List<RecursoDaEtapa>>().Which.Add(Janela(definitivo));
     }
 
-    [Fact(DisplayName = "Etapa que publica o preliminar sem o definitivo do mesmo tipo: a gravação das etapas recusa")]
-    public void EtapaComPreliminarSemDefinitivo_GravacaoRecusa()
+    [Fact(DisplayName = "Etapa que publica o preliminar sem o definitivo do mesmo tipo: a gravação das etapas aceita, e o fechamento do ciclo é conferido na publicação")]
+    public void EtapaComPreliminarSemDefinitivo_GravacaoAceita()
     {
         ProcessoSeletivo processo = ProcessoConforme();
         EtapaProcesso etapa = processo.Etapas.Single();
@@ -136,8 +136,7 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
 
         Result gravar = processo.DefinirEtapas([etapa]);
 
-        gravar.IsFailure.Should().BeTrue();
-        gravar.Errors.Should().ContainSingle().Which.Error.Code.Should().Be("ProcessoSeletivo.EtapaComPreliminarSemDefinitivo");
+        gravar.IsSuccess.Should().BeTrue(gravar.Error?.Message);
     }
 
     [Fact(DisplayName = "Etapa que publica o preliminar sem o definitivo do mesmo tipo, carregada do banco: item vermelho e a publicação recusa")]
@@ -158,48 +157,6 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
         publicar.Error!.Code.Should().Be("ProcessoSeletivo.EtapaComPreliminarSemDefinitivo");
     }
 
-    [Fact(DisplayName = "Fase que já publica o definitivo do tipo e aponta uma concluinte que o publica também: o cronograma recusa")]
-    public void FaseComConcluinteQueRepeteODefinitivo_Recusa()
-    {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Cronograma", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
-            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        FaseCronograma abre = FaseQueAbreEFechaOMesmoTipoApontandoConcluinte();
-        FaseCronograma conclui = FaseConcluinteQuePublicaODefinitivo();
-
-        Result gravar = processo.DefinirCronogramaFases([abre, conclui], []);
-
-        gravar.IsFailure.Should().BeTrue();
-        gravar.Errors.Should().ContainSingle().Which.Error.Code.Should().Be("ProcessoSeletivo.ConclusaoDuplicada");
-    }
-
-    private static FaseCronograma FaseQueAbreEFechaOMesmoTipoApontandoConcluinte() => FaseCronograma.Criar(
-        new OrigemCanonicaDaFase(
-            Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false,
-            ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
-        new DecisoesDeCronogramaDaFase(
-            1, Inicio: null, Fim: null, FaseConcluinteCodigo: "RESULTADO_FINAL", UnidadeResponsavel: UnidadesDeTeste.Ceps),
-        new PublicacoesDaFase(
-            Produtos:
-            [
-                ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
-                ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
-            ],
-            EmiteParecerIndividual: false,
-            RegraRecurso: null),
-        bancasRequeridas: []).Value!;
-
-    private static FaseCronograma FaseConcluinteQuePublicaODefinitivo() => FaseCronograma.Criar(
-        new OrigemCanonicaDaFase(
-            Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false,
-            ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
-        new DecisoesDeCronogramaDaFase(2, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
-        new PublicacoesDaFase(
-            Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false,
-            RegraRecurso: null),
-        bancasRequeridas: []).Value!;
-
     private static TiposDeAtoUnicosPorObjeto Catalogo(string codigo, bool ehResultado, bool congela) =>
         TiposDeAtoUnicosPorObjeto.ParaChecklist(
             new Dictionary<string, string>(StringComparer.Ordinal),
@@ -215,7 +172,7 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
             ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
             1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
         HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(produtos),
         bancasRequeridas: []).Value!;
 

@@ -43,13 +43,13 @@ public sealed class LeituraDasFasesTests
     public void FaseCanonica_Inexistente_AcumulaRecusasIndependentes()
     {
         FaseNoDocumento fase = Fase(0, "fase", "FASE-DIGITADA", "UNIDADE-DIGITADA")
-            .Publicando(Preliminar(3, "ATO-DIGITADO")).ComConcluinte("chave-digitada");
+            .Publicando(Preliminar(3, "ATO-DIGITADO"));
         IdentificacaoECronogramaLidos lidos = Ler(Documento(fase));
 
         lidos.Cronograma.CronogramaFases.Should().BeEmpty();
         lidos.Origem.PartesRecusadas.Select(static parte => parte.Causa.Field).Should().Equal(
             "/cronograma/fases/0/faseCanonicaCodigo", "/cronograma/fases/0/unidadeResponsavelCodigo",
-            "/cronograma/fases/0/produtos/3/atoCodigo", "/cronograma/fases/0/faseConcluinteChave");
+            "/cronograma/fases/0/produtos/3/atoCodigo");
         lidos.Origem.PartesRecusadas.Should().OnlyContain(parte => parte.Caminho == "fases" && parte.Chave == "fase" && parte.PosicaoDeOrigem == 0);
         Mensagens(lidos).Should().NotContain(mensagem => mensagem.Contains("DIGITAD", StringComparison.OrdinalIgnoreCase));
     }
@@ -82,11 +82,11 @@ public sealed class LeituraDasFasesTests
         IdentificacaoECronogramaLidos lidos = Ler(Documento(
             Fase(0, "inscricao", unidade: "UNIDADE-DIGITADA"),
             Fase(1, "recurso", "RECURSO"),
-            Fase(2, "resultado", "RESULTADO").ComConcluinte("chave-digitada")));
+            Fase(2, "resultado", "RESULTADO", unidade: "OUTRA-DIGITADA")));
 
         PartesRecusadas(lidos).Should().Equal(
             ("/cronograma/fases/0/unidadeResponsavelCodigo", FaseCronogramaErrorCodes.UnidadeResponsavelNaoEncontrada),
-            ("/cronograma/fases/2/faseConcluinteChave", DocumentoDaConfiguracaoErrorCodes.ChaveCitadaInexistente));
+            ("/cronograma/fases/2/unidadeResponsavelCodigo", FaseCronogramaErrorCodes.UnidadeResponsavelNaoEncontrada));
     }
 
     [Fact(DisplayName = "A fase sem unidade que a leitura recusou não é recusada de novo como sem unidade pela completude")]

@@ -182,8 +182,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
-            1, Inicio: temInicio ? InstanteEmBelem.Em(2026, 1, 1) : null, Fim: temFim ? InstanteEmBelem.Em(2026, 2, 1) : null, FaseConcluinteCodigo: null,
-            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            1, Inicio: temInicio ? InstanteEmBelem.Em(2026, 1, 1) : null, Fim: temFim ? InstanteEmBelem.Em(2026, 2, 1) : null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
 
@@ -210,7 +209,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
     private static FaseCronograma FaseDeInscricaoNaOrdem1() => FaseCronograma.Criar(
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
-        new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
 

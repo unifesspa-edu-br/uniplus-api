@@ -23,7 +23,7 @@ public sealed class ProcessoSeletivoIdadeMaximaAncoradaEmFaseTests
 
     private static FaseCronograma FaseNoEditalComFim(int ordem, string codigo, DateTimeOffset fim) => FaseCronograma.Criar(
         new OrigemCanonicaDaFase(Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
-        new DecisoesDeCronogramaDaFase(ordem, Inicio: fim.AddDays(-10), Fim: fim, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new DecisoesDeCronogramaDaFase(ordem, Inicio: fim.AddDays(-10), Fim: fim, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
 
@@ -32,7 +32,7 @@ public sealed class ProcessoSeletivoIdadeMaximaAncoradaEmFaseTests
         new OrigemCanonicaDaFase(
             faseCanonicaOrigemId ?? Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
             ColetaSolicitacaoIsencao: false),
-        new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: fim, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: fim, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
 

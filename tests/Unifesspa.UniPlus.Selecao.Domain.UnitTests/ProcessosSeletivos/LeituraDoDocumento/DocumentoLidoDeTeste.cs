@@ -62,13 +62,10 @@ internal static class DocumentoLidoDeTeste
         new("Processo Seletivo de Exemplo 2027", "SiSU", "CEPS", OrigemCandidatos.ImportacaoExterna, "1504208", IdentificadoresDeTeste.NovoValor(), new(CodigoDaConvencao, "v1"));
 
     internal static FaseNoDocumento Fase(int posicao, string chave, string faseCanonica = "INSCRICAO", string? unidade = "CEPS") =>
-        new(posicao, chave, new(faseCanonica, unidade, null), new(null, null), new([], false, null, null), [], null);
+        new(posicao, chave, new(faseCanonica, unidade), new(null, null), new([], false, null, null), [], null);
 
     internal static FaseNoDocumento Publicando(this FaseNoDocumento fase, params ProdutoNoDocumento[] produtos) =>
         fase with { Publicacoes = fase.Publicacoes with { Produtos = produtos } };
-
-    internal static FaseNoDocumento ComConcluinte(this FaseNoDocumento fase, string? chave) =>
-        fase with { Referencias = fase.Referencias with { FaseConcluinteChave = chave } };
 
     internal static BancaNoDocumento Banca(int posicao, string chave, string tipo, string[] categorias, DeclaracaoDaDeliberacao? regra = null) =>
         new(posicao, chave, tipo, categorias, regra);

@@ -27,8 +27,7 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
             OrigemId: Guid.CreateVersion7(), Codigo: "ALFA_FASE", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: true, ColetaInscricao: true,
             ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
-            Ordem: 2, Inicio: new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 2, 28, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
-            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            Ordem: 2, Inicio: new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 2, 28, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("ALFA_FASE", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []);
 
@@ -38,8 +37,7 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
             OrigemId: Guid.CreateVersion7(), Codigo: "ZETA_FASE", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: true, ColetaInscricao: true,
             ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
-            Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
-            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("ZETA_FASE", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []);
 
@@ -118,8 +116,7 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
             OrigemId: Guid.CreateVersion7(), Codigo: codigo, OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: true, ColetaInscricao: true,
             ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
-            Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
-            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: bancas).Value!;
 

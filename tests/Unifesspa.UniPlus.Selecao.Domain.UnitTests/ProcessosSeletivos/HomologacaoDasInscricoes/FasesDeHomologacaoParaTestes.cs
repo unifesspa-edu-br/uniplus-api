@@ -12,18 +12,18 @@ internal static class FasesDeHomologacaoParaTestes
 
     internal static FaseCronograma Fase(
         int ordem, string codigo, IReadOnlyList<ProdutoDaFase>? produtos = null, RegraRecursoFase? regraRecurso = null,
-        string? faseConcluinteCodigo = null, IReadOnlyList<string?>? tiposDeDecisao = null,
+        IReadOnlyList<string?>? tiposDeDecisao = null,
         RegraDeHomologacaoDasInscricoes? regraDeHomologacao = null) =>
         FaseCronograma.Criar(
             new OrigemCanonicaDaFase(Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
-            new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, faseConcluinteCodigo, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(produtos ?? [], EmiteParecerIndividual: false, regraRecurso, tiposDeDecisao, regraDeHomologacao),
             regraRecurso is null ? [] : [BancasDeTeste.DeRecursosDaFase()]).Value!;
 
     internal static FaseCronograma FaseDeColeta(int ordem) =>
         FaseCronograma.Criar(
             new OrigemCanonicaDaFase(Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
-            new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase([], EmiteParecerIndividual: false, RegraRecurso: null),
             []).Value!;
 

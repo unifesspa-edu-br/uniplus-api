@@ -56,7 +56,7 @@ public sealed class NoExigenciaPersistenciaDaDistincaoTests(ProcessoSeletivoDbFi
 
     private static FaseCronograma Fase() => FaseCronograma.Criar(
         new OrigemCanonicaDaFase(Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, false, false, false, false),
-        new DecisoesDeCronogramaDaFase(1, null, null, null, UnidadesDeTeste.Ceps),
+        new DecisoesDeCronogramaDaFase(1, null, null, UnidadesDeTeste.Ceps),
         new PublicacoesDaFase([], false, null), []).Value!;
 
     private static DocumentoExigido Documento(Guid fase) => DocumentoExigido.Criar(fase, Guid.CreateVersion7(),

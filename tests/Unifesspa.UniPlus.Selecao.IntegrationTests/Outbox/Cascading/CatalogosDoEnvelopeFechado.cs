@@ -47,7 +47,7 @@ internal static class CatalogosDoEnvelopeFechado
         Guid OfertaCursoId,
         Guid ReferenciaReservaDemograficaId,
         Guid FaseInscricaoId,
-        Guid FaseResultadoPreliminarId,
+        Guid FaseDeResultadoId,
         Guid FaseAvaliacaoId,
         Guid TipoBancaId,
         Guid TipoProcessoId,
@@ -59,7 +59,7 @@ internal static class CatalogosDoEnvelopeFechado
     /// <see cref="CascadingFixture"/>), os catálogos que os handlers de Seleção resolvem e que não
     /// têm <c>HasData</c>: Unidade administradora (Organização Institucional), Curso + LocalOferta
     /// + OfertaCurso + ReferenciaReservaDemografica (Configuração), TipoBanca (Configuração).
-    /// As dezesseis <see cref="FaseCanonica"/> passaram a vir semeadas por migration e são apenas
+    /// As quatorze <see cref="FaseCanonica"/> passaram a vir semeadas por migration e são apenas
     /// resolvidas aqui pelo código. As 10 <see cref="Modalidade"/> federais já vêm semeadas por migration
     /// (<see cref="ModalidadeSeed"/>) — só referenciadas aqui pelo código.
     /// </summary>
@@ -100,7 +100,7 @@ internal static class CatalogosDoEnvelopeFechado
         await PersistirEAprovarAsync(config);
 
         return new CatalogosSemeados(
-            unidadeId, oferta.Id, referencia.Id, vocabularios.FaseInscricaoId, vocabularios.FaseResultadoPreliminarId, vocabularios.FaseAvaliacaoId,
+            unidadeId, oferta.Id, referencia.Id, vocabularios.FaseInscricaoId, vocabularios.FaseDeResultadoId, vocabularios.FaseAvaliacaoId,
             vocabularios.TipoBancaId, await ObterTipoProcessoSisuAsync(config), tipoDocumento.Id, ModalidadesFederaisEAmplaPorCodigo());
     }
 
@@ -174,7 +174,7 @@ internal static class CatalogosDoEnvelopeFechado
             .Where(i => i.Codigo == ModalidadesFederaisLei12711.Ac || ModalidadesFederaisLei12711.Codigos.Contains(i.Codigo))
             .ToDictionary(i => i.Codigo, i => i.Id, StringComparer.Ordinal);
 
-    private sealed record VocabulariosFechados(Guid FaseInscricaoId, Guid FaseResultadoPreliminarId, Guid FaseAvaliacaoId, Guid TipoBancaId);
+    private sealed record VocabulariosFechados(Guid FaseInscricaoId, Guid FaseDeResultadoId, Guid FaseAvaliacaoId, Guid TipoBancaId);
 
     /// <summary>
     /// As fases canônicas nascem semeadas pela migration, e o vocabulário é fechado: criar aqui colidiria
@@ -188,7 +188,7 @@ internal static class CatalogosDoEnvelopeFechado
         TipoBanca banca = await ObterOuCriarTipoBancaDeAnaliseDocumentalAsync(config);
 
         return new VocabulariosFechados(
-            IdDaFase(fasesVivas, "INSCRICAO"), IdDaFase(fasesVivas, "RESULTADO_PRELIMINAR"), IdDaFase(fasesVivas, FaseCanonicaCatalogo.CodigoAvaliacao), banca.Id);
+            IdDaFase(fasesVivas, "INSCRICAO"), IdDaFase(fasesVivas, "RESULTADO_FINAL"), IdDaFase(fasesVivas, FaseCanonicaCatalogo.CodigoAvaliacao), banca.Id);
     }
 
     private static Guid IdDaFase(List<FaseCanonica> fasesVivas, string codigo) =>
@@ -208,7 +208,7 @@ internal static class CatalogosDoEnvelopeFechado
             return existente;
         }
 
-        Result<TipoBanca> criada = TipoBanca.Criar(Codigo, "Banca de análise documental", "RESULTADO_PRELIMINAR", null);
+        Result<TipoBanca> criada = TipoBanca.Criar(Codigo, "Banca de análise documental", "RESULTADO_FINAL", null);
         criada.IsSuccess.Should().BeTrue(criada.Error?.Message);
         config.TiposBanca.Add(criada.Value!);
         return criada.Value!;

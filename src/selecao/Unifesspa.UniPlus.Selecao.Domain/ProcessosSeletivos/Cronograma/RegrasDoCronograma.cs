@@ -32,7 +32,7 @@ internal static class RegrasDoCronograma
             : Result<PlanoDoCronograma>.ValidationFailure(causas);
     }
 
-    // O ciclo recursal e a janela da etapa são conferidos contra o conjunto candidato, não contra o agregado corrente: a etapa
+    // O período da etapa é conferido contra o conjunto candidato, não contra o agregado corrente: a etapa
     // cuja fase está saindo sai junto na poda e não entra na conta. A mudança casa as fases por origem, e o casamento lança com
     // origem repetida, que a estrutura já recusou: só ela deixa de ser avaliada. A precedência casa por código e não lê a origem
     // (a aresta de código ambíguo já fica suspensa na estrutura), e a ordem repetida é recusa do conjunto: as duas seguem avaliadas.
@@ -48,7 +48,6 @@ internal static class RegrasDoCronograma
             .. candidato.ConferirEstrutura(),
             .. candidato.OrigensUnicas ? CausasDaRecusa.Da(RecusaDaMudanca(configuracao, fases)) : [],
             .. candidato.ConferirPrecedencia(precedencias),
-            .. candidato.ConferirConclusaoDoCiclo(),
             .. EtapasNoCronograma.ConferirJanelaDasEtapas(candidato, EtapasDoProcesso.Das(configuracao.Avaliacao.Etapas)),
         ];
     }

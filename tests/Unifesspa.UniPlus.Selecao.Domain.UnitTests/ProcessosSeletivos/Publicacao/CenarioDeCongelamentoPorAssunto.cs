@@ -227,7 +227,7 @@ internal sealed class CenarioDeCongelamentoPorAssunto
     private static FaseCronograma FaseComJanelaInvertida() => FaseCronograma.Reidratar(
         Guid.CreateVersion7(),
         new OrigemCanonicaDaFase(Guid.CreateVersion7(), "FASE_DA_JANELA", OrigemDataFase.NoEdital, false, false, false, false),
-        new DecisoesDeCronogramaDaFase(99, Agora, Agora.AddDays(-1), null, UnidadesDeTeste.Ceps),
+        new DecisoesDeCronogramaDaFase(99, Agora, Agora.AddDays(-1), UnidadesDeTeste.Ceps),
         new PublicacoesDaFase([], false, null),
         []);
 
@@ -237,17 +237,20 @@ internal sealed class CenarioDeCongelamentoPorAssunto
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
-            1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)), Fim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), FaseConcluinteCodigo: null,
-            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)), Fim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
 
     private static FaseCronograma FasePreliminarComRecurso() => FaseCronograma.Criar(
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), CodigoDaFaseDoRecurso, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
-        new DecisoesDeCronogramaDaFase(2, Inicio: null, Fim: null, FaseConcluinteCodigo: "RESULTADO_FINAL", UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new DecisoesDeCronogramaDaFase(2, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(
-            Produtos: [ProdutoDaFase.Reidratar(ProdutoPreliminar, ResultadoClassificacao, PapelProdutoFase.Preliminar)],
+            Produtos:
+            [
+                ProdutoDaFase.Reidratar(ProdutoPreliminar, ResultadoClassificacao, PapelProdutoFase.Preliminar),
+                ProdutoDaFase.Criar(ResultadoClassificacao, PapelProdutoFase.Definitivo),
+            ],
             EmiteParecerIndividual: false,
             RegraRecurso: RegraRecursoFase.Criar(
                 Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, 'd'),
@@ -258,7 +261,7 @@ internal sealed class CenarioDeCongelamentoPorAssunto
     private static FaseCronograma FaseDoResultadoFinal() => FaseCronograma.Criar(
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
-        new DecisoesDeCronogramaDaFase(3, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new DecisoesDeCronogramaDaFase(3, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(
             Produtos: [
                 ProdutoDaFase.Criar(ResultadoClassificacao, PapelProdutoFase.Definitivo),

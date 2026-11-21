@@ -34,7 +34,6 @@ public sealed class DefinirCronogramaFasesCommandValidatorTests
         Inicio: null,
         Fim: null,
         Produtos: [new ProdutoDaFaseInput("RESULTADO_CLASSIFICACAO", PapelProdutoFaseCodigo.Preliminar)],
-        FaseConcluinteCodigo: null,
         EmiteParecerIndividual: false,
         BancasRequeridas: [],
         RegraRecurso: regraRecurso);

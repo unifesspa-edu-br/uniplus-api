@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
@@ -167,10 +168,23 @@ public sealed record CronogramaDoProcesso
         return EstruturaDoCronograma.Precedencia(this, precedencias);
     }
 
-    public IReadOnlyList<FieldError> ConferirConclusaoDoCiclo() => ConclusaoDoCicloRecursal.Recusas(this);
+    /// <summary>
+    /// O preliminar de um tipo de ato exige o definitivo do mesmo tipo na própria fase. A ligação é pelo tipo de ato dentro do mesmo
+    /// lugar que o publica, e o alvo do procedimento de recurso não entra: duas fases que publicam o mesmo tipo não se ligam.
+    /// </summary>
+    public IReadOnlyList<FieldError> ConferirFechamentoDoCiclo() =>
+    [
+        .. Fases.SelectMany(static (fase, posicao) =>
+            TiposJulgaveis(fase).Select(tipo => NaFase(posicao, FaseDeclarada.ListaDosProdutos, PreliminarSemDefinitivo(fase.Codigo, tipo)))),
+    ];
 
-    /// <summary>As fases cuja concluinte declarada a conferência não pôde julgar, e que por isso não contam como conformes.</summary>
-    public IReadOnlyList<FaseDeclarada> ConclusoesIndeterminadas() => ConclusaoDoCicloRecursal.Indeterminadas(this);
+    // O ciclo de um preliminar sem definitivo lê a lista dos produtos inteira: com parte recusada, o definitivo pode ser ela.
+    private static IReadOnlyList<string> TiposJulgaveis(FaseDeclarada fase) =>
+        fase.ParteRecusadaEm(FaseDeclarada.ListaDosProdutos) ? [] : fase.Atos.TiposComCicloAberto();
+
+    private static DomainError PreliminarSemDefinitivo(string codigoDaFase, string tipo) => new(
+        ProcessoSeletivoErrorCodes.FaseComPreliminarSemDefinitivo,
+        $"A fase '{codigoDaFase}' publica o resultado preliminar do ato '{tipo}' e não publica o definitivo do mesmo tipo. Publique o resultado definitivo na própria fase.");
 
     /// <exception cref="InvalidOperationException">Há fase que coleta isenção com janela a conferir e o fuso institucional não foi informado.</exception>
     public IReadOnlyList<FieldError> ConferirCompletude(TimeZoneInfo? fuso) => CompletudeDoCronograma.Recusas(this, fuso);

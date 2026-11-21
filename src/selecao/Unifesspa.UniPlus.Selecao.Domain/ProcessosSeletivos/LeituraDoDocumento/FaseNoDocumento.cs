@@ -16,8 +16,8 @@ public sealed record FaseNoDocumento(
     IReadOnlyList<BancaNoDocumento> Bancas,
     RegraDeRecursoNoDocumento? RegraDeRecurso);
 
-/// <summary>O que a fase cita por código: a fase canônica, a unidade que responde por ela e a chave da fase que conclui o ciclo de recurso.</summary>
-public sealed record ReferenciasDaFaseNoDocumento(string FaseCanonicaCodigo, string? UnidadeResponsavelCodigo, string? FaseConcluinteChave);
+/// <summary>O que a fase cita por código: a fase canônica e a unidade que responde por ela.</summary>
+public sealed record ReferenciasDaFaseNoDocumento(string FaseCanonicaCodigo, string? UnidadeResponsavelCodigo);
 
 /// <summary>O que a fase publica e decide: os atos, o parecer individual, os tipos de decisão e a regra de homologação das inscrições.</summary>
 public sealed record PublicacoesNoDocumento(

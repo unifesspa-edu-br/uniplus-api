@@ -27,7 +27,6 @@ public sealed class FronteiraEntreFaseEEtapaTests
         "Cronograma.BancasDaFase",
         "Cronograma.CronogramaDoProcesso",
         "Cronograma.EstruturaDoCronograma",
-        "Cronograma.ConclusaoDoCicloRecursal",
         "Cronograma.CompletudeDoCronograma",
         "Cronograma.JanelaDeIsencao",
     ];

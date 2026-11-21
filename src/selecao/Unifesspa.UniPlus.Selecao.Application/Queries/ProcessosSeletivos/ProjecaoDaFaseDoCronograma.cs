@@ -39,7 +39,6 @@ internal static class ProjecaoDaFaseDoCronograma
         Ordem: fase.Ordem,
         Inicio: fase.Inicio,
         Fim: fase.Fim,
-        FaseConcluinteCodigo: fase.FaseConcluinteCodigo,
         UnidadeResponsavel: ProjetarUnidadeResponsavel(fase.UnidadeResponsavel));
 
     private static UnidadeResponsavelDto? ProjetarUnidadeResponsavel(UnidadeResponsavelSnapshot? unidade) =>

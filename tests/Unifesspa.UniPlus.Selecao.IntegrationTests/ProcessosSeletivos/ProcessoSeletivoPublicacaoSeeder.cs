@@ -125,7 +125,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
             ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
             Ordem: 1, Inicio: inicioDaFase ?? new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: inicioDaFase?.AddDays(30) ?? new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
         HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(),
         bancasRequeridas: []).Value!;
 

@@ -32,7 +32,7 @@ public sealed class ConformidadeCronogramaTests
         bool coletaSolicitacaoIsencao = false) =>
         FaseCronograma.Criar(
             new OrigemCanonicaDaFase(OrigemId: Guid.CreateVersion7(), Codigo: codigo, OrigemData: OrigemDataFase.NaExecucao, AgrupaEtapas: agrupaEtapas, PermiteComplementacao: false, ColetaInscricao: coletaInscricao, ColetaSolicitacaoIsencao: coletaSolicitacaoIsencao),
-            new DecisoesDeCronogramaDaFase(Ordem: ordem, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new DecisoesDeCronogramaDaFase(Ordem: ordem, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: produzResultado ? [ProdutoDaFase.Criar(codigo, PapelProdutoFase.Definitivo)] : [], EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []);
 

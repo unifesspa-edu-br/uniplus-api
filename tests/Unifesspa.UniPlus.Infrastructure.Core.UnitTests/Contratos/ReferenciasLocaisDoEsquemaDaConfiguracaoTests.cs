@@ -12,14 +12,16 @@ using static Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Contratos.ContratoD
 /// </summary>
 public sealed class ReferenciasLocaisDoEsquemaDaConfiguracaoTests
 {
-    [Fact(DisplayName = "A fase referencia outra fase pela chave local, definida no próprio documento")]
-    public void FaseConcluinte_ReferenciaPelaChaveLocal()
+    [Fact(DisplayName = "A fase não declara a fase que conclui o ciclo de recurso: o exemplo valida sem a propriedade e a fase que a traz é recusada")]
+    public void FaseConcluinteChave_PropriedadeRetirada_Recusa()
     {
         JsonNode documento = Carregar(Path.Join("exemplos", "inscricao-pelo-sistema.json"));
         JsonNode fase = documento["cronograma"]!["fases"]![2]!;
 
-        fase["faseConcluinteChave"]!.GetValue<string>().Should().Be(documento["cronograma"]!["fases"]![3]!["chave"]!.GetValue<string>());
-        fase["faseConcluinteChave"] = "Fase Final";
+        fase.AsObject().ContainsKey("faseConcluinteChave").Should().BeFalse();
+        CaminhosComErro(documento).Should().BeEmpty();
+
+        fase["faseConcluinteChave"] = documento["cronograma"]!["fases"]![1]!["chave"]!.GetValue<string>();
         CaminhosComErro(documento).Should().Contain("/cronograma/fases/2/faseConcluinteChave");
     }
 

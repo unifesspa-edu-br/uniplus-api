@@ -15,29 +15,12 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 internal static class LeituraDasFases
 {
-    internal static FasesLidas Ler(IReadOnlyList<FaseNoDocumento> fases, CadastrosCitadosNoDocumento cadastros)
+    internal static FasesLidas Ler(IReadOnlyList<FaseNoDocumento> fases, CadastrosCitadosNoDocumento cadastros) =>
+        NaOrdemCanonica([.. fases.Select(fase => LerFase(fase, cadastros))]);
+
+    private static FaseLida LerFase(FaseNoDocumento fase, CadastrosCitadosNoDocumento cadastros)
     {
-        IReadOnlyDictionary<string, string> codigosPorChave = CodigosPorChave(fases, cadastros);
-
-        return NaOrdemCanonica([.. fases.Select(fase => LerFase(fase, cadastros, codigosPorChave))]);
-    }
-
-    // O código que a fase citada tem é o do cadastro e, na fase que o cadastro não tem, o que o documento escreveu; a primeira chave vale.
-    private static Dictionary<string, string> CodigosPorChave(IReadOnlyList<FaseNoDocumento> fases, CadastrosCitadosNoDocumento cadastros)
-    {
-        Dictionary<string, string> codigos = new(StringComparer.Ordinal);
-        foreach (FaseNoDocumento fase in fases)
-        {
-            string codigo = fase.Referencias.FaseCanonicaCodigo;
-            codigos.TryAdd(fase.Chave, cadastros.FaseCanonica(codigo)?.Codigo ?? codigo);
-        }
-
-        return codigos;
-    }
-
-    private static FaseLida LerFase(FaseNoDocumento fase, CadastrosCitadosNoDocumento cadastros, IReadOnlyDictionary<string, string> codigosPorChave)
-    {
-        DeclaracaoDaFaseLida declaracao = LerDeclaracao(fase, cadastros, codigosPorChave);
+        DeclaracaoDaFaseLida declaracao = LerDeclaracao(fase, cadastros);
         if (cadastros.FaseCanonica(fase.Referencias.FaseCanonicaCodigo) is not { } canonica)
         {
             return new(null, fase.PosicaoNoDocumento, fase.Chave, [FaseCanonicaNaoEncontrada(fase), .. declaracao.Recusas], ItensAdotadosDaFase.Nenhum);
@@ -47,22 +30,20 @@ internal static class LeituraDasFases
         return new(adotada, fase.PosicaoNoDocumento, fase.Chave, declaracao.Recusas, declaracao.Itens);
     }
 
-    private static DeclaracaoDaFaseLida LerDeclaracao(
-        FaseNoDocumento fase, CadastrosCitadosNoDocumento cadastros, IReadOnlyDictionary<string, string> codigosPorChave)
+    private static DeclaracaoDaFaseLida LerDeclaracao(FaseNoDocumento fase, CadastrosCitadosNoDocumento cadastros)
     {
         ValorLido<UnidadeResponsavelSnapshot?> unidade = LeituraDaUnidadeResponsavel.Ler(fase, cadastros);
         ValorLido<IReadOnlyList<(ProdutoDaFase Item, int PosicaoNoDocumento)>> produtos = LeituraDosProdutosDaFase.Ler(fase, cadastros);
-        ValorLido<string?> concluinte = LeituraDaFaseConcluinte.Ler(fase, codigosPorChave);
         ValorLido<IReadOnlyList<(BancaRequerida Item, int PosicaoNoDocumento)>> bancas = LeituraDasBancasDaFase.Ler(fase, cadastros);
         ValorLido<RegraDeRecursoLida> regra = LeituraDaRegraDeRecursoDaFase.Ler(fase, [.. produtos.Valor.Select(static par => par.Item)], cadastros);
         ValorLido<RegraDeHomologacaoDasInscricoes?> homologacao = LeituraDaRegraDeHomologacaoDaFase.Ler(fase);
 
         return new(
-            new(fase.PosicaoNoDocumento + 1, fase.Janela.Inicio, fase.Janela.Fim, concluinte.Valor, unidade.Valor),
+            new(fase.PosicaoNoDocumento + 1, fase.Janela.Inicio, fase.Janela.Fim, unidade.Valor),
             new([.. produtos.Valor.Select(static par => par.Item)], fase.Publicacoes.EmiteParecerIndividual, regra.Valor.Regra, fase.Publicacoes.TiposDeDecisao, homologacao.Valor),
             [.. bancas.Valor.Select(static par => par.Item)],
             new(produtos.Valor, bancas.Valor, regra.Valor.Procedimentos),
-            [.. unidade.Recusas, .. produtos.Recusas, .. concluinte.Recusas, .. bancas.Recusas, .. regra.Recusas, .. homologacao.Recusas]);
+            [.. unidade.Recusas, .. produtos.Recusas, .. bancas.Recusas, .. regra.Recusas, .. homologacao.Recusas]);
     }
 
     private static RecusaDaParte FaseCanonicaNaoEncontrada(FaseNoDocumento fase) => new(

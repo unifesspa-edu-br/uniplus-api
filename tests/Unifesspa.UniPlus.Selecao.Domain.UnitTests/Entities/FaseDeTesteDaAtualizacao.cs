@@ -23,7 +23,6 @@ internal static class FaseDeTesteDaAtualizacao
         public DateTimeOffset? Inicio { get; init; }
         public DateTimeOffset? Fim { get; init; }
         public IReadOnlyList<ProdutoDaFase> Produtos { get; init; } = [];
-        public string? FaseConcluinteCodigo { get; init; }
         public bool EmiteParecerIndividual { get; init; }
         public IReadOnlyList<BancaRequerida> Bancas { get; init; } = [];
         public RegraRecursoFase? RegraRecurso { get; init; }
@@ -32,7 +31,7 @@ internal static class FaseDeTesteDaAtualizacao
 
     internal static Result<FaseCronograma> Criar(DadosDaFase dados) => FaseCronograma.Criar(
         new OrigemCanonicaDaFase(Guid.CreateVersion7(), dados.Codigo, dados.OrigemData, AgrupaEtapas: false, PermiteComplementacao: false, dados.ColetaInscricao, dados.ColetaSolicitacaoIsencao),
-        new DecisoesDeCronogramaDaFase(dados.Ordem, dados.Inicio, dados.Fim, dados.FaseConcluinteCodigo, dados.Unidade),
+        new DecisoesDeCronogramaDaFase(dados.Ordem, dados.Inicio, dados.Fim, dados.Unidade),
         new PublicacoesDaFase(dados.Produtos, dados.EmiteParecerIndividual, dados.RegraRecurso),
         dados.Bancas);
 
@@ -41,7 +40,7 @@ internal static class FaseDeTesteDaAtualizacao
     internal static FaseCronograma Reidratar(Guid id, DadosDaFase dados) => FaseCronograma.Reidratar(
         id,
         new OrigemCanonicaDaFase(Guid.CreateVersion7(), dados.Codigo, dados.OrigemData, AgrupaEtapas: false, PermiteComplementacao: false, dados.ColetaInscricao, dados.ColetaSolicitacaoIsencao),
-        new DecisoesDeCronogramaDaFase(dados.Ordem, dados.Inicio, dados.Fim, dados.FaseConcluinteCodigo, dados.Unidade),
+        new DecisoesDeCronogramaDaFase(dados.Ordem, dados.Inicio, dados.Fim, dados.Unidade),
         new PublicacoesDaFase(dados.Produtos, dados.EmiteParecerIndividual, dados.RegraRecurso),
         dados.Bancas);
 

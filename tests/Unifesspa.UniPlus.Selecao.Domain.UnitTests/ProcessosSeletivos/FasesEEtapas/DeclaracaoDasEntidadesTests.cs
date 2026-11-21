@@ -31,7 +31,7 @@ public sealed class DeclaracaoDasEntidadesTests
     [Fact(DisplayName = "A fase criada pela fábrica declara os dados que guarda e nenhuma recusa")]
     public void Fase_CriadaPelaFabrica_DeclaraOQueGuardaSemRecusa()
     {
-        FaseCronograma fase = new ModeloDeFase("INSCRICAO", 2) { ColetaInscricao = true, FaseConcluinteCodigo = "RESULTADO" }.Janela(1, 9).Criar();
+        FaseCronograma fase = new ModeloDeFase("INSCRICAO", 2) { ColetaInscricao = true }.Janela(1, 9).Criar();
 
         FaseDeclarada declarada = fase.Declaracao();
 
@@ -41,7 +41,6 @@ public sealed class DeclaracaoDasEntidadesTests
         declarada.Ordem.Should().Be(2);
         declarada.Janela.Inicio.Should().Be(fase.Inicio);
         declarada.Janela.Fim.Should().Be(fase.Fim);
-        declarada.FaseConcluinteCodigo.Should().Be("RESULTADO");
         declarada.TemUnidadeResponsavel.Should().BeTrue();
         declarada.ColetaInscricao.Should().BeTrue();
         declarada.Recusas.Should().BeEmpty();
@@ -74,7 +73,7 @@ public sealed class DeclaracaoDasEntidadesTests
         return FaseCronograma.Reidratar(
             Guid.CreateVersion7(),
             new OrigemCanonicaDaFase(Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NoEdital, true, false, true, false),
-            new DecisoesDeCronogramaDaFase(1, Abertura, Abertura.AddDays(9), null, UnidadesDeTeste.Ceps),
+            new DecisoesDeCronogramaDaFase(1, Abertura, Abertura.AddDays(9), UnidadesDeTeste.Ceps),
             new PublicacoesDaFase([], false, null),
             [comRecorte]);
     }

@@ -4,6 +4,7 @@ using System.Collections.Frozen;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -31,9 +32,6 @@ public sealed record FaseDeclarada
     /// <summary>O campo da regra de homologação das inscrições da fase, pelo nome que <see cref="ParteRecusadaEm"/> reconhece.</summary>
     public const string CampoDaRegraDeHomologacao = "regraDeHomologacao";
 
-    /// <summary>O campo da fase que conclui o ciclo recursal desta, pelo nome que <see cref="ParteRecusadaEm"/> reconhece.</summary>
-    public const string CampoDaFaseConcluinte = "faseConcluinte";
-
     private readonly IReadOnlySet<string> _caminhosComParteRecusada;
 
     private FaseDeclarada(
@@ -50,7 +48,7 @@ public sealed record FaseDeclarada
         Codigo = origem.Codigo.Trim();
         Ordem = decisoes.Ordem;
         Janela = new JanelaDeTempo(decisoes.Inicio, decisoes.Fim);
-        FaseConcluinteCodigo = CodigoDeFase.Normalizado(decisoes.FaseConcluinteCodigo);
+        DataFixadaNoEdital = origem.OrigemData == OrigemDataFase.NoEdital;
         TemUnidadeResponsavel = decisoes.UnidadeResponsavel is not null;
         AgrupaEtapas = origem.AgrupaEtapas;
         ColetaInscricao = origem.ColetaInscricao;
@@ -71,7 +69,8 @@ public sealed record FaseDeclarada
 
     public JanelaDeTempo Janela { get; }
 
-    public string? FaseConcluinteCodigo { get; }
+    /// <summary>Se o período da fase é fixado no edital, e por isso o período inteiro é obrigatório.</summary>
+    public bool DataFixadaNoEdital { get; }
 
     public bool TemUnidadeResponsavel { get; }
 
@@ -89,7 +88,7 @@ public sealed record FaseDeclarada
 
     /// <summary>
     /// Se a leitura do documento recusou alguma parte da fase, pelo caminho dela relativo à fase: a lista (<see cref="ListaDosProdutos"/>,
-    /// <see cref="ListaDasBancasRequeridas"/>) ou o campo (<see cref="CampoDaUnidadeResponsavel"/>, <see cref="CampoDaRegraDeRecurso"/>, <see cref="ListaDosProcedimentosDeRecurso"/>, <see cref="CampoDaRegraDeHomologacao"/>, <see cref="CampoDaFaseConcluinte"/>). O que a declaração tem desse caminho
+    /// <see cref="ListaDasBancasRequeridas"/>) ou o campo (<see cref="CampoDaUnidadeResponsavel"/>, <see cref="CampoDaRegraDeRecurso"/>, <see cref="ListaDosProcedimentosDeRecurso"/>, <see cref="CampoDaRegraDeHomologacao"/>). O que a declaração tem desse caminho
     /// não é o que o autor escreveu, e a regra que o lê não o julga.
     /// </summary>
     public bool ParteRecusadaEm(string caminho) => _caminhosComParteRecusada.Contains(caminho);

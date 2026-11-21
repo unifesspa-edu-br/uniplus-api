@@ -131,7 +131,7 @@ public sealed class EtapaProcessoTiposDeDecisaoTests
             new OrigemCanonicaDaFase(
                 Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", OrigemDataFase.NaExecucao,
                 AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
-            new DecisoesDeCronogramaDaFase(1, null, null, null, UnidadesDeTeste.Ceps),
+            new DecisoesDeCronogramaDaFase(1, null, null, UnidadesDeTeste.Ceps),
             new PublicacoesDaFase([], false, null, [Classificacao]),
             []).Value!;
         EtapaProcesso etapa = EtapaCom(Classificacao);

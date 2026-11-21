@@ -226,7 +226,7 @@ Ocorrências por arquivo de teste, com as linhas e a ação. `Habilitacao` como 
 | `Selecao.IntegrationTests/ProcessosSeletivos/EnvelopeCodecRecusaDerivacaoETiposDeAtoTests.cs` | finalidade-HABILITACAO | 87 | manter (ponto em aberto) |
 | `Selecao.IntegrationTests/ProcessosSeletivos/EnvelopeCodecRoundTripTests.cs` | finalidade-HABILITACAO | 98 | manter (ponto em aberto) |
 | `Selecao.IntegrationTests/Outbox/Cascading/DadosDoAtoDeTeste.cs` | ato (cadastro) | 15 | manter |
-| `Selecao.IntegrationTests/Outbox/Cascading/CronogramaFasesJanelaComOffsetEndpointTests.cs` | fase-HOMOLOGACAO | 65 | renomear |
+| `Selecao.IntegrationTests/Outbox/Cascading/CronogramaFasesPeriodoComDeslocamentoEndpointTests.cs` | fase-HOMOLOGACAO | 65 | renomear |
 | `Selecao.IntegrationTests/Outbox/Cascading/CronogramaFasesLoteDeRecusasEndpointTests.cs` | fase-HOMOLOGACAO-resultado-final | 51 | manter |
 | `Selecao.IntegrationTests/Outbox/Cascading/FatosDasVersoesPublicadasNaRetificacaoEndpointTests.cs` | finalidade-HABILITACAO | 49,52,202 | manter (ponto em aberto) |
 | `Selecao.IntegrationTests/Outbox/Cascading/FormulariosEndpointTests.cs` | finalidade-HABILITACAO | 96 | manter (ponto em aberto) |

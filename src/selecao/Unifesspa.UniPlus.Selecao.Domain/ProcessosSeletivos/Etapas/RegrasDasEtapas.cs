@@ -41,7 +41,7 @@ internal static class RegrasDasEtapas
 
     /// <summary>
     /// As causas de trocar o conjunto de etapas, todas juntas e na ordem em que orientam quem edita: o conjunto, a coerência com
-    /// o ENEM, o que a configuração já cita, a fase e a janela no cronograma e, por fim, o fechamento do ciclo recursal. Uma
+    /// o ENEM, o que a configuração já cita e a fase e o período no cronograma. O fechamento do ciclo recursal é conferido na publicação. Uma
     /// lista vazia é válida: o processo sem prova (classificação importada) não tem etapa.
     /// </summary>
     internal static Result ConferirSubstituicao(ConfiguracaoDeclarada configuracao, IReadOnlyList<EtapaProcesso> etapas)
@@ -68,7 +68,6 @@ internal static class RegrasDasEtapas
             .. CausasDaRecusa.Da(RecusaDasReferenciasDaConfiguracao(configuracao, etapas)),
             .. EtapasNoCronograma.ConferirFaseDasEtapas(cronograma, declaradas),
             .. EtapasNoCronograma.ConferirJanelaDasEtapas(cronograma, declaradas),
-            .. declaradas.ConferirFechamentoDoCiclo(),
         ];
     }
 

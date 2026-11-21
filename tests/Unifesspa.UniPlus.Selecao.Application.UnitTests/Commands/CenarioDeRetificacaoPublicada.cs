@@ -120,7 +120,7 @@ internal sealed class CenarioDeRetificacaoPublicada
         FaseCronograma.Criar(
             new OrigemCanonicaDaFase(
                 Guid.CreateVersion7(), "PROVA", OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
-            new DecisoesDeCronogramaDaFase(1, Inicio: Agora, Fim: Agora.AddDays(10), FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new DecisoesDeCronogramaDaFase(1, Inicio: Agora, Fim: Agora.AddDays(10), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: [preliminar, ProdutoDaFase.Criar("RESULTADO_PROVA", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;
 

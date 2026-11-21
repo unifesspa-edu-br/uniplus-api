@@ -61,8 +61,7 @@ public sealed class PonteiroDasCausasNoEnvelopeTests
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: true, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
-            ordem, new DateTimeOffset(2026, 1, ordem, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 2, ordem, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
-            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            ordem, new DateTimeOffset(2026, 1, ordem, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 2, ordem, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
 

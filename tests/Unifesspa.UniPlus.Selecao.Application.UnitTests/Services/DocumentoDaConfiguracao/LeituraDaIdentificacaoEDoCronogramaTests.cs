@@ -26,7 +26,7 @@ public sealed class LeituraDaIdentificacaoEDoCronogramaTests
           "cronograma": { "fases": [
             { "chave": "inscricao", "faseCanonicaCodigo": "INSCRICAO", "unidadeResponsavelCodigo": "CEPS" },
             { "chave": "recurso", "faseCanonicaCodigo": "RECURSO", "unidadeResponsavelCodigo": "CEPS" },
-            { "chave": "recurso-externo", "faseCanonicaCodigo": "RECURSO", "unidadeResponsavelCodigo": "CGA", "faseConcluinteChave": "inexistente" }
+            { "chave": "recurso-externo", "faseCanonicaCodigo": "RECURSO", "unidadeResponsavelCodigo": "CGA" }
           ] }
         }
         """;
@@ -42,7 +42,7 @@ public sealed class LeituraDaIdentificacaoEDoCronogramaTests
         ITipoAtoPublicadoReader tiposDeAto = Substitute.For<ITipoAtoPublicadoReader>();
         tiposDeAto.ListarVigentesAsync(default!, default, default).ReturnsForAnyArgs([]);
         _unidades.ObterPorCodigoAsync("CEPS", Arg.Any<CancellationToken>()).Returns(Unidade("CEPS"));
-        _unidades.ObterPorCodigoAsync("CGA", Arg.Any<CancellationToken>()).Returns(Unidade("CGA"));
+        _unidades.ObterPorCodigoAsync("CGA", Arg.Any<CancellationToken>()).Returns((UnidadeView?)null);
         _tiposDeProcesso.ObterAtivoPorCodigoAsync("SiSU", Arg.Any<CancellationToken>()).Returns(new TipoProcessoView(Guid.CreateVersion7(), "SiSU", "Sistema de Seleção", null));
         _fasesCanonicas.ListarVivasPorCodigosAsync(default!, default).ReturnsForAnyArgs([Fase("INSCRICAO"), Fase("RECURSO")]);
         _geo.ConferirMunicipioAsync("1504208", "PA", Arg.Any<CancellationToken>()).Returns(Result<string>.Success("Marabá"));
@@ -94,7 +94,7 @@ public sealed class LeituraDaIdentificacaoEDoCronogramaTests
         Result<IdentificacaoECronogramaLidos> lidos = await Ler();
 
         lidos.Value!.Origem.PartesRecusadas.Select(static parte => (parte.Causa.Field, parte.Causa.Error.Code)).Should().Equal(
-            ("/cronograma/fases/2/faseConcluinteChave", DocumentoDaConfiguracaoErrorCodes.ChaveCitadaInexistente));
+            ("/cronograma/fases/2/unidadeResponsavelCodigo", FaseCronogramaErrorCodes.UnidadeResponsavelNaoEncontrada));
     }
 
     [Fact(DisplayName = "O documento sem identificação nem cronograma é lido como declaração vazia, sem consultar cadastro")]

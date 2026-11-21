@@ -37,7 +37,6 @@ public sealed class ClassificacaoDasPropriedadesDoPreliminarTests
         [nameof(FaseCronograma.ColetaSolicitacaoIsencao)] = Entra("Muda quem pede isenção."),
         [nameof(FaseCronograma.Inicio)] = Entra("A janela da fase delimita o que o preliminar considera."),
         [nameof(FaseCronograma.Fim)] = Entra("A janela da fase delimita o que o preliminar considera."),
-        [nameof(FaseCronograma.FaseConcluinteCodigo)] = Entra("Muda a fase que fecha o ciclo do preliminar."),
         [nameof(FaseCronograma.EmiteParecerIndividual)] = Entra("O parecer individual é o fundamento do recurso."),
         [nameof(FaseCronograma.ProduzResultado)] = NaoEntra("Derivada de Produtos."),
         [nameof(FaseCronograma.RegraRecurso)] = Entra("A regra de prazo e os procedimentos do recurso mudam o que o candidato pode contestar e como o recurso é revisado."),

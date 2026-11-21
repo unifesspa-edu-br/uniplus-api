@@ -63,7 +63,6 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
 
         // Story #851 — cronograma de fases.
         ("FaseCodigo", LimitesDoEnvelope.FaseCodigo, typeof(FaseCronograma), nameof(FaseCronograma.Codigo)),
-        ("FaseCodigo", LimitesDoEnvelope.FaseCodigo, typeof(FaseCronograma), nameof(FaseCronograma.FaseConcluinteCodigo)),
         ("TipoAtoCodigo", LimitesDoEnvelope.TipoAtoCodigo, typeof(ProdutoDaFase), nameof(ProdutoDaFase.AtoCodigo)),
         ("TipoBancaCodigo", LimitesDoEnvelope.TipoBancaCodigo, typeof(BancaRequerida), nameof(BancaRequerida.Codigo)),
         ("TipoBancaNome", LimitesDoEnvelope.TipoBancaNome, typeof(BancaRequerida), nameof(BancaRequerida.Nome)),

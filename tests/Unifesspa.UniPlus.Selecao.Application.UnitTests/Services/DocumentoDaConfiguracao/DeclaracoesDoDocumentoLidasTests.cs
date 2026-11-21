@@ -16,7 +16,7 @@ public sealed class DeclaracoesDoDocumentoLidasTests
     private const string FasesForaDeOrdem = """
         {
           "cronograma": { "fases": [
-            { "chave": "resultado", "faseCanonicaCodigo": "RESULTADO", "faseConcluinteChave": "recurso" },
+            { "chave": "resultado", "faseCanonicaCodigo": "RESULTADO" },
             { "chave": "inscricao", "faseCanonicaCodigo": "INSCRICAO", "unidadeResponsavelCodigo": "CEPS" },
             { "chave": "recurso", "faseCanonicaCodigo": "RECURSO" }
           ] }
@@ -106,7 +106,6 @@ public sealed class DeclaracoesDoDocumentoLidasTests
         fases.Select(static fase => (fase.PosicaoNoDocumento, fase.Chave, fase.Referencias.FaseCanonicaCodigo))
             .Should().Equal((0, "resultado", "RESULTADO"), (1, "inscricao", "INSCRICAO"), (2, "recurso", "RECURSO"));
         fases.Select(static fase => fase.Referencias.UnidadeResponsavelCodigo).Should().Equal(new string?[] { null, "CEPS", null });
-        fases.Select(static fase => fase.Referencias.FaseConcluinteChave).Should().Equal(new string?[] { "recurso", null, null });
     }
 
     [Fact(DisplayName = "A janela da fase vai em UTC e o extremo ausente fica ausente")]

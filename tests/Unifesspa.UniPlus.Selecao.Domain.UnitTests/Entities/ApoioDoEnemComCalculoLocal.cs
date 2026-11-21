@@ -63,7 +63,7 @@ internal static class ApoioDoEnemComCalculoLocal
             [FaseCronograma.Criar(
                 new OrigemCanonicaDaFase(
                     Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
-                new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+                new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
                 HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologaComRecurso(),
                 bancasRequeridas: [BancasDeTeste.DeRecursosDaFase()]).Value!],
             []).IsSuccess.Should().BeTrue();

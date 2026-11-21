@@ -46,15 +46,14 @@ internal static class CorpusEnvelopeCronograma
             OrigemId: new Guid("4444dddd-0000-4000-8000-000000000001"), Codigo: "INSCRICAO", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: true,
             ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
-            Ordem: 1, Inicio: new DateTimeOffset(2026, 3, 2, 0, 0, 0, TimeSpan.Zero), Fim: FimDasInscricoes, FaseConcluinteCodigo: null,
-            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            Ordem: 1, Inicio: new DateTimeOffset(2026, 3, 2, 0, 0, 0, TimeSpan.Zero), Fim: FimDasInscricoes, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [ProdutoDaFase.Reidratar(ProdutoId(1, 1, variante), "COMUNICADO_INSCRICOES", null)], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []);
 
     /// <summary>
     /// Fase 2: agrupa as três etapas, publica DOIS produtos preliminares — gabarito e
-    /// resultado, atos distintos com o mesmo papel —, promete parecer individual, declara a
-    /// fase que a conclui, exige quatro bancas — duas do MESMO tipo, separadas pelo recorte de
+    /// resultado, atos distintos com o mesmo papel — e o definitivo de cada um, promete parecer
+    /// individual, exige quatro bancas — duas do MESMO tipo, separadas pelos candidatos atendidos pela banca, de
     /// competência, e a de análise de recursos — e admite recurso, sem instância superior,
     /// sem efeito suspensivo e sem guardar a vaga. É o ramo mais rico do bloco <c>cronogramaFases</c>.
     /// </summary>
@@ -68,8 +67,7 @@ internal static class CorpusEnvelopeCronograma
             OrigemId: new Guid("4444dddd-0000-4000-8000-000000000002"), Codigo: "RESULTADO_PRELIMINAR", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false,
             ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
-            Ordem: 2, Inicio: new DateTimeOffset(2026, 3, 25, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 3, 25, 18, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: "RESULTADO_FINAL",
-            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            Ordem: 2, Inicio: new DateTimeOffset(2026, 3, 25, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 3, 25, 18, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(
                 Produtos: ProdutosDaFaseDeRecurso(variante, permutar), EmiteParecerIndividual: true, RegraRecurso: RegraDeRecursoDaFase(variante),
                 TiposDeDecisao: [TipoMotivoDeDecisaoCodigo.Classificacao, TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes],
@@ -99,6 +97,8 @@ internal static class CorpusEnvelopeCronograma
         Ordem<ProdutoDaFase>([
             ProdutoDaFase.Reidratar(ProdutoId(2, 1, variante), "GABARITO", PapelProdutoFase.Preliminar),
             ProdutoDaFase.Reidratar(ProdutoId(2, 2, variante), "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
+            ProdutoDaFase.Reidratar(ProdutoId(2, 3, variante), "GABARITO", PapelProdutoFase.Definitivo),
+            ProdutoDaFase.Reidratar(ProdutoId(2, 4, variante), "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
         ], permutar);
 
     // DUAS bancas do MESMO tipo, distinguidas só pelo recorte de competência — o
@@ -166,9 +166,7 @@ internal static class CorpusEnvelopeCronograma
     ]);
 
     /// <summary>
-    /// Fase 3: conclui o ciclo recursal aberto pela fase 2 — publica a definitiva de cada
-    /// matéria que a fase 2 deixa aberta (o gabarito e o resultado da classificação), que é o que a
-    /// declaração de concluinte da fase 2 exige que exista.
+    /// Fase 3: não publica ato; tem a data final declarada.
     /// </summary>
     internal static FaseCronograma FaseResultadoFinal(int variante = 0, IReadOnlyList<string?>? tiposDeDecisao = null) => FaseCronograma.Reidratar(
         id: new Guid($"6666aaaa-000{variante:x}-4000-8000-000000000003"),
@@ -176,10 +174,9 @@ internal static class CorpusEnvelopeCronograma
             OrigemId: new Guid("4444dddd-0000-4000-8000-000000000003"), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false,
             ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
-            Ordem: 3, Inicio: new DateTimeOffset(2026, 4, 10, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 4, 10, 18, 0, 0, TimeSpan.Zero).AddTicks(1_234_560), FaseConcluinteCodigo: null,
-            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            Ordem: 3, Inicio: new DateTimeOffset(2026, 4, 10, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 4, 10, 18, 0, 0, TimeSpan.Zero).AddTicks(1_234_560), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(
-            Produtos: ProdutosDaFaseResultadoFinal(variante),
+            Produtos: [],
             EmiteParecerIndividual: false,
             RegraRecurso: null,
             TiposDeDecisao: tiposDeDecisao ?? TiposDaFaseFinalDoCorpus),
@@ -194,20 +191,13 @@ internal static class CorpusEnvelopeCronograma
         TipoMotivoDeDecisaoCodigo.NotaDaEtapa, TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa, TipoMotivoDeDecisaoCodigo.GabaritoDaProva, TipoMotivoDeDecisaoCodigo.AnaliseDocumental,
     ];
 
-    internal static List<ProdutoDaFase> ProdutosDaFaseResultadoFinal(int variante) =>
-    [
-        ProdutoDaFase.Reidratar(ProdutoId(3, 1, variante), "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
-        ProdutoDaFase.Reidratar(ProdutoId(3, 2, variante), "GABARITO", PapelProdutoFase.Definitivo),
-    ];
-
     /// <summary>Fase mínima que satisfaz o bicondicional fase×etapa (uma etapa acompanha os dois grafos acima).</summary>
     internal static FaseCronograma FaseCronogramaConforme(int variante) => FaseCronograma.Criar(
         new OrigemCanonicaDaFase(
             OrigemId: new Guid($"9999eee{variante:x}-0000-4000-8000-000000000001"), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false,
             ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
-            Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
-            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(),
         bancasRequeridas: []).Value!;
 }

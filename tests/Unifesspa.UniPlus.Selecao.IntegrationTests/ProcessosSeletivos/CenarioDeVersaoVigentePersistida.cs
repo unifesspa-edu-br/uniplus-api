@@ -41,7 +41,7 @@ internal sealed class CenarioDeVersaoVigentePersistida
     public UniPlusDbContext CriarDbContext() => _fixture.CreateDbContext();
 
     public static SnapshotCanonico Canonicalizar(ProcessoSeletivo processo, DadosEdital dados, DocumentoAPublicar documento) =>
-        Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dados, documento.HashSha256!, FusoInstitucional.ZoneId, Retificacao: null, Conformidade: null, DadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)));
+        Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dados, documento.HashSha256!, FusoInstitucional.ZoneId, Retificacao: null, Conformidade: null, DadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(CalendarioDiasUteis: CorpusEnvelopeDadosDoEdital.CalendarioRico(), ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)));
 
     /// <summary>
     /// Publica a abertura e retifica em seguida, avançando o relógio entre as duas. Devolve as duas

@@ -26,11 +26,11 @@ public sealed class ConferenciaDoCicloRecursalAbertoTests
     public void PreliminarPublicado_RetiraODefinitivo_ERecusada()
     {
         ProdutoDaFase preliminar = Produto(Materia, PapelProdutoFase.Preliminar);
-        FaseCronograma publicada = Fase("PROVA", 1, null, preliminar, Produto(Materia, PapelProdutoFase.Definitivo));
+        FaseCronograma publicada = Fase("PROVA", 1, preliminar, Produto(Materia, PapelProdutoFase.Definitivo));
 
         IReadOnlyList<FieldError> recusas = Conferir(
             publicada: [publicada],
-            nova: [Fase("PROVA", 1, null, preliminar)],
+            nova: [Fase("PROVA", 1, preliminar)],
             publicados: [Item(publicada, preliminar)]);
 
         FieldError recusa = recusas.Should().ContainSingle().Subject;
@@ -39,15 +39,15 @@ public sealed class ConferenciaDoCicloRecursalAbertoTests
         recusa.Error.Message.Should().Contain(Materia).And.Contain("Publique o definitivo antes de retificar");
     }
 
-    [Fact(DisplayName = "Preliminar publicado e retificação que leva o definitivo para outro ciclo é recusada")]
-    public void PreliminarPublicado_MudaODefinitivoDeCiclo_ERecusada()
+    [Fact(DisplayName = "Preliminar publicado e retificação que leva o definitivo para outra fase é recusada")]
+    public void PreliminarPublicado_MoveODefinitivoParaOutraFase_ERecusada()
     {
         ProdutoDaFase preliminar = Produto(Materia, PapelProdutoFase.Preliminar);
-        FaseCronograma prova = Fase("PROVA", 1, "RESULTADO", preliminar);
+        FaseCronograma prova = Fase("PROVA", 1, preliminar, Produto(Materia, PapelProdutoFase.Definitivo));
 
         IReadOnlyList<FieldError> recusas = Conferir(
-            publicada: [prova, Fase("RESULTADO", 2, null, Produto(Materia, PapelProdutoFase.Definitivo)), Fase("RECURSOS", 3, null)],
-            nova: [Fase("PROVA", 1, "RECURSOS", preliminar), Fase("RESULTADO", 2, null), Fase("RECURSOS", 3, null, Produto(Materia, PapelProdutoFase.Definitivo))],
+            publicada: [prova, Fase("RESULTADO", 2)],
+            nova: [Fase("PROVA", 1, preliminar), Fase("RESULTADO", 2, Produto(Materia, PapelProdutoFase.Definitivo))],
             publicados: [Item(prova, preliminar)]);
 
         recusas.Should().ContainSingle().Which.Error.Code.Should().Be(ProcessoSeletivoErrorCodes.RetificacaoDesfazCicloRecursalAberto);
@@ -58,21 +58,21 @@ public sealed class ConferenciaDoCicloRecursalAbertoTests
     {
         ProdutoDaFase preliminar = Produto(Materia, PapelProdutoFase.Preliminar);
         ProdutoDaFase definitivo = Produto(Materia, PapelProdutoFase.Definitivo);
-        FaseCronograma publicada = Fase("PROVA", 1, null, preliminar, definitivo);
+        FaseCronograma publicada = Fase("PROVA", 1, preliminar, definitivo);
 
         Conferir(
             publicada: [publicada],
-            nova: [Fase("PROVA", 1, null)],
+            nova: [Fase("PROVA", 1)],
             publicados: [Item(publicada, preliminar), Item(publicada, definitivo)]).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "Preliminar publicado sem definitivo no cronograma e retificação que o retira é recusada")]
     public void PreliminarPublicadoSemDefinitivo_RetiraOPreliminar_Recusa()
     {
-        FaseCronograma publicada = Fase("PROVA", 1, null, Produto(Materia, PapelProdutoFase.Preliminar));
+        FaseCronograma publicada = Fase("PROVA", 1, Produto(Materia, PapelProdutoFase.Preliminar));
 
         IReadOnlyList<FieldError> recusas = Conferir(
-            publicada: [publicada], nova: [Fase("PROVA", 1, null)], publicados: [Item(publicada, publicada.Produtos.Single())]);
+            publicada: [publicada], nova: [Fase("PROVA", 1)], publicados: [Item(publicada, publicada.Produtos.Single())]);
 
         recusas.Should().ContainSingle().Which.Field.Should().Be("cronograma.fases");
     }
@@ -80,9 +80,9 @@ public sealed class ConferenciaDoCicloRecursalAbertoTests
     [Fact(DisplayName = "Com o preliminar não publicado a retificação que retira o par não é recusada")]
     public void PreliminarNaoPublicado_RetiraOPar_NaoRecusa()
     {
-        FaseCronograma publicada = Fase("PROVA", 1, null, Produto(Materia, PapelProdutoFase.Preliminar), Produto(Materia, PapelProdutoFase.Definitivo));
+        FaseCronograma publicada = Fase("PROVA", 1, Produto(Materia, PapelProdutoFase.Preliminar), Produto(Materia, PapelProdutoFase.Definitivo));
 
-        Conferir(publicada: [publicada], nova: [Fase("PROVA", 1, null)], publicados: []).Should().BeEmpty();
+        Conferir(publicada: [publicada], nova: [Fase("PROVA", 1)], publicados: []).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "Preliminar publicado e retificação que mantém o par no mesmo ciclo não é recusada")]
@@ -90,11 +90,11 @@ public sealed class ConferenciaDoCicloRecursalAbertoTests
     {
         ProdutoDaFase preliminar = Produto(Materia, PapelProdutoFase.Preliminar);
         ProdutoDaFase definitivo = Produto(Materia, PapelProdutoFase.Definitivo);
-        FaseCronograma publicada = Fase("PROVA", 1, null, preliminar, definitivo);
+        FaseCronograma publicada = Fase("PROVA", 1, preliminar, definitivo);
 
         Conferir(
             publicada: [publicada],
-            nova: [Fase("PROVA", 1, null, preliminar, definitivo)],
+            nova: [Fase("PROVA", 1, preliminar, definitivo)],
             publicados: [Item(publicada, preliminar)]).Should().BeEmpty();
     }
 
@@ -102,11 +102,11 @@ public sealed class ConferenciaDoCicloRecursalAbertoTests
     public void PreliminarPublicado_ItensComIdentificadoresNovosNoMesmoLugar_NaoRecusa()
     {
         ProdutoDaFase preliminar = Produto(Materia, PapelProdutoFase.Preliminar);
-        FaseCronograma publicada = Fase("PROVA", 1, null, preliminar, Produto(Materia, PapelProdutoFase.Definitivo));
+        FaseCronograma publicada = Fase("PROVA", 1, preliminar, Produto(Materia, PapelProdutoFase.Definitivo));
 
         Conferir(
             publicada: [publicada],
-            nova: [Fase("PROVA", 2, null, Produto(Materia, PapelProdutoFase.Preliminar), Produto(Materia, PapelProdutoFase.Definitivo))],
+            nova: [Fase("PROVA", 2, Produto(Materia, PapelProdutoFase.Preliminar), Produto(Materia, PapelProdutoFase.Definitivo))],
             publicados: [Item(publicada, preliminar)]).Should().BeEmpty();
     }
 
@@ -114,11 +114,11 @@ public sealed class ConferenciaDoCicloRecursalAbertoTests
     public void PreliminarPublicado_FaseDeslocadaComProdutosRecriados_RetiraODefinitivo_ERecusada()
     {
         ProdutoDaFase preliminar = Produto(Materia, PapelProdutoFase.Preliminar);
-        FaseCronograma publicada = Fase("PROVA", 1, null, preliminar, Produto(Materia, PapelProdutoFase.Definitivo));
+        FaseCronograma publicada = Fase("PROVA", 1, preliminar, Produto(Materia, PapelProdutoFase.Definitivo));
 
         IReadOnlyList<FieldError> recusas = Conferir(
             publicada: [publicada],
-            nova: [Fase("HOMOLOGACAO_INSCRICOES", 1, null), Fase("PROVA", 2, null, Produto(Materia, PapelProdutoFase.Preliminar))],
+            nova: [Fase("HOMOLOGACAO_INSCRICOES", 1), Fase("PROVA", 2, Produto(Materia, PapelProdutoFase.Preliminar))],
             publicados: [Item(publicada, preliminar)]);
 
         recusas.Should().ContainSingle().Which.Error.Code.Should().Be(ProcessoSeletivoErrorCodes.RetificacaoDesfazCicloRecursalAberto);
@@ -160,11 +160,11 @@ public sealed class ConferenciaDoCicloRecursalAbertoTests
         ProdutoDaFase preliminarDaProva = Produto(Materia, PapelProdutoFase.Preliminar);
         ProdutoDaFase preliminarDaAnalise = Produto(OutraMateria, PapelProdutoFase.Preliminar);
         FaseCronograma publicada = Fase(
-            "PROVA", 1, null, preliminarDaProva, Produto(Materia, PapelProdutoFase.Definitivo), preliminarDaAnalise, Produto(OutraMateria, PapelProdutoFase.Definitivo));
+            "PROVA", 1, preliminarDaProva, Produto(Materia, PapelProdutoFase.Definitivo), preliminarDaAnalise, Produto(OutraMateria, PapelProdutoFase.Definitivo));
 
         IReadOnlyList<FieldError> recusas = Conferir(
             publicada: [publicada],
-            nova: [Fase("PROVA", 1, null)],
+            nova: [Fase("PROVA", 1)],
             publicados: [Item(publicada, preliminarDaProva), Item(publicada, preliminarDaAnalise)]);
 
         recusas.Select(static r => r.Field).Should().AllBe("cronograma.fases");
@@ -177,12 +177,12 @@ public sealed class ConferenciaDoCicloRecursalAbertoTests
     {
         ProdutoDaFase preliminarDaProva = Produto(Materia, PapelProdutoFase.Preliminar);
         ProdutoDaFase preliminarDaReaplicacao = Produto(Materia, PapelProdutoFase.Preliminar);
-        FaseCronograma prova = Fase("PROVA", 1, null, preliminarDaProva, Produto(Materia, PapelProdutoFase.Definitivo));
-        FaseCronograma reaplicacao = Fase("REAPLICACAO", 2, null, preliminarDaReaplicacao, Produto(Materia, PapelProdutoFase.Definitivo));
+        FaseCronograma prova = Fase("PROVA", 1, preliminarDaProva, Produto(Materia, PapelProdutoFase.Definitivo));
+        FaseCronograma reaplicacao = Fase("REAPLICACAO", 2, preliminarDaReaplicacao, Produto(Materia, PapelProdutoFase.Definitivo));
 
         IReadOnlyList<FieldError> recusas = Conferir(
             publicada: [prova, reaplicacao],
-            nova: [Fase("PROVA", 1, null), Fase("REAPLICACAO", 2, null)],
+            nova: [Fase("PROVA", 1), Fase("REAPLICACAO", 2)],
             publicados: [Item(prova, preliminarDaProva), Item(reaplicacao, preliminarDaReaplicacao)]);
 
         recusas.Should().ContainSingle().Which.Field.Should().Be("cronograma.fases");
@@ -195,11 +195,11 @@ public sealed class ConferenciaDoCicloRecursalAbertoTests
         ProdutoDaFase definitivoDaProva = Produto(Materia, PapelProdutoFase.Definitivo);
         ProdutoDaFase preliminarDaAnalise = Produto(OutraMateria, PapelProdutoFase.Preliminar);
         FaseCronograma publicada = Fase(
-            "PROVA", 1, null, preliminarDaProva, definitivoDaProva, preliminarDaAnalise, Produto(OutraMateria, PapelProdutoFase.Definitivo));
+            "PROVA", 1, preliminarDaProva, definitivoDaProva, preliminarDaAnalise, Produto(OutraMateria, PapelProdutoFase.Definitivo));
 
         IReadOnlyList<FieldError> recusas = Conferir(
             publicada: [publicada],
-            nova: [Fase("PROVA", 1, null)],
+            nova: [Fase("PROVA", 1)],
             publicados: [Item(publicada, preliminarDaProva), Item(publicada, definitivoDaProva), Item(publicada, preliminarDaAnalise)]);
 
         recusas.Should().ContainSingle().Which.Field.Should().Be("cronograma.fases");
@@ -215,10 +215,10 @@ public sealed class ConferenciaDoCicloRecursalAbertoTests
     private static ProdutoDaFase Produto(string materia, PapelProdutoFase papel) => ProdutoDaFase.Criar(materia, papel);
 
     // A mesma fase, em versões diferentes do cronograma, tem a mesma fase canônica de origem.
-    private FaseCronograma Fase(string codigo, int ordem, string? faseConcluinteCodigo, params ProdutoDaFase[] produtos) =>
+    private FaseCronograma Fase(string codigo, int ordem, params ProdutoDaFase[] produtos) =>
         FaseCronograma.Criar(
             new OrigemCanonicaDaFase(OrigemDe(codigo), codigo, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
-            new DecisoesDeCronogramaDaFase(ordem, Inicio: Agora, Fim: Agora.AddDays(10), FaseConcluinteCodigo: faseConcluinteCodigo, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new DecisoesDeCronogramaDaFase(ordem, Inicio: Agora, Fim: Agora.AddDays(10), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: produtos, EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;
 

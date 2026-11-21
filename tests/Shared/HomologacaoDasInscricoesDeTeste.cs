@@ -56,7 +56,7 @@ internal static class HomologacaoDasInscricoesDeTeste
     internal static FaseCronograma FaseQueHomologaComRecurso(int ordem, string codigo = "HOMOLOGACAO_DAS_INSCRICOES", string resultado = "RESULTADO_DA_HOMOLOGACAO") => FaseCronograma.Criar(
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
-        new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         PublicacoesDaFaseQueHomologaComRecurso(resultado),
         bancasRequeridas: [BancasDeTeste.DeRecursosDaFase()]).Value!;
 

@@ -11,13 +11,16 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using static FaseDaRetificacaoDeTeste;
 
 /// <summary>
-/// O que a retificação não muda nos prazos (UNI-REQ-0211, UNI-REQ-0106): a fase concluída fica integral; a fase
+/// O que a retificação não muda nos prazos (UNI-REQ-0211, UNI-REQ-0106): a fase concluída pelo definitivo fica integral; a fase
 /// em andamento mantém o início e não antecipa o término; as inscrições nunca antecipam o término, mas podem ser
-/// prorrogadas; a janela de isenção não se reduz nem reabre; antes de começar, o prazo muda livremente.
+/// prorrogadas; a fase sem definitivo que já concluiu pelo fim do período não é prorrogada depois que uma fase posterior
+/// começou; o período de isenção não se reduz nem reabre; antes de começar, o prazo muda livremente.
 /// </summary>
 public sealed class ConferenciaDosPrazosDaRetificacaoTests
 {
     private static readonly DateTimeOffset Passado = Instante.AddDays(-20);
+
+    private static readonly TimeSpan UmMicrossegundo = TimeSpan.FromTicks(10);
 
     private static IReadOnlyList<FieldError> Conferir(FaseCronograma[] fasesDaBase, FaseCronograma[] fasesNovas, FasesIniciadas iniciadas) =>
         ConferenciaDosPrazosDaRetificacao.Conferir(fasesNovas, [], new AndamentoDasFases(fasesDaBase, [], Fatos(iniciadas)));
@@ -28,17 +31,23 @@ public sealed class ConferenciaDosPrazosDaRetificacaoTests
     private static FaseCronograma EmAndamento(string codigo = "PROVA", bool inscricao = false, bool isencao = false) =>
         Fase(1, codigo, (Passado, Instante.AddDays(10)), inscricao, isencao);
 
-    [Fact(DisplayName = "A fase concluída com o prazo mudado é recusada, e a idêntica passa")]
-    public void FaseConcluida_PrazoMudado_Recusa()
+    private static FaseCronograma Encerrada(int ordem, string codigo, bool inscricao = false, bool isencao = false, params ProdutoDaFase[] produtos) =>
+        Fase(ordem, codigo, (Passado, Instante.AddDays(-1)), inscricao, isencao, produtos);
+
+    private static FaseCronograma Prorrogada(FaseCronograma fase) => ComJanela(fase, fase.Inicio, Instante.AddDays(3));
+
+    [Fact(DisplayName = "A fase concluída pelo definitivo publicado, com o prazo mudado, é recusada no início e no término, e a idêntica passa")]
+    public void FaseComDefinitivoPublicado_PrazoMudado_Recusa()
     {
-        FaseCronograma prova = Fase(1, "PROVA", (Passado, Passado.AddDays(5)));
+        ProdutoDaFase definitivo = Definitivo("RESULTADO_PROVA");
+        FaseCronograma prova = Fase(1, "PROVA", (Passado, Passado.AddDays(5)), produtos: [definitivo]);
         FaseCronograma resultado = Fase(2, "RESULTADO");
         FasesIniciadas iniciadas = Iniciadas(prova, resultado);
+        FatosDaExecucao fatos = Fatos(iniciadas, Item(prova, definitivo));
 
-        Conferir([prova, resultado], [prova, resultado], iniciadas).Should().BeEmpty();
-        Recusas(Conferir([prova, resultado], [ComJanela(prova, Passado, Passado.AddDays(9)), resultado], iniciadas)).Should().Equal(
-            ("fases[0].fim", RetificacaoErrorCodes.FaseConcluidaAlterada));
-        Recusas(Conferir([prova, resultado], [ComJanela(prova, Passado.AddDays(1), Passado.AddDays(9)), resultado], iniciadas)).Should().Equal(
+        ConferenciaDosPrazosDaRetificacao.Conferir([prova, resultado], [], new AndamentoDasFases([prova, resultado], [], fatos)).Should().BeEmpty();
+        Recusas(ConferenciaDosPrazosDaRetificacao.Conferir(
+            [ComJanela(prova, Passado.AddDays(1), Passado.AddDays(9)), resultado], [], new AndamentoDasFases([prova, resultado], [], fatos))).Should().Equal(
             ("fases[0].inicio", RetificacaoErrorCodes.FaseConcluidaAlterada),
             ("fases[0].fim", RetificacaoErrorCodes.FaseConcluidaAlterada));
     }
@@ -86,11 +95,11 @@ public sealed class ConferenciaDosPrazosDaRetificacaoTests
             ("fases[0].fim", RetificacaoErrorCodes.TerminoDeFaseEmAndamentoAntecipado));
     }
 
-    [Fact(DisplayName = "O término das inscrições nunca é antecipado, nem antes de abrir; prorrogar vale, mesmo com o prazo vencido")]
+    [Fact(DisplayName = "O término das inscrições nunca é antecipado, nem antes de abrir; prorrogar vale, mesmo com o prazo vencido, sem fase posterior iniciada")]
     public void Inscricao_TerminoNuncaAntecipado()
     {
         FaseCronograma aberta = Fase(1, "INSCRICAO", (Passado, Instante.AddDays(10)), coletaInscricao: true);
-        FaseCronograma vencida = Fase(1, "INSCRICAO", (Passado, Instante.AddDays(-1)), coletaInscricao: true);
+        FaseCronograma vencida = Encerrada(1, "INSCRICAO", inscricao: true);
         FaseCronograma futura = Fase(1, "INSCRICAO", (Instante.AddDays(5), Instante.AddDays(15)), coletaInscricao: true);
         FaseCronograma homologacao = Fase(2, "HOMOLOGACAO");
 
@@ -98,25 +107,105 @@ public sealed class ConferenciaDosPrazosDaRetificacaoTests
             ("fases[0].fim", RetificacaoErrorCodes.TerminoDaInscricaoAntecipado));
         Recusas(Conferir([futura], [ComJanela(futura, futura.Inicio, Instante.AddDays(14))], Iniciadas())).Should().Equal(
             ("fases[0].fim", RetificacaoErrorCodes.TerminoDaInscricaoAntecipado));
-        Conferir([vencida, homologacao], [ComJanela(vencida, vencida.Inicio, Instante.AddDays(3)), homologacao], Iniciadas(vencida)).Should().BeEmpty();
+        Recusas(Conferir([vencida], [ComJanela(vencida, vencida.Inicio, Instante.AddDays(-3))], Iniciadas(vencida))).Should().Equal(
+            ("fases[0].fim", RetificacaoErrorCodes.TerminoDaInscricaoAntecipado));
+        Recusas(Conferir([vencida], [ComJanela(vencida, Passado.AddDays(1), vencida.Fim)], Iniciadas(vencida))).Should().Equal(
+            ("fases[0].inicio", RetificacaoErrorCodes.InicioDeFaseIniciadaAlterado));
+        Conferir([vencida, homologacao], [Prorrogada(vencida), homologacao], Iniciadas(vencida)).Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "A inscrição vencida, com a homologação já iniciada, está concluída e não aceita prorrogação")]
-    public void Inscricao_ConcluidaPelaFaseSeguinte_NaoProrroga()
+    [Fact(DisplayName = "A fase sem definitivo, iniciada e encerrada, com a fase imediatamente seguinte iniciada, não é prorrogada, e a mensagem cita as duas")]
+    public void FaseConcluidaSemDefinitivo_ComASeguinteIniciada_NaoProrroga()
     {
-        FaseCronograma vencida = Fase(1, "INSCRICAO", (Passado, Instante.AddDays(-1)), coletaInscricao: true);
+        FaseCronograma vencida = Encerrada(1, "INSCRICAO", inscricao: true);
         FaseCronograma homologacao = Fase(2, "HOMOLOGACAO");
 
-        Recusas(Conferir([vencida, homologacao], [ComJanela(vencida, vencida.Inicio, Instante.AddDays(3)), homologacao], Iniciadas(vencida, homologacao))).Should().Equal(
-            ("fases[0].fim", RetificacaoErrorCodes.FaseConcluidaAlterada));
+        IReadOnlyList<FieldError> recusas = Conferir([vencida, homologacao], [Prorrogada(vencida), homologacao], Iniciadas(vencida, homologacao));
+
+        recusas.Should().ContainSingle().Which.Field.Should().Be("fases[0].fim");
+        recusas.Single().Error.Code.Should().Be(RetificacaoErrorCodes.ProrrogacaoComFasePosteriorIniciada);
+        recusas.Single().Error.Message.Should().Contain("'INSCRICAO'").And.Contain("'HOMOLOGACAO'");
     }
 
-    [Fact(DisplayName = "Adiar o início das inscrições antes de abrir é aceito: não é redução")]
-    public void Inscricao_AdiarInicioAntesDeAbrir_Aceita()
+    [Fact(DisplayName = "A fase sem definitivo, iniciada e encerrada, com só uma fase posterior distante iniciada, também não é prorrogada")]
+    public void FaseConcluidaSemDefinitivo_ComPosteriorDistanteIniciada_NaoProrroga()
     {
-        FaseCronograma futura = Fase(1, "INSCRICAO", (Instante.AddDays(5), Instante.AddDays(15)), coletaInscricao: true);
+        FaseCronograma prova = Encerrada(1, "PROVA");
+        FaseCronograma intermediaria = Fase(2, "ANALISE");
+        FaseCronograma distante = Fase(3, "MATRICULA");
 
-        Conferir([futura], [ComJanela(futura, Instante.AddDays(8), futura.Fim)], Iniciadas()).Should().BeEmpty();
+        IReadOnlyList<FieldError> recusas = Conferir([prova, intermediaria, distante], [Prorrogada(prova), intermediaria, distante], Iniciadas(prova, distante));
+
+        recusas.Should().ContainSingle().Which.Error.Code.Should().Be(RetificacaoErrorCodes.ProrrogacaoComFasePosteriorIniciada);
+        recusas.Single().Error.Message.Should().Contain("'MATRICULA'");
+    }
+
+    [Fact(DisplayName = "A fase nunca iniciada e encerrada é prorrogada, com ou sem fase posterior iniciada")]
+    public void FaseNuncaIniciadaEEncerrada_Prorroga()
+    {
+        FaseCronograma prova = Encerrada(1, "PROVA");
+        FaseCronograma seguinte = Fase(2, "RESULTADO");
+
+        Conferir([prova, seguinte], [Prorrogada(prova), seguinte], Iniciadas()).Should().BeEmpty();
+        Conferir([prova, seguinte], [Prorrogada(prova), seguinte], Iniciadas(seguinte)).Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "A isenção contemporânea da inscrição não é fase posterior, e uma fase posterior verdadeira iniciada continua recusando")]
+    public void FaseDeMesmoMomento_NaoEPosterior()
+    {
+        FaseCronograma isencao = Fase(1, "ISENCAO", (Passado, Instante.AddDays(2)), coletaIsencao: true);
+        FaseCronograma inscricao = Encerrada(2, "INSCRICAO", inscricao: true);
+        FaseCronograma seguinte = Fase(3, "HOMOLOGACAO");
+
+        Conferir([isencao, inscricao, seguinte], [isencao, Prorrogada(inscricao), seguinte], Iniciadas(isencao, inscricao)).Should().BeEmpty();
+        Recusas(Conferir([isencao, inscricao, seguinte], [isencao, Prorrogada(inscricao), seguinte], Iniciadas(isencao, inscricao, seguinte))).Should().Equal(
+            ("fases[1].fim", RetificacaoErrorCodes.ProrrogacaoComFasePosteriorIniciada));
+    }
+
+    [Fact(DisplayName = "No instante exato do fim publicado o período ainda corre: prorrogar é aceito, mesmo com fase posterior iniciada por sobreposição")]
+    public void NoInstanteDoFim_ProrrogacaoAceita()
+    {
+        FaseCronograma prova = Fase(1, "PROVA", (Passado, Instante));
+        FaseCronograma seguinte = Fase(2, "RESULTADO");
+
+        Conferir([prova, seguinte], [ComJanela(prova, prova.Inicio, Instante.AddDays(3)), seguinte], Iniciadas(prova, seguinte)).Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Com o instante estritamente antes do fim publicado, prorrogar é aceito, mesmo com fase posterior iniciada")]
+    public void AntesDoFim_ProrrogacaoAceitaComPosteriorIniciada()
+    {
+        FaseCronograma prova = Fase(1, "PROVA", (Passado, Instante.AddDays(1)));
+        FaseCronograma seguinte = Fase(2, "RESULTADO");
+
+        Conferir([prova, seguinte], [ComJanela(prova, prova.Inicio, Instante.AddDays(3)), seguinte], Iniciadas(prova, seguinte)).Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Um microssegundo depois do fim publicado a fase sem definitivo está concluída, e prorrogar com fase posterior iniciada é recusado")]
+    public void DepoisDoFim_ProrrogacaoRecusadaComPosteriorIniciada()
+    {
+        FaseCronograma prova = Fase(1, "PROVA", (Passado, Instante - UmMicrossegundo));
+        FaseCronograma seguinte = Fase(2, "RESULTADO");
+
+        Recusas(Conferir([prova, seguinte], [Prorrogada(prova), seguinte], Iniciadas(prova, seguinte))).Should().Equal(
+            ("fases[0].fim", RetificacaoErrorCodes.ProrrogacaoComFasePosteriorIniciada));
+    }
+
+    [Fact(DisplayName = "A fase com definitivo previsto e ainda pendente, de período terminado e com fase posterior iniciada, é prorrogada: não está concluída")]
+    public void FaseComDefinitivoPendente_Prorroga()
+    {
+        FaseCronograma prova = Encerrada(1, "PROVA", produtos: [Preliminar("RESULTADO_PROVA"), Definitivo("RESULTADO_PROVA")]);
+        FaseCronograma seguinte = Fase(2, "RESULTADO");
+
+        Conferir([prova, seguinte], [Prorrogada(prova), seguinte], Iniciadas(prova, seguinte)).Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "A fase sem definitivo e concluída não antecipa o término: a recusa é de fase concluída alterada")]
+    public void FaseConcluidaSemDefinitivo_TerminoAntecipado_Recusa()
+    {
+        FaseCronograma prova = Encerrada(1, "PROVA");
+
+        Recusas(Conferir([prova], [ComJanela(prova, prova.Inicio, Instante.AddDays(-3))], Iniciadas(prova))).Should().Equal(
+            ("fases[0].fim", RetificacaoErrorCodes.FaseConcluidaAlterada));
     }
 
     [Fact(DisplayName = "A janela de isenção não se reduz, mesmo antes de abrir, e prorrogar antes do término é aceito")]
@@ -129,28 +218,55 @@ public sealed class ConferenciaDosPrazosDaRetificacaoTests
         Conferir([futura], [ComJanela(futura, futura.Inicio, Instante.AddDays(12))], Iniciadas()).Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "A janela de isenção encerrada não reabre: mudar o término é recusado, inclusive com o término no instante")]
+    [Fact(DisplayName = "O período de isenção iniciado e encerrada não reabre: mudar o término é recusado, com ou sem fase posterior iniciada")]
     public void JanelaDeIsencaoEncerrada_NaoReabre()
     {
-        FaseCronograma encerrada = Fase(1, "ISENCAO", (Passado, Instante.AddDays(-1)), coletaIsencao: true);
-        FaseCronograma noInstante = Fase(1, "ISENCAO", (Passado, Instante), coletaIsencao: true);
+        FaseCronograma encerrada = Encerrada(1, "ISENCAO", isencao: true);
         FaseCronograma seguinte = Fase(2, "INSCRICAO");
 
-        Recusas(Conferir([encerrada, seguinte], [ComJanela(encerrada, encerrada.Inicio, Instante.AddDays(3)), seguinte], Iniciadas(encerrada))).Should().Equal(
+        Recusas(Conferir([encerrada, seguinte], [Prorrogada(encerrada), seguinte], Iniciadas(encerrada))).Should().Equal(
             ("fases[0].fim", RetificacaoErrorCodes.JanelaDeIsencaoEncerradaReaberta));
-        Recusas(Conferir([noInstante, seguinte], [ComJanela(noInstante, noInstante.Inicio, Instante.AddDays(1)), seguinte], Iniciadas(noInstante))).Should().Equal(
+        Recusas(Conferir([encerrada, seguinte], [Prorrogada(encerrada), seguinte], Iniciadas(encerrada, seguinte))).Should().Equal(
             ("fases[0].fim", RetificacaoErrorCodes.JanelaDeIsencaoEncerradaReaberta));
+    }
+
+    [Fact(DisplayName = "A fronteira da isenção: com o fim um microssegundo antes do instante está encerrada, e no instante exato e depois ainda corre")]
+    public void PeriodoDeIsencao_Fronteira()
+    {
+        FaseCronograma antes = Fase(1, "ISENCAO", (Passado, Instante - UmMicrossegundo), coletaIsencao: true);
+        FaseCronograma noFim = Fase(1, "ISENCAO", (Passado, Instante), coletaIsencao: true);
+        FaseCronograma depois = Fase(1, "ISENCAO", (Passado, Instante + UmMicrossegundo), coletaIsencao: true);
+
+        Recusas(Conferir([antes], [Prorrogada(antes)], Iniciadas(antes))).Should().Equal(
+            ("fases[0].fim", RetificacaoErrorCodes.JanelaDeIsencaoEncerradaReaberta));
+        Conferir([noFim], [Prorrogada(noFim)], Iniciadas(noFim)).Should().BeEmpty();
+        Conferir([depois], [Prorrogada(depois)], Iniciadas(depois)).Should().BeEmpty();
+        Conferir([noFim], [noFim], Iniciadas(noFim)).Should().BeEmpty();
+        Recusas(Conferir([noFim], [ComJanela(noFim, noFim.Inicio, Instante.AddDays(-1))], Iniciadas(noFim))).Should().Equal(
+            ("fases[0].fim", RetificacaoErrorCodes.JanelaDeIsencaoReduzida));
+    }
+
+    [Fact(DisplayName = "O período de isenção nunca iniciado e encerrado se prorroga, com ou sem fase posterior iniciada")]
+    public void PeriodoDeIsencaoNuncaIniciada_Prorroga()
+    {
+        FaseCronograma isencao = Encerrada(1, "ISENCAO", isencao: true);
+        FaseCronograma seguinte = Fase(2, "INSCRICAO");
+
+        Conferir([isencao, seguinte], [Prorrogada(isencao), seguinte], Iniciadas()).Should().BeEmpty();
+        Conferir([isencao, seguinte], [Prorrogada(isencao), seguinte], Iniciadas(seguinte)).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "A fase recusada é apontada pela posição na ordem do documento, e não pela posição na lista como veio")]
     public void FaseRecusada_ApontaAPosicaoNoDocumento()
     {
+        ProdutoDaFase definitivo = Definitivo("RESULTADO_PROVA");
         FaseCronograma inscricao = Fase(1, "INSCRICAO", (Passado, Passado.AddDays(5)));
-        FaseCronograma prova = Fase(2, "PROVA", (Passado, Passado.AddDays(5)));
+        FaseCronograma prova = Fase(2, "PROVA", (Passado, Passado.AddDays(5)), produtos: [definitivo]);
         FaseCronograma resultado = Fase(3, "RESULTADO");
+        FatosDaExecucao fatos = Fatos(Iniciadas(inscricao, prova, resultado), Item(prova, definitivo));
 
-        Recusas(Conferir(
-            [inscricao, prova, resultado], [resultado, ComJanela(prova, Passado, Passado.AddDays(9)), inscricao], Iniciadas(inscricao, prova, resultado))).Should().Equal(
+        Recusas(ConferenciaDosPrazosDaRetificacao.Conferir(
+            [resultado, ComJanela(prova, Passado, Passado.AddDays(9)), inscricao], [], new AndamentoDasFases([inscricao, prova, resultado], [], fatos))).Should().Equal(
             ("fases[1].fim", RetificacaoErrorCodes.FaseConcluidaAlterada));
     }
 

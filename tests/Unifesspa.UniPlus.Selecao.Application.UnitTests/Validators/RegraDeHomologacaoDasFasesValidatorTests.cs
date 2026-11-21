@@ -17,8 +17,7 @@ public sealed class RegraDeHomologacaoDasFasesValidatorTests
         new DefinirCronogramaFasesCommand(Guid.CreateVersion7(), [Fase(regra)]));
 
     private static FaseCronogramaInput Fase(RegraDeHomologacaoInput? regra) => new(
-        Ordem: 1, FaseCanonicaId: Guid.CreateVersion7(), Inicio: null, Fim: null, Produtos: [], FaseConcluinteCodigo: null,
-        EmiteParecerIndividual: false, BancasRequeridas: [], RegraRecurso: null, RegraDeHomologacao: regra);
+        Ordem: 1, FaseCanonicaId: Guid.CreateVersion7(), Inicio: null, Fim: null, Produtos: [], EmiteParecerIndividual: false, BancasRequeridas: [], RegraRecurso: null, RegraDeHomologacao: regra);
 
     [Fact(DisplayName = "A fase sem regra de homologação não tem o que validar")]
     public void SemRegra_Aceita() => Validar(regra: null).IsValid.Should().BeTrue();

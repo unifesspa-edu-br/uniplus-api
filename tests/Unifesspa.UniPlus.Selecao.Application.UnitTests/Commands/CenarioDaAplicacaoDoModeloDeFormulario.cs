@@ -149,7 +149,7 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
                 new OrigemCanonicaDaFase(
                     Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: codigo == "INSCRICAO",
                     ColetaSolicitacaoIsencao: false),
-                new DecisoesDeCronogramaDaFase(i + 1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+                new DecisoesDeCronogramaDaFase(i + 1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
                 new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
                 bancasRequeridas: []).Value!),
         ];

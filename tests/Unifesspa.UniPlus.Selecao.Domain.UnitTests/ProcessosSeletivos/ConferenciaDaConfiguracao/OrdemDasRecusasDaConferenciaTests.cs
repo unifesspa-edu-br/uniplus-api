@@ -34,7 +34,7 @@ public sealed class OrdemDasRecusasDaConferenciaTests
     private static FaseCronograma FaseComJanelaInvertida() => FaseCronograma.Reidratar(
         Guid.CreateVersion7(),
         new OrigemCanonicaDaFase(Guid.CreateVersion7(), "FASE_DA_JANELA", OrigemDataFase.NoEdital, false, false, false, false),
-        new DecisoesDeCronogramaDaFase(99, Agora, Agora.AddDays(-1), null, UnidadesDeTeste.Ceps),
+        new DecisoesDeCronogramaDaFase(99, Agora, Agora.AddDays(-1), UnidadesDeTeste.Ceps),
         new PublicacoesDaFase([], false, null),
         []);
 

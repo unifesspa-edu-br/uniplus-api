@@ -82,7 +82,6 @@ public sealed class MotivosDosLugaresQueSaemEndpointTests : IAsyncLifetime
         inicio = new DateTimeOffset(2030, 1, 10, 0, 0, 0, TimeSpan.Zero),
         fim = new DateTimeOffset(2030, 1, 20, 0, 0, 0, TimeSpan.Zero),
         produtos = Array.Empty<object>(),
-        faseConcluinteCodigo = (string?)null,
         emiteParecerIndividual = false,
         bancasRequeridas = Array.Empty<object>(),
         regraRecurso = (object?)null,

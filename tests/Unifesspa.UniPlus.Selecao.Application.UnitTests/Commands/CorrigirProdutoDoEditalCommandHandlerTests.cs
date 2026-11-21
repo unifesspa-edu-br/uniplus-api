@@ -108,15 +108,9 @@ public sealed class CorrigirProdutoDoEditalCommandHandlerTests
 
     private (ProdutoDaFase PreliminarA, ProdutoDaFase PreliminarB, ProdutoDaFase DefinitivoC) DoisCiclosComODefinitivoDoPrimeiro()
     {
-        (ProdutoDaFase preliminarA, _) = Par();
-        (ProdutoDaFase preliminarB, _) = Par();
-        ProdutoDaFase definitivoC = ProdutoDaFase.Criar(Materia, PapelProdutoFase.Definitivo);
-        ProdutoDaFase definitivoD = ProdutoDaFase.Criar(Materia, PapelProdutoFase.Definitivo);
-        _cenario.Cronograma(
-            FaseQueConclui("ABRE_A", 1, "FECHA_C", preliminarA),
-            FaseQueConclui("ABRE_B", 2, "FECHA_D", preliminarB),
-            Fase("FECHA_C", 3, definitivoC),
-            Fase("FECHA_D", 4, definitivoD));
+        (ProdutoDaFase preliminarA, ProdutoDaFase definitivoC) = Par();
+        (ProdutoDaFase preliminarB, ProdutoDaFase definitivoD) = Par();
+        _cenario.Cronograma(Fase("FASE_A", 1, preliminarA, definitivoC), Fase("FASE_B", 2, preliminarB, definitivoD));
         return (preliminarA, preliminarB, definitivoC);
     }
 

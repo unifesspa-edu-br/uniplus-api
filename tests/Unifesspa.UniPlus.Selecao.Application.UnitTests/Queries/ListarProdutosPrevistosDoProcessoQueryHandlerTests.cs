@@ -85,15 +85,12 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
             new string('a', 64), "America/Sao_Paulo", retificacao: null, conformidade: null, dadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada());
 
     private static FaseCronograma Fase(string codigo, int ordem, params ProdutoDaFase[] produtos) =>
-        FaseQueConclui(codigo, ordem, null, produtos);
+        FaseDeOrigem(Guid.CreateVersion7(), codigo, ordem, produtos);
 
-    private static FaseCronograma FaseQueConclui(string codigo, int ordem, string? faseConcluinteCodigo, params ProdutoDaFase[] produtos) =>
-        FaseDeOrigem(Guid.CreateVersion7(), codigo, ordem, faseConcluinteCodigo, produtos);
-
-    private static FaseCronograma FaseDeOrigem(Guid origem, string codigo, int ordem, string? faseConcluinteCodigo, params ProdutoDaFase[] produtos) =>
+    private static FaseCronograma FaseDeOrigem(Guid origem, string codigo, int ordem, params ProdutoDaFase[] produtos) =>
         FaseCronograma.Criar(
             new OrigemCanonicaDaFase(origem, codigo, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
-            new DecisoesDeCronogramaDaFase(ordem, Inicio: Agora, Fim: Agora.AddDays(10), FaseConcluinteCodigo: faseConcluinteCodigo, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new DecisoesDeCronogramaDaFase(ordem, Inicio: Agora, Fim: Agora.AddDays(10), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: produtos, EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;
 
@@ -182,10 +179,10 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
     {
         Guid origem = Guid.CreateVersion7();
         (ProdutoDaFase preliminar, ProdutoDaFase definitivo) = Par();
-        Cronograma([FaseDeOrigem(origem, "INSCRICAO", 1, null, preliminar, definitivo)]);
+        Cronograma([FaseDeOrigem(origem, "INSCRICAO", 1, preliminar, definitivo)]);
         AtoDoProcesso ato = Publicar(Materia, preliminar.Id);
         (ProdutoDaFase preliminarRecriado, ProdutoDaFase definitivoRecriado) = Par();
-        Cronograma([Fase("HOMOLOGACAO_INSCRICOES", 1), FaseDeOrigem(origem, "INSCRICAO", 2, null, preliminarRecriado, definitivoRecriado)]);
+        Cronograma([Fase("HOMOLOGACAO_INSCRICOES", 1), FaseDeOrigem(origem, "INSCRICAO", 2, preliminarRecriado, definitivoRecriado)]);
 
         ProdutoPrevistoDto doPreliminar = await ItemDaFase(preliminarRecriado.Id);
         ProdutoPrevistoDto doDefinitivo = await ItemDaFase(definitivoRecriado.Id);
@@ -237,13 +234,13 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
         (await ItemDaFase(definitivo.Id)).PodePublicar.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "O definitivo da fase concluinte espera o preliminar do mesmo tipo da fase que abre o ciclo")]
-    public async Task Handle_CicloEntreFases_DefinitivoEsperaOPreliminarDaFaseQueAbre()
+    [Fact(DisplayName = "O definitivo da fase espera o preliminar do mesmo tipo de ato da própria fase, e não o de outro tipo")]
+    public async Task Handle_CicloNaPropriaFase_DefinitivoEsperaOPreliminarDoMesmoTipo()
     {
         ProdutoDaFase preliminar = ProdutoDaFase.Criar(Materia, PapelProdutoFase.Preliminar);
         ProdutoDaFase preliminarOutroTipo = ProdutoDaFase.Criar(OutraMateria, PapelProdutoFase.Preliminar);
         ProdutoDaFase definitivo = ProdutoDaFase.Criar(Materia, PapelProdutoFase.Definitivo);
-        Cronograma([FaseQueConclui("AVALIACAO", 1, "RESULTADO", preliminar, preliminarOutroTipo), Fase("RESULTADO", 2, definitivo)]);
+        Cronograma([Fase("AVALIACAO", 1, preliminar, preliminarOutroTipo, definitivo)]);
 
         (await ItemDaFase(definitivo.Id)).Impedimento!.Motivo.Should().Be(ImpedimentoDoProduto.PreliminarNaoPublicado);
 
@@ -255,52 +252,14 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
         (await ItemDaFase(definitivo.Id)).PodePublicar.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Duas fases que abrem ciclo com o mesmo tipo e apontam a mesma concluinte: o definitivo espera os dois preliminares")]
-    public async Task Handle_DuasFasesAbremCicloComOMesmoTipo_DefinitivoEsperaOsDois()
-    {
-        ProdutoDaFase primeiroPreliminar = ProdutoDaFase.Criar(Materia, PapelProdutoFase.Preliminar);
-        ProdutoDaFase segundoPreliminar = ProdutoDaFase.Criar(Materia, PapelProdutoFase.Preliminar);
-        ProdutoDaFase definitivo = ProdutoDaFase.Criar(Materia, PapelProdutoFase.Definitivo);
-        Cronograma(
-        [
-            FaseQueConclui("PROVA_1", 1, "RESULTADO", primeiroPreliminar),
-            FaseQueConclui("PROVA_2", 2, "RESULTADO", segundoPreliminar),
-            Fase("RESULTADO", 3, definitivo),
-        ]);
-        Publicar(Materia, primeiroPreliminar.Id);
-        (await ItemDaFase(definitivo.Id)).Impedimento!.Motivo.Should().Be(ImpedimentoDoProduto.PreliminarNaoPublicado);
-
-        Publicar(Materia, segundoPreliminar.Id);
-        (await ItemDaFase(definitivo.Id)).PodePublicar.Should().BeTrue();
-    }
-
-    private void CronogramaDasDuasFases(ProdutoDaFase primeiro, ProdutoDaFase segundo, ProdutoDaFase definitivo) =>
-        Cronograma(
-        [
-            FaseQueConclui("PROVA_1", 1, "RESULTADO", primeiro),
-            FaseQueConclui("PROVA_2", 2, "RESULTADO", segundo),
-            Fase("RESULTADO", 3, definitivo),
-        ]);
-
-    [Fact(DisplayName = "O preliminar de uma fase que aponta outra concluinte não é esperado")]
-    public async Task Handle_FaseQueApontaOutraConcluinte_NaoEhEsperada()
+    [Fact(DisplayName = "O preliminar de uma fase não é esperado pelo definitivo do mesmo tipo de outra fase")]
+    public async Task Handle_PreliminarDeOutraFaseDoMesmoTipo_NaoEhEsperado()
     {
         ProdutoDaFase preliminar = ProdutoDaFase.Criar(Materia, PapelProdutoFase.Preliminar);
         ProdutoDaFase definitivo = ProdutoDaFase.Criar(Materia, PapelProdutoFase.Definitivo);
-        Cronograma([FaseQueConclui("PROVA", 1, "OUTRA", preliminar), Fase("RESULTADO", 2, definitivo), Fase("OUTRA", 3)]);
+        Cronograma([Fase("PROVA", 1, preliminar), Fase("RESULTADO", 2, definitivo)]);
 
         (await ItemDaFase(definitivo.Id)).PodePublicar.Should().BeTrue();
-    }
-
-    [Fact(DisplayName = "O ciclo que a fase de origem fecha com o próprio definitivo não chega à concluinte")]
-    public async Task Handle_CicloFechadoNaFaseDeOrigem_NaoEhEsperadoPelaConcluinte()
-    {
-        (ProdutoDaFase preliminar, ProdutoDaFase definitivoDaOrigem) = Par();
-        ProdutoDaFase preliminarAberto = ProdutoDaFase.Criar(OutraMateria, PapelProdutoFase.Preliminar);
-        ProdutoDaFase definitivoDaConcluinte = ProdutoDaFase.Criar(Materia, PapelProdutoFase.Definitivo);
-        Cronograma([FaseQueConclui("AVALIACAO", 1, "RESULTADO", preliminar, definitivoDaOrigem, preliminarAberto), Fase("RESULTADO", 2, definitivoDaConcluinte)]);
-
-        (await ItemDaFase(definitivoDaConcluinte.Id)).PodePublicar.Should().BeTrue();
     }
 
     [Fact(DisplayName = "A correção de uma lista publicada entra na cadeia e não substitui a primeira publicação")]

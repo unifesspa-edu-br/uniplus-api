@@ -27,6 +27,7 @@ public sealed class SequenciaDosItensDoCronogramaTests
         "cronograma_homologacao_das_inscricoes_com_confirmacao_do_inep",
         "cronograma_fase_que_coleta_inscricao_sem_janela",
         "cronograma_fase_sem_unidade_responsavel",
+        "cronograma_fase_sem_definitivo_sem_data_final",
         "cronograma_janela_de_isencao",
         "cronograma_vagas_sem_fase_que_produz_resultado",
         "cronograma_conclusao_do_ciclo_recursal",

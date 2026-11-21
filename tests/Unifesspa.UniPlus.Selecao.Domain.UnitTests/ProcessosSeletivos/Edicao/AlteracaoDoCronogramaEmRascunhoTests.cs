@@ -46,7 +46,7 @@ public sealed class AlteracaoDoCronogramaEmRascunhoTests
                 PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(
                 ordem, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-                FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+                UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase([], EmiteParecerIndividual: false, RegraRecurso: null), []).Value!;
 
     private static FaseCronograma ComUnidade(FaseCronograma atual, UnidadeResponsavelSnapshot unidade) =>
@@ -54,7 +54,7 @@ public sealed class AlteracaoDoCronogramaEmRascunhoTests
             new OrigemCanonicaDaFase(
                 atual.FaseCanonicaOrigemId, atual.Codigo, atual.OrigemData, atual.AgrupaEtapas,
                 atual.PermiteComplementacao, atual.ColetaInscricao, atual.ColetaSolicitacaoIsencao),
-            new DecisoesDeCronogramaDaFase(atual.Ordem, atual.Inicio, atual.Fim, atual.FaseConcluinteCodigo, unidade),
+            new DecisoesDeCronogramaDaFase(atual.Ordem, atual.Inicio, atual.Fim, unidade),
             new PublicacoesDaFase([.. atual.Produtos], atual.EmiteParecerIndividual, atual.RegraRecurso),
             [.. atual.BancasRequeridas]).Value!;
 }

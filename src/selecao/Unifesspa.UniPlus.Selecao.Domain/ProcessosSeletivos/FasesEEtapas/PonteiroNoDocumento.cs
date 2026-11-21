@@ -29,7 +29,6 @@ public static class PonteiroNoDocumento
         // A ordem da fase, que o documento não tem: a posição da fase na lista é a ordem dela, e a causa fica no trecho da fase.
         ["fases[].ordem"] = "fases[]",
         ["fases[].faseCanonicaId"] = "fases[].faseCanonicaCodigo",
-        ["fases[].faseConcluinteCodigo"] = "fases[].faseConcluinteChave",
         ["fases[].unidadeResponsavel"] = "fases[].unidadeResponsavelCodigo",
         ["fases[].bancasRequeridas[].tipoBancaId"] = "fases[].bancasRequeridas[].tipoBancaCodigo",
         ["fases[].bancasRequeridas[].categoriasDocumentoIds"] = "fases[].bancasRequeridas[].categoriasDocumentoCodigos",

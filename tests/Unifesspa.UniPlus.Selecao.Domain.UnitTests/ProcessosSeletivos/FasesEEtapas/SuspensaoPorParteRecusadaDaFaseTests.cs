@@ -84,19 +84,19 @@ public sealed class SuspensaoPorParteRecusadaDaFaseTests
         comParteRecusada.ItemDasVagasOfertadas(haVagasOfertadas: true).Ok.Should().BeFalse();
     }
 
-    [Fact(DisplayName = "A conclusão do ciclo recursal não é julgada na fase cuja lista dos produtos tem parte recusada, e a outra fase segue julgada")]
-    public void ConclusaoDoCiclo_ComParteRecusadaNosProdutos_SuspendeSoNaFaseDaLista()
+    [Fact(DisplayName = "O fechamento do ciclo de recurso não é julgado na fase cuja lista dos produtos tem parte recusada, e a outra fase segue julgada")]
+    public void FechamentoDoCiclo_ComParteRecusadaNosProdutos_SuspendeSoNaFaseDaLista()
     {
         FaseCronograma[] fases = [FaseQueAbreOCiclo("ANALISE", 1), FaseQueAbreOCiclo("RECURSO", 2)];
 
         CronogramaDoProcesso cronograma = CronogramaDoProcesso.Do(fases, ComPartesRecusadas("fases[0].produtos"));
 
-        CronogramaDoProcesso.Do(fases).ConferirConclusaoDoCiclo().Select(static recusa => recusa.Field).Should()
-            .Equal("fases[0].faseConcluinteCodigo", "fases[1].faseConcluinteCodigo");
-        cronograma.ConferirConclusaoDoCiclo().Select(static recusa => recusa.Field).Should().Equal("fases[1].faseConcluinteCodigo");
+        CronogramaDoProcesso.Do(fases).ConferirFechamentoDoCiclo().Select(static recusa => recusa.Field).Should()
+            .Equal("fases[0].produtos", "fases[1].produtos");
+        cronograma.ConferirFechamentoDoCiclo().Select(static recusa => recusa.Field).Should().Equal("fases[1].produtos");
     }
 
-    [Fact(DisplayName = "O item da conclusão do ciclo fica pendente, e não aprovado, quando a lista dos produtos de uma fase tem parte recusada")]
+    [Fact(DisplayName = "O item do fechamento do ciclo fica pendente, e não aprovado, quando a lista dos produtos de uma fase tem parte recusada")]
     public void ItemDaConclusaoDoCiclo_ComParteRecusadaNosProdutos_FicaPendente()
     {
         FaseCronograma[] fases = [new ModeloDeFase("INSCRICAO", 1).Janela(1, 5).Adotada()];
@@ -104,22 +104,6 @@ public sealed class SuspensaoPorParteRecusadaDaFaseTests
 
         CicloRecursalDoProcesso.Item(CronogramaDoProcesso.Do(fases), semEtapas).Ok.Should().BeTrue();
         CicloRecursalDoProcesso.Item(CronogramaDoProcesso.Do(fases, ComPartesRecusadas("fases[0].produtos")), semEtapas).Ok.Should().BeFalse();
-    }
-
-    [Fact(DisplayName = "Na concluinte com a lista dos produtos recusada só se julga a ordem, que não lê os produtos")]
-    public void Concluinte_ComParteRecusadaNosProdutos_JulgaSoAOrdem()
-    {
-        FaseCronograma abre = new ModeloDeFase("ANALISE", 2) { FaseConcluinteCodigo = "CONCLUSAO" }.Janela(2, 3)
-            .Publicando(ModeloDeFase.Preliminar("RESULTADO_PROVA")).Adotada();
-        FaseCronograma concluinte = new ModeloDeFase("CONCLUSAO", 1).Janela(1, 2).Adotada();
-
-        CronogramaDoProcesso comProdutosLidos = CronogramaDoProcesso.Do([concluinte, abre]);
-        CronogramaDoProcesso comProdutosRecusados = CronogramaDoProcesso.Do([concluinte, abre], ComPartesRecusadas("fases[0].produtos"));
-
-        comProdutosLidos.ConferirConclusaoDoCiclo().Select(static recusa => recusa.Error.Code).Should()
-            .Equal("ProcessoSeletivo.FaseConcluinteSemResultadoDefinitivo");
-        comProdutosRecusados.ConferirConclusaoDoCiclo().Select(static recusa => recusa.Error.Code).Should()
-            .Equal("ProcessoSeletivo.FaseConcluinteAntecedeAConcluida");
     }
 
     [Fact(DisplayName = "O recurso sem banca de análise não é julgado na fase cuja lista das bancas tem parte recusada, e o item do painel fica pendente")]
@@ -150,7 +134,7 @@ public sealed class SuspensaoPorParteRecusadaDaFaseTests
     {
         ProdutoDaFase preliminar = ModeloDeFase.Preliminar("RESULTADO_PROVA");
 
-        return new ModeloDeFase(codigo, ordem) { Produtos = [preliminar], RegraRecurso = ModeloDeFase.RecursoAncoradoEm(preliminar.Id), FaseConcluinteCodigo = "CONCLUSAO" }
+        return new ModeloDeFase(codigo, ordem) { Produtos = [preliminar], RegraRecurso = ModeloDeFase.RecursoAncoradoEm(preliminar.Id) }
             .Janela(ordem, ordem + 1).Adotada();
     }
 }

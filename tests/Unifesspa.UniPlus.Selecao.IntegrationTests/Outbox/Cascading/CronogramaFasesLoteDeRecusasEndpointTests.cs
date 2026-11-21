@@ -4,9 +4,18 @@ using System.Net;
 
 using AwesomeAssertions;
 
+using Domain.Entities;
 using Domain.Enums;
+using Domain.ValueObjects;
+
+using Microsoft.Extensions.DependencyInjection;
+
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.ApoioDoCronogramaDeFasesPeloEndpoint;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.PublicacaoPeloEndpointDeTeste;
 
 /// <summary>
 /// O lote de recusas do cronograma chegando ao cliente, pelo HTTP: duas fases mal
@@ -43,11 +52,19 @@ public sealed class CronogramaFasesLoteDeRecusasEndpointTests
     private const string CodigoAtoDefinitivo = "LOTE_RECUSAS_ATO_DEFINITIVO";
     private const string CodigoAtoQueNaoEhResultado = "LOTE_RECUSAS_ATO_AVISO";
 
+    /// <summary>
+    /// Fase canônica de data definida na execução: o cronograma aceita só a data final.
+    /// </summary>
+    private const string CodigoFaseDeDataNaExecucao = "CHAMADA";
+
+    private const string CodigoPapelEmAtoQueNaoEhResultado =
+        "uniplus.selecao.produto_da_fase.papel_em_ato_que_nao_eh_resultado";
+
     private const string CadaElementoDeclaraOCaminho =
         "cada elemento de errors[] declara o caminho dot-notation do que falhou (ADR-0023) — " +
         "field: null manda o cliente procurar um campo que a resposta não nomeia";
 
-    private static readonly (string Codigo, string Nome, bool EhResultado)[] TiposDeAtoDoLote =
+    private static readonly (string Codigo, string Nome, bool EhResultado)[] TiposDeAtoDoCenario =
     [
         (CodigoAtoPreliminar, "Resultado preliminar do lote de recusas", true),
         (CodigoAtoDefinitivo, "Resultado definitivo do lote de recusas", true),
@@ -56,10 +73,10 @@ public sealed class CronogramaFasesLoteDeRecusasEndpointTests
 
     // As duas fases têm a data fixada no edital (NO_EDITAL) e exigem o período; sem ele a fábrica
     // recusaria antes, e o conjunto de recusas sob prova nunca chegaria a ser conferido.
-    private static readonly JanelaDaFase JanelaDeJaneiro = new(
+    private static readonly PeriodoDaFase PeriodoDeJaneiro = new(
         new DateTimeOffset(2027, 1, 10, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2027, 1, 20, 0, 0, 0, TimeSpan.Zero));
 
-    private static readonly JanelaDaFase JanelaDeFevereiro = new(
+    private static readonly PeriodoDaFase PeriodoDeFevereiro = new(
         new DateTimeOffset(2027, 2, 1, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2027, 2, 10, 0, 0, 0, TimeSpan.Zero));
 
     private readonly CascadingFixture _fixture;
@@ -69,40 +86,43 @@ public sealed class CronogramaFasesLoteDeRecusasEndpointTests
     [Fact(DisplayName = "Duas fases mal declaradas devolvem 422 com as DUAS violações em errors[], cada uma com o seu campo")]
     public async Task DuasFasesMalDeclaradas_422ComOsDoisErrosECampos()
     {
-        CenarioDoLote cenario = await PrepararCenarioAsync();
-        object[] fases = FasesComConclusaoMalDeclarada(cenario);
+        CenarioDoCronograma cenario = await PrepararCenarioAsync();
+        object[] fases = FasesComPapelEmAtoQueNaoEhResultado(cenario);
 
         ErroDoProblema[] reportados = await EnviarERecusarAsync(
             cenario, fases, "reduzir o lote ao primeiro erro apaga os campos, e sem campo nenhum a resposta sai sem errors[]");
 
         AfirmarCampoECodigoDeCadaErro(
             reportados,
-            campos: ["fases[0].faseConcluinteCodigo", "fases[1].faseConcluinteCodigo"],
-            codigos: ["uniplus.selecao.processo_seletivo.conclusao_nao_declarada", "uniplus.selecao.processo_seletivo.conclusao_declarada_sem_preliminar"],
+            [
+                new ErroDoProblema("fases[0].produtos[0].papel", CodigoPapelEmAtoQueNaoEhResultado),
+                new ErroDoProblema("fases[1].produtos[0].papel", CodigoPapelEmAtoQueNaoEhResultado),
+            ],
             motivoDosCampos: "o operador precisa saber QUAIS fases corrigir, não só que alguma está errada");
     }
 
     [Fact(DisplayName = "Recusa acumulada mais interrupção cross-módulo: os dois elementos de errors[] saem com field preenchido")]
     public async Task RecusaAcumuladaMaisInterrupcao_TodosOsElementosTemField()
     {
-        CenarioDoLote cenario = await PrepararCenarioAsync();
+        CenarioDoCronograma cenario = await PrepararCenarioAsync();
         object[] fases = FasesComRecusaAcumuladaEInterrupcao(cenario);
 
         ErroDoProblema[] reportados = await EnviarERecusarAsync(cenario, fases);
 
         AfirmarCampoECodigoDeCadaErro(
             reportados,
-            campos: ["fases[0].produtos[0].papel", "fases[1].bancasRequeridas[0].tipoBancaId"],
-            codigos: ["uniplus.selecao.produto_da_fase.papel_em_ato_que_nao_eh_resultado", "uniplus.selecao.fase_cronograma.tipo_banca_nao_encontrado"]);
+            [
+                new ErroDoProblema("fases[0].produtos[0].papel", CodigoPapelEmAtoQueNaoEhResultado),
+                new ErroDoProblema("fases[1].bancasRequeridas[0].tipoBancaId", "uniplus.selecao.fase_cronograma.tipo_banca_nao_encontrado"),
+            ]);
     }
 
-    // A primeira publica preliminar e não declara quem a conclui; a segunda declara
-    // concluinte sem publicar preliminar nenhuma. As duas são violações da MESMA
-    // travessia, e o domínio as acumula.
-    private static object[] FasesComConclusaoMalDeclarada(CenarioDoLote cenario) =>
+    // As duas fases dão papel a um ato que o catálogo não classifica como resultado. São
+    // violações da MESMA travessia, e o domínio as acumula.
+    private static object[] FasesComPapelEmAtoQueNaoEhResultado(CenarioDoCronograma cenario) =>
     [
-        FaseDoLote(1, cenario.FasePreliminarId, JanelaDeJaneiro, ProdutoDoAto(CodigoAtoPreliminar, PapelProdutoFaseCodigo.Preliminar), faseConcluinteCodigo: null),
-        FaseDoLote(2, cenario.FaseDefinitivaId, JanelaDeFevereiro, ProdutoDoAto(CodigoAtoDefinitivo, PapelProdutoFaseCodigo.Definitivo), faseConcluinteCodigo: "FASE_QUE_NAO_EXISTE"),
+        FaseDoCronograma(1, cenario.FasePreliminarId, PeriodoDeJaneiro, ProdutoDoAto(CodigoAtoQueNaoEhResultado, PapelProdutoFaseCodigo.Preliminar)),
+        FaseDoCronograma(2, cenario.FaseDefinitivaId, PeriodoDeFevereiro, ProdutoDoAto(CodigoAtoQueNaoEhResultado, PapelProdutoFaseCodigo.Definitivo)),
     ];
 
     // A 1ª fase dá papel a um ato que o catálogo não classifica como resultado — recusa
@@ -110,22 +130,21 @@ public sealed class CronogramaFasesLoteDeRecusasEndpointTests
     // cross-módulo, que INTERROMPE a passada levando o acumulado junto. É a combinação
     // que faz `errors[]` ser emitido: basta um item com campo para o array sair, e ele
     // é montado sobre todos.
-    private static object[] FasesComRecusaAcumuladaEInterrupcao(CenarioDoLote cenario) =>
+    private static object[] FasesComRecusaAcumuladaEInterrupcao(CenarioDoCronograma cenario) =>
     [
-        FaseDoLote(1, cenario.FasePreliminarId, JanelaDeJaneiro, ProdutoDoAto(CodigoAtoQueNaoEhResultado, PapelProdutoFaseCodigo.Preliminar), faseConcluinteCodigo: null),
-        FaseDoLote(2, cenario.FaseDefinitivaId, JanelaDeFevereiro, ProdutoDoAto(CodigoAtoDefinitivo, PapelProdutoFaseCodigo.Definitivo), faseConcluinteCodigo: null, BancaDeTipoInexistente()),
+        FaseDoCronograma(1, cenario.FasePreliminarId, PeriodoDeJaneiro, ProdutoDoAto(CodigoAtoQueNaoEhResultado, PapelProdutoFaseCodigo.Preliminar)),
+        FaseDoCronograma(2, cenario.FaseDefinitivaId, PeriodoDeFevereiro, ProdutoDoAto(CodigoAtoDefinitivo, PapelProdutoFaseCodigo.Definitivo), BancaDeTipoInexistente()),
     ];
 
     private static void AfirmarCampoECodigoDeCadaErro(
-        ErroDoProblema[] reportados, string[] campos, string[] codigos, string motivoDosCampos = "")
+        ErroDoProblema[] reportados, ErroDoProblema[] esperados, string motivoDosCampos = "")
     {
         reportados.Should().NotContain(e => e.Campo == null, CadaElementoDeclaraOCaminho);
-        reportados.Select(e => e.Campo).Should().BeEquivalentTo(campos, motivoDosCampos);
-        reportados.Select(e => e.Codigo).Should().BeEquivalentTo(codigos);
+        reportados.Should().Equal(esperados, $"campo e código seguem a ordem das fases do contrato. {motivoDosCampos}");
     }
 
     private static async Task<ErroDoProblema[]> EnviarERecusarAsync(
-        CenarioDoLote cenario, object[] fases, string motivoDoArray = "")
+        CenarioDoCronograma cenario, object[] fases, string motivoDoArray = "")
     {
         using HttpResponseMessage resposta = await EnviarCronogramaAsync(cenario.Client, cenario.ProcessoId, fases);
 
@@ -133,28 +152,79 @@ public sealed class CronogramaFasesLoteDeRecusasEndpointTests
         return await LerErrosDoProblemaAsync(resposta, motivoDoArray);
     }
 
-    private async Task<CenarioDoLote> PrepararCenarioAsync()
+    [Fact(DisplayName = "A fase de data definida na execução só com a data final é aceita no cronograma, sem início")]
+    public async Task FaseDeDataNaExecucao_SoComFim_Aceita()
+    {
+        CascadingApiFactory api = _fixture.Factory;
+        Guid faseId = await ObterFaseCanonicaSemeadaAsync(api, CodigoFaseDeDataNaExecucao);
+        Guid processoId = await SemearProcessoEmRascunhoAsync(api, "PS fase só com data final", OrigemCandidatos.ImportacaoExterna);
+        object[] fases = [FaseDoCronograma(1, faseId, new PeriodoDaFase(null, PeriodoDeFevereiro.Fim), [])];
+
+        using HttpResponseMessage resposta = await EnviarCronogramaAsync(api.CreateClient(), processoId, fases);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.NoContent, await resposta.Content.ReadAsStringAsync());
+    }
+
+    [Fact(DisplayName = "A publicação aceita o processo cuja fase de data definida na execução declara só a data final, e a leitura devolve a fase sem início")]
+    public async Task PublicarProcessoComFaseDeDataNaExecucao_SoComFim_Aceita()
+    {
+        await TiposDeAtoSeeder.SemearAsync(_fixture.Factory.Services);
+        (Guid processoId, Guid documentoId) = await SemearProcessoComFaseDeDataNaExecucaoAsync();
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        using HttpResponseMessage resposta = await PublicarAsync(client, processoId, documentoId);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.NoContent, await resposta.Content.ReadAsStringAsync());
+        CronogramaDaFaseDto fase = (await LerProcessoPelaApiAsync(client, processoId)).CronogramaFases.Single(f => f.Codigo == CodigoFaseDeDataNaExecucao).Cronograma;
+        fase.Inicio.Should().BeNull("a data definida na execução não declara o início");
+        fase.Fim.Should().Be(PeriodoDeFevereiro.Fim);
+    }
+
+    private async Task<(Guid ProcessoId, Guid DocumentoId)> SemearProcessoComFaseDeDataNaExecucaoAsync()
+    {
+        await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        OpcoesDoProcessoSeletivoPublicavel opcoes = new()
+        {
+            Nome = $"PS publicação com fase de data na execução {Guid.CreateVersion7()}",
+            FasesAdicionais = [FaseDeDataNaExecucaoSoComFim()],
+        };
+
+        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, opcoes);
+
+        return (processo.Id, documento.Id);
+    }
+
+    // Não coleta inscrição nem isenção e não publica ato: sem resultado definitivo, a data final é o que fecha a fase.
+    private static FaseCronograma FaseDeDataNaExecucaoSoComFim() => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            Guid.CreateVersion7(), CodigoFaseDeDataNaExecucao, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false,
+            ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(Ordem: 2, Inicio: null, Fim: PeriodoDeFevereiro.Fim, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
+
+    private async Task<CenarioDoCronograma> PrepararCenarioAsync()
     {
         CascadingApiFactory api = _fixture.Factory;
         HttpClient client = api.CreateClient();
 
-        await TiposDeAtoSeeder.SemearTiposAsync(api.Services, TiposDeAtoDoLote);
+        await TiposDeAtoSeeder.SemearTiposAsync(api.Services, TiposDeAtoDoCenario);
         Guid fasePreliminarId = await ObterFaseCanonicaSemeadaAsync(api, CodigoFasePreliminar);
         Guid faseDefinitivaId = await ObterFaseCanonicaSemeadaAsync(api, CodigoFaseDefinitiva);
         Guid processoId = await SemearProcessoEmRascunhoAsync(api, "PS lote de recusas", OrigemCandidatos.ImportacaoExterna);
 
-        return new CenarioDoLote(client, processoId, fasePreliminarId, faseDefinitivaId);
+        return new CenarioDoCronograma(client, processoId, fasePreliminarId, faseDefinitivaId);
     }
 
-    private static object FaseDoLote(
-        int ordem, Guid faseCanonicaId, JanelaDaFase janela, object[] produtos, string? faseConcluinteCodigo, object[]? bancasRequeridas = null) => new
+    private static object FaseDoCronograma(
+        int ordem, Guid faseCanonicaId, PeriodoDaFase periodo, object[] produtos, object[]? bancasRequeridas = null) => new
         {
             ordem,
             faseCanonicaId,
-            inicio = janela.Inicio,
-            fim = janela.Fim,
+            inicio = periodo.Inicio,
+            fim = periodo.Fim,
             produtos,
-            faseConcluinteCodigo,
             emiteParecerIndividual = false,
             bancasRequeridas = bancasRequeridas ?? [],
             regraRecurso = (object?)null,
@@ -166,7 +236,7 @@ public sealed class CronogramaFasesLoteDeRecusasEndpointTests
     private static object[] BancaDeTipoInexistente() =>
         [new { tipoBancaId = Guid.CreateVersion7(), categoriasDocumentoIds = Array.Empty<Guid>() }];
 
-    private sealed record JanelaDaFase(DateTimeOffset Inicio, DateTimeOffset Fim);
+    private sealed record PeriodoDaFase(DateTimeOffset? Inicio, DateTimeOffset Fim);
 
-    private sealed record CenarioDoLote(HttpClient Client, Guid ProcessoId, Guid FasePreliminarId, Guid FaseDefinitivaId);
+    private sealed record CenarioDoCronograma(HttpClient Client, Guid ProcessoId, Guid FasePreliminarId, Guid FaseDefinitivaId);
 }

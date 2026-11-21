@@ -49,7 +49,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     private static FaseCronograma FaseDeResultadoFinal() => FaseCronograma.Criar(
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
-        new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologaComRecurso(),
         bancasRequeridas: [BancasDeTeste.DeRecursosDaFase()]).Value!;
 
@@ -144,8 +144,8 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     private static FaseCronograma FaseDeHabilitacao() => FaseCronograma.Criar(
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "HABILITACAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
-        new DecisoesDeCronogramaDaFase(2, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: null),
-        new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+        new DecisoesDeCronogramaDaFase(2, Inicio: null, Fim: null, UnidadeResponsavel: null),
+        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_HABILITACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
 
     [Fact(DisplayName = "Cronograma: fase sem unidade responsável — item vermelho e Publicar recusa com FaseSemUnidadeResponsavel, citando a fase")]
@@ -170,7 +170,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     private static FaseCronograma FaseDeMatricula() => FaseCronograma.Criar(
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "MATRICULA", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
-        new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
 

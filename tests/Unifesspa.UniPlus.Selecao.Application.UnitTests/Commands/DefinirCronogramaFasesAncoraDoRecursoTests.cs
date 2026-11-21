@@ -104,7 +104,6 @@ public sealed class DefinirCronogramaFasesAncoraDoRecursoTests
         {
             Ordem = ordem,
             Produtos = [ProdutoDaClassificacao(PapelProdutoFaseCodigo.Preliminar)],
-            FaseConcluinteCodigo = "RESULTADO_FINAL",
             RegraRecurso = RecursoAncoradoNaClassificacao(),
         };
 

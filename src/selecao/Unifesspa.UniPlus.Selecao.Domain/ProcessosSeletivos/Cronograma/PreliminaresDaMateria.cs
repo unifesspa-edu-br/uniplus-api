@@ -11,10 +11,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <remarks>
 /// <para>
 /// A matéria é o tipo de ato, e o papel diz se a publicação é preliminar ou definitiva. O
-/// definitivo espera os preliminares do mesmo tipo de ato declarados no mesmo lugar (a fase ou a
-/// etapa) e, quando o lugar é uma fase, os declarados pelas fases que a apontam como concluinte e
-/// deixam aberto o ciclo desse tipo (sem o definitivo do mesmo tipo na própria fase). Duas fases que abrem ciclo com o mesmo tipo e apontam a mesma concluinte
-/// fazem o definitivo da concluinte esperar os dois preliminares.
+/// definitivo espera os preliminares do mesmo tipo de ato declarados no mesmo lugar, a fase ou a
+/// etapa que o publica; dois lugares que publicam o mesmo tipo não se ligam.
 /// </para>
 /// <para>
 /// A consulta dos itens previstos e a publicação de resultado perguntam aqui; nenhuma delas
@@ -47,36 +45,20 @@ public static class PreliminaresDaMateria
         ArgumentNullException.ThrowIfNull(etapas);
 
         return fases.FirstOrDefault(f => f.Produtos.Any(p => p.Id == definitivoId)) is { } fase
-            ? EsperadosNaFase(fases, fase, definitivoId)
+            ? PreliminaresDoLugar(fase.Produtos.Select(static p => (p.Id, p.AtoCodigo, p.Papel)), definitivoId)
             : EsperadosNaEtapa(etapas, definitivoId);
     }
 
-    private static IReadOnlyList<Guid> EsperadosNaFase(IReadOnlyCollection<FaseCronograma> fases, FaseCronograma fase, Guid definitivoId)
+    private static IReadOnlyList<Guid> EsperadosNaEtapa(IReadOnlyCollection<EtapaProcesso> etapas, Guid definitivoId) =>
+        etapas.FirstOrDefault(e => e.Produtos.Any(p => p.Id == definitivoId)) is { } etapa
+            ? PreliminaresDoLugar(etapa.Produtos.Select(static p => (p.Id, p.AtoCodigo, p.Papel)), definitivoId)
+            : [];
+
+    private static IReadOnlyList<Guid> PreliminaresDoLugar(IEnumerable<(Guid Id, string AtoCodigo, PapelProdutoFase? Papel)> produtos, Guid definitivoId)
     {
-        string atoCodigo = fase.Produtos.First(p => p.Id == definitivoId).AtoCodigo;
-        IEnumerable<Guid> daFase = CicloRecursal.PreliminaresDoTipo(fase.Produtos.Select(static p => (p.Id, p.AtoCodigo, p.Papel)), atoCodigo);
+        (Guid Id, string AtoCodigo, PapelProdutoFase? Papel)[] doLugar = [.. produtos];
 
-        // Só chega à concluinte o ciclo que a fase de origem deixa aberto: a matéria que ela
-        // fecha com o próprio definitivo não espera a concluinte.
-        IEnumerable<Guid> deOutrasFases = fases
-            .Where(f => f.Id != fase.Id
-                && string.Equals(f.FaseConcluinteCodigo, fase.Codigo, StringComparison.Ordinal)
-                && f.TiposComCicloAberto().Contains(atoCodigo, StringComparer.Ordinal))
-            .SelectMany(f => CicloRecursal.PreliminaresDoTipo(f.Produtos.Select(static p => (p.Id, p.AtoCodigo, p.Papel)), atoCodigo));
-
-        return [.. daFase, .. deOutrasFases];
-    }
-
-    private static IReadOnlyList<Guid> EsperadosNaEtapa(IReadOnlyCollection<EtapaProcesso> etapas, Guid definitivoId)
-    {
-        if (etapas.FirstOrDefault(e => e.Produtos.Any(p => p.Id == definitivoId)) is not { } etapa)
-        {
-            return [];
-        }
-
-        string atoDaEtapa = etapa.Produtos.First(p => p.Id == definitivoId).AtoCodigo;
-
-        return [.. CicloRecursal.PreliminaresDoTipo(etapa.Produtos.Select(static p => (p.Id, p.AtoCodigo, p.Papel)), atoDaEtapa)];
+        return CicloRecursal.PreliminaresDoTipo(doLugar, doLugar.First(p => p.Id == definitivoId).AtoCodigo);
     }
 
     /// <summary>

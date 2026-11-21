@@ -22,7 +22,7 @@ internal static class LeituraDoCronograma
     private static readonly string[] ChavesDaFase =
     [
         "ordem", "faseCanonicaOrigemId", "codigo", "origemData", "agrupaEtapas", "permiteComplementacao",
-        "coletaInscricao", "coletaSolicitacaoIsencao", "inicio", "fim", "produtos", "faseConcluinteCodigo",
+        "coletaInscricao", "coletaSolicitacaoIsencao", "inicio", "fim", "produtos",
         "emiteParecerIndividual", "bancasRequeridas", "regraRecurso", "unidadeResponsavel", "tiposDeDecisao", "regraDeHomologacao",
     ];
 
@@ -96,7 +96,6 @@ internal static class LeituraDoCronograma
         ordem,
         leitor.InstanteOpcional(item, "inicio", path),
         leitor.InstanteOpcional(item, "fim", path),
-        leitor.TextoOpcional(item, "faseConcluinteCodigo", path, LimitesDoEnvelope.FaseCodigo),
         null);
 
     private static FaseCronograma? LerFilhasEMontar(

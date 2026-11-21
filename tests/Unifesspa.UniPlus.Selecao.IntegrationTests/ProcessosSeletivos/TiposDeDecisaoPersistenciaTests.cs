@@ -117,7 +117,7 @@ public sealed class TiposDeDecisaoPersistenciaTests(ProcessoSeletivoDbFixture fi
 
     private static FaseCronograma NovaFase(Guid origemId, IReadOnlyList<string?> tipos) => FaseCronograma.Criar(
         new OrigemCanonicaDaFase(origemId, "HOMOLOGACAO_INSCRICOES", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
-        new DecisoesDeCronogramaDaFase(Ordem: 1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new DecisoesDeCronogramaDaFase(Ordem: 1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null, TiposDeDecisao: tipos),
         bancasRequeridas: []).Value!;
 

@@ -61,7 +61,6 @@ internal static class SerializacaoDoCronograma
         item["ordem"] = fase.Ordem;
         item["inicio"] = fase.Inicio is { } inicio ? HashCanonicalComputer.SerializeInstantCanonical(inicio) : null;
         item["fim"] = fase.Fim is { } fim ? HashCanonicalComputer.SerializeInstantCanonical(fim) : null;
-        item["faseConcluinteCodigo"] = fase.FaseConcluinteCodigo is { } concluinte ? HashCanonicalComputer.NormalizeNfc(concluinte) : null;
         item["unidadeResponsavel"] = fase.UnidadeResponsavel is { } unidade ? SerializarUnidadeResponsavel(unidade) : null;
     }
 

@@ -18,7 +18,7 @@ public static class CicloRecursal
 {
     /// <summary>
     /// Os tipos de ato cujo preliminar é publicado sem o definitivo do mesmo tipo no mesmo
-    /// lugar: o ciclo desses tipos fica para outra fase fechar, ou nunca fecha.
+    /// lugar: o ciclo desses tipos nunca fecha.
     /// </summary>
     public static IReadOnlyList<string> TiposComCicloAberto(IEnumerable<(string AtoCodigo, PapelProdutoFase? Papel)> produtos)
     {
@@ -52,14 +52,6 @@ public static class CicloRecursal
         return produtos.Any(p => p.Papel == papel);
     }
 
-    /// <summary>Se algum dos produtos é o definitivo do tipo de ato dado (a matéria é o tipo).</summary>
-    public static bool PublicaDefinitivoDe(IEnumerable<(string AtoCodigo, PapelProdutoFase? Papel)> produtos, string atoCodigo)
-    {
-        ArgumentNullException.ThrowIfNull(produtos);
-
-        return produtos.Any(p => p.Papel == PapelProdutoFase.Definitivo && string.Equals(p.AtoCodigo, atoCodigo, StringComparison.Ordinal));
-    }
-
     /// <summary>Se algum dos produtos tem papel: o lugar publica ao menos um resultado.</summary>
     public static bool ProduzResultado(IEnumerable<(string AtoCodigo, PapelProdutoFase? Papel)> produtos)
     {
@@ -91,8 +83,7 @@ public static class CicloRecursal
     /// etapa), cada um com os lugares que o declaram, na ordem em que o cronograma os cita.
     /// </summary>
     /// <remarks>
-    /// Conta declarações, não ciclos: um único definitivo da fase concluinte que fecha dois
-    /// ciclos é uma declaração e não entra. O definitivo declarado em dois lugares tem dois
+    /// Conta declarações, não ciclos. O definitivo declarado em dois lugares tem dois
     /// fechamentos, e o edital precisa confirmar que é isso que quer.
     /// </remarks>
     public static IReadOnlyList<(string AtoCodigo, IReadOnlyList<string> Lugares)> DefinitivosEmMaisDeUmLugar(
