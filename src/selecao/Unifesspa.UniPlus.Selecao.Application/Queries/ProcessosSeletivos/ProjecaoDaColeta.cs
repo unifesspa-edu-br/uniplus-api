@@ -21,7 +21,25 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// </summary>
 internal static class ProjecaoDaColeta
 {
-    internal static FormularioDto ProjetarFormulario(ProcessoSeletivo processo, FormularioProcesso formulario) => new(
+    internal static IReadOnlyList<FormularioDto> ProjetarFormularios(ProcessoSeletivo processo) =>
+        [.. processo.Formularios.OrderBy(static f => f.Finalidade).Select(f => ProjetarFormulario(processo, f))];
+
+    internal static IReadOnlyList<OpcoesDeclaradasDoFatoDto> ProjetarOpcoesDeclaradas(ProcessoSeletivo processo) =>
+        [.. processo.OpcoesDeclaradas
+            .GroupBy(static o => o.FatoCodigo, StringComparer.Ordinal)
+            .OrderBy(static g => g.Key, StringComparer.Ordinal)
+            .Select(ProjetarOpcoesDoFato)];
+
+    internal static IReadOnlyList<ConfiguracaoDerivacaoDto> ProjetarDerivacoes(ProcessoSeletivo processo) =>
+        [.. processo.RegrasDerivacao.OrderBy(static c => c.CodigoFato, StringComparer.Ordinal).Select(ProjetarDerivacao)];
+
+    internal static IReadOnlyList<DocumentoExigidoDto> ProjetarDocumentosExigidos(ProcessoSeletivo processo) =>
+        [.. processo.DocumentosExigidos.OrderBy(static d => d.Id).Select(ProjetarDocumento)];
+
+    internal static IReadOnlyList<NoExigenciaDto> ProjetarRaizesDeExigencia(ProcessoSeletivo processo) =>
+        [.. processo.RaizesDeExigencia.OrderBy(static n => n.Ordem).ThenBy(static n => n.Id).Select(ProjetarNo)];
+
+    private static FormularioDto ProjetarFormulario(ProcessoSeletivo processo, FormularioProcesso formulario) => new(
         EstruturaFormulario.ParaToken(formulario.Finalidade),
         formulario.FaseId,
         formulario.Titulo,
@@ -65,10 +83,10 @@ internal static class ProjecaoDaColeta
 
     private static OpcaoDoProcessoDto ProjetarOpcao(OpcaoDeclaradaFato opcao) => new(opcao.Codigo, opcao.Rotulo, opcao.Ordem);
 
-    internal static OpcoesDeclaradasDoFatoDto ProjetarOpcoesDoFato(IGrouping<string, OpcaoDeclaradaFato> opcoes) => new(
+    private static OpcoesDeclaradasDoFatoDto ProjetarOpcoesDoFato(IGrouping<string, OpcaoDeclaradaFato> opcoes) => new(
         opcoes.Key, [.. opcoes.OrderBy(static o => o.Ordem).Select(ProjetarOpcao)]);
 
-    internal static ConfiguracaoDerivacaoDto ProjetarDerivacao(ConfiguracaoDerivacaoFato config) => new(
+    private static ConfiguracaoDerivacaoDto ProjetarDerivacao(ConfiguracaoDerivacaoFato config) => new(
         config.CodigoFato,
         [.. config.Regras.OrderBy(r => r.Ordem).Select(ProjetarRegraDeDerivacao)]);
 
@@ -111,7 +129,7 @@ internal static class ProjecaoDaColeta
     internal static ReferenciaTemporalFatosDto? ProjetarReferenciaTemporal(ReferenciaTemporalFatos? referencia) =>
         referencia is null ? null : new ReferenciaTemporalFatosDto(referencia.Tipo.ToCodigo(), referencia.Data, referencia.FaseId);
 
-    internal static DocumentoExigidoDto ProjetarDocumento(DocumentoExigido documento) => new(
+    private static DocumentoExigidoDto ProjetarDocumento(DocumentoExigido documento) => new(
         documento.Id, documento.ExigidoNaFaseId,
         documento.TipoDocumentoOrigemId, documento.TipoDocumentoCodigo, documento.TipoDocumentoNome, documento.TipoDocumentoCategoria,
         ProjetarAplicabilidade(documento.Aplicabilidade), documento.Obrigatorio, documento.ConsequenciaIndeferimento,
@@ -127,7 +145,7 @@ internal static class ProjecaoDaColeta
         : new ModeloDaExigenciaDto(modelo.ModeloId, modelo.NomeArquivo, ModeloDeDocumento.TokenDe(modelo.Formato), modelo.HashSha256);
 
     // Um nó da árvore de satisfação, recursivamente, no mesmo formato de NoExigenciaInput (comando de escrita).
-    internal static NoExigenciaDto ProjetarNo(NoExigencia no) => new(
+    private static NoExigenciaDto ProjetarNo(NoExigencia no) => new(
         no.Id,
         no.Tipo.ToCodigo(),
         no.Tipo == TipoNo.Folha ? ProjetarDocumento(no.DocumentoExigido!) : null,

@@ -108,5 +108,5 @@ public static class DefinirDistribuicaoVagasCommandHandler
     // processo.DistribuicaoVagas já reflete exatamente o que foi persistido — mesma projeção do GET, para o corpo
     // da resposta nunca divergir do que um GET mostraria em seguida.
     private static IReadOnlyList<ConfiguracaoDistribuicaoVagasDto> Persistida(ProcessoSeletivo processo) =>
-        [.. processo.DistribuicaoVagas.Select(ProjecaoDasVagas.ProjetarDistribuicao)];
+        ProjecaoDasVagas.ProjetarDistribuicoes(processo);
 }

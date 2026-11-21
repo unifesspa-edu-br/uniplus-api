@@ -21,6 +21,9 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// </summary>
 internal static class ProjecaoDasVagas
 {
+    internal static IReadOnlyList<ConfiguracaoDistribuicaoVagasDto> ProjetarDistribuicoes(ProcessoSeletivo processo) =>
+        [.. processo.DistribuicaoVagas.Select(ProjetarDistribuicao)];
+
     /// <summary>
     /// A distribuição de vagas de uma oferta de curso. É <c>internal</c> porque a simulação e a escrita
     /// da distribuição devolvem exatamente o mesmo formato da leitura persistida, sem uma segunda
