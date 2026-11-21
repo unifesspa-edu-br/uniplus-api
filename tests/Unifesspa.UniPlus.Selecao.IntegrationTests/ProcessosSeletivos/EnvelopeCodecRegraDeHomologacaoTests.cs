@@ -35,7 +35,7 @@ public sealed class EnvelopeCodecRegraDeHomologacaoTests
     [Fact(DisplayName = "Ida e volta do envelope com a regra de homologação reproduz os bytes e o hash congelados")]
     public void IdaEVolta_ComARegra_ReproduzBytesEHash()
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(comBancaDeHomologacao: true);
         SnapshotCanonico congelado = Codificar(processo);
         CorpusEnvelopeEntrada.Publicar(processo);
         VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);

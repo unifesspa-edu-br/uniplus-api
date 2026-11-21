@@ -633,6 +633,18 @@ definir_taxa_inscricao() {
     ok "sem taxa de inscrição"
 }
 
+# A banca que a publicação exige, no formato de uma banca requerida da fase: o tipo é lido do cadastro pelo código (nunca por id
+# fixo), sem categorias de documento e com a deliberação colegiada com votação (3 titulares, quórum 2, maioria simples).
+banca_requerida() {
+    local codigo="$1" tipo_id
+    tipo_id=$(api_get "/api/configuracao/tipos-banca?limit=100" \
+        | jq -r --arg c "$codigo" '.[] | select((.codigo | if type == "object" then .codigo else . end) == $c) | .id')
+    exigir_id "tipo de banca $codigo" "$tipo_id"
+    jq -nc --arg t "$tipo_id" '{tipoBancaId: $t, categoriasDocumentoIds: [], regraDeDeliberacao: {
+        modo: "colegiadaComVotacao", integrantes: 3, suplentes: 0, quorum: 2, criterio: "maioriaSimples",
+        desempate: "votoDaPresidencia", encerramento: "presidenciaNoQuorum", semUnanimidade: null}}'
+}
+
 definir_cronograma_fases() {
     log "Definir Cronograma de Fases (Anexo I deslocado, fuso America/Belem)"
     # Anexo I: inscrição de 10/12/2026 a 10/01/2027 e 1ª chamada em 25/01/2027.
@@ -650,7 +662,8 @@ definir_cronograma_fases() {
     inicio_habilitacao=$(na_data 2027-01-25 00:00:00)
     fim_habilitacao=$(na_data 2027-01-29 23:59:59)
 
-    local fases
+    local fases banca_homologacao
+    banca_homologacao=$(banca_requerida BANCA_HOMOLOGACAO_INSCRICOES)
     fases="[
         {
             \"ordem\": 1, \"faseCanonicaId\": \"$FASE_INSCRICAO_ID\",
@@ -663,7 +676,7 @@ definir_cronograma_fases() {
             \"inicio\": \"$inicio_resultado\", \"fim\": \"$fim_resultado\",
             \"produtos\": [{\"atoCodigo\": \"RESULTADO_CLASSIFICACAO\", \"papel\": \"DEFINITIVO\"}],
             \"emiteParecerIndividual\": false,
-            \"bancasRequeridas\": [], \"regraRecurso\": null, \"tiposDeDecisao\": [\"HOMOLOGACAO_DAS_INSCRICOES\"],
+            \"bancasRequeridas\": [$banca_homologacao], \"regraRecurso\": null, \"tiposDeDecisao\": [\"HOMOLOGACAO_DAS_INSCRICOES\"],
             \"regraDeHomologacao\": {
                 \"resultadoAtoCodigo\": \"RESULTADO_CLASSIFICACAO\",
                 \"alternativas\": [{\"condicoes\": [{\"tipo\": \"RESULTADO_NO_RETORNO_DO_INEP\", \"edicaoDoExame\": 2026, \"motivoDesfavoravelCodigo\": \"SEM_RESULTADO_INEP\"}]}]
@@ -679,9 +692,10 @@ definir_cronograma_fases() {
     # A fase de classificação, quando o roteiro declara uma etapa nela, ocupa o
     # intervalo entre o fim da inscrição e o resultado.
     if [ -n "${FASE_CLASSIFICACAO_ID:-}" ]; then
-        fases=$(jq -c --arg fase "$FASE_CLASSIFICACAO_ID" --arg inicio "$(na_data 2027-01-11 00:00:00)" --arg fim "$(na_data 2027-01-12 23:59:59)" '
+        fases=$(jq -c --arg fase "$FASE_CLASSIFICACAO_ID" --arg inicio "$(na_data 2027-01-11 00:00:00)" --arg fim "$(na_data 2027-01-12 23:59:59)" \
+            --argjson banca_notas "$(banca_requerida BANCA_IMPORTACAO_NOTAS_INEP)" '
             [.[0], {ordem: 2, faseCanonicaId: $fase, inicio: $inicio, fim: $fim, produtos: [],
-                emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null}]
+                emiteParecerIndividual: false, bancasRequeridas: [$banca_notas], regraRecurso: null}]
             + (.[1:] | map(.ordem += 1))' <<< "$fases")
         fases=$(jq -c --arg inicio "$(na_data 2027-01-13 00:00:00)" '.[2].inicio = $inicio' <<< "$fases")
     fi

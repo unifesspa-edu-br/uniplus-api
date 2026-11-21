@@ -188,7 +188,14 @@ public sealed class HashEstavelEntreGravacoesTests
         new DecisoesDeCronogramaDaFase(
             Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: unidadeResponsavel),
         HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(),
-        bancasRequeridas: []).Value!;
+        bancasRequeridas: [BancaDeHomologacaoComIdentidadeFixa()]).Value!;
+
+    // A banca com a mesma identidade em toda instância: o hash só se mantém entre gravações se a identidade da banca se mantém.
+    private static BancaRequerida BancaDeHomologacaoComIdentidadeFixa() => BancaRequerida.ReconstruirDosDadosSalvos(
+        new Guid("bbbb0000-0000-4000-8000-0000000000a1"),
+        TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.HomologacaoDasInscricoes, new Guid("5555eeee-0000-4000-8000-0000000000a1")),
+        [],
+        BancasDeTeste.Regra());
 
     private static DadosEdital DadosDeReferencia() => DadosEdital.Criar(
         "001/2026",

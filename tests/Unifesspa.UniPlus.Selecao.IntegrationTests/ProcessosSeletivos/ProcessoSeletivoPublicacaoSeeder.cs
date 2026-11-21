@@ -127,7 +127,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
             Ordem: 1, Inicio: inicioDaFase ?? new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: inicioDaFase?.AddDays(30) ?? new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
             UnidadeResponsavel: UnidadesDeTeste.Ceps),
         HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(),
-        bancasRequeridas: []).Value!;
+        bancasRequeridas: [BancasDeTeste.DaHomologacaoDasInscricoesDaFase()]).Value!;
 
     private static EtapaProcesso ProvaObjetivaDoResultadoFinal() => EtapaProcesso.Criar(
         new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),

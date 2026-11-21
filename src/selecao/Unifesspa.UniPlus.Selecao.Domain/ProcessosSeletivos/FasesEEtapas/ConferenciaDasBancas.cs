@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
@@ -20,28 +21,40 @@ public static class ConferenciaDasBancas
     [
         new("cronograma_banca_de_recursos_sem_candidatos_atendidos",
             "Cronograma: a banca que julga recurso não define candidatos atendidos",
-            static (cronograma, _, _) => cronograma.RecusasDasDeclaracoes(ExigenciaDeBancaDeRecurso.CodigosDosCandidatosAtendidos),
-            static (_, _) => false),
+            static (_, cronograma, _, _) => cronograma.RecusasDasDeclaracoes(ExigenciaDeBancaDeRecurso.CodigosDosCandidatosAtendidos),
+            static (_, _, _) => false),
         new("cronograma_recurso_com_banca_que_julga",
             "Cronograma: todo recurso tem a banca que o julga em 1ª instância, na fase ou na etapa",
-            static (cronograma, etapas, _) => QuemJulgaORecurso.SemBanca(cronograma, etapas),
-            static (cronograma, etapas) => QuemJulgaIndeterminado(cronograma, etapas)),
+            static (_, cronograma, etapas, _) => QuemJulgaORecurso.SemBanca(cronograma, etapas),
+            static (_, cronograma, etapas) => QuemJulgaIndeterminado(cronograma, etapas)),
         new("cronograma_instancia_superior_admitida_pelo_tipo_de_banca",
             "Cronograma: o recurso que admite instância superior não recai sobre item avaliado por tipo de banca que o encerra na 1ª instância",
-            static (cronograma, etapas, _) => QuemJulgaORecurso.InstanciaSuperiorNaoAdmitida(cronograma, etapas),
-            static (cronograma, etapas) => QuemJulgaIndeterminado(cronograma, etapas)),
+            static (_, cronograma, etapas, _) => QuemJulgaORecurso.InstanciaSuperiorNaoAdmitida(cronograma, etapas),
+            static (_, cronograma, etapas) => QuemJulgaIndeterminado(cronograma, etapas)),
         new("cronograma_tipo_de_banca_com_o_minimo_de_bancas",
             "Cronograma: o tipo de banca que exige duas ou mais bancas tem ao menos duas, na fase ou na etapa e em cada grupo de candidatos atendidos",
-            static (cronograma, etapas, _) => ConferirMinimoDeBancasPorTipo(cronograma, etapas),
-            static (cronograma, etapas) => MinimoDeBancasIndeterminado(cronograma, etapas)),
+            static (_, cronograma, etapas, _) => ConferirMinimoDeBancasPorTipo(cronograma, etapas),
+            static (_, cronograma, etapas) => MinimoDeBancasIndeterminado(cronograma, etapas)),
+        new("cronograma_homologacao_das_inscricoes_com_banca",
+            "Cronograma: toda fase que homologa as inscrições tem a banca de homologação das inscrições, nela ou nas etapas dela",
+            static (origem, cronograma, etapas, _) => ExigenciaDasBancasDaHomologacao.BancaDeHomologacaoDasInscricoes(origem, cronograma, etapas).Causas,
+            static (origem, cronograma, etapas) => ExigenciaDasBancasDaHomologacao.BancaDeHomologacaoDasInscricoes(origem, cronograma, etapas).Indeterminado),
+        new("cronograma_nota_do_enem_com_banca_de_importacao_das_notas",
+            "Cronograma: o processo que usa a nota do ENEM com inscrição própria tem a banca de importação das notas do INEP, em alguma fase ou etapa",
+            static (origem, cronograma, etapas, _) => ExigenciaDasBancasDaHomologacao.BancaDeImportacaoDasNotasDoInep(origem, cronograma, etapas).Causas,
+            static (origem, cronograma, etapas) => ExigenciaDasBancasDaHomologacao.BancaDeImportacaoDasNotasDoInep(origem, cronograma, etapas).Indeterminado),
+        new("cronograma_importacao_externa_com_banca_de_importacao_de_candidatos",
+            "Cronograma: o processo que importa candidatos de fora tem a banca de importação de candidatos, em alguma fase ou etapa",
+            static (origem, cronograma, etapas, _) => ExigenciaDasBancasDaHomologacao.BancaDeImportacaoDeCandidatos(origem, cronograma, etapas).Causas,
+            static (origem, cronograma, etapas) => ExigenciaDasBancasDaHomologacao.BancaDeImportacaoDeCandidatos(origem, cronograma, etapas).Indeterminado),
         new("cronograma_banca_com_regra_de_deliberacao",
             "Cronograma: toda banca declara a regra de deliberação e, se julga recurso por ato individual, a votação do recurso",
-            static (cronograma, etapas, _) => ConferirRegrasDeDeliberacao(cronograma, etapas),
-            static (cronograma, etapas) => DeliberacaoIndeterminada(cronograma, etapas)),
+            static (_, cronograma, etapas, _) => ConferirRegrasDeDeliberacao(cronograma, etapas),
+            static (_, cronograma, etapas) => DeliberacaoIndeterminada(cronograma, etapas)),
         new("cronograma_banca_com_o_minimo_de_integrantes",
             "Cronograma: toda banca tem ao menos o mínimo de integrantes que o quórum e os corretores das etapas julgadas exigem",
-            ConferirMinimoDeIntegrantes,
-            static (cronograma, etapas) => EtapaJulgadaIndeterminada(cronograma, etapas)),
+            static (_, cronograma, etapas, corretores) => ConferirMinimoDeIntegrantes(cronograma, etapas, corretores),
+            static (_, cronograma, etapas) => EtapaJulgadaIndeterminada(cronograma, etapas)),
     ];
 
     /// <summary>
@@ -84,9 +97,10 @@ public static class ConferenciaDasBancas
         return [.. bancas.Select(banca => AbaixoDoMinimo(banca, corretores)).OfType<FieldError>(), .. RegrasNaoResolvidas(bancas, corretores)];
     }
 
-    public static IReadOnlyList<ItemConformidade> Itens(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, CorretoresDasEtapas corretores) =>
+    public static IReadOnlyList<ItemConformidade> Itens(
+        OrigemCandidatos origem, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, CorretoresDasEtapas corretores) =>
         [.. ItensDaBanca.Select(item => new ItemConformidade(
-            item.Codigo, DimensaoConformidade.Cronograma, item.Mensagem, item.Causas(cronograma, etapas, corretores).Count == 0 && !item.SemJulgar(cronograma, etapas)))];
+            item.Codigo, DimensaoConformidade.Cronograma, item.Mensagem, item.Causas(origem, cronograma, etapas, corretores).Count == 0 && !item.SemJulgar(origem, cronograma, etapas)))];
 
     internal static DomainError RegraDeDeliberacaoAusente(string citacaoDaBanca, string onde) =>
         new(BancaErrorCodes.RegraDeDeliberacaoObrigatoria, $"A banca '{citacaoDaBanca}' da {onde} não declara a regra de deliberação.");
@@ -240,8 +254,8 @@ public static class ConferenciaDasBancas
     private sealed record ItemDaBanca(
         string Codigo,
         string Mensagem,
-        Func<CronogramaDoProcesso, EtapasDoProcesso, CorretoresDasEtapas, IReadOnlyList<FieldError>> Causas,
-        Func<CronogramaDoProcesso, EtapasDoProcesso, bool> SemJulgar);
+        Func<OrigemCandidatos, CronogramaDoProcesso, EtapasDoProcesso, CorretoresDasEtapas, IReadOnlyList<FieldError>> Causas,
+        Func<OrigemCandidatos, CronogramaDoProcesso, EtapasDoProcesso, bool> SemJulgar);
 
     /// <summary>Uma banca declarada com regra de deliberação, a citação dela, onde ela está e as etapas que julga.</summary>
     private sealed record BancaJulgadora(

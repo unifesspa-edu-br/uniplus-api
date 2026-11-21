@@ -59,7 +59,7 @@ public sealed class CausasQueImpedemCongelarTests
 
     private static string[] VermelhosDaHomologacao(ProcessoSeletivo processo) =>
         [.. ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
-            .Where(static item => !item.Ok && item.Codigo.StartsWith("cronograma_homologacao_das_inscricoes", StringComparison.Ordinal))
+            .Where(static item => !item.Ok && (item.Codigo is ItemDaFase or ItemDoCiclo or ItemDoInep))
             .Select(static item => item.Codigo)];
 
     [Fact(DisplayName = "A falta da fase de coleta é recusada antes da falta da fase que homologa as inscrições")]

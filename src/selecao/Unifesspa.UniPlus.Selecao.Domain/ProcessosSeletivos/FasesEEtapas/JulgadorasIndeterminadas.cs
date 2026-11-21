@@ -40,7 +40,7 @@ internal static class JulgadorasIndeterminadas
 
     private static bool EtapasQueAvaliamComParteRecusada(FaseDeclarada fase, EtapasDoProcesso etapas, AlvoDoProcedimentoDeRecurso? alvo) => alvo switch
     {
-        null => etapas.LeituraRecusouEtapa || etapas.Etapas.Any(etapa => DaFase(etapa, fase) && BancasRecusadas(etapa)),
+        null => etapas.LeituraRecusouEtapa || etapas.DaFase(fase).Any(BancasRecusadas),
         { Tipo: TipoDeAlvoDoProcedimentoDeRecurso.ItemDeAvaliacao } => EtapaDoAlvoComBancasRecusadas(etapas, alvo),
         _ => false,
     };
@@ -52,9 +52,6 @@ internal static class JulgadorasIndeterminadas
             : etapas.LeituraRecusouEtapa;
 
     private static bool BancasRecusadas(EtapaDeclarada etapa) => etapa.ParteRecusadaEm(EtapaDeclarada.ListaDasBancas);
-
-    private static bool DaFase(EtapaDeclarada etapa, FaseDeclarada fase) =>
-        string.Equals(etapa.FaseCodigo, fase.Codigo, StringComparison.Ordinal);
 
     private static bool FaseDaEtapaPodeTerSidoRecusada(CronogramaDoProcesso cronograma, EtapaDeclarada etapa) =>
         cronograma.TemParteRecusadaNaListaDeFases

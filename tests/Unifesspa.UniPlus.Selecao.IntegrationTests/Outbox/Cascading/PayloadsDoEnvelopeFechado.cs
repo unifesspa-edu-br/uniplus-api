@@ -102,7 +102,7 @@ internal static class PayloadsDoEnvelopeFechado
         fim = new DateTimeOffset(2026, 3, 25, 18, 0, 0, TimeSpan.Zero),
         produtos = ProdutosDoResultado(),
         emiteParecerIndividual = true,
-        bancasRequeridas = new object[] { BancaDoTipo(catalogos.TipoBancaId) },
+        bancasRequeridas = new object[] { BancaDoTipo(catalogos.TipoBancaId), BancaDoTipo(catalogos.TipoBancaDeHomologacaoId) },
         regraRecurso = (object?)null,
         regraDeHomologacao = RegraDeHomologacaoDoResultado(),
         tiposDeDecisao = new[] { TipoMotivoDeDecisao.HomologacaoDasInscricoes.Codigo() },

@@ -291,7 +291,7 @@ public sealed class CandidatosAtendidosConferenciaPersistenciaTests : IClassFixt
                 Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(
                 [preliminar, ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], RegraDeRecurso(preliminar.Id)),
-            bancasRequeridas: [.. BancasDoMesmoTipoComCandidatosAtendidosDistintos(), BancasDeTeste.DeRecursosDaFase()]).Value!;
+            bancasRequeridas: [.. BancasDoMesmoTipoComCandidatosAtendidosDistintos(), BancasDeTeste.DaHomologacaoDasInscricoesDaFase(), BancasDeTeste.DeRecursosDaFase()]).Value!;
     }
 
     private static BancaRequerida[] BancasDoMesmoTipoComCandidatosAtendidosDistintos() =>

@@ -229,7 +229,7 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
             new OrigemCanonicaDaFase(OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(Ordem: 2, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologaComRecurso(),
-            bancasRequeridas: [BancasDeTeste.DeRecursosDaFase()]).Value!;
+            bancasRequeridas: HomologacaoDasInscricoesDeTeste.BancasDaFaseQueHomologaComRecurso()).Value!;
         FormularioDeTeste.TrocarCronograma(processo, [resultado]).IsSuccess.Should().BeTrue();
         ContagemDePrazosDeTeste.DeclararConvencao(processo);
         return resultado.Id;
@@ -252,7 +252,7 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
             new OrigemCanonicaDaFase(OrigemId: Guid.CreateVersion7(), Codigo: "INSCRICAO_REMANEJAMENTO", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(Ordem: 2, Inicio: new DateTimeOffset(2026, 1, 20, 12, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 25, 12, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(),
-            bancasRequeridas: []).Value!;
+            bancasRequeridas: [BancasDeTeste.DaHomologacaoDasInscricoesDaFase()]).Value!;
         return coletaOrdem2;
     }
 

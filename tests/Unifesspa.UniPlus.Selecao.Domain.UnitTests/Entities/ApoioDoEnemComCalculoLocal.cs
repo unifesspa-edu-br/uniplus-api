@@ -65,7 +65,7 @@ internal static class ApoioDoEnemComCalculoLocal
                     Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
                 new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
                 HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologaComRecurso(),
-                bancasRequeridas: [BancasDeTeste.DeRecursosDaFase()]).Value!],
+                bancasRequeridas: HomologacaoDasInscricoesDeTeste.BancasDaFaseQueHomologaComRecurso()).Value!],
             []).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas(
             [EtapaDeProvaObjetiva("Prova", CaraterEtapa.Classificatoria, 1, 1m, null, "RESULTADO_FINAL")])

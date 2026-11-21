@@ -7232,6 +7232,11 @@
       "titulo": "O fuso institucional aplicado não é uma zona reconhecida"
     },
     {
+      "codigo": "uniplus.selecao.processo_seletivo.homologacao_das_inscricoes_sem_banca",
+      "status": 422,
+      "titulo": "A fase que homologa as inscrições não prevê banca de homologação das inscrições"
+    },
+    {
       "codigo": "uniplus.selecao.processo_seletivo.id_etapa_duplicado",
       "status": 422,
       "titulo": "O mesmo identificador de etapa aparece em mais de uma etapa"
@@ -7275,6 +7280,11 @@
       "codigo": "uniplus.selecao.processo_seletivo.importacao_de_exame_sem_homologacao_das_inscricoes",
       "status": 422,
       "titulo": "O processo que usa a nota do ENEM não tem fase que homologa as inscrições"
+    },
+    {
+      "codigo": "uniplus.selecao.processo_seletivo.importacao_externa_sem_banca_de_importacao_de_candidatos",
+      "status": 422,
+      "titulo": "O processo que importa candidatos de fora não prevê a banca de importação de candidatos"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.importacao_externa_sem_homologacao_das_inscricoes",
@@ -7380,6 +7390,11 @@
       "codigo": "uniplus.selecao.processo_seletivo.no_exigencia_documento_exigido_duplicado",
       "status": 422,
       "titulo": "Duas folhas não podem citar a mesma exigência"
+    },
+    {
+      "codigo": "uniplus.selecao.processo_seletivo.nota_do_enem_sem_banca_de_importacao_das_notas",
+      "status": 422,
+      "titulo": "O processo que usa a nota do ENEM com inscrição própria não prevê a banca de importação das notas do INEP"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.ocorrencia_simulada_invalida",

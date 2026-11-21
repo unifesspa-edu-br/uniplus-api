@@ -46,7 +46,7 @@ public sealed class SuspensaoDaEtapaDeFaseRecusadaNaLeituraTests
         [.. QuemJulgaORecurso.SemBanca(cronograma, etapas).Select(static causa => (causa.Field, causa.Error.Code))];
 
     private static bool ItemAprovado(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
-        ConferenciaDasBancas.Itens(cronograma, etapas, NenhumLido).Single(static item => item.Codigo == ItemDoRecurso).Ok;
+        ConferenciaDasBancas.Itens(OrigemCandidatos.InscricaoPropria, cronograma, etapas, NenhumLido).Single(static item => item.Codigo == ItemDoRecurso).Ok;
 
     [Fact(DisplayName = "A etapa que cita a fase recusada inteira não recebe a recusa de recurso sem banca, e o item do painel fica pendente")]
     public void EtapaDaFaseRecusada_NaoRecebeARecusa_EItemFicaPendente()

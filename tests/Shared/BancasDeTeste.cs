@@ -28,6 +28,12 @@ internal static class BancasDeTeste
     public static BancaDaEtapa DeRecursosDaEtapa(RegraDeDeliberacao? regra = null) =>
         BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.DeRecursos(OrigemDoTipoDeRecursos), regra ?? Regra());
 
+    /// <summary>A banca de homologação das inscrições da fase, com a regra de deliberação declarada.</summary>
+    public static BancaRequerida DaHomologacaoDasInscricoesDaFase() => DaFase(TipoDeBanca.HomologacaoDasInscricoes);
+
+    /// <summary>Uma banca da fase do tipo pedido, com a regra de deliberação declarada.</summary>
+    public static BancaRequerida DaFase(TipoDeBanca tipo) => BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.De(tipo), [], Regra());
+
     /// <summary>Uma banca da etapa do tipo pedido, com a regra de deliberação declarada.</summary>
     public static BancaDaEtapa DaEtapa(TipoDeBanca tipo) => BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(tipo), Regra());
 }

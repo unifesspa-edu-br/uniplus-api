@@ -50,7 +50,7 @@ internal static class ProcessoParaMotivos
                 Guid.CreateVersion7(), "HOMOLOGACAO_INSCRICOES", OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(2, Inicio: InicioDaHomologacao, Fim: InicioDaHomologacao.AddDays(20), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa() with { TiposDeDecisao = [] },
-            bancasRequeridas: []).Value!;
+            bancasRequeridas: [BancasDeTeste.DaHomologacaoDasInscricoesDaFase()]).Value!;
 
         processo.DefinirCronogramaFases([processo.CronogramaFases.Single(f => f.Codigo == "INSCRICAO"), homologacao], []).IsSuccess.Should().BeTrue();
     }

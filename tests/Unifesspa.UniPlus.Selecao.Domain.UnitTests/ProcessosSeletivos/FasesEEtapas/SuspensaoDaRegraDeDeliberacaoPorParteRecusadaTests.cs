@@ -37,7 +37,7 @@ public sealed class SuspensaoDaRegraDeDeliberacaoPorParteRecusadaTests
         Cronograma(Ler(Documento(Fase(0, "recurso", "RECURSO") with { Bancas = bancas })));
 
     private static ItemConformidade ItemDaDeliberacaoNoPainel(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
-        ConferenciaDasBancas.Itens(cronograma, etapas, NenhumLido).Single(static item => item.Codigo == ItemDaDeliberacao);
+        ConferenciaDasBancas.Itens(OrigemCandidatos.InscricaoPropria, cronograma, etapas, NenhumLido).Single(static item => item.Codigo == ItemDaDeliberacao);
 
     [Fact(DisplayName = "A banca da fase recusada na leitura deixa pendente o item da regra de deliberação, e sem recusa o item é aprovado")]
     public void BancaDaFaseRecusadaNaLeitura_ItemFicaPendente()

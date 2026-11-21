@@ -52,7 +52,12 @@ internal static class ProcessoSeletivoPublicavelSeeder
             RegraRecurso: opcoes.RegraDeRecursoDaFase,
             TiposDeDecisao: TiposDeDecisaoDaFaseUnica,
             RegraDeHomologacao: HomologacaoDasInscricoesDeTeste.Regra(opcoes.ProdutosDaFase is { Count: > 0 } ? opcoes.ProdutosDaFase[0].AtoCodigo : HomologacaoDasInscricoesDeTeste.ResultadoDaFase)),
-        bancasRequeridas: []).Value!;
+        bancasRequeridas: BancasDaFaseDeResultado(opcoes)).Value!;
+
+    private static IReadOnlyList<BancaRequerida> BancasDaFaseDeResultado(OpcoesDoProcessoSeletivoPublicavel opcoes) =>
+        opcoes.ComBancaDeImportacaoDasNotas
+            ? [BancasDeTeste.DaHomologacaoDasInscricoesDaFase(), BancasDeTeste.DaFase(TipoDeBanca.ImportacaoDasNotasDoInep)]
+            : [BancasDeTeste.DaHomologacaoDasInscricoesDaFase()];
 
     public static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearAsync(
         UniPlusDbContext db, OpcoesDoProcessoSeletivoPublicavel opcoes)
@@ -205,6 +210,9 @@ internal sealed record OpcoesDoProcessoSeletivoPublicavel
 {
     public required string Nome { get; init; }
     public bool ColetaSolicitacaoIsencao { get; init; }
+
+    /// <summary>Acrescenta à fase de resultado a banca de importação das notas do INEP, que o processo com nota do ENEM exige.</summary>
+    public bool ComBancaDeImportacaoDasNotas { get; init; }
     public Action<ProcessoSeletivo>? Complementar { get; init; }
     public TipoProcessoSnapshot? Tipo { get; init; }
     public IReadOnlyList<ProdutoDaFase>? ProdutosDaFase { get; init; }

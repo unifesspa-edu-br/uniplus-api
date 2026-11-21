@@ -65,8 +65,9 @@ internal static class CorpusEnvelopeCronograma
     /// <param name="variante">Ver <see cref="EtapaId"/> — só distingue processos no mesmo Postgres entre testes de persistência.</param>
     /// <param name="permutar">Inverte a ordem de ENTRADA dos produtos e das bancas requeridas desta fase — nunca o conteúdo.</param>
     /// <param name="regraDeHomologacao">A regra de homologação das inscrições da fase; a do corpus quando ausente.</param>
+    /// <param name="comBancaDeHomologacao">Opt-in: acrescenta a banca de homologação das inscrições, que a publicação exige e que a golden fixture não tem.</param>
     internal static FaseCronograma FaseResultadoPreliminarComRecurso(
-        int variante = 0, bool permutar = false, RegraDeHomologacaoDasInscricoes? regraDeHomologacao = null) => FaseCronograma.Reidratar(
+        int variante = 0, bool permutar = false, RegraDeHomologacaoDasInscricoes? regraDeHomologacao = null, bool comBancaDeHomologacao = false) => FaseCronograma.Reidratar(
         id: new Guid($"6666aaaa-000{variante:x}-4000-8000-000000000002"),
         new OrigemCanonicaDaFase(
             OrigemId: new Guid("4444dddd-0000-4000-8000-000000000002"), Codigo: "RESULTADO_PRELIMINAR", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false,
@@ -78,7 +79,7 @@ internal static class CorpusEnvelopeCronograma
                 Produtos: ProdutosDaFaseDeRecurso(variante, permutar), EmiteParecerIndividual: true, RegraRecurso: RegraDeRecursoDaFase(variante),
                 TiposDeDecisao: [TipoMotivoDeDecisao.Classificacao.Codigo(), TipoMotivoDeDecisao.HomologacaoDasInscricoes.Codigo()],
                 RegraDeHomologacao: regraDeHomologacao ?? RegraDeHomologacaoDoCorpus()),
-        bancasRequeridas: BancasRequeridasDaFaseDeRecurso(permutar, variante));
+        bancasRequeridas: BancasRequeridasDaFaseDeRecurso(permutar, comBancaDeHomologacao, variante));
 
     /// <summary>
     /// Duas alternativas, a primeira com duas condições, sem e com enquadramento, na ordem que não é a alfabética dos
@@ -111,10 +112,22 @@ internal static class CorpusEnvelopeCronograma
     // atendidos. A posição vem da ordem de chegada dentro do tipo, então a permutação da entrada
     // move as duas juntas e preserva a ordem relativa entre elas: inverter uma em relação à outra
     // é mudar a configuração, não só a ordem de entrada.
-    internal static IReadOnlyList<BancaRequerida> BancasRequeridasDaFaseDeRecurso(bool permutar, int variante = 0) =>
-        permutar
+    internal static IReadOnlyList<BancaRequerida> BancasRequeridasDaFaseDeRecurso(bool permutar, bool comBancaDeHomologacao = false, int variante = 0)
+    {
+        BancaRequerida[] daGolden = permutar
             ? [BancaDeAnaliseDeRecursos(variante), BancaDeHeteroidentificacao(variante), BancaDeAnaliseDocumentalDeRenda(variante), BancaDeAnaliseDocumentalDeIdentificacao(variante)]
             : [BancaDeAnaliseDocumentalDeRenda(variante), BancaDeAnaliseDocumentalDeIdentificacao(variante), BancaDeHeteroidentificacao(variante), BancaDeAnaliseDeRecursos(variante)];
+
+        return comBancaDeHomologacao ? [.. daGolden, BancaDeHomologacaoDasInscricoes(variante)] : daGolden;
+    }
+
+    // A banca que julga a homologação das inscrições, que a publicação exige de toda fase que homologa.
+    internal static BancaRequerida BancaDeHomologacaoDasInscricoes(int variante = 0) =>
+        BancaRequerida.ReconstruirDosDadosSalvos(
+            BancaId(5, variante),
+            TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.HomologacaoDasInscricoes, new Guid("5555eeee-0000-4000-8000-000000000004")),
+            [],
+            BancasDeTeste.Regra());
 
     internal static BancaRequerida BancaDeAnaliseDocumentalDeRenda(int variante = 0) =>
         BancaRequerida.ReconstruirDosDadosSalvos(

@@ -94,11 +94,17 @@ internal static class ProcessoConformeFactory
             new DecisoesDeCronogramaDaFase(
                 Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: semUnidadeResponsavel ? null : UnidadesDeTeste.Ceps),
             HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(ProdutosDaFaseConforme(comRecurso: regraRecurso is not null), regraRecurso),
-            bancasRequeridas: bancas ?? (regraRecurso is null ? [] : [BancasDeTeste.DeRecursosDaFase()]));
+            bancasRequeridas: bancas ?? BancasDaFaseConforme(regraRecurso));
 
         fase.IsSuccess.Should().BeTrue(fase.Error?.Message);
         return fase.Value!;
     }
+
+    // A fase homologa as inscrições, e toda origem exige a banca de homologação das inscrições; a de recursos entra com o recurso.
+    private static IReadOnlyList<BancaRequerida> BancasDaFaseConforme(RegraRecursoFase? regraRecurso) =>
+        regraRecurso is null
+            ? [BancasDeTeste.DaHomologacaoDasInscricoesDaFase()]
+            : [BancasDeTeste.DaHomologacaoDasInscricoesDaFase(), BancasDeTeste.DeRecursosDaFase()];
 
     // O preliminar entra só quando há regra de recurso: é nele que a fase ancora o prazo, e sem
     // ele a factory devolveria uma fase recusada em vez da fase conforme que os testes desta

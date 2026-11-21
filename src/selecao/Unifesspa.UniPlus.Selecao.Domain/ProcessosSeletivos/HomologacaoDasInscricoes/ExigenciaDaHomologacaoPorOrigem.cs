@@ -58,7 +58,7 @@ internal static class ExigenciaDaHomologacaoPorOrigem
     // não se sabe se a regra está nela.
     private static Veredicto FaseQueHomologa(OrigemCandidatos origem, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas)
     {
-        if (cronograma.Fases.Any(TemARegra))
+        if (cronograma.Fases.Any(HomologaAsInscricoes))
         {
             return Veredicto.Atendido;
         }
@@ -68,10 +68,12 @@ internal static class ExigenciaDaHomologacaoPorOrigem
             : Veredicto.Recusado([new FieldError(CampoDasFases, FaseAusente(origem, etapas))]);
     }
 
-    private static bool RegraRecusadaEmAlgumaFase(CronogramaDoProcesso cronograma) =>
+    /// <summary>Se a leitura recusou a regra de homologação de alguma fase: não se sabe se ela é uma das que homologam.</summary>
+    internal static bool RegraRecusadaEmAlgumaFase(CronogramaDoProcesso cronograma) =>
         cronograma.Fases.Any(static fase => fase.ParteRecusadaEm(FaseDeclarada.CampoDaRegraDeHomologacao));
 
-    private static bool TemARegra(FaseDeclarada fase) =>
+    /// <summary>Se a fase homologa as inscrições: declara a regra de homologação, e a leitura não a recusou.</summary>
+    internal static bool HomologaAsInscricoes(FaseDeclarada fase) =>
         !fase.ParteRecusadaEm(FaseDeclarada.CampoDaRegraDeHomologacao) && fase.Atos.RegraDeHomologacao is not null;
 
     private static DomainError FaseAusente(OrigemCandidatos origem, EtapasDoProcesso etapas) => origem switch
@@ -96,7 +98,7 @@ internal static class ExigenciaDaHomologacaoPorOrigem
             return origem == OrigemCandidatos.Nenhuma ? Veredicto.SemJulgar : Veredicto.Atendido;
         }
 
-        CicloDaFase[] fases = [.. cronograma.Fases.Select(CicloDaFase.De).Where(static ciclo => TemARegra(ciclo.Fase))];
+        CicloDaFase[] fases = [.. cronograma.Fases.Select(CicloDaFase.De).Where(static ciclo => HomologaAsInscricoes(ciclo.Fase))];
 
         return fases.Any(static ciclo => ciclo.Estado == EstadoDoCiclo.Completo) ? Veredicto.Atendido
             : cronograma.TemParteRecusadaNaListaDeFases || RegraRecusadaEmAlgumaFase(cronograma) || fases.Any(static ciclo => ciclo.Estado == EstadoDoCiclo.Indeterminado) ? Veredicto.SemJulgar

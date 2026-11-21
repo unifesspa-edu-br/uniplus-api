@@ -94,7 +94,7 @@ internal sealed class CenarioDeRetificacaoPersistida
         new DecisoesDeCronogramaDaFase(
             Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(),
-        bancasRequeridas: []).Value!;
+        bancasRequeridas: [BancasDeTeste.DaHomologacaoDasInscricoesDaFase()]).Value!;
 
     public static DocumentoAPublicar DocumentoConfirmado(Guid processoId)
     {

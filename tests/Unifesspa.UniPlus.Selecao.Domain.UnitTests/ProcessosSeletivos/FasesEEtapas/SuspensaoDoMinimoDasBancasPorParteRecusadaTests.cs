@@ -55,7 +55,7 @@ public sealed class SuspensaoDoMinimoDasBancasPorParteRecusadaTests
         ConferenciaDasBancas.ConferirMinimoDeIntegrantes(cronograma, etapas, TresCorretores);
 
     private static ItemConformidade ItemDoMinimoNoPainel(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
-        ConferenciaDasBancas.Itens(cronograma, etapas, TresCorretores).Single(static item => item.Codigo == ItemDoMinimo);
+        ConferenciaDasBancas.Itens(OrigemCandidatos.InscricaoPropria, cronograma, etapas, TresCorretores).Single(static item => item.Codigo == ItemDoMinimo);
 
     [Theory(DisplayName = "A banca de recursos da fase não julga a etapa cuja lista das bancas ou dos recursos tem parte recusada: não recusa o mínimo, e o item fica pendente")]
     [InlineData("etapas[0].bancas")]

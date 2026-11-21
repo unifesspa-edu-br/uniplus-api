@@ -106,7 +106,7 @@ internal static class ProcessoComDuasExigenciasDeTeste
                 Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: true, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(1, Inicio: InicioDaFase, Fim: FimDaFase, UnidadeResponsavel: UnidadesDeTeste.Ceps),
             HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(resultado: "INSCRICAO"),
-            bancasRequeridas: []).Value!;
+            bancasRequeridas: [BancasDeTeste.DaHomologacaoDasInscricoesDaFase()]).Value!;
         processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
         return fase;

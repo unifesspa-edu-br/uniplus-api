@@ -161,6 +161,7 @@ AtualizacaoDosFundamentos,
             .Include(p => p.Campos).ThenInclude(f => f.Precondicoes)
             .Include(p => p.AtendimentoEspecializado)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.Produtos)
+            .Include(p => p.CronogramaFases).ThenInclude(f => f.BancasRequeridas).ThenInclude(b => b.CandidatosAtendidos)
             .Include(p => p.ConfiguracaoTaxaInscricao)
             .Include(p => p.CriteriosDesempate)
             .AsSplitQuery()
@@ -181,7 +182,7 @@ AtualizacaoDosFundamentos,
             RegraRecurso: null,
             TiposDeDecisao: [TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo(), TipoMotivoDeDecisao.HomologacaoDasInscricoes.Codigo()],
             RegraDeHomologacao: HomologacaoDasInscricoesDeTeste.Regra()),
-        bancasRequeridas: []).Value!;
+        bancasRequeridas: [BancasDeTeste.DaHomologacaoDasInscricoesDaFase()]).Value!;
 
     private const string AtualizacaoDosFundamentos =
             """

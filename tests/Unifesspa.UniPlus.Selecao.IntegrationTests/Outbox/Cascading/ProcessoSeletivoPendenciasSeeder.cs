@@ -59,7 +59,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
                 Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
                 UnidadeResponsavel: null),
             HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(),
-            bancasRequeridas: []).Value!;
+            bancasRequeridas: [BancasDeTeste.DaHomologacaoDasInscricoesDaFase()]).Value!;
         DefinirCronogramaEEtapaDaFase(processo, [faseSemUnidade]);
 
         return await PersistirComDocumentoConfirmadoAsync(db, processo);

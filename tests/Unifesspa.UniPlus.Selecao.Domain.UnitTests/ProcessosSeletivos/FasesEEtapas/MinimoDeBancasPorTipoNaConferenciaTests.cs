@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
@@ -54,7 +55,7 @@ public sealed class MinimoDeBancasPorTipoNaConferenciaTests
         ConferenciaDasBancas.ConferirMinimoDeBancasPorTipo(Fases(new ModeloDeFase("AVALIACAO", 1)), Etapas(etapa));
 
     private static bool ItemAprovado(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
-        ConferenciaDasBancas.Itens(cronograma, etapas, NenhumLido).Single(static item => item.Codigo == Item).Ok;
+        ConferenciaDasBancas.Itens(OrigemCandidatos.InscricaoPropria, cronograma, etapas, NenhumLido).Single(static item => item.Codigo == Item).Ok;
 
     [Fact(DisplayName = "A fase com uma só banca do tipo que exige duas ou mais é recusada, citando a banca pelo rótulo e pela posição")]
     public void Fase_UmaSoBancaDoTipoQueExige_Recusa()

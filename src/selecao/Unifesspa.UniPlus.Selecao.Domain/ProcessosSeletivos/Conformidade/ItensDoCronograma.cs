@@ -56,7 +56,7 @@ internal static class ItensDoCronograma
     private static ItemConformidade[] DasBancasEDaJanelaDasEtapas(
         ConfiguracaoDeclarada configuracao, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, CorretoresDasEtapas corretores) =>
     [
-        .. ConferenciaDasBancas.Itens(cronograma, etapas, corretores),
+        .. ConferenciaDasBancas.Itens(configuracao.Identidade.OrigemCandidatos, cronograma, etapas, corretores),
         new ItemConformidade("etapa_correcao_independente_com_dois_corretores", DimensaoConformidade.Etapas, "Etapa de tipo que exige correção independente com regra de consolidação de ao menos dois corretores distintos", PendenciasDaCorrecaoIndependente.CausasDaCorrecaoIndependente(configuracao, corretores).Count == 0),
         EtapasNoCronograma.ItemDaJanelaDaEtapaNaFase(cronograma, etapas),
     ];

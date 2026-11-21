@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -38,6 +39,12 @@ public sealed class ConferenciaDasBancasTests
 
         return new ModeloDeFase(codigo, ordem) { Produtos = [preliminar], RegraRecurso = ModeloDeFase.RecursoAncoradoEm(preliminar.Id), Bancas = bancas };
     }
+
+    // A fase que homologa as inscrições, com a banca que julga a homologação, para que os itens novos do painel fiquem julgáveis.
+    private static ModeloDeFase QueHomologa(ModeloDeFase fase) => fase.Homologando(RegraDeHomologacaoDasInscricoes.Declarar("RESULTADO", [])) with
+    {
+        Bancas = [.. fase.Bancas, BancasDeTeste.DaHomologacaoDasInscricoesDaFase()],
+    };
 
     private static BancaRequerida DeRecursos(int integrantes, int quorum) =>
         BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.DeRecursos(Guid.CreateVersion7()), [], BancasDeTeste.Regra(integrantes, quorum));
@@ -190,20 +197,27 @@ public sealed class ConferenciaDasBancasTests
         ConferenciaDasBancas.ConferirMinimoDeIntegrantes(cronograma, Etapas(ComRecurso("AVALIACAO")), NenhumLido).Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "Os seis itens saem nesta ordem, verdes quando a configuração das bancas é conforme")]
-    public void Itens_Conformes_SeisVerdesNaOrdem()
+    private static readonly string[] OsNoveItens =
+    [
+        "cronograma_banca_de_recursos_sem_candidatos_atendidos",
+        "cronograma_recurso_com_banca_que_julga",
+        "cronograma_instancia_superior_admitida_pelo_tipo_de_banca",
+        "cronograma_tipo_de_banca_com_o_minimo_de_bancas",
+        "cronograma_homologacao_das_inscricoes_com_banca",
+        "cronograma_nota_do_enem_com_banca_de_importacao_das_notas",
+        "cronograma_importacao_externa_com_banca_de_importacao_de_candidatos",
+        "cronograma_banca_com_regra_de_deliberacao",
+        "cronograma_banca_com_o_minimo_de_integrantes",
+    ];
+
+    [Fact(DisplayName = "Os nove itens saem nesta ordem, verdes quando a configuração das bancas é conforme")]
+    public void Itens_Conformes_NoveVerdesNaOrdem()
     {
-        CronogramaDoProcesso cronograma = Fases(new ModeloDeFase("AVALIACAO", 1) with { Bancas = [BancasDeTeste.DeRecursosDaFase()] });
+        CronogramaDoProcesso cronograma = Fases(QueHomologa(new ModeloDeFase("AVALIACAO", 1) with { Bancas = [BancasDeTeste.DeRecursosDaFase()] }));
 
-        IReadOnlyList<ItemConformidade> itens = ConferenciaDasBancas.Itens(cronograma, Etapas(), NenhumLido);
+        IReadOnlyList<ItemConformidade> itens = ConferenciaDasBancas.Itens(OrigemCandidatos.InscricaoPropria, cronograma, Etapas(), NenhumLido);
 
-        itens.Select(static item => item.Codigo).Should().Equal(
-            "cronograma_banca_de_recursos_sem_candidatos_atendidos",
-            "cronograma_recurso_com_banca_que_julga",
-            "cronograma_instancia_superior_admitida_pelo_tipo_de_banca",
-            "cronograma_tipo_de_banca_com_o_minimo_de_bancas",
-            "cronograma_banca_com_regra_de_deliberacao",
-            "cronograma_banca_com_o_minimo_de_integrantes");
+        itens.Select(static item => item.Codigo).Should().Equal(OsNoveItens);
         itens.Should().OnlyContain(static item => item.Ok);
     }
 
@@ -212,20 +226,20 @@ public sealed class ConferenciaDasBancasTests
     {
         BancaRequerida comCandidatosAtendidos = BancaRequerida.Criar(
             TiposDeBancaCopiadosDeTeste.DeRecursos(Guid.CreateVersion7()), [CategoriaJulgada.Criar(Guid.CreateVersion7(), "RENDA")], BancasDeTeste.Regra());
-        CronogramaDoProcesso cronograma = Fases(new ModeloDeFase("AVALIACAO", 1) with { Bancas = [comCandidatosAtendidos] });
+        CronogramaDoProcesso cronograma = Fases(QueHomologa(new ModeloDeFase("AVALIACAO", 1) with { Bancas = [comCandidatosAtendidos] }));
 
-        ConferenciaDasBancas.Itens(cronograma, Etapas(), NenhumLido).Where(static item => !item.Ok).Select(static item => item.Codigo)
+        ConferenciaDasBancas.Itens(OrigemCandidatos.InscricaoPropria, cronograma, Etapas(), NenhumLido).Where(static item => !item.Ok).Select(static item => item.Codigo)
             .Should().Equal("cronograma_banca_de_recursos_sem_candidatos_atendidos");
     }
 
     [Fact(DisplayName = "Cada item fica vermelho com a causa que projeta")]
     public void Itens_CadaCausa_DeixaVermelhoOSeuItem()
     {
-        CronogramaDoProcesso cronograma = Fases(FaseComRecurso("AVALIACAO", 1, DeRecursos(integrantes: 2, quorum: 2), SemRegraNaFase()));
+        CronogramaDoProcesso cronograma = Fases(QueHomologa(FaseComRecurso("AVALIACAO", 1, DeRecursos(integrantes: 2, quorum: 2), SemRegraNaFase())));
         EtapasDoProcesso etapas = Etapas(ComRecurso("AVALIACAO"));
 
-        ConferenciaDasBancas.Itens(cronograma, etapas, TresCorretores).Where(static item => !item.Ok).Select(static item => item.Codigo)
+        ConferenciaDasBancas.Itens(OrigemCandidatos.InscricaoPropria, cronograma, etapas, TresCorretores).Where(static item => !item.Ok).Select(static item => item.Codigo)
             .Should().Equal("cronograma_banca_com_regra_de_deliberacao", "cronograma_banca_com_o_minimo_de_integrantes");
-        ConferenciaDasBancas.Itens(Fases(FaseComRecurso("AVALIACAO", 1)), Etapas(), NenhumLido)[1].Ok.Should().BeFalse();
+        ConferenciaDasBancas.Itens(OrigemCandidatos.InscricaoPropria, Fases(FaseComRecurso("AVALIACAO", 1)), Etapas(), NenhumLido)[1].Ok.Should().BeFalse();
     }
 }

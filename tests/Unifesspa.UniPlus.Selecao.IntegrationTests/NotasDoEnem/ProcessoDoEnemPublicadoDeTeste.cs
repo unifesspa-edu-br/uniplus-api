@@ -71,7 +71,7 @@ internal static class ProcessoDoEnemPublicadoDeTeste
         await using AsyncServiceScope scope = fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         Dictionary<string, ReferenciaRegra> regras = await db.RolDeRegras.Where(r => r.Versao == "v1").ToDictionaryAsync(r => r.Codigo, r => r.Referencia());
-        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"PS Medicina notas do ENEM {Guid.CreateVersion7()}", Complementar = p => etapaDoEnem = ConfigurarEnem(p, ofertaTecnologica, ofertaHumanistica, regras), FimDasInscricoes = fimDasInscricoes });
+        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"PS Medicina notas do ENEM {Guid.CreateVersion7()}", Complementar = p => etapaDoEnem = ConfigurarEnem(p, ofertaTecnologica, ofertaHumanistica, regras), FimDasInscricoes = fimDasInscricoes, ComBancaDeImportacaoDasNotas = true });
         return (new Publicado(processo.Id, etapaDoEnem, ofertaTecnologica, ofertaHumanistica), documento.Id);
     }
 

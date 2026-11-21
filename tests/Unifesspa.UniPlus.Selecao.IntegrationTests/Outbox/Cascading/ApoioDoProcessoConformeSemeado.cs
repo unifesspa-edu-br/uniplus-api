@@ -51,7 +51,7 @@ internal static class ApoioDoProcessoConformeSemeado
             Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
             UnidadeResponsavel: UnidadesDeTeste.Ceps),
         HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(),
-        bancasRequeridas: []).Value!;
+        bancasRequeridas: [BancasDeTeste.DaHomologacaoDasInscricoesDaFase()]).Value!;
 
     internal static void DefinirCronogramaEEtapaDaFase(ProcessoSeletivo processo, IReadOnlyList<FaseCronograma> fases)
     {

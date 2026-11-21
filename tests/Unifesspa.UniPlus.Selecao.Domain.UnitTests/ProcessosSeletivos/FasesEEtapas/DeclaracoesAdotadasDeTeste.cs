@@ -34,9 +34,10 @@ internal static class DeclaracoesAdotadasDeTeste
     internal static OrigemNoDocumento ComPartesRecusadas(params string[] colecoes) =>
         new(new Dictionary<string, IReadOnlyList<int>>(), [.. colecoes.Select(static (colecao, posicao) => Recusada(colecao, posicao))]);
 
-    internal static ConfiguracaoDeclarada Lida(IReadOnlyList<FaseCronograma> fases, IReadOnlyList<EtapaProcesso> etapas, OrigemNoDocumento origem)
+    internal static ConfiguracaoDeclarada Lida(
+        IReadOnlyList<FaseCronograma> fases, IReadOnlyList<EtapaProcesso> etapas, OrigemNoDocumento origem, ConfiguracaoDeclarada? daRaiz = null)
     {
-        ConfiguracaoDeclarada raiz = ProcessoConformeFactory.Criar().Declaracao();
+        ConfiguracaoDeclarada raiz = daRaiz ?? ProcessoConformeFactory.Criar().Declaracao();
 
         return new ConfiguracaoDeclarada(
             raiz.Identidade,
