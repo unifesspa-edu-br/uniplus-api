@@ -69,7 +69,7 @@ public sealed class OpcoesDeclaradasEndpointTests
     {
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        (ProcessoSeletivo processo, _) = await ProcessoSeletivoPendenciasSeeder.SemearEnemComCalculoLocalAsync(
+        (ProcessoSeletivo processo, _) = await ProcessoSeletivoEnemComCalculoLocalSeeder.SemearAsync(
             db, $"Opções declaradas {Guid.CreateVersion7()}", ofertaComGrupo: true);
         return processo.Id;
     }

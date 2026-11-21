@@ -98,7 +98,7 @@ public sealed class ConformidadeEnemEndpointTests
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        return await ProcessoSeletivoPendenciasSeeder.SemearEnemComCalculoLocalAsync(db, $"{nome} {Guid.CreateVersion7()}", ofertaComGrupo);
+        return await ProcessoSeletivoEnemComCalculoLocalSeeder.SemearAsync(db, $"{nome} {Guid.CreateVersion7()}", ofertaComGrupo);
     }
 
     private static object Ato(string tipoAtoCodigo) => new

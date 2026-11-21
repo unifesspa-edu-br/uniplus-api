@@ -232,7 +232,7 @@ public sealed class OrdemDasReferenciasDasEtapasEVagasTests
     private static ConfiguracaoDeclarada ConfiguracaoComVagas()
     {
         ConfiguracaoDeclarada original = ProcessoConformeFactory.Criar().Declaracao();
-        ConfiguracaoDistribuicaoVagas oferta = ApoioConformidadePublicabilidadeEstrutural.OfertaFederalCompleta();
+        ConfiguracaoDistribuicaoVagas oferta = ApoioDasCotasFederaisNaConformidade.OfertaFederalCompleta();
         ConfiguracaoCascataRemanejamento cascata = ConfiguracaoCascataRemanejamento.Criar(
             ProcessoConformeFactory.Regra(RegraRemanejamentoCodigo.Cascata, "a"), "AC",
             [DestinoRemanejamento.Criar("LB_PPI", 1, "LB_Q").Value!]).Value!;

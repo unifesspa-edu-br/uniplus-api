@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
+using System.Text.Json;
+
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
@@ -85,4 +87,41 @@ internal static class ApoioDosDocumentosExigidosDoProcessoSeletivo
 
     internal static void ExigirFolhas(ProcessoSeletivo processo, params DocumentoExigido[] exigencias) =>
         DefinirFolhas(processo, exigencias).IsSuccess.Should().BeTrue();
+
+    internal static CondicaoGatilho GatilhoFaixaEtaria() =>
+        CondicaoGatilho.Criar(0, "FAIXA_ETARIA", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!;
+
+    internal static DocumentoExigidoBaseLegal BaseLegalResolvida() => DocumentoExigidoBaseLegal.Criar(
+        "Lei 12.711/2012, art. 3º", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!;
+
+    internal static NoExigenciaBaseLegal BaseLegalDoGrupo(StatusBaseLegal status) =>
+        NoExigenciaBaseLegal.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.Federal, status, null).Value!;
+
+    internal static Guid FaseDoResultado(ProcessoSeletivo processo) => processo.CronogramaFases.Single(static f => !f.ColetaInscricao).Id;
+
+    /// <summary>O documento geral de teste, exigido na fase, com a obrigatoriedade, a consequência e as bases legais que o cenário pede.</summary>
+    internal static DocumentoExigido DocumentoGeral(
+        Guid faseId, bool obrigatorio, string? consequencia, IReadOnlyList<DocumentoExigidoBaseLegal>? basesLegais = null, FinalidadeFormulario? finalidade = null) =>
+        DocumentoExigido.Criar(
+            faseId, Guid.CreateVersion7(), "DOC_GERAL", "Documento geral", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
+            Aplicabilidade.Geral, obrigatorio, consequenciaIndeferimento: consequencia,
+            condicoes: [], basesLegais: basesLegais ?? [], idadeMaximaEmissao: null,
+            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: finalidade).Value!;
+
+    /// <summary>O documento obrigatório que só vale quando os gatilhos dados acontecem, exigido na fase, com base legal resolvida.</summary>
+    internal static DocumentoExigido DocumentoCondicional(Guid faseId, string codigo, string nome, string categoria, params CondicaoGatilho[] gatilhos) =>
+        DocumentoExigido.Criar(
+            faseId, Guid.CreateVersion7(), codigo, nome, categoria, ProtecaoDoDocumentoDeTeste.Pessoal,
+            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
+            condicoes: gatilhos, basesLegais: [BaseLegalResolvida()], idadeMaximaEmissao: null,
+            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
+
+    /// <summary>Grupo OU de um documento geral só, com a consequência dada e base legal resolvida, como única exigência do processo.</summary>
+    internal static void ExigirGrupoOuDeUmDocumento(ProcessoSeletivo processo, string consequencia)
+    {
+        NoExigencia folha = NoExigencia.CriarFolha(DocumentoGeral(FaseDoResultado(processo), obrigatorio: false, consequencia: null), 0).Value!;
+        NoExigencia grupo = NoExigencia.CriarGrupo(TipoNo.GrupoOu, 0, 1, consequencia, [BaseLegalDoGrupo(StatusBaseLegal.Resolvido)], [folha]).Value!;
+
+        processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
+    }
 }
