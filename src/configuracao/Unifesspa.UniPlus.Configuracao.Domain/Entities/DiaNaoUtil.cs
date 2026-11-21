@@ -30,26 +30,15 @@ public sealed class DiaNaoUtil : EntityBase
     {
     }
 
-    internal static DiaNaoUtil Abrir(
-        Guid calendarioDiasUteisId,
-        Abrangencia abrangencia,
-        string? municipioIbge,
-        string? municipioNome,
-        string? municipioUf,
-        string? uf,
-        DateOnly data,
-        string descricao)
+    internal static DiaNaoUtil Abrir(Guid calendarioDiasUteisId, DiaNaoUtilResolvido dia) => new()
     {
-        return new DiaNaoUtil
-        {
-            CalendarioDiasUteisId = calendarioDiasUteisId,
-            Abrangencia = abrangencia,
-            MunicipioIbge = municipioIbge,
-            MunicipioNome = municipioNome,
-            MunicipioUf = municipioUf,
-            Uf = uf,
-            Data = data,
-            Descricao = descricao,
-        };
-    }
+        CalendarioDiasUteisId = calendarioDiasUteisId,
+        Abrangencia = dia.Abrangencia,
+        MunicipioIbge = dia.MunicipioIbge,
+        MunicipioNome = dia.MunicipioNome,
+        MunicipioUf = dia.MunicipioUf,
+        Uf = dia.Uf,
+        Data = dia.Data,
+        Descricao = dia.Descricao,
+    };
 }
