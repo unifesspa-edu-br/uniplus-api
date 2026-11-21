@@ -65,11 +65,8 @@ public sealed class FormaDasRecusasAoCongelarTests
     public async Task Recopia_ChegaComOLoteInteiro()
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Preparo");
-        ServicosDoCongelamentoDeTeste servicos = ServicosDoCongelamentoDeTeste.Para(processo)
-            .ComCatalogoDeFatos(CatalogoComORgUfPorMunicipio())
-            .ComUnidades(ResolvedorDeUnidadeDeTeste.Com());
-        CatalogoVivo catalogo = await servicos.Catalogos().LerAsync(processo, CancellationToken.None);
-        Result<RecopiadoAoCongelar> esperado = await servicos.Recopia().RecopiarAsync(processo, catalogo, new PrimeiraPublicacao(), CancellationToken.None);
+        ServicosDoCongelamentoDeTeste servicos = ServicosComORgUfPorMunicipio(processo);
+        Result<RecopiadoAoCongelar> esperado = await RecopiaEsperadaAsync(servicos, processo);
 
         (Result resposta, IEnumerable<object> eventos) = await servicos.PublicarAsync(ComandoDePublicacao(processo));
 
@@ -181,6 +178,18 @@ public sealed class FormaDasRecusasAoCongelarTests
 
     private static PublicarProcessoSeletivoCommand ComandoDePublicacao(ProcessoSeletivo processo) =>
         new(processo.Id, "001/2026", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto());
+
+    private static ServicosDoCongelamentoDeTeste ServicosComORgUfPorMunicipio(ProcessoSeletivo processo) =>
+        ServicosDoCongelamentoDeTeste.Para(processo)
+            .ComCatalogoDeFatos(CatalogoComORgUfPorMunicipio())
+            .ComUnidades(ResolvedorDeUnidadeDeTeste.Com());
+
+    private static async Task<Result<RecopiadoAoCongelar>> RecopiaEsperadaAsync(ServicosDoCongelamentoDeTeste servicos, ProcessoSeletivo processo)
+    {
+        CatalogoVivo catalogo = await servicos.Catalogos().LerAsync(processo, CancellationToken.None);
+
+        return await servicos.Recopia().RecopiarAsync(processo, catalogo, new PrimeiraPublicacao(), CancellationToken.None);
+    }
 
     private static IFatoCandidatoReader CatalogoComORgUfPorMunicipio()
     {

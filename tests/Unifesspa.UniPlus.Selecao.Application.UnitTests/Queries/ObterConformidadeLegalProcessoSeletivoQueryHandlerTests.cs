@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries.CenarioDaConsultaDeConformidadeLegal;
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport.CenariosDeDefinirEtapas;
 
 /// <summary>
@@ -57,41 +58,20 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
         ConferirQueBateComOAvaliadorDireto(dto, processo, regraAprovada, regraReprovada);
     }
 
+    /// <summary>
+    /// Sem esta conferência, a consulta pública diria que o processo está conforme instantes antes de a publicação
+    /// recusá-lo por referência órfã: o avaliador é domínio puro e lê "modalidade não ofertada" — que aprova vazio —
+    /// onde na verdade há uma modalidade que não existe.
+    /// </summary>
     [Fact(DisplayName = "CA-16: regra que referencia cadastro inexistente aparece reprovada na consulta, não aprovada por vacuidade")]
     public async Task Consulta_ComRegraDeReferenciaOrfa_ReprovaComOMotivoDaOrfandade()
     {
-        // Sem esta conferência, a consulta pública diria que o processo está conforme
-        // instantes antes de a publicação recusá-lo por referência órfã: o avaliador é
-        // domínio puro e lê "modalidade não ofertada" — que aprova vazio — onde na verdade
-        // há uma modalidade que não existe.
         ProcessoSeletivo processo = ProcessoBase();
-        ObrigatoriedadeLegal regraOrfa = NovaRegra(
-            "CONSULTA-ORFA", new DocumentoObrigatorioParaModalidade("LB_PPl", "LAUDO_MEDICO"));
+        ObrigatoriedadeLegal regraOrfa = NovaRegra("CONSULTA-ORFA", new DocumentoObrigatorioParaModalidade("LB_PPl", "LAUDO_MEDICO"));
+        CenarioDaConsultaDeConformidadeLegal cenario = ComOProcesso(processo).ComRegrasVigentesEmQualquerData(regraOrfa).SemModalidadeNoCadastro();
 
-        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = Substitute.For<IObrigatoriedadeLegalRepository>();
-        obrigatoriedadeLegalRepository.ObterVigentesParaTipoProcessoAsync(
-            Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns([regraOrfa]);
-
-        IProcessoSeletivoRepository processoSeletivoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        processoSeletivoRepository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>())
-            .Returns(processo);
-
-        IModalidadeReader modalidadeReader = Substitute.For<IModalidadeReader>();
-        modalidadeReader.ObterVivaPorCodigoAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns((ModalidadeView?)null);
-
-        Result<ConformidadeLegalProcessoSeletivoDto> resultadoDaConsulta = await ObterConformidadeLegalProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeLegalProcessoSeletivoQuery(processo.Id, new DateOnly(2026, 1, 1)),
-            processoSeletivoRepository,
-            obrigatoriedadeLegalRepository,
-            modalidadeReader,
-            CadastrosVivos.TiposDocumento(),
-            CadastrosVivos.TiposEtapa(),
-            CadastrosVivos.TiposDeficiencia(),
-            CadastrosVivos.RegrasDesempate(),
-            new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(),
-            CancellationToken.None);
+        Result<ConformidadeLegalProcessoSeletivoDto> resultadoDaConsulta = await cenario.ConsultarAsync(
+            new ObterConformidadeLegalProcessoSeletivoQuery(processo.Id, new DateOnly(2026, 1, 1)));
 
         resultadoDaConsulta.IsSuccess.Should().BeTrue();
         RegraAvaliadaDto avaliada = resultadoDaConsulta.Value!.Regras.Should().ContainSingle().Which;
@@ -100,78 +80,41 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
         avaliada.Motivo.Should().Contain("LB_PPl", "o motivo tem de dizer qual referência não existe");
     }
 
+    /// <summary>
+    /// O certame de importação externa não tem fase de coleta e informa o período no ato. Se a consulta olhasse só o
+    /// cronograma, ficaria sem data, devolveria null, e o 422 de conformidade legal desses processos sairia sem
+    /// `obrigatoriedadesReprovadas` — em silêncio, que é o modo de falha que o BindRequired do endpoint documenta.
+    /// </summary>
     [Fact(DisplayName = "Sem fase que colete inscrição, a data vem do período informado no ato — o 422 não perde as regras reprovadas")]
     public async Task Consulta_SemFaseDeColeta_UsaOPeriodoInformado()
     {
-        // O certame de importação externa não tem fase de coleta e informa o período no ato. Se a
-        // consulta olhasse só o cronograma, ficaria sem data, devolveria null, e o 422 de
-        // conformidade legal desses processos sairia sem `obrigatoriedadesReprovadas` — em
-        // silêncio, que é o modo de falha que o BindRequired do endpoint documenta.
-        ProcessoSeletivo processo = ProcessoDeImportacaoExterna();
-        processo.CronogramaFases.Should().NotContain(
-            f => f.ColetaInscricao, "o cenário exige um processo sem fase de coleta");
-
+        ProcessoSeletivo processo = ProcessoDeImportacaoExternaSemFaseDeColeta();
         ObrigatoriedadeLegal regra = NovaRegra("CONSULTA-SEM-COLETA", new EtapaObrigatoria("PROVA_OBJETIVA"));
+        CenarioDaConsultaDeConformidadeLegal cenario = ComOProcesso(processo).ComRegrasVigentesEmQualquerData(regra);
 
-        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = Substitute.For<IObrigatoriedadeLegalRepository>();
-        obrigatoriedadeLegalRepository.ObterVigentesParaTipoProcessoAsync(
-            Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns([regra]);
-
-        IProcessoSeletivoRepository processoSeletivoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        processoSeletivoRepository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>())
-            .Returns(processo);
-
-        Result<ConformidadeLegalProcessoSeletivoDto> resultadoDaConsulta = await ObterConformidadeLegalProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeLegalProcessoSeletivoQuery(
-                processo.Id,
-                PeriodoInscricaoInformado: InstanteEmBelem.Em(2026, 1, 1)),
-            processoSeletivoRepository,
-            obrigatoriedadeLegalRepository,
-            CadastrosVivos.Modalidades(),
-            CadastrosVivos.TiposDocumento(),
-            CadastrosVivos.TiposEtapa(),
-            CadastrosVivos.TiposDeficiencia(),
-            CadastrosVivos.RegrasDesempate(),
-            new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(),
-            CancellationToken.None);
+        Result<ConformidadeLegalProcessoSeletivoDto> resultadoDaConsulta = await cenario.ConsultarAsync(ConsultaComPeriodoInformado(processo));
 
         resultadoDaConsulta.IsSuccess.Should().BeTrue(
             "sem a data do ato a consulta recusaria e o 422 perderia o diagnóstico");
         resultadoDaConsulta.Value!.DataReferencia.Should().Be(new DateOnly(2026, 1, 1), "o dia sai do instante informado, no fuso institucional");
         resultadoDaConsulta.Value!.Regras.Should().ContainSingle();
-
-        await obrigatoriedadeLegalRepository.Received(1).ObterVigentesParaTipoProcessoAsync(
+        await cenario.Obrigatoriedades.Received(1).ObterVigentesParaTipoProcessoAsync(
             Arg.Any<string>(), new DateOnly(2026, 1, 1), Arg.Any<CancellationToken>());
     }
 
+    /// <summary>
+    /// O fuso irresolvível é defeito de instalação, mapeado para 500 pelos gates de publicação. Se a consulta o
+    /// convertesse em recusa de domínio, o endpoint devolveria 422 — pediria ao operador que informasse algo, e
+    /// esconderia a configuração quebrada que ela deveria antecipar. A origem é importada porque é o ramo que chega
+    /// a consultar o fuso: a inscrição própria sem fase de coleta é recusada antes, pela verificação que emite o código primeiro.
+    /// </summary>
     [Fact(DisplayName = "Fuso irresolvível propaga como defeito de instalação, e não como processo inexistente")]
     public async Task Consulta_ComFusoIrresolvivel_PropagaAFalha()
     {
-        // O fuso irresolvível é defeito de instalação, mapeado para 500 pelos gates de publicação.
-        // Se a consulta o convertesse em recusa de domínio, o endpoint devolveria 422 — pediria ao
-        // operador que informasse algo, e esconderia a configuração quebrada que ela deveria antecipar.
-        // Origem importada: é o ramo que chega a consultar o fuso, porque a inscrição própria sem
-        // fase de coleta é recusada antes, pelo código que o gate emite primeiro.
         ProcessoSeletivo processo = ProcessoDeImportacaoExterna();
+        CenarioDaConsultaDeConformidadeLegal cenario = ComOProcesso(processo).ComFusoInstitucionalIndisponivel();
 
-        IProcessoSeletivoRepository processoSeletivoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        processoSeletivoRepository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>())
-            .Returns(processo);
-
-        Func<Task> consulta = () => ObterConformidadeLegalProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeLegalProcessoSeletivoQuery(
-                processo.Id,
-                PeriodoInscricaoInformado: InstanteEmBelem.Em(2026, 1, 1)),
-            processoSeletivoRepository,
-            Substitute.For<IObrigatoriedadeLegalRepository>(),
-            CadastrosVivos.Modalidades(),
-            CadastrosVivos.TiposDocumento(),
-            CadastrosVivos.TiposEtapa(),
-            CadastrosVivos.TiposDeficiencia(),
-            CadastrosVivos.RegrasDesempate(),
-            new ResolvedorFusoIndisponivelDeTeste(), CadastrosVivos.CatalogoDeFatos(),
-            CancellationToken.None);
+        Func<Task> consulta = () => cenario.ConsultarAsync(ConsultaComPeriodoInformado(processo));
 
         await consulta.Should().ThrowAsync<InvalidOperationException>(
             "404 diria que o processo não existe, quando o que falta é a base de fusos do ambiente");
@@ -180,99 +123,54 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
     [Fact(DisplayName = "Processo inexistente recusa com NaoEncontrado (404), sem consultar o catálogo de obrigatoriedades")]
     public async Task ProcessoInexistente_RecusaComNaoEncontrado()
     {
-        IProcessoSeletivoRepository processoSeletivoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        processoSeletivoRepository.ObterComConfiguracaoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns((ProcessoSeletivo?)null);
-        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = Substitute.For<IObrigatoriedadeLegalRepository>();
+        CenarioDaConsultaDeConformidadeLegal cenario = SemNenhumProcesso();
 
-        Result<ConformidadeLegalProcessoSeletivoDto> resultadoDaConsulta = await ObterConformidadeLegalProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeLegalProcessoSeletivoQuery(Guid.CreateVersion7(), new DateOnly(2026, 1, 1)),
-            processoSeletivoRepository,
-            obrigatoriedadeLegalRepository,
-            CadastrosVivos.Modalidades(),
-            CadastrosVivos.TiposDocumento(),
-            CadastrosVivos.TiposEtapa(),
-            CadastrosVivos.TiposDeficiencia(),
-            CadastrosVivos.RegrasDesempate(),
-            new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(),
-            CancellationToken.None);
+        Result<ConformidadeLegalProcessoSeletivoDto> resultadoDaConsulta = await cenario.ConsultarAsync(
+            new ObterConformidadeLegalProcessoSeletivoQuery(Guid.CreateVersion7(), new DateOnly(2026, 1, 1)));
 
         resultadoDaConsulta.IsFailure.Should().BeTrue();
         resultadoDaConsulta.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado",
             "404 é para o processo que não existe — é a ÚNICA condição que o merece (issue #1456)");
-        _ = await obrigatoriedadeLegalRepository.DidNotReceive().ObterVigentesParaTipoProcessoAsync(
+        _ = await cenario.Obrigatoriedades.DidNotReceive().ObterVigentesParaTipoProcessoAsync(
             Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>());
     }
 
+    /// <summary>
+    /// O certame de origem importada chega à Revisão sem fase de coleta e com o período do ato ainda em branco: não há
+    /// de onde derivar o dia. Traduzir isso em `null` dizia ao endpoint "o processo não existe" (404), e a tela não
+    /// tinha como distinguir a pendência de uma falha de rede — o campo de período fica atrás do erro, e o processo
+    /// vira impublicável.
+    /// </summary>
     [Fact(DisplayName = "#1456 — sem fase de coleta e sem período informado, recusa com o código do gate (422), nunca com 404")]
     public async Task SemFaseDeColetaESemPeriodo_RecusaComOCodigoDoGate()
     {
-        // O certame de origem importada chega à Revisão sem fase de coleta e com o período do ato
-        // ainda em branco: não há de onde derivar o dia. Traduzir isso em `null` dizia ao endpoint
-        // "o processo não existe" (404), e a tela não tinha como distinguir a pendência de uma
-        // falha de rede — o campo de período fica atrás do erro, e o processo vira impublicável.
-        ProcessoSeletivo processo = ProcessoDeImportacaoExterna();
-        processo.CronogramaFases.Should().NotContain(
-            f => f.ColetaInscricao, "o cenário exige um processo sem fase de coleta");
+        ProcessoSeletivo processo = ProcessoDeImportacaoExternaSemFaseDeColeta();
+        CenarioDaConsultaDeConformidadeLegal cenario = ComOProcesso(processo);
 
-        IProcessoSeletivoRepository processoSeletivoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        processoSeletivoRepository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>())
-            .Returns(processo);
-        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = Substitute.For<IObrigatoriedadeLegalRepository>();
-
-        Result<ConformidadeLegalProcessoSeletivoDto> resultadoDaConsulta =
-            await ObterConformidadeLegalProcessoSeletivoQueryHandler.Handle(
-                new ObterConformidadeLegalProcessoSeletivoQuery(processo.Id),
-                processoSeletivoRepository,
-                obrigatoriedadeLegalRepository,
-                CadastrosVivos.Modalidades(),
-                CadastrosVivos.TiposDocumento(),
-                CadastrosVivos.TiposEtapa(),
-                CadastrosVivos.TiposDeficiencia(),
-                CadastrosVivos.RegrasDesempate(),
-                new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(),
-                CancellationToken.None);
+        Result<ConformidadeLegalProcessoSeletivoDto> resultadoDaConsulta = await cenario.ConsultarAsync(
+            new ObterConformidadeLegalProcessoSeletivoQuery(processo.Id));
 
         resultadoDaConsulta.IsFailure.Should().BeTrue();
         resultadoDaConsulta.Error!.Code.Should().Be(
             "ProcessoSeletivo.PeriodoInscricaoObrigatorioSemFaseDeColeta",
             "é o MESMO código que ResolucaoDoPeriodoDeInscricao devolve no gate — o preflight espelha a recusa, não inventa a sua");
-
-        _ = await obrigatoriedadeLegalRepository.DidNotReceive().ObterVigentesParaTipoProcessoAsync(
+        _ = await cenario.Obrigatoriedades.DidNotReceive().ObterVigentesParaTipoProcessoAsync(
             Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>());
     }
 
+    /// <summary>
+    /// A ordem das recusas é a da verificação, e não é detalhe de apresentação: `PendenciaDoCronograma` recusa este estado
+    /// (`ProcessoSeletivo.cs:2106-2110`) ANTES de a resolução do período ser consultada. Devolver o código do período
+    /// mandaria o operador preencher um campo no ato, quando o que falta é CRIAR a fase que coleta inscrição no
+    /// cronograma. A consulta leva um período informado, que neste ramo a verificação nem chega a olhar.
+    /// </summary>
     [Fact(DisplayName = "#1456 — inscrição própria sem fase que colete recusa com InscricaoPropriaSemFaseDeColeta, e não com o do período")]
     public async Task InscricaoPropriaSemFaseDeColeta_RecusaComOCodigoQueOGateEmitePrimeiro()
     {
-        // A ordem das recusas é a do gate, e não é detalhe de apresentação: `PendenciaDoCronograma`
-        // recusa este estado (`ProcessoSeletivo.cs:2106-2110`) ANTES de a resolução do período ser
-        // consultada. Devolver o código do período mandaria o operador preencher um campo no ato,
-        // quando o que falta é CRIAR a fase que coleta inscrição no cronograma.
-        ProcessoSeletivo processo = ProcessoBase();
-        processo.OrigemCandidatos.Should().Be(OrigemCandidatos.InscricaoPropria);
-        processo.CronogramaFases.Should().NotContain(f => f.ColetaInscricao);
+        ProcessoSeletivo processo = ProcessoDeInscricaoPropriaSemFaseDeColeta();
 
-        IProcessoSeletivoRepository processoSeletivoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        processoSeletivoRepository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>())
-            .Returns(processo);
-        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = Substitute.For<IObrigatoriedadeLegalRepository>();
-
-        Result<ConformidadeLegalProcessoSeletivoDto> resultadoDaConsulta =
-            await ObterConformidadeLegalProcessoSeletivoQueryHandler.Handle(
-                // Mesmo com um período informado — que neste ramo o gate nem chega a olhar.
-                new ObterConformidadeLegalProcessoSeletivoQuery(
-                    processo.Id,
-                    PeriodoInscricaoInformado: InstanteEmBelem.Em(2026, 1, 1)),
-                processoSeletivoRepository,
-                obrigatoriedadeLegalRepository,
-                CadastrosVivos.Modalidades(),
-                CadastrosVivos.TiposDocumento(),
-                CadastrosVivos.TiposEtapa(),
-                CadastrosVivos.TiposDeficiencia(),
-                CadastrosVivos.RegrasDesempate(),
-                new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(),
-                CancellationToken.None);
+        Result<ConformidadeLegalProcessoSeletivoDto> resultadoDaConsulta = await ComOProcesso(processo)
+            .ConsultarAsync(ConsultaComPeriodoInformado(processo));
 
         resultadoDaConsulta.IsFailure.Should().BeTrue();
         resultadoDaConsulta.Error!.Code.Should().Be(
@@ -335,23 +233,11 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
             "o mesmo código que ProcessoSeletivo.Publicar recusa — a pendência é da fase, não do período do ato");
     }
 
-    private static async Task<Result<ConformidadeLegalProcessoSeletivoDto>> ConsultarAsync(ProcessoSeletivo processo)
-    {
-        IProcessoSeletivoRepository processoSeletivoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        processoSeletivoRepository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>())
-            .Returns(processo);
-        return await ObterConformidadeLegalProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeLegalProcessoSeletivoQuery(processo.Id),
-            processoSeletivoRepository,
-            Substitute.For<IObrigatoriedadeLegalRepository>(),
-            CadastrosVivos.Modalidades(),
-            CadastrosVivos.TiposDocumento(),
-            CadastrosVivos.TiposEtapa(),
-            CadastrosVivos.TiposDeficiencia(),
-            CadastrosVivos.RegrasDesempate(),
-            new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(),
-            CancellationToken.None);
-    }
+    private static Task<Result<ConformidadeLegalProcessoSeletivoDto>> ConsultarAsync(ProcessoSeletivo processo) =>
+        ComOProcesso(processo).ConsultarAsync(new ObterConformidadeLegalProcessoSeletivoQuery(processo.Id));
+
+    private static ObterConformidadeLegalProcessoSeletivoQuery ConsultaComPeriodoInformado(ProcessoSeletivo processo) =>
+        new(processo.Id, PeriodoInscricaoInformado: InstanteEmBelem.Em(2026, 1, 1));
 
     private static ProcessoSeletivo ProcessoBase() =>
         ProcessoSeletivo.Criar(
@@ -370,7 +256,24 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
-    /// <summary>Identidades derivadas das próprias exigências — estado sem renomeação nem reciclagem.</summary>
+    private static ProcessoSeletivo ProcessoDeImportacaoExternaSemFaseDeColeta()
+    {
+        ProcessoSeletivo processo = ProcessoDeImportacaoExterna();
+        processo.CronogramaFases.Should().NotContain(
+            f => f.ColetaInscricao, "o cenário exige um processo sem fase de coleta");
+
+        return processo;
+    }
+
+    private static ProcessoSeletivo ProcessoDeInscricaoPropriaSemFaseDeColeta()
+    {
+        ProcessoSeletivo processo = ProcessoBase();
+        processo.OrigemCandidatos.Should().Be(OrigemCandidatos.InscricaoPropria);
+        processo.CronogramaFases.Should().NotContain(f => f.ColetaInscricao);
+
+        return processo;
+    }
+
     /// <summary>
     /// Cadastro vivo deduzido do próprio processo: cada código resolve para a identidade
     /// que o processo congelou — o caminho feliz, em que regra e processo apontam para o
@@ -398,35 +301,10 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
             .ToDictionary(g => g.Key, g => origemDe(g.First()), StringComparer.Ordinal);
 
 
-    private static IObrigatoriedadeLegalRepository RepositorioComAsRegrasVigentes(DateOnly dataDeCorte, ObrigatoriedadeLegal[] regras)
-    {
-        IObrigatoriedadeLegalRepository repositorio = Substitute.For<IObrigatoriedadeLegalRepository>();
-        repositorio.ObterVigentesParaTipoProcessoAsync(Arg.Any<string>(), dataDeCorte, Arg.Any<CancellationToken>()).Returns(regras);
-        return repositorio;
-    }
-
-    private static IProcessoSeletivoRepository RepositorioQueDevolveOProcesso(ProcessoSeletivo processo)
-    {
-        IProcessoSeletivoRepository repositorio = Substitute.For<IProcessoSeletivoRepository>();
-        repositorio.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-        return repositorio;
-    }
-
     private static Task<Result<ConformidadeLegalProcessoSeletivoDto>> ConsultarAsync(
-        ProcessoSeletivo processo, DateOnly dataDeCorte, params ObrigatoriedadeLegal[] regras)
-    {
-        return ObterConformidadeLegalProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeLegalProcessoSeletivoQuery(processo.Id, dataDeCorte),
-            RepositorioQueDevolveOProcesso(processo),
-            RepositorioComAsRegrasVigentes(dataDeCorte, regras),
-            CadastrosVivos.Modalidades(),
-            CadastrosVivos.TiposDocumento(),
-            CadastrosVivos.TiposEtapa(),
-            CadastrosVivos.TiposDeficiencia(),
-            CadastrosVivos.RegrasDesempate(),
-            new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(),
-            CancellationToken.None);
-    }
+        ProcessoSeletivo processo, DateOnly dataDeCorte, params ObrigatoriedadeLegal[] regras) =>
+        ComOProcesso(processo).ComRegrasVigentesNaDataDeCorte(dataDeCorte, regras)
+            .ConsultarAsync(new ObterConformidadeLegalProcessoSeletivoQuery(processo.Id, dataDeCorte));
 
     private static void ConferirMotivosExpostos(ConformidadeLegalProcessoSeletivoDto dto)
     {
