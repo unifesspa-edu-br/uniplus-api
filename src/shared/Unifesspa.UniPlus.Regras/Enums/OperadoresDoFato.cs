@@ -16,7 +16,10 @@ public static class OperadoresDoFato
 
     private static readonly Operador[] Categorico = [Operador.Igual, Operador.Diferente, Operador.Em, Operador.NaoEm];
 
-    /// <summary>Os operadores que o domínio admite, na ordem em que a matriz os lista, qualquer que seja a cardinalidade.</summary>
+    /// <summary>
+    /// Os operadores que o domínio admite, na ordem em que a tela os oferece (o primeiro é o padrão da condição nova),
+    /// qualquer que seja a cardinalidade.
+    /// </summary>
     public static IReadOnlyList<Operador> Admitidos(TipoDominioFato dominio) => dominio switch
     {
         TipoDominioFato.Booleano => Booleano,
@@ -26,7 +29,9 @@ public static class OperadoresDoFato
     };
 
     /// <summary>
-    /// Os operadores que o fato admite: os do domínio, ou nenhum quando o fato não categórico declara mais de um valor.
+    /// Os operadores que uma condição pode usar sobre o fato, na ordem em que a tela os oferece; o primeiro é o
+    /// padrão da condição nova. Nenhum quando o fato não é citável em regra (texto, data, endereço) ou quando não
+    /// é categórico e declara mais de um valor.
     /// </summary>
     public static IReadOnlyList<Operador> Admitidos(TipoDominioFato dominio, CardinalidadeDoFato cardinalidade) =>
         cardinalidade == CardinalidadeDoFato.Conjunto && !EhCategorico(dominio) ? [] : Admitidos(dominio);

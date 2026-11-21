@@ -4,7 +4,9 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Persistence;
+using Unifesspa.UniPlus.Configuracao.Application.Queries.FatosCandidato;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
@@ -50,35 +52,16 @@ public sealed class FatoCandidatoLeituraTests
     public async Task Reader_Lista_OrdenadoPorCodigo()
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
-        var reader = new FatoCandidatoReader(ctx);
 
         // Os fatos de sistema entre os listados: o catálogo também tem fatos do administrador semeados.
         IReadOnlyList<FatoCandidatoView> views =
-            [.. (await reader.ListarAsync()).Where(static v => FatoCandidatoSeed.Itens.Any(i => i.Codigo == v.Codigo))];
+            [.. (await new FatoCandidatoReader(ctx).ListarAsync()).Where(static v => FatoCandidatoSeed.Itens.Any(i => i.Codigo == v.Codigo))];
 
         views.Should().HaveCount(58);
         views.Select(v => v.Codigo).Should().BeInAscendingOrder(StringComparer.Ordinal);
-
-        FatoCandidatoView corRaca = views.Single(v => v.Codigo == "COR_RACA");
-        corRaca.Dominio.Should().Be("CATEGORICO");
-        corRaca.Origem.Should().Be("DECLARADO");
-        corRaca.Cardinalidade.Should().Be("ESCALAR");
-        corRaca.PontoResolucao.Should().Be("INSCRICAO");
-        corRaca.Binding.Should().Be("CAMPO_FORMULARIO:COR_RACA");
-        // A view projeta os códigos dos valores declarados em ValoresDominio, que o consumidor
-        // cross-módulo (PredicadoDnfValidador) usa como domínio do categórico estático.
-        corRaca.ValoresDominio.Should().Equal("BRANCA", "PRETA", "PARDA", "AMARELA", "INDIGENA", "NAO_INFORMADO");
-        corRaca.ValoresDominioDeclarados.Should().NotBeNull().And.HaveCount(6);
-        corRaca.ValoresDominioDeclarados!.Select(v => v.Codigo).Should().Contain("PRETA");
-
-        FatoCandidatoView faixaEtaria = views.Single(v => v.Codigo == "FAIXA_ETARIA");
-        faixaEtaria.Nome.Should().Be("Idade", "o comprovante mostra a idade em anos, com o rótulo do catálogo");
-        faixaEtaria.Origem.Should().Be("DERIVADO");
-        faixaEtaria.Binding.Should().Be("ATRIBUTO_CANDIDATO:FAIXA_ETARIA");
-        faixaEtaria.ValoresDominioDeclarados.Should().BeNull();
-
-        FatoCandidatoView modalidade = views.Single(v => v.Codigo == "MODALIDADE");
-        modalidade.ValoresDominioDeclarados.Should().BeNull("MODALIDADE é escopo-processo, sem FatoValorDominio filhos");
+        ConferirCorRaca(views.Single(v => v.Codigo == "COR_RACA"));
+        ConferirFaixaEtaria(views.Single(v => v.Codigo == "FAIXA_ETARIA"));
+        views.Single(v => v.Codigo == "MODALIDADE").ValoresDominioDeclarados.Should().BeNull("MODALIDADE é escopo-processo, sem FatoValorDominio filhos");
     }
 
     [Fact(DisplayName = "Reader resolve por chave natural e devolve null para código inexistente")]
@@ -95,5 +78,55 @@ public sealed class FatoCandidatoLeituraTests
 
         FatoCandidatoView? inexistente = await reader.ObterPorCodigoAsync("NAO_EXISTE");
         inexistente.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "A leitura do catálogo para a consulta pública devolve a mesma view do leitor da Seleção, com os operadores do fato")]
+    public async Task LeitorDoCatalogo_DevolveAViewEOsOperadoresDoFato()
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+        var reader = new FatoCandidatoReader(ctx);
+
+        IReadOnlyList<FatoDoCatalogoDto> doCatalogo = await ((IFatoCandidatoDoCatalogoReader)reader).ListarAsync();
+
+        IReadOnlyList<FatoCandidatoView> views = await reader.ListarAsync();
+        doCatalogo.Select(static f => f.Fato).Should().BeEquivalentTo(views, options => options.WithStrictOrdering());
+        FatoDoCatalogoDto corRaca = doCatalogo.Single(static f => f.Fato.Codigo == "COR_RACA");
+        corRaca.OperadoresAdmitidos.Select(static o => o.Codigo).Should().Equal("IGUAL", "DIFERENTE", "EM", "NAO_EM");
+    }
+
+    [Fact(DisplayName = "A leitura do catálogo para a consulta pública resolve por código e devolve null para código inexistente")]
+    public async Task LeitorDoCatalogo_ObterPorCodigo_ResolveOuNull()
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+        IFatoCandidatoDoCatalogoReader reader = new FatoCandidatoReader(ctx);
+
+        FatoDoCatalogoDto? sexo = await reader.ObterPorCodigoAsync("SEXO");
+
+        sexo.Should().NotBeNull();
+        sexo!.Fato.Codigo.Should().Be("SEXO");
+        sexo.OperadoresAdmitidos.Should().NotBeEmpty();
+        (await reader.ObterPorCodigoAsync("NAO_EXISTE")).Should().BeNull();
+    }
+
+    private static void ConferirCorRaca(FatoCandidatoView corRaca)
+    {
+        corRaca.Dominio.Should().Be("CATEGORICO");
+        corRaca.Origem.Should().Be("DECLARADO");
+        corRaca.Cardinalidade.Should().Be("ESCALAR");
+        corRaca.PontoResolucao.Should().Be("INSCRICAO");
+        corRaca.Binding.Should().Be("CAMPO_FORMULARIO:COR_RACA");
+        // A view projeta os códigos dos valores declarados em ValoresDominio, que o consumidor
+        // cross-módulo (PredicadoDnfValidador) usa como domínio do categórico estático.
+        corRaca.ValoresDominio.Should().Equal("BRANCA", "PRETA", "PARDA", "AMARELA", "INDIGENA", "NAO_INFORMADO");
+        corRaca.ValoresDominioDeclarados.Should().NotBeNull().And.HaveCount(6);
+        corRaca.ValoresDominioDeclarados!.Select(v => v.Codigo).Should().Contain("PRETA");
+    }
+
+    private static void ConferirFaixaEtaria(FatoCandidatoView faixaEtaria)
+    {
+        faixaEtaria.Nome.Should().Be("Idade", "o comprovante mostra a idade em anos, com o rótulo do catálogo");
+        faixaEtaria.Origem.Should().Be("DERIVADO");
+        faixaEtaria.Binding.Should().Be("ATRIBUTO_CANDIDATO:FAIXA_ETARIA");
+        faixaEtaria.ValoresDominioDeclarados.Should().BeNull();
     }
 }

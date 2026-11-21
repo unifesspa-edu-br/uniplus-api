@@ -11,7 +11,6 @@ using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
 using Unifesspa.UniPlus.Configuracao.Application.Queries.FatosCandidato;
 using Unifesspa.UniPlus.Configuracao.Application.Queries.ProtecaoDoCatalogo;
-using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
@@ -46,13 +45,14 @@ public sealed class FatosCandidatoController : ControllerBase
     }
 
     /// <summary>
-    /// Lista o catálogo de fatos do candidato, ordenado por código. É de baixo volume, portanto não
-    /// paginado; a manutenção tem lista própria, paginada e filtrável.
+    /// Lista o catálogo de fatos do candidato, ordenado por código, cada fato com os operadores que uma condição
+    /// pode usar sobre ele. É de baixo volume, portanto não paginado; a manutenção tem lista própria, paginada e
+    /// filtrável.
     /// </summary>
     [HttpGet("fatos-candidato")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "fato-candidato", Versions = [1])]
-    [ProducesResponseType(typeof(IEnumerable<FatoCandidatoView>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<FatoDoCatalogoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> Listar(CancellationToken cancellationToken)
     {
@@ -70,12 +70,12 @@ public sealed class FatosCandidatoController : ControllerBase
     [HttpGet("fatos-candidato/{codigo}")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "fato-candidato", Versions = [1])]
-    [ProducesResponseType(typeof(FatoCandidatoView), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(FatoDoCatalogoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterPorCodigo(string codigo, CancellationToken cancellationToken)
     {
-        FatoCandidatoView? fato = await _queryBus
+        FatoDoCatalogoDto? fato = await _queryBus
             .Send(new ObterFatoCandidatoPorCodigoQuery(codigo), cancellationToken)
             .ConfigureAwait(false);
 

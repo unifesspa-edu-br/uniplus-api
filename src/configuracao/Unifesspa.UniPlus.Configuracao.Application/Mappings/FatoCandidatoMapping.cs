@@ -1,13 +1,9 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Mappings;
 
-using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
-using Unifesspa.UniPlus.Configuracao.Domain.Services;
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
-using Unifesspa.UniPlus.Regras.Enums;
 
 internal static class FatoCandidatoMapping
 {
@@ -26,7 +22,7 @@ internal static class FatoCandidatoMapping
             fato.ValoresEmOrdem(),
             [.. fato.RegrasPadrao.Select(static r => new RegraPadraoDto(r.Contribui, r.Quando.ToDto()))],
             fato.Aprovacao.ToDto(),
-            fato.OperadoresAdmitidos());
+            OperadoresAdmitidosDoFato.De(fato));
     }
 
     private static List<FatoValorDominioDto> ValoresEmOrdem(this FatoCandidato fato) =>
@@ -34,16 +30,4 @@ internal static class FatoCandidatoMapping
             .OrderBy(static v => v.Ordem)
             .ThenBy(static v => v.Codigo, StringComparer.Ordinal)
             .Select(static v => new FatoValorDominioDto(v.Codigo, v.Descricao, v.Ordem, v.Ativo, v.Orientacao))];
-
-    private static List<CodigoComRotulo<Operador>> OperadoresAdmitidos(this FatoCandidato fato)
-    {
-        if (VocabularioDoCatalogo.TipoNoVocabulario(fato) is not { } dominio)
-        {
-            return [];
-        }
-
-        CardinalidadeDoFato cardinalidade = VocabularioDoCatalogo.CardinalidadeNoVocabulario(fato);
-        return [.. OperadoresDoFato.Admitidos(dominio, cardinalidade)
-            .Select(operador => CodigoComRotulo<Operador>.De(operador, OperadoresDoFato.Rotulo(operador, cardinalidade)))];
-    }
 }
