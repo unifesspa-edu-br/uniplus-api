@@ -1,0 +1,11 @@
+# Sobreposição do docker-compose.yml para gerar de novo a base local pronta (docs/setup-ambiente-local.md, "Gerar de novo
+# a base local"): o Postgres restaura só o Geo, o Keycloak e a API criam do zero o banco de cada um (o Keycloak importa o realm
+# e o ambiente-init cria as personas) e o MinIO começa vazio, sem os arquivos da geração anterior. Uso, na pasta docker, com nome
+# de projeto próprio para não apagar o seu ambiente de trabalho:
+#   docker compose -p base-local -f docker-compose.yml -f base-local/docker-compose.gerar-base-local.yml up -d --build
+services:
+  postgres:
+    environment:
+      RESTAURAR_KEYCLOAK_E_MONOLITO: "false"
+  minio-restaura:
+    command: ["true"]

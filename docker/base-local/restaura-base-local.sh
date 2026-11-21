@@ -32,8 +32,14 @@ restaurar() { # $1=banco $2=dump (arquivo ou diretório) $3...=opções extras d
     echo "[base-local] restaurando $banco"
     pg_restore -U "$usuario" -d "$banco" --clean --if-exists --exit-on-error "$@" "$dump"
 }
-restaurar keycloak /base-local/dumps/keycloak.dump --no-privileges --no-owner
-restaurar uniplus /base-local/dumps/uniplus.dump --no-privileges --no-owner
+# Só a geração de uma base nova (docker/base-local/docker-compose.gerar-base-local.yml) deixa de restaurar os dois bancos: o Keycloak e
+# o banco do monólito nascem do zero e são gravados juntos, porque as concessões guardam o id das contas do Keycloak.
+if [ "${RESTAURAR_KEYCLOAK_E_MONOLITO:-true}" = "true" ]; then
+    restaurar keycloak /base-local/dumps/keycloak.dump --no-privileges --no-owner
+    restaurar uniplus /base-local/dumps/uniplus.dump --no-privileges --no-owner
+else
+    echo "[base-local] bancos keycloak e uniplus não restaurados: o Keycloak e a API os criam do zero"
+fi
 tar xJf /base-local/geo/geo-api-database.tar.xz -C /tmp
 restaurar uniplus_geo /tmp/geo-api-database
 rm -rf /tmp/geo-api-database
