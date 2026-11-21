@@ -12,8 +12,10 @@ public static class TipoConceitoMapping
         ArgumentNullException.ThrowIfNull(tipo);
         bool numerico = tipo.Natureza == NaturezaConceito.Numerico;
         return new TipoConceitoDto(
-            tipo.Id, tipo.Codigo, tipo.Nome, tipo.Descricao, CodigoComRotulo<NaturezaConceito>.De(tipo.Natureza), tipo.Ativo,
-            numerico ? new EscalaNumericaDto(tipo.EscalaMinima!.Value, tipo.EscalaMaxima!.Value, tipo.CasasDecimais!.Value) : null,
-            numerico ? null : [.. tipo.Valores.Select(valor => new ValorCategoricoDto(valor.Codigo, valor.Rotulo, valor.ContaComoAprovacao))]);
+            tipo.Id, tipo.Codigo, tipo.Ativo,
+            new DefinicaoDoTipoConceitoDto(
+                tipo.Nome, tipo.Descricao, CodigoComRotulo<NaturezaConceito>.De(tipo.Natureza),
+                numerico ? new EscalaNumericaDto(tipo.EscalaMinima!.Value, tipo.EscalaMaxima!.Value, tipo.CasasDecimais!.Value) : null,
+                numerico ? null : [.. tipo.Valores.Select(valor => new ValorCategoricoDto(valor.Codigo, valor.Rotulo, valor.ContaComoAprovacao))]));
     }
 }

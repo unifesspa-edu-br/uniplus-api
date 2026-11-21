@@ -31,8 +31,8 @@ public sealed class TipoConceitoValidacaoEndpointTests
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await ErrosAsync(resposta)).Should().Equal(
-            ("nome", $"{Prefixo}nome_obrigatorio"),
-            ("numerico", $"{Prefixo}escala_numerica_obrigatoria"));
+            ("definicao.nome", $"{Prefixo}nome_obrigatorio"),
+            ("definicao.numerico", $"{Prefixo}escala_numerica_obrigatoria"));
     }
 
     [Fact(DisplayName = "POST de categórico com um só valor e sem nome devolve as duas violações em errors[]")]
@@ -45,8 +45,8 @@ public sealed class TipoConceitoValidacaoEndpointTests
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await ErrosAsync(resposta)).Should().Equal(
-            ("nome", $"{Prefixo}nome_obrigatorio"),
-            ("valores", $"{Prefixo}valores_categoricos_insuficientes"));
+            ("definicao.nome", $"{Prefixo}nome_obrigatorio"),
+            ("definicao.valores", $"{Prefixo}valores_categoricos_insuficientes"));
     }
 
     [Fact(DisplayName = "POST de categórico sem valores retorna 422 valores_categoricos_insuficientes")]
@@ -57,7 +57,7 @@ public sealed class TipoConceitoValidacaoEndpointTests
         using HttpResponseMessage resposta = await PostarAsync(client, Categorico().Sem("valores"));
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        (await ErrosAsync(resposta)).Should().Equal(("valores", $"{Prefixo}valores_categoricos_insuficientes"));
+        (await ErrosAsync(resposta)).Should().Equal(("definicao.valores", $"{Prefixo}valores_categoricos_insuficientes"));
     }
 
     [Fact(DisplayName = "POST de categórico com valor sem o campo contaComoAprovacao retorna 422 no campo do valor")]
@@ -69,17 +69,17 @@ public sealed class TipoConceitoValidacaoEndpointTests
         using HttpResponseMessage resposta = await PostarAsync(client, Categorico().Com("valores", valores));
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        (await ErrosAsync(resposta)).Should().Equal(("valores[1].contaComoAprovacao", $"{Prefixo}valor_categorico_conta_como_aprovacao_obrigatoria"));
+        (await ErrosAsync(resposta)).Should().Equal(("definicao.valores[1].contaComoAprovacao", $"{Prefixo}valor_categorico_conta_como_aprovacao_obrigatoria"));
     }
 
     [Theory(DisplayName = "POST com definição incoerente retorna 422 no campo da violação")]
-    [InlineData("natureza_desconhecida", "natureza", "natureza_invalida")]
-    [InlineData("escala_invertida", "numerico", "escala_numerica_invalida")]
-    [InlineData("casas_demais", "numerico.casasDecimais", "casas_decimais_invalidas")]
-    [InlineData("numerico_com_valores", "valores", "parametros_incompativeis_com_a_natureza")]
-    [InlineData("categorico_com_escala", "numerico", "parametros_incompativeis_com_a_natureza")]
-    [InlineData("codigo_de_valor_minusculo", "valores[0].codigo", "valor_categorico_codigo_invalido")]
-    [InlineData("codigo_de_valor_repetido", "valores[1].codigo", "valor_categorico_duplicado")]
+    [InlineData("natureza_desconhecida", "definicao.natureza", "natureza_invalida")]
+    [InlineData("escala_invertida", "definicao.numerico", "escala_numerica_invalida")]
+    [InlineData("casas_demais", "definicao.numerico.casasDecimais", "casas_decimais_invalidas")]
+    [InlineData("numerico_com_valores", "definicao.valores", "parametros_incompativeis_com_a_natureza")]
+    [InlineData("categorico_com_escala", "definicao.numerico", "parametros_incompativeis_com_a_natureza")]
+    [InlineData("codigo_de_valor_minusculo", "definicao.valores[0].codigo", "valor_categorico_codigo_invalido")]
+    [InlineData("codigo_de_valor_repetido", "definicao.valores[1].codigo", "valor_categorico_duplicado")]
     public async Task Criar_DefinicaoIncoerente_Retorna422(string caso, string campo, string codigo)
     {
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -100,7 +100,7 @@ public sealed class TipoConceitoValidacaoEndpointTests
             client, id, Numerico().Sem("codigo").Com("id", id).Sem("numerico"));
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        (await ErrosAsync(resposta)).Should().Equal(("numerico", $"{Prefixo}escala_numerica_obrigatoria"));
+        (await ErrosAsync(resposta)).Should().Equal(("definicao.numerico", $"{Prefixo}escala_numerica_obrigatoria"));
     }
 
     [Fact(DisplayName = "PUT inválido não altera o tipo gravado")]
@@ -114,7 +114,7 @@ public sealed class TipoConceitoValidacaoEndpointTests
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         using JsonDocument tipo = await LerAsync(await ObterAsync(client, id));
-        tipo.RootElement.GetProperty("nome").GetString().Should().Be("Nota da entrevista");
+        tipo.RootElement.GetProperty("definicao").GetProperty("nome").GetString().Should().Be("Nota da entrevista");
     }
 
     private static Dictionary<string, object?> CorpoIncoerente(string caso) => caso switch
@@ -122,8 +122,8 @@ public sealed class TipoConceitoValidacaoEndpointTests
         "natureza_desconhecida" => Numerico().Com("natureza", "textual"),
         "escala_invertida" => Numerico().Com("numerico", new { escalaMinima = 10m, escalaMaxima = 0m, casasDecimais = 2 }),
         "casas_demais" => Numerico().Com("numerico", new { escalaMinima = 0m, escalaMaxima = 10m, casasDecimais = 5 }),
-        "numerico_com_valores" => Numerico().Com("valores", Categorico()["valores"]),
-        "categorico_com_escala" => Categorico().Com("numerico", Numerico()["numerico"]),
+        "numerico_com_valores" => Numerico().Com("valores", DefinicaoDe(Categorico())["valores"]),
+        "categorico_com_escala" => Categorico().Com("numerico", DefinicaoDe(Numerico())["numerico"]),
         "codigo_de_valor_minusculo" => Categorico().Com("valores", ValoresCom("deferido", "INDEFERIDO")),
         "codigo_de_valor_repetido" => Categorico().Com("valores", ValoresCom("DEFERIDO", "DEFERIDO")),
         _ => throw new InvalidOperationException($"Caso de teste inesperado: {caso}"),

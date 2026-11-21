@@ -29,36 +29,39 @@ public sealed class TipoConceitoCommandJsonTests
         valor!.ContaComoAprovacao.Should().BeNull();
     }
 
-    [Fact(DisplayName = "JSON completo do tipo categórico desserializa na ordem dos valores")]
-    public void Criar_Completo_Desserializa()
-    {
-        const string json = """
+    private const string CategoricoCompleto = """
         {
-          "codigo": "PARECER", "nome": "Parecer", "natureza": "CATEGORICO", "numerico": null,
-          "valores": [
-            { "codigo": "B", "rotulo": "Beta", "contaComoAprovacao": false },
-            { "codigo": "A", "rotulo": "Alfa", "contaComoAprovacao": true }
-          ]
+          "codigo": "PARECER",
+          "definicao": {
+            "nome": "Parecer", "natureza": "CATEGORICO", "numerico": null,
+            "valores": [
+              { "codigo": "B", "rotulo": "Beta", "contaComoAprovacao": false },
+              { "codigo": "A", "rotulo": "Alfa", "contaComoAprovacao": true }
+            ]
+          }
         }
         """;
 
-        CriarTipoConceitoCommand? comando = JsonSerializer.Deserialize<CriarTipoConceitoCommand>(json, Options);
+    [Fact(DisplayName = "JSON completo do tipo categórico desserializa na ordem dos valores")]
+    public void Criar_Completo_Desserializa()
+    {
+        CriarTipoConceitoCommand? comando = JsonSerializer.Deserialize<CriarTipoConceitoCommand>(CategoricoCompleto, Options);
 
-        comando!.Valores!.Select(v => v.Codigo).Should().Equal("B", "A");
-        comando.Valores![1].ContaComoAprovacao.Should().BeTrue();
+        comando!.Definicao!.Valores!.Select(v => v.Codigo).Should().Equal("B", "A");
+        comando.Definicao.Valores![1].ContaComoAprovacao.Should().BeTrue();
     }
 
     [Fact(DisplayName = "JSON do tipo numérico desserializa a escala e deixa os valores nulos")]
     public void Criar_Numerico_Desserializa()
     {
         const string json = """
-        { "codigo": "NOTA", "nome": "Nota", "natureza": "NUMERICO",
-          "numerico": { "escalaMinima": 0, "escalaMaxima": 10, "casasDecimais": 2 }, "valores": null }
+        { "codigo": "NOTA", "definicao": { "nome": "Nota", "natureza": "NUMERICO",
+          "numerico": { "escalaMinima": 0, "escalaMaxima": 10, "casasDecimais": 2 }, "valores": null } }
         """;
 
         CriarTipoConceitoCommand? comando = JsonSerializer.Deserialize<CriarTipoConceitoCommand>(json, Options);
 
-        comando!.Numerico.Should().Be(new EscalaNumericaCommand(0m, 10m, 2));
-        comando.Valores.Should().BeNull();
+        comando!.Definicao!.Numerico.Should().Be(new EscalaNumericaCommand(0m, 10m, 2));
+        comando.Definicao.Valores.Should().BeNull();
     }
 }

@@ -10,7 +10,8 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
 /// <summary>
 /// Requisições ao catálogo de tipos de conceito pela porta pública. Os corpos são dicionários para o teste
-/// trocar ou tirar um campo sem montar outro tipo anônimo; sem <c>contaId</c>, o autor é o administrador dos testes.
+/// trocar ou tirar um campo sem montar outro tipo anônimo: <c>Com</c> e <c>Sem</c> agem na <c>definicao</c>, salvo
+/// <c>codigo</c> e <c>id</c>, que ficam no corpo. Sem <c>contaId</c>, o autor é o administrador dos testes.
 /// </summary>
 internal static class TiposConceitoHttpDeTeste
 {
@@ -22,37 +23,52 @@ internal static class TiposConceitoHttpDeTeste
     public static Dictionary<string, object?> Numerico(string? codigo = null) => new()
     {
         ["codigo"] = codigo ?? CodigoUnico(),
-        ["nome"] = "Nota da entrevista",
-        ["descricao"] = "Nota atribuída pela banca.",
-        ["natureza"] = "NUMERICO",
-        ["numerico"] = new { escalaMinima = 0m, escalaMaxima = 10m, casasDecimais = 2 },
+        ["definicao"] = new Dictionary<string, object?>
+        {
+            ["nome"] = "Nota da entrevista",
+            ["descricao"] = "Nota atribuída pela banca.",
+            ["natureza"] = "NUMERICO",
+            ["numerico"] = new { escalaMinima = 0m, escalaMaxima = 10m, casasDecimais = 2 },
+        },
     };
 
     public static Dictionary<string, object?> Categorico(string? codigo = null) => new()
     {
         ["codigo"] = codigo ?? CodigoUnico(),
-        ["nome"] = "Parecer da análise",
-        ["natureza"] = "CATEGORICO",
-        ["valores"] = new object[]
+        ["definicao"] = new Dictionary<string, object?>
         {
-            new { codigo = "INDEFERIDO", rotulo = "Indeferido", contaComoAprovacao = false },
-            new { codigo = "DEFERIDO", rotulo = "Deferido", contaComoAprovacao = true },
+            ["nome"] = "Parecer da análise",
+            ["natureza"] = "CATEGORICO",
+            ["valores"] = new object[]
+            {
+                new { codigo = "INDEFERIDO", rotulo = "Indeferido", contaComoAprovacao = false },
+                new { codigo = "DEFERIDO", rotulo = "Deferido", contaComoAprovacao = true },
+            },
         },
     };
+
+    /// <summary>Os campos da definição de um corpo montado por <see cref="Numerico"/> ou <see cref="Categorico"/>.</summary>
+    public static Dictionary<string, object?> DefinicaoDe(Dictionary<string, object?> corpo)
+    {
+        ArgumentNullException.ThrowIfNull(corpo);
+        return (Dictionary<string, object?>)corpo["definicao"]!;
+    }
 
     public static Dictionary<string, object?> Com(this Dictionary<string, object?> corpo, string campo, object? valor)
     {
         ArgumentNullException.ThrowIfNull(corpo);
-        corpo[campo] = valor;
+        (EhDoCorpo(campo) ? corpo : DefinicaoDe(corpo))[campo] = valor;
         return corpo;
     }
 
     public static Dictionary<string, object?> Sem(this Dictionary<string, object?> corpo, string campo)
     {
         ArgumentNullException.ThrowIfNull(corpo);
-        corpo.Remove(campo);
+        (EhDoCorpo(campo) ? corpo : DefinicaoDe(corpo)).Remove(campo);
         return corpo;
     }
+
+    private static bool EhDoCorpo(string campo) => campo is "codigo" or "id";
 
     public static HttpRequestMessage Autenticada(HttpMethod metodo, string rota, string? contaId = null)
     {

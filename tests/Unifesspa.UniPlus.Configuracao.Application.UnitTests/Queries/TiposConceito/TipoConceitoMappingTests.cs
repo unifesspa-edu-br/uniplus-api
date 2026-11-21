@@ -13,9 +13,9 @@ public sealed class TipoConceitoMappingTests
     {
         TipoConceitoDto dto = TiposConceitoDeTeste.Numerico().ToDto();
 
-        (dto.Natureza.Codigo, dto.Natureza.Rotulo).Should().Be(("NUMERICO", "Numérico"));
-        dto.Numerico.Should().Be(new EscalaNumericaDto(0m, 10m, 2));
-        dto.Valores.Should().BeNull();
+        (dto.Definicao.Natureza.Codigo, dto.Definicao.Natureza.Rotulo).Should().Be(("NUMERICO", "Numérico"));
+        dto.Definicao.Numerico.Should().Be(new EscalaNumericaDto(0m, 10m, 2));
+        dto.Definicao.Valores.Should().BeNull();
     }
 
     [Fact(DisplayName = "O DTO do tipo categórico traz os valores na ordem e nenhuma escala")]
@@ -23,9 +23,9 @@ public sealed class TipoConceitoMappingTests
     {
         TipoConceitoDto dto = TiposConceitoDeTeste.Categorico().ToDto();
 
-        (dto.Natureza.Codigo, dto.Natureza.Rotulo).Should().Be(("CATEGORICO", "Categórico"));
-        dto.Numerico.Should().BeNull();
-        dto.Valores.Should().Equal(new ValorCategoricoDto("DEFERIDO", "Deferido", true), new ValorCategoricoDto("INDEFERIDO", "Indeferido", false));
+        (dto.Definicao.Natureza.Codigo, dto.Definicao.Natureza.Rotulo).Should().Be(("CATEGORICO", "Categórico"));
+        dto.Definicao.Numerico.Should().BeNull();
+        dto.Definicao.Valores.Should().Equal(new ValorCategoricoDto("DEFERIDO", "Deferido", true), new ValorCategoricoDto("INDEFERIDO", "Indeferido", false));
     }
 
     [Fact(DisplayName = "O DTO expõe o código, o nome e a situação do tipo")]
@@ -33,6 +33,6 @@ public sealed class TipoConceitoMappingTests
     {
         TipoConceitoDto dto = TiposConceitoDeTeste.Numerico().ToDto();
 
-        (dto.Codigo, dto.Nome, dto.Ativo).Should().Be(("NOTA_ENTREVISTA", "Nota da entrevista", true));
+        (dto.Codigo, dto.Definicao.Nome, dto.Ativo).Should().Be(("NOTA_ENTREVISTA", "Nota da entrevista", true));
     }
 }

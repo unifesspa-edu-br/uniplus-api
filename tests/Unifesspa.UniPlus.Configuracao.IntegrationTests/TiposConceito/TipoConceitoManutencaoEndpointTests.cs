@@ -125,7 +125,7 @@ public sealed class TipoConceitoManutencaoEndpointTests
 
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
         using JsonDocument tipo = await LerAsync(await ObterAsync(client, id));
-        (tipo.RootElement.GetProperty("codigo").GetString(), tipo.RootElement.GetProperty("nome").GetString())
+        (tipo.RootElement.GetProperty("codigo").GetString(), tipo.RootElement.GetProperty("definicao").GetProperty("nome").GetString())
             .Should().Be((codigo, "Nota renomeada"));
     }
 
@@ -139,9 +139,10 @@ public sealed class TipoConceitoManutencaoEndpointTests
 
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
         using JsonDocument tipo = await LerAsync(await ObterAsync(client, id));
-        tipo.RootElement.GetProperty("natureza").GetProperty("codigo").GetString().Should().Be("CATEGORICO");
-        tipo.RootElement.GetProperty("valores").GetArrayLength().Should().Be(2);
-        Ausente(tipo.RootElement, "numerico").Should().BeTrue("a escala da natureza anterior é descartada");
+        JsonElement definicao = tipo.RootElement.GetProperty("definicao");
+        definicao.GetProperty("natureza").GetProperty("codigo").GetString().Should().Be("CATEGORICO");
+        definicao.GetProperty("valores").GetArrayLength().Should().Be(2);
+        Ausente(definicao, "numerico").Should().BeTrue("a escala da natureza anterior é descartada");
     }
 
     [Fact(DisplayName = "PUT com Id da URL diferente do Id do corpo retorna 400")]

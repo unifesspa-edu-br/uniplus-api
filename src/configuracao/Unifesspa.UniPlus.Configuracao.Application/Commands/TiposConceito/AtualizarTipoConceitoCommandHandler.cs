@@ -26,7 +26,7 @@ public static class AtualizarTipoConceitoCommandHandler
 
         Result<DefinicaoValidada> definicao = DefinicaoDoComando.De(command).Validar();
         return definicao.IsFailure
-            ? Result.ValidationFailure(definicao.Errors)
+            ? Result.ValidationFailure(DefinicaoDoComando.NoCaminhoDaDefinicao(definicao.Errors))
             : await Aplicar(command.Id, definicao.Value!, repository, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 
