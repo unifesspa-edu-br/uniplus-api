@@ -13,11 +13,11 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// podem decidir a posição antes do <c>Id</c>.
 /// </summary>
 /// <remarks>
-/// O motor de keyset ordena por propriedades do tipo que ele pagina, e a chave de
+/// A paginação por cursor ordena por propriedades do tipo cujos resultados ela apresenta, e a chave de
 /// ordenação alfabética do curso é propriedade sombra — invisível na entidade
 /// materializada. Projetar para esta linha de leitura resolve isso sem levar a coluna de
 /// ordenação para dentro do domínio, e ainda serve de ponto de continuação do cursor: a
-/// referência que o motor consome é uma instância dele com as colunas preenchidas.
+/// referência que a paginação usa é uma instância dele com as colunas preenchidas.
 /// </remarks>
 internal sealed class CursoOrdenado : IIdentificavel
 {
@@ -78,12 +78,12 @@ internal sealed record OfertaCursoOrdenada : IIdentificavel
 /// <remarks>
 /// <para>Os nomes dos campos são contrato público e vivem em
 /// <see cref="CamposOrdenacaoCurso"/> e <see cref="CamposOrdenacaoOfertaCurso"/>,
-/// visíveis à borda que valida o parâmetro e documenta a rota. O que mora aqui é o
-/// outro lado da ponte: a coluna que cada nome designa e como o valor dela vira
+/// usados na validação do parâmetro e na documentação da rota. Aqui são definidas
+/// as colunas correspondentes a cada nome e como o valor delas se torna
 /// texto no cursor. Um teste confere que os dois conjuntos coincidem, de
 /// modo que declarar um campo sem mapeá-lo — ou o contrário — quebra a suíte em vez
-/// de virar um 422 inexplicável em produção.</para>
-/// <para>Toda ordenação termina implicitamente pelo <c>Id</c>, que o motor
+/// de causar um erro 422 sem explicação em produção.</para>
+/// <para>Toda ordenação termina implicitamente pelo <c>Id</c>, que a paginação
 /// acrescenta. Por isso nenhum campo aqui precisa garantir unicidade sozinho.</para>
 /// </remarks>
 internal static class OrdenacaoDeCursos
@@ -166,16 +166,16 @@ internal static class OrdenacaoDeCursos
                 d => KeysetSortColumn<OfertaCursoOrdenada>.For(
                     CamposOrdenacaoOfertaCurso.RegimeDeFuncionamento,
                     o => o.RegimeDeFuncionamento,
-                    o => RegimesDeFuncionamento.ParaTokenCanonico(o.RegimeDeFuncionamento),
+                    o => o.RegimeDeFuncionamento.Codigo(),
                     d),
-                (oferta, parte) => oferta with { RegimeDeFuncionamento = RegimeDeFuncionamentoDoCursor(parte) }),
+                (oferta, parte) => oferta with { RegimeDeFuncionamento = CatalogoDe<RegimeDeFuncionamento>.Obter(parte) }),
             [CamposOrdenacaoOfertaCurso.RegimeDeTurno] = new(
                 d => KeysetSortColumn<OfertaCursoOrdenada>.For(
                     CamposOrdenacaoOfertaCurso.RegimeDeTurno,
                     o => o.RegimeDeTurno,
-                    o => RegimesDeTurno.ParaTokenCanonico(o.RegimeDeTurno),
+                    o => o.RegimeDeTurno.Codigo(),
                     d),
-                (oferta, parte) => oferta with { RegimeDeTurno = RegimeDeTurnoDoCursor(parte) }),
+                (oferta, parte) => oferta with { RegimeDeTurno = CatalogoDe<RegimeDeTurno>.Obter(parte) }),
             [CamposOrdenacaoOfertaCurso.CriadoEm] = new(
                 d => KeysetSortColumn<OfertaCursoOrdenada>.For(
                     CamposOrdenacaoOfertaCurso.CriadoEm, o => o.CriadoEm, o => ChaveDeInstante(o.CriadoEm), d),
@@ -226,16 +226,6 @@ internal static class OrdenacaoDeCursos
 
         return oferta;
     }
-
-    private static RegimeDeFuncionamento RegimeDeFuncionamentoDoCursor(string parte) =>
-        RegimesDeFuncionamento.TryAnalisar(parte, out RegimeDeFuncionamento regime)
-            ? regime
-            : default;
-
-    private static RegimeDeTurno RegimeDeTurnoDoCursor(string parte) =>
-        RegimesDeTurno.TryAnalisar(parte, out RegimeDeTurno turno)
-            ? turno
-            : default;
 
     private static Dictionary<string, string> ValoresPorCampo(
         IReadOnlyList<SortField> campos,

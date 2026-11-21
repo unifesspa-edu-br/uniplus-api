@@ -240,6 +240,33 @@ internal sealed class ApoioDosEndpointsDeOfertaCurso
             new DeclaracaoDaOfertaDeCurso(NovoCodigoDaOferta(), "REGULAR", "PRESENCIAL", "EXTENSIVO", "REGULAR", ["MATUTINO"])).Value!;
     }
 
+    internal static Dictionary<string, object?> CorpoDeAtualizacaoCom(Guid id, params (string Campo, object? Valor)[] ajustes)
+    {
+        Dictionary<string, object?> corpo = CorpoDeAtualizacao(id, NovoCodigoDaOferta());
+        foreach ((string campo, object? valor) in ajustes)
+        {
+            corpo[campo] = valor;
+        }
+
+        return corpo;
+    }
+
+    internal static IReadOnlyList<string?> CamposComErro(string corpo)
+    {
+        using JsonDocument problema = JsonDocument.Parse(corpo);
+
+        return [.. problema.RootElement.GetProperty("errors").EnumerateArray().Select(e => e.GetProperty("field").GetString())];
+    }
+
+    internal static async Task ConferirRecusaAsync(HttpResponseMessage resposta, string codigoPublicado, string campo)
+    {
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        string corpo = await resposta.Content.ReadAsStringAsync();
+        using JsonDocument problema = JsonDocument.Parse(corpo);
+        problema.RootElement.GetProperty("code").GetString().Should().Be(codigoPublicado);
+        CamposComErro(corpo).Should().Contain(campo);
+    }
+
     internal static string NovoCodigoDaOferta() => $"OFERTA_{Guid.CreateVersion7():N}".ToUpperInvariant();
 
     internal static async Task<HttpResponseMessage> EnviarPostAdmin(HttpClient client, object body)

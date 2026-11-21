@@ -168,9 +168,9 @@ public sealed class OfertaCursoCriacaoEndpointTests
         root.GetProperty("localOfertaId").GetGuid().Should().Be(dependencias.LocalOfertaId);
         root.GetProperty("programaDeOferta").GetProperty("codigo").GetString().Should().Be("REGULAR");
         root.GetProperty("formatoPedagogico").GetProperty("codigo").GetString().Should().Be("PRESENCIAL");
-        root.GetProperty("regimeDeFuncionamento").GetString().Should().Be("EXTENSIVO");
-        root.GetProperty("regimeDeTurno").GetString().Should().Be("INTEGRAL");
-        root.GetProperty("turnos").EnumerateArray().Select(t => t.GetString())
+        root.GetProperty("regimeDeFuncionamento").GetProperty("codigo").GetString().Should().Be("EXTENSIVO");
+        root.GetProperty("regimeDeTurno").GetProperty("codigo").GetString().Should().Be("INTEGRAL");
+        root.GetProperty("turnos").EnumerateArray().Select(t => t.GetProperty("codigo").GetString())
             .Should().Equal(["MATUTINO", "VESPERTINO"],
                 "a leitura devolve os turnos em ordem canônica, não na ordem enviada");
         root.GetProperty("eMecCodigo").GetString().Should().Be("123456");

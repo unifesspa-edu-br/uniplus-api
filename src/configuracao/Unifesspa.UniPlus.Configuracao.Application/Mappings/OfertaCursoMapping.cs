@@ -14,8 +14,8 @@ public static class OfertaCursoMapping
         return new OfertaCursoDto(
             oferta.Id, oferta.Codigo, oferta.CursoId, oferta.LocalOfertaId, ParaDto(oferta.UnidadeOfertante),
             CodigoComRotulo<ProgramaDeOferta>.De(oferta.ProgramaDeOferta), CodigoComRotulo<FormatoPedagogico>.De(oferta.FormatoPedagogico),
-            RegimesDeFuncionamento.ParaTokenCanonico(oferta.RegimeDeFuncionamento), RegimesDeTurno.ParaTokenCanonico(oferta.RegimeDeTurno),
-            [.. TurnosOferta.OrdenarCanonicamente(oferta.Turnos).Select(TurnosOferta.ParaTokenCanonico)],
+            CodigoComRotulo<RegimeDeFuncionamento>.De(oferta.RegimeDeFuncionamento), CodigoComRotulo<RegimeDeTurno>.De(oferta.RegimeDeTurno),
+            [.. TurnosOferta.OrdenarCanonicamente(oferta.Turnos).Select(CodigoComRotulo<TurnoOferta>.De)],
             oferta.EMecCodigo, oferta.CodigoSga, oferta.VagasAnuaisAutorizadas, oferta.BaseLegal, oferta.AtoAutorizacaoMec, oferta.CreatedAt);
     }
 

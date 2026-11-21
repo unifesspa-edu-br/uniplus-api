@@ -12,7 +12,7 @@ using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Entities.MontagemDa
 
 public sealed class OfertaCursoFuncionamentoTests
 {
-    [Theory(DisplayName = "Os três tokens canônicos de regime de funcionamento são aceitos")]
+    [Theory(DisplayName = "Os três códigos de regime de funcionamento são aceitos")]
     [InlineData("EXTENSIVO", "REGULAR", new[] { "MATUTINO" }, RegimeDeFuncionamento.Extensivo)]
     [InlineData("EXTENSIVO", "INTEGRAL", new[] { "MATUTINO", "VESPERTINO" }, RegimeDeFuncionamento.Extensivo)]
     [InlineData("ALTERNANCIA_PEDAGOGICA", "REGULAR", new[] { "MATUTINO" }, RegimeDeFuncionamento.AlternanciaPedagogica)]
@@ -41,9 +41,9 @@ public sealed class OfertaCursoFuncionamentoTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void Criar_FuncionamentoAusente_FalhaComObrigatorio(string? token)
+    public void Criar_FuncionamentoAusente_FalhaComObrigatorio(string? codigo)
     {
-        Result<OfertaCurso> resultado = Criar(d => d with { RegimeDeFuncionamento = token });
+        Result<OfertaCurso> resultado = Criar(d => d with { RegimeDeFuncionamento = codigo });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.RegimeDeFuncionamentoObrigatorio);
@@ -60,16 +60,18 @@ public sealed class OfertaCursoFuncionamentoTests
         resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.RegimeDeFuncionamentoObrigatorio);
     }
 
-    [Theory(DisplayName = "Token de regime de funcionamento fora do domínio fechado é recusado")]
+    [Theory(DisplayName = "Código de regime de funcionamento fora do domínio fechado é recusado")]
     [InlineData("SEMI_INTENSIVO")]
     [InlineData("Intensivo")]
     [InlineData("intensivo")]
     [InlineData("1")]
     [InlineData("INTEGRAL")]
     [InlineData("PRESENCIAL")]
-    public void Criar_FuncionamentoInvalido_Falha(string token)
+    [InlineData(" INTENSIVO")]
+    [InlineData("INTENSIVO ")]
+    public void Criar_FuncionamentoInvalido_Falha(string codigo)
     {
-        Result<OfertaCurso> resultado = Criar(d => d with { RegimeDeFuncionamento = token });
+        Result<OfertaCurso> resultado = Criar(d => d with { RegimeDeFuncionamento = codigo });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.RegimeDeFuncionamentoInvalido);

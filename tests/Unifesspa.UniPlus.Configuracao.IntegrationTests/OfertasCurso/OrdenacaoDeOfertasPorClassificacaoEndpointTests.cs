@@ -17,24 +17,32 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// A paginação por cursor da listagem de ofertas quando a ordem é o programa ou o formato: o cursor leva o código do
-/// campo, e a continuação o lê de volta, sozinho ou junto de outro campo, nos dois sentidos.
+/// A paginação por cursor da listagem de ofertas quando a ordem é o programa, o formato ou um dos regimes: o cursor leva o
+/// código do campo, e a continuação o lê de volta, sozinho ou junto de outro campo, nos dois sentidos.
 /// </summary>
 [Collection(ConfiguracaoEndpointCollection.Name)]
 public sealed class OrdenacaoDeOfertasPorClassificacaoEndpointTests
 {
     private const int OfertasPorPagina = 2;
 
-    private static readonly (string Programa, string Formato)[] OfertasSemeadas =
+    private static readonly ClassificacaoDaOferta[] OfertasSemeadas =
     [
-        ("REGULAR", "EAD"),
-        ("REGULAR", "PRESENCIAL"),
-        ("PARFOR", "PRESENCIAL"),
-        ("PARFOR", "EAD"),
-        ("PRONERA", "SEMIPRESENCIAL"),
-        ("PRONERA", "PRESENCIAL"),
-        ("FORMA_PARA", "EAD"),
+        new("REGULAR", "EAD", "EXTENSIVO", "REGULAR"),
+        new("REGULAR", "PRESENCIAL", "INTENSIVO", "INTEGRAL"),
+        new("PARFOR", "PRESENCIAL", "ALTERNANCIA_PEDAGOGICA", "REGULAR"),
+        new("PARFOR", "EAD", "EXTENSIVO", "INTEGRAL"),
+        new("PRONERA", "SEMIPRESENCIAL", "INTENSIVO", "INTEGRAL"),
+        new("PRONERA", "PRESENCIAL", "ALTERNANCIA_PEDAGOGICA", "INTEGRAL"),
+        new("FORMA_PARA", "EAD", "EXTENSIVO", "REGULAR"),
     ];
+
+    private static readonly Dictionary<string, Func<ClassificacaoDaOferta, string>> ValorPorCampo = new(StringComparer.Ordinal)
+    {
+        ["programaDeOferta"] = oferta => oferta.Programa,
+        ["formatoPedagogico"] = oferta => oferta.Formato,
+        ["regimeDeFuncionamento"] = oferta => oferta.Funcionamento,
+        ["regimeDeTurno"] = oferta => oferta.RegimeDeTurno,
+    };
 
     private readonly ConfiguracaoEndpointFixture _fixture;
 
@@ -43,7 +51,7 @@ public sealed class OrdenacaoDeOfertasPorClassificacaoEndpointTests
         _fixture = fixture;
     }
 
-    [Theory(DisplayName = "A travessia por rel=\"next\" ordenada por programa ou formato mantém a ordem e não repete nem omite oferta")]
+    [Theory(DisplayName = "A travessia por rel=\"next\" ordenada por programa, formato ou regime mantém a ordem e não repete nem omite oferta")]
     [InlineData("programaDeOferta")]
     [InlineData("-programaDeOferta")]
     [InlineData("formatoPedagogico")]
@@ -52,8 +60,20 @@ public sealed class OrdenacaoDeOfertasPorClassificacaoEndpointTests
     [InlineData("-programaDeOferta,formatoPedagogico")]
     [InlineData("formatoPedagogico,-programaDeOferta")]
     [InlineData("-formatoPedagogico,programaDeOferta")]
-    public Task Listar_OrdenadoPorClassificacao_PercorreTodasAsPaginasNaOrdem(string ordenacao) =>
-        ConferirTravessiaAsync(ordenacao);
+    [InlineData("regimeDeFuncionamento")]
+    [InlineData("-regimeDeFuncionamento")]
+    [InlineData("regimeDeTurno")]
+    [InlineData("-regimeDeTurno")]
+    [InlineData("regimeDeFuncionamento,-regimeDeTurno")]
+    [InlineData("-regimeDeFuncionamento,regimeDeTurno")]
+    [InlineData("regimeDeTurno,-programaDeOferta")]
+    [InlineData("-regimeDeFuncionamento,formatoPedagogico")]
+    public Task Listar_OrdenadoPorClassificacao_PercorreTodasAsPaginasNaOrdem(string ordenacao)
+    {
+        ArgumentNullException.ThrowIfNull(ordenacao);
+
+        return ConferirTravessiaAsync(ordenacao);
+    }
 
     private async Task ConferirTravessiaAsync(string ordenacao)
     {
@@ -62,8 +82,9 @@ public sealed class OrdenacaoDeOfertasPorClassificacaoEndpointTests
 
         IReadOnlyList<JsonElement> percorridas = await PercorrerAsync(client, cursoId, ordenacao);
 
-        percorridas.Select(ClassificacaoDe).Select(o => Ordenados(o, ordenacao))
-            .Should().Equal(OrdemEsperada(ordenacao).Select(o => Ordenados(o, ordenacao)));
+        string[] camposOrdenados = [.. ordenacao.Split(',').Select(c => c.TrimStart('-'))];
+        percorridas.Select(ClassificacaoDe).Select(o => Projetar(o, camposOrdenados))
+            .Should().Equal(OrdemEsperada(ordenacao).Select(o => Projetar(o, camposOrdenados)));
         percorridas.Select(o => o.GetProperty("id").GetGuid()).Should().OnlyHaveUniqueItems();
     }
 
@@ -97,33 +118,33 @@ public sealed class OrdenacaoDeOfertasPorClassificacaoEndpointTests
         return ofertas;
     }
 
-    private static (string Programa, string Formato) ClassificacaoDe(JsonElement oferta) =>
-        (oferta.GetProperty("programaDeOferta").GetProperty("codigo").GetString() ?? string.Empty,
-         oferta.GetProperty("formatoPedagogico").GetProperty("codigo").GetString() ?? string.Empty);
+    private static ClassificacaoDaOferta ClassificacaoDe(JsonElement oferta) =>
+        new(CodigoDe(oferta, "programaDeOferta"), CodigoDe(oferta, "formatoPedagogico"), CodigoDe(oferta, "regimeDeFuncionamento"), CodigoDe(oferta, "regimeDeTurno"));
+
+    private static string CodigoDe(JsonElement oferta, string campo) =>
+        oferta.GetProperty(campo).GetProperty("codigo").GetString() ?? string.Empty;
 
     // Dentro de um empate o motor desempata pelo Id, que não segue a ordem de criação: só os campos ordenados são comparados.
-    private static (string Programa, string Formato) Ordenados((string Programa, string Formato) oferta, string ordenacao) =>
-        (ordenacao.Contains("programaDeOferta", StringComparison.Ordinal) ? oferta.Programa : string.Empty,
-         ordenacao.Contains("formatoPedagogico", StringComparison.Ordinal) ? oferta.Formato : string.Empty);
+    private static string Projetar(ClassificacaoDaOferta oferta, string[] camposOrdenados) =>
+        string.Join('|', camposOrdenados.Select(campo => ValorPorCampo[campo](oferta)));
 
-    private static IEnumerable<(string Programa, string Formato)> OrdemEsperada(string ordenacao)
+    private static IEnumerable<ClassificacaoDaOferta> OrdemEsperada(string ordenacao)
     {
         string[] campos = ordenacao.Split(',');
-        IOrderedEnumerable<(string Programa, string Formato)> ordenadas = Ordenar(OfertasSemeadas, ChaveDe(campos[0]), campos[0].StartsWith('-'));
+        IOrderedEnumerable<ClassificacaoDaOferta> ordenadas = Ordenar(OfertasSemeadas, campos[0]);
 
-        return campos.Skip(1).Aggregate(ordenadas, (acumulada, campo) => Desempatar(acumulada, ChaveDe(campo), campo.StartsWith('-')));
+        return campos.Skip(1).Aggregate(ordenadas, Desempatar);
     }
 
-    private static Func<(string Programa, string Formato), string> ChaveDe(string campo) =>
-        campo.EndsWith("programaDeOferta", StringComparison.Ordinal) ? oferta => oferta.Programa : oferta => oferta.Formato;
+    private static IOrderedEnumerable<ClassificacaoDaOferta> Ordenar(IEnumerable<ClassificacaoDaOferta> ofertas, string campo) =>
+        campo.StartsWith('-')
+            ? ofertas.OrderByDescending(ValorPorCampo[campo[1..]], StringComparer.Ordinal)
+            : ofertas.OrderBy(ValorPorCampo[campo], StringComparer.Ordinal);
 
-    private static IOrderedEnumerable<(string Programa, string Formato)> Ordenar(
-        IEnumerable<(string Programa, string Formato)> ofertas, Func<(string Programa, string Formato), string> chave, bool decrescente) =>
-        decrescente ? ofertas.OrderByDescending(chave, StringComparer.Ordinal) : ofertas.OrderBy(chave, StringComparer.Ordinal);
-
-    private static IOrderedEnumerable<(string Programa, string Formato)> Desempatar(
-        IOrderedEnumerable<(string Programa, string Formato)> ofertas, Func<(string Programa, string Formato), string> chave, bool decrescente) =>
-        decrescente ? ofertas.ThenByDescending(chave, StringComparer.Ordinal) : ofertas.ThenBy(chave, StringComparer.Ordinal);
+    private static IOrderedEnumerable<ClassificacaoDaOferta> Desempatar(IOrderedEnumerable<ClassificacaoDaOferta> ofertas, string campo) =>
+        campo.StartsWith('-')
+            ? ofertas.ThenByDescending(ValorPorCampo[campo[1..]], StringComparer.Ordinal)
+            : ofertas.ThenBy(ValorPorCampo[campo], StringComparer.Ordinal);
 
     private async Task<Guid> SemearOfertasDoCursoAsync()
     {
@@ -135,18 +156,24 @@ public sealed class OrdenacaoDeOfertasPorClassificacaoEndpointTests
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext dbContext = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         dbContext.AddRange(curso, local);
-        dbContext.AddRange(OfertasSemeadas.Select(o => NovaOferta(curso.Id, local.Id, o.Programa, o.Formato)));
+        dbContext.AddRange(OfertasSemeadas.Select(o => NovaOferta(curso.Id, local.Id, o)));
         await dbContext.SaveChangesAsync(CancellationToken.None);
 
         return curso.Id;
     }
 
-    private static OfertaCurso NovaOferta(Guid cursoId, Guid localId, string programa, string formato) =>
+    private static OfertaCurso NovaOferta(Guid cursoId, Guid localId, ClassificacaoDaOferta classificacao) =>
         OfertaCurso.Criar(
             cursoId,
             localId,
             UnidadeOfertante.Criar(Guid.CreateVersion7(), "ICH", "Instituto de Ciências Humanas", "CENTRO").ValorEsperado(),
             new DeclaracaoDaOfertaDeCurso(
-                $"OFERTA_{Guid.CreateVersion7():N}".ToUpperInvariant(), programa, formato, "EXTENSIVO", "REGULAR", ["MATUTINO"],
+                $"OFERTA_{Guid.CreateVersion7():N}".ToUpperInvariant(), classificacao.Programa, classificacao.Formato,
+                classificacao.Funcionamento, classificacao.RegimeDeTurno, TurnosDoRegime(classificacao.RegimeDeTurno),
                 BaseLegal: "Lei de teste")).ValorEsperado();
+
+    private static string[] TurnosDoRegime(string regime) =>
+        regime == "INTEGRAL" ? ["MATUTINO", "VESPERTINO"] : ["MATUTINO"];
+
+    private sealed record ClassificacaoDaOferta(string Programa, string Formato, string Funcionamento, string RegimeDeTurno);
 }

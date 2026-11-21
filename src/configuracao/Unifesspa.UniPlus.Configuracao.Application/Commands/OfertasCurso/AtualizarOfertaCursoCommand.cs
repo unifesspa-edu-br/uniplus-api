@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// Atualiza os atributos editáveis de uma oferta de curso: código, programa, formato
 /// pedagógico, regime de funcionamento, regime de turno e turnos, códigos
 /// (e-MEC / SGA), teto de vagas, base legal e ato de autorização. <c>CursoId</c>, <c>LocalOfertaId</c> e a unidade ofertante
-/// (snapshot-copy, ADR-0061) são <b>imutáveis</b> — mudar curso×local×unidade
+/// (cópia dos dados, ADR-0061) são <b>imutáveis</b> — mudar curso×local×unidade
 /// caracteriza outra oferta; este comando não os aceita. O guard condicional da
 /// base legal é revalidado na transição (Regular→Parfor sem base é rejeitado).
 /// O ator (<c>updated_by</c>) é carimbado server-side via <c>IUserContext</c>.
@@ -27,9 +27,9 @@ public sealed record AtualizarOfertaCursoCommand(
     Guid Id,
     string? Codigo,
     [property: AceitaCodigosDe<ProgramaDeOferta>] string? ProgramaDeOferta,
-    string? RegimeDeFuncionamento,
-    string? RegimeDeTurno,
-    IReadOnlyList<string?>? Turnos,
+    [property: AceitaCodigosDe<RegimeDeFuncionamento>] string? RegimeDeFuncionamento,
+    [property: AceitaCodigosDe<RegimeDeTurno>] string? RegimeDeTurno,
+    [property: AceitaCodigosDe<TurnoOferta>] IReadOnlyList<string?>? Turnos,
     [property: AceitaCodigosDe<FormatoPedagogico>] string? FormatoPedagogico = null,
     string? EMecCodigo = null,
     string? CodigoSga = null,
