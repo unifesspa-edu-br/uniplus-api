@@ -94,6 +94,7 @@ internal static class CausasQueImpedemCongelar
     private static IEnumerable<FieldError> Bancas(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, CorretoresDasEtapas corretores) =>
     [
         .. ConferenciaDasBancas.ConferirRecursosSemBanca(cronograma, etapas),
+        .. ConferenciaDasBancas.ConferirMinimoDeBancasPorTipo(cronograma, etapas),
         .. ConferenciaDasBancas.ConferirRegrasDeDeliberacao(cronograma, etapas),
         .. ConferenciaDasBancas.ConferirMinimoDeIntegrantes(cronograma, etapas, corretores),
     ];

@@ -18,6 +18,7 @@ public static class BancaErrorCodes
     public const string RegraDeDeliberacaoObrigatoria = "Banca.RegraDeDeliberacaoObrigatoria";
     public const string IntegrantesAbaixoDoMinimo = "Banca.IntegrantesAbaixoDoMinimo";
     public const string CandidatosAtendidosEmBancaDeRecursos = "Banca.CandidatosAtendidosEmBancaDeRecursos";
+    public const string TipoExigeMaisDeUmaBanca = "Banca.TipoExigeMaisDeUmaBanca";
     public const string IdDuplicado = "Banca.IdDuplicado";
     public const string RecursoSemBanca = "Cronograma.RecursoSemBanca";
 }

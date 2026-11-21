@@ -78,7 +78,7 @@ public sealed class FaseDeclaradaTests
         FaseDeclarada fase = modelo.Declarar();
 
         Recusas(fase).Should().Equal(("bancasRequeridas[0].categoriasDocumentoIds", "Banca.CandidatosAtendidosEmBancaDeRecursos"));
-        fase.Recusas[0].Error.Message.Should().Contain("'RECURSO'");
+        fase.Recusas[0].Error.Message.Should().NotContain("RECURSO'").And.Contain("Na fase, a banca");
     }
 
     [Fact(DisplayName = "A declaração traz as mesmas recusas que a criação da fase para a mesma entrada")]

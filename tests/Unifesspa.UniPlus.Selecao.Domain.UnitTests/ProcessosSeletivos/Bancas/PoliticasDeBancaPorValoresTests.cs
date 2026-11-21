@@ -57,8 +57,8 @@ public sealed class PoliticasDeBancaPorValoresTests
     {
         TipoDeBancaCopiado tipoDeRecursos = TiposDeBancaCopiadosDeTeste.DeRecursos();
 
-        ExigenciaDeBancaDeRecurso.CandidatosAtendidosNaDeclaracao("RECURSOS", tipoDeRecursos, 1, 1)!.Message.Should().Contain("Na fase 'RECURSOS'");
-        ExigenciaDeBancaDeRecurso.CandidatosAtendidosNaDeclaracao("RECURSOS", tipoDeRecursos, 1, 0).Should().BeNull();
-        ExigenciaDeBancaDeRecurso.CandidatosAtendidosNaDeclaracao("RECURSOS", TiposDeBancaCopiadosDeTeste.Avaliadora(), 1, 1).Should().BeNull();
+        ExigenciaDeBancaDeRecurso.CandidatosAtendidosNaDeclaracao(tipoDeRecursos, 1, 1)!.Message.Should().Contain("Na fase,");
+        ExigenciaDeBancaDeRecurso.CandidatosAtendidosNaDeclaracao(tipoDeRecursos, 1, 0).Should().BeNull();
+        ExigenciaDeBancaDeRecurso.CandidatosAtendidosNaDeclaracao(TiposDeBancaCopiadosDeTeste.Avaliadora(), 1, 1).Should().BeNull();
     }
 }

@@ -17,7 +17,6 @@ using Xunit;
 /// </summary>
 public sealed class AncoraDoRecursoDaFaseTests
 {
-    private const string Fase = "RESULTADO_PRELIMINAR";
     private const string Gabarito = "GABARITO";
     private const string Resultado = "RESULTADO_CLASSIFICACAO";
 
@@ -33,19 +32,19 @@ public sealed class AncoraDoRecursoDaFaseTests
     [Fact(DisplayName = "Fase sem regra de recurso não tem âncora a conferir")]
     public void Violacao_SemRegraDeRecurso_NaoViola()
     {
-        AncoraDoRecursoDaFase.Violacao(Fase, [Definitivo(Resultado)], regraRecurso: null).Should().BeNull();
+        AncoraDoRecursoDaFase.Violacao([Definitivo(Resultado)], regraRecurso: null).Should().BeNull();
     }
 
     [Fact(DisplayName = "Fase que admite recurso e não publica produto preliminar é recusada no campo dos produtos")]
     public void Violacao_SemProdutoPreliminar_RecusaNosProdutos()
     {
         FieldError? violacao = AncoraDoRecursoDaFase.Violacao(
-            Fase, [Definitivo(Resultado)], Recurso(Guid.CreateVersion7()));
+            [Definitivo(Resultado)], Recurso(Guid.CreateVersion7()));
 
         violacao.Should().NotBeNull();
         violacao!.Field.Should().Be("produtos");
         violacao.Error.Code.Should().Be("RegraRecursoFase.FaseSemProdutoPreliminar");
-        violacao.Error.Message.Should().Contain($"'{Fase}'");
+        violacao.Error.Message.Should().Contain("fase admite recurso");
     }
 
     [Fact(DisplayName = "Âncora em produto definitivo é recusada e a mensagem lista os preliminares em ordem alfabética")]
@@ -54,7 +53,7 @@ public sealed class AncoraDoRecursoDaFaseTests
         ProdutoDaFase definitivo = Definitivo(Resultado);
 
         FieldError? violacao = AncoraDoRecursoDaFase.Violacao(
-            Fase, [Preliminar("ZETA"), definitivo, Preliminar("ALFA")], Recurso(definitivo.Id));
+            [Preliminar("ZETA"), definitivo, Preliminar("ALFA")], Recurso(definitivo.Id));
 
         violacao.Should().NotBeNull();
         violacao!.Field.Should().Be("regraRecurso.atoAncoraCodigo");
@@ -66,7 +65,7 @@ public sealed class AncoraDoRecursoDaFaseTests
     public void Violacao_AncoraEmProdutoDeOutraFase_Recusa()
     {
         FieldError? violacao = AncoraDoRecursoDaFase.Violacao(
-            Fase, [Preliminar(Resultado)], Recurso(Preliminar(Resultado).Id));
+            [Preliminar(Resultado)], Recurso(Preliminar(Resultado).Id));
 
         violacao!.Error.Code.Should().Be("RegraRecursoFase.AncoraNaoEhProdutoPreliminarDaFase");
     }
@@ -76,7 +75,7 @@ public sealed class AncoraDoRecursoDaFaseTests
     {
         ProdutoDaFase preliminar = Preliminar(Resultado);
 
-        AncoraDoRecursoDaFase.Violacao(Fase, [preliminar, Definitivo("OUTRO")], Recurso(preliminar.Id)).Should().BeNull();
+        AncoraDoRecursoDaFase.Violacao([preliminar, Definitivo("OUTRO")], Recurso(preliminar.Id)).Should().BeNull();
     }
 
     [Fact(DisplayName = "Preliminar e definitivo da mesma matéria não se confundem: só a âncora no preliminar vale")]
@@ -86,8 +85,8 @@ public sealed class AncoraDoRecursoDaFaseTests
         ProdutoDaFase preliminar = Preliminar(Gabarito);
         ProdutoDaFase[] produtos = [definitivo, preliminar];
 
-        AncoraDoRecursoDaFase.Violacao(Fase, produtos, Recurso(preliminar.Id)).Should().BeNull();
-        AncoraDoRecursoDaFase.Violacao(Fase, produtos, Recurso(definitivo.Id))!
+        AncoraDoRecursoDaFase.Violacao(produtos, Recurso(preliminar.Id)).Should().BeNull();
+        AncoraDoRecursoDaFase.Violacao(produtos, Recurso(definitivo.Id))!
             .Error.Code.Should().Be("RegraRecursoFase.AncoraNaoEhProdutoPreliminarDaFase");
     }
 

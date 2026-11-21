@@ -145,7 +145,7 @@ public sealed class FaseCronogramaCandidatosAtendidosTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Error.Code).Should()
             .BeEquivalentTo(["RegraRecursoFase.AncoraNaoEhProdutoPreliminarDaFase"]);
-        resultado.Errors.Should().ContainSingle().Which.Error.Message.Should().Contain("RESULTADO_PRELIMINAR");
+        resultado.Errors.Should().ContainSingle().Which.Error.Message.Should().Contain("RESULTADO_CLASSIFICACAO");
     }
 
     [Fact(DisplayName = "CA-02: ancorar no produto de OUTRA fase que publica o MESMO tipo de ato é recusado")]
@@ -234,8 +234,8 @@ public sealed class FaseCronogramaCandidatosAtendidosTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
-    [Fact(DisplayName = "CA-02: as duas bancas do mesmo tipo sem candidatos atendidos acumulam uma recusa cada")]
-    public void CandidatosAtendidos_AmbasSemCandidatosAtendidos_AcumulaUmaPorBanca()
+    [Fact(DisplayName = "CA-02: as bancas do mesmo tipo sem candidatos atendidos atendem todos os candidatos e são aceitas")]
+    public void CandidatosAtendidos_AmbasSemCandidatosAtendidos_Aceita()
     {
         Result<FaseCronograma> resultado = Criar(m => m with
         {
@@ -246,11 +246,27 @@ public sealed class FaseCronogramaCandidatosAtendidosTests
                 ],
         });
 
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.BancasRequeridas.Select(banca => banca.PosicaoNoTipo).Should().Equal(1, 2);
+    }
+
+    [Fact(DisplayName = "CA-02: cada banca sem candidatos atendidos ao lado de banca com candidatos atendidos acumula uma recusa")]
+    public void CandidatosAtendidos_VariasSemCandidatosAtendidosAoLadoDeUmaComCandidatosAtendidos_AcumulaUmaPorBanca()
+    {
+        Result<FaseCronograma> resultado = Criar(m => m with
+        {
+            OrigemData = OrigemDataFase.NaExecucao,
+            Bancas = [
+                    Banca(TipoDeBanca.AnaliseDocumental),
+                    Banca(TipoDeBanca.AnaliseDocumental, "RENDA"),
+                    Banca(TipoDeBanca.AnaliseDocumental),
+                ],
+        });
+
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Error.Code).Should().AllBe("BancaRequerida.CandidatosAtendidosObrigatorios");
-        resultado.Errors.Select(e => e.Field).Should().BeEquivalentTo(
-            ["bancasRequeridas[0].categoriasDocumentoIds", "bancasRequeridas[1].categoriasDocumentoIds"],
-            "a recusa que sai é a de candidatos atendidos ausentes, e não a de candidatos atendidos duplicados — dois conjuntos vazios de candidatos atendidos não são dois conjuntos iguais, são dois que faltam");
+        resultado.Errors.Select(e => e.Field).Should().Equal(
+            "bancasRequeridas[0].categoriasDocumentoIds", "bancasRequeridas[2].categoriasDocumentoIds");
     }
 
     [Fact(DisplayName = "CA-03: duas bancas do mesmo tipo com candidatos atendidos distintos são declaráveis")]
@@ -269,8 +285,8 @@ public sealed class FaseCronogramaCandidatosAtendidosTests
         resultado.Value!.BancasRequeridas.Should().HaveCount(2);
     }
 
-    [Fact(DisplayName = "CA-03: duas bancas do mesmo tipo com os mesmos candidatos atendidos declarados em outra ordem são recusadas")]
-    public void CandidatosAtendidos_MesmoTipoCandidatosAtendidosIguaisEmOutraOrdem_Recusa()
+    [Fact(DisplayName = "CA-03: duas bancas do mesmo tipo com os mesmos candidatos atendidos declarados em outra ordem julgam em paralelo")]
+    public void CandidatosAtendidos_MesmoTipoCandidatosAtendidosIguaisEmOutraOrdem_Aceita()
     {
         Result<FaseCronograma> resultado = Criar(m => m with
         {
@@ -281,11 +297,7 @@ public sealed class FaseCronogramaCandidatosAtendidosTests
                 ],
         });
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Errors.Should().ContainSingle()
-            .Which.Should().Match<FieldError>(e =>
-                e.Error.Code == "BancaRequerida.CandidatosAtendidosDuplicados"
-                && e.Field == "bancasRequeridas[1].categoriasDocumentoIds");
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
     [Fact(DisplayName = "CA-03: candidatos atendidos que se cruzam sem coincidir distinguem as bancas e são aceitos")]

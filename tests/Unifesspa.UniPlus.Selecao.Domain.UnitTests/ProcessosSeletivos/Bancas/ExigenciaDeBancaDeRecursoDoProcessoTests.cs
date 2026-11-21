@@ -94,9 +94,9 @@ public sealed class ExigenciaDeBancaDeRecursoDoProcessoTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: FaseReidratadaComBancaDeRecursosComCandidatosDeclarados(comCandidatosDeclarados));
 
         Pendencia(processo)!.Code.Should().Be("Banca.CandidatosAtendidosEmBancaDeRecursos");
-        ExigenciaDeBancaDeRecurso.CandidatosAtendidosNaDeclaracao("RECURSOS", TiposDeBancaCopiadosDeTeste.DeRecursos(), 1, 1)!.Code
+        ExigenciaDeBancaDeRecurso.CandidatosAtendidosNaDeclaracao(TiposDeBancaCopiadosDeTeste.DeRecursos(), 1, 1)!.Code
             .Should().Be("Banca.CandidatosAtendidosEmBancaDeRecursos");
-        ExigenciaDeBancaDeRecurso.CandidatosAtendidosNaDeclaracao("RECURSOS", TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental), 1, 1).Should().BeNull();
+        ExigenciaDeBancaDeRecurso.CandidatosAtendidosNaDeclaracao(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental), 1, 1).Should().BeNull();
     }
 
     [Fact(DisplayName = "Banca da etapa sem regra de deliberação é recusada, citando o nome da banca")]

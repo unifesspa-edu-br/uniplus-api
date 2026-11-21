@@ -50,7 +50,7 @@ internal static class EntradaDoPreliminarDaEtapa
 
     private static IEnumerable<string> DaBanca(BancaDaEtapa banca)
     {
-        string campo = $"bancas[{Valor(banca.Tipo.OrigemId)}]";
+        string campo = $"bancas[{Valor(banca.Tipo.OrigemId)}#{banca.PosicaoNoTipo}]";
 
         return
         [

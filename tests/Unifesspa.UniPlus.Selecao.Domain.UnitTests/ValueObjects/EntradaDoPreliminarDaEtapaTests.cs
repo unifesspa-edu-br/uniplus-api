@@ -163,6 +163,15 @@ public sealed class EntradaDoPreliminarDaEtapaTests
         ComBanca(encerraNaPrimeira: true).EntradaDoPreliminar().Should().NotBe(ComBanca().EntradaDoPreliminar());
     }
 
+    [Fact(DisplayName = "Trocar as regras entre duas bancas do mesmo tipo na etapa muda a entrada")]
+    public void RegrasTrocadasEntreBancasDoMesmoTipo_MudamAEntrada() =>
+        Etapa(completar: e => e.DefinirBancas([
+                BancasDeTeste.DeRecursosDaEtapa(BancasDeTeste.Regra(integrantes: 5, quorum: 3)),
+                BancasDeTeste.DeRecursosDaEtapa(BancasDeTeste.Regra(integrantes: 7, quorum: 4))])).EntradaDoPreliminar()
+            .Should().NotBe(Etapa(completar: e => e.DefinirBancas([
+                BancasDeTeste.DeRecursosDaEtapa(BancasDeTeste.Regra(integrantes: 5, quorum: 4)),
+                BancasDeTeste.DeRecursosDaEtapa(BancasDeTeste.Regra(integrantes: 7, quorum: 3))])).EntradaDoPreliminar());
+
     [Fact(DisplayName = "Trocar um tipo de decisão declarado pela etapa muda a entrada")]
     public void TrocarTipoDeDecisao_MudaAEntrada() =>
         ComTipos(TipoMotivoDeDecisao.Classificacao.Codigo()).EntradaDoPreliminar()

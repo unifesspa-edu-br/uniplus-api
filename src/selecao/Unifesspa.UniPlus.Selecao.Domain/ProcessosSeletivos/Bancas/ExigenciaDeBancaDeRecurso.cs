@@ -15,17 +15,17 @@ public static class ExigenciaDeBancaDeRecurso
 
     /// <summary>A recusa dos candidatos atendidos na banca que julga recurso, declarada pela fase.</summary>
     public static DomainError? CandidatosAtendidosNaDeclaracao(
-        string codigoDaFase, TipoDeBancaCopiado tipo, int posicaoNoTipo, int categoriasNosCandidatosAtendidos)
+        TipoDeBancaCopiado tipo, int posicaoNoTipo, int categoriasNosCandidatosAtendidos)
     {
         ArgumentNullException.ThrowIfNull(tipo);
 
         return tipo.JulgaRecurso && categoriasNosCandidatosAtendidos > 0
-            ? CandidatosAtendidosEmBancaDeRecursos(codigoDaFase, tipo, posicaoNoTipo)
+            ? CandidatosAtendidosEmBancaDeRecursos(tipo, posicaoNoTipo)
             : null;
     }
 
-    private static DomainError CandidatosAtendidosEmBancaDeRecursos(string codigoDaFase, TipoDeBancaCopiado tipo, int posicaoNoTipo) =>
+    private static DomainError CandidatosAtendidosEmBancaDeRecursos(TipoDeBancaCopiado tipo, int posicaoNoTipo) =>
         new(
             BancaErrorCodes.CandidatosAtendidosEmBancaDeRecursos,
-            $"Na fase '{codigoDaFase}', a banca '{tipo.Codigo.Rotulo()} {posicaoNoTipo}' tem o papel '{tipo.Papel.Rotulo()}' e define candidatos atendidos, mas a banca que julga recurso atende todos os candidatos. Retire as categorias de documento dela.");
+            $"Na fase, a banca '{tipo.Codigo.Rotulo()} {posicaoNoTipo}' tem o papel '{tipo.Papel.Rotulo()}' e define candidatos atendidos, mas a banca que julga recurso atende todos os candidatos. Retire as categorias de documento dela.");
 }

@@ -39,6 +39,7 @@ internal static class ErrosDaBanca
         new(BancaErrorCodes.RegraDeDeliberacaoObrigatoria, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.banca.regra_de_deliberacao_obrigatoria", "A banca não declara a regra de deliberação, ou a votação do recurso que julga por ato individual")),
         new(BancaErrorCodes.IntegrantesAbaixoDoMinimo, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.banca.integrantes_abaixo_do_minimo", "A banca declara menos integrantes que o mínimo exigido")),
         new(BancaErrorCodes.CandidatosAtendidosEmBancaDeRecursos, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.banca.candidatos_atendidos_em_banca_de_recursos", "A banca que julga recurso não define candidatos atendidos")),
+        new(BancaErrorCodes.TipoExigeMaisDeUmaBanca, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.banca.tipo_exige_mais_de_uma_banca", "O tipo de banca exige duas ou mais bancas, e há só uma")),
         new(BancaErrorCodes.RecursoSemBanca, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.cronograma.recurso_sem_banca", "O recurso não tem banca que o julgue em 1ª instância")),
     ];
 }

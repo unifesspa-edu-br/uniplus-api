@@ -67,7 +67,7 @@ internal static class EntradaDoPreliminarDaFase
         ];
     }
 
-    // O tipo sozinho nem sempre distingue a banca: duas do mesmo tipo se separam pelos candidatos atendidos.
+    // Duas bancas do mesmo tipo se distinguem pela posição entre as do tipo (a mesma que as recusas citam) e pelos candidatos atendidos.
     private static string ChaveDaBanca(BancaRequerida banca)
     {
         IEnumerable<string> atendidos = banca.CandidatosAtendidos
@@ -75,6 +75,6 @@ internal static class EntradaDoPreliminarDaFase
             .Distinct(StringComparer.Ordinal)
             .Order(StringComparer.Ordinal);
 
-        return $"{Valor(banca.Tipo.OrigemId)}/{string.Join(',', atendidos)}";
+        return $"{Valor(banca.Tipo.OrigemId)}#{banca.PosicaoNoTipo}/{string.Join(',', atendidos)}";
     }
 }

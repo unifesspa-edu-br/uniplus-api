@@ -46,7 +46,7 @@ public sealed class SuspensaoPorParteRecusadaDaFaseTests
         CronogramaDoProcesso cronograma = CronogramaDoProcesso.Do(fases, ComPartesRecusadas("fases[1].produtos"));
 
         CamposDasRecusas(cronograma).Should().Equal("fases[0].emiteParecerIndividual");
-        cronograma.RecusasDasDeclaracoes()[0].Error.Message.Should().Contain("RESULTADO");
+        cronograma.RecusasDasDeclaracoes()[0].Error.Message.Should().NotContain("RESULTADO").And.Contain("parecer individual");
     }
 
     [Fact(DisplayName = "A âncora do recurso num produto que não é preliminar não é julgada quando a lista dos produtos tem parte recusada")]
