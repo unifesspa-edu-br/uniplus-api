@@ -21,6 +21,7 @@ internal static class ItensDoCronograma
         return
         [
             .. DaPublicacao(configuracao, cronograma, etapas, cadastros.ContagemDePrazos),
+            cronograma.ItemDaPrecedenciaEntreFases(cadastros.Precedencias),
             .. DoCicloRecursal(configuracao, cronograma, etapas),
             .. DasBancasEDaJanelaDasEtapas(configuracao, cronograma, etapas, cadastros.Corretores),
             .. ConferenciaDosTiposDeAto.Itens(cronograma, etapas, cadastros.TiposDeAtoUnicos),

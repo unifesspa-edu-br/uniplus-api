@@ -12,13 +12,15 @@ using Services;
 
 /// <summary>
 /// O que a conferência da configuração lê dos cadastros vivos, uma vez e como valor, no mesmo instante da operação: os tipos
-/// de ato únicos, o calendário vigente, os corretores das regras de consolidação e os motivos escolhidos com a situação de
-/// cada um no cadastro. O catálogo e a proteção já vêm lidos e recopiados.
+/// de ato únicos, o calendário vigente, os corretores das regras de consolidação, os motivos escolhidos com a situação de
+/// cada um no cadastro e a precedência entre fases, esta só quando o cronograma mudou desde a versão publicada. O catálogo e
+/// a proteção já vêm lidos e recopiados.
 /// </summary>
 public sealed class LeituraDosCadastrosDaConfiguracao(
     ResolucaoDosTiposDeAtoUnicos tiposDeAto,
     LeituraDoContextoDeContagemDePrazos contextos,
     LeituraDasRegrasCitadasNaConfiguracao leituraDasRegras,
+    LeituraDasPrecedenciasDosCadastros precedencias,
     IMotivoDoProcessoRepository motivos)
 {
     // O tipo que a versão vigente já congelou mantém a classificação dela: mudar o catálogo depois não alcança o processo já
@@ -38,14 +40,18 @@ public sealed class LeituraDosCadastrosDaConfiguracao(
         RegrasCitadasNaConfiguracao regrasCitadas = await leituraDasRegras.LerAsync(processo, cancellationToken).ConfigureAwait(false);
         MotivosEscolhidos escolhidos = await LerOsMotivosEscolhidosAsync(processo.Id, origem.NumeroDaVersaoQueNasce, cancellationToken).ConfigureAwait(false);
 
-        return Montar(contexto, vivo, tipos, regrasCitadas, escolhidos);
+        PrecedenciasDosCadastros lidas = await precedencias
+            .LerAsync(origem.FasesDaVersaoPublicada(), processo.CronogramaFases, cancellationToken)
+            .ConfigureAwait(false);
+
+        return Montar(contexto, vivo, tipos, regrasCitadas, escolhidos, lidas);
     }
 
     private static CadastrosDaConfiguracao Montar(ContextoDeContagemDePrazos contexto, CatalogoERecopia vivo,
-        TiposDeAtoUnicosPorObjeto tipos, RegrasCitadasNaConfiguracao regras, MotivosEscolhidos escolhidos) =>
+        TiposDeAtoUnicosPorObjeto tipos, RegrasCitadasNaConfiguracao regras, MotivosEscolhidos escolhidos, PrecedenciasDosCadastros precedencias) =>
         new(contexto, vivo.Catalogo.FatosDeModalidade, tipos, regras.Corretores, vivo.Recopiado.Protecao.Exigencias,
             escolhidos, vivo.Recopiado.Publicadas)
-        { Regras = regras.Regras, NomesDasFases = vivo.Catalogo.NomesDasFases };
+        { Regras = regras.Regras, NomesDasFases = vivo.Catalogo.NomesDasFases, Precedencias = precedencias };
 
     private async Task<MotivosEscolhidos> LerOsMotivosEscolhidosAsync(Guid processoId, int numeroDaVersaoQueNasce, CancellationToken cancellationToken) =>
         new(await motivos.ListarEscolhaAtualComOrigemAsync(processoId, cancellationToken).ConfigureAwait(false), numeroDaVersaoQueNasce);

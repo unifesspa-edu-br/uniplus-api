@@ -29,7 +29,7 @@ internal sealed class CenarioDeRetificacaoPublicada
     private readonly DependenciasDosHandlersQueCongelam _handlers;
     private readonly Dictionary<string, TipoDeAtoCongelado> _tiposCongelados = new(StringComparer.Ordinal);
     private readonly VersaoConfiguracao _versao;
-    private readonly ConfiguracaoPublicada _configuracaoPublicada;
+    private ConfiguracaoPublicada _configuracaoPublicada;
     private readonly EixosDeVersaoPublicada _congelado;
 
     private CenarioDeRetificacaoPublicada(ProcessoSeletivo processo, VersaoConfiguracao versao, ConfiguracaoPublicada configuracaoPublicada, EixosDeVersaoPublicada congelado)
@@ -68,6 +68,14 @@ internal sealed class CenarioDeRetificacaoPublicada
     /// <summary>O cadastro vivo das unidades: só as informadas estão vivas.</summary>
     public void ComUnidadesVivas(params UnidadeResponsavelSnapshot[] vivas) =>
         _handlers.Unidades = ResolvedorDeUnidadeDeTeste.Com(vivas);
+
+    /// <summary>A versão publicada declarou o mesmo cronograma que o processo tem agora.</summary>
+    public void ComCronogramaPublicadoIgualAoDoProcesso()
+    {
+        _configuracaoPublicada = ConfiguracaoPublicadaDeTeste.ComCronograma(
+            _configuracaoPublicada, new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, [.. Processo.CronogramaFases]));
+        ConfigurarCodecs(reidratavel: true);
+    }
 
     /// <summary>O processo passa a cobrar a taxa com um fundamento de isenção e não escolheu motivo algum.</summary>
     public void ComIsencaoHabilitadaSemMotivos() => IsencaoDeTeste.HabilitarSemMotivos(Processo);

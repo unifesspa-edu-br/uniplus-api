@@ -69,6 +69,12 @@ public sealed class CadastrosDaConfiguracao
         init => _nomesDasFases = (value ?? throw new ArgumentNullException(nameof(value))).ToFrozenDictionary();
     }
 
+    /// <summary>
+    /// A precedência entre fases que o cadastro tinha no momento da leitura, ou o registro de que a operação não a pediu. É
+    /// obrigatória para que nenhum caminho que julga a configuração esqueça de informá-la.
+    /// </summary>
+    public required PrecedenciasDosCadastros Precedencias { get; init; }
+
     /// <summary>O que os formulários coletaram nas versões publicadas; nulo antes da primeira publicação.</summary>
     public FatosDasVersoesPublicadas? FatosDasVersoesPublicadas { get; }
 }

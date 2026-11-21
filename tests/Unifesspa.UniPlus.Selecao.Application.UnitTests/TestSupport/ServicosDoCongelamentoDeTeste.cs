@@ -81,6 +81,8 @@ internal sealed class ServicosDoCongelamentoDeTeste
 
     public IRegraCatalogoReader RegrasDeConsolidacao { get; private set; } = RegrasDeConsolidacaoDeTeste.Catalogo();
 
+    public IPrecedenciaFaseReader Precedencias { get; private set; } = PrecedenciasDeTeste.SemArestas();
+
     public IRegistroCodecsEnvelope Codecs { get; private set; } = CodecsDeTeste.QueReidrataSemTiposDeAto();
 
     public TimeProvider Relogio { get; private set; } = new RelogioFixo(Agora);
@@ -224,6 +226,13 @@ internal sealed class ServicosDoCongelamentoDeTeste
         return this;
     }
 
+    public ServicosDoCongelamentoDeTeste ComPrecedencias(IPrecedenciaFaseReader precedencias)
+    {
+        Precedencias = precedencias;
+
+        return this;
+    }
+
     public ServicosDoCongelamentoDeTeste ComCodecs(IRegistroCodecsEnvelope codecs)
     {
         Codecs = codecs;
@@ -274,7 +283,7 @@ internal sealed class ServicosDoCongelamentoDeTeste
     public ConferenciaDeConformidadeLegal ConformidadeLegal() =>
         new(ObrigatoriedadesLegais, Modalidades, TiposDocumento, TiposEtapa, TiposDeficiencia, RegrasDesempate);
 
-    public LeituraDosCadastrosDaConfiguracao CadastrosDaConfiguracao() => new(TiposDeAtoUnicos(), Contextos(), Corretores(), MotivosEscolhidos);
+    public LeituraDosCadastrosDaConfiguracao CadastrosDaConfiguracao() => new(TiposDeAtoUnicos(), Contextos(), Corretores(), new LeituraDasPrecedenciasDosCadastros(Precedencias), MotivosEscolhidos);
 
     public LeituraDoContextoDeContagemDePrazos Contextos() => new(Calendario, Fuso);
 
@@ -310,7 +319,11 @@ internal sealed class ServicosDoCongelamentoDeTeste
         RetificarAsync(new RetificarProcessoSeletivoCommand(
             processoId, "Correção do prazo", "001/2026-R1", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: PublicacaoDeTeste.NovoAto()));
 
-    public AvaliacaoDaConformidade Avaliacao() => new(Repositorio, Contextos(), Corretores(), TiposDeAtoUnicos(), Catalogos(), Codecs, MotivosEscolhidos);
+    public AvaliacaoDaConformidade Avaliacao() => new(
+        new LeituraDaVersaoPublicadaDoPainel(Repositorio, Codecs),
+        new LeituraDosCadastrosDoPainel(
+            Repositorio, Contextos(), Corretores(), TiposDeAtoUnicos(), new LeituraDasPrecedenciasDosCadastros(Precedencias), MotivosEscolhidos),
+        Catalogos());
 
     public Task<ConformidadeProcessoSeletivoDto?> ConformidadeAsync(ObterConformidadeProcessoSeletivoQuery consulta) =>
         ObterConformidadeProcessoSeletivoQueryHandler.Handle(consulta, Repositorio, Avaliacao(), CancellationToken.None);

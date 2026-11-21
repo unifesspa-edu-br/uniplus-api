@@ -32,7 +32,7 @@ internal static class CausasQueImpedemCongelar
         new(NomeDoAssunto.Conformidade, static c => ChecklistDeConformidade.CausasDeConformidade(c.Configuracao)),
         new(NomeDoAssunto.Declaracoes, static c => Declaracoes(c.Configuracao.Origem, c.Cronograma, c.Etapas)),
         new(NomeDoAssunto.ReferenciasDeRegra, static c => ConferenciaDasReferenciasDeRegra.Conferir(c.Configuracao, c.Cadastros)),
-        new(NomeDoAssunto.Conjunto, static c => Conjunto(c.Cronograma, c.Etapas)),
+        new(NomeDoAssunto.Conjunto, static c => Conjunto(c.Cronograma, c.Etapas, c.Cadastros.Precedencias)),
         new(NomeDoAssunto.Completude, static c => Completude(c.Configuracao, c.Cronograma, c.Etapas, c.Cadastros.ContagemDePrazos)),
         new(NomeDoAssunto.Recursos, static c => Recursos(c.Configuracao)),
         new(NomeDoAssunto.Bancas, static c => Bancas(c.Cronograma, c.Etapas, c.Cadastros.Corretores)),
@@ -66,9 +66,11 @@ internal static class CausasQueImpedemCongelar
         .. etapas.RecusasDasDeclaracoes(),
     ];
 
-    private static IEnumerable<FieldError> Conjunto(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
+    // A precedência do cadastro só é julgada quando a operação a leu: a conferência da publicação a repete porque o cadastro muda entre gravar e publicar.
+    private static IEnumerable<FieldError> Conjunto(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, PrecedenciasDosCadastros precedencias) =>
     [
         .. cronograma.ConferirEstrutura(),
+        .. precedencias.FoiLida ? cronograma.ConferirPrecedencia(precedencias.Arestas) : [],
         .. etapas.Conferir(),
         .. EtapasNoCronograma.ConferirFaseDasEtapas(cronograma, etapas),
         .. EtapasNoCronograma.ConferirJanelaDasEtapas(cronograma, etapas),

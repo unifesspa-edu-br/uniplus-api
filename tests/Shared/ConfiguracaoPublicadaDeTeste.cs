@@ -19,6 +19,10 @@ internal static class ConfiguracaoPublicadaDeTeste
         configuracao.Cronograma, configuracao.Avaliacao, vagas, configuracao.Exigencias,
         configuracao.Coleta, configuracao.DivulgacaoETaxa, configuracao.IdentificadorLegivel);
 
+    internal static ConfiguracaoPublicada ComCronograma(ConfiguracaoPublicada configuracao, CronogramaDeclarado cronograma) => new(
+        cronograma, configuracao.Avaliacao, configuracao.Vagas, configuracao.Exigencias,
+        configuracao.Coleta, configuracao.DivulgacaoETaxa, configuracao.IdentificadorLegivel);
+
     internal static ConfiguracaoPublicada ComColeta(ConfiguracaoPublicada configuracao, ColetaDeclarada coleta) => new(
         configuracao.Cronograma, configuracao.Avaliacao, configuracao.Vagas, configuracao.Exigencias,
         coleta, configuracao.DivulgacaoETaxa, configuracao.IdentificadorLegivel);

@@ -131,8 +131,12 @@ public static class SelecaoApplicationServiceRegistration
     }
 
     // A consulta de conformidade recebe a avaliação pronta, sem service location: as portas entram pelo construtor.
-    private static void AddAvaliacaoDaConformidade(IServiceCollection services) =>
+    private static void AddAvaliacaoDaConformidade(IServiceCollection services)
+    {
+        services.AddScoped<LeituraDaVersaoPublicadaDoPainel>();
+        services.AddScoped<LeituraDosCadastrosDoPainel>();
         services.AddScoped<AvaliacaoDaConformidade>();
+    }
 
     // A conferência dos campos e das referências de uma obrigatoriedade legal guarda só as portas por construtor, e
     // os handlers de criar e atualizar a recebem pronta, sem service location.
@@ -149,6 +153,7 @@ public static class SelecaoApplicationServiceRegistration
         AddConferenciasDoCongelamento(services);
         services.AddScoped<LeituraDoContextoDeContagemDePrazos>();
         services.AddScoped<LeituraDasRegrasCitadasNaConfiguracao>();
+        services.AddScoped<LeituraDasPrecedenciasDosCadastros>();
         services.AddScoped<MontagemDoCongelamento>();
         services.AddScoped<MontagemDaDivulgacao>();
         services.AddScoped<GravacaoDaVersaoCongelada>();
