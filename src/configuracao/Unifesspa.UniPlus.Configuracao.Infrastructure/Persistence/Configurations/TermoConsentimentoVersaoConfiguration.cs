@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Configurations;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -17,10 +15,6 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// (termos imunes após a publicação, UNI-REQ-0086). Sem soft-delete, sem audit fields, sem updates —
 /// qualquer mutação fora de <c>INSERT</c> é incidente operacional.
 /// </summary>
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class TermoConsentimentoVersaoConfiguration : IEntityTypeConfiguration<TermoConsentimentoVersao>
 {
     private const int HashLength = 64;
@@ -29,27 +23,33 @@ internal sealed class TermoConsentimentoVersaoConfiguration : IEntityTypeConfigu
     public void Configure(EntityTypeBuilder<TermoConsentimentoVersao> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
-
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
-
-        builder.ToTable(
-            "versoes_do_termo_consentimento",
-            t =>
-            {
-                t.HasCheckConstraint(
-                    "ck_versoes_do_termo_consentimento_forma_aceite",
-                    $"forma_aceite IN ({TokensSql(FormasAceite.TokensCanonicos)})");
-                t.HasCheckConstraint("ck_versoes_do_termo_consentimento_numero", "numero >= 1");
-            });
+        builder.ToTable("versoes_do_termo_consentimento", ConfigurarChecks);
         builder.HasKey(v => v.Id);
+        ConfigurarConteudo(builder);
+        ConfigurarFormaDeAceiteEIntegridade(builder);
+        ConfigurarPromocao(builder);
+        ConfigurarIndices(builder);
+    }
 
+    private static void ConfigurarChecks(TableBuilder<TermoConsentimentoVersao> table)
+    {
+        table.HasCheckConstraint(
+            "ck_versoes_do_termo_consentimento_forma_aceite",
+            $"forma_aceite IN ({TokensSql(FormasAceite.TokensCanonicos)})");
+        table.HasCheckConstraint("ck_versoes_do_termo_consentimento_numero", "numero >= 1");
+    }
+
+    private static void ConfigurarConteudo(EntityTypeBuilder<TermoConsentimentoVersao> builder)
+    {
         builder.Property(v => v.TermoConsentimentoId).IsRequired();
-
         builder.Property(v => v.Numero).IsRequired();
-
         builder.Property(v => v.Texto).IsRequired();
         builder.Property(v => v.BaseLegal).IsRequired();
+    }
 
+    private static void ConfigurarFormaDeAceiteEIntegridade(EntityTypeBuilder<TermoConsentimentoVersao> builder)
+    {
         builder.Property(v => v.FormaAceite)
             .HasConversion<FormaAceiteValueConverter>()
             .HasMaxLength(30)
@@ -59,13 +59,19 @@ internal sealed class TermoConsentimentoVersaoConfiguration : IEntityTypeConfigu
             .HasMaxLength(HashLength)
             .IsFixedLength()
             .IsRequired();
+    }
 
+    private static void ConfigurarPromocao(EntityTypeBuilder<TermoConsentimentoVersao> builder)
+    {
         builder.Property(v => v.PromovidaEm).IsRequired();
 
         builder.Property(v => v.PromovidaPor).ClassificaComo(ClassificacaoDeProtecao.Pessoal)
             .HasMaxLength(PromovidaPorMaxLength)
             .IsRequired();
+    }
 
+    private static void ConfigurarIndices(EntityTypeBuilder<TermoConsentimentoVersao> builder)
+    {
         builder.HasIndex(v => new { v.TermoConsentimentoId, v.Numero })
             .IsUnique()
             .HasDatabaseName(RestricoesDoBanco.VersaoDoTermoNumeroUnico);

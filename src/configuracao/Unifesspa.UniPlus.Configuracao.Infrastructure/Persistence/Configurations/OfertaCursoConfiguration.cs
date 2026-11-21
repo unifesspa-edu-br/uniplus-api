@@ -11,10 +11,6 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<OfertaCurso>
 {
     private const int EnumTokenMaxLength = 30;
@@ -28,17 +24,29 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
     public void Configure(EntityTypeBuilder<OfertaCurso> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
-
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
-
         builder.ToTable("ofertas_de_curso", ConfigurarChecks);
-
         builder.HasKey(o => o.Id);
+        ConfigurarIdentificacao(builder);
+        ConfigurarClassificacoes(builder);
+        ConfigurarRegimes(builder);
+        ConfigurarTurnos(builder);
+        ConfigurarCadastroNoMec(builder);
+        ConfigurarUnidadeOfertante(builder);
+        ConfigurarAuditoria(builder);
+        ConfigurarRelacionamentos(builder);
+        ConfigurarIndices(builder);
+    }
 
+    private static void ConfigurarIdentificacao(EntityTypeBuilder<OfertaCurso> builder)
+    {
         builder.Property(o => o.Codigo).HasMaxLength(CodigoMaxLength).IsRequired();
         builder.Property(o => o.CursoId).IsRequired();
         builder.Property(o => o.LocalOfertaId).IsRequired();
+    }
 
+    private static void ConfigurarClassificacoes(EntityTypeBuilder<OfertaCurso> builder)
+    {
         builder.Property(o => o.ProgramaDeOferta)
             .HasConversion<ProgramaDeOfertaValueConverter>()
             .HasMaxLength(EnumTokenMaxLength)
@@ -48,7 +56,10 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
             .HasConversion<FormatoPedagogicoValueConverter>()
             .HasMaxLength(EnumTokenMaxLength)
             .IsRequired();
+    }
 
+    private static void ConfigurarRegimes(EntityTypeBuilder<OfertaCurso> builder)
+    {
         builder.Property(o => o.RegimeDeFuncionamento)
             .HasConversion<RegimeDeFuncionamentoValueConverter>()
             .HasMaxLength(EnumTokenMaxLength)
@@ -58,13 +69,16 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
             .HasConversion<RegimeDeTurnoValueConverter>()
             .HasMaxLength(EnumTokenMaxLength)
             .IsRequired();
+    }
 
-        // Coleção primitiva de 1..2 tokens de domínio fechado, mapeada a um array
-        // nativo do Postgres (varchar(30)[]). Array em vez de tabela filha porque
-        // só ele permite ao banco recusar, numa única expressão sem subquery, as
-        // três formas de violação da cardinalidade: lista vazia, turno repetido e
-        // quantidade incompatível com o regime declarado (ver ConfigurarChecks).
-        // Uma tabela filha com PK composta recusaria apenas a repetição.
+    // Coleção primitiva de 1..2 tokens de domínio fechado, mapeada a um array
+    // nativo do Postgres (varchar(30)[]). Array em vez de tabela filha porque
+    // só ele permite ao banco recusar, numa única expressão sem subquery, as
+    // três formas de violação da cardinalidade: lista vazia, turno repetido e
+    // quantidade incompatível com o regime declarado (ver ConfigurarChecksDosTurnos).
+    // Uma tabela filha com PK composta recusaria apenas a repetição.
+    private static void ConfigurarTurnos(EntityTypeBuilder<OfertaCurso> builder)
+    {
         builder.PrimitiveCollection(o => o.Turnos)
             .HasColumnName("turnos")
             .ElementType(elemento => elemento
@@ -72,9 +86,12 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
                 .HasMaxLength(EnumTokenMaxLength))
             .UsePropertyAccessMode(PropertyAccessMode.Field)
             .IsRequired();
+    }
 
-        // Nome explícito: a convenção snake_case quebraria "EMecCodigo" de forma
-        // não óbvia — fixa e_mec_codigo como contrato de schema.
+    // Nome explícito: a convenção snake_case quebraria "EMecCodigo" de forma
+    // não óbvia — fixa e_mec_codigo como contrato de schema.
+    private static void ConfigurarCadastroNoMec(EntityTypeBuilder<OfertaCurso> builder)
+    {
         builder.Property(o => o.EMecCodigo)
             .HasColumnName("e_mec_codigo")
             .HasMaxLength(EMecCodigoMaxLength);
@@ -83,39 +100,42 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
         builder.Property(o => o.VagasAnuaisAutorizadas);
         builder.Property(o => o.BaseLegal).HasMaxLength(BaseLegalMaxLength);
         builder.Property(o => o.AtoAutorizacaoMec).HasMaxLength(AtoAutorizacaoMecMaxLength);
+    }
 
-        // Snapshot-copy da unidade ofertante (ADR-0061): owned type obrigatório,
-        // table splitting em colunas unidade_oft_* — todas NOT NULL, SEM FK para
-        // Organização (a proveniência é só o origem_id).
-        builder.OwnsOne(o => o.UnidadeOfertante, unidade =>
-        {
-            unidade.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
-            unidade.Property(u => u.OrigemId)
-                .HasColumnName("unidade_oft_origem_id")
-                .IsRequired();
-            unidade.Property(u => u.Sigla)
-                .HasColumnName("unidade_oft_sigla")
-                .HasMaxLength(UnidadeOfertante.SiglaMaxLength)
-                .IsRequired();
-            unidade.Property(u => u.Nome)
-                .HasColumnName("unidade_oft_nome")
-                .HasMaxLength(UnidadeOfertante.NomeMaxLength)
-                .IsRequired();
-            unidade.Property(u => u.Tipo)
-                .HasColumnName("unidade_oft_tipo")
-                .HasMaxLength(UnidadeOfertante.TipoMaxLength)
-                .IsRequired();
-        });
+    // Snapshot-copy da unidade ofertante (ADR-0061): owned type obrigatório,
+    // table splitting em colunas unidade_oft_* — todas NOT NULL, SEM FK para
+    // Organização (a proveniência é só o origem_id).
+    private static void ConfigurarUnidadeOfertante(EntityTypeBuilder<OfertaCurso> builder)
+    {
+        builder.OwnsOne(o => o.UnidadeOfertante, ConfigurarColunasDaUnidadeOfertante);
         builder.Navigation(o => o.UnidadeOfertante).IsRequired();
+    }
 
-        // Auditoria (IAuditableEntity)
+    private static void ConfigurarColunasDaUnidadeOfertante(OwnedNavigationBuilder<OfertaCurso, UnidadeOfertante> unidade)
+    {
+        unidade.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
+        unidade.Property(u => u.OrigemId).HasColumnName("unidade_oft_origem_id").IsRequired();
+        unidade.Property(u => u.Sigla)
+            .HasColumnName("unidade_oft_sigla").HasMaxLength(UnidadeOfertante.SiglaMaxLength).IsRequired();
+        unidade.Property(u => u.Nome)
+            .HasColumnName("unidade_oft_nome").HasMaxLength(UnidadeOfertante.NomeMaxLength).IsRequired();
+        unidade.Property(u => u.Tipo)
+            .HasColumnName("unidade_oft_tipo").HasMaxLength(UnidadeOfertante.TipoMaxLength).IsRequired();
+    }
+
+    // Auditoria (IAuditableEntity)
+    private static void ConfigurarAuditoria(EntityTypeBuilder<OfertaCurso> builder)
+    {
         builder.Property(o => o.CreatedBy).HasMaxLength(AuditUserMaxLength);
         builder.Property(o => o.UpdatedBy).HasMaxLength(AuditUserMaxLength);
+    }
 
-        // FKs intra-schema com RESTRICT: a remoção lógica de Curso/LocalOferta é
-        // barrada pelos handlers (RemocaoBloqueadaPorOfertaCurso, via
-        // ReferenciadoPorOfertaCursoVivaAsync); o RESTRICT cobre o DELETE físico
-        // residual — mesmo expediente do locais_de_oferta → campus.
+    // FKs intra-schema com RESTRICT: a remoção lógica de Curso/LocalOferta é
+    // barrada pelos handlers (RemocaoBloqueadaPorOfertaCurso, via
+    // ReferenciadoPorOfertaCursoVivaAsync); o RESTRICT cobre o DELETE físico
+    // residual — mesmo expediente do locais_de_oferta → campus.
+    private static void ConfigurarRelacionamentos(EntityTypeBuilder<OfertaCurso> builder)
+    {
         builder.HasOne<Curso>()
             .WithMany()
             .HasForeignKey(o => o.CursoId)
@@ -125,16 +145,19 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
             .WithMany()
             .HasForeignKey(o => o.LocalOfertaId)
             .OnDelete(DeleteBehavior.Restrict);
+    }
 
-        // O código identifica a oferta viva: oferta removida libera o valor, e o índice decide a corrida entre dois cadastros.
+    // O código identifica a oferta viva: oferta removida libera o valor, e o índice decide a corrida entre dois cadastros.
+    // O Id entra como segunda coluna do índice por curso porque a listagem restrita a um curso
+    // ordena pelo nome do curso — constante dentro da listagem —, deixando o
+    // Id como única coluna que move o seek de página em página.
+    private static void ConfigurarIndices(EntityTypeBuilder<OfertaCurso> builder)
+    {
         builder.HasIndex(o => o.Codigo)
             .IsUnique()
             .HasFilter("is_deleted = false")
             .HasDatabaseName(RestricoesDoBanco.OfertaDeCursoCodigoVivo);
 
-        // O Id entra como segunda coluna porque a listagem restrita a um curso
-        // ordena pelo nome do curso — constante dentro do recorte —, deixando o
-        // Id como única coluna que move o seek de página em página.
         builder.HasIndex(o => new { o.CursoId, o.Id })
             .HasDatabaseName("ix_ofertas_de_curso_curso_id");
 
@@ -144,20 +167,46 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
 
     private static void ConfigurarChecks(TableBuilder<OfertaCurso> table)
     {
-        // Formato do código (defesa em profundidade contra insert cru): o mesmo que o objeto de valor confere.
+        ConfigurarChecksDoCadastro(table);
+        ConfigurarChecksDoPrograma(table);
+        ConfigurarChecksDosDominiosDosRegimes(table);
+        ConfigurarChecksDosTurnos(table);
+        ConfigurarChecksDeCoerenciaEntreRegimes(table);
+    }
+
+    // Formato do código (defesa em profundidade contra insert cru): o mesmo que o objeto de valor confere.
+    // Teto e-MEC: nulo aceito; zero aceito; negativo nunca. Domínio fechado do formato pedagógico.
+    private static void ConfigurarChecksDoCadastro(TableBuilder<OfertaCurso> table)
+    {
         table.HasCheckConstraint(
             "ck_ofertas_de_curso_codigo_formato",
             "codigo ~ '^[A-Z][A-Z0-9_]{1,49}$'");
 
-        // Domínios fechados dos enums (defesa em profundidade contra inserts crus).
+        table.HasCheckConstraint(
+            "ck_ofertas_de_curso_vagas_anuais_autorizadas",
+            "vagas_anuais_autorizadas IS NULL OR vagas_anuais_autorizadas >= 0");
+
+        table.HasCheckConstraint(
+            "ck_ofertas_de_curso_formato_pedagogico",
+            $"formato_pedagogico IN ({TokensSql(FormatosPedagogicos.TokensCanonicos)})");
+    }
+
+    // Domínio fechado do programa de oferta e guard condicional da base legal (ADR-0066): programa
+    // fora do Regular exige base legal — espelha no banco o guard de Criar/Atualizar.
+    private static void ConfigurarChecksDoPrograma(TableBuilder<OfertaCurso> table)
+    {
         table.HasCheckConstraint(
             "ck_ofertas_de_curso_programa_de_oferta",
             $"programa_de_oferta IN ({TokensSql(ProgramasDeOferta.TokensCanonicos)})");
 
         table.HasCheckConstraint(
-            "ck_ofertas_de_curso_formato_pedagogico",
-            $"formato_pedagogico IN ({TokensSql(FormatosPedagogicos.TokensCanonicos)})");
+            "ck_ofertas_de_curso_base_legal_programa",
+            "programa_de_oferta = 'REGULAR' OR base_legal IS NOT NULL");
+    }
 
+    // Domínios fechados dos regimes e de cada elemento do array de turnos (o `<@` compara conjuntos).
+    private static void ConfigurarChecksDosDominiosDosRegimes(TableBuilder<OfertaCurso> table)
+    {
         table.HasCheckConstraint(
             "ck_ofertas_de_curso_regime_de_turno",
             $"regime_de_turno IN ({TokensSql(RegimesDeTurno.TokensCanonicos)})");
@@ -166,52 +215,46 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
             "ck_ofertas_de_curso_regime_de_funcionamento",
             $"regime_de_funcionamento IN ({TokensSql(RegimesDeFuncionamento.TokensCanonicos)})");
 
-        // Domínio fechado de cada elemento do array (o `<@` compara conjuntos).
         table.HasCheckConstraint(
             "ck_ofertas_de_curso_turnos_dominio",
             $"turnos::text[] <@ ARRAY[{TokensSql(TurnosOferta.TokensCanonicos)}]::text[]");
+    }
 
-        // Cardinalidade e distinção conforme o regime declarado (UNI-REQ-0137):
-        // REGULAR ocupa exatamente um turno; INTEGRAL, exatamente dois distintos.
-        // Espelha no banco a invariante de Criar/Atualizar.
-        //
-        // A comparação por subscrito (turnos[1] <> turnos[2]) só é confiável sobre
-        // um array unidimensional de limite inferior 1: o Postgres aceita arrays
-        // multidimensionais e com limite inferior arbitrário, e um subscrito fora
-        // da faixa devolve NULL — que num CHECK conta como satisfeito. Daí as duas
-        // guardas de forma antes da regra. O `coalesce` cobre o array vazio, cujos
-        // array_ndims/array_lower são NULL.
+    // Cardinalidade e distinção conforme o regime declarado (UNI-REQ-0137):
+    // REGULAR ocupa exatamente um turno; INTEGRAL, exatamente dois distintos.
+    // Espelha no banco a invariante de Criar/Atualizar.
+    //
+    // A comparação por subscrito (turnos[1] <> turnos[2]) só é confiável sobre
+    // um array unidimensional de limite inferior 1: o Postgres aceita arrays
+    // multidimensionais e com limite inferior arbitrário, e um subscrito fora
+    // da faixa devolve NULL — que num CHECK conta como satisfeito. Daí as duas
+    // guardas de forma antes da regra. O `coalesce` cobre o array vazio, cujos
+    // array_ndims/array_lower são NULL.
+    private static void ConfigurarChecksDosTurnos(TableBuilder<OfertaCurso> table)
+    {
         table.HasCheckConstraint(
             "ck_ofertas_de_curso_turnos_regime",
             "coalesce(array_ndims(turnos), 0) = 1 "
             + "AND coalesce(array_lower(turnos, 1), 1) = 1 "
             + "AND ((regime_de_turno = 'REGULAR' AND cardinality(turnos) = 1) "
             + "OR (regime_de_turno = 'INTEGRAL' AND cardinality(turnos) = 2 AND turnos[1] <> turnos[2]))");
+    }
 
-        // Compatibilidade entre as duas dimensões (UNI-REQ-0138): a oferta
-        // INTENSIVA exige regime de turno INTEGRAL; a EXTENSIVA aceita ambos.
-        // Espelha no banco a invariante de Criar/Atualizar. A expressão é derivada
-        // do mesmo roster que o agregado consulta (RegimeDeTurnoExigido), para o
-        // CHECK não divergir da regra caso o vocabulário cresça.
+    // Compatibilidade entre as duas dimensões (UNI-REQ-0138): a oferta
+    // INTENSIVA exige regime de turno INTEGRAL; a EXTENSIVA aceita ambos.
+    // Espelha no banco a invariante de Criar/Atualizar. A expressão é derivada
+    // do mesmo vocabulário que o agregado consulta (RegimeDeTurnoExigido), para o
+    // CHECK não divergir da regra caso o vocabulário cresça.
+    private static void ConfigurarChecksDeCoerenciaEntreRegimes(TableBuilder<OfertaCurso> table)
+    {
         table.HasCheckConstraint(
             "ck_ofertas_de_curso_funcionamento_regime_de_turno",
             CompatibilidadeFuncionamentoRegimeSql());
-
-        // Teto e-MEC: nulo aceito; zero aceito; negativo nunca.
-        table.HasCheckConstraint(
-            "ck_ofertas_de_curso_vagas_anuais_autorizadas",
-            "vagas_anuais_autorizadas IS NULL OR vagas_anuais_autorizadas >= 0");
-
-        // Guard condicional da base legal (ADR-0066): programa fora do Regular
-        // exige base legal — espelha no banco o guard de Criar/Atualizar.
-        table.HasCheckConstraint(
-            "ck_ofertas_de_curso_base_legal_programa",
-            "programa_de_oferta = 'REGULAR' OR base_legal IS NOT NULL");
     }
 
     // Uma cláusula por regime de funcionamento que restringe o regime de turno;
-    // os que não restringem (EXTENSIVO e ALTERNANCIA_PEDAGOGICA) não entram na expressão. Com o roster
-    // atual resulta em
+    // os que não restringem (EXTENSIVO e ALTERNANCIA_PEDAGOGICA) não entram na expressão. Com o
+    // vocabulário atual resulta em
     // `regime_de_funcionamento <> 'INTENSIVO' OR regime_de_turno = 'INTEGRAL'`.
     private static string CompatibilidadeFuncionamentoRegimeSql()
     {

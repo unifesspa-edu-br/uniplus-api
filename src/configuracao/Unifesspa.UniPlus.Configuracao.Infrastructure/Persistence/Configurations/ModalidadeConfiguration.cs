@@ -26,6 +26,9 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
     private const int BaseLegalMaxLength = 500;
     private const int AuditUserMaxLength = 255;
 
+    // Instante fixo do seed (HasData exige valor determinístico).
+    private static readonly DateTimeOffset InstanteDoSeed = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+
     private static readonly JsonSerializerOptions JsonOptions = OpcoesJsonDeDocumento.Criar(new()
     {
         WriteIndented = false,
@@ -34,23 +37,35 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
     public void Configure(EntityTypeBuilder<Modalidade> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
-
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
-
         builder.ToTable("modalidades", ConfigurarChecks);
-
         builder.HasKey(m => m.Id);
+        ConfigurarIdentificacao(builder);
+        ConfigurarNaturezaEComposicaoDasVagas(builder);
+        ConfigurarRemanejamento(builder);
+        ConfigurarParametrosDoRemanejamento(builder);
+        ConfigurarRegraDeAplicabilidade(builder);
+        ConfigurarAuditoria(builder);
+        ConfigurarIndices(builder);
+        builder.HasData(MaterializarSeed());
+    }
 
-        // Codigo é value object imutável — persistido por valor como varchar via
-        // CodigoModalidadeValueConverter (reidratação fail-fast). O CHECK de formato
-        // e o índice único parcial abaixo protegem a coluna.
+    // Codigo é value object imutável — persistido por valor como varchar via
+    // CodigoModalidadeValueConverter (reidratação fail-fast). O CHECK de formato
+    // e o índice único parcial protegem a coluna.
+    private static void ConfigurarIdentificacao(EntityTypeBuilder<Modalidade> builder)
+    {
         builder.Property(m => m.Codigo)
             .HasConversion<CodigoModalidadeValueConverter>()
             .HasMaxLength(CodigoMaxLength)
             .IsRequired();
 
         builder.Property(m => m.Descricao).HasMaxLength(DescricaoMaxLength);
+        builder.Property(m => m.BaseLegal).HasMaxLength(BaseLegalMaxLength);
+    }
 
+    private static void ConfigurarNaturezaEComposicaoDasVagas(EntityTypeBuilder<Modalidade> builder)
+    {
         builder.Property(m => m.NaturezaLegal)
             .HasConversion<NaturezaLegalValueConverter>()
             .HasMaxLength(EnumTokenMaxLength)
@@ -62,8 +77,11 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
             .IsRequired();
 
         builder.Property(m => m.ComposicaoOrigem).HasMaxLength(CodigoReferenciaMaxLength);
+    }
 
-        // Enums nullable: o converter cobre o valor não-nulo; o EF encapsula null.
+    // Enums nullable: o converter cobre o valor não-nulo; o EF encapsula null.
+    private static void ConfigurarRemanejamento(EntityTypeBuilder<Modalidade> builder)
+    {
         builder.Property(m => m.RegraRemanejamento)
             .HasConversion(new RegraRemanejamentoValueConverter())
             .HasMaxLength(EnumTokenMaxLength);
@@ -71,70 +89,83 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
         builder.Property(m => m.AcaoQuandoIndeferido)
             .HasConversion(new AcaoQuandoIndeferidoValueConverter())
             .HasMaxLength(EnumTokenMaxLength);
+    }
 
-        // remanejamento_parametros: value object serializado como jsonb (chaves fixadas por
-        // JsonPropertyName — destino/par/fallback). Default '{}' cobre inserts crus.
+    // remanejamento_parametros: value object serializado como jsonb (chaves fixadas por
+    // JsonPropertyName — destino/par/fallback). Default '{}' cobre inserts crus.
+    private static void ConfigurarParametrosDoRemanejamento(EntityTypeBuilder<Modalidade> builder)
+    {
         builder.Property(m => m.RemanejamentoParametros)
             .HasColumnName("remanejamento_parametros")
             .HasConversion(RemanejamentoParametrosConverter, RemanejamentoParametrosComparer)
             .HasColumnType("jsonb")
             .HasDefaultValueSql("'{}'::jsonb")
             .IsRequired();
+    }
 
-        // A regra de aplicabilidade (ADR-0144): o predicado como lista de cláusulas, cada uma lista
-        // de condições. Sem default: toda modalidade declara a sua, e a incondicional é a lista vazia.
+    // A regra de aplicabilidade (ADR-0144): o predicado como lista de cláusulas, cada uma lista
+    // de condições. Sem default: toda modalidade declara a sua, e a incondicional é a lista vazia.
+    private static void ConfigurarRegraDeAplicabilidade(EntityTypeBuilder<Modalidade> builder)
+    {
         builder.Property(m => m.RegraDeAplicabilidade)
             .HasConversion(PredicadoDnfColunaJson.Converter, PredicadoDnfColunaJson.Comparer)
             .HasColumnType("jsonb")
             .IsRequired();
+    }
 
-        builder.Property(m => m.BaseLegal).HasMaxLength(BaseLegalMaxLength);
-
-        // Auditoria (IAuditableEntity)
+    // Auditoria (IAuditableEntity)
+    private static void ConfigurarAuditoria(EntityTypeBuilder<Modalidade> builder)
+    {
         builder.Property(m => m.CreatedBy).HasMaxLength(AuditUserMaxLength);
         builder.Property(m => m.UpdatedBy).HasMaxLength(AuditUserMaxLength);
+    }
 
-        // Unicidade do código entre modalidades vivas (índice parcial) — uma
-        // modalidade viva por código; soft-delete libera o slot para recriação.
+    // Unicidade do código entre modalidades vivas (índice parcial) — uma
+    // modalidade viva por código; soft-delete libera o slot para recriação.
+    private static void ConfigurarIndices(EntityTypeBuilder<Modalidade> builder)
+    {
         builder.HasIndex(m => m.Codigo)
             .IsUnique()
             .HasFilter("is_deleted = false")
             .HasDatabaseName(RestricoesDoBanco.ModalidadeCodigoVivo);
-
-        builder.HasData(MaterializarSeed());
     }
 
     /// <summary>
     /// Projeta o seed (<see cref="ModalidadeSeed.Itens"/>) para linhas que o <c>HasData</c> congela
-    /// como literais na migration inicial. O instante-âncora é fixo (as linhas não passam pelo
+    /// como literais na migration inicial. O instante é fixo (as linhas não passam pelo
     /// <c>AuditableInterceptor</c>); as oito federais mais AC, AC_PCD, AC_I e AC_Q
     /// nascem com a migration inicial.
     /// </summary>
-    private static IEnumerable<object> MaterializarSeed()
-    {
-        DateTimeOffset seedCriadoEm = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+    private static IEnumerable<object> MaterializarSeed() =>
+        ModalidadeSeed.Itens.Select(LinhaDoSeed);
 
-        return ModalidadeSeed.Itens.Select(item => new
-        {
-            item.Id,
-            Codigo = CodigoModalidade.Criar(item.Codigo).Value!,
-            item.Descricao,
-            NaturezaLegal = item.Natureza,
-            ComposicaoVagas = item.Composicao,
-            item.ComposicaoOrigem,
-            RegraRemanejamento = item.Regra,
-            item.RemanejamentoParametros,
-            item.RegraDeAplicabilidade,
-            AcaoQuandoIndeferido = (AcaoQuandoIndeferido?)null,
-            item.BaseLegal,
-            CreatedAt = seedCriadoEm,
-            IsDeleted = false,
-        });
-    }
+    private static object LinhaDoSeed(ModalidadeSeedItem item) => new
+    {
+        item.Id,
+        Codigo = CodigoModalidade.Criar(item.Codigo).Value!,
+        item.Descricao,
+        NaturezaLegal = item.Natureza,
+        ComposicaoVagas = item.Composicao,
+        item.ComposicaoOrigem,
+        RegraRemanejamento = item.Regra,
+        item.RemanejamentoParametros,
+        item.RegraDeAplicabilidade,
+        AcaoQuandoIndeferido = (AcaoQuandoIndeferido?)null,
+        item.BaseLegal,
+        CreatedAt = InstanteDoSeed,
+        IsDeleted = false,
+    };
 
     private static void ConfigurarChecks(TableBuilder<Modalidade> table)
     {
-        // Domínios fechados dos enums (defesa em profundidade contra inserts crus).
+        ConfigurarChecksDosDominiosDasVagas(table);
+        ConfigurarChecksDosDominiosDoRemanejamento(table);
+        ConfigurarChecksDeCoerenciaDoCodigoEDaComposicao(table);
+    }
+
+    // Domínios fechados dos enums (defesa em profundidade contra inserts crus).
+    private static void ConfigurarChecksDosDominiosDasVagas(TableBuilder<Modalidade> table)
+    {
         table.HasCheckConstraint(
             "ck_modalidades_natureza_legal",
             $"natureza_legal IN ({TokensSql(NaturezasLegais.TokensCanonicos)})");
@@ -142,7 +173,10 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
         table.HasCheckConstraint(
             "ck_modalidades_composicao_vagas",
             $"composicao_vagas IN ({TokensSql(ComposicoesVagas.TokensCanonicos)})");
+    }
 
+    private static void ConfigurarChecksDosDominiosDoRemanejamento(TableBuilder<Modalidade> table)
+    {
         table.HasCheckConstraint(
             "ck_modalidades_regra_remanejamento",
             $"regra_remanejamento IS NULL OR regra_remanejamento IN ({TokensSql(RegrasRemanejamento.TokensCanonicos)})");
@@ -150,14 +184,17 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
         table.HasCheckConstraint(
             "ck_modalidades_acao_quando_indeferido",
             $"acao_quando_indeferido IS NULL OR acao_quando_indeferido IN ({TokensSql(AcoesQuandoIndeferido.TokensCanonicos)})");
+    }
 
-        // Formato fechado do código — alinhado ao value object CodigoModalidade.
+    // Formato fechado do código — alinhado ao value object CodigoModalidade.
+    // Equivalência exata RETIRADA_DE_OUTRA_MODALIDADE ⟺ composicao_origem preenchida (invariante 4),
+    // como igualdade de dois booleanos — null-safe (ambos os lados nunca são null).
+    private static void ConfigurarChecksDeCoerenciaDoCodigoEDaComposicao(TableBuilder<Modalidade> table)
+    {
         table.HasCheckConstraint(
             "ck_modalidades_codigo_formato",
             "codigo ~ '^[A-Z0-9_]+$'");
 
-        // Equivalência exata RETIRADA_DE_OUTRA_MODALIDADE ⟺ composicao_origem preenchida (invariante 4),
-        // como igualdade de dois booleanos — null-safe (ambos os lados nunca são null).
         table.HasCheckConstraint(
             "ck_modalidades_retirada_de_outra_modalidade_origem",
             "(composicao_vagas = 'RETIRADA_DE_OUTRA_MODALIDADE') = (composicao_origem IS NOT NULL)");
