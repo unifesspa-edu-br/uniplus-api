@@ -80,13 +80,17 @@
       {
         "fatoCodigo": "DATA_A",
         "estado": "RESOLVIDO",
-        "restricoesVioladas": []
+        "regras": {
+          "restricoesVioladas": []
+        }
       },
       {
         "fatoCodigo": "DATA_B",
-        "restricoesVioladas": [
-          "FAIXA_DE_DATA"
-        ]
+        "regras": {
+          "restricoesVioladas": [
+            "FAIXA_DE_DATA"
+          ]
+        }
       }
     ]
   }

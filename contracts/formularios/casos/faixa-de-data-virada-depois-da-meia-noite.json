@@ -59,7 +59,9 @@
       {
         "fatoCodigo": "DATA_HOJE",
         "estado": "RESOLVIDO",
-        "restricoesVioladas": []
+        "regras": {
+          "restricoesVioladas": []
+        }
       }
     ]
   }

@@ -85,36 +85,40 @@
       {
         "codigo": "FAMILIA",
         "estado": "RESOLVIDO",
-        "contagemValida": true,
-        "ocorrencias": [
-          {
-            "id": "m1",
-            "estado": "RESOLVIDO",
-            "campos": [
-              {
-                "fatoCodigo": "TRABALHADOR_RURAL",
-                "estado": "RESOLVIDO"
-              }
-            ]
-          },
-          {
-            "id": "m2",
-            "estado": "RESOLVIDO",
-            "campos": [
-              {
-                "fatoCodigo": "TRABALHADOR_RURAL",
-                "estado": "RESOLVIDO"
-              }
-            ]
-          }
-        ]
+        "ocorrencias": {
+          "contagemValida": true,
+          "lista": [
+            {
+              "id": "m1",
+              "estado": "RESOLVIDO",
+              "campos": [
+                {
+                  "fatoCodigo": "TRABALHADOR_RURAL",
+                  "estado": "RESOLVIDO"
+                }
+              ]
+            },
+            {
+              "id": "m2",
+              "estado": "RESOLVIDO",
+              "campos": [
+                {
+                  "fatoCodigo": "TRABALHADOR_RURAL",
+                  "estado": "RESOLVIDO"
+                }
+              ]
+            }
+          ]
+        }
       }
     ],
     "campos": [
       {
         "fatoCodigo": "DECLARACAO_RURAL",
-        "visivel": "VERDADEIRO",
-        "obrigatorio": "VERDADEIRO"
+        "regras": {
+          "visivel": "VERDADEIRO",
+          "obrigatorio": "VERDADEIRO"
+        }
       }
     ]
   }

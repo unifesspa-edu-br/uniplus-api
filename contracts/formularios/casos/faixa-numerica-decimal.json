@@ -61,14 +61,18 @@
     "campos": [
       {
         "fatoCodigo": "NOTA_A",
-        "restricoesVioladas": [
-          "FAIXA_NUMERICA"
-        ]
+        "regras": {
+          "restricoesVioladas": [
+            "FAIXA_NUMERICA"
+          ]
+        }
       },
       {
         "fatoCodigo": "NOTA_B",
         "estado": "RESOLVIDO",
-        "restricoesVioladas": []
+        "regras": {
+          "restricoesVioladas": []
+        }
       }
     ]
   }

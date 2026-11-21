@@ -43,7 +43,9 @@
       {
         "fatoCodigo": "SIGLA",
         "estado": "RESOLVIDO",
-        "restricoesVioladas": []
+        "regras": {
+          "restricoesVioladas": []
+        }
       }
     ]
   }

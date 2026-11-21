@@ -52,8 +52,12 @@
     "grupos": [
       {
         "codigo": "FAMILIA",
-        "visivel": "VERDADEIRO",
-        "contagemValida": false
+        "regras": {
+          "visivel": "VERDADEIRO"
+        },
+        "ocorrencias": {
+          "contagemValida": false
+        }
       }
     ]
   }

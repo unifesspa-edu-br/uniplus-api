@@ -32,8 +32,10 @@
     "campos": [
       {
         "fatoCodigo": "DETALHE",
-        "visivel": "FALSO",
-        "estado": "NAO_APLICAVEL"
+        "estado": "NAO_APLICAVEL",
+        "regras": {
+          "visivel": "FALSO"
+        }
       }
     ]
   }

@@ -52,7 +52,9 @@
     "campos": [
       {
         "fatoCodigo": "DECLARACAO",
-        "visivel": "INDETERMINADO"
+        "regras": {
+          "visivel": "INDETERMINADO"
+        }
       }
     ]
   }

@@ -82,29 +82,35 @@
     "grupos": [
       {
         "codigo": "FAMILIA",
-        "ocorrencias": [
-          {
-            "id": "m1",
-            "campos": [
-              {
-                "fatoCodigo": "NASCIMENTO_MEMBRO",
-                "estado": "RESOLVIDO",
-                "restricoesVioladas": []
-              }
-            ]
-          },
-          {
-            "id": "m2",
-            "campos": [
-              {
-                "fatoCodigo": "NASCIMENTO_MEMBRO",
-                "restricoesVioladas": [
-                  "FAIXA_DE_DATA"
-                ]
-              }
-            ]
-          }
-        ]
+        "ocorrencias": {
+          "lista": [
+            {
+              "id": "m1",
+              "campos": [
+                {
+                  "fatoCodigo": "NASCIMENTO_MEMBRO",
+                  "estado": "RESOLVIDO",
+                  "regras": {
+                    "restricoesVioladas": []
+                  }
+                }
+              ]
+            },
+            {
+              "id": "m2",
+              "campos": [
+                {
+                  "fatoCodigo": "NASCIMENTO_MEMBRO",
+                  "regras": {
+                    "restricoesVioladas": [
+                      "FAIXA_DE_DATA"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
       }
     ]
   }

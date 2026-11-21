@@ -59,7 +59,9 @@
       {
         "fatoCodigo": "DATA_OPCIONAL",
         "estado": "NAO_INFORMADO",
-        "restricoesVioladas": []
+        "regras": {
+          "restricoesVioladas": []
+        }
       }
     ]
   }

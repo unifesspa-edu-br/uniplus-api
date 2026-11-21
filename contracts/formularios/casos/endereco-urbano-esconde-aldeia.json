@@ -59,8 +59,10 @@
       },
       {
         "fatoCodigo": "NOME_ALDEIA",
-        "visivel": "FALSO",
-        "estado": "NAO_APLICAVEL"
+        "estado": "NAO_APLICAVEL",
+        "regras": {
+          "visivel": "FALSO"
+        }
       }
     ]
   }

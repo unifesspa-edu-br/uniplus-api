@@ -56,7 +56,9 @@
       },
       {
         "fatoCodigo": "JUSTIFICATIVA",
-        "visivel": "FALSO"
+        "regras": {
+          "visivel": "FALSO"
+        }
       }
     ]
   }
