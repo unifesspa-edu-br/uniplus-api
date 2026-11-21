@@ -16,10 +16,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// Implementação de <see cref="ITermoConsentimentoReader"/> (ADR-0056). A junção com o termo aplica
 /// o filtro de exclusão lógica dele: versão de termo removido não é oferecida a vínculo novo.
 /// </summary>
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via DI em DependencyInjection.")]
 internal sealed class TermoConsentimentoReader : ITermoConsentimentoReader
 {
     private readonly UniPlusDbContext _dbContext;
