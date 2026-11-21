@@ -74,10 +74,14 @@ internal static class ApoioDaModalidade
             BaseLegal = "Lei 12.711/2012",
         }).Value!;
 
+    /// <summary>A regra da pessoa com deficiência na ampla concorrência: ser pessoa com deficiência e optar por concorrer como tal, sem citar a opção pelas cotas.</summary>
+    internal static PredicadoDnf RegraDaAcPcd() => Clausulas([("PCD", true), ("CONCORRER_PCD", true)]);
+
     /// <summary>Pessoa com deficiência na ampla concorrência: única fixa com parâmetro de remanejamento.</summary>
     internal static Modalidade AcPcd() =>
         Criar("AC_PCD", d => d with
         {
+            RegraDeAplicabilidade = RegraDaAcPcd(),
             NaturezaLegalToken = "ACAO_AFIRMATIVA",
             ComposicaoVagasToken = "RETIRADA_DE_OUTRA_MODALIDADE",
             ComposicaoOrigem = "AC",

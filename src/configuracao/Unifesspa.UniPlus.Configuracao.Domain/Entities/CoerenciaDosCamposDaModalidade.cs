@@ -48,7 +48,7 @@ internal static class CoerenciaDosCamposDaModalidade
     /// </summary>
     internal static List<FieldError> ValidarCoerencia(CamposValidadosDaModalidade validados, CodigoModalidade? codigo)
     {
-        List<FieldError> violacoes = ValidarCoerenciaCruzada(validados.Campos, validados.Reconhecidos);
+        List<FieldError> violacoes = ValidarCoerenciaCruzada(validados.Campos, validados.Reconhecidos, codigo);
         if (codigo is not null)
         {
             violacoes.AddRange(ValidarAutorreferencia(codigo, validados.Campos));
@@ -64,11 +64,13 @@ internal static class CoerenciaDosCamposDaModalidade
     /// <remarks>
     /// Cada checagem só roda quando o token de que depende foi reconhecido: sobre um token
     /// inválido a comparação usaria o valor default do enum e reportaria uma incoerência que
-    /// o autor da requisição não cometeu.
+    /// o autor da requisição não cometeu. Pelo mesmo motivo, a forma da regra da ação afirmativa, que
+    /// depende do código da modalidade, só é conferida com o código reconhecido.
     /// </remarks>
     internal static List<FieldError> ValidarCoerenciaCruzada(
         CamposResolvidosDaModalidade campos,
-        TokensReconhecidosDaModalidade reconhecidos)
+        TokensReconhecidosDaModalidade reconhecidos,
+        CodigoModalidade? codigo)
     {
         FieldError?[] violacoes =
         [
@@ -78,7 +80,7 @@ internal static class CoerenciaDosCamposDaModalidade
                 : null,
             reconhecidos.Regra ? ValidarParametrosPorRegra(campos.RegraRemanejamento, campos.RemanejamentoParametros) : null,
             reconhecidos.Natureza && campos.RegraDeAplicabilidade is { } regra
-                ? ValidarRegraPelaNatureza(campos.NaturezaLegal, regra)
+                ? ValidarRegraPelaNatureza(campos.NaturezaLegal, regra, codigo)
                 : null,
         ];
 
@@ -155,10 +157,11 @@ internal static class CoerenciaDosCamposDaModalidade
 
     /// <remarks>
     /// A natureza fixa a forma da regra: todo candidato concorre à ampla concorrência, e o candidato
-    /// nunca concorre a cota da lei e a ação afirmativa ao mesmo tempo, então cada cláusula da cota
-    /// exige a opção pelas cotas da lei e cada cláusula da ação afirmativa exige não tê-la feito.
+    /// que optou pelas cotas da lei não concorre a ação afirmativa, então cada cláusula da cota exige a
+    /// opção pelas cotas da lei e cada cláusula da ação afirmativa exige não tê-la feito. A exceção é a
+    /// ação afirmativa que se soma às cotas, cuja regra não cita a opção (UNI-REQ-0142 e UNI-REQ-0266).
     /// </remarks>
-    private static FieldError? ValidarRegraPelaNatureza(NaturezaLegal natureza, PredicadoDnf regra) => natureza switch
+    private static FieldError? ValidarRegraPelaNatureza(NaturezaLegal natureza, PredicadoDnf regra, CodigoModalidade? codigo) => natureza switch
     {
         NaturezaLegal.Ampla when regra.Clausulas.Count > 0 => new("regraDeAplicabilidade", new DomainError(
             ModalidadeErrorCodes.AmplaConcorrenciaComCondicao,
@@ -166,9 +169,21 @@ internal static class CoerenciaDosCamposDaModalidade
         NaturezaLegal.CotaReservada when !OpcaoPelasCotasDaLei.TodaClausulaExige(regra, optou: true) => new("regraDeAplicabilidade", new DomainError(
             ModalidadeErrorCodes.CotaSemOpcaoPelasCotasDaLei,
             $"Toda cláusula da regra de uma cota da lei exige {OpcaoPelasCotasDaLei.Fato} verdadeiro.")),
-        NaturezaLegal.AcaoAfirmativa when !OpcaoPelasCotasDaLei.TodaClausulaExige(regra, optou: false) => new("regraDeAplicabilidade", new DomainError(
-            ModalidadeErrorCodes.AcaoAfirmativaComOpcaoPelasCotasDaLei,
-            $"Toda cláusula da regra de uma ação afirmativa exige {OpcaoPelasCotasDaLei.Fato} falso: quem optou pelas cotas da lei não concorre a ela.")),
+        NaturezaLegal.AcaoAfirmativa when codigo is not null => ValidarRegraDaAcaoAfirmativa(codigo, regra),
         _ => null,
     };
+
+    private static FieldError? ValidarRegraDaAcaoAfirmativa(CodigoModalidade codigo, PredicadoDnf regra)
+    {
+        if (OpcaoPelasCotasDaLei.RegraTemAFormaDaAcaoAfirmativa(codigo.Valor, regra))
+        {
+            return null;
+        }
+
+        string detalhe = OpcaoPelasCotasDaLei.SeSomaAsCotas(codigo.Valor)
+            ? $"A regra da reserva de vagas para pessoa com deficiência ({codigo.Valor}) não cita {OpcaoPelasCotasDaLei.Fato}: "
+                + "ela vale para quem optou pelas cotas da lei e para quem não optou."
+            : $"Toda cláusula da regra de uma ação afirmativa exige {OpcaoPelasCotasDaLei.Fato} falso: quem optou pelas cotas da lei não concorre a ela.";
+        return new("regraDeAplicabilidade", new DomainError(ModalidadeErrorCodes.AcaoAfirmativaComOpcaoPelasCotasDaLei, detalhe));
+    }
 }

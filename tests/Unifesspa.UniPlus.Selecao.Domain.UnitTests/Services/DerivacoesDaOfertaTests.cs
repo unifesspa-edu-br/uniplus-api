@@ -72,13 +72,13 @@ public sealed class DerivacoesDaOfertaTests
     public void SemCota_NaoSupreOEgresso() =>
         DerivacoesDaOferta.Efetivas([], [Oferta(
                 Modalidade("AC", NaturezaLegalModalidade.Ampla),
-                Modalidade("AC_PCD", NaturezaLegalModalidade.AcaoAfirmativa, [NaoOptou, ("PCD", true)]))])
+                Modalidade("AC_PCD", NaturezaLegalModalidade.AcaoAfirmativa, [("PCD", true)]))])
             .Should().NotContain(d => d.CodigoFato == OrigemEscolar.FatoEgresso);
 
     [Fact(DisplayName = "A modalidade do candidato é a união das regras das modalidades ofertadas, uma por código")]
     public void Modalidade_UneAsRegrasOfertadas()
     {
-        ModalidadeSelecionada pcd = Modalidade("AC_PCD", NaturezaLegalModalidade.AcaoAfirmativa, [NaoOptou, ("PCD", true)]);
+        ModalidadeSelecionada pcd = Modalidade("AC_PCD", NaturezaLegalModalidade.AcaoAfirmativa, [("PCD", true)]);
         IReadOnlyList<ConfiguracaoDerivacaoFato> efetivas = DerivacoesDaOferta.Efetivas([], [
             Oferta(Modalidade("AC", NaturezaLegalModalidade.Ampla), pcd, Modalidade("LI_PCD", NaturezaLegalModalidade.CotaReservada, [Optou, ("PCD", true)])),
             Oferta(Modalidade("AC", NaturezaLegalModalidade.Ampla), pcd, Modalidade("LI_PCD", NaturezaLegalModalidade.CotaReservada, [Optou, ("PCD", true)])),
@@ -90,12 +90,34 @@ public sealed class DerivacoesDaOfertaTests
         efetivas.Single(d => d.CodigoFato == ModalidadeDoCandidato.Fato).Regras.Should().HaveCount(3, "a modalidade em duas ofertas tem uma regra só");
     }
 
+    [Fact(DisplayName = "Com cota da lei ofertada, quem optou pelas cotas e tem deficiência também concorre à AC_PCD")]
+    public void ComCota_QuemOptouPelasCotasConcorreTambemAAcPcd()
+    {
+        IReadOnlyList<ConfiguracaoDerivacaoFato> efetivas = DerivacoesDaOferta.Efetivas([], [Oferta(
+            Modalidade("AC", NaturezaLegalModalidade.Ampla),
+            Modalidade("AC_PCD", NaturezaLegalModalidade.AcaoAfirmativa, [("PCD", true)]),
+            Modalidade("LI_PCD", NaturezaLegalModalidade.CotaReservada, [Optou, ("PCD", true)]))]);
+
+        Derivar(efetivas, (OpcaoPelasCotasDaLei.Fato, Sim), ("PCD", Sim)).Should().Equal("AC", "AC_PCD", "LI_PCD");
+    }
+
+    [Fact(DisplayName = "Sem cota da lei ofertada, a oferta só com AC e AC_PCD cita só os fatos de deficiência e não deriva a opção pelas cotas")]
+    public void SoAcEAcPcd_CitaSoOsFatosDeDeficiencia()
+    {
+        IReadOnlyList<ConfiguracaoDerivacaoFato> efetivas = DerivacoesDaOferta.Efetivas([], [Oferta(
+            Modalidade("AC", NaturezaLegalModalidade.Ampla),
+            Modalidade("AC_PCD", NaturezaLegalModalidade.AcaoAfirmativa, [("PCD", true), ("CONCORRER_PCD", true)]))]);
+
+        efetivas.Select(static d => d.CodigoFato).Should().Equal(ModalidadeDoCandidato.Fato);
+        efetivas.Single().FatosCitados.Should().BeEquivalentTo(["PCD", "CONCORRER_PCD"]);
+    }
+
     [Fact(DisplayName = "Sem cota da lei ofertada, a opção pelas cotas vale falso: não é derivada e sai das regras")]
     public void SemCota_OpcaoValeFalso()
     {
         IReadOnlyList<ConfiguracaoDerivacaoFato> efetivas = DerivacoesDaOferta.Efetivas([], [Oferta(
             Modalidade("AC", NaturezaLegalModalidade.Ampla),
-            Modalidade("AC_PCD", NaturezaLegalModalidade.AcaoAfirmativa, [NaoOptou, ("PCD", true), ("CONCORRER_PCD", true)]),
+            Modalidade("AC_PCD", NaturezaLegalModalidade.AcaoAfirmativa, [("PCD", true), ("CONCORRER_PCD", true)]),
             Modalidade("ESPECIAL", NaturezaLegalModalidade.AcaoAfirmativa, [Optou, ("PCD", true)]))]);
 
         efetivas.Should().NotContain(d => d.CodigoFato == OpcaoPelasCotasDaLei.Fato);

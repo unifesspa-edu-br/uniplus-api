@@ -162,7 +162,6 @@ internal static class ItensDoChecklistDoEnvelopeFechado
         "modalidade_regra_incoerente_com_a_natureza",
         "modalidade_remanejamento_incoerente_com_a_natureza",
         "modalidade_cotas_da_lei_diferentes_entre_ofertas",
-        "modalidade_reserva_pcd_sem_cota_pcd_da_lei",
         "derivacao_cota_e_acao_afirmativa_juntas",
         "grafo_dependencia_com_ciclo",
         "criterios_desempate_em_excesso",

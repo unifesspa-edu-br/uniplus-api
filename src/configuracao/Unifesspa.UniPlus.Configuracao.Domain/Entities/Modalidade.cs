@@ -55,7 +55,9 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
     /// <summary>
     /// Quem concorre à modalidade: o predicado sobre os fatos do candidato que o enquadra nela
     /// (ADR-0144). A ampla concorrência é incondicional, sem cláusula; a cota da lei exige a opção
-    /// pelas cotas em toda cláusula, e a ação afirmativa exige não tê-la feito (UNI-REQ-0142).
+    /// pelas cotas em toda cláusula, e a ação afirmativa exige não tê-la feito, salvo a reserva de
+    /// pessoa com deficiência, que não cita a opção e vale para quem optou pelas cotas (UNI-REQ-0142
+    /// e UNI-REQ-0266).
     /// </summary>
     public PredicadoDnf RegraDeAplicabilidade { get; private set; } = null!;
     /// <summary>

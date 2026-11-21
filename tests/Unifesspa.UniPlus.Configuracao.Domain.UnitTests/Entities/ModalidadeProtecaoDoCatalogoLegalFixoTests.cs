@@ -123,7 +123,7 @@ public sealed class ModalidadeProtecaoDoCatalogoLegalFixoTests
             Descricao: null, NaturezaLegalToken: "ACAO_AFIRMATIVA", ComposicaoVagasToken: "RETIRADA_DE_OUTRA_MODALIDADE",
             ComposicaoOrigem: "AC", RegraRemanejamentoToken: "DESTINO_UNICO",
             RemanejamentoDestino: destino, RemanejamentoPar: par, RemanejamentoFallback: fallback,
-            RegraDeAplicabilidade: AplicavelA("ACAO_AFIRMATIVA"), AcaoQuandoIndeferidoToken: null, BaseLegal: null));
+            RegraDeAplicabilidade: RegraDaAcPcd(), AcaoQuandoIndeferidoToken: null, BaseLegal: null));
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(ModalidadeErrorCodes.EstruturaProtegidaNaoEditavel);

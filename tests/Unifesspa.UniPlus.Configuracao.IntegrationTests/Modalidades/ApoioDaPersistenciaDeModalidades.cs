@@ -64,7 +64,7 @@ internal static class ApoioDaPersistenciaDeModalidades
 
     internal static Modalidade DestinoUnico(string codigo, string destino) =>
         Modalidade.Criar(codigo, new DeclaracaoDaModalidade(null, "ACAO_AFIRMATIVA", "SUPLEMENTAR_AO_TOTAL", null, "DESTINO_UNICO", destino, null, null,
-            SementeDeAplicabilidadeLegal.AcPcd, null, null)).Value!;
+            SementeDeAplicabilidadeLegal.AcI, null, null)).Value!;
 
     internal static string CodigoUnico() => $"MOD_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
 }

@@ -52,13 +52,23 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
         ItemDaExclusividadeOk(CotaEAcaoAfirmativaPor("NOTA", 1, 1.0m)).Should().BeFalse();
 
     /// <summary>
-    /// As regras semeadas passam pela recusa: cada cláusula de <c>AC_PCD</c> recusa a opção pelas
-    /// cotas que toda cota exige.
+    /// As regras semeadas passam pela recusa: cada cláusula da ação afirmativa institucional recusa a
+    /// opção pelas cotas que toda cota exige.
     /// </summary>
-    [Fact(DisplayName = "Pré-canonicalização: cotas que exigem a opção e AC_PCD que a recusa não acendem o item")]
+    [Fact(DisplayName = "Pré-canonicalização: cotas que exigem a opção e ação afirmativa institucional que a recusa não acendem o item")]
     public void PreCanon_OpcaoPelasCotasSeparaCotaDeAcaoAfirmativa_ItemOk() =>
         ItemDaExclusividadeOk(ProcessoComCotaEAcaoAfirmativa(
                 Exige((OpcaoPelasCotasDaLei.Fato, true)), Exige((OpcaoPelasCotasDaLei.Fato, false), ("PCD", true))))
+            .Should().BeTrue();
+
+    /// <summary>
+    /// A reserva para pessoa com deficiência se soma às cotas: a regra semeada dela não cita a opção
+    /// pelas cotas e não acende o item.
+    /// </summary>
+    [Fact(DisplayName = "Pré-canonicalização: cotas que exigem a opção e AC_PCD que não a cita não acendem o item")]
+    public void PreCanon_AcPcdSemCitarAOpcao_ItemOk() =>
+        ItemDaExclusividadeOk(ProcessoComCotaEAcaoAfirmativa(
+                Exige((OpcaoPelasCotasDaLei.Fato, true)), Exige(("PCD", true)), ModalidadesFederaisLei12711.AcPcd))
             .Should().BeTrue();
 
     [Fact(DisplayName = "Pré-canonicalização: ciclo entre duas configurações de derivação — item vermelho e Publicar recusa com GrafoDependenciaConjuntaErrorCodes.GrafoConjuntoComCiclo")]

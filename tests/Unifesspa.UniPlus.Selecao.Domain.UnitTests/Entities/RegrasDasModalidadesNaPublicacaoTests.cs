@@ -40,6 +40,20 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
             "sem cota da lei ofertada, ninguém optou pelas cotas, e a regra cita só o que a inscrição pergunta");
     }
 
+    [Fact(DisplayName = "A AC_PCD ofertada com cota da lei, sem LI_PCD nem LB_PCD, não impede a publicação")]
+    public void AcPcdComCotaDaLeiSemCotaParaPessoaComDeficiencia_NaoImpedeAPublicacao()
+    {
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
+        Ofertar(processo,
+            Modalidade("AC", NaturezaLegalModalidade.Ampla, PredicadoDnf.SemClausula),
+            Modalidade("LI_EP", NaturezaLegalModalidade.CotaReservada, Exige((OpcaoPelasCotasDaLei.Fato, true))),
+            Modalidade(ModalidadesFederaisLei12711.AcPcd, NaturezaLegalModalidade.AcaoAfirmativa, Exige(("PCD", true), ("CONCORRER_PCD", true))));
+        processo.DefinirItens([.. CamposDaOrigemEscolar(true), Booleano("PCD", 10), Booleano("CONCORRER_PCD", 11)]).IsSuccess.Should().BeTrue();
+
+        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo).Should().BeNull(
+            "quem optou pelas cotas também concorre à AC_PCD, então a oferta não precisa da cota da lei para pessoa com deficiência");
+    }
+
     [Fact(DisplayName = "A regra que cita fato coletado só na isenção é recusada: a modalidade é decidida pela inscrição")]
     public void FatoSoNaIsencao_Recusa()
     {
@@ -189,7 +203,7 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         ModalidadeSelecionada semRemanejamento = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), ModalidadesFederaisLei12711.AcPcd, null, NaturezaLegalModalidade.AcaoAfirmativa,
+            Guid.CreateVersion7(), "X", null, NaturezaLegalModalidade.AcaoAfirmativa,
             ComposicaoVagasModalidade.SuplementarAoTotal, null, RegraRemanejamentoModalidade.Nenhuma, null, null, null,
             RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), null, "base legal", quantidadeDeclarada: 10).Value!;
         Ofertar(processo, Modalidade("AC", NaturezaLegalModalidade.Ampla, PredicadoDnf.SemClausula), semRemanejamento);
@@ -206,7 +220,7 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
             processo,
             Modalidade("AC", NaturezaLegalModalidade.Ampla, PredicadoDnf.SemClausula),
             Modalidade(ModalidadesFederaisLei12711.AcPcd, NaturezaLegalModalidade.AcaoAfirmativa,
-                Exige((OpcaoPelasCotasDaLei.Fato, false), ("PCD", true), ("CONCORRER_PCD", true))));
+                Exige(("PCD", true), ("CONCORRER_PCD", true))));
         return processo;
     }
 

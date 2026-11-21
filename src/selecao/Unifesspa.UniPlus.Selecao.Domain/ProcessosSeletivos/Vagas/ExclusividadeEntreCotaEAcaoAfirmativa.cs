@@ -2,19 +2,22 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 internal static class ExclusividadeEntreCotaEAcaoAfirmativa
 {
     /// <summary>
-    /// A mesma inscrição não concorre a cota da lei e a ação afirmativa (UNI-REQ-0142). As regras de
-    /// aplicabilidade das modalidades ofertadas definem as modalidades do candidato, então a recusa é
-    /// sobre elas: se alguma combinação de respostas faz valer, ao mesmo tempo, a regra de uma cota e
-    /// a de uma ação afirmativa, o processo não publica. O cadastro já recusa a regra que permitiria
-    /// isso; aqui é a defesa sobre a cópia congelada.
+    /// A mesma inscrição não concorre a cota da lei e a ação afirmativa, salvo a que se soma às cotas
+    /// (UNI-REQ-0142 e UNI-REQ-0266). As regras de aplicabilidade das modalidades ofertadas definem as
+    /// modalidades do candidato, então a recusa é sobre elas: se alguma combinação de respostas faz
+    /// valer, ao mesmo tempo, a regra de uma cota e a de uma ação afirmativa que não se soma às cotas,
+    /// o processo não publica. O cadastro já recusa a regra que permitiria isso; aqui é a defesa sobre
+    /// a cópia congelada.
     /// </summary>
     /// <remarks>
     /// Duas cláusulas só valem juntas se nenhum fato é exigido com valores incompatíveis nelas. A prova
@@ -23,36 +26,44 @@ internal static class ExclusividadeEntreCotaEAcaoAfirmativa
     /// como derivável junto. Fato multivalorado (seleção múltipla) ou derivado categórico não é
     /// tratado como escalar: sobre ele <c>IGUAL</c> é pertinência, e o mesmo candidato pode conter os
     /// dois valores. O derivado booleano é escalar.
-    /// A âncora, sem cláusula, vale sempre.
+    /// A regra sem cláusula, como a da ampla concorrência, vale sempre.
     /// </remarks>
-    internal static DomainError? PendenciaDaExclusividadeEntreCotaEAcaoAfirmativa(ConfiguracaoDeclarada configuracao)
-    {
-        List<ModalidadeSelecionada> ofertadas = RegrasDaDistribuicaoDeVagas.ModalidadesOfertadas(configuracao);
-        IReadOnlyList<ConfiguracaoDerivacaoFato> derivacoes = configuracao.DerivacoesEfetivas();
-        HashSet<string> fatosMultivalorados = [
-            .. configuracao.Coleta.Itens
-                .Where(static f => f.TipoRenderizacao == TipoRenderizacao.SelecaoMultipla)
-                .Select(static f => f.FatoCodigo),
-            .. derivacoes.Where(static c => !c.Booleano).Select(static c => c.CodigoFato),
-        ];
+    internal static DomainError? PendenciaDaExclusividadeEntreCotaEAcaoAfirmativa(ConfiguracaoDeclarada configuracao) =>
+        PrimeiroParQuePodeValerJunto(RegrasDaDistribuicaoDeVagas.ModalidadesOfertadas(configuracao), FatosMultivalorados(configuracao)) is { } par
+            ? RecusaDoPar(par.Cota, par.AcaoAfirmativa)
+            : null;
 
+    private static HashSet<string> FatosMultivalorados(ConfiguracaoDeclarada configuracao) =>
+    [
+        .. configuracao.Coleta.Itens
+            .Where(static f => f.TipoRenderizacao == TipoRenderizacao.SelecaoMultipla)
+            .Select(static f => f.FatoCodigo),
+        .. configuracao.DerivacoesEfetivas().Where(static c => !c.Booleano).Select(static c => c.CodigoFato),
+    ];
+
+    private static (ModalidadeSelecionada Cota, ModalidadeSelecionada AcaoAfirmativa)? PrimeiroParQuePodeValerJunto(
+        List<ModalidadeSelecionada> ofertadas, HashSet<string> fatosMultivalorados)
+    {
         foreach (ModalidadeSelecionada cota in ofertadas.Where(static m => m.NaturezaLegal == NaturezaLegalModalidade.CotaReservada))
         {
-            foreach (ModalidadeSelecionada acaoAfirmativa in ofertadas.Where(static m => m.NaturezaLegal == NaturezaLegalModalidade.AcaoAfirmativa))
+            foreach (ModalidadeSelecionada acaoAfirmativa in ofertadas.Where(static m => m.NaturezaLegal == NaturezaLegalModalidade.AcaoAfirmativa && !OpcaoPelasCotasDaLei.SeSomaAsCotas(m.Codigo)))
             {
                 if (PodemValerJuntas(cota.RegraDeAplicabilidade, acaoAfirmativa.RegraDeAplicabilidade, fatosMultivalorados))
                 {
-                    return new DomainError(
-                        "ProcessoSeletivo.CotaEAcaoAfirmativaDerivaveisJuntas",
-                        $"As regras de aplicabilidade permitem que o mesmo candidato concorra à cota \"{cota.Codigo}\" "
-                        + $"e à ação afirmativa \"{acaoAfirmativa.Codigo}\"; quem opta pelas cotas da lei "
-                        + "não concorre a ação afirmativa.");
+                    return (cota, acaoAfirmativa);
                 }
             }
         }
 
         return null;
     }
+
+    private static DomainError RecusaDoPar(ModalidadeSelecionada cota, ModalidadeSelecionada acaoAfirmativa) => new(
+        ProcessoSeletivoErrorCodes.CotaEAcaoAfirmativaDerivaveisJuntas,
+        $"As regras de aplicabilidade permitem que o mesmo candidato concorra à cota \"{cota.Codigo}\" "
+        + $"e à ação afirmativa \"{acaoAfirmativa.Codigo}\". Quem opta pelas cotas da lei só concorre também "
+        + $"à reserva de vagas para pessoa com deficiência ({OpcaoPelasCotasDaLei.AcaoAfirmativaQueSeSomaAsCotas}); "
+        + "a regra das demais ações afirmativas precisa recusar os candidatos atendidos pelas cotas da lei.");
 
     internal static bool PodemValerJuntas(PredicadoDnf primeiro, PredicadoDnf segundo, IReadOnlySet<string> fatosMultivalorados) =>
         ClausulasDe(primeiro).Any(a => ClausulasDe(segundo).Any(b => !Incompativeis(a, b, fatosMultivalorados)));

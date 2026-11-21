@@ -44,7 +44,6 @@ internal static class CondicoesDaCanonicalizacao
         new("distribuicaoVagas", static (configuracao, _) => RegrasDaDistribuicaoDeVagas.RegraIncoerenteComANatureza(configuracao.Vagas.DistribuicaoVagas)),
         new("distribuicaoVagas", static (configuracao, _) => RegrasDaDistribuicaoDeVagas.RemanejamentoIncoerenteComANatureza(configuracao.Vagas.DistribuicaoVagas)),
         new("distribuicaoVagas", static (configuracao, _) => PendenciasDaDistribuicaoDeVagas.PendenciaDasCotasDaLeiEntreOfertas(configuracao)),
-        new("distribuicaoVagas", static (configuracao, _) => PendenciasDaDistribuicaoDeVagas.PendenciaDaReservaPcdSemCotaPcdDaLei(configuracao)),
         new("distribuicaoVagas", static (configuracao, _) => ExclusividadeEntreCotaEAcaoAfirmativa.PendenciaDaExclusividadeEntreCotaEAcaoAfirmativa(configuracao)),
         new("coleta", static (configuracao, _) => PendenciasDosFatos.PendenciaDoGrafoConjunto(configuracao)),
         new("classificacao", static (configuracao, _) => PendenciasDoDesempate.PendenciaDosCriteriosDesempate(configuracao)),

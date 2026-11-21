@@ -236,7 +236,8 @@ public static class RegraCatalogoSeed
         // A mesma fórmula de DISTRIBUICAO-LEI-12711, com AC_PCD (retirada da ampla
         // concorrência) como décima modalidade do rol. Ofertar AC_PCD junto das cotas é
         // válido: a exclusividade entre cota da lei e ação afirmativa vale por inscrição, não
-        // por oferta (UNI-REQ-0142).
+        // por oferta, e a AC_PCD é a exceção, a que quem optou pelas cotas também concorre
+        // (UNI-REQ-0142 e UNI-REQ-0266).
         new(SeedId(27), RegraDistribuicaoVagasCodigo.Lei12711ComAcPcd, VersaoV1, TipoRegra.RegraDistribuicaoVagas,
             """
             {"pr_minimo":"numeric (piso 0,5 — art. 10 II; teto 1,0)","modo_arredondamento":"teto (ceil) em todas as sub-reservas EXCETO LI_Q (floor) — art. 11","ordem_garantia_minima":["LB_PPI","LB_Q","LB_PCD","LB_EP","LI_PPI","LI_PCD","LI_EP"],"sub_reservas":["PPI","Q","PCD","EP"],"entradas_por_edital":["VO_base","PR","ReferenciaReservaDemografica"],"modalidades_admitidas":["AC","LB_PPI","LB_Q","LB_PCD","LB_EP","LI_PPI","LI_Q","LI_PCD","LI_EP","AC_PCD"]}

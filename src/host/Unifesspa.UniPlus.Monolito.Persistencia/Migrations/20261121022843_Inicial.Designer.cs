@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261118224420_Inicial")]
+    [Migration("20261121022843_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -21,7 +21,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.14")
+                .HasAnnotation("ProductVersion", "10.0.15")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
@@ -6670,7 +6670,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Descricao = "Ampla Concorrência – Pessoa com Deficiência (V)",
                             IsDeleted = false,
                             NaturezaLegal = "ACAO_AFIRMATIVA",
-                            RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":false},{\"fato\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true}]]",
+                            RegraDeAplicabilidade = "[[{\"fato\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "DESTINO_UNICO",
                             RemanejamentoParametros = "{\"destino\":\"AC\",\"par\":null,\"fallback\":null}"
                         },

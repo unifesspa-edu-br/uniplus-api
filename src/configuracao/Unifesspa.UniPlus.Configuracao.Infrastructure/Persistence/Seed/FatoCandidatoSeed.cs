@@ -332,7 +332,8 @@ public static class FatoCandidatoSeed
             ClassificacaoDeProtecao.Sensivel, FinalidadeReservaDeVagas),
 
         // A opção pelas cotas da Lei nº 12.711/2012, que cada cota da lei exige e cada ação afirmativa
-        // recusa (UNI-REQ-0076, UNI-REQ-0142). O processo copia a regra padrão recortada pela oferta:
+        // recusa, salvo a de pessoa com deficiência, que não a cita (UNI-REQ-0076, UNI-REQ-0142 e
+        // UNI-REQ-0266). O processo copia a regra padrão considerando só as modalidades ofertadas:
         // sem cota da lei ofertada, ninguém optou por elas.
         new(SeedId(54), OpcaoPelasCotasDaLei.Fato, "Optou pelas cotas da Lei nº 12.711/2012",
             "Se o candidato é egresso de escola pública e optou por concorrer às vagas de escola pública.",

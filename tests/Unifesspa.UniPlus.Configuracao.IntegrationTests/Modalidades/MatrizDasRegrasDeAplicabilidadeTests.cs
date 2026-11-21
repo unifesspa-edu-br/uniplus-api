@@ -13,8 +13,9 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// <summary>
 /// A união das regras de aplicabilidade semeadas, avaliada pelo motor de derivação sobre as
 /// respostas do candidato: os perfis da derivação de modalidade pela Lei de Cotas (UNI-REQ-0076) e
-/// a exclusividade entre cota da lei e ação afirmativa (UNI-REQ-0142). A opção pelas cotas da lei
-/// sai da regra padrão do fato semeado, como sairá na inscrição.
+/// a exclusividade entre cota da lei e ação afirmativa, com a exceção da reserva de pessoa com
+/// deficiência (UNI-REQ-0142 e UNI-REQ-0266). A opção pelas cotas da lei sai da regra padrão do fato
+/// semeado, como sairá na inscrição.
 /// </summary>
 [SuppressMessage(
     "Performance",
@@ -23,7 +24,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 public sealed class MatrizDasRegrasDeAplicabilidadeTests
 {
     private static readonly string[] CotasDaLei = ["LI_EP", "LB_EP", "LI_PPI", "LB_PPI", "LI_Q", "LB_Q", "LI_PCD", "LB_PCD"];
-    private static readonly string[] AcoesAfirmativas = ["AC_PCD", "AC_I", "AC_Q"];
+    private static readonly string[] AcoesAfirmativasQueNaoSeSomamAsCotas = ["AC_I", "AC_Q"];
     private static readonly string[] CoresOuRacas = ["BRANCA", "PRETA", "PARDA", "AMARELA", "INDIGENA"];
 
     private static readonly string[] FatosBooleanos =
@@ -53,12 +54,26 @@ public sealed class MatrizDasRegrasDeAplicabilidadeTests
         Derivar(Candidato((OrigemEscolar.FatoEgresso, true), ("PCD", true), ("CONCORRER_PCD", true)))
             .Should().BeEquivalentTo(["AC", "AC_PCD"]);
 
-    [Fact(DisplayName = "Pessoa com deficiência egressa que optou pelas cotas, sem renda, concorre a AC, LI_EP e LI_PCD, sem AC_PCD")]
+    [Fact(DisplayName = "Pessoa com deficiência egressa que optou pelas cotas, sem renda, concorre a AC, LI_EP, LI_PCD e AC_PCD")]
     public void PcdEgressaQueOptouPelasCotas() =>
         Derivar(Candidato(
                 (OrigemEscolar.FatoEgresso, true), (OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, true),
                 ("PCD", true), ("CONCORRER_PCD", true)))
-            .Should().BeEquivalentTo(["AC", "LI_EP", "LI_PCD"]);
+            .Should().BeEquivalentTo(["AC", "LI_EP", "LI_PCD", "AC_PCD"]);
+
+    [Fact(DisplayName = "Pessoa com deficiência egressa que optou pelas cotas, com renda, concorre às cotas de renda e à AC_PCD")]
+    public void PcdEgressaQueOptouPelasCotasComRenda() =>
+        Derivar(Candidato(
+                (OrigemEscolar.FatoEgresso, true), (OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, true),
+                ("PCD", true), ("CONCORRER_PCD", true), ("BAIXA_RENDA", true), ("CONCORRER_RENDA", true)))
+            .Should().BeEquivalentTo(["AC", "LI_EP", "LB_EP", "LI_PCD", "LB_PCD", "AC_PCD"]);
+
+    [Fact(DisplayName = "Pessoa com deficiência que optou pelas cotas, mas não quer concorrer como tal, não concorre a LI_PCD, LB_PCD nem AC_PCD")]
+    public void PcdQueOptouPelasCotasESemConcorrerComoPcd() =>
+        Derivar(Candidato(
+                (OrigemEscolar.FatoEgresso, true), (OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, true),
+                ("PCD", true), ("BAIXA_RENDA", true), ("CONCORRER_RENDA", true)))
+            .Should().BeEquivalentTo(["AC", "LI_EP", "LB_EP"]);
 
     [Fact(DisplayName = "Candidato sem deficiência que não optou pelas cotas concorre só a AC")]
     public void SemDeficienciaSemOpcao() =>
@@ -73,7 +88,7 @@ public sealed class MatrizDasRegrasDeAplicabilidadeTests
             ("PCD", true), ("CONCORRER_PCD", true), ("CONCORRER_RENDA", true));
         candidato["BAIXA_RENDA"] = FatoResolvido.NaoAplicavel();
 
-        Derivar(candidato).Should().BeEquivalentTo(["AC", "LI_EP", "LI_PCD"]);
+        Derivar(candidato).Should().BeEquivalentTo(["AC", "LI_EP", "LI_PCD", "AC_PCD"]);
     }
 
     [Fact(DisplayName = "Cotista de renda em várias dimensões concorre também às cotas independentes de renda de cada uma")]
@@ -110,8 +125,30 @@ public sealed class MatrizDasRegrasDeAplicabilidadeTests
         Derivar(Candidato(("INDIGENA", true), ("QUILOMBOLA", true), ("CONCORRER_VAGA_POR_ACRESCIMO", true)))
             .Should().BeEquivalentTo(["AC", "AC_I", "AC_Q"]);
 
-    [Fact(DisplayName = "Nenhuma combinação de respostas deriva cota da lei junto de ação afirmativa, e todas derivam AC")]
-    public void CotaDaLeiNuncaJuntoDeAcaoAfirmativa()
+    [Fact(DisplayName = "Nenhuma combinação deriva cota da lei junto de AC_I ou AC_Q, AC_PCD junto de cota só com deficiência, e todas derivam AC")]
+    public void ExclusividadeEntreCotaDaLeiEAcaoAfirmativa()
+    {
+        foreach (Dictionary<string, FatoResolvido> candidato in TodasAsCombinacoesDeRespostas())
+        {
+            IReadOnlySet<string> modalidades = Derivar(candidato);
+
+            modalidades.Should().Contain("AC");
+            ConferirAExclusividade(modalidades, concorreComoPessoaComDeficiencia: EhVerdadeiro(candidato, "PCD") && EhVerdadeiro(candidato, "CONCORRER_PCD"));
+        }
+    }
+
+    private static void ConferirAExclusividade(IReadOnlySet<string> modalidades, bool concorreComoPessoaComDeficiencia)
+    {
+        bool comCotaDaLei = modalidades.Overlaps(CotasDaLei);
+        string derivadas = string.Join(", ", modalidades);
+
+        (comCotaDaLei && modalidades.Overlaps(AcoesAfirmativasQueNaoSeSomamAsCotas)).Should().BeFalse(
+            $"{derivadas} junta cota da lei e ação afirmativa que não se soma a ela");
+        (comCotaDaLei && modalidades.Contains("AC_PCD") && !concorreComoPessoaComDeficiencia).Should().BeFalse(
+            $"{derivadas} junta cota da lei e AC_PCD sem o candidato concorrer como pessoa com deficiência");
+    }
+
+    private static IEnumerable<Dictionary<string, FatoResolvido>> TodasAsCombinacoesDeRespostas()
     {
         for (int bits = 0; bits < 1 << FatosBooleanos.Length; bits++)
         {
@@ -123,14 +160,13 @@ public sealed class MatrizDasRegrasDeAplicabilidadeTests
                     candidato[FatosBooleanos[i]] = Valor((bits & (1 << i)) != 0);
                 }
 
-                IReadOnlySet<string> modalidades = Derivar(candidato);
-
-                modalidades.Should().Contain("AC");
-                (modalidades.Overlaps(CotasDaLei) && modalidades.Overlaps(AcoesAfirmativas)).Should().BeFalse(
-                    $"{string.Join(", ", modalidades)} junta cota da lei e ação afirmativa");
+                yield return candidato;
             }
         }
     }
+
+    private static bool EhVerdadeiro(Dictionary<string, FatoResolvido> candidato, string fato) =>
+        candidato[fato].Valor is { ValueKind: JsonValueKind.True };
 
     private static IReadOnlySet<string> Derivar(Dictionary<string, FatoResolvido> candidato)
     {
