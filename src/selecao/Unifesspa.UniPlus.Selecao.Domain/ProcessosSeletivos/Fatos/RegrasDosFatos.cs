@@ -80,21 +80,27 @@ public static class RegrasDosFatos
         IReadOnlyDictionary<string, string> pontoResolucaoPorFato,
         IReadOnlyDictionary<string, string> membroPorAgregado)
     {
-        if (configuracao.Coleta.FormularioDe(FinalidadeFormulario.Inscricao)?.FaseId is not { } faseId
-            || configuracao.Cronograma.CronogramaFases.FirstOrDefault(f => f.Id == faseId) is not { } faseDaInscricao)
+        if (FaseDaInscricao(configuracao) is not { } faseDaInscricao)
         {
             return null;
         }
 
-        FaseEfetivaDoFato.FaseEfetiva efetiva = FaseEfetivaDoFato.Resolver(configuracao, fato, pontoResolucaoPorFato, membroPorAgregado, []);
+        OrdemDoCronograma ordem = OrdemDoCronograma.Do(configuracao.Cronograma.CronogramaFases);
+        FaseEfetivaDoFato.FaseEfetiva efetiva = FaseEfetivaDoFato.Resolver(configuracao, ordem, fato, pontoResolucaoPorFato, membroPorAgregado, []);
 
         return efetiva.Recusa
-            ?? RecusaDoFatoConhecidoDepoisDaInscricao(efetiva, faseDaInscricao, fato)
+            ?? RecusaDoFatoConhecidoDepoisDaInscricao(ordem, efetiva, faseDaInscricao, fato)
             ?? RecusaDoFatoSoDaIsencao(configuracao, fato, membroPorAgregado);
     }
 
-    private static DomainError? RecusaDoFatoConhecidoDepoisDaInscricao(FaseEfetivaDoFato.FaseEfetiva efetiva, FaseCronograma faseDaInscricao, string fato) =>
-        efetiva.Fase is { } fase && fase.Ordem > faseDaInscricao.Ordem
+    private static FaseCronograma? FaseDaInscricao(ConfiguracaoDeclarada configuracao) =>
+        configuracao.Coleta.FormularioDe(FinalidadeFormulario.Inscricao)?.FaseId is { } faseId
+            ? configuracao.Cronograma.CronogramaFases.FirstOrDefault(f => f.Id == faseId)
+            : null;
+
+    private static DomainError? RecusaDoFatoConhecidoDepoisDaInscricao(
+        OrdemDoCronograma ordem, FaseEfetivaDoFato.FaseEfetiva efetiva, FaseCronograma faseDaInscricao, string fato) =>
+        efetiva.Fase is { } fase && ordem.Posterior(fase, faseDaInscricao)
             ? new DomainError(
                 ProcessoSeletivoErrorCodes.FatoElegibilidadeConhecidoDepoisDaInscricao,
                 $"O fato '{fato}', que decide quem recebe o acréscimo, só é conhecido na fase '{fase.Codigo}', depois da inscrição.")

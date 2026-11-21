@@ -4,8 +4,8 @@ using Entities;
 
 using Enums;
 
+
 using Unifesspa.UniPlus.Regras.Formularios;
-using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 using ValueObjects;
@@ -34,44 +34,24 @@ public static class ExigenciasDeFasePosterior
             return new HashSet<Guid>();
         }
 
-        ProducaoDasEtapas ateAInscricao = ProducaoDasEtapas.De(
-            configuracao.Definicao,
-            configuracao.Definicao.Etapas.Where(e => finalidades.Any(f => DefinicaoDoProcesso.EhDaFinalidade(e.Codigo, f))));
+        ConhecimentoAteAInscricao conhecimento = ConhecimentoAteAInscricao.De(configuracao, finalidades, fatosConhecidos);
 
-        bool Conhecido(string fato) =>
-            ateAInscricao.Fechamento([fato]).Pressupostos.All(p =>
-                fatosConhecidos.ContainsKey(p)
-                || (DerivadosDoSistema.Dependencias.TryGetValue(p, out IReadOnlyList<string>? dependencias)
-                    && dependencias.All(ateAInscricao.Produzidos.Contains)));
+        return configuracao.Arvore.Raizes.SelectMany(raiz => Bloqueadas(raiz, grupoRepetido: null, conhecimento)).ToHashSet();
+    }
 
-        HashSet<Guid> bloqueadas = [];
-        foreach (NoExigencia raiz in configuracao.Arvore.Raizes)
+    // A folha é bloqueada quando o grupo que a repete ou algum fato das condições dela só se conhece depois da inscrição.
+    private static IEnumerable<Guid> Bloqueadas(NoExigencia no, string? grupoRepetido, ConhecimentoAteAInscricao conhecimento)
+    {
+        string? repetido = no.RepetePorEntidade ?? grupoRepetido;
+        if (no.Tipo != TipoNo.Folha)
         {
-            Coletar(raiz, grupoRepetido: null);
+            return no.Filhos.SelectMany(filho => Bloqueadas(filho, repetido, conhecimento));
         }
 
-        return bloqueadas;
+        DocumentoExigido documento = no.DocumentoExigido!;
+        bool bloqueada = !conhecimento.ConheceOGrupo(repetido) || documento.Condicoes.Any(c => !conhecimento.ConheceOFato(c.Fato));
 
-        void Coletar(NoExigencia no, string? grupoRepetido)
-        {
-            string? repetido = no.RepetePorEntidade ?? grupoRepetido;
-            if (no.Tipo != TipoNo.Folha)
-            {
-                foreach (NoExigencia filho in no.Filhos)
-                {
-                    Coletar(filho, repetido);
-                }
-
-                return;
-            }
-
-            DocumentoExigido documento = no.DocumentoExigido!;
-            bool doGrupoConhecido = repetido is null || ateAInscricao.Grupos.Contains(repetido);
-            if (!doGrupoConhecido || documento.Condicoes.Select(static c => c.Fato).Any(f => !Conhecido(f)))
-            {
-                bloqueadas.Add(documento.Id);
-            }
-        }
+        return bloqueada ? [documento.Id] : [];
     }
 
     /// <summary>
@@ -80,15 +60,22 @@ public static class ExigenciasDeFasePosterior
     /// </summary>
     private static List<FinalidadeFormulario>? FinalidadesAteAInscricao(ConfiguracaoAvaliavel configuracao)
     {
-        Dictionary<Guid, int> ordemDaFase = configuracao.Fases.ToDictionary(static f => f.Id, static f => f.Ordem);
-        if (configuracao.Formularios.FirstOrDefault(static f => f.Finalidade == FinalidadeFormulario.Inscricao) is not { FaseId: { } faseDaInscricao }
-            || !ordemDaFase.TryGetValue(faseDaInscricao, out int ordemDaInscricao))
+        Dictionary<Guid, FaseCronograma> fasesPorId = configuracao.Fases.ToDictionary(static f => f.Id);
+        if (FaseDaInscricao(configuracao, fasesPorId) is not { } faseDaInscricao)
         {
             return null;
         }
 
+        OrdemDoCronograma ordem = OrdemDoCronograma.Do(configuracao.Fases);
+
         return [.. configuracao.Formularios
-            .Where(f => f.FaseId is { } fase && ordemDaFase.TryGetValue(fase, out int ordem) && ordem <= ordemDaInscricao)
+            .Where(f => f.FaseId is { } fase && fasesPorId.TryGetValue(fase, out FaseCronograma? faseDoFormulario) && !ordem.Posterior(faseDoFormulario, faseDaInscricao))
             .Select(static f => f.Finalidade)];
     }
+
+    private static FaseCronograma? FaseDaInscricao(ConfiguracaoAvaliavel configuracao, Dictionary<Guid, FaseCronograma> fasesPorId) =>
+        configuracao.Formularios.FirstOrDefault(static f => f.Finalidade == FinalidadeFormulario.Inscricao) is { FaseId: { } faseId }
+            && fasesPorId.TryGetValue(faseId, out FaseCronograma? fase)
+                ? fase
+                : null;
 }
