@@ -54,9 +54,7 @@ public sealed class ProjecaoDaFaseDoCronogramaTests
     ];
 
     private static BancaRequerida Banca() => BancaRequerida.Criar(
-        new Guid("01a0d640-0000-7000-8000-0000000000c4"),
-        "BANCA_DE_RECURSOS",
-        "Banca de recursos",
+        TiposDeBancaCopiadosDeTeste.Nomeada(TiposDeBancaCopiadosDeTeste.DeRecursos(new Guid("01a0d640-0000-7000-8000-0000000000c4")), "Banca de recursos"),
         []);
 
     private static FaseCronograma FaseCompleta(
@@ -92,6 +90,18 @@ public sealed class ProjecaoDaFaseDoCronogramaTests
         dto.Id.Should().Be(FaseId);
         dto.Codigo.Should().Be("RESULTADO_PRELIMINAR");
         dto.BancasRequeridas.Should().ContainSingle().Which.Id.Should().Be(fase.BancasRequeridas.Single().Id);
+    }
+
+    [Fact(DisplayName = "A banca da fase projeta a cópia do tipo: o código e o papel com rótulo, as marcas e os tipos de decisão julgados")]
+    public void ProjetarFase_Banca_ProjetaACopiaDoTipo()
+    {
+        BancaRequeridaDto banca = ProjecaoDaFaseDoCronograma.ProjetarFase(FaseCompleta()).BancasRequeridas.Single();
+
+        banca.Codigo.Should().BeEquivalentTo(CodigoComRotulo<TipoDeBanca>.De(TipoDeBanca.AnaliseDeRecursos));
+        banca.Papel.Should().BeEquivalentTo(CodigoComRotulo<PapelDaBanca>.De(PapelDaBanca.JulgaAPrimeiraInstancia));
+        banca.ExigeDuasOuMaisBancas.Should().BeFalse();
+        banca.EncerraRecursoNaPrimeiraInstancia.Should().BeFalse();
+        banca.TiposDeDecisaoJulgados.Should().BeEmpty();
     }
 
     [Theory(DisplayName = "Cada traço herdado da fase canônica cai no seu campo, nos dois sentidos")]

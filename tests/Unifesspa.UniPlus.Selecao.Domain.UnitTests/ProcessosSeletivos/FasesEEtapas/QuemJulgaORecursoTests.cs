@@ -152,8 +152,8 @@ public sealed class QuemJulgaORecursoTests
         Causas(recusas).Should().Equal(
             ("fases[0].bancasRequeridas", "Cronograma.RecursoSemBanca"),
             ("etapas[0].bancas", "Cronograma.RecursoSemBanca"));
-        recusas[0].Error.Message.Should().Be("A fase 'AVALIACAO' admite recurso e não declara a banca de análise de recursos.");
-        recusas[1].Error.Message.Should().Be("A etapa 'Redação' abre recurso, e nem ela nem a fase em que acontece declaram a banca de análise de recursos.");
+        recusas[0].Error.Message.Should().Be("A fase 'AVALIACAO' admite recurso, e nenhuma banca prevista o julga em 1ª instância: a fase não tem banca com o papel 'Julga o recurso em 1ª instância'. Acrescente essa banca.");
+        recusas[1].Error.Message.Should().Be("A etapa na posição 1 admite recurso, e nenhuma banca prevista o julga em 1ª instância: nem a etapa nem a fase 'AVALIACAO', em que ela acontece, têm banca com o papel 'Julga o recurso em 1ª instância'. Acrescente essa banca.");
     }
 
     [Fact(DisplayName = "O recurso julgado por alguma banca, ou de julgadora indeterminada, não é recusado")]

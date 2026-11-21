@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -36,8 +37,8 @@ public sealed partial class IdentificadoresDasBancasNasRecusasDaPublicacaoTests
     private const string CodigoDaFaseComBancas = "CLASSIFICACAO";
     private const string CodigoDaFaseDeResultado = "RESULTADO_FINAL";
     private const string NomeDaEtapaComBancas = "Prova Discursiva";
-    private const string AnaliseDocumental = "BANCA_ANALISE_DOCUMENTAL";
-    private const string Heteroidentificacao = "BANCA_HETEROIDENTIFICACAO";
+    private const TipoDeBanca AnaliseDocumental = TipoDeBanca.AnaliseDocumental;
+    private const TipoDeBanca Heteroidentificacao = TipoDeBanca.Heteroidentificacao;
 
     private readonly CascadingFixture _fixture;
 
@@ -55,7 +56,7 @@ public sealed partial class IdentificadoresDasBancasNasRecusasDaPublicacaoTests
 
         JsonElement problema = await PublicarRecusadaAsync(processo.Id, documento.Id);
 
-        naOrdemCanonica.Select(static banca => banca.Codigo).Should().Equal(
+        naOrdemCanonica.Select(static banca => banca.Tipo.Codigo).Should().Equal(
             [AnaliseDocumental, AnaliseDocumental, Heteroidentificacao], "a banca de heteroidentificação foi declarada primeira e é a última na ordem canônica");
         ExigirAsBancasRecusadas(
             problema, "/cronograma/fases/1/bancasRequeridas/",
@@ -73,7 +74,7 @@ public sealed partial class IdentificadoresDasBancasNasRecusasDaPublicacaoTests
 
         JsonElement problema = await PublicarRecusadaAsync(processo.Id, documento.Id);
 
-        naOrdemCanonica.Select(static banca => banca.Codigo).Should().Equal([AnaliseDocumental, AnaliseDocumental, Heteroidentificacao]);
+        naOrdemCanonica.Select(static banca => banca.Tipo.Codigo).Should().Equal([AnaliseDocumental, AnaliseDocumental, Heteroidentificacao]);
         ExigirAsBancasRecusadas(
             problema, "/etapas/1/bancas/", [.. naOrdemCanonica.Select(banca => new[] { $"etapas={etapa.Id:D}", $"bancas={banca.Id:D}" })]);
     }
@@ -183,9 +184,9 @@ public sealed partial class IdentificadoresDasBancasNasRecusasDaPublicacaoTests
         return fase.Value!;
     }
 
-    private static BancaRequerida BancaDaFase(string codigoDoTipo, params string[] categorias) =>
+    private static BancaRequerida BancaDaFase(TipoDeBanca tipo, params string[] categorias) =>
         BancaRequerida.Criar(
-            Guid.CreateVersion7(), codigoDoTipo, "Banca de teste", [.. categorias.Select(static codigo => CategoriaJulgada.Criar(Guid.CreateVersion7(), codigo))]);
+            TiposDeBancaCopiadosDeTeste.De(tipo), [.. categorias.Select(static codigo => CategoriaJulgada.Criar(Guid.CreateVersion7(), codigo))]);
 
     private static EtapaProcesso EtapaComBancasSemRegra()
     {
@@ -197,9 +198,9 @@ public sealed partial class IdentificadoresDasBancasNasRecusasDaPublicacaoTests
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
         etapa.DefinirBancas(
         [
-            BancaDaEtapa.Criar(Guid.CreateVersion7(), Heteroidentificacao, "Banca de teste"),
-            BancaDaEtapa.Criar(Guid.CreateVersion7(), AnaliseDocumental, "Banca de teste"),
-            BancaDaEtapa.Criar(Guid.CreateVersion7(), AnaliseDocumental, "Banca de teste"),
+            BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(Heteroidentificacao)),
+            BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(AnaliseDocumental)),
+            BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(AnaliseDocumental)),
         ]);
 
         return etapa;
@@ -225,7 +226,7 @@ public sealed partial class IdentificadoresDasBancasNasRecusasDaPublicacaoTests
         EtapaProcesso etapa = processo.Etapas.Single(e => e.Nome == NomeDaEtapaComBancas);
 
         etapa.DefinirBancas([.. etapa.Bancas.Where(banca => banca.Id != bancaRetiradaId).Select(static banca =>
-            BancaDaEtapa.Criar(banca.TipoBancaOrigemId, banca.Codigo, banca.Nome, banca.RegraDeDeliberacao, idDaBancaQueSubstitui: banca.Id))]);
+            BancaDaEtapa.Criar(banca.Tipo, banca.RegraDeDeliberacao, idDaBancaQueSubstitui: banca.Id))]);
         await db.SaveChangesAsync();
     }
 

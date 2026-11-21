@@ -11,7 +11,9 @@ using DTOs;
 
 using Mappings;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Projeta para o contrato REST a fase do cronograma, com as bancas requeridas e a regra de recurso.
@@ -64,10 +66,14 @@ internal static class ProjecaoDaFaseDoCronograma
 
     private static BancaRequeridaDto ProjetarBancaRequerida(BancaRequerida banca) => new(
         banca.Id,
-        banca.TipoBancaOrigemId,
-        banca.Codigo,
+        banca.Tipo.OrigemId,
+        CodigoComRotulo<TipoDeBanca>.De(banca.Tipo.Codigo),
         banca.PosicaoNoTipo,
-        banca.Nome,
+        banca.Tipo.Nome,
+        CodigoComRotulo<PapelDaBanca>.De(banca.Tipo.Papel),
+        banca.Tipo.ExigeDuasOuMaisBancas,
+        banca.Tipo.EncerraRecursoNaPrimeiraInstancia,
+        [.. banca.Tipo.TiposDeDecisaoJulgados.Select(CodigoComRotulo<TipoMotivoDeDecisao>.De)],
         ProjecaoDaRegraDeDeliberacao.De(banca.RegraDeDeliberacao),
         [.. OrdemCanonicaDaConfiguracao.CandidatosAtendidos(banca.CandidatosAtendidos)
             .Select(static c => new CategoriaJulgadaDto(c.Id, c.CategoriaDocumentoOrigemId, c.Codigo))]);

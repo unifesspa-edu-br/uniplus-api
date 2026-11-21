@@ -64,8 +64,8 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         // Story #851 — cronograma de fases.
         ("FaseCodigo", LimitesDoEnvelope.FaseCodigo, typeof(FaseCronograma), nameof(FaseCronograma.Codigo)),
         ("TipoAtoCodigo", LimitesDoEnvelope.TipoAtoCodigo, typeof(ProdutoDaFase), nameof(ProdutoDaFase.AtoCodigo)),
-        ("TipoBancaCodigo", LimitesDoEnvelope.TipoBancaCodigo, typeof(BancaRequerida), nameof(BancaRequerida.Codigo)),
-        ("TipoBancaNome", LimitesDoEnvelope.TipoBancaNome, typeof(BancaRequerida), nameof(BancaRequerida.Nome)),
+        ("TipoBancaCodigo", LimitesDoEnvelope.TipoBancaCodigo, typeof(BancaRequerida), CaminhoDaCopiaDoTipo(nameof(TipoDeBancaCopiado.Codigo))),
+        ("TipoBancaNome", LimitesDoEnvelope.TipoBancaNome, typeof(BancaRequerida), CaminhoDaCopiaDoTipo(nameof(TipoDeBancaCopiado.Nome))),
         ("CategoriaDocumentoCodigo", LimitesDoEnvelope.CategoriaDocumentoCodigo, typeof(CategoriaJulgada), nameof(CategoriaJulgada.Codigo)),
 
         // As mesmas grandezas, um nível abaixo: a etapa repete fase, ato e banca, e as colunas
@@ -79,8 +79,8 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         // segundo erro é o teste de recusa por campo, em EnvelopeCodecRecusaEtapasTests.
         ("FaseCodigo", LimitesDoEnvelope.FaseCodigo, typeof(EtapaProcesso), nameof(EtapaProcesso.FaseCodigo)),
         ("TipoAtoCodigo", LimitesDoEnvelope.TipoAtoCodigo, typeof(ProdutoDaEtapa), nameof(ProdutoDaEtapa.AtoCodigo)),
-        ("TipoBancaCodigo", LimitesDoEnvelope.TipoBancaCodigo, typeof(BancaDaEtapa), nameof(BancaDaEtapa.Codigo)),
-        ("TipoBancaNome", LimitesDoEnvelope.TipoBancaNome, typeof(BancaDaEtapa), nameof(BancaDaEtapa.Nome)),
+        ("TipoBancaCodigo", LimitesDoEnvelope.TipoBancaCodigo, typeof(BancaDaEtapa), CaminhoDaCopiaDoTipo(nameof(TipoDeBancaCopiado.Codigo))),
+        ("TipoBancaNome", LimitesDoEnvelope.TipoBancaNome, typeof(BancaDaEtapa), CaminhoDaCopiaDoTipo(nameof(TipoDeBancaCopiado.Nome))),
         ("ItemDeAvaliacaoRotulo", LimitesDoEnvelope.ItemDeAvaliacaoRotulo, typeof(ItemDeAvaliacao), nameof(ItemDeAvaliacao.Rotulo)),
 
         // Story #554 (PR #903) — exigencias[] real.
@@ -157,8 +157,23 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         }
     }
 
+    // As duas bancas guardam a cópia do tipo como tipo de propriedade própria: o caminho vai da navegação até a coluna.
+    private static string CaminhoDaCopiaDoTipo(string propriedade) => $"{nameof(BancaRequerida.Tipo)}.{propriedade}";
+
+    private static IProperty Coluna(UniPlusDbContext contexto, Type entidade, string caminho)
+    {
+        IEntityType tipo = contexto.Model.FindEntityType(entidade)!;
+        string[] partes = caminho.Split('.');
+        foreach (string navegacao in partes[..^1])
+        {
+            tipo = tipo.FindNavigation(navegacao)!.TargetEntityType;
+        }
+
+        return tipo.FindProperty(partes[^1])!;
+    }
+
     private static void ConferirOComprimento(UniPlusDbContext contexto, string nome, int valorNoCodec, Type entidade, string propriedade) =>
-        contexto.Model.FindEntityType(entidade)!.FindProperty(propriedade)!.GetMaxLength()
+        Coluna(contexto, entidade, propriedade).GetMaxLength()
             .Should().Be(valorNoCodec,
                 $"LimitesDoEnvelope.{nome} tem de ser o HasMaxLength de {entidade.Name}.{propriedade}. " +
                 "Se a coluna encolheu, o decoder passou a aceitar o que o banco recusa — e o descarte volta a morrer " +

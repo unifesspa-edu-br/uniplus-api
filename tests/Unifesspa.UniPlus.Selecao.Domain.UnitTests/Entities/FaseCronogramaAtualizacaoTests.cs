@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -78,17 +79,17 @@ public sealed class FaseCronogramaAtualizacaoTests
     [Fact(DisplayName = "A banca devolvida com o id dela mantém a linha viva, leva a ela o que mudou e continua com a identidade")]
     public void AtualizarDe_BancaComOIdDaViva_MantemALinhaViva()
     {
-        FaseCronograma viva = Fase(new() { Bancas = [Banca("BANCA_ANALISE_DOCUMENTAL", "RENDA")] });
+        FaseCronograma viva = Fase(new() { Bancas = [Banca(TipoDeBanca.AnaliseDocumental, "RENDA")] });
         BancaRequerida linhaViva = viva.BancasRequeridas.Single();
         Guid novaOrigem = Guid.CreateVersion7();
-        BancaRequerida declarada = BancaQueSubstitui(linhaViva.Id, novaOrigem, "BANCA_HETEROIDENTIFICACAO", "PPI");
+        BancaRequerida declarada = BancaQueSubstitui(linhaViva.Id, novaOrigem, TipoDeBanca.Heteroidentificacao, "PPI");
 
         Atualizar(viva, Fase(new() { Bancas = [declarada] }));
 
         BancaRequerida banca = viva.BancasRequeridas.Should().ContainSingle().Subject;
         banca.Should().BeSameAs(linhaViva);
-        banca.Codigo.Should().Be("BANCA_HETEROIDENTIFICACAO");
-        banca.TipoBancaOrigemId.Should().Be(novaOrigem);
+        banca.Tipo.Codigo.Should().Be(TipoDeBanca.Heteroidentificacao);
+        banca.Tipo.OrigemId.Should().Be(novaOrigem);
         banca.CandidatosAtendidos.Select(static c => c.Codigo).Should().Equal("PPI");
         banca.FaseCronogramaId.Should().Be(viva.Id);
     }
@@ -96,10 +97,10 @@ public sealed class FaseCronogramaAtualizacaoTests
     [Fact(DisplayName = "A banca devolvida sem o id dela é criada de novo, e a viva sai")]
     public void AtualizarDe_BancaSemId_RecriaABanca()
     {
-        FaseCronograma viva = Fase(new() { Bancas = [Banca("BANCA_ANALISE_DOCUMENTAL", "RENDA")] });
+        FaseCronograma viva = Fase(new() { Bancas = [Banca(TipoDeBanca.AnaliseDocumental, "RENDA")] });
         Guid idDaViva = viva.BancasRequeridas.Single().Id;
 
-        Atualizar(viva, Fase(new() { Bancas = [Banca("BANCA_ANALISE_DOCUMENTAL", "RENDA")] }));
+        Atualizar(viva, Fase(new() { Bancas = [Banca(TipoDeBanca.AnaliseDocumental, "RENDA")] }));
 
         viva.BancasRequeridas.Single().Id.Should().NotBe(idDaViva);
     }
@@ -107,7 +108,7 @@ public sealed class FaseCronogramaAtualizacaoTests
     [Fact(DisplayName = "Reordenar duas bancas do mesmo tipo troca as posições e mantém o id de cada uma")]
     public void AtualizarDe_BancasDoMesmoTipoReordenadas_TrocamDePosicao()
     {
-        FaseCronograma viva = Fase(new() { Bancas = [Banca("BANCA_ANALISE_DOCUMENTAL", "RENDA"), Banca("BANCA_ANALISE_DOCUMENTAL", "PCD")] });
+        FaseCronograma viva = Fase(new() { Bancas = [Banca(TipoDeBanca.AnaliseDocumental, "RENDA"), Banca(TipoDeBanca.AnaliseDocumental, "PCD")] });
         BancaRequerida renda = viva.BancasRequeridas.Single(static b => b.CandidatosAtendidos.Single().Codigo == "RENDA");
         BancaRequerida pcd = viva.BancasRequeridas.Single(static b => b.CandidatosAtendidos.Single().Codigo == "PCD");
 
@@ -116,6 +117,17 @@ public sealed class FaseCronogramaAtualizacaoTests
         pcd.PosicaoNoTipo.Should().Be(1);
         renda.PosicaoNoTipo.Should().Be(2);
         viva.BancasRequeridas.Should().BeEquivalentTo([pcd, renda]);
+    }
+
+    [Fact(DisplayName = "As bancas da fase saem na ordem de leitura: código do tipo e, dentro dele, posição, qualquer que seja a ordem em que chegaram")]
+    public void BancasRequeridas_SaemPeloTipoEPelaPosicao()
+    {
+        FaseCronograma fase = Fase(new()
+        {
+            Bancas = [Banca(TipoDeBanca.Heteroidentificacao, "PPI"), Banca(TipoDeBanca.AnaliseDocumental, "RENDA"), Banca(TipoDeBanca.AnaliseDocumental, "PCD")],
+        });
+
+        fase.BancasRequeridas.Select(static b => b.CandidatosAtendidos.Single().Codigo).Should().Equal("RENDA", "PCD", "PPI");
     }
 
     // ── AtualizarDe: âncora do recurso ──
@@ -178,8 +190,8 @@ public sealed class FaseCronogramaAtualizacaoTests
     [Fact(DisplayName = "As bancas da fase viva são trocadas pelas da fase nova e ficam vinculadas a ela")]
     public void AtualizarDe_BancasDaFaseNova_SubstituemEVinculam()
     {
-        BancaRequerida bancaAntiga = Banca("BANCA_ANALISE_DOCUMENTAL");
-        BancaRequerida bancaNova = Banca("BANCA_HETEROIDENTIFICACAO");
+        BancaRequerida bancaAntiga = Banca(TipoDeBanca.AnaliseDocumental);
+        BancaRequerida bancaNova = Banca(TipoDeBanca.Heteroidentificacao);
         FaseCronograma viva = Fase(new() { Bancas = [bancaAntiga] });
 
         Atualizar(viva, Fase(new() { Bancas = [bancaNova] }));

@@ -2,9 +2,11 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Cronogra
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
@@ -12,9 +14,9 @@ using static ModeloDeFase;
 
 public sealed class ItensDaFaseNoCronogramaTests
 {
-    private static BancaRequerida Banca(string codigo, params string[] categorias) =>
+    private static BancaRequerida Banca(TipoDeBanca tipo, params string[] categorias) =>
         BancaRequerida.Criar(
-            Guid.CreateVersion7(), codigo, "Banca de teste",
+            TiposDeBancaCopiadosDeTeste.De(tipo),
             [.. categorias.Select(static c => CategoriaJulgada.Criar(Guid.CreateVersion7(), c))]);
 
     [Fact(DisplayName = "A âncora do recurso na fase fica verde quando o prazo ancora num preliminar da própria fase")]
@@ -43,8 +45,8 @@ public sealed class ItensDaFaseNoCronogramaTests
     [Fact(DisplayName = "Os candidatos atendidos ficam vermelhos quando duas bancas do mesmo código não se distinguem")]
     public void ItemDosCandidatosAtendidos_BancasIndistinguiveis_FicaVermelho()
     {
-        FaseDeclarada indistinguiveis = new ModeloDeFase("ANALISE", 1) { Bancas = [Banca("DOCUMENTAL"), Banca("DOCUMENTAL")] }.Declarar();
-        FaseDeclarada distintas = new ModeloDeFase("ANALISE", 1) { Bancas = [Banca("DOCUMENTAL", "RENDA"), Banca("DOCUMENTAL", "ETNICO_RACIAL")] }.Declarar();
+        FaseDeclarada indistinguiveis = new ModeloDeFase("ANALISE", 1) { Bancas = [Banca(TipoDeBanca.AnaliseDocumental), Banca(TipoDeBanca.AnaliseDocumental)] }.Declarar();
+        FaseDeclarada distintas = new ModeloDeFase("ANALISE", 1) { Bancas = [Banca(TipoDeBanca.AnaliseDocumental, "RENDA"), Banca(TipoDeBanca.AnaliseDocumental, "ETNICO_RACIAL")] }.Declarar();
 
         Cronograma(indistinguiveis).ItemDosCandidatosAtendidos().Ok.Should().BeFalse();
         Cronograma(distintas).ItemDosCandidatosAtendidos().Should().Match<ItemConformidade>(

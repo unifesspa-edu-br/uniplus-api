@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 
-using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -16,16 +15,13 @@ internal static class MinimoDeIntegrantes
     internal static int Exigido(RegraDeDeliberacao regra, IEnumerable<int> corretoresDasJulgadas) =>
         Math.Max(regra.QuorumExigido, corretoresDasJulgadas.DefaultIfEmpty(0).Max());
 
-    internal static DomainError AbaixoDoMinimo(string nomeDaBanca, string onde, int integrantes, int minimo) =>
+    internal static DomainError AbaixoDoMinimo(string citacaoDaBanca, string onde, int integrantes, int minimo) =>
         new(
             BancaErrorCodes.IntegrantesAbaixoDoMinimo,
-            $"A banca '{Eco(nomeDaBanca)}' {onde} declara {integrantes} integrantes, e o mínimo exigido é {minimo}, o maior entre o quórum e os corretores da regra de consolidação das etapas que ela julga (com o corretor adicional, quando a regra declara novo corretor).");
+            $"A banca '{citacaoDaBanca}' da {onde} declara {integrantes} integrantes, e o mínimo exigido é {minimo}, o maior entre o quórum e os corretores da regra de consolidação das etapas que ela julga (com o corretor adicional, quando a regra o declara).");
 
-    internal static DomainError NaoResolvida(string nomeDaBanca, string onde, string nomeDaEtapa) =>
+    internal static DomainError NaoResolvida(string citacaoDaBanca, string onde, int posicaoDaEtapa) =>
         new(
             EtapaProcessoErrorCodes.RegraDeConsolidacaoNaoResolvida,
-            $"A banca '{Eco(nomeDaBanca)}' {onde} julga a etapa '{Eco(nomeDaEtapa)}', cuja regra de consolidação não pôde ser confirmada no catálogo, e a quantidade de corretores não é conhecida. Tente novamente ou fale com a equipe de suporte.");
-
-    private static string Eco(string texto) =>
-        CaracteresInvisiveis.ParaEco(texto, TextoCongelado.TamanhoMaximoEcoado);
+            $"A banca '{citacaoDaBanca}' da {onde} julga a etapa na posição {posicaoDaEtapa + 1}, cuja regra de consolidação não pôde ser confirmada no catálogo; a quantidade de corretores não é conhecida. Tente novamente ou fale com a equipe de suporte.");
 }

@@ -2,44 +2,45 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Domain.Entities;
 using Domain.Errors;
+using Domain.ProcessosSeletivos.Bancas;
 using Domain.ProcessosSeletivos.Cronograma;
 using Domain.ValueObjects;
 
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
-/// Monta as bancas requeridas de uma fase. O tipo de banca e os candidatos atendidos são resolvidos no
-/// cadastro vivo e congelados por valor: uma categoria que saiu do cadastro não pode entrar no edital,
-/// porque os candidatos atendidos congelados respondem por parecer e recurso do certame inteiro. As violações da banca
-/// de uma mesma fase acumulam: o que falta numa não esconde o que falta nas outras.
+/// Monta as bancas requeridas de uma fase. A banca nova ou que troca de tipo copia o tipo de banca do cadastro vivo; a banca
+/// que continua com o mesmo tipo mantém a cópia que já tem, sem ler o cadastro, e por isso o tipo que saiu do cadastro não
+/// a afeta. Os candidatos atendidos são resolvidos no cadastro vivo e congelados por valor: uma categoria que saiu do cadastro
+/// não pode entrar no edital, porque os candidatos atendidos congelados respondem por parecer e recurso do certame inteiro. As
+/// violações da banca de uma mesma fase acumulam: o que falta numa não esconde o que falta nas outras.
 /// </summary>
 internal sealed class MontagemDasBancasDaFase(CadastrosDasFases cadastros)
 {
     public async Task<Result<List<BancaRequerida>>> MontarAsync(
-        FaseCronogramaInput fase, int indice, CancellationToken cancellationToken)
+        FaseCronogramaInput fase, int indice, IReadOnlyCollection<BancaRequerida> gravadas, CancellationToken cancellationToken)
     {
         RecusasAcumuladas<BancaRequerida> bancas = new();
         for (int posicao = 0; posicao < fase.BancasRequeridas.Count; posicao++)
         {
             string campo = $"fases[{indice}].{FaseDeclarada.ListaDasBancasRequeridas}[{posicao}]";
-            bancas.Juntar(await BancaAsync(fase.BancasRequeridas[posicao], campo, cancellationToken).ConfigureAwait(false));
+            bancas.Juntar(await BancaAsync(fase.BancasRequeridas[posicao], gravadas, campo, cancellationToken).ConfigureAwait(false));
         }
 
         return bancas.Resultado();
     }
 
     private async Task<Result<BancaRequerida>> BancaAsync(
-        BancaRequeridaInput declarada, string campo, CancellationToken cancellationToken)
+        BancaRequeridaInput declarada, IReadOnlyCollection<BancaRequerida> gravadas, string campo, CancellationToken cancellationToken)
     {
-        TipoBancaView? tipo = await cadastros.TiposDeBanca.ObterPorIdAsync(declarada.TipoBancaId, cancellationToken).ConfigureAwait(false);
+        TipoDeBancaCopiado? tipo = await TipoAsync(declarada, gravadas, cancellationToken).ConfigureAwait(false);
         if (tipo is null)
         {
             return InterrupcaoDaEdicao.Com<BancaRequerida>($"{campo}.tipoBancaId", new DomainError(
-                "FaseCronograma.TipoBancaNaoEncontrado",
-                $"Tipo de banca {declarada.TipoBancaId} não encontrado ou não está mais vivo."));
+                FaseCronogramaErrorCodes.TipoBancaNaoEncontrado,
+                "O tipo de banca indicado não existe ou está desativado no cadastro."));
         }
 
         Result<List<CategoriaJulgada>> atendidos = await CandidatosAtendidosAsync(declarada, campo, cancellationToken).ConfigureAwait(false);
@@ -48,14 +49,27 @@ internal sealed class MontagemDasBancasDaFase(CadastrosDasFases cadastros)
             : Montada(declarada, tipo, atendidos.Value!, campo);
     }
 
+    private async Task<TipoDeBancaCopiado?> TipoAsync(
+        BancaRequeridaInput declarada, IReadOnlyCollection<BancaRequerida> gravadas, CancellationToken cancellationToken)
+    {
+        if (CopiaMantidaDaBanca.De(gravadas, declarada.Id, declarada.TipoBancaId) is { } mantida)
+        {
+            return mantida;
+        }
+
+        TipoBancaView? tipo = await cadastros.TiposDeBanca.ObterPorIdAsync(declarada.TipoBancaId, cancellationToken).ConfigureAwait(false);
+
+        return tipo is null ? null : CopiaDoTipoDeBanca.De(tipo);
+    }
+
     private static Result<BancaRequerida> Montada(
-        BancaRequeridaInput declarada, TipoBancaView tipo, List<CategoriaJulgada> atendidos, string campo)
+        BancaRequeridaInput declarada, TipoDeBancaCopiado tipo, List<CategoriaJulgada> atendidos, string campo)
     {
         Result<RegraDeDeliberacao?> regra = MontagemDaRegraDeDeliberacao.Montar(declarada.RegraDeDeliberacao, campo);
 
         return regra.Errors.Count > 0
             ? Result<BancaRequerida>.ValidationFailure(regra.Errors)
-            : Result<BancaRequerida>.Success(BancaRequerida.Criar(tipo.Id, tipo.Codigo.Codigo(), tipo.Nome, atendidos, regra.Value, declarada.Id));
+            : Result<BancaRequerida>.Success(BancaRequerida.Criar(tipo, atendidos, regra.Value, declarada.Id));
     }
 
     private async Task<Result<List<CategoriaJulgada>>> CandidatosAtendidosAsync(

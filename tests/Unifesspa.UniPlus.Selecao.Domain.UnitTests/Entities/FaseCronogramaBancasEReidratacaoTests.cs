@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -19,8 +20,8 @@ public sealed class FaseCronogramaBancasEReidratacaoTests
         {
             OrigemData = OrigemDataFase.NaExecucao,
             Bancas = [
-                    Banca("BANCA_ANALISE_DOCUMENTAL", "RENDA"),
-                    Banca("BANCA_HETEROIDENTIFICACAO", "RENDA"),
+                    Banca(TipoDeBanca.AnaliseDocumental, "RENDA"),
+                    Banca(TipoDeBanca.Heteroidentificacao, "RENDA"),
                 ],
         });
 
@@ -30,7 +31,7 @@ public sealed class FaseCronogramaBancasEReidratacaoTests
     [Fact(DisplayName = "A mesma categoria declarada duas vezes nos candidatos atendidos de uma banca é recusada")]
     public void CandidatosAtendidos_CategoriaRepetidaNaMesmaBanca_Recusa()
     {
-        Result<FaseCronograma> resultado = Criar(m => m with { OrigemData = OrigemDataFase.NaExecucao, Bancas = [Banca("BANCA_ANALISE_DOCUMENTAL", "RENDA", "RENDA")] });
+        Result<FaseCronograma> resultado = Criar(m => m with { OrigemData = OrigemDataFase.NaExecucao, Bancas = [Banca(TipoDeBanca.AnaliseDocumental, "RENDA", "RENDA")] });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle()
@@ -47,8 +48,8 @@ public sealed class FaseCronogramaBancasEReidratacaoTests
             regraRecurso: null,
             bancasRequeridas:
             [
-                Banca("BANCA_ANALISE_DOCUMENTAL"),
-                Banca("BANCA_ANALISE_DOCUMENTAL"),
+                Banca(TipoDeBanca.AnaliseDocumental),
+                Banca(TipoDeBanca.AnaliseDocumental),
             ]);
 
         act.Should().Throw<ArgumentException>().WithParameterName("bancasRequeridas");
@@ -62,8 +63,8 @@ public sealed class FaseCronogramaBancasEReidratacaoTests
             regraRecurso: null,
             bancasRequeridas:
             [
-                Banca("BANCA_ANALISE_DOCUMENTAL", "RENDA"),
-                Banca("BANCA_ANALISE_DOCUMENTAL", "ETNICO_RACIAL"),
+                Banca(TipoDeBanca.AnaliseDocumental, "RENDA"),
+                Banca(TipoDeBanca.AnaliseDocumental, "ETNICO_RACIAL"),
             ]);
 
         fase.BancasRequeridas.SelectMany(b => b.CandidatosAtendidos).Select(c => c.Codigo)
@@ -73,21 +74,21 @@ public sealed class FaseCronogramaBancasEReidratacaoTests
     [Fact(DisplayName = "A fase numera as bancas dentro de cada tipo na ordem em que as recebe")]
     public void Reidratar_BancasDeVariosTipos_NumeraDentroDeCadaTipo()
     {
-        BancaRequerida analiseA = Banca("BANCA_ANALISE_DOCUMENTAL", "RENDA");
-        BancaRequerida entrevista = Banca("BANCA_ENTREVISTA");
-        BancaRequerida analiseB = Banca("BANCA_ANALISE_DOCUMENTAL", "PCD");
+        BancaRequerida analiseA = Banca(TipoDeBanca.AnaliseDocumental, "RENDA");
+        BancaRequerida entrevista = Banca(TipoDeBanca.Entrevista);
+        BancaRequerida analiseB = Banca(TipoDeBanca.AnaliseDocumental, "PCD");
 
         FaseCronograma fase = Reidratar([], null, [analiseA, entrevista, analiseB]);
 
-        fase.BancasRequeridas.Select(static b => (b.Codigo, b.PosicaoNoTipo)).Should().BeEquivalentTo(
-            [("BANCA_ANALISE_DOCUMENTAL", 1), ("BANCA_ENTREVISTA", 1), ("BANCA_ANALISE_DOCUMENTAL", 2)]);
+        fase.BancasRequeridas.Select(static b => (b.Tipo.Codigo, b.PosicaoNoTipo)).Should().BeEquivalentTo(
+            [(TipoDeBanca.AnaliseDocumental, 1), (TipoDeBanca.Entrevista, 1), (TipoDeBanca.AnaliseDocumental, 2)]);
     }
 
     [Fact(DisplayName = "A banca reconstruída dos dados salvos guarda o Id congelado e a fase não o troca")]
     public void ReconstruirDosDadosSalvos_PreservaOIdNaFase()
     {
         Guid id = Guid.CreateVersion7();
-        BancaRequerida banca = BancaRequerida.ReconstruirDosDadosSalvos(id, Guid.CreateVersion7(), "BANCA_ENTREVISTA", "Banca", []);
+        BancaRequerida banca = BancaRequerida.ReconstruirDosDadosSalvos(id, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.Entrevista, Guid.CreateVersion7()), []);
 
         FaseCronograma fase = Reidratar([], null, [banca]);
 
@@ -97,7 +98,7 @@ public sealed class FaseCronogramaBancasEReidratacaoTests
     [Fact(DisplayName = "A banca da fase reconstruída sem o Id congelado é erro de programação")]
     public void ReconstruirDosDadosSalvos_IdVazio_Lanca()
     {
-        Action reconstruir = () => BancaRequerida.ReconstruirDosDadosSalvos(Guid.Empty, Guid.CreateVersion7(), "BANCA_ENTREVISTA", "Banca", []);
+        Action reconstruir = () => BancaRequerida.ReconstruirDosDadosSalvos(Guid.Empty, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.Entrevista, Guid.CreateVersion7()), []);
 
         reconstruir.Should().Throw<ArgumentException>();
     }
@@ -111,8 +112,8 @@ public sealed class FaseCronogramaBancasEReidratacaoTests
             OrigemData = OrigemDataFase.NaExecucao,
             Bancas =
             [
-                FaseDeTesteDaAtualizacao.BancaQueSubstitui(idDaGravada, Guid.CreateVersion7(), "BANCA_ANALISE_DOCUMENTAL", "RENDA"),
-                FaseDeTesteDaAtualizacao.BancaQueSubstitui(idDaGravada, Guid.CreateVersion7(), "BANCA_HETEROIDENTIFICACAO", "PCD"),
+                FaseDeTesteDaAtualizacao.BancaQueSubstitui(idDaGravada, Guid.CreateVersion7(), TipoDeBanca.AnaliseDocumental, "RENDA"),
+                FaseDeTesteDaAtualizacao.BancaQueSubstitui(idDaGravada, Guid.CreateVersion7(), TipoDeBanca.Heteroidentificacao, "PCD"),
             ],
             EmiteParecerIndividual = true,
         });
@@ -129,9 +130,9 @@ public sealed class FaseCronogramaBancasEReidratacaoTests
             OrigemData = OrigemDataFase.NaExecucao,
             Bancas =
             [
-                FaseDeTesteDaAtualizacao.BancaQueSubstitui(Guid.CreateVersion7(), Guid.CreateVersion7(), "BANCA_ANALISE_DOCUMENTAL", "RENDA"),
-                FaseDeTesteDaAtualizacao.BancaQueSubstitui(Guid.CreateVersion7(), Guid.CreateVersion7(), "BANCA_ANALISE_DOCUMENTAL", "PCD"),
-                Banca("BANCA_HETEROIDENTIFICACAO", "PPI"),
+                FaseDeTesteDaAtualizacao.BancaQueSubstitui(Guid.CreateVersion7(), Guid.CreateVersion7(), TipoDeBanca.AnaliseDocumental, "RENDA"),
+                FaseDeTesteDaAtualizacao.BancaQueSubstitui(Guid.CreateVersion7(), Guid.CreateVersion7(), TipoDeBanca.AnaliseDocumental, "PCD"),
+                Banca(TipoDeBanca.Heteroidentificacao, "PPI"),
             ],
         });
 

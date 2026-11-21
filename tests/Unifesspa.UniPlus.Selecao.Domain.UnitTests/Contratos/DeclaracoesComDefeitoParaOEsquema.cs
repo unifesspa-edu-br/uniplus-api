@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Contratos;
 
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
@@ -16,7 +17,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// </summary>
 internal static class DeclaracoesComDefeitoParaOEsquema
 {
-    private const string Banca = "BANCA_ANALISE_DOCUMENTAL";
+    private const TipoDeBanca Banca = TipoDeBanca.AnaliseDocumental;
 
     internal static ContextoDaConferencia ContextoComTodosOsDefeitos()
     {
@@ -41,7 +42,7 @@ internal static class DeclaracoesComDefeitoParaOEsquema
     }
 
     private static BancaRequerida BancaDeFase(params string[] categorias) => BancaRequerida.Criar(
-        Guid.CreateVersion7(), Banca, "Banca de teste", [.. categorias.Select(static c => CategoriaJulgada.Criar(Guid.CreateVersion7(), c))]);
+        TiposDeBancaCopiadosDeTeste.De(Banca), [.. categorias.Select(static c => CategoriaJulgada.Criar(Guid.CreateVersion7(), c))]);
 
     private static EtapaDeclarada[] Etapas()
     {

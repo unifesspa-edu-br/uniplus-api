@@ -36,9 +36,9 @@ internal static class ErrosDaBanca
 
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> DaExigenciaNaPublicacao() =>
     [
-        new(BancaErrorCodes.RegraDeDeliberacaoObrigatoria, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.banca.regra_de_deliberacao_obrigatoria", "Toda banca declara a regra de deliberação para o processo ser publicado")),
+        new(BancaErrorCodes.RegraDeDeliberacaoObrigatoria, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.banca.regra_de_deliberacao_obrigatoria", "A banca não declara a regra de deliberação, ou a votação do recurso que julga por ato individual")),
         new(BancaErrorCodes.IntegrantesAbaixoDoMinimo, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.banca.integrantes_abaixo_do_minimo", "A banca declara menos integrantes que o mínimo exigido")),
         new(BancaErrorCodes.CandidatosAtendidosEmBancaDeRecursos, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.banca.candidatos_atendidos_em_banca_de_recursos", "A banca que julga recurso não define candidatos atendidos")),
-        new(BancaErrorCodes.RecursoSemBanca, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.cronograma.recurso_sem_banca", "Fase ou etapa com recurso exige banca de análise de recursos")),
+        new(BancaErrorCodes.RecursoSemBanca, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.cronograma.recurso_sem_banca", "O recurso não tem banca que o julgue em 1ª instância")),
     ];
 }

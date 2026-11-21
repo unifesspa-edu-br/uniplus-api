@@ -19,14 +19,12 @@ public sealed class BancaDaEtapaConfiguration : IEntityTypeConfiguration<BancaDa
         builder.ToTable("bancas_da_etapa");
         builder.HasKey(b => b.Id);
         builder.Property(b => b.Id).ValueGeneratedNever();
-        builder.Property(b => b.Codigo).HasMaxLength(60).IsRequired();
-        builder.Property(b => b.Nome).HasMaxLength(200).IsRequired();
+        builder.OwnsOne(b => b.Tipo, tipo => tipo.ConfigurarTipoDeBancaCopiado());
+        builder.Navigation(b => b.Tipo).IsRequired();
         builder.OwnsOne(b => b.RegraDeDeliberacao, regra => regra.ConfigurarRegraDeDeliberacao());
-        builder.Property(b => b.TipoBancaOrigemId).IsRequired();
         builder.Property(b => b.PosicaoNoTipo).IsRequired();
 
-        // A unicidade do par código e posição é a restrição adiada do script de posição única das bancas.
-        builder.HasIndex(b => new { b.EtapaProcessoId, b.Codigo })
-            .HasDatabaseName("ix_bancas_da_etapa_codigo");
+        // A unicidade do par código e posição, e o índice que atende à busca por lugar e tipo, são a restrição adiada do
+        // script de posição única das bancas.
     }
 }

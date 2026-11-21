@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Etapas;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
@@ -62,7 +63,7 @@ internal sealed record ModeloDeEtapa(string Nome)
         Forma = FormaDeAvaliacao.Humana,
         RegraConsolidacao = ReferenciaRegra.De(RegraConsolidacaoCodigo.AvaliacaoUnica, "v1", new string('a', 64)),
         Passo = 0.5m,
-        Bancas = [BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_AVALIADORA", "Banca avaliadora", BancasDeTeste.Regra())],
+        Bancas = [BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()), BancasDeTeste.Regra())],
     };
 
     internal ModeloDeEtapa SemNota() => this with

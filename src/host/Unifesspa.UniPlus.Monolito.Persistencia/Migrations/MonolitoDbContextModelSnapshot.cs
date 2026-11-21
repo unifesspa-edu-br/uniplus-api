@@ -10888,12 +10888,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<string>("Codigo")
-                        .IsRequired()
-                        .HasMaxLength(60)
-                        .HasColumnType("character varying(60)")
-                        .HasColumnName("codigo");
-
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -10902,19 +10896,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("etapa_processo_id");
 
-                    b.Property<string>("Nome")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("nome");
-
                     b.Property<int>("PosicaoNoTipo")
                         .HasColumnType("integer")
                         .HasColumnName("posicao_no_tipo");
-
-                    b.Property<Guid>("TipoBancaOrigemId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tipo_banca_origem_id");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -10923,8 +10907,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.HasKey("Id")
                         .HasName("pk_bancas_da_etapa");
 
-                    b.HasIndex("EtapaProcessoId", "Codigo")
-                        .HasDatabaseName("ix_bancas_da_etapa_codigo");
+                    b.HasIndex("EtapaProcessoId")
+                        .HasDatabaseName("ix_bancas_da_etapa_etapa_processo_id");
 
                     b.ToTable("bancas_da_etapa", "selecao");
                 });
@@ -10935,12 +10919,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<string>("Codigo")
-                        .IsRequired()
-                        .HasMaxLength(60)
-                        .HasColumnType("character varying(60)")
-                        .HasColumnName("codigo");
-
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -10949,19 +10927,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("fase_cronograma_id");
 
-                    b.Property<string>("Nome")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("nome");
-
                     b.Property<int>("PosicaoNoTipo")
                         .HasColumnType("integer")
                         .HasColumnName("posicao_no_tipo");
-
-                    b.Property<Guid>("TipoBancaOrigemId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tipo_banca_origem_id");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -18775,7 +18743,63 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasConstraintName("fk_bancas_da_etapa_bancas_da_etapa_id");
                         });
 
+                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.TipoDeBancaCopiado", "Tipo", b1 =>
+                        {
+                            b1.Property<Guid>("BancaDaEtapaId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Codigo")
+                                .IsRequired()
+                                .HasMaxLength(60)
+                                .HasColumnType("character varying(60)")
+                                .HasColumnName("codigo");
+
+                            b1.Property<bool>("EncerraRecursoNaPrimeiraInstancia")
+                                .HasColumnType("boolean")
+                                .HasColumnName("encerra_recurso_na_primeira_instancia");
+
+                            b1.Property<bool>("ExigeDuasOuMaisBancas")
+                                .HasColumnType("boolean")
+                                .HasColumnName("exige_duas_ou_mais_bancas");
+
+                            b1.Property<string>("Nome")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("nome");
+
+                            b1.Property<Guid>("OrigemId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("tipo_banca_origem_id");
+
+                            b1.Property<string>("Papel")
+                                .IsRequired()
+                                .HasMaxLength(60)
+                                .HasColumnType("character varying(60)")
+                                .HasColumnName("papel");
+
+                            b1.PrimitiveCollection<string[]>("_tiposDeDecisaoJulgados")
+                                .IsRequired()
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("text[]")
+                                .HasColumnName("tipos_de_decisao_julgados")
+                                .HasDefaultValueSql("'{}'::text[]")
+                                .HasComment("Tipos de decisão que o tipo de banca julgava quando a banca o copiou, em ordem alfabética ordinal do código e sem repetição.");
+
+                            b1.HasKey("BancaDaEtapaId");
+
+                            b1.ToTable("bancas_da_etapa", "selecao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("BancaDaEtapaId")
+                                .HasConstraintName("fk_bancas_da_etapa_bancas_da_etapa_id");
+                        });
+
                     b.Navigation("RegraDeDeliberacao");
+
+                    b.Navigation("Tipo")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.BancaRequerida", b =>
@@ -18834,7 +18858,63 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasConstraintName("fk_bancas_requeridas_bancas_requeridas_id");
                         });
 
+                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.TipoDeBancaCopiado", "Tipo", b1 =>
+                        {
+                            b1.Property<Guid>("BancaRequeridaId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Codigo")
+                                .IsRequired()
+                                .HasMaxLength(60)
+                                .HasColumnType("character varying(60)")
+                                .HasColumnName("codigo");
+
+                            b1.Property<bool>("EncerraRecursoNaPrimeiraInstancia")
+                                .HasColumnType("boolean")
+                                .HasColumnName("encerra_recurso_na_primeira_instancia");
+
+                            b1.Property<bool>("ExigeDuasOuMaisBancas")
+                                .HasColumnType("boolean")
+                                .HasColumnName("exige_duas_ou_mais_bancas");
+
+                            b1.Property<string>("Nome")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("nome");
+
+                            b1.Property<Guid>("OrigemId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("tipo_banca_origem_id");
+
+                            b1.Property<string>("Papel")
+                                .IsRequired()
+                                .HasMaxLength(60)
+                                .HasColumnType("character varying(60)")
+                                .HasColumnName("papel");
+
+                            b1.PrimitiveCollection<string[]>("_tiposDeDecisaoJulgados")
+                                .IsRequired()
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("text[]")
+                                .HasColumnName("tipos_de_decisao_julgados")
+                                .HasDefaultValueSql("'{}'::text[]")
+                                .HasComment("Tipos de decisão que o tipo de banca julgava quando a banca o copiou, em ordem alfabética ordinal do código e sem repetição.");
+
+                            b1.HasKey("BancaRequeridaId");
+
+                            b1.ToTable("bancas_requeridas", "selecao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("BancaRequeridaId")
+                                .HasConstraintName("fk_bancas_requeridas_bancas_requeridas_id");
+                        });
+
                     b.Navigation("RegraDeDeliberacao");
+
+                    b.Navigation("Tipo")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.CategoriaJulgada", b =>

@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
@@ -172,15 +173,15 @@ public sealed class ProcessoSeletivoCronogramaTests
     public void Redefinir_ComAPropriaFaseJaGravada_PreservaBancasRequeridas()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        BancaRequerida banca = BancaRequerida.Criar(Guid.CreateVersion7(), "BANCA_ANALISE_DOCUMENTAL", "Banca de teste", []);
+        BancaRequerida banca = BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, Guid.CreateVersion7()), []);
         FaseCronograma heteroidentificacao = new ModeloDeFase("HETEROIDENTIFICACAO", 1) { Bancas = [banca] }.Criar();
         processo.DefinirCronogramaFases([heteroidentificacao], []).IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirCronogramaFases([.. processo.CronogramaFases], []);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        processo.CronogramaFases.Single().BancasRequeridas.Select(b => b.Codigo)
-            .Should().Equal("BANCA_ANALISE_DOCUMENTAL");
+        processo.CronogramaFases.Single().BancasRequeridas.Select(b => b.Tipo.Codigo)
+            .Should().Equal(TipoDeBanca.AnaliseDocumental);
     }
 
     // ── CA-10 — heteroidentificação precede a homologação do resultado final ──

@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.FasesEEt
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
@@ -39,10 +40,10 @@ public sealed class ConferenciaDasBancasTests
     }
 
     private static BancaRequerida DeRecursos(int integrantes, int quorum) =>
-        BancaRequerida.Criar(Guid.CreateVersion7(), TipoBancaCodigo.AnaliseDeRecursos, "Banca de recursos", [], BancasDeTeste.Regra(integrantes, quorum));
+        BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.DeRecursos(Guid.CreateVersion7()), [], BancasDeTeste.Regra(integrantes, quorum));
 
     private static BancaRequerida SemRegraNaFase() =>
-        BancaRequerida.Criar(Guid.CreateVersion7(), "BANCA_AVALIADORA", "Banca avaliadora", []);
+        BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()), []);
 
     private static ModeloDeEtapa ComRecurso(string codigoDaFase, params BancaDaEtapa[] bancas) =>
         new ModeloDeEtapa("Redação") with
@@ -109,13 +110,13 @@ public sealed class ConferenciaDasBancasTests
     public void RegrasDeDeliberacao_BancaSemRegra_Recusa()
     {
         CronogramaDoProcesso cronograma = Fases(new ModeloDeFase("AVALIACAO", 1) with { Bancas = [BancasDeTeste.DeRecursosDaFase(), SemRegraNaFase()] });
-        EtapasDoProcesso etapas = Etapas(EtapaNaFase("AVALIACAO") with { Bancas = [BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_AVALIADORA", "Banca da etapa")] });
+        EtapasDoProcesso etapas = Etapas(EtapaNaFase("AVALIACAO") with { Bancas = [BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()))] });
 
         Causas(ConferenciaDasBancas.ConferirRegrasDeDeliberacao(cronograma, etapas)).Should().Equal(
             ("fases[0].bancasRequeridas[1]", "Banca.RegraDeDeliberacaoObrigatoria"),
             ("etapas[0].bancas[0]", "Banca.RegraDeDeliberacaoObrigatoria"));
         ConferenciaDasBancas.ConferirRegrasDeDeliberacao(cronograma, etapas)[0].Error.Message
-            .Should().Be("A banca 'Banca avaliadora' da fase 'AVALIACAO' não declara a regra de deliberação.");
+            .Should().Be("A banca 'Banca de correção de redações 1' da fase 'AVALIACAO' não declara a regra de deliberação.");
     }
 
     [Fact(DisplayName = "A banca de recursos da fase com menos integrantes do que os corretores da etapa que julga é recusada")]
@@ -164,7 +165,7 @@ public sealed class ConferenciaDasBancasTests
     [Fact(DisplayName = "A banca que não é de recursos não julga etapa: o mínimo dela é o quórum")]
     public void Minimo_BancaQueNaoEDeRecursos_NaoJulgaEtapa()
     {
-        BancaRequerida avaliadora = BancaRequerida.Criar(Guid.CreateVersion7(), "BANCA_AVALIADORA", "Banca avaliadora", [], BancasDeTeste.Regra(integrantes: 2, quorum: 2));
+        BancaRequerida avaliadora = BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()), [], BancasDeTeste.Regra(integrantes: 2, quorum: 2));
         CronogramaDoProcesso cronograma = Fases(new ModeloDeFase("AVALIACAO", 1) with { Bancas = [avaliadora] });
 
         ConferenciaDasBancas.ConferirMinimoDeIntegrantes(cronograma, Etapas(ComRecurso("AVALIACAO")), TresCorretores).Should().BeEmpty();
@@ -197,7 +198,7 @@ public sealed class ConferenciaDasBancasTests
         IReadOnlyList<ItemConformidade> itens = ConferenciaDasBancas.Itens(cronograma, Etapas(), NenhumLido);
 
         itens.Select(static item => item.Codigo).Should().Equal(
-            "cronograma_recurso_com_banca_de_analise",
+            "cronograma_recurso_com_banca_que_julga",
             "cronograma_banca_de_recursos_sem_candidatos_atendidos",
             "cronograma_banca_com_regra_de_deliberacao",
             "cronograma_banca_com_o_minimo_de_integrantes");
@@ -208,7 +209,7 @@ public sealed class ConferenciaDasBancasTests
     public void Itens_CandidatosAtendidosEmBancaDeRecursos_SoOItemDosCandidatosAtendidosVermelho()
     {
         BancaRequerida comCandidatosAtendidos = BancaRequerida.Criar(
-            Guid.CreateVersion7(), TipoBancaCodigo.AnaliseDeRecursos, "Banca de recursos", [CategoriaJulgada.Criar(Guid.CreateVersion7(), "RENDA")], BancasDeTeste.Regra());
+            TiposDeBancaCopiadosDeTeste.DeRecursos(Guid.CreateVersion7()), [CategoriaJulgada.Criar(Guid.CreateVersion7(), "RENDA")], BancasDeTeste.Regra());
         CronogramaDoProcesso cronograma = Fases(new ModeloDeFase("AVALIACAO", 1) with { Bancas = [comCandidatosAtendidos] });
 
         ConferenciaDasBancas.Itens(cronograma, Etapas(), NenhumLido).Where(static item => !item.Ok).Select(static item => item.Codigo)

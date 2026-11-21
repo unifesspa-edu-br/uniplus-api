@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// As bancas que a fase requer. A banca cujo tipo (o código é obrigatório no documento, e aqui só falta o que o cadastro não tem), categoria dos candidatos atendidos ou regra de deliberação o domínio recusa fica de fora inteira
+/// As bancas que a fase requer, cada uma com a cópia do tipo que o cadastro tem agora. A banca cujo tipo (o código é obrigatório no documento, e aqui só falta o que o cadastro não tem), categoria dos candidatos atendidos ou regra de deliberação o domínio recusa fica de fora inteira
 /// e vira parte recusada, que aponta o campo da banca que a causa; as causas independentes da mesma banca acumulam. A banca que
 /// não cabe na lista suspende o que se conclui das bancas da fase. Não confere os candidatos atendidos nem o mínimo de integrantes.
 /// </summary>
@@ -24,14 +24,14 @@ internal static class LeituraDasBancasDaFase
 
     private static ValorLido<BancaRequerida?> Banca(BancaNoDocumento banca, CadastrosCitadosNoDocumento cadastros)
     {
-        TipoDeBancaCitado? tipo = cadastros.TipoDeBanca(banca.TipoBancaCodigo);
+        TipoDeBancaCopiado? tipo = cadastros.TipoDeBanca(banca.TipoBancaCodigo);
         CategoriaDeDocumentoCitada?[] categorias = [.. banca.CategoriasDocumentoCodigos.Select(cadastros.Categoria)];
         (RegraDeDeliberacao? regra, IReadOnlyList<FieldError> violacoes) = Deliberacao(banca.RegraDeDeliberacao);
         RecusaDaParte[] recusas = [.. DoTipo(banca, tipo), .. DasCategorias(banca, categorias), .. DaDeliberacao(banca, violacoes)];
 
         return recusas.Length > 0
             ? new(null, recusas)
-            : new(BancaRequerida.Criar(tipo!.OrigemId, tipo.Codigo, tipo.Nome, [.. categorias.Select(static categoria => CategoriaJulgada.Criar(categoria!.OrigemId, categoria.Codigo))], regra), []);
+            : new(BancaRequerida.Criar(tipo!, [.. categorias.Select(static categoria => CategoriaJulgada.Criar(categoria!.OrigemId, categoria.Codigo))], regra), []);
     }
 
     private static (RegraDeDeliberacao? Regra, IReadOnlyList<FieldError> Violacoes) Deliberacao(DeclaracaoDaDeliberacao? declarada)
@@ -46,11 +46,11 @@ internal static class LeituraDasBancasDaFase
         return (regra.Value, regra.IsFailure ? regra.Errors : []);
     }
 
-    private static IEnumerable<RecusaDaParte> DoTipo(BancaNoDocumento banca, TipoDeBancaCitado? tipo) =>
+    private static IEnumerable<RecusaDaParte> DoTipo(BancaNoDocumento banca, TipoDeBancaCopiado? tipo) =>
         tipo is null
             ? [Recusa(banca, $"bancasRequeridas[{banca.PosicaoNoDocumento}].tipoBancaId", new DomainError(
                 FaseCronogramaErrorCodes.TipoBancaNaoEncontrado,
-                "O tipo de banca citado pela banca da fase não foi encontrado ou não está mais vivo."))]
+                "O tipo de banca indicado não existe ou está desativado no cadastro."))]
             : [];
 
     private static IEnumerable<RecusaDaParte> DasCategorias(BancaNoDocumento banca, CategoriaDeDocumentoCitada?[] categorias) =>

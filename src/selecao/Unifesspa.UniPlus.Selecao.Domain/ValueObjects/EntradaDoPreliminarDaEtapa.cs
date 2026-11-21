@@ -50,9 +50,14 @@ internal static class EntradaDoPreliminarDaEtapa
 
     private static IEnumerable<string> DaBanca(BancaDaEtapa banca)
     {
-        string campo = $"bancas[{Valor(banca.TipoBancaOrigemId)}]";
+        string campo = $"bancas[{Valor(banca.Tipo.OrigemId)}]";
 
-        return [Linha(campo, true), .. DaDeliberacao($"{campo}.regraDeDeliberacao", banca.RegraDeDeliberacao)];
+        return
+        [
+            Linha(campo, true),
+            .. DaCopiaDoTipo($"{campo}.tipo", banca.Tipo),
+            .. DaDeliberacao($"{campo}.regraDeDeliberacao", banca.RegraDeDeliberacao),
+        ];
     }
 
     // A janela recursal se distingue pelo fato de que o prazo corre e pelo ato em que ancora.

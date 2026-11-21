@@ -73,6 +73,18 @@ internal static class LinhasDaEntradaDoPreliminar
     internal static IEnumerable<string> DosTiposDeDecisao(IEnumerable<TipoMotivoDeDecisao> tipos) =>
         tipos.Select(static tipo => Linha($"tiposDeDecisao[{Valor(tipo.Codigo())}]", true));
 
+    /// <summary>
+    /// O que a cópia do tipo decide no julgamento da banca: o papel, as duas marcas e os tipos de decisão que julga. O nome
+    /// do cadastro só se exibe e o código segue a origem, então ficam de fora.
+    /// </summary>
+    internal static IEnumerable<string> DaCopiaDoTipo(string campo, TipoDeBancaCopiado tipo) =>
+    [
+        Linha($"{campo}.papel", tipo.Papel),
+        Linha($"{campo}.exigeDuasOuMaisBancas", tipo.ExigeDuasOuMaisBancas),
+        Linha($"{campo}.encerraRecursoNaPrimeiraInstancia", tipo.EncerraRecursoNaPrimeiraInstancia),
+        .. tipo.TiposDeDecisaoJulgados.Select(julgado => Linha($"{campo}.tiposDeDecisaoJulgados[{Valor(julgado.Codigo())}]", true)),
+    ];
+
     /// <summary>O produto em que o prazo ancora, pelo tipo de ato e pelo papel e nunca pelo <c>Id</c>.</summary>
     internal static IEnumerable<string> DaAncora(string campo, IEnumerable<IProdutoPublicado> produtos, Guid produtoAncoraId)
     {

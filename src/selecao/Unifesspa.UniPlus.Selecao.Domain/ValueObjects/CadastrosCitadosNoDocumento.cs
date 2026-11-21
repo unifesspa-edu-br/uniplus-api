@@ -13,7 +13,7 @@ public sealed class CadastrosCitadosNoDocumento
     private readonly FrozenDictionary<string, UnidadeCitada> _unidades = FrozenDictionary<string, UnidadeCitada>.Empty;
     private readonly FrozenDictionary<string, TipoProcessoSnapshot> _tiposDeProcesso = FrozenDictionary<string, TipoProcessoSnapshot>.Empty;
     private readonly FrozenDictionary<string, OrigemCanonicaDaFase> _fasesCanonicas = FrozenDictionary<string, OrigemCanonicaDaFase>.Empty;
-    private readonly FrozenDictionary<string, TipoDeBancaCitado> _tiposDeBanca = FrozenDictionary<string, TipoDeBancaCitado>.Empty;
+    private readonly FrozenDictionary<string, TipoDeBancaCopiado> _tiposDeBanca = FrozenDictionary<string, TipoDeBancaCopiado>.Empty;
     private readonly FrozenDictionary<string, CategoriaDeDocumentoCitada> _categoriasDeDocumento = FrozenDictionary<string, CategoriaDeDocumentoCitada>.Empty;
     private readonly FrozenDictionary<string, LocalidadeRegente> _localidades = FrozenDictionary<string, LocalidadeRegente>.Empty;
     private readonly FrozenDictionary<(string Codigo, string Versao), RegraDoCatalogoCitada> _regras = FrozenDictionary<(string Codigo, string Versao), RegraDoCatalogoCitada>.Empty;
@@ -45,8 +45,8 @@ public sealed class CadastrosCitadosNoDocumento
         init => _fasesCanonicas = Congelado(value);
     }
 
-    /// <summary>Os tipos de banca vivos, pelo código.</summary>
-    public IReadOnlyDictionary<string, TipoDeBancaCitado> TiposDeBanca
+    /// <summary>Os tipos de banca vivos, pelo código, já como a cópia que a banca guarda.</summary>
+    public IReadOnlyDictionary<string, TipoDeBancaCopiado> TiposDeBanca
     {
         get => _tiposDeBanca;
         init => _tiposDeBanca = Congelado(value);
@@ -86,7 +86,7 @@ public sealed class CadastrosCitadosNoDocumento
 
     internal OrigemCanonicaDaFase? FaseCanonica(string? codigo) => Achado(_fasesCanonicas, codigo);
 
-    internal TipoDeBancaCitado? TipoDeBanca(string? codigo) => Achado(_tiposDeBanca, codigo);
+    internal TipoDeBancaCopiado? TipoDeBanca(string? codigo) => Achado(_tiposDeBanca, codigo);
 
     internal CategoriaDeDocumentoCitada? Categoria(string? codigo) => Achado(_categoriasDeDocumento, codigo);
 
@@ -110,9 +110,6 @@ public sealed record UnidadeCitada(Guid OrigemId, UnidadeAdministradoraSnapshot 
 {
     internal UnidadeResponsavelSnapshot ComoResponsavel() => new(OrigemId, Cadastro.Sigla, Cadastro.Nome);
 }
-
-/// <summary>O tipo de banca que o documento cita.</summary>
-public sealed record TipoDeBancaCitado(Guid OrigemId, string Codigo, string Nome);
 
 /// <summary>A categoria de documento que o documento cita nos candidatos atendidos por uma banca.</summary>
 public sealed record CategoriaDeDocumentoCitada(Guid OrigemId, string Codigo);

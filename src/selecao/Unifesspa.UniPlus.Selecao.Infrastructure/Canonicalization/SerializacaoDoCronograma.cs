@@ -103,16 +103,19 @@ internal static class SerializacaoDoCronograma
         return new JsonArray([.. ordenadas.Select(static par => (JsonNode)par.Item)]);
     }
 
-    private static JsonObject SerializarBancaRequerida(BancaRequerida banca) => new()
+    private static JsonObject SerializarBancaRequerida(BancaRequerida banca)
     {
-        ["id"] = banca.Id,
-        ["posicaoNoTipo"] = banca.PosicaoNoTipo,
-        ["tipoBancaOrigemId"] = banca.TipoBancaOrigemId,
-        ["codigo"] = HashCanonicalComputer.NormalizeNfc(banca.Codigo),
-        ["nome"] = HashCanonicalComputer.NormalizeNfc(banca.Nome),
-        ["regraDeDeliberacao"] = RegraDeDeliberacaoNoEnvelope.Serializar(banca.RegraDeDeliberacao),
-        ["candidatosAtendidos"] = SerializarCandidatosAtendidos(banca),
-    };
+        JsonObject item = new()
+        {
+            ["id"] = banca.Id,
+            ["posicaoNoTipo"] = banca.PosicaoNoTipo,
+            ["regraDeDeliberacao"] = RegraDeDeliberacaoNoEnvelope.Serializar(banca.RegraDeDeliberacao),
+            ["candidatosAtendidos"] = SerializarCandidatosAtendidos(banca),
+        };
+        TipoDeBancaNoEnvelope.Serializar(item, banca.Tipo);
+
+        return item;
+    }
 
     private static JsonArray SerializarCandidatosAtendidos(BancaRequerida banca)
     {

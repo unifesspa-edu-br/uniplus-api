@@ -68,7 +68,7 @@ internal static class ApoioDasBancasDoProcesso
         BancasDeTeste.DeRecursosDaEtapa(BancasDeTeste.Regra(integrantes, quorum));
 
     internal static BancaRequerida DeRecursosDaFase(int integrantes, int quorum) =>
-        BancaRequerida.Criar(Tipo, TipoBancaCodigo.AnaliseDeRecursos, "Banca de análise de recursos", [], BancasDeTeste.Regra(integrantes, quorum));
+        BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.DeRecursos(Tipo), [], BancasDeTeste.Regra(integrantes, quorum));
 
     internal static CorretoresDasEtapas Corretores(params (ReferenciaRegra Regra, int Numero)[] porRegra) =>
         new(porRegra.ToDictionary(static par => par.Regra, static par => CorretoresDaRegra.SemNovoCorretor(par.Numero)));

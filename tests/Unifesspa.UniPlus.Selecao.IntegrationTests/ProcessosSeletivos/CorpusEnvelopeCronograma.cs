@@ -119,18 +119,14 @@ internal static class CorpusEnvelopeCronograma
     internal static BancaRequerida BancaDeAnaliseDocumentalDeRenda(int variante = 0) =>
         BancaRequerida.ReconstruirDosDadosSalvos(
             BancaId(1, variante),
-            new Guid("5555eeee-0000-4000-8000-000000000001"),
-            "BANCA_ANALISE_DOCUMENTAL",
-            "Banca de teste",
+            TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, new Guid("5555eeee-0000-4000-8000-000000000001")),
             [CategoriaJulgada.Criar(new Guid("7777ffff-0000-4000-8000-000000000001"), "RENDA")],
             BancasDeTeste.Regra());
 
     internal static BancaRequerida BancaDeAnaliseDocumentalDeIdentificacao(int variante = 0) =>
         BancaRequerida.ReconstruirDosDadosSalvos(
             BancaId(2, variante),
-            new Guid("5555eeee-0000-4000-8000-000000000001"),
-            "BANCA_ANALISE_DOCUMENTAL",
-            "Banca de teste",
+            TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, new Guid("5555eeee-0000-4000-8000-000000000001")),
             [
                 CategoriaJulgada.Criar(new Guid("7777ffff-0000-4000-8000-000000000003"), "IDENTIFICACAO"),
                 CategoriaJulgada.Criar(new Guid("7777ffff-0000-4000-8000-000000000002"), "ETNICO_RACIAL"),
@@ -140,9 +136,7 @@ internal static class CorpusEnvelopeCronograma
     internal static BancaRequerida BancaDeHeteroidentificacao(int variante = 0) =>
         BancaRequerida.ReconstruirDosDadosSalvos(
             BancaId(3, variante),
-            new Guid("5555eeee-0000-4000-8000-000000000002"),
-            "BANCA_HETEROIDENTIFICACAO",
-            "Banca de teste",
+            TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.Heteroidentificacao, new Guid("5555eeee-0000-4000-8000-000000000002")),
             [],
             BancasDeTeste.Regra());
 
@@ -151,9 +145,7 @@ internal static class CorpusEnvelopeCronograma
     internal static BancaRequerida BancaDeAnaliseDeRecursos(int variante = 0) =>
         BancaRequerida.ReconstruirDosDadosSalvos(
             BancaId(4, variante),
-            new Guid("5555eeee-0000-4000-8000-000000000003"),
-            TipoBancaCodigo.AnaliseDeRecursos,
-            "Banca de análise de recursos",
+            TiposDeBancaCopiadosDeTeste.DeRecursos(new Guid("5555eeee-0000-4000-8000-000000000003")),
             [],
             BancasDeTeste.Regra());
 

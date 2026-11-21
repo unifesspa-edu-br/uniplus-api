@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -54,13 +55,13 @@ public sealed class LeituraDoProcessoEmOrdemCanonicaTests
         ProdutoDaEtapa resultado = ProdutoDaEtapa.Criar("RESULTADO_DA_PROVA", PapelProdutoFase.Preliminar);
         ProdutoDaEtapa gabarito = ProdutoDaEtapa.Criar("GABARITO", PapelProdutoFase.Preliminar);
         etapa.DefinirProdutos([resultado, gabarito]).IsSuccess.Should().BeTrue();
-        etapa.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "ZETA", "Banca Z"), BancaDaEtapa.Criar(Guid.CreateVersion7(), "ALFA", "Banca A")]);
+        etapa.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.Entrevista)), BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental))]);
         etapa.DefinirRecursos([AoAto(resultado.Id), AoAto(gabarito.Id)]).IsSuccess.Should().BeTrue();
 
         EtapaProcessoDto dto = ProjecaoDaEtapaDoProcesso.ProjetarEtapa(etapa);
 
         dto.Publicacoes.Produtos.Select(static p => p.AtoCodigo).Should().Equal("GABARITO", "RESULTADO_DA_PROVA");
-        dto.Bancas.Select(static b => b.Codigo).Should().Equal("ALFA", "ZETA");
+        dto.Bancas.Select(static b => b.Codigo.Codigo).Should().Equal("BANCA_ANALISE_DOCUMENTAL", "BANCA_ENTREVISTA");
         dto.Publicacoes.Recursos.Select(static r => r.ProdutoAncoraId).Should().Equal(gabarito.Id, resultado.Id);
     }
 }

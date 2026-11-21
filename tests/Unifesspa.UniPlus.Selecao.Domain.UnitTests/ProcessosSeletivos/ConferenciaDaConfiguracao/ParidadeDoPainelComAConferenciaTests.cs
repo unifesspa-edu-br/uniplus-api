@@ -108,7 +108,7 @@ public sealed class ParidadeDoPainelComAConferenciaTests
         ["Conjunto"] = ["etapas_em_conjunto"],
         ["Completude"] = ["cronograma_fase_agrupadora_sem_etapa_pontuada", "cronograma_etapa_declara_a_fase"],
         ["Recursos"] = ["cronograma_procedimento_de_recurso"],
-        ["Bancas"] = ["cronograma_recurso_com_banca_de_analise"],
+        ["Bancas"] = ["cronograma_recurso_com_banca_que_julga"],
         ["CorrecaoIndependente"] = ["etapa_correcao_independente_com_dois_corretores"],
         ["TiposDeAto"] = ["cronograma_resultado_declarado_com_papel", "cronograma_tipo_que_congela_nao_eh_resultado", "cronograma_tipo_de_ato_unico_declarado_uma_vez"],
         ["Cascata"] = ["cascata_pendente", "cascata_modalidade_fora_do_regime_federal"],

@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
@@ -154,7 +155,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         EtapaProcesso etapa = EtapaNotaEnem();
-        etapa.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA", "Banca de teste")]);
+        etapa.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()))]);
 
         Result result = processo.DefinirEtapas([etapa]);
 
@@ -217,7 +218,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
     public void DefinirEtapas_OrdemDasRecusas()
     {
         EtapaProcesso comTudo = EtapaNotaEnemForaDaMedia(CaraterEtapa.Eliminatoria);
-        comTudo.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA", "Banca de teste")]);
+        comTudo.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()))]);
         comTudo.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar)]).IsSuccess.Should().BeTrue();
 
         NovoProcesso().DefinirEtapas([comTudo, EtapaNotaEnem(ordem: 2)])
@@ -226,7 +227,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
             .Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemNaoCompoeNota");
 
         EtapaProcesso comBancaEProduto = EtapaNotaEnem();
-        comBancaEProduto.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA", "Banca de teste")]);
+        comBancaEProduto.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()))]);
         comBancaEProduto.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar)]).IsSuccess.Should().BeTrue();
         NovoProcesso().DefinirEtapas([comBancaEProduto])
             .Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemComBanca");
@@ -238,7 +239,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirClassificacao(ClassificacaoMediaPonderada(baseadoEmEnem: false)).IsSuccess.Should().BeTrue();
         EtapaProcesso etapa = EtapaNotaEnemForaDaMedia(CaraterEtapa.Eliminatoria);
-        etapa.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA", "Banca de teste")]);
+        etapa.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()))]);
 
         processo.DefinirEtapas([etapa, EtapaNotaEnem(ordem: 2)])
             .Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemDuplicada");
@@ -249,7 +250,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         EtapaProcesso redacao = EtapaRedacao();
-        redacao.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA", "Banca de teste")]);
+        redacao.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()))]);
         redacao.DefinirJanelaEParecer(null, null, emiteParecerIndividual: true).IsSuccess.Should().BeTrue();
 
         Result result = processo.DefinirEtapas([EtapaNotaEnem(), redacao]);
@@ -275,7 +276,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirClassificacao(ClassificacaoMediaPonderada(baseadoEmEnem: false)).IsSuccess.Should().BeTrue();
         EtapaProcesso etapa = EtapaNotaEnem();
-        etapa.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA", "Banca de teste")]);
+        etapa.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()))]);
 
         Result result = processo.DefinirEtapas([etapa]);
 
@@ -357,6 +358,18 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
         Result result = processo.DefinirClassificacao(ClassificacaoMediaPonderada(baseadoEmEnem: true));
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
+    }
+
+    [Fact(DisplayName = "A banca da etapa do ENEM só é recusada pela declaração das etapas: a coerência com a classificação não a repete")]
+    public void ConferirEtapaDeNotaDoEnem_ComBancaQueAvalia_NaoRepeteARecusaDaDeclaracao()
+    {
+        EtapaProcesso etapa = EtapaNotaEnem();
+        etapa.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()))]);
+
+        RegrasDasEtapas.ConferirEtapaDeNotaDoEnem([etapa], ClassificacaoMediaPonderada(baseadoEmEnem: true)).Should().BeNull();
+        RegrasDasEtapas.ConferirEtapaDeNotaDoEnem([etapa], ClassificacaoMediaPonderada(baseadoEmEnem: false))!
+            .Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemSemClassificacaoEnem");
+        NovoProcesso().DefinirEtapas([etapa]).Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemComBanca");
     }
 
     [Fact(DisplayName = "Processo sem etapa de nota do ENEM não é afetado pela classificação não ENEM")]

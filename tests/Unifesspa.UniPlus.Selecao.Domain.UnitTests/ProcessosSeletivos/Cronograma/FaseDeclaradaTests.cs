@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -70,7 +71,7 @@ public sealed class FaseDeclaradaTests
     public void Declarar_CandidatosAtendidosEmBancaDeRecursos_RecusaNosCandidatosAtendidos()
     {
         BancaRequerida comCandidatosAtendidos = BancaRequerida.Criar(
-            Guid.CreateVersion7(), TipoBancaCodigo.AnaliseDeRecursos, "Banca de análise de recursos",
+            TiposDeBancaCopiadosDeTeste.DeRecursos(Guid.CreateVersion7()),
             [CategoriaJulgada.Criar(Guid.CreateVersion7(), "RENDA")]);
         ModeloDeFase modelo = new("RECURSO", 1) { Bancas = [comCandidatosAtendidos] };
 
@@ -123,7 +124,7 @@ public sealed class FaseDeclaradaTests
         FaseDeclarada fase = new ModeloDeFase("RECURSO", 1) { Bancas = [BancasDeTeste.DeRecursosDaFase()] }.Declarar();
 
         fase.Bancas.TemBancaDeRecursos.Should().BeTrue();
-        fase.Bancas.Declaradas.Should().ContainSingle().Which.Should().Match<(int Posicao, string Nome, RegraDeDeliberacao? Regra, bool DeRecursos)>(
-            static banca => banca.Posicao == 0 && banca.DeRecursos && banca.Regra != null);
+        fase.Bancas.Declaradas.Should().ContainSingle().Which.Should().Match<BancaDeclarada>(
+            static banca => banca.Posicao == 0 && banca.Tipo.JulgaRecurso && banca.Regra != null);
     }
 }

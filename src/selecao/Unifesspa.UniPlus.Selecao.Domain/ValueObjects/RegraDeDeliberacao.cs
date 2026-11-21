@@ -49,6 +49,13 @@ public sealed class RegraDeDeliberacao
     /// <summary>Quantos titulares precisam atuar: o quórum da votação, ou um titular quando não há votação.</summary>
     public int QuorumExigido => Quorum ?? 1;
 
+    /// <summary>
+    /// Se a banca decide por ato individual sem declarar a votação usada no julgamento do recurso: quórum, critério e
+    /// encerramento juntos.
+    /// </summary>
+    public bool AtoIndividualSemVotacao =>
+        Modo == ModoDeDeliberacao.AtoIndividual && !(Quorum.HasValue && Criterio.HasValue && Encerramento.HasValue);
+
     private RegraDeDeliberacao() { }
 
     private RegraDeDeliberacao(DeclaracaoDaDeliberacao declarada)

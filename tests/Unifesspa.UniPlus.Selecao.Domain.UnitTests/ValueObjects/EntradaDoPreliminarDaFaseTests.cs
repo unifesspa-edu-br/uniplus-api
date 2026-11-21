@@ -35,7 +35,7 @@ public sealed class EntradaDoPreliminarDaFaseTests
         [nameof(FaseCronograma.ColetaInscricao)] = () => Fase(origem: o => o with { ColetaInscricao = true }),
         [nameof(FaseCronograma.ColetaSolicitacaoIsencao)] = () => Fase(origem: o => o with { ColetaSolicitacaoIsencao = true }),
         [nameof(FaseCronograma.RegraRecurso)] = () => ComRecurso(prazo: 2m, ancora: 0, Materia),
-        [nameof(FaseCronograma.BancasRequeridas)] = () => Fase(bancas: [Banca(TipoDeBancaA, "BANCA_A")]),
+        [nameof(FaseCronograma.BancasRequeridas)] = () => Fase(bancas: [Banca(TipoDeBancaA, TipoDeBanca.AnaliseDocumental)]),
         [nameof(FaseCronograma.TiposDeDecisao)] = () => ComTipos(TipoMotivoDeDecisao.Classificacao.Codigo()),
     };
 
@@ -122,8 +122,25 @@ public sealed class EntradaDoPreliminarDaFaseTests
 
     [Fact(DisplayName = "A regra de deliberação da banca entra na entrada")]
     public void DeliberacaoDaBanca_MudaAEntrada() =>
-        Fase(bancas: [Banca(TipoDeBancaA, "BANCA_A", BancasDeTeste.Regra(integrantes: 5, quorum: 3))]).EntradaDoPreliminar()
-            .Should().NotBe(Fase(bancas: [Banca(TipoDeBancaA, "BANCA_A", BancasDeTeste.Regra(integrantes: 3, quorum: 2))]).EntradaDoPreliminar());
+        Fase(bancas: [Banca(TipoDeBancaA, TipoDeBanca.AnaliseDocumental, BancasDeTeste.Regra(integrantes: 5, quorum: 3))]).EntradaDoPreliminar()
+            .Should().NotBe(Fase(bancas: [Banca(TipoDeBancaA, TipoDeBanca.AnaliseDocumental, BancasDeTeste.Regra(integrantes: 3, quorum: 2))]).EntradaDoPreliminar());
+
+    [Fact(DisplayName = "O papel que a banca copiou do tipo entra na entrada")]
+    public void PapelCopiadoDaBanca_MudaAEntrada() =>
+        ComBanca(papel: PapelDaBanca.AvaliaOMerito).EntradaDoPreliminar()
+            .Should().NotBe(ComBanca(papel: PapelDaBanca.JulgaAPrimeiraInstancia).EntradaDoPreliminar());
+
+    [Fact(DisplayName = "Os tipos de decisão que a banca copiou do tipo entram na entrada")]
+    public void TiposDeDecisaoCopiadosDaBanca_MudamAEntrada() =>
+        ComBanca(tipos: [TipoMotivoDeDecisao.Classificacao]).EntradaDoPreliminar()
+            .Should().NotBe(ComBanca(tipos: [TipoMotivoDeDecisao.AnaliseDocumental]).EntradaDoPreliminar());
+
+    [Fact(DisplayName = "As marcas que a banca copiou do tipo entram na entrada")]
+    public void MarcasCopiadasDaBanca_MudamAEntrada()
+    {
+        ComBanca(exigeDuasOuMais: true).EntradaDoPreliminar().Should().NotBe(ComBanca().EntradaDoPreliminar());
+        ComBanca(encerraNaPrimeira: true).EntradaDoPreliminar().Should().NotBe(ComBanca().EntradaDoPreliminar());
+    }
 
     [Fact(DisplayName = "Os candidatos atendidos da banca entram na entrada, pelas origens das categorias")]
     public void CandidatosAtendidosDaBanca_MudamAEntrada()
@@ -131,14 +148,14 @@ public sealed class EntradaDoPreliminarDaFaseTests
         Guid renda = Guid.Parse("0197d6f0-4444-7000-8000-000000000001");
         Guid raca = Guid.Parse("0197d6f0-4444-7000-8000-000000000002");
 
-        Fase(bancas: [Banca(TipoDeBancaA, "BANCA_A", candidatosAtendidos: [CategoriaJulgada.Criar(renda, "RENDA")])]).EntradaDoPreliminar()
-            .Should().NotBe(Fase(bancas: [Banca(TipoDeBancaA, "BANCA_A", candidatosAtendidos: [CategoriaJulgada.Criar(raca, "RACA")])]).EntradaDoPreliminar());
+        Fase(bancas: [Banca(TipoDeBancaA, TipoDeBanca.AnaliseDocumental, candidatosAtendidos: [CategoriaJulgada.Criar(renda, "RENDA")])]).EntradaDoPreliminar()
+            .Should().NotBe(Fase(bancas: [Banca(TipoDeBancaA, TipoDeBanca.AnaliseDocumental, candidatosAtendidos: [CategoriaJulgada.Criar(raca, "RACA")])]).EntradaDoPreliminar());
     }
 
     [Fact(DisplayName = "A ordem em que as bancas são declaradas não muda a entrada")]
     public void OrdemDasBancas_NaoMudaAEntrada() =>
-        Fase(bancas: [Banca(TipoDeBancaA, "BANCA_A"), Banca(TipoDeBancaB, "BANCA_B")]).EntradaDoPreliminar()
-            .Should().Be(Fase(bancas: [Banca(TipoDeBancaB, "BANCA_B"), Banca(TipoDeBancaA, "BANCA_A")]).EntradaDoPreliminar());
+        Fase(bancas: [Banca(TipoDeBancaA, TipoDeBanca.AnaliseDocumental), Banca(TipoDeBancaB, TipoDeBanca.Entrevista)]).EntradaDoPreliminar()
+            .Should().Be(Fase(bancas: [Banca(TipoDeBancaB, TipoDeBanca.Entrevista), Banca(TipoDeBancaA, TipoDeBanca.AnaliseDocumental)]).EntradaDoPreliminar());
 
     [Fact(DisplayName = "Trocar um tipo de decisão declarado pela fase muda a entrada")]
     public void TrocarTipoDeDecisao_MudaAEntrada() =>
@@ -164,6 +181,17 @@ public sealed class EntradaDoPreliminarDaFaseTests
             Alterar(decisoes, new DecisoesDeCronogramaDaFase(1, Inicio, Inicio.AddDays(5), UnidadesDeTeste.Ceps)),
             Alterar(publicacoes, new PublicacoesDaFase([ProdutoDaFase.Criar(Materia, PapelProdutoFase.Preliminar)], false, null)),
             bancas ?? []).Value!;
+
+    private static FaseCronograma ComBanca(
+        PapelDaBanca papel = PapelDaBanca.AvaliaOMerito,
+        IEnumerable<TipoMotivoDeDecisao>? tipos = null,
+        bool exigeDuasOuMais = false,
+        bool encerraNaPrimeira = false) =>
+        Fase(bancas: [BancaRequerida.Criar(
+            TiposDeBancaCopiadosDeTeste.Com(
+                TipoDeBanca.AnaliseDocumental, papel, TipoDeBancaA, null, exigeDuasOuMais, encerraNaPrimeira, tipos ?? [TipoMotivoDeDecisao.Classificacao]),
+            [],
+            null)]);
 
     private static FaseCronograma ComTipos(params string[] tipos) => Fase(publicacoes: p => p with { TiposDeDecisao = tipos });
 
@@ -197,6 +225,6 @@ public sealed class EntradaDoPreliminarDaFaseTests
     private static ProcedimentosDeRecurso Procedimentos(string regra) => ProcedimentosDeRecurso.De(
         [ProcedimentoDeRecursoDeclarado.De(TipoMotivoDeDecisao.Classificacao, null, ReferenciaRegra.De(regra, "v1", new string('a', 64)))]);
 
-    private static BancaRequerida Banca(Guid tipo, string codigo, RegraDeDeliberacao? regra = null, IReadOnlyList<CategoriaJulgada>? candidatosAtendidos = null) =>
-        BancaRequerida.Criar(tipo, codigo, "Banca de teste", candidatosAtendidos ?? [], regra);
+    private static BancaRequerida Banca(Guid origem, TipoDeBanca tipo, RegraDeDeliberacao? regra = null, IReadOnlyList<CategoriaJulgada>? candidatosAtendidos = null) =>
+        BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.De(tipo, origem), candidatosAtendidos ?? [], regra);
 }

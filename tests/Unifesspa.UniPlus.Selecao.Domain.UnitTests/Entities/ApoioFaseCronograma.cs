@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Cronograma;
@@ -11,11 +12,9 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 internal static class ApoioFaseCronograma
 {
-    internal static BancaRequerida Banca(string codigo, params string[] categorias) =>
+    internal static BancaRequerida Banca(TipoDeBanca tipo, params string[] categorias) =>
         BancaRequerida.Criar(
-            Guid.CreateVersion7(),
-            codigo,
-            "Banca de teste",
+            TiposDeBancaCopiadosDeTeste.De(tipo),
             [.. categorias.Select(static c => CategoriaJulgada.Criar(Guid.CreateVersion7(), c))]);
 
     internal static ReferenciaRegra RegraAncorada() =>

@@ -198,16 +198,15 @@ public sealed class EnvelopeCodecRecusaEtapasTests
         resultado.Error.Message.Should().Contain("etapas[0].produtos[0].atoCodigo").And.Contain("60");
     }
 
-    [Fact(DisplayName = "etapas[].bancas[].codigo acima do limite da coluna (60) é recusado")]
-    public void Etapa_BancaCodigoAcimaDoLimite_Recusa()
+    [Fact(DisplayName = "etapas[].bancas[].codigo fora do vocabulário de tipos de banca é recusado, sem repetir o texto recebido")]
+    public void Etapa_BancaCodigoForaDoVocabulario_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-            envelope["etapas"]!.AsArray()[0]!["bancas"]!.AsArray()[0]!["codigo"] = new string('A', 61));
+            envelope["etapas"]!.AsArray()[0]!["bancas"]!.AsArray()[0]!["codigo"] = "CODIGO_DIGITADO");
 
-        resultado.IsFailure.Should().BeTrue(
-            "um código de 61 caracteres não cabe na coluna codigo de bancas_da_etapa (varchar 60)");
+        resultado.IsFailure.Should().BeTrue("o código da banca é do vocabulário fechado de tipos de banca");
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
-        resultado.Error.Message.Should().Contain("etapas[0].bancas[0].codigo").And.Contain("60");
+        resultado.Error.Message.Should().Contain("etapas[0].bancas[0].codigo").And.NotContain("CODIGO_DIGITADO");
     }
 
     private static void AdulterarItemOuEscala(JsonObject envelope, string adulteracao)

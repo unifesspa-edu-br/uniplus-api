@@ -31,6 +31,7 @@ using Unifesspa.UniPlus.Selecao.Application.Services.DocumentoDaConfiguracao;
 internal sealed class FasesEmMontagem
 {
     private readonly CadastrosDasFases _cadastros;
+    private readonly IReadOnlyCollection<FaseCronograma> _fasesGravadas;
     private readonly MontagemDasBancasDaFase _bancas;
     private readonly MontagemDosProdutosDaFase _produtos;
     private readonly MontagemDaRegraDeRecursoDaFase _regraDeRecurso;
@@ -41,6 +42,7 @@ internal sealed class FasesEmMontagem
     public FasesEmMontagem(ProcessoSeletivo processo, CadastrosDasFases cadastros, AtosConsultadosNaEdicao atos)
     {
         _cadastros = cadastros;
+        _fasesGravadas = processo.CronogramaFases;
         _bancas = new MontagemDasBancasDaFase(cadastros);
         _produtos = new MontagemDosProdutosDaFase(atos);
         _regraDeRecurso = new MontagemDaRegraDeRecursoDaFase(
@@ -166,11 +168,16 @@ internal sealed class FasesEmMontagem
             return Result<InsumosDaFase>.ValidationFailure(unidade.Errors);
         }
 
-        Result<List<BancaRequerida>> bancas = await _bancas.MontarAsync(input, indice, cancellationToken).ConfigureAwait(false);
+        Result<List<BancaRequerida>> bancas = await _bancas
+            .MontarAsync(input, indice, BancasGravadasDaFase(input.FaseCanonicaId), cancellationToken).ConfigureAwait(false);
         return bancas.IsFailure
             ? Result<InsumosDaFase>.ValidationFailure(bancas.Errors)
             : Result<InsumosDaFase>.Success(new InsumosDaFase(canonica, unidade.Value, bancas.Value!));
     }
+
+    // As bancas da fase que a redefinição substitui, achada pela fase canônica: a banca que continua com o mesmo tipo mantém a cópia.
+    private IReadOnlyCollection<BancaRequerida> BancasGravadasDaFase(Guid faseCanonicaId) =>
+        _fasesGravadas.FirstOrDefault(fase => fase.FaseCanonicaOrigemId == faseCanonicaId)?.BancasRequeridas ?? [];
 
     // A unidade é resolvida no cadastro vivo a cada definição; a fase sem unidade declarada não consulta o cadastro.
     private async Task<Result<UnidadeResponsavelSnapshot?>> UnidadeAsync(

@@ -3,8 +3,10 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Cronogra
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
@@ -15,14 +17,14 @@ using Xunit;
 public sealed class CandidatosAtendidosPelasBancasTests
 {
     private const string Fase = "ANALISE_DOCUMENTAL";
-    private const string Documental = "BANCA_ANALISE_DOCUMENTAL";
-    private const string Heteroidentificacao = "BANCA_HETEROIDENTIFICACAO";
+    private const TipoDeBanca Documental = TipoDeBanca.AnaliseDocumental;
+    private const TipoDeBanca Heteroidentificacao = TipoDeBanca.Heteroidentificacao;
     private const string Renda = "RENDA";
     private const string EtnicoRacial = "ETNICO_RACIAL";
 
-    private static BancaRequerida Banca(string codigo, params string[] categorias) =>
+    private static BancaRequerida Banca(TipoDeBanca tipo, params string[] categorias) =>
         BancaRequerida.Criar(
-            Guid.CreateVersion7(), codigo, "Banca de teste",
+            TiposDeBancaCopiadosDeTeste.De(tipo),
             [.. categorias.Select(static c => CategoriaJulgada.Criar(Guid.CreateVersion7(), c))]);
 
     private static (string? Campo, string Codigo)[] Recusas(IReadOnlyList<BancaRequerida> bancas) =>
@@ -70,7 +72,7 @@ public sealed class CandidatosAtendidosPelasBancasTests
         FieldError violacao = violacoes.Should().ContainSingle().Subject;
         violacao.Field.Should().Be("bancasRequeridas[1].categoriasDocumentoIds");
         violacao.Error.Code.Should().Be("BancaRequerida.CandidatosAtendidosDuplicados");
-        violacao.Error.Message.Should().Contain($"a banca '{Documental}' atende os mesmos candidatos");
+        violacao.Error.Message.Should().Contain("a banca 'BANCA_ANALISE_DOCUMENTAL' atende os mesmos candidatos");
     }
 
     [Fact(DisplayName = "O agrupamento é pelo código da banca: bancas de outros códigos não entram no grupo")]

@@ -67,7 +67,7 @@ public sealed class DeclaracaoDasEntidadesTests
     private static FaseCronograma FaseReidratadaComCandidatosAtendidosEmBancaDeRecursos()
     {
         BancaRequerida comCandidatosAtendidos = BancaRequerida.Criar(
-            TipoDaBanca, TipoBancaCodigo.AnaliseDeRecursos, "Banca de análise de recursos",
+            TiposDeBancaCopiadosDeTeste.DeRecursos(TipoDaBanca),
             [CategoriaJulgada.Criar(Guid.CreateVersion7(), "RENDA")], BancasDeTeste.Regra());
 
         return FaseCronograma.Reidratar(

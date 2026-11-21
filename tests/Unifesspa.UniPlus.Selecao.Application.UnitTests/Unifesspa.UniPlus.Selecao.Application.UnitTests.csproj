@@ -37,6 +37,7 @@
     <Compile Include="../Shared/FatosDerivadosCongeladosDeTeste.cs" Link="FatosDerivadosCongeladosDeTeste.cs" />
     <Compile Include="../Shared/TiposDeAtoUnicosDeTeste.cs" Link="TiposDeAtoUnicosDeTeste.cs" />
     <Compile Include="../Shared/BancasDeTeste.cs" Link="BancasDeTeste.cs" />
+    <Compile Include="../Shared/TiposDeBancaCopiadosDeTeste.cs" Link="TiposDeBancaCopiadosDeTeste.cs" />
     <Compile Include="../Shared/HomologacaoDasInscricoesDeTeste.cs" Link="HomologacaoDasInscricoesDeTeste.cs" />
     <Compile Include="../Shared/ParametrosDoRecursoDeTeste.cs" Link="ParametrosDoRecursoDeTeste.cs" />
     <Compile Include="../Shared/ContagemDePrazosDeTeste.cs" Link="ContagemDePrazosDeTeste.cs" />

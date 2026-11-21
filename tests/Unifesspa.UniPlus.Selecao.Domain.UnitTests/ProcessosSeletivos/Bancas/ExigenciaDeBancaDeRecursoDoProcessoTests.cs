@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Bancas;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
@@ -66,7 +67,7 @@ public sealed class ExigenciaDeBancaDeRecursoDoProcessoTests
         DomainError? pendencia = Pendencia(processo);
 
         pendencia!.Code.Should().Be("Cronograma.RecursoSemBanca");
-        pendencia.Message.Should().Contain("Redação");
+        pendencia.Message.Should().Contain("A etapa na posição 1 admite recurso");
     }
 
     // A fase criada recusa a declaração dos candidatos atendidos na banca de recursos; o estado violado chega pela reidratação, como o que o banco hidrata.
@@ -88,14 +89,14 @@ public sealed class ExigenciaDeBancaDeRecursoDoProcessoTests
     public void BancaDeRecursosComCandidatosDeclarados_Recusa()
     {
         BancaRequerida comCandidatosDeclarados = BancaRequerida.Criar(
-            Tipo, TipoBancaCodigo.AnaliseDeRecursos, "Banca de análise de recursos",
+            TiposDeBancaCopiadosDeTeste.DeRecursos(Tipo),
             [CategoriaJulgada.Criar(Guid.CreateVersion7(), "RENDA")], BancasDeTeste.Regra());
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: FaseReidratadaComBancaDeRecursosComCandidatosDeclarados(comCandidatosDeclarados));
 
         Pendencia(processo)!.Code.Should().Be("Banca.CandidatosAtendidosEmBancaDeRecursos");
-        ExigenciaDeBancaDeRecurso.CandidatosAtendidosNaDeclaracao("RECURSOS", TipoBancaCodigo.AnaliseDeRecursos, 1)!.Code
+        ExigenciaDeBancaDeRecurso.CandidatosAtendidosNaDeclaracao("RECURSOS", TiposDeBancaCopiadosDeTeste.DeRecursos(), 1, 1)!.Code
             .Should().Be("Banca.CandidatosAtendidosEmBancaDeRecursos");
-        ExigenciaDeBancaDeRecurso.CandidatosAtendidosNaDeclaracao("RECURSOS", "BANCA_ANALISE_DOCUMENTAL", 1).Should().BeNull();
+        ExigenciaDeBancaDeRecurso.CandidatosAtendidosNaDeclaracao("RECURSOS", TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental), 1, 1).Should().BeNull();
     }
 
     [Fact(DisplayName = "Banca da etapa sem regra de deliberação é recusada, citando o nome da banca")]
@@ -103,18 +104,18 @@ public sealed class ExigenciaDeBancaDeRecursoDoProcessoTests
     {
         EtapaProcesso etapa = NovaEtapa("Redação", 1);
         ProcessoSeletivo processo = ProcessoComEtapas(null, etapa);
-        etapa.DefinirBancas([BancaDaEtapa.Criar(Tipo, "BANCA_EXAMINADORA", "Banca examinadora")]);
+        etapa.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Tipo))]);
 
         DomainError? pendencia = Pendencia(processo);
 
         pendencia!.Code.Should().Be("Banca.RegraDeDeliberacaoObrigatoria");
-        pendencia.Message.Should().Contain("Banca examinadora");
+        pendencia.Message.Should().Contain("A banca 'Banca de correção de redações 1' da etapa na posição 1");
     }
 
     [Fact(DisplayName = "Banca da fase sem regra de deliberação é recusada")]
     public void BancaDaFaseSemRegra_Recusa()
     {
-        BancaRequerida semRegra = BancaRequerida.Criar(Tipo, "BANCA_ANALISE_DOCUMENTAL", "Análise documental", []);
+        BancaRequerida semRegra = BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, Tipo), []);
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: ProcessoConformeFactory.FaseConforme(bancas: [semRegra]));
 
         Pendencia(processo)!.Code.Should().Be("Banca.RegraDeDeliberacaoObrigatoria");

@@ -14049,17 +14049,17 @@
         "UNI-REQ-0275"
       ],
       "oQueAconteceu": [
-        "A banca foi declarada na fase ou na etapa sem a regra de deliberação, e o edital\nnão pode ser publicado assim. No rascunho a regra é opcional, para que a banca\npossa ser declarada aos poucos; a publicação a exige, porque o sistema não impõe\nnenhuma regra de decisão à banca: quem a define é o edital (UNI-REQ-0275). Sem\nela, no julgamento não haveria como saber quantos votos decidem, como se\ndesempata nem quando a votação termina.",
+        "Há duas formas desta recusa. Na primeira, a banca foi declarada na fase ou na etapa sem\na regra de deliberação, e o edital não pode ser publicado assim. No rascunho a regra é opcional, para que a banca\npossa ser declarada aos poucos; a publicação a exige, porque o sistema não impõe\nnenhuma regra de decisão à banca: quem a define é o edital (UNI-REQ-0275). Sem\nela, no julgamento não haveria como saber quantos votos decidem, como se\ndesempata nem quando a votação termina.",
+        "Na segunda forma, a banca decide por ato individual e julga recurso por ter avaliado o\nitem recorrido, sem banca dedicada de recursos no lugar, mas não declara a votação do\nrecurso. A mensagem da resposta diz: \"A banca '*tipo e posição da banca*' da *fase ou\netapa* decide por ato individual e julga recurso por ter avaliado o item recorrido, sem\nbanca dedicada no lugar, mas não declara a votação do recurso. Declare o quórum, o\ncritério e o encerramento usados no julgamento do recurso.\" Quando a banca julga o recurso pelo papel que tem, a mensagem diz: \"A banca '*tipo e posição da banca*' da *fase ou etapa* decide por ato individual e julga recurso com o papel 'Julga o recurso em 1ª instância', mas não declara a votação do recurso. Declare o quórum, o critério e o encerramento usados no julgamento do recurso.\"",
         "A mesma conferência roda na publicação e na retificação em ato único. A recusa\nvem como o código desta página no corpo da resposta, e não na lista `errors[]`: a publicação aponta uma pendência por vez, a primeira que\nencontra."
       ],
       "comoResolver": [
         "Informe a regra de deliberação da banca, do modo que o edital declara:",
-        "- **`colegiadaComVotacao`:** número de integrantes e de suplentes, quórum,\n  critério de decisão e forma de encerramento, além do desempate e do valor para\n  a unanimidade não alcançada, nos casos em que se aplicam.\n- **`atoIndividual`:** sem quórum nem votação, como na banca de homologação das\n  inscrições (UNI-REQ-0338).",
+        "- **`colegiadaComVotacao`:** número de integrantes e de suplentes, quórum,\n  critério de decisão e forma de encerramento, além do desempate e do valor para\n  a unanimidade não alcançada, nos casos em que se aplicam.\n- **`atoIndividual`:** sem votação para o ato, como na banca de homologação das\n  inscrições (UNI-REQ-0338). Se a banca julga recurso, declare também a votação do\n  recurso: quórum, critério e encerramento (ver\n  [votação do recurso incompleta](/erros/uniplus.selecao.banca.votacao_do_recurso_incompleta)).",
         "Os campos da regra são conferidos já na gravação do cronograma e das etapas,\ncada um com a sua recusa, antes da publicação. O painel de conformidade aponta a\nbanca sem regra, no item `cronograma_banca_com_regra_de_deliberacao`."
       ],
       "ondeAparece": [
-        "Publicação inicial do processo seletivo",
-        "Retificação em ato único"
+        "- Publicação inicial do processo seletivo\n- Retificação em ato único"
       ]
     },
     {
@@ -16783,23 +16783,26 @@
     {
       "codigo": "uniplus.selecao.cronograma.recurso_sem_banca",
       "requisitos": [
-        "UNI-REQ-0274"
+        "UNI-REQ-0274",
+        "UNI-REQ-0473"
       ],
       "oQueAconteceu": [
-        "O cronograma tem prazo de recurso em uma fase ou em uma etapa, e nenhuma banca\nde análise de recursos o julga. Todo recurso previsto no edital exige essa banca\n(UNI-REQ-0274), porque quem integra a banca é quem tem acesso aos dados dos\ncandidatos para analisá-lo. Sem ela, o recurso de quem recorre ficaria sem quem\no analise, e o edital não é publicado.",
-        "A banca que atende o recurso é declarada assim:",
-        "- **recurso da fase:** a banca de análise de recursos declarada na própria\n  fase;\n- **recurso da etapa:** a banca de análise de recursos declarada na própria\n  etapa ou, na falta dela, na fase da etapa. Quando existe nas duas, o recurso\n  da etapa é julgado pela banca da etapa. Banca declarada só em outra etapa não\n  atende.",
-        "A conferência roda no congelamento do processo: na publicação e na retificação\nem ato único. A gravação do cronograma não a faz. A recusa vem como o código desta página no corpo da\nresposta, e não na lista `errors[]`; ela aponta uma pendência por vez, a\nprimeira que encontra, e cita a fase ou a etapa que está sem banca."
+        "O cronograma admite recurso em uma fase ou em uma etapa, e nenhuma banca prevista o\njulga em 1ª instância. Todo recurso previsto no edital precisa de quem o julgue\n(UNI-REQ-0274 e UNI-REQ-0473), porque quem integra a banca é quem tem acesso aos dados\ndos candidatos. Sem essa banca, o recurso ficaria sem quem o analise, e o edital não\né publicado.",
+        "A banca que julga o recurso em 1ª instância é escolhida nesta ordem, e só uma vale\npara cada recurso:",
+        "1. a banca **dedicada** de recursos da etapa (papel \"Julga o recurso em 1ª instância\"),\n   quando a etapa do item recorrido tem uma;\n2. a banca **dedicada** de recursos da fase, quando a etapa não tem;\n3. sem banca dedicada, a banca que **avaliou** o item recorrido, na etapa ou na fase em\n   que a avaliação foi feita.",
+        "A banca de importação (de notas do INEP ou de candidatos) e a banca de 2ª instância\nnunca julgam o recurso em 1ª instância.",
+        "A recusa tem três formas, conforme o caso. A mensagem da resposta diz:",
+        "- **fase com tipo de decisão:** \"A fase '*código da fase*' admite recurso de *tipo de\n  decisão*, e nenhuma banca prevista o julga em 1ª instância: a fase não tem banca com\n  o papel 'Julga o recurso em 1ª instância', e nem a fase nem as etapas dela têm banca\n  que tenha avaliado esse item. Acrescente uma dessas bancas.\";\n- **etapa com tipo de decisão:** \"A etapa na posição *n* admite recurso de *tipo de\n  decisão*, e nenhuma banca prevista o julga em 1ª instância: nem a etapa nem a fase\n  '*código da fase*', em que ela acontece, têm banca com o papel 'Julga o recurso em 1ª\n  instância', e a etapa não tem banca que tenha avaliado esse item. Acrescente uma dessas\n  bancas.\";\n- **recurso sem procedimento declarado:** \"A fase '*código da fase*' (ou a etapa na\n  posição *n*) admite recurso sem procedimento declarado, e só uma banca com o papel\n  'Julga o recurso em 1ª instância' pode julgá-lo. Acrescente essa banca.\"",
+        "O campo da recusa é `fases[i].bancasRequeridas` ou `etapas[i].bancas`. A conferência roda\nno congelamento do processo: na publicação e na retificação em ato único. A gravação do\ncronograma não a faz. A recusa vem como o código desta página no corpo da resposta, e não\nna lista `errors[]`; ela aponta uma pendência por vez, a primeira que encontra."
       ],
       "comoResolver": [
-        "Declare a banca de análise de recursos onde o recurso é julgado:",
-        "- na fase, quando todos os recursos dela, e das etapas que não têm banca\n  própria, são analisados pela mesma banca;\n- na etapa, quando ela tem banca de recurso própria.",
+        "Acrescente a banca que julga o recurso onde ele acontece:",
+        "- uma banca dedicada de recursos na fase, quando todos os recursos dela, e das etapas que\n  não têm banca dedicada própria, são julgados pela mesma banca;\n- uma banca dedicada de recursos na etapa, quando ela tem banca própria;\n- ou uma banca avaliadora do item, na fase ou na etapa, quando não há banca dedicada.",
         "Declare a banca com a regra de deliberação do edital, que também é conferida:\n[regra obrigatória](/erros/uniplus.selecao.banca.regra_de_deliberacao_obrigatoria)\ne [mínimo de integrantes](/erros/uniplus.selecao.banca.integrantes_abaixo_do_minimo).\nSe o certame não admite recurso naquela fase ou etapa, retire o prazo de\nrecurso em vez de declarar a banca.",
-        "O painel de conformidade aponta o recurso sem banca antes da publicação, no item\n`cronograma_recurso_com_banca_de_analise`."
+        "O painel de conformidade aponta o recurso sem banca antes da publicação, no item\n`cronograma_recurso_com_banca_que_julga`."
       ],
       "ondeAparece": [
-        "Publicação inicial do processo seletivo",
-        "Retificação em ato único"
+        "- Publicação inicial do processo seletivo\n- Retificação em ato único"
       ]
     },
     {
@@ -18555,14 +18558,14 @@
       "codigo": "uniplus.selecao.etapa_processo.tipo_banca_nao_encontrado_ou_inativo",
       "requisitos": [],
       "oQueAconteceu": [
-        "A etapa pode requerer bancas (`bancas`), e cada banca é de um tipo do cadastro do\nmódulo Configuração. O pedido de definição de etapas\n(`PUT .../processos-seletivos/{id}/etapas`) citou, em `tipoBancaId`, um\nidentificador que não corresponde a nenhum tipo de banca; a mensagem traz o\nidentificador. Apesar de o texto da mensagem falar em \"inativo\", o cadastro de tipos\nde banca só distingue o tipo que existe do que foi removido, e a recusa vale para\no tipo removido.",
+        "A etapa pode requerer bancas (`bancas`), e cada banca é de um tipo do cadastro do\nmódulo Configuração. O pedido de definição de etapas\n(`PUT .../processos-seletivos/{id}/etapas`) citou, em `tipoBancaId`, um\nidentificador que não corresponde a nenhum tipo de banca ativo. A mensagem da resposta\ndiz: \"O tipo de banca indicado não existe ou está desativado no cadastro.\" Ela não repete\no identificador enviado.",
         "O tipo de banca é copiado por valor para a etapa, e sem ele a banca não pode ser\nmontada. A conferência é feita etapa por etapa, na ordem do pedido, depois da\ndeclaração dos atos e do período de cada etapa; a primeira banca cujo tipo não\né encontrado interrompe a conferência, e a resposta traz só esta recusa, sem\nindicar qual é a etapa nem a banca. Nada é gravado."
       ],
       "comoResolver": [
-        "Confira, no cadastro de tipos de banca do módulo Configuração, o identificador do\ntipo pretendido e use-o em `tipoBancaId`. Se o tipo foi removido do cadastro e\nainda deve existir, peça a quem o gere que o restabeleça antes de repetir a\ndefinição das etapas."
+        "Confira, no cadastro de tipos de banca do módulo Configuração, o identificador do\ntipo pretendido e use-o em `tipoBancaId`. Se o tipo foi desativado no cadastro e\nainda deve existir, peça a quem o gere que o restabeleça antes de repetir a\ndefinição das etapas."
       ],
       "ondeAparece": [
-        "Definição de etapas do processo seletivo"
+        "- Definição de etapas do processo seletivo"
       ]
     },
     {
@@ -18753,14 +18756,14 @@
       "codigo": "uniplus.selecao.fase_cronograma.tipo_banca_nao_encontrado",
       "requisitos": [],
       "oQueAconteceu": [
-        "A fase do cronograma declara as bancas que atuam nela (`bancasRequeridas`), e\ncada banca é de um tipo do cadastro do módulo Configuração. O pedido de definição\ndo cronograma (`PUT .../cronograma-fases`) citou, em\n`fases[n].bancasRequeridas[m].tipoBancaId`, um identificador que não corresponde a\nnenhum tipo de banca, ou que corresponde a um tipo removido do cadastro. A\nmensagem traz o identificador.",
+        "A fase do cronograma declara as bancas que atuam nela (`bancasRequeridas`), e\ncada banca é de um tipo do cadastro do módulo Configuração. O pedido de definição\ndo cronograma (`PUT .../cronograma-fases`) citou, em\n`fases[n].bancasRequeridas[m].tipoBancaId`, um identificador que não corresponde a\nnenhum tipo de banca, ou que corresponde a um tipo desativado no cadastro. A mensagem da\nresposta diz: \"O tipo de banca indicado não existe ou está desativado no cadastro.\" Ela não\nrepete o identificador enviado.",
         "O tipo de banca é copiado por valor para o cronograma, e sem ele a banca não pode\nser montada. A conferência segue pelas demais bancas da mesma fase, e as recusas\ndelas se somam a esta no array `errors[]`; em seguida a **montagem do cronograma\né interrompida** nessa fase: as fases anteriores da lista, com as violações que já\ntiveram, saem na mesma resposta, e as seguintes não chegam a ser conferidas. Nada\né gravado."
       ],
       "comoResolver": [
-        "Confira, no cadastro de tipos de banca do módulo Configuração, o identificador do\ntipo pretendido e use-o em `tipoBancaId`. Se o tipo foi removido do cadastro e\nainda deve existir, peça a quem o gere que o restabeleça antes de repetir a\ndefinição do cronograma. Corrija também as demais violações que a resposta trouxer."
+        "Confira, no cadastro de tipos de banca do módulo Configuração, o identificador do\ntipo pretendido e use-o em `tipoBancaId`. Se o tipo foi desativado no cadastro e\nainda deve existir, peça a quem o gere que o restabeleça antes de repetir a\ndefinição do cronograma. Corrija também as demais violações que a resposta trouxer."
       ],
       "ondeAparece": [
-        "Definição do cronograma de fases do processo seletivo"
+        "- Definição do cronograma de fases do processo seletivo"
       ]
     },
     {
@@ -23512,13 +23515,14 @@
       "codigo": "uniplus.selecao.processo_seletivo.etapa_nota_enem_com_banca",
       "requisitos": [],
       "oQueAconteceu": [
-        "Uma etapa que declara a nota vinda do ENEM também declara uma ou mais bancas. A nota\ndessa etapa chega pela importação do resultado do INEP e é calculada pelo sistema;\nninguém a atribui, e por isso não há banca para ela. O recurso coletivo contra a lista geral é\no da fase que publica o resultado, julgado pela banca prevista nela. A mensagem de detalhe cita a etapa. A recusa sai com **422** e nada\nfoi gravado."
+        "Uma etapa que declara a nota vinda do ENEM também declara uma banca que avalia o mérito.\nA nota dessa etapa chega pela importação do resultado do INEP e é calculada pelo sistema;\nninguém a atribui, e por isso não há banca avaliadora para ela. O recurso contra o\nresultado é declarado na configuração do recurso da fase que publica o resultado.",
+        "A mensagem da resposta diz: \"A etapa na posição *n* tem a nota vinda do ENEM e não admite\nbanca com o papel 'Avalia o mérito'. O recurso contra o resultado é declarado na\nconfiguração do recurso da fase que publica o resultado.\" A recusa sai com **422** e nada\nfoi gravado."
       ],
       "comoResolver": [
-        "Retire as bancas da etapa de nota do ENEM e reenvie as etapas\n(`PUT /api/selecao/processos-seletivos/{id}/etapas`). Se a avaliação por banca é parte\ndo certame, ela é outra etapa, com nota atribuída pela banca, e não a de nota do ENEM."
+        "Retire a banca avaliadora da etapa de nota do ENEM e reenvie as etapas\n(`PUT /api/selecao/processos-seletivos/{id}/etapas`). Se a avaliação por banca é parte\ndo certame, ela é outra etapa, com nota atribuída pela banca, e não a de nota do ENEM."
       ],
       "ondeAparece": [
-        "Definição de etapas do processo seletivo"
+        "- Definição de etapas do processo seletivo"
       ]
     },
     {

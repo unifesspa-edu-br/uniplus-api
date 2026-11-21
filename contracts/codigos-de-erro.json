@@ -4319,7 +4319,7 @@
     {
       "codigo": "uniplus.selecao.banca.regra_de_deliberacao_obrigatoria",
       "status": 422,
-      "titulo": "Toda banca declara a regra de deliberação para o processo ser publicado"
+      "titulo": "A banca não declara a regra de deliberação, ou a votação do recurso que julga por ato individual"
     },
     {
       "codigo": "uniplus.selecao.banca.sem_unanimidade_nao_se_aplica",
@@ -5089,7 +5089,7 @@
     {
       "codigo": "uniplus.selecao.cronograma.recurso_sem_banca",
       "status": 422,
-      "titulo": "Fase ou etapa com recurso exige banca de análise de recursos"
+      "titulo": "O recurso não tem banca que o julgue em 1ª instância"
     },
     {
       "codigo": "uniplus.selecao.dados_edital.periodo_inscricao_invalido",
@@ -5614,7 +5614,7 @@
     {
       "codigo": "uniplus.selecao.etapa_processo.tipo_banca_nao_encontrado_ou_inativo",
       "status": 422,
-      "titulo": "O tipo de banca não existe ou está inativo no cadastro"
+      "titulo": "O tipo de banca não existe ou está desativado"
     },
     {
       "codigo": "uniplus.selecao.fase_cronograma.ato_duplicado_na_fase",
@@ -5679,7 +5679,7 @@
     {
       "codigo": "uniplus.selecao.fase_cronograma.tipo_banca_nao_encontrado",
       "status": 422,
-      "titulo": "Tipo de banca não encontrado ou não está mais vivo"
+      "titulo": "O tipo de banca não existe ou está desativado"
     },
     {
       "codigo": "uniplus.selecao.fase_cronograma.unidade_de_fase_iniciada_nao_muda",
@@ -7059,7 +7059,7 @@
     {
       "codigo": "uniplus.selecao.processo_seletivo.etapa_nota_enem_com_banca",
       "status": 422,
-      "titulo": "Etapa de nota do ENEM não admite banca"
+      "titulo": "A etapa de nota do ENEM não admite banca que avalia o mérito"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.etapa_nota_enem_com_produto_ou_recurso_em_ato",

@@ -146,6 +146,23 @@ public sealed class EntradaDoPreliminarDaEtapaTests
         Etapa(completar: e => e.DefinirBancas([BancasDeTeste.DeRecursosDaEtapa(BancasDeTeste.Regra(integrantes: 5, quorum: 3))])).EntradaDoPreliminar()
             .Should().NotBe(Etapa(completar: e => e.DefinirBancas([BancasDeTeste.DeRecursosDaEtapa()])).EntradaDoPreliminar());
 
+    [Fact(DisplayName = "O papel que a banca da etapa copiou do tipo entra na entrada")]
+    public void PapelCopiadoDaBanca_MudaAEntrada() =>
+        ComBanca(papel: PapelDaBanca.AvaliaOMerito).EntradaDoPreliminar()
+            .Should().NotBe(ComBanca(papel: PapelDaBanca.JulgaAPrimeiraInstancia).EntradaDoPreliminar());
+
+    [Fact(DisplayName = "Os tipos de decisão que a banca da etapa copiou do tipo entram na entrada")]
+    public void TiposDeDecisaoCopiadosDaBanca_MudamAEntrada() =>
+        ComBanca(tipos: [TipoMotivoDeDecisao.Classificacao]).EntradaDoPreliminar()
+            .Should().NotBe(ComBanca(tipos: [TipoMotivoDeDecisao.AnaliseDocumental]).EntradaDoPreliminar());
+
+    [Fact(DisplayName = "As marcas que a banca da etapa copiou do tipo entram na entrada")]
+    public void MarcasCopiadasDaBanca_MudamAEntrada()
+    {
+        ComBanca(exigeDuasOuMais: true).EntradaDoPreliminar().Should().NotBe(ComBanca().EntradaDoPreliminar());
+        ComBanca(encerraNaPrimeira: true).EntradaDoPreliminar().Should().NotBe(ComBanca().EntradaDoPreliminar());
+    }
+
     [Fact(DisplayName = "Trocar um tipo de decisão declarado pela etapa muda a entrada")]
     public void TrocarTipoDeDecisao_MudaAEntrada() =>
         ComTipos(TipoMotivoDeDecisao.Classificacao.Codigo()).EntradaDoPreliminar()
@@ -168,6 +185,16 @@ public sealed class EntradaDoPreliminarDaEtapaTests
 
     private static ProcedimentoDeRecursoDeclarado Procedimento(TipoMotivoDeDecisao tipo, string regra) =>
         ProcedimentoDeRecursoDeclarado.De(tipo, null, ReferenciaRegra.De(regra, "v1", new string('a', 64)));
+
+    private static EtapaProcesso ComBanca(
+        PapelDaBanca papel = PapelDaBanca.AvaliaOMerito,
+        IEnumerable<TipoMotivoDeDecisao>? tipos = null,
+        bool exigeDuasOuMais = false,
+        bool encerraNaPrimeira = false) =>
+        Etapa(completar: e => e.DefinirBancas([BancaDaEtapa.Criar(
+            TiposDeBancaCopiadosDeTeste.Com(
+                TipoDeBanca.CorrecaoDeRedacoes, papel, OrigemDoTipo, null, exigeDuasOuMais, encerraNaPrimeira, tipos ?? [TipoMotivoDeDecisao.Classificacao]),
+            BancasDeTeste.Regra())]));
 
     private static EtapaProcesso Etapa(
         Func<IdentificacaoDaEtapa, IdentificacaoDaEtapa>? identificacao = null,

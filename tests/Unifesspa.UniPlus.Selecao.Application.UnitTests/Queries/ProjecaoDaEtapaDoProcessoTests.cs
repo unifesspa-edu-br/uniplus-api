@@ -52,7 +52,7 @@ public sealed class ProjecaoDaEtapaDoProcessoTests
         etapa.DefinirJanelaEParecer(Inicio, Fim, emiteParecerIndividual: true).IsSuccess.Should().BeTrue();
         etapa.DefinirTiposDeDecisao([TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo(), TipoMotivoDeDecisao.Classificacao.Codigo()]).IsSuccess.Should().BeTrue();
         etapa.DefinirProdutos([ProdutoDaEtapa.Reidratar(ProdutoDoResultadoId, "RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar)]).IsSuccess.Should().BeTrue();
-        etapa.DefinirBancas([BancaDaEtapa.Criar(TipoBancaId, "BANCA_GERAL", "Banca geral")]);
+        etapa.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.Nomeada(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, TipoBancaId), "Banca geral"))]);
         etapa.DefinirRecursos([RecursoDaEtapa.Criar(AncoraDoRecurso.AtoPublicado, RegraDoPrazo(), ParametrosDoPrazo(), ProdutoDoResultadoId).Value!])
             .IsSuccess.Should().BeTrue();
         return etapa;
@@ -76,6 +76,18 @@ public sealed class ProjecaoDaEtapaDoProcessoTests
 
     private static ParametrosDeclaradosDoRecurso ParametrosDoPrazo() => ParametrosDoRecursoDeTeste.ComInstanciaSuperior(2m, UnidadePrazo.DiasUteis);
 
+    private static BancaDaEtapaDto BancaGeralEsperada(Guid id) => new(
+        id,
+        TipoBancaId,
+        CodigoComRotulo<TipoDeBanca>.De(TipoDeBanca.CorrecaoDeRedacoes),
+        1,
+        "Banca geral",
+        CodigoComRotulo<PapelDaBanca>.De(PapelDaBanca.AvaliaOMerito),
+        false,
+        false,
+        [CodigoComRotulo<TipoMotivoDeDecisao>.De(TipoMotivoDeDecisao.NotaDaEtapa)],
+        null);
+
     [Fact(DisplayName = "A etapa projeta o id e as bancas no topo")]
     public void ProjetarEtapa_IdEBancas_FicamNoTopo()
     {
@@ -84,7 +96,7 @@ public sealed class ProjecaoDaEtapaDoProcessoTests
         EtapaProcessoDto dto = ProjecaoDaEtapaDoProcesso.ProjetarEtapa(etapa);
 
         dto.Id.Should().Be(EtapaId);
-        dto.Bancas.Should().BeEquivalentTo([new BancaDaEtapaDto(etapa.Bancas.Single().Id, TipoBancaId, "BANCA_GERAL", 1, "Banca geral", null)]);
+        dto.Bancas.Should().BeEquivalentTo([BancaGeralEsperada(etapa.Bancas.Single().Id)]);
     }
 
     [Fact(DisplayName = "A identificação projeta o nome, o caráter, o tipo, a ordem e o código da fase")]

@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -29,7 +30,7 @@ public sealed class FaseCronogramaCriacaoTests
         Produtos = [ProdutoDaFase.Criar("COMUNICADO", null), ProdutoDaFase.Criar("COMUNICADO", null)],
         EmiteParecerIndividual = true,
         RegraRecurso = Recurso(Guid.CreateVersion7()),
-        Bancas = [Banca("BANCA_ANALISE_DOCUMENTAL"), Banca("BANCA_ANALISE_DOCUMENTAL")],
+        Bancas = [Banca(TipoDeBanca.AnaliseDocumental), Banca(TipoDeBanca.AnaliseDocumental)],
     });
 
     [Fact(DisplayName = "As recusas acumuladas seguem a ordem: janela, publicações, âncora do recurso e candidatos atendidos")]
@@ -54,7 +55,7 @@ public sealed class FaseCronogramaCriacaoTests
             OrigemData = OrigemDataFase.NoEdital,
             Produtos = [Preliminar(Resultado)],
             RegraRecurso = Recurso(Guid.CreateVersion7()),
-            Bancas = [Banca("BANCA_A", "RENDA"), Banca("BANCA_A", "RENDA"), Banca("BANCA_B", "RENDA", "RENDA")],
+            Bancas = [Banca(TipoDeBanca.AnaliseDocumental, "RENDA"), Banca(TipoDeBanca.AnaliseDocumental, "RENDA"), Banca(TipoDeBanca.Entrevista, "RENDA", "RENDA")],
         });
 
         Recusas(resultado).Should().Equal(
@@ -92,7 +93,7 @@ public sealed class FaseCronogramaCriacaoTests
 
     [Fact(DisplayName = "A fábrica recusa os candidatos atendidos na banca de análise de recursos, no campo dos candidatos atendidos")]
     public void Criar_BancaDeRecursosComCandidatosAtendidos_RecusaOsCandidatosAtendidos() =>
-        Recusas(Criar(new() { Bancas = [Banca(TipoBancaCodigo.AnaliseDeRecursos, "RENDA")] })).Should().Equal(
+        Recusas(Criar(new() { Bancas = [Banca(TipoDeBanca.AnaliseDeRecursos, "RENDA")] })).Should().Equal(
             ("bancasRequeridas[0].categoriasDocumentoIds", "Banca.CandidatosAtendidosEmBancaDeRecursos"));
 
     // ── FinalidadesQueAtende ──
@@ -170,7 +171,7 @@ public sealed class FaseCronogramaCriacaoTests
     public void Criar_Recusada_NaoVinculaAsFilhas()
     {
         ProdutoDaFase produto = Preliminar(Resultado);
-        BancaRequerida banca = Banca("BANCA_ANALISE_DOCUMENTAL");
+        BancaRequerida banca = Banca(TipoDeBanca.AnaliseDocumental);
         RegraRecursoFase regra = Recurso(produto.Id);
 
         Result<FaseCronograma> resultado = CriarRecusadaPelaJanelaComFilhas(produto, banca, regra);
@@ -184,7 +185,7 @@ public sealed class FaseCronogramaCriacaoTests
     public void Criar_Aceita_VinculaAsFilhas()
     {
         ProdutoDaFase produto = Preliminar(Resultado);
-        BancaRequerida banca = Banca("BANCA_ANALISE_DOCUMENTAL");
+        BancaRequerida banca = Banca(TipoDeBanca.AnaliseDocumental);
         RegraRecursoFase regra = Recurso(produto.Id);
 
         FaseCronograma fase = Fase(new() { Produtos = [produto], Bancas = [banca], RegraRecurso = regra });

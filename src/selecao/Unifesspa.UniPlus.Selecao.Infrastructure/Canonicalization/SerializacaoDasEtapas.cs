@@ -109,16 +109,20 @@ internal static class SerializacaoDasEtapas
             : null;
 
     private static JsonArray SerializarBancas(EtapaProcesso etapa) =>
-        new([.. OrdemCanonicaDaConfiguracao.BancasDaEtapa(etapa.Bancas)
-            .Select(static b => (JsonNode)new JsonObject
-            {
-                ["id"] = JsonValue.Create(b.Id),
-                ["posicaoNoTipo"] = JsonValue.Create(b.PosicaoNoTipo),
-                ["tipoBancaOrigemId"] = JsonValue.Create(b.TipoBancaOrigemId),
-                ["codigo"] = HashCanonicalComputer.NormalizeNfc(b.Codigo),
-                ["nome"] = HashCanonicalComputer.NormalizeNfc(b.Nome),
-                ["regraDeDeliberacao"] = RegraDeDeliberacaoNoEnvelope.Serializar(b.RegraDeDeliberacao),
-            })]);
+        new([.. OrdemCanonicaDaConfiguracao.BancasDaEtapa(etapa.Bancas).Select(static b => (JsonNode)SerializarBanca(b))]);
+
+    private static JsonObject SerializarBanca(BancaDaEtapa banca)
+    {
+        JsonObject item = new()
+        {
+            ["id"] = JsonValue.Create(banca.Id),
+            ["posicaoNoTipo"] = JsonValue.Create(banca.PosicaoNoTipo),
+            ["regraDeDeliberacao"] = RegraDeDeliberacaoNoEnvelope.Serializar(banca.RegraDeDeliberacao),
+        };
+        TipoDeBancaNoEnvelope.Serializar(item, banca.Tipo);
+
+        return item;
+    }
 
     private static JsonArray SerializarRecursos(EtapaProcesso etapa) =>
         new([.. etapa.Recursos

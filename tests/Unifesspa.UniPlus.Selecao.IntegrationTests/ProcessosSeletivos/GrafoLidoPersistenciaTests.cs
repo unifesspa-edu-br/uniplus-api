@@ -88,8 +88,8 @@ public sealed class GrafoLidoPersistenciaTests(ProcessoSeletivoDbFixture fixture
             .Should().BeEquivalentTo(origem.ItensDeAvaliacao.Select(i => (i.Id, HashCanonicalComputer.NormalizeNfc(i.Rotulo), i.PontuacaoMaxima)));
         relida.Produtos.Select(p => (p.Id, p.AtoCodigo, p.Papel)).Should().BeEquivalentTo(
             origem.Produtos.Select(p => (p.Id, HashCanonicalComputer.NormalizeNfc(p.AtoCodigo), p.Papel)));
-        relida.Bancas.Select(b => (b.TipoBancaOrigemId, b.Codigo)).Should().BeEquivalentTo(
-            origem.Bancas.Select(b => (b.TipoBancaOrigemId, HashCanonicalComputer.NormalizeNfc(b.Codigo))));
+        relida.Bancas.Select(b => (b.Id, b.Tipo)).Should().BeEquivalentTo(origem.Bancas.Select(b => (b.Id, b.Tipo)),
+            "a banca relida guarda a mesma cópia do tipo que foi gravada");
         relida.Recursos.Select(r => (r.Ancora, r.Regra.Codigo, r.Parametros.PrazoDeInterposicao.Valor, r.ProdutoAncoraId)).Should().BeEquivalentTo(
             origem.Recursos.Select(r => (r.Ancora, r.Regra.Codigo, r.Parametros.PrazoDeInterposicao.Valor, r.ProdutoAncoraId)));
     }

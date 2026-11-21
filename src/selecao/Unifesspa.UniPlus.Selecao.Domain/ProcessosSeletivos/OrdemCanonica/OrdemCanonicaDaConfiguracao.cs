@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -86,7 +87,7 @@ public static class OrdemCanonicaDaConfiguracao
         ArgumentNullException.ThrowIfNull(itens);
         ArgumentNullException.ThrowIfNull(banca);
 
-        return itens.OrderBy(item => HashCanonicalComputer.NormalizeNfc(banca(item).Codigo), StringComparer.Ordinal)
+        return itens.OrderBy(item => banca(item).Tipo.Codigo.Codigo(), StringComparer.Ordinal)
             .ThenBy(item => banca(item).PosicaoNoTipo);
     }
 
@@ -99,7 +100,7 @@ public static class OrdemCanonicaDaConfiguracao
     {
         ArgumentNullException.ThrowIfNull(bancas);
 
-        return bancas.OrderBy(static banca => HashCanonicalComputer.NormalizeNfc(banca.Codigo), StringComparer.Ordinal)
+        return bancas.OrderBy(static banca => banca.Tipo.Codigo.Codigo(), StringComparer.Ordinal)
             .ThenBy(static banca => banca.PosicaoNoTipo);
     }
 

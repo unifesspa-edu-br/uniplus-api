@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Bancas;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
@@ -107,7 +108,7 @@ public sealed class BancasDoProcessoTests
     {
         EtapaProcesso redacao = ComRecurso(NovaEtapa("Redação", 1, CorrecaoIndependente));
         ProcessoSeletivo processo = ProcessoComEtapas([BancasDeTeste.DeRecursosDaFase()], redacao);
-        redacao.DefinirBancas([BancaDaEtapa.Criar(Tipo, "BANCA_EXAMINADORA", "Banca examinadora", BancasDeTeste.Regra(integrantes: 2, quorum: 2))]);
+        redacao.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Tipo), BancasDeTeste.Regra(integrantes: 2, quorum: 2))]);
 
         Pendencia(processo, Corretores((CorrecaoIndependente, 3))).Should().BeNull();
     }
@@ -148,7 +149,7 @@ public sealed class BancasDoProcessoTests
         DomainError? pendencia = Pendencia(processo, CorretoresDeTeste.SemConsolidacao);
 
         pendencia!.Code.Should().Be("EtapaProcesso.RegraDeConsolidacaoNaoResolvida");
-        pendencia.Message.Should().Contain("'Redação'").And.NotContain(CorrecaoIndependente.Hash);
+        pendencia.Message.Should().Contain("julga a etapa na posição 1").And.NotContain(CorrecaoIndependente.Hash);
     }
 
     [Fact(DisplayName = "A etapa resolvida e a não resolvida julgadas pela mesma banca acumulam o mínimo e a regra não resolvida")]
@@ -161,7 +162,7 @@ public sealed class BancasDoProcessoTests
         IReadOnlyList<FieldError> violacoes = Minimo(processo, Corretores((CorrecaoIndependente, 3)));
 
         violacoes.Select(static erro => erro.Error.Code).Should().Equal("Banca.IntegrantesAbaixoDoMinimo", "EtapaProcesso.RegraDeConsolidacaoNaoResolvida");
-        violacoes[^1].Error.Message.Should().Contain("'Entrevista'");
+        violacoes[^1].Error.Message.Should().Contain("julga a etapa na posição 2");
     }
 
     [Fact(DisplayName = "A banca abaixo do mínimo vem antes da regra não resolvida de outra banca que a precede")]
@@ -231,17 +232,17 @@ public sealed class BancasDoProcessoTests
     public void Redefinir_ComOId_ReaproveitaALinhaEAlinhaOsDadosDeclarados()
     {
         EtapaProcesso etapa = NovaEtapa("Redação", 1);
-        etapa.DefinirBancas([BancaDaEtapa.Criar(Tipo, "BANCA_EXAMINADORA", "Antigo", BancasDeTeste.Regra(3, 2))]);
+        etapa.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Tipo), BancasDeTeste.Regra(3, 2))]);
         Guid linha = etapa.Bancas.Single().Id;
         Guid outraOrigem = Guid.CreateVersion7();
 
         etapa.DefinirBancas(
-            [BancaDaEtapa.Criar(outraOrigem, "BANCA_EXAMINADORA", "Novo", BancasDeTeste.Regra(5, 4), idDaBancaQueSubstitui: linha)]);
+            [BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.Nomeada(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, outraOrigem), "Novo"), BancasDeTeste.Regra(5, 4), idDaBancaQueSubstitui: linha)]);
 
         BancaDaEtapa banca = etapa.Bancas.Single();
         banca.Id.Should().Be(linha);
-        banca.TipoBancaOrigemId.Should().Be(outraOrigem);
-        banca.Nome.Should().Be("Novo");
+        banca.Tipo.OrigemId.Should().Be(outraOrigem);
+        banca.Tipo.Nome.Should().Be("Novo");
         banca.RegraDeDeliberacao!.Integrantes.Should().Be(5);
     }
 }
