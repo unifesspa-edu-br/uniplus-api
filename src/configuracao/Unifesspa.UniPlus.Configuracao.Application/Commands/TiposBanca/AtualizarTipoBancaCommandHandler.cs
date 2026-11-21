@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -17,6 +18,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public static class AtualizarTipoBancaCommandHandler
 {
+    private static readonly DomainError NaoEncontrado = new(TipoBancaErrorCodes.NaoEncontrado, "Tipo de banca não encontrado.");
+
     public static async Task<Result> Handle(
         AtualizarTipoBancaCommand command,
         ITipoBancaRepository repository,
@@ -27,25 +30,30 @@ public static class AtualizarTipoBancaCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        Result<(string Nome, string? FaseTipica, string? Descricao)> camposResult =
-            TipoBanca.ValidarCamposComuns(command.Nome, command.FaseTipica, command.Descricao);
-        if (camposResult.IsFailure)
-        {
-            return Result.ValidationFailure(camposResult.Errors);
-        }
+        Result<(string Nome, string? FaseTipica, string? Descricao, AtuacaoDoTipoDeBanca Atuacao)> camposResult =
+            TipoBanca.ValidarCampos(command.Declaracao());
 
+        return camposResult.IsFailure
+            ? Result.ValidationFailure(camposResult.Errors)
+            : await AtualizarAsync(command, repository, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result> AtualizarAsync(
+        AtualizarTipoBancaCommand command,
+        ITipoBancaRepository repository,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
         TipoBanca? banca = await repository.ObterPorIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
         if (banca is null)
         {
-            return Result.Failure(new DomainError(
-                TipoBancaErrorCodes.NaoEncontrado,
-                "Tipo de banca não encontrado."));
+            return Result.Failure(NaoEncontrado);
         }
 
         // Revalida por dentro (barato, sem I/O) com exatamente os mesmos argumentos
-        // já confirmados acima, então sempre terá sucesso aqui; esta chamada só
+        // já confirmados por quem chama, então sempre terá sucesso aqui; esta chamada só
         // serve para aplicar a mutação.
-        banca.Atualizar(command.Nome, command.FaseTipica, command.Descricao);
+        banca.Atualizar(command.Declaracao());
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 

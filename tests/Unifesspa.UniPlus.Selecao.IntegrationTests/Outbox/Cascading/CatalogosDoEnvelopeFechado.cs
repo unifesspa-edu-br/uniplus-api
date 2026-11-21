@@ -209,7 +209,10 @@ internal static class CatalogosDoEnvelopeFechado
             return existente;
         }
 
-        Result<TipoBanca> criada = TipoBanca.Criar(Tipo.Codigo(), "Banca de análise documental", "RESULTADO_FINAL", null);
+        Result<TipoBanca> criada = TipoBanca.Criar(
+            Tipo.Codigo(),
+            new DeclaracaoDoTipoDeBanca(
+                "Banca de análise documental", "RESULTADO_FINAL", Papel: "AVALIA_O_MERITO", TiposDeDecisaoJulgados: ["ANALISE_DOCUMENTAL"]));
         criada.IsSuccess.Should().BeTrue(criada.Error?.Message);
         config.TiposBanca.Add(criada.Value!);
         return criada.Value!;

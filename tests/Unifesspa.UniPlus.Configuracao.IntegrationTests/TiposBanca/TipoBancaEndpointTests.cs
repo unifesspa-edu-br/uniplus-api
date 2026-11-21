@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.TiposBanca;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text;
@@ -18,10 +17,6 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 /// Postgres efêmero. Cada teste que persiste usa um tipo distinto.
 /// </summary>
 [Collection(ConfiguracaoEndpointCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class TipoBancaEndpointTests
 {
     private readonly ConfiguracaoEndpointFixture _fixture;
@@ -85,7 +80,8 @@ public sealed class TipoBancaEndpointTests
     [Fact(DisplayName = "POST cria (201) e o GET subsequente retorna os campos + HATEOAS")]
     public async Task Criar_ComAuthEIdempotency_Retorna201EPersiste()
     {
-        var body = new { codigo = "BANCA_CORRECAO_REDACOES", nome = "Banca de correção de redações", faseTipica = "Avaliação" };
+        var body = new { codigo = "BANCA_CORRECAO_REDACOES", nome = "Banca de correção de redações", faseTipica = "Avaliação", papel = "IMPORTA_CANDIDATOS" };
+        await LiberarCodigosAsync(body.codigo);
 
         using HttpClient client = _fixture.Factory.CreateClient();
         using JsonDocument doc = await CriarEObterAsync(client, body);
@@ -117,7 +113,8 @@ public sealed class TipoBancaEndpointTests
     public async Task Criar_ComCodigoAcrescentadoAoVocabulario_Retorna201(
         string codigo, string nome, string faseTipica, string descricao)
     {
-        var body = new { codigo, nome, faseTipica, descricao };
+        var body = new { codigo, nome, faseTipica, descricao, papel = "IMPORTA_CANDIDATOS" };
+        await LiberarCodigosAsync(codigo);
 
         using HttpClient client = _fixture.Factory.CreateClient();
         using JsonDocument doc = await CriarEObterAsync(client, body);
@@ -155,7 +152,8 @@ public sealed class TipoBancaEndpointTests
     [Fact(DisplayName = "POST com código já existente entre vivos retorna 409")]
     public async Task Criar_CodigoDuplicado_Retorna409()
     {
-        var body = new { codigo = "BANCA_ANALISE_DOCUMENTAL", nome = "Banca de análise documental" };
+        var body = new { codigo = "BANCA_ANALISE_DOCUMENTAL", nome = "Banca de análise documental", papel = "IMPORTA_CANDIDATOS" };
+        await LiberarCodigosAsync(body.codigo);
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage primeiro = await EnviarPostAdmin(client, body);
@@ -168,7 +166,7 @@ public sealed class TipoBancaEndpointTests
     [Fact(DisplayName = "ADR-0125: POST com código fora do vocabulário e nome ausente devolve as duas violações em errors[], campo em camelCase")]
     public async Task Criar_ForaDoCanonicoENomeAusente_DevolveAsDuasViolacoesEmErrors()
     {
-        var body = new { codigo = "BANCA_LOGISTICA", nome = "" };
+        var body = new { codigo = "BANCA_LOGISTICA", nome = "", papel = "IMPORTA_CANDIDATOS" };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await EnviarPostAdmin(client, body);
@@ -224,6 +222,9 @@ public sealed class TipoBancaEndpointTests
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
+
+    private Task LiberarCodigosAsync(params string[] codigos) =>
+        TiposDeBancaDeTeste.ApagarAsync(_fixture.ConnectionString, codigos);
 
     private static async Task<HttpResponseMessage> EnviarPostAdmin(HttpClient client, object body)
     {

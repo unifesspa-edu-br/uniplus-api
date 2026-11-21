@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
@@ -23,6 +24,9 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// rótulo de texto <b>orientativo e não vinculante</b>, <b>não</b> uma referência
 /// para o cadastro de fases. Pode ser nula e pode conter um valor que não
 /// corresponda a nenhuma fase cadastrada.</para>
+/// <para>A <see cref="Atuacao"/> (o papel, as duas marcas e os tipos de decisão julgados) diz como as
+/// bancas do tipo atuam; as regras da seleção decidem por eles, nunca pelo código do tipo. Só o papel que avalia
+/// o mérito declara tipos de decisão (ao menos um, sem repetição).</para>
 /// <para>A remoção é sempre soft-delete; nunca bloqueada — o único consumo é por
 /// snapshot-copy desacoplado no Módulo Seleção (ADR-0061).</para>
 /// </remarks>
@@ -36,6 +40,7 @@ public sealed class TipoBanca : SoftDeletableEntity, IAuditableEntity
     public string Nome { get; private set; } = null!;
     public string? FaseTipica { get; private set; }
     public string? Descricao { get; private set; }
+    public AtuacaoDoTipoDeBanca Atuacao { get; private set; } = null!;
 
     public string? CreatedBy { get; private set; }
     public string? UpdatedBy { get; private set; }
@@ -73,23 +78,24 @@ public sealed class TipoBanca : SoftDeletableEntity, IAuditableEntity
         Result<TipoDeBanca>.ValidationFailure([new("codigo", new DomainError(codigoDoErro, mensagem))]);
 
     /// <summary>
-    /// Valida os três campos comuns a Criar e Atualizar (nome, fase típica,
-    /// descrição), acumulando toda violação independente em vez de parar na
-    /// primeira — sem mutar nada. Os limites de tamanho valem sobre o valor já
-    /// normalizado (<c>Trim</c>), a mesma medida que <see cref="AplicarCampos"/>
-    /// persiste.
+    /// Valida os campos editáveis (nome, fase típica, descrição e a atuação do tipo), acumulando toda violação
+    /// independente em vez de parar na primeira — sem mutar nada. Os limites de tamanho valem sobre o valor já
+    /// normalizado (<c>Trim</c>), a mesma medida que <see cref="Aplicar"/> persiste.
     /// </summary>
-    public static Result<(string Nome, string? FaseTipica, string? Descricao)> ValidarCamposComuns(
-        string? nome, string? faseTipica, string? descricao)
+    public static Result<(string Nome, string? FaseTipica, string? Descricao, AtuacaoDoTipoDeBanca Atuacao)> ValidarCampos(
+        DeclaracaoDoTipoDeBanca declaracao)
     {
-        string? nomeNorm = NormalizarOpcional(nome);
-        string? faseTipicaNorm = NormalizarOpcional(faseTipica);
-        string? descricaoNorm = NormalizarOpcional(descricao);
-        FieldError[] erros = ErrosDosCamposComuns(nomeNorm, faseTipicaNorm, descricaoNorm);
+        ArgumentNullException.ThrowIfNull(declaracao);
+
+        string? nome = NormalizarOpcional(declaracao.Nome);
+        string? faseTipica = NormalizarOpcional(declaracao.FaseTipica);
+        string? descricao = NormalizarOpcional(declaracao.Descricao);
+        Result<AtuacaoDoTipoDeBanca> atuacao = AtuacaoDoTipoDeBanca.Validar(declaracao);
+        FieldError[] erros = [.. ErrosDosCamposComuns(nome, faseTipica, descricao), .. atuacao.Errors];
 
         return erros.Length > 0
-            ? Result<(string, string?, string?)>.ValidationFailure(erros)
-            : Result<(string, string?, string?)>.Success((nomeNorm!, faseTipicaNorm, descricaoNorm));
+            ? Result<(string, string?, string?, AtuacaoDoTipoDeBanca)>.ValidationFailure(erros)
+            : Result<(string, string?, string?, AtuacaoDoTipoDeBanca)>.Success((nome!, faseTipica, descricao, atuacao.Value!));
     }
 
     private static FieldError[] ErrosDosCamposComuns(string? nome, string? faseTipica, string? descricao) =>
@@ -117,14 +123,14 @@ public sealed class TipoBanca : SoftDeletableEntity, IAuditableEntity
     /// <summary>
     /// Cria um novo tipo de banca. Revalida <paramref name="codigo"/> via
     /// <see cref="ValidarCodigo"/> e os demais campos via
-    /// <see cref="ValidarCamposComuns"/>, acumulando toda violação no mesmo lote.
+    /// <see cref="ValidarCampos"/>, acumulando toda violação no mesmo lote.
     /// A unicidade do código entre vivos é responsabilidade do handler.
     /// </summary>
-    public static Result<TipoBanca> Criar(string? codigo, string? nome, string? faseTipica, string? descricao)
+    public static Result<TipoBanca> Criar(string? codigo, DeclaracaoDoTipoDeBanca declaracao)
     {
         Result<TipoDeBanca> codigoResult = ValidarCodigo(codigo);
-        Result<(string Nome, string? FaseTipica, string? Descricao)> camposResult =
-            ValidarCamposComuns(nome, faseTipica, descricao);
+        Result<(string Nome, string? FaseTipica, string? Descricao, AtuacaoDoTipoDeBanca Atuacao)> camposResult =
+            ValidarCampos(declaracao);
 
         if (codigoResult.IsFailure || camposResult.IsFailure)
         {
@@ -132,7 +138,7 @@ public sealed class TipoBanca : SoftDeletableEntity, IAuditableEntity
         }
 
         var banca = new TipoBanca { Codigo = codigoResult.Value };
-        banca.AplicarCampos(camposResult.Value);
+        banca.Aplicar(camposResult.Value);
 
         return Result<TipoBanca>.Success(banca);
     }
@@ -141,28 +147,26 @@ public sealed class TipoBanca : SoftDeletableEntity, IAuditableEntity
     /// Atualiza os atributos editáveis do tipo de banca. O <c>Codigo</c> e o
     /// <c>Id</c> são <b>imutáveis</b> — este método não os recebe.
     /// </summary>
-    public Result Atualizar(
-        string? nome,
-        string? faseTipica,
-        string? descricao)
+    public Result Atualizar(DeclaracaoDoTipoDeBanca declaracao)
     {
-        Result<(string Nome, string? FaseTipica, string? Descricao)> camposResult =
-            ValidarCamposComuns(nome, faseTipica, descricao);
+        Result<(string Nome, string? FaseTipica, string? Descricao, AtuacaoDoTipoDeBanca Atuacao)> camposResult =
+            ValidarCampos(declaracao);
         if (camposResult.IsFailure)
         {
             return Result.ValidationFailure(camposResult.Errors);
         }
 
-        AplicarCampos(camposResult.Value);
+        Aplicar(camposResult.Value);
 
         return Result.Success();
     }
 
-    private void AplicarCampos((string Nome, string? FaseTipica, string? Descricao) campos)
+    private void Aplicar((string Nome, string? FaseTipica, string? Descricao, AtuacaoDoTipoDeBanca Atuacao) campos)
     {
         Nome = campos.Nome;
         FaseTipica = campos.FaseTipica;
         Descricao = campos.Descricao;
+        Atuacao = campos.Atuacao;
     }
 
     private static string? NormalizarOpcional(string? valor) =>

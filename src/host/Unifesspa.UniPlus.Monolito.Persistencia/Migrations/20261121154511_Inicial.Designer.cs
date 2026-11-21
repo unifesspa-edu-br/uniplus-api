@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261121154345_Inicial")]
+    [Migration("20261121154511_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -7495,6 +7495,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.ToTable("tipos_de_banca", "configuracao", t =>
                         {
                             t.HasCheckConstraint("ck_tipos_de_banca_codigo_canonico", "codigo IN ('BANCA_ANALISE_DOCUMENTAL', 'BANCA_ENTREVISTA', 'BANCA_CORRECAO_REDACOES', 'BANCA_ANALISE_RECURSOS', 'BANCA_HETEROIDENTIFICACAO', 'BANCA_BIOPSICOSSOCIAL', 'BANCA_HOMOLOGACAO_INSCRICOES', 'BANCA_IMPORTACAO_NOTAS_INEP', 'BANCA_IMPORTACAO_CANDIDATOS')");
+
+                            t.HasCheckConstraint("ck_tipos_de_banca_decisoes", "tipos_de_decisao_julgados <@ ARRAY['ISENCAO_DA_TAXA', 'HOMOLOGACAO_DAS_INSCRICOES', 'ANALISE_DOCUMENTAL', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'CLASSIFICACAO', 'GABARITO_DA_PROVA', 'NOTA_DA_ETAPA']::text[]");
+
+                            t.HasCheckConstraint("ck_tipos_de_banca_papel", "papel IN ('AVALIA_O_MERITO', 'JULGA_A_PRIMEIRA_INSTANCIA', 'IMPORTA_AS_NOTAS_DO_INEP', 'IMPORTA_CANDIDATOS')");
                         });
                 });
 
@@ -17438,6 +17442,49 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .OnDelete(DeleteBehavior.ClientNoAction)
                         .IsRequired()
                         .HasConstraintName("fk_versoes_do_termo_consentimento_termo_de_consentimento");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.TipoBanca", b =>
+                {
+                    b.OwnsOne("Unifesspa.UniPlus.Configuracao.Domain.ValueObjects.AtuacaoDoTipoDeBanca", "Atuacao", b1 =>
+                        {
+                            b1.Property<Guid>("TipoBancaId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<bool>("EncerraRecursoNaPrimeiraInstancia")
+                                .HasColumnType("boolean")
+                                .HasColumnName("encerra_recurso_na_primeira_instancia");
+
+                            b1.Property<bool>("ExigeDuasOuMaisBancas")
+                                .HasColumnType("boolean")
+                                .HasColumnName("exige_duas_ou_mais_bancas");
+
+                            b1.Property<string>("Papel")
+                                .IsRequired()
+                                .HasMaxLength(60)
+                                .HasColumnType("character varying(60)")
+                                .HasColumnName("papel");
+
+                            b1.PrimitiveCollection<string[]>("_tiposDeDecisaoJulgados")
+                                .IsRequired()
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("text[]")
+                                .HasColumnName("tipos_de_decisao_julgados")
+                                .HasDefaultValueSql("'{}'::text[]")
+                                .HasComment("Tipos de decisão que o tipo de banca julga, em ordem alfabética ordinal do código e sem repetição; só o papel que avalia o mérito os declara.");
+
+                            b1.HasKey("TipoBancaId");
+
+                            b1.ToTable("tipos_de_banca", "configuracao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("TipoBancaId")
+                                .HasConstraintName("fk_tipos_de_banca_tipos_de_banca_id");
+                        });
+
+                    b.Navigation("Atuacao")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.TipoConceito", b =>

@@ -20,4 +20,9 @@ public static class TipoBancaErrorCodes
     public const string FaseTipicaTamanho = "TipoBanca.FaseTipicaTamanho";
     public const string DescricaoTamanho = "TipoBanca.DescricaoTamanho";
     public const string NaoEncontrado = "TipoBanca.NaoEncontrado";
+    public const string PapelObrigatorio = "TipoBanca.PapelObrigatorio";
+    public const string PapelForaDoVocabulario = "TipoBanca.PapelForaDoVocabulario";
+    public const string TipoDeDecisaoForaDoVocabulario = "TipoBanca.TipoDeDecisaoForaDoVocabulario";
+    public const string TipoDeDecisaoRepetido = "TipoBanca.TipoDeDecisaoRepetido";
+    public const string TiposDeDecisaoIncoerentesComOPapel = "TipoBanca.TiposDeDecisaoIncoerentesComOPapel";
 }

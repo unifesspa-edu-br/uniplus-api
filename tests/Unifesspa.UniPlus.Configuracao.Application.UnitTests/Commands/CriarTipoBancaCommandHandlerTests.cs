@@ -18,7 +18,7 @@ public sealed class CriarTipoBancaCommandHandlerTests
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     private static CriarTipoBancaCommand Comando() =>
-        new("BANCA_ENTREVISTA", Nome: "Banca de entrevista");
+        new("BANCA_ENTREVISTA", Nome: "Banca de entrevista", Papel: "AVALIA_O_MERITO", TiposDeDecisaoJulgados: ["NOTA_DA_ETAPA"]);
 
     [Fact(DisplayName = "Código livre cria a banca, persiste e retorna o Id")]
     public async Task Handle_CodigoLivre_CriaEPersiste()
@@ -50,7 +50,7 @@ public sealed class CriarTipoBancaCommandHandlerTests
     [Fact(DisplayName = "Código fora do vocabulário propaga o erro sem consultar unicidade nem persistir")]
     public async Task Handle_ForaDoCanonico_RetornaErroSemConsultarUnicidadeNemPersistir()
     {
-        var comando = new CriarTipoBancaCommand("BANCA_LOGISTICA", Nome: "x");
+        var comando = new CriarTipoBancaCommand("BANCA_LOGISTICA", Nome: "x", Papel: "IMPORTA_CANDIDATOS");
 
         Result<Guid> resultado = await CriarTipoBancaCommandHandler.Handle(
             comando, _repository, _unitOfWork, CancellationToken.None);
@@ -64,7 +64,7 @@ public sealed class CriarTipoBancaCommandHandlerTests
     [Fact(DisplayName = "Código fora do vocabulário e nome ausente no mesmo payload acumulam as duas violações")]
     public async Task Handle_CodigoForaDoCanonicoENomeAusente_AcumulaAsDuasViolacoes()
     {
-        var comando = new CriarTipoBancaCommand("BANCA_LOGISTICA", Nome: "");
+        var comando = new CriarTipoBancaCommand("BANCA_LOGISTICA", Nome: "", Papel: "IMPORTA_CANDIDATOS");
 
         Result<Guid> resultado = await CriarTipoBancaCommandHandler.Handle(
             comando, _repository, _unitOfWork, CancellationToken.None);
@@ -73,5 +73,40 @@ public sealed class CriarTipoBancaCommandHandlerTests
         resultado.Errors.Should().HaveCount(2);
         resultado.Errors[0].Field.Should().Be("codigo");
         resultado.Errors[1].Field.Should().Be("nome");
+    }
+
+    [Fact(DisplayName = "Papel, marcas e tipos de decisão do comando chegam ao tipo criado e persistido")]
+    public async Task Handle_ComAtuacao_PersisteAAtuacao()
+    {
+        var comando = new CriarTipoBancaCommand(
+            "BANCA_HETEROIDENTIFICACAO", Nome: "Banca de heteroidentificação", Papel: "AVALIA_O_MERITO",
+            ExigeDuasOuMaisBancas: true, EncerraRecursoNaPrimeiraInstancia: true, TiposDeDecisaoJulgados: ["HETEROIDENTIFICACAO"]);
+
+        Result<Guid> resultado = await CriarTipoBancaCommandHandler.Handle(
+            comando, _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue();
+        await _repository.Received(1).AdicionarAsync(
+            Arg.Is<TipoBanca>(b => b.Atuacao.Papel == PapelDaBanca.AvaliaOMerito
+                && b.Atuacao.ExigeDuasOuMaisBancas
+                && b.Atuacao.EncerraRecursoNaPrimeiraInstancia
+                && b.Atuacao.TiposDeDecisaoJulgados.SequenceEqual(new[] { TipoMotivoDeDecisao.Heteroidentificacao })),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Papel ausente, papel que não avalia o mérito com tipo de decisão e tipo repetido acumulam as violações sem consultar unicidade")]
+    public async Task Handle_AtuacaoInvalida_AcumulaSemConsultarUnicidade()
+    {
+        var comando = new CriarTipoBancaCommand(
+            "BANCA_ENTREVISTA", Nome: "Banca de entrevista", Papel: "IMPORTA_CANDIDATOS",
+            TiposDeDecisaoJulgados: ["NOTA_DA_ETAPA", "NOTA_DA_ETAPA"]);
+
+        Result<Guid> resultado = await CriarTipoBancaCommandHandler.Handle(
+            comando, _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+            ("tiposDeDecisaoJulgados[1]", TipoBancaErrorCodes.TipoDeDecisaoRepetido),
+            ("tiposDeDecisaoJulgados", TipoBancaErrorCodes.TiposDeDecisaoIncoerentesComOPapel));
+        await _repository.DidNotReceive().CodigoExisteEntreVivosAsync(Arg.Any<TipoDeBanca>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
     }
 }

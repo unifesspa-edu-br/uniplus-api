@@ -15,6 +15,10 @@ public sealed record TipoBancaDto(
     string Nome,
     string? FaseTipica,
     string? Descricao,
+    CodigoComRotulo<PapelDaBanca> Papel,
+    bool ExigeDuasOuMaisBancas,
+    bool EncerraRecursoNaPrimeiraInstancia,
+    IReadOnlyList<CodigoComRotulo<TipoMotivoDeDecisao>> TiposDeDecisaoJulgados,
     DateTimeOffset CriadoEm)
 {
     [JsonPropertyName("_links")]

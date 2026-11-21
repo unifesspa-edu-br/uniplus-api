@@ -9,12 +9,18 @@ using Unifesspa.UniPlus.Regras.Enums;
 
 public sealed class TipoBancaTests
 {
+    private static DeclaracaoDoTipoDeBanca Declaracao(
+        string? nome = "Banca de entrevista",
+        string? faseTipica = null,
+        string? descricao = null) =>
+        new(nome, faseTipica, descricao, "AVALIA_O_MERITO", TiposDeDecisaoJulgados: ["NOTA_DA_ETAPA"]);
+
     private static Result<TipoBanca> Criar(
         string codigo = "BANCA_ENTREVISTA",
         string? nome = "Banca de entrevista",
         string? faseTipica = null,
         string? descricao = null) =>
-        TipoBanca.Criar(codigo, nome, faseTipica, descricao);
+        TipoBanca.Criar(codigo, Declaracao(nome, faseTipica, descricao));
 
     // ── Factory válida ─────────────────────────────────────────────────────────
 
@@ -190,7 +196,7 @@ public sealed class TipoBancaTests
     [Fact(DisplayName = "Código fora do canônico e nome ausente ao mesmo tempo acumulam as duas violações rotuladas")]
     public void Criar_CodigoForaDoCanonicoENomeAusente_AcumulaAsDuasViolacoesRotuladas()
     {
-        Result<TipoBanca> r = TipoBanca.Criar("BANCA_LOGISTICA", "", null, null);
+        Result<TipoBanca> r = TipoBanca.Criar("BANCA_LOGISTICA", Declaracao(nome: ""));
 
         r.IsFailure.Should().BeTrue();
         r.Errors.Should().HaveCount(2);
@@ -204,7 +210,7 @@ public sealed class TipoBancaTests
     public void Criar_NomeAusenteFaseTipicaEDescricaoLongas_AcumulaAsTresViolacoes()
     {
         Result<TipoBanca> r = TipoBanca.Criar(
-            "BANCA_ENTREVISTA", "", new string('a', 61), new string('b', 301));
+            "BANCA_ENTREVISTA", Declaracao(nome: "", faseTipica: new string('a', 61), descricao: new string('b', 301)));
 
         r.IsFailure.Should().BeTrue();
         r.Errors.Should().HaveCount(3);
@@ -218,7 +224,7 @@ public sealed class TipoBancaTests
     {
         TipoBanca b = Criar(codigo: "BANCA_ANALISE_RECURSOS", nome: "Banca de análise de recursos").Value!;
 
-        Result r = b.Atualizar(nome: "", faseTipica: null, descricao: new string('a', 301));
+        Result r = b.Atualizar(Declaracao(nome: "", descricao: new string('a', 301)));
 
         r.IsFailure.Should().BeTrue();
         r.Errors.Should().HaveCount(2);
@@ -233,12 +239,79 @@ public sealed class TipoBancaTests
         TipoBanca b = Criar(codigo: "BANCA_ANALISE_RECURSOS", nome: "Banca de análise de recursos").Value!;
         Guid idOriginal = b.Id;
 
-        Result r = b.Atualizar(nome: "Banca de recursos (novo)", faseTipica: "Recursos", descricao: "desc");
+        Result r = b.Atualizar(Declaracao(nome: "Banca de recursos (novo)", faseTipica: "Recursos", descricao: "desc"));
 
         r.IsSuccess.Should().BeTrue();
         b.Codigo.Should().Be(TipoDeBanca.AnaliseDeRecursos, "o código é imutável");
         b.Id.Should().Be(idOriginal, "o Id é imutável");
         b.Nome.Should().Be("Banca de recursos (novo)");
         b.FaseTipica.Should().Be("Recursos");
+    }
+
+    // ── Papel, marcas e tipos de decisão ───────────────────────────────────────
+
+    [Fact(DisplayName = "Tipo de banca que avalia o mérito guarda o papel, as marcas e os tipos de decisão em ordem alfabética do código")]
+    public void Criar_ComAtuacao_GuardaPapelMarcasETiposOrdenados()
+    {
+        DeclaracaoDoTipoDeBanca declaracao = new(
+            "Banca de análise documental", Papel: "AVALIA_O_MERITO", ExigeDuasOuMaisBancas: true, EncerraRecursoNaPrimeiraInstancia: true,
+            TiposDeDecisaoJulgados: ["ISENCAO_DA_TAXA", "ANALISE_DOCUMENTAL"]);
+
+        TipoBanca b = TipoBanca.Criar("BANCA_ANALISE_DOCUMENTAL", declaracao).Value!;
+
+        b.Atuacao.Papel.Should().Be(PapelDaBanca.AvaliaOMerito);
+        b.Atuacao.ExigeDuasOuMaisBancas.Should().BeTrue();
+        b.Atuacao.EncerraRecursoNaPrimeiraInstancia.Should().BeTrue();
+        b.Atuacao.TiposDeDecisaoJulgados.Should().Equal(TipoMotivoDeDecisao.AnaliseDocumental, TipoMotivoDeDecisao.IsencaoDaTaxa);
+    }
+
+    [Fact(DisplayName = "Tipo de banca de outro papel é criado sem tipos de decisão e com as marcas apagadas por padrão")]
+    public void Criar_PapelDeImportacao_SemTiposDeDecisao()
+    {
+        TipoBanca b = TipoBanca.Criar(
+            "BANCA_IMPORTACAO_CANDIDATOS", new DeclaracaoDoTipoDeBanca("Banca de importação de candidatos", Papel: "IMPORTA_CANDIDATOS")).Value!;
+
+        b.Atuacao.Papel.Should().Be(PapelDaBanca.ImportaCandidatos);
+        b.Atuacao.ExigeDuasOuMaisBancas.Should().BeFalse();
+        b.Atuacao.EncerraRecursoNaPrimeiraInstancia.Should().BeFalse();
+        b.Atuacao.TiposDeDecisaoJulgados.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Código fora do vocabulário, nome ausente e papel ausente acumulam as três violações, na ordem dos campos")]
+    public void Criar_CodigoNomeEPapelInvalidos_AcumulaAsTresViolacoes()
+    {
+        Result<TipoBanca> r = TipoBanca.Criar("BANCA_LOGISTICA", new DeclaracaoDoTipoDeBanca(""));
+
+        r.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+            ("codigo", TipoBancaErrorCodes.CodigoForaDoConjuntoCanonico),
+            ("nome", TipoBancaErrorCodes.NomeObrigatorio),
+            ("papel", TipoBancaErrorCodes.PapelObrigatorio));
+    }
+
+    [Fact(DisplayName = "Atualizar troca o papel, as marcas e os tipos de decisão, substituindo o que estava gravado")]
+    public void Atualizar_TrocaAAtuacao()
+    {
+        TipoBanca b = Criar().Value!;
+
+        Result r = b.Atualizar(new DeclaracaoDoTipoDeBanca(
+            "Banca de entrevista", Papel: "JULGA_A_PRIMEIRA_INSTANCIA", ExigeDuasOuMaisBancas: true));
+
+        r.IsSuccess.Should().BeTrue();
+        b.Atuacao.Papel.Should().Be(PapelDaBanca.JulgaAPrimeiraInstancia);
+        b.Atuacao.ExigeDuasOuMaisBancas.Should().BeTrue();
+        b.Atuacao.TiposDeDecisaoJulgados.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Atualizar com papel fora do vocabulário recusa e não muda o papel nem os tipos de decisão")]
+    public void Atualizar_PapelInvalido_NaoMuta()
+    {
+        TipoBanca b = Criar().Value!;
+
+        Result r = b.Atualizar(new DeclaracaoDoTipoDeBanca("Outro nome", Papel: "PAPEL_QUE_NAO_EXISTE", TiposDeDecisaoJulgados: ["CLASSIFICACAO"]));
+
+        r.Error!.Code.Should().Be(TipoBancaErrorCodes.PapelForaDoVocabulario);
+        b.Nome.Should().Be("Banca de entrevista");
+        b.Atuacao.Papel.Should().Be(PapelDaBanca.AvaliaOMerito);
+        b.Atuacao.TiposDeDecisaoJulgados.Should().Equal(TipoMotivoDeDecisao.NotaDaEtapa);
     }
 }

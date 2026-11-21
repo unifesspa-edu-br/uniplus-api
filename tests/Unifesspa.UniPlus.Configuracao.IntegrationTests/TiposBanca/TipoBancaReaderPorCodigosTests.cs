@@ -119,5 +119,5 @@ public sealed class TipoBancaReaderPorCodigosTests : IAsyncLifetime
     }
 
     private static TipoBanca Tipo(string codigo) =>
-        TipoBanca.Criar(codigo, $"Banca {codigo}", null, null).Value!;
+        TipoBanca.Criar(codigo, new DeclaracaoDoTipoDeBanca($"Banca {codigo}", Papel: "IMPORTA_CANDIDATOS")).Value!;
 }

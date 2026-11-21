@@ -13,9 +13,17 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// <param name="Nome">Rótulo de apresentação.</param>
 /// <param name="FaseTipica">Fase usual da banca — rótulo de texto orientativo, não vinculante; ou null.</param>
 /// <param name="Descricao">Descrição livre opcional.</param>
+/// <param name="Papel">O que as bancas do tipo fazem no processo; as regras da seleção decidem por ele, e não pelo código.</param>
+/// <param name="ExigeDuasOuMaisBancas">O tipo só vale com duas ou mais bancas no mesmo lugar.</param>
+/// <param name="EncerraRecursoNaPrimeiraInstancia">O recurso do que o tipo avalia termina na primeira instância.</param>
+/// <param name="TiposDeDecisaoJulgados">Tipos de decisão que o tipo julga, em ordem alfabética ordinal do código; vazio fora do papel que avalia o mérito.</param>
 public sealed record TipoBancaView(
     Guid Id,
     TipoDeBanca Codigo,
     string Nome,
     string? FaseTipica,
-    string? Descricao);
+    string? Descricao,
+    PapelDaBanca Papel,
+    bool ExigeDuasOuMaisBancas,
+    bool EncerraRecursoNaPrimeiraInstancia,
+    IReadOnlyList<TipoMotivoDeDecisao> TiposDeDecisaoJulgados);

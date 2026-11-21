@@ -2582,6 +2582,31 @@
       "titulo": "Tamanho do nome do tipo de banca inválido"
     },
     {
+      "codigo": "uniplus.configuracao.tipo_banca.papel_fora_do_vocabulario",
+      "status": 422,
+      "titulo": "O papel não pertence ao vocabulário de papéis"
+    },
+    {
+      "codigo": "uniplus.configuracao.tipo_banca.papel_obrigatorio",
+      "status": 422,
+      "titulo": "O papel do tipo de banca é obrigatório"
+    },
+    {
+      "codigo": "uniplus.configuracao.tipo_banca.tipo_de_decisao_fora_do_vocabulario",
+      "status": 422,
+      "titulo": "Um tipo de decisão julgado não pertence ao vocabulário"
+    },
+    {
+      "codigo": "uniplus.configuracao.tipo_banca.tipo_de_decisao_repetido",
+      "status": 422,
+      "titulo": "Um tipo de decisão aparece mais de uma vez"
+    },
+    {
+      "codigo": "uniplus.configuracao.tipo_banca.tipos_de_decisao_incoerentes_com_o_papel",
+      "status": 422,
+      "titulo": "Só o tipo que avalia o mérito declara tipos de decisão, e declara ao menos um"
+    },
+    {
       "codigo": "uniplus.configuracao.tipo_conceito.casas_decimais_invalidas",
       "status": 422,
       "titulo": "Casas decimais do tipo de conceito inválidas"

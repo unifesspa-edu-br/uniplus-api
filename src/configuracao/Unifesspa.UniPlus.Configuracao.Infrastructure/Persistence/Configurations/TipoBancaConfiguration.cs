@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Configurations;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -12,17 +10,15 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
 
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class TipoBancaConfiguration : IEntityTypeConfiguration<TipoBanca>
 {
     private const int CodigoMaxLength = 60;
+    private const int PapelMaxLength = 60;
     private const int NomeMaxLength = 200;
     private const int FaseTipicaMaxLength = 60;
     private const int DescricaoMaxLength = 300;
     private const int AuditUserMaxLength = 255;
+    private const string CampoDosTiposDeDecisaoJulgados = "_tiposDeDecisaoJulgados";
 
     public void Configure(EntityTypeBuilder<TipoBanca> builder)
     {
@@ -48,6 +44,8 @@ internal sealed class TipoBancaConfiguration : IEntityTypeConfiguration<TipoBanc
 
         builder.Property(b => b.Descricao).HasMaxLength(DescricaoMaxLength);
 
+        MapearAtuacao(builder);
+
         // Auditoria (IAuditableEntity)
         builder.Property(b => b.CreatedBy).HasMaxLength(AuditUserMaxLength);
         builder.Property(b => b.UpdatedBy).HasMaxLength(AuditUserMaxLength);
@@ -59,12 +57,42 @@ internal sealed class TipoBancaConfiguration : IEntityTypeConfiguration<TipoBanc
             .HasDatabaseName(RestricoesDoBanco.TipoDeBancaCodigoVivo);
     }
 
+    // A atuação é um valor do tipo de banca, gravado como as quatro colunas da própria linha (table splitting). O papel é
+    // gravado pelo código de contrato (a convenção do modelo instala o conversor), assim como cada tipo de decisão da
+    // lista, que a atuação guarda no campo e expõe somente leitura.
+    private static void MapearAtuacao(EntityTypeBuilder<TipoBanca> builder)
+    {
+        builder.OwnsOne(b => b.Atuacao, atuacao =>
+        {
+            atuacao.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
+            atuacao.Property(a => a.Papel).HasColumnName("papel").HasMaxLength(PapelMaxLength).IsRequired();
+            atuacao.Property(a => a.ExigeDuasOuMaisBancas).HasColumnName("exige_duas_ou_mais_bancas").IsRequired();
+            atuacao.Property(a => a.EncerraRecursoNaPrimeiraInstancia)
+                .HasColumnName("encerra_recurso_na_primeira_instancia").IsRequired();
+            atuacao.Ignore(a => a.TiposDeDecisaoJulgados);
+            // Sem HasColumnType: com ele o provedor monta o elemento pelo tipo da coluna e ignora o conversor do código; o text[] sai do conversor.
+            atuacao.PrimitiveCollection<List<TipoMotivoDeDecisao>>(CampoDosTiposDeDecisaoJulgados)
+                .HasColumnName("tipos_de_decisao_julgados")
+                .HasDefaultValueSql("'{}'::text[]")
+                .HasComment("Tipos de decisão que o tipo de banca julga, em ordem alfabética ordinal do código e sem repetição; só o papel que avalia o mérito os declara.")
+                .IsRequired()
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+        builder.Navigation(b => b.Atuacao).IsRequired();
+    }
+
     private static void ConfigurarChecks(TableBuilder<TipoBanca> table)
     {
         // Domínio fechado do vocabulário de tipos de banca (defesa em profundidade).
         table.HasCheckConstraint(
             "ck_tipos_de_banca_codigo_canonico",
             $"codigo IN ({TokensSql(CatalogoDe<TipoDeBanca>.Todos())})");
+        table.HasCheckConstraint(
+            "ck_tipos_de_banca_papel",
+            $"papel IN ({TokensSql(CatalogoDe<PapelDaBanca>.Todos())})");
+        table.HasCheckConstraint(
+            "ck_tipos_de_banca_decisoes",
+            $"tipos_de_decisao_julgados <@ ARRAY[{TokensSql(CatalogoDe<TipoMotivoDeDecisao>.Todos())}]::text[]");
     }
 
     private static string TokensSql(IReadOnlyList<CodigoDeclarado> codigos) =>

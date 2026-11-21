@@ -8237,6 +8237,86 @@
       ]
     },
     {
+      "codigo": "uniplus.configuracao.tipo_banca.papel_fora_do_vocabulario",
+      "requisitos": [
+        "UNI-REQ-0139"
+      ],
+      "oQueAconteceu": [
+        "O papel informado no cadastro do tipo de banca não é um dos papéis do vocabulário fechado de papéis de banca. (UNI-REQ-0139).",
+        "A recusa vem na lista `errors[]` da resposta, no caminho do campo `papel`, com\nstatus 422. As recusas do cadastro se acumulam na mesma resposta, e a mensagem\nnão repete o valor recebido."
+      ],
+      "comoResolver": [
+        "Use um dos códigos que a consulta `GET /api/configuracao/vocabularios/papeis-de-banca` devolve e envie de novo. Se o papel que falta é novo, ele entra no vocabulário por alteração do sistema, e não por cadastro."
+      ],
+      "ondeAparece": [
+        "- Criação de um tipo de banca\n- Atualização de um tipo de banca"
+      ]
+    },
+    {
+      "codigo": "uniplus.configuracao.tipo_banca.papel_obrigatorio",
+      "requisitos": [
+        "UNI-REQ-0139"
+      ],
+      "oQueAconteceu": [
+        "O tipo de banca foi criado ou atualizado sem o papel. O papel diz o que as bancas desse tipo fazem: avaliam o mérito, julgam o recurso em 1ª instância, importam as notas do INEP, importam candidatos ou julgam o recurso em 2ª instância. As regras do processo seletivo leem o papel registrado em cada banca, e não o nome do tipo (UNI-REQ-0139).",
+        "A recusa vem na lista `errors[]` da resposta, no caminho do campo `papel`, com\nstatus 422. As recusas do cadastro se acumulam na mesma resposta, e a mensagem\nnão repete o valor recebido."
+      ],
+      "comoResolver": [
+        "Informe um dos papéis do vocabulário de papéis de banca, que a consulta `GET /api/configuracao/vocabularios/papeis-de-banca` lista com código e rótulo, e envie de novo."
+      ],
+      "ondeAparece": [
+        "- Criação de um tipo de banca\n- Atualização de um tipo de banca"
+      ]
+    },
+    {
+      "codigo": "uniplus.configuracao.tipo_banca.tipo_de_decisao_fora_do_vocabulario",
+      "requisitos": [
+        "UNI-REQ-0139"
+      ],
+      "oQueAconteceu": [
+        "O cadastro do tipo de banca lista os tipos de decisão que ele julga, e um dos itens da lista não pertence ao vocabulário de tipos de decisão (UNI-REQ-0283). O item aparece no campo `tiposDeDecisaoJulgados[j]`.",
+        "A recusa vem na lista `errors[]` da resposta, no caminho do campo `tiposDeDecisaoJulgados[j]`, com\nstatus 422. As recusas do cadastro se acumulam na mesma resposta, e a mensagem\nnão repete o valor recebido."
+      ],
+      "comoResolver": [
+        "Use só os tipos do vocabulário de tipos de decisão, e envie de novo."
+      ],
+      "ondeAparece": [
+        "- Criação de um tipo de banca\n- Atualização de um tipo de banca"
+      ]
+    },
+    {
+      "codigo": "uniplus.configuracao.tipo_banca.tipo_de_decisao_repetido",
+      "requisitos": [
+        "UNI-REQ-0139"
+      ],
+      "oQueAconteceu": [
+        "A lista de tipos de decisão que o tipo de banca julga traz o mesmo tipo mais de uma vez. A mensagem cita o tipo pelo rótulo fixo do vocabulário e não repete o valor recebido.",
+        "A recusa vem na lista `errors[]` da resposta, no caminho do campo `tiposDeDecisaoJulgados[j]`, com\nstatus 422. As recusas do cadastro se acumulam na mesma resposta, e a mensagem\nnão repete o valor recebido."
+      ],
+      "comoResolver": [
+        "Deixe cada tipo de decisão uma única vez na lista e envie de novo."
+      ],
+      "ondeAparece": [
+        "- Criação de um tipo de banca\n- Atualização de um tipo de banca"
+      ]
+    },
+    {
+      "codigo": "uniplus.configuracao.tipo_banca.tipos_de_decisao_incoerentes_com_o_papel",
+      "requisitos": [
+        "UNI-REQ-0139"
+      ],
+      "oQueAconteceu": [
+        "O tipo de banca com o papel de avaliar o mérito precisa declarar ao menos um tipo de decisão que julga, porque é por essa lista que o recurso de cada item encontra a banca que o avaliou (UNI-REQ-0274). Os tipos com outro papel (julgar recurso, importar notas, importar candidatos) não declaram nenhum.",
+        "A recusa vem na lista `errors[]` da resposta, no caminho do campo `tiposDeDecisaoJulgados`, com\nstatus 422. As recusas do cadastro se acumulam na mesma resposta, e a mensagem\nnão repete o valor recebido."
+      ],
+      "comoResolver": [
+        "Para o tipo que avalia o mérito, declare ao menos um tipo de decisão que ele julga. Para os demais papéis, deixe a lista vazia. Se o papel é que está errado, corrija o papel."
+      ],
+      "ondeAparece": [
+        "- Criação de um tipo de banca\n- Atualização de um tipo de banca"
+      ]
+    },
+    {
       "codigo": "uniplus.configuracao.tipo_conceito.casas_decimais_invalidas",
       "requisitos": [],
       "oQueAconteceu": [

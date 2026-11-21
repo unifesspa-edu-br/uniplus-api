@@ -16,6 +16,10 @@ public static class TipoBancaMapping
             banca.Nome,
             banca.FaseTipica,
             banca.Descricao,
+            CodigoComRotulo<PapelDaBanca>.De(banca.Atuacao.Papel),
+            banca.Atuacao.ExigeDuasOuMaisBancas,
+            banca.Atuacao.EncerraRecursoNaPrimeiraInstancia,
+            [.. banca.Atuacao.TiposDeDecisaoJulgados.Select(static tipo => CodigoComRotulo<TipoMotivoDeDecisao>.De(tipo))],
             banca.CreatedAt);
     }
 }

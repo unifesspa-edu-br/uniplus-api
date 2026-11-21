@@ -16,10 +16,6 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// no consumidor (ADR-0061) dispensa releitura quente. Ordena por <c>Codigo</c>
 /// ascendente.
 /// </summary>
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via DI em ConfiguracaoInfrastructureRegistration.")]
 internal sealed class TipoBancaReader : ITipoBancaReader
 {
     private readonly UniPlusDbContext _dbContext;
@@ -84,5 +80,9 @@ internal sealed class TipoBancaReader : ITipoBancaReader
             b.Codigo,
             b.Nome,
             b.FaseTipica,
-            b.Descricao);
+            b.Descricao,
+            b.Atuacao.Papel,
+            b.Atuacao.ExigeDuasOuMaisBancas,
+            b.Atuacao.EncerraRecursoNaPrimeiraInstancia,
+            [.. b.Atuacao.TiposDeDecisaoJulgados]);
 }

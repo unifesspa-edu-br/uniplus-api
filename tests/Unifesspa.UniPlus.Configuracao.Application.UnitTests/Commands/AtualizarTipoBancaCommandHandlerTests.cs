@@ -18,7 +18,7 @@ public sealed class AtualizarTipoBancaCommandHandlerTests
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     private static TipoBanca Existente(string codigo = "BANCA_ANALISE_RECURSOS") =>
-        TipoBanca.Criar(codigo, "Banca de análise de recursos", null, null).Value!;
+        TipoBanca.Criar(codigo, new DeclaracaoDoTipoDeBanca("Banca de análise de recursos", Papel: "JULGA_A_PRIMEIRA_INSTANCIA")).Value!;
 
     [Fact(DisplayName = "Tipo de banca inexistente retorna NaoEncontrado (404)")]
     public async Task Handle_Inexistente_RetornaNaoEncontrado()
@@ -27,7 +27,7 @@ public sealed class AtualizarTipoBancaCommandHandlerTests
         _repository.ObterPorIdAsync(id, Arg.Any<CancellationToken>()).Returns((TipoBanca?)null);
 
         Result resultado = await AtualizarTipoBancaCommandHandler.Handle(
-            new AtualizarTipoBancaCommand(id, Nome: "x"), _repository, _unitOfWork, CancellationToken.None);
+            new AtualizarTipoBancaCommand(id, Nome: "x", Papel: "IMPORTA_CANDIDATOS"), _repository, _unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(TipoBancaErrorCodes.NaoEncontrado);
@@ -56,7 +56,7 @@ public sealed class AtualizarTipoBancaCommandHandlerTests
     public async Task Handle_NomeVazioEDescricaoLonga_AcumulaAsDuasViolacoes()
     {
         Result resultado = await AtualizarTipoBancaCommandHandler.Handle(
-            new AtualizarTipoBancaCommand(Guid.CreateVersion7(), Nome: "", Descricao: new string('a', 301)),
+            new AtualizarTipoBancaCommand(Guid.CreateVersion7(), Nome: "", Descricao: new string('a', 301), Papel: "IMPORTA_CANDIDATOS"),
             _repository, _unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
@@ -71,7 +71,7 @@ public sealed class AtualizarTipoBancaCommandHandlerTests
         TipoBanca existente = Existente("BANCA_ANALISE_RECURSOS");
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
 
-        var comando = new AtualizarTipoBancaCommand(existente.Id, Nome: "Banca de recursos (novo)", FaseTipica: "Recursos");
+        var comando = new AtualizarTipoBancaCommand(existente.Id, Nome: "Banca de recursos (novo)", FaseTipica: "Recursos", Papel: "JULGA_A_PRIMEIRA_INSTANCIA");
 
         Result resultado = await AtualizarTipoBancaCommandHandler.Handle(
             comando, _repository, _unitOfWork, CancellationToken.None);
@@ -80,6 +80,34 @@ public sealed class AtualizarTipoBancaCommandHandlerTests
         existente.Codigo.Should().Be(TipoDeBanca.AnaliseDeRecursos, "o código é imutável — não há campo para alterá-lo");
         existente.Nome.Should().Be("Banca de recursos (novo)");
         existente.FaseTipica.Should().Be("Recursos");
+        await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Id inexistente com papel ausente devolve a violação do papel, não NaoEncontrado")]
+    public async Task Handle_IdInexistenteSemPapel_RetornaPapelObrigatorioSemConsultarRepositorio()
+    {
+        Result resultado = await AtualizarTipoBancaCommandHandler.Handle(
+            new AtualizarTipoBancaCommand(Guid.CreateVersion7(), Nome: "x"), _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.Error!.Code.Should().Be(TipoBancaErrorCodes.PapelObrigatorio);
+        await _repository.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Atualização troca o papel, as marcas e os tipos de decisão, e persiste")]
+    public async Task Handle_TrocaAAtuacao_Persiste()
+    {
+        TipoBanca existente = Existente("BANCA_ANALISE_RECURSOS");
+        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+        var comando = new AtualizarTipoBancaCommand(
+            existente.Id, Nome: "Banca de recursos", Papel: "AVALIA_O_MERITO", ExigeDuasOuMaisBancas: true,
+            TiposDeDecisaoJulgados: ["CLASSIFICACAO", "NOTA_DA_ETAPA"]);
+
+        Result resultado = await AtualizarTipoBancaCommandHandler.Handle(comando, _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue();
+        existente.Atuacao.Papel.Should().Be(PapelDaBanca.AvaliaOMerito);
+        existente.Atuacao.ExigeDuasOuMaisBancas.Should().BeTrue();
+        existente.Atuacao.TiposDeDecisaoJulgados.Should().Equal(TipoMotivoDeDecisao.Classificacao, TipoMotivoDeDecisao.NotaDaEtapa);
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 }
