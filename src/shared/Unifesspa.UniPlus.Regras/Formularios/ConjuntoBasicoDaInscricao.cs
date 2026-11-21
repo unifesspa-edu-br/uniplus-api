@@ -76,6 +76,20 @@ public static class ConjuntoBasicoDaInscricao
     /// <summary>Os tipos de localidade em que se pede o nome da aldeia, da comunidade ou do quilombo.</summary>
     private static readonly string[] LocalidadesComComunidade = ["ALDEIA", "COMUNIDADE", "QUILOMBO"];
 
+    private static readonly string CampoDeSelecao = TipoRenderizacao.SelecaoUnica.Codigo();
+    private static readonly string CampoDeTexto = TipoRenderizacao.Texto.Codigo();
+    private static readonly string CampoDeData = TipoRenderizacao.Data.Codigo();
+    private static readonly string Sempre = PredicadoDnfJson.ObrigatoriedadeSempre;
+    private static readonly IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>> QuandoNaoEstrangeiro = Quando(Nacionalidade, Operador.Diferente.Codigo(), Estrangeiro);
+    private static readonly IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>> QuandoEstrangeiro = Quando(Nacionalidade, Operador.Igual.Codigo(), Estrangeiro);
+
+    private static readonly IReadOnlyList<RestricaoValorInput> DataPlausivel =
+    [
+        new(RestricaoValorJson.FaixaDeData,
+            DataMinima: new LimiteDeDataInput(RestricaoValorJson.AncoraEnvio, Anos: -AnosDePlausibilidadeDaData),
+            DataMaxima: new LimiteDeDataInput(RestricaoValorJson.AncoraEnvio)),
+    ];
+
     /// <summary>A seção reservada, a primeira etapa do formulário de inscrição.</summary>
     public static EtapaFormularioInput Secao { get; } =
         new(CodigoDaSecao, 0, EstruturaFormulario.TipoSecao, null, "Dados do candidato", null, null);
@@ -289,58 +303,69 @@ public static class ConjuntoBasicoDaInscricao
 
     private static List<FatoColetadoInput> MontarItens()
     {
-        IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>> naoEstrangeiro = Quando(Nacionalidade, Operador.Diferente.Codigo(), Estrangeiro);
-        IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>> estrangeiro = Quando(Nacionalidade, Operador.Igual.Codigo(), Estrangeiro);
-
-        string selecao = TipoRenderizacaoCodigo.SelecaoUnica;
-        string texto = TipoRenderizacaoCodigo.Texto;
-        string data = TipoRenderizacaoCodigo.Data;
-        string sempre = PredicadoDnfJson.ObrigatoriedadeSempre;
-        IReadOnlyList<RestricaoValorInput> dataPlausivel =
-        [
-            new(RestricaoValorJson.FaixaDeData,
-                DataMinima: new LimiteDeDataInput(RestricaoValorJson.AncoraEnvio, Anos: -AnosDePlausibilidadeDaData),
-                DataMaxima: new LimiteDeDataInput(RestricaoValorJson.AncoraEnvio)),
-        ];
-
         List<FatoColetadoInput> itens =
         [
-            new(Nome, 0, "Nome completo", texto, sempre, null),
-            new(DesejaNomeSocial, 0, "Deseja usar nome social?", TipoRenderizacaoCodigo.Booleano, sempre, null),
-            new(NomeSocial, 0, "Nome social", texto, sempre, Quando(DesejaNomeSocial, Operador.Igual.Codigo(), true), Ajuda: AjudaDoNomeSocial),
-            new(Nacionalidade, 0, "Nacionalidade", selecao, sempre, null),
-            new(Cpf, 0, "CPF", texto, sempre, null),
-            new("RG_NUMERO", 0, "Número do RG", texto, sempre, naoEstrangeiro),
-            new(OrgaoEmissor, 0, "Órgão emissor do RG", selecao, sempre, naoEstrangeiro),
-            new("RG_ORGAO_EMISSOR_OUTRO", 0, "Nome do órgão emissor", texto, sempre,
-                Quando(OrgaoEmissor, Operador.Igual.Codigo(), OutroOrgaoEmissor),
-                Restricoes: [new RestricaoValorInput(RestricaoValorJson.TamanhoTexto, Maximo: TamanhoMaximoDoNomeDoOrgaoEmissor)]),
-            new("RG_UF", 0, "UF de emissão do RG", selecao, sempre, naoEstrangeiro),
-            new("RG_DATA_EMISSAO", 0, "Data de emissão do RG", data, sempre, naoEstrangeiro, Restricoes: dataPlausivel),
-            new("PASSAPORTE_NUMERO", 0, "Número do passaporte", texto, sempre, estrangeiro),
-            new("RNM_NUMERO", 0, "Número do Registro Nacional Migratório (RNM)", texto, sempre, estrangeiro),
-            new("DATA_NASCIMENTO", 0, "Data de nascimento", data, sempre, null, Restricoes: dataPlausivel),
-            new("NATURALIDADE_UF", 0, "UF de nascimento", selecao, sempre, naoEstrangeiro),
-            new("NATURALIDADE_MUNICIPIO", 0, "Município de nascimento", TipoRenderizacaoCodigo.Municipio, sempre, naoEstrangeiro,
-                Restricoes: [new RestricaoValorInput(RestricaoValorJson.MunicipiosDaUf, Fatos: ["NATURALIDADE_UF"])]),
-            new("NOME_MAE", 0, "Nome da mãe", texto, sempre, null),
-            new("NOME_PAI", 0, "Nome do pai", texto, PredicadoDnfJson.ObrigatoriedadeNunca, null),
-            new("ESTADO_CIVIL", 0, "Estado civil", selecao, sempre, null),
-            new("SEXO", 0, "Sexo biológico", selecao, sempre, null),
-            new("SEXO_CIVIL", 0, "Sexo civil", selecao, sempre, null),
-            new("IDENTIDADE_GENERO", 0, "Identidade de gênero", selecao, sempre, null),
-            new("ORIENTACAO_SEXUAL", 0, "Orientação sexual", selecao, sempre, null),
-            new("COR_RACA", 0, "Cor ou raça", selecao, sempre, null),
-            new("EMAIL", 0, "E-mail", texto, sempre, null),
-            new("TELEFONE", 0, "Telefone", texto, sempre, null),
-            new(TipoDeLocalidade, 0, "Tipo de localidade", selecao, sempre, null),
-            new("NOME_COMUNIDADE", 0, "Nome da aldeia, comunidade ou quilombo", texto, sempre,
-                Quando(TipoDeLocalidade, Operador.Em.Codigo(), LocalidadesComComunidade)),
-            new("ENDERECO_RESIDENCIAL", 0, "Endereço residencial", TipoRenderizacaoCodigo.Endereco, sempre, null),
+            .. Identificacao(), .. DocumentoDeIdentidade(), .. Nascimento(), .. Filiacao(), .. Caracterizacao(), .. ContatoEResidencia(),
         ];
 
         return [.. itens.Select(static (item, ordem) => item with { Ordem = ordem, EtapaCodigo = CodigoDaSecao })];
     }
+
+    private static FatoColetadoInput[] Identificacao() =>
+    [
+        new(Nome, 0, "Nome completo", CampoDeTexto, Sempre, null),
+        new(DesejaNomeSocial, 0, "Deseja usar nome social?", TipoRenderizacao.Booleano.Codigo(), Sempre, null),
+        new(NomeSocial, 0, "Nome social", CampoDeTexto, Sempre, Quando(DesejaNomeSocial, Operador.Igual.Codigo(), true), Ajuda: AjudaDoNomeSocial),
+        new(Nacionalidade, 0, "Nacionalidade", CampoDeSelecao, Sempre, null),
+        new(Cpf, 0, "CPF", CampoDeTexto, Sempre, null),
+    ];
+
+    private static FatoColetadoInput[] DocumentoDeIdentidade() =>
+    [
+        new("RG_NUMERO", 0, "Número do RG", CampoDeTexto, Sempre, QuandoNaoEstrangeiro),
+        new(OrgaoEmissor, 0, "Órgão emissor do RG", CampoDeSelecao, Sempre, QuandoNaoEstrangeiro),
+        new("RG_ORGAO_EMISSOR_OUTRO", 0, "Nome do órgão emissor", CampoDeTexto, Sempre,
+            Quando(OrgaoEmissor, Operador.Igual.Codigo(), OutroOrgaoEmissor),
+            Restricoes: [new RestricaoValorInput(RestricaoValorJson.TamanhoTexto, Maximo: TamanhoMaximoDoNomeDoOrgaoEmissor)]),
+        new("RG_UF", 0, "UF de emissão do RG", CampoDeSelecao, Sempre, QuandoNaoEstrangeiro),
+        new("RG_DATA_EMISSAO", 0, "Data de emissão do RG", CampoDeData, Sempre, QuandoNaoEstrangeiro, Restricoes: DataPlausivel),
+        new("PASSAPORTE_NUMERO", 0, "Número do passaporte", CampoDeTexto, Sempre, QuandoEstrangeiro),
+        new("RNM_NUMERO", 0, "Número do Registro Nacional Migratório (RNM)", CampoDeTexto, Sempre, QuandoEstrangeiro),
+    ];
+
+    private static FatoColetadoInput[] Nascimento() =>
+    [
+        new("DATA_NASCIMENTO", 0, "Data de nascimento", CampoDeData, Sempre, null, Restricoes: DataPlausivel),
+        new("NATURALIDADE_UF", 0, "UF de nascimento", CampoDeSelecao, Sempre, QuandoNaoEstrangeiro),
+        new("NATURALIDADE_MUNICIPIO", 0, "Município de nascimento", TipoRenderizacao.Municipio.Codigo(), Sempre, QuandoNaoEstrangeiro,
+            Restricoes: [new RestricaoValorInput(RestricaoValorJson.MunicipiosDaUf, Fatos: ["NATURALIDADE_UF"])]),
+    ];
+
+    private static FatoColetadoInput[] Filiacao() =>
+    [
+        new("NOME_MAE", 0, "Nome da mãe", CampoDeTexto, Sempre, null),
+        new("NOME_PAI", 0, "Nome do pai", CampoDeTexto, PredicadoDnfJson.ObrigatoriedadeNunca, null),
+    ];
+
+    private static FatoColetadoInput[] Caracterizacao() =>
+    [
+        new("ESTADO_CIVIL", 0, "Estado civil", CampoDeSelecao, Sempre, null),
+        new("SEXO", 0, "Sexo biológico", CampoDeSelecao, Sempre, null),
+        new("SEXO_CIVIL", 0, "Sexo civil", CampoDeSelecao, Sempre, null),
+        new("IDENTIDADE_GENERO", 0, "Identidade de gênero", CampoDeSelecao, Sempre, null),
+        new("ORIENTACAO_SEXUAL", 0, "Orientação sexual", CampoDeSelecao, Sempre, null),
+        new("COR_RACA", 0, "Cor ou raça", CampoDeSelecao, Sempre, null),
+    ];
+
+    private static FatoColetadoInput[] ContatoEResidencia() =>
+    [
+        new("EMAIL", 0, "E-mail", CampoDeTexto, Sempre, null),
+        new("TELEFONE", 0, "Telefone", CampoDeTexto, Sempre, null),
+        new(TipoDeLocalidade, 0, "Tipo de localidade", CampoDeSelecao, Sempre, null),
+        new("NOME_COMUNIDADE", 0, "Nome da aldeia, comunidade ou quilombo", CampoDeTexto, Sempre,
+            Quando(TipoDeLocalidade, Operador.Em.Codigo(), LocalidadesComComunidade)),
+        new("ENDERECO_RESIDENCIAL", 0, "Endereço residencial", TipoRenderizacao.Endereco.Codigo(), Sempre, null),
+    ];
 
     private static IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>> Quando(string fato, string operador, object valor) =>
         [[new CondicaoPrecondicaoInput(fato, operador, JsonSerializer.SerializeToElement(valor))]];

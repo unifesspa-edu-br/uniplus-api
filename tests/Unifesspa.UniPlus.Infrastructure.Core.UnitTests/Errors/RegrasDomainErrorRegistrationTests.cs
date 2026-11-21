@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </summary>
 public sealed class RegrasDomainErrorRegistrationTests
 {
-    private const int QuantidadeDeMapeamentos = 94;
+    private const int QuantidadeDeMapeamentos = 95;
     private const string BaseUriDoCatalogo = "https://unifesspa-edu-br.github.io/uniplus-developers/erros/";
     private const string CodigoDoErroNaoMapeado = "uniplus.erro_nao_mapeado";
 

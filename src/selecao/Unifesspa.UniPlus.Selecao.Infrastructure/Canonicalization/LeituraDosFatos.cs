@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -122,7 +123,7 @@ internal static class LeituraDosFatos
             return leitor.Recusar<FatoColetado?>(mensagem);
         }
 
-        TipoRenderizacao tipoRenderizacao = TipoRenderizacaoCodigo.FromCodigo(d.TipoRenderizacaoCodigo);
+        TipoRenderizacao tipoRenderizacao = d.TipoRenderizacao!.Value;
         ComponentesDoFato? c = LerComponentes(leitor, item, path, tipoRenderizacao, d.Finalidade);
         if (c is null)
         {
@@ -201,8 +202,8 @@ internal static class LeituraDosFatos
             return $"'{path}.finalidade' fora do vocabulário de finalidades.";
         }
 
-        return TipoRenderizacaoCodigo.FromCodigo(d.TipoRenderizacaoCodigo) is TipoRenderizacao.Nenhuma
-            ? $"'{path}.tipoRenderizacao' fora do vocabulário de tipos de renderização."
+        return d.TipoRenderizacao is null
+            ? $"'{path}.tipoRenderizacao' fora dos tipos de campo aceitos: {string.Join(", ", CatalogoDe<TipoRenderizacao>.Todos().Select(static c => c.Codigo))}."
             : null;
     }
 
@@ -237,7 +238,7 @@ internal static class LeituraDosFatos
         EtapaCodigo = leitor.TextoOpcional(item, "etapaCodigo", path, LimitesDoEnvelope.CodigoEtapaFormulario),
         Ordem = leitor.Inteiro(item, "ordem", path),
         Rotulo = leitor.TextoNaoVazio(item, "rotulo", path, LimitesDoEnvelope.NomeDeCadastro),
-        TipoRenderizacaoCodigo = leitor.TextoNaoVazio(item, "tipoRenderizacao", path),
+        TipoRenderizacao = TipoDoCodigo(leitor.TextoNaoVazio(item, "tipoRenderizacao", path)),
         Ajuda = leitor.TextoOpcional(item, "ajuda", path, LimitesDoEnvelope.AjudaDoCampo),
         PedirConfirmacao = leitor.Booleano(item, "pedirConfirmacao", path),
         OrigemValores = leitor.Enumeracao<OrigemValoresColeta>(item, "origemValores", path),
@@ -248,6 +249,9 @@ internal static class LeituraDosFatos
         Descricao = leitor.TextoNaoVazio(item, "descricao", path, LimitesDoEnvelope.DescricaoDoFato),
         ComponenteExibicao = leitor.TextoOpcional(item, "componenteExibicao", path, LimitesDoEnvelope.ComponenteExibicao),
     };
+
+    private static TipoRenderizacao? TipoDoCodigo(string codigo) =>
+        CatalogoDe<TipoRenderizacao>.TentarObter(codigo, out TipoRenderizacao tipo) ? tipo : null;
 
     private sealed class DeclaracaoDoFato
     {
@@ -261,7 +265,7 @@ internal static class LeituraDosFatos
 
         public string Rotulo { get; init; } = string.Empty;
 
-        public string TipoRenderizacaoCodigo { get; init; } = string.Empty;
+        public TipoRenderizacao? TipoRenderizacao { get; init; }
 
         public string? Ajuda { get; init; }
 

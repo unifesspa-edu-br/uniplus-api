@@ -62,9 +62,8 @@ public sealed record OpcoesCondicionadasInput(
 /// sempre, e um predicado sem cláusula avaliaria falso, o oposto.
 /// </summary>
 /// <remarks>
-/// <see cref="TipoRenderizacao"/> é o código canônico de
-/// <see cref="Enums.TipoRenderizacaoCodigo"/>. Um código ausente ou não reconhecido vira o
-/// sentinela <see cref="Enums.TipoRenderizacao.Nenhuma"/>, que a forma do item recusa. A
+/// <see cref="TipoRenderizacao"/> é o código de <see cref="Enums.TipoRenderizacao"/>; a leitura dele, que recusa o
+/// código ausente e o desconhecido, é de <see cref="TipoRenderizacaoDaEntrada"/>. A
 /// <see cref="Obrigatoriedade"/> segue a forma do termo exigido: <c>SEMPRE</c> ou <c>NUNCA</c>
 /// sem <see cref="PredicadoObrigatoriedade"/>, e <c>QUANDO</c> com ele.
 /// </remarks>
@@ -72,7 +71,7 @@ public sealed record FatoColetadoInput(
     string FatoCodigo,
     int Ordem,
     string Rotulo,
-    string TipoRenderizacao,
+    [AceitaCodigosDe<TipoRenderizacao>] string? TipoRenderizacao,
     string? Obrigatoriedade,
     IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? Precondicao,
     string? EtapaCodigo = null,

@@ -17,6 +17,8 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// </summary>
 public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoColetado>
 {
+    private const int TipoRenderizacaoMaxLength = 30;
+
     public void Configure(EntityTypeBuilder<FatoColetado> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -30,7 +32,7 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
         builder.Property(f => f.FatoCodigo).HasMaxLength(FormaDoItem.FatoCodigoMaxLength).IsRequired();
         builder.Property(f => f.Ordem).IsRequired();
         builder.Property(f => f.Rotulo).HasMaxLength(FormaDoItem.RotuloMaxLength).IsRequired();
-        builder.Property(f => f.TipoRenderizacao).HasConversion<int>().IsRequired();
+        builder.Property(f => f.TipoRenderizacao).HasMaxLength(TipoRenderizacaoMaxLength).IsRequired();
         builder.Property(f => f.Obrigatoriedade)
             .HasConversion(ConversoresDeRegras.Obrigatoriedade, ConversoresDeRegras.ComparadorDeObrigatoriedade)
             .HasColumnType("jsonb")

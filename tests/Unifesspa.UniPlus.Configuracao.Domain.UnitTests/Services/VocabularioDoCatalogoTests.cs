@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -201,9 +202,9 @@ public sealed class VocabularioDoCatalogoTests
         Dictionary<string, ApresentacaoDoFato> apresentacoes = VocabularioDoCatalogo.ApresentacaoDos([renda, categoria, idade], ["IDADE", "CATEGORIA", "RENDA_DECLARADA"]);
 
         apresentacoes.Keys.Should().Equal("IDADE", "CATEGORIA", "RENDA_DECLARADA");
-        apresentacoes["RENDA_DECLARADA"].Should().Be(new ApresentacaoDoFato("RENDA_DECLARADA", "Renda declarada", TipoRenderizacao.Booleano.ToCodigo()));
-        apresentacoes["CATEGORIA"].Should().Be(new ApresentacaoDoFato("CATEGORIA", "CATEGORIA", TipoRenderizacao.SelecaoUnica.ToCodigo()));
-        apresentacoes["IDADE"].Should().Be(new ApresentacaoDoFato("IDADE", "IDADE", TipoRenderizacao.Numero.ToCodigo()));
+        apresentacoes["RENDA_DECLARADA"].Should().Be(new ApresentacaoDoFato("RENDA_DECLARADA", "Renda declarada", TipoRenderizacao.Booleano.Codigo()));
+        apresentacoes["CATEGORIA"].Should().Be(new ApresentacaoDoFato("CATEGORIA", "CATEGORIA", TipoRenderizacao.SelecaoUnica.Codigo()));
+        apresentacoes["IDADE"].Should().Be(new ApresentacaoDoFato("IDADE", "IDADE", TipoRenderizacao.Numero.Codigo()));
     }
 
     [Fact(DisplayName = "A apresentação do município do Geo é campo de município, e a das demais fontes de categórico, seleção única")]
@@ -216,9 +217,9 @@ public sealed class VocabularioDoCatalogoTests
         Dictionary<string, ApresentacaoDoFato> apresentacoes = VocabularioDoCatalogo.ApresentacaoDos(
             [municipio, uf, opcoesDoProcesso], ["MUNICIPIO_RESIDENCIA", "UF_RESIDENCIA", "OPCAO_DO_PROCESSO"]);
 
-        apresentacoes["MUNICIPIO_RESIDENCIA"].TipoRenderizacao.Should().Be(TipoRenderizacao.Municipio.ToCodigo());
-        apresentacoes["UF_RESIDENCIA"].TipoRenderizacao.Should().Be(TipoRenderizacao.SelecaoUnica.ToCodigo());
-        apresentacoes["OPCAO_DO_PROCESSO"].TipoRenderizacao.Should().Be(TipoRenderizacao.SelecaoUnica.ToCodigo());
+        apresentacoes["MUNICIPIO_RESIDENCIA"].TipoRenderizacao.Should().Be(TipoRenderizacao.Municipio.Codigo());
+        apresentacoes["UF_RESIDENCIA"].TipoRenderizacao.Should().Be(TipoRenderizacao.SelecaoUnica.Codigo());
+        apresentacoes["OPCAO_DO_PROCESSO"].TipoRenderizacao.Should().Be(TipoRenderizacao.SelecaoUnica.Codigo());
     }
 
     [Fact(DisplayName = "A apresentação do fato deixa de fora o código que o catálogo não tem e não repete o código citado mais de uma vez")]

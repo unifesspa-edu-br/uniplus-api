@@ -13,8 +13,6 @@ public static class TiposRenderizacao
         TipoRenderizacao.SelecaoUnica or TipoRenderizacao.SelecaoMultipla => true,
         TipoRenderizacao.Numero or TipoRenderizacao.Booleano or TipoRenderizacao.Texto or TipoRenderizacao.Data or TipoRenderizacao.Endereco
             or TipoRenderizacao.Municipio => false,
-        TipoRenderizacao.Nenhuma => throw new ArgumentOutOfRangeException(
-            nameof(tipo), tipo, "TipoRenderizacao.Nenhuma é sentinela e não classifica campo."),
         _ => throw new ArgumentOutOfRangeException(nameof(tipo), tipo, "TipoRenderizacao desconhecido."),
     };
 }

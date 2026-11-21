@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -254,8 +255,12 @@ internal static class LeituraDoEdital
             return null;
         }
 
-        return tipo is not null && TipoRenderizacaoCodigo.FromCodigo(tipo) == TipoRenderizacao.Nenhuma
-            ? leitor.Recusar<ApresentacaoDoFato?>($"Envelope malformado em '{path}.tipoRenderizacao': '{tipo}' não é um tipo de campo.")
+        return tipo is not null && !CatalogoDe<TipoRenderizacao>.TentarObter(tipo, out _)
+            ? leitor.Recusar<ApresentacaoDoFato?>(TipoDeCampoForaDoCatalogo(path))
             : new ApresentacaoDoFato(fatoCodigo, rotulo, tipo);
     }
+
+    private static string TipoDeCampoForaDoCatalogo(string path) =>
+        $"Envelope malformado em '{path}.tipoRenderizacao': o tipo de campo não é um dos códigos aceitos: "
+        + $"{string.Join(", ", CatalogoDe<TipoRenderizacao>.Todos().Select(static d => d.Codigo))}.";
 }

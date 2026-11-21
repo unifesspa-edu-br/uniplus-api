@@ -9,6 +9,7 @@ public static class ItemFormularioErrorCodes
     public const string RotuloObrigatorio = "ItemFormulario.RotuloObrigatorio";
     public const string RotuloTamanho = "ItemFormulario.RotuloTamanho";
     public const string TipoRenderizacaoObrigatorio = "ItemFormulario.TipoRenderizacaoObrigatorio";
+    public const string TipoRenderizacaoInvalido = "ItemFormulario.TipoRenderizacaoInvalido";
     public const string AjudaTamanho = "ItemFormulario.AjudaTamanho";
     public const string FormatoIncoerente = "ItemFormulario.FormatoIncoerente";
     public const string RegraAutorreferente = "ItemFormulario.RegraAutorreferente";

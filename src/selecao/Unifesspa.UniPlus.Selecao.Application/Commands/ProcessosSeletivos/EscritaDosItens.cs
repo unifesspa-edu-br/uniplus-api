@@ -21,8 +21,8 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// <summary>Os itens lidos pela forma, sem leitura externa: a configuração de cada item cuja forma foi aceita.</summary>
 internal sealed record ItensLidos(IReadOnlyList<FatoColetadoInput> Entradas, IReadOnlyList<ConfiguracaoDoItem?> Configuracoes, IReadOnlyList<FieldError> Erros);
 
-/// <summary>A obrigatoriedade, as restrições e o impedimento de um item cuja forma foi aceita.</summary>
-internal sealed record ConfiguracaoDoItem(Obrigatoriedade Obrigatoriedade, IReadOnlyList<RestricaoValor> Restricoes, Impedimento? Impedimento = null);
+/// <summary>O tipo de campo, a obrigatoriedade, as restrições e o impedimento de um item cuja forma foi aceita.</summary>
+internal sealed record ConfiguracaoDoItem(TipoRenderizacao TipoRenderizacao, Obrigatoriedade Obrigatoriedade, IReadOnlyList<RestricaoValor> Restricoes, Impedimento? Impedimento = null);
 
 /// <summary>
 /// Os grupos lidos pela forma, sem leitura externa: a exibição e a obrigatoriedade de cada grupo
@@ -54,25 +54,42 @@ internal static class EscritaDosItens
         ConfiguracaoDoItem?[] configuracoes = new ConfiguracaoDoItem?[entradas.Count];
         for (int indice = 0; indice < entradas.Count; indice++)
         {
-            FatoColetadoInput input = entradas[indice];
-            string campo = $"{caminho}[{indice}]";
-            int recusasAntes = erros.Count;
-            erros.AddRange(FormaDoItem.ValidarFormaBasica(
-                    input.FatoCodigo, input.Ordem, input.Rotulo, TipoRenderizacaoCodigo.FromCodigo(input.TipoRenderizacao))
-                .Select(erro => erro with { Field = $"{campo}.{erro.Field}" }));
-
-            Obrigatoriedade? obrigatoriedade = ConferirObrigatoriedade(input.Obrigatoriedade, input.PredicadoObrigatoriedade, campo, erros);
-            IReadOnlyList<RestricaoValor> restricoes = ConferirRestricoes(input, campo, erros);
-            Result<Impedimento?> impedimento = EntradaDeRegras.Impedimento(input.Impedimento);
-            if (impedimento.IsFailure)
-            {
-                erros.Add(new($"{campo}.impedimento.quando", impedimento.Error!));
-            }
-
-            configuracoes[indice] = erros.Count == recusasAntes ? new ConfiguracaoDoItem(obrigatoriedade!, restricoes, impedimento.Value) : null;
+            configuracoes[indice] = LerConfiguracao(entradas[indice], $"{caminho}[{indice}]", erros);
         }
 
         return new ItensLidos(entradas, configuracoes, erros);
+    }
+
+    /// <summary>
+    /// A configuração do item pela forma, acumulando as recusas dele em <paramref name="erros"/>; nula quando o item teve
+    /// alguma recusa. A coerência do tipo de campo com o fato só roda com o tipo lido, depois, contra o catálogo.
+    /// </summary>
+    private static ConfiguracaoDoItem? LerConfiguracao(FatoColetadoInput input, string campo, List<FieldError> erros)
+    {
+        int recusasAntes = erros.Count;
+        erros.AddRange(FormaDoItem.ValidarFormaBasica(input.FatoCodigo, input.Ordem, input.Rotulo)
+            .Select(erro => erro with { Field = $"{campo}.{erro.Field}" }));
+        TipoRenderizacao? tipo = LerTipoRenderizacao(input.TipoRenderizacao, campo, erros);
+        Obrigatoriedade? obrigatoriedade = ConferirObrigatoriedade(input.Obrigatoriedade, input.PredicadoObrigatoriedade, campo, erros);
+        IReadOnlyList<RestricaoValor> restricoes = ConferirRestricoes(input, campo, erros);
+        Result<Impedimento?> impedimento = EntradaDeRegras.Impedimento(input.Impedimento);
+        if (impedimento.IsFailure)
+        {
+            erros.Add(new($"{campo}.impedimento.quando", impedimento.Error!));
+        }
+
+        return erros.Count == recusasAntes ? new ConfiguracaoDoItem(tipo!.Value, obrigatoriedade!, restricoes, impedimento.Value) : null;
+    }
+
+    private static TipoRenderizacao? LerTipoRenderizacao(string? codigo, string campo, List<FieldError> erros)
+    {
+        Result<TipoRenderizacao> tipo = TipoRenderizacaoDaEntrada.Ler(codigo);
+        if (tipo.IsFailure)
+        {
+            erros.Add(new($"{campo}.tipoRenderizacao", tipo.Error!));
+        }
+
+        return tipo.IsSuccess ? tipo.Value : null;
     }
 
     /// <summary>
@@ -270,7 +287,7 @@ internal static class EscritaDosItens
         }
 
         FatoCandidatoView view = contexto.Fatos[input.FatoCodigo];
-        TipoRenderizacao tipoRenderizacao = TipoRenderizacaoCodigo.FromCodigo(input.TipoRenderizacao);
+        TipoRenderizacao tipoRenderizacao = configuracao.TipoRenderizacao;
         if (ConferenciaDoItemNoCatalogo.Coerencia(view, tipoRenderizacao) is { } incoerencia)
         {
             return Result<FatoColetado>.ValidationFailure([new("tipoRenderizacao", incoerencia)]);

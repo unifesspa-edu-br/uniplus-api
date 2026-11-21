@@ -118,6 +118,35 @@ public sealed class ConteudoDoModeloJsonTests
         ConteudoDoModeloJson.Comparer.Equals(ConteudoCompleto(), copia).Should().BeTrue();
     }
 
+    [Theory(DisplayName = "O tipo de campo do item é gravado no documento pelo código")]
+    [InlineData(TipoRenderizacao.Numero, "NUMERO")]
+    [InlineData(TipoRenderizacao.Booleano, "BOOLEANO")]
+    [InlineData(TipoRenderizacao.SelecaoUnica, "SELECAO_UNICA")]
+    [InlineData(TipoRenderizacao.SelecaoMultipla, "SELECAO_MULTIPLA")]
+    [InlineData(TipoRenderizacao.Texto, "TEXTO")]
+    [InlineData(TipoRenderizacao.Data, "DATA")]
+    [InlineData(TipoRenderizacao.Endereco, "ENDERECO")]
+    [InlineData(TipoRenderizacao.Municipio, "MUNICIPIO")]
+    public void Serializar_TipoDeCampoDoItem_GravaOCodigo(TipoRenderizacao tipo, string codigo)
+    {
+        ConteudoDoModelo conteudo = ConteudoMinimo() with { Itens = [ItemMinimo("QUILOMBOLA", 0) with { TipoRenderizacao = tipo }] };
+
+        ConteudoDoModeloJson.Serializar(conteudo).Should().Contain($"\"tipoRenderizacao\":\"{codigo}\"");
+    }
+
+    [Theory(DisplayName = "O tipo de campo gravado que o catálogo não declara é dado corrompido e lança")]
+    [InlineData("NENHUMA")]
+    [InlineData("selecao_unica")]
+    [InlineData("0")]
+    public void Desserializar_TipoDeCampoForaDoCatalogo_Lanca(string tipo)
+    {
+        string corrompido = JsonLegado.Replace("\"tipoRenderizacao\":\"BOOLEANO\"", $"\"tipoRenderizacao\":\"{tipo}\"", StringComparison.Ordinal);
+
+        Action ler = () => ConteudoDoModeloJson.Desserializar(corrompido);
+
+        ler.Should().Throw<ArgumentException>();
+    }
+
     [Fact(DisplayName = "A forma que não remonta é dado corrompido e lança")]
     public void Desserializar_ExibicaoQueNaoRemonta_Lanca()
     {

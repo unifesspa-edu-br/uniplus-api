@@ -160,13 +160,13 @@ internal static class PayloadsDoEnvelopeFechado
         new
         {
             fatoCodigo = "BAIXA_RENDA", ordem = 0, rotulo = "Baixa renda",
-            tipoRenderizacao = TipoRenderizacaoCodigo.Booleano, obrigatoriedade = "SEMPRE",
+            tipoRenderizacao = TipoRenderizacao.Booleano.Codigo(), obrigatoriedade = "SEMPRE",
             precondicao = new[] { new[] { new { fato = "COR_RACA", @operador = Operador.Igual.Codigo(), valor = "PRETA" } } },
         },
         new
         {
             fatoCodigo = "EDICAO_ENEM", ordem = 1, rotulo = "Qual edição do ENEM você vai usar?",
-            tipoRenderizacao = TipoRenderizacaoCodigo.SelecaoUnica, obrigatoriedade = "SEMPRE",
+            tipoRenderizacao = TipoRenderizacao.SelecaoUnica.Codigo(), obrigatoriedade = "SEMPRE",
         },
         .. PerguntasDaReserva(),
     ];
@@ -180,7 +180,7 @@ internal static class PayloadsDoEnvelopeFechado
             fatoCodigo = fato,
             ordem = indice + 2,
             rotulo = fato,
-            tipoRenderizacao = TipoRenderizacaoCodigo.Booleano,
+            tipoRenderizacao = TipoRenderizacao.Booleano.Codigo(),
             obrigatoriedade = "SEMPRE",
         });
     }

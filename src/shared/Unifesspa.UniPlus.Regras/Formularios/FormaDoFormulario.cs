@@ -76,46 +76,45 @@ public static class FormaDoItem
     }
 
     /// <summary>
-    /// Os quatro campos que não dependem do catálogo nem das regras: existe separada para quem
+    /// Os campos que não dependem do catálogo nem das regras — código do fato, ordem e rótulo: existe separada para quem
     /// recebe a lista inteira conferir a forma de todos os itens antes de resolver o catálogo, e
     /// assim um código vazio não cai num "fato desconhecido", menos específico.
     /// </summary>
-    public static List<FieldError> ValidarFormaBasica(string? fatoCodigo, int ordem, string? rotulo, TipoRenderizacao tipoRenderizacao)
-    {
-        List<FieldError> erros = [];
+    public static List<FieldError> ValidarFormaBasica(string? fatoCodigo, int ordem, string? rotulo) =>
+        [.. RecusasDoCodigoDoFato(fatoCodigo), .. RecusasDaOrdem(ordem), .. RecusasDoRotulo(rotulo)];
 
+    private static IEnumerable<FieldError> RecusasDoCodigoDoFato(string? fatoCodigo)
+    {
         if (string.IsNullOrWhiteSpace(fatoCodigo))
         {
-            erros.Add(new("fatoCodigo", new DomainError(ItemFormularioErrorCodes.FatoCodigoObrigatorio, "O código do fato do item é obrigatório.")));
+            yield return new("fatoCodigo", new DomainError(ItemFormularioErrorCodes.FatoCodigoObrigatorio, "O código do fato do item é obrigatório."));
         }
         else if (fatoCodigo.Trim().Length > FatoCodigoMaxLength)
         {
-            erros.Add(new("fatoCodigo", new DomainError(
-                ItemFormularioErrorCodes.FatoCodigoTamanho, $"O código do fato do item deve ter no máximo {FatoCodigoMaxLength} caracteres.")));
+            yield return new("fatoCodigo", new DomainError(
+                ItemFormularioErrorCodes.FatoCodigoTamanho, $"O código do fato do item deve ter no máximo {FatoCodigoMaxLength} caracteres."));
         }
+    }
 
+    private static IEnumerable<FieldError> RecusasDaOrdem(int ordem)
+    {
         if (ordem < 0)
         {
-            erros.Add(new("ordem", new DomainError(ItemFormularioErrorCodes.OrdemInvalida, "A ordem do item não pode ser negativa.")));
+            yield return new("ordem", new DomainError(ItemFormularioErrorCodes.OrdemInvalida, "A ordem do item não pode ser negativa."));
         }
+    }
 
+    private static IEnumerable<FieldError> RecusasDoRotulo(string? rotulo)
+    {
         if (string.IsNullOrWhiteSpace(rotulo))
         {
-            erros.Add(new("rotulo", new DomainError(ItemFormularioErrorCodes.RotuloObrigatorio, "O rótulo do item é obrigatório.")));
+            yield return new("rotulo", new DomainError(ItemFormularioErrorCodes.RotuloObrigatorio, "O rótulo do item é obrigatório."));
         }
         else if (rotulo.Trim().Length > RotuloMaxLength)
         {
-            erros.Add(new("rotulo", new DomainError(
-                ItemFormularioErrorCodes.RotuloTamanho, $"O rótulo do item deve ter no máximo {RotuloMaxLength} caracteres.")));
+            yield return new("rotulo", new DomainError(
+                ItemFormularioErrorCodes.RotuloTamanho, $"O rótulo do item deve ter no máximo {RotuloMaxLength} caracteres."));
         }
-
-        if (tipoRenderizacao == TipoRenderizacao.Nenhuma || !Enum.IsDefined(tipoRenderizacao))
-        {
-            erros.Add(new("tipoRenderizacao", new DomainError(
-                ItemFormularioErrorCodes.TipoRenderizacaoObrigatorio, "O tipo de campo do item é obrigatório.")));
-        }
-
-        return erros;
     }
 
     /// <summary>
@@ -140,7 +139,7 @@ public static class FormaDoItem
         ArgumentNullException.ThrowIfNull(obrigatoriedade);
         ArgumentNullException.ThrowIfNull(restricoes);
 
-        List<FieldError> erros = ValidarFormaBasica(fatoCodigo, ordem, rotulo, tipoRenderizacao);
+        List<FieldError> erros = ValidarFormaBasica(fatoCodigo, ordem, rotulo);
 
         if (TextoOpcional(ajuda) is { Length: > AjudaMaxLength })
         {
@@ -214,7 +213,7 @@ public static class FormaDoItem
 
     /// <summary>Se o tipo de restrição se aplica ao tipo de campo.</summary>
     public static bool RestricaoCabeNoCampo(TipoRestricaoValor restricao, TipoRenderizacao campo) =>
-        campo != TipoRenderizacao.Nenhuma && restricao switch
+        restricao switch
         {
             TipoRestricaoValor.FaixaNumerica => campo == TipoRenderizacao.Numero,
             TipoRestricaoValor.TamanhoTexto => campo == TipoRenderizacao.Texto,

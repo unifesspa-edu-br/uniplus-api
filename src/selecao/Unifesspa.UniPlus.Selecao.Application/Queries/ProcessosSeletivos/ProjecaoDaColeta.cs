@@ -46,7 +46,7 @@ internal static class ProjecaoDaColeta
         fato.FatoCodigo,
         fato.Ordem,
         fato.Rotulo,
-        fato.TipoRenderizacao.ToCodigo(),
+        fato.TipoRenderizacao.Codigo(),
         fato.Obrigatoriedade.ToDto(),
         ProjetarPredicado(fato.Precondicoes, static c => (c.Clausula, c.Fato, c.Operador, c.Valor),
             static (f, o, v) => new CondicaoPrecondicaoDto(f, o, v)),

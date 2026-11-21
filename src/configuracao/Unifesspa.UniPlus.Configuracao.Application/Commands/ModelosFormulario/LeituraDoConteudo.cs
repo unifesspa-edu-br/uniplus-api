@@ -81,6 +81,7 @@ internal sealed class LeituraDoConteudo(IReadOnlyDictionary<string, string> form
     private ItemDoModelo? LerItem(FatoColetadoInput entrada, string campo)
     {
         int recusasAntes = _recusas.Count;
+        TipoRenderizacao? tipo = LerTipoRenderizacao(entrada.TipoRenderizacao, campo);
         PredicadoDnf? exibicao = LerPredicado(entrada.Precondicao, $"{campo}.precondicao");
         Obrigatoriedade? obrigatoriedade = LerObrigatoriedade(entrada.Obrigatoriedade, entrada.PredicadoObrigatoriedade, campo);
         List<RestricaoValor> restricoes = LerRestricoes(entrada.Restricoes, campo);
@@ -88,8 +89,19 @@ internal sealed class LeituraDoConteudo(IReadOnlyDictionary<string, string> form
         return RecusouDesde(recusasAntes)
             ? null
             : new ItemDoModelo(
-                entrada.FatoCodigo, entrada.Ordem, entrada.EtapaCodigo, entrada.Rotulo, TipoRenderizacaoCodigo.FromCodigo(entrada.TipoRenderizacao),
+                entrada.FatoCodigo, entrada.Ordem, entrada.EtapaCodigo, entrada.Rotulo, tipo!.Value,
                 FormatoDoCatalogo(entrada.FatoCodigo), entrada.Ajuda, obrigatoriedade!, exibicao, restricoes, entrada.PedirConfirmacao, impedimento);
+    }
+
+    private TipoRenderizacao? LerTipoRenderizacao(string? codigo, string campo)
+    {
+        Result<TipoRenderizacao> tipo = TipoRenderizacaoDaEntrada.Ler(codigo);
+        if (tipo.IsFailure)
+        {
+            _recusas.Add(new($"{campo}.tipoRenderizacao", tipo.Error!));
+        }
+
+        return tipo.IsSuccess ? tipo.Value : null;
     }
 
     private TermoDoModelo? LerTermo(TermoExigidoInput entrada, string campo)

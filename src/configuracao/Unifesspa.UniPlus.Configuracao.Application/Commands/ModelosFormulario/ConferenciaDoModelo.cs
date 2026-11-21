@@ -176,7 +176,7 @@ internal static class ConferenciaDoModelo
         CatalogoDoModelo catalogo,
         Func<string, IReadOnlyDictionary<string, FatoDoCatalogo>, DomainError?> recusaDeColetavel)
     {
-        if (FormaDoItem.ValidarFormaBasica(item.FatoCodigo, item.Ordem, item.Rotulo, item.TipoRenderizacao).Count > 0)
+        if (FormaDoItem.ValidarFormaBasica(item.FatoCodigo, item.Ordem, item.Rotulo).Count > 0)
         {
             return [];
         }

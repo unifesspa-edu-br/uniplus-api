@@ -168,7 +168,7 @@ public sealed class ConferenciaDoModeloTests
     [
         ("itens[1].fatoCodigo", ItemFormularioErrorCodes.FatoDesconhecido, "O fato 'NAO_EXISTE' não pertence ao catálogo de fatos do candidato."),
         ("itens[2].tipoRenderizacao", ItemFormularioErrorCodes.TipoRenderizacaoIncoerenteComDominio,
-            "O tipo de campo 'Numero' não é coerente com o domínio 'BOOLEANO', a cardinalidade 'ESCALAR' e a fonte de valores 'nenhuma' do fato 'CERTIFICADO'."),
+            "O tipo de campo 'NUMERO' não é coerente com o domínio 'BOOLEANO', a cardinalidade 'ESCALAR' e a fonte de valores 'nenhuma' do fato 'CERTIFICADO'."),
         FatoInexistenteNoPredicado("itens[2].precondicao"),
         FatoInexistenteNoPredicado("itens[2].predicadoObrigatoriedade"),
         FatoInexistenteNoPredicado("itens[2].impedimento.quando"),
@@ -187,7 +187,7 @@ public sealed class ConferenciaDoModeloTests
         ("grupos[0].subitens[0].fatoCodigo", ItemFormularioErrorCodes.FatoNaoColetavel,
             "O fato 'CERTIFICADO' não é coletável num campo do grupo: só o fato declarado de membro de grupo é respondido em cada ocorrência — fatos do candidato, derivados e calculados não."),
         ("grupos[0].subitens[1].tipoRenderizacao", ItemFormularioErrorCodes.TipoRenderizacaoIncoerenteComDominio,
-            "O tipo de campo 'Numero' não é coerente com o domínio 'BOOLEANO', a cardinalidade 'ESCALAR' e a fonte de valores 'nenhuma' do fato 'MAIOR_IDADE'."),
+            "O tipo de campo 'NUMERO' não é coerente com o domínio 'BOOLEANO', a cardinalidade 'ESCALAR' e a fonte de valores 'nenhuma' do fato 'MAIOR_IDADE'."),
     ];
 
     private static Recusa[] RecusasDosDocumentos() =>

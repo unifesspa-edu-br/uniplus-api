@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Domain.Entities;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -64,7 +65,7 @@ internal static class SecaoDadosBasicosDoProcesso
             fato.FatoCodigo,
             fato.Ordem,
             fato.Rotulo,
-            fato.TipoRenderizacao.ToCodigo(),
+            fato.TipoRenderizacao.Codigo(),
             EntradaDeRegras.ParaEntrada(fato.Obrigatoriedade),
             EntradaDeRegras.ParaEntrada(fato.Exibicao),
             fato.EtapaCodigo,

@@ -323,7 +323,7 @@ internal static class FormularioDeTeste
         CondicaoPrecondicaoFato[] precondicoes = [.. (entrada.Precondicao ?? []).SelectMany((clausula, indice) => clausula.Select(c =>
             CondicaoPrecondicaoFato.Criar(indice, c.Fato, CatalogoDe<Operador>.Obter(c.Operador!), c.Valor).Value!))];
         return FatoColetado.Criar(
-            entrada.FatoCodigo, entrada.Ordem, entrada.Rotulo, TipoRenderizacaoCodigo.FromCodigo(entrada.TipoRenderizacao), obrigatoriedade, precondicoes,
+            entrada.FatoCodigo, entrada.Ordem, entrada.Rotulo, CatalogoDe<TipoRenderizacao>.Obter(entrada.TipoRenderizacao!), obrigatoriedade, precondicoes,
             ClassificacaoDosFatos.GetValueOrDefault(entrada.FatoCodigo, "PESSOAL"), ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoDoFatoDeTeste.Descricao,
             entrada.FatoCodigo.EndsWith("_UF", StringComparison.Ordinal) ? Unifesspa.UniPlus.Selecao.Domain.Enums.OrigemValoresColeta.UnidadesFederativas : default,
             entrada.EtapaCodigo, formato: FormatoDosTextos.GetValueOrDefault(entrada.FatoCodigo), ajuda: entrada.Ajuda,

@@ -6,6 +6,7 @@ using Domain.Entities;
 using Domain.Services;
 using Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -96,7 +97,7 @@ public static class ProjecaoDoFormularioRenderizavel
         fato.FatoCodigo,
         fato.Ordem,
         fato.Rotulo,
-        fato.TipoRenderizacao.ToCodigo(),
+        fato.TipoRenderizacao.Codigo(),
         valores.GetValueOrDefault(fato.FatoCodigo) is { } doCampo
             ? [.. doCampo.OrderBy(static v => v.Ordem).ThenBy(static v => v.Codigo, StringComparer.Ordinal)
                 .Select(static v => new ValorSelecionavel(v.Codigo, v.Descricao, v.Ordem, v.Orientacao))]

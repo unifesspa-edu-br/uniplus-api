@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Serializacao;
@@ -57,7 +58,7 @@ internal static class ConteudoDoModeloJson
         ["ordem"] = campo.Ordem,
         ["etapaCodigo"] = campo.EtapaCodigo,
         ["rotulo"] = campo.Rotulo,
-        ["tipoRenderizacao"] = campo.TipoRenderizacao.ToCodigo(),
+        ["tipoRenderizacao"] = campo.TipoRenderizacao.Codigo(),
         ["formato"] = campo.Formato,
         ["ajuda"] = campo.Ajuda,
         ["obrigatoriedade"] = PredicadoDnfJson.ParaJson(campo.Obrigatoriedade),
@@ -155,7 +156,7 @@ internal static class ConteudoDoModeloJson
         campo.GetProperty("ordem").GetInt32(),
         Texto(campo, "etapaCodigo"),
         campo.GetProperty("rotulo").GetString()!,
-        TipoRenderizacaoCodigo.FromCodigo(campo.GetProperty("tipoRenderizacao").GetString()),
+        CatalogoDe<TipoRenderizacao>.Obter(campo.GetProperty("tipoRenderizacao").GetString()!),
         Texto(campo, "formato"),
         Texto(campo, "ajuda"),
         Remontar(PredicadoDnfJson.ObrigatoriedadeDeJson(campo.GetProperty("obrigatoriedade"))),

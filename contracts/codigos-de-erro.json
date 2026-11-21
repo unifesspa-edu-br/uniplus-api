@@ -3537,6 +3537,11 @@
       "titulo": "O tipo de campo não é coerente com o domínio do fato"
     },
     {
+      "codigo": "uniplus.item_formulario.tipo_renderizacao_invalido",
+      "status": 422,
+      "titulo": "O tipo de campo do item não é reconhecido"
+    },
+    {
       "codigo": "uniplus.item_formulario.tipo_renderizacao_obrigatorio",
       "status": 422,
       "titulo": "O tipo de campo do item é obrigatório"

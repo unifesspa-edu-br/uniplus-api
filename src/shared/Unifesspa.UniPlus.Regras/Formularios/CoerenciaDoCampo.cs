@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Regras.Formularios;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
@@ -48,5 +49,5 @@ public static class CoerenciaDoCampo
             ? null
             : new DomainError(
                 ItemFormularioErrorCodes.TipoRenderizacaoIncoerenteComDominio,
-                $"O tipo de campo '{tipoRenderizacao}' não é coerente com o domínio '{dominio}', a cardinalidade '{cardinalidade}' e a fonte de valores '{fonteValores ?? "nenhuma"}' do fato '{fatoCodigo}'.");
+                $"O tipo de campo '{tipoRenderizacao.Codigo()}' não é coerente com o domínio '{dominio}', a cardinalidade '{cardinalidade}' e a fonte de valores '{fonteValores ?? "nenhuma"}' do fato '{fatoCodigo}'.");
 }

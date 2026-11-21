@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -134,7 +135,7 @@ internal static class SerializacaoDosFatos
             ["etapaCodigo"] = fato.EtapaCodigo is { } etapa ? HashCanonicalComputer.NormalizeNfc(etapa) : null,
             ["ordem"] = fato.Ordem,
             ["rotulo"] = HashCanonicalComputer.NormalizeNfc(fato.Rotulo),
-            ["tipoRenderizacao"] = fato.TipoRenderizacao.ToCodigo(),
+            ["tipoRenderizacao"] = fato.TipoRenderizacao.Codigo(),
             ["obrigatoriedade"] = SerializacaoDosFormularios.SerializarObrigatoriedade(fato.Obrigatoriedade),
             ["ajuda"] = fato.Ajuda is { } ajuda ? HashCanonicalComputer.NormalizeNfc(ajuda) : null,
             ["pedirConfirmacao"] = fato.PedirConfirmacao,

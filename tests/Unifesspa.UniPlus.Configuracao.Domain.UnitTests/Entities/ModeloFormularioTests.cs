@@ -400,17 +400,14 @@ public sealed class ModeloFormularioTests
         recusa.Field.Should().Be("conteudo.itens[0].restricoes[0]");
     }
 
-    [Fact(DisplayName = "Tipo de etapa e tipo de campo fora do vocabulário são recusados")]
-    public void EnumsForaDoVocabulario_Recusa()
+    [Fact(DisplayName = "Tipo de etapa fora do vocabulário é recusado")]
+    public void TipoDeEtapaForaDoVocabulario_Recusa()
     {
         Result<ModeloFormulario> etapa = Criar(
             FinalidadeFormulario.Habilitacao,
             new ConteudoDoModelo("Habilitação", [Dados with { Tipo = (TipoEtapaFormulario)99 }, Revisao], [Item("CERTIFICADO", 0)], [], [], []));
-        Result<ModeloFormulario> campo = Criar(
-            FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0) with { TipoRenderizacao = (TipoRenderizacao)99 }]));
 
         etapa.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EstruturaFormularioErrorCodes.TipoDeEtapaObrigatorio);
-        campo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ItemFormularioErrorCodes.TipoRenderizacaoObrigatorio);
     }
 
     [Fact(DisplayName = "Tipo de processo só com espaços é recusado, em vez de virar o modelo de todos os tipos")]

@@ -6,6 +6,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -53,7 +54,7 @@ public sealed class FormaDosItensDaColetaDeFatosTests
             processo.Id, FinalidadeFormulario.Habilitacao, [new FatoColetadoInput(fatoCodigo, 0, "Rótulo", tipoRenderizacao, "SEMPRE", null)]));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        processo.FatosColetados.Single().TipoRenderizacao.Should().Be(TipoRenderizacaoCodigo.FromCodigo(tipoRenderizacao));
+        processo.FatosColetados.Single().TipoRenderizacao.Should().Be(CatalogoDe<TipoRenderizacao>.Obter(tipoRenderizacao));
     }
 
     [Fact(DisplayName = "Fato de texto multivalorado não é coletável como campo de texto")]

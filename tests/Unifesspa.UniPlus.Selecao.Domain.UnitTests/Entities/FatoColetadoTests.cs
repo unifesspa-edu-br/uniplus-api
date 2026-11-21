@@ -52,16 +52,6 @@ public sealed class FatoColetadoTests
         resultado.Error!.Code.Should().Be(ItemFormularioErrorCodes.RotuloObrigatorio);
     }
 
-    [Fact(DisplayName = "TipoRenderizacao.Nenhuma (sentinela) é recusado")]
-    public void Criar_TipoRenderizacaoNenhuma_RetornaFalha()
-    {
-        Result<FatoColetado> resultado = FatoColetado.Criar(
-            "COR_RACA", 0, "Cor ou raça", TipoRenderizacao.Nenhuma, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(ItemFormularioErrorCodes.TipoRenderizacaoObrigatorio);
-    }
-
     [Theory(DisplayName = "O formato existe se, e só se, o campo é de texto")]
     [InlineData(TipoRenderizacao.Texto, null, false)]
     [InlineData(TipoRenderizacao.Texto, "CPF", true)]
@@ -222,17 +212,16 @@ public sealed class FatoColetadoTests
     }
 
     [Fact(DisplayName = "ADR-0125: violações independentes acumulam num único lote")]
-    public void Criar_OrdemNegativaERotuloVazioETipoRenderizacaoAusente_AcumulaAsTresViolacoes()
+    public void Criar_OrdemNegativaERotuloVazio_AcumulaAsDuasViolacoes()
     {
         Result<FatoColetado> resultado = FatoColetado.Criar(
-            "COR_RACA", -1, "", TipoRenderizacao.Nenhuma, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao);
+            "COR_RACA", -1, "", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
         [
             ItemFormularioErrorCodes.OrdemInvalida,
             ItemFormularioErrorCodes.RotuloObrigatorio,
-            ItemFormularioErrorCodes.TipoRenderizacaoObrigatorio,
         ]);
     }
 }
