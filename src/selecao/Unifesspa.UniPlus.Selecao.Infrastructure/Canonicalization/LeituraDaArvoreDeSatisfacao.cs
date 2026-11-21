@@ -249,7 +249,7 @@ internal static class LeituraDaArvoreDeSatisfacao
 
         public IReadOnlyList<string>? OcorrenciasEsperadas { get; set; }
 
-        public IReadOnlyList<NoExigenciaBaseLegal> BasesLegais { get; set; } = [];
+        public IReadOnlyList<BaseLegalDaComprovacao> BasesLegais { get; set; } = [];
     }
 
     /// <summary>Mesma técnica de <c>LeituraDosMetadadosDosFatos.LerValoresDominio</c> para o campo nulo-ou-array.</summary>
@@ -272,21 +272,21 @@ internal static class LeituraDaArvoreDeSatisfacao
 
     /// <summary>
     /// Base legal PRÓPRIA de um grupo — mesmo formato de <c>LeituraDosFormatosEBasesLegais.LerBasesLegais</c>
-    /// (a de <see cref="DocumentoExigido"/>), tipo diferente (<see cref="NoExigenciaBaseLegal"/>).
+    /// (a de <see cref="DocumentoExigido"/>), tipo diferente (<see cref="BaseLegalDaComprovacao"/>).
     /// Só <c>RESOLVIDO</c> é congelado — mesma razão de <c>LeituraDosFormatosEBasesLegais.LerBasesLegais</c>.
     /// </summary>
-    internal static IReadOnlyList<NoExigenciaBaseLegal> LerBasesLegaisDeNo(LeitorEnvelope leitor, JsonObject item, string pathPai)
+    internal static IReadOnlyList<BaseLegalDaComprovacao> LerBasesLegaisDeNo(LeitorEnvelope leitor, JsonObject item, string pathPai)
     {
         JsonArray array = leitor.Array(item, "basesLegais", pathPai);
         return leitor.Falhou ? [] : LerBasesLegaisDoArray(leitor, array, $"{pathPai}.basesLegais");
     }
 
-    private static List<NoExigenciaBaseLegal> LerBasesLegaisDoArray(LeitorEnvelope leitor, JsonArray array, string path)
+    private static List<BaseLegalDaComprovacao> LerBasesLegaisDoArray(LeitorEnvelope leitor, JsonArray array, string path)
     {
-        List<NoExigenciaBaseLegal> basesLegais = [];
+        List<BaseLegalDaComprovacao> basesLegais = [];
         for (int i = 0; i < array.Count; i++)
         {
-            NoExigenciaBaseLegal? baseLegal = LerBaseLegalDoNo(
+            BaseLegalDaComprovacao? baseLegal = LerBaseLegalDoNo(
                 leitor, leitor.ItemObjeto(array, i, path), $"{path}[{i}]");
             if (baseLegal is null)
             {
@@ -299,14 +299,14 @@ internal static class LeituraDaArvoreDeSatisfacao
         return basesLegais;
     }
 
-    private static NoExigenciaBaseLegal? LerBaseLegalDoNo(LeitorEnvelope leitor, JsonObject baseItem, string path)
+    private static BaseLegalDaComprovacao? LerBaseLegalDoNo(LeitorEnvelope leitor, JsonObject baseItem, string path)
     {
         if (LeituraDosFormatosEBasesLegais.LerBaseLegalResolvida(leitor, baseItem, path) is not { } lida)
         {
             return null;
         }
 
-        Result<NoExigenciaBaseLegal> baseLegal = NoExigenciaBaseLegal.Criar(lida.Referencia, lida.Abrangencia, lida.Status, lida.Observacao);
-        return baseLegal.IsFailure ? leitor.Propagar<NoExigenciaBaseLegal?>(baseLegal.Error!) : baseLegal.Value;
+        Result<BaseLegalDaComprovacao> baseLegal = BaseLegalDaComprovacao.Criar(lida.Referencia, lida.Abrangencia, lida.Status, lida.Observacao);
+        return baseLegal.IsFailure ? leitor.Propagar<BaseLegalDaComprovacao?>(baseLegal.Error!) : baseLegal.Value;
     }
 }

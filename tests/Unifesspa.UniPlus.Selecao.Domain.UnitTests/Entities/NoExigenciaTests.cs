@@ -30,8 +30,8 @@ public sealed class NoExigenciaTests
             null,
             finalidade: finalidade).Value!;
 
-    private static NoExigenciaBaseLegal BaseLegalResolvida() =>
-        NoExigenciaBaseLegal.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.Federal, StatusBaseLegal.Resolvido, null).Value!;
+    private static BaseLegalDaComprovacao BaseLegalResolvida() =>
+        BaseLegalDaComprovacao.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.Federal, StatusBaseLegal.Resolvido, null).Value!;
 
     [Theory(DisplayName = "CriarGrupo recusa grupo sem filhos, E ou OU")]
     [InlineData(TipoNo.GrupoE)]

@@ -17,7 +17,7 @@ public sealed class NoExigencia : EntityBase, IParteDoProcesso
     public const int QuantidadeMinimaPadrao = 1;
     private const int QuantidadeMinimaDeFolhaMaxima = 366;
     private readonly List<NoExigencia> _filhos = [];
-    private readonly List<NoExigenciaBaseLegal> _basesLegais = [];
+    private readonly List<BaseLegalDaComprovacao> _basesLegais = [];
 
     public Guid ProcessoSeletivoId { get; private set; }
     public Guid? NoPaiId { get; private set; }
@@ -32,7 +32,7 @@ public sealed class NoExigencia : EntityBase, IParteDoProcesso
     /// <summary>Grupo do formulário cujas ocorrências repetem esta subárvore (ADR-0138).</summary>
     public string? RepetePorEntidade { get; private set; }
     public IReadOnlyList<NoExigencia> Filhos => _filhos.AsReadOnly();
-    public IReadOnlyCollection<NoExigenciaBaseLegal> BasesLegais => _basesLegais.AsReadOnly();
+    public IReadOnlyCollection<BaseLegalDaComprovacao> BasesLegais => _basesLegais.AsReadOnly();
 
     private NoExigencia() { }
 
@@ -89,7 +89,7 @@ public sealed class NoExigencia : EntityBase, IParteDoProcesso
 
     public static Result<NoExigencia> CriarGrupo(
         TipoNo tipo, int ordem, int? quantidadeMinima, string? consequencia,
-        IReadOnlyList<NoExigenciaBaseLegal> basesLegais, IReadOnlyList<NoExigencia> filhos, string? repetePorEntidade = null)
+        IReadOnlyList<BaseLegalDaComprovacao> basesLegais, IReadOnlyList<NoExigencia> filhos, string? repetePorEntidade = null)
     {
         ArgumentNullException.ThrowIfNull(basesLegais);
         ArgumentNullException.ThrowIfNull(filhos);
@@ -122,7 +122,7 @@ public sealed class NoExigencia : EntityBase, IParteDoProcesso
     private static DomainError OrdemInvalida() => new("NoExigencia.OrdemInvalida", "A ordem do nó não pode ser negativa.");
 
     private static NoExigencia NovoGrupo(
-        int ordem, CombinacaoDoGrupo combinacao, IReadOnlyList<NoExigenciaBaseLegal> basesLegais,
+        int ordem, CombinacaoDoGrupo combinacao, IReadOnlyList<BaseLegalDaComprovacao> basesLegais,
         IReadOnlyList<NoExigencia> filhos, string? repetePorEntidade, Guid? id = null)
     {
         NoExigencia no = new(id)
@@ -137,14 +137,14 @@ public sealed class NoExigencia : EntityBase, IParteDoProcesso
         return no;
     }
 
-    private void VincularFilhosEBasesLegais(IReadOnlyList<NoExigencia> filhos, IReadOnlyList<NoExigenciaBaseLegal> basesLegais)
+    private void VincularFilhosEBasesLegais(IReadOnlyList<NoExigencia> filhos, IReadOnlyList<BaseLegalDaComprovacao> basesLegais)
     {
         foreach (NoExigencia filho in filhos)
         {
             filho.VincularPai(Id);
             _filhos.Add(filho);
         }
-        foreach (NoExigenciaBaseLegal baseLegal in basesLegais)
+        foreach (BaseLegalDaComprovacao baseLegal in basesLegais)
         {
             baseLegal.VincularNoExigencia(Id);
             _basesLegais.Add(baseLegal);
@@ -173,7 +173,7 @@ public sealed class NoExigencia : EntityBase, IParteDoProcesso
 
     /// <summary>Repõe um grupo com identidade e parâmetros já conferidos na leitura do envelope.</summary>
     public static NoExigencia ReidratarGrupo(
-        Guid id, int ordem, CombinacaoDoGrupo combinacao, IReadOnlyList<NoExigenciaBaseLegal> basesLegais,
+        Guid id, int ordem, CombinacaoDoGrupo combinacao, IReadOnlyList<BaseLegalDaComprovacao> basesLegais,
         IReadOnlyList<NoExigencia> filhos, string? repetePorEntidade)
     {
         ArgumentNullException.ThrowIfNull(combinacao);
@@ -228,7 +228,7 @@ public sealed class NoExigencia : EntityBase, IParteDoProcesso
 
     public bool DeterminaResultado() => Tipo == TipoNo.GrupoOu && Consequencia is not null;
 
-    public IEnumerable<NoExigenciaBaseLegal> BasesLegaisResolvidas() => _basesLegais.Where(static b => b.Status == StatusBaseLegal.Resolvido);
+    public IEnumerable<BaseLegalDaComprovacao> BasesLegaisResolvidas() => _basesLegais.Where(static b => b.Status == StatusBaseLegal.Resolvido);
 
     public bool PodeAlcancarModalidade(string modalidadeCodigo, FatosDeModalidade fatosDeModalidade)
     {

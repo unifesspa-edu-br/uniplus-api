@@ -57,7 +57,7 @@ internal static class ManifestoDeExigenciasFatosEFormulario
             ["Chave", "DataReferencia", "OcorrenciasEsperadas"],
             [("ConferivelPelaContagem", "Derivada da chave e da ausência de ocorrências esperadas; não acrescenta conteúdo ao envelope.")]),
 
-        [typeof(NoExigenciaBaseLegal)] = (
+        [typeof(BaseLegalDaComprovacao)] = (
             ["Referencia", "Abrangencia", "Status", "Observacao"],
             [("NoExigenciaId", "FK interna.")]),
 

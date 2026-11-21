@@ -30,8 +30,8 @@ public sealed class NoExigenciaFolhaTests
             null,
             finalidade: finalidade).Value!;
 
-    private static NoExigenciaBaseLegal BaseLegalResolvida() =>
-        NoExigenciaBaseLegal.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.Federal, StatusBaseLegal.Resolvido, null).Value!;
+    private static BaseLegalDaComprovacao BaseLegalResolvida() =>
+        BaseLegalDaComprovacao.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.Federal, StatusBaseLegal.Resolvido, null).Value!;
 
     [Fact(DisplayName = "CriarFolha aceita um DocumentoExigido válido")]
     public void CriarFolha_DocumentoValido_Aceita()

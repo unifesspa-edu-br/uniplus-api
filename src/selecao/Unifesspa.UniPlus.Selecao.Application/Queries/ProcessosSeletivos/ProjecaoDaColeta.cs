@@ -180,7 +180,7 @@ internal static class ProjecaoDaColeta
     private static DistincaoDasApresentacoesDto? ProjetarDistincao(DistincaoDasApresentacoes? distincao) =>
         distincao is null ? null : new DistincaoDasApresentacoesDto(distincao.Chave?.ToCodigo(), distincao.DataReferencia, distincao.OcorrenciasEsperadas);
 
-    private static BaseLegalDto ProjetarBaseLegalDoNo(NoExigenciaBaseLegal baseLegal) => new(
+    private static BaseLegalDto ProjetarBaseLegalDoNo(BaseLegalDaComprovacao baseLegal) => new(
         baseLegal.Id, baseLegal.Referencia, baseLegal.Abrangencia.ToCodigo(), baseLegal.Status.ToCodigo(), baseLegal.Observacao);
 
     private static BaseLegalDto ProjetarBaseLegal(DocumentoExigidoBaseLegal baseLegal) => new(

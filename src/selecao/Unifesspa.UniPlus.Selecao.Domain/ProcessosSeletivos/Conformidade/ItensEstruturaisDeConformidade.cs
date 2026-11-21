@@ -236,7 +236,7 @@ internal static class ItensEstruturaisDeConformidade
     internal static bool TemFundamentoDeIsencaoQuandoCobra(ConfiguracaoDeclarada configuracao) =>
         configuracao.DivulgacaoETaxa.ConfiguracaoTaxaInscricao is not { Cobra: true, Fundamentos.Count: 0 };
 
-    /// <summary>Grupos <c>OU</c>/<c>N-de</c> com <see cref="NoExigencia.Consequencia"/> própria — cada um precisa de ≥1 <see cref="NoExigenciaBaseLegal"/> <see cref="StatusBaseLegal.Resolvido"/>, mesma semântica de <see cref="Services.ValidadorBaseLegalExigencias"/> para folha.</summary>
+    /// <summary>Grupos <c>OU</c>/<c>N-de</c> com <see cref="NoExigencia.Consequencia"/> própria — cada um precisa de ≥1 <see cref="BaseLegalDaComprovacao"/> <see cref="StatusBaseLegal.Resolvido"/>, mesma semântica de <see cref="Services.ValidadorBaseLegalExigencias"/> para folha.</summary>
     internal static bool GruposComConsequenciaTemBaseLegalResolvida(ConfiguracaoDeclarada configuracao) =>
         configuracao.Exigencias.NosExigencia
             .Where(static no => no.DeterminaResultado())

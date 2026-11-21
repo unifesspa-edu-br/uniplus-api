@@ -73,6 +73,6 @@ internal static class ApoioDaArvoreDeSatisfacao
         DocumentoExigido documento, string entidadeId) =>
         new() { [documento.Id] = [new ApresentacaoDocumento(Guid.CreateVersion7(), EntidadeId: entidadeId)] };
 
-    internal static NoExigenciaBaseLegal BaseLegalResolvida() =>
-        NoExigenciaBaseLegal.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.Federal, StatusBaseLegal.Resolvido, null).Value!;
+    internal static BaseLegalDaComprovacao BaseLegalResolvida() =>
+        BaseLegalDaComprovacao.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.Federal, StatusBaseLegal.Resolvido, null).Value!;
 }

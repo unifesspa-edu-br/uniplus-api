@@ -94,7 +94,7 @@ public sealed class EnvelopeLidoArvoreDeSatisfacaoTests
             dataReferencia: new DateOnly(2026, 3, 31)).Value!;
         NoExigencia folhaRenda = NoExigencia.CriarFolha(
             comprovanteRenda, 1, repetePorEntidade: "COMPOSICAO_FAMILIAR").Value!;
-        NoExigenciaBaseLegal baseLegalDoGrupo = NoExigenciaBaseLegal.Criar(
+        BaseLegalDaComprovacao baseLegalDoGrupo = BaseLegalDaComprovacao.Criar(
             "Res. Unifesspa 532/2021, art. 12", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, "Norma interna").Value!;
         return NoExigencia.CriarGrupo(
             TipoNo.GrupoOu, 0, 1, "ELIMINA", [baseLegalDoGrupo], [folhaRg, folhaRenda]).Value!;
