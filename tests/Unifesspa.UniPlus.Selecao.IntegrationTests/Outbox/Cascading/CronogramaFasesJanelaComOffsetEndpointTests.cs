@@ -1,15 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 
 using System.Net;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
-using System.Text;
 
 using AwesomeAssertions;
 
 using Domain.Entities;
 using Domain.Enums;
-using Domain.ValueObjects;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,12 +13,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
-using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
-using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
-using Unifesspa.UniPlus.Testes.Compartilhado;
+
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.ApoioDoCronogramaDeFasesPeloEndpoint;
 
 /// <summary>
 /// A janela do cronograma de fases informada com offset diferente de UTC (issue #1124),
@@ -78,17 +72,11 @@ public sealed class CronogramaFasesJanelaComOffsetEndpointTests
     public async Task JanelaComOffset_204EPersisteInstanteEmUtc(string inicio, string fim)
     {
         Contexto ctx = await SemearAsync($"offset {inicio}");
-
         HttpResponseMessage resposta = await ctx.PutCronogramaFasesAsync(inicio, fim);
-
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent,
             $"'{inicio}' é um instante válido pelo contrato date-time — o offset é forma de escrita, não erro do cliente");
 
-        FaseCronograma persistida = await ctx.ObterFasePersistidaAsync();
-        persistida.Inicio.Should().Be(InicioEsperadoUtc, "o instante informado pelo cliente é preservado");
-        persistida.Inicio!.Value.Offset.Should().Be(TimeSpan.Zero, "a janela é normalizada para UTC antes de persistir");
-        persistida.Fim.Should().Be(FimEsperadoUtc);
-        persistida.Fim!.Value.Offset.Should().Be(TimeSpan.Zero);
+        AfirmarJanelaPersistidaEmUtc(await ctx.ObterFasePersistidaAsync(), InicioEsperadoUtc, FimEsperadoUtc);
 
         FaseCronogramaDto lida = await ctx.ObterFaseLidaPelaApiAsync();
         lida.Cronograma.Inicio.Should().Be(InicioEsperadoUtc, "a leitura devolve o mesmo instante que a gravação recebeu");
@@ -99,56 +87,33 @@ public sealed class CronogramaFasesJanelaComOffsetEndpointTests
     public async Task RedefinirMesmaFaseComOutroOffset_AtualizaInstanteEmUtc()
     {
         Contexto ctx = await SemearAsync(nameof(RedefinirMesmaFaseComOutroOffset_AtualizaInstanteEmUtc));
-
-        HttpResponseMessage primeira = await ctx.PutCronogramaFasesAsync(
-            "2027-01-25T11:00:00Z", "2027-01-27T21:00:00Z");
+        HttpResponseMessage primeira = await ctx.PutCronogramaFasesAsync("2027-01-25T11:00:00Z", "2027-01-27T21:00:00Z");
         primeira.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         // Mesma fase canônica: DefinirCronogramaFases reconcilia a linha existente por
         // FaseCanonicaOrigemId (AtualizarDe) em vez de recriá-la.
-        HttpResponseMessage segunda = await ctx.PutCronogramaFasesAsync(
-            "2027-02-01T05:00:00-03:00", "2027-02-03T15:00:00-03:00");
+        HttpResponseMessage segunda = await ctx.PutCronogramaFasesAsync("2027-02-01T05:00:00-03:00", "2027-02-03T15:00:00-03:00");
         segunda.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        FaseCronograma persistida = await ctx.ObterFasePersistidaAsync();
-        persistida.Inicio.Should().Be(new DateTimeOffset(2027, 2, 1, 8, 0, 0, TimeSpan.Zero));
-        persistida.Inicio!.Value.Offset.Should().Be(TimeSpan.Zero);
-        persistida.Fim.Should().Be(new DateTimeOffset(2027, 2, 3, 18, 0, 0, TimeSpan.Zero));
+        AfirmarJanelaPersistidaEmUtc(
+            await ctx.ObterFasePersistidaAsync(),
+            new DateTimeOffset(2027, 2, 1, 8, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2027, 2, 3, 18, 0, 0, TimeSpan.Zero));
+    }
+
+    private static void AfirmarJanelaPersistidaEmUtc(
+        FaseCronograma persistida, DateTimeOffset inicioEsperado, DateTimeOffset fimEsperado)
+    {
+        persistida.Inicio.Should().Be(inicioEsperado, "o instante informado pelo cliente é preservado");
+        persistida.Inicio!.Value.Offset.Should().Be(TimeSpan.Zero, "a janela é normalizada para UTC antes de persistir");
+        persistida.Fim.Should().Be(fimEsperado);
         persistida.Fim!.Value.Offset.Should().Be(TimeSpan.Zero);
     }
 
     private sealed record Contexto(CascadingApiFactory Api, HttpClient Client, Guid ProcessoId, Guid FaseCanonicaId)
     {
-        public async Task<HttpResponseMessage> PutCronogramaFasesAsync(string inicio, string fim)
-        {
-            // Corpo cru para fixar o TEXTO RFC 3339 que trafega — serializar um
-            // DateTimeOffset deixaria o offset a cargo do serializador do teste, e é
-            // justamente o offset do payload que está sob prova.
-            string faseCanonicaId = FaseCanonicaId.ToString();
-            string corpo = $$"""
-                [{
-                  "ordem": 1,
-                  "faseCanonicaId": "{{faseCanonicaId}}",
-                  "inicio": "{{inicio}}",
-                  "fim": "{{fim}}",
-                  "produtos": [],
-                  "faseConcluinteCodigo": null,
-                  "emiteParecerIndividual": false,
-                  "bancasRequeridas": [],
-                  "regraRecurso": null
-                }]
-                """;
-
-            using HttpRequestMessage request = new(
-                HttpMethod.Put,
-                new Uri($"/api/selecao/processos-seletivos/{ProcessoId}/cronograma-fases", UriKind.Relative))
-            {
-                Content = new StringContent(corpo, Encoding.UTF8, "application/json"),
-            };
-            Autenticar(request);
-            request.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
-            return await Client.SendAsync(request).ConfigureAwait(false);
-        }
+        public Task<HttpResponseMessage> PutCronogramaFasesAsync(string inicio, string fim) =>
+            EnviarCronogramaComCorpoCruAsync(Client, ProcessoId, CorpoDaFase(inicio, fim));
 
         public async Task<FaseCronograma> ObterFasePersistidaAsync()
         {
@@ -159,18 +124,22 @@ public sealed class CronogramaFasesJanelaComOffsetEndpointTests
                 .ConfigureAwait(false);
         }
 
-        public async Task<FaseCronogramaDto> ObterFaseLidaPelaApiAsync()
-        {
-            using HttpRequestMessage request = new(
-                HttpMethod.Get,
-                new Uri($"/api/selecao/processos-seletivos/{ProcessoId}", UriKind.Relative));
-            Autenticar(request);
-            using HttpResponseMessage resposta = await Client.SendAsync(request).ConfigureAwait(false);
-            resposta.StatusCode.Should().Be(HttpStatusCode.OK);
-            ProcessoSeletivoDto? processo = await resposta.Content
-                .ReadFromJsonAsync<ProcessoSeletivoDto>(JsonDoContrato.Opcoes).ConfigureAwait(false);
-            return processo!.CronogramaFases.Single();
-        }
+        public async Task<FaseCronogramaDto> ObterFaseLidaPelaApiAsync() =>
+            (await LerProcessoPelaApiAsync(Client, ProcessoId).ConfigureAwait(false)).CronogramaFases.Single();
+
+        private string CorpoDaFase(string inicio, string fim) => $$"""
+            [{
+              "ordem": 1,
+              "faseCanonicaId": "{{FaseCanonicaId}}",
+              "inicio": "{{inicio}}",
+              "fim": "{{fim}}",
+              "produtos": [],
+              "faseConcluinteCodigo": null,
+              "emiteParecerIndividual": false,
+              "bancasRequeridas": [],
+              "regraRecurso": null
+            }]
+            """;
     }
 
     /// <summary>
@@ -185,26 +154,10 @@ public sealed class CronogramaFasesJanelaComOffsetEndpointTests
         HttpClient client = api.CreateClient();
 
         Guid faseCanonicaId = await ObterOuCriarFaseCanonicaAsync(api);
-        Guid processoId = await PersistirProcessoAsync(api, nome);
+        Guid processoId = await SemearProcessoEmRascunhoAsync(
+            api, $"PS janela com offset — {nome}", OrigemCandidatos.InscricaoPropria);
 
         return new Contexto(api, client, processoId, faseCanonicaId);
-    }
-
-    private static async Task<Guid> PersistirProcessoAsync(CascadingApiFactory api, string nome)
-    {
-        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            $"PS janela com offset — {nome} {Guid.CreateVersion7()}",
-            TiposDeProcessoDeTeste.SiSU,
-            OrigemCandidatos.InscricaoPropria,
-            Guid.CreateVersion7(),
-            UnidadeAdministradoraSnapshot.Criar(
-                "CEPS",
-                "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        await db.ProcessosSeletivos.AddAsync(processo).ConfigureAwait(false);
-        await db.SaveChangesAsync().ConfigureAwait(false);
-        return processo.Id;
     }
 
     /// <summary>
@@ -214,18 +167,14 @@ public sealed class CronogramaFasesJanelaComOffsetEndpointTests
     /// </summary>
     private static async Task<Guid> ObterOuCriarFaseCanonicaAsync(CascadingApiFactory api)
     {
-        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        UniPlusDbContext config = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-
-        // O catálogo de fases vivas é pequeno — materializar é mais barato que traduzir a comparação do value object Codigo para SQL.
-        List<FaseCanonica> vivas = await config.FasesCanonicas.AsNoTracking().ToListAsync().ConfigureAwait(false);
-        FaseCanonica? existente = vivas.Find(f => string.Equals(f.Codigo.Valor, CodigoFaseComJanela, StringComparison.Ordinal));
+        FaseCanonica? existente = await ProcurarFaseCanonicaAsync(api, CodigoFaseComJanela);
         if (existente is not null)
         {
             return existente.Id;
         }
 
-        return await CriarFaseDeEnsalamentoAsync(config);
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        return await CriarFaseDeEnsalamentoAsync(scope.ServiceProvider.GetRequiredService<UniPlusDbContext>());
     }
 
     private static async Task<Guid> CriarFaseDeEnsalamentoAsync(UniPlusDbContext config)
@@ -239,12 +188,5 @@ public sealed class CronogramaFasesJanelaComOffsetEndpointTests
         config.FasesCanonicas.Add(criada.Value!);
         await config.SaveChangesAsync().ConfigureAwait(false);
         return criada.Value!.Id;
-    }
-
-    private static void Autenticar(HttpRequestMessage request)
-    {
-        request.Headers.Authorization = new AuthenticationHeaderValue(
-            TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "plataforma-admin");
     }
 }
