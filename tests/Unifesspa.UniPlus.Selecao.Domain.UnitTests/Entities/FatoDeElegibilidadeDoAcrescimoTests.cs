@@ -57,6 +57,19 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
         return processo;
     }
 
+    /// <summary>A isenção na posição 1, a inscrição na 2 e a habilitação na 3.</summary>
+    private static ProcessoSeletivo ProcessoComIsencaoAntesDaInscricao()
+    {
+        FaseCronograma isencao = Fase(1, "SOLICITACAO_ISENCAO", coletaIsencao: true);
+        FaseCronograma inscricao = Fase(2, "INSCRICAO", coletaInscricao: true);
+        FaseCronograma habilitacao = Fase(3, FormularioProcesso.CodigoFaseHabilitacao);
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: inscricao);
+        processo.DefinirCronogramaFases([isencao, inscricao, habilitacao], []).IsSuccess.Should().BeTrue();
+        DefinirFormulariosDoAcrescimo(processo, inscricao, isencao, habilitacao);
+
+        return processo;
+    }
+
     private static GrupoColetado GrupoDaInscricao() =>
         GrupoColetado.Criar("COMPOSICAO_FAMILIAR", 2, FormularioDeTeste.Secao, "Composição familiar", 0, 5, null, Obrigatoriedade.Sempre,
             [FatoColetado.Criar("MEMBRO_PEDE_O_ACRESCIMO", 0, "Membro pede o acréscimo", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!],
@@ -165,6 +178,16 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
     public void DerivadoDaIsencao_Recusa()
     {
         ProcessoSeletivo processo = Processo(isencaoNaFaseDaInscricao: true);
+        Derivar(processo, "ELEGIVEL_AO_ACRESCIMO", "BOLSISTA");
+        Aplicar(processo, "ELEGIVEL_AO_ACRESCIMO");
+
+        RegrasDosFatos.ConferirFatoDeElegibilidade(processo.Declaracao(), SemCatalogo, SemCatalogo)!.Code.Should().Be(ProcessoSeletivoErrorCodes.FatoElegibilidadeDaIsencao);
+    }
+
+    [Fact(DisplayName = "O derivado de fato da isenção na posição 1 não é conhecido depois da inscrição na posição 2, e é recusado por vir só da isenção")]
+    public void DerivadoDaIsencaoAnteriorAInscricao_RecusaPorVirSoDaIsencao()
+    {
+        ProcessoSeletivo processo = ProcessoComIsencaoAntesDaInscricao();
         Derivar(processo, "ELEGIVEL_AO_ACRESCIMO", "BOLSISTA");
         Aplicar(processo, "ELEGIVEL_AO_ACRESCIMO");
 
