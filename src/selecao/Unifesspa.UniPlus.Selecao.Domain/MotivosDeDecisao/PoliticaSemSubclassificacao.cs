@@ -1,6 +1,8 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
@@ -18,7 +20,7 @@ public abstract class PoliticaSemSubclassificacao : IPoliticaDoTipoDeMotivo
             ? Result<string?>.Success(null)
             : Result<string?>.Failure(new DomainError(
                 MotivoDeDecisaoErrorCodes.SubclassificacaoNaoAdmitida,
-                $"O tipo {Tipo.ToCodigo()} não tem subclassificação; só o motivo da isenção da taxa a declara."));
+                $"O tipo {Tipo.Codigo()} não tem subclassificação; só o motivo da isenção da taxa a declara."));
 
     public bool AdmiteSentido(SentidoDoMotivo sentido) => sentido is SentidoDoMotivo.Favoravel or SentidoDoMotivo.Desfavoravel;
 }

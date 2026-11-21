@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
@@ -71,7 +72,7 @@ internal static class CorpusEnvelopeCronograma
         { NoMesmoMomentoDaAnterior = true },
         new PublicacoesDaFase(
                 Produtos: ProdutosDaFaseDeRecurso(variante, permutar), EmiteParecerIndividual: true, RegraRecurso: RegraDeRecursoDaFase(variante),
-                TiposDeDecisao: [TipoMotivoDeDecisaoCodigo.Classificacao, TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes],
+                TiposDeDecisao: [TipoMotivoDeDecisao.Classificacao.Codigo(), TipoMotivoDeDecisao.HomologacaoDasInscricoes.Codigo()],
                 RegraDeHomologacao: regraDeHomologacao ?? RegraDeHomologacaoDoCorpus()),
         bancasRequeridas: BancasRequeridasDaFaseDeRecurso(permutar));
 
@@ -189,7 +190,7 @@ internal static class CorpusEnvelopeCronograma
     /// </summary>
     private static readonly string[] TiposDaFaseFinalDoCorpus =
     [
-        TipoMotivoDeDecisaoCodigo.NotaDaEtapa, TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa, TipoMotivoDeDecisaoCodigo.GabaritoDaProva, TipoMotivoDeDecisaoCodigo.AnaliseDocumental,
+        TipoMotivoDeDecisao.NotaDaEtapa.Codigo(), TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo(), TipoMotivoDeDecisao.GabaritoDaProva.Codigo(), TipoMotivoDeDecisao.AnaliseDocumental.Codigo(),
     ];
 
     /// <summary>Fase mínima que satisfaz o bicondicional fase×etapa (uma etapa acompanha os dois grafos acima).</summary>

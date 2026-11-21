@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
@@ -22,13 +23,9 @@ public sealed record ProcedimentoDeRecursoDeclarado
 
     public ReferenciaRegra Regra { get; }
 
-    /// <exception cref="ArgumentOutOfRangeException">
-    /// O tipo é a sentinela <see cref="TipoMotivoDeDecisao.Nenhum"/>: quem chama recusa o tipo inválido antes de montar.
-    /// </exception>
     public static ProcedimentoDeRecursoDeclarado De(TipoMotivoDeDecisao tipoDeDecisao, AlvoDoProcedimentoDeRecurso? alvo, ReferenciaRegra regra)
     {
         ArgumentNullException.ThrowIfNull(regra);
-        ArgumentOutOfRangeException.ThrowIfEqual(tipoDeDecisao, TipoMotivoDeDecisao.Nenhum);
 
         return new ProcedimentoDeRecursoDeclarado(tipoDeDecisao, alvo, regra);
     }

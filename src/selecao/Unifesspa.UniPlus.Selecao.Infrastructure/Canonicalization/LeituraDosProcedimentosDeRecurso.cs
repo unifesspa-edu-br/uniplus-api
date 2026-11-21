@@ -2,8 +2,11 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 using System.Text.Json.Nodes;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Recursos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -56,10 +59,9 @@ internal static class LeituraDosProcedimentosDeRecurso
             return null;
         }
 
-        TipoMotivoDeDecisao tipo = TipoMotivoDeDecisaoCodigo.FromCodigo(codigoDoTipo);
-        return tipo == TipoMotivoDeDecisao.Nenhum
-            ? leitor.Malformado<ProcedimentoDeRecursoDeclarado?>($"{path}.tipoDeDecisao", $"o tipo '{codigoDoTipo}' não pertence ao vocabulário de decisões.")
-            : ProcedimentoDeRecursoDeclarado.De(tipo, alvo, regra);
+        return CatalogoDe<TipoMotivoDeDecisao>.TentarObter(codigoDoTipo, out TipoMotivoDeDecisao tipo)
+            ? ProcedimentoDeRecursoDeclarado.De(tipo, alvo, regra)
+            : leitor.Malformado<ProcedimentoDeRecursoDeclarado?>($"{path}.tipoDeDecisao", $"o tipo de decisão não pertence ao vocabulário de decisões. Tipos aceitos: {TipoDoMotivoInformado.RotulosAceitosEmTexto}.");
     }
 
     private static AlvoDoProcedimentoDeRecurso? LerAlvo(LeitorEnvelope leitor, JsonObject item, string path)

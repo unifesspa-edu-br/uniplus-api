@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -30,8 +31,17 @@ public sealed class TiposDeDecisaoPersistenciaTests(ProcessoSeletivoDbFixture fi
     {
         (Guid faseId, Guid etapaId) = await GravarAsync([Heteroidentificacao, AnaliseDocumental], [Classificacao, AnaliseDocumental]);
 
-        (await RelerFaseAsync(faseId)).TiposDeDecisao.Should().Equal(AnaliseDocumental, Heteroidentificacao);
-        (await RelerEtapaAsync(etapaId)).TiposDeDecisao.Should().Equal(AnaliseDocumental, Classificacao);
+        (await RelerFaseAsync(faseId)).TiposDeDecisao.Should().Equal(TipoMotivoDeDecisao.AnaliseDocumental, TipoMotivoDeDecisao.Heteroidentificacao);
+        (await RelerEtapaAsync(etapaId)).TiposDeDecisao.Should().Equal(TipoMotivoDeDecisao.AnaliseDocumental, TipoMotivoDeDecisao.Classificacao);
+    }
+
+    [Fact(DisplayName = "Fase e etapa gravam cada tipo pelo código de contrato, e não pelo nome do enum")]
+    public async Task TiposDeclarados_GravamOCodigoDeContratoNaColuna()
+    {
+        (Guid faseId, Guid etapaId) = await GravarAsync([Heteroidentificacao, AnaliseDocumental], [Classificacao, AnaliseDocumental]);
+
+        (await TextoGravadoDaFaseAsync(faseId)).Should().Be("ANALISE_DOCUMENTAL,HETEROIDENTIFICACAO");
+        (await TextoGravadoDaEtapaAsync(etapaId)).Should().Be("ANALISE_DOCUMENTAL,CLASSIFICACAO");
     }
 
     [Fact(DisplayName = "Fase e etapa sem tipos declarados gravam e leem lista vazia")]
@@ -57,7 +67,7 @@ public sealed class TiposDeDecisaoPersistenciaTests(ProcessoSeletivoDbFixture fi
             await db.SaveChangesAsync();
         }
 
-        (await RelerFaseAsync(faseId)).TiposDeDecisao.Should().Equal(Classificacao, Heteroidentificacao);
+        (await RelerFaseAsync(faseId)).TiposDeDecisao.Should().Equal(TipoMotivoDeDecisao.Classificacao, TipoMotivoDeDecisao.Heteroidentificacao);
     }
 
     [Fact(DisplayName = "Redefinir o cronograma sem tipos esvazia a fase rastreada e a mudança persiste")]
@@ -88,7 +98,7 @@ public sealed class TiposDeDecisaoPersistenciaTests(ProcessoSeletivoDbFixture fi
             await db.SaveChangesAsync();
         }
 
-        (await RelerEtapaAsync(etapaId)).TiposDeDecisao.Should().Equal(Classificacao, Heteroidentificacao);
+        (await RelerEtapaAsync(etapaId)).TiposDeDecisao.Should().Equal(TipoMotivoDeDecisao.Classificacao, TipoMotivoDeDecisao.Heteroidentificacao);
     }
 
     [Fact(DisplayName = "Esvaziar os tipos da etapa rastreada persiste a lista vazia")]
@@ -165,5 +175,21 @@ public sealed class TiposDeDecisaoPersistenciaTests(ProcessoSeletivoDbFixture fi
     {
         await using UniPlusDbContext conferencia = fixture.CreateDbContext();
         return await conferencia.Set<EtapaProcesso>().FirstAsync(e => e.Id == etapaId);
+    }
+
+    private async Task<string> TextoGravadoDaFaseAsync(Guid faseId)
+    {
+        await using UniPlusDbContext conferencia = fixture.CreateDbContext();
+        return await conferencia.Database
+            .SqlQuery<string>($"SELECT array_to_string(tipos_de_decisao, ',') AS \"Value\" FROM selecao.fases_cronograma WHERE id = {faseId}")
+            .SingleAsync();
+    }
+
+    private async Task<string> TextoGravadoDaEtapaAsync(Guid etapaId)
+    {
+        await using UniPlusDbContext conferencia = fixture.CreateDbContext();
+        return await conferencia.Database
+            .SqlQuery<string>($"SELECT array_to_string(tipos_de_decisao, ',') AS \"Value\" FROM selecao.etapas_processo WHERE id = {etapaId}")
+            .SingleAsync();
     }
 }

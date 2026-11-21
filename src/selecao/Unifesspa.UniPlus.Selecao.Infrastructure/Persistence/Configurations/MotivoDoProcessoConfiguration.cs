@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -17,10 +15,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// para o cadastro (ADR-0061), para que a linha viva possa mudar sem alcançar o processo, e sem chave estrangeira para a
 /// fase ou a etapa do lugar, porque a escolha acompanha a identidade delas entre as versões do edital.
 /// </summary>
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class MotivoDoProcessoConfiguration : IEntityTypeConfiguration<MotivoDoProcesso>
 {
     public void Configure(EntityTypeBuilder<MotivoDoProcesso> builder)
@@ -73,7 +67,7 @@ internal sealed class MotivoDoProcessoConfiguration : IEntityTypeConfiguration<M
 
     private static void MapearCopia(EntityTypeBuilder<MotivoDoProcesso> builder)
     {
-        builder.Property(m => m.Tipo).HasConversion<string>().HasMaxLength(MotivoDeDecisaoConfiguration.EnumMaxLength).IsRequired();
+        builder.Property(m => m.Tipo).HasMaxLength(MotivoDeDecisaoConfiguration.EnumMaxLength).IsRequired();
         builder.Property(m => m.Codigo)
             .HasConversion(codigo => codigo.Valor, valor => CodigoMotivoDecisao.Reidratar(valor))
             .HasMaxLength(MotivoDeDecisaoConfiguration.CodigoMaxLength)

@@ -13,6 +13,8 @@ using Outbox.Cascading;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
@@ -135,7 +137,7 @@ public sealed class EsperaPeloBloqueioNaInclusaoDeMotivoEndpointTests : IAsyncLi
         private static async Task<Guid> SemearMotivoAsync(CenarioDeEsperaPelaTrava cenario)
         {
             MotivoDeDecisao motivo = MotivoDeDecisao.Criar(new CamposDoMotivo(
-                TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes,
+                TipoMotivoDeDecisao.HomologacaoDasInscricoes.Codigo(),
                 $"TEST_EPT_{Guid.NewGuid():N}"[..40].ToUpperInvariant(),
                 "Sem resultado no retorno do INEP para a edição indicada",
                 null,

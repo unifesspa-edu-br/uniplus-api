@@ -9,6 +9,7 @@ using Kernel.Domain.CodigosDeContrato;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Entrada de recurso de uma fase, usada por <see cref="FaseCronogramaInput"/>.
@@ -112,7 +113,7 @@ public sealed record FaseCronogramaInput(
     IReadOnlyList<BancaRequeridaInput> BancasRequeridas,
     RegraRecursoFaseInput? RegraRecurso,
     Guid? UnidadeResponsavelId = null,
-    IReadOnlyList<string?>? TiposDeDecisao = null,
+    [property: AceitaCodigosDe<TipoMotivoDeDecisao>] IReadOnlyList<string?>? TiposDeDecisao = null,
     RegraDeHomologacaoInput? RegraDeHomologacao = null)
 {
     /// <summary>

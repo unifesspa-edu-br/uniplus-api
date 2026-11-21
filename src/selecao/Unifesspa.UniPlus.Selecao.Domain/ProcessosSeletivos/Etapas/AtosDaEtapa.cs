@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
@@ -19,7 +20,7 @@ public sealed record AtosDaEtapa
 
     public bool EmiteParecerIndividual { get; }
 
-    public IReadOnlyList<string> TiposDeDecisao { get; }
+    public IReadOnlyList<TipoMotivoDeDecisao> TiposDeDecisao { get; }
 
     public bool TemRecursos { get; }
 

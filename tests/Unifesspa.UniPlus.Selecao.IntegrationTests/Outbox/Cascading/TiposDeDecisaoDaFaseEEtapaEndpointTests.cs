@@ -35,8 +35,8 @@ using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 [Trait("Category", "OutboxCascading")]
 public sealed class TiposDeDecisaoDaFaseEEtapaEndpointTests
 {
-    private const string Classificacao = TipoMotivoDeDecisaoCodigo.Classificacao;
-    private const string Isencao = TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa;
+    private const string Classificacao = "CLASSIFICACAO";
+    private const string Isencao = "ISENCAO_DA_TAXA";
     private const string TipoForaDoVocabulario = "RECURSO_DA_BANCA";
     private const string CodigoDeTipoInvalido = "uniplus.selecao.motivo_de_decisao.tipo_invalido";
     private const string CodigoDeTipoDuplicado = "uniplus.selecao.motivo_de_decisao.tipo_de_decisao_duplicado";

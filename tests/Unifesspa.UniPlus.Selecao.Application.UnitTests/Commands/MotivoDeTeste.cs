@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -12,7 +14,7 @@ internal static class MotivoDeTeste
 {
     internal static MotivoDeDecisao Motivo(
         TipoMotivoDeDecisao tipo = TipoMotivoDeDecisao.IsencaoDaTaxa, string codigo = "RENDA_ACIMA_DO_LIMITE", string? subclassificacao = FundamentoIsencaoCodigo.CadastroUnico) =>
-        MotivoDeDecisao.Criar(new CamposDoMotivo(tipo.ToCodigo(), codigo, "Renda familiar per capita acima do limite legal.", subclassificacao, SentidoDoMotivo.Desfavoravel)).Value!;
+        MotivoDeDecisao.Criar(new CamposDoMotivo(tipo.Codigo(), codigo, "Renda familiar per capita acima do limite legal.", subclassificacao, SentidoDoMotivo.Desfavoravel)).Value!;
 
     /// <summary>O lugar da primeira fase do cronograma do processo.</summary>
     internal static LugarDaDecisao LugarDaPrimeiraFase(ProcessoSeletivo processo) =>

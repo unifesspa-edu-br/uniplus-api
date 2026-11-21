@@ -6,8 +6,10 @@ using Enums;
 
 using Services;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
@@ -103,10 +105,10 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
     /// </summary>
     public bool EmiteParecerIndividual { get; private set; }
 
-    private readonly List<string> _tiposDeDecisao = [];
+    private readonly List<TipoMotivoDeDecisao> _tiposDeDecisao = [];
 
     /// <summary>Os tipos de decisão que a fase declara produzir, em ordem alfabética ordinal e sem repetição.</summary>
-    public IReadOnlyList<string> TiposDeDecisao => _tiposDeDecisao.AsReadOnly();
+    public IReadOnlyList<TipoMotivoDeDecisao> TiposDeDecisao => _tiposDeDecisao.AsReadOnly();
 
     /// <summary>A regra de homologação das inscrições que a fase declara; ausente quando a fase não homologa.</summary>
     public RegraDeHomologacaoDasInscricoes? RegraDeHomologacao { get; private set; }
@@ -234,7 +236,7 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
         Id,
         OrigemCanonica(),
         DecisoesDeCronograma(),
-        new PublicacoesDaFase([.. OrdemCanonicaDaConfiguracao.ProdutosDaFase(_produtos)], EmiteParecerIndividual, RegraRecurso, [.. _tiposDeDecisao], RegraDeHomologacao),
+        new PublicacoesDaFase([.. OrdemCanonicaDaConfiguracao.ProdutosDaFase(_produtos)], EmiteParecerIndividual, RegraRecurso, [.. _tiposDeDecisao.Select(static tipo => tipo.Codigo())], RegraDeHomologacao),
         [.. OrdemCanonicaDaConfiguracao.BancasDaFase(_bancasRequeridas)],
         colecoesComParteRecusada);
 

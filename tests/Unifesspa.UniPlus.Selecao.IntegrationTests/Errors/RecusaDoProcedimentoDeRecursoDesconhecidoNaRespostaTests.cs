@@ -8,7 +8,9 @@ using AwesomeAssertions;
 using Microsoft.AspNetCore.Mvc;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -33,7 +35,7 @@ public sealed class RecusaDoProcedimentoDeRecursoDesconhecidoNaRespostaTests
     {
         DeclaracaoDosProcedimentosDeRecurso declaracao = new(
             static (_, _, _) => Task.FromResult<RegraCatalogo?>(null), CodigosDoProcedimentoDeRecurso.DaEtapa);
-        ProcedimentoDeRecursoInput entrada = new(TipoMotivoDeDecisaoCodigo.Classificacao, null, CodigoDigitado, VersaoDigitada);
+        ProcedimentoDeRecursoInput entrada = new(TipoMotivoDeDecisao.Classificacao.Codigo(), null, CodigoDigitado, VersaoDigitada);
         ContextoDosProcedimentosDeRecurso contexto = new(new HashSet<TipoMotivoDeDecisao> { TipoMotivoDeDecisao.Classificacao }, new HashSet<Guid>(), false);
 
         Result<ProcedimentosDeRecurso> recusa = await declaracao.DeclararAsync([entrada], contexto, "recursos[0].procedimentos", CancellationToken.None);

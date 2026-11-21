@@ -15,8 +15,10 @@ using Outbox.Cascading;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 
 /// <summary>
 /// Recusas de campo do cadastro único de motivos de decisão e do filtro da listagem pelo endpoint
@@ -65,7 +67,7 @@ public sealed class RecusasDoCadastroDeMotivoEndpointTests : IAsyncLifetime
         problema.GetProperty("code").GetString().Should().Be(Prefixo + "tipo_obrigatorio");
         problema.GetProperty("title").GetString().Should().Be("Tipo do motivo é obrigatório");
         problema.GetProperty("detail").GetString().Should()
-            .Be($"Informe o tipo do motivo. Tipos aceitos: {TipoMotivoDeDecisaoCodigo.CodigosEmTexto}.");
+            .Be($"Informe o tipo do motivo. Tipos aceitos: {TipoDoMotivoInformado.RotulosAceitosEmTexto}.");
         CampoDoErro(problema).Should().Be("tipo");
     }
 
@@ -116,7 +118,7 @@ public sealed class RecusasDoCadastroDeMotivoEndpointTests : IAsyncLifetime
         using HttpClient client = await ClienteComConcessaoAsync();
 
         using HttpResponseMessage resposta = await PostAsync(
-            client, Payload(TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes, "SUBCLASSIFICACAO_RECUSADA"));
+            client, Payload("HOMOLOGACAO_DAS_INSCRICOES", "SUBCLASSIFICACAO_RECUSADA"));
 
         JsonElement problema = await LerProblemaAsync(resposta);
         problema.GetProperty("code").GetString().Should().Be(Prefixo + "subclassificacao_nao_admitida");
@@ -154,7 +156,7 @@ public sealed class RecusasDoCadastroDeMotivoEndpointTests : IAsyncLifetime
     }
 
     private static object Payload(
-        string? tipo = TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa,
+        string? tipo = "ISENCAO_DA_TAXA",
         string? subclassificacao = "CADASTRO_UNICO",
         string? sentido = "DESFAVORAVEL",
         string descricao = "Renda familiar per capita acima do limite legal.") => new

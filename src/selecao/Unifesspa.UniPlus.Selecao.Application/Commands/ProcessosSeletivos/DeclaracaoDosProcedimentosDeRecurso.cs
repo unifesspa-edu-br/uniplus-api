@@ -3,10 +3,14 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Errors;
+using Domain.MotivosDeDecisao;
 using Domain.ProcessosSeletivos.Recursos;
 using Domain.ValueObjects;
 
+using Kernel.Domain.CodigosDeContrato;
 using Kernel.Results;
+
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Monta os procedimentos de recurso que uma fase ou uma etapa declara a partir da entrada: o tipo de decisão do vocabulário, o
@@ -49,23 +53,19 @@ internal sealed class DeclaracaoDosProcedimentosDeRecurso(
     private async Task<Result<ProcedimentoDeRecursoDeclarado>> DeclararProcedimentoAsync(
         ProcedimentoDeRecursoInput entrada, string campo, CancellationToken cancellationToken)
     {
-        TipoMotivoDeDecisao tipo = TipoMotivoDeDecisaoCodigo.FromCodigo(entrada.TipoDeDecisao);
+        bool tipoValido = CatalogoDe<TipoMotivoDeDecisao>.TentarObter(entrada.TipoDeDecisao, out TipoMotivoDeDecisao tipo);
         Result<AlvoDoProcedimentoDeRecurso?> alvo = Alvo(entrada.Alvo, campo);
         Result<ReferenciaRegra> regra = await ReferenciaAsync(entrada, campo, cancellationToken).ConfigureAwait(false);
 
-        List<FieldError> recusas = [.. RecusaDoTipo(tipo, campo), .. alvo.Errors, .. regra.Errors];
+        List<FieldError> recusas = [.. RecusaDoTipoDeDecisao(tipoValido, campo), .. alvo.Errors, .. regra.Errors];
 
         return recusas.Count > 0
             ? Result<ProcedimentoDeRecursoDeclarado>.ValidationFailure(recusas)
             : Result<ProcedimentoDeRecursoDeclarado>.Success(ProcedimentoDeRecursoDeclarado.De(tipo, alvo.Value, regra.Value!));
     }
 
-    private static IEnumerable<FieldError> RecusaDoTipo(TipoMotivoDeDecisao tipo, string campo) =>
-        tipo == TipoMotivoDeDecisao.Nenhum
-            ? [new FieldError($"{campo}.tipoDeDecisao", new DomainError(
-                MotivoDeDecisaoErrorCodes.TipoInvalido,
-                $"O tipo informado não pertence ao vocabulário de decisões. Tipos aceitos: {TipoMotivoDeDecisaoCodigo.CodigosEmTexto}."))]
-            : [];
+    private static IEnumerable<FieldError> RecusaDoTipoDeDecisao(bool tipoValido, string campo) =>
+        tipoValido ? [] : [new FieldError($"{campo}.tipoDeDecisao", TipoDoMotivoInformado.TipoForaDoVocabulario())];
 
     private Result<AlvoDoProcedimentoDeRecurso?> Alvo(AlvoDoProcedimentoDeRecursoInput? entrada, string campo) => entrada switch
     {
@@ -94,8 +94,6 @@ internal sealed class DeclaracaoDosProcedimentosDeRecurso(
 
         return regra is { Tipo: TipoRegra.RegraProcedimentoRecurso }
             ? Result<ReferenciaRegra>.Success(regra.Referencia())
-            : Result<ReferenciaRegra>.ValidationFailure([new($"{campo}.regra", new DomainError(
-                codigos.Desconhecido,
-                $"O procedimento de recurso informado, ou a versão dele, não consta do catálogo. Procedimentos aceitos: {string.Join(", ", RegraProcedimentoRecursoCodigo.Rol)}."))]);
+            : Result<ReferenciaRegra>.ValidationFailure([new($"{campo}.regra", ConferenciaDosProcedimentosDeRecurso.ProcedimentoForaDoCatalogo(codigos))]);
     }
 }

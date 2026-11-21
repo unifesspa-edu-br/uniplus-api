@@ -1,12 +1,13 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
 /// <summary>
 /// Os tipos de decisão que uma fase ou etapa declara produzir: zero, um ou vários, cada um do
-/// vocabulário de <see cref="TipoMotivoDeDecisaoCodigo"/>. Fase e etapa declaram o seu conjunto sem
+/// vocabulário de <see cref="TipoMotivoDeDecisao"/>. Fase e etapa declaram o seu conjunto sem
 /// herança entre elas; só a repetição dentro da mesma declaração é recusada.
 /// </summary>
 public static class TiposDeDecisaoDeclarados
@@ -42,36 +43,37 @@ public static class TiposDeDecisaoDeclarados
     public static IReadOnlySet<TipoMotivoDeDecisao>? Aceitos(IReadOnlyList<string?>? bruto) =>
         Validar(bruto, Campo).Count > 0
             ? null
-            : (bruto ?? []).Select(TipoMotivoDeDecisaoCodigo.FromCodigo).ToHashSet();
+            : Reconhecidos(bruto).ToHashSet();
 
     /// <summary>
-    /// Os códigos canônicos em ordem alfabética ordinal, sem repetição. Pressupõe a declaração já
+    /// Os tipos em ordem alfabética ordinal do código, sem repetição. Pressupõe a declaração já
     /// conferida por <see cref="Validar"/>: o que não pertence ao vocabulário fica de fora.
     /// </summary>
-    public static IReadOnlyList<string> Canonicos(IReadOnlyList<string?>? bruto) =>
-    [
-        .. (bruto ?? [])
-            .Select(TipoMotivoDeDecisaoCodigo.FromCodigo)
-            .Where(static tipo => tipo != TipoMotivoDeDecisao.Nenhum)
-            .Distinct()
-            .Select(static tipo => tipo.ToCodigo())
-            .Order(StringComparer.Ordinal),
-    ];
+    public static IReadOnlyList<TipoMotivoDeDecisao> Canonicos(IReadOnlyList<string?>? bruto) =>
+        [.. Reconhecidos(bruto).Distinct().OrderBy(static tipo => tipo.Codigo(), StringComparer.Ordinal)];
+
+    private static IEnumerable<TipoMotivoDeDecisao> Reconhecidos(IReadOnlyList<string?>? bruto)
+    {
+        foreach (string? codigo in bruto ?? [])
+        {
+            if (CatalogoDe<TipoMotivoDeDecisao>.TentarObter(codigo, out TipoMotivoDeDecisao tipo))
+            {
+                yield return tipo;
+            }
+        }
+    }
 
     private static DomainError? ErroDoElemento(string? codigo, HashSet<TipoMotivoDeDecisao> jaDeclarados)
     {
-        TipoMotivoDeDecisao tipo = TipoMotivoDeDecisaoCodigo.FromCodigo(codigo);
-        if (tipo == TipoMotivoDeDecisao.Nenhum)
+        if (!CatalogoDe<TipoMotivoDeDecisao>.TentarObter(codigo, out TipoMotivoDeDecisao tipo))
         {
-            return new DomainError(
-                MotivoDeDecisaoErrorCodes.TipoInvalido,
-                $"O tipo informado não pertence ao vocabulário de decisões. Tipos aceitos: {TipoMotivoDeDecisaoCodigo.CodigosEmTexto}.");
+            return TipoDoMotivoInformado.TipoForaDoVocabulario();
         }
 
         return jaDeclarados.Add(tipo)
             ? null
             : new DomainError(
                 MotivoDeDecisaoErrorCodes.TipoDeDecisaoDuplicado,
-                $"O tipo '{codigo}' é declarado mais de uma vez; cada tipo de decisão é declarado uma única vez.");
+                $"O tipo de decisão '{tipo.Rotulo()}' é declarado mais de uma vez; cada tipo é declarado uma única vez.");
     }
 }

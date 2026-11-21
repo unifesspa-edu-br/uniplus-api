@@ -7,8 +7,10 @@ using ProcessosSeletivos.Etapas;
 
 using Services;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -84,10 +86,10 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     private readonly List<BancaDaEtapa> _bancas = [];
     private readonly List<RecursoDaEtapa> _recursos = [];
     private readonly List<ItemDeAvaliacao> _itensDeAvaliacao = [];
-    private readonly List<string> _tiposDeDecisao = [];
+    private readonly List<TipoMotivoDeDecisao> _tiposDeDecisao = [];
 
     /// <summary>Os tipos de decisão que a etapa declara produzir, em ordem alfabética ordinal e sem repetição.</summary>
-    public IReadOnlyList<string> TiposDeDecisao => _tiposDeDecisao.AsReadOnly();
+    public IReadOnlyList<TipoMotivoDeDecisao> TiposDeDecisao => _tiposDeDecisao.AsReadOnly();
 
     /// <summary>Os itens em que a nota da etapa se divide, em ordem canônica: pelo conteúdo, nunca pelo id.</summary>
     public IReadOnlyList<ItemDeAvaliacao> ItensDeAvaliacao => [.. _itensDeAvaliacao
@@ -345,7 +347,7 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
             [.. ItensDeAvaliacao.Select(static item => new ItemDeAvaliacaoDeclarado(item.Id, item.Rotulo, item.PontuacaoMaxima))],
             null),
         new JanelaDeTempo(Inicio, Fim),
-        new PublicacoesDaEtapa([.. OrdemCanonicaDaConfiguracao.ProdutosDaEtapa(_produtos)], EmiteParecerIndividual, [.. Recursos], [.. _tiposDeDecisao]),
+        new PublicacoesDaEtapa([.. OrdemCanonicaDaConfiguracao.ProdutosDaEtapa(_produtos)], EmiteParecerIndividual, [.. Recursos], [.. _tiposDeDecisao.Select(static tipo => tipo.Codigo())]),
         [.. OrdemCanonicaDaConfiguracao.BancasDaEtapa(_bancas)],
         colecoesComParteRecusada);
 

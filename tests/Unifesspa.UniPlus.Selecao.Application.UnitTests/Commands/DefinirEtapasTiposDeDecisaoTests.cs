@@ -30,9 +30,9 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport.Cenario
 /// </summary>
 public sealed class DefinirEtapasTiposDeDecisaoTests
 {
-    private const string Classificacao = TipoMotivoDeDecisaoCodigo.Classificacao;
-    private const string Isencao = TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa;
-    private const string Heteroidentificacao = TipoMotivoDeDecisaoCodigo.Heteroidentificacao;
+    private const string Classificacao = "CLASSIFICACAO";
+    private const string Isencao = "ISENCAO_DA_TAXA";
+    private const string Heteroidentificacao = "HETEROIDENTIFICACAO";
     private const string TipoForaDoVocabulario = "RECURSO_DA_BANCA";
     private static readonly DateTimeOffset Inicio = new(2026, 2, 1, 0, 0, 0, TimeSpan.Zero);
     private static readonly DateTimeOffset FimAntesDoInicio = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);

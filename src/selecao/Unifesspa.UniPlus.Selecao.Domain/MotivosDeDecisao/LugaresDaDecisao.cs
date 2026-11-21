@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
@@ -50,9 +51,9 @@ public sealed class LugaresDaDecisao
         ArgumentNullException.ThrowIfNull(etapas);
 
         IEnumerable<LugarNoProcesso> dasFases = OrdemCanonicaDaConfiguracao.Fases(fases).Select((f, posicao) => new LugarNoProcesso(
-            LugarDaDecisao.DaFase(f.FaseCanonicaOrigemId), f.Id, $"A fase '{f.Codigo}'", TiposDeDecisaoDe(f.TiposDeDecisao), TiposRecusadosEm(origem, ListaDasFases, posicao)));
+            LugarDaDecisao.DaFase(f.FaseCanonicaOrigemId), f.Id, $"A fase '{f.Codigo}'", f.TiposDeDecisao.ToHashSet(), TiposRecusadosEm(origem, ListaDasFases, posicao)));
         IEnumerable<LugarNoProcesso> dasEtapas = OrdemCanonicaDaConfiguracao.Etapas(etapas).Select((e, posicao) => new LugarNoProcesso(
-            LugarDaDecisao.DaEtapa(e.Id), e.Id, $"A etapa '{e.Nome}'", TiposDeDecisaoDe(e.TiposDeDecisao), TiposRecusadosEm(origem, ListaDasEtapas, posicao)));
+            LugarDaDecisao.DaEtapa(e.Id), e.Id, $"A etapa '{e.Nome}'", e.TiposDeDecisao.ToHashSet(), TiposRecusadosEm(origem, ListaDasEtapas, posicao)));
 
         return new([.. dasFases, .. dasEtapas], origem.TemParteRecusadaEm(ListaDasFases) || origem.TemParteRecusadaEm(ListaDasEtapas));
     }
@@ -82,9 +83,6 @@ public sealed class LugaresDaDecisao
 
     private static bool TiposRecusadosEm(OrigemNoDocumento origem, string lista, int posicao) =>
         origem.PartesRecusadasDe($"{lista}[{posicao}]").Contains(TiposDeDecisaoDeclarados.Campo);
-
-    private static HashSet<TipoMotivoDeDecisao> TiposDeDecisaoDe(IEnumerable<string> declarados) =>
-        [.. declarados.Select(TipoMotivoDeDecisaoCodigo.FromCodigo)];
 }
 
 /// <summary>

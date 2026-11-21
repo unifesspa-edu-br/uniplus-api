@@ -4,7 +4,9 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -45,7 +47,7 @@ public sealed class DeclaracaoDosProcedimentosDeRecursoTests
         enem);
 
     private static ProcedimentoDeRecursoInput Entrada(
-        string? tipo = TipoMotivoDeDecisaoCodigo.Classificacao,
+        string? tipo = "CLASSIFICACAO",
         AlvoDoProcedimentoDeRecursoInput? alvo = null,
         string? regra = RegraProcedimentoRecursoCodigo.Recalculo,
         string? versao = "v1") => new(tipo, alvo, regra, versao);
@@ -109,9 +111,9 @@ public sealed class DeclaracaoDosProcedimentosDeRecursoTests
 
         resultado.Errors.Should().ContainSingle();
         resultado.Errors[0].Field.Should().Be("recursos[0].procedimentos[0].regra");
+        resultado.Errors[0].Error.Code.Should().Be(Codigos.Desconhecido);
         resultado.Errors[0].Error.Message.Should()
-            .Contain("não consta do catálogo")
-            .And.Contain(RegraProcedimentoRecursoCodigo.Recalculo)
+            .Be($"O procedimento de recurso informado, ou a versão dele, não consta do catálogo. Procedimentos aceitos: {string.Join(", ", RegraProcedimentoRecursoCodigo.Rol)}.")
             .And.NotContain(CodigoDigitado)
             .And.NotContain(VersaoDigitada);
     }

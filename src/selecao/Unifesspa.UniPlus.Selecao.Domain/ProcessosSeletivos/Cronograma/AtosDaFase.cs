@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
@@ -24,7 +25,7 @@ public sealed record AtosDaFase
 
     public bool AdmiteRecurso { get; }
 
-    public IReadOnlyList<string> TiposDeDecisao { get; }
+    public IReadOnlyList<TipoMotivoDeDecisao> TiposDeDecisao { get; }
 
     public RegraDeHomologacaoDasInscricoes? RegraDeHomologacao { get; }
 

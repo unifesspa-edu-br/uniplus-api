@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Recursos
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Recursos;
@@ -38,14 +39,6 @@ public sealed class ProcedimentosDeRecursoTests
         base1.MesmoConteudo(ProcedimentosDeRecurso.De([Procedimento(alvo: AlvoItem())])).Should().BeFalse();
         base1.MesmoConteudo(ProcedimentosDeRecurso.De([HomologacaoSemAlvo])).Should().BeFalse();
         base1.MesmoConteudo(ProcedimentosDeRecurso.Nenhum).Should().BeFalse();
-    }
-
-    [Fact(DisplayName = "Tipo de decisão sentinela não monta procedimento: o tipo inválido é recusado antes")]
-    public void TipoNenhum_NaoMonta()
-    {
-        Action montar = () => ProcedimentoDeRecursoDeclarado.De(TipoMotivoDeDecisao.Nenhum, null, Regra());
-
-        montar.Should().Throw<ArgumentOutOfRangeException>();
     }
 
     [Fact(DisplayName = "O alvo guarda o item pelo identificador canônico e a área pelo código; a igualdade é pelo valor")]

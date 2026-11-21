@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ValueObjects;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -36,7 +38,7 @@ public sealed class EntradaDoPreliminarDaEtapaTests
         [nameof(EtapaProcesso.ItensDeAvaliacao)] = () => Etapa(itens: [new(null, "Clareza", 6m)]),
         [nameof(EtapaProcesso.Bancas)] = () => Etapa(completar: e => e.DefinirBancas([BancasDeTeste.DeRecursosDaEtapa()])),
         [nameof(EtapaProcesso.Recursos)] = () => Etapa(completar: e => AbrirRecurso(e, prazo: 2m, ancora: 0, Materia)),
-        [nameof(EtapaProcesso.TiposDeDecisao)] = () => ComTipos(TipoMotivoDeDecisaoCodigo.Classificacao),
+        [nameof(EtapaProcesso.TiposDeDecisao)] = () => ComTipos(TipoMotivoDeDecisao.Classificacao.Codigo()),
     };
 
     private static readonly Dictionary<string, Func<EtapaProcesso>> QueNaoEntram = new()
@@ -146,13 +148,13 @@ public sealed class EntradaDoPreliminarDaEtapaTests
 
     [Fact(DisplayName = "Trocar um tipo de decisão declarado pela etapa muda a entrada")]
     public void TrocarTipoDeDecisao_MudaAEntrada() =>
-        ComTipos(TipoMotivoDeDecisaoCodigo.Classificacao).EntradaDoPreliminar()
-            .Should().NotBe(ComTipos(TipoMotivoDeDecisaoCodigo.AnaliseDocumental).EntradaDoPreliminar());
+        ComTipos(TipoMotivoDeDecisao.Classificacao.Codigo()).EntradaDoPreliminar()
+            .Should().NotBe(ComTipos(TipoMotivoDeDecisao.AnaliseDocumental.Codigo()).EntradaDoPreliminar());
 
     [Fact(DisplayName = "A ordem em que os tipos de decisão são declarados não muda a entrada")]
     public void OrdemDosTiposDeDecisao_NaoMudaAEntrada() =>
-        ComTipos(TipoMotivoDeDecisaoCodigo.Classificacao, TipoMotivoDeDecisaoCodigo.AnaliseDocumental).EntradaDoPreliminar()
-            .Should().Be(ComTipos(TipoMotivoDeDecisaoCodigo.AnaliseDocumental, TipoMotivoDeDecisaoCodigo.Classificacao).EntradaDoPreliminar());
+        ComTipos(TipoMotivoDeDecisao.Classificacao.Codigo(), TipoMotivoDeDecisao.AnaliseDocumental.Codigo()).EntradaDoPreliminar()
+            .Should().Be(ComTipos(TipoMotivoDeDecisao.AnaliseDocumental.Codigo(), TipoMotivoDeDecisao.Classificacao.Codigo()).EntradaDoPreliminar());
 
     private static EtapaProcesso ComParametrosDoRecurso(ParametrosDeclaradosDoRecurso parametros) =>
         Etapa(completar: e => AbrirRecursoComParametros(e, parametros, ProcedimentosDeRecurso.Nenhum, 0, Materia));

@@ -11,6 +11,8 @@ using Kernel.Results;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -35,7 +37,7 @@ internal static class ProcessoSeletivoPublicavelSeeder
 
     // O que a fase única declara decidir: os motivos escolhidos nela nos testes são deste tipo, e o motivo só vale no lugar que
     // declara o tipo dele.
-    private static readonly string[] TiposDeDecisaoDaFaseUnica = [TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes];
+    private static readonly string[] TiposDeDecisaoDaFaseUnica = [TipoMotivoDeDecisao.HomologacaoDasInscricoes.Codigo()];
 
     /// <summary>A fase que coleta a inscrição, agrupa as etapas e publica o resultado que homologa as inscrições.</summary>
     internal static FaseCronograma FaseDeResultadoFinal(OpcoesDoProcessoSeletivoPublicavel opcoes) => FaseCronograma.Criar(

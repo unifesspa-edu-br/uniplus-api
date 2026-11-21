@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Testes.Compartilhado;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -35,14 +37,14 @@ internal static class MotivosDaHomologacaoDeTeste
         return
         [
             .. processo.CronogramaFases
-                .Where(static fase => fase.RegraDeHomologacao is not null && fase.TiposDeDecisao.Contains(TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes))
+                .Where(static fase => fase.RegraDeHomologacao is not null && fase.TiposDeDecisao.Contains(TipoMotivoDeDecisao.HomologacaoDasInscricoes))
                 .SelectMany(fase => CodigosDosMotivosDasCondicoes(fase).Select(codigo => (fase, codigo))),
         ];
     }
 
     /// <summary>O motivo do cadastro que a condição aponta, como o cadastro o guardaria.</summary>
     public static MotivoDeDecisao NovaOrigem(string codigo) => MotivoDeDecisao.Criar(new CamposDoMotivo(
-        TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes, codigo, "Condição de homologação não atendida", null, SentidoDoMotivo.Desfavoravel)).Value!;
+        TipoMotivoDeDecisao.HomologacaoDasInscricoes.Codigo(), codigo, "Condição de homologação não atendida", null, SentidoDoMotivo.Desfavoravel)).Value!;
 
     /// <summary>A cópia do motivo do cadastro que o processo escolhe na fase.</summary>
     public static MotivoDoProcesso Escolher(ProcessoSeletivo processo, FaseCronograma fase, MotivoDeDecisao origem) =>

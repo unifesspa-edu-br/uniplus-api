@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -85,11 +86,11 @@ public sealed class MotivosEscolhidos
     private static IOrderedEnumerable<MotivoEscolhidoComOrigem> PorCodigo(IEnumerable<MotivoEscolhidoComOrigem> motivos) =>
         motivos
             .OrderBy(static m => m.Escolhido.Codigo.Valor, StringComparer.Ordinal)
-            .ThenBy(static m => m.Escolhido.Tipo.ToCodigo(), StringComparer.Ordinal);
+            .ThenBy(static m => m.Escolhido.Tipo.Codigo(), StringComparer.Ordinal);
 
     private string MensagemDoTipoNaoDeclarado(LugarNoProcesso lugar, MotivoDoProcesso escolhido)
     {
-        string recusa = $"{lugar.Descricao} não declara o tipo de decisão {escolhido.Tipo.ToCodigo()} do motivo {escolhido.Codigo.Valor}";
+        string recusa = $"{lugar.Descricao} não declara o tipo de decisão {escolhido.Tipo.Codigo()} do motivo {escolhido.Codigo.Valor}";
 
         return escolhido.PendenteNa(_numeroDaVersaoQueNasce)
             ? $"{recusa}; declare o tipo ou retire o motivo."

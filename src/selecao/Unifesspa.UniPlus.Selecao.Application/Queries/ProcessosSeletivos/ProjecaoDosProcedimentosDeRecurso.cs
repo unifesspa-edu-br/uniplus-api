@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Recursos;
@@ -10,7 +11,7 @@ internal static class ProjecaoDosProcedimentosDeRecurso
 {
     internal static IReadOnlyList<ProcedimentoDeRecursoDto> De(ProcedimentosDeRecurso procedimentos, OrigemDaNotaDaJanela origem) =>
         [.. procedimentos.Itens.Select(p => new ProcedimentoDeRecursoDto(
-            p.TipoDeDecisao.ToCodigo(),
+            p.TipoDeDecisao.Codigo(),
             Alvo(p.Alvo),
             ProjecaoDoProcessoSeletivo.Referencia(p.Regra),
             SugestaoDoProcedimentoDeRecurso.Para(p.TipoDeDecisao, p.Alvo, origem)))];

@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.MotivosDeDecisao;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
@@ -36,8 +38,8 @@ internal static class ProcessoParaMotivos
 
     private static FaseCronograma[] FasesQueDeclaramOsTiposDeDecisao() =>
     [
-        Fase(1, "INSCRICAO", InicioDaInscricao, coletaIsencao: true, TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa),
-        Fase(2, "HOMOLOGACAO_INSCRICOES", InicioDaHomologacao, coletaIsencao: false, TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes),
+        Fase(1, "INSCRICAO", InicioDaInscricao, coletaIsencao: true, TipoMotivoDeDecisao.IsencaoDaTaxa),
+        Fase(2, "HOMOLOGACAO_INSCRICOES", InicioDaHomologacao, coletaIsencao: false, TipoMotivoDeDecisao.HomologacaoDasInscricoes),
     ];
 
     /// <summary>A fase de homologação das inscrições passa a ter a regra de homologação e a não declarar o tipo de decisão dela.</summary>
@@ -61,7 +63,7 @@ internal static class ProcessoParaMotivos
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     /// <summary>A fase declara só os tipos de decisão informados, no lugar dos que o processo de teste traz.</summary>
-    internal static void DeclararNaFase(ProcessoSeletivo processo, string codigoDaFase, params string[] tipos)
+    internal static void DeclararNaFase(ProcessoSeletivo processo, string codigoDaFase, params TipoMotivoDeDecisao[] tipos)
     {
         FaseCronograma fase = processo.CronogramaFases.Single(f => f.Codigo == codigoDaFase);
         ProcessoCarregadoDoBanco.SemTiposDeDecisao(fase);
@@ -69,8 +71,8 @@ internal static class ProcessoParaMotivos
     }
 
     /// <summary>A etapa declara só os tipos de decisão informados.</summary>
-    internal static void DeclararNaEtapa(ProcessoSeletivo processo, string nomeDaEtapa, params string[] tipos) =>
-        processo.Etapas.Single(e => e.Nome == nomeDaEtapa).DefinirTiposDeDecisao(tipos).IsSuccess.Should().BeTrue();
+    internal static void DeclararNaEtapa(ProcessoSeletivo processo, string nomeDaEtapa, params TipoMotivoDeDecisao[] tipos) =>
+        processo.Etapas.Single(e => e.Nome == nomeDaEtapa).DefinirTiposDeDecisao([.. tipos.Select(static tipo => tipo.Codigo())]).IsSuccess.Should().BeTrue();
 
     /// <summary>O processo sem a fase de código informado, como fica o retrato dos lugares quando a leitura recusa a fase inteira.</summary>
     internal static void SemAFase(ProcessoSeletivo processo, string codigoDaFase) =>
@@ -104,7 +106,7 @@ internal static class ProcessoParaMotivos
         MotivoDoProcesso.Copiar(processo.Id, lugar, origem, versaoDeEntrada, justificativa: null);
 
     internal static MotivoDeDecisao Motivo(TipoMotivoDeDecisao tipo, string codigo, SentidoDoMotivo sentido, string? subclassificacao = null) =>
-        MotivoDeDecisao.Criar(new CamposDoMotivo(tipo.ToCodigo(), codigo, "Descrição do motivo " + codigo, subclassificacao, sentido)).Value!;
+        MotivoDeDecisao.Criar(new CamposDoMotivo(tipo.Codigo(), codigo, "Descrição do motivo " + codigo, subclassificacao, sentido)).Value!;
 
     internal static MotivoDeDecisao DaIsencao(string fundamento, SentidoDoMotivo sentido, string codigo = "RENDA_ACIMA_DO_LIMITE") =>
         Motivo(TipoMotivoDeDecisao.IsencaoDaTaxa, codigo, sentido, fundamento);
@@ -112,12 +114,12 @@ internal static class ProcessoParaMotivos
     private static EtapaProcesso Etapa(string nome, int ordem) =>
         ApoioDaPublicacaoDoProcessoSeletivo.EtapaDaProvaObjetiva(nome, CaraterEtapa.Classificatoria, peso: 1m, ordem: ordem, faseCodigo: "HOMOLOGACAO_INSCRICOES");
 
-    private static FaseCronograma Fase(int ordem, string codigo, DateTimeOffset inicio, bool coletaIsencao, string tipoDeDecisao) =>
+    private static FaseCronograma Fase(int ordem, string codigo, DateTimeOffset inicio, bool coletaIsencao, TipoMotivoDeDecisao tipoDeDecisao) =>
         FaseCronograma.Criar(
             new OrigemCanonicaDaFase(
                 Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: ordem == 1, ColetaSolicitacaoIsencao: coletaIsencao),
             new DecisoesDeCronogramaDaFase(ordem, Inicio: inicio, Fim: inicio.AddDays(20), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(
-                Produtos: [ProdutoDaFase.Criar(codigo, PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null, TiposDeDecisao: [tipoDeDecisao]),
+                Produtos: [ProdutoDaFase.Criar(codigo, PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null, TiposDeDecisao: [tipoDeDecisao.Codigo()]),
             bancasRequeridas: []).Value!;
 }

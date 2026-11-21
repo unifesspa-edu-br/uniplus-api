@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Recursos;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -56,9 +57,9 @@ public static class ConferenciaDosProcedimentosDeRecurso
         ProcedimentoDeRecursoDeclarado atual = declarados[posicao];
         FieldError?[] faltas =
         [
-            FaltaDaRegra(atual, codigos, campo),
             FaltaDoTipo(atual, contexto, codigos, campo),
             FaltaDoAlvo(atual, contexto, codigos, campo),
+            FaltaDaRegra(atual, codigos, campo),
             FaltaDeCoerencia(declarados, posicao, codigos, campo),
         ];
 
@@ -68,9 +69,20 @@ public static class ConferenciaDosProcedimentosDeRecurso
     private static FieldError? FaltaDaRegra(ProcedimentoDeRecursoDeclarado procedimento, CodigosDoProcedimentoDeRecurso codigos, string campo) =>
         RegraProcedimentoRecursoCodigo.Rol.Contains(procedimento.Regra.Codigo, StringComparer.Ordinal)
             ? null
-            : new FieldError($"{campo}.regra", new DomainError(
-                codigos.Desconhecido,
-                "A regra indicada não é um procedimento de recurso disponível no cadastro."));
+            : new FieldError($"{campo}.regra", ProcedimentoForaDoCatalogo(codigos));
+
+    /// <summary>
+    /// A recusa da regra que não é um procedimento de recurso do catálogo, a mesma para quem grava a declaração, a confere e a lê
+    /// do documento; lista os procedimentos aceitos e não repete o que foi escrito.
+    /// </summary>
+    public static DomainError ProcedimentoForaDoCatalogo(CodigosDoProcedimentoDeRecurso codigos)
+    {
+        ArgumentNullException.ThrowIfNull(codigos);
+
+        return new(
+            codigos.Desconhecido,
+            $"O procedimento de recurso informado, ou a versão dele, não consta do catálogo. Procedimentos aceitos: {string.Join(", ", RegraProcedimentoRecursoCodigo.Rol)}.");
+    }
 
     private static FieldError? FaltaDoTipo(
         ProcedimentoDeRecursoDeclarado procedimento, ContextoDosProcedimentosDeRecurso contexto, CodigosDoProcedimentoDeRecurso codigos, string campo) =>
@@ -114,7 +126,7 @@ public static class ConferenciaDosProcedimentosDeRecurso
     {
         ProcedimentoDeRecursoDeclarado atual = declarados[posicao];
         List<ProcedimentoDeRecursoDeclarado> anteriores = [.. declarados.Take(posicao).Where(p => p.TipoDeDecisao == atual.TipoDeDecisao)];
-        string tipo = atual.TipoDeDecisao.ToCodigo();
+        string tipo = atual.TipoDeDecisao.Codigo();
 
         if (anteriores.Exists(atual.CobreAMesmaMateria))
         {

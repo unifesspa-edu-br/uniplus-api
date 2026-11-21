@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.LeituraDoDocumento;
 
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -13,10 +14,13 @@ public sealed record RegraDeRecursoNoDocumento(
     ParametrosDeclaradosDoRecurso Parametros,
     IReadOnlyList<ProcedimentoNoDocumento> Procedimentos);
 
-/// <summary>Um procedimento de recurso, com a posição dele na lista enviada: o tipo de decisão, o alvo opcional e a regra do catálogo.</summary>
+/// <summary>
+/// Um procedimento de recurso, com a posição dele na lista enviada: o tipo de decisão, que é nulo quando o documento não traz um
+/// tipo do vocabulário, o alvo opcional e a regra do catálogo.
+/// </summary>
 public sealed record ProcedimentoNoDocumento(
     int PosicaoNoDocumento,
-    TipoMotivoDeDecisao TipoDeDecisao,
+    TipoMotivoDeDecisao? TipoDeDecisao,
     AlvoNoDocumento? Alvo,
     ReferenciaDeRegraNoDocumento Regra);
 

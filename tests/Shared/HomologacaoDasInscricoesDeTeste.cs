@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Testes.Compartilhado;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -17,7 +19,7 @@ internal static class HomologacaoDasInscricoesDeTeste
     internal const string CodigoDaConfirmacaoDoInep = "RESULTADO_NO_RETORNO_DO_INEP";
 
     /// <summary>O tipo de decisão que a fase que homologa declara produzir.</summary>
-    internal static IReadOnlyList<string?> TiposDeDecisao { get; } = [TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes];
+    internal static IReadOnlyList<string?> TiposDeDecisao { get; } = [TipoMotivoDeDecisao.HomologacaoDasInscricoes.Codigo()];
 
     /// <summary>A regra que aponta o resultado e homologa a inscrição que tem resultado no retorno do INEP.</summary>
     internal static RegraDeHomologacaoDasInscricoes Regra(string resultadoAtoCodigo = ResultadoDaFase) =>

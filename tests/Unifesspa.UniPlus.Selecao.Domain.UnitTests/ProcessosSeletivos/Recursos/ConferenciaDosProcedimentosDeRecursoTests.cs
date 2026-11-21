@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Recursos
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Recursos;
@@ -118,13 +119,13 @@ public sealed class ConferenciaDosProcedimentosDeRecursoTests
             Procedimento(TipoMotivoDeDecisao.AnaliseDocumental, AlvoItem())).Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "As recusas de um mesmo procedimento se acumulam: regra, tipo e alvo, nessa ordem")]
+    [Fact(DisplayName = "As recusas de um mesmo procedimento se acumulam: tipo, alvo e regra, nessa ordem")]
     public void Faltas_AcumulamNaOrdem()
     {
         IReadOnlyList<FieldError> faltas = Faltas(Contexto(),
             Procedimento(TipoMotivoDeDecisao.AnaliseDocumental, AlvoItem(OutroItem), "OUTRA-REGRA"));
 
-        faltas.Select(f => f.Error.Code).Should().Equal(Codigos.Desconhecido, Codigos.ParaDecisaoNaoDeclarada, Codigos.AlvoInexistente);
+        faltas.Select(f => f.Error.Code).Should().Equal(Codigos.ParaDecisaoNaoDeclarada, Codigos.AlvoInexistente, Codigos.Desconhecido);
     }
 
     [Fact(DisplayName = "A janela de fase usa os códigos do prefixo da regra de recurso da fase")]
@@ -138,7 +139,7 @@ public sealed class ConferenciaDosProcedimentosDeRecursoTests
         faltas[0].Error.Code.Should().Be("RegraRecursoFase.ProcedimentoParaDecisaoNaoDeclarada");
     }
 
-    [Fact(DisplayName = "Com a declaração dos tipos do lugar recusada, o tipo do procedimento não é recusado e a regra e o alvo continuam sendo")]
+    [Fact(DisplayName = "Com a declaração dos tipos do lugar recusada, o tipo do procedimento não é recusado e o alvo e a regra continuam sendo")]
     public void TiposDoLugarRecusados_NaoRecusaOTipoDoProcedimento()
     {
         ContextoDosProcedimentosDeRecurso semTipos = Contexto() with { TiposDeDecisaoDoLugar = null };
@@ -146,7 +147,7 @@ public sealed class ConferenciaDosProcedimentosDeRecursoTests
         IReadOnlyList<FieldError> faltas = Faltas(semTipos,
             Procedimento(TipoMotivoDeDecisao.AnaliseDocumental, AlvoItem(OutroItem), "OUTRA-REGRA"));
 
-        faltas.Select(f => f.Error.Code).Should().Equal(Codigos.Desconhecido, Codigos.AlvoInexistente);
+        faltas.Select(f => f.Error.Code).Should().Equal(Codigos.AlvoInexistente, Codigos.Desconhecido);
     }
 
     [Fact(DisplayName = "Com a declaração dos tipos do lugar recusada, a coerência entre procedimentos continua sendo conferida")]

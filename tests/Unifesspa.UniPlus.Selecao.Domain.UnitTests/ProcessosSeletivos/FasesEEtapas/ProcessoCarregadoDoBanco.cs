@@ -4,6 +4,7 @@ using System.Reflection;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 /// <summary>
@@ -31,10 +32,10 @@ internal static class ProcessoCarregadoDoBanco
     internal static void SemOsProdutos(FaseCronograma fase) => Lista<ProdutoDaFase>(fase, "_produtos").Clear();
 
     /// <summary>A fase que o banco hidrata declarando um tipo de decisão, sem que a gravação o tenha conferido.</summary>
-    internal static void ComTipoDeDecisao(FaseCronograma fase, string tipo) => Lista<string>(fase, "_tiposDeDecisao").Add(tipo);
+    internal static void ComTipoDeDecisao(FaseCronograma fase, TipoMotivoDeDecisao tipo) => Lista<TipoMotivoDeDecisao>(fase, "_tiposDeDecisao").Add(tipo);
 
     /// <summary>A fase que o banco hidrata sem declarar nenhum tipo de decisão.</summary>
-    internal static void SemTiposDeDecisao(FaseCronograma fase) => Lista<string>(fase, "_tiposDeDecisao").Clear();
+    internal static void SemTiposDeDecisao(FaseCronograma fase) => Lista<TipoMotivoDeDecisao>(fase, "_tiposDeDecisao").Clear();
 
     /// <summary>A fase que o banco hidrata sem nenhuma banca requerida.</summary>
     internal static void SemBancasRequeridas(FaseCronograma fase) => Lista<BancaRequerida>(fase, "_bancasRequeridas").Clear();

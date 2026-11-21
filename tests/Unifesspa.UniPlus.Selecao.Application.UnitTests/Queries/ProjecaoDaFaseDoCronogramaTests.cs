@@ -5,6 +5,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
@@ -69,7 +70,7 @@ public sealed class ProjecaoDaFaseDoCronogramaTests
                 Produtos: Produtos(),
                 EmiteParecerIndividual: true,
                 RegraRecurso: RegraDeRecurso(),
-                TiposDeDecisao: [TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa, TipoMotivoDeDecisaoCodigo.Classificacao],
+                TiposDeDecisao: [TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo(), TipoMotivoDeDecisao.Classificacao.Codigo()],
                 RegraDeHomologacao: regraDeHomologacao),
             [Banca()]);
 
@@ -192,7 +193,7 @@ public sealed class ProjecaoDaFaseDoCronogramaTests
             new ReferenciaRegraDto(RegraPrazoRecursoCodigo.AncoradoEmAto, "1", new string('a', 64)),
             ParametrosEsperados(),
             []),
-        TiposDeDecisao: [TipoMotivoDeDecisaoCodigo.Classificacao, TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa],
+        TiposDeDecisao: [TipoMotivoDeDecisao.Classificacao.Codigo(), TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo()],
         RegraDeHomologacao: null);
 
     private static RegraDeHomologacaoDasInscricoes RegraDeHomologacao() => RegraDeHomologacaoDasInscricoes.Declarar(

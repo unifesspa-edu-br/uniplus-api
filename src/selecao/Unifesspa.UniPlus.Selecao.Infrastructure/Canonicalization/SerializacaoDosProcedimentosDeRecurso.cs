@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 using System.Text.Json.Nodes;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Recursos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -18,7 +19,7 @@ internal static class SerializacaoDosProcedimentosDeRecurso
     internal static JsonArray Serializar(ProcedimentosDeRecurso procedimentos) =>
         new([.. procedimentos.Itens.Select(static p => (JsonNode)new JsonObject
         {
-            ["tipoDeDecisao"] = p.TipoDeDecisao.ToCodigo(),
+            ["tipoDeDecisao"] = p.TipoDeDecisao.Codigo(),
             ["alvo"] = SerializarAlvo(p.Alvo),
             ["regra"] = EscritaCanonica.SerializarReferenciaRegra(p.Regra),
         })]);

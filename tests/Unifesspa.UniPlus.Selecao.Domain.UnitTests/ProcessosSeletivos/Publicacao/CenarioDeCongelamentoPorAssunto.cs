@@ -6,8 +6,10 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Kernel.Tempo;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -137,7 +139,7 @@ internal sealed class CenarioDeCongelamentoPorAssunto
         [NomeDoAssunto.Conjunto] = new(static c => ProcessoCarregadoDoBanco.Etapa(
             c._processo, EtapaDeProva("Outra prova", c._processo.Etapas.First().Ordem ?? 1, c._processo.Etapas.First().FaseCodigo))),
         [NomeDoAssunto.Completude] = new(static c => ProcessoCarregadoDoBanco.Etapa(c._processo, EtapaDeProva("Prova sem fase", 60, null))),
-        [NomeDoAssunto.Recursos] = new(static c => ProcessoCarregadoDoBanco.ComTipoDeDecisao(c.FaseDoRecurso(), TipoMotivoDeDecisaoCodigo.Classificacao)),
+        [NomeDoAssunto.Recursos] = new(static c => ProcessoCarregadoDoBanco.ComTipoDeDecisao(c.FaseDoRecurso(), TipoMotivoDeDecisao.Classificacao)),
         [NomeDoAssunto.Bancas] = new(static c => ProcessoCarregadoDoBanco.SemBancasRequeridas(c.FaseDoRecurso())),
         [NomeDoAssunto.CorrecaoIndependente] = new(static c => c.ComEtapaDeUmSoCorretor()),
         [NomeDoAssunto.TiposDeAto] = new(static c => c._tipos = Tipos(unico: true, resultadoSemPapel: true, congelaComPapel: true)),

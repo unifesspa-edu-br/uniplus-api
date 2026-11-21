@@ -2,7 +2,9 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.MotivosDeDecisao;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -67,7 +69,7 @@ public sealed class CoberturaDosMotivosTests
     public void Cobertura_EPorLugar()
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho(FundamentoIsencaoCodigo.CadastroUnico);
-        ProcessoParaMotivos.DeclararNaFase(processo, "HOMOLOGACAO_INSCRICOES", TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa);
+        ProcessoParaMotivos.DeclararNaFase(processo, "HOMOLOGACAO_INSCRICOES", TipoMotivoDeDecisao.IsencaoDaTaxa);
         MotivoDoProcesso[] escolhidos =
         [
             Escolher(processo, ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel, "NIS_LOCALIZADO")),
@@ -85,7 +87,7 @@ public sealed class CoberturaDosMotivosTests
     public void Cobertura_IncluiAsEtapasQueDeclaramOTipo()
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho(FundamentoIsencaoCodigo.CadastroUnico);
-        ProcessoParaMotivos.DeclararNaEtapa(processo, "Prova discursiva", TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa);
+        ProcessoParaMotivos.DeclararNaEtapa(processo, "Prova discursiva", TipoMotivoDeDecisao.IsencaoDaTaxa);
 
         Faltas(processo).Select(f => f.Error.Message[..f.Error.Message.IndexOf(" precisa", StringComparison.Ordinal)]).Distinct().Should().Equal(
             "A fase 'INSCRICAO'", "A etapa 'Prova discursiva'");
@@ -95,7 +97,7 @@ public sealed class CoberturaDosMotivosTests
     public void FundamentoSemLugarQueDeclare_RecusaComTipoNaoDeclarado()
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho(FundamentoIsencaoCodigo.CadastroUnico, FundamentoIsencaoCodigo.DoacaoMedulaOssea);
-        ProcessoParaMotivos.DeclararNaFase(processo, "INSCRICAO", TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes);
+        ProcessoParaMotivos.DeclararNaFase(processo, "INSCRICAO", TipoMotivoDeDecisao.HomologacaoDasInscricoes);
 
         FieldError[] faltas = Faltas(processo);
 
@@ -114,23 +116,15 @@ public sealed class CoberturaDosMotivosTests
         Faltas(processo).Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "Há uma política por tipo, e a sentinela não tem política")]
-    public void Politicas_UmaPorTipo()
-    {
-        Enum.GetValues<TipoMotivoDeDecisao>().Where(t => t != TipoMotivoDeDecisao.Nenhum)
-            .Should().OnlyContain(t => PoliticasDosTiposDeMotivo.Do(t)!.Tipo == t);
-        PoliticasDosTiposDeMotivo.Do(TipoMotivoDeDecisao.Nenhum).Should().BeNull();
-    }
+    [Fact(DisplayName = "Há uma política por tipo de decisão")]
+    public void Politicas_UmaPorTipo() =>
+        Enum.GetValues<TipoMotivoDeDecisao>().Should().OnlyContain(t => PoliticasDosTiposDeMotivo.Do(t).Tipo == t);
 
-    [Fact(DisplayName = "Os códigos de tipo e sentido vão e voltam do wire")]
+    [Fact(DisplayName = "Os códigos de sentido vão e voltam do wire")]
     public void Codigos_IdaEVolta()
     {
-        Enum.GetValues<TipoMotivoDeDecisao>().Where(t => t != TipoMotivoDeDecisao.Nenhum)
-            .Should().OnlyContain(t => TipoMotivoDeDecisaoCodigo.FromCodigo(t.ToCodigo()) == t);
-        TipoMotivoDeDecisaoCodigo.FromCodigo("isencao_da_taxa").Should().Be(TipoMotivoDeDecisao.Nenhum);
         SentidoDoMotivoCodigo.FromCodigo(SentidoDoMotivoCodigo.Favoravel).Should().Be(SentidoDoMotivo.Favoravel);
         SentidoDoMotivoCodigo.FromCodigo(null).Should().Be(SentidoDoMotivo.Nenhum);
-        FluentActions.Invoking(() => TipoMotivoDeDecisao.Nenhum.ToCodigo()).Should().Throw<ArgumentOutOfRangeException>();
     }
 
     private static FieldError[] Faltas(ProcessoSeletivo processo, params MotivoDoProcesso[] escolhidos) =>

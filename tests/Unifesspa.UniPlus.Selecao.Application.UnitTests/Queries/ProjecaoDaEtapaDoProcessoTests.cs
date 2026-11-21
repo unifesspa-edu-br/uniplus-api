@@ -3,6 +3,8 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -48,7 +50,7 @@ public sealed class ProjecaoDaEtapaDoProcessoTests
     {
         EtapaProcesso etapa = EtapaProcesso.Reidratar(EtapaId, Identificacao("AVALIACAO"), AvaliacaoHumana(), Itens());
         etapa.DefinirJanelaEParecer(Inicio, Fim, emiteParecerIndividual: true).IsSuccess.Should().BeTrue();
-        etapa.DefinirTiposDeDecisao([TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa, TipoMotivoDeDecisaoCodigo.Classificacao]).IsSuccess.Should().BeTrue();
+        etapa.DefinirTiposDeDecisao([TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo(), TipoMotivoDeDecisao.Classificacao.Codigo()]).IsSuccess.Should().BeTrue();
         etapa.DefinirProdutos([ProdutoDaEtapa.Reidratar(ProdutoDoResultadoId, "RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar)]).IsSuccess.Should().BeTrue();
         etapa.DefinirBancas([BancaDaEtapa.Criar(TipoBancaId, "BANCA_GERAL", "Banca geral")]).IsSuccess.Should().BeTrue();
         etapa.DefinirRecursos([RecursoDaEtapa.Criar(AncoraDoRecurso.AtoPublicado, RegraDoPrazo(), ParametrosDoPrazo(), ProdutoDoResultadoId).Value!])
@@ -168,7 +170,7 @@ public sealed class ProjecaoDaEtapaDoProcessoTests
                 "RESULTADO_PRELIMINAR",
                 []),
         ],
-        TiposDeDecisao: [TipoMotivoDeDecisaoCodigo.Classificacao, TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa]);
+        TiposDeDecisao: [TipoMotivoDeDecisao.Classificacao.Codigo(), TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo()]);
 
     private static ParametrosRegraPrazoRecursoDto ParametrosEsperados() => new(
         2m,

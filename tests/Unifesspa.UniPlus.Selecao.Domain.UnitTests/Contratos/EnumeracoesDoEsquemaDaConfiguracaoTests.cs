@@ -50,7 +50,7 @@ public sealed class EnumeracoesDoEsquemaDaConfiguracaoTests
         (Predicado, "/$defs/baseLegal/properties/abrangencia", () => Codigos<TipoAbrangencia>(static v => v.ToCodigo())),
         (Predicado, "/$defs/baseLegal/properties/status", () => Codigos<StatusBaseLegal>(static v => v.ToCodigo())),
         ("divulgacao.schema.json", "/properties/camposPublicos/items", () => ConfiguracaoDivulgacao.CamposPermitidos.Select(static c => c.Codigo)),
-        (Comuns, "/$defs/tipoDeDecisao", () => TipoMotivoDeDecisaoCodigo.Codigos),
+        (Comuns, "/$defs/tipoDeDecisao", () => CatalogoDe<TipoMotivoDeDecisao>.Todos().Select(static c => c.Codigo)),
         ("motivo.schema.json", "/properties/sentido", () => SentidoDoMotivoCodigo.Todos),
         ("etapas.schema.json", "/properties/carater", Nomes<CaraterEtapa>),
         ("etapas.schema.json", "/properties/formaDeAvaliacao", () => Codigos<FormaDeAvaliacao>(static v => ((FormaDeAvaliacao?)v).ToCodigo()!)),

@@ -7,6 +7,7 @@ using Entities;
 using Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// A forma canônica das linhas de <see cref="EntradaDoPreliminar"/> que a fase e a etapa escrevem do mesmo
@@ -49,7 +50,7 @@ internal static class LinhasDaEntradaDoPreliminar
     /// <summary>Os procedimentos declarados da janela: o tipo de decisão e o alvo identificam, e a regra congelada vale.</summary>
     internal static IEnumerable<string> DosProcedimentos(string campo, ProcedimentosDeRecurso procedimentos) =>
         procedimentos.Itens.SelectMany(procedimento => DaReferencia(
-            $"{campo}.procedimentos[{Valor(procedimento.TipoDeDecisao.ToCodigo())}|{ChaveDoAlvo(procedimento.Alvo)}].regra", procedimento.Regra));
+            $"{campo}.procedimentos[{Valor(procedimento.TipoDeDecisao.Codigo())}|{ChaveDoAlvo(procedimento.Alvo)}].regra", procedimento.Regra));
 
     private static string ChaveDoAlvo(AlvoDoProcedimentoDeRecurso? alvo) => alvo is null ? string.Empty : $"{alvo.Tipo}:{Valor(alvo.Valor)}";
 
@@ -69,8 +70,8 @@ internal static class LinhasDaEntradaDoPreliminar
             ];
 
     /// <summary>Uma linha por tipo de decisão declarado: a mesma declaração em outra ordem dá as mesmas linhas.</summary>
-    internal static IEnumerable<string> DosTiposDeDecisao(IEnumerable<string> tipos) =>
-        tipos.Select(static tipo => Linha($"tiposDeDecisao[{Valor(tipo)}]", true));
+    internal static IEnumerable<string> DosTiposDeDecisao(IEnumerable<TipoMotivoDeDecisao> tipos) =>
+        tipos.Select(static tipo => Linha($"tiposDeDecisao[{Valor(tipo.Codigo())}]", true));
 
     /// <summary>O produto em que o prazo ancora, pelo tipo de ato e pelo papel e nunca pelo <c>Id</c>.</summary>
     internal static IEnumerable<string> DaAncora(string campo, IEnumerable<IProdutoPublicado> produtos, Guid produtoAncoraId)

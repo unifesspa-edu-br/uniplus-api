@@ -6,7 +6,9 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -61,7 +63,7 @@ public sealed class MotivosNoCongelamentoTests
     {
         ProcessoSeletivo processo = cenario.Processo;
         typeof(FaseCronograma).GetField("_tiposDeDecisao", BindingFlags.Instance | BindingFlags.NonPublic)!
-            .GetValue(processo.CronogramaFases.First()).Should().BeAssignableTo<List<string>>().Subject.Add(TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa);
+            .GetValue(processo.CronogramaFases.First()).Should().BeAssignableTo<List<TipoMotivoDeDecisao>>().Subject.Add(TipoMotivoDeDecisao.IsencaoDaTaxa);
         MotivoDeDecisao origem = Motivo();
 
         return (origem, Escolhido(processo, LugarDaPrimeiraFase(processo), origem));
