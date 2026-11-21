@@ -241,12 +241,16 @@ internal static class CorpusEnvelopeProcessoRico
             TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
 
     // Formulário de inscrição (Story #559, UNI-REQ-0086): título e um termo com exibição e
-    // obrigatoriedade condicionais — o decoder tem de remontar o termo inteiro.
+    // obrigatoriedade condicionais, e um segundo termo com a outra forma publicável de aceite — o
+    // decoder tem de remontar cada termo inteiro, com a forma de aceite de cada um.
     internal static void DefinirTituloETermos(ProcessoSeletivo processo, PredicadoDnf corPreta)
     {
         processo.DefinirTitulo("Formulário de Inscrição — PS Rico 2026").IsSuccess.Should().BeTrue();
         processo.DefinirTermos(
-            [Termo("DECLARACAO_PERTENCIMENTO", 0, exibicao: corPreta, obrigatoriedade: Obrigatoriedade.Quando(corPreta))]).IsSuccess.Should().BeTrue();
+            [
+                Termo("DECLARACAO_PERTENCIMENTO", 0, exibicao: corPreta, obrigatoriedade: Obrigatoriedade.Quando(corPreta)),
+                Termo("AUTORIZACAO_REGISTRO_DE_ACESSO", 1, formaAceite: "REGISTRO_DIGITAL_COM_LOG_IP"),
+            ]).IsSuccess.Should().BeTrue();
     }
 
     // Seção com exibição condicional: aparece só para quem se declarou preto — o decoder remonta
