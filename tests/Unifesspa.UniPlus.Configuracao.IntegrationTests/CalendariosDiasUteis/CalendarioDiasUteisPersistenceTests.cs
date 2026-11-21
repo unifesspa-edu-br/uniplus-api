@@ -10,10 +10,12 @@ using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Integração ponta-a-ponta do calendário de dias úteis contra Postgres real
@@ -276,6 +278,29 @@ public sealed class CalendarioDiasUteisPersistenceTests
             && d.Uf == null);
     }
 
+    [Fact(DisplayName = "Calendário carregado do banco recusa dia repetido contra os dias já gravados")]
+    public async Task IncluirDiaNaoUtil_AgregadoReidratado_RecusaRepetidoEAceitaDiferente()
+    {
+        CalendarioDiasUteis calendario = Nova(VersaoUnica());
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.CalendariosDiasUteis.Add(calendario);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext(AdminA);
+        CalendarioDiasUteis reidratado = await leitura.CalendariosDiasUteis
+            .Include(c => c.DiasNaoUteis)
+            .SingleAsync(c => c.Id == calendario.Id);
+
+        reidratado.IncluirDiaNaoUtil(
+            new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2027, 1, 1), "Repetido")).Error?.Code
+            .Should().Be(CalendarioDiasUteisErrorCodes.DataDuplicadaNoDataset);
+        reidratado.IncluirDiaNaoUtil(
+            new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2027, 1, 2), "Outro dia")).IsSuccess
+            .Should().BeTrue();
+    }
+
     private static string VersaoUnica() => $"cal-{Guid.NewGuid():N}"[..20];
 
     private static CalendarioDiasUteis Nova(string versaoDataset, params DiaNaoUtilCriacao[] dias)
@@ -283,6 +308,6 @@ public sealed class CalendarioDiasUteisPersistenceTests
         DiaNaoUtilCriacao[] diasNaoUteis = dias.Length == 0
             ? [new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2027, 1, 1), "Confraternização Universal")]
             : dias;
-        return CalendarioDiasUteis.Criar(versaoDataset, diasNaoUteis).Value!;
+        return CalendarioDiasUteis.Criar(versaoDataset, diasNaoUteis).ValorEsperado();
     }
 }

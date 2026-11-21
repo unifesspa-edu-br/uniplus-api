@@ -32,10 +32,10 @@ public static class AtualizarPesoAreaEnemCommandHandler
 
         return conferenciaDaDeclaracao.IsFailure
             ? Result.ValidationFailure(conferenciaDaDeclaracao.Errors)
-            : await AtualizarAsync(command, areas, repository, unitOfWork, cancellationToken).ConfigureAwait(false);
+            : await AtualizarSeExistirAsync(command, areas, repository, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async Task<Result> AtualizarAsync(
+    private static async Task<Result> AtualizarSeExistirAsync(
         AtualizarPesoAreaEnemCommand command,
         IReadOnlyList<AreaInformada>? areas,
         IPesoAreaEnemRepository repository,
@@ -43,27 +43,17 @@ public static class AtualizarPesoAreaEnemCommandHandler
         CancellationToken cancellationToken)
     {
         PesoAreaEnem? peso = await repository.ObterPorIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
-
-        return peso is null
-            ? Result.Failure(new DomainError(PesoAreaEnemErrorCodes.NaoEncontrado, "Linha de pesos do ENEM não encontrada."))
-            : await AplicarAsync(peso, areas, command.BaseLegal, unitOfWork, cancellationToken).ConfigureAwait(false);
-    }
-
-    private static async Task<Result> AplicarAsync(
-        PesoAreaEnem peso,
-        IReadOnlyList<AreaInformada>? areas,
-        string? baseLegal,
-        IUnitOfWork unitOfWork,
-        CancellationToken cancellationToken)
-    {
-        Result atualizado = peso.Atualizar(areas, baseLegal);
-        if (atualizado.IsFailure)
+        if (peso is null)
         {
-            return atualizado;
+            return Result.Failure(new DomainError(PesoAreaEnemErrorCodes.NaoEncontrado, "Linha de pesos do ENEM não encontrada."));
         }
 
-        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        Result atualizado = peso.Atualizar(areas, command.BaseLegal);
+        if (atualizado.IsSuccess)
+        {
+            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        }
 
-        return Result.Success();
+        return atualizado;
     }
 }

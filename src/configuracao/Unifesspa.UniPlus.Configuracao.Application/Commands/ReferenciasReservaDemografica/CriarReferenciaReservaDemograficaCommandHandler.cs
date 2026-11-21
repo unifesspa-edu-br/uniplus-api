@@ -31,42 +31,29 @@ public static class CriarReferenciaReservaDemograficaCommandHandler
             command.PcdPercentual,
             command.BaseLegal);
 
-        if (referenciaResult.IsFailure)
-        {
-            return Result<Guid>.ValidationFailure(referenciaResult.Errors);
-        }
+        return referenciaResult.Value is not { } referencia
+            ? Result<Guid>.ValidationFailure(referenciaResult.Errors)
+            : await IncluirAsync(referencia, repository, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
 
-        ReferenciaReservaDemografica referencia = referenciaResult.Value!;
-
-        if (await repository.CensoExisteEntreLivosAsync(referencia.CensoReferencia, null, cancellationToken).ConfigureAwait(false))
+    private static async Task<Result<Guid>> IncluirAsync(
+        ReferenciaReservaDemografica referencia,
+        IReferenciaReservaDemograficaRepository repository,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
+        Result censo = await CensoUnicoDaReferencia
+            .ConferirAsync(referencia.CensoReferencia, null, repository, cancellationToken).ConfigureAwait(false);
+        if (censo.Error is { } censoRecusado)
         {
-            return Result<Guid>.Failure(CensoJaExisteErro());
+            return Result<Guid>.Failure(censoRecusado);
         }
 
         await repository.AdicionarAsync(referencia, cancellationToken).ConfigureAwait(false);
+        Result gravado = await CensoUnicoDaReferencia.GravarAsync(unitOfWork, cancellationToken).ConfigureAwait(false);
 
-        try
-        {
-            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception ex) when (UniqueConstraintViolation.GetViolatedConstraint(ex) is { } constraint
-            && UniqueConstraintViolation.IsCensoConflict(constraint))
-        {
-            // Corrida entre CensoExisteEntreLivosAsync e o INSERT (check-then-act): o
-            // índice único parcial dispara 23505 e viramos o mesmo CensoJaExiste do
-            // caminho não-race — 409 consistente, em vez de deixar o DbUpdateException
-            // virar 500 no middleware global. O filtro do `when` garante que outras
-            // exceções propagam intactas. Descarta o rastreamento da entidade que não
-            // foi persistida, senão o save automático do Wolverine repetiria a
-            // violação fora deste catch.
-            unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result<Guid>.Failure(CensoJaExisteErro());
-        }
-
-        return Result<Guid>.Success(referencia.Id);
+        return gravado.Error is { } gravacaoRecusada
+            ? Result<Guid>.Failure(gravacaoRecusada)
+            : Result<Guid>.Success(referencia.Id);
     }
-
-    private static DomainError CensoJaExisteErro() =>
-        new(ReferenciaReservaDemograficaErrorCodes.CensoJaExiste,
-            "Já existe uma Referência de reserva demográfica viva para o Censo informado.");
 }

@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 
 /// <summary>
@@ -24,6 +25,8 @@ public sealed class DiaNaoUtil : EntityBase
     public string? Uf { get; private set; }
     public DateOnly Data { get; private set; }
     public string Descricao { get; private set; } = string.Empty;
+
+    internal ChaveDoDiaNaoUtil Chave => new(Data, Abrangencia, MunicipioIbge, Uf);
 
     // EF Core materialization
     private DiaNaoUtil()

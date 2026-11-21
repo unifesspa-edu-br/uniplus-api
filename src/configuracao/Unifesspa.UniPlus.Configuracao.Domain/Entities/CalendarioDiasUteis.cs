@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -49,10 +50,14 @@ public sealed class CalendarioDiasUteis : SoftDeletableEntity, IAuditableEntity
         "O dataset precisa de ao menos um dia não útil — um calendário vazio não conta nada.");
 
     private readonly List<DiaNaoUtil> _diasNaoUteis = [];
+    private HashSet<ChaveDoDiaNaoUtil>? _chavesCadastradas;
 
     public string VersaoDataset { get; private set; } = string.Empty;
     public bool Vigente { get; private set; }
     public IReadOnlyList<DiaNaoUtil> DiasNaoUteis => _diasNaoUteis.AsReadOnly();
+
+    private HashSet<ChaveDoDiaNaoUtil> ChavesCadastradas =>
+        _chavesCadastradas ??= [.. _diasNaoUteis.Select(static dia => dia.Chave)];
 
     public string? CreatedBy { get; private set; }
     public string? UpdatedBy { get; private set; }
@@ -117,31 +122,14 @@ public sealed class CalendarioDiasUteis : SoftDeletableEntity, IAuditableEntity
     /// no pai: inserir um filho não muta o pai, então nada aqui depende de
     /// <c>xmin</c>).
     /// </summary>
-    public Result<DiaNaoUtil> IncluirDiaNaoUtil(DiaNaoUtilCriacao? item)
-    {
-        Result<DiaNaoUtilResolvido> conferido = ConferenciaDoDiaNaoUtil.Conferir(item, "item");
-        if (conferido.Value is not { } resolvido)
-        {
-            return Result<DiaNaoUtil>.ValidationFailure(conferido.Errors);
-        }
+    public Result<DiaNaoUtil> IncluirDiaNaoUtil(DiaNaoUtilCriacao? item) => IncluirDia(item, "item");
 
-        if (JaCadastrado(resolvido))
-        {
-            return Result<DiaNaoUtil>.Failure(DataDuplicada);
-        }
-
-        return Result<DiaNaoUtil>.Success(Acrescentar(resolvido));
-    }
-
-    private bool JaCadastrado(DiaNaoUtilResolvido dia) => _diasNaoUteis.Any(existente =>
-        existente.Data == dia.Data
-        && existente.Abrangencia == dia.Abrangencia
-        && existente.MunicipioIbge == dia.MunicipioIbge
-        && existente.Uf == dia.Uf);
+    private bool JaCadastrado(DiaNaoUtilResolvido dia) => ChavesCadastradas.Contains(dia.Chave);
 
     private DiaNaoUtil Acrescentar(DiaNaoUtilResolvido resolvido)
     {
         DiaNaoUtil dia = DiaNaoUtil.Abrir(Id, resolvido);
+        ChavesCadastradas.Add(dia.Chave);
         _diasNaoUteis.Add(dia);
 
         return dia;
@@ -162,33 +150,26 @@ public sealed class CalendarioDiasUteis : SoftDeletableEntity, IAuditableEntity
         List<FieldError> recusas = [];
         for (int indice = 0; indice < dias.Count; indice++)
         {
-            recusas.AddRange(IncluirDiaDoDataset(dias[indice], $"diasNaoUteis[{indice}]").Errors);
+            string campo = $"diasNaoUteis[{indice}]";
+            recusas.AddRange(IncluirDia(dias[indice], campo).Errors.Select(erro => erro.Field is null ? erro with { Field = campo } : erro));
         }
 
         return recusas;
     }
 
-    private Result IncluirDiaDoDataset(DiaNaoUtilCriacao? item, string campo)
+    private Result<DiaNaoUtil> IncluirDia(DiaNaoUtilCriacao? item, string campo)
     {
         Result<DiaNaoUtilResolvido> conferido = ConferenciaDoDiaNaoUtil.Conferir(item, campo);
         if (conferido.Value is not { } resolvido)
         {
-            return Result.ValidationFailure(conferido.Errors);
+            return Result<DiaNaoUtil>.ValidationFailure(conferido.Errors);
         }
 
-        if (JaCadastrado(resolvido))
-        {
-            return Result.ValidationFailure([new FieldError(campo, DataDuplicada)]);
-        }
-
-        Acrescentar(resolvido);
-
-        return Result.Success();
+        return JaCadastrado(resolvido)
+            ? Result<DiaNaoUtil>.Failure(DataDuplicada)
+            : Result<DiaNaoUtil>.Success(Acrescentar(resolvido));
     }
 
-    /// <summary>
-    /// Confere a versão do dataset: obrigatória e dentro do tamanho, devolvendo-a sem espaços nas pontas.
-    /// </summary>
     private static Result<string> ConferirVersaoDoDataset(string? versaoDataset)
     {
         if (string.IsNullOrWhiteSpace(versaoDataset))

@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 
 /// <summary>
 /// Entrada de criação de um <see cref="DiaNaoUtil"/>, usada só por
@@ -34,4 +35,7 @@ internal sealed record DiaNaoUtilResolvido(
     string? MunicipioUf,
     string? Uf,
     DateOnly Data,
-    string Descricao);
+    string Descricao)
+{
+    internal ChaveDoDiaNaoUtil Chave => new(Data, Abrangencia, MunicipioIbge, Uf);
+}
