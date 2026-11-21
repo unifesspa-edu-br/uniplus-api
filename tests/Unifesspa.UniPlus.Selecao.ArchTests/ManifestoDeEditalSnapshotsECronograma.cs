@@ -77,7 +77,7 @@ internal static class ManifestoDeEditalSnapshotsECronograma
         // Cronograma de fases (Story #851) — o eixo temporal do certame.
         [typeof(FaseCronograma)] = (
             [
-                "Ordem", "FaseCanonicaOrigemId", "Codigo", "OrigemData",
+                "Ordem", "NoMesmoMomentoDaAnterior", "FaseCanonicaOrigemId", "Codigo", "OrigemData",
                 "AgrupaEtapas", "PermiteComplementacao",
                 "ColetaInscricao", "ColetaSolicitacaoIsencao", "Inicio", "Fim",
                 "Produtos", "EmiteParecerIndividual",

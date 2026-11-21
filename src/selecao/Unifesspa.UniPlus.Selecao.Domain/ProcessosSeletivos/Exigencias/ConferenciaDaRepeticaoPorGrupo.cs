@@ -45,7 +45,7 @@ public static class ConferenciaDaRepeticaoPorGrupo
         coletaDoGrupo.Grupos
             .First(grupo => string.Equals(grupo.Codigo, codigoDoGrupo, StringComparison.Ordinal))
             .Subitens
-            .All(campo => conhecimento.NoPonto(campo.FatoCodigo, ponto) == ConhecimentoDoFatoNoPonto.Conhecido);
+            .All(campo => conhecimento.NaExigencia(campo.FatoCodigo, ponto).Conhecido);
 
     private static DomainError Recusa(string codigo, string mensagem) => new(codigo, mensagem);
 }

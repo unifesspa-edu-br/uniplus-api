@@ -67,7 +67,8 @@ internal static class CorpusEnvelopeCronograma
             OrigemId: new Guid("4444dddd-0000-4000-8000-000000000002"), Codigo: "RESULTADO_PRELIMINAR", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false,
             ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
-            Ordem: 2, Inicio: new DateTimeOffset(2026, 3, 25, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 3, 25, 18, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            Ordem: 2, Inicio: new DateTimeOffset(2026, 3, 25, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 3, 25, 18, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps)
+        { NoMesmoMomentoDaAnterior = true },
         new PublicacoesDaFase(
                 Produtos: ProdutosDaFaseDeRecurso(variante, permutar), EmiteParecerIndividual: true, RegraRecurso: RegraDeRecursoDaFase(variante),
                 TiposDeDecisao: [TipoMotivoDeDecisaoCodigo.Classificacao, TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes],

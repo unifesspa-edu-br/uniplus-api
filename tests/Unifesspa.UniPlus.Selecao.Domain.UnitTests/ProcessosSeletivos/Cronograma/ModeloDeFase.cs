@@ -30,6 +30,8 @@ internal sealed record ModeloDeFase(string Codigo, int Ordem)
 
     internal bool AgrupaEtapas { get; init; }
 
+    internal bool NoMesmoMomentoDaAnterior { get; init; }
+
     internal bool EmiteParecerIndividual { get; init; }
 
     internal IReadOnlyList<ProdutoDaFase> Produtos { get; init; } = [];
@@ -45,6 +47,9 @@ internal sealed record ModeloDeFase(string Codigo, int Ordem)
     internal ModeloDeFase Janela(int diaDeAbertura, int diaDeEncerramento) =>
         this with { Inicio = Abertura.AddDays(diaDeAbertura), Fim = Abertura.AddDays(diaDeEncerramento) };
 
+    /// <summary>A fase marcada para acontecer no mesmo momento da fase que a antecede na lista.</summary>
+    internal ModeloDeFase NoMesmoMomento() => this with { NoMesmoMomentoDaAnterior = true };
+
     internal ModeloDeFase Publicando(params ProdutoDaFase[] produtos) => this with { Produtos = produtos };
 
     /// <summary>A fase que declara o tipo de decisão da homologação das inscrições e a regra dada.</summary>
@@ -59,7 +64,7 @@ internal sealed record ModeloDeFase(string Codigo, int Ordem)
         OrigemId, Codigo, OrigemData, AgrupaEtapas, PermiteComplementacao: false, ColetaInscricao, ColetaSolicitacaoIsencao);
 
     internal DecisoesDeCronogramaDaFase Decisoes() =>
-        new(Ordem, Inicio, Fim, ComUnidade ? UnidadeResponsavel : null);
+        new(Ordem, Inicio, Fim, ComUnidade ? UnidadeResponsavel : null) { NoMesmoMomentoDaAnterior = NoMesmoMomentoDaAnterior };
 
     internal PublicacoesDaFase Publicacoes() => new(Produtos, EmiteParecerIndividual, RegraRecurso, TiposDeDecisao, RegraDeHomologacao);
 

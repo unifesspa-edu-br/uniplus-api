@@ -132,6 +132,20 @@ public sealed class DeclaracoesDoDocumentoLidasTests
         publicacoes.TiposDeDecisao.Should().Equal("ANALISE_DOCUMENTAL", "HOMOLOGACAO_DAS_INSCRICOES");
     }
 
+    [Fact(DisplayName = "A marca de mesmo momento da fase vai como escrita, e a fase sem a propriedade fica sem marca")]
+    public void MarcaDeMesmoMomento_VaiComoEscritaEAusenteFicaFalsa()
+    {
+        IReadOnlyList<FaseNoDocumento> fases = Lidas("""
+            { "cronograma": { "fases": [
+              { "chave": "isencao", "faseCanonicaCodigo": "ISENCAO" },
+              { "chave": "inscricao", "faseCanonicaCodigo": "INSCRICAO", "noMesmoMomentoDaAnterior": true },
+              { "chave": "resultado", "faseCanonicaCodigo": "RESULTADO", "noMesmoMomentoDaAnterior": false }
+            ] } }
+            """).Fases;
+
+        fases.Select(static fase => fase.NoMesmoMomentoDaAnterior).Should().Equal(false, true, false);
+    }
+
     [Fact(DisplayName = "A fase sem publicações não emite parecer, não tem produto e não declara tipos de decisão")]
     public void FaseSemPublicacoes_TemOValorDePartida()
     {

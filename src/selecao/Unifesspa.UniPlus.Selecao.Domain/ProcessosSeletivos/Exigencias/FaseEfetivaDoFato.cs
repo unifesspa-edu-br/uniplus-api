@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -73,18 +74,11 @@ public static class FaseEfetivaDoFato
         IReadOnlyDictionary<string, string> membroPorAgregado)
     {
         OrdemDoCronograma ordem = OrdemDoCronograma.Do(configuracao.Cronograma.CronogramaFases);
-        FaseEfetiva efetiva = Resolver(configuracao, ordem, fato, pontoResolucaoPorFato, membroPorAgregado, []);
+        FaseConhecida conhecida = FaseEmQueOFatoFicaConhecido.Resolver(
+            new OrigensDoFatoNaConfiguracaoDeclarada(configuracao, pontoResolucaoPorFato, membroPorAgregado), ordem, fato);
 
-        return efetiva.Recusa ?? RecusaDoFatoResolvidoEmFasePosterior(ordem, fato, efetiva.Fase, faseDaExigencia);
+        return FaseEmQueOFatoFicaConhecido.RecusaDeFasePosterior(fato, conhecida, faseDaExigencia, ordem);
     }
-
-    private static DomainError? RecusaDoFatoResolvidoEmFasePosterior(
-        OrdemDoCronograma ordem, string fato, FaseCronograma? faseEfetiva, FaseCronograma faseDaExigencia) =>
-        faseEfetiva is not null && ordem.Posterior(faseEfetiva, faseDaExigencia)
-            ? new DomainError(
-                DocumentoExigidoErrorCodes.FatoResolvidoEmFasePosterior,
-                $"O fato '{fato}' só é conhecido na fase '{faseEfetiva.Codigo}' (ordem {faseEfetiva.Ordem}), posterior à fase em que o documento é exigido (ordem {faseDaExigencia.Ordem}).")
-            : null;
 
     private static DomainError? RecusaDoFatoDaIsencaoEmOutraFinalidade(
         ConfiguracaoDeclarada configuracao,
@@ -117,76 +111,6 @@ public static class FaseEfetivaDoFato
                 finalidadeDaExigencia,
                 membroPorAgregado);
 
-    /// <summary>A fase em que o fato fica conhecido no processo, ou a recusa quando o catálogo o situa fora do cronograma.</summary>
-    internal static FaseEfetiva Resolver(
-        ConfiguracaoDeclarada configuracao,
-        OrdemDoCronograma ordem,
-        string fato,
-        IReadOnlyDictionary<string, string> pontoResolucaoPorFato,
-        IReadOnlyDictionary<string, string> membroPorAgregado,
-        HashSet<string> emAvaliacao)
-    {
-        FaseEfetiva doPonto = FaseDoPontoDeResolucao(configuracao, fato, pontoResolucaoPorFato);
-        if (doPonto.Recusa is not null)
-        {
-            return doPonto;
-        }
-
-        FaseEfetiva dasDependencias = emAvaliacao.Add(fato)
-            ? FaseDasDependencias(configuracao, ordem, fato, pontoResolucaoPorFato, membroPorAgregado, emAvaliacao)
-            : new FaseEfetiva(null, null);
-
-        return dasDependencias.Recusa is not null
-            ? dasDependencias
-            : new FaseEfetiva(
-                ordem.MaisTardia([doPonto.Fase, FaseDoFormularioQueColeta(configuracao, fato), dasDependencias.Fase]), null);
-    }
-
-    private static FaseEfetiva FaseDoPontoDeResolucao(
-        ConfiguracaoDeclarada configuracao, string fato, IReadOnlyDictionary<string, string> pontoResolucaoPorFato)
-    {
-        if (!pontoResolucaoPorFato.TryGetValue(fato, out string? ponto))
-        {
-            return new FaseEfetiva(null, null);
-        }
-
-        return configuracao.Cronograma.CronogramaFases.FirstOrDefault(f => string.Equals(f.Codigo, ponto, StringComparison.Ordinal)) is { } fase
-            ? new FaseEfetiva(fase, null)
-            : new FaseEfetiva(null, new DomainError(
-                DocumentoExigidoErrorCodes.PontoResolucaoForaDoCronograma,
-                $"O fato '{fato}' resolve na fase '{ponto}', que não pertence ao cronograma deste processo."));
-    }
-
-    private static FaseCronograma? FaseDoFormularioQueColeta(ConfiguracaoDeclarada configuracao, string fato) =>
-        configuracao.Coleta.Campos.FirstOrDefault(f => string.Equals(f.FatoCodigo, fato, StringComparison.Ordinal)) is { } coletado
-            && configuracao.Coleta.FormularioDe(coletado.Finalidade)?.FaseId is { } faseDoFormulario
-                ? configuracao.Cronograma.CronogramaFases.FirstOrDefault(f => f.Id == faseDoFormulario)
-                : null;
-
-    // As dependências seguem a ordem declarada, e a primeira recusa encerra o percurso.
-    private static FaseEfetiva FaseDasDependencias(
-        ConfiguracaoDeclarada configuracao,
-        OrdemDoCronograma ordem,
-        string fato,
-        IReadOnlyDictionary<string, string> pontoResolucaoPorFato,
-        IReadOnlyDictionary<string, string> membroPorAgregado,
-        HashSet<string> emAvaliacao)
-    {
-        List<FaseCronograma?> fases = [];
-        foreach (string dependencia in DependenciasDoFato(configuracao, fato, membroPorAgregado))
-        {
-            FaseEfetiva daDependencia = Resolver(configuracao, ordem, dependencia, pontoResolucaoPorFato, membroPorAgregado, emAvaliacao);
-            if (daDependencia.Recusa is not null)
-            {
-                return daDependencia;
-            }
-
-            fases.Add(daDependencia.Fase);
-        }
-
-        return new FaseEfetiva(ordem.MaisTardia(fases), null);
-    }
-
     /// <summary>Se o fato vem só do formulário de isenção, diretamente ou por uma dependência.</summary>
     internal static bool DependeDeFatoSoDaIsencao(ConfiguracaoDeclarada configuracao, string fato, IReadOnlyDictionary<string, string> membroPorAgregado, HashSet<string> emAvaliacao) =>
         configuracao.Coleta.Campos.Any(f => f.Finalidade == FinalidadeFormulario.IsencaoTaxa && string.Equals(f.FatoCodigo, fato, StringComparison.Ordinal))
@@ -202,6 +126,4 @@ public static class FaseEfetivaDoFato
         (configuracao.DerivacoesEfetivas().FirstOrDefault(r => string.Equals(r.CodigoFato, fato, StringComparison.Ordinal))?.FatosCitados ?? [])
             .Concat(DerivadosDoSistema.Dependencias.GetValueOrDefault(fato) ?? [])
             .Concat(membroPorAgregado.TryGetValue(fato, out string? membro) ? [membro] : []);
-
-    internal sealed record FaseEfetiva(FaseCronograma? Fase, DomainError? Recusa);
 }

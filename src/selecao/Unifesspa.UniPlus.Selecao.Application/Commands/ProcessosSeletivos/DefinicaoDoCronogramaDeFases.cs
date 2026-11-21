@@ -9,7 +9,8 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
-using Unifesspa.UniPlus.Configuracao.Contracts;
+using Services;
+
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 
 /// <summary>
@@ -21,7 +22,7 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// </summary>
 public sealed class DefinicaoDoCronogramaDeFases(
     MontagemDasFases montagem,
-    IPrecedenciaFaseReader precedenciaFaseReader,
+    LeituraDasPrecedenciasDosCadastros precedencias,
     ITipoAtoPublicadoReader tipoAtoPublicadoReader,
     IProcessoSeletivoRepository processoSeletivoRepository,
     IRegistroCodecsEnvelope registroCodecs,
@@ -51,16 +52,8 @@ public sealed class DefinicaoDoCronogramaDeFases(
             return Result.ValidationFailure(fases.Errors);
         }
 
-        List<ArestaPrecedencia> precedencias = await PrecedenciasVivasAsync(cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<ArestaPrecedencia> vivas = await precedencias.ListarVivasAsync(cancellationToken).ConfigureAwait(false);
 
-        return processo.DefinirCronogramaFases(fases.Value!, precedencias);
-    }
-
-    private async Task<List<ArestaPrecedencia>> PrecedenciasVivasAsync(CancellationToken cancellationToken)
-    {
-        IReadOnlyList<PrecedenciaFaseView> arestasVivas = await precedenciaFaseReader
-            .ListarVivasAsync(cancellationToken)
-            .ConfigureAwait(false);
-        return [.. arestasVivas.Select(static a => new ArestaPrecedencia(a.AntecessoraCodigo, a.SucessoraCodigo, a.PermiteSobreposicao))];
+        return processo.DefinirCronogramaFases(fases.Value!, vivas);
     }
 }

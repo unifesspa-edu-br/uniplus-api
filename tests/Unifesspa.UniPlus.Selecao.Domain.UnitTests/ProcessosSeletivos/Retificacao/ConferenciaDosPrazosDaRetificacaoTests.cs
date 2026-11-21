@@ -32,7 +32,7 @@ public sealed class ConferenciaDosPrazosDaRetificacaoTests
         Fase(1, codigo, (Passado, Instante.AddDays(10)), inscricao, isencao);
 
     private static FaseCronograma Encerrada(int ordem, string codigo, bool inscricao = false, bool isencao = false, params ProdutoDaFase[] produtos) =>
-        Fase(ordem, codigo, (Passado, Instante.AddDays(-1)), inscricao, isencao, produtos);
+        Fase(ordem, codigo, (Passado, Instante.AddDays(-1)), inscricao, isencao, produtos: produtos);
 
     private static FaseCronograma Prorrogada(FaseCronograma fase) => ComJanela(fase, fase.Inicio, Instante.AddDays(3));
 
@@ -160,6 +160,18 @@ public sealed class ConferenciaDosPrazosDaRetificacaoTests
         Conferir([isencao, inscricao, seguinte], [isencao, Prorrogada(inscricao), seguinte], Iniciadas(isencao, inscricao)).Should().BeEmpty();
         Recusas(Conferir([isencao, inscricao, seguinte], [isencao, Prorrogada(inscricao), seguinte], Iniciadas(isencao, inscricao, seguinte))).Should().Equal(
             ("fases[1].fim", RetificacaoErrorCodes.ProrrogacaoComFasePosteriorIniciada));
+    }
+
+    [Fact(DisplayName = "A fase marcada para acontecer no mesmo momento da prorrogada não é posterior a ela; sem a marca é")]
+    public void FaseMarcadaNoMesmoMomento_NaoEPosterior()
+    {
+        FaseCronograma prova = Encerrada(1, "PROVA");
+        FaseCronograma analise = Fase(2, "ANALISE", noMesmoMomentoDaAnterior: true);
+        FaseCronograma analiseSemMarca = Fase(2, "ANALISE");
+
+        Conferir([prova, analise], [Prorrogada(prova), analise], Iniciadas(prova, analise)).Should().BeEmpty();
+        Recusas(Conferir([prova, analiseSemMarca], [Prorrogada(prova), analiseSemMarca], Iniciadas(prova, analiseSemMarca))).Should().Equal(
+            ("fases[0].fim", RetificacaoErrorCodes.ProrrogacaoComFasePosteriorIniciada));
     }
 
     [Fact(DisplayName = "No instante exato do fim publicado o período ainda corre: prorrogar é aceito, mesmo com fase posterior iniciada por sobreposição")]

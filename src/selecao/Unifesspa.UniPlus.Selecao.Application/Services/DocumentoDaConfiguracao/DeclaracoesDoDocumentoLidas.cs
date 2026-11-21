@@ -40,7 +40,10 @@ internal static class DeclaracoesDoDocumentoLidas
         new(Valor<DateTimeOffset>(fase, "inicio"), Valor<DateTimeOffset>(fase, "fim")),
         Publicacoes(fase),
         [.. Itens(fase, "bancasRequeridas").Select(static item => Banca(item.Posicao, item.Item))],
-        RegraDeRecurso(Objeto(fase, "regraRecurso")));
+        RegraDeRecurso(Objeto(fase, "regraRecurso")))
+    {
+        NoMesmoMomentoDaAnterior = Valor<bool>(fase, "noMesmoMomentoDaAnterior") ?? false,
+    };
 
     private static PublicacoesNoDocumento Publicacoes(JsonObject fase) => new(
         [.. Itens(fase, "produtos").Select(static item => Produto(item.Posicao, item.Item))],

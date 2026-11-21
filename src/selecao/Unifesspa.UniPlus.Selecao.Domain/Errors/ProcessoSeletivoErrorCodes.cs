@@ -75,6 +75,8 @@ public static class ProcessoSeletivoErrorCodes
     public const string EtapaComPreliminarSemDefinitivo = "ProcessoSeletivo.EtapaComPreliminarSemDefinitivo";
     public const string FaseComPreliminarSemDefinitivo = "ProcessoSeletivo.FaseComPreliminarSemDefinitivo";
     public const string FaseSemDefinitivoSemDataFinal = "ProcessoSeletivo.FaseSemDefinitivoSemDataFinal";
+    public const string PrimeiraFaseNoMesmoMomentoDaAnterior = "ProcessoSeletivo.PrimeiraFaseNoMesmoMomentoDaAnterior";
+    public const string FasesComPrecedenciaNoMesmoMomento = "ProcessoSeletivo.FasesComPrecedenciaNoMesmoMomento";
     public const string TipoProcessoNaoEncontradoOuInativo = "ProcessoSeletivo.TipoProcessoNaoEncontradoOuInativo";
     public const string UnidadeAdministradoraNaoEncontrada = "ProcessoSeletivo.UnidadeAdministradoraNaoEncontrada";
     public const string AlgoritmoContagemPrazoNaoEncontrado = "ProcessoSeletivo.AlgoritmoContagemPrazoNaoEncontrado";

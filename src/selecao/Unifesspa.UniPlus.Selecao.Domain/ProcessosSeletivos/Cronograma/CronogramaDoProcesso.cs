@@ -107,7 +107,7 @@ public sealed record CronogramaDoProcesso
     public ItemConformidade ItemDasFasesEmConjunto() => new(
         "cronograma_fases_em_conjunto",
         DimensaoConformidade.Cronograma,
-        "Cronograma: as fases não repetem ordem nem fase canônica",
+        "Cronograma: as fases não repetem ordem nem fase canônica, e a primeira não está marcada para acontecer no mesmo momento da anterior",
         ConferirEstrutura().All(static recusa => recusa.Error.Code == EstruturaDoCronograma.CronogramaVazio));
 
     /// <summary>
@@ -169,8 +169,8 @@ public sealed record CronogramaDoProcesso
     }
 
     /// <summary>
-    /// O item de que as fases respeitam a precedência do cadastro: a ordem e o período de cada uma. Sem a precedência lida, a
-    /// operação não a pede e o item fica conforme.
+    /// O item de que as fases respeitam a precedência do cadastro: a ordem, a marca "no mesmo momento da anterior" e o período de cada
+    /// uma. Sem a precedência lida, a operação não a pede e o item fica conforme.
     /// </summary>
     public ItemConformidade ItemDaPrecedenciaEntreFases(PrecedenciasDosCadastros precedencias)
     {
@@ -179,7 +179,7 @@ public sealed record CronogramaDoProcesso
         return new(
             "cronograma_precedencia_entre_fases",
             DimensaoConformidade.Cronograma,
-            "Cronograma: as fases respeitam a precedência do cadastro, na ordem e no período de cada uma",
+            "Cronograma: as fases respeitam a precedência do cadastro, na ordem, no momento e no período de cada uma",
             !precedencias.FoiLida || ConferirPrecedencia(precedencias.Arestas).Count == 0);
     }
 

@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -28,7 +29,7 @@ internal sealed class CenarioDoCronogramaDeFases
     {
         Processo = processo;
         Repository = RepositorioQueDevolve(processo);
-        PrecedenciaFaseReader = PrecedenciasSemArestas();
+        PrecedenciaFaseReader = PrecedenciasDeTeste.SemArestas();
         FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns((IReadOnlyList<FatoCandidatoView>)[]);
     }
 
@@ -44,7 +45,7 @@ internal sealed class CenarioDoCronogramaDeFases
 
     public ICategoriaDocumentoReader CategoriaDocumentoReader { get; } = Substitute.For<ICategoriaDocumentoReader>();
 
-    public IPrecedenciaFaseReader PrecedenciaFaseReader { get; }
+    public IPrecedenciaFaseReader PrecedenciaFaseReader { get; private set; }
 
     public IRegraCatalogoReader RegraCatalogoReader { get; } = Substitute.For<IRegraCatalogoReader>();
 
@@ -150,6 +151,13 @@ internal sealed class CenarioDoCronogramaDeFases
         return this;
     }
 
+    /// <summary>O cadastro de precedência entre fases passa a ter as relações dadas.</summary>
+    public CenarioDoCronogramaDeFases ComPrecedencias(params (string Antecessora, string Sucessora, bool PermiteSobreposicao)[] arestas)
+    {
+        PrecedenciaFaseReader = PrecedenciasDeTeste.Com(arestas);
+        return this;
+    }
+
     public Task<Result> DefinirFasesAsync(params FaseCronogramaInput[] fases) =>
         DefinirAsync(new DefinirCronogramaFasesCommand(Processo.Id, fases));
 
@@ -168,7 +176,7 @@ internal sealed class CenarioDoCronogramaDeFases
 
     private DefinicaoDoCronogramaDeFases DefinicaoSobre(IProcessoSeletivoRepository repositorio) => new(
         new MontagemDasFases(FaseCanonicaReader, UnidadeResponsavel, TipoBancaReader, CategoriaDocumentoReader, RegraCatalogoReader, FatoCandidatoReader),
-        PrecedenciaFaseReader, TipoAtoPublicadoReader, repositorio, Codecs, new MotivosDosLugaresQueSaem(MotivosEscolhidos));
+        new LeituraDasPrecedenciasDosCadastros(PrecedenciaFaseReader), TipoAtoPublicadoReader, repositorio, Codecs, new MotivosDosLugaresQueSaem(MotivosEscolhidos));
 
     private static IProcessoSeletivoRepository RepositorioQueDevolve(ProcessoSeletivo processo)
     {
@@ -176,14 +184,5 @@ internal sealed class CenarioDoCronogramaDeFases
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
 
         return repository;
-    }
-
-    private static IPrecedenciaFaseReader PrecedenciasSemArestas()
-    {
-        IPrecedenciaFaseReader precedenciaFaseReader = Substitute.For<IPrecedenciaFaseReader>();
-        precedenciaFaseReader.ListarVivasAsync(Arg.Any<CancellationToken>())
-            .Returns((IReadOnlyList<PrecedenciaFaseView>)[]);
-
-        return precedenciaFaseReader;
     }
 }

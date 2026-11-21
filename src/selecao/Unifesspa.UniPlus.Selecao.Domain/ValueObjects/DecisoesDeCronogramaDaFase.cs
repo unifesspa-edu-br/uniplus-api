@@ -8,4 +8,8 @@ public sealed record DecisoesDeCronogramaDaFase(
     int Ordem,
     DateTimeOffset? Inicio,
     DateTimeOffset? Fim,
-    UnidadeResponsavelSnapshot? UnidadeResponsavel);
+    UnidadeResponsavelSnapshot? UnidadeResponsavel)
+{
+    /// <summary>A fase acontece no mesmo momento da fase que a antecede na lista; sem a marca, acontece depois dela.</summary>
+    public bool NoMesmoMomentoDaAnterior { get; init; }
+}

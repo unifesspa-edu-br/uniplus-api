@@ -33,6 +33,7 @@ public sealed record FaseDeclarada
     public const string CampoDaRegraDeHomologacao = "regraDeHomologacao";
 
     private readonly IReadOnlySet<string> _caminhosComParteRecusada;
+    private readonly DecisoesDeCronogramaDaFase _decisoes;
 
     private FaseDeclarada(
         Guid id,
@@ -46,10 +47,9 @@ public sealed record FaseDeclarada
         Id = id;
         OrigemId = origem.OrigemId;
         Codigo = origem.Codigo.Trim();
-        Ordem = decisoes.Ordem;
+        _decisoes = decisoes;
         Janela = new JanelaDeTempo(decisoes.Inicio, decisoes.Fim);
         DataFixadaNoEdital = origem.OrigemData == OrigemDataFase.NoEdital;
-        TemUnidadeResponsavel = decisoes.UnidadeResponsavel is not null;
         AgrupaEtapas = origem.AgrupaEtapas;
         ColetaInscricao = origem.ColetaInscricao;
         ColetaSolicitacaoIsencao = origem.ColetaSolicitacaoIsencao;
@@ -65,14 +65,17 @@ public sealed record FaseDeclarada
 
     public string Codigo { get; }
 
-    public int Ordem { get; }
+    public int Ordem => _decisoes.Ordem;
+
+    /// <summary>Se a fase acontece no mesmo momento da fase que a antecede na lista.</summary>
+    public bool NoMesmoMomentoDaAnterior => _decisoes.NoMesmoMomentoDaAnterior;
 
     public JanelaDeTempo Janela { get; }
 
     /// <summary>Se o período da fase é fixado no edital, e por isso o período inteiro é obrigatório.</summary>
     public bool DataFixadaNoEdital { get; }
 
-    public bool TemUnidadeResponsavel { get; }
+    public bool TemUnidadeResponsavel => _decisoes.UnidadeResponsavel is not null;
 
     public bool AgrupaEtapas { get; }
 

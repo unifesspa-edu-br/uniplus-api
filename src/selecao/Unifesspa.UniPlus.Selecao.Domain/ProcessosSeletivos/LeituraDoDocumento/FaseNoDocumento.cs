@@ -14,7 +14,11 @@ public sealed record FaseNoDocumento(
     JanelaDeTempo Janela,
     PublicacoesNoDocumento Publicacoes,
     IReadOnlyList<BancaNoDocumento> Bancas,
-    RegraDeRecursoNoDocumento? RegraDeRecurso);
+    RegraDeRecursoNoDocumento? RegraDeRecurso)
+{
+    /// <summary>A fase acontece no mesmo momento da fase que a antecede na lista; o documento sem o campo vale sem a marca.</summary>
+    public bool NoMesmoMomentoDaAnterior { get; init; }
+}
 
 /// <summary>O que a fase cita por código: a fase canônica e a unidade que responde por ela.</summary>
 public sealed record ReferenciasDaFaseNoDocumento(string FaseCanonicaCodigo, string? UnidadeResponsavelCodigo);

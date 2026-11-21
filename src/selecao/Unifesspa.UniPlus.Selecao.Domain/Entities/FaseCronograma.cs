@@ -36,6 +36,9 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
     /// <summary>Posição do certame na linha do tempo, única dentro do cronograma.</summary>
     public int Ordem { get; private set; }
 
+    /// <summary>Se a fase acontece no mesmo momento da fase que a antecede na lista; a fase sem a marca acontece depois dela.</summary>
+    public bool NoMesmoMomentoDaAnterior { get; private set; }
+
     /// <summary>Id (Guid v7) da <c>FaseCanonica</c> viva de origem, no momento do congelamento.</summary>
     public Guid FaseCanonicaOrigemId { get; private set; }
 
@@ -289,7 +292,7 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
         FaseCanonicaOrigemId, Codigo, OrigemData, AgrupaEtapas, PermiteComplementacao, ColetaInscricao, ColetaSolicitacaoIsencao);
 
     private DecisoesDeCronogramaDaFase DecisoesDeCronograma() =>
-        new(Ordem, Inicio, Fim, UnidadeResponsavel);
+        new(Ordem, Inicio, Fim, UnidadeResponsavel) { NoMesmoMomentoDaAnterior = NoMesmoMomentoDaAnterior };
 
     private void DefinirOrigemCanonica(OrigemCanonicaDaFase origem)
     {
@@ -305,6 +308,7 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
     private void DefinirCronograma(DecisoesDeCronogramaDaFase cronograma)
     {
         Ordem = cronograma.Ordem;
+        NoMesmoMomentoDaAnterior = cronograma.NoMesmoMomentoDaAnterior;
         Inicio = JanelaDeTempo.EmUtc(cronograma.Inicio);
         Fim = JanelaDeTempo.EmUtc(cronograma.Fim);
         DefinirUnidadeResponsavel(cronograma.UnidadeResponsavel);

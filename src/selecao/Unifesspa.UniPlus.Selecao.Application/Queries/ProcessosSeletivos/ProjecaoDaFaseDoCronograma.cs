@@ -37,6 +37,7 @@ internal static class ProjecaoDaFaseDoCronograma
 
     private static CronogramaDaFaseDto ProjetarCronogramaDaFase(FaseCronograma fase) => new(
         Ordem: fase.Ordem,
+        NoMesmoMomentoDaAnterior: fase.NoMesmoMomentoDaAnterior,
         Inicio: fase.Inicio,
         Fim: fase.Fim,
         UnidadeResponsavel: ProjetarUnidadeResponsavel(fase.UnidadeResponsavel));

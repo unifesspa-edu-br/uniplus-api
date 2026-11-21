@@ -57,16 +57,30 @@ public sealed class ConferenciaDoCicloNovoDaRetificacaoTests
         resultado.Recusas.Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "Mudar só a ordem e os produtos da fase do preliminar não exige declarar o novo ciclo")]
+    [Fact(DisplayName = "Mudar só os números da ordem, sem mudar a sequência, e os produtos da fase do preliminar não exige declarar o novo ciclo")]
     public void OrdemEProdutos_NaoExigem()
     {
         Cronograma publicado = new();
-        FaseCronograma provaRenomeada = Renomeada(publicado.Prova, publicado.Prova.Codigo, 9, Preliminar(Materia), Preliminar(OutraMateria));
+        FaseCronograma provaRenumerada = Renomeada(publicado.Prova, publicado.Prova.Codigo, 5, Preliminar(Materia), Preliminar(OutraMateria));
+        FaseCronograma resultadoRenumerado = Renomeada(publicado.Resultado, publicado.Resultado.Codigo, 6);
+        FaseCronograma matriculaRenumerada = Renomeada(publicado.Matricula, publicado.Matricula.Codigo, 7);
 
         ResultadoDoCicloNovo resultado = publicado.Conferir(
-            [publicado.Inscricao, provaRenomeada, publicado.Resultado, publicado.Matricula], [], publicado.ItemPreliminar);
+            [publicado.Inscricao, provaRenumerada, resultadoRenumerado, matriculaRenumerada], [], publicado.ItemPreliminar);
 
         resultado.Recusas.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Mover a fase do preliminar para depois de outra fase muda o momento dela e exige declarar o novo ciclo")]
+    public void FaseDoPreliminarMovidaParaDepoisDeOutra_ExigeDeclararOCiclo()
+    {
+        Cronograma publicado = new();
+        FaseCronograma provaDepois = Renomeada(publicado.Prova, publicado.Prova.Codigo, 9, Preliminar(Materia), Preliminar(OutraMateria));
+
+        ResultadoDoCicloNovo resultado = publicado.Conferir(
+            [publicado.Inscricao, provaDepois, publicado.Resultado, publicado.Matricula], [], publicado.ItemPreliminar);
+
+        resultado.Recusas.Should().ContainSingle().Which.Error.Code.Should().Be(RetificacaoErrorCodes.CicloNovoNaoDeclarado);
     }
 
     [Fact(DisplayName = "Trocar o código da fase do preliminar exige declarar o novo ciclo")]
@@ -225,7 +239,7 @@ public sealed class ConferenciaDoCicloNovoDaRetificacaoTests
     {
         ProdutoDaFase preliminar = Preliminar(Materia);
         FaseCronograma isencao = Fase(1, "ISENCAO", coletaIsencao: true);
-        FaseCronograma inscricao = Fase(2, "INSCRICAO", coletaInscricao: true, produtos: [preliminar]);
+        FaseCronograma inscricao = Fase(2, "INSCRICAO", coletaInscricao: true, noMesmoMomentoDaAnterior: true, produtos: [preliminar]);
         FaseCronograma[] novas = [ComJanela(isencao, UmDiaDepois, UmDiaDepois.AddDays(8)), inscricao];
 
         ResultadoDoCicloNovo resultado = ConferenciaDoCicloNovoDaRetificacao.Conferir(

@@ -7192,6 +7192,11 @@
       "titulo": "Toda fase do cronograma precisa de uma unidade responsável para o processo ser publicado"
     },
     {
+      "codigo": "uniplus.selecao.processo_seletivo.fases_com_precedencia_no_mesmo_momento",
+      "status": 422,
+      "titulo": "Fases ligadas por precedência não podem estar no mesmo momento"
+    },
+    {
       "codigo": "uniplus.selecao.processo_seletivo.fato_coletado_nao_mais_declarado",
       "status": 422,
       "titulo": "Fato coletado deixou de ser declarado/vinculado a campo de inscrição no catálogo de fatos do candidato"
@@ -7475,6 +7480,11 @@
       "codigo": "uniplus.selecao.processo_seletivo.pressuposto_sem_cadastro",
       "status": 422,
       "titulo": "Fato citado pelas regras de um formulário não encontrado no catálogo de fatos do candidato"
+    },
+    {
+      "codigo": "uniplus.selecao.processo_seletivo.primeira_fase_no_mesmo_momento_da_anterior",
+      "status": 422,
+      "titulo": "A primeira fase do cronograma não pode estar no mesmo momento da anterior"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.recurso_acessibilidade_referenciado_por_condicao_viva",

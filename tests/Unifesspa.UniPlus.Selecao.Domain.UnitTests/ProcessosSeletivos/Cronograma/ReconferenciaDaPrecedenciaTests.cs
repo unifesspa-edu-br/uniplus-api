@@ -10,7 +10,7 @@ using Xunit;
 
 /// <summary>
 /// A precedência é conferida de novo na primeira publicação e sempre que o que a conferência lê do cronograma mudou desde a versão
-/// publicada: as fases presentes, a ordem e o período de cada uma. O resto da fase não conta.
+/// publicada: as fases presentes, a ordem, a marca e o período de cada uma. O resto da fase não conta.
 /// </summary>
 public sealed class ReconferenciaDaPrecedenciaTests
 {
@@ -37,13 +37,14 @@ public sealed class ReconferenciaDaPrecedenciaTests
         ReconferenciaDaPrecedencia.Exigida(Criar(a, b), Criar(b, a)).Should().BeFalse();
     }
 
-    [Fact(DisplayName = "Mudar a ordem, o início ou o fim de uma fase exige conferir de novo")]
+    [Fact(DisplayName = "Mudar a ordem, a marca, o início ou o fim de uma fase exige conferir de novo")]
     public void MudancaQueAConferenciaLe_Exige()
     {
         (ModeloDeFase a, ModeloDeFase b) = Fases();
         FaseCronograma[] publicadas = Criar(a, b);
 
         ReconferenciaDaPrecedencia.Exigida(publicadas, Criar(a, b with { Ordem = 3 })).Should().BeTrue();
+        ReconferenciaDaPrecedencia.Exigida(publicadas, Criar(a, b.NoMesmoMomento())).Should().BeTrue();
         ReconferenciaDaPrecedencia.Exigida(publicadas, Criar(a, b with { Inicio = b.Inicio!.Value.AddDays(1) })).Should().BeTrue();
         ReconferenciaDaPrecedencia.Exigida(publicadas, Criar(a, b with { Fim = b.Fim!.Value.AddDays(1) })).Should().BeTrue();
     }
