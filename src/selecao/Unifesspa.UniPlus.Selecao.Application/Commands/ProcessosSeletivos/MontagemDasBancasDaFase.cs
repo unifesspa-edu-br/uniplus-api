@@ -35,7 +35,7 @@ internal sealed class MontagemDasBancasDaFase(CadastrosDasFases cadastros)
         TipoBancaView? tipo = await cadastros.TiposDeBanca.ObterPorIdAsync(declarada.TipoBancaId, cancellationToken).ConfigureAwait(false);
         if (tipo is null)
         {
-            return InterrupcaoDaFase.Com<BancaRequerida>($"{campo}.tipoBancaId", new DomainError(
+            return InterrupcaoDaEdicao.Com<BancaRequerida>($"{campo}.tipoBancaId", new DomainError(
                 "FaseCronograma.TipoBancaNaoEncontrado",
                 $"Tipo de banca {declarada.TipoBancaId} não encontrado ou não está mais vivo."));
         }
@@ -75,7 +75,7 @@ internal sealed class MontagemDasBancasDaFase(CadastrosDasFases cadastros)
     }
 
     private static Result<List<CategoriaJulgada>> CategoriaNaoEncontrada(Guid categoriaId, string campo) =>
-        InterrupcaoDaFase.Com<List<CategoriaJulgada>>($"{campo}.categoriasDocumentoIds", new DomainError(
+        InterrupcaoDaEdicao.Com<List<CategoriaJulgada>>($"{campo}.categoriasDocumentoIds", new DomainError(
             "FaseCronograma.CategoriaDocumentoNaoEncontrada",
             $"Categoria de documento {categoriaId} não encontrada ou não está mais viva."));
 }

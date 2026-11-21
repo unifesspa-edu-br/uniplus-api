@@ -1,9 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
+using System.Diagnostics;
+
 using Domain.Entities;
 using Domain.Enums;
-using Domain.Errors;
-using Domain.ValueObjects;
 
 using Kernel.Results;
 
@@ -13,12 +13,14 @@ using Kernel.Results;
 /// </summary>
 internal sealed class DeclaracaoDosProdutosDaEtapa(AtosConsultadosNaEdicao atos)
 {
+    private readonly ConferenciaDoProdutoDeclarado _conferencia = new(atos);
+
     public async Task<Result> DeclararAsync(EtapaProcesso etapa, EtapaProcessoInput input, CancellationToken cancellationToken)
     {
         List<ProdutoDaEtapa> produtos = [];
-        foreach (ProdutoDaEtapaInput declarado in input.Produtos)
+        for (int posicao = 0; posicao < input.Produtos.Count; posicao++)
         {
-            Result<ProdutoDaEtapa> produto = await ProdutoAsync(etapa, input, declarado, cancellationToken).ConfigureAwait(false);
+            Result<ProdutoDaEtapa> produto = await ProdutoAsync(etapa, input, posicao, cancellationToken).ConfigureAwait(false);
             if (produto.IsFailure)
             {
                 return Result.Failure(produto.Error!);
@@ -31,40 +33,26 @@ internal sealed class DeclaracaoDosProdutosDaEtapa(AtosConsultadosNaEdicao atos)
     }
 
     private async Task<Result<ProdutoDaEtapa>> ProdutoAsync(
-        EtapaProcesso etapa, EtapaProcessoInput input, ProdutoDaEtapaInput declarado, CancellationToken cancellationToken)
+        EtapaProcesso etapa, EtapaProcessoInput input, int posicao, CancellationToken cancellationToken)
     {
-        RotuloDoDonoDoProduto dono = RotuloDoDonoDoProduto.DaEtapa(input.Nome);
-        if (!PapelProdutoFaseCodigo.TentarConverter(declarado.Papel, out PapelProdutoFase? papel))
-        {
-            return Result<ProdutoDaEtapa>.Failure(ConferenciaDoProdutoDoAto.PapelDesconhecido(declarado.Papel, dono));
-        }
-
-        // O catálogo só confere o par (ato, papel) que a etapa passa a declarar. Aposentar no catálogo um
-        // ato já declarado bloquearia todo PUT posterior da coleção, porque o endpoint substitui tudo e o
-        // cliente devolve o produto que leu.
-        DomainError? recusa = JaDeclarado(etapa, declarado, papel)
-            ? null
-            : await RecusaDoProdutoNovoAsync(declarado, papel, dono, cancellationToken).ConfigureAwait(false);
-        return recusa is null
-            ? Result<ProdutoDaEtapa>.Success(ProdutoDaEtapa.Criar(declarado.AtoCodigo, papel))
-            : Result<ProdutoDaEtapa>.Failure(recusa);
+        ProdutoDaEtapaInput declarado = input.Produtos[posicao];
+        Result<ProdutoConferido> conferido = await _conferencia
+            .ConferirAsync(
+                declarado.AtoCodigo, declarado.Papel, posicao, RotuloDoDonoDoProduto.DaEtapa(input.Nome), JaDeclarados(etapa), cancellationToken)
+            .ConfigureAwait(false);
+        return conferido.IsFailure
+            ? Result<ProdutoDaEtapa>.Failure(conferido.Error!)
+            : DaEtapa(conferido.Value!);
     }
 
-    private static bool JaDeclarado(EtapaProcesso etapa, ProdutoDaEtapaInput declarado, PapelProdutoFase? papel) =>
-        etapa.Produtos.Any(p => string.Equals(p.AtoCodigo, declarado.AtoCodigo, StringComparison.Ordinal) && p.Papel == papel);
-
-    private async Task<DomainError?> RecusaDoProdutoNovoAsync(
-        ProdutoDaEtapaInput declarado, PapelProdutoFase? papel, RotuloDoDonoDoProduto dono, CancellationToken cancellationToken)
-    {
-        Result<ClassificacaoDoAtoConsultado> classificada = await atos
-            .ClassificacaoAsync(declarado.AtoCodigo, cancellationToken).ConfigureAwait(false);
-        if (classificada.IsFailure)
+    private static Result<ProdutoDaEtapa> DaEtapa(ProdutoConferido conferido) =>
+        conferido switch
         {
-            return classificada.Error;
-        }
+            ProdutoConferido.Aceito aceito => Result<ProdutoDaEtapa>.Success(ProdutoDaEtapa.Criar(aceito.AtoCodigo, aceito.Papel)),
+            ProdutoConferido.Recusado recusado => Result<ProdutoDaEtapa>.Failure(recusado.Recusa.Error),
+            _ => throw new UnreachableException(),
+        };
 
-        return classificada.Value is ClassificacaoDoAtoConsultado.Conhecida conhecida
-            ? ConferenciaDoProdutoDoAto.RecusaDoPapel(declarado.AtoCodigo, papel, conhecida.Classificacao, dono)
-            : ConferenciaDoProdutoDoAto.AtoNaoEncontrado(declarado.AtoCodigo, dono);
-    }
+    private static List<(string AtoCodigo, PapelProdutoFase? Papel)> JaDeclarados(EtapaProcesso etapa) =>
+        [.. etapa.Produtos.Select(static p => (p.AtoCodigo, p.Papel))];
 }

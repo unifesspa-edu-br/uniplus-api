@@ -83,7 +83,7 @@ internal sealed class FasesEmMontagem
     private async Task<Result> MontarComInsumosAsync(
         FaseCronogramaInput input, int indice, InsumosDaFase insumos, CancellationToken cancellationToken)
     {
-        Result<ProdutosDaFaseMontados> produtos = await _produtos
+        Result<ProdutosConferidos<ProdutoDaFase>> produtos = await _produtos
             .MontarAsync(input, indice, insumos.Canonica.Codigo, cancellationToken).ConfigureAwait(false);
         if (produtos.IsFailure)
         {
@@ -97,7 +97,7 @@ internal sealed class FasesEmMontagem
     // As recusas dos produtos e da regra de recurso se acumulam com as da regra de homologação e as da fábrica da fase:
     // nenhuma delas depende da outra, e a resposta as traz juntas.
     private async Task MontarComProdutosAsync(
-        FaseCronogramaInput input, int indice, InsumosDaFase insumos, ProdutosDaFaseMontados produtos, CancellationToken cancellationToken)
+        FaseCronogramaInput input, int indice, InsumosDaFase insumos, ProdutosConferidos<ProdutoDaFase> produtos, CancellationToken cancellationToken)
     {
         _recusas.AddRange(produtos.Recusas);
         Result<RegraRecursoFase?> regraDeRecurso = await RegraDeRecursoAsync(input, indice, insumos.Canonica.Codigo, produtos.Produtos, cancellationToken)
@@ -113,7 +113,7 @@ internal sealed class FasesEmMontagem
         FaseCronogramaInput input,
         int indice,
         InsumosDaFase insumos,
-        ProdutosDaFaseMontados produtos,
+        ProdutosConferidos<ProdutoDaFase> produtos,
         RegraRecursoFase? regraRecurso,
         CancellationToken cancellationToken)
     {
@@ -151,7 +151,7 @@ internal sealed class FasesEmMontagem
         FaseCanonicaView? canonica = await _cadastros.FasesCanonicas
             .ObterPorIdAsync(input.FaseCanonicaId, cancellationToken).ConfigureAwait(false);
         return canonica is null
-            ? InterrupcaoDaFase.Com<InsumosDaFase>($"fases[{indice}].faseCanonicaId", new DomainError(
+            ? InterrupcaoDaEdicao.Com<InsumosDaFase>($"fases[{indice}].faseCanonicaId", new DomainError(
                 FaseCronogramaErrorCodes.FaseCanonicaNaoEncontrada,
                 $"Fase canônica {input.FaseCanonicaId} não encontrada ou não está mais viva."))
             : await ResolverInsumosDaFaseAsync(input, indice, canonica, cancellationToken).ConfigureAwait(false);
@@ -183,7 +183,7 @@ internal sealed class FasesEmMontagem
 
         UnidadeResponsavelSnapshot? unidade = await _cadastros.Unidades.ObterAsync(id, cancellationToken).ConfigureAwait(false);
         return unidade is null
-            ? InterrupcaoDaFase.Com<UnidadeResponsavelSnapshot?>($"fases[{indice}].unidadeResponsavelId", new DomainError(
+            ? InterrupcaoDaEdicao.Com<UnidadeResponsavelSnapshot?>($"fases[{indice}].unidadeResponsavelId", new DomainError(
                 FaseCronogramaErrorCodes.UnidadeResponsavelNaoEncontrada,
                 $"Unidade responsável {id} da fase '{canonica.Codigo}' não encontrada ou não está mais viva."))
             : Result<UnidadeResponsavelSnapshot?>.Success(unidade);

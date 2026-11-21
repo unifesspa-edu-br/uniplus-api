@@ -92,7 +92,7 @@ internal sealed class MontagemDaRegraDeRecursoDaFase(
             atoCodigo => ancorasJaDeclaradas.Contains((faseCodigo, atoCodigo)),
             (atoCodigo, token) => atos.Congelados.AncoraDaFaseJaPublicadaAsync(faseCodigo, atoCodigo, token),
             cancellationToken).ConfigureAwait(false);
-        return recusa is null ? regra : InterrupcaoDaFase.Com<RegraRecursoFase>($"{campo}.atoAncoraCodigo", recusa);
+        return recusa is null ? regra : InterrupcaoDaEdicao.Com<RegraRecursoFase>($"{campo}.atoAncoraCodigo", recusa);
     }
 
     private static Result<T> Recusa<T>(string campo, DomainError erro) =>
