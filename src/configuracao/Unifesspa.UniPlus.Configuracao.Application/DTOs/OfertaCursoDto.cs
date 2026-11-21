@@ -2,12 +2,14 @@ namespace Unifesspa.UniPlus.Configuracao.Application.DTOs;
 
 using System.Text.Json.Serialization;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+
 /// <summary>
 /// DTO de resposta HTTP para <c>OfertaCurso</c>. A unidade ofertante é um
 /// sub-objeto aninhado (<see cref="UnidadeOfertanteDto"/>, snapshot-copy
-/// ADR-0061). Os enums são expostos como tokens UPPER_SNAKE do contrato
-/// (<c>programaDeOferta</c>, <c>formatoPedagogico</c>,
-/// <c>regimeDeFuncionamento</c> e <c>regimeDeTurno</c> obrigatórios).
+/// ADR-0061). O programa e o formato saem como código e rótulo
+/// (<c>programaDeOferta</c> e <c>formatoPedagogico</c>); o regime de funcionamento e o de turno, como tokens UPPER_SNAKE do contrato.
 /// <c>regimeDeFuncionamento</c> é dimensão própria, independente do regime de
 /// turno (UNI-REQ-0138). <c>turnos</c> traz de um a dois turnos, conforme o
 /// regime de turno, em ordem canônica (matutino, vespertino, noturno). Suporta HATEOAS Level 1 via
@@ -19,8 +21,8 @@ public sealed record OfertaCursoDto(
     Guid CursoId,
     Guid LocalOfertaId,
     UnidadeOfertanteDto UnidadeOfertante,
-    string ProgramaDeOferta,
-    string FormatoPedagogico,
+    CodigoComRotulo<ProgramaDeOferta> ProgramaDeOferta,
+    CodigoComRotulo<FormatoPedagogico> FormatoPedagogico,
     string RegimeDeFuncionamento,
     string RegimeDeTurno,
     IReadOnlyList<string> Turnos,

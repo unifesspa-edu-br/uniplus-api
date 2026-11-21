@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -20,8 +21,7 @@ internal sealed class ValidacaoDaOfertaDeCurso(DeclaracaoDaOfertaDeCurso declara
 
     private readonly List<FieldError> _erros = [];
     private CodigoOfertaCurso? _codigo;
-    private bool _programaReconhecido;
-    private ProgramaDeOferta _programa;
+    private ProgramaDeOferta? _programa;
     private FormatoPedagogico _formato = FormatoPedagogico.Presencial;
     private bool _funcionamentoReconhecido;
     private RegimeDeFuncionamento _funcionamento = RegimeDeFuncionamento.Nenhum;
@@ -37,9 +37,7 @@ internal sealed class ValidacaoDaOfertaDeCurso(DeclaracaoDaOfertaDeCurso declara
         ConferirCombinacoes();
         TextosDaOferta textos = ConferirTextos();
 
-        return _erros.Count > 0
-            ? Result<CamposDaOfertaDeCurso>.ValidationFailure(_erros)
-            : Result<CamposDaOfertaDeCurso>.Success(Montar(textos));
+        return Concluir(textos);
     }
 
     private void ResolverClassificacoes()
@@ -70,9 +68,12 @@ internal sealed class ValidacaoDaOfertaDeCurso(DeclaracaoDaOfertaDeCurso declara
         return textos;
     }
 
-    private CamposDaOfertaDeCurso Montar(TextosDaOferta textos) =>
-        new(_codigo!.Valor, _programa, _formato, _funcionamento, _regime, TurnosOferta.OrdenarCanonicamente(_turnos),
-            textos.EMecCodigo, textos.CodigoSga, declaracao.VagasAnuaisAutorizadas, textos.BaseLegal, textos.AtoAutorizacaoMec);
+    private Result<CamposDaOfertaDeCurso> Concluir(TextosDaOferta textos) =>
+        _erros.Count == 0 && _codigo is { } codigo && _programa is { } programa
+            ? Result<CamposDaOfertaDeCurso>.Success(new(
+                codigo.Valor, programa, _formato, _funcionamento, _regime, TurnosOferta.OrdenarCanonicamente(_turnos),
+                textos.EMecCodigo, textos.CodigoSga, declaracao.VagasAnuaisAutorizadas, textos.BaseLegal, textos.AtoAutorizacaoMec))
+            : Result<CamposDaOfertaDeCurso>.ValidationFailure(_erros);
 
     private sealed record TextosDaOferta(string? EMecCodigo, string? CodigoSga, string? BaseLegal, string? AtoAutorizacaoMec);
 
@@ -90,24 +91,28 @@ internal sealed class ValidacaoDaOfertaDeCurso(DeclaracaoDaOfertaDeCurso declara
 
     private void ResolverPrograma()
     {
-        _programaReconhecido = ProgramasDeOferta.TryAnalisar(declaracao.ProgramaDeOferta, out _programa);
-        if (!_programaReconhecido)
+        _programa = CatalogoDe<ProgramaDeOferta>.TentarObter(declaracao.ProgramaDeOferta, out ProgramaDeOferta programa) ? programa : null;
+        if (_programa is null)
         {
-            _erros.Add(new("programaDeOferta", new DomainError(
-                OfertaCursoErrorCodes.ProgramaDeOfertaInvalido,
-                $"Programa de oferta deve ser um de: {string.Join(", ", ProgramasDeOferta.TokensCanonicos)}.")));
+            AdicionarErro("programaDeOferta", OfertaCursoErrorCodes.ProgramaDeOfertaInvalido, $"Programa de oferta deve ser um de: {CodigosAceitos<ProgramaDeOferta>()}.");
         }
     }
 
-    // O formato é obrigatório, mas ausente vale PRESENCIAL (mesmo expediente do default AMPLA de NaturezasLegais).
+    // O formato é obrigatório, mas ausente vale PRESENCIAL (mesmo expediente do default AMPLA da natureza legal).
     private void ResolverFormato()
     {
-        if (!string.IsNullOrWhiteSpace(declaracao.FormatoPedagogico)
-            && !FormatosPedagogicos.TryAnalisar(declaracao.FormatoPedagogico, out _formato))
+        if (declaracao.FormatoPedagogico is null)
         {
-            _erros.Add(new("formatoPedagogico", new DomainError(
-                OfertaCursoErrorCodes.FormatoPedagogicoInvalido,
-                $"Formato pedagógico deve ser um de: {string.Join(", ", FormatosPedagogicos.TokensCanonicos)}.")));
+            return;
+        }
+
+        if (CatalogoDe<FormatoPedagogico>.TentarObter(declaracao.FormatoPedagogico, out FormatoPedagogico formato))
+        {
+            _formato = formato;
+        }
+        else
+        {
+            AdicionarErro("formatoPedagogico", OfertaCursoErrorCodes.FormatoPedagogicoInvalido, $"Formato pedagógico deve ser um de: {CodigosAceitos<FormatoPedagogico>()}.");
         }
     }
 
@@ -223,7 +228,7 @@ internal sealed class ValidacaoDaOfertaDeCurso(DeclaracaoDaOfertaDeCurso declara
     // Programa fora do Regular exige base legal, também na edição (a transição Regular→Parfor sem base legal falha).
     private void ConferirBaseLegalDoPrograma(string? baseLegal)
     {
-        if (_programaReconhecido && _programa != ProgramaDeOferta.Regular && baseLegal is null)
+        if (_programa is { } programa && programa != ProgramaDeOferta.Regular && baseLegal is null)
         {
             _erros.Add(new("baseLegal", new DomainError(
                 OfertaCursoErrorCodes.BaseLegalObrigatoriaParaProgramaNaoRegular,
@@ -235,6 +240,10 @@ internal sealed class ValidacaoDaOfertaDeCurso(DeclaracaoDaOfertaDeCurso declara
 
     private void AdicionarErro(string campo, string codigo, string mensagem) =>
         _erros.Add(new(campo, new DomainError(codigo, mensagem)));
+
+    private static string CodigosAceitos<TEnum>()
+        where TEnum : struct, Enum =>
+        string.Join(", ", CatalogoDe<TEnum>.Todos().Select(static declarado => declarado.Codigo));
 
     private static TurnoOferta? ReconhecerTurno(string? token) =>
         TurnosOferta.TryAnalisar(token, out TurnoOferta turno) ? turno : null;

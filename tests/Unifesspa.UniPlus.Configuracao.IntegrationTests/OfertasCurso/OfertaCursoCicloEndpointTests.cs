@@ -127,8 +127,8 @@ public sealed class OfertaCursoCicloEndpointTests
     {
         using JsonDocument doc = await LerOfertaAsync(client, id);
         JsonElement root = doc.RootElement;
-        root.GetProperty("programaDeOferta").GetString().Should().Be("PARFOR");
-        root.GetProperty("formatoPedagogico").GetString().Should().Be("EAD");
+        root.GetProperty("programaDeOferta").GetProperty("codigo").GetString().Should().Be("PARFOR");
+        root.GetProperty("formatoPedagogico").GetProperty("codigo").GetString().Should().Be("EAD");
         root.GetProperty("regimeDeTurno").GetString().Should().Be("REGULAR");
         root.GetProperty("turnos").EnumerateArray().Select(t => t.GetString())
             .Should().Equal(["NOTURNO"], "a oferta a distância também declara turno");

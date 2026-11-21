@@ -1,0 +1,65 @@
+namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.OfertasCurso;
+
+using System.Reflection;
+
+using AwesomeAssertions;
+
+using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories.Ordenacao;
+using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Kernel.Pagination;
+
+/// <summary>
+/// A remontagem da oferta de referência a partir das partes do cursor: o código de programa e de formato conhecido
+/// volta ao valor do enum, e o desconhecido é defeito do cursor, nunca um valor padrão.
+/// </summary>
+public sealed class OfertaLidaDoCursorTests
+{
+    private static readonly IReadOnlyList<SortField> Campos =
+    [
+        new(CamposOrdenacaoOfertaCurso.ProgramaDeOferta, SortDirection.Ascending),
+        new(CamposOrdenacaoOfertaCurso.FormatoPedagogico, SortDirection.Descending),
+    ];
+
+    [Theory(DisplayName = "Os códigos conhecidos do cursor voltam ao programa e ao formato")]
+    [InlineData("REGULAR", "PRESENCIAL", ProgramaDeOferta.Regular, FormatoPedagogico.Presencial)]
+    [InlineData("FORMA_PARA", "SEMIPRESENCIAL", ProgramaDeOferta.FormaPara, FormatoPedagogico.Semipresencial)]
+    [InlineData("CONVENIO_OUTRO", "EAD", ProgramaDeOferta.OutroConvenio, FormatoPedagogico.Ead)]
+    public void Remontar_CodigosConhecidos_VoltamAoValor(
+        string programa, string formato, ProgramaDeOferta programaEsperado, FormatoPedagogico formatoEsperado)
+    {
+        Guid id = Guid.CreateVersion7();
+
+        OfertaCursoOrdenada oferta = Remontar([programa, formato], id);
+
+        oferta.Id.Should().Be(id);
+        oferta.ProgramaDeOferta.Should().Be(programaEsperado);
+        oferta.FormatoPedagogico.Should().Be(formatoEsperado);
+    }
+
+    [Theory(DisplayName = "Código desconhecido, em outra caixa ou com espaço lança ArgumentException")]
+    [InlineData("PROUNI", "EAD")]
+    [InlineData("regular", "EAD")]
+    [InlineData("REGULAR", "HIBRIDO")]
+    [InlineData("REGULAR", " EAD")]
+    [InlineData("REGULAR", "")]
+    public void Remontar_CodigoDesconhecido_LancaArgumentException(string programa, string formato)
+    {
+        Action act = () => Remontar([programa, formato], Guid.CreateVersion7());
+
+        act.Should().Throw<ArgumentException>();
+    }
+
+    private static OfertaCursoOrdenada Remontar(string[] partes, Guid id)
+    {
+        KeysetSort<OfertaCursoOrdenada> ordenacao = OrdenacaoDeCursos.DeOfertas(Campos, []);
+        PropertyInfo propriedade = typeof(KeysetSort<OfertaCursoOrdenada>)
+            .GetProperty("BuildAnchor", BindingFlags.NonPublic | BindingFlags.Instance)
+            .Should().NotBeNull().And.Subject.As<PropertyInfo>();
+        Func<IReadOnlyList<string>, Guid, object> montar = propriedade.GetValue(ordenacao)
+            .Should().BeAssignableTo<Func<IReadOnlyList<string>, Guid, object>>().Which;
+
+        return montar(partes, id).Should().BeOfType<OfertaCursoOrdenada>().Which;
+    }
+}

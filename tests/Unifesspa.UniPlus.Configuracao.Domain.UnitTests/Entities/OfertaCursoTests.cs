@@ -63,7 +63,7 @@ public sealed class OfertaCursoTests
     [InlineData("PARFOR", ProgramaDeOferta.Parfor)]
     [InlineData("PRONERA", ProgramaDeOferta.Pronera)]
     [InlineData("PEPETI", ProgramaDeOferta.Pepeti)]
-    [InlineData("CONVENIO_OUTRO", ProgramaDeOferta.ConvenioOutro)]
+    [InlineData("CONVENIO_OUTRO", ProgramaDeOferta.OutroConvenio)]
     [InlineData("OUTRO", ProgramaDeOferta.Outro)]
     public void Criar_ProgramaCanonico_Aceita(string token, ProgramaDeOferta esperado)
     {
@@ -81,12 +81,24 @@ public sealed class OfertaCursoTests
     [InlineData("regular")]
     [InlineData("1")]
     [InlineData("PROUNI")]
+    [InlineData(" REGULAR")]
+    [InlineData("REGULAR ")]
     public void Criar_ProgramaInvalido_Falha(string? token)
     {
         Result<OfertaCurso> resultado = Criar(d => d with { ProgramaDeOferta = token });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.ProgramaDeOfertaInvalido);
+    }
+
+    [Fact(DisplayName = "A recusa do programa lista os códigos aceitos na ordem de exibição e não repete o valor recebido")]
+    public void Criar_ProgramaDesconhecido_MensagemListaOsCodigosSemRepetirOValor()
+    {
+        Result<OfertaCurso> resultado = Criar(d => d with { ProgramaDeOferta = "PROUNI" });
+
+        FieldError erro = resultado.Errors.Should().ContainSingle(e => e.Field == "programaDeOferta").Subject;
+        erro.Error.Message.Should().Contain("REGULAR, FORMA_PARA, PARFOR, PRONERA, PEPETI, CONVENIO_OUTRO, OUTRO")
+            .And.NotContain("PROUNI");
     }
 
     [Theory(DisplayName = "Cada um dos três tokens canônicos de formato é aceito")]
@@ -100,8 +112,6 @@ public sealed class OfertaCursoTests
 
     [Theory(DisplayName = "Formato ausente aplica o default conceitual PRESENCIAL")]
     [InlineData(null)]
-    [InlineData("")]
-    [InlineData("   ")]
     public void Criar_SemFormato_DefaultPresencial(string? token)
     {
         OfertaCurso oferta = Criar(d => d with { FormatoPedagogico = token }).Value!;
@@ -111,9 +121,14 @@ public sealed class OfertaCursoTests
     }
 
     [Theory(DisplayName = "Formato fora do domínio fechado é rejeitado")]
+    [InlineData("")]
+    [InlineData("   ")]
     [InlineData("Presencial")]
+    [InlineData("presencial")]
     [InlineData("HIBRIDO")]
     [InlineData("2")]
+    [InlineData(" EAD")]
+    [InlineData("EAD ")]
     public void Criar_FormatoInvalido_Falha(string token)
     {
         Result<OfertaCurso> resultado = Criar(d => d with { FormatoPedagogico = token });

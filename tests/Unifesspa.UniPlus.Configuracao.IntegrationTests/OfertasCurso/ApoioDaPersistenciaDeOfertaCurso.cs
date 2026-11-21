@@ -49,7 +49,7 @@ internal sealed class ApoioDaPersistenciaDeOfertaCurso
     internal async Task<Guid> SemearCursoAsync()
     {
         Curso curso = Curso.Criar(
-            CodigoUnico(), "Engenharia Elétrica", "Bacharelado", "Graduação", null).Value!;
+            CodigoUnico(), "Engenharia Elétrica", "Bacharelado", "Graduação", null).ValorEsperado();
 
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
         ctx.Cursos.Add(curso);
@@ -87,7 +87,7 @@ internal sealed class ApoioDaPersistenciaDeOfertaCurso
     internal async Task<(Guid CursoId, Guid LocalOfertaId)> SemearCursoELocalAsync()
     {
         Curso curso = Curso.Criar(
-            CodigoUnico(), "Engenharia Civil", "Bacharelado", "Graduação", null).Value!;
+            CodigoUnico(), "Engenharia Civil", "Bacharelado", "Graduação", null).ValorEsperado();
         LocalOferta local = LocalOferta.Criar(
             new(TipoLocalOferta.CampusSede, null, "1504208", "Marabá", "PA", null, null),
             Agora).ValorEsperado();
@@ -104,14 +104,14 @@ internal sealed class ApoioDaPersistenciaDeOfertaCurso
 
     internal static UnidadeOfertante NovaUnidade() =>
         UnidadeOfertante.Criar(
-            Guid.CreateVersion7(), "FACET", "Faculdade de Computação e Engenharia Elétrica", "Faculdade").Value!;
+            Guid.CreateVersion7(), "FACET", "Faculdade de Computação e Engenharia Elétrica", "Faculdade").ValorEsperado();
 
     internal static OfertaCurso NovaOferta(Guid cursoId, Guid localId, UnidadeOfertante unidade) =>
         OfertaCurso.Criar(
             cursoId, localId, unidade,
             new DeclaracaoDaOfertaDeCurso(
                 $"OFERTA_{Guid.CreateVersion7():N}".ToUpperInvariant(), "PARFOR", "SEMIPRESENCIAL", "INTENSIVO", "INTEGRAL", ["NOTURNO", "VESPERTINO"],
-                "123456", "ENG-01", 40, "Decreto 6.755/2009", "Portaria MEC 9/2009")).Value!;
+                "123456", "ENG-01", 40, "Decreto 6.755/2009", "Portaria MEC 9/2009")).ValorEsperado();
 
     /// <summary>
     /// A linha gravada por SQL cru, sem passar pelo domínio: serve a provar o que o banco recusa sozinho. As colunas da
@@ -146,11 +146,23 @@ internal sealed class ApoioDaPersistenciaDeOfertaCurso
             InsercaoSemRegimeDeFuncionamento,
             [cursoId, localId, "REGULAR", "PRESENCIAL", "REGULAR", new[] { "MATUTINO" }, null, null]);
 
+    /// <summary>Insere a linha crua pelo contexto informado, para que o chamador a mantenha na própria transação.</summary>
+    internal static Task InserirCruNoContextoAsync(UniPlusDbContext ctx, Guid cursoId, Guid localId, LinhaCruDeOferta linha) =>
+        InserirPeloContextoAsync(
+            ctx,
+            InsercaoDeOfertaCrua,
+            [cursoId, localId, linha.Programa, linha.Formato, linha.Funcionamento, linha.Regime, linha.Turnos, linha.Vagas, linha.BaseLegal]);
+
     private async Task ExecutarInsercaoCruaAsync(string comandoSql, object?[] colunasDaOferta)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await InserirPeloContextoAsync(ctx, comandoSql, colunasDaOferta);
+    }
+
+    private static async Task InserirPeloContextoAsync(UniPlusDbContext ctx, string comandoSql, object?[] colunasDaOferta)
     {
         object?[] valores = [Guid.CreateVersion7(), CodigoCru(), .. colunasDaOferta[..2], Guid.CreateVersion7(), .. colunasDaOferta[2..], DateTimeOffset.UtcNow];
 
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         await ctx.Database.ExecuteSqlAsync(FormattableStringFactory.Create(comandoSql, valores));
     }
 

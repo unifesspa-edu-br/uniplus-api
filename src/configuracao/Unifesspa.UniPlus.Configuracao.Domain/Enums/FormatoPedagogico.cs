@@ -1,24 +1,22 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 /// <summary>
-/// Formato pedagógico de uma <see cref="Entities.OfertaCurso"/> (story #588,
-/// ADR-0066): presencial, semipresencial ou a distância (EaD). Persistido como
-/// código UPPER_SNAKE (<see cref="FormatosPedagogicos"/>). Quando o código não é
-/// informado na criação/atualização, o default conceitual é
-/// <see cref="Presencial"/> (mesmo expediente do default AMPLA de
-/// <see cref="NaturezasLegais"/>).
+/// Formato pedagógico de uma <see cref="Entities.OfertaCurso"/> (ADR-0066). Quando o pedido não informa o formato, vale
+/// <see cref="Presencial"/>. A ordem de declaração é a de exibição.
 /// </summary>
 public enum FormatoPedagogico
 {
-    /// <summary>Valor de ausência — indica entrada inválida/corrupção se encontrado em runtime.</summary>
-    Nenhum = 0,
-
-    /// <summary>Oferta presencial (default conceitual quando o código está ausente).</summary>
+    /// <summary>Oferta presencial, o formato quando o pedido não informa.</summary>
+    [CodigoDeContrato("PRESENCIAL", "Presencial")]
     Presencial = 1,
 
-    /// <summary>Oferta semipresencial (híbrida).</summary>
+    /// <summary>Oferta semipresencial, que combina aulas presenciais e a distância.</summary>
+    [CodigoDeContrato("SEMIPRESENCIAL", "Semipresencial")]
     Semipresencial = 2,
 
-    /// <summary>Oferta a distância (EaD).</summary>
+    /// <summary>Oferta a distância.</summary>
+    [CodigoDeContrato("EAD", "A distância")]
     Ead = 3,
 }
