@@ -9,23 +9,23 @@ using Microsoft.Extensions.DependencyInjection;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 
 /// <summary>
-/// As fontes de início no lugar registradas no host. Cada fonte nova entra na lista esperada junto do PR que a cria,
+/// As fontes da avaliação iniciada no lugar registradas no host. Cada fonte nova entra na lista esperada junto do PR que a cria,
 /// e omitir ou remover uma fonte quebra o teste.
 /// </summary>
-public sealed class FontesDoInicioNoLugarCompoeOHostTests : IClassFixture<SelecaoApiFactory>
+public sealed class FontesDaAvaliacaoIniciadaNoLugarCompoeOHostTests : IClassFixture<SelecaoApiFactory>
 {
     private static readonly Type[] FontesEsperadas = [];
 
     private readonly SelecaoApiFactory _factory;
 
-    public FontesDoInicioNoLugarCompoeOHostTests(SelecaoApiFactory factory) => _factory = factory;
+    public FontesDaAvaliacaoIniciadaNoLugarCompoeOHostTests(SelecaoApiFactory factory) => _factory = factory;
 
-    [Fact(DisplayName = "O host registra exatamente as fontes de início no lugar esperadas")]
+    [Fact(DisplayName = "O host registra exatamente as fontes da avaliação iniciada no lugar esperadas")]
     public void Host_RegistraExatamenteAsFontesEsperadas()
     {
         using AsyncServiceScope escopo = _factory.Services.CreateAsyncScope();
 
-        IEnumerable<IFonteDoInicioNoLugar> fontes = escopo.ServiceProvider.GetServices<IFonteDoInicioNoLugar>();
+        IEnumerable<IFonteDaAvaliacaoIniciadaNoLugar> fontes = escopo.ServiceProvider.GetServices<IFonteDaAvaliacaoIniciadaNoLugar>();
 
         fontes.Select(static f => f.GetType()).Should().BeEquivalentTo(FontesEsperadas);
     }
