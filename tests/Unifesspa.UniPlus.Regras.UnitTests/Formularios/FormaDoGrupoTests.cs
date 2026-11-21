@@ -56,7 +56,7 @@ public sealed class FormaDoGrupoTests
     [Fact]
     public void Conferir_ViolacoesIndependentes_SaemJuntas()
     {
-        List<FieldError> erros = FormaDoGrupo.Conferir(" ", -1, null, 2, 1, [], [], Obrigatoriedade.Sempre);
+        List<FieldError> erros = FormaDoGrupo.Conferir(" ", -1, null, new OcorrenciasDoGrupo(2, 1), [], [], Obrigatoriedade.Sempre);
 
         erros.Select(static e => e.Error.Code).Should().BeEquivalentTo(
         [
@@ -81,7 +81,13 @@ public sealed class FormaDoGrupoTests
         IEnumerable<string>? citados = null,
         Obrigatoriedade? obrigatoriedade = null) =>
         FormaDoGrupo.Conferir(
-            "COMPOSICAO", 1, "Composição familiar", minimo, maximo, subitens ?? [("PARENTESCO", null, false)], citados ?? [], obrigatoriedade ?? Obrigatoriedade.Sempre);
+            "COMPOSICAO",
+            1,
+            "Composição familiar",
+            new OcorrenciasDoGrupo(minimo, maximo),
+            subitens ?? [("PARENTESCO", null, false)],
+            citados ?? [],
+            obrigatoriedade ?? Obrigatoriedade.Sempre);
 
     private static PredicadoDnf Predicado(string fato) =>
         PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;

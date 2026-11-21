@@ -174,25 +174,26 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
         IReadOnlyList<RestricaoValor> restricoesDoItem = restricoes ?? [];
 
         IReadOnlyList<CondicaoPrecondicaoFato> condicoes = precondicoes ?? [];
-        List<FieldError> erros = ConferirFormaEClassificacao(
-            fatoCodigo, ordem, rotulo, tipoRenderizacao, formato, ajuda, condicoes.Select(static c => c.Fato), obrigatoriedade, restricoesDoItem,
-            impedimento, classificacaoProtecao, componenteExibicao);
+        ApresentacaoDoCampo apresentacao = new(rotulo, tipoRenderizacao, ajuda, pedirConfirmacao);
+        RegrasDoCampo regras = new(PredicadoDeExibicao(condicoes), obrigatoriedade, restricoesDoItem, impedimento);
+        List<FieldError> erros = ConferirFormaEClassificacao(fatoCodigo, ordem, apresentacao, formato, regras, classificacaoProtecao, componenteExibicao);
 
         if (erros.Count > 0)
         {
             return Result<FatoColetado>.ValidationFailure(erros);
         }
 
+        ApresentacaoDoCampo gravada = apresentacao.NaFormaGravada();
         FatoColetado fato = new()
         {
             FatoCodigo = (fatoCodigo ?? string.Empty).Trim(),
             Ordem = ordem,
-            Rotulo = (rotulo ?? string.Empty).Trim(),
+            Rotulo = gravada.Rotulo,
             TipoRenderizacao = tipoRenderizacao,
             Obrigatoriedade = obrigatoriedade,
-            Ajuda = FormaDoItem.TextoOpcional(ajuda),
+            Ajuda = gravada.Ajuda,
             PedirConfirmacao = pedirConfirmacao,
-            Restricoes = [.. restricoesDoItem.OrderBy(static r => r.Tipo)],
+            Restricoes = regras.ComRestricoesNaOrdemDoTipo().Restricoes,
             Impedimento = impedimento,
             OrigemValores = origemValores,
             Formato = FormaDoItem.TextoOpcional(formato),
@@ -228,8 +229,7 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
 
         // A mesma forma e o mesmo vocabulário que Criar confere.
         List<FieldError> erros = ConferirFormaEClassificacao(
-            FatoCodigo, Ordem, Rotulo, TipoRenderizacao, copia.Formato, Ajuda, _precondicoes.Select(static c => c.Fato), Obrigatoriedade, Restricoes,
-            Impedimento, copia.ClassificacaoProtecao, copia.ComponenteExibicao);
+            FatoCodigo, Ordem, Apresentacao(), copia.Formato, Regras(), copia.ClassificacaoProtecao, copia.ComponenteExibicao);
         return erros.Count > 0 ? Result.ValidationFailure(erros) : Result.Success();
     }
 
@@ -240,19 +240,13 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
     private static List<FieldError> ConferirFormaEClassificacao(
         string fatoCodigo,
         int ordem,
-        string rotulo,
-        TipoRenderizacao tipoRenderizacao,
+        ApresentacaoDoCampo apresentacao,
         string? formato,
-        string? ajuda,
-        IEnumerable<string> fatosDaPrecondicao,
-        Obrigatoriedade obrigatoriedade,
-        IReadOnlyList<RestricaoValor> restricoes,
-        Impedimento? impedimento,
+        RegrasDoCampo regras,
         string classificacaoProtecao,
         string? componenteExibicao)
     {
-        List<FieldError> erros = FormaDoItem.Conferir(
-            fatoCodigo, ordem, rotulo, tipoRenderizacao, formato, ajuda, fatosDaPrecondicao, obrigatoriedade, restricoes, impedimento);
+        List<FieldError> erros = FormaDoItem.Conferir(fatoCodigo, ordem, apresentacao, formato, regras);
         if (!ClassificacoesDeProtecao.TokensCanonicos.Contains(classificacaoProtecao))
         {
             // A Seleção só copia o valor já validado pelo catálogo, no vocabulário fechado
@@ -317,12 +311,11 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
     /// impedimento, sem repetição. O impedimento cita a resposta do próprio campo, que não é
     /// dependência: só as respostas anteriores entram.
     /// </summary>
-    public IReadOnlyCollection<string> FatosCitados =>
-        [.. _precondicoes.Select(static c => c.Fato)
-            .Concat(Obrigatoriedade.FatosCitados)
-            .Concat(Restricoes.SelectMany(static r => r.FatosCitados))
-            .Concat((Impedimento?.FatosCitados ?? []).Where(f => !string.Equals(f, FatoCodigo, StringComparison.Ordinal)))
-            .Distinct(StringComparer.Ordinal)];
+    public IReadOnlyCollection<string> FatosCitados => Regras().FatosCitadosPor(FatoCodigo);
+
+    private ApresentacaoDoCampo Apresentacao() => new(Rotulo, TipoRenderizacao, Ajuda, PedirConfirmacao);
+
+    private RegrasDoCampo Regras() => new(ParaPredicado(), Obrigatoriedade, Restricoes, Impedimento);
 
     /// <summary>
     /// As condições das regras do item, para os vínculos e as referências a valor do processo: a
@@ -354,7 +347,7 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
     internal void VincularFinalidade(FinalidadeFormulario finalidade) => Finalidade = finalidade;
 
     /// <summary>A pré-condição de exibição na forma avaliável; nula quando o item sempre aparece.</summary>
-    public Regras.ValueObjects.PredicadoDnf? Exibicao => ParaPredicado();
+    public PredicadoDnf? Exibicao => ParaPredicado();
 
     /// <summary>
     /// O predicado de pré-condição na forma avaliável, ou <see langword="null"/> quando o fato é
@@ -362,11 +355,12 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
     /// oposto de "sem pré-condição" —, então a ausência é representada pelo nulo, nunca por um
     /// predicado vazio.
     /// </summary>
-    internal Regras.ValueObjects.PredicadoDnf? ParaPredicado() =>
-        _precondicoes.Count == 0
+    internal PredicadoDnf? ParaPredicado() => PredicadoDeExibicao(_precondicoes);
+
+    private static PredicadoDnf? PredicadoDeExibicao(IReadOnlyList<CondicaoPrecondicaoFato> condicoes) =>
+        condicoes.Count == 0
             ? null
-            : Regras.ValueObjects.PredicadoDnf.CriarDeCondicoesAgrupadas(
-                [.. _precondicoes.Select(static c => (c.Clausula, c.ParaCondicaoDnf()))]).Value!;
+            : PredicadoDnf.CriarDeCondicoesAgrupadas([.. condicoes.Select(static c => (c.Clausula, c.ParaCondicaoDnf()))]).Value!;
 }
 
 /// <summary>Códigos de erro de <see cref="FatoColetado"/>.</summary>

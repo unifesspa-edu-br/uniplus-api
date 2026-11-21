@@ -123,91 +123,29 @@ public static class FormaDoItem
     /// comprimento um, recusada aqui com um erro específico, sem precisar conhecer os outros itens.
     /// O impedimento é a exceção: cada cláusula dele cita a resposta do próprio campo.
     /// </summary>
-    public static List<FieldError> Conferir(
-        string? fatoCodigo,
-        int ordem,
-        string? rotulo,
-        TipoRenderizacao tipoRenderizacao,
-        string? formato,
-        string? ajuda,
-        IEnumerable<string> fatosCitadosPelaExibicao,
-        Obrigatoriedade obrigatoriedade,
-        IReadOnlyList<RestricaoValor> restricoes,
-        Impedimento? impedimento = null)
+    public static List<FieldError> Conferir(string? fatoCodigo, int ordem, ApresentacaoDoCampo apresentacao, string? formato, RegrasDoCampo regras)
     {
-        ArgumentNullException.ThrowIfNull(fatosCitadosPelaExibicao);
-        ArgumentNullException.ThrowIfNull(obrigatoriedade);
-        ArgumentNullException.ThrowIfNull(restricoes);
+        ArgumentNullException.ThrowIfNull(apresentacao);
+        ArgumentNullException.ThrowIfNull(regras);
 
-        List<FieldError> erros = ValidarFormaBasica(fatoCodigo, ordem, rotulo);
+        return
+        [
+            .. ValidarFormaBasica(fatoCodigo, ordem, apresentacao.Rotulo),
+            .. apresentacao.ConferirAjuda(),
+            .. RecusasDoFormato(apresentacao.TipoRenderizacao, formato),
+            .. regras.ConferirNoCampo(fatoCodigo?.Trim() ?? string.Empty, apresentacao.TipoRenderizacao),
+        ];
+    }
 
-        if (TextoOpcional(ajuda) is { Length: > AjudaMaxLength })
-        {
-            erros.Add(new("ajuda", new DomainError(
-                ItemFormularioErrorCodes.AjudaTamanho, $"A ajuda do campo tem no máximo {AjudaMaxLength} caracteres.")));
-        }
-
+    private static IEnumerable<FieldError> RecusasDoFormato(TipoRenderizacao tipoRenderizacao, string? formato)
+    {
         string? formatoNormalizado = TextoOpcional(formato);
         if ((tipoRenderizacao == TipoRenderizacao.Texto) != (formatoNormalizado is not null)
             || formatoNormalizado is { Length: > FormatoMaxLength })
         {
-            erros.Add(new("formato", new DomainError(
+            yield return new("formato", new DomainError(
                 ItemFormularioErrorCodes.FormatoIncoerente,
-                $"O campo de texto tem o formato do fato no catálogo, com no máximo {FormatoMaxLength} caracteres; os demais campos não têm formato.")));
-        }
-
-        string codigo = fatoCodigo?.Trim() ?? string.Empty;
-        if (fatosCitadosPelaExibicao.Contains(codigo, StringComparer.Ordinal))
-        {
-            erros.Add(new("precondicao", new DomainError(ItemFormularioErrorCodes.RegraAutorreferente, "A exibição cita o próprio fato.")));
-        }
-
-        if (obrigatoriedade.FatosCitados.Contains(codigo, StringComparer.Ordinal))
-        {
-            erros.Add(new("predicadoObrigatoriedade", new DomainError(
-                ItemFormularioErrorCodes.RegraAutorreferente, "A obrigatoriedade cita o próprio fato.")));
-        }
-
-        erros.AddRange(ConferirRestricoes(codigo, tipoRenderizacao, restricoes));
-        if (impedimento is not null)
-        {
-            erros.AddRange(ConferirImpedimento(codigo, tipoRenderizacao, impedimento));
-        }
-
-        return erros;
-    }
-
-    /// <summary>
-    /// O impedimento cabe no tipo do campo, cada cláusula dele cita a resposta do próprio campo, e a
-    /// mensagem ao candidato é obrigatória e limitada.
-    /// </summary>
-    private static IEnumerable<FieldError> ConferirImpedimento(string codigo, TipoRenderizacao tipoRenderizacao, Impedimento impedimento)
-    {
-        if (!Impedimento.CabeNoCampo(tipoRenderizacao))
-        {
-            yield return new("impedimento", new DomainError(
-                ItemFormularioErrorCodes.ImpedimentoNaoCabeNoCampo,
-                "O impedimento só cabe em campo booleano, numérico, de seleção ou de município: texto, data e endereço não entram em regra."));
-        }
-
-        // Sem cláusula, o OU sobre elas nunca se cumpre, e o "toda cláusula cita o campo" aprovaria em vazio.
-        if (impedimento.Quando.Clausulas.Count == 0)
-        {
-            yield return new("impedimento.quando", new DomainError(
-                ItemFormularioErrorCodes.ImpedimentoSemCondicao, "O impedimento tem a condição sobre a resposta do campo."));
-        }
-        else if (impedimento.Quando.Clausulas.Any(clausula => !clausula.Condicoes.Any(c => string.Equals(c.Fato, codigo, StringComparison.Ordinal))))
-        {
-            yield return new("impedimento.quando", new DomainError(
-                ItemFormularioErrorCodes.ImpedimentoSemOProprioCampo,
-                "Cada cláusula do impedimento cita a resposta do próprio campo; o bloqueio só por resposta anterior é da exibição."));
-        }
-
-        if (TextoOpcional(impedimento.Mensagem) is not { Length: <= MensagemDoImpedimentoMaxLength } mensagem || mensagem.Contains('\0', StringComparison.Ordinal))
-        {
-            yield return new("impedimento.mensagem", new DomainError(
-                ItemFormularioErrorCodes.ImpedimentoMensagemInvalida,
-                $"A mensagem que explica o impedimento ao candidato é obrigatória e tem no máximo {MensagemDoImpedimentoMaxLength} caracteres."));
+                $"O campo de texto tem o formato do fato no catálogo, com no máximo {FormatoMaxLength} caracteres; os demais campos não têm formato."));
         }
     }
 
@@ -226,55 +164,11 @@ public static class FormaDoItem
 
     /// <summary>O texto aparado, ou nulo quando vazio — a forma em que o item guarda ajuda e formato.</summary>
     public static string? TextoOpcional(string? texto) => string.IsNullOrWhiteSpace(texto) ? null : texto.Trim();
-
-    /// <summary>
-    /// As restrições cabem no tipo do campo — faixa só no numérico, tamanho só no de texto, opções
-    /// só no de seleção, municípios da UF só no de município, onde são obrigatórios, faixa de data só
-    /// no de data —, não se repetem
-    /// por tipo, não citam o próprio fato, e os limites da faixa cabem nas casas decimais do edital.
-    /// </summary>
-    private static IEnumerable<FieldError> ConferirRestricoes(string codigo, TipoRenderizacao tipoRenderizacao, IReadOnlyList<RestricaoValor> restricoes)
-    {
-        if (RestricoesDeValor.TipoRepetido(restricoes) is { } repetido)
-        {
-            yield return new("restricoes", repetido);
-        }
-
-        if (tipoRenderizacao == TipoRenderizacao.Municipio && !restricoes.Any(static r => r is MunicipiosDaUf))
-        {
-            yield return new("restricoes", new DomainError(
-                ItemFormularioErrorCodes.MunicipioSemUf, "O campo de município cita a UF respondida antes, pelos municípios da UF."));
-        }
-
-        for (int indice = 0; indice < restricoes.Count; indice++)
-        {
-            if (!RestricaoCabeNoCampo(restricoes[indice].Tipo, tipoRenderizacao))
-            {
-                yield return new($"restricoes[{indice}]", new DomainError(
-                    ItemFormularioErrorCodes.RestricaoIncoerente,
-                    "A faixa numérica só se aplica ao campo numérico, o tamanho só ao de texto, as opções só ao de seleção, os municípios da UF só ao de município e a faixa de data só ao de data."));
-            }
-
-            if (restricoes[indice] is FaixaNumerica faixa
-                && new[] { faixa.Minimo, faixa.Maximo }.Any(static limite => limite is { } v && Math.Round(v, CasasDecimaisDaFaixa) != v))
-            {
-                yield return new($"restricoes[{indice}]", new DomainError(
-                    RestricaoValorErrorCodes.LimitesIncoerentes,
-                    $"Os limites da faixa numérica têm no máximo {CasasDecimaisDaFaixa} casas decimais."));
-            }
-
-            if (restricoes[indice].FatosCitados.Contains(codigo, StringComparer.Ordinal))
-            {
-                yield return new($"restricoes[{indice}]", new DomainError(ItemFormularioErrorCodes.RegraAutorreferente, "A restrição cita o próprio fato."));
-            }
-        }
-    }
 }
 
 /// <summary>
 /// A forma de um grupo repetível do formulário, a mesma no processo e no modelo (UNI-REQ-0146): o
-/// código, a ordem, o rótulo, o mínimo e, quando declarado, o máximo de ocorrências e os campos de
-/// cada ocorrência.
+/// código, a ordem, o rótulo, as ocorrências e os campos de cada ocorrência.
 /// Acumula toda violação independente em vez de parar na primeira (ADR-0125).
 /// </summary>
 public static class FormaDoGrupo
@@ -284,98 +178,115 @@ public static class FormaDoGrupo
     /// <summary>Teto de campos de cada ocorrência: um membro da família tem poucos dados declarados.</summary>
     public const int MaximoDeSubitens = 30;
 
-    /// <summary>
-    /// O mínimo não é negativo, e o máximo, quando declarado, é ao menos um e não fica abaixo do
-    /// mínimo. Sem máximo, o grupo aceita qualquer quantidade de ocorrências.
-    /// </summary>
-    public static bool ContagemValida(int minimo, int? maximo) =>
-        minimo >= 0 && (maximo is not { } teto || (teto >= 1 && teto >= minimo));
-
     /// <summary>O grupo tem de um até o teto de campos por ocorrência.</summary>
     public static bool QuantidadeDeCamposValida(int quantidade) => quantidade is >= 1 and <= MaximoDeSubitens;
 
     /// <summary>
-    /// Código e rótulo obrigatórios e limitados, ordem não negativa, mínimo não negativo e até o
-    /// máximo, máximo opcional e de ao menos um, ao menos um campo e no máximo o teto, nenhum campo com seção
-    /// própria — o campo aparece onde o grupo aparece — e nenhuma regra do grupo citando o próprio
-    /// grupo ou os campos dele — fora da ocorrência, eles não têm valor único.
+    /// Código e rótulo obrigatórios e limitados, ordem não negativa, ocorrências coerentes, ao menos um
+    /// campo e no máximo o teto, nenhum campo com seção própria — o campo aparece onde o grupo aparece
+    /// — e nenhuma regra do grupo citando o próprio grupo ou os campos dele — fora da ocorrência, eles
+    /// não têm valor único.
     /// </summary>
     public static List<FieldError> Conferir(
         string? codigo,
         int ordem,
         string? rotulo,
-        int minimo,
-        int? maximo,
+        OcorrenciasDoGrupo ocorrencias,
         IReadOnlyList<(string? FatoCodigo, string? EtapaCodigo, bool TemImpedimento)> subitens,
         IEnumerable<string> fatosCitadosPelaExibicao,
         Obrigatoriedade obrigatoriedade)
     {
+        ArgumentNullException.ThrowIfNull(ocorrencias);
         ArgumentNullException.ThrowIfNull(subitens);
         ArgumentNullException.ThrowIfNull(fatosCitadosPelaExibicao);
         ArgumentNullException.ThrowIfNull(obrigatoriedade);
 
-        List<FieldError> erros = [];
-        void Recusar(string campo, string codigoErro, string mensagem) => erros.Add(new(campo, new DomainError(codigoErro, mensagem)));
+        return
+        [
+            .. RecusasDoCodigo(codigo), .. RecusasDaOrdem(ordem), .. RecusasDoRotulo(rotulo), .. ocorrencias.Conferir(),
+            .. RecusasDaQuantidadeDeCampos(subitens.Count), .. RecusasDosCampos(subitens),
+            .. RecusasDeRegraQueCitaOGrupo(codigo?.Trim() ?? string.Empty, subitens, fatosCitadosPelaExibicao, obrigatoriedade),
+        ];
+    }
 
-        string codigoAparado = codigo?.Trim() ?? string.Empty;
-        if (codigoAparado.Length is 0 or > CodigoMaxLength)
+    private static IEnumerable<FieldError> RecusasDoCodigo(string? codigo)
+    {
+        if ((codigo?.Trim() ?? string.Empty).Length is 0 or > CodigoMaxLength)
         {
-            Recusar("codigo", GrupoFormularioErrorCodes.CodigoInvalido, $"O código do grupo é obrigatório e tem no máximo {CodigoMaxLength} caracteres.");
+            yield return new("codigo", new DomainError(
+                GrupoFormularioErrorCodes.CodigoInvalido, $"O código do grupo é obrigatório e tem no máximo {CodigoMaxLength} caracteres."));
         }
+    }
 
+    private static IEnumerable<FieldError> RecusasDaOrdem(int ordem)
+    {
         if (ordem < 0)
         {
-            Recusar("ordem", GrupoFormularioErrorCodes.OrdemInvalida, "A ordem do grupo não pode ser negativa.");
+            yield return new("ordem", new DomainError(GrupoFormularioErrorCodes.OrdemInvalida, "A ordem do grupo não pode ser negativa."));
         }
+    }
 
+    private static IEnumerable<FieldError> RecusasDoRotulo(string? rotulo)
+    {
         if ((rotulo?.Trim() ?? string.Empty).Length is 0 or > FormaDoItem.RotuloMaxLength)
         {
-            Recusar("rotulo", GrupoFormularioErrorCodes.RotuloInvalido,
-                $"O rótulo do grupo é obrigatório e tem no máximo {FormaDoItem.RotuloMaxLength} caracteres.");
+            yield return new("rotulo", new DomainError(
+                GrupoFormularioErrorCodes.RotuloInvalido,
+                $"O rótulo do grupo é obrigatório e tem no máximo {FormaDoItem.RotuloMaxLength} caracteres."));
         }
+    }
 
-        const string contagem = "O mínimo de ocorrências não é negativo, e o máximo, quando declarado, é ao menos um e não fica abaixo do mínimo.";
-        if (minimo < 0)
+    private static IEnumerable<FieldError> RecusasDaQuantidadeDeCampos(int quantidade)
+    {
+        if (!QuantidadeDeCamposValida(quantidade))
         {
-            Recusar("minimo", GrupoFormularioErrorCodes.ContagemIncoerente, contagem);
+            yield return new("subitens", new DomainError(
+                GrupoFormularioErrorCodes.SubitensForaDoLimite, $"O grupo tem de um a {MaximoDeSubitens} campos por ocorrência."));
         }
-        else if (!ContagemValida(minimo, maximo))
+    }
+
+    private static IEnumerable<FieldError> RecusasDosCampos(IReadOnlyList<(string? FatoCodigo, string? EtapaCodigo, bool TemImpedimento)> subitens) =>
+        subitens.SelectMany(static (subitem, indice) => RecusasDoCampo(subitem, indice));
+
+    private static IEnumerable<FieldError> RecusasDoCampo((string? FatoCodigo, string? EtapaCodigo, bool TemImpedimento) subitem, int indice)
+    {
+        if (subitem.EtapaCodigo is not null)
         {
-            Recusar("maximo", GrupoFormularioErrorCodes.ContagemIncoerente, contagem);
+            yield return new($"subitens[{indice}].etapaCodigo", new DomainError(
+                GrupoFormularioErrorCodes.CampoComSecaoPropria,
+                $"O campo '{subitem.FatoCodigo}' segue a seção do grupo e não declara seção própria."));
         }
 
-        if (!QuantidadeDeCamposValida(subitens.Count))
+        if (subitem.TemImpedimento)
         {
-            Recusar("subitens", GrupoFormularioErrorCodes.SubitensForaDoLimite,
-                $"O grupo tem de um a {MaximoDeSubitens} campos por ocorrência.");
+            yield return new($"subitens[{indice}].impedimento", new DomainError(
+                GrupoFormularioErrorCodes.CampoComImpedimento,
+                $"O campo '{subitem.FatoCodigo}' é de membro: o impedimento é da inscrição do candidato, não de um membro."));
         }
+    }
 
-        for (int indice = 0; indice < subitens.Count; indice++)
-        {
-            if (subitens[indice].EtapaCodigo is not null)
-            {
-                Recusar($"subitens[{indice}].etapaCodigo", GrupoFormularioErrorCodes.CampoComSecaoPropria,
-                    $"O campo '{subitens[indice].FatoCodigo}' segue a seção do grupo e não declara seção própria.");
-            }
-
-            if (subitens[indice].TemImpedimento)
-            {
-                Recusar($"subitens[{indice}].impedimento", GrupoFormularioErrorCodes.CampoComImpedimento,
-                    $"O campo '{subitens[indice].FatoCodigo}' é de membro: o impedimento é da inscrição do candidato, não de um membro.");
-            }
-        }
-
+    private static IEnumerable<FieldError> RecusasDeRegraQueCitaOGrupo(
+        string codigoAparado,
+        IReadOnlyList<(string? FatoCodigo, string? EtapaCodigo, bool TemImpedimento)> subitens,
+        IEnumerable<string> fatosCitadosPelaExibicao,
+        Obrigatoriedade obrigatoriedade)
+    {
         HashSet<string> doGrupo = new(subitens.Select(static s => s.FatoCodigo).OfType<string>().Append(codigoAparado), StringComparer.Ordinal);
-        foreach ((string campo, IEnumerable<string> citados) in new[] { ("exibicao", fatosCitadosPelaExibicao), ("predicadoObrigatoriedade", obrigatoriedade.FatosCitados) })
-        {
-            if (citados.FirstOrDefault(doGrupo.Contains) is { } citado)
-            {
-                Recusar(campo, GrupoFormularioErrorCodes.RegraAutorreferente,
-                    $"Uma regra do grupo cita '{citado}', do próprio grupo — a exibição e a obrigatoriedade do grupo se decidem antes das ocorrências.");
-            }
-        }
+        return
+        [
+            .. RecusasDaRegraQueCitaOGrupo("exibicao", fatosCitadosPelaExibicao, doGrupo),
+            .. RecusasDaRegraQueCitaOGrupo("predicadoObrigatoriedade", obrigatoriedade.FatosCitados, doGrupo),
+        ];
+    }
 
-        return erros;
+    private static IEnumerable<FieldError> RecusasDaRegraQueCitaOGrupo(string campo, IEnumerable<string> citados, HashSet<string> doGrupo)
+    {
+        if (citados.FirstOrDefault(doGrupo.Contains) is { } citado)
+        {
+            yield return new(campo, new DomainError(
+                GrupoFormularioErrorCodes.RegraAutorreferente,
+                $"Uma regra do grupo cita '{citado}', do próprio grupo — a exibição e a obrigatoriedade do grupo se decidem antes das ocorrências."));
+        }
     }
 }
 
@@ -415,45 +326,70 @@ public static class FormaDaEtapa
     /// exibição condicional só na seção — o bloco de sistema aparece sempre.
     /// </summary>
     public static List<FieldError> Conferir(
-        string? codigo, int ordem, TipoEtapaFormulario tipo, string? titulo, string? descricao, string? aviso, bool temExibicao)
-    {
-        List<FieldError> erros = [];
-        void Recusar(string campo, string codigoErro, string mensagem) => erros.Add(new(campo, new DomainError(codigoErro, mensagem)));
+        string? codigo, int ordem, TipoEtapaFormulario tipo, string? titulo, string? descricao, string? aviso, bool temExibicao) =>
+    [
+        .. RecusasDoCodigo(codigo),
+        .. RecusasDaOrdem(ordem),
+        .. RecusasDoTitulo(titulo),
+        .. RecusasDaDescricao(descricao),
+        .. RecusasDoAviso(aviso),
+        .. RecusasDaExibicao(tipo, temExibicao),
+    ];
 
+    private static IEnumerable<FieldError> RecusasDoCodigo(string? codigo)
+    {
         if ((codigo?.Trim() ?? string.Empty).Length is 0 or > CodigoMaxLength)
         {
-            Recusar("codigo", EstruturaFormularioErrorCodes.EtapaCodigoInvalido,
-                $"O código da etapa é obrigatório e tem no máximo {CodigoMaxLength} caracteres.");
+            yield return new("codigo", new DomainError(
+                EstruturaFormularioErrorCodes.EtapaCodigoInvalido,
+                $"O código da etapa é obrigatório e tem no máximo {CodigoMaxLength} caracteres."));
         }
+    }
 
+    private static IEnumerable<FieldError> RecusasDaOrdem(int ordem)
+    {
         if (ordem < 0)
         {
-            Recusar("ordem", EstruturaFormularioErrorCodes.EtapaOrdemInvalida, "A ordem da etapa não pode ser negativa.");
+            yield return new("ordem", new DomainError(EstruturaFormularioErrorCodes.EtapaOrdemInvalida, "A ordem da etapa não pode ser negativa."));
         }
+    }
 
+    private static IEnumerable<FieldError> RecusasDoTitulo(string? titulo)
+    {
         if ((titulo?.Trim() ?? string.Empty).Length is 0 or > TituloMaxLength)
         {
-            Recusar("titulo", EstruturaFormularioErrorCodes.EtapaTituloInvalido,
-                $"O título da etapa é obrigatório e tem no máximo {TituloMaxLength} caracteres.");
+            yield return new("titulo", new DomainError(
+                EstruturaFormularioErrorCodes.EtapaTituloInvalido,
+                $"O título da etapa é obrigatório e tem no máximo {TituloMaxLength} caracteres."));
         }
+    }
 
+    private static IEnumerable<FieldError> RecusasDaDescricao(string? descricao)
+    {
         if (FormaDoItem.TextoOpcional(descricao) is { Length: > TextoMaxLength })
         {
-            Recusar("descricao", EstruturaFormularioErrorCodes.EtapaTextoTamanho, $"A descrição da etapa tem no máximo {TextoMaxLength} caracteres.");
+            yield return new("descricao", new DomainError(
+                EstruturaFormularioErrorCodes.EtapaTextoTamanho, $"A descrição da etapa tem no máximo {TextoMaxLength} caracteres."));
         }
+    }
 
+    private static IEnumerable<FieldError> RecusasDoAviso(string? aviso)
+    {
         if (FormaDoItem.TextoOpcional(aviso) is { Length: > TextoMaxLength })
         {
-            Recusar("aviso", EstruturaFormularioErrorCodes.EtapaTextoTamanho, $"O aviso da etapa tem no máximo {TextoMaxLength} caracteres.");
+            yield return new("aviso", new DomainError(
+                EstruturaFormularioErrorCodes.EtapaTextoTamanho, $"O aviso da etapa tem no máximo {TextoMaxLength} caracteres."));
         }
+    }
 
+    private static IEnumerable<FieldError> RecusasDaExibicao(TipoEtapaFormulario tipo, bool temExibicao)
+    {
         if (temExibicao && tipo != TipoEtapaFormulario.Secao)
         {
-            Recusar("exibicao", EstruturaFormularioErrorCodes.ExibicaoForaDeSecao,
-                "Só a seção tem exibição condicional; o bloco de sistema aparece sempre.");
+            yield return new("exibicao", new DomainError(
+                EstruturaFormularioErrorCodes.ExibicaoForaDeSecao,
+                "Só a seção tem exibição condicional; o bloco de sistema aparece sempre."));
         }
-
-        return erros;
     }
 }
 
@@ -463,25 +399,28 @@ public static class FormaDoTermo
     public const int CodigoMaxLength = 60;
 
     /// <summary>A forma do termo que não depende do catálogo: confere todo o payload antes de ler as versões.</summary>
-    public static List<FieldError> ValidarFormaBasica(string? codigo, int ordem)
+    public static List<FieldError> ValidarFormaBasica(string? codigo, int ordem) =>
+        [.. RecusasDoCodigo(codigo), .. RecusasDaOrdem(ordem)];
+
+    private static IEnumerable<FieldError> RecusasDoCodigo(string? codigo)
     {
-        List<FieldError> erros = [];
         if (string.IsNullOrWhiteSpace(codigo))
         {
-            erros.Add(new("codigo", new DomainError(TermoFormularioErrorCodes.CodigoObrigatorio, "O código do termo exigido é obrigatório.")));
+            yield return new("codigo", new DomainError(TermoFormularioErrorCodes.CodigoObrigatorio, "O código do termo exigido é obrigatório."));
         }
         else if (codigo.Trim().Length > CodigoMaxLength)
         {
-            erros.Add(new("codigo", new DomainError(
-                TermoFormularioErrorCodes.CodigoTamanho, $"O código do termo exigido deve ter no máximo {CodigoMaxLength} caracteres.")));
+            yield return new("codigo", new DomainError(
+                TermoFormularioErrorCodes.CodigoTamanho, $"O código do termo exigido deve ter no máximo {CodigoMaxLength} caracteres."));
         }
+    }
 
+    private static IEnumerable<FieldError> RecusasDaOrdem(int ordem)
+    {
         if (ordem < 0)
         {
-            erros.Add(new("ordem", new DomainError(TermoFormularioErrorCodes.OrdemInvalida, "A ordem do termo não pode ser negativa.")));
+            yield return new("ordem", new DomainError(TermoFormularioErrorCodes.OrdemInvalida, "A ordem do termo não pode ser negativa."));
         }
-
-        return erros;
     }
 
     /// <summary>O código em NFC; o que não se normaliza é comparado como veio, e a recusa dele é de quem guarda o texto.</summary>
@@ -501,24 +440,30 @@ public static class FormaDoTermo
         HashSet<int> ordens = [];
         for (int i = 0; i < termos.Count; i++)
         {
-            if (termos[i] is not { } termo)
+            if (termos[i] is { } termo)
             {
-                continue;
-            }
-
-            if (!string.IsNullOrWhiteSpace(termo.Codigo) && !codigos.Add(EmNfc(termo.Codigo.Trim())))
-            {
-                erros.Add(new($"termos[{i}].codigo", new DomainError(
-                    TermoFormularioErrorCodes.CodigoDuplicado, $"O código '{termo.Codigo.Trim()}' aparece em mais de um termo do formulário.")));
-            }
-
-            if (!ordens.Add(termo.Ordem))
-            {
-                erros.Add(new($"termos[{i}].ordem", new DomainError(
-                    TermoFormularioErrorCodes.OrdemDuplicada, "Dois termos do formulário têm a mesma ordem.")));
+                erros.AddRange([.. RecusasDeCodigoDuplicado(i, termo.Codigo, codigos), .. RecusasDeOrdemDuplicada(i, termo.Ordem, ordens)]);
             }
         }
 
         return erros;
+    }
+
+    private static IEnumerable<FieldError> RecusasDeCodigoDuplicado(int indice, string? codigo, HashSet<string> codigos)
+    {
+        if (!string.IsNullOrWhiteSpace(codigo) && !codigos.Add(EmNfc(codigo.Trim())))
+        {
+            yield return new($"termos[{indice}].codigo", new DomainError(
+                TermoFormularioErrorCodes.CodigoDuplicado, $"O código '{codigo.Trim()}' aparece em mais de um termo do formulário."));
+        }
+    }
+
+    private static IEnumerable<FieldError> RecusasDeOrdemDuplicada(int indice, int ordem, HashSet<int> ordens)
+    {
+        if (!ordens.Add(ordem))
+        {
+            yield return new($"termos[{indice}].ordem", new DomainError(
+                TermoFormularioErrorCodes.OrdemDuplicada, "Dois termos do formulário têm a mesma ordem."));
+        }
     }
 }

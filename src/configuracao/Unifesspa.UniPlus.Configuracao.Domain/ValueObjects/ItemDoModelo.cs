@@ -24,9 +24,7 @@ public sealed record ItemDoModelo(
     Impedimento? Impedimento = null)
 {
     public IReadOnlyCollection<string> FatosCitados =>
-        [.. (Exibicao?.FatosCitados ?? []).Concat(Obrigatoriedade.FatosCitados).Concat(Restricoes.SelectMany(static r => r.FatosCitados))
-            .Concat((Impedimento?.FatosCitados ?? []).Where(f => !string.Equals(f, FatoCodigo, StringComparison.Ordinal)))
-            .Distinct(StringComparer.Ordinal)];
+        new RegrasDoCampo(Exibicao, Obrigatoriedade, Restricoes, Impedimento).FatosCitadosPor(FatoCodigo);
 
     /// <summary>A exibição e a obrigatoriedade do item, cada uma com o caminho do campo dela na entrada.</summary>
     public IReadOnlyList<PredicadoNaEntrada> Predicados() =>

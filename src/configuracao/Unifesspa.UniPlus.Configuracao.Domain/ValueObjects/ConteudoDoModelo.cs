@@ -117,7 +117,13 @@ public sealed record ConteudoDoModelo(
         TextosDoConteudo().SelectMany(static t => TextoGravavel.Recusar(t.Campo, t.Texto)).DistinctBy(static e => e.Field);
 
     private static ItemDoModelo ComRestricoesEmOrdem(ItemDoModelo campo) =>
-        campo with { Restricoes = [.. campo.Restricoes.OrderBy(static r => r.Tipo)] };
+        campo with { Restricoes = RegrasDe(campo).ComRestricoesNaOrdemDoTipo().Restricoes };
+
+    private static RegrasDoCampo RegrasDe(ItemDoModelo campo) =>
+        new(campo.Exibicao, campo.Obrigatoriedade, campo.Restricoes, campo.Impedimento);
+
+    private static ApresentacaoDoCampo ApresentacaoDe(ItemDoModelo campo) =>
+        new(campo.Rotulo, campo.TipoRenderizacao, campo.Ajuda, campo.PedirConfirmacao);
 
     private static EtapaDoModelo EtapaNaFormaGravada(EtapaDoModelo etapa) => etapa with
     {
@@ -127,15 +133,19 @@ public sealed record ConteudoDoModelo(
         Aviso = FormaDoItem.TextoOpcional(etapa.Aviso),
     };
 
-    private static ItemDoModelo CampoNaFormaGravada(ItemDoModelo campo) => campo with
+    private static ItemDoModelo CampoNaFormaGravada(ItemDoModelo campo)
     {
-        FatoCodigo = TextoGravavel.CodigoNaFormaGravada(campo.FatoCodigo),
-        EtapaCodigo = campo.EtapaCodigo is null ? null : TextoGravavel.CodigoNaFormaGravada(campo.EtapaCodigo),
-        Rotulo = (campo.Rotulo ?? string.Empty).Trim(),
-        Formato = FormaDoItem.TextoOpcional(campo.Formato),
-        Ajuda = FormaDoItem.TextoOpcional(campo.Ajuda),
-        Restricoes = campo.Restricoes ?? [],
-    };
+        ApresentacaoDoCampo apresentacao = ApresentacaoDe(campo).NaFormaGravada();
+        return campo with
+        {
+            FatoCodigo = TextoGravavel.CodigoNaFormaGravada(campo.FatoCodigo),
+            EtapaCodigo = campo.EtapaCodigo is null ? null : TextoGravavel.CodigoNaFormaGravada(campo.EtapaCodigo),
+            Rotulo = apresentacao.Rotulo,
+            Formato = FormaDoItem.TextoOpcional(campo.Formato),
+            Ajuda = apresentacao.Ajuda,
+            Restricoes = campo.Restricoes ?? [],
+        };
+    }
 
     private static GrupoDoModelo GrupoNaFormaGravada(GrupoDoModelo grupo) => grupo with
     {

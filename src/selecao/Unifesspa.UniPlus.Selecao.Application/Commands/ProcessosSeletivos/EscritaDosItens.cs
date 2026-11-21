@@ -120,7 +120,7 @@ internal static class EscritaDosItens
             configuracoes[indice] = erros.Count == recusasAntes ? new ConfiguracaoDoGrupo(exibicao.Value, obrigatoriedade!) : null;
 
             erros.AddRange(FormaDoGrupo.Conferir(
-                    input.Codigo, input.Ordem, input.Rotulo, input.Minimo, input.Maximo,
+                    input.Codigo, input.Ordem, input.Rotulo, new OcorrenciasDoGrupo(input.Minimo, input.Maximo),
                     [.. subitens.Select(static s => (s?.FatoCodigo, s?.EtapaCodigo, s?.Impedimento is not null))],
                     exibicao.IsSuccess ? exibicao.Value?.FatosCitados ?? [] : [],
                     obrigatoriedade ?? Obrigatoriedade.Nunca)

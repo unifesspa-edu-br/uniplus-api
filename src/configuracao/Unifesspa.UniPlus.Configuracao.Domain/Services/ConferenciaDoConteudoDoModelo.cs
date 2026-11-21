@@ -93,8 +93,11 @@ public static class ConferenciaDoConteudoDoModelo
     private static IEnumerable<FieldError> ConferirCampo(ItemDoModelo campo, string caminho) =>
         NoCaminho(
             FormaDoItem.Conferir(
-                campo.FatoCodigo, campo.Ordem, campo.Rotulo, campo.TipoRenderizacao, campo.Formato, campo.Ajuda,
-                campo.Exibicao?.FatosCitados ?? [], campo.Obrigatoriedade, campo.Restricoes, campo.Impedimento),
+                campo.FatoCodigo,
+                campo.Ordem,
+                new ApresentacaoDoCampo(campo.Rotulo, campo.TipoRenderizacao, campo.Ajuda, campo.PedirConfirmacao),
+                campo.Formato,
+                new RegrasDoCampo(campo.Exibicao, campo.Obrigatoriedade, campo.Restricoes, campo.Impedimento)),
             caminho);
 
     /// <summary>A forma do grupo, a do candidato como membro quando ele o inclui e a de cada campo do grupo.</summary>
@@ -102,7 +105,7 @@ public static class ConferenciaDoConteudoDoModelo
     [
         .. NoCaminho(
             FormaDoGrupo.Conferir(
-                grupo.Codigo, grupo.Ordem, grupo.Rotulo, grupo.Minimo, grupo.Maximo,
+                grupo.Codigo, grupo.Ordem, grupo.Rotulo, new OcorrenciasDoGrupo(grupo.Minimo, grupo.Maximo),
                 [.. grupo.Subitens.Select(static s => ((string?)s.FatoCodigo, s.EtapaCodigo, s.Impedimento is not null))],
                 grupo.Exibicao?.FatosCitados ?? [], grupo.Obrigatoriedade),
             caminho),
