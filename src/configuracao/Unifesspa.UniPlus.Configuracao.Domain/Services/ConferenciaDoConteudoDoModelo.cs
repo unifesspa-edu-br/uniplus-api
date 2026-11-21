@@ -78,7 +78,7 @@ public static class ConferenciaDoConteudoDoModelo
             :
             [
                 .. conteudo.Itens.SelectMany((item, i) => ConferirCampo(item, $"itens[{i}]")),
-                .. Impedimento.ConferirFinalidade(finalidade, conteudo.Itens.Select(static i => i.Impedimento)),
+                .. Impedimento.ConferirFinalidade(finalidade, conteudo.Itens.Select(static i => i.Regras.Impedimento)),
                 .. conteudo.Grupos.SelectMany((grupo, i) => ConferirGrupo(grupo, $"grupos[{i}]")),
             ];
     }
@@ -92,12 +92,7 @@ public static class ConferenciaDoConteudoDoModelo
     /// <summary>A forma de um campo do modelo, item ou campo de grupo, no caminho dele.</summary>
     private static IEnumerable<FieldError> ConferirCampo(ItemDoModelo campo, string caminho) =>
         NoCaminho(
-            FormaDoItem.Conferir(
-                campo.FatoCodigo,
-                campo.Ordem,
-                new ApresentacaoDoCampo(campo.Rotulo, campo.TipoRenderizacao, campo.Ajuda, campo.PedirConfirmacao),
-                campo.Formato,
-                new RegrasDoCampo(campo.Exibicao, campo.Obrigatoriedade, campo.Restricoes, campo.Impedimento)),
+            FormaDoItem.Conferir(campo.FatoCodigo, campo.Ordem, campo.Apresentacao, campo.Formato, campo.Regras),
             caminho);
 
     /// <summary>A forma do grupo, a do candidato como membro quando ele o inclui e a de cada campo do grupo.</summary>
@@ -106,7 +101,7 @@ public static class ConferenciaDoConteudoDoModelo
         .. NoCaminho(
             FormaDoGrupo.Conferir(
                 grupo.Codigo, grupo.Ordem, grupo.Rotulo, new OcorrenciasDoGrupo(grupo.Minimo, grupo.Maximo),
-                [.. grupo.Subitens.Select(static s => ((string?)s.FatoCodigo, s.EtapaCodigo, s.Impedimento is not null))],
+                [.. grupo.Subitens.Select(static s => ((string?)s.FatoCodigo, s.EtapaCodigo, s.Regras.Impedimento is not null))],
                 grupo.Exibicao?.FatosCitados ?? [], grupo.Obrigatoriedade),
             caminho),
         .. grupo.IncluiCandidato ? ConferirCandidatoComoMembro(grupo, caminho) : [],
@@ -116,7 +111,7 @@ public static class ConferenciaDoConteudoDoModelo
     private static IEnumerable<FieldError> ConferirCandidatoComoMembro(GrupoDoModelo grupo, string caminho) =>
         NoCaminho(
             CandidatoComoMembro.Conferir(
-                grupo.Minimo, [.. grupo.Subitens.Select(static s => (s.FatoCodigo, s.Exibicao is not null, s.Obrigatoriedade, s.Restricoes))]),
+                grupo.Minimo, [.. grupo.Subitens.Select(static s => (s.FatoCodigo, s.Regras.Exibicao is not null, s.Regras.Obrigatoriedade, s.Regras.Restricoes))]),
             caminho);
 
     private static IEnumerable<FieldError> NoCaminho(IEnumerable<FieldError> erros, string caminho) =>
@@ -256,10 +251,10 @@ public static class ConferenciaDoConteudoDoModelo
         CampoQueAlimentaRegra.PrimeiroOpcional(
             conteudo.Itens.OrderBy(static i => i.Ordem)
                 .Concat(conteudo.Grupos.OrderBy(static g => g.Ordem).SelectMany(static g => g.Subitens.OrderBy(static s => s.Ordem)))
-                .Select(static i => (i.FatoCodigo, i.Obrigatoriedade.Tipo)),
+                .Select(static i => (i.FatoCodigo, i.Regras.Obrigatoriedade.Tipo)),
             CampoQueAlimentaRegra.Fatos(
                 DependenciasCitadas(conteudo, derivacoes), conteudo.CondicoesDasRegras().Select(static c => (c.Fato, c.Operador)),
-                conteudo.Itens.Where(static i => i.Impedimento is not null).Select(static i => i.FatoCodigo)));
+                conteudo.Itens.Where(static i => i.Regras.Impedimento is not null).Select(static i => i.FatoCodigo)));
 
     /// <summary>
     /// As dependências dos derivados que as regras do modelo citam, direta ou transitivamente — só elas

@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport.ConteudosDoModeloDeTeste;
 
@@ -18,11 +19,9 @@ public sealed class PredicadosDasPartesDoModeloTests
     [Fact(DisplayName = "O item enumera a precondição e o predicado de obrigatoriedade, nessa ordem")]
     public void Item_PrecondicaoEObrigatoriedade_NaOrdem()
     {
-        ItemDoModelo item = Item("CERTIFICADO", exibicao: Exibicao) with
-        {
-            Obrigatoriedade = Obrigatoriedade.Quando(DaObrigatoriedade),
-            Impedimento = new Impedimento(DoImpedimento, "Já possui o certificado."),
-        };
+        ItemDoModelo item = Item("CERTIFICADO", exibicao: Exibicao)
+            .ComObrigatoriedade(Obrigatoriedade.Quando(DaObrigatoriedade))
+            .ComImpedimento(new Impedimento(DoImpedimento, "Já possui o certificado."));
 
         item.Predicados().Should().Equal(
             new PredicadoNaEntrada("precondicao", Exibicao),

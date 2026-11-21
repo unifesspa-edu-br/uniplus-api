@@ -285,12 +285,12 @@ internal static class ModelosDaSementePsrMedicina2027
 
     private static ItemDoModelo Campo(
         string fato, int ordem, string? etapa, string rotulo, TipoRenderizacao tipo, string? ajuda, PredicadoDnf? exibicao = null) =>
-        new(fato, ordem, etapa, rotulo, tipo, null, ajuda, Obrigatoriedade.Sempre, exibicao, [], PedirConfirmacao: false);
+        new(fato, ordem, etapa, new ApresentacaoDoCampo(rotulo, tipo, ajuda), null, new RegrasDoCampo(exibicao, Obrigatoriedade.Sempre, []));
 
     private static ItemDoModelo ComFormato(this ItemDoModelo item, string formato) => item with { Formato = formato };
 
     private static ItemDoModelo ComRestricoes(this ItemDoModelo item, IReadOnlyList<RestricaoValor> restricoes) =>
-        item with { Restricoes = restricoes };
+        item with { Regras = new RegrasDoCampo(item.Regras.Exibicao, item.Regras.Obrigatoriedade, restricoes, item.Regras.Impedimento) };
 
     /// <summary>
     /// Onde cursou oferece "Concluí por certificação" só a quem respondeu que concluiu por

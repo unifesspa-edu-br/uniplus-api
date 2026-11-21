@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// As regras próprias do modelo de formulário (UNI-REQ-0144, ADR-0137): os pressupostos, o grafo de
@@ -29,7 +30,13 @@ public sealed class ModeloFormularioTests
         PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(fato, operador, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;
 
     private static ItemDoModelo Item(string fato, int ordem, Obrigatoriedade? obrigatoriedade = null, PredicadoDnf? exibicao = null, string? etapa = "DADOS") =>
-        new(fato, ordem, etapa, fato, TipoRenderizacao.Booleano, null, null, obrigatoriedade ?? Obrigatoriedade.Sempre, exibicao, [], false);
+        new(
+            fato,
+            ordem,
+            etapa,
+            new ApresentacaoDoCampo(fato, TipoRenderizacao.Booleano),
+            null,
+            new RegrasDoCampo(exibicao, obrigatoriedade ?? Obrigatoriedade.Sempre, []));
 
     private static ConteudoDoModelo Conteudo(IReadOnlyList<ItemDoModelo> itens, params string[] pressupostos) =>
         new("Habilitação", [Dados, Revisao], itens, [], pressupostos, []);
@@ -197,10 +204,8 @@ public sealed class ModeloFormularioTests
     [Fact(DisplayName = "O item com impedimento fora do modelo de inscrição é recusado")]
     public void ImpedimentoNaHabilitacao_Recusa()
     {
-        ItemDoModelo comImpedimento = Item("CERTIFICADO_EMITIDO", 0) with
-        {
-            Impedimento = new Impedimento(Quando("CERTIFICADO_EMITIDO"), "Quem já tem o certificado não se habilita por este processo."),
-        };
+        ItemDoModelo comImpedimento = Item("CERTIFICADO_EMITIDO", 0)
+            .ComImpedimento(new Impedimento(Quando("CERTIFICADO_EMITIDO"), "Quem já tem o certificado não se habilita por este processo."));
 
         Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([comImpedimento]));
 
@@ -294,7 +299,7 @@ public sealed class ModeloFormularioTests
     [Fact(DisplayName = "Texto com caractere nulo no rótulo do item é recusado no caminho do conteúdo")]
     public void TextoComCaractereNulo_NoRotuloDoItem_Recusa()
     {
-        Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0) with { Rotulo = "Certificado\0" }]));
+        Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0).ComRotulo("Certificado\0")]));
 
         DeveRecusarTextoNaoGravavelEm(modelo, "conteudo.itens[0].rotulo");
     }
@@ -357,7 +362,7 @@ public sealed class ModeloFormularioTests
     [Fact(DisplayName = "Código com surrogate sem par é recusado, sem exceção na normalização")]
     public void CodigoComSurrogateSemPar_Recusa()
     {
-        Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO\uD800", 0) with { Rotulo = "Certificado" }]));
+        Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO\uD800", 0).ComRotulo("Certificado")]));
 
         modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.TextoNaoGravavel);
     }
@@ -387,11 +392,9 @@ public sealed class ModeloFormularioTests
     [Fact(DisplayName = "A recusa de restrição aponta a posição em que ela veio")]
     public void RestricaoIncoerente_ApontaAPosicaoEnviada()
     {
-        ItemDoModelo item = Item("IDADE", 0) with
-        {
-            TipoRenderizacao = TipoRenderizacao.Numero,
-            Restricoes = [new TamanhoTexto(1, 10), new FaixaNumerica(0, 10)],
-        };
+        ItemDoModelo item = Item("IDADE", 0)
+            .ComTipoDeCampo(TipoRenderizacao.Numero)
+            .ComRestricoes([new TamanhoTexto(1, 10), new FaixaNumerica(0, 10)]);
 
         Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([item]));
 

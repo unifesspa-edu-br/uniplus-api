@@ -44,9 +44,10 @@ public static class ModeloFormularioMapping
         etapa.Titulo, etapa.Descricao, etapa.Aviso, EntradaDeRegras.ParaEntrada(etapa.Exibicao));
 
     private static FatoColetadoInput ItemParaEntrada(ItemDoModelo campo) => new(
-        campo.FatoCodigo, campo.Ordem, campo.Rotulo, campo.TipoRenderizacao.Codigo(), EntradaDeRegras.ParaEntrada(campo.Obrigatoriedade),
-        EntradaDeRegras.ParaEntrada(campo.Exibicao), campo.EtapaCodigo, EntradaDeRegras.ParaEntrada(campo.Obrigatoriedade.Predicado),
-        campo.Ajuda, campo.PedirConfirmacao, [.. campo.Restricoes.Select(EntradaDeRegras.ParaEntrada)], EntradaDeRegras.ParaEntrada(campo.Impedimento));
+        campo.FatoCodigo, campo.Ordem, campo.Apresentacao.Rotulo, campo.Apresentacao.TipoRenderizacao.Codigo(),
+        EntradaDeRegras.ParaEntrada(campo.Regras.Obrigatoriedade), EntradaDeRegras.ParaEntrada(campo.Regras.Exibicao), campo.EtapaCodigo,
+        EntradaDeRegras.ParaEntrada(campo.Regras.Obrigatoriedade.Predicado), campo.Apresentacao.Ajuda, campo.Apresentacao.PedirConfirmacao,
+        [.. campo.Regras.Restricoes.Select(EntradaDeRegras.ParaEntrada)], EntradaDeRegras.ParaEntrada(campo.Regras.Impedimento));
 
     private static TermoExigidoInput TermoParaEntrada(TermoDoModelo termo) => new(
         termo.Codigo, termo.Ordem, termo.TermoId, termo.VersaoId, EntradaDeRegras.ParaEntrada(termo.Exibicao),

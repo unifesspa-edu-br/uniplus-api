@@ -19,7 +19,7 @@ public sealed class ModeloFormularioPressupostosTests
     private static readonly EtapaDoModelo Revisao = new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null);
 
     private static ItemDoModelo Item(string fato, int ordem, string? etapa = "DADOS") =>
-        new(fato, ordem, etapa, fato, TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false);
+        new(fato, ordem, etapa, new ApresentacaoDoCampo(fato, TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
 
     private static ConteudoDoModelo Conteudo(IReadOnlyList<ItemDoModelo> itens, IReadOnlyList<GrupoDoModelo> grupos, params string[] pressupostos) =>
         new("Habilitação", [Dados, Revisao], itens, [], pressupostos, grupos);

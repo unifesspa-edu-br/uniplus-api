@@ -94,11 +94,11 @@ internal static class ConferenciaDoModelo
         ItemDoModelo[] campos = [.. conteudo.Campos()];
         IEnumerable<(string Fato, JsonElement Valor)> condicoes = conteudo.CondicoesDasRegras().Select(static c => (c.Fato, c.Valor));
         IEnumerable<(string Fato, string Valor)> opcoes = campos
-            .SelectMany(static i => i.Restricoes.OfType<OpcoesPermitidas>().SelectMany(static o => o.Entradas)
+            .SelectMany(static i => i.Regras.Restricoes.OfType<OpcoesPermitidas>().SelectMany(static o => o.Entradas)
                 .SelectMany(e => e.Valores.Select(v => (i.FatoCodigo, v))));
         IEnumerable<string> fatos = campos.Select(static i => i.FatoCodigo)
             .Concat(conteudo.Pressupostos)
-            .Concat(campos.SelectMany(static i => i.Restricoes.SelectMany(static r => r.FatosCitados)))
+            .Concat(campos.SelectMany(static i => i.Regras.Restricoes.SelectMany(static r => r.FatosCitados)))
             .Concat(conteudo.Documentos.Select(static d => d.PorOpcao?.FatoCodigo).OfType<string>().Select(TextoGravavel.CodigoNaFormaGravada));
         return VinculosDeFatos.De(fatos, condicoes, opcoes);
     }
@@ -176,7 +176,7 @@ internal static class ConferenciaDoModelo
         CatalogoDoModelo catalogo,
         Func<string, IReadOnlyDictionary<string, FatoDoCatalogo>, DomainError?> recusaDeColetavel)
     {
-        if (FormaDoItem.ValidarFormaBasica(item.FatoCodigo, item.Ordem, item.Rotulo).Count > 0)
+        if (FormaDoItem.ValidarFormaBasica(item.FatoCodigo, item.Ordem, item.Apresentacao.Rotulo).Count > 0)
         {
             return [];
         }
@@ -195,17 +195,17 @@ internal static class ConferenciaDoModelo
             .. ConferirTipoDoCampo(item, fato, codigo, caminho),
             .. ConferirPredicados(caminho, item.Predicados(), catalogo),
             .. ConferenciaNoCatalogo.SemanticaDasRestricoes(
-                fato, item.TipoRenderizacao, item.Restricoes, catalogo.Fatos, catalogo.Vocabulario, catalogo.DominiosDinamicos)
+                fato, item.Apresentacao.TipoRenderizacao, item.Regras.Restricoes, catalogo.Fatos, catalogo.Vocabulario, catalogo.DominiosDinamicos)
                 .Select(restricao => restricao.NoCaminhoDe(caminho)),
             .. ConferirImpedimentoDoItem(item, caminho, catalogo),
         ];
     }
 
     private static IEnumerable<FieldError> ConferirImpedimentoDoItem(ItemDoModelo item, string caminho, CatalogoDoModelo catalogo) =>
-        ConferirPredicado($"{caminho}.impedimento.quando", item.Impedimento?.Quando, catalogo) is { } recusa ? [recusa] : [];
+        ConferirPredicado($"{caminho}.impedimento.quando", item.Regras.Impedimento?.Quando, catalogo) is { } recusa ? [recusa] : [];
 
     private static IEnumerable<FieldError> ConferirTipoDoCampo(ItemDoModelo item, FatoDoCatalogo fato, string codigo, string caminho) =>
-        CoerenciaDoCampo.Validar(codigo, item.TipoRenderizacao, fato.Dominio, fato.Cardinalidade, fato.FonteValores) is { } incoerencia
+        CoerenciaDoCampo.Validar(codigo, item.Apresentacao.TipoRenderizacao, fato.Dominio, fato.Cardinalidade, fato.FonteValores) is { } incoerencia
             ? [new FieldError($"{caminho}.tipoRenderizacao", incoerencia, codigo)]
             : [];
 

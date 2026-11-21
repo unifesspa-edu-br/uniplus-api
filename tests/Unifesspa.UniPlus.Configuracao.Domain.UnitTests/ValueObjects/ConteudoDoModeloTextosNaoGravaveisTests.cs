@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport.ConteudosDoModeloDeTeste;
 
@@ -52,12 +53,12 @@ public sealed class ConteudoDoModeloTextosNaoGravaveisTests
 
     [Fact(DisplayName = "O rótulo do campo de item é recusado no caminho do item")]
     public void Item_Rotulo_Recusa() =>
-        CamposRecusados(Vazio with { Itens = [Item("RENDA"), Item("COR_RACA", 1) with { Rotulo = ComNulo }] }).Should().Equal("itens[1].rotulo");
+        CamposRecusados(Vazio with { Itens = [Item("RENDA"), Item("COR_RACA", 1).ComRotulo(ComNulo)] }).Should().Equal("itens[1].rotulo");
 
     [Fact(DisplayName = "A mensagem do impedimento e a condição dele são recusadas")]
     public void Item_Impedimento_Recusa()
     {
-        ItemDoModelo campo = Item("CERTIFICADO") with { Impedimento = new Impedimento(QuandoOValorE(JsonSerializer.SerializeToElement(ComNulo)), ComNulo) };
+        ItemDoModelo campo = Item("CERTIFICADO").ComImpedimento(new Impedimento(QuandoOValorE(JsonSerializer.SerializeToElement(ComNulo)), ComNulo));
 
         CamposRecusados(Vazio with { Itens = [campo] }).Should().Equal("itens[0].impedimento.quando", "itens[0].impedimento.mensagem");
     }
@@ -66,11 +67,9 @@ public sealed class ConteudoDoModeloTextosNaoGravaveisTests
     public void Item_RestricaoEImpedimento_RecusaARestricaoAntesDoImpedimento()
     {
         RestricaoValor opcoes = new OpcoesPermitidas([new OpcoesCondicionadas(QuandoOValorE(ValorComNulo), [ComNulo])]);
-        ItemDoModelo campo = Item("CERTIFICADO") with
-        {
-            Restricoes = [opcoes, new MunicipiosDaUf(ComNulo)],
-            Impedimento = new Impedimento(QuandoOValorE(ValorComNulo), ComNulo),
-        };
+        ItemDoModelo campo = Item("CERTIFICADO")
+            .ComRestricoes([opcoes, new MunicipiosDaUf(ComNulo)])
+            .ComImpedimento(new Impedimento(QuandoOValorE(ValorComNulo), ComNulo));
 
         CamposRecusados(Vazio with { Itens = [campo] }).Should().Equal(
             "itens[0].restricoes[0].entradas[0].valores",
@@ -85,14 +84,14 @@ public sealed class ConteudoDoModeloTextosNaoGravaveisTests
     {
         RestricaoValor opcoes = new OpcoesPermitidas([new OpcoesCondicionadas(QuandoOValorE(JsonSerializer.SerializeToElement(ComNulo)), [ComNulo])]);
 
-        CamposRecusados(Vazio with { Itens = [Item("COTA") with { Restricoes = [opcoes] }] })
+        CamposRecusados(Vazio with { Itens = [Item("COTA").ComRestricoes([opcoes])] })
             .Should().Equal("itens[0].restricoes[0].entradas[0].valores", "itens[0].restricoes[0].entradas[0].quando");
     }
 
     [Fact(DisplayName = "O fato citado pelas opções das respostas e o fato da UF dos municípios são recusados")]
     public void Item_RestricoesQueCitamFatos_Recusa()
     {
-        ItemDoModelo campo = Item("MUNICIPIO") with { Restricoes = [new OpcoesDasRespostas([ComNulo]), new MunicipiosDaUf(ComNulo)] };
+        ItemDoModelo campo = Item("MUNICIPIO").ComRestricoes([new OpcoesDasRespostas([ComNulo]), new MunicipiosDaUf(ComNulo)]);
 
         CamposRecusados(Vazio with { Itens = [campo] }).Should().Equal("itens[0].restricoes[0].fatos", "itens[0].restricoes[1].fatos");
     }
@@ -100,7 +99,7 @@ public sealed class ConteudoDoModeloTextosNaoGravaveisTests
     [Fact(DisplayName = "O rótulo do grupo e o código do campo de grupo são recusados no caminho do grupo")]
     public void Grupo_RotuloECampo_Recusa()
     {
-        GrupoDoModelo grupo = Grupo("COMPOSICAO", 0, null, Item("MAIOR_IDADE"), Item(ComNulo, 1) with { Rotulo = "Maior idade" }) with { Rotulo = ComNulo };
+        GrupoDoModelo grupo = Grupo("COMPOSICAO", 0, null, Item("MAIOR_IDADE"), Item(ComNulo, 1).ComRotulo("Maior idade")) with { Rotulo = ComNulo };
 
         CamposRecusados(Vazio with { Grupos = [grupo] }).Should().Equal("grupos[0].rotulo", "grupos[0].subitens[1].fatoCodigo");
     }
@@ -120,7 +119,7 @@ public sealed class ConteudoDoModeloTextosNaoGravaveisTests
     [Fact(DisplayName = "A obrigatoriedade do item é recusada no campo do predicado de obrigatoriedade")]
     public void Item_Obrigatoriedade_RecusaNoPredicadoDeObrigatoriedade()
     {
-        ItemDoModelo campo = Item("RENDA") with { Obrigatoriedade = Obrigatoriedade.Quando(QuandoOValorE(ValorComNulo)) };
+        ItemDoModelo campo = Item("RENDA").ComObrigatoriedade(Obrigatoriedade.Quando(QuandoOValorE(ValorComNulo)));
 
         CamposRecusados(Vazio with { Itens = [campo] }).Should().Equal("itens[0].predicadoObrigatoriedade");
     }
@@ -128,7 +127,7 @@ public sealed class ConteudoDoModeloTextosNaoGravaveisTests
     [Fact(DisplayName = "A exibição e a obrigatoriedade do campo de grupo são recusadas na precondição e no predicado de obrigatoriedade")]
     public void Subitem_ExibicaoEObrigatoriedade_RecusaNosCamposDoContrato()
     {
-        ItemDoModelo subitem = Item("SEM_RENDA", 1, QuandoOValorE(ValorComNulo)) with { Obrigatoriedade = Obrigatoriedade.Quando(QuandoOValorE(ValorComNulo)) };
+        ItemDoModelo subitem = Item("SEM_RENDA", 1, QuandoOValorE(ValorComNulo)).ComObrigatoriedade(Obrigatoriedade.Quando(QuandoOValorE(ValorComNulo)));
         GrupoDoModelo grupo = Grupo("COMPOSICAO", 0, null, Item("MAIOR_IDADE"), subitem);
 
         CamposRecusados(Vazio with { Grupos = [grupo] }).Should().Equal("grupos[0].subitens[1].precondicao", "grupos[0].subitens[1].predicadoObrigatoriedade");
@@ -164,11 +163,9 @@ public sealed class ConteudoDoModeloTextosNaoGravaveisTests
     private static ConteudoDoModelo ConteudoComRegraNaoGravavelEmCadaParte()
     {
         PredicadoDnf ruim = QuandoOValorE(ValorComNulo);
-        ItemDoModelo campo = Item("CERTIFICADO", exibicao: ruim) with
-        {
-            Obrigatoriedade = Obrigatoriedade.Quando(ruim),
-            Impedimento = new Impedimento(ruim, "Já possui o certificado."),
-        };
+        ItemDoModelo campo = Item("CERTIFICADO", exibicao: ruim)
+            .ComObrigatoriedade(Obrigatoriedade.Quando(ruim))
+            .ComImpedimento(new Impedimento(ruim, "Já possui o certificado."));
         GrupoDoModelo grupo = Grupo("COMPOSICAO", 0, ruim, Item("MAIOR_IDADE")) with { Obrigatoriedade = Obrigatoriedade.Quando(ruim) };
         TermoDoModelo termo = Termo("LGPD", exibicao: ruim) with { Obrigatoriedade = Obrigatoriedade.Quando(ruim) };
 

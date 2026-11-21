@@ -50,7 +50,7 @@ public sealed record ConteudoDoModelo(
     }
 
     private static DefinicaoItem Item(ItemDoModelo item) =>
-        new(item.FatoCodigo, item.Exibicao, item.Obrigatoriedade, item.Restricoes, item.Impedimento, item.Formato);
+        new(item.FatoCodigo, item.Regras.Exibicao, item.Regras.Obrigatoriedade, item.Regras.Restricoes, item.Regras.Impedimento, item.Formato);
 
     /// <summary>Os campos do modelo, itens e campos de grupo.</summary>
     public IEnumerable<ItemDoModelo> Campos() => Itens.Concat(Grupos.SelectMany(static g => g.Subitens));
@@ -68,7 +68,7 @@ public sealed record ConteudoDoModelo(
         PredicadosDasRegras().SelectMany(static p => p.Clausulas).SelectMany(static c => c.Condicoes);
 
     private IEnumerable<PredicadoDnf> PredicadosDasRegras() =>
-        Campos().SelectMany(static i => SemCaminho(i.Predicados()).Append(i.Impedimento?.Quando).Concat(PredicadosDasOpcoesPermitidas(i)))
+        Campos().SelectMany(static i => SemCaminho(i.Predicados()).Append(i.Regras.Impedimento?.Quando).Concat(PredicadosDasOpcoesPermitidas(i)))
             .Concat(Grupos.SelectMany(static g => SemCaminho(g.Predicados())))
             .Concat(Etapas.SelectMany(static e => SemCaminho(e.Predicados())))
             .Concat(Termos.SelectMany(static t => SemCaminho(t.Predicados())))
@@ -78,7 +78,7 @@ public sealed record ConteudoDoModelo(
     private static IEnumerable<PredicadoDnf?> SemCaminho(IEnumerable<PredicadoNaEntrada> predicados) => predicados.Select(static p => p.Predicado);
 
     private static IEnumerable<PredicadoDnf?> PredicadosDasOpcoesPermitidas(ItemDoModelo campo) =>
-        campo.Restricoes.OfType<OpcoesPermitidas>().SelectMany(static o => o.Entradas.Select(static e => e.Quando));
+        campo.Regras.Restricoes.OfType<OpcoesPermitidas>().SelectMany(static o => o.Entradas.Select(static e => e.Quando));
 
     /// <summary>
     /// O conteúdo na forma em que é conferido e gravado: textos aparados, códigos em NFC, ausente como
@@ -117,13 +117,7 @@ public sealed record ConteudoDoModelo(
         TextosDoConteudo().SelectMany(static t => TextoGravavel.Recusar(t.Campo, t.Texto)).DistinctBy(static e => e.Field);
 
     private static ItemDoModelo ComRestricoesEmOrdem(ItemDoModelo campo) =>
-        campo with { Restricoes = RegrasDe(campo).ComRestricoesNaOrdemDoTipo().Restricoes };
-
-    private static RegrasDoCampo RegrasDe(ItemDoModelo campo) =>
-        new(campo.Exibicao, campo.Obrigatoriedade, campo.Restricoes, campo.Impedimento);
-
-    private static ApresentacaoDoCampo ApresentacaoDe(ItemDoModelo campo) =>
-        new(campo.Rotulo, campo.TipoRenderizacao, campo.Ajuda, campo.PedirConfirmacao);
+        campo with { Regras = campo.Regras.ComRestricoesNaOrdemDoTipo() };
 
     private static EtapaDoModelo EtapaNaFormaGravada(EtapaDoModelo etapa) => etapa with
     {
@@ -133,19 +127,13 @@ public sealed record ConteudoDoModelo(
         Aviso = FormaDoItem.TextoOpcional(etapa.Aviso),
     };
 
-    private static ItemDoModelo CampoNaFormaGravada(ItemDoModelo campo)
+    private static ItemDoModelo CampoNaFormaGravada(ItemDoModelo campo) => campo with
     {
-        ApresentacaoDoCampo apresentacao = ApresentacaoDe(campo).NaFormaGravada();
-        return campo with
-        {
-            FatoCodigo = TextoGravavel.CodigoNaFormaGravada(campo.FatoCodigo),
-            EtapaCodigo = campo.EtapaCodigo is null ? null : TextoGravavel.CodigoNaFormaGravada(campo.EtapaCodigo),
-            Rotulo = apresentacao.Rotulo,
-            Formato = FormaDoItem.TextoOpcional(campo.Formato),
-            Ajuda = apresentacao.Ajuda,
-            Restricoes = campo.Restricoes ?? [],
-        };
-    }
+        FatoCodigo = TextoGravavel.CodigoNaFormaGravada(campo.FatoCodigo),
+        EtapaCodigo = campo.EtapaCodigo is null ? null : TextoGravavel.CodigoNaFormaGravada(campo.EtapaCodigo),
+        Apresentacao = campo.Apresentacao.NaFormaGravada(),
+        Formato = FormaDoItem.TextoOpcional(campo.Formato),
+    };
 
     private static GrupoDoModelo GrupoNaFormaGravada(GrupoDoModelo grupo) => grupo with
     {
@@ -229,11 +217,11 @@ public sealed record ConteudoDoModelo(
         new (string, string?)[]
         {
             ($"{caminho}.fatoCodigo", campo.FatoCodigo), ($"{caminho}.etapaCodigo", campo.EtapaCodigo),
-            ($"{caminho}.rotulo", campo.Rotulo), ($"{caminho}.formato", campo.Formato), ($"{caminho}.ajuda", campo.Ajuda),
+            ($"{caminho}.rotulo", campo.Apresentacao.Rotulo), ($"{caminho}.formato", campo.Formato), ($"{caminho}.ajuda", campo.Apresentacao.Ajuda),
         }
         .Concat(TextosDosPredicados(caminho, campo.Predicados()))
-        .Concat(campo.Restricoes.SelectMany((r, j) => TextosDaRestricao($"{caminho}.restricoes[{j}]", r)))
-        .Concat(TextosDoImpedimento(caminho, campo.Impedimento));
+        .Concat(campo.Regras.Restricoes.SelectMany((r, j) => TextosDaRestricao($"{caminho}.restricoes[{j}]", r)))
+        .Concat(TextosDoImpedimento(caminho, campo.Regras.Impedimento));
 
     private static IEnumerable<(string Campo, string? Texto)> TextosDoImpedimento(string caminho, Impedimento? impedimento) =>
         impedimento is null

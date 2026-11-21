@@ -55,7 +55,8 @@ internal static class ConteudosDeModeloParaTeste
     /// <summary>O modelo gravado com o certificado como item, antes de qualquer mudança no catálogo.</summary>
     public static ModeloFormulario Existente(string? tipo)
     {
-        ItemDoModelo item = new("CERTIFICADO", 0, "DADOS", "Certificado", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false);
+        ItemDoModelo item = new(
+            "CERTIFICADO", 0, "DADOS", new ApresentacaoDoCampo("Certificado", TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
         return ModeloFormulario.Criar(
             "HABILITACAO_MEDICINA", "Habilitação Medicina", null, FinalidadeFormulario.Habilitacao, tipo,
             new ConteudoDoModelo("Habilitação", [Secao, Revisao], [item], [], [], []),

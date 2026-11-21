@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport.ConteudosDoModeloDeTeste;
 
@@ -93,7 +94,7 @@ public sealed class ConferenciaDoConteudoDoModeloTests
     [Fact(DisplayName = "A forma de cada item é recusada no índice dele")]
     public void Item_RecusaNoIndice()
     {
-        List<FieldError> erros = Conferir(Conteudo(Item("CERTIFICADO"), Item("LAUDO", 1) with { Rotulo = string.Empty }));
+        List<FieldError> erros = Conferir(Conteudo(Item("CERTIFICADO"), Item("LAUDO", 1).ComRotulo(string.Empty)));
 
         Campos(erros).Should().Equal("conteudo.itens[1].rotulo");
         Codigos(erros).Should().Equal(ItemFormularioErrorCodes.RotuloObrigatorio);
@@ -118,7 +119,7 @@ public sealed class ConferenciaDoConteudoDoModeloTests
     [Fact(DisplayName = "O item com impedimento fora do modelo de inscrição é recusado, e no de inscrição passa")]
     public void Impedimento_SoNaInscricao()
     {
-        ConteudoDoModelo conteudo = Conteudo(Item("CERTIFICADO") with { Impedimento = new Impedimento(Quando("CERTIFICADO"), "Já possui o certificado.") });
+        ConteudoDoModelo conteudo = Conteudo(Item("CERTIFICADO").ComImpedimento(new Impedimento(Quando("CERTIFICADO"), "Já possui o certificado.")));
 
         Campos(Conferir(conteudo)).Should().Equal("conteudo.itens[0].impedimento");
         Conferir(conteudo, FinalidadeFormulario.Inscricao).Should().BeEmpty();
@@ -127,7 +128,7 @@ public sealed class ConferenciaDoConteudoDoModeloTests
     [Fact(DisplayName = "A forma do grupo, o candidato como membro e a forma de cada campo saem nessa ordem, cada um no caminho do grupo")]
     public void Grupo_RecusaNaOrdemDaFormaDoCandidatoEDosCampos()
     {
-        GrupoDoModelo grupo = Grupo("COMPOSICAO_FAMILIAR", 1, null, Item("RENDA") with { EtapaCodigo = null, Rotulo = string.Empty }) with
+        GrupoDoModelo grupo = Grupo("COMPOSICAO_FAMILIAR", 1, null, (Item("RENDA") with { EtapaCodigo = null }).ComRotulo(string.Empty)) with
         {
             Minimo = 3,
             Maximo = 2,
@@ -216,7 +217,7 @@ public sealed class ConferenciaDoConteudoDoModeloTests
     [Fact(DisplayName = "As recusas das famílias acumulam juntas, cada uma no seu ponteiro, na ordem das regras do conteúdo")]
     public void Recusas_AcumulamNaOrdemDasRegras()
     {
-        ConteudoDoModelo conteudo = Conteudo(Item("CERTIFICADO") with { Rotulo = string.Empty }, ComImpedimento(Item("LAUDO", 1))) with
+        ConteudoDoModelo conteudo = Conteudo(Item("CERTIFICADO").ComRotulo(string.Empty), ComImpedimento(Item("LAUDO", 1))) with
         {
             Titulo = new string('T', FormaDoCabecalho.TituloMaxLength + 1),
             Etapas = [Etapa(), Revisao with { Titulo = " " }],
@@ -231,8 +232,8 @@ public sealed class ConferenciaDoConteudoDoModeloTests
     }
 
     private static ItemDoModelo[] ItensComOPrimeiroSemRotulo(int quantidade) =>
-        [.. Enumerable.Range(0, quantidade).Select(static i => Item($"FATO_{i}", i) with { Rotulo = i == 0 ? string.Empty : $"Fato {i}" })];
+        [.. Enumerable.Range(0, quantidade).Select(static i => Item($"FATO_{i}", i).ComRotulo(i == 0 ? string.Empty : $"Fato {i}"))];
 
     private static ItemDoModelo ComImpedimento(ItemDoModelo item) =>
-        item with { Impedimento = new Impedimento(Quando(item.FatoCodigo), "Já possui o certificado.") };
+        item.ComImpedimento(new Impedimento(Quando(item.FatoCodigo), "Já possui o certificado."));
 }

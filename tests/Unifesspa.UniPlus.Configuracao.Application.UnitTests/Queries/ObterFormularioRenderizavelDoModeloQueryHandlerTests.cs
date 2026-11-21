@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// O renderizável do modelo projeta o conteúdo como aplicado, com o catálogo vivo e o cadastro
@@ -145,7 +146,7 @@ public sealed class ObterFormularioRenderizavelDoModeloQueryHandlerTests
     [Fact(DisplayName = "As regras recortadas citam os pressupostos que o modelo declara")]
     public async Task Handle_PressupostoDoModelo_SaiNosPressupostos()
     {
-        ModeloFormulario modelo = Modelo(itens: [Item("CERTIFICADO", 0) with { Exibicao = Quando("CONCLUSAO_REGULAR", true) }], pressupostos: ["CONCLUSAO_REGULAR"]);
+        ModeloFormulario modelo = Modelo(itens: [Item("CERTIFICADO", 0).ComExibicao(Quando("CONCLUSAO_REGULAR", true))], pressupostos: ["CONCLUSAO_REGULAR"]);
 
         FormularioRenderizavel resultado = (await ObterAsync(modelo))!;
 
@@ -189,7 +190,7 @@ public sealed class ObterFormularioRenderizavelDoModeloQueryHandlerTests
     }
 
     private static ItemDoModelo Item(string fato, int ordem) =>
-        new(fato, ordem, "DADOS", fato, TipoRenderizacao.SelecaoUnica, null, null, Obrigatoriedade.Sempre, null, [], false);
+        new(fato, ordem, "DADOS", new ApresentacaoDoCampo(fato, TipoRenderizacao.SelecaoUnica), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
 
     private static ItemDoModelo Subitem(string fato, int ordem) => Item(fato, ordem) with { EtapaCodigo = null };
 

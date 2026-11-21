@@ -328,7 +328,13 @@ public sealed class AlterarDefinicaoDoFatoCandidatoCommandHandlerTests
     ];
 
     private static ItemDoModelo ItemBooleano(string fato, int ordem, string? rotulo = null, PredicadoDnf? precondicao = null) =>
-        new(fato, ordem, "DADOS", rotulo ?? fato, TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, precondicao, [], false);
+        new(
+            fato,
+            ordem,
+            "DADOS",
+            new ApresentacaoDoCampo(rotulo ?? fato, TipoRenderizacao.Booleano),
+            null,
+            new RegrasDoCampo(precondicao, Obrigatoriedade.Sempre, []));
 
     private static ModeloFormulario ModeloHabilitacao(ConteudoDoModelo conteudo, bool ativo)
     {

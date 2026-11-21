@@ -88,7 +88,7 @@ public sealed class ModeloFormularioReaderTests
                 new("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null, null),
                 new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null),
             ],
-            [new ItemDoModelo("CERTIFICADO", 0, "DADOS", "Certificado", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false)],
+            [new ItemDoModelo("CERTIFICADO", 0, "DADOS", new ApresentacaoDoCampo("Certificado", TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []))],
             [],
             [],
             [GrupoDeComposicaoFamiliar()]);
@@ -97,8 +97,8 @@ public sealed class ModeloFormularioReaderTests
         new(
             "COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", 1, null, null, Obrigatoriedade.Sempre,
             [
-                new(CandidatoComoMembro.FatoParentesco, 0, null, "Parentesco", TipoRenderizacao.SelecaoUnica, null, null, Obrigatoriedade.Sempre, null, [], false),
-                new("MAIOR_IDADE", 1, null, "Maior de idade", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false),
+                new(CandidatoComoMembro.FatoParentesco, 0, null, new ApresentacaoDoCampo("Parentesco", TipoRenderizacao.SelecaoUnica), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, [])),
+                new("MAIOR_IDADE", 1, null, new ApresentacaoDoCampo("Maior de idade", TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, [])),
             ],
             IncluiCandidato: true);
 }

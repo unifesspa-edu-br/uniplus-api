@@ -104,7 +104,10 @@ public static class SementeIsencaoDaTaxa
 
     private static ItemDoModelo PerguntaDeRenda() =>
         new(IsencaoPorCarenciaSocioeconomica.FatoRenda, 1, Renda,
-            "A renda da sua família é de até um salário mínimo e meio por pessoa?", TipoRenderizacao.Booleano, null,
-            "Some a renda bruta mensal de todos da família e divida pelo número de pessoas. Exatamente um salário mínimo e meio também dá direito.",
-            Obrigatoriedade.Sempre, null, [], PedirConfirmacao: false);
+            new ApresentacaoDoCampo(
+                "A renda da sua família é de até um salário mínimo e meio por pessoa?",
+                TipoRenderizacao.Booleano,
+                "Some a renda bruta mensal de todos da família e divida pelo número de pessoas. Exatamente um salário mínimo e meio também dá direito."),
+            null,
+            new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
 }

@@ -134,11 +134,11 @@ public static class ObterFormularioRenderizavelDoModeloQueryHandler
         FinalidadeFormulario finalidade, ItemDoModelo item, IReadOnlyDictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes) => new(
         item.FatoCodigo,
         item.Ordem,
-        item.Rotulo,
-        item.TipoRenderizacao.Codigo(),
+        item.Apresentacao.Rotulo,
+        item.Apresentacao.TipoRenderizacao.Codigo(),
         opcoes.GetValueOrDefault(item.FatoCodigo),
         item.EtapaCodigo,
         item.Formato,
-        ConjuntoBasicoDaInscricao.AjudaDoCampo(finalidade, item.FatoCodigo, item.Ajuda),
-        item.PedirConfirmacao);
+        ConjuntoBasicoDaInscricao.AjudaDoCampo(finalidade, item.FatoCodigo, item.Apresentacao.Ajuda),
+        item.Apresentacao.PedirConfirmacao);
 }

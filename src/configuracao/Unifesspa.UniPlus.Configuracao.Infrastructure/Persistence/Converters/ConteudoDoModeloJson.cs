@@ -57,15 +57,15 @@ internal static class ConteudoDoModeloJson
         ["fatoCodigo"] = campo.FatoCodigo,
         ["ordem"] = campo.Ordem,
         ["etapaCodigo"] = campo.EtapaCodigo,
-        ["rotulo"] = campo.Rotulo,
-        ["tipoRenderizacao"] = campo.TipoRenderizacao.Codigo(),
+        ["rotulo"] = campo.Apresentacao.Rotulo,
+        ["tipoRenderizacao"] = campo.Apresentacao.TipoRenderizacao.Codigo(),
         ["formato"] = campo.Formato,
-        ["ajuda"] = campo.Ajuda,
-        ["obrigatoriedade"] = PredicadoDnfJson.ParaJson(campo.Obrigatoriedade),
-        ["exibicao"] = PredicadoOpcionalParaJson(campo.Exibicao),
-        ["restricoes"] = RestricaoValorJson.ParaJson(campo.Restricoes),
-        ["pedirConfirmacao"] = campo.PedirConfirmacao,
-        ["impedimento"] = campo.Impedimento is null ? null : PredicadoDnfJson.ParaJson(campo.Impedimento),
+        ["ajuda"] = campo.Apresentacao.Ajuda,
+        ["obrigatoriedade"] = PredicadoDnfJson.ParaJson(campo.Regras.Obrigatoriedade),
+        ["exibicao"] = PredicadoOpcionalParaJson(campo.Regras.Exibicao),
+        ["restricoes"] = RestricaoValorJson.ParaJson(campo.Regras.Restricoes),
+        ["pedirConfirmacao"] = campo.Apresentacao.PedirConfirmacao,
+        ["impedimento"] = campo.Regras.Impedimento is null ? null : PredicadoDnfJson.ParaJson(campo.Regras.Impedimento),
     };
 
     private static JsonObject TermoParaJson(TermoDoModelo termo) => new()
@@ -155,14 +155,20 @@ internal static class ConteudoDoModeloJson
         campo.GetProperty("fatoCodigo").GetString()!,
         campo.GetProperty("ordem").GetInt32(),
         Texto(campo, "etapaCodigo"),
+        ApresentacaoDeJson(campo),
+        Texto(campo, "formato"),
+        RegrasDeJson(campo));
+
+    private static ApresentacaoDoCampo ApresentacaoDeJson(JsonElement campo) => new(
         campo.GetProperty("rotulo").GetString()!,
         CatalogoDe<TipoRenderizacao>.Obter(campo.GetProperty("tipoRenderizacao").GetString()!),
-        Texto(campo, "formato"),
         Texto(campo, "ajuda"),
-        Remontar(PredicadoDnfJson.ObrigatoriedadeDeJson(campo.GetProperty("obrigatoriedade"))),
+        campo.GetProperty("pedirConfirmacao").GetBoolean());
+
+    private static RegrasDoCampo RegrasDeJson(JsonElement campo) => new(
         Predicado(campo, "exibicao"),
+        Remontar(PredicadoDnfJson.ObrigatoriedadeDeJson(campo.GetProperty("obrigatoriedade"))),
         Remontar(RestricaoValorJson.ListaDeJson(campo.GetProperty("restricoes"))),
-        campo.GetProperty("pedirConfirmacao").GetBoolean(),
         Remontar(PredicadoDnfJson.ImpedimentoDeJson(campo.TryGetProperty("impedimento", out JsonElement impedimento) ? impedimento : default)));
 
     private static TermoDoModelo TermoDeJson(JsonElement termo) => new(

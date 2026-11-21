@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// O documento jsonb do conteúdo do modelo, sem banco: a forma gravada é a do contrato, na ordem das
@@ -129,7 +130,7 @@ public sealed class ConteudoDoModeloJsonTests
     [InlineData(TipoRenderizacao.Municipio, "MUNICIPIO")]
     public void Serializar_TipoDeCampoDoItem_GravaOCodigo(TipoRenderizacao tipo, string codigo)
     {
-        ConteudoDoModelo conteudo = ConteudoMinimo() with { Itens = [ItemMinimo("QUILOMBOLA", 0) with { TipoRenderizacao = tipo }] };
+        ConteudoDoModelo conteudo = ConteudoMinimo() with { Itens = [ItemMinimo("QUILOMBOLA", 0).ComTipoDeCampo(tipo)] };
 
         ConteudoDoModeloJson.Serializar(conteudo).Should().Contain($"\"tipoRenderizacao\":\"{codigo}\"");
     }
@@ -236,12 +237,19 @@ public sealed class ConteudoDoModeloJsonTests
         "DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", "Dados do candidato", "Confira os dados", Quando("QUILOMBOLA", true));
 
     private static ItemDoModelo ItemCompleto() => new(
-        "RENDA", 1, "DADOS", "Renda familiar", TipoRenderizacao.Numero, "LIVRE", "Some a renda de todos",
-        Obrigatoriedade.Quando(Quando("BAIXA_RENDA", true)), Quando("QUILOMBOLA", true), [new FaixaNumerica(0, 10), new OpcoesDasRespostas(["COR_RACA"])],
-        true, new Impedimento(Quando("BAIXA_RENDA", false), "Renda acima do limite"));
+        "RENDA",
+        1,
+        "DADOS",
+        new ApresentacaoDoCampo("Renda familiar", TipoRenderizacao.Numero, "Some a renda de todos", pedirConfirmacao: true),
+        "LIVRE",
+        new RegrasDoCampo(
+            Quando("QUILOMBOLA", true),
+            Obrigatoriedade.Quando(Quando("BAIXA_RENDA", true)),
+            [new FaixaNumerica(0, 10), new OpcoesDasRespostas(["COR_RACA"])],
+            new Impedimento(Quando("BAIXA_RENDA", false), "Renda acima do limite")));
 
     private static ItemDoModelo ItemMinimo(string fatoCodigo, int ordem) =>
-        new(fatoCodigo, ordem, null, "Pergunta", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false);
+        new(fatoCodigo, ordem, null, new ApresentacaoDoCampo("Pergunta", TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
 
     private static GrupoDoModelo GrupoCompleto() => new(
         "FAMILIA", 2, "DADOS", "Composição familiar", 1, 5, Quando("QUILOMBOLA", true), Obrigatoriedade.Quando(Quando("BAIXA_RENDA", true)),

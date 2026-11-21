@@ -82,15 +82,25 @@ internal sealed class LeituraDoConteudo(IReadOnlyDictionary<string, string> form
     {
         int recusasAntes = _recusas.Count;
         TipoRenderizacao? tipo = LerTipoRenderizacao(entrada.TipoRenderizacao, campo);
+        RegrasDoCampo? regras = LerRegrasDoCampo(entrada, campo);
+        return RecusouDesde(recusasAntes)
+            ? null
+            : new ItemDoModelo(
+                entrada.FatoCodigo,
+                entrada.Ordem,
+                entrada.EtapaCodigo,
+                new ApresentacaoDoCampo(entrada.Rotulo, tipo!.Value, entrada.Ajuda, entrada.PedirConfirmacao),
+                FormatoDoCatalogo(entrada.FatoCodigo),
+                regras!);
+    }
+
+    private RegrasDoCampo? LerRegrasDoCampo(FatoColetadoInput entrada, string campo)
+    {
         PredicadoDnf? exibicao = LerPredicado(entrada.Precondicao, $"{campo}.precondicao");
         Obrigatoriedade? obrigatoriedade = LerObrigatoriedade(entrada.Obrigatoriedade, entrada.PredicadoObrigatoriedade, campo);
         List<RestricaoValor> restricoes = LerRestricoes(entrada.Restricoes, campo);
         Impedimento? impedimento = LerImpedimento(entrada.Impedimento, campo);
-        return RecusouDesde(recusasAntes)
-            ? null
-            : new ItemDoModelo(
-                entrada.FatoCodigo, entrada.Ordem, entrada.EtapaCodigo, entrada.Rotulo, tipo!.Value,
-                FormatoDoCatalogo(entrada.FatoCodigo), entrada.Ajuda, obrigatoriedade!, exibicao, restricoes, entrada.PedirConfirmacao, impedimento);
+        return obrigatoriedade is null ? null : new RegrasDoCampo(exibicao, obrigatoriedade, restricoes, impedimento);
     }
 
     private TipoRenderizacao? LerTipoRenderizacao(string? codigo, string campo)

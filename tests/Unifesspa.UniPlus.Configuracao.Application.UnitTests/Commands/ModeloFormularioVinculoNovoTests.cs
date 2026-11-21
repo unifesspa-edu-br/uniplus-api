@@ -32,15 +32,21 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </summary>
 public sealed class ModeloFormularioVinculoNovoTests : ModeloFormularioHandlerTestBase
 {
+    private static ModeloFormulario ExistenteComOTermo(TermoDoModelo termo)
+    {
+        ItemDoModelo item = new(
+            "CERTIFICADO", 0, "DADOS", new ApresentacaoDoCampo("Certificado", TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
+        return ModeloFormulario.Criar(
+            "HABILITACAO_MEDICINA", "Habilitação Medicina", null, FinalidadeFormulario.Habilitacao, null,
+            new ConteudoDoModelo("Habilitação", [Secao, Revisao], [item], [termo], [], []),
+            new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)).Value!;
+    }
+
     [Fact(DisplayName = "Termo que o catálogo já não traz continua no modelo que o escolheu; o termo novo é recusado")]
     public async Task Termo_RecusaSoOVinculoNovo()
     {
         TermoDoModelo gravado = new("LGPD", 0, Guid.NewGuid(), Guid.NewGuid(), null, Obrigatoriedade.Sempre);
-        ItemDoModelo item = new("CERTIFICADO", 0, "DADOS", "Certificado", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false);
-        ModeloFormulario existente = ModeloFormulario.Criar(
-            "HABILITACAO_MEDICINA", "Habilitação Medicina", null, FinalidadeFormulario.Habilitacao, null,
-            new ConteudoDoModelo("Habilitação", [Secao, Revisao], [item], [gravado], [], []),
-            new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)).Value!;
+        ModeloFormulario existente = ExistenteComOTermo(gravado);
         TermoExigidoInput mantido = new(gravado.Codigo, 0, gravado.TermoId, gravado.VersaoId, null, "SEMPRE", null);
         TermoExigidoInput novo = new("IMAGEM", 1, Guid.NewGuid(), Guid.NewGuid(), null, "SEMPRE", null);
 

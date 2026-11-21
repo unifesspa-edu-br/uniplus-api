@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport.ConteudosDoModeloDeTeste;
 
@@ -55,11 +56,9 @@ public sealed class ConteudoDoModeloRegrasTests
     [Fact(DisplayName = "O modelo sem regras não cita fato")]
     public void FatosCitados_SemRegras_Vazio() => (Vazio with { Itens = [Item("RENDA")] }).FatosCitados().Should().BeEmpty();
 
-    private static ItemDoModelo CampoComRegras() => Item("CERTIFICADO", exibicao: Quando("DA_EXIBICAO_DO_CAMPO")) with
-    {
-        Obrigatoriedade = Obrigatoriedade.Quando(Quando("DA_OBRIGATORIEDADE_DO_CAMPO")),
-        Impedimento = new Impedimento(Quando("DO_IMPEDIMENTO"), "Já possui o certificado."),
-    };
+    private static ItemDoModelo CampoComRegras() => Item("CERTIFICADO", exibicao: Quando("DA_EXIBICAO_DO_CAMPO"))
+        .ComObrigatoriedade(Obrigatoriedade.Quando(Quando("DA_OBRIGATORIEDADE_DO_CAMPO")))
+        .ComImpedimento(new Impedimento(Quando("DO_IMPEDIMENTO"), "Já possui o certificado."));
 
     private static GrupoDoModelo GrupoComRegras() =>
         Grupo("COMPOSICAO", 0, Quando("DA_EXIBICAO_DO_GRUPO"), Item("MAIOR_IDADE", exibicao: Quando("DO_CAMPO_DE_GRUPO"))) with
@@ -118,7 +117,7 @@ public sealed class ConteudoDoModeloRegrasTests
     public void CondicoesDasRegras_OpcoesPermitidasCondicionadas_TrazOperadorEValor()
     {
         PredicadoDnf quando = Quando("TIPO_ESCOLA", Operador.Diferente, JsonSerializer.SerializeToElement("PRIVADA"));
-        ItemDoModelo campo = Item("COTA") with { Restricoes = [new OpcoesPermitidas([new OpcoesCondicionadas(quando, ["A", "B"])])] };
+        ItemDoModelo campo = Item("COTA").ComRestricoes([new OpcoesPermitidas([new OpcoesCondicionadas(quando, ["A", "B"])])]);
 
         CondicaoDnf condicao = (Vazio with { Itens = [campo] }).CondicoesDasRegras().Should().ContainSingle().Subject;
 
@@ -130,11 +129,9 @@ public sealed class ConteudoDoModeloRegrasTests
     [Fact(DisplayName = "A condição das opções permitidas vem depois das regras do próprio campo e antes do campo seguinte")]
     public void CondicoesDasRegras_OpcoesPermitidas_DepoisDasRegrasDoCampo()
     {
-        ItemDoModelo comOpcoes = Item("COTA", exibicao: Quando("DA_EXIBICAO")) with
-        {
-            Restricoes = [new OpcoesPermitidas([new OpcoesCondicionadas(Quando("DAS_OPCOES"), ["A"])])],
-            Impedimento = new Impedimento(Quando("DO_IMPEDIMENTO"), "Não pode."),
-        };
+        ItemDoModelo comOpcoes = Item("COTA", exibicao: Quando("DA_EXIBICAO"))
+            .ComRestricoes([new OpcoesPermitidas([new OpcoesCondicionadas(Quando("DAS_OPCOES"), ["A"])])])
+            .ComImpedimento(new Impedimento(Quando("DO_IMPEDIMENTO"), "Não pode."));
 
         IEnumerable<string> fatos = (Vazio with { Itens = [comOpcoes, Item("RENDA", 1, Quando("DO_SEGUNDO"))] }).CondicoesDasRegras().Select(static c => c.Fato);
 
@@ -144,7 +141,7 @@ public sealed class ConteudoDoModeloRegrasTests
     [Fact(DisplayName = "A opção permitida sem condição não é condição de regra")]
     public void CondicoesDasRegras_OpcoesPermitidasSemCondicao_NaoTemCondicao()
     {
-        ItemDoModelo campo = Item("COTA") with { Restricoes = [new OpcoesPermitidas([new OpcoesCondicionadas(null, ["A"])])] };
+        ItemDoModelo campo = Item("COTA").ComRestricoes([new OpcoesPermitidas([new OpcoesCondicionadas(null, ["A"])])]);
 
         (Vazio with { Itens = [campo] }).CondicoesDasRegras().Should().BeEmpty();
     }

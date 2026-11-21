@@ -18,7 +18,7 @@ public sealed class TipoDeCampoDoItemDoModeloTests
         ConteudoLido lido = ConteudoLido.Ler(Conteudo(Item("SELECAO_MULTIPLA")), SemFormatos);
 
         lido.Erros.Should().BeEmpty();
-        lido.Itens.Single().Item.TipoRenderizacao.Should().Be(TipoRenderizacao.SelecaoMultipla);
+        lido.Itens.Single().Item.Apresentacao.TipoRenderizacao.Should().Be(TipoRenderizacao.SelecaoMultipla);
     }
 
     [Fact(DisplayName = "Tipo de campo ausente é recusado como obrigatório e o item não é lido")]

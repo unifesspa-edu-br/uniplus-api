@@ -212,8 +212,17 @@ public sealed class ConteudoLidoTests
             [new RestricaoValorInput("TAMANHO_TEXTO", 11, 11)], new ImpedimentoInput(Quando("SEM_RENDA"), "Mensagem"));
 
     private static ItemDoModelo ItemEsperado() =>
-        new("CPF_RESPONSAVEL", 0, "DADOS", "CPF do responsável", TipoRenderizacao.Texto, "CPF", "Ajuda", Obrigatoriedade.Quando(Predicado("MAIOR_IDADE")),
-            Predicado("CERTIFICADO"), [RestricoesDeValor.Tamanho(11, 11).Value!], true, new Impedimento(Predicado("SEM_RENDA"), "Mensagem"));
+        new(
+            "CPF_RESPONSAVEL",
+            0,
+            "DADOS",
+            new ApresentacaoDoCampo("CPF do responsável", TipoRenderizacao.Texto, "Ajuda", pedirConfirmacao: true),
+            "CPF",
+            new RegrasDoCampo(
+                Predicado("CERTIFICADO"),
+                Obrigatoriedade.Quando(Predicado("MAIOR_IDADE")),
+                [RestricoesDeValor.Tamanho(11, 11).Value!],
+                new Impedimento(Predicado("SEM_RENDA"), "Mensagem")));
 
     private static TermoExigidoInput TermoValido() => new("TERMO_USO", 0, TermoId, VersaoId, Quando("CERTIFICADO"), "NUNCA", null);
 
@@ -224,7 +233,9 @@ public sealed class ConteudoLidoTests
 
     private static GrupoDoModelo GrupoEsperado() =>
         new("COMPOSICAO", 1, "DADOS", "Composição", 1, 5, Predicado("CERTIFICADO"), Obrigatoriedade.Sempre,
-            [new ItemDoModelo("MAIOR_IDADE", 0, null, "MAIOR_IDADE", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [], false)], true);
+            [new ItemDoModelo(
+                "MAIOR_IDADE", 0, null, new ApresentacaoDoCampo("MAIOR_IDADE", TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []))],
+            true);
 
     private static DocumentoExigidoDoModeloInput DocumentoValido() =>
         new("INSCRICAO", "LAUDO_MEDICO", true, Quando("CERTIFICADO"), "REMOVE_VANTAGEM",

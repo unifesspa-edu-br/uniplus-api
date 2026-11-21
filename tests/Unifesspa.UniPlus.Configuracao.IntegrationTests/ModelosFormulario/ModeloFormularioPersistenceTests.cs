@@ -58,11 +58,17 @@ public sealed class ModeloFormularioPersistenceTests
 
     private static ItemDoModelo[] ItensDaHabilitacao() =>
     [
-        new("CERTIFICADO_EMITIDO", 0, "ESCOLA", "Certificado emitido?", TipoRenderizacao.Booleano, null, "Responda pelo histórico",
-            Obrigatoriedade.Sempre, null, [], PedirConfirmacao: true),
-        new("TIPO_DOCUMENTO", 1, "ESCOLA", "Tipo de documento", TipoRenderizacao.SelecaoUnica, null, null,
-            Obrigatoriedade.Quando(Quando("FORMA_CONCLUSAO", "REGULAR")), null,
-            [RestricoesDeValor.Opcoes([(Quando("FORMA_CONCLUSAO", "REGULAR"), ["HISTORICO"])]).Value!], PedirConfirmacao: false),
+        new("CERTIFICADO_EMITIDO", 0, "ESCOLA",
+            new ApresentacaoDoCampo("Certificado emitido?", TipoRenderizacao.Booleano, "Responda pelo histórico", pedirConfirmacao: true),
+            null,
+            new RegrasDoCampo(null, Obrigatoriedade.Sempre, [])),
+        new("TIPO_DOCUMENTO", 1, "ESCOLA",
+            new ApresentacaoDoCampo("Tipo de documento", TipoRenderizacao.SelecaoUnica),
+            null,
+            new RegrasDoCampo(
+                null,
+                Obrigatoriedade.Quando(Quando("FORMA_CONCLUSAO", "REGULAR")),
+                [RestricoesDeValor.Opcoes([(Quando("FORMA_CONCLUSAO", "REGULAR"), ["HISTORICO"])]).Value!])),
     ];
 
     private static TermoDoModelo TermoDeVeracidade() =>
@@ -71,29 +77,38 @@ public sealed class ModeloFormularioPersistenceTests
     private static GrupoDoModelo GrupoDaComposicaoFamiliar() =>
         new("COMPOSICAO_FAMILIAR", 2, "ESCOLA", "Composição familiar", 1, 10, Quando("FORMA_CONCLUSAO", "REGULAR"), Obrigatoriedade.Sempre,
         [
-            new("PARENTESCO", 0, null, "Parentesco", TipoRenderizacao.SelecaoUnica, null, "Em relação ao candidato",
-                Obrigatoriedade.Sempre, null, [], PedirConfirmacao: false),
-            new("RENDA_MEMBRO", 1, null, "Renda", TipoRenderizacao.Booleano, null, null,
-                Obrigatoriedade.Quando(Quando("PARENTESCO", "CONJUGE")), Quando("PARENTESCO", "CONJUGE"), [], PedirConfirmacao: false),
+            new("PARENTESCO", 0, null,
+                new ApresentacaoDoCampo("Parentesco", TipoRenderizacao.SelecaoUnica, "Em relação ao candidato"),
+                null,
+                new RegrasDoCampo(null, Obrigatoriedade.Sempre, [])),
+            new("RENDA_MEMBRO", 1, null,
+                new ApresentacaoDoCampo("Renda", TipoRenderizacao.Booleano),
+                null,
+                new RegrasDoCampo(Quando("PARENTESCO", "CONJUGE"), Obrigatoriedade.Quando(Quando("PARENTESCO", "CONJUGE")), [])),
         ]);
 
     private static ModeloFormulario NovoDeInscricaoComImpedimento(Impedimento impedimento)
     {
         Result<ModeloFormulario> criado = ModeloFormulario.Criar(
             $"INS_{Guid.NewGuid():N}"[..30], "Inscrição PSIQ 2027", null, FinalidadeFormulario.Inscricao, "PSIQ",
-            new ConteudoDoModelo(
-                "Inscrição",
-                [
-                    new("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null, null),
-                    new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null),
-                ],
-                [new("VINCULO_PARFOR", 0, "DADOS", "Vínculo com o PARFOR", TipoRenderizacao.Booleano, null, null, Obrigatoriedade.Sempre, null, [],
-                    PedirConfirmacao: false, Impedimento: impedimento)],
-                [], [], []),
+            ConteudoDaInscricaoComImpedimento(impedimento),
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal));
         criado.IsSuccess.Should().BeTrue(criado.Error?.Message);
         return criado.Value!;
     }
+
+    private static ConteudoDoModelo ConteudoDaInscricaoComImpedimento(Impedimento impedimento) =>
+        new(
+            "Inscrição",
+            [
+                new("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null, null),
+                new("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null),
+            ],
+            [new("VINCULO_PARFOR", 0, "DADOS",
+                new ApresentacaoDoCampo("Vínculo com o PARFOR", TipoRenderizacao.Booleano),
+                null,
+                new RegrasDoCampo(null, Obrigatoriedade.Sempre, [], impedimento))],
+            [], [], []);
 
     [Fact(DisplayName = "O conteúdo do modelo volta do documento jsonb igual ao gravado")]
     public async Task Conteudo_IdaEVolta()
@@ -120,7 +135,7 @@ public sealed class ModeloFormularioPersistenceTests
 
         ModeloFormulario lido = await LerAsync(criado.Id);
 
-        lido.Conteudo.Itens.Single().Impedimento.Should().BeEquivalentTo(impedimento, opcoes => opcoes.ComparingByMembers<JsonElement>()
+        lido.Conteudo.Itens.Single().Regras.Impedimento.Should().BeEquivalentTo(impedimento, opcoes => opcoes.ComparingByMembers<JsonElement>()
             .Using<JsonElement>(c => c.Subject.GetRawText().Should().Be(c.Expectation.GetRawText())).WhenTypeIs<JsonElement>());
     }
 

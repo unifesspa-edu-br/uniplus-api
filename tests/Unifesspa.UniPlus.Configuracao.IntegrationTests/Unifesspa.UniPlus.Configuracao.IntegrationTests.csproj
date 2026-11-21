@@ -27,6 +27,7 @@
 
   <ItemGroup>
     <Compile Include="../Shared/RelogioControlado.cs" Link="RelogioControlado.cs" />
+    <Compile Include="../Shared/ItemDoModeloDeTeste.cs" Link="ItemDoModeloDeTeste.cs" />
   </ItemGroup>
 
   <ItemGroup>

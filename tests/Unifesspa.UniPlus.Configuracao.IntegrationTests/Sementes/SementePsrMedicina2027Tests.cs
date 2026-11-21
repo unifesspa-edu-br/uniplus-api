@@ -65,8 +65,8 @@ public sealed class SementePsrMedicina2027Tests
         List<ItemDoModelo> itens = [.. modelos.SelectMany(static m => m.Conteudo.Itens.Concat(m.Conteudo.Grupos.SelectMany(static g => g.Subitens)))];
 
         modelos.Should().HaveCount(3);
-        itens.Where(static i => i.TipoRenderizacao == TipoRenderizacao.Booleano)
-            .Should().OnlyContain(static i => i.Rotulo.EndsWith('?'), "o sim ou não responde a uma pergunta");
+        itens.Where(static i => i.Apresentacao.TipoRenderizacao == TipoRenderizacao.Booleano)
+            .Should().OnlyContain(static i => i.Apresentacao.Rotulo.EndsWith('?'), "o sim ou não responde a uma pergunta");
         ConferirAjudasSemRepeticao(itens);
     }
 
@@ -109,13 +109,13 @@ public sealed class SementePsrMedicina2027Tests
     {
         Dictionary<string, ItemDoModelo> itens = inscricao.Conteudo.Itens.ToDictionary(static i => i.FatoCodigo, StringComparer.Ordinal);
         itens["SOLICITA_FATOR_ATENUACAO"].FatosCitados.Should().BeEmpty("o pedido é feito a todo candidato");
-        itens["SOLICITA_FATOR_ATENUACAO"].Ajuda.Should().NotContainAny(["reside", "conta de"]);
+        itens["SOLICITA_FATOR_ATENUACAO"].Apresentacao.Ajuda.Should().NotContainAny(["reside", "conta de"]);
         itens["CAMINHO_FATOR_ATENUACAO"].FatosCitados.Should().BeEquivalentTo(["SOLICITA_FATOR_ATENUACAO", "FORMA_CONCLUSAO_EM"]);
         itens["MUNICIPIO_ENSINO_MEDIO_FATOR_ATENUACAO"].FatosCitados.Should()
             .BeEquivalentTo(["SOLICITA_FATOR_ATENUACAO", "FORMA_CONCLUSAO_EM", "CAMINHO_FATOR_ATENUACAO"]);
         itens["MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO"].FatosCitados.Should().BeEquivalentTo(["SOLICITA_FATOR_ATENUACAO", "CAMINHO_FATOR_ATENUACAO"]);
         string[] doFator = ["CAMINHO_FATOR_ATENUACAO", "MUNICIPIO_ENSINO_MEDIO_FATOR_ATENUACAO", "MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO"];
-        doFator.Should().OnlyContain(c => itens[c].Obrigatoriedade.Tipo == TipoObrigatoriedade.Sempre, "o que aparece é exigido");
+        doFator.Should().OnlyContain(c => itens[c].Regras.Obrigatoriedade.Tipo == TipoObrigatoriedade.Sempre, "o que aparece é exigido");
     }
 
     [Fact(DisplayName = "O modelo de inscrição semeado traz a seção dos dados básicos, e as regras dele citam a cor ou raça")]
@@ -149,7 +149,7 @@ public sealed class SementePsrMedicina2027Tests
             .Which.Titulo.Should().Be("Atendimento especializado");
         string[] daSecao = ["SOLICITA_ATENDIMENTO_ESPECIALIZADO", "CONDICAO_ATENDIMENTO", "DESCRICAO_OUTRA_CONDICAO_ATENDIMENTO", "RECURSO_ACESSIBILIDADE"];
         daSecao.Should().OnlyContain(c => itens[c].EtapaCodigo == "ATENDIMENTO_ESPECIALIZADO");
-        daSecao.Should().OnlyContain(c => itens[c].Obrigatoriedade.Tipo == TipoObrigatoriedade.Sempre, "o que aparece é exigido");
+        daSecao.Should().OnlyContain(c => itens[c].Regras.Obrigatoriedade.Tipo == TipoObrigatoriedade.Sempre, "o que aparece é exigido");
     }
 
     private static void ConferirExibicaoDoAtendimento(Dictionary<string, ItemDoModelo> itens)
@@ -159,7 +159,7 @@ public sealed class SementePsrMedicina2027Tests
         Exibicao(itens["RECURSO_ACESSIBILIDADE"]).Should().Be(Se("SOLICITA_ATENDIMENTO_ESPECIALIZADO", true));
         Exibicao(itens["DESCRICAO_OUTRA_CONDICAO_ATENDIMENTO"]).Should().Be(Se("CONDICAO_ATENDIMENTO", SementePsrMedicina2027.CondicaoForaDaLista));
         itens["TIPO_DEFICIENCIA"].EtapaCodigo.Should().Be("RESERVA_DE_VAGAS", "a âncora do tipo de deficiência não muda nesta configuração");
-        itens["DESCRICAO_OUTRA_CONDICAO_ATENDIMENTO"].Restricoes.Should().ContainSingle()
+        itens["DESCRICAO_OUTRA_CONDICAO_ATENDIMENTO"].Regras.Restricoes.Should().ContainSingle()
             .Which.Should().BeEquivalentTo(new TamanhoTexto(null, 120));
     }
 
@@ -226,9 +226,9 @@ public sealed class SementePsrMedicina2027Tests
             .ToListAsync();
 
     private static void ConferirAjudasSemRepeticao(List<ItemDoModelo> itens) =>
-        itens.Where(static i => i.Ajuda != null).Should().OnlyContain(
-            static i => !i.Ajuda!.StartsWith("Responda", StringComparison.Ordinal)
-                && !i.Ajuda.Contains(i.Rotulo.TrimEnd('?'), StringComparison.OrdinalIgnoreCase),
+        itens.Where(static i => i.Apresentacao.Ajuda != null).Should().OnlyContain(
+            static i => !i.Apresentacao.Ajuda!.StartsWith("Responda", StringComparison.Ordinal)
+                && !i.Apresentacao.Ajuda.Contains(i.Apresentacao.Rotulo.TrimEnd('?'), StringComparison.OrdinalIgnoreCase),
             "a ajuda diz o que o rótulo não diz");
 
     private static async Task ConferirTermosPromovidosAsync(UniPlusDbContext ctx)
@@ -257,7 +257,7 @@ public sealed class SementePsrMedicina2027Tests
 
     /// <summary>A exibição do item, na forma canônica em que o modelo a grava.</summary>
     private static string? Exibicao(ItemDoModelo item) =>
-        item.Exibicao is null ? null : PredicadoDnfJson.ParaJson(item.Exibicao).ToJsonString();
+        item.Regras.Exibicao is null ? null : PredicadoDnfJson.ParaJson(item.Regras.Exibicao).ToJsonString();
 
     /// <summary>A condição única "fato igual a valor", na mesma forma canônica.</summary>
     private static string Se<T>(string fato, T valor) =>
