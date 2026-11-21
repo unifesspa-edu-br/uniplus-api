@@ -36,6 +36,8 @@ public sealed class SementePsrMedicina2027Tests
         "CATEGORIAS_RENDA_FAMILIA",
     ];
 
+    private const string CodigoDoTermoDoBancoCentral = "AUTORIZACAO_DE_CONSULTA_AO_BANCO_CENTRAL";
+
     private readonly ConfiguracaoDbFixture _fixture;
 
     public SementePsrMedicina2027Tests(ConfiguracaoDbFixture fixture)
@@ -76,9 +78,9 @@ public sealed class SementePsrMedicina2027Tests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         string antes = await RetratoAsync(ctx);
 
-        foreach (string comando in SementePsrMedicina2027.ComandosDoTipoTermosEFatos())
+        foreach (ComandoDaSemente comando in SementePsrMedicina2027.ComandosDoTipoTermosEFatos())
         {
-            await ctx.Database.ExecuteSqlRawAsync(comando);
+            await ctx.Database.ExecuteSqlRawAsync(comando.Texto);
         }
 
         (await RetratoAsync(ctx)).Should().Be(antes);
@@ -98,9 +100,9 @@ public sealed class SementePsrMedicina2027Tests
 
     private static void ConferirTermoDoBancoCentralSoNaHabilitacao(ModeloFormulario inscricao, ModeloFormulario habilitacao)
     {
-        inscricao.Conteudo.Termos.Should().NotContain(static t => t.Codigo == "CONSULTA_AO_BANCO_CENTRAL");
+        inscricao.Conteudo.Termos.Should().NotContain(static t => t.Codigo == CodigoDoTermoDoBancoCentral);
         TermoDoModelo termoDoBancoCentral = habilitacao.Conteudo.Termos.Should()
-            .ContainSingle(static t => t.Codigo == "CONSULTA_AO_BANCO_CENTRAL").Subject;
+            .ContainSingle(static t => t.Codigo == CodigoDoTermoDoBancoCentral).Subject;
         termoDoBancoCentral.FatosCitados.Should().BeEquivalentTo(["CONCORRER_RENDA"]);
         habilitacao.Conteudo.Pressupostos.Should().Contain("CONCORRER_RENDA");
     }

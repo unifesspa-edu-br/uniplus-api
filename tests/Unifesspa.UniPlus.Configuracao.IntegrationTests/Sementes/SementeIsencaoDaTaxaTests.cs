@@ -54,10 +54,10 @@ public sealed class SementeIsencaoDaTaxaTests
         string antes = await RetratoAsync(ctx);
         antes.Should().NotBeEmpty("a preparaÃ§Ã£o do banco já gravou os termos e o modelo");
 
-        foreach (string comando in SementeIsencaoDaTaxa.Comandos())
+        foreach (ComandoDaSemente comando in SementeIsencaoDaTaxa.Comandos())
         {
             // O conteúdo do modelo é JSON: as chaves escapadas não viram marcadores de parâmetro.
-            await ctx.Database.ExecuteSqlRawAsync(comando.Replace("{", "{{", StringComparison.Ordinal).Replace("}", "}}", StringComparison.Ordinal));
+            await ctx.Database.ExecuteSqlRawAsync(comando.Texto.Replace("{", "{{", StringComparison.Ordinal).Replace("}", "}}", StringComparison.Ordinal));
         }
 
         (await RetratoAsync(ctx)).Should().Be(antes);

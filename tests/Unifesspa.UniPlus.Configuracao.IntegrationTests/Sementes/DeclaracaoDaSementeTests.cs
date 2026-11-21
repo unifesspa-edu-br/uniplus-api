@@ -53,7 +53,7 @@ public sealed class DeclaracaoDaSementeTests
     [Fact(DisplayName = "O termo que o domínio recusa interrompe a gravação com a recusa nomeando a semente e o termo")]
     public void ComandosDoTermo_TermoRecusado_LancaNomeandoSementeETermo()
     {
-        TermoDaSemente semente = new(Guid.NewGuid(), Guid.NewGuid(), "TERMO_DE_TESTE", "", "Texto do termo.", "Base legal.");
+        TermoDaSemente semente = new(Guid.NewGuid(), Guid.NewGuid(), "", "Texto do termo.", "Base legal.");
         Action gravar = () => _ = SqlDaSemente.ComandosDoTermo(semente, Declaracao).ToList();
 
         gravar.Should().Throw<InvalidOperationException>()

@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 
 using Testcontainers.PostgreSql;
 
@@ -41,7 +42,7 @@ public sealed class ConfiguracaoDbFixture : IAsyncLifetime
 
         await using UniPlusDbContext context = CreateDbContext(userId: null);
         await context.PrepararOBancoAsync().ConfigureAwait(false);
-        await SementesDaConfiguracao.AplicarAsync(context, CancellationToken.None).ConfigureAwait(false);
+        await SementesDaConfiguracao.AplicarAsync(context, NullLogger.Instance, CancellationToken.None).ConfigureAwait(false);
     }
 
     public async Task DisposeAsync()

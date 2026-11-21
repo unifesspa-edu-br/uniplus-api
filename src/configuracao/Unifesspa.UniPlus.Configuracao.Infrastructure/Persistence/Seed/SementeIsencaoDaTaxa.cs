@@ -46,16 +46,16 @@ public static class SementeIsencaoDaTaxa
     private static Guid Id(int tabela, int n) =>
         Guid.Parse($"15e0{tabela:D4}-0000-7000-8000-{n:D12}", CultureInfo.InvariantCulture);
 
-    private static TermoDaSemente Termo(int n, string codigo, string nome, string texto, string baseLegal) =>
-        new(Id(TabelaTermo, n), Id(TabelaVersaoDoTermo, n), codigo, nome, texto, baseLegal);
+    private static TermoDaSemente Termo(int n, string nome, string texto, string baseLegal) =>
+        new(Id(TabelaTermo, n), Id(TabelaVersaoDoTermo, n), nome, texto, baseLegal);
 
     /// <summary>Os termos que o pedido de isenção exige. Os textos são proposta.</summary>
     public static IReadOnlyList<TermoDaSemente> Termos { get; } =
     [
-        Termo(1, "VERACIDADE_DO_PEDIDO_DE_ISENCAO", "Veracidade das informações do pedido de isenção",
+        Termo(1, "Veracidade das informações do pedido de isenção",
             "Declaro que as informações que presto neste pedido de isenção da taxa de inscrição são verdadeiras e que posso comprová-las quando solicitado. Estou ciente de que a informação falsa leva ao indeferimento do pedido, sem prejuízo das sanções legais.",
             "Lei nº 12.799/2013, art. 1º; edital do processo seletivo."),
-        Termo(2, "USO_DOS_DADOS_DO_PEDIDO_DE_ISENCAO", "Uso dos dados do pedido de isenção",
+        Termo(2, "Uso dos dados do pedido de isenção",
             "Autorizo a Unifesspa a utilizar os dados que informo neste pedido, e os da minha inscrição, exclusivamente para a análise da isenção da taxa de inscrição deste processo seletivo.",
             "Lei nº 13.709/2018 (LGPD), art. 7º, inciso I; edital do processo seletivo."),
     ];
@@ -64,13 +64,13 @@ public static class SementeIsencaoDaTaxa
     /// Os comandos SQL que gravam os termos e o modelo, ativo, na ordem das chaves estrangeiras. Cada
     /// inserção ignora a linha que já existe: reaplicar não duplica nem altera.
     /// </summary>
-    public static IReadOnlyList<string> Comandos() =>
+    internal static IReadOnlyList<ComandoDaSemente> Comandos() =>
     [
         .. Termos.SelectMany(static t => SqlDaSemente.ComandosDoTermo(t, Declaracao)),
         ComandoDoModelo(),
     ];
 
-    private static string ComandoDoModelo()
+    private static ComandoDaSemente ComandoDoModelo()
     {
         ModeloFormulario modelo = Declaracao.Exigir(
             ModeloFormulario.Criar(
@@ -89,7 +89,7 @@ public static class SementeIsencaoDaTaxa
         "Solicitação de isenção da taxa de inscrição",
         Etapas(),
         [PerguntaDeRenda()],
-        [.. Termos.Select(static (t, i) => new TermoDoModelo(t.Codigo, i + 1, t.TermoId, t.VersaoId, null, Obrigatoriedade.Sempre))],
+        [.. Termos.Select(static (t, i) => new TermoDoModelo(SqlDaSemente.CodigoDoTermo(t, Declaracao), i + 1, t.TermoId, t.VersaoId, null, Obrigatoriedade.Sempre))],
         IsencaoPorCarenciaSocioeconomica.FatosDaInscricao,
         []);
 
