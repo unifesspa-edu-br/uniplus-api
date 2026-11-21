@@ -63,7 +63,7 @@ public sealed class NoExigenciaFolhaTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("NoExigencia.QuantidadeMinimaDeFolhaInvalida");
-        resultado.Error.Message.Should().Be("A quantidade mínima de apresentações deve estar entre 1 e 366.");
+        resultado.Error.Message.Should().Be("A quantidade mínima de apresentações deste documento está fora dos limites. Informe um valor entre 1 e 366.");
     }
 
     [Fact(DisplayName = "CriarFolha sem chaveDistincao recusa dataReferencia")]
@@ -95,7 +95,7 @@ public sealed class NoExigenciaFolhaTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("NoExigencia.DataReferenciaObrigatoriaParaChaveCalendario");
-        resultado.Error.Message.Should().Be("Informe a data de referência para distinção por competência mensal ou exercício anual.");
+        resultado.Error.Message.Should().Be("Este documento é distinguido por mês ou ano e precisa de uma data de referência. Informe a data.");
     }
 
     [Fact(DisplayName = "CriarFolha com chave de calendário recusa ocorrenciasEsperadas")]
@@ -129,7 +129,7 @@ public sealed class NoExigenciaFolhaTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("NoExigencia.OcorrenciasEsperadasVazia");
-        resultado.Error.Message.Should().Be("Informe ao menos uma ocorrência esperada ou deixe a lista ausente.");
+        resultado.Error.Message.Should().Be("A lista de ocorrências esperadas está vazia. Informe ao menos uma ocorrência ou deixe a lista ausente.");
     }
 
     [Theory(DisplayName = "CriarFolha com ChaveDistincao.Ocorrencia recusa id vazio ou em branco")]
@@ -143,7 +143,7 @@ public sealed class NoExigenciaFolhaTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("NoExigencia.OcorrenciasEsperadasComIdVazio");
-        resultado.Error.Message.Should().Be("Informe identificadores não vazios para as ocorrências esperadas.");
+        resultado.Error.Message.Should().Be("Uma ocorrência esperada não tem identificador. Informe um identificador para cada ocorrência.");
     }
 
     [Fact(DisplayName = "CriarFolha com ChaveDistincao.Ocorrencia recusa ids duplicados")]
@@ -155,7 +155,7 @@ public sealed class NoExigenciaFolhaTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("NoExigencia.OcorrenciasEsperadasComIdsDuplicados");
-        resultado.Error.Message.Should().Be("Informe identificadores distintos para as ocorrências esperadas.");
+        resultado.Error.Message.Should().Be("Há ocorrências esperadas com o mesmo identificador. Informe identificadores distintos.");
     }
 
     [Fact(DisplayName = "CriarFolha com ChaveDistincao.Ocorrencia recusa quantidadeMinima divergente do tamanho da lista")]
@@ -249,7 +249,7 @@ public sealed class NoExigenciaFolhaTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("NoExigencia.QuantidadeMinimaDeFolhaInvalida");
-        resultado.Error.Message.Should().Be("A quantidade mínima de apresentações deve estar entre 1 e 366.");
+        resultado.Error.Message.Should().Be("A quantidade mínima de apresentações deste documento está fora dos limites. Informe um valor entre 1 e 366.");
     }
 
     [Fact(DisplayName = "CriarFolha copia ocorrenciasEsperadas defensivamente — mutação da lista original não afeta o nó")]

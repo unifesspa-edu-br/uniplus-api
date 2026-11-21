@@ -196,17 +196,16 @@ public sealed class DefinirDocumentosExigidosCommandValidatorTests
         new DefinirDocumentosExigidosCommandValidator().Validate(
             new DefinirDocumentosExigidosCommand(Guid.CreateVersion7(), [raiz]));
 
-    [Theory(DisplayName = "A chave de distinção vazia ou em branco é rejeitada — nunca coagida silenciosamente pelo handler")]
+    [Theory(DisplayName = "Critério de distinção desconhecido segue para a conferência do domínio")]
     [InlineData("")]
     [InlineData("   ")]
-    public void Rejeita_ChaveDistincaoVaziaOuEmBranco(string chaveInvalida)
+    public void AceitaForma_ChaveDistincaoVaziaOuEmBranco(string chaveInvalida)
     {
         NoExigenciaInput raiz = NoExigenciaDeTeste.Folha(ItemCom()).ComDistincao(chaveInvalida).Construir();
 
         ValidationResult resultado = ValidarRaiz(raiz);
 
-        resultado.IsValid.Should().BeFalse();
-        resultado.Errors.Should().Contain(e => e.ErrorMessage.Contains("distincao.chave", StringComparison.OrdinalIgnoreCase));
+        resultado.IsValid.Should().BeTrue();
     }
 
     [Fact(DisplayName = "A chave de distinção do catálogo fechado é aceita")]
@@ -220,12 +219,12 @@ public sealed class DefinirDocumentosExigidosCommandValidatorTests
         ValidarRaiz(raiz).IsValid.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Grupo E com quantidade mínima é rejeitado: só a folha e o grupo OU a declaram")]
+    [Fact(DisplayName = "Quantidade mínima do grupo é conferida pelo domínio")]
     public void Rejeita_QuantidadeMinimaEmGrupoE()
     {
         NoExigenciaInput raiz = NoExigenciaDeTeste.Grupo("E", NoExigenciaDeTeste.Folha(ItemCom()).Construir()).ComQuantidadeMinima(2).Construir();
 
-        ValidarRaiz(raiz).Errors.Should().Contain(e => e.ErrorMessage.Contains("cardinalidade.quantidadeMinima", StringComparison.Ordinal));
+        ValidarRaiz(raiz).IsValid.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Grupo OU com distinção das apresentações é rejeitado: a distinção é exclusiva da folha")]
@@ -244,14 +243,14 @@ public sealed class DefinirDocumentosExigidosCommandValidatorTests
         ValidarRaiz(raiz).Errors.Should().Contain(e => e.ErrorMessage.Contains("indeferimento.consequencia", StringComparison.Ordinal));
     }
 
-    [Fact(DisplayName = "Grupo OU com bases legais sem consequência é rejeitado")]
+    [Fact(DisplayName = "Base legal sem consequência é conferida pelo domínio")]
     public void Rejeita_BasesLegaisDeGrupoSemConsequencia()
     {
         NoExigenciaInput raiz = NoExigenciaDeTeste.Grupo("OU", NoExigenciaDeTeste.Folha(ItemCom()).Construir())
             .ComIndeferimento(null, new BaseLegalInput("Lei X", "FEDERAL", "RESOLVIDO", null))
             .Construir();
 
-        ValidarRaiz(raiz).Errors.Should().Contain(e => e.ErrorMessage.Contains("indeferimento.basesLegais", StringComparison.Ordinal));
+        ValidarRaiz(raiz).IsValid.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Grupo OU com consequência do catálogo e bases legais é aceito")]

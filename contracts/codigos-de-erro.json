@@ -6582,6 +6582,21 @@
       "titulo": "dataReferencia é obrigatória quando chaveDistincao é COMPETENCIA_MENSAL ou EXERCICIO_ANUAL"
     },
     {
+      "codigo": "uniplus.selecao.no_exigencia.documento_obrigatorio_em_folha",
+      "status": 422,
+      "titulo": "Documento não informado"
+    },
+    {
+      "codigo": "uniplus.selecao.no_exigencia.documento_proibido_em_grupo",
+      "status": 422,
+      "titulo": "Documento informado no grupo"
+    },
+    {
+      "codigo": "uniplus.selecao.no_exigencia.filhos_proibidos_em_folha",
+      "status": 422,
+      "titulo": "Documento reúne outros itens"
+    },
+    {
       "codigo": "uniplus.selecao.no_exigencia.grupo_com_fases_diferentes",
       "status": 422,
       "titulo": "Todos os nós de um grupo precisam pertencer à mesma fase do cronograma"
@@ -6655,6 +6670,11 @@
       "codigo": "uniplus.selecao.no_exigencia.tipo_entidade_invalido",
       "status": 422,
       "titulo": "repetePorEntidade não nomeia grupo repetível dos formulários do processo"
+    },
+    {
+      "codigo": "uniplus.selecao.no_exigencia.tipo_invalido",
+      "status": 422,
+      "titulo": "Tipo do item não reconhecido"
     },
     {
       "codigo": "uniplus.selecao.no_exigencia_base_legal.abrangencia_obrigatoria",

@@ -29,11 +29,15 @@ public static class ValidadorRepeticaoPorGrupo
         ArgumentNullException.ThrowIfNull(grupos);
 
         HashSet<string> existentes = new(grupos.Select(static g => g.Codigo), StringComparer.Ordinal);
-        return codigos
-            .Where(c => !existentes.Contains(c))
-            .Select(static c => new DomainError(
-                GrupoInexistente,
-                $"A exigência repete por '{c}', que não é grupo repetível dos formulários do processo."))
-            .FirstOrDefault();
+        return codigos.Select(codigo => RecusarGrupoInexistente(codigo, existentes)).OfType<DomainError>().FirstOrDefault();
+    }
+
+    /// <summary>Recusa a repetição que não corresponde a um grupo dos formulários.</summary>
+    public static DomainError? RecusarGrupoInexistente(string? codigo, IReadOnlySet<string> existentes)
+    {
+        ArgumentNullException.ThrowIfNull(existentes);
+        return codigo is not null && !existentes.Contains(codigo)
+            ? new(GrupoInexistente, "O grupo de repetição informado não existe nos formulários do processo. Escolha um grupo existente ou retire a repetição.")
+            : null;
     }
 }

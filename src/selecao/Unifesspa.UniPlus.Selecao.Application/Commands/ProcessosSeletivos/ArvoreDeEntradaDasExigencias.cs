@@ -21,8 +21,4 @@ internal static class ArvoreDeEntradaDasExigencias
     public static HashSet<Guid> ModelosCitados(IReadOnlyList<NoExigenciaInput> nos) =>
         [.. nos.SelectMany(static no => (no.Documento?.ModeloId() is { } id ? [id] : Array.Empty<Guid>()).Concat(ModelosCitados(no.Filhos ?? [])))];
 
-    /// <summary>Os grupos que a árvore nomeia na repetição por entidade.</summary>
-    public static IEnumerable<string> GruposDaRepeticao(IEnumerable<NoExigenciaInput> nos) =>
-        nos.SelectMany(static no => (no.RepetePorEntidade is { } grupo ? [grupo] : Array.Empty<string>())
-            .Concat(GruposDaRepeticao(no.Filhos ?? [])));
 }

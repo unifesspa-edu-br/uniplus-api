@@ -61,6 +61,10 @@ internal static class ErrosDaArvoreDeExigencias
 
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> EstruturaDaArvore() =>
     [
+        new("NoExigencia.TipoInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.tipo_invalido", "Tipo do item não reconhecido")),
+        new("NoExigencia.DocumentoObrigatorioEmFolha", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.documento_obrigatorio_em_folha", "Documento não informado")),
+        new("NoExigencia.DocumentoProibidoEmGrupo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.documento_proibido_em_grupo", "Documento informado no grupo")),
+        new("NoExigencia.FilhosProibidosEmFolha", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.filhos_proibidos_em_folha", "Documento reúne outros itens")),
         new("NoExigencia.GrupoVazio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.grupo_vazio", "Um grupo E/OU não pode ter zero filhos")),
         new("NoExigencia.ArvoreComCiclo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.arvore_com_ciclo", "A árvore de satisfação não pode conter ciclos")),
         new("NoExigencia.GrupoComFasesDiferentes", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.grupo_com_fases_diferentes", "Todos os nós de um grupo precisam pertencer à mesma fase do cronograma")),
