@@ -50,6 +50,16 @@ internal static class ExigenciaDaBancaDaSegundaInstancia
             BancaErrorCodes.EtapaComBancaDaSegundaInstanciaSemRecursoParaJulgar,
             $"A etapa na posição {posicao + 1} prevê a banca '{banca.Citacao}', com o papel '{PapelQueJulga}', e nenhum recurso da etapa admite instância superior. A banca de 2ª instância da etapa julga só os recursos dela; a do recurso da fase fica na própria fase. Retire essa banca, ou declare que um recurso da etapa admite instância superior.");
 
+    internal static DomainError FaseComMaisDeUmaBanca(string codigo, int quantidade, BancaDeclarada segunda) =>
+        new(
+            BancaErrorCodes.FaseComMaisDeUmaBancaDaSegundaInstancia,
+            $"A fase '{codigo}' prevê {quantidade} bancas com o papel '{PapelQueJulga}', e a 2ª instância é julgada por uma única banca na fase. Mantenha uma e retire as demais, a começar pela banca '{segunda.Citacao}'.");
+
+    internal static DomainError EtapaComMaisDeUmaBanca(int posicao, int quantidade, BancaDeclarada segunda) =>
+        new(
+            BancaErrorCodes.EtapaComMaisDeUmaBancaDaSegundaInstancia,
+            $"A etapa na posição {posicao + 1} prevê {quantidade} bancas com o papel '{PapelQueJulga}', e a 2ª instância é julgada por uma única banca na etapa. Mantenha uma e retire as demais, a começar pela banca '{segunda.Citacao}'.");
+
     private static string DaFase(string? codigoDaFase) =>
         codigoDaFase is null ? "a fase" : $"a fase '{codigoDaFase}'";
 

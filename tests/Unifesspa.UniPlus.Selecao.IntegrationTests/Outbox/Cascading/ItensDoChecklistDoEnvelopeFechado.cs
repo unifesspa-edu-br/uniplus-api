@@ -121,6 +121,7 @@ internal static class ItensDoChecklistDoEnvelopeFechado
         "cronograma_instancia_superior_admitida_pelo_tipo_de_banca",
         "cronograma_instancia_superior_com_banca_da_segunda_instancia",
         "cronograma_banca_da_segunda_instancia_com_recurso_para_julgar",
+        "cronograma_uma_banca_da_segunda_instancia_por_fase_ou_etapa",
         "cronograma_tipo_de_banca_com_o_minimo_de_bancas",
         "cronograma_homologacao_das_inscricoes_com_banca",
         "cronograma_nota_do_enem_com_banca_de_importacao_das_notas",

@@ -44,6 +44,8 @@ public sealed class OrdemDasCausasDasBancasTests
         "Banca.EtapaSemBancaDaSegundaInstancia",
         "Banca.FaseComBancaDaSegundaInstanciaSemRecursoParaJulgar",
         "Banca.EtapaComBancaDaSegundaInstanciaSemRecursoParaJulgar",
+        "Banca.FaseComMaisDeUmaBancaDaSegundaInstancia",
+        "Banca.EtapaComMaisDeUmaBancaDaSegundaInstancia",
         "Banca.TipoExigeMaisDeUmaBanca",
         "ProcessoSeletivo.HomologacaoDasInscricoesSemBanca",
         "ProcessoSeletivo.NotaDoEnemSemBancaDeImportacaoDasNotas",
@@ -60,6 +62,7 @@ public sealed class OrdemDasCausasDasBancasTests
         "cronograma_instancia_superior_admitida_pelo_tipo_de_banca",
         "cronograma_instancia_superior_com_banca_da_segunda_instancia",
         "cronograma_banca_da_segunda_instancia_com_recurso_para_julgar",
+        "cronograma_uma_banca_da_segunda_instancia_por_fase_ou_etapa",
         "cronograma_tipo_de_banca_com_o_minimo_de_bancas",
         "cronograma_homologacao_das_inscricoes_com_banca",
         "cronograma_nota_do_enem_com_banca_de_importacao_das_notas",
@@ -101,7 +104,8 @@ public sealed class OrdemDasCausasDasBancasTests
             FaseComRecurso(Homologacao, [Procedimento(TipoMotivoDeDecisao.HomologacaoDasInscricoes)], true).Homologando(RegraDaHomologacao) with { Ordem = 3 };
 
         return Montar(
-            [comBancaSemRegra, comBancaDaSegundaInstanciaSemRecurso, homologaComInstanciaSuperiorSemBancaEComRecursoSemJulgador],
+            [comBancaSemRegra, comBancaDaSegundaInstanciaSemRecurso, homologaComInstanciaSuperiorSemBancaEComRecursoSemJulgador,
+                FaseComRecurso("EXCESSO", DaNota, true, BancasDeTeste.DeRecursosDaFase(), DaSegundaInstanciaNaFase(), DaSegundaInstanciaNaFase()) with { Ordem = 4 }],
             [.. EtapasComDefeitos(), .. EtapasDaSegundaInstanciaComDefeitos()],
             ApoioConformidadePublicabilidadeEstrutural.ProcessoConforme().Declaracao());
     }
@@ -129,7 +133,7 @@ public sealed class OrdemDasCausasDasBancasTests
         ModeloDeEtapa recursoSemBanca = EtapaComRecurso(
             "Documentos", Avaliacao, DaNota, true, NaEtapa(Avaliadora(TipoDeBanca.Entrevista, false, TipoMotivoDeDecisao.NotaDaEtapa)));
 
-        return [bancaSemRecurso, recursoSemBanca];
+        return [bancaSemRecurso, recursoSemBanca, EtapaQueAdmite(BancasDeTeste.DeRecursosDaEtapa(), DaSegundaInstanciaNaEtapa(), DaSegundaInstanciaNaEtapa())];
     }
 
     // A inscrição própria com a nota do ENEM sem a banca de importação das notas, entre a falta de bancas do tipo, na fase, e a banca
@@ -208,6 +212,8 @@ public sealed class OrdemDasCausasDasBancasTests
         ("Banca.EtapaSemBancaDaSegundaInstancia", "etapas[4].bancas"),
         ("Banca.FaseComBancaDaSegundaInstanciaSemRecursoParaJulgar", "fases[1].bancasRequeridas[0]"),
         ("Banca.EtapaComBancaDaSegundaInstanciaSemRecursoParaJulgar", "etapas[3].bancas[0]"),
+        ("Banca.FaseComMaisDeUmaBancaDaSegundaInstancia", "fases[3].bancasRequeridas[2]"),
+        ("Banca.EtapaComMaisDeUmaBancaDaSegundaInstancia", "etapas[5].bancas[2]"),
         ("Banca.TipoExigeMaisDeUmaBanca", "etapas[1].bancas[0]"),
         ("ProcessoSeletivo.HomologacaoDasInscricoesSemBanca", "fases[2].bancasRequeridas"),
         ("ProcessoSeletivo.ImportacaoExternaSemBancaDeImportacaoDeCandidatos", "fases"),
@@ -222,6 +228,7 @@ public sealed class OrdemDasCausasDasBancasTests
         "cronograma_instancia_superior_admitida_pelo_tipo_de_banca",
         "cronograma_instancia_superior_com_banca_da_segunda_instancia",
         "cronograma_banca_da_segunda_instancia_com_recurso_para_julgar",
+        "cronograma_uma_banca_da_segunda_instancia_por_fase_ou_etapa",
         "cronograma_tipo_de_banca_com_o_minimo_de_bancas",
         "cronograma_homologacao_das_inscricoes_com_banca",
         "cronograma_importacao_externa_com_banca_de_importacao_de_candidatos",
