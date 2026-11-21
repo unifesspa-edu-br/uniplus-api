@@ -112,7 +112,7 @@ Extensions adicionais não definidas aqui são proibidas em V1 sem ADR de extens
 
 ### Negativas
 
-- **Custo de governança da taxonomia `code`.** Cada novo erro de domínio entra no catálogo `/erros/{code}` do portal e é registrado no mapper ([ADR-0024](0024-mapeamento-domain-error-http.md)). Adições viram revisão de PR no `uniplus-developers`.
+- **Custo de governança da taxonomia `code`.** Cada novo código público é registrado no mapper ([ADR-0024](0024-mapeamento-domain-error-http.md)) e recebe descrição no mesmo PR da API. O portal gera a página `/erros/{code}` a partir dos contratos da API ([ADR-0178](0178-texto-publico-dos-erros-na-api.md)).
 - **`legal_reference` depende de input externo.** Conteúdo normativo das entradas iniciais do catálogo aguarda input de PROEG/PROEX/CEPS/jurídico. CTIC publica drafts e refina conforme o input chega — não bloqueia a ADR.
 - **Migração do consumidor.** O `ApiErrorHandlerService` do `uniplus-web` consome 7807 hoje; precisa ser ajustado para 9457 (ADR-0011 do `uniplus-web` cobre o adapter).
 

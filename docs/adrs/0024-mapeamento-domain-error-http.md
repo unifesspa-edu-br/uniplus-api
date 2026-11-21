@@ -88,7 +88,7 @@ Esta ADR **não muda** a forma como `Result<T>` e `DomainError` são construído
 
 ### Negativas
 
-- **Burocracia em cada novo `code`.** Cada erro novo no `Domain` exige uma linha no arquivo de registro do módulo + uma entrada no catálogo do portal. O ArchUnit garante que a linha do registry existe; a entrada do portal vira critério de revisão de PR.
+- **Burocracia em cada novo `code`.** Cada novo código público exige uma entrada no registro do módulo e uma descrição em `contracts/descricoes-de-erros.json`. O teste do catálogo confere a correspondência ([ADR-0178](0178-texto-publico-dos-erros-na-api.md)).
 - **Risco de over-mapping.** Tentação de criar codes muito granulares ("um por exception"). Mitigação: revisão de PR; o `code` deve representar uma causa estável e referenciável publicamente, não um ponto de implementação.
 - **Migração de codes existentes.** Os 14 codes em uso no `Domain` do módulo Seleção (espalhados por `Edital.*`, `Inscricao.*`, `Cpf.*`, `Email.*`, `NomeSocial.*`, `NumeroEdital.*`, `FormulaCalculo.*`, `PeriodoInscricao.*`, `NotaFinal.*`) precisam ser migrados para a taxonomia `uniplus.<modulo>.<razao>` e registrados — entra no escopo do PR pilot que migra o `EditalController` e os value objects relacionados.
 
@@ -101,7 +101,7 @@ Esta ADR **não muda** a forma como `Result<T>` e `DomainError` são construído
 1. **Verificações estáticas no CI** — três checks nomeados na seção "Boundary enforçado por ArchUnit". O check 1 (cobertura) roda como Roslyn analyzer ou equivalente; os checks 2 e 3 (direção de dependência e ausência de `DomainError` em controllers) rodam em `tests/Unifesspa.UniPlus.*.ArchTests` via ArchUnitNET ([ADR-0012](0012-archunitnet-como-fitness-tests-arquiteturais.md)).
 2. **Cobertura do mapper.** Suite de testes de unidade verifica que `DomainErrorMappingRegistry.Resolve` cobre 100% dos codes coletados pelo ArchUnit. Falha indica registry desincronizado com o código real.
 3. **Smoke E2E (Postman/Newman).** Cenários conhecidos de erro batem `code` retornado contra valor esperado e contra entrada do catálogo `/erros/{code}` quando o portal estiver no ar ([ADR-0023](0023-wire-formato-erro-rfc-9457.md), Confirmação 3).
-4. **Revisão arquitetural de PR.** Qualquer PR que adicione `code` novo no `Domain` ou `Application` deve incluir a entrada no registry e a entrada-rascunho no catálogo do portal. Critério explícito no checklist do PR template.
+4. **Revisão arquitetural de PR.** O PR que expõe um novo código deve incluir a entrada no registro e a descrição no contrato da API ([ADR-0178](0178-texto-publico-dos-erros-na-api.md)).
 
 ## Mais informações
 
