@@ -68,4 +68,14 @@ public sealed class CondicaoDnfInformadaTests
         mensagem.Should().Contain("IGUAL, EM, MAIOR_IGUAL, MENOR_IGUAL, DIFERENTE, NAO_EM");
         mensagem.Should().NotContain("QUASE_IGUAL");
     }
+
+    [Theory(DisplayName = "Criar com operador fora do enum lança, em vez de recusar o pedido")]
+    [InlineData(0)]
+    [InlineData(99)]
+    public void Criar_OperadorForaDoEnum_Lanca(int valor)
+    {
+        Func<Result<CondicaoDnf>> criar = () => CondicaoDnf.Criar("FATO", (Operador)valor, Json("true"));
+
+        criar.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("operador");
+    }
 }

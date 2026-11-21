@@ -59,8 +59,14 @@ public sealed record CondicaoDnf
     /// Cria a condição validando a forma — sem I/O e sem conhecimento do
     /// vocabulário de fatos. Devolve a primeira recusa.
     /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">O operador não é membro do enum, como num cast de inteiro.</exception>
     public static Result<CondicaoDnf> Criar(string fato, Operador operador, JsonElement valor)
     {
+        if (!Enum.IsDefined(operador))
+        {
+            throw new ArgumentOutOfRangeException(nameof(operador), operador, "O operador da condição não é membro do enum de operadores.");
+        }
+
         DomainError? recusa = RecusaDoFato(fato) ?? RecusaDaForma(operador, valor);
 
         return recusa is null

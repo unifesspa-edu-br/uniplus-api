@@ -10,13 +10,17 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 internal sealed record ParametrosDoConceito(NaturezaConceito Natureza, EscalaNumerica? Escala, IReadOnlyList<ValorCategorico> Valores)
 {
     /// <summary>Os parâmetros copiados, ou <see langword="null"/> com as recusas acumuladas em <paramref name="erros"/>.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">A natureza não é membro do enum, como num cast de inteiro.</exception>
     internal static ParametrosDoConceito? Conferir(
         NaturezaConceito natureza, EscalaInformada? escala, IReadOnlyList<ValorCategoricoInformado?>? valores, List<FieldError> erros)
     {
         int errosAntes = erros.Count;
-        ParametrosDoConceito? parametros = natureza == NaturezaConceito.Numerico
-            ? DoNumerico(escala, valores, erros)
-            : DoCategorico(escala, valores, erros);
+        ParametrosDoConceito? parametros = natureza switch
+        {
+            NaturezaConceito.Numerico => DoNumerico(escala, valores, erros),
+            NaturezaConceito.Categorico => DoCategorico(escala, valores, erros),
+            _ => throw new ArgumentOutOfRangeException(nameof(natureza), natureza, "A natureza do conceito não é membro do enum de naturezas."),
+        };
         return erros.Count == errosAntes ? parametros : null;
     }
 

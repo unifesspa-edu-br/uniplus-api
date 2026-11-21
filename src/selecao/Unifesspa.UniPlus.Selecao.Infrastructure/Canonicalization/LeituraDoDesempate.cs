@@ -114,8 +114,8 @@ internal static class LeituraDoDesempate
         return leitor.Falhou ? null : new ParametrosDesempateIdoso(idadeMinima);
     }
 
-    // A forma (fato não vazio, operador reconhecido, valor coerente com o operador) é conferida pela mesma
-    // factory que o caminho de comando usa. O decoder não revalida a semântica, porque o congelamento dos
+    // O operador é reconhecido por `LerOperador`; a forma (fato não vazio, valor coerente com o operador) é conferida
+    // pela mesma factory que o caminho de comando usa. O decoder não revalida a semântica, porque o congelamento dos
     // parâmetros na publicação proíbe reinterpretar um predicado já congelado contra um catálogo que
     // pode ter mudado.
     private static ParametrosCriterioDesempate? LerPredicadoFato(LeitorEnvelope leitor, JsonObject parametros, string path)

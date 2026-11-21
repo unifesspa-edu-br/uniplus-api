@@ -66,6 +66,16 @@ public sealed class ConceitoDaEtapaTests
         Pares(Categorico(AptoEInapto(), new EscalaInformada(0m, 10m, 2))).Should().Equal(("escala", ConceitoDaEtapaErrorCodes.NaturezaIncoerente));
     }
 
+    [Theory(DisplayName = "A natureza fora do enum lança, em vez de recusar como categórica")]
+    [InlineData(0)]
+    [InlineData(99)]
+    public void Criar_NaturezaForaDoEnum_Lanca(int natureza)
+    {
+        Func<Result<ConceitoDaEtapa>> criar = () => ConceitoDaEtapa.Criar("NOTA", "Nota", (NaturezaConceito)natureza, null, null);
+
+        criar.Should().Throw<ArgumentOutOfRangeException>().WithParameterName(nameof(natureza));
+    }
+
     [Theory(DisplayName = "O conceito categórico com menos de dois valores é recusado")]
     [InlineData(0)]
     [InlineData(1)]
