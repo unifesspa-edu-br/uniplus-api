@@ -11,7 +11,7 @@ using CampoDoMembro = (string FatoCodigo, bool TemExibicao, Unifesspa.UniPlus.Re
 /// quantidade de ocorrências. Também diz se o próprio candidato é uma delas, como na composição
 /// familiar.
 /// </summary>
-public sealed record OcorrenciasDoGrupo(int Minimo, int? Maximo, bool IncluiCandidato = false)
+public sealed record OcorrenciasDoGrupo(int Minimo, int? Maximo, bool IncluiCandidato)
 {
     private const string Regra = "O mínimo de ocorrências não é negativo, e o máximo, quando declarado, é ao menos um e não fica abaixo do mínimo.";
 

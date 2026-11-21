@@ -76,7 +76,7 @@ public sealed class ModeloFormularioPersistenceTests
             new ExibicaoEObrigatoriedade(Quando("FORMA_CONCLUSAO", "REGULAR"), Obrigatoriedade.Sempre));
 
     private static GrupoDoModelo GrupoDaComposicaoFamiliar() =>
-        new("COMPOSICAO_FAMILIAR", 2, "ESCOLA", "Composição familiar", new OcorrenciasDoGrupo(1, 10),
+        new("COMPOSICAO_FAMILIAR", 2, "ESCOLA", "Composição familiar", new OcorrenciasDoGrupo(1, 10, IncluiCandidato: false),
             new ExibicaoEObrigatoriedade(Quando("FORMA_CONCLUSAO", "REGULAR"), Obrigatoriedade.Sempre),
         [
             new("PARENTESCO", 0, null,

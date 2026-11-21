@@ -122,7 +122,7 @@ public sealed class ObterFormularioRenderizavelDoModeloQueryHandlerTests
     public async Task Handle_Grupo_ProjetaOsSubcamposNaOrdem()
     {
         GrupoDoModelo familia = new(
-            "FAMILIA", 1, "DADOS", "Composição familiar", new OcorrenciasDoGrupo(1, 3), new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre),
+            "FAMILIA", 1, "DADOS", "Composição familiar", new OcorrenciasDoGrupo(1, 3, IncluiCandidato: false), new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre),
             [Subitem("SEGUNDO", 1), Subitem("PRIMEIRO", 0)]);
 
         FormularioRenderizavel resultado = (await ObterAsync(Modelo(grupos: [familia])))!;

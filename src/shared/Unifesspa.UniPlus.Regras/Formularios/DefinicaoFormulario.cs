@@ -141,16 +141,14 @@ public sealed record DefinicaoGrupo
         int minimo,
         int? maximo,
         IReadOnlyList<DefinicaoItem> subitens,
-        bool incluiCandidato = false)
+        bool incluiCandidato)
     {
         if (Violacao(codigo, minimo, maximo) is { } violacao)
         {
             throw new ArgumentException(violacao, nameof(codigo));
         }
-
         ArgumentNullException.ThrowIfNull(obrigatoriedade);
         ArgumentNullException.ThrowIfNull(subitens);
-
         Codigo = codigo;
         Exibicao = exibicao;
         Obrigatoriedade = obrigatoriedade;
@@ -218,16 +216,13 @@ public sealed record DefinicaoItem
         {
             throw new ArgumentException(violacao, nameof(fatoCodigo));
         }
-
         ArgumentNullException.ThrowIfNull(obrigatoriedade);
         ArgumentNullException.ThrowIfNull(restricoes);
-
         FatoCodigo = fatoCodigo;
         Exibicao = exibicao;
         Obrigatoriedade = obrigatoriedade;
         Restricoes = [.. restricoes];
         Impedimento = impedimento;
-
         formato = ConjuntoBasicoDaInscricao.FormatoDaResposta(fatoCodigo, formato);
         Formato = formato;
         RestricoesDaResposta = formato is null ? Restricoes : [.. Restricoes, new FormatoDeTexto(formato)];

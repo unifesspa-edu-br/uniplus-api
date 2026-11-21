@@ -337,7 +337,7 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
                 null,
                 [new DefinicaoItem(BaixaRenda, null, Obrigatoriedade.Sempre, []), new DefinicaoItem(PediuFator, null, Obrigatoriedade.Sempre, [])],
                 [new DefinicaoGrupo(
-                    Familia, exibicaoDaFamilia, Obrigatoriedade.Sempre, 0, null, [new DefinicaoItem(RendaDoMembro, null, Obrigatoriedade.Sempre, [])])])],
+                    Familia, exibicaoDaFamilia, Obrigatoriedade.Sempre, 0, null, [new DefinicaoItem(RendaDoMembro, null, Obrigatoriedade.Sempre, [])], incluiCandidato: false)])],
             [],
             []);
 

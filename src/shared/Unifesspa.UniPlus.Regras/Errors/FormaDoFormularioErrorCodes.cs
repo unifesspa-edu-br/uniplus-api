@@ -35,6 +35,7 @@ public static class GrupoFormularioErrorCodes
     public const string CodigoInvalido = "GrupoFormulario.CodigoInvalido";
     public const string OrdemInvalida = "GrupoFormulario.OrdemInvalida";
     public const string RotuloInvalido = "GrupoFormulario.RotuloInvalido";
+    public const string OcorrenciasObrigatorias = "GrupoFormulario.OcorrenciasObrigatorias";
     public const string ContagemIncoerente = "GrupoFormulario.ContagemIncoerente";
     public const string SubitensForaDoLimite = "GrupoFormulario.SubitensForaDoLimite";
     public const string RegraAutorreferente = "GrupoFormulario.RegraAutorreferente";

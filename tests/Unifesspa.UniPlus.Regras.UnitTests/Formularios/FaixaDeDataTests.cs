@@ -206,7 +206,7 @@ public class FaixaDeDataNaAvaliacaoTests : TestesDeAvaliacao
             [
                 new DefinicaoEtapa(Etapa, exibicao: null, [],
                     [new DefinicaoGrupo("FAMILIA", null, Obrigatoriedade.Nunca, 0, null,
-                        [new DefinicaoItem("NASCIMENTO_MEMBRO", null, Obrigatoriedade.Sempre, [AteOEnvio])])]),
+                        [new DefinicaoItem("NASCIMENTO_MEMBRO", null, Obrigatoriedade.Sempre, [AteOEnvio])], incluiCandidato: false)]),
             ],
             termos: [],
             derivacoes: []);

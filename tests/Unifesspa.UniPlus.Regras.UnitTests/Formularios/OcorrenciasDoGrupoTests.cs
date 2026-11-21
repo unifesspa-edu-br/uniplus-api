@@ -19,7 +19,7 @@ public sealed class OcorrenciasDoGrupoTests
     [InlineData(0, 0, false)]
     [InlineData(3, 2, false)]
     public void Valida_MinimoEMaximo_ConformeARegra(int minimo, int? maximo, bool esperada) =>
-        new OcorrenciasDoGrupo(minimo, maximo).Valida.Should().Be(esperada);
+        new OcorrenciasDoGrupo(minimo, maximo, IncluiCandidato: false).Valida.Should().Be(esperada);
 
     [Theory(DisplayName = "A recusa aponta o mínimo quando ele é negativo e o máximo quando só o máximo destoa")]
     [InlineData(-1, 3, "minimo")]
@@ -28,7 +28,7 @@ public sealed class OcorrenciasDoGrupoTests
     [InlineData(3, 2, "maximo")]
     public void Conferir_Incoerente_RecusaNoCampoQueDestoa(int minimo, int? maximo, string campo)
     {
-        List<FieldError> erros = [.. new OcorrenciasDoGrupo(minimo, maximo).Conferir()];
+        List<FieldError> erros = [.. new OcorrenciasDoGrupo(minimo, maximo, IncluiCandidato: false).Conferir()];
 
         FieldError erro = erros.Should().ContainSingle().Subject;
         erro.Field.Should().Be(campo);
@@ -40,11 +40,11 @@ public sealed class OcorrenciasDoGrupoTests
     [InlineData(1, 1)]
     [InlineData(0, 5)]
     public void Conferir_Coerente_NaoRecusa(int minimo, int? maximo) =>
-        new OcorrenciasDoGrupo(minimo, maximo).Conferir().Should().BeEmpty();
+        new OcorrenciasDoGrupo(minimo, maximo, IncluiCandidato: false).Conferir().Should().BeEmpty();
 
     [Fact(DisplayName = "O grupo que não inclui o candidato não tem a identificação dele conferida, mesmo sem parentesco")]
     public void ConferirCandidatoComoMembro_SemCandidato_NaoRecusa() =>
-        new OcorrenciasDoGrupo(0, 5).ConferirCandidatoComoMembro([("RENDA", false, Obrigatoriedade.Nunca, [])]).Should().BeEmpty();
+        new OcorrenciasDoGrupo(0, 5, IncluiCandidato: false).ConferirCandidatoComoMembro([("RENDA", false, Obrigatoriedade.Nunca, [])]).Should().BeEmpty();
 
     [Fact(DisplayName = "O grupo que inclui o candidato recusa a falta do parentesco que o identifica")]
     public void ConferirCandidatoComoMembro_ComCandidatoSemParentesco_Recusa()

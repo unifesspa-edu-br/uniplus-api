@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// <summary>A criação do grupo repetível do formulário (UNI-REQ-0146): a forma, o candidato como membro e a finalidade.</summary>
 public sealed class GrupoColetadoTests
 {
-    private static readonly OcorrenciasDoGrupo ZeroACinco = new(0, 5);
+    private static readonly OcorrenciasDoGrupo ZeroACinco = new(0, 5, IncluiCandidato: false);
 
     private static readonly ExibicaoEObrigatoriedade SempreNunca = new(null, Obrigatoriedade.Nunca);
 

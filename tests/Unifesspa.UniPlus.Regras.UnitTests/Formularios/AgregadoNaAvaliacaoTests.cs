@@ -70,7 +70,7 @@ public class AgregadoNaAvaliacaoTests : TestesDeAvaliacao
     private static DefinicaoItem Item(string fato, PredicadoDnf? exibicao = null) => new(fato, exibicao, Obrigatoriedade.Sempre, []);
 
     private static DefinicaoGrupo Grupo(string codigo, PredicadoDnf? exibicao, DefinicaoItem subitem) =>
-        new(codigo, exibicao, Obrigatoriedade.Nunca, 0, null, [subitem]);
+        new(codigo, exibicao, Obrigatoriedade.Nunca, 0, null, [subitem], incluiCandidato: false);
 
     private static OcorrenciaRespondida Ocorrencia(string id, string fato, bool valor) =>
         new(id, new Dictionary<string, JsonElement>(StringComparer.Ordinal) { [fato] = JsonSerializer.SerializeToElement(valor) });

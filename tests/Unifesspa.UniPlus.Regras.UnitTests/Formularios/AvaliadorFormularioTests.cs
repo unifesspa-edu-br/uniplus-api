@@ -488,7 +488,8 @@ public class AvaliadorFormularioTests : TestesDeAvaliacao
             Obrigatoriedade.Sempre,
             minimo: 1,
             maximo: 5,
-            [Item("PARENTESCO")]);
+            [Item("PARENTESCO")],
+            incluiCandidato: false);
         DefinicaoFormulario formulario = new(
             [new DefinicaoEtapa(Etapa, exibicao: null, [Item("CONCORRER_RENDA")], [grupo])], termos: [], derivacoes: []);
 
@@ -502,7 +503,7 @@ public class AvaliadorFormularioTests : TestesDeAvaliacao
     }
 
     private static DefinicaoGrupo Grupo(Obrigatoriedade obrigatoriedade, int minimo, int? maximo, params DefinicaoItem[] subitens) =>
-        new("COMPOSICAO", exibicao: null, obrigatoriedade, minimo, maximo, subitens);
+        new("COMPOSICAO", exibicao: null, obrigatoriedade, minimo, maximo, subitens, incluiCandidato: false);
 
     private static DefinicaoFormulario ComGrupo(DefinicaoGrupo grupo) =>
         new([new DefinicaoEtapa(Etapa, exibicao: null, [], [grupo])], termos: [], derivacoes: []);

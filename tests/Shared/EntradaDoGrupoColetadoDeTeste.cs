@@ -68,7 +68,7 @@ internal sealed record EntradaDoGrupoColetadoDeTeste
         Codigo,
         Ordem,
         Rotulo,
-        TemOcorrencias ? new OcorrenciasDoGrupoInput(Minimo, Maximo, IncluiCandidato) : null,
+        TemOcorrencias ? new OcorrenciasDoGrupoInput(Minimo, IncluiCandidato, Maximo) : null,
         TemRegras ? new ExibicaoEObrigatoriedadeInput(Exibicao, new ObrigatoriedadeInput(TipoDaObrigatoriedade, PredicadoDaObrigatoriedade)) : null,
         Subitens,
         Secao);

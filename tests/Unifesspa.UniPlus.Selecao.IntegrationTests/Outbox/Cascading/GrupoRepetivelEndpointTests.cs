@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
@@ -68,6 +69,33 @@ public sealed class GrupoRepetivelEndpointTests
             .Should().Contain(["grupos[0].rotulo", "grupos[0].ocorrencias.minimo", "grupos[0].subitens", "grupos[0].subitens[0].apresentacao.rotulo"]);
     }
 
+    [Fact(DisplayName = "O grupo sem as ocorrências é recusado com o código novo no mínimo e na inclusão do candidato, acumulado com as demais recusas")]
+    public async Task DefinirItens_GrupoSemOcorrencias_RecusaMinimoEInclusaoJuntoDasDemais()
+    {
+        string campo = await SemearFatoDeMembroAsync();
+        Guid processoId = await SemearProcessoAsync();
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage recusado = await EnviarAsync(
+            client, HttpMethod.Put, $"/api/selecao/admin/processos-seletivos/{processoId}/formularios/INSCRICAO/itens", CorpoComGrupoSemOcorrencias(campo), exigeSucesso: false);
+
+        recusado.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument problema = JsonDocument.Parse(await recusado.Content.ReadAsStringAsync());
+        JsonElement[] erros = [.. problema.RootElement.GetProperty("errors").EnumerateArray()];
+        erros.Select(static e => e.GetProperty("field").GetString()).Should().Contain(
+            ["grupos[0].ocorrencias.minimo", "grupos[0].ocorrencias.incluiCandidato", "grupos[0].rotulo"]);
+        erros.Where(static e => e.GetProperty("field").GetString()!.StartsWith("grupos[0].ocorrencias.", StringComparison.Ordinal))
+            .Should().OnlyContain(static e => e.GetProperty("code").GetString() == "uniplus.grupo_formulario.ocorrencias_obrigatorias");
+    }
+
+    private static object CorpoComGrupoSemOcorrencias(string campo)
+    {
+        object[] subitens = [FormularioDeInscricaoHttp.Item(campo, 0, "Trabalha no campo", "BOOLEANO")];
+        JsonObject grupo = JsonSerializer.SerializeToNode(FormularioDeInscricaoHttp.Grupo("COMPOSICAO_FAMILIAR", 0, "", "DADOS", subitens))!.AsObject();
+        grupo.Remove("ocorrencias");
+        return new { itens = Array.Empty<object>(), grupos = new[] { grupo } };
+    }
+
     private static async Task<JsonDocument> LerProcessoAsync(HttpClient client, Guid processoId)
     {
         using HttpRequestMessage get = Requisicao(HttpMethod.Get, $"/api/selecao/processos-seletivos/{processoId}");
@@ -106,7 +134,7 @@ public sealed class GrupoRepetivelEndpointTests
         return EnviarAsync(client, HttpMethod.Put, $"/api/selecao/admin/processos-seletivos/{processoId}/formularios/INSCRICAO/itens", new
         {
             itens = Array.Empty<object>(),
-            grupos = new[] { FormularioDeInscricaoHttp.Grupo("COMPOSICAO_FAMILIAR", 0, rotulo, "DADOS", subitens, new OcorrenciasDoGrupoInput(minimo, null, true)) },
+            grupos = new[] { FormularioDeInscricaoHttp.Grupo("COMPOSICAO_FAMILIAR", 0, rotulo, "DADOS", subitens, new OcorrenciasDoGrupoInput(minimo, true)) },
         }, exigeSucesso: false);
     }
 
@@ -162,7 +190,7 @@ public sealed class GrupoRepetivelEndpointTests
             grupos = new[]
             {
                 FormularioDeInscricaoHttp.Grupo(
-                    "COMPOSICAO_FAMILIAR", 0, "Composição familiar", "DADOS", [campo], new OcorrenciasDoGrupoInput(1, 10), obrigatoriedade),
+                    "COMPOSICAO_FAMILIAR", 0, "Composição familiar", "DADOS", [campo], new OcorrenciasDoGrupoInput(1, false, 10), obrigatoriedade),
             },
         });
 

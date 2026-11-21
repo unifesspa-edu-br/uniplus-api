@@ -17,16 +17,8 @@ public sealed class GrupoDoFormularioNaEntradaTests
     {
         OcorrenciasDoGrupoInput entrada = EntradaDeRegras.ParaEntrada(new OcorrenciasDoGrupo(1, 5, IncluiCandidato: true));
 
-        entrada.Should().Be(new OcorrenciasDoGrupoInput(1, 5, IncluiCandidato: true));
+        entrada.Should().Be(new OcorrenciasDoGrupoInput(1, IncluiCandidato: true, Maximo: 5));
     }
-
-    [Fact(DisplayName = "As ocorrências ausentes na entrada valem sem mínimo, sem máximo e sem o candidato entre os membros")]
-    public void Ocorrencias_EntradaAusente_ValeOPadrao() =>
-        EntradaDeRegras.Ocorrencias(null).Should().Be(new OcorrenciasDoGrupo(0, null));
-
-    [Fact(DisplayName = "As ocorrências informadas na entrada chegam ao domínio como estão, inclusive as incoerentes, que o domínio recusa")]
-    public void Ocorrencias_EntradaIncoerente_ChegaAoDominio() =>
-        EntradaDeRegras.Ocorrencias(new OcorrenciasDoGrupoInput(3, 2, IncluiCandidato: true)).Should().Be(new OcorrenciasDoGrupo(3, 2, IncluiCandidato: true));
 
     [Fact(DisplayName = "A exibição e a obrigatoriedade do grupo vão à entrada com o token e o predicado da obrigatoriedade")]
     public void ParaEntrada_ExibicaoEObrigatoriedade_LevaTokenEPredicado()

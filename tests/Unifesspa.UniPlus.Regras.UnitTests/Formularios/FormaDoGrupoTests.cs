@@ -56,7 +56,7 @@ public sealed class FormaDoGrupoTests
     [Fact]
     public void Conferir_ViolacoesIndependentes_SaemJuntas()
     {
-        List<FieldError> erros = FormaDoGrupo.Conferir(" ", -1, null, new OcorrenciasDoGrupo(2, 1), [], new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre));
+        List<FieldError> erros = FormaDoGrupo.Conferir(" ", -1, null, new OcorrenciasDoGrupo(2, 1, IncluiCandidato: false), [], new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre));
 
         erros.Select(static e => e.Error.Code).Should().BeEquivalentTo(
         [
@@ -84,7 +84,7 @@ public sealed class FormaDoGrupoTests
             "COMPOSICAO",
             1,
             "Composição familiar",
-            new OcorrenciasDoGrupo(minimo, maximo),
+            new OcorrenciasDoGrupo(minimo, maximo, IncluiCandidato: false),
             subitens ?? [("PARENTESCO", null, false)],
             new ExibicaoEObrigatoriedade(exibicao, obrigatoriedade ?? Obrigatoriedade.Sempre));
 

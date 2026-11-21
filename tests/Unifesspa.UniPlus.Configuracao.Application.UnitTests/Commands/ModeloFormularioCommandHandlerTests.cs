@@ -61,12 +61,29 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
     public async Task Criar_GrupoQueIncluiOCandidatoSemParentesco_Recusa()
     {
         ConteudoDoModeloInput conteudo = ComComposicao(Campo("MAIOR_IDADE", 0));
-        conteudo = conteudo with { Grupos = [conteudo.Grupos![0] with { Ocorrencias = new OcorrenciasDoGrupoInput(1, 10, IncluiCandidato: true) }] };
+        conteudo = conteudo with { Grupos = [conteudo.Grupos![0] with { Ocorrencias = new OcorrenciasDoGrupoInput(1, IncluiCandidato: true, Maximo: 10) }] };
 
         Result<Guid> resultado = await CriarAsync(conteudo);
 
         resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(static e =>
             e.Field == "conteudo.grupos[0].subitens" && e.Error.Code == GrupoFormularioErrorCodes.CandidatoComoMembroIncompleto);
+    }
+
+    [Fact(DisplayName = "Grupo sem as ocorrências é recusado no mínimo e na inclusão do candidato, antes das regras do grupo")]
+    public async Task Criar_GrupoSemOcorrencias_RecusaOMinimoEAInclusaoAntesDasRegras()
+    {
+        Result<Guid> resultado = await CriarAsync(SemOcorrenciasEComObrigatoriedadeInvalida(ComComposicao(Campo("MAIOR_IDADE", 0))));
+
+        resultado.Errors.Select(static e => e.Field).Should().ContainInOrder(
+            "conteudo.grupos[0].ocorrencias.minimo", "conteudo.grupos[0].ocorrencias.incluiCandidato", "conteudo.grupos[0].regras.obrigatoriedade");
+        resultado.Errors.Take(2).Select(static e => e.Error.Code).Should().AllBe(GrupoFormularioErrorCodes.OcorrenciasObrigatorias);
+        await Repository.DidNotReceive().AdicionarAsync(Arg.Any<ModeloFormulario>(), Arg.Any<CancellationToken>());
+    }
+
+    private static ConteudoDoModeloInput SemOcorrenciasEComObrigatoriedadeInvalida(ConteudoDoModeloInput conteudo)
+    {
+        GrupoColetadoInput grupo = conteudo.Grupos![0];
+        return conteudo with { Grupos = [grupo with { Ocorrencias = null, Regras = grupo.Regras! with { Obrigatoriedade = new ObrigatoriedadeInput("INEXISTENTE") } }] };
     }
 
     [Fact(DisplayName = "Campo do grupo com fato do candidato não é coletável na ocorrência")]

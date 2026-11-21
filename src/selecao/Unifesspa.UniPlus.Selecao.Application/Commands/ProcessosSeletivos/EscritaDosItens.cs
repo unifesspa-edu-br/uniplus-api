@@ -39,12 +39,13 @@ internal sealed record RegrasLidasDoGrupo(PredicadoDnf? Exibicao, Obrigatoriedad
 }
 
 /// <summary>
-/// Um grupo lido pela forma, sem leitura externa: a configuração dele, se a forma inteira foi
-/// aceita, os campos lidos como os itens e todas as recusas da leitura, as do grupo e as dos campos.
+/// Um grupo lido pela forma, sem leitura externa: as ocorrências, nulas quando a leitura delas foi recusada, a
+/// configuração dele, se a forma inteira foi aceita, os campos lidos como os itens e todas as recusas da leitura,
+/// as do grupo e as dos campos.
 /// </summary>
 internal sealed record GrupoLido(
     GrupoColetadoInput Entrada,
-    OcorrenciasDoGrupo Ocorrencias,
+    OcorrenciasDoGrupo? Ocorrencias,
     ExibicaoEObrigatoriedade? Configuracao,
     bool FormaValida,
     ItensLidos Campos,
@@ -133,20 +134,21 @@ internal static class EscritaDosItens
 
     private static GrupoLido LerGrupo(GrupoColetadoInput input, string caminho)
     {
+        OcorrenciasLidasDoGrupo ocorrencias = OcorrenciasLidasDoGrupo.Ler(input.Ocorrencias);
         RegrasLidasDoGrupo regras = LerRegrasDoGrupo(input, caminho);
-        OcorrenciasDoGrupo ocorrencias = EntradaDeRegras.Ocorrencias(input.Ocorrencias);
-
-        // A identificação da ocorrência do candidato depende só do mínimo e da forma lida dos
-        // campos, e sai no mesmo lote das demais recusas, mesmo com campo recusado (ADR-0125).
         ItensLidos campos = Ler(input.Subitens ?? [], $"{caminho}.subitens");
-        List<FieldError> erros =
-        [
-            .. regras.Erros,
-            .. ConferirFormaDoGrupo(input, ocorrencias, regras, caminho),
-            .. NoCaminho(ConferirCandidatoComoMembro(ocorrencias, input.Subitens ?? [], campos), caminho),
-        ];
-        return new GrupoLido(input, ocorrencias, regras.Configuracao, erros.Count == 0, campos, [.. erros, .. campos.Erros]);
+        List<FieldError> erros = [.. NoCaminho(ocorrencias.Recusas, caminho), .. regras.Erros, .. RecusasDaFormaDoGrupo(input, ocorrencias, regras, campos, caminho)];
+        return new GrupoLido(input, ocorrencias.Declaradas, regras.Configuracao, erros.Count == 0, campos, [.. erros, .. campos.Erros]);
     }
+
+    // A identificação da ocorrência do candidato depende só da inclusão, do mínimo e da forma lida dos
+    // campos, e sai no mesmo lote das demais recusas, mesmo com campo recusado (ADR-0125).
+    private static IEnumerable<FieldError> RecusasDaFormaDoGrupo(
+        GrupoColetadoInput input, OcorrenciasLidasDoGrupo ocorrencias, RegrasLidasDoGrupo regras, ItensLidos campos, string caminho) =>
+    [
+        .. ConferirFormaDoGrupo(input, ocorrencias.ParaAConferenciaDaForma, regras, caminho),
+        .. NoCaminho(ConferirCandidatoComoMembro(ocorrencias.ParaAConferenciaDaForma, input.Subitens ?? [], campos), caminho),
+    ];
 
     private static RegrasLidasDoGrupo LerRegrasDoGrupo(GrupoColetadoInput input, string caminho)
     {
@@ -204,20 +206,20 @@ internal static class EscritaDosItens
     private static (GrupoColetado? Grupo, List<FieldError> Erros) ResolverGrupo(GrupoLido lido, string caminho, ContextoDoCatalogo contexto)
     {
         (List<FatoColetado> campos, List<FieldError> dosCampos) = Resolver(lido.Campos with { Erros = [] }, contexto, $"{caminho}.subitens", campoDeGrupo: true);
-        if (lido.Configuracao is not { } configuracao)
+        if (lido.Configuracao is not { } configuracao || lido.Ocorrencias is not { } ocorrencias)
         {
             return (null, dosCampos);
         }
 
         List<FieldError> doGrupo = [.. ConferenciaDoItemNoCatalogo.DoGrupo(configuracao, contexto).Select(erro => erro.NoCaminhoDe(caminho))];
         bool recusado = doGrupo.Count > 0 || !lido.FormaValida || dosCampos.Count > 0 || lido.Campos.Erros.Count > 0;
-        return (recusado ? null : CriarGrupo(lido, configuracao, campos), [.. dosCampos, .. doGrupo]);
+        return (recusado ? null : CriarGrupo(lido, ocorrencias, configuracao, campos), [.. dosCampos, .. doGrupo]);
     }
 
     // A forma do grupo e a identificação do candidato já foram conferidas na leitura; a fábrica as
     // repete e devolve o grupo.
-    private static GrupoColetado CriarGrupo(GrupoLido lido, ExibicaoEObrigatoriedade configuracao, List<FatoColetado> campos) =>
-        GrupoColetado.Criar(lido.Entrada.Codigo, lido.Entrada.Ordem, lido.Entrada.EtapaCodigo, lido.Entrada.Rotulo, lido.Ocorrencias, configuracao, campos).Value!;
+    private static GrupoColetado CriarGrupo(GrupoLido lido, OcorrenciasDoGrupo ocorrencias, ExibicaoEObrigatoriedade configuracao, List<FatoColetado> campos) =>
+        GrupoColetado.Criar(lido.Entrada.Codigo, lido.Entrada.Ordem, lido.Entrada.EtapaCodigo, lido.Entrada.Rotulo, ocorrencias, configuracao, campos).Value!;
 
     /// <summary>
     /// Os itens de forma válida conferidos contra o catálogo, com as recusas da forma e da semântica

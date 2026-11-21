@@ -157,8 +157,8 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
         erro.Error.Code.Should().Be(FatoColetadoErrorCodes.ObrigatoriedadeInvalida);
     }
 
-    [Fact(DisplayName = "Grupo sem as ocorrências vale sem mínimo e sem máximo")]
-    public async Task Handle_GrupoSemOcorrencias_ValeSemMinimoENemMaximo()
+    [Fact(DisplayName = "Grupo sem as ocorrências é recusado no mínimo e na inclusão do candidato, e não é criado")]
+    public async Task Handle_GrupoSemOcorrencias_RecusaOMinimoEAInclusao()
     {
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
@@ -166,8 +166,23 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
 
         Result resultado = await HandleAsync(mocks, ComGrupo(processo, grupo));
 
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        processo.GruposColetados.Should().ContainSingle().Which.Ocorrencias.Should().Be(new OcorrenciasDoGrupo(0, null));
+        resultado.Errors.Select(static e => e.Field).Should().Equal("grupos[0].ocorrencias.minimo", "grupos[0].ocorrencias.incluiCandidato");
+        resultado.Errors.Select(static e => e.Error.Code).Should().AllBe(GrupoFormularioErrorCodes.OcorrenciasObrigatorias);
+        processo.GruposColetados.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "As recusas das ocorrências vêm antes das da forma do grupo, na ordem do pedido")]
+    public async Task Handle_GrupoSemOcorrenciasEComCodigoInvalido_RecusasDasOcorrenciasPrimeiro()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        GrupoColetadoInput grupo = Composicao() with { Ocorrencias = null, Codigo = " " };
+
+        Result resultado = await HandleAsync(mocks, ComGrupo(processo, grupo));
+
+        resultado.Errors.Select(static e => e.Field).Should().ContainInOrder(
+            "grupos[0].ocorrencias.minimo", "grupos[0].ocorrencias.incluiCandidato", "grupos[0].codigo");
+        processo.GruposColetados.Should().BeEmpty();
     }
 
     [Fact(DisplayName = "Exibição do grupo que cita fato calculado de atributo do candidato sem dependências declaradas é recusada, como nas demais regras")]
@@ -187,7 +202,7 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
 
     private static GrupoColetadoInput GrupoComVariasRecusas() => ComExibicao(Composicao(), [[Condicao("COR_RACA", "IGUAL", "VERDE")]]) with
     {
-        Ocorrencias = new OcorrenciasDoGrupoInput(5, 2),
+        Ocorrencias = new OcorrenciasDoGrupoInput(5, false, 2),
         Subitens =
         [
             EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").ComRotulo("Baixa renda").Construir(),

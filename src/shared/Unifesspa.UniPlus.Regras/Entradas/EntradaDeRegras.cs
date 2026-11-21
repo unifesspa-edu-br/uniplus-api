@@ -294,15 +294,11 @@ public static class EntradaDeRegras
         return new(ParaEntrada(obrigatoriedade), ParaEntrada(obrigatoriedade.Predicado));
     }
 
-    /// <summary>As ocorrências da entrada; a ausência vale sem mínimo, sem máximo e sem o candidato entre os membros.</summary>
-    public static OcorrenciasDoGrupo Ocorrencias(OcorrenciasDoGrupoInput? entrada) =>
-        entrada is null ? new(0, null) : new(entrada.Minimo, entrada.Maximo, entrada.IncluiCandidato);
-
     /// <summary>As ocorrências na forma da entrada.</summary>
     public static OcorrenciasDoGrupoInput ParaEntrada(OcorrenciasDoGrupo ocorrencias)
     {
         ArgumentNullException.ThrowIfNull(ocorrencias);
-        return new(ocorrencias.Minimo, ocorrencias.Maximo, ocorrencias.IncluiCandidato);
+        return new(ocorrencias.Minimo, ocorrencias.IncluiCandidato, ocorrencias.Maximo);
     }
 
     /// <summary>A exibição e a obrigatoriedade na forma da entrada: a obrigatoriedade leva o token e, quando há, o predicado.</summary>

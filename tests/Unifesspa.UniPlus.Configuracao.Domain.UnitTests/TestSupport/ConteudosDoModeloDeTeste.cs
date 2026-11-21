@@ -24,7 +24,7 @@ internal static class ConteudosDoModeloDeTeste
         new(fato, ordem, "DADOS", new ApresentacaoDoCampo(fato, TipoRenderizacao.Booleano), null, new RegrasDoCampo(exibicao, Obrigatoriedade.Sempre, []));
 
     public static GrupoDoModelo Grupo(string codigo, int ordem = 0, PredicadoDnf? exibicao = null, params ItemDoModelo[] campos) =>
-        new(codigo, ordem, "DADOS", "Grupo", new OcorrenciasDoGrupo(1, 10), new ExibicaoEObrigatoriedade(exibicao, Obrigatoriedade.Sempre), campos);
+        new(codigo, ordem, "DADOS", "Grupo", new OcorrenciasDoGrupo(1, 10, IncluiCandidato: false), new ExibicaoEObrigatoriedade(exibicao, Obrigatoriedade.Sempre), campos);
 
     public static TermoDoModelo Termo(string codigo, int ordem = 0, PredicadoDnf? exibicao = null) =>
         new(codigo, ordem, Guid.NewGuid(), Guid.NewGuid(), new ExibicaoEObrigatoriedade(exibicao, Obrigatoriedade.Sempre));

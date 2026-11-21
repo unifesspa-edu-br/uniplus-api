@@ -109,7 +109,7 @@ public sealed class RecorteDaFinalidadeTests
     }
 
     private static DefinicaoGrupo Grupo(string codigo, string subitem, PredicadoDnf? exibicao = null) =>
-        new(codigo, exibicao, Obrigatoriedade.Nunca, 0, null, [new DefinicaoItem(subitem, null, Obrigatoriedade.Sempre, [])]);
+        new(codigo, exibicao, Obrigatoriedade.Nunca, 0, null, [new DefinicaoItem(subitem, null, Obrigatoriedade.Sempre, [])], incluiCandidato: false);
 
     /// <summary>
     /// A inscrição pergunta o tipo de escola; a habilitação pede o certificado de quem estudou em escola

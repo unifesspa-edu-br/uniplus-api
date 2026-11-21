@@ -256,7 +256,7 @@ public sealed class AvaliacaoDaInscricaoTests
             definicao = new DefinicaoFormulario(
                 [new DefinicaoEtapa(Etapa, null, [.. perguntas.Select(f => new DefinicaoItem(f, null, Obrigatoriedade.Sempre, []))],
                     [new DefinicaoGrupo(GrupoDeMunicipios, soSePedeOFator, Obrigatoriedade.Sempre, 0, 3,
-                        [new DefinicaoItem(MunicipioDoBonus, null, Obrigatoriedade.Sempre, [])])])],
+                        [new DefinicaoItem(MunicipioDoBonus, null, Obrigatoriedade.Sempre, [])], incluiCandidato: false)])],
                 [],
                 derivacoes);
         }

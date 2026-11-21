@@ -127,12 +127,14 @@ internal sealed class LeituraDoConteudo(IReadOnlyDictionary<string, string> form
     private GrupoDoModelo? LerGrupo(GrupoColetadoInput entrada, string campo)
     {
         int recusasAntes = _recusas.Count;
+        OcorrenciasLidasDoGrupo ocorrencias = OcorrenciasLidasDoGrupo.Ler(entrada.Ocorrencias);
+        _recusas.AddRange(ocorrencias.Recusas.Select(recusa => recusa with { Field = $"{campo}.{recusa.Field}" }));
         ExibicaoEObrigatoriedade? regras = LerExibicaoEObrigatoriedade(entrada.Regras, $"{campo}.{GrupoColetadoInput.CaminhoDasRegras}");
         List<ItemDoModelo> subitens = [.. Lista(entrada.Subitens, $"{campo}.subitens", LerItem).Select(static subitem => subitem.Parte)];
         return RecusouDesde(recusasAntes)
             ? null
             : new GrupoDoModelo(
-                entrada.Codigo, entrada.Ordem, entrada.EtapaCodigo, entrada.Rotulo, EntradaDeRegras.Ocorrencias(entrada.Ocorrencias), regras!, subitens);
+                entrada.Codigo, entrada.Ordem, entrada.EtapaCodigo, entrada.Rotulo, ocorrencias.Declaradas!, regras!, subitens);
     }
 
     private ExibicaoEObrigatoriedade? LerExibicaoEObrigatoriedade(ExibicaoEObrigatoriedadeInput? entrada, string campo)

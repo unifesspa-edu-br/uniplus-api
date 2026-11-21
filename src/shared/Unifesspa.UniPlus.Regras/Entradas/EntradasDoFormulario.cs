@@ -126,10 +126,11 @@ public sealed record ImpedimentoInput(IReadOnlyList<IReadOnlyList<CondicaoPrecon
 
 /// <summary>
 /// Quantas ocorrências o grupo repetível admite — o mínimo e, quando declarado, o máximo — e se o próprio
-/// candidato é uma delas, como na composição familiar. O mínimo negativo e o máximo abaixo do mínimo são
-/// recusados pelo domínio.
+/// candidato é uma delas, como na composição familiar. O mínimo e a inclusão do candidato são obrigatórios e,
+/// quando ausentes, chegam ao domínio, que os recusa; o máximo ausente é o grupo sem limite. O mínimo negativo e
+/// o máximo abaixo do mínimo também são recusados pelo domínio.
 /// </summary>
-public sealed record OcorrenciasDoGrupoInput(int Minimo, int? Maximo, bool IncluiCandidato = false);
+public sealed record OcorrenciasDoGrupoInput(int? Minimo, bool? IncluiCandidato, int? Maximo = null);
 
 /// <summary>
 /// Quando um grupo repetível ou um termo aparece e quando é obrigatório: a <see cref="Exibicao"/> condicional,
@@ -144,8 +145,8 @@ public sealed record ExibicaoEObrigatoriedadeInput(
 /// Um grupo repetível do formulário (UNI-REQ-0146): o código, a posição na ordem dos itens, o rótulo, as
 /// <see cref="Ocorrencias"/> admitidas, a exibição e a obrigatoriedade do grupo em <see cref="Regras"/> — na forma
 /// das do item —, os campos de cada ocorrência, cada um na forma do item, com ordem própria dentro do grupo e sem
-/// seção, e a seção do grupo. As ocorrências ausentes valem sem mínimo, sem máximo e sem o candidato entre os
-/// membros; as regras ausentes chegam ao domínio, que recusa a obrigatoriedade que falta.
+/// seção, e a seção do grupo. As ocorrências ausentes são recusadas pelo domínio, como o mínimo e a inclusão
+/// do candidato que faltarem; as regras ausentes chegam ao domínio, que recusa a obrigatoriedade que falta.
 /// </summary>
 public sealed record GrupoColetadoInput(
     string Codigo,

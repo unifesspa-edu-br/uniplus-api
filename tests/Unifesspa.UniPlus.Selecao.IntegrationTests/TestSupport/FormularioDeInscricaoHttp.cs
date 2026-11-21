@@ -62,7 +62,7 @@ internal static class FormularioDeInscricaoHttp
             ordem,
             rotulo,
             etapaCodigo,
-            ocorrencias = ocorrencias ?? new OcorrenciasDoGrupoInput(0, null),
+            ocorrencias = ocorrencias ?? new OcorrenciasDoGrupoInput(0, false),
             regras = new { exibicao = (object?)null, obrigatoriedade = new { tipo = obrigatoriedade } },
             subitens,
         };

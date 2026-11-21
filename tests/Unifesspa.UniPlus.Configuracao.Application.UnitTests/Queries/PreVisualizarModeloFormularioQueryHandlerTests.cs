@@ -185,7 +185,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     public async Task Handle_OcorrenciaSemIdentidade_Recusa()
     {
         GrupoDoModelo familia = new(
-            "COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", new OcorrenciasDoGrupo(0, null),
+            "COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", new OcorrenciasDoGrupo(0, null, IncluiCandidato: false),
             new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Nunca), [Subitem("TRABALHA_NO_CAMPO", 0)]);
         ModeloFormulario modelo = Modelo([Item("CERTIFICADO", 0)], grupos: [familia]);
 
@@ -248,7 +248,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
         PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(valor)).Value!)]).Value!;
 
     private static GrupoDoModelo ComposicaoFamiliar(int minimo, int maximo) => new(
-        "COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", new OcorrenciasDoGrupo(minimo, maximo),
+        "COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", new OcorrenciasDoGrupo(minimo, maximo, IncluiCandidato: false),
         new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre),
         [Subitem("TRABALHA_NO_CAMPO", 0), Subitem("DECLARACAO_RURAL", 1, exibicao: Quando("TRABALHA_NO_CAMPO", true))]);
 

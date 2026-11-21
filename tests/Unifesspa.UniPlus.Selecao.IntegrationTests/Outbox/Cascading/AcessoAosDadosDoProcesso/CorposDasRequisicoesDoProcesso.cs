@@ -56,7 +56,7 @@ internal static class CorposDasRequisicoesDoProcesso
     private static object GrupoDeResponsaveis(string fatoDoGrupo) =>
         FormularioDeInscricaoHttp.Grupo(
             FatosDoCenario.GrupoDeResponsaveis, PrimeiraOrdem + 1, "Responsáveis legais", FormularioDeInscricaoHttp.Secao,
-            [RgDoResponsavel(fatoDoGrupo)], new OcorrenciasDoGrupoInput(0, 3));
+            [RgDoResponsavel(fatoDoGrupo)], new OcorrenciasDoGrupoInput(0, false, 3));
 
     private static object RgDoResponsavel(string fatoDoGrupo) =>
         FormularioDeInscricaoHttp.Item(fatoDoGrupo, 0, "RG do responsável", "TEXTO", "NUNCA");

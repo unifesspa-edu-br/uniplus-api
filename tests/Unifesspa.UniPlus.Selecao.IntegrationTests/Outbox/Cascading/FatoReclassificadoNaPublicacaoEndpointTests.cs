@@ -116,7 +116,7 @@ public sealed class FatoReclassificadoNaPublicacaoEndpointTests
         {
             FormularioDeInscricaoHttp.Grupo(
                 "COMPOSICAO_FAMILIAR", 1, "Composição familiar", FormularioDeTeste.Secao,
-                [FormularioDeInscricaoHttp.Item(campo, 0, "Campo", "BOOLEANO", "NUNCA")], new OcorrenciasDoGrupoInput(0, 10)),
+                [FormularioDeInscricaoHttp.Item(campo, 0, "Campo", "BOOLEANO", "NUNCA")], new OcorrenciasDoGrupoInput(0, false, 10)),
         },
     };
 
