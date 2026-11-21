@@ -16,7 +16,7 @@ internal static class ErrosDoCronograma
         .. HomologacaoDasInscricoesPorOrigem(),
         .. EtapasNoCronograma(),
         .. DeclaracaoDaFase(),
-        .. RecorteDeCompetencia(),
+        .. CandidatosAtendidosDasBancas(),
         .. DeclaracaoDaEtapa(),
         .. FechamentoDoCicloDeRecurso(),
         .. ProdutosETiposDeAto(),
@@ -82,19 +82,19 @@ internal static class ErrosDoCronograma
         new("FaseCronograma.ParecerIndividualSemResultado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.parecer_individual_sem_resultado", "A fase promete parecer individual e não publica nenhum resultado")),
         new("FaseCronograma.FaseCanonicaNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.fase_canonica_nao_encontrada", "Fase canônica não encontrada ou não está mais viva")),
         new("FaseCronograma.TipoBancaNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.tipo_banca_nao_encontrado", "Tipo de banca não encontrado ou não está mais vivo")),
-        new("FaseCronograma.CategoriaDocumentoNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.categoria_documento_nao_encontrada", "Categoria de documento do recorte de competência não encontrada ou não está mais viva")),
+        new("FaseCronograma.CategoriaDocumentoNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.categoria_documento_nao_encontrada", "A categoria de documento dos candidatos atendidos não existe ou está desativada")),
     ];
 
     /// <summary>
-    /// O recorte de competência separa duas bancas do mesmo tipo na mesma fase. Onde o tipo já identifica sozinho, o recorte é
-    /// dispensável, e por isso a obrigatoriedade só existe no arranjo ambíguo. Recortes iguais entre duas dessas bancas caem na
-    /// recusa irmã: cumprem a letra da exigência sem distinguir nada.
+    /// Os candidatos atendidos separam duas bancas do mesmo tipo na mesma fase. Onde o tipo já identifica sozinho, declará-los é
+    /// dispensável, e por isso a obrigatoriedade só existe no arranjo ambíguo. Candidatos atendidos iguais entre duas dessas bancas
+    /// caem na recusa irmã: cumprem a letra da exigência sem distinguir nada.
     /// </summary>
-    private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> RecorteDeCompetencia() =>
+    private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> CandidatosAtendidosDasBancas() =>
     [
-        new("BancaRequerida.CategoriaDuplicadaNoRecorte", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.banca_requerida.categoria_duplicada_no_recorte", "A banca declara a mesma categoria de documento mais de uma vez no recorte de competência")),
-        new("BancaRequerida.RecorteDeCompetenciaObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.banca_requerida.recorte_de_competencia_obrigatorio", "A fase requer mais de uma banca do mesmo tipo e cada uma precisa declarar as categorias de documento que julga")),
-        new("BancaRequerida.RecorteDeCompetenciaDuplicado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.banca_requerida.recorte_de_competencia_duplicado", "Duas bancas do mesmo tipo na mesma fase declaram o mesmo recorte de competência")),
+        new("BancaRequerida.CategoriaRepetidaNosCandidatosAtendidos", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.banca_requerida.categoria_repetida_nos_candidatos_atendidos", "A banca repete uma categoria de documento nos candidatos atendidos")),
+        new("BancaRequerida.CandidatosAtendidosObrigatorios", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.banca_requerida.candidatos_atendidos_obrigatorios", "Bancas do mesmo tipo: umas definem os candidatos atendidos e outra não")),
+        new("BancaRequerida.CandidatosAtendidosDuplicados", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.banca_requerida.candidatos_atendidos_duplicados", "Duas bancas do mesmo tipo na mesma fase atendem os mesmos candidatos")),
     ];
 
     /// <summary>

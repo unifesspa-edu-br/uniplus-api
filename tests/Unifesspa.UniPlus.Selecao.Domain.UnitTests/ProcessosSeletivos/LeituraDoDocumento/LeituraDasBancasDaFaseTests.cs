@@ -18,14 +18,14 @@ public sealed class LeituraDasBancasDaFaseTests
 {
     private static FaseNoDocumento ComBancas(params BancaNoDocumento[] bancas) => Fase(0, "recurso", "RECURSO") with { Bancas = bancas };
 
-    [Fact(DisplayName = "A banca com tipo e categorias do cadastro entra na fase com o tipo e o recorte de competência")]
+    [Fact(DisplayName = "A banca com tipo e categorias do cadastro entra na fase com o tipo e os candidatos atendidos")]
     public void Banca_ComCadastros_EntraNaFase()
     {
         IdentificacaoECronogramaLidos lidos = Ler(Documento(ComBancas(Banca(0, "banca-recursos", "ANALISE_RECURSOS", ["IDENTIDADE"]))));
 
         BancaRequerida banca = lidos.Cronograma.CronogramaFases.Single().BancasRequeridas.Single();
         banca.Codigo.Should().Be("ANALISE_RECURSOS");
-        banca.RecorteDeCompetencia.Should().ContainSingle();
+        banca.CandidatosAtendidos.Should().ContainSingle();
         lidos.Origem.PartesRecusadas.Should().BeEmpty();
     }
 
@@ -39,7 +39,7 @@ public sealed class LeituraDasBancasDaFaseTests
         Mensagens(lidos).Should().NotContain(mensagem => mensagem.Contains("DIGITADO", StringComparison.Ordinal));
     }
 
-    [Fact(DisplayName = "A categoria que o cadastro não tem aponta a posição dela no recorte da banca")]
+    [Fact(DisplayName = "A categoria que o cadastro não tem aponta a posição dela nos candidatos atendidos da banca")]
     public void Banca_CategoriaInexistente_ApontaAPosicaoDaCategoria()
     {
         IdentificacaoECronogramaLidos lidos = Ler(Documento(ComBancas(Banca(0, "banca-recursos", "ANALISE_RECURSOS", ["IDENTIDADE", "CATEGORIA-DIGITADA"], null))));

@@ -40,14 +40,14 @@ public sealed class ItensDaFaseNoCronogramaTests
         Cronograma(ancoraErrada).ItemDaAncoraDoRecurso().Ok.Should().BeFalse();
     }
 
-    [Fact(DisplayName = "O recorte de competência fica vermelho quando duas bancas do mesmo código não se distinguem")]
-    public void ItemDoRecorteDeCompetencia_BancasIndistinguiveis_FicaVermelho()
+    [Fact(DisplayName = "Os candidatos atendidos ficam vermelhos quando duas bancas do mesmo código não se distinguem")]
+    public void ItemDosCandidatosAtendidos_BancasIndistinguiveis_FicaVermelho()
     {
         FaseDeclarada indistinguiveis = new ModeloDeFase("ANALISE", 1) { Bancas = [Banca("DOCUMENTAL"), Banca("DOCUMENTAL")] }.Declarar();
         FaseDeclarada distintas = new ModeloDeFase("ANALISE", 1) { Bancas = [Banca("DOCUMENTAL", "RENDA"), Banca("DOCUMENTAL", "ETNICO_RACIAL")] }.Declarar();
 
-        Cronograma(indistinguiveis).ItemDoRecorteDeCompetencia().Ok.Should().BeFalse();
-        Cronograma(distintas).ItemDoRecorteDeCompetencia().Should().Match<ItemConformidade>(
-            static item => item.Ok && item.Codigo == "cronograma_recorte_de_competencia_das_bancas");
+        Cronograma(indistinguiveis).ItemDosCandidatosAtendidos().Ok.Should().BeFalse();
+        Cronograma(distintas).ItemDosCandidatosAtendidos().Should().Match<ItemConformidade>(
+            static item => item.Ok && item.Codigo == "cronograma_candidatos_atendidos_das_bancas");
     }
 }

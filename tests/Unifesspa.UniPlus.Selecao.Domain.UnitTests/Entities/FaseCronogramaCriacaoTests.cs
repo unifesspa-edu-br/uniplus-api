@@ -22,7 +22,7 @@ public sealed class FaseCronogramaCriacaoTests
 {
     // ── Criar: ordem das recusas acumuladas ──
 
-    private static Result<FaseCronograma> FaseComJanelaInvertidaEPublicacoesERecorteRecusados() => Criar(new()
+    private static Result<FaseCronograma> FaseComJanelaInvertidaEPublicacoesECandidatosAtendidosRecusados() => Criar(new()
     {
         Inicio = InicioDaJanela.AddDays(2),
         Fim = InicioDaJanela,
@@ -32,21 +32,21 @@ public sealed class FaseCronogramaCriacaoTests
         Bancas = [Banca("BANCA_ANALISE_DOCUMENTAL"), Banca("BANCA_ANALISE_DOCUMENTAL")],
     });
 
-    [Fact(DisplayName = "As recusas acumuladas seguem a ordem: janela, publicações, âncora do recurso e recorte")]
-    public void Criar_VariasRecusas_SeguemAOrdemDaJanelaPublicacoesAncoraERecorte()
+    [Fact(DisplayName = "As recusas acumuladas seguem a ordem: janela, publicações, âncora do recurso e candidatos atendidos")]
+    public void Criar_VariasRecusas_SeguemAOrdemDaJanelaPublicacoesAncoraECandidatosAtendidos()
     {
-        Result<FaseCronograma> resultado = FaseComJanelaInvertidaEPublicacoesERecorteRecusados();
+        Result<FaseCronograma> resultado = FaseComJanelaInvertidaEPublicacoesECandidatosAtendidosRecusados();
 
         Recusas(resultado).Should().Equal(
             ("fim", "FaseCronograma.JanelaInvertida"),
             ("produtos[1]", "FaseCronograma.AtoDuplicadoNaFase"),
             ("emiteParecerIndividual", "FaseCronograma.ParecerIndividualSemResultado"),
             ("produtos", "RegraRecursoFase.FaseSemProdutoPreliminar"),
-            ("bancasRequeridas[0].categoriasDocumentoIds", "BancaRequerida.RecorteDeCompetenciaObrigatorio"),
-            ("bancasRequeridas[1].categoriasDocumentoIds", "BancaRequerida.RecorteDeCompetenciaObrigatorio"));
+            ("bancasRequeridas[0].categoriasDocumentoIds", "BancaRequerida.CandidatosAtendidosObrigatorios"),
+            ("bancasRequeridas[1].categoriasDocumentoIds", "BancaRequerida.CandidatosAtendidosObrigatorios"));
     }
 
-    [Fact(DisplayName = "A janela obrigatória antecede a âncora, e a categoria repetida no recorte antecede o recorte duplicado")]
+    [Fact(DisplayName = "A janela obrigatória antecede a âncora, e a categoria repetida nos candidatos atendidos antecede os candidatos atendidos duplicados")]
     public void Criar_JanelaObrigatoriaAncoraECategoriaRepetida_SeguemAOrdem()
     {
         Result<FaseCronograma> resultado = Criar(new()
@@ -60,8 +60,8 @@ public sealed class FaseCronogramaCriacaoTests
         Recusas(resultado).Should().Equal(
             (null, "FaseCronograma.JanelaObrigatoriaEmDataNoEdital"),
             ("regraRecurso.atoAncoraCodigo", "RegraRecursoFase.AncoraNaoEhProdutoPreliminarDaFase"),
-            ("bancasRequeridas[2].categoriasDocumentoIds", "BancaRequerida.CategoriaDuplicadaNoRecorte"),
-            ("bancasRequeridas[1].categoriasDocumentoIds", "BancaRequerida.RecorteDeCompetenciaDuplicado"));
+            ("bancasRequeridas[2].categoriasDocumentoIds", "BancaRequerida.CategoriaRepetidaNosCandidatosAtendidos"),
+            ("bancasRequeridas[1].categoriasDocumentoIds", "BancaRequerida.CandidatosAtendidosDuplicados"));
     }
 
     [Fact(DisplayName = "O par repetido A, B, A recusa só o terceiro produto, e o primeiro A segue valendo")]
@@ -90,10 +90,10 @@ public sealed class FaseCronogramaCriacaoTests
         resultado.Errors[1].Error.Message.Should().Contain("'ATO_A'");
     }
 
-    [Fact(DisplayName = "A fábrica recusa o recorte de competência na banca de análise de recursos, no campo do recorte")]
-    public void Criar_BancaDeRecursosComRecorte_RecusaORecorte() =>
+    [Fact(DisplayName = "A fábrica recusa os candidatos atendidos na banca de análise de recursos, no campo dos candidatos atendidos")]
+    public void Criar_BancaDeRecursosComCandidatosAtendidos_RecusaOsCandidatosAtendidos() =>
         Recusas(Criar(new() { Bancas = [Banca(TipoBancaCodigo.AnaliseDeRecursos, "RENDA")] })).Should().Equal(
-            ("bancasRequeridas[0].categoriasDocumentoIds", "Banca.RecorteEmBancaDeRecursos"));
+            ("bancasRequeridas[0].categoriasDocumentoIds", "Banca.CandidatosAtendidosEmBancaDeRecursos"));
 
     // ── FinalidadesQueAtende ──
 

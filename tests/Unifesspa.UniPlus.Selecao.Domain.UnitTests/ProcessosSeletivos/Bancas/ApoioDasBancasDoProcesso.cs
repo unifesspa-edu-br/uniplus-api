@@ -75,7 +75,7 @@ internal static class ApoioDasBancasDoProcesso
 
     internal static DomainError? Pendencia(ProcessoSeletivo processo, CorretoresDasEtapas? corretores = null) =>
         ConferenciaDasBancas.ConferirRecursosSemBanca(CronogramaDoProcesso.Do(processo.CronogramaFases), EtapasDoProcesso.Das(processo.Etapas))
-            .Concat(CronogramaDoProcesso.Do(processo.CronogramaFases).RecusasDasDeclaracoes(ExigenciaDeBancaDeRecurso.CodigosDoRecorte))
+            .Concat(CronogramaDoProcesso.Do(processo.CronogramaFases).RecusasDasDeclaracoes(ExigenciaDeBancaDeRecurso.CodigosDosCandidatosAtendidos))
             .Concat(ConferenciaDasBancas.ConferirRegrasDeDeliberacao(CronogramaDoProcesso.Do(processo.CronogramaFases), EtapasDoProcesso.Das(processo.Etapas)))
             .Concat(Minimo(processo, corretores ?? CorretoresDeTeste.SemConsolidacao))
             .Select(static causa => causa.Error)

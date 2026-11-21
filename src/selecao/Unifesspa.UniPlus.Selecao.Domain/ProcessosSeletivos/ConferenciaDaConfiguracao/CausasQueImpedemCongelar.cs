@@ -90,7 +90,7 @@ internal static class CausasQueImpedemCongelar
     private static IEnumerable<FieldError> Recursos(ConfiguracaoDeclarada configuracao) =>
         PendenciasDosProcedimentosDeRecurso.CausasDosProcedimentosDeRecurso(configuracao);
 
-    // O recorte de competência é recusa da declaração da banca e já saiu junto das declarações.
+    // Os candidatos atendidos são recusa da declaração da banca e já saem junto das declarações.
     private static IEnumerable<FieldError> Bancas(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, CorretoresDasEtapas corretores) =>
     [
         .. ConferenciaDasBancas.ConferirRecursosSemBanca(cronograma, etapas),

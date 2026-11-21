@@ -160,7 +160,7 @@ public static class SelecaoCodegenRegistration
         // da Organização Institucional (ADR-0056). O resolvedor é interno à infraestrutura.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IResolvedorDaUnidadeResponsavel>();
 
-        // Recorte de competência da banca requerida: a categoria de documento que cada
+        // Candidatos atendidos da banca requerida: a categoria de documento que cada
         // banca julga é snapshot-copy do cadastro de Configuração. Mesmo motivo dos demais
         // readers cross-módulo acima — o concreto é internal a Configuracao.Infrastructure.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<ICategoriaDocumentoReader>();

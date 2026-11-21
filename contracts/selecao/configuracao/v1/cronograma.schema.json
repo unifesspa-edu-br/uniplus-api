@@ -86,7 +86,7 @@
         },
         "bancasRequeridas": {
           "title": "Bancas requeridas",
-          "description": "Bancas que a fase exige. Cada uma tem uma chave local, porque o mesmo tipo de banca pode aparecer mais de uma vez com recortes diferentes.",
+          "description": "Bancas que a fase exige. Cada uma tem uma chave local, porque o mesmo tipo de banca pode aparecer mais de uma vez com candidatos atendidos diferentes.",
           "type": "array",
           "items": {
             "$ref": "bancas.schema.json"

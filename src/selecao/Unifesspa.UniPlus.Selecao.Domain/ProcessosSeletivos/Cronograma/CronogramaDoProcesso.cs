@@ -89,8 +89,8 @@ public sealed record CronogramaDoProcesso
     }
 
     /// <summary>
-    /// O item de que as declarações das fases não têm recusa fora das que já têm item próprio (âncora do recurso, recorte de
-    /// competência e recorte na banca de recursos): a conferência da configuração recusa toda declaração, e o painel mostra o que sobra aqui.
+    /// O item de que as declarações das fases não têm recusa fora das que já têm item próprio (âncora do recurso, candidatos
+    /// atendidos das bancas e candidatos atendidos na banca de recursos): a conferência da configuração recusa toda declaração, e o painel mostra o que sobra aqui.
     /// </summary>
     public ItemConformidade ItemDasDeclaracoes() => new(
         "cronograma_fases_declaradas",
@@ -209,10 +209,10 @@ public sealed record CronogramaDoProcesso
         "Cronograma: o prazo da regra de recurso começa na publicação de um produto preliminar da própria fase",
         AncoraDoRecursoDaFase.Codigos);
 
-    public ItemConformidade ItemDoRecorteDeCompetencia() => ItemSemRecusa(
-        "cronograma_recorte_de_competencia_das_bancas",
-        "Cronograma: bancas do mesmo tipo na mesma fase declaram recortes de competência distintos",
-        RecorteDeCompetenciaDasBancas.Codigos);
+    public ItemConformidade ItemDosCandidatosAtendidos() => ItemSemRecusa(
+        "cronograma_candidatos_atendidos_das_bancas",
+        "Cronograma: bancas do mesmo tipo na mesma fase declaram candidatos atendidos distintos",
+        CandidatosAtendidosPelasBancas.Codigos);
 
     public IReadOnlyList<ItemConformidade> ItensDaCompletude(TimeZoneInfo? fuso) => CompletudeDoCronograma.Itens(this, fuso);
 
@@ -249,7 +249,7 @@ public sealed record CronogramaDoProcesso
     private static bool TemOCodigo(FaseDeclarada fase, string codigo) => string.Equals(fase.Codigo, codigo, StringComparison.Ordinal);
 
     private static readonly IReadOnlySet<string> CodigosComItemProprio = new HashSet<string>(
-        [.. AncoraDoRecursoDaFase.Codigos, .. RecorteDeCompetenciaDasBancas.Codigos, .. ExigenciaDeBancaDeRecurso.CodigosDoRecorte],
+        [.. AncoraDoRecursoDaFase.Codigos, .. CandidatosAtendidosPelasBancas.Codigos, .. ExigenciaDeBancaDeRecurso.CodigosDosCandidatosAtendidos],
         StringComparer.Ordinal);
 
     private ItemConformidade ItemSemRecusa(string codigo, string mensagem, IReadOnlySet<string> codigosDeRecusa) =>

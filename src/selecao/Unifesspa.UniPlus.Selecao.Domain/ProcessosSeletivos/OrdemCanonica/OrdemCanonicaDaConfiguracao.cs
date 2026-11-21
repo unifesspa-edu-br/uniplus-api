@@ -99,7 +99,7 @@ public static class OrdemCanonicaDaConfiguracao
     }
 
     /// <summary>As categorias que a banca julga, pelo código.</summary>
-    public static IOrderedEnumerable<CategoriaJulgada> RecorteDeCompetencia(IEnumerable<CategoriaJulgada> categorias)
+    public static IOrderedEnumerable<CategoriaJulgada> CandidatosAtendidos(IEnumerable<CategoriaJulgada> categorias)
     {
         ArgumentNullException.ThrowIfNull(categorias);
 

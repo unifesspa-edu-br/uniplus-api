@@ -66,17 +66,17 @@ public sealed class FaseDeclaradaTests
         fase.Ordem.Should().Be(1);
     }
 
-    [Fact(DisplayName = "Banca de análise de recursos com recorte é recusada no campo do recorte da banca")]
-    public void Declarar_RecorteEmBancaDeRecursos_RecusaNoRecorte()
+    [Fact(DisplayName = "Banca de análise de recursos com candidatos atendidos é recusada no campo dos candidatos atendidos da banca")]
+    public void Declarar_CandidatosAtendidosEmBancaDeRecursos_RecusaNosCandidatosAtendidos()
     {
-        BancaRequerida comRecorte = BancaRequerida.Criar(
+        BancaRequerida comCandidatosAtendidos = BancaRequerida.Criar(
             Guid.CreateVersion7(), TipoBancaCodigo.AnaliseDeRecursos, "Banca de análise de recursos",
             [CategoriaJulgada.Criar(Guid.CreateVersion7(), "RENDA")]);
-        ModeloDeFase modelo = new("RECURSO", 1) { Bancas = [comRecorte] };
+        ModeloDeFase modelo = new("RECURSO", 1) { Bancas = [comCandidatosAtendidos] };
 
         FaseDeclarada fase = modelo.Declarar();
 
-        Recusas(fase).Should().Equal(("bancasRequeridas[0].categoriasDocumentoIds", "Banca.RecorteEmBancaDeRecursos"));
+        Recusas(fase).Should().Equal(("bancasRequeridas[0].categoriasDocumentoIds", "Banca.CandidatosAtendidosEmBancaDeRecursos"));
         fase.Recusas[0].Error.Message.Should().Contain("'RECURSO'");
     }
 

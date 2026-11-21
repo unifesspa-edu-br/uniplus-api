@@ -13,60 +13,60 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// O recorte de competência das bancas requeridas por uma fase, contra Postgres real.
+/// Os candidatos atendidos das bancas requeridas por uma fase, contra Postgres real.
 /// </summary>
 /// <remarks>
 /// O teste precisa de banco por duas razões independentes: a reposição do cronograma
-/// substitui a banca inteira, e é no <c>SaveChanges</c> que se vê se o recorte da banca que
-/// saiu foi removido em cascata em vez de sobrar como linha órfã; e
+/// substitui a banca inteira, e é no <c>SaveChanges</c> que se vê se os candidatos atendidos da banca que
+/// saiu foram removidos em cascata em vez de sobrarem como linhas órfãs; e
 /// <c>ux_categorias_julgadas_codigo</c> só existe no schema — em memória, a mesma categoria
 /// declarada duas vezes na mesma banca passaria sem ninguém perceber.
 /// </remarks>
-public sealed class RecorteDeCompetenciaPersistenciaTests : IClassFixture<ProcessoSeletivoDbFixture>
+public sealed class CandidatosAtendidosPersistenciaTests : IClassFixture<ProcessoSeletivoDbFixture>
 {
     private readonly ProcessoSeletivoDbFixture _fixture;
 
-    public RecorteDeCompetenciaPersistenciaTests(ProcessoSeletivoDbFixture fixture) =>
+    public CandidatosAtendidosPersistenciaTests(ProcessoSeletivoDbFixture fixture) =>
         _fixture = fixture;
 
-    [Fact(DisplayName = "Duas bancas do mesmo tipo com recortes distintos sobrevivem ao banco como linhas distinguíveis")]
-    public async Task DefinirCronograma_DuasBancasDoMesmoTipo_PersisteCadaRecorte()
+    [Fact(DisplayName = "Duas bancas do mesmo tipo com candidatos atendidos distintos sobrevivem ao banco como linhas distinguíveis")]
+    public async Task DefinirCronograma_DuasBancasDoMesmoTipo_PersisteOsCandidatosAtendidosDeCada()
     {
         Guid tipoUnico = Guid.CreateVersion7();
         Guid processoId = await GravarAsync(
-            "PS recorte", Guid.CreateVersion7(), BancaComRecorte(tipoUnico, "RENDA"), BancaComRecorte(tipoUnico, "ETNICO_RACIAL"));
+            "PS candidatos atendidos", Guid.CreateVersion7(), BancaComCandidatosAtendidos(tipoUnico, "RENDA"), BancaComCandidatosAtendidos(tipoUnico, "ETNICO_RACIAL"));
 
         await using UniPlusDbContext db = _fixture.CreateDbContext();
         IReadOnlyCollection<BancaRequerida> bancas = (await CarregarAsync(db, processoId)).CronogramaFases.Single().BancasRequeridas;
 
         bancas.Should().OnlyContain(b => b.Codigo == "BANCA_ANALISE_DOCUMENTAL" && b.TipoBancaOrigemId == tipoUnico);
-        ConferirQueCadaBancaGuardaOProprioRecorte(bancas);
+        ConferirQueCadaBancaGuardaOsPropriosCandidatosAtendidos(bancas);
     }
 
-    private static void ConferirQueCadaBancaGuardaOProprioRecorte(IReadOnlyCollection<BancaRequerida> bancas)
+    private static void ConferirQueCadaBancaGuardaOsPropriosCandidatosAtendidos(IReadOnlyCollection<BancaRequerida> bancas)
     {
         bancas.Should().HaveCount(2);
-        bancas.SelectMany(b => b.RecorteDeCompetencia).Select(c => c.Codigo)
+        bancas.SelectMany(b => b.CandidatosAtendidos).Select(c => c.Codigo)
             .Should().BeEquivalentTo(["RENDA", "ETNICO_RACIAL"],
-                "cada banca guarda o próprio recorte — é ele que separa uma da outra no snapshot publicado");
-        bancas.SelectMany(b => b.RecorteDeCompetencia)
+                "cada banca guarda os próprios candidatos atendidos — são eles que separam uma da outra no snapshot publicado");
+        bancas.SelectMany(b => b.CandidatosAtendidos)
             .Should().OnlyContain(c => c.BancaRequeridaId != Guid.Empty);
     }
 
-    [Fact(DisplayName = "Regravar o cronograma repõe o recorte sem deixar categoria órfã da banca que saiu")]
-    public async Task RedefinirCronograma_OutroRecorte_SubstituiSemDeixarOrfa()
+    [Fact(DisplayName = "Regravar o cronograma repõe os candidatos atendidos sem deixar categoria órfã da banca que saiu")]
+    public async Task RedefinirCronograma_OutrosCandidatosAtendidos_SubstituiSemDeixarOrfa()
     {
         Guid faseCanonicaOrigemId = Guid.CreateVersion7();
         Guid tipoBanca = Guid.CreateVersion7();
-        Guid processoId = await GravarAsync("PS recorte reposto", faseCanonicaOrigemId, BancaComRecorte(tipoBanca, "RENDA"));
+        Guid processoId = await GravarAsync("PS candidatos atendidos reposto", faseCanonicaOrigemId, BancaComCandidatosAtendidos(tipoBanca, "RENDA"));
 
-        await RedefinirAsync(processoId, faseCanonicaOrigemId, BancaComRecorte(tipoBanca, "ESCOLARIDADE"));
+        await RedefinirAsync(processoId, faseCanonicaOrigemId, BancaComCandidatosAtendidos(tipoBanca, "ESCOLARIDADE"));
 
         await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
         processo.CronogramaFases.Single().BancasRequeridas.Single()
-            .RecorteDeCompetencia.Should().ContainSingle()
+            .CandidatosAtendidos.Should().ContainSingle()
             .Which.Codigo.Should().Be("ESCOLARIDADE");
         await ConferirQueNenhumaCategoriaFicouOrfaAsync(db);
     }
@@ -74,7 +74,7 @@ public sealed class RecorteDeCompetenciaPersistenciaTests : IClassFixture<Proces
     [Fact(DisplayName = "O índice único recusa a mesma categoria duas vezes na mesma banca, via SQL cru")]
     public async Task IndiceUnico_MesmaCategoriaDuasVezesNaMesmaBanca_Recusa()
     {
-        Guid processoId = await GravarAsync("PS recorte unico", Guid.CreateVersion7(), BancaComRecorte(Guid.CreateVersion7(), "RENDA"));
+        Guid processoId = await GravarAsync("PS candidatos atendidos unico", Guid.CreateVersion7(), BancaComCandidatosAtendidos(Guid.CreateVersion7(), "RENDA"));
 
         await using UniPlusDbContext direto = _fixture.CreateDbContext();
         Guid bancaId = (await CarregarAsync(direto, processoId)).CronogramaFases.Single().BancasRequeridas.Single().Id;
@@ -90,7 +90,7 @@ public sealed class RecorteDeCompetenciaPersistenciaTests : IClassFixture<Proces
         violacao.ConstraintName.Should().Be("ux_categorias_julgadas_codigo");
     }
 
-    // A banca antiga foi removida com a reposição; o recorte dela não pode
+    // A banca antiga foi removida com a reposição; os candidatos atendidos dela não podem
     // sobreviver ao pai, ou o certame passaria a declarar competência de uma banca
     // que ninguém mais requer.
     private static async Task ConferirQueNenhumaCategoriaFicouOrfaAsync(UniPlusDbContext db)
@@ -100,7 +100,7 @@ public sealed class RecorteDeCompetenciaPersistenciaTests : IClassFixture<Proces
             .Should().Be(0, "nenhuma categoria julgada sobrevive à banca que a declarou");
     }
 
-    private static BancaRequerida BancaComRecorte(Guid tipoBanca, string categoriaCodigo) =>
+    private static BancaRequerida BancaComCandidatosAtendidos(Guid tipoBanca, string categoriaCodigo) =>
         BancaRequerida.Criar(
             tipoBanca,
             "BANCA_ANALISE_DOCUMENTAL",
@@ -144,7 +144,7 @@ public sealed class RecorteDeCompetenciaPersistenciaTests : IClassFixture<Proces
     private static async Task<ProcessoSeletivo> CarregarAsync(UniPlusDbContext db, Guid processoId) =>
         await db.ProcessosSeletivos
             .Include(p => p.CronogramaFases).ThenInclude(f => f.Produtos)
-            .Include(p => p.CronogramaFases).ThenInclude(f => f.BancasRequeridas).ThenInclude(b => b.RecorteDeCompetencia)
+            .Include(p => p.CronogramaFases).ThenInclude(f => f.BancasRequeridas).ThenInclude(b => b.CandidatosAtendidos)
             .AsSplitQuery()
             .FirstAsync(p => p.Id == processoId);
 }

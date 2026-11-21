@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.Selecao.Application.Services.DocumentoDaConfiguracao;
 /// <remarks>
 /// Nenhuma passada pura antecede os cadastros: os tipos de decisão são conferidos pelo domínio, na fábrica da fase,
 /// junto das demais violações dela. A data de origem é cópia da fase canônica, o papel de cada produto depende do
-/// catálogo de tipos de ato e o recorte de competência da banca depende do cadastro de categorias, e por isso as
+/// catálogo de tipos de ato e os candidatos atendidos pela banca dependem do cadastro de categorias, e por isso as
 /// recusas de produto e as da fábrica da fase acumulam por fase, e a recusa do domínio sai como lote, com o campo de
 /// cada violação. A regra de recurso e a regra de homologação recusadas também acumulam, sem impedir as demais partes
 /// nem as demais fases. Os insumos que faltam inteiro interrompem a montagem, levando junto o que já foi

@@ -12837,7 +12837,7 @@
           "codigo",
           "nome",
           "regraDeDeliberacao",
-          "recorteDeCompetencia"
+          "candidatosAtendidos"
         ],
         "type": "object",
         "properties": {
@@ -12865,7 +12865,7 @@
               }
             ]
           },
-          "recorteDeCompetencia": {
+          "candidatosAtendidos": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/CategoriaJulgadaDto"
@@ -15636,7 +15636,7 @@
       },
       "DocumentoDaConfiguracaoBancas": {
         "title": "Banca requerida",
-        "description": "Uma banca que a fase exige: o tipo dela, o recorte de compet\u00EAncia e a regra de delibera\u00E7\u00E3o.",
+        "description": "Uma banca que a fase exige: o tipo dela, os candidatos atendidos e a regra de delibera\u00E7\u00E3o.",
         "type": "object",
         "additionalProperties": false,
         "required": [
@@ -15658,8 +15658,8 @@
             "maxLength": 60
           },
           "categoriasDocumentoCodigos": {
-            "title": "Recorte de compet\u00EAncia",
-            "description": "C\u00F3digos das categorias de documento que a banca analisa. Lista vazia quando a banca n\u00E3o \u00E9 recortada por categoria.",
+            "title": "Candidatos atendidos",
+            "description": "C\u00F3digos das categorias de documento que a banca analisa. Lista vazia quando a banca n\u00E3o define candidatos atendidos por categoria.",
             "type": "array",
             "uniqueItems": true,
             "items": {
@@ -16456,7 +16456,7 @@
           },
           "bancasRequeridas": {
             "title": "Bancas requeridas",
-            "description": "Bancas que a fase exige. Cada uma tem uma chave local, porque o mesmo tipo de banca pode aparecer mais de uma vez com recortes diferentes.",
+            "description": "Bancas que a fase exige. Cada uma tem uma chave local, porque o mesmo tipo de banca pode aparecer mais de uma vez com candidatos atendidos diferentes.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DocumentoDaConfiguracaoBancas"

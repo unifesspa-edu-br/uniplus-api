@@ -4262,6 +4262,11 @@
       "titulo": "O token não identifica quem confirma a política de divulgação"
     },
     {
+      "codigo": "uniplus.selecao.banca.candidatos_atendidos_em_banca_de_recursos",
+      "status": 422,
+      "titulo": "A banca que julga recurso não define candidatos atendidos"
+    },
+    {
       "codigo": "uniplus.selecao.banca.criterio_obrigatorio",
       "status": 422,
       "titulo": "A deliberação colegiada declara o critério de votação"
@@ -4307,11 +4312,6 @@
       "titulo": "Com o encerramento por todos os titulares, o quórum é o número de integrantes"
     },
     {
-      "codigo": "uniplus.selecao.banca.recorte_em_banca_de_recursos",
-      "status": 422,
-      "titulo": "A banca de análise de recursos julga todos os recursos da fase e não declara recorte de competência"
-    },
-    {
       "codigo": "uniplus.selecao.banca.regra_de_deliberacao_obrigatoria",
       "status": 422,
       "titulo": "Toda banca declara a regra de deliberação para o processo ser publicado"
@@ -4337,19 +4337,19 @@
       "titulo": "A votação do recurso está incompleta"
     },
     {
-      "codigo": "uniplus.selecao.banca_requerida.categoria_duplicada_no_recorte",
+      "codigo": "uniplus.selecao.banca_requerida.candidatos_atendidos_duplicados",
       "status": 422,
-      "titulo": "A banca declara a mesma categoria de documento mais de uma vez no recorte de competência"
+      "titulo": "Duas bancas do mesmo tipo na mesma fase atendem os mesmos candidatos"
     },
     {
-      "codigo": "uniplus.selecao.banca_requerida.recorte_de_competencia_duplicado",
+      "codigo": "uniplus.selecao.banca_requerida.candidatos_atendidos_obrigatorios",
       "status": 422,
-      "titulo": "Duas bancas do mesmo tipo na mesma fase declaram o mesmo recorte de competência"
+      "titulo": "Bancas do mesmo tipo: umas definem os candidatos atendidos e outra não"
     },
     {
-      "codigo": "uniplus.selecao.banca_requerida.recorte_de_competencia_obrigatorio",
+      "codigo": "uniplus.selecao.banca_requerida.categoria_repetida_nos_candidatos_atendidos",
       "status": 422,
-      "titulo": "A fase requer mais de uma banca do mesmo tipo e cada uma precisa declarar as categorias de documento que julga"
+      "titulo": "A banca repete uma categoria de documento nos candidatos atendidos"
     },
     {
       "codigo": "uniplus.selecao.calendario_dias_uteis_congelado.dia_duplicado",
@@ -5624,7 +5624,7 @@
     {
       "codigo": "uniplus.selecao.fase_cronograma.categoria_documento_nao_encontrada",
       "status": 422,
-      "titulo": "Categoria de documento do recorte de competência não encontrada ou não está mais viva"
+      "titulo": "A categoria de documento dos candidatos atendidos não existe ou está desativada"
     },
     {
       "codigo": "uniplus.selecao.fase_cronograma.etapa_da_fase_referenciada",

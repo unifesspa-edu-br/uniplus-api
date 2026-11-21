@@ -158,7 +158,7 @@ public sealed class DeclaracoesDoDocumentoLidasTests
         publicacoes.RegraDeHomologacao.Should().BeNull();
     }
 
-    [Fact(DisplayName = "A banca copia a posição, a chave, o tipo e as categorias do recorte pelo código")]
+    [Fact(DisplayName = "A banca copia a posição, a chave, o tipo e as categorias dos candidatos atendidos pelo código")]
     public void Banca_CopiaPosicaoChaveTipoECategorias()
     {
         BancaNoDocumento banca = UnicaFase(FaseCompleta).Bancas[0];
@@ -168,8 +168,8 @@ public sealed class DeclaracoesDoDocumentoLidasTests
         banca.RegraDeDeliberacao.Should().BeNull();
     }
 
-    [Fact(DisplayName = "A banca sem recorte fica com o recorte vazio, e a deliberação copia cada valor")]
-    public void Banca_SemRecorte_CopiaADeliberacao()
+    [Fact(DisplayName = "A banca sem candidatos atendidos fica com candidatos atendidos vazios, e a deliberação copia cada valor")]
+    public void Banca_SemCandidatosAtendidos_CopiaADeliberacao()
     {
         BancaNoDocumento banca = UnicaFase(FaseCompleta).Bancas[1];
 

@@ -297,7 +297,7 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
             .Include(p => p.AtendimentoEspecializado)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.Produtos)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.RegraRecurso)
-            .Include(p => p.CronogramaFases).ThenInclude(f => f.BancasRequeridas).ThenInclude(b => b.RecorteDeCompetencia)
+            .Include(p => p.CronogramaFases).ThenInclude(f => f.BancasRequeridas).ThenInclude(b => b.CandidatosAtendidos)
             .Include(p => p.ConfiguracaoTaxaInscricao)
             .Include(p => p.CriteriosDesempate)
             .AsSplitQuery()

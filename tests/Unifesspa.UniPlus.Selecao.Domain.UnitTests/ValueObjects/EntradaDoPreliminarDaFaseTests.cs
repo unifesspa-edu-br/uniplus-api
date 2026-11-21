@@ -125,14 +125,14 @@ public sealed class EntradaDoPreliminarDaFaseTests
         Fase(bancas: [Banca(TipoDeBancaA, "BANCA_A", BancasDeTeste.Regra(integrantes: 5, quorum: 3))]).EntradaDoPreliminar()
             .Should().NotBe(Fase(bancas: [Banca(TipoDeBancaA, "BANCA_A", BancasDeTeste.Regra(integrantes: 3, quorum: 2))]).EntradaDoPreliminar());
 
-    [Fact(DisplayName = "O recorte de competência da banca entra na entrada, pelas origens das categorias")]
-    public void RecorteDaBanca_MudaAEntrada()
+    [Fact(DisplayName = "Os candidatos atendidos da banca entram na entrada, pelas origens das categorias")]
+    public void CandidatosAtendidosDaBanca_MudamAEntrada()
     {
         Guid renda = Guid.Parse("0197d6f0-4444-7000-8000-000000000001");
         Guid raca = Guid.Parse("0197d6f0-4444-7000-8000-000000000002");
 
-        Fase(bancas: [Banca(TipoDeBancaA, "BANCA_A", recorte: [CategoriaJulgada.Criar(renda, "RENDA")])]).EntradaDoPreliminar()
-            .Should().NotBe(Fase(bancas: [Banca(TipoDeBancaA, "BANCA_A", recorte: [CategoriaJulgada.Criar(raca, "RACA")])]).EntradaDoPreliminar());
+        Fase(bancas: [Banca(TipoDeBancaA, "BANCA_A", candidatosAtendidos: [CategoriaJulgada.Criar(renda, "RENDA")])]).EntradaDoPreliminar()
+            .Should().NotBe(Fase(bancas: [Banca(TipoDeBancaA, "BANCA_A", candidatosAtendidos: [CategoriaJulgada.Criar(raca, "RACA")])]).EntradaDoPreliminar());
     }
 
     [Fact(DisplayName = "A ordem em que as bancas são declaradas não muda a entrada")]
@@ -197,6 +197,6 @@ public sealed class EntradaDoPreliminarDaFaseTests
     private static ProcedimentosDeRecurso Procedimentos(string regra) => ProcedimentosDeRecurso.De(
         [ProcedimentoDeRecursoDeclarado.De(TipoMotivoDeDecisao.Classificacao, null, ReferenciaRegra.De(regra, "v1", new string('a', 64)))]);
 
-    private static BancaRequerida Banca(Guid tipo, string codigo, RegraDeDeliberacao? regra = null, IReadOnlyList<CategoriaJulgada>? recorte = null) =>
-        BancaRequerida.Criar(tipo, codigo, "Banca de teste", recorte ?? [], regra);
+    private static BancaRequerida Banca(Guid tipo, string codigo, RegraDeDeliberacao? regra = null, IReadOnlyList<CategoriaJulgada>? candidatosAtendidos = null) =>
+        BancaRequerida.Criar(tipo, codigo, "Banca de teste", candidatosAtendidos ?? [], regra);
 }

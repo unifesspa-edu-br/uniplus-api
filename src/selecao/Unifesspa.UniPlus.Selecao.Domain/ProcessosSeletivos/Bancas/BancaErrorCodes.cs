@@ -17,6 +17,6 @@ public static class BancaErrorCodes
     public const string VotacaoDoRecursoIncompleta = "Banca.VotacaoDoRecursoIncompleta";
     public const string RegraDeDeliberacaoObrigatoria = "Banca.RegraDeDeliberacaoObrigatoria";
     public const string IntegrantesAbaixoDoMinimo = "Banca.IntegrantesAbaixoDoMinimo";
-    public const string RecorteEmBancaDeRecursos = "Banca.RecorteEmBancaDeRecursos";
+    public const string CandidatosAtendidosEmBancaDeRecursos = "Banca.CandidatosAtendidosEmBancaDeRecursos";
     public const string RecursoSemBanca = "Cronograma.RecursoSemBanca";
 }

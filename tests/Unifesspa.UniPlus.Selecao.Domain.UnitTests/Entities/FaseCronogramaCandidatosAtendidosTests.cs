@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioFaseCronograma;
 
-public sealed class FaseCronogramaRecorteDeCompetenciaTests
+public sealed class FaseCronogramaCandidatosAtendidosTests
 {
     [Fact(DisplayName = "CA-03 (contraprova): dois atos DISTINTOS com o mesmo papel na mesma fase são aceitos")]
     public void Produtos_AtosDistintosComOMesmoPapel_Aceita()
@@ -197,10 +197,10 @@ public sealed class FaseCronogramaRecorteDeCompetenciaTests
         resultado.Errors.Should().Contain(e => e.Field == "emiteParecerIndividual" && e.Error.Code == "FaseCronograma.ParecerIndividualSemResultado");
     }
 
-    // ── CA-02 / CA-03 — recorte de competência das bancas requeridas ──
+    // ── CA-02 / CA-03 — candidatos atendidos das bancas requeridas ──
 
-    [Fact(DisplayName = "CA-02: duas bancas do mesmo tipo, uma sem recorte, é recusada com erro nomeado")]
-    public void RecorteDeCompetencia_DuasDoMesmoTipoUmaSemRecorte_Recusa()
+    [Fact(DisplayName = "CA-02: duas bancas do mesmo tipo, uma sem candidatos atendidos, é recusada com erro nomeado")]
+    public void CandidatosAtendidos_DuasDoMesmoTipoUmaSemCandidatosAtendidos_Recusa()
     {
         Result<FaseCronograma> resultado = Criar(m => m with
         {
@@ -214,12 +214,12 @@ public sealed class FaseCronogramaRecorteDeCompetenciaTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle()
             .Which.Should().Match<FieldError>(e =>
-                e.Error.Code == "BancaRequerida.RecorteDeCompetenciaObrigatorio"
+                e.Error.Code == "BancaRequerida.CandidatosAtendidosObrigatorios"
                 && e.Field == "bancasRequeridas[1].categoriasDocumentoIds");
     }
 
-    [Fact(DisplayName = "CA-02: uma banca por tipo aceita recorte vazio — o tipo já a identifica")]
-    public void RecorteDeCompetencia_UmaBancaPorTipoSemRecorte_Aceita()
+    [Fact(DisplayName = "CA-02: uma banca por tipo aceita candidatos atendidos vazios — o tipo já a identifica")]
+    public void CandidatosAtendidos_UmaBancaPorTipoSemCandidatosAtendidos_Aceita()
     {
         Result<FaseCronograma> resultado = Criar(m => m with
         {
@@ -233,8 +233,8 @@ public sealed class FaseCronogramaRecorteDeCompetenciaTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
-    [Fact(DisplayName = "CA-02: as duas bancas do mesmo tipo sem recorte acumulam uma recusa cada")]
-    public void RecorteDeCompetencia_AmbasSemRecorte_AcumulaUmaPorBanca()
+    [Fact(DisplayName = "CA-02: as duas bancas do mesmo tipo sem candidatos atendidos acumulam uma recusa cada")]
+    public void CandidatosAtendidos_AmbasSemCandidatosAtendidos_AcumulaUmaPorBanca()
     {
         Result<FaseCronograma> resultado = Criar(m => m with
         {
@@ -246,14 +246,14 @@ public sealed class FaseCronogramaRecorteDeCompetenciaTests
         });
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Errors.Select(e => e.Error.Code).Should().AllBe("BancaRequerida.RecorteDeCompetenciaObrigatorio");
+        resultado.Errors.Select(e => e.Error.Code).Should().AllBe("BancaRequerida.CandidatosAtendidosObrigatorios");
         resultado.Errors.Select(e => e.Field).Should().BeEquivalentTo(
             ["bancasRequeridas[0].categoriasDocumentoIds", "bancasRequeridas[1].categoriasDocumentoIds"],
-            "a recusa que sai é a de recorte ausente, e não a de recorte duplicado — dois recortes vazios não são dois recortes iguais, são dois recortes que faltam");
+            "a recusa que sai é a de candidatos atendidos ausentes, e não a de candidatos atendidos duplicados — dois conjuntos vazios de candidatos atendidos não são dois conjuntos iguais, são dois que faltam");
     }
 
-    [Fact(DisplayName = "CA-03: duas bancas do mesmo tipo com recortes distintos são declaráveis")]
-    public void RecorteDeCompetencia_MesmoTipoRecortesDistintos_Aceita()
+    [Fact(DisplayName = "CA-03: duas bancas do mesmo tipo com candidatos atendidos distintos são declaráveis")]
+    public void CandidatosAtendidos_MesmoTipoCandidatosAtendidosDistintos_Aceita()
     {
         Result<FaseCronograma> resultado = Criar(m => m with
         {
@@ -268,8 +268,8 @@ public sealed class FaseCronogramaRecorteDeCompetenciaTests
         resultado.Value!.BancasRequeridas.Should().HaveCount(2);
     }
 
-    [Fact(DisplayName = "CA-03: duas bancas do mesmo tipo com o mesmo recorte declarado em outra ordem são recusadas")]
-    public void RecorteDeCompetencia_MesmoTipoRecortesIguaisEmOutraOrdem_Recusa()
+    [Fact(DisplayName = "CA-03: duas bancas do mesmo tipo com os mesmos candidatos atendidos declarados em outra ordem são recusadas")]
+    public void CandidatosAtendidos_MesmoTipoCandidatosAtendidosIguaisEmOutraOrdem_Recusa()
     {
         Result<FaseCronograma> resultado = Criar(m => m with
         {
@@ -283,12 +283,12 @@ public sealed class FaseCronogramaRecorteDeCompetenciaTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle()
             .Which.Should().Match<FieldError>(e =>
-                e.Error.Code == "BancaRequerida.RecorteDeCompetenciaDuplicado"
+                e.Error.Code == "BancaRequerida.CandidatosAtendidosDuplicados"
                 && e.Field == "bancasRequeridas[1].categoriasDocumentoIds");
     }
 
-    [Fact(DisplayName = "CA-03: recortes que se cruzam sem coincidir distinguem as bancas e são aceitos")]
-    public void RecorteDeCompetencia_MesmoTipoRecortesQueSeCruzam_Aceita()
+    [Fact(DisplayName = "CA-03: candidatos atendidos que se cruzam sem coincidir distinguem as bancas e são aceitos")]
+    public void CandidatosAtendidos_MesmoTipoCandidatosAtendidosQueSeCruzam_Aceita()
     {
         Result<FaseCronograma> resultado = Criar(m => m with
         {

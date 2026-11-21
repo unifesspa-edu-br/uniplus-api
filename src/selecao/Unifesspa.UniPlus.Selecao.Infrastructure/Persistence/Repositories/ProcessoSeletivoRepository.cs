@@ -132,7 +132,7 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             // Clear() num backing list já vazio, deixando as linhas antigas no banco.
             .Include(p => p.CronogramaFases).ThenInclude(f => f.RegraRecurso)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.Produtos)
-            .Include(p => p.CronogramaFases).ThenInclude(f => f.BancasRequeridas).ThenInclude(b => b.RecorteDeCompetencia)
+            .Include(p => p.CronogramaFases).ThenInclude(f => f.BancasRequeridas).ThenInclude(b => b.CandidatosAtendidos)
             // Documentos exigidos (Story #554, issue #547, PR #895) — sem o Include, a
             // coleção tracked nasce vazia em todo carregamento novo do agregado:
             // DefinirDocumentosExigidos faria Clear() num backing list já vazio (linhas

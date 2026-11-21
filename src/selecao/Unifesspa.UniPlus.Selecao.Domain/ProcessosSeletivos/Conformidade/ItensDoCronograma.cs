@@ -49,7 +49,7 @@ internal static class ItensDoCronograma
         CicloRecursalDoProcesso.Item(cronograma, etapas),
         cronograma.ItemDaAncoraDoRecurso(),
         etapas.ItemDaAncoraDoRecurso(),
-        cronograma.ItemDoRecorteDeCompetencia(),
+        cronograma.ItemDosCandidatosAtendidos(),
         Item("cronograma_procedimento_de_recurso", "Cronograma: cada recurso tem procedimento de revisão para as decisões da fase ou etapa", PendenciasDosProcedimentosDeRecurso.CausasDosProcedimentosDeRecurso(configuracao).Count == 0 && !PendenciasDosProcedimentosDeRecurso.RecusadosPelaLeitura(configuracao)),
     ];
 

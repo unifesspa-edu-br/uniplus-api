@@ -112,12 +112,12 @@ internal static class SerializacaoDoCronograma
         ["codigo"] = HashCanonicalComputer.NormalizeNfc(banca.Codigo),
         ["nome"] = HashCanonicalComputer.NormalizeNfc(banca.Nome),
         ["regraDeDeliberacao"] = RegraDeDeliberacaoNoEnvelope.Serializar(banca.RegraDeDeliberacao),
-        ["recorteDeCompetencia"] = SerializarRecorteDeCompetencia(banca),
+        ["candidatosAtendidos"] = SerializarCandidatosAtendidos(banca),
     };
 
-    private static JsonArray SerializarRecorteDeCompetencia(BancaRequerida banca)
+    private static JsonArray SerializarCandidatosAtendidos(BancaRequerida banca)
     {
-        IOrderedEnumerable<CategoriaJulgada> ordenadas = OrdemCanonicaDaConfiguracao.RecorteDeCompetencia(banca.RecorteDeCompetencia);
+        IOrderedEnumerable<CategoriaJulgada> ordenadas = OrdemCanonicaDaConfiguracao.CandidatosAtendidos(banca.CandidatosAtendidos);
 
         return new JsonArray([.. ordenadas.Select(static c => (JsonNode)new JsonObject
         {

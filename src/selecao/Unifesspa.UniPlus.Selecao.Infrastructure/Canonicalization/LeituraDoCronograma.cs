@@ -133,7 +133,7 @@ internal static class LeituraDoCronograma
         return fase.IsFailure ? leitor.Propagar<FaseCronograma?>(fase.Error!) : fase.Value;
     }
 
-    // A âncora do recurso e o recorte de competência são conferidos pelo mesmo predicado do agregado:
+    // A âncora do recurso e os candidatos atendidos são conferidos pelo mesmo predicado do agregado:
     // a fábrica só tem throw para esses estados, porque nenhum caminho de escrita os produz, e um
     // envelope incoerente tem de virar recusa nomeada.
     private static Result<FaseCronograma> ConferirEReidratar(
@@ -148,8 +148,8 @@ internal static class LeituraDoCronograma
             return Result<FaseCronograma>.Failure(violacaoDaAncora.Error);
         }
 
-        return RecorteDeCompetenciaDasBancas.Violacoes(origem.Codigo, bancas) is [{ } violacaoDoRecorte, ..]
-            ? Result<FaseCronograma>.Failure(violacaoDoRecorte.Error)
+        return CandidatosAtendidosPelasBancas.Violacoes(origem.Codigo, bancas) is [{ } violacaoDosCandidatosAtendidos, ..]
+            ? Result<FaseCronograma>.Failure(violacaoDosCandidatosAtendidos.Error)
             : Reidratar(id, origem, decisoes, publicacoes, bancas);
     }
 
@@ -232,12 +232,12 @@ internal static class LeituraDoCronograma
 
     private static BancaRequerida? LerBancaRequerida(LeitorEnvelope leitor, JsonObject item, string path)
     {
-        leitor.ExigirChaves(item, path, "tipoBancaOrigemId", "codigo", "nome", "regraDeDeliberacao", "recorteDeCompetencia");
+        leitor.ExigirChaves(item, path, "tipoBancaOrigemId", "codigo", "nome", "regraDeDeliberacao", "candidatosAtendidos");
         BancaLida? lida = BancaLida.Ler(leitor, item, path);
-        IReadOnlyList<CategoriaJulgada> recorte = lida is null ? [] : LeituraDosPrazosDeRecurso.LerRecorteDeCompetencia(leitor, item, path);
+        IReadOnlyList<CategoriaJulgada> atendidos = lida is null ? [] : LeituraDosPrazosDeRecurso.LerCandidatosAtendidos(leitor, item, path);
 
         return leitor.Falhou || lida is null
             ? null
-            : BancaRequerida.Criar(lida.TipoBancaOrigemId, lida.Codigo, lida.Nome, recorte, lida.Regra);
+            : BancaRequerida.Criar(lida.TipoBancaOrigemId, lida.Codigo, lida.Nome, atendidos, lida.Regra);
     }
 }

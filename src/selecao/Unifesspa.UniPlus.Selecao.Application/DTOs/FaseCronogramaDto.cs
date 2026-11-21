@@ -8,13 +8,13 @@ using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 /// <param name="Papel">Token canônico UPPER_SNAKE (<c>PRELIMINAR</c>/<c>DEFINITIVO</c>), ou nulo quando o ato não é resultado.</param>
 public sealed record ProdutoDaFaseDto(Guid Id, string AtoCodigo, string? Papel);
 
-/// <summary>Projeção de leitura de <c>CategoriaJulgada</c> — uma categoria de documento do recorte de competência da banca.</summary>
+/// <summary>Projeção de leitura de <c>CategoriaJulgada</c> — uma categoria de documento dos candidatos atendidos pela banca.</summary>
 public sealed record CategoriaJulgadaDto(Guid Id, Guid CategoriaDocumentoOrigemId, string Codigo);
 
 /// <summary>Projeção de leitura de <c>BancaRequerida</c> (Story #851).</summary>
 /// <param name="Nome">Nome do tipo de banca congelado na declaração: o cliente o exibe como veio.</param>
 /// <param name="RegraDeDeliberacao">Nula enquanto o rascunho não a declara; a publicação a exige.</param>
-/// <param name="RecorteDeCompetencia">
+/// <param name="CandidatosAtendidos">
 /// As categorias de documento que a banca julga — o que a distingue de outra banca do
 /// mesmo tipo na mesma fase. Vazio quando o tipo já identifica a banca sozinho.
 /// </param>
@@ -24,7 +24,7 @@ public sealed record BancaRequeridaDto(
     string Codigo,
     string Nome,
     RegraDeDeliberacaoDto? RegraDeDeliberacao,
-    IReadOnlyList<CategoriaJulgadaDto> RecorteDeCompetencia);
+    IReadOnlyList<CategoriaJulgadaDto> CandidatosAtendidos);
 
 /// <summary>Projeção de leitura de <c>ParametrosRegraPrazoRecurso</c> (Story #851).</summary>
 /// <param name="PrazoValor">Valor do prazo de interposição do recurso na 1ª instância.</param>

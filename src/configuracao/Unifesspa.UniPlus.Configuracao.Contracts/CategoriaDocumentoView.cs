@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// <summary>
 /// DTO read-only de <c>CategoriaDocumento</c> para consumo cross-módulo via
 /// <see cref="ICategoriaDocumentoReader"/> (ADR-0056). Expõe a categoria viva que o
-/// Módulo Seleção lê ao declarar o recorte de competência de uma banca requerida por
+/// Módulo Seleção lê ao declarar os candidatos atendidos por uma banca requerida por
 /// fase, antes de congelar por valor o par identidade-e-código (snapshot-copy,
 /// ADR-0061).
 /// </summary>

@@ -52,13 +52,13 @@ public sealed class PoliticasDeBancaPorValoresTests
         FluentActions.Invoking(() => corretores.EmCampoDaRegra(Desconhecida)).Should().Throw<InvalidOperationException>();
     }
 
-    [Fact(DisplayName = "O recorte de competência só é recusado na banca de recursos, e cita a fase declarada")]
-    public void RecorteNaDeclaracao_SoNaBancaDeRecursos()
+    [Fact(DisplayName = "Os candidatos atendidos só são recusados na banca de recursos, e cita a fase declarada")]
+    public void CandidatosAtendidosNaDeclaracao_SoNaBancaDeRecursos()
     {
         string tipoDeRecursos = TipoBancaCodigo.AnaliseDeRecursos;
 
-        ExigenciaDeBancaDeRecurso.RecorteNaDeclaracao("RECURSOS", tipoDeRecursos, 1)!.Message.Should().Contain("da fase 'RECURSOS'");
-        ExigenciaDeBancaDeRecurso.RecorteNaDeclaracao("RECURSOS", tipoDeRecursos, 0).Should().BeNull();
-        ExigenciaDeBancaDeRecurso.RecorteNaDeclaracao("RECURSOS", "BANCA_AVALIADORA", 1).Should().BeNull();
+        ExigenciaDeBancaDeRecurso.CandidatosAtendidosNaDeclaracao("RECURSOS", tipoDeRecursos, 1)!.Message.Should().Contain("da fase 'RECURSOS'");
+        ExigenciaDeBancaDeRecurso.CandidatosAtendidosNaDeclaracao("RECURSOS", tipoDeRecursos, 0).Should().BeNull();
+        ExigenciaDeBancaDeRecurso.CandidatosAtendidosNaDeclaracao("RECURSOS", "BANCA_AVALIADORA", 1).Should().BeNull();
     }
 }
