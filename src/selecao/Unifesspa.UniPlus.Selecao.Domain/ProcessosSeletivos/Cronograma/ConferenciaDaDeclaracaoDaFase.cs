@@ -93,6 +93,7 @@ internal static class ConferenciaDaDeclaracaoDaFase
         .. ResultadoDaRegraDeHomologacao(origem.Codigo, publicacoes, colecoesComParteRecusada.Contains(FaseDeclarada.ListaDosProdutos)),
         .. CandidatosAtendidosPelasBancas.Violacoes(origem.Codigo, bancasRequeridas),
         .. CandidatosAtendidosEmBancaDeRecursos(origem.Codigo, bancasRequeridas),
+        .. IdentificadorDasBancas.Repetidos(bancasRequeridas, FaseDeclarada.ListaDasBancasRequeridas, IdentificadorDasBancas.DaFase),
     ];
 
     // A falta do resultado sai sempre; o resultado que não é produto da fase só é julgado contra a lista de produtos íntegra.

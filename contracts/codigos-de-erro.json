@@ -4287,6 +4287,11 @@
       "titulo": "A deliberação colegiada declara o encerramento da votação"
     },
     {
+      "codigo": "uniplus.selecao.banca.id_duplicado",
+      "status": 422,
+      "titulo": "Duas bancas da mesma fase ou etapa têm o mesmo identificador"
+    },
+    {
       "codigo": "uniplus.selecao.banca.integrantes_abaixo_do_minimo",
       "status": 422,
       "titulo": "A banca declara menos integrantes que o mínimo exigido"
@@ -5470,11 +5475,6 @@
       "codigo": "uniplus.selecao.etapa_processo.avaliacao_na_etapa_do_enem",
       "status": 422,
       "titulo": "A etapa de nota do ENEM não declara forma de avaliação nem regra de consolidação"
-    },
-    {
-      "codigo": "uniplus.selecao.etapa_processo.banca_duplicada_na_etapa",
-      "status": 422,
-      "titulo": "O mesmo tipo de banca foi requerido duas vezes na etapa"
     },
     {
       "codigo": "uniplus.selecao.etapa_processo.carater_nao_admitido_pelo_tipo",

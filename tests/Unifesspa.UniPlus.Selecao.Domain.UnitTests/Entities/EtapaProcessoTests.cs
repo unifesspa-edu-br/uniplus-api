@@ -37,19 +37,33 @@ public sealed class EtapaProcessoTests
             + "de novo faz o hash da publicação mudar sem que nada da configuração tenha mudado");
     }
 
-    [Fact(DisplayName = "Regravar a mesma banca preserva o Id")]
-    public void DefinirBancas_MesmoCodigo_PreservaOId()
+    [Fact(DisplayName = "Regravar a banca com o id dela preserva o Id")]
+    public void DefinirBancas_ComOIdDaBanca_PreservaOId()
     {
         EtapaProcesso etapa = EtapaDeProvaObjetivaParaAmbosOsCarateres();
 
         Guid tipoBanca = Guid.CreateVersion7();
-        etapa.DefinirBancas([BancaDaEtapa.Criar(tipoBanca, "BANCA_TECNICA", "Banca de teste")]).IsSuccess.Should().BeTrue();
+        etapa.DefinirBancas([BancaDaEtapa.Criar(tipoBanca, "BANCA_TECNICA", "Banca de teste")]);
         Guid idOriginal = etapa.Bancas.Single().Id;
 
-        etapa.DefinirBancas([BancaDaEtapa.Criar(tipoBanca, "BANCA_TECNICA", "Banca de teste")]).IsSuccess.Should().BeTrue();
+        etapa.DefinirBancas([BancaDaEtapa.Criar(tipoBanca, "BANCA_TECNICA", "Banca de teste", idDaBancaQueSubstitui: idOriginal)]);
 
         etapa.Bancas.Single().Id.Should().Be(idOriginal,
-            "o código não mudou; recriar a linha gira o id e o CreatedAt sem que nada tenha mudado");
+            "a banca devolvida com o id dela é a mesma; recriar a linha gira o id, que a designação e o julgamento apontam");
+    }
+
+    [Fact(DisplayName = "Regravar a banca sem o id dela a cria de novo")]
+    public void DefinirBancas_SemOIdDaBanca_RecriaABanca()
+    {
+        EtapaProcesso etapa = EtapaDeProvaObjetivaParaAmbosOsCarateres();
+
+        Guid tipoBanca = Guid.CreateVersion7();
+        etapa.DefinirBancas([BancaDaEtapa.Criar(tipoBanca, "BANCA_TECNICA", "Banca de teste")]);
+        Guid idOriginal = etapa.Bancas.Single().Id;
+
+        etapa.DefinirBancas([BancaDaEtapa.Criar(tipoBanca, "BANCA_TECNICA", "Banca de teste")]);
+
+        etapa.Bancas.Single().Id.Should().NotBe(idOriginal);
     }
 
     [Fact(DisplayName = "O mesmo tipo de ato com o mesmo papel duas vezes na etapa é recusado")]

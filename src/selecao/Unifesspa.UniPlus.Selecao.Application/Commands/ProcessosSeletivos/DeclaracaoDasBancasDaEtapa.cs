@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Domain.Entities;
+using Domain.ProcessosSeletivos.Bancas;
 using Domain.ValueObjects;
 
 using Kernel.Results;
@@ -16,20 +17,46 @@ internal sealed class DeclaracaoDasBancasDaEtapa(LeituraMemoizada<Guid, TipoBanc
 {
     public async Task<Result> DeclararAsync(EtapaProcesso etapa, EtapaProcessoInput input, CancellationToken cancellationToken)
     {
+        Result<List<BancaDaEtapa>> declaradas = await DeclaradasAsync(input, cancellationToken).ConfigureAwait(false);
+        if (declaradas.IsFailure)
+        {
+            return Result.ValidationFailure(declaradas.Errors);
+        }
+
+        etapa.DefinirBancas(declaradas.Value!);
+
+        return Result.Success();
+    }
+
+    private async Task<Result<List<BancaDaEtapa>>> DeclaradasAsync(EtapaProcessoInput input, CancellationToken cancellationToken)
+    {
         RecusasAcumuladas<BancaDaEtapa> bancas = new();
+        DomainError? interrupcao = await JuntarAsync(bancas, input, cancellationToken).ConfigureAwait(false);
+        if (interrupcao is not null)
+        {
+            return Result<List<BancaDaEtapa>>.Failure(interrupcao);
+        }
+
+        bancas.Acrescentar(IdentificadorDasBancas.Repetidos(input.Bancas.Select(static banca => banca.Id), "bancas", IdentificadorDasBancas.DaEtapa));
+
+        return bancas.Resultado();
+    }
+
+    // A recusa sem campo é a do catálogo ilegível: interrompe a declaração e devolve só ela.
+    private async Task<DomainError?> JuntarAsync(RecusasAcumuladas<BancaDaEtapa> bancas, EtapaProcessoInput input, CancellationToken cancellationToken)
+    {
         for (int posicao = 0; posicao < input.Bancas.Count; posicao++)
         {
             Result<BancaDaEtapa> banca = await BancaAsync(input.Bancas[posicao], posicao, cancellationToken).ConfigureAwait(false);
             if (banca.Errors.Any(static erro => erro.Field is null))
             {
-                return Result.Failure(banca.Error!);
+                return banca.Error;
             }
 
             bancas.Juntar(banca);
         }
 
-        Result<List<BancaDaEtapa>> declaradas = bancas.Resultado();
-        return declaradas.IsFailure ? Result.ValidationFailure(declaradas.Errors) : etapa.DefinirBancas(declaradas.Value!);
+        return null;
     }
 
     private async Task<Result<BancaDaEtapa>> BancaAsync(BancaDaEtapaInput declarada, int posicao, CancellationToken cancellationToken)
@@ -45,6 +72,6 @@ internal sealed class DeclaracaoDasBancasDaEtapa(LeituraMemoizada<Guid, TipoBanc
         Result<RegraDeDeliberacao?> regra = MontagemDaRegraDeDeliberacao.Montar(declarada.RegraDeDeliberacao, $"bancas[{posicao}]");
         return regra.IsFailure
             ? Result<BancaDaEtapa>.ValidationFailure(regra.Errors)
-            : Result<BancaDaEtapa>.Success(BancaDaEtapa.Criar(tipo.Id, tipo.Codigo.Codigo(), tipo.Nome, regra.Value));
+            : Result<BancaDaEtapa>.Success(BancaDaEtapa.Criar(tipo.Id, tipo.Codigo.Codigo(), tipo.Nome, regra.Value, declarada.Id));
     }
 }

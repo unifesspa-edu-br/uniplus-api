@@ -20,6 +20,8 @@ internal sealed class RecusasAcumuladas<T>
         }
     }
 
+    internal void Acrescentar(IEnumerable<FieldError> recusas) => _recusas.AddRange(recusas);
+
     internal Result<List<T>> Resultado() => _recusas.Count > 0
         ? Result<List<T>>.ValidationFailure(_recusas)
         : Result<List<T>>.Success(_montados);

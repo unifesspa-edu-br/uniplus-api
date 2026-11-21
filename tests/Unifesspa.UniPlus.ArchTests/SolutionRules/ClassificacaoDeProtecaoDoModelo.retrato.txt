@@ -1237,6 +1237,7 @@ selecao.bancas_da_etapa.created_at: Interno
 selecao.bancas_da_etapa.etapa_processo_id: Interno
 selecao.bancas_da_etapa.id: Interno
 selecao.bancas_da_etapa.nome: Interno
+selecao.bancas_da_etapa.posicao_no_tipo: Interno
 selecao.bancas_da_etapa.regra_deliberacao_criterio: Interno
 selecao.bancas_da_etapa.regra_deliberacao_desempate: Interno
 selecao.bancas_da_etapa.regra_deliberacao_encerramento: Interno
@@ -1252,6 +1253,7 @@ selecao.bancas_requeridas.created_at: Interno
 selecao.bancas_requeridas.fase_cronograma_id: Interno
 selecao.bancas_requeridas.id: Interno
 selecao.bancas_requeridas.nome: Interno
+selecao.bancas_requeridas.posicao_no_tipo: Interno
 selecao.bancas_requeridas.regra_deliberacao_criterio: Interno
 selecao.bancas_requeridas.regra_deliberacao_desempate: Interno
 selecao.bancas_requeridas.regra_deliberacao_encerramento: Interno

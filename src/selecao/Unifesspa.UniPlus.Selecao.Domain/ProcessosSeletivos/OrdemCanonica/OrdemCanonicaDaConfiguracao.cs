@@ -77,25 +77,30 @@ public static class OrdemCanonicaDaConfiguracao
             .ThenBy(static recurso => recurso.Id);
     }
 
-    /// <summary>As bancas que a fase requer, pelo tipo e pelo código; <paramref name="banca"/> acha a banca em cada item.</summary>
+    /// <summary>
+    /// As bancas que a fase requer, pelo código do tipo e pela posição dentro dele; <paramref name="banca"/> acha a banca em cada
+    /// item. O par é único na fase e decide a ordem sozinho: o id da banca não entra, nem como desempate.
+    /// </summary>
     public static IOrderedEnumerable<T> BancasDaFase<T>(IEnumerable<T> itens, Func<T, BancaRequerida> banca)
     {
         ArgumentNullException.ThrowIfNull(itens);
         ArgumentNullException.ThrowIfNull(banca);
 
-        return itens.OrderBy(item => banca(item).TipoBancaOrigemId).ThenBy(item => banca(item).Codigo, StringComparer.Ordinal);
+        return itens.OrderBy(item => HashCanonicalComputer.NormalizeNfc(banca(item).Codigo), StringComparer.Ordinal)
+            .ThenBy(item => banca(item).PosicaoNoTipo);
     }
 
-    /// <summary>As bancas que a fase requer, pelo tipo e pelo código.</summary>
+    /// <summary>As bancas que a fase requer, pelo código do tipo e pela posição dentro dele.</summary>
     public static IOrderedEnumerable<BancaRequerida> BancasDaFase(IEnumerable<BancaRequerida> bancas) =>
         BancasDaFase(bancas, static banca => banca);
 
-    /// <summary>As bancas da etapa, pelo código.</summary>
+    /// <summary>As bancas da etapa, pelo código do tipo e pela posição dentro dele; o id da banca não entra, nem como desempate.</summary>
     public static IOrderedEnumerable<BancaDaEtapa> BancasDaEtapa(IEnumerable<BancaDaEtapa> bancas)
     {
         ArgumentNullException.ThrowIfNull(bancas);
 
-        return bancas.OrderBy(static banca => HashCanonicalComputer.NormalizeNfc(banca.Codigo), StringComparer.Ordinal);
+        return bancas.OrderBy(static banca => HashCanonicalComputer.NormalizeNfc(banca.Codigo), StringComparer.Ordinal)
+            .ThenBy(static banca => banca.PosicaoNoTipo);
     }
 
     /// <summary>As categorias que a banca julga, pelo código.</summary>

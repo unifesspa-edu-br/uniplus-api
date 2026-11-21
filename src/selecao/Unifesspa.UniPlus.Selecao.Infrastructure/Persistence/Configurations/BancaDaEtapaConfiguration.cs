@@ -23,10 +23,10 @@ public sealed class BancaDaEtapaConfiguration : IEntityTypeConfiguration<BancaDa
         builder.Property(b => b.Nome).HasMaxLength(200).IsRequired();
         builder.OwnsOne(b => b.RegraDeDeliberacao, regra => regra.ConfigurarRegraDeDeliberacao());
         builder.Property(b => b.TipoBancaOrigemId).IsRequired();
+        builder.Property(b => b.PosicaoNoTipo).IsRequired();
 
-        // O mesmo tipo de banca uma única vez por etapa — defesa atômica da guarda de domínio.
+        // A unicidade do par código e posição é a restrição adiada do script de posição única das bancas.
         builder.HasIndex(b => new { b.EtapaProcessoId, b.Codigo })
-            .IsUnique()
-            .HasDatabaseName("ux_bancas_da_etapa_codigo");
+            .HasDatabaseName("ix_bancas_da_etapa_codigo");
     }
 }

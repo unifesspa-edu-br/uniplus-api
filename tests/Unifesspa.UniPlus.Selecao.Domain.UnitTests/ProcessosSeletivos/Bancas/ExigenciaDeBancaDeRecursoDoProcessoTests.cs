@@ -61,7 +61,7 @@ public sealed class ExigenciaDeBancaDeRecursoDoProcessoTests
         EtapaProcesso semBanca = ComRecurso(NovaEtapa("Redação", 1));
         EtapaProcesso comBanca = ComRecurso(NovaEtapa("Objetiva", 2));
         ProcessoSeletivo processo = ProcessoComEtapas(null, semBanca, comBanca);
-        processo.Etapas.Single(e => e.Nome == "Objetiva").DefinirBancas([BancasDeTeste.DeRecursosDaEtapa()]).IsSuccess.Should().BeTrue();
+        processo.Etapas.Single(e => e.Nome == "Objetiva").DefinirBancas([BancasDeTeste.DeRecursosDaEtapa()]);
 
         DomainError? pendencia = Pendencia(processo);
 
@@ -103,7 +103,7 @@ public sealed class ExigenciaDeBancaDeRecursoDoProcessoTests
     {
         EtapaProcesso etapa = NovaEtapa("Redação", 1);
         ProcessoSeletivo processo = ProcessoComEtapas(null, etapa);
-        etapa.DefinirBancas([BancaDaEtapa.Criar(Tipo, "BANCA_EXAMINADORA", "Banca examinadora")]).IsSuccess.Should().BeTrue();
+        etapa.DefinirBancas([BancaDaEtapa.Criar(Tipo, "BANCA_EXAMINADORA", "Banca examinadora")]);
 
         DomainError? pendencia = Pendencia(processo);
 

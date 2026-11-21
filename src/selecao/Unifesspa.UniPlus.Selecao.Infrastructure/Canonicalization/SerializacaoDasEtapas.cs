@@ -112,6 +112,8 @@ internal static class SerializacaoDasEtapas
         new([.. OrdemCanonicaDaConfiguracao.BancasDaEtapa(etapa.Bancas)
             .Select(static b => (JsonNode)new JsonObject
             {
+                ["id"] = JsonValue.Create(b.Id),
+                ["posicaoNoTipo"] = JsonValue.Create(b.PosicaoNoTipo),
                 ["tipoBancaOrigemId"] = JsonValue.Create(b.TipoBancaOrigemId),
                 ["codigo"] = HashCanonicalComputer.NormalizeNfc(b.Codigo),
                 ["nome"] = HashCanonicalComputer.NormalizeNfc(b.Nome),

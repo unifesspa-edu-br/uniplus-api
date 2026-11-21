@@ -39,6 +39,72 @@ public sealed class DeclaracaoDasBancasDaEtapaTests
         banca.RegraDeDeliberacao!.Integrantes.Should().Be(3);
     }
 
+    [Fact(DisplayName = "A banca devolvida com o id dela continua a mesma, e a posição dentro do tipo segue a ordem declarada")]
+    public async Task Declarar_ComOIdDaBanca_MantemABancaEPosicionaPelaOrdemDeclarada()
+    {
+        EtapaProcesso etapa = NovaEtapa();
+        await Declaracao().DeclararAsync(etapa, Entrada(Banca(TipoDeEntrevista, null), Banca(TipoDeEntrevista, null)), CancellationToken.None);
+        Guid[] ids = [.. etapa.Bancas.Select(static b => b.Id)];
+
+        Result resultado = await Declaracao().DeclararAsync(
+            etapa, Entrada(Banca(TipoDeEntrevista, null, ids[1]), Banca(TipoDeEntrevista, null, ids[0])), CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue();
+        etapa.Bancas.Select(static b => (b.Id, b.PosicaoNoTipo)).Should().BeEquivalentTo([(ids[1], 1), (ids[0], 2)]);
+    }
+
+    [Fact(DisplayName = "Duas bancas do mesmo tipo na mesma etapa são aceitas, cada uma com a própria identidade e posição")]
+    public async Task Declarar_DuasBancasDoMesmoTipo_SaoAceitas()
+    {
+        EtapaProcesso etapa = NovaEtapa();
+
+        Result resultado = await Declaracao().DeclararAsync(etapa, Entrada(Banca(TipoDeEntrevista, null), Banca(TipoDeEntrevista, null)), CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue();
+        etapa.Bancas.Select(static b => b.PosicaoNoTipo).Should().BeEquivalentTo([1, 2]);
+        etapa.Bancas.Select(static b => b.Id).Distinct().Should().HaveCount(2);
+    }
+
+    [Fact(DisplayName = "A banca devolvida sem o id dela é criada de novo, com id novo")]
+    public async Task Declarar_SemOIdDaBanca_CriaABancaDeNovo()
+    {
+        EtapaProcesso etapa = NovaEtapa();
+        await Declaracao().DeclararAsync(etapa, Entrada(Banca(TipoDeEntrevista, null)), CancellationToken.None);
+        Guid idAnterior = etapa.Bancas.Single().Id;
+
+        await Declaracao().DeclararAsync(etapa, Entrada(Banca(TipoDeEntrevista, null)), CancellationToken.None);
+
+        etapa.Bancas.Single().Id.Should().NotBe(idAnterior);
+    }
+
+    [Fact(DisplayName = "Duas bancas com o mesmo id de banca gravada: a segunda é recusada em bancas[p].id, sem alterar a etapa")]
+    public async Task Declarar_ComOMesmoIdEmDuasBancas_RecusaASegunda()
+    {
+        EtapaProcesso etapa = NovaEtapa();
+        Guid idRepetido = Guid.CreateVersion7();
+
+        Result resultado = await Declaracao().DeclararAsync(
+            etapa, Entrada(Banca(TipoDeEntrevista, null, idRepetido), Banca(TipoDeRecursos, null, idRepetido)), CancellationToken.None);
+
+        resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(
+            erro => erro.Field == "bancas[1].id" && erro.Error.Code == "Banca.IdDuplicado");
+        etapa.Bancas.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "A recusa do id repetido sai junto com as violações da regra das bancas")]
+    public async Task Declarar_ComIdRepetidoERegraInvalida_AcumulaAsRecusas()
+    {
+        EtapaProcesso etapa = NovaEtapa();
+        Guid idRepetido = Guid.CreateVersion7();
+
+        Result resultado = await Declaracao().DeclararAsync(
+            etapa,
+            Entrada(Banca(TipoDeEntrevista, RegrasDeDeliberacaoDeTeste.ComTresViolacoes(), idRepetido), Banca(TipoDeRecursos, null, idRepetido)),
+            CancellationToken.None);
+
+        resultado.Errors.Select(static erro => erro.Field).Should().Contain("bancas[0].regraDeDeliberacao.integrantes").And.Contain("bancas[1].id");
+    }
+
     [Fact(DisplayName = "A banca sem regra é rascunho e a declaração a aceita")]
     public async Task Declarar_SemRegra_AceitaORascunho()
     {
@@ -79,14 +145,14 @@ public sealed class DeclaracaoDasBancasDaEtapaTests
         etapa.Bancas.Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "Redeclarar o mesmo tipo reaproveita a linha da banca e atualiza a regra")]
+    [Fact(DisplayName = "Redeclarar a banca com o id lido reaproveita a linha e atualiza a regra")]
     public async Task Declarar_ReaproveitandoABanca_AtualizaARegraSemTrocarALinha()
     {
         EtapaProcesso etapa = NovaEtapa();
         await Declaracao().DeclararAsync(etapa, Entrada(Banca(TipoDeEntrevista, null)), CancellationToken.None);
         Guid linha = etapa.Bancas.Single().Id;
 
-        Result resultado = await Declaracao().DeclararAsync(etapa, Entrada(Banca(TipoDeEntrevista, RegrasDeDeliberacaoDeTeste.Valida())), CancellationToken.None);
+        Result resultado = await Declaracao().DeclararAsync(etapa, Entrada(Banca(TipoDeEntrevista, RegrasDeDeliberacaoDeTeste.Valida(), linha)), CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
         BancaDaEtapa banca = etapa.Bancas.Should().ContainSingle().Subject;
@@ -130,7 +196,7 @@ public sealed class DeclaracaoDasBancasDaEtapaTests
     private static DeclaracaoDasBancasDaEtapa Declaracao() => new(new LeituraMemoizada<Guid, TipoBancaView>(
         (tipoId, _) => Task.FromResult<TipoBancaView?>(new[] { TipoDeEntrevista, TipoDeRecursos }.FirstOrDefault(tipo => tipo.Id == tipoId))));
 
-    private static BancaDaEtapaInput Banca(TipoBancaView tipo, RegraDeDeliberacaoInput? regra) => new(tipo.Id, regra);
+    private static BancaDaEtapaInput Banca(TipoBancaView tipo, RegraDeDeliberacaoInput? regra, Guid? id = null) => new(tipo.Id, regra, id);
 
     private static EtapaProcessoInput Entrada(params BancaDaEtapaInput[] bancas) => new(
         "Prova oral", CaraterEtapa.Classificatoria, TipoDaProva, 1m, null, 1, Produtos: [], Bancas: bancas, Recursos: []);

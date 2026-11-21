@@ -91,6 +91,9 @@ internal static class CorpusEnvelope
     internal static Guid BancaDaObjetivaId(int ordem, int variante) =>
         new($"aaad000{variante:x}-0000-4000-8000-00000000000{ordem:x}");
 
+    internal static Guid BancaDaEtapaId(int etapa, int variante) =>
+        new($"aaae000{variante:x}-0000-4000-8000-00000000000{etapa:x}");
+
     /// <summary>
     /// Código de ato com acento gravado em forma <b>decomposta</b> — <c>A</c> mais acento agudo
     /// combinante — e não na forma composta que um teclado produz.

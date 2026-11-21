@@ -221,7 +221,7 @@ internal sealed class CenarioDeCongelamentoPorAssunto
             new DeclaracaoDaAvaliacaoDaEtapa(
                 Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: 0.5m, FormaDeAvaliacao: FormaDeAvaliacao.Humana,
                 RegraConsolidacao: Regra(RegraConsolidacaoCodigo.CorrecaoIndependente, 'c'), EscalaDeAtendimento: null)).Value!;
-        etapa.DefinirBancas([BancasDeTeste.DeRecursosDaEtapa()]).IsSuccess.Should().BeTrue();
+        etapa.DefinirBancas([BancasDeTeste.DeRecursosDaEtapa()]);
 
         return etapa;
     }

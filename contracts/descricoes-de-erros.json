@@ -13929,6 +13929,22 @@
       ]
     },
     {
+      "codigo": "uniplus.selecao.banca.id_duplicado",
+      "requisitos": [
+        "UNI-REQ-0470"
+      ],
+      "oQueAconteceu": [
+        "A fase ou a etapa pode ter mais de uma banca do mesmo tipo, e cada banca tem a sua\nidentificação própria (UNI-REQ-0470). O pedido de gravação traz o mesmo identificador\npara mais de uma banca da mesma fase ou etapa. A recusa sai com **422**; nada é gravado e a\nconfiguração anterior continua como estava. O campo da recusa é `bancasRequeridas[p].id`, na\nfase, ou `bancas[p].id`, na etapa, em que `p` é a posição da banca repetida. A conferência\nacontece só na gravação, que é onde o pedido traz o identificador; a publicação não emite esta recusa.",
+        "A mensagem da resposta diz: \"O mesmo identificador de banca foi informado em mais de uma\nbanca da fase (ou da etapa); cada banca tem identificador próprio.\" Ela não repete o valor enviado."
+      ],
+      "comoResolver": [
+        "Dê a cada banca da fase ou da etapa um identificador diferente e envie de novo."
+      ],
+      "ondeAparece": [
+        "- Definição do cronograma de fases do processo seletivo\n- Gravação das bancas da fase e da etapa"
+      ]
+    },
+    {
       "codigo": "uniplus.selecao.banca.integrantes_abaixo_do_minimo",
       "requisitos": [
         "UNI-REQ-0387",
@@ -18072,20 +18088,6 @@
       "comoResolver": [
         "Remova a forma de avaliação e a regra de consolidação da etapa de nota do ENEM. Se a\nintenção era uma etapa avaliada pelo próprio processo (prova, redação, entrevista),\ntroque o tipo da etapa para o de uma etapa que não seja de nota do ENEM e então declare\na forma nela.",
         "Se a resposta trouxer mais de uma violação em `errors[]`, corrija todas antes de\nreenviar."
-      ],
-      "ondeAparece": [
-        "Definição de etapas do processo seletivo"
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.etapa_processo.banca_duplicada_na_etapa",
-      "requisitos": [],
-      "oQueAconteceu": [
-        "Uma das etapas do pedido de definição de etapas\n(`PUT .../processos-seletivos/{id}/etapas`) declarou, em `bancas`, o mesmo tipo de\nbanca mais de uma vez: o código do tipo é que identifica a banca na etapa, e a\nrepetição é detectada pelo código do tipo de banca resolvido no cadastro.",
-        "A recusa não é acumulada com as demais: vem depois da conferência da forma, do\ncaráter e da avaliação de todas as etapas, e é conferida etapa por etapa, na ordem\ndo pedido, depois da declaração dos atos e do período de cada etapa e depois de\ntodos os tipos de banca da etapa terem sido encontrados no cadastro\n([`tipo_banca_nao_encontrado_ou_inativo`](/erros/uniplus.selecao.etapa_processo.tipo_banca_nao_encontrado_ou_inativo)).\nA primeira etapa com problema interrompe a conferência, e a resposta traz só esta\nrecusa, sem indicar qual é a etapa. Nada é gravado."
-      ],
-      "comoResolver": [
-        "Deixe cada tipo de banca uma única vez na etapa e reenvie a definição. Se o\npedido tem várias etapas com bancas, confira todas, porque as seguintes só são\nconferidas depois que esta for corrigida."
       ],
       "ondeAparece": [
         "Definição de etapas do processo seletivo"

@@ -168,9 +168,9 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     /// <see cref="EntityBase.Id"/></b>, que <see cref="Criar"/> não aceita.
     /// </summary>
     /// <remarks>
-    /// O id da etapa e o de cada item de avaliação (<paramref name="itens"/>) são congelados no
-    /// envelope porque o desempate, a eliminação, o lançamento e o recurso apontam para eles; os ids das
-    /// demais filhas são regenerados. Os dados vêm de um documento já validado, e o decoder recusa
+    /// O id da etapa, o de cada item de avaliação (<paramref name="itens"/>) e o de cada banca são
+    /// congelados no envelope porque o desempate, a eliminação, o lançamento, o recurso e o julgamento apontam para eles; os
+    /// ids das demais filhas são regenerados. Os dados vêm de um documento já validado, e o decoder recusa
     /// bytes inválidos com <c>Result</c>: as guardas aqui são só contra erro de programação.
     /// </remarks>
     public static EtapaProcesso Reidratar(
@@ -318,19 +318,16 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
         return Result.Success();
     }
 
-    /// <summary>Substitui as bancas da etapa por inteiro, recusando o mesmo tipo duas vezes.</summary>
-    public Result DefinirBancas(IReadOnlyList<BancaDaEtapa> bancas)
+    /// <summary>
+    /// Substitui as bancas da etapa por inteiro. A banca declarada com o id de uma banca da etapa a substitui e a mantém; a
+    /// que chega sem id, ou com id que não é de banca da etapa, é banca nova. Cada banca recebe a posição no tipo que a ordem
+    /// de chegada lhe dá.
+    /// </summary>
+    public void DefinirBancas(IReadOnlyList<BancaDaEtapa> bancas)
     {
         ArgumentNullException.ThrowIfNull(bancas);
 
-        if (AlinhamentoDasBancasDaEtapa.BancaRepetida(bancas) is { } repetida)
-        {
-            return Result.Failure(repetida);
-        }
-
         SubstituirBancas(bancas);
-
-        return Result.Success();
     }
 
     /// <summary>
@@ -382,7 +379,7 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
         FilhasDoAgregado.Substituir(_produtos, produtos, produto => produto.VincularEtapa(Id));
 
     private void SubstituirBancas(IEnumerable<BancaDaEtapa> declaradas) =>
-        FilhasDoAgregado.Substituir(_bancas, AlinhamentoDasBancasDaEtapa.Reconciliar(_bancas, declaradas), banca => banca.VincularEtapa(Id));
+        FilhasDoAgregado.Substituir(_bancas, ReconciliacaoDasBancas.Reconciliar(_bancas, declaradas), banca => banca.VincularEtapa(Id));
 
     private void SubstituirRecursos(IEnumerable<RecursoDaEtapa> recursos) =>
         FilhasDoAgregado.Substituir(_recursos, recursos, recurso => recurso.VincularEtapa(Id));

@@ -21,7 +21,7 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Norma
 /// </summary>
 public sealed class ResumoDoConteudoCongeladoRicoTests
 {
-    private const string ResumoDoCorpusRico = "a9cc14fcc8dc9aa5964b854e1e4d6d4c367be18e79dbe5002507bbea202c33b4";
+    private const string ResumoDoCorpusRico = "342fe68fab1289595b4b0b5274d4a2b268c76723d3be99bb1ec5693b4d0a0e45";
     private const string ResumoDoCorpusDeReferencia = "ddb9829c638541d6f5f612a51b4743992959c91428d3dff4ac8057e170b61052";
     private const string ResumoDoCorpusComCascata = "286f088aa8e376742aeb84bb7dd0ebb2615c35e61950e3bed7093478a40f2f4a";
 

@@ -6,12 +6,17 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 
 /// <summary>
-/// Recusas da composição e da regra de deliberação das bancas, e da banca que o recurso exige.
+/// Recusas da identificação, da composição e da regra de deliberação das bancas, e da banca que o recurso exige.
 /// </summary>
 internal static class ErrosDaBanca
 {
     internal static IEnumerable<KeyValuePair<string, DomainErrorMapping>> Mapeamentos() =>
-        [.. DaDeclaracaoDaRegra(), .. DaExigenciaNaPublicacao()];
+        [.. DaIdentificacaoDaBanca(), .. DaDeclaracaoDaRegra(), .. DaExigenciaNaPublicacao()];
+
+    private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> DaIdentificacaoDaBanca() =>
+    [
+        new(BancaErrorCodes.IdDuplicado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.banca.id_duplicado", "Duas bancas da mesma fase ou etapa têm o mesmo identificador")),
+    ];
 
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> DaDeclaracaoDaRegra() =>
     [

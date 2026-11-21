@@ -35,7 +35,7 @@ internal static class CorpusEnvelopeEtapas
         EtapaProcesso etapa = NovaEtapaObjetiva(variante, permutar);
         etapa.DefinirJanelaEParecer(null, null, emiteParecerIndividual: true).IsSuccess.Should().BeTrue();
         etapa.DefinirProdutos(ProdutosDaObjetiva(variante, permutar)).IsSuccess.Should().BeTrue();
-        etapa.DefinirBancas(BancasDaObjetiva(variante, permutar)).IsSuccess.Should().BeTrue();
+        etapa.DefinirBancas(BancasDaObjetiva(variante, permutar));
         etapa.DefinirRecursos(RecursosDaObjetiva(variante)).IsSuccess.Should().BeTrue();
         return etapa;
     }
@@ -76,17 +76,17 @@ internal static class CorpusEnvelopeEtapas
             ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(6, variante), AtoAnulacao, PapelProdutoFase.Definitivo),
         ], permutar);
 
-    // A etapa requer banca: é o bloco em que o envelope congela o TIPO e o código, e não a
-    // linha — o id dela muda a cada gravação, porque o comando declara a banca pelo tipo.
+    // A etapa requer banca: é o bloco em que o envelope congela a identidade da banca, a posição
+    // dela no tipo, o TIPO e o código.
     // Três bancas, declaradas fora da ordem que o envelope emite: com uma só, a ordenação
     // por código não se manifestava. Duas delas são o mesmo par dos produtos — acento
     // decomposto e um companheiro escolhido para que a ordem entre eles vire com a
     // normalização —, aplicado ao outro campo que a canonicalização ordena por texto.
     internal static IReadOnlyList<BancaDaEtapa> BancasDaObjetiva(int variante, bool permutar) =>
         Ordem([
-            BancaDaEtapa.Reidratar(BancaDaObjetivaId(2, variante), TipoBancaRecursal, BancaAnaliseDecomposta, "Banca de teste", BancasDeTeste.Regra()),
-            BancaDaEtapa.Reidratar(BancaDaObjetivaId(3, variante), TipoBancaAnulacao, BancaAnulacao, "Banca de teste", BancasDeTeste.Regra()),
-            BancaDaEtapa.Reidratar(BancaDaObjetivaId(1, variante), TipoBancaExaminadora, "BANCA_EXAMINADORA", "Banca de teste", BancasDeTeste.Regra()),
+            BancaDaEtapa.ReconstruirDosDadosSalvos(BancaDaObjetivaId(2, variante), TipoBancaRecursal, BancaAnaliseDecomposta, "Banca de teste", BancasDeTeste.Regra()),
+            BancaDaEtapa.ReconstruirDosDadosSalvos(BancaDaObjetivaId(3, variante), TipoBancaAnulacao, BancaAnulacao, "Banca de teste", BancasDeTeste.Regra()),
+            BancaDaEtapa.ReconstruirDosDadosSalvos(BancaDaObjetivaId(1, variante), TipoBancaExaminadora, "BANCA_EXAMINADORA", "Banca de teste", BancasDeTeste.Regra()),
         ], permutar);
 
     internal static IReadOnlyList<RecursoDaEtapa> RecursosDaObjetiva(int variante) =>
@@ -164,7 +164,7 @@ internal static class CorpusEnvelopeEtapas
                 ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(5, variante), "Primeiro acesso ao ensino superior", 20.5000m),
                 ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(6, variante), "Domínio do conteúdo", 79.5000m),
             ], permutar));
-        etapa.DefinirBancas([BancaDaEtapa.Criar(TipoBancaExaminadora, "BANCA_EXAMINADORA", "Banca de teste", BancasDeTeste.Regra())]).IsSuccess.Should().BeTrue();
+        etapa.DefinirBancas([BancaDaEtapa.ReconstruirDosDadosSalvos(BancaDaEtapaId(3, variante), TipoBancaExaminadora, "BANCA_EXAMINADORA", "Banca de teste", BancasDeTeste.Regra())]);
         etapa.DefinirTiposDeDecisao([TipoMotivoDeDecisao.NotaDaEtapa.Codigo(), TipoMotivoDeDecisao.Heteroidentificacao.Codigo()]).IsSuccess.Should().BeTrue();
         return etapa;
     }
@@ -181,7 +181,7 @@ internal static class CorpusEnvelopeEtapas
                 ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(4, variante), "Coesão da exposição", 30.0000m),
                 ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(3, variante), "Argumentação", 70.0000m),
             ], permutar));
-        etapa.DefinirBancas([BancaDaEtapa.Criar(TipoBancaExaminadora, "BANCA_EXAMINADORA", "Banca de teste", BancasDeTeste.Regra())]).IsSuccess.Should().BeTrue();
+        etapa.DefinirBancas([BancaDaEtapa.ReconstruirDosDadosSalvos(BancaDaEtapaId(4, variante), TipoBancaExaminadora, "BANCA_EXAMINADORA", "Banca de teste", BancasDeTeste.Regra())]);
         return etapa;
     }
 

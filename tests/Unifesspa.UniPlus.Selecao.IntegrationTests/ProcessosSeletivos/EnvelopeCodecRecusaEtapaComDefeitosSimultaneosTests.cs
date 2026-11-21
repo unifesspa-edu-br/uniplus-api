@@ -15,7 +15,7 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Adult
 /// <summary>
 /// Uma etapa do envelope com dois defeitos ao mesmo tempo é recusada pelo primeiro na ordem em que a leitura
 /// confere a etapa: forma da etapa, forma dos produtos, forma e regra da janela, tipos de decisão, forma das
-/// bancas, banca duplicada, produto duplicado e, por fim, os recursos. A ordem decide qual recusa o cadastro devolve, e a
+/// bancas, id de banca repetido, produto duplicado e, por fim, os recursos. A ordem decide qual recusa o cadastro devolve, e a
 /// leitura dividida em passos não pode trocá-la.
 /// </summary>
 public sealed class EnvelopeCodecRecusaEtapaComDefeitosSimultaneosTests
@@ -32,18 +32,6 @@ public sealed class EnvelopeCodecRecusaEtapaComDefeitosSimultaneosTests
         ConferirRecusaEm(resultado, "etapas[0].produtos[0]");
     }
 
-    [Fact(DisplayName = "Janela invertida e banca com o código repetido: recusa a janela")]
-    public void JanelaInvertida_BancaRepetida_RecusaAJanela()
-    {
-        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-        {
-            InverterAJanela(PrimeiraEtapa(envelope));
-            RepetirOCodigoDaBanca(PrimeiraEtapa(envelope));
-        });
-
-        ConferirRecusaEm(resultado, "etapas[0]", "a janela da etapa está invertida");
-    }
-
     [Fact(DisplayName = "Janela invertida e tipos de decisão fora de ordem: recusa a janela")]
     public void JanelaInvertida_TiposForaDeOrdem_RecusaAJanela()
     {
@@ -56,24 +44,12 @@ public sealed class EnvelopeCodecRecusaEtapaComDefeitosSimultaneosTests
         ConferirRecusaEm(resultado, "etapas[0]", "a janela da etapa está invertida");
     }
 
-    [Fact(DisplayName = "Tipos de decisão fora de ordem e banca com o código repetido: recusa os tipos")]
-    public void TiposForaDeOrdem_BancaRepetida_RecusaOsTipos()
+    [Fact(DisplayName = "Banca com o id repetido e produto repetido: recusa as bancas")]
+    public void BancaComIdRepetido_ProdutoRepetido_RecusaAsBancas()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
         {
-            DesordenarOsTiposDeDecisao(PrimeiraEtapa(envelope));
-            RepetirOCodigoDaBanca(PrimeiraEtapa(envelope));
-        });
-
-        ConferirRecusaEm(resultado, "etapas[0].tiposDeDecisao");
-    }
-
-    [Fact(DisplayName = "Banca com o código repetido e produto repetido: recusa as bancas")]
-    public void BancaRepetida_ProdutoRepetido_RecusaAsBancas()
-    {
-        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-        {
-            RepetirOCodigoDaBanca(PrimeiraEtapa(envelope));
+            RepetirOIdDaBanca(PrimeiraEtapa(envelope));
             RepetirOProduto(PrimeiraEtapa(envelope));
         });
 
@@ -115,10 +91,10 @@ public sealed class EnvelopeCodecRecusaEtapaComDefeitosSimultaneosTests
     private static void DesordenarOsTiposDeDecisao(JsonObject etapa) =>
         etapa["tiposDeDecisao"] = new JsonArray("NOTA_DA_ETAPA", "ANALISE_DOCUMENTAL");
 
-    private static void RepetirOCodigoDaBanca(JsonObject etapa)
+    private static void RepetirOIdDaBanca(JsonObject etapa)
     {
         JsonArray bancas = etapa["bancas"]!.AsArray();
-        bancas[1]!["codigo"] = bancas[0]!["codigo"]!.GetValue<string>();
+        bancas[1]!["id"] = bancas[0]!["id"]!.GetValue<string>();
     }
 
     private static void RepetirOProduto(JsonObject etapa)

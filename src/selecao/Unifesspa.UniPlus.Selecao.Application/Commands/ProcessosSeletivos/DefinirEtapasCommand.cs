@@ -127,7 +127,11 @@ public sealed record NivelDeAtendimentoInput(string Rotulo, decimal Fracao);
 /// <param name="RegraDeDeliberacao">
 /// Como a banca é composta e delibera. Opcional no rascunho; a publicação e a retificação a exigem.
 /// </param>
-public sealed record BancaDaEtapaInput(Guid TipoBancaId, RegraDeDeliberacaoInput? RegraDeDeliberacao = null);
+/// <param name="Id">
+/// O id da banca que a leitura devolveu. Com ele, a banca é a mesma e mantém a identidade ao mudar de tipo, de regra ou de
+/// posição; sem ele, ou com id que não é de banca da etapa, a banca é criada de novo.
+/// </param>
+public sealed record BancaDaEtapaInput(Guid TipoBancaId, RegraDeDeliberacaoInput? RegraDeDeliberacao = null, Guid? Id = null);
 
 /// <summary>
 /// Uma janela recursal da etapa. <paramref name="AtoAncoraCodigo"/> só é lido na âncora de

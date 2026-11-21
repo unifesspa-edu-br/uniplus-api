@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -24,9 +25,18 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <see cref="ProcessosSeletivos.Cronograma.CandidatosAtendidosPelasBancas.Violacoes"/>.
 /// </para>
 /// </remarks>
-public sealed class BancaRequerida : EntityBase
+public sealed class BancaRequerida : EntityBase, IBancaDoLugar<BancaRequerida>
 {
     public Guid FaseCronogramaId { get; private set; }
+
+    /// <summary>
+    /// A posição da banca entre as do mesmo tipo na fase, a partir de 1, na ordem em que a fase as recebeu. Junto do código
+    /// do tipo, é única na fase e é o que ordena as bancas.
+    /// </summary>
+    public int PosicaoNoTipo { get; private set; }
+
+    /// <summary>O id da banca já gravada que esta declaração substitui; ausente quando a banca é nova.</summary>
+    private Guid? IdDaBancaQueSubstitui { get; init; }
 
     /// <summary>Id (Guid v7) do <c>TipoBanca</c> vivo de origem, no momento do congelamento.</summary>
     public Guid TipoBancaOrigemId { get; private set; }
@@ -55,17 +65,47 @@ public sealed class BancaRequerida : EntityBase
         string codigo,
         string nome,
         IReadOnlyList<CategoriaJulgada> candidatosAtendidos,
+        RegraDeDeliberacao? regraDeDeliberacao = null,
+        Guid? idDaBancaQueSubstitui = null) =>
+        Montar(Guid.CreateVersion7(), tipoBancaOrigemId, codigo, nome, candidatosAtendidos, regraDeDeliberacao, idDaBancaQueSubstitui);
+
+    /// <summary>Reconstrói a banca dos dados salvos no envelope, preservando o <see cref="EntityBase.Id"/> congelado.</summary>
+    public static BancaRequerida ReconstruirDosDadosSalvos(
+        Guid id,
+        Guid tipoBancaOrigemId,
+        string codigo,
+        string nome,
+        IReadOnlyList<CategoriaJulgada> candidatosAtendidos,
         RegraDeDeliberacao? regraDeDeliberacao = null)
+    {
+        if (id == Guid.Empty)
+        {
+            throw new ArgumentException("A banca reconstruída deve declarar o Id congelado no envelope.", nameof(id));
+        }
+
+        return Montar(id, tipoBancaOrigemId, codigo, nome, candidatosAtendidos, regraDeDeliberacao, id);
+    }
+
+    private static BancaRequerida Montar(
+        Guid id,
+        Guid tipoBancaOrigemId,
+        string codigo,
+        string nome,
+        IReadOnlyList<CategoriaJulgada> candidatosAtendidos,
+        RegraDeDeliberacao? regraDeDeliberacao,
+        Guid? idDaBancaQueSubstitui)
     {
         (string codigoAparado, string nomeAparado) = OrigemDaBanca.Exigir(tipoBancaOrigemId, codigo, nome);
         ArgumentNullException.ThrowIfNull(candidatosAtendidos);
 
         BancaRequerida banca = new()
         {
+            Id = id,
             TipoBancaOrigemId = tipoBancaOrigemId,
             Codigo = codigoAparado,
             Nome = nomeAparado,
             RegraDeDeliberacao = regraDeDeliberacao,
+            IdDaBancaQueSubstitui = idDaBancaQueSubstitui,
         };
         banca.AdotarCandidatosAtendidos(candidatosAtendidos);
         return banca;
@@ -81,6 +121,48 @@ public sealed class BancaRequerida : EntityBase
     }
 
     internal void VincularFase(Guid faseCronogramaId) => FaseCronogramaId = faseCronogramaId;
+
+    void IBancaDoLugar<BancaRequerida>.PosicionarNoTipo(int posicaoNoTipo) => PosicaoNoTipo = posicaoNoTipo;
+
+    /// <summary>
+    /// Assume a declaração que substitui esta banca, preservando o <see cref="EntityBase.Id"/>. A categoria de mesmo código
+    /// continua sendo a mesma linha, porque o par banca e código é único e sair e voltar sob ele colidiria dentro da mesma
+    /// transação.
+    /// </summary>
+    void IBancaDoLugar<BancaRequerida>.AssumirDeclaracao(BancaRequerida declarada)
+    {
+        ArgumentNullException.ThrowIfNull(declarada);
+
+        TipoBancaOrigemId = declarada.TipoBancaOrigemId;
+        Codigo = declarada.Codigo;
+        Nome = declarada.Nome;
+        RegraDeDeliberacao = declarada.RegraDeDeliberacao;
+        PosicaoNoTipo = declarada.PosicaoNoTipo;
+        ReconciliarCandidatosAtendidos(declarada._candidatosAtendidos);
+    }
+
+    private void ReconciliarCandidatosAtendidos(IReadOnlyList<CategoriaJulgada> declaradas)
+    {
+        List<CategoriaJulgada> vivas = [.. _candidatosAtendidos];
+        List<CategoriaJulgada> mantidas = [.. declaradas.Select(declarada => ReaproveitarOuAdotar(vivas, declarada))];
+
+        _candidatosAtendidos.Clear();
+        AdotarCandidatosAtendidos(mantidas);
+    }
+
+    private static CategoriaJulgada ReaproveitarOuAdotar(List<CategoriaJulgada> vivas, CategoriaJulgada declarada)
+    {
+        CategoriaJulgada? viva = vivas.Find(candidata => string.Equals(candidata.Codigo, declarada.Codigo, StringComparison.Ordinal));
+        if (viva is null)
+        {
+            return declarada;
+        }
+
+        vivas.Remove(viva);
+        viva.AssumirOrigem(declarada);
+
+        return viva;
+    }
 
     /// <summary>
     /// Os códigos dos candidatos atendidos, sem repetição e em ordem canônica — a forma pela
@@ -98,4 +180,6 @@ public sealed class BancaRequerida : EntityBase
             .Select(static c => c.Codigo)
             .Distinct(StringComparer.Ordinal)
             .Order(StringComparer.Ordinal)];
+
+    Guid? IBancaDoLugar<BancaRequerida>.IdDaBancaQueSubstitui => IdDaBancaQueSubstitui;
 }

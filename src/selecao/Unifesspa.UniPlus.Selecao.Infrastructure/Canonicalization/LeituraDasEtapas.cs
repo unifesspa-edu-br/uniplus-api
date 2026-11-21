@@ -164,21 +164,25 @@ internal static class LeituraDasEtapas
     private static EtapaProcesso? DeclararFilhas(
         LeitorEnvelope leitor, EtapaProcesso etapa, List<ProdutoDaEtapa> produtos, JsonObject item, string path)
     {
-        List<BancaDaEtapa> bancas = LerBancasDaEtapa(leitor, item, path);
+        return DefinirBancas(leitor, etapa, LerBancasDaEtapa(leitor, item, path)) is not null
+            && DefinirProdutos(leitor, etapa, produtos, path) is not null
+            ? DefinirRecursos(leitor, etapa, item, path)
+            : null;
+    }
+
+    // As bancas chegam à etapa, que lhes atribui a posição no tipo; a lida tem de ser essa.
+    private static EtapaProcesso? DefinirBancas(LeitorEnvelope leitor, EtapaProcesso etapa, BancasLidas<BancaDaEtapa> lidas)
+    {
         if (leitor.Falhou)
         {
             return null;
         }
 
-        return DefinirBancas(leitor, etapa, bancas, path) is not null && DefinirProdutos(leitor, etapa, produtos, path) is not null
-            ? DefinirRecursos(leitor, etapa, item, path)
-            : null;
-    }
+        etapa.DefinirBancas(lidas.Bancas);
+        lidas.ExigirQueSeguemARaiz(leitor, etapa.Bancas.ToDictionary(static banca => banca.Id, static banca => banca.PosicaoNoTipo));
 
-    private static EtapaProcesso? DefinirBancas(LeitorEnvelope leitor, EtapaProcesso etapa, List<BancaDaEtapa> bancas, string path) =>
-        etapa.DefinirBancas(bancas).IsFailure
-            ? RecusarEtapa(leitor, $"{path}.bancas", "o mesmo tipo aparece duas vezes.")
-            : etapa;
+        return leitor.Falhou ? null : etapa;
+    }
 
     private static EtapaProcesso? DefinirProdutos(LeitorEnvelope leitor, EtapaProcesso etapa, List<ProdutoDaEtapa> produtos, string path) =>
         etapa.DefinirProdutos(produtos).IsFailure
@@ -298,29 +302,16 @@ internal static class LeituraDasEtapas
         return produtos;
     }
 
-    private static List<BancaDaEtapa> LerBancasDaEtapa(LeitorEnvelope leitor, JsonObject item, string path)
-    {
-        JsonArray? array = leitor.Array(item, "bancas", path);
-        string pathBancas = $"{path}.bancas";
-        List<BancaDaEtapa> bancas = [];
-        for (int j = 0; !leitor.Falhou && array is not null && j < array.Count; j++)
-        {
-            BancaDaEtapa? banca = LerBancaDaEtapa(leitor, leitor.ItemObjeto(array, j, pathBancas), $"{pathBancas}[{j}]");
-            if (banca is not null)
-            {
-                bancas.Add(banca);
-            }
-        }
+    private static BancasLidas<BancaDaEtapa> LerBancasDaEtapa(LeitorEnvelope leitor, JsonObject item, string path) =>
+        BancasLidas<BancaDaEtapa>.Ler(leitor, leitor.Array(item, "bancas", path), $"{path}.bancas", LerBancaDaEtapa);
 
-        return leitor.Falhou ? [] : bancas;
-    }
-
-    // Id novo: o envelope não congela a identidade da linha porque nada a referencia.
-    private static BancaDaEtapa? LerBancaDaEtapa(LeitorEnvelope leitor, JsonObject itemBanca, string pathBanca)
+    private static (BancaDaEtapa, BancaLida)? LerBancaDaEtapa(LeitorEnvelope leitor, JsonObject itemBanca, string pathBanca)
     {
-        leitor.ExigirChaves(itemBanca, pathBanca, "tipoBancaOrigemId", "codigo", "nome", "regraDeDeliberacao");
+        leitor.ExigirChaves(itemBanca, pathBanca, "id", "posicaoNoTipo", "tipoBancaOrigemId", "codigo", "nome", "regraDeDeliberacao");
         BancaLida? lida = BancaLida.Ler(leitor, itemBanca, pathBanca);
 
-        return lida is null ? null : BancaDaEtapa.Criar(lida.TipoBancaOrigemId, lida.Codigo, lida.Nome, lida.Regra);
+        return lida is null
+            ? null
+            : (BancaDaEtapa.ReconstruirDosDadosSalvos(lida.Id, lida.TipoBancaOrigemId, lida.Codigo, lida.Nome, lida.Regra), lida);
     }
 }

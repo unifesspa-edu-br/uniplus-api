@@ -68,6 +68,7 @@ internal static class ProjecaoDaFaseDoCronograma
         banca.Id,
         banca.TipoBancaOrigemId,
         banca.Codigo,
+        banca.PosicaoNoTipo,
         banca.Nome,
         ProjecaoDaRegraDeDeliberacao.De(banca.RegraDeDeliberacao),
         [.. OrdemCanonicaDaConfiguracao.CandidatosAtendidos(banca.CandidatosAtendidos)

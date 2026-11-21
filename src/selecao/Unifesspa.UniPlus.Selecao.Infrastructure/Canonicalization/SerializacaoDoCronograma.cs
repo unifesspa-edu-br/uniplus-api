@@ -98,16 +98,15 @@ internal static class SerializacaoDoCronograma
     private static JsonArray SerializarBancasRequeridas(FaseCronograma fase)
     {
         IOrderedEnumerable<(BancaRequerida Banca, JsonObject Item)> ordenadas = OrdemCanonicaDaConfiguracao
-            .BancasDaFase(fase.BancasRequeridas.Select(static b => (Banca: b, Item: SerializarBancaRequerida(b))), static par => par.Banca)
-            .ThenBy(
-                static par => EscritaCanonica.PerfilAtual.Serializar(par.Item),
-                ComparadorLexicograficoDeBytes.Instancia);
+            .BancasDaFase(fase.BancasRequeridas.Select(static b => (Banca: b, Item: SerializarBancaRequerida(b))), static par => par.Banca);
 
         return new JsonArray([.. ordenadas.Select(static par => (JsonNode)par.Item)]);
     }
 
     private static JsonObject SerializarBancaRequerida(BancaRequerida banca) => new()
     {
+        ["id"] = banca.Id,
+        ["posicaoNoTipo"] = banca.PosicaoNoTipo,
         ["tipoBancaOrigemId"] = banca.TipoBancaOrigemId,
         ["codigo"] = HashCanonicalComputer.NormalizeNfc(banca.Codigo),
         ["nome"] = HashCanonicalComputer.NormalizeNfc(banca.Nome),
