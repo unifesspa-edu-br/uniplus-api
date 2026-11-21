@@ -82,7 +82,7 @@ Esta ADR **não muda** a forma como `Result<T>` e `DomainError` são construído
 ### Positivas
 
 - **Clean Architecture preservada.** Único lugar onde HTTP encosta na semântica de erro é a camada `API`. Mover slices, refatorar handlers ou trocar framework HTTP não exige tocar `Domain`/`Application`.
-- **Fonte única de verdade.** Registry serve simultaneamente os controllers, o catálogo público, a documentação OpenAPI (via transformer da [ADR-0030](0030-openapi-3-1-contract-first.md)) e os logs estruturados. Drift entre essas vistas é tecnicamente impossível.
+- **Fonte única de verdade.** Registry serve simultaneamente os controllers, o catálogo público, a documentação OpenAPI (via transformer da [ADR-0030](0030-openapi-3-1-contract-first-microsoft-aspnetcore-openapi.md)) e os logs estruturados. Drift entre essas vistas é tecnicamente impossível.
 - **Drift detectado em PR.** Adicionar `code` novo no `Domain` sem registrar quebra o ArchUnit no CI — chega como erro acionável no PR, nunca silencia para produção.
 - **Testes mais simples.** Stub do `IDomainErrorMapper` cobre cenários de mapping em testes de controller sem precisar do registry real.
 

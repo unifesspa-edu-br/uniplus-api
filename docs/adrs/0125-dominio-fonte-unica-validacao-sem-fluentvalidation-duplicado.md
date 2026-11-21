@@ -50,6 +50,8 @@ Mecanismo, implementado e testado no agregado `Campus`:
 **Escopo desta ADR**: valida o mecanismo (aditivo no `Kernel`, reutilizável por todo módulo) e aplica-o integralmente em `Campus`, com evidência de zero regressão na suíte inteira da solução (unit + arch + integration, todos os módulos) — exceto a diferença de comportamento documentada abaixo (`Id` vazio). **Fora de escopo**: migrar os demais ~60 validators do repositório para o mesmo padrão — trabalho real, mecânico caso a caso (cada agregado precisa da mesma auditoria "o que aqui não tem equivalente de domínio?"), rastreado à parte.
 
 > **Emenda (2026-11-11) — sem supressão do CA1062 no símbolo.** A [ADR-0160](0160-supressao-de-aviso-do-analisador-proibida.md) proíbe a supressão por símbolo descrita no item 4. O mecanismo desta ADR continua; o `CA1062` do domínio passa a ser tratado no código, e a supressão existente é dívida a remover.
+>
+> **Emenda (2026-11-20) — quando a resposta leva `errors[]` é o que diz a ADR-0023.** A [ADR-0023](0023-wire-formato-erro-rfc-9457.md), na emenda de 17/11/2026, é mais recente e prevalece sobre o que esta ADR diz no item 1, nas Consequências e na Confirmação sobre quando a lista `errors[]` aparece. A lista vai na resposta quando há mais de uma causa ou quando alguma causa aponta um campo, em qualquer status, e o item sem campo sai sem a chave `field`. Quem decide não é mais a origem do erro (`ValidationFailure` ou `Failure`): uma recusa com uma só causa sem campo, de qualquer origem, não leva a lista, e duas causas sem campo levam. O mecanismo desta ADR não muda. O `field` em notação de pontos, com o nome do campo no corpo do pedido, continua valendo nos endpoints desta ADR.
 
 ## Consequências
 

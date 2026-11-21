@@ -58,7 +58,7 @@ Todos os ADRs filhos desta umbrella herdam e respeitam:
 | `uniplus-api` | [ADR-0027](0027-idempotency-key-store-postgresql.md) | `Idempotency-Key` opt-in com store em PostgreSQL adjacente ao outbox. |
 | `uniplus-api` | [ADR-0028](0028-versionamento-per-resource-content-negotiation.md) | Versionamento per-resource via content negotiation (`application/vnd.uniplus.<resource>.v<N>+json`). |
 | `uniplus-api` | [ADR-0029](0029-hateoas-level-1-links.md) | HATEOAS Level 1 com `_links` self/next/prev relativos; HAL rejeitado. |
-| `uniplus-api` | [ADR-0030](0030-openapi-3-1-contract-first.md) | OpenAPI 3.1 contract-first via `Microsoft.AspNetCore.OpenApi` (completa [ADR-0015](0015-rest-contract-first-com-openapi.md)). |
+| `uniplus-api` | [ADR-0030](0030-openapi-3-1-contract-first-microsoft-aspnetcore-openapi.md) | OpenAPI 3.1 contract-first via `Microsoft.AspNetCore.OpenApi` (completa [ADR-0015](0015-rest-contract-first-com-openapi.md)). |
 | `uniplus-web` | ADR-0011 | Consumer adapter `ApiResult<T>` em nova lib `libs/shared-http`. |
 | `uniplus-developers` | ADR-0001 | Arquitetura do portal de desenvolvedores (Docusaurus 3 + Redoc + GitHub Pages). |
 
