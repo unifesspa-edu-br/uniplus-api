@@ -60,7 +60,7 @@ public sealed class CongelamentoDaVersao(
         }
 
         Result<AtoEDocumentoConferidos> ato = await atoEDocumento
-            .ConferirAsync(processo.Id, edital.DocumentoEditalId, atoInformado, origem.DescricaoDaOperacao, cancellationToken)
+            .ConferirAsync(processo.Id, edital.DocumentoEditalId, atoInformado, origem, cancellationToken)
             .ConfigureAwait(false);
 
         return ato.IsFailure

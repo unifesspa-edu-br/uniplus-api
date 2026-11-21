@@ -11,6 +11,8 @@ using Kernel.Results;
 
 using Queries.ProcessosSeletivos;
 
+using Services;
+
 /// <summary>
 /// De onde a versão que nasce parte: a primeira publicação, que não tem versão anterior, ou uma retificação, que
 /// parte da versão vigente. A conferência do congelamento é a mesma para as duas operações; o que muda vem daqui,
@@ -30,6 +32,12 @@ internal abstract record OrigemDoCongelamento
     /// é conflito de estado, e a recusa impede o congelamento. Fica fora da ordem dos assuntos de regra da configuração.
     /// </summary>
     public abstract Result ConferirEstado(ProcessoSeletivo processo);
+
+    /// <summary>
+    /// O instante único da operação, lido depois da trava do processo: o do relógio na primeira publicação, e, na
+    /// retificação, o maior entre o relógio e a vigência da versão que ela sucede.
+    /// </summary>
+    public abstract Result<InstanteDoComando> LerOInstante(LeituraDoInstanteDoComando instantes);
 
     /// <summary>O ato que a versão emenda e o motivo; nulo quando a versão não retifica nada.</summary>
     public abstract RetificacaoDoEdital? Retificacao { get; }
@@ -65,6 +73,9 @@ internal sealed record PrimeiraPublicacao : OrigemDoCongelamento
     public override Result ConferirEstado(ProcessoSeletivo processo) =>
         TransicoesDaVersao.ConferirEstadoParaPublicar(processo.Status);
 
+    public override Result<InstanteDoComando> LerOInstante(LeituraDoInstanteDoComando instantes) =>
+        instantes.Ler();
+
     public override RetificacaoDoEdital? Retificacao => null;
 
     public override int NumeroDaVersaoQueNasce => VersaoConfiguracao.NumeroDaAbertura;
@@ -92,6 +103,9 @@ internal sealed record RetificacaoDeAtoUnico(BaseDaRetificacao Base) : OrigemDoC
 
     public override Result ConferirEstado(ProcessoSeletivo processo) =>
         TransicoesDaVersao.ConferirEstadoParaRetificar(processo.Id, processo.Status, Base.VersaoVigente, Base.Motivo);
+
+    public override Result<InstanteDoComando> LerOInstante(LeituraDoInstanteDoComando instantes) =>
+        instantes.LerNaSucessaoDe(Base.VersaoVigente);
 
     public override RetificacaoDoEdital? Retificacao => new(Base.VersaoVigente.AtoCriadorId, Base.Motivo);
 

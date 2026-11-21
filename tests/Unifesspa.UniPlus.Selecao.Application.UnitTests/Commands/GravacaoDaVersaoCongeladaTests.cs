@@ -206,7 +206,7 @@ public sealed class GravacaoDaVersaoCongeladaTests
             (ProcessoSeletivo processo, VersaoConfiguracao versao) = ProcessoPublicado();
             ServicosDoCongelamentoDeTeste servicos = ServicosDoCongelamentoDeTeste.Para(processo);
             Result<AtoEDocumentoConferidos> conferidos = await servicos.AtoEDocumento()
-                .ConferirAsync(processo.Id, Guid.CreateVersion7(), NovoAto(), "publicação", CancellationToken.None);
+                .ConferirAsync(processo.Id, Guid.CreateVersion7(), NovoAto(), new PrimeiraPublicacao(), CancellationToken.None);
             conferidos.IsSuccess.Should().BeTrue(conferidos.Error?.Message);
 
             return new Preparo(servicos, processo, versao, conferidos.Value);

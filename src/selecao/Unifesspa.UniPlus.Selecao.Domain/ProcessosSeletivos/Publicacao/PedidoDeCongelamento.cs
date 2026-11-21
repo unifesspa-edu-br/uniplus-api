@@ -19,7 +19,8 @@ public sealed record PedidoDeCongelamento
 
     /// <summary>
     /// O instante em que o comando publica, lido uma só vez do relógio injetado (ADR-0068) e nunca relido pelo
-    /// agregado: vale a vigência da versão e o id do ato que ela cria.
+    /// agregado: vale a vigência da versão e o id do ato que ela cria. Na retificação é o instante efetivo, o maior entre
+    /// o relógio e a vigência da versão sucedida, o mesmo em que o comando confere os prazos e monta os fatos.
     /// </summary>
     public required DateTimeOffset Instante { get; init; }
 
