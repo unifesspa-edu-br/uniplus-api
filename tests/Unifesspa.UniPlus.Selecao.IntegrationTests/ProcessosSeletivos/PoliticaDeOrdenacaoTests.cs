@@ -99,20 +99,22 @@ public sealed class PoliticaDeOrdenacaoTests
         // conteúdo (nome) daria.
         EtapaProcesso zeta = EtapaReidratada(IdFixo(2), "Zeta", 1);
         EtapaProcesso alfa = EtapaReidratada(IdFixo(1), "Alfa", 2);
+        AfirmarQueNomeEIdContrariamAOrdem(zeta, alfa);
 
-        new[] { zeta, alfa }.OrderBy(static e => e.Nome, StringComparer.Ordinal).Select(static e => e.Nome)
-            .Should().Equal(["Alfa", "Zeta"], "pré-condição: ordenar pelo nome (proxy de conteúdo) dá o oposto do oráculo de Ordem abaixo");
-        new[] { zeta, alfa }.OrderBy(static e => e.Id).Select(static e => e.Nome)
-            .Should().Equal(["Alfa", "Zeta"], "pré-condição: ordenar pelo Id dá o oposto do oráculo de Ordem abaixo");
-
-        ProcessoSeletivo processo = Montar(etapas: [alfa, zeta]);
-
-        JsonArray etapasJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["etapas"]!.AsArray();
+        JsonArray etapasJson = ArrayCanonicalizado(Montar(etapas: [alfa, zeta]), "etapas");
 
         etapasJson.Should().HaveCount(2, "pré-condição: o caminho existe e tem os dois itens sob teste");
         etapasJson.Select(static e => e!["nome"]!.GetValue<string>()).Should().Equal(
             ["Zeta", "Alfa"],
             "Ordem (1 para Zeta, 2 para Alfa) governa a posição — nem o nome nem o Id, que apontariam para o oposto");
+    }
+
+    private static void AfirmarQueNomeEIdContrariamAOrdem(EtapaProcesso zeta, EtapaProcesso alfa)
+    {
+        new[] { zeta, alfa }.OrderBy(static e => e.Nome, StringComparer.Ordinal).Select(static e => e.Nome)
+            .Should().Equal(["Alfa", "Zeta"], "pré-condição: ordenar pelo nome (proxy de conteúdo) dá o oposto do oráculo de Ordem abaixo");
+        new[] { zeta, alfa }.OrderBy(static e => e.Id).Select(static e => e.Nome)
+            .Should().Equal(["Alfa", "Zeta"], "pré-condição: ordenar pelo Id dá o oposto do oráculo de Ordem abaixo");
     }
 
     [Fact(DisplayName = "etapas: sem Ordem, o conteúdo governa sobre o Id — a posição depende do que a etapa diz, não do Guid")]
@@ -124,9 +126,7 @@ public sealed class PoliticaDeOrdenacaoTests
         new[] { zeta, alfa }.OrderBy(static e => e.Id).Select(static e => e.Nome)
             .Should().Equal(["Zeta", "Alfa"], "pré-condição: ordenar pelo Id (a política ANTIGA) dá o oposto do oráculo de conteúdo abaixo");
 
-        ProcessoSeletivo processo = Montar(etapas: [zeta, alfa]);
-
-        JsonArray etapasJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["etapas"]!.AsArray();
+        JsonArray etapasJson = ArrayCanonicalizado(Montar(etapas: [zeta, alfa]), "etapas");
 
         etapasJson.Select(static e => e!["nome"]!.GetValue<string>()).Should().Equal(
             ["Alfa", "Zeta"],
@@ -136,26 +136,30 @@ public sealed class PoliticaDeOrdenacaoTests
     [Fact(DisplayName = "etapas: duplicata verdadeira (mesmo conteúdo, sem Ordem) desempata por Id — o desempate final é alcançável, não código morto")]
     public void Etapas_DuplicataVerdadeira_IdEstabilizaComoDesempateFinal()
     {
-        // O MESMO TipoEtapaSnapshot para as duas etapas — não um TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), ..., notaDeOrigemNoEnem: false)
-        // por etapa (flaky sob CORRIDA, issue #1115): duas chamadas independentes gerariam origemId
-        // distintos, e origemId entra em SerializarTipoEtapa/SemId — as etapas deixariam de ser
-        // conteudisticamente idênticas, e o ThenBy de CONTEÚDO (não o de Id, que é o objeto real
-        // desta prova) desempataria a posição, tornando o teste dependente da ordem de criação dos Guid v7.
-        TipoEtapaSnapshot tipoEtapa = TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
-        EtapaProcesso etapaComIdMenor = EtapaReidratada(IdFixo(1), "Prova Objetiva", null, tipoEtapa);
-        EtapaProcesso etapaComIdMaior = EtapaReidratada(IdFixo(2), "Prova Objetiva", null, tipoEtapa);
+        (EtapaProcesso etapaComIdMenor, EtapaProcesso etapaComIdMaior) = DuasEtapasIdenticasSalvoOId();
 
         etapaComIdMenor.Nome.Should().Be(etapaComIdMaior.Nome,
             "pré-condição: as duas etapas são conteudisticamente IDÊNTICAS (mesmo nome/caráter/peso/notaMinima, ambas sem Ordem) — a chave de conteúdo empata e sobra o Id");
 
-        ProcessoSeletivo processo = Montar(etapas: [etapaComIdMaior, etapaComIdMenor]);
-
-        JsonArray etapasJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["etapas"]!.AsArray();
+        JsonArray etapasJson = ArrayCanonicalizado(Montar(etapas: [etapaComIdMaior, etapaComIdMenor]), "etapas");
 
         etapasJson.Select(static e => e!["id"]!.GetValue<Guid>()).Should().Equal(
             [IdFixo(1), IdFixo(2)],
             "duas etapas classificatórias com o MESMO nome/caráter/peso/notaMinima (o domínio só recusa Ordem INFORMADA duplicada, " +
             "e o índice único do banco admite múltiplos NULL) são aceitas — o Id estabiliza a alcançabilidade dessa duplicata");
+    }
+
+    private static (EtapaProcesso ComIdMenor, EtapaProcesso ComIdMaior) DuasEtapasIdenticasSalvoOId()
+    {
+        // O MESMO TipoEtapaSnapshot para as duas etapas — não um TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), ..., notaDeOrigemNoEnem: false)
+        // por etapa (flaky sob CORRIDA, issue #1115): duas chamadas independentes gerariam origemId
+        // distintos, e origemId entra em SerializarTipoEtapa/SemId — as etapas deixariam de ser
+        // conteudisticamente idênticas, e o ThenBy de CONTEÚDO (não o de Id, que é o objeto real
+        // desta prova) desempataria a posição, tornando o teste dependente da ordem de criação dos Guid v7.
+        TipoEtapaSnapshot tipoEtapa = TipoEtapaDeProvaObjetiva();
+        return (
+            EtapaReidratada(IdFixo(1), "Prova Objetiva", null, tipoEtapa),
+            EtapaReidratada(IdFixo(2), "Prova Objetiva", null, tipoEtapa));
     }
 
     private static FaseCronograma FaseDeInscricao() => FaseCronograma.Criar(
@@ -183,9 +187,7 @@ public sealed class PoliticaDeOrdenacaoTests
         // padrão de Montar() (FaseMinima, agrupaEtapas: true) pressupõe ao menos uma.
         FaseCronograma faseSemAgruparEtapas = FaseDeInscricao();
 
-        ProcessoSeletivo processo = Montar(etapas: [], cronogramaFases: [faseSemAgruparEtapas]);
-
-        JsonArray etapasJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["etapas"]!.AsArray();
+        JsonArray etapasJson = ArrayCanonicalizado(Montar(etapas: [], cronogramaFases: [faseSemAgruparEtapas]), "etapas");
 
         etapasJson.Should().BeEmpty(
             "um processo classificado por nota importada (RegraCalculoCodigo.ClassificacaoImportada, usado pelo processo mínimo " +
@@ -203,9 +205,7 @@ public sealed class PoliticaDeOrdenacaoTests
                 [CriterioDesempateCodigo.Idoso, CriterioDesempateCodigo.MaiorIdade],
                 "pré-condição: ordenar pelo código da regra (proxy de conteúdo) dá o oposto do oráculo de Ordem abaixo");
 
-        ProcessoSeletivo processo = Montar(criteriosDesempate: [criterioIdoso, criterioMaiorIdade]);
-
-        JsonArray criteriosJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["criteriosDesempate"]!.AsArray();
+        JsonArray criteriosJson = ArrayCanonicalizado(Montar(criteriosDesempate: [criterioIdoso, criterioMaiorIdade]), "criteriosDesempate");
 
         criteriosJson.Should().HaveCount(2, "pré-condição: o caminho existe e tem os dois itens sob teste");
         criteriosJson.Select(static c => c!["regra"]!["codigo"]!.GetValue<string>()).Should().Equal(
@@ -219,7 +219,7 @@ public sealed class PoliticaDeOrdenacaoTests
             new IdentificacaoDaEtapa(
                 Nome: nome,
                 Carater: CaraterEtapa.Classificatoria,
-                TipoEtapa: tipoEtapa ?? TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
+                TipoEtapa: tipoEtapa ?? TipoEtapaDeProvaObjetiva(),
                 Ordem: ordem,
                 FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null),
