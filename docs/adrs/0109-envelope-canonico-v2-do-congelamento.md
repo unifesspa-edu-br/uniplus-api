@@ -204,6 +204,8 @@ para `0.0.6` e regenerou a fixture final. A regra vale somente antes do primeiro
 publicado em qualquer ambiente, inclusive homologação. A partir dele, cada mudança de forma
 exige o seu próprio avanço.
 
+> **Nota (2026-11-20) — o limite da E2.1 é a produção, e a versão avança uma vez por entrega.** A emenda às ADRs 0109 e 0110 feita pela [ADR-0137](0137-formularios-por-finalidade-e-modelos-por-tipo-de-processo.md), mantida pela [ADR-0171](0171-formularios-do-processo-ligados-as-fases.md), levou o limite acima, "primeiro certame publicado em qualquer ambiente, inclusive homologação", para a primeira publicação **em produção**: os processos de homologação são descartáveis e são recriados quando a forma muda. Decide-se agora como a versão avança até lá: cada entrega que muda a forma do envelope (o conjunto de mudanças que chega junto à `main`) avança a `schema_version` **uma vez só**, junto com a sua última mudança de forma; as mudanças de forma anteriores da mesma entrega só regeneram a golden fixture, como no fechamento da forma `0.0.6` acima. As formas intermediárias não são implantadas sozinhas, e a D1 continua cumprida. A partir da primeira publicação em produção, cada mudança de forma exige o seu próprio avanço.
+
 ### E2.2 — Cai a fixture por versão; permanece a prova de fidelidade da forma corrente
 
 Cai a parte da D2 que manda manter uma golden fixture por `schema_version`. Enquanto vigora
