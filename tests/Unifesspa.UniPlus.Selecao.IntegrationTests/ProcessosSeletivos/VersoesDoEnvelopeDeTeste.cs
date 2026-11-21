@@ -18,7 +18,7 @@ internal static class VersoesDoEnvelopeDeTeste
 {
     public static ProcessoSeletivo ProcessoPublicado()
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(comBancaDeHomologacao: true);
         CorpusEnvelopeEntrada.Publicar(processo);
         return processo;
     }

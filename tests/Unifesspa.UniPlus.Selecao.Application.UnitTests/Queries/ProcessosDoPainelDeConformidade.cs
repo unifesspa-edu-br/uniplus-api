@@ -161,7 +161,7 @@ internal static class ProcessosDoPainelDeConformidade
             new DecisoesDeCronogramaDaFase(
                 Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(resultado: "RESULTADO_FINAL"),
-            bancasRequeridas: []).Value!;
+            bancasRequeridas: [BancasDeTeste.DaHomologacaoDasInscricoesDaFase()]).Value!;
 
     private static FaseCronograma FaseConforme() =>
         FaseCronograma.Criar(
@@ -171,7 +171,7 @@ internal static class ProcessosDoPainelDeConformidade
             new DecisoesDeCronogramaDaFase(
                 Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(),
-            bancasRequeridas: []).Value!;
+            bancasRequeridas: [BancasDeTeste.DaHomologacaoDasInscricoesDaFase()]).Value!;
 
     private static FaseCronograma FaseDoResultadoDaClassificacao(int ordem, string codigo) =>
         FaseCronograma.Criar(
@@ -179,7 +179,7 @@ internal static class ProcessosDoPainelDeConformidade
                 Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
             HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(),
-            bancasRequeridas: []).Value!;
+            bancasRequeridas: [BancasDeTeste.DaHomologacaoDasInscricoesDaFase()]).Value!;
 
     // Publicar sem declarar a cobrança de taxa é recusado; declarada, ela isola a pendência que o teste observa.
     private static ConfiguracaoTaxaInscricao TaxaSemCobranca() =>

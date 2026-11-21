@@ -51,7 +51,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologaComRecurso(),
-        bancasRequeridas: [BancasDeTeste.DeRecursosDaFase()]).Value!;
+        bancasRequeridas: HomologacaoDasInscricoesDeTeste.BancasDaFaseQueHomologaComRecurso()).Value!;
 
     private static void DefinirEDepoisRemoverAEtapaPontuada(ProcessoSeletivo processo)
     {

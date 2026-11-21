@@ -30,7 +30,7 @@ internal static class ProcessoSeletivoConformeBuilder
         new DecisoesDeCronogramaDaFase(
             Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(),
-        bancasRequeridas).Value!;
+        [BancasDeTeste.DaHomologacaoDasInscricoesDaFase(), .. bancasRequeridas]).Value!;
 
     public static ProcessoSeletivo Criar(string nome, out Guid faseId) => Criar(nome, [], out faseId);
 

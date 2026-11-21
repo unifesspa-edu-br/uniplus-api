@@ -60,7 +60,14 @@ internal static class HomologacaoDasInscricoesDeTeste
             Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         PublicacoesDaFaseQueHomologaComRecurso(resultado),
-        bancasRequeridas: [BancasDeTeste.DeRecursosDaFase()]).Value!;
+        bancasRequeridas: BancasDaFaseQueHomologaComRecurso()).Value!;
+
+    /// <summary>
+    /// As bancas da fase que homologa as inscrições de quem importa os candidatos: a de homologação das inscrições, a de importação
+    /// de candidatos e a que julga o recurso.
+    /// </summary>
+    internal static IReadOnlyList<BancaRequerida> BancasDaFaseQueHomologaComRecurso() =>
+        [BancasDeTeste.DaHomologacaoDasInscricoesDaFase(), BancasDeTeste.DaFase(TipoDeBanca.ImportacaoDeCandidatos), BancasDeTeste.DeRecursosDaFase()];
 
     /// <summary>A janela de recurso ancorada no produto dado, com o procedimento da decisão de homologação.</summary>
     internal static RegraRecursoFase RegraDeRecurso(Guid produtoAncoraId) => RegraRecursoFase.Criar(

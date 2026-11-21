@@ -24095,6 +24095,27 @@
       ]
     },
     {
+      "codigo": "uniplus.selecao.processo_seletivo.homologacao_das_inscricoes_sem_banca",
+      "requisitos": [
+        "UNI-REQ-0338",
+        "UNI-REQ-0340"
+      ],
+      "oQueAconteceu": [
+        "O processo, qualquer que seja a origem das inscrições (inscrição pelo sistema,\nnota do ENEM por inscrição própria ou importação de fora, como no SISU), tem a\nfase que homologa as inscrições, e ela, com as etapas dela, não prevê nenhuma banca cujo tipo julgue a homologação das inscrições\n(UNI-REQ-0340). Quem julga a homologação das inscrições é essa banca, por ato\nindividual (UNI-REQ-0338).",
+        "A mensagem cita a fase pelo código. Mais de uma banca desse tipo é aceita. A banca é reconhecida pelo que o tipo\ndela julga, registrado na banca quando ela é criada, e não pelo nome do tipo.",
+        "Esta página trata da **banca**. A falta da **fase** que homologa as inscrições\ntem recusa própria:\n[importação externa](/erros/uniplus.selecao.processo_seletivo.importacao_externa_sem_homologacao_das_inscricoes),\n[nota do ENEM](/erros/uniplus.selecao.processo_seletivo.importacao_de_exame_sem_homologacao_das_inscricoes)\ne [inscrição própria](/erros/uniplus.selecao.processo_seletivo.inscricao_propria_sem_homologacao_das_inscricoes).",
+        "A conferência é de completude e roda na publicação e na retificação em ato\núnico. A recusa vem como o código desta página no corpo da resposta, e não na\nlista `errors[]`, e aponta o lugar `fases[i].bancasRequeridas`."
+      ],
+      "comoResolver": [
+        "Acrescente à fase que homologa as inscrições, ou a uma etapa dela, uma banca\ncujo tipo julgue a homologação das inscrições.",
+        "Exemplo: um processo com inscrição pelo sistema, sem nota do ENEM, não é publicado\nenquanto a fase de homologação das inscrições não tiver banca de homologação das\ninscrições; o \"SISU 2027\", que importa candidatos de fora, precisa dela e também\nda banca de importação de candidatos.",
+        "O painel de conformidade aponta a pendência antes da publicação, no item\n`cronograma_homologacao_das_inscricoes_com_banca`."
+      ],
+      "ondeAparece": [
+        "- Publicação inicial do processo seletivo\n- Retificação em ato único"
+      ]
+    },
+    {
       "codigo": "uniplus.selecao.processo_seletivo.id_etapa_duplicado",
       "requisitos": [
         "UNI-REQ-0015"
@@ -24230,6 +24251,26 @@
       "ondeAparece": [
         "Publicação inicial (`POST /api/selecao/processos-seletivos/{id}/publicacao`)",
         "Retificação (`POST /api/selecao/processos-seletivos/{id}/retificacoes`)"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.processo_seletivo.importacao_externa_sem_banca_de_importacao_de_candidatos",
+      "requisitos": [
+        "UNI-REQ-0339",
+        "UNI-REQ-0340"
+      ],
+      "oQueAconteceu": [
+        "O processo importa candidatos de fora, como o SISU, e nenhuma fase nem etapa\nprevê a banca de importação de candidatos (UNI-REQ-0340). É essa banca que\nimporta o arquivo de candidatos e resolve as críticas da importação\n(UNI-REQ-0339), no período da fase de inscrição (UNI-REQ-0341). Sem ela, o\narquivo não teria quem o importasse, e o edital não é publicado.",
+        "A banca é reconhecida pelo papel de importar candidatos, registrado na banca\nquando ela é criada, e não pelo nome do tipo. Qualquer que seja o uso da nota do\nENEM, a importação de fora exige esta banca.",
+        "A conferência é de completude e roda na publicação e na retificação em ato\núnico. A recusa vem como o código desta página no corpo da resposta, e não na\nlista `errors[]`, e aponta o campo `fases` do processo, sem índice."
+      ],
+      "comoResolver": [
+        "Acrescente a banca de importação de candidatos onde os candidatos são\nimportados, na fase ou na etapa. Essa banca importa; não avalia nem julga\nrecurso.",
+        "Exemplo: o \"SISU 2027\" só é publicado com a fase de homologação das inscrições,\na banca de homologação das inscrições\n([banca ausente](/erros/uniplus.selecao.processo_seletivo.homologacao_das_inscricoes_sem_banca))\ne a banca de importação de candidatos.",
+        "O painel de conformidade aponta a pendência antes da publicação, no item\n`cronograma_importacao_externa_com_banca_de_importacao_de_candidatos`."
+      ],
+      "ondeAparece": [
+        "- Publicação inicial do processo seletivo\n- Retificação em ato único"
       ]
     },
     {
@@ -24621,6 +24662,25 @@
       ],
       "ondeAparece": [
         "Definição de documentos exigidos do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.processo_seletivo.nota_do_enem_sem_banca_de_importacao_das_notas",
+      "requisitos": [
+        "UNI-REQ-0339",
+        "UNI-REQ-0340"
+      ],
+      "oQueAconteceu": [
+        "O processo usa a nota do ENEM com inscrição própria, e nenhuma fase nem etapa\nprevê a banca de importação das notas do INEP (UNI-REQ-0340). É essa banca que\nimporta o retorno do INEP e resolve as críticas da importação (UNI-REQ-0339).\nSem ela, as notas não teriam quem as importasse, e o edital não é publicado.",
+        "A banca é reconhecida pelo papel de importar as notas do INEP, registrado na\nbanca quando ela é criada, e não pelo nome do tipo. O processo que não usa a\nnota do ENEM não exige essa banca, e o de inscrição própria sem a nota do ENEM\ntambém não.",
+        "A conferência é de completude e roda na publicação e na retificação em ato\núnico. A recusa vem como o código desta página no corpo da resposta, e não na\nlista `errors[]`, e aponta o campo `fases` do processo, sem índice."
+      ],
+      "comoResolver": [
+        "Acrescente a banca de importação das notas do INEP onde as notas são importadas,\nna fase ou na etapa. Essa banca importa; não avalia nem julga recurso.",
+        "O painel de conformidade aponta a pendência antes da publicação, no item\n`cronograma_nota_do_enem_com_banca_de_importacao_das_notas`."
+      ],
+      "ondeAparece": [
+        "- Publicação inicial do processo seletivo\n- Retificação em ato único"
       ]
     },
     {

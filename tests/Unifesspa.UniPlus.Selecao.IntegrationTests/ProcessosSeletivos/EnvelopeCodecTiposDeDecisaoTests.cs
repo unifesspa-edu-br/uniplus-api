@@ -92,7 +92,7 @@ public sealed class EnvelopeCodecTiposDeDecisaoTests
     [Fact(DisplayName = "Ida e volta do envelope com tipos de decisão reproduz os bytes e o hash congelados")]
     public void IdaEVolta_ComTipos_ReproduzBytesEHash()
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(tiposDeDecisaoDaFaseFinal: [Classificacao, IsencaoDaTaxa]);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(tiposDeDecisaoDaFaseFinal: [Classificacao, IsencaoDaTaxa], comBancaDeHomologacao: true);
         ProvaObjetivaDe(processo).DefinirTiposDeDecisao([Classificacao]).IsSuccess.Should().BeTrue();
         SnapshotCanonico congelado = Codificar(processo);
         CorpusEnvelopeEntrada.Publicar(processo);

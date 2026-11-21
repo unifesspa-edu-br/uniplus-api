@@ -37,10 +37,8 @@ internal sealed record RecursoNaFase(FaseDeclarada Fase, int Posicao, RecursoDec
 
     private IEnumerable<BancaDeclarada> OndeSeProcura(AlvoDoProcedimentoDeRecurso? alvo) => alvo switch
     {
-        null => [.. Fase.Bancas.Declaradas, .. Etapas.Etapas.Where(DaFase).SelectMany(static etapa => etapa.Bancas.Declaradas)],
+        null => [.. Fase.Bancas.Declaradas, .. Etapas.DaFase(Fase).SelectMany(static etapa => etapa.Bancas.Declaradas)],
         { Tipo: TipoDeAlvoDoProcedimentoDeRecurso.ItemDeAvaliacao } => Etapas.Etapas.Where(etapa => etapa.ContemOAlvo(alvo)).SelectMany(static etapa => etapa.Bancas.Declaradas),
         _ => [],
     };
-
-    private bool DaFase(EtapaDeclarada etapa) => string.Equals(etapa.FaseCodigo, Fase.Codigo, StringComparison.Ordinal);
 }

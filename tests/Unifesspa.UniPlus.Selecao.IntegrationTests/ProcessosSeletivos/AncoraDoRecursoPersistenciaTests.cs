@@ -319,7 +319,7 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
             HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(
                 [preliminar, ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], RegraDeRecurso(preliminar.Id, procedimentos)) with
             { TiposDeDecisao = TiposDeDecisaoDaFase() },
-            bancasRequeridas: [BancasDeTeste.DeRecursosDaFase()]).Value!;
+            bancasRequeridas: [BancasDeTeste.DaHomologacaoDasInscricoesDaFase(), BancasDeTeste.DeRecursosDaFase()]).Value!;
     }
 
     // A fase declara os tipos que produz, e a conferência da publicação exige procedimento para cada um, sem alvo que a fase não tem.

@@ -290,7 +290,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
             Guid.CreateVersion7(), "CLASSIFICACAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(produtos, resultado: produtos[0].AtoCodigo),
-        bancasRequeridas: []).Value!;
+        bancasRequeridas: [BancasDeTeste.DaHomologacaoDasInscricoesDaFase()]).Value!;
 
     /// <summary>
     /// Processo com o cronograma pedido, cuja versão publicada congelou a classificação dada. O processo vivo

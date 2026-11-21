@@ -59,7 +59,7 @@ internal static class ApoioDasBancasDoProcesso
 
     internal static ProcessoSeletivo ProcessoComEtapas(IReadOnlyList<BancaRequerida>? bancasDaFase, params EtapaProcesso[] etapas)
     {
-        ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: ProcessoConformeFactory.FaseConforme(bancas: bancasDaFase ?? []));
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: ProcessoConformeFactory.FaseConforme(bancas: [BancasDeTeste.DaHomologacaoDasInscricoesDaFase(), .. bancasDaFase ?? []]));
         processo.DefinirEtapas(etapas).IsSuccess.Should().BeTrue();
         return processo;
     }
@@ -88,7 +88,7 @@ internal static class ApoioDasBancasDoProcesso
             .Select(static causa => causa.Error.Code);
 
     internal static IReadOnlyList<ItemConformidade> Itens(ProcessoSeletivo processo, CorretoresDasEtapas corretores) =>
-        ConferenciaDasBancas.Itens(CronogramaDoProcesso.Do(processo.CronogramaFases), EtapasDoProcesso.Das(processo.Etapas), corretores);
+        ConferenciaDasBancas.Itens(processo.OrigemCandidatos, CronogramaDoProcesso.Do(processo.CronogramaFases), EtapasDoProcesso.Das(processo.Etapas), corretores);
 
     internal static IReadOnlyList<FieldError> Minimo(ProcessoSeletivo processo, CorretoresDasEtapas corretores) =>
         ConferenciaDasBancas.ConferirMinimoDeIntegrantes(CronogramaDoProcesso.Do(processo.CronogramaFases), EtapasDoProcesso.Das(processo.Etapas), corretores);

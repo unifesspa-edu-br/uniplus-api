@@ -48,12 +48,17 @@ internal static class CorpusEnvelopeProcessoRico
     /// </param>
     /// <param name="tiposDeDecisaoDaFaseFinal">Os tipos de decisão que a fase de resultado final declara; ausentes por padrão.</param>
     /// <param name="regraDeHomologacao">A regra de homologação das inscrições da fase de resultado preliminar; a do corpus quando ausente.</param>
+    /// <param name="comBancaDeHomologacao">
+    /// Opt-in: acrescenta a banca de homologação das inscrições, sem a qual a publicação recusa o processo. Fica fora por padrão
+    /// porque a golden fixture (<c>envelope-rico.json</c>) congela as bancas de hoje do corpus; só os testes que publicam o processo a pedem.
+    /// </param>
     internal static ProcessoSeletivo ProcessoRico(
         int variante = 0, bool permutar = false, bool comArvoreSatisfacao = false, IReadOnlyList<string?>? tiposDeDecisaoDaFaseFinal = null,
-        int vagasOfertadasBaseDaLeiDeCotas = VagasOfertadasBaseDaLeiDeCotasDoCorpus, RegraDeHomologacaoDasInscricoes? regraDeHomologacao = null)
+        int vagasOfertadasBaseDaLeiDeCotas = VagasOfertadasBaseDaLeiDeCotasDoCorpus, RegraDeHomologacaoDasInscricoes? regraDeHomologacao = null,
+        bool comBancaDeHomologacao = false)
     {
         ProcessoSeletivo processo = NovoProcessoRico(variante);
-        DefinirCronogramaEEtapas(processo, variante, permutar, tiposDeDecisaoDaFaseFinal, regraDeHomologacao);
+        DefinirCronogramaEEtapas(processo, variante, permutar, tiposDeDecisaoDaFaseFinal, regraDeHomologacao, comBancaDeHomologacao);
         DefinirOfertaEClassificacao(processo, variante, permutar, vagasOfertadasBaseDaLeiDeCotas);
         DefinirFormularioDeInscricao(processo, permutar);
         DefinirCascataEDocumentos(processo, variante, permutar, comArvoreSatisfacao);
@@ -89,10 +94,10 @@ internal static class CorpusEnvelopeProcessoRico
 
     internal static void DefinirCronogramaEEtapas(
         ProcessoSeletivo processo, int variante, bool permutar, IReadOnlyList<string?>? tiposDeDecisaoDaFaseFinal,
-        RegraDeHomologacaoDasInscricoes? regraDeHomologacao = null)
+        RegraDeHomologacaoDasInscricoes? regraDeHomologacao = null, bool comBancaDeHomologacao = false)
     {
         processo.DefinirCronogramaFases(
-            Ordem([FaseInscricao(variante), FaseResultadoPreliminarComRecurso(variante, permutar, regraDeHomologacao), FaseResultadoFinal(variante, tiposDeDecisaoDaFaseFinal)], permutar), [])
+            Ordem([FaseInscricao(variante), FaseResultadoPreliminarComRecurso(variante, permutar, regraDeHomologacao, comBancaDeHomologacao), FaseResultadoFinal(variante, tiposDeDecisaoDaFaseFinal)], permutar), [])
             .IsSuccess.Should().BeTrue();
         processo.DefinirEtapas(Ordem([
             EtapaObjetiva(variante, permutar),

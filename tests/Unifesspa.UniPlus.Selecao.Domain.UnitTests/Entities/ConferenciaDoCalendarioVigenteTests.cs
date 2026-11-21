@@ -91,7 +91,7 @@ public sealed class ConferenciaDoCalendarioVigenteTests
             Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(3, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(),
-        bancasRequeridas: []).Value!;
+        bancasRequeridas: [BancasDeTeste.DaHomologacaoDasInscricoesDaFase()]).Value!;
 
     /// <summary>Processo conforme, com uma fase que aceita recurso e a convenção já declarada.</summary>
     private static ProcessoSeletivo ProcessoComRecurso(UnidadePrazo unidade)

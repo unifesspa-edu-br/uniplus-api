@@ -14,6 +14,7 @@ internal static class ErrosDoCronograma
     [
         .. EstruturaDoCronograma(),
         .. HomologacaoDasInscricoesPorOrigem(),
+        .. BancasQueAOrigemExige(),
         .. EtapasNoCronograma(),
         .. DeclaracaoDaFase(),
         .. CandidatosAtendidosDasBancas(),
@@ -53,6 +54,17 @@ internal static class ErrosDoCronograma
         new("ProcessoSeletivo.ImportacaoDeExameSemHomologacaoDasInscricoes", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.importacao_de_exame_sem_homologacao_das_inscricoes", "O processo que usa a nota do ENEM não tem fase que homologa as inscrições")),
         new("ProcessoSeletivo.ImportacaoExternaSemHomologacaoDasInscricoes", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.importacao_externa_sem_homologacao_das_inscricoes", "O processo de importação externa não tem fase que homologa as inscrições")),
         new("ProcessoSeletivo.ImportacaoExternaSemJanelaDeRecurso", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.importacao_externa_sem_janela_de_recurso", "A homologação da importação externa não tem preliminar, período de recurso e definitivo")),
+    ];
+
+    /// <summary>
+    /// As bancas que a publicação exige conforme a origem dos candidatos e o uso da nota do ENEM: a de homologação das
+    /// inscrições e as duas de importação. Todos 422.
+    /// </summary>
+    private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> BancasQueAOrigemExige() =>
+    [
+        new(ProcessoSeletivoErrorCodes.HomologacaoDasInscricoesSemBanca, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.homologacao_das_inscricoes_sem_banca", "A fase que homologa as inscrições não prevê banca de homologação das inscrições")),
+        new(ProcessoSeletivoErrorCodes.NotaDoEnemSemBancaDeImportacaoDasNotas, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.nota_do_enem_sem_banca_de_importacao_das_notas", "O processo que usa a nota do ENEM com inscrição própria não prevê a banca de importação das notas do INEP")),
+        new(ProcessoSeletivoErrorCodes.ImportacaoExternaSemBancaDeImportacaoDeCandidatos, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.importacao_externa_sem_banca_de_importacao_de_candidatos", "O processo que importa candidatos de fora não prevê a banca de importação de candidatos")),
     ];
 
     /// <summary>

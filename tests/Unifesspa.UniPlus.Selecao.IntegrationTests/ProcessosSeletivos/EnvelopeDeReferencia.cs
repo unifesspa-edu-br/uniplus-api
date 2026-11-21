@@ -45,12 +45,13 @@ internal static class EnvelopeDeReferencia
     internal static ReferenciaRegra Regra(string codigo, string hashSeed) =>
         ReferenciaRegra.De(codigo, "v1", new string(hashSeed[0], 64));
 
-    internal static ProcessoSeletivo ProcessoDeReferencia()
+    /// <param name="comBancaDeHomologacao">Opt-in: acrescenta a banca de homologação das inscrições que a publicação exige; a golden fixture não a tem.</param>
+    internal static ProcessoSeletivo ProcessoDeReferencia(bool comBancaDeHomologacao = false)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Referencia 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
         DefinirVagasEClassificacao(processo);
-        FaseCronograma fase = DefinirCronogramaEEtapas(processo);
+        FaseCronograma fase = DefinirCronogramaEEtapas(processo, comBancaDeHomologacao);
         DefinirDocumentosEFatos(processo, fase);
         DefinirFormularioEDerivacao(processo);
         DefinirTaxaDeInscricao(processo);
@@ -157,9 +158,9 @@ internal static class EnvelopeDeReferencia
         }).Value!).IsSuccess.Should().BeTrue();
     }
 
-    private static FaseCronograma DefinirCronogramaEEtapas(ProcessoSeletivo processo)
+    private static FaseCronograma DefinirCronogramaEEtapas(ProcessoSeletivo processo, bool comBancaDeHomologacao)
     {
-        FaseCronograma fase = FaseDeInscricao();
+        FaseCronograma fase = FaseDeInscricao(comBancaDeHomologacao);
         processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas([
             EtapaProcesso.Criar(
@@ -220,14 +221,14 @@ internal static class EnvelopeDeReferencia
             CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
         ], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
 
-    private static FaseCronograma FaseDeInscricao() => FaseCronograma.Criar(
+    private static FaseCronograma FaseDeInscricao(bool comBancaDeHomologacao) => FaseCronograma.Criar(
         new OrigemCanonicaDaFase(
             OrigemId: Guid.CreateVersion7(), Codigo: "INSCRICAO", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true,
             ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
             Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(resultado: "INSCRICAO"),
-        bancasRequeridas: []).Value!;
+        bancasRequeridas: comBancaDeHomologacao ? [CorpusEnvelopeCronograma.BancaDeHomologacaoDasInscricoes()] : []).Value!;
 
     /// <summary>
     /// Exigência CONDICIONAL rica — todas as 12 dimensões da forma 1.2 preenchidas, para que a

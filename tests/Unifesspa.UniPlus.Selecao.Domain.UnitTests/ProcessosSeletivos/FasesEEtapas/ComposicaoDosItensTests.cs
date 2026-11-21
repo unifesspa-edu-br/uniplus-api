@@ -16,7 +16,7 @@ using Xunit;
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Cronograma.ModeloDeFase;
 
 /// <summary>
-/// As declarações que a gravação recusaria, carregadas do banco, nunca tiram um item do painel: os vinte e quatro saem, e fica
+/// As declarações que a gravação recusaria, carregadas do banco, nunca tiram um item do painel: todos saem, e fica
 /// vermelho exatamente o item da regra que a declaração viola, ou o que não se consegue conferir por causa dela.
 /// </summary>
 public sealed class ComposicaoDosItensTests
@@ -43,12 +43,12 @@ public sealed class ComposicaoDosItensTests
     private static EtapaProcesso EtapaCarregada(string nome, int ordem, string faseCodigo, CaraterEtapa carater = CaraterEtapa.Classificatoria, decimal? peso = 1m) =>
         ApoioDeEtapaReidratada.DeProvaObjetiva(Guid.CreateVersion7(), nome, ordem, faseCodigo, peso ?? 0m, carater: carater);
 
-    [Fact(DisplayName = "O processo conforme tem os trinta e três itens do cronograma, todos conformes")]
+    [Fact(DisplayName = "O processo conforme tem os trinta e seis itens do cronograma, todos conformes")]
     public void Itens_ProcessoConforme_TodosVerdes()
     {
         IReadOnlyList<ItemConformidade> itens = Itens(ApoioDaPublicacaoDoProcessoSeletivo.NovoProcessoConforme());
 
-        itens.Should().HaveCount(33);
+        itens.Should().HaveCount(36);
         Pendentes(itens).Should().BeEmpty();
     }
 
@@ -62,7 +62,7 @@ public sealed class ComposicaoDosItensTests
 
         IReadOnlyList<ItemConformidade> itens = Itens(processo);
 
-        itens.Should().HaveCount(33);
+        itens.Should().HaveCount(36);
         Pendentes(itens).Should().Equal("cronograma_ancora_do_recurso", "cronograma_recurso_com_banca_que_julga");
     }
 
@@ -77,7 +77,7 @@ public sealed class ComposicaoDosItensTests
 
         IReadOnlyList<ItemConformidade> itens = Itens(processo);
 
-        itens.Should().HaveCount(33);
+        itens.Should().HaveCount(36);
         Pendentes(itens).Should().Equal("cronograma_fases_declaradas", "cronograma_etapa_fora_da_janela_da_fase");
     }
 
@@ -89,7 +89,7 @@ public sealed class ComposicaoDosItensTests
 
         IReadOnlyList<ItemConformidade> itens = Itens(processo);
 
-        itens.Should().HaveCount(33);
+        itens.Should().HaveCount(36);
         Pendentes(itens).Should().Equal("etapas_declaradas");
     }
 }

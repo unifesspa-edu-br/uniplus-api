@@ -53,6 +53,7 @@ internal static class CatalogosDoEnvelopeFechado
         Guid FaseDeResultadoId,
         Guid FaseAvaliacaoId,
         Guid TipoBancaId,
+        Guid TipoBancaDeHomologacaoId,
         Guid TipoProcessoId,
         Guid TipoDocumentoId,
         IReadOnlyDictionary<string, Guid> ModalidadeIdPorCodigo);
@@ -104,7 +105,7 @@ internal static class CatalogosDoEnvelopeFechado
 
         return new CatalogosSemeados(
             unidadeId, oferta.Id, referencia.Id, vocabularios.FaseInscricaoId, vocabularios.FaseDeResultadoId, vocabularios.FaseAvaliacaoId,
-            vocabularios.TipoBancaId, await ObterTipoProcessoSisuAsync(config), tipoDocumento.Id, ModalidadesFederaisEAmplaPorCodigo());
+            vocabularios.TipoBancaId, vocabularios.TipoBancaDeHomologacaoId, await ObterTipoProcessoSisuAsync(config), tipoDocumento.Id, ModalidadesFederaisEAmplaPorCodigo());
     }
 
     private static async Task PersistirEAprovarAsync(UniPlusDbContext config)
@@ -176,7 +177,7 @@ internal static class CatalogosDoEnvelopeFechado
             .Where(i => i.Codigo == ModalidadesFederaisLei12711.Ac || ModalidadesFederaisLei12711.Codigos.Contains(i.Codigo))
             .ToDictionary(i => i.Codigo, i => i.Id, StringComparer.Ordinal);
 
-    private sealed record VocabulariosFechados(Guid FaseInscricaoId, Guid FaseDeResultadoId, Guid FaseAvaliacaoId, Guid TipoBancaId);
+    private sealed record VocabulariosFechados(Guid FaseInscricaoId, Guid FaseDeResultadoId, Guid FaseAvaliacaoId, Guid TipoBancaId, Guid TipoBancaDeHomologacaoId);
 
     /// <summary>
     /// As fases canônicas nascem semeadas pela migration, e o vocabulário é fechado: criar aqui colidiria
@@ -187,10 +188,12 @@ internal static class CatalogosDoEnvelopeFechado
     private static async Task<VocabulariosFechados> ObterVocabulariosFechadosAsync(UniPlusDbContext config)
     {
         List<FaseCanonica> fasesVivas = await config.FasesCanonicas.ToListAsync().ConfigureAwait(false);
-        TipoBanca banca = await ObterOuCriarTipoBancaDeAnaliseDocumentalAsync(config);
+        TipoBanca banca = await ObterOuCriarTipoBancaAsync(config, TipoDeBanca.AnaliseDocumental, "Banca de análise documental", "ANALISE_DOCUMENTAL");
+        TipoBanca bancaDeHomologacao = await ObterOuCriarTipoBancaAsync(
+            config, TipoDeBanca.HomologacaoDasInscricoes, "Banca de homologação das inscrições", TipoMotivoDeDecisao.HomologacaoDasInscricoes.Codigo());
 
         return new VocabulariosFechados(
-            IdDaFase(fasesVivas, "INSCRICAO"), IdDaFase(fasesVivas, "RESULTADO_FINAL"), IdDaFase(fasesVivas, FaseCanonicaCatalogo.CodigoAvaliacao), banca.Id);
+            IdDaFase(fasesVivas, "INSCRICAO"), IdDaFase(fasesVivas, "RESULTADO_FINAL"), IdDaFase(fasesVivas, FaseCanonicaCatalogo.CodigoAvaliacao), banca.Id, bancaDeHomologacao.Id);
     }
 
     private static Guid IdDaFase(List<FaseCanonica> fasesVivas, string codigo) =>
@@ -200,19 +203,17 @@ internal static class CatalogosDoEnvelopeFechado
     /// O código do tipo de banca também é vocabulário fechado, com índice único sobre o vivo: reaproveita
     /// a linha se já existir.
     /// </summary>
-    private static async Task<TipoBanca> ObterOuCriarTipoBancaDeAnaliseDocumentalAsync(UniPlusDbContext config)
+    private static async Task<TipoBanca> ObterOuCriarTipoBancaAsync(UniPlusDbContext config, TipoDeBanca tipo, string nome, string tipoDeDecisaoJulgado)
     {
-        const TipoDeBanca Tipo = TipoDeBanca.AnaliseDocumental;
-        TipoBanca? existente = await config.TiposBanca.SingleOrDefaultAsync(b => b.Codigo == Tipo).ConfigureAwait(false);
+        TipoBanca? existente = await config.TiposBanca.SingleOrDefaultAsync(b => b.Codigo == tipo).ConfigureAwait(false);
         if (existente is not null)
         {
             return existente;
         }
 
         Result<TipoBanca> criada = TipoBanca.Criar(
-            Tipo.Codigo(),
-            new DeclaracaoDoTipoDeBanca(
-                "Banca de análise documental", "RESULTADO_FINAL", Papel: "AVALIA_O_MERITO", TiposDeDecisaoJulgados: ["ANALISE_DOCUMENTAL"]));
+            tipo.Codigo(),
+            new DeclaracaoDoTipoDeBanca(nome, "RESULTADO_FINAL", Papel: "AVALIA_O_MERITO", TiposDeDecisaoJulgados: [tipoDeDecisaoJulgado]));
         criada.IsSuccess.Should().BeTrue(criada.Error?.Message);
         config.TiposBanca.Add(criada.Value!);
         return criada.Value!;

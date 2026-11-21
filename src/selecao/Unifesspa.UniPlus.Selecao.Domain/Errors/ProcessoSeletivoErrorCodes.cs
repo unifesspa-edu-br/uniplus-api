@@ -42,6 +42,15 @@ public static class ProcessoSeletivoErrorCodes
     /// <summary>Importação externa cuja fase que homologa as inscrições não tem o período de recurso entre o preliminar e o definitivo.</summary>
     public const string ImportacaoExternaSemJanelaDeRecurso = "ProcessoSeletivo.ImportacaoExternaSemJanelaDeRecurso";
 
+    /// <summary>A fase que homologa as inscrições não prevê a banca de homologação das inscrições, nela nem nas etapas dela.</summary>
+    public const string HomologacaoDasInscricoesSemBanca = "ProcessoSeletivo.HomologacaoDasInscricoesSemBanca";
+
+    /// <summary>Inscrição própria com nota do ENEM e sem banca de importação das notas do INEP.</summary>
+    public const string NotaDoEnemSemBancaDeImportacaoDasNotas = "ProcessoSeletivo.NotaDoEnemSemBancaDeImportacaoDasNotas";
+
+    /// <summary>Importação externa sem banca de importação de candidatos.</summary>
+    public const string ImportacaoExternaSemBancaDeImportacaoDeCandidatos = "ProcessoSeletivo.ImportacaoExternaSemBancaDeImportacaoDeCandidatos";
+
     public const string CriteriosDesempateEmExcesso = "ProcessoSeletivo.CriteriosDesempateEmExcesso";
 
     public const string IdentificadorLegivelTamanho = "ProcessoSeletivo.IdentificadorLegivelTamanho";

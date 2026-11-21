@@ -34,7 +34,7 @@ internal static class ApoioDoEnvelopeCodecTipos
 
     internal static Result<EnvelopeReidratado> Reidratar(Action<JsonObject> adulterar)
     {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(comBancaDeHomologacao: true);
         byte[] originais = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
         CorpusEnvelopeEntrada.Publicar(processo);
 

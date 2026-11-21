@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.FasesEEt
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
@@ -20,7 +21,7 @@ public sealed class SuspensaoDasBancasPorFaseOuEtapaRecusadaTests
     private static readonly CorretoresDasEtapas NenhumLido = new(new Dictionary<ReferenciaRegra, CorretoresDaRegra>());
 
     private static bool ItemAprovado(string codigo, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
-        ConferenciaDasBancas.Itens(cronograma, etapas, NenhumLido).Single(item => item.Codigo == codigo).Ok;
+        ConferenciaDasBancas.Itens(OrigemCandidatos.InscricaoPropria, cronograma, etapas, NenhumLido).Single(item => item.Codigo == codigo).Ok;
 
     [Theory(DisplayName = "A lista de fases recusada na leitura deixa pendente o item das bancas, e sem recusa o item é aprovado")]
     [InlineData("cronograma_banca_com_regra_de_deliberacao")]

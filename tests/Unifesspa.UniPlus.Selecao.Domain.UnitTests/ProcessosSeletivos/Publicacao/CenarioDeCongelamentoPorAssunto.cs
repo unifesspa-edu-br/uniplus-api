@@ -273,7 +273,7 @@ internal sealed class CenarioDeCongelamentoPorAssunto
             RegraRecurso: null,
             HomologacaoDasInscricoesDeTeste.TiposDeDecisao,
             HomologacaoDasInscricoesDeTeste.Regra(ResultadoClassificacao)),
-        bancasRequeridas: []).Value!;
+        bancasRequeridas: [BancasDeTeste.DaHomologacaoDasInscricoesDaFase()]).Value!;
 
     private static DocumentoExigido ExigenciaGeral(Guid faseId) => DocumentoExigido.Criar(
         faseId,

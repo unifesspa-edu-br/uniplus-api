@@ -59,7 +59,7 @@ public sealed class DeliberacaoEMinimoDeQuemJulgaTests
         ConferenciaDasBancas.ConferirMinimoDeIntegrantes(Fases(fase), Etapas(etapas), corretores);
 
     private static ItemConformidade ItemDoPainel(string codigo, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
-        ConferenciaDasBancas.Itens(cronograma, etapas, TresCorretores).Single(item => item.Codigo == codigo);
+        ConferenciaDasBancas.Itens(OrigemCandidatos.InscricaoPropria, cronograma, etapas, TresCorretores).Single(item => item.Codigo == codigo);
 
     private static (CronogramaDoProcesso Cronograma, EtapasDoProcesso Etapas) ComRecursosRecusados(ModeloDeEtapa etapa) =>
         (CronogramaDoProcesso.Do([new ModeloDeFase(Fase, 1).Adotada()]), EtapasDoProcesso.Das([etapa.Adotada()], ComPartesRecusadas("etapas[0].recursos")));

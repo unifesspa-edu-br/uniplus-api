@@ -104,11 +104,11 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
     internal static FaseCronograma FaseBase(
         bool coletaInscricao = false, bool coletaSolicitacaoIsencao = false, Guid? faseCanonicaOrigemId = null,
         bool semUnidadeResponsavel = false) => FaseQueHomologa(
-        HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(), [], coletaInscricao, coletaSolicitacaoIsencao, faseCanonicaOrigemId, semUnidadeResponsavel);
+        HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(), [BancasDeTeste.DaHomologacaoDasInscricoesDaFase()], coletaInscricao, coletaSolicitacaoIsencao, faseCanonicaOrigemId, semUnidadeResponsavel);
 
     /// <summary>A fase que homologa as inscrições de quem importa os candidatos: com o resultado preliminar, a janela de recurso e o definitivo.</summary>
-    internal static FaseCronograma FaseBaseDaImportacao(Guid? faseCanonicaOrigemId = null) => FaseQueHomologa(
-        HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologaComRecurso(), [BancasDeTeste.DeRecursosDaFase()], faseCanonicaOrigemId: faseCanonicaOrigemId);
+    internal static FaseCronograma FaseBaseDaImportacao(Guid? faseCanonicaOrigemId = null, IReadOnlyList<BancaRequerida>? bancas = null) => FaseQueHomologa(
+        HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologaComRecurso(), bancas ?? HomologacaoDasInscricoesDeTeste.BancasDaFaseQueHomologaComRecurso(), faseCanonicaOrigemId: faseCanonicaOrigemId);
 
     private static FaseCronograma FaseQueHomologa(
         PublicacoesDaFase publicacoes, IReadOnlyList<BancaRequerida> bancas, bool coletaInscricao = false, bool coletaSolicitacaoIsencao = false,

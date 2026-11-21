@@ -50,7 +50,7 @@ public sealed class ParidadeExigenciasDocumentaisTests
         new DecisoesDeCronogramaDaFase(
             Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(),
-        bancasRequeridas: []).Value!;
+        bancasRequeridas: [BancasDeTeste.DaHomologacaoDasInscricoesDaFase()]).Value!;
 
     /// <summary>Processo conforme mínimo (etapas/oferta/distribuição/classificação/cronograma) — o par exigido pelo canonicalizador para os blocos reais.</summary>
     private static ProcessoSeletivo NovoProcessoConforme()

@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cascata;
@@ -35,7 +36,7 @@ internal static class CausasQueImpedemCongelar
         new(NomeDoAssunto.Conjunto, static c => Conjunto(c.Cronograma, c.Etapas, c.Cadastros.Precedencias)),
         new(NomeDoAssunto.Completude, static c => Completude(c.Configuracao, c.Cronograma, c.Etapas, c.Cadastros.ContagemDePrazos)),
         new(NomeDoAssunto.Recursos, static c => Recursos(c.Configuracao)),
-        new(NomeDoAssunto.Bancas, static c => Bancas(c.Cronograma, c.Etapas, c.Cadastros.Corretores)),
+        new(NomeDoAssunto.Bancas, static c => Bancas(c.Configuracao.Identidade.OrigemCandidatos, c.Cronograma, c.Etapas, c.Cadastros.Corretores)),
         new(NomeDoAssunto.CorrecaoIndependente, static c => CorrecaoIndependente(c.Configuracao, c.Cadastros.Corretores)),
         new(NomeDoAssunto.TiposDeAto, static c => TiposDeAto(c.Cronograma, c.Etapas, c.Cadastros.TiposDeAtoUnicos)),
         new(NomeDoAssunto.Cascata, static c => CausasDaRecusa.NoCampo(CoberturaDaCascata.CausasDaCascata(c.Configuracao), "cascataRemanejamento")),
@@ -91,11 +92,13 @@ internal static class CausasQueImpedemCongelar
         PendenciasDosProcedimentosDeRecurso.CausasDosProcedimentosDeRecurso(configuracao);
 
     // Os candidatos atendidos são recusa da declaração da banca e já saem junto das declarações.
-    private static IEnumerable<FieldError> Bancas(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, CorretoresDasEtapas corretores) =>
+    private static IEnumerable<FieldError> Bancas(
+        OrigemCandidatos origem, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, CorretoresDasEtapas corretores) =>
     [
         .. QuemJulgaORecurso.SemBanca(cronograma, etapas),
         .. QuemJulgaORecurso.InstanciaSuperiorNaoAdmitida(cronograma, etapas),
         .. ConferenciaDasBancas.ConferirMinimoDeBancasPorTipo(cronograma, etapas),
+        .. ExigenciaDasBancasDaHomologacao.Causas(origem, cronograma, etapas),
         .. ConferenciaDasBancas.ConferirRegrasDeDeliberacao(cronograma, etapas),
         .. ConferenciaDasBancas.ConferirMinimoDeIntegrantes(cronograma, etapas, corretores),
     ];
