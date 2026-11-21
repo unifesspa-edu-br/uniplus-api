@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public static class FaseEfetivaDoFato
 {
     /// <summary>
-    /// A recusa de citar o fato num gatilho de exigência da fase dada (UNI-REQ-0144, UNI-REQ-0077):
+    /// A recusa de citar o fato numa condição de aplicação de exigência da fase dada (UNI-REQ-0144, UNI-REQ-0077):
     /// nenhum documento é pedido antes de o fato ser conhecido. O fato fica conhecido na mais
     /// tardia entre a fase do catálogo (<paramref name="pontoResolucaoPorFato"/>) e a fase do
     /// formulário que o produz; o derivado por regra, não antes das suas dependências; e o agregado
@@ -113,7 +113,7 @@ public static class FaseEfetivaDoFato
             : CitacoesDosFormularios.CitacaoNaoGarantida(
                 configuracao,
                 publicadas,
-                [($"o gatilho de um documento exigido na fase '{faseDaExigencia.Codigo}'", fato)],
+                [($"a condição de aplicação de um documento exigido na fase '{faseDaExigencia.Codigo}'", fato)],
                 finalidadeDaExigencia,
                 membroPorAgregado);
 
