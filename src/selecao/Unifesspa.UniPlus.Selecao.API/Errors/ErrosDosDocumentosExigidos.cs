@@ -17,7 +17,7 @@ internal static class ErrosDosDocumentosExigidos
         // GERAL/CONDICIONAL, fase, snapshot-copy do tipo de documento.
         new("DocumentoExigido.AplicabilidadeObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.aplicabilidade_obrigatoria", "A aplicabilidade da exigência documental é obrigatória")),
         new("DocumentoExigido.ConsequenciaIndeferimentoInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.consequencia_indeferimento_invalida", "Consequência de indeferimento fora do domínio conhecido")),
-        new("DocumentoExigido.GeralComCondicao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.geral_com_condicao", "Exigência GERAL não pode conviver com condição de gatilho viva")),
+        new("DocumentoExigido.GeralComCondicao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.geral_com_condicao", "A exigência geral não pode ter condição de aplicação ativa")),
         new("DocumentoExigido.FaseNaoPertenceAoProcesso", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.fase_nao_pertence_ao_processo", "A fase informada não pertence ao cronograma deste processo")),
         // O formulário a que o documento pertence: obrigatório na fase que responde algum
         // formulário, e um dos que ela responde.
@@ -32,12 +32,11 @@ internal static class ErrosDosDocumentosExigidos
         new(ProcessoSeletivoErrorCodes.FatoComProtecaoPendente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fato_com_protecao_pendente", "Fato do processo aguarda a aprovação da proteção de dados")),
         new(ProcessoSeletivoErrorCodes.TipoDocumentoDoVinculoNaoEncontrado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.tipo_documento_nao_encontrado", "Tipo de documento não encontrado ou não está mais vivo")),
         new("DocumentoExigido.ModeloNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.modelo_nao_encontrado", "O modelo de documento citado não existe neste processo")),
-        // Gate de fase: uma condição de gatilho não pode citar um fato cujo
-        // PontoResolucao é uma fase posterior à fase em que o documento é exigido — os dois
-        // erros são diagnósticos distintos (fase do PontoResolucao ausente do cronograma vs.
-        // presente, mas posterior), não reaproveitam o mesmo código.
-        new("DocumentoExigido.PontoResolucaoForaDoCronograma", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.ponto_resolucao_fora_do_cronograma", "A fase em que o fato citado na condição de gatilho é conhecido não pertence ao cronograma deste processo")),
-        new("DocumentoExigido.FatoResolvidoEmFasePosterior", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.fato_resolvido_em_fase_posterior", "O fato citado na condição de gatilho só é conhecido numa fase posterior à fase em que o documento é exigido")),
+        // A condição de aplicação do documento não pode citar um fato que só se conhece numa fase posterior à fase
+        // em que o documento é exigido. São duas recusas distintas, com códigos próprios: a fase em que o fato se conhece
+        // não está no cronograma, ou está, mas vem depois.
+        new("DocumentoExigido.PontoResolucaoForaDoCronograma", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.ponto_resolucao_fora_do_cronograma", "A fase em que o fato citado na condição de aplicação é conhecido não pertence ao cronograma deste processo")),
+        new("DocumentoExigido.FatoResolvidoEmFasePosterior", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.fato_resolvido_em_fase_posterior", "O documento é exigido por um fato que só se conhece numa fase posterior")),
         new("FaseCronograma.ReferenciadaPorExigenciaViva", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.referenciada_por_exigencia_viva", "A fase removida do cronograma é usada por um documento de outra fase como âncora de idade máxima")),
         new("FaseCronograma.EtapaDaFaseReferenciada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.etapa_da_fase_referenciada", "A etapa que acontece na fase removida é referenciada pela classificação ou por um critério de desempate")),
         // Guards backward de fase — complemento ao
@@ -47,9 +46,8 @@ internal static class ErrosDosDocumentosExigidos
         // Uma permutação cíclica de Ordem entre
         // fases retidas não tem ordem de UPDATE que a resolva num único SaveChanges.
         new("FaseCronograma.PermutacaoDeOrdemNaoSuportada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.permutacao_de_ordem_nao_suportada", "A redefinição do cronograma troca a Ordem entre fases já existentes formando um ciclo fechado, que não pode ser persistido em uma única chamada")),
-        // Gatilho DNF — CondicaoGatilho sobre PredicadoDnf,
-        // ReferenciaTemporalFatos e a validação de publicação sem fallback silencioso
-        // (ADR-0111).
+        // Condição de aplicação em forma normal disjuntiva (ADR-0111), referência temporal dos fatos
+        // e a validação da publicação, sem valor de reserva silencioso.
         new("CondicaoGatilho.ClausulaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.condicao_gatilho.clausula_invalida", "O ordinal da cláusula não pode ser negativo")),
         new("ReferenciaTemporalFatos.TipoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.referencia_temporal_fatos.tipo_obrigatorio", "O tipo de referência temporal é obrigatório")),
         new("ReferenciaTemporalFatos.TipoDesconhecido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.referencia_temporal_fatos.tipo_desconhecido", "Tipo de referência temporal fora do catálogo fechado")),
