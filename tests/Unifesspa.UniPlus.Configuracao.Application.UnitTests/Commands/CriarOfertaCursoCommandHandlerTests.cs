@@ -34,8 +34,8 @@ public sealed class CriarOfertaCursoCommandHandlerTests
 
     private static LocalOferta LocalVivo() =>
         LocalOferta.Criar(
-            TipoLocalOferta.CampusSede, null, "1504208", "Marabá", "PA",
-            ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null).Value!;
+            new(TipoLocalOferta.CampusSede, null, "1504208", "Marabá", "PA", null, null),
+            Agora).Value!;
 
     private static UnidadeView UnidadeViva(Guid id) =>
         new(id, "FACET", "FACET", "facet", "Faculdade de Computação e Engenharia Elétrica",

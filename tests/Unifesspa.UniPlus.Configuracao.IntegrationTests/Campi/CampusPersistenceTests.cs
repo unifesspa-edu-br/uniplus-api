@@ -130,8 +130,8 @@ public sealed class CampusPersistenceTests
         }
 
         LocalOferta local = LocalOferta.Criar(
-            TipoLocalOferta.CursoForaDeSede, campus.Id, "1504208", "Marabá", "PA",
-            ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null).Value!;
+            new(TipoLocalOferta.CursoForaDeSede, campus.Id, "1504208", "Marabá", "PA", null, null),
+            Agora).Value!;
         await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.LocaisOferta.Add(local);
@@ -160,8 +160,8 @@ public sealed class CampusPersistenceTests
         }
 
         LocalOferta local = LocalOferta.Criar(
-            TipoLocalOferta.CursoForaDeSede, campus.Id, "1504208", "Marabá", "PA",
-            ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null).Value!;
+            new(TipoLocalOferta.CursoForaDeSede, campus.Id, "1504208", "Marabá", "PA", null, null),
+            Agora).Value!;
         await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.LocaisOferta.Add(local);

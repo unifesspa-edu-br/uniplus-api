@@ -181,6 +181,6 @@ public sealed class OfertaCursoLeituraPersistenceTests
 
     private static LocalOferta CampusSedeEmMaraba() =>
         LocalOferta.Criar(
-            TipoLocalOferta.CampusSede, null, "1504208", "Marabá", "PA",
-            ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null).Value!;
+            new(TipoLocalOferta.CampusSede, null, "1504208", "Marabá", "PA", null, null),
+            Agora).Value!;
 }

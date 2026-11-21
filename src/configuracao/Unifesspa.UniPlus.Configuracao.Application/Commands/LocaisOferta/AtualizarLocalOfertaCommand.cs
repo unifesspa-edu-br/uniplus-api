@@ -3,6 +3,8 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.LocaisOferta;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.Enderecos;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <remarks>
@@ -18,4 +20,9 @@ public sealed record AtualizarLocalOfertaCommand(
     string? CidadeNome,
     string? CidadeUf,
     EnderecoGeoInput? Endereco,
-    string? CodigoEmec) : ICommand<Result>;
+    string? CodigoEmec) : ICommand<Result>
+{
+    /// <summary>A declaração do local com o <paramref name="endereco"/> já resolvido a partir do <see cref="Endereco"/> do payload.</summary>
+    public DeclaracaoDoLocalDeOferta Declaracao(ReferenciaEnderecoGeo? endereco) =>
+        new(Tipo, CampusResponsavelId, CidadeCodigoIbge, CidadeNome, CidadeUf, endereco, CodigoEmec);
+}

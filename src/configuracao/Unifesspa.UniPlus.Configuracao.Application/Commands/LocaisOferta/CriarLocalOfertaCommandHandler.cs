@@ -3,9 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.LocaisOferta;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.Enderecos;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
-using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
-using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -13,8 +11,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// Handler do <see cref="CriarLocalOfertaCommand"/>: valida o agregado por
 /// inteiro primeiro (sem I/O) — tipo, cidade, coerência com o endereço e código
 /// e-MEC acumulados no mesmo lote — só então confere a existência do campus
-/// responsável (quando informado, FK intra-banco opcional ADR-0065), cria o
-/// agregado carimbando a proveniência do display cache e persiste.
+/// responsável (quando informado, FK intra-banco opcional ADR-0065) e persiste o
+/// local, que define sozinho a proveniência da cidade.
 /// </summary>
 public static class CriarLocalOfertaCommandHandler
 {
@@ -32,48 +30,46 @@ public static class CriarLocalOfertaCommandHandler
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        DateTimeOffset agora = timeProvider.GetUtcNow();
+        Result<LocalOferta> local = MontarLocal(command, timeProvider.GetUtcNow());
 
+        return local.IsFailure
+            ? Result<Guid>.ValidationFailure(local.Errors)
+            : await ConferirCampusEGravarAsync(local.Value!, repository, campusRepository, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
+
+    // Não retorna cedo quando o endereço falha: o local é criado de qualquer forma (sem endereço) para que tipo, cidade e
+    // código e-MEC também sejam conferidos e entrem no mesmo lote de errors[]; senão um CEP malformado esconderia os demais.
+    private static Result<LocalOferta> MontarLocal(CriarLocalOfertaCommand command, DateTimeOffset agora)
+    {
         (DomainError? enderecoErro, ReferenciaEnderecoGeo? endereco) =
             EnderecoGeoInputMapping.Resolver(command.Endereco, existente: null, agora);
 
-        // Não retorna cedo quando o endereço falha: LocalOferta.Criar precisa
-        // rodar de qualquer forma (com endereco: null quando inválido) para que
-        // tipo/cidade/codigoEmec também sejam avaliados e entrem no mesmo lote de
-        // errors[] — senão um payload com CEP malformado E tipo inválido só
-        // reportaria o erro de endereço.
-        Result<LocalOferta> localResult = LocalOferta.Criar(
-            command.Tipo,
-            command.CampusResponsavelId,
-            command.CidadeCodigoIbge,
-            command.CidadeNome,
-            command.CidadeUf,
-            ReferenciaCidadeGeo.OrigemGeoApi,
-            agora,
-            enderecoErro is null ? endereco : null,
-            command.CodigoEmec);
+        Result<LocalOferta> local = LocalOferta.Criar(command.Declaracao(enderecoErro is null ? endereco : null), agora);
 
-        if (enderecoErro is not null || localResult.IsFailure)
-        {
-            List<FieldError> erros = [.. localResult.Errors];
-            if (enderecoErro is not null)
-            {
-                erros.Add(new FieldError("endereco", enderecoErro));
-            }
+        return enderecoErro is null
+            ? local
+            : Result<LocalOferta>.ValidationFailure([.. local.Errors, new FieldError("endereco", enderecoErro)]);
+    }
 
-            return Result<Guid>.ValidationFailure(erros);
-        }
+    private static async Task<Result<Guid>> ConferirCampusEGravarAsync(
+        LocalOferta local,
+        ILocalOfertaRepository repository,
+        ICampusRepository campusRepository,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
+        Result campus = local.CampusResponsavelId is { } campusId
+            ? await CampusResponsavelDoLocal.ConferirAsync(campusId, campusRepository, cancellationToken).ConfigureAwait(false)
+            : Result.Success();
 
-        LocalOferta local = localResult.Value!;
+        return campus.IsFailure
+            ? Result<Guid>.Failure(campus.Error!)
+            : await GravarAsync(local, repository, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
 
-        if (command.CampusResponsavelId.HasValue
-            && !await campusRepository.ExisteVivoAsync(command.CampusResponsavelId.Value, cancellationToken).ConfigureAwait(false))
-        {
-            return Result<Guid>.Failure(new DomainError(
-                LocalOfertaErrorCodes.CampusResponsavelNaoEncontrado,
-                "O Campus responsável informado não foi encontrado."));
-        }
-
+    private static async Task<Result<Guid>> GravarAsync(
+        LocalOferta local, ILocalOfertaRepository repository, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
         await repository.AdicionarAsync(local, cancellationToken).ConfigureAwait(false);
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
