@@ -107,7 +107,7 @@ internal static class OrdenacaoDeCursos
         IReadOnlyList<string> filtrosDaListagem) =>
         new(
             [.. campos.Select(ColunaDeCurso)],
-            (partes, id) => CursoLidoDoCursor(campos, partes, id),
+            (partes, id) => CursoLidoDoCursor(ValoresPorCampo(campos, partes), id),
             filtrosDaListagem);
 
     /// <summary>Monta a ordenação de Ofertas de Curso para os campos pedidos, sobre os filtros da listagem informados.</summary>
@@ -116,7 +116,7 @@ internal static class OrdenacaoDeCursos
         IReadOnlyList<string> filtrosDaListagem) =>
         new(
             [.. campos.Select(ColunaDeOferta)],
-            (partes, id) => OfertaLidaDoCursor(campos, partes, id),
+            (partes, id) => OfertaLidaDoCursor(ValoresPorCampo(campos, partes), id),
             filtrosDaListagem);
 
     private static readonly Dictionary<string, Func<SortDirection, KeysetSortColumn<CursoOrdenado>>> CamposDeCurso =
@@ -189,14 +189,8 @@ internal static class OrdenacaoDeCursos
     private static string ChaveDeInstante(DateTimeOffset instante) =>
         instante.ToUniversalTime().ToString("O", System.Globalization.CultureInfo.InvariantCulture);
 
-    private static CursoOrdenado CursoLidoDoCursor(
-        IReadOnlyList<SortField> campos,
-        IReadOnlyList<string> partes,
-        Guid id)
-    {
-        Dictionary<string, string> valores = ValoresPorCampo(campos, partes);
-
-        return new CursoOrdenado
+    private static CursoOrdenado CursoLidoDoCursor(Dictionary<string, string> valores, Guid id) =>
+        new()
         {
             Id = id,
             NomeOrdenacao = valores.GetValueOrDefault(CamposOrdenacaoCurso.Nome, string.Empty),
@@ -205,40 +199,27 @@ internal static class OrdenacaoDeCursos
             NivelEnsino = valores.GetValueOrDefault(CamposOrdenacaoCurso.NivelEnsino, string.Empty),
             CriadoEm = InstanteDaChave(valores, CamposOrdenacaoCurso.CriadoEm),
         };
-    }
 
-    private static OfertaCursoOrdenada OfertaLidaDoCursor(
-        IReadOnlyList<SortField> campos,
-        IReadOnlyList<string> partes,
-        Guid id)
-    {
-        Dictionary<string, string> valores = ValoresPorCampo(campos, partes);
-
-        return new OfertaCursoOrdenada
+    private static OfertaCursoOrdenada OfertaLidaDoCursor(Dictionary<string, string> valores, Guid id) =>
+        new()
         {
             Id = id,
             NomeOrdenacao = valores.GetValueOrDefault(CamposOrdenacaoOfertaCurso.CursoNome, string.Empty),
             Codigo = valores.GetValueOrDefault(CamposOrdenacaoOfertaCurso.CursoCodigo, string.Empty),
             UnidadeSigla = valores.GetValueOrDefault(CamposOrdenacaoOfertaCurso.UnidadeOfertanteSigla, string.Empty),
-            ProgramaDeOferta = ProgramasDeOferta.TryAnalisar(
-                valores.GetValueOrDefault(CamposOrdenacaoOfertaCurso.ProgramaDeOferta), out ProgramaDeOferta vProgramaDeOferta)
-                ? vProgramaDeOferta
-                : default,
-            FormatoPedagogico = FormatosPedagogicos.TryAnalisar(
-                valores.GetValueOrDefault(CamposOrdenacaoOfertaCurso.FormatoPedagogico), out FormatoPedagogico vFormatoPedagogico)
-                ? vFormatoPedagogico
-                : default,
-            RegimeDeFuncionamento = RegimesDeFuncionamento.TryAnalisar(
-                valores.GetValueOrDefault(CamposOrdenacaoOfertaCurso.RegimeDeFuncionamento), out RegimeDeFuncionamento vRegimeDeFuncionamento)
-                ? vRegimeDeFuncionamento
-                : default,
-            RegimeDeTurno = RegimesDeTurno.TryAnalisar(
-                valores.GetValueOrDefault(CamposOrdenacaoOfertaCurso.RegimeDeTurno), out RegimeDeTurno vRegimeDeTurno)
-                ? vRegimeDeTurno
-                : default,
+            ProgramaDeOferta = ClassificacaoDoCursor<ProgramaDeOferta>(valores, CamposOrdenacaoOfertaCurso.ProgramaDeOferta, ProgramasDeOferta.TryAnalisar),
+            FormatoPedagogico = ClassificacaoDoCursor<FormatoPedagogico>(valores, CamposOrdenacaoOfertaCurso.FormatoPedagogico, FormatosPedagogicos.TryAnalisar),
+            RegimeDeFuncionamento = ClassificacaoDoCursor<RegimeDeFuncionamento>(valores, CamposOrdenacaoOfertaCurso.RegimeDeFuncionamento, RegimesDeFuncionamento.TryAnalisar),
+            RegimeDeTurno = ClassificacaoDoCursor<RegimeDeTurno>(valores, CamposOrdenacaoOfertaCurso.RegimeDeTurno, RegimesDeTurno.TryAnalisar),
             CriadoEm = InstanteDaChave(valores, CamposOrdenacaoOfertaCurso.CriadoEm),
         };
-    }
+
+    private delegate bool Analisador<TEnum>(string? texto, out TEnum valor);
+
+    private static TEnum ClassificacaoDoCursor<TEnum>(
+        Dictionary<string, string> valores, string campo, Analisador<TEnum> analisar)
+        where TEnum : struct, Enum =>
+        analisar(valores.GetValueOrDefault(campo), out TEnum classificacao) ? classificacao : default;
 
     private static Dictionary<string, string> ValoresPorCampo(
         IReadOnlyList<SortField> campos,

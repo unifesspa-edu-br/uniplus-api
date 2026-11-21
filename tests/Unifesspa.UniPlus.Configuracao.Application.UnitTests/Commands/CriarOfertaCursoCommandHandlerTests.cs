@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Governance.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class CriarOfertaCursoCommandHandlerTests
 {
@@ -30,16 +31,24 @@ public sealed class CriarOfertaCursoCommandHandlerTests
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     private static Curso CursoVivo() =>
-        Curso.Criar("ENG_CIVIL", "Engenharia Civil", "Bacharelado", "Graduação", null).Value!;
+        Curso.Criar("ENG_CIVIL", "Engenharia Civil", "Bacharelado", "Graduação", null).ValorEsperado();
 
     private static LocalOferta LocalVivo() =>
         LocalOferta.Criar(
             new(TipoLocalOferta.CampusSede, null, "1504208", "Marabá", "PA", null, null),
-            Agora).Value!;
+            Agora).ValorEsperado();
 
     private static UnidadeView UnidadeViva(Guid id) =>
         new(id, "FACET", "FACET", "facet", "Faculdade de Computação e Engenharia Elétrica",
             null, "Faculdade", UnidadeAcademica: true, UnidadeSuperiorId: null);
+
+    private static bool CongelaAUnidadeViva(OfertaCurso oferta, Guid unidadeId, Guid cursoId, Guid localId) =>
+        oferta.UnidadeOfertante.OrigemId == unidadeId
+        && oferta.UnidadeOfertante.Sigla == "FACET"
+        && oferta.UnidadeOfertante.Nome == "Faculdade de Computação e Engenharia Elétrica"
+        && oferta.UnidadeOfertante.Tipo == "Faculdade"
+        && oferta.CursoId == cursoId
+        && oferta.LocalOfertaId == localId;
 
     private static CriarOfertaCursoCommand Comando(
         Guid cursoId,
@@ -60,26 +69,15 @@ public sealed class CriarOfertaCursoCommandHandlerTests
     [Fact(DisplayName = "Curso e local vivos + unidade viva: congela o snapshot da view, persiste e retorna o Id")]
     public async Task Handle_ReferenciasVivas_CongelaEPersiste()
     {
-        Curso curso = CursoVivo();
-        LocalOferta local = LocalVivo();
-        Guid unidadeId = Guid.CreateVersion7();
-        _cursoRepository.ObterPorIdParaLeituraAsync(curso.Id, Arg.Any<CancellationToken>()).Returns(curso);
-        _localOfertaRepository.ObterPorIdParaLeituraAsync(local.Id, Arg.Any<CancellationToken>()).Returns(local);
-        _unidadeReader.ObterPorIdAsync(unidadeId, Arg.Any<CancellationToken>()).Returns(UnidadeViva(unidadeId));
+        PrepararReferenciasVivas(out Guid cursoId, out Guid localId, out Guid unidadeId);
 
-        Result<Guid> resultado = await HandleAsync(Comando(curso.Id, local.Id, unidadeId));
+        Result<Guid> resultado = await HandleAsync(Comando(cursoId, localId, unidadeId));
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value.Should().NotBe(Guid.Empty);
         // Snapshot-copy (ADR-0061): sigla/nome/tipo congelados exatamente como a view devolveu.
         await _repository.Received(1).AdicionarAsync(
-            Arg.Is<OfertaCurso>(o =>
-                o.UnidadeOfertante.OrigemId == unidadeId
-                && o.UnidadeOfertante.Sigla == "FACET"
-                && o.UnidadeOfertante.Nome == "Faculdade de Computação e Engenharia Elétrica"
-                && o.UnidadeOfertante.Tipo == "Faculdade"
-                && o.CursoId == curso.Id
-                && o.LocalOfertaId == local.Id),
+            Arg.Is<OfertaCurso>(o => CongelaAUnidadeViva(o, unidadeId, cursoId, localId)),
             Arg.Any<CancellationToken>());
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
@@ -227,15 +225,10 @@ public sealed class CriarOfertaCursoCommandHandlerTests
     [Fact(DisplayName = "Programa não-REGULAR com base legal cria normalmente")]
     public async Task Handle_ProgramaNaoRegularComBaseLegal_Cria()
     {
-        Curso curso = CursoVivo();
-        LocalOferta local = LocalVivo();
-        Guid unidadeId = Guid.CreateVersion7();
-        _cursoRepository.ObterPorIdParaLeituraAsync(curso.Id, Arg.Any<CancellationToken>()).Returns(curso);
-        _localOfertaRepository.ObterPorIdParaLeituraAsync(local.Id, Arg.Any<CancellationToken>()).Returns(local);
-        _unidadeReader.ObterPorIdAsync(unidadeId, Arg.Any<CancellationToken>()).Returns(UnidadeViva(unidadeId));
+        PrepararReferenciasVivas(out Guid cursoId, out Guid localId, out Guid unidadeId);
 
         Result<Guid> resultado = await HandleAsync(
-            Comando(curso.Id, local.Id, unidadeId, programa: "PARFOR", baseLegal: "Decreto 6.755/2009"));
+            Comando(cursoId, localId, unidadeId, programa: "PARFOR", baseLegal: "Decreto 6.755/2009"));
 
         resultado.IsSuccess.Should().BeTrue();
         await _repository.Received(1).AdicionarAsync(
