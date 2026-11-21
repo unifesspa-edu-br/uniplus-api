@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.CategoriasDocumento;
 
-using System.Diagnostics.CodeAnalysis;
-
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
@@ -13,16 +11,12 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// O leitor cross-módulo de categoria de documento (ADR-0056), contra Postgres real.
-/// Quem o consome é o Módulo Seleção, ao declarar o recorte de competência de uma banca
+/// Quem o consome é o Módulo Seleção, ao declarar os candidatos atendidos por uma banca
 /// requerida por fase: é este leitor que decide se a categoria referenciada existe e
 /// segue viva no cadastro, e uma categoria removida que continuasse respondendo faria o
 /// edital congelar competência sobre um rótulo que saiu do catálogo.
 /// </summary>
 [Collection(ConfiguracaoDbCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class CategoriaDocumentoReaderTests
 {
     private const string AdminA = "admin-a";
@@ -39,17 +33,9 @@ public sealed class CategoriaDocumentoReaderTests
     {
         string codigo = CodigoUnico();
         CategoriaDocumento categoria = CategoriaDocumento.Criar(codigo, "Comprovação de renda", "Bloco de renda", 30).Value!;
+        await CadastrarAsync(categoria);
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.CategoriasDocumento.Add(categoria);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
-        var reader = new CategoriaDocumentoReader(readCtx);
-
-        CategoriaDocumentoView? view = await reader.ObterPorIdAsync(categoria.Id);
+        CategoriaDocumentoView? view = await ObterPorIdAsync(categoria.Id);
 
         view.Should().NotBeNull();
         view!.Codigo.Should().Be(codigo);
@@ -62,20 +48,9 @@ public sealed class CategoriaDocumentoReaderTests
     public async Task ObterPorIdAsync_CategoriaRemovida_DevolveNulo()
     {
         CategoriaDocumento categoria = CategoriaDocumento.Criar(CodigoUnico(), "Identificação", null, 0).Value!;
+        await CadastrarEntaoRemoverAsync(categoria);
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.CategoriasDocumento.Add(categoria);
-            await ctx.SaveChangesAsync();
-
-            categoria.MarkAsDeleted(AdminA, DateTimeOffset.UtcNow);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
-        var reader = new CategoriaDocumentoReader(readCtx);
-
-        CategoriaDocumentoView? view = await reader.ObterPorIdAsync(categoria.Id);
+        CategoriaDocumentoView? view = await ObterPorIdAsync(categoria.Id);
 
         view.Should().BeNull();
     }
@@ -84,36 +59,54 @@ public sealed class CategoriaDocumentoReaderTests
     public async Task ListarVivosAsync_OrdenaPorCodigoEExcluiRemovidas()
     {
         string prefixo = $"ZZ{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
-        string codigoB = $"{prefixo}_B";
-        string codigoA = $"{prefixo}_A";
-        string codigoRemovido = $"{prefixo}_C";
+        CategoriaDocumento removida = CategoriaDocumento.Criar($"{prefixo}_C", "Removida", null, 0).Value!;
 
-        CategoriaDocumento removida = CategoriaDocumento.Criar(codigoRemovido, "Removida", null, 0).Value!;
+        // Inseridas fora de ordem alfabética, e com Ordem que contraria o alfabeto: o
+        // leitor precisa ordenar pelo código, não pela ordem de inserção nem pela
+        // Ordem de exibição do cadastro, que admite empate.
+        await CadastrarEntaoRemoverAsync(
+            removida,
+            CategoriaDocumento.Criar($"{prefixo}_B", "Categoria Bê", null, 1).Value!,
+            CategoriaDocumento.Criar($"{prefixo}_A", "Categoria Á", null, 99).Value!);
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            // Inseridas fora de ordem alfabética, e com Ordem que contraria o alfabeto: o
-            // leitor precisa ordenar pelo código, não pela ordem de inserção nem pela
-            // Ordem de exibição do cadastro, que admite empate.
-            ctx.CategoriasDocumento.Add(CategoriaDocumento.Criar(codigoB, "Categoria Bê", null, 1).Value!);
-            ctx.CategoriasDocumento.Add(CategoriaDocumento.Criar(codigoA, "Categoria Á", null, 99).Value!);
-            ctx.CategoriasDocumento.Add(removida);
-            await ctx.SaveChangesAsync();
+        string[] minhas = await CodigosVivosComPrefixoAsync(prefixo);
 
-            removida.MarkAsDeleted(AdminA, DateTimeOffset.UtcNow);
-            await ctx.SaveChangesAsync();
-        }
+        minhas.Should().Equal([$"{prefixo}_A", $"{prefixo}_B"]);
+    }
 
-        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
-        var reader = new CategoriaDocumentoReader(readCtx);
+    private async Task CadastrarAsync(CategoriaDocumento categoria)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
+        ctx.CategoriasDocumento.Add(categoria);
+        await ctx.SaveChangesAsync();
+    }
 
-        IReadOnlyList<CategoriaDocumentoView> todas = await reader.ListarVivosAsync();
+    private async Task CadastrarEntaoRemoverAsync(CategoriaDocumento removida, params CategoriaDocumento[] vivas)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
+        ctx.CategoriasDocumento.AddRange(vivas);
+        ctx.CategoriasDocumento.Add(removida);
+        await ctx.SaveChangesAsync();
 
-        string[] minhas = [.. todas
+        removida.MarkAsDeleted(AdminA, DateTimeOffset.UtcNow);
+        await ctx.SaveChangesAsync();
+    }
+
+    private async Task<CategoriaDocumentoView?> ObterPorIdAsync(Guid id)
+    {
+        await using UniPlusDbContext leituraCtx = _fixture.CreateDbContext(userId: null);
+
+        return await new CategoriaDocumentoReader(leituraCtx).ObterPorIdAsync(id);
+    }
+
+    private async Task<string[]> CodigosVivosComPrefixoAsync(string prefixo)
+    {
+        await using UniPlusDbContext leituraCtx = _fixture.CreateDbContext(userId: null);
+        IReadOnlyList<CategoriaDocumentoView> todas = await new CategoriaDocumentoReader(leituraCtx).ListarVivosAsync();
+
+        return [.. todas
             .Select(v => v.Codigo)
             .Where(c => c.StartsWith(prefixo, StringComparison.Ordinal))];
-
-        minhas.Should().Equal([codigoA, codigoB]);
     }
 
     private static string CodigoUnico() => $"CAT_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";

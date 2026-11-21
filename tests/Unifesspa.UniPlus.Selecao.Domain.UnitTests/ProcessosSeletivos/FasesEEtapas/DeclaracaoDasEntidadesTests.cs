@@ -63,10 +63,10 @@ public sealed class DeclaracaoDasEntidadesTests
         fase.Declaracao().Recusas.Should().BeEmpty();
     }
 
-    // A criação recusa o recorte na banca de recursos; o estado violado chega pela reidratação, como o que o banco hidrata.
-    private static FaseCronograma FaseReidratadaComRecorteEmBancaDeRecursos()
+    // A criação recusa os candidatos atendidos na banca de recursos; o estado violado chega pela reidratação, como o que o banco hidrata.
+    private static FaseCronograma FaseReidratadaComCandidatosAtendidosEmBancaDeRecursos()
     {
-        BancaRequerida comRecorte = BancaRequerida.Criar(
+        BancaRequerida comCandidatosAtendidos = BancaRequerida.Criar(
             TipoDaBanca, TipoBancaCodigo.AnaliseDeRecursos, "Banca de análise de recursos",
             [CategoriaJulgada.Criar(Guid.CreateVersion7(), "RENDA")], BancasDeTeste.Regra());
 
@@ -75,13 +75,13 @@ public sealed class DeclaracaoDasEntidadesTests
             new OrigemCanonicaDaFase(Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NoEdital, true, false, true, false),
             new DecisoesDeCronogramaDaFase(1, Abertura, Abertura.AddDays(9), UnidadesDeTeste.Ceps),
             new PublicacoesDaFase([], false, null),
-            [comRecorte]);
+            [comCandidatosAtendidos]);
     }
 
     [Fact(DisplayName = "A fase reidratada em estado violado declara a recusa que a criação teria feito")]
     public void Fase_ReidratadaEmEstadoViolado_DeclaraARecusa() =>
-        Causas(FaseReidratadaComRecorteEmBancaDeRecursos().Declaracao().Recusas).Should().ContainSingle()
-            .Which.Codigo.Should().Be("Banca.RecorteEmBancaDeRecursos");
+        Causas(FaseReidratadaComCandidatosAtendidosEmBancaDeRecursos().Declaracao().Recusas).Should().ContainSingle()
+            .Which.Codigo.Should().Be("Banca.CandidatosAtendidosEmBancaDeRecursos");
 
     [Fact(DisplayName = "O cronograma do processo tem um membro por fase, na ordem em que as fases chegam")]
     public void CronogramaDoProcesso_Do_TemUmMembroPorFaseNaOrdemDeChegada()

@@ -7,9 +7,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// As bancas que a fase requer. A banca cujo tipo (o código é obrigatório no documento, e aqui só falta o que o cadastro não tem), categoria do recorte ou regra de deliberação o domínio recusa fica de fora inteira
+/// As bancas que a fase requer. A banca cujo tipo (o código é obrigatório no documento, e aqui só falta o que o cadastro não tem), categoria dos candidatos atendidos ou regra de deliberação o domínio recusa fica de fora inteira
 /// e vira parte recusada, que aponta o campo da banca que a causa; as causas independentes da mesma banca acumulam. A banca que
-/// não cabe na lista suspende o que se conclui das bancas da fase. Não confere o recorte nem o mínimo de integrantes.
+/// não cabe na lista suspende o que se conclui das bancas da fase. Não confere os candidatos atendidos nem o mínimo de integrantes.
 /// </summary>
 internal static class LeituraDasBancasDaFase
 {
@@ -59,7 +59,7 @@ internal static class LeituraDasBancasDaFase
             .Where(static par => par.categoria is null)
             .Select(par => Recusa(banca, $"bancasRequeridas[{banca.PosicaoNoDocumento}].categoriasDocumentoIds[{par.posicao}]", new DomainError(
                 FaseCronogramaErrorCodes.CategoriaDocumentoNaoEncontrada,
-                "A categoria de documento do recorte de competência da banca não foi encontrada ou não está mais viva.")));
+                "Uma categoria de documento dos candidatos atendidos pela banca não existe ou está desativada no cadastro.")));
 
     private static IEnumerable<RecusaDaParte> DaDeliberacao(BancaNoDocumento banca, IReadOnlyList<FieldError> violacoes) =>
         violacoes.Select(violacao => Recusa(banca, $"bancasRequeridas[{banca.PosicaoNoDocumento}].regraDeDeliberacao.{violacao.Field}", violacao.Error));

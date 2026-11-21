@@ -13838,6 +13838,27 @@
       ]
     },
     {
+      "codigo": "uniplus.selecao.banca.candidatos_atendidos_em_banca_de_recursos",
+      "requisitos": [
+        "UNI-REQ-0274",
+        "UNI-REQ-0398",
+        "UNI-REQ-0473"
+      ],
+      "oQueAconteceu": [
+        "A banca que julga recurso foi declarada com candidatos atendidos, isto é, com a\nlista de categorias de documento que ela atende. A banca que julga recurso atende\ntodos os candidatos da fase: ela analisa o recurso inteiro (UNI-REQ-0274 e\nUNI-REQ-0398), e não uma parte dele.",
+        "Os candidatos atendidos existem para repartir o trabalho entre bancas do mesmo\ntipo, como descrito em\n[candidatos atendidos obrigatórios](/erros/uniplus.selecao.banca_requerida.candidatos_atendidos_obrigatorios).\nNuma banca que julga recurso, uma lista deixaria parte dos recursos sem quem os\njulgue.",
+        "A regra vale para a banca cujo papel, registrado nela quando foi criada, é o de\njulgar recurso: a banca de análise de recursos de 1ª instância (UNI-REQ-0473).\nCom a banca de 2ª instância, a mesma recusa vale também para ela. A mensagem cita a fase pelo código,\na banca pelo nome do tipo e pelo número dela e o papel dela.",
+        "Só a banca da fase tem candidatos atendidos: a recusa sai na gravação do\ncronograma, na leitura do documento de configuração e na publicação, no campo\n`fases[i].bancasRequeridas[p].categoriasDocumentoIds`. Na gravação ela vem na\nlista `errors[]`."
+      ],
+      "comoResolver": [
+        "Retire as categorias de documento da banca que julga recurso. Se parte da análise\nprecisa de bancas distintas, declare essas bancas com o tipo próprio de cada uma\ne mantenha a banca que julga recurso sem categorias.",
+        "O painel de conformidade aponta a pendência antes da publicação, no item\n`cronograma_banca_de_recursos_sem_candidatos_atendidos`."
+      ],
+      "ondeAparece": [
+        "- Definição do cronograma de fases do processo seletivo\n- Leitura do documento de configuração do processo seletivo\n- Publicação inicial do processo seletivo\n- Retificação em ato único"
+      ]
+    },
+    {
       "codigo": "uniplus.selecao.banca.criterio_obrigatorio",
       "requisitos": [
         "UNI-REQ-0275"
@@ -14007,27 +14028,6 @@
       ]
     },
     {
-      "codigo": "uniplus.selecao.banca.recorte_em_banca_de_recursos",
-      "requisitos": [
-        "UNI-REQ-0398",
-        "UNI-REQ-0274"
-      ],
-      "oQueAconteceu": [
-        "A banca de análise de recursos foi declarada com recorte de competência, isto é,\ncom a lista de categorias de documento que ela julga. A banca de análise de\nrecursos não tem recorte: ela analisa o recurso da fase ou da etapa inteiro\n(UNI-REQ-0274), e não uma parte dele.",
-        "O recorte existe para distinguir duas bancas do mesmo tipo na mesma fase, cada\numa com a sua parte da análise documental, como descrito em\n[Recorte de competência obrigatório](/erros/uniplus.selecao.banca_requerida.recorte_de_competencia_obrigatorio).\nNa banca de recursos, um recorte deixaria parte do recurso sem quem o analise.",
-        "Só a banca da fase tem recorte de competência: a recusa sai na gravação do\ncronograma, no campo `fases[0].bancasRequeridas[0].categoriasDocumentoIds`, e\nvem na lista `errors[]` da resposta.\nA publicação e a retificação em ato único conferem de novo."
-      ],
-      "comoResolver": [
-        "Retire o recorte de competência da banca de análise de recursos. Se parte da\nanálise documental precisa de bancas distintas, declare essas bancas com o tipo\npróprio de cada uma, e mantenha uma única banca de análise de recursos sem\nrecorte.",
-        "O painel de conformidade aponta a pendência antes da publicação, no item\n`cronograma_banca_de_recursos_sem_recorte`."
-      ],
-      "ondeAparece": [
-        "Definição do cronograma de fases do processo seletivo",
-        "Publicação inicial do processo seletivo",
-        "Retificação em ato único"
-      ]
-    },
-    {
       "codigo": "uniplus.selecao.banca.regra_de_deliberacao_obrigatoria",
       "requisitos": [
         "UNI-REQ-0275"
@@ -14120,63 +14120,59 @@
       ]
     },
     {
-      "codigo": "uniplus.selecao.banca_requerida.categoria_duplicada_no_recorte",
+      "codigo": "uniplus.selecao.banca_requerida.candidatos_atendidos_duplicados",
       "requisitos": [],
       "oQueAconteceu": [
-        "Uma banca requerida pela fase cita a mesma categoria de documento duas ou mais\nvezes no recorte de competência.",
-        "O recorte é o conjunto do que aquela banca julga. Repetir uma categoria não\nacrescenta competência nenhuma — e deixa a declaração ambígua sobre ter sido engano\nde digitação ou intenção de dizer outra coisa. Como o recorte vai congelado na\nconfiguração publicada e responde por parecer e recurso do certame inteiro, a\nambiguidade é recusada na origem em vez de resolvida por conta própria.",
-        "Esta recusa vale para qualquer banca da fase, tenha ela outras bancas do mesmo tipo\nou não."
+        "Duas bancas do mesmo tipo na mesma fase atendem os mesmos candidatos: declaram o\nmesmo conjunto de categorias de documento.",
+        "Os candidatos atendidos de uma banca são as categorias de documento que ela julga.\nQuando duas bancas do mesmo tipo julgam as mesmas categorias, o parecer que o\ncandidato recebe não diz qual delas o julgou, e o recurso não sabe contra qual\nbanca se dirige. Por isso a repetição é recusada.",
+        "A comparação é feita como conjunto: a ordem em que as categorias são declaradas\nnão importa. A mensagem cita a fase pelo código e a banca pelo número dela, e o\ncampo apontado é `fases[i].bancasRequeridas[p].categoriasDocumentoIds`."
       ],
       "comoResolver": [
-        "Remova a repetição — a recusa nomeia o código da banca cujo recorte a contém.",
-        "Se a intenção era dar à banca competência sobre mais de uma matéria, declare\ncategorias **distintas**, uma para cada. Se era corrigir a categoria declarada,\ntroque-a em vez de acrescentar a nova ao lado da anterior.",
-        "Havendo outra banca do mesmo tipo na fase, os dois recortes ainda precisam ser\n[diferentes entre si](/erros/uniplus.selecao.banca_requerida.recorte_de_competencia_duplicado)\ndepois da correção.",
-        "O preflight de conformidade mostra esta pendência antes da publicação, no item\n`cronograma_recorte_de_competencia_das_bancas`."
+        "Defina categorias de documento diferentes para cada banca desse tipo, de modo que\ncada candidato seja atendido por uma só banca."
       ],
       "ondeAparece": [
-        "Definição do cronograma de fases do processo seletivo",
-        "Publicação inicial do processo seletivo",
-        "Retificação em ato único"
+        "- Definição do cronograma de fases do processo seletivo\n- Leitura do documento de configuração do processo seletivo\n- Publicação inicial do processo seletivo\n- Retificação em ato único"
       ]
     },
     {
-      "codigo": "uniplus.selecao.banca_requerida.recorte_de_competencia_duplicado",
-      "requisitos": [],
+      "codigo": "uniplus.selecao.banca_requerida.candidatos_atendidos_obrigatorios",
+      "requisitos": [
+        "UNI-REQ-0470"
+      ],
       "oQueAconteceu": [
-        "Duas bancas do mesmo tipo na mesma fase declaram exatamente as mesmas categorias de\ndocumento.",
-        "Declarar o recorte serve para distinguir bancas que o tipo sozinho não distingue.\nDuas bancas de análise documental com o mesmo recorte continuam indistinguíveis: o\nparecer que o candidato recebe não diz qual delas o julgou, e o recurso não sabe\ncontra quem se dirige. Preencher as duas com o mesmo conteúdo cumpre a letra da\nexigência sem cumprir o efeito, e por isso é recusado junto com a omissão.",
-        "A comparação é feita como **conjunto**: a ordem em que as categorias são declaradas\nnão importa, e duas bancas que citam as mesmas categorias em ordens diferentes\ndeclaram o mesmo recorte.",
-        "A recusa nomeia o código da banca e lista as categorias do recorte repetido."
+        "A fase tem bancas do mesmo tipo, e ao menos uma delas define os candidatos\natendidos, isto é, as categorias de documento que atende, enquanto outra não\ndefine.",
+        "Os candidatos atendidos dizem quem cada banca atende (UNI-REQ-0470):",
+        "- bancas do mesmo tipo com o **mesmo conjunto de categorias** atendem os mesmos\n  candidatos e julgam em paralelo, dividindo o trabalho;\n- bancas do mesmo tipo **todas sem categorias** formam um grupo só, que atende\n  todos os candidatos, também em paralelo;\n- bancas do mesmo tipo com categorias **diferentes** repartem as categorias\n  entre si.",
+        "Misturar bancas com categorias e banca sem categorias não permite saber quem\natende quem, e por isso é recusado. A comparação do conjunto não depende da ordem\nem que as categorias são declaradas.",
+        "A etapa não declara categorias: as bancas do mesmo tipo na etapa formam um grupo\nsó, e esta recusa vale só para a fase.",
+        "A mensagem cita a fase pelo código, o tipo e a banca sem categorias, pelo nome do\ntipo e pelo número dela. A recusa sai na gravação do cronograma, na leitura do\ndocumento e na publicação, no campo `fases[i].bancasRequeridas[p].categoriasDocumentoIds`,\ne na gravação vem na lista `errors[]`."
       ],
       "comoResolver": [
-        "Dois caminhos, conforme o desenho da fase:",
-        "- **As duas bancas julgam coisas diferentes.** Reparta as categorias entre elas,\n  conforme o que cada uma de fato analisa. Cada categoria continua podendo aparecer\n  [uma única vez](/erros/uniplus.selecao.banca_requerida.categoria_duplicada_no_recorte)\n  dentro de um mesmo recorte.\n- **As duas julgam o mesmo conjunto.** Então não são duas bancas — remova a\n  repetida. Com uma banca do tipo na fase, o recorte deixa de ser exigido.",
-        "Não há um terceiro caminho: esvaziar o recorte de uma das duas para desfazer a\nigualdade devolve a\n[recusa por recorte ausente](/erros/uniplus.selecao.banca_requerida.recorte_de_competencia_obrigatorio),\nporque a fase continua com duas bancas do mesmo tipo.",
-        "O preflight de conformidade mostra esta pendência antes da publicação, no item\n`cronograma_recorte_de_competencia_das_bancas`."
+        "Escolha um dos caminhos:",
+        "- defina as categorias de documento de cada banca desse tipo, sem repetir a mesma\n  categoria\n  ([categoria repetida](/erros/uniplus.selecao.banca_requerida.categoria_repetida_nos_candidatos_atendidos))\n  e usando categorias que existam e estejam ativas no cadastro\n  ([categoria não encontrada](/erros/uniplus.selecao.fase_cronograma.categoria_documento_nao_encontrada));\n- ou retire as categorias de todas as bancas do tipo, que passam a atender todos\n  os candidatos, em paralelo.",
+        "No painel de conformidade do processo, o item `cronograma_candidatos_atendidos_das_bancas` mostra\nse a regra está cumprida."
       ],
       "ondeAparece": [
-        "Definição do cronograma de fases do processo seletivo",
-        "Publicação inicial do processo seletivo",
-        "Retificação em ato único"
+        "- Definição do cronograma de fases do processo seletivo\n- Leitura do documento de configuração do processo seletivo\n- Publicação inicial do processo seletivo\n- Retificação em ato único"
       ]
     },
     {
-      "codigo": "uniplus.selecao.banca_requerida.recorte_de_competencia_obrigatorio",
-      "requisitos": [],
+      "codigo": "uniplus.selecao.banca_requerida.categoria_repetida_nos_candidatos_atendidos",
+      "requisitos": [
+        "UNI-REQ-0470"
+      ],
       "oQueAconteceu": [
-        "A fase do cronograma exige mais de uma banca do mesmo tipo, e ao menos uma delas\nnão declara nenhuma categoria de documento — não diz o que julga.",
-        "Enquanto a fase tem uma banca de cada tipo, o próprio tipo já identifica quem\njulgou: \"a banca de heteroidentificação\" não é ambíguo. Com duas bancas do mesmo\ntipo, o tipo deixa de distinguir. Numa fase de análise documental, uma banca pode\nanalisar a comprovação de renda e outra a autodeclaração étnico-racial — são\njulgamentos distintos, com composição e prazo próprios, e o parecer entregue ao\ncandidato precisa dizer de qual delas veio. O recorte de competência é o que dá\nesse nome.",
-        "A exigência é **condicional**: banca única do seu tipo na fase não precisa declarar\nrecorte, porque não há de quem distinguir. O agrupamento que decide \"mesmo tipo\" usa\no código da banca — o mesmo que aparece no edital publicado, que é por onde quem lê\ndiferencia uma da outra."
+        "Uma banca da fase cita a mesma categoria de documento duas ou mais vezes nos\ncandidatos atendidos.",
+        "Os candidatos atendidos são o conjunto de categorias que aquela banca julga\n(UNI-REQ-0470). Repetir uma categoria não acrescenta nada e deixa a declaração\nambígua entre engano de digitação e intenção de dizer outra coisa. Como o\nconjunto vai congelado na configuração publicada e responde pelo parecer e pelo\nrecurso do certame inteiro, a repetição é recusada na origem.",
+        "A recusa vale para qualquer banca da fase, tenha ela outras bancas do mesmo tipo\nou não. A mensagem cita a fase pelo código e a banca pelo nome do tipo e pelo\nnúmero dela, e o campo apontado é `fases[i].bancasRequeridas[p].categoriasDocumentoIds[k]`.\nNa gravação a recusa vem na lista `errors[]`."
       ],
       "comoResolver": [
-        "Dois caminhos, conforme o desenho da fase:",
-        "- **As duas bancas existem mesmo.** Declare, em cada uma, as categorias de documento\n  que ela julga. Três condições são conferidas em seguida, e vale atendê-las de uma\n  vez: os recortes das duas precisam ser\n  [diferentes entre si](/erros/uniplus.selecao.banca_requerida.recorte_de_competencia_duplicado);\n  cada categoria aparece\n  [uma única vez](/erros/uniplus.selecao.banca_requerida.categoria_duplicada_no_recorte)\n  dentro de um recorte; e cada categoria citada precisa\n  [existir e estar viva](/erros/uniplus.selecao.fase_cronograma.categoria_documento_nao_encontrada)\n  no cadastro.\n- **A fase não precisa de duas bancas do mesmo tipo.** Remova a repetida. Com uma\n  banca do tipo, o recorte deixa de ser exigido, e nada mais precisa ser declarado.",
-        "O preflight de conformidade mostra esta pendência antes da publicação, no item\n`cronograma_recorte_de_competencia_das_bancas`."
+        "Remova a repetição. Se a intenção era dar à banca competência sobre mais de uma\nmatéria, declare categorias distintas, uma para cada. Se era corrigir a categoria,\ntroque-a em vez de acrescentar a nova ao lado da anterior.",
+        "Havendo outra banca do mesmo tipo, a regra dos\n[candidatos atendidos](/erros/uniplus.selecao.banca_requerida.candidatos_atendidos_obrigatorios)\ncontinua valendo depois da correção.",
+        "O painel de conformidade do processo mostra o resultado no item\n`cronograma_candidatos_atendidos_das_bancas`."
       ],
       "ondeAparece": [
-        "Definição do cronograma de fases do processo seletivo",
-        "Publicação inicial do processo seletivo",
-        "Retificação em ato único"
+        "- Definição do cronograma de fases do processo seletivo\n- Leitura do documento de configuração do processo seletivo\n- Publicação inicial do processo seletivo\n- Retificação em ato único"
       ]
     },
     {
@@ -18589,17 +18585,17 @@
       "codigo": "uniplus.selecao.fase_cronograma.categoria_documento_nao_encontrada",
       "requisitos": [],
       "oQueAconteceu": [
-        "Uma das categorias de documento declaradas no recorte de competência de uma banca\nnão existe no cadastro, ou já não está viva.",
-        "O recorte de competência é a lista das categorias de documento que aquela banca\njulga. Ele é resolvido contra o cadastro vivo e congelado por valor na configuração\ndo certame, do mesmo modo que o tipo da banca — e é esse recorte congelado que\nresponde, pelo certame inteiro, por qual banca julgou o quê. Parecer e recurso se\nreferem a ele. Uma categoria que saiu do cadastro não pode entrar no edital: o\ndocumento publicado citaria um recorte que já não se consegue interpretar.",
+        "Uma das categorias de documento que definem os candidatos atendidos por uma banca\nnão existe no cadastro, ou está desativada. A mensagem da resposta diz: \"Uma categoria\nde documento dos candidatos atendidos pela banca não existe ou está desativada no\ncadastro.\" O campo da recusa é `bancasRequeridas[p].categoriasDocumentoIds[k]`, em que `p` é a posição da banca na fase e `k` é a posição da categoria na lista. Ela não repete o identificador enviado.",
+        "Os candidatos atendidos são a lista das categorias de documento que aquela banca julga.\nEla é resolvida contra o cadastro e guardada por valor na configuração do certame, do\nmesmo modo que o tipo da banca, e é essa lista guardada que responde, pelo certame\ninteiro, por qual banca julgou o quê. Parecer e recurso se referem a ela. Uma categoria\nque saiu do cadastro não pode entrar no edital: o documento publicado citaria candidatos\natendidos que já não se consegue interpretar. A recusa vale também na leitura do documento\nde configuração.",
         "A recusa interrompe a gravação na primeira ocorrência. A resolução da categoria\nfalhou, e seguir adiante conferindo o resto do cronograma produziria diagnóstico\nsobre um estado que não chegou a existir."
       ],
       "comoResolver": [
-        "A recusa nomeia o identificador da categoria que não foi encontrada. Dois desfechos\npossíveis:",
+        "A resposta não traz o identificador da categoria; confira as categorias declaradas na\nbanca. Dois desfechos possíveis:",
         "- **A categoria é a certa, e não está cadastrada ou foi desativada.** Cadastre-a ou\n  reative-a no cadastro de categorias de documento, no módulo Configuração, e repita\n  a definição do cronograma.\n- **O identificador não é o pretendido.** Consulte o cadastro e declare o\n  identificador da categoria que a banca de fato julga.",
-        "Com o recorte resolvido, a fase ainda confere duas coisas sobre ele, cada uma com\nrecusa própria: que a mesma categoria não aparece\n[duas vezes no mesmo recorte](/erros/uniplus.selecao.banca_requerida.categoria_duplicada_no_recorte),\ne que duas bancas do mesmo tipo não declaram\n[recortes iguais](/erros/uniplus.selecao.banca_requerida.recorte_de_competencia_duplicado)."
+        "Com as categorias resolvidas, a fase ainda confere duas coisas sobre os candidatos\natendidos, cada uma com recusa própria: que a mesma categoria não aparece\n[duas vezes entre os candidatos atendidos](/erros/uniplus.selecao.banca_requerida.categoria_repetida_nos_candidatos_atendidos),\ne que as bancas do mesmo tipo\n[ou todas definem os candidatos atendidos, ou nenhuma define](/erros/uniplus.selecao.banca_requerida.candidatos_atendidos_obrigatorios)."
       ],
       "ondeAparece": [
-        "Definição do cronograma de fases do processo seletivo"
+        "- Definição do cronograma de fases do processo seletivo"
       ]
     },
     {

@@ -5,13 +5,13 @@ using Unifesspa.UniPlus.Kernel.Domain.Entities;
 /// <summary>
 /// Uma categoria de documento que uma <see cref="BancaRequerida"/> julga (0..*) —
 /// snapshot-copy (ADR-0061) de uma <c>CategoriaDocumento</c> do módulo Configuração no
-/// momento em que o recorte de competência foi declarado.
+/// momento em que os candidatos atendidos foram declarados.
 /// </summary>
 /// <remarks>
 /// <para>
-/// O conjunto destas categorias é o <b>recorte de competência</b> da banca: o que separa
+/// O conjunto destas categorias são os <b>candidatos atendidos</b> pela banca: o que separa
 /// duas bancas do mesmo tipo dentro da mesma fase, como a que analisa critério de renda da
-/// que analisa requisito étnico-racial numa mesma análise documental. Sem ele, as duas são
+/// que analisa requisito étnico-racial numa mesma análise documental. Sem eles, as duas são
 /// indistinguíveis no snapshot publicado, e parecer, recurso e exigência documental ficam
 /// sem responsável identificável.
 /// </para>

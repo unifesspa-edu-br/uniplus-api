@@ -20,8 +20,8 @@ public sealed class MontagemDasBancasDaFaseTests
     private static readonly TipoBancaView TipoDeHomologacao = new(Guid.CreateVersion7(), TipoDeBanca.HomologacaoDasInscricoes, "Banca de homologação das inscrições", null, null, PapelDaBanca.AvaliaOMerito, false, false, [TipoMotivoDeDecisao.HomologacaoDasInscricoes]);
     private static readonly CategoriaDocumentoView CategoriaRenda = new(Guid.CreateVersion7(), "RENDA", "Renda", null, 1);
 
-    [Fact(DisplayName = "A banca requerida congela o tipo, o recorte de competência e a regra declarada")]
-    public async Task Montar_ComRecorteERegra_CongelaOTipoORecorteEARegra()
+    [Fact(DisplayName = "A banca requerida congela o tipo, os candidatos atendidos e a regra declarada")]
+    public async Task Montar_ComCandidatosAtendidosERegra_CongelaOTipoEOsCandidatosAtendidosEARegra()
     {
         MontagemDasBancasDaFase montagem = Montagem();
         BancaRequeridaInput declarada = new(TipoDocumental.Id, [CategoriaRenda.Id], RegrasDeDeliberacaoDeTeste.Valida());
@@ -32,19 +32,19 @@ public sealed class MontagemDasBancasDaFaseTests
         BancaRequerida banca = resultado.Value!.Should().ContainSingle().Subject;
         banca.Codigo.Should().Be("BANCA_ANALISE_DOCUMENTAL");
         banca.Nome.Should().Be("Banca de análise documental");
-        banca.RecorteDeCompetencia.Select(static categoria => categoria.Codigo).Should().Equal("RENDA");
+        banca.CandidatosAtendidos.Select(static categoria => categoria.Codigo).Should().Equal("RENDA");
         banca.RegraDeDeliberacao!.Quorum.Should().Be(2);
     }
 
-    [Fact(DisplayName = "A banca de análise de recursos com recorte é montada como veio: quem a recusa é a fábrica da fase")]
-    public async Task Montar_BancaDeRecursosComRecorte_MontaSemRecusar()
+    [Fact(DisplayName = "A banca de análise de recursos com candidatos atendidos é montada como veio: quem a recusa é a fábrica da fase")]
+    public async Task Montar_BancaDeRecursosComCandidatosAtendidos_MontaSemRecusar()
     {
         BancaRequeridaInput declarada = new(TipoDeRecursos.Id, [CategoriaRenda.Id], RegrasDeDeliberacaoDeTeste.Valida());
 
         Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(Fase(declarada), 2, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
-        resultado.Value!.Single().RecorteDeCompetencia.Select(static categoria => categoria.Codigo).Should().Equal("RENDA");
+        resultado.Value!.Single().CandidatosAtendidos.Select(static categoria => categoria.Codigo).Should().Equal("RENDA");
     }
 
     [Fact(DisplayName = "As violações da regra de deliberação das bancas da fase acumulam sob o caminho de cada uma")]
@@ -76,8 +76,8 @@ public sealed class MontagemDasBancasDaFaseTests
         recusa.Error.Code.Should().Be("FaseCronograma.TipoBancaNaoEncontrado");
     }
 
-    [Fact(DisplayName = "A categoria ausente do cadastro é recusada no campo do recorte")]
-    public async Task Montar_ComCategoriaAusenteDoCadastro_RecusaNoCampoDoRecorte()
+    [Fact(DisplayName = "A categoria ausente do cadastro é recusada no campo dos candidatos atendidos")]
+    public async Task Montar_ComCategoriaAusenteDoCadastro_RecusaNoCampoDosCandidatosAtendidos()
     {
         BancaRequeridaInput declarada = new(TipoDocumental.Id, [Guid.CreateVersion7()], null);
 

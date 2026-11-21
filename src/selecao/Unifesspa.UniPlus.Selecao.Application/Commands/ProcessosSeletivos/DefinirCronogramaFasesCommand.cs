@@ -65,7 +65,7 @@ public sealed record ProdutoDaFaseInput(string AtoCodigo, string? Papel);
 /// o par identidade-e-código por valor (snapshot-copy, ADR-0061).
 /// </param>
 /// <param name="CategoriasDocumentoIds">
-/// O recorte de competência: as categorias de documento que esta banca julga, referenciadas
+/// Os candidatos atendidos: as categorias de documento que esta banca julga, referenciadas
 /// pelo id do cadastro e congeladas por valor como o tipo de banca. Vazio é declarável
 /// quando o tipo já identifica a banca sozinho dentro da fase.
 /// </param>

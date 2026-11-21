@@ -103,10 +103,10 @@ internal static class CorpusEnvelopeCronograma
             ProdutoDaFase.Reidratar(ProdutoId(2, 4, variante), "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
         ], permutar);
 
-    // DUAS bancas do MESMO tipo, distinguidas só pelo recorte de competência — o
+    // DUAS bancas do MESMO tipo, distinguidas só pelos candidatos atendidos — o
     // arranjo que (tipoBancaOrigemId, codigo) não separa. É o que prova que a política
-    // de ordenação do array desempata pelo conteúdo do item, e que o recorte
-    // atravessa o round-trip byte a byte.
+    // de ordenação do array desempata pelo conteúdo do item, e que os candidatos atendidos
+    // atravessam o round-trip byte a byte.
     internal static IReadOnlyList<BancaRequerida> BancasRequeridasDaFaseDeRecurso(bool permutar) =>
         Ordem<BancaRequerida>([
             BancaDeAnaliseDocumentalDeRenda(),

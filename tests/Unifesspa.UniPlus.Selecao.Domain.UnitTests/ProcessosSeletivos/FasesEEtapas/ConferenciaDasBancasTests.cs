@@ -198,21 +198,21 @@ public sealed class ConferenciaDasBancasTests
 
         itens.Select(static item => item.Codigo).Should().Equal(
             "cronograma_recurso_com_banca_de_analise",
-            "cronograma_banca_de_recursos_sem_recorte",
+            "cronograma_banca_de_recursos_sem_candidatos_atendidos",
             "cronograma_banca_com_regra_de_deliberacao",
             "cronograma_banca_com_o_minimo_de_integrantes");
         itens.Should().OnlyContain(static item => item.Ok);
     }
 
-    [Fact(DisplayName = "A banca de recursos com recorte deixa vermelho só o item do recorte")]
-    public void Itens_RecorteEmBancaDeRecursos_SoOItemDoRecorteVermelho()
+    [Fact(DisplayName = "A banca de recursos com candidatos atendidos deixa vermelho só o item dos candidatos atendidos")]
+    public void Itens_CandidatosAtendidosEmBancaDeRecursos_SoOItemDosCandidatosAtendidosVermelho()
     {
-        BancaRequerida comRecorte = BancaRequerida.Criar(
+        BancaRequerida comCandidatosAtendidos = BancaRequerida.Criar(
             Guid.CreateVersion7(), TipoBancaCodigo.AnaliseDeRecursos, "Banca de recursos", [CategoriaJulgada.Criar(Guid.CreateVersion7(), "RENDA")], BancasDeTeste.Regra());
-        CronogramaDoProcesso cronograma = Fases(new ModeloDeFase("AVALIACAO", 1) with { Bancas = [comRecorte] });
+        CronogramaDoProcesso cronograma = Fases(new ModeloDeFase("AVALIACAO", 1) with { Bancas = [comCandidatosAtendidos] });
 
         ConferenciaDasBancas.Itens(cronograma, Etapas(), NenhumLido).Where(static item => !item.Ok).Select(static item => item.Codigo)
-            .Should().Equal("cronograma_banca_de_recursos_sem_recorte");
+            .Should().Equal("cronograma_banca_de_recursos_sem_candidatos_atendidos");
     }
 
     [Fact(DisplayName = "Cada item fica vermelho com a causa que projeta")]

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/bancas.schema.json",
   "title": "Banca requerida",
-  "description": "Uma banca que a fase exige: o tipo dela, o recorte de competência e a regra de deliberação.",
+  "description": "Uma banca que a fase exige: o tipo dela, os candidatos atendidos e a regra de deliberação.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -24,8 +24,8 @@
       "maxLength": 60
     },
     "categoriasDocumentoCodigos": {
-      "title": "Recorte de competência",
-      "description": "Códigos das categorias de documento que a banca analisa. Lista vazia quando a banca não é recortada por categoria.",
+      "title": "Candidatos atendidos",
+      "description": "Códigos das categorias de documento que a banca analisa. Lista vazia quando a banca não define candidatos atendidos por categoria.",
       "type": "array",
       "uniqueItems": true,
       "items": {

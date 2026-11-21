@@ -29,12 +29,12 @@ public sealed class BancaRequeridaConfiguration : IEntityTypeConfiguration<Banca
         builder.Property(b => b.Nome).HasMaxLength(NomeMaxLength).IsRequired();
         builder.OwnsOne(b => b.RegraDeDeliberacao, regra => regra.ConfigurarRegraDeDeliberacao());
 
-        builder.HasMany(b => b.RecorteDeCompetencia)
+        builder.HasMany(b => b.CandidatosAtendidos)
             .WithOne()
             .HasForeignKey(c => c.BancaRequeridaId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.Navigation(b => b.RecorteDeCompetencia)
+        builder.Navigation(b => b.CandidatosAtendidos)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }

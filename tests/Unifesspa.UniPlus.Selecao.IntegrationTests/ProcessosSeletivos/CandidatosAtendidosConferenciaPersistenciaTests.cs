@@ -20,12 +20,12 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// A coincidência entre a conferência de publicação e o item de conformidade do recorte de
-/// competência das bancas requeridas. <c>FaseCronograma.Criar</c> recusa duas bancas do
+/// A coincidência entre a conferência de publicação e o item de conformidade dos candidatos atendidos
+/// pelas bancas requeridas. <c>FaseCronograma.Criar</c> recusa duas bancas do
 /// mesmo tipo que não se distinguem, mas esse estado é <b>materializável</b>: o EF hidrata
 /// <c>bancas_requeridas</c> e <c>categorias_julgadas</c> direto das linhas, sem passar pela
-/// fábrica, e nada no banco obriga uma banca a ter recorte nem impede duas do mesmo tipo de
-/// terem o mesmo.
+/// fábrica, e nada no banco obriga uma banca a ter candidatos atendidos nem impede duas do mesmo tipo de
+/// terem os mesmos.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -38,80 +38,80 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// que se está defendendo.
 /// </para>
 /// </remarks>
-public sealed class RecorteDeCompetenciaConferenciaPersistenciaTests : IClassFixture<ProcessoSeletivoDbFixture>
+public sealed class CandidatosAtendidosConferenciaPersistenciaTests : IClassFixture<ProcessoSeletivoDbFixture>
 {
     private static readonly string HashFixo = string.Concat(Enumerable.Repeat("a712345678", 7))[..64];
 
     /// <summary>
-    /// O tipo de banca é o MESMO nas duas bancas da fase semeada — é esse empate que faz o
-    /// recorte ser o único separador entre elas.
+    /// O tipo de banca é o MESMO nas duas bancas da fase semeada — é esse empate que faz os
+    /// candidatos atendidos serem o único separador entre elas.
     /// </summary>
     private static readonly Guid TipoBancaOrigemId = Guid.CreateVersion7();
 
     private readonly ProcessoSeletivoDbFixture _fixture;
 
-    public RecorteDeCompetenciaConferenciaPersistenciaTests(ProcessoSeletivoDbFixture fixture) =>
+    public CandidatosAtendidosConferenciaPersistenciaTests(ProcessoSeletivoDbFixture fixture) =>
         _fixture = fixture;
 
-    [Fact(DisplayName = "Banca hidratada sem recorte, ao lado de outra do mesmo tipo, marca o item pendente e recusa a publicação")]
-    public async Task BancaSemRecorte_ItemPendenteEPublicacaoRecusada()
+    [Fact(DisplayName = "Banca hidratada sem candidatos atendidos, ao lado de outra do mesmo tipo, marca o item pendente e recusa a publicação")]
+    public async Task BancaSemCandidatosAtendidos_ItemPendenteEPublicacaoRecusada()
     {
-        Guid processoId = await SemearProcessoConformeAsync($"PS 1428 sem recorte {Guid.CreateVersion7()}");
-        await ApagarRecorteDeAsync(processoId, "ETNICO_RACIAL");
+        Guid processoId = await SemearProcessoConformeAsync($"PS 1428 sem candidatos atendidos {Guid.CreateVersion7()}");
+        await ApagarCandidatosAtendidosDeAsync(processoId, "ETNICO_RACIAL");
         await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
-        AfirmarQueABancaHidratouSemRecorte(processo);
-        AfirmarOItemPendenteDoRecorte(processo);
+        AfirmarQueABancaHidratouSemCandidatosAtendidos(processo);
+        AfirmarOItemPendenteDosCandidatosAtendidos(processo);
 
         Result<VersaoConfiguracao> publicacao = Publicar(processo);
 
         publicacao.IsFailure.Should().BeTrue(
             "linha legada não pode congelar um edital em que duas bancas do mesmo tipo são a mesma linha repetida");
-        publicacao.Error!.Code.Should().Be("BancaRequerida.RecorteDeCompetenciaObrigatorio");
+        publicacao.Error!.Code.Should().Be("BancaRequerida.CandidatosAtendidosObrigatorios");
     }
 
-    private static void AfirmarQueABancaHidratouSemRecorte(ProcessoSeletivo processo) =>
+    private static void AfirmarQueABancaHidratouSemCandidatosAtendidos(ProcessoSeletivo processo) =>
         processo.CronogramaFases.Single().BancasRequeridas
-            .Should().Contain(b => b.RecorteDeCompetencia.Count == 0,
-                "pré-condição: o EF hidratou a banca sem recorte sem passar por fábrica nenhuma");
+            .Should().Contain(b => b.CandidatosAtendidos.Count == 0,
+                "pré-condição: o EF hidratou a banca sem candidatos atendidos sem passar por fábrica nenhuma");
 
-    private static void AfirmarOItemPendenteDoRecorte(ProcessoSeletivo processo) =>
+    private static void AfirmarOItemPendenteDosCandidatosAtendidos(ProcessoSeletivo processo) =>
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Com(ComCalendario()))
-            .Should().ContainSingle(i => i.Codigo == "cronograma_recorte_de_competencia_das_bancas")
+            .Should().ContainSingle(i => i.Codigo == "cronograma_candidatos_atendidos_das_bancas")
             .Which.Ok.Should().BeFalse(
                 "quem monta o edital precisa ver a pendência; invariante que só existe no domínio não aparece no checklist");
 
-    [Fact(DisplayName = "Duas bancas do mesmo tipo hidratadas com o MESMO recorte marcam o item pendente e recusam a publicação")]
-    public async Task RecortesIguais_ItemPendenteEPublicacaoRecusada()
+    [Fact(DisplayName = "Duas bancas do mesmo tipo hidratadas com os MESMOS candidatos atendidos marcam o item pendente e recusam a publicação")]
+    public async Task CandidatosAtendidosIguais_ItemPendenteEPublicacaoRecusada()
     {
-        Guid processoId = await SemearProcessoConformeAsync($"PS 1428 recorte igual {Guid.CreateVersion7()}");
-        await UniformizarRecortesAsync(processoId);
+        Guid processoId = await SemearProcessoConformeAsync($"PS 1428 candidatos atendidos iguais {Guid.CreateVersion7()}");
+        await UniformizarCandidatosAtendidosAsync(processoId);
         await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
-        ConferirQueAsBancasDocumentaisSeguemComRecorte(processo);
-        ItemDoRecorteDasBancas(processo).Ok.Should().BeFalse();
+        ConferirQueAsBancasDocumentaisSeguemComCandidatosAtendidos(processo);
+        ItemDosCandidatosAtendidosDasBancas(processo).Ok.Should().BeFalse();
         Result<VersaoConfiguracao> publicacao = Publicar(processo);
         publicacao.IsFailure.Should().BeTrue();
-        publicacao.Error!.Code.Should().Be("BancaRequerida.RecorteDeCompetenciaDuplicado");
+        publicacao.Error!.Code.Should().Be("BancaRequerida.CandidatosAtendidosDuplicados");
     }
 
-    [Fact(DisplayName = "Contraprova: a mesma configuração com recortes distintos tem o item conforme e publica")]
-    public async Task RecortesDistintos_ItemConformeEPublica()
+    [Fact(DisplayName = "Contraprova: a mesma configuração com candidatos atendidos distintos tem o item conforme e publica")]
+    public async Task CandidatosAtendidosDistintos_ItemConformeEPublica()
     {
-        Guid processoId = await SemearProcessoConformeAsync($"PS 1428 recorte ok {Guid.CreateVersion7()}");
+        Guid processoId = await SemearProcessoConformeAsync($"PS 1428 candidatos atendidos ok {Guid.CreateVersion7()}");
 
         await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
-        ItemDoRecorteDasBancas(processo).Ok.Should().BeTrue();
+        ItemDosCandidatosAtendidosDasBancas(processo).Ok.Should().BeTrue();
 
         Result<VersaoConfiguracao> publicacao = Publicar(processo);
 
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
     }
 
-    /// <summary>Apaga o recorte da banca que julga <paramref name="codigo"/>, deixando-a sem nenhum.</summary>
-    private Task ApagarRecorteDeAsync(Guid processoId, string codigo) => ExecutarAsync(
+    /// <summary>Apaga os candidatos atendidos da banca que julga <paramref name="codigo"/>, deixando-a sem nenhum.</summary>
+    private Task ApagarCandidatosAtendidosDeAsync(Guid processoId, string codigo) => ExecutarAsync(
         """
         DELETE FROM selecao.categorias_julgadas c
          USING selecao.bancas_requeridas b, selecao.fases_cronograma f
@@ -128,10 +128,10 @@ public sealed class RecorteDeCompetenciaConferenciaPersistenciaTests : IClassFix
         linhasEsperadas: 1);
 
     /// <summary>
-    /// Faz as duas bancas do mesmo tipo julgarem a MESMA categoria: cada uma tem recorte, então a
+    /// Faz as duas bancas do mesmo tipo julgarem a MESMA categoria: cada uma tem candidatos atendidos, então a
     /// checagem de ausência sozinha não veria o defeito — o que some é a distinção.
     /// </summary>
-    private Task UniformizarRecortesAsync(Guid processoId) => ExecutarAsync(
+    private Task UniformizarCandidatosAtendidosAsync(Guid processoId) => ExecutarAsync(
         """
         UPDATE selecao.categorias_julgadas c
            SET codigo = 'RENDA'
@@ -144,14 +144,14 @@ public sealed class RecorteDeCompetenciaConferenciaPersistenciaTests : IClassFix
         comando => comando.Parameters.AddWithValue("processo", processoId),
         linhasEsperadas: 1);
 
-    private static ItemConformidade ItemDoRecorteDasBancas(ProcessoSeletivo processo) =>
+    private static ItemConformidade ItemDosCandidatosAtendidosDasBancas(ProcessoSeletivo processo) =>
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Com(ComCalendario()))
-            .Should().ContainSingle(i => i.Codigo == "cronograma_recorte_de_competencia_das_bancas").Which;
+            .Should().ContainSingle(i => i.Codigo == "cronograma_candidatos_atendidos_das_bancas").Which;
 
-    private static void ConferirQueAsBancasDocumentaisSeguemComRecorte(ProcessoSeletivo processo) =>
+    private static void ConferirQueAsBancasDocumentaisSeguemComCandidatosAtendidos(ProcessoSeletivo processo) =>
         processo.CronogramaFases.Single().BancasRequeridas.Where(b => b.Codigo == "BANCA_ANALISE_DOCUMENTAL")
-            .Should().OnlyContain(b => b.RecorteDeCompetencia.Count == 1,
-                "pré-condição: as duas bancas seguem com recorte declarado — o que mudou foi ele ser o mesmo");
+            .Should().OnlyContain(b => b.CandidatosAtendidos.Count == 1,
+                "pré-condição: as duas bancas seguem com candidatos atendidos declarados — o que mudou foi serem os mesmos");
 
     /// <summary>
     /// Calendário vigente mínimo — o prazo de interposição corre em dia útil, e sem ele a
@@ -271,7 +271,7 @@ public sealed class RecorteDeCompetenciaConferenciaPersistenciaTests : IClassFix
             .Include(p => p.AtendimentoEspecializado)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.Produtos)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.RegraRecurso)
-            .Include(p => p.CronogramaFases).ThenInclude(f => f.BancasRequeridas).ThenInclude(b => b.RecorteDeCompetencia)
+            .Include(p => p.CronogramaFases).ThenInclude(f => f.BancasRequeridas).ThenInclude(b => b.CandidatosAtendidos)
             .Include(p => p.ConfiguracaoTaxaInscricao)
             .Include(p => p.CriteriosDesempate)
             .AsSplitQuery()
@@ -292,16 +292,16 @@ public sealed class RecorteDeCompetenciaConferenciaPersistenciaTests : IClassFix
                 Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(
                 [preliminar, ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], RegraDeRecurso(preliminar.Id)),
-            bancasRequeridas: [.. BancasDoMesmoTipoComRecorteDistinto(), BancasDeTeste.DeRecursosDaFase()]).Value!;
+            bancasRequeridas: [.. BancasDoMesmoTipoComCandidatosAtendidosDistintos(), BancasDeTeste.DeRecursosDaFase()]).Value!;
     }
 
-    private static BancaRequerida[] BancasDoMesmoTipoComRecorteDistinto() =>
+    private static BancaRequerida[] BancasDoMesmoTipoComCandidatosAtendidosDistintos() =>
     [
-        BancaDoRecorte("RENDA"),
-        BancaDoRecorte("ETNICO_RACIAL"),
+        BancaDosCandidatosAtendidos("RENDA"),
+        BancaDosCandidatosAtendidos("ETNICO_RACIAL"),
     ];
 
-    private static BancaRequerida BancaDoRecorte(string categoriaCodigo) =>
+    private static BancaRequerida BancaDosCandidatosAtendidos(string categoriaCodigo) =>
         BancaRequerida.Criar(
             TipoBancaOrigemId,
             "BANCA_ANALISE_DOCUMENTAL",

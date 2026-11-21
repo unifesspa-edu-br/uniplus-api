@@ -74,11 +74,11 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
     }
 
     // (TipoBancaOrigemId, Codigo) empata: as duas bancas são do MESMO tipo, que é o
-    // arranjo que o recorte de competência existe para tornar declarável. Sem uma
+    // arranjo que os candidatos atendidos existem para tornar declarável. Sem uma
     // terceira chave, a posição no array passaria a depender da ordem em que o EF
     // materializou as linhas, e a mesma configuração produziria dois hashes.
-    [Fact(DisplayName = "cronogramaFases.fases[].bancasRequeridas: duas bancas do mesmo tipo são desempatadas pelo recorte — oráculo de sequência exata")]
-    public void CronogramaFases_BancasRequeridas_MesmoTipo_DesempatadasPeloRecorte()
+    [Fact(DisplayName = "cronogramaFases.fases[].bancasRequeridas: duas bancas do mesmo tipo são desempatadas pelos candidatos atendidos — oráculo de sequência exata")]
+    public void CronogramaFases_BancasRequeridas_MesmoTipo_DesempatadasPelosCandidatosAtendidos()
     {
         Guid tipoUnico = IdFixo(1);
         BancaRequerida bancaDaRenda = BancaRequerida.Criar(
@@ -89,14 +89,14 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
         JsonArray bancasJson = BancasRequeridasEnvelopadas(FaseComAsBancas("ANALISE", bancaDaRenda, bancaEtnicoRacial));
 
         bancasJson
-            .Select(static b => b!["recorteDeCompetencia"]!.AsArray()[0]!["codigo"]!.GetValue<string>())
+            .Select(static b => b!["candidatosAtendidos"]!.AsArray()[0]!["codigo"]!.GetValue<string>())
             .Should().Equal(["ETNICO_RACIAL", "RENDA"]);
     }
 
     // O id de origem é identidade técnica e não pode vazar para dentro do hash: dois
-    // recortes com as MESMAS categorias precisam produzir os mesmos bytes.
-    [Fact(DisplayName = "cronogramaFases.fases[].bancasRequeridas[].recorteDeCompetencia: o conteúdo (código) governa — oráculo de sequência exata")]
-    public void CronogramaFases_RecorteDeCompetencia_CodigoGoverna()
+    // candidatos atendidos com as MESMAS categorias precisam produzir os mesmos bytes.
+    [Fact(DisplayName = "cronogramaFases.fases[].bancasRequeridas[].candidatosAtendidos: o conteúdo (código) governa — oráculo de sequência exata")]
+    public void CronogramaFases_CandidatosAtendidos_CodigoGoverna()
     {
         BancaRequerida banca = BancaRequerida.Criar(
             IdFixo(1),
@@ -106,9 +106,9 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
                 CategoriaJulgada.Criar(IdFixo(2), "ALFA_CATEGORIA"),
             ]);
 
-        JsonArray recorteJson = BancasRequeridasEnvelopadas(FaseComAsBancas("ANALISE", banca))[0]!["recorteDeCompetencia"]!.AsArray();
+        JsonArray candidatosAtendidosJson = BancasRequeridasEnvelopadas(FaseComAsBancas("ANALISE", banca))[0]!["candidatosAtendidos"]!.AsArray();
 
-        recorteJson.Select(static c => c!["codigo"]!.GetValue<string>()).Should().Equal(["ALFA_CATEGORIA", "ZETA_CATEGORIA"]);
+        candidatosAtendidosJson.Select(static c => c!["codigo"]!.GetValue<string>()).Should().Equal(["ALFA_CATEGORIA", "ZETA_CATEGORIA"]);
     }
 
     private static FaseCronograma FaseComAsBancas(string codigo, params BancaRequerida[] bancas) => FaseCronograma.Criar(

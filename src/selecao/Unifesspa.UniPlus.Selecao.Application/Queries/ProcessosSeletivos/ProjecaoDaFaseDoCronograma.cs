@@ -70,7 +70,7 @@ internal static class ProjecaoDaFaseDoCronograma
         banca.Codigo,
         banca.Nome,
         ProjecaoDaRegraDeDeliberacao.De(banca.RegraDeDeliberacao),
-        [.. OrdemCanonicaDaConfiguracao.RecorteDeCompetencia(banca.RecorteDeCompetencia)
+        [.. OrdemCanonicaDaConfiguracao.CandidatosAtendidos(banca.CandidatosAtendidos)
             .Select(static c => new CategoriaJulgadaDto(c.Id, c.CategoriaDocumentoOrigemId, c.Codigo))]);
 
     private static RegraDeHomologacaoDto ProjetarRegraDeHomologacao(RegraDeHomologacaoDasInscricoes regra) => new(

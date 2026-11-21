@@ -71,8 +71,8 @@ public sealed class DefinirCronogramaFasesResolucaoDosCadastrosTests
         await cenario.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Handle com categoria de documento fora do cadastro recusa nomeando o recorte da banca")]
-    public async Task Handle_CategoriaDoRecorteForaDoCadastro_RecusaComErroNomeado()
+    [Fact(DisplayName = "Handle com categoria de documento fora do cadastro recusa nomeando os candidatos atendidos da banca")]
+    public async Task Handle_CategoriaDosCandidatosAtendidosForaDoCadastro_RecusaComErroNomeado()
     {
         CenarioDoCronogramaDeFases cenario = CenarioDoCronogramaDeFases.EmRascunho().ComTipoDeAto(TipoAtoDaClassificacao());
         FaseCronogramaInput fase = FaseComBancaCujaCategoriaSaiuDoCadastro(cenario);

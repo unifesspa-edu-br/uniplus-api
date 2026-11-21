@@ -62,14 +62,14 @@ internal static class EntradaDoPreliminarDaFase
         return [Linha(campo, true), .. DaDeliberacao($"{campo}.regraDeDeliberacao", banca.RegraDeDeliberacao)];
     }
 
-    // O tipo sozinho nem sempre distingue a banca: duas do mesmo tipo se separam pelo recorte de competência.
+    // O tipo sozinho nem sempre distingue a banca: duas do mesmo tipo se separam pelos candidatos atendidos.
     private static string ChaveDaBanca(BancaRequerida banca)
     {
-        IEnumerable<string> recorte = banca.RecorteDeCompetencia
+        IEnumerable<string> atendidos = banca.CandidatosAtendidos
             .Select(static categoria => Valor(categoria.CategoriaDocumentoOrigemId))
             .Distinct(StringComparer.Ordinal)
             .Order(StringComparer.Ordinal);
 
-        return $"{Valor(banca.TipoBancaOrigemId)}/{string.Join(',', recorte)}";
+        return $"{Valor(banca.TipoBancaOrigemId)}/{string.Join(',', atendidos)}";
     }
 }

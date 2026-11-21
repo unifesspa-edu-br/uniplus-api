@@ -68,13 +68,13 @@ internal static class ConferenciaDaDeclaracaoDaFase
         }
     }
 
-    // Pelo mesmo predicado de Criar: um recorte reposto que não distingue duas bancas do mesmo tipo é tão
-    // incoerente quanto um escrito assim pela primeira vez.
-    internal static void ExigirRecorteCoerente(string codigo, IReadOnlyList<BancaRequerida> bancasRequeridas)
+    // Pelo mesmo predicado de Criar: candidatos atendidos repostos que não distinguem duas bancas do mesmo tipo são tão
+    // incoerentes quanto os escritos assim pela primeira vez.
+    internal static void ExigirCandidatosAtendidosCoerentes(string codigo, IReadOnlyList<BancaRequerida> bancasRequeridas)
     {
-        if (RecorteDeCompetenciaDasBancas.Violacoes(codigo, bancasRequeridas) is [{ } violacaoDoRecorte, ..])
+        if (CandidatosAtendidosPelasBancas.Violacoes(codigo, bancasRequeridas) is [{ } violacaoDosCandidatosAtendidos, ..])
         {
-            throw new ArgumentException(violacaoDoRecorte.Error.Message, nameof(bancasRequeridas));
+            throw new ArgumentException(violacaoDosCandidatosAtendidos.Error.Message, nameof(bancasRequeridas));
         }
     }
 
@@ -91,8 +91,8 @@ internal static class ConferenciaDaDeclaracaoDaFase
         .. ViolacoesDasPublicacoes(origem.Codigo, publicacoes, colecoesComParteRecusada.Contains(FaseDeclarada.ListaDosProdutos)),
         .. TiposDeDecisaoDeclarados.Validar(publicacoes.TiposDeDecisao, TiposDeDecisaoDeclarados.Campo),
         .. ResultadoDaRegraDeHomologacao(origem.Codigo, publicacoes, colecoesComParteRecusada.Contains(FaseDeclarada.ListaDosProdutos)),
-        .. RecorteDeCompetenciaDasBancas.Violacoes(origem.Codigo, bancasRequeridas),
-        .. RecortesEmBancaDeRecursos(origem.Codigo, bancasRequeridas),
+        .. CandidatosAtendidosPelasBancas.Violacoes(origem.Codigo, bancasRequeridas),
+        .. CandidatosAtendidosEmBancaDeRecursos(origem.Codigo, bancasRequeridas),
     ];
 
     // A falta do resultado sai sempre; o resultado que não é produto da fase só é julgado contra a lista de produtos íntegra.
@@ -104,14 +104,14 @@ internal static class ConferenciaDaDeclaracaoDaFase
         return recusa is null ? [] : [recusa];
     }
 
-    private static IEnumerable<FieldError> RecortesEmBancaDeRecursos(string codigoDaFase, IReadOnlyList<BancaRequerida> bancasRequeridas)
+    private static IEnumerable<FieldError> CandidatosAtendidosEmBancaDeRecursos(string codigoDaFase, IReadOnlyList<BancaRequerida> bancasRequeridas)
     {
         for (int indice = 0; indice < bancasRequeridas.Count; indice++)
         {
             BancaRequerida banca = bancasRequeridas[indice];
-            if (ExigenciaDeBancaDeRecurso.RecorteNaDeclaracao(codigoDaFase, banca.Codigo, banca.RecorteDeCompetencia.Count) is { } recusa)
+            if (ExigenciaDeBancaDeRecurso.CandidatosAtendidosNaDeclaracao(codigoDaFase, banca.Codigo, banca.CandidatosAtendidos.Count) is { } recusa)
             {
-                yield return new FieldError(RecorteDeCompetenciaDasBancas.CampoDoRecorte(indice), recusa);
+                yield return new FieldError(CandidatosAtendidosPelasBancas.CampoDosCandidatosAtendidos(indice), recusa);
             }
         }
     }

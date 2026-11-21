@@ -19,13 +19,13 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 internal static class LeituraDosPrazosDeRecurso
 {
     /// <summary>
-    /// O recorte de competência da banca — as categorias de documento que ela julga. Como
+    /// Os candidatos atendidos pela banca — as categorias de documento que ela julga. Como
     /// as próprias bancas, as categorias não congelam <c>id</c>: nada aponta para a linha
     /// de fora dela, e a reidratação as recria por inteiro.
     /// </summary>
-    internal static List<CategoriaJulgada> LerRecorteDeCompetencia(LeitorEnvelope leitor, JsonObject bancaItem, string pathPai)
+    internal static List<CategoriaJulgada> LerCandidatosAtendidos(LeitorEnvelope leitor, JsonObject bancaItem, string pathPai)
     {
-        JsonArray array = leitor.Array(bancaItem, "recorteDeCompetencia", pathPai);
+        JsonArray array = leitor.Array(bancaItem, "candidatosAtendidos", pathPai);
         if (leitor.Falhou)
         {
             return [];
@@ -36,7 +36,7 @@ internal static class LeituraDosPrazosDeRecurso
 
     private static List<CategoriaJulgada> LerCategorias(LeitorEnvelope leitor, JsonArray array, string pathPai)
     {
-        List<CategoriaJulgada> recorte = [];
+        List<CategoriaJulgada> atendidos = [];
         for (int i = 0; i < array.Count; i++)
         {
             CategoriaJulgada? categoria = LerCategoria(leitor, array, i, pathPai);
@@ -45,16 +45,16 @@ internal static class LeituraDosPrazosDeRecurso
                 return [];
             }
 
-            recorte.Add(categoria!);
+            atendidos.Add(categoria!);
         }
 
-        return recorte;
+        return atendidos;
     }
 
     private static CategoriaJulgada? LerCategoria(LeitorEnvelope leitor, JsonArray array, int indice, string pathPai)
     {
-        string path = $"{pathPai}.recorteDeCompetencia[{indice}]";
-        JsonObject item = leitor.ItemObjeto(array, indice, $"{pathPai}.recorteDeCompetencia");
+        string path = $"{pathPai}.candidatosAtendidos[{indice}]";
+        JsonObject item = leitor.ItemObjeto(array, indice, $"{pathPai}.candidatosAtendidos");
         leitor.ExigirChaves(item, path, "categoriaDocumentoOrigemId", "codigo");
         Guid id = leitor.Identificador(item, "categoriaDocumentoOrigemId", path);
         string codigo = leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.CategoriaDocumentoCodigo);

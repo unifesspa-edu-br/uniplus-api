@@ -205,7 +205,7 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
         ConferenciaDaDeclaracaoDaFase.ExigirDeclaracaoPresente(origem, cronograma, publicacoes, bancasRequeridas);
         ConferenciaDaDeclaracaoDaFase.ExigirIdCongelado(id);
         ConferenciaDaDeclaracaoDaFase.ExigirAncoraCoerente(origem.Codigo, publicacoes.Produtos, publicacoes.RegraRecurso);
-        ConferenciaDaDeclaracaoDaFase.ExigirRecorteCoerente(origem.Codigo, bancasRequeridas);
+        ConferenciaDaDeclaracaoDaFase.ExigirCandidatosAtendidosCoerentes(origem.Codigo, bancasRequeridas);
 
         FaseCronograma fase = new() { Id = id };
         fase.AdotarDeclaracao(origem, cronograma, publicacoes, bancasRequeridas);
@@ -273,7 +273,7 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
     /// Recriar a fase trocaria o <c>Id</c> e o <c>CreatedAt</c> de uma fase que nunca deixou de existir, e
     /// derrubaria as referências por Id (documentos exigidos, referência temporal de fatos). Os produtos
     /// seguem o mesmo cuidado, reconciliados pelo par ato e papel (<see cref="ProdutosPublicados"/>). Banca
-    /// e recorte não precisam: a chave do índice das categorias inclui o id da banca, que sempre chega nova.
+    /// e candidatos atendidos não precisam: a chave do índice das categorias inclui o id da banca, que sempre chega nova.
     /// </remarks>
     internal void AtualizarDe(FaseCronograma origem, IReadOnlyList<ProdutoDaFase> produtos)
     {

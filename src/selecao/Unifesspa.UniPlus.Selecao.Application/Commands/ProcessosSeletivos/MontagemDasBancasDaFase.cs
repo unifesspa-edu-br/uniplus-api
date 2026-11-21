@@ -10,9 +10,9 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
-/// Monta as bancas requeridas de uma fase. O tipo de banca e o recorte de competência são resolvidos no
+/// Monta as bancas requeridas de uma fase. O tipo de banca e os candidatos atendidos são resolvidos no
 /// cadastro vivo e congelados por valor: uma categoria que saiu do cadastro não pode entrar no edital,
-/// porque o recorte congelado responde por parecer e recurso do certame inteiro. As violações da banca
+/// porque os candidatos atendidos congelados respondem por parecer e recurso do certame inteiro. As violações da banca
 /// de uma mesma fase acumulam: o que falta numa não esconde o que falta nas outras.
 /// </summary>
 internal sealed class MontagemDasBancasDaFase(CadastrosDasFases cadastros)
@@ -41,26 +41,26 @@ internal sealed class MontagemDasBancasDaFase(CadastrosDasFases cadastros)
                 $"Tipo de banca {declarada.TipoBancaId} não encontrado ou não está mais vivo."));
         }
 
-        Result<List<CategoriaJulgada>> recorte = await RecorteAsync(declarada, campo, cancellationToken).ConfigureAwait(false);
-        return recorte.IsFailure
-            ? Result<BancaRequerida>.ValidationFailure(recorte.Errors)
-            : Montada(declarada, tipo, recorte.Value!, campo);
+        Result<List<CategoriaJulgada>> atendidos = await CandidatosAtendidosAsync(declarada, campo, cancellationToken).ConfigureAwait(false);
+        return atendidos.IsFailure
+            ? Result<BancaRequerida>.ValidationFailure(atendidos.Errors)
+            : Montada(declarada, tipo, atendidos.Value!, campo);
     }
 
     private static Result<BancaRequerida> Montada(
-        BancaRequeridaInput declarada, TipoBancaView tipo, List<CategoriaJulgada> recorte, string campo)
+        BancaRequeridaInput declarada, TipoBancaView tipo, List<CategoriaJulgada> atendidos, string campo)
     {
         Result<RegraDeDeliberacao?> regra = MontagemDaRegraDeDeliberacao.Montar(declarada.RegraDeDeliberacao, campo);
 
         return regra.Errors.Count > 0
             ? Result<BancaRequerida>.ValidationFailure(regra.Errors)
-            : Result<BancaRequerida>.Success(BancaRequerida.Criar(tipo.Id, tipo.Codigo.Codigo(), tipo.Nome, recorte, regra.Value));
+            : Result<BancaRequerida>.Success(BancaRequerida.Criar(tipo.Id, tipo.Codigo.Codigo(), tipo.Nome, atendidos, regra.Value));
     }
 
-    private async Task<Result<List<CategoriaJulgada>>> RecorteAsync(
+    private async Task<Result<List<CategoriaJulgada>>> CandidatosAtendidosAsync(
         BancaRequeridaInput declarada, string campo, CancellationToken cancellationToken)
     {
-        List<CategoriaJulgada> recorte = [];
+        List<CategoriaJulgada> atendidos = [];
         foreach (Guid categoriaId in declarada.CategoriasDocumentoIds)
         {
             CategoriaDocumentoView? categoria = await cadastros.Categorias.ObterAsync(categoriaId, cancellationToken).ConfigureAwait(false);
@@ -69,10 +69,10 @@ internal sealed class MontagemDasBancasDaFase(CadastrosDasFases cadastros)
                 return CategoriaNaoEncontrada(categoriaId, campo);
             }
 
-            recorte.Add(CategoriaJulgada.Criar(categoria.Id, categoria.Codigo));
+            atendidos.Add(CategoriaJulgada.Criar(categoria.Id, categoria.Codigo));
         }
 
-        return Result<List<CategoriaJulgada>>.Success(recorte);
+        return Result<List<CategoriaJulgada>>.Success(atendidos);
     }
 
     private static Result<List<CategoriaJulgada>> CategoriaNaoEncontrada(Guid categoriaId, string campo) =>
