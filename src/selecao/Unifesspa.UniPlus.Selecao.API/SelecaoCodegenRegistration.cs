@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.API;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -18,10 +16,6 @@ using Wolverine;
 /// <c>UseWolverineOutboxCascading</c>, para que <c>WolverineOutboxConfiguration</c> permaneça agnóstico
 /// dos tipos de cada módulo.
 /// </summary>
-[SuppressMessage(
-    "Design",
-    "CA1515:Consider making public types internal",
-    Justification = "Referenciado pelo composition root (host do monólito modular) fora deste assembly.")]
 public static class SelecaoCodegenRegistration
 {
     /// <summary>
@@ -31,138 +25,91 @@ public static class SelecaoCodegenRegistration
     {
         ArgumentNullException.ThrowIfNull(opts);
 
-        // O acervo público é registrado por fábrica, que adia a resolução do storage para o uso:
-        // a divulgação de certame sem modelo não toca o armazenamento. A fábrica é opaca ao
-        // codegen, e service-locá-la é o opt-in sancionado (ADR-0098).
-        opts.CodeGeneration.AlwaysUseServiceLocationFor<IAcervoPublico>();
+        OptInDasLeiturasDeAtendimentoEDeOferta(opts);
+        OptInDasLeiturasDoCronograma(opts);
+        OptInDasLeiturasDeClassificacaoEDoTipoDeProcesso(opts);
+        OptInDasLeiturasDosCadastrosDaInscricao(opts);
+        OptInDasPortasDePublicacoes(opts);
+        OptInDasPortasInternasDaSelecao(opts);
+        OptInDasPortasRegistradasPorFabrica(opts);
+    }
 
-        // O armazenamento do candidato é registrado por fábrica (credencial própria derivada das opções),
-        // opaca ao codegen.
-        opts.CodeGeneration.AlwaysUseServiceLocationFor<ArmazenamentoDoCandidato>();
-
-        // Readers de reference data cross-módulo (ADR-0056) consumidos pelo
-        // handler de atendimento especializado (F0). A interface vive
-        // em Configuracao.Contracts (contrato público), mas o concreto é
-        // internal a Configuracao.Infrastructure por design de encapsulamento —
-        // o codegen do Wolverine não consegue emitir `new XReader(...)` de um
-        // tipo internal de outro assembly e cai em service location sob a
-        // política NotAllowed. Service-locar o contrato cross-módulo é o consumo
-        // correto; AlwaysUseServiceLocationFor é o opt-in sancionado (ADR-0098).
+    // Leituras de catálogos da Configuração consumidas pelos handlers do processo (ADR-0056): o contrato é
+    // público, mas o concreto é internal à Configuracao.Infrastructure, e o codegen não emite `new` de tipo
+    // não público de outro assembly. Atendimento especializado, vagas e modalidades.
+    private static void OptInDasLeiturasDeAtendimentoEDeOferta(WolverineOptions opts)
+    {
         opts.CodeGeneration.AlwaysUseServiceLocationFor<ICondicaoAtendimentoReader>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IRecursoAcessibilidadeReader>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<ITipoDeficienciaReader>();
-
-        // Readers de vagas/modalidade (Story #773) — mesmo motivo acima.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IOfertaCursoReader>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IModalidadeReader>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IReferenciaReservaDemograficaReader>();
+    }
 
-        // IRegraCatalogoReader (Story #772): o concreto RegraCatalogoReader é
-        // internal a Selecao.Infrastructure — mesma restrição de visibilidade
-        // do codegen do Wolverine (que roda em Selecao.API), mesmo sendo um
-        // reader intra-módulo (não cross-módulo como os demais acima).
-        opts.CodeGeneration.AlwaysUseServiceLocationFor<IRegraCatalogoReader>();
-
-        // Catálogo de tipos de ato (ADR-0056): a conferência do tipo declarado acontece antes de publicar. Mesmo
-        // motivo dos readers de Configuracao acima — o contrato é público, o concreto vive na Infrastructure do outro
-        // módulo.
-        opts.CodeGeneration.AlwaysUseServiceLocationFor<Unifesspa.UniPlus.Publicacoes.Contracts.ITipoAtoPublicadoReader>();
-
-        // Porta de escrita do registro de atos (ADR-0170): o domínio que publica a chama na própria transação. O
-        // concreto é internal à Application de Publicações, e o codegen não constrói tipo não público.
-        opts.CodeGeneration.AlwaysUseServiceLocationFor<Unifesspa.UniPlus.Publicacoes.Contracts.IRegistroDeAtoNormativo>();
-
-        // Projeção pública do certame: concreto internal na Infrastructure de Seleção, injetado
-        // tanto no handler que divulga quanto nos dois de leitura.
-        opts.CodeGeneration.AlwaysUseServiceLocationFor<ICertameDivulgadoRepository>();
-
-        // Vocabulário fechado de fatos do candidato (#846, ADR-0111), consumido pelo
-        // handler de critérios de desempate para validar DESEMPATE-PREDICADO-FATO
-        // (Story #847). Mesmo motivo dos demais readers cross-módulo acima.
-        opts.CodeGeneration.AlwaysUseServiceLocationFor<IFatoCandidatoReader>();
-
-        // Calendário de dias úteis vigente (issue #1140, UNI-REQ-0116) — consumido pelas três
-        // transições que geram versão e pela consulta de conformidade. O concreto é internal a
-        // Configuracao.Infrastructure, mesmo motivo dos demais readers cross-módulo acima.
+    // Mesmo motivo das leituras de atendimento e oferta. Cronograma de fases: fase canônica, tipo de banca,
+    // precedências entre fases, calendário de dias úteis vigente e tipos de etapa, congelados por snapshot-copy.
+    private static void OptInDasLeiturasDoCronograma(WolverineOptions opts)
+    {
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IFaseCanonicaReader>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<ITipoBancaReader>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IPrecedenciaFaseReader>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<ICalendarioVigenteReader>();
-
-        OptInDasLeiturasDoCronograma(opts);
-        OptInDasLeiturasDaFase(opts);
-
-        // Documentos exigidos (Story #554, PR #895): snapshot-copy de TipoDocumento
-        // (Configuração) para cada exigência. Mesmo motivo dos demais readers
-        // cross-módulo acima — o concreto TipoDocumentoReader é internal a
-        // Configuracao.Infrastructure.
-        opts.CodeGeneration.AlwaysUseServiceLocationFor<ITipoDocumentoReader>();
-        opts.CodeGeneration.AlwaysUseServiceLocationFor<ITipoProcessoReader>();
-
-        // Base Legal de Bônus Regional (Story #1465/#1466): DefinirBonusRegionalCommandHandler
-        // resolve o Id referenciado e congela o snapshot em ConfiguracaoBonusRegional. Mesmo
-        // motivo dos demais readers cross-módulo acima.
-        opts.CodeGeneration.AlwaysUseServiceLocationFor<IBaseLegalBonusRegionalReader>();
-
-        // Termos de consentimento: DefinirTermosDoFormularioCommandHandler resolve as versões
-        // escolhidas e congela o conteúdo delas no formulário. Mesmo motivo dos demais readers.
-        opts.CodeGeneration.AlwaysUseServiceLocationFor<ITermoConsentimentoReader>();
-
-        // Modelos de formulário: AplicarModeloFormularioCommandHandler lê o modelo escolhido para
-        // copiá-lo ao processo. Mesmo motivo dos demais readers.
-        opts.CodeGeneration.AlwaysUseServiceLocationFor<IModeloFormularioReader>();
-
-        // Pesos por Área do ENEM: DefinirClassificacaoCommandHandler resolve a resolução
-        // declarada e congela o quadro na classificação. Mesmo motivo dos demais readers
-        // cross-módulo acima — o concreto PesoAreaEnemReader é internal a
-        // Configuracao.Infrastructure.
-        opts.CodeGeneration.AlwaysUseServiceLocationFor<IPesoAreaEnemReader>();
-
-        // Tipos de etapa (issue #1071): DefinirEtapasCommandHandler e os handlers de
-        // ObrigatoriedadeLegal resolvem o cadastro configurável de Configuração para
-        // congelar o snapshot-copy — mesmo motivo dos demais readers cross-módulo acima.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<ITipoEtapaReader>();
+    }
 
-        // Conferência de endereço no Geo (issue #1865): SubmeterInscricaoCommandHandler é o
-        // primeiro consumidor real. O concreto ConferenciaEnderecoGeo é internal a
-        // Selecao.Infrastructure — mesmo motivo dos demais registros internal acima.
+    // Mesmo motivo das leituras de atendimento e oferta. Tipo de processo, pesos por área do ENEM, base legal do
+    // bônus regional e vocabulário de fatos do candidato (validação do predicado de desempate).
+    private static void OptInDasLeiturasDeClassificacaoEDoTipoDeProcesso(WolverineOptions opts)
+    {
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<ITipoProcessoReader>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IPesoAreaEnemReader>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IBaseLegalBonusRegionalReader>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IFatoCandidatoReader>();
+    }
+
+    // Mesmo motivo das leituras de atendimento e oferta. Cadastros que a inscrição congela: tipos e categorias
+    // de documento, termos de consentimento e modelos de formulário.
+    private static void OptInDasLeiturasDosCadastrosDaInscricao(WolverineOptions opts)
+    {
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<ITipoDocumentoReader>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<ICategoriaDocumentoReader>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<ITermoConsentimentoReader>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IModeloFormularioReader>();
+    }
+
+    // Portas de Publicações (ADR-0056, ADR-0170): o catálogo de tipos de ato confere o tipo declarado antes de
+    // publicar, e o registro de atos é escrito na transação do domínio que publica. Os concretos são internal ao
+    // módulo de Publicações.
+    private static void OptInDasPortasDePublicacoes(WolverineOptions opts)
+    {
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<Unifesspa.UniPlus.Publicacoes.Contracts.ITipoAtoPublicadoReader>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<Unifesspa.UniPlus.Publicacoes.Contracts.IRegistroDeAtoNormativo>();
+    }
+
+    // Portas cujo concreto é internal à Infrastructure do Seleção, e o codegen roda em Selecao.API. Leitores de
+    // inscrição, índice cego e lotes do ENEM e do INEP também dependem de serviços de criptografia que o codegen
+    // não monta em tempo de compilação.
+    private static void OptInDasPortasInternasDaSelecao(WolverineOptions opts)
+    {
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IRegraCatalogoReader>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<ICertameDivulgadoRepository>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IResolvedorDaUnidadeResponsavel>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IConferenciaEnderecoGeo>();
-
-        // Envio ao INEP e importação das notas do ENEM (issue #1602): os leitores de inscrição
-        // decifram o CPF e calculam o índice cego via serviços de criptografia, que o codegen não
-        // monta em tempo de compilação. A porta é service-locada em vez de construída.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IInscritosDaEdicaoDoEnem>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IGeracaoDeEnvioAoInepRepository>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<ILoteDeNotasDoEnemRepository>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IIndiceCegoDoCpf>();
+    }
 
-        // Impedimento do servidor inscrito: a porta é registrada por fábrica, e os handlers que a alcançam pelo
-        // ponto de decisão a resolvem por service location em vez de construí-la.
+    // Portas registradas por fábrica, opacas ao codegen (ADR-0098): o acervo público adia a resolução do storage
+    // até o uso, o armazenamento do candidato deriva credencial própria das opções, e as portas de impedimento e
+    // de designação de banca nascem de uma implementação do host que o módulo dono substitui.
+    private static void OptInDasPortasRegistradasPorFabrica(WolverineOptions opts)
+    {
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IAcervoPublico>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<ArmazenamentoDoCandidato>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IInscricaoDoSujeitoNoProcesso>();
-
-        // Designação de banca: a porta nasce de uma implementação interna do host e o módulo que guarda as designações a
-        // substitui por fábrica; a verificação que a usa chega ao handler pelo ponto de decisão.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IDesignacaoDeBanca>();
-    }
-
-    private static void OptInDasLeiturasDoCronograma(WolverineOptions opts)
-    {
-        // Cronograma de fases (Story #851): FaseCanonica/TipoBanca (Configuração) e o
-        // grafo de precedências (idem) — primeiro consumo real dos dois primeiros
-        // readers desde que a #40 os deixou registrados sem consumidor. Mesmo motivo
-        // dos demais readers cross-módulo acima — gap real, confirmado ausente antes
-        // desta entrega.
-        opts.CodeGeneration.AlwaysUseServiceLocationFor<IFaseCanonicaReader>();
-        opts.CodeGeneration.AlwaysUseServiceLocationFor<ITipoBancaReader>();
-        opts.CodeGeneration.AlwaysUseServiceLocationFor<IPrecedenciaFaseReader>();
-    }
-
-    private static void OptInDasLeiturasDaFase(WolverineOptions opts)
-    {
-        // Unidade responsável por fase: o cronograma a congela por snapshot-copy a partir do cadastro
-        // da Organização Institucional (ADR-0056). O resolvedor é interno à infraestrutura.
-        opts.CodeGeneration.AlwaysUseServiceLocationFor<IResolvedorDaUnidadeResponsavel>();
-
-        // Candidatos atendidos da banca requerida: a categoria de documento que cada
-        // banca julga é snapshot-copy do cadastro de Configuração. Mesmo motivo dos demais
-        // readers cross-módulo acima — o concreto é internal a Configuracao.Infrastructure.
-        opts.CodeGeneration.AlwaysUseServiceLocationFor<ICategoriaDocumentoReader>();
     }
 }

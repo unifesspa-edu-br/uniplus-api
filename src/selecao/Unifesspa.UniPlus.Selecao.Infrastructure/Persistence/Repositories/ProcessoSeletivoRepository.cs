@@ -90,103 +90,90 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
     public Task TravarAsync(Guid id, CancellationToken cancellationToken = default) =>
         _bloqueio.AdquirirAsync(InstrucaoDeBloqueio.ProcessoExclusivo, id, cancellationToken);
 
-    private static IQueryable<ProcessoSeletivo> ComConfiguracao(IQueryable<ProcessoSeletivo> query) =>
+    // Todo Include abaixo existe porque, sem ele, a coleção (ou a navegação 0..1) nasce vazia (ou nula) em
+    // cada carregamento novo do agregado: a leitura diria que nada foi declarado, as recusas de publicação
+    // enxergariam zero itens, e a redefinição faria Clear() numa lista já vazia, deixando as linhas antigas
+    // no banco. O AsSplitQuery é obrigatório: o produto cartesiano de todas as coleções num único JOIN
+    // explode o tamanho do resultado, e a consulta dividida traz cada coleção em consulta própria.
+    private static IQueryable<ProcessoSeletivo> ComConfiguracao(IQueryable<ProcessoSeletivo> query)
+    {
+        IQueryable<ProcessoSeletivo> carregada = ComEtapas(query);
+        carregada = ComAtendimentoEspecializado(carregada);
+        carregada = ComVagasEBonusRegional(carregada);
+        carregada = ComDivulgacaoETaxaDeInscricao(carregada);
+        carregada = ComDesempateEClassificacao(carregada);
+        carregada = ComCronogramaDeFases(carregada);
+        carregada = ComDocumentosExigidos(carregada);
+        carregada = ComColetaDeFatos(carregada);
+        carregada = ComTermosEFormularios(carregada);
+        carregada = ComRegrasDeDerivacao(carregada);
+        carregada = ComCascata(carregada);
+        return carregada.AsSplitQuery();
+    }
+
+    private static IQueryable<ProcessoSeletivo> ComEtapas(IQueryable<ProcessoSeletivo> query) =>
         query
-            // Produtos da etapa: MESMO raciocínio do produto da fase abaixo. Sem o
-            // ThenInclude, a coleção nasce vazia em todo carregamento novo — o read-back
-            // diria que a etapa não publica nada, e a redefinição faria Clear() num backing
-            // list já vazio, deixando as linhas antigas no banco.
             .Include(p => p.Etapas).ThenInclude(e => e.Produtos)
             .Include(p => p.Etapas).ThenInclude(e => e.Bancas)
             .Include(p => p.Etapas).ThenInclude(e => e.Recursos)
-            .Include(p => p.Etapas).ThenInclude(e => e.ItensDeAvaliacao)
+            .Include(p => p.Etapas).ThenInclude(e => e.ItensDeAvaliacao);
+
+    private static IQueryable<ProcessoSeletivo> ComAtendimentoEspecializado(IQueryable<ProcessoSeletivo> query) =>
+        query
             .Include(p => p.AtendimentoEspecializado!).ThenInclude(o => o.Condicoes)
             .Include(p => p.AtendimentoEspecializado!).ThenInclude(o => o.Recursos)
-            .Include(p => p.AtendimentoEspecializado!).ThenInclude(o => o.TiposDeficiencia)
+            .Include(p => p.AtendimentoEspecializado!).ThenInclude(o => o.TiposDeficiencia);
+
+    private static IQueryable<ProcessoSeletivo> ComVagasEBonusRegional(IQueryable<ProcessoSeletivo> query) =>
+        query
             .Include(p => p.DistribuicaoVagas).ThenInclude(d => d.Modalidades)
             .Include(p => p.DistribuicaoVagas).ThenInclude(d => d.VagasOfertadas)
-            // Bônus regional referencia Base Legal tipada (Story #1466) — MESMO raciocínio das
-            // demais coleções filhas acima: sem o ThenInclude, o snapshot de municípios nasce
-            // sempre vazio em todo carregamento novo do agregado — o GET do processo (CA-04)
-            // sempre mentiria "nenhum município", mesmo com linhas persistidas.
-            .Include(p => p.BonusRegional!).ThenInclude(b => b.Municipios)
-            // Divulgação pública (UNI-REQ-0050, issue #563) — MESMO raciocínio de BonusRegional
-            // acima: sem o Include, a navegação 0..1 nasce null em todo carregamento novo do
-            // agregado, e o read-back administrativo (ProcessoSeletivoDto) sempre veria ausência.
+            .Include(p => p.BonusRegional!).ThenInclude(b => b.Municipios);
+
+    private static IQueryable<ProcessoSeletivo> ComDivulgacaoETaxaDeInscricao(IQueryable<ProcessoSeletivo> query) =>
+        query
             .Include(p => p.ConfiguracaoDivulgacao)
-            // Taxa de inscrição e isenção (issue #1112) — MESMO raciocínio acima: sem o Include,
-            // uma configuração persistida reaparece null na próxima leitura, a publicação
-            // recusaria como "não declarada" mesmo já declarada, e o GET administrativo mentiria.
-            .Include(p => p.ConfiguracaoTaxaInscricao)
+            .Include(p => p.ConfiguracaoTaxaInscricao);
+
+    private static IQueryable<ProcessoSeletivo> ComDesempateEClassificacao(IQueryable<ProcessoSeletivo> query) =>
+        query
             .Include(p => p.CriteriosDesempate)
             .Include(p => p.Classificacao!).ThenInclude(c => c.RegrasEliminacao)
-            // Quadro de pesos por área congelado: sem os dois ThenInclude, o GET mostraria a
-            // resolução declarada com o quadro vazio, e o envelope congelaria a classificação
-            // sem os pesos que a nota do candidato vai usar.
-            .Include(p => p.Classificacao!).ThenInclude(c => c.QuadroPesoAreaEnem).ThenInclude(g => g.Areas)
-            // Cronograma de fases (Story #851) — 3 coleções novas (produtos publicados,
-            // bancas requeridas, regra de recurso 1:1) somadas às já existentes. Sem o
-            // Include dos produtos, ProduzResultado — que deriva deles — nasce falso em todo
-            // carregamento novo do agregado: o gate de publicação recusaria "nenhuma fase
-            // produz resultado" num cronograma que declara vários, e a redefinição faria
-            // Clear() num backing list já vazio, deixando as linhas antigas no banco.
+            .Include(p => p.Classificacao!).ThenInclude(c => c.QuadroPesoAreaEnem).ThenInclude(g => g.Areas);
+
+    private static IQueryable<ProcessoSeletivo> ComCronogramaDeFases(IQueryable<ProcessoSeletivo> query) =>
+        query
             .Include(p => p.CronogramaFases).ThenInclude(f => f.RegraRecurso)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.Produtos)
-            .Include(p => p.CronogramaFases).ThenInclude(f => f.BancasRequeridas).ThenInclude(b => b.CandidatosAtendidos)
-            // Documentos exigidos (Story #554, issue #547, PR #895) — sem o Include, a
-            // coleção tracked nasce vazia em todo carregamento novo do agregado:
-            // DefinirDocumentosExigidos faria Clear() num backing list já vazio (linhas
-            // antigas sobrevivem no banco, PUT acumula) e a guarda B-01/CA-01 sempre
-            // veria zero exigências. Gatilho DNF (issue #892, PR #896) — mesmo raciocínio
-            // para Condicoes: sem o ThenInclude, PendenciaDasExigenciasDocumentais veria
-            // sempre zero condições, e CA-01 (GERAL x condição) falharia aberta. Base
-            // legal (issue #549, PR #898) — mesmo raciocínio para BasesLegais: sem o
-            // ThenInclude, ValidadorBaseLegalExigencias veria sempre zero bases e o 5º
-            // item de AvaliarConformidade reprovaria toda exigência que determina
-            // resultado, mesmo com bases RESOLVIDO persistidas.
+            .Include(p => p.CronogramaFases).ThenInclude(f => f.BancasRequeridas).ThenInclude(b => b.CandidatosAtendidos);
+
+    // NosExigencia.DocumentoExigido é preenchido pelo rastreador de alterações a partir da mesma instância
+    // trazida por DocumentosExigidos, e por isso não tem Include próprio.
+    private static IQueryable<ProcessoSeletivo> ComDocumentosExigidos(IQueryable<ProcessoSeletivo> query) =>
+        query
             .Include(p => p.DocumentosExigidos).ThenInclude(d => d.Condicoes)
             .Include(p => p.DocumentosExigidos).ThenInclude(d => d.BasesLegais)
-            // Árvore de satisfação (Story #920) — MESMO raciocínio acima: sem o Include, a
-            // coleção tracked nasce vazia em todo carregamento novo do agregado.
-            // DefinirDocumentosExigidos faria Clear() num backing list já vazio (linhas
-            // antigas sobrevivem no banco) e GruposComConsequenciaTemBaseLegalResolvida/os
-            // gates de grupo REMOVE_VANTAGEM e PENDENCIA_REENVIO reverso sempre veriam zero
-            // nós. NoExigencia.DocumentoExigido é fixed-up automaticamente pelo change
-            // tracker a partir da MESMA instância já trazida por DocumentosExigidos acima —
-            // sem novo ThenInclude de Condicoes/BasesLegais do documento.
             .Include(p => p.NosExigencia).ThenInclude(n => n.DocumentoExigido)
-            .Include(p => p.NosExigencia).ThenInclude(n => n.BasesLegais)
-            // Grafo de coleta de fatos (Story #926) — MESMO raciocínio: sem o Include, a coleção
-            // tracked nasce vazia e DefinirFatosColetados faria Clear() num backing list já vazio,
-            // deixando as linhas antigas no banco. Sem o ThenInclude das pré-condições, o grafo
-            // seria reidratado sem aresta nenhuma: todo fato pareceria coletado
-            // incondicionalmente, e campos que deveriam ser suprimidos passariam a ser exigidos.
+            .Include(p => p.NosExigencia).ThenInclude(n => n.BasesLegais);
+
+    private static IQueryable<ProcessoSeletivo> ComColetaDeFatos(IQueryable<ProcessoSeletivo> query) =>
+        query
             .Include(p => p.Campos).ThenInclude(f => f.Precondicoes)
-            // Grupos repetíveis (UNI-REQ-0146) — mesmo raciocínio, com os campos e as pré-condições deles.
             .Include(p => p.GruposColetados).ThenInclude(g => g.Subitens)
-            // Opções declaradas (issue #1619) — mesmo raciocínio: sem o Include, a substituição
-            // por fato não veria as linhas antigas e a pendência de publicação veria zero opções.
-            .Include(p => p.OpcoesDeclaradas)
-            // Termos exigidos (UNI-REQ-0086) — mesmo raciocínio: sem o Include, a substituição e a
-            // pendência de forma de aceite veriam zero termos.
+            .Include(p => p.OpcoesDeclaradas);
+
+    private static IQueryable<ProcessoSeletivo> ComTermosEFormularios(IQueryable<ProcessoSeletivo> query) =>
+        query
             .Include(p => p.TermosExigidos)
-            // Formulários por finalidade (UNI-REQ-0144) — mesmo raciocínio, com as etapas.
-            .Include(p => p.Formularios).ThenInclude(f => f.Etapas)
-            // Regras de derivação (Story #927) — MESMO raciocínio, nos três níveis: sem os Include, a
-            // configuração reidrataria sem regra nenhuma (ou sem as condições/o predicado de cada
-            // regra), e a substituição por inteiro faria Clear() num backing list vazio, deixando as
-            // linhas antigas no banco. O motor produziria conjunto errado ou indeterminado.
-            .Include(p => p.RegrasDerivacao).ThenInclude(c => c.Regras).ThenInclude(r => r.Condicoes)
-            // Cascata de remanejamento (Story #575) — MESMO raciocínio: sem o Include, a
-            // navegação 0..1 nasce null em todo carregamento novo do agregado, e o canonicalizer
-            // congelaria uma cascata vazia sem nenhum erro (o defeito que esta story fecha).
-            .Include(p => p.Cascata!).ThenInclude(c => c.Destinos)
-            // AsSplitQuery obrigatório a partir desta entrega: o produto cartesiano de
-            // TODAS as coleções (etapas × condições × recursos × tipos × vagas ×
-            // modalidades × desempate × eliminação × fases × bancas) num único JOIN
-            // explode o tamanho do resultado — split query traz cada coleção em uma
-            // consulta própria.
-            .AsSplitQuery();
+            .Include(p => p.Formularios).ThenInclude(f => f.Etapas);
+
+    private static IQueryable<ProcessoSeletivo> ComRegrasDeDerivacao(IQueryable<ProcessoSeletivo> query) =>
+        query
+            .Include(p => p.RegrasDerivacao).ThenInclude(c => c.Regras).ThenInclude(r => r.Condicoes);
+
+    private static IQueryable<ProcessoSeletivo> ComCascata(IQueryable<ProcessoSeletivo> query) =>
+        query
+            .Include(p => p.Cascata!).ThenInclude(c => c.Destinos);
 
     public async Task AdicionarVersaoConfiguracaoAsync(VersaoConfiguracao versao, CancellationToken cancellationToken = default)
     {
@@ -241,24 +228,12 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
         DateTimeOffset instante,
         CancellationToken cancellationToken = default)
     {
-        // Npgsql exige DateTimeOffset em UTC (offset zero) ao comparar contra
-        // colunas timestamptz — um instante com offset não-UTC (ex.: -03:00
-        // vindo de um Accept RFC 3339) falharia na execução da query. Normaliza
-        // aqui, no boundary que dona a interação com o Npgsql, preservando o
-        // mesmo instante; qualquer chamador fica DB-safe.
+        // O Npgsql só compara timestamptz com DateTimeOffset em UTC; offset diferente falharia na consulta.
         DateTimeOffset instanteUtc = instante.ToUniversalTime();
 
-        // Configuração vigente = VERSÃO de maior vigente_a_partir_de ≤ instante,
-        // desempatada pelo número (ADR-0075/0076/0104). Nenhum atributo do ato entra
-        // na query: o que ordena é o relógio do sistema, e não a data que o documento
-        // declara — que a retificação republica inalterada, e que um acervo migrado
-        // pode trazer regredida. O seletor é, por isso, imune a tipos de ato;
-        // ix_versoes_configuracao_processo_vigencia o cobre.
-        //
-        // O empate de instante é permitido por desenho (não há unicidade sobre
-        // vigente_a_partir_de): quando o relógio regride, VersaoConfiguracao.Suceder
-        // ancora a sucessora no instante da anterior, e é o número decrescente que
-        // elege a mais nova.
+        // Vigente é a versão de maior vigente_a_partir_de ≤ instante, desempatada pelo número (ADR-0075/0076/0104).
+        // Ordena o relógio do sistema, não a data declarada no ato; o empate de instante é permitido, porque
+        // Suceder ancora a sucessora no instante da anterior quando o relógio regride, e o número elege a mais nova.
         return await _context.Vigentes(processoSeletivoId, instanteUtc)
             .AsNoTracking()
             .FirstOrDefaultAsync(cancellationToken)
@@ -270,19 +245,16 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(atoCriadorIds);
-
         if (atoCriadorIds.Count == 0)
         {
             return [];
         }
-
         Guid[] atos = [.. atoCriadorIds];
 
         return await _context.VersoesConfiguracao
             .AsNoTracking()
             .Where(v => atos.Contains(v.AtoCriadorId)
-                // Mesmo filtro de exclusão lógica dos irmãos desta família: processo excluído
-                // logicamente não vaza a sua configuração congelada por nenhuma das portas.
+                // Processo excluído logicamente não vaza a configuração congelada por nenhuma das portas.
                 && _context.Set<ProcessoSeletivo>().Any(p => p.Id == v.ProcessoSeletivoId))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
@@ -357,8 +329,7 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
     {
         ArgumentNullException.ThrowIfNull(unidadesDoRascunho);
 
-        // Keyset bidirecional (ADR-0089): ordenação, âncora, probe n+1, reversão
-        // e flags ficam no helper. Com Guid v7 (ADR-0032) a ordem por Id é cronológica.
+        // Keyset bidirecional (ADR-0089); com Guid v7 (ADR-0032) a ordem por Id é cronológica.
         IQueryable<ProcessoSeletivo> query = _context.ProcessosSeletivos.AsNoTracking()
             .Where(p => EstadoDoProcesso.StatusDeLeituraAberta.Contains(p.Status)
                 || (p.Status == StatusProcesso.Cancelado
