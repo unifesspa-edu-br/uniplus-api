@@ -71,7 +71,7 @@ public sealed class FormulariosPorFinalidadeTests
     [Fact(DisplayName = "Aviso da etapa acima do limite é recusado no próprio campo")]
     public void Etapa_AvisoLongo_RecusaNoCampoAviso() =>
         EtapaFormulario.Criar("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, new string('a', 2001))
-            .Errors.Should().ContainSingle().Which.Field.Should().Be("aviso");
+            .Errors.Should().ContainSingle().Which.Field.Should().Be("apresentacao.aviso");
 
     [Theory(DisplayName = "Item em bloco de sistema ou em etapa inexistente é recusado na definição")]
     [InlineData("REVISAO")]
