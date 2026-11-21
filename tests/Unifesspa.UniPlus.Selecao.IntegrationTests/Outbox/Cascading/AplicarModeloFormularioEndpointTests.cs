@@ -140,7 +140,8 @@ public sealed class AplicarModeloFormularioEndpointTests
             Grupos =
             [
                 new GrupoDoModelo(
-                    "COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", 1, 10, null, Obrigatoriedade.Sempre,
+                    "COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", new OcorrenciasDoGrupo(1, 10),
+                    new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre),
                     [new ItemDoModelo(
                         "MAIOR_IDADE", 0, null, new ApresentacaoDoCampo("Maior de idade", TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []))]),
             ],

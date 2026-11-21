@@ -103,7 +103,7 @@ public sealed class ConteudoLidoTests
         [ItemValido(), ElementoNulo<FatoColetadoInput>(), ItemValido()],
         [ElementoNulo<TermoExigidoInput>(), TermoValido()],
         [],
-        [GrupoValido(), GrupoValido() with { Obrigatoriedade = "TALVEZ" }, GrupoValido()],
+        [GrupoValido(), GrupoValido() with { Regras = new ExibicaoEObrigatoriedadeInput(null, new ObrigatoriedadeInput("TALVEZ")) }, GrupoValido()],
         [DocumentoValido(), ElementoNulo<DocumentoExigidoDoModeloInput>(), DocumentoValido() with { FaseCodigo = string.Empty }, DocumentoValido()]);
 
     private static EquivalencyOptions<ConteudoDoModelo> PorMembros(EquivalencyOptions<ConteudoDoModelo> opcoes) => opcoes
@@ -165,22 +165,20 @@ public sealed class ConteudoLidoTests
         ElementoNulo<GrupoColetadoInput>(),
         GrupoValido() with
         {
-            Exibicao = PredicadoSemCondicao,
-            Obrigatoriedade = "QUANDO",
-            PredicadoObrigatoriedade = PredicadoSemCondicao,
+            Regras = new ExibicaoEObrigatoriedadeInput(PredicadoSemCondicao, new ObrigatoriedadeInput("QUANDO", PredicadoSemCondicao)),
             Subitens = [ElementoNulo<FatoColetadoInput>(), Item("MAIOR_IDADE", 1).ExibidoQuando(PredicadoSemCondicao).Construir()],
         },
-        GrupoValido() with { Obrigatoriedade = "TALVEZ" },
+        GrupoValido() with { Regras = new ExibicaoEObrigatoriedadeInput(null, new ObrigatoriedadeInput("TALVEZ")) },
     ];
 
     private static Recusa[] RecusasDosGrupos() =>
     [
         Malformada("grupos[0]", EntradaNula),
-        ClausulaVazia("grupos[1].exibicao"),
-        ClausulaVazia("grupos[1].predicadoObrigatoriedade"),
+        ClausulaVazia("grupos[1].regras.exibicao"),
+        ClausulaVazia("grupos[1].regras.obrigatoriedade.predicado"),
         Malformada("grupos[1].subitens[0]", EntradaNula),
         ClausulaVazia("grupos[1].subitens[1].regras.exibicao"),
-        ("grupos[2].obrigatoriedade", ModeloFormularioErrorCodes.ObrigatoriedadeInvalida, ObrigatoriedadeIncoerente),
+        ("grupos[2].regras.obrigatoriedade", ModeloFormularioErrorCodes.ObrigatoriedadeInvalida, ObrigatoriedadeIncoerente),
     ];
 
     private static DocumentoExigidoDoModeloInput[] DocumentosRecusados() =>
@@ -233,13 +231,14 @@ public sealed class ConteudoLidoTests
     private static TermoDoModelo TermoEsperado() => new("TERMO_USO", 0, TermoId, VersaoId, Predicado("CERTIFICADO"), Obrigatoriedade.Nunca);
 
     private static GrupoColetadoInput GrupoValido() =>
-        new("COMPOSICAO", 1, "Composição", "DADOS", 1, 5, Quando("CERTIFICADO"), "SEMPRE", null, [Item("MAIOR_IDADE", 0).Construir()], true);
+        EntradaDoGrupoColetadoDeTeste.Compondo("COMPOSICAO", 1).ComRotulo("Composição").NaSecao("DADOS").ComOcorrencias(1, 5).IncluindoOCandidato()
+            .ExibidoQuando(Quando("CERTIFICADO")).ComObrigatoriedade("SEMPRE").ComCampos(Item("MAIOR_IDADE", 0).Construir()).Construir();
 
     private static GrupoDoModelo GrupoEsperado() =>
-        new("COMPOSICAO", 1, "DADOS", "Composição", 1, 5, Predicado("CERTIFICADO"), Obrigatoriedade.Sempre,
+        new("COMPOSICAO", 1, "DADOS", "Composição", new OcorrenciasDoGrupo(1, 5, true),
+            new ExibicaoEObrigatoriedade(Predicado("CERTIFICADO"), Obrigatoriedade.Sempre),
             [new ItemDoModelo(
-                "MAIOR_IDADE", 0, null, new ApresentacaoDoCampo("MAIOR_IDADE", TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []))],
-            true);
+                "MAIOR_IDADE", 0, null, new ApresentacaoDoCampo("MAIOR_IDADE", TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []))]);
 
     private static DocumentoExigidoDoModeloInput DocumentoValido() =>
         new("INSCRICAO", "LAUDO_MEDICO", true, Quando("CERTIFICADO"), "REMOVE_VANTAGEM",

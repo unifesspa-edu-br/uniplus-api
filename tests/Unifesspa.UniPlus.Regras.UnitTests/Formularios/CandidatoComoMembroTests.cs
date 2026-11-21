@@ -13,7 +13,7 @@ public sealed class CandidatoComoMembroTests
 
     [Theory]
     [InlineData("valido", null)]
-    [InlineData("minimoZero", "minimo")]
+    [InlineData("minimoZero", "ocorrencias.minimo")]
     [InlineData("semParentesco", "subitens")]
     [InlineData("parentescoOpcional", "subitens[0]")]
     [InlineData("parentescoComExibicao", "subitens[0]")]

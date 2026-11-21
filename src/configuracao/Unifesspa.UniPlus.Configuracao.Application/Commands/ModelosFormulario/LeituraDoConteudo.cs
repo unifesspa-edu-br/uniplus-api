@@ -129,15 +129,20 @@ internal sealed class LeituraDoConteudo(IReadOnlyDictionary<string, string> form
     private GrupoDoModelo? LerGrupo(GrupoColetadoInput entrada, string campo)
     {
         int recusasAntes = _recusas.Count;
-        PredicadoDnf? exibicao = LerPredicado(entrada.Exibicao, $"{campo}.exibicao");
-        Obrigatoriedade? obrigatoriedade = LerObrigatoriedade(
-            entrada.Obrigatoriedade, entrada.PredicadoObrigatoriedade, $"{campo}.obrigatoriedade", $"{campo}.predicadoObrigatoriedade");
+        ExibicaoEObrigatoriedade? regras = LerExibicaoEObrigatoriedade(entrada.Regras, $"{campo}.{GrupoColetadoInput.CaminhoDasRegras}");
         List<ItemDoModelo> subitens = [.. Lista(entrada.Subitens, $"{campo}.subitens", LerItem).Select(static subitem => subitem.Parte)];
         return RecusouDesde(recusasAntes)
             ? null
             : new GrupoDoModelo(
-                entrada.Codigo, entrada.Ordem, entrada.EtapaCodigo, entrada.Rotulo, entrada.Minimo, entrada.Maximo, exibicao, obrigatoriedade!, subitens,
-                entrada.IncluiCandidato);
+                entrada.Codigo, entrada.Ordem, entrada.EtapaCodigo, entrada.Rotulo, EntradaDeRegras.Ocorrencias(entrada.Ocorrencias), regras!, subitens);
+    }
+
+    private ExibicaoEObrigatoriedade? LerExibicaoEObrigatoriedade(ExibicaoEObrigatoriedadeInput? entrada, string campo)
+    {
+        PredicadoDnf? exibicao = LerPredicado(entrada?.Exibicao, $"{campo}.exibicao");
+        Obrigatoriedade? obrigatoriedade = LerObrigatoriedade(
+            entrada?.Obrigatoriedade?.Tipo, entrada?.Obrigatoriedade?.Predicado, $"{campo}.obrigatoriedade", $"{campo}.obrigatoriedade.predicado");
+        return obrigatoriedade is null ? null : new ExibicaoEObrigatoriedade(exibicao, obrigatoriedade);
     }
 
     /// <summary>

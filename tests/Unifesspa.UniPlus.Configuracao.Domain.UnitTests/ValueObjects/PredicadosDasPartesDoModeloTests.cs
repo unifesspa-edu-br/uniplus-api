@@ -39,19 +39,19 @@ public sealed class PredicadosDasPartesDoModeloTests
     [Fact(DisplayName = "O grupo enumera a exibição e o predicado de obrigatoriedade, nessa ordem")]
     public void Grupo_ExibicaoEObrigatoriedade_NaOrdem()
     {
-        GrupoDoModelo grupo = Grupo("COMPOSICAO", 0, Exibicao) with { Obrigatoriedade = Obrigatoriedade.Quando(DaObrigatoriedade) };
+        GrupoDoModelo grupo = Grupo("COMPOSICAO", 0, Exibicao).ComObrigatoriedade(Obrigatoriedade.Quando(DaObrigatoriedade));
 
         grupo.Predicados().Should().Equal(
-            new PredicadoNaEntrada("exibicao", Exibicao),
-            new PredicadoNaEntrada("predicadoObrigatoriedade", DaObrigatoriedade));
+            new PredicadoNaEntrada("regras.exibicao", Exibicao),
+            new PredicadoNaEntrada("regras.obrigatoriedade.predicado", DaObrigatoriedade));
     }
 
     [Fact(DisplayName = "O grupo sem regras enumera os mesmos caminhos, sem predicado")]
     public void Grupo_SemRegras_MesmosCaminhosSemPredicado()
     {
         Grupo("COMPOSICAO").Predicados().Should().Equal(
-            new PredicadoNaEntrada("exibicao", null),
-            new PredicadoNaEntrada("predicadoObrigatoriedade", null));
+            new PredicadoNaEntrada("regras.exibicao", null),
+            new PredicadoNaEntrada("regras.obrigatoriedade.predicado", null));
     }
 
     [Fact(DisplayName = "A etapa enumera a exibição")]

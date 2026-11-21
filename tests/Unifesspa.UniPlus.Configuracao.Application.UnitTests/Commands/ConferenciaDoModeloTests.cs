@@ -83,7 +83,8 @@ public sealed class ConferenciaDoModeloTests
         [],
         [],
         [],
-        [new("COMPOSICAO", 1, "Composição", null, 1, 5, null, "SEMPRE", null, [SubitemDeSelecaoComRestricoesEImpedimentoQueRecusam()])]);
+        [EntradaDoGrupoColetadoDeTeste.Compondo("COMPOSICAO", 1).ComRotulo("Composição").ComOcorrencias(1, 5).ComObrigatoriedade("SEMPRE")
+            .ComCampos(SubitemDeSelecaoComRestricoesEImpedimentoQueRecusam()).Construir()]);
 
     private static FatoColetadoInput SubitemDeSelecaoComRestricoesEImpedimentoQueRecusam() =>
         EntradaDoFatoColetadoDeTeste.Coletando("CONDICAO_DO_MEMBRO").DoTipo("SELECAO_UNICA")
@@ -142,8 +143,9 @@ public sealed class ConferenciaDoModeloTests
             .Construir();
 
     private static GrupoColetadoInput GrupoQueRecusa() =>
-        new("COMPOSICAO", 1, "Composição", null, 1, 5, CitandoFatoInexistente, "QUANDO", CitandoFatoInexistente,
-            [Item("CERTIFICADO", 0), Item("MAIOR_IDADE", 1, "NUMERO")]);
+        EntradaDoGrupoColetadoDeTeste.Compondo("COMPOSICAO", 1).ComRotulo("Composição").ComOcorrencias(1, 5)
+            .ExibidoQuando(CitandoFatoInexistente).ComObrigatoriedade("QUANDO", CitandoFatoInexistente)
+            .ComCampos(Item("CERTIFICADO", 0), Item("MAIOR_IDADE", 1, "NUMERO")).Construir();
 
     private static DocumentoExigidoDoModeloInput[] DocumentosQueRecusam() =>
     [
@@ -175,8 +177,8 @@ public sealed class ConferenciaDoModeloTests
 
     private static Recusa[] RecusasDosGrupos() =>
     [
-        FatoInexistenteNoPredicado("grupos[0].exibicao"),
-        FatoInexistenteNoPredicado("grupos[0].predicadoObrigatoriedade"),
+        FatoInexistenteNoPredicado("grupos[0].regras.exibicao"),
+        FatoInexistenteNoPredicado("grupos[0].regras.obrigatoriedade.predicado"),
         ("grupos[0].subitens[0].fatoCodigo", ItemFormularioErrorCodes.FatoNaoColetavel,
             "O fato 'CERTIFICADO' não é coletável num campo do grupo: só o fato declarado de membro de grupo é respondido em cada ocorrência — fatos do candidato, derivados e calculados não."),
         ("grupos[0].subitens[1].apresentacao.tipoRenderizacao", ItemFormularioErrorCodes.TipoRenderizacaoIncoerenteComDominio,

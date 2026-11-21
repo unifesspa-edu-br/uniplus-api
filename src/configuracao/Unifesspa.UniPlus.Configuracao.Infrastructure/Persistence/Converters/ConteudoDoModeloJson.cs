@@ -84,11 +84,11 @@ internal static class ConteudoDoModeloJson
         ["ordem"] = grupo.Ordem,
         ["etapaCodigo"] = grupo.EtapaCodigo,
         ["rotulo"] = grupo.Rotulo,
-        ["minimo"] = grupo.Minimo,
-        ["maximo"] = grupo.Maximo,
-        ["incluiCandidato"] = grupo.IncluiCandidato,
-        ["exibicao"] = PredicadoOpcionalParaJson(grupo.Exibicao),
-        ["obrigatoriedade"] = PredicadoDnfJson.ParaJson(grupo.Obrigatoriedade),
+        ["minimo"] = grupo.Ocorrencias.Minimo,
+        ["maximo"] = grupo.Ocorrencias.Maximo,
+        ["incluiCandidato"] = grupo.Ocorrencias.IncluiCandidato,
+        ["exibicao"] = PredicadoOpcionalParaJson(grupo.Regras.Exibicao),
+        ["obrigatoriedade"] = PredicadoDnfJson.ParaJson(grupo.Regras.Obrigatoriedade),
         ["subitens"] = new JsonArray([.. grupo.Subitens.Select(CampoParaJson)]),
     };
 
@@ -184,12 +184,11 @@ internal static class ConteudoDoModeloJson
         grupo.GetProperty("ordem").GetInt32(),
         Texto(grupo, "etapaCodigo"),
         grupo.GetProperty("rotulo").GetString()!,
-        grupo.GetProperty("minimo").GetInt32(),
-        InteiroOuNulo(grupo.GetProperty("maximo")),
-        Predicado(grupo, "exibicao"),
-        Remontar(PredicadoDnfJson.ObrigatoriedadeDeJson(grupo.GetProperty("obrigatoriedade"))),
-        [.. grupo.GetProperty("subitens").EnumerateArray().Select(CampoDeJson)],
-        grupo.GetProperty("incluiCandidato").GetBoolean());
+        new OcorrenciasDoGrupo(
+            grupo.GetProperty("minimo").GetInt32(), InteiroOuNulo(grupo.GetProperty("maximo")), grupo.GetProperty("incluiCandidato").GetBoolean()),
+        new ExibicaoEObrigatoriedade(
+            Predicado(grupo, "exibicao"), Remontar(PredicadoDnfJson.ObrigatoriedadeDeJson(grupo.GetProperty("obrigatoriedade")))),
+        [.. grupo.GetProperty("subitens").EnumerateArray().Select(CampoDeJson)]);
 
     private static IReadOnlyList<DocumentoExigidoDoModelo> DocumentosDeJson(JsonElement raiz) =>
         raiz.TryGetProperty("documentosExigidos", out JsonElement documentos)

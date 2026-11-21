@@ -98,16 +98,15 @@ public static class ConferenciaDoConteudoDoModelo
     /// <summary>A forma do grupo, a do candidato como membro quando ele o inclui e a de cada campo do grupo.</summary>
     private static IEnumerable<FieldError> ConferirGrupo(GrupoDoModelo grupo, string caminho)
     {
-        OcorrenciasDoGrupo ocorrencias = new(grupo.Minimo, grupo.Maximo, grupo.IncluiCandidato);
         return
         [
             .. NoCaminho(
                 FormaDoGrupo.Conferir(
-                    grupo.Codigo, grupo.Ordem, grupo.Rotulo, ocorrencias,
+                    grupo.Codigo, grupo.Ordem, grupo.Rotulo, grupo.Ocorrencias,
                     [.. grupo.Subitens.Select(static s => ((string?)s.FatoCodigo, s.EtapaCodigo, s.Regras.Impedimento is not null))],
-                    new ExibicaoEObrigatoriedade(grupo.Exibicao, grupo.Obrigatoriedade)),
+                    grupo.Regras),
                 caminho),
-            .. ConferirCandidatoComoMembro(ocorrencias, grupo.Subitens, caminho),
+            .. ConferirCandidatoComoMembro(grupo.Ocorrencias, grupo.Subitens, caminho),
             .. grupo.Subitens.SelectMany((campo, j) => ConferirCampo(campo, $"{caminho}.subitens[{j}]")),
         ];
     }

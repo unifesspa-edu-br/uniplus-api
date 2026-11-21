@@ -51,9 +51,8 @@ public static class ModeloFormularioMapping
         EntradaDeRegras.ParaEntrada(termo.Obrigatoriedade), EntradaDeRegras.ParaEntrada(termo.Obrigatoriedade.Predicado));
 
     private static GrupoColetadoInput GrupoParaEntrada(GrupoDoModelo grupo) => new(
-        grupo.Codigo, grupo.Ordem, grupo.Rotulo, grupo.EtapaCodigo, grupo.Minimo, grupo.Maximo, EntradaDeRegras.ParaEntrada(grupo.Exibicao),
-        EntradaDeRegras.ParaEntrada(grupo.Obrigatoriedade), EntradaDeRegras.ParaEntrada(grupo.Obrigatoriedade.Predicado),
-        [.. grupo.Subitens.Select(ItemParaEntrada)], grupo.IncluiCandidato);
+        grupo.Codigo, grupo.Ordem, grupo.Rotulo, EntradaDeRegras.ParaEntrada(grupo.Ocorrencias), EntradaDeRegras.ParaEntrada(grupo.Regras),
+        [.. grupo.Subitens.Select(ItemParaEntrada)], grupo.EtapaCodigo);
 
     private static DocumentoExigidoDoModeloInput DocumentoParaEntrada(DocumentoExigidoDoModelo documento) => new(
         documento.FaseCodigo, documento.TipoDocumentoCodigo, documento.Obrigatorio, EntradaDeRegras.ParaEntrada(documento.Quando),

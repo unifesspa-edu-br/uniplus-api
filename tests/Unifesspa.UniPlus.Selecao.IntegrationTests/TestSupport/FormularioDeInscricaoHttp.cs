@@ -3,6 +3,8 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
+using Unifesspa.UniPlus.Regras.Entradas;
+
 /// <summary>
 /// Os itens do formulário de inscrição pelo HTTP, para os testes que não tratam da estrutura
 /// dele: a rota administrativa dos itens e o corpo, com cada item sem etapa posto na seção de
@@ -42,6 +44,28 @@ internal static class FormularioDeInscricaoHttp
 
         return item;
     }
+
+    /// <summary>
+    /// O grupo na forma do corpo: as ocorrências e as regras aninhadas, e a obrigatoriedade com o tipo; os campos
+    /// vão como <paramref name="subitens"/>.
+    /// </summary>
+    public static object Grupo(
+        string codigo,
+        int ordem,
+        string rotulo,
+        string etapaCodigo,
+        object[] subitens,
+        OcorrenciasDoGrupoInput? ocorrencias = null,
+        string obrigatoriedade = "NUNCA") => new
+        {
+            codigo,
+            ordem,
+            rotulo,
+            etapaCodigo,
+            ocorrencias = ocorrencias ?? new OcorrenciasDoGrupoInput(0, null),
+            regras = new { exibicao = (object?)null, obrigatoriedade = new { tipo = obrigatoriedade } },
+            subitens,
+        };
 
     public static object CorpoDosItens(IEnumerable<object> itens) => new
     {

@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.AcessoAosD
 
 using System.Globalization;
 
+using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
@@ -55,19 +56,10 @@ internal static class CorposDasRequisicoesDoProcesso
         FormularioDeInscricaoHttp.Item(
             FatosDoCenario.Sensivel, PrimeiraOrdem, FatosDoCenario.Sensivel, "BOOLEANO", "NUNCA", etapaCodigo: FormularioDeInscricaoHttp.Secao);
 
-    private static object GrupoDeResponsaveis(string fatoDoGrupo) => new
-    {
-        codigo = FatosDoCenario.GrupoDeResponsaveis,
-        ordem = PrimeiraOrdem + 1,
-        rotulo = "Responsáveis legais",
-        etapaCodigo = FormularioDeInscricaoHttp.Secao,
-        minimo = 0,
-        maximo = 3,
-        exibicao = (object?)null,
-        obrigatoriedade = "NUNCA",
-        predicadoObrigatoriedade = (object?)null,
-        subitens = new object[] { RgDoResponsavel(fatoDoGrupo) },
-    };
+    private static object GrupoDeResponsaveis(string fatoDoGrupo) =>
+        FormularioDeInscricaoHttp.Grupo(
+            FatosDoCenario.GrupoDeResponsaveis, PrimeiraOrdem + 1, "Responsáveis legais", FormularioDeInscricaoHttp.Secao,
+            [RgDoResponsavel(fatoDoGrupo)], new OcorrenciasDoGrupoInput(0, 3));
 
     private static object RgDoResponsavel(string fatoDoGrupo) =>
         FormularioDeInscricaoHttp.Item(fatoDoGrupo, 0, "RG do responsável", "TEXTO", "NUNCA");

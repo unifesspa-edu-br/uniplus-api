@@ -71,9 +71,8 @@ internal static class SecaoDadosBasicosDoProcesso
         return [.. processo.GruposColetados
             .Where(static g => g.Finalidade == FinalidadeFormulario.Inscricao)
             .Select(static g => new GrupoColetadoInput(
-                g.Codigo, g.Ordem, g.Rotulo, g.EtapaCodigo, g.Minimo, g.Maximo, EntradaDeRegras.ParaEntrada(g.Exibicao),
-                EntradaDeRegras.ParaEntrada(g.Obrigatoriedade), EntradaDeRegras.ParaEntrada(g.Obrigatoriedade.Predicado),
-                [.. g.Subitens.Select(Entrada)], g.IncluiCandidato))];
+                g.Codigo, g.Ordem, g.Rotulo, EntradaDeRegras.ParaEntrada(g.Ocorrencias), EntradaDeRegras.ParaEntrada(g.Regras),
+                [.. g.Subitens.Select(Entrada)], g.EtapaCodigo))];
     }
 
     /// <summary>

@@ -67,7 +67,8 @@ public sealed class ModeloFormularioMappingTests
         [ItemMinimo("QUILOMBOLA", 0)],
         [new TermoDoModelo("TERMO_USO", 0, TermoId, VersaoId, null, Obrigatoriedade.Sempre)],
         [],
-        [new GrupoDoModelo("FAMILIA", 0, null, "Família", 1, null, null, Obrigatoriedade.Nunca, [ItemMinimo("PARENTESCO", 0)])],
+        [new GrupoDoModelo(
+            "FAMILIA", 0, null, "Família", new OcorrenciasDoGrupo(1, null), new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Nunca), [ItemMinimo("PARENTESCO", 0)])],
         [new DocumentoExigidoDoModelo("INSCRICAO", "RG", true, null, "INDEFERIMENTO", [])]);
 
     private static EtapaDoModelo EtapaCompleta() => new(
@@ -89,8 +90,9 @@ public sealed class ModeloFormularioMappingTests
         new(fatoCodigo, ordem, null, new ApresentacaoDoCampo("Pergunta", TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
 
     private static GrupoDoModelo GrupoCompleto() => new(
-        "FAMILIA", 2, "DADOS", "Composição familiar", 1, 5, Quando("QUILOMBOLA", true), Obrigatoriedade.Quando(Quando("BAIXA_RENDA", true)),
-        [ItemMinimo("PARENTESCO", 0), ItemMinimo("RENDA_MEMBRO", 1)], true);
+        "FAMILIA", 2, "DADOS", "Composição familiar", new OcorrenciasDoGrupo(1, 5, true),
+        new ExibicaoEObrigatoriedade(Quando("QUILOMBOLA", true), Obrigatoriedade.Quando(Quando("BAIXA_RENDA", true))),
+        [ItemMinimo("PARENTESCO", 0), ItemMinimo("RENDA_MEMBRO", 1)]);
 
     private static DocumentoExigidoDoModelo DocumentoCompleto() => new(
         "HABILITACAO", "CERTIDAO", false, Quando("QUILOMBOLA", true), "PERDA_DA_VAGA",
@@ -112,7 +114,8 @@ public sealed class ModeloFormularioMappingTests
         [ItemMinimoNaEntrada("QUILOMBOLA", 0)],
         [new TermoExigidoInput("TERMO_USO", 0, TermoId, VersaoId, null, "SEMPRE", null)],
         [],
-        [new GrupoColetadoInput("FAMILIA", 0, "Família", null, 1, null, null, "NUNCA", null, [ItemMinimoNaEntrada("PARENTESCO", 0)])],
+        [EntradaDoGrupoColetadoDeTeste.Compondo("FAMILIA").ComRotulo("Família").ComOcorrencias(1)
+            .ComCampos(ItemMinimoNaEntrada("PARENTESCO", 0)).Construir()],
         [new DocumentoExigidoDoModeloInput("INSCRICAO", "RG", true, null, "INDEFERIMENTO", [])]);
 
     private static EtapaFormularioInput EtapaCompletaNaEntrada() => new(
@@ -130,9 +133,11 @@ public sealed class ModeloFormularioMappingTests
     private static FatoColetadoInput ItemMinimoNaEntrada(string fatoCodigo, int ordem) =>
         EntradaDoFatoColetadoDeTeste.Coletando(fatoCodigo, ordem).ComRotulo("Pergunta").ComRestricoes().Construir();
 
-    private static GrupoColetadoInput GrupoCompletoNaEntrada() => new(
-        "FAMILIA", 2, "Composição familiar", "DADOS", 1, 5, QuandoNaEntrada("QUILOMBOLA", true), "QUANDO", QuandoNaEntrada("BAIXA_RENDA", true),
-        [ItemMinimoNaEntrada("PARENTESCO", 0), ItemMinimoNaEntrada("RENDA_MEMBRO", 1)], true);
+    private static GrupoColetadoInput GrupoCompletoNaEntrada() =>
+        EntradaDoGrupoColetadoDeTeste.Compondo("FAMILIA", 2).ComRotulo("Composição familiar").NaSecao("DADOS")
+            .ComOcorrencias(1, 5).IncluindoOCandidato().ExibidoQuando(QuandoNaEntrada("QUILOMBOLA", true))
+            .ComObrigatoriedade("QUANDO", QuandoNaEntrada("BAIXA_RENDA", true))
+            .ComCampos(ItemMinimoNaEntrada("PARENTESCO", 0), ItemMinimoNaEntrada("RENDA_MEMBRO", 1)).Construir();
 
     private static DocumentoExigidoDoModeloInput DocumentoCompletoNaEntrada() => new(
         "HABILITACAO", "CERTIDAO", false, QuandoNaEntrada("QUILOMBOLA", true), "PERDA_DA_VAGA",

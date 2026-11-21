@@ -39,7 +39,9 @@ internal static class ProjecaoDaColeta
             .Select(g => ProjetarGrupo(processo, g))]);
 
     private static GrupoColetadoDto ProjetarGrupo(ProcessoSeletivo processo, GrupoColetado g) => new(
-        g.Codigo, g.Ordem, g.EtapaCodigo, g.Rotulo, g.Minimo, g.Maximo, g.IncluiCandidato, g.Exibicao?.ToDto(), g.Obrigatoriedade.ToDto(),
+        g.Codigo, g.Ordem, g.EtapaCodigo, g.Rotulo,
+        new OcorrenciasDoGrupoDto(g.Minimo, g.Maximo, g.IncluiCandidato),
+        new ExibicaoEObrigatoriedadeDto(g.Exibicao?.ToDto(), g.Obrigatoriedade.ToDto()),
         [.. g.Subitens.OrderBy(static s => s.Ordem).Select(s => ProjetarFato(processo, s))]);
 
     private static FatoColetadoDto ProjetarFato(ProcessoSeletivo processo, FatoColetado fato) => new(

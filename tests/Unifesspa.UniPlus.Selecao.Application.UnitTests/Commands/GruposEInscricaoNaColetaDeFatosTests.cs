@@ -136,11 +136,38 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
     {
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        GrupoColetadoInput grupo = Composicao() with { Exibicao = [[Condicao("COR_RACA", "IGUAL", "VERDE")]] };
+        GrupoColetadoInput grupo = ComExibicao(Composicao(), [[Condicao("COR_RACA", "IGUAL", "VERDE")]]);
 
         Result resultado = await HandleAsync(mocks, ComGrupo(processo, grupo));
 
-        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("grupos[0].exibicao");
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("grupos[0].regras.exibicao");
+    }
+
+    [Fact(DisplayName = "Grupo sem as regras é recusado na obrigatoriedade, no caminho das regras do grupo")]
+    public async Task Handle_GrupoSemRegras_RecusaAObrigatoriedadeAusente()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        GrupoColetadoInput grupo = Composicao() with { Regras = null };
+
+        Result resultado = await HandleAsync(mocks, ComGrupo(processo, grupo));
+
+        FieldError erro = resultado.Errors.Should().ContainSingle().Subject;
+        erro.Field.Should().Be("grupos[0].regras.obrigatoriedade");
+        erro.Error.Code.Should().Be(FatoColetadoErrorCodes.ObrigatoriedadeInvalida);
+    }
+
+    [Fact(DisplayName = "Grupo sem as ocorrências vale sem mínimo e sem máximo")]
+    public async Task Handle_GrupoSemOcorrencias_ValeSemMinimoENemMaximo()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        GrupoColetadoInput grupo = Composicao() with { Ocorrencias = null };
+
+        Result resultado = await HandleAsync(mocks, ComGrupo(processo, grupo));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.GruposColetados.Should().ContainSingle().Which.Ocorrencias.Should().Be(new OcorrenciasDoGrupo(0, null));
     }
 
     [Fact(DisplayName = "Exibição do grupo que cita fato calculado de atributo do candidato sem dependências declaradas é recusada, como nas demais regras")]
@@ -148,18 +175,19 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
     {
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        GrupoColetadoInput grupo = Composicao() with { Exibicao = [[Condicao("FAIXA_DE_RENDA", "IGUAL", "MENOR_DE_18")]] };
+        GrupoColetadoInput grupo = ComExibicao(Composicao(), [[Condicao("FAIXA_DE_RENDA", "IGUAL", "MENOR_DE_18")]]);
 
         Result resultado = await HandleAsync(mocks, ComGrupo(processo, grupo));
 
         resultado.Errors.Should().Contain(static e => e.Field == "grupos[0]" && e.Error.Code == GrafoFormularioErrorCodes.CitaAtributoDoCandidato);
     }
 
-    private static GrupoColetadoInput GrupoComVariasRecusas() => Composicao() with
+    private static GrupoColetadoInput ComExibicao(GrupoColetadoInput grupo, IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>> exibicao) =>
+        grupo with { Regras = grupo.Regras! with { Exibicao = exibicao } };
+
+    private static GrupoColetadoInput GrupoComVariasRecusas() => ComExibicao(Composicao(), [[Condicao("COR_RACA", "IGUAL", "VERDE")]]) with
     {
-        Minimo = 5,
-        Maximo = 2,
-        Exibicao = [[Condicao("COR_RACA", "IGUAL", "VERDE")]],
+        Ocorrencias = new OcorrenciasDoGrupoInput(5, 2),
         Subitens =
         [
             EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").ComRotulo("Baixa renda").Construir(),
@@ -175,7 +203,7 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
         Result resultado = await HandleAsync(mocks, ComGrupo(processo, GrupoComVariasRecusas()));
 
         resultado.Errors.Select(static e => e.Field).Should().Contain(
-            ["grupos[0].maximo", "grupos[0].exibicao", "grupos[0].subitens[0].fatoCodigo", "grupos[0].subitens[1].etapaCodigo"]);
+            ["grupos[0].ocorrencias.maximo", "grupos[0].regras.exibicao", "grupos[0].subitens[0].fatoCodigo", "grupos[0].subitens[1].etapaCodigo"]);
     }
 
     [Fact(DisplayName = "PUT sem grupos mantém os grupos do formulário")]

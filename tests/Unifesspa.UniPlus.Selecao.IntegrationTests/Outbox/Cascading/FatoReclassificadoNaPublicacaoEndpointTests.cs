@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -113,11 +114,9 @@ public sealed class FatoReclassificadoNaPublicacaoEndpointTests
         itens = new[] { FormularioDeInscricaoHttp.Item(item, 0, "Item", "BOOLEANO", "NUNCA", etapaCodigo: FormularioDeTeste.Secao) },
         grupos = new[]
         {
-            new
-            {
-                codigo = "COMPOSICAO_FAMILIAR", ordem = 1, rotulo = "Composição familiar", etapaCodigo = FormularioDeTeste.Secao, minimo = 0, maximo = 10, obrigatoriedade = "NUNCA",
-                subitens = new[] { FormularioDeInscricaoHttp.Item(campo, 0, "Campo", "BOOLEANO", "NUNCA") },
-            },
+            FormularioDeInscricaoHttp.Grupo(
+                "COMPOSICAO_FAMILIAR", 1, "Composição familiar", FormularioDeTeste.Secao,
+                [FormularioDeInscricaoHttp.Item(campo, 0, "Campo", "BOOLEANO", "NUNCA")], new OcorrenciasDoGrupoInput(0, 10)),
         },
     };
 

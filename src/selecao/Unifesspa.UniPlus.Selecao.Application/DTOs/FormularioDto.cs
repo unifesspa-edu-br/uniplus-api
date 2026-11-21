@@ -15,21 +15,23 @@ public sealed record EtapaFormularioDto(
     IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? Exibicao);
 
 /// <summary>
-/// Um grupo repetível do formulário (UNI-REQ-0146): a posição na ordem dos itens, a seção, o
-/// rótulo, o mínimo e o máximo de ocorrências, se o próprio candidato é um dos membros, a
-/// exibição — nula quando sempre aparece —, a obrigatoriedade e os campos de cada ocorrência, na
-/// ordem dentro do grupo.
+/// Quantas ocorrências o grupo repetível admite: o mínimo, o máximo — nulo quando não há — e se o próprio
+/// candidato é uma delas. Tem a forma de <see cref="OcorrenciasDoGrupoInput"/>, que a escrita aceita.
+/// </summary>
+public sealed record OcorrenciasDoGrupoDto(int Minimo, int? Maximo, bool IncluiCandidato);
+
+/// <summary>
+/// Um grupo repetível do formulário (UNI-REQ-0146): a posição na ordem dos itens, a seção, o rótulo, as
+/// ocorrências admitidas, a exibição — nula quando sempre aparece — e a obrigatoriedade em
+/// <see cref="Regras"/> e os campos de cada ocorrência, na ordem dentro do grupo.
 /// </summary>
 public sealed record GrupoColetadoDto(
     string Codigo,
     int Ordem,
     string? EtapaCodigo,
     string Rotulo,
-    int Minimo,
-    int? Maximo,
-    bool IncluiCandidato,
-    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? Exibicao,
-    ObrigatoriedadeDto Obrigatoriedade,
+    OcorrenciasDoGrupoDto Ocorrencias,
+    ExibicaoEObrigatoriedadeDto Regras,
     IReadOnlyList<FatoColetadoDto> Subitens);
 
 /// <summary>

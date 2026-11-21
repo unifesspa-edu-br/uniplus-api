@@ -34,7 +34,7 @@ public static class CandidatoComoMembro
     }
 
     private static IEnumerable<FieldError> RecusasDoMinimo(int minimo) =>
-        minimo < 1 ? [Recusa("minimo", "O grupo que inclui o candidato tem ao menos uma ocorrência: a do próprio candidato.")] : [];
+        minimo < 1 ? [Recusa($"{GrupoColetadoInput.CaminhoDasOcorrencias}.minimo", "O grupo que inclui o candidato tem ao menos uma ocorrência: a do próprio candidato.")] : [];
 
     private static IEnumerable<FieldError> RecusasDoParentescoAusente() =>
         [Recusa("subitens", $"O grupo que inclui o candidato pede o parentesco ({FatoParentesco}) em cada ocorrência.")];

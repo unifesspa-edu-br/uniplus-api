@@ -43,12 +43,15 @@ public sealed record ConteudoDoModelo(
                 e.Codigo,
                 e.Exibicao,
                 [.. itensPorEtapa[e.Codigo].OrderBy(static i => i.Ordem).Select(Item)],
-                [.. gruposPorEtapa[e.Codigo].OrderBy(static g => g.Ordem).Select(static g => new DefinicaoGrupo(
-                    g.Codigo, g.Exibicao, g.Obrigatoriedade, g.Minimo, g.Maximo, [.. g.Subitens.OrderBy(static s => s.Ordem).Select(Item)], g.IncluiCandidato))]))],
+                [.. gruposPorEtapa[e.Codigo].OrderBy(static g => g.Ordem).Select(Grupo)]))],
             [.. Termos.OrderBy(static t => t.Ordem).Select(static t => new DefinicaoTermo(t.Codigo, t.Exibicao, t.Obrigatoriedade))],
             derivacoes,
             agregados);
     }
+
+    private static DefinicaoGrupo Grupo(GrupoDoModelo grupo) => new(
+        grupo.Codigo, grupo.Regras.Exibicao, grupo.Regras.Obrigatoriedade, grupo.Ocorrencias.Minimo, grupo.Ocorrencias.Maximo,
+        [.. grupo.Subitens.OrderBy(static s => s.Ordem).Select(Item)], grupo.Ocorrencias.IncluiCandidato);
 
     private static DefinicaoItem Item(ItemDoModelo item) =>
         new(item.FatoCodigo, item.Regras.Exibicao, item.Regras.Obrigatoriedade, item.Regras.Restricoes, item.Regras.Impedimento, item.Formato);

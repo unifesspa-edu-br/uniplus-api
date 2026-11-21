@@ -141,14 +141,15 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
     private static GrupoColetadoInput? GrupoAdulterado(string caso)
     {
         FatoColetadoInput campo = Item("PARENTESCO", "Parentesco", "SELECAO_UNICA").Construir();
-        GrupoColetadoInput grupo = new("COMPOSICAO", 1, "Composição", "DADOS", 0, 5, null, "NUNCA", null, [campo]);
+        GrupoColetadoInput grupo = EntradaDoGrupoColetadoDeTeste.Compondo("COMPOSICAO", 1).ComRotulo("Composição").NaSecao("DADOS")
+            .ComOcorrencias(0, 5).ComCampos(campo).Construir();
         return caso switch
         {
             "grupoNulo" => null,
             "subitensNulo" => grupo with { Subitens = null! },
             "campoNulo" => grupo with { Subitens = [null!] },
-            "exibicaoVazia" => grupo with { Exibicao = [] },
-            "obrigatoriedadeVazia" => grupo with { PredicadoObrigatoriedade = [] },
+            "exibicaoVazia" => grupo with { Regras = grupo.Regras! with { Exibicao = [] } },
+            "obrigatoriedadeVazia" => grupo with { Regras = grupo.Regras! with { Obrigatoriedade = new ObrigatoriedadeInput("NUNCA", []) } },
             "exibicaoDoCampoVazia" => grupo with { Subitens = [campo with { Regras = campo.Regras! with { Exibicao = [[]] } }] },
             _ => grupo with { Subitens = [campo with { Regras = campo.Regras! with { Obrigatoriedade = new ObrigatoriedadeInput("QUANDO", []) } }] },
         };

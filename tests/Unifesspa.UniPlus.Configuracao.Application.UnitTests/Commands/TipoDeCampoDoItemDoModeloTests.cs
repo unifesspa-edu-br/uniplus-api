@@ -35,7 +35,8 @@ public sealed class TipoDeCampoDoItemDoModeloTests
     [Fact(DisplayName = "Tipo de campo desconhecido é recusado como inválido, também no campo de grupo")]
     public void Ler_TipoDesconhecido_RecusaComoInvalidoNoItemENoCampoDeGrupo()
     {
-        GrupoColetadoInput grupo = new("DEPENDENTES", 1, "Dependentes", null, 0, null, null, "SEMPRE", null, [Item("NENHUMA")]);
+        GrupoColetadoInput grupo = EntradaDoGrupoColetadoDeTeste.Compondo("DEPENDENTES", 1).ComRotulo("Dependentes")
+            .ComObrigatoriedade("SEMPRE").ComCampos(Item("NENHUMA")).Construir();
         ConteudoLido lido = ConteudoLido.Ler(
             new ConteudoDoModeloInput("Habilitação", null, [Item("NENHUMA")], null, null, [grupo]), SemFormatos);
 

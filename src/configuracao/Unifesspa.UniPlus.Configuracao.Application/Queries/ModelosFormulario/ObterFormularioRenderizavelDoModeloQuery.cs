@@ -125,9 +125,9 @@ public static class ObterFormularioRenderizavelDoModeloQueryHandler
         grupo.Ordem,
         grupo.EtapaCodigo,
         grupo.Rotulo,
-        grupo.Minimo,
-        grupo.Maximo,
-        grupo.IncluiCandidato,
+        grupo.Ocorrencias.Minimo,
+        grupo.Ocorrencias.Maximo,
+        grupo.Ocorrencias.IncluiCandidato,
         [.. grupo.Subitens.OrderBy(static s => s.Ordem).Select(s => Campo(finalidade, s, opcoes))]);
 
     private static CampoRenderizavel Campo(

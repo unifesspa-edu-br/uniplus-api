@@ -49,7 +49,8 @@ public sealed class ModeloFormularioTests
         ModeloFormulario.Criar("INSCRICAO_MEDICINA", "Inscrição Medicina 2027", null, FinalidadeFormulario.Inscricao, null, conteudo, derivacoes);
 
     private static GrupoDoModelo Composicao(params ItemDoModelo[] campos) =>
-        new("COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", 1, 10, null, Obrigatoriedade.Sempre, campos);
+        new("COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", new OcorrenciasDoGrupo(1, 10),
+            new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre), campos);
 
     private static ItemDoModelo Campo(string fato, int ordem, Obrigatoriedade? obrigatoriedade = null, PredicadoDnf? exibicao = null) =>
         Item(fato, ordem, obrigatoriedade, exibicao, etapa: null);

@@ -49,7 +49,8 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
     [Fact(DisplayName = "O grupo do cliente que colide com a seção sobe com os itens")]
     public void MesclarItens_GrupoQueColide_Sobe()
     {
-        GrupoColetadoInput grupo = new("COMPOSICAO", 1, "Composição familiar", "DADOS", 1, null, null, null, null, []);
+        GrupoColetadoInput grupo = EntradaDoGrupoColetadoDeTeste.Compondo("COMPOSICAO", 1).ComRotulo("Composição familiar").NaSecao("DADOS")
+            .ComOcorrencias(1).Construir();
 
         (_, IReadOnlyList<GrupoColetadoInput> grupos, _) = ConjuntoBasicoDaInscricao.MesclarItens(
             [ItemDoCliente("QUILOMBOLA", 0)], [grupo], ConjuntoBasicoDaInscricao.Itens);
@@ -60,7 +61,8 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
     [Fact(DisplayName = "Item e grupo do cliente na seção reservada são recusados, cada um no seu campo")]
     public void MesclarItens_ClienteNaSecaoReservada_Recusa()
     {
-        GrupoColetadoInput grupo = new("COMPOSICAO", 30, "Composição familiar", ConjuntoBasicoDaInscricao.CodigoDaSecao, 1, null, null, null, null, []);
+        GrupoColetadoInput grupo = EntradaDoGrupoColetadoDeTeste.Compondo("COMPOSICAO", 30).ComRotulo("Composição familiar")
+            .NaSecao(ConjuntoBasicoDaInscricao.CodigoDaSecao).ComOcorrencias(1).Construir();
 
         (_, _, List<FieldError> erros) = ConjuntoBasicoDaInscricao.MesclarItens(
             [ItemDoCliente("QUILOMBOLA", 30) with { EtapaCodigo = ConjuntoBasicoDaInscricao.CodigoDaSecao }], [grupo], ConjuntoBasicoDaInscricao.Itens);

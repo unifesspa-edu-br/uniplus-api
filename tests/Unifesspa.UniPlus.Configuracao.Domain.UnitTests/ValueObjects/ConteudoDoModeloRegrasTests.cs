@@ -61,10 +61,8 @@ public sealed class ConteudoDoModeloRegrasTests
         .ComImpedimento(new Impedimento(Quando("DO_IMPEDIMENTO"), "Já possui o certificado."));
 
     private static GrupoDoModelo GrupoComRegras() =>
-        Grupo("COMPOSICAO", 0, Quando("DA_EXIBICAO_DO_GRUPO"), Item("MAIOR_IDADE", exibicao: Quando("DO_CAMPO_DE_GRUPO"))) with
-        {
-            Obrigatoriedade = Obrigatoriedade.Quando(Quando("DA_OBRIGATORIEDADE_DO_GRUPO")),
-        };
+        Grupo("COMPOSICAO", 0, Quando("DA_EXIBICAO_DO_GRUPO"), Item("MAIOR_IDADE", exibicao: Quando("DO_CAMPO_DE_GRUPO")))
+            .ComObrigatoriedade(Obrigatoriedade.Quando(Quando("DA_OBRIGATORIEDADE_DO_GRUPO")));
 
     private static TermoDoModelo TermoComRegras() => Termo("LGPD", exibicao: Quando("DA_EXIBICAO_DO_TERMO")) with
     {

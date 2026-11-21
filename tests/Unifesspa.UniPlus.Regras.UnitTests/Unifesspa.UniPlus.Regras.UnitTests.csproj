@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <Compile Include="../Shared/EntradaDoFatoColetadoDeTeste.cs" Link="EntradaDoFatoColetadoDeTeste.cs" />
+    <Compile Include="../Shared/EntradaDoGrupoColetadoDeTeste.cs" Link="EntradaDoGrupoColetadoDeTeste.cs" />
   </ItemGroup>
 
   <ItemGroup>

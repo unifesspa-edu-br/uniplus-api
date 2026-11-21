@@ -128,16 +128,12 @@ public sealed class ConferenciaDoConteudoDoModeloTests
     [Fact(DisplayName = "A forma do grupo, o candidato como membro e a forma de cada campo saem nessa ordem, cada um no caminho do grupo")]
     public void Grupo_RecusaNaOrdemDaFormaDoCandidatoEDosCampos()
     {
-        GrupoDoModelo grupo = Grupo("COMPOSICAO_FAMILIAR", 1, null, (Item("RENDA") with { EtapaCodigo = null }).ComRotulo(string.Empty)) with
-        {
-            Minimo = 3,
-            Maximo = 2,
-            IncluiCandidato = true,
-        };
+        GrupoDoModelo grupo = Grupo("COMPOSICAO_FAMILIAR", 1, null, (Item("RENDA") with { EtapaCodigo = null }).ComRotulo(string.Empty))
+            .ComOcorrencias(3, 2, incluiCandidato: true);
 
         List<FieldError> erros = Conferir(Conteudo(Item("CERTIFICADO")) with { Grupos = [grupo] });
 
-        Campos(erros).Should().Equal("conteudo.grupos[0].maximo", "conteudo.grupos[0].subitens", "conteudo.grupos[0].subitens[0].apresentacao.rotulo");
+        Campos(erros).Should().Equal("conteudo.grupos[0].ocorrencias.maximo", "conteudo.grupos[0].subitens", "conteudo.grupos[0].subitens[0].apresentacao.rotulo");
     }
 
     [Fact(DisplayName = "O grupo que não inclui o candidato não pede o parentesco")]
@@ -221,14 +217,14 @@ public sealed class ConferenciaDoConteudoDoModeloTests
         {
             Titulo = new string('T', FormaDoCabecalho.TituloMaxLength + 1),
             Etapas = [Etapa(), Revisao with { Titulo = " " }],
-            Grupos = [Grupo("COMPOSICAO_FAMILIAR", 2, null, Item("RENDA") with { EtapaCodigo = null }) with { Minimo = 3, Maximo = 2 }],
+            Grupos = [Grupo("COMPOSICAO_FAMILIAR", 2, null, Item("RENDA") with { EtapaCodigo = null }).ComOcorrencias(3, 2)],
             Termos = [Termo(" ", 0)],
             Pressupostos = [string.Empty],
         };
 
         Campos(Conferir(conteudo)).Should().Equal(
             "conteudo.titulo", "conteudo.etapas[1].titulo", "conteudo.itens[0].apresentacao.rotulo", "conteudo.itens[1].regras.impedimento",
-            "conteudo.grupos[0].maximo", "conteudo.termos[0].codigo", "conteudo.pressupostos[0]");
+            "conteudo.grupos[0].ocorrencias.maximo", "conteudo.termos[0].codigo", "conteudo.pressupostos[0]");
     }
 
     private static ItemDoModelo[] ItensComOPrimeiroSemRotulo(int quantidade) =>

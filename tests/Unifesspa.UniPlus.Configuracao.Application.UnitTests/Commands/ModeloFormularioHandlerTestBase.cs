@@ -108,7 +108,8 @@ public abstract class ModeloFormularioHandlerTestBase
     protected static ConteudoDoModeloInput ComComposicao(params FatoColetadoInput[] campos) =>
         Conteudo(Item("CERTIFICADO", 0)) with
         {
-            Grupos = [new GrupoColetadoInput("COMPOSICAO_FAMILIAR", 1, "Composição familiar", "DADOS", 1, 10, null, "SEMPRE", null, campos)],
+            Grupos = [EntradaDoGrupoColetadoDeTeste.Compondo("COMPOSICAO_FAMILIAR", 1).ComRotulo("Composição familiar").NaSecao("DADOS")
+                .ComOcorrencias(1, 10).ComObrigatoriedade("SEMPRE").ComCampos(campos).Construir()],
         };
 
     protected static FatoColetadoInput Campo(string fato, int ordem, string tipo = "BOOLEANO") => Montar(fato, ordem, tipo).NaSecao(null).Construir();

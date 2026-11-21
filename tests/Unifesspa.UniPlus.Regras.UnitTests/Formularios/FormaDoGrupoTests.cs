@@ -25,7 +25,7 @@ public sealed class FormaDoGrupoTests
         List<FieldError> erros = Conferir(minimo: minimo, maximo: maximo);
 
         erros.Select(static e => e.Error.Code).Should().Equal(esperado is null ? [] : [esperado]);
-        erros.Select(static e => e.Field).Should().AllBe(minimo < 0 ? "minimo" : "maximo", "a recusa aponta o campo que está fora");
+        erros.Select(static e => e.Field).Should().AllBe(minimo < 0 ? "ocorrencias.minimo" : "ocorrencias.maximo", "a recusa aponta o campo que está fora");
     }
 
     [Theory]
@@ -50,7 +50,7 @@ public sealed class FormaDoGrupoTests
 
         FieldError erro = erros.Should().ContainSingle().Subject;
         erro.Error.Code.Should().Be(GrupoFormularioErrorCodes.RegraAutorreferente);
-        erro.Field.Should().Be(naObrigatoriedade ? "predicadoObrigatoriedade" : "exibicao");
+        erro.Field.Should().Be(naObrigatoriedade ? "regras.obrigatoriedade.predicado" : "regras.exibicao");
     }
 
     [Fact]

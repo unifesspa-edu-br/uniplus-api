@@ -230,7 +230,8 @@ public sealed class ConteudoDoModeloJsonTests
         [ItemMinimo("QUILOMBOLA", 0)],
         [new TermoDoModelo("TERMO_USO", 0, TermoId, VersaoId, null, Obrigatoriedade.Sempre)],
         [],
-        [new GrupoDoModelo("FAMILIA", 0, null, "Família", 1, null, null, Obrigatoriedade.Nunca, [ItemMinimo("PARENTESCO", 0)])],
+        [new GrupoDoModelo(
+            "FAMILIA", 0, null, "Família", new OcorrenciasDoGrupo(1, null), new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Nunca), [ItemMinimo("PARENTESCO", 0)])],
         [new DocumentoExigidoDoModelo("INSCRICAO", "RG", true, null, "INDEFERIMENTO", [])]);
 
     private static EtapaDoModelo EtapaCompleta() => new(
@@ -252,8 +253,9 @@ public sealed class ConteudoDoModeloJsonTests
         new(fatoCodigo, ordem, null, new ApresentacaoDoCampo("Pergunta", TipoRenderizacao.Booleano), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
 
     private static GrupoDoModelo GrupoCompleto() => new(
-        "FAMILIA", 2, "DADOS", "Composição familiar", 1, 5, Quando("QUILOMBOLA", true), Obrigatoriedade.Quando(Quando("BAIXA_RENDA", true)),
-        [ItemMinimo("PARENTESCO", 0), ItemMinimo("RENDA_MEMBRO", 1)], true);
+        "FAMILIA", 2, "DADOS", "Composição familiar", new OcorrenciasDoGrupo(1, 5, true),
+        new ExibicaoEObrigatoriedade(Quando("QUILOMBOLA", true), Obrigatoriedade.Quando(Quando("BAIXA_RENDA", true))),
+        [ItemMinimo("PARENTESCO", 0), ItemMinimo("RENDA_MEMBRO", 1)]);
 
     private static DocumentoExigidoDoModelo DocumentoCompleto() => new(
         "HABILITACAO", "CERTIDAO", false, Quando("QUILOMBOLA", true), "PERDA_DA_VAGA",

@@ -203,7 +203,8 @@ public static class FormaDoGrupo
 
         return
         [
-            .. RecusasDoCodigo(codigo), .. RecusasDaOrdem(ordem), .. RecusasDoRotulo(rotulo), .. ocorrencias.Conferir(),
+            .. RecusasDoCodigo(codigo), .. RecusasDaOrdem(ordem), .. RecusasDoRotulo(rotulo),
+            .. ocorrencias.Conferir().Select(static erro => erro.NoCaminhoDe(GrupoColetadoInput.CaminhoDasOcorrencias)),
             .. RecusasDaQuantidadeDeCampos(subitens.Count), .. RecusasDosCampos(subitens),
             .. RecusasDeRegraQueCitaOGrupo(codigo?.Trim() ?? string.Empty, subitens, regras),
         ];
@@ -273,8 +274,9 @@ public static class FormaDoGrupo
         HashSet<string> doGrupo = new(subitens.Select(static s => s.FatoCodigo).OfType<string>().Append(codigoAparado), StringComparer.Ordinal);
         return
         [
-            .. RecusasDaRegraQueCitaOGrupo("exibicao", regras.Exibicao?.FatosCitados ?? [], doGrupo),
-            .. RecusasDaRegraQueCitaOGrupo("predicadoObrigatoriedade", regras.Obrigatoriedade.FatosCitados, doGrupo),
+            .. RecusasDaRegraQueCitaOGrupo($"{GrupoColetadoInput.CaminhoDasRegras}.exibicao", regras.Exibicao?.FatosCitados ?? [], doGrupo),
+            .. RecusasDaRegraQueCitaOGrupo(
+                $"{GrupoColetadoInput.CaminhoDasRegras}.obrigatoriedade.predicado", regras.Obrigatoriedade.FatosCitados, doGrupo),
         ];
     }
 

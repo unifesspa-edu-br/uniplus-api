@@ -60,7 +60,7 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
     public async Task Criar_GrupoQueIncluiOCandidatoSemParentesco_Recusa()
     {
         ConteudoDoModeloInput conteudo = ComComposicao(Campo("MAIOR_IDADE", 0));
-        conteudo = conteudo with { Grupos = [conteudo.Grupos![0] with { IncluiCandidato = true }] };
+        conteudo = conteudo with { Grupos = [conteudo.Grupos![0] with { Ocorrencias = new OcorrenciasDoGrupoInput(1, 10, IncluiCandidato: true) }] };
 
         Result<Guid> resultado = await CriarAsync(conteudo);
 

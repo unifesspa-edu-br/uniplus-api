@@ -194,7 +194,8 @@ public sealed class AgregadoDoAdministradorTests
     }
 
     private static GrupoDoModelo ComposicaoFamiliarComMenorSobGuarda() => new(
-        "COMPOSICAO_FAMILIAR", 0, "DADOS", "Composição familiar", 0, null, null, Regras.Formularios.Obrigatoriedade.Nunca,
+        "COMPOSICAO_FAMILIAR", 0, "DADOS", "Composição familiar", new Regras.Formularios.OcorrenciasDoGrupo(0, null),
+        new Regras.Formularios.ExibicaoEObrigatoriedade(null, Regras.Formularios.Obrigatoriedade.Nunca),
         [new ItemDoModelo(
             "MENOR_SOB_GUARDA",
             0,

@@ -46,7 +46,9 @@ public sealed class ModeloFormularioPressupostosTests
     [Fact(DisplayName = "Fato não é pressuposto e campo de grupo do mesmo modelo")]
     public void PressupostoTambemCampoDeGrupo_Recusa()
     {
-        GrupoDoModelo composicao = new("COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", 1, 10, null, Obrigatoriedade.Sempre, [Item("RENDA", 0, etapa: null)]);
+        GrupoDoModelo composicao = new(
+            "COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", new OcorrenciasDoGrupo(1, 10),
+            new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre), [Item("RENDA", 0, etapa: null)]);
 
         Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CONCLUSAO_REGULAR", 0)], [composicao], "RENDA"));
 

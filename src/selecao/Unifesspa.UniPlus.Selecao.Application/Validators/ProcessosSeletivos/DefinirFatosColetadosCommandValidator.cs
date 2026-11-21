@@ -66,12 +66,7 @@ public sealed class DefinirFatosColetadosCommandValidator : AbstractValidator<De
         grupo.RuleFor(g => g.Subitens)
             .NotNull()
             .WithMessage("A lista de campos do grupo é obrigatória.");
-        grupo.RuleFor(g => g.Exibicao)
-            .Must(PredicadoBemFormado)
-            .WithMessage(MensagemDoPredicado);
-        grupo.RuleFor(g => g.PredicadoObrigatoriedade)
-            .Must(PredicadoBemFormado)
-            .WithMessage(MensagemDoPredicado);
+        grupo.RuleFor(g => g.Regras).ChildRules(static regras => PredicadosDoGrupo(regras));
         grupo.RuleForEach(g => g.Subitens)
             .NotNull()
             .WithMessage("Campo do grupo não pode ser nulo.");
@@ -89,11 +84,21 @@ public sealed class DefinirFatosColetadosCommandValidator : AbstractValidator<De
             regras.RuleFor(r => r!.Exibicao)
                 .Must(PredicadoBemFormado)
                 .WithMessage(MensagemDoPredicado);
-            regras.RuleFor(r => r!.Obrigatoriedade).ChildRules(static obrigatoriedade =>
-                obrigatoriedade.RuleFor(o => o!.Predicado)
-                    .Must(PredicadoBemFormado)
-                    .WithMessage(MensagemDoPredicado));
+            regras.RuleFor(r => r!.Obrigatoriedade).ChildRules(static obrigatoriedade => PredicadoDaObrigatoriedade(obrigatoriedade));
         });
+
+    private static void PredicadosDoGrupo(InlineValidator<ExibicaoEObrigatoriedadeInput?> regras)
+    {
+        regras.RuleFor(r => r!.Exibicao)
+            .Must(PredicadoBemFormado)
+            .WithMessage(MensagemDoPredicado);
+        regras.RuleFor(r => r!.Obrigatoriedade).ChildRules(static obrigatoriedade => PredicadoDaObrigatoriedade(obrigatoriedade));
+    }
+
+    private static void PredicadoDaObrigatoriedade(InlineValidator<ObrigatoriedadeInput?> obrigatoriedade) =>
+        obrigatoriedade.RuleFor(o => o!.Predicado)
+            .Must(PredicadoBemFormado)
+            .WithMessage(MensagemDoPredicado);
 
     private static bool PredicadoBemFormado(IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? predicado) =>
         predicado is null

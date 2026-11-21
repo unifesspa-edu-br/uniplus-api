@@ -125,23 +125,43 @@ public sealed record FatoColetadoInput(
 public sealed record ImpedimentoInput(IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? Quando, string? Mensagem);
 
 /// <summary>
-/// Um grupo repetível do formulário (UNI-REQ-0146): o código, a posição na ordem dos itens, a
-/// seção, o rótulo, o mínimo e o máximo de ocorrências, a exibição e a obrigatoriedade do grupo —
-/// na forma das do item — e os campos de cada ocorrência, cada um na forma do item, com ordem
-/// própria dentro do grupo e sem seção.
+/// Quantas ocorrências o grupo repetível admite — o mínimo e, quando declarado, o máximo — e se o próprio
+/// candidato é uma delas, como na composição familiar. O mínimo negativo e o máximo abaixo do mínimo são
+/// recusados pelo domínio.
+/// </summary>
+public sealed record OcorrenciasDoGrupoInput(int Minimo, int? Maximo, bool IncluiCandidato = false);
+
+/// <summary>
+/// Quando um grupo repetível ou um termo aparece e quando é obrigatório: a <see cref="Exibicao"/> condicional,
+/// nula quando aparece sempre, e a obrigatoriedade. Diferente das regras do campo, não tem restrição de valor
+/// nem impedimento.
+/// </summary>
+public sealed record ExibicaoEObrigatoriedadeInput(
+    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? Exibicao,
+    ObrigatoriedadeInput? Obrigatoriedade);
+
+/// <summary>
+/// Um grupo repetível do formulário (UNI-REQ-0146): o código, a posição na ordem dos itens, o rótulo, as
+/// <see cref="Ocorrencias"/> admitidas, a exibição e a obrigatoriedade do grupo em <see cref="Regras"/> — na forma
+/// das do item —, os campos de cada ocorrência, cada um na forma do item, com ordem própria dentro do grupo e sem
+/// seção, e a seção do grupo. As ocorrências ausentes valem sem mínimo, sem máximo e sem o candidato entre os
+/// membros; as regras ausentes chegam ao domínio, que recusa a obrigatoriedade que falta.
 /// </summary>
 public sealed record GrupoColetadoInput(
     string Codigo,
     int Ordem,
     string Rotulo,
-    string? EtapaCodigo,
-    int Minimo,
-    int? Maximo,
-    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? Exibicao,
-    string? Obrigatoriedade,
-    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? PredicadoObrigatoriedade,
+    OcorrenciasDoGrupoInput? Ocorrencias,
+    ExibicaoEObrigatoriedadeInput? Regras,
     IReadOnlyList<FatoColetadoInput> Subitens,
-    bool IncluiCandidato = false);
+    string? EtapaCodigo = null)
+{
+    /// <summary>O caminho das ocorrências no grupo, onde a recusa de mínimo e máximo se aponta.</summary>
+    public const string CaminhoDasOcorrencias = "ocorrencias";
+
+    /// <summary>O caminho das regras no grupo, onde a recusa de exibição e obrigatoriedade se aponta.</summary>
+    public const string CaminhoDasRegras = "regras";
+}
 
 /// <summary>
 /// Uma etapa do formulário: seção (<c>SECAO</c>) ou bloco de sistema (<c>BLOCO</c>, com o bloco em

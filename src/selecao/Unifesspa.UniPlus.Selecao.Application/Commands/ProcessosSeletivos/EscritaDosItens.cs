@@ -134,7 +134,7 @@ internal static class EscritaDosItens
     private static GrupoLido LerGrupo(GrupoColetadoInput input, string caminho)
     {
         RegrasLidasDoGrupo regras = LerRegrasDoGrupo(input, caminho);
-        OcorrenciasDoGrupo ocorrencias = new(input.Minimo, input.Maximo, input.IncluiCandidato);
+        OcorrenciasDoGrupo ocorrencias = EntradaDeRegras.Ocorrencias(input.Ocorrencias);
 
         // A identificação da ocorrência do candidato depende só do mínimo e da forma lida dos
         // campos, e sai no mesmo lote das demais recusas, mesmo com campo recusado (ADR-0125).
@@ -150,15 +150,17 @@ internal static class EscritaDosItens
 
     private static RegrasLidasDoGrupo LerRegrasDoGrupo(GrupoColetadoInput input, string caminho)
     {
-        Result<PredicadoDnf?> exibicao = EntradaDeRegras.Predicado(input.Exibicao);
+        string caminhoDasRegras = $"{caminho}.{GrupoColetadoInput.CaminhoDasRegras}";
+        Result<PredicadoDnf?> exibicao = EntradaDeRegras.Predicado(input.Regras?.Exibicao);
         List<FieldError> erros = [];
         if (exibicao.IsFailure)
         {
-            erros.Add(new($"{caminho}.exibicao", exibicao.Error!));
+            erros.Add(new($"{caminhoDasRegras}.exibicao", exibicao.Error!));
         }
 
         Obrigatoriedade? obrigatoriedade = ConferirObrigatoriedade(
-            input.Obrigatoriedade, input.PredicadoObrigatoriedade, $"{caminho}.obrigatoriedade", $"{caminho}.predicadoObrigatoriedade", erros);
+            input.Regras?.Obrigatoriedade?.Tipo, input.Regras?.Obrigatoriedade?.Predicado,
+            $"{caminhoDasRegras}.obrigatoriedade", $"{caminhoDasRegras}.obrigatoriedade.predicado", erros);
         return new RegrasLidasDoGrupo(exibicao.IsSuccess ? exibicao.Value : null, obrigatoriedade, erros);
     }
 

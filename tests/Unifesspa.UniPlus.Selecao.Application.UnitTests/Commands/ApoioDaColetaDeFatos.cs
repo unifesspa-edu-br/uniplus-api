@@ -120,13 +120,14 @@ internal static class ApoioDaColetaDeFatos
         return processo;
     }
 
-    internal static GrupoColetadoInput Composicao() => new(
-        "COMPOSICAO_FAMILIAR", 1, "Composição familiar", FormularioDeTeste.Secao, 0, 10,
-        [[Condicao("COR_RACA", "IGUAL", "PRETA")]], "NUNCA", null,
-        [
-            EntradaDoFatoColetadoDeTeste.Coletando("PARENTESCO").ComRotulo("Parentesco").DoTipo("SELECAO_UNICA").Construir(),
-            EntradaDoFatoColetadoDeTeste.Coletando("MENOR_SOB_GUARDA", 1).ComRotulo("Menor sob guarda").ExibidoQuando([[Condicao("PARENTESCO", "IGUAL", "FILHO")]]).Construir(),
-        ]);
+    internal static GrupoColetadoInput Composicao() =>
+        EntradaDoGrupoColetadoDeTeste.Compondo("COMPOSICAO_FAMILIAR", 1).ComRotulo("Composição familiar").NaSecao(FormularioDeTeste.Secao)
+            .ComOcorrencias(0, 10).ExibidoQuando([[Condicao("COR_RACA", "IGUAL", "PRETA")]])
+            .ComCampos(
+                EntradaDoFatoColetadoDeTeste.Coletando("PARENTESCO").ComRotulo("Parentesco").DoTipo("SELECAO_UNICA").Construir(),
+                EntradaDoFatoColetadoDeTeste.Coletando("MENOR_SOB_GUARDA", 1).ComRotulo("Menor sob guarda")
+                    .ExibidoQuando([[Condicao("PARENTESCO", "IGUAL", "FILHO")]]).Construir())
+            .Construir();
 
     internal static DefinirFatosColetadosCommand ComGrupo(ProcessoSeletivo processo, GrupoColetadoInput grupo) => new(
         processo.Id, FinalidadeFormulario.Habilitacao,

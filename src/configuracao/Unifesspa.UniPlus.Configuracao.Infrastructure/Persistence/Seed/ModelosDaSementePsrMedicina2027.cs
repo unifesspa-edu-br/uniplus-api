@@ -266,16 +266,16 @@ internal static class ModelosDaSementePsrMedicina2027
     ];
 
     private static GrupoDoModelo GrupoDaComposicaoFamiliar() =>
-        new(Familia, 4, Familia, "Membros da composição familiar", Minimo: 1, Maximo: null, Exibicao: null,
-            Obrigatoriedade.Sempre,
+        new(Familia, 4, Familia, "Membros da composição familiar",
+            new OcorrenciasDoGrupo(Minimo: 1, Maximo: null, IncluiCandidato: true),
+            new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre),
             [
                 Campo(CandidatoComoMembro.FatoParentesco, 1, null, "Parentesco com você", TipoRenderizacao.SelecaoUnica, null),
                 Campo("CATEGORIA_RENDA", 2, null, "Fontes de renda desta pessoa", TipoRenderizacao.SelecaoMultipla,
                     "Marque todas. Elas definem os documentos de renda a apresentar."),
                 Campo("SOB_GUARDA", 3, null, "É menor de idade sob guarda?", TipoRenderizacao.Booleano,
                     "Sob a sua guarda ou a de alguém da família."),
-            ],
-            IncluiCandidato: true);
+            ]);
 
     private static EtapaDoModelo Secao(string codigo, int ordem, string titulo, string descricao) =>
         new(codigo, ordem, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, titulo, descricao, null, null);

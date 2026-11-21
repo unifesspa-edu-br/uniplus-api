@@ -136,12 +136,10 @@ public sealed class ConteudoDoModeloTextosNaoGravaveisTests
     [Fact(DisplayName = "A exibição do grupo é recusada na exibição e a obrigatoriedade no predicado de obrigatoriedade")]
     public void Grupo_ExibicaoEObrigatoriedade_RecusaNosCamposDoContrato()
     {
-        GrupoDoModelo grupo = Grupo("COMPOSICAO", 0, QuandoOValorE(ValorComNulo), Item("MAIOR_IDADE")) with
-        {
-            Obrigatoriedade = Obrigatoriedade.Quando(QuandoOValorE(ValorComNulo)),
-        };
+        GrupoDoModelo grupo = Grupo("COMPOSICAO", 0, QuandoOValorE(ValorComNulo), Item("MAIOR_IDADE"))
+            .ComObrigatoriedade(Obrigatoriedade.Quando(QuandoOValorE(ValorComNulo)));
 
-        CamposRecusados(Vazio with { Grupos = [grupo] }).Should().Equal("grupos[0].exibicao", "grupos[0].predicadoObrigatoriedade");
+        CamposRecusados(Vazio with { Grupos = [grupo] }).Should().Equal("grupos[0].regras.exibicao", "grupos[0].regras.obrigatoriedade.predicado");
     }
 
     [Fact(DisplayName = "O documento exigido é recusado no código, na condição, na exigência por opção e na base legal")]
@@ -166,7 +164,7 @@ public sealed class ConteudoDoModeloTextosNaoGravaveisTests
         ItemDoModelo campo = Item("CERTIFICADO", exibicao: ruim)
             .ComObrigatoriedade(Obrigatoriedade.Quando(ruim))
             .ComImpedimento(new Impedimento(ruim, "Já possui o certificado."));
-        GrupoDoModelo grupo = Grupo("COMPOSICAO", 0, ruim, Item("MAIOR_IDADE")) with { Obrigatoriedade = Obrigatoriedade.Quando(ruim) };
+        GrupoDoModelo grupo = Grupo("COMPOSICAO", 0, ruim, Item("MAIOR_IDADE")).ComObrigatoriedade(Obrigatoriedade.Quando(ruim));
         TermoDoModelo termo = Termo("LGPD", exibicao: ruim) with { Obrigatoriedade = Obrigatoriedade.Quando(ruim) };
 
         return Vazio with { Etapas = [Etapa(exibicao: ruim)], Itens = [campo], Grupos = [grupo], Termos = [termo], DocumentosExigidos = [Documento("LAUDO", ruim)] };
@@ -179,8 +177,8 @@ public sealed class ConteudoDoModeloTextosNaoGravaveisTests
             "itens[0].regras.exibicao",
             "itens[0].regras.obrigatoriedade.predicado",
             "itens[0].regras.impedimento.quando",
-            "grupos[0].exibicao",
-            "grupos[0].predicadoObrigatoriedade",
+            "grupos[0].regras.exibicao",
+            "grupos[0].regras.obrigatoriedade.predicado",
             "termos[0].exibicao",
             "termos[0].predicadoObrigatoriedade",
             "documentosExigidos[0].quando");

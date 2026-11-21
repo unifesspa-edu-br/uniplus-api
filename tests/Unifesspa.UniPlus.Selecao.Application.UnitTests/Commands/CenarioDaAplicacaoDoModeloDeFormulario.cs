@@ -114,7 +114,8 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
             "REMOVE_VANTAGEM", []);
 
     public static GrupoColetadoInput Composicao(params FatoColetadoInput[] campos) =>
-        new("COMPOSICAO_FAMILIAR", 1, "Composição familiar", "DADOS", 1, 10, null, "SEMPRE", null, campos);
+        EntradaDoGrupoColetadoDeTeste.Compondo("COMPOSICAO_FAMILIAR", 1).ComRotulo("Composição familiar").NaSecao("DADOS")
+            .ComOcorrencias(1, 10).ComObrigatoriedade("SEMPRE").ComCampos(campos).Construir();
 
     public static FatoColetadoInput Campo(string fato, int ordem) => EntradaDoFatoColetadoDeTeste.Coletando(fato, ordem).Construir();
 

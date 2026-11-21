@@ -287,6 +287,31 @@ public static class EntradaDeRegras
     public static ApresentacaoDoCampo Apresentacao(ApresentacaoDoCampoInput? entrada, TipoRenderizacao tipoRenderizacao) =>
         new(entrada?.Rotulo ?? string.Empty, tipoRenderizacao, entrada?.Ajuda, entrada?.PedirConfirmacao ?? false);
 
+    /// <summary>A obrigatoriedade na forma da entrada: o token e, quando há, o predicado.</summary>
+    public static ObrigatoriedadeInput ObrigatoriedadeNaEntrada(Formularios.Obrigatoriedade obrigatoriedade)
+    {
+        ArgumentNullException.ThrowIfNull(obrigatoriedade);
+        return new(ParaEntrada(obrigatoriedade), ParaEntrada(obrigatoriedade.Predicado));
+    }
+
+    /// <summary>As ocorrências da entrada; a ausência vale sem mínimo, sem máximo e sem o candidato entre os membros.</summary>
+    public static OcorrenciasDoGrupo Ocorrencias(OcorrenciasDoGrupoInput? entrada) =>
+        entrada is null ? new(0, null) : new(entrada.Minimo, entrada.Maximo, entrada.IncluiCandidato);
+
+    /// <summary>As ocorrências na forma da entrada.</summary>
+    public static OcorrenciasDoGrupoInput ParaEntrada(OcorrenciasDoGrupo ocorrencias)
+    {
+        ArgumentNullException.ThrowIfNull(ocorrencias);
+        return new(ocorrencias.Minimo, ocorrencias.Maximo, ocorrencias.IncluiCandidato);
+    }
+
+    /// <summary>A exibição e a obrigatoriedade na forma da entrada: a obrigatoriedade leva o token e, quando há, o predicado.</summary>
+    public static ExibicaoEObrigatoriedadeInput ParaEntrada(ExibicaoEObrigatoriedade regras)
+    {
+        ArgumentNullException.ThrowIfNull(regras);
+        return new(ParaEntrada(regras.Exibicao), ObrigatoriedadeNaEntrada(regras.Obrigatoriedade));
+    }
+
     /// <summary>A apresentação do campo na forma da entrada, com o tipo de campo no código canônico.</summary>
     public static ApresentacaoDoCampoInput ParaEntrada(ApresentacaoDoCampo apresentacao)
     {
@@ -300,7 +325,7 @@ public static class EntradaDeRegras
         ArgumentNullException.ThrowIfNull(regras);
         return new(
             ParaEntrada(regras.Exibicao),
-            new ObrigatoriedadeInput(ParaEntrada(regras.Obrigatoriedade), ParaEntrada(regras.Obrigatoriedade.Predicado)),
+            ObrigatoriedadeNaEntrada(regras.Obrigatoriedade),
             [.. regras.Restricoes.Select(ParaEntrada)],
             ParaEntrada(regras.Impedimento));
     }

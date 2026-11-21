@@ -24,8 +24,13 @@ internal static class ConferenciaDoItemNoCatalogo
 
     private static readonly string RegrasNoItem = $"{FatoColetadoInput.CaminhoDasRegras}.";
 
-    private static readonly (string NasRegras, string NoItemPlano)[] CamposPlanos =
+    private static readonly (string NasRegras, string NoItemPlano)[] CamposPlanosDoItem =
         [("exibicao", "precondicao"), ("obrigatoriedade.predicado", "predicadoObrigatoriedade")];
+
+    private static readonly string RegrasNoGrupo = $"{GrupoColetadoInput.CaminhoDasRegras}.";
+
+    private static readonly (string NasRegras, string NoGrupoPlano)[] CamposPlanosDoGrupo =
+        [("exibicao", "exibicao"), ("obrigatoriedade.predicado", "predicadoObrigatoriedade")];
 
     /// <summary>A coerência do tipo de campo com domínio, cardinalidade e fonte de valores do fato.</summary>
     public static DomainError? Coerencia(FatoCandidatoView fato, TipoRenderizacao tipoRenderizacao)
@@ -87,18 +92,27 @@ internal static class ConferenciaDoItemNoCatalogo
         ArgumentNullException.ThrowIfNull(contexto);
         return
         [
-            .. SemanticaDoPredicado("exibicao", regras.Exibicao, contexto),
-            .. SemanticaDoPredicado("predicadoObrigatoriedade", regras.Obrigatoriedade.Predicado, contexto),
+            .. SemanticaDoPredicado($"{GrupoColetadoInput.CaminhoDasRegras}.exibicao", regras.Exibicao, contexto),
+            .. SemanticaDoPredicado($"{GrupoColetadoInput.CaminhoDasRegras}.obrigatoriedade.predicado", regras.Obrigatoriedade.Predicado, contexto),
             .. RecusaDeAtributoDoCandidato(regras.FatosCitados, contexto),
         ];
     }
 
-    private static FieldError NoItemPlano(FieldError erro) =>
-        erro.Field is { } campo && campo.StartsWith(RegrasNoItem, StringComparison.Ordinal) ? erro with { Field = CampoPlano(campo[RegrasNoItem.Length..]) } : erro;
+    /// <summary>
+    /// A conferência do grupo já gravado contra o catálogo de hoje, como em <see cref="DoGrupo"/>; o grupo gravado e o
+    /// envelope guardam o grupo plano, e a recusa aponta o campo plano: <c>exibicao</c> e <c>predicadoObrigatoriedade</c>.
+    /// </summary>
+    public static List<FieldError> DoGrupoGravado(ExibicaoEObrigatoriedade regras, ContextoDoCatalogo contexto) =>
+        [.. DoGrupo(regras, contexto).Select(static erro => NoPlano(erro, RegrasNoGrupo, CamposPlanosDoGrupo))];
 
-    private static string CampoPlano(string nasRegras) =>
-        CamposPlanos.Where(c => nasRegras.StartsWith(c.NasRegras, StringComparison.Ordinal))
-            .Select(c => c.NoItemPlano + nasRegras[c.NasRegras.Length..])
+    private static FieldError NoPlano(FieldError erro, string regrasNaParte, (string NasRegras, string NoPlano)[] camposPlanos) =>
+        erro.Field is { } campo && campo.StartsWith(regrasNaParte, StringComparison.Ordinal)
+            ? erro with { Field = CampoPlano(campo[regrasNaParte.Length..], camposPlanos) }
+            : erro;
+
+    private static string CampoPlano(string nasRegras, (string NasRegras, string NoPlano)[] camposPlanos) =>
+        camposPlanos.Where(c => nasRegras.StartsWith(c.NasRegras, StringComparison.Ordinal))
+            .Select(c => c.NoPlano + nasRegras[c.NasRegras.Length..])
             .FirstOrDefault(nasRegras);
 
     /// <summary>
@@ -123,6 +137,6 @@ internal static class ConferenciaDoItemNoCatalogo
             return [];
         }
 
-        return [.. Semantica(fato, item.TipoRenderizacao, item.Regras, item.Precondicoes.Select(static c => c.Fato), contexto).Select(NoItemPlano)];
+        return [.. Semantica(fato, item.TipoRenderizacao, item.Regras, item.Precondicoes.Select(static c => c.Fato), contexto).Select(static erro => NoPlano(erro, RegrasNoItem, CamposPlanosDoItem))];
     }
 }
