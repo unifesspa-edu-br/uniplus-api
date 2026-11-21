@@ -93,13 +93,13 @@ internal static class FixturesDeConversorJson
     internal sealed class ConversorNoCampoDoEnum
     {
         [JsonConverter(typeof(JsonStringEnumConverter))]
-        public EstadoComCodigo Estado = EstadoComCodigo.Concluido;
+        public readonly EstadoComCodigo Estado = EstadoComCodigo.Concluido;
     }
 
     internal sealed class ConversorNoCampoDeLista
     {
         [JsonConverter(typeof(JsonStringEnumConverter))]
-        public List<EstadoComCodigo> Estados = [];
+        public readonly List<EstadoComCodigo> Estados = [];
     }
 
     internal sealed class SemConversorNoMembroComEnumComCodigo
@@ -112,7 +112,7 @@ internal static class FixturesDeConversorJson
 
         public Dictionary<EstadoComCodigo, List<EstadoComCodigo>> PorEstado { get; set; } = [];
 
-        public EstadoComCodigo Campo = EstadoComCodigo.Concluido;
+        public readonly EstadoComCodigo Campo = EstadoComCodigo.Concluido;
     }
 
     internal sealed class ConversorEmTipoQueNaoMencionaEnumComCodigo
@@ -124,7 +124,7 @@ internal static class FixturesDeConversorJson
         public Dictionary<string, int> Contagens { get; set; } = [];
 
         [JsonConverter(typeof(ConversorDeTextoDeTeste))]
-        public string Campo = string.Empty;
+        public readonly string Campo = string.Empty;
     }
 
     internal sealed class ConversorEmEnumSemCodigo
@@ -136,6 +136,6 @@ internal static class FixturesDeConversorJson
         public List<EstadoSemCodigo?> Estados { get; set; } = [];
 
         [JsonConverter(typeof(JsonStringEnumConverter))]
-        public EstadoSemCodigoComConversorNoTipo Campo = EstadoSemCodigoComConversorNoTipo.Aberto;
+        public readonly EstadoSemCodigoComConversorNoTipo Campo = EstadoSemCodigoComConversorNoTipo.Aberto;
     }
 }
