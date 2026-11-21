@@ -77,6 +77,12 @@ A [ADR-0051](0051-apicurio-schema-registry-avro-wolverine.md) define o registro 
 > - **Dentro da `v1`, sem versão nova.** A regra de evolução protege o documento válido numa versão congelada; retirar propriedade de versão congelada criaria a `v2`. A `v1` ainda não congelou: não existe a pasta `publicadas/` e nenhuma tag do repositório contém a `v1`. Pela regra de congelamento desta ADR, a mudança é feita na própria `v1`, como na emenda de 17/11 sobre a ordem das listas, e não há documento de versão congelada a preservar. A regra de prazo de recurso do catálogo mantém o código e a versão. O exemplo em `contracts/selecao/configuracao/exemplos/` acompanha o contrato novo. A partir da primeira tag que contiver a `v1`, vale a regra de evolução: acrescentar opção ao efeito suspensivo é compatível; retirar ou renomear propriedade, não.
 >
 > **Confirmação:** o teste de paridade confere as opções de `efeitoSuspensivo`, `guardaDaVaga` e das unidades de prazo com os valores dos enums do domínio; o teste de contrato confere que o exemplo publicado valida contra o esquema e que as propriedades retiradas são recusadas como desconhecidas.
+>
+> **Emenda (2026-11-20) — a fase não declara a fase que conclui o ciclo de recurso, dentro da `v1`.**
+>
+> Cada fase publica o próprio resultado definitivo, e o ciclo de recurso fecha dentro dela, como decide a [ADR-0177](0177-efeito-suspensivo-por-periodo-segunda-instancia-e-guarda-da-vaga.md). Sai da fase do cronograma a propriedade `faseConcluinteChave`, e a fase que ainda a traz é recusada como propriedade desconhecida, com o caminho. A mudança é feita na própria `v1` pelo mesmo motivo da emenda anterior: a `v1` ainda não congelou. A exigência de que a fase com resultado preliminar publique também o definitivo é do domínio, conferida na publicação; o esquema não a expressa.
+>
+> **Confirmação:** o teste de contrato confere que o exemplo publicado valida sem a propriedade e que a fase que a traz é recusada.
 
 ## Consequências
 
