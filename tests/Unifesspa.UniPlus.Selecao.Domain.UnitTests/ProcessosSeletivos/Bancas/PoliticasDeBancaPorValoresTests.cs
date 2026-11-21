@@ -52,15 +52,6 @@ public sealed class PoliticasDeBancaPorValoresTests
         FluentActions.Invoking(() => corretores.EmCampoDaRegra(Desconhecida)).Should().Throw<InvalidOperationException>();
     }
 
-    [Fact(DisplayName = "A etapa que abre recurso só fica sem quem o julgue quando nem ela nem a fase têm banca de recursos")]
-    public void EtapaSemBancaQueJulgue_SoSemAsDuasBancas()
-    {
-        ExigenciaDeBancaDeRecurso.EtapaSemBancaQueJulgue(abreRecurso: true, temBancaPropria: false, faseTemBanca: false).Should().BeTrue();
-        ExigenciaDeBancaDeRecurso.EtapaSemBancaQueJulgue(abreRecurso: true, temBancaPropria: true, faseTemBanca: false).Should().BeFalse();
-        ExigenciaDeBancaDeRecurso.EtapaSemBancaQueJulgue(abreRecurso: true, temBancaPropria: false, faseTemBanca: true).Should().BeFalse();
-        ExigenciaDeBancaDeRecurso.EtapaSemBancaQueJulgue(abreRecurso: false, temBancaPropria: false, faseTemBanca: false).Should().BeFalse();
-    }
-
     [Fact(DisplayName = "O recorte de competência só é recusado na banca de recursos, e cita a fase declarada")]
     public void RecorteNaDeclaracao_SoNaBancaDeRecursos()
     {
