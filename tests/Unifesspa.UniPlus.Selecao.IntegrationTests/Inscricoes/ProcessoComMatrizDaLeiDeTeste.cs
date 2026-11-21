@@ -62,14 +62,13 @@ internal static class ProcessoComMatrizDaLeiDeTeste
     /// <summary>
     /// As regras da matriz da lei sobre a opção de cada dimensão: optar pelas cotas é ser egresso de
     /// escola pública e optar pelas vagas de escola pública, a cota de renda acrescenta a renda, e a
-    /// reserva de pessoa com deficiência vale para quem não optou pelas cotas.
+    /// reserva de pessoa com deficiência não cita a opção: vale para quem optou pelas cotas e para
+    /// quem não optou.
     /// </summary>
     private static readonly Dictionary<string, PredicadoDnf> RegrasDaLei = new(StringComparer.Ordinal)
     {
         ["AC"] = PredicadoDnf.SemClausula,
-        ["AC_PCD"] = Clausulas(
-            [(OpcaoPelasCotasDaLei.Fato, false), ("CONCORRER_PCD", true), (OrigemEscolar.FatoEgresso, false)],
-            [(OpcaoPelasCotasDaLei.Fato, false), ("CONCORRER_PCD", true), ("CONCORRER_EP", false)]),
+        ["AC_PCD"] = Clausulas([("CONCORRER_PCD", true)]),
         ["LI_EP"] = Clausulas([.. OptouPelasCotas]),
         ["LB_EP"] = Clausulas([.. OptouPelasCotas, ("CONCORRER_RENDA", true)]),
         ["LI_PPI"] = Clausulas([.. OptouPelasCotas, ("CONCORRER_PPI", true)]),

@@ -112,9 +112,9 @@ public static class RegrasDaDistribuicaoDeVagas
 
     /// <summary>
     /// A regra congelada tem a forma que a natureza da modalidade pede no cadastro: toda cláusula de
-    /// uma cota da lei exige a opção pelas cotas, e toda cláusula de uma ação afirmativa a recusa. A
-    /// cópia que não a tem não veio do cadastro como ele é hoje, e a distribuição de vagas tem de ser
-    /// gravada de novo.
+    /// uma cota da lei exige a opção pelas cotas, e toda cláusula de uma ação afirmativa a recusa, salvo
+    /// a que se soma às cotas, que não a cita. A cópia que não a tem não veio do cadastro como ele é
+    /// hoje, e a distribuição de vagas tem de ser gravada de novo.
     /// </summary>
     internal static DomainError? RegraIncoerenteComANatureza(IEnumerable<ConfiguracaoDistribuicaoVagas> distribuicaoVagas) =>
         distribuicaoVagas
@@ -122,7 +122,7 @@ public static class RegrasDaDistribuicaoDeVagas
             .FirstOrDefault(static m => m.NaturezaLegal switch
             {
                 NaturezaLegalModalidade.CotaReservada => !OpcaoPelasCotasDaLei.TodaClausulaExige(m.RegraDeAplicabilidade, optou: true),
-                NaturezaLegalModalidade.AcaoAfirmativa => !OpcaoPelasCotasDaLei.TodaClausulaExige(m.RegraDeAplicabilidade, optou: false),
+                NaturezaLegalModalidade.AcaoAfirmativa => !OpcaoPelasCotasDaLei.RegraTemAFormaDaAcaoAfirmativa(m.Codigo, m.RegraDeAplicabilidade),
                 _ => false,
             }) is { } incoerente
             ? new DomainError(

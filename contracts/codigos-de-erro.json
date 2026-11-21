@@ -1674,7 +1674,7 @@
     {
       "codigo": "uniplus.configuracao.modalidade.acao_afirmativa_com_opcao_pelas_cotas_da_lei",
       "status": 422,
-      "titulo": "A ação afirmativa exige não ter optado pelas cotas da lei em toda cláusula"
+      "titulo": "A ação afirmativa exige não ter optado pelas cotas da lei em toda cláusula, salvo a reserva de vagas para pessoa com deficiência, que não cita a opção"
     },
     {
       "codigo": "uniplus.configuracao.modalidade.acao_indeferimento_invalida",
@@ -6939,7 +6939,7 @@
     {
       "codigo": "uniplus.selecao.processo_seletivo.cota_e_acao_afirmativa_derivaveis_juntas",
       "status": 422,
-      "titulo": "As regras de aplicabilidade permitem que o mesmo candidato concorra a cota da lei e a ação afirmativa"
+      "titulo": "As regras de aplicabilidade dão ao mesmo candidato uma cota da lei e uma ação afirmativa diferente da AC_PCD"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.cotas_da_lei_diferentes_entre_ofertas",
@@ -7470,11 +7470,6 @@
       "codigo": "uniplus.selecao.processo_seletivo.remanejamento_incoerente_com_a_natureza",
       "status": 422,
       "titulo": "A regra de remanejamento de uma modalidade ofertada não é a que a natureza dela pede"
-    },
-    {
-      "codigo": "uniplus.selecao.processo_seletivo.reserva_pcd_sem_cota_pcd_da_lei",
-      "status": 422,
-      "titulo": "O processo oferta a reserva de pessoa com deficiência de ampla concorrência e cota da lei, sem a cota da lei para pessoa com deficiência"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.resultado_declarado_sem_papel",

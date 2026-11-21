@@ -21,7 +21,7 @@ public enum NaturezaLegal
     /// Ação afirmativa institucional (Res. Unifesspa 532/2021), sem condição de escola
     /// pública nem de renda — ex.: pessoa com deficiência na ampla concorrência, vagas
     /// por acréscimo para indígenas e quilombolas. Não convive com cota da lei na mesma
-    /// inscrição (UNI-REQ-0142).
+    /// inscrição, salvo a de pessoa com deficiência (UNI-REQ-0142 e UNI-REQ-0266).
     /// </summary>
     AcaoAfirmativa = 3,
 }

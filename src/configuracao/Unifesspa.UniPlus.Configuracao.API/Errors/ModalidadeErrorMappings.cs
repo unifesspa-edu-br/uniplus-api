@@ -170,7 +170,7 @@ internal static class ModalidadeErrorMappings
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.modalidade.acao_afirmativa_com_opcao_pelas_cotas_da_lei",
-                "A ação afirmativa exige não ter optado pelas cotas da lei em toda cláusula")),
+                "A ação afirmativa exige não ter optado pelas cotas da lei em toda cláusula, salvo a reserva de vagas para pessoa com deficiência, que não cita a opção")),
 
         new(ModalidadeErrorCodes.RegraCitaFatoNaoCitavel,
             new DomainErrorMapping(

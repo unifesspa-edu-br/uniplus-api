@@ -44,6 +44,16 @@ public sealed class AvaliacaoDaInscricaoTests
         modalidades.Pendencias.Should().BeEmpty();
     }
 
+    [Fact(DisplayName = "Pessoa com deficiência que optou pelas cotas concorre também à AC_PCD, avaliada sobre o snapshot")]
+    public void PessoaComDeficienciaQueOptouPelasCotas_ConcorreTambemAAcPcd()
+    {
+        ModalidadesDeConcorrencia modalidades = Avaliar(Configuracao(derivaModalidade: true), Respostas(
+            ondeCursou: OrigemEscolar.SomentePublica, pcd: true, ep: true, ppi: false, q: false, renda: false)).Modalidades;
+
+        modalidades.Situacao.Should().Be(SituacaoDasModalidades.Concorre);
+        modalidades.Itens.Select(static m => m.Codigo).Should().Equal("AC", "AC_PCD", "LI_EP", "LI_PCD");
+    }
+
     [Fact(DisplayName = "Sem a opção pelas cotas, o candidato concorre só à ampla concorrência")]
     public void SemOpcaoPelasCotas_ConcorreSoAAmpla()
     {
@@ -256,7 +266,7 @@ public sealed class AvaliacaoDaInscricaoTests
     {
         (string, bool) optou = (OpcaoPelasCotasDaLei.Fato, true);
         yield return Modalidade("AC", NaturezaLegalModalidade.Ampla);
-        yield return Modalidade("AC_PCD", NaturezaLegalModalidade.AcaoAfirmativa, (OpcaoPelasCotasDaLei.Fato, false), ("CONCORRER_PCD", true));
+        yield return Modalidade("AC_PCD", NaturezaLegalModalidade.AcaoAfirmativa, ("CONCORRER_PCD", true));
         foreach ((string sufixo, string? opcao) in new[] { ("EP", (string?)null), ("PPI", "CONCORRER_PPI"), ("Q", "CONCORRER_Q"), ("PCD", "CONCORRER_PCD") })
         {
             (string, bool)[] atomos = opcao is null ? [optou] : [optou, (opcao, true)];

@@ -135,6 +135,22 @@ public sealed class ModalidadesDaConsultaDaInscricaoTests
         semOrigem.Pendencias.Select(static p => p.FatoCodigo).Should().Equal(OrigemEscolar.FatoFormaDeConclusao, OrigemEscolar.FatoOndeCursou);
     }
 
+    [Fact(DisplayName = "Pessoa com deficiência que optou pelas cotas concorre à AC, a LI_EP, a LI_PCD e também à AC_PCD, sobre a versão publicada")]
+    public async Task Consulta_PessoaComDeficienciaQueOptouPelasCotas_ConcorreTambemAAcPcd()
+    {
+        await using UniPlusDbContext db = _cenario.CriarDbContext();
+        (Guid processoId, _) = await PublicarEDivulgarAsync(
+            db, ProcessoComAMatrizNormativa(nameof(Consulta_PessoaComDeficienciaQueOptouPelasCotas_ConcorreTambemAAcPcd)), OpcoesDaOrigemEscolar());
+        IUserContext fernanda = UsuarioComCpf(PersonasDeTeste.FernandaDrumond);
+        (await _cenario.IniciarRascunhoAsync(db, processoId, fernanda)).IsSuccess.Should().BeTrue();
+        Dictionary<string, JsonElement> respostas = RespostasDaOrigemEDasCotas(OrigemEscolar.SomentePublica, ep: true, ppi: false, renda: false);
+        respostas["CONCORRER_PCD"] = JsonSerializer.SerializeToElement(true);
+
+        ModalidadesDaInscricaoDto modalidades = (await _cenario.AvaliarAsync(db, processoId, fernanda, respostas)).Value!.Modalidades;
+
+        modalidades.Itens.Select(static m => m.Codigo).Should().Equal("AC", "AC_PCD", "LI_EP", "LI_PCD");
+    }
+
     [Fact(DisplayName = "Salvar e ler a inscrição devolvem a avaliação do que ficou gravado, com as modalidades que a resposta decide")]
     public async Task SalvarELer_DevolvemAAvaliacaoDoGravado()
     {

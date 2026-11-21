@@ -266,4 +266,47 @@ public sealed class ModalidadeCoerenciaDosCamposTests
         })
             .IsSuccess.Should().BeTrue();
     }
+
+    [Fact(DisplayName = "A reserva para pessoa com deficiência que não cita a opção pelas cotas da lei é aceita")]
+    public void Criar_AcPcdSemCitarAOpcao_Aceita() =>
+        Criar("AC_PCD", d => d.ComoAcaoAfirmativa("DESTINO_UNICO") with { RemanejamentoDestino = "AC", RegraDeAplicabilidade = RegraDaAcPcd() })
+            .IsSuccess.Should().BeTrue();
+
+    [Fact(DisplayName = "A reserva para pessoa com deficiência que exige não ter optado pelas cotas da lei é recusada, e o detalhe explica a exceção")]
+    public void Criar_AcPcdExigindoNaoTerOptado_FalhaComODetalheDaExcecao()
+    {
+        Result<Modalidade> r = Criar("AC_PCD", d => d.ComoAcaoAfirmativa("DESTINO_UNICO") with
+        {
+            RemanejamentoDestino = "AC",
+            RegraDeAplicabilidade = ComOpcaoPelasCotas(optou: false, ("PCD", true), ("CONCORRER_PCD", true)),
+        });
+
+        r.Errors.Should().ContainSingle(e => e.Error.Code == ModalidadeErrorCodes.AcaoAfirmativaComOpcaoPelasCotasDaLei
+            && e.Error.Message.Contains("não cita OPTOU_PELAS_COTAS_DA_LEI", StringComparison.Ordinal));
+    }
+
+    [Fact(DisplayName = "A ação afirmativa institucional que não cita a opção pelas cotas da lei continua recusada")]
+    public void Criar_AcaoAfirmativaInstitucionalSemCitarAOpcao_Falha()
+    {
+        Result<Modalidade> r = Criar("PSIQ_AA", d => d.ComoAcaoAfirmativa("DESTINO_UNICO") with
+        {
+            RemanejamentoDestino = "AC",
+            RegraDeAplicabilidade = Clausulas([("INDIGENA", true)]),
+        });
+
+        r.Errors.Should().ContainSingle(e => e.Error.Code == ModalidadeErrorCodes.AcaoAfirmativaComOpcaoPelasCotasDaLei
+            && e.Error.Message.Contains("exige OPTOU_PELAS_COTAS_DA_LEI falso", StringComparison.Ordinal));
+    }
+
+    [Fact(DisplayName = "Com o código recusado, a regra da ação afirmativa não é conferida: só o código é recusado")]
+    public void Criar_AcaoAfirmativaComCodigoInvalido_RecusaSoOCodigo()
+    {
+        Result<Modalidade> r = Criar("ac pcd", d => d.ComoAcaoAfirmativa("DESTINO_UNICO") with
+        {
+            RemanejamentoDestino = "AC",
+            RegraDeAplicabilidade = RegraDaAcPcd(),
+        });
+
+        r.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModalidadeErrorCodes.CodigoFormatoInvalido);
+    }
 }

@@ -25,10 +25,11 @@ using Atomo = (string Fato, Unifesspa.UniPlus.Regras.Enums.Operador Operador, ob
 /// (Portaria Normativa MEC nº 18/2012, art. 10, IV).
 /// </para>
 /// <para>
-/// As ações afirmativas exigem não ter optado pelas cotas da lei, porque o candidato nunca concorre
-/// às duas (UNI-REQ-0142): a reserva de pessoa com deficiência pede só ser pessoa com deficiência e
-/// optar por ela, e as vagas por acréscimo pedem a autodeclaração indígena ou quilombola e a opção
-/// por elas, sem condição de escola, renda ou cor.
+/// As ações afirmativas exigem não ter optado pelas cotas da lei, porque o candidato não concorre
+/// às duas (UNI-REQ-0142): as vagas por acréscimo pedem a autodeclaração indígena ou quilombola e a
+/// opção por elas, sem condição de escola, renda ou cor. A exceção é a reserva de pessoa com
+/// deficiência, que não cita a opção pelas cotas: pede só ser pessoa com deficiência e optar por ela,
+/// e vale para quem optou pelas cotas e para quem não optou (UNI-REQ-0142 e UNI-REQ-0266).
 /// </para>
 /// </remarks>
 internal static class SementeDeAplicabilidadeLegal
@@ -75,7 +76,7 @@ internal static class SementeDeAplicabilidadeLegal
 
     public static PredicadoDnf LbPcd { get; } = Regra(ComRenda(CotaPcd));
 
-    public static PredicadoDnf AcPcd { get; } = Regra([NaoOptouPelasCotas, Pcd, ConcorrerPcd]);
+    public static PredicadoDnf AcPcd { get; } = Regra([Pcd, ConcorrerPcd]);
 
     public static PredicadoDnf AcI { get; } = Regra([NaoOptouPelasCotas, Indigena, ConcorrerVagaPorAcrescimo]);
 

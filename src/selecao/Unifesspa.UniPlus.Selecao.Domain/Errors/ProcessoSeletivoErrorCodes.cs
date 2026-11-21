@@ -39,7 +39,7 @@ public static class ProcessoSeletivoErrorCodes
     /// <summary>Importação externa sem nenhuma fase que homologa as inscrições.</summary>
     public const string ImportacaoExternaSemHomologacaoDasInscricoes = "ProcessoSeletivo.ImportacaoExternaSemHomologacaoDasInscricoes";
 
-    /// <summary>Importação externa cuja fase que homologa as inscrições não tem a janela de recurso entre o preliminar e o definitivo.</summary>
+    /// <summary>Importação externa cuja fase que homologa as inscrições não tem o período de recurso entre o preliminar e o definitivo.</summary>
     public const string ImportacaoExternaSemJanelaDeRecurso = "ProcessoSeletivo.ImportacaoExternaSemJanelaDeRecurso";
 
     public const string CriteriosDesempateEmExcesso = "ProcessoSeletivo.CriteriosDesempateEmExcesso";
@@ -66,7 +66,7 @@ public static class ProcessoSeletivoErrorCodes
     public const string DerivacaoDaOferta = "ProcessoSeletivo.DerivacaoDaOferta";
     public const string RegraDeModalidadeCitaFatoNaoColetado = "ProcessoSeletivo.RegraDeModalidadeCitaFatoNaoColetado";
     public const string CotasDaLeiDiferentesEntreOfertas = "ProcessoSeletivo.CotasDaLeiDiferentesEntreOfertas";
-    public const string ReservaPcdSemCotaPcdDaLei = "ProcessoSeletivo.ReservaPcdSemCotaPcdDaLei";
+    public const string CotaEAcaoAfirmativaDerivaveisJuntas = "ProcessoSeletivo.CotaEAcaoAfirmativaDerivaveisJuntas";
     public const string RegraIncoerenteComANatureza = "ProcessoSeletivo.RegraIncoerenteComANatureza";
     public const string TipoDeAtoUnicoDeclaradoMaisDeUmaVez = "ProcessoSeletivo.TipoDeAtoUnicoDeclaradoMaisDeUmaVez";
     public const string ResultadoDeclaradoSemPapel = "ProcessoSeletivo.ResultadoDeclaradoSemPapel";

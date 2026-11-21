@@ -212,31 +212,6 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
         ExigirPublicacaoRecusada(processo, ProcessoSeletivoErrorCodes.CotasDaLeiDiferentesEntreOfertas);
     }
 
-    private static ConfiguracaoDistribuicaoVagas OfertaComReservaDePcd(bool comCotaPcd) => ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-            new DistribuicaoDeVagasDeclarada
-            {
-                VagasOfertadasBase = 10,
-                PercentualDaReservaLegal = 1m,
-                RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
-                Modalidades = [
-                Modalidade("AC", NaturezaLegalModalidade.Ampla, RegraRemanejamentoModalidade.Nenhuma, 6),
-                Modalidade("AC_PCD", NaturezaLegalModalidade.AcaoAfirmativa, RegraRemanejamentoModalidade.Nenhuma, 2),
-                Modalidade(comCotaPcd ? "LI_PCD" : "LI_PPI", NaturezaLegalModalidade.CotaReservada, RegraRemanejamentoModalidade.SegueCascata, 2,
-                    regra: Exige((OpcaoPelasCotasDaLei.Fato, true))),
-            ]
-            },
-            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
-
-    [Theory(DisplayName = "Pré-canonicalização: reserva de PcD de ampla concorrência com cota da lei exige a cota da lei para PcD")]
-    [InlineData(true, true)]
-    [InlineData(false, false)]
-    public void PreCanon_ReservaPcdSemCotaPcdDaLei(bool comCotaPcd, bool esperadoOk)
-    {
-        ProcessoSeletivo processo = ProcessoConforme([OfertaComReservaDePcd(comCotaPcd)]);
-
-        Checklist(processo).Single(static i => i.Codigo == "modalidade_reserva_pcd_sem_cota_pcd_da_lei").Ok.Should().Be(esperadoOk);
-    }
-
     /// <summary>
     /// A regra copiada sem a opção pelas cotas — a linha anterior à cópia da regra — dá cota e ação
     /// afirmativa a todo candidato: os dois itens acendem, e a publicação recusa pela forma da regra,

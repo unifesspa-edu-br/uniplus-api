@@ -135,30 +135,30 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
         [],
         []).Value!;
 
+    /// <summary>A ação afirmativa institucional, que não se soma às cotas da lei.</summary>
+    internal const string AcaoAfirmativaInstitucional = "AC_I";
+
     /// <summary>
-    /// As oito cotas da lei, a ampla e a ação afirmativa de PcD retirando duas vagas da ampla, cada uma
-    /// com a regra de aplicabilidade dada.
+    /// As oito cotas da lei, a ampla e uma ação afirmativa retirando duas vagas da ampla, cada uma com a
+    /// regra de aplicabilidade dada. Sem o código, a ação afirmativa é a institucional.
     /// </summary>
-    internal static ProcessoSeletivo ProcessoComCotaEAcaoAfirmativa(PredicadoDnf regraDasCotas, PredicadoDnf regraDaAcaoAfirmativa)
+    internal static ProcessoSeletivo ProcessoComCotaEAcaoAfirmativa(
+        PredicadoDnf regraDasCotas, PredicadoDnf regraDaAcaoAfirmativa, string codigoDaAcaoAfirmativa = AcaoAfirmativaInstitucional) =>
+        ProcessoComCotasEAcoesAfirmativas(regraDasCotas, (codigoDaAcaoAfirmativa, regraDaAcaoAfirmativa));
+
+    /// <summary>
+    /// As oito cotas da lei, a ampla e cada ação afirmativa dada, retirando duas vagas da ampla, com a
+    /// regra de aplicabilidade das cotas e a de cada ação afirmativa.
+    /// </summary>
+    internal static ProcessoSeletivo ProcessoComCotasEAcoesAfirmativas(
+        PredicadoDnf regraDasCotas, params (string Codigo, PredicadoDnf Regra)[] acoesAfirmativas)
     {
-        ConfiguracaoDistribuicaoVagas oferta = OfertaComCotasEAcaoAfirmativa(regraDasCotas, regraDaAcaoAfirmativa);
+        ConfiguracaoDistribuicaoVagas oferta = OfertaComCotasEAcoesAfirmativas(regraDasCotas, acoesAfirmativas);
         ProcessoSeletivo processo = ProcessoConforme([oferta]);
         processo.DefinirCascataRemanejamento(CascataCompleta()).IsSuccess.Should().BeTrue();
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         return processo;
     }
-
-    private static IReadOnlyList<ModalidadeSelecionada> ModalidadesDaOferta(PredicadoDnf regraDasCotas, PredicadoDnf regraDaAcaoAfirmativa) =>
-    [
-        .. OrigensFederais.Select(codigo =>
-            Modalidade(codigo, NaturezaLegalModalidade.CotaReservada, RegraRemanejamentoModalidade.SegueCascata, quantidadeDeclarada: null, regra: regraDasCotas)),
-        Modalidade(ModalidadesFederaisLei12711.Ac, NaturezaLegalModalidade.Ampla, RegraRemanejamentoModalidade.Nenhuma, quantidadeDeclarada: null),
-        ModalidadeDeAcaoAfirmativa(regraDaAcaoAfirmativa),
-    ];
-
-    private static ModalidadeSelecionada ModalidadeDeAcaoAfirmativa(PredicadoDnf regra) => ModalidadeSelecionada.Criar(
-        Guid.CreateVersion7(), "AC_PCD", null, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade,
-        ModalidadesFederaisLei12711.Ac, RegraRemanejamentoModalidade.DestinoUnico, ModalidadesFederaisLei12711.Ac, null, null, regra, null, "base legal", 2).Value!;
 
     internal static bool ItemDaExclusividadeOk(ProcessoSeletivo processo) =>
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
@@ -367,9 +367,10 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
         new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 0.5m, RegraDeDistribuicao = RegraLei12711(), RegraDeAjuste = RegraAjusteArt11(), ReferenciaDemografica = Demografica(), Modalidades = AsOitoFederaisMaisAc() },
         new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
-    private static ConfiguracaoDistribuicaoVagas OfertaComCotasEAcaoAfirmativa(PredicadoDnf regraDasCotas, PredicadoDnf regraDaAcaoAfirmativa)
+    private static ConfiguracaoDistribuicaoVagas OfertaComCotasEAcoesAfirmativas(
+        PredicadoDnf regraDasCotas, IEnumerable<(string Codigo, PredicadoDnf Regra)> acoesAfirmativas)
     {
-        ModalidadeSelecionada acPcd = ModalidadeDePcdDaAmpla(regraDaAcaoAfirmativa);
+        ModalidadeSelecionada[] acoes = [.. acoesAfirmativas.Select(static a => AcaoAfirmativaQueRetiraDaAmpla(a.Codigo, a.Regra))];
         ConfiguracaoDistribuicaoVagas oferta = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
             new DistribuicaoDeVagasDeclarada
             {
@@ -378,29 +379,24 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
                 RegraDeDistribuicao = RegraLei12711(),
                 RegraDeAjuste = RegraAjusteArt11(),
                 ReferenciaDemografica = Demografica(),
-                Modalidades = ModalidadesComCotasEAcaoAfirmativa(regraDasCotas, acPcd),
+                Modalidades = ModalidadesComCotasEAcoesAfirmativas(regraDasCotas, acoes),
             },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
         return oferta;
     }
 
 
-    private static ModalidadeSelecionada ModalidadeDePcdDaAmpla(PredicadoDnf regraDaAcaoAfirmativa)
-    {
-        ModalidadeSelecionada acPcd = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC_PCD", null, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade,
-            ModalidadesFederaisLei12711.Ac, RegraRemanejamentoModalidade.DestinoUnico, ModalidadesFederaisLei12711.Ac, null, null, regraDaAcaoAfirmativa, null, "base legal", 2).Value!;
-        return acPcd;
-    }
+    private static ModalidadeSelecionada AcaoAfirmativaQueRetiraDaAmpla(string codigo, PredicadoDnf regra) =>
+        ModalidadeSelecionada.Criar(
+            Guid.CreateVersion7(), codigo, null, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade,
+            ModalidadesFederaisLei12711.Ac, RegraRemanejamentoModalidade.DestinoUnico, ModalidadesFederaisLei12711.Ac, null, null, regra, null, "base legal", 2).Value!;
 
-
-    private static IReadOnlyList<ModalidadeSelecionada> ModalidadesComCotasEAcaoAfirmativa(
-        PredicadoDnf regraDasCotas, ModalidadeSelecionada acPcd) =>
+    private static IReadOnlyList<ModalidadeSelecionada> ModalidadesComCotasEAcoesAfirmativas(
+        PredicadoDnf regraDasCotas, ModalidadeSelecionada[] acoesAfirmativas) =>
     [
         .. OrigensFederais.Select(codigo =>
             Modalidade(codigo, NaturezaLegalModalidade.CotaReservada, RegraRemanejamentoModalidade.SegueCascata, quantidadeDeclarada: null, regra: regraDasCotas)),
         Modalidade(ModalidadesFederaisLei12711.Ac, NaturezaLegalModalidade.Ampla, RegraRemanejamentoModalidade.Nenhuma, quantidadeDeclarada: null),
-        acPcd,
+        .. acoesAfirmativas,
     ];
-
 }

@@ -19,8 +19,8 @@ public enum NaturezaLegalModalidade
 
     /// <summary>
     /// Ação afirmativa institucional, fora da Lei 12.711 — a PcD "V" retirada da AC e as
-    /// vagas por acréscimo do PSIQ. Não convive com cota da lei na mesma inscrição
-    /// (UNI-REQ-0142).
+    /// vagas por acréscimo do PSIQ. Não convive com cota da lei na mesma inscrição, salvo a PcD
+    /// "V" (UNI-REQ-0142 e UNI-REQ-0266).
     /// </summary>
     AcaoAfirmativa = 3,
 }
