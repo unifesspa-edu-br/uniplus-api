@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
-// Mapeia ComposicaoVagas ↔ string (varchar) usando o token canônico UPPER_SNAKE
+// Mapeia ComposicaoVagas ↔ string (varchar) usando o código canônico UPPER_SNAKE
 // (RESTANTE_DAS_VAGAS_OFERTADAS…), não o nome PascalCase do enum. O comprimento da coluna é
 // definido na própria propriedade via HasMaxLength no IEntityTypeConfiguration. A
 // reidratação falha explicitamente (com contexto) caso a coluna seja corrompida
@@ -14,16 +14,16 @@ public sealed class ComposicaoVagasValueConverter : ValueConverter<ComposicaoVag
     public ComposicaoVagasValueConverter()
         : base(
             composicao => ComposicoesVagas.ParaTokenCanonico(composicao),
-            token => Reidratar(token))
+            codigo => Reidratar(codigo))
     {
     }
 
-    private static ComposicaoVagas Reidratar(string token)
+    private static ComposicaoVagas Reidratar(string codigo)
     {
-        if (!ComposicoesVagas.TryAnalisar(token, out ComposicaoVagas composicao))
+        if (!ComposicoesVagas.TryAnalisar(codigo, out ComposicaoVagas composicao))
         {
             throw new InvalidOperationException(
-                $"Dado inválido no banco ao reidratar {nameof(ComposicaoVagas)}: '{token}'. " +
+                $"Dado inválido no banco ao reidratar {nameof(ComposicaoVagas)}: '{codigo}'. " +
                 "Verifique se houve alteração manual da coluna fora do fluxo da aplicação.");
         }
 

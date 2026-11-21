@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
-// Mapeia RegimeDeFuncionamento ↔ string (varchar) usando o token canônico
+// Mapeia RegimeDeFuncionamento ↔ string (varchar) usando o código canônico
 // UPPER_SNAKE (INTENSIVO, EXTENSIVO, ALTERNANCIA_PEDAGOGICA), não o nome
 // PascalCase do enum. A reidratação falha explicitamente
 // (com contexto) caso a coluna seja corrompida fora do fluxo da
@@ -14,16 +14,16 @@ public sealed class RegimeDeFuncionamentoValueConverter : ValueConverter<RegimeD
     public RegimeDeFuncionamentoValueConverter()
         : base(
             regime => RegimesDeFuncionamento.ParaTokenCanonico(regime),
-            token => Reidratar(token))
+            codigo => Reidratar(codigo))
     {
     }
 
-    private static RegimeDeFuncionamento Reidratar(string token)
+    private static RegimeDeFuncionamento Reidratar(string codigo)
     {
-        if (!RegimesDeFuncionamento.TryAnalisar(token, out RegimeDeFuncionamento regime))
+        if (!RegimesDeFuncionamento.TryAnalisar(codigo, out RegimeDeFuncionamento regime))
         {
             throw new InvalidOperationException(
-                $"Dado inválido no banco ao reidratar {nameof(RegimeDeFuncionamento)}: '{token}'. " +
+                $"Dado inválido no banco ao reidratar {nameof(RegimeDeFuncionamento)}: '{codigo}'. " +
                 "Verifique se houve alteração manual da coluna fora do fluxo da aplicação.");
         }
 

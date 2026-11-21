@@ -5,30 +5,30 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
 /// <summary>
-/// O parsing do regime de funcionamento é por allowlist textual explícita
+/// O parsing do regime de funcionamento é por lista textual explícita de códigos aceitos
 /// (UNI-REQ-0138): só INTENSIVO, EXTENSIVO e ALTERNANCIA_PEDAGOGICA são aceitos. A obrigatoriedade do
 /// regime é regra da entidade, não deste mapeamento.
 /// </summary>
 public sealed class RegimesDeFuncionamentoTests
 {
-    [Theory(DisplayName = "Os três tokens canônicos são analisados para o regime correto")]
+    [Theory(DisplayName = "Os três códigos canônicos são analisados para o regime correto")]
     [InlineData("INTENSIVO", RegimeDeFuncionamento.Intensivo)]
     [InlineData("EXTENSIVO", RegimeDeFuncionamento.Extensivo)]
     [InlineData("ALTERNANCIA_PEDAGOGICA", RegimeDeFuncionamento.AlternanciaPedagogica)]
-    public void TryAnalisar_TokenCanonico_Resolve(string token, RegimeDeFuncionamento esperado)
+    public void TryAnalisar_CodigoCanonico_Resolve(string codigo, RegimeDeFuncionamento esperado)
     {
-        RegimesDeFuncionamento.TryAnalisar(token, out RegimeDeFuncionamento regime).Should().BeTrue();
+        RegimesDeFuncionamento.TryAnalisar(codigo, out RegimeDeFuncionamento regime).Should().BeTrue();
         regime.Should().Be(esperado);
     }
 
-    [Fact(DisplayName = "Token com espaços é normalizado por Trim antes da resolução")]
+    [Fact(DisplayName = "Código com espaços é normalizado por Trim antes da resolução")]
     public void TryAnalisar_ComEspacos_Normaliza()
     {
         RegimesDeFuncionamento.TryAnalisar("  INTENSIVO  ", out RegimeDeFuncionamento regime).Should().BeTrue();
         regime.Should().Be(RegimeDeFuncionamento.Intensivo);
     }
 
-    [Theory(DisplayName = "Tokens numéricos, PascalCase, de outra dimensão e vazios são rejeitados")]
+    [Theory(DisplayName = "Códigos numéricos, PascalCase, de outra dimensão e vazios são rejeitados")]
     [InlineData("1")]
     [InlineData("Intensivo")]
     [InlineData("intensivo")]
@@ -39,14 +39,14 @@ public sealed class RegimesDeFuncionamentoTests
     [InlineData("PRESENCIAL")]  // formato pedagógico não é regime de funcionamento
     [InlineData("")]
     [InlineData("   ")]
-    public void TryAnalisar_ForaDoDominio_Rejeita(string token)
+    public void TryAnalisar_ForaDoDominio_Rejeita(string codigo)
     {
-        RegimesDeFuncionamento.TryAnalisar(token, out RegimeDeFuncionamento regime).Should().BeFalse();
+        RegimesDeFuncionamento.TryAnalisar(codigo, out RegimeDeFuncionamento regime).Should().BeFalse();
         regime.Should().Be(RegimeDeFuncionamento.Nenhum);
-        RegimesDeFuncionamento.EhValido(token).Should().BeFalse();
+        RegimesDeFuncionamento.EhValido(codigo).Should().BeFalse();
     }
 
-    [Fact(DisplayName = "Token nulo é rejeitado sem lançar")]
+    [Fact(DisplayName = "Código nulo é rejeitado sem lançar")]
     public void TryAnalisar_Nulo_Rejeita()
     {
         RegimesDeFuncionamento.TryAnalisar(null, out RegimeDeFuncionamento regime).Should().BeFalse();
@@ -57,14 +57,14 @@ public sealed class RegimesDeFuncionamentoTests
     [InlineData(RegimeDeFuncionamento.Intensivo, "INTENSIVO")]
     [InlineData(RegimeDeFuncionamento.Extensivo, "EXTENSIVO")]
     [InlineData(RegimeDeFuncionamento.AlternanciaPedagogica, "ALTERNANCIA_PEDAGOGICA")]
-    public void ParaTokenCanonico_RoundTrip(RegimeDeFuncionamento regime, string token)
+    public void ParaCodigoCanonico_IdaEVolta(RegimeDeFuncionamento regime, string codigo)
     {
-        RegimesDeFuncionamento.ParaTokenCanonico(regime).Should().Be(token);
-        RegimesDeFuncionamento.TryAnalisar(token, out RegimeDeFuncionamento resolvido).Should().BeTrue();
+        RegimesDeFuncionamento.ParaTokenCanonico(regime).Should().Be(codigo);
+        RegimesDeFuncionamento.TryAnalisar(codigo, out RegimeDeFuncionamento resolvido).Should().BeTrue();
         resolvido.Should().Be(regime);
     }
 
-    [Fact(DisplayName = "ParaTokenCanonico de Nenhum (sentinela) lança — não é regime válido")]
+    [Fact(DisplayName = "ParaTokenCanonico de Nenhum (valor de ausência) lança — não é regime válido")]
     public void ParaTokenCanonico_Nenhum_Lanca()
     {
         Action act = () => RegimesDeFuncionamento.ParaTokenCanonico(RegimeDeFuncionamento.Nenhum);
@@ -93,7 +93,7 @@ public sealed class RegimesDeFuncionamentoTests
         RegimesDeFuncionamento.RegimeDeTurnoExigido(RegimeDeFuncionamento.AlternanciaPedagogica)
             .Should().BeNull();
 
-    [Fact(DisplayName = "RegimeDeTurnoExigido do sentinela lança — não há compatibilidade sem regime")]
+    [Fact(DisplayName = "RegimeDeTurnoExigido do valor de ausência lança — não há compatibilidade sem regime")]
     public void RegimeDeTurnoExigido_Nenhum_Lanca()
     {
         Action act = () => RegimesDeFuncionamento.RegimeDeTurnoExigido(RegimeDeFuncionamento.Nenhum);

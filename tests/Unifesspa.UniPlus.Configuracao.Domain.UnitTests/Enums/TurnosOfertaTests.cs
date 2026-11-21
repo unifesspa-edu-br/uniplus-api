@@ -5,30 +5,30 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
 /// <summary>
-/// O parsing do turno é por allowlist textual explícita: só os três tokens
+/// O parsing do turno é por lista textual explícita de códigos aceitos: só os três códigos
 /// canônicos UPPER_SNAKE são aceitos. Quantos turnos a oferta declara é regra da
 /// entidade, decidida pelo regime, não deste mapeamento.
 /// </summary>
 public sealed class TurnosOfertaTests
 {
-    [Theory(DisplayName = "Os três tokens canônicos são analisados para o turno correto")]
+    [Theory(DisplayName = "Os três códigos canônicos são analisados para o turno correto")]
     [InlineData("MATUTINO", TurnoOferta.Matutino)]
     [InlineData("VESPERTINO", TurnoOferta.Vespertino)]
     [InlineData("NOTURNO", TurnoOferta.Noturno)]
-    public void TryAnalisar_TokenCanonico_Resolve(string token, TurnoOferta esperado)
+    public void TryAnalisar_CodigoCanonico_Resolve(string codigo, TurnoOferta esperado)
     {
-        TurnosOferta.TryAnalisar(token, out TurnoOferta turno).Should().BeTrue();
+        TurnosOferta.TryAnalisar(codigo, out TurnoOferta turno).Should().BeTrue();
         turno.Should().Be(esperado);
     }
 
-    [Fact(DisplayName = "Token com espaços é normalizado por Trim antes da resolução")]
+    [Fact(DisplayName = "Código com espaços é normalizado por Trim antes da resolução")]
     public void TryAnalisar_ComEspacos_Normaliza()
     {
         TurnosOferta.TryAnalisar("  NOTURNO  ", out TurnoOferta turno).Should().BeTrue();
         turno.Should().Be(TurnoOferta.Noturno);
     }
 
-    [Fact(DisplayName = "INTEGRAL deixou de ser turno — virou regime, e o token é rejeitado aqui")]
+    [Fact(DisplayName = "INTEGRAL deixou de ser turno — virou regime, e o código é rejeitado aqui")]
     public void TryAnalisar_Integral_Rejeita()
     {
         TurnosOferta.TryAnalisar("INTEGRAL", out TurnoOferta turno).Should().BeFalse();
@@ -36,22 +36,22 @@ public sealed class TurnosOfertaTests
         TurnosOferta.EhValido("INTEGRAL").Should().BeFalse();
     }
 
-    [Theory(DisplayName = "Tokens numéricos, PascalCase, fora do domínio e vazios são rejeitados")]
-    [InlineData("1")]           // numérico — Enum.TryParse aceitaria; a allowlist não
+    [Theory(DisplayName = "Códigos numéricos, PascalCase, fora do domínio e vazios são rejeitados")]
+    [InlineData("1")]           // numérico — Enum.TryParse aceitaria; a lista de códigos aceitos não
     [InlineData("4")]
-    [InlineData("Matutino")]    // PascalCase do enum — não é o token de contrato
+    [InlineData("Matutino")]    // PascalCase do enum — não é o código de contrato
     [InlineData("DIURNO")]      // fora do domínio fechado
     [InlineData("matutino")]    // case-sensitive
     [InlineData("")]
     [InlineData("   ")]
-    public void TryAnalisar_ForaDoDominio_Rejeita(string token)
+    public void TryAnalisar_ForaDoDominio_Rejeita(string codigo)
     {
-        TurnosOferta.TryAnalisar(token, out TurnoOferta turno).Should().BeFalse();
+        TurnosOferta.TryAnalisar(codigo, out TurnoOferta turno).Should().BeFalse();
         turno.Should().Be(TurnoOferta.Nenhum);
-        TurnosOferta.EhValido(token).Should().BeFalse();
+        TurnosOferta.EhValido(codigo).Should().BeFalse();
     }
 
-    [Fact(DisplayName = "Token nulo é rejeitado sem lançar")]
+    [Fact(DisplayName = "Código nulo é rejeitado sem lançar")]
     public void TryAnalisar_Nulo_Rejeita()
     {
         TurnosOferta.TryAnalisar(null, out TurnoOferta turno).Should().BeFalse();
@@ -62,14 +62,14 @@ public sealed class TurnosOfertaTests
     [InlineData(TurnoOferta.Matutino, "MATUTINO")]
     [InlineData(TurnoOferta.Vespertino, "VESPERTINO")]
     [InlineData(TurnoOferta.Noturno, "NOTURNO")]
-    public void ParaTokenCanonico_RoundTrip(TurnoOferta turno, string token)
+    public void ParaCodigoCanonico_IdaEVolta(TurnoOferta turno, string codigo)
     {
-        TurnosOferta.ParaTokenCanonico(turno).Should().Be(token);
-        TurnosOferta.TryAnalisar(token, out TurnoOferta resolvido).Should().BeTrue();
+        TurnosOferta.ParaTokenCanonico(turno).Should().Be(codigo);
+        TurnosOferta.TryAnalisar(codigo, out TurnoOferta resolvido).Should().BeTrue();
         resolvido.Should().Be(turno);
     }
 
-    [Fact(DisplayName = "ParaTokenCanonico de Nenhum (sentinela) lança — não é turno válido")]
+    [Fact(DisplayName = "ParaTokenCanonico de Nenhum (valor de ausência) lança — não é turno válido")]
     public void ParaTokenCanonico_Nenhum_Lanca()
     {
         Action act = () => TurnosOferta.ParaTokenCanonico(TurnoOferta.Nenhum);

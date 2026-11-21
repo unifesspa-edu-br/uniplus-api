@@ -21,7 +21,7 @@ internal static class ApoioDaModalidade
     {
         DeclaracaoDaModalidade declarada = ajuste?.Invoke(DeclaracaoPadrao) ?? DeclaracaoPadrao;
 
-        return declarada with { RegraDeAplicabilidade = declarada.RegraDeAplicabilidade ?? AplicavelA(declarada.NaturezaLegalToken) };
+        return declarada with { RegraDeAplicabilidade = declarada.RegraDeAplicabilidade ?? AplicavelA(declarada.CodigoDaNaturezaLegal) };
     }
 
     internal static Result<Modalidade> Criar(
@@ -31,17 +31,17 @@ internal static class ApoioDaModalidade
     /// <summary>Cota da lei: reservada, dentro das vagas reservadas, cascata.</summary>
     internal static DeclaracaoDaModalidade ComoCotaReservada(this DeclaracaoDaModalidade declaracao) => declaracao with
     {
-        NaturezaLegalToken = "COTA_RESERVADA",
-        ComposicaoVagasToken = "DENTRO_DA_RESERVA_LEGAL",
-        RegraRemanejamentoToken = "SEGUE_CASCATA",
+        CodigoDaNaturezaLegal = "COTA_RESERVADA",
+        CodigoDaComposicaoDeVagas = "DENTRO_DA_RESERVA_LEGAL",
+        CodigoDaRegraDeRemanejamento = "SEGUE_CASCATA",
     };
 
     /// <summary>Ação afirmativa suplementar ao total, com a regra de remanejamento dada.</summary>
     internal static DeclaracaoDaModalidade ComoAcaoAfirmativa(this DeclaracaoDaModalidade declaracao, string regraRemanejamento) => declaracao with
     {
-        NaturezaLegalToken = "ACAO_AFIRMATIVA",
-        ComposicaoVagasToken = "SUPLEMENTAR_AO_TOTAL",
-        RegraRemanejamentoToken = regraRemanejamento,
+        CodigoDaNaturezaLegal = "ACAO_AFIRMATIVA",
+        CodigoDaComposicaoDeVagas = "SUPLEMENTAR_AO_TOTAL",
+        CodigoDaRegraDeRemanejamento = regraRemanejamento,
     };
 
     private static DeclaracaoDaModalidade DeclaracaoPadrao { get; } = new(
@@ -82,10 +82,10 @@ internal static class ApoioDaModalidade
         Criar("AC_PCD", d => d with
         {
             RegraDeAplicabilidade = RegraDaAcPcd(),
-            NaturezaLegalToken = "ACAO_AFIRMATIVA",
-            ComposicaoVagasToken = "RETIRADA_DE_OUTRA_MODALIDADE",
+            CodigoDaNaturezaLegal = "ACAO_AFIRMATIVA",
+            CodigoDaComposicaoDeVagas = "RETIRADA_DE_OUTRA_MODALIDADE",
             ComposicaoOrigem = "AC",
-            RegraRemanejamentoToken = "DESTINO_UNICO",
+            CodigoDaRegraDeRemanejamento = "DESTINO_UNICO",
             RemanejamentoDestino = "AC",
         }).Value!;
 }

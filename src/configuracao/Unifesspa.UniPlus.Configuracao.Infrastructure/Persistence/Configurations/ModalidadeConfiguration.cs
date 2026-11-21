@@ -21,7 +21,7 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
 {
     private const int CodigoMaxLength = 60;
     private const int DescricaoMaxLength = 300;
-    private const int EnumTokenMaxLength = 30;
+    private const int CodigoDeContratoMaxLength = 30;
     private const int CodigoReferenciaMaxLength = 60;
     private const int BaseLegalMaxLength = 500;
     private const int AuditUserMaxLength = 255;
@@ -68,12 +68,12 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
     {
         builder.Property(m => m.NaturezaLegal)
             .HasConversion<NaturezaLegalValueConverter>()
-            .HasMaxLength(EnumTokenMaxLength)
+            .HasMaxLength(CodigoDeContratoMaxLength)
             .IsRequired();
 
         builder.Property(m => m.ComposicaoVagas)
             .HasConversion<ComposicaoVagasValueConverter>()
-            .HasMaxLength(EnumTokenMaxLength)
+            .HasMaxLength(CodigoDeContratoMaxLength)
             .IsRequired();
 
         builder.Property(m => m.ComposicaoOrigem).HasMaxLength(CodigoReferenciaMaxLength);
@@ -84,11 +84,11 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
     {
         builder.Property(m => m.RegraRemanejamento)
             .HasConversion(new RegraRemanejamentoValueConverter())
-            .HasMaxLength(EnumTokenMaxLength);
+            .HasMaxLength(CodigoDeContratoMaxLength);
 
         builder.Property(m => m.AcaoQuandoIndeferido)
             .HasConversion(new AcaoQuandoIndeferidoValueConverter())
-            .HasMaxLength(EnumTokenMaxLength);
+            .HasMaxLength(CodigoDeContratoMaxLength);
     }
 
     // remanejamento_parametros: value object serializado como jsonb (chaves fixadas por

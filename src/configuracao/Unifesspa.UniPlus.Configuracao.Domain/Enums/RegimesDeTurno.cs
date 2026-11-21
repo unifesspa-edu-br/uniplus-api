@@ -1,13 +1,13 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
 /// <summary>
-/// Mapeamento entre <see cref="RegimeDeTurno"/> (domínio, PascalCase) e o token
+/// Mapeamento entre <see cref="RegimeDeTurno"/> (domínio, PascalCase) e o código
 /// textual de contrato/banco (UPPER_SNAKE), com parsing de domínio fechado.
 /// </summary>
 /// <remarks>
-/// <para>O parsing é por <b>allowlist textual explícita</b> (<see cref="TryAnalisar"/>):
-/// só os dois tokens canônicos são aceitos — sem <c>Enum.TryParse</c>, que
-/// aceitaria tokens numéricos e nomes PascalCase fora do contrato.</para>
+/// <para>O parsing é por <b>lista textual explícita de códigos aceitos</b> (<see cref="TryAnalisar"/>):
+/// só os dois códigos canônicos são aceitos — sem <c>Enum.TryParse</c>, que
+/// aceitaria códigos numéricos e nomes PascalCase fora do contrato.</para>
 /// <para>É o vocabulário fonte do CHECK de domínio em
 /// <c>ofertas_de_curso.regime_de_turno</c> (<see cref="TokensCanonicos"/>) e do value
 /// converter de persistência. <see cref="TurnosExigidos"/> é a fonte única da
@@ -24,26 +24,26 @@ public static class RegimesDeTurno
     private static readonly Dictionary<string, RegimeDeTurno> DeToken =
         ParaToken.ToDictionary(kv => kv.Value, kv => kv.Key, StringComparer.Ordinal);
 
-    /// <summary>Os dois tokens canônicos (UPPER_SNAKE), para o CHECK de domínio e mensagens.</summary>
+    /// <summary>Os dois códigos canônicos (UPPER_SNAKE), para o CHECK de domínio e mensagens.</summary>
     public static readonly IReadOnlyList<string> TokensCanonicos = [.. ParaToken.Values];
 
-    /// <summary>Token textual de contrato/banco (UPPER_SNAKE) de um regime válido.</summary>
-    /// <exception cref="ArgumentOutOfRangeException">Se <paramref name="regime"/> é <see cref="RegimeDeTurno.Nenhum"/> ou fora do roster.</exception>
+    /// <summary>Código textual de contrato/banco (UPPER_SNAKE) de um regime válido.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">Se <paramref name="regime"/> é <see cref="RegimeDeTurno.Nenhum"/> ou fora dos valores declarados.</exception>
     public static string ParaTokenCanonico(RegimeDeTurno regime) =>
-        ParaToken.TryGetValue(regime, out string? token)
-            ? token
+        ParaToken.TryGetValue(regime, out string? codigo)
+            ? codigo
             : throw new ArgumentOutOfRangeException(
                 nameof(regime), regime, "Regime de turno fora do domínio fechado.");
 
     /// <summary>
-    /// Resolve um token textual (UPPER_SNAKE) ao regime correspondente. Aceita
-    /// <c>Trim</c>, mas é case-sensitive e rejeita tokens numéricos ou fora do
-    /// domínio (allowlist). Retorna <see langword="false"/> quando inválido.
+    /// Resolve um código textual (UPPER_SNAKE) ao regime correspondente. Aceita
+    /// <c>Trim</c>, mas é case-sensitive e rejeita códigos numéricos ou fora do
+    /// domínio (lista de códigos aceitos). Retorna <see langword="false"/> quando inválido.
     /// </summary>
-    public static bool TryAnalisar(string? token, out RegimeDeTurno regime)
+    public static bool TryAnalisar(string? codigo, out RegimeDeTurno regime)
     {
-        if (!string.IsNullOrWhiteSpace(token)
-            && DeToken.TryGetValue(token.Trim(), out RegimeDeTurno resolvido))
+        if (!string.IsNullOrWhiteSpace(codigo)
+            && DeToken.TryGetValue(codigo.Trim(), out RegimeDeTurno resolvido))
         {
             regime = resolvido;
             return true;
@@ -53,15 +53,15 @@ public static class RegimesDeTurno
         return false;
     }
 
-    /// <summary>Indica se <paramref name="token"/> é um dos dois tokens canônicos, sem alocar resultado.</summary>
-    public static bool EhValido(string? token) => TryAnalisar(token, out _);
+    /// <summary>Indica se <paramref name="codigo"/> é um dos dois códigos canônicos, sem alocar resultado.</summary>
+    public static bool EhValido(string? codigo) => TryAnalisar(codigo, out _);
 
     /// <summary>
     /// Quantidade exata de turnos distintos que o regime exige: um para
     /// <see cref="RegimeDeTurno.Regular"/>, dois para
     /// <see cref="RegimeDeTurno.Integral"/>.
     /// </summary>
-    /// <exception cref="ArgumentOutOfRangeException">Se <paramref name="regime"/> é <see cref="RegimeDeTurno.Nenhum"/> ou fora do roster.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Se <paramref name="regime"/> é <see cref="RegimeDeTurno.Nenhum"/> ou fora dos valores declarados.</exception>
     public static int TurnosExigidos(RegimeDeTurno regime) => regime switch
     {
         RegimeDeTurno.Regular => 1,

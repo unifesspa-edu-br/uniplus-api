@@ -4,11 +4,11 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 /// Natureza de uma <see cref="Entities.Modalidade"/> de concorrência (UNI-REQ-0141):
 /// distingue, em domínio fechado, a cota da Lei 12.711/2012 (atual. Lei 14.723/2023),
 /// a ação afirmativa instituída por norma da universidade e a ampla concorrência.
-/// Persistida como token UPPER_SNAKE (<see cref="NaturezasLegais"/>).
+/// Persistida como código UPPER_SNAKE (<see cref="NaturezasLegais"/>).
 /// </summary>
 public enum NaturezaLegal
 {
-    /// <summary>Sentinela — indica entrada inválida/corrupção se encontrado em runtime.</summary>
+    /// <summary>Valor de ausência — indica entrada inválida/corrupção se encontrado em runtime.</summary>
     Nenhuma = 0,
 
     /// <summary>Cota da Lei 12.711/2012, condicionada à escola pública (segue a cascata de remanejamento).</summary>

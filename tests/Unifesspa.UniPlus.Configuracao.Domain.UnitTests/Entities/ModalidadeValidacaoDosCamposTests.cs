@@ -16,7 +16,7 @@ public sealed class ModalidadeValidacaoDosCamposTests
     [Fact(DisplayName = "Código ausente, descrição longa e natureza inválida acumulam as três violações")]
     public void Criar_TresViolacoesIndependentes_AcumulaAsTres()
     {
-        Result<Modalidade> r = Criar("", d => d with { Descricao = new string('a', 301), NaturezaLegalToken = "XPTO" });
+        Result<Modalidade> r = Criar("", d => d with { Descricao = new string('a', 301), CodigoDaNaturezaLegal = "XPTO" });
 
         r.IsFailure.Should().BeTrue();
         r.Errors.Should().HaveCount(3);
@@ -42,10 +42,10 @@ public sealed class ModalidadeValidacaoDosCamposTests
     public void ValidarCampos_CamposValidos_Aceita()
     {
         Result<CamposResolvidosDaModalidade> r = ValidacaoDosCamposDaModalidade.ValidarCampos(new DeclaracaoDaModalidade(
-            Descricao: null, NaturezaLegalToken: "AMPLA", ComposicaoVagasToken: "RESTANTE_DAS_VAGAS_OFERTADAS",
-            ComposicaoOrigem: null, RegraRemanejamentoToken: null, RemanejamentoDestino: null,
+            Descricao: null, CodigoDaNaturezaLegal: "AMPLA", CodigoDaComposicaoDeVagas: "RESTANTE_DAS_VAGAS_OFERTADAS",
+            ComposicaoOrigem: null, CodigoDaRegraDeRemanejamento: null, RemanejamentoDestino: null,
             RemanejamentoPar: null, RemanejamentoFallback: null, RegraDeAplicabilidade: Incondicional(),
-            AcaoQuandoIndeferidoToken: null, BaseLegal: null));
+            CodigoDaAcaoQuandoIndeferido: null, BaseLegal: null));
 
         r.IsSuccess.Should().BeTrue();
     }
@@ -57,10 +57,10 @@ public sealed class ModalidadeValidacaoDosCamposTests
         // não avalia coerência cruzada — só parse e tamanhos. A guarda do catálogo
         // legal fixo (handler) precisa rodar ANTES dessa incoerência ser reportada.
         Result r = ValidacaoDosCamposDaModalidade.ValidarCamposDoPayload(new DeclaracaoDaModalidade(
-            Descricao: null, NaturezaLegalToken: "AMPLA", ComposicaoVagasToken: "DENTRO_DA_RESERVA_LEGAL",
-            ComposicaoOrigem: null, RegraRemanejamentoToken: "SEGUE_CASCATA", RemanejamentoDestino: null,
+            Descricao: null, CodigoDaNaturezaLegal: "AMPLA", CodigoDaComposicaoDeVagas: "DENTRO_DA_RESERVA_LEGAL",
+            ComposicaoOrigem: null, CodigoDaRegraDeRemanejamento: "SEGUE_CASCATA", RemanejamentoDestino: null,
             RemanejamentoPar: null, RemanejamentoFallback: null, RegraDeAplicabilidade: Incondicional(),
-            AcaoQuandoIndeferidoToken: null, BaseLegal: null));
+            CodigoDaAcaoQuandoIndeferido: null, BaseLegal: null));
 
         r.IsSuccess.Should().BeTrue();
     }

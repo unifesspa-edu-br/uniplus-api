@@ -48,9 +48,9 @@ public static class AtualizarModalidadeCommandHandler
 
     private static List<FieldError> RecusasDoPayload(Result<PredicadoDnf?> regra, DeclaracaoDaModalidade declaracao)
     {
-        Result preCheck = ValidacaoDosCamposDaModalidade.ValidarCamposDoPayload(declaracao);
+        Result conferenciaDaDeclaracao = ValidacaoDosCamposDaModalidade.ValidarCamposDoPayload(declaracao);
 
-        return RegraDeAplicabilidadeDaEntrada.ComAsRecusasDaMontagem(regra, preCheck.IsFailure ? preCheck.Errors : []);
+        return RegraDeAplicabilidadeDaEntrada.ComAsRecusasDaMontagem(regra, conferenciaDaDeclaracao.IsFailure ? conferenciaDaDeclaracao.Errors : []);
     }
 
     private static async Task<Result> AtualizarAsync(

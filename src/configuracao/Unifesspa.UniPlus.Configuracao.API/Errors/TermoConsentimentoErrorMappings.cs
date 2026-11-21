@@ -26,7 +26,7 @@ internal static class TermoConsentimentoErrorMappings
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.termo_consentimento.forma_aceite_invalida",
-                "Forma de aceite do termo fora do domínio fechado")),
+                "Forma de aceite do termo não é um dos códigos aceitos")),
 
         new(TermoConsentimentoErrorCodes.TextoTamanho,
             new DomainErrorMapping(

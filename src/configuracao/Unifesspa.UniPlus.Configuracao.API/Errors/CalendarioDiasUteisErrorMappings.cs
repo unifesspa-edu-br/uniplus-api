@@ -32,7 +32,7 @@ internal static class CalendarioDiasUteisErrorMappings
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.calendario_dias_uteis.abrangencia_invalida",
-                "Abrangência do dia não útil fora do domínio fechado")),
+                "Abrangência do dia não útil não é um dos códigos aceitos")),
 
         new(CalendarioDiasUteisErrorCodes.SnapshotMunicipalApenasParaMunicipal,
             new DomainErrorMapping(

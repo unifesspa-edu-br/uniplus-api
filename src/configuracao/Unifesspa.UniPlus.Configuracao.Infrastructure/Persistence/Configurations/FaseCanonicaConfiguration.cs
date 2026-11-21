@@ -17,7 +17,7 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
     private const int CodigoMaxLength = 60;
     private const int NomeMaxLength = 200;
     private const int DescricaoMaxLength = 300;
-    private const int EnumTokenMaxLength = 30;
+    private const int CodigoDeContratoMaxLength = 30;
     private const int BaseLegalMaxLength = 500;
     private const int UnidadeSiglaMaxLength = 50;
     private const int UnidadeNomeMaxLength = 250;
@@ -60,7 +60,7 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
     {
         builder.Property(f => f.OrigemData)
             .HasConversion<OrigemDataFaseValueConverter>()
-            .HasMaxLength(EnumTokenMaxLength)
+            .HasMaxLength(CodigoDeContratoMaxLength)
             .IsRequired();
     }
 

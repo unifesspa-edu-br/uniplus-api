@@ -18,10 +18,10 @@ public sealed class ModalidadeProtecaoDoCatalogoLegalFixoTests
         Modalidade m = CotaFederal();
 
         Result r = m.Atualizar(new DeclaracaoDaModalidade(
-            Descricao: "Cota", NaturezaLegalToken: "AMPLA", ComposicaoVagasToken: "DENTRO_DA_RESERVA_LEGAL",
-            ComposicaoOrigem: null, RegraRemanejamentoToken: "SEGUE_CASCATA",
+            Descricao: "Cota", CodigoDaNaturezaLegal: "AMPLA", CodigoDaComposicaoDeVagas: "DENTRO_DA_RESERVA_LEGAL",
+            ComposicaoOrigem: null, CodigoDaRegraDeRemanejamento: "SEGUE_CASCATA",
             RemanejamentoDestino: null, RemanejamentoPar: null, RemanejamentoFallback: null,
-            RegraDeAplicabilidade: AplicavelA("AMPLA"), AcaoQuandoIndeferidoToken: null, BaseLegal: "Lei 12.711/2012"));
+            RegraDeAplicabilidade: AplicavelA("AMPLA"), CodigoDaAcaoQuandoIndeferido: null, BaseLegal: "Lei 12.711/2012"));
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(ModalidadeErrorCodes.EstruturaProtegidaNaoEditavel);
@@ -34,10 +34,10 @@ public sealed class ModalidadeProtecaoDoCatalogoLegalFixoTests
         Modalidade m = CotaFederal();
 
         Result r = m.Atualizar(new DeclaracaoDaModalidade(
-            Descricao: "Cota", NaturezaLegalToken: "COTA_RESERVADA", ComposicaoVagasToken: "SUPLEMENTAR_AO_TOTAL",
-            ComposicaoOrigem: null, RegraRemanejamentoToken: "SEGUE_CASCATA",
+            Descricao: "Cota", CodigoDaNaturezaLegal: "COTA_RESERVADA", CodigoDaComposicaoDeVagas: "SUPLEMENTAR_AO_TOTAL",
+            ComposicaoOrigem: null, CodigoDaRegraDeRemanejamento: "SEGUE_CASCATA",
             RemanejamentoDestino: null, RemanejamentoPar: null, RemanejamentoFallback: null,
-            RegraDeAplicabilidade: AplicavelA("COTA_RESERVADA"), AcaoQuandoIndeferidoToken: null, BaseLegal: "Lei 12.711/2012"));
+            RegraDeAplicabilidade: AplicavelA("COTA_RESERVADA"), CodigoDaAcaoQuandoIndeferido: null, BaseLegal: "Lei 12.711/2012"));
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(ModalidadeErrorCodes.EstruturaProtegidaNaoEditavel);
@@ -50,10 +50,10 @@ public sealed class ModalidadeProtecaoDoCatalogoLegalFixoTests
         Modalidade m = CotaFederal();
 
         Result r = m.Atualizar(new DeclaracaoDaModalidade(
-            Descricao: "Cota", NaturezaLegalToken: "COTA_RESERVADA", ComposicaoVagasToken: "DENTRO_DA_RESERVA_LEGAL",
-            ComposicaoOrigem: "AC", RegraRemanejamentoToken: "SEGUE_CASCATA",
+            Descricao: "Cota", CodigoDaNaturezaLegal: "COTA_RESERVADA", CodigoDaComposicaoDeVagas: "DENTRO_DA_RESERVA_LEGAL",
+            ComposicaoOrigem: "AC", CodigoDaRegraDeRemanejamento: "SEGUE_CASCATA",
             RemanejamentoDestino: null, RemanejamentoPar: null, RemanejamentoFallback: null,
-            RegraDeAplicabilidade: AplicavelA("COTA_RESERVADA"), AcaoQuandoIndeferidoToken: null, BaseLegal: "Lei 12.711/2012"));
+            RegraDeAplicabilidade: AplicavelA("COTA_RESERVADA"), CodigoDaAcaoQuandoIndeferido: null, BaseLegal: "Lei 12.711/2012"));
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(ModalidadeErrorCodes.EstruturaProtegidaNaoEditavel);
@@ -66,10 +66,10 @@ public sealed class ModalidadeProtecaoDoCatalogoLegalFixoTests
         Modalidade m = CotaFederal();
 
         Result r = m.Atualizar(new DeclaracaoDaModalidade(
-            Descricao: "Cota", NaturezaLegalToken: "COTA_RESERVADA", ComposicaoVagasToken: "DENTRO_DA_RESERVA_LEGAL",
-            ComposicaoOrigem: null, RegraRemanejamentoToken: null,
+            Descricao: "Cota", CodigoDaNaturezaLegal: "COTA_RESERVADA", CodigoDaComposicaoDeVagas: "DENTRO_DA_RESERVA_LEGAL",
+            ComposicaoOrigem: null, CodigoDaRegraDeRemanejamento: null,
             RemanejamentoDestino: null, RemanejamentoPar: null, RemanejamentoFallback: null,
-            RegraDeAplicabilidade: AplicavelA("COTA_RESERVADA"), AcaoQuandoIndeferidoToken: null, BaseLegal: "Lei 12.711/2012"));
+            RegraDeAplicabilidade: AplicavelA("COTA_RESERVADA"), CodigoDaAcaoQuandoIndeferido: null, BaseLegal: "Lei 12.711/2012"));
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(ModalidadeErrorCodes.EstruturaProtegidaNaoEditavel);
@@ -82,10 +82,10 @@ public sealed class ModalidadeProtecaoDoCatalogoLegalFixoTests
         Modalidade m = CotaFederal();
 
         Result r = m.Atualizar(new DeclaracaoDaModalidade(
-            Descricao: "Cota", NaturezaLegalToken: "COTA_RESERVADA", ComposicaoVagasToken: "DENTRO_DA_RESERVA_LEGAL",
-            ComposicaoOrigem: null, RegraRemanejamentoToken: "SEGUE_CASCATA",
+            Descricao: "Cota", CodigoDaNaturezaLegal: "COTA_RESERVADA", CodigoDaComposicaoDeVagas: "DENTRO_DA_RESERVA_LEGAL",
+            ComposicaoOrigem: null, CodigoDaRegraDeRemanejamento: "SEGUE_CASCATA",
             RemanejamentoDestino: null, RemanejamentoPar: null, RemanejamentoFallback: null,
-            RegraDeAplicabilidade: ComOpcaoPelasCotas(optou: true, ("BAIXA_RENDA", true)), AcaoQuandoIndeferidoToken: null,
+            RegraDeAplicabilidade: ComOpcaoPelasCotas(optou: true, ("BAIXA_RENDA", true)), CodigoDaAcaoQuandoIndeferido: null,
             BaseLegal: "Lei 12.711/2012"));
 
         r.IsFailure.Should().BeTrue();
@@ -100,10 +100,10 @@ public sealed class ModalidadeProtecaoDoCatalogoLegalFixoTests
         Modalidade m = CotaFederal();
 
         Result r = m.Atualizar(new DeclaracaoDaModalidade(
-            Descricao: "Cota", NaturezaLegalToken: "COTA_RESERVADA", ComposicaoVagasToken: "DENTRO_DA_RESERVA_LEGAL",
-            ComposicaoOrigem: null, RegraRemanejamentoToken: "SEGUE_CASCATA",
+            Descricao: "Cota", CodigoDaNaturezaLegal: "COTA_RESERVADA", CodigoDaComposicaoDeVagas: "DENTRO_DA_RESERVA_LEGAL",
+            ComposicaoOrigem: null, CodigoDaRegraDeRemanejamento: "SEGUE_CASCATA",
             RemanejamentoDestino: null, RemanejamentoPar: null, RemanejamentoFallback: null,
-            RegraDeAplicabilidade: AplicavelA("COTA_RESERVADA"), AcaoQuandoIndeferidoToken: "RECLASSIFICAR_AC",
+            RegraDeAplicabilidade: AplicavelA("COTA_RESERVADA"), CodigoDaAcaoQuandoIndeferido: "RECLASSIFICAR_AC",
             BaseLegal: "Lei 12.711/2012"));
 
         r.IsFailure.Should().BeTrue();
@@ -120,10 +120,10 @@ public sealed class ModalidadeProtecaoDoCatalogoLegalFixoTests
         Modalidade m = AcPcd();
 
         Result r = m.Atualizar(new DeclaracaoDaModalidade(
-            Descricao: null, NaturezaLegalToken: "ACAO_AFIRMATIVA", ComposicaoVagasToken: "RETIRADA_DE_OUTRA_MODALIDADE",
-            ComposicaoOrigem: "AC", RegraRemanejamentoToken: "DESTINO_UNICO",
+            Descricao: null, CodigoDaNaturezaLegal: "ACAO_AFIRMATIVA", CodigoDaComposicaoDeVagas: "RETIRADA_DE_OUTRA_MODALIDADE",
+            ComposicaoOrigem: "AC", CodigoDaRegraDeRemanejamento: "DESTINO_UNICO",
             RemanejamentoDestino: destino, RemanejamentoPar: par, RemanejamentoFallback: fallback,
-            RegraDeAplicabilidade: RegraDaAcPcd(), AcaoQuandoIndeferidoToken: null, BaseLegal: null));
+            RegraDeAplicabilidade: RegraDaAcPcd(), CodigoDaAcaoQuandoIndeferido: null, BaseLegal: null));
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(ModalidadeErrorCodes.EstruturaProtegidaNaoEditavel);
@@ -140,10 +140,10 @@ public sealed class ModalidadeProtecaoDoCatalogoLegalFixoTests
         Modalidade m = CotaFederal(ComOpcaoPelasCotas(optou: true, ("BAIXA_RENDA", true)));
 
         Result r = m.Atualizar(new DeclaracaoDaModalidade(
-            Descricao: "Cota — baixa renda, preto/pardo/indígena", NaturezaLegalToken: "COTA_RESERVADA",
-            ComposicaoVagasToken: "DENTRO_DA_RESERVA_LEGAL", ComposicaoOrigem: null, RegraRemanejamentoToken: "SEGUE_CASCATA",
+            Descricao: "Cota — baixa renda, preto/pardo/indígena", CodigoDaNaturezaLegal: "COTA_RESERVADA",
+            CodigoDaComposicaoDeVagas: "DENTRO_DA_RESERVA_LEGAL", ComposicaoOrigem: null, CodigoDaRegraDeRemanejamento: "SEGUE_CASCATA",
             RemanejamentoDestino: null, RemanejamentoPar: null, RemanejamentoFallback: null,
-            RegraDeAplicabilidade: ComOpcaoPelasCotas(optou: true, ("BAIXA_RENDA", true)), AcaoQuandoIndeferidoToken: null,
+            RegraDeAplicabilidade: ComOpcaoPelasCotas(optou: true, ("BAIXA_RENDA", true)), CodigoDaAcaoQuandoIndeferido: null,
             BaseLegal: "Lei 12.711/2012 (red. Lei 14.723/2023)"));
 
         r.IsSuccess.Should().BeTrue();
@@ -158,10 +158,10 @@ public sealed class ModalidadeProtecaoDoCatalogoLegalFixoTests
         Modalidade m = CotaFederal();
 
         Result r = m.Atualizar(new DeclaracaoDaModalidade(
-            Descricao: null, NaturezaLegalToken: "XPTO", ComposicaoVagasToken: "DENTRO_DA_RESERVA_LEGAL",
-            ComposicaoOrigem: null, RegraRemanejamentoToken: "SEGUE_CASCATA",
+            Descricao: null, CodigoDaNaturezaLegal: "XPTO", CodigoDaComposicaoDeVagas: "DENTRO_DA_RESERVA_LEGAL",
+            ComposicaoOrigem: null, CodigoDaRegraDeRemanejamento: "SEGUE_CASCATA",
             RemanejamentoDestino: null, RemanejamentoPar: null, RemanejamentoFallback: null,
-            RegraDeAplicabilidade: AplicavelA("XPTO"), AcaoQuandoIndeferidoToken: null, BaseLegal: null));
+            RegraDeAplicabilidade: AplicavelA("XPTO"), CodigoDaAcaoQuandoIndeferido: null, BaseLegal: null));
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(ModalidadeErrorCodes.NaturezaInvalida,

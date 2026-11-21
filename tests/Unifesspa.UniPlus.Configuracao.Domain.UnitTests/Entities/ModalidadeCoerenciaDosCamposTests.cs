@@ -20,9 +20,9 @@ public sealed class ModalidadeCoerenciaDosCamposTests
     {
         Result<Modalidade> r = Criar(ajuste: d => d with
         {
-            NaturezaLegalToken = "COTA_RESERVADA",
-            ComposicaoVagasToken = "DENTRO_DA_RESERVA_LEGAL",
-            RegraRemanejamentoToken = null,
+            CodigoDaNaturezaLegal = "COTA_RESERVADA",
+            CodigoDaComposicaoDeVagas = "DENTRO_DA_RESERVA_LEGAL",
+            CodigoDaRegraDeRemanejamento = null,
         });
 
         r.IsFailure.Should().BeTrue();
@@ -34,8 +34,8 @@ public sealed class ModalidadeCoerenciaDosCamposTests
     {
         Result<Modalidade> r = Criar(ajuste: d => d with
         {
-            NaturezaLegalToken = "AMPLA",
-            RegraRemanejamentoToken = "SEGUE_CASCATA",
+            CodigoDaNaturezaLegal = "AMPLA",
+            CodigoDaRegraDeRemanejamento = "SEGUE_CASCATA",
         });
 
         r.IsFailure.Should().BeTrue();
@@ -67,7 +67,7 @@ public sealed class ModalidadeCoerenciaDosCamposTests
     {
         Result<Modalidade> r = Criar(ajuste: d => d with
         {
-            ComposicaoVagasToken = "RETIRADA_DE_OUTRA_MODALIDADE",
+            CodigoDaComposicaoDeVagas = "RETIRADA_DE_OUTRA_MODALIDADE",
             ComposicaoOrigem = null,
         });
 
@@ -80,7 +80,7 @@ public sealed class ModalidadeCoerenciaDosCamposTests
     {
         Result<Modalidade> r = Criar(ajuste: d => d with
         {
-            ComposicaoVagasToken = "RESTANTE_DAS_VAGAS_OFERTADAS",
+            CodigoDaComposicaoDeVagas = "RESTANTE_DAS_VAGAS_OFERTADAS",
             ComposicaoOrigem = "AC",
         });
 
@@ -101,7 +101,7 @@ public sealed class ModalidadeCoerenciaDosCamposTests
         {
             "origem" => Criar("AC_PCD", d => d with
             {
-                ComposicaoVagasToken = "RETIRADA_DE_OUTRA_MODALIDADE",
+                CodigoDaComposicaoDeVagas = "RETIRADA_DE_OUTRA_MODALIDADE",
                 ComposicaoOrigem = "AC_PCD",
             }),
             "destino" => Criar("AC_I", d => d.ComoAcaoAfirmativa("DESTINO_UNICO") with { RemanejamentoDestino = "AC_I" }),
@@ -135,8 +135,8 @@ public sealed class ModalidadeCoerenciaDosCamposTests
     {
         Modalidade m = Criar("AC_PCD", d => d with
         {
-            NaturezaLegalToken = "AMPLA",
-            ComposicaoVagasToken = "RETIRADA_DE_OUTRA_MODALIDADE",
+            CodigoDaNaturezaLegal = "AMPLA",
+            CodigoDaComposicaoDeVagas = "RETIRADA_DE_OUTRA_MODALIDADE",
             ComposicaoOrigem = "AC",
         }).Value!;
 

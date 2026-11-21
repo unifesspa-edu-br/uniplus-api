@@ -7,7 +7,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 /// <b>obrigatório</b> da oferta e dimensão <b>própria</b> — não substitui nem
 /// reutiliza o <see cref="RegimeDeTurno"/>, o <see cref="ProgramaDeOferta"/>, o
 /// <see cref="FormatoPedagogico"/> nem o <see cref="TurnoOferta"/>.
-/// Persistido como token UPPER_SNAKE (<see cref="RegimesDeFuncionamento"/>).
+/// Persistido como código UPPER_SNAKE (<see cref="RegimesDeFuncionamento"/>).
 /// </summary>
 /// <remarks>
 /// O regime é <b>declarado</b>, nunca inferido da quantidade de turnos, do
@@ -20,7 +20,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 /// </remarks>
 public enum RegimeDeFuncionamento
 {
-    /// <summary>Sentinela — indica entrada inválida/corrupção se encontrado em runtime.</summary>
+    /// <summary>Valor de ausência — indica entrada inválida/corrupção se encontrado em runtime.</summary>
     Nenhum = 0,
 
     /// <summary>Oferta intensiva — exige regime de turno integral.</summary>

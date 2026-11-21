@@ -2,14 +2,14 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
 /// <summary>
 /// Forma de aceite de um termo de consentimento/declaração (termos imunes após a publicação, UNI-REQ-0086).
-/// Persistida como token UPPER_SNAKE (<see cref="FormasAceite"/>).
+/// Persistida como código UPPER_SNAKE (<see cref="FormasAceite"/>).
 /// </summary>
 public enum FormaAceite
 {
-    /// <summary>Sentinela — indica entrada inválida/corrupção se encontrado em runtime.</summary>
+    /// <summary>Valor de ausência — indica entrada inválida/corrupção se encontrado em runtime.</summary>
     Nenhuma = 0,
 
-    /// <summary>Placeholder — a publicação de um processo recusa termo exigido nesta forma.</summary>
+    /// <summary>Valor provisório — a publicação de um processo recusa termo exigido nesta forma.</summary>
     ADefinir = 1,
 
     /// <summary>Registro digital do aceite, sem log de endereço IP.</summary>

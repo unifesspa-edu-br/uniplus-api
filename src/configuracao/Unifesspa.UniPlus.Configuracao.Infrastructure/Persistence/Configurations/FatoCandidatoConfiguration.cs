@@ -37,7 +37,7 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
     private const int CodigoMaxLength = 50;
     private const int NomeMaxLength = 200;
     private const int DescricaoMaxLength = 1000;
-    private const int EnumTokenMaxLength = 20;
+    private const int CodigoDeContratoMaxLength = 20;
     private const int PontoResolucaoMaxLength = 50;
     private const int BindingMaxLength = 200;
 
@@ -62,37 +62,37 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
         // componente de exibição: anulável — sem declaração vale o padrão que a consulta resolve.
         builder.Property(f => f.ComponenteExibicao)
             .HasConversion(ComponenteExibicaoConverter)
-            .HasMaxLength(EnumTokenMaxLength);
+            .HasMaxLength(CodigoDeContratoMaxLength);
 
         builder.Property(f => f.Dominio)
             .HasConversion(DominioConverter)
-            .HasMaxLength(EnumTokenMaxLength)
+            .HasMaxLength(CodigoDeContratoMaxLength)
             .IsRequired();
 
         builder.Property(f => f.Origem)
             .HasConversion(OrigemConverter)
-            .HasMaxLength(EnumTokenMaxLength)
+            .HasMaxLength(CodigoDeContratoMaxLength)
             .IsRequired();
 
         builder.Property(f => f.Cardinalidade)
             .HasConversion(CardinalidadeConverter)
-            .HasMaxLength(EnumTokenMaxLength)
+            .HasMaxLength(CodigoDeContratoMaxLength)
             .IsRequired();
 
         // fonte_valores (ADR-0136): anulável — só o fato categórico tem fonte; o booleano e o
         // numérico ficam com NULL, que o EF encapsula sem chamar o converter.
         builder.Property(f => f.FonteValores)
             .HasConversion(FonteValoresConverter)
-            .HasMaxLength(EnumTokenMaxLength);
+            .HasMaxLength(CodigoDeContratoMaxLength);
 
         // formato (ADR-0136): anulável — só o fato de domínio texto tem formato.
         builder.Property(f => f.Formato)
             .HasConversion(FormatoConverter)
-            .HasMaxLength(EnumTokenMaxLength);
+            .HasMaxLength(CodigoDeContratoMaxLength);
 
         builder.Property(f => f.Escopo)
             .HasConversion(EscopoConverter)
-            .HasMaxLength(EnumTokenMaxLength)
+            .HasMaxLength(CodigoDeContratoMaxLength)
             .IsRequired();
 
         // Proteção de dados (ADR-0136): classificação na escala da ADR-0081, finalidade e

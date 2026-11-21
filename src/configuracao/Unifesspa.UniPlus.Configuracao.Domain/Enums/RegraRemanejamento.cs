@@ -4,12 +4,12 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 /// Regra de remanejamento das vagas não preenchidas de uma
 /// <see cref="Entities.Modalidade"/> de concorrência (UNI-REQ-0011): descreve, em
 /// domínio fechado, para onde vagas ociosas migram (cascata legal, destino único
-/// ou par cruzado). Persistida como token UPPER_SNAKE (<see cref="RegrasRemanejamento"/>).
+/// ou par cruzado). Persistida como código UPPER_SNAKE (<see cref="RegrasRemanejamento"/>).
 /// É opcional — modalidades de ampla concorrência não remanejam como cota.
 /// </summary>
 public enum RegraRemanejamento
 {
-    /// <summary>Sentinela — indica entrada inválida/corrupção se encontrado em runtime.</summary>
+    /// <summary>Valor de ausência — indica entrada inválida/corrupção se encontrado em runtime.</summary>
     Nenhuma = 0,
 
     /// <summary>Segue a cascata de remanejamento legalmente estabelecida (cotas reservadas).</summary>

@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
-// Mapeia FormatoPedagogico ↔ string (varchar) usando o token canônico UPPER_SNAKE
+// Mapeia FormatoPedagogico ↔ string (varchar) usando o código canônico UPPER_SNAKE
 // (PRESENCIAL…), não o nome PascalCase do enum. O comprimento da coluna é definido
 // na própria propriedade via HasMaxLength no IEntityTypeConfiguration. A
 // reidratação falha explicitamente (com contexto) caso a coluna seja corrompida
@@ -14,16 +14,16 @@ public sealed class FormatoPedagogicoValueConverter : ValueConverter<FormatoPeda
     public FormatoPedagogicoValueConverter()
         : base(
             formato => FormatosPedagogicos.ParaTokenCanonico(formato),
-            token => Reidratar(token))
+            codigo => Reidratar(codigo))
     {
     }
 
-    private static FormatoPedagogico Reidratar(string token)
+    private static FormatoPedagogico Reidratar(string codigo)
     {
-        if (!FormatosPedagogicos.TryAnalisar(token, out FormatoPedagogico formato))
+        if (!FormatosPedagogicos.TryAnalisar(codigo, out FormatoPedagogico formato))
         {
             throw new InvalidOperationException(
-                $"Dado inválido no banco ao reidratar {nameof(FormatoPedagogico)}: '{token}'. " +
+                $"Dado inválido no banco ao reidratar {nameof(FormatoPedagogico)}: '{codigo}'. " +
                 "Verifique se houve alteração manual da coluna fora do fluxo da aplicação.");
         }
 

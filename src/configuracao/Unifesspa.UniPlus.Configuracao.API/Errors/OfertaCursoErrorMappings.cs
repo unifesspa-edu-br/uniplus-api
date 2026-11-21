@@ -74,19 +74,19 @@ internal static class OfertaCursoErrorMappings
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.oferta_curso.programa_de_oferta_invalido",
-                "Programa de oferta fora do domínio fechado")),
+                "Programa de oferta não é um dos códigos aceitos")),
 
         new(OfertaCursoErrorCodes.FormatoPedagogicoInvalido,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.oferta_curso.formato_pedagogico_invalido",
-                "Formato pedagógico fora do domínio fechado")),
+                "Formato pedagógico não é um dos códigos aceitos")),
 
         new(OfertaCursoErrorCodes.TurnoInvalido,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.oferta_curso.turno_invalido",
-                "Turno fora do domínio fechado")),
+                "Turno não é um dos códigos aceitos")),
 
         new(OfertaCursoErrorCodes.RegimeDeTurnoObrigatorio,
             new DomainErrorMapping(
@@ -98,7 +98,7 @@ internal static class OfertaCursoErrorMappings
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.oferta_curso.regime_de_turno_invalido",
-                "Regime de turno fora do domínio fechado")),
+                "Regime de turno não é um dos códigos aceitos")),
 
         new(OfertaCursoErrorCodes.TurnosObrigatorios,
             new DomainErrorMapping(
@@ -128,7 +128,7 @@ internal static class OfertaCursoErrorMappings
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.oferta_curso.regime_de_funcionamento_invalido",
-                "Regime de funcionamento fora do domínio fechado")),
+                "Regime de funcionamento não é um dos códigos aceitos")),
 
         new(OfertaCursoErrorCodes.RegimeDeFuncionamentoIncompativelComRegimeDeTurno,
             new DomainErrorMapping(
