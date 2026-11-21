@@ -2,8 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Retificacao;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// O que a retificação não muda nos prazos do cronograma publicado (UNI-REQ-0211, UNI-REQ-0106). A fase concluída
@@ -123,13 +123,13 @@ public static class ConferenciaDosPrazosDaRetificacao
     private static bool ConcluidaSemDefinitivo(FaseCronograma fase, AndamentoDasFases andamento) =>
         !fase.PublicaResultadoDefinitivo && andamento.Da(fase) == AndamentoDaFase.Concluida;
 
-    // Posterior é qualquer fase de momento maior, a próxima ou a mais distante; a de mesmo momento não é.
+    // Posterior é qualquer fase de momento maior na ordem do cronograma, a próxima ou a mais distante; a de mesmo momento não é.
     private static FaseCronograma? PrimeiraFasePosteriorIniciada(FaseCronograma fase, AndamentoDasFases andamento)
     {
-        int momento = MomentoDaFase.Da(fase, andamento.FasesDaBase);
+        OrdemDoCronograma ordem = OrdemDoCronograma.Do(andamento.FasesDaBase);
 
         return andamento.FasesDaBase
-            .Where(outra => MomentoDaFase.Da(outra, andamento.FasesDaBase) > momento && andamento.Fatos.FasesIniciadas.Contem(outra.FaseCanonicaOrigemId))
+            .Where(outra => ordem.Posterior(outra, fase) && andamento.Fatos.FasesIniciadas.Contem(outra.FaseCanonicaOrigemId))
             .OrderBy(static outra => outra.Ordem)
             .ThenBy(static outra => outra.Codigo, StringComparer.Ordinal)
             .FirstOrDefault();

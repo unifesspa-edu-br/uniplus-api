@@ -86,10 +86,11 @@ public static class RegrasDosFatos
         }
 
         OrdemDoCronograma ordem = OrdemDoCronograma.Do(configuracao.Cronograma.CronogramaFases);
-        FaseEfetivaDoFato.FaseEfetiva efetiva = FaseEfetivaDoFato.Resolver(configuracao, ordem, fato, pontoResolucaoPorFato, membroPorAgregado, []);
+        FaseConhecida conhecida = FaseEmQueOFatoFicaConhecido.Resolver(
+            new OrigensDoFatoNaConfiguracaoDeclarada(configuracao, pontoResolucaoPorFato, membroPorAgregado), ordem, fato);
 
-        return efetiva.Recusa
-            ?? RecusaDoFatoConhecidoDepoisDaInscricao(ordem, efetiva, faseDaInscricao, fato)
+        return conhecida.Recusa
+            ?? RecusaDoFatoConhecidoDepoisDaInscricao(ordem, conhecida, faseDaInscricao, fato)
             ?? RecusaDoFatoSoDaIsencao(configuracao, fato, membroPorAgregado);
     }
 
@@ -99,8 +100,8 @@ public static class RegrasDosFatos
             : null;
 
     private static DomainError? RecusaDoFatoConhecidoDepoisDaInscricao(
-        OrdemDoCronograma ordem, FaseEfetivaDoFato.FaseEfetiva efetiva, FaseCronograma faseDaInscricao, string fato) =>
-        efetiva.Fase is { } fase && ordem.Posterior(fase, faseDaInscricao)
+        OrdemDoCronograma ordem, FaseConhecida conhecida, FaseCronograma faseDaInscricao, string fato) =>
+        conhecida.Fase is { } fase && ordem.Posterior(fase, faseDaInscricao)
             ? new DomainError(
                 ProcessoSeletivoErrorCodes.FatoElegibilidadeConhecidoDepoisDaInscricao,
                 $"O fato '{fato}', que decide quem recebe o acréscimo, só é conhecido na fase '{fase.Codigo}', depois da inscrição.")

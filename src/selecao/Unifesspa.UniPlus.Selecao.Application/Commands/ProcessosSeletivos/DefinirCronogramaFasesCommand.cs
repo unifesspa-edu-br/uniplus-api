@@ -113,7 +113,14 @@ public sealed record FaseCronogramaInput(
     RegraRecursoFaseInput? RegraRecurso,
     Guid? UnidadeResponsavelId = null,
     IReadOnlyList<string?>? TiposDeDecisao = null,
-    RegraDeHomologacaoInput? RegraDeHomologacao = null);
+    RegraDeHomologacaoInput? RegraDeHomologacao = null)
+{
+    /// <summary>
+    /// A fase acontece no mesmo momento da fase que a antecede na lista, e não depois dela. Vale a partir da segunda fase. É
+    /// substituição integral: omitir a marca equivale a <c>false</c>, e quem quer conservá-la a devolve.
+    /// </summary>
+    public bool NoMesmoMomentoDaAnterior { get; init; }
+}
 
 /// <summary>
 /// Substitui integralmente o cronograma de fases do processo (Story #851, CA-06):

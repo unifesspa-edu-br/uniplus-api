@@ -12436,6 +12436,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("inicio");
 
+                    b.Property<bool>("NoMesmoMomentoDaAnterior")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("no_mesmo_momento_da_anterior");
+
                     b.Property<int>("Ordem")
                         .HasColumnType("integer")
                         .HasColumnName("ordem");

@@ -21,7 +21,7 @@ internal static class LeituraDoCronograma
 {
     private static readonly string[] ChavesDaFase =
     [
-        "ordem", "faseCanonicaOrigemId", "codigo", "origemData", "agrupaEtapas", "permiteComplementacao",
+        "ordem", "noMesmoMomentoDaAnterior", "faseCanonicaOrigemId", "codigo", "origemData", "agrupaEtapas", "permiteComplementacao",
         "coletaInscricao", "coletaSolicitacaoIsencao", "inicio", "fim", "produtos",
         "emiteParecerIndividual", "bancasRequeridas", "regraRecurso", "unidadeResponsavel", "tiposDeDecisao", "regraDeHomologacao",
     ];
@@ -92,11 +92,11 @@ internal static class LeituraDoCronograma
 
     // A unidade responsável vem depois das filhas na ordem da gramática, e completa estas decisões.
     private static DecisoesDeCronogramaDaFase LerDecisoesSemUnidade(
-        LeitorEnvelope leitor, JsonObject item, string path, int ordem) => new(
-        ordem,
-        leitor.InstanteOpcional(item, "inicio", path),
-        leitor.InstanteOpcional(item, "fim", path),
-        null);
+        LeitorEnvelope leitor, JsonObject item, string path, int ordem) =>
+        new(ordem, leitor.InstanteOpcional(item, "inicio", path), leitor.InstanteOpcional(item, "fim", path), null)
+        {
+            NoMesmoMomentoDaAnterior = leitor.Booleano(item, "noMesmoMomentoDaAnterior", path),
+        };
 
     private static FaseCronograma? LerFilhasEMontar(
         LeitorEnvelope leitor,

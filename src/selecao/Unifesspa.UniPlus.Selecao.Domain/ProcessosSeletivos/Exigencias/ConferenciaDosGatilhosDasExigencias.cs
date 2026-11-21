@@ -32,13 +32,17 @@ public static class ConferenciaDosGatilhosDasExigencias
 
     private static DomainError? RecusaDaCitacao(ConhecimentoDosFatos conhecimento, GatilhoDaExigencia gatilho, string fato, PontoDeUso ponto)
     {
-        ConhecimentoDoFatoNoPonto noPonto = conhecimento.NoPonto(fato, ponto);
-        if (noPonto != ConhecimentoDoFatoNoPonto.Conhecido)
-        {
-            return Recusa(noPonto);
-        }
+        ConhecimentoNaExigencia naExigencia = conhecimento.NaExigencia(fato, ponto);
 
+        return naExigencia.Situacao != ConhecimentoDoFatoNoPonto.Conhecido
+            ? Recusa(naExigencia.Situacao)
+            : naExigencia.RecusaDaFase ?? RecusaDoGrupoRepetivel(conhecimento, gatilho, fato);
+    }
+
+    private static DomainError? RecusaDoGrupoRepetivel(ConhecimentoDosFatos conhecimento, GatilhoDaExigencia gatilho, string fato)
+    {
         string? grupoDoCampo = conhecimento.GrupoDoCampo(fato);
+
         return grupoDoCampo is null || string.Equals(grupoDoCampo, gatilho.GrupoDeRepeticao, StringComparison.Ordinal)
             ? null
             : new DomainError(
@@ -51,12 +55,6 @@ public static class ConferenciaDosGatilhosDasExigencias
         ConhecimentoDoFatoNoPonto.ForaDoProcesso => new(
             DocumentoExigidoErrorCodes.FatoNaoColetadoPeloProcesso,
             "O fato citado na condição de aplicação da exigência não é coletado nem derivado por este processo."),
-        ConhecimentoDoFatoNoPonto.ConhecidoEmFasePosterior => new(
-            DocumentoExigidoErrorCodes.FatoResolvidoEmFasePosterior,
-            "O fato citado na condição de aplicação da exigência só é conhecido numa fase posterior à da exigência."),
-        ConhecimentoDoFatoNoPonto.FaseDoCatalogoForaDoCronograma => new(
-            DocumentoExigidoErrorCodes.PontoResolucaoForaDoCronograma,
-            "O catálogo situa o fato citado na condição de aplicação da exigência numa fase que o cronograma do processo não tem."),
         _ => new(
             DocumentoExigidoErrorCodes.FatoDeFormularioNaoAlcancado,
             "O fato citado na condição de aplicação da exigência não é conhecido no formulário que a entrega."),

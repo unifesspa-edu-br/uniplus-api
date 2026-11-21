@@ -1,29 +1,65 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// O cronograma como conjunto de fases: existência (que a parte recusada na lista suspende), ordem única, fase canônica única e a precedência que o
-/// cadastro declara entre elas. Cada causa sai na posição da fase que a repete ou a viola.
+/// O cronograma como conjunto de fases: existência (que a parte recusada na lista suspende), ordem única, fase canônica única,
+/// a marca "no mesmo momento da anterior" e a precedência que o cadastro declara entre elas. Cada causa sai na posição da fase
+/// que a repete ou a viola.
 /// </summary>
 internal static class EstruturaDoCronograma
 {
     internal const string CronogramaVazio = "ProcessoSeletivo.CronogramaFasesVazio";
+
+    private const string CampoDaMarca = "noMesmoMomentoDaAnterior";
 
     internal static IReadOnlyList<FieldError> Recusas(CronogramaDoProcesso cronograma) =>
     [
         .. FasesAusentes(cronograma),
         .. OrdensRepetidas(cronograma.Fases),
         .. FasesCanonicasRepetidas(cronograma.Fases),
+        .. PrimeiraFaseNoMesmoMomentoDaAnterior(cronograma),
     ];
 
     /// <summary>
     /// A precedência de cada aresta do cadastro. A aresta com fase ausente não se aplica, e a que envolve código
-    /// repetido fica suspensa: a repetição já é causa de estrutura, e não há como saber qual fase o código designa.
+    /// repetido fica suspensa: a repetição já é causa de estrutura, e não há como saber qual fase o código designa. A
+    /// aresta entre duas fases de ordens distintas que acontecem no mesmo momento, por causa da marca, é recusada pela marca; a
+    /// de ordens iguais fica com a recusa da ordem repetida e da precedência, sem recusa nova.
     /// </summary>
-    internal static IReadOnlyList<FieldError> Precedencia(CronogramaDoProcesso cronograma, IReadOnlyList<ArestaPrecedencia> arestas) =>
-        [.. arestas.Select(aresta => ViolacaoDaAresta(cronograma, aresta)).OfType<FieldError>()];
+    internal static IReadOnlyList<FieldError> Precedencia(CronogramaDoProcesso cronograma, IReadOnlyList<ArestaPrecedencia> arestas)
+    {
+        IReadOnlyDictionary<int, int> momentos = OrdemDoCronograma.MomentosPorOrdem(
+            cronograma.Fases.Select(static fase => (fase.Ordem, fase.NoMesmoMomentoDaAnterior)));
+
+        return [.. arestas.Select(aresta => ViolacaoDaAresta(cronograma, aresta, momentos)).OfType<FieldError>()];
+    }
+
+    // A marca na fase de menor ordem não junta a fase a nenhuma outra. Com a menor ordem repetida a recusa é da ordem repetida, e a
+    // leitura que recusou fase do documento deixou a lista sem as fases que o autor escreveu: a primeira não se afirma.
+    private static IEnumerable<FieldError> PrimeiraFaseNoMesmoMomentoDaAnterior(CronogramaDoProcesso cronograma)
+    {
+        if (cronograma.TemParteRecusadaNaListaDeFases || cronograma.Fases.Count == 0)
+        {
+            return [];
+        }
+
+        int menorOrdem = cronograma.Fases.Min(static fase => fase.Ordem);
+
+        return cronograma.Fases.Where(fase => fase.Ordem == menorOrdem).ToArray() is [{ NoMesmoMomentoDaAnterior: true } primeira]
+            ? [PrimeiraFaseMarcada(cronograma, primeira)]
+            : [];
+    }
+
+    private static FieldError PrimeiraFaseMarcada(CronogramaDoProcesso cronograma, FaseDeclarada primeira) =>
+        CronogramaDoProcesso.NaFase(
+            cronograma.PosicaoDe(primeira),
+            CampoDaMarca,
+            new DomainError(
+                ProcessoSeletivoErrorCodes.PrimeiraFaseNoMesmoMomentoDaAnterior,
+                "A primeira fase do cronograma está marcada para acontecer no mesmo momento da anterior, mas não há fase antes dela. Retire a marca dessa fase ou coloque antes dela a fase com que ela deve acontecer."));
 
     // A leitura que recusou fase do documento deixa a lista sem as fases que o autor escreveu: a ausência não se afirma.
     private static IEnumerable<FieldError> FasesAusentes(CronogramaDoProcesso cronograma) =>
@@ -62,7 +98,7 @@ internal static class EstruturaDoCronograma
         }
     }
 
-    private static FieldError? ViolacaoDaAresta(CronogramaDoProcesso cronograma, ArestaPrecedencia aresta)
+    private static FieldError? ViolacaoDaAresta(CronogramaDoProcesso cronograma, ArestaPrecedencia aresta, IReadOnlyDictionary<int, int> momentos)
     {
         FaseDeclarada? antecessora = cronograma.FaseDeCodigo(aresta.AntecessoraCodigo);
         FaseDeclarada? sucessora = cronograma.FaseDeCodigo(aresta.SucessoraCodigo);
@@ -71,12 +107,35 @@ internal static class EstruturaDoCronograma
             return null;
         }
 
-        return OrdemViolada(cronograma, aresta, antecessora, sucessora) ?? SobreposicaoNaoPermitida(cronograma, aresta, antecessora, sucessora);
+        return MesmoMomento(cronograma, aresta, antecessora, sucessora, momentos)
+            ?? OrdemViolada(cronograma, aresta, antecessora, sucessora, momentos)
+            ?? SobreposicaoNaoPermitida(cronograma, aresta, antecessora, sucessora);
+    }
+
+    // A marca, e não a ordem, pôs as duas no mesmo momento: a recusa fica na fase que vem depois na lista. A lista com fase recusada
+    // pela leitura não diz quem tem a marca.
+    private static FieldError? MesmoMomento(
+        CronogramaDoProcesso cronograma, ArestaPrecedencia aresta, FaseDeclarada antecessora, FaseDeclarada sucessora, IReadOnlyDictionary<int, int> momentos)
+    {
+        bool juntasPelaMarca = antecessora.Ordem != sucessora.Ordem && momentos[antecessora.Ordem] == momentos[sucessora.Ordem];
+        if (cronograma.TemParteRecusadaNaListaDeFases || !juntasPelaMarca)
+        {
+            return null;
+        }
+
+        FaseDeclarada junta = antecessora.Ordem > sucessora.Ordem ? antecessora : sucessora;
+
+        return CronogramaDoProcesso.NaFase(
+            cronograma.PosicaoDe(junta),
+            CampoDaMarca,
+            new DomainError(
+                ProcessoSeletivoErrorCodes.FasesComPrecedenciaNoMesmoMomento,
+                $"A fase '{aresta.AntecessoraCodigo}' vem antes da fase '{aresta.SucessoraCodigo}' no cadastro de precedência, e as duas estão marcadas para acontecer no mesmo momento. Retire a marca \"no mesmo momento da anterior\" que junta as duas ou separe-as na ordem do cronograma."));
     }
 
     private static FieldError? OrdemViolada(
-        CronogramaDoProcesso cronograma, ArestaPrecedencia aresta, FaseDeclarada antecessora, FaseDeclarada sucessora) =>
-        antecessora.Ordem >= sucessora.Ordem
+        CronogramaDoProcesso cronograma, ArestaPrecedencia aresta, FaseDeclarada antecessora, FaseDeclarada sucessora, IReadOnlyDictionary<int, int> momentos) =>
+        antecessora.Ordem == sucessora.Ordem || momentos[antecessora.Ordem] > momentos[sucessora.Ordem]
             ? CronogramaDoProcesso.NaFase(
                 cronograma.PosicaoDe(sucessora),
                 "ordem",

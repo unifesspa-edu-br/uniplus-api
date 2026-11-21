@@ -34,11 +34,12 @@ public sealed class ProjecaoDaFaseDoCronogramaTests
         ColetaInscricao: coletaInscricao,
         ColetaSolicitacaoIsencao: coletaIsencao);
 
-    private static DecisoesDeCronogramaDaFase Cronograma(UnidadeResponsavelSnapshot? unidade) => new(
+    private static DecisoesDeCronogramaDaFase Cronograma(UnidadeResponsavelSnapshot? unidade, bool noMesmoMomentoDaAnterior = false) => new(
         Ordem: 3,
         Inicio: Inicio,
         Fim: Fim,
-        UnidadeResponsavel: unidade);
+        UnidadeResponsavel: unidade)
+    { NoMesmoMomentoDaAnterior = noMesmoMomentoDaAnterior };
 
     private static RegraRecursoFase RegraDeRecurso() => RegraRecursoFase.Criar(
         ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "1", new string('a', 64)),
@@ -59,11 +60,11 @@ public sealed class ProjecaoDaFaseDoCronogramaTests
 
     private static FaseCronograma FaseCompleta(
         bool agrupaEtapas = true, bool permiteComplementacao = false, bool coletaInscricao = true, bool coletaIsencao = false,
-        RegraDeHomologacaoDasInscricoes? regraDeHomologacao = null) =>
+        RegraDeHomologacaoDasInscricoes? regraDeHomologacao = null, bool noMesmoMomentoDaAnterior = false) =>
         FaseCronograma.Reidratar(
             FaseId,
             Origem(agrupaEtapas, permiteComplementacao, coletaInscricao, coletaIsencao),
-            Cronograma(new UnidadeResponsavelSnapshot(UnidadeId, "CEPS", "Centro de Processos Seletivos")),
+            Cronograma(new UnidadeResponsavelSnapshot(UnidadeId, "CEPS", "Centro de Processos Seletivos"), noMesmoMomentoDaAnterior),
             new PublicacoesDaFase(
                 Produtos: Produtos(),
                 EmiteParecerIndividual: true,
@@ -112,6 +113,16 @@ public sealed class ProjecaoDaFaseDoCronogramaTests
             ColetaSolicitacaoIsencao: coletaIsencao));
     }
 
+    [Theory(DisplayName = "O cronograma projeta a marca de mesmo momento como a fase a tem")]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ProjetarFase_Cronograma_ProjetaAMarca(bool marcada)
+    {
+        FaseCronograma fase = FaseCompleta(noMesmoMomentoDaAnterior: marcada);
+
+        ProjecaoDaFaseDoCronograma.ProjetarFase(fase).Cronograma.NoMesmoMomentoDaAnterior.Should().Be(marcada);
+    }
+
     [Fact(DisplayName = "O cronograma projeta a posição, o período e a unidade responsável")]
     public void ProjetarFase_Cronograma_ProjetaCadaCampo()
     {
@@ -119,6 +130,7 @@ public sealed class ProjecaoDaFaseDoCronogramaTests
 
         grupo.Should().BeEquivalentTo(new CronogramaDaFaseDto(
             Ordem: 3,
+            NoMesmoMomentoDaAnterior: false,
             Inicio: Inicio,
             Fim: Fim,
             UnidadeResponsavel: new UnidadeResponsavelDto(UnidadeId, "CEPS", "Centro de Processos Seletivos")));

@@ -23,12 +23,12 @@ public sealed class ConformidadeDaPrecedenciaNoPainelTests
 {
     private const string ItemDaPrecedencia = "cronograma_precedencia_entre_fases";
 
-    private static ProcessoSeletivo ProcessoComDuasFases()
+    private static ProcessoSeletivo ProcessoComDuasFasesNoMesmoMomento()
     {
         ProcessoSeletivo processo = ComTodosOsItensObrigatorios();
         FaseCronograma habilitacao = FaseCronograma.Criar(
             new OrigemCanonicaDaFase(Guid.CreateVersion7(), "HABILITACAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
-            new DecisoesDeCronogramaDaFase(2, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new DecisoesDeCronogramaDaFase(2, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps) { NoMesmoMomentoDaAnterior = true },
             new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
             []).Value!;
         processo.DefinirCronogramaFases([.. processo.CronogramaFases, habilitacao], []).IsSuccess.Should().BeTrue();
@@ -44,11 +44,11 @@ public sealed class ConformidadeDaPrecedenciaNoPainelTests
         return painel!.Itens.Single(static item => item.Codigo == ItemDaPrecedencia).Ok;
     }
 
-    [Fact(DisplayName = "Sem versão publicada, o painel lê a precedência e mostra pendentes as fases em ordem invertida")]
+    [Fact(DisplayName = "Sem versão publicada, o painel lê a precedência e mostra pendentes as fases ligadas no mesmo momento")]
     public async Task SemVersaoPublicada_PainelLeAPrecedencia()
     {
-        ProcessoSeletivo processo = ProcessoComDuasFases();
-        IPrecedenciaFaseReader cadastro = PrecedenciasDeTeste.Com(("HABILITACAO", processo.CronogramaFases.Single(static fase => fase.Ordem == 1).Codigo, true));
+        ProcessoSeletivo processo = ProcessoComDuasFasesNoMesmoMomento();
+        IPrecedenciaFaseReader cadastro = PrecedenciasDeTeste.Com((processo.CronogramaFases.Single(static fase => fase.Ordem == 1).Codigo, "HABILITACAO", true));
 
         bool ok = await ItemOkAsync(ServicosDoCongelamentoDeTeste.Para(processo).ComPrecedencias(cadastro), processo);
 
@@ -59,7 +59,7 @@ public sealed class ConformidadeDaPrecedenciaNoPainelTests
     [Fact(DisplayName = "Sem relação no cadastro, o item da precedência fica conforme")]
     public async Task SemRelacaoNoCadastro_ItemConforme()
     {
-        ProcessoSeletivo processo = ProcessoComDuasFases();
+        ProcessoSeletivo processo = ProcessoComDuasFasesNoMesmoMomento();
 
         bool ok = await ItemOkAsync(ServicosDoCongelamentoDeTeste.Para(processo), processo);
 
@@ -69,8 +69,8 @@ public sealed class ConformidadeDaPrecedenciaNoPainelTests
     [Fact(DisplayName = "Com o cronograma igual ao da versão publicada, o painel não lê a precedência e o item fica conforme")]
     public async Task CronogramaIgualAoPublicado_PainelNaoLeAPrecedencia()
     {
-        ProcessoSeletivo processo = ProcessoComDuasFases();
-        IPrecedenciaFaseReader cadastro = PrecedenciasDeTeste.Com(("HABILITACAO", processo.CronogramaFases.Single(static fase => fase.Ordem == 1).Codigo, true));
+        ProcessoSeletivo processo = ProcessoComDuasFasesNoMesmoMomento();
+        IPrecedenciaFaseReader cadastro = PrecedenciasDeTeste.Com((processo.CronogramaFases.Single(static fase => fase.Ordem == 1).Codigo, "HABILITACAO", true));
         ServicosDoCongelamentoDeTeste servicos = ServicosDoCongelamentoDeTeste.Para(processo).ComPrecedencias(cadastro);
         VersaoPublicadaDeTeste.Publicar(processo, servicos.Repositorio, servicos.Codecs);
 

@@ -2490,6 +2490,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
                     ordem = table.Column<int>(type: "integer", nullable: false),
+                    no_mesmo_momento_da_anterior = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     fase_canonica_origem_id = table.Column<Guid>(type: "uuid", nullable: false),
                     codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
                     unidade_responsavel_origem_id = table.Column<Guid>(type: "uuid", nullable: true),

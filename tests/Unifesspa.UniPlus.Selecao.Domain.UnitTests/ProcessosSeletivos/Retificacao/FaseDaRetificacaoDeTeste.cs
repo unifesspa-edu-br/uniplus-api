@@ -25,10 +25,12 @@ internal static class FaseDaRetificacaoDeTeste
         (DateTimeOffset Inicio, DateTimeOffset Fim)? janela = null,
         bool coletaInscricao = false,
         bool coletaIsencao = false,
+        bool noMesmoMomentoDaAnterior = false,
         params ProdutoDaFase[] produtos) =>
         FaseCronograma.Criar(
             new OrigemCanonicaDaFase(Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: coletaInscricao, ColetaSolicitacaoIsencao: coletaIsencao),
-            new DecisoesDeCronogramaDaFase(ordem, Inicio: janela?.Inicio ?? Instante.AddDays(ordem), Fim: janela?.Fim ?? Instante.AddDays(ordem + 5), UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new DecisoesDeCronogramaDaFase(ordem, Inicio: janela?.Inicio ?? Instante.AddDays(ordem), Fim: janela?.Fim ?? Instante.AddDays(ordem + 5), UnidadeResponsavel: UnidadesDeTeste.Ceps)
+            { NoMesmoMomentoDaAnterior = noMesmoMomentoDaAnterior },
             new PublicacoesDaFase(Produtos: produtos, EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;
 
@@ -44,7 +46,17 @@ internal static class FaseDaRetificacaoDeTeste
     internal static FaseCronograma ComJanela(FaseCronograma fase, DateTimeOffset? inicio, DateTimeOffset? fim) =>
         FaseCronograma.Criar(
             new OrigemCanonicaDaFase(fase.FaseCanonicaOrigemId, fase.Codigo, fase.OrigemData, fase.AgrupaEtapas, fase.PermiteComplementacao, fase.ColetaInscricao, fase.ColetaSolicitacaoIsencao),
-            new DecisoesDeCronogramaDaFase(fase.Ordem, Inicio: inicio, Fim: fim, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new DecisoesDeCronogramaDaFase(fase.Ordem, Inicio: inicio, Fim: fim, UnidadeResponsavel: UnidadesDeTeste.Ceps)
+            { NoMesmoMomentoDaAnterior = fase.NoMesmoMomentoDaAnterior },
+            new PublicacoesDaFase(Produtos: [.. fase.Produtos], EmiteParecerIndividual: false, RegraRecurso: null),
+            bancasRequeridas: []).Value!;
+
+    /// <summary>A mesma fase, com a mesma origem canônica e os mesmos dados, com a marca "no mesmo momento da anterior" trocada.</summary>
+    internal static FaseCronograma ComMarca(FaseCronograma fase, bool noMesmoMomentoDaAnterior) =>
+        FaseCronograma.Criar(
+            new OrigemCanonicaDaFase(fase.FaseCanonicaOrigemId, fase.Codigo, fase.OrigemData, fase.AgrupaEtapas, fase.PermiteComplementacao, fase.ColetaInscricao, fase.ColetaSolicitacaoIsencao),
+            new DecisoesDeCronogramaDaFase(fase.Ordem, Inicio: fase.Inicio, Fim: fase.Fim, UnidadeResponsavel: UnidadesDeTeste.Ceps)
+            { NoMesmoMomentoDaAnterior = noMesmoMomentoDaAnterior },
             new PublicacoesDaFase(Produtos: [.. fase.Produtos], EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;
 
@@ -52,7 +64,8 @@ internal static class FaseDaRetificacaoDeTeste
     internal static FaseCronograma ComTiposDeDecisao(FaseCronograma fase, params string[] tipos) =>
         FaseCronograma.Criar(
             new OrigemCanonicaDaFase(fase.FaseCanonicaOrigemId, fase.Codigo, fase.OrigemData, fase.AgrupaEtapas, fase.PermiteComplementacao, fase.ColetaInscricao, fase.ColetaSolicitacaoIsencao),
-            new DecisoesDeCronogramaDaFase(fase.Ordem, Inicio: fase.Inicio, Fim: fase.Fim, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new DecisoesDeCronogramaDaFase(fase.Ordem, Inicio: fase.Inicio, Fim: fase.Fim, UnidadeResponsavel: UnidadesDeTeste.Ceps)
+            { NoMesmoMomentoDaAnterior = fase.NoMesmoMomentoDaAnterior },
             new PublicacoesDaFase(Produtos: [.. fase.Produtos], EmiteParecerIndividual: false, RegraRecurso: null, TiposDeDecisao: tipos),
             bancasRequeridas: []).Value!;
 
@@ -60,7 +73,8 @@ internal static class FaseDaRetificacaoDeTeste
     internal static FaseCronograma Renomeada(FaseCronograma fase, string codigo, int ordem, params ProdutoDaFase[] produtos) =>
         FaseCronograma.Criar(
             new OrigemCanonicaDaFase(fase.FaseCanonicaOrigemId, codigo, fase.OrigemData, fase.AgrupaEtapas, fase.PermiteComplementacao, fase.ColetaInscricao, fase.ColetaSolicitacaoIsencao),
-            new DecisoesDeCronogramaDaFase(ordem, Inicio: fase.Inicio, Fim: fase.Fim, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new DecisoesDeCronogramaDaFase(ordem, Inicio: fase.Inicio, Fim: fase.Fim, UnidadeResponsavel: UnidadesDeTeste.Ceps)
+            { NoMesmoMomentoDaAnterior = fase.NoMesmoMomentoDaAnterior },
             new PublicacoesDaFase(Produtos: produtos, EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;
 

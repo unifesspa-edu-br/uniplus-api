@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 
@@ -32,7 +31,7 @@ public static class RegrasDasModalidadesNaInscricao
     private static PontoDeUso? FimDaInscricao(ConhecimentoDosFatos conhecimento) =>
         conhecimento.Cronograma
             .Where(static fase => fase.ColetaInscricao)
-            .OrderByDescending(fase => MomentoDaFase.Da(fase, conhecimento.Cronograma))
+            .OrderByDescending(static fase => fase.Ordem)
             .FirstOrDefault() is { } faseDaInscricao
             ? new PontoDeUso(faseDaInscricao, null)
             : null;

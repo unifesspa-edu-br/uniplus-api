@@ -18,10 +18,10 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// </summary>
 public sealed class LeituraDasPrecedenciasDosCadastrosTests
 {
-    private static FaseCronograma Fase(Guid origem, string codigo, int ordem) =>
+    private static FaseCronograma Fase(Guid origem, string codigo, int ordem, bool marcada = false) =>
         FaseCronograma.Criar(
             new OrigemCanonicaDaFase(origem, codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
-            new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps) { NoMesmoMomentoDaAnterior = marcada },
             new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;
 
@@ -55,7 +55,7 @@ public sealed class LeituraDasPrecedenciasDosCadastrosTests
         IPrecedenciaFaseReader leitor = PrecedenciasDeTeste.SemArestas();
 
         PrecedenciasDosCadastros precedencias = await new LeituraDasPrecedenciasDosCadastros(leitor).LerAsync(
-            [Fase(origemA, "A", 1), Fase(origemB, "B", 2)], [Fase(origemA, "A", 1), Fase(origemB, "B", 3)], CancellationToken.None);
+            [Fase(origemA, "A", 1), Fase(origemB, "B", 2)], [Fase(origemA, "A", 1), Fase(origemB, "B", 2, marcada: true)], CancellationToken.None);
 
         precedencias.FoiLida.Should().BeTrue();
         precedencias.Arestas.Should().BeEmpty();

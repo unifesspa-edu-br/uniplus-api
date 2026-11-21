@@ -91,11 +91,13 @@ public sealed record FaseCanonicaCongeladaDto(
 
 /// <summary>O que o edital decide sobre a fase: a posição, o período e quem responde.</summary>
 /// <param name="Ordem">A posição da fase na sequência do cronograma.</param>
+/// <param name="NoMesmoMomentoDaAnterior">Se a fase acontece no mesmo momento da fase que a antecede na lista.</param>
 /// <param name="Inicio">O início da janela da fase, ou nulo quando o edital não o fixa.</param>
 /// <param name="Fim">O fim da janela da fase, ou nulo quando o edital não o fixa.</param>
 /// <param name="UnidadeResponsavel">A unidade que responde pela fase, ou nulo enquanto o rascunho ainda não a definiu.</param>
 public sealed record CronogramaDaFaseDto(
     int Ordem,
+    bool NoMesmoMomentoDaAnterior,
     DateTimeOffset? Inicio,
     DateTimeOffset? Fim,
     UnidadeResponsavelDto? UnidadeResponsavel);
