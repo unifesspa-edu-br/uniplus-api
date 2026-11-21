@@ -62,6 +62,9 @@
 #   NOME_PROCESSO (default: o nome do processo da Medicina 2027)
 #   IDENTIFICADOR_PROCESSO (default: psm-2027) — o identificador legível é único:
 #                 outro processo na mesma base precisa de outro valor
+#   INICIO_INSCRICAO, FIM_INSCRICAO (default: a inscrição abre ontem e dura um mês) —
+#                 início e fim do período de inscrição, com data, hora e fuso de Belém,
+#                 como 2026-11-08T00:00:00-03:00
 #
 # O arquivo também pode ser lido com `source` por um roteiro irmão (ver
 # roteiro-processo-teste-notas-do-enem.sh): as funções ficam disponíveis e o
@@ -640,8 +643,8 @@ definir_cronograma_fases() {
     hoje=$(TZ=America/Belem date +%Y-%m-%d)
     deslocamento=$(( ($(date -d "$hoje -1 day" +%s) - $(date -d 2026-12-10 +%s)) / 86400 ))
     na_data() { TZ=America/Belem date -d "$1 $deslocamento days" +%Y-%m-%dT"$2"-03:00; }
-    inicio_inscricao=$(na_data 2026-12-10 00:00:00)
-    fim_inscricao=$(na_data 2027-01-10 23:59:59)
+    inicio_inscricao="${INICIO_INSCRICAO:-$(na_data 2026-12-10 00:00:00)}"
+    fim_inscricao="${FIM_INSCRICAO:-$(na_data 2027-01-10 23:59:59)}"
     inicio_resultado=$(na_data 2027-01-11 00:00:00)
     fim_resultado=$(na_data 2027-01-24 23:59:59)
     inicio_habilitacao=$(na_data 2027-01-25 00:00:00)
