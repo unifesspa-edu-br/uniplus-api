@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Verificador.UnitTests;
 
+using System.Buffers.Binary;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -185,17 +186,39 @@ public sealed class ClamdClientTests
     {
         using TcpClient conexao = await servidor.AcceptTcpClientAsync();
         NetworkStream rede = conexao.GetStream();
-        byte[] descarte = new byte[4096];
-        // O cliente termina o envio com o pedaço de tamanho zero; só depois o servidor responde.
-        int total = 0;
-        while (total < 14)
-        {
-            total += await rede.ReadAsync(descarte);
-        }
+        await ConsumirInstreamAsync(rede);
 
         if (!string.IsNullOrEmpty(resposta))
         {
             await rede.WriteAsync(Encoding.UTF8.GetBytes(resposta + "\0"));
+        }
+    }
+
+    private static async Task ConsumirInstreamAsync(NetworkStream rede)
+    {
+        byte[] descarte = new byte[4096];
+        await rede.ReadExactlyAsync(descarte.AsMemory(0, "zINSTREAM\0"u8.Length));
+        byte[] cabecalho = new byte[sizeof(uint)];
+        while (true)
+        {
+            await rede.ReadExactlyAsync(cabecalho);
+            uint tamanho = BinaryPrimitives.ReadUInt32BigEndian(cabecalho);
+            if (tamanho == 0)
+            {
+                return;
+            }
+
+            await DescartarPedacoAsync(rede, descarte, tamanho);
+        }
+    }
+
+    private static async Task DescartarPedacoAsync(NetworkStream rede, byte[] descarte, uint restantes)
+    {
+        while (restantes > 0)
+        {
+            int quantidade = (int)Math.Min(restantes, (uint)descarte.Length);
+            await rede.ReadExactlyAsync(descarte.AsMemory(0, quantidade));
+            restantes -= (uint)quantidade;
         }
     }
 
