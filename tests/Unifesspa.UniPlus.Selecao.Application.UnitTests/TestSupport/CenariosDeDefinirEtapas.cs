@@ -27,9 +27,9 @@ internal static class CenariosDeDefinirEtapas
     {
         ITipoEtapaReader reader = Substitute.For<ITipoEtapaReader>();
         reader.ObterAtivoPorIdAsync(TipoProvaObjetivaOrigemId, Arg.Any<CancellationToken>())
-            .Returns(new TipoEtapaView(TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva", null, true, true, false, false, []));
+            .Returns(TipoEtapaViewDeTeste.Com(TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA").Chamado("Prova Objetiva").Construir());
         reader.ObterAtivoPorIdAsync(TipoRedacaoOrigemId, Arg.Any<CancellationToken>())
-            .Returns(new TipoEtapaView(TipoRedacaoOrigemId, "REDACAO", "Redação", null, true, true, false, false, []));
+            .Returns(TipoEtapaViewDeTeste.Com(TipoRedacaoOrigemId, "REDACAO").Chamado("Redação").Construir());
         return reader;
     }
 
@@ -103,7 +103,8 @@ internal static class CenariosDeDefinirEtapas
     /// <summary>O tipo de etapa como o cadastro o devolve hoje, sem descrição e sem conceitos.</summary>
     internal static TipoEtapaView TipoNoCadastro(
         Guid id, string codigo, string nome, bool admitePontuacao = true, bool admiteEliminacao = true, bool notaDeOrigemNoEnem = false, bool exigeCorrecaoIndependente = false) =>
-        new(id, codigo, nome, null, admitePontuacao, admiteEliminacao, notaDeOrigemNoEnem, exigeCorrecaoIndependente, []);
+        TipoEtapaViewDeTeste.Com(id, codigo).Chamado(nome).ComCarater(admitePontuacao, admiteEliminacao)
+            .ComNotaDoEnem(notaDeOrigemNoEnem).ComCorrecaoIndependente(exigeCorrecaoIndependente).Construir();
 
     /// <summary>O tipo de etapa como ficou congelado na etapa do processo.</summary>
     internal static TipoEtapaSnapshot TipoCongelado(

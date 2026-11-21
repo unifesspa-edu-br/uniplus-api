@@ -51,17 +51,18 @@ public static class AtualizarTipoEtapaCommandHandler
     private static async Task<Result<IReadOnlyList<TipoConceito>>> ConferirCampos(
         AtualizarTipoEtapaCommand command, ITipoConceitoRepository conceitos, CancellationToken cancellationToken)
     {
+        AvaliacaoDasEtapasInput avaliacao = command.Avaliacao ?? AvaliacaoDasEtapasInput.Ausente;
         Result<CamposEditaveisDoTipoDeEtapa> campos = TipoEtapa.ValidarCamposEditaveis(
-            command.Nome, command.Descricao, command.AdmitePontuacao, command.AdmiteEliminacao, command.ExigeCorrecaoIndependente);
+            command.Nome, command.Descricao, avaliacao.AdmitePontuacao, avaliacao.AdmiteEliminacao, avaliacao.ExigeCorrecaoIndependente);
         Result<IReadOnlyList<TipoConceito>> admitidos = await ResolucaoDosConceitosAdmitidos
-            .Resolver(command.ConceitosAdmitidos, conceitos, cancellationToken).ConfigureAwait(false);
-        FieldError[] erros = [.. campos.Errors, .. admitidos.Errors, .. ViolacoesDosConceitos(command, admitidos)];
+            .Resolver(avaliacao.ConceitosAdmitidos, conceitos, cancellationToken).ConfigureAwait(false);
+        FieldError[] erros = CaminhoDaAvaliacao.Aplicar([.. campos.Errors, .. admitidos.Errors, .. ViolacoesDosConceitos(avaliacao, admitidos)]);
         return erros.Length > 0 ? Result<IReadOnlyList<TipoConceito>>.ValidationFailure(erros) : admitidos;
     }
 
     private static IReadOnlyList<FieldError> ViolacoesDosConceitos(
-        AtualizarTipoEtapaCommand command, Result<IReadOnlyList<TipoConceito>> admitidos) =>
-        admitidos.IsSuccess ? TipoEtapa.ViolacoesDaCorrecaoSemConceito(command.ExigeCorrecaoIndependente, admitidos.Value!) : [];
+        AvaliacaoDasEtapasInput avaliacao, Result<IReadOnlyList<TipoConceito>> admitidos) =>
+        admitidos.IsSuccess ? TipoEtapa.ViolacoesDaCorrecaoSemConceito(avaliacao.ExigeCorrecaoIndependente, admitidos.Value!) : [];
 
     private static async Task<Result> Aplicar(
         TipoEtapa tipo,
@@ -72,8 +73,9 @@ public static class AtualizarTipoEtapaCommandHandler
     {
         // Com os campos já confirmados, só a regra que depende do próprio tipo pode recusar
         // aqui, e o tipo recusa antes de mutar.
+        AvaliacaoDasEtapasInput avaliacao = command.Avaliacao ?? AvaliacaoDasEtapasInput.Ausente;
         Result atualizar = tipo.Atualizar(
-            command.Nome, command.Descricao, command.AdmitePontuacao, command.AdmiteEliminacao, command.ExigeCorrecaoIndependente);
+            command.Nome, command.Descricao, avaliacao.AdmitePontuacao, avaliacao.AdmiteEliminacao, avaliacao.ExigeCorrecaoIndependente);
         if (atualizar.IsFailure)
         {
             return atualizar;

@@ -8,24 +8,11 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// sem validator FluentValidation garantindo não-nulo a montante, o model
 /// binding automático do <c>[ApiController]</c> interceptaria um campo
 /// ausente/nulo com um 400 genérico do ASP.NET, antes de o domínio rodar.
-/// <para>
-/// Os dois sinalizadores de caráter admitido são anuláveis pelo mesmo motivo, com um
-/// agravante: <c>bool</c> não-anulável faria campo ausente virar <c>false</c> em silêncio, e
-/// o tipo nasceria declarando que não compõe a nota final sem ninguém ter dito isso.
-/// </para>
-/// <para>
-/// <c>ExigeCorrecaoIndependente</c> também é obrigatório, anulável pelo mesmo motivo.
-/// </para>
-/// <para>
-/// <c>ConceitosAdmitidos</c> traz os códigos dos tipos de conceito que o tipo admite. A lista é obrigatória,
-/// ainda que vazia: ausente é recusada, e não lida como "nenhum conceito".
-/// </para>
+/// A <c>Avaliacao</c> traz os sinalizadores de caráter e os conceitos admitidos, anuláveis pelo mesmo motivo
+/// (ver <see cref="AvaliacaoDasEtapasInput"/>).
 /// </remarks>
 public sealed record CriarTipoEtapaCommand(
     string? Codigo,
     string? Nome,
-    bool? AdmitePontuacao,
-    bool? AdmiteEliminacao,
-    bool? ExigeCorrecaoIndependente,
-    IReadOnlyList<string>? ConceitosAdmitidos,
+    AvaliacaoDasEtapasInput? Avaliacao,
     string? Descricao = null) : ICommand<Result<Guid>>;

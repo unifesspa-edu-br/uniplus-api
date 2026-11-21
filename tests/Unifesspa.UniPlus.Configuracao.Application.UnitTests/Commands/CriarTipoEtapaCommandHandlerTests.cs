@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class CriarTipoEtapaCommandHandlerTests
 {
@@ -19,7 +20,10 @@ public sealed class CriarTipoEtapaCommandHandlerTests
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     private static CriarTipoEtapaCommand ComandoValido() =>
-        new("TIPO_ETAPA_TESTE", "Tipo de etapa de teste", AdmitePontuacao: true, AdmiteEliminacao: true, ExigeCorrecaoIndependente: false, ConceitosAdmitidos: []);
+        ComAvaliacao(AvaliacaoDasEtapasDeTeste.Padrao());
+
+    private static CriarTipoEtapaCommand ComAvaliacao(AvaliacaoDasEtapasDeTeste avaliacao) =>
+        new("TIPO_ETAPA_TESTE", "Tipo de etapa de teste", avaliacao.Construir());
 
     private Task<Result<Guid>> Criar(CriarTipoEtapaCommand comando) =>
         CriarTipoEtapaCommandHandler.Handle(comando, _repository, _conceitos, _unitOfWork, CancellationToken.None);
@@ -87,7 +91,7 @@ public sealed class CriarTipoEtapaCommandHandlerTests
         TipoEtapa? gravado = null;
         await _repository.AdicionarAsync(Arg.Do<TipoEtapa>(tipo => gravado = tipo), Arg.Any<CancellationToken>());
 
-        Result<Guid> resultado = await Criar(ComandoValido() with { ConceitosAdmitidos = [nota.Codigo] });
+        Result<Guid> resultado = await Criar(ComAvaliacao(AvaliacaoDasEtapasDeTeste.Padrao().ComConceitos(nota.Codigo)));
 
         resultado.IsSuccess.Should().BeTrue();
         gravado!.ConceitosAdmitidos.Should().ContainSingle().Which.Should().BeSameAs(nota);
@@ -106,10 +110,10 @@ public sealed class CriarTipoEtapaCommandHandlerTests
     [Fact(DisplayName = "Exigir correção independente sem admitir conceito é recusado no campo dos conceitos, sem persistir")]
     public async Task Handle_CorrecaoIndependenteSemConceito_RecusaSemPersistir()
     {
-        Result<Guid> resultado = await Criar(ComandoValido() with { ExigeCorrecaoIndependente = true });
+        Result<Guid> resultado = await Criar(ComAvaliacao(AvaliacaoDasEtapasDeTeste.Padrao().ComCorrecaoIndependente(true)));
 
         resultado.Errors.Select(erro => (erro.Field, erro.Error.Code)).Should().Equal(
-            ("conceitosAdmitidos", TipoEtapaErrorCodes.CorrecaoIndependenteSemConceito));
+            ("avaliacao.conceitosAdmitidos", TipoEtapaErrorCodes.CorrecaoIndependenteSemConceito));
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -121,7 +125,7 @@ public sealed class CriarTipoEtapaCommandHandlerTests
         TipoEtapa? gravado = null;
         await _repository.AdicionarAsync(Arg.Do<TipoEtapa>(tipo => gravado = tipo), Arg.Any<CancellationToken>());
 
-        Result<Guid> resultado = await Criar(ComandoValido() with { ExigeCorrecaoIndependente = true, ConceitosAdmitidos = [nota.Codigo] });
+        Result<Guid> resultado = await Criar(ComAvaliacao(AvaliacaoDasEtapasDeTeste.Padrao().ComCorrecaoIndependente(true).ComConceitos(nota.Codigo)));
 
         resultado.IsSuccess.Should().BeTrue();
         gravado!.ExigeCorrecaoIndependente.Should().BeTrue();
@@ -130,19 +134,19 @@ public sealed class CriarTipoEtapaCommandHandlerTests
     [Fact(DisplayName = "Sinalizador de correção independente ausente é recusado como campo obrigatório")]
     public async Task Handle_CorrecaoIndependenteAusente_Recusa()
     {
-        Result<Guid> resultado = await Criar(ComandoValido() with { ExigeCorrecaoIndependente = null });
+        Result<Guid> resultado = await Criar(ComAvaliacao(AvaliacaoDasEtapasDeTeste.Padrao().ComCorrecaoIndependente(null)));
 
         resultado.Errors.Select(erro => (erro.Field, erro.Error.Code)).Should().Equal(
-            ("exigeCorrecaoIndependente", TipoEtapaErrorCodes.ExigeCorrecaoIndependenteObrigatorio));
+            ("avaliacao.exigeCorrecaoIndependente", TipoEtapaErrorCodes.ExigeCorrecaoIndependenteObrigatorio));
     }
 
     [Fact(DisplayName = "Lista ausente é recusada como campo obrigatório, sem consultar o catálogo nem persistir")]
     public async Task Handle_ListaAusente_RecusaSemConsultarNemPersistir()
     {
-        Result<Guid> resultado = await Criar(ComandoValido() with { ConceitosAdmitidos = null });
+        Result<Guid> resultado = await Criar(ComAvaliacao(AvaliacaoDasEtapasDeTeste.Padrao().ComConceitos(null)));
 
         resultado.Errors.Select(erro => (erro.Field, erro.Error.Code)).Should().Equal(
-            ("conceitosAdmitidos", TipoEtapaErrorCodes.ConceitosAdmitidosObrigatorio));
+            ("avaliacao.conceitosAdmitidos", TipoEtapaErrorCodes.ConceitosAdmitidosObrigatorio));
         await _conceitos.DidNotReceive().ListarPorCodigosAsync(
             Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>());
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
@@ -153,11 +157,11 @@ public sealed class CriarTipoEtapaCommandHandlerTests
     {
         CatalogoTem();
 
-        Result<Guid> resultado = await Criar(ComandoValido() with { Nome = "", ConceitosAdmitidos = ["FANTASMA"] });
+        Result<Guid> resultado = await Criar(ComAvaliacao(AvaliacaoDasEtapasDeTeste.Padrao().ComConceitos("FANTASMA")) with { Nome = "" });
 
         resultado.Errors.Select(erro => (erro.Field, erro.Error.Code)).Should().Equal(
             ("nome", TipoEtapaErrorCodes.NomeObrigatorio),
-            ("conceitosAdmitidos", TipoEtapaErrorCodes.ConceitoInexistente));
+            ("avaliacao.conceitosAdmitidos", TipoEtapaErrorCodes.ConceitoInexistente));
         await _repository.DidNotReceive().AdicionarAsync(Arg.Any<TipoEtapa>(), Arg.Any<CancellationToken>());
     }
 
@@ -170,7 +174,7 @@ public sealed class CriarTipoEtapaCommandHandlerTests
         CatalogoTem(antigo, nota);
 
         Result<Guid> resultado = await Criar(
-            ComandoValido() with { ConceitosAdmitidos = [antigo.Codigo, nota.Codigo, nota.Codigo] });
+            ComAvaliacao(AvaliacaoDasEtapasDeTeste.Padrao().ComConceitos(antigo.Codigo, nota.Codigo, nota.Codigo)));
 
         resultado.Errors.Select(erro => erro.Error.Code).Should().Equal(
             TipoEtapaErrorCodes.ConceitoInativo, TipoEtapaErrorCodes.ConceitoDuplicado);

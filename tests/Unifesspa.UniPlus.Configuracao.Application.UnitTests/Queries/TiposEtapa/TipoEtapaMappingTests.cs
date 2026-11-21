@@ -21,7 +21,7 @@ public sealed class TipoEtapaMappingTests
     {
         TipoEtapaDto dto = TipoComConceitos(TiposConceitoDeTeste.Numerico(), TiposConceitoDeTeste.Categorico()).ToDto();
 
-        dto.ConceitosAdmitidos.Select(static c => (c.Codigo, c.Nome, c.Natureza.Codigo, c.Natureza.Rotulo)).Should().Equal(
+        dto.Avaliacao.ConceitosAdmitidos.Select(static c => (c.Codigo, c.Nome, c.Natureza.Codigo, c.Natureza.Rotulo)).Should().Equal(
             ("NOTA_ENTREVISTA", "Nota da entrevista", "NUMERICO", "Numérico"),
             ("PARECER_ANALISE", "Parecer da análise", "CATEGORICO", "Categórico"));
     }
@@ -31,6 +31,6 @@ public sealed class TipoEtapaMappingTests
     {
         TipoEtapaDto dto = TipoComConceitos().ToDto();
 
-        dto.ConceitosAdmitidos.Should().NotBeNull().And.BeEmpty();
+        dto.Avaliacao.ConceitosAdmitidos.Should().NotBeNull().And.BeEmpty();
     }
 }

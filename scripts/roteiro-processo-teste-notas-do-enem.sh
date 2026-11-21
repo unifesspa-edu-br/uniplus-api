@@ -144,7 +144,7 @@ obter_fase_classificacao() {
 definir_etapa_nota_do_enem() {
     log "Definir a etapa de nota do ENEM"
     local tipo_id
-    tipo_id=$(api_get "/api/configuracao/tipos-etapa?limit=100" | jq -r '.[] | select(.notaDeOrigemNoEnem==true and .ativo==true) | .id' | head -1)
+    tipo_id=$(api_get "/api/configuracao/tipos-etapa?limit=100" | jq -r '.[] | select(.avaliacao.notaDeOrigemNoEnem==true and .ativo==true) | .id' | head -1)
     exigir_id "tipo de etapa com nota de origem no ENEM" "$tipo_id"
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/etapas" "$(jq -nc --arg t "$tipo_id" '[{
         nome: "Nota do ENEM", carater: "ambas", tipoEtapaOrigemId: $t, peso: 1, notaMinima: null,

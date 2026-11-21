@@ -52,8 +52,9 @@ internal sealed class TipoEtapaReader : ITipoEtapaReader
     }
 
     private static TipoEtapaView ParaView(TipoEtapa tipo) =>
-        new(tipo.Id, tipo.Codigo, tipo.Nome, tipo.Descricao, tipo.AdmitePontuacao, tipo.AdmiteEliminacao, tipo.NotaDeOrigemNoEnem,
-            tipo.ExigeCorrecaoIndependente,
-            [.. tipo.ConceitosAdmitidos.Select(conceito => new ConceitoAdmitidoView(
-                conceito.Codigo, conceito.Nome, conceito.Natureza.Codigo()))]);
+        new(tipo.Id, tipo.Codigo, tipo.Nome, tipo.Descricao,
+            new AvaliacaoDasEtapasView(
+                tipo.AdmitePontuacao, tipo.AdmiteEliminacao, tipo.NotaDeOrigemNoEnem, tipo.ExigeCorrecaoIndependente,
+                [.. tipo.ConceitosAdmitidos.Select(conceito => new ConceitoAdmitidoView(
+                    conceito.Codigo, conceito.Nome, conceito.Natureza.Codigo()))]));
 }

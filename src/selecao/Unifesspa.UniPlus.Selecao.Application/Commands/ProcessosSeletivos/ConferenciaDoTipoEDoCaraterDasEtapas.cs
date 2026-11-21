@@ -61,7 +61,7 @@ internal sealed class ConferenciaDoTipoEDoCaraterDasEtapas(ITipoEtapaReader tipo
         }
 
         return (etapa with { TipoLido = tipo },
-            RecusasDoCarater(declarada.Carater, tipo.AdmitePontuacao, tipo.AdmiteEliminacao, tipo.Nome, indice));
+            RecusasDoCarater(declarada.Carater, tipo.Avaliacao.AdmitePontuacao, tipo.Avaliacao.AdmiteEliminacao, tipo.Nome, indice));
     }
 
     // Vínculo inalterado e tipo desde então desativado: recusar puniria quem só quer corrigir o caráter

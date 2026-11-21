@@ -57,18 +57,20 @@ internal static class TiposConceitoHttpDeTeste
     public static Dictionary<string, object?> Com(this Dictionary<string, object?> corpo, string campo, object? valor)
     {
         ArgumentNullException.ThrowIfNull(corpo);
-        (EhDoCorpo(campo) ? corpo : DefinicaoDe(corpo))[campo] = valor;
+        AlvoDe(corpo, campo)[campo] = valor;
         return corpo;
     }
 
     public static Dictionary<string, object?> Sem(this Dictionary<string, object?> corpo, string campo)
     {
         ArgumentNullException.ThrowIfNull(corpo);
-        (EhDoCorpo(campo) ? corpo : DefinicaoDe(corpo)).Remove(campo);
+        AlvoDe(corpo, campo).Remove(campo);
         return corpo;
     }
 
-    private static bool EhDoCorpo(string campo) => campo is "codigo" or "id";
+    // Um corpo sem "definicao" (o de outro cadastro que reaproveita estes auxiliares) é editado na raiz.
+    private static Dictionary<string, object?> AlvoDe(Dictionary<string, object?> corpo, string campo) =>
+        campo is "codigo" or "id" || !corpo.ContainsKey("definicao") ? corpo : DefinicaoDe(corpo);
 
     public static HttpRequestMessage Autenticada(HttpMethod metodo, string rota, string? contaId = null)
     {
