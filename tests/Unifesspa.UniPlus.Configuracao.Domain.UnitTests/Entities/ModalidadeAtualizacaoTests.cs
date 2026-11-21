@@ -47,7 +47,7 @@ public sealed class ModalidadeAtualizacaoTests
     {
         Modalidade m = Criar("PSVR_AMPLA").Value!;
 
-        Result r = m.Atualizar(Declarar(d => d with { NaturezaLegalToken = "COTA_RESERVADA", ComposicaoVagasToken = "DENTRO_DA_RESERVA_LEGAL" }));
+        Result r = m.Atualizar(Declarar(d => d with { CodigoDaNaturezaLegal = "COTA_RESERVADA", CodigoDaComposicaoDeVagas = "DENTRO_DA_RESERVA_LEGAL" }));
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(ModalidadeErrorCodes.NaturezaRemanejamentoIncoerente);

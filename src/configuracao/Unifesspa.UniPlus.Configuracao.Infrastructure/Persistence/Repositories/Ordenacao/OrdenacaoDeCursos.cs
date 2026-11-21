@@ -14,8 +14,8 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// <remarks>
 /// O motor de keyset ordena por propriedades do tipo que ele pagina, e a chave de
 /// ordenação alfabética do curso é propriedade sombra — invisível na entidade
-/// materializada. Projetar para este carrier resolve isso sem levar a coluna de
-/// ordenação para dentro do domínio, e ainda serve de âncora de continuação: a
+/// materializada. Projetar para esta linha de leitura resolve isso sem levar a coluna de
+/// ordenação para dentro do domínio, e ainda serve de ponto de continuação do cursor: a
 /// referência que o motor consome é uma instância dele com as colunas preenchidas.
 /// </remarks>
 internal sealed class CursoOrdenado : IIdentificavel
@@ -42,7 +42,7 @@ internal sealed class CursoOrdenado : IIdentificavel
 /// <remarks>
 /// A oferta não navega para o curso — a chave estrangeira é declarada sem
 /// propriedade de navegação. As colunas do curso vêm então de uma junção explícita
-/// projetada neste carrier, em vez de acrescentar navegação à entidade só para
+/// projetada nesta linha de leitura, em vez de acrescentar navegação à entidade só para
 /// servir a listagem.
 /// </remarks>
 internal sealed class OfertaCursoOrdenada : IIdentificavel
@@ -79,7 +79,7 @@ internal sealed class OfertaCursoOrdenada : IIdentificavel
 /// <see cref="CamposOrdenacaoCurso"/> e <see cref="CamposOrdenacaoOfertaCurso"/>,
 /// visíveis à borda que valida o parâmetro e documenta a rota. O que mora aqui é o
 /// outro lado da ponte: a coluna que cada nome designa e como o valor dela vira
-/// texto na âncora do cursor. Um teste confere que os dois conjuntos coincidem, de
+/// texto no cursor. Um teste confere que os dois conjuntos coincidem, de
 /// modo que declarar um campo sem mapeá-lo — ou o contrário — quebra a suíte em vez
 /// de virar um 422 inexplicável em produção.</para>
 /// <para>Toda ordenação termina implicitamente pelo <c>Id</c>, que o motor
@@ -101,23 +101,23 @@ internal static class OrdenacaoDeCursos
         new(CamposOrdenacaoOfertaCurso.CursoCodigo, SortDirection.Ascending),
     ];
 
-    /// <summary>Monta a ordenação de Cursos para os campos pedidos, sobre o recorte informado.</summary>
+    /// <summary>Monta a ordenação de Cursos para os campos pedidos, sobre os filtros da listagem informados.</summary>
     public static KeysetSort<CursoOrdenado> DeCursos(
         IReadOnlyList<SortField> campos,
-        IReadOnlyList<string> recorte) =>
+        IReadOnlyList<string> filtrosDaListagem) =>
         new(
             [.. campos.Select(ColunaDeCurso)],
-            (partes, id) => AncoraDeCurso(campos, partes, id),
-            recorte);
+            (partes, id) => CursoLidoDoCursor(campos, partes, id),
+            filtrosDaListagem);
 
-    /// <summary>Monta a ordenação de Ofertas de Curso para os campos pedidos, sobre o recorte informado.</summary>
+    /// <summary>Monta a ordenação de Ofertas de Curso para os campos pedidos, sobre os filtros da listagem informados.</summary>
     public static KeysetSort<OfertaCursoOrdenada> DeOfertas(
         IReadOnlyList<SortField> campos,
-        IReadOnlyList<string> recorte) =>
+        IReadOnlyList<string> filtrosDaListagem) =>
         new(
             [.. campos.Select(ColunaDeOferta)],
-            (partes, id) => AncoraDeOferta(campos, partes, id),
-            recorte);
+            (partes, id) => OfertaLidaDoCursor(campos, partes, id),
+            filtrosDaListagem);
 
     private static readonly Dictionary<string, Func<SortDirection, KeysetSortColumn<CursoOrdenado>>> CamposDeCurso =
         new(StringComparer.Ordinal)
@@ -183,13 +183,13 @@ internal static class OrdenacaoDeCursos
 
     /// <summary>
     /// Instante em ISO-8601 com precisão de milissegundo e deslocamento zero. A
-    /// ordem lexicográfica desse formato coincide com a cronológica, que é o que a
-    /// âncora precisa para comparar como o banco compara.
+    /// ordem lexicográfica desse formato coincide com a cronológica, que é o que o
+    /// cursor precisa para comparar como o banco compara.
     /// </summary>
     private static string ChaveDeInstante(DateTimeOffset instante) =>
         instante.ToUniversalTime().ToString("O", System.Globalization.CultureInfo.InvariantCulture);
 
-    private static CursoOrdenado AncoraDeCurso(
+    private static CursoOrdenado CursoLidoDoCursor(
         IReadOnlyList<SortField> campos,
         IReadOnlyList<string> partes,
         Guid id)
@@ -207,7 +207,7 @@ internal static class OrdenacaoDeCursos
         };
     }
 
-    private static OfertaCursoOrdenada AncoraDeOferta(
+    private static OfertaCursoOrdenada OfertaLidaDoCursor(
         IReadOnlyList<SortField> campos,
         IReadOnlyList<string> partes,
         Guid id)

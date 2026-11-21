@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
-/// Validação e normalização dos campos editáveis de <see cref="Modalidade"/>: tokens dos enums, tamanhos e
+/// Validação e normalização dos campos editáveis de <see cref="Modalidade"/>: códigos dos enums, tamanhos e
 /// coerência entre campos, acumulando toda violação em vez de parar na primeira. Sem I/O.
 /// </summary>
 public static class ValidacaoDosCamposDaModalidade
@@ -41,8 +41,8 @@ public static class ValidacaoDosCamposDaModalidade
     /// Valida os campos editáveis por completo, acumulando toda violação
     /// independente — os campos que não cruzam entre si (<see cref="ValidarCamposIndependentes"/>)
     /// e as três invariantes cruzadas (RetiradaDeOutraModalidade⟺origem, natureza↔regra, parâmetros por
-    /// regra), cada uma só avaliada quando os tokens de que ela depende já foram
-    /// reconhecidos (senão o erro reportado seria derivado de um token inválido,
+    /// regra), cada uma só avaliada quando os códigos de que ela depende já foram
+    /// reconhecidos (senão o erro reportado seria derivado de um código inválido,
     /// não uma incoerência independente — ex.: reportar "SEGUE_CASCATA exigido"
     /// sobre uma <c>NaturezaLegal</c> que nem chegou a resolver para um valor de
     /// domínio). Sem I/O — existe também para o handler de atualização falhar
@@ -62,8 +62,8 @@ public static class ValidacaoDosCamposDaModalidade
 
     /// <summary>
     /// Valida e normaliza os campos editáveis independentes de qualquer coerência cruzada, acumulando toda
-    /// violação em vez de parar na primeira: tokens dos enums, normalização de texto e tamanhos. Devolve,
-    /// junto das recusas, quais tokens das invariantes cruzadas foram reconhecidos; com o lote de recusas
+    /// violação em vez de parar na primeira: códigos dos enums, normalização de texto e tamanhos. Devolve,
+    /// junto das recusas, quais códigos das invariantes cruzadas foram reconhecidos; com a lista de recusas
     /// vazio, os três são sempre verdadeiros. Sem I/O, e separada da coerência cruzada porque
     /// <see cref="Modalidade.Atualizar"/> intercala a guarda do catálogo legal fixo entre as duas.
     /// </summary>
@@ -72,29 +72,29 @@ public static class ValidacaoDosCamposDaModalidade
         string? descricao = NormalizarOpcional(declaracao.Descricao);
         string? baseLegal = NormalizarOpcional(declaracao.BaseLegal);
         string? origem = NormalizarOpcional(declaracao.ComposicaoOrigem);
-        TokensResolvidosDaModalidade tokens = TokensResolvidosDaModalidade.De(declaracao);
+        CodigosResolvidosDaModalidade codigos = CodigosResolvidosDaModalidade.De(declaracao);
         FieldError?[] recusas =
         [
             RecusaDeTamanho(descricao, DescricaoMaxLength, "descricao", ModalidadeErrorCodes.DescricaoTamanho, "Descrição da modalidade"),
             RecusaDeTamanho(baseLegal, BaseLegalMaxLength, "baseLegal", ModalidadeErrorCodes.BaseLegalTamanho, "Base legal da modalidade"),
-            .. tokens.Recusas,
+            .. codigos.Recusas,
             RecusaDeTamanho(origem, CodigoReferenciaMaxLength, "composicaoOrigem", ModalidadeErrorCodes.CodigoFormatoInvalido, "Código de origem da composição"),
             RecusaDaRegraDeAplicabilidade(declaracao.RegraDeAplicabilidade),
         ];
-        return new([.. recusas.OfType<FieldError>()], tokens.Reconhecidos, CamposResolvidos(declaracao, tokens, descricao, origem, baseLegal));
+        return new([.. recusas.OfType<FieldError>()], codigos.Reconhecidos, CamposResolvidos(declaracao, codigos, descricao, origem, baseLegal));
     }
 
     private static CamposResolvidosDaModalidade CamposResolvidos(
-        DeclaracaoDaModalidade declaracao, TokensResolvidosDaModalidade tokens, string? descricao, string? origem, string? baseLegal) =>
+        DeclaracaoDaModalidade declaracao, CodigosResolvidosDaModalidade codigos, string? descricao, string? origem, string? baseLegal) =>
         new(
             descricao,
-            tokens.Natureza,
-            tokens.Composicao,
+            codigos.Natureza,
+            codigos.Composicao,
             origem,
-            tokens.Regra,
+            codigos.Regra,
             RemanejamentoParametros.Criar(declaracao.RemanejamentoDestino, declaracao.RemanejamentoPar, declaracao.RemanejamentoFallback),
             declaracao.RegraDeAplicabilidade,
-            tokens.Acao,
+            codigos.Acao,
             baseLegal);
 
     private static FieldError? RecusaDeTamanho(string? valor, int maximo, string campo, string codigoDaRecusa, string rotulo) =>

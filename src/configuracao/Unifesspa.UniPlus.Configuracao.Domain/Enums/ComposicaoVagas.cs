@@ -5,11 +5,11 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 /// concorrência (UNI-REQ-0011): descreve, em domínio fechado, como as vagas da
 /// modalidade se relacionam com o total do processo (residuais das vagas ofertadas base, dentro da
 /// reserva legal, retiradas de outra modalidade ou suplementares ao total). Persistida como
-/// token UPPER_SNAKE (<see cref="ComposicoesVagas"/>).
+/// código UPPER_SNAKE (<see cref="ComposicoesVagas"/>).
 /// </summary>
 public enum ComposicaoVagas
 {
-    /// <summary>Sentinela — indica entrada inválida/corrupção se encontrado em runtime.</summary>
+    /// <summary>Valor de ausência — indica entrada inválida/corrupção se encontrado em runtime.</summary>
     Nenhuma = 0,
 
     /// <summary>Vagas que restam das vagas ofertadas base após as reservas.</summary>

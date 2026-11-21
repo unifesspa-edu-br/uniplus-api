@@ -81,7 +81,7 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
     /// Cria uma nova Modalidade, acumulando toda violação independente em vez de
     /// parar na primeira. Valida o código (formato) e todas as invariantes de
     /// coerência de domínio (natureza↔remanejamento, RetiradaDeOutraModalidade⟺origem, parâmetros por
-    /// regra, ação de indeferimento). Os enums chegam em <paramref name="declaracao"/> como tokens
+    /// regra, ação de indeferimento). Os enums chegam em <paramref name="declaracao"/> como códigos
     /// textuais (UPPER_SNAKE): a natureza e a composição de vagas aplicam default quando ausentes
     /// (AMPLA / RESTANTE_DAS_VAGAS_OFERTADAS); a regra de remanejamento e a ação quando indeferido
     /// são opcionais.

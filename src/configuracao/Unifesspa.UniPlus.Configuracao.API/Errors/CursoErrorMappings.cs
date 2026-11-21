@@ -68,7 +68,7 @@ internal static class CursoErrorMappings
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.curso.grupo_area_enem_invalido",
-                "Grupo de área do ENEM fora do domínio fechado")),
+                "Grupo de área do ENEM não é um dos códigos aceitos")),
 
         new(CursoErrorCodes.NaoEncontrado,
             new DomainErrorMapping(

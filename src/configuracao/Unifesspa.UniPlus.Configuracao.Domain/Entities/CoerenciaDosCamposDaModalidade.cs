@@ -62,14 +62,14 @@ internal static class CoerenciaDosCamposDaModalidade
     /// remanejamento e parâmetros por regra.
     /// </summary>
     /// <remarks>
-    /// Cada checagem só roda quando o token de que depende foi reconhecido: sobre um token
+    /// Cada checagem só roda quando o código de que depende foi reconhecido: sobre um código
     /// inválido a comparação usaria o valor default do enum e reportaria uma incoerência que
     /// o autor da requisição não cometeu. Pelo mesmo motivo, a forma da regra da ação afirmativa, que
     /// depende do código da modalidade, só é conferida com o código reconhecido.
     /// </remarks>
     internal static List<FieldError> ValidarCoerenciaCruzada(
         CamposResolvidosDaModalidade campos,
-        TokensReconhecidosDaModalidade reconhecidos,
+        CodigosReconhecidosDaModalidade reconhecidos,
         CodigoModalidade? codigo)
     {
         FieldError?[] violacoes =

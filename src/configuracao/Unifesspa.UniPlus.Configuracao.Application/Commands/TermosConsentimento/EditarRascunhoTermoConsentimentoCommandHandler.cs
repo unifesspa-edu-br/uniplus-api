@@ -24,11 +24,11 @@ public static class EditarRascunhoTermoConsentimentoCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        Result preCheck = TermoConsentimento.ValidarCamposDoPayload(
+        Result conferenciaDaDeclaracao = TermoConsentimento.ValidarCamposDoPayload(
             command.TextoRascunho, command.BaseLegalRascunho, command.FormaAceiteRascunho);
-        if (preCheck.IsFailure)
+        if (conferenciaDaDeclaracao.IsFailure)
         {
-            return Result.ValidationFailure(preCheck.Errors);
+            return Result.ValidationFailure(conferenciaDaDeclaracao.Errors);
         }
 
         TermoConsentimento? termo = await repository.ObterPorIdAsync(command.Id, cancellationToken).ConfigureAwait(false);

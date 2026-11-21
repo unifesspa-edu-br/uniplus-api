@@ -23,16 +23,16 @@ public static class AtualizarReferenciaReservaDemograficaCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        Result preCheck = ReferenciaReservaDemografica.ValidarCamposDoPayload(
+        Result conferenciaDaDeclaracao = ReferenciaReservaDemografica.ValidarCamposDoPayload(
             command.CensoReferencia,
             command.PpiPercentual,
             command.QuilombolaPercentual,
             command.PcdPercentual,
             command.BaseLegal);
 
-        if (preCheck.IsFailure)
+        if (conferenciaDaDeclaracao.IsFailure)
         {
-            return Result.ValidationFailure(preCheck.Errors);
+            return Result.ValidationFailure(conferenciaDaDeclaracao.Errors);
         }
 
         ReferenciaReservaDemografica? referencia = await repository

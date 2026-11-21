@@ -5,11 +5,11 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 /// <see cref="Entities.OfertaCurso"/> é ofertada (story #588, ADR-0066):
 /// distingue, em domínio fechado, a oferta regular das ofertas vinculadas a
 /// programas especiais (Forma Pará, Parfor, Pronera, PEPETI) e a convênios.
-/// Persistido como token UPPER_SNAKE (<see cref="ProgramasDeOferta"/>).
+/// Persistido como código UPPER_SNAKE (<see cref="ProgramasDeOferta"/>).
 /// </summary>
 public enum ProgramaDeOferta
 {
-    /// <summary>Sentinela — indica entrada inválida/corrupção se encontrado em runtime.</summary>
+    /// <summary>Valor de ausência — indica entrada inválida/corrupção se encontrado em runtime.</summary>
     Nenhum = 0,
 
     /// <summary>Oferta regular da instituição (sem programa especial).</summary>

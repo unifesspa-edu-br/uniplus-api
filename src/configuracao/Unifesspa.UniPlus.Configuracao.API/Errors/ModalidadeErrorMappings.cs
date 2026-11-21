@@ -38,19 +38,19 @@ internal static class ModalidadeErrorMappings
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.modalidade.natureza_invalida",
-                "Natureza legal da modalidade fora do domínio fechado")),
+                "Natureza legal da modalidade não é um dos códigos aceitos")),
 
         new(ModalidadeErrorCodes.ComposicaoVagasInvalida,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.modalidade.composicao_vagas_invalida",
-                "Composição de vagas da modalidade fora do domínio fechado")),
+                "Composição de vagas da modalidade não é um dos códigos aceitos")),
 
         new(ModalidadeErrorCodes.RegraRemanejamentoInvalida,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.modalidade.regra_remanejamento_invalida",
-                "Regra de remanejamento da modalidade fora do domínio fechado")),
+                "Regra de remanejamento da modalidade não é um dos códigos aceitos")),
 
         new(ModalidadeErrorCodes.NaturezaRemanejamentoIncoerente,
             new DomainErrorMapping(
@@ -104,7 +104,7 @@ internal static class ModalidadeErrorMappings
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.modalidade.acao_indeferimento_invalida",
-                "Ação no indeferimento fora do domínio fechado")),
+                "Ação no indeferimento não é um dos códigos aceitos")),
 
         new(ModalidadeErrorCodes.ReferenciaInexistenteOuInativa,
             new DomainErrorMapping(

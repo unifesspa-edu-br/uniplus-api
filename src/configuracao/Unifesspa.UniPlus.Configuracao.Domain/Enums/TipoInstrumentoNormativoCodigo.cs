@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 /// </para>
 /// <para>
 /// <see cref="TipoInstrumentoNormativo.Nenhum"/> é explicitamente excluído de
-/// <see cref="Descritos"/>: é sentinela de ausência, não um tipo referenciável por
+/// <see cref="Descritos"/>: é valor de ausência, não um tipo referenciável por
 /// uma Base Legal.
 /// </para>
 /// </remarks>
@@ -88,7 +88,7 @@ public static class TipoInstrumentoNormativoCodigo
     /// Converte <paramref name="tipo"/> para o código canônico UPPER_SNAKE.
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">
-    /// Lançado para <see cref="TipoInstrumentoNormativo.Nenhum"/>, que é sentinela de ausência
+    /// Lançado para <see cref="TipoInstrumentoNormativo.Nenhum"/>, que é valor de ausência
     /// e não possui código canônico.
     /// </exception>
     public static string ToCodigo(this TipoInstrumentoNormativo tipo) => tipo switch
@@ -101,7 +101,7 @@ public static class TipoInstrumentoNormativoCodigo
         TipoInstrumentoNormativo.Parecer => Parecer,
         TipoInstrumentoNormativo.Edital => Edital,
         TipoInstrumentoNormativo.Nenhum => throw new ArgumentOutOfRangeException(
-            nameof(tipo), tipo, "TipoInstrumentoNormativo.Nenhum é sentinela e não tem código canônico."),
+            nameof(tipo), tipo, "TipoInstrumentoNormativo.Nenhum é valor de ausência e não tem código canônico."),
         _ => throw new ArgumentOutOfRangeException(nameof(tipo), tipo, "TipoInstrumentoNormativo desconhecido."),
     };
 

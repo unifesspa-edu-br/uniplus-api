@@ -924,7 +924,7 @@
     {
       "codigo": "uniplus.configuracao.calendario_dias_uteis.abrangencia_invalida",
       "status": 422,
-      "titulo": "Abrangência do dia não útil fora do domínio fechado"
+      "titulo": "Abrangência do dia não útil não é um dos códigos aceitos"
     },
     {
       "codigo": "uniplus.configuracao.calendario_dias_uteis.conflito_de_concorrencia",
@@ -1164,7 +1164,7 @@
     {
       "codigo": "uniplus.configuracao.curso.grupo_area_enem_invalido",
       "status": 422,
-      "titulo": "Grupo de área do ENEM fora do domínio fechado"
+      "titulo": "Grupo de área do ENEM não é um dos códigos aceitos"
     },
     {
       "codigo": "uniplus.configuracao.curso.nao_encontrado",
@@ -1259,7 +1259,7 @@
     {
       "codigo": "uniplus.configuracao.fase_canonica.origem_data_invalida",
       "status": 422,
-      "titulo": "Origem da data da fase canônica fora do domínio fechado"
+      "titulo": "Origem da data da fase canônica não é um dos códigos aceitos"
     },
     {
       "codigo": "uniplus.configuracao.fase_canonica.origem_data_obrigatoria",
@@ -1679,7 +1679,7 @@
     {
       "codigo": "uniplus.configuracao.modalidade.acao_indeferimento_invalida",
       "status": 422,
-      "titulo": "Ação no indeferimento fora do domínio fechado"
+      "titulo": "Ação no indeferimento não é um dos códigos aceitos"
     },
     {
       "codigo": "uniplus.configuracao.modalidade.ampla_concorrencia_com_condicao",
@@ -1714,7 +1714,7 @@
     {
       "codigo": "uniplus.configuracao.modalidade.composicao_vagas_invalida",
       "status": 422,
-      "titulo": "Composição de vagas da modalidade fora do domínio fechado"
+      "titulo": "Composição de vagas da modalidade não é um dos códigos aceitos"
     },
     {
       "codigo": "uniplus.configuracao.modalidade.cota_sem_opcao_pelas_cotas_da_lei",
@@ -1744,7 +1744,7 @@
     {
       "codigo": "uniplus.configuracao.modalidade.natureza_invalida",
       "status": 422,
-      "titulo": "Natureza legal da modalidade fora do domínio fechado"
+      "titulo": "Natureza legal da modalidade não é um dos códigos aceitos"
     },
     {
       "codigo": "uniplus.configuracao.modalidade.natureza_remanejamento_incoerente",
@@ -1809,7 +1809,7 @@
     {
       "codigo": "uniplus.configuracao.modalidade.regra_remanejamento_invalida",
       "status": 422,
-      "titulo": "Regra de remanejamento da modalidade fora do domínio fechado"
+      "titulo": "Regra de remanejamento da modalidade não é um dos códigos aceitos"
     },
     {
       "codigo": "uniplus.configuracao.modalidade.remanejamento_destino_circular",
@@ -2004,7 +2004,7 @@
     {
       "codigo": "uniplus.configuracao.oferta_curso.formato_pedagogico_invalido",
       "status": 422,
-      "titulo": "Formato pedagógico fora do domínio fechado"
+      "titulo": "Formato pedagógico não é um dos códigos aceitos"
     },
     {
       "codigo": "uniplus.configuracao.oferta_curso.local_oferta_inexistente_ou_removido",
@@ -2019,7 +2019,7 @@
     {
       "codigo": "uniplus.configuracao.oferta_curso.programa_de_oferta_invalido",
       "status": 422,
-      "titulo": "Programa de oferta fora do domínio fechado"
+      "titulo": "Programa de oferta não é um dos códigos aceitos"
     },
     {
       "codigo": "uniplus.configuracao.oferta_curso.regime_de_funcionamento_incompativel_com_regime_de_turno",
@@ -2029,7 +2029,7 @@
     {
       "codigo": "uniplus.configuracao.oferta_curso.regime_de_funcionamento_invalido",
       "status": 422,
-      "titulo": "Regime de funcionamento fora do domínio fechado"
+      "titulo": "Regime de funcionamento não é um dos códigos aceitos"
     },
     {
       "codigo": "uniplus.configuracao.oferta_curso.regime_de_funcionamento_obrigatorio",
@@ -2039,7 +2039,7 @@
     {
       "codigo": "uniplus.configuracao.oferta_curso.regime_de_turno_invalido",
       "status": 422,
-      "titulo": "Regime de turno fora do domínio fechado"
+      "titulo": "Regime de turno não é um dos códigos aceitos"
     },
     {
       "codigo": "uniplus.configuracao.oferta_curso.regime_de_turno_obrigatorio",
@@ -2049,7 +2049,7 @@
     {
       "codigo": "uniplus.configuracao.oferta_curso.turno_invalido",
       "status": 422,
-      "titulo": "Turno fora do domínio fechado"
+      "titulo": "Turno não é um dos códigos aceitos"
     },
     {
       "codigo": "uniplus.configuracao.oferta_curso.turno_repetido",
@@ -2509,7 +2509,7 @@
     {
       "codigo": "uniplus.configuracao.termo_consentimento.forma_aceite_invalida",
       "status": 422,
-      "titulo": "Forma de aceite do termo fora do domínio fechado"
+      "titulo": "Forma de aceite do termo não é um dos códigos aceitos"
     },
     {
       "codigo": "uniplus.configuracao.termo_consentimento.nao_encontrado",

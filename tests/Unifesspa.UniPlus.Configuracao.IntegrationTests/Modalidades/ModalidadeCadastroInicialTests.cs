@@ -139,5 +139,5 @@ public sealed class ModalidadeCadastroInicialTests(ConfiguracaoDbFixture fixture
             ComposicoesVagas.ParaTokenCanonico(item.Composicao), item.ComposicaoOrigem,
             item.Regra is { } regra ? RegrasRemanejamento.ParaTokenCanonico(regra) : null,
             item.RemanejamentoParametros.Destino, item.RemanejamentoParametros.Par, item.RemanejamentoParametros.Fallback,
-            item.RegraDeAplicabilidade, AcaoQuandoIndeferidoToken: null, item.BaseLegal));
+            item.RegraDeAplicabilidade, CodigoDaAcaoQuandoIndeferido: null, item.BaseLegal));
 }

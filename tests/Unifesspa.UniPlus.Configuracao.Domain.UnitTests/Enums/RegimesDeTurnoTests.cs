@@ -5,29 +5,29 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
 /// <summary>
-/// O parsing do regime de turno é por allowlist textual explícita (UNI-REQ-0137):
+/// O parsing do regime de turno é por lista textual explícita de códigos aceitos (UNI-REQ-0137):
 /// só REGULAR e INTEGRAL são aceitos. A obrigatoriedade do regime é regra da
 /// entidade, não deste mapeamento.
 /// </summary>
 public sealed class RegimesDeTurnoTests
 {
-    [Theory(DisplayName = "Os dois tokens canônicos são analisados para o regime correto")]
+    [Theory(DisplayName = "Os dois códigos canônicos são analisados para o regime correto")]
     [InlineData("REGULAR", RegimeDeTurno.Regular)]
     [InlineData("INTEGRAL", RegimeDeTurno.Integral)]
-    public void TryAnalisar_TokenCanonico_Resolve(string token, RegimeDeTurno esperado)
+    public void TryAnalisar_CodigoCanonico_Resolve(string codigo, RegimeDeTurno esperado)
     {
-        RegimesDeTurno.TryAnalisar(token, out RegimeDeTurno regime).Should().BeTrue();
+        RegimesDeTurno.TryAnalisar(codigo, out RegimeDeTurno regime).Should().BeTrue();
         regime.Should().Be(esperado);
     }
 
-    [Fact(DisplayName = "Token com espaços é normalizado por Trim antes da resolução")]
+    [Fact(DisplayName = "Código com espaços é normalizado por Trim antes da resolução")]
     public void TryAnalisar_ComEspacos_Normaliza()
     {
         RegimesDeTurno.TryAnalisar("  INTEGRAL  ", out RegimeDeTurno regime).Should().BeTrue();
         regime.Should().Be(RegimeDeTurno.Integral);
     }
 
-    [Theory(DisplayName = "Tokens numéricos, PascalCase, fora do domínio e vazios são rejeitados")]
+    [Theory(DisplayName = "Códigos numéricos, PascalCase, fora do domínio e vazios são rejeitados")]
     [InlineData("1")]
     [InlineData("Regular")]
     [InlineData("MATUTINO")]    // turno não é regime
@@ -35,14 +35,14 @@ public sealed class RegimesDeTurnoTests
     [InlineData("regular")]
     [InlineData("")]
     [InlineData("   ")]
-    public void TryAnalisar_ForaDoDominio_Rejeita(string token)
+    public void TryAnalisar_ForaDoDominio_Rejeita(string codigo)
     {
-        RegimesDeTurno.TryAnalisar(token, out RegimeDeTurno regime).Should().BeFalse();
+        RegimesDeTurno.TryAnalisar(codigo, out RegimeDeTurno regime).Should().BeFalse();
         regime.Should().Be(RegimeDeTurno.Nenhum);
-        RegimesDeTurno.EhValido(token).Should().BeFalse();
+        RegimesDeTurno.EhValido(codigo).Should().BeFalse();
     }
 
-    [Fact(DisplayName = "Token nulo é rejeitado sem lançar")]
+    [Fact(DisplayName = "Código nulo é rejeitado sem lançar")]
     public void TryAnalisar_Nulo_Rejeita()
     {
         RegimesDeTurno.TryAnalisar(null, out RegimeDeTurno regime).Should().BeFalse();
@@ -52,14 +52,14 @@ public sealed class RegimesDeTurnoTests
     [Theory(DisplayName = "ParaTokenCanonico é o inverso de TryAnalisar (round-trip)")]
     [InlineData(RegimeDeTurno.Regular, "REGULAR")]
     [InlineData(RegimeDeTurno.Integral, "INTEGRAL")]
-    public void ParaTokenCanonico_RoundTrip(RegimeDeTurno regime, string token)
+    public void ParaCodigoCanonico_IdaEVolta(RegimeDeTurno regime, string codigo)
     {
-        RegimesDeTurno.ParaTokenCanonico(regime).Should().Be(token);
-        RegimesDeTurno.TryAnalisar(token, out RegimeDeTurno resolvido).Should().BeTrue();
+        RegimesDeTurno.ParaTokenCanonico(regime).Should().Be(codigo);
+        RegimesDeTurno.TryAnalisar(codigo, out RegimeDeTurno resolvido).Should().BeTrue();
         resolvido.Should().Be(regime);
     }
 
-    [Fact(DisplayName = "ParaTokenCanonico de Nenhum (sentinela) lança — não é regime válido")]
+    [Fact(DisplayName = "ParaTokenCanonico de Nenhum (valor de ausência) lança — não é regime válido")]
     public void ParaTokenCanonico_Nenhum_Lanca()
     {
         Action act = () => RegimesDeTurno.ParaTokenCanonico(RegimeDeTurno.Nenhum);
@@ -79,7 +79,7 @@ public sealed class RegimesDeTurnoTests
     public void TurnosExigidos_PorRegime(RegimeDeTurno regime, int esperado) =>
         RegimesDeTurno.TurnosExigidos(regime).Should().Be(esperado);
 
-    [Fact(DisplayName = "TurnosExigidos do sentinela lança — não há cardinalidade sem regime")]
+    [Fact(DisplayName = "TurnosExigidos do valor de ausência lança — não há cardinalidade sem regime")]
     public void TurnosExigidos_Nenhum_Lanca()
     {
         Action act = () => RegimesDeTurno.TurnosExigidos(RegimeDeTurno.Nenhum);

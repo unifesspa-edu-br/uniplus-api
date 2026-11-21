@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
-// Mapeia OrigemDataFase ↔ string (varchar) usando o token canônico UPPER_SNAKE
+// Mapeia OrigemDataFase ↔ string (varchar) usando o código canônico UPPER_SNAKE
 // (NO_EDITAL, NA_EXECUCAO), não o nome PascalCase do enum. O comprimento da coluna é
 // definido na própria propriedade via HasMaxLength no IEntityTypeConfiguration.
 // A reidratação falha explicitamente (com contexto) caso a coluna seja
@@ -15,16 +15,16 @@ public sealed class OrigemDataFaseValueConverter : ValueConverter<OrigemDataFase
     public OrigemDataFaseValueConverter()
         : base(
             origem => OrigensDataFase.ParaTokenCanonico(origem),
-            token => Reidratar(token))
+            codigo => Reidratar(codigo))
     {
     }
 
-    private static OrigemDataFase Reidratar(string token)
+    private static OrigemDataFase Reidratar(string codigo)
     {
-        if (!OrigensDataFase.TryAnalisar(token, out OrigemDataFase origem))
+        if (!OrigensDataFase.TryAnalisar(codigo, out OrigemDataFase origem))
         {
             throw new InvalidOperationException(
-                $"Dado inválido no banco ao reidratar {nameof(OrigemDataFase)}: '{token}'. " +
+                $"Dado inválido no banco ao reidratar {nameof(OrigemDataFase)}: '{codigo}'. " +
                 "Verifique se houve alteração manual da coluna fora do fluxo da aplicação.");
         }
 

@@ -17,7 +17,7 @@ public sealed class ModalidadeCriacaoTests
     [Fact(DisplayName = "Ampla sem remanejamento preenche os campos e fica ativa com Guid v7")]
     public void Criar_AmplaSemRemanejamento_Valida()
     {
-        Modalidade m = Criar("AC", d => d with { Descricao = "Ampla concorrência", NaturezaLegalToken = "AMPLA" }).Value!;
+        Modalidade m = Criar("AC", d => d with { Descricao = "Ampla concorrência", CodigoDaNaturezaLegal = "AMPLA" }).Value!;
 
         m.Id.Should().NotBe(Guid.Empty);
         m.Codigo.Valor.Should().Be("AC");
@@ -40,7 +40,7 @@ public sealed class ModalidadeCriacaoTests
     [Fact(DisplayName = "Natureza e composição ausentes assumem defaults AMPLA / RESTANTE_DAS_VAGAS_OFERTADAS")]
     public void Criar_SemNaturezaComposicao_AplicaDefaults()
     {
-        Modalidade m = Criar(ajuste: d => d with { NaturezaLegalToken = null, ComposicaoVagasToken = null }).Value!;
+        Modalidade m = Criar(ajuste: d => d with { CodigoDaNaturezaLegal = null, CodigoDaComposicaoDeVagas = null }).Value!;
 
         m.NaturezaLegal.Should().Be(NaturezaLegal.Ampla);
         m.ComposicaoVagas.Should().Be(ComposicaoVagas.RestanteDasVagasOfertadas);
@@ -76,7 +76,7 @@ public sealed class ModalidadeCriacaoTests
     [Fact(DisplayName = "Ação quando indeferido fora do domínio é rejeitada")]
     public void Criar_AcaoInvalida_Falha()
     {
-        Result<Modalidade> r = Criar(ajuste: d => d with { AcaoQuandoIndeferidoToken = "REPROVAR" });
+        Result<Modalidade> r = Criar(ajuste: d => d with { CodigoDaAcaoQuandoIndeferido = "REPROVAR" });
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(ModalidadeErrorCodes.AcaoIndeferimentoInvalida);
@@ -85,7 +85,7 @@ public sealed class ModalidadeCriacaoTests
     [Fact(DisplayName = "Ação quando indeferido válida é aceita")]
     public void Criar_AcaoValida_Aceita()
     {
-        Modalidade m = Criar(ajuste: d => d with { AcaoQuandoIndeferidoToken = "RECLASSIFICAR_AC" }).Value!;
+        Modalidade m = Criar(ajuste: d => d with { CodigoDaAcaoQuandoIndeferido = "RECLASSIFICAR_AC" }).Value!;
 
         m.AcaoQuandoIndeferido.Should().Be(AcaoQuandoIndeferido.ReclassificarAc);
     }

@@ -92,7 +92,7 @@ internal static class FaseCanonicaErrorMappings
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.fase_canonica.origem_data_invalida",
-                "Origem da data da fase canônica fora do domínio fechado")),
+                "Origem da data da fase canônica não é um dos códigos aceitos")),
 
         new(FaseCanonicaErrorCodes.UnidadeSugeridaNaoEncontrada,
             new DomainErrorMapping(

@@ -2,12 +2,12 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
 /// <summary>
 /// Classificação de um <c>LocalOferta</c> quanto à modalidade de oferta de vagas
-/// (UNI-REQ #587). Roster fechado — novos tipos exigem deliberação do Tech Lead.
+/// (UNI-REQ #587). Conjunto fechado — novos tipos exigem deliberação do líder técnico.
 /// O valor numérico faz parte do contrato: nunca renumerar existentes.
 /// </summary>
 public enum TipoLocalOferta
 {
-    /// <summary>Sentinela — indica corrupção se encontrado em runtime.</summary>
+    /// <summary>Valor de ausência — indica corrupção se encontrado em runtime.</summary>
     Nenhum = 0,
 
     /// <summary>Campus sede da instituição.</summary>

@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<OfertaCurso>
 {
-    private const int EnumTokenMaxLength = 30;
+    private const int CodigoDeContratoMaxLength = 30;
     private const int CodigoMaxLength = CodigoOfertaCurso.TamanhoMaximo;
     private const int EMecCodigoMaxLength = 20;
     private const int CodigoSgaMaxLength = 30;
@@ -49,12 +49,12 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
     {
         builder.Property(o => o.ProgramaDeOferta)
             .HasConversion<ProgramaDeOfertaValueConverter>()
-            .HasMaxLength(EnumTokenMaxLength)
+            .HasMaxLength(CodigoDeContratoMaxLength)
             .IsRequired();
 
         builder.Property(o => o.FormatoPedagogico)
             .HasConversion<FormatoPedagogicoValueConverter>()
-            .HasMaxLength(EnumTokenMaxLength)
+            .HasMaxLength(CodigoDeContratoMaxLength)
             .IsRequired();
     }
 
@@ -62,12 +62,12 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
     {
         builder.Property(o => o.RegimeDeFuncionamento)
             .HasConversion<RegimeDeFuncionamentoValueConverter>()
-            .HasMaxLength(EnumTokenMaxLength)
+            .HasMaxLength(CodigoDeContratoMaxLength)
             .IsRequired();
 
         builder.Property(o => o.RegimeDeTurno)
             .HasConversion<RegimeDeTurnoValueConverter>()
-            .HasMaxLength(EnumTokenMaxLength)
+            .HasMaxLength(CodigoDeContratoMaxLength)
             .IsRequired();
     }
 
@@ -83,7 +83,7 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
             .HasColumnName("turnos")
             .ElementType(elemento => elemento
                 .HasConversion<TurnoOfertaValueConverter>()
-                .HasMaxLength(EnumTokenMaxLength))
+                .HasMaxLength(CodigoDeContratoMaxLength))
             .UsePropertyAccessMode(PropertyAccessMode.Field)
             .IsRequired();
     }

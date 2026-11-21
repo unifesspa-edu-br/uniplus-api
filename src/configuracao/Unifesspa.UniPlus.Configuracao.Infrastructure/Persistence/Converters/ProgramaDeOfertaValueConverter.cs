@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
-// Mapeia ProgramaDeOferta ↔ string (varchar) usando o token canônico UPPER_SNAKE
+// Mapeia ProgramaDeOferta ↔ string (varchar) usando o código canônico UPPER_SNAKE
 // (REGULAR…), não o nome PascalCase do enum. O comprimento da coluna é definido
 // na própria propriedade via HasMaxLength no IEntityTypeConfiguration. A
 // reidratação falha explicitamente (com contexto) caso a coluna seja corrompida
@@ -14,16 +14,16 @@ public sealed class ProgramaDeOfertaValueConverter : ValueConverter<ProgramaDeOf
     public ProgramaDeOfertaValueConverter()
         : base(
             programa => ProgramasDeOferta.ParaTokenCanonico(programa),
-            token => Reidratar(token))
+            codigo => Reidratar(codigo))
     {
     }
 
-    private static ProgramaDeOferta Reidratar(string token)
+    private static ProgramaDeOferta Reidratar(string codigo)
     {
-        if (!ProgramasDeOferta.TryAnalisar(token, out ProgramaDeOferta programa))
+        if (!ProgramasDeOferta.TryAnalisar(codigo, out ProgramaDeOferta programa))
         {
             throw new InvalidOperationException(
-                $"Dado inválido no banco ao reidratar {nameof(ProgramaDeOferta)}: '{token}'. " +
+                $"Dado inválido no banco ao reidratar {nameof(ProgramaDeOferta)}: '{codigo}'. " +
                 "Verifique se houve alteração manual da coluna fora do fluxo da aplicação.");
         }
 

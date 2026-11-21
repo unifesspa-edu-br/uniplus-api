@@ -30,11 +30,11 @@ public static class AtualizarPesoAreaEnemCommandHandler
         IReadOnlyList<AreaInformada>? areas =
             AreasDoComando.ParaDominio(command.Areas);
 
-        Result preCheck = PesoAreaEnem.ValidarCamposDoPayload(areas, command.BaseLegal);
+        Result conferenciaDaDeclaracao = PesoAreaEnem.ValidarCamposDoPayload(areas, command.BaseLegal);
 
-        if (preCheck.IsFailure)
+        if (conferenciaDaDeclaracao.IsFailure)
         {
-            return Result.ValidationFailure(preCheck.Errors);
+            return Result.ValidationFailure(conferenciaDaDeclaracao.Errors);
         }
 
         PesoAreaEnem? peso = await repository

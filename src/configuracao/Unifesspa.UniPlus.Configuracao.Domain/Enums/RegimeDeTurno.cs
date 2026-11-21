@@ -5,7 +5,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 /// ADR-0126): declara se a oferta funciona em um único turno
 /// (<see cref="Regular"/>) ou em dois turnos distintos (<see cref="Integral"/>).
 /// É atributo <b>obrigatório</b> da oferta, em todo formato pedagógico.
-/// Persistido como token UPPER_SNAKE (<see cref="RegimesDeTurno"/>).
+/// Persistido como código UPPER_SNAKE (<see cref="RegimesDeTurno"/>).
 /// </summary>
 /// <remarks>
 /// O regime é <b>declarado</b>, não inferido da quantidade de turnos informada:
@@ -14,7 +14,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 /// </remarks>
 public enum RegimeDeTurno
 {
-    /// <summary>Sentinela — indica entrada inválida/corrupção se encontrado em runtime.</summary>
+    /// <summary>Valor de ausência — indica entrada inválida/corrupção se encontrado em runtime.</summary>
     Nenhum = 0,
 
     /// <summary>Oferta em um único turno.</summary>
