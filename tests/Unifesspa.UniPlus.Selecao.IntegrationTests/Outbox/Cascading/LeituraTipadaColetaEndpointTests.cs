@@ -39,50 +39,48 @@ public sealed class LeituraTipadaColetaEndpointTests
     {
         Contexto ctx = await SemearRascunhoAsync(nameof(Get_ProjetaColetaEDerivacaoTipadas));
 
-        // Coleta: COR_RACA vem da seção do conjunto básico, sem exibição; BAIXA_RENDA, depois
-        // dela, com exibição citando COR_RACA.
-        (await ctx.PutFatosAsync(
+        (await ColetarBaixaRendaAsync(ctx)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await DerivarEgressoDeEscolaPublicaAsync(ctx)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        using JsonDocument doc = await ctx.ObterProcessoAsync();
+        ConferirItensColetados(FormularioNaRespostaDoProcesso.Itens(FormularioNaRespostaDoProcesso.DeInscricao(doc)).ToArray());
+        ConferirRegrasDeDerivacao(doc.RootElement.GetProperty("regrasDerivacao"));
+    }
+
+    // COR_RACA vem da seção do conjunto básico, sem exibição; BAIXA_RENDA, depois dela, com exibição citando COR_RACA.
+    private static Task<HttpResponseMessage> ColetarBaixaRendaAsync(Contexto ctx) =>
+        ctx.PutFatosAsync(
         [
             FormularioDeInscricaoHttp.Item(
                 "BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA",
-                exibicao: new[] { new[] { new { fato = "COR_RACA", operador = "IGUAL", valor = "PRETA" } } }),
-        ])).StatusCode.Should().Be(HttpStatusCode.NoContent);
+                exibicao: CorRacaPreta()),
+        ]);
 
-        // Derivação do egresso de escola pública: regra âncora (quando null) + condicional citando COR_RACA.
-        (await ctx.PutRegrasAsync(
+    // Derivação do egresso de escola pública: regra âncora (quando null) + condicional citando COR_RACA.
+    private static Task<HttpResponseMessage> DerivarEgressoDeEscolaPublicaAsync(Contexto ctx) =>
+        ctx.PutRegrasAsync(
         [
-            new
-            {
-                codigoFato = "EGRESSO_ESCOLA_PUBLICA",
-                regras = new object[]
-                {
-                    new { ordem = 0, contribui = (string?)null, quando = (object?)null },
-                    new
-                    {
-                        ordem = 1,
-                        contribui = (string?)null,
-                        quando = new[] { new[] { new { fato = "COR_RACA", operador = "IGUAL", valor = "PRETA" } } },
-                    },
-                },
-            },
-        ])).StatusCode.Should().Be(HttpStatusCode.NoContent);
+            new { codigoFato = "EGRESSO_ESCOLA_PUBLICA", regras = new object[] { RegraDeDerivacao(0, quando: null), RegraDeDerivacao(1, CorRacaPreta()) } },
+        ]);
 
-        using JsonDocument doc = await ctx.ObterProcessoAsync();
-        JsonElement root = doc.RootElement;
+    private static object RegraDeDerivacao(int ordem, object? quando) => new { ordem, contribui = (string?)null, quando };
 
-        // Fatos coletados — dentro do formulário de inscrição, ordenados por ordem, exibição
-        // ausente é null.
-        JsonElement fatos = root.GetProperty("formularios")[0].GetProperty("fatosColetados");
-        fatos.GetArrayLength().Should().Be(ConjuntoBasicoDaInscricao.Itens.Count + 1);
+    private static IReadOnlyList<IReadOnlyList<object>> CorRacaPreta() => [[new { fato = "COR_RACA", operador = "IGUAL", valor = "PRETA" }]];
 
-        JsonElement corRaca = fatos.EnumerateArray().Single(static f => f.GetProperty("fatoCodigo").GetString() == "COR_RACA");
-        corRaca.GetProperty("fatoCodigo").GetString().Should().Be("COR_RACA");
+    // Os itens do formulário de inscrição, ordenados por ordem; a exibição ausente é null.
+    private static void ConferirItensColetados(JsonElement[] itens)
+    {
+        itens.Length.Should().Be(ConjuntoBasicoDaInscricao.Itens.Count + 1);
+        JsonElement corRaca = itens.Single(static f => f.GetProperty("fatoCodigo").GetString() == "COR_RACA");
         corRaca.GetProperty("apresentacao").GetProperty("rotulo").GetString().Should().Be("Cor ou raça");
         corRaca.GetProperty("apresentacao").GetProperty("tipoRenderizacao").GetString().Should().Be("SELECAO_UNICA");
         corRaca.GetProperty("regras").GetProperty("obrigatoriedade").GetProperty("tipo").GetString().Should().Be("SEMPRE");
         corRaca.GetProperty("regras").GetProperty("exibicao").ValueKind.Should().Be(JsonValueKind.Null, "fato sem exibição é null, nunca []");
+        ConferirExibicaoDaBaixaRenda(itens[ConjuntoBasicoDaInscricao.Itens.Count]);
+    }
 
-        JsonElement baixaRenda = fatos[ConjuntoBasicoDaInscricao.Itens.Count];
+    private static void ConferirExibicaoDaBaixaRenda(JsonElement baixaRenda)
+    {
         baixaRenda.GetProperty("fatoCodigo").GetString().Should().Be("BAIXA_RENDA");
         JsonElement exibicao = baixaRenda.GetProperty("regras").GetProperty("exibicao");
         exibicao.ValueKind.Should().Be(JsonValueKind.Array);
@@ -90,9 +88,11 @@ public sealed class LeituraTipadaColetaEndpointTests
         condicao.GetProperty("fato").GetString().Should().Be("COR_RACA");
         condicao.GetProperty("operador").GetString().Should().Be("IGUAL");
         condicao.GetProperty("valor").GetString().Should().Be("PRETA");
+    }
 
-        // Regras de derivação — as do processo, regras por ordem, âncora com quando null.
-        JsonElement regrasDerivacao = root.GetProperty("regrasDerivacao");
+    // As regras de derivação do processo, por ordem, com a âncora de quando null.
+    private static void ConferirRegrasDeDerivacao(JsonElement regrasDerivacao)
+    {
         regrasDerivacao.GetArrayLength().Should().Be(1);
         JsonElement config = regrasDerivacao[0];
         config.GetProperty("codigoFato").GetString().Should().Be("EGRESSO_ESCOLA_PUBLICA");
@@ -111,7 +111,7 @@ public sealed class LeituraTipadaColetaEndpointTests
         using JsonDocument doc = await ctx.ObterProcessoAsync();
         JsonElement root = doc.RootElement;
 
-        root.GetProperty("formularios")[0].GetProperty("fatosColetados").EnumerateArray()
+        FormularioNaRespostaDoProcesso.Itens(FormularioNaRespostaDoProcesso.DeInscricao(doc))
             .Select(static f => f.GetProperty("fatoCodigo").GetString()).Should().Equal(ConjuntoBasicoDaInscricao.Itens.Select(static i => i.FatoCodigo));
         root.GetProperty("regrasDerivacao").GetArrayLength().Should().Be(0);
     }

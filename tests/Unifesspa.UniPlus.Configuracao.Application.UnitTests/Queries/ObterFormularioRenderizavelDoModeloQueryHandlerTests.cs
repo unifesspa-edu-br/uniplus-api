@@ -98,7 +98,7 @@ public sealed class ObterFormularioRenderizavelDoModeloQueryHandlerTests
     {
         TermoConsentimento termo = TermoPromovido(out TermoConsentimentoVersao versao);
         _termos.ObterPorIdParaLeituraAsync(termo.Id, Arg.Any<CancellationToken>()).Returns(termo);
-        ModeloFormulario modelo = Modelo(termos: [new("ACEITE_DADOS", 3, termo.Id, versao.Id, null, Obrigatoriedade.Sempre)]);
+        ModeloFormulario modelo = Modelo(termos: [new("ACEITE_DADOS", 3, termo.Id, versao.Id, new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre))]);
 
         FormularioRenderizavel resultado = (await ObterAsync(modelo))!;
 
@@ -111,7 +111,7 @@ public sealed class ObterFormularioRenderizavelDoModeloQueryHandlerTests
     {
         TermoConsentimento termo = TermoPromovido(out _);
         _termos.ObterPorIdParaLeituraAsync(termo.Id, Arg.Any<CancellationToken>()).Returns(termo);
-        ModeloFormulario modelo = Modelo(termos: [new("ACEITE_DADOS", 0, termo.Id, Guid.NewGuid(), null, Obrigatoriedade.Sempre)]);
+        ModeloFormulario modelo = Modelo(termos: [new("ACEITE_DADOS", 0, termo.Id, Guid.NewGuid(), new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre))]);
 
         Func<Task> obter = () => ObterAsync(modelo);
 

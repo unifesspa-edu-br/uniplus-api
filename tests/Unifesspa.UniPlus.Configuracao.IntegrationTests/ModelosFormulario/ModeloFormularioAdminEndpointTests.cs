@@ -177,11 +177,8 @@ public sealed class ModeloFormularioAdminEndpointTests
     {
         ["codigo"] = "LGPD",
         ["ordem"] = 0,
-        ["termoId"] = Guid.NewGuid(),
-        ["versaoId"] = Guid.NewGuid(),
-        ["exibicao"] = null,
-        ["obrigatoriedade"] = "SEMPRE",
-        ["predicadoObrigatoriedade"] = null,
+        ["termo"] = new JsonObject { ["termoId"] = Guid.NewGuid(), ["versaoId"] = Guid.NewGuid() },
+        ["regras"] = new JsonObject { ["exibicao"] = null, ["obrigatoriedade"] = new JsonObject { ["tipo"] = "SEMPRE" } },
     });
 
     private static async Task ConferirCodigoDoErroAsync(HttpResponseMessage resposta, string codigo)

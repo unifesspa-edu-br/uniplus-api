@@ -47,8 +47,9 @@ public sealed class GrupoRepetivelEndpointTests
 
         using JsonDocument corpo = await LerProcessoAsync(client, processoId);
         JsonElement inscricao = FormularioDeInscricao(corpo);
-        ConferirGrupoDaComposicaoFamiliar(inscricao.GetProperty("grupos").EnumerateArray().Single(), campo);
-        inscricao.GetProperty("fatosColetados").EnumerateArray().Select(static f => f.GetProperty("fatoCodigo").GetString())
+        JsonElement coleta = inscricao.GetProperty("coleta");
+        ConferirGrupoDaComposicaoFamiliar(coleta.GetProperty("grupos").EnumerateArray().Single(), campo);
+        coleta.GetProperty("itens").EnumerateArray().Select(static f => f.GetProperty("fatoCodigo").GetString())
             .Should().NotContain(campo, "o campo do grupo não é item do formulário");
     }
 

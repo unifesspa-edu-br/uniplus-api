@@ -195,7 +195,7 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
     [InlineData(3, 3)]
     public void MesclarEtapas_SecaoOmitida_Entra(int ordemEnviada, int ordemGravada)
     {
-        EtapaFormularioInput dados = new("DADOS", ordemEnviada, EstruturaFormulario.TipoSecao, null, "Dados", null, null);
+        EtapaFormularioInput dados = new("DADOS", ordemEnviada, EstruturaFormulario.TipoSecao, null, new ApresentacaoDaEtapaInput("Dados", null, null));
 
         (IReadOnlyList<EtapaFormularioInput> etapas, List<FieldError> erros) = ConjuntoBasicoDaInscricao.MesclarEtapas([dados], ConjuntoBasicoDaInscricao.Secao);
 
@@ -209,7 +209,7 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
     [InlineData(true)]
     public void MesclarEtapas_SecaoEnviada_SoComoEsta(bool alterada)
     {
-        EtapaFormularioInput secao = alterada ? ConjuntoBasicoDaInscricao.Secao with { Titulo = "Identificação" } : ConjuntoBasicoDaInscricao.Secao;
+        EtapaFormularioInput secao = alterada ? ConjuntoBasicoDaInscricao.Secao with { Apresentacao = new ApresentacaoDaEtapaInput("Identificação", null, null) } : ConjuntoBasicoDaInscricao.Secao;
 
         (_, List<FieldError> erros) = ConjuntoBasicoDaInscricao.MesclarEtapas([secao], ConjuntoBasicoDaInscricao.Secao);
 

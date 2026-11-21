@@ -72,7 +72,8 @@ public sealed class ModeloFormularioPersistenceTests
     ];
 
     private static TermoDoModelo TermoDeVeracidade() =>
-        new("VERACIDADE", 0, Guid.CreateVersion7(), Guid.CreateVersion7(), Quando("FORMA_CONCLUSAO", "REGULAR"), Obrigatoriedade.Sempre);
+        new("VERACIDADE", 0, Guid.CreateVersion7(), Guid.CreateVersion7(),
+            new ExibicaoEObrigatoriedade(Quando("FORMA_CONCLUSAO", "REGULAR"), Obrigatoriedade.Sempre));
 
     private static GrupoDoModelo GrupoDaComposicaoFamiliar() =>
         new("COMPOSICAO_FAMILIAR", 2, "ESCOLA", "Composição familiar", new OcorrenciasDoGrupo(1, 10),

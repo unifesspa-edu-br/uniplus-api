@@ -41,14 +41,13 @@ public static class ModeloFormularioMapping
 
     private static EtapaFormularioInput EtapaParaEntrada(EtapaDoModelo etapa) => new(
         etapa.Codigo, etapa.Ordem, EstruturaFormulario.ParaToken(etapa.Tipo), EstruturaFormulario.ParaToken(etapa.Bloco),
-        etapa.Titulo, etapa.Descricao, etapa.Aviso, EntradaDeRegras.ParaEntrada(etapa.Exibicao));
+        new ApresentacaoDaEtapaInput(etapa.Titulo, etapa.Descricao, etapa.Aviso), EntradaDeRegras.ParaEntrada(etapa.Exibicao));
 
     private static FatoColetadoInput ItemParaEntrada(ItemDoModelo campo) => new(
         campo.FatoCodigo, campo.Ordem, EntradaDeRegras.ParaEntrada(campo.Apresentacao), EntradaDeRegras.ParaEntrada(campo.Regras), campo.EtapaCodigo);
 
     private static TermoExigidoInput TermoParaEntrada(TermoDoModelo termo) => new(
-        termo.Codigo, termo.Ordem, termo.TermoId, termo.VersaoId, EntradaDeRegras.ParaEntrada(termo.Exibicao),
-        EntradaDeRegras.ParaEntrada(termo.Obrigatoriedade), EntradaDeRegras.ParaEntrada(termo.Obrigatoriedade.Predicado));
+        termo.Codigo, termo.Ordem, new VersaoDoTermoInput(termo.TermoId, termo.VersaoId), EntradaDeRegras.ParaEntrada(termo.Regras));
 
     private static GrupoColetadoInput GrupoParaEntrada(GrupoDoModelo grupo) => new(
         grupo.Codigo, grupo.Ordem, grupo.Rotulo, EntradaDeRegras.ParaEntrada(grupo.Ocorrencias), EntradaDeRegras.ParaEntrada(grupo.Regras),

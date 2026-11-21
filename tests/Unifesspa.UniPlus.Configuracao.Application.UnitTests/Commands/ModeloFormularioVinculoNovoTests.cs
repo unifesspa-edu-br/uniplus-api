@@ -25,6 +25,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// A escrita do modelo de formulário recusa só o vínculo novo a fato, termo ou tipo desativado ou
@@ -45,15 +46,15 @@ public sealed class ModeloFormularioVinculoNovoTests : ModeloFormularioHandlerTe
     [Fact(DisplayName = "Termo que o catálogo já não traz continua no modelo que o escolheu; o termo novo é recusado")]
     public async Task Termo_RecusaSoOVinculoNovo()
     {
-        TermoDoModelo gravado = new("LGPD", 0, Guid.NewGuid(), Guid.NewGuid(), null, Obrigatoriedade.Sempre);
+        TermoDoModelo gravado = new("LGPD", 0, Guid.NewGuid(), Guid.NewGuid(), new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre));
         ModeloFormulario existente = ExistenteComOTermo(gravado);
-        TermoExigidoInput mantido = new(gravado.Codigo, 0, gravado.TermoId, gravado.VersaoId, null, "SEMPRE", null);
-        TermoExigidoInput novo = new("IMAGEM", 1, Guid.NewGuid(), Guid.NewGuid(), null, "SEMPRE", null);
+        TermoExigidoInput mantido = EntradaDoTermoExigidoDeTeste.Exigindo(gravado.Codigo).DaVersao(gravado.TermoId, gravado.VersaoId).Construir();
+        TermoExigidoInput novo = EntradaDoTermoExigidoDeTeste.Exigindo("IMAGEM", 1).DaVersao(Guid.NewGuid(), Guid.NewGuid()).Construir();
 
         Result editar = await AtualizarAsync(existente, Conteudo(Item("CERTIFICADO", 0)) with { Termos = [mantido, novo] }, tipo: null);
 
         editar.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(
-            new FieldError("conteudo.termos[1].versaoId", new DomainError(ModeloFormularioErrorCodes.TermoVersaoNaoEncontrada, string.Empty)),
+            new FieldError("conteudo.termos[1].termo.versaoId", new DomainError(ModeloFormularioErrorCodes.TermoVersaoNaoEncontrada, string.Empty)),
             static o => o.Excluding(static e => e.Error.Message).Excluding(static e => e.Origem));
     }
 

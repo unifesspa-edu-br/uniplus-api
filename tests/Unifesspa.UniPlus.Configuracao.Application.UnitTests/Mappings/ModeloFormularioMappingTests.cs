@@ -56,7 +56,9 @@ public sealed class ModeloFormularioMappingTests
         "Inscrição Medicina",
         [EtapaCompleta(), new EtapaDoModelo("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null)],
         [ItemCompleto()],
-        [new TermoDoModelo("TERMO_USO", 0, TermoId, VersaoId, Quando("QUILOMBOLA", true), Obrigatoriedade.Quando(Quando("BAIXA_RENDA", true)))],
+        [new TermoDoModelo(
+            "TERMO_USO", 0, TermoId, VersaoId,
+            new ExibicaoEObrigatoriedade(Quando("QUILOMBOLA", true), Obrigatoriedade.Quando(Quando("BAIXA_RENDA", true))))],
         ["COR_RACA"],
         [GrupoCompleto()],
         [DocumentoCompleto()]);
@@ -65,7 +67,7 @@ public sealed class ModeloFormularioMappingTests
         null,
         [new EtapaDoModelo("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null, null)],
         [ItemMinimo("QUILOMBOLA", 0)],
-        [new TermoDoModelo("TERMO_USO", 0, TermoId, VersaoId, null, Obrigatoriedade.Sempre)],
+        [new TermoDoModelo("TERMO_USO", 0, TermoId, VersaoId, new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre))],
         [],
         [new GrupoDoModelo(
             "FAMILIA", 0, null, "Família", new OcorrenciasDoGrupo(1, null), new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Nunca), [ItemMinimo("PARENTESCO", 0)])],
@@ -101,25 +103,29 @@ public sealed class ModeloFormularioMappingTests
 
     private static ConteudoDoModeloInput EntradaCompleta() => new(
         "Inscrição Medicina",
-        [EtapaCompletaNaEntrada(), new EtapaFormularioInput("REVISAO", 1, "BLOCO", "REVISAO_E_ACEITE", "Revisão", null, null)],
+        [EtapaCompletaNaEntrada(), EntradaDaEtapaFormularioDeTeste.BlocoDeSistema("REVISAO", 1, "REVISAO_E_ACEITE").ComTitulo("Revisão").Construir()],
         [ItemCompletoNaEntrada()],
-        [new TermoExigidoInput("TERMO_USO", 0, TermoId, VersaoId, QuandoNaEntrada("QUILOMBOLA", true), "QUANDO", QuandoNaEntrada("BAIXA_RENDA", true))],
+        [
+            EntradaDoTermoExigidoDeTeste.Exigindo("TERMO_USO").DaVersao(TermoId, VersaoId).ExibidoQuando(QuandoNaEntrada("QUILOMBOLA", true))
+                .ComObrigatoriedade("QUANDO", QuandoNaEntrada("BAIXA_RENDA", true)).Construir(),
+        ],
         ["COR_RACA"],
         [GrupoCompletoNaEntrada()],
         [DocumentoCompletoNaEntrada()]);
 
     private static ConteudoDoModeloInput EntradaMinima() => new(
         null,
-        [new EtapaFormularioInput("DADOS", 0, "SECAO", null, "Dados", null, null)],
+        [EntradaDaEtapaFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").Construir()],
         [ItemMinimoNaEntrada("QUILOMBOLA", 0)],
-        [new TermoExigidoInput("TERMO_USO", 0, TermoId, VersaoId, null, "SEMPRE", null)],
+        [EntradaDoTermoExigidoDeTeste.Exigindo("TERMO_USO").DaVersao(TermoId, VersaoId).Construir()],
         [],
         [EntradaDoGrupoColetadoDeTeste.Compondo("FAMILIA").ComRotulo("Família").ComOcorrencias(1)
             .ComCampos(ItemMinimoNaEntrada("PARENTESCO", 0)).Construir()],
         [new DocumentoExigidoDoModeloInput("INSCRICAO", "RG", true, null, "INDEFERIMENTO", [])]);
 
-    private static EtapaFormularioInput EtapaCompletaNaEntrada() => new(
-        "DADOS", 0, "SECAO", null, "Dados", "Dados do candidato", "Confira os dados", QuandoNaEntrada("QUILOMBOLA", true));
+    private static EtapaFormularioInput EtapaCompletaNaEntrada() =>
+        EntradaDaEtapaFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").ComDescricao("Dados do candidato").ComAviso("Confira os dados")
+            .ExibidaQuando(QuandoNaEntrada("QUILOMBOLA", true)).Construir();
 
     private static FatoColetadoInput ItemCompletoNaEntrada() =>
         EntradaDoFatoColetadoDeTeste.Coletando("RENDA", 1)

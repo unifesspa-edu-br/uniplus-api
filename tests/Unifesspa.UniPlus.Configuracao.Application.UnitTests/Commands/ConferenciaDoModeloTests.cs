@@ -79,7 +79,10 @@ public sealed class ConferenciaDoModeloTests
 
     private static ConteudoDoModeloInput EntradaComSubitemQueRecusaRestricoesEImpedimento() => new(
         "Habilitação",
-        [new("DADOS", 0, "SECAO", null, "Dados", null, null), new("REVISAO", 1, "BLOCO", "REVISAO_E_ACEITE", "Revisão", null, null)],
+        [
+            EntradaDaEtapaFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").Construir(),
+            EntradaDaEtapaFormularioDeTeste.BlocoDeSistema("REVISAO", 1, "REVISAO_E_ACEITE").ComTitulo("Revisão").Construir(),
+        ],
         [],
         [],
         [],
@@ -104,11 +107,15 @@ public sealed class ConferenciaDoModeloTests
 
     private static ConteudoDoModeloInput EntradaQueRecusaEmTodasAsPartes() => new(
         "Habilitação",
-        [new("DADOS", 0, "SECAO", null, "Dados", null, null, CitandoFatoInexistente), new("REVISAO", 1, "BLOCO", "REVISAO_E_ACEITE", "Revisão", null, null)],
+        [
+            EntradaDaEtapaFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").ExibidaQuando(CitandoFatoInexistente).Construir(),
+            EntradaDaEtapaFormularioDeTeste.BlocoDeSistema("REVISAO", 1, "REVISAO_E_ACEITE").ComTitulo("Revisão").Construir(),
+        ],
         ItensQueRecusam(),
         [
-            new("TERMO_USO", 0, TermoDesconhecido, VersaoJaVinculada, CitandoFatoInexistente, "QUANDO", CitandoFatoInexistente),
-            new("TERMO_USO", 1, TermoJaVinculado, VersaoJaVinculada, CitandoFatoInexistente, "SEMPRE", null),
+            EntradaDoTermoExigidoDeTeste.Exigindo("TERMO_USO").DaVersao(TermoDesconhecido, VersaoJaVinculada).ExibidoQuando(CitandoFatoInexistente)
+                .ComObrigatoriedade("QUANDO", CitandoFatoInexistente).Construir(),
+            EntradaDoTermoExigidoDeTeste.Exigindo("TERMO_USO", 1).DaVersao(TermoJaVinculado, VersaoJaVinculada).ExibidoQuando(CitandoFatoInexistente).Construir(),
         ],
         ["NAO_EXISTE", string.Empty, " CERTIFICADO ", "MAIOR_IDADE"],
         [GrupoQueRecusa()],
@@ -197,10 +204,10 @@ public sealed class ConferenciaDoModeloTests
 
     private static Recusa[] RecusasDosTermos() =>
     [
-        FatoInexistenteNoPredicado("termos[0].exibicao"),
-        FatoInexistenteNoPredicado("termos[0].predicadoObrigatoriedade"),
-        ("termos[0].versaoId", ModeloFormularioErrorCodes.TermoVersaoNaoEncontrada, "A versão informada não existe no catálogo de termos, ou pertence a outro termo."),
-        FatoInexistenteNoPredicado("termos[1].exibicao"),
+        FatoInexistenteNoPredicado("termos[0].regras.exibicao"),
+        FatoInexistenteNoPredicado("termos[0].regras.obrigatoriedade.predicado"),
+        ("termos[0].termo.versaoId", ModeloFormularioErrorCodes.TermoVersaoNaoEncontrada, "A versão informada não existe no catálogo de termos, ou pertence a outro termo."),
+        FatoInexistenteNoPredicado("termos[1].regras.exibicao"),
     ];
 
     private static Recusa[] RecusasDosPressupostos() =>

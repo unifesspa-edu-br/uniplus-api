@@ -96,7 +96,10 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
         new(Guid.NewGuid(), "MODELO", "Modelo", null, EstruturaFormulario.ParaToken(finalidade), null, true,
             new ConteudoDoModeloInput(
                 "Formulário",
-                [new EtapaFormularioInput("DADOS", 0, "SECAO", null, "Dados", null, null), new EtapaFormularioInput("REVISAO", 1, "BLOCO", "REVISAO_E_ACEITE", "Revisão", null, null)],
+                [
+                    EntradaDaEtapaFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").Construir(),
+                    EntradaDaEtapaFormularioDeTeste.BlocoDeSistema("REVISAO", 1, "REVISAO_E_ACEITE").ComTitulo("Revisão").Construir(),
+                ],
                 itens, termos ?? [], pressupostos ?? [], grupos ?? [], documentos));
 
     public static ModeloFormularioView ModeloComDocumentos(params DocumentoExigidoDoModeloInput[] documentos) =>

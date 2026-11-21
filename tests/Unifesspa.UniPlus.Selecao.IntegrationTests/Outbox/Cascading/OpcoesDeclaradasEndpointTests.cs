@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 
 using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 
@@ -12,7 +11,7 @@ using Domain.Entities;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
-using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
 /// As opções que o processo declara para um fato de fonte do processo, como as edições do ENEM
@@ -33,32 +32,32 @@ public sealed class OpcoesDeclaradasEndpointTests
         Guid processoId = await SemearProcessoDoEnemAsync();
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        using HttpRequestMessage itens = Requisicao(HttpMethod.Put, $"/api/selecao/admin/processos-seletivos/{processoId}/formularios/INSCRICAO/itens");
-        itens.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
-        itens.Content = JsonContent.Create(new { itens = Array.Empty<object>(), grupos = Array.Empty<object>() });
-        HttpResponseMessage semOCampo = await client.SendAsync(itens);
+        HttpResponseMessage semOCampo = await ProcessoSeletivoHttp.DefinirItensAsync(client, processoId, new { itens = Array.Empty<object>(), grupos = Array.Empty<object>() });
         semOCampo.StatusCode.Should().Be(HttpStatusCode.NoContent, await semOCampo.Content.ReadAsStringAsync());
+        HttpResponseMessage declaradas = await DeclararEdicoesDoEnemAsync(client, processoId);
+        declaradas.StatusCode.Should().Be(HttpStatusCode.NoContent, await declaradas.Content.ReadAsStringAsync());
 
-        using HttpRequestMessage opcoes = Requisicao(HttpMethod.Put, $"/api/selecao/processos-seletivos/{processoId}/fatos/EDICAO_ENEM/opcoes");
+        using JsonDocument corpo = await ProcessoSeletivoHttp.ObterAsync(client, processoId);
+        corpo.RootElement.GetProperty("formularios").EnumerateArray().SelectMany(static f => FormularioNaRespostaDoProcesso.Itens(f))
+            .Select(static f => f.GetProperty("fatoCodigo").GetString())
+            .Should().NotContain("EDICAO_ENEM");
+        ConferirEdicoesDeclaradas(corpo.RootElement);
+    }
+
+    private static async Task<HttpResponseMessage> DeclararEdicoesDoEnemAsync(HttpClient client, Guid processoId)
+    {
+        using HttpRequestMessage opcoes = ProcessoSeletivoHttp.Requisicao(HttpMethod.Put, $"/api/selecao/processos-seletivos/{processoId}/fatos/EDICAO_ENEM/opcoes");
         opcoes.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
         opcoes.Content = JsonContent.Create(new
         {
             opcoes = new[] { new { codigo = "2026", rotulo = "ENEM 2026" }, new { codigo = "2025", rotulo = "ENEM 2025" } },
         });
-        HttpResponseMessage declaradas = await client.SendAsync(opcoes);
-        declaradas.StatusCode.Should().Be(HttpStatusCode.NoContent, await declaradas.Content.ReadAsStringAsync());
+        return await client.SendAsync(opcoes);
+    }
 
-        using HttpRequestMessage get = Requisicao(HttpMethod.Get, $"/api/selecao/processos-seletivos/{processoId}");
-        get.Headers.Accept.ParseAdd("application/vnd.uniplus.processo-seletivo.v1+json");
-        HttpResponseMessage lido = await client.SendAsync(get);
-        lido.StatusCode.Should().Be(HttpStatusCode.OK, await lido.Content.ReadAsStringAsync());
-
-        using JsonDocument corpo = JsonDocument.Parse(await lido.Content.ReadAsStringAsync());
-        corpo.RootElement.GetProperty("formularios").EnumerateArray()
-            .SelectMany(static f => f.GetProperty("fatosColetados").EnumerateArray())
-            .Select(static f => f.GetProperty("fatoCodigo").GetString())
-            .Should().NotContain("EDICAO_ENEM");
-        JsonElement edicoes = corpo.RootElement.GetProperty("opcoesDeclaradas").EnumerateArray()
+    private static void ConferirEdicoesDeclaradas(JsonElement processo)
+    {
+        JsonElement edicoes = processo.GetProperty("opcoesDeclaradas").EnumerateArray()
             .Single(static o => o.GetProperty("fatoCodigo").GetString() == "EDICAO_ENEM");
         edicoes.GetProperty("opcoes").EnumerateArray()
             .Select(static o => (o.GetProperty("codigo").GetString(), o.GetProperty("rotulo").GetString(), o.GetProperty("ordem").GetInt32()))
@@ -72,13 +71,5 @@ public sealed class OpcoesDeclaradasEndpointTests
         (ProcessoSeletivo processo, _) = await ProcessoSeletivoPendenciasSeeder.SemearEnemComCalculoLocalAsync(
             db, $"Opções declaradas {Guid.CreateVersion7()}", ofertaComGrupo: true);
         return processo.Id;
-    }
-
-    private static HttpRequestMessage Requisicao(HttpMethod metodo, string rota)
-    {
-        HttpRequestMessage request = new(metodo, new Uri(rota, UriKind.Relative));
-        request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "plataforma-admin");
-        return request;
     }
 }

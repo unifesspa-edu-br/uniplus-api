@@ -26,17 +26,22 @@ internal static class ProjecaoDaColeta
         EstruturaFormulario.ParaToken(formulario.Finalidade),
         formulario.FaseId,
         formulario.Titulo,
-        formulario.ModeloOrigemId,
-        formulario.ModeloOrigemCodigo,
-        [.. formulario.Etapas.OrderBy(static e => e.Ordem).Select(static e => new EtapaFormularioDto(
-            e.Codigo, e.Ordem, EstruturaFormulario.ParaToken(e.Tipo), EstruturaFormulario.ParaToken(e.Bloco), e.Titulo, e.Descricao, e.Aviso,
-            e.Exibicao?.ToDto()))],
-        [.. processo.FatosColetados.Where(f => f.Finalidade == formulario.Finalidade).OrderBy(static f => f.Ordem)
-            .Select(f => ProjetarFato(processo, f))],
-        [.. processo.TermosExigidos.Where(t => t.Finalidade == formulario.Finalidade).OrderBy(static t => t.Ordem)
-            .Select(static t => t.ToDto())],
-        [.. processo.GruposColetados.Where(g => g.Finalidade == formulario.Finalidade).OrderBy(static g => g.Ordem)
-            .Select(g => ProjetarGrupo(processo, g))]);
+        formulario.ModeloOrigemId is { } modeloId ? new ModeloDeOrigemDto(modeloId, formulario.ModeloOrigemCodigo!) : null,
+        [.. formulario.Etapas.OrderBy(static e => e.Ordem).Select(ProjetarEtapa)],
+        ProjetarColeta(processo, formulario.Finalidade),
+        [.. processo.TermosExigidos.Where(t => t.Finalidade == formulario.Finalidade).OrderBy(static t => t.Ordem).Select(static t => t.ToDto())]);
+
+    private static EtapaFormularioDto ProjetarEtapa(EtapaFormulario etapa) => new(
+        etapa.Codigo,
+        etapa.Ordem,
+        EstruturaFormulario.ParaToken(etapa.Tipo),
+        EstruturaFormulario.ParaToken(etapa.Bloco),
+        new ApresentacaoDaEtapaDto(etapa.Titulo, etapa.Descricao, etapa.Aviso),
+        etapa.Exibicao?.ToDto());
+
+    private static ColetaDoFormularioDto ProjetarColeta(ProcessoSeletivo processo, FinalidadeFormulario finalidade) => new(
+        [.. processo.FatosColetados.Where(f => f.Finalidade == finalidade).OrderBy(static f => f.Ordem).Select(f => ProjetarFato(processo, f))],
+        [.. processo.GruposColetados.Where(g => g.Finalidade == finalidade).OrderBy(static g => g.Ordem).Select(g => ProjetarGrupo(processo, g))]);
 
     private static GrupoColetadoDto ProjetarGrupo(ProcessoSeletivo processo, GrupoColetado g) => new(
         g.Codigo, g.Ordem, g.EtapaCodigo, g.Rotulo,

@@ -102,7 +102,8 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     [Fact(DisplayName = "O termo aparece conforme as respostas")]
     public async Task Handle_TermoCondicionado_SegueAsRespostas()
     {
-        TermoDoModelo termo = new("BANCO_CENTRAL", 0, Guid.NewGuid(), Guid.NewGuid(), Quando("CERTIFICADO", true), Obrigatoriedade.Sempre);
+        TermoDoModelo termo = new(
+            "BANCO_CENTRAL", 0, Guid.NewGuid(), Guid.NewGuid(), new ExibicaoEObrigatoriedade(Quando("CERTIFICADO", true), Obrigatoriedade.Sempre));
         ModeloFormulario modelo = Modelo([Item("CERTIFICADO", 0)], termos: [termo]);
 
         PreVisualizacaoDoModeloDto resultado = (await PreVisualizarAsync(modelo, respostas: new() { ["CERTIFICADO"] = false }))!;

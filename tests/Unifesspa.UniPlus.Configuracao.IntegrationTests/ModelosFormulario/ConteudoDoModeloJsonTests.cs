@@ -219,7 +219,9 @@ public sealed class ConteudoDoModeloJsonTests
         "Inscrição \"Medicina\" <2027>",
         [EtapaCompleta(), new EtapaDoModelo("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null)],
         [ItemCompleto()],
-        [new TermoDoModelo("TERMO_USO", 0, TermoId, VersaoId, Quando("QUILOMBOLA", true), Obrigatoriedade.Quando(Quando("BAIXA_RENDA", true)))],
+        [new TermoDoModelo(
+            "TERMO_USO", 0, TermoId, VersaoId,
+            new ExibicaoEObrigatoriedade(Quando("QUILOMBOLA", true), Obrigatoriedade.Quando(Quando("BAIXA_RENDA", true))))],
         ["COR_RACA"],
         [GrupoCompleto()],
         [DocumentoCompleto()]);
@@ -228,7 +230,7 @@ public sealed class ConteudoDoModeloJsonTests
         null,
         [new EtapaDoModelo("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null, null)],
         [ItemMinimo("QUILOMBOLA", 0)],
-        [new TermoDoModelo("TERMO_USO", 0, TermoId, VersaoId, null, Obrigatoriedade.Sempre)],
+        [new TermoDoModelo("TERMO_USO", 0, TermoId, VersaoId, new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre))],
         [],
         [new GrupoDoModelo(
             "FAMILIA", 0, null, "Família", new OcorrenciasDoGrupo(1, null), new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Nunca), [ItemMinimo("PARENTESCO", 0)])],

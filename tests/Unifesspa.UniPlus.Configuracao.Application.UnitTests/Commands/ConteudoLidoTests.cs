@@ -115,7 +115,7 @@ public sealed class ConteudoLidoTests
         [.. RecusasDasEtapas(), .. RecusasDosItens(), .. RecusasDosTermos(), .. RecusasDosGrupos(), .. RecusasDosDocumentos()];
 
     private static EtapaFormularioInput[] EtapasRecusadas() =>
-        [ElementoNulo<EtapaFormularioInput>(), new("DADOS", 1, "SECAO", null, "Dados", null, null, PredicadoSemCondicao)];
+        [ElementoNulo<EtapaFormularioInput>(), EntradaDaEtapaFormularioDeTeste.Secao("DADOS", 1).ComTitulo("Dados").ExibidaQuando(PredicadoSemCondicao).Construir()];
 
     private static Recusa[] RecusasDasEtapas() =>
         [Malformada("etapas[0]", EntradaNula), ClausulaVazia("etapas[1].exibicao")];
@@ -148,16 +148,17 @@ public sealed class ConteudoLidoTests
     private static TermoExigidoInput[] TermosRecusados() =>
     [
         ElementoNulo<TermoExigidoInput>(),
-        new("TERMO_USO", 1, TermoId, VersaoId, PredicadoSemCondicao, "QUANDO", PredicadoSemCondicao),
-        new("TERMO_USO", 2, TermoId, VersaoId, null, "TALVEZ", null),
+        EntradaDoTermoExigidoDeTeste.Exigindo("TERMO_USO", 1).DaVersao(TermoId, VersaoId).ExibidoQuando(PredicadoSemCondicao)
+            .ComObrigatoriedade("QUANDO", PredicadoSemCondicao).Construir(),
+        EntradaDoTermoExigidoDeTeste.Exigindo("TERMO_USO", 2).DaVersao(TermoId, VersaoId).ComObrigatoriedade("TALVEZ").Construir(),
     ];
 
     private static Recusa[] RecusasDosTermos() =>
     [
         Malformada("termos[0]", EntradaNula),
-        ClausulaVazia("termos[1].exibicao"),
-        ClausulaVazia("termos[1].predicadoObrigatoriedade"),
-        ("termos[2].obrigatoriedade", ModeloFormularioErrorCodes.ObrigatoriedadeInvalida, ObrigatoriedadeIncoerente),
+        ClausulaVazia("termos[1].regras.exibicao"),
+        ClausulaVazia("termos[1].regras.obrigatoriedade.predicado"),
+        ("termos[2].regras.obrigatoriedade", ModeloFormularioErrorCodes.ObrigatoriedadeInvalida, ObrigatoriedadeIncoerente),
     ];
 
     private static GrupoColetadoInput[] GruposRecusados() =>
@@ -199,7 +200,8 @@ public sealed class ConteudoLidoTests
         Malformada("documentosExigidos[1].porOpcao.exceto", "A opção excetuada precisa ser um código."),
     ];
 
-    private static EtapaFormularioInput EtapaValida() => new("DADOS", 0, "SECAO", null, "Dados", "Descrição", "Aviso", Quando("CERTIFICADO"));
+    private static EtapaFormularioInput EtapaValida() =>
+        EntradaDaEtapaFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").ComDescricao("Descrição").ComAviso("Aviso").ExibidaQuando(Quando("CERTIFICADO")).Construir();
 
     private static EtapaDoModelo EtapaEsperada() =>
         new("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", "Descrição", "Aviso", Predicado("CERTIFICADO"));
@@ -226,9 +228,11 @@ public sealed class ConteudoLidoTests
                 [RestricoesDeValor.Tamanho(11, 11).Value!],
                 new Impedimento(Predicado("SEM_RENDA"), "Mensagem")));
 
-    private static TermoExigidoInput TermoValido() => new("TERMO_USO", 0, TermoId, VersaoId, Quando("CERTIFICADO"), "NUNCA", null);
+    private static TermoExigidoInput TermoValido() =>
+        EntradaDoTermoExigidoDeTeste.Exigindo("TERMO_USO").DaVersao(TermoId, VersaoId).ExibidoQuando(Quando("CERTIFICADO")).ComObrigatoriedade("NUNCA").Construir();
 
-    private static TermoDoModelo TermoEsperado() => new("TERMO_USO", 0, TermoId, VersaoId, Predicado("CERTIFICADO"), Obrigatoriedade.Nunca);
+    private static TermoDoModelo TermoEsperado() =>
+        new("TERMO_USO", 0, TermoId, VersaoId, new ExibicaoEObrigatoriedade(Predicado("CERTIFICADO"), Obrigatoriedade.Nunca));
 
     private static GrupoColetadoInput GrupoValido() =>
         EntradaDoGrupoColetadoDeTeste.Compondo("COMPOSICAO", 1).ComRotulo("Composição").NaSecao("DADOS").ComOcorrencias(1, 5).IncluindoOCandidato()

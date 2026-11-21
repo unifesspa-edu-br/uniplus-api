@@ -305,7 +305,7 @@ internal static class ModelosDaSementePsrMedicina2027
         ]);
 
     private static TermoDoModelo Termo(TermoDaSemente termo, int ordem, PredicadoDnf? exibicao = null) =>
-        new(termo.Codigo, ordem, termo.TermoId, termo.VersaoId, exibicao, Obrigatoriedade.Sempre);
+        new(termo.Codigo, ordem, termo.TermoId, termo.VersaoId, new ExibicaoEObrigatoriedade(exibicao, Obrigatoriedade.Sempre));
 
     /// <summary>A condição única "fato operador valor", como predicado de uma cláusula só.</summary>
     private static PredicadoDnf Se<T>(string fato, Operador operador, T valor) => SeAlguma([Condicao(fato, operador, valor)]);

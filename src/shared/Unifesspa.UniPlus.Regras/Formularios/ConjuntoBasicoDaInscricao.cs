@@ -92,7 +92,7 @@ public static class ConjuntoBasicoDaInscricao
 
     /// <summary>A seção reservada, a primeira etapa do formulário de inscrição.</summary>
     public static EtapaFormularioInput Secao { get; } =
-        new(CodigoDaSecao, 0, EstruturaFormulario.TipoSecao, null, "Dados do candidato", null, null);
+        new(CodigoDaSecao, 0, EstruturaFormulario.TipoSecao, null, new ApresentacaoDaEtapaInput("Dados do candidato", null, null));
 
     /// <summary>Os itens da seção, na ordem em que são coletados.</summary>
     public static IReadOnlyList<FatoColetadoInput> Itens { get; } = MontarItens();
@@ -335,10 +335,13 @@ public static class ConjuntoBasicoDaInscricao
         enviada.Ordem == referencia.Ordem
         && string.Equals(enviada.Tipo, referencia.Tipo, StringComparison.Ordinal)
         && string.IsNullOrWhiteSpace(enviada.Bloco)
-        && string.Equals(enviada.Titulo?.Trim(), referencia.Titulo, StringComparison.Ordinal)
-        && string.Equals(string.IsNullOrWhiteSpace(enviada.Descricao) ? null : enviada.Descricao.Trim(), referencia.Descricao, StringComparison.Ordinal)
-        && string.Equals(string.IsNullOrWhiteSpace(enviada.Aviso) ? null : enviada.Aviso.Trim(), referencia.Aviso, StringComparison.Ordinal)
+        && MesmaApresentacao(enviada.Apresentacao, referencia.Apresentacao)
         && enviada.Exibicao is not { Count: > 0 };
+
+    private static bool MesmaApresentacao(ApresentacaoDaEtapaInput? enviada, ApresentacaoDaEtapaInput? referencia) =>
+        string.Equals(enviada?.Titulo?.Trim(), referencia?.Titulo, StringComparison.Ordinal)
+        && string.Equals(FormaDoItem.TextoOpcional(enviada?.Descricao), referencia?.Descricao, StringComparison.Ordinal)
+        && string.Equals(FormaDoItem.TextoOpcional(enviada?.Aviso), referencia?.Aviso, StringComparison.Ordinal);
 
     private static FieldError SecaoReservada(string campo) =>
         new(campo, new DomainError(

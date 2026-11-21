@@ -27,7 +27,7 @@ internal static class ConteudosDoModeloDeTeste
         new(codigo, ordem, "DADOS", "Grupo", new OcorrenciasDoGrupo(1, 10), new ExibicaoEObrigatoriedade(exibicao, Obrigatoriedade.Sempre), campos);
 
     public static TermoDoModelo Termo(string codigo, int ordem = 0, PredicadoDnf? exibicao = null) =>
-        new(codigo, ordem, Guid.NewGuid(), Guid.NewGuid(), exibicao, Obrigatoriedade.Sempre);
+        new(codigo, ordem, Guid.NewGuid(), Guid.NewGuid(), new ExibicaoEObrigatoriedade(exibicao, Obrigatoriedade.Sempre));
 
     public static DocumentoExigidoDoModelo Documento(string tipo, PredicadoDnf? quando = null, ExigenciaPorOpcao? porOpcao = null) =>
         new("INSCRICAO", tipo, false, quando, "REMOVE_VANTAGEM", [], porOpcao);

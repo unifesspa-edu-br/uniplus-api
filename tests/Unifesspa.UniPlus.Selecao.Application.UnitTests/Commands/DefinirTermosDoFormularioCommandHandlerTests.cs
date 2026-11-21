@@ -45,17 +45,7 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
             Substitute.For<ITermoConsentimentoReader>(),
             Substitute.For<IUnitOfWork>());
         mocks.Repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(
-        [
-            new(Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", "Descrição do fato.", "CATEGORICO", "DECLARADO", "ESCALAR",
-                ["BRANCA", "PRETA", "PARDA"], "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
-            new(Guid.CreateVersion7(), "BAIXA_RENDA", "Baixa renda", "Descrição do fato.", "BOOLEANO", "DECLARADO", "ESCALAR",
-                null, "INSCRICAO", "CAMPO_FORMULARIO:BAIXA_RENDA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
-            new(Guid.CreateVersion7(), "FAIXA_ETARIA", "Faixa etária", "Descrição do fato.", "NUMERICO", "DERIVADO", "ESCALAR",
-                null, "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
-            new(Guid.CreateVersion7(), "FAIXA_DE_RENDA", "Faixa de renda", "Descrição do fato.", "CATEGORICO", "DERIVADO", "ESCALAR",
-                ["MENOR_DE_18", "DE_18_A_59"], "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_DE_RENDA", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
-        ]));
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(FatosDoCatalogo()));
         mocks.TermoReader.ListarVersoesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(
         [
             new VersaoTermoConsentimentoView(TermoId, VersaoId, "AUTORIZACAO_DE_CONSULTA", 1, "Autorização de consulta", "Autorizo a consulta.", "Lei 12.711/2012",
@@ -64,51 +54,58 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
         return mocks;
     }
 
+    private static FatoCandidatoView[] FatosDoCatalogo() =>
+    [
+        new(Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", "Descrição do fato.", "CATEGORICO", "DECLARADO", "ESCALAR",
+            ["BRANCA", "PRETA", "PARDA"], "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
+        new(Guid.CreateVersion7(), "BAIXA_RENDA", "Baixa renda", "Descrição do fato.", "BOOLEANO", "DECLARADO", "ESCALAR",
+            null, "INSCRICAO", "CAMPO_FORMULARIO:BAIXA_RENDA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
+        new(Guid.CreateVersion7(), "FAIXA_ETARIA", "Faixa etária", "Descrição do fato.", "NUMERICO", "DERIVADO", "ESCALAR",
+            null, "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
+        new(Guid.CreateVersion7(), "FAIXA_DE_RENDA", "Faixa de renda", "Descrição do fato.", "CATEGORICO", "DERIVADO", "ESCALAR",
+            ["MENOR_DE_18", "DE_18_A_59"], "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_DE_RENDA", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
+    ];
+
     private static Task<Result> HandleAsync(Mocks mocks, ProcessoSeletivo processo, params TermoExigidoInput[] termos) =>
         DefinirTermosDoFormularioCommandHandler.Handle(
             new DefinirTermosDoFormularioCommand(processo.Id, FinalidadeFormulario.Habilitacao, termos),
             mocks.Repository, mocks.FatoCandidatoReader, mocks.TermoReader, mocks.UnitOfWork, CancellationToken.None);
 
-    private static ProcessoSeletivo ProcessoQueColetaCorRaca()
+    private static ProcessoSeletivo ProcessoQueColetaCorRaca() => ProcessoQueColeta(ItemCorRaca());
+
+    private static ProcessoSeletivo ProcessoQueColeta(params FatoColetado[] itens)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             "PS Termos", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        processo.DefinirItens(
-            [FatoColetadoDeTeste.Coletando("COR_RACA", 0)
-                .ComRotulo("Cor ou raça")
-                .DoTipo(TipoRenderizacao.SelecaoUnica)
-                .ComObrigatoriedade(Obrigatoriedade.Sempre)
-                .Construir()], FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+        processo.DefinirItens(itens, FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
         return processo;
     }
+
+    private static FatoColetado ItemCorRaca() =>
+        FatoColetadoDeTeste.Coletando("COR_RACA", 0)
+            .ComRotulo("Cor ou raça")
+            .DoTipo(TipoRenderizacao.SelecaoUnica)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .Construir();
+
+    private static FatoColetado ItemDataDeNascimento() =>
+        FatoColetadoDeTeste.Coletando("DATA_NASCIMENTO", 1)
+            .ComRotulo("Data de nascimento")
+            .DoTipo(TipoRenderizacao.Data)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .Construir();
 
     [Theory(DisplayName = "Condição do termo cita a faixa etária quando o processo coleta a data de nascimento")]
     [InlineData(true)]
     [InlineData(false)]
     public async Task Handle_CondicaoCitaFaixaEtaria_PelaDataDeNascimento(bool coletaDataDeNascimento)
     {
-        ProcessoSeletivo processo = ProcessoQueColetaCorRaca();
-        if (coletaDataDeNascimento)
-        {
-            processo.DefinirItens(
-                [
-                    FatoColetadoDeTeste.Coletando("COR_RACA", 0)
-                        .ComRotulo("Cor ou raça")
-                        .DoTipo(TipoRenderizacao.SelecaoUnica)
-                        .ComObrigatoriedade(Obrigatoriedade.Sempre)
-                        .Construir(),
-                    FatoColetadoDeTeste.Coletando("DATA_NASCIMENTO", 1)
-                        .ComRotulo("Data de nascimento")
-                        .DoTipo(TipoRenderizacao.Data)
-                        .ComObrigatoriedade(Obrigatoriedade.Sempre)
-                        .Construir(),
-                ], FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
-        }
+        ProcessoSeletivo processo = coletaDataDeNascimento ? ProcessoQueColeta(ItemCorRaca(), ItemDataDeNascimento()) : ProcessoQueColetaCorRaca();
 
         Result resultado = await HandleAsync(
-            NovosMocks(processo), processo, new TermoExigidoInput("CONSULTA", 0, TermoId, VersaoId, Quando("FAIXA_ETARIA", 18), "SEMPRE", null));
+            NovosMocks(processo), processo, Termo("CONSULTA", TermoId, VersaoId).ExibidoQuando(Quando("FAIXA_ETARIA", 18)).Construir());
 
         resultado.IsSuccess.Should().Be(coletaDataDeNascimento, resultado.Error?.Message);
     }
@@ -123,7 +120,7 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
         Mocks mocks = NovosMocks(processo);
 
         Result resultado = await HandleAsync(mocks, processo,
-            new TermoExigidoInput("CONSULTA", 0, TermoId, VersaoId, Quando("COR_RACA", "PRETA"), "QUANDO", Quando("COR_RACA", "PRETA")));
+            Termo("CONSULTA", TermoId, VersaoId).ExibidoQuando(Quando("COR_RACA", "PRETA")).ComObrigatoriedade("QUANDO", Quando("COR_RACA", "PRETA")).Construir());
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         TermoExigidoFormulario termo = processo.TermosExigidos.Should().ContainSingle().Which;
@@ -139,11 +136,11 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
         Mocks mocks = NovosMocks(processo);
 
         Result resultado = await HandleAsync(mocks, processo,
-            new TermoExigidoInput("CONSULTA", 0, Guid.CreateVersion7(), VersaoId, null, "SEMPRE", null));
+            Termo("CONSULTA", Guid.CreateVersion7(), VersaoId).Construir());
 
         resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
         {
-            Field = "termos[0].versaoId",
+            Field = "termos[0].termo.versaoId",
             Error = new { Code = TermoExigidoFormularioErrorCodes.VersaoNaoEncontrada },
         });
     }
@@ -155,9 +152,9 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
         Mocks mocks = NovosMocks(processo);
 
         Result resultado = await HandleAsync(mocks, processo,
-            new TermoExigidoInput("CONSULTA", 0, TermoId, VersaoId, Quando("BAIXA_RENDA", true), "SEMPRE", null));
+            Termo("CONSULTA", TermoId, VersaoId).ExibidoQuando(Quando("BAIXA_RENDA", true)).Construir());
 
-        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("termos[0].exibicao");
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("termos[0].regras.exibicao");
         processo.TermosExigidos.Should().BeEmpty();
     }
 
@@ -168,12 +165,13 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
         Mocks mocks = NovosMocks(processo);
 
         Result resultado = await HandleAsync(mocks, processo,
-            new TermoExigidoInput("CONSULTA", 0, TermoId, VersaoId, Quando("FAIXA_DE_RENDA", "DE_18_A_59"), "QUANDO", Quando("BAIXA_RENDA", true)));
+            Termo("CONSULTA", TermoId, VersaoId).ExibidoQuando(Quando("FAIXA_DE_RENDA", "DE_18_A_59"))
+                .ComObrigatoriedade("QUANDO", Quando("BAIXA_RENDA", true)).Construir());
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
-            ("termos[0].exibicao", GrafoFormularioErrorCodes.CitaAtributoDoCandidato),
-            ("termos[0].predicadoObrigatoriedade", "PredicadoDnf.FatoNaoColetadoPeloProcesso"),
+            ("termos[0].regras.exibicao", GrafoFormularioErrorCodes.CitaAtributoDoCandidato),
+            ("termos[0].regras.obrigatoriedade.predicado", "PredicadoDnf.FatoNaoColetadoPeloProcesso"),
         ]);
     }
 
@@ -184,9 +182,9 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
         Mocks mocks = NovosMocks(processo);
 
         Result resultado = await HandleAsync(mocks, processo,
-            new TermoExigidoInput("CONSULTA", 0, TermoId, Guid.CreateVersion7(), Quando("BAIXA_RENDA", true), "SEMPRE", null));
+            Termo("CONSULTA", TermoId, Guid.CreateVersion7()).ExibidoQuando(Quando("BAIXA_RENDA", true)).Construir());
 
-        resultado.Errors.Select(static e => e.Field).Should().BeEquivalentTo(["termos[0].exibicao", "termos[0].versaoId"]);
+        resultado.Errors.Select(static e => e.Field).Should().BeEquivalentTo(["termos[0].regras.exibicao", "termos[0].termo.versaoId"]);
     }
 
     [Theory(DisplayName = "Obrigatoriedade tem predicado se, e só se, é QUANDO")]
@@ -199,10 +197,33 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
         Mocks mocks = NovosMocks(processo);
 
         Result resultado = await HandleAsync(mocks, processo,
-            new TermoExigidoInput("CONSULTA", 0, TermoId, VersaoId, null, tipo, comPredicado ? Quando("COR_RACA", "PRETA") : null));
+            Termo("CONSULTA", TermoId, VersaoId).ComObrigatoriedade(tipo, comPredicado ? Quando("COR_RACA", "PRETA") : null).Construir());
 
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(TermoExigidoFormularioErrorCodes.ObrigatoriedadeInvalida);
     }
+
+    [Fact(DisplayName = "Termo sem as regras é recusado na obrigatoriedade, no caminho das regras do termo")]
+    public async Task Handle_TermoSemRegras_RecusaAObrigatoriedadeAusente()
+    {
+        ProcessoSeletivo processo = ProcessoQueColetaCorRaca();
+
+        Result resultado = await HandleAsync(NovosMocks(processo), processo, Termo("CONSULTA", TermoId, VersaoId).SemRegras().Construir());
+
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("termos[0].regras.obrigatoriedade", TermoExigidoFormularioErrorCodes.ObrigatoriedadeInvalida));
+    }
+
+    [Fact(DisplayName = "Termo sem a versão do catálogo é recusado como versão não encontrada, no caminho do termo")]
+    public async Task Handle_TermoSemVersao_RecusaVersaoNaoEncontrada()
+    {
+        ProcessoSeletivo processo = ProcessoQueColetaCorRaca();
+
+        Result resultado = await HandleAsync(NovosMocks(processo), processo, EntradaDoTermoExigidoDeTeste.Exigindo("CONSULTA").Construir());
+
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("termos[0].termo.versaoId", TermoExigidoFormularioErrorCodes.VersaoNaoEncontrada));
+    }
+
+    private static EntradaDoTermoExigidoDeTeste Termo(string codigo, Guid termoId, Guid versaoId, int ordem = 0) =>
+        EntradaDoTermoExigidoDeTeste.Exigindo(codigo, ordem).DaVersao(termoId, versaoId);
 
     [Fact(DisplayName = "Forma, versão e unicidade saem no mesmo lote, entre termos diferentes")]
     public async Task Handle_RecusasDeFasesDiferentes_SaemJuntas()
@@ -211,14 +232,14 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
         Mocks mocks = NovosMocks(processo);
 
         Result resultado = await HandleAsync(mocks, processo,
-            new TermoExigidoInput("", 0, TermoId, VersaoId, null, "SEMPRE", null),
-            new TermoExigidoInput("CONSULTA", 1, TermoId, Guid.CreateVersion7(), null, "SEMPRE", null),
-            new TermoExigidoInput("CONSULTA", 2, TermoId, VersaoId, null, "SEMPRE", null));
+            Termo("", TermoId, VersaoId).Construir(),
+            Termo("CONSULTA", TermoId, Guid.CreateVersion7(), ordem: 1).Construir(),
+            Termo("CONSULTA", TermoId, VersaoId, ordem: 2).Construir());
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
             ("termos[0].codigo", TermoFormularioErrorCodes.CodigoObrigatorio),
-            ("termos[1].versaoId", TermoExigidoFormularioErrorCodes.VersaoNaoEncontrada),
+            ("termos[1].termo.versaoId", TermoExigidoFormularioErrorCodes.VersaoNaoEncontrada),
             ("termos[2].codigo", TermoFormularioErrorCodes.CodigoDuplicado),
         ]);
     }

@@ -9,15 +9,11 @@ internal static class TermoExigidoMapping
         new(
             termo.Codigo,
             termo.Ordem,
-            termo.TermoId,
-            termo.VersaoId,
-            termo.TermoCodigo,
-            termo.VersaoNumero,
-            termo.Nome,
-            termo.Texto,
-            termo.BaseLegal,
-            termo.FormaAceite,
-            termo.HashVersao,
-            termo.Exibicao?.ToDto(),
-            termo.Obrigatoriedade.ToDto());
+            new VersaoDoTermoDto(
+                termo.TermoId,
+                termo.VersaoId,
+                termo.TermoCodigo,
+                termo.VersaoNumero,
+                new ConteudoDoTermoDto(termo.Nome, termo.Texto, termo.BaseLegal, termo.FormaAceite, termo.HashVersao)),
+            new ExibicaoEObrigatoriedadeDto(termo.Exibicao?.ToDto(), termo.Obrigatoriedade.ToDto()));
 }

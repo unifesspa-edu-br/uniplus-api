@@ -69,19 +69,19 @@ public sealed class PredicadosDasPartesDoModeloTests
     [Fact(DisplayName = "O termo enumera a exibição e o predicado de obrigatoriedade, nessa ordem")]
     public void Termo_ExibicaoEObrigatoriedade_NaOrdem()
     {
-        TermoDoModelo termo = Termo("LGPD", exibicao: Exibicao) with { Obrigatoriedade = Obrigatoriedade.Quando(DaObrigatoriedade) };
+        TermoDoModelo termo = Termo("LGPD", exibicao: Exibicao).ComObrigatoriedade(Obrigatoriedade.Quando(DaObrigatoriedade));
 
         termo.Predicados().Should().Equal(
-            new PredicadoNaEntrada("exibicao", Exibicao),
-            new PredicadoNaEntrada("predicadoObrigatoriedade", DaObrigatoriedade));
+            new PredicadoNaEntrada("regras.exibicao", Exibicao),
+            new PredicadoNaEntrada("regras.obrigatoriedade.predicado", DaObrigatoriedade));
     }
 
     [Fact(DisplayName = "O termo sem regras enumera os mesmos caminhos, sem predicado")]
     public void Termo_SemRegras_MesmosCaminhosSemPredicado()
     {
         Termo("LGPD").Predicados().Should().Equal(
-            new PredicadoNaEntrada("exibicao", null),
-            new PredicadoNaEntrada("predicadoObrigatoriedade", null));
+            new PredicadoNaEntrada("regras.exibicao", null),
+            new PredicadoNaEntrada("regras.obrigatoriedade.predicado", null));
     }
 
     [Fact(DisplayName = "O documento enumera a condição que o torna exigido")]

@@ -44,7 +44,7 @@ public sealed record ConteudoDoModelo(
                 e.Exibicao,
                 [.. itensPorEtapa[e.Codigo].OrderBy(static i => i.Ordem).Select(Item)],
                 [.. gruposPorEtapa[e.Codigo].OrderBy(static g => g.Ordem).Select(Grupo)]))],
-            [.. Termos.OrderBy(static t => t.Ordem).Select(static t => new DefinicaoTermo(t.Codigo, t.Exibicao, t.Obrigatoriedade))],
+            [.. Termos.OrderBy(static t => t.Ordem).Select(static t => new DefinicaoTermo(t.Codigo, t.Regras.Exibicao, t.Regras.Obrigatoriedade))],
             derivacoes,
             agregados);
     }
@@ -169,8 +169,10 @@ public sealed record ConteudoDoModelo(
     private static IEnumerable<(string Campo, string? Texto)> TextosDaEtapa(EtapaDoModelo etapa, int indice) =>
         new (string, string?)[]
         {
-            ($"etapas[{indice}].codigo", etapa.Codigo), ($"etapas[{indice}].titulo", etapa.Titulo),
-            ($"etapas[{indice}].descricao", etapa.Descricao), ($"etapas[{indice}].aviso", etapa.Aviso),
+            ($"etapas[{indice}].codigo", etapa.Codigo),
+            ($"etapas[{indice}].{EtapaFormularioInput.CaminhoDaApresentacao}.titulo", etapa.Titulo),
+            ($"etapas[{indice}].{EtapaFormularioInput.CaminhoDaApresentacao}.descricao", etapa.Descricao),
+            ($"etapas[{indice}].{EtapaFormularioInput.CaminhoDaApresentacao}.aviso", etapa.Aviso),
         }
         .Concat(TextosDosPredicados($"etapas[{indice}]", etapa.Predicados()));
 

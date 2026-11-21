@@ -1,7 +1,13 @@
 namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
 /// <summary>
-/// Uma etapa do formulário: seção ou bloco de sistema, em token canônico, com a exibição
+/// Como a etapa se apresenta ao candidato: o título, a descrição e o aviso. Tem a forma de
+/// <see cref="ApresentacaoDaEtapaInput"/>, que a escrita aceita.
+/// </summary>
+public sealed record ApresentacaoDaEtapaDto(string Titulo, string? Descricao, string? Aviso);
+
+/// <summary>
+/// Uma etapa do formulário: seção ou bloco de sistema, em token canônico, com a apresentação e a exibição
 /// condicional da seção — nula quando ela sempre aparece.
 /// </summary>
 public sealed record EtapaFormularioDto(
@@ -9,9 +15,7 @@ public sealed record EtapaFormularioDto(
     int Ordem,
     string Tipo,
     string? Bloco,
-    string Titulo,
-    string? Descricao,
-    string? Aviso,
+    ApresentacaoDaEtapaDto Apresentacao,
     IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? Exibicao);
 
 /// <summary>
@@ -34,17 +38,24 @@ public sealed record GrupoColetadoDto(
     ExibicaoEObrigatoriedadeDto Regras,
     IReadOnlyList<FatoColetadoDto> Subitens);
 
+/// <summary>O modelo de formulário de que o formulário do processo partiu: o identificador e o código dele.</summary>
+public sealed record ModeloDeOrigemDto(Guid Id, string Codigo);
+
 /// <summary>
-/// O formulário de uma finalidade (UNI-REQ-0144): a fase, o título, o modelo de origem, as etapas,
-/// os itens em ordem, os grupos repetíveis e os termos exigidos.
+/// O que o formulário coleta do candidato: os itens em ordem e os grupos repetíveis, na forma do corpo do PUT
+/// dos itens do formulário.
+/// </summary>
+public sealed record ColetaDoFormularioDto(IReadOnlyList<FatoColetadoDto> Itens, IReadOnlyList<GrupoColetadoDto> Grupos);
+
+/// <summary>
+/// O formulário de uma finalidade (UNI-REQ-0144): a fase, o título, o modelo de origem — nulo quando o formulário não
+/// partiu de um modelo —, as etapas, o que ele coleta e os termos exigidos.
 /// </summary>
 public sealed record FormularioDto(
     string Finalidade,
     Guid? FaseId,
     string? Titulo,
-    Guid? ModeloOrigemId,
-    string? ModeloOrigemCodigo,
+    ModeloDeOrigemDto? ModeloOrigem,
     IReadOnlyList<EtapaFormularioDto> Etapas,
-    IReadOnlyList<FatoColetadoDto> FatosColetados,
-    IReadOnlyList<TermoExigidoDto> Termos,
-    IReadOnlyList<GrupoColetadoDto> Grupos);
+    ColetaDoFormularioDto Coleta,
+    IReadOnlyList<TermoExigidoDto> Termos);

@@ -107,9 +107,9 @@ public sealed class ConteudoDoModeloTextosNaoGravaveisTests
     [Fact(DisplayName = "O código do termo, a exibição e a obrigatoriedade dele são recusados, cada um no seu campo")]
     public void Termo_CodigoExibicaoEObrigatoriedade_Recusa()
     {
-        TermoDoModelo termo = Termo(ComNulo, 0, QuandoOValorE(ValorComNulo)) with { Obrigatoriedade = Obrigatoriedade.Quando(QuandoOValorE(ValorComNulo)) };
+        TermoDoModelo termo = Termo(ComNulo, 0, QuandoOValorE(ValorComNulo)).ComObrigatoriedade(Obrigatoriedade.Quando(QuandoOValorE(ValorComNulo)));
 
-        CamposRecusados(Vazio with { Termos = [termo] }).Should().Equal("termos[0].codigo", "termos[0].exibicao", "termos[0].predicadoObrigatoriedade");
+        CamposRecusados(Vazio with { Termos = [termo] }).Should().Equal("termos[0].codigo", "termos[0].regras.exibicao", "termos[0].regras.obrigatoriedade.predicado");
     }
 
     [Fact(DisplayName = "A exibição do item é recusada no caminho das regras")]
@@ -165,7 +165,7 @@ public sealed class ConteudoDoModeloTextosNaoGravaveisTests
             .ComObrigatoriedade(Obrigatoriedade.Quando(ruim))
             .ComImpedimento(new Impedimento(ruim, "Já possui o certificado."));
         GrupoDoModelo grupo = Grupo("COMPOSICAO", 0, ruim, Item("MAIOR_IDADE")).ComObrigatoriedade(Obrigatoriedade.Quando(ruim));
-        TermoDoModelo termo = Termo("LGPD", exibicao: ruim) with { Obrigatoriedade = Obrigatoriedade.Quando(ruim) };
+        TermoDoModelo termo = Termo("LGPD", exibicao: ruim).ComObrigatoriedade(Obrigatoriedade.Quando(ruim));
 
         return Vazio with { Etapas = [Etapa(exibicao: ruim)], Itens = [campo], Grupos = [grupo], Termos = [termo], DocumentosExigidos = [Documento("LAUDO", ruim)] };
     }
@@ -179,8 +179,8 @@ public sealed class ConteudoDoModeloTextosNaoGravaveisTests
             "itens[0].regras.impedimento.quando",
             "grupos[0].regras.exibicao",
             "grupos[0].regras.obrigatoriedade.predicado",
-            "termos[0].exibicao",
-            "termos[0].predicadoObrigatoriedade",
+            "termos[0].regras.exibicao",
+            "termos[0].regras.obrigatoriedade.predicado",
             "documentosExigidos[0].quando");
 
     [Fact(DisplayName = "O pressuposto com caractere nulo é recusado na posição dele")]

@@ -75,7 +75,7 @@ internal sealed class LeituraDoConteudo(IReadOnlyDictionary<string, string> form
             ? null
             : new EtapaDoModelo(
                 entrada.Codigo, entrada.Ordem, EstruturaFormulario.TipoDoToken(entrada.Tipo), EstruturaFormulario.BlocoDoToken(entrada.Bloco),
-                entrada.Titulo, entrada.Descricao, entrada.Aviso, exibicao);
+                entrada.Apresentacao?.Titulo ?? string.Empty, entrada.Apresentacao?.Descricao, entrada.Apresentacao?.Aviso, exibicao);
     }
 
     private ItemDoModelo? LerItem(FatoColetadoInput entrada, string campo)
@@ -118,12 +118,10 @@ internal sealed class LeituraDoConteudo(IReadOnlyDictionary<string, string> form
     private TermoDoModelo? LerTermo(TermoExigidoInput entrada, string campo)
     {
         int recusasAntes = _recusas.Count;
-        PredicadoDnf? exibicao = LerPredicado(entrada.Exibicao, $"{campo}.exibicao");
-        Obrigatoriedade? obrigatoriedade = LerObrigatoriedade(
-            entrada.Obrigatoriedade, entrada.PredicadoObrigatoriedade, $"{campo}.obrigatoriedade", $"{campo}.predicadoObrigatoriedade");
+        ExibicaoEObrigatoriedade? regras = LerExibicaoEObrigatoriedade(entrada.Regras, $"{campo}.{TermoExigidoInput.CaminhoDasRegras}");
         return RecusouDesde(recusasAntes)
             ? null
-            : new TermoDoModelo(entrada.Codigo, entrada.Ordem, entrada.TermoId, entrada.VersaoId, exibicao, obrigatoriedade!);
+            : new TermoDoModelo(entrada.Codigo, entrada.Ordem, entrada.Termo?.TermoId ?? Guid.Empty, entrada.Termo?.VersaoId ?? Guid.Empty, regras!);
     }
 
     private GrupoDoModelo? LerGrupo(GrupoColetadoInput entrada, string campo)

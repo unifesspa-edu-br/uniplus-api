@@ -224,7 +224,7 @@ internal static class ConferenciaDoModelo
             return [];
         }
 
-        return [new FieldError($"{caminho}.versaoId", new DomainError(
+        return [new FieldError($"{caminho}.{TermoExigidoInput.CaminhoDoTermo}.versaoId", new DomainError(
             ModeloFormularioErrorCodes.TermoVersaoNaoEncontrada,
             "A versão informada não existe no catálogo de termos, ou pertence a outro termo."),
             $"{termo.TermoId}/{termo.VersaoId}")];

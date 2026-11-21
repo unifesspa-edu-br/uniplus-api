@@ -50,7 +50,7 @@ internal static class FormularioDeTeste
         }
 
         EtapaFormularioInput secao = ConjuntoBasicoDaInscricao.Secao;
-        return [EtapaFormulario.Criar(secao.Codigo, secao.Ordem, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, secao.Titulo, secao.Descricao, secao.Aviso).Value!, .. doTeste];
+        return [EtapaFormulario.Criar(secao.Codigo, secao.Ordem, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, secao.Apresentacao!.Titulo!, secao.Apresentacao.Descricao, secao.Apresentacao.Aviso).Value!, .. doTeste];
     }
 
     /// <summary>Os itens do conjunto básico, como a escrita os monta, sem os que o teste já declara.</summary>

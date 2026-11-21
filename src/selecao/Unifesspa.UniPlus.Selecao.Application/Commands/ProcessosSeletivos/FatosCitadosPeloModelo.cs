@@ -28,7 +28,7 @@ internal static class FatosCitadosPeloModelo
             .SelectMany(static i => DasRegras(i?.Regras, i?.FatoCodigo))
             .Concat(grupos.SelectMany(static g => DasRegrasDeExibicao(g.Regras)))
             .Concat(etapas.SelectMany(static e => Do(e?.Exibicao)))
-            .Concat(termos.SelectMany(static t => Do(t.Exibicao).Concat(Do(t.PredicadoObrigatoriedade))));
+            .Concat(termos.SelectMany(static t => DasRegrasDeExibicao(t.Regras)));
 
     private static IEnumerable<string> DasRegrasDeExibicao(ExibicaoEObrigatoriedadeInput? regras) =>
         Do(regras?.Exibicao).Concat(Do(regras?.Obrigatoriedade?.Predicado));

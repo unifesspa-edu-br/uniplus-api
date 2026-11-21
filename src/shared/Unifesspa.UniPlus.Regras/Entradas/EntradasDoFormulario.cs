@@ -164,31 +164,51 @@ public sealed record GrupoColetadoInput(
 }
 
 /// <summary>
+/// Como a etapa se apresenta ao candidato: o título, a descrição e o aviso. O título é obrigatório; o domínio
+/// recusa o que falta.
+/// </summary>
+public sealed record ApresentacaoDaEtapaInput(string? Titulo, string? Descricao, string? Aviso);
+
+/// <summary>
 /// Uma etapa do formulário: seção (<c>SECAO</c>) ou bloco de sistema (<c>BLOCO</c>, com o bloco em
-/// <see cref="Bloco"/>), com a ordem, o título, os textos de apoio e, na seção, a
-/// <see cref="Exibicao"/> condicional — predicado sobre fatos conhecidos antes dela.
+/// <see cref="Bloco"/>), com a ordem, a <see cref="Apresentacao"/> e, na seção, a
+/// <see cref="Exibicao"/> condicional — predicado sobre fatos conhecidos antes dela. A apresentação ausente chega
+/// ao domínio, que recusa o título que falta no caminho dela.
 /// </summary>
 public sealed record EtapaFormularioInput(
     string Codigo,
     int Ordem,
     string Tipo,
     string? Bloco,
-    string Titulo,
-    string? Descricao,
-    string? Aviso,
-    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? Exibicao = null);
+    ApresentacaoDaEtapaInput? Apresentacao,
+    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? Exibicao = null)
+{
+    /// <summary>O caminho da apresentação na etapa, onde a recusa de título, descrição e aviso se aponta.</summary>
+    public const string CaminhoDaApresentacao = "apresentacao";
+}
 
 /// <summary>
-/// Um termo que o formulário exige: o identificador da exigência, a ordem, o termo e a versão do
+/// A versão do catálogo de termos que o formulário exige: o termo e a versão dele. A leitura devolve também o
+/// conteúdo congelado; a escrita lê só a identidade.
+/// </summary>
+public sealed record VersaoDoTermoInput(Guid TermoId, Guid VersaoId);
+
+/// <summary>
+/// Um termo que o formulário exige: o identificador da exigência, a ordem, o <see cref="Termo"/> e a versão do
 /// catálogo, a exibição (nula quando o termo sempre aparece) e a obrigatoriedade
-/// (<c>SEMPRE</c>, <c>NUNCA</c> ou <c>QUANDO</c>, esta com predicado). Os predicados têm a forma
-/// da pré-condição de fato coletado: OU de cláusulas, cada uma E de condições.
+/// (<c>SEMPRE</c>, <c>NUNCA</c> ou <c>QUANDO</c>, esta com predicado) em <see cref="Regras"/>. Os predicados têm a forma
+/// da exibição do campo: OU de cláusulas, cada uma E de condições. O termo ausente não é encontrado no catálogo, e as
+/// regras ausentes chegam ao domínio, que recusa a obrigatoriedade que falta.
 /// </summary>
 public sealed record TermoExigidoInput(
     string Codigo,
     int Ordem,
-    Guid TermoId,
-    Guid VersaoId,
-    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? Exibicao,
-    string Obrigatoriedade,
-    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? PredicadoObrigatoriedade);
+    VersaoDoTermoInput? Termo,
+    ExibicaoEObrigatoriedadeInput? Regras)
+{
+    /// <summary>O caminho da versão do termo na exigência, onde a recusa de termo e versão se aponta.</summary>
+    public const string CaminhoDoTermo = "termo";
+
+    /// <summary>O caminho das regras na exigência, onde a recusa de exibição e obrigatoriedade se aponta.</summary>
+    public const string CaminhoDasRegras = "regras";
+}

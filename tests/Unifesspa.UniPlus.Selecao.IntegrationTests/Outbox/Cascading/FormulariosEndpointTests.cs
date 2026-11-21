@@ -139,7 +139,11 @@ public sealed class FormulariosEndpointTests
         publico.StatusCode.Should().Be(HttpStatusCode.NotFound, "o certame ainda não foi divulgado");
         rascunho.StatusCode.Should().Be(HttpStatusCode.OK);
         using JsonDocument doc = JsonDocument.Parse(await rascunho.Content.ReadAsStringAsync());
-        JsonElement root = doc.RootElement;
+        ConferirRascunhoComApresentacaoERegras(doc.RootElement);
+    }
+
+    private static void ConferirRascunhoComApresentacaoERegras(JsonElement root)
+    {
         root.GetProperty("titulo").GetString().Should().Be("Formulário de Inscrição");
         root.GetProperty("fatosColetados").GetArrayLength().Should().Be(ConjuntoBasicoDaInscricao.Itens.Count);
         root.GetProperty("regras").GetProperty("etapas").EnumerateArray().SelectMany(static e => e.GetProperty("itens").EnumerateArray())
@@ -167,23 +171,28 @@ public sealed class FormulariosEndpointTests
         (await ctx.PutFormularioAsync("Formulário de Inscrição"))
             .StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await ctx.PutFatosAsync([])).StatusCode.Should().Be(HttpStatusCode.NoContent);
-        await ctx.PublicarAsync();
-
-        // O formulário segue a divulgação, que chega pela fila durável — o 204 da publicação volta
-        // muito antes dela existir. Sem esta espera, o GET corre contra a materialização e o teste
-        // mede a corrida, não o contrato.
-        await ctx.EsperarDivulgacaoAsync();
+        await ctx.PublicarEEsperarDivulgacaoAsync();
 
         HttpResponseMessage resposta = await ctx.GetFormularioAsync();
 
         resposta.StatusCode.Should().Be(HttpStatusCode.OK);
         using JsonDocument doc = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
-        JsonElement root = doc.RootElement;
+        ConferirCabecalhoDoFormularioPublicado(doc.RootElement);
+        ConferirCorRacaDoFormularioPublicado(doc.RootElement);
+    }
+
+    private static void ConferirCabecalhoDoFormularioPublicado(JsonElement root)
+    {
         root.GetProperty("finalidade").GetString().Should().Be("INSCRICAO");
         root.GetProperty("titulo").GetString().Should().Be("Formulário de Inscrição");
         root.GetProperty("etapas").EnumerateArray().Select(static e => e.GetProperty("codigo").GetString())
             .Should().Equal(ConjuntoBasicoDaInscricao.CodigoDaSecao, "DADOS", "REVISAO");
         root.GetProperty("termos").GetArrayLength().Should().Be(0);
+        root.GetProperty("pressupostos").GetArrayLength().Should().Be(0);
+    }
+
+    private static void ConferirCorRacaDoFormularioPublicado(JsonElement root)
+    {
         JsonElement fatos = root.GetProperty("fatosColetados");
         fatos.GetArrayLength().Should().Be(ConjuntoBasicoDaInscricao.Itens.Count);
         JsonElement fato = fatos.EnumerateArray().Single(static f => f.GetProperty("fatoCodigo").GetString() == "COR_RACA");
@@ -197,35 +206,30 @@ public sealed class FormulariosEndpointTests
             .Single(static i => i.GetProperty("fatoCodigo").GetString() == "COR_RACA");
         regraDoCampo.GetProperty("obrigatoriedade").GetString().Should().Be("SEMPRE");
         regraDoCampo.GetProperty("oferta").GetArrayLength().Should().BePositive("a resposta fora da oferta congelada não vale");
-        root.GetProperty("pressupostos").GetArrayLength().Should().Be(0);
     }
 
+    /// <summary>
+    /// O 404 anterior à divulgação é transitório: o mesmo endereço passa a servir o formulário assim que a materialização
+    /// chega. Sem diretiva, um cache compartilhado atribui frescor heurístico à recusa e segue escondendo o formulário já público.
+    /// </summary>
     [Fact(DisplayName = "GET público exige revalidação, inclusive na recusa anterior à divulgação")]
     public async Task Obter_AntesEDepoisDaDivulgacao_ExigeRevalidacao()
     {
-        // O 404 anterior à divulgação é transitório: o mesmo endereço passa a servir o formulário
-        // assim que a materialização chega. Sem diretiva, um cache compartilhado atribui frescor
-        // heurístico à recusa e segue escondendo o formulário já público.
         Contexto ctx = await SemearRascunhoAsync(nameof(Obter_AntesEDepoisDaDivulgacao_ExigeRevalidacao));
-
-        (await ctx.PutFormularioAsync("Formulário de Inscrição"))
-            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await ctx.PutFormularioAsync("Formulário de Inscrição")).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         HttpResponseMessage recusa = await ctx.GetFormularioAsync();
-
         recusa.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        recusa.Headers.CacheControl!.NoCache.Should().BeTrue(
-            "a recusa é transitória e o endereço passa a servir o formulário quando a divulgação chega");
+        ExigeRevalidacao(recusa, "a recusa é transitória e o endereço passa a servir o formulário quando a divulgação chega");
 
-        await ctx.PublicarAsync();
-        await ctx.EsperarDivulgacaoAsync();
-
+        await ctx.PublicarEEsperarDivulgacaoAsync();
         HttpResponseMessage servido = await ctx.GetFormularioAsync();
-
         servido.StatusCode.Should().Be(HttpStatusCode.OK);
-        servido.Headers.CacheControl!.NoCache.Should().BeTrue(
-            "o endereço também não muda quando uma retificação troca a versão servida");
+        ExigeRevalidacao(servido, "o endereço também não muda quando uma retificação troca a versão servida");
     }
+
+    private static void ExigeRevalidacao(HttpResponseMessage resposta, string motivo) =>
+        resposta.Headers.CacheControl!.NoCache.Should().BeTrue(motivo);
 
     private enum Autenticacao
     {
@@ -244,13 +248,9 @@ public sealed class FormulariosEndpointTests
             DateTimeOffset limite = DateTimeOffset.UtcNow + TimeSpan.FromSeconds(30);
             while (DateTimeOffset.UtcNow < limite)
             {
-                await using (AsyncServiceScope scope = Api.Services.CreateAsyncScope())
+                if (await DivulgacaoChegouAsync().ConfigureAwait(false))
                 {
-                    UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-                    if (await db.CertamesDivulgados.AsNoTracking().AnyAsync(c => c.Id == ProcessoId))
-                    {
-                        return;
-                    }
+                    return;
                 }
 
                 await Task.Delay(TimeSpan.FromMilliseconds(300));
@@ -258,6 +258,24 @@ public sealed class FormulariosEndpointTests
 
             throw new InvalidOperationException(
                 $"A divulgação do processo {ProcessoId} não chegou em 30s — sem ela o formulário não é servido.");
+        }
+
+        private async Task<bool> DivulgacaoChegouAsync()
+        {
+            await using AsyncServiceScope scope = Api.Services.CreateAsyncScope();
+            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+            return await db.CertamesDivulgados.AsNoTracking().AnyAsync(c => c.Id == ProcessoId).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Publica o certame e espera a divulgação. O formulário segue a divulgação, que chega pela fila durável — o 204 da
+        /// publicação volta muito antes dela existir. Sem esta espera, o GET corre contra a materialização e o teste mede a
+        /// corrida, não o contrato.
+        /// </summary>
+        public async Task PublicarEEsperarDivulgacaoAsync()
+        {
+            await PublicarAsync().ConfigureAwait(false);
+            await EsperarDivulgacaoAsync().ConfigureAwait(false);
         }
 
         public async Task<Guid> FaseDeInscricaoAsync()
@@ -280,16 +298,7 @@ public sealed class FormulariosEndpointTests
                 HttpMethod.Put,
                 new Uri($"/api/selecao/admin/processos-seletivos/{ProcessoId}/formularios/{finalidade}", UriKind.Relative))
             {
-                Content = JsonContent.Create(new
-                {
-                    faseId = fase,
-                    titulo,
-                    etapas = new object[]
-                    {
-                        new { codigo = "DADOS", ordem = 0, tipo = "SECAO", bloco = (string?)null, titulo = "Dados" },
-                        new { codigo = "REVISAO", ordem = 1, tipo = "BLOCO", bloco = "REVISAO_E_ACEITE", titulo = "Revisão e aceite" },
-                    },
-                }),
+                Content = JsonContent.Create(new { faseId = fase, titulo, etapas = EtapasDoFormulario() }),
             };
             Autenticar(request, autenticar);
             request.Headers.TryAddWithoutValidation("Idempotency-Key", MakeIdempotencyKey());
@@ -327,20 +336,7 @@ public sealed class FormulariosEndpointTests
                 HttpMethod.Post,
                 new Uri($"/api/selecao/processos-seletivos/{ProcessoId}/publicacao", UriKind.Relative))
             {
-                Content = JsonContent.Create(new
-                {
-                    numero = "001/2026",
-                    documentoEditalId = DocumentoId,
-                    ato = new
-                    {
-                        orgao = "CEPS",
-                        serie = "EDITAL",
-                        ano = 2026,
-                        dataDoAto = Hoje(),
-                        assinante = "Diretor do CEPS",
-                        tipoAtoCodigo = "EDITAL_ABERTURA",
-                    },
-                }),
+                Content = JsonContent.Create(new { numero = "001/2026", documentoEditalId = DocumentoId, ato = AtoDaPublicacao() }),
             };
             Autenticar(publicar, Autenticacao.PlataformaAdmin);
             publicar.Headers.TryAddWithoutValidation("Idempotency-Key", MakeIdempotencyKey());
@@ -353,20 +349,17 @@ public sealed class FormulariosEndpointTests
     {
         CascadingApiFactory api = _fixture.Factory;
         await TiposDeAtoSeeder.SemearAsync(api.Services);
-        HttpClient client = api.CreateClient();
+        (Guid processoId, Guid documentoId) = await SemearProcessoPublicavelAsync(api, nome);
+        return new Contexto(api, api.CreateClient(), processoId, documentoId);
+    }
 
-        Guid processoId;
-        Guid documentoId;
-        await using (AsyncServiceScope scope = api.Services.CreateAsyncScope())
-        {
-            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-            (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
-                .SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"{nome} {Guid.CreateVersion7()}" });
-            processoId = processo.Id;
-            documentoId = documento.Id;
-        }
-
-        return new Contexto(api, client, processoId, documentoId);
+    private static async Task<(Guid ProcessoId, Guid DocumentoId)> SemearProcessoPublicavelAsync(CascadingApiFactory api, string nome)
+    {
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
+            .SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"{nome} {Guid.CreateVersion7()}" });
+        return (processo.Id, documento.Id);
     }
 
     private static void Autenticar(HttpRequestMessage request, Autenticacao autenticacao)
@@ -382,6 +375,22 @@ public sealed class FormulariosEndpointTests
             TestAuthHandler.RolesHeader,
             "plataforma-admin");
     }
+
+    private static object AtoDaPublicacao() => new
+    {
+        orgao = "CEPS",
+        serie = "EDITAL",
+        ano = 2026,
+        dataDoAto = Hoje(),
+        assinante = "Diretor do CEPS",
+        tipoAtoCodigo = "EDITAL_ABERTURA",
+    };
+
+    private static object[] EtapasDoFormulario() =>
+    [
+        new { codigo = "DADOS", ordem = 0, tipo = "SECAO", bloco = (string?)null, apresentacao = new { titulo = "Dados" } },
+        new { codigo = "REVISAO", ordem = 1, tipo = "BLOCO", bloco = "REVISAO_E_ACEITE", apresentacao = new { titulo = "Revisão e aceite" } },
+    ];
 
     private static string Hoje() =>
         DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);

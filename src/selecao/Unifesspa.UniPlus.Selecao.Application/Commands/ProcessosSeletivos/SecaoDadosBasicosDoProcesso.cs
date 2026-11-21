@@ -61,7 +61,7 @@ internal static class SecaoDadosBasicosDoProcesso
         return ConjuntoBasicoDaInscricao.SecaoDe((processo.FormularioDe(FinalidadeFormulario.Inscricao)?.Etapas ?? [])
             .Select(static gravada => new EtapaFormularioInput(
                 gravada.Codigo, gravada.Ordem, EstruturaFormulario.ParaToken(gravada.Tipo), EstruturaFormulario.ParaToken(gravada.Bloco),
-                gravada.Titulo, gravada.Descricao, gravada.Aviso, EntradaDeRegras.ParaEntrada(gravada.Exibicao))));
+                new ApresentacaoDaEtapaInput(gravada.Titulo, gravada.Descricao, gravada.Aviso), EntradaDeRegras.ParaEntrada(gravada.Exibicao))));
     }
 
     /// <summary>Os grupos gravados no formulário de inscrição, na forma de entrada.</summary>

@@ -74,8 +74,8 @@ internal static class ConteudoDoModeloJson
         ["ordem"] = termo.Ordem,
         ["termoId"] = termo.TermoId,
         ["versaoId"] = termo.VersaoId,
-        ["exibicao"] = PredicadoOpcionalParaJson(termo.Exibicao),
-        ["obrigatoriedade"] = PredicadoDnfJson.ParaJson(termo.Obrigatoriedade),
+        ["exibicao"] = PredicadoOpcionalParaJson(termo.Regras.Exibicao),
+        ["obrigatoriedade"] = PredicadoDnfJson.ParaJson(termo.Regras.Obrigatoriedade),
     };
 
     private static JsonObject GrupoParaJson(GrupoDoModelo grupo) => new()
@@ -176,8 +176,8 @@ internal static class ConteudoDoModeloJson
         termo.GetProperty("ordem").GetInt32(),
         termo.GetProperty("termoId").GetGuid(),
         termo.GetProperty("versaoId").GetGuid(),
-        Predicado(termo, "exibicao"),
-        Remontar(PredicadoDnfJson.ObrigatoriedadeDeJson(termo.GetProperty("obrigatoriedade"))));
+        new ExibicaoEObrigatoriedade(
+            Predicado(termo, "exibicao"), Remontar(PredicadoDnfJson.ObrigatoriedadeDeJson(termo.GetProperty("obrigatoriedade")))));
 
     private static GrupoDoModelo GrupoDeJson(JsonElement grupo) => new(
         grupo.GetProperty("codigo").GetString()!,

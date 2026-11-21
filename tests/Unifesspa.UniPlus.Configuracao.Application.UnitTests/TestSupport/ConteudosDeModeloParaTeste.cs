@@ -42,7 +42,10 @@ internal static class ConteudosDeModeloParaTeste
 
     public static ConteudoDoModeloInput Conteudo(params FatoColetadoInput[] itens) => new(
         "Habilitação",
-        [new EtapaFormularioInput("DADOS", 0, "SECAO", null, "Dados", null, null), new EtapaFormularioInput("REVISAO", 1, "BLOCO", "REVISAO_E_ACEITE", "Revisão", null, null)],
+        [
+            EntradaDaEtapaFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").Construir(),
+            EntradaDaEtapaFormularioDeTeste.BlocoDeSistema("REVISAO", 1, "REVISAO_E_ACEITE").ComTitulo("Revisão").Construir(),
+        ],
         itens,
         [],
         []);

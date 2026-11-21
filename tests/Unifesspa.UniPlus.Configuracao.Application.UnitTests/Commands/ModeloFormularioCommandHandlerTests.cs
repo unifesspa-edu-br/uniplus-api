@@ -24,6 +24,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// A escrita do modelo de formulário confere o conteúdo contra o catálogo de fatos, de termos e de
@@ -172,12 +173,12 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
     [Fact(DisplayName = "Termo cuja versão não existe no catálogo é recusado")]
     public async Task Criar_VersaoDeTermoInexistente_Recusa()
     {
-        TermoExigidoInput termo = new("LGPD", 0, Guid.NewGuid(), Guid.NewGuid(), null, "SEMPRE", null);
+        TermoExigidoInput termo = EntradaDoTermoExigidoDeTeste.Exigindo("LGPD").DaVersao(Guid.NewGuid(), Guid.NewGuid()).Construir();
 
         Result<Guid> resultado = await CriarAsync(Conteudo(Item("CERTIFICADO", 0)) with { Termos = [termo] });
 
         resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(
-            new FieldError("conteudo.termos[0].versaoId", new DomainError(ModeloFormularioErrorCodes.TermoVersaoNaoEncontrada, string.Empty)),
+            new FieldError("conteudo.termos[0].termo.versaoId", new DomainError(ModeloFormularioErrorCodes.TermoVersaoNaoEncontrada, string.Empty)),
             static o => o.Excluding(static e => e.Error.Message).Excluding(static e => e.Origem));
     }
 

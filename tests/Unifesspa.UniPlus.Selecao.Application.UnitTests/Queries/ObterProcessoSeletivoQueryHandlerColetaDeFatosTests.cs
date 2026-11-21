@@ -74,7 +74,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerColetaDeFatosTests
     private static async Task<IReadOnlyList<FatoColetadoDto>> ProjetarFatosAsync(ProcessoSeletivo processo)
     {
         ProcessoSeletivoDto dto = await ProjetarAsync(processo);
-        return dto.Formularios.Should().ContainSingle().Which.FatosColetados;
+        return dto.Formularios.Should().ContainSingle().Which.Coleta.Itens;
     }
 
     /// <summary>BAIXA_RENDA na ordem 0, sem exibição; COR_RACA na ordem 1, com exibição citando o anterior. Entram fora de ordem: a projeção é quem ordena.</summary>

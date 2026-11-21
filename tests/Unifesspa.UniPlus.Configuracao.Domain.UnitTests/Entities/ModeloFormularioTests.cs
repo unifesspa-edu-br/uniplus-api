@@ -371,7 +371,7 @@ public sealed class ModeloFormularioTests
     [Fact(DisplayName = "Código de termo com surrogate sem par é recusado, sem exceção na conferência de unicidade")]
     public void CodigoDeTermoComSurrogateSemPar_Recusa()
     {
-        TermoDoModelo termo = new("LGPD\uD800", 0, Guid.NewGuid(), Guid.NewGuid(), null, Obrigatoriedade.Sempre);
+        TermoDoModelo termo = new("LGPD\uD800", 0, Guid.NewGuid(), Guid.NewGuid(), new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre));
 
         Result<ModeloFormulario> modelo = Criar(
             FinalidadeFormulario.Habilitacao, new ConteudoDoModelo("Habilitação", [Dados, Revisao], [Item("CERTIFICADO", 0)], [termo], [], []));

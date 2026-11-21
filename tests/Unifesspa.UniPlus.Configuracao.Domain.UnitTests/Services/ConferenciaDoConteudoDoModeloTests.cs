@@ -87,7 +87,7 @@ public sealed class ConferenciaDoConteudoDoModeloTests
 
         List<FieldError> erros = Conferir(conteudo);
 
-        Campos(erros).Should().Equal("conteudo.etapas[1].titulo");
+        Campos(erros).Should().Equal("conteudo.etapas[1].apresentacao.titulo");
         Codigos(erros).Should().Equal(EstruturaFormularioErrorCodes.EtapaTituloInvalido);
     }
 
@@ -223,7 +223,7 @@ public sealed class ConferenciaDoConteudoDoModeloTests
         };
 
         Campos(Conferir(conteudo)).Should().Equal(
-            "conteudo.titulo", "conteudo.etapas[1].titulo", "conteudo.itens[0].apresentacao.rotulo", "conteudo.itens[1].regras.impedimento",
+            "conteudo.titulo", "conteudo.etapas[1].apresentacao.titulo", "conteudo.itens[0].apresentacao.rotulo", "conteudo.itens[1].regras.impedimento",
             "conteudo.grupos[0].ocorrencias.maximo", "conteudo.termos[0].codigo", "conteudo.pressupostos[0]");
     }
 

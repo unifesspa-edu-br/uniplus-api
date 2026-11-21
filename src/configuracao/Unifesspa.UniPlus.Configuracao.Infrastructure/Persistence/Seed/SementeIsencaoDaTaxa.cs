@@ -89,7 +89,8 @@ public static class SementeIsencaoDaTaxa
         "Solicitação de isenção da taxa de inscrição",
         Etapas(),
         [PerguntaDeRenda()],
-        [.. Termos.Select(static (t, i) => new TermoDoModelo(t.Codigo, i + 1, t.TermoId, t.VersaoId, null, Obrigatoriedade.Sempre))],
+        [.. Termos.Select(static (t, i) => new TermoDoModelo(
+            t.Codigo, i + 1, t.TermoId, t.VersaoId, new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre)))],
         IsencaoPorCarenciaSocioeconomica.FatosDaInscricao,
         []);
 

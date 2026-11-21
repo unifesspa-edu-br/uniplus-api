@@ -64,10 +64,8 @@ public sealed class ConteudoDoModeloRegrasTests
         Grupo("COMPOSICAO", 0, Quando("DA_EXIBICAO_DO_GRUPO"), Item("MAIOR_IDADE", exibicao: Quando("DO_CAMPO_DE_GRUPO")))
             .ComObrigatoriedade(Obrigatoriedade.Quando(Quando("DA_OBRIGATORIEDADE_DO_GRUPO")));
 
-    private static TermoDoModelo TermoComRegras() => Termo("LGPD", exibicao: Quando("DA_EXIBICAO_DO_TERMO")) with
-    {
-        Obrigatoriedade = Obrigatoriedade.Quando(Quando("DA_OBRIGATORIEDADE_DO_TERMO")),
-    };
+    private static TermoDoModelo TermoComRegras() =>
+        Termo("LGPD", exibicao: Quando("DA_EXIBICAO_DO_TERMO")).ComObrigatoriedade(Obrigatoriedade.Quando(Quando("DA_OBRIGATORIEDADE_DO_TERMO")));
 
     private static ConteudoDoModelo ConteudoComRegrasEmTodasAsOrigens() => Vazio with
     {

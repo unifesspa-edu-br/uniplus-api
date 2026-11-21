@@ -359,7 +359,7 @@ public static class FormaDaEtapa
     {
         if ((titulo?.Trim() ?? string.Empty).Length is 0 or > TituloMaxLength)
         {
-            yield return new("titulo", new DomainError(
+            yield return new($"{EtapaFormularioInput.CaminhoDaApresentacao}.titulo", new DomainError(
                 EstruturaFormularioErrorCodes.EtapaTituloInvalido,
                 $"O título da etapa é obrigatório e tem no máximo {TituloMaxLength} caracteres."));
         }
@@ -369,7 +369,7 @@ public static class FormaDaEtapa
     {
         if (FormaDoItem.TextoOpcional(descricao) is { Length: > TextoMaxLength })
         {
-            yield return new("descricao", new DomainError(
+            yield return new($"{EtapaFormularioInput.CaminhoDaApresentacao}.descricao", new DomainError(
                 EstruturaFormularioErrorCodes.EtapaTextoTamanho, $"A descrição da etapa tem no máximo {TextoMaxLength} caracteres."));
         }
     }
@@ -378,7 +378,7 @@ public static class FormaDaEtapa
     {
         if (FormaDoItem.TextoOpcional(aviso) is { Length: > TextoMaxLength })
         {
-            yield return new("aviso", new DomainError(
+            yield return new($"{EtapaFormularioInput.CaminhoDaApresentacao}.aviso", new DomainError(
                 EstruturaFormularioErrorCodes.EtapaTextoTamanho, $"O aviso da etapa tem no máximo {TextoMaxLength} caracteres."));
         }
     }
