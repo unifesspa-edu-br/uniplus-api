@@ -26,6 +26,10 @@ public sealed record IdentidadeDoItemDoEdital
     public const int ChaveMaxLength = 160;
 
     private const string SemPapel = "-";
+    private const string PrefixoDaFase = "fase:";
+    private const string PrefixoDaEtapa = "etapa:";
+    private const char SeparadorDaChave = '|';
+    private const int TamanhoDaIdentidade = 36;
 
     private IdentidadeDoItemDoEdital(string lugar, string atoCodigo, PapelProdutoFase? papel)
     {
@@ -41,14 +45,14 @@ public sealed record IdentidadeDoItemDoEdital
     public PapelProdutoFase? Papel { get; }
 
     /// <summary>A forma gravada no ato publicado: o par lugar, tipo de ato e papel, numa só chave.</summary>
-    public string Chave => $"{Lugar}|{AtoCodigo}|{Papel.ToCodigo() ?? SemPapel}";
+    public string Chave => $"{Lugar}{SeparadorDaChave}{AtoCodigo}{SeparadorDaChave}{Papel.ToCodigo() ?? SemPapel}";
 
     public static IdentidadeDoItemDoEdital DaFase(FaseCronograma fase, ProdutoDaFase produto)
     {
         ArgumentNullException.ThrowIfNull(fase);
         ArgumentNullException.ThrowIfNull(produto);
 
-        return new($"fase:{fase.FaseCanonicaOrigemId:D}", produto.AtoCodigo, produto.Papel);
+        return new($"{PrefixoDaFase}{fase.FaseCanonicaOrigemId:D}", produto.AtoCodigo, produto.Papel);
     }
 
     public static IdentidadeDoItemDoEdital DaEtapa(EtapaProcesso etapa, ProdutoDaEtapa produto)
@@ -56,7 +60,39 @@ public sealed record IdentidadeDoItemDoEdital
         ArgumentNullException.ThrowIfNull(etapa);
         ArgumentNullException.ThrowIfNull(produto);
 
-        return new($"etapa:{etapa.Id:D}", produto.AtoCodigo, produto.Papel);
+        return new($"{PrefixoDaEtapa}{etapa.Id:D}", produto.AtoCodigo, produto.Papel);
+    }
+
+    /// <summary>
+    /// O lugar que uma chave gravada declara: a fase de origem ou a etapa, com exatamente uma das duas identidades
+    /// preenchida. Só reconhece a chave na forma que <see cref="Chave"/> escreve: o prefixo do lugar, a identidade na forma
+    /// <c>D</c> em minúsculas e o separador. Qualquer outra forma devolve nulo, e a identidade vazia é devolvida como vazia.
+    /// </summary>
+    public static (Guid? FaseCanonicaOrigemId, Guid? EtapaProcessoId)? LugarGravadoNaChave(string chave)
+    {
+        ArgumentNullException.ThrowIfNull(chave);
+
+        if (IdentidadeDoLugar(chave, PrefixoDaFase) is { } fase)
+        {
+            return (fase, null);
+        }
+
+        return IdentidadeDoLugar(chave, PrefixoDaEtapa) is { } etapa ? (null, etapa) : null;
+    }
+
+    private static Guid? IdentidadeDoLugar(string chave, string prefixo)
+    {
+        ReadOnlySpan<char> depoisDoPrefixo = chave.StartsWith(prefixo, StringComparison.Ordinal) ? chave.AsSpan(prefixo.Length) : default;
+        if (depoisDoPrefixo.Length <= TamanhoDaIdentidade || depoisDoPrefixo[TamanhoDaIdentidade] != SeparadorDaChave)
+        {
+            return null;
+        }
+
+        ReadOnlySpan<char> texto = depoisDoPrefixo[..TamanhoDaIdentidade];
+
+        return Guid.TryParseExact(texto, "D", out Guid identidade) && texto.Equals(identidade.ToString("D"), StringComparison.Ordinal)
+            ? identidade
+            : null;
     }
 
     /// <summary>A identidade de cada produto do cronograma, pelo <c>Id</c> que ele tem naquele cronograma.</summary>

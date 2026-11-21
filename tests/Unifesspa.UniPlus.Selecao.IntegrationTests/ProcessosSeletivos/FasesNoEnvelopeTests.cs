@@ -4,53 +4,52 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 
 using Xunit;
 
-using static Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories.FasesNoEnvelope;
-
 /// <summary>
-/// A leitura direta das janelas da fase e da etapa no envelope congelado: o instante é lido na forma canônica
-/// do envelope, o nó ausente ou nulo é a fase sem janela e qualquer outra forma é falha, nunca "sem janela".
+/// A leitura direta dos períodos da fase e da etapa no envelope congelado: o instante é lido na forma canônica
+/// do envelope, o nó ausente ou nulo é a fase sem período e qualquer outra forma é falha, nunca "sem período".
 /// </summary>
 public sealed class FasesNoEnvelopeTests
 {
     private static readonly DateTimeOffset Inicio = new DateTimeOffset(2040, 3, 10, 12, 0, 0, TimeSpan.Zero).AddTicks(1234560);
     private static readonly DateTimeOffset Fim = new DateTimeOffset(2040, 3, 20, 12, 0, 0, TimeSpan.Zero).AddTicks(9999990);
 
-    [Fact(DisplayName = "A janela da fase e da etapa é lida com os microssegundos que o envelope guarda")]
-    public void Das_LeAJanelaEmMicrossegundos()
+    [Fact(DisplayName = "O período da fase e da etapa é lido com os microssegundos que o envelope guarda")]
+    public void Das_LeOPeriodoEmMicrossegundos()
     {
         string envelope = Envelope(
             faseInicio: Canonico(Inicio), faseFim: Canonico(Fim), etapaInicio: Canonico(Inicio), etapaFim: Canonico(Fim));
 
-        Fase fase = FasesNoEnvelope.Das(envelope).Single();
+        FaseDaVersaoPublicada fase = FasesNoEnvelope.Das(envelope).Single();
 
-        fase.Inicio.Should().Be(Inicio);
-        fase.Fim.Should().Be(Fim);
-        fase.Etapas.Single().Inicio.Should().Be(Inicio);
-        fase.Etapas.Single().Fim.Should().Be(Fim);
+        fase.Periodo.Inicio.Should().Be(Inicio);
+        fase.Periodo.Fim.Should().Be(Fim);
+        fase.Etapas.Single().Periodo.Inicio.Should().Be(Inicio);
+        fase.Etapas.Single().Periodo.Fim.Should().Be(Fim);
     }
 
-    [Fact(DisplayName = "O instante nulo ou ausente é a fase e a etapa sem janela")]
-    public void Das_InstanteNuloOuAusente_SemJanela()
+    [Fact(DisplayName = "O instante nulo ou ausente é a fase e a etapa sem período")]
+    public void Das_InstanteNuloOuAusente_SemPeriodo()
     {
         JsonObject objeto = JsonNode.Parse(Envelope(null, null, null, null))!.AsObject();
         objeto["etapas"]![0]!.AsObject().Remove("fim");
         objeto["cronogramaFases"]!["fases"]![0]!.AsObject().Remove("fim");
 
-        Fase fase = FasesNoEnvelope.Das(objeto.ToJsonString()).Single();
+        FaseDaVersaoPublicada fase = FasesNoEnvelope.Das(objeto.ToJsonString()).Single();
 
-        fase.Inicio.Should().BeNull();
-        fase.Fim.Should().BeNull();
-        fase.Etapas.Single().Inicio.Should().BeNull();
-        fase.Etapas.Single().Fim.Should().BeNull();
+        fase.Periodo.Inicio.Should().BeNull();
+        fase.Periodo.Fim.Should().BeNull();
+        fase.Etapas.Single().Periodo.Inicio.Should().BeNull();
+        fase.Etapas.Single().Periodo.Fim.Should().BeNull();
     }
 
-    [Theory(DisplayName = "O instante fora da forma canônica do envelope na janela da fase é falha, não ausência")]
+    [Theory(DisplayName = "O instante fora da forma canônica do envelope no período da fase é falha, não ausência")]
     [InlineData("2020-01-01T00:00:00Z")]
     [InlineData("2020-01-01T00:00:00.123Z")]
     [InlineData("2020-01-01T00:00:00.1234567Z")]
@@ -65,7 +64,7 @@ public sealed class FasesNoEnvelopeTests
         leitura.Should().Throw<PayloadForaDoPerfilCanonicoException>();
     }
 
-    [Theory(DisplayName = "O instante fora da forma canônica do envelope na janela da etapa é falha, não ausência")]
+    [Theory(DisplayName = "O instante fora da forma canônica do envelope no período da etapa é falha, não ausência")]
     [InlineData("2020-01-01T00:00:00Z")]
     [InlineData("2020-01-01T00:00:00.1234567Z")]
     public void Das_InstanteDaEtapaForaDaForma_Lanca(string instante)

@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
@@ -14,14 +15,14 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 using static CenarioDeFasesDoProcessoPublicado;
 
 /// <summary>
-/// O início no lugar das fases iniciadas, num Postgres real: o ato inicia a fase produtora pelo instante da divulgação
-/// só quando é o ato da fase, e as fontes de início entram nas fases e nas etapas iniciadas.
+/// A avaliação iniciada no lugar nas fases iniciadas, num Postgres real: o ato inicia a fase produtora pelo instante da
+/// divulgação só quando é o ato da fase, e as fontes da avaliação iniciada entram nas fases e nas etapas iniciadas.
 /// </summary>
-public sealed class InicioNoLugarDasFasesIniciadasTests : IClassFixture<ProcessoSeletivoDbFixture>
+public sealed class AvaliacaoIniciadaNoLugarDasFasesIniciadasTests : IClassFixture<ProcessoSeletivoDbFixture>
 {
     private readonly CenarioDeFasesDoProcessoPublicado _cenario;
 
-    public InicioNoLugarDasFasesIniciadasTests(ProcessoSeletivoDbFixture fixture) =>
+    public AvaliacaoIniciadaNoLugarDasFasesIniciadasTests(ProcessoSeletivoDbFixture fixture) =>
         _cenario = new CenarioDeFasesDoProcessoPublicado(fixture);
 
     [Fact(DisplayName = "O ato da fase inicia a fase produtora, e o ato da etapa não")]
@@ -40,38 +41,38 @@ public sealed class InicioNoLugarDasFasesIniciadasTests : IClassFixture<Processo
         daEtapa.AvaliacaoComecou(LugarDaDecisao.DaFase(outraFase.FaseCanonicaOrigemId)).Should().BeFalse();
     }
 
-    [Fact(DisplayName = "A fonte de início no lugar da fase inicia a avaliação da fase mesmo com a janela futura")]
+    [Fact(DisplayName = "A fonte da avaliação iniciada na fase inicia a avaliação da fase mesmo com o período futuro")]
     public async Task Iniciadas_FonteNoLugarDaFase_IniciaAAvaliacao()
     {
         (Guid processoId, FaseCronograma fase, _) = await _cenario.PublicadoAsync("PS fonte no lugar da fase", Abertura);
-        InicioNoLugar inicio = new(LugarDaDecisao.DaFase(fase.FaseCanonicaOrigemId), DateTimeOffset.UtcNow);
+        AvaliacaoIniciadaNoLugar avaliacao = new(LugarDaDecisao.DaFase(fase.FaseCanonicaOrigemId), DateTimeOffset.UtcNow);
 
-        FasesIniciadas iniciadas = await _cenario.IniciadasAsync(processoId, DateTimeOffset.UtcNow, new FonteFixa(inicio));
+        FasesIniciadas iniciadas = await _cenario.IniciadasAsync(processoId, DateTimeOffset.UtcNow, new FonteFixa(avaliacao));
 
-        iniciadas.AvaliacaoComecou(inicio.Lugar).Should().BeTrue();
+        iniciadas.AvaliacaoComecou(avaliacao.Lugar).Should().BeTrue();
         iniciadas.Contem(fase.FaseCanonicaOrigemId).Should().BeTrue();
     }
 
-    [Fact(DisplayName = "A fonte de início no lugar da etapa inicia a etapa e a fase para a autorização, e não a avaliação da fase")]
+    [Fact(DisplayName = "A fonte da avaliação iniciada na etapa inicia a etapa e a fase para a autorização, e não a avaliação da fase")]
     public async Task Iniciadas_FonteNoLugarDaEtapa_IniciaAEtapa()
     {
         (Guid processoId, FaseCronograma fase, EtapaProcesso etapa) = await _cenario.PublicadoAsync("PS fonte no lugar da etapa", Abertura);
-        InicioNoLugar inicio = new(LugarDaDecisao.DaEtapa(etapa.Id), DateTimeOffset.UtcNow);
+        AvaliacaoIniciadaNoLugar avaliacao = new(LugarDaDecisao.DaEtapa(etapa.Id), DateTimeOffset.UtcNow);
 
-        FasesIniciadas iniciadas = await _cenario.IniciadasAsync(processoId, DateTimeOffset.UtcNow, new FonteFixa(inicio));
+        FasesIniciadas iniciadas = await _cenario.IniciadasAsync(processoId, DateTimeOffset.UtcNow, new FonteFixa(avaliacao));
 
-        iniciadas.AvaliacaoComecou(inicio.Lugar).Should().BeTrue();
+        iniciadas.AvaliacaoComecou(avaliacao.Lugar).Should().BeTrue();
         iniciadas.Contem(fase.FaseCanonicaOrigemId).Should().BeTrue();
         iniciadas.AvaliacaoComecou(LugarDaDecisao.DaFase(fase.FaseCanonicaOrigemId)).Should().BeFalse();
     }
 
-    [Fact(DisplayName = "A fonte com vários inícios no lugar inicia a avaliação só a partir do instante do primeiro deles")]
-    public async Task Iniciadas_FonteComVariosInicios_ContaDesdeOPrimeiroInstante()
+    [Fact(DisplayName = "A fonte com várias avaliações iniciadas no lugar inicia a avaliação só a partir do instante do primeiro deles")]
+    public async Task Iniciadas_FonteComVariasAvaliacoes_ContaDesdeOPrimeiroInstante()
     {
-        (Guid processoId, FaseCronograma fase, _) = await _cenario.PublicadoAsync("PS fonte com varios inicios", Abertura);
+        (Guid processoId, FaseCronograma fase, _) = await _cenario.PublicadoAsync("PS fonte com varios avaliacoes", Abertura);
         DateTimeOffset primeiro = Abertura.AddDays(-20);
         LugarDaDecisao lugar = LugarDaDecisao.DaFase(fase.FaseCanonicaOrigemId);
-        FonteFixa fonte = new(new InicioNoLugar(lugar, primeiro.AddDays(5)), new InicioNoLugar(lugar, primeiro));
+        FonteFixa fonte = new(new AvaliacaoIniciadaNoLugar(lugar, primeiro.AddDays(5)), new AvaliacaoIniciadaNoLugar(lugar, primeiro));
 
         FasesIniciadas antes = await _cenario.IniciadasAsync(processoId, primeiro.AddTicks(-1), fonte);
         FasesIniciadas noInstante = await _cenario.IniciadasAsync(processoId, primeiro, fonte);
@@ -117,18 +118,18 @@ public sealed class InicioNoLugarDasFasesIniciadasTests : IClassFixture<Processo
         FasesIniciadasNoInstante resultado = await leitor.ObterAgoraAsync(processoId);
 
         resultado.Instante.Should().Be(agora);
-        resultado.Fases.AvaliacaoComecou(LugarDaDecisao.DaFase(fase.FaseCanonicaOrigemId)).Should().BeTrue("a janela da fase abriu em Abertura");
+        resultado.Fases.AvaliacaoComecou(LugarDaDecisao.DaFase(fase.FaseCanonicaOrigemId)).Should().BeTrue("o período da fase abriu em Abertura");
     }
 
-    private sealed class FonteFixa(params InicioNoLugar[] inicios) : IFonteDoInicioNoLugar
+    private sealed class FonteFixa(params AvaliacaoIniciadaNoLugar[] avaliacoes) : IFonteDaAvaliacaoIniciadaNoLugar
     {
-        public Task<IReadOnlyList<InicioNoLugar>> ListarAsync(Guid processoId, CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<InicioNoLugar>>(inicios);
+        public Task<IReadOnlyList<AvaliacaoIniciadaNoLugar>> ListarAsync(Guid processoId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<AvaliacaoIniciadaNoLugar>>(avaliacoes);
     }
 
-    private sealed class FonteQueFalha : IFonteDoInicioNoLugar
+    private sealed class FonteQueFalha : IFonteDaAvaliacaoIniciadaNoLugar
     {
-        public Task<IReadOnlyList<InicioNoLugar>> ListarAsync(Guid processoId, CancellationToken cancellationToken = default) =>
+        public Task<IReadOnlyList<AvaliacaoIniciadaNoLugar>> ListarAsync(Guid processoId, CancellationToken cancellationToken = default) =>
             throw new InvalidOperationException("A fonte do início falhou.");
     }
 }

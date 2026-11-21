@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Montagem compartilhada dos testes das fases iniciadas (Postgres real): o processo publicado com uma fase e uma
-/// etapa, o ato semeado no processo e a leitura das fases iniciadas num instante.
+/// etapa, o ato semeado no processo, a troca da chave gravada nele e a leitura das fases iniciadas num instante.
 /// </summary>
 internal sealed class CenarioDeFasesDoProcessoPublicado
 {
@@ -53,7 +53,15 @@ internal sealed class CenarioDeFasesDoProcessoPublicado
         await semeadura.SaveChangesAsync();
     }
 
-    public async Task<FasesIniciadas> IniciadasAsync(Guid processoId, DateTimeOffset agora, params IFonteDoInicioNoLugar[] fontes)
+    public async Task SubstituirAChaveDosAtosAsync(Guid processoId, string chave)
+    {
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
+        await context.AtosDoProcesso
+            .Where(a => a.ProcessoSeletivoId == processoId)
+            .ExecuteUpdateAsync(a => a.SetProperty(ato => ato.ItemDoEdital, chave));
+    }
+
+    public async Task<FasesIniciadas> IniciadasAsync(Guid processoId, DateTimeOffset agora, params IFonteDaAvaliacaoIniciadaNoLugar[] fontes)
     {
         await using UniPlusDbContext context = _fixture.CreateDbContext();
         return await new FasesIniciadasDoProcesso(context, TimeProvider.System, fontes).ObterAsync(processoId, agora);

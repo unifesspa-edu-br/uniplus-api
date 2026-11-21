@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
@@ -13,24 +14,11 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 /// </summary>
 internal static class FasesNoEnvelope
 {
-    /// <summary>Uma etapa da fase, com a janela própria que o envelope declara.</summary>
-    internal sealed record EtapaDaFase(Guid Id, string Nome, DateTimeOffset? Inicio, DateTimeOffset? Fim);
-
-    internal sealed record Fase(
-        Guid Id,
-        Guid OrigemId,
-        string Codigo,
-        Guid? Unidade,
-        DateTimeOffset? Inicio,
-        DateTimeOffset? Fim,
-        bool ColetaInscricao,
-        IReadOnlyList<EtapaDaFase> Etapas);
-
-    internal static IReadOnlyList<Fase> Das(string? congelado) =>
+    internal static IReadOnlyList<FaseDaVersaoPublicada> Das(string? congelado) =>
         Envelope(congelado) is { } envelope ? Das(envelope) : [];
 
     internal static UnidadeDaFase? DaFase(string? congelado, Guid faseId) =>
-        Das(congelado).FirstOrDefault(f => f.Id == faseId) is { Unidade: { } unidade } fase
+        Das(congelado).FirstOrDefault(f => f.Id == faseId) is { UnidadeResponsavelOrigemId: { } unidade } fase
             ? new UnidadeDaFase(fase.Id, unidade)
             : null;
 
@@ -41,8 +29,8 @@ internal static class FasesNoEnvelope
             return null;
         }
 
-        Fase? fase = Das(envelope).FirstOrDefault(f => string.Equals(f.Codigo, codigo, StringComparison.Ordinal));
-        return fase?.Unidade is { } unidade ? new UnidadeDaFase(fase.Id, unidade) : null;
+        FaseDaVersaoPublicada? fase = Das(envelope).FirstOrDefault(f => string.Equals(f.Codigo, codigo, StringComparison.Ordinal));
+        return fase?.UnidadeResponsavelOrigemId is { } unidade ? new UnidadeDaFase(fase.Id, unidade) : null;
     }
 
     private static string? CodigoDaFaseDaEtapa(JsonObject envelope, Guid etapaId) =>
@@ -52,12 +40,12 @@ internal static class FasesNoEnvelope
             ? TextoDe(etapa["faseCodigo"])
             : null;
 
-    private static List<Fase> Das(JsonObject envelope)
+    private static List<FaseDaVersaoPublicada> Das(JsonObject envelope)
     {
-        List<(EtapaDaFase Etapa, string? FaseCodigo)> etapas = [.. (envelope["etapas"] as JsonArray ?? [])
+        List<(EtapaDaVersaoPublicada Etapa, string? FaseCodigo)> etapas = [.. (envelope["etapas"] as JsonArray ?? [])
             .OfType<JsonObject>()
             .Select(static e => (
-                new EtapaDaFase(GuidDe(e["id"]) ?? Guid.Empty, TextoDe(e["nome"]) ?? string.Empty, InstanteDe(e["inicio"]), InstanteDe(e["fim"])),
+                new EtapaDaVersaoPublicada(GuidDe(e["id"]) ?? Guid.Empty, TextoDe(e["nome"]) ?? string.Empty, new JanelaDeTempo(InstanteDe(e["inicio"]), InstanteDe(e["fim"]))),
                 TextoDe(e["faseCodigo"])))];
 
         return [.. ((envelope["cronogramaFases"] as JsonObject)?["fases"] as JsonArray ?? [])
@@ -66,13 +54,12 @@ internal static class FasesNoEnvelope
             .Where(static f => f.Id != Guid.Empty)];
     }
 
-    private static Fase LerFase(JsonObject f, List<(EtapaDaFase Etapa, string? FaseCodigo)> etapas) => new(
+    private static FaseDaVersaoPublicada LerFase(JsonObject f, List<(EtapaDaVersaoPublicada Etapa, string? FaseCodigo)> etapas) => new(
         GuidDe(f["id"]) ?? Guid.Empty,
         GuidDe(f["faseCanonicaOrigemId"]) ?? Guid.Empty,
         TextoDe(f["codigo"]) ?? string.Empty,
         GuidDe((f["unidadeResponsavel"] as JsonObject)?["origemId"]),
-        InstanteDe(f["inicio"]),
-        InstanteDe(f["fim"]),
+        new JanelaDeTempo(InstanteDe(f["inicio"]), InstanteDe(f["fim"])),
         f["coletaInscricao"] is JsonValue coleta && coleta.TryGetValue(out bool coletaInscricao) && coletaInscricao,
         [.. etapas.Where(e => string.Equals(e.FaseCodigo, TextoDe(f["codigo"]), StringComparison.Ordinal)).Select(static e => e.Etapa)]);
 
@@ -96,8 +83,8 @@ internal static class FasesNoEnvelope
     private static Guid? GuidDe(JsonNode? node) => Guid.TryParse(TextoDe(node), out Guid id) ? id : null;
 
     /// <summary>
-    /// Sem janela quando o nó é ausente ou <c>null</c>. Qualquer outro valor que não esteja na forma canônica
-    /// do envelope é falha, não ausência: tratar o instante ilegível como "sem janela" faria a fase passar
+    /// Sem período quando o nó é ausente ou <c>null</c>. Qualquer outro valor que não esteja na forma canônica
+    /// do envelope é falha, não ausência: tratar o instante ilegível como "sem período" faria a fase passar
     /// por não iniciada.
     /// </summary>
     private static DateTimeOffset? InstanteDe(JsonNode? node)
