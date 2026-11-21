@@ -1,20 +1,22 @@
 namespace Unifesspa.UniPlus.Selecao.API.Controllers;
 
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.Vocabularios;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// Vocabulários fechados que a configuração de um Processo Seletivo referencia por código:
-/// os fundamentos de isenção de taxa (UNI-REQ-0101) e os campos publicáveis na divulgação
-/// de resultado (UNI-REQ-0050).
+/// os fundamentos de isenção de taxa (UNI-REQ-0101), os campos publicáveis na divulgação
+/// de resultado (UNI-REQ-0050) e as opções do recurso: a unidade do prazo, o efeito
+/// suspensivo e a guarda da vaga.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -36,10 +38,6 @@ using Unifesspa.UniPlus.Selecao.Application.Queries.Vocabularios;
 /// </para>
 /// </remarks>
 [ApiController]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public; sem isso o MVC ignora a classe.")]
 public sealed class VocabulariosController : ControllerBase
 {
     private readonly IQueryBus _queryBus;
@@ -85,5 +83,60 @@ public sealed class VocabulariosController : ControllerBase
             .ConfigureAwait(false);
 
         return Ok(campos);
+    }
+
+    /// <summary>
+    /// Lista as unidades em que o edital declara o prazo do recurso: horas e dias úteis. A de
+    /// dias corridos não é oferecida, porque o prazo que corre em dia sem expediente encolhe
+    /// sem que a pessoa possa agir.
+    /// </summary>
+    [HttpGet("unidades-do-prazo-de-recurso")]
+    [AllowAnonymous]
+    [VendorMediaType(Resource = "unidade-do-prazo-de-recurso", Versions = [1])]
+    [ProducesResponseType(typeof(IEnumerable<CodigoComRotulo<UnidadePrazo>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> ListarUnidadesDoPrazoDeRecurso(CancellationToken cancellationToken)
+    {
+        IReadOnlyList<CodigoComRotulo<UnidadePrazo>> unidades = await _queryBus
+            .Send(new ListarUnidadesDoPrazoDeRecursoQuery(), cancellationToken)
+            .ConfigureAwait(false);
+
+        return Ok(unidades);
+    }
+
+    /// <summary>
+    /// Lista as opções de efeito suspensivo do recurso da 1ª instância, cada uma com a
+    /// explicação do que ela significa para o processo.
+    /// </summary>
+    [HttpGet("efeitos-suspensivos")]
+    [AllowAnonymous]
+    [VendorMediaType(Resource = "efeito-suspensivo", Versions = [1])]
+    [ProducesResponseType(typeof(IEnumerable<CodigoComDescricao<EfeitoSuspensivo>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> ListarEfeitosSuspensivos(CancellationToken cancellationToken)
+    {
+        IReadOnlyList<CodigoComDescricao<EfeitoSuspensivo>> efeitos = await _queryBus
+            .Send(new ListarEfeitosSuspensivosQuery(), cancellationToken)
+            .ConfigureAwait(false);
+
+        return Ok(efeitos);
+    }
+
+    /// <summary>
+    /// Lista as opções de guarda da vaga enquanto o recurso corre, cada uma com a explicação
+    /// do que ela significa para quem recorre.
+    /// </summary>
+    [HttpGet("guardas-da-vaga")]
+    [AllowAnonymous]
+    [VendorMediaType(Resource = "guarda-da-vaga", Versions = [1])]
+    [ProducesResponseType(typeof(IEnumerable<CodigoComDescricao<GuardaDaVaga>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> ListarGuardasDaVaga(CancellationToken cancellationToken)
+    {
+        IReadOnlyList<CodigoComDescricao<GuardaDaVaga>> guardas = await _queryBus
+            .Send(new ListarGuardasDaVagaQuery(), cancellationToken)
+            .ConfigureAwait(false);
+
+        return Ok(guardas);
     }
 }

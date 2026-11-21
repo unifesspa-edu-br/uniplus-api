@@ -8,9 +8,15 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 /// </summary>
 public enum GuardaDaVaga
 {
-    [CodigoDeContrato("ateOResultadoDefinitivo", "Guarda a vaga até o resultado definitivo")]
+    [CodigoDeContrato(
+        "ateOResultadoDefinitivo",
+        "Guarda a vaga até o resultado definitivo",
+        Descricao = "Se quem recorre seria chamado para a vaga, ela fica guardada até a publicação do resultado definitivo.")]
     AteOResultadoDefinitivo = 1,
 
-    [CodigoDeContrato("naoGuarda", "Não guarda a vaga")]
+    [CodigoDeContrato(
+        "naoGuarda",
+        "Não guarda a vaga",
+        Descricao = "A vaga não fica guardada durante o recurso. Se o recurso for deferido com a vaga já ocupada, a unidade resolve a situação.")]
     NaoGuarda = 2,
 }
