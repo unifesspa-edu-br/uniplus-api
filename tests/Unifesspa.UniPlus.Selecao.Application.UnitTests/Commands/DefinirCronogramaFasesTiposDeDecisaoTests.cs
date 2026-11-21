@@ -142,7 +142,7 @@ public sealed class DefinirCronogramaFasesTiposDeDecisaoTests
 
         Recusas(resultado).Should().Equal(
             ("fases[0].tiposDeDecisao[0]", MotivoDeDecisaoErrorCodes.TipoInvalido),
-            ("fases[1].produtos", "FaseCronograma.AtoDuplicadoNaFase"));
+            ("fases[1].produtos[1]", "FaseCronograma.AtoDuplicadoNaFase"));
     }
 
     [Fact(DisplayName = "Tipo com erro de digitação recusa só o tipo: o procedimento do tipo certo não é avaliado")]

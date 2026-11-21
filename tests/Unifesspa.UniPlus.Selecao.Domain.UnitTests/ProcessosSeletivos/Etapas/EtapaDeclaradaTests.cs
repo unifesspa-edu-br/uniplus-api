@@ -115,6 +115,14 @@ public sealed class EtapaDeclaradaTests
             "EtapaProcesso.BancaDuplicadaNaEtapa");
     }
 
+    [Fact(DisplayName = "Na leitura do documento o ato repetido recusa a lista dos produtos inteira, uma vez só, sem posição de produto")]
+    public void Declarar_AtoRepetido_RecusaAListaInteiraUmaVez()
+    {
+        ModeloDeEtapa modelo = new("Prova") { Produtos = [Preliminar("ATO_A"), Preliminar("ATO_B"), Preliminar("ATO_B"), Preliminar("ATO_A")] };
+
+        Recusas(modelo.Declarar()).Should().Equal(("produtos", "EtapaProcesso.AtoDuplicadoNaEtapa"));
+    }
+
     [Fact(DisplayName = "A recusa da âncora das janelas recursais acompanha o campo dos recursos")]
     public void Declarar_AncoraForaDosPreliminares_RecusaNosRecursos()
     {

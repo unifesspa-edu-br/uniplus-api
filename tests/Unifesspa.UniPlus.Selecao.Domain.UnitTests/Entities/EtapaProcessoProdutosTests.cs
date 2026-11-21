@@ -64,23 +64,37 @@ public sealed class EtapaProcessoProdutosTests
         etapa.Produtos.Should().ContainSingle().Which.Id.Should().Be(idDaLinha);
     }
 
-    [Fact(DisplayName = "DefinirProdutos recusa o mesmo ato e papel escrito em formas de acento diferentes")]
-    public void DefinirProdutos_AtoRepetidoEmFormasDeAcentoDiferentes_Recusa()
+    [Fact(DisplayName = "DefinirProdutos recusa o mesmo ato e papel escrito em formas de acento diferentes, no produto repetido")]
+    public void DefinirProdutos_AtoRepetidoEmFormasDeAcentoDiferentes_RecusaNoProdutoRepetido()
     {
         Result resultado = Etapa().DefinirProdutos([Preliminar(AtoComposto), Preliminar(AtoDecomposto)]);
 
-        resultado.Error!.Code.Should().Be("EtapaProcesso.AtoDuplicadoNaEtapa");
-        resultado.Error.Message.Should().Contain($"'{AtoComposto}'");
+        FieldError recusa = resultado.Errors.Should().ContainSingle().Subject;
+        recusa.Field.Should().Be("produtos[1]");
+        recusa.Error.Code.Should().Be("EtapaProcesso.AtoDuplicadoNaEtapa");
+        recusa.Error.Message.Should().Contain($"'{AtoDecomposto}'");
     }
 
-    [Fact(DisplayName = "O par repetido A, B, B, A informa o ato A, a primeira ocorrência repetida")]
-    public void DefinirProdutos_ParRepetidoEmAbba_InformaAPrimeiraOcorrencia()
+    [Fact(DisplayName = "O par repetido A, B, B, A recusa o segundo B e o segundo A, cada um no seu produto")]
+    public void DefinirProdutos_ParRepetidoEmAbba_RecusaCadaRepeticao()
     {
         Result resultado = Etapa().DefinirProdutos(
             [Preliminar("ATO_A"), Preliminar("ATO_B"), Preliminar("ATO_B"), Preliminar("ATO_A")]);
 
-        resultado.Error!.Code.Should().Be("EtapaProcesso.AtoDuplicadoNaEtapa");
-        resultado.Error.Message.Should().Contain("'ATO_A'").And.NotContain("'ATO_B'");
+        resultado.Errors.Select(static e => e.Field).Should().Equal("produtos[2]", "produtos[3]");
+        resultado.Errors.Select(static e => e.Error.Code).Should().AllBe("EtapaProcesso.AtoDuplicadoNaEtapa");
+        resultado.Errors[0].Error.Message.Should().Contain("'ATO_B'");
+        resultado.Errors[1].Error.Message.Should().Contain("'ATO_A'");
+    }
+
+    [Fact(DisplayName = "O par repetido A, B, A recusa só o terceiro produto, e o primeiro A segue valendo")]
+    public void DefinirProdutos_ParRepetidoEmAba_RecusaOTerceiroProduto()
+    {
+        Result resultado = Etapa().DefinirProdutos([Preliminar("ATO_A"), Preliminar("ATO_B"), Preliminar("ATO_A")]);
+
+        FieldError recusa = resultado.Errors.Should().ContainSingle().Subject;
+        recusa.Field.Should().Be("produtos[2]");
+        recusa.Error.Code.Should().Be("EtapaProcesso.AtoDuplicadoNaEtapa");
     }
 
     [Fact(DisplayName = "DefinirProdutos recusado deixa os produtos da etapa como estavam")]

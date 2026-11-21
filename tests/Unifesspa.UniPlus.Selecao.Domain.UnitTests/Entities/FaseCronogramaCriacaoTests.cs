@@ -39,7 +39,7 @@ public sealed class FaseCronogramaCriacaoTests
 
         Recusas(resultado).Should().Equal(
             ("fim", "FaseCronograma.JanelaInvertida"),
-            ("produtos", "FaseCronograma.AtoDuplicadoNaFase"),
+            ("produtos[1]", "FaseCronograma.AtoDuplicadoNaFase"),
             ("emiteParecerIndividual", "FaseCronograma.ParecerIndividualSemResultado"),
             ("produtos", "RegraRecursoFase.FaseSemProdutoPreliminar"),
             ("bancasRequeridas[0].categoriasDocumentoIds", "BancaRequerida.RecorteDeCompetenciaObrigatorio"),
@@ -64,16 +64,30 @@ public sealed class FaseCronogramaCriacaoTests
             ("bancasRequeridas[1].categoriasDocumentoIds", "BancaRequerida.RecorteDeCompetenciaDuplicado"));
     }
 
-    [Fact(DisplayName = "O par repetido A, B, B, A informa o ato A, a primeira ocorrência repetida")]
-    public void Criar_ParRepetidoEmAbba_InformaAPrimeiraOcorrencia()
+    [Fact(DisplayName = "O par repetido A, B, A recusa só o terceiro produto, e o primeiro A segue valendo")]
+    public void Criar_ParRepetidoEmAba_RecusaOTerceiroProduto()
+    {
+        Result<FaseCronograma> resultado = Criar(new()
+        {
+            Produtos = [Preliminar("ATO_A"), Preliminar("ATO_B"), Preliminar("ATO_A")],
+        });
+
+        Recusas(resultado).Should().Equal(("produtos[2]", "FaseCronograma.AtoDuplicadoNaFase"));
+    }
+
+    [Fact(DisplayName = "O par repetido A, B, B, A recusa o segundo B e o segundo A, cada um no seu produto")]
+    public void Criar_ParRepetidoEmAbba_RecusaCadaRepeticao()
     {
         Result<FaseCronograma> resultado = Criar(new()
         {
             Produtos = [Preliminar("ATO_A"), Preliminar("ATO_B"), Preliminar("ATO_B"), Preliminar("ATO_A")],
         });
 
-        Recusas(resultado).Should().ContainSingle().Which.Codigo.Should().Be("FaseCronograma.AtoDuplicadoNaFase");
-        resultado.Error!.Message.Should().Contain("'ATO_A'").And.NotContain("'ATO_B'");
+        Recusas(resultado).Should().Equal(
+            ("produtos[2]", "FaseCronograma.AtoDuplicadoNaFase"),
+            ("produtos[3]", "FaseCronograma.AtoDuplicadoNaFase"));
+        resultado.Errors[0].Error.Message.Should().Contain("'ATO_B'");
+        resultado.Errors[1].Error.Message.Should().Contain("'ATO_A'");
     }
 
     [Fact(DisplayName = "A fábrica recusa o recorte de competência na banca de análise de recursos, no campo do recorte")]

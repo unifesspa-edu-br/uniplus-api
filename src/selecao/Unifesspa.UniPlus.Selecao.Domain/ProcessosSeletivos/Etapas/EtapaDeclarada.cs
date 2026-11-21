@@ -179,7 +179,7 @@ public sealed record EtapaDeclarada
         IReadOnlyList<BancaDaEtapa> bancas,
         IReadOnlySet<string> suspensas) =>
     [
-        .. Recusa("produtos", ConferenciaDaDeclaracaoDaEtapa.AtoRepetido(publicacoes.Produtos)),
+        .. Recusa(ListaDosProdutos, AtoRepetidoNaListaInteira(publicacoes.Produtos)),
         .. Recusa("fim", ConferenciaDaDeclaracaoDaEtapa.JanelaInvertida(janela)),
         .. TiposDeDecisaoDeclarados.Validar(publicacoes.TiposDeDecisao, TiposDeDecisaoDeclarados.Campo),
         .. Recusa("bancas", AlinhamentoDasBancasDaEtapa.BancaRepetida(bancas)),
@@ -198,4 +198,8 @@ public sealed record EtapaDeclarada
 
     private static IEnumerable<FieldError> Recusa(string campo, DomainError? erro) =>
         erro is null ? [] : [new FieldError(campo, erro)];
+
+    // A declaração lida de um documento não tem posição de entrada: o ato repetido sai uma vez só, na lista dos produtos inteira.
+    private static DomainError? AtoRepetidoNaListaInteira(IReadOnlyList<ProdutoDaEtapa> produtos) =>
+        ConferenciaDaDeclaracaoDaEtapa.AtosRepetidos(produtos) is [{ } primeira, ..] ? primeira.Error : null;
 }

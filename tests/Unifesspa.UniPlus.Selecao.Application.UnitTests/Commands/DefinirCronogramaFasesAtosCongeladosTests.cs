@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.FasesDoCronogramaDeTeste;
 
@@ -54,6 +55,33 @@ public sealed class DefinirCronogramaFasesAtosCongeladosTests
 
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be("Envelope.CodecDesconhecido");
     }
+
+    [Fact(DisplayName = "Versão publicada ilegível interrompe na fase em que ocorre: guarda as recusas das fases anteriores e dos produtos anteriores, e não julga o resto")]
+    public async Task Handle_VersaoPublicadaIlegivelNaSegundaFase_GuardaAsRecusasAnterioresECortaAsSeguintes()
+    {
+        CenarioDoCronogramaDeFases cenario = CenarioDoCronogramaDeFases.EmRascunho()
+            .ComVersaoPublicadaIlegivel(new DomainError("Envelope.CodecDesconhecido", "O codec não lê esta versão."))
+            .ComTipoDeAto(TipoAtoDaClassificacao());
+        FaseCronogramaInput[] fases = TresFasesComPapelDesconhecidoEACatalogoIlegivelNaSegunda(cenario);
+
+        Result resultado = await cenario.DefinirFasesAsync(fases);
+
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+            ("fases[0].produtos[0].papel", "ProdutoDaFase.PapelDesconhecido"),
+            ("fases[1].produtos[0].papel", "ProdutoDaFase.PapelDesconhecido"),
+            ("fases[1].produtos[1].atoCodigo", "Envelope.CodecDesconhecido"));
+    }
+
+    private static FaseCronogramaInput[] TresFasesComPapelDesconhecidoEACatalogoIlegivelNaSegunda(CenarioDoCronogramaDeFases cenario) =>
+    [
+        ComProdutos(cenario.CadastrarFase(FaseCanonicaRecorrivel()), 1, ProdutoDaClassificacao("PRELIMINARY")),
+        ComProdutos(
+            cenario.CadastrarFase(FaseCanonicaDoResultadoFinal()), 2, ProdutoDaClassificacao("PRELIMINARY"), ProdutoDaClassificacao(PapelProdutoFaseCodigo.Preliminar)),
+        ComProdutos(cenario.CadastrarFase(FaseCanonicaRecorrivel() with { Id = Guid.CreateVersion7() }), 3, ProdutoDaClassificacao("PRELIMINARY")),
+    ];
+
+    private static FaseCronogramaInput ComProdutos(FaseCronogramaInput fase, int ordem, params ProdutoDaFaseInput[] produtos) =>
+        fase with { Ordem = ordem, Produtos = produtos };
 
     [Theory(DisplayName = "Com o tipo fora do catálogo hoje, a âncora nova é recusada e a que o agregado já tinha segue aceita")]
     [InlineData(false, "ProdutoDaFase.AtoNaoEncontradoNoCatalogo")]

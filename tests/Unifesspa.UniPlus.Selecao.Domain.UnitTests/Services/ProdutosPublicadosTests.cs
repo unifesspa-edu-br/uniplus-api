@@ -260,22 +260,22 @@ public sealed class ProdutosPublicadosTests
     }
 
     [Fact]
-    public void ParRepetido_ComVariosGrupos_InformaOGrupoCujaPrimeiraOcorrenciaVemAntes()
+    public void PosicoesRepetidas_ComVariosGrupos_InformaCadaRepeticaoAPartirDaSegundaOcorrencia()
     {
-        ProdutoDaFase primeiroA = Fase("A", PapelProdutoFase.Preliminar);
         ProdutoDaFase[] produtos =
         [
-            primeiroA,
+            Fase("A", PapelProdutoFase.Preliminar),
             Fase("B", PapelProdutoFase.Preliminar),
             Fase("B", PapelProdutoFase.Preliminar),
             Fase("A", PapelProdutoFase.Preliminar),
+            Fase("B", PapelProdutoFase.Preliminar),
         ];
 
-        ProdutosPublicados.PrimeiroParRepetido(produtos, Ordinal).Should().BeSameAs(primeiroA);
+        ProdutosPublicados.PosicoesRepetidas(produtos, Ordinal).Should().Equal(2, 3, 4);
     }
 
     [Fact]
-    public void ParRepetido_MesmoAtoEmPapeisDiferentes_NaoERepeticao()
+    public void PosicoesRepetidas_MesmoAtoEmPapeisDiferentes_NaoERepeticao()
     {
         ProdutoDaFase[] produtos =
         [
@@ -284,11 +284,11 @@ public sealed class ProdutosPublicadosTests
             Fase("A", null),
         ];
 
-        ProdutosPublicados.PrimeiroParRepetido(produtos, Ordinal).Should().BeNull();
+        ProdutosPublicados.PosicoesRepetidas(produtos, Ordinal).Should().BeEmpty();
     }
 
     [Fact]
-    public void ParRepetido_ComparaOAtoPelaChaveDeQuemChama()
+    public void PosicoesRepetidas_ComparaOAtoPelaChaveDeQuemChama()
     {
         ProdutoDaEtapa[] produtos =
         [
@@ -296,8 +296,7 @@ public sealed class ProdutosPublicadosTests
             Etapa(AtoDecomposto, PapelProdutoFase.Preliminar),
         ];
 
-        ProdutosPublicados.PrimeiroParRepetido(produtos, HashCanonicalComputer.NormalizeNfc)
-            .Should().BeSameAs(produtos[0]);
-        ProdutosPublicados.PrimeiroParRepetido(produtos, Ordinal).Should().BeNull();
+        ProdutosPublicados.PosicoesRepetidas(produtos, HashCanonicalComputer.NormalizeNfc).Should().Equal(1);
+        ProdutosPublicados.PosicoesRepetidas(produtos, Ordinal).Should().BeEmpty();
     }
 }

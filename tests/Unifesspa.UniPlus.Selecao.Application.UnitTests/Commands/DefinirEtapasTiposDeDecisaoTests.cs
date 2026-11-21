@@ -200,7 +200,7 @@ public sealed class DefinirEtapasTiposDeDecisaoTests
 
         Recusas(resultado).Should().Equal(
             ("etapas[0].tiposDeDecisao[0]", MotivoDeDecisaoErrorCodes.TipoInvalido),
-            ("etapas[1].produtos", "EtapaProcesso.AtoDuplicadoNaEtapa"));
+            ("etapas[1].produtos[1]", "EtapaProcesso.AtoDuplicadoNaEtapa"));
     }
 
     [Fact(DisplayName = "Tipos válidos sem o tipo do procedimento continuam recusando o procedimento da etapa")]
@@ -242,7 +242,7 @@ public sealed class DefinirEtapasTiposDeDecisaoTests
 
         Result resultado = await ExecutarComOsCadastros(processo, etapa);
 
-        Recusas(resultado).Select(static r => r.Campo).Should().Equal("etapas[0].produtos", "etapas[0].fim", "etapas[0].tiposDeDecisao[0]");
+        Recusas(resultado).Select(static r => r.Campo).Should().Equal("etapas[0].produtos[0].papel", "etapas[0].fim", "etapas[0].tiposDeDecisao[0]");
     }
 
     [Fact(DisplayName = "O id de etapa repetido vence os tipos inválidos")]

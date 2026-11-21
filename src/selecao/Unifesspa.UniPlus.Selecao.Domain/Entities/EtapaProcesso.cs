@@ -292,7 +292,7 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     }
 
     /// <summary>
-    /// Substitui os produtos da etapa por inteiro, recusando o mesmo par ato e papel duas vezes: dois
+    /// Substitui os produtos da etapa por inteiro, recusando cada repetição do par ato e papel: dois
     /// registros idênticos tornariam ambíguo o que o recurso ancora. A chave é o par, e não o ato, porque
     /// a mesma matéria é publicada como preliminar e como definitiva (a fase usa a mesma chave).
     /// </summary>
@@ -305,9 +305,9 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     {
         ArgumentNullException.ThrowIfNull(produtos);
 
-        if (ConferenciaDaDeclaracaoDaEtapa.AtoRepetido(produtos) is { } repetido)
+        if (ConferenciaDaDeclaracaoDaEtapa.AtosRepetidos(produtos) is [_, ..] repetidos)
         {
-            return Result.Failure(repetido);
+            return Result.ValidationFailure(repetidos);
         }
 
         SubstituirProdutos(ProdutosPublicados

@@ -91,15 +91,20 @@ public static class ConferenciaDaDeclaracaoDaEtapa
     }
 
     /// <summary>
-    /// A recusa do mesmo par ato e papel declarado duas vezes: dois registros idênticos tornariam ambíguo o
-    /// que o recurso ancora. O ato é comparado em NFC, como o documento canônico o emite.
+    /// A recusa de cada repetição do par ato e papel, a partir da segunda ocorrência, no produto repetido
+    /// (<c>produtos[posicao]</c>): dois registros idênticos tornariam ambíguo o que o recurso ancora. O ato é
+    /// comparado em NFC, como o documento canônico o emite.
     /// </summary>
-    internal static DomainError? AtoRepetido(IEnumerable<ProdutoDaEtapa> produtos) =>
-        ProdutosPublicados.PrimeiroParRepetido(produtos, HashCanonicalComputer.NormalizeNfc) is { } duplicado
-            ? new DomainError(
-                "EtapaProcesso.AtoDuplicadoNaEtapa",
-                $"A etapa declara o ato '{duplicado.AtoCodigo}' mais de uma vez no mesmo papel — o par ato e papel é declarado uma única vez por etapa.")
-            : null;
+    internal static IReadOnlyList<FieldError> AtosRepetidos(IReadOnlyList<ProdutoDaEtapa> produtos) =>
+    [
+        .. ProdutosPublicados.PosicoesRepetidas(produtos, HashCanonicalComputer.NormalizeNfc)
+            .Select(posicao => new FieldError($"produtos[{posicao}]", AtoDuplicado(produtos[posicao].AtoCodigo))),
+    ];
+
+    private static DomainError AtoDuplicado(string atoCodigo) =>
+        new(
+            "EtapaProcesso.AtoDuplicadoNaEtapa",
+            $"A etapa declara o ato '{atoCodigo}' mais de uma vez no mesmo papel — o par ato e papel é declarado uma única vez por etapa.");
 
     internal static DomainError? JanelaInvertida(JanelaDeTempo janela) =>
         janela.Invertida
