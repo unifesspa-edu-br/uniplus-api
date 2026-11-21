@@ -186,7 +186,7 @@ public async Task<IActionResult> ObterPorId(Guid id, CancellationToken cancellat
 ## Mais informações
 
 - [ADR-0029](0029-hateoas-level-1-links.md) — HATEOAS Level 1 binding (decisão canônica de `_links`).
-- [ADR-0030](0030-openapi-3-1-contract-first.md) — OpenAPI como fonte de verdade das operações (motivo para action links não estarem em `_links`).
+- [ADR-0030](0030-openapi-3-1-contract-first-microsoft-aspnetcore-openapi.md) — OpenAPI como fonte de verdade das operações (motivo para action links não estarem em `_links`).
 - [ADR-0025](0025-wire-formato-sucesso-body-direto.md) — body como representação direta (motivo para `_links` ser campo do DTO, não wrapper).
 - [ADR-0028](0028-versionamento-per-resource-content-negotiation.md) — vendor MIME (versionamento por recurso; futura mudança pode requerir versionamento de `_links`).
 - [Microsoft Docs — LinkGenerator](https://learn.microsoft.com/aspnet/core/fundamentals/routing#linkgenerator) — geração de URI singleton DI.

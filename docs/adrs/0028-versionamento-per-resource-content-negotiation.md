@@ -133,7 +133,7 @@ A entrada é parte do PR de implementação da versão; PR sem entrada falha em 
 
 - **Cadência independente.** Edital pode subir para `v2` sem afetar Recurso ou Inscrição. Cada recurso evolui no seu próprio ritmo.
 - **URL estável.** `/editais/{id}` continua funcionando ao longo de todas as evoluções; clientes que mudam de versão alteram apenas `Accept`.
-- **Padrão aberto.** Vendor media types funcionam com clientes HTTP genéricos (curl, Postman, axios, httpx) sem adapter custom; OpenAPI 3.1 ([ADR-0030](0030-openapi-3-1-contract-first.md)) descreve cada versão como response separada.
+- **Padrão aberto.** Vendor media types funcionam com clientes HTTP genéricos (curl, Postman, axios, httpx) sem adapter custom; OpenAPI 3.1 ([ADR-0030](0030-openapi-3-1-contract-first-microsoft-aspnetcore-openapi.md)) descreve cada versão como response separada.
 - **Deprecation explícita.** `Sunset` + `Deprecation` headers (RFCs 8594/9745) permitem que clientes detectem deprecation programaticamente, sem dependência de canal humano.
 - **Janela 12 meses dá previsibilidade.** Integradores institucionais conseguem planejar upgrades dentro do orçamento anual; CTIC consegue planejar lançamentos sem pressão para suporte indefinido.
 
@@ -163,7 +163,7 @@ A entrada é parte do PR de implementação da versão; PR sem entrada falha em 
 - [ADR-0019](0019-proibir-pii-em-path-segments-de-url.md) — path carrega identidade, não metadado.
 - [ADR-0023](0023-wire-formato-erro-rfc-9457.md) — wire format do 406 retornado quando versão é inválida.
 - [ADR-0025](0025-wire-formato-sucesso-body-direto.md) — body é representação direta; `Content-Type` descreve a representação.
-- [ADR-0030](0030-openapi-3-1-contract-first.md) — pipeline OpenAPI que descreve cada versão como response separada.
+- [ADR-0030](0030-openapi-3-1-contract-first-microsoft-aspnetcore-openapi.md) — pipeline OpenAPI que descreve cada versão como response separada.
 - [RFC 6838 — Media Type Specifications and Registration Procedures](https://www.rfc-editor.org/rfc/rfc6838.html).
 - [RFC 6839 — Additional Media Type Structured Syntax Suffixes](https://www.rfc-editor.org/rfc/rfc6839.html) — base do suffix `+json`.
 - [RFC 8594 — The Sunset HTTP Header Field](https://www.rfc-editor.org/rfc/rfc8594.html).

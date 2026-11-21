@@ -22,7 +22,7 @@ A discussão polariza-se entre adotar nada (REST nível 2 puro, URLs construída
 - **URLs evolvable pelo servidor.** Quando o servidor controla a forma do link (relativo, baseado em template interno), reorganizar a estrutura de URL não quebra clientes que respeitam `_links`. Clientes que hardcoded URLs absolutas continuam quebrando — esse é o trade-off, não a meta.
 - **Custo proporcional.** HAL (`_embedded`, `_curies`, link objects estruturados) e JSON:API (`{data, links, included, relationships}`) trazem maquinaria que a `uniplus-api` não consome. Custo de onboarding, codegen e ferramentas adicionais não justificado.
 - **Coerência com decisões já tomadas.** Body é representação direta ([ADR-0025](0025-wire-formato-sucesso-body-direto.md)) — `_links` entra como campo normal do recurso, não como wrapper. Coleção usa `Link` header ([ADR-0026](0026-paginacao-cursor-opaco-cifrado.md)) — não conflito.
-- **Não introduzir actions/state machine.** Hipermídia avançada (descobrir `publicar`, `recusar` via links em vez de OpenAPI) acopla cliente a uma máquina de estados implícita no payload. OpenAPI ([ADR-0030](0030-openapi-3-1-contract-first.md)) é a fonte de verdade dessas operações; `_links` em V1 é navegação, não invocação.
+- **Não introduzir actions/state machine.** Hipermídia avançada (descobrir `publicar`, `recusar` via links em vez de OpenAPI) acopla cliente a uma máquina de estados implícita no payload. OpenAPI ([ADR-0030](0030-openapi-3-1-contract-first-microsoft-aspnetcore-openapi.md)) é a fonte de verdade dessas operações; `_links` em V1 é navegação, não invocação.
 
 ## Opções consideradas
 
@@ -75,7 +75,7 @@ Todas as URIs em `_links` são **relativas à raiz da API**. Isso permite que a 
 
 - Catálogo completo de relações por recurso — declarado por slice na implementação. Convenção: relações que retornam outro recurso ou coleção devem aparecer no `_links` do recurso pai quando úteis para navegação canônica.
 - Implementação concreta do builder de links na camada `API` — extension method, helper service ou middleware. Decisão de implementação.
-- Action links (`publicar`, `cancelar`, etc.) — **explicitamente fora do V1**. Operações de mutação são descobertas via OpenAPI ([ADR-0030](0030-openapi-3-1-contract-first.md)), não via `_links`. Adicioná-las exige nova ADR superseding.
+- Action links (`publicar`, `cancelar`, etc.) — **explicitamente fora do V1**. Operações de mutação são descobertas via OpenAPI ([ADR-0030](0030-openapi-3-1-contract-first-microsoft-aspnetcore-openapi.md)), não via `_links`. Adicioná-las exige nova ADR superseding.
 - Adoção de HAL ou JSON:API no futuro — possível via ADR superseding se requisitos mudarem (ex.: cliente pesado que se beneficia de `_embedded`).
 
 ### Por que B, C e D foram rejeitadas
@@ -115,7 +115,7 @@ Todas as URIs em `_links` são **relativas à raiz da API**. Isso permite que a 
 - [ADR-0022](0022-contrato-rest-canonico-umbrella.md) — umbrella (princípio 6: padrões abertos com customização justificada).
 - [ADR-0025](0025-wire-formato-sucesso-body-direto.md) — body como representação direta; `_links` é campo, não wrapper.
 - [ADR-0026](0026-paginacao-cursor-opaco-cifrado.md) — navegação de coleção via `Link` header (não duplicada em `_links`).
-- [ADR-0030](0030-openapi-3-1-contract-first.md) — OpenAPI como fonte de verdade das operações (motivo para não ter action links em V1).
+- [ADR-0030](0030-openapi-3-1-contract-first-microsoft-aspnetcore-openapi.md) — OpenAPI como fonte de verdade das operações (motivo para não ter action links em V1).
 - [Roy Fielding — REST APIs must be hypertext-driven](https://roy.gbiv.com/untangled/2008/rest-apis-must-be-hypertext-driven) — referência conceitual sobre HATEOAS.
 - [draft-kelly-json-hal-11 — HAL](https://datatracker.ietf.org/doc/html/draft-kelly-json-hal-11) — opção B rejeitada.
 - [JSON:API](https://jsonapi.org/) — opção C rejeitada.
