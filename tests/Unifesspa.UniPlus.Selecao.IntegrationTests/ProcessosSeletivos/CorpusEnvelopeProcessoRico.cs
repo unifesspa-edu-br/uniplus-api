@@ -42,11 +42,9 @@ internal static class CorpusEnvelopeProcessoRico
     /// <param name="variante">Ver <see cref="EtapaId"/> — só distingue processos no mesmo Postgres entre testes de persistência.</param>
     /// <param name="permutar">Inverte a ordem de ENTRADA das coleções não ordenadas — nunca o conteúdo.</param>
     /// <param name="comArvoreSatisfacao">
-    /// Opt-in: acrescenta a árvore de satisfação de documentos exigidos (<see cref="ArvoreSatisfacaoRica"/>).
-    /// Fica fora por padrão porque as golden fixtures (<c>envelope-rico.json</c>) e os testes de
-    /// round-trip congelam a forma de HOJE do corpus rico — sem árvore, <c>documentosExigidos.exigencias</c>
-    /// e <c>arvoreSatisfacao</c> vazios. Populá-la incondicionalmente mudaria os bytes desse envelope de
-    /// referência para todo consumidor de <see cref="ProcessoRico"/>, não só quem testa a permutação.
+    /// Acrescenta a árvore de satisfação dos documentos exigidos. É opcional porque os arquivos de
+    /// referência do envelope rico (<c>envelope-rico.json</c>) e os testes de ida e volta esperam o
+    /// corpus sem ela: incluí-la sempre alteraria o envelope de todos os testes que usam <see cref="ProcessoRico"/>.
     /// </param>
     /// <param name="tiposDeDecisaoDaFaseFinal">Os tipos de decisão que a fase de resultado final declara; ausentes por padrão.</param>
     /// <param name="regraDeHomologacao">A regra de homologação das inscrições da fase de resultado preliminar; a do corpus quando ausente.</param>
