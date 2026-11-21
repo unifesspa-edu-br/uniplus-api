@@ -15216,6 +15216,38 @@
         }
       }
     },
+    "/api/configuracao/vocabularios/tipos-de-decisao": {
+      "get": {
+        "tags": [
+          "Vocabularios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.codigo-tipo-de-decisao.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TipoMotivoDeDecisao"
+                  }
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/configuracao/vocabularios/fases-canonicas": {
       "get": {
         "tags": [
