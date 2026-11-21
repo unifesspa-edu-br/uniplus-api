@@ -317,14 +317,13 @@ public sealed class DefinirCronogramaFasesRegraDeHomologacaoTests
         RegraRecursoFaseInput recurso = RecursoAncoradoNaClassificacao() with
         {
             PrazoValor = 0m,
-            SuspensividadePrimeiraInstanciaValor = -1m,
-            SuspensividadePrimeiraInstanciaUnidade = UnidadePrazo.Horas,
+            EfeitoSuspensivo = null,
         };
         Result resultado = await cenario.DefinirFasesAsync(Fase(cenario, Regra(resultado: null)) with { RegraRecurso = recurso });
 
         Recusas(resultado).Should().Equal(
-            ("fases[0].regraRecurso", "RegraRecursoFase.PrazoNaoPositivo"),
-            ("fases[0].regraRecurso", "RegraRecursoFase.SuspensividadeNaoPositiva"),
+            ("fases[0].regraRecurso.prazoValor", "RegraRecursoFase.PrazoNaoPositivo"),
+            ("fases[0].regraRecurso.efeitoSuspensivo", "RegraRecursoFase.EfeitoSuspensivoNaoDeclarado"),
             ($"{CampoDaRegra}.resultadoAtoCodigo", HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado));
     }
 

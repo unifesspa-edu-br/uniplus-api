@@ -139,13 +139,10 @@ internal static class ManifestoDeEditalSnapshotsECronograma
             [("FaseCronogramaId", "FK interna.")]),
 
         [typeof(ParametrosRegraPrazoRecurso)] = (
-            [
-                "PrazoValor", "PrazoUnidade",
-                "SuspensividadePrimeiraInstanciaValor", "SuspensividadePrimeiraInstanciaUnidade",
-                "AdmiteInstanciaSuperior",
-                "SuspensividadeSegundaInstanciaValor", "SuspensividadeSegundaInstanciaUnidade",
-            ],
+            ["PrazoDeInterposicao", "AdmiteInstanciaSuperior", "PrazoDaSegundaInstancia", "EfeitoSuspensivo", "GuardaDaVaga"],
             []),
+
+        [typeof(PrazoDoRecurso)] = (["Valor", "Unidade"], []),
 
         // Conformidade legal (Story #853) — não pende de ConfiguracaoPublicada (não é reposta no
         // agregado vivo); alcançada a partir de EnvelopeReidratado.Conformidade, semeada

@@ -93,7 +93,7 @@
         },
         "regraRecurso": {
           "title": "Regra de recurso",
-          "description": "Prazo e efeito suspensivo do recurso. A presença desta regra é o que faz a fase admitir recurso.",
+          "description": "Prazos, efeito suspensivo e guarda da vaga do recurso. A presença desta regra é o que faz a fase admitir recurso.",
           "$ref": "#/$defs/regraRecurso"
         },
         "tiposDeDecisao": {
@@ -119,7 +119,7 @@
     },
     "regraRecurso": {
       "title": "Regra de recurso",
-      "description": "Regra do catálogo que define o prazo de interposição do recurso, a âncora dele e o efeito suspensivo.",
+      "description": "Regra do catálogo que define o prazo de interposição do recurso, o evento que inicia o prazo, o efeito suspensivo e a guarda da vaga.",
       "type": "object",
       "allOf": [
         {

@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
+using System.Collections.Frozen;
+
 using Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
@@ -35,7 +37,7 @@ public sealed class RecursoDaEtapa : EntityBase
     /// <summary>Referência simbólica à regra de prazo no catálogo institucional.</summary>
     public ReferenciaRegra Regra { get; private set; } = null!;
 
-    /// <summary>Prazo de interposição e suspensividade, como o catálogo os tipa.</summary>
+    /// <summary>Os prazos, o efeito suspensivo da 1ª instância e a guarda da vaga já conferidos.</summary>
     public ParametrosRegraPrazoRecurso Parametros { get; private set; } = null!;
 
     /// <summary>
@@ -50,27 +52,25 @@ public sealed class RecursoDaEtapa : EntityBase
     private RecursoDaEtapa() { }
 
     /// <summary>
-    /// Cria a janela recursal. Que a regra exista no catálogo é I/O — Application (ADR-0042);
-    /// que o produto âncora pertença à etapa e seja preliminar é conferido pela etapa, que é
-    /// quem enxerga os dois lados.
+    /// Cria a configuração do recurso da etapa. Que a regra exista no catálogo é I/O, de Application (ADR-0042); que a publicação de referência pertença à
+    /// etapa e seja preliminar é conferido pela etapa, que é quem enxerga os dois lados. Cada recusa de parâmetro traz o campo
+    /// relativo ao recurso.
     /// </summary>
     public static Result<RecursoDaEtapa> Criar(
         AncoraDoRecurso ancora,
         ReferenciaRegra regra,
-        ParametrosRegraPrazoRecurso parametros,
+        ParametrosDeclaradosDoRecurso declarados,
         Guid produtoAncoraId,
         ProcedimentosDeRecurso? procedimentos = null)
     {
         ArgumentNullException.ThrowIfNull(regra);
-        ArgumentNullException.ThrowIfNull(parametros);
+        ArgumentNullException.ThrowIfNull(declarados);
 
-        List<FieldError> erros = Validar(ancora, regra, parametros);
-        if (erros.Count > 0)
-        {
-            return Result<RecursoDaEtapa>.ValidationFailure(erros);
-        }
-
-        return Result<RecursoDaEtapa>.Success(Novo(ancora, regra, parametros, produtoAncoraId, procedimentos));
+        (ParametrosRegraPrazoRecurso? conferidos, IReadOnlyList<RecusaDosParametrosDoRecurso> recusas) = declarados.Conferir();
+        List<FieldError> erros = Validar(ancora, regra, recusas);
+        return conferidos is null || erros.Count > 0
+            ? Result<RecursoDaEtapa>.ValidationFailure(erros)
+            : Result<RecursoDaEtapa>.Success(Novo(ancora, regra, conferidos, produtoAncoraId, procedimentos));
     }
 
     private static RecursoDaEtapa Novo(AncoraDoRecurso ancora, ReferenciaRegra regra,
@@ -83,13 +83,13 @@ public sealed class RecursoDaEtapa : EntityBase
             Procedimentos = procedimentos ?? ProcedimentosDeRecurso.Nenhum,
         };
 
-    private static List<FieldError> Validar(AncoraDoRecurso ancora, ReferenciaRegra regra, ParametrosRegraPrazoRecurso parametros)
+    private static List<FieldError> Validar(
+        AncoraDoRecurso ancora, ReferenciaRegra regra, IReadOnlyList<RecusaDosParametrosDoRecurso> recusas)
     {
         List<FieldError> erros = [];
         AdicionarRecusa(erros, "ancora", ValidarAncora(ancora));
         AdicionarRecusa(erros, null, ValidarRegra(regra));
-        erros.AddRange(ValidacaoDosParametrosDoRecurso.Validar(parametros)
-            .Select(static recusa => new FieldError(null, ErroDosParametros(recusa))));
+        erros.AddRange(recusas.Select(static recusa => new FieldError(recusa.Campo, ErroDosParametros(recusa))));
         return erros;
     }
 
@@ -111,22 +111,24 @@ public sealed class RecursoDaEtapa : EntityBase
             "RecursoDaEtapa.RegraCatalogoInvalida",
             "A regra indicada não permite contar o prazo de recurso a partir de uma publicação.");
 
-    /// <summary>
-    /// Traduz o motivo da recusa no código de erro desta entidade — literal, para que a
-    /// cobertura do registro de erros o alcance.
-    /// </summary>
-    private static DomainError ErroDosParametros(RecusaDosParametrosDoRecurso recusa) => recusa.Motivo switch
-    {
-        MotivoDaRecusaDosParametros.PrazoNaoPositivo => new("RecursoDaEtapa.PrazoNaoPositivo", recusa.Mensagem),
-        MotivoDaRecusaDosParametros.PrazoEmDiasCorridos => new("RecursoDaEtapa.PrazoEmDiasCorridos", recusa.Mensagem),
-        MotivoDaRecusaDosParametros.PrazoSemUnidadeDeclaravel => new("RecursoDaEtapa.PrazoSemUnidadeDeclaravel", recusa.Mensagem),
-        MotivoDaRecusaDosParametros.PrazoEmFracaoDeDiaUtil => new("RecursoDaEtapa.PrazoEmFracaoDeDiaUtil", recusa.Mensagem),
-        MotivoDaRecusaDosParametros.SuspensividadeNaoPositiva => new("RecursoDaEtapa.SuspensividadeNaoPositiva", recusa.Mensagem),
-        MotivoDaRecusaDosParametros.SuspensividadeUnidadeNaoDeclaravel => new("RecursoDaEtapa.SuspensividadeUnidadeNaoDeclaravel", recusa.Mensagem),
-        MotivoDaRecusaDosParametros.SuspensividadeIncompleta => new("RecursoDaEtapa.SuspensividadeIncompleta", recusa.Mensagem),
-        MotivoDaRecusaDosParametros.SuspensividadeSuperiorSemInstanciaSuperior => new("RecursoDaEtapa.SuspensividadeSuperiorSemInstanciaSuperior", recusa.Mensagem),
-        _ => throw new ArgumentOutOfRangeException(nameof(recusa), recusa.Motivo, "Motivo de recusa desconhecido."),
-    };
+    // Os códigos são literais, e não montados a partir do motivo: é assim que o registro de erros enxerga cada um, porque um código
+    // interpolado nunca apareceria na varredura, e um erro sem registro vira 500 em vez de 422.
+    private static readonly FrozenDictionary<MotivoDaRecusaDosParametros, string> CodigosDosParametros =
+        new Dictionary<MotivoDaRecusaDosParametros, string>
+        {
+            [MotivoDaRecusaDosParametros.PrazoNaoPositivo] = "RecursoDaEtapa.PrazoNaoPositivo",
+            [MotivoDaRecusaDosParametros.PrazoEmDiasCorridos] = "RecursoDaEtapa.PrazoEmDiasCorridos",
+            [MotivoDaRecusaDosParametros.PrazoSemUnidadeDeclaravel] = "RecursoDaEtapa.PrazoSemUnidadeDeclaravel",
+            [MotivoDaRecusaDosParametros.PrazoEmFracaoDeDiaUtil] = "RecursoDaEtapa.PrazoEmFracaoDeDiaUtil",
+            [MotivoDaRecusaDosParametros.EfeitoSuspensivoNaoDeclarado] = "RecursoDaEtapa.EfeitoSuspensivoNaoDeclarado",
+            [MotivoDaRecusaDosParametros.GuardaDaVagaNaoDeclaravel] = "RecursoDaEtapa.GuardaDaVagaNaoDeclaravel",
+            [MotivoDaRecusaDosParametros.PrazoSegundaInstanciaNaoDeclarado] = "RecursoDaEtapa.PrazoSegundaInstanciaNaoDeclarado",
+            [MotivoDaRecusaDosParametros.PrazoSegundaInstanciaSemInstanciaSuperior] = "RecursoDaEtapa.PrazoSegundaInstanciaSemInstanciaSuperior",
+            [MotivoDaRecusaDosParametros.NaoGuardaComInstanciaSuperior] = "RecursoDaEtapa.NaoGuardaComInstanciaSuperior",
+        }.ToFrozenDictionary();
+
+    private static DomainError ErroDosParametros(RecusaDosParametrosDoRecurso recusa) =>
+        new(CodigosDosParametros[recusa.Motivo], recusa.Mensagem);
 
     /// <summary>
     /// Reidrata a janela preservando o <see cref="EntityBase.Id"/> congelado, sob as mesmas
@@ -152,15 +154,15 @@ public sealed class RecursoDaEtapa : EntityBase
         Guid id,
         AncoraDoRecurso ancora,
         ReferenciaRegra regra,
-        ParametrosRegraPrazoRecurso parametros,
+        ParametrosDeclaradosDoRecurso declarados,
         Guid produtoAncoraId,
         ProcedimentosDeRecurso procedimentos)
     {
         ArgumentNullException.ThrowIfNull(regra);
-        ArgumentNullException.ThrowIfNull(parametros);
+        ArgumentNullException.ThrowIfNull(declarados);
         ArgumentNullException.ThrowIfNull(procedimentos);
         ExigirId(id);
-        Result<RecursoDaEtapa> validada = Criar(ancora, regra, parametros, produtoAncoraId, procedimentos);
+        Result<RecursoDaEtapa> validada = Criar(ancora, regra, declarados, produtoAncoraId, procedimentos);
         if (validada.IsFailure)
         {
             return validada;

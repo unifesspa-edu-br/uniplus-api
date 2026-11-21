@@ -7,30 +7,26 @@ using FluentValidation.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Validators.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// UNI-REQ-0081: o valor congelado do par de suspensividade é sempre estritamente
-/// positivo — zero ou negativo tornaria o prazo inutilizável desde a publicação
-/// (imutável). Ausência (null) já é a forma correta de desativar uma instância.
+/// O validator confere só a forma da regra de recurso: o que cabe na coluna. Magnitude, unidade, efeito suspensivo, guarda da
+/// vaga e prazo da 2ª instância são recusas do domínio, que acumula todas (ADR-0125).
 /// </summary>
 public sealed class DefinirCronogramaFasesCommandValidatorTests
 {
     private static RegraRecursoFaseInput RegraRecurso(
-        decimal? susp1Valor = null,
-        UnidadePrazo? susp1Unidade = null,
-        decimal? susp2Valor = null,
-        UnidadePrazo? susp2Unidade = null) => new(
+        decimal? prazoValor = 48m,
+        decimal? prazoSegundaInstanciaValor = null) => new(
             RegraCodigo: RegraPrazoRecursoCodigo.AncoradoEmAto,
             RegraVersao: "v1",
-            PrazoValor: 48m,
-            PrazoUnidade: UnidadePrazo.Horas,
+            PrazoValor: prazoValor,
+            PrazoUnidade: "horas",
             AtoAncoraCodigo: "RESULTADO_CLASSIFICACAO",
-            SuspensividadePrimeiraInstanciaValor: susp1Valor,
-            SuspensividadePrimeiraInstanciaUnidade: susp1Unidade,
-            AdmiteInstanciaSuperior: susp2Valor is not null,
-            SuspensividadeSegundaInstanciaValor: susp2Valor,
-            SuspensividadeSegundaInstanciaUnidade: susp2Unidade);
+            AdmiteInstanciaSuperior: prazoSegundaInstanciaValor is not null,
+            PrazoSegundaInstanciaValor: prazoSegundaInstanciaValor,
+            PrazoSegundaInstanciaUnidade: prazoSegundaInstanciaValor is null ? null : "horas",
+            EfeitoSuspensivo: "semEfeitoSuspensivo",
+            GuardaDaVaga: null);
 
     private static FaseCronogramaInput FaseValida(RegraRecursoFaseInput? regraRecurso = null) => new(
         Ordem: 1,
@@ -72,15 +68,7 @@ public sealed class DefinirCronogramaFasesCommandValidatorTests
     [InlineData("categorias", "Declare as categorias de documento julgadas pela banca")]
     public void Rejeita_ColecaoNula(string colecao, string recusaEsperada)
     {
-        FaseCronogramaInput fase = colecao switch
-        {
-            "produtos" => FaseValida() with { Produtos = null! },
-            "bancas" => FaseValida() with { BancasRequeridas = null! },
-            _ => FaseValida() with
-            {
-                BancasRequeridas = [new BancaRequeridaInput(Guid.CreateVersion7(), null!)],
-            },
-        };
+        FaseCronogramaInput fase = FaseComColecaoNula(colecao);
 
         ValidationResult resultado = new DefinirCronogramaFasesCommandValidator()
             .Validate(new DefinirCronogramaFasesCommand(Guid.CreateVersion7(), [fase]));
@@ -88,6 +76,13 @@ public sealed class DefinirCronogramaFasesCommandValidatorTests
         resultado.IsValid.Should().BeFalse();
         resultado.Errors.Should().Contain(e => e.ErrorMessage.StartsWith(recusaEsperada, StringComparison.Ordinal));
     }
+
+    private static FaseCronogramaInput FaseComColecaoNula(string colecao) => colecao switch
+    {
+        "produtos" => FaseValida() with { Produtos = null! },
+        "bancas" => FaseValida() with { BancasRequeridas = null! },
+        _ => FaseValida() with { BancasRequeridas = [new BancaRequeridaInput(Guid.CreateVersion7(), null!)] },
+    };
 
     /// <summary>
     /// Item nulo dentro das coleções aninhadas passa incólume pelo <c>ChildRules</c>, e o
@@ -110,51 +105,50 @@ public sealed class DefinirCronogramaFasesCommandValidatorTests
         resultado.Errors.Should().Contain(e => e.ErrorMessage.Contains("não pode ser nulo", StringComparison.Ordinal));
     }
 
-    [Fact(DisplayName = "Aceita suspensividade ausente (null) — é a forma de desativar uma instância")]
-    public void Aceita_SuspensividadeAusente()
+    [Fact(DisplayName = "Aceita a regra de recurso com os prazos dentro da precisão da coluna")]
+    public void Aceita_PrazosDentroDaPrecisao()
     {
         ValidationResult resultado = new DefinirCronogramaFasesCommandValidator()
-            .Validate(Comando(RegraRecurso()));
+            .Validate(Comando(RegraRecurso(prazoValor: 48.1234m, prazoSegundaInstanciaValor: 3m)));
 
         resultado.IsValid.Should().BeTrue(string.Join("; ", resultado.Errors));
     }
 
-    [Fact(DisplayName = "Aceita suspensividade positiva")]
-    public void Aceita_SuspensividadePositiva()
+    [Theory(DisplayName = "Recusa o prazo com mais de quatro casas decimais, que a coluna arredondaria em silêncio")]
+    [InlineData(48.12345, null)]
+    [InlineData(48, 3.00001)]
+    public void Recusa_PrazoComMaisDeQuatroCasas(double prazo, double? segundaInstancia)
     {
         ValidationResult resultado = new DefinirCronogramaFasesCommandValidator()
-            .Validate(Comando(RegraRecurso(susp1Valor: 5m, susp1Unidade: UnidadePrazo.Dias)));
+            .Validate(Comando(RegraRecurso((decimal)prazo, (decimal?)segundaInstancia)));
 
-        resultado.IsValid.Should().BeTrue(string.Join("; ", resultado.Errors));
+        resultado.IsValid.Should().BeFalse();
+        resultado.Errors.Should().ContainSingle().Which.ErrorMessage.Should().Contain("4 casas decimais");
     }
 
-    [Theory(DisplayName = "Validator passa com suspensividade não positiva ou pela metade — a recusa é de RegraRecursoFase.Criar, fonte única de validação (ADR-0125)")]
-    [InlineData(0, UnidadePrazo.Dias)]
-    [InlineData(-1, UnidadePrazo.Dias)]
-    [InlineData(5, UnidadePrazo.Nenhuma)]
-    public void Aceita_SuspensividadeInvalidaNoValidator(int valor, UnidadePrazo unidade)
+    [Theory(DisplayName = "Validator passa com prazo ausente, zero ou negativo: a recusa é do domínio, fonte única de validação (ADR-0125)")]
+    [InlineData(null)]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void Aceita_PrazoNaoPositivoNoValidator(int? valor)
     {
         ValidationResult resultado = new DefinirCronogramaFasesCommandValidator()
-            .Validate(Comando(RegraRecurso(susp1Valor: valor, susp1Unidade: unidade)));
+            .Validate(Comando(RegraRecurso(prazoValor: valor)));
 
         resultado.IsValid.Should().BeTrue(
             "magnitude e unidade declarável são invariantes do agregado; repeti-las aqui devolveria a resposta "
-            + "genérica do validator no lugar do erro de negócio nomeado — a cobertura vive em RegraRecursoFaseTests");
+            + "genérica do validator no lugar do erro de negócio nomeado");
     }
 
-    [Fact(DisplayName = "Validator passa com janela invertida — a rejeição é do agregado (FaseCronograma.Criar, ADR-0125), para poder acumular com outras violações da mesma fase")]
-    public void Aceita_JanelaInvertidaNoValidator()
+    [Fact(DisplayName = "Validator passa com o fim da fase antes do início — a rejeição é do agregado (FaseCronograma.Criar, ADR-0125), para poder acumular com outras violações da mesma fase")]
+    public void Aceita_FimAntesDoInicioNoValidator()
     {
-        FaseCronogramaInput fase = new(
-            Ordem: 1,
-            FaseCanonicaId: Guid.CreateVersion7(),
-            Inicio: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            Fim: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-            Produtos: [],
-            FaseConcluinteCodigo: null,
-            EmiteParecerIndividual: false,
-            BancasRequeridas: [],
-            RegraRecurso: null);
+        FaseCronogramaInput fase = FaseValida() with
+        {
+            Inicio = new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
+            Fim = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            Produtos = [],
+        };
         DefinirCronogramaFasesCommand command = new(Guid.CreateVersion7(), [fase]);
 
         ValidationResult resultado = new DefinirCronogramaFasesCommandValidator().Validate(command);

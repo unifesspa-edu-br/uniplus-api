@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Seed;
 /// Cobertura da substituição da regra de prazo de recurso (#854): a antiga
 /// <c>RECURSO-MULTI-INSTANCIA</c> — que atribuía ao Uni+ a gestão de uma segunda
 /// instância inexistente — dá lugar a <c>RECURSO-PRAZO-ANCORADO-EM-ATO</c>, que
-/// preserva o período de suspensividade (por instância) e inicia o prazo em um ato
+/// declara o efeito suspensivo, a guarda da vaga e o prazo da 2ª instância e inicia o prazo em um ato
 /// publicado. Asserções sobre a fonte única do seed (<see cref="RegraCatalogoSeed.Itens"/>),
 /// sem tocar o banco — a materialização é coberta por <see cref="RegraCatalogoSeedTests"/>.
 /// </summary>
@@ -25,7 +25,7 @@ public sealed class RegraCatalogoSubstituicaoRecursoTests
 
     /// <summary>Hash da regra vigente: amarra a definição do seed ao hash gravado.</summary>
     private const string HashRegraNova =
-        "595a2d755e2f9ded25793c6f433964f36f4b9d314ef3a1183e45f57ed4d5bd02";
+        "7bf7efd0ce76abe370879d800b980b7894eadf27d2a96f22eba6066d6aa24206";
 
     private static RegraCatalogoSeedItem RegraNova() =>
         RegraCatalogoSeed.Itens.Single(i => i.Codigo == CodigoNovo);
@@ -57,7 +57,7 @@ public sealed class RegraCatalogoSubstituicaoRecursoTests
     public void RegraCatalogoSeed_RecursoPrazo_InvariantesPreservadas()
     {
         RegraCatalogoSeedItem nova = RegraNova();
-        nova.InvariantesJson.Should().Contain("o prazo começa no instante da publicação do ato");
+        nova.InvariantesJson.Should().Contain("começa no instante da publicação do ato");
         nova.InvariantesJson.Should().Contain("publicação de um produto preliminar da própria fase");
     }
 
@@ -78,14 +78,14 @@ public sealed class RegraCatalogoSubstituicaoRecursoTests
         conteudo.Should().NotContainEquivalentOf(marca);
     }
 
-    [Theory(DisplayName = "O documento admite a ausência dos parâmetros de suspensividade")]
-    [InlineData("suspensividadePrimeiraInstanciaValor", "suspensividadePrimeiraInstanciaUnidade")]
-    [InlineData("suspensividadeSegundaInstanciaValor", "suspensividadeSegundaInstanciaUnidade")]
-    public void EsquemaDoDocumento_Suspensividade_DeclaraCamposOpcionais(string valor, string unidade)
+    [Theory(DisplayName = "O documento declara os parâmetros do recurso como opcionais na forma: o domínio confere cada um")]
+    [InlineData("prazoSegundaInstanciaValor", "prazoSegundaInstanciaUnidade")]
+    [InlineData("efeitoSuspensivo", "guardaDaVaga")]
+    public void EsquemaDoDocumento_ParametrosDoRecurso_DeclaraCamposOpcionais(string primeiro, string segundo)
     {
         JsonNode recurso = ArquivosDoEsquema.DoAssembly().PorNome["comuns.schema.json"]["$defs"]!["propriedadesDoRecurso"]!;
-        recurso["properties"]![valor].Should().NotBeNull();
-        recurso["properties"]![unidade].Should().NotBeNull();
+        recurso["properties"]![primeiro].Should().NotBeNull();
+        recurso["properties"]![segundo].Should().NotBeNull();
         recurso["required"].Should().BeNull();
     }
 

@@ -63,14 +63,7 @@ internal static class HomologacaoDasInscricoesDeTeste
     /// <summary>A janela de recurso ancorada no produto dado, com o procedimento da decisão de homologação.</summary>
     internal static RegraRecursoFase RegraDeRecurso(Guid produtoAncoraId) => RegraRecursoFase.Criar(
         ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('d', 64)),
-        new ParametrosRegraPrazoRecurso(
-            PrazoValor: 2m,
-            PrazoUnidade: UnidadePrazo.DiasUteis,
-            SuspensividadePrimeiraInstanciaValor: null,
-            SuspensividadePrimeiraInstanciaUnidade: null,
-            AdmiteInstanciaSuperior: false,
-            SuspensividadeSegundaInstanciaValor: null,
-            SuspensividadeSegundaInstanciaUnidade: null),
+        ParametrosDoRecursoDeTeste.Declarados(2m, UnidadePrazo.DiasUteis),
         produtoAncoraId,
         ProcedimentosDaHomologacao()).Value!;
 

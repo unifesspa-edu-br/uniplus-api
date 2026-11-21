@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
@@ -22,7 +23,7 @@ public sealed class AncoraDoRecursoDaFaseTests
 
     private static RegraRecursoFase Recurso(Guid produtoAncoraId) => RegraRecursoFase.Criar(
         ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)),
-        new ParametrosRegraPrazoRecurso(48m, UnidadePrazo.Horas, null, null, false, null, null),
+        ParametrosDoRecursoDeTeste.Declarados(48m, UnidadePrazo.Horas),
         produtoAncoraId).Value!;
 
     private static ProdutoDaFase Preliminar(string ato) => ProdutoDaFase.Criar(ato, PapelProdutoFase.Preliminar);

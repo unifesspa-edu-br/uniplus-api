@@ -29,12 +29,12 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// mantendo content-addressability por construção.
 /// </para>
 /// <para>
-/// A linha <c>SeedId(18)</c> (<c>RECURSO-PRAZO-ANCORADO-EM-ATO</c>) substituiu a
-/// antiga <c>RECURSO-MULTI-INSTANCIA</c>, que conflacionava a gestão de uma
-/// segunda instância — inexistente no Uni+ — com o período de suspensividade.
-/// A ADR-0112 fixa a fronteira dessa correção: o seed é corrigível por
-/// substituição enquanto nenhuma configuração congelada o referenciar; a partir
-/// do primeiro congelamento, os registros anteriores são preservados (congelamento dos parâmetros na publicação, UNI-REQ-0019).
+/// A linha <c>SeedId(18)</c> (<c>RECURSO-PRAZO-ANCORADO-EM-ATO</c>) descreve o prazo de recurso
+/// contado de um ato publicado: a 1ª instância tem efeito suspensivo escolhido pelo edital, e a
+/// 2ª instância corre no Uni+, com prazo próprio e sempre suspensiva. A ADR-0112 fixa a fronteira
+/// da correção: o seed é corrigível por substituição enquanto nenhuma configuração congelada o
+/// referenciar; a partir do primeiro congelamento, os registros anteriores são preservados
+/// (congelamento dos parâmetros na publicação, UNI-REQ-0019).
 /// </para>
 /// <para>
 /// <b>Precondição (ADR-0112):</b> substituir ou remover uma entrada deste seed exige
@@ -167,13 +167,13 @@ public static class RegraCatalogoSeed
             """,
             "Portaria MEC 18/2012 art. 11, parágrafo único (red. PN 2.027/2023) — reserva limitada às vagas da oferta e prioridade do inciso III (LB) sobre o inciso IV (LI); art. 10 II (mínimo 50%, piso)"),
 
-        // regra_prazo_recurso — prazo do recurso contado de ato e período de suspensividade por instância
+        // regra_prazo_recurso — prazo do recurso contado de ato, efeito suspensivo da 1ª instância, guarda da vaga e 2ª instância
         new(SeedId(18), "RECURSO-PRAZO-ANCORADO-EM-ATO", VersaoV1, TipoRegra.RegraPrazoRecurso,
             "{}",
             """
-            ["o Uni+ gere apenas a 1ª instância — o julgamento em instância superior (administrativa ou judicial) corre FORA do sistema; a sua existência e o seu desfecho são REGISTRADOS como ato publicado","a suspensividade é configurável por fase e por grau: sem prazo de suspensividade, a pendência não impede atos irreversíveis","o período de suspensividade termina no julgamento ou no fim do prazo, o que ocorrer primeiro — recurso sem julgamento não impede o andamento do certame indefinidamente","interposição só é aceita durante o período da fase de recurso","não cabe recurso contra resultado definitivo","o prazo começa no instante da publicação do ato: se a publicação atrasa, o prazo acompanha o atraso, sem retificação","o evento que inicia o prazo é a publicação de um produto preliminar da própria fase, identificado pela publicação e não pelo código do tipo de ato — a publicação do mesmo tipo por outra fase do cronograma não inicia o prazo desta","o evento que inicia o prazo nunca é um ato que registra a configuração da versão publicada","o prazo de interposição corre exclusivamente em dia útil e admite apenas dias úteis em valor inteiro ou horas — dias corridos são recusados, e fração de dia útil também, cada um com causa própria; nunca aproximado em silêncio","contagem sobre dia útil depende de duas declarações do processo, o calendário de dias úteis vigente da localidade regente e a convenção de contagem — vale para todo prazo de interposição, nas duas unidades, e para a suspensividade em dias úteis","a suspensividade em horas ou em dias corridos não depende de calendário nem de convenção de contagem — conta todos os dias, sem distinguir úteis de não úteis","julgamento e retificação são novos fatos e não sobrescrevem os registros anteriores"]
+            ["o recurso corre em duas instâncias no Uni+; a 2ª instância existe quando o recurso admite instância superior, e o julgamento do recurso fica registrado como ato publicado","o efeito suspensivo do recurso na 1ª instância vem da escolha do edital, e a escolha é obrigatória: o edital declara explicitamente que não há efeito suspensivo, e a falta da declaração é recusada","o recurso na 2ª instância sempre tem efeito suspensivo, sem configuração","a guarda da vaga em disputa é uma declaração separada do efeito suspensivo: a vaga fica guardada até o resultado definitivo ou não fica guardada, e, sem declaração, vale guardar até o resultado definitivo","com instância superior, o edital não pode declarar que a vaga não fica guardada","interposição só é aceita durante o período da fase de recurso","não cabe recurso contra resultado definitivo","o prazo de interposição na 1ª instância começa no instante da publicação do ato: se a publicação atrasa, o prazo acompanha o atraso, sem retificação","o prazo da 2ª instância é próprio, é declarado quando o recurso admite instância superior, é recusado quando não admite, e começa na publicação do indeferimento ao candidato","o evento que inicia o prazo é a publicação de um produto preliminar da própria fase, identificado pela publicação e não pelo código do tipo de ato — a publicação do mesmo tipo por outra fase do cronograma não inicia o prazo desta","o evento que inicia o prazo nunca é um ato que registra a configuração da versão publicada","os prazos correm exclusivamente em dia útil e admitem apenas dias úteis em valor inteiro ou horas — dias corridos são recusados, e fração de dia útil também, cada um com causa própria; nunca aproximado em silêncio","contagem sobre dia útil depende de duas declarações do processo, o calendário de dias úteis vigente da localidade regente e a convenção de contagem — vale para todo prazo de recurso, nas duas unidades e nas duas instâncias","julgamento e retificação são novos fatos e não sobrescrevem os registros anteriores"]
             """,
-            "Lei 9.784/1999 art. 56 (cabimento do recurso administrativo) e art. 61 (efeito suspensivo por decisão fundamentada); prazo configurável por edital"),
+            "Lei 9.784/1999 art. 56 (cabimento do recurso administrativo) e art. 61 (efeito suspensivo por decisão fundamentada); prazo, efeito suspensivo e guarda da vaga configuráveis por edital"),
 
         // criterio_remanejamento — sequência legal de redirecionamento das cotas federais
         new(SeedId(19), "REMANEJ-CASCATA-LEI-12711", VersaoV1, TipoRegra.CriterioRemanejamento,

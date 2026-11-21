@@ -66,18 +66,21 @@ internal static class LeituraDosRecursosDaEtapa
             return leitor.Malformado<RecursoDaEtapa?>($"{pathRecurso}.ancora", "o recurso tem de declarar de que instante o prazo corre.");
         }
 
-        ParametrosRegraPrazoRecurso? parametros = LeituraDosPrazosDeRecurso.LerParametrosDePrazoDeRecurso(leitor, parametrosObjeto, $"{pathRecurso}.parametros");
+        ParametrosDeclaradosDoRecurso? parametros = LeituraDosPrazosDeRecurso.LerParametrosDePrazoDeRecurso(leitor, parametrosObjeto, $"{pathRecurso}.parametros");
         if (leitor.Falhou || parametros is null)
         {
             return null;
         }
 
-        return Montar(leitor, lido, parametros);
+        return Montar(leitor, lido, parametros, pathRecurso);
     }
 
-    private static RecursoDaEtapa? Montar(LeitorEnvelope leitor, RecursoLido lido, ParametrosRegraPrazoRecurso parametros)
+    private static RecursoDaEtapa? Montar(LeitorEnvelope leitor, RecursoLido lido, ParametrosDeclaradosDoRecurso parametros, string pathRecurso)
     {
-        Result<RecursoDaEtapa> recurso = RecursoDaEtapa.Reidratar(Guid.CreateVersion7(), lido.Ancora, lido.Regra, parametros, lido.AncoraId ?? Guid.Empty, lido.Procedimentos);
-        return recurso.IsFailure ? leitor.Propagar<RecursoDaEtapa?>(recurso.Errors) : recurso.Value;
+        Result<RecursoDaEtapa> recurso = RecursoDaEtapa.Reidratar(
+            Guid.CreateVersion7(), lido.Ancora, lido.Regra, parametros, lido.AncoraId ?? Guid.Empty, lido.Procedimentos);
+        return recurso.IsFailure
+            ? leitor.Propagar<RecursoDaEtapa?>([.. recurso.Errors.Select(erro => erro.NoCaminhoDe(pathRecurso))])
+            : recurso.Value;
     }
 }

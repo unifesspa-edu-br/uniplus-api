@@ -37,8 +37,8 @@ internal static class LeituraDaRegraDeRecursoDaFase
     private static ValorLido<RegraDeRecursoLida> RegraRecusada(
         FaseNoDocumento fase, RegraDeRecursoNoDocumento declarada, RecusaDaParte[] recusasDaRegra, IReadOnlyList<RecusaDaParte> procedimentos)
     {
-        RecusaDaParte[] parametros = [.. RegraRecursoFase.RecusasDosParametros(declarada.Prazo)
-            .Select(erro => Recusa(fase, FaseDeclarada.CampoDaRegraDeRecurso, FaseDeclarada.CampoDaRegraDeRecurso, erro))];
+        RecusaDaParte[] parametros = [.. RegraRecursoFase.RecusasDosParametros(declarada.Parametros)
+            .Select(erro => Recusa(fase, FaseDeclarada.CampoDaRegraDeRecurso, erro))];
         return new(RegraDeRecursoLida.Nenhuma, [.. recusasDaRegra, .. parametros, .. procedimentos]);
     }
 
@@ -54,9 +54,9 @@ internal static class LeituraDaRegraDeRecursoDaFase
         FaseNoDocumento fase, RegraDeRecursoNoDocumento declarada, RegraDoCatalogoCitada regra, IReadOnlyList<ProdutoDaFase> produtos, IReadOnlyList<(ProcedimentoDeRecursoDeclarado Item, int PosicaoNoDocumento)> procedimentos)
     {
         Guid ancora = produtos.FirstOrDefault(produto => EhOPreliminarAncora(produto, declarada))?.Id ?? Guid.Empty;
-        Result<RegraRecursoFase> criada = RegraRecursoFase.Criar(regra.Referencia, declarada.Prazo, ancora, ProcedimentosDeRecurso.De(procedimentos.Select(static par => par.Item)));
+        Result<RegraRecursoFase> criada = RegraRecursoFase.Criar(regra.Referencia, declarada.Parametros, ancora, ProcedimentosDeRecurso.De(procedimentos.Select(static par => par.Item)));
 
-        return criada.IsSuccess ? new(criada.Value, []) : new(null, [.. criada.Errors.Select(erro => Recusa(fase, FaseDeclarada.CampoDaRegraDeRecurso, FaseDeclarada.CampoDaRegraDeRecurso, erro.Error))]);
+        return criada.IsSuccess ? new(criada.Value, []) : new(null, [.. criada.Errors.Select(erro => Recusa(fase, FaseDeclarada.CampoDaRegraDeRecurso, erro))]);
     }
 
     // A âncora é um preliminar da própria fase: o mesmo ato pode ser publicado nos dois papéis, e o prazo conta do preliminar.
@@ -72,4 +72,7 @@ internal static class LeituraDaRegraDeRecursoDaFase
 
     private static RecusaDaParte Recusa(FaseNoDocumento fase, string parte, string campo, DomainError erro) =>
         new(parte, campo, fase.PosicaoNoDocumento, null, erro);
+
+    private static RecusaDaParte Recusa(FaseNoDocumento fase, string parte, FieldError erro) =>
+        Recusa(fase, parte, erro.NoCaminhoDe(parte).Field ?? parte, erro.Error);
 }

@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Selecao.API.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
@@ -38,7 +39,7 @@ public sealed class RecusaDeUnidadeNoPrazoDeInterposicaoProblemDetailsTests
     [Fact(DisplayName = "Dia corrido na interposição: 422 com title e detail que orientam dias úteis ou horas")]
     public void PrazoEmDiasCorridos_ProblemDetailsCompleto()
     {
-        Result<RegraRecursoFase> resultado = Criar(prazoUnidade: UnidadePrazo.Dias, prazoValor: 5m);
+        Result<RegraRecursoFase> resultado = Criar(UnidadePrazo.Dias, 5m);
 
         ProblemDetails problem = ProblemDetailsDe(resultado);
 
@@ -47,13 +48,13 @@ public sealed class RecusaDeUnidadeNoPrazoDeInterposicaoProblemDetailsTests
         problem.Type.Should().Be(BaseUriDeErros + "uniplus.selecao.configuracao_do_recurso_da_fase.prazo_em_dias_corridos");
         problem.Title.Should().Be("O prazo do recurso não aceita dias corridos");
         problem.Detail.Should().Be(
-            "O prazo de interposição deve ser informado em dias úteis ou horas; dias corridos não são aceitos.");
+            "O prazo de interposição deve ser informado em dias úteis ou em horas; dias corridos não são aceitos.");
     }
 
     [Fact(DisplayName = "Fração de dia útil: 422 com código próprio e detail que manda declarar em horas")]
     public void PrazoEmFracaoDeDiaUtil_ProblemDetailsCompleto()
     {
-        Result<RegraRecursoFase> resultado = Criar(prazoUnidade: UnidadePrazo.DiasUteis, prazoValor: 1.5m);
+        Result<RegraRecursoFase> resultado = Criar(UnidadePrazo.DiasUteis, 1.5m);
 
         ProblemDetails problem = ProblemDetailsDe(resultado);
 
@@ -68,52 +69,37 @@ public sealed class RecusaDeUnidadeNoPrazoDeInterposicaoProblemDetailsTests
     [Fact(DisplayName = "As duas recusas têm códigos distintos — remediação diferente não pode chegar com o mesmo type")]
     public void AsDuasRecusas_TemCodigosDistintos()
     {
-        ProblemDetails corrido = ProblemDetailsDe(Criar(prazoUnidade: UnidadePrazo.Dias, prazoValor: 5m));
-        ProblemDetails fracao = ProblemDetailsDe(Criar(prazoUnidade: UnidadePrazo.DiasUteis, prazoValor: 1.5m));
+        ProblemDetails corrido = ProblemDetailsDe(Criar(UnidadePrazo.Dias, 5m));
+        ProblemDetails fracao = ProblemDetailsDe(Criar(UnidadePrazo.DiasUteis, 1.5m));
 
         corrido.Extensions["code"].Should().NotBe(fracao.Extensions["code"]);
         corrido.Type.Should().NotBe(fracao.Type,
             "o type resolve numa página do catálogo público, e as duas páginas explicam saídas diferentes");
     }
 
-    [Theory(DisplayName = "Contraprova: suspensividade em dias úteis é aceita — é outro relógio, com outra regra")]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    [InlineData(true, true)]
-    public void SuspensividadeEmDiasUteis_NaoRecusa(bool primeiraEmDiasUteis, bool segundaEmDiasUteis)
+    [Fact(DisplayName = "Contraprova: o prazo da 2ª instância em dias úteis é aceito, e dia corrido nele é recusado no campo próprio")]
+    public void PrazoDaSegundaInstancia_AceitaDiasUteisERecusaDiasCorridos()
     {
-        Result<RegraRecursoFase> resultado = Criar(
-            susp1Unidade: primeiraEmDiasUteis ? UnidadePrazo.DiasUteis : UnidadePrazo.Dias,
-            susp2Unidade: segundaEmDiasUteis ? UnidadePrazo.DiasUteis : UnidadePrazo.Dias);
+        Result<RegraRecursoFase> aceito = CriarComSegundaInstancia(UnidadePrazo.DiasUteis);
+        Result<RegraRecursoFase> recusado = CriarComSegundaInstancia(UnidadePrazo.Dias);
 
-        resultado.IsSuccess.Should().BeTrue(
-            "a suspensividade admite as três unidades; o que a contagem em dia útil exige é a convenção "
-                + "declarada pelo processo, e essa é invariante da raiz, verificada ao gerar versão");
+        aceito.IsSuccess.Should().BeTrue();
+        recusado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be("RegraRecursoFase.PrazoEmDiasCorridos");
+        ProblemDetailsDe(recusado).Detail.Should().Contain("prazo da 2ª instância");
     }
 
-    private static Result<RegraRecursoFase> Criar(
-        UnidadePrazo prazoUnidade = UnidadePrazo.Horas,
-        decimal prazoValor = 48m,
-        UnidadePrazo? susp1Unidade = null,
-        UnidadePrazo? susp2Unidade = null)
-    {
-        ReferenciaRegra regra = ReferenciaRegra.De(
-            RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64));
+    private static Result<RegraRecursoFase> CriarComSegundaInstancia(UnidadePrazo unidade) =>
+        RegraRecursoFase.Criar(
+            ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)),
+            ParametrosDoRecursoDeTeste.Declarados(
+                2m, UnidadePrazo.DiasUteis, admiteInstanciaSuperior: true, segundaInstancia: new PrazoDoRecurso(3m, unidade)),
+            Guid.CreateVersion7());
 
-        ParametrosRegraPrazoRecurso parametros = new(
-            PrazoValor: prazoValor,
-            PrazoUnidade: prazoUnidade,
-            SuspensividadePrimeiraInstanciaValor: susp1Unidade is null ? null : 5m,
-            SuspensividadePrimeiraInstanciaUnidade: susp1Unidade,
-            AdmiteInstanciaSuperior: susp2Unidade is not null,
-            SuspensividadeSegundaInstanciaValor: susp2Unidade is null ? null : 5m,
-            SuspensividadeSegundaInstanciaUnidade: susp2Unidade);
-
-        // Âncora qualquer: as recusas exercitadas aqui são as invariantes puras da regra, e
-        // nenhuma delas consulta o produto — que ele seja preliminar da fase é conferido por
-        // FaseCronograma.Criar.
-        return RegraRecursoFase.Criar(regra, parametros, Guid.CreateVersion7());
-    }
+    private static Result<RegraRecursoFase> Criar(UnidadePrazo prazoUnidade, decimal prazoValor) =>
+        RegraRecursoFase.Criar(
+            ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)),
+            ParametrosDoRecursoDeTeste.Declarados(prazoValor, prazoUnidade),
+            Guid.CreateVersion7());
 
     private static ProblemDetails ProblemDetailsDe(Result<RegraRecursoFase> resultado)
     {

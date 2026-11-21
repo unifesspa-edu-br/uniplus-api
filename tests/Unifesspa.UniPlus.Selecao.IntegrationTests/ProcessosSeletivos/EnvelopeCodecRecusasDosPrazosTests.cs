@@ -16,19 +16,18 @@ public sealed class EnvelopeCodecRecusasDosPrazosTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void Reidratar_PrazoESuspensividadeInvalidos_Acumula(bool etapa)
+    public void Reidratar_PrazoEEfeitoSuspensivoInvalidos_Acumula(bool etapa)
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
         {
             JsonObject parametros = Parametros(envelope, etapa);
             parametros["prazoValor"] = "0.0000";
-            parametros["suspensividadePrimeiraInstanciaValor"] = "1.0000";
-            parametros["suspensividadePrimeiraInstanciaUnidade"] = null;
+            parametros["efeitoSuspensivo"] = "talvez";
         });
 
         string entidade = etapa ? "RecursoDaEtapa" : "RegraRecursoFase";
         resultado.Errors.Select(static erro => erro.Error.Code).Should().Equal(
-            $"{entidade}.PrazoNaoPositivo", $"{entidade}.SuspensividadeIncompleta");
+            $"{entidade}.PrazoNaoPositivo", $"{entidade}.EfeitoSuspensivoNaoDeclarado");
     }
 
     private static JsonObject Parametros(JsonObject envelope, bool etapa) => etapa

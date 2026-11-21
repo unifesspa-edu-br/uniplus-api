@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.LeituraDoDocumento;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Prazos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
@@ -18,7 +19,7 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Leitu
 /// </summary>
 public sealed class SuspensaoDaContagemDePrazosPelaLeituraTests
 {
-    private static readonly ParametrosRegraPrazoRecurso EmDiasUteis = new(2m, UnidadePrazo.DiasUteis, null, null, false, null, null);
+    private static readonly ParametrosDeclaradosDoRecurso EmDiasUteis = ParametrosDoRecursoDeTeste.Declarados(2m, UnidadePrazo.DiasUteis);
 
     private static FaseNoDocumento ComRegraEmDiasUteis(string regraCodigo) =>
         Fase(0, "resultado", "RESULTADO").Publicando(Preliminar(0, AtoDoResultado)) with

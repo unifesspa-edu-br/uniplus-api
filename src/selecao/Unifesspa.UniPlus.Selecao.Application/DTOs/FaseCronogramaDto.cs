@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
 using Domain.Enums;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+
 /// <summary>Projeção de leitura de <c>ProdutoDaFase</c> — o que a fase publica e o papel de cada publicação.</summary>
 /// <param name="Papel">Token canônico UPPER_SNAKE (<c>PRELIMINAR</c>/<c>DEFINITIVO</c>), ou nulo quando o ato não é resultado.</param>
 public sealed record ProdutoDaFaseDto(Guid Id, string AtoCodigo, string? Papel);
@@ -25,14 +27,21 @@ public sealed record BancaRequeridaDto(
     IReadOnlyList<CategoriaJulgadaDto> RecorteDeCompetencia);
 
 /// <summary>Projeção de leitura de <c>ParametrosRegraPrazoRecurso</c> (Story #851).</summary>
+/// <param name="PrazoValor">Valor do prazo de interposição do recurso na 1ª instância.</param>
+/// <param name="PrazoUnidade">Unidade do prazo de interposição.</param>
+/// <param name="AdmiteInstanciaSuperior">Se o recurso admite instância superior.</param>
+/// <param name="PrazoSegundaInstanciaValor">Valor do prazo na 2ª instância; nulo quando o recurso não admite instância superior.</param>
+/// <param name="PrazoSegundaInstanciaUnidade">Unidade do prazo na 2ª instância; nula quando o recurso não admite instância superior.</param>
+/// <param name="EfeitoSuspensivo">Efeito suspensivo do recurso na 1ª instância.</param>
+/// <param name="GuardaDaVaga">Se a vaga em disputa fica guardada enquanto o recurso corre.</param>
 public sealed record ParametrosRegraPrazoRecursoDto(
     decimal PrazoValor,
-    UnidadePrazo PrazoUnidade,
-    decimal? SuspensividadePrimeiraInstanciaValor,
-    UnidadePrazo? SuspensividadePrimeiraInstanciaUnidade,
+    CodigoComRotulo<UnidadePrazo> PrazoUnidade,
     bool AdmiteInstanciaSuperior,
-    decimal? SuspensividadeSegundaInstanciaValor,
-    UnidadePrazo? SuspensividadeSegundaInstanciaUnidade);
+    decimal? PrazoSegundaInstanciaValor,
+    CodigoComRotulo<UnidadePrazo>? PrazoSegundaInstanciaUnidade,
+    CodigoComRotulo<EfeitoSuspensivo> EfeitoSuspensivo,
+    CodigoComRotulo<GuardaDaVaga> GuardaDaVaga);
 
 /// <summary>Projeção de leitura de <c>RegraRecursoFase</c> (0..1, Story #851) — presença = a fase admite recurso.</summary>
 /// <param name="ProdutoAncoraId">

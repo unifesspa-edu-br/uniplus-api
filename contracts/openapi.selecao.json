@@ -16139,7 +16139,7 @@
       },
       "DocumentoDaConfiguracaoComunsPropriedadesDoRecurso": {
         "title": "Propriedades do recurso",
-        "description": "Prazo de interposi\u00E7\u00E3o, \u00E2ncora e efeito suspensivo do recurso, comuns \u00E0 fase e \u00E0 etapa.",
+        "description": "Prazos, efeito suspensivo e guarda da vaga do recurso, comuns \u00E0 fase e \u00E0 etapa.",
         "type": "object",
         "properties": {
           "regraCodigo": {
@@ -16164,9 +16164,10 @@
           },
           "prazoUnidade": {
             "title": "Unidade do prazo",
-            "description": "Unidade do prazo de interposi\u00E7\u00E3o: horas ou dias \u00FAteis (diasUteis).",
+            "description": "Unidade do prazo de interposi\u00E7\u00E3o: horas, dias \u00FAteis (diasUteis) ou dias corridos (dias). S\u00F3 horas e dias \u00FAteis s\u00E3o aceitos pelo dom\u00EDnio; dias corridos chegam a ele para receber a recusa pr\u00F3pria.",
             "enum": [
               "horas",
+              "dias",
               "diasUteis"
             ]
           },
@@ -16178,47 +16179,39 @@
             "minLength": 1,
             "maxLength": 60
           },
-          "suspensividadePrimeiraInstanciaValor": {
-            "title": "Efeito suspensivo na primeira inst\u00E2ncia, quantidade",
-            "description": "Quantidade de unidades do efeito suspensivo na primeira inst\u00E2ncia, com at\u00E9 quatro casas decimais. Nulo, junto \u00E0 unidade, desativa o bloqueio nesta inst\u00E2ncia.",
-            "type": [
-              "number",
-              "null"
-            ],
-            "multipleOf": 0.0001
-          },
-          "suspensividadePrimeiraInstanciaUnidade": {
-            "title": "Efeito suspensivo na primeira inst\u00E2ncia, unidade",
-            "description": "Unidade do efeito suspensivo na primeira inst\u00E2ncia: horas, dias ou dias \u00FAteis (diasUteis). Nula, junto ao valor, desativa o bloqueio nesta inst\u00E2ncia.",
-            "enum": [
-              "horas",
-              "dias",
-              "diasUteis",
-              null
-            ]
-          },
           "admiteInstanciaSuperior": {
             "title": "Admite inst\u00E2ncia superior",
             "description": "Se cabe recurso \u00E0 inst\u00E2ncia superior.",
             "type": "boolean"
           },
-          "suspensividadeSegundaInstanciaValor": {
-            "title": "Efeito suspensivo na inst\u00E2ncia superior, quantidade",
-            "description": "Quantidade de unidades do efeito suspensivo na inst\u00E2ncia superior, com at\u00E9 quatro casas decimais. Nulo, junto \u00E0 unidade, desativa o bloqueio nesta inst\u00E2ncia.",
-            "type": [
-              "number",
-              "null"
-            ],
+          "prazoSegundaInstanciaValor": {
+            "title": "Prazo da 2\u00AA inst\u00E2ncia",
+            "description": "Quantidade de unidades do prazo para recorrer em 2\u00AA inst\u00E2ncia, com at\u00E9 quatro casas decimais. Obrigat\u00F3rio quando o recurso admite inst\u00E2ncia superior e recusado quando n\u00E3o admite.",
+            "type": "number",
             "multipleOf": 0.0001
           },
-          "suspensividadeSegundaInstanciaUnidade": {
-            "title": "Efeito suspensivo na inst\u00E2ncia superior, unidade",
-            "description": "Unidade do efeito suspensivo na inst\u00E2ncia superior: horas, dias ou dias \u00FAteis (diasUteis). Nula, junto ao valor, desativa o bloqueio nesta inst\u00E2ncia.",
+          "prazoSegundaInstanciaUnidade": {
+            "title": "Unidade do prazo da 2\u00AA inst\u00E2ncia",
+            "description": "Unidade do prazo da 2\u00AA inst\u00E2ncia: horas, dias \u00FAteis (diasUteis) ou dias corridos (dias). Como no prazo de interposi\u00E7\u00E3o, s\u00F3 horas e dias \u00FAteis s\u00E3o aceitos pelo dom\u00EDnio.",
             "enum": [
               "horas",
               "dias",
-              "diasUteis",
-              null
+              "diasUteis"
+            ]
+          },
+          "efeitoSuspensivo": {
+            "title": "Efeito suspensivo na 1\u00AA inst\u00E2ncia",
+            "description": "Efeito suspensivo do recurso na 1\u00AA inst\u00E2ncia, escolhido pelo edital. A \u00FAnica op\u00E7\u00E3o aceita \u00E9 sem efeito suspensivo (semEfeitoSuspensivo). A 2\u00AA inst\u00E2ncia sempre tem efeito suspensivo, sem escolha.",
+            "enum": [
+              "semEfeitoSuspensivo"
+            ]
+          },
+          "guardaDaVaga": {
+            "title": "Guarda da vaga",
+            "description": "Se a vaga em disputa fica guardada enquanto o recurso corre: at\u00E9 o resultado definitivo (ateOResultadoDefinitivo) ou n\u00E3o guarda (naoGuarda). Quando ausente, vale guardar at\u00E9 o resultado definitivo. Com inst\u00E2ncia superior, a vaga fica guardada at\u00E9 o resultado definitivo.",
+            "enum": [
+              "ateOResultadoDefinitivo",
+              "naoGuarda"
             ]
           },
           "procedimentosDeRecurso": {
@@ -16377,7 +16370,7 @@
           },
           "regraRecurso": {
             "title": "Regra de recurso",
-            "description": "Prazo e efeito suspensivo do recurso. A presen\u00E7a desta regra \u00E9 o que faz a fase admitir recurso.",
+            "description": "Prazos, efeito suspensivo e guarda da vaga do recurso. A presen\u00E7a desta regra \u00E9 o que faz a fase admitir recurso.",
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoCronogramaRegraRecurso"
           },
           "tiposDeDecisao": {
@@ -16403,7 +16396,7 @@
       },
       "DocumentoDaConfiguracaoCronogramaRegraRecurso": {
         "title": "Regra de recurso",
-        "description": "Regra do cat\u00E1logo que define o prazo de interposi\u00E7\u00E3o do recurso, a \u00E2ncora dele e o efeito suspensivo.",
+        "description": "Regra do cat\u00E1logo que define o prazo de interposi\u00E7\u00E3o do recurso, o evento que inicia o prazo, o efeito suspensivo e a guarda da vaga.",
         "type": "object",
         "allOf": [
           {
@@ -17350,7 +17343,7 @@
       },
       "DocumentoDaConfiguracaoEtapasRecursoDaEtapa": {
         "title": "Recurso da etapa",
-        "description": "Recurso que a etapa admite: a \u00E2ncora do prazo e as mesmas propriedades de prazo e efeito suspensivo do recurso da fase. Com a \u00E2ncora atoPublicado, o ato \u00E2ncora \u00E9 um ato preliminar da pr\u00F3pria etapa.",
+        "description": "Recurso que a etapa admite: o evento que inicia o prazo e as mesmas propriedades de prazos, efeito suspensivo e guarda da vaga do recurso da fase. Quando o evento que inicia o prazo \u00E9 atoPublicado, o ato de refer\u00EAncia \u00E9 um ato preliminar da pr\u00F3pria etapa.",
         "type": "object",
         "allOf": [
           {
@@ -19383,6 +19376,28 @@
           }
         }
       },
+      "EfeitoSuspensivo": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/EfeitoSuspensivoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "EfeitoSuspensivoCodigo": {
+        "enum": [
+          "semEfeitoSuspensivo"
+        ],
+        "type": "string",
+        "description": "- \u0060semEfeitoSuspensivo\u0060: Sem efeito suspensivo"
+      },
       "EncerramentoDaVotacao": {
         "enum": [
           "todosOsTitulares",
@@ -21303,6 +21318,29 @@
             }
           }
         }
+      },
+      "GuardaDaVaga": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/GuardaDaVagaCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "GuardaDaVagaCodigo": {
+        "enum": [
+          "ateOResultadoDefinitivo",
+          "naoGuarda"
+        ],
+        "type": "string",
+        "description": "- \u0060ateOResultadoDefinitivo\u0060: Guarda a vaga at\u00E9 o resultado definitivo\n- \u0060naoGuarda\u0060: N\u00E3o guarda a vaga"
       },
       "IdadeMaximaEmissaoDto": {
         "required": [
@@ -23966,11 +24004,11 @@
         "required": [
           "prazoValor",
           "prazoUnidade",
-          "suspensividadePrimeiraInstanciaValor",
-          "suspensividadePrimeiraInstanciaUnidade",
           "admiteInstanciaSuperior",
-          "suspensividadeSegundaInstanciaValor",
-          "suspensividadeSegundaInstanciaUnidade"
+          "prazoSegundaInstanciaValor",
+          "prazoSegundaInstanciaUnidade",
+          "efeitoSuspensivo",
+          "guardaDaVaga"
         ],
         "type": "object",
         "properties": {
@@ -23981,34 +24019,17 @@
           "prazoUnidade": {
             "$ref": "#/components/schemas/UnidadePrazo"
           },
-          "suspensividadePrimeiraInstanciaValor": {
-            "type": [
-              "null",
-              "number"
-            ],
-            "format": "double"
-          },
-          "suspensividadePrimeiraInstanciaUnidade": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/UnidadePrazo"
-              }
-            ]
-          },
           "admiteInstanciaSuperior": {
             "type": "boolean"
           },
-          "suspensividadeSegundaInstanciaValor": {
+          "prazoSegundaInstanciaValor": {
             "type": [
               "null",
               "number"
             ],
             "format": "double"
           },
-          "suspensividadeSegundaInstanciaUnidade": {
+          "prazoSegundaInstanciaUnidade": {
             "oneOf": [
               {
                 "type": "null"
@@ -24017,6 +24038,12 @@
                 "$ref": "#/components/schemas/UnidadePrazo"
               }
             ]
+          },
+          "efeitoSuspensivo": {
+            "$ref": "#/components/schemas/EfeitoSuspensivo"
+          },
+          "guardaDaVaga": {
+            "$ref": "#/components/schemas/GuardaDaVaga"
           }
         }
       },
@@ -25422,11 +25449,11 @@
           "prazoValor",
           "prazoUnidade",
           "atoAncoraCodigo",
-          "suspensividadePrimeiraInstanciaValor",
-          "suspensividadePrimeiraInstanciaUnidade",
           "admiteInstanciaSuperior",
-          "suspensividadeSegundaInstanciaValor",
-          "suspensividadeSegundaInstanciaUnidade"
+          "prazoSegundaInstanciaValor",
+          "prazoSegundaInstanciaUnidade",
+          "efeitoSuspensivo",
+          "guardaDaVaga"
         ],
         "type": "object",
         "properties": {
@@ -25440,11 +25467,21 @@
             "type": "string"
           },
           "prazoValor": {
-            "type": "number",
+            "type": [
+              "null",
+              "number"
+            ],
             "format": "double"
           },
           "prazoUnidade": {
-            "$ref": "#/components/schemas/UnidadePrazo"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UnidadePrazoCodigo"
+              }
+            ]
           },
           "atoAncoraCodigo": {
             "type": [
@@ -25452,40 +25489,43 @@
               "string"
             ]
           },
-          "suspensividadePrimeiraInstanciaValor": {
-            "type": [
-              "null",
-              "number"
-            ],
-            "format": "double"
-          },
-          "suspensividadePrimeiraInstanciaUnidade": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/UnidadePrazo"
-              }
-            ]
-          },
           "admiteInstanciaSuperior": {
             "type": "boolean"
           },
-          "suspensividadeSegundaInstanciaValor": {
+          "prazoSegundaInstanciaValor": {
             "type": [
               "null",
               "number"
             ],
             "format": "double"
           },
-          "suspensividadeSegundaInstanciaUnidade": {
+          "prazoSegundaInstanciaUnidade": {
             "oneOf": [
               {
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/UnidadePrazo"
+                "$ref": "#/components/schemas/UnidadePrazoCodigo"
+              }
+            ]
+          },
+          "efeitoSuspensivo": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EfeitoSuspensivoCodigo"
+              }
+            ]
+          },
+          "guardaDaVaga": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/GuardaDaVagaCodigo"
               }
             ]
           },
@@ -26147,11 +26187,11 @@
           "prazoValor",
           "prazoUnidade",
           "atoAncoraCodigo",
-          "suspensividadePrimeiraInstanciaValor",
-          "suspensividadePrimeiraInstanciaUnidade",
           "admiteInstanciaSuperior",
-          "suspensividadeSegundaInstanciaValor",
-          "suspensividadeSegundaInstanciaUnidade"
+          "prazoSegundaInstanciaValor",
+          "prazoSegundaInstanciaUnidade",
+          "efeitoSuspensivo",
+          "guardaDaVaga"
         ],
         "type": "object",
         "properties": {
@@ -26162,49 +26202,62 @@
             "type": "string"
           },
           "prazoValor": {
-            "type": "number",
+            "type": [
+              "null",
+              "number"
+            ],
             "format": "double"
           },
           "prazoUnidade": {
-            "$ref": "#/components/schemas/UnidadePrazo"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UnidadePrazoCodigo"
+              }
+            ]
           },
           "atoAncoraCodigo": {
             "type": "string"
           },
-          "suspensividadePrimeiraInstanciaValor": {
-            "type": [
-              "null",
-              "number"
-            ],
-            "format": "double"
-          },
-          "suspensividadePrimeiraInstanciaUnidade": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/UnidadePrazo"
-              }
-            ]
-          },
           "admiteInstanciaSuperior": {
             "type": "boolean"
           },
-          "suspensividadeSegundaInstanciaValor": {
+          "prazoSegundaInstanciaValor": {
             "type": [
               "null",
               "number"
             ],
             "format": "double"
           },
-          "suspensividadeSegundaInstanciaUnidade": {
+          "prazoSegundaInstanciaUnidade": {
             "oneOf": [
               {
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/UnidadePrazo"
+                "$ref": "#/components/schemas/UnidadePrazoCodigo"
+              }
+            ]
+          },
+          "efeitoSuspensivo": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EfeitoSuspensivoCodigo"
+              }
+            ]
+          },
+          "guardaDaVaga": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/GuardaDaVagaCodigo"
               }
             ]
           },
@@ -27077,13 +27130,28 @@
         }
       },
       "UnidadePrazo": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/UnidadePrazoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "UnidadePrazoCodigo": {
         "enum": [
-          "nenhuma",
           "horas",
           "dias",
           "diasUteis"
         ],
-        "type": "string"
+        "type": "string",
+        "description": "- \u0060horas\u0060: Horas\n- \u0060dias\u0060: Dias corridos\n- \u0060diasUteis\u0060: Dias \u00FAteis"
       },
       "UnidadeResponsavelDto": {
         "required": [

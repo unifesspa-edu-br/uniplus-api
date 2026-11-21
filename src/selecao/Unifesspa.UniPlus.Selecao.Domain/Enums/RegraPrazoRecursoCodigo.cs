@@ -1,16 +1,15 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
-/// Código canônico da(s) regra(s) de <c>tipo=regra_prazo_recurso</c> do
-/// <c>regras_do_catalogo</c> (Story #854) reconhecidas por
-/// <see cref="Entities.RegraRecursoFase"/> (Story #851 §3.0/CA-01).
+/// Código canônico da regra de <c>tipo=regra_prazo_recurso</c> do <c>regras_do_catalogo</c> que
+/// <see cref="Entities.RegraRecursoFase"/> reconhece.
 /// </summary>
 /// <remarks>
-/// Símbolo, não literal solto: o gate referencia esta constante — nunca o texto
-/// <c>"RECURSO-PRAZO-ANCORADO-EM-ATO"</c> espalhado pelo código (CA-01).
+/// Símbolo, não literal solto: a conferência da regra referencia esta constante, nunca o texto
+/// <c>"RECURSO-PRAZO-ANCORADO-EM-ATO"</c> espalhado pelo código.
 /// </remarks>
 public static class RegraPrazoRecursoCodigo
 {
-    /// <summary>Prazo de interposição ancorado no instante de publicação de um ato + suspensividade por instância (#854).</summary>
+    /// <summary>Prazo de interposição e prazo da 2ª instância contados da publicação de um ato.</summary>
     public const string AncoradoEmAto = "RECURSO-PRAZO-ANCORADO-EM-ATO";
 }

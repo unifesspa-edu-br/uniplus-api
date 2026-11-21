@@ -27,9 +27,8 @@ public sealed class InstanciaSuperiorDaJanelaDeRecursoJsonTests
         const string json = """
         {
           "regraCodigo": "RECURSO-PRAZO-ANCORADO-EM-ATO", "regraVersao": "v1",
-          "prazoValor": 2, "prazoUnidade": "DiasUteis", "atoAncoraCodigo": "RESULTADO_PRELIMINAR",
-          "suspensividadePrimeiraInstanciaValor": null, "suspensividadePrimeiraInstanciaUnidade": null,
-          "suspensividadeSegundaInstanciaValor": null, "suspensividadeSegundaInstanciaUnidade": null
+          "prazoValor": 2, "prazoUnidade": "diasUteis", "atoAncoraCodigo": "RESULTADO_PRELIMINAR",
+          "efeitoSuspensivo": "semEfeitoSuspensivo"
         }
         """;
 
@@ -44,14 +43,32 @@ public sealed class InstanciaSuperiorDaJanelaDeRecursoJsonTests
         const string json = """
         {
           "ancora": "AtoPublicado", "regraCodigo": "RECURSO-PRAZO-ANCORADO-EM-ATO", "regraVersao": "v1",
-          "prazoValor": 2, "prazoUnidade": "DiasUteis", "atoAncoraCodigo": "RESULTADO_PRELIMINAR",
-          "suspensividadePrimeiraInstanciaValor": null, "suspensividadePrimeiraInstanciaUnidade": null,
-          "suspensividadeSegundaInstanciaValor": null, "suspensividadeSegundaInstanciaUnidade": null
+          "prazoValor": 2, "prazoUnidade": "diasUteis", "atoAncoraCodigo": "RESULTADO_PRELIMINAR",
+          "efeitoSuspensivo": "semEfeitoSuspensivo"
         }
         """;
 
         Action act = () => JsonSerializer.Deserialize<RecursoDaEtapaInput>(json, Options);
 
         act.Should().Throw<JsonException>();
+    }
+
+    [Fact(DisplayName = "Com a declaração de instância superior, a regra de recurso da fase é lida com os códigos como texto")]
+    public void RegraDaFase_ComDeclaracao_LeOsCodigosComoTexto()
+    {
+        const string json = """
+        {
+          "regraCodigo": "RECURSO-PRAZO-ANCORADO-EM-ATO", "regraVersao": "v1",
+          "prazoValor": 2, "prazoUnidade": "diasUteis", "atoAncoraCodigo": "RESULTADO_PRELIMINAR",
+          "admiteInstanciaSuperior": true, "prazoSegundaInstanciaValor": 3, "prazoSegundaInstanciaUnidade": "horas",
+          "efeitoSuspensivo": "semEfeitoSuspensivo", "guardaDaVaga": "naoGuarda"
+        }
+        """;
+
+        RegraRecursoFaseInput? regra = JsonSerializer.Deserialize<RegraRecursoFaseInput>(json, Options);
+
+        regra.Should().NotBeNull();
+        (regra!.PrazoUnidade, regra.PrazoSegundaInstanciaUnidade, regra.EfeitoSuspensivo, regra.GuardaDaVaga)
+            .Should().Be(("diasUteis", "horas", "semEfeitoSuspensivo", "naoGuarda"));
     }
 }

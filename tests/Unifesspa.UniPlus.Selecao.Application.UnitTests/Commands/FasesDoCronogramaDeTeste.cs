@@ -48,13 +48,13 @@ internal static class FasesDoCronogramaDeTeste
         RegraCodigo: RegraPrazoRecursoCodigo.AncoradoEmAto,
         RegraVersao: "v1",
         PrazoValor: 48m,
-        PrazoUnidade: UnidadePrazo.Horas,
+        PrazoUnidade: "horas",
         AtoAncoraCodigo: AtoDaClassificacao,
-        SuspensividadePrimeiraInstanciaValor: null,
-        SuspensividadePrimeiraInstanciaUnidade: null,
         AdmiteInstanciaSuperior: false,
-        SuspensividadeSegundaInstanciaValor: null,
-        SuspensividadeSegundaInstanciaUnidade: null);
+        PrazoSegundaInstanciaValor: null,
+        PrazoSegundaInstanciaUnidade: null,
+        EfeitoSuspensivo: "semEfeitoSuspensivo",
+        GuardaDaVaga: null);
 
     public static TipoAtoPublicadoView TipoAtoDaClassificacao() => new(
         AtoDaClassificacao, "Resultado da classificação",

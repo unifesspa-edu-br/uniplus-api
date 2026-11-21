@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Leitura da regra de recurso de uma fase: o recorte de competência e os prazos.
+/// Leitura da regra de recurso de uma fase: os candidatos atendidos pela banca e os parâmetros do recurso.
 /// </summary>
 internal static class LeituraDosPrazosDeRecurso
 {
@@ -97,7 +97,7 @@ internal static class LeituraDosPrazosDeRecurso
     private static RegraRecursoFase? MontarRegra(LeitorEnvelope leitor, JsonObject bloco, string path,
         ReferenciaRegra regra, Guid ancora, JsonObject objeto)
     {
-        ParametrosRegraPrazoRecurso? parametros = LerParametrosDePrazoDeRecurso(leitor, objeto, $"{path}.parametros");
+        ParametrosDeclaradosDoRecurso? parametros = LerParametrosDePrazoDeRecurso(leitor, objeto, $"{path}.parametros");
         if (leitor.Falhou || parametros is null)
         {
             return null;
@@ -109,19 +109,23 @@ internal static class LeituraDosPrazosDeRecurso
             return null;
         }
 
-        Result<RegraRecursoFase> resultado = RegraRecursoFase.Reidratar(regra, parametros, ancora, procedimentos);
-        return resultado.IsFailure ? leitor.Propagar<RegraRecursoFase>(resultado.Errors) : resultado.Value;
+        return Reidratar(leitor, path, RegraRecursoFase.Reidratar(regra, parametros, ancora, procedimentos));
     }
 
+    private static RegraRecursoFase? Reidratar(LeitorEnvelope leitor, string path, Result<RegraRecursoFase> resultado) =>
+        resultado.IsFailure
+            ? leitor.Propagar<RegraRecursoFase>([.. resultado.Errors.Select(erro => erro.NoCaminhoDe(path))])
+            : resultado.Value;
+
     /// <summary>
-    /// Lê os parâmetros do prazo de recurso — prazo, os dois pares de suspensividade e a declaração de instância superior.
+    /// Lê os parâmetros do recurso como o registro os traz: os dois prazos, a declaração de instância superior, o efeito
+    /// suspensivo e a guarda da vaga, os códigos como texto. Quem confere o código é o domínio, na reidratação.
     /// </summary>
     /// <remarks>
-    /// Um lugar só porque fase e etapa carregam o mesmo value object: lê-lo em dois lugares deixaria um deles
-    /// reconstruir os parâmetros com as suspensividades nulas, e o que o edital prometeu ao candidato voltaria vazio
-    /// do envelope sem que nada acusasse.
+    /// Um lugar só porque fase e etapa carregam os mesmos parâmetros: lê-los em dois lugares deixaria um deles reconstruir os
+    /// parâmetros sem um dos campos, e o que o edital prometeu ao candidato voltaria vazio do registro sem que nada acusasse.
     /// </remarks>
-    internal static ParametrosRegraPrazoRecurso? LerParametrosDePrazoDeRecurso(
+    internal static ParametrosDeclaradosDoRecurso? LerParametrosDePrazoDeRecurso(
         LeitorEnvelope leitor,
         JsonObject parametrosObjeto,
         string parametrosPath)
@@ -131,33 +135,30 @@ internal static class LeituraDosPrazosDeRecurso
     }
 
     private static void ExigirChavesDosParametros(LeitorEnvelope leitor, JsonObject objeto, string path) =>
-        leitor.ExigirChaves(objeto, path, "prazoValor", "prazoUnidade",
-            "suspensividadePrimeiraInstanciaValor", "suspensividadePrimeiraInstanciaUnidade",
-            "admiteInstanciaSuperior", "suspensividadeSegundaInstanciaValor", "suspensividadeSegundaInstanciaUnidade");
+        leitor.ExigirChaves(objeto, path, "prazoValor", "prazoUnidade", "admiteInstanciaSuperior",
+            "prazoSegundaInstanciaValor", "prazoSegundaInstanciaUnidade", "efeitoSuspensivo", "guardaDaVaga");
 
-    private static ParametrosRegraPrazoRecurso? LerParametros(LeitorEnvelope leitor, JsonObject parametrosObjeto, string parametrosPath)
+    private static ParametrosDeclaradosDoRecurso? LerParametros(LeitorEnvelope leitor, JsonObject objeto, string path)
     {
-        decimal prazoValor = leitor.Decimal(parametrosObjeto, "prazoValor", EscritaCanonica.EscalaPadrao, parametrosPath, LimitesDoEnvelope.PrecisaoPrazo);
-        UnidadePrazo prazoUnidade = leitor.Enumeracao<UnidadePrazo>(parametrosObjeto, "prazoUnidade", parametrosPath);
-        (decimal? valor1, UnidadePrazo? unidade1) = LerSuspensividade(leitor, parametrosObjeto, parametrosPath, "Primeira");
-        bool admiteInstanciaSuperior = leitor.Booleano(parametrosObjeto, "admiteInstanciaSuperior", parametrosPath);
-        (decimal? valor2, UnidadePrazo? unidade2) = LerSuspensividade(leitor, parametrosObjeto, parametrosPath, "Segunda");
+        PrazoDeclarado interposicao = LerPrazo(leitor, objeto, path, "prazo", obrigatorio: true);
+        bool admiteInstanciaSuperior = leitor.Booleano(objeto, "admiteInstanciaSuperior", path);
+        PrazoDeclarado segundaInstancia = LerPrazo(leitor, objeto, path, "prazoSegundaInstancia", obrigatorio: false);
+        string efeito = leitor.Texto(objeto, "efeitoSuspensivo", path);
+        string guarda = leitor.Texto(objeto, "guardaDaVaga", path);
 
         return leitor.Falhou
             ? null
-            : new ParametrosRegraPrazoRecurso(
-                prazoValor, prazoUnidade,
-                valor1, unidade1,
-                admiteInstanciaSuperior,
-                valor2, unidade2);
+            : new ParametrosDeclaradosDoRecurso(interposicao, admiteInstanciaSuperior, segundaInstancia, efeito, guarda);
     }
 
-    private static (decimal? Valor, UnidadePrazo? Unidade) LerSuspensividade(
-        LeitorEnvelope leitor, JsonObject objeto, string path, string instancia)
+    private static PrazoDeclarado LerPrazo(LeitorEnvelope leitor, JsonObject objeto, string path, string prefixo, bool obrigatorio)
     {
-        string prefixo = $"suspensividade{instancia}Instancia";
-        decimal? valor = leitor.DecimalOpcional(objeto, $"{prefixo}Valor", EscritaCanonica.EscalaPadrao, path, LimitesDoEnvelope.PrecisaoPrazo);
-        UnidadePrazo? unidade = leitor.EnumeracaoOpcional<UnidadePrazo>(objeto, $"{prefixo}Unidade", path);
-        return (valor, unidade);
+        decimal? valor = obrigatorio
+            ? leitor.Decimal(objeto, $"{prefixo}Valor", EscritaCanonica.EscalaPadrao, path, LimitesDoEnvelope.PrecisaoPrazo)
+            : leitor.DecimalOpcional(objeto, $"{prefixo}Valor", EscritaCanonica.EscalaPadrao, path, LimitesDoEnvelope.PrecisaoPrazo);
+        string? unidade = obrigatorio
+            ? leitor.Texto(objeto, $"{prefixo}Unidade", path)
+            : leitor.TextoOpcional(objeto, $"{prefixo}Unidade", path);
+        return new PrazoDeclarado(valor, unidade);
     }
 }

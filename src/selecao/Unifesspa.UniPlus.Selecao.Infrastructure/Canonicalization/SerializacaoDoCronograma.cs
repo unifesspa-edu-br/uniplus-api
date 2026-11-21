@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -135,16 +136,15 @@ internal static class SerializacaoDoCronograma
 
     internal static JsonObject SerializarParametrosRegraPrazoRecurso(ParametrosRegraPrazoRecurso parametros) => new()
     {
-        ["prazoValor"] = HashCanonicalComputer.SerializeDecimalCanonical(parametros.PrazoValor, EscritaCanonica.EscalaPadrao),
-        ["prazoUnidade"] = parametros.PrazoUnidade.ToString(),
-        ["suspensividadePrimeiraInstanciaValor"] = parametros.SuspensividadePrimeiraInstanciaValor is { } v1
-            ? HashCanonicalComputer.SerializeDecimalCanonical(v1, EscritaCanonica.EscalaPadrao)
-            : null,
-        ["suspensividadePrimeiraInstanciaUnidade"] = parametros.SuspensividadePrimeiraInstanciaUnidade?.ToString(),
+        ["prazoValor"] = Valor(parametros.PrazoDeInterposicao),
+        ["prazoUnidade"] = parametros.PrazoDeInterposicao.Unidade.Codigo(),
         ["admiteInstanciaSuperior"] = parametros.AdmiteInstanciaSuperior,
-        ["suspensividadeSegundaInstanciaValor"] = parametros.SuspensividadeSegundaInstanciaValor is { } v2
-            ? HashCanonicalComputer.SerializeDecimalCanonical(v2, EscritaCanonica.EscalaPadrao)
-            : null,
-        ["suspensividadeSegundaInstanciaUnidade"] = parametros.SuspensividadeSegundaInstanciaUnidade?.ToString(),
+        ["prazoSegundaInstanciaValor"] = parametros.PrazoDaSegundaInstancia is { } segunda ? Valor(segunda) : null,
+        ["prazoSegundaInstanciaUnidade"] = parametros.PrazoDaSegundaInstancia?.Unidade.Codigo(),
+        ["efeitoSuspensivo"] = parametros.EfeitoSuspensivo.Codigo(),
+        ["guardaDaVaga"] = parametros.GuardaDaVaga.Codigo(),
     };
+
+    private static string Valor(PrazoDoRecurso prazo) =>
+        HashCanonicalComputer.SerializeDecimalCanonical(prazo.Valor, EscritaCanonica.EscalaPadrao);
 }

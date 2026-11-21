@@ -147,7 +147,7 @@
   "$defs": {
     "recursoDaEtapa": {
       "title": "Recurso da etapa",
-      "description": "Recurso que a etapa admite: a âncora do prazo e as mesmas propriedades de prazo e efeito suspensivo do recurso da fase. Com a âncora atoPublicado, o ato âncora é um ato preliminar da própria etapa.",
+      "description": "Recurso que a etapa admite: o evento que inicia o prazo e as mesmas propriedades de prazos, efeito suspensivo e guarda da vaga do recurso da fase. Quando o evento que inicia o prazo é atoPublicado, o ato de referência é um ato preliminar da própria etapa.",
       "type": "object",
       "allOf": [
         {

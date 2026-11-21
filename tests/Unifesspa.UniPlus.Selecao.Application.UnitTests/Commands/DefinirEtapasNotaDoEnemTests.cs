@@ -70,7 +70,7 @@ public sealed class DefinirEtapasNotaDoEnemTests
 
     private static RecursoDaEtapaInput RecursoEmAtoPublicado() => new(
         AncoraDoRecurso.AtoPublicado, "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1",
-        2m, UnidadePrazo.DiasUteis, "RESULTADO_CLASSIFICACAO", null, null, false, null, null);
+        2m, "diasUteis", "RESULTADO_CLASSIFICACAO", false, null, null, "semEfeitoSuspensivo", null);
 
     private static IRegraCatalogoReader CatalogoComARegraDeRecursoEmAto()
     {

@@ -35,17 +35,7 @@ public sealed class RecursoDaEtapaConfiguration : IEntityTypeConfiguration<Recur
         builder.OwnsOne(r => r.Regra, regra => regra.ConfigurarReferenciaRegra("regra"));
         builder.Navigation(r => r.Regra).IsRequired();
 
-        builder.OwnsOne(r => r.Parametros, parametros =>
-        {
-            parametros.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
-            parametros.Property(x => x.PrazoValor).HasColumnName("prazo_valor").HasPrecision(18, 4).IsRequired();
-            parametros.Property(x => x.PrazoUnidade).HasColumnName("prazo_unidade").HasConversion<int>();
-            parametros.Property(x => x.SuspensividadePrimeiraInstanciaValor).HasColumnName("susp_1a_valor").HasPrecision(18, 4);
-            parametros.Property(x => x.SuspensividadePrimeiraInstanciaUnidade).HasColumnName("susp_1a_unidade").HasConversion<int>();
-            parametros.Property(x => x.AdmiteInstanciaSuperior).HasColumnName("admite_instancia_superior").IsRequired();
-            parametros.Property(x => x.SuspensividadeSegundaInstanciaValor).HasColumnName("susp_2a_valor").HasPrecision(18, 4);
-            parametros.Property(x => x.SuspensividadeSegundaInstanciaUnidade).HasColumnName("susp_2a_unidade").HasConversion<int>();
-        });
+        builder.OwnsOne(r => r.Parametros, parametros => parametros.ConfigurarParametrosDoRecurso());
         builder.Navigation(r => r.Parametros).IsRequired();
 
         builder.HasIndex(r => r.EtapaProcessoId);

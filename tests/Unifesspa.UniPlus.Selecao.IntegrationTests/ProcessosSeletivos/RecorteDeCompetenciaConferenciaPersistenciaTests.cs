@@ -313,14 +313,7 @@ public sealed class RecorteDeCompetenciaConferenciaPersistenciaTests : IClassFix
     private static RegraRecursoFase RegraDeRecurso(Guid produtoPreliminarId) =>
         RegraRecursoFase.Criar(
             Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, 'e'),
-            new ParametrosRegraPrazoRecurso(
-                PrazoValor: 48m,
-                PrazoUnidade: UnidadePrazo.Horas,
-                SuspensividadePrimeiraInstanciaValor: null,
-                SuspensividadePrimeiraInstanciaUnidade: null,
-                AdmiteInstanciaSuperior: false,
-                SuspensividadeSegundaInstanciaValor: null,
-                SuspensividadeSegundaInstanciaUnidade: null),
+            ParametrosDoRecursoDeTeste.Declarados(48m, UnidadePrazo.Horas),
             produtoPreliminarId,
             HomologacaoDasInscricoesDeTeste.ProcedimentosDaHomologacao()).Value!;
 }

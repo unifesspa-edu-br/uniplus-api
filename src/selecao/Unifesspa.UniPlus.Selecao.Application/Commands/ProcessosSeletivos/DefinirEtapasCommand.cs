@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 using Domain.Enums;
 using Domain.ValueObjects;
 
+using Kernel.Domain.CodigosDeContrato;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
@@ -135,18 +136,24 @@ public sealed record BancaDaEtapaInput(Guid TipoBancaId, RegraDeDeliberacaoInput
 /// silêncio, e a janela seria congelada sem instância superior sem que ninguém o tivesse decidido.
 /// <paramref name="Procedimentos"/> declara como o recurso de cada matéria que a etapa produz é revisado.
 /// </summary>
+/// <param name="PrazoValor">Valor do prazo de interposição; ausente é recusado pelo domínio.</param>
+/// <param name="PrazoUnidade">Código da unidade do prazo de interposição; o domínio recusa o ausente e o desconhecido.</param>
+/// <param name="PrazoSegundaInstanciaValor">Valor do prazo da 2ª instância; obrigatório com instância superior e recusado sem ela.</param>
+/// <param name="PrazoSegundaInstanciaUnidade">Código da unidade do prazo da 2ª instância.</param>
+/// <param name="EfeitoSuspensivo">Código do efeito suspensivo da 1ª instância; obrigatório.</param>
+/// <param name="GuardaDaVaga">Código da guarda da vaga; ausente vale guardar até o resultado definitivo.</param>
 public sealed record RecursoDaEtapaInput(
     AncoraDoRecurso Ancora,
     string RegraCodigo,
     string RegraVersao,
-    decimal PrazoValor,
-    UnidadePrazo PrazoUnidade,
+    decimal? PrazoValor,
+    [property: AceitaCodigosDe<UnidadePrazo>] string? PrazoUnidade,
     string? AtoAncoraCodigo,
-    decimal? SuspensividadePrimeiraInstanciaValor,
-    UnidadePrazo? SuspensividadePrimeiraInstanciaUnidade,
     [property: JsonRequired] bool AdmiteInstanciaSuperior,
-    decimal? SuspensividadeSegundaInstanciaValor,
-    UnidadePrazo? SuspensividadeSegundaInstanciaUnidade,
+    decimal? PrazoSegundaInstanciaValor,
+    [property: AceitaCodigosDe<UnidadePrazo>] string? PrazoSegundaInstanciaUnidade,
+    [property: AceitaCodigosDe<EfeitoSuspensivo>] string? EfeitoSuspensivo,
+    [property: AceitaCodigosDe<GuardaDaVaga>] string? GuardaDaVaga,
     IReadOnlyList<ProcedimentoDeRecursoInput>? Procedimentos = null);
 
 /// <summary>O que uma etapa publica: o código do tipo de ato e o papel no ciclo recursal.</summary>

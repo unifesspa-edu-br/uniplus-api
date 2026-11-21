@@ -81,17 +81,16 @@ internal static class DeclaracoesDoDocumentoLidas
         : new(
             new(Texto(regra, "regraCodigo"), Texto(regra, "regraVersao")),
             Texto(regra, "atoAncoraCodigo"),
-            Prazo(regra),
+            ParametrosDoRecurso(regra),
             [.. Itens(regra, "procedimentosDeRecurso").Select(static item => Procedimento(item.Posicao, item.Item))]);
 
-    private static ParametrosRegraPrazoRecurso Prazo(JsonObject regra) => new(
-        Valor<decimal>(regra, "prazoValor") ?? 0m,
-        Enumeracao<UnidadePrazo>(regra, "prazoUnidade") ?? UnidadePrazo.Nenhuma,
-        Valor<decimal>(regra, "suspensividadePrimeiraInstanciaValor"),
-        Enumeracao<UnidadePrazo>(regra, "suspensividadePrimeiraInstanciaUnidade"),
+    // Os códigos seguem como texto até o domínio, que recusa o desconhecido junto das demais causas; o esquema já fecha as opções.
+    private static ParametrosDeclaradosDoRecurso ParametrosDoRecurso(JsonObject regra) => new(
+        new PrazoDeclarado(Valor<decimal>(regra, "prazoValor"), Texto(regra, "prazoUnidade")),
         Valor<bool>(regra, "admiteInstanciaSuperior") ?? false,
-        Valor<decimal>(regra, "suspensividadeSegundaInstanciaValor"),
-        Enumeracao<UnidadePrazo>(regra, "suspensividadeSegundaInstanciaUnidade"));
+        new PrazoDeclarado(Valor<decimal>(regra, "prazoSegundaInstanciaValor"), Texto(regra, "prazoSegundaInstanciaUnidade")),
+        Texto(regra, "efeitoSuspensivo"),
+        Texto(regra, "guardaDaVaga"));
 
     private static ProcedimentoNoDocumento Procedimento(int posicao, JsonObject procedimento) => new(
         posicao,

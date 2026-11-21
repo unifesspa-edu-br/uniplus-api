@@ -6,6 +6,8 @@ using Entities;
 
 using Enums;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 /// <summary>
 /// A forma canônica das linhas de <see cref="EntradaDoPreliminar"/> que a fase e a etapa escrevem do mesmo
 /// jeito: o par campo e valor, a referência de regra, os parâmetros do prazo de recurso, a regra de
@@ -33,15 +35,15 @@ internal static class LinhasDaEntradaDoPreliminar
             ? []
             : [Linha($"{campo}.codigo", regra.Codigo), Linha($"{campo}.versao", regra.Versao), Linha($"{campo}.hash", regra.Hash)];
 
+    // O prazo da 2ª instância fica de fora: ele vale pela versão vigente quando o indeferimento é publicado ao candidato, e mudá-lo
+    // não pode exigir ciclo novo do recurso da 1ª instância.
     internal static IEnumerable<string> DosParametrosDoRecurso(string campo, ParametrosRegraPrazoRecurso parametros) =>
     [
-        Linha($"{campo}.prazoValor", parametros.PrazoValor),
-        Linha($"{campo}.prazoUnidade", parametros.PrazoUnidade),
-        Linha($"{campo}.suspensividadePrimeiraInstanciaValor", parametros.SuspensividadePrimeiraInstanciaValor),
-        Linha($"{campo}.suspensividadePrimeiraInstanciaUnidade", parametros.SuspensividadePrimeiraInstanciaUnidade),
+        Linha($"{campo}.prazoValor", parametros.PrazoDeInterposicao.Valor),
+        Linha($"{campo}.prazoUnidade", parametros.PrazoDeInterposicao.Unidade.Codigo()),
         Linha($"{campo}.admiteInstanciaSuperior", parametros.AdmiteInstanciaSuperior),
-        Linha($"{campo}.suspensividadeSegundaInstanciaValor", parametros.SuspensividadeSegundaInstanciaValor),
-        Linha($"{campo}.suspensividadeSegundaInstanciaUnidade", parametros.SuspensividadeSegundaInstanciaUnidade),
+        Linha($"{campo}.efeitoSuspensivo", parametros.EfeitoSuspensivo.Codigo()),
+        Linha($"{campo}.guardaDaVaga", parametros.GuardaDaVaga.Codigo()),
     ];
 
     /// <summary>Os procedimentos declarados da janela: o tipo de decisão e o alvo identificam, e a regra congelada vale.</summary>

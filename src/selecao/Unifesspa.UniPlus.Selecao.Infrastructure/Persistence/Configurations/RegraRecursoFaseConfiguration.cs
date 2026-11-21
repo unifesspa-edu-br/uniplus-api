@@ -30,17 +30,7 @@ public sealed class RegraRecursoFaseConfiguration : IEntityTypeConfiguration<Reg
         builder.OwnsOne(r => r.Regra, regra => regra.ConfigurarReferenciaRegra("regra"));
         builder.Navigation(r => r.Regra).IsRequired();
 
-        builder.OwnsOne(r => r.Parametros, parametros =>
-        {
-            parametros.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
-            parametros.Property(x => x.PrazoValor).HasColumnName("prazo_valor").HasPrecision(18, 4).IsRequired();
-            parametros.Property(x => x.PrazoUnidade).HasColumnName("prazo_unidade").HasConversion<int>().IsRequired();
-            parametros.Property(x => x.SuspensividadePrimeiraInstanciaValor).HasColumnName("suspensividade_1a_instancia_valor").HasPrecision(18, 4);
-            parametros.Property(x => x.SuspensividadePrimeiraInstanciaUnidade).HasColumnName("suspensividade_1a_instancia_unidade").HasConversion<int>();
-            parametros.Property(x => x.AdmiteInstanciaSuperior).HasColumnName("admite_instancia_superior").IsRequired();
-            parametros.Property(x => x.SuspensividadeSegundaInstanciaValor).HasColumnName("suspensividade_2a_instancia_valor").HasPrecision(18, 4);
-            parametros.Property(x => x.SuspensividadeSegundaInstanciaUnidade).HasColumnName("suspensividade_2a_instancia_unidade").HasConversion<int>();
-        });
+        builder.OwnsOne(r => r.Parametros, parametros => parametros.ConfigurarParametrosDoRecurso());
         builder.Navigation(r => r.Parametros).IsRequired();
 
         // Coluna crua, sem FK para produtos_da_fase, ao contrário do que DocumentoExigido faz

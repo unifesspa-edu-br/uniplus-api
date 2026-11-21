@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class JanelasRecursaisDaEtapaTests
 {
@@ -27,7 +28,7 @@ public sealed class JanelasRecursaisDaEtapaTests
     private static RecursoDaEtapa Janela(AncoraDoRecurso ancora, Guid produtoAncoraId, decimal horas = 48m) => RecursoDaEtapa.Criar(
         ancora,
         ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)),
-        new ParametrosRegraPrazoRecurso(horas, UnidadePrazo.Horas, null, null, false, null, null),
+        ParametrosDoRecursoDeTeste.Declarados(horas, UnidadePrazo.Horas),
         produtoAncoraId).Value!;
 
     private static ProdutoDaEtapa Preliminar(string ato) => ProdutoDaEtapa.Criar(ato, PapelProdutoFase.Preliminar);

@@ -96,7 +96,7 @@ internal static class ErrosDoCronograma
     ];
 
     /// <summary>
-    /// A janela da etapa prova as mesmas invariantes de prazo e suspensividade que a regra da fase, e a recusa precisa nomear quem recusou.
+    /// O recurso da etapa prova as mesmas invariantes dos parâmetros do recurso que a regra da fase, e a recusa precisa nomear quem recusou.
     /// </summary>
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> DeclaracaoDaEtapa() =>
     [
@@ -162,7 +162,7 @@ internal static class ErrosDoCronograma
     ];
 
     /// <summary>
-    /// O prazo e a suspensividade do recurso da etapa.
+    /// Os prazos, o efeito suspensivo e a guarda da vaga do recurso da etapa. Os quatro códigos de prazo valem para o prazo de interposição e para o da 2ª instância, que se distinguem pelo campo e pela mensagem.
     /// </summary>
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> PrazoDoRecursoDaEtapa() =>
     [
@@ -170,10 +170,11 @@ internal static class ErrosDoCronograma
         new("RecursoDaEtapa.PrazoEmDiasCorridos", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_do_recurso_da_etapa.prazo_em_dias_corridos", "O prazo do recurso não aceita dias corridos")),
         new("RecursoDaEtapa.PrazoSemUnidadeDeclaravel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_do_recurso_da_etapa.prazo_sem_unidade_declaravel", "O prazo do recurso precisa declarar dias úteis ou horas")),
         new("RecursoDaEtapa.PrazoEmFracaoDeDiaUtil", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_do_recurso_da_etapa.prazo_em_fracao_de_dia_util", "O prazo do recurso em dias úteis exige número inteiro")),
-        new("RecursoDaEtapa.SuspensividadeIncompleta", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.recurso_da_etapa.suspensividade_incompleta", "A suspensividade exige valor e unidade juntos, ou nenhum dos dois")),
-        new("RecursoDaEtapa.SuspensividadeUnidadeNaoDeclaravel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.recurso_da_etapa.suspensividade_unidade_nao_declaravel", "A unidade da suspensividade não é declarável")),
-        new("RecursoDaEtapa.SuspensividadeNaoPositiva", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.recurso_da_etapa.suspensividade_nao_positiva", "O valor da suspensividade deve ser estritamente positivo")),
-        new("RecursoDaEtapa.SuspensividadeSuperiorSemInstanciaSuperior", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.recurso_da_etapa.suspensividade_superior_sem_instancia_superior", "Sem recurso em instância superior, não há tempo de bloqueio para essa instância")),
+        new("RecursoDaEtapa.EfeitoSuspensivoNaoDeclarado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_do_recurso_da_etapa.efeito_suspensivo_nao_declarado", "O período de recurso precisa declarar um efeito suspensivo aceito")),
+        new("RecursoDaEtapa.PrazoSegundaInstanciaNaoDeclarado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_do_recurso_da_etapa.prazo_segunda_instancia_nao_declarado", "O recurso que admite instância superior precisa declarar o prazo da 2ª instância")),
+        new("RecursoDaEtapa.PrazoSegundaInstanciaSemInstanciaSuperior", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_do_recurso_da_etapa.prazo_segunda_instancia_sem_instancia_superior", "Sem instância superior, não há prazo de 2ª instância")),
+        new("RecursoDaEtapa.NaoGuardaComInstanciaSuperior", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_do_recurso_da_etapa.nao_guarda_com_instancia_superior", "Com instância superior, a vaga fica guardada até o resultado definitivo")),
+        new("RecursoDaEtapa.GuardaDaVagaNaoDeclaravel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_do_recurso_da_etapa.guarda_da_vaga_nao_declaravel", "A guarda da vaga declarada não é uma das opções aceitas")),
     ];
 
     /// <summary>
@@ -193,19 +194,18 @@ internal static class ErrosDoCronograma
     ];
 
     /// <summary>
-    /// O prazo e a suspensividade do recurso da fase. As duas unidades recusadas na interposição têm causas e remediações distintas
-    /// (UNI-REQ-0113), então cada uma tem código próprio. O estado que o requisito proíbe é recusado pela construção da entidade,
-    /// venha de onde vier, inclusive da reidratação do envelope, que não passa pelo validator HTTP.
+    /// Os prazos, o efeito suspensivo e a guarda da vaga do recurso da fase. Os quatro códigos de prazo valem para o prazo de interposição e para o da 2ª instância, que se distinguem pelo campo e pela mensagem. O estado que o requisito proíbe é recusado pela construção da entidade, venha de onde vier, inclusive da leitura do registro da versão publicada, que não passa pelo validator HTTP.
     /// </summary>
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> PrazoDoRecursoDaFase() =>
     [
-        new("RegraRecursoFase.PrazoEmDiasCorridos", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_do_recurso_da_fase.prazo_em_dias_corridos", "O prazo do recurso não aceita dias corridos")),
-        new("RegraRecursoFase.PrazoEmFracaoDeDiaUtil", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_do_recurso_da_fase.prazo_em_fracao_de_dia_util", "O prazo do recurso em dias úteis exige número inteiro")),
-        new("RegraRecursoFase.PrazoSemUnidadeDeclaravel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_do_recurso_da_fase.prazo_sem_unidade_declaravel", "O prazo do recurso precisa declarar dias úteis ou horas")),
         new("RegraRecursoFase.PrazoNaoPositivo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_do_recurso_da_fase.prazo_nao_positivo", "O prazo do recurso deve ser maior que zero")),
-        new("RegraRecursoFase.SuspensividadeIncompleta", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.suspensividade_incompleta", "A suspensividade exige valor e unidade juntos, ou nenhum dos dois")),
-        new("RegraRecursoFase.SuspensividadeUnidadeNaoDeclaravel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.suspensividade_unidade_nao_declaravel", "A unidade da suspensividade não é declarável")),
-        new("RegraRecursoFase.SuspensividadeNaoPositiva", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.suspensividade_nao_positiva", "O valor da suspensividade deve ser estritamente positivo")),
-        new("RegraRecursoFase.SuspensividadeSuperiorSemInstanciaSuperior", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.suspensividade_superior_sem_instancia_superior", "Sem recurso em instância superior, não há tempo de bloqueio para essa instância")),
+        new("RegraRecursoFase.PrazoEmDiasCorridos", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_do_recurso_da_fase.prazo_em_dias_corridos", "O prazo do recurso não aceita dias corridos")),
+        new("RegraRecursoFase.PrazoSemUnidadeDeclaravel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_do_recurso_da_fase.prazo_sem_unidade_declaravel", "O prazo do recurso precisa declarar dias úteis ou horas")),
+        new("RegraRecursoFase.PrazoEmFracaoDeDiaUtil", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_do_recurso_da_fase.prazo_em_fracao_de_dia_util", "O prazo do recurso em dias úteis exige número inteiro")),
+        new("RegraRecursoFase.EfeitoSuspensivoNaoDeclarado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_do_recurso_da_fase.efeito_suspensivo_nao_declarado", "O período de recurso precisa declarar um efeito suspensivo aceito")),
+        new("RegraRecursoFase.PrazoSegundaInstanciaNaoDeclarado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_do_recurso_da_fase.prazo_segunda_instancia_nao_declarado", "O recurso que admite instância superior precisa declarar o prazo da 2ª instância")),
+        new("RegraRecursoFase.PrazoSegundaInstanciaSemInstanciaSuperior", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_do_recurso_da_fase.prazo_segunda_instancia_sem_instancia_superior", "Sem instância superior, não há prazo de 2ª instância")),
+        new("RegraRecursoFase.NaoGuardaComInstanciaSuperior", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_do_recurso_da_fase.nao_guarda_com_instancia_superior", "Com instância superior, a vaga fica guardada até o resultado definitivo")),
+        new("RegraRecursoFase.GuardaDaVagaNaoDeclaravel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_do_recurso_da_fase.guarda_da_vaga_nao_declaravel", "A guarda da vaga declarada não é uma das opções aceitas")),
     ];
 }

@@ -98,6 +98,25 @@ public sealed class EntradaDoPreliminarDaEtapaTests
         Etapa(completar: e => AbrirRecurso(e, prazo: 3m, ancora: 0, Materia)).EntradaDoPreliminar()
             .Should().NotBe(Etapa(completar: e => AbrirRecurso(e, prazo: 2m, ancora: 0, Materia)).EntradaDoPreliminar());
 
+    [Fact(DisplayName = "Mudar só a guarda da vaga, a unidade do prazo ou a instância superior do recurso muda a entrada")]
+    public void ParametrosDoRecurso_MudamAEntrada()
+    {
+        EntradaDoPreliminar baseDaEntrada = ComParametrosDoRecurso(ParametrosDoRecursoDeTeste.Declarados()).EntradaDoPreliminar();
+
+        ComParametrosDoRecurso(ParametrosDoRecursoDeTeste.Declarados(guardaDaVaga: "naoGuarda")).EntradaDoPreliminar().Should().NotBe(baseDaEntrada);
+        ComParametrosDoRecurso(ParametrosDoRecursoDeTeste.Declarados(2m, UnidadePrazo.Horas)).EntradaDoPreliminar().Should().NotBe(baseDaEntrada);
+        ComParametrosDoRecurso(ParametrosDoRecursoDeTeste.ComInstanciaSuperior()).EntradaDoPreliminar().Should().NotBe(baseDaEntrada);
+    }
+
+    [Fact(DisplayName = "Mudar só o prazo da 2ª instância não muda a entrada: ele vale pela versão vigente quando o indeferimento é publicado")]
+    public void PrazoDaSegundaInstancia_NaoMudaAEntrada()
+    {
+        ParametrosDeclaradosDoRecurso comInstanciaSuperior = ParametrosDoRecursoDeTeste.ComInstanciaSuperior();
+
+        ComParametrosDoRecurso(comInstanciaSuperior with { PrazoDaSegundaInstancia = new PrazoDeclarado(5m, "diasUteis") }).EntradaDoPreliminar()
+            .Should().Be(ComParametrosDoRecurso(comInstanciaSuperior).EntradaDoPreliminar());
+    }
+
     [Fact(DisplayName = "O procedimento declarado na janela recursal entra na entrada, pela regra, e a ordem de declaração não importa")]
     public void ProcedimentosDaJanela_EntramNaEntrada()
     {
@@ -134,6 +153,9 @@ public sealed class EntradaDoPreliminarDaEtapaTests
     public void OrdemDosTiposDeDecisao_NaoMudaAEntrada() =>
         ComTipos(TipoMotivoDeDecisaoCodigo.Classificacao, TipoMotivoDeDecisaoCodigo.AnaliseDocumental).EntradaDoPreliminar()
             .Should().Be(ComTipos(TipoMotivoDeDecisaoCodigo.AnaliseDocumental, TipoMotivoDeDecisaoCodigo.Classificacao).EntradaDoPreliminar());
+
+    private static EtapaProcesso ComParametrosDoRecurso(ParametrosDeclaradosDoRecurso parametros) =>
+        Etapa(completar: e => AbrirRecursoComParametros(e, parametros, ProcedimentosDeRecurso.Nenhum, 0, Materia));
 
     private static EntradaDoPreliminar ComProcedimentos(string regra, TipoMotivoDeDecisao tipo) =>
         Etapa(completar: e => AbrirRecursoComProcedimentos(e, 2m, 0, ProcedimentosDeRecurso.De([Procedimento(tipo, regra)]), Materia)).EntradaDoPreliminar();
@@ -174,13 +196,17 @@ public sealed class EntradaDoPreliminarDaEtapaTests
     private static void AbrirRecurso(EtapaProcesso etapa, decimal prazo, int ancora, params string[] atos) =>
         AbrirRecursoComProcedimentos(etapa, prazo, ancora, ProcedimentosDeRecurso.Nenhum, atos);
 
-    private static void AbrirRecursoComProcedimentos(EtapaProcesso etapa, decimal prazo, int ancora, ProcedimentosDeRecurso procedimentos, params string[] atos)
+    private static void AbrirRecursoComProcedimentos(EtapaProcesso etapa, decimal prazo, int ancora, ProcedimentosDeRecurso procedimentos, params string[] atos) =>
+        AbrirRecursoComParametros(etapa, ParametrosDoRecursoDeTeste.Declarados(prazo, UnidadePrazo.DiasUteis), procedimentos, ancora, atos);
+
+    private static void AbrirRecursoComParametros(
+        EtapaProcesso etapa, ParametrosDeclaradosDoRecurso parametros, ProcedimentosDeRecurso procedimentos, int ancora, params string[] atos)
     {
         List<ProdutoDaEtapa> produtos = [.. atos.Select(static ato => ProdutoDaEtapa.Criar(ato, PapelProdutoFase.Preliminar))];
         RecursoDaEtapa recurso = RecursoDaEtapa.Criar(
             AncoraDoRecurso.AtoPublicado,
             ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('c', 64)),
-            new ParametrosRegraPrazoRecurso(prazo, UnidadePrazo.DiasUteis, null, null, false, null, null),
+            parametros,
             produtos[ancora].Id,
             procedimentos).Value!;
 

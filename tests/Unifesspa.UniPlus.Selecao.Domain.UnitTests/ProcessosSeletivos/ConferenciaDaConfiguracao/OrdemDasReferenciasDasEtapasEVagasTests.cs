@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class OrdemDasReferenciasDasEtapasEVagasTests
 {
@@ -206,7 +207,7 @@ public sealed class OrdemDasReferenciasDasEtapasEVagasTests
         ConfiguracaoDeclarada vagas = ConfiguracaoComVagas();
         ConfiguracaoDeclarada etapas = ConfiguracaoComEtapas();
         RegraRecursoFase prazo = ModeloDeFase.RecursoAncoradoEm(ProcessoConformeFactory.ProdutoPreliminarId);
-        RegraRecursoFase recurso = RegraRecursoFase.Criar(prazo.Regra, prazo.Parametros, prazo.ProdutoAncoraId,
+        RegraRecursoFase recurso = RegraRecursoFase.Criar(prazo.Regra, ParametrosDoRecursoDeTeste.DeclaradosDe(prazo.Parametros), prazo.ProdutoAncoraId,
             OrdemDasReferenciasDeRegraTests.Procedimentos()).Value!;
         FaseCronograma fase = ProcessoConformeFactory.FaseConforme(recurso);
         CronogramaDeclarado cronograma = new(null, ProcessoConformeFactory.Regra("CONTAGEM", "a"), [fase]);
@@ -309,6 +310,6 @@ public sealed class OrdemDasReferenciasDasEtapasEVagasTests
             ProcedimentoDeRecursoDeclarado.De(TipoMotivoDeDecisao.Classificacao, null, ProcessoConformeFactory.Regra("PRIMEIRA", "a")),
             ProcedimentoDeRecursoDeclarado.De(TipoMotivoDeDecisao.IsencaoDaTaxa, null, ProcessoConformeFactory.Regra("SEGUNDA", "b")),
         ]);
-        return RecursoDaEtapa.Criar(AncoraDoRecurso.AtoPublicado, prazo.Regra, prazo.Parametros, produtoId, procedimentos).Value!;
+        return RecursoDaEtapa.Criar(AncoraDoRecurso.AtoPublicado, prazo.Regra, ParametrosDoRecursoDeTeste.DeclaradosDe(prazo.Parametros), produtoId, procedimentos).Value!;
     }
 }

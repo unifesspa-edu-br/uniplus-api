@@ -64,8 +64,8 @@ public sealed class DefinirEtapasTiposDeDecisaoTests
             Recursos =
             [
                 new RecursoDaEtapaInput(
-                    AncoraDoRecurso.AtoPublicado, RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", 2m, UnidadePrazo.DiasUteis,
-                    AtoDaClassificacao, null, null, false, null, null, procedimentos),
+                    AncoraDoRecurso.AtoPublicado, RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", 2m, "diasUteis",
+                    AtoDaClassificacao, false, null, null, "semEfeitoSuspensivo", null, procedimentos),
             ],
         };
 

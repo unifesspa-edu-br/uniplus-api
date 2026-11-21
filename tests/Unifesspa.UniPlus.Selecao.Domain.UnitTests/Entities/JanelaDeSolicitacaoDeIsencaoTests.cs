@@ -214,14 +214,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
 
     private static RegraRecursoFase RecursoEmDiasUteis(decimal prazo) => RegraRecursoFase.Criar(
         ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('d', 64)),
-        new ParametrosRegraPrazoRecurso(
-            PrazoValor: prazo,
-            PrazoUnidade: UnidadePrazo.DiasUteis,
-            SuspensividadePrimeiraInstanciaValor: null,
-            SuspensividadePrimeiraInstanciaUnidade: null,
-            AdmiteInstanciaSuperior: false,
-            SuspensividadeSegundaInstanciaValor: null,
-            SuspensividadeSegundaInstanciaUnidade: null),
+        ParametrosDoRecursoDeTeste.Declarados(prazo, UnidadePrazo.DiasUteis),
         ProdutoPreliminarId).Value!;
 
     private static ProcessoSeletivo ProcessoComCronograma(FaseCronograma[] fases)

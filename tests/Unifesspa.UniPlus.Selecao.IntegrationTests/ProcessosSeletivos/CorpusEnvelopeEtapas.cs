@@ -26,11 +26,9 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Corpu
 
 internal static class CorpusEnvelopeEtapas
 {
-    // A objetiva carrega o recurso da ETAPA, e carrega os dois casos que o envelope
-    // precisava aprender a congelar: a suspensividade declarada nos dois pares — que voltava
-    // nula — e a âncora por CIÊNCIA, cujo produto é ausente e cujo Guid vazio fazia o
-    // envelope recusar a si mesmo na volta. Sem isto no corpus, o round-trip passava
-    // exatamente por não exercitar recurso de etapa nenhum.
+    // A objetiva carrega o recurso da ETAPA com os dois casos que o envelope congela: o prazo da 2ª
+    // instância declarado e o evento que inicia o prazo por CIÊNCIA, cujo produto é ausente. Sem isto no corpus, o
+    // round-trip não exercitaria recurso de etapa nenhum.
     internal static EtapaProcesso EtapaObjetiva(int variante, bool permutar)
     {
         EtapaProcesso etapa = NovaEtapaObjetiva(variante, permutar);
@@ -102,11 +100,8 @@ internal static class CorpusEnvelopeEtapas
             RecursoDaObjetivaId(1, variante),
             AncoraDoRecurso.AtoPublicado,
             Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, '9'),
-            new ParametrosRegraPrazoRecurso(
-                3.0000m, UnidadePrazo.DiasUteis,
-                2.0000m, UnidadePrazo.DiasUteis,
-                true,
-                1.0000m, UnidadePrazo.DiasUteis),
+            ParametrosDoRecursoDeTeste.Declarados(
+                3m, UnidadePrazo.DiasUteis, admiteInstanciaSuperior: true, segundaInstancia: new PrazoDoRecurso(1m, UnidadePrazo.DiasUteis)),
             ProdutoDaObjetivaId(1, variante),
             ProcedimentosDoCorpusSemAlvo()).Value!;
 
@@ -119,12 +114,7 @@ internal static class CorpusEnvelopeEtapas
             RecursoDaObjetivaId(2, variante),
             AncoraDoRecurso.AtoPublicado,
             Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, '9'),
-            // Dia útil, e não dia corrido: `UnidadePrazo.Dias` é recusado pelo domínio, e um
-            // corpus que o carregue congela no envelope uma configuração que o caminho de
-            // escrita nunca produziria.
-            new ParametrosRegraPrazoRecurso(
-                5.0000m, UnidadePrazo.DiasUteis,
-                null, null, false, null, null),
+            ParametrosDoRecursoDeTeste.Declarados(5.0000m, UnidadePrazo.DiasUteis),
             ProdutoDaObjetivaId(3, variante),
             ProcedimentosDoCorpusComAlvos()).Value!;
 
@@ -151,7 +141,7 @@ internal static class CorpusEnvelopeEtapas
             RecursoDaObjetivaId(3, variante),
             AncoraDoRecurso.CienciaIndividual,
             Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, '9'),
-            new ParametrosRegraPrazoRecurso(48.0000m, UnidadePrazo.Horas, null, null, false, null, null),
+            ParametrosDoRecursoDeTeste.Declarados(48.0000m, UnidadePrazo.Horas),
             Guid.Empty,
             ProcedimentosDoCorpusSemAlvo()).Value!;
 
