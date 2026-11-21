@@ -31,6 +31,7 @@
     <Compile Include="../Shared/TipoEtapaDeTeste.cs" Link="TipoEtapaDeTeste.cs" />
     <Compile Include="../Shared/ItemDoModeloDeTeste.cs" Link="ItemDoModeloDeTeste.cs" />
     <Compile Include="../Shared/DecisaoDeAcessoDeTeste.cs" Link="DecisaoDeAcessoDeTeste.cs" />
+    <Compile Include="../Shared/EntradaDoFatoColetadoDeTeste.cs" Link="EntradaDoFatoColetadoDeTeste.cs" />
   </ItemGroup>
 
 </Project>

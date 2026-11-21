@@ -211,7 +211,7 @@ public sealed class ModeloFormularioTests
 
         modelo.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
         {
-            Field = "conteudo.itens[0].impedimento",
+            Field = "conteudo.itens[0].regras.impedimento",
             Error = new { Code = ItemFormularioErrorCodes.ImpedimentoForaDaInscricao },
         });
     }
@@ -301,7 +301,7 @@ public sealed class ModeloFormularioTests
     {
         Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0).ComRotulo("Certificado\0")]));
 
-        DeveRecusarTextoNaoGravavelEm(modelo, "conteudo.itens[0].rotulo");
+        DeveRecusarTextoNaoGravavelEm(modelo, "conteudo.itens[0].apresentacao.rotulo");
     }
 
     [Fact(DisplayName = "Caractere nulo num valor citado por regra do item é recusado antes de chegar ao banco")]
@@ -312,7 +312,7 @@ public sealed class ModeloFormularioTests
         Result<ModeloFormulario> modelo = Criar(
             FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0, exibicao: valorNulo)], "CONCLUSAO_REGULAR"));
 
-        DeveRecusarTextoNaoGravavelEm(modelo, "conteudo.itens[0].precondicao");
+        DeveRecusarTextoNaoGravavelEm(modelo, "conteudo.itens[0].regras.exibicao");
     }
 
     [Fact(DisplayName = "Caractere nulo num valor citado pela obrigatoriedade do item é recusado no predicado de obrigatoriedade")]
@@ -323,7 +323,7 @@ public sealed class ModeloFormularioTests
         Result<ModeloFormulario> modelo = Criar(
             FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0, Obrigatoriedade.Quando(valorNulo))], "CONCLUSAO_REGULAR"));
 
-        DeveRecusarTextoNaoGravavelEm(modelo, "conteudo.itens[0].predicadoObrigatoriedade");
+        DeveRecusarTextoNaoGravavelEm(modelo, "conteudo.itens[0].regras.obrigatoriedade.predicado");
     }
 
     [Fact(DisplayName = "Caractere nulo no nome de propriedade de um valor JSON citado por regra é recusado")]
@@ -334,7 +334,7 @@ public sealed class ModeloFormularioTests
         Result<ModeloFormulario> modelo = Criar(
             FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0, exibicao: QuandoOValorE(Operador.Em, objetoNulo))], "CONCLUSAO_REGULAR"));
 
-        DeveRecusarTextoNaoGravavelEm(modelo, "conteudo.itens[0].precondicao");
+        DeveRecusarTextoNaoGravavelEm(modelo, "conteudo.itens[0].regras.exibicao");
     }
 
     private static Result<ModeloFormulario> CriarComDocumento(string tipo, string valor, string observacao)
@@ -400,7 +400,7 @@ public sealed class ModeloFormularioTests
 
         FieldError recusa = modelo.Errors.Should().ContainSingle().Subject;
         recusa.Error.Code.Should().Be(ItemFormularioErrorCodes.RestricaoIncoerente);
-        recusa.Field.Should().Be("conteudo.itens[0].restricoes[0]");
+        recusa.Field.Should().Be("conteudo.itens[0].regras.restricoes[0]");
     }
 
     [Fact(DisplayName = "Tipo de etapa fora do vocabulário é recusado")]

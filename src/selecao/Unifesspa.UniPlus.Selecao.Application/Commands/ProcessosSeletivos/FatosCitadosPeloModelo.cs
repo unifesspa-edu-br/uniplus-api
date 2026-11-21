@@ -25,12 +25,18 @@ internal static class FatosCitadosPeloModelo
         IEnumerable<EtapaFormularioInput> etapas,
         IEnumerable<TermoExigidoInput> termos) =>
         itens.Concat(grupos.SelectMany(static g => g.Subitens ?? []))
-            .SelectMany(static i => Do(i?.Precondicao).Concat(Do(i?.PredicadoObrigatoriedade))
-                .Concat(Do(i?.Impedimento?.Quando).Where(f => !string.Equals(f, i?.FatoCodigo, StringComparison.Ordinal)))
-                .Concat((i?.Restricoes ?? []).SelectMany(static r => (r.Fatos ?? []).Concat((r.Entradas ?? []).SelectMany(static e => Do(e.Quando))))))
+            .SelectMany(static i => DasRegras(i?.Regras, i?.FatoCodigo))
             .Concat(grupos.SelectMany(static g => Do(g.Exibicao).Concat(Do(g.PredicadoObrigatoriedade))))
             .Concat(etapas.SelectMany(static e => Do(e?.Exibicao)))
             .Concat(termos.SelectMany(static t => Do(t.Exibicao).Concat(Do(t.PredicadoObrigatoriedade))));
+
+    private static IEnumerable<string> DasRegras(RegrasDoCampoInput? regras, string? fatoDoCampo) =>
+        Do(regras?.Exibicao).Concat(Do(regras?.Obrigatoriedade?.Predicado))
+            .Concat(Do(regras?.Impedimento?.Quando).Where(f => !string.Equals(f, fatoDoCampo, StringComparison.Ordinal)))
+            .Concat(DasRestricoes(regras?.Restricoes ?? []));
+
+    private static IEnumerable<string> DasRestricoes(IEnumerable<RestricaoValorInput> restricoes) =>
+        restricoes.SelectMany(static r => (r.Fatos ?? []).Concat((r.Entradas ?? []).SelectMany(static e => Do(e.Quando))));
 
     private static IEnumerable<string> Do(IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? predicado) =>
         (predicado ?? []).SelectMany(static clausula => clausula ?? []).Select(static c => c?.Fato).OfType<string>();

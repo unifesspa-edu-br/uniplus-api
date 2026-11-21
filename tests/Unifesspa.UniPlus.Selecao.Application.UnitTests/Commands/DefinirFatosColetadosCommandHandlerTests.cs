@@ -61,7 +61,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     private static Task<Result> RegravarSoOsItensAsync(ProcessoSeletivo processo, FatoColetado baixaRenda) =>
         DefinirNaInscricaoAsync(
             NovosMocks(processo, processo.Id), processo,
-            [new FatoColetadoInput("BAIXA_RENDA", baixaRenda.Ordem, "Baixa renda", "BOOLEANO", "NUNCA", null) { EtapaCodigo = FormularioDeTeste.Secao }]);
+            [EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA", baixaRenda.Ordem).ComRotulo("Baixa renda").ComObrigatoriedade("NUNCA").NaSecao(FormularioDeTeste.Secao).Construir()]);
 
     [Fact(DisplayName = "O formulário de inscrição gravado antes dos dados de sexo e gênero recebe os três na gravação, sem colidir com a ordem dos itens")]
     public async Task Handle_InscricaoGravadaSemOsTresDados_ReporOsItensSemColidirAOrdem()
@@ -112,8 +112,8 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
 
     private static FatoColetadoInput[] ItensDaColetaValida() =>
     [
-        new FatoColetadoInput("COR_RACA", 0, "Cor ou raça", "SELECAO_UNICA", "NUNCA", null),
-        new FatoColetadoInput("BAIXA_RENDA", 1, "Baixa renda", "BOOLEANO", "NUNCA", [[Condicao("COR_RACA", "IGUAL", "PRETA")]]),
+        EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA").ComRotulo("Cor ou raça").DoTipo("SELECAO_UNICA").ComObrigatoriedade("NUNCA").Construir(),
+        EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA", 1).ComRotulo("Baixa renda").ComObrigatoriedade("NUNCA").ExibidoQuando([[Condicao("COR_RACA", "IGUAL", "PRETA")]]).Construir(),
     ];
 
     [Fact(DisplayName = "Coleta com pré-condição válida é aceita, persistida, e devolve 204 sem ETag em rascunho")]
@@ -136,8 +136,8 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [
-            new FatoColetadoInput("COR_RACA", 0, "Cor ou raça", "SELECAO_UNICA", "NUNCA", null, EtapaCodigo: "INEXISTENTE"),
-            new FatoColetadoInput("BAIXA_RENDA", 1, "Baixa renda", "BOOLEANO", "NUNCA", null, EtapaCodigo: "OUTRA"),
+            EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA").ComRotulo("Cor ou raça").DoTipo("SELECAO_UNICA").ComObrigatoriedade("NUNCA").NaSecao("INEXISTENTE").Construir(),
+            EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA", 1).ComRotulo("Baixa renda").ComObrigatoriedade("NUNCA").NaSecao("OUTRA").Construir(),
         ]);
 
         resultado.Errors.Select(static e => e.Field).Should().BeEquivalentTo(["itens[0].etapaCodigo", "itens[1].etapaCodigo"]);
@@ -151,7 +151,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(
             [.. VocabularioSeed().Select(static f => f.Codigo == "BAIXA_RENDA" ? f with { Ativo = false } : f)]));
         DefinirFatosColetadosCommand coletaBaixaRenda = new(
-            processo.Id, FinalidadeFormulario.Habilitacao, [new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", null)]);
+            processo.Id, FinalidadeFormulario.Habilitacao, [EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").ComRotulo("Baixa renda").ComObrigatoriedade("NUNCA").Construir()]);
 
         (await HandleAsync(mocks, coletaBaixaRenda)).Error!.Code.Should().Be(VinculoCatalogoErrorCodes.FatoDesativado);
 
@@ -178,7 +178,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(
             [.. VocabularioSeed().Select(static f => f.Codigo == "BAIXA_RENDA" ? f with { ProtecaoAprovada = false } : f)]));
         DefinirFatosColetadosCommand coletaBaixaRenda = new(
-            processo.Id, FinalidadeFormulario.Habilitacao, [new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", null)]);
+            processo.Id, FinalidadeFormulario.Habilitacao, [EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").ComRotulo("Baixa renda").ComObrigatoriedade("NUNCA").Construir()]);
 
         (await HandleAsync(mocks, coletaBaixaRenda)).Error!.Code.Should().Be(VinculoCatalogoErrorCodes.FatoComProtecaoPendente);
     }
@@ -188,7 +188,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Habilitacao, [new FatoColetadoInput("MODALIDADE", 0, "Modalidade", "SELECAO_MULTIPLA", "NUNCA", null)]);
+        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Habilitacao, [EntradaDoFatoColetadoDeTeste.Coletando("MODALIDADE").ComRotulo("Modalidade").DoTipo("SELECAO_MULTIPLA").ComObrigatoriedade("NUNCA").Construir()]);
 
         Result resultado = await HandleAsync(mocks, command);
 
@@ -205,7 +205,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(
             [.. VocabularioSeed().Select(static f => f.Codigo == "BAIXA_RENDA" ? f with { Escopo = "MEMBRO_GRUPO" } : f)]));
         DefinirFatosColetadosCommand command = new(
-            processo.Id, FinalidadeFormulario.Habilitacao, [new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", null)]);
+            processo.Id, FinalidadeFormulario.Habilitacao, [EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").ComRotulo("Baixa renda").ComObrigatoriedade("NUNCA").Construir()]);
 
         Result resultado = await HandleAsync(mocks, command);
 
@@ -217,7 +217,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     {
         Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
-            [new FatoColetadoInput("RENDA_PER_CAPITA", 0, "Renda per capita", "NUMERO", "NUNCA", null)]);
+            [EntradaDoFatoColetadoDeTeste.Coletando("RENDA_PER_CAPITA").ComRotulo("Renda per capita").DoTipo("NUMERO").ComObrigatoriedade("NUNCA").Construir()]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ItemFormulario.FatoNaoColetavel");
@@ -228,7 +228,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     {
         Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
-            [new FatoColetadoInput("V", 0, "V", "SELECAO_UNICA", "NUNCA", null)]);
+            [EntradaDoFatoColetadoDeTeste.Coletando("V").DoTipo("SELECAO_UNICA").ComObrigatoriedade("NUNCA").Construir()]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ItemFormulario.FatoDesconhecido");
@@ -243,8 +243,8 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         // COR_RACA é categórico: MAIOR_IGUAL não se aplica.
         DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Habilitacao,
         [
-            new FatoColetadoInput("COR_RACA", 0, "Cor ou raça", "SELECAO_UNICA", "NUNCA", null),
-            new FatoColetadoInput("BAIXA_RENDA", 1, "Baixa renda", "BOOLEANO", "NUNCA", [[Condicao("COR_RACA", "MAIOR_IGUAL", "PRETA")]]),
+            EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA").ComRotulo("Cor ou raça").DoTipo("SELECAO_UNICA").ComObrigatoriedade("NUNCA").Construir(),
+            EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA", 1).ComRotulo("Baixa renda").ComObrigatoriedade("NUNCA").ExibidoQuando([[Condicao("COR_RACA", "MAIOR_IGUAL", "PRETA")]]).Construir(),
         ]);
 
         Result resultado = await HandleAsync(mocks, command);
@@ -262,8 +262,8 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         // BAIXA_RENDA na ordem 0 cita COR_RACA (ordem 1, posterior).
         DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Habilitacao,
         [
-            new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", [[Condicao("COR_RACA", "IGUAL", "PRETA")]]),
-            new FatoColetadoInput("COR_RACA", 1, "Cor ou raça", "SELECAO_UNICA", "NUNCA", null),
+            EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").ComRotulo("Baixa renda").ComObrigatoriedade("NUNCA").ExibidoQuando([[Condicao("COR_RACA", "IGUAL", "PRETA")]]).Construir(),
+            EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA", 1).ComRotulo("Cor ou raça").DoTipo("SELECAO_UNICA").ComObrigatoriedade("NUNCA").Construir(),
         ]);
 
         Result resultado = await HandleAsync(mocks, command);
@@ -287,7 +287,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     {
         Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
-            [new FatoColetadoInput(fatoCodigo, 0, "Rótulo", tipoRenderizacaoIncoerente, "NUNCA", null)]);
+            [EntradaDoFatoColetadoDeTeste.Coletando(fatoCodigo).ComRotulo("Rótulo").DoTipo(tipoRenderizacaoIncoerente).ComObrigatoriedade("NUNCA").Construir()]);
 
         resultado.IsFailure.Should().BeTrue(motivo);
         resultado.Error!.Code.Should().Be("ItemFormulario.TipoRenderizacaoIncoerenteComDominio");
@@ -302,23 +302,21 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [
-            new FatoColetadoInput("COR_RACA", 0, "Cor ou raça", "SELECAO_UNICA", "NUNCA", null),
-            new FatoColetadoInput("BAIXA_RENDA", 1, "Baixa renda", "BOOLEANO", tipo, null,
-                PredicadoObrigatoriedade: comPredicado ? [[Condicao("COR_RACA", "IGUAL", "PRETA")]] : null),
+            EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA").ComRotulo("Cor ou raça").DoTipo("SELECAO_UNICA").ComObrigatoriedade("NUNCA").Construir(),
+            EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA", 1).ComRotulo("Baixa renda").ComObrigatoriedade(tipo, comPredicado ? [[Condicao("COR_RACA", "IGUAL", "PRETA")]] : null).Construir(),
         ]);
 
         resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
         {
-            Field = "itens[1].obrigatoriedade",
+            Field = "itens[1].regras.obrigatoriedade",
             Error = new { Code = FatoColetadoErrorCodes.ObrigatoriedadeInvalida },
         });
     }
 
     private static FatoColetadoInput[] ItensComObrigatoriedadeQuando() =>
     [
-        new FatoColetadoInput("COR_RACA", 0, "Cor ou raça", "SELECAO_UNICA", "SEMPRE", null),
-        new FatoColetadoInput("BAIXA_RENDA", 1, "Baixa renda", "BOOLEANO", "QUANDO", null,
-            PredicadoObrigatoriedade: [[Condicao("COR_RACA", "IGUAL", "PRETA")]], Ajuda: "Renda por pessoa da família", PedirConfirmacao: true),
+        EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA").ComRotulo("Cor ou raça").DoTipo("SELECAO_UNICA").Construir(),
+        EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA", 1).ComRotulo("Baixa renda").ComObrigatoriedade("QUANDO", [[Condicao("COR_RACA", "IGUAL", "PRETA")]]).ComAjuda("Renda por pessoa da família").PedindoConfirmacao().Construir(),
     ];
 
     [Fact(DisplayName = "Obrigatoriedade QUANDO sobre campo anterior é aceita e congela o predicado")]

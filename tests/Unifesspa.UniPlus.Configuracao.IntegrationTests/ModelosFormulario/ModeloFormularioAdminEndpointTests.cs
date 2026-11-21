@@ -135,7 +135,7 @@ public sealed class ModeloFormularioAdminEndpointTests
     {
         lido["ativo"]!.GetValue<bool>().Should().BeTrue();
         lido["finalidade"]!.GetValue<string>().Should().Be("HABILITACAO");
-        JsonNode condicao = lido["conteudo"]!["itens"]![1]!["precondicao"]![0]![0]!;
+        JsonNode condicao = lido["conteudo"]!["itens"]![1]!["regras"]!["exibicao"]![0]![0]!;
         condicao["fato"]!.GetValue<string>().Should().Be("QUILOMBOLA");
         condicao["valor"]!.GetValue<bool>().Should().BeTrue();
     }
@@ -169,7 +169,7 @@ public sealed class ModeloFormularioAdminEndpointTests
     private static JsonNode ComCorRacaDispensada(JsonNode conteudo)
     {
         JsonNode alterado = conteudo.DeepClone();
-        Item(alterado["itens"]!.AsArray(), "COR_RACA")["obrigatoriedade"] = "NUNCA";
+        Item(alterado["itens"]!.AsArray(), "COR_RACA")["regras"]!["obrigatoriedade"]!["tipo"] = "NUNCA";
         return alterado;
     }
 

@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Condicoes = System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<Unifesspa.UniPlus.Regras.Entradas.CondicaoPrecondicaoInput>>;
 using Recusa = (string? Campo, string Codigo, string Mensagem);
@@ -85,22 +86,19 @@ public sealed class ConferenciaDoModeloTests
         [new("COMPOSICAO", 1, "Composição", null, 1, 5, null, "SEMPRE", null, [SubitemDeSelecaoComRestricoesEImpedimentoQueRecusam()])]);
 
     private static FatoColetadoInput SubitemDeSelecaoComRestricoesEImpedimentoQueRecusam() =>
-        Item("CONDICAO_DO_MEMBRO", 0, "SELECAO_UNICA") with
-        {
-            Impedimento = new ImpedimentoInput(CitandoFatoInexistente, "Mensagem"),
-            Restricoes =
-            [
+        EntradaDoFatoColetadoDeTeste.Coletando("CONDICAO_DO_MEMBRO").DoTipo("SELECAO_UNICA")
+            .ComImpedimento(new ImpedimentoInput(CitandoFatoInexistente, "Mensagem"))
+            .ComRestricoes(
                 new RestricaoValorInput("OPCOES_PERMITIDAS", Entradas: [new(CitandoFatoInexistente, ["A"])]),
-                new RestricaoValorInput("OPCOES_DAS_RESPOSTAS", Fatos: ["NAO_EXISTE"]),
-            ],
-        };
+                new RestricaoValorInput("OPCOES_DAS_RESPOSTAS", Fatos: ["NAO_EXISTE"]))
+            .Construir();
 
     private static Recusa[] RecusasDoSubitem() =>
     [
-        FatoInexistenteNoPredicado("grupos[0].subitens[0].restricoes[0].entradas[0].quando"),
-        ("grupos[0].subitens[0].restricoes[1].fatos", ItemFormularioErrorCodes.OpcoesDeOutroDominio,
+        FatoInexistenteNoPredicado("grupos[0].subitens[0].regras.restricoes[0].entradas[0].quando"),
+        ("grupos[0].subitens[0].regras.restricoes[1].fatos", ItemFormularioErrorCodes.OpcoesDeOutroDominio,
             "As opções formadas pelas respostas vêm de campos de seleção cujas opções são todas opções do campo."),
-        FatoInexistenteNoPredicado("grupos[0].subitens[0].impedimento.quando"),
+        FatoInexistenteNoPredicado("grupos[0].subitens[0].regras.impedimento.quando"),
     ];
 
     private static ConteudoDoModeloInput EntradaQueRecusaEmTodasAsPartes() => new(
@@ -119,7 +117,7 @@ public sealed class ConferenciaDoModeloTests
 
     private static FatoColetadoInput[] ItensQueRecusam() =>
     [
-        Item("CERTIFICADO", 0) with { Precondicao = [[]] },
+        EntradaDoFatoColetadoDeTeste.Coletando("CERTIFICADO").ExibidoQuando([[]]).Construir(),
         Item("NAO_EXISTE", 1),
         ItemDeTipoIncoerenteComRegrasQueRecusam(),
         ItemDeSelecaoComImpedimentoERestricoesQueRecusam(),
@@ -129,24 +127,19 @@ public sealed class ConferenciaDoModeloTests
     ];
 
     private static FatoColetadoInput ItemDeTipoIncoerenteComRegrasQueRecusam() =>
-        Item("CERTIFICADO", 2, "NUMERO") with
-        {
-            Precondicao = CitandoFatoInexistente,
-            Obrigatoriedade = "QUANDO",
-            PredicadoObrigatoriedade = CitandoFatoInexistente,
-            Impedimento = new ImpedimentoInput(CitandoFatoInexistente, "Mensagem"),
-        };
+        EntradaDoFatoColetadoDeTeste.Coletando("CERTIFICADO", 2).DoTipo("NUMERO")
+            .ExibidoQuando(CitandoFatoInexistente)
+            .ComObrigatoriedade("QUANDO", CitandoFatoInexistente)
+            .ComImpedimento(new ImpedimentoInput(CitandoFatoInexistente, "Mensagem"))
+            .Construir();
 
     private static FatoColetadoInput ItemDeSelecaoComImpedimentoERestricoesQueRecusam() =>
-        Item("CONDICAO", 3, "SELECAO_UNICA") with
-        {
-            Impedimento = new ImpedimentoInput(CitandoFatoInexistente, "Mensagem"),
-            Restricoes =
-            [
+        EntradaDoFatoColetadoDeTeste.Coletando("CONDICAO", 3).DoTipo("SELECAO_UNICA")
+            .ComImpedimento(new ImpedimentoInput(CitandoFatoInexistente, "Mensagem"))
+            .ComRestricoes(
                 new RestricaoValorInput("OPCOES_PERMITIDAS", Entradas: [new(CitandoFatoInexistente, ["A"]), new(null, ["B", "Z"])]),
-                new RestricaoValorInput("OPCOES_DAS_RESPOSTAS", Fatos: ["NAO_EXISTE"]),
-            ],
-        };
+                new RestricaoValorInput("OPCOES_DAS_RESPOSTAS", Fatos: ["NAO_EXISTE"]))
+            .Construir();
 
     private static GrupoColetadoInput GrupoQueRecusa() =>
         new("COMPOSICAO", 1, "Composição", null, 1, 5, CitandoFatoInexistente, "QUANDO", CitandoFatoInexistente,
@@ -167,17 +160,17 @@ public sealed class ConferenciaDoModeloTests
     private static Recusa[] RecusasDosItens() =>
     [
         ("itens[1].fatoCodigo", ItemFormularioErrorCodes.FatoDesconhecido, "O fato 'NAO_EXISTE' não pertence ao catálogo de fatos do candidato."),
-        ("itens[2].tipoRenderizacao", ItemFormularioErrorCodes.TipoRenderizacaoIncoerenteComDominio,
+        ("itens[2].apresentacao.tipoRenderizacao", ItemFormularioErrorCodes.TipoRenderizacaoIncoerenteComDominio,
             "O tipo de campo 'NUMERO' não é coerente com o domínio 'BOOLEANO', a cardinalidade 'ESCALAR' e a fonte de valores 'nenhuma' do fato 'CERTIFICADO'."),
-        FatoInexistenteNoPredicado("itens[2].precondicao"),
-        FatoInexistenteNoPredicado("itens[2].predicadoObrigatoriedade"),
-        FatoInexistenteNoPredicado("itens[2].impedimento.quando"),
-        FatoInexistenteNoPredicado("itens[3].restricoes[0].entradas[0].quando"),
-        ("itens[3].restricoes[0].entradas[1].valores", PredicadoDnfErrorCodes.ValorForaDoDominio,
+        FatoInexistenteNoPredicado("itens[2].regras.exibicao"),
+        FatoInexistenteNoPredicado("itens[2].regras.obrigatoriedade.predicado"),
+        FatoInexistenteNoPredicado("itens[2].regras.impedimento.quando"),
+        FatoInexistenteNoPredicado("itens[3].regras.restricoes[0].entradas[0].quando"),
+        ("itens[3].regras.restricoes[0].entradas[1].valores", PredicadoDnfErrorCodes.ValorForaDoDominio,
             "O valor 'Z' da condição EM sobre 'CONDICAO' não pertence ao domínio declarado."),
-        ("itens[3].restricoes[1].fatos", ItemFormularioErrorCodes.OpcoesDeOutroDominio,
+        ("itens[3].regras.restricoes[1].fatos", ItemFormularioErrorCodes.OpcoesDeOutroDominio,
             "As opções formadas pelas respostas vêm de campos de seleção cujas opções são todas opções do campo."),
-        FatoInexistenteNoPredicado("itens[3].impedimento.quando"),
+        FatoInexistenteNoPredicado("itens[3].regras.impedimento.quando"),
     ];
 
     private static Recusa[] RecusasDosGrupos() =>
@@ -186,7 +179,7 @@ public sealed class ConferenciaDoModeloTests
         FatoInexistenteNoPredicado("grupos[0].predicadoObrigatoriedade"),
         ("grupos[0].subitens[0].fatoCodigo", ItemFormularioErrorCodes.FatoNaoColetavel,
             "O fato 'CERTIFICADO' não é coletável num campo do grupo: só o fato declarado de membro de grupo é respondido em cada ocorrência — fatos do candidato, derivados e calculados não."),
-        ("grupos[0].subitens[1].tipoRenderizacao", ItemFormularioErrorCodes.TipoRenderizacaoIncoerenteComDominio,
+        ("grupos[0].subitens[1].apresentacao.tipoRenderizacao", ItemFormularioErrorCodes.TipoRenderizacaoIncoerenteComDominio,
             "O tipo de campo 'NUMERO' não é coerente com o domínio 'BOOLEANO', a cardinalidade 'ESCALAR' e a fonte de valores 'nenhuma' do fato 'MAIOR_IDADE'."),
     ];
 
@@ -225,7 +218,8 @@ public sealed class ConferenciaDoModeloTests
     private static Recusa FatoInexistenteNoPredicado(string campo) =>
         (campo, "PredicadoDnf.FatoDesconhecido", "O fato 'NAO_EXISTE' não pertence ao vocabulário fechado.");
 
-    private static FatoColetadoInput Item(string fato, int ordem, string tipo = "BOOLEANO") => new(fato, ordem, fato, tipo, "SEMPRE", null);
+    private static FatoColetadoInput Item(string fato, int ordem, string tipo = "BOOLEANO") =>
+        EntradaDoFatoColetadoDeTeste.Coletando(fato, ordem).DoTipo(tipo).Construir();
 
     private static Condicoes Citando(string fato) =>
         [[new CondicaoPrecondicaoInput(fato, Operador.Igual.Codigo(), JsonSerializer.SerializeToElement(true))]];

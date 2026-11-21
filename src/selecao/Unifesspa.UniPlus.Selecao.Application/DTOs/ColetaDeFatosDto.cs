@@ -14,30 +14,40 @@ using Unifesspa.UniPlus.Regras.Enums;
 public sealed record CondicaoPrecondicaoDto(string Fato, string Operador, JsonElement Valor);
 
 /// <summary>
-/// DTO de leitura de um fato coletado (Story #987; apresentação — Rotulo/TipoRenderizacao/
-/// Obrigatoriedade/Ajuda — Story #559, UNI-REQ-0145). A <see cref="Precondicao"/> é o predicado na forma normal
-/// disjuntiva — o OU de cláusulas, cada cláusula o E de condições —, ou <see langword="null"/>
-/// quando o fato é coletado incondicionalmente (nunca uma lista vazia). <see cref="Opcoes"/> são as
-/// opções que o processo oferece ao fato cuja fonte dos valores é o processo (issue #1619), ou
-/// <see langword="null"/> quando os valores não vêm do processo. <see cref="Formato"/> é o formato
-/// da resposta do campo de texto (livre, CPF, e-mail…), <see langword="null"/> nos demais campos.
-/// <see cref="Impedimento"/> é a resposta que impede a inscrição, com a mensagem ao candidato, ou
-/// <see langword="null"/> quando nenhuma impede.
+/// Como o campo se apresenta ao candidato: o rótulo, o tipo de campo, a ajuda e o pedido de
+/// confirmação da resposta (UNI-REQ-0145). Tem a forma de <see cref="ApresentacaoDoCampoInput"/>, que a
+/// escrita aceita.
+/// </summary>
+public sealed record ApresentacaoDoCampoDto(string Rotulo, string TipoRenderizacao, string? Ajuda, bool PedirConfirmacao);
+
+/// <summary>
+/// As regras do campo sobre as respostas anteriores. A <see cref="Exibicao"/> é o predicado na forma
+/// normal disjuntiva — o OU de cláusulas, cada cláusula o E de condições —, ou <see langword="null"/>
+/// quando o campo aparece sempre (nunca uma lista vazia). <see cref="Impedimento"/> é a resposta que
+/// impede a inscrição, com a mensagem ao candidato, ou <see langword="null"/> quando nenhuma impede.
+/// Tem a forma de <see cref="RegrasDoCampoInput"/>.
+/// </summary>
+public sealed record RegrasDoCampoDto(
+    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? Exibicao,
+    ObrigatoriedadeDto Obrigatoriedade,
+    IReadOnlyList<RestricaoValorDto> Restricoes,
+    ImpedimentoDto? Impedimento);
+
+/// <summary>
+/// DTO de leitura de um fato coletado (Story #987), na forma do item que a escrita aceita:
+/// <see cref="Apresentacao"/> e <see cref="Regras"/>. <see cref="Opcoes"/> são as opções que o processo
+/// oferece ao fato cuja fonte dos valores é o processo (issue #1619), ou <see langword="null"/> quando
+/// os valores não vêm do processo. <see cref="Formato"/> é o formato da resposta do campo de texto
+/// (livre, CPF, e-mail…), <see langword="null"/> nos demais campos.
 /// </summary>
 public sealed record FatoColetadoDto(
     string FatoCodigo,
     int Ordem,
-    string Rotulo,
-    string TipoRenderizacao,
-    ObrigatoriedadeDto Obrigatoriedade,
-    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? Precondicao,
-    IReadOnlyList<OpcaoDoProcessoDto>? Opcoes,
     string? EtapaCodigo,
+    ApresentacaoDoCampoDto Apresentacao,
+    RegrasDoCampoDto Regras,
     string? Formato,
-    string? Ajuda,
-    bool PedirConfirmacao,
-    IReadOnlyList<RestricaoValorDto> Restricoes,
-    ImpedimentoDto? Impedimento);
+    IReadOnlyList<OpcaoDoProcessoDto>? Opcoes);
 
 /// <summary>A resposta do campo que impede a inscrição e a mensagem que explica o motivo ao candidato.</summary>
 public sealed record ImpedimentoDto(IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>> Quando, string Mensagem);

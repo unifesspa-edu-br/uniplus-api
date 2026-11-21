@@ -45,16 +45,16 @@ internal static class ProjecaoDaColeta
     private static FatoColetadoDto ProjetarFato(ProcessoSeletivo processo, FatoColetado fato) => new(
         fato.FatoCodigo,
         fato.Ordem,
-        fato.Rotulo,
-        fato.TipoRenderizacao.Codigo(),
-        fato.Obrigatoriedade.ToDto(),
+        fato.EtapaCodigo,
+        new ApresentacaoDoCampoDto(fato.Rotulo, fato.TipoRenderizacao.Codigo(), fato.Ajuda, fato.PedirConfirmacao),
+        ProjetarRegras(fato),
+        fato.Formato,
+        ProjetarOpcoesDoFato(processo, fato));
+
+    private static RegrasDoCampoDto ProjetarRegras(FatoColetado fato) => new(
         ProjetarPredicado(fato.Precondicoes, static c => (c.Clausula, c.Fato, c.Operador, c.Valor),
             static (f, o, v) => new CondicaoPrecondicaoDto(f, o, v)),
-        ProjetarOpcoesDoFato(processo, fato),
-        fato.EtapaCodigo,
-        fato.Formato,
-        fato.Ajuda,
-        fato.PedirConfirmacao,
+        fato.Obrigatoriedade.ToDto(),
         [.. fato.Restricoes.Select(static r => r.ToDto())],
         fato.Impedimento?.ToDto());
 

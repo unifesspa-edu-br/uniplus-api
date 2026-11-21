@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class ModeloFormularioMappingTests
 {
@@ -117,13 +118,17 @@ public sealed class ModeloFormularioMappingTests
     private static EtapaFormularioInput EtapaCompletaNaEntrada() => new(
         "DADOS", 0, "SECAO", null, "Dados", "Dados do candidato", "Confira os dados", QuandoNaEntrada("QUILOMBOLA", true));
 
-    private static FatoColetadoInput ItemCompletoNaEntrada() => new(
-        "RENDA", 1, "Renda familiar", "NUMERO", "QUANDO", QuandoNaEntrada("QUILOMBOLA", true), "DADOS", QuandoNaEntrada("BAIXA_RENDA", true),
-        "Some a renda de todos", true, [new RestricaoValorInput("FAIXA_NUMERICA", 0, 10), new RestricaoValorInput("OPCOES_DAS_RESPOSTAS", Fatos: ["COR_RACA"])],
-        new ImpedimentoInput(QuandoNaEntrada("BAIXA_RENDA", false), "Renda acima do limite"));
+    private static FatoColetadoInput ItemCompletoNaEntrada() =>
+        EntradaDoFatoColetadoDeTeste.Coletando("RENDA", 1)
+            .ComRotulo("Renda familiar").DoTipo("NUMERO").ComAjuda("Some a renda de todos").PedindoConfirmacao().NaSecao("DADOS")
+            .ExibidoQuando(QuandoNaEntrada("QUILOMBOLA", true))
+            .ComObrigatoriedade("QUANDO", QuandoNaEntrada("BAIXA_RENDA", true))
+            .ComRestricoes(new RestricaoValorInput("FAIXA_NUMERICA", 0, 10), new RestricaoValorInput("OPCOES_DAS_RESPOSTAS", Fatos: ["COR_RACA"]))
+            .ComImpedimento(new ImpedimentoInput(QuandoNaEntrada("BAIXA_RENDA", false), "Renda acima do limite"))
+            .Construir();
 
     private static FatoColetadoInput ItemMinimoNaEntrada(string fatoCodigo, int ordem) =>
-        new(fatoCodigo, ordem, "Pergunta", "BOOLEANO", "SEMPRE", null, null, null, null, false, []);
+        EntradaDoFatoColetadoDeTeste.Coletando(fatoCodigo, ordem).ComRotulo("Pergunta").ComRestricoes().Construir();
 
     private static GrupoColetadoInput GrupoCompletoNaEntrada() => new(
         "FAMILIA", 2, "Composição familiar", "DADOS", 1, 5, QuandoNaEntrada("QUILOMBOLA", true), "QUANDO", QuandoNaEntrada("BAIXA_RENDA", true),

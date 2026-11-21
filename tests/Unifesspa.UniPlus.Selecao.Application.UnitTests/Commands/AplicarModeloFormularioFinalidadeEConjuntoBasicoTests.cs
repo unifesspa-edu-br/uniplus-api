@@ -24,15 +24,13 @@ public sealed class AplicarModeloFormularioFinalidadeEConjuntoBasicoTests
     private readonly CenarioDaAplicacaoDoModeloDeFormulario _cenario = new();
 
     private static FatoColetadoInput ItemQuilombolaImpedidoParaPretos(string mensagem) =>
-        Item("QUILOMBOLA", FormularioDeTeste.PrimeiraOrdemDeInscricao) with
-        {
-            Impedimento = new ImpedimentoInput(
+        Montar("QUILOMBOLA", FormularioDeTeste.PrimeiraOrdemDeInscricao).ComImpedimento(
+            new ImpedimentoInput(
                 [[
                     new CondicaoPrecondicaoInput("QUILOMBOLA", "IGUAL", JsonSerializer.SerializeToElement(true)),
                     new CondicaoPrecondicaoInput("COR_RACA", "IGUAL", JsonSerializer.SerializeToElement("PRETA")),
                 ]],
-                mensagem),
-        };
+                mensagem)).Construir();
 
     [Fact(DisplayName = "Fora da inscrição, o fato que a inscrição coleta fica nela e sai da cópia")]
     public async Task Handle_HabilitacaoComFatoDaInscricao_MantemNaInscricao()

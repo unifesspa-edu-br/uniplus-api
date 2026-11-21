@@ -16,24 +16,24 @@ public sealed class PredicadosDasPartesDoModeloTests
     private static readonly PredicadoDnf DaObrigatoriedade = Quando("DA_OBRIGATORIEDADE");
     private static readonly PredicadoDnf DoImpedimento = Quando("DO_IMPEDIMENTO");
 
-    [Fact(DisplayName = "O item enumera a precondição e o predicado de obrigatoriedade, nessa ordem")]
-    public void Item_PrecondicaoEObrigatoriedade_NaOrdem()
+    [Fact(DisplayName = "O item enumera, no caminho das regras, a exibição e o predicado de obrigatoriedade, nessa ordem")]
+    public void Item_ExibicaoEObrigatoriedade_NaOrdem()
     {
         ItemDoModelo item = Item("CERTIFICADO", exibicao: Exibicao)
             .ComObrigatoriedade(Obrigatoriedade.Quando(DaObrigatoriedade))
             .ComImpedimento(new Impedimento(DoImpedimento, "Já possui o certificado."));
 
         item.Predicados().Should().Equal(
-            new PredicadoNaEntrada("precondicao", Exibicao),
-            new PredicadoNaEntrada("predicadoObrigatoriedade", DaObrigatoriedade));
+            new PredicadoNaEntrada("regras.exibicao", Exibicao),
+            new PredicadoNaEntrada("regras.obrigatoriedade.predicado", DaObrigatoriedade));
     }
 
     [Fact(DisplayName = "O item sem regras enumera os mesmos caminhos, sem predicado")]
     public void Item_SemRegras_MesmosCaminhosSemPredicado()
     {
         Item("RENDA").Predicados().Should().Equal(
-            new PredicadoNaEntrada("precondicao", null),
-            new PredicadoNaEntrada("predicadoObrigatoriedade", null));
+            new PredicadoNaEntrada("regras.exibicao", null),
+            new PredicadoNaEntrada("regras.obrigatoriedade.predicado", null));
     }
 
     [Fact(DisplayName = "O grupo enumera a exibição e o predicado de obrigatoriedade, nessa ordem")]

@@ -83,8 +83,8 @@ public sealed class RegrasDoCampoTests
         RegrasDoCampo regras = new(Predicado(("CAMPO", true)), Obrigatoriedade.Quando(Predicado(("CAMPO", true))), []);
 
         regras.ConferirNoCampo("CAMPO", TipoRenderizacao.Booleano).Select(static e => (e.Field, e.Error.Code)).Should().Equal(
-            ("precondicao", ItemFormularioErrorCodes.RegraAutorreferente),
-            ("predicadoObrigatoriedade", ItemFormularioErrorCodes.RegraAutorreferente));
+            ("exibicao", ItemFormularioErrorCodes.RegraAutorreferente),
+            ("obrigatoriedade.predicado", ItemFormularioErrorCodes.RegraAutorreferente));
     }
 
     [Fact(DisplayName = "A restrição fora do tipo do campo é recusada na posição dela")]

@@ -5,6 +5,7 @@ using Domain.Entities;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
@@ -18,6 +19,14 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </summary>
 internal static class ConferenciaDoItemNoCatalogo
 {
+    /// <summary>O caminho da exibição do item, onde se aponta a recusa da forma e a da semântica dela.</summary>
+    public static readonly string CaminhoDaExibicao = $"{FatoColetadoInput.CaminhoDasRegras}.exibicao";
+
+    private static readonly string RegrasNoItem = $"{FatoColetadoInput.CaminhoDasRegras}.";
+
+    private static readonly (string NasRegras, string NoItemPlano)[] CamposPlanos =
+        [("exibicao", "precondicao"), ("obrigatoriedade.predicado", "predicadoObrigatoriedade")];
+
     /// <summary>A coerência do tipo de campo com domínio, cardinalidade e fonte de valores do fato.</summary>
     public static DomainError? Coerencia(FatoCandidatoView fato, TipoRenderizacao tipoRenderizacao)
     {
@@ -38,14 +47,19 @@ internal static class ConferenciaDoItemNoCatalogo
         ArgumentNullException.ThrowIfNull(contexto);
         return
         [
-            .. SemanticaDoPredicado("precondicao", regras.Exibicao, contexto),
-            .. SemanticaDoPredicado("predicadoObrigatoriedade", regras.Obrigatoriedade.Predicado, contexto),
-            .. ConferenciaNoCatalogo.SemanticaDasRestricoes(
-                contexto.FatosDasRegras[fato.Codigo], tipoRenderizacao, regras.Restricoes, contexto.FatosDasRegras, contexto.Vocabulario, contexto.DominiosDinamicos),
-            .. SemanticaDoPredicado("impedimento.quando", regras.Impedimento?.Quando, contexto),
+            .. SemanticaDasRegras(fato, tipoRenderizacao, regras, contexto).Select(static erro => erro.NoCaminhoDe(FatoColetadoInput.CaminhoDasRegras)),
             .. RecusaDeAtributoDoCandidato(fatosDaPrecondicao.Concat(FatosDasRegrasSemExibicao(regras)), contexto),
         ];
     }
+
+    private static IEnumerable<FieldError> SemanticaDasRegras(FatoCandidatoView fato, TipoRenderizacao tipoRenderizacao, RegrasDoCampo regras, ContextoDoCatalogo contexto) =>
+    [
+        .. SemanticaDoPredicado("exibicao", regras.Exibicao, contexto),
+        .. SemanticaDoPredicado("obrigatoriedade.predicado", regras.Obrigatoriedade.Predicado, contexto),
+        .. ConferenciaNoCatalogo.SemanticaDasRestricoes(
+            contexto.FatosDasRegras[fato.Codigo], tipoRenderizacao, regras.Restricoes, contexto.FatosDasRegras, contexto.Vocabulario, contexto.DominiosDinamicos),
+        .. SemanticaDoPredicado("impedimento.quando", regras.Impedimento?.Quando, contexto),
+    ];
 
     private static IEnumerable<string> FatosDasRegrasSemExibicao(RegrasDoCampo regras) =>
         regras.Obrigatoriedade.FatosCitados
@@ -79,10 +93,20 @@ internal static class ConferenciaDoItemNoCatalogo
         ];
     }
 
+    private static FieldError NoItemPlano(FieldError erro) =>
+        erro.Field is { } campo && campo.StartsWith(RegrasNoItem, StringComparison.Ordinal) ? erro with { Field = CampoPlano(campo[RegrasNoItem.Length..]) } : erro;
+
+    private static string CampoPlano(string nasRegras) =>
+        CamposPlanos.Where(c => nasRegras.StartsWith(c.NasRegras, StringComparison.Ordinal))
+            .Select(c => c.NoItemPlano + nasRegras[c.NasRegras.Length..])
+            .FirstOrDefault(nasRegras);
+
     /// <summary>
     /// Confere o item já gravado contra o catálogo de hoje. O fato que alguma versão publicada já
     /// coletou só tem o campo conferido: os valores de domínio nunca saem do catálogo, então as
-    /// regras dele não são reconferidas.
+    /// regras dele não são reconferidas. O item gravado e o envelope guardam o item plano, e a
+    /// recusa aponta o campo plano: <c>tipoRenderizacao</c>, <c>precondicao</c>,
+    /// <c>predicadoObrigatoriedade</c>, <c>restricoes</c> e <c>impedimento</c>.
     /// </summary>
     public static List<FieldError> DoItemGravado(FatoColetado item, FatoCandidatoView fato, bool jaColetado, ContextoDoCatalogo contexto)
     {
@@ -99,6 +123,6 @@ internal static class ConferenciaDoItemNoCatalogo
             return [];
         }
 
-        return Semantica(fato, item.TipoRenderizacao, item.Regras, item.Precondicoes.Select(static c => c.Fato), contexto);
+        return [.. Semantica(fato, item.TipoRenderizacao, item.Regras, item.Precondicoes.Select(static c => c.Fato), contexto).Select(NoItemPlano)];
     }
 }

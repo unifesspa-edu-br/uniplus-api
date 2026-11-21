@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
-/// Uma condição da pré-condição de um fato coletado — a tripla
+/// Uma condição de um predicado do formulário — a exibição, a obrigatoriedade ou o impedimento de um item —, a tripla
 /// <c>{ Fato, Operador, Valor }</c> na forma flat do wire de comando. Idêntica em forma à
 /// condição de gatilho documental: o <see cref="Operador"/> é o código canônico UPPER_SNAKE
 /// (<c>IGUAL</c>, <c>EM</c>, …) e o <see cref="Valor"/> é o valor JSON já tipado (string,
@@ -54,32 +54,69 @@ public sealed record OpcoesCondicionadasInput(
     IReadOnlyList<string> Valores);
 
 /// <summary>
-/// Um item do formulário, no processo e no modelo: o fato que o campo coleta do candidato, a
-/// posição na ordem de coleta, a apresentação do campo e a exibição condicional em
-/// <see cref="Precondicao"/>. O predicado está na forma normal disjuntiva — a lista externa é o
-/// <b>OU</b> de cláusulas, e cada cláusula interna é o <b>E</b> de condições. A ausência de
-/// condição é <see langword="null"/>, nunca uma lista vazia: o campo sem condição aparece
-/// sempre, e um predicado sem cláusula avaliaria falso, o oposto.
+/// A obrigatoriedade na entrada: o <see cref="Tipo"/> — <c>SEMPRE</c> ou <c>NUNCA</c>, sem
+/// <see cref="Predicado"/>, e <c>QUANDO</c>, com ele. O predicado está na forma normal disjuntiva,
+/// como o da exibição.
 /// </summary>
-/// <remarks>
-/// <see cref="TipoRenderizacao"/> é o código de <see cref="Enums.TipoRenderizacao"/>; a leitura dele, que recusa o
-/// código ausente e o desconhecido, é de <see cref="TipoRenderizacaoDaEntrada"/>. A
-/// <see cref="Obrigatoriedade"/> segue a forma do termo exigido: <c>SEMPRE</c> ou <c>NUNCA</c>
-/// sem <see cref="PredicadoObrigatoriedade"/>, e <c>QUANDO</c> com ele.
-/// </remarks>
+public sealed record ObrigatoriedadeInput(string? Tipo, IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? Predicado = null);
+
+/// <summary>
+/// Como o campo se apresenta ao candidato: o rótulo, o tipo de campo, a ajuda e o pedido de
+/// confirmação da resposta. <see cref="TipoRenderizacao"/> é o código de
+/// <see cref="Enums.TipoRenderizacao"/>; a leitura dele, que recusa o código ausente e o desconhecido,
+/// é de <see cref="TipoRenderizacaoDaEntrada"/>.
+/// </summary>
+public sealed record ApresentacaoDoCampoInput(
+    string? Rotulo,
+    [AceitaCodigosDe<TipoRenderizacao>] string? TipoRenderizacao,
+    string? Ajuda = null,
+    bool PedirConfirmacao = false);
+
+/// <summary>
+/// As regras do campo sobre as respostas anteriores: a <see cref="Exibicao"/> condicional, a
+/// obrigatoriedade, as restrições de valor e o impedimento. A exibição e o predicado da obrigatoriedade
+/// estão na forma normal disjuntiva — a lista externa é o <b>OU</b> de cláusulas, e cada cláusula
+/// interna é o <b>E</b> de condições. A ausência de condição é <see langword="null"/>, nunca uma lista
+/// vazia: o campo sem condição aparece sempre, e um predicado sem cláusula avaliaria falso, o oposto.
+/// </summary>
+public sealed record RegrasDoCampoInput(
+    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? Exibicao,
+    ObrigatoriedadeInput? Obrigatoriedade,
+    IReadOnlyList<RestricaoValorInput>? Restricoes = null,
+    ImpedimentoInput? Impedimento = null)
+{
+    /// <summary>
+    /// Os predicados que as regras trazem — exibição, predicado da obrigatoriedade, condição do impedimento
+    /// e condição de cada grupo de opções —, os ausentes como <see langword="null"/>.
+    /// </summary>
+    public IEnumerable<IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>?> Predicados() =>
+    [
+        Exibicao,
+        Obrigatoriedade?.Predicado,
+        Impedimento?.Quando,
+        .. (Restricoes ?? []).SelectMany(static r => (r?.Entradas ?? []).Select(static e => e?.Quando)),
+    ];
+}
+
+/// <summary>
+/// Um item do formulário, no processo e no modelo: o fato que o campo coleta, a posição na ordem de
+/// coleta, a apresentação e as regras do campo e a seção em que ele aparece. A apresentação ou as
+/// regras ausentes chegam ao domínio, que recusa o rótulo, o tipo de campo e a obrigatoriedade que
+/// faltam, cada um no caminho da parte a que pertence.
+/// </summary>
 public sealed record FatoColetadoInput(
     string FatoCodigo,
     int Ordem,
-    string Rotulo,
-    [AceitaCodigosDe<TipoRenderizacao>] string? TipoRenderizacao,
-    string? Obrigatoriedade,
-    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? Precondicao,
-    string? EtapaCodigo = null,
-    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? PredicadoObrigatoriedade = null,
-    string? Ajuda = null,
-    bool PedirConfirmacao = false,
-    IReadOnlyList<RestricaoValorInput>? Restricoes = null,
-    ImpedimentoInput? Impedimento = null);
+    ApresentacaoDoCampoInput? Apresentacao,
+    RegrasDoCampoInput? Regras,
+    string? EtapaCodigo = null)
+{
+    /// <summary>O caminho da apresentação do campo no item, onde a recusa de rótulo, tipo e ajuda se aponta.</summary>
+    public const string CaminhoDaApresentacao = "apresentacao";
+
+    /// <summary>O caminho das regras do campo no item, onde a recusa de exibição, obrigatoriedade, restrição e impedimento se aponta.</summary>
+    public const string CaminhoDasRegras = "regras";
+}
 
 /// <summary>
 /// A resposta do campo que impede a inscrição: a condição, cujas cláusulas citam a resposta do

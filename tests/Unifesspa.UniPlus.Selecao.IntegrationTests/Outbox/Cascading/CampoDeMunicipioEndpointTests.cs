@@ -51,8 +51,8 @@ public sealed class CampoDeMunicipioEndpointTests
             .GetProperty("fatosColetados").EnumerateArray()
             .Single(static f => f.GetProperty("fatoCodigo").GetString() == "NATURALIDADE_MUNICIPIO");
         municipio.GetProperty("etapaCodigo").GetString().Should().Be("DADOS_BASICOS");
-        municipio.GetProperty("tipoRenderizacao").GetString().Should().Be("MUNICIPIO");
-        JsonElement restricao = municipio.GetProperty("restricoes").EnumerateArray().Single();
+        municipio.GetProperty("apresentacao").GetProperty("tipoRenderizacao").GetString().Should().Be("MUNICIPIO");
+        JsonElement restricao = municipio.GetProperty("regras").GetProperty("restricoes").EnumerateArray().Single();
         restricao.GetProperty("tipo").GetString().Should().Be("MUNICIPIOS_DA_UF");
         restricao.GetProperty("fatos").EnumerateArray().Single().GetString().Should().Be("NATURALIDADE_UF");
     }

@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Regras.Formularios;
 
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 
@@ -108,11 +109,11 @@ public static class FormaDoItem
     {
         if (string.IsNullOrWhiteSpace(rotulo))
         {
-            yield return new("rotulo", new DomainError(ItemFormularioErrorCodes.RotuloObrigatorio, "O rótulo do item é obrigatório."));
+            yield return new($"{FatoColetadoInput.CaminhoDaApresentacao}.rotulo", new DomainError(ItemFormularioErrorCodes.RotuloObrigatorio, "O rótulo do item é obrigatório."));
         }
         else if (rotulo.Trim().Length > RotuloMaxLength)
         {
-            yield return new("rotulo", new DomainError(
+            yield return new($"{FatoColetadoInput.CaminhoDaApresentacao}.rotulo", new DomainError(
                 ItemFormularioErrorCodes.RotuloTamanho, $"O rótulo do item deve ter no máximo {RotuloMaxLength} caracteres."));
         }
     }
@@ -131,9 +132,10 @@ public static class FormaDoItem
         return
         [
             .. ValidarFormaBasica(fatoCodigo, ordem, apresentacao.Rotulo),
-            .. apresentacao.ConferirAjuda(),
+            .. apresentacao.ConferirAjuda().Select(static erro => erro.NoCaminhoDe(FatoColetadoInput.CaminhoDaApresentacao)),
             .. RecusasDoFormato(apresentacao.TipoRenderizacao, formato),
-            .. regras.ConferirNoCampo(fatoCodigo?.Trim() ?? string.Empty, apresentacao.TipoRenderizacao),
+            .. regras.ConferirNoCampo(fatoCodigo?.Trim() ?? string.Empty, apresentacao.TipoRenderizacao)
+                .Select(static erro => erro.NoCaminhoDe(FatoColetadoInput.CaminhoDasRegras)),
         ];
     }
 
@@ -259,7 +261,7 @@ public static class FormaDoGrupo
 
         if (subitem.TemImpedimento)
         {
-            yield return new($"subitens[{indice}].impedimento", new DomainError(
+            yield return new($"subitens[{indice}].{FatoColetadoInput.CaminhoDasRegras}.impedimento", new DomainError(
                 GrupoFormularioErrorCodes.CampoComImpedimento,
                 $"O campo '{subitem.FatoCodigo}' é de membro: o impedimento é da inscrição do candidato, não de um membro."));
         }

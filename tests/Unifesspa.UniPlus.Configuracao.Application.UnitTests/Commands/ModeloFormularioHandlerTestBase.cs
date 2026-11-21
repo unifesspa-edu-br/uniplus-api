@@ -25,6 +25,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>Dublês, fatos aprovados e montagem de comandos comuns aos testes do handler do modelo de formulário.</summary>
 public abstract class ModeloFormularioHandlerTestBase
@@ -110,10 +111,13 @@ public abstract class ModeloFormularioHandlerTestBase
             Grupos = [new GrupoColetadoInput("COMPOSICAO_FAMILIAR", 1, "Composição familiar", "DADOS", 1, 10, null, "SEMPRE", null, campos)],
         };
 
-    protected static FatoColetadoInput Campo(string fato, int ordem) => Item(fato, ordem) with { EtapaCodigo = null };
+    protected static FatoColetadoInput Campo(string fato, int ordem, string tipo = "BOOLEANO") => Montar(fato, ordem, tipo).NaSecao(null).Construir();
 
-    protected static FatoColetadoInput Item(string fato, int ordem, string tipo = "BOOLEANO") =>
-        new(fato, ordem, fato, tipo, "SEMPRE", null, EtapaCodigo: "DADOS");
+    protected static FatoColetadoInput Item(string fato, int ordem, string tipo = "BOOLEANO") => Montar(fato, ordem, tipo).Construir();
+
+    /// <summary>O item na seção <c>DADOS</c>, ainda sem fechar, para o teste que lhe dá regras.</summary>
+    private protected static EntradaDoFatoColetadoDeTeste Montar(string fato, int ordem, string tipo = "BOOLEANO") =>
+        EntradaDoFatoColetadoDeTeste.Coletando(fato, ordem).DoTipo(tipo).NaSecao("DADOS");
 
     protected static IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>> Quando(string fato, object valor) =>
         [[new CondicaoPrecondicaoInput(fato, "IGUAL", JsonSerializer.SerializeToElement(valor))]];

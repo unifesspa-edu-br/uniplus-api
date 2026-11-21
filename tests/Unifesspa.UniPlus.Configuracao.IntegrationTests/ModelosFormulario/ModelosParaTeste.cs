@@ -66,11 +66,25 @@ internal static class ModelosParaTeste
     ];
 
     private static object Item(
-        string fatoCodigo, int ordem, string rotulo, string tipoRenderizacao, object? precondicao = null, string obrigatoriedade = "SEMPRE") =>
-        new { fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatoriedade, precondicao, etapaCodigo = "DADOS" };
+        string fatoCodigo, int ordem, string rotulo, string tipoRenderizacao, object? exibicao = null, string obrigatoriedade = "SEMPRE") =>
+        new
+        {
+            fatoCodigo,
+            ordem,
+            etapaCodigo = "DADOS",
+            apresentacao = new { rotulo, tipoRenderizacao },
+            regras = new { exibicao, obrigatoriedade = new { tipo = obrigatoriedade } },
+        };
 
     private static object ItemComRestricoes(string fatoCodigo, int ordem, string rotulo, string tipoRenderizacao, object restricoes) =>
-        new { fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatoriedade = "SEMPRE", precondicao = (object?)null, etapaCodigo = "DADOS", restricoes };
+        new
+        {
+            fatoCodigo,
+            ordem,
+            etapaCodigo = "DADOS",
+            apresentacao = new { rotulo, tipoRenderizacao },
+            regras = new { exibicao = (object?)null, obrigatoriedade = new { tipo = "SEMPRE" }, restricoes },
+        };
 
     private static object[][] Condicao(string fato, object valor) =>
         [[new { fato, operador = "IGUAL", valor }]];

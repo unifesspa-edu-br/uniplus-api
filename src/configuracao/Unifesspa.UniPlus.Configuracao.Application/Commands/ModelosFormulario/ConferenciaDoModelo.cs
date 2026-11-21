@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
@@ -196,17 +197,17 @@ internal static class ConferenciaDoModelo
             .. ConferirPredicados(caminho, item.Predicados(), catalogo),
             .. ConferenciaNoCatalogo.SemanticaDasRestricoes(
                 fato, item.Apresentacao.TipoRenderizacao, item.Regras.Restricoes, catalogo.Fatos, catalogo.Vocabulario, catalogo.DominiosDinamicos)
-                .Select(restricao => restricao.NoCaminhoDe(caminho)),
+                .Select(restricao => restricao.NoCaminhoDe($"{caminho}.{FatoColetadoInput.CaminhoDasRegras}")),
             .. ConferirImpedimentoDoItem(item, caminho, catalogo),
         ];
     }
 
     private static IEnumerable<FieldError> ConferirImpedimentoDoItem(ItemDoModelo item, string caminho, CatalogoDoModelo catalogo) =>
-        ConferirPredicado($"{caminho}.impedimento.quando", item.Regras.Impedimento?.Quando, catalogo) is { } recusa ? [recusa] : [];
+        ConferirPredicado($"{caminho}.{FatoColetadoInput.CaminhoDasRegras}.impedimento.quando", item.Regras.Impedimento?.Quando, catalogo) is { } recusa ? [recusa] : [];
 
     private static IEnumerable<FieldError> ConferirTipoDoCampo(ItemDoModelo item, FatoDoCatalogo fato, string codigo, string caminho) =>
         CoerenciaDoCampo.Validar(codigo, item.Apresentacao.TipoRenderizacao, fato.Dominio, fato.Cardinalidade, fato.FonteValores) is { } incoerencia
-            ? [new FieldError($"{caminho}.tipoRenderizacao", incoerencia, codigo)]
+            ? [new FieldError($"{caminho}.{FatoColetadoInput.CaminhoDaApresentacao}.tipoRenderizacao", incoerencia, codigo)]
             : [];
 
     private static IEnumerable<FieldError> ConferirVersaoDoTermo(

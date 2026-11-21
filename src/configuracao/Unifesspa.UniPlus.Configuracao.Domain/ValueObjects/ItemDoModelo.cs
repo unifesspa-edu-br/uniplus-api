@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
@@ -20,7 +21,7 @@ public sealed record ItemDoModelo(
     /// <summary>A exibição e a obrigatoriedade do item, cada uma com o caminho do campo dela na entrada.</summary>
     public IReadOnlyList<PredicadoNaEntrada> Predicados() =>
     [
-        new("precondicao", Regras.Exibicao),
-        new("predicadoObrigatoriedade", Regras.Obrigatoriedade.Predicado),
+        new($"{FatoColetadoInput.CaminhoDasRegras}.exibicao", Regras.Exibicao),
+        new($"{FatoColetadoInput.CaminhoDasRegras}.obrigatoriedade.predicado", Regras.Obrigatoriedade.Predicado),
     ];
 }

@@ -114,7 +114,7 @@ public sealed class FatoColetadoTests
     [Fact(DisplayName = "Ajuda acima do limite é recusada no campo")]
     public void Criar_AjudaLonga_Recusa() =>
         FatoColetado.Criar("PCD", 0, null, Campo("PCD", TipoRenderizacao.Booleano, new string('a', FormaDoItem.AjudaMaxLength + 1)), Regras(), CopiaPadrao)
-            .Errors.Should().ContainSingle().Which.Field.Should().Be("ajuda");
+            .Errors.Should().ContainSingle().Which.Field.Should().Be("apresentacao.ajuda");
 
     public static TheoryData<TipoRenderizacao, RestricaoValor, bool> RestricoesPorTipoDeCampo => new()
     {
@@ -141,7 +141,7 @@ public sealed class FatoColetadoTests
         else
         {
             resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(
-                new { Field = "restricoes[0]", Error = new { Code = ItemFormularioErrorCodes.RestricaoIncoerente } });
+                new { Field = "regras.restricoes[0]", Error = new { Code = ItemFormularioErrorCodes.RestricaoIncoerente } });
         }
     }
 

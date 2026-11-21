@@ -58,9 +58,9 @@ public class ImpedimentoTests : TestesDeAvaliacao
 
         erros.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
-            ("impedimento", ItemFormularioErrorCodes.ImpedimentoNaoCabeNoCampo),
-            ("impedimento.quando", ItemFormularioErrorCodes.ImpedimentoSemOProprioCampo),
-            ("impedimento.mensagem", ItemFormularioErrorCodes.ImpedimentoMensagemInvalida),
+            ("regras.impedimento", ItemFormularioErrorCodes.ImpedimentoNaoCabeNoCampo),
+            ("regras.impedimento.quando", ItemFormularioErrorCodes.ImpedimentoSemOProprioCampo),
+            ("regras.impedimento.mensagem", ItemFormularioErrorCodes.ImpedimentoMensagemInvalida),
         ]);
     }
 
@@ -72,7 +72,7 @@ public class ImpedimentoTests : TestesDeAvaliacao
 
         erros.Should().ContainSingle().Which.Should().BeEquivalentTo(new
         {
-            Field = "impedimento.quando",
+            Field = "regras.impedimento.quando",
             Error = new { Code = ItemFormularioErrorCodes.ImpedimentoSemCondicao },
         });
     }
@@ -96,7 +96,7 @@ public class ImpedimentoTests : TestesDeAvaliacao
 
         erros.Should().ContainSingle().Which.Should().BeEquivalentTo(new
         {
-            Field = "subitens[0].impedimento",
+            Field = "subitens[0].regras.impedimento",
             Error = new { Code = GrupoFormularioErrorCodes.CampoComImpedimento },
         });
     }

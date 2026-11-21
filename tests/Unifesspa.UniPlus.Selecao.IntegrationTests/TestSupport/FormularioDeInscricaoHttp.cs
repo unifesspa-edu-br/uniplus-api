@@ -15,6 +15,34 @@ internal static class FormularioDeInscricaoHttp
     public static Uri RotaDosItens(Guid processoId) =>
         new($"/api/selecao/admin/processos-seletivos/{processoId}/formularios/INSCRICAO/itens", UriKind.Relative);
 
+    /// <summary>
+    /// O item na forma do corpo: a apresentação e as regras aninhadas, e a obrigatoriedade com o tipo. Sem
+    /// <paramref name="etapaCodigo"/>, o item vai sem seção, e <see cref="CorpoDosItens"/> o põe na dos dados.
+    /// </summary>
+    public static object Item(
+        string fatoCodigo,
+        int ordem,
+        string rotulo,
+        string tipoRenderizacao,
+        string obrigatoriedade = "SEMPRE",
+        object? exibicao = null,
+        string? etapaCodigo = null)
+    {
+        Dictionary<string, object?> item = new()
+        {
+            ["fatoCodigo"] = fatoCodigo,
+            ["ordem"] = ordem,
+            ["apresentacao"] = new { rotulo, tipoRenderizacao },
+            ["regras"] = new { exibicao, obrigatoriedade = new { tipo = obrigatoriedade } },
+        };
+        if (etapaCodigo is not null)
+        {
+            item["etapaCodigo"] = etapaCodigo;
+        }
+
+        return item;
+    }
+
     public static object CorpoDosItens(IEnumerable<object> itens) => new
     {
         itens = itens.Select(static item =>

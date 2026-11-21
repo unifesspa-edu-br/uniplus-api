@@ -26,6 +26,9 @@ public sealed class ObterProcessoSeletivoQueryHandlerColetaDeFatosTests
     private static CondicaoRegraDerivacao CondicaoRegra(int clausula, string fato, Operador operador, object valor) =>
         CondicaoRegraDerivacao.Criar(clausula, fato, operador, JsonSerializer.SerializeToElement(valor)).Value!;
 
+    private static ProcessoSeletivo NovoProcesso() =>
+        ProcessoSeletivo.Criar("PS Query", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+
     private static async Task<ProcessoSeletivoDto> ProjetarAsync(ProcessoSeletivo processo)
     {
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
@@ -37,77 +40,92 @@ public sealed class ObterProcessoSeletivoQueryHandlerColetaDeFatosTests
         return dto!;
     }
 
-    [Fact(DisplayName = "Fatos coletados são ordenados por ordem; sem pré-condição projeta null, nunca []")]
-    public async Task Fatos_OrdenadosEPrecondicaoNullNuncaVazia()
+    [Fact(DisplayName = "Fatos coletados são ordenados por ordem e projetam a apresentação e as regras no código canônico da escrita")]
+    public async Task Fatos_Ordenados_ProjetamApresentacaoEObrigatoriedade()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Query", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-
-        // BAIXA_RENDA na ordem 0 (sem pré-condição); COR_RACA na ordem 1 com pré-condição citando o anterior.
-        FatoColetado baixaRenda = FatoColetadoDeTeste.Coletando("BAIXA_RENDA", 0)
-            .ComRotulo("Baixa renda")
-            .ComObrigatoriedade(Obrigatoriedade.Sempre)
-            .Construir();
-        FatoColetado corRaca = FatoColetadoDeTeste.Coletando("COR_RACA", 1)
-            .ComRotulo("Cor ou raça")
-            .DoTipo(TipoRenderizacao.SelecaoUnica)
-            .ExibidoQuando(ExibicaoDeTeste.Quando("BAIXA_RENDA", Operador.Igual, true))
-            .Construir();
-        // Passa fora de ordem de propósito — a projeção é quem ordena.
-        processo.DefinirItens([corRaca, baixaRenda], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
-
-        ProcessoSeletivoDto dto = await ProjetarAsync(processo);
-        IReadOnlyList<FatoColetadoDto> fatos = dto.Formularios.Should().ContainSingle().Which.FatosColetados;
+        IReadOnlyList<FatoColetadoDto> fatos = await ProjetarFatosAsync(ProcessoComDoisFatosForaDeOrdem());
 
         fatos.Select(f => f.FatoCodigo).Should().ContainInOrder("BAIXA_RENDA", "COR_RACA");
-        fatos[0].Rotulo.Should().Be("Baixa renda");
-        fatos[0].TipoRenderizacao.Should().Be("BOOLEANO", "o wire de leitura usa o mesmo código canônico do wire de escrita");
-        fatos[0].Obrigatoriedade.Tipo.Should().Be("SEMPRE");
-        fatos[0].Precondicao.Should().BeNull("fato sem pré-condição projeta null, nunca lista vazia");
+        fatos[0].Apresentacao.Rotulo.Should().Be("Baixa renda");
+        fatos[0].Apresentacao.TipoRenderizacao.Should().Be("BOOLEANO", "o wire de leitura usa o mesmo código canônico do wire de escrita");
+        fatos[0].Regras.Obrigatoriedade.Tipo.Should().Be("SEMPRE");
+    }
 
-        IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? precondicao = fatos[1].Precondicao;
-        precondicao.Should().NotBeNull();
-        precondicao!.Should().ContainSingle().Which.Should().ContainSingle();
-        CondicaoPrecondicaoDto condicao = precondicao[0][0];
+    [Fact(DisplayName = "Fato sem exibição projeta null, nunca lista vazia")]
+    public async Task Fatos_SemExibicao_ProjetaNull()
+    {
+        IReadOnlyList<FatoColetadoDto> fatos = await ProjetarFatosAsync(ProcessoComDoisFatosForaDeOrdem());
+
+        fatos[0].Regras.Exibicao.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "A exibição do fato faz round-trip: o valor tipado volta como booleano JSON")]
+    public async Task Fatos_ComExibicao_ProjetaACondicao()
+    {
+        IReadOnlyList<FatoColetadoDto> fatos = await ProjetarFatosAsync(ProcessoComDoisFatosForaDeOrdem());
+
+        IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>> exibicao = fatos[1].Regras.Exibicao!;
+        CondicaoPrecondicaoDto condicao = exibicao.Should().ContainSingle().Which.Should().ContainSingle().Subject;
         condicao.Fato.Should().Be("BAIXA_RENDA");
         condicao.Operador.Should().Be("IGUAL");
-        condicao.Valor.GetBoolean().Should().BeTrue("o valor tipado faz round-trip como booleano JSON");
+        condicao.Valor.GetBoolean().Should().BeTrue();
+    }
+
+    private static async Task<IReadOnlyList<FatoColetadoDto>> ProjetarFatosAsync(ProcessoSeletivo processo)
+    {
+        ProcessoSeletivoDto dto = await ProjetarAsync(processo);
+        return dto.Formularios.Should().ContainSingle().Which.FatosColetados;
+    }
+
+    /// <summary>BAIXA_RENDA na ordem 0, sem exibição; COR_RACA na ordem 1, com exibição citando o anterior. Entram fora de ordem: a projeção é quem ordena.</summary>
+    private static ProcessoSeletivo ProcessoComDoisFatosForaDeOrdem()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FatoColetado baixaRenda = FatoColetadoDeTeste.Coletando("BAIXA_RENDA", 0).ComRotulo("Baixa renda").ComObrigatoriedade(Obrigatoriedade.Sempre).Construir();
+        FatoColetado corRaca = FatoColetadoDeTeste.Coletando("COR_RACA", 1).ComRotulo("Cor ou raça").DoTipo(TipoRenderizacao.SelecaoUnica)
+            .ExibidoQuando(ExibicaoDeTeste.Quando("BAIXA_RENDA", Operador.Igual, true)).Construir();
+        processo.DefinirItens([corRaca, baixaRenda], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+        return processo;
     }
 
     [Fact(DisplayName = "Regras de derivação: config por codigoFato, regras por ordem; âncora projeta quando null")]
     public async Task Regras_OrdenadasEAncoraProjetaNull()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Query", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ConfiguracaoDerivacaoDto projetada = await ProjetarDerivacaoAsync();
 
-        RegraDerivacaoConfigurada ancora = RegraDerivacaoConfigurada.Criar(0, "AC", null).Value!;
-        RegraDerivacaoConfigurada condicional = RegraDerivacaoConfigurada.Criar(1, "LB_PPI",
-            [CondicaoRegra(0, "COR_RACA", Operador.Igual, "PRETA")]).Value!;
-        // Regras fora de ordem — a projeção ordena por Ordem.
-        ConfiguracaoDerivacaoFato config = ConfiguracaoDerivacaoFato.Criar("REGIME_DE_VAGA", [condicional, ancora]).Value!;
-        processo.DefinirRegrasDerivacao([config]).IsSuccess.Should().BeTrue();
-
-        ProcessoSeletivoDto dto = await ProjetarAsync(processo);
-
-        ConfiguracaoDerivacaoDto projetada = dto.RegrasDerivacao.Should().ContainSingle().Which;
         projetada.CodigoFato.Should().Be("REGIME_DE_VAGA");
         projetada.Regras.Select(r => r.Ordem).Should().ContainInOrder(0, 1);
+        projetada.Regras[0].Contribui.Should().Be("AC");
+        projetada.Regras[0].Quando.Should().BeNull("a regra âncora incondicional projeta quando null, nunca lista vazia");
+    }
 
-        RegraDerivacaoDto regraAncora = projetada.Regras[0];
-        regraAncora.Contribui.Should().Be("AC");
-        regraAncora.Quando.Should().BeNull("a regra âncora incondicional projeta quando null, nunca lista vazia");
+    [Fact(DisplayName = "A condição da regra de derivação projeta o fato, o operador e o valor tipado")]
+    public async Task Regras_Condicional_ProjetaACondicao()
+    {
+        RegraDerivacaoDto regraCondicional = (await ProjetarDerivacaoAsync()).Regras[1];
 
-        RegraDerivacaoDto regraCondicional = projetada.Regras[1];
         regraCondicional.Contribui.Should().Be("LB_PPI");
-        regraCondicional.Quando.Should().NotBeNull();
-        CondicaoDerivacaoDto condicao = regraCondicional.Quando![0][0];
+        CondicaoDerivacaoDto condicao = regraCondicional.Quando!.Should().ContainSingle().Which.Should().ContainSingle().Subject;
         condicao.Fato.Should().Be("COR_RACA");
         condicao.Operador.Should().Be("IGUAL");
         condicao.Valor.GetString().Should().Be("PRETA");
     }
 
+    /// <summary>As regras entram fora de ordem: a projeção ordena por <c>Ordem</c>.</summary>
+    private static async Task<ConfiguracaoDerivacaoDto> ProjetarDerivacaoAsync()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        RegraDerivacaoConfigurada ancora = RegraDerivacaoConfigurada.Criar(0, "AC", null).Value!;
+        RegraDerivacaoConfigurada condicional = RegraDerivacaoConfigurada.Criar(1, "LB_PPI", [CondicaoRegra(0, "COR_RACA", Operador.Igual, "PRETA")]).Value!;
+        processo.DefinirRegrasDerivacao([ConfiguracaoDerivacaoFato.Criar("REGIME_DE_VAGA", [condicional, ancora]).Value!]).IsSuccess.Should().BeTrue();
+
+        return (await ProjetarAsync(processo)).RegrasDerivacao.Should().ContainSingle().Which;
+    }
+
     [Fact(DisplayName = "Processo sem coleta nem derivação projeta listas vazias (não null)")]
     public async Task SemColeta_ListasVazias()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Query", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = NovoProcesso();
 
         ProcessoSeletivoDto dto = await ProjetarAsync(processo);
 

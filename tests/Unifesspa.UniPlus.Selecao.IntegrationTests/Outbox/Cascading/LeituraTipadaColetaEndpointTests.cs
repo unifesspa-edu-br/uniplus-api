@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 /// <summary>
 /// A leitura tipada de fatos coletados e regras de derivação no <c>GET</c> do processo (Story
 /// #987), fim a fim: configura a coleta e a derivação pelos endpoints de escrita e confere que a
-/// consulta as devolve tipadas, com <c>precondicao</c>/<c>quando</c> ausente como <c>null</c> (nunca
+/// consulta as devolve tipadas, com <c>exibicao</c>/<c>quando</c> ausente como <c>null</c> (nunca
 /// <c>[]</c>) e o valor tipado — round-trip com a forma de escrita.
 /// </summary>
 [Collection(CascadingCollection.Name)]
@@ -39,19 +39,13 @@ public sealed class LeituraTipadaColetaEndpointTests
     {
         Contexto ctx = await SemearRascunhoAsync(nameof(Get_ProjetaColetaEDerivacaoTipadas));
 
-        // Coleta: COR_RACA vem da seção do conjunto básico, sem pré-condição; BAIXA_RENDA, depois
-        // dela, com pré-condição citando COR_RACA.
+        // Coleta: COR_RACA vem da seção do conjunto básico, sem exibição; BAIXA_RENDA, depois
+        // dela, com exibição citando COR_RACA.
         (await ctx.PutFatosAsync(
         [
-            new
-            {
-                fatoCodigo = "BAIXA_RENDA",
-                ordem = 0,
-                rotulo = "Baixa renda",
-                tipoRenderizacao = "BOOLEANO",
-                obrigatoriedade = "NUNCA",
-                precondicao = new[] { new[] { new { fato = "COR_RACA", operador = "IGUAL", valor = "PRETA" } } },
-            },
+            FormularioDeInscricaoHttp.Item(
+                "BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA",
+                exibicao: new[] { new[] { new { fato = "COR_RACA", operador = "IGUAL", valor = "PRETA" } } }),
         ])).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         // Derivação do egresso de escola pública: regra âncora (quando null) + condicional citando COR_RACA.
@@ -76,23 +70,23 @@ public sealed class LeituraTipadaColetaEndpointTests
         using JsonDocument doc = await ctx.ObterProcessoAsync();
         JsonElement root = doc.RootElement;
 
-        // Fatos coletados — dentro do formulário de inscrição, ordenados por ordem, precondicao
+        // Fatos coletados — dentro do formulário de inscrição, ordenados por ordem, exibição
         // ausente é null.
         JsonElement fatos = root.GetProperty("formularios")[0].GetProperty("fatosColetados");
         fatos.GetArrayLength().Should().Be(ConjuntoBasicoDaInscricao.Itens.Count + 1);
 
         JsonElement corRaca = fatos.EnumerateArray().Single(static f => f.GetProperty("fatoCodigo").GetString() == "COR_RACA");
         corRaca.GetProperty("fatoCodigo").GetString().Should().Be("COR_RACA");
-        corRaca.GetProperty("rotulo").GetString().Should().Be("Cor ou raça");
-        corRaca.GetProperty("tipoRenderizacao").GetString().Should().Be("SELECAO_UNICA");
-        corRaca.GetProperty("obrigatoriedade").GetProperty("tipo").GetString().Should().Be("SEMPRE");
-        corRaca.GetProperty("precondicao").ValueKind.Should().Be(JsonValueKind.Null, "fato sem pré-condição é null, nunca []");
+        corRaca.GetProperty("apresentacao").GetProperty("rotulo").GetString().Should().Be("Cor ou raça");
+        corRaca.GetProperty("apresentacao").GetProperty("tipoRenderizacao").GetString().Should().Be("SELECAO_UNICA");
+        corRaca.GetProperty("regras").GetProperty("obrigatoriedade").GetProperty("tipo").GetString().Should().Be("SEMPRE");
+        corRaca.GetProperty("regras").GetProperty("exibicao").ValueKind.Should().Be(JsonValueKind.Null, "fato sem exibição é null, nunca []");
 
         JsonElement baixaRenda = fatos[ConjuntoBasicoDaInscricao.Itens.Count];
         baixaRenda.GetProperty("fatoCodigo").GetString().Should().Be("BAIXA_RENDA");
-        JsonElement precondicao = baixaRenda.GetProperty("precondicao");
-        precondicao.ValueKind.Should().Be(JsonValueKind.Array);
-        JsonElement condicao = precondicao[0][0];
+        JsonElement exibicao = baixaRenda.GetProperty("regras").GetProperty("exibicao");
+        exibicao.ValueKind.Should().Be(JsonValueKind.Array);
+        JsonElement condicao = exibicao[0][0];
         condicao.GetProperty("fato").GetString().Should().Be("COR_RACA");
         condicao.GetProperty("operador").GetString().Should().Be("IGUAL");
         condicao.GetProperty("valor").GetString().Should().Be("PRETA");

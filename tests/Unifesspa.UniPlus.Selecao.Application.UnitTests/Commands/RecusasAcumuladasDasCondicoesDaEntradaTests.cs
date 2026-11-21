@@ -25,7 +25,7 @@ public sealed class RecusasAcumuladasDasCondicoesDaEntradaTests
         ProcessoSeletivo processo = ProcessoEmRascunho();
         return DefinirNaHabilitacaoAsync(
             processo,
-            [new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", clausulas) { EtapaCodigo = FormularioDeTeste.Secao }]);
+            [EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").ComRotulo("Baixa renda").ComObrigatoriedade("NUNCA").ExibidoQuando(clausulas).NaSecao(FormularioDeTeste.Secao).Construir()]);
     }
 
     [Fact(DisplayName = "Pré-condição com fato vazio e operador desconhecido na mesma condição recusa os dois campos")]
@@ -35,8 +35,8 @@ public sealed class RecusasAcumuladasDasCondicoesDaEntradaTests
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Contain(
         [
-            ("itens[0].precondicao[0][0].fato", FatoNaoInformado),
-            ("itens[0].precondicao[0][0].operador", OperadorDesconhecido),
+            ("itens[0].regras.exibicao[0][0].fato", FatoNaoInformado),
+            ("itens[0].regras.exibicao[0][0].operador", OperadorDesconhecido),
         ]);
     }
 
@@ -48,8 +48,8 @@ public sealed class RecusasAcumuladasDasCondicoesDaEntradaTests
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Contain(
         [
-            ("itens[0].precondicao[0][0].fato", FatoNaoInformado),
-            ("itens[0].precondicao[1][1].operador", OperadorDesconhecido),
+            ("itens[0].regras.exibicao[0][0].fato", FatoNaoInformado),
+            ("itens[0].regras.exibicao[1][1].operador", OperadorDesconhecido),
         ]);
     }
 

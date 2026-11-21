@@ -81,25 +81,26 @@ internal sealed class LeituraDoConteudo(IReadOnlyDictionary<string, string> form
     private ItemDoModelo? LerItem(FatoColetadoInput entrada, string campo)
     {
         int recusasAntes = _recusas.Count;
-        TipoRenderizacao? tipo = LerTipoRenderizacao(entrada.TipoRenderizacao, campo);
-        RegrasDoCampo? regras = LerRegrasDoCampo(entrada, campo);
+        TipoRenderizacao? tipo = LerTipoRenderizacao(entrada.Apresentacao?.TipoRenderizacao, $"{campo}.{FatoColetadoInput.CaminhoDaApresentacao}");
+        RegrasDoCampo? regras = LerRegrasDoCampo(entrada.Regras, $"{campo}.{FatoColetadoInput.CaminhoDasRegras}");
         return RecusouDesde(recusasAntes)
             ? null
             : new ItemDoModelo(
                 entrada.FatoCodigo,
                 entrada.Ordem,
                 entrada.EtapaCodigo,
-                new ApresentacaoDoCampo(entrada.Rotulo, tipo!.Value, entrada.Ajuda, entrada.PedirConfirmacao),
+                EntradaDeRegras.Apresentacao(entrada.Apresentacao, tipo!.Value),
                 FormatoDoCatalogo(entrada.FatoCodigo),
                 regras!);
     }
 
-    private RegrasDoCampo? LerRegrasDoCampo(FatoColetadoInput entrada, string campo)
+    private RegrasDoCampo? LerRegrasDoCampo(RegrasDoCampoInput? entrada, string campo)
     {
-        PredicadoDnf? exibicao = LerPredicado(entrada.Precondicao, $"{campo}.precondicao");
-        Obrigatoriedade? obrigatoriedade = LerObrigatoriedade(entrada.Obrigatoriedade, entrada.PredicadoObrigatoriedade, campo);
-        List<RestricaoValor> restricoes = LerRestricoes(entrada.Restricoes, campo);
-        Impedimento? impedimento = LerImpedimento(entrada.Impedimento, campo);
+        PredicadoDnf? exibicao = LerPredicado(entrada?.Exibicao, $"{campo}.exibicao");
+        Obrigatoriedade? obrigatoriedade = LerObrigatoriedade(
+            entrada?.Obrigatoriedade?.Tipo, entrada?.Obrigatoriedade?.Predicado, $"{campo}.obrigatoriedade", $"{campo}.obrigatoriedade.predicado");
+        List<RestricaoValor> restricoes = LerRestricoes(entrada?.Restricoes, campo);
+        Impedimento? impedimento = LerImpedimento(entrada?.Impedimento, campo);
         return obrigatoriedade is null ? null : new RegrasDoCampo(exibicao, obrigatoriedade, restricoes, impedimento);
     }
 
@@ -118,7 +119,8 @@ internal sealed class LeituraDoConteudo(IReadOnlyDictionary<string, string> form
     {
         int recusasAntes = _recusas.Count;
         PredicadoDnf? exibicao = LerPredicado(entrada.Exibicao, $"{campo}.exibicao");
-        Obrigatoriedade? obrigatoriedade = LerObrigatoriedade(entrada.Obrigatoriedade, entrada.PredicadoObrigatoriedade, campo);
+        Obrigatoriedade? obrigatoriedade = LerObrigatoriedade(
+            entrada.Obrigatoriedade, entrada.PredicadoObrigatoriedade, $"{campo}.obrigatoriedade", $"{campo}.predicadoObrigatoriedade");
         return RecusouDesde(recusasAntes)
             ? null
             : new TermoDoModelo(entrada.Codigo, entrada.Ordem, entrada.TermoId, entrada.VersaoId, exibicao, obrigatoriedade!);
@@ -128,7 +130,8 @@ internal sealed class LeituraDoConteudo(IReadOnlyDictionary<string, string> form
     {
         int recusasAntes = _recusas.Count;
         PredicadoDnf? exibicao = LerPredicado(entrada.Exibicao, $"{campo}.exibicao");
-        Obrigatoriedade? obrigatoriedade = LerObrigatoriedade(entrada.Obrigatoriedade, entrada.PredicadoObrigatoriedade, campo);
+        Obrigatoriedade? obrigatoriedade = LerObrigatoriedade(
+            entrada.Obrigatoriedade, entrada.PredicadoObrigatoriedade, $"{campo}.obrigatoriedade", $"{campo}.predicadoObrigatoriedade");
         List<ItemDoModelo> subitens = [.. Lista(entrada.Subitens, $"{campo}.subitens", LerItem).Select(static subitem => subitem.Parte)];
         return RecusouDesde(recusasAntes)
             ? null
@@ -242,19 +245,19 @@ internal sealed class LeituraDoConteudo(IReadOnlyDictionary<string, string> form
     }
 
     private Obrigatoriedade? LerObrigatoriedade(
-        string? token, IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? predicadoDeEntrada, string campo)
+        string? token, IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? predicadoDeEntrada, string caminhoDoToken, string caminhoDoPredicado)
     {
         int recusasAntes = _recusas.Count;
-        PredicadoDnf? predicado = LerPredicado(predicadoDeEntrada, $"{campo}.predicadoObrigatoriedade");
-        return RecusouDesde(recusasAntes) ? null : ObrigatoriedadeDoToken(token, predicado, campo);
+        PredicadoDnf? predicado = LerPredicado(predicadoDeEntrada, caminhoDoPredicado);
+        return RecusouDesde(recusasAntes) ? null : ObrigatoriedadeDoToken(token, predicado, caminhoDoToken);
     }
 
-    private Obrigatoriedade? ObrigatoriedadeDoToken(string? token, PredicadoDnf? predicado, string campo)
+    private Obrigatoriedade? ObrigatoriedadeDoToken(string? token, PredicadoDnf? predicado, string caminho)
     {
         Obrigatoriedade? obrigatoriedade = EntradaDeRegras.Obrigatoriedade(token, predicado);
         if (obrigatoriedade is null)
         {
-            _recusas.Add(new($"{campo}.obrigatoriedade", new DomainError(
+            _recusas.Add(new(caminho, new DomainError(
                 ModeloFormularioErrorCodes.ObrigatoriedadeInvalida,
                 "A obrigatoriedade é SEMPRE ou NUNCA, sem predicado, ou QUANDO, com predicado.")));
         }

@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// O catálogo de fatos e o conteúdo de modelo de formulário com que os testes da escrita do
@@ -47,7 +48,7 @@ internal static class ConteudosDeModeloParaTeste
         []);
 
     public static FatoColetadoInput Item(string fato, int ordem, string tipo = "BOOLEANO") =>
-        new(fato, ordem, fato, tipo, "SEMPRE", null, EtapaCodigo: "DADOS");
+        EntradaDoFatoColetadoDeTeste.Coletando(fato, ordem).DoTipo(tipo).NaSecao("DADOS").Construir();
 
     public static IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>> Quando(string fato, object valor) =>
         [[new CondicaoPrecondicaoInput(fato, "IGUAL", JsonSerializer.SerializeToElement(valor))]];

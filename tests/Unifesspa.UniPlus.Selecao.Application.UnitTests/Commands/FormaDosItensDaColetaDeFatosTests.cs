@@ -35,11 +35,10 @@ public sealed class FormaDosItensDaColetaDeFatosTests
         Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [
-            new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "QUANDO", null,
-                PredicadoObrigatoriedade: [[Condicao("FATO_INEXISTENTE", "IGUAL", true)]]),
+            EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").ComRotulo("Baixa renda").ComObrigatoriedade("QUANDO", [[Condicao("FATO_INEXISTENTE", "IGUAL", true)]]).Construir(),
         ]);
 
-        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("itens[0].predicadoObrigatoriedade");
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("itens[0].regras.obrigatoriedade.predicado");
     }
 
     [Theory(DisplayName = "Data e endereço são coletados no campo do domínio deles")]
@@ -51,7 +50,7 @@ public sealed class FormaDosItensDaColetaDeFatosTests
         Mocks mocks = NovosMocks(processo, processo.Id);
 
         Result resultado = await HandleAsync(mocks, new DefinirFatosColetadosCommand(
-            processo.Id, FinalidadeFormulario.Habilitacao, [new FatoColetadoInput(fatoCodigo, 0, "Rótulo", tipoRenderizacao, "SEMPRE", null)]));
+            processo.Id, FinalidadeFormulario.Habilitacao, [EntradaDoFatoColetadoDeTeste.Coletando(fatoCodigo).ComRotulo("Rótulo").DoTipo(tipoRenderizacao).Construir()]));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.FatosColetados.Single().TipoRenderizacao.Should().Be(CatalogoDe<TipoRenderizacao>.Obter(tipoRenderizacao));
@@ -65,7 +64,7 @@ public sealed class FormaDosItensDaColetaDeFatosTests
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(
             [.. VocabularioSeed().Select(static f => f.Codigo == "NOME_SOCIAL" ? f with { Cardinalidade = "MULTIVALORADO" } : f)]));
         DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Habilitacao,
-            [new FatoColetadoInput("NOME_SOCIAL", 0, "Nome social", "TEXTO", "NUNCA", null)]);
+            [EntradaDoFatoColetadoDeTeste.Coletando("NOME_SOCIAL").ComRotulo("Nome social").DoTipo("TEXTO").ComObrigatoriedade("NUNCA").Construir()]);
 
         (await HandleAsync(mocks, command)).Error!.Code.Should().Be("ItemFormulario.TipoRenderizacaoIncoerenteComDominio");
     }
@@ -76,7 +75,7 @@ public sealed class FormaDosItensDaColetaDeFatosTests
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Result resultado = await DefinirNaHabilitacaoAsync(
             processo,
-            [new FatoColetadoInput("NOME_SOCIAL", 0, "Nome social", "TEXTO", "NUNCA", null)]);
+            [EntradaDoFatoColetadoDeTeste.Coletando("NOME_SOCIAL").ComRotulo("Nome social").DoTipo("TEXTO").ComObrigatoriedade("NUNCA").Construir()]);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.FatosColetados.Single().Formato.Should().Be("NOME_PESSOA");
@@ -88,7 +87,7 @@ public sealed class FormaDosItensDaColetaDeFatosTests
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Result resultado = await DefinirNaHabilitacaoAsync(
             processo,
-            [new FatoColetadoInput("CPF", 0, "CPF", "TEXTO", "NUNCA", null)]);
+            [EntradaDoFatoColetadoDeTeste.Coletando("CPF").DoTipo("TEXTO").ComObrigatoriedade("NUNCA").Construir()]);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.FatosColetados.Single().ClassificacaoProtecao.Should().Be("IDENTIFICADOR");
@@ -102,14 +101,14 @@ public sealed class FormaDosItensDaColetaDeFatosTests
 
         DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Habilitacao,
         [
-            new FatoColetadoInput("COR_RACA", -1, "Cor ou raça", "SELECAO_UNICA", "NUNCA", null),
-            new FatoColetadoInput("BAIXA_RENDA", 1, "", "BOOLEANO", "NUNCA", null),
+            EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA", -1).ComRotulo("Cor ou raça").DoTipo("SELECAO_UNICA").ComObrigatoriedade("NUNCA").Construir(),
+            EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA", 1).ComRotulo("").ComObrigatoriedade("NUNCA").Construir(),
         ]);
 
         Result resultado = await HandleAsync(mocks, command);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Errors.Select(e => e.Field).Should().BeEquivalentTo(["itens[0].ordem", "itens[1].rotulo"]);
+        resultado.Errors.Select(e => e.Field).Should().BeEquivalentTo(["itens[0].ordem", "itens[1].apresentacao.rotulo"]);
         await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -118,7 +117,7 @@ public sealed class FormaDosItensDaColetaDeFatosTests
     {
         Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
-            [new FatoColetadoInput("", 0, "Rótulo", "SELECAO_UNICA", "NUNCA", null)]);
+            [EntradaDoFatoColetadoDeTeste.Coletando("").ComRotulo("Rótulo").DoTipo("SELECAO_UNICA").ComObrigatoriedade("NUNCA").Construir()]);
 
         resultado.Errors.Select(static e => e.Error.Code).Should().Equal("ItemFormulario.FatoCodigoObrigatorio");
     }
@@ -129,8 +128,8 @@ public sealed class FormaDosItensDaColetaDeFatosTests
         Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [
-            new FatoColetadoInput("COR_RACA", -1, "Cor ou raça", "SELECAO_UNICA", "NUNCA", null),
-            new FatoColetadoInput("FATO_INEXISTENTE", 1, "Rótulo", "SELECAO_UNICA", "NUNCA", null),
+            EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA", -1).ComRotulo("Cor ou raça").DoTipo("SELECAO_UNICA").ComObrigatoriedade("NUNCA").Construir(),
+            EntradaDoFatoColetadoDeTeste.Coletando("FATO_INEXISTENTE", 1).ComRotulo("Rótulo").DoTipo("SELECAO_UNICA").ComObrigatoriedade("NUNCA").Construir(),
         ]);
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
@@ -149,7 +148,7 @@ public sealed class FormaDosItensDaColetaDeFatosTests
         // coerência, quando o TipoRenderizacao informado é o coerente com o domínio.
         Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
-            [new FatoColetadoInput("MODALIDADE", 0, "Modalidade", "SELECAO_MULTIPLA", "NUNCA", null)]);
+            [EntradaDoFatoColetadoDeTeste.Coletando("MODALIDADE").ComRotulo("Modalidade").DoTipo("SELECAO_MULTIPLA").ComObrigatoriedade("NUNCA").Construir()]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ItemFormulario.FatoNaoColetavel");
@@ -164,30 +163,28 @@ public sealed class FormaDosItensDaColetaDeFatosTests
         Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [
-            new FatoColetadoInput("NOME_SOCIAL", 0, "Nome social", "TEXTO", "NUNCA", null,
-                Restricoes: [new RestricaoValorInput(tipo, (decimal?)minimo, (decimal?)maximo)]),
+            EntradaDoFatoColetadoDeTeste.Coletando("NOME_SOCIAL").ComRotulo("Nome social").DoTipo("TEXTO").ComObrigatoriedade("NUNCA").ComRestricoes([new RestricaoValorInput(tipo, (decimal?)minimo, (decimal?)maximo)]).Construir(),
         ]);
 
         resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
         {
-            Field = "itens[0].restricoes[0]",
+            Field = "itens[0].regras.restricoes[0]",
             Error = new { Code = codigo },
         });
     }
 
-    private static FatoColetadoInput DataComLimitesInvertidos() => new(
-        "DATA_NASCIMENTO", 0, "Data de nascimento", "DATA", "SEMPRE", null,
-        Restricoes:
-        [
-            new RestricaoValorInput(
+    private static FatoColetadoInput DataComLimitesInvertidos() =>
+        EntradaDoFatoColetadoDeTeste.Coletando("DATA_NASCIMENTO").ComRotulo("Data de nascimento").DoTipo("DATA")
+            .ComRestricoes(new RestricaoValorInput(
                 "FAIXA_DE_DATA",
                 DataMinima: new LimiteDeDataInput("DATA_FIXA", Data: new DateOnly(2011, 1, 1)),
-                DataMaxima: new LimiteDeDataInput("DATA_FIXA", Data: new DateOnly(2010, 12, 31))),
-        ]);
+                DataMaxima: new LimiteDeDataInput("DATA_FIXA", Data: new DateOnly(2010, 12, 31))))
+            .Construir();
 
-    private static FatoColetadoInput DataDeNascimentoComFaixaForaDoCampo() => new(
-        "NOME_SOCIAL", 1, "Nome social", "TEXTO", "NUNCA", null,
-        Restricoes: [new RestricaoValorInput("FAIXA_DE_DATA", DataMaxima: new LimiteDeDataInput("ENVIO", Anos: 0, Dias: 0))]);
+    private static FatoColetadoInput DataDeNascimentoComFaixaForaDoCampo() =>
+        EntradaDoFatoColetadoDeTeste.Coletando("NOME_SOCIAL", 1).ComRotulo("Nome social").DoTipo("TEXTO").ComObrigatoriedade("NUNCA")
+            .ComRestricoes(new RestricaoValorInput("FAIXA_DE_DATA", DataMaxima: new LimiteDeDataInput("ENVIO", Anos: 0, Dias: 0)))
+            .Construir();
 
     [Fact(DisplayName = "Faixa de data com a mínima depois da máxima e faixa de data fora do campo de data são recusadas juntas")]
     public async Task Handle_FaixaDeDataInvalida_RecusaCadaUmaNoSeuCampo()
@@ -196,8 +193,8 @@ public sealed class FormaDosItensDaColetaDeFatosTests
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
-            ("itens[0].restricoes[0]", "RestricaoValor.LimitesIncoerentes"),
-            ("itens[1].restricoes[0]", "ItemFormulario.RestricaoIncoerente"),
+            ("itens[0].regras.restricoes[0]", "RestricaoValor.LimitesIncoerentes"),
+            ("itens[1].regras.restricoes[0]", "ItemFormulario.RestricaoIncoerente"),
         ]);
     }
 
@@ -207,13 +204,12 @@ public sealed class FormaDosItensDaColetaDeFatosTests
         Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [
-            new FatoColetadoInput("COR_RACA", 0, "Cor ou raça", "SELECAO_UNICA", "SEMPRE", null,
-                Restricoes: [new RestricaoValorInput("OPCOES_PERMITIDAS", Entradas: [new OpcoesCondicionadasInput(null, ["PRETA", "ROXA"])])]),
+            EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA").ComRotulo("Cor ou raça").DoTipo("SELECAO_UNICA").ComRestricoes([new RestricaoValorInput("OPCOES_PERMITIDAS", Entradas: [new OpcoesCondicionadasInput(null, ["PRETA", "ROXA"])])]).Construir(),
         ]);
 
         resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
         {
-            Field = "itens[0].restricoes[0].entradas[0].valores",
+            Field = "itens[0].regras.restricoes[0].entradas[0].valores",
             Error = new { Code = "PredicadoDnf.ValorForaDoDominio" },
         });
     }
@@ -224,13 +220,12 @@ public sealed class FormaDosItensDaColetaDeFatosTests
         Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [
-            new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", null,
-                Restricoes: [new RestricaoValorInput("OPCOES_PERMITIDAS", Entradas: [new OpcoesCondicionadasInput(null, ["SIM"])])]),
+            EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").ComRotulo("Baixa renda").ComObrigatoriedade("NUNCA").ComRestricoes([new RestricaoValorInput("OPCOES_PERMITIDAS", Entradas: [new OpcoesCondicionadasInput(null, ["SIM"])])]).Construir(),
         ]);
 
         resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
         {
-            Field = "itens[0].restricoes[0]",
+            Field = "itens[0].regras.restricoes[0]",
             Error = new { Code = ItemFormularioErrorCodes.RestricaoIncoerente },
         });
     }
@@ -241,12 +236,10 @@ public sealed class FormaDosItensDaColetaDeFatosTests
         Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [
-            new FatoColetadoInput("COR_RACA", 0, "Cor ou raça", "SELECAO_UNICA", "SEMPRE", null,
-                Restricoes:
-                [
+            EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA").ComRotulo("Cor ou raça").DoTipo("SELECAO_UNICA").ComRestricoes([
                     new RestricaoValorInput("OPCOES_PERMITIDAS", Entradas: [new OpcoesCondicionadasInput(null, ["ROXA"])]),
                     new RestricaoValorInput("OPCOES_PERMITIDAS", Entradas: [new OpcoesCondicionadasInput(null, ["PRETA"])]),
-                ]),
+                ]).Construir(),
         ]);
 
         resultado.Errors.Select(static e => e.Error.Code).Should().BeEquivalentTo(
@@ -264,8 +257,7 @@ public sealed class FormaDosItensDaColetaDeFatosTests
                 : f)]));
         DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Habilitacao,
         [
-            new FatoColetadoInput("COR_RACA", 0, "Cor ou raça", "SELECAO_UNICA", "SEMPRE", null,
-                Restricoes: [new RestricaoValorInput("OPCOES_PERMITIDAS", Entradas: [new OpcoesCondicionadasInput(null, ["AMARELA"])])]),
+            EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA").ComRotulo("Cor ou raça").DoTipo("SELECAO_UNICA").ComRestricoes([new RestricaoValorInput("OPCOES_PERMITIDAS", Entradas: [new OpcoesCondicionadasInput(null, ["AMARELA"])])]).Construir(),
         ]);
 
         (await HandleAsync(mocks, command)).Error!.Code.Should().Be(VinculoCatalogoErrorCodes.ValorDesativado);
@@ -273,9 +265,8 @@ public sealed class FormaDosItensDaColetaDeFatosTests
 
     private static FatoColetadoInput[] OpcoesDasRespostasDe(string fonte) =>
     [
-        new FatoColetadoInput(fonte, 0, "Campo de origem", "SELECAO_UNICA", "SEMPRE", null),
-        new FatoColetadoInput("OPCAO_LISTA_ESPERA", 1, "Lista de espera", "SELECAO_UNICA", "NUNCA", null,
-            Restricoes: [new RestricaoValorInput("OPCOES_DAS_RESPOSTAS", Fatos: [fonte])]),
+        EntradaDoFatoColetadoDeTeste.Coletando(fonte).ComRotulo("Campo de origem").DoTipo("SELECAO_UNICA").Construir(),
+        EntradaDoFatoColetadoDeTeste.Coletando("OPCAO_LISTA_ESPERA", 1).ComRotulo("Lista de espera").DoTipo("SELECAO_UNICA").ComObrigatoriedade("NUNCA").ComRestricoes([new RestricaoValorInput("OPCOES_DAS_RESPOSTAS", Fatos: [fonte])]).Construir(),
     ];
 
     [Theory(DisplayName = "Opções formadas pelas respostas de campo cujas opções são todas opções do campo são aceitas, e o campo de origem fica citado")]
@@ -297,6 +288,34 @@ public sealed class FormaDosItensDaColetaDeFatosTests
         Result resultado = await DefinirNaHabilitacaoAsync(ProcessoEmRascunho(), OpcoesDasRespostasDe("COR_RACA"));
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
-            ("itens[1].restricoes[0].fatos", ItemFormularioErrorCodes.OpcoesDeOutroDominio));
+            ("itens[1].regras.restricoes[0].fatos", ItemFormularioErrorCodes.OpcoesDeOutroDominio));
+    }
+
+    [Fact(DisplayName = "Regras ausentes são recusadas pela obrigatoriedade inválida, no caminho das regras")]
+    public async Task Handle_RegrasAusentes_RecusaAObrigatoriedadeNoCaminhoDasRegras()
+    {
+        Result resultado = await DefinirNaHabilitacaoAsync(
+            ProcessoEmRascunho(), [EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").SemRegras().Construir()]);
+
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+            ("itens[0].regras.obrigatoriedade", "FatoColetado.ObrigatoriedadeInvalida"));
+    }
+
+    [Fact(DisplayName = "Obrigatoriedade ausente dentro das regras é recusada no caminho dela")]
+    public async Task Handle_ObrigatoriedadeAusente_RecusaNoCaminhoDaObrigatoriedade()
+    {
+        Result resultado = await DefinirNaHabilitacaoAsync(
+            ProcessoEmRascunho(), [EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").ComObrigatoriedade(null).Construir()]);
+
+        resultado.Errors.Select(static e => e.Field).Should().Equal("itens[0].regras.obrigatoriedade");
+    }
+
+    [Fact(DisplayName = "O predicado da obrigatoriedade que não é lido é recusado no caminho dele")]
+    public async Task Handle_PredicadoDaObrigatoriedadeSemCondicao_RecusaNoCaminhoDoPredicado()
+    {
+        Result resultado = await DefinirNaHabilitacaoAsync(
+            ProcessoEmRascunho(), [EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").ComObrigatoriedade("QUANDO", [[]]).Construir()]);
+
+        resultado.Errors.Select(static e => e.Field).Should().Equal("itens[0].regras.obrigatoriedade.predicado");
     }
 }

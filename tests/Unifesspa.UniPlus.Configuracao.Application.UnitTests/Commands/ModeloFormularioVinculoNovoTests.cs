@@ -112,7 +112,7 @@ public sealed class ModeloFormularioVinculoNovoTests : ModeloFormularioHandlerTe
         FatoCandidato opcao = OpcaoComUmValor();
         FatoCandidato perfil = PerfilDerivadoDesativado(opcao);
         Fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns([Certificado, opcao, perfil]);
-        FatoColetadoInput comOpcoes = Item("OPCAO", 1, "SELECAO_UNICA") with { Restricoes = [new RestricaoValorInput("OPCOES_DAS_RESPOSTAS", Fatos: ["PERFIL"])] };
+        FatoColetadoInput comOpcoes = Montar("OPCAO", 1, "SELECAO_UNICA").ComRestricoes(new RestricaoValorInput("OPCOES_DAS_RESPOSTAS", Fatos: ["PERFIL"])).Construir();
 
         Result<Guid> resultado = await CriarAsync(Conteudo(Item("CERTIFICADO", 0), comOpcoes));
 
@@ -131,10 +131,10 @@ public sealed class ModeloFormularioVinculoNovoTests : ModeloFormularioHandlerTe
     [Fact(DisplayName = "Obrigatoriedade QUANDO sem predicado é recusada na leitura")]
     public async Task Criar_QuandoSemPredicado_Recusa()
     {
-        Result<Guid> resultado = await CriarAsync(Conteudo(Item("CERTIFICADO", 0) with { Obrigatoriedade = "QUANDO" }));
+        Result<Guid> resultado = await CriarAsync(Conteudo(Montar("CERTIFICADO", 0).ComObrigatoriedade("QUANDO").Construir()));
 
         resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(
-            new FieldError("conteudo.itens[0].obrigatoriedade", new DomainError(ModeloFormularioErrorCodes.ObrigatoriedadeInvalida, string.Empty)),
+            new FieldError("conteudo.itens[0].regras.obrigatoriedade", new DomainError(ModeloFormularioErrorCodes.ObrigatoriedadeInvalida, string.Empty)),
             static o => o.Excluding(static e => e.Error.Message));
     }
 
@@ -151,14 +151,14 @@ public sealed class ModeloFormularioVinculoNovoTests : ModeloFormularioHandlerTe
     public async Task Criar_RecusaDeLeitura_AcumulaAsDoCadastro()
     {
         CriarModeloFormularioCommand command = new(
-            "", "Habilitação", null, "XYZ", null, Conteudo(Item("CERTIFICADO", 0) with { Obrigatoriedade = "QUANDO" }));
+            "", "Habilitação", null, "XYZ", null, Conteudo(Montar("CERTIFICADO", 0).ComObrigatoriedade("QUANDO").Construir()));
 
         Result<Guid> resultado = await CriarModeloFormularioCommandHandler.Handle(
             command, Repository, Fatos, Termos, Tipos, UnitOfWork, CancellationToken.None);
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
-            ("conteudo.itens[0].obrigatoriedade", ModeloFormularioErrorCodes.ObrigatoriedadeInvalida),
+            ("conteudo.itens[0].regras.obrigatoriedade", ModeloFormularioErrorCodes.ObrigatoriedadeInvalida),
             ("codigo", ModeloFormularioErrorCodes.CodigoObrigatorio),
             ("finalidade", EstruturaFormularioErrorCodes.FinalidadeInvalida),
         ]);

@@ -82,7 +82,7 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
         FormularioRenderizavel formulario = configuracao.Projetar(FinalidadeFormulario.Inscricao)!;
 
         formulario.FatosColetados.Single(static f => f.FatoCodigo == "NOME_SOCIAL").Ajuda
-            .Should().Be(ConjuntoBasicoDaInscricao.Itens.Single(static i => i.FatoCodigo == "NOME_SOCIAL").Ajuda);
+            .Should().Be(ConjuntoBasicoDaInscricao.Itens.Single(static i => i.FatoCodigo == "NOME_SOCIAL").Apresentacao!.Ajuda);
         formulario.FatosColetados.Single(static f => f.FatoCodigo == "NOME_MAE").Ajuda.Should().BeNull();
     }
 

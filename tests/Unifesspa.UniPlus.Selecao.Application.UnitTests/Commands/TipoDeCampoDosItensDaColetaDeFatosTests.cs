@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.ApoioDaColetaDeFatos;
 
@@ -14,32 +15,32 @@ public sealed class TipoDeCampoDosItensDaColetaDeFatosTests
     public async Task Handle_TipoDeCampoAusente_RecusaComoObrigatorio()
     {
         Result resultado = await DefinirNaHabilitacaoAsync(
-            ProcessoEmRascunho(), [new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", null, "SEMPRE", null)]);
+            ProcessoEmRascunho(), [EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").ComRotulo("Baixa renda").DoTipo(null).Construir()]);
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
-            ("itens[0].tipoRenderizacao", "ItemFormulario.TipoRenderizacaoObrigatorio"));
+            ("itens[0].apresentacao.tipoRenderizacao", "ItemFormulario.TipoRenderizacaoObrigatorio"));
     }
 
     [Fact(DisplayName = "Tipo de campo desconhecido é recusado como inválido e a coerência com o fato não roda")]
     public async Task Handle_TipoDeCampoDesconhecido_RecusaComoInvalidoSemConferirACoerencia()
     {
         Result resultado = await DefinirNaHabilitacaoAsync(
-            ProcessoEmRascunho(), [new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "NENHUMA", "SEMPRE", null)]);
+            ProcessoEmRascunho(), [EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").ComRotulo("Baixa renda").DoTipo("NENHUMA").Construir()]);
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
-            ("itens[0].tipoRenderizacao", "ItemFormulario.TipoRenderizacaoInvalido"));
+            ("itens[0].apresentacao.tipoRenderizacao", "ItemFormulario.TipoRenderizacaoInvalido"));
     }
 
     [Fact(DisplayName = "Tipo de campo desconhecido acumula com a outra recusa do mesmo item")]
     public async Task Handle_TipoDeCampoDesconhecidoEOrdemNegativa_AcumulaAsDuasRecusas()
     {
         Result resultado = await DefinirNaHabilitacaoAsync(
-            ProcessoEmRascunho(), [new FatoColetadoInput("BAIXA_RENDA", -1, "Baixa renda", "boolean", "SEMPRE", null)]);
+            ProcessoEmRascunho(), [EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA", -1).ComRotulo("Baixa renda").DoTipo("boolean").Construir()]);
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
             ("itens[0].ordem", "ItemFormulario.OrdemInvalida"),
-            ("itens[0].tipoRenderizacao", "ItemFormulario.TipoRenderizacaoInvalido"),
+            ("itens[0].apresentacao.tipoRenderizacao", "ItemFormulario.TipoRenderizacaoInvalido"),
         ]);
     }
 
@@ -49,14 +50,27 @@ public sealed class TipoDeCampoDosItensDaColetaDeFatosTests
         Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [
-                new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "NENHUMA", "SEMPRE", null),
-                new FatoColetadoInput("COR_RACA", 1, "Cor ou raça", "BOOLEANO", "SEMPRE", null),
+                EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").ComRotulo("Baixa renda").DoTipo("NENHUMA").Construir(),
+                EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA", 1).ComRotulo("Cor ou raça").Construir(),
             ]);
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
-            ("itens[0].tipoRenderizacao", "ItemFormulario.TipoRenderizacaoInvalido"),
-            ("itens[1].tipoRenderizacao", "ItemFormulario.TipoRenderizacaoIncoerenteComDominio"),
+            ("itens[0].apresentacao.tipoRenderizacao", "ItemFormulario.TipoRenderizacaoInvalido"),
+            ("itens[1].apresentacao.tipoRenderizacao", "ItemFormulario.TipoRenderizacaoIncoerenteComDominio"),
+        ]);
+    }
+
+    [Fact(DisplayName = "Apresentação ausente é recusada pelo rótulo e pelo tipo de campo obrigatórios, no caminho dela")]
+    public async Task Handle_ApresentacaoAusente_RecusaRotuloETipoNoCaminhoDaApresentacao()
+    {
+        Result resultado = await DefinirNaHabilitacaoAsync(
+            ProcessoEmRascunho(), [EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").SemApresentacao().Construir()]);
+
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
+        [
+            ("itens[0].apresentacao.rotulo", "ItemFormulario.RotuloObrigatorio"),
+            ("itens[0].apresentacao.tipoRenderizacao", "ItemFormulario.TipoRenderizacaoObrigatorio"),
         ]);
     }
 }

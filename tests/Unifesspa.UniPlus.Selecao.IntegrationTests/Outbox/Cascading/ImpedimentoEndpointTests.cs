@@ -50,7 +50,7 @@ public sealed class ImpedimentoEndpointTests
             .Single(static f => f.GetProperty("finalidade").GetString() == "INSCRICAO")
             .GetProperty("fatosColetados").EnumerateArray()
             .Single(static f => f.GetProperty("fatoCodigo").GetString() == "QUILOMBOLA")
-            .GetProperty("impedimento");
+            .GetProperty("regras").GetProperty("impedimento");
         impedimento.GetProperty("mensagem").GetString().Should().Be(Mensagem);
         JsonElement condicao = impedimento.GetProperty("quando").EnumerateArray().Single().EnumerateArray().Single();
         condicao.GetProperty("fato").GetString().Should().Be("QUILOMBOLA");
@@ -67,7 +67,7 @@ public sealed class ImpedimentoEndpointTests
 
         recusado.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         string corpo = await recusado.Content.ReadAsStringAsync();
-        corpo.Should().Contain("itens[0].impedimento.mensagem").And.Contain("uniplus.item_formulario.impedimento_mensagem_invalida");
+        corpo.Should().Contain("itens[0].regras.impedimento.mensagem").And.Contain("uniplus.item_formulario.impedimento_mensagem_invalida");
     }
 
     private static async Task<HttpResponseMessage> DefinirItensAsync(HttpClient client, Guid processoId, string? mensagem)
@@ -82,11 +82,13 @@ public sealed class ImpedimentoEndpointTests
                 {
                     fatoCodigo = "QUILOMBOLA",
                     ordem = FormularioDeTeste.PrimeiraOrdemDeInscricao,
-                    rotulo = "Quilombola",
-                    tipoRenderizacao = "BOOLEANO",
-                    obrigatoriedade = "SEMPRE",
                     etapaCodigo = FormularioDeTeste.Secao,
-                    impedimento = new { quando = new[] { new[] { new { fato = "QUILOMBOLA", operador = "IGUAL", valor = true } } }, mensagem },
+                    apresentacao = new { rotulo = "Quilombola", tipoRenderizacao = "BOOLEANO" },
+                    regras = new
+                    {
+                        obrigatoriedade = new { tipo = "SEMPRE" },
+                        impedimento = new { quando = new[] { new[] { new { fato = "QUILOMBOLA", operador = "IGUAL", valor = true } } }, mensagem },
+                    },
                 },
             },
             grupos = Array.Empty<object>(),

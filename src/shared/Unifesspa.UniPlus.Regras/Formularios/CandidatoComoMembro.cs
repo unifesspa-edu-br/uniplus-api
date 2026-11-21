@@ -3,8 +3,11 @@ namespace Unifesspa.UniPlus.Regras.Formularios;
 using System.Text.Json;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
+
+using CampoDoMembro = (string FatoCodigo, bool TemExibicao, Unifesspa.UniPlus.Regras.Formularios.Obrigatoriedade Obrigatoriedade, System.Collections.Generic.IReadOnlyList<Unifesspa.UniPlus.Regras.Formularios.RestricaoValor> Restricoes);
 
 /// <summary>
 /// O grupo repetível que inclui o próprio candidato entre os membros, como a composição familiar
@@ -22,43 +25,47 @@ public static class CandidatoComoMembro
     /// valem sempre — opções formadas pelas respostas anteriores não o garantem. Sem isso, nenhuma
     /// resposta identificaria a ocorrência do candidato.
     /// </summary>
-    public static List<FieldError> Conferir(
-        int minimo,
-        IReadOnlyList<(string FatoCodigo, bool TemExibicao, Obrigatoriedade Obrigatoriedade, IReadOnlyList<RestricaoValor> Restricoes)> subitens)
+    public static List<FieldError> Conferir(int minimo, IReadOnlyList<CampoDoMembro> subitens)
     {
         ArgumentNullException.ThrowIfNull(subitens);
 
-        List<FieldError> erros = [];
-        void Recusar(string campo, string mensagem) =>
-            erros.Add(new(campo, new DomainError(GrupoFormularioErrorCodes.CandidatoComoMembroIncompleto, mensagem)));
-
-        if (minimo < 1)
-        {
-            Recusar("minimo", "O grupo que inclui o candidato tem ao menos uma ocorrência: a do próprio candidato.");
-        }
-
         int indice = subitens.ToList().FindIndex(static s => string.Equals(s.FatoCodigo, FatoParentesco, StringComparison.Ordinal));
-        if (indice < 0)
-        {
-            Recusar("subitens", $"O grupo que inclui o candidato pede o parentesco ({FatoParentesco}) em cada ocorrência.");
-            return erros;
-        }
-
-        (_, bool temExibicao, Obrigatoriedade obrigatoriedade, IReadOnlyList<RestricaoValor> restricoes) = subitens[indice];
-        if (temExibicao || obrigatoriedade.Tipo != TipoObrigatoriedade.Sempre)
-        {
-            Recusar($"subitens[{indice}]", "O parentesco do grupo que inclui o candidato é sempre exibido e obrigatório.");
-        }
-
-        if (restricoes.Any(static r => r is OpcoesDasRespostas
-            || (r is OpcoesPermitidas permitidas && !permitidas.Entradas.Any(static e => e.Quando is null && e.Valores.Contains(ProprioCandidato)))))
-        {
-            Recusar($"subitens[{indice}].restricoes",
-                $"As opções de parentesco do grupo que inclui o candidato admitem sempre o próprio candidato ({ProprioCandidato}).");
-        }
-
-        return erros;
+        return [.. RecusasDoMinimo(minimo), .. indice < 0 ? RecusasDoParentescoAusente() : RecusasDoParentesco(indice, subitens[indice])];
     }
+
+    private static IEnumerable<FieldError> RecusasDoMinimo(int minimo) =>
+        minimo < 1 ? [Recusa("minimo", "O grupo que inclui o candidato tem ao menos uma ocorrência: a do próprio candidato.")] : [];
+
+    private static IEnumerable<FieldError> RecusasDoParentescoAusente() =>
+        [Recusa("subitens", $"O grupo que inclui o candidato pede o parentesco ({FatoParentesco}) em cada ocorrência.")];
+
+    private static IEnumerable<FieldError> RecusasDoParentesco(int indice, CampoDoMembro parentesco) =>
+    [
+        .. RecusasDaExibicaoEDaObrigatoriedade(indice, parentesco),
+        .. RecusasDasOpcoes(indice, parentesco.Restricoes),
+    ];
+
+    private static IEnumerable<FieldError> RecusasDaExibicaoEDaObrigatoriedade(int indice, CampoDoMembro parentesco) =>
+        parentesco.TemExibicao || parentesco.Obrigatoriedade.Tipo != TipoObrigatoriedade.Sempre
+            ? [Recusa($"subitens[{indice}]", "O parentesco do grupo que inclui o candidato é sempre exibido e obrigatório.")]
+            : [];
+
+    private static IEnumerable<FieldError> RecusasDasOpcoes(int indice, IReadOnlyList<RestricaoValor> restricoes) =>
+        restricoes.Any(static r => !AdmiteSempreOProprioCandidato(r))
+            ? [Recusa(
+                $"subitens[{indice}].{FatoColetadoInput.CaminhoDasRegras}.restricoes",
+                $"As opções de parentesco do grupo que inclui o candidato admitem sempre o próprio candidato ({ProprioCandidato}).")]
+            : [];
+
+    private static bool AdmiteSempreOProprioCandidato(RestricaoValor restricao) => restricao switch
+    {
+        OpcoesDasRespostas => false,
+        OpcoesPermitidas permitidas => permitidas.Entradas.Any(static e => e.Quando is null && e.Valores.Contains(ProprioCandidato)),
+        _ => true,
+    };
+
+    private static FieldError Recusa(string campo, string mensagem) =>
+        new(campo, new DomainError(GrupoFormularioErrorCodes.CandidatoComoMembroIncompleto, mensagem));
 
     /// <summary>A lista respondida tem exatamente uma ocorrência do próprio candidato.</summary>
     public static bool TemUmaOcorrenciaDoCandidato(IEnumerable<OcorrenciaRespondida> ocorrencias)

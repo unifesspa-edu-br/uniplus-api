@@ -67,7 +67,7 @@ public sealed record RegrasDoCampo
     {
         if ((Exibicao?.FatosCitados ?? []).Contains(fatoDoCampo, StringComparer.Ordinal))
         {
-            yield return new("precondicao", new DomainError(ItemFormularioErrorCodes.RegraAutorreferente, "A exibição cita o próprio fato."));
+            yield return new("exibicao", new DomainError(ItemFormularioErrorCodes.RegraAutorreferente, "A exibição cita o próprio fato."));
         }
     }
 
@@ -75,7 +75,7 @@ public sealed record RegrasDoCampo
     {
         if (Obrigatoriedade.FatosCitados.Contains(fatoDoCampo, StringComparer.Ordinal))
         {
-            yield return new("predicadoObrigatoriedade", new DomainError(
+            yield return new("obrigatoriedade.predicado", new DomainError(
                 ItemFormularioErrorCodes.RegraAutorreferente, "A obrigatoriedade cita o próprio fato."));
         }
     }

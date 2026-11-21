@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -217,11 +218,15 @@ public sealed record ConteudoDoModelo(
         new (string, string?)[]
         {
             ($"{caminho}.fatoCodigo", campo.FatoCodigo), ($"{caminho}.etapaCodigo", campo.EtapaCodigo),
-            ($"{caminho}.rotulo", campo.Apresentacao.Rotulo), ($"{caminho}.formato", campo.Formato), ($"{caminho}.ajuda", campo.Apresentacao.Ajuda),
+            ($"{caminho}.{FatoColetadoInput.CaminhoDaApresentacao}.rotulo", campo.Apresentacao.Rotulo), ($"{caminho}.formato", campo.Formato),
+            ($"{caminho}.{FatoColetadoInput.CaminhoDaApresentacao}.ajuda", campo.Apresentacao.Ajuda),
         }
         .Concat(TextosDosPredicados(caminho, campo.Predicados()))
-        .Concat(campo.Regras.Restricoes.SelectMany((r, j) => TextosDaRestricao($"{caminho}.restricoes[{j}]", r)))
-        .Concat(TextosDoImpedimento(caminho, campo.Regras.Impedimento));
+        .Concat(TextosDasRegrasSemPredicados($"{caminho}.{FatoColetadoInput.CaminhoDasRegras}", campo.Regras));
+
+    private static IEnumerable<(string Campo, string? Texto)> TextosDasRegrasSemPredicados(string caminho, RegrasDoCampo regras) =>
+        regras.Restricoes.SelectMany((r, j) => TextosDaRestricao($"{caminho}.restricoes[{j}]", r))
+            .Concat(TextosDoImpedimento(caminho, regras.Impedimento));
 
     private static IEnumerable<(string Campo, string? Texto)> TextosDoImpedimento(string caminho, Impedimento? impedimento) =>
         impedimento is null

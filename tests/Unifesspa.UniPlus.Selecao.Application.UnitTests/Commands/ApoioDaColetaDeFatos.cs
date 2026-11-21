@@ -124,12 +124,12 @@ internal static class ApoioDaColetaDeFatos
         "COMPOSICAO_FAMILIAR", 1, "Composição familiar", FormularioDeTeste.Secao, 0, 10,
         [[Condicao("COR_RACA", "IGUAL", "PRETA")]], "NUNCA", null,
         [
-            new FatoColetadoInput("PARENTESCO", 0, "Parentesco", "SELECAO_UNICA", "SEMPRE", null),
-            new FatoColetadoInput("MENOR_SOB_GUARDA", 1, "Menor sob guarda", "BOOLEANO", "SEMPRE", [[Condicao("PARENTESCO", "IGUAL", "FILHO")]]),
+            EntradaDoFatoColetadoDeTeste.Coletando("PARENTESCO").ComRotulo("Parentesco").DoTipo("SELECAO_UNICA").Construir(),
+            EntradaDoFatoColetadoDeTeste.Coletando("MENOR_SOB_GUARDA", 1).ComRotulo("Menor sob guarda").ExibidoQuando([[Condicao("PARENTESCO", "IGUAL", "FILHO")]]).Construir(),
         ]);
 
     internal static DefinirFatosColetadosCommand ComGrupo(ProcessoSeletivo processo, GrupoColetadoInput grupo) => new(
         processo.Id, FinalidadeFormulario.Habilitacao,
-        [new FatoColetadoInput("COR_RACA", 0, "Cor ou raça", "SELECAO_UNICA", "SEMPRE", null, EtapaCodigo: FormularioDeTeste.Secao)],
+        [EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA").ComRotulo("Cor ou raça").DoTipo("SELECAO_UNICA").NaSecao(FormularioDeTeste.Secao).Construir()],
         [grupo]);
 }

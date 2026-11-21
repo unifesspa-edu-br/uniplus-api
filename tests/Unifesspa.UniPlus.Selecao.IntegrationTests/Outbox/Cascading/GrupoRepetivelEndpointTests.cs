@@ -74,7 +74,7 @@ public sealed class GrupoRepetivelEndpointTests
         recusado.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         using JsonDocument problema = JsonDocument.Parse(await recusado.Content.ReadAsStringAsync());
         problema.RootElement.GetProperty("errors").EnumerateArray().Select(static e => e.GetProperty("field").GetString())
-            .Should().Contain(["grupos[0].rotulo", "grupos[0].minimo", "grupos[0].subitens", "grupos[0].subitens[0].rotulo"]);
+            .Should().Contain(["grupos[0].rotulo", "grupos[0].minimo", "grupos[0].subitens", "grupos[0].subitens[0].apresentacao.rotulo"]);
     }
 
     /// <summary>O PUT dos itens com a composição familiar sem máximo que inclui o candidato.</summary>
@@ -85,9 +85,9 @@ public sealed class GrupoRepetivelEndpointTests
         object[] subitens =
         [
             .. comParentesco
-                ? new object[] { new { fatoCodigo = CandidatoComoMembro.FatoParentesco, ordem = 0, rotulo = "Parentesco", tipoRenderizacao = "SELECAO_UNICA", obrigatoriedade = "SEMPRE" } }
+                ? new object[] { FormularioDeInscricaoHttp.Item(CandidatoComoMembro.FatoParentesco, 0, "Parentesco", "SELECAO_UNICA") }
                 : [],
-            new { fatoCodigo = campo, ordem = 1, rotulo = rotuloDoCampo, tipoRenderizacao = "BOOLEANO", obrigatoriedade = "SEMPRE" },
+            FormularioDeInscricaoHttp.Item(campo, 1, rotuloDoCampo, "BOOLEANO"),
         ];
         return EnviarAsync(client, HttpMethod.Put, $"/api/selecao/admin/processos-seletivos/{processoId}/formularios/INSCRICAO/itens", new
         {
@@ -130,7 +130,7 @@ public sealed class GrupoRepetivelEndpointTests
                 {
                     codigo = "COMPOSICAO_FAMILIAR", ordem = 0, rotulo = "Composição familiar", etapaCodigo = "DADOS",
                     minimo = 1, maximo = 10, obrigatoriedade = obrigatoriedadeDoGrupo,
-                    subitens = new[] { new { fatoCodigo = membro, ordem = 0, rotulo = "Categoria de renda", tipoRenderizacao = "SELECAO_UNICA", obrigatoriedade = "SEMPRE" } },
+                    subitens = new[] { FormularioDeInscricaoHttp.Item(membro, 0, "Categoria de renda", "SELECAO_UNICA") },
                 },
             },
         });
@@ -180,7 +180,7 @@ public sealed class GrupoRepetivelEndpointTests
                 {
                     codigo = "COMPOSICAO_FAMILIAR", ordem = 0, rotulo = "Composição familiar", etapaCodigo = "DADOS",
                     minimo = 1, maximo = 10, obrigatoriedade = "SEMPRE",
-                    subitens = new[] { new { fatoCodigo = sobGuarda, ordem = 0, rotulo = "Sob guarda", tipoRenderizacao = "BOOLEANO", obrigatoriedade = "SEMPRE" } },
+                    subitens = new[] { FormularioDeInscricaoHttp.Item(sobGuarda, 0, "Sob guarda", "BOOLEANO") },
                 },
             },
         });

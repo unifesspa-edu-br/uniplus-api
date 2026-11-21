@@ -33,7 +33,7 @@ public sealed class ImpedimentoNoFormularioTests
 
         resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
         {
-            Field = "itens[0].impedimento",
+            Field = "itens[0].regras.impedimento",
             Error = new { Code = ItemFormularioErrorCodes.ImpedimentoForaDaInscricao },
         });
     }

@@ -278,16 +278,8 @@ public sealed class ProtecaoDaExigenciaEndpointTests
                 new Uri($"/api/selecao/admin/processos-seletivos/{ProcessoId}/formularios/INSCRICAO/itens", UriKind.Relative),
                 new { itens = new[] { ItemSensivel() } });
 
-        private static object ItemSensivel() => new
-        {
-            fatoCodigo = FatoSensivel,
-            ordem = PrimeiraOrdem,
-            rotulo = FatoSensivel,
-            tipoRenderizacao = "BOOLEANO",
-            obrigatoriedade = "NUNCA",
-            precondicao = (object?)null,
-            etapaCodigo = FormularioDeInscricaoHttp.Secao,
-        };
+        private static object ItemSensivel() =>
+            FormularioDeInscricaoHttp.Item(FatoSensivel, PrimeiraOrdem, FatoSensivel, "BOOLEANO", "NUNCA", etapaCodigo: FormularioDeInscricaoHttp.Secao);
 
         public Task<HttpResponseMessage> PutExigenciaAsync(Guid tipoDocumentoId, string[]? comprova = null) =>
             EnviarAsync(

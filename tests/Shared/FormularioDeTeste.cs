@@ -315,18 +315,19 @@ internal static class FormularioDeTeste
     /// <summary>O item básico na forma do domínio, a partir da entrada do conjunto básico.</summary>
     private static FatoColetado Basico(FatoColetadoInput entrada) =>
         FatoColetadoDeTeste.Coletando(entrada.FatoCodigo, entrada.Ordem)
-            .ComRotulo(entrada.Rotulo)
-            .DoTipo(CatalogoDe<TipoRenderizacao>.Obter(entrada.TipoRenderizacao!))
+            .ComRotulo(entrada.Apresentacao!.Rotulo!)
+            .DoTipo(CatalogoDe<TipoRenderizacao>.Obter(entrada.Apresentacao.TipoRenderizacao!))
             .ComObrigatoriedade(ObrigatoriedadeDaEntrada(entrada))
             .ExibidoQuando(ExibicaoDaEntrada(entrada))
             .ComCopia(CopiaDoCatalogoDoBasico(entrada))
             .NaSecao(entrada.EtapaCodigo)
-            .ComAjuda(entrada.Ajuda)
-            .ComRestricoes([.. (entrada.Restricoes ?? []).Select(static r => EntradaDeRegras.Restricao(r).Value!)])
+            .ComAjuda(entrada.Apresentacao.Ajuda)
+            .ComRestricoes([.. (entrada.Regras!.Restricoes ?? []).Select(static r => EntradaDeRegras.Restricao(r).Value!)])
             .Construir();
 
     private static Obrigatoriedade ObrigatoriedadeDaEntrada(FatoColetadoInput entrada) =>
-        EntradaDeRegras.Obrigatoriedade(entrada.Obrigatoriedade, EntradaDeRegras.Predicado(entrada.PredicadoObrigatoriedade).Value)!;
+        EntradaDeRegras.Obrigatoriedade(
+            entrada.Regras!.Obrigatoriedade!.Tipo, EntradaDeRegras.Predicado(entrada.Regras.Obrigatoriedade.Predicado).Value)!;
 
     private static CopiaDoItemNoCatalogo CopiaDoCatalogoDoBasico(FatoColetadoInput entrada) =>
         ProtecaoDoFatoDeTeste.Copia(
@@ -335,7 +336,7 @@ internal static class FormularioDeTeste
             FormatoDosTextos.GetValueOrDefault(entrada.FatoCodigo));
 
     private static PredicadoDnf? ExibicaoDaEntrada(FatoColetadoInput entrada) =>
-        entrada.Precondicao is not { Count: > 0 } clausulas
+        entrada.Regras!.Exibicao is not { Count: > 0 } clausulas
             ? null
             : PredicadoDnf.CriarDeCondicoesAgrupadas(
                 [.. clausulas.SelectMany((clausula, indice) => clausula.Select(c =>

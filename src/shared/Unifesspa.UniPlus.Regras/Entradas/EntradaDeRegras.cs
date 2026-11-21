@@ -280,6 +280,31 @@ public static class EntradaDeRegras
         return PredicadoDnfJson.ParaToken(obrigatoriedade.Tipo);
     }
 
+    /// <summary>
+    /// A apresentação da entrada com o tipo de campo já lido. A entrada ausente e o rótulo ausente ficam sem
+    /// texto, e a recusa deles é da forma do item.
+    /// </summary>
+    public static ApresentacaoDoCampo Apresentacao(ApresentacaoDoCampoInput? entrada, TipoRenderizacao tipoRenderizacao) =>
+        new(entrada?.Rotulo ?? string.Empty, tipoRenderizacao, entrada?.Ajuda, entrada?.PedirConfirmacao ?? false);
+
+    /// <summary>A apresentação do campo na forma da entrada, com o tipo de campo no código canônico.</summary>
+    public static ApresentacaoDoCampoInput ParaEntrada(ApresentacaoDoCampo apresentacao)
+    {
+        ArgumentNullException.ThrowIfNull(apresentacao);
+        return new(apresentacao.Rotulo, apresentacao.TipoRenderizacao.Codigo(), apresentacao.Ajuda, apresentacao.PedirConfirmacao);
+    }
+
+    /// <summary>As regras do campo na forma da entrada: a obrigatoriedade leva o token e, quando há, o predicado.</summary>
+    public static RegrasDoCampoInput ParaEntrada(RegrasDoCampo regras)
+    {
+        ArgumentNullException.ThrowIfNull(regras);
+        return new(
+            ParaEntrada(regras.Exibicao),
+            new ObrigatoriedadeInput(ParaEntrada(regras.Obrigatoriedade), ParaEntrada(regras.Obrigatoriedade.Predicado)),
+            [.. regras.Restricoes.Select(ParaEntrada)],
+            ParaEntrada(regras.Impedimento));
+    }
+
     /// <summary>A restrição de valor na forma da entrada.</summary>
     public static RestricaoValorInput ParaEntrada(RestricaoValor restricao)
     {

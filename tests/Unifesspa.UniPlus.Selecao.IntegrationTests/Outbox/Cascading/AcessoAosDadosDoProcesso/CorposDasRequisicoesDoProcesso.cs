@@ -51,16 +51,9 @@ internal static class CorposDasRequisicoesDoProcesso
         },
     };
 
-    private static object ItemDoFatoSensivel() => new
-    {
-        fatoCodigo = FatosDoCenario.Sensivel,
-        ordem = PrimeiraOrdem,
-        rotulo = FatosDoCenario.Sensivel,
-        tipoRenderizacao = "BOOLEANO",
-        obrigatoriedade = "NUNCA",
-        precondicao = (object?)null,
-        etapaCodigo = FormularioDeInscricaoHttp.Secao,
-    };
+    private static object ItemDoFatoSensivel() =>
+        FormularioDeInscricaoHttp.Item(
+            FatosDoCenario.Sensivel, PrimeiraOrdem, FatosDoCenario.Sensivel, "BOOLEANO", "NUNCA", etapaCodigo: FormularioDeInscricaoHttp.Secao);
 
     private static object GrupoDeResponsaveis(string fatoDoGrupo) => new
     {
@@ -76,12 +69,6 @@ internal static class CorposDasRequisicoesDoProcesso
         subitens = new object[] { RgDoResponsavel(fatoDoGrupo) },
     };
 
-    private static object RgDoResponsavel(string fatoDoGrupo) => new
-    {
-        fatoCodigo = fatoDoGrupo,
-        ordem = 0,
-        rotulo = "RG do responsável",
-        tipoRenderizacao = "TEXTO",
-        obrigatoriedade = "NUNCA",
-    };
+    private static object RgDoResponsavel(string fatoDoGrupo) =>
+        FormularioDeInscricaoHttp.Item(fatoDoGrupo, 0, "RG do responsável", "TEXTO", "NUNCA");
 }

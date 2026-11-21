@@ -24,7 +24,7 @@ internal sealed record ItensLidos(IReadOnlyList<FatoColetadoInput> Entradas, IRe
 /// <summary>O tipo de campo, a obrigatoriedade, as restrições e o impedimento de um item cuja forma foi aceita.</summary>
 internal sealed record ConfiguracaoDoItem(TipoRenderizacao TipoRenderizacao, Obrigatoriedade Obrigatoriedade, IReadOnlyList<RestricaoValor> Restricoes, Impedimento? Impedimento = null)
 {
-    /// <summary>As regras do item com a exibição dada, que a leitura da pré-condição devolve à parte.</summary>
+    /// <summary>As regras do item com a exibição dada, que a leitura da exibição devolve à parte.</summary>
     public RegrasDoCampo RegrasComExibicao(PredicadoDnf? exibicao) => new(exibicao, Obrigatoriedade, Restricoes, Impedimento);
 }
 
@@ -77,18 +77,30 @@ internal static class EscritaDosItens
     private static ConfiguracaoDoItem? LerConfiguracao(FatoColetadoInput input, string campo, List<FieldError> erros)
     {
         int recusasAntes = erros.Count;
-        erros.AddRange(FormaDoItem.ValidarFormaBasica(input.FatoCodigo, input.Ordem, input.Rotulo)
-            .Select(erro => erro with { Field = $"{campo}.{erro.Field}" }));
-        TipoRenderizacao? tipo = LerTipoRenderizacao(input.TipoRenderizacao, campo, erros);
-        Obrigatoriedade? obrigatoriedade = ConferirObrigatoriedade(input.Obrigatoriedade, input.PredicadoObrigatoriedade, campo, erros);
-        IReadOnlyList<RestricaoValor> restricoes = ConferirRestricoes(input, campo, erros);
-        Result<Impedimento?> impedimento = EntradaDeRegras.Impedimento(input.Impedimento);
+        erros.AddRange(FormaDoItem.ValidarFormaBasica(input.FatoCodigo, input.Ordem, input.Apresentacao?.Rotulo).Select(erro => erro.NoCaminhoDe(campo)));
+        TipoRenderizacao? tipo = LerTipoRenderizacao(input.Apresentacao?.TipoRenderizacao, $"{campo}.{FatoColetadoInput.CaminhoDaApresentacao}", erros);
+        (Obrigatoriedade? obrigatoriedade, IReadOnlyList<RestricaoValor> restricoes, Impedimento? impedimento) =
+            LerRegras(input.Regras, $"{campo}.{FatoColetadoInput.CaminhoDasRegras}", erros);
+        return erros.Count == recusasAntes ? new ConfiguracaoDoItem(tipo!.Value, obrigatoriedade!, restricoes, impedimento) : null;
+    }
+
+    /// <summary>
+    /// A obrigatoriedade, as restrições e o impedimento do item pela forma, no caminho das regras. A exibição é lida à parte, na
+    /// resolução, porque a recusa dela sai junto das semânticas.
+    /// </summary>
+    private static (Obrigatoriedade? Obrigatoriedade, IReadOnlyList<RestricaoValor> Restricoes, Impedimento? Impedimento) LerRegras(
+        RegrasDoCampoInput? regras, string campo, List<FieldError> erros)
+    {
+        Obrigatoriedade? obrigatoriedade = ConferirObrigatoriedade(
+            regras?.Obrigatoriedade?.Tipo, regras?.Obrigatoriedade?.Predicado, $"{campo}.obrigatoriedade", $"{campo}.obrigatoriedade.predicado", erros);
+        IReadOnlyList<RestricaoValor> restricoes = ConferirRestricoes(regras?.Restricoes, campo, erros);
+        Result<Impedimento?> impedimento = EntradaDeRegras.Impedimento(regras?.Impedimento);
         if (impedimento.IsFailure)
         {
             erros.Add(new($"{campo}.impedimento.quando", impedimento.Error!));
         }
 
-        return erros.Count == recusasAntes ? new ConfiguracaoDoItem(tipo!.Value, obrigatoriedade!, restricoes, impedimento.Value) : null;
+        return (obrigatoriedade, restricoes, impedimento.Value);
     }
 
     private static TipoRenderizacao? LerTipoRenderizacao(string? codigo, string campo, List<FieldError> erros)
@@ -139,7 +151,8 @@ internal static class EscritaDosItens
             erros.Add(new($"{caminho}.exibicao", exibicao.Error!));
         }
 
-        Obrigatoriedade? obrigatoriedade = ConferirObrigatoriedade(input.Obrigatoriedade, input.PredicadoObrigatoriedade, caminho, erros);
+        Obrigatoriedade? obrigatoriedade = ConferirObrigatoriedade(
+            input.Obrigatoriedade, input.PredicadoObrigatoriedade, $"{caminho}.obrigatoriedade", $"{caminho}.predicadoObrigatoriedade", erros);
         return new RegrasLidasDoGrupo(exibicao.IsSuccess ? exibicao.Value : null, obrigatoriedade, erros);
     }
 
@@ -147,7 +160,7 @@ internal static class EscritaDosItens
         NoCaminho(
             FormaDoGrupo.Conferir(
                 input.Codigo, input.Ordem, input.Rotulo, new OcorrenciasDoGrupo(input.Minimo, input.Maximo),
-                [.. (input.Subitens ?? []).Select(static s => (s?.FatoCodigo, s?.EtapaCodigo, s?.Impedimento is not null))],
+                [.. (input.Subitens ?? []).Select(static s => (s?.FatoCodigo, s?.EtapaCodigo, s?.Regras?.Impedimento is not null))],
                 regras.Exibicao?.FatosCitados ?? [],
                 regras.Obrigatoriedade ?? Obrigatoriedade.Nunca),
             caminho);
@@ -161,7 +174,7 @@ internal static class EscritaDosItens
     /// </summary>
     private static List<FieldError> ConferirCandidatoComoMembro(int minimo, IReadOnlyList<FatoColetadoInput> subitens, ItensLidos lidos) =>
         CandidatoComoMembro.Conferir(minimo, [.. subitens.Select((subitem, indice) => lidos.Configuracoes[indice] is { } configuracao
-            ? (subitem.FatoCodigo, subitem.Precondicao is { Count: > 0 }, configuracao.Obrigatoriedade, configuracao.Restricoes)
+            ? (subitem.FatoCodigo, subitem.Regras?.Exibicao is { Count: > 0 }, configuracao.Obrigatoriedade, configuracao.Restricoes)
             : (subitem.FatoCodigo, false, Obrigatoriedade.Sempre, (IReadOnlyList<RestricaoValor>)[]))]);
 
     /// <summary>
@@ -220,17 +233,21 @@ internal static class EscritaDosItens
     }
 
     /// <summary>
-    /// A obrigatoriedade do item na forma do termo: <c>SEMPRE</c> ou <c>NUNCA</c> sem predicado,
+    /// A obrigatoriedade na forma do termo: <c>SEMPRE</c> ou <c>NUNCA</c> sem predicado,
     /// <c>QUANDO</c> com ele. A semântica do predicado é conferida contra o catálogo, depois.
     /// </summary>
     private static Obrigatoriedade? ConferirObrigatoriedade(
-        string? token, IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? predicadoInput, string campo, List<FieldError> erros)
+        string? token,
+        IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? predicadoInput,
+        string caminhoDoToken,
+        string caminhoDoPredicado,
+        List<FieldError> erros)
     {
         Result<PredicadoDnf?> predicado = EntradaDeRegras.Predicado(predicadoInput);
         Obrigatoriedade? obrigatoriedade = predicado.IsSuccess ? EntradaDeRegras.Obrigatoriedade(token, predicado.Value) : null;
         erros.AddRange(predicado.IsFailure
-            ? [new FieldError($"{campo}.predicadoObrigatoriedade", predicado.Error!)]
-            : obrigatoriedade is null ? [new FieldError($"{campo}.obrigatoriedade", ObrigatoriedadeInvalida)] : []);
+            ? [new FieldError(caminhoDoPredicado, predicado.Error!)]
+            : obrigatoriedade is null ? [new FieldError(caminhoDoToken, ObrigatoriedadeInvalida)] : []);
         return obrigatoriedade;
     }
 
@@ -238,9 +255,9 @@ internal static class EscritaDosItens
         FatoColetadoErrorCodes.ObrigatoriedadeInvalida, "A obrigatoriedade é SEMPRE ou NUNCA, sem predicado, ou QUANDO, com predicado.");
 
     /// <summary>A forma das restrições de valor do item; os valores e fatos citados são conferidos contra o catálogo, depois.</summary>
-    private static List<RestricaoValor> ConferirRestricoes(FatoColetadoInput input, string campo, List<FieldError> erros)
+    private static List<RestricaoValor> ConferirRestricoes(IReadOnlyList<RestricaoValorInput>? restricoes, string campo, List<FieldError> erros)
     {
-        List<Result<RestricaoValor>> lidas = [.. (input.Restricoes ?? []).Select(LerRestricao)];
+        List<Result<RestricaoValor>> lidas = [.. (restricoes ?? []).Select(LerRestricao)];
         erros.AddRange(lidas.Select((lida, indice) => (lida, indice)).Where(static r => r.lida.IsFailure)
             .Select(r => new FieldError($"{campo}.restricoes[{r.indice}]", r.lida.Error!)));
         return [.. lidas.Where(static lida => lida.IsSuccess).Select(static lida => lida.Value!)];
@@ -281,7 +298,7 @@ internal static class EscritaDosItens
 
         FatoCandidatoView fato = contexto.Fatos[input.FatoCodigo];
         return ConferenciaDoItemNoCatalogo.Coerencia(fato, tipoRenderizacao) is { } incoerencia
-            ? Result<FatoCandidatoView>.ValidationFailure([new("tipoRenderizacao", incoerencia)])
+            ? Result<FatoCandidatoView>.ValidationFailure([new($"{FatoColetadoInput.CaminhoDaApresentacao}.tipoRenderizacao", incoerencia)])
             : Result<FatoCandidatoView>.Success(fato);
     }
 
@@ -293,15 +310,15 @@ internal static class EscritaDosItens
     private static (RegrasDoCampo Regras, List<FieldError> Erros) ConferirSemanticaDasRegras(
         FatoColetadoInput input, FatoCandidatoView fato, ConfiguracaoDoItem configuracao, ContextoDoCatalogo contexto)
     {
-        Result<PredicadoDnf?> exibicao = EntradaDeRegras.Predicado(input.Precondicao);
+        Result<PredicadoDnf?> exibicao = EntradaDeRegras.Predicado(input.Regras?.Exibicao);
         RegrasDoCampo lidas = configuracao.RegrasComExibicao(exibicao.IsSuccess ? exibicao.Value : null);
-        IEnumerable<string> fatosDaExibicao = (input.Precondicao ?? []).SelectMany(static c => c).Where(static c => c is not null).Select(static c => c.Fato);
+        IEnumerable<string> fatosDaExibicao = (input.Regras?.Exibicao ?? []).SelectMany(static c => c).Where(static c => c is not null).Select(static c => c.Fato);
         List<FieldError> erros =
         [
-            .. exibicao.Errors.Select(static e => new FieldError($"precondicao{e.Field}", e.Error)),
+            .. exibicao.Errors.Select(static e => new FieldError($"{ConferenciaDoItemNoCatalogo.CaminhoDaExibicao}{e.Field}", e.Error)),
             .. ConferenciaDoItemNoCatalogo.Semantica(fato, configuracao.TipoRenderizacao, lidas, fatosDaExibicao, contexto),
         ];
-        bool exibicaoRecusada = erros.Any(static e => e.Field is { } campo && campo.StartsWith("precondicao", StringComparison.Ordinal));
+        bool exibicaoRecusada = erros.Any(static e => e.Field is { } campo && campo.StartsWith(ConferenciaDoItemNoCatalogo.CaminhoDaExibicao, StringComparison.Ordinal));
         return (exibicaoRecusada ? configuracao.RegrasComExibicao(null) : lidas, erros);
     }
 
@@ -316,7 +333,7 @@ internal static class EscritaDosItens
             input.FatoCodigo,
             input.Ordem,
             input.EtapaCodigo,
-            new ApresentacaoDoCampo(input.Rotulo, tipoRenderizacao, input.Ajuda, input.PedirConfirmacao),
+            EntradaDeRegras.Apresentacao(input.Apresentacao, tipoRenderizacao),
             regras,
             VocabularioDeFatos.CopiaNoCatalogo(fato));
         return erros.Count == 0

@@ -151,11 +151,11 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     [Fact(DisplayName = "A recusa de um item aponta a posição dele no modelo, mesmo depois de um descarte")]
     public async Task Handle_RecusaDepoisDeDescarte_ApontaAPosicaoNoModelo()
     {
-        ModeloFormularioView modelo = Modelo(FinalidadeFormulario.Inscricao, [Item("BAIXA_RENDA", 0), Item("QUILOMBOLA", 1) with { Rotulo = "" }]);
+        ModeloFormularioView modelo = Modelo(FinalidadeFormulario.Inscricao, [Item("BAIXA_RENDA", 0), Montar("QUILOMBOLA", 1).ComRotulo("").Construir()]);
 
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(modelo);
 
-        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("modelo.itens[1].rotulo");
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("modelo.itens[1].apresentacao.rotulo");
     }
 
     [Fact(DisplayName = "A recusa do estado final aponta o termo pela posição no modelo, depois de um descarte")]

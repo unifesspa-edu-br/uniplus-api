@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Regras.Formularios;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -31,7 +32,7 @@ public sealed record Impedimento(PredicadoDnf Quando, string Mensagem)
             : [.. impedimentosDosItens
                 .Select(static (impedimento, indice) => (Impedimento: impedimento, Indice: indice))
                 .Where(static p => p.Impedimento is not null)
-                .Select(static p => new FieldError($"itens[{p.Indice}].impedimento", new DomainError(
+                .Select(static p => new FieldError($"itens[{p.Indice}].{FatoColetadoInput.CaminhoDasRegras}.impedimento", new DomainError(
                     ItemFormularioErrorCodes.ImpedimentoForaDaInscricao,
                     "Só o formulário de inscrição tem impedimento: ele impede a inscrição do candidato.")))];
     }

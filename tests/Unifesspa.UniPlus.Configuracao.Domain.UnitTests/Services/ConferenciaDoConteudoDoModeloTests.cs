@@ -96,7 +96,7 @@ public sealed class ConferenciaDoConteudoDoModeloTests
     {
         List<FieldError> erros = Conferir(Conteudo(Item("CERTIFICADO"), Item("LAUDO", 1).ComRotulo(string.Empty)));
 
-        Campos(erros).Should().Equal("conteudo.itens[1].rotulo");
+        Campos(erros).Should().Equal("conteudo.itens[1].apresentacao.rotulo");
         Codigos(erros).Should().Equal(ItemFormularioErrorCodes.RotuloObrigatorio);
     }
 
@@ -121,7 +121,7 @@ public sealed class ConferenciaDoConteudoDoModeloTests
     {
         ConteudoDoModelo conteudo = Conteudo(Item("CERTIFICADO").ComImpedimento(new Impedimento(Quando("CERTIFICADO"), "Já possui o certificado.")));
 
-        Campos(Conferir(conteudo)).Should().Equal("conteudo.itens[0].impedimento");
+        Campos(Conferir(conteudo)).Should().Equal("conteudo.itens[0].regras.impedimento");
         Conferir(conteudo, FinalidadeFormulario.Inscricao).Should().BeEmpty();
     }
 
@@ -137,7 +137,7 @@ public sealed class ConferenciaDoConteudoDoModeloTests
 
         List<FieldError> erros = Conferir(Conteudo(Item("CERTIFICADO")) with { Grupos = [grupo] });
 
-        Campos(erros).Should().Equal("conteudo.grupos[0].maximo", "conteudo.grupos[0].subitens", "conteudo.grupos[0].subitens[0].rotulo");
+        Campos(erros).Should().Equal("conteudo.grupos[0].maximo", "conteudo.grupos[0].subitens", "conteudo.grupos[0].subitens[0].apresentacao.rotulo");
     }
 
     [Fact(DisplayName = "O grupo que não inclui o candidato não pede o parentesco")]
@@ -227,7 +227,7 @@ public sealed class ConferenciaDoConteudoDoModeloTests
         };
 
         Campos(Conferir(conteudo)).Should().Equal(
-            "conteudo.titulo", "conteudo.etapas[1].titulo", "conteudo.itens[0].rotulo", "conteudo.itens[1].impedimento",
+            "conteudo.titulo", "conteudo.etapas[1].titulo", "conteudo.itens[0].apresentacao.rotulo", "conteudo.itens[1].regras.impedimento",
             "conteudo.grupos[0].maximo", "conteudo.termos[0].codigo", "conteudo.pressupostos[0]");
     }
 

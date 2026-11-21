@@ -50,7 +50,7 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
         await Repository.AdicionarAsync(Arg.Do<ModeloFormulario>(m => gravado = m), Arg.Any<CancellationToken>());
 
         Result<Guid> resultado = await CriarAsync(ComComposicao(
-            Campo("MAIOR_IDADE", 0), Campo("SEM_RENDA", 1) with { Precondicao = Quando("MAIOR_IDADE", true) }));
+            Campo("MAIOR_IDADE", 0), Montar("SEM_RENDA", 1).NaSecao(null).ExibidoQuando(Quando("MAIOR_IDADE", true)).Construir()));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         gravado!.Conteudo.Grupos.Single().Subitens.Select(static s => s.FatoCodigo).Should().Equal("MAIOR_IDADE", "SEM_RENDA");
@@ -71,7 +71,7 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
     [Fact(DisplayName = "Campo do grupo com fato do candidato não é coletável na ocorrência")]
     public async Task Criar_CampoDoGrupoComFatoDoCandidato_Recusa()
     {
-        Result<Guid> resultado = await CriarAsync(ComComposicao(Campo("CPF_RESPONSAVEL", 0) with { TipoRenderizacao = "TEXTO" }));
+        Result<Guid> resultado = await CriarAsync(ComComposicao(Campo("CPF_RESPONSAVEL", 0, "TEXTO")));
 
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("conteudo.grupos[0].subitens[0].fatoCodigo");
     }
@@ -123,7 +123,7 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
     [InlineData(false)]
     public async Task Criar_RegraCitaFaixaEtaria_PelaDataDeNascimento(bool coletaDataDeNascimento)
     {
-        FatoColetadoInput cita = Item("CERTIFICADO", 1) with { Precondicao = Quando("FAIXA_ETARIA", 18) };
+        FatoColetadoInput cita = Montar("CERTIFICADO", 1).ExibidoQuando(Quando("FAIXA_ETARIA", 18)).Construir();
         ConteudoDoModeloInput conteudo = coletaDataDeNascimento ? Conteudo(Item("DATA_NASCIMENTO", 0, "DATA"), cita) : Conteudo(cita);
 
         Result<Guid> resultado = await CriarAsync(conteudo);
@@ -151,22 +151,22 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
     [Fact(DisplayName = "Regra que cita valor fora do tipo do fato é recusada pela semântica do predicado")]
     public async Task Criar_RegraComValorDeOutroTipo_Recusa()
     {
-        FatoColetadoInput exibido = Item("CPF_RESPONSAVEL", 1, "TEXTO") with { Precondicao = Quando("CERTIFICADO", "SIM") };
+        FatoColetadoInput exibido = Montar("CPF_RESPONSAVEL", 1, "TEXTO").ExibidoQuando(Quando("CERTIFICADO", "SIM")).Construir();
 
         Result<Guid> resultado = await CriarAsync(Conteudo(Item("CERTIFICADO", 0), exibido));
 
-        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("conteudo.itens[1].precondicao");
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("conteudo.itens[1].regras.exibicao");
     }
 
     [Fact(DisplayName = "Regra que cita fato calculado de atributos do candidato é recusada")]
     public async Task Criar_RegraCitaAtributo_Recusa()
     {
-        FatoColetadoInput exibido = Item("CERTIFICADO", 0) with { Precondicao = Quando("IDADE", 18) };
+        FatoColetadoInput exibido = Montar("CERTIFICADO", 0).ExibidoQuando(Quando("IDADE", 18)).Construir();
 
         Result<Guid> resultado = await CriarAsync(Conteudo(exibido));
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should()
-            .Contain(("conteudo.itens[0].precondicao", GrafoFormularioErrorCodes.CitaAtributoDoCandidato));
+            .Contain(("conteudo.itens[0].regras.exibicao", GrafoFormularioErrorCodes.CitaAtributoDoCandidato));
     }
 
     [Fact(DisplayName = "Termo cuja versão não existe no catálogo é recusado")]
