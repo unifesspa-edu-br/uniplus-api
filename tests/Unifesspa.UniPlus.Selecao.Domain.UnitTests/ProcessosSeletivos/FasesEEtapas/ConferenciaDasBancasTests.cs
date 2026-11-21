@@ -65,15 +65,15 @@ public sealed class ConferenciaDasBancasTests
     {
         CronogramaDoProcesso cronograma = Fases(FaseComRecurso("RESULTADO", 1));
 
-        Causas(ConferenciaDasBancas.ConferirRecursosSemBanca(cronograma, Etapas()))
+        Causas(QuemJulgaORecurso.SemBanca(cronograma, Etapas()))
             .Should().Equal(("fases[0].bancasRequeridas", "Cronograma.RecursoSemBanca"));
     }
 
     [Fact(DisplayName = "A fase que admite recurso com a banca de recursos, ou sem recurso, não é recusada")]
     public void RecursosSemBanca_FaseComBancaOuSemRecurso_SemCausa()
     {
-        ConferenciaDasBancas.ConferirRecursosSemBanca(Fases(FaseComRecurso("RESULTADO", 1, BancasDeTeste.DeRecursosDaFase())), Etapas()).Should().BeEmpty();
-        ConferenciaDasBancas.ConferirRecursosSemBanca(Fases(new ModeloDeFase("INSCRICAO", 1)), Etapas()).Should().BeEmpty();
+        QuemJulgaORecurso.SemBanca(Fases(FaseComRecurso("RESULTADO", 1, BancasDeTeste.DeRecursosDaFase())), Etapas()).Should().BeEmpty();
+        QuemJulgaORecurso.SemBanca(Fases(new ModeloDeFase("INSCRICAO", 1)), Etapas()).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "A etapa que abre recurso sem banca própria e sem banca de recursos na fase é recusada")]
@@ -82,7 +82,7 @@ public sealed class ConferenciaDasBancasTests
         CronogramaDoProcesso cronograma = Fases(new ModeloDeFase("AVALIACAO", 1));
         EtapasDoProcesso etapas = Etapas(ComRecurso("AVALIACAO"));
 
-        Causas(ConferenciaDasBancas.ConferirRecursosSemBanca(cronograma, etapas)).Should().Equal(("etapas[0].bancas", "Cronograma.RecursoSemBanca"));
+        Causas(QuemJulgaORecurso.SemBanca(cronograma, etapas)).Should().Equal(("etapas[0].bancas", "Cronograma.RecursoSemBanca"));
     }
 
     [Fact(DisplayName = "A etapa que abre recurso é julgada pela banca própria ou pela banca de recursos da fase")]
@@ -91,9 +91,9 @@ public sealed class ConferenciaDasBancasTests
         CronogramaDoProcesso semBanca = Fases(new ModeloDeFase("AVALIACAO", 1));
         CronogramaDoProcesso comBancaNaFase = Fases(new ModeloDeFase("AVALIACAO", 1) with { Bancas = [BancasDeTeste.DeRecursosDaFase()] });
 
-        ConferenciaDasBancas.ConferirRecursosSemBanca(semBanca, Etapas(ComRecurso("AVALIACAO", BancasDeTeste.DeRecursosDaEtapa()))).Should().BeEmpty();
-        ConferenciaDasBancas.ConferirRecursosSemBanca(comBancaNaFase, Etapas(ComRecurso("AVALIACAO"))).Should().BeEmpty();
-        ConferenciaDasBancas.ConferirRecursosSemBanca(semBanca, Etapas(EtapaNaFase("AVALIACAO"))).Should().BeEmpty();
+        QuemJulgaORecurso.SemBanca(semBanca, Etapas(ComRecurso("AVALIACAO", BancasDeTeste.DeRecursosDaEtapa()))).Should().BeEmpty();
+        QuemJulgaORecurso.SemBanca(comBancaNaFase, Etapas(ComRecurso("AVALIACAO"))).Should().BeEmpty();
+        QuemJulgaORecurso.SemBanca(semBanca, Etapas(EtapaNaFase("AVALIACAO"))).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "As fases são recusadas antes das etapas")]
@@ -102,7 +102,7 @@ public sealed class ConferenciaDasBancasTests
         CronogramaDoProcesso cronograma = Fases(FaseComRecurso("AVALIACAO", 1));
         EtapasDoProcesso etapas = Etapas(ComRecurso("AVALIACAO"));
 
-        Causas(ConferenciaDasBancas.ConferirRecursosSemBanca(cronograma, etapas)).Select(static causa => causa.Campo)
+        Causas(QuemJulgaORecurso.SemBanca(cronograma, etapas)).Select(static causa => causa.Campo)
             .Should().Equal("fases[0].bancasRequeridas", "etapas[0].bancas");
     }
 
@@ -190,8 +190,8 @@ public sealed class ConferenciaDasBancasTests
         ConferenciaDasBancas.ConferirMinimoDeIntegrantes(cronograma, Etapas(ComRecurso("AVALIACAO")), NenhumLido).Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "Os cinco itens saem nesta ordem, verdes quando a configuração das bancas é conforme")]
-    public void Itens_Conformes_CincoVerdesNaOrdem()
+    [Fact(DisplayName = "Os seis itens saem nesta ordem, verdes quando a configuração das bancas é conforme")]
+    public void Itens_Conformes_SeisVerdesNaOrdem()
     {
         CronogramaDoProcesso cronograma = Fases(new ModeloDeFase("AVALIACAO", 1) with { Bancas = [BancasDeTeste.DeRecursosDaFase()] });
 
@@ -200,6 +200,7 @@ public sealed class ConferenciaDasBancasTests
         itens.Select(static item => item.Codigo).Should().Equal(
             "cronograma_banca_de_recursos_sem_candidatos_atendidos",
             "cronograma_recurso_com_banca_que_julga",
+            "cronograma_instancia_superior_admitida_pelo_tipo_de_banca",
             "cronograma_tipo_de_banca_com_o_minimo_de_bancas",
             "cronograma_banca_com_regra_de_deliberacao",
             "cronograma_banca_com_o_minimo_de_integrantes");

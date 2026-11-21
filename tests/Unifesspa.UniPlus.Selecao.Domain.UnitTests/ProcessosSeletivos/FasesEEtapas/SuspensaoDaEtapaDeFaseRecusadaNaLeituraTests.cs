@@ -43,7 +43,7 @@ public sealed class SuspensaoDaEtapaDeFaseRecusadaNaLeituraTests
     private static FaseCronograma FaseSemRecurso(string codigo) => new ModeloDeFase(codigo, 1).Janela(1, 5).Adotada();
 
     private static (string? Campo, string Codigo)[] Causas(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
-        [.. ConferenciaDasBancas.ConferirRecursosSemBanca(cronograma, etapas).Select(static causa => (causa.Field, causa.Error.Code))];
+        [.. QuemJulgaORecurso.SemBanca(cronograma, etapas).Select(static causa => (causa.Field, causa.Error.Code))];
 
     private static bool ItemAprovado(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
         ConferenciaDasBancas.Itens(cronograma, etapas, NenhumLido).Single(static item => item.Codigo == ItemDoRecurso).Ok;

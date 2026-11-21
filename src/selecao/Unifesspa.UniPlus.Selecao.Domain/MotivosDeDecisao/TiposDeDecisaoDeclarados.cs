@@ -36,6 +36,14 @@ public static class TiposDeDecisaoDeclarados
         return erros;
     }
 
+    /// <summary>Se alguma das recusas da declaração é de um tipo de decisão: o lugar não sabe quais tipos produz.</summary>
+    public static bool TemRecusa(IEnumerable<FieldError> recusas)
+    {
+        ArgumentNullException.ThrowIfNull(recusas);
+
+        return recusas.Any(static recusa => recusa.Field?.StartsWith(Campo, StringComparison.Ordinal) == true);
+    }
+
     /// <summary>
     /// Os tipos da declaração quando <see cref="Validar"/> a aceita; nulo quando recusa, para quem depende
     /// do dado não o ler recusado. A declaração ausente é a declaração vazia. Não emite recusa.

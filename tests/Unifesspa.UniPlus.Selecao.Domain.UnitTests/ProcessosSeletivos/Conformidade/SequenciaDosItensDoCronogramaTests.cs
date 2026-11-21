@@ -38,6 +38,7 @@ public sealed class SequenciaDosItensDoCronogramaTests
         "cronograma_procedimento_de_recurso",
         "cronograma_banca_de_recursos_sem_candidatos_atendidos",
         "cronograma_recurso_com_banca_que_julga",
+        "cronograma_instancia_superior_admitida_pelo_tipo_de_banca",
         "cronograma_tipo_de_banca_com_o_minimo_de_bancas",
         "cronograma_banca_com_regra_de_deliberacao",
         "cronograma_banca_com_o_minimo_de_integrantes",

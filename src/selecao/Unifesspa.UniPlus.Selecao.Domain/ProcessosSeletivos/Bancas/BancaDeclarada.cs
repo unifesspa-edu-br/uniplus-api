@@ -16,8 +16,11 @@ public sealed record BancaDeclarada(int Posicao, int PosicaoNoTipo, TipoDeBancaC
     /// <summary>Como as mensagens citam a banca: o rótulo fixo do tipo e a posição entre as do mesmo tipo.</summary>
     public string Citacao => $"{Tipo.Codigo.Rotulo()} {PosicaoNoTipo}";
 
-    /// <summary>Se a banca decide por ato individual e julga recurso sem declarar a votação dele.</summary>
-    public bool JulgaRecursoSemVotacao => Tipo.JulgaRecurso && Regra is { AtoIndividualSemVotacao: true };
+    /// <summary>Se a banca decide por ato individual sem declarar a votação usada no julgamento do recurso.</summary>
+    public bool SemVotacaoDoRecurso => Regra is { AtoIndividualSemVotacao: true };
+
+    /// <summary>Se a banca decide por ato individual e julga recurso, pelo papel, sem declarar a votação dele.</summary>
+    public bool JulgaRecursoSemVotacao => Tipo.JulgaRecurso && SemVotacaoDoRecurso;
 
     internal static IReadOnlyList<BancaDeclarada> De(IReadOnlyList<(TipoDeBancaCopiado Tipo, RegraDeDeliberacao? Regra)> bancas)
     {

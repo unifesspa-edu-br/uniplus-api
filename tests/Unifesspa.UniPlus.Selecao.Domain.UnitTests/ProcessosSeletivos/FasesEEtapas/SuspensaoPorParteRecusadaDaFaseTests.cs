@@ -122,9 +122,9 @@ public sealed class SuspensaoPorParteRecusadaDaFaseTests
         CronogramaDoProcesso comParteRecusada = CronogramaDoProcesso.Do(fases, ComPartesRecusadas("fases[0].bancasRequeridas"));
         EtapasDoProcesso semEtapas = EtapasDoProcesso.Das([]);
 
-        ConferenciaDasBancas.ConferirRecursosSemBanca(CronogramaDoProcesso.Do(fases), semEtapas).Select(static recusa => recusa.Field).Should()
+        QuemJulgaORecurso.SemBanca(CronogramaDoProcesso.Do(fases), semEtapas).Select(static recusa => recusa.Field).Should()
             .Equal("fases[0].bancasRequeridas", "fases[1].bancasRequeridas");
-        ConferenciaDasBancas.ConferirRecursosSemBanca(comParteRecusada, semEtapas).Select(static recusa => recusa.Field).Should()
+        QuemJulgaORecurso.SemBanca(comParteRecusada, semEtapas).Select(static recusa => recusa.Field).Should()
             .Equal("fases[1].bancasRequeridas");
         ItemDoRecurso(CronogramaDoProcesso.Do([fases[1]]), semEtapas).Ok.Should().BeFalse();
         ItemDoRecurso(CronogramaDoProcesso.Do([SemRecurso()], ComPartesRecusadas("fases[0].bancasRequeridas")), semEtapas).Ok.Should().BeFalse();

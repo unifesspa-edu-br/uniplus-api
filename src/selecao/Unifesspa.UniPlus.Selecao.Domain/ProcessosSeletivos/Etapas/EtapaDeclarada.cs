@@ -103,6 +103,18 @@ public sealed record EtapaDeclarada
 
     public IReadOnlyList<FieldError> Recusas { get; }
 
+    /// <summary>Se a declaração recusou algum tipo de decisão da etapa: não se sabe quais decisões ela produz.</summary>
+    public bool TiposDeDecisaoRecusados => TiposDeDecisaoDeclarados.TemRecusa(Recusas);
+
+    /// <summary>Se o alvo do procedimento de recurso é um item de avaliação desta etapa.</summary>
+    public bool ContemOAlvo(AlvoDoProcedimentoDeRecurso alvo)
+    {
+        ArgumentNullException.ThrowIfNull(alvo);
+
+        return alvo.Tipo == TipoDeAlvoDoProcedimentoDeRecurso.ItemDeAvaliacao
+            && _avaliacao.Itens.Any(item => item.Id is { } id && string.Equals(id.ToString("D"), alvo.Valor, StringComparison.Ordinal));
+    }
+
     /// <summary>Se a etapa compõe a média: o caráter pontua e o peso foi declarado.</summary>
     public bool ComponeNota => CaraterDaEtapa.Pontua(Carater) && Peso.HasValue;
 
