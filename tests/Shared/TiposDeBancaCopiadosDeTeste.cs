@@ -17,6 +17,10 @@ internal static class TiposDeBancaCopiadosDeTeste
     /// <summary>A cópia do tipo de banca que julga recurso em 1ª instância.</summary>
     public static TipoDeBancaCopiado DeRecursos(Guid? origemId = null) => De(TipoDeBanca.AnaliseDeRecursos, origemId);
 
+    /// <summary>A cópia do tipo de banca que julga recurso em 2ª instância.</summary>
+    public static TipoDeBancaCopiado DeSegundaInstancia(Guid? origemId = null) =>
+        De(TipoDeBanca.AnaliseDeRecursosDeSegundaInstancia, origemId);
+
     /// <summary>A cópia do tipo de banca que avalia o mérito, com o nome que o teste escolher.</summary>
     public static TipoDeBancaCopiado Avaliadora(Guid? origemId = null, string? nome = null) =>
         Nomeada(De(TipoDeBanca.CorrecaoDeRedacoes, origemId), nome);
@@ -55,6 +59,7 @@ internal static class TiposDeBancaCopiadosDeTeste
     private static PapelDaBanca PapelNatural(TipoDeBanca codigo) => codigo switch
     {
         TipoDeBanca.AnaliseDeRecursos => PapelDaBanca.JulgaAPrimeiraInstancia,
+        TipoDeBanca.AnaliseDeRecursosDeSegundaInstancia => PapelDaBanca.JulgaASegundaInstancia,
         TipoDeBanca.ImportacaoDasNotasDoInep => PapelDaBanca.ImportaAsNotasDoInep,
         TipoDeBanca.ImportacaoDeCandidatos => PapelDaBanca.ImportaCandidatos,
         _ => PapelDaBanca.AvaliaOMerito,

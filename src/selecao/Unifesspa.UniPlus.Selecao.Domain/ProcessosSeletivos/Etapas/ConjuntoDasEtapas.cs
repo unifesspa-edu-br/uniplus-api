@@ -41,8 +41,7 @@ internal static class ConjuntoDasEtapas
     internal static DomainError NotaDoEnemComBanca(int posicao) => new(
         "ProcessoSeletivo.EtapaNotaEnemComBanca",
         $"A etapa na posição {posicao + 1} tem a nota vinda do ENEM e não admite banca com o papel '{PapelDaBanca.AvaliaOMerito.Rotulo()}'. " +
-        $"Na etapa cabem a banca com o papel '{PapelDaBanca.ImportaAsNotasDoInep.Rotulo()}' e a banca com o papel '{PapelDaBanca.JulgaAPrimeiraInstancia.Rotulo()}', " +
-        "que julga o recurso individual da etapa. O recurso contra o resultado é declarado na configuração do recurso da fase que publica o resultado.");
+        "O recurso contra o resultado é declarado na configuração do recurso da fase que publica o resultado.");
 
     internal static DomainError NotaDoEnemComProdutoOuRecursoEmAto(int posicao) => new(
         "ProcessoSeletivo.EtapaNotaEnemComProdutoOuRecursoEmAto",

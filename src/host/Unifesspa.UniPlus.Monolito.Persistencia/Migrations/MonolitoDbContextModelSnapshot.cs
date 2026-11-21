@@ -7491,11 +7491,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("tipos_de_banca", "configuracao", t =>
                         {
-                            t.HasCheckConstraint("ck_tipos_de_banca_codigo_canonico", "codigo IN ('BANCA_ANALISE_DOCUMENTAL', 'BANCA_ENTREVISTA', 'BANCA_CORRECAO_REDACOES', 'BANCA_ANALISE_RECURSOS', 'BANCA_HETEROIDENTIFICACAO', 'BANCA_BIOPSICOSSOCIAL', 'BANCA_HOMOLOGACAO_INSCRICOES', 'BANCA_IMPORTACAO_NOTAS_INEP', 'BANCA_IMPORTACAO_CANDIDATOS')");
+                            t.HasCheckConstraint("ck_tipos_de_banca_codigo_canonico", "codigo IN ('BANCA_ANALISE_DOCUMENTAL', 'BANCA_ENTREVISTA', 'BANCA_CORRECAO_REDACOES', 'BANCA_ANALISE_RECURSOS', 'BANCA_HETEROIDENTIFICACAO', 'BANCA_BIOPSICOSSOCIAL', 'BANCA_HOMOLOGACAO_INSCRICOES', 'BANCA_IMPORTACAO_NOTAS_INEP', 'BANCA_IMPORTACAO_CANDIDATOS', 'BANCA_ANALISE_RECURSOS_SEGUNDA_INSTANCIA')");
 
                             t.HasCheckConstraint("ck_tipos_de_banca_decisoes", "tipos_de_decisao_julgados <@ ARRAY['ISENCAO_DA_TAXA', 'HOMOLOGACAO_DAS_INSCRICOES', 'ANALISE_DOCUMENTAL', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'CLASSIFICACAO', 'GABARITO_DA_PROVA', 'NOTA_DA_ETAPA']::text[]");
 
-                            t.HasCheckConstraint("ck_tipos_de_banca_papel", "papel IN ('AVALIA_O_MERITO', 'JULGA_A_PRIMEIRA_INSTANCIA', 'IMPORTA_AS_NOTAS_DO_INEP', 'IMPORTA_CANDIDATOS')");
+                            t.HasCheckConstraint("ck_tipos_de_banca_papel", "papel IN ('AVALIA_O_MERITO', 'JULGA_A_PRIMEIRA_INSTANCIA', 'IMPORTA_AS_NOTAS_DO_INEP', 'IMPORTA_CANDIDATOS', 'JULGA_A_SEGUNDA_INSTANCIA')");
                         });
                 });
 

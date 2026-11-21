@@ -18,6 +18,7 @@ public sealed class MontagemDasBancasDaFaseTests
 {
     private static readonly TipoBancaView TipoDocumental = new(Guid.CreateVersion7(), TipoDeBanca.AnaliseDocumental, "Banca de análise documental", null, null, PapelDaBanca.AvaliaOMerito, false, false, [TipoMotivoDeDecisao.AnaliseDocumental, TipoMotivoDeDecisao.IsencaoDaTaxa]);
     private static readonly TipoBancaView TipoDeRecursos = new(Guid.CreateVersion7(), TipoDeBanca.AnaliseDeRecursos, "Banca de análise de recursos", null, null, PapelDaBanca.JulgaAPrimeiraInstancia, false, false, []);
+    private static readonly TipoBancaView TipoDeSegundaInstancia = new(Guid.CreateVersion7(), TipoDeBanca.AnaliseDeRecursosDeSegundaInstancia, "Banca de análise de recursos de 2ª instância", null, null, PapelDaBanca.JulgaASegundaInstancia, false, false, []);
     private static readonly TipoBancaView TipoDeHomologacao = new(Guid.CreateVersion7(), TipoDeBanca.HomologacaoDasInscricoes, "Banca de homologação das inscrições", null, null, PapelDaBanca.AvaliaOMerito, false, false, [TipoMotivoDeDecisao.HomologacaoDasInscricoes]);
     private static readonly CategoriaDocumentoView CategoriaRenda = new(Guid.CreateVersion7(), "RENDA", "Renda", null, 1);
 
@@ -159,6 +160,34 @@ public sealed class MontagemDasBancasDaFaseTests
         resultado.IsSuccess.Should().BeTrue();
     }
 
+    [Fact(DisplayName = "A banca nova do tipo de 2ª instância copia do cadastro o tipo e o papel que julga o recurso em 2ª instância")]
+    public async Task Montar_BancaNovaDeSegundaInstancia_CopiaOPapel()
+    {
+        BancaRequeridaInput declarada = new(TipoDeSegundaInstancia.Id, [], RegrasDeDeliberacaoDeTeste.AtoIndividualComVotacaoDoRecurso());
+
+        Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(Fase(declarada), 0, [], CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.Single().Tipo.Should().Be(new TipoDeBancaCopiado(
+            TipoDeSegundaInstancia.Id, TipoDeBanca.AnaliseDeRecursosDeSegundaInstancia, "Banca de análise de recursos de 2ª instância",
+            PapelDaBanca.JulgaASegundaInstancia, false, false, []));
+    }
+
+    [Fact(DisplayName = "A banca de 2ª instância com a votação do recurso pela metade recusa o campo que falta, no caminho da banca")]
+    public async Task Montar_SegundaInstanciaEmAtoIndividualComVotacaoPelaMetade_RecusaOsCamposQueFaltam()
+    {
+        BancaRequeridaInput declarada = new(TipoDeSegundaInstancia.Id, [], RegrasDeDeliberacaoDeTeste.AtoIndividualSoComOQuorum());
+
+        Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(Fase(declarada), 0, [], CancellationToken.None);
+
+        resultado.Errors.Select(static erro => erro.Field).Should().BeEquivalentTo(
+        [
+            "fases[0].bancasRequeridas[0].regraDeDeliberacao.criterio",
+            "fases[0].bancasRequeridas[0].regraDeDeliberacao.encerramento",
+        ]);
+        resultado.Errors.Should().OnlyContain(static erro => erro.Error.Code == "Banca.VotacaoDoRecursoIncompleta");
+    }
+
     [Fact(DisplayName = "A banca gravada que a declaração substitui sem trocar o tipo mantém a cópia, ainda que o cadastro tenha mudado")]
     public async Task Montar_BancaGravadaDoMesmoTipo_MantemACopiaSemLerOCadastro()
     {
@@ -228,6 +257,7 @@ public sealed class MontagemDasBancasDaFaseTests
         leitor.ObterPorIdAsync(TipoDocumental.Id, Arg.Any<CancellationToken>()).Returns(TipoDocumental);
         leitor.ObterPorIdAsync(TipoDeRecursos.Id, Arg.Any<CancellationToken>()).Returns(TipoDeRecursos);
         leitor.ObterPorIdAsync(TipoDeHomologacao.Id, Arg.Any<CancellationToken>()).Returns(TipoDeHomologacao);
+        leitor.ObterPorIdAsync(TipoDeSegundaInstancia.Id, Arg.Any<CancellationToken>()).Returns(TipoDeSegundaInstancia);
         return leitor;
     }
 

@@ -215,11 +215,11 @@ public static class ConferenciaDasBancas
                 banca.Citacao,
                 $"fase '{fase.Codigo}'",
                 banca.Regra!,
-                banca.Tipo.JulgaRecurso ? QuemJulgaORecurso.EtapasJulgadasPelaFase(itens, fase) : [])));
+                banca.Tipo.JulgaAPrimeiraInstancia ? QuemJulgaORecurso.EtapasJulgadasPelaFase(itens, fase) : [])));
 
-    // A banca da etapa com papel que julga recurso julga a etapa sempre; a que avaliou o item a julga quando se sabe que o recurso
-    // da própria etapa recai sobre ela, sem banca dedicada no lugar. O recurso da fase não acrescenta etapa julgada: ela segue
-    // conferida pelo quórum.
+    // A banca da etapa dedicada à 1ª instância julga a etapa sempre; a que avaliou o item a julga quando se sabe que o recurso
+    // da própria etapa recai sobre ela, sem banca dedicada no lugar. A banca de 2ª instância não julga etapa: é conferida só
+    // pelo quórum, na fase e na etapa. O recurso da fase não acrescenta etapa julgada: ela segue conferida pelo quórum.
     private static IEnumerable<BancaJulgadora> BancasDasEtapas(EtapasDoProcesso etapas, IReadOnlyList<QuemJulgaORecurso.ItemJulgado> itens)
     {
         IReadOnlySet<BancaDeclarada> avaliadorasDaEtapa = QuemJulgaORecurso.AvaliadorasQueJulgam(itens.Where(static item => item.Recurso.Etapa is not null));
@@ -231,7 +231,7 @@ public static class ConferenciaDasBancas
                 banca.Citacao,
                 EtapaNaPosicao(posicao),
                 banca.Regra!,
-                banca.Tipo.JulgaRecurso || avaliadorasDaEtapa.Contains(banca) ? [new EtapaJulgada(etapa, posicao)] : [])));
+                banca.Tipo.JulgaAPrimeiraInstancia || avaliadorasDaEtapa.Contains(banca) ? [new EtapaJulgada(etapa, posicao)] : [])));
     }
 
     private static IEnumerable<FieldError> RegrasNaoResolvidas(BancaJulgadora[] bancas, CorretoresDasEtapas corretores) =>

@@ -16,6 +16,7 @@ public sealed class DeclaracaoDasBancasDaEtapaTests
     private static readonly Guid TipoDaProva = Guid.CreateVersion7();
     private static readonly TipoBancaView TipoDeEntrevista = new(Guid.CreateVersion7(), TipoDeBanca.Entrevista, "Banca de entrevista", null, null, PapelDaBanca.AvaliaOMerito, false, false, [TipoMotivoDeDecisao.NotaDaEtapa]);
     private static readonly TipoBancaView TipoDeRecursos = new(Guid.CreateVersion7(), TipoDeBanca.AnaliseDeRecursos, "Banca de análise de recursos", null, null, PapelDaBanca.JulgaAPrimeiraInstancia, false, false, []);
+    private static readonly TipoBancaView TipoDeSegundaInstancia = new(Guid.CreateVersion7(), TipoDeBanca.AnaliseDeRecursosDeSegundaInstancia, "Banca de análise de recursos de 2ª instância", null, null, PapelDaBanca.JulgaASegundaInstancia, false, false, []);
     private static readonly string[] CamposDaPrimeiraEDaTerceiraBanca =
     [
         "bancas[0].regraDeDeliberacao.integrantes",
@@ -209,6 +210,32 @@ public sealed class DeclaracaoDasBancasDaEtapaTests
         etapa.Bancas.Should().BeEmpty();
     }
 
+    [Fact(DisplayName = "A banca nova do tipo de 2ª instância copia do cadastro o tipo e o papel que julga o recurso em 2ª instância")]
+    public async Task Declarar_BancaNovaDeSegundaInstancia_CopiaOPapel()
+    {
+        EtapaProcesso etapa = NovaEtapa();
+
+        Result resultado = await Declaracao().DeclararAsync(etapa, Entrada(Banca(TipoDeSegundaInstancia, RegrasDeDeliberacaoDeTeste.Valida())), CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue();
+        etapa.Bancas.Single().Tipo.Should().Be(new TipoDeBancaCopiado(
+            TipoDeSegundaInstancia.Id, TipoDeBanca.AnaliseDeRecursosDeSegundaInstancia, "Banca de análise de recursos de 2ª instância",
+            PapelDaBanca.JulgaASegundaInstancia, false, false, []));
+    }
+
+    [Fact(DisplayName = "A banca de 2ª instância da etapa com a votação do recurso pela metade recusa o campo que falta, no caminho da banca")]
+    public async Task Declarar_SegundaInstanciaComVotacaoPelaMetade_RecusaOsCamposQueFaltam()
+    {
+        EtapaProcesso etapa = NovaEtapa();
+
+        Result resultado = await Declaracao().DeclararAsync(
+            etapa, Entrada(Banca(TipoDeSegundaInstancia, RegrasDeDeliberacaoDeTeste.AtoIndividualSoComOQuorum())), CancellationToken.None);
+
+        resultado.Errors.Select(static erro => erro.Field).Should().BeEquivalentTo(
+            ["bancas[0].regraDeDeliberacao.criterio", "bancas[0].regraDeDeliberacao.encerramento"]);
+        resultado.Errors.Should().OnlyContain(static erro => erro.Error.Code == "Banca.VotacaoDoRecursoIncompleta");
+    }
+
     [Fact(DisplayName = "A banca que continua com o mesmo tipo mantém a cópia, ainda que o tipo tenha saído do cadastro")]
     public async Task Declarar_MesmoTipoQueSaiuDoCadastro_MantemACopia()
     {
@@ -253,7 +280,7 @@ public sealed class DeclaracaoDasBancasDaEtapaTests
         (_, _) => Task.FromResult<TipoBancaView?>(null)));
 
     private static DeclaracaoDasBancasDaEtapa Declaracao() => new(new LeituraMemoizada<Guid, TipoBancaView>(
-        (tipoId, _) => Task.FromResult<TipoBancaView?>(new[] { TipoDeEntrevista, TipoDeRecursos }.FirstOrDefault(tipo => tipo.Id == tipoId))));
+        (tipoId, _) => Task.FromResult<TipoBancaView?>(new[] { TipoDeEntrevista, TipoDeRecursos, TipoDeSegundaInstancia }.FirstOrDefault(tipo => tipo.Id == tipoId))));
 
     private static BancaDaEtapaInput Banca(TipoBancaView tipo, RegraDeDeliberacaoInput? regra, Guid? id = null) => new(tipo.Id, regra, id);
 

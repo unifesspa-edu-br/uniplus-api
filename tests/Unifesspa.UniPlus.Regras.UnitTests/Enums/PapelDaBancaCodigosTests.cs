@@ -16,6 +16,7 @@ public sealed class PapelDaBancaCodigosTests
                 [PapelDaBanca.JulgaAPrimeiraInstancia] = ("JULGA_A_PRIMEIRA_INSTANCIA", "Julga o recurso em 1ª instância"),
                 [PapelDaBanca.ImportaAsNotasDoInep] = ("IMPORTA_AS_NOTAS_DO_INEP", "Importa as notas do INEP"),
                 [PapelDaBanca.ImportaCandidatos] = ("IMPORTA_CANDIDATOS", "Importa candidatos"),
+                [PapelDaBanca.JulgaASegundaInstancia] = ("JULGA_A_SEGUNDA_INSTANCIA", "Julga o recurso em 2ª instância"),
             });
 
     [Fact(DisplayName = "O vocabulário de papéis de banca é publicado na ordem de exibição")]
@@ -24,7 +25,8 @@ public sealed class PapelDaBancaCodigosTests
             PapelDaBanca.AvaliaOMerito,
             PapelDaBanca.JulgaAPrimeiraInstancia,
             PapelDaBanca.ImportaAsNotasDoInep,
-            PapelDaBanca.ImportaCandidatos);
+            PapelDaBanca.ImportaCandidatos,
+            PapelDaBanca.JulgaASegundaInstancia);
 
     [Fact(DisplayName = "O catálogo lê o papel pelo código exato, e não reconhece caixa diferente, espaço nem texto ausente")]
     public void TentarObter_SoReconheceOCodigoExato()

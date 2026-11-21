@@ -156,8 +156,8 @@ internal static class RegrasDasEtapas
     /// A etapa que declara nota de origem no ENEM (<see cref="EtapaProcesso.DeclaraNotaDoEnem"/>) é no máximo uma por processo,
     /// porque a nota do ENEM é uma só por candidato; compõe a média, porque é para gerar a nota final que o processo baseado em
     /// ENEM a declara; e só convive com classificação baseada em ENEM <b>e</b> calculada pela média ponderada, que é a fórmula
-    /// em que ela entra como componente. Não pode ter banca com o papel que avalia o mérito, porque ninguém atribui a nota:
-    /// cabem a banca de importação das notas do INEP e a banca que julga o recurso individual da etapa. Também não declara
+    /// em que ela entra como componente. Não pode ter banca com o papel que avalia o mérito, porque ninguém atribui a nota.
+    /// Também não declara
     /// produto nem recurso ancorado em ato, porque o resultado é publicado pela fase. Essas duas últimas regras são da
     /// declaração das etapas (<see cref="ConjuntoDasEtapas"/>), que numera as etapas como o cliente as enviou, e aqui não
     /// se repetem. O parecer individual é admitido, não exigido: nesta etapa ele é o espelho do cálculo gerado pelo sistema, e

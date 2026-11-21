@@ -56,11 +56,12 @@ public sealed class TipoDeBancaCopiadoTests
     public void Criar_SemNome_Lanca(string nome) =>
         FluentActions.Invoking(() => Copia(nome: nome)).Should().Throw<ArgumentException>();
 
-    [Theory(DisplayName = "Só o papel que julga o recurso em 1ª instância faz a cópia julgar recurso, e só o que avalia o mérito a faz avaliar")]
+    [Theory(DisplayName = "Os papéis que julgam o recurso em 1ª ou em 2ª instância fazem a cópia julgar recurso, e só o que avalia o mérito a faz avaliar")]
     [InlineData(PapelDaBanca.AvaliaOMerito, false, true)]
     [InlineData(PapelDaBanca.JulgaAPrimeiraInstancia, true, false)]
     [InlineData(PapelDaBanca.ImportaAsNotasDoInep, false, false)]
     [InlineData(PapelDaBanca.ImportaCandidatos, false, false)]
+    [InlineData(PapelDaBanca.JulgaASegundaInstancia, true, false)]
     public void Papel_DecideSeJulgaRecursoESeAvalia(PapelDaBanca papel, bool julgaRecurso, bool avalia)
     {
         TipoDeBancaCopiado copia = Copia(papel: papel);

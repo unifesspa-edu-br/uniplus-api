@@ -41,4 +41,23 @@ public sealed class TipoDeBancaNoEnvelopeTests
 
         banca.Select(static p => p.Key).Should().BeEquivalentTo(TipoDeBancaNoEnvelope.Chaves);
     }
+
+    [Fact(DisplayName = "A cópia do tipo de 2ª instância, escrita e lida de volta pelo envelope, mantém o tipo e o papel que julga o recurso em 2ª instância")]
+    public void Ler_CopiaDeSegundaInstancia_MantemOPapel()
+    {
+        TipoDeBancaCopiado copia = new(
+            Guid.CreateVersion7(), TipoDeBanca.AnaliseDeRecursosDeSegundaInstancia, "Banca de análise de recursos de 2ª instância",
+            PapelDaBanca.JulgaASegundaInstancia, false, false, []);
+        JsonObject escrita = [];
+        LeitorEnvelope leitor = new();
+
+        TipoDeBancaNoEnvelope.Serializar(escrita, copia);
+        JsonObject banca = JsonNode.Parse(escrita.ToJsonString())!.AsObject();
+        TipoDeBancaCopiado? lida = TipoDeBancaNoEnvelope.Ler(leitor, banca, "fases[0].bancasRequeridas[0]");
+
+        banca["papel"]!.GetValue<string>().Should().Be("JULGA_A_SEGUNDA_INSTANCIA");
+        leitor.Falhou.Should().BeFalse();
+        lida.Should().Be(copia);
+        lida!.Papel.Should().Be(PapelDaBanca.JulgaASegundaInstancia);
+    }
 }

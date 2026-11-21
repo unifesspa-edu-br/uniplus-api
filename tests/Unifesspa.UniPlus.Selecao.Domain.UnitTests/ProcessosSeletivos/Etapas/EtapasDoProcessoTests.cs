@@ -83,7 +83,7 @@ public sealed class EtapasDoProcessoTests
 
         recusa.Error.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemComBanca");
         recusa.Error.Message.Should().Be(
-            "A etapa na posição 1 tem a nota vinda do ENEM e não admite banca com o papel 'Avalia o mérito'. Na etapa cabem a banca com o papel 'Importa as notas do INEP' e a banca com o papel 'Julga o recurso em 1ª instância', que julga o recurso individual da etapa. O recurso contra o resultado é declarado na configuração do recurso da fase que publica o resultado.");
+            "A etapa na posição 1 tem a nota vinda do ENEM e não admite banca com o papel 'Avalia o mérito'. O recurso contra o resultado é declarado na configuração do recurso da fase que publica o resultado.");
     }
 
     [Theory(DisplayName = "ENEM admite a banca que importa as notas do INEP e a banca que julga o recurso em 1ª instância")]
