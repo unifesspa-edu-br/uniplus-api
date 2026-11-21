@@ -72,7 +72,7 @@ public sealed record SinalizadoresDaFase(
         PermiteComplementacao && !FaseCanonicaCatalogo.AdmiteComplementacao(codigo)
             ? new("permiteComplementacao", new DomainError(
                 FaseCanonicaErrorCodes.ComplementacaoApenasFasesPermitidas,
-                "Complementação documental só é permitida nas fases de homologação e recursos."))
+                "Complementação documental só é permitida na fase de homologação das inscrições."))
             : null;
 
     /// <remarks>

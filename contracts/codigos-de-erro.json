@@ -1234,7 +1234,7 @@
     {
       "codigo": "uniplus.configuracao.fase_canonica.complementacao_apenas_fases_permitidas",
       "status": 422,
-      "titulo": "Complementação documental só é permitida nas fases de homologação e recursos"
+      "titulo": "Complementação documental só é permitida na fase de homologação das inscrições"
     },
     {
       "codigo": "uniplus.configuracao.fase_canonica.descricao_tamanho",

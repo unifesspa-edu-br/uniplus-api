@@ -151,4 +151,20 @@ public sealed class CatalogoDeFasesCanonicasTests
             nomesDoSeed[descrito.Codigo].Should().Be(descrito.Nome,
                 $"o rótulo do vocabulário para {descrito.Codigo} deveria coincidir com o Nome inicial do seed"));
     }
+
+    [Fact(DisplayName = "O vocabulário tem quatorze fases, sem as de resultado preliminar e de recursos: o recurso corre dentro da fase que publica o resultado")]
+    public void Catalogo_TemQuatorzeFasesSemAsRetiradas()
+    {
+        FaseCanonicaCatalogo.Codigos.Should().HaveCount(14);
+        FaseCanonicaCatalogo.Codigos.Should().NotContain(["RESULTADO_PRELIMINAR", "RECURSOS"]);
+        FaseCanonicaCatalogo.Codigos.Should().Contain("RESULTADO_FINAL");
+    }
+
+    [Fact(DisplayName = "As arestas de precedência do seed são quatro e só citam fases do vocabulário")]
+    public void Precedencias_SaoQuatroESoCitamFasesDoVocabulario()
+    {
+        PrecedenciaFaseSeed.Itens.Should().HaveCount(4);
+        PrecedenciaFaseSeed.Itens.SelectMany(static aresta => new[] { aresta.AntecessoraCodigo, aresta.SucessoraCodigo })
+            .Should().OnlyContain(static codigo => FaseCanonicaCatalogo.EhCanonico(codigo));
+    }
 }

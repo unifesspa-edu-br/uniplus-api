@@ -29,7 +29,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// só compara os dois códigos entre si e pode ser avaliada antes de qualquer
 /// leitura do grafo (ver <see cref="ValidarCodigos"/>).</para>
 /// <para>Ao contrário de <see cref="FaseCanonica"/>, este cadastro <b>é</b>
-/// seed-governado: as seis arestas estruturais do ciclo de vida do processo
+/// seed-governado: as quatro arestas estruturais do ciclo de vida do processo
 /// seletivo são semeadas via migration (mesmo molde de <c>RegraCatalogo</c>), e o
 /// CRUD admin permanece disponível para acrescentar novas arestas conforme o CEPS
 /// precisar.</para>

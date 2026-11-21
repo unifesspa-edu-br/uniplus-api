@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261121045342_Inicial")]
+    [Migration("20261121045419_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -3737,11 +3737,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         {
                             t.HasCheckConstraint("ck_fases_canonicas_agrupa_etapas", "agrupa_etapas = false OR codigo = 'AVALIACAO'");
 
-                            t.HasCheckConstraint("ck_fases_canonicas_codigo_canonico", "codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO_INSCRICOES', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_PRELIMINAR', 'RECURSOS', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
+                            t.HasCheckConstraint("ck_fases_canonicas_codigo_canonico", "codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO_INSCRICOES', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
 
                             t.HasCheckConstraint("ck_fases_canonicas_codigo_formato", "codigo ~ '^[A-Z_]+$'");
 
-                            t.HasCheckConstraint("ck_fases_canonicas_complementacao", "permite_complementacao = false OR codigo IN ('HOMOLOGACAO_INSCRICOES', 'RECURSOS')");
+                            t.HasCheckConstraint("ck_fases_canonicas_complementacao", "permite_complementacao = false OR codigo IN ('HOMOLOGACAO_INSCRICOES')");
 
                             t.HasCheckConstraint("ck_fases_canonicas_inscricao_e_isencao_exclusivas", "NOT (coleta_inscricao AND coleta_solicitacao_isencao)");
 
@@ -3814,30 +3814,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         },
                         new
                         {
-                            Id = new Guid("f45e0000-0000-7000-8000-000000000007"),
-                            Codigo = "RESULTADO_PRELIMINAR",
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            Descricao = "Publicação do resultado que ainda admite recurso.",
-                            IsDeleted = false,
-                            Nome = "Resultado preliminar",
-                            OrigemData = "NO_EDITAL"
-                        },
-                        new
-                        {
-                            Id = new Guid("f45e0000-0000-7000-8000-000000000008"),
-                            Codigo = "RECURSOS",
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            Descricao = "Interposição e análise dos recursos contra o resultado preliminar.",
-                            IsDeleted = false,
-                            Nome = "Recursos",
-                            OrigemData = "NO_EDITAL"
-                        },
-                        new
-                        {
                             Id = new Guid("f45e0000-0000-7000-8000-000000000009"),
                             Codigo = "RESULTADO_FINAL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            Descricao = "Publicação do resultado depois de julgados os recursos.",
+                            Descricao = "Publicação do resultado do processo: o preliminar, o prazo de recurso e o definitivo, na mesma fase.",
                             IsDeleted = false,
                             Nome = "Resultado final",
                             OrigemData = "NO_EDITAL"
@@ -7071,13 +7051,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("precedencias_entre_fases", "configuracao", t =>
                         {
-                            t.HasCheckConstraint("ck_precedencias_entre_fases_antecessora_canonica", "antecessora_codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO_INSCRICOES', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_PRELIMINAR', 'RECURSOS', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
+                            t.HasCheckConstraint("ck_precedencias_entre_fases_antecessora_canonica", "antecessora_codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO_INSCRICOES', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
 
                             t.HasCheckConstraint("ck_precedencias_entre_fases_antecessora_formato", "antecessora_codigo ~ '^[A-Z_]+$'");
 
                             t.HasCheckConstraint("ck_precedencias_entre_fases_sem_self_loop", "antecessora_codigo <> sucessora_codigo");
 
-                            t.HasCheckConstraint("ck_precedencias_entre_fases_sucessora_canonica", "sucessora_codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO_INSCRICOES', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_PRELIMINAR', 'RECURSOS', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
+                            t.HasCheckConstraint("ck_precedencias_entre_fases_sucessora_canonica", "sucessora_codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO_INSCRICOES', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
 
                             t.HasCheckConstraint("ck_precedencias_entre_fases_sucessora_formato", "sucessora_codigo ~ '^[A-Z_]+$'");
                         });
@@ -7091,24 +7071,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             IsDeleted = false,
                             PermiteSobreposicao = false,
                             SucessoraCodigo = "HOMOLOGACAO_INSCRICOES"
-                        },
-                        new
-                        {
-                            Id = new Guid("93ec0000-0000-7000-8000-000000000002"),
-                            AntecessoraCodigo = "RESULTADO_PRELIMINAR",
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            IsDeleted = false,
-                            PermiteSobreposicao = false,
-                            SucessoraCodigo = "RECURSOS"
-                        },
-                        new
-                        {
-                            Id = new Guid("93ec0000-0000-7000-8000-000000000003"),
-                            AntecessoraCodigo = "RECURSOS",
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            IsDeleted = false,
-                            PermiteSobreposicao = false,
-                            SucessoraCodigo = "RESULTADO_FINAL"
                         },
                         new
                         {
@@ -16612,22 +16574,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                     ColetaInscricao = false,
                                     ColetaSolicitacaoIsencao = false,
                                     PermiteComplementacao = false
-                                },
-                                new
-                                {
-                                    FaseCanonicaId = new Guid("f45e0000-0000-7000-8000-000000000007"),
-                                    AgrupaEtapas = false,
-                                    ColetaInscricao = false,
-                                    ColetaSolicitacaoIsencao = false,
-                                    PermiteComplementacao = false
-                                },
-                                new
-                                {
-                                    FaseCanonicaId = new Guid("f45e0000-0000-7000-8000-000000000008"),
-                                    AgrupaEtapas = false,
-                                    ColetaInscricao = false,
-                                    ColetaSolicitacaoIsencao = false,
-                                    PermiteComplementacao = true
                                 },
                                 new
                                 {

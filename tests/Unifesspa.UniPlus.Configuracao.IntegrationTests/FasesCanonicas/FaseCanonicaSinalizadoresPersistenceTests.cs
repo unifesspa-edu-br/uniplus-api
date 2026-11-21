@@ -60,7 +60,7 @@ public sealed class FaseCanonicaSinalizadoresPersistenceTests
     public async Task Sinalizadores_GravadosVoltamIguaisNaLeitura(
         string codigo, bool agrupaEtapas, bool permiteComplementacao, bool coletaInscricao)
     {
-        await LiberarSlotDoSeedAsync(codigo);
+        await LiberarSlotAsync(codigo);
         var sinalizadores = new SinalizadoresDaFase(agrupaEtapas, permiteComplementacao, coletaInscricao, ColetaSolicitacaoIsencao: false);
         FaseCanonica fase = FaseCanonica.Criar(codigo, "Fase", null, null, "NO_EDITAL", sinalizadores).Value!;
         await GravarComoAsync("admin-a", fase);
@@ -73,9 +73,9 @@ public sealed class FaseCanonicaSinalizadoresPersistenceTests
     [Fact(DisplayName = "Atualizar troca os sinalizadores gravados e a leitura devolve os novos")]
     public async Task Atualizar_TrocaOsSinalizadoresGravados()
     {
-        await LiberarSlotDoSeedAsync("RECURSOS");
+        await LiberarSlotAsync("HOMOLOGACAO_INSCRICOES");
         FaseCanonica fase = FaseCanonica.Criar(
-            "RECURSOS", "Recursos", null, null, "NO_EDITAL", new SinalizadoresDaFase(false, false, false, false)).Value!;
+            "HOMOLOGACAO_INSCRICOES", "Homologação das inscrições", null, null, "NO_EDITAL", new SinalizadoresDaFase(false, false, false, false)).Value!;
         await GravarComoAsync("admin-a", fase);
 
         await AtualizarComoAsync("admin-b", fase.Id, new SinalizadoresDaFase(false, true, false, false));
@@ -111,8 +111,8 @@ public sealed class FaseCanonicaSinalizadoresPersistenceTests
         return await leitura.FasesCanonicas.AsNoTracking().SingleAsync(f => f.Id == id);
     }
 
-    // O seed já ocupa o código do vocabulário: o índice único parcial só libera o slot com a
-    // linha semeada fora do caminho.
-    private Task LiberarSlotDoSeedAsync(string codigo) =>
-        ApoioDosEndpointsDeFaseCanonica.LiberarSlotDoSeedAsync(_fixture.ConnectionString, codigo);
+    // O seed, ou outro teste da coleção, já ocupa o código do vocabulário: o índice único parcial só libera o
+    // slot com a linha viva do código fora do caminho.
+    private Task LiberarSlotAsync(string codigo) =>
+        ApoioDosEndpointsDeFaseCanonica.LiberarSlotDoCodigoAsync(_fixture.ConnectionString, codigo);
 }

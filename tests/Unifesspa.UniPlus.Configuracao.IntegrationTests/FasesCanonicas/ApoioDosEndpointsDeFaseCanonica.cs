@@ -62,4 +62,16 @@ internal static class ApoioDosEndpointsDeFaseCanonica
         await comando.ExecuteNonQueryAsync();
     }
 
+    // O código ocupado por uma fase que outro teste da mesma coleção gravou também tem de sair: o índice único
+    // parcial vale para qualquer linha viva do código, e não só para a semeada.
+    internal static async Task LiberarSlotDoCodigoAsync(string stringDeConexao, string codigo)
+    {
+        await using var conexao = new NpgsqlConnection(stringDeConexao);
+        await conexao.OpenAsync();
+
+        await using NpgsqlCommand comando = conexao.CreateCommand();
+        comando.CommandText = "DELETE FROM configuracao.fases_canonicas WHERE codigo = @codigo";
+        comando.Parameters.AddWithValue("codigo", codigo);
+        await comando.ExecuteNonQueryAsync();
+    }
 }

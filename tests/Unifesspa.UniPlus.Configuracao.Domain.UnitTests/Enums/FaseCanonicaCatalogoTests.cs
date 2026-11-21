@@ -17,7 +17,6 @@ public sealed class FaseCanonicaCatalogoTests
     [InlineData("AVALIACAO", true)]
     [InlineData("INSCRICAO", false)]
     [InlineData("HOMOLOGACAO_INSCRICOES", false)]
-    [InlineData("RECURSOS", false)]
     [InlineData("HABILITACAO", false)]
     [InlineData("avaliacao", false)]
     [InlineData("FASE_FORA_DO_CATALOGO", false)]
@@ -25,10 +24,10 @@ public sealed class FaseCanonicaCatalogoTests
     public void AdmiteAgruparEtapas_SoNaAvaliacao(string? codigo, bool esperado) =>
         FaseCanonicaCatalogo.AdmiteAgruparEtapas(codigo).Should().Be(esperado);
 
-    [Theory(DisplayName = "Admite complementação a homologação das inscrições e os recursos, nunca a habilitação")]
+    [Theory(DisplayName = "Admite complementação só a homologação das inscrições, nunca a habilitação")]
     [InlineData("HOMOLOGACAO_INSCRICOES", true)]
-    [InlineData("RECURSOS", true)]
-    [InlineData("recursos", false)]
+    [InlineData("RECURSOS", false)]
+    [InlineData("homologacao_inscricoes", false)]
     [InlineData("HABILITACAO", false)]
     [InlineData("INSCRICAO", false)]
     [InlineData("AVALIACAO", false)]

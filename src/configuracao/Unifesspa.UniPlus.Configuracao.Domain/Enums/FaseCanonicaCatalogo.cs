@@ -30,7 +30,7 @@ public static class FaseCanonicaCatalogo
     public const string CodigoSolicitacaoIsencao = "SOLICITACAO_ISENCAO";
 
     /// <summary>
-    /// As dezesseis fases, com o rótulo canônico do código, em ordem cronológica
+    /// As quatorze fases, com o rótulo canônico do código, em ordem cronológica
     /// aproximada — fonte do endpoint de vocabulário
     /// (<c>GET /api/configuracao/vocabularios/fases-canonicas</c>). Ordem de declaração
     /// não é semântica para unicidade (que é por código), mas é a ordem em que o
@@ -44,8 +44,6 @@ public static class FaseCanonicaCatalogo
         new("ENSALAMENTO", "Ensalamento"),
         new(CodigoAvaliacao, "Avaliação"),
         new("CLASSIFICACAO", "Classificação"),
-        new("RESULTADO_PRELIMINAR", "Resultado preliminar"),
-        new("RECURSOS", "Recursos"),
         new("RESULTADO_FINAL", "Resultado final"),
         new("HABILITACAO", "Habilitação"),
         new("HETEROIDENTIFICACAO", "Heteroidentificação"),
@@ -65,13 +63,13 @@ public static class FaseCanonicaCatalogo
 
     /// <summary>
     /// Fases em que a legislação permite complementação/reenvio documental —
-    /// homologação e recursos. A habilitação é deliberadamente excluída (o SiSU
-    /// veda complementação nessa fase).
+    /// só a homologação das inscrições, e a complementação durante o recurso fica nela, pela fase de origem.
+    /// A habilitação é deliberadamente excluída (o SiSU veda complementação nessa fase). Outro tipo de
+    /// fase só entra aqui com base legal, por mudança do próprio catálogo.
     /// </summary>
     public static readonly IReadOnlyList<string> CodigosComComplementacaoPermitida =
     [
         "HOMOLOGACAO_INSCRICOES",
-        "RECURSOS",
     ];
 
     private static readonly HashSet<string> CodigosSet = new(Codigos, StringComparer.Ordinal);

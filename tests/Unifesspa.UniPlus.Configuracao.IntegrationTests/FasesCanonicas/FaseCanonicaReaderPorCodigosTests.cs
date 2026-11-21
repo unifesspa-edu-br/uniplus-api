@@ -25,9 +25,9 @@ public sealed class FaseCanonicaReaderPorCodigosTests : IAsyncLifetime
     private const string Admin = "admin-a";
     private const string Ensalamento = "ENSALAMENTO";
     private const string Classificacao = "CLASSIFICACAO";
-    private const string ResultadoPreliminar = "RESULTADO_PRELIMINAR";
+    private const string ResultadoFinal = "RESULTADO_FINAL";
 
-    private static readonly string[] CodigosUsados = [Ensalamento, Classificacao, ResultadoPreliminar];
+    private static readonly string[] CodigosUsados = [Ensalamento, Classificacao, ResultadoFinal];
 
     private readonly ConfiguracaoDbFixture _fixture;
 
@@ -43,11 +43,11 @@ public sealed class FaseCanonicaReaderPorCodigosTests : IAsyncLifetime
     [Fact(DisplayName = "ListarVivasPorCodigosAsync devolve só as fases vivas pedidas, ordenadas por código")]
     public async Task ListarVivasPorCodigosAsync_DevolveSoAsPedidasOrdenadas()
     {
-        await CadastrarAsync(vivas: [Ensalamento, Classificacao, ResultadoPreliminar], removidas: []);
+        await CadastrarAsync(vivas: [Ensalamento, Classificacao, ResultadoFinal], removidas: []);
 
-        IReadOnlyList<FaseCanonicaView> fases = await ListarAsync(ResultadoPreliminar, Classificacao);
+        IReadOnlyList<FaseCanonicaView> fases = await ListarAsync(ResultadoFinal, Classificacao);
 
-        fases.Select(f => f.Codigo).Should().Equal(Classificacao, ResultadoPreliminar);
+        fases.Select(f => f.Codigo).Should().Equal(Classificacao, ResultadoFinal);
         fases.Should().OnlyContain(f => f.Id != Guid.Empty && f.Nome.Length > 0);
     }
 

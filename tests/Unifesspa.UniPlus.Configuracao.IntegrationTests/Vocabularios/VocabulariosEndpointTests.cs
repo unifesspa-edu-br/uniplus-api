@@ -80,8 +80,6 @@ public sealed class VocabulariosEndpointTests
         "ENSALAMENTO",
         "AVALIACAO",
         "CLASSIFICACAO",
-        "RESULTADO_PRELIMINAR",
-        "RECURSOS",
         "RESULTADO_FINAL",
         "HABILITACAO",
         "HETEROIDENTIFICACAO",
@@ -92,7 +90,7 @@ public sealed class VocabulariosEndpointTests
         "CHAMADA",
     ];
 
-    [Fact(DisplayName = "GET /vocabularios/fases-canonicas devolve os dezesseis códigos com nome, na ordem publicada, sem exigir autenticação")]
+    [Fact(DisplayName = "GET /vocabularios/fases-canonicas devolve os quatorze códigos com nome, na ordem publicada, sem exigir autenticação")]
     public async Task ListarCodigosFaseCanonica_DevolveVocabularioCompleto()
     {
         using HttpClient client = _fixture.Factory.CreateClient();

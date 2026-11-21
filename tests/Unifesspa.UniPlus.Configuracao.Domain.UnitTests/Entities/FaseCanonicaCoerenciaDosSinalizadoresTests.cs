@@ -122,13 +122,11 @@ public sealed class FaseCanonicaCoerenciaDosSinalizadoresTests
 
     // ── Coerência permite_complementacao ⇒ fases permitidas ────────────────────
 
-    [Theory(DisplayName = "Permitir complementação verdadeiro em fase permitida é aceito")]
-    [InlineData("HOMOLOGACAO_INSCRICOES")]
-    [InlineData("RECURSOS")]
-    public void Criar_ComplementacaoFasePermitida_Aceita(string codigo)
+    [Fact(DisplayName = "Permitir complementação verdadeiro em fase permitida é aceito")]
+    public void Criar_ComplementacaoFasePermitida_Aceita()
     {
         Result<FaseCanonica> r = Criar(
-            codigo: codigo, nome: "Fase", sinalizadores: Sinalizadores(permiteComplementacao: true));
+            codigo: "HOMOLOGACAO_INSCRICOES", nome: "Fase", sinalizadores: Sinalizadores(permiteComplementacao: true));
 
         r.IsSuccess.Should().BeTrue();
     }
@@ -207,7 +205,7 @@ public sealed class FaseCanonicaCoerenciaDosSinalizadoresTests
 
         resultado.Errors.Select(e => e.Error.Message).Should().Equal(
             "Apenas a fase de avaliação agrupa etapas pontuadas.",
-            "Complementação documental só é permitida nas fases de homologação e recursos.",
+            "Complementação documental só é permitida na fase de homologação das inscrições.",
             "A marca de solicitação de isenção pertence à fase de isenção, e só a ela.",
             "Uma fase não coleta inscrição e solicitação de isenção ao mesmo tempo — são períodos distintos, cada um com o seu prazo.");
     }

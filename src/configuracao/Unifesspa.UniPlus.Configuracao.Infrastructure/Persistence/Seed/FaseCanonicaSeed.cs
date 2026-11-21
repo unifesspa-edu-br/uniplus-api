@@ -3,14 +3,14 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
 /// <summary>
-/// Fonte única do seed das dezesseis fases canônicas do ciclo de vida de um processo
+/// Fonte única do seed das quatorze fases canônicas do ciclo de vida de um processo
 /// seletivo. Consumida pela configuração EF Core (que materializa as linhas na
 /// migration) e pelos testes (que conferem o seed contra esta lista), garantindo
 /// uma única definição por fase.
 /// </summary>
 /// <remarks>
 /// <para>
-/// A fase é <b>vocabulário estrutural</b>: as dezesseis existem porque o ciclo do
+/// A fase é <b>vocabulário estrutural</b>: as quatorze existem porque o ciclo do
 /// certame as tem, não porque alguém as escolheu. Não há autor a registrar, e por
 /// isso entram por migration em vez de endpoint admin — critério da ADR-0062,
 /// Emenda 2. O CRUD admin permanece disponível para editar o que é de fato
@@ -38,7 +38,7 @@ public static class FaseCanonicaSeed
         Guid.Parse($"f45e0000-0000-7000-8000-{n:D12}");
 
     /// <summary>
-    /// As dezesseis fases, em ordem cronológica aproximada do certame. A ordem aqui é
+    /// As quatorze fases, em ordem cronológica aproximada do certame. A ordem aqui é
     /// de leitura: a unicidade é por código, e a ordem real de um processo vem do
     /// grafo de precedências mais o cronograma que o operador monta.
     /// </summary>
@@ -80,20 +80,8 @@ public static class FaseCanonicaSeed
             ColetaInscricao: false, AgrupaEtapas: false, PermiteComplementacao: false,
             BaseLegal: null),
 
-        new(SeedId(7), "RESULTADO_PRELIMINAR", "Resultado preliminar",
-            "Publicação do resultado que ainda admite recurso.",
-            OrigemDataFase.NoEdital,
-            ColetaInscricao: false, AgrupaEtapas: false, PermiteComplementacao: false,
-            BaseLegal: null),
-
-        new(SeedId(8), "RECURSOS", "Recursos",
-            "Interposição e análise dos recursos contra o resultado preliminar.",
-            OrigemDataFase.NoEdital,
-            ColetaInscricao: false, AgrupaEtapas: false, PermiteComplementacao: true,
-            BaseLegal: null),
-
         new(SeedId(9), "RESULTADO_FINAL", "Resultado final",
-            "Publicação do resultado depois de julgados os recursos.",
+            "Publicação do resultado do processo: o preliminar, o prazo de recurso e o definitivo, na mesma fase.",
             OrigemDataFase.NoEdital,
             ColetaInscricao: false, AgrupaEtapas: false, PermiteComplementacao: false,
             BaseLegal: null),
