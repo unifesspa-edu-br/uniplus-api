@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Services;
 
 /// <summary>
 /// Código de uma <see cref="Entities.Modalidade"/> de concorrência (UNI-REQ-0011,
@@ -20,10 +21,10 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// remanejamento e as referências de composição (<c>ComposicaoOrigem</c>,
 /// <c>RemanejamentoParametros</c>) apontam para modalidades por código — renomear
 /// quebraria a integridade referencial intra-banco.</para>
-/// <para>Treze códigos são <b>reservados</b> ao catálogo legal fixo (ver
+/// <para>Doze códigos são <b>reservados</b> ao catálogo legal fixo (ver
 /// <see cref="CodigosLegaisFixos"/>): as oito modalidades da Lei 12.711/2012 (red. Lei
-/// 14.723/2023), a ampla concorrência, as duas modalidades de pessoa com deficiência fora da
-/// reserva federal e as duas vagas por acréscimo do PSIQ. A proteção é exposta por
+/// 14.723/2023), a ampla concorrência, a reserva de pessoa com deficiência na ampla concorrência
+/// e as duas vagas por acréscimo do PSIQ. A proteção é exposta por
 /// <see cref="EhLegalFixa"/> e aplicada pelo agregado (atualização) e pelos handlers (criação
 /// e remoção), não pelo banco.</para>
 /// </remarks>
@@ -35,7 +36,7 @@ public sealed partial record CodigoModalidade
     public const string Ac = "AC";
 
     /// <summary>Pessoa com deficiência na ampla concorrência (rótulo <c>V</c> nos editais).</summary>
-    public const string AcPcd = "AC_PCD";
+    public const string AcPcd = OpcaoPelasCotasDaLei.AcaoAfirmativaQueSeSomaAsCotas;
 
     /// <summary>Cota de baixa renda para pessoa preta, parda ou indígena.</summary>
     public const string LbPpi = "LB_PPI";

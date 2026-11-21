@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
+using Unifesspa.UniPlus.Regras.Services;
+
 /// <summary>
 /// Os 8 códigos de modalidade federal da Lei 12.711/2012 (red. Lei 14.723/2023,
 /// art. 3º) + a ampla concorrência — fato legal fixo, não configurável.
@@ -23,9 +25,9 @@ public static class ModalidadesFederaisLei12711
 
     /// <summary>
     /// A reserva de pessoa com deficiência de ampla concorrência, ação afirmativa que convive com as
-    /// cotas da lei para quem não optou por elas (UNI-REQ-0141).
+    /// cotas da lei: quem optou por elas também concorre a ela (UNI-REQ-0141 e UNI-REQ-0266).
     /// </summary>
-    public const string AcPcd = "AC_PCD";
+    public const string AcPcd = OpcaoPelasCotasDaLei.AcaoAfirmativaQueSeSomaAsCotas;
 
     /// <summary>Os 8 códigos federais (sem AC) — ordem I a VIII (art. 10, §2º).</summary>
     public static readonly IReadOnlyList<string> Codigos =
