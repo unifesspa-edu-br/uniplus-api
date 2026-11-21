@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -1182,8 +1181,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_tipos_de_banca", x => x.id);
-                    table.CheckConstraint("ck_tipos_de_banca_codigo_canonico", "codigo IN ('BANCA_ANALISE_DOCUMENTAL', 'BANCA_ENTREVISTA', 'BANCA_CORRECAO_REDACOES', 'BANCA_ANALISE_RECURSOS', 'BANCA_HETEROIDENTIFICACAO', 'BANCA_BIOPSICOSSOCIAL')");
-                    table.CheckConstraint("ck_tipos_de_banca_codigo_formato", "codigo ~ '^[A-Z_]+$'");
+                    table.CheckConstraint("ck_tipos_de_banca_codigo_canonico", "codigo IN ('BANCA_ANALISE_DOCUMENTAL', 'BANCA_ENTREVISTA', 'BANCA_CORRECAO_REDACOES', 'BANCA_ANALISE_RECURSOS', 'BANCA_HETEROIDENTIFICACAO', 'BANCA_BIOPSICOSSOCIAL', 'BANCA_HOMOLOGACAO_INSCRICOES', 'BANCA_IMPORTACAO_NOTAS_INEP', 'BANCA_IMPORTACAO_CANDIDATOS')");
                 });
 
             migrationBuilder.CreateTable(
@@ -2463,7 +2461,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     inicio = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     fim = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     emite_parecer_individual = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    tipos_de_decisao = table.Column<List<string>>(type: "text[]", nullable: false, defaultValueSql: "'{}'::text[]", comment: "Tipos de decisão que a fase ou a etapa declara produzir, em ordem alfabética ordinal e sem repetição."),
+                    tipos_de_decisao = table.Column<string[]>(type: "text[]", nullable: false, defaultValueSql: "'{}'::text[]", comment: "Tipos de decisão que a fase ou a etapa declara produzir, em ordem alfabética ordinal e sem repetição."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
@@ -2505,7 +2503,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     fim = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     emite_parecer_individual = table.Column<bool>(type: "boolean", nullable: false),
                     regra_de_homologacao = table.Column<string>(type: "jsonb", nullable: true, comment: "Regra de homologação das inscrições que a fase declara: o resultado que publica a lista e as alternativas de condições, na ordem declarada. Nula quando a fase não homologa."),
-                    tipos_de_decisao = table.Column<List<string>>(type: "text[]", nullable: false, defaultValueSql: "'{}'::text[]", comment: "Tipos de decisão que a fase ou a etapa declara produzir, em ordem alfabética ordinal e sem repetição."),
+                    tipos_de_decisao = table.Column<string[]>(type: "text[]", nullable: false, defaultValueSql: "'{}'::text[]", comment: "Tipos de decisão que a fase ou a etapa declara produzir, em ordem alfabética ordinal e sem repetição."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },

@@ -7,6 +7,7 @@ using Domain.ValueObjects;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
 /// Monta as bancas requeridas de uma fase. O tipo de banca e o recorte de competência são resolvidos no
@@ -53,7 +54,7 @@ internal sealed class MontagemDasBancasDaFase(CadastrosDasFases cadastros)
 
         return regra.Errors.Count > 0
             ? Result<BancaRequerida>.ValidationFailure(regra.Errors)
-            : Result<BancaRequerida>.Success(BancaRequerida.Criar(tipo.Id, tipo.Codigo, tipo.Nome, recorte, regra.Value));
+            : Result<BancaRequerida>.Success(BancaRequerida.Criar(tipo.Id, tipo.Codigo.Codigo(), tipo.Nome, recorte, regra.Value));
     }
 
     private async Task<Result<List<CategoriaJulgada>>> RecorteAsync(

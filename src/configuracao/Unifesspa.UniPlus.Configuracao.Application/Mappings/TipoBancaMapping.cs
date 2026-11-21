@@ -1,7 +1,9 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Mappings;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Regras.Enums;
 
 public static class TipoBancaMapping
 {
@@ -10,7 +12,7 @@ public static class TipoBancaMapping
         ArgumentNullException.ThrowIfNull(banca);
         return new TipoBancaDto(
             banca.Id,
-            banca.Codigo.Valor,
+            CodigoComRotulo<TipoDeBanca>.De(banca.Codigo),
             banca.Nome,
             banca.FaseTipica,
             banca.Descricao,

@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Services.DocumentoDaConfiguracao;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -65,7 +66,7 @@ public sealed class LeituraDosCadastrosDaConfiguracaoCitados(
         codigos.Count == 0
             ? new Dictionary<string, TipoDeBancaCitado>()
             : (await tiposDeBanca.ListarVivosPorCodigosAsync(codigos, cancellationToken).ConfigureAwait(false))
-                .ToDictionary(static tipo => tipo.Codigo, static tipo => new TipoDeBancaCitado(tipo.Id, tipo.Codigo, tipo.Nome), StringComparer.Ordinal);
+                .ToDictionary(static tipo => tipo.Codigo.Codigo(), static tipo => new TipoDeBancaCitado(tipo.Id, tipo.Codigo.Codigo(), tipo.Nome), StringComparer.Ordinal);
 
     private async Task<IReadOnlyDictionary<string, CategoriaDeDocumentoCitada>> CategoriasAsync(
         IReadOnlyList<string> codigos, CancellationToken cancellationToken) =>

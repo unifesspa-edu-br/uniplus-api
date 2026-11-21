@@ -7,10 +7,10 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
-using Unifesspa.UniPlus.Configuracao.Domain.Enums;
-using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 
 [SuppressMessage(
     "Performance",
@@ -34,11 +34,10 @@ internal sealed class TipoBancaConfiguration : IEntityTypeConfiguration<TipoBanc
 
         builder.HasKey(b => b.Id);
 
-        // Codigo é value object imutável — persistido por valor como varchar via
-        // CodigoBancaValueConverter (reidratação fail-fast). O CHECK de formato, o
-        // CHECK de conjunto canônico e o índice único parcial protegem a coluna.
+        // Codigo é o tipo do vocabulário, imutável, gravado pelo código de contrato do enum
+        // (a convenção do modelo instala o conversor). O CHECK do vocabulário e o índice
+        // único parcial protegem a coluna.
         builder.Property(b => b.Codigo)
-            .HasConversion<CodigoBancaValueConverter>()
             .HasMaxLength(CodigoMaxLength)
             .IsRequired();
 
@@ -62,17 +61,12 @@ internal sealed class TipoBancaConfiguration : IEntityTypeConfiguration<TipoBanc
 
     private static void ConfigurarChecks(TableBuilder<TipoBanca> table)
     {
-        // Formato fechado do código — alinhado ao value object CodigoBanca.
-        table.HasCheckConstraint(
-            "ck_tipos_de_banca_codigo_formato",
-            "codigo ~ '^[A-Z_]+$'");
-
-        // Domínio fechado das seis bancas canônicas (defesa em profundidade).
+        // Domínio fechado do vocabulário de tipos de banca (defesa em profundidade).
         table.HasCheckConstraint(
             "ck_tipos_de_banca_codigo_canonico",
-            $"codigo IN ({TokensSql(TipoBancaCatalogo.Codigos)})");
+            $"codigo IN ({TokensSql(CatalogoDe<TipoDeBanca>.Todos())})");
     }
 
-    private static string TokensSql(IReadOnlyList<string> tokens) =>
-        string.Join(", ", tokens.Select(token => $"'{token}'"));
+    private static string TokensSql(IReadOnlyList<CodigoDeclarado> codigos) =>
+        string.Join(", ", codigos.Select(declarado => $"'{declarado.Codigo}'"));
 }

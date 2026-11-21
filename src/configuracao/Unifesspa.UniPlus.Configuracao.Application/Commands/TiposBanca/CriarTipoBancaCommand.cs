@@ -1,10 +1,12 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.TiposBanca;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
-/// Cria um tipo de banca (UNI-REQ-0064): código (chave natural canônica imutável),
+/// Cria um tipo de banca (UNI-REQ-0064): código do vocabulário de tipos de banca (chave natural imutável),
 /// nome, fase típica opcional (rótulo orientativo, não vinculante) e descrição
 /// opcional. O ator de auditoria (<c>created_by</c>) é carimbado server-side via
 /// <c>IUserContext</c>, não no payload.
@@ -16,7 +18,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// do ASP.NET, antes de o domínio rodar.
 /// </remarks>
 public sealed record CriarTipoBancaCommand(
-    string? Codigo,
+    [property: AceitaCodigosDe<TipoDeBanca>] string? Codigo,
     string? Nome = null,
     string? FaseTipica = null,
     string? Descricao = null) : ICommand<Result<Guid>>;

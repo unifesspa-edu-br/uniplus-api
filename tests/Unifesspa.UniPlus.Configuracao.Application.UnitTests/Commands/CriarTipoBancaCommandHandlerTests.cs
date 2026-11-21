@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 public sealed class CriarTipoBancaCommandHandlerTests
 {
@@ -22,7 +23,7 @@ public sealed class CriarTipoBancaCommandHandlerTests
     [Fact(DisplayName = "Código livre cria a banca, persiste e retorna o Id")]
     public async Task Handle_CodigoLivre_CriaEPersiste()
     {
-        _repository.CodigoExisteEntreVivosAsync("BANCA_ENTREVISTA", null, Arg.Any<CancellationToken>()).Returns(false);
+        _repository.CodigoExisteEntreVivosAsync(TipoDeBanca.Entrevista, null, Arg.Any<CancellationToken>()).Returns(false);
 
         Result<Guid> resultado = await CriarTipoBancaCommandHandler.Handle(
             Comando(), _repository, _unitOfWork, CancellationToken.None);
@@ -36,7 +37,7 @@ public sealed class CriarTipoBancaCommandHandlerTests
     [Fact(DisplayName = "Código já existente entre vivos retorna conflito (CodigoJaExiste) sem persistir")]
     public async Task Handle_CodigoDuplicado_RetornaConflito()
     {
-        _repository.CodigoExisteEntreVivosAsync("BANCA_ENTREVISTA", null, Arg.Any<CancellationToken>()).Returns(true);
+        _repository.CodigoExisteEntreVivosAsync(TipoDeBanca.Entrevista, null, Arg.Any<CancellationToken>()).Returns(true);
 
         Result<Guid> resultado = await CriarTipoBancaCommandHandler.Handle(
             Comando(), _repository, _unitOfWork, CancellationToken.None);
@@ -46,7 +47,7 @@ public sealed class CriarTipoBancaCommandHandlerTests
         await _repository.DidNotReceive().AdicionarAsync(Arg.Any<TipoBanca>(), Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Código fora do conjunto canônico propaga o erro sem consultar unicidade nem persistir")]
+    [Fact(DisplayName = "Código fora do vocabulário propaga o erro sem consultar unicidade nem persistir")]
     public async Task Handle_ForaDoCanonico_RetornaErroSemConsultarUnicidadeNemPersistir()
     {
         var comando = new CriarTipoBancaCommand("BANCA_LOGISTICA", Nome: "x");
@@ -56,11 +57,11 @@ public sealed class CriarTipoBancaCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(TipoBancaErrorCodes.CodigoForaDoConjuntoCanonico);
-        await _repository.DidNotReceive().CodigoExisteEntreVivosAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
+        await _repository.DidNotReceive().CodigoExisteEntreVivosAsync(Arg.Any<TipoDeBanca>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Código fora do canônico e nome ausente no mesmo payload acumulam as duas violações")]
+    [Fact(DisplayName = "Código fora do vocabulário e nome ausente no mesmo payload acumulam as duas violações")]
     public async Task Handle_CodigoForaDoCanonicoENomeAusente_AcumulaAsDuasViolacoes()
     {
         var comando = new CriarTipoBancaCommand("BANCA_LOGISTICA", Nome: "");

@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Pagination;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Repositório da entidade <see cref="TipoBanca"/> (ADR-0054: banco isolado
@@ -38,12 +39,11 @@ public interface ITipoBancaRepository
     void Remover(TipoBanca banca);
 
     /// <summary>
-    /// Verifica se existe tipo de banca vivo com o <paramref name="codigo"/>
-    /// (case-sensitive, sobre o valor normalizado por <c>Trim</c>), excluindo
+    /// Verifica se existe tipo de banca vivo com o <paramref name="codigo"/>, excluindo
     /// opcionalmente um <paramref name="excluirId"/> (para a checagem na atualização).
     /// </summary>
     Task<bool> CodigoExisteEntreVivosAsync(
-        string codigo,
+        TipoDeBanca codigo,
         Guid? excluirId,
         CancellationToken cancellationToken);
 }

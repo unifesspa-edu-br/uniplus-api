@@ -17,8 +17,8 @@ public interface ITipoBancaReader
 
     /// <summary>
     /// Os tipos de banca vivos (não soft-deleted) dos <paramref name="codigos"/>, numa só
-    /// leitura, ordenados por <c>Codigo</c> ascendente. O código sem tipo vivo — inexistente,
-    /// fora do formato ou removido — não aparece no resultado, e um código repetido no lote
+    /// leitura, ordenados por <c>Codigo</c> ascendente. O código sem tipo vivo — fora do
+    /// vocabulário, sem cadastro ou removido — não aparece no resultado, e um código repetido no lote
     /// devolve o tipo uma só vez.
     /// </summary>
     Task<IReadOnlyList<TipoBancaView>> ListarVivosPorCodigosAsync(

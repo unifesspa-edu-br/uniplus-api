@@ -7,9 +7,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Queries.Vocabularios;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Vocabulários fechados de <c>TipoBanca</c> e <c>FaseCanonica</c> (UNI-REQ-0139), de
@@ -62,15 +64,15 @@ public sealed class VocabulariosController : ControllerBase
         _queryBus = queryBus;
     }
 
-    /// <summary>Lista os seis tipos de banca do conjunto canônico, com código e rótulo.</summary>
+    /// <summary>Lista os tipos de banca do vocabulário, com código e rótulo, na ordem de exibição.</summary>
     [HttpGet("vocabularios/tipos-banca")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "codigo-tipo-banca", Versions = [1])]
-    [ProducesResponseType(typeof(IEnumerable<TipoBancaVocabularioDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<CodigoComRotulo<TipoDeBanca>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ListarCodigosTipoBanca(CancellationToken cancellationToken)
     {
-        IReadOnlyList<TipoBancaVocabularioDto> codigos = await _queryBus
+        IReadOnlyList<CodigoComRotulo<TipoDeBanca>> codigos = await _queryBus
             .Send(new ListarCodigosTipoBancaQuery(), cancellationToken)
             .ConfigureAwait(false);
 

@@ -14,8 +14,8 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 /// <summary>
 /// Smoke + caminho de escrita dos endpoints de <c>TipoBanca</c> (UNI-REQ-0139):
 /// routing, vendor media type, HATEOAS, autenticação/autorização, idempotência,
-/// domínio canônico (422) e unicidade do código (409) — com Wolverine contra
-/// Postgres efêmero. Cada teste que persiste usa um código canônico distinto.
+/// vocabulário fechado (422) e unicidade do código (409) — com Wolverine contra
+/// Postgres efêmero. Cada teste que persiste usa um tipo distinto.
 /// </summary>
 [Collection(ConfiguracaoEndpointCollection.Name)]
 [SuppressMessage(
@@ -85,63 +85,49 @@ public sealed class TipoBancaEndpointTests
     [Fact(DisplayName = "POST cria (201) e o GET subsequente retorna os campos + HATEOAS")]
     public async Task Criar_ComAuthEIdempotency_Retorna201EPersiste()
     {
-        var body = new
-        {
-            codigo = "BANCA_CORRECAO_REDACOES",
-            nome = "Banca de correção de redações",
-            faseTipica = "Avaliação",
-        };
+        var body = new { codigo = "BANCA_CORRECAO_REDACOES", nome = "Banca de correção de redações", faseTipica = "Avaliação" };
 
         using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage criar = await EnviarPostAdmin(client, body);
+        using JsonDocument doc = await CriarEObterAsync(client, body);
 
-        criar.StatusCode.Should().Be(HttpStatusCode.Created);
-        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
-        id.Should().NotBe(Guid.Empty);
-
-        HttpResponseMessage obter = await client.GetAsync(
-            new Uri($"/api/configuracao/tipos-banca/{id}", UriKind.Relative));
-        obter.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
         JsonElement root = doc.RootElement;
-        root.GetProperty("codigo").GetString().Should().Be("BANCA_CORRECAO_REDACOES");
+        root.GetProperty("codigo").GetProperty("codigo").GetString().Should().Be("BANCA_CORRECAO_REDACOES");
+        root.GetProperty("codigo").GetProperty("rotulo").GetString().Should().Be("Banca de correção de redações");
         root.GetProperty("nome").GetString().Should().Be("Banca de correção de redações");
         root.GetProperty("faseTipica").GetString().Should().Be("Avaliação");
         root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
     }
 
-    [Theory(DisplayName = "POST com os dois códigos novos do conjunto canônico cria (201)")]
+    [Theory(DisplayName = "POST com os códigos acrescentados ao vocabulário de tipos de banca cria (201)")]
     [InlineData(
         "BANCA_HETEROIDENTIFICACAO", "Banca de heteroidentificação", "Heteroidentificação",
         "Procedimento complementar à autodeclaração em que a comissão avalia os traços físicos da pessoa candidata para validar seu direito a vagas reservadas para pessoas negras (pretas e pardas) em concursos públicos ou vestibulares.")]
     [InlineData(
         "BANCA_BIOPSICOSSOCIAL", "Banca de avaliação biopsicossocial", "Avaliação biopsicossocial",
         "Comissão multiprofissional responsável por realizar a avaliação que define se a pessoa candidata com deficiência cumpre os requisitos legais para concorrer às vagas reservadas em concursos públicos ou vestibulares.")]
-    public async Task Criar_ComCodigoNovoDoConjuntoCanonico_Retorna201(
+    [InlineData(
+        "BANCA_HOMOLOGACAO_INSCRICOES", "Banca de homologação das inscrições", "Homologação das inscrições",
+        "Banca que analisa e homologa as inscrições dos candidatos.")]
+    [InlineData(
+        "BANCA_IMPORTACAO_NOTAS_INEP", "Banca de importação das notas do INEP", "Avaliação",
+        "Banca que importa as notas do INEP quando o processo usa a nota do ENEM com inscrição própria.")]
+    [InlineData(
+        "BANCA_IMPORTACAO_CANDIDATOS", "Banca de importação de candidatos", "Inscrição",
+        "Banca que importa candidatos de fora quando o processo não tem inscrição própria.")]
+    public async Task Criar_ComCodigoAcrescentadoAoVocabulario_Retorna201(
         string codigo, string nome, string faseTipica, string descricao)
     {
         var body = new { codigo, nome, faseTipica, descricao };
 
         using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage criar = await EnviarPostAdmin(client, body);
+        using JsonDocument doc = await CriarEObterAsync(client, body);
 
-        criar.StatusCode.Should().Be(HttpStatusCode.Created);
-        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
-        id.Should().NotBe(Guid.Empty);
-
-        HttpResponseMessage obter = await client.GetAsync(
-            new Uri($"/api/configuracao/tipos-banca/{id}", UriKind.Relative));
-        obter.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
-        JsonElement root = doc.RootElement;
-        root.GetProperty("codigo").GetString().Should().Be(codigo);
-        root.GetProperty("descricao").GetString().Should().Be(descricao);
+        doc.RootElement.GetProperty("codigo").GetProperty("codigo").GetString().Should().Be(codigo);
+        doc.RootElement.GetProperty("descricao").GetString().Should().Be(descricao);
     }
 
-    [Fact(DisplayName = "POST com código fora do conjunto canônico retorna 422")]
-    public async Task Criar_ForaDoCanonico_Retorna422()
+    [Fact(DisplayName = "POST com código fora do vocabulário de tipos de banca retorna 422")]
+    public async Task Criar_ForaDoVocabulario_Retorna422()
     {
         var body = new { codigo = "BANCA_LOGISTICA", nome = "x" };
 
@@ -149,6 +135,21 @@ public sealed class TipoBancaEndpointTests
         HttpResponseMessage response = await EnviarPostAdmin(client, body);
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
+    [Fact(DisplayName = "POST com código fora do vocabulário lista os tipos aceitos e não repete o código enviado")]
+    public async Task Criar_ForaDoVocabulario_ListaOsAceitosSemRepetirOEnviado()
+    {
+        var body = new { codigo = "BANCA_LOGISTICA", nome = "x" };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, body);
+
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("detail").GetString().Should()
+            .Contain("Banca de análise documental")
+            .And.Contain("Banca de importação de candidatos")
+            .And.NotContain("BANCA_LOGISTICA");
     }
 
     [Fact(DisplayName = "POST com código já existente entre vivos retorna 409")]
@@ -164,7 +165,7 @@ public sealed class TipoBancaEndpointTests
         segundo.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
-    [Fact(DisplayName = "ADR-0125: POST com código fora do conjunto canônico e nome ausente devolve as duas violações em errors[], campo em camelCase")]
+    [Fact(DisplayName = "ADR-0125: POST com código fora do vocabulário e nome ausente devolve as duas violações em errors[], campo em camelCase")]
     public async Task Criar_ForaDoCanonicoENomeAusente_DevolveAsDuasViolacoesEmErrors()
     {
         var body = new { codigo = "BANCA_LOGISTICA", nome = "" };
@@ -196,10 +197,7 @@ public sealed class TipoBancaEndpointTests
         const string json = """{"nome":"Banca de teste"}""";
 
         using HttpClient client = _fixture.Factory.CreateClient();
-        using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/configuracao/admin/tipos-banca", UriKind.Relative));
-        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
-        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
-        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+        using HttpRequestMessage request = PostAdminComChaveDeIdempotencia();
         request.Content = new StringContent(json, Encoding.UTF8, "application/json");
 
         HttpResponseMessage response = await client.SendAsync(request);
@@ -229,11 +227,31 @@ public sealed class TipoBancaEndpointTests
 
     private static async Task<HttpResponseMessage> EnviarPostAdmin(HttpClient client, object body)
     {
-        using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/configuracao/admin/tipos-banca", UriKind.Relative));
+        using HttpRequestMessage request = PostAdminComChaveDeIdempotencia();
+        request.Content = JsonContent.Create(body);
+        return await client.SendAsync(request);
+    }
+
+    private static HttpRequestMessage PostAdminComChaveDeIdempotencia()
+    {
+        HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/configuracao/admin/tipos-banca", UriKind.Relative));
         request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
         request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
         request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-        request.Content = JsonContent.Create(body);
-        return await client.SendAsync(request);
+        return request;
+    }
+
+    private static async Task<JsonDocument> CriarEObterAsync(HttpClient client, object body)
+    {
+        HttpResponseMessage criar = await EnviarPostAdmin(client, body);
+        criar.StatusCode.Should().Be(HttpStatusCode.Created);
+        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+        id.Should().NotBe(Guid.Empty);
+
+        HttpResponseMessage obter = await client.GetAsync(
+            new Uri($"/api/configuracao/tipos-banca/{id}", UriKind.Relative));
+        obter.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        return JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
     }
 }

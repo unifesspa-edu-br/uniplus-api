@@ -27,43 +27,58 @@ public static class CriarTipoBancaCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        Result<TipoBanca> bancaResult = TipoBanca.Criar(
-            command.Codigo,
-            command.Nome,
-            command.FaseTipica,
-            command.Descricao);
+        Result<TipoBanca> conferida = await ConferirAsync(command, repository, cancellationToken).ConfigureAwait(false);
 
-        if (bancaResult.IsFailure)
-        {
-            return Result<Guid>.ValidationFailure(bancaResult.Errors);
-        }
+        return conferida.IsFailure
+            ? Result<Guid>.ValidationFailure(conferida.Errors)
+            : await GravarAsync(conferida.Value!, repository, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
 
-        TipoBanca banca = bancaResult.Value!;
+    private static async Task<Result<TipoBanca>> ConferirAsync(
+        CriarTipoBancaCommand command,
+        ITipoBancaRepository repository,
+        CancellationToken cancellationToken)
+    {
+        Result<TipoBanca> bancaResult = TipoBanca.Criar(command.Codigo, command.Nome, command.FaseTipica, command.Descricao);
 
-        // Unicidade consultada com o código já normalizado (banca.Codigo.Valor), só
-        // depois de o agregado passar em todas as regras de campo.
-        if (await repository.CodigoExisteEntreVivosAsync(banca.Codigo.Valor, null, cancellationToken).ConfigureAwait(false))
-        {
-            return Result<Guid>.Failure(CodigoJaExisteErro());
-        }
+        // Unicidade consultada só depois de o agregado passar em todas as regras de campo.
+        return bancaResult.IsFailure || !await CodigoJaCadastradoAsync(bancaResult.Value!, repository, cancellationToken).ConfigureAwait(false)
+            ? bancaResult
+            : Result<TipoBanca>.Failure(CodigoJaExisteErro());
+    }
 
+    private static Task<bool> CodigoJaCadastradoAsync(
+        TipoBanca banca,
+        ITipoBancaRepository repository,
+        CancellationToken cancellationToken) =>
+        repository.CodigoExisteEntreVivosAsync(banca.Codigo, null, cancellationToken);
+
+    private static async Task<Result<Guid>> GravarAsync(
+        TipoBanca banca,
+        ITipoBancaRepository repository,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
         await repository.AdicionarAsync(banca, cancellationToken).ConfigureAwait(false);
 
         try
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception ex) when (UniqueConstraintViolation.GetViolatedConstraint(ex) is { } constraint
-            && UniqueConstraintViolation.IsCodigoConflict(constraint))
+        catch (Exception ex) when (ViolaOIndiceUnicoDoCodigo(ex))
         {
-            // Corrida entre CodigoExisteEntreVivosAsync e o INSERT (check-then-act): o
-            // índice único parcial dispara 23505 e viramos o mesmo CodigoJaExiste do
-            // caminho não-race — 409 consistente.
             return Result<Guid>.Failure(CodigoJaExisteErro());
         }
 
         return Result<Guid>.Success(banca.Id);
     }
+
+    // Corrida entre CodigoExisteEntreVivosAsync e o INSERT (check-then-act): o
+    // índice único parcial dispara 23505 e viramos o mesmo CodigoJaExiste do
+    // caminho não-race — 409 consistente.
+    private static bool ViolaOIndiceUnicoDoCodigo(Exception ex) =>
+        UniqueConstraintViolation.GetViolatedConstraint(ex) is { } constraint
+        && UniqueConstraintViolation.IsCodigoConflict(constraint);
 
     private static DomainError CodigoJaExisteErro() =>
         new(TipoBancaErrorCodes.CodigoJaExiste,

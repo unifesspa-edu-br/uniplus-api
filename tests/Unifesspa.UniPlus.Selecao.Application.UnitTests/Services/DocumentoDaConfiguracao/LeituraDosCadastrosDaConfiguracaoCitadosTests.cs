@@ -5,7 +5,9 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Services.DocumentoDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
@@ -26,7 +28,7 @@ public sealed class LeituraDosCadastrosDaConfiguracaoCitadosTests
     private static FaseCanonicaView Fase(string codigo, string origemData = "NO_EDITAL") =>
         new(Guid.CreateVersion7(), codigo, $"Fase {codigo}", null, false, true, null, true, false, origemData);
 
-    private static TipoBancaView TipoDeBanca(string codigo) => new(Guid.CreateVersion7(), codigo, $"Banca {codigo}", null, null);
+    private static TipoBancaView TipoCadastrado(TipoDeBanca tipo) => new(Guid.CreateVersion7(), tipo, $"Banca {tipo.Codigo()}", null, null);
 
     private static CategoriaDocumentoView Categoria(string codigo) => new(Guid.CreateVersion7(), codigo, $"Categoria {codigo}", null, 1);
 
@@ -37,7 +39,7 @@ public sealed class LeituraDosCadastrosDaConfiguracaoCitadosTests
     {
         _tiposDeProcesso.ObterAtivoPorCodigoAsync("SiSU", Arg.Any<CancellationToken>()).Returns(new TipoProcessoView(Guid.CreateVersion7(), "SiSU", "Sistema de Seleção", null));
         _fasesCanonicas.ListarVivasPorCodigosAsync(Lote("INSCRICAO", "RECURSO"), Arg.Any<CancellationToken>()).Returns([Fase("INSCRICAO"), Fase("RECURSO")]);
-        _tiposDeBanca.ListarVivosPorCodigosAsync(Lote("BANCA_DOCUMENTAL"), Arg.Any<CancellationToken>()).Returns([TipoDeBanca("BANCA_DOCUMENTAL")]);
+        _tiposDeBanca.ListarVivosPorCodigosAsync(Lote("BANCA_ANALISE_DOCUMENTAL"), Arg.Any<CancellationToken>()).Returns([TipoCadastrado(TipoDeBanca.AnaliseDocumental)]);
         _categorias.ListarVivasPorCodigosAsync(Lote("RENDA", "IDENTIDADE"), Arg.Any<CancellationToken>()).Returns([Categoria("RENDA"), Categoria("IDENTIDADE")]);
     }
 
@@ -47,12 +49,12 @@ public sealed class LeituraDosCadastrosDaConfiguracaoCitadosTests
         CadastrosComOsCodigosCitados();
 
         Result<CadastrosDaConfiguracaoCitados> lidos = await _leitura.LerAsync(
-            SemCodigos with { TipoDeProcesso = "SiSU", FasesCanonicas = ["INSCRICAO", "RECURSO"], TiposDeBanca = ["BANCA_DOCUMENTAL"], CategoriasDeDocumento = ["RENDA", "IDENTIDADE"] },
+            SemCodigos with { TipoDeProcesso = "SiSU", FasesCanonicas = ["INSCRICAO", "RECURSO"], TiposDeBanca = ["BANCA_ANALISE_DOCUMENTAL"], CategoriasDeDocumento = ["RENDA", "IDENTIDADE"] },
             CancellationToken.None);
 
         lidos.Value!.TiposDeProcesso.Keys.Should().Equal("SiSU");
         lidos.Value.FasesCanonicas.Keys.Should().Equal("INSCRICAO", "RECURSO");
-        lidos.Value.TiposDeBanca.Keys.Should().Equal("BANCA_DOCUMENTAL");
+        lidos.Value.TiposDeBanca.Keys.Should().Equal("BANCA_ANALISE_DOCUMENTAL");
         lidos.Value.CategoriasDeDocumento.Keys.Should().Equal("RENDA", "IDENTIDADE");
         await _fasesCanonicas.Received(1).ListarVivasPorCodigosAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>());
         await _tiposDeBanca.Received(1).ListarVivosPorCodigosAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>());

@@ -20,6 +20,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
@@ -27,6 +28,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
@@ -196,19 +198,18 @@ internal static class CatalogosDoEnvelopeFechado
 
     /// <summary>
     /// O código do tipo de banca também é vocabulário fechado, com índice único sobre o vivo: reaproveita
-    /// a linha se já existir. O código (value object) não traduz para SQL, então o filtro é em memória.
+    /// a linha se já existir.
     /// </summary>
     private static async Task<TipoBanca> ObterOuCriarTipoBancaDeAnaliseDocumentalAsync(UniPlusDbContext config)
     {
-        const string Codigo = "BANCA_ANALISE_DOCUMENTAL";
-        List<TipoBanca> bancasVivas = await config.TiposBanca.ToListAsync().ConfigureAwait(false);
-        TipoBanca? existente = bancasVivas.SingleOrDefault(b => string.Equals(b.Codigo.Valor, Codigo, StringComparison.Ordinal));
+        const TipoDeBanca Tipo = TipoDeBanca.AnaliseDocumental;
+        TipoBanca? existente = await config.TiposBanca.SingleOrDefaultAsync(b => b.Codigo == Tipo).ConfigureAwait(false);
         if (existente is not null)
         {
             return existente;
         }
 
-        Result<TipoBanca> criada = TipoBanca.Criar(Codigo, "Banca de análise documental", "RESULTADO_FINAL", null);
+        Result<TipoBanca> criada = TipoBanca.Criar(Tipo.Codigo(), "Banca de análise documental", "RESULTADO_FINAL", null);
         criada.IsSuccess.Should().BeTrue(criada.Error?.Message);
         config.TiposBanca.Add(criada.Value!);
         return criada.Value!;

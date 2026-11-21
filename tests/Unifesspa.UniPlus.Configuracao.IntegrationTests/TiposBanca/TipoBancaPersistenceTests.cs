@@ -9,17 +9,18 @@ using Microsoft.EntityFrameworkCore;
 using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
-using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Integração ponta-a-ponta do TipoBanca contra Postgres real (UNI-REQ-0139):
 /// persistência, UNIQUE parcial do código vivo, liberação do slot por soft-delete,
-/// CHECKs de domínio (formato, conjunto canônico) e leitura cross-módulo. Cada teste
-/// usa um código canônico distinto (o conjunto é fechado — seis bancas).
+/// CHECK do vocabulário de tipos de banca e leitura cross-módulo. Cada teste usa um tipo
+/// distinto (o vocabulário é fechado).
 /// </summary>
 [Collection(ConfiguracaoDbCollection.Name)]
 [SuppressMessage(
@@ -42,41 +43,22 @@ public sealed class TipoBancaPersistenceTests
     public async Task Insert_PersisteEFicaVisivelPeloReader()
     {
         TipoBanca banca = Banca("BANCA_ANALISE_DOCUMENTAL", "Banca de análise documental", "Homologação");
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.TiposBanca.Add(banca);
-            await ctx.SaveChangesAsync();
-        }
+        await GravarAsync(banca, AdminA);
 
         await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         TipoBanca persistida = await readCtx.TiposBanca.SingleAsync(b => b.Id == banca.Id);
+        DeveTerPersistidoOsCampos(persistida);
 
-        persistida.Codigo.Valor.Should().Be("BANCA_ANALISE_DOCUMENTAL");
-        persistida.FaseTipica.Should().Be("Homologação");
-        persistida.CreatedBy.Should().Be(AdminA);
-        persistida.IsDeleted.Should().BeFalse();
-
-        var reader = new TipoBancaReader(readCtx);
-        TipoBancaView? view = await reader.ObterPorIdAsync(banca.Id);
-        view.Should().NotBeNull();
-        view!.Codigo.Should().Be("BANCA_ANALISE_DOCUMENTAL");
-        view.FaseTipica.Should().Be("Homologação");
+        TipoBancaView? view = await new TipoBancaReader(readCtx).ObterPorIdAsync(banca.Id);
+        DeveEstarVisivelPeloLeitor(view);
     }
 
     [Fact(DisplayName = "UNIQUE parcial do código rejeita segunda banca viva com mesmo código")]
     public async Task UniquePartial_Codigo_RejeitaDuplicataAtiva()
     {
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.TiposBanca.Add(Banca("BANCA_ENTREVISTA", "Banca de entrevista", null));
-            await ctx.SaveChangesAsync();
-        }
+        await GravarAsync(Banca("BANCA_ENTREVISTA", "Banca de entrevista", null), AdminA);
 
-        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
-        ctx2.TiposBanca.Add(Banca("BANCA_ENTREVISTA", "Banca de entrevista", null));
-
-        Func<Task> act = async () => await ctx2.SaveChangesAsync();
+        Func<Task> act = () => GravarAsync(Banca("BANCA_ENTREVISTA", "Banca de entrevista", null), AdminA);
 
         DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
         Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
@@ -88,31 +70,12 @@ public sealed class TipoBancaPersistenceTests
     public async Task SoftDelete_LiberaSlot()
     {
         TipoBanca banca = Banca("BANCA_CORRECAO_REDACOES", "Banca de correção de redações", null);
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.TiposBanca.Add(banca);
-            await ctx.SaveChangesAsync();
-        }
+        await GravarAsync(banca, AdminA);
+        await ExcluirAsync(banca.Id, AdminB);
+        await DeveTerGuardadoATrilhaDaExclusaoAsync(banca.Id);
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
-        {
-            TipoBanca tracked = await ctx.TiposBanca.SingleAsync(b => b.Id == banca.Id);
-            ctx.TiposBanca.Remove(tracked);
-            await ctx.SaveChangesAsync();
-        }
+        Func<Task> act = () => GravarAsync(Banca("BANCA_CORRECAO_REDACOES", "Banca de correção de redações", null), AdminA);
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null))
-        {
-            TipoBanca excluida = await ctx.TiposBanca
-                .IgnoreQueryFilters().SingleAsync(b => b.Id == banca.Id);
-            excluida.IsDeleted.Should().BeTrue();
-            excluida.DeletedBy.Should().Be(AdminB);
-        }
-
-        await using UniPlusDbContext ctx3 = _fixture.CreateDbContext(AdminA);
-        ctx3.TiposBanca.Add(Banca("BANCA_CORRECAO_REDACOES", "Banca de correção de redações", null));
-
-        Func<Task> act = async () => await ctx3.SaveChangesAsync();
         await act.Should().NotThrowAsync("o slot do código foi liberado pelo soft-delete");
     }
 
@@ -128,43 +91,76 @@ public sealed class TipoBancaPersistenceTests
             "o CHECK de conjunto canônico impede o INSERT direto");
     }
 
-    [Fact(DisplayName = "CHECK de banco rejeita código fora do formato via SQL cru")]
-    public async Task Check_RejeitaCodigoForaDoFormatoViaSqlCru()
+    [Theory(DisplayName = "Os tipos de banca acrescentados ao vocabulário são gravados e lidos pelo código de contrato")]
+    [InlineData("BANCA_HOMOLOGACAO_INSCRICOES", TipoDeBanca.HomologacaoDasInscricoes)]
+    [InlineData("BANCA_IMPORTACAO_NOTAS_INEP", TipoDeBanca.ImportacaoDasNotasDoInep)]
+    [InlineData("BANCA_IMPORTACAO_CANDIDATOS", TipoDeBanca.ImportacaoDeCandidatos)]
+    public async Task Insert_TipoAcrescentadoAoVocabulario_GravaOCodigoELeOTipo(string codigo, TipoDeBanca esperado)
     {
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+        TipoBanca banca = Banca(codigo, $"Banca {codigo}", null);
+        await GravarAsync(banca, AdminA);
 
-        Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.tipos_de_banca (id, codigo, nome, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"banca-entrevista"}, {"Banca"}, {DateTimeOffset.UtcNow}, {false})");
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext(userId: null);
+        string gravado = await leitura.Database
+            .SqlQuery<string>($"SELECT codigo AS \"Value\" FROM configuracao.tipos_de_banca WHERE id = {banca.Id}")
+            .SingleAsync();
 
-        await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK codigo ~ '^[A-Z_]+$' impede o INSERT direto");
+        gravado.Should().Be(codigo);
+        (await leitura.TiposBanca.SingleAsync(b => b.Id == banca.Id)).Codigo.Should().Be(esperado);
     }
 
     [Fact(DisplayName = "Reader.ListarVivosAsync exclui bancas soft-deleted")]
     public async Task ListarVivos_ExcluiSoftDeleted()
     {
         TipoBanca banca = Banca("BANCA_ANALISE_RECURSOS", "Banca de análise de recursos", null);
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.TiposBanca.Add(banca);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
-        {
-            CodigoBanca vo = CodigoBanca.Criar("BANCA_ANALISE_RECURSOS").Value!;
-            TipoBanca aExcluir = await ctx.TiposBanca.SingleAsync(b => b.Codigo == vo);
-            ctx.TiposBanca.Remove(aExcluir);
-            await ctx.SaveChangesAsync();
-        }
+        await GravarAsync(banca, AdminA);
+        await ExcluirAsync(banca.Id, AdminB);
 
         await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
-        var reader = new TipoBancaReader(readCtx);
-        IReadOnlyList<TipoBancaView> todos = await reader.ListarVivosAsync();
+        IReadOnlyList<TipoBancaView> todos = await new TipoBancaReader(readCtx).ListarVivosAsync();
 
-        string[] codigos = [.. todos.Select(v => v.Codigo)];
+        string[] codigos = [.. todos.Select(v => v.Codigo.Codigo())];
         codigos.Should().BeInAscendingOrder("o leitor ordena por código ascendente");
         codigos.Should().NotContain("BANCA_ANALISE_RECURSOS", "a banca soft-deleted não aparece no leitor de vivos");
+    }
+
+    private async Task GravarAsync(TipoBanca banca, string usuario)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(usuario);
+        ctx.TiposBanca.Add(banca);
+        await ctx.SaveChangesAsync();
+    }
+
+    private async Task ExcluirAsync(Guid id, string usuario)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(usuario);
+        TipoBanca aExcluir = await ctx.TiposBanca.SingleAsync(b => b.Id == id);
+        ctx.TiposBanca.Remove(aExcluir);
+        await ctx.SaveChangesAsync();
+    }
+
+    private async Task DeveTerGuardadoATrilhaDaExclusaoAsync(Guid id)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+        TipoBanca excluida = await ctx.TiposBanca.IgnoreQueryFilters().SingleAsync(b => b.Id == id);
+
+        excluida.IsDeleted.Should().BeTrue();
+        excluida.DeletedBy.Should().Be(AdminB);
+    }
+
+    private static void DeveTerPersistidoOsCampos(TipoBanca persistida)
+    {
+        persistida.Codigo.Should().Be(TipoDeBanca.AnaliseDocumental);
+        persistida.FaseTipica.Should().Be("Homologação");
+        persistida.CreatedBy.Should().Be(AdminA);
+        persistida.IsDeleted.Should().BeFalse();
+    }
+
+    private static void DeveEstarVisivelPeloLeitor(TipoBancaView? view)
+    {
+        view.Should().NotBeNull();
+        view!.Codigo.Should().Be(TipoDeBanca.AnaliseDocumental);
+        view.FaseTipica.Should().Be("Homologação");
     }
 
     private static TipoBanca Banca(string codigo, string nome, string? faseTipica) =>

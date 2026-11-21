@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
 /// A leitura em lote de tipos de banca por código (ADR-0056), contra Postgres real. É ela que
@@ -46,19 +47,19 @@ public sealed class TipoBancaReaderPorCodigosTests : IAsyncLifetime
 
         IReadOnlyList<TipoBancaView> tipos = await ListarAsync(Heteroidentificacao, Biopsicossocial);
 
-        tipos.Select(t => t.Codigo).Should().Equal(Biopsicossocial, Heteroidentificacao);
+        tipos.Select(t => t.Codigo.Codigo()).Should().Equal(Biopsicossocial, Heteroidentificacao);
         tipos.Should().OnlyContain(t => t.Id != Guid.Empty && t.Nome.Length > 0);
     }
 
-    [Fact(DisplayName = "ListarVivosPorCodigosAsync não devolve código inexistente nem fora do formato")]
-    public async Task ListarVivosPorCodigosAsync_CodigoInexistenteOuMalFormado_NaoVolta()
+    [Fact(DisplayName = "ListarVivosPorCodigosAsync não devolve código fora do vocabulário")]
+    public async Task ListarVivosPorCodigosAsync_CodigoForaDoVocabulario_NaoVolta()
     {
         await CadastrarAsync(vivos: [Biopsicossocial], removidos: []);
 
         IReadOnlyList<TipoBancaView> tipos =
-            await ListarAsync(Biopsicossocial, "BANCA_QUE_NAO_EXISTE", "banca-minuscula", string.Empty);
+            await ListarAsync(Biopsicossocial, "BANCA_QUE_NAO_EXISTE", "banca_biopsicossocial", $" {Biopsicossocial} ", string.Empty);
 
-        tipos.Select(t => t.Codigo).Should().Equal(Biopsicossocial);
+        tipos.Select(t => t.Codigo.Codigo()).Should().Equal(Biopsicossocial);
     }
 
     [Fact(DisplayName = "ListarVivosPorCodigosAsync não devolve tipo de banca removido")]
@@ -68,7 +69,7 @@ public sealed class TipoBancaReaderPorCodigosTests : IAsyncLifetime
 
         IReadOnlyList<TipoBancaView> tipos = await ListarAsync(Biopsicossocial, Heteroidentificacao);
 
-        tipos.Select(t => t.Codigo).Should().Equal(Biopsicossocial);
+        tipos.Select(t => t.Codigo.Codigo()).Should().Equal(Biopsicossocial);
     }
 
     [Fact(DisplayName = "ListarVivosPorCodigosAsync com códigos repetidos devolve cada tipo uma só vez")]
@@ -77,9 +78,9 @@ public sealed class TipoBancaReaderPorCodigosTests : IAsyncLifetime
         await CadastrarAsync(vivos: [Biopsicossocial, Heteroidentificacao], removidos: []);
 
         IReadOnlyList<TipoBancaView> tipos =
-            await ListarAsync(Biopsicossocial, Heteroidentificacao, Biopsicossocial, $" {Biopsicossocial} ");
+            await ListarAsync(Biopsicossocial, Heteroidentificacao, Biopsicossocial);
 
-        tipos.Select(t => t.Codigo).Should().Equal(Biopsicossocial, Heteroidentificacao);
+        tipos.Select(t => t.Codigo.Codigo()).Should().Equal(Biopsicossocial, Heteroidentificacao);
     }
 
     [Fact(DisplayName = "ListarVivosPorCodigosAsync com lote vazio não devolve tipo")]
@@ -105,7 +106,7 @@ public sealed class TipoBancaReaderPorCodigosTests : IAsyncLifetime
         escrita.TiposBanca.AddRange(tipos);
         await escrita.SaveChangesAsync();
 
-        escrita.TiposBanca.RemoveRange(tipos.Where(t => removidos.Contains(t.Codigo.Valor)));
+        escrita.TiposBanca.RemoveRange(tipos.Where(t => removidos.Contains(t.Codigo.Codigo())));
         await escrita.SaveChangesAsync();
     }
 

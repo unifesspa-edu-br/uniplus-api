@@ -7,8 +7,10 @@ using System.Net.Http.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Contrato HTTP dos vocabulários fechados de Configuração — <c>TipoBanca</c> e
@@ -47,9 +49,21 @@ public sealed class VocabulariosEndpointTests
             new GrupoAreaEnemDto("SAUDE_E_BIOLOGICAS", "Saúde e Biológicas"));
     }
 
-    // Afirmado por extenso, e não derivado do catálogo: é o contrato publicado que está sob teste —
-    // derivá-lo da mesma fonte que o produz faria o teste concordar com qualquer mudança, inclusive
-    // uma remoção acidental de código.
+    [Fact(DisplayName = "GET /vocabularios/tipos-banca devolve os nove códigos com rótulo, na ordem publicada, sem exigir autenticação")]
+    public async Task ListarCodigosTipoBanca_DevolveVocabularioCompleto()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        CodigoComRotulo<TipoDeBanca>[] codigos = await ApoioDosVocabularios.LerAsync<CodigoComRotulo<TipoDeBanca>>(
+            client, "tipos-banca", "codigo-tipo-banca");
+
+        codigos.Select(c => c.Codigo).Should().Equal(CodigosDeTipoBancaNaOrdemPublicada);
+        codigos.Should().AllSatisfy(c => c.Rotulo.Should().NotBeNullOrWhiteSpace());
+    }
+
+    // Afirmado por extenso, e não derivado do catálogo: é o contrato publicado que está
+    // sob teste — derivá-lo da mesma fonte que o produz faria o teste concordar com
+    // qualquer mudança, inclusive uma remoção acidental de código.
     private static readonly string[] CodigosDeTipoBancaNaOrdemPublicada =
     [
         "BANCA_ANALISE_DOCUMENTAL",
@@ -58,19 +72,10 @@ public sealed class VocabulariosEndpointTests
         "BANCA_ANALISE_RECURSOS",
         "BANCA_HETEROIDENTIFICACAO",
         "BANCA_BIOPSICOSSOCIAL",
+        "BANCA_HOMOLOGACAO_INSCRICOES",
+        "BANCA_IMPORTACAO_NOTAS_INEP",
+        "BANCA_IMPORTACAO_CANDIDATOS",
     ];
-
-    [Fact(DisplayName = "GET /vocabularios/tipos-banca devolve os seis códigos com nome, na ordem publicada, sem exigir autenticação")]
-    public async Task ListarCodigosTipoBanca_DevolveVocabularioCompleto()
-    {
-        using HttpClient client = _fixture.Factory.CreateClient();
-
-        TipoBancaVocabularioDto[] codigos = await ApoioDosVocabularios.LerAsync<TipoBancaVocabularioDto>(
-            client, "tipos-banca", "codigo-tipo-banca");
-
-        codigos.Select(c => c.Codigo).Should().Equal(CodigosDeTipoBancaNaOrdemPublicada);
-        codigos.Should().AllSatisfy(c => c.Nome.Should().NotBeNullOrWhiteSpace());
-    }
 
     private static readonly string[] CodigosDeFaseNaOrdemPublicada =
     [
