@@ -70,6 +70,15 @@ public sealed class SuspensaoPorParteRecusadaDaFaseTests
         CamposDasRecusas(cronograma).Should().Equal("fases[0].produtos");
     }
 
+    [Fact(DisplayName = "Na leitura do documento o ato repetido recusa a lista dos produtos inteira, uma vez só, sem posição de produto")]
+    public void AtoRepetido_NaLeituraDoDocumento_RecusaAListaInteiraUmaVez()
+    {
+        ModeloDeFase repetido = new ModeloDeFase("RESULTADO", 1).Janela(1, 5).Publicando(
+            ModeloDeFase.Preliminar("ATO_A"), ModeloDeFase.Preliminar("ATO_B"), ModeloDeFase.Preliminar("ATO_B"), ModeloDeFase.Preliminar("ATO_A"));
+
+        CamposDasRecusas(CronogramaDoProcesso.Do([repetido.Adotada()])).Should().Equal("fases[0].produtos");
+    }
+
     [Fact(DisplayName = "As vagas sem fase que produz resultado não são julgadas quando alguma fase tem parte recusada nos produtos, e o item do painel fica pendente")]
     public void VagasSemFaseQueProduzResultado_ComParteRecusadaNosProdutos_SuspendeEPendenta()
     {

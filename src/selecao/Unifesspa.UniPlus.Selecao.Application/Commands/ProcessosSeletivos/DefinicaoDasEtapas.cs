@@ -76,7 +76,7 @@ public sealed class DefinicaoDasEtapas(
     }
 
     // O fechamento do ciclo acumula uma violação por matéria aberta, cada uma com o campo que a localiza; propagar o
-    // lote preserva esses campos.
+    // lote preserva esses campos. O catálogo ilegível interrompe na etapa em que ocorre, levando as recusas das etapas anteriores.
     private static async Task<Result> AplicarAsync(
         EdicaoDasEtapas edicao, IReadOnlyList<EtapaConferida> conferidas, CancellationToken cancellationToken)
     {
@@ -103,9 +103,13 @@ public sealed class DefinicaoDasEtapas(
         List<FieldError> recusas = [];
         for (int indice = 0; indice < etapas.Count; indice++)
         {
-            IReadOnlyList<FieldError> doFilho = await declaracao
-                .DeclararAsync(etapas[indice], edicao.Command.Etapas[indice], cancellationToken).ConfigureAwait(false);
-            recusas.AddRange(EscritaDasEtapasDoProcesso.ComIndice(doFilho, indice));
+            Result<IReadOnlyList<FieldError>> doFilho = await declaracao.DeclararAsync(etapas[indice], edicao.Command.Etapas[indice], cancellationToken).ConfigureAwait(false);
+            if (doFilho.IsFailure)
+            {
+                return Result.ValidationFailure([.. recusas, .. EscritaDasEtapasDoProcesso.ComIndice(doFilho.Errors, indice)]);
+            }
+
+            recusas.AddRange(EscritaDasEtapasDoProcesso.ComIndice(doFilho.Value!, indice));
         }
 
         return recusas.Count > 0 ? Result.ValidationFailure(recusas) : Result.Success();

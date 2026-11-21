@@ -111,7 +111,19 @@ public sealed record FaseDeclarada
             decisoes,
             new AtosDaFase(publicacoes),
             new BancasDaFase(bancas),
-            ConferenciaDaDeclaracaoDaFase.Violacoes(origem, decisoes, publicacoes, bancas, suspensas),
+            AtoRepetidoNaListaInteira(ConferenciaDaDeclaracaoDaFase.Violacoes(origem, decisoes, publicacoes, bancas, suspensas)),
             suspensas);
+    }
+
+    // A declaração lida de um documento não tem posição de entrada: o ato repetido sai uma vez só, na lista dos produtos inteira.
+    private static List<FieldError> AtoRepetidoNaListaInteira(List<FieldError> violacoes)
+    {
+        FieldError? primeira = violacoes.Find(ConferenciaDaDeclaracaoDaFase.EhAtoDuplicado);
+
+        return primeira is null
+            ? violacoes
+            : [.. violacoes
+                .Where(violacao => !ConferenciaDaDeclaracaoDaFase.EhAtoDuplicado(violacao) || violacao == primeira)
+                .Select(violacao => violacao == primeira ? violacao with { Field = ListaDosProdutos } : violacao)];
     }
 }

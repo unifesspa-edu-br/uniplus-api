@@ -62,7 +62,7 @@ internal sealed class ConferenciaDaAncoraDoRecurso(AtosConsultadosNaEdicao atos)
             ? null
             : new DomainError(
                 rotulo.CodigoDoAtoNaoEncontrado,
-                $"O tipo de ato '{atoCodigo}'{rotulo.Qualificador} não tem versão vigente no catálogo de Publicações na data de hoje, e a âncora nova precisa da irreversibilidade dele.");
+                $"O tipo de ato declarado{rotulo.Qualificador} não tem versão vigente no catálogo de Publicações na data de hoje, e a âncora nova precisa da irreversibilidade dele.");
     }
 
     private static DomainError? RecusaDoAto(

@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Services;
 
 using Entities;
 
+using Enums;
+
 /// <summary>
 /// Os produtos que chegam substituem os produtos da fase ou da etapa sem trocar a identidade do que
 /// continua sendo a mesma publicação: a instância rastreada sobrevive, com o <c>Id</c> e o
@@ -15,15 +17,22 @@ using Entities;
 internal static class ProdutosPublicados
 {
     /// <summary>
-    /// O primeiro produto do primeiro par ato e papel declarado mais de uma vez, ou
-    /// <see langword="null"/>. Quando mais de um par se repete, vence o que tem a primeira
-    /// ocorrência antes na lista.
+    /// As posições, na ordem em que chegaram, dos produtos cujo par ato e papel já foi declarado antes:
+    /// a primeira ocorrência de um par não conta, cada repetição a partir da segunda conta.
     /// </summary>
-    internal static T? PrimeiroParRepetido<T>(IEnumerable<T> produtos, Func<string, string> chaveDoAto)
-        where T : class, IProdutoPublicado =>
-        produtos
-            .GroupBy(produto => (Ato: chaveDoAto(produto.AtoCodigo), produto.Papel))
-            .FirstOrDefault(static grupo => grupo.Count() > 1)?.First();
+    internal static IReadOnlyList<int> PosicoesRepetidas<T>(IEnumerable<T> produtos, Func<string, string> chaveDoAto)
+        where T : class, IProdutoPublicado
+    {
+        HashSet<(string Ato, PapelProdutoFase? Papel)> jaDeclarados = [];
+
+        return
+        [
+            .. produtos
+                .Select((produto, posicao) => (Chave: (Ato: chaveDoAto(produto.AtoCodigo), produto.Papel), Posicao: posicao))
+                .Where(item => !jaDeclarados.Add(item.Chave))
+                .Select(static item => item.Posicao),
+        ];
+    }
 
     /// <summary>
     /// Reconcilia numa passada, pelo par exato ato e papel. Para cada produto que chega, em ordem

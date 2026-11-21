@@ -17,6 +17,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 internal static class ConferenciaDaDeclaracaoDaFase
 {
+    private const string CodigoDoAtoDuplicado = "FaseCronograma.AtoDuplicadoNaFase";
+
     internal static void ExigirDeclaracaoPresente(
         OrigemCanonicaDaFase origem,
         DecisoesDeCronogramaDaFase cronograma,
@@ -126,25 +128,29 @@ internal static class ConferenciaDaDeclaracaoDaFase
     // lista inteira, e uma parte recusada pode ser o resultado ou o preliminar que falta.
     private static List<FieldError> ViolacoesDasPublicacoes(string codigo, PublicacoesDaFase publicacoes, bool produtosComParteRecusada)
     {
-        FieldError?[] violacoes =
+        FieldError?[] daLista =
         [
-            AtoDuplicado(codigo, publicacoes.Produtos),
             produtosComParteRecusada ? null : ParecerIndividualSemResultado(codigo, publicacoes),
             produtosComParteRecusada ? null : AncoraDoRecursoDaFase.Violacao(codigo, publicacoes.Produtos, publicacoes.RegraRecurso),
         ];
 
-        return [.. violacoes.OfType<FieldError>()];
+        return [.. AtosDuplicados(codigo, publicacoes.Produtos), .. daLista.OfType<FieldError>()];
     }
 
     // A chave natural do produto é o par ato e papel, e o índice único da tabela a espelha. Não é o ato
     // sozinho porque o catálogo nomeia a matéria: o mesmo código é publicado como preliminar, que abre o
     // ciclo recursal, e como definitivo, que o encerra.
-    private static FieldError? AtoDuplicado(string codigo, IReadOnlyList<ProdutoDaFase> produtos) =>
-        ProdutosPublicados.PrimeiroParRepetido(produtos, static ato => ato) is { } duplicado
-            ? new FieldError("produtos", new DomainError(
-                "FaseCronograma.AtoDuplicadoNaFase",
-                $"A fase '{codigo}' declara o ato '{duplicado.AtoCodigo}' mais de uma vez no mesmo papel — o par ato e papel é declarado uma única vez por fase."))
-            : null;
+    private static IEnumerable<FieldError> AtosDuplicados(string codigo, IReadOnlyList<ProdutoDaFase> produtos) =>
+        ProdutosPublicados.PosicoesRepetidas(produtos, static ato => ato)
+            .Select(posicao => new FieldError($"produtos[{posicao}]", AtoDuplicado(codigo, produtos[posicao].AtoCodigo)));
+
+    /// <summary>A recusa do par ato e papel repetido, que a leitura do documento reconhece para recusar a lista inteira.</summary>
+    internal static bool EhAtoDuplicado(FieldError recusa) => recusa.Error.Code == CodigoDoAtoDuplicado;
+
+    private static DomainError AtoDuplicado(string codigo, string atoCodigo) =>
+        new(
+            CodigoDoAtoDuplicado,
+            $"A fase '{codigo}' declara o ato '{atoCodigo}' mais de uma vez no mesmo papel — o par ato e papel é declarado uma única vez por fase.");
 
     // O parecer individual é o fundamento do recurso: sem publicação de resultado não há decisão a
     // contestar, e a promessa ficaria sem objeto.
