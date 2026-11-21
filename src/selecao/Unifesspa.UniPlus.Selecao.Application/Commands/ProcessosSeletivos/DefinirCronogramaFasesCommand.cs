@@ -72,10 +72,15 @@ public sealed record ProdutoDaFaseInput(string AtoCodigo, string? Papel);
 /// <param name="RegraDeDeliberacao">
 /// Como a banca é composta e delibera. Opcional no rascunho; a publicação e a retificação a exigem.
 /// </param>
+/// <param name="Id">
+/// O id da banca que a leitura devolveu. Com ele, a banca é a mesma e mantém a identidade ao mudar de tipo, de regra ou de
+/// posição; sem ele, ou com id que não é de banca da fase, a banca é criada de novo.
+/// </param>
 public sealed record BancaRequeridaInput(
     Guid TipoBancaId,
     IReadOnlyList<Guid> CategoriasDocumentoIds,
-    RegraDeDeliberacaoInput? RegraDeDeliberacao = null);
+    RegraDeDeliberacaoInput? RegraDeDeliberacao = null,
+    Guid? Id = null);
 
 /// <summary>
 /// Entrada de uma fase do cronograma, usada por

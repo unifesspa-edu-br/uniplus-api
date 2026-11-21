@@ -108,7 +108,7 @@ internal static class LeituraDoCronograma
         bool emiteParecerIndividual)
     {
         IReadOnlyList<ProdutoDaFase> produtos = LerProdutosDaFase(leitor, item, path);
-        IReadOnlyList<BancaRequerida> bancas = leitor.Falhou ? [] : LerBancasRequeridas(leitor, item, path);
+        BancasLidas<BancaRequerida> bancas = leitor.Falhou ? new(path) : LerBancasRequeridas(leitor, item, path);
         RegraRecursoFase? regraRecurso = leitor.Falhou ? null : LeituraDosPrazosDeRecurso.LerRegraRecursoFase(leitor, item, path);
         UnidadeResponsavelSnapshot? unidade = leitor.Falhou ? null : LerUnidadeResponsavel(leitor, item, path);
         IReadOnlyList<string> tipos = leitor.Falhou ? [] : TiposDeDecisaoNoEnvelope.Ler(leitor, item, path);
@@ -127,10 +127,17 @@ internal static class LeituraDoCronograma
         OrigemCanonicaDaFase origem,
         DecisoesDeCronogramaDaFase decisoes,
         PublicacoesDaFase publicacoes,
-        IReadOnlyList<BancaRequerida> bancas)
+        BancasLidas<BancaRequerida> bancas)
     {
-        Result<FaseCronograma> fase = ConferirEReidratar(id, origem, decisoes, publicacoes, bancas);
-        return fase.IsFailure ? leitor.Propagar<FaseCronograma?>(fase.Error!) : fase.Value;
+        Result<FaseCronograma> fase = ConferirEReidratar(id, origem, decisoes, publicacoes, bancas.Bancas);
+        if (fase.IsFailure)
+        {
+            return leitor.Propagar<FaseCronograma?>(fase.Error!);
+        }
+
+        bancas.ExigirQueSeguemARaiz(leitor, fase.Value!.BancasRequeridas.ToDictionary(static banca => banca.Id, static banca => banca.PosicaoNoTipo));
+
+        return leitor.Falhou ? null : fase.Value;
     }
 
     // A âncora do recurso e os candidatos atendidos são conferidos pelo mesmo predicado do agregado:
@@ -213,31 +220,17 @@ internal static class LeituraDoCronograma
         return leitor.Falhou ? null : ProdutoDaFase.Reidratar(id!.Value, atoCodigo, papel);
     }
 
-    internal static List<BancaRequerida> LerBancasRequeridas(LeitorEnvelope leitor, JsonObject faseItem, string pathPai)
-    {
-        JsonArray array = leitor.Array(faseItem, "bancasRequeridas", pathPai);
-        List<BancaRequerida> bancas = [];
-        for (int i = 0; !leitor.Falhou && i < array.Count; i++)
-        {
-            string path = $"{pathPai}.bancasRequeridas[{i}]";
-            BancaRequerida? banca = LerBancaRequerida(leitor, leitor.ItemObjeto(array, i, $"{pathPai}.bancasRequeridas"), path);
-            if (banca is not null)
-            {
-                bancas.Add(banca);
-            }
-        }
+    internal static BancasLidas<BancaRequerida> LerBancasRequeridas(LeitorEnvelope leitor, JsonObject faseItem, string pathPai) =>
+        BancasLidas<BancaRequerida>.Ler(leitor, leitor.Array(faseItem, "bancasRequeridas", pathPai), $"{pathPai}.bancasRequeridas", LerBancaRequerida);
 
-        return leitor.Falhou ? [] : bancas;
-    }
-
-    private static BancaRequerida? LerBancaRequerida(LeitorEnvelope leitor, JsonObject item, string path)
+    private static (BancaRequerida, BancaLida)? LerBancaRequerida(LeitorEnvelope leitor, JsonObject item, string path)
     {
-        leitor.ExigirChaves(item, path, "tipoBancaOrigemId", "codigo", "nome", "regraDeDeliberacao", "candidatosAtendidos");
+        leitor.ExigirChaves(item, path, "id", "posicaoNoTipo", "tipoBancaOrigemId", "codigo", "nome", "regraDeDeliberacao", "candidatosAtendidos");
         BancaLida? lida = BancaLida.Ler(leitor, item, path);
         IReadOnlyList<CategoriaJulgada> atendidos = lida is null ? [] : LeituraDosPrazosDeRecurso.LerCandidatosAtendidos(leitor, item, path);
 
         return leitor.Falhou || lida is null
             ? null
-            : BancaRequerida.Criar(lida.TipoBancaOrigemId, lida.Codigo, lida.Nome, atendidos, lida.Regra);
+            : (BancaRequerida.ReconstruirDosDadosSalvos(lida.Id, lida.TipoBancaOrigemId, lida.Codigo, lida.Nome, atendidos, lida.Regra), lida);
     }
 }

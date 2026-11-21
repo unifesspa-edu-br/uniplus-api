@@ -18,20 +18,15 @@ public sealed class EtapaDeclaradaTests
     private static (string? Campo, string Codigo)[] Recusas(EtapaDeclarada etapa) =>
         [.. etapa.Recusas.Select(static r => (r.Field, r.Error.Code))];
 
-    private static ModeloDeEtapa ModeloComRecusaEmCadaFilha()
-    {
-        BancaDaEtapa banca = BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_AVALIADORA", "Banca", BancasDeTeste.Regra());
-
-        return new ModeloDeEtapa("Prova")
+    private static ModeloDeEtapa ModeloComRecusaEmCadaPublicacao() =>
+        new("Prova")
         {
             Peso = -1m,
             Produtos = [Preliminar("GABARITO"), Preliminar("GABARITO")],
             Inicio = new DateTimeOffset(2026, 3, 5, 0, 0, 0, TimeSpan.Zero),
             Fim = new DateTimeOffset(2026, 3, 1, 0, 0, 0, TimeSpan.Zero),
             TiposDeDecisao = ["TIPO_INEXISTENTE"],
-            Bancas = [banca, banca],
         };
-    }
 
     private static EtapaDeclarada EtapaComRecusaEmTodoDado() =>
         new ModeloDeEtapa(" ")
@@ -102,17 +97,16 @@ public sealed class EtapaDeclaradaTests
         etapa.Ordem.Should().Be(0);
     }
 
-    [Fact(DisplayName = "As recusas da publicação e das bancas saem depois das da avaliação, na ordem da gravação")]
-    public void Declarar_RecusasDasFilhas_SaemNaOrdemDaGravacao()
+    [Fact(DisplayName = "As recusas da publicação saem depois das da avaliação, na ordem da gravação")]
+    public void Declarar_RecusasDasPublicacoes_SaemNaOrdemDaGravacao()
     {
-        ModeloDeEtapa modelo = ModeloComRecusaEmCadaFilha();
+        ModeloDeEtapa modelo = ModeloComRecusaEmCadaPublicacao();
 
         Recusas(modelo.Declarar()).Select(static r => r.Codigo).Should().Equal(
             "EtapaProcesso.PesoInvalido",
             "EtapaProcesso.AtoDuplicadoNaEtapa",
             "EtapaProcesso.JanelaInvertida",
-            "MotivoDeDecisao.TipoInvalido",
-            "EtapaProcesso.BancaDuplicadaNaEtapa");
+            "MotivoDeDecisao.TipoInvalido");
     }
 
     [Fact(DisplayName = "Na leitura do documento o ato repetido recusa a lista dos produtos inteira, uma vez só, sem posição de produto")]

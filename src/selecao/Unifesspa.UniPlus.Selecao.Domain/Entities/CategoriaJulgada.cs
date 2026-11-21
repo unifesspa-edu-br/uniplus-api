@@ -17,9 +17,8 @@ using Unifesspa.UniPlus.Kernel.Domain.Entities;
 /// </para>
 /// <para>
 /// Deriva de <see cref="EntityBase"/> puro (sem soft-delete) e <b>não</b> tem o
-/// <see cref="EntityBase.Id"/> congelado no envelope, mesma disciplina de
-/// <see cref="BancaRequerida"/>: nada referencia a linha de fora dela, e a configuração em
-/// rascunho é substituível por inteiro (<see cref="ProcessoSeletivo.DefinirCronogramaFases"/>).
+/// <see cref="EntityBase.Id"/> congelado no envelope, ao contrário da <see cref="BancaRequerida"/>: nada referencia a
+/// linha de fora dela, e quem a identifica é o código dentro da banca.
 /// </para>
 /// </remarks>
 public sealed class CategoriaJulgada : EntityBase
@@ -56,4 +55,11 @@ public sealed class CategoriaJulgada : EntityBase
     }
 
     internal void VincularBanca(Guid bancaRequeridaId) => BancaRequeridaId = bancaRequeridaId;
+
+    internal void AssumirOrigem(CategoriaJulgada declarada)
+    {
+        ArgumentNullException.ThrowIfNull(declarada);
+
+        CategoriaDocumentoOrigemId = declarada.CategoriaDocumentoOrigemId;
+    }
 }

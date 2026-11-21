@@ -32,7 +32,7 @@ public sealed class BancasDoProcessoTests
     {
         EtapaProcesso redacao = ComRecurso(NovaEtapa("Redação", 1, CorrecaoIndependente));
         ProcessoSeletivo processo = ProcessoComEtapas(null, redacao);
-        redacao.DefinirBancas([DeRecursosDaEtapa(integrantes: 2, quorum: 2)]).IsSuccess.Should().BeTrue();
+        redacao.DefinirBancas([DeRecursosDaEtapa(integrantes: 2, quorum: 2)]);
 
         DomainError? pendencia = Pendencia(processo, Corretores((CorrecaoIndependente, 3)));
 
@@ -49,7 +49,7 @@ public sealed class BancasDoProcessoTests
     {
         EtapaProcesso etapa = ComRecurso(NovaEtapa("Redação", 1, corretores == 0 ? null : CorrecaoIndependente));
         ProcessoSeletivo processo = ProcessoComEtapas(null, etapa);
-        etapa.DefinirBancas([DeRecursosDaEtapa(integrantes, quorum)]).IsSuccess.Should().BeTrue();
+        etapa.DefinirBancas([DeRecursosDaEtapa(integrantes, quorum)]);
 
         Pendencia(processo, Corretores((CorrecaoIndependente, corretores))).Should().BeNull();
     }
@@ -61,7 +61,7 @@ public sealed class BancasDoProcessoTests
     {
         EtapaProcesso etapa = ComRecurso(NovaEtapa("Entrevista", 1, MaioriaSimples));
         ProcessoSeletivo processo = ProcessoComEtapas(null, etapa);
-        etapa.DefinirBancas([DeRecursosDaEtapa(integrantes, quorum: 2)]).IsSuccess.Should().BeTrue();
+        etapa.DefinirBancas([DeRecursosDaEtapa(integrantes, quorum: 2)]);
 
         DomainError? pendencia = Pendencia(processo, Corretores((MaioriaSimples, 4)));
 
@@ -97,7 +97,7 @@ public sealed class BancasDoProcessoTests
         EtapaProcesso redacao = ComRecurso(NovaEtapa("Redação", 1, CorrecaoIndependente));
         EtapaProcesso entrevista = ComRecurso(NovaEtapa("Entrevista", 2, AvaliacaoUnica));
         ProcessoSeletivo processo = ProcessoComEtapas([DeRecursosDaFase(integrantes: 3, quorum: 2)], redacao, entrevista);
-        processo.Etapas.Single(e => e.Nome == "Entrevista").DefinirBancas([DeRecursosDaEtapa(integrantes: 1, quorum: 1)]).IsSuccess.Should().BeTrue();
+        processo.Etapas.Single(e => e.Nome == "Entrevista").DefinirBancas([DeRecursosDaEtapa(integrantes: 1, quorum: 1)]);
 
         Pendencia(processo, Corretores((CorrecaoIndependente, 3), (AvaliacaoUnica, 1))).Should().BeNull();
     }
@@ -107,8 +107,7 @@ public sealed class BancasDoProcessoTests
     {
         EtapaProcesso redacao = ComRecurso(NovaEtapa("Redação", 1, CorrecaoIndependente));
         ProcessoSeletivo processo = ProcessoComEtapas([BancasDeTeste.DeRecursosDaFase()], redacao);
-        redacao.DefinirBancas([BancaDaEtapa.Criar(Tipo, "BANCA_EXAMINADORA", "Banca examinadora", BancasDeTeste.Regra(integrantes: 2, quorum: 2))])
-            .IsSuccess.Should().BeTrue();
+        redacao.DefinirBancas([BancaDaEtapa.Criar(Tipo, "BANCA_EXAMINADORA", "Banca examinadora", BancasDeTeste.Regra(integrantes: 2, quorum: 2))]);
 
         Pendencia(processo, Corretores((CorrecaoIndependente, 3))).Should().BeNull();
     }
@@ -118,7 +117,7 @@ public sealed class BancasDoProcessoTests
     {
         EtapaProcesso redacao = ComRecurso(NovaEtapa("Redação", 1, CorrecaoIndependente));
         ProcessoSeletivo processo = ProcessoComEtapas(null, redacao);
-        redacao.DefinirBancas([DeRecursosDaEtapa(integrantes: 2, quorum: 2)]).IsSuccess.Should().BeTrue();
+        redacao.DefinirBancas([DeRecursosDaEtapa(integrantes: 2, quorum: 2)]);
         CorretoresDasEtapas corretores = Corretores((CorrecaoIndependente, 3));
 
         IEnumerable<string> vermelhos = Itens(processo, corretores)
@@ -133,7 +132,7 @@ public sealed class BancasDoProcessoTests
     {
         EtapaProcesso redacao = ComRecurso(NovaEtapa("Redação", 1));
         ProcessoSeletivo processo = ProcessoComEtapas(null, redacao);
-        redacao.DefinirBancas([DeRecursosDaEtapa(integrantes: 2, quorum: 2)]).IsSuccess.Should().BeTrue();
+        redacao.DefinirBancas([DeRecursosDaEtapa(integrantes: 2, quorum: 2)]);
 
         CorretoresDeTeste.SemConsolidacao.EmCampo(redacao).Should().Be(0);
         Itens(processo, CorretoresDeTeste.SemConsolidacao).Should().OnlyContain(static item => item.Ok);
@@ -144,7 +143,7 @@ public sealed class BancasDoProcessoTests
     {
         EtapaProcesso redacao = ComRecurso(NovaEtapa("Redação", 1, CorrecaoIndependente));
         ProcessoSeletivo processo = ProcessoComEtapas(null, redacao);
-        redacao.DefinirBancas([DeRecursosDaEtapa(integrantes: 3, quorum: 2)]).IsSuccess.Should().BeTrue();
+        redacao.DefinirBancas([DeRecursosDaEtapa(integrantes: 3, quorum: 2)]);
 
         DomainError? pendencia = Pendencia(processo, CorretoresDeTeste.SemConsolidacao);
 
@@ -172,7 +171,7 @@ public sealed class BancasDoProcessoTests
         EtapaProcesso redacao = ComRecurso(NovaEtapa("Redação", 1, CorrecaoIndependente));
         EtapaProcesso entrevista = ComRecurso(NovaEtapa("Entrevista", 2, lida));
         ProcessoSeletivo processo = ProcessoComEtapas([DeRecursosDaFase(integrantes: 3, quorum: 2)], redacao, entrevista);
-        entrevista.DefinirBancas([DeRecursosDaEtapa(integrantes: 2, quorum: 2)]).IsSuccess.Should().BeTrue();
+        entrevista.DefinirBancas([DeRecursosDaEtapa(integrantes: 2, quorum: 2)]);
         CorretoresDasEtapas corretores = Corretores((lida, 3));
 
         IEnumerable<string> violacoes = Minimo(processo, corretores).Select(static erro => erro.Error.Code);
@@ -187,7 +186,7 @@ public sealed class BancasDoProcessoTests
     {
         EtapaProcesso redacao = ComRecurso(NovaEtapa("Redação", 1));
         ProcessoSeletivo processo = ProcessoComEtapas(null, redacao);
-        redacao.DefinirBancas([DeRecursosDaEtapa(integrantes: 2, quorum: 2)]).IsSuccess.Should().BeTrue();
+        redacao.DefinirBancas([DeRecursosDaEtapa(integrantes: 2, quorum: 2)]);
 
         CorretoresDeTeste.SemConsolidacao.EmCampo(redacao).Should().Be(0);
         CodigosDaConferencia(processo, CorretoresDeTeste.SemConsolidacao).Should().BeEmpty();
@@ -198,7 +197,7 @@ public sealed class BancasDoProcessoTests
     {
         EtapaProcesso objetiva = ComRecurso(NovaEtapa("Objetiva", 1));
         ProcessoSeletivo processo = ProcessoComEtapas(null, objetiva);
-        objetiva.DefinirBancas([DeRecursosDaEtapa(integrantes: 3, quorum: 2)]).IsSuccess.Should().BeTrue();
+        objetiva.DefinirBancas([DeRecursosDaEtapa(integrantes: 3, quorum: 2)]);
 
         Pendencia(processo, CorretoresDeTeste.SemConsolidacao).Should().BeNull();
     }
@@ -208,7 +207,7 @@ public sealed class BancasDoProcessoTests
     {
         EtapaProcesso redacao = ComRecurso(NovaEtapa("Redação", 1, CorrecaoIndependente));
         ProcessoSeletivo processo = ProcessoComEtapas(null, redacao);
-        redacao.DefinirBancas([DeRecursosDaEtapa(integrantes: 3, quorum: 2)]).IsSuccess.Should().BeTrue();
+        redacao.DefinirBancas([DeRecursosDaEtapa(integrantes: 3, quorum: 2)]);
 
         IEnumerable<string> vermelhos = Itens(processo, CorretoresDeTeste.SemConsolidacao)
             .Where(static item => !item.Ok).Select(static item => item.Codigo);
@@ -221,25 +220,24 @@ public sealed class BancasDoProcessoTests
     {
         EtapaProcesso redacao = ComRecurso(NovaEtapa("Redação", 1, CorrecaoIndependente));
         ProcessoSeletivo processo = ProcessoComEtapas(null, redacao);
-        redacao.DefinirBancas([DeRecursosDaEtapa(integrantes: 2, quorum: 2)]).IsSuccess.Should().BeTrue();
+        redacao.DefinirBancas([DeRecursosDaEtapa(integrantes: 2, quorum: 2)]);
 
         CodigosDaConferencia(processo, Corretores((CorrecaoIndependente, 2))).Should().BeEmpty();
         CodigosDaConferencia(processo, Corretores((CorrecaoIndependente, 3))).Should().Equal("Banca.IntegrantesAbaixoDoMinimo");
         CodigosDaConferencia(processo, CorretoresDeTeste.SemConsolidacao).Should().Equal("EtapaProcesso.RegraDeConsolidacaoNaoResolvida");
     }
 
-    [Fact(DisplayName = "Redefinir as bancas da etapa reaproveita a linha de mesmo código e leva a ela a origem, o nome e a regra declarados")]
-    public void Redefinir_ReaproveitaALinhaEAlinhaOsDadosDeclarados()
+    [Fact(DisplayName = "Redefinir as bancas da etapa com o id da banca reaproveita a linha e leva a ela a origem, o nome e a regra declarados")]
+    public void Redefinir_ComOId_ReaproveitaALinhaEAlinhaOsDadosDeclarados()
     {
         EtapaProcesso etapa = NovaEtapa("Redação", 1);
-        etapa.DefinirBancas([BancaDaEtapa.Criar(Tipo, "BANCA_EXAMINADORA", "Antigo", BancasDeTeste.Regra(3, 2))]).IsSuccess.Should().BeTrue();
+        etapa.DefinirBancas([BancaDaEtapa.Criar(Tipo, "BANCA_EXAMINADORA", "Antigo", BancasDeTeste.Regra(3, 2))]);
         Guid linha = etapa.Bancas.Single().Id;
         Guid outraOrigem = Guid.CreateVersion7();
 
-        Result definidas = etapa.DefinirBancas(
-            [BancaDaEtapa.Criar(outraOrigem, "BANCA_EXAMINADORA", "Novo", BancasDeTeste.Regra(5, 4))]);
+        etapa.DefinirBancas(
+            [BancaDaEtapa.Criar(outraOrigem, "BANCA_EXAMINADORA", "Novo", BancasDeTeste.Regra(5, 4), idDaBancaQueSubstitui: linha)]);
 
-        definidas.IsSuccess.Should().BeTrue();
         BancaDaEtapa banca = etapa.Bancas.Single();
         banca.Id.Should().Be(linha);
         banca.TipoBancaOrigemId.Should().Be(outraOrigem);

@@ -10908,6 +10908,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("nome");
 
+                    b.Property<int>("PosicaoNoTipo")
+                        .HasColumnType("integer")
+                        .HasColumnName("posicao_no_tipo");
+
                     b.Property<Guid>("TipoBancaOrigemId")
                         .HasColumnType("uuid")
                         .HasColumnName("tipo_banca_origem_id");
@@ -10920,8 +10924,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasName("pk_bancas_da_etapa");
 
                     b.HasIndex("EtapaProcessoId", "Codigo")
-                        .IsUnique()
-                        .HasDatabaseName("ux_bancas_da_etapa_codigo");
+                        .HasDatabaseName("ix_bancas_da_etapa_codigo");
 
                     b.ToTable("bancas_da_etapa", "selecao");
                 });
@@ -10951,6 +10954,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
                         .HasColumnName("nome");
+
+                    b.Property<int>("PosicaoNoTipo")
+                        .HasColumnType("integer")
+                        .HasColumnName("posicao_no_tipo");
 
                     b.Property<Guid>("TipoBancaOrigemId")
                         .HasColumnType("uuid")
@@ -18833,7 +18840,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.CategoriaJulgada", b =>
                 {
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.BancaRequerida", null)
-                        .WithMany("RecorteDeCompetencia")
+                        .WithMany("CandidatosAtendidos")
                         .HasForeignKey("BancaRequeridaId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
@@ -20796,7 +20803,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.BancaRequerida", b =>
                 {
-                    b.Navigation("RecorteDeCompetencia");
+                    b.Navigation("CandidatosAtendidos");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoBonusRegional", b =>

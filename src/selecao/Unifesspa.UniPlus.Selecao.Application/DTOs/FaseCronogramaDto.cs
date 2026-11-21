@@ -12,6 +12,8 @@ public sealed record ProdutoDaFaseDto(Guid Id, string AtoCodigo, string? Papel);
 public sealed record CategoriaJulgadaDto(Guid Id, Guid CategoriaDocumentoOrigemId, string Codigo);
 
 /// <summary>Projeção de leitura de <c>BancaRequerida</c> (Story #851).</summary>
+/// <param name="Id">Identidade permanente da banca: o cliente a devolve ao regravar a fase, para a banca continuar sendo a mesma.</param>
+/// <param name="PosicaoNoTipo">Posição da banca entre as do mesmo tipo na fase, a partir de 1.</param>
 /// <param name="Nome">Nome do tipo de banca congelado na declaração: o cliente o exibe como veio.</param>
 /// <param name="RegraDeDeliberacao">Nula enquanto o rascunho não a declara; a publicação a exige.</param>
 /// <param name="CandidatosAtendidos">
@@ -22,6 +24,7 @@ public sealed record BancaRequeridaDto(
     Guid Id,
     Guid TipoBancaOrigemId,
     string Codigo,
+    int PosicaoNoTipo,
     string Nome,
     RegraDeDeliberacaoDto? RegraDeDeliberacao,
     IReadOnlyList<CategoriaJulgadaDto> CandidatosAtendidos);

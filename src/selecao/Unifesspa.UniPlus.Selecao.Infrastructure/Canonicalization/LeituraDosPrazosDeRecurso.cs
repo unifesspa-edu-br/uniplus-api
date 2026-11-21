@@ -19,9 +19,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 internal static class LeituraDosPrazosDeRecurso
 {
     /// <summary>
-    /// Os candidatos atendidos pela banca — as categorias de documento que ela julga. Como
-    /// as próprias bancas, as categorias não congelam <c>id</c>: nada aponta para a linha
-    /// de fora dela, e a reidratação as recria por inteiro.
+    /// Os candidatos atendidos pela banca — as categorias de documento que ela julga. A banca congela o <c>id</c>, porque o
+    /// que fica fora da versão a aponta; as categorias não congelam: nada aponta para a linha de fora dela, e a
+    /// reconstrução as recria por inteiro.
     /// </summary>
     internal static List<CategoriaJulgada> LerCandidatosAtendidos(LeitorEnvelope leitor, JsonObject bancaItem, string pathPai)
     {

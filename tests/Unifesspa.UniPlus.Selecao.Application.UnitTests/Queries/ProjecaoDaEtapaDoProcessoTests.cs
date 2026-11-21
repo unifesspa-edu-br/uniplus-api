@@ -52,7 +52,7 @@ public sealed class ProjecaoDaEtapaDoProcessoTests
         etapa.DefinirJanelaEParecer(Inicio, Fim, emiteParecerIndividual: true).IsSuccess.Should().BeTrue();
         etapa.DefinirTiposDeDecisao([TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo(), TipoMotivoDeDecisao.Classificacao.Codigo()]).IsSuccess.Should().BeTrue();
         etapa.DefinirProdutos([ProdutoDaEtapa.Reidratar(ProdutoDoResultadoId, "RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar)]).IsSuccess.Should().BeTrue();
-        etapa.DefinirBancas([BancaDaEtapa.Criar(TipoBancaId, "BANCA_GERAL", "Banca geral")]).IsSuccess.Should().BeTrue();
+        etapa.DefinirBancas([BancaDaEtapa.Criar(TipoBancaId, "BANCA_GERAL", "Banca geral")]);
         etapa.DefinirRecursos([RecursoDaEtapa.Criar(AncoraDoRecurso.AtoPublicado, RegraDoPrazo(), ParametrosDoPrazo(), ProdutoDoResultadoId).Value!])
             .IsSuccess.Should().BeTrue();
         return etapa;
@@ -84,7 +84,7 @@ public sealed class ProjecaoDaEtapaDoProcessoTests
         EtapaProcessoDto dto = ProjecaoDaEtapaDoProcesso.ProjetarEtapa(etapa);
 
         dto.Id.Should().Be(EtapaId);
-        dto.Bancas.Should().BeEquivalentTo([new BancaDaEtapaDto(etapa.Bancas.Single().Id, TipoBancaId, "BANCA_GERAL", "Banca geral", null)]);
+        dto.Bancas.Should().BeEquivalentTo([new BancaDaEtapaDto(etapa.Bancas.Single().Id, TipoBancaId, "BANCA_GERAL", 1, "Banca geral", null)]);
     }
 
     [Fact(DisplayName = "A identificação projeta o nome, o caráter, o tipo, a ordem e o código da fase")]

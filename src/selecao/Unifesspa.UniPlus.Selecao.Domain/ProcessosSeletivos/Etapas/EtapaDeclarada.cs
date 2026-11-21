@@ -133,7 +133,7 @@ public sealed record EtapaDeclarada
             avaliacao,
             janela,
             (new AtosDaEtapa(publicacoes), new BancasDaEtapa(bancas)),
-            [.. RecusasDaAvaliacao(identificacao, avaliacao), .. RecusasDasPublicacoes(identificacao, janela, publicacoes, bancas, suspensas)],
+            [.. RecusasDaAvaliacao(identificacao, avaliacao), .. RecusasDasPublicacoes(identificacao, janela, publicacoes, suspensas)],
             suspensas);
     }
 
@@ -176,13 +176,11 @@ public sealed record EtapaDeclarada
         IdentificacaoDaEtapa identificacao,
         JanelaDeTempo janela,
         PublicacoesDaEtapa publicacoes,
-        IReadOnlyList<BancaDaEtapa> bancas,
         IReadOnlySet<string> suspensas) =>
     [
         .. Recusa(ListaDosProdutos, AtoRepetidoNaListaInteira(publicacoes.Produtos)),
         .. Recusa("fim", ConferenciaDaDeclaracaoDaEtapa.JanelaInvertida(janela)),
         .. TiposDeDecisaoDeclarados.Validar(publicacoes.TiposDeDecisao, TiposDeDecisaoDeclarados.Campo),
-        .. Recusa("bancas", AlinhamentoDasBancasDaEtapa.BancaRepetida(bancas)),
         .. RecusaDosRecursos(identificacao, publicacoes, suspensas),
     ];
 

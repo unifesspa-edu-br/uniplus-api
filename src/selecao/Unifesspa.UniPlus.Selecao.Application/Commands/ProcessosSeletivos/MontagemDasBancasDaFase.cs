@@ -54,7 +54,7 @@ internal sealed class MontagemDasBancasDaFase(CadastrosDasFases cadastros)
 
         return regra.Errors.Count > 0
             ? Result<BancaRequerida>.ValidationFailure(regra.Errors)
-            : Result<BancaRequerida>.Success(BancaRequerida.Criar(tipo.Id, tipo.Codigo.Codigo(), tipo.Nome, atendidos, regra.Value));
+            : Result<BancaRequerida>.Success(BancaRequerida.Criar(tipo.Id, tipo.Codigo.Codigo(), tipo.Nome, atendidos, regra.Value, declarada.Id));
     }
 
     private async Task<Result<List<CategoriaJulgada>>> CandidatosAtendidosAsync(

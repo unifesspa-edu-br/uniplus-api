@@ -59,26 +59,22 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
         fasesJson.Select(static f => f!["codigo"]!.GetValue<string>()).Should().Equal(["ZETA_FASE", "ALFA_FASE"]);
     }
 
-    [Fact(DisplayName = "cronogramaFases.fases[].bancasRequeridas: identidade de origem governa sobre o conteúdo — oráculo de sequência exata")]
-    public void CronogramaFases_BancasRequeridas_IdentidadeDeOrigemGovernaSobreConteudo()
+    [Fact(DisplayName = "cronogramaFases.fases[].bancasRequeridas: o código governa sobre a identidade de origem — oráculo de sequência exata")]
+    public void CronogramaFases_BancasRequeridas_CodigoGovernaSobreIdentidadeDeOrigem()
     {
         BancaRequerida bancaComOrigemMenor = BancaRequerida.Criar(IdFixo(1), "ZETA_BANCA", "Banca de teste", []);
         BancaRequerida bancaComOrigemMaior = BancaRequerida.Criar(IdFixo(2), "ALFA_BANCA", "Banca de teste", []);
 
-        new[] { bancaComOrigemMenor, bancaComOrigemMaior }.OrderBy(static b => b.Codigo, StringComparer.Ordinal).Select(static b => b.Codigo)
-            .Should().Equal(["ALFA_BANCA", "ZETA_BANCA"]);
+        JsonArray bancasJson = BancasRequeridasEnvelopadas(FaseComAsBancas("INSCRICAO", bancaComOrigemMenor, bancaComOrigemMaior));
 
-        JsonArray bancasJson = BancasRequeridasEnvelopadas(FaseComAsBancas("INSCRICAO", bancaComOrigemMaior, bancaComOrigemMenor));
-
-        bancasJson.Select(static b => b!["codigo"]!.GetValue<string>()).Should().Equal(["ZETA_BANCA", "ALFA_BANCA"]);
+        bancasJson.Select(static b => b!["codigo"]!.GetValue<string>()).Should().Equal(["ALFA_BANCA", "ZETA_BANCA"]);
     }
 
-    // (TipoBancaOrigemId, Codigo) empata: as duas bancas são do MESMO tipo, que é o
-    // arranjo que os candidatos atendidos existem para tornar declarável. Sem uma
-    // terceira chave, a posição no array passaria a depender da ordem em que o EF
-    // materializou as linhas, e a mesma configuração produziria dois hashes.
-    [Fact(DisplayName = "cronogramaFases.fases[].bancasRequeridas: duas bancas do mesmo tipo são desempatadas pelos candidatos atendidos — oráculo de sequência exata")]
-    public void CronogramaFases_BancasRequeridas_MesmoTipo_DesempatadasPelosCandidatosAtendidos()
+    // (TipoBancaOrigemId, Codigo) empata: as duas bancas são do MESMO tipo. Quem desempata é a
+    // posição no tipo, que a raiz calcula pela ordem de chegada — nunca o id nem os candidatos
+    // atendidos.
+    [Fact(DisplayName = "cronogramaFases.fases[].bancasRequeridas: duas bancas do mesmo tipo seguem a posição no tipo — oráculo de sequência exata")]
+    public void CronogramaFases_BancasRequeridas_MesmoTipo_SeguemAPosicaoNoTipo()
     {
         Guid tipoUnico = IdFixo(1);
         BancaRequerida bancaDaRenda = BancaRequerida.Criar(
@@ -86,12 +82,14 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
         BancaRequerida bancaEtnicoRacial = BancaRequerida.Criar(
             tipoUnico, "BANCA_ANALISE_DOCUMENTAL", "Banca de teste", [CategoriaJulgada.Criar(IdFixo(8), "ETNICO_RACIAL")]);
 
-        JsonArray bancasJson = BancasRequeridasEnvelopadas(FaseComAsBancas("ANALISE", bancaDaRenda, bancaEtnicoRacial));
-
-        bancasJson
-            .Select(static b => b!["candidatosAtendidos"]!.AsArray()[0]!["codigo"]!.GetValue<string>())
+        CandidatosAtendidosNaOrdemDasBancas(FaseComAsBancas("ANALISE", bancaDaRenda, bancaEtnicoRacial))
+            .Should().Equal(["RENDA", "ETNICO_RACIAL"]);
+        CandidatosAtendidosNaOrdemDasBancas(FaseComAsBancas("ANALISE", bancaEtnicoRacial, bancaDaRenda))
             .Should().Equal(["ETNICO_RACIAL", "RENDA"]);
     }
+
+    private static string[] CandidatosAtendidosNaOrdemDasBancas(FaseCronograma fase) =>
+        [.. BancasRequeridasEnvelopadas(fase).Select(static b => b!["candidatosAtendidos"]!.AsArray()[0]!["codigo"]!.GetValue<string>())];
 
     // O id de origem é identidade técnica e não pode vazar para dentro do hash: dois
     // candidatos atendidos com as MESMAS categorias precisam produzir os mesmos bytes.

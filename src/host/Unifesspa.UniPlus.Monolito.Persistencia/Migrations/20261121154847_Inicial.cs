@@ -3650,6 +3650,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     etapa_processo_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    posicao_no_tipo = table.Column<int>(type: "integer", nullable: false),
                     tipo_banca_origem_id = table.Column<Guid>(type: "uuid", nullable: false),
                     codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
                     nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
@@ -3768,6 +3769,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     fase_cronograma_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    posicao_no_tipo = table.Column<int>(type: "integer", nullable: false),
                     tipo_banca_origem_id = table.Column<Guid>(type: "uuid", nullable: false),
                     codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
                     nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
@@ -5773,11 +5775,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 columns: new[] { "tipo", "fato_id" });
 
             migrationBuilder.CreateIndex(
-                name: "ux_bancas_da_etapa_codigo",
+                name: "ix_bancas_da_etapa_codigo",
                 schema: "selecao",
                 table: "bancas_da_etapa",
-                columns: new[] { "etapa_processo_id", "codigo" },
-                unique: true);
+                columns: new[] { "etapa_processo_id", "codigo" });
 
             migrationBuilder.CreateIndex(
                 name: "ix_bancas_requeridas_fase_cronograma_id",

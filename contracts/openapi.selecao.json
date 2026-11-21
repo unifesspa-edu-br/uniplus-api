@@ -12777,6 +12777,7 @@
           "id",
           "tipoBancaOrigemId",
           "codigo",
+          "posicaoNoTipo",
           "nome",
           "regraDeDeliberacao"
         ],
@@ -12792,6 +12793,10 @@
           },
           "codigo": {
             "type": "string"
+          },
+          "posicaoNoTipo": {
+            "type": "integer",
+            "format": "int32"
           },
           "nome": {
             "type": "string"
@@ -12827,6 +12832,13 @@
                 "$ref": "#/components/schemas/RegraDeDeliberacaoInput"
               }
             ]
+          },
+          "id": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
       },
@@ -12835,6 +12847,7 @@
           "id",
           "tipoBancaOrigemId",
           "codigo",
+          "posicaoNoTipo",
           "nome",
           "regraDeDeliberacao",
           "candidatosAtendidos"
@@ -12851,6 +12864,10 @@
           },
           "codigo": {
             "type": "string"
+          },
+          "posicaoNoTipo": {
+            "type": "integer",
+            "format": "int32"
           },
           "nome": {
             "type": "string"
@@ -12900,6 +12917,13 @@
                 "$ref": "#/components/schemas/RegraDeDeliberacaoInput"
               }
             ]
+          },
+          "id": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
       },

@@ -115,7 +115,7 @@ internal static class ManifestoDeEditalSnapshotsECronograma
             [("FaseCronogramaId", "FK interna.")]),
 
         [typeof(BancaRequerida)] = (
-            ["TipoBancaOrigemId", "Codigo", "Nome", "CandidatosAtendidos", "RegraDeDeliberacao"],
+            ["TipoBancaOrigemId", "Codigo", "PosicaoNoTipo", "Nome", "CandidatosAtendidos", "RegraDeDeliberacao"],
             [("FaseCronogramaId", "FK interna.")]),
 
         // A regra de deliberação da banca, igual na banca da fase e na da etapa. Sem Id no
@@ -124,9 +124,8 @@ internal static class ManifestoDeEditalSnapshotsECronograma
             ["Modo", "Integrantes", "Suplentes", "Quorum", "Criterio", "Desempate", "Encerramento", "SemUnanimidade"],
             [("QuorumExigido", "Derivada de Quorum — sem votação exige um titular; congelá-la duplicaria a fonte de verdade.")]),
 
-        // Os candidatos atendidos — o que distingue duas bancas do MESMO tipo na mesma
-        // fase. Sem Id no envelope, como a banca que a carrega: nada aponta para a linha de
-        // fora dela.
+        // Os candidatos atendidos de cada banca. Sem Id no envelope: nada aponta para a linha de
+        // fora da banca que a carrega.
         [typeof(CategoriaJulgada)] = (
             ["CategoriaDocumentoOrigemId", "Codigo"],
             [("BancaRequeridaId", "FK interna.")]),

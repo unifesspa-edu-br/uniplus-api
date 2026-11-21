@@ -59,8 +59,7 @@ internal static class ProcessoComCorrecaoIndependente
             Entrevista("Redação", 1, CorrecaoIndependente), Entrevista("Entrevista", 2, AvaliacaoUnica));
         foreach (EtapaProcesso etapa in processo.Etapas)
         {
-            etapa.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA", "Banca examinadora", BancasDeTeste.Regra())])
-                .IsSuccess.Should().BeTrue();
+            etapa.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA", "Banca examinadora", BancasDeTeste.Regra())]);
         }
 
         return processo;
@@ -121,8 +120,7 @@ internal static class ProcessoComCorrecaoIndependente
         new(new Dictionary<ReferenciaRegra, CorretoresDaRegra> { [CorrecaoIndependente] = CorretoresDaRegra.SemNovoCorretor(3), [AvaliacaoUnica] = CorretoresDaRegra.SemNovoCorretor(1) });
 
     private static void DeclararBancaDaEtapa(EtapaProcesso etapa, int integrantes, int quorum) =>
-        etapa.DefinirBancas([BancasDeTeste.DeRecursosDaEtapa(BancasDeTeste.Regra(integrantes, quorum))])
-            .IsSuccess.Should().BeTrue();
+        etapa.DefinirBancas([BancasDeTeste.DeRecursosDaEtapa(BancasDeTeste.Regra(integrantes, quorum))]);
 
     private static ProcessoSeletivo ComEtapas(ProcessoSeletivo processo, params EtapaProcesso[] etapas)
     {

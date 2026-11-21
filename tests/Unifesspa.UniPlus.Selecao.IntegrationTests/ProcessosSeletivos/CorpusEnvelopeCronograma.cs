@@ -34,6 +34,10 @@ internal static class CorpusEnvelopeCronograma
     /// </summary>
     internal static readonly DateTimeOffset FimDasInscricoes = new DateTimeOffset(2026, 3, 20, 23, 59, 59, TimeSpan.Zero).AddTicks(9_999_990);
 
+    // O id da banca também leva a variante: processos de testes de persistência diferentes não podem repetir a chave no mesmo Postgres.
+    internal static Guid BancaId(int numero, int variante) =>
+        new($"bbbb0000-000{variante:x}-4000-8000-00000000000{numero:x}");
+
     internal static Guid ProdutoId(int fase, int posicao, int variante) =>
         new($"7777bbbb-000{variante:x}-4000-8000-0000000{fase:x}000{posicao:x}");
 
@@ -74,7 +78,7 @@ internal static class CorpusEnvelopeCronograma
                 Produtos: ProdutosDaFaseDeRecurso(variante, permutar), EmiteParecerIndividual: true, RegraRecurso: RegraDeRecursoDaFase(variante),
                 TiposDeDecisao: [TipoMotivoDeDecisao.Classificacao.Codigo(), TipoMotivoDeDecisao.HomologacaoDasInscricoes.Codigo()],
                 RegraDeHomologacao: regraDeHomologacao ?? RegraDeHomologacaoDoCorpus()),
-        bancasRequeridas: BancasRequeridasDaFaseDeRecurso(permutar));
+        bancasRequeridas: BancasRequeridasDaFaseDeRecurso(permutar, variante));
 
     /// <summary>
     /// Duas alternativas, a primeira com duas condições, sem e com enquadramento, na ordem que não é a alfabética dos
@@ -103,28 +107,27 @@ internal static class CorpusEnvelopeCronograma
             ProdutoDaFase.Reidratar(ProdutoId(2, 4, variante), "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
         ], permutar);
 
-    // DUAS bancas do MESMO tipo, distinguidas só pelos candidatos atendidos — o
-    // arranjo que (tipoBancaOrigemId, codigo) não separa. É o que prova que a política
-    // de ordenação do array desempata pelo conteúdo do item, e que os candidatos atendidos
-    // atravessam o round-trip byte a byte.
-    internal static IReadOnlyList<BancaRequerida> BancasRequeridasDaFaseDeRecurso(bool permutar) =>
-        Ordem<BancaRequerida>([
-            BancaDeAnaliseDocumentalDeRenda(),
-            BancaDeAnaliseDocumentalDeIdentificacao(),
-            BancaDeHeteroidentificacao(),
-            BancaDeAnaliseDeRecursos(),
-        ], permutar);
+    // DUAS bancas do MESMO tipo, distinguidas pelo id, pela posição no tipo e pelos candidatos
+    // atendidos. A posição vem da ordem de chegada dentro do tipo, então a permutação da entrada
+    // move as duas juntas e preserva a ordem relativa entre elas: inverter uma em relação à outra
+    // é mudar a configuração, não só a ordem de entrada.
+    internal static IReadOnlyList<BancaRequerida> BancasRequeridasDaFaseDeRecurso(bool permutar, int variante = 0) =>
+        permutar
+            ? [BancaDeAnaliseDeRecursos(variante), BancaDeHeteroidentificacao(variante), BancaDeAnaliseDocumentalDeRenda(variante), BancaDeAnaliseDocumentalDeIdentificacao(variante)]
+            : [BancaDeAnaliseDocumentalDeRenda(variante), BancaDeAnaliseDocumentalDeIdentificacao(variante), BancaDeHeteroidentificacao(variante), BancaDeAnaliseDeRecursos(variante)];
 
-    internal static BancaRequerida BancaDeAnaliseDocumentalDeRenda() =>
-        BancaRequerida.Criar(
+    internal static BancaRequerida BancaDeAnaliseDocumentalDeRenda(int variante = 0) =>
+        BancaRequerida.ReconstruirDosDadosSalvos(
+            BancaId(1, variante),
             new Guid("5555eeee-0000-4000-8000-000000000001"),
             "BANCA_ANALISE_DOCUMENTAL",
             "Banca de teste",
             [CategoriaJulgada.Criar(new Guid("7777ffff-0000-4000-8000-000000000001"), "RENDA")],
             BancasDeTeste.Regra());
 
-    internal static BancaRequerida BancaDeAnaliseDocumentalDeIdentificacao() =>
-        BancaRequerida.Criar(
+    internal static BancaRequerida BancaDeAnaliseDocumentalDeIdentificacao(int variante = 0) =>
+        BancaRequerida.ReconstruirDosDadosSalvos(
+            BancaId(2, variante),
             new Guid("5555eeee-0000-4000-8000-000000000001"),
             "BANCA_ANALISE_DOCUMENTAL",
             "Banca de teste",
@@ -134,8 +137,9 @@ internal static class CorpusEnvelopeCronograma
             ],
             BancasDeTeste.Regra());
 
-    internal static BancaRequerida BancaDeHeteroidentificacao() =>
-        BancaRequerida.Criar(
+    internal static BancaRequerida BancaDeHeteroidentificacao(int variante = 0) =>
+        BancaRequerida.ReconstruirDosDadosSalvos(
+            BancaId(3, variante),
             new Guid("5555eeee-0000-4000-8000-000000000002"),
             "BANCA_HETEROIDENTIFICACAO",
             "Banca de teste",
@@ -144,8 +148,9 @@ internal static class CorpusEnvelopeCronograma
 
     // Quem julga o recurso da fase e o das etapas que ela abriga: o ciclo recursal do corpus só é
     // publicável com a banca de análise de recursos declarada.
-    internal static BancaRequerida BancaDeAnaliseDeRecursos() =>
-        BancaRequerida.Criar(
+    internal static BancaRequerida BancaDeAnaliseDeRecursos(int variante = 0) =>
+        BancaRequerida.ReconstruirDosDadosSalvos(
+            BancaId(4, variante),
             new Guid("5555eeee-0000-4000-8000-000000000003"),
             TipoBancaCodigo.AnaliseDeRecursos,
             "Banca de análise de recursos",

@@ -61,6 +61,7 @@ internal static class ProjecaoDaEtapaDoProcesso
         banca.Id,
         banca.TipoBancaOrigemId,
         banca.Codigo,
+        banca.PosicaoNoTipo,
         banca.Nome,
         ProjecaoDaRegraDeDeliberacao.De(banca.RegraDeDeliberacao));
 

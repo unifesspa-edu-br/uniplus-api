@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 
-/// <summary>Códigos de recusa da regra de deliberação das bancas e da banca que o recurso exige.</summary>
+/// <summary>Códigos de recusa da identificação das bancas, da regra de deliberação delas e da banca que o recurso exige.</summary>
 public static class BancaErrorCodes
 {
     public const string ModoDeDeliberacaoInvalido = "Banca.ModoDeDeliberacaoInvalido";
@@ -18,5 +18,6 @@ public static class BancaErrorCodes
     public const string RegraDeDeliberacaoObrigatoria = "Banca.RegraDeDeliberacaoObrigatoria";
     public const string IntegrantesAbaixoDoMinimo = "Banca.IntegrantesAbaixoDoMinimo";
     public const string CandidatosAtendidosEmBancaDeRecursos = "Banca.CandidatosAtendidosEmBancaDeRecursos";
+    public const string IdDuplicado = "Banca.IdDuplicado";
     public const string RecursoSemBanca = "Cronograma.RecursoSemBanca";
 }

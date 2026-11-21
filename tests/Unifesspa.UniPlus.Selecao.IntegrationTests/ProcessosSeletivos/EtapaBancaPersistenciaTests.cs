@@ -14,8 +14,8 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 using Xunit;
 
 /// <summary>
-/// As bancas da etapa contra o Postgres real: o que o índice único cobra quando a mesma
-/// configuração é gravada duas vezes.
+/// As bancas da etapa contra o Postgres real: o que a restrição única da posição no tipo cobra
+/// quando a mesma configuração é gravada de novo, reordenada ou trocada de código.
 /// </summary>
 public sealed class EtapaBancaPersistenciaTests(ProcessoSeletivoDbFixture fixture)
     : IClassFixture<ProcessoSeletivoDbFixture>
@@ -24,52 +24,81 @@ public sealed class EtapaBancaPersistenciaTests(ProcessoSeletivoDbFixture fixtur
     private static readonly Guid OutroTipoBanca = new("dddd1111-0000-4000-8000-000000000002");
 
     /// <summary>
-    /// Regravar a etapa sem mudar nada é o caso mais comum do editor — o operador salva de
-    /// novo depois de mexer noutro campo. A coleção é substituída por inteiro, e substituir a
-    /// banca por uma instância nova de MESMO código põe o INSERT da nova e o DELETE da órfã
-    /// disputando o mesmo slot de <c>ux_bancas_da_etapa_codigo</c> na mesma transação.
+    /// Regravar a etapa sem mudar nada é o caso mais comum do editor: o operador salva de
+    /// novo depois de mexer noutro campo. O corpo devolve o id que leu, e a linha é mantida.
     /// </summary>
-    [Fact(DisplayName = "Regravar a etapa com a mesma banca não colide no índice único")]
-    public async Task RegravarAMesmaBanca_NaoColide()
+    [Fact(DisplayName = "Regravar a etapa com o id da banca mantém a mesma linha")]
+    public async Task RegravarAMesmaBancaComOId_MantemALinha()
     {
         (Guid processoId, Guid etapaId) = await GravarEtapaComAsync("Certame de bancas", Banca(TipoBanca, "BANCA_TITULOS"));
+        Guid idGravado = (await RelerAsync(etapaId)).Bancas.Single().Id;
 
-        // Instância NOVA com o MESMO código — é o que o handler monta a cada PUT, porque o
-        // corpo declara o tipo de banca, não a linha que já existe.
         await RegravarAsync(
             processoId,
             etapaId,
-            [Banca(TipoBanca, "BANCA_TITULOS")],
+            [Banca(TipoBanca, "BANCA_TITULOS", idGravado)],
             "regravar a etapa sem mudar a banca é o caso comum do editor, e não pode falhar por causa de como a coleção é substituída");
 
         EtapaProcesso relida = await RelerAsync(etapaId);
         relida.Bancas.Should().ContainSingle("a banca continua uma só — não duplicou nem sumiu");
-        relida.Bancas.Single().Codigo.Should().Be("BANCA_TITULOS");
+        relida.Bancas.Single().Id.Should().Be(idGravado);
+    }
+
+    /// <summary>Sem o id, a banca declarada é nova: a antiga sai e a nova entra na mesma posição.</summary>
+    [Fact(DisplayName = "Regravar a etapa sem o id da banca recria a linha sem colidir")]
+    public async Task RegravarAMesmaBancaSemOId_RecriaALinha()
+    {
+        (Guid processoId, Guid etapaId) = await GravarEtapaComAsync("Certame de recriação", Banca(TipoBanca, "BANCA_TITULOS"));
+        Guid idGravado = (await RelerAsync(etapaId)).Bancas.Single().Id;
+
+        await RegravarAsync(
+            processoId, etapaId, [Banca(TipoBanca, "BANCA_TITULOS")],
+            "a banca nova ocupa a posição da que saiu, e a restrição adiada só confere ao fim da transação");
+
+        EtapaProcesso relida = await RelerAsync(etapaId);
+        relida.Bancas.Should().ContainSingle();
+        relida.Bancas.Single().Id.Should().NotBe(idGravado);
     }
 
     /// <summary>
-    /// Duas bancas que trocam de código entre si. É o caso em que reordenar comandos não
-    /// resolve: cada INSERT quer o slot que o outro DELETE ainda não liberou, e não existe
-    /// ordem que sirva para os dois.
+    /// Duas bancas do mesmo tipo e do mesmo código trocam de posição entre si. Cada UPDATE quer
+    /// a posição que o outro ainda ocupa: só a restrição adiada ao fim da transação permite.
     /// </summary>
+    [Fact(DisplayName = "Duas bancas do mesmo tipo que trocam de posição entre si continuam gravando")]
+    public async Task TrocaDePosicoesEntreBancasDoMesmoTipo_NaoColide()
+    {
+        (Guid processoId, Guid etapaId) = await GravarEtapaComAsync(
+            "Certame de posições", Banca(TipoBanca, "BANCA_TITULOS"), Banca(TipoBanca, "BANCA_TITULOS"));
+        IReadOnlyList<BancaDaEtapa> gravadas = [.. (await RelerAsync(etapaId)).Bancas.OrderBy(b => b.PosicaoNoTipo)];
+        gravadas.Select(b => b.PosicaoNoTipo).Should().Equal(1, 2);
+
+        await RegravarAsync(
+            processoId, etapaId,
+            [Banca(TipoBanca, "BANCA_TITULOS", gravadas[1].Id), Banca(TipoBanca, "BANCA_TITULOS", gravadas[0].Id)],
+            "trocar a posição de duas bancas é configuração legítima, e a restrição única só pode ser conferida ao fim da transação");
+
+        IReadOnlyList<BancaDaEtapa> relidas = [.. (await RelerAsync(etapaId)).Bancas.OrderBy(b => b.PosicaoNoTipo)];
+        relidas.Select(b => b.Id).Should().Equal(gravadas[1].Id, gravadas[0].Id);
+    }
+
+    /// <summary>Duas bancas que trocam de código entre si, sem o id: cada uma é uma linha nova.</summary>
     [Fact(DisplayName = "Duas bancas que trocam de código entre si continuam gravando")]
     public async Task TrocaDeCodigosEntreBancas_NaoColide()
     {
         (Guid processoId, Guid etapaId) = await GravarEtapaComAsync(
             "Certame de troca", Banca(TipoBanca, "BANCA_A"), Banca(OutroTipoBanca, "BANCA_B"));
 
-        // Os códigos trocam de dono: o tipo que era A passa a responder por B e vice-versa.
         await RegravarAsync(
             processoId, etapaId, [Banca(TipoBanca, "BANCA_B"), Banca(OutroTipoBanca, "BANCA_A")],
-            "trocar os códigos de lugar é configuração legítima, e não pode depender de o banco aceitar duas linhas no mesmo slot do índice único durante a transação");
+            "trocar os códigos de lugar é configuração legítima");
 
         EtapaProcesso relida = await RelerAsync(etapaId);
         relida.Bancas.Select(b => (b.TipoBancaOrigemId, b.Codigo))
             .Should().BeEquivalentTo([(TipoBanca, "BANCA_B"), (OutroTipoBanca, "BANCA_A")]);
     }
 
-    private static BancaDaEtapa Banca(Guid tipo, string codigo) =>
-        BancaDaEtapa.Criar(tipo, codigo, "Banca de teste");
+    private static BancaDaEtapa Banca(Guid tipo, string codigo, Guid? idDaBancaQueSubstitui = null) =>
+        BancaDaEtapa.Criar(tipo, codigo, "Banca de teste", idDaBancaQueSubstitui: idDaBancaQueSubstitui);
 
     private static EtapaProcesso NovaEtapaDeTitulos() =>
         EtapaProcesso.Criar(
@@ -90,7 +119,7 @@ public sealed class EtapaBancaPersistenciaTests(ProcessoSeletivoDbFixture fixtur
         await using UniPlusDbContext escrita = fixture.CreateDbContext();
         ProcessoSeletivo processo = NovoProcesso(nome);
         EtapaProcesso etapa = NovaEtapaDeTitulos();
-        etapa.DefinirBancas(bancas).IsSuccess.Should().BeTrue();
+        etapa.DefinirBancas(bancas);
         processo.DefinirEtapas([etapa]).IsSuccess.Should().BeTrue();
         escrita.ProcessosSeletivos.Add(processo);
         await escrita.SaveChangesAsync();
@@ -103,7 +132,7 @@ public sealed class EtapaBancaPersistenciaTests(ProcessoSeletivoDbFixture fixtur
         ProcessoSeletivo tracked = await regravacao.ProcessosSeletivos
             .Include(p => p.Etapas).ThenInclude(e => e.Bancas)
             .FirstAsync(p => p.Id == processoId);
-        tracked.Etapas.Single(e => e.Id == etapaId).DefinirBancas(bancas).IsSuccess.Should().BeTrue();
+        tracked.Etapas.Single(e => e.Id == etapaId).DefinirBancas(bancas);
 
         Func<Task> gravar = async () => await regravacao.SaveChangesAsync();
 

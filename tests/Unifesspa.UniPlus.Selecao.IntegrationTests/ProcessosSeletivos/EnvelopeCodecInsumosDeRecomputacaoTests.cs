@@ -91,12 +91,11 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
             .IsSuccess.Should().BeTrue();
 
     /// <summary>
-    /// A banca da etapa é declarada pelo TIPO, não pela linha: regravar a etapa sem mudar nada
-    /// constrói uma banca nova, com id novo. Congelar esse id fazia o hash da publicação mudar
-    /// depois de um PUT que não mudou configuração alguma — e o hash é justamente o que prova
-    /// que a publicação continua sendo a mesma.
+    /// A banca da etapa congela o <c>id</c> e a posição dela no tipo. O cliente devolve o id que
+    /// leu: redeclarar a mesma configuração mantém a linha e o hash da publicação, mesmo com o
+    /// acento do código enviado em outra forma de normalização.
     /// </summary>
-    [Fact(DisplayName = "Redeclarar a mesma banca da etapa preserva a linha e os bytes canônicos")]
+    [Fact(DisplayName = "Redeclarar a mesma banca da etapa com o id lido preserva a linha e os bytes canônicos")]
     public void RedeclararAMesmaBancaDaEtapa_PreservaLinhaEBytes()
     {
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
@@ -106,10 +105,26 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
 
         RedeclararComOAcentoNaFormaComposta(objetiva);
 
-        ConferirQueOCodigoGuardadoEOOriginal(objetiva, idsOriginais);
         ConferirQueALinhaNaoGirouDeId(objetiva, idsOriginais);
         byte[] depois = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
         depois.Should().Equal(antes, "a mesma configuração de banca é a mesma publicação");
+    }
+
+    [Fact(DisplayName = "Redeclarar a banca da etapa sem o id lido recria a linha e muda os bytes canônicos")]
+    public void RedeclararABancaDaEtapaSemOId_RecriaALinhaEMudaOsBytes()
+    {
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        byte[] antes = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
+        EtapaProcesso objetiva = processo.Etapas.Single(e => e.Nome == "Prova Objetiva");
+        Dictionary<string, Guid> idsOriginais = IdsDasBancasPorCodigo(objetiva);
+
+        objetiva.DefinirBancas([.. objetiva.Bancas.Select(b =>
+            BancaDaEtapa.Criar(b.TipoBancaOrigemId, b.Codigo, b.Nome, b.RegraDeDeliberacao))]);
+
+        objetiva.Bancas.Select(b => b.Id).Should().NotIntersectWith(idsOriginais.Values,
+            "sem o id, a banca declarada é outra");
+        byte[] depois = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
+        depois.Should().NotEqual(antes, "o id da banca faz parte do conteúdo congelado");
     }
 
     private static Dictionary<string, Guid> IdsDasBancasPorCodigo(EtapaProcesso etapa)
@@ -120,36 +135,17 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
         return ids;
     }
 
-    // O cliente devolve a coleção inteira que leu, mas com o acento na forma COMPOSTA — é o
-    // que um navegador ou um sistema operacional que normaliza diferente do que gravou
-    // enviaria de volta. Devolver a cópia literal do que está guardado não provaria nada:
-    // decomposto contra decomposto casa até numa comparação ordinal, e uma regressão do
-    // reencontro para igualdade de bytes passaria batida. Com as formas trocadas, só casa
-    // quem normaliza — e quem não normalizar recria a linha, girando o id.
+    // O cliente devolve a coleção inteira que leu, com o id de cada banca, mas com o acento na
+    // forma COMPOSTA: é o que um navegador ou um sistema operacional que normaliza diferente do
+    // que foi gravado enviaria de volta.
     private static void RedeclararComOAcentoNaFormaComposta(EtapaProcesso etapa) =>
         etapa.DefinirBancas([.. etapa.Bancas.Select(b =>
-            BancaDaEtapa.Criar(b.TipoBancaOrigemId, b.Codigo.Normalize(NormalizationForm.FormC), b.Nome, b.RegraDeDeliberacao))])
-            .IsSuccess.Should().BeTrue();
+            BancaDaEtapa.Criar(
+                b.TipoBancaOrigemId, b.Codigo.Normalize(NormalizationForm.FormC), b.Nome, b.RegraDeDeliberacao, idDaBancaQueSubstitui: b.Id))]);
 
-    // O que fica guardado é o código da linha PRESERVADA — a forma decomposta original —, e
-    // não a composta que o cliente acabou de mandar. É o desfecho certo: reconciliar
-    // preserva a linha, e trocar o texto dela por um canonicamente equivalente seria uma
-    // escrita sem mudança de conteúdo. Afirmar isto é o que prende as duas metades: o
-    // reencontro aconteceu apesar das formas diferentes, e a linha não foi tocada.
-    private static void ConferirQueOCodigoGuardadoEOOriginal(EtapaProcesso etapa, Dictionary<string, Guid> idsOriginais) =>
-        etapa.Bancas.Select(b => b.Codigo).Should().BeEquivalentTo(idsOriginais.Keys,
-            "a redeclaração reencontrou as linhas existentes em vez de criar outras, e o texto "
-            + "delas é o que já estava guardado");
-
-    private static void ConferirQueALinhaNaoGirouDeId(EtapaProcesso etapa, Dictionary<string, Guid> idsOriginais)
-    {
-        foreach (BancaDaEtapa banca in etapa.Bancas)
-        {
-            banca.Id.Should().Be(idsOriginais[banca.Codigo],
-                "o código não mudou, e recriar a linha giraria o id — o que basta para o hash da "
-                + "publicação mudar depois de uma gravação que não mudou configuração alguma");
-        }
-    }
+    private static void ConferirQueALinhaNaoGirouDeId(EtapaProcesso etapa, Dictionary<string, Guid> idsOriginais) =>
+        etapa.Bancas.Select(b => b.Id).Should().BeEquivalentTo(idsOriginais.Values,
+            "o id lido identifica a banca: a redeclaração mantém a linha em vez de criar outra");
 
     // ── Golden fixture RICA: o decoder é ancorado num artefato congelado ──
 

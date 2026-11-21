@@ -27,6 +27,7 @@ public sealed class BancaRequeridaConfiguration : IEntityTypeConfiguration<Banca
         builder.Property(b => b.TipoBancaOrigemId).IsRequired();
         builder.Property(b => b.Codigo).HasMaxLength(CodigoMaxLength).IsRequired();
         builder.Property(b => b.Nome).HasMaxLength(NomeMaxLength).IsRequired();
+        builder.Property(b => b.PosicaoNoTipo).IsRequired();
         builder.OwnsOne(b => b.RegraDeDeliberacao, regra => regra.ConfigurarRegraDeDeliberacao());
 
         builder.HasMany(b => b.CandidatosAtendidos)

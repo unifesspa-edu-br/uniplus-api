@@ -73,12 +73,11 @@ public sealed class DefinirEtapasTiposDeDecisaoTests
     private static ProcedimentoDeRecursoInput ProcedimentoDaClassificacao(string regra = RegraProcedimentoRecursoCodigo.Recalculo) =>
         new(Classificacao, null, regra, "v1");
 
-    private static EtapaProcessoInput EtapaComJanelaInvertidaEBancaRepetida() =>
+    private static EtapaProcessoInput EtapaComJanelaInvertidaETipoInvalido() =>
         Etapa(1, tipos: [TipoForaDoVocabulario]) with
         {
             Inicio = Inicio,
             Fim = FimAntesDoInicio,
-            Bancas = [new BancaDaEtapaInput(TipoBancaId), new BancaDaEtapaInput(TipoBancaId)],
         };
 
     private static ITipoAtoPublicadoReader CatalogoComOAtoDaClassificacao()
@@ -176,17 +175,16 @@ public sealed class DefinirEtapasTiposDeDecisaoTests
             ("etapas[2].tiposDeDecisao[2]", MotivoDeDecisaoErrorCodes.TipoDeDecisaoDuplicado));
     }
 
-    [Fact(DisplayName = "Etapa com tipo inválido, janela invertida e banca repetida devolve as três recusas, na ordem da declaração")]
-    public async Task Handle_TipoInvalidoJanelaInvertidaEBancaRepetida_RecusaAsTres()
+    [Fact(DisplayName = "Etapa com tipo inválido e janela invertida devolve as duas recusas, na ordem da declaração")]
+    public async Task Handle_TipoInvalidoEJanelaInvertida_RecusaAsDuas()
     {
         ProcessoSeletivo processo = ProcessoSemEtapas();
 
-        Result resultado = await ExecutarComOsCadastros(processo, EtapaComJanelaInvertidaEBancaRepetida());
+        Result resultado = await ExecutarComOsCadastros(processo, EtapaComJanelaInvertidaETipoInvalido());
 
         Recusas(resultado).Should().Equal(
             ("etapas[0].fim", "EtapaProcesso.JanelaInvertida"),
-            ("etapas[0].tiposDeDecisao[0]", MotivoDeDecisaoErrorCodes.TipoInvalido),
-            ("etapas[0].bancas", "EtapaProcesso.BancaDuplicadaNaEtapa"));
+            ("etapas[0].tiposDeDecisao[0]", MotivoDeDecisaoErrorCodes.TipoInvalido));
         resultado.Error!.Code.Should().Be("EtapaProcesso.JanelaInvertida");
     }
 

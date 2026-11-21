@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
@@ -272,8 +273,8 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
     /// <remarks>
     /// Recriar a fase trocaria o <c>Id</c> e o <c>CreatedAt</c> de uma fase que nunca deixou de existir, e
     /// derrubaria as referências por Id (documentos exigidos, referência temporal de fatos). Os produtos
-    /// seguem o mesmo cuidado, reconciliados pelo par ato e papel (<see cref="ProdutosPublicados"/>). Banca
-    /// e candidatos atendidos não precisam: a chave do índice das categorias inclui o id da banca, que sempre chega nova.
+    /// seguem o mesmo cuidado, reconciliados pelo par ato e papel (<see cref="ProdutosPublicados"/>), e as bancas pelo id
+    /// (<see cref="ReconciliacaoDasBancas"/>).
     /// </remarks>
     internal void AtualizarDe(FaseCronograma origem, IReadOnlyList<ProdutoDaFase> produtos)
     {
@@ -357,5 +358,5 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
         FilhasDoAgregado.Substituir(_produtos, produtos, produto => produto.VincularFase(Id));
 
     private void AdotarBancasRequeridas(IEnumerable<BancaRequerida> bancasRequeridas) =>
-        FilhasDoAgregado.Substituir(_bancasRequeridas, bancasRequeridas, banca => banca.VincularFase(Id));
+        FilhasDoAgregado.Substituir(_bancasRequeridas, ReconciliacaoDasBancas.Reconciliar(_bancasRequeridas, bancasRequeridas), banca => banca.VincularFase(Id));
 }

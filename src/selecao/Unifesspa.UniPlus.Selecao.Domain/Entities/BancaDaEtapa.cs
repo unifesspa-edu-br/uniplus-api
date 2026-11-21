@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -14,9 +15,18 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// julga a de laudo — duas bancas distintas dentro da mesma fase, que um vínculo no nível
 /// da fase não separa.
 /// </remarks>
-public sealed class BancaDaEtapa : EntityBase
+public sealed class BancaDaEtapa : EntityBase, IBancaDoLugar<BancaDaEtapa>
 {
     public Guid EtapaProcessoId { get; private set; }
+
+    /// <summary>
+    /// A posição da banca entre as do mesmo tipo na etapa, a partir de 1, na ordem em que a etapa as recebeu. Junto do código
+    /// do tipo, é única na etapa e é o que ordena as bancas.
+    /// </summary>
+    public int PosicaoNoTipo { get; private set; }
+
+    /// <summary>O id da banca já gravada que esta declaração substitui; ausente quando a banca é nova.</summary>
+    private Guid? IdDaBancaQueSubstitui { get; init; }
 
     /// <summary>Id do <c>TipoBanca</c> vivo de origem, no momento do congelamento.</summary>
     public Guid TipoBancaOrigemId { get; private set; }
@@ -33,23 +43,32 @@ public sealed class BancaDaEtapa : EntityBase
     private BancaDaEtapa() { }
 
     public static BancaDaEtapa Criar(
-        Guid tipoBancaOrigemId, string codigo, string nome, RegraDeDeliberacao? regraDeDeliberacao = null) =>
-        Montar(Guid.CreateVersion7(), tipoBancaOrigemId, codigo, nome, regraDeDeliberacao);
+        Guid tipoBancaOrigemId,
+        string codigo,
+        string nome,
+        RegraDeDeliberacao? regraDeDeliberacao = null,
+        Guid? idDaBancaQueSubstitui = null) =>
+        Montar(Guid.CreateVersion7(), tipoBancaOrigemId, codigo, nome, regraDeDeliberacao, idDaBancaQueSubstitui);
 
-    /// <summary>Reidrata a banca preservando o <see cref="EntityBase.Id"/> congelado.</summary>
-    public static BancaDaEtapa Reidratar(
+    /// <summary>Reconstrói a banca dos dados salvos no envelope, preservando o <see cref="EntityBase.Id"/> congelado.</summary>
+    public static BancaDaEtapa ReconstruirDosDadosSalvos(
         Guid id, Guid tipoBancaOrigemId, string codigo, string nome, RegraDeDeliberacao? regraDeDeliberacao = null)
     {
         if (id == Guid.Empty)
         {
-            throw new ArgumentException("A banca reidratada deve declarar o Id congelado no envelope.", nameof(id));
+            throw new ArgumentException("A banca reconstruída deve declarar o Id congelado no envelope.", nameof(id));
         }
 
-        return Montar(id, tipoBancaOrigemId, codigo, nome, regraDeDeliberacao);
+        return Montar(id, tipoBancaOrigemId, codigo, nome, regraDeDeliberacao, id);
     }
 
     private static BancaDaEtapa Montar(
-        Guid id, Guid tipoBancaOrigemId, string codigo, string nome, RegraDeDeliberacao? regraDeDeliberacao)
+        Guid id,
+        Guid tipoBancaOrigemId,
+        string codigo,
+        string nome,
+        RegraDeDeliberacao? regraDeDeliberacao,
+        Guid? idDaBancaQueSubstitui)
     {
         (string codigoAparado, string nomeAparado) = OrigemDaBanca.Exigir(tipoBancaOrigemId, codigo, nome);
 
@@ -60,22 +79,28 @@ public sealed class BancaDaEtapa : EntityBase
             Codigo = codigoAparado,
             Nome = nomeAparado,
             RegraDeDeliberacao = regraDeDeliberacao,
+            IdDaBancaQueSubstitui = idDaBancaQueSubstitui,
         };
     }
 
     /// <summary>
-    /// Assume a declaração que substitui esta linha, preservando o <see cref="EntityBase.Id"/>: a etapa
-    /// reaproveita a linha de mesmo código, porque o código é a chave do índice único da etapa e sair e
-    /// voltar sob ele colidiria dentro da própria transação.
+    /// Assume a declaração que substitui esta banca, preservando o <see cref="EntityBase.Id"/>: a banca que continua
+    /// declarada continua sendo a mesma linha, e é a posição no tipo que a ordena.
     /// </summary>
-    internal void AssumirDeclaracao(BancaDaEtapa declarada)
+    void IBancaDoLugar<BancaDaEtapa>.AssumirDeclaracao(BancaDaEtapa declarada)
     {
         ArgumentNullException.ThrowIfNull(declarada);
 
         TipoBancaOrigemId = declarada.TipoBancaOrigemId;
+        Codigo = declarada.Codigo;
         Nome = declarada.Nome;
         RegraDeDeliberacao = declarada.RegraDeDeliberacao;
+        PosicaoNoTipo = declarada.PosicaoNoTipo;
     }
 
+    void IBancaDoLugar<BancaDaEtapa>.PosicionarNoTipo(int posicaoNoTipo) => PosicaoNoTipo = posicaoNoTipo;
+
     internal void VincularEtapa(Guid etapaProcessoId) => EtapaProcessoId = etapaProcessoId;
+
+    Guid? IBancaDoLugar<BancaDaEtapa>.IdDaBancaQueSubstitui => IdDaBancaQueSubstitui;
 }

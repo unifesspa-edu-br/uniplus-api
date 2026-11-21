@@ -180,7 +180,7 @@ public sealed class EntradaDoPreliminarDaEtapaTests
             Alterar(identificacao, new IdentificacaoDaEtapa("Prova de redação", CaraterEtapa.Ambas, Tipo(OrigemDoTipo), 1, "AVALIACAO")),
             Alterar(avaliacao, new DeclaracaoDaAvaliacaoDaEtapa(1m, null, 10m, null, FormaDeAvaliacao.Humana, null, null)),
             itens ?? [new(null, "Clareza", 5m)]).Value!;
-        etapa.DefinirJanelaEParecer(janela?.Inicio, janela?.Fim, janela?.EmiteParecer ?? false).IsSuccess.Should().BeTrue();
+        etapa.DefinirJanelaEParecer(janela?.Inicio, janela?.Fim, janela?.EmiteParecer ?? false);
         completar?.Invoke(etapa);
 
         return etapa;

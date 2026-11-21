@@ -73,6 +73,51 @@ public sealed class FaseCronogramaAtualizacaoTests
         viva.Produtos.Should().ContainSingle().Which.Id.Should().Be(idDefinitivo);
     }
 
+    // ── AtualizarDe: reconciliação das bancas pelo id ──
+
+    [Fact(DisplayName = "A banca devolvida com o id dela mantém a linha viva, leva a ela o que mudou e continua com a identidade")]
+    public void AtualizarDe_BancaComOIdDaViva_MantemALinhaViva()
+    {
+        FaseCronograma viva = Fase(new() { Bancas = [Banca("BANCA_ANALISE_DOCUMENTAL", "RENDA")] });
+        BancaRequerida linhaViva = viva.BancasRequeridas.Single();
+        Guid novaOrigem = Guid.CreateVersion7();
+        BancaRequerida declarada = BancaQueSubstitui(linhaViva.Id, novaOrigem, "BANCA_HETEROIDENTIFICACAO", "PPI");
+
+        Atualizar(viva, Fase(new() { Bancas = [declarada] }));
+
+        BancaRequerida banca = viva.BancasRequeridas.Should().ContainSingle().Subject;
+        banca.Should().BeSameAs(linhaViva);
+        banca.Codigo.Should().Be("BANCA_HETEROIDENTIFICACAO");
+        banca.TipoBancaOrigemId.Should().Be(novaOrigem);
+        banca.CandidatosAtendidos.Select(static c => c.Codigo).Should().Equal("PPI");
+        banca.FaseCronogramaId.Should().Be(viva.Id);
+    }
+
+    [Fact(DisplayName = "A banca devolvida sem o id dela é criada de novo, e a viva sai")]
+    public void AtualizarDe_BancaSemId_RecriaABanca()
+    {
+        FaseCronograma viva = Fase(new() { Bancas = [Banca("BANCA_ANALISE_DOCUMENTAL", "RENDA")] });
+        Guid idDaViva = viva.BancasRequeridas.Single().Id;
+
+        Atualizar(viva, Fase(new() { Bancas = [Banca("BANCA_ANALISE_DOCUMENTAL", "RENDA")] }));
+
+        viva.BancasRequeridas.Single().Id.Should().NotBe(idDaViva);
+    }
+
+    [Fact(DisplayName = "Reordenar duas bancas do mesmo tipo troca as posições e mantém o id de cada uma")]
+    public void AtualizarDe_BancasDoMesmoTipoReordenadas_TrocamDePosicao()
+    {
+        FaseCronograma viva = Fase(new() { Bancas = [Banca("BANCA_ANALISE_DOCUMENTAL", "RENDA"), Banca("BANCA_ANALISE_DOCUMENTAL", "PCD")] });
+        BancaRequerida renda = viva.BancasRequeridas.Single(static b => b.CandidatosAtendidos.Single().Codigo == "RENDA");
+        BancaRequerida pcd = viva.BancasRequeridas.Single(static b => b.CandidatosAtendidos.Single().Codigo == "PCD");
+
+        Atualizar(viva, Fase(new() { Bancas = [NoLugarDe(pcd), NoLugarDe(renda)] }));
+
+        pcd.PosicaoNoTipo.Should().Be(1);
+        renda.PosicaoNoTipo.Should().Be(2);
+        viva.BancasRequeridas.Should().BeEquivalentTo([pcd, renda]);
+    }
+
     // ── AtualizarDe: âncora do recurso ──
 
     [Fact(DisplayName = "A âncora do recurso é reapontada para a linha viva que casou pelo par ato e papel")]

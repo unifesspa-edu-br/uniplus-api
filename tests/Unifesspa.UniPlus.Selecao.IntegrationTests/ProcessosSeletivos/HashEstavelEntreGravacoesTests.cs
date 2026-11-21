@@ -42,8 +42,8 @@ public sealed class HashEstavelEntreGravacoesTests
         ProcessoSeletivo processo = ProcessoComEtapaCompleta();
         byte[] antes = Canonicalizar(processo);
 
-        // O cliente devolve exatamente o que leu — é o que o editor faz ao salvar um passo sem
-        // ter tocado neste. Instâncias novas, mesmo conteúdo.
+        // O cliente devolve exatamente o que leu, inclusive o id da banca — é o que o editor faz
+        // ao salvar um passo sem ter tocado neste. Instâncias novas, mesmo conteúdo.
         RedeclararEtapaIdentica(processo);
         byte[] depois = Canonicalizar(processo);
 
@@ -122,8 +122,7 @@ public sealed class HashEstavelEntreGravacoesTests
         EtapaProcesso etapa = processo.Etapas.Single();
 
         etapa.DefinirProdutos(ProdutosDaEtapaCompleta()).IsSuccess.Should().BeTrue();
-        etapa.DefinirBancas([BancaDaEtapa.Criar(TipoBancaOrigem, "BANCA_TECNICA", "Banca de teste")])
-            .IsSuccess.Should().BeTrue();
+        etapa.DefinirBancas([BancaDaEtapa.Criar(TipoBancaOrigem, "BANCA_TECNICA", "Banca de teste", idDaBancaQueSubstitui: etapa.Bancas.SingleOrDefault()?.Id)]);
         etapa.DefinirRecursos(JanelasEmOrdemInversaDoDocumento(etapa)).IsSuccess.Should().BeTrue();
     }
 

@@ -57,6 +57,15 @@ internal static class FaseDeTesteDaAtualizacao
             Guid.CreateVersion7(), codigo, "Banca de teste",
             [.. categorias.Select(static c => CategoriaJulgada.Criar(Guid.CreateVersion7(), c))]);
 
+    internal static BancaRequerida NoLugarDe(BancaRequerida viva) =>
+        BancaQueSubstitui(viva.Id, Guid.CreateVersion7(), viva.Codigo, [.. viva.CandidatosAtendidos.Select(static c => c.Codigo)]);
+
+    internal static BancaRequerida BancaQueSubstitui(Guid idDaViva, Guid origemDoTipo, string codigo, params string[] categorias) =>
+        BancaRequerida.Criar(
+            origemDoTipo, codigo, "Banca de teste",
+            [.. categorias.Select(static c => CategoriaJulgada.Criar(Guid.CreateVersion7(), c))],
+            idDaBancaQueSubstitui: idDaViva);
+
     internal static ProdutoDaFase Preliminar(string ato) => ProdutoDaFase.Criar(ato, PapelProdutoFase.Preliminar);
 
     internal static ProdutoDaFase Definitivo(string ato) => ProdutoDaFase.Criar(ato, PapelProdutoFase.Definitivo);

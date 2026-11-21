@@ -101,7 +101,7 @@ internal sealed record ModeloDeEtapa(string Nome)
             : throw new InvalidOperationException($"O modelo de etapa declara o que a etapa recusa: {string.Join(", ", criada.Errors.Select(static e => e.Error.Code))}.");
         Aceitar(etapa.DefinirJanelaEParecer(Inicio, Fim, EmiteParecerIndividual));
         Aceitar(etapa.DefinirProdutos(Produtos));
-        Aceitar(etapa.DefinirBancas(Bancas));
+        etapa.DefinirBancas(Bancas);
         Aceitar(etapa.DefinirRecursos(Recursos));
         Aceitar(etapa.DefinirTiposDeDecisao(TiposDeDecisao));
 

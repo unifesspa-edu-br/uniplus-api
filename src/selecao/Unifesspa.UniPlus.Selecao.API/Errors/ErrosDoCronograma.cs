@@ -102,7 +102,6 @@ internal static class ErrosDoCronograma
     /// </summary>
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> DeclaracaoDaEtapa() =>
     [
-        new("EtapaProcesso.BancaDuplicadaNaEtapa", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.banca_duplicada_na_etapa", "O mesmo tipo de banca foi requerido duas vezes na etapa")),
         new("EtapaProcesso.JanelaInvertida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.janela_invertida", "A data de término do período da etapa é anterior à data de início")),
         new("EtapaProcesso.TipoBancaNaoEncontradoOuInativo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.tipo_banca_nao_encontrado_ou_inativo", "O tipo de banca não existe ou está inativo no cadastro")),
         new("EtapaProcesso.AtoDuplicadoNaEtapa", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.ato_duplicado_na_etapa", "A etapa declara o mesmo tipo de ato com o mesmo papel mais de uma vez")),
