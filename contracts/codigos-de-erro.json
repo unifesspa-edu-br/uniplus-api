@@ -782,16 +782,6 @@
       "titulo": "Outra versão foi publicada antes"
     },
     {
-      "codigo": "uniplus.cep.invalido",
-      "status": 422,
-      "titulo": "CEP inválido"
-    },
-    {
-      "codigo": "uniplus.cep.vazio",
-      "status": 422,
-      "titulo": "CEP obrigatório"
-    },
-    {
       "codigo": "uniplus.cidade_referencia.codigo_ibge_formato_invalido",
       "status": 422,
       "titulo": "Código IBGE da cidade em formato inválido"
@@ -3547,16 +3537,6 @@
       "titulo": "Os municípios da UF citam um campo de UF do Geo"
     },
     {
-      "codigo": "uniplus.nome_pessoa.invalido",
-      "status": 422,
-      "titulo": "Nome inválido"
-    },
-    {
-      "codigo": "uniplus.nome_pessoa.vazio",
-      "status": 422,
-      "titulo": "Nome obrigatório"
-    },
-    {
       "codigo": "uniplus.nome_social.nome_civil_vazio",
       "status": 422,
       "titulo": "Nome civil obrigatório"
@@ -4762,11 +4742,6 @@
       "titulo": "A ampla concorrência resultaria negativa — ajuste as vagas ofertadas base, o percentual da reserva legal ou as retiradas"
     },
     {
-      "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.quadro_chave_colide",
-      "status": 422,
-      "titulo": "Uma retirada ou suplemento não pode usar o código de uma sub-reserva federal ou da ampla concorrência"
-    },
-    {
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.quadro_excede_as_vagas_ofertadas_base",
       "status": 422,
       "titulo": "Quadro de vagas acima do total da oferta"
@@ -5205,11 +5180,6 @@
       "codigo": "uniplus.selecao.documento_da_configuracao.campo_obrigatorio_ausente",
       "status": 422,
       "titulo": "O documento não traz um campo que o formato exige"
-    },
-    {
-      "codigo": "uniplus.selecao.documento_da_configuracao.chave_citada_inexistente",
-      "status": 422,
-      "titulo": "Uma parte do documento cita uma chave que nenhuma parte do tipo citado tem"
     },
     {
       "codigo": "uniplus.selecao.documento_da_configuracao.chave_repetida",
@@ -6552,11 +6522,6 @@
       "titulo": "dataReferencia é obrigatória quando chaveDistincao é COMPETENCIA_MENSAL ou EXERCICIO_ANUAL"
     },
     {
-      "codigo": "uniplus.selecao.no_exigencia.documento_obrigatorio_em_folha",
-      "status": 422,
-      "titulo": "Um nó do tipo FOLHA precisa declarar 'documento'"
-    },
-    {
       "codigo": "uniplus.selecao.no_exigencia.grupo_com_fases_diferentes",
       "status": 422,
       "titulo": "Todos os nós de um grupo precisam pertencer à mesma fase do cronograma"
@@ -6597,11 +6562,6 @@
       "titulo": "ocorrenciasEsperadas, quando presente, não pode ser vazia"
     },
     {
-      "codigo": "uniplus.selecao.no_exigencia.ordem_invalida",
-      "status": 422,
-      "titulo": "A ordem do nó não pode ser negativa"
-    },
-    {
       "codigo": "uniplus.selecao.no_exigencia.quantidade_minima_de_folha_invalida",
       "status": 422,
       "titulo": "A quantidade mínima de apresentações deve estar entre 1 e 366"
@@ -6635,11 +6595,6 @@
       "codigo": "uniplus.selecao.no_exigencia.tipo_entidade_invalido",
       "status": 422,
       "titulo": "repetePorEntidade não nomeia grupo repetível dos formulários do processo"
-    },
-    {
-      "codigo": "uniplus.selecao.no_exigencia.tipo_invalido",
-      "status": 422,
-      "titulo": "Tipo de nó inválido — esperado FOLHA, E ou OU"
     },
     {
       "codigo": "uniplus.selecao.no_exigencia_base_legal.abrangencia_obrigatoria",
@@ -6825,11 +6780,6 @@
       "codigo": "uniplus.selecao.obrigatoriedade_legal.tipo_etapa_nao_encontrado_ou_inativo",
       "status": 422,
       "titulo": "Tipo de etapa não encontrado ou não está ativo"
-    },
-    {
-      "codigo": "uniplus.selecao.obrigatoriedade_legal.tipo_processo_codigo_fora_do_vocabulario",
-      "status": 422,
-      "titulo": "TipoProcessoCodigo fora do vocabulário"
     },
     {
       "codigo": "uniplus.selecao.obrigatoriedade_legal.tipo_processo_codigo_invalido",
@@ -7150,11 +7100,6 @@
       "codigo": "uniplus.selecao.processo_seletivo.etapa_termina_depois_da_fase",
       "status": 422,
       "titulo": "A etapa termina depois da fase que a abriga"
-    },
-    {
-      "codigo": "uniplus.selecao.processo_seletivo.etapas_vazias",
-      "status": 422,
-      "titulo": "O processo deve ter ao menos uma etapa pontuada"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.exigencia_menos_protegida_que_fato_comprovado",
@@ -8025,16 +7970,6 @@
       "codigo": "uniplus.selecao.versao_configuracao.vigencia_regressiva",
       "status": 422,
       "titulo": "A vigência de uma versão não pode preceder a da versão anterior"
-    },
-    {
-      "codigo": "uniplus.telefone.invalido",
-      "status": 422,
-      "titulo": "Telefone inválido"
-    },
-    {
-      "codigo": "uniplus.telefone.vazio",
-      "status": 422,
-      "titulo": "Telefone obrigatório"
     },
     {
       "codigo": "uniplus.termo_formulario.codigo_duplicado",
