@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Recursos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -49,7 +49,7 @@ internal static class ColunaDosProcedimentosDeRecurso
         ProcedimentosDeRecurso.De((JsonSerializer.Deserialize<List<ProcedimentoPersistido>>(documento, Opcoes) ?? []).Select(Declarado));
 
     private static ProcedimentoPersistido Persistido(ProcedimentoDeRecursoDeclarado procedimento) => new(
-        procedimento.TipoDeDecisao.ToCodigo(),
+        procedimento.TipoDeDecisao,
         procedimento.Alvo is null ? null : (int)procedimento.Alvo.Tipo,
         procedimento.Alvo?.Valor,
         procedimento.Regra.Codigo,
@@ -57,7 +57,7 @@ internal static class ColunaDosProcedimentosDeRecurso
         procedimento.Regra.Hash);
 
     private static ProcedimentoDeRecursoDeclarado Declarado(ProcedimentoPersistido persistido) => ProcedimentoDeRecursoDeclarado.De(
-        TipoMotivoDeDecisaoCodigo.FromCodigo(persistido.TipoDeDecisao),
+        persistido.TipoDeDecisao,
         Alvo(persistido),
         ReferenciaRegra.De(persistido.RegraCodigo, persistido.RegraVersao, persistido.RegraHash));
 
@@ -69,5 +69,5 @@ internal static class ColunaDosProcedimentosDeRecurso
     };
 
     private sealed record ProcedimentoPersistido(
-        string TipoDeDecisao, int? AlvoTipo, string? AlvoValor, string RegraCodigo, string RegraVersao, string RegraHash);
+        TipoMotivoDeDecisao TipoDeDecisao, int? AlvoTipo, string? AlvoValor, string RegraCodigo, string RegraVersao, string RegraHash);
 }

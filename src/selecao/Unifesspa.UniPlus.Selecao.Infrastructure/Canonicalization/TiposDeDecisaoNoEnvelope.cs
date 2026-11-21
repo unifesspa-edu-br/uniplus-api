@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 using System.Text.Json.Nodes;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 
 /// <summary>
@@ -11,8 +13,8 @@ using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 /// </summary>
 internal static class TiposDeDecisaoNoEnvelope
 {
-    internal static JsonArray Serializar(IReadOnlyList<string> tipos) =>
-        new([.. tipos.Order(StringComparer.Ordinal).Select(static tipo => (JsonNode)tipo)]);
+    internal static JsonArray Serializar(IReadOnlyList<TipoMotivoDeDecisao> tipos) =>
+        new([.. tipos.Select(static tipo => tipo.Codigo()).Order(StringComparer.Ordinal).Select(static codigo => (JsonNode)codigo)]);
 
     /// <summary>
     /// Lê os tipos como o envelope os escreve: do vocabulário, sem repetição e em ordem. A forma que a escrita
@@ -21,7 +23,7 @@ internal static class TiposDeDecisaoNoEnvelope
     internal static IReadOnlyList<string> Ler(LeitorEnvelope leitor, JsonObject lugar, string pathDoLugar)
     {
         IReadOnlyList<string> lidos = leitor.Textos(lugar, TiposDeDecisaoDeclarados.Campo, pathDoLugar);
-        if (leitor.Falhou || lidos.SequenceEqual(TiposDeDecisaoDeclarados.Canonicos(lidos), StringComparer.Ordinal))
+        if (leitor.Falhou || lidos.SequenceEqual(TiposDeDecisaoDeclarados.Canonicos(lidos).Select(static tipo => tipo.Codigo()), StringComparer.Ordinal))
         {
             return lidos;
         }

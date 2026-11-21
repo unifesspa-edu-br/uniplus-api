@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
@@ -28,7 +29,7 @@ public sealed class ProcedimentosDeRecurso
 
     /// <summary>A ordem canônica dos procedimentos, a mesma que a coleção guarda; quem liga cada um à posição em que veio no documento a usa.</summary>
     internal static IOrderedEnumerable<ProcedimentoDeRecursoDeclarado> NaOrdemCanonica(IEnumerable<ProcedimentoDeRecursoDeclarado> declarados) => declarados
-        .OrderBy(static p => p.TipoDeDecisao.ToCodigo(), StringComparer.Ordinal)
+        .OrderBy(static p => p.TipoDeDecisao.Codigo(), StringComparer.Ordinal)
         .ThenBy(static p => p.Alvo is null ? 0 : (int)p.Alvo.Tipo)
         .ThenBy(static p => p.Alvo?.Valor, StringComparer.Ordinal);
 

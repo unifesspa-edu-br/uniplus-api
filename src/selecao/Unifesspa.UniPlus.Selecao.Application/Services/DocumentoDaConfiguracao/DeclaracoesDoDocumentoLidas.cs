@@ -3,6 +3,8 @@ namespace Unifesspa.UniPlus.Selecao.Application.Services.DocumentoDaConfiguracao
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.LeituraDoDocumento;
@@ -97,9 +99,12 @@ internal static class DeclaracoesDoDocumentoLidas
 
     private static ProcedimentoNoDocumento Procedimento(int posicao, JsonObject procedimento) => new(
         posicao,
-        TipoMotivoDeDecisaoCodigo.FromCodigo(Texto(procedimento, "tipoDeDecisao")),
+        TipoDeDecisao(Texto(procedimento, "tipoDeDecisao")),
         Alvo(Objeto(procedimento, "alvo")),
         Referencia(Objeto(procedimento, "regra")) ?? new ReferenciaDeRegraNoDocumento(null, null));
+
+    private static TipoMotivoDeDecisao? TipoDeDecisao(string? codigo) =>
+        CatalogoDe<TipoMotivoDeDecisao>.TentarObter(codigo, out TipoMotivoDeDecisao tipo) ? tipo : null;
 
     private static AlvoNoDocumento? Alvo(JsonObject? alvo) =>
         alvo is null ? null : new(Texto(alvo, "itemDeAvaliacaoChave"), Texto(alvo, "areaDoEnem"));

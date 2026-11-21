@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -18,9 +19,9 @@ using Xunit;
 /// </summary>
 public sealed class EtapaProcessoTiposDeDecisaoTests
 {
-    private const string Classificacao = TipoMotivoDeDecisaoCodigo.Classificacao;
-    private const string Isencao = TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa;
-    private const string Heteroidentificacao = TipoMotivoDeDecisaoCodigo.Heteroidentificacao;
+    private const string Classificacao = "CLASSIFICACAO";
+    private const string Isencao = "ISENCAO_DA_TAXA";
+    private const string Heteroidentificacao = "HETEROIDENTIFICACAO";
 
     private static IdentificacaoDaEtapa Identificacao() => new(
         Nome: "Prova Objetiva",
@@ -74,7 +75,7 @@ public sealed class EtapaProcessoTiposDeDecisaoTests
     {
         EtapaProcesso etapa = EtapaCom(Isencao, Classificacao, Heteroidentificacao);
 
-        etapa.TiposDeDecisao.Should().Equal(Classificacao, Heteroidentificacao, Isencao);
+        etapa.TiposDeDecisao.Should().Equal(TipoMotivoDeDecisao.Classificacao, TipoMotivoDeDecisao.Heteroidentificacao, TipoMotivoDeDecisao.IsencaoDaTaxa);
     }
 
     [Fact(DisplayName = "Tipos inválidos e repetidos acumulam na recusa, por posição de entrada")]
@@ -95,7 +96,7 @@ public sealed class EtapaProcessoTiposDeDecisaoTests
 
         etapa.DefinirTiposDeDecisao([Isencao, "RECURSO_DA_BANCA"]).IsFailure.Should().BeTrue();
 
-        etapa.TiposDeDecisao.Should().Equal(Classificacao);
+        etapa.TiposDeDecisao.Should().Equal(TipoMotivoDeDecisao.Classificacao);
     }
 
     [Fact(DisplayName = "A etapa guarda cópia: alterar a lista de entrada depois não muda a declaração")]
@@ -108,7 +109,7 @@ public sealed class EtapaProcessoTiposDeDecisaoTests
         entrada.Add(Isencao);
         entrada[0] = Heteroidentificacao;
 
-        etapa.TiposDeDecisao.Should().Equal(Classificacao);
+        etapa.TiposDeDecisao.Should().Equal(TipoMotivoDeDecisao.Classificacao);
     }
 
     [Fact(DisplayName = "A lista devolvida pela etapa não é alterável nem por conversão de tipo")]
@@ -116,12 +117,12 @@ public sealed class EtapaProcessoTiposDeDecisaoTests
     {
         EtapaProcesso etapa = EtapaCom(Classificacao);
 
-        etapa.TiposDeDecisao.Should().NotBeAssignableTo<List<string>>();
-        IList<string> comoLista = etapa.TiposDeDecisao.Should().BeAssignableTo<IList<string>>().Subject;
+        etapa.TiposDeDecisao.Should().NotBeAssignableTo<List<TipoMotivoDeDecisao>>();
+        IList<TipoMotivoDeDecisao> comoLista = etapa.TiposDeDecisao.Should().BeAssignableTo<IList<TipoMotivoDeDecisao>>().Subject;
         comoLista.IsReadOnly.Should().BeTrue();
-        Action alterar = () => comoLista.Add(Isencao);
+        Action alterar = () => comoLista.Add(TipoMotivoDeDecisao.IsencaoDaTaxa);
         alterar.Should().Throw<NotSupportedException>();
-        etapa.TiposDeDecisao.Should().Equal(Classificacao);
+        etapa.TiposDeDecisao.Should().Equal(TipoMotivoDeDecisao.Classificacao);
     }
 
     [Fact(DisplayName = "Fase e etapa podem declarar o mesmo tipo, cada uma com o que é seu")]
@@ -136,7 +137,7 @@ public sealed class EtapaProcessoTiposDeDecisaoTests
             []).Value!;
         EtapaProcesso etapa = EtapaCom(Classificacao);
 
-        fase.TiposDeDecisao.Should().Equal(Classificacao);
-        etapa.TiposDeDecisao.Should().Equal(Classificacao);
+        fase.TiposDeDecisao.Should().Equal(TipoMotivoDeDecisao.Classificacao);
+        etapa.TiposDeDecisao.Should().Equal(TipoMotivoDeDecisao.Classificacao);
     }
 }

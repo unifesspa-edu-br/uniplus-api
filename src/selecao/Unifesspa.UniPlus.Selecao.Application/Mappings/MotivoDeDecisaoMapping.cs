@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Mappings;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -13,7 +14,7 @@ public static class MotivoDeDecisaoMapping
 
         return new MotivoDeDecisaoDto(
             motivo.Id,
-            motivo.Tipo.ToCodigo(),
+            motivo.Tipo.Codigo(),
             motivo.Codigo.Valor,
             motivo.Descricao,
             motivo.Subclassificacao,
@@ -28,7 +29,7 @@ public static class MotivoDeDecisaoMapping
         return new MotivoDoProcessoDto(
             motivo.MotivoDeDecisaoOrigemId,
             new LugarDoMotivoDto(motivo.Lugar.FaseCanonicaOrigemId, motivo.Lugar.EtapaProcessoId),
-            motivo.Tipo.ToCodigo(),
+            motivo.Tipo.Codigo(),
             motivo.Codigo.Valor,
             motivo.Descricao,
             motivo.Subclassificacao,

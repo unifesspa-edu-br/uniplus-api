@@ -2,7 +2,9 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Retifica
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Retificacao;
@@ -24,7 +26,7 @@ public sealed class ConferenciaDoCicloNovoPelosTiposDeDecisaoTests
     public void TiposDaPropriaFase_ExigemDeclararOCiclo()
     {
         FaseCronograma[] publicadas = Cronograma(out ProdutoDaFase preliminar);
-        FaseCronograma[] novas = [publicadas[0], ComTiposDeDecisao(publicadas[1], TipoMotivoDeDecisaoCodigo.Classificacao)];
+        FaseCronograma[] novas = [publicadas[0], ComTiposDeDecisao(publicadas[1], TipoMotivoDeDecisao.Classificacao.Codigo())];
 
         ResultadoDoCicloNovo resultado = Conferir(publicadas, novas, Item(publicadas[1], preliminar));
 
@@ -35,7 +37,7 @@ public sealed class ConferenciaDoCicloNovoPelosTiposDeDecisaoTests
     public void TiposDeFaseAnterior_ExigemDeclararOCiclo()
     {
         FaseCronograma[] publicadas = Cronograma(out ProdutoDaFase preliminar);
-        FaseCronograma[] novas = [ComTiposDeDecisao(publicadas[0], TipoMotivoDeDecisaoCodigo.Classificacao), publicadas[1]];
+        FaseCronograma[] novas = [ComTiposDeDecisao(publicadas[0], TipoMotivoDeDecisao.Classificacao.Codigo()), publicadas[1]];
 
         ResultadoDoCicloNovo resultado = Conferir(publicadas, novas, Item(publicadas[1], preliminar));
 
@@ -46,7 +48,7 @@ public sealed class ConferenciaDoCicloNovoPelosTiposDeDecisaoTests
     public void TiposDeFasePosterior_NaoExigem()
     {
         FaseCronograma[] publicadas = Cronograma(out ProdutoDaFase preliminar, comPosterior: true);
-        FaseCronograma[] novas = [publicadas[0], publicadas[1], ComTiposDeDecisao(publicadas[2], TipoMotivoDeDecisaoCodigo.Classificacao)];
+        FaseCronograma[] novas = [publicadas[0], publicadas[1], ComTiposDeDecisao(publicadas[2], TipoMotivoDeDecisao.Classificacao.Codigo())];
 
         Conferir(publicadas, novas, Item(publicadas[1], preliminar)).Recusas.Should().BeEmpty();
     }
@@ -55,8 +57,8 @@ public sealed class ConferenciaDoCicloNovoPelosTiposDeDecisaoTests
     public void TiposDaFaseEmOutraOrdem_NaoExigem()
     {
         ProdutoDaFase preliminar = Preliminar(Materia);
-        FaseCronograma publicada = ComTiposDeDecisao(Fase(2, "PROVA", produtos: [preliminar]), TipoMotivoDeDecisaoCodigo.Classificacao, TipoMotivoDeDecisaoCodigo.AnaliseDocumental);
-        FaseCronograma permutada = ComTiposDeDecisao(publicada, TipoMotivoDeDecisaoCodigo.AnaliseDocumental, TipoMotivoDeDecisaoCodigo.Classificacao);
+        FaseCronograma publicada = ComTiposDeDecisao(Fase(2, "PROVA", produtos: [preliminar]), TipoMotivoDeDecisao.Classificacao.Codigo(), TipoMotivoDeDecisao.AnaliseDocumental.Codigo());
+        FaseCronograma permutada = ComTiposDeDecisao(publicada, TipoMotivoDeDecisao.AnaliseDocumental.Codigo(), TipoMotivoDeDecisao.Classificacao.Codigo());
 
         Conferir([publicada], [permutada], Item(publicada, preliminar)).Recusas.Should().BeEmpty();
     }
@@ -66,7 +68,7 @@ public sealed class ConferenciaDoCicloNovoPelosTiposDeDecisaoTests
     {
         EtapaProcesso objetiva = EtapaDaProva(Guid.CreateVersion7(), Materia);
         EtapaProcesso analise = EtapaDaProva(Guid.CreateVersion7(), OutraMateria);
-        EtapaProcesso objetivaComTipos = EtapaDaProva(objetiva.Id, Materia, TipoMotivoDeDecisaoCodigo.Classificacao);
+        EtapaProcesso objetivaComTipos = EtapaDaProva(objetiva.Id, Materia, TipoMotivoDeDecisao.Classificacao.Codigo());
         FaseCronograma prova = Fase(1, "PROVA");
 
         ResultadoDoCicloNovo resultado = ConferirEtapas(prova, [objetiva, analise], [objetivaComTipos, analise], ItemPreliminarDaEtapa(objetiva), ItemPreliminarDaEtapa(analise));
@@ -79,8 +81,8 @@ public sealed class ConferenciaDoCicloNovoPelosTiposDeDecisaoTests
     public void TiposDaEtapaEmOutraOrdem_NaoExigem()
     {
         Guid id = Guid.CreateVersion7();
-        EtapaProcesso publicada = EtapaDaProva(id, Materia, TipoMotivoDeDecisaoCodigo.Classificacao, TipoMotivoDeDecisaoCodigo.AnaliseDocumental);
-        EtapaProcesso permutada = EtapaDaProva(id, Materia, TipoMotivoDeDecisaoCodigo.AnaliseDocumental, TipoMotivoDeDecisaoCodigo.Classificacao);
+        EtapaProcesso publicada = EtapaDaProva(id, Materia, TipoMotivoDeDecisao.Classificacao.Codigo(), TipoMotivoDeDecisao.AnaliseDocumental.Codigo());
+        EtapaProcesso permutada = EtapaDaProva(id, Materia, TipoMotivoDeDecisao.AnaliseDocumental.Codigo(), TipoMotivoDeDecisao.Classificacao.Codigo());
 
         ResultadoDoCicloNovo resultado = ConferirEtapas(Fase(1, "PROVA"), [publicada], [permutada], ItemPreliminarDaEtapa(publicada));
 

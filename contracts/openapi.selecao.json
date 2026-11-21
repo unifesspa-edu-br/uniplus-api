@@ -20053,7 +20053,7 @@
               "array"
             ],
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/TipoMotivoDeDecisaoCodigo"
             }
           }
         }
@@ -20311,7 +20311,7 @@
               "array"
             ],
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/TipoMotivoDeDecisaoCodigo"
             }
           },
           "regraDeHomologacao": {
@@ -27224,6 +27224,20 @@
             "type": "boolean"
           }
         }
+      },
+      "TipoMotivoDeDecisaoCodigo": {
+        "enum": [
+          "ISENCAO_DA_TAXA",
+          "HOMOLOGACAO_DAS_INSCRICOES",
+          "ANALISE_DOCUMENTAL",
+          "HETEROIDENTIFICACAO",
+          "AVALIACAO_BIOPSICOSSOCIAL",
+          "CLASSIFICACAO",
+          "GABARITO_DA_PROVA",
+          "NOTA_DA_ETAPA"
+        ],
+        "type": "string",
+        "description": "A decis\u00E3o individual a que um motivo serve. O tipo separa as listas do cadastro de motivos, e o c\u00F3digo do motivo s\u00F3 \u00E9 \u00FAnico dentro dele. O recurso n\u00E3o \u00E9 tipo pr\u00F3prio: o motivo do recurso \u00E9 o da decis\u00E3o recorrida.\n\n- \u0060ISENCAO_DA_TAXA\u0060: Isen\u00E7\u00E3o da taxa\n- \u0060HOMOLOGACAO_DAS_INSCRICOES\u0060: Homologa\u00E7\u00E3o das inscri\u00E7\u00F5es\n- \u0060ANALISE_DOCUMENTAL\u0060: An\u00E1lise documental\n- \u0060HETEROIDENTIFICACAO\u0060: Heteroidentifica\u00E7\u00E3o\n- \u0060AVALIACAO_BIOPSICOSSOCIAL\u0060: Avalia\u00E7\u00E3o biopsicossocial\n- \u0060CLASSIFICACAO\u0060: Classifica\u00E7\u00E3o\n- \u0060GABARITO_DA_PROVA\u0060: Gabarito da prova\n- \u0060NOTA_DA_ETAPA\u0060: Nota da etapa"
       },
       "TipoProcessoSnapshotDto": {
         "required": [

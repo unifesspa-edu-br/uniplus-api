@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Retificacao;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -86,6 +87,6 @@ public static class ConferenciaDosMotivosDaRetificacao
         andamento.Fatos.FasesIniciadas.AvaliacaoComecou(motivo.Lugar)
             ? new DomainError(
                 MotivoDeDecisaoErrorCodes.AvaliacaoIniciada,
-                $"A avaliação de {motivo.Tipo.ToCodigo()} nesta fase ou etapa já começou; motivo novo não entra mais.")
+                $"A avaliação de {motivo.Tipo.Codigo()} nesta fase ou etapa já começou; motivo novo não entra mais.")
             : null;
 }

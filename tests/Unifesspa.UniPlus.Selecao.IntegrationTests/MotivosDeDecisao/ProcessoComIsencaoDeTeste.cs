@@ -7,6 +7,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Outbox.Cascading;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
@@ -28,7 +30,7 @@ internal static class ProcessoComIsencaoDeTeste
     {
         await using AsyncServiceScope escopo = services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"{nome} {Guid.CreateVersion7()}", Complementar = processo => Habilitar(processo, tiposDeDecisao ?? [TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa]) });
+        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"{nome} {Guid.CreateVersion7()}", Complementar = processo => Habilitar(processo, tiposDeDecisao ?? [TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo()]) });
 
         return (processo.Id, documento.Id);
     }

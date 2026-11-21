@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Services.DocumentoDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
@@ -200,6 +201,17 @@ public sealed class DeclaracoesDoDocumentoLidasTests
             new ProcedimentoNoDocumento(0, TipoMotivoDeDecisao.AnaliseDocumental, null, new("PROCEDIMENTO-CONFERENCIA", "v1")),
             new ProcedimentoNoDocumento(1, TipoMotivoDeDecisao.NotaDaEtapa, new(null, "REDACAO"), new("PROCEDIMENTO-RECALCULO", "v1")),
             new ProcedimentoNoDocumento(2, TipoMotivoDeDecisao.NotaDaEtapa, new("item-de-prova", null), new(null, null)));
+    }
+
+    [Fact(DisplayName = "O código de tipo de decisão que o vocabulário não conhece fica ausente no procedimento, para o domínio recusar, sem exceção")]
+    public void Procedimento_ComTipoDeDecisaoDesconhecido_FicaSemTipo()
+    {
+        IReadOnlyList<ProcedimentoNoDocumento> procedimentos = UnicaFase("""
+            { "cronograma": { "fases": [ { "chave": "analise", "faseCanonicaCodigo": "ANALISE", "regraRecurso": { "regraCodigo": "PRAZO-ANCORADO",
+              "procedimentosDeRecurso": [ { "tipoDeDecisao": "TIPO_QUE_NAO_EXISTE", "regra": { "codigo": "PROCEDIMENTO-CONFERENCIA", "versao": "v1" } } ] } } ] } }
+            """).RegraDeRecurso!.Procedimentos;
+
+        procedimentos.Should().ContainSingle().Which.TipoDeDecisao.Should().BeNull();
     }
 
     [Fact(DisplayName = "A regra de recurso sem parâmetros fica sem valor declarado, para o domínio recusar")]

@@ -14,6 +14,8 @@ using Outbox.Cascading;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
@@ -27,7 +29,7 @@ internal sealed class ChamadasDosMotivosDeTeste(CascadingFixture fixture, string
     internal async Task<MotivoDeDecisao> SemearMotivoAsync(SentidoDoMotivo sentido = SentidoDoMotivo.Desfavoravel)
     {
         MotivoDeDecisao motivo = MotivoDeDecisao.Criar(new CamposDoMotivo(
-            TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes,
+            TipoMotivoDeDecisao.HomologacaoDasInscricoes.Codigo(),
             $"{prefixoDoCodigo}_{Guid.NewGuid():N}"[..40].ToUpperInvariant(),
             "Sem resultado no retorno do INEP para a edição indicada",
             null,
@@ -44,7 +46,7 @@ internal sealed class ChamadasDosMotivosDeTeste(CascadingFixture fixture, string
     internal async Task<MotivoDeDecisao> SemearMotivoDeIsencaoAsync(SentidoDoMotivo sentido)
     {
         MotivoDeDecisao motivo = MotivoDeDecisao.Criar(new CamposDoMotivo(
-            TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa,
+            TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo(),
             $"{prefixoDoCodigo}_{Guid.NewGuid():N}"[..40].ToUpperInvariant(),
             "Situação no Cadastro Único conferida pela comissão",
             ProcessoComIsencaoDeTeste.Fundamento,

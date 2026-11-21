@@ -15,7 +15,7 @@ using Xunit;
 /// </summary>
 public sealed class FaseCronogramaRegraDeHomologacaoTests
 {
-    private const string Homologacao = TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes;
+    private const string Homologacao = "HOMOLOGACAO_DAS_INSCRICOES";
 
     private static readonly RegraDeHomologacaoDasInscricoes Regra =
         RegraDeHomologacaoDasInscricoes.Declarar("RESULTADO_HOMOLOGACAO", []);

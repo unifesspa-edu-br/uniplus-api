@@ -2,7 +2,9 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.LeituraD
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
@@ -30,7 +32,7 @@ public sealed class LeituraDaRegraDeRecursoDaFaseTests
         };
 
     private static FaseNoDocumento ComTipos(FaseNoDocumento fase, params TipoMotivoDeDecisao[] tipos) =>
-        fase with { Publicacoes = fase.Publicacoes with { TiposDeDecisao = [.. tipos.Select(static tipo => tipo.ToCodigo())] } };
+        fase with { Publicacoes = fase.Publicacoes with { TiposDeDecisao = [.. tipos.Select(static tipo => tipo.Codigo())] } };
 
     private static string[] CodigosDasCausas(IdentificacaoECronogramaLidos lidos) =>
         [.. CausasQueImpedemCongelar.De(Configuracao(lidos), CadastrosDeTeste.Padrao).Select(static causa => causa.Error.Code)];

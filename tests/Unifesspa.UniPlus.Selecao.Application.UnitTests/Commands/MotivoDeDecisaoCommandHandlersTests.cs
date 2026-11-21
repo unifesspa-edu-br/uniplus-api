@@ -8,7 +8,9 @@ using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Commands.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -249,11 +251,11 @@ public sealed class MotivoDeDecisaoCommandHandlersTests
         CriarMotivoDeDecisaoCommandHandler.Handle(comando, _repository, _unitOfWork, CancellationToken.None);
 
     private static CriarMotivoDeDecisaoCommand Comando(string sentido) =>
-        new(TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa, Codigo, Descricao, FundamentoIsencaoCodigo.CadastroUnico, sentido);
+        new(TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo(), Codigo, Descricao, FundamentoIsencaoCodigo.CadastroUnico, sentido);
 
     private static MotivoDeDecisao MotivoValido() =>
         MotivoDeDecisao.Criar(new CamposDoMotivo(
-            TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa,
+            TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo(),
             Codigo,
             Descricao,
             FundamentoIsencaoCodigo.CadastroUnico,

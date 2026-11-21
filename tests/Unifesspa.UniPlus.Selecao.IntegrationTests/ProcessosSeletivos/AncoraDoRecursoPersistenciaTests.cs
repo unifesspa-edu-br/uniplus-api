@@ -7,8 +7,10 @@ using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Kernel.Tempo;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -322,7 +324,7 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
 
     // A fase declara os tipos que produz, e a conferência da publicação exige procedimento para cada um, sem alvo que a fase não tem.
     private static string[] TiposDeDecisaoDaFase() =>
-        [TipoMotivoDeDecisao.Classificacao.ToCodigo(), TipoMotivoDeDecisao.AnaliseDocumental.ToCodigo(), TipoMotivoDeDecisao.HomologacaoDasInscricoes.ToCodigo()];
+        [TipoMotivoDeDecisao.Classificacao.Codigo(), TipoMotivoDeDecisao.AnaliseDocumental.Codigo(), TipoMotivoDeDecisao.HomologacaoDasInscricoes.Codigo()];
 
     private static ProcedimentosDeRecurso ProcedimentosCoerentesComAFase() => ProcedimentosDeRecurso.De(
     [

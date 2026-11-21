@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -17,9 +18,9 @@ using Xunit;
 /// </summary>
 public sealed class FaseCronogramaTiposDeDecisaoTests
 {
-    private const string Classificacao = TipoMotivoDeDecisaoCodigo.Classificacao;
-    private const string Isencao = TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa;
-    private const string Heteroidentificacao = TipoMotivoDeDecisaoCodigo.Heteroidentificacao;
+    private const string Classificacao = "CLASSIFICACAO";
+    private const string Isencao = "ISENCAO_DA_TAXA";
+    private const string Heteroidentificacao = "HETEROIDENTIFICACAO";
 
     private static OrigemCanonicaDaFase Origem(OrigemDataFase origemData = OrigemDataFase.NaExecucao) => new(
         Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", origemData,
@@ -55,7 +56,7 @@ public sealed class FaseCronogramaTiposDeDecisaoTests
     {
         FaseCronograma fase = FaseCom(Isencao, Classificacao, Heteroidentificacao);
 
-        fase.TiposDeDecisao.Should().Equal(Classificacao, Heteroidentificacao, Isencao);
+        fase.TiposDeDecisao.Should().Equal(TipoMotivoDeDecisao.Classificacao, TipoMotivoDeDecisao.Heteroidentificacao, TipoMotivoDeDecisao.IsencaoDaTaxa);
     }
 
     [Fact(DisplayName = "Tipo fora do vocabulário recusa a criação no campo e na posição do tipo")]
@@ -91,7 +92,7 @@ public sealed class FaseCronogramaTiposDeDecisaoTests
         entrada.Add(Isencao);
         entrada[0] = Heteroidentificacao;
 
-        fase.TiposDeDecisao.Should().Equal(Classificacao);
+        fase.TiposDeDecisao.Should().Equal(TipoMotivoDeDecisao.Classificacao);
     }
 
     [Fact(DisplayName = "A lista devolvida pela fase não é alterável nem por conversão de tipo")]
@@ -99,12 +100,12 @@ public sealed class FaseCronogramaTiposDeDecisaoTests
     {
         FaseCronograma fase = FaseCom(Classificacao);
 
-        fase.TiposDeDecisao.Should().NotBeAssignableTo<List<string>>();
-        IList<string> comoLista = fase.TiposDeDecisao.Should().BeAssignableTo<IList<string>>().Subject;
+        fase.TiposDeDecisao.Should().NotBeAssignableTo<List<TipoMotivoDeDecisao>>();
+        IList<TipoMotivoDeDecisao> comoLista = fase.TiposDeDecisao.Should().BeAssignableTo<IList<TipoMotivoDeDecisao>>().Subject;
         comoLista.IsReadOnly.Should().BeTrue();
-        Action alterar = () => comoLista.Add(Isencao);
+        Action alterar = () => comoLista.Add(TipoMotivoDeDecisao.IsencaoDaTaxa);
         alterar.Should().Throw<NotSupportedException>();
-        fase.TiposDeDecisao.Should().Equal(Classificacao);
+        fase.TiposDeDecisao.Should().Equal(TipoMotivoDeDecisao.Classificacao);
     }
 
     [Fact(DisplayName = "Reidratar a fase do envelope deixa a declaração vazia")]
@@ -120,7 +121,7 @@ public sealed class FaseCronogramaTiposDeDecisaoTests
 
         viva.AtualizarDe(FaseCom(Isencao, Heteroidentificacao), []);
 
-        viva.TiposDeDecisao.Should().Equal(Heteroidentificacao, Isencao);
+        viva.TiposDeDecisao.Should().Equal(TipoMotivoDeDecisao.Heteroidentificacao, TipoMotivoDeDecisao.IsencaoDaTaxa);
     }
 
     [Fact(DisplayName = "Atualizar a fase com origem sem tipos limpa a declaração")]
@@ -142,7 +143,7 @@ public sealed class FaseCronogramaTiposDeDecisaoTests
 
         origem.AtualizarDe(FaseCom(Heteroidentificacao), []);
 
-        viva.TiposDeDecisao.Should().Equal(Isencao);
+        viva.TiposDeDecisao.Should().Equal(TipoMotivoDeDecisao.IsencaoDaTaxa);
     }
 
     [Fact(DisplayName = "Reposição a partir de fase congelada sem tipos ainda não preserva os tipos de decisão declarados")]

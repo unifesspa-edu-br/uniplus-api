@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Testes.Compartilhado;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -26,8 +28,8 @@ internal static class MotivosDaIsencaoDeTeste
 
     private static IEnumerable<LugarDaDecisao> LugaresQueDeclaramOTipo(ProcessoSeletivo processo) =>
     [
-        .. processo.CronogramaFases.Where(static f => f.TiposDeDecisao.Contains(TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa)).Select(static f => LugarDaDecisao.DaFase(f.FaseCanonicaOrigemId)),
-        .. processo.Etapas.Where(static e => e.TiposDeDecisao.Contains(TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa)).Select(static e => LugarDaDecisao.DaEtapa(e.Id)),
+        .. processo.CronogramaFases.Where(static f => f.TiposDeDecisao.Contains(TipoMotivoDeDecisao.IsencaoDaTaxa)).Select(static f => LugarDaDecisao.DaFase(f.FaseCanonicaOrigemId)),
+        .. processo.Etapas.Where(static e => e.TiposDeDecisao.Contains(TipoMotivoDeDecisao.IsencaoDaTaxa)).Select(static e => LugarDaDecisao.DaEtapa(e.Id)),
     ];
 
     private static IEnumerable<MotivoEscolhidoComOrigem> EscolherEm(ProcessoSeletivo processo, LugarDaDecisao lugar, IReadOnlyList<string> fundamentos) =>
@@ -38,7 +40,7 @@ internal static class MotivosDaIsencaoDeTeste
 
     private static MotivoDeDecisao OrigemDaIsencao(string fundamento, SentidoDoMotivo sentido) =>
         MotivoDeDecisao.Criar(new CamposDoMotivo(
-            TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa, $"TEST_ISN_{Guid.NewGuid():N}"[..30].ToUpperInvariant(), "Situação conferida pela comissão", fundamento, sentido)).Value!;
+            TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo(), $"TEST_ISN_{Guid.NewGuid():N}"[..30].ToUpperInvariant(), "Situação conferida pela comissão", fundamento, sentido)).Value!;
 
     private static MotivoDoProcesso Escolher(ProcessoSeletivo processo, LugarDaDecisao lugar, MotivoDeDecisao origem) =>
         EscolhaDosMotivos.Incluir(new InclusaoDeMotivo(processo, lugar, [], origem)).Value!;

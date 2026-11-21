@@ -4,7 +4,9 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Pagination;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -28,7 +30,7 @@ public sealed class MotivosDeDecisaoQueryHandlersTests
         resultado.Items.Should().ContainSingle().Which.Should().BeEquivalentTo(new
         {
             motivo.Id,
-            Tipo = TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa,
+            Tipo = TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo(),
             Codigo = "RENDA_ACIMA_DO_LIMITE",
             Subclassificacao = FundamentoIsencaoCodigo.CadastroUnico,
             Sentido = SentidoDoMotivoCodigo.Favoravel,
@@ -68,5 +70,5 @@ public sealed class MotivosDeDecisaoQueryHandlersTests
 
     private static MotivoDeDecisao Motivo() =>
         MotivoDeDecisao.Criar(new CamposDoMotivo(
-            TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa, "RENDA_ACIMA_DO_LIMITE", "Renda dentro do limite legal.", FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel)).Value!;
+            TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo(), "RENDA_ACIMA_DO_LIMITE", "Renda dentro do limite legal.", FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel)).Value!;
 }

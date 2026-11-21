@@ -2,7 +2,9 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.MotivosDeDecisao;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -158,7 +160,7 @@ public sealed class MotivosEscolhidosTests
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho();
         MotivoEscolhidoComOrigem publicado = NaInscricao(processo, IsencaoFavoravel(), versaoDeEntrada: 1);
-        ProcessoParaMotivos.DeclararNaFase(processo, "INSCRICAO", TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes);
+        ProcessoParaMotivos.DeclararNaFase(processo, "INSCRICAO", TipoMotivoDeDecisao.HomologacaoDasInscricoes);
 
         FieldError recusa = OsMotivos(publicado).DeTipoNaoDeclarado(ProcessoParaMotivos.Lugares(processo)).Should().ContainSingle().Subject;
 
@@ -201,7 +203,7 @@ public sealed class MotivosEscolhidosTests
             NaInscricao(processo, ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Desfavoravel, "PUBLICADO"), versaoDeEntrada: 1),
             NaInscricao(processo, ProcessoParaMotivos.DaIsencao(FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Desfavoravel, "DECLARADO"), VersaoQueNasce),
         ];
-        ProcessoParaMotivos.DeclararNaFase(processo, "INSCRICAO", TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa);
+        ProcessoParaMotivos.DeclararNaFase(processo, "INSCRICAO", TipoMotivoDeDecisao.IsencaoDaTaxa);
 
         OsMotivos(escolhidos).QueCompoemAVersao(ProcessoParaMotivos.Lugares(processo)).Select(m => m.Codigo.Valor).Should().BeEquivalentTo(["PUBLICADO", "DECLARADO"]);
     }

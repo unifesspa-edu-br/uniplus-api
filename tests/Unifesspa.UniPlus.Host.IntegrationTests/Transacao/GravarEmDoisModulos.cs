@@ -2,9 +2,11 @@ namespace Unifesspa.UniPlus.Host.IntegrationTests.Transacao;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -59,7 +61,7 @@ public static class GravarEmDoisModulosHandler
 
     internal static MotivoDeDecisao NovoMotivo(string codigo) =>
         MotivoDeDecisao.Criar(new CamposDoMotivo(
-            TipoMotivoDeDecisaoCodigo.Classificacao, codigo, "Motivo de teste da transação.", Subclassificacao: null, SentidoDoMotivo.Favoravel)).Value!;
+            TipoMotivoDeDecisao.Classificacao.Codigo(), codigo, "Motivo de teste da transação.", Subclassificacao: null, SentidoDoMotivo.Favoravel)).Value!;
 
     private static async Task<(Result, IEnumerable<object>)> ConcluirAsync(
         GravarEmDoisModulos comando, IUnitOfWork unidade, CancellationToken cancellationToken)

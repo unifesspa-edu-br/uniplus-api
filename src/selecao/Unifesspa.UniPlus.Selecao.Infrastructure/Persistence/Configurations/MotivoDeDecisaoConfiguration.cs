@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -12,10 +10,6 @@ using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>Configuração EF Core do cadastro único de motivos de decisão (UNI-REQ-0283).</summary>
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class MotivoDeDecisaoConfiguration : IEntityTypeConfiguration<MotivoDeDecisao>
 {
     internal const int CodigoMaxLength = 50;
@@ -38,9 +32,8 @@ internal sealed class MotivoDeDecisaoConfiguration : IEntityTypeConfiguration<Mo
 
     private static void MapearColunas(EntityTypeBuilder<MotivoDeDecisao> builder)
     {
-        // Texto, e não inteiro: auditoria e consulta manual leem a coluna sem conhecer a ordem de
-        // declaração do enum.
-        builder.Property(m => m.Tipo).HasConversion<string>().HasMaxLength(EnumMaxLength).IsRequired();
+        // O tipo é gravado pelo código de contrato do enum, que a convenção do modelo instala.
+        builder.Property(m => m.Tipo).HasMaxLength(EnumMaxLength).IsRequired();
         builder.Property(m => m.Codigo)
             .HasConversion(codigo => codigo.Valor, valor => CodigoMotivoDecisao.Reidratar(valor))
             .HasMaxLength(CodigoMaxLength)

@@ -2,7 +2,9 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -237,5 +239,5 @@ public sealed class MotivoDeDecisaoTests
 
     private static Result<MotivoDeDecisao> Criar(
         TipoMotivoDeDecisao tipo, string? codigo, string? subclassificacao, SentidoDoMotivo sentido, string descricao = DescricaoValida) =>
-        MotivoDeDecisao.Criar(new CamposDoMotivo(tipo.ToCodigo(), codigo, descricao, subclassificacao, sentido));
+        MotivoDeDecisao.Criar(new CamposDoMotivo(tipo.Codigo(), codigo, descricao, subclassificacao, sentido));
 }

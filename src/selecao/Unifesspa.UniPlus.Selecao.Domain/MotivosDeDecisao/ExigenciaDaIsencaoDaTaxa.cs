@@ -1,6 +1,8 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -58,5 +60,5 @@ public sealed class ExigenciaDaIsencaoDaTaxa : IExigenciaDeMotivos
     private static FieldError SemLugarQueDeclareOTipo(FundamentoIsencao fundamento) =>
         new("taxaDeInscricao.fundamentos", new DomainError(
             MotivoDeDecisaoErrorCodes.TipoDeDecisaoNaoDeclarado,
-            $"O fundamento de isenção {fundamento.ToCodigo()} é habilitado, mas nenhuma fase nem etapa declara o tipo de decisão {TipoMotivoDeDecisao.IsencaoDaTaxa.ToCodigo()}."));
+            $"O fundamento de isenção {fundamento.ToCodigo()} é habilitado, mas nenhuma fase nem etapa declara o tipo de decisão {TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo()}."));
 }

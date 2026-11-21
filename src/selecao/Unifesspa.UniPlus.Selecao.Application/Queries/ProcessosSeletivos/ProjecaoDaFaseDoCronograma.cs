@@ -11,6 +11,8 @@ using DTOs;
 
 using Mappings;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 /// <summary>
 /// Projeta para o contrato REST a fase do cronograma, com as bancas requeridas e a regra de recurso.
 /// </summary>
@@ -50,7 +52,7 @@ internal static class ProjecaoDaFaseDoCronograma
         ProduzResultado: fase.ProduzResultado,
         EmiteParecerIndividual: fase.EmiteParecerIndividual,
         RegraRecurso: fase.RegraRecurso is { } regraRecurso ? ProjetarRegraDeRecurso(regraRecurso) : null,
-        TiposDeDecisao: [.. fase.TiposDeDecisao],
+        TiposDeDecisao: [.. fase.TiposDeDecisao.Select(static tipo => tipo.Codigo())],
         RegraDeHomologacao: fase.RegraDeHomologacao is { } regraDeHomologacao ? ProjetarRegraDeHomologacao(regraDeHomologacao) : null);
 
     private static ProdutoDaFaseDto[] ProjetarProdutosDaFase(FaseCronograma fase) =>

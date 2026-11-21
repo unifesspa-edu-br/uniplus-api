@@ -26,9 +26,9 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.Publicacao
 /// </summary>
 public sealed class DefinirCronogramaFasesTiposDeDecisaoTests
 {
-    private const string Classificacao = TipoMotivoDeDecisaoCodigo.Classificacao;
-    private const string Isencao = TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa;
-    private const string Heteroidentificacao = TipoMotivoDeDecisaoCodigo.Heteroidentificacao;
+    private const string Classificacao = "CLASSIFICACAO";
+    private const string Isencao = "ISENCAO_DA_TAXA";
+    private const string Heteroidentificacao = "HETEROIDENTIFICACAO";
     private const string TipoForaDoVocabulario = "RECURSO_DA_BANCA";
 
     private static FaseCronogramaInput FaseDoCadastro(CenarioDoCronogramaDeFases cenario, int ordem, params string?[] tipos) =>

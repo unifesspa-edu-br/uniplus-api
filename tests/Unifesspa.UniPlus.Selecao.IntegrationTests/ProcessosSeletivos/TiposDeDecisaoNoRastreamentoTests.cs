@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
 using Unifesspa.UniPlus.Monolito.Persistencia;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -54,7 +55,7 @@ public sealed class TiposDeDecisaoNoRastreamentoTests
 
         processo.CronogramaFases.Single().Should().BeSameAs(rastreada);
         contexto.Entry(rastreada).Property(Campo).IsModified.Should().BeTrue();
-        rastreada.TiposDeDecisao.Should().Equal("CLASSIFICACAO");
+        rastreada.TiposDeDecisao.Should().Equal(TipoMotivoDeDecisao.Classificacao);
     }
 
     [Fact(DisplayName = "Alterar os tipos da etapa rastreada no lugar marca a coluna como modificada")]

@@ -6,6 +6,7 @@ using System.Text.Json.Nodes;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -22,9 +23,9 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Apoio
 /// </summary>
 public sealed class EnvelopeCodecTiposDeDecisaoTests
 {
-    private const string Classificacao = TipoMotivoDeDecisaoCodigo.Classificacao;
-    private const string IsencaoDaTaxa = TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa;
-    private const string AnaliseDocumental = TipoMotivoDeDecisaoCodigo.AnaliseDocumental;
+    private const string Classificacao = "CLASSIFICACAO";
+    private const string IsencaoDaTaxa = "ISENCAO_DA_TAXA";
+    private const string AnaliseDocumental = "ANALISE_DOCUMENTAL";
 
     private const string CaminhoDaFase = "cronogramaFases.fases.0";
     private const string CaminhoDaEtapa = "etapas.0";
@@ -107,7 +108,7 @@ public sealed class EnvelopeCodecTiposDeDecisaoTests
     {
         EnvelopeReidratado envelope = ReidratarMutado(mutado => DefinirTipos(mutado, CaminhoDaFase, AnaliseDocumental, Classificacao));
 
-        envelope.Configuracao.Cronograma.CronogramaFases[0].TiposDeDecisao.Should().Equal(AnaliseDocumental, Classificacao);
+        envelope.Configuracao.Cronograma.CronogramaFases[0].TiposDeDecisao.Should().Equal(TipoMotivoDeDecisao.AnaliseDocumental, TipoMotivoDeDecisao.Classificacao);
     }
 
     [Fact(DisplayName = "O decodificador lê os tipos de decisão da etapa: mudá-los no envelope muda o que a leitura devolve")]
@@ -115,7 +116,7 @@ public sealed class EnvelopeCodecTiposDeDecisaoTests
     {
         EnvelopeReidratado envelope = ReidratarMutado(mutado => DefinirTipos(mutado, CaminhoDaEtapa, AnaliseDocumental, Classificacao));
 
-        envelope.Configuracao.Avaliacao.Etapas[0].TiposDeDecisao.Should().Equal(AnaliseDocumental, Classificacao);
+        envelope.Configuracao.Avaliacao.Etapas[0].TiposDeDecisao.Should().Equal(TipoMotivoDeDecisao.AnaliseDocumental, TipoMotivoDeDecisao.Classificacao);
     }
 
     [Theory(DisplayName = "A leitura recusa tipos de decisão da fase fora da forma que a escrita produz")]

@@ -21,6 +21,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
@@ -104,7 +105,7 @@ internal static class PayloadsDoEnvelopeFechado
         bancasRequeridas = new object[] { BancaDoTipo(catalogos.TipoBancaId) },
         regraRecurso = (object?)null,
         regraDeHomologacao = RegraDeHomologacaoDoResultado(),
-        tiposDeDecisao = new[] { TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes },
+        tiposDeDecisao = new[] { TipoMotivoDeDecisao.HomologacaoDasInscricoes.Codigo() },
         unidadeResponsavelId = catalogos.UnidadeId,
     };
 

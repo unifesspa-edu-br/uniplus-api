@@ -5,7 +5,9 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
@@ -94,7 +96,7 @@ public sealed class BlocosDoDocumentoDasCausasTests
     public void CampoDaCausaDoRecursoDaEtapa_ExisteNoEsquema()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        processo.DefinirEtapas([PendenciasDosProcedimentosDeRecursoTests.EtapaComJanela(ProcedimentosDeRecurso.Nenhum, TipoMotivoDeDecisaoCodigo.Classificacao)])
+        processo.DefinirEtapas([PendenciasDosProcedimentosDeRecursoTests.EtapaComJanela(ProcedimentosDeRecurso.Nenhum, TipoMotivoDeDecisao.Classificacao.Codigo())])
             .IsSuccess.Should().BeTrue();
 
         IReadOnlyList<FieldError> causas = PonteiroNoDocumento.Converter(

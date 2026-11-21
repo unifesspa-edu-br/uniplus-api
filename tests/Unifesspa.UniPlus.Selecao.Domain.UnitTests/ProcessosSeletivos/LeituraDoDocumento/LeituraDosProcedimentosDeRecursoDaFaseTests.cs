@@ -2,7 +2,9 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.LeituraD
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.LeituraDoDocumento;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -29,7 +31,33 @@ public sealed class LeituraDosProcedimentosDeRecursoDaFaseTests
 
         lidos.Cronograma.CronogramaFases.Single().RegraRecurso!.Procedimentos.Itens.Should().BeEmpty();
         PartesRecusadas(lidos).Select(static parte => parte.Ponteiro).Should().Equal(
-            "/cronograma/fases/0/regraRecurso/procedimentosDeRecurso/0/regra/codigo", "/cronograma/fases/0/regraRecurso/procedimentosDeRecurso/0/alvo");
+            "/cronograma/fases/0/regraRecurso/procedimentosDeRecurso/0/alvo", "/cronograma/fases/0/regraRecurso/procedimentosDeRecurso/0/regra/codigo");
+    }
+
+    [Fact(DisplayName = "O procedimento com tipo fora do vocabulário, alvo com item e regra desconhecida acumula as três recusas na ordem tipo, alvo e regra")]
+    public void Procedimento_TipoAlvoERegraInvalidos_AcumulaNaOrdemDosCampos()
+    {
+        ProcedimentoNoDocumento procedimento = new(0, null, new AlvoNoDocumento("item-digitado", null), new("REGRA-DIGITADA", "v1"));
+        IdentificacaoECronogramaLidos lidos = Ler(Documento(ComRegra(Ancorada, procedimentos: procedimento)));
+
+        PartesRecusadas(lidos).Should().Equal(
+            ("/cronograma/fases/0/regraRecurso/procedimentosDeRecurso/0/tipoDeDecisao", "MotivoDeDecisao.TipoInvalido"),
+            ("/cronograma/fases/0/regraRecurso/procedimentosDeRecurso/0/alvo", "RegraRecursoFase.AlvoDoProcedimentoDeRecursoInexistente"),
+            ("/cronograma/fases/0/regraRecurso/procedimentosDeRecurso/0/regra/codigo", "RegraRecursoFase.ProcedimentoDeRecursoDesconhecido"));
+    }
+
+    [Fact(DisplayName = "A regra que o catálogo não conhece é recusada com a mesma mensagem da gravação, sem repetir o que foi escrito")]
+    public void Procedimento_RegraDesconhecida_RecusaComAMensagemDaGravacao()
+    {
+        ProcedimentoNoDocumento procedimento = new(0, TipoMotivoDeDecisao.NotaDaEtapa, null, new("REGRA-DIGITADA", "versao-digitada"));
+        IdentificacaoECronogramaLidos lidos = Ler(Documento(ComRegra(Ancorada, procedimentos: procedimento)));
+
+        PartesRecusadas(lidos).Should().Equal(
+            ("/cronograma/fases/0/regraRecurso/procedimentosDeRecurso/0/regra/codigo", "RegraRecursoFase.ProcedimentoDeRecursoDesconhecido"));
+        Mensagens(lidos).Should().ContainSingle().Which.Should()
+            .Be($"O procedimento de recurso informado, ou a versão dele, não consta do catálogo. Procedimentos aceitos: {string.Join(", ", RegraProcedimentoRecursoCodigo.Rol)}.")
+            .And.NotContain("REGRA-DIGITADA")
+            .And.NotContain("versao-digitada");
     }
 
     [Fact(DisplayName = "A versão inexistente da regra do procedimento aponta o código citado")]
@@ -40,6 +68,31 @@ public sealed class LeituraDosProcedimentosDeRecursoDaFaseTests
 
         PartesRecusadas(lidos).Select(static parte => parte.Ponteiro).Should().Equal(
             "/cronograma/fases/0/regraRecurso/procedimentosDeRecurso/0/regra/codigo");
+    }
+
+    [Fact(DisplayName = "O procedimento sem tipo de decisão do vocabulário é recusado no campo do tipo, sem exceção")]
+    public void Procedimento_SemTipoDeDecisaoDoVocabulario_RecusaNoCampoDoTipo()
+    {
+        ProcedimentoNoDocumento procedimento = new(0, null, null, new(CodigoDoProcedimento, "v1"));
+        IdentificacaoECronogramaLidos lidos = Ler(Documento(ComRegra(Ancorada, procedimento)));
+
+        lidos.Cronograma.CronogramaFases.Single().RegraRecurso!.Procedimentos.Itens.Should().BeEmpty();
+        PartesRecusadas(lidos).Should().Equal(
+            ("/cronograma/fases/0/regraRecurso/procedimentosDeRecurso/0/tipoDeDecisao", "MotivoDeDecisao.TipoInvalido"));
+    }
+
+    [Fact(DisplayName = "A recusa do tipo de decisão na leitura lista os tipos aceitos, como a gravação, e acompanha a posição do procedimento")]
+    public void Procedimento_SemTipoDeDecisaoDoVocabulario_RecusaComAMensagemDoVocabulario()
+    {
+        ProcedimentoNoDocumento anterior = new(0, TipoMotivoDeDecisao.NotaDaEtapa, null, new(CodigoDoProcedimento, "v1"));
+        ProcedimentoNoDocumento procedimento = new(1, null, null, new(CodigoDoProcedimento, "v1"));
+        IdentificacaoECronogramaLidos lidos = Ler(Documento(ComRegra(Ancorada, anterior, procedimento)));
+
+        PartesRecusadas(lidos).Should().Equal(
+            ("/cronograma/fases/0/regraRecurso/procedimentosDeRecurso/1/tipoDeDecisao", "MotivoDeDecisao.TipoInvalido"));
+        Mensagens(lidos).Should().ContainSingle().Which.Should()
+            .Be($"O tipo informado não pertence ao vocabulário de decisões. Tipos aceitos: {TipoDoMotivoInformado.RotulosAceitosEmTexto}.");
+        lidos.Cronograma.CronogramaFases.Single().RegraRecurso!.Procedimentos.Itens.Should().ContainSingle();
     }
 
     [Theory(DisplayName = "A leitura aceita área do ENEM e recusa regra ou alvo inexistente")]

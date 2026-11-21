@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ValueObjects;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -34,7 +36,7 @@ public sealed class EntradaDoPreliminarDaFaseTests
         [nameof(FaseCronograma.ColetaSolicitacaoIsencao)] = () => Fase(origem: o => o with { ColetaSolicitacaoIsencao = true }),
         [nameof(FaseCronograma.RegraRecurso)] = () => ComRecurso(prazo: 2m, ancora: 0, Materia),
         [nameof(FaseCronograma.BancasRequeridas)] = () => Fase(bancas: [Banca(TipoDeBancaA, "BANCA_A")]),
-        [nameof(FaseCronograma.TiposDeDecisao)] = () => ComTipos(TipoMotivoDeDecisaoCodigo.Classificacao),
+        [nameof(FaseCronograma.TiposDeDecisao)] = () => ComTipos(TipoMotivoDeDecisao.Classificacao.Codigo()),
     };
 
     private static readonly Dictionary<string, Func<FaseCronograma>> QueNaoEntram = new()
@@ -140,13 +142,13 @@ public sealed class EntradaDoPreliminarDaFaseTests
 
     [Fact(DisplayName = "Trocar um tipo de decisão declarado pela fase muda a entrada")]
     public void TrocarTipoDeDecisao_MudaAEntrada() =>
-        ComTipos(TipoMotivoDeDecisaoCodigo.Classificacao).EntradaDoPreliminar()
-            .Should().NotBe(ComTipos(TipoMotivoDeDecisaoCodigo.AnaliseDocumental).EntradaDoPreliminar());
+        ComTipos(TipoMotivoDeDecisao.Classificacao.Codigo()).EntradaDoPreliminar()
+            .Should().NotBe(ComTipos(TipoMotivoDeDecisao.AnaliseDocumental.Codigo()).EntradaDoPreliminar());
 
     [Fact(DisplayName = "A ordem em que os tipos de decisão são declarados não muda a entrada")]
     public void OrdemDosTiposDeDecisao_NaoMudaAEntrada() =>
-        ComTipos(TipoMotivoDeDecisaoCodigo.Classificacao, TipoMotivoDeDecisaoCodigo.AnaliseDocumental).EntradaDoPreliminar()
-            .Should().Be(ComTipos(TipoMotivoDeDecisaoCodigo.AnaliseDocumental, TipoMotivoDeDecisaoCodigo.Classificacao).EntradaDoPreliminar());
+        ComTipos(TipoMotivoDeDecisao.Classificacao.Codigo(), TipoMotivoDeDecisao.AnaliseDocumental.Codigo()).EntradaDoPreliminar()
+            .Should().Be(ComTipos(TipoMotivoDeDecisao.AnaliseDocumental.Codigo(), TipoMotivoDeDecisao.Classificacao.Codigo()).EntradaDoPreliminar());
 
     [Fact(DisplayName = "O instante da janela entra em UTC: o mesmo instante com outro deslocamento não muda a entrada")]
     public void InstanteComOutroDeslocamento_NaoMudaAEntrada() =>

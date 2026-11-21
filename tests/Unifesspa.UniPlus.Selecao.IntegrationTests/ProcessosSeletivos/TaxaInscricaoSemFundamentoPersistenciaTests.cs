@@ -7,7 +7,9 @@ using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
@@ -177,7 +179,7 @@ AtualizacaoDosFundamentos,
             Produtos: [ProdutoDaFase.Criar(HomologacaoDasInscricoesDeTeste.ResultadoDaFase, PapelProdutoFase.Definitivo)],
             EmiteParecerIndividual: false,
             RegraRecurso: null,
-            TiposDeDecisao: [TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa, TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes],
+            TiposDeDecisao: [TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo(), TipoMotivoDeDecisao.HomologacaoDasInscricoes.Codigo()],
             RegraDeHomologacao: HomologacaoDasInscricoesDeTeste.Regra()),
         bancasRequeridas: []).Value!;
 

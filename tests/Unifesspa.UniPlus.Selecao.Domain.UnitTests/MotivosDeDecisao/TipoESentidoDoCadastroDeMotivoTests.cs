@@ -2,7 +2,9 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.MotivosDeDecisao;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
@@ -29,7 +31,7 @@ public sealed class TipoESentidoDoCadastroDeMotivoTests
         FieldError erro = resultado.Errors.Should().ContainSingle().Subject;
         erro.Field.Should().Be("tipo");
         erro.Error.Code.Should().Be(MotivoDeDecisaoErrorCodes.TipoObrigatorio);
-        erro.Error.Message.Should().StartWith("Informe o tipo do motivo.").And.Contain(TipoMotivoDeDecisaoCodigo.CodigosEmTexto);
+        erro.Error.Message.Should().StartWith("Informe o tipo do motivo.").And.Contain(TipoDoMotivoInformado.RotulosAceitosEmTexto);
     }
 
     [Theory(DisplayName = "Texto fora do vocabulário é recusado como inválido, sem repetir o valor recebido")]
@@ -43,12 +45,17 @@ public sealed class TipoESentidoDoCadastroDeMotivoTests
         FieldError erro = resultado.Errors.Should().ContainSingle().Subject;
         erro.Field.Should().Be("tipo");
         erro.Error.Code.Should().Be(MotivoDeDecisaoErrorCodes.TipoInvalido);
-        erro.Error.Message.Should().Contain(TipoMotivoDeDecisaoCodigo.CodigosEmTexto).And.NotContain(tipo);
+        erro.Error.Message.Should().Contain(TipoDoMotivoInformado.RotulosAceitosEmTexto).And.NotContain(tipo);
     }
 
+    [Fact(DisplayName = "A lista de tipos aceitos que as recusas citam segue a ordem do vocabulário")]
+    public void RotulosAceitosEmTexto_SegueAOrdemDoVocabulario() =>
+        TipoDoMotivoInformado.RotulosAceitosEmTexto.Should().Be(
+            "Isenção da taxa; Homologação das inscrições; Análise documental; Heteroidentificação; Avaliação biopsicossocial; Classificação; Gabarito da prova; Nota da etapa");
+
     [Theory(DisplayName = "Cada código do vocabulário é convertido para o tipo correspondente")]
-    [InlineData(TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa, TipoMotivoDeDecisao.IsencaoDaTaxa)]
-    [InlineData(TipoMotivoDeDecisaoCodigo.Classificacao, TipoMotivoDeDecisao.Classificacao)]
+    [InlineData("ISENCAO_DA_TAXA", TipoMotivoDeDecisao.IsencaoDaTaxa)]
+    [InlineData("CLASSIFICACAO", TipoMotivoDeDecisao.Classificacao)]
     public void Converter_CodigoDoVocabulario_DevolveOTipo(string codigo, TipoMotivoDeDecisao esperado)
     {
         TipoDoMotivoInformado.Converter(codigo).Value.Should().Be(esperado);
@@ -57,7 +64,7 @@ public sealed class TipoESentidoDoCadastroDeMotivoTests
     [Fact(DisplayName = "Sentido não admitido pelo tipo é recusado sem citar o sentido recebido")]
     public void Validar_SentidoNaoAdmitido_RecusaSemCitarOSentido()
     {
-        CamposDoMotivo campos = new(TipoMotivoDeDecisaoCodigo.Classificacao, "NOTA_ZERADA", Descricao, null, (SentidoDoMotivo)99);
+        CamposDoMotivo campos = new(TipoMotivoDeDecisao.Classificacao.Codigo(), "NOTA_ZERADA", Descricao, null, (SentidoDoMotivo)99);
 
         Result<CamposValidados> resultado = ValidacaoDoMotivo.Validar(campos);
 
@@ -71,7 +78,7 @@ public sealed class TipoESentidoDoCadastroDeMotivoTests
     public void Validar_CamposInvalidos_NaoRepeteOsValoresRecebidos()
     {
         Result<CamposValidados> resultado = ValidacaoDoMotivo.Validar(new CamposDoMotivo(
-            TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa, CodigoRecusado, DescricaoRecusada, SubclassificacaoRecusada, SentidoDoMotivo.Nenhum));
+            TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo(), CodigoRecusado, DescricaoRecusada, SubclassificacaoRecusada, SentidoDoMotivo.Nenhum));
 
         resultado.Errors.Select(erro => erro.Error.Code).Should().BeEquivalentTo(
         [

@@ -27,7 +27,7 @@ internal static class PendenciasDosProcedimentosDeRecurso
             .SelectMany(recurso => Ausentes(
                 recurso.Procedimentos,
                 new ContextoDosProcedimentosDeRecurso(
-                    TiposDoLugar(etapa.TiposDeDecisao), etapa.ItensDeAvaliacao.Select(static item => item.Id).ToHashSet(), processoTemNotaDoEnem),
+                    etapa.TiposDeDecisao.ToHashSet(), etapa.ItensDeAvaliacao.Select(static item => item.Id).ToHashSet(), processoTemNotaDoEnem),
                 CodigosDoProcedimentoDeRecurso.DaEtapa,
                 $"A etapa '{etapa.Nome}'"))
             .Select(erro => new FieldError($"etapas[{posicao}].recursos", erro)));
@@ -41,7 +41,7 @@ internal static class PendenciasDosProcedimentosDeRecurso
     // não se sabe se o recusado cobria o tipo, e a causa é a da leitura.
     private static IEnumerable<FieldError> DaFase(ConfiguracaoDeclarada configuracao, FaseCronograma fase, int posicao, bool processoTemNotaDoEnem)
     {
-        ContextoDosProcedimentosDeRecurso contexto = new(TiposDoLugar(fase.TiposDeDecisao), new HashSet<Guid>(), processoTemNotaDoEnem);
+        ContextoDosProcedimentosDeRecurso contexto = new(fase.TiposDeDecisao.ToHashSet(), new HashSet<Guid>(), processoTemNotaDoEnem);
         ProcedimentosDeRecurso declarados = fase.RegraRecurso!.Procedimentos;
         IReadOnlyList<FieldError> faltas = ConferenciaDosProcedimentosDeRecurso.Faltas(
             declarados.Itens, contexto, CodigosDoProcedimentoDeRecurso.DaFase, $"fases[{posicao}].{FaseDeclarada.ListaDosProcedimentosDeRecurso}");
@@ -66,9 +66,6 @@ internal static class PendenciasDosProcedimentosDeRecurso
                 configuracao.Origem.TemParteRecusadaEm($"fases[{posicao}].{FaseDeclarada.CampoDaRegraDeRecurso}")
                 || configuracao.Origem.TemParteRecusadaEm($"fases[{posicao}].{FaseDeclarada.ListaDosProcedimentosDeRecurso}"));
     }
-
-    private static HashSet<TipoMotivoDeDecisao> TiposDoLugar(IEnumerable<string> codigos) =>
-        [.. codigos.Select(TipoMotivoDeDecisaoCodigo.FromCodigo)];
 
     private static IEnumerable<DomainError> Ausentes(
         ProcedimentosDeRecurso declarados, ContextoDosProcedimentosDeRecurso contexto, CodigosDoProcedimentoDeRecurso codigos, string lugar) =>

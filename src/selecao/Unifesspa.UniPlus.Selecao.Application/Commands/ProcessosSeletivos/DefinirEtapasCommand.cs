@@ -9,6 +9,7 @@ using Kernel.Domain.CodigosDeContrato;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Item de entrada de uma etapa pontuada, usado por
@@ -113,7 +114,7 @@ public sealed record EtapaProcessoInput(
     string? RegraConsolidacaoVersao = null,
     IReadOnlyList<ItemDeAvaliacaoInput>? ItensDeAvaliacao = null,
     IReadOnlyList<NivelDeAtendimentoInput>? EscalaDeAtendimento = null,
-    IReadOnlyList<string?>? TiposDeDecisao = null);
+    [property: AceitaCodigosDe<TipoMotivoDeDecisao>] IReadOnlyList<string?>? TiposDeDecisao = null);
 
 /// <summary>Um item de avaliação (critério ou bloco) da etapa e a pontuação máxima que ele vale.</summary>
 public sealed record ItemDeAvaliacaoInput(Guid? Id, string Rotulo, decimal PontuacaoMaxima);
