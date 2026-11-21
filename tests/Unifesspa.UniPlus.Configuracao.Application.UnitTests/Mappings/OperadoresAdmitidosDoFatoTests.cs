@@ -4,7 +4,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Application.Mappings;
-using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -14,7 +14,7 @@ public sealed class OperadoresAdmitidosDoFatoTests
 {
     private static CodigoComRotulo<Operador>[] Operadores(
         DominioFato dominio, CardinalidadeFato cardinalidade, FonteValoresFato? fonte = null) =>
-        [.. OperadoresAdmitidosDoFato.De(Fato(dominio, cardinalidade, fonte))];
+        [.. OperadoresAdmitidosDoFato.De(FatosCandidatoDeTeste.Declarado(dominio, cardinalidade, fonte))];
 
     [Fact(DisplayName = "Categórico multivalorado devolve os operadores lidos sobre o conjunto, na ordem da tela")]
     public void De_CategoricoMultivalorado_LeSobreOConjunto() =>
@@ -75,9 +75,4 @@ public sealed class OperadoresAdmitidosDoFatoTests
 
     private static CodigoComRotulo<Operador> Rotulado(string codigo, string rotulo) =>
         CodigoComRotulo<Operador>.De(CatalogoDe<Operador>.Obter(codigo), rotulo);
-
-    private static FatoCandidato Fato(DominioFato dominio, CardinalidadeFato cardinalidade, FonteValoresFato? fonte) =>
-        CriacaoDoFato.CriarDoAdministrador(
-            "FATO_DE_TESTE", "Fato de teste", "Descrição do fato.", dominio, cardinalidade, fonte, dominio == DominioFato.Texto ? FormatoTexto.Livre : null, "INSCRICAO", EscopoFato.Candidato,
-            ClassificacaoDeProtecao.Pessoal, "Verificação dos requisitos do processo seletivo.", HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
 }

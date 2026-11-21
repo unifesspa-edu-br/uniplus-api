@@ -86,7 +86,7 @@ public sealed class FatosCandidatoController : ControllerBase
     [HttpGet("admin/fatos-candidato")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoConsultar, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
     [VendorMediaType(Resource = "fato-candidato", Versions = [1])]
-    [ProducesResponseType(typeof(IEnumerable<FatoCandidatoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<FatoDeManutencaoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -112,14 +112,14 @@ public sealed class FatosCandidatoController : ControllerBase
     [HttpGet("admin/fatos-candidato/{id:guid}")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoConsultar, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
     [VendorMediaType(Resource = "fato-candidato", Versions = [1])]
-    [ProducesResponseType(typeof(FatoCandidatoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(FatoDeManutencaoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterParaManutencao(Guid id, CancellationToken cancellationToken)
     {
-        FatoCandidatoDto? fato = await _queryBus.Send(new ObterFatoCandidatoParaManutencaoQuery(id), cancellationToken)
+        FatoDeManutencaoDto? fato = await _queryBus.Send(new ObterFatoCandidatoParaManutencaoQuery(id), cancellationToken)
             .ConfigureAwait(false);
         return fato is null ? NotFound() : Ok(fato);
     }
@@ -214,6 +214,13 @@ public sealed class FatosCandidatoController : ControllerBase
     /// padrão, um agregado, um modelo de formulário ou a regra de uma modalidade é recusada, com a
     /// lista do que deixaria de valer. A versão publicada de um processo não muda.
     /// </summary>
+    /// <remarks>
+    /// O corpo é plano e cada campo vem da <c>definicao</c> da resposta do fato: <c>dominio</c>, <c>cardinalidade</c>,
+    /// <c>formato</c> e <c>escopo</c> têm o mesmo nome; <c>fonteValores</c> é <c>definicao.valores.fonte</c>;
+    /// <c>pontoResolucao</c> é <c>definicao.resolucao.pontoResolucao</c>; <c>classificacaoProtecao</c>,
+    /// <c>finalidadeTratamento</c> e <c>hipoteseLegal</c> são <c>definicao.protecao.classificacao</c>,
+    /// <c>definicao.protecao.finalidade</c> e <c>definicao.protecao.hipoteseLegal</c>.
+    /// </remarks>
     [HttpPut("admin/fatos-candidato/{id:guid}/definicao")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
     [RequiresIdempotencyKey]
@@ -230,7 +237,10 @@ public sealed class FatosCandidatoController : ControllerBase
         return Enviar(new AlterarDefinicaoDoFatoCandidatoCommand(id, request), cancellationToken);
     }
 
-    /// <summary>Edita o nome e a descrição; os eixos têm a alteração própria, em <c>/definicao</c>.</summary>
+    /// <summary>
+    /// Edita o nome, a descrição e o componente de exibição; os eixos têm a alteração própria, em <c>/definicao</c>.
+    /// O corpo tem os campos do <c>descritivo</c> da resposta do fato.
+    /// </summary>
     [HttpPut("admin/fatos-candidato/{id:guid}")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
     [RequiresIdempotencyKey]
