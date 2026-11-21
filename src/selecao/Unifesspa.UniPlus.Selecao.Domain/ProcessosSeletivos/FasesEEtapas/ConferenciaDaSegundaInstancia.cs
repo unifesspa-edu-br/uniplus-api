@@ -25,9 +25,9 @@ internal static class ConferenciaDaSegundaInstancia
     /// </summary>
     private sealed record AlcanceDaBancaDaFase(IReadOnlyList<EtapaDeclarada> Etapas, bool Incerto, bool EtapaQueAdmiteTemBancaPropria);
 
-    /// <summary>Todas as causas da banca de 2ª instância: primeiro as faltas, depois as sobras.</summary>
+    /// <summary>Todas as causas da banca de 2ª instância: primeiro as faltas, depois as sobras e os excessos.</summary>
     internal static IReadOnlyList<FieldError> Conferir(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
-        [.. Faltas(cronograma, etapas).Causas, .. Sobras(cronograma, etapas).Causas];
+        [.. Faltas(cronograma, etapas).Causas, .. Sobras(cronograma, etapas).Causas, .. Excessos(cronograma, etapas).Causas];
 
     /// <summary>O recurso que admite instância superior sem banca de 2ª instância no lugar certo: primeiro as fases, depois as etapas.</summary>
     internal static Veredicto Faltas(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas)
@@ -53,6 +53,36 @@ internal static class ConferenciaDaSegundaInstancia
                 .. cronograma.Fases.Select((fase, posicao) => SobraNaFase(fase, posicao, EtapasNoAlcanceDaBancaDaFase(fase, etapas))),
                 .. etapas.Etapas.Select(SobraNaEtapa),
             ]);
+
+    /// <summary>O excesso de bancas aceitas em cada lugar, exceto onde a sobra já orienta a retirada.</summary>
+    internal static Veredicto Excessos(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
+        Juntar(cronograma, etapas,
+        [
+            .. cronograma.Fases.Select((fase, posicao) => ExcessoNaFase(fase, posicao, etapas)),
+            .. etapas.Etapas.Select(ExcessoNaEtapa),
+        ]);
+
+    private static Veredicto ExcessoNaFase(FaseDeclarada fase, int posicao, EtapasDoProcesso etapas) =>
+        ExcessoDasBancas(
+            fase.Bancas.BancasDaSegundaInstancia,
+            fase.ParteRecusadaEm(FaseDeclarada.ListaDasBancasRequeridas),
+            SobraNaFase(fase, posicao, EtapasNoAlcanceDaBancaDaFase(fase, etapas)),
+            banca => CronogramaDoProcesso.NaFase(posicao, $"{FaseDeclarada.ListaDasBancasRequeridas}[{banca.Posicao}]",
+                ExigenciaDaBancaDaSegundaInstancia.FaseComMaisDeUmaBanca(fase.Codigo, fase.Bancas.BancasDaSegundaInstancia.Count, banca)));
+
+    private static Veredicto ExcessoNaEtapa(EtapaDeclarada etapa, int posicao) =>
+        ExcessoDasBancas(
+            etapa.Bancas.BancasDaSegundaInstancia,
+            etapa.ParteRecusadaEm(EtapaDeclarada.ListaDasBancas),
+            SobraNaEtapa(etapa, posicao),
+            banca => EtapasDoProcesso.NaEtapa(posicao, $"{EtapaDeclarada.ListaDasBancas}[{banca.Posicao}]",
+                ExigenciaDaBancaDaSegundaInstancia.EtapaComMaisDeUmaBanca(posicao, etapa.Bancas.BancasDaSegundaInstancia.Count, banca)));
+
+    private static Veredicto ExcessoDasBancas(
+        IReadOnlyList<BancaDeclarada> bancas, bool listaRecusada, Veredicto sobra, Func<BancaDeclarada, FieldError> recusa) =>
+        sobra.Causas.Count > 0
+            ? Veredicto.SemJulgar
+            : new(bancas.Count > 1 ? [recusa(bancas[1])] : [], listaRecusada);
 
     private static Veredicto Juntar(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, Veredicto[] lugares) =>
         new(

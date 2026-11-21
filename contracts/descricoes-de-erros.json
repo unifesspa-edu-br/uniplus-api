@@ -13949,6 +13949,24 @@
       ]
     },
     {
+      "codigo": "uniplus.selecao.banca.etapa_com_mais_de_uma_banca_da_segunda_instancia",
+      "requisitos": [
+        "UNI-REQ-0454"
+      ],
+      "oQueAconteceu": [
+        "A etapa prevê duas ou mais bancas com o papel de julgar o recurso em 2ª\ninstância. A 2ª instância é um colegiado único (UNI-REQ-0454): a etapa admite uma\núnica banca com esse papel.",
+        "A mensagem cita a etapa pela posição, e não pelo nome, a quantidade de bancas com\no papel e a segunda banca, pelo nome do tipo e pelo número dela, que é a primeira\na retirar. A banca de 2ª instância da etapa e a da fase em que ela acontece são\naceitas juntas: a regra conta por lugar. No lugar em que sai a recusa de banca\nde 2ª instância sem recurso para julgar, esta recusa não sai: primeiro se\nretiram as bancas que não têm recurso para julgar.",
+        "A conferência é de completude e roda na publicação e na retificação em ato\núnico. A recusa vem como o código desta página no corpo da resposta, e não na\nlista `errors[]`, e aponta o campo `etapas[i].bancas[p]`, com a identificação da\nbanca para a tela ligar a recusa à banca certa."
+      ],
+      "comoResolver": [
+        "Mantenha uma banca de 2ª instância na etapa e retire as demais, a começar pela\nque a mensagem cita.",
+        "O painel de conformidade aponta a pendência antes da publicação, no item\n`cronograma_uma_banca_da_segunda_instancia_por_fase_ou_etapa`."
+      ],
+      "ondeAparece": [
+        "- Publicação inicial do processo seletivo\n- Retificação em ato único"
+      ]
+    },
+    {
       "codigo": "uniplus.selecao.banca.etapa_sem_banca_da_segunda_instancia",
       "requisitos": [
         "UNI-REQ-0274",
@@ -13983,6 +14001,24 @@
         "Escolha um dos caminhos:",
         "- retire a banca de 2ª instância da fase;\n- ou retire a banca de 2ª instância de uma etapa da fase com recurso que admite instância superior, para que a banca da fase julgue o recurso dela;\n- ou declare que o recurso da fase, ou o de uma etapa dela sem banca de 2ª instância própria, admite instância superior.",
         "O painel de conformidade aponta a pendência antes da publicação, no item `cronograma_banca_da_segunda_instancia_com_recurso_para_julgar`."
+      ],
+      "ondeAparece": [
+        "- Publicação inicial do processo seletivo\n- Retificação em ato único"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.banca.fase_com_mais_de_uma_banca_da_segunda_instancia",
+      "requisitos": [
+        "UNI-REQ-0454"
+      ],
+      "oQueAconteceu": [
+        "A fase prevê duas ou mais bancas com o papel de julgar o recurso em 2ª instância.\nA 2ª instância é um colegiado único (UNI-REQ-0454): a fase admite uma única banca\ncom esse papel.",
+        "A mensagem cita a fase pelo código, a quantidade de bancas com o papel e a\nsegunda banca, pelo nome do tipo e pelo número dela, que é a primeira a retirar.\nUma banca na fase e outra numa etapa dela são aceitas: a regra conta por lugar.\nNo lugar em que sai a recusa de banca de 2ª instância sem recurso para\njulgar, esta recusa não sai: primeiro se retiram as bancas que não têm recurso\npara julgar.",
+        "A conferência é de completude e roda na publicação e na retificação em ato\núnico. A recusa vem como o código desta página no corpo da resposta, e não na\nlista `errors[]`, e aponta o campo `fases[i].bancasRequeridas[p]`, com a\nidentificação da banca para a tela ligar a recusa à banca certa."
+      ],
+      "comoResolver": [
+        "Mantenha uma banca de 2ª instância na fase e retire as demais, a começar pela que\na mensagem cita. Se as duas bancas faziam trabalho diferente, uma delas não é de\n2ª instância: troque o tipo dela.",
+        "O painel de conformidade aponta a pendência antes da publicação, no item\n`cronograma_uma_banca_da_segunda_instancia_por_fase_ou_etapa`."
       ],
       "ondeAparece": [
         "- Publicação inicial do processo seletivo\n- Retificação em ato único"

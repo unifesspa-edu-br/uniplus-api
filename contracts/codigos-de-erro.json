@@ -4292,6 +4292,11 @@
       "titulo": "A etapa prevê banca que julga o recurso em 2ª instância, e nenhum recurso da etapa admite instância superior"
     },
     {
+      "codigo": "uniplus.selecao.banca.etapa_com_mais_de_uma_banca_da_segunda_instancia",
+      "status": 422,
+      "titulo": "A etapa prevê mais de uma banca que julga o recurso em 2ª instância"
+    },
+    {
       "codigo": "uniplus.selecao.banca.etapa_sem_banca_da_segunda_instancia",
       "status": 422,
       "titulo": "O recurso admite instância superior, e nem a etapa nem a fase preveem banca que o julgue em 2ª instância"
@@ -4300,6 +4305,11 @@
       "codigo": "uniplus.selecao.banca.fase_com_banca_da_segunda_instancia_sem_recurso_para_julgar",
       "status": 422,
       "titulo": "A fase prevê banca que julga o recurso em 2ª instância, e não há recurso para ela julgar"
+    },
+    {
+      "codigo": "uniplus.selecao.banca.fase_com_mais_de_uma_banca_da_segunda_instancia",
+      "status": 422,
+      "titulo": "A fase prevê mais de uma banca que julga o recurso em 2ª instância"
     },
     {
       "codigo": "uniplus.selecao.banca.fase_sem_banca_da_segunda_instancia",

@@ -39,6 +39,8 @@ public sealed class ErrosDaBancaTests
     [InlineData("Banca.EtapaSemBancaDaSegundaInstancia", "uniplus.selecao.banca.etapa_sem_banca_da_segunda_instancia")]
     [InlineData("Banca.FaseComBancaDaSegundaInstanciaSemRecursoParaJulgar", "uniplus.selecao.banca.fase_com_banca_da_segunda_instancia_sem_recurso_para_julgar")]
     [InlineData("Banca.EtapaComBancaDaSegundaInstanciaSemRecursoParaJulgar", "uniplus.selecao.banca.etapa_com_banca_da_segunda_instancia_sem_recurso_para_julgar")]
+    [InlineData("Banca.FaseComMaisDeUmaBancaDaSegundaInstancia", "uniplus.selecao.banca.fase_com_mais_de_uma_banca_da_segunda_instancia")]
+    [InlineData("Banca.EtapaComMaisDeUmaBancaDaSegundaInstancia", "uniplus.selecao.banca.etapa_com_mais_de_uma_banca_da_segunda_instancia")]
     public void Recusa_MapeadaPara422ComOCodigoEstavel(string codigoDoDominio, string codigoNoFio)
     {
         bool mapeada = Mapper.TryGetMapping(codigoDoDominio, out DomainErrorMapping? mapeamento);
@@ -55,6 +57,8 @@ public sealed class ErrosDaBancaTests
     [InlineData("Banca.EtapaSemBancaDaSegundaInstancia", "O recurso admite instância superior, e nem a etapa nem a fase preveem banca que o julgue em 2ª instância")]
     [InlineData("Banca.FaseComBancaDaSegundaInstanciaSemRecursoParaJulgar", "A fase prevê banca que julga o recurso em 2ª instância, e não há recurso para ela julgar")]
     [InlineData("Banca.EtapaComBancaDaSegundaInstanciaSemRecursoParaJulgar", "A etapa prevê banca que julga o recurso em 2ª instância, e nenhum recurso da etapa admite instância superior")]
+    [InlineData("Banca.FaseComMaisDeUmaBancaDaSegundaInstancia", "A fase prevê mais de uma banca que julga o recurso em 2ª instância")]
+    [InlineData("Banca.EtapaComMaisDeUmaBancaDaSegundaInstancia", "A etapa prevê mais de uma banca que julga o recurso em 2ª instância")]
     public void RecusaDaSegundaInstancia_TemOTituloDoContrato(string codigoDoDominio, string titulo)
     {
         Mapper.TryGetMapping(codigoDoDominio, out DomainErrorMapping? mapeamento).Should().BeTrue();

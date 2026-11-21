@@ -24,6 +24,8 @@ public static class BancaErrorCodes
     public const string EtapaSemBancaDaSegundaInstancia = "Banca.EtapaSemBancaDaSegundaInstancia";
     public const string FaseComBancaDaSegundaInstanciaSemRecursoParaJulgar = "Banca.FaseComBancaDaSegundaInstanciaSemRecursoParaJulgar";
     public const string EtapaComBancaDaSegundaInstanciaSemRecursoParaJulgar = "Banca.EtapaComBancaDaSegundaInstanciaSemRecursoParaJulgar";
+    public const string FaseComMaisDeUmaBancaDaSegundaInstancia = "Banca.FaseComMaisDeUmaBancaDaSegundaInstancia";
+    public const string EtapaComMaisDeUmaBancaDaSegundaInstancia = "Banca.EtapaComMaisDeUmaBancaDaSegundaInstancia";
     public const string IdDuplicado = "Banca.IdDuplicado";
     public const string RecursoSemBanca = "Cronograma.RecursoSemBanca";
 }
