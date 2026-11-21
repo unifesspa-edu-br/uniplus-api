@@ -40,7 +40,7 @@ public static class ConferenciaDasBancas
         ArgumentNullException.ThrowIfNull(cronograma);
         ArgumentNullException.ThrowIfNull(etapas);
 
-        return [.. FasesSemBancaDeRecursos(cronograma), .. EtapasSemBancaDeRecursos(cronograma, etapas)];
+        return QuemJulgaORecurso.SemBanca(cronograma, etapas);
     }
 
     public static IReadOnlyList<FieldError> ConferirRegrasDeDeliberacao(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas)
@@ -98,36 +98,7 @@ public static class ConferenciaDasBancas
 
     // O mínimo só fica indeterminado onde há etapa cuja julgadora não se sabe: parte recusada em fase sem etapa não o afeta.
     private static bool EtapaJulgadaIndeterminada(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
-        etapas.Etapas.Any(etapa => JulgadoraDaEtapaIndeterminada(cronograma, etapa));
-
-    private static IEnumerable<FieldError> FasesSemBancaDeRecursos(CronogramaDoProcesso cronograma) =>
-        cronograma.Fases
-            .Select(static (fase, posicao) => (fase, posicao))
-            .Where(static par => par.fase.Atos.AdmiteRecurso && !par.fase.ParteRecusadaEm(FaseDeclarada.ListaDasBancasRequeridas) && !par.fase.Bancas.TemBancaDeRecursos)
-            .Select(static par => CronogramaDoProcesso.NaFase(par.posicao, "bancasRequeridas", ExigenciaDeBancaDeRecurso.FaseSemBancaDeRecursos(par.fase.Codigo)));
-
-    private static IEnumerable<FieldError> EtapasSemBancaDeRecursos(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
-        etapas.Etapas
-            .Select(static (etapa, posicao) => (etapa, posicao))
-            .Where(par => !JulgadoraDaEtapaIndeterminada(cronograma, par.etapa)
-                && ExigenciaDeBancaDeRecurso.EtapaSemBancaQueJulgue(par.etapa.Atos.TemRecursos, par.etapa.Bancas.TemBancaDeRecursos, FaseDaEtapaTemBancaDeRecursos(cronograma, par.etapa)))
-            .Select(static par => EtapasDoProcesso.NaEtapa(par.posicao, "bancas", ExigenciaDeBancaDeRecurso.EtapaSemBancaDeRecursos(par.etapa.Nome)));
-
-    private static bool JulgadoraDaEtapaIndeterminada(CronogramaDoProcesso cronograma, EtapaDeclarada etapa) =>
-        etapa.ParteRecusadaEm(EtapaDeclarada.ListaDasBancas)
-        || etapa.ParteRecusadaEm(EtapaDeclarada.ListaDosRecursos)
-        || FaseDaEtapaPodeTerSidoRecusada(cronograma, etapa)
-        || cronograma.Fases.Any(fase => string.Equals(fase.Codigo, etapa.FaseCodigo, StringComparison.Ordinal) && fase.ParteRecusadaEm(FaseDeclarada.ListaDasBancasRequeridas));
-
-    // A fase que a leitura recusou inteira não chega ao cronograma, e a banca de recursos que ela declarou com ela: a etapa que
-    // cita uma fase que não está entre as aceitas, havendo fase recusada, pode ser julgada por essa banca.
-    private static bool FaseDaEtapaPodeTerSidoRecusada(CronogramaDoProcesso cronograma, EtapaDeclarada etapa) =>
-        cronograma.TemParteRecusadaNaListaDeFases
-        && etapa.FaseCodigo is not null
-        && !cronograma.Fases.Any(fase => string.Equals(fase.Codigo, etapa.FaseCodigo, StringComparison.Ordinal));
-
-    private static bool FaseDaEtapaTemBancaDeRecursos(CronogramaDoProcesso cronograma, EtapaDeclarada etapa) =>
-        cronograma.Fases.Any(fase => string.Equals(fase.Codigo, etapa.FaseCodigo, StringComparison.Ordinal) && fase.Bancas.TemBancaDeRecursos);
+        etapas.Etapas.Any(etapa => QuemJulgaORecurso.JulgadoraIndeterminada(cronograma, etapa));
 
     private static IEnumerable<FieldError> BancasSemRegraDasFases(CronogramaDoProcesso cronograma) =>
         cronograma.Fases.SelectMany(static (fase, posicao) => fase.Bancas.Declaradas
@@ -149,7 +120,7 @@ public static class ConferenciaDasBancas
                 banca.Nome,
                 $"da fase '{fase.Codigo}'",
                 banca.Regra!,
-                banca.DeRecursos ? EtapasRecorridasSemBancaPropria(cronograma, etapas, fase) : [])));
+                banca.DeRecursos ? EtapasJulgadasPelaFase(cronograma, etapas, fase) : [])));
 
     private static IEnumerable<BancaJulgadora> BancasDasEtapas(EtapasDoProcesso etapas) =>
         etapas.Etapas.SelectMany(static (etapa, posicao) => etapa.Bancas.Declaradas
@@ -163,11 +134,11 @@ public static class ConferenciaDasBancas
 
     // A etapa da fase com recurso e sem banca de recursos própria é julgada pela banca de recursos da fase; a etapa de julgadora
     // indeterminada não se atribui a banca nenhuma, e o mínimo se confere sobre as que a banca julga com certeza.
-    private static EtapaDeclarada[] EtapasRecorridasSemBancaPropria(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, FaseDeclarada fase) =>
-        [.. etapas.Etapas.Where(etapa => string.Equals(etapa.FaseCodigo, fase.Codigo, StringComparison.Ordinal)
-            && !JulgadoraDaEtapaIndeterminada(cronograma, etapa)
-            && etapa.Atos.TemRecursos
-            && !etapa.Bancas.TemBancaDeRecursos)];
+    private static EtapaDeclarada[] EtapasJulgadasPelaFase(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, FaseDeclarada fase) =>
+        [.. QuemJulgaORecurso.DasEtapas(cronograma, etapas)
+            .Where(recurso => recurso.Nivel == QuemJulgaORecurso.Nivel.BancaDeRecursosDaFase
+                && string.Equals(recurso.Etapa.FaseCodigo, fase.Codigo, StringComparison.Ordinal))
+            .Select(static recurso => recurso.Etapa)];
 
     private static IEnumerable<FieldError> RegrasNaoResolvidas(BancaJulgadora[] bancas, CorretoresDasEtapas corretores) =>
         bancas.SelectMany(banca => banca.Julgadas
