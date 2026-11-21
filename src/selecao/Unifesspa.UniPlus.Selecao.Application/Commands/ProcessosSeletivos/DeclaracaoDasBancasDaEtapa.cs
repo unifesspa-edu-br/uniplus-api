@@ -6,6 +6,7 @@ using Domain.ValueObjects;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
 /// Declara as bancas de uma etapa, copiando por valor o tipo de banca do cadastro e acumulando as
@@ -44,6 +45,6 @@ internal sealed class DeclaracaoDasBancasDaEtapa(LeituraMemoizada<Guid, TipoBanc
         Result<RegraDeDeliberacao?> regra = MontagemDaRegraDeDeliberacao.Montar(declarada.RegraDeDeliberacao, $"bancas[{posicao}]");
         return regra.IsFailure
             ? Result<BancaDaEtapa>.ValidationFailure(regra.Errors)
-            : Result<BancaDaEtapa>.Success(BancaDaEtapa.Criar(tipo.Id, tipo.Codigo, tipo.Nome, regra.Value));
+            : Result<BancaDaEtapa>.Success(BancaDaEtapa.Criar(tipo.Id, tipo.Codigo.Codigo(), tipo.Nome, regra.Value));
     }
 }

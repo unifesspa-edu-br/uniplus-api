@@ -8125,28 +8125,15 @@
         "UNI-REQ-0139"
       ],
       "oQueAconteceu": [
-        "O código informado respeita o formato (`^[A-Z_]+$`), mas não é o de nenhum\ntipo de banca do catálogo da seleção, que é fechado: o cadastro aceita só os\ncódigos dos tipos que o catálogo traz.",
+        "O código informado não é o de nenhum tipo de banca do vocabulário, que é fechado:\no cadastro aceita só os códigos dos tipos que o vocabulário traz. O código é lido\nexatamente como foi enviado, sem tirar espaços: um código com espaço no começo ou no\nfim também cai aqui.",
+        "A mensagem da resposta diz: \"O tipo de banca informado não é um dos aceitos. Tipos de\nbanca aceitos: Banca de análise documental; Banca de entrevista; Banca de correção de\nredações; Banca de análise de recursos; Banca de análise de recursos de 2ª instância; Banca de heteroidentificação; Banca de avaliação\nbiopsicossocial; Banca de homologação das inscrições; Banca de importação das notas do\nINEP; Banca de importação de candidatos.\" Ela lista os tipos pelo nome, sem repetir o\nvalor enviado.",
         "Este cadastro entrega o **tipo** da banca. A composição da banca (membros,\natas, deliberações) não é modelada aqui."
       ],
       "comoResolver": [
-        "Use o código de um tipo de banca do catálogo, que `GET /api/configuracao/vocabularios/tipos-banca` lista."
+        "Use o código de um tipo de banca do vocabulário, que `GET /api/configuracao/vocabularios/tipos-banca` lista."
       ],
       "ondeAparece": [
-        "Criação de um tipo de banca"
-      ]
-    },
-    {
-      "codigo": "uniplus.configuracao.tipo_banca.codigo_formato_invalido",
-      "requisitos": [],
-      "oQueAconteceu": [
-        "O **código** informado não respeita o formato fechado — `^[A-Z_]+$`: apenas\nletras maiúsculas e sublinhado, sem hífen e sem dígito —, com no máximo 60\ncaracteres (ex.: `BANCA_ENTREVISTA`).",
-        "Esta validação é só de formato. Um código bem formado ainda pode não\npertencer ao catálogo de tipos de banca — ver\n[código fora do conjunto canônico](/erros/uniplus.configuracao.tipo_banca.codigo_fora_do_conjunto_canonico)."
-      ],
-      "comoResolver": [
-        "Use apenas letras maiúsculas e sublinhado, sem hífen e sem dígito, com até\n60 caracteres."
-      ],
-      "ondeAparece": [
-        "Criação de um tipo de banca"
+        "- Criação de um tipo de banca"
       ]
     },
     {

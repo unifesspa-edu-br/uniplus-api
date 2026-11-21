@@ -15165,7 +15165,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/TipoBancaVocabularioDto"
+                    "$ref": "#/components/schemas/TipoDeBanca"
                   }
                 }
               }
@@ -18045,9 +18045,13 @@
         "type": "object",
         "properties": {
           "codigo": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TipoDeBancaCodigo"
+              }
             ]
           },
           "nome": {
@@ -22188,7 +22192,7 @@
             "format": "uuid"
           },
           "codigo": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoDeBanca"
           },
           "nome": {
             "type": "string"
@@ -22217,21 +22221,6 @@
             "additionalProperties": {
               "type": "string"
             }
-          }
-        }
-      },
-      "TipoBancaVocabularioDto": {
-        "required": [
-          "codigo",
-          "nome"
-        ],
-        "type": "object",
-        "properties": {
-          "codigo": {
-            "type": "string"
-          },
-          "nome": {
-            "type": "string"
           }
         }
       },
@@ -22299,6 +22288,36 @@
             }
           }
         }
+      },
+      "TipoDeBanca": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/TipoDeBancaCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "TipoDeBancaCodigo": {
+        "enum": [
+          "BANCA_ANALISE_DOCUMENTAL",
+          "BANCA_ENTREVISTA",
+          "BANCA_CORRECAO_REDACOES",
+          "BANCA_ANALISE_RECURSOS",
+          "BANCA_HETEROIDENTIFICACAO",
+          "BANCA_BIOPSICOSSOCIAL",
+          "BANCA_HOMOLOGACAO_INSCRICOES",
+          "BANCA_IMPORTACAO_NOTAS_INEP",
+          "BANCA_IMPORTACAO_CANDIDATOS"
+        ],
+        "type": "string",
+        "description": "O tipo de banca que a sele\u00E7\u00E3o pode prever em uma fase ou em uma etapa. O c\u00F3digo e o r\u00F3tulo do tipo s\u00E3o fixos; o nome do cadastro de tipos de banca pode ser editado.\n\n- \u0060BANCA_ANALISE_DOCUMENTAL\u0060: Banca de an\u00E1lise documental\n- \u0060BANCA_ENTREVISTA\u0060: Banca de entrevista\n- \u0060BANCA_CORRECAO_REDACOES\u0060: Banca de corre\u00E7\u00E3o de reda\u00E7\u00F5es\n- \u0060BANCA_ANALISE_RECURSOS\u0060: Banca de an\u00E1lise de recursos\n- \u0060BANCA_HETEROIDENTIFICACAO\u0060: Banca de heteroidentifica\u00E7\u00E3o\n- \u0060BANCA_BIOPSICOSSOCIAL\u0060: Banca de avalia\u00E7\u00E3o biopsicossocial\n- \u0060BANCA_HOMOLOGACAO_INSCRICOES\u0060: Banca de homologa\u00E7\u00E3o das inscri\u00E7\u00F5es\n- \u0060BANCA_IMPORTACAO_NOTAS_INEP\u0060: Banca de importa\u00E7\u00E3o das notas do INEP\n- \u0060BANCA_IMPORTACAO_CANDIDATOS\u0060: Banca de importa\u00E7\u00E3o de candidatos"
       },
       "TipoDeficienciaDto": {
         "required": [

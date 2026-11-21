@@ -4,9 +4,10 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
-using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Implementação de <see cref="ITipoBancaReader"/> (ADR-0056): leitura direta do
@@ -47,7 +48,7 @@ internal sealed class TipoBancaReader : ITipoBancaReader
     {
         ArgumentNullException.ThrowIfNull(codigos);
 
-        List<CodigoBanca> codigosDoLote = CodigosDoLote.Validos(codigos, CodigoBanca.Criar);
+        List<TipoDeBanca> codigosDoLote = TiposDoLote(codigos);
         List<TipoBanca> entidades = await _dbContext.TiposBanca
             .AsNoTracking()
             .Where(b => codigosDoLote.Contains(b.Codigo))
@@ -70,10 +71,17 @@ internal sealed class TipoBancaReader : ITipoBancaReader
         return entidade is null ? null : ParaView(entidade);
     }
 
+    // Um código fora do vocabulário nunca tem tipo cadastrado, então sai do lote em vez de virar consulta.
+    private static List<TipoDeBanca> TiposDoLote(IReadOnlyCollection<string> codigos) =>
+    [.. codigos
+        .Where(static codigo => CatalogoDe<TipoDeBanca>.TentarObter(codigo, out _))
+        .Select(static codigo => CatalogoDe<TipoDeBanca>.Obter(codigo))
+        .Distinct()];
+
     private static TipoBancaView ParaView(TipoBanca b) =>
         new(
             b.Id,
-            b.Codigo.Valor,
+            b.Codigo,
             b.Nome,
             b.FaseTipica,
             b.Descricao);

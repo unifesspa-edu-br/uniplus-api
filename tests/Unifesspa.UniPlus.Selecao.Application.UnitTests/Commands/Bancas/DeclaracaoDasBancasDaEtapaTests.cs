@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -12,8 +13,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed class DeclaracaoDasBancasDaEtapaTests
 {
     private static readonly Guid TipoDaProva = Guid.CreateVersion7();
-    private static readonly TipoBancaView TipoExaminadora = new(Guid.CreateVersion7(), "BANCA_EXAMINADORA", "Banca examinadora", null, null);
-    private static readonly TipoBancaView TipoDeRecursos = new(Guid.CreateVersion7(), "BANCA_ANALISE_RECURSOS", "Banca de análise de recursos", null, null);
+    private static readonly TipoBancaView TipoDeEntrevista = new(Guid.CreateVersion7(), TipoDeBanca.Entrevista, "Banca de entrevista", null, null);
+    private static readonly TipoBancaView TipoDeRecursos = new(Guid.CreateVersion7(), TipoDeBanca.AnaliseDeRecursos, "Banca de análise de recursos", null, null);
     private static readonly string[] CamposDaPrimeiraEDaTerceiraBanca =
     [
         "bancas[0].regraDeDeliberacao.integrantes",
@@ -29,12 +30,12 @@ public sealed class DeclaracaoDasBancasDaEtapaTests
     {
         EtapaProcesso etapa = NovaEtapa();
 
-        Result resultado = await Declaracao().DeclararAsync(etapa, Entrada(Banca(TipoExaminadora, RegrasDeDeliberacaoDeTeste.Valida())), CancellationToken.None);
+        Result resultado = await Declaracao().DeclararAsync(etapa, Entrada(Banca(TipoDeEntrevista, RegrasDeDeliberacaoDeTeste.Valida())), CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
         BancaDaEtapa banca = etapa.Bancas.Should().ContainSingle().Subject;
-        banca.Codigo.Should().Be("BANCA_EXAMINADORA");
-        banca.Nome.Should().Be("Banca examinadora");
+        banca.Codigo.Should().Be("BANCA_ENTREVISTA");
+        banca.Nome.Should().Be("Banca de entrevista");
         banca.RegraDeDeliberacao!.Integrantes.Should().Be(3);
     }
 
@@ -43,7 +44,7 @@ public sealed class DeclaracaoDasBancasDaEtapaTests
     {
         EtapaProcesso etapa = NovaEtapa();
 
-        Result resultado = await Declaracao().DeclararAsync(etapa, Entrada(Banca(TipoExaminadora, null)), CancellationToken.None);
+        Result resultado = await Declaracao().DeclararAsync(etapa, Entrada(Banca(TipoDeEntrevista, null)), CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
         etapa.Bancas.Single().RegraDeDeliberacao.Should().BeNull();
@@ -54,9 +55,9 @@ public sealed class DeclaracaoDasBancasDaEtapaTests
     {
         EtapaProcesso etapa = NovaEtapa();
         EtapaProcessoInput entrada = Entrada(
-            Banca(TipoExaminadora, RegrasDeDeliberacaoDeTeste.ComTresViolacoes()),
+            Banca(TipoDeEntrevista, RegrasDeDeliberacaoDeTeste.ComTresViolacoes()),
             Banca(TipoDeRecursos, RegrasDeDeliberacaoDeTeste.Valida()),
-            Banca(TipoExaminadora, RegrasDeDeliberacaoDeTeste.ComTresViolacoes()));
+            Banca(TipoDeEntrevista, RegrasDeDeliberacaoDeTeste.ComTresViolacoes()));
 
         Result resultado = await Declaracao().DeclararAsync(etapa, entrada, CancellationToken.None);
 
@@ -82,10 +83,10 @@ public sealed class DeclaracaoDasBancasDaEtapaTests
     public async Task Declarar_ReaproveitandoABanca_AtualizaARegraSemTrocarALinha()
     {
         EtapaProcesso etapa = NovaEtapa();
-        await Declaracao().DeclararAsync(etapa, Entrada(Banca(TipoExaminadora, null)), CancellationToken.None);
+        await Declaracao().DeclararAsync(etapa, Entrada(Banca(TipoDeEntrevista, null)), CancellationToken.None);
         Guid linha = etapa.Bancas.Single().Id;
 
-        Result resultado = await Declaracao().DeclararAsync(etapa, Entrada(Banca(TipoExaminadora, RegrasDeDeliberacaoDeTeste.Valida())), CancellationToken.None);
+        Result resultado = await Declaracao().DeclararAsync(etapa, Entrada(Banca(TipoDeEntrevista, RegrasDeDeliberacaoDeTeste.Valida())), CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
         BancaDaEtapa banca = etapa.Bancas.Should().ContainSingle().Subject;
@@ -94,7 +95,7 @@ public sealed class DeclaracaoDasBancasDaEtapaTests
     }
 
     private static DeclaracaoDasBancasDaEtapa Declaracao() => new(new LeituraMemoizada<Guid, TipoBancaView>(
-        (tipoId, _) => Task.FromResult<TipoBancaView?>(new[] { TipoExaminadora, TipoDeRecursos }.FirstOrDefault(tipo => tipo.Id == tipoId))));
+        (tipoId, _) => Task.FromResult<TipoBancaView?>(new[] { TipoDeEntrevista, TipoDeRecursos }.FirstOrDefault(tipo => tipo.Id == tipoId))));
 
     private static BancaDaEtapaInput Banca(TipoBancaView tipo, RegraDeDeliberacaoInput? regra) => new(tipo.Id, regra);
 

@@ -4,16 +4,11 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
-using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
-using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via DI em ConfiguracaoInfrastructureRegistration.")]
 public sealed class TipoBancaRepository : ITipoBancaRepository
 {
     private readonly UniPlusDbContext _dbContext;
@@ -64,26 +59,13 @@ public sealed class TipoBancaRepository : ITipoBancaRepository
     }
 
     public Task<bool> CodigoExisteEntreVivosAsync(
-        string codigo,
+        TipoDeBanca codigo,
         Guid? excluirId,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(codigo);
-
-        // Um código fora do formato nunca tem tipo de banca vivo — evita query
-        // desnecessária e garante que a comparação use o valor canônico normalizado
-        // (Trim). Case-sensitive (default do Postgres) — alinhado ao índice único.
-        Result<CodigoBanca> codigoResult = CodigoBanca.Criar(codigo);
-        if (codigoResult.IsFailure)
-        {
-            return Task.FromResult(false);
-        }
-
-        CodigoBanca codigoVo = codigoResult.Value!;
-
         return _dbContext.TiposBanca
             .AsNoTracking()
             .Where(b => excluirId == null || b.Id != excluirId)
-            .AnyAsync(b => b.Codigo == codigoVo, cancellationToken);
+            .AnyAsync(b => b.Codigo == codigo, cancellationToken);
     }
 }

@@ -6,6 +6,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -14,8 +15,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public sealed class MontagemDasBancasDaFaseTests
 {
-    private static readonly TipoBancaView TipoDocumental = new(Guid.CreateVersion7(), "BANCA_ANALISE_DOCUMENTAL", "Banca de análise documental", null, null);
-    private static readonly TipoBancaView TipoDeRecursos = new(Guid.CreateVersion7(), "BANCA_ANALISE_RECURSOS", "Banca de análise de recursos", null, null);
+    private static readonly TipoBancaView TipoDocumental = new(Guid.CreateVersion7(), TipoDeBanca.AnaliseDocumental, "Banca de análise documental", null, null);
+    private static readonly TipoBancaView TipoDeRecursos = new(Guid.CreateVersion7(), TipoDeBanca.AnaliseDeRecursos, "Banca de análise de recursos", null, null);
     private static readonly CategoriaDocumentoView CategoriaRenda = new(Guid.CreateVersion7(), "RENDA", "Renda", null, 1);
 
     [Fact(DisplayName = "A banca requerida congela o tipo, o recorte de competência e a regra declarada")]

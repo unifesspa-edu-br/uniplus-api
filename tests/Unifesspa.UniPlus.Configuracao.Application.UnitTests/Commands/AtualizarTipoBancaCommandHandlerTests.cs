@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 public sealed class AtualizarTipoBancaCommandHandlerTests
 {
@@ -76,7 +77,7 @@ public sealed class AtualizarTipoBancaCommandHandlerTests
             comando, _repository, _unitOfWork, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
-        existente.Codigo.Valor.Should().Be("BANCA_ANALISE_RECURSOS", "o código é imutável — não há campo para alterá-lo");
+        existente.Codigo.Should().Be(TipoDeBanca.AnaliseDeRecursos, "o código é imutável — não há campo para alterá-lo");
         existente.Nome.Should().Be("Banca de recursos (novo)");
         existente.FaseTipica.Should().Be("Recursos");
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());

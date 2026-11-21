@@ -13,7 +13,6 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Errors;
 public static class TipoBancaErrorCodes
 {
     public const string CodigoObrigatorio = "TipoBanca.CodigoObrigatorio";
-    public const string CodigoFormatoInvalido = "TipoBanca.CodigoFormatoInvalido";
     public const string CodigoForaDoConjuntoCanonico = "TipoBanca.CodigoForaDoConjuntoCanonico";
     public const string CodigoJaExiste = "TipoBanca.CodigoJaExiste";
     public const string NomeObrigatorio = "TipoBanca.NomeObrigatorio";

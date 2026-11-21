@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 public sealed class TipoBancaTests
 {
@@ -23,24 +24,25 @@ public sealed class TipoBancaTests
         TipoBanca b = Criar(codigo: "BANCA_ANALISE_DOCUMENTAL", nome: "Banca de análise documental").Value!;
 
         b.Id.Should().NotBe(Guid.Empty);
-        b.Codigo.Valor.Should().Be("BANCA_ANALISE_DOCUMENTAL");
+        b.Codigo.Should().Be(TipoDeBanca.AnaliseDocumental);
         b.Nome.Should().Be("Banca de análise documental");
         b.FaseTipica.Should().BeNull();
         b.IsDeleted.Should().BeFalse();
     }
 
-    // ── Formato do código ──────────────────────────────────────────────────────
+    // ── Leitura exata do código ────────────────────────────────────────────────
 
-    [Theory(DisplayName = "Código com minúscula, hífen ou dígito é rejeitado (formato)")]
+    [Theory(DisplayName = "Código com minúscula, hífen, espaço nas pontas ou dígito não é do vocabulário")]
     [InlineData("banca_entrevista")]
     [InlineData("BANCA-ENTREVISTA")]
+    [InlineData(" BANCA_ENTREVISTA ")]
     [InlineData("BANCA2")]
-    public void Criar_CodigoForaDoFormato_Falha(string codigo)
+    public void Criar_CodigoEscritoDeOutroJeito_NaoEDoVocabulario(string codigo)
     {
         Result<TipoBanca> r = Criar(codigo: codigo);
 
         r.IsFailure.Should().BeTrue();
-        r.Error!.Code.Should().Be(TipoBancaErrorCodes.CodigoFormatoInvalido);
+        r.Error!.Code.Should().Be(TipoBancaErrorCodes.CodigoForaDoConjuntoCanonico);
     }
 
     [Theory(DisplayName = "Código ausente ou em branco é rejeitado")]
@@ -56,7 +58,7 @@ public sealed class TipoBancaTests
 
     // ── Domínio canônico ───────────────────────────────────────────────────────
 
-    [Fact(DisplayName = "Código bem-formado fora do conjunto canônico é rejeitado")]
+    [Fact(DisplayName = "Código bem-formado fora do vocabulário é rejeitado")]
     public void Criar_CodigoForaDoConjuntoCanonico_Falha()
     {
         Result<TipoBanca> r = Criar(codigo: "BANCA_LOGISTICA");
@@ -74,17 +76,36 @@ public sealed class TipoBancaTests
         r.Error!.Message.Should().NotContain("BANCA_LOGISTICA_MUITO_ESPECIFICA");
     }
 
-    [Theory(DisplayName = "Códigos dentro do conjunto canônico são aceitos")]
-    [InlineData("BANCA_ANALISE_DOCUMENTAL")]
-    [InlineData("BANCA_CORRECAO_REDACOES")]
-    [InlineData("BANCA_ANALISE_RECURSOS")]
-    [InlineData("BANCA_HETEROIDENTIFICACAO")]
-    [InlineData("BANCA_BIOPSICOSSOCIAL")]
-    public void Criar_CodigoCanonico_Aceita(string codigo)
+    [Theory(DisplayName = "Todo código do vocabulário de tipos de banca é aceito e vira o tipo correspondente")]
+    [InlineData("BANCA_ANALISE_DOCUMENTAL", TipoDeBanca.AnaliseDocumental)]
+    [InlineData("BANCA_ENTREVISTA", TipoDeBanca.Entrevista)]
+    [InlineData("BANCA_CORRECAO_REDACOES", TipoDeBanca.CorrecaoDeRedacoes)]
+    [InlineData("BANCA_ANALISE_RECURSOS", TipoDeBanca.AnaliseDeRecursos)]
+    [InlineData("BANCA_HETEROIDENTIFICACAO", TipoDeBanca.Heteroidentificacao)]
+    [InlineData("BANCA_BIOPSICOSSOCIAL", TipoDeBanca.AvaliacaoBiopsicossocial)]
+    [InlineData("BANCA_HOMOLOGACAO_INSCRICOES", TipoDeBanca.HomologacaoDasInscricoes)]
+    [InlineData("BANCA_IMPORTACAO_NOTAS_INEP", TipoDeBanca.ImportacaoDasNotasDoInep)]
+    [InlineData("BANCA_IMPORTACAO_CANDIDATOS", TipoDeBanca.ImportacaoDeCandidatos)]
+    public void Criar_CodigoDoVocabulario_Aceita(string codigo, TipoDeBanca esperado)
     {
         Result<TipoBanca> r = Criar(codigo: codigo);
 
         r.IsSuccess.Should().BeTrue();
+        r.Value!.Codigo.Should().Be(esperado);
+    }
+
+    [Fact(DisplayName = "A recusa do código fora do vocabulário diz o que o campo aceita, sem repetir o valor recebido")]
+    public void Criar_CodigoForaDoVocabulario_DetalheFixo()
+    {
+        Result<TipoBanca> r = Criar(codigo: "BANCA_LOGISTICA");
+
+        r.Error!.Message.Should().Be(
+            "O tipo de banca informado não é um dos aceitos. Tipos de banca aceitos: "
+            + "Banca de análise documental; Banca de entrevista; Banca de correção de redações; "
+            + "Banca de análise de recursos; Banca de heteroidentificação; "
+            + "Banca de avaliação biopsicossocial; Banca de homologação das inscrições; "
+            + "Banca de importação das notas do INEP; Banca de importação de candidatos.");
+        r.Error!.Message.Should().NotContain("BANCA_LOGISTICA");
     }
 
     // ── Nome ───────────────────────────────────────────────────────────────────
@@ -215,7 +236,7 @@ public sealed class TipoBancaTests
         Result r = b.Atualizar(nome: "Banca de recursos (novo)", faseTipica: "Recursos", descricao: "desc");
 
         r.IsSuccess.Should().BeTrue();
-        b.Codigo.Valor.Should().Be("BANCA_ANALISE_RECURSOS", "o código é imutável");
+        b.Codigo.Should().Be(TipoDeBanca.AnaliseDeRecursos, "o código é imutável");
         b.Id.Should().Be(idOriginal, "o Id é imutável");
         b.Nome.Should().Be("Banca de recursos (novo)");
         b.FaseTipica.Should().Be("Recursos");

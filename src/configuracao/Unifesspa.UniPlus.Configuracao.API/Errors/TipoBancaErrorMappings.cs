@@ -16,17 +16,11 @@ internal static class TipoBancaErrorMappings
                 "uniplus.configuracao.tipo_banca.codigo_obrigatorio",
                 "Código do tipo de banca é obrigatório")),
 
-        new(TipoBancaErrorCodes.CodigoFormatoInvalido,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.tipo_banca.codigo_formato_invalido",
-                "Código do tipo de banca em formato inválido")),
-
         new(TipoBancaErrorCodes.CodigoForaDoConjuntoCanonico,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.tipo_banca.codigo_fora_do_conjunto_canonico",
-                "Código do tipo de banca fora do conjunto canônico das seis bancas")),
+                "Código fora do vocabulário de tipos de banca")),
 
         new(TipoBancaErrorCodes.CodigoJaExiste,
             new DomainErrorMapping(

@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
@@ -102,7 +103,7 @@ public sealed class DefinirEtapasTiposDeDecisaoTests
     {
         ITipoBancaReader cadastro = Substitute.For<ITipoBancaReader>();
         cadastro.ObterPorIdAsync(TipoBancaId, Arg.Any<CancellationToken>())
-            .Returns(new TipoBancaView(TipoBancaId, "BANCA_EXAMINADORA", "Banca examinadora", null, null));
+            .Returns(new TipoBancaView(TipoBancaId, TipoDeBanca.Entrevista, "Banca de entrevista", null, null));
         return cadastro;
     }
 

@@ -6,6 +6,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -124,7 +125,7 @@ public sealed class DefinirCronogramaFasesResolucaoDosCadastrosTests
         Guid categoriaViva = Guid.CreateVersion7();
         Guid categoriaRemovida = Guid.CreateVersion7();
         cenario.TipoBancaReader.ObterPorIdAsync(tipoBancaId, Arg.Any<CancellationToken>())
-            .Returns(new TipoBancaView(tipoBancaId, "BANCA_ANALISE_DOCUMENTAL", "Banca de análise documental", null, null));
+            .Returns(new TipoBancaView(tipoBancaId, TipoDeBanca.AnaliseDocumental, "Banca de análise documental", null, null));
         cenario.CategoriaDocumentoReader.ObterPorIdAsync(categoriaViva, Arg.Any<CancellationToken>())
             .Returns(new CategoriaDocumentoView(categoriaViva, "RENDA", "Renda", null, 0));
         cenario.CategoriaDocumentoReader.ObterPorIdAsync(categoriaRemovida, Arg.Any<CancellationToken>())

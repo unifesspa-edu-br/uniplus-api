@@ -2544,12 +2544,7 @@
     {
       "codigo": "uniplus.configuracao.tipo_banca.codigo_fora_do_conjunto_canonico",
       "status": 422,
-      "titulo": "Código do tipo de banca fora do conjunto canônico das seis bancas"
-    },
-    {
-      "codigo": "uniplus.configuracao.tipo_banca.codigo_formato_invalido",
-      "status": 422,
-      "titulo": "Código do tipo de banca em formato inválido"
+      "titulo": "Código fora do vocabulário de tipos de banca"
     },
     {
       "codigo": "uniplus.configuracao.tipo_banca.codigo_ja_existe",
