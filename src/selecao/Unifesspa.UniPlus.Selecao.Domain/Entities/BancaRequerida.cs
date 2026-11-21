@@ -6,8 +6,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Uma banca requerida por uma <see cref="FaseCronograma"/> (0..*, Story #851 §4) —
-/// snapshot-copy (ADR-0061) de um <c>TipoBanca</c> do módulo Configuração no momento em
-/// que foi vinculada, mais os <b>candidatos atendidos</b>, que dizem do que ela responde.
+/// cópia (ADR-0061) do <c>TipoBanca</c> do módulo Configuração no momento em que foi vinculada
+/// (<see cref="Tipo"/>), mais os <b>candidatos atendidos</b>, que dizem do que ela responde.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -38,14 +38,11 @@ public sealed class BancaRequerida : EntityBase, IBancaDoLugar<BancaRequerida>
     /// <summary>O id da banca já gravada que esta declaração substitui; ausente quando a banca é nova.</summary>
     private Guid? IdDaBancaQueSubstitui { get; init; }
 
-    /// <summary>Id (Guid v7) do <c>TipoBanca</c> vivo de origem, no momento do congelamento.</summary>
-    public Guid TipoBancaOrigemId { get; private set; }
-
-    /// <summary>Código classificatório congelado (ex.: <c>"BANCA_ANALISE_DOCUMENTAL"</c>).</summary>
-    public string Codigo { get; private set; } = string.Empty;
-
-    /// <summary>Nome do tipo de banca, copiado do cadastro no congelamento (ADR-0061).</summary>
-    public string Nome { get; private set; } = string.Empty;
+    /// <summary>
+    /// O tipo de banca copiado do cadastro: o código, o papel, as marcas e os tipos de decisão que ele julga. Cada banca é
+    /// julgada pela própria cópia, mantida enquanto o tipo dela não muda.
+    /// </summary>
+    public TipoDeBancaCopiado Tipo { get; private set; } = null!;
 
     /// <summary>Como a banca é composta e delibera; ausente enquanto o rascunho não a declara.</summary>
     public RegraDeDeliberacao? RegraDeDeliberacao { get; private set; }
@@ -61,20 +58,16 @@ public sealed class BancaRequerida : EntityBase, IBancaDoLugar<BancaRequerida>
     private BancaRequerida() { }
 
     public static BancaRequerida Criar(
-        Guid tipoBancaOrigemId,
-        string codigo,
-        string nome,
+        TipoDeBancaCopiado tipo,
         IReadOnlyList<CategoriaJulgada> candidatosAtendidos,
         RegraDeDeliberacao? regraDeDeliberacao = null,
         Guid? idDaBancaQueSubstitui = null) =>
-        Montar(Guid.CreateVersion7(), tipoBancaOrigemId, codigo, nome, candidatosAtendidos, regraDeDeliberacao, idDaBancaQueSubstitui);
+        Montar(Guid.CreateVersion7(), tipo, candidatosAtendidos, regraDeDeliberacao, idDaBancaQueSubstitui);
 
     /// <summary>Reconstrói a banca dos dados salvos no envelope, preservando o <see cref="EntityBase.Id"/> congelado.</summary>
     public static BancaRequerida ReconstruirDosDadosSalvos(
         Guid id,
-        Guid tipoBancaOrigemId,
-        string codigo,
-        string nome,
+        TipoDeBancaCopiado tipo,
         IReadOnlyList<CategoriaJulgada> candidatosAtendidos,
         RegraDeDeliberacao? regraDeDeliberacao = null)
     {
@@ -83,27 +76,23 @@ public sealed class BancaRequerida : EntityBase, IBancaDoLugar<BancaRequerida>
             throw new ArgumentException("A banca reconstruída deve declarar o Id congelado no envelope.", nameof(id));
         }
 
-        return Montar(id, tipoBancaOrigemId, codigo, nome, candidatosAtendidos, regraDeDeliberacao, id);
+        return Montar(id, tipo, candidatosAtendidos, regraDeDeliberacao, id);
     }
 
     private static BancaRequerida Montar(
         Guid id,
-        Guid tipoBancaOrigemId,
-        string codigo,
-        string nome,
+        TipoDeBancaCopiado tipo,
         IReadOnlyList<CategoriaJulgada> candidatosAtendidos,
         RegraDeDeliberacao? regraDeDeliberacao,
         Guid? idDaBancaQueSubstitui)
     {
-        (string codigoAparado, string nomeAparado) = OrigemDaBanca.Exigir(tipoBancaOrigemId, codigo, nome);
+        ArgumentNullException.ThrowIfNull(tipo);
         ArgumentNullException.ThrowIfNull(candidatosAtendidos);
 
         BancaRequerida banca = new()
         {
             Id = id,
-            TipoBancaOrigemId = tipoBancaOrigemId,
-            Codigo = codigoAparado,
-            Nome = nomeAparado,
+            Tipo = tipo,
             RegraDeDeliberacao = regraDeDeliberacao,
             IdDaBancaQueSubstitui = idDaBancaQueSubstitui,
         };
@@ -125,17 +114,15 @@ public sealed class BancaRequerida : EntityBase, IBancaDoLugar<BancaRequerida>
     void IBancaDoLugar<BancaRequerida>.PosicionarNoTipo(int posicaoNoTipo) => PosicaoNoTipo = posicaoNoTipo;
 
     /// <summary>
-    /// Assume a declaração que substitui esta banca, preservando o <see cref="EntityBase.Id"/>. A categoria de mesmo código
-    /// continua sendo a mesma linha, porque o par banca e código é único e sair e voltar sob ele colidiria dentro da mesma
-    /// transação.
+    /// Assume a declaração que substitui esta banca, preservando o <see cref="EntityBase.Id"/>. A cópia do tipo só é trocada
+    /// quando o tipo muda. A categoria de mesmo código continua sendo a mesma linha, porque o par banca e código é único e
+    /// sair e voltar sob ele colidiria dentro da mesma transação.
     /// </summary>
     void IBancaDoLugar<BancaRequerida>.AssumirDeclaracao(BancaRequerida declarada)
     {
         ArgumentNullException.ThrowIfNull(declarada);
 
-        TipoBancaOrigemId = declarada.TipoBancaOrigemId;
-        Codigo = declarada.Codigo;
-        Nome = declarada.Nome;
+        Tipo = Tipo.OrigemId == declarada.Tipo.OrigemId ? Tipo : declarada.Tipo;
         RegraDeDeliberacao = declarada.RegraDeDeliberacao;
         PosicaoNoTipo = declarada.PosicaoNoTipo;
         ReconciliarCandidatosAtendidos(declarada._candidatosAtendidos);

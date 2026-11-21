@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -39,7 +40,7 @@ public sealed class CandidatosAtendidosPersistenciaTests : IClassFixture<Process
         await using UniPlusDbContext db = _fixture.CreateDbContext();
         IReadOnlyCollection<BancaRequerida> bancas = (await CarregarAsync(db, processoId)).CronogramaFases.Single().BancasRequeridas;
 
-        bancas.Should().OnlyContain(b => b.Codigo == "BANCA_ANALISE_DOCUMENTAL" && b.TipoBancaOrigemId == tipoUnico);
+        bancas.Should().OnlyContain(b => b.Tipo.Codigo == TipoDeBanca.AnaliseDocumental && b.Tipo.OrigemId == tipoUnico);
         ConferirQueCadaBancaGuardaOsPropriosCandidatosAtendidos(bancas);
     }
 
@@ -102,9 +103,7 @@ public sealed class CandidatosAtendidosPersistenciaTests : IClassFixture<Process
 
     private static BancaRequerida BancaComCandidatosAtendidos(Guid tipoBanca, string categoriaCodigo) =>
         BancaRequerida.Criar(
-            tipoBanca,
-            "BANCA_ANALISE_DOCUMENTAL",
-            "Banca de teste",
+            TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, tipoBanca),
             [CategoriaJulgada.Criar(Guid.CreateVersion7(), categoriaCodigo)]);
 
     private async Task<Guid> GravarAsync(string nome, Guid faseCanonicaOrigemId, params BancaRequerida[] bancas)

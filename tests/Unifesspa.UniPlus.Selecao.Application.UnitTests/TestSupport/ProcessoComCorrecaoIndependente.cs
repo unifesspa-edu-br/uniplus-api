@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -52,14 +53,14 @@ internal static class ProcessoComCorrecaoIndependente
     public static ProcessoSeletivo ComBancaDaFase(int integrantes, int quorum = 2)
     {
         BancaRequerida banca = BancaRequerida.Criar(
-            Guid.CreateVersion7(), TipoBancaCodigo.AnaliseDeRecursos, "Banca de análise de recursos", [], BancasDeTeste.Regra(integrantes, quorum));
+            TiposDeBancaCopiadosDeTeste.DeRecursos(Guid.CreateVersion7()), [], BancasDeTeste.Regra(integrantes, quorum));
 
         ProcessoSeletivo processo = ComEtapas(
             ProcessoSeletivoConformeBuilder.Criar("PS banca da fase", [banca], out _),
             Entrevista("Redação", 1, CorrecaoIndependente), Entrevista("Entrevista", 2, AvaliacaoUnica));
         foreach (EtapaProcesso etapa in processo.Etapas)
         {
-            etapa.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA", "Banca examinadora", BancasDeTeste.Regra())]);
+            etapa.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, Guid.CreateVersion7()), BancasDeTeste.Regra())]);
         }
 
         return processo;

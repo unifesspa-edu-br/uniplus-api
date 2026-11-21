@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Etapas;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
@@ -69,18 +70,55 @@ public sealed class EtapasDoProcessoTests
     [Fact(DisplayName = "ENEM sem peso e com banca acusa as duas causas")]
     public void Conferir_EnemSemPesoEComBanca_AcusaAsDuas()
     {
-        Conferir((DoEnem() with { Peso = null, Bancas = [BancasDeTeste.DeRecursosDaEtapa()] }).Declarar(), new ModeloDeEtapa("Prova").Declarar())
+        Conferir((DoEnem() with { Peso = null, Bancas = [BancasDeTeste.DaEtapa(TipoDeBanca.CorrecaoDeRedacoes)] }).Declarar(), new ModeloDeEtapa("Prova").Declarar())
             .Should().Equal(("etapas[0].peso", "ProcessoSeletivo.EtapaNotaEnemNaoCompoeNota"), ("etapas[0].bancas", "ProcessoSeletivo.EtapaNotaEnemComBanca"));
     }
+
+    [Fact(DisplayName = "ENEM com banca que avalia o mérito é recusado, citando a posição da etapa")]
+    public void Conferir_EnemComBancaQueAvalia_Recusa()
+    {
+        EtapasDoProcesso etapas = new([(DoEnem() with { Bancas = [BancasDeTeste.DaEtapa(TipoDeBanca.CorrecaoDeRedacoes)] }).Declarar()]);
+
+        FieldError recusa = etapas.Conferir().Single();
+
+        recusa.Error.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemComBanca");
+        recusa.Error.Message.Should().Be(
+            "A etapa na posição 1 tem a nota vinda do ENEM e não admite banca com o papel 'Avalia o mérito'. Na etapa cabem a banca com o papel 'Importa as notas do INEP' e a banca com o papel 'Julga o recurso em 1ª instância', que julga o recurso individual da etapa. O recurso contra o resultado é declarado na configuração do recurso da fase que publica o resultado.");
+    }
+
+    [Theory(DisplayName = "ENEM admite a banca que importa as notas do INEP e a banca que julga o recurso em 1ª instância")]
+    [InlineData(TipoDeBanca.ImportacaoDasNotasDoInep)]
+    [InlineData(TipoDeBanca.AnaliseDeRecursos)]
+    public void Conferir_EnemComBancaQueNaoAvalia_Admite(TipoDeBanca tipo) =>
+        Conferir((DoEnem() with { Bancas = [BancasDeTeste.DaEtapa(tipo)] }).Declarar()).Should().BeEmpty();
+
+    [Theory(DisplayName = "ENEM com mais de uma banca é recusado quando uma delas atribui a nota, inclusive a de homologação das inscrições")]
+    [InlineData(TipoDeBanca.CorrecaoDeRedacoes)]
+    [InlineData(TipoDeBanca.HomologacaoDasInscricoes)]
+    public void Conferir_EnemComVariasBancasUmaAvalia_Recusa(TipoDeBanca avaliadora) =>
+        Conferir((DoEnem() with
+        {
+            Bancas = [BancasDeTeste.DaEtapa(TipoDeBanca.ImportacaoDasNotasDoInep), BancasDeTeste.DaEtapa(avaliadora), BancasDeTeste.DaEtapa(TipoDeBanca.AnaliseDeRecursos)],
+        }).Declarar())
+            .Should().Equal(("etapas[0].bancas", "ProcessoSeletivo.EtapaNotaEnemComBanca"));
 
     [Fact(DisplayName = "ENEM com banca e com produto acusa as duas causas, e recurso ancorado em ato conta como produto")]
     public void Conferir_EnemComBancaEComProduto_AcusaAsDuas()
     {
-        EtapaDeclarada comBancaEProduto = (DoEnem() with { Bancas = [BancasDeTeste.DeRecursosDaEtapa()], Produtos = [Preliminar("RESULTADO")] }).Declarar();
+        EtapaDeclarada comBancaEProduto = (DoEnem() with { Bancas = [BancasDeTeste.DaEtapa(TipoDeBanca.CorrecaoDeRedacoes)], Produtos = [Preliminar("RESULTADO")] }).Declarar();
         EtapaDeclarada comRecursoEmAto = (DoEnem() with { Recursos = [RecursoModelo.AoAto(Guid.CreateVersion7())] }).Declarar();
 
         Conferir(comBancaEProduto).Should().Equal(("etapas[0].bancas", "ProcessoSeletivo.EtapaNotaEnemComBanca"), ("etapas[0].produtos", "ProcessoSeletivo.EtapaNotaEnemComProdutoOuRecursoEmAto"));
         Conferir(comRecursoEmAto).Select(static r => r.Codigo).Should().Contain("ProcessoSeletivo.EtapaNotaEnemComProdutoOuRecursoEmAto");
+    }
+
+    [Fact(DisplayName = "ENEM com produto é recusado citando a posição da etapa, e não o nome")]
+    public void Conferir_EnemComProduto_CitaAPosicaoDaEtapa()
+    {
+        EtapaDeclarada comProduto = (DoEnem() with { Produtos = [Preliminar("RESULTADO")] }).Declarar();
+
+        new EtapasDoProcesso([comProduto]).Conferir().Single(static r => r.Error.Code == "ProcessoSeletivo.EtapaNotaEnemComProdutoOuRecursoEmAto").Error.Message
+            .Should().StartWith("A etapa na posição 1 tem a nota vinda do ENEM e não declara produto nem recurso contra ato publicado:");
     }
 
     [Fact(DisplayName = "ENEM sem peso quando nenhuma outra etapa compõe a nota acusa só a própria causa")]

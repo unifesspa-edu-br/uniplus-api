@@ -33,9 +33,9 @@ public sealed class PoliticasDeBancaPorValoresTests
     [Fact(DisplayName = "As recusas do mínimo e da regra não resolvida citam a banca, o lugar e o que faltou")]
     public void FabricasDoMinimo_CitamBancaLugarEMedida()
     {
-        MinimoDeIntegrantes.AbaixoDoMinimo("Banca de recursos", "da fase", 2, 3).Message
-            .Should().StartWith("A banca 'Banca de recursos' da fase declara 2 integrantes, e o mínimo exigido é 3");
-        MinimoDeIntegrantes.NaoResolvida("Banca de recursos", "da fase", "Redação").Code
+        MinimoDeIntegrantes.AbaixoDoMinimo("Banca de análise de recursos 1", "fase 'RECURSOS'", 2, 3).Message
+            .Should().StartWith("A banca 'Banca de análise de recursos 1' da fase 'RECURSOS' declara 2 integrantes, e o mínimo exigido é 3");
+        MinimoDeIntegrantes.NaoResolvida("Banca de análise de recursos 1", "fase 'RECURSOS'", 0).Code
             .Should().Be(EtapaProcessoErrorCodes.RegraDeConsolidacaoNaoResolvida);
     }
 
@@ -55,10 +55,10 @@ public sealed class PoliticasDeBancaPorValoresTests
     [Fact(DisplayName = "Os candidatos atendidos só são recusados na banca de recursos, e cita a fase declarada")]
     public void CandidatosAtendidosNaDeclaracao_SoNaBancaDeRecursos()
     {
-        string tipoDeRecursos = TipoBancaCodigo.AnaliseDeRecursos;
+        TipoDeBancaCopiado tipoDeRecursos = TiposDeBancaCopiadosDeTeste.DeRecursos();
 
-        ExigenciaDeBancaDeRecurso.CandidatosAtendidosNaDeclaracao("RECURSOS", tipoDeRecursos, 1)!.Message.Should().Contain("da fase 'RECURSOS'");
-        ExigenciaDeBancaDeRecurso.CandidatosAtendidosNaDeclaracao("RECURSOS", tipoDeRecursos, 0).Should().BeNull();
-        ExigenciaDeBancaDeRecurso.CandidatosAtendidosNaDeclaracao("RECURSOS", "BANCA_AVALIADORA", 1).Should().BeNull();
+        ExigenciaDeBancaDeRecurso.CandidatosAtendidosNaDeclaracao("RECURSOS", tipoDeRecursos, 1, 1)!.Message.Should().Contain("Na fase 'RECURSOS'");
+        ExigenciaDeBancaDeRecurso.CandidatosAtendidosNaDeclaracao("RECURSOS", tipoDeRecursos, 1, 0).Should().BeNull();
+        ExigenciaDeBancaDeRecurso.CandidatosAtendidosNaDeclaracao("RECURSOS", TiposDeBancaCopiadosDeTeste.Avaliadora(), 1, 1).Should().BeNull();
     }
 }

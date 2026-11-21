@@ -153,17 +153,15 @@ internal static class RegrasDasEtapas
     }
 
     /// <summary>
-    /// A etapa que declara nota de origem no ENEM (<see cref="EtapaProcesso.DeclaraNotaDoEnem"/>):
-    /// é no máximo uma por processo, porque a nota do ENEM é uma só por candidato; compõe a
-    /// média, porque é para gerar a nota final que o processo baseado em ENEM a declara; não
-    /// tem banca, porque ninguém atribui a nota e quem julga o recurso é declarado na fase de
-    /// recursos; e não declara produto nem recurso ancorado em ato, porque o resultado é
-    /// publicado pela fase e o recurso coletivo sobre a lista geral é o da regra de recurso da
-    /// fase — uma janela por fato. O parecer individual é admitido, não exigido: nesta etapa
-    /// ele é o espelho do cálculo gerado pelo sistema (notas por área, pesos do grupo
-    /// congelado, média), e é dele que corre o recurso individual ancorado na ciência. Só
-    /// convive com classificação baseada em ENEM <b>e</b> calculada pela média ponderada,
-    /// que é a fórmula em que ela entra como componente.
+    /// A etapa que declara nota de origem no ENEM (<see cref="EtapaProcesso.DeclaraNotaDoEnem"/>) é no máximo uma por processo,
+    /// porque a nota do ENEM é uma só por candidato; compõe a média, porque é para gerar a nota final que o processo baseado em
+    /// ENEM a declara; e só convive com classificação baseada em ENEM <b>e</b> calculada pela média ponderada, que é a fórmula
+    /// em que ela entra como componente. Não pode ter banca com o papel que avalia o mérito, porque ninguém atribui a nota:
+    /// cabem a banca de importação das notas do INEP e a banca que julga o recurso individual da etapa. Também não declara
+    /// produto nem recurso ancorado em ato, porque o resultado é publicado pela fase. Essas duas últimas regras são da
+    /// declaração das etapas (<see cref="ConjuntoDasEtapas"/>), que numera as etapas como o cliente as enviou, e aqui não
+    /// se repetem. O parecer individual é admitido, não exigido: nesta etapa ele é o espelho do cálculo gerado pelo sistema, e
+    /// é dele que corre o recurso individual ancorado na ciência.
     /// </summary>
     /// <param name="classificacao">
     /// <see langword="null"/> enquanto a classificação não foi gravada — aí a coerência
@@ -173,7 +171,8 @@ internal static class RegrasDasEtapas
         IEnumerable<EtapaProcesso> etapas,
         ConfiguracaoClassificacao? classificacao)
     {
-        List<EtapaProcesso> etapasDoEnem = [.. etapas.Where(static e => e.DeclaraNotaDoEnem)];
+        List<EtapaProcesso> todas = [.. etapas];
+        List<EtapaProcesso> etapasDoEnem = [.. todas.Where(static e => e.DeclaraNotaDoEnem)];
 
         // A coerência com a classificação sai primeiro porque é ela que decide se a etapa pode existir no processo:
         // recusar antes por outra causa levaria o operador a corrigir uma etapa que, sob esta classificação, ele teria
@@ -193,12 +192,10 @@ internal static class RegrasDasEtapas
                 $"A etapa \"{etapaDoEnem.Nome}\" tem a nota vinda do ENEM e exige classificação baseada em ENEM, calculada pela média ponderada.")
             : null;
 
+    // A banca e o produto da etapa do ENEM são recusados na declaração das etapas, que numera as etapas como o cliente as enviou:
+    // repeti-los aqui, por outra lista, daria à mesma etapa dois números.
     private static DomainError? CausaDaEtapaUnicaDoEnem(EtapaProcesso etapaDoEnem) =>
-        !etapaDoEnem.ComponeNota ? ConjuntoDasEtapas.NotaDoEnemNaoCompoeNota(etapaDoEnem.Nome)
-        : etapaDoEnem.Bancas.Count > 0 ? ConjuntoDasEtapas.NotaDoEnemComBanca(etapaDoEnem.Nome)
-        : etapaDoEnem.Produtos.Count > 0 || etapaDoEnem.Recursos.Any(static r => r.Ancora == AncoraDoRecurso.AtoPublicado)
-            ? ConjuntoDasEtapas.NotaDoEnemComProdutoOuRecursoEmAto(etapaDoEnem.Nome)
-        : null;
+        !etapaDoEnem.ComponeNota ? ConjuntoDasEtapas.NotaDoEnemNaoCompoeNota(etapaDoEnem.Nome) : null;
 
     /// <summary>
     /// A etapa é referenciada por configuração que não pertence à fase dela — critério de

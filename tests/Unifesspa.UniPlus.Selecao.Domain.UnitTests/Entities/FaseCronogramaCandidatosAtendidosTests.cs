@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -206,8 +207,8 @@ public sealed class FaseCronogramaCandidatosAtendidosTests
         {
             OrigemData = OrigemDataFase.NaExecucao,
             Bancas = [
-                    Banca("BANCA_ANALISE_DOCUMENTAL", "RENDA"),
-                    Banca("BANCA_ANALISE_DOCUMENTAL"),
+                    Banca(TipoDeBanca.AnaliseDocumental, "RENDA"),
+                    Banca(TipoDeBanca.AnaliseDocumental),
                 ],
         });
 
@@ -225,8 +226,8 @@ public sealed class FaseCronogramaCandidatosAtendidosTests
         {
             OrigemData = OrigemDataFase.NaExecucao,
             Bancas = [
-                    Banca("BANCA_ANALISE_DOCUMENTAL"),
-                    Banca("BANCA_HETEROIDENTIFICACAO"),
+                    Banca(TipoDeBanca.AnaliseDocumental),
+                    Banca(TipoDeBanca.Heteroidentificacao),
                 ],
         });
 
@@ -240,8 +241,8 @@ public sealed class FaseCronogramaCandidatosAtendidosTests
         {
             OrigemData = OrigemDataFase.NaExecucao,
             Bancas = [
-                    Banca("BANCA_ANALISE_DOCUMENTAL"),
-                    Banca("BANCA_ANALISE_DOCUMENTAL"),
+                    Banca(TipoDeBanca.AnaliseDocumental),
+                    Banca(TipoDeBanca.AnaliseDocumental),
                 ],
         });
 
@@ -259,8 +260,8 @@ public sealed class FaseCronogramaCandidatosAtendidosTests
         {
             OrigemData = OrigemDataFase.NaExecucao,
             Bancas = [
-                    Banca("BANCA_ANALISE_DOCUMENTAL", "RENDA"),
-                    Banca("BANCA_ANALISE_DOCUMENTAL", "ETNICO_RACIAL"),
+                    Banca(TipoDeBanca.AnaliseDocumental, "RENDA"),
+                    Banca(TipoDeBanca.AnaliseDocumental, "ETNICO_RACIAL"),
                 ],
         });
 
@@ -275,8 +276,8 @@ public sealed class FaseCronogramaCandidatosAtendidosTests
         {
             OrigemData = OrigemDataFase.NaExecucao,
             Bancas = [
-                    Banca("BANCA_ANALISE_DOCUMENTAL", "RENDA", "ESCOLARIDADE"),
-                    Banca("BANCA_ANALISE_DOCUMENTAL", "ESCOLARIDADE", "RENDA"),
+                    Banca(TipoDeBanca.AnaliseDocumental, "RENDA", "ESCOLARIDADE"),
+                    Banca(TipoDeBanca.AnaliseDocumental, "ESCOLARIDADE", "RENDA"),
                 ],
         });
 
@@ -294,8 +295,8 @@ public sealed class FaseCronogramaCandidatosAtendidosTests
         {
             OrigemData = OrigemDataFase.NaExecucao,
             Bancas = [
-                    Banca("BANCA_ANALISE_DOCUMENTAL", "RENDA", "ESCOLARIDADE"),
-                    Banca("BANCA_ANALISE_DOCUMENTAL", "RENDA"),
+                    Banca(TipoDeBanca.AnaliseDocumental, "RENDA", "ESCOLARIDADE"),
+                    Banca(TipoDeBanca.AnaliseDocumental, "RENDA"),
                 ],
         });
 

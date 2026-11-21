@@ -25,5 +25,6 @@ public static class EtapaProcessoErrorCodes
     public const string ItensNaEtapaDoEnem = "EtapaProcesso.ItensNaEtapaDoEnem";
     public const string EscalaSemItens = "EtapaProcesso.EscalaSemItens";
     public const string EscalaNaFormaObjetiva = "EtapaProcesso.EscalaNaFormaObjetiva";
+    public const string TipoBancaNaoEncontradoOuInativo = "EtapaProcesso.TipoBancaNaoEncontradoOuInativo";
     public const string PassoComEscalaDeAtendimento = "EtapaProcesso.PassoComEscalaDeAtendimento";
 }

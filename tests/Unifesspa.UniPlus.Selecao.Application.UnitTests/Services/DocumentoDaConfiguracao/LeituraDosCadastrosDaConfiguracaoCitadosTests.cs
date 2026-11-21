@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Services.DocumentoDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>Os cadastros de Configuração que o documento cita são lidos em lote, uma chamada por cadastro e cada código uma vez, e o código que o cadastro não tem fica fora.</summary>
 public sealed class LeituraDosCadastrosDaConfiguracaoCitadosTests
@@ -54,12 +55,19 @@ public sealed class LeituraDosCadastrosDaConfiguracaoCitadosTests
 
         lidos.Value!.TiposDeProcesso.Keys.Should().Equal("SiSU");
         lidos.Value.FasesCanonicas.Keys.Should().Equal("INSCRICAO", "RECURSO");
-        lidos.Value.TiposDeBanca.Keys.Should().Equal("BANCA_ANALISE_DOCUMENTAL");
+        ConferirOsTiposDeBancaLidos(lidos.Value.TiposDeBanca);
         lidos.Value.CategoriasDeDocumento.Keys.Should().Equal("RENDA", "IDENTIDADE");
         await _fasesCanonicas.Received(1).ListarVivasPorCodigosAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>());
         await _tiposDeBanca.Received(1).ListarVivosPorCodigosAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>());
         await _categorias.Received(1).ListarVivasPorCodigosAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>());
         await _tiposDeProcesso.Received(1).ObterAtivoPorCodigoAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    private static void ConferirOsTiposDeBancaLidos(IReadOnlyDictionary<string, TipoDeBancaCopiado> tipos)
+    {
+        tipos.Keys.Should().Equal("BANCA_ANALISE_DOCUMENTAL");
+        tipos["BANCA_ANALISE_DOCUMENTAL"].Should().Match<TipoDeBancaCopiado>(
+            c => c.Codigo == TipoDeBanca.AnaliseDocumental && c.Papel == PapelDaBanca.ImportaCandidatos && c.Nome == "Banca BANCA_ANALISE_DOCUMENTAL");
     }
 
     [Fact(DisplayName = "O cadastro de que o documento não cita código não é consultado")]

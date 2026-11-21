@@ -3654,6 +3654,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     tipo_banca_origem_id = table.Column<Guid>(type: "uuid", nullable: false),
                     codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
                     nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    papel = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
+                    exige_duas_ou_mais_bancas = table.Column<bool>(type: "boolean", nullable: false),
+                    encerra_recurso_na_primeira_instancia = table.Column<bool>(type: "boolean", nullable: false),
+                    tipos_de_decisao_julgados = table.Column<string[]>(type: "text[]", nullable: false, defaultValueSql: "'{}'::text[]", comment: "Tipos de decisão que o tipo de banca julgava quando a banca o copiou, em ordem alfabética ordinal do código e sem repetição."),
                     regra_deliberacao_modo = table.Column<int>(type: "integer", nullable: true),
                     regra_deliberacao_integrantes = table.Column<int>(type: "integer", nullable: true),
                     regra_deliberacao_suplentes = table.Column<int>(type: "integer", nullable: true),
@@ -3773,6 +3777,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     tipo_banca_origem_id = table.Column<Guid>(type: "uuid", nullable: false),
                     codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
                     nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    papel = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
+                    exige_duas_ou_mais_bancas = table.Column<bool>(type: "boolean", nullable: false),
+                    encerra_recurso_na_primeira_instancia = table.Column<bool>(type: "boolean", nullable: false),
+                    tipos_de_decisao_julgados = table.Column<string[]>(type: "text[]", nullable: false, defaultValueSql: "'{}'::text[]", comment: "Tipos de decisão que o tipo de banca julgava quando a banca o copiou, em ordem alfabética ordinal do código e sem repetição."),
                     regra_deliberacao_modo = table.Column<int>(type: "integer", nullable: true),
                     regra_deliberacao_integrantes = table.Column<int>(type: "integer", nullable: true),
                     regra_deliberacao_suplentes = table.Column<int>(type: "integer", nullable: true),
@@ -5775,10 +5783,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 columns: new[] { "tipo", "fato_id" });
 
             migrationBuilder.CreateIndex(
-                name: "ix_bancas_da_etapa_codigo",
+                name: "ix_bancas_da_etapa_etapa_processo_id",
                 schema: "selecao",
                 table: "bancas_da_etapa",
-                columns: new[] { "etapa_processo_id", "codigo" });
+                column: "etapa_processo_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_bancas_requeridas_fase_cronograma_id",

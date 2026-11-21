@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -52,17 +53,17 @@ internal static class FaseDeTesteDaAtualizacao
         ParametrosDoRecursoDeTeste.Declarados(48m, UnidadePrazo.Horas),
         produtoAncoraId).Value!;
 
-    internal static BancaRequerida Banca(string codigo, params string[] categorias) =>
+    internal static BancaRequerida Banca(TipoDeBanca tipo, params string[] categorias) =>
         BancaRequerida.Criar(
-            Guid.CreateVersion7(), codigo, "Banca de teste",
+            TiposDeBancaCopiadosDeTeste.De(tipo),
             [.. categorias.Select(static c => CategoriaJulgada.Criar(Guid.CreateVersion7(), c))]);
 
     internal static BancaRequerida NoLugarDe(BancaRequerida viva) =>
-        BancaQueSubstitui(viva.Id, Guid.CreateVersion7(), viva.Codigo, [.. viva.CandidatosAtendidos.Select(static c => c.Codigo)]);
+        BancaQueSubstitui(viva.Id, Guid.CreateVersion7(), viva.Tipo.Codigo, [.. viva.CandidatosAtendidos.Select(static c => c.Codigo)]);
 
-    internal static BancaRequerida BancaQueSubstitui(Guid idDaViva, Guid origemDoTipo, string codigo, params string[] categorias) =>
+    internal static BancaRequerida BancaQueSubstitui(Guid idDaViva, Guid origemDoTipo, TipoDeBanca tipo, params string[] categorias) =>
         BancaRequerida.Criar(
-            origemDoTipo, codigo, "Banca de teste",
+            TiposDeBancaCopiadosDeTeste.De(tipo, origemDoTipo),
             [.. categorias.Select(static c => CategoriaJulgada.Criar(Guid.CreateVersion7(), c))],
             idDaBancaQueSubstitui: idDaViva);
 

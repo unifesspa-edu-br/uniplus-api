@@ -95,7 +95,7 @@ public sealed class EnvelopeCodecIdentidadeDasBancasTests
         EtapaProcesso objetiva = processo.Etapas.Single(e => e.Nome == "Prova Objetiva");
         BancaDaEtapa primeira = objetiva.Bancas.First();
         objetiva.DefinirBancas([.. objetiva.Bancas.Select(ComOMesmoId), OutraDoMesmoTipo(primeira)]);
-        BancaDaEtapa segunda = objetiva.Bancas.Single(b => b.Id != primeira.Id && b.Codigo == primeira.Codigo);
+        BancaDaEtapa segunda = objetiva.Bancas.Single(b => b.Id != primeira.Id && b.Tipo.Codigo == primeira.Tipo.Codigo);
         byte[] naOrdemDeChegada = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
 
         objetiva.DefinirBancas([ComOMesmoId(segunda), .. objetiva.Bancas.Where(b => b.Id != segunda.Id).Select(ComOMesmoId)]);
@@ -116,8 +116,8 @@ public sealed class EnvelopeCodecIdentidadeDasBancasTests
             CorpusEnvelopeEntrada.Entrada(CorpusEnvelopeProcessoRico.ProcessoRico(variante: variante, permutar: permutar))).Bytes;
 
     private static BancaDaEtapa ComOMesmoId(BancaDaEtapa banca) =>
-        BancaDaEtapa.Criar(banca.TipoBancaOrigemId, banca.Codigo, banca.Nome, banca.RegraDeDeliberacao, idDaBancaQueSubstitui: banca.Id);
+        BancaDaEtapa.Criar(banca.Tipo, banca.RegraDeDeliberacao, idDaBancaQueSubstitui: banca.Id);
 
     private static BancaDaEtapa OutraDoMesmoTipo(BancaDaEtapa banca) =>
-        BancaDaEtapa.Criar(banca.TipoBancaOrigemId, banca.Codigo, banca.Nome, banca.RegraDeDeliberacao);
+        BancaDaEtapa.Criar(banca.Tipo, banca.RegraDeDeliberacao);
 }

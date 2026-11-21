@@ -21,7 +21,7 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Fases
 /// </summary>
 public sealed class SuspensaoDaEtapaDeFaseRecusadaNaLeituraTests
 {
-    private const string ItemDoRecurso = "cronograma_recurso_com_banca_de_analise";
+    private const string ItemDoRecurso = "cronograma_recurso_com_banca_que_julga";
     private const string RecursoSemBanca = "Cronograma.RecursoSemBanca";
 
     private static readonly ReferenciaRegra AvaliacaoUnica =

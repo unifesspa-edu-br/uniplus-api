@@ -1234,9 +1234,12 @@ selecao.avaliacoes_da_etapa.oferta_curso_id: Pessoal
 selecao.avaliacoes_da_etapa.situacao: Pessoal
 selecao.bancas_da_etapa.codigo: Interno
 selecao.bancas_da_etapa.created_at: Interno
+selecao.bancas_da_etapa.encerra_recurso_na_primeira_instancia: Interno
 selecao.bancas_da_etapa.etapa_processo_id: Interno
+selecao.bancas_da_etapa.exige_duas_ou_mais_bancas: Interno
 selecao.bancas_da_etapa.id: Interno
 selecao.bancas_da_etapa.nome: Interno
+selecao.bancas_da_etapa.papel: Interno
 selecao.bancas_da_etapa.posicao_no_tipo: Interno
 selecao.bancas_da_etapa.regra_deliberacao_criterio: Interno
 selecao.bancas_da_etapa.regra_deliberacao_desempate: Interno
@@ -1247,12 +1250,16 @@ selecao.bancas_da_etapa.regra_deliberacao_quorum: Interno
 selecao.bancas_da_etapa.regra_deliberacao_sem_unanimidade: Interno
 selecao.bancas_da_etapa.regra_deliberacao_suplentes: Interno
 selecao.bancas_da_etapa.tipo_banca_origem_id: Interno
+selecao.bancas_da_etapa.tipos_de_decisao_julgados: Interno
 selecao.bancas_da_etapa.updated_at: Interno
 selecao.bancas_requeridas.codigo: Interno
 selecao.bancas_requeridas.created_at: Interno
+selecao.bancas_requeridas.encerra_recurso_na_primeira_instancia: Interno
+selecao.bancas_requeridas.exige_duas_ou_mais_bancas: Interno
 selecao.bancas_requeridas.fase_cronograma_id: Interno
 selecao.bancas_requeridas.id: Interno
 selecao.bancas_requeridas.nome: Interno
+selecao.bancas_requeridas.papel: Interno
 selecao.bancas_requeridas.posicao_no_tipo: Interno
 selecao.bancas_requeridas.regra_deliberacao_criterio: Interno
 selecao.bancas_requeridas.regra_deliberacao_desempate: Interno
@@ -1263,6 +1270,7 @@ selecao.bancas_requeridas.regra_deliberacao_quorum: Interno
 selecao.bancas_requeridas.regra_deliberacao_sem_unanimidade: Interno
 selecao.bancas_requeridas.regra_deliberacao_suplentes: Interno
 selecao.bancas_requeridas.tipo_banca_origem_id: Interno
+selecao.bancas_requeridas.tipos_de_decisao_julgados: Interno
 selecao.bancas_requeridas.updated_at: Interno
 selecao.bases_legais_dos_nos.abrangencia: Interno
 selecao.bases_legais_dos_nos.created_at: Interno

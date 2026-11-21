@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
@@ -68,7 +69,7 @@ public static class CandidatosAtendidosPelasBancas
             {
                 yield return new(CampoDosCandidatosAtendidos(indice), new DomainError(
                     CategoriaRepetida,
-                    $"A banca '{banca.Codigo}' da fase '{codigoDaFase}' declara a mesma categoria de documento mais de uma vez nos candidatos atendidos."));
+                    $"A banca '{banca.Tipo.Codigo.Codigo()}' da fase '{codigoDaFase}' declara a mesma categoria de documento mais de uma vez nos candidatos atendidos."));
             }
         }
     }
@@ -78,7 +79,7 @@ public static class CandidatosAtendidosPelasBancas
     private static IEnumerable<FieldError> CandidatosAtendidosDosGruposDeMesmoCodigo(
         string codigoDaFase, IReadOnlyList<BancaRequerida> bancasRequeridas) =>
         Enumerable.Range(0, bancasRequeridas.Count)
-            .GroupBy(i => bancasRequeridas[i].Codigo, StringComparer.Ordinal)
+            .GroupBy(i => bancasRequeridas[i].Tipo.Codigo)
             .Where(static g => g.Count() > 1)
             .SelectMany(grupo => CandidatosAtendidosDoGrupoQueNaoDistinguem(codigoDaFase, bancasRequeridas, grupo));
 
@@ -131,12 +132,12 @@ public static class CandidatosAtendidosPelasBancas
     private static FieldError CandidatosAtendidosObrigatorios(string codigoDaFase, BancaRequerida banca, int indice) =>
         new(CampoDosCandidatosAtendidos(indice), new DomainError(
             CandidatosAtendidosObrigatoriosCodigo,
-            $"Na fase '{codigoDaFase}', a banca '{banca.Codigo}' não define candidatos atendidos, e a fase requer mais de uma banca desse tipo. Defina as categorias de documento de cada banca desse tipo."));
+            $"Na fase '{codigoDaFase}', a banca '{banca.Tipo.Codigo.Codigo()}' não define candidatos atendidos, e a fase requer mais de uma banca desse tipo. Defina as categorias de documento de cada banca desse tipo."));
 
     private static FieldError CandidatosAtendidosDuplicados(string codigoDaFase, BancaRequerida banca, int indice) =>
         new(CampoDosCandidatosAtendidos(indice), new DomainError(
             CandidatosAtendidosDuplicadosCodigo,
-            $"Na fase '{codigoDaFase}', a banca '{banca.Codigo}' atende os mesmos candidatos que outra banca do mesmo tipo. Defina categorias de documento diferentes para cada banca desse tipo."));
+            $"Na fase '{codigoDaFase}', a banca '{banca.Tipo.Codigo.Codigo()}' atende os mesmos candidatos que outra banca do mesmo tipo. Defina categorias de documento diferentes para cada banca desse tipo."));
 
     internal static string CampoDosCandidatosAtendidos(int indice) => $"{FaseDeclarada.ListaDasBancasRequeridas}[{indice}].categoriasDocumentoIds";
 }

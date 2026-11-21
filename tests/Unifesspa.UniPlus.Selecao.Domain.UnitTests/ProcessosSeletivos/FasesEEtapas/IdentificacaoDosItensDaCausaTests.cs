@@ -3,12 +3,14 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.FasesEEt
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioFaseCronograma;
 
@@ -18,8 +20,8 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioFaseCronog
 /// </summary>
 public sealed class IdentificacaoDosItensDaCausaTests
 {
-    private const string AnaliseDocumentalDoTipo = "BANCA_ANALISE_DOCUMENTAL";
-    private const string HeteroidentificacaoDoTipo = "BANCA_HETEROIDENTIFICACAO";
+    private const TipoDeBanca AnaliseDocumentalDoTipo = TipoDeBanca.AnaliseDocumental;
+    private const TipoDeBanca HeteroidentificacaoDoTipo = TipoDeBanca.Heteroidentificacao;
 
     private static readonly DomainError Erro = new("Teste.Recusa", "Mensagem.");
 
@@ -44,9 +46,9 @@ public sealed class IdentificacaoDosItensDaCausaTests
         EtapaProcesso etapa = processo.Etapas.Single();
         etapa.DefinirBancas(
         [
-            BancaDaEtapa.Criar(Guid.CreateVersion7(), HeteroidentificacaoDoTipo, "Banca de teste"),
-            BancaDaEtapa.Criar(Guid.CreateVersion7(), AnaliseDocumentalDoTipo, "Banca de teste"),
-            BancaDaEtapa.Criar(Guid.CreateVersion7(), AnaliseDocumentalDoTipo, "Banca de teste"),
+            BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(HeteroidentificacaoDoTipo)),
+            BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(AnaliseDocumentalDoTipo)),
+            BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(AnaliseDocumentalDoTipo)),
         ]);
 
         return (processo.Declaracao(), fase, etapa);
@@ -100,7 +102,7 @@ public sealed class IdentificacaoDosItensDaCausaTests
         FieldError[] causas = Identificar(
             configuracao, "fases[0].bancasRequeridas[0]", "fases[0].bancasRequeridas[1].regraDeDeliberacao.quorum", "fases[0].bancasRequeridas[2]");
 
-        fase.BancasRequeridas.Select(static banca => (banca.Codigo, banca.PosicaoNoTipo))
+        fase.BancasRequeridas.Select(static banca => (banca.Tipo.Codigo, banca.PosicaoNoTipo))
             .Should().Equal([(AnaliseDocumentalDoTipo, 1), (AnaliseDocumentalDoTipo, 2), (HeteroidentificacaoDoTipo, 1)], "a banca de heteroidentificação chegou primeiro e é a última na ordem canônica");
         causas.Select(static causa => causa.Identificadores!.Select(static item => item.Lista).ToArray())
             .Should().AllSatisfy(listas => listas.Should().Equal("fases", "bancasRequeridas"));
@@ -115,7 +117,7 @@ public sealed class IdentificacaoDosItensDaCausaTests
 
         FieldError[] causas = Identificar(configuracao, "fases[0].bancasRequeridas[0]", "fases[0].bancasRequeridas[1]");
 
-        fase.BancasRequeridas.Take(2).Select(static banca => banca.Codigo).Should().OnlyContain(codigo => codigo == AnaliseDocumentalDoTipo);
+        fase.BancasRequeridas.Take(2).Select(static banca => banca.Tipo.Codigo).Should().OnlyContain(codigo => codigo == AnaliseDocumentalDoTipo);
         causas.Select(static causa => causa.Identificadores![1].Identificador).Distinct().Should().HaveCount(2);
     }
 
@@ -127,7 +129,7 @@ public sealed class IdentificacaoDosItensDaCausaTests
 
         FieldError[] causas = Identificar(configuracao, "etapas[0].bancas[0].regraDeDeliberacao", "etapas[0].bancas[1]", "etapas[0].bancas[2]");
 
-        naOrdemCanonica.Select(static banca => banca.Codigo).Should().Equal([AnaliseDocumentalDoTipo, AnaliseDocumentalDoTipo, HeteroidentificacaoDoTipo]);
+        naOrdemCanonica.Select(static banca => banca.Tipo.Codigo).Should().Equal([AnaliseDocumentalDoTipo, AnaliseDocumentalDoTipo, HeteroidentificacaoDoTipo]);
         causas.SelectMany(static causa => causa.Identificadores!).Should().Equal(naOrdemCanonica.SelectMany(banca =>
             new[] { new IdentificadorDoItem("etapas", etapa.Id.ToString("D")), new IdentificadorDoItem("bancas", banca.Id.ToString("D")) }));
         naOrdemCanonica.Select(static banca => banca.Id).Distinct().Should().HaveCount(3, "as duas bancas do mesmo tipo têm identificadores distintos");

@@ -12779,6 +12779,10 @@
           "codigo",
           "posicaoNoTipo",
           "nome",
+          "papel",
+          "exigeDuasOuMaisBancas",
+          "encerraRecursoNaPrimeiraInstancia",
+          "tiposDeDecisaoJulgados",
           "regraDeDeliberacao"
         ],
         "type": "object",
@@ -12792,7 +12796,7 @@
             "format": "uuid"
           },
           "codigo": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoDeBanca"
           },
           "posicaoNoTipo": {
             "type": "integer",
@@ -12800,6 +12804,21 @@
           },
           "nome": {
             "type": "string"
+          },
+          "papel": {
+            "$ref": "#/components/schemas/PapelDaBanca"
+          },
+          "exigeDuasOuMaisBancas": {
+            "type": "boolean"
+          },
+          "encerraRecursoNaPrimeiraInstancia": {
+            "type": "boolean"
+          },
+          "tiposDeDecisaoJulgados": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TipoMotivoDeDecisao"
+            }
           },
           "regraDeDeliberacao": {
             "oneOf": [
@@ -12849,6 +12868,10 @@
           "codigo",
           "posicaoNoTipo",
           "nome",
+          "papel",
+          "exigeDuasOuMaisBancas",
+          "encerraRecursoNaPrimeiraInstancia",
+          "tiposDeDecisaoJulgados",
           "regraDeDeliberacao",
           "candidatosAtendidos"
         ],
@@ -12863,7 +12886,7 @@
             "format": "uuid"
           },
           "codigo": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoDeBanca"
           },
           "posicaoNoTipo": {
             "type": "integer",
@@ -12871,6 +12894,21 @@
           },
           "nome": {
             "type": "string"
+          },
+          "papel": {
+            "$ref": "#/components/schemas/PapelDaBanca"
+          },
+          "exigeDuasOuMaisBancas": {
+            "type": "boolean"
+          },
+          "encerraRecursoNaPrimeiraInstancia": {
+            "type": "boolean"
+          },
+          "tiposDeDecisaoJulgados": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TipoMotivoDeDecisao"
+            }
           },
           "regraDeDeliberacao": {
             "oneOf": [
@@ -24120,6 +24158,31 @@
         ],
         "type": "string"
       },
+      "PapelDaBanca": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/PapelDaBancaCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "PapelDaBancaCodigo": {
+        "enum": [
+          "AVALIA_O_MERITO",
+          "JULGA_A_PRIMEIRA_INSTANCIA",
+          "IMPORTA_AS_NOTAS_DO_INEP",
+          "IMPORTA_CANDIDATOS"
+        ],
+        "type": "string",
+        "description": "O que as bancas de um tipo fazem no processo seletivo. Cada tipo de banca cadastrado tem exatamente um papel; as regras da sele\u00E7\u00E3o decidem pelo papel, e n\u00E3o pelo c\u00F3digo do tipo.\n\n- \u0060AVALIA_O_MERITO\u0060: Avalia o m\u00E9rito\n- \u0060JULGA_A_PRIMEIRA_INSTANCIA\u0060: Julga o recurso em 1\u00AA inst\u00E2ncia\n- \u0060IMPORTA_AS_NOTAS_DO_INEP\u0060: Importa as notas do INEP\n- \u0060IMPORTA_CANDIDATOS\u0060: Importa candidatos"
+      },
       "ParametrosRegraAjusteDistribuicao": {
         "required": [
           "$tipo"
@@ -27213,6 +27276,36 @@
           }
         }
       },
+      "TipoDeBanca": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/TipoDeBancaCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "TipoDeBancaCodigo": {
+        "enum": [
+          "BANCA_ANALISE_DOCUMENTAL",
+          "BANCA_ENTREVISTA",
+          "BANCA_CORRECAO_REDACOES",
+          "BANCA_ANALISE_RECURSOS",
+          "BANCA_HETEROIDENTIFICACAO",
+          "BANCA_BIOPSICOSSOCIAL",
+          "BANCA_HOMOLOGACAO_INSCRICOES",
+          "BANCA_IMPORTACAO_NOTAS_INEP",
+          "BANCA_IMPORTACAO_CANDIDATOS"
+        ],
+        "type": "string",
+        "description": "O tipo de banca que a sele\u00E7\u00E3o pode prever em uma fase ou em uma etapa. O c\u00F3digo e o r\u00F3tulo do tipo s\u00E3o fixos; o nome do cadastro de tipos de banca pode ser editado.\n\n- \u0060BANCA_ANALISE_DOCUMENTAL\u0060: Banca de an\u00E1lise documental\n- \u0060BANCA_ENTREVISTA\u0060: Banca de entrevista\n- \u0060BANCA_CORRECAO_REDACOES\u0060: Banca de corre\u00E7\u00E3o de reda\u00E7\u00F5es\n- \u0060BANCA_ANALISE_RECURSOS\u0060: Banca de an\u00E1lise de recursos\n- \u0060BANCA_HETEROIDENTIFICACAO\u0060: Banca de heteroidentifica\u00E7\u00E3o\n- \u0060BANCA_BIOPSICOSSOCIAL\u0060: Banca de avalia\u00E7\u00E3o biopsicossocial\n- \u0060BANCA_HOMOLOGACAO_INSCRICOES\u0060: Banca de homologa\u00E7\u00E3o das inscri\u00E7\u00F5es\n- \u0060BANCA_IMPORTACAO_NOTAS_INEP\u0060: Banca de importa\u00E7\u00E3o das notas do INEP\n- \u0060BANCA_IMPORTACAO_CANDIDATOS\u0060: Banca de importa\u00E7\u00E3o de candidatos"
+      },
       "TipoDeLeiauteDoInep": {
         "enum": [
           "envio",
@@ -27246,6 +27339,21 @@
           },
           "exigeCorrecaoIndependente": {
             "type": "boolean"
+          }
+        }
+      },
+      "TipoMotivoDeDecisao": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/TipoMotivoDeDecisaoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
           }
         }
       },

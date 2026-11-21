@@ -63,7 +63,7 @@ public sealed class ComposicaoDosItensTests
         IReadOnlyList<ItemConformidade> itens = Itens(processo);
 
         itens.Should().HaveCount(31);
-        Pendentes(itens).Should().Equal("cronograma_ancora_do_recurso", "cronograma_recurso_com_banca_de_analise");
+        Pendentes(itens).Should().Equal("cronograma_ancora_do_recurso", "cronograma_recurso_com_banca_que_julga");
     }
 
     [Fact(DisplayName = "A fase carregada com a janela invertida deixa pendentes o item das declarações das fases e o da janela da etapa que a declara")]

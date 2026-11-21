@@ -26,7 +26,7 @@ internal static class DocumentoLidoDeTeste
         Unidades = Unidades(),
         TiposDeProcesso = new Dictionary<string, TipoProcessoSnapshot> { ["SiSU"] = TiposDeProcessoDeTeste.SiSU },
         FasesCanonicas = FasesCanonicas(),
-        TiposDeBanca = new Dictionary<string, TipoDeBancaCitado> { ["ANALISE_RECURSOS"] = new(Guid.CreateVersion7(), "ANALISE_RECURSOS", "Banca de análise de recursos") },
+        TiposDeBanca = new Dictionary<string, TipoDeBancaCopiado> { ["ANALISE_RECURSOS"] = TiposDeBancaCopiadosDeTeste.DeRecursos() },
         CategoriasDeDocumento = new Dictionary<string, CategoriaDeDocumentoCitada> { ["IDENTIDADE"] = new(Guid.CreateVersion7(), "IDENTIDADE") },
         Localidades = new Dictionary<string, LocalidadeRegente> { ["1504208"] = LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value! },
         Regras = Regras(),

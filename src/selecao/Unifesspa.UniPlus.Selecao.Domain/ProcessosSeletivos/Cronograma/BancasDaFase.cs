@@ -2,21 +2,15 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
-using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
-/// <summary>As bancas que a fase requer, como valores: nome, regra de deliberação e se é a banca de análise de recursos, na posição declarada.</summary>
+/// <summary>As bancas que a fase requer, como valores: a cópia do tipo e a regra de deliberação de cada uma, na posição declarada.</summary>
 public sealed record BancasDaFase
 {
-    internal BancasDaFase(IReadOnlyList<BancaRequerida> bancas)
-    {
-        Declaradas =
-        [
-            .. bancas.Select(static (banca, posicao) =>
-                (posicao, banca.Nome, banca.RegraDeDeliberacao, JulgamentoDasBancas.EhDeRecursos(banca.Codigo))),
-        ];
-    }
+    internal BancasDaFase(IReadOnlyList<BancaRequerida> bancas) =>
+        Declaradas = BancaDeclarada.De([.. bancas.Select(static banca => (banca.Tipo, banca.RegraDeDeliberacao))]);
 
-    public bool TemBancaDeRecursos => Declaradas.Any(static banca => banca.DeRecursos);
+    /// <summary>Se alguma banca da fase tem papel que julga recurso.</summary>
+    public bool TemBancaDeRecursos => Declaradas.Any(static banca => banca.Tipo.JulgaRecurso);
 
-    public IReadOnlyList<(int Posicao, string Nome, RegraDeDeliberacao? Regra, bool DeRecursos)> Declaradas { get; }
+    public IReadOnlyList<BancaDeclarada> Declaradas { get; }
 }

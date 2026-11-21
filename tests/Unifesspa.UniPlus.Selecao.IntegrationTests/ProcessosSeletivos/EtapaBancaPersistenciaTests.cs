@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -30,13 +31,13 @@ public sealed class EtapaBancaPersistenciaTests(ProcessoSeletivoDbFixture fixtur
     [Fact(DisplayName = "Regravar a etapa com o id da banca mantém a mesma linha")]
     public async Task RegravarAMesmaBancaComOId_MantemALinha()
     {
-        (Guid processoId, Guid etapaId) = await GravarEtapaComAsync("Certame de bancas", Banca(TipoBanca, "BANCA_TITULOS"));
+        (Guid processoId, Guid etapaId) = await GravarEtapaComAsync("Certame de bancas", Banca(TipoBanca, TipoDeBanca.Entrevista));
         Guid idGravado = (await RelerAsync(etapaId)).Bancas.Single().Id;
 
         await RegravarAsync(
             processoId,
             etapaId,
-            [Banca(TipoBanca, "BANCA_TITULOS", idGravado)],
+            [Banca(TipoBanca, TipoDeBanca.Entrevista, idGravado)],
             "regravar a etapa sem mudar a banca é o caso comum do editor, e não pode falhar por causa de como a coleção é substituída");
 
         EtapaProcesso relida = await RelerAsync(etapaId);
@@ -48,11 +49,11 @@ public sealed class EtapaBancaPersistenciaTests(ProcessoSeletivoDbFixture fixtur
     [Fact(DisplayName = "Regravar a etapa sem o id da banca recria a linha sem colidir")]
     public async Task RegravarAMesmaBancaSemOId_RecriaALinha()
     {
-        (Guid processoId, Guid etapaId) = await GravarEtapaComAsync("Certame de recriação", Banca(TipoBanca, "BANCA_TITULOS"));
+        (Guid processoId, Guid etapaId) = await GravarEtapaComAsync("Certame de recriação", Banca(TipoBanca, TipoDeBanca.Entrevista));
         Guid idGravado = (await RelerAsync(etapaId)).Bancas.Single().Id;
 
         await RegravarAsync(
-            processoId, etapaId, [Banca(TipoBanca, "BANCA_TITULOS")],
+            processoId, etapaId, [Banca(TipoBanca, TipoDeBanca.Entrevista)],
             "a banca nova ocupa a posição da que saiu, e a restrição adiada só confere ao fim da transação");
 
         EtapaProcesso relida = await RelerAsync(etapaId);
@@ -68,37 +69,83 @@ public sealed class EtapaBancaPersistenciaTests(ProcessoSeletivoDbFixture fixtur
     public async Task TrocaDePosicoesEntreBancasDoMesmoTipo_NaoColide()
     {
         (Guid processoId, Guid etapaId) = await GravarEtapaComAsync(
-            "Certame de posições", Banca(TipoBanca, "BANCA_TITULOS"), Banca(TipoBanca, "BANCA_TITULOS"));
+            "Certame de posições", Banca(TipoBanca, TipoDeBanca.Entrevista), Banca(TipoBanca, TipoDeBanca.Entrevista));
         IReadOnlyList<BancaDaEtapa> gravadas = [.. (await RelerAsync(etapaId)).Bancas.OrderBy(b => b.PosicaoNoTipo)];
         gravadas.Select(b => b.PosicaoNoTipo).Should().Equal(1, 2);
 
         await RegravarAsync(
             processoId, etapaId,
-            [Banca(TipoBanca, "BANCA_TITULOS", gravadas[1].Id), Banca(TipoBanca, "BANCA_TITULOS", gravadas[0].Id)],
+            [Banca(TipoBanca, TipoDeBanca.Entrevista, gravadas[1].Id), Banca(TipoBanca, TipoDeBanca.Entrevista, gravadas[0].Id)],
             "trocar a posição de duas bancas é configuração legítima, e a restrição única só pode ser conferida ao fim da transação");
 
         IReadOnlyList<BancaDaEtapa> relidas = [.. (await RelerAsync(etapaId)).Bancas.OrderBy(b => b.PosicaoNoTipo)];
         relidas.Select(b => b.Id).Should().Equal(gravadas[1].Id, gravadas[0].Id);
     }
 
-    /// <summary>Duas bancas que trocam de código entre si, sem o id: cada uma é uma linha nova.</summary>
-    [Fact(DisplayName = "Duas bancas que trocam de código entre si continuam gravando")]
-    public async Task TrocaDeCodigosEntreBancas_NaoColide()
+    /// <summary>Duas bancas que trocam de tipo entre si, sem o id: cada uma é uma linha nova.</summary>
+    [Fact(DisplayName = "Duas bancas que trocam de tipo entre si continuam gravando")]
+    public async Task TrocaDeTiposEntreBancas_NaoColide()
     {
         (Guid processoId, Guid etapaId) = await GravarEtapaComAsync(
-            "Certame de troca", Banca(TipoBanca, "BANCA_A"), Banca(OutroTipoBanca, "BANCA_B"));
+            "Certame de troca", Banca(TipoBanca, TipoDeBanca.AnaliseDocumental), Banca(OutroTipoBanca, TipoDeBanca.Heteroidentificacao));
 
         await RegravarAsync(
-            processoId, etapaId, [Banca(TipoBanca, "BANCA_B"), Banca(OutroTipoBanca, "BANCA_A")],
-            "trocar os códigos de lugar é configuração legítima");
+            processoId, etapaId, [Banca(TipoBanca, TipoDeBanca.Heteroidentificacao), Banca(OutroTipoBanca, TipoDeBanca.AnaliseDocumental)],
+            "trocar os tipos de lugar é configuração legítima");
 
         EtapaProcesso relida = await RelerAsync(etapaId);
-        relida.Bancas.Select(b => (b.TipoBancaOrigemId, b.Codigo))
-            .Should().BeEquivalentTo([(TipoBanca, "BANCA_B"), (OutroTipoBanca, "BANCA_A")]);
+        relida.Bancas.Select(b => (b.Tipo.OrigemId, b.Tipo.Codigo))
+            .Should().BeEquivalentTo([(TipoBanca, TipoDeBanca.Heteroidentificacao), (OutroTipoBanca, TipoDeBanca.AnaliseDocumental)]);
     }
 
-    private static BancaDaEtapa Banca(Guid tipo, string codigo, Guid? idDaBancaQueSubstitui = null) =>
-        BancaDaEtapa.Criar(tipo, codigo, "Banca de teste", idDaBancaQueSubstitui: idDaBancaQueSubstitui);
+    /// <summary>A cópia do tipo (código, nome, papel, marcas e tipos de decisão julgados) volta do banco como foi gravada.</summary>
+    [Fact(DisplayName = "A cópia do tipo de banca volta do banco com papel, marcas e tipos de decisão julgados")]
+    public async Task CopiaDoTipo_VoltaDoBancoComoFoiGravada()
+    {
+        TipoDeBancaCopiado copia = TiposDeBancaCopiadosDeTeste.Com(
+            TipoDeBanca.Heteroidentificacao, PapelDaBanca.AvaliaOMerito, TipoBanca, "Comissão de heteroidentificação", exigeDuasOuMaisBancas: true, encerraRecursoNaPrimeiraInstancia: false);
+        (_, Guid etapaId) = await GravarEtapaComAsync("Certame da cópia", BancaDaEtapa.Criar(copia));
+
+        EtapaProcesso relida = await RelerAsync(etapaId);
+
+        relida.Bancas.Single().Tipo.Should().Be(copia);
+    }
+
+    /// <summary>A lista da cópia é gravada pelos códigos de contrato dos tipos de decisão, na coluna da própria banca.</summary>
+    [Fact(DisplayName = "A cópia do tipo de banca grava cada tipo de decisão pelo código de contrato, e não pelo nome do enum")]
+    public async Task CopiaDoTipo_GravaOsCodigosDeContratoDosTiposDeDecisao()
+    {
+        TipoDeBancaCopiado copia = new(
+            TipoBanca, TipoDeBanca.Heteroidentificacao, "Comissão de heteroidentificação", PapelDaBanca.AvaliaOMerito,
+            exigeDuasOuMaisBancas: false, encerraRecursoNaPrimeiraInstancia: false,
+            [TipoMotivoDeDecisao.AnaliseDocumental, TipoMotivoDeDecisao.IsencaoDaTaxa]);
+        (_, Guid etapaId) = await GravarEtapaComAsync("Certame dos códigos da cópia", BancaDaEtapa.Criar(copia));
+        Guid bancaId = (await RelerAsync(etapaId)).Bancas.Single().Id;
+
+        await using UniPlusDbContext conferencia = fixture.CreateDbContext();
+        string gravado = await conferencia.Database
+            .SqlQuery<string>($"SELECT array_to_string(tipos_de_decisao_julgados, ',') AS \"Value\" FROM selecao.bancas_da_etapa WHERE id = {bancaId}")
+            .SingleAsync();
+
+        gravado.Should().Be("ANALISE_DOCUMENTAL,ISENCAO_DA_TAXA");
+    }
+
+    /// <summary>A banca que troca de tipo, com o mesmo id, passa a ter a cópia do tipo novo.</summary>
+    [Fact(DisplayName = "A banca que troca de tipo passa a guardar a cópia do tipo novo")]
+    public async Task TrocaDeTipo_GravaACopiaDoTipoNovo()
+    {
+        (Guid processoId, Guid etapaId) = await GravarEtapaComAsync("Certame da troca de cópia", Banca(TipoBanca, TipoDeBanca.AnaliseDocumental));
+        Guid idGravado = (await RelerAsync(etapaId)).Bancas.Single().Id;
+
+        await RegravarAsync(processoId, etapaId, [Banca(OutroTipoBanca, TipoDeBanca.AnaliseDeRecursos, idGravado)], "trocar o tipo da banca é configuração legítima");
+
+        BancaDaEtapa relida = (await RelerAsync(etapaId)).Bancas.Single();
+        relida.Id.Should().Be(idGravado);
+        relida.Tipo.Should().Be(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDeRecursos, OutroTipoBanca));
+    }
+
+    private static BancaDaEtapa Banca(Guid origemDoTipo, TipoDeBanca tipo, Guid? idDaBancaQueSubstitui = null) =>
+        BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(tipo, origemDoTipo), idDaBancaQueSubstitui: idDaBancaQueSubstitui);
 
     private static EtapaProcesso NovaEtapaDeTitulos() =>
         EtapaProcesso.Criar(

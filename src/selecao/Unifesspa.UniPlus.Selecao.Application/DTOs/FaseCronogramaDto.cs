@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Domain.Enums;
 
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>Projeção de leitura de <c>ProdutoDaFase</c> — o que a fase publica e o papel de cada publicação.</summary>
 /// <param name="Papel">Token canônico UPPER_SNAKE (<c>PRELIMINAR</c>/<c>DEFINITIVO</c>), ou nulo quando o ato não é resultado.</param>
@@ -14,7 +15,12 @@ public sealed record CategoriaJulgadaDto(Guid Id, Guid CategoriaDocumentoOrigemI
 /// <summary>Projeção de leitura de <c>BancaRequerida</c> (Story #851).</summary>
 /// <param name="Id">Identidade permanente da banca: o cliente a devolve ao regravar a fase, para a banca continuar sendo a mesma.</param>
 /// <param name="PosicaoNoTipo">Posição da banca entre as do mesmo tipo na fase, a partir de 1.</param>
+/// <param name="Codigo">O código do tipo de banca, com o rótulo que a tela mostra.</param>
 /// <param name="Nome">Nome do tipo de banca congelado na declaração: o cliente o exibe como veio.</param>
+/// <param name="Papel">O papel do tipo de banca congelado na declaração: o que a banca faz no processo.</param>
+/// <param name="ExigeDuasOuMaisBancas">Se o tipo exige duas ou mais bancas congeladas na declaração.</param>
+/// <param name="EncerraRecursoNaPrimeiraInstancia">Se o recurso julgado por essa banca termina na 1ª instância.</param>
+/// <param name="TiposDeDecisaoJulgados">As decisões que a banca julga, congeladas na declaração; vazia quando o papel não avalia o mérito.</param>
 /// <param name="RegraDeDeliberacao">Nula enquanto o rascunho não a declara; a publicação a exige.</param>
 /// <param name="CandidatosAtendidos">
 /// As categorias de documento que a banca julga — o que a distingue de outra banca do
@@ -23,9 +29,13 @@ public sealed record CategoriaJulgadaDto(Guid Id, Guid CategoriaDocumentoOrigemI
 public sealed record BancaRequeridaDto(
     Guid Id,
     Guid TipoBancaOrigemId,
-    string Codigo,
+    CodigoComRotulo<TipoDeBanca> Codigo,
     int PosicaoNoTipo,
     string Nome,
+    CodigoComRotulo<PapelDaBanca> Papel,
+    bool ExigeDuasOuMaisBancas,
+    bool EncerraRecursoNaPrimeiraInstancia,
+    IReadOnlyList<CodigoComRotulo<TipoMotivoDeDecisao>> TiposDeDecisaoJulgados,
     RegraDeDeliberacaoDto? RegraDeDeliberacao,
     IReadOnlyList<CategoriaJulgadaDto> CandidatosAtendidos);
 

@@ -1,6 +1,8 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
@@ -36,13 +38,15 @@ internal static class ConjuntoDasEtapas
         "ProcessoSeletivo.EtapaNotaEnemNaoCompoeNota",
         $"A etapa \"{nome}\" tem a nota vinda do ENEM e precisa compor a média: declare caráter classificatória ou ambas e um peso.");
 
-    internal static DomainError NotaDoEnemComBanca(string nome) => new(
+    internal static DomainError NotaDoEnemComBanca(int posicao) => new(
         "ProcessoSeletivo.EtapaNotaEnemComBanca",
-        $"A etapa \"{nome}\" tem a nota vinda do ENEM e não admite banca: ninguém atribui a nota, e quem julga o recurso é declarado na fase de recursos.");
+        $"A etapa na posição {posicao + 1} tem a nota vinda do ENEM e não admite banca com o papel '{PapelDaBanca.AvaliaOMerito.Rotulo()}'. " +
+        $"Na etapa cabem a banca com o papel '{PapelDaBanca.ImportaAsNotasDoInep.Rotulo()}' e a banca com o papel '{PapelDaBanca.JulgaAPrimeiraInstancia.Rotulo()}', " +
+        "que julga o recurso individual da etapa. O recurso contra o resultado é declarado na configuração do recurso da fase que publica o resultado.");
 
-    internal static DomainError NotaDoEnemComProdutoOuRecursoEmAto(string nome) => new(
+    internal static DomainError NotaDoEnemComProdutoOuRecursoEmAto(int posicao) => new(
         "ProcessoSeletivo.EtapaNotaEnemComProdutoOuRecursoEmAto",
-        $"A etapa \"{nome}\" tem a nota vinda do ENEM e não declara produto nem recurso contra ato publicado: o resultado é publicado pela fase, e o recurso coletivo sobre a lista geral é o da regra de recurso da fase. Na etapa cabe só o recurso individual, com o prazo contado a partir da ciência do candidato.");
+        $"A etapa na posição {posicao + 1} tem a nota vinda do ENEM e não declara produto nem recurso contra ato publicado: o resultado é publicado pela fase, e o recurso coletivo sobre a lista geral é o da regra de recurso da fase. Na etapa cabe só o recurso individual, com o prazo contado a partir da ciência do candidato.");
 
     private static IEnumerable<FieldError> IdsRepetidos(IReadOnlyList<EtapaDeclarada> etapas) =>
         EtapasDoProcesso.PosicoesComIdRepetido(etapas.Select(static etapa => (Guid?)etapa.Id))
@@ -79,13 +83,13 @@ internal static class ConjuntoDasEtapas
 
     private static IEnumerable<FieldError> EtapasDoEnemComBanca(IReadOnlyList<EtapaDeclarada> etapas) =>
         DoEnem(etapas)
-            .Where(static par => par.Etapa.Bancas.TemBancas)
-            .Select(static par => EtapasDoProcesso.NaEtapa(par.Posicao, EtapaDeclarada.ListaDasBancas, NotaDoEnemComBanca(par.Etapa.Nome)));
+            .Where(static par => par.Etapa.Bancas.TemBancaQueAvalia)
+            .Select(static par => EtapasDoProcesso.NaEtapa(par.Posicao, EtapaDeclarada.ListaDasBancas, NotaDoEnemComBanca(par.Posicao)));
 
     private static IEnumerable<FieldError> EtapasDoEnemComProdutoOuRecursoEmAto(IReadOnlyList<EtapaDeclarada> etapas) =>
         DoEnem(etapas)
             .Where(static par => par.Etapa.Atos.TemProdutos || par.Etapa.Atos.TemRecursoEmAto)
-            .Select(static par => EtapasDoProcesso.NaEtapa(par.Posicao, "produtos", NotaDoEnemComProdutoOuRecursoEmAto(par.Etapa.Nome)));
+            .Select(static par => EtapasDoProcesso.NaEtapa(par.Posicao, "produtos", NotaDoEnemComProdutoOuRecursoEmAto(par.Posicao)));
 
     // Sem etapa que componha a nota o divisor da média é zero. A regra lê o caráter e o peso de todas as etapas, então se
     // suspende quando algum foi recusado; e já foi dita pela etapa do ENEM que não compõe, que é a causa real.

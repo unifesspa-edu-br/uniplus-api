@@ -116,7 +116,7 @@ internal static class ItensDoChecklistDoEnvelopeFechado
         "cronograma_resultado_declarado_com_papel",
         "cronograma_tipo_que_congela_nao_eh_resultado",
         "cronograma_tipo_de_ato_unico_declarado_uma_vez",
-        "cronograma_recurso_com_banca_de_analise",
+        "cronograma_recurso_com_banca_que_julga",
         "cronograma_banca_de_recursos_sem_candidatos_atendidos",
         "cronograma_banca_com_regra_de_deliberacao",
         "cronograma_banca_com_o_minimo_de_integrantes",

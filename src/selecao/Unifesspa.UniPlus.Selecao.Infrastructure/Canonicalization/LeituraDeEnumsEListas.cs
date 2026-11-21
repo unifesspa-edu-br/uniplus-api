@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -22,11 +23,6 @@ internal static class LeituraDeEnumsEListas
     public static TEnum Enumeracao<TEnum>(this LeitorEnvelope leitor, JsonObject pai, string chave, string path)
         where TEnum : struct, Enum
     {
-        if (leitor.Falhou)
-        {
-            return default;
-        }
-
         string texto = leitor.Texto(pai, chave, path);
         if (leitor.Falhou)
         {
@@ -39,6 +35,24 @@ internal static class LeituraDeEnumsEListas
         }
 
         return valor;
+    }
+
+    /// <summary>
+    /// Enum de código de contrato pelo <b>código exato</b>: o encoder escreve <c>Codigo()</c>, e o código que o vocabulário não
+    /// conhece é recusado, sem aparar espaço nem ignorar caixa.
+    /// </summary>
+    public static TEnum CodigoDeContrato<TEnum>(this LeitorEnvelope leitor, JsonObject pai, string chave, string path)
+        where TEnum : struct, Enum
+    {
+        string texto = leitor.TextoNaoVazio(pai, chave, path);
+        if (leitor.Falhou)
+        {
+            return default;
+        }
+
+        return CatalogoDe<TEnum>.TentarObter(texto, out TEnum valor)
+            ? valor
+            : leitor.Malformado<TEnum>($"{path}.{chave}", $"o código não pertence ao vocabulário de {typeof(TEnum).Name}.");
     }
 
     /// <summary>
@@ -79,23 +93,19 @@ internal static class LeituraDeEnumsEListas
     /// </remarks>
     public static IReadOnlyList<string> Textos(this LeitorEnvelope leitor, JsonObject pai, string chave, string path)
     {
-        if (leitor.Falhou)
-        {
-            return [];
-        }
-
         JsonArray array = leitor.Array(pai, chave, path);
-        if (leitor.Falhou)
-        {
-            return [];
-        }
 
+        return leitor.Falhou ? [] : TextosNormalizadosDoArray(leitor, array, $"{path}.{chave}");
+    }
+
+    private static IReadOnlyList<string> TextosNormalizadosDoArray(LeitorEnvelope leitor, JsonArray array, string pathArray)
+    {
         List<string> valores = [];
         for (int i = 0; i < array.Count; i++)
         {
             if (DefeitoDoItemDeTexto(array[i]) is { } defeito)
             {
-                return leitor.Malformado<IReadOnlyList<string>>($"{path}.{chave}[{i}]", defeito) ?? [];
+                return leitor.Malformado<IReadOnlyList<string>>($"{pathArray}[{i}]", defeito) ?? [];
             }
 
             valores.Add(array[i]!.GetValue<string>());

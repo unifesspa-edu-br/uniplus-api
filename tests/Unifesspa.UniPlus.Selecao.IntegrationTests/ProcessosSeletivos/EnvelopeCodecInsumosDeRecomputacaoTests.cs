@@ -92,8 +92,7 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
 
     /// <summary>
     /// A banca da etapa congela o <c>id</c> e a posição dela no tipo. O cliente devolve o id que
-    /// leu: redeclarar a mesma configuração mantém a linha e o hash da publicação, mesmo com o
-    /// acento do código enviado em outra forma de normalização.
+    /// leu: redeclarar a mesma configuração mantém a linha e o hash da publicação.
     /// </summary>
     [Fact(DisplayName = "Redeclarar a mesma banca da etapa com o id lido preserva a linha e os bytes canônicos")]
     public void RedeclararAMesmaBancaDaEtapa_PreservaLinhaEBytes()
@@ -101,9 +100,9 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
         byte[] antes = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
         EtapaProcesso objetiva = processo.Etapas.Single(e => e.Nome == "Prova Objetiva");
-        Dictionary<string, Guid> idsOriginais = IdsDasBancasPorCodigo(objetiva);
+        Dictionary<TipoDeBanca, Guid> idsOriginais = IdsDasBancasPorTipo(objetiva);
 
-        RedeclararComOAcentoNaFormaComposta(objetiva);
+        RedeclararComOIdLido(objetiva);
 
         ConferirQueALinhaNaoGirouDeId(objetiva, idsOriginais);
         byte[] depois = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
@@ -116,10 +115,10 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
         byte[] antes = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
         EtapaProcesso objetiva = processo.Etapas.Single(e => e.Nome == "Prova Objetiva");
-        Dictionary<string, Guid> idsOriginais = IdsDasBancasPorCodigo(objetiva);
+        Dictionary<TipoDeBanca, Guid> idsOriginais = IdsDasBancasPorTipo(objetiva);
 
         objetiva.DefinirBancas([.. objetiva.Bancas.Select(b =>
-            BancaDaEtapa.Criar(b.TipoBancaOrigemId, b.Codigo, b.Nome, b.RegraDeDeliberacao))]);
+            BancaDaEtapa.Criar(b.Tipo, b.RegraDeDeliberacao))]);
 
         objetiva.Bancas.Select(b => b.Id).Should().NotIntersectWith(idsOriginais.Values,
             "sem o id, a banca declarada é outra");
@@ -127,23 +126,19 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
         depois.Should().NotEqual(antes, "o id da banca faz parte do conteúdo congelado");
     }
 
-    private static Dictionary<string, Guid> IdsDasBancasPorCodigo(EtapaProcesso etapa)
+    private static Dictionary<TipoDeBanca, Guid> IdsDasBancasPorTipo(EtapaProcesso etapa)
     {
-        Dictionary<string, Guid> ids = etapa.Bancas.ToDictionary(b => b.Codigo, b => b.Id, StringComparer.Ordinal);
+        Dictionary<TipoDeBanca, Guid> ids = etapa.Bancas.ToDictionary(b => b.Tipo.Codigo, b => b.Id);
         ids.Should().HaveCountGreaterThan(1, "pré-condição: a etapa do corpus requer mais de uma banca");
         ids.Values.Should().NotContain(Guid.Empty);
         return ids;
     }
 
-    // O cliente devolve a coleção inteira que leu, com o id de cada banca, mas com o acento na
-    // forma COMPOSTA: é o que um navegador ou um sistema operacional que normaliza diferente do
-    // que foi gravado enviaria de volta.
-    private static void RedeclararComOAcentoNaFormaComposta(EtapaProcesso etapa) =>
-        etapa.DefinirBancas([.. etapa.Bancas.Select(b =>
-            BancaDaEtapa.Criar(
-                b.TipoBancaOrigemId, b.Codigo.Normalize(NormalizationForm.FormC), b.Nome, b.RegraDeDeliberacao, idDaBancaQueSubstitui: b.Id))]);
+    // O cliente devolve a coleção inteira que leu, com o id de cada banca.
+    private static void RedeclararComOIdLido(EtapaProcesso etapa) =>
+        etapa.DefinirBancas([.. etapa.Bancas.Select(b => BancaDaEtapa.Criar(b.Tipo, b.RegraDeDeliberacao, idDaBancaQueSubstitui: b.Id))]);
 
-    private static void ConferirQueALinhaNaoGirouDeId(EtapaProcesso etapa, Dictionary<string, Guid> idsOriginais) =>
+    private static void ConferirQueALinhaNaoGirouDeId(EtapaProcesso etapa, Dictionary<TipoDeBanca, Guid> idsOriginais) =>
         etapa.Bancas.Select(b => b.Id).Should().BeEquivalentTo(idsOriginais.Values,
             "o id lido identifica a banca: a redeclaração mantém a linha em vez de criar outra");
 

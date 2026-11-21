@@ -1,14 +1,15 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 
-using Unifesspa.UniPlus.Kernel.Extensions;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Quem julga o recurso de cada fase que o admite e de cada etapa que o abre: a banca de análise de recursos da própria etapa,
+/// Quem julga o recurso de cada fase que o admite e de cada etapa que o abre: a banca cujo papel julga recurso na própria etapa,
 /// ou a da fase em que a etapa acontece. O primeiro nível que tem banca decide, e o recurso que nenhum nível julga é recusado.
 /// </summary>
 internal static class QuemJulgaORecurso
@@ -76,7 +77,7 @@ internal static class QuemJulgaORecurso
             .Select(static recurso => CronogramaDoProcesso.NaFase(recurso.Posicao, FaseDeclarada.ListaDasBancasRequeridas, FaseSemBancaDeRecursos(recurso.Fase.Codigo))),
         .. DasEtapas(cronograma, etapas)
             .Where(static recurso => recurso.Nivel == Nivel.Ninguem)
-            .Select(static recurso => EtapasDoProcesso.NaEtapa(recurso.Posicao, EtapaDeclarada.ListaDasBancas, EtapaSemBancaDeRecursos(recurso.Etapa.Nome))),
+            .Select(static recurso => EtapasDoProcesso.NaEtapa(recurso.Posicao, EtapaDeclarada.ListaDasBancas, EtapaSemBancaDeRecursos(recurso.Posicao, recurso.Etapa.FaseCodigo))),
     ];
 
     /// <summary>
@@ -107,15 +108,19 @@ internal static class QuemJulgaORecurso
         cronograma.Fases.Any(fase => TemOCodigoDaFase(fase, etapa) && fase.Bancas.TemBancaDeRecursos);
 
     private static DomainError FaseSemBancaDeRecursos(string codigoDaFase) =>
-        new(BancaErrorCodes.RecursoSemBanca, $"A fase '{codigoDaFase}' admite recurso e não declara a banca de análise de recursos.");
-
-    private static DomainError EtapaSemBancaDeRecursos(string nomeDaEtapa) =>
         new(
             BancaErrorCodes.RecursoSemBanca,
-            $"A etapa '{Eco(nomeDaEtapa)}' abre recurso, e nem ela nem a fase em que acontece declaram a banca de análise de recursos.");
+            $"A fase '{codigoDaFase}' admite recurso, e nenhuma banca prevista o julga em 1ª instância: a fase não tem banca com o papel '{PapelQueJulga}'. Acrescente essa banca.");
 
-    private static string Eco(string nomeDaEtapa) =>
-        CaracteresInvisiveis.ParaEco(nomeDaEtapa, TextoCongelado.TamanhoMaximoEcoado);
+    private static DomainError EtapaSemBancaDeRecursos(int posicao, string? codigoDaFase) =>
+        new(
+            BancaErrorCodes.RecursoSemBanca,
+            $"A etapa na posição {posicao + 1} admite recurso, e nenhuma banca prevista o julga em 1ª instância: nem a etapa nem {DaFase(codigoDaFase)}, em que ela acontece, têm banca com o papel '{PapelQueJulga}'. Acrescente essa banca.");
+
+    private static string DaFase(string? codigoDaFase) =>
+        codigoDaFase is null ? "a fase" : $"a fase '{codigoDaFase}'";
+
+    private static string PapelQueJulga => PapelDaBanca.JulgaAPrimeiraInstancia.Rotulo();
 
     /// <summary>O recurso de uma fase, a posição dela no cronograma e quem o julga.</summary>
     internal sealed record RecursoJulgadoDaFase(FaseDeclarada Fase, int Posicao, Nivel Nivel);

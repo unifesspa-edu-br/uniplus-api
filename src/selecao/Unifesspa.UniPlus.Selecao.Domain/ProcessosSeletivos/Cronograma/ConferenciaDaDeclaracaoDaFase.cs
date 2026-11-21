@@ -107,10 +107,11 @@ internal static class ConferenciaDaDeclaracaoDaFase
 
     private static IEnumerable<FieldError> CandidatosAtendidosEmBancaDeRecursos(string codigoDaFase, IReadOnlyList<BancaRequerida> bancasRequeridas)
     {
+        IReadOnlyList<int> posicoes = PosicaoDasBancasNoTipo.Calcular(bancasRequeridas.Select(static banca => banca.Tipo.Codigo));
         for (int indice = 0; indice < bancasRequeridas.Count; indice++)
         {
             BancaRequerida banca = bancasRequeridas[indice];
-            if (ExigenciaDeBancaDeRecurso.CandidatosAtendidosNaDeclaracao(codigoDaFase, banca.Codigo, banca.CandidatosAtendidos.Count) is { } recusa)
+            if (ExigenciaDeBancaDeRecurso.CandidatosAtendidosNaDeclaracao(codigoDaFase, banca.Tipo, posicoes[indice], banca.CandidatosAtendidos.Count) is { } recusa)
             {
                 yield return new FieldError(CandidatosAtendidosPelasBancas.CampoDosCandidatosAtendidos(indice), recusa);
             }

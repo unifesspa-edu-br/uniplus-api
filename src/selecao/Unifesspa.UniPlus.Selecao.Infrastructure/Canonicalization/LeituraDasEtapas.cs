@@ -36,29 +36,34 @@ internal static class LeituraDasEtapas
         List<ItemDeAvaliacao> itens = [];
         for (int j = 0; !leitor.Falhou && j < array.Count; j++)
         {
-            string pathItem = $"{pathItens}[{j}]";
-            JsonObject objeto = leitor.ItemObjeto(array, j, pathItens);
-            leitor.ExigirChaves(objeto, pathItem, "id", "rotulo", "pontuacaoMaxima");
-            Guid id = leitor.Identificador(objeto, "id", pathItem);
-            string rotulo = leitor.TextoNaoVazio(objeto, "rotulo", pathItem, LimitesDoEnvelope.ItemDeAvaliacaoRotulo);
-            decimal pontuacao = leitor.Decimal(objeto, "pontuacaoMaxima", EscritaCanonica.EscalaPadrao, pathItem, LimitesDoEnvelope.PrecisaoEtapa);
-            if (leitor.Falhou)
+            if (LerItemDeAvaliacao(leitor, leitor.ItemObjeto(array, j, pathItens), $"{pathItens}[{j}]") is not { } item)
             {
                 break;
             }
 
-            if (pontuacao <= 0)
-            {
-                leitor.Propagar<IReadOnlyList<ItemDeAvaliacao>>(new DomainError(
-                    ErrosCodecEnvelope.EnvelopeMalformado,
-                    $"Envelope malformado em '{pathItem}.pontuacaoMaxima': a pontuação do item deve ser maior que zero."));
-                break;
-            }
-
-            itens.Add(ItemDeAvaliacao.Reidratar(id, rotulo, pontuacao));
+            itens.Add(item);
         }
 
         return itens;
+    }
+
+    private static ItemDeAvaliacao? LerItemDeAvaliacao(LeitorEnvelope leitor, JsonObject objeto, string pathItem)
+    {
+        leitor.ExigirChaves(objeto, pathItem, "id", "rotulo", "pontuacaoMaxima");
+        Guid id = leitor.Identificador(objeto, "id", pathItem);
+        string rotulo = leitor.TextoNaoVazio(objeto, "rotulo", pathItem, LimitesDoEnvelope.ItemDeAvaliacaoRotulo);
+        decimal pontuacao = LerPontuacaoDoItem(leitor, objeto, pathItem);
+
+        return leitor.Falhou ? null : ItemDeAvaliacao.Reidratar(id, rotulo, pontuacao);
+    }
+
+    private static decimal LerPontuacaoDoItem(LeitorEnvelope leitor, JsonObject objeto, string pathItem)
+    {
+        decimal pontuacao = leitor.Decimal(objeto, "pontuacaoMaxima", EscritaCanonica.EscalaPadrao, pathItem, LimitesDoEnvelope.PrecisaoEtapa);
+
+        return leitor.Falhou || pontuacao > 0
+            ? pontuacao
+            : leitor.Malformado<decimal>($"{pathItem}.pontuacaoMaxima", "a pontuação do item deve ser maior que zero.");
     }
 
     internal static List<NivelDeAtendimento>? LerEscalaDeAtendimento(LeitorEnvelope leitor, JsonObject etapa, string path)
@@ -70,6 +75,14 @@ internal static class LeituraDasEtapas
         }
 
         string pathEscala = $"{path}.escalaDeAtendimento";
+        List<NivelDeAtendimento> niveis = LerNiveisDeAtendimento(leitor, array, pathEscala);
+        ExigirEscalaComNiveis(leitor, niveis, pathEscala);
+
+        return niveis;
+    }
+
+    private static List<NivelDeAtendimento> LerNiveisDeAtendimento(LeitorEnvelope leitor, JsonArray array, string pathEscala)
+    {
         List<NivelDeAtendimento> niveis = [];
         for (int j = 0; !leitor.Falhou && j < array.Count; j++)
         {
@@ -81,12 +94,15 @@ internal static class LeituraDasEtapas
             niveis.Add(nivel);
         }
 
+        return niveis;
+    }
+
+    private static void ExigirEscalaComNiveis(LeitorEnvelope leitor, List<NivelDeAtendimento> niveis, string pathEscala)
+    {
         if (!leitor.Falhou && niveis.Count == 0)
         {
             leitor.Malformado<object>(pathEscala, "a escala sem níveis deve ser null.");
         }
-
-        return niveis;
     }
 
     private static NivelDeAtendimento? LerNivelDeAtendimento(LeitorEnvelope leitor, JsonObject objeto, string pathNivel)
@@ -110,11 +126,12 @@ internal static class LeituraDasEtapas
     internal static IReadOnlyList<EtapaProcesso> LerEtapas(LeitorEnvelope leitor, JsonObject payload)
     {
         JsonArray array = leitor.Array(payload, "etapas", "$");
-        if (leitor.Falhou)
-        {
-            return [];
-        }
 
+        return leitor.Falhou ? [] : LerEtapasDoArray(leitor, array);
+    }
+
+    private static List<EtapaProcesso> LerEtapasDoArray(LeitorEnvelope leitor, JsonArray array)
+    {
         List<EtapaProcesso> etapas = [];
         for (int i = 0; i < array.Count; i++)
         {
@@ -279,27 +296,35 @@ internal static class LeituraDasEtapas
     private static List<ProdutoDaEtapa> LerProdutosDaEtapa(LeitorEnvelope leitor, JsonObject item, string path)
     {
         JsonArray? array = leitor.Array(item, "produtos", path);
-        string pathProdutos = $"{path}.produtos";
-        List<ProdutoDaEtapa> produtos = [];
-        for (int j = 0; array is not null && j < array.Count; j++)
-        {
-            string pathProduto = $"{pathProdutos}[{j}]";
 
+        return array is null ? [] : LerProdutosDoArray(leitor, array, $"{path}.produtos");
+    }
+
+    private static List<ProdutoDaEtapa> LerProdutosDoArray(LeitorEnvelope leitor, JsonArray array, string pathProdutos)
+    {
+        List<ProdutoDaEtapa> produtos = [];
+        for (int j = 0; j < array.Count; j++)
+        {
             // O caminho que ItemObjeto recebe é o do array, porque é ele que acrescenta o índice.
-            JsonObject itemProduto = leitor.ItemObjeto(array, j, pathProdutos);
-            leitor.ExigirChaves(itemProduto, pathProduto, "id", "atoCodigo", "papel");
-            Guid idProduto = leitor.Identificador(itemProduto, "id", pathProduto);
-            string ato = leitor.TextoNaoVazio(itemProduto, "atoCodigo", pathProduto, LimitesDoEnvelope.TipoAtoCodigo);
-            PapelProdutoFase? papel = leitor.EnumeracaoOpcional<PapelProdutoFase>(itemProduto, "papel", pathProduto);
-            if (leitor.Falhou)
+            if (LerProdutoDaEtapa(leitor, leitor.ItemObjeto(array, j, pathProdutos), $"{pathProdutos}[{j}]") is not { } produto)
             {
                 return [];
             }
 
-            produtos.Add(ProdutoDaEtapa.Reidratar(idProduto, ato, papel));
+            produtos.Add(produto);
         }
 
         return produtos;
+    }
+
+    private static ProdutoDaEtapa? LerProdutoDaEtapa(LeitorEnvelope leitor, JsonObject itemProduto, string pathProduto)
+    {
+        leitor.ExigirChaves(itemProduto, pathProduto, "id", "atoCodigo", "papel");
+        Guid id = leitor.Identificador(itemProduto, "id", pathProduto);
+        string ato = leitor.TextoNaoVazio(itemProduto, "atoCodigo", pathProduto, LimitesDoEnvelope.TipoAtoCodigo);
+        PapelProdutoFase? papel = leitor.EnumeracaoOpcional<PapelProdutoFase>(itemProduto, "papel", pathProduto);
+
+        return leitor.Falhou ? null : ProdutoDaEtapa.Reidratar(id, ato, papel);
     }
 
     private static BancasLidas<BancaDaEtapa> LerBancasDaEtapa(LeitorEnvelope leitor, JsonObject item, string path) =>
@@ -307,11 +332,11 @@ internal static class LeituraDasEtapas
 
     private static (BancaDaEtapa, BancaLida)? LerBancaDaEtapa(LeitorEnvelope leitor, JsonObject itemBanca, string pathBanca)
     {
-        leitor.ExigirChaves(itemBanca, pathBanca, "id", "posicaoNoTipo", "tipoBancaOrigemId", "codigo", "nome", "regraDeDeliberacao");
+        leitor.ExigirChaves(itemBanca, pathBanca, [.. TipoDeBancaNoEnvelope.Chaves, "id", "posicaoNoTipo", "regraDeDeliberacao"]);
         BancaLida? lida = BancaLida.Ler(leitor, itemBanca, pathBanca);
 
         return lida is null
             ? null
-            : (BancaDaEtapa.ReconstruirDosDadosSalvos(lida.Id, lida.TipoBancaOrigemId, lida.Codigo, lida.Nome, lida.Regra), lida);
+            : (BancaDaEtapa.ReconstruirDosDadosSalvos(lida.Id, lida.Tipo, lida.Regra), lida);
     }
 }

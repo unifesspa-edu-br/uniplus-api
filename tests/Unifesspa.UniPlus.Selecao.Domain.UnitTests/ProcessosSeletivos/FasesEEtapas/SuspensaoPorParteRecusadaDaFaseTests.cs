@@ -132,7 +132,7 @@ public sealed class SuspensaoPorParteRecusadaDaFaseTests
     }
 
     private static ItemConformidade ItemDoRecurso(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
-        ConferenciaDasBancas.Itens(cronograma, etapas, CadastrosDeTeste.Padrao.Corretores).Single(static item => item.Codigo == "cronograma_recurso_com_banca_de_analise");
+        ConferenciaDasBancas.Itens(cronograma, etapas, CadastrosDeTeste.Padrao.Corretores).Single(static item => item.Codigo == "cronograma_recurso_com_banca_que_julga");
 
     private static FaseCronograma SemRecurso() => new ModeloDeFase("INSCRICAO", 1).Janela(1, 5).Adotada();
 

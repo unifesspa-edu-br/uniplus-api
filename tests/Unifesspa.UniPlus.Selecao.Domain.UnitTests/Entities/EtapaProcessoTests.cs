@@ -3,11 +3,13 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioEtapaProcesso;
 
@@ -43,10 +45,10 @@ public sealed class EtapaProcessoTests
         EtapaProcesso etapa = EtapaDeProvaObjetivaParaAmbosOsCarateres();
 
         Guid tipoBanca = Guid.CreateVersion7();
-        etapa.DefinirBancas([BancaDaEtapa.Criar(tipoBanca, "BANCA_TECNICA", "Banca de teste")]);
+        etapa.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, tipoBanca))]);
         Guid idOriginal = etapa.Bancas.Single().Id;
 
-        etapa.DefinirBancas([BancaDaEtapa.Criar(tipoBanca, "BANCA_TECNICA", "Banca de teste", idDaBancaQueSubstitui: idOriginal)]);
+        etapa.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, tipoBanca), idDaBancaQueSubstitui: idOriginal)]);
 
         etapa.Bancas.Single().Id.Should().Be(idOriginal,
             "a banca devolvida com o id dela é a mesma; recriar a linha gira o id, que a designação e o julgamento apontam");
@@ -58,10 +60,10 @@ public sealed class EtapaProcessoTests
         EtapaProcesso etapa = EtapaDeProvaObjetivaParaAmbosOsCarateres();
 
         Guid tipoBanca = Guid.CreateVersion7();
-        etapa.DefinirBancas([BancaDaEtapa.Criar(tipoBanca, "BANCA_TECNICA", "Banca de teste")]);
+        etapa.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, tipoBanca))]);
         Guid idOriginal = etapa.Bancas.Single().Id;
 
-        etapa.DefinirBancas([BancaDaEtapa.Criar(tipoBanca, "BANCA_TECNICA", "Banca de teste")]);
+        etapa.DefinirBancas([BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.CorrecaoDeRedacoes, tipoBanca))]);
 
         etapa.Bancas.Single().Id.Should().NotBe(idOriginal);
     }
@@ -94,25 +96,32 @@ public sealed class EtapaProcessoTests
     [Fact(DisplayName = "Produto que sai da declaração some, e o que entra ganha Id próprio")]
     public void DefinirProdutos_ParQueMuda_TrocaDeLinha()
     {
-        EtapaProcesso etapa = EtapaDeProvaObjetivaParaAmbosOsCarateres();
-
-        etapa.DefinirProdutos([
-            ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
-            ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
-        ]).IsSuccess.Should().BeTrue();
+        EtapaProcesso etapa = EtapaComResultadoDaClassificacaoPreliminarEDefinitivo();
         Guid idPreliminar = etapa.Produtos.Single(p => p.Papel == PapelProdutoFase.Preliminar).Id;
 
         // O definitivo sai, o preliminar fica, e um ato novo entra.
-        etapa.DefinirProdutos([
+        DeclararProdutosAceitos(etapa,
             ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
-            ProdutoDaEtapa.Criar("GABARITO", PapelProdutoFase.Preliminar),
-        ]).IsSuccess.Should().BeTrue();
+            ProdutoDaEtapa.Criar("GABARITO", PapelProdutoFase.Preliminar));
 
         etapa.Produtos.Should().HaveCount(2);
         etapa.Produtos.Single(p => p.AtoCodigo == "RESULTADO_CLASSIFICACAO").Id.Should().Be(idPreliminar,
             "preservar identidade não pode virar preservar conteúdo: o que continua declarado mantém a linha");
         etapa.Produtos.Should().ContainSingle(p => p.AtoCodigo == "GABARITO");
     }
+
+    private static EtapaProcesso EtapaComResultadoDaClassificacaoPreliminarEDefinitivo()
+    {
+        EtapaProcesso etapa = EtapaDeProvaObjetivaParaAmbosOsCarateres();
+        DeclararProdutosAceitos(etapa,
+            ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
+            ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo));
+
+        return etapa;
+    }
+
+    private static void DeclararProdutosAceitos(EtapaProcesso etapa, params ProdutoDaEtapa[] produtos) =>
+        etapa.DefinirProdutos(produtos).IsSuccess.Should().BeTrue();
 
     private static EtapaProcesso EtapaDeProvaObjetivaParaAmbosOsCarateres() =>
         EtapaProcesso.Criar(

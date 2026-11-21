@@ -31,7 +31,7 @@ using Xunit;
 /// <para>
 /// <c>atendimentoEspecializado</c> (condições/recursos/tipos de deficiência) e
 /// <c>cronogramaFases.fases[].bancasRequeridas</c> ordenam pela IDENTIDADE DE ORIGEM do item
-/// (<c>CondicaoOrigemId</c>/<c>RecursoOrigemId</c>/<c>TipoDeficienciaOrigemId</c>/<c>TipoBancaOrigemId</c>)
+/// (<c>CondicaoOrigemId</c>/<c>RecursoOrigemId</c>/<c>TipoDeficienciaOrigemId</c>)
 /// — a segunda camada da política de ordenação, não a chave de conteúdo (ADR-0109 D9, a terceira e
 /// última camada, reservada a coleções sem identidade de negócio nenhuma). As duas entram nesta
 /// prova (a pré-condição correspondente confere que a permutação de fato inverte a ordem de
@@ -68,116 +68,12 @@ public sealed class EnvelopeCanonicoPermutacaoTests
         ProcessoSeletivo direto = CorpusEnvelopeProcessoRico.ProcessoRico(comArvoreSatisfacao: true);
         ProcessoSeletivo permutado = CorpusEnvelopeProcessoRico.ProcessoRico(permutar: true, comArvoreSatisfacao: true);
 
-        // Pré-condição POR COLEÇÃO: sem provar que a permutação alterou DE FATO a ordem de entrada
-        // DAQUELA coleção especificamente, uma coleção que o `permutar` não conseguisse inverter
-        // (por exemplo, porque o agregado a reordena na entrada) passaria por vacuidade — a
-        // comparação de bytes ao final compararia um envelope com ele mesmo, sob outro nome, e a
-        // ausência de cobertura ficaria invisível (issue #1087).
-        direto.Etapas.Select(static e => e.Nome)
-            .Should().NotEqual(permutado.Etapas.Select(static e => e.Nome),
-                "pré-condição: a permutação tem de inverter a ordem de entrada das etapas");
-
-        // Os produtos da etapa: a mesma matéria aparece nos dois papéis, e é o único par em que o
-        // código do ato não fixa a posição sozinho. Sem esta pré-condição, tirar o desempate por
-        // papel do encoder deixaria a comparação de bytes ao final sem nada a provar aqui.
-        direto.Etapas.SelectMany(static e => e.Produtos).Select(static p => p.Id)
-            .Should().NotEqual(permutado.Etapas.SelectMany(static e => e.Produtos).Select(static p => p.Id),
-                "pré-condição: a permutação tem de inverter a ordem de entrada dos produtos da etapa");
-
-        // O atendimento especializado não tem chave `Ordem` — o encoder ordena as três listas pela
-        // IDENTIDADE DE ORIGEM do item (CondicaoOrigemId/RecursoOrigemId/TipoDeficienciaOrigemId),
-        // não pela chave de conteúdo. Sem esta pré-condição, remover o OrderBy de
-        // SerializarAtendimento no encoder deixaria a comparação de bytes ao final vazia para as
-        // três listas (issue #1087).
-        direto.AtendimentoEspecializado!.Condicoes.Select(static c => c.CondicaoOrigemId)
-            .Should().NotEqual(permutado.AtendimentoEspecializado!.Condicoes.Select(static c => c.CondicaoOrigemId),
-                "pré-condição: a permutação tem de inverter a ordem de entrada das condições do atendimento especializado");
-        direto.AtendimentoEspecializado!.Recursos.Select(static r => r.RecursoOrigemId)
-            .Should().NotEqual(permutado.AtendimentoEspecializado!.Recursos.Select(static r => r.RecursoOrigemId),
-                "pré-condição: a permutação tem de inverter a ordem de entrada dos recursos do atendimento especializado");
-        direto.AtendimentoEspecializado!.TiposDeficiencia.Select(static t => t.TipoDeficienciaOrigemId)
-            .Should().NotEqual(permutado.AtendimentoEspecializado!.TiposDeficiencia.Select(static t => t.TipoDeficienciaOrigemId),
-                "pré-condição: a permutação tem de inverter a ordem de entrada dos tipos de deficiência do atendimento especializado");
-
-        direto.DistribuicaoVagas.Select(static d => d.OfertaCursoOrigemId)
-            .Should().NotEqual(permutado.DistribuicaoVagas.Select(static d => d.OfertaCursoOrigemId),
-                "pré-condição: a permutação tem de inverter a ordem de entrada da distribuição de vagas por oferta");
-
-        direto.CriteriosDesempate.Select(static c => c.Ordem)
-            .Should().NotEqual(permutado.CriteriosDesempate.Select(static c => c.Ordem),
-                "pré-condição: a permutação tem de inverter a ordem de entrada dos critérios de desempate");
-        direto.CronogramaFases.Select(static f => f.Codigo)
-            .Should().NotEqual(permutado.CronogramaFases.Select(static f => f.Codigo),
-                "pré-condição: a permutação tem de inverter a ordem de entrada das fases do cronograma");
-
-        // As bancas requeridas não têm chave `Ordem` — o encoder ordena pela IDENTIDADE DE ORIGEM
-        // (TipoBancaOrigemId), não pela chave de conteúdo. A fase RESULTADO_PRELIMINAR é a única
-        // do corpus com mais de uma banca — sem esta pré-condição, remover o OrderBy de
-        // SerializarBancasRequeridas deixaria a comparação de bytes ao final vazia para esta lista.
-        FaseCronograma faseComBancasDireto = direto.CronogramaFases.Single(static f => f.Codigo == "RESULTADO_PRELIMINAR");
-        FaseCronograma faseComBancasPermutado = permutado.CronogramaFases.Single(static f => f.Codigo == "RESULTADO_PRELIMINAR");
-        faseComBancasDireto.BancasRequeridas.Select(static b => b.TipoBancaOrigemId)
-            .Should().NotEqual(faseComBancasPermutado.BancasRequeridas.Select(static b => b.TipoBancaOrigemId),
-                "pré-condição: a permutação tem de inverter a ordem de entrada das bancas requeridas da fase RESULTADO_PRELIMINAR");
-
-        direto.FatosColetados.Select(static f => f.FatoCodigo)
-            .Should().NotEqual(permutado.FatosColetados.Select(static f => f.FatoCodigo),
-                "pré-condição: a permutação tem de inverter a ordem de entrada dos fatos coletados");
-        direto.RegrasDerivacao.Select(static c => c.CodigoFato)
-            .Should().NotEqual(permutado.RegrasDerivacao.Select(static c => c.CodigoFato),
-                "pré-condição: a permutação tem de inverter a ordem de entrada da lista de configurações de derivação");
-
-        // A lista EXTERNA de configurações de derivação já está coberta acima — mas o `permutar`
-        // também inverte, DENTRO da configuração de REGIME_INGRESSO, a lista de regras (AMPLA/COTISTA)
-        // e, dentro da regra COTISTA, a lista de condições aninhadas (COR_RACA/RENDA). Nenhuma das duas
-        // tinha pré-condição própria: um agregado que normalizasse a ordem de QUALQUER uma na
-        // entrada (por exemplo, reordenando por `Ordem`/`Clausula` num factory futuro) passaria
-        // pela comparação de bytes ao final por vacuidade, sem que a lacuna aparecesse (issue #1087).
-        ConfiguracaoDerivacaoFato derivacaoDireto = direto.RegrasDerivacao.Single(static c => c.CodigoFato == "REGIME_INGRESSO");
-        ConfiguracaoDerivacaoFato derivacaoPermutado = permutado.RegrasDerivacao.Single(static c => c.CodigoFato == "REGIME_INGRESSO");
-        derivacaoDireto.Regras.Select(static r => r.Contribui)
-            .Should().NotEqual(derivacaoPermutado.Regras.Select(static r => r.Contribui),
-                "pré-condição: a permutação tem de inverter a ordem de entrada das regras dentro da configuração de derivação");
-
-        RegraDerivacaoConfigurada regraComCondicoesDireto = derivacaoDireto.Regras.Single(static r => r.Contribui == "COTISTA");
-        RegraDerivacaoConfigurada regraComCondicoesPermutado = derivacaoPermutado.Regras.Single(static r => r.Contribui == "COTISTA");
-        regraComCondicoesDireto.Condicoes.Select(static c => c.Fato)
-            .Should().NotEqual(regraComCondicoesPermutado.Condicoes.Select(static c => c.Fato),
-                "pré-condição: a permutação tem de inverter a ordem de entrada das condições aninhadas da regra que contribui COTISTA");
-
-        // A origem fixada é a primeira das 8 federais — permutar embaralha os DESTINOS dentro dela;
-        // inverter a sequência de ORIGENS não provaria nada (cada origem aparece uma única vez na
-        // cascata, então a ordem entre origens nunca alimenta SerializarCascataRemanejamento).
-        string origemCascataDeTeste = ModalidadesFederaisLei12711.Codigos[0];
-        direto.Cascata!.Destinos.Where(d => d.ModalidadeOrigemCodigo == origemCascataDeTeste)
-            .Select(static d => d.ModalidadeDestinoCodigo)
-            .Should().NotEqual(
-                permutado.Cascata!.Destinos.Where(d => d.ModalidadeOrigemCodigo == origemCascataDeTeste)
-                    .Select(static d => d.ModalidadeDestinoCodigo),
-                $"pré-condição: a permutação tem de inverter a ordem de entrada dos destinos da cascata dentro da origem '{origemCascataDeTeste}'");
-
-        direto.RaizesDeExigencia.Select(static r => r.Tipo)
-            .Should().NotEqual(permutado.RaizesDeExigencia.Select(static r => r.Tipo),
-                "pré-condição: a permutação tem de inverter a ordem de entrada das raízes da árvore de satisfação");
-
-        NoExigencia grupoDireto = direto.RaizesDeExigencia.Single(static r => r.Filhos.Count > 0);
-        NoExigencia grupoPermutado = permutado.RaizesDeExigencia.Single(static r => r.Filhos.Count > 0);
-        grupoDireto.Filhos.Select(static f => f.DocumentoExigido!.TipoDocumentoCodigo)
-            .Should().NotEqual(grupoPermutado.Filhos.Select(static f => f.DocumentoExigido!.TipoDocumentoCodigo),
-                "pré-condição: a permutação tem de inverter a ordem de entrada dos filhos do grupo da árvore de satisfação");
+        ConferirQueAPermutacaoInverteACadaColecao(direto, permutado);
 
         SnapshotCanonico bytesDireto = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(direto));
         SnapshotCanonico bytesPermutado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(permutado));
 
-        bytesPermutado.Bytes.Should().Equal(bytesDireto.Bytes,
-            "o envelope depende só do conteúdo — permutar a ordem de entrada de etapas, atendimento especializado, " +
-            "distribuição/ofertas, critérios de desempate, cronograma de fases (inclusive as bancas requeridas " +
-            "de uma fase), fatos coletados, regras de derivação (a lista externa, as regras internas de uma " +
-            "configuração e as condições aninhadas de uma regra), destinos da cascata e a árvore de satisfação " +
-            "não muda um único byte");
-        PerfilCanonicoV1.Instancia.HashHex(bytesPermutado.Bytes)
-            .Should().Be(PerfilCanonicoV1.Instancia.HashHex(bytesDireto.Bytes),
-                "bytes idênticos ⟹ hash idêntico");
+        ConferirBytesEHashIdenticos(bytesDireto, bytesPermutado);
     }
 
     /// <summary>
@@ -191,19 +87,10 @@ public sealed class EnvelopeCanonicoPermutacaoTests
     {
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
 
-        IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> direto =
-            CorpusEnvelopeDadosDoEdital.ValoresSelecionaveisRicos(permutarValores: false);
-        IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> permutado =
-            CorpusEnvelopeDadosDoEdital.ValoresSelecionaveisRicos(permutarValores: true);
+        ConferirQueAPermutacaoInverteAListaDeCorRaca();
 
-        direto["COR_RACA"]!.Select(static v => v.Codigo).Should().NotEqual(
-            permutado["COR_RACA"]!.Select(static v => v.Codigo),
-            "pré-condição: a permutação tem de inverter a ordem de entrada da lista de valores selecionáveis");
-
-        SnapshotCanonico bytesDireto = CorpusEnvelope.Codec.Codificar(
-            CorpusEnvelopeEntrada.Entrada(processo, permutarValoresSelecionaveis: false));
-        SnapshotCanonico bytesPermutado = CorpusEnvelope.Codec.Codificar(
-            CorpusEnvelopeEntrada.Entrada(processo, permutarValoresSelecionaveis: true));
+        SnapshotCanonico bytesDireto = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo, permutarValoresSelecionaveis: false));
+        SnapshotCanonico bytesPermutado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo, permutarValoresSelecionaveis: true));
 
         bytesPermutado.Bytes.Should().Equal(bytesDireto.Bytes,
             "valoresSelecionaveis[] é ordenado pelo encoder por Ordem/Codigo (D2) — a ordem de entrada da lista " +
@@ -219,5 +106,151 @@ public sealed class EnvelopeCanonicoPermutacaoTests
         byte[] segunda = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
 
         segunda.Should().Equal(primeira, "a projeção é pura — recanonicalizar sem alteração é estável byte a byte");
+    }
+
+    /// <summary>
+    /// Pré-condição POR COLEÇÃO: sem provar que a permutação alterou DE FATO a ordem de entrada
+    /// DAQUELA coleção especificamente, uma coleção que o <c>permutar</c> não conseguisse inverter
+    /// (por exemplo, porque o agregado a reordena na entrada) passaria por vacuidade — a
+    /// comparação de bytes ao final compararia um envelope com ele mesmo, sob outro nome, e a
+    /// ausência de cobertura ficaria invisível.
+    /// </summary>
+    private static void ConferirQueAPermutacaoInverteACadaColecao(ProcessoSeletivo direto, ProcessoSeletivo permutado)
+    {
+        ConferirInversaoDasEtapasEDosProdutos(direto, permutado);
+        ConferirInversaoDoAtendimentoEspecializado(direto, permutado);
+        ConferirInversao(direto, permutado, "da distribuição de vagas por oferta",
+            static p => p.DistribuicaoVagas.Select(static d => d.OfertaCursoOrigemId));
+        ConferirInversao(direto, permutado, "dos critérios de desempate",
+            static p => p.CriteriosDesempate.Select(static c => c.Ordem));
+        ConferirInversaoDoCronograma(direto, permutado);
+        ConferirInversaoDosFatosEDaDerivacao(direto, permutado);
+        ConferirInversaoDosDestinosDaCascata(direto, permutado);
+        ConferirInversaoDaArvoreDeSatisfacao(direto, permutado);
+    }
+
+    private static void ConferirInversao<T>(
+        ProcessoSeletivo direto, ProcessoSeletivo permutado, string descricaoDaColecao, Func<ProcessoSeletivo, IEnumerable<T>> colecao) =>
+        colecao(direto).Should().NotEqual(
+            colecao(permutado),
+            $"pré-condição: a permutação tem de inverter a ordem de entrada {descricaoDaColecao}");
+
+    /// <summary>
+    /// Nos produtos da etapa, a mesma matéria aparece nos dois papéis, e é o único par em que o
+    /// código do ato não fixa a posição sozinho. Sem a pré-condição dos produtos, tirar o desempate por
+    /// papel do encoder deixaria a comparação de bytes ao final sem nada a provar aqui.
+    /// </summary>
+    private static void ConferirInversaoDasEtapasEDosProdutos(ProcessoSeletivo direto, ProcessoSeletivo permutado)
+    {
+        ConferirInversao(direto, permutado, "das etapas",
+            static p => p.Etapas.Select(static e => e.Nome));
+        ConferirInversao(direto, permutado, "dos produtos da etapa",
+            static p => p.Etapas.SelectMany(static e => e.Produtos).Select(static x => x.Id));
+    }
+
+    /// <summary>
+    /// O atendimento especializado não tem chave <c>Ordem</c> — o encoder ordena as três listas pela
+    /// IDENTIDADE DE ORIGEM do item (CondicaoOrigemId/RecursoOrigemId/TipoDeficienciaOrigemId),
+    /// não pela chave de conteúdo. Sem estas pré-condições, remover o OrderBy de
+    /// SerializarAtendimento no encoder deixaria a comparação de bytes ao final vazia para as
+    /// três listas.
+    /// </summary>
+    private static void ConferirInversaoDoAtendimentoEspecializado(ProcessoSeletivo direto, ProcessoSeletivo permutado)
+    {
+        ConferirInversao(direto, permutado, "das condições do atendimento especializado",
+            static p => p.AtendimentoEspecializado!.Condicoes.Select(static c => c.CondicaoOrigemId));
+        ConferirInversao(direto, permutado, "dos recursos do atendimento especializado",
+            static p => p.AtendimentoEspecializado!.Recursos.Select(static r => r.RecursoOrigemId));
+        ConferirInversao(direto, permutado, "dos tipos de deficiência do atendimento especializado",
+            static p => p.AtendimentoEspecializado!.TiposDeficiencia.Select(static t => t.TipoDeficienciaOrigemId));
+    }
+
+    /// <summary>
+    /// As bancas requeridas não têm chave <c>Ordem</c>: o agregado as ordena na SAÍDA, no getter, e o encoder escreve essa ordem.
+    /// RESULTADO_PRELIMINAR é a única fase do corpus com mais de uma banca; a pré-condição confere que a ordem de CHEGADA
+    /// foi invertida pela permutação, sem o que a comparação de bytes ao final ficaria vazia para esta lista.
+    /// </summary>
+    private static void ConferirInversaoDoCronograma(ProcessoSeletivo direto, ProcessoSeletivo permutado)
+    {
+        ConferirInversao(direto, permutado, "das fases do cronograma",
+            static p => p.CronogramaFases.Select(static f => f.Codigo));
+        CorpusEnvelopeCronograma.BancasRequeridasDaFaseDeRecurso(permutar: false).Select(static b => b.Id)
+            .Should().NotEqual(CorpusEnvelopeCronograma.BancasRequeridasDaFaseDeRecurso(permutar: true).Select(static b => b.Id),
+                "pré-condição: a permutação tem de inverter a ordem de entrada das bancas requeridas da fase RESULTADO_PRELIMINAR");
+    }
+
+    /// <summary>
+    /// A lista EXTERNA de configurações de derivação é a primeira conferida, mas o <c>permutar</c>
+    /// também inverte, DENTRO da configuração de REGIME_INGRESSO, a lista de regras (AMPLA/COTISTA)
+    /// e, dentro da regra COTISTA, a lista de condições aninhadas (COR_RACA/RENDA). Um agregado que
+    /// normalizasse a ordem de QUALQUER uma na entrada (por exemplo, reordenando por
+    /// <c>Ordem</c>/<c>Clausula</c> num factory futuro) passaria pela comparação de bytes ao final
+    /// por vacuidade, sem que a lacuna aparecesse.
+    /// </summary>
+    private static void ConferirInversaoDosFatosEDaDerivacao(ProcessoSeletivo direto, ProcessoSeletivo permutado)
+    {
+        ConferirInversao(direto, permutado, "dos fatos coletados",
+            static p => p.FatosColetados.Select(static f => f.FatoCodigo));
+        ConferirInversao(direto, permutado, "da lista de configurações de derivação",
+            static p => p.RegrasDerivacao.Select(static c => c.CodigoFato));
+        ConferirInversao(direto, permutado, "das regras dentro da configuração de derivação",
+            static p => DerivacaoDoRegimeDeIngresso(p).Regras.Select(static r => r.Contribui));
+        ConferirInversao(direto, permutado, "das condições aninhadas da regra que contribui COTISTA",
+            static p => RegraCotista(p).Condicoes.Select(static c => c.Fato));
+    }
+
+    private static ConfiguracaoDerivacaoFato DerivacaoDoRegimeDeIngresso(ProcessoSeletivo processo) =>
+        processo.RegrasDerivacao.Single(static c => c.CodigoFato == "REGIME_INGRESSO");
+
+    private static RegraDerivacaoConfigurada RegraCotista(ProcessoSeletivo processo) =>
+        DerivacaoDoRegimeDeIngresso(processo).Regras.Single(static r => r.Contribui == "COTISTA");
+
+    /// <summary>
+    /// A origem fixada é a primeira das 8 federais — permutar embaralha os DESTINOS dentro dela;
+    /// inverter a sequência de ORIGENS não provaria nada (cada origem aparece uma única vez na
+    /// cascata, então a ordem entre origens nunca alimenta SerializarCascataRemanejamento).
+    /// </summary>
+    private static void ConferirInversaoDosDestinosDaCascata(ProcessoSeletivo direto, ProcessoSeletivo permutado)
+    {
+        string origemCascataDeTeste = ModalidadesFederaisLei12711.Codigos[0];
+
+        ConferirInversao(direto, permutado, $"dos destinos da cascata dentro da origem '{origemCascataDeTeste}'",
+            p => p.Cascata!.Destinos.Where(d => d.ModalidadeOrigemCodigo == origemCascataDeTeste).Select(static d => d.ModalidadeDestinoCodigo));
+    }
+
+    private static void ConferirInversaoDaArvoreDeSatisfacao(ProcessoSeletivo direto, ProcessoSeletivo permutado)
+    {
+        ConferirInversao(direto, permutado, "das raízes da árvore de satisfação",
+            static p => p.RaizesDeExigencia.Select(static r => r.Tipo));
+        ConferirInversao(direto, permutado, "dos filhos do grupo da árvore de satisfação",
+            static p => GrupoDaArvore(p).Filhos.Select(static f => f.DocumentoExigido!.TipoDocumentoCodigo));
+    }
+
+    private static NoExigencia GrupoDaArvore(ProcessoSeletivo processo) =>
+        processo.RaizesDeExigencia.Single(static r => r.Filhos.Count > 0);
+
+    private static void ConferirQueAPermutacaoInverteAListaDeCorRaca()
+    {
+        IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> direto =
+            CorpusEnvelopeDadosDoEdital.ValoresSelecionaveisRicos(permutarValores: false);
+        IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> permutado =
+            CorpusEnvelopeDadosDoEdital.ValoresSelecionaveisRicos(permutarValores: true);
+
+        direto["COR_RACA"]!.Select(static v => v.Codigo).Should().NotEqual(
+            permutado["COR_RACA"]!.Select(static v => v.Codigo),
+            "pré-condição: a permutação tem de inverter a ordem de entrada da lista de valores selecionáveis");
+    }
+
+    private static void ConferirBytesEHashIdenticos(SnapshotCanonico bytesDireto, SnapshotCanonico bytesPermutado)
+    {
+        bytesPermutado.Bytes.Should().Equal(bytesDireto.Bytes,
+            "o envelope depende só do conteúdo — permutar a ordem de entrada de etapas, atendimento especializado, " +
+            "distribuição/ofertas, critérios de desempate, cronograma de fases (inclusive as bancas requeridas " +
+            "de uma fase), fatos coletados, regras de derivação (a lista externa, as regras internas de uma " +
+            "configuração e as condições aninhadas de uma regra), destinos da cascata e a árvore de satisfação " +
+            "não muda um único byte");
+        PerfilCanonicoV1.Instancia.HashHex(bytesPermutado.Bytes)
+            .Should().Be(PerfilCanonicoV1.Instancia.HashHex(bytesDireto.Bytes),
+                "bytes idênticos ⟹ hash idêntico");
     }
 }

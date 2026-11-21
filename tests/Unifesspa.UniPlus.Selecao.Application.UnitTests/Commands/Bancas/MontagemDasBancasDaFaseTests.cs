@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class MontagemDasBancasDaFaseTests
 {
@@ -26,12 +27,13 @@ public sealed class MontagemDasBancasDaFaseTests
         MontagemDasBancasDaFase montagem = Montagem();
         BancaRequeridaInput declarada = new(TipoDocumental.Id, [CategoriaRenda.Id], RegrasDeDeliberacaoDeTeste.Valida());
 
-        Result<List<BancaRequerida>> resultado = await montagem.MontarAsync(Fase(declarada), 0, CancellationToken.None);
+        Result<List<BancaRequerida>> resultado = await montagem.MontarAsync(Fase(declarada), 0, [], CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
         BancaRequerida banca = resultado.Value!.Should().ContainSingle().Subject;
-        banca.Codigo.Should().Be("BANCA_ANALISE_DOCUMENTAL");
-        banca.Nome.Should().Be("Banca de análise documental");
+        banca.Tipo.Should().Be(new TipoDeBancaCopiado(
+            TipoDocumental.Id, TipoDeBanca.AnaliseDocumental, "Banca de análise documental", PapelDaBanca.AvaliaOMerito, false, false,
+            [TipoMotivoDeDecisao.AnaliseDocumental, TipoMotivoDeDecisao.IsencaoDaTaxa]));
         banca.CandidatosAtendidos.Select(static categoria => categoria.Codigo).Should().Equal("RENDA");
         banca.RegraDeDeliberacao!.Quorum.Should().Be(2);
     }
@@ -41,7 +43,7 @@ public sealed class MontagemDasBancasDaFaseTests
     {
         BancaRequeridaInput declarada = new(TipoDeRecursos.Id, [CategoriaRenda.Id], RegrasDeDeliberacaoDeTeste.Valida());
 
-        Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(Fase(declarada), 2, CancellationToken.None);
+        Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(Fase(declarada), 2, [], CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Single().CandidatosAtendidos.Select(static categoria => categoria.Codigo).Should().Equal("RENDA");
@@ -54,7 +56,7 @@ public sealed class MontagemDasBancasDaFaseTests
             new BancaRequeridaInput(TipoDocumental.Id, [], RegrasDeDeliberacaoDeTeste.ComTresViolacoes()),
             new BancaRequeridaInput(TipoDocumental.Id, [CategoriaRenda.Id], RegrasDeDeliberacaoDeTeste.Valida()));
 
-        Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(fase, 0, CancellationToken.None);
+        Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(fase, 0, [], CancellationToken.None);
 
         resultado.Errors.Select(static erro => erro.Field).Should().BeEquivalentTo(
         [
@@ -69,7 +71,7 @@ public sealed class MontagemDasBancasDaFaseTests
     {
         BancaRequeridaInput desconhecida = new(Guid.CreateVersion7(), [], null);
 
-        Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(Fase(desconhecida), 1, CancellationToken.None);
+        Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(Fase(desconhecida), 1, [], CancellationToken.None);
 
         FieldError recusa = resultado.Errors.Should().ContainSingle().Subject;
         recusa.Field.Should().Be("fases[1].bancasRequeridas[0].tipoBancaId");
@@ -81,7 +83,7 @@ public sealed class MontagemDasBancasDaFaseTests
     {
         BancaRequeridaInput declarada = new(TipoDocumental.Id, [Guid.CreateVersion7()], null);
 
-        Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(Fase(declarada), 0, CancellationToken.None);
+        Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(Fase(declarada), 0, [], CancellationToken.None);
 
         FieldError recusa = resultado.Errors.Should().ContainSingle().Subject;
         recusa.Field.Should().Be("fases[0].bancasRequeridas[0].categoriasDocumentoIds[0]");
@@ -93,7 +95,7 @@ public sealed class MontagemDasBancasDaFaseTests
     {
         BancaRequeridaInput declarada = new(TipoDocumental.Id, [CategoriaRenda.Id, Guid.CreateVersion7()], null);
 
-        Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(Fase(declarada), 0, CancellationToken.None);
+        Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(Fase(declarada), 0, [], CancellationToken.None);
 
         FieldError recusa = resultado.Errors.Should().ContainSingle().Subject;
         recusa.Field.Should().Be("fases[0].bancasRequeridas[0].categoriasDocumentoIds[1]");
@@ -104,7 +106,7 @@ public sealed class MontagemDasBancasDaFaseTests
     {
         BancaRequeridaInput declarada = new(TipoDocumental.Id, [CategoriaRenda.Id], null);
 
-        Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(Fase(declarada), 0, CancellationToken.None);
+        Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(Fase(declarada), 0, [], CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Single().RegraDeDeliberacao.Should().BeNull();
@@ -115,7 +117,7 @@ public sealed class MontagemDasBancasDaFaseTests
     {
         BancaRequeridaInput declarada = new(TipoDeHomologacao.Id, [], RegrasDeDeliberacaoDeTeste.AtoIndividual());
 
-        Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(Fase(declarada), 0, CancellationToken.None);
+        Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(Fase(declarada), 0, [], CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Single().RegraDeDeliberacao!.Quorum.Should().BeNull();
@@ -126,7 +128,7 @@ public sealed class MontagemDasBancasDaFaseTests
     {
         BancaRequeridaInput declarada = new(TipoDeHomologacao.Id, [], RegrasDeDeliberacaoDeTeste.AtoIndividualComVotacaoDoRecurso());
 
-        Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(Fase(declarada), 0, CancellationToken.None);
+        Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(Fase(declarada), 0, [], CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Single().RegraDeDeliberacao!.QuorumExigido.Should().Be(2);
@@ -137,7 +139,7 @@ public sealed class MontagemDasBancasDaFaseTests
     {
         BancaRequeridaInput declarada = new(TipoDeHomologacao.Id, [], RegrasDeDeliberacaoDeTeste.AtoIndividualSoComOQuorum());
 
-        Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(Fase(declarada), 0, CancellationToken.None);
+        Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(Fase(declarada), 0, [], CancellationToken.None);
 
         resultado.Errors.Select(static erro => erro.Field).Should().BeEquivalentTo(
         [
@@ -152,9 +154,60 @@ public sealed class MontagemDasBancasDaFaseTests
     {
         BancaRequeridaInput declarada = new(TipoDeRecursos.Id, [], RegrasDeDeliberacaoDeTeste.AtoIndividualComVotacaoDoRecurso());
 
-        Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(Fase(declarada), 0, CancellationToken.None);
+        Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(Fase(declarada), 0, [], CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "A banca gravada que a declaração substitui sem trocar o tipo mantém a cópia, ainda que o cadastro tenha mudado")]
+    public async Task Montar_BancaGravadaDoMesmoTipo_MantemACopiaSemLerOCadastro()
+    {
+        BancaRequerida gravada = BancaRequerida.Criar(
+            new TipoDeBancaCopiado(TipoDocumental.Id, TipoDeBanca.AnaliseDocumental, "Nome de quando a banca nasceu", PapelDaBanca.ImportaCandidatos, true, true, []), []);
+        BancaRequeridaInput declarada = new(TipoDocumental.Id, [], null, gravada.Id);
+
+        Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(Fase(declarada), 0, [gravada], CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.Single().Tipo.Should().BeSameAs(gravada.Tipo);
+    }
+
+    [Fact(DisplayName = "O tipo que saiu do cadastro não afeta a banca gravada que o mantém")]
+    public async Task Montar_BancaGravadaComTipoQueSaiuDoCadastro_NaoRecusa()
+    {
+        Guid tipoDesativado = Guid.CreateVersion7();
+        BancaRequerida gravada = BancaRequerida.Criar(
+            new TipoDeBancaCopiado(tipoDesativado, TipoDeBanca.Entrevista, "Banca de entrevista", PapelDaBanca.AvaliaOMerito, false, false, [TipoMotivoDeDecisao.NotaDaEtapa]), []);
+
+        Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(
+            Fase(new BancaRequeridaInput(tipoDesativado, [], null, gravada.Id)), 0, [gravada], CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.Single().Tipo.Should().BeSameAs(gravada.Tipo);
+    }
+
+    [Fact(DisplayName = "A banca gravada que troca de tipo copia o cadastro atual do tipo novo")]
+    public async Task Montar_BancaGravadaQueTrocaDeTipo_CopiaOCadastroAtual()
+    {
+        BancaRequerida gravada = BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.Entrevista), []);
+
+        Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(
+            Fase(new BancaRequeridaInput(TipoDeRecursos.Id, [], null, gravada.Id)), 0, [gravada], CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.Single().Tipo.OrigemId.Should().Be(TipoDeRecursos.Id);
+        resultado.Value!.Single().Tipo.Papel.Should().Be(PapelDaBanca.JulgaAPrimeiraInstancia);
+    }
+
+    [Fact(DisplayName = "A banca nova com tipo que o cadastro não tem é recusada sem citar o id recebido")]
+    public async Task Montar_BancaNovaComTipoDesativado_RecusaSemCitarOId()
+    {
+        Guid desativado = Guid.CreateVersion7();
+
+        Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(Fase(new BancaRequeridaInput(desativado, [], null)), 0, [], CancellationToken.None);
+
+        resultado.Errors.Should().ContainSingle().Which.Error.Message
+            .Should().Be("O tipo de banca indicado não existe ou está desativado no cadastro.");
     }
 
     private static FaseCronogramaInput Fase(params BancaRequeridaInput[] bancas) => new(

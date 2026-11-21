@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 
-using Unifesspa.UniPlus.Kernel.Extensions;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
@@ -17,16 +17,16 @@ public static class ConferenciaDasBancas
 {
     private static readonly ItemDaBanca[] ItensDaBanca =
     [
-        new("cronograma_recurso_com_banca_de_analise",
-            "Cronograma: todo recurso tem a banca de análise de recursos que o julga, na fase ou na etapa",
+        new("cronograma_recurso_com_banca_que_julga",
+            "Cronograma: todo recurso tem a banca que o julga em 1ª instância, na fase ou na etapa",
             static (cronograma, etapas, _) => ConferirRecursosSemBanca(cronograma, etapas),
             static (cronograma, etapas) => ConjuntoDeEtapasJulgadasIndeterminado(cronograma, etapas)),
         new("cronograma_banca_de_recursos_sem_candidatos_atendidos",
-            "Cronograma: a banca de análise de recursos não define candidatos atendidos",
+            "Cronograma: a banca que julga recurso não define candidatos atendidos",
             static (cronograma, _, _) => cronograma.RecusasDasDeclaracoes(ExigenciaDeBancaDeRecurso.CodigosDosCandidatosAtendidos),
             static (_, _) => false),
         new("cronograma_banca_com_regra_de_deliberacao",
-            "Cronograma: toda banca declarada tem a regra de deliberação",
+            "Cronograma: toda banca declara a regra de deliberação e, se julga recurso por ato individual, a votação do recurso",
             static (cronograma, etapas, _) => ConferirRegrasDeDeliberacao(cronograma, etapas),
             static (cronograma, etapas) => BancasIndeterminadas(cronograma, etapas)),
         new("cronograma_banca_com_o_minimo_de_integrantes",
@@ -48,7 +48,7 @@ public static class ConferenciaDasBancas
         ArgumentNullException.ThrowIfNull(cronograma);
         ArgumentNullException.ThrowIfNull(etapas);
 
-        return [.. BancasSemRegraDasFases(cronograma), .. BancasSemRegraDasEtapas(etapas)];
+        return [.. DeliberacaoDasBancasDasFases(cronograma), .. DeliberacaoDasBancasDasEtapas(etapas)];
     }
 
     /// <summary>
@@ -72,8 +72,13 @@ public static class ConferenciaDasBancas
         [.. ItensDaBanca.Select(item => new ItemConformidade(
             item.Codigo, DimensaoConformidade.Cronograma, item.Mensagem, item.Causas(cronograma, etapas, corretores).Count == 0 && !item.SemJulgar(cronograma, etapas)))];
 
-    internal static DomainError RegraDeDeliberacaoAusente(string nomeDaBanca, string onde) =>
-        new(BancaErrorCodes.RegraDeDeliberacaoObrigatoria, $"A banca '{nomeDaBanca}' {onde} não declara a regra de deliberação.");
+    internal static DomainError RegraDeDeliberacaoAusente(string citacaoDaBanca, string onde) =>
+        new(BancaErrorCodes.RegraDeDeliberacaoObrigatoria, $"A banca '{citacaoDaBanca}' da {onde} não declara a regra de deliberação.");
+
+    internal static DomainError VotacaoDoRecursoAusente(BancaDeclarada banca, string onde) =>
+        new(
+            BancaErrorCodes.RegraDeDeliberacaoObrigatoria,
+            $"A banca '{banca.Citacao}' da {onde} decide por ato individual e julga recurso com o papel '{banca.Tipo.Papel.Rotulo()}', mas não declara a votação do recurso. Declare o quórum, o critério e o encerramento usados no julgamento do recurso.");
 
     // Quem julga o recurso de cada etapa sai da lista das bancas da fase e da etapa e da lista dos recursos da etapa: com parte
     // recusada em alguma delas, a banca que julga pode ser outra, e o item fica pendente em vez de aprovado por omissão.
@@ -100,63 +105,74 @@ public static class ConferenciaDasBancas
     private static bool EtapaJulgadaIndeterminada(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
         etapas.Etapas.Any(etapa => QuemJulgaORecurso.JulgadoraIndeterminada(cronograma, etapa));
 
-    private static IEnumerable<FieldError> BancasSemRegraDasFases(CronogramaDoProcesso cronograma) =>
+    private static IEnumerable<FieldError> DeliberacaoDasBancasDasFases(CronogramaDoProcesso cronograma) =>
         cronograma.Fases.SelectMany(static (fase, posicao) => fase.Bancas.Declaradas
-            .Where(static banca => banca.Regra is null)
-            .Select(banca => CronogramaDoProcesso.NaFase(
-                posicao, $"{FaseDeclarada.ListaDasBancasRequeridas}[{banca.Posicao}]", RegraDeDeliberacaoAusente(banca.Nome, $"da fase '{fase.Codigo}'"))));
+            .Select(banca => (Banca: banca, Causa: CausaDaDeliberacao(banca, $"fase '{fase.Codigo}'")))
+            .Where(static par => par.Causa is not null)
+            .Select(par => CronogramaDoProcesso.NaFase(posicao, $"{FaseDeclarada.ListaDasBancasRequeridas}[{par.Banca.Posicao}]", par.Causa!)));
 
-    private static IEnumerable<FieldError> BancasSemRegraDasEtapas(EtapasDoProcesso etapas) =>
+    private static IEnumerable<FieldError> DeliberacaoDasBancasDasEtapas(EtapasDoProcesso etapas) =>
         etapas.Etapas.SelectMany(static (etapa, posicao) => etapa.Bancas.Declaradas
-            .Where(static banca => banca.Regra is null)
-            .Select(banca => EtapasDoProcesso.NaEtapa(
-                posicao, $"{EtapaDeclarada.ListaDasBancas}[{banca.Posicao}]", RegraDeDeliberacaoAusente(banca.Nome, $"da etapa '{etapa.Nome}'"))));
+            .Select(banca => (Banca: banca, Causa: CausaDaDeliberacao(banca, EtapaNaPosicao(posicao))))
+            .Where(static par => par.Causa is not null)
+            .Select(par => EtapasDoProcesso.NaEtapa(posicao, $"{EtapaDeclarada.ListaDasBancas}[{par.Banca.Posicao}]", par.Causa!)));
+
+    // A regra ausente vem antes: sem regra não há modo de deliberação a conferir.
+    private static DomainError? CausaDaDeliberacao(BancaDeclarada banca, string onde)
+    {
+        if (banca.Regra is null)
+        {
+            return RegraDeDeliberacaoAusente(banca.Citacao, onde);
+        }
+
+        return banca.JulgaRecursoSemVotacao ? VotacaoDoRecursoAusente(banca, onde) : null;
+    }
+
+    private static string EtapaNaPosicao(int posicao) => $"etapa na posição {posicao + 1}";
 
     private static IEnumerable<BancaJulgadora> BancasDasFases(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
         cronograma.Fases.SelectMany((fase, posicao) => fase.Bancas.Declaradas
             .Where(static banca => banca.Regra is not null)
             .Select(banca => new BancaJulgadora(
                 erro => CronogramaDoProcesso.NaFase(posicao, $"{FaseDeclarada.ListaDasBancasRequeridas}[{banca.Posicao}]", erro),
-                banca.Nome,
-                $"da fase '{fase.Codigo}'",
+                banca.Citacao,
+                $"fase '{fase.Codigo}'",
                 banca.Regra!,
-                banca.DeRecursos ? EtapasJulgadasPelaFase(cronograma, etapas, fase) : [])));
+                banca.Tipo.JulgaRecurso ? EtapasJulgadasPelaFase(cronograma, etapas, fase) : [])));
 
     private static IEnumerable<BancaJulgadora> BancasDasEtapas(EtapasDoProcesso etapas) =>
         etapas.Etapas.SelectMany(static (etapa, posicao) => etapa.Bancas.Declaradas
             .Where(static banca => banca.Regra is not null)
             .Select(banca => new BancaJulgadora(
                 erro => EtapasDoProcesso.NaEtapa(posicao, $"{EtapaDeclarada.ListaDasBancas}[{banca.Posicao}]", erro),
-                banca.Nome,
-                $"da etapa '{Eco(etapa.Nome)}'",
+                banca.Citacao,
+                EtapaNaPosicao(posicao),
                 banca.Regra!,
-                banca.DeRecursos ? [etapa] : [])));
+                banca.Tipo.JulgaRecurso ? [new EtapaJulgada(etapa, posicao)] : [])));
 
     // A etapa da fase com recurso e sem banca de recursos própria é julgada pela banca de recursos da fase; a etapa de julgadora
     // indeterminada não se atribui a banca nenhuma, e o mínimo se confere sobre as que a banca julga com certeza.
-    private static EtapaDeclarada[] EtapasJulgadasPelaFase(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, FaseDeclarada fase) =>
+    private static EtapaJulgada[] EtapasJulgadasPelaFase(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, FaseDeclarada fase) =>
         [.. QuemJulgaORecurso.DasEtapas(cronograma, etapas)
             .Where(recurso => recurso.Nivel == QuemJulgaORecurso.Nivel.BancaDeRecursosDaFase
                 && string.Equals(recurso.Etapa.FaseCodigo, fase.Codigo, StringComparison.Ordinal))
-            .Select(static recurso => recurso.Etapa)];
+            .Select(static recurso => new EtapaJulgada(recurso.Etapa, recurso.Posicao))];
 
     private static IEnumerable<FieldError> RegrasNaoResolvidas(BancaJulgadora[] bancas, CorretoresDasEtapas corretores) =>
         bancas.SelectMany(banca => banca.Julgadas
-            .Where(etapa => !corretores.RegraResolvida(etapa.RegraConsolidacao))
-            .Select(etapa => banca.Localiza(MinimoDeIntegrantes.NaoResolvida(banca.Nome, banca.Onde, etapa.Nome))));
+            .Where(julgada => !corretores.RegraResolvida(julgada.Etapa.RegraConsolidacao))
+            .Select(julgada => banca.Localiza(MinimoDeIntegrantes.NaoResolvida(banca.Citacao, banca.Onde, julgada.Posicao))));
 
     private static FieldError? AbaixoDoMinimo(BancaJulgadora banca, CorretoresDasEtapas corretores)
     {
         int minimo = MinimoDeIntegrantes.Exigido(
             banca.Regra,
-            banca.Julgadas.Where(etapa => corretores.RegraResolvida(etapa.RegraConsolidacao)).Select(etapa => corretores.EmCampoDaRegra(etapa.RegraConsolidacao)));
+            banca.Julgadas.Where(julgada => corretores.RegraResolvida(julgada.Etapa.RegraConsolidacao)).Select(julgada => corretores.EmCampoDaRegra(julgada.Etapa.RegraConsolidacao)));
 
         return banca.Regra.Integrantes >= minimo
             ? null
-            : banca.Localiza(MinimoDeIntegrantes.AbaixoDoMinimo(banca.Nome, banca.Onde, banca.Regra.Integrantes, minimo));
+            : banca.Localiza(MinimoDeIntegrantes.AbaixoDoMinimo(banca.Citacao, banca.Onde, banca.Regra.Integrantes, minimo));
     }
-
-    private static string Eco(string texto) => CaracteresInvisiveis.ParaEco(texto, TextoCongelado.TamanhoMaximoEcoado);
 
     /// <summary>Um item do painel das bancas e as causas que ele projeta: vermelho quando houver alguma.</summary>
     private sealed record ItemDaBanca(
@@ -165,7 +181,10 @@ public static class ConferenciaDasBancas
         Func<CronogramaDoProcesso, EtapasDoProcesso, CorretoresDasEtapas, IReadOnlyList<FieldError>> Causas,
         Func<CronogramaDoProcesso, EtapasDoProcesso, bool> SemJulgar);
 
-    /// <summary>Uma banca declarada com regra de deliberação, onde ela está e as etapas que julga.</summary>
+    /// <summary>Uma etapa que a banca julga e a posição dela na lista das etapas, que as mensagens citam.</summary>
+    private sealed record EtapaJulgada(EtapaDeclarada Etapa, int Posicao);
+
+    /// <summary>Uma banca declarada com regra de deliberação, a citação dela, onde ela está e as etapas que julga.</summary>
     private sealed record BancaJulgadora(
-        Func<DomainError, FieldError> Localiza, string Nome, string Onde, RegraDeDeliberacao Regra, IReadOnlyList<EtapaDeclarada> Julgadas);
+        Func<DomainError, FieldError> Localiza, string Citacao, string Onde, RegraDeDeliberacao Regra, IReadOnlyList<EtapaJulgada> Julgadas);
 }

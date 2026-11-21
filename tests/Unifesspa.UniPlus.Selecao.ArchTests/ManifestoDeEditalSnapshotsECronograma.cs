@@ -115,14 +115,22 @@ internal static class ManifestoDeEditalSnapshotsECronograma
             [("FaseCronogramaId", "FK interna.")]),
 
         [typeof(BancaRequerida)] = (
-            ["TipoBancaOrigemId", "Codigo", "PosicaoNoTipo", "Nome", "CandidatosAtendidos", "RegraDeDeliberacao"],
+            ["Tipo", "PosicaoNoTipo", "CandidatosAtendidos", "RegraDeDeliberacao"],
             [("FaseCronogramaId", "FK interna.")]),
+
+        // A cópia do tipo de banca que a banca da fase e a da etapa guardam, congelada na publicação. Sem Id no
+        // envelope: é valor da banca que a carrega, e a origem do tipo identifica de onde a cópia saiu.
+        [typeof(TipoDeBancaCopiado)] = (
+            ["OrigemId", "Codigo", "Nome", "Papel", "ExigeDuasOuMaisBancas", "EncerraRecursoNaPrimeiraInstancia", "TiposDeDecisaoJulgados"],
+            [("AvaliaOMerito", "Derivada do papel — congelá-la duplicaria a fonte de verdade."),
+             ("JulgaRecurso", "Derivada do papel — congelá-la duplicaria a fonte de verdade.")]),
 
         // A regra de deliberação da banca, igual na banca da fase e na da etapa. Sem Id no
         // envelope: é valor da banca que a carrega.
         [typeof(RegraDeDeliberacao)] = (
             ["Modo", "Integrantes", "Suplentes", "Quorum", "Criterio", "Desempate", "Encerramento", "SemUnanimidade"],
-            [("QuorumExigido", "Derivada de Quorum — sem votação exige um titular; congelá-la duplicaria a fonte de verdade.")]),
+            [("QuorumExigido", "Derivada de Quorum — sem votação exige um titular; congelá-la duplicaria a fonte de verdade."),
+             ("AtoIndividualSemVotacao", "Derivada do modo e da votação declarados; congelá-la duplicaria a fonte de verdade.")]),
 
         // Os candidatos atendidos de cada banca. Sem Id no envelope: nada aponta para a linha de
         // fora da banca que a carrega.

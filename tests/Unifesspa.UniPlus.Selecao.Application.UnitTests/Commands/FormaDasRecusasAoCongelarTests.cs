@@ -7,6 +7,7 @@ using NSubstitute.ExceptionExtensions;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
@@ -138,8 +139,8 @@ public sealed class FormaDasRecusasAoCongelarTests
         EtapaProcesso etapa = EtapaQuePublicaPreliminarSemDefinitivo(processo);
         etapa.DefinirBancas(
         [
-            BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_HETEROIDENTIFICACAO", "Banca de teste"),
-            BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_ANALISE_DOCUMENTAL", "Banca de teste"),
+            BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.Heteroidentificacao, Guid.CreateVersion7())),
+            BancaDaEtapa.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, Guid.CreateVersion7())),
         ]);
 
         return etapa;

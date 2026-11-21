@@ -62,15 +62,15 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
     [Fact(DisplayName = "cronogramaFases.fases[].bancasRequeridas: o código governa sobre a identidade de origem — oráculo de sequência exata")]
     public void CronogramaFases_BancasRequeridas_CodigoGovernaSobreIdentidadeDeOrigem()
     {
-        BancaRequerida bancaComOrigemMenor = BancaRequerida.Criar(IdFixo(1), "ZETA_BANCA", "Banca de teste", []);
-        BancaRequerida bancaComOrigemMaior = BancaRequerida.Criar(IdFixo(2), "ALFA_BANCA", "Banca de teste", []);
+        BancaRequerida bancaComOrigemMenor = BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.Entrevista, IdFixo(1)), []);
+        BancaRequerida bancaComOrigemMaior = BancaRequerida.Criar(TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, IdFixo(2)), []);
 
         JsonArray bancasJson = BancasRequeridasEnvelopadas(FaseComAsBancas("INSCRICAO", bancaComOrigemMenor, bancaComOrigemMaior));
 
-        bancasJson.Select(static b => b!["codigo"]!.GetValue<string>()).Should().Equal(["ALFA_BANCA", "ZETA_BANCA"]);
+        bancasJson.Select(static b => b!["codigo"]!.GetValue<string>()).Should().Equal(["BANCA_ANALISE_DOCUMENTAL", "BANCA_ENTREVISTA"]);
     }
 
-    // (TipoBancaOrigemId, Codigo) empata: as duas bancas são do MESMO tipo. Quem desempata é a
+    // (código do tipo) empata: as duas bancas são do MESMO tipo. Quem desempata é a
     // posição no tipo, que a raiz calcula pela ordem de chegada — nunca o id nem os candidatos
     // atendidos.
     [Fact(DisplayName = "cronogramaFases.fases[].bancasRequeridas: duas bancas do mesmo tipo seguem a posição no tipo — oráculo de sequência exata")]
@@ -78,9 +78,9 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
     {
         Guid tipoUnico = IdFixo(1);
         BancaRequerida bancaDaRenda = BancaRequerida.Criar(
-            tipoUnico, "BANCA_ANALISE_DOCUMENTAL", "Banca de teste", [CategoriaJulgada.Criar(IdFixo(9), "RENDA")]);
+            TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, tipoUnico), [CategoriaJulgada.Criar(IdFixo(9), "RENDA")]);
         BancaRequerida bancaEtnicoRacial = BancaRequerida.Criar(
-            tipoUnico, "BANCA_ANALISE_DOCUMENTAL", "Banca de teste", [CategoriaJulgada.Criar(IdFixo(8), "ETNICO_RACIAL")]);
+            TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, tipoUnico), [CategoriaJulgada.Criar(IdFixo(8), "ETNICO_RACIAL")]);
 
         CandidatosAtendidosNaOrdemDasBancas(FaseComAsBancas("ANALISE", bancaDaRenda, bancaEtnicoRacial))
             .Should().Equal(["RENDA", "ETNICO_RACIAL"]);
@@ -97,8 +97,7 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
     public void CronogramaFases_CandidatosAtendidos_CodigoGoverna()
     {
         BancaRequerida banca = BancaRequerida.Criar(
-            IdFixo(1),
-            "BANCA_ANALISE_DOCUMENTAL", "Banca de teste",
+            TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, IdFixo(1)),
             [
                 CategoriaJulgada.Criar(IdFixo(1), "ZETA_CATEGORIA"),
                 CategoriaJulgada.Criar(IdFixo(2), "ALFA_CATEGORIA"),

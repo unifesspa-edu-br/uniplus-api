@@ -132,12 +132,6 @@ internal static class CorpusEnvelope
     /// <summary>Mesmo texto do ato acentuado, na forma composta que o envelope tem de emitir.</summary>
     internal const string AtoAnaliseComposto = "RESULTADO_AN\u00C1LISE";
 
-    /// <summary>Código de banca acentuado, também em forma decomposta, pela mesma razão.</summary>
-    internal const string BancaAnaliseDecomposta = "BANCA_ANA\u0301LISE";
-
-    /// <summary>Par da banca acima, pela mesma construção: a ordem entre as duas vira com a normalização.</summary>
-    internal const string BancaAnulacao = "BANCA_ANULACAO";
-
     internal static Guid RecursoDaObjetivaId(int ordem, int variante) =>
         new($"aaac000{variante:x}-0000-4000-8000-00000000000{ordem:x}");
 

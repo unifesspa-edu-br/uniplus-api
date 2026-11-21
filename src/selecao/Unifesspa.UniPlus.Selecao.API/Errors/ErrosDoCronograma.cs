@@ -81,7 +81,7 @@ internal static class ErrosDoCronograma
         new("FaseCronograma.AtoDuplicadoNaFase", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.ato_duplicado_na_fase", "A fase declara o mesmo tipo de ato com o mesmo papel mais de uma vez")),
         new("FaseCronograma.ParecerIndividualSemResultado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.parecer_individual_sem_resultado", "A fase promete parecer individual e não publica nenhum resultado")),
         new("FaseCronograma.FaseCanonicaNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.fase_canonica_nao_encontrada", "Fase canônica não encontrada ou não está mais viva")),
-        new("FaseCronograma.TipoBancaNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.tipo_banca_nao_encontrado", "Tipo de banca não encontrado ou não está mais vivo")),
+        new("FaseCronograma.TipoBancaNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.tipo_banca_nao_encontrado", "O tipo de banca não existe ou está desativado")),
         new("FaseCronograma.CategoriaDocumentoNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.categoria_documento_nao_encontrada", "A categoria de documento dos candidatos atendidos não existe ou está desativada")),
     ];
 
@@ -103,7 +103,7 @@ internal static class ErrosDoCronograma
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> DeclaracaoDaEtapa() =>
     [
         new("EtapaProcesso.JanelaInvertida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.janela_invertida", "A data de término do período da etapa é anterior à data de início")),
-        new("EtapaProcesso.TipoBancaNaoEncontradoOuInativo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.tipo_banca_nao_encontrado_ou_inativo", "O tipo de banca não existe ou está inativo no cadastro")),
+        new(EtapaProcessoErrorCodes.TipoBancaNaoEncontradoOuInativo, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.tipo_banca_nao_encontrado_ou_inativo", "O tipo de banca não existe ou está desativado")),
         new("EtapaProcesso.AtoDuplicadoNaEtapa", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.ato_duplicado_na_etapa", "A etapa declara o mesmo tipo de ato com o mesmo papel mais de uma vez")),
     ];
 

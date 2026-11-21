@@ -59,7 +59,12 @@ internal static class EntradaDoPreliminarDaFase
     {
         string campo = $"bancasRequeridas[{ChaveDaBanca(banca)}]";
 
-        return [Linha(campo, true), .. DaDeliberacao($"{campo}.regraDeDeliberacao", banca.RegraDeDeliberacao)];
+        return
+        [
+            Linha(campo, true),
+            .. DaCopiaDoTipo($"{campo}.tipo", banca.Tipo),
+            .. DaDeliberacao($"{campo}.regraDeDeliberacao", banca.RegraDeDeliberacao),
+        ];
     }
 
     // O tipo sozinho nem sempre distingue a banca: duas do mesmo tipo se separam pelos candidatos atendidos.
@@ -70,6 +75,6 @@ internal static class EntradaDoPreliminarDaFase
             .Distinct(StringComparer.Ordinal)
             .Order(StringComparer.Ordinal);
 
-        return $"{Valor(banca.TipoBancaOrigemId)}/{string.Join(',', atendidos)}";
+        return $"{Valor(banca.Tipo.OrigemId)}/{string.Join(',', atendidos)}";
     }
 }

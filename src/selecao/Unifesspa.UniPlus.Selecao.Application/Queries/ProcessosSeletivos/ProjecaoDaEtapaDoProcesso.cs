@@ -10,7 +10,9 @@ using DTOs;
 
 using Mappings;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Projeta para o contrato REST a etapa do processo, com as bancas e os recursos que ela declara.
@@ -59,10 +61,14 @@ internal static class ProjecaoDaEtapaDoProcesso
 
     private static BancaDaEtapaDto ProjetarBancaDaEtapa(BancaDaEtapa banca) => new(
         banca.Id,
-        banca.TipoBancaOrigemId,
-        banca.Codigo,
+        banca.Tipo.OrigemId,
+        CodigoComRotulo<TipoDeBanca>.De(banca.Tipo.Codigo),
         banca.PosicaoNoTipo,
-        banca.Nome,
+        banca.Tipo.Nome,
+        CodigoComRotulo<PapelDaBanca>.De(banca.Tipo.Papel),
+        banca.Tipo.ExigeDuasOuMaisBancas,
+        banca.Tipo.EncerraRecursoNaPrimeiraInstancia,
+        [.. banca.Tipo.TiposDeDecisaoJulgados.Select(CodigoComRotulo<TipoMotivoDeDecisao>.De)],
         ProjecaoDaRegraDeDeliberacao.De(banca.RegraDeDeliberacao));
 
     private static NivelDeAtendimentoDto[]? ProjetarEscala(EtapaProcesso etapa) =>

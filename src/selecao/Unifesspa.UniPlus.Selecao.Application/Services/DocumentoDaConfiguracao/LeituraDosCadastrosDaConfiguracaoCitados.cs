@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Services.DocumentoDaConfiguracao
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -12,7 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 internal sealed record CadastrosDaConfiguracaoCitados(
     IReadOnlyDictionary<string, TipoProcessoSnapshot> TiposDeProcesso,
     IReadOnlyDictionary<string, OrigemCanonicaDaFase> FasesCanonicas,
-    IReadOnlyDictionary<string, TipoDeBancaCitado> TiposDeBanca,
+    IReadOnlyDictionary<string, TipoDeBancaCopiado> TiposDeBanca,
     IReadOnlyDictionary<string, CategoriaDeDocumentoCitada> CategoriasDeDocumento);
 
 /// <summary>
@@ -61,12 +62,12 @@ public sealed class LeituraDosCadastrosDaConfiguracaoCitados(
             : (await fasesCanonicas.ListarVivasPorCodigosAsync(codigos, cancellationToken).ConfigureAwait(false))
                 .ToDictionary(static fase => fase.Codigo, OrigemCanonicaDaFaseDoCadastro.De, StringComparer.Ordinal);
 
-    private async Task<IReadOnlyDictionary<string, TipoDeBancaCitado>> TiposDeBancaAsync(
+    private async Task<IReadOnlyDictionary<string, TipoDeBancaCopiado>> TiposDeBancaAsync(
         IReadOnlyList<string> codigos, CancellationToken cancellationToken) =>
         codigos.Count == 0
-            ? new Dictionary<string, TipoDeBancaCitado>()
+            ? new Dictionary<string, TipoDeBancaCopiado>()
             : (await tiposDeBanca.ListarVivosPorCodigosAsync(codigos, cancellationToken).ConfigureAwait(false))
-                .ToDictionary(static tipo => tipo.Codigo.Codigo(), static tipo => new TipoDeBancaCitado(tipo.Id, tipo.Codigo.Codigo(), tipo.Nome), StringComparer.Ordinal);
+                .ToDictionary(static tipo => tipo.Codigo.Codigo(), static tipo => CopiaDoTipoDeBanca.De(tipo), StringComparer.Ordinal);
 
     private async Task<IReadOnlyDictionary<string, CategoriaDeDocumentoCitada>> CategoriasAsync(
         IReadOnlyList<string> codigos, CancellationToken cancellationToken) =>

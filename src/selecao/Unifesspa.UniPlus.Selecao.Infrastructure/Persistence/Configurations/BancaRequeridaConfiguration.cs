@@ -11,9 +11,6 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// <summary>Configuração EF Core de <see cref="BancaRequerida"/> (Story #851) — filha 0..* de <see cref="FaseCronograma"/>.</summary>
 public sealed class BancaRequeridaConfiguration : IEntityTypeConfiguration<BancaRequerida>
 {
-    private const int CodigoMaxLength = 60;
-    private const int NomeMaxLength = 200;
-
     public void Configure(EntityTypeBuilder<BancaRequerida> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -24,9 +21,8 @@ public sealed class BancaRequeridaConfiguration : IEntityTypeConfiguration<Banca
         builder.HasKey(b => b.Id);
         builder.Property(b => b.Id).ValueGeneratedNever();
 
-        builder.Property(b => b.TipoBancaOrigemId).IsRequired();
-        builder.Property(b => b.Codigo).HasMaxLength(CodigoMaxLength).IsRequired();
-        builder.Property(b => b.Nome).HasMaxLength(NomeMaxLength).IsRequired();
+        builder.OwnsOne(b => b.Tipo, tipo => tipo.ConfigurarTipoDeBancaCopiado());
+        builder.Navigation(b => b.Tipo).IsRequired();
         builder.Property(b => b.PosicaoNoTipo).IsRequired();
         builder.OwnsOne(b => b.RegraDeDeliberacao, regra => regra.ConfigurarRegraDeDeliberacao());
 

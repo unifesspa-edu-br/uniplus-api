@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.LeituraD
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -24,7 +25,8 @@ public sealed class LeituraDasBancasDaFaseTests
         IdentificacaoECronogramaLidos lidos = Ler(Documento(ComBancas(Banca(0, "banca-recursos", "ANALISE_RECURSOS", ["IDENTIDADE"]))));
 
         BancaRequerida banca = lidos.Cronograma.CronogramaFases.Single().BancasRequeridas.Single();
-        banca.Codigo.Should().Be("ANALISE_RECURSOS");
+        banca.Tipo.Codigo.Should().Be(TipoDeBanca.AnaliseDeRecursos);
+        banca.Tipo.Papel.Should().Be(PapelDaBanca.JulgaAPrimeiraInstancia, "a banca guarda a cópia do tipo que o cadastro tinha ao ser lida");
         banca.CandidatosAtendidos.Should().ContainSingle();
         lidos.Origem.PartesRecusadas.Should().BeEmpty();
     }

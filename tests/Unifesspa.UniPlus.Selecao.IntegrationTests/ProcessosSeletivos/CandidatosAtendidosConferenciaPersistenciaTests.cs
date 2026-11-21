@@ -9,6 +9,7 @@ using Npgsql;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Kernel.Tempo;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
@@ -149,7 +150,7 @@ public sealed class CandidatosAtendidosConferenciaPersistenciaTests : IClassFixt
             .Should().ContainSingle(i => i.Codigo == "cronograma_candidatos_atendidos_das_bancas").Which;
 
     private static void ConferirQueAsBancasDocumentaisSeguemComCandidatosAtendidos(ProcessoSeletivo processo) =>
-        processo.CronogramaFases.Single().BancasRequeridas.Where(b => b.Codigo == "BANCA_ANALISE_DOCUMENTAL")
+        processo.CronogramaFases.Single().BancasRequeridas.Where(b => b.Tipo.Codigo == TipoDeBanca.AnaliseDocumental)
             .Should().OnlyContain(b => b.CandidatosAtendidos.Count == 1,
                 "pré-condição: as duas bancas seguem com candidatos atendidos declarados — o que mudou foi serem os mesmos");
 
@@ -303,9 +304,7 @@ public sealed class CandidatosAtendidosConferenciaPersistenciaTests : IClassFixt
 
     private static BancaRequerida BancaDosCandidatosAtendidos(string categoriaCodigo) =>
         BancaRequerida.Criar(
-            TipoBancaOrigemId,
-            "BANCA_ANALISE_DOCUMENTAL",
-            "Banca de teste",
+            TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, TipoBancaOrigemId),
             [CategoriaJulgada.Criar(Guid.CreateVersion7(), categoriaCodigo)],
             BancasDeTeste.Regra());
 

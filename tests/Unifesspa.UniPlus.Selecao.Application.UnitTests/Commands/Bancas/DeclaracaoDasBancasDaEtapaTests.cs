@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public sealed class DeclaracaoDasBancasDaEtapaTests
@@ -25,7 +26,7 @@ public sealed class DeclaracaoDasBancasDaEtapaTests
         "bancas[2].regraDeDeliberacao.encerramento",
     ];
 
-    [Fact(DisplayName = "A banca da etapa congela o código e o nome do tipo no cadastro, com a regra declarada")]
+    [Fact(DisplayName = "A banca da etapa copia do cadastro o tipo, o nome, o papel, as marcas e os tipos de decisão julgados, com a regra declarada")]
     public async Task Declarar_ComRegra_CongelaOTipoEARegra()
     {
         EtapaProcesso etapa = NovaEtapa();
@@ -34,8 +35,8 @@ public sealed class DeclaracaoDasBancasDaEtapaTests
 
         resultado.IsSuccess.Should().BeTrue();
         BancaDaEtapa banca = etapa.Bancas.Should().ContainSingle().Subject;
-        banca.Codigo.Should().Be("BANCA_ENTREVISTA");
-        banca.Nome.Should().Be("Banca de entrevista");
+        banca.Tipo.Should().Be(new TipoDeBancaCopiado(
+            TipoDeEntrevista.Id, TipoDeBanca.Entrevista, "Banca de entrevista", PapelDaBanca.AvaliaOMerito, false, false, [TipoMotivoDeDecisao.NotaDaEtapa]));
         banca.RegraDeDeliberacao!.Integrantes.Should().Be(3);
     }
 
@@ -132,16 +133,31 @@ public sealed class DeclaracaoDasBancasDaEtapaTests
         etapa.Bancas.Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "O tipo de banca ausente do cadastro interrompe a declaração, sem campo e sem alterar a etapa")]
-    public async Task Declarar_ComTipoAusenteDoCadastro_InterrompeSemAlterarAEtapa()
+    [Fact(DisplayName = "O tipo de banca ausente do cadastro é recusado no campo da banca, sem alterar a etapa")]
+    public async Task Declarar_ComTipoAusenteDoCadastro_RecusaNoCampoDaBancaSemAlterarAEtapa()
     {
         EtapaProcesso etapa = NovaEtapa();
         BancaDaEtapaInput desconhecida = new(Guid.CreateVersion7(), RegrasDeDeliberacaoDeTeste.Valida());
 
         Result resultado = await Declaracao().DeclararAsync(etapa, Entrada(desconhecida), CancellationToken.None);
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("EtapaProcesso.TipoBancaNaoEncontradoOuInativo");
+        FieldError recusa = resultado.Errors.Should().ContainSingle().Subject;
+        recusa.Field.Should().Be("bancas[0].tipoBancaId");
+        recusa.Error.Code.Should().Be(EtapaProcessoErrorCodes.TipoBancaNaoEncontradoOuInativo);
+        etapa.Bancas.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "O tipo ausente do cadastro não esconde a regra inválida de outra banca: as duas recusas saem juntas")]
+    public async Task Declarar_ComTipoAusenteERegraInvalida_AcumulaAsDuasRecusas()
+    {
+        EtapaProcesso etapa = NovaEtapa();
+        BancaDaEtapaInput desconhecida = new(Guid.CreateVersion7(), RegrasDeDeliberacaoDeTeste.Valida());
+
+        Result resultado = await Declaracao().DeclararAsync(
+            etapa, Entrada(desconhecida, Banca(TipoDeEntrevista, RegrasDeDeliberacaoDeTeste.ComTresViolacoes())), CancellationToken.None);
+
+        resultado.Errors.Select(static erro => erro.Field).Should().BeEquivalentTo(
+            "bancas[0].tipoBancaId", "bancas[1].regraDeDeliberacao.integrantes", "bancas[1].regraDeDeliberacao.criterio", "bancas[1].regraDeDeliberacao.encerramento");
         etapa.Bancas.Should().BeEmpty();
     }
 
@@ -192,6 +208,49 @@ public sealed class DeclaracaoDasBancasDaEtapaTests
         resultado.Errors.Should().OnlyContain(static erro => erro.Error.Code == "Banca.VotacaoDoRecursoIncompleta");
         etapa.Bancas.Should().BeEmpty();
     }
+
+    [Fact(DisplayName = "A banca que continua com o mesmo tipo mantém a cópia, ainda que o tipo tenha saído do cadastro")]
+    public async Task Declarar_MesmoTipoQueSaiuDoCadastro_MantemACopia()
+    {
+        EtapaProcesso etapa = NovaEtapa();
+        await Declaracao().DeclararAsync(etapa, Entrada(Banca(TipoDeEntrevista, null)), CancellationToken.None);
+        BancaDaEtapa gravada = etapa.Bancas.Single();
+        TipoDeBancaCopiado copia = gravada.Tipo;
+
+        Result resultado = await DeclaracaoSemOCadastro().DeclararAsync(etapa, Entrada(Banca(TipoDeEntrevista, null, gravada.Id)), CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue();
+        etapa.Bancas.Single().Tipo.Should().BeSameAs(copia);
+    }
+
+    [Fact(DisplayName = "A banca que troca de tipo copia o cadastro atual do tipo novo")]
+    public async Task Declarar_TrocaDeTipo_CopiaOCadastroAtual()
+    {
+        EtapaProcesso etapa = NovaEtapa();
+        await Declaracao().DeclararAsync(etapa, Entrada(Banca(TipoDeEntrevista, null)), CancellationToken.None);
+        Guid linha = etapa.Bancas.Single().Id;
+
+        Result resultado = await Declaracao().DeclararAsync(etapa, Entrada(Banca(TipoDeRecursos, null, linha)), CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue();
+        BancaDaEtapa banca = etapa.Bancas.Single();
+        banca.Id.Should().Be(linha);
+        banca.Tipo.OrigemId.Should().Be(TipoDeRecursos.Id);
+        banca.Tipo.Papel.Should().Be(PapelDaBanca.JulgaAPrimeiraInstancia);
+    }
+
+    [Fact(DisplayName = "A banca nova com tipo desativado interrompe a declaração sem citar o id recebido")]
+    public async Task Declarar_BancaNovaComTipoDesativado_InterrompeSemCitarOId()
+    {
+        EtapaProcesso etapa = NovaEtapa();
+
+        Result resultado = await DeclaracaoSemOCadastro().DeclararAsync(etapa, Entrada(Banca(TipoDeEntrevista, null)), CancellationToken.None);
+
+        resultado.Error!.Message.Should().Be("O tipo de banca indicado não existe ou está desativado no cadastro.");
+    }
+
+    private static DeclaracaoDasBancasDaEtapa DeclaracaoSemOCadastro() => new(new LeituraMemoizada<Guid, TipoBancaView>(
+        (_, _) => Task.FromResult<TipoBancaView?>(null)));
 
     private static DeclaracaoDasBancasDaEtapa Declaracao() => new(new LeituraMemoizada<Guid, TipoBancaView>(
         (tipoId, _) => Task.FromResult<TipoBancaView?>(new[] { TipoDeEntrevista, TipoDeRecursos }.FirstOrDefault(tipo => tipo.Id == tipoId))));

@@ -2,6 +2,9 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
 using Domain.Enums;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Regras.Enums;
+
 /// <summary>
 /// Projeção de leitura de <c>EtapaProcesso</c> (Story #758).
 /// </summary>
@@ -96,14 +99,23 @@ public sealed record NivelDeAtendimentoDto(string Rotulo, decimal Fracao);
 /// <summary>Projeção de leitura de <c>BancaDaEtapa</c>.</summary>
 /// <param name="Id">Identidade permanente da banca: o cliente a devolve ao regravar a etapa, para a banca continuar sendo a mesma.</param>
 /// <param name="PosicaoNoTipo">Posição da banca entre as do mesmo tipo na etapa, a partir de 1.</param>
+/// <param name="Codigo">O código do tipo de banca, com o rótulo que a tela mostra.</param>
 /// <param name="Nome">Nome do tipo de banca congelado na declaração: o cliente o exibe como veio.</param>
+/// <param name="Papel">O papel do tipo de banca congelado na declaração: o que a banca faz no processo.</param>
+/// <param name="ExigeDuasOuMaisBancas">Se o tipo exige duas ou mais bancas congeladas na declaração.</param>
+/// <param name="EncerraRecursoNaPrimeiraInstancia">Se o recurso julgado por essa banca termina na 1ª instância.</param>
+/// <param name="TiposDeDecisaoJulgados">As decisões que a banca julga, congeladas na declaração; vazia quando o papel não avalia o mérito.</param>
 /// <param name="RegraDeDeliberacao">Nula enquanto o rascunho não a declara; a publicação a exige.</param>
 public sealed record BancaDaEtapaDto(
     Guid Id,
     Guid TipoBancaOrigemId,
-    string Codigo,
+    CodigoComRotulo<TipoDeBanca> Codigo,
     int PosicaoNoTipo,
     string Nome,
+    CodigoComRotulo<PapelDaBanca> Papel,
+    bool ExigeDuasOuMaisBancas,
+    bool EncerraRecursoNaPrimeiraInstancia,
+    IReadOnlyList<CodigoComRotulo<TipoMotivoDeDecisao>> TiposDeDecisaoJulgados,
     RegraDeDeliberacaoDto? RegraDeDeliberacao);
 
 /// <summary>Projeção de leitura de <c>RecursoDaEtapa</c>.</summary>
