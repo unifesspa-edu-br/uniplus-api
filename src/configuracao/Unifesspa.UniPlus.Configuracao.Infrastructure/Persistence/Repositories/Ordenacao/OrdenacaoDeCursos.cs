@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
@@ -45,7 +46,7 @@ internal sealed class CursoOrdenado : IIdentificavel
 /// projetada nesta linha de leitura, em vez de acrescentar navegação à entidade só para
 /// servir a listagem.
 /// </remarks>
-internal sealed class OfertaCursoOrdenada : IIdentificavel
+internal sealed record OfertaCursoOrdenada : IIdentificavel
 {
     public Guid Id { get; init; }
 
@@ -116,7 +117,7 @@ internal static class OrdenacaoDeCursos
         IReadOnlyList<string> filtrosDaListagem) =>
         new(
             [.. campos.Select(ColunaDeOferta)],
-            (partes, id) => OfertaLidaDoCursor(ValoresPorCampo(campos, partes), id),
+            (partes, id) => OfertaLidaDoCursor(campos, partes, id),
             filtrosDaListagem);
 
     private static readonly Dictionary<string, Func<SortDirection, KeysetSortColumn<CursoOrdenado>>> CamposDeCurso =
@@ -134,37 +135,51 @@ internal static class OrdenacaoDeCursos
                 CamposOrdenacaoCurso.CriadoEm, c => c.CriadoEm, c => ChaveDeInstante(c.CriadoEm), d),
         };
 
-    private static readonly Dictionary<string, Func<SortDirection, KeysetSortColumn<OfertaCursoOrdenada>>> CamposDeOferta =
+    private sealed record CampoOrdenavelDaOferta(
+        Func<SortDirection, KeysetSortColumn<OfertaCursoOrdenada>> Coluna,
+        Func<OfertaCursoOrdenada, string, OfertaCursoOrdenada> Reconstituir);
+
+    private static readonly Dictionary<string, CampoOrdenavelDaOferta> CamposDeOferta =
         new(StringComparer.Ordinal)
         {
-            [CamposOrdenacaoOfertaCurso.CursoNome] = d => KeysetSortColumn<OfertaCursoOrdenada>.For(
-                CamposOrdenacaoOfertaCurso.CursoNome, o => o.NomeOrdenacao, o => o.NomeOrdenacao, d),
-            [CamposOrdenacaoOfertaCurso.CursoCodigo] = d => KeysetSortColumn<OfertaCursoOrdenada>.For(
-                CamposOrdenacaoOfertaCurso.CursoCodigo, o => o.Codigo, o => o.Codigo, d),
-            [CamposOrdenacaoOfertaCurso.UnidadeOfertanteSigla] = d => KeysetSortColumn<OfertaCursoOrdenada>.For(
-                CamposOrdenacaoOfertaCurso.UnidadeOfertanteSigla, o => o.UnidadeSigla, o => o.UnidadeSigla, d),
-            [CamposOrdenacaoOfertaCurso.ProgramaDeOferta] = d => KeysetSortColumn<OfertaCursoOrdenada>.For(
-                CamposOrdenacaoOfertaCurso.ProgramaDeOferta,
-                o => o.ProgramaDeOferta,
-                o => ProgramasDeOferta.ParaTokenCanonico(o.ProgramaDeOferta),
-                d),
-            [CamposOrdenacaoOfertaCurso.FormatoPedagogico] = d => KeysetSortColumn<OfertaCursoOrdenada>.For(
-                CamposOrdenacaoOfertaCurso.FormatoPedagogico,
-                o => o.FormatoPedagogico,
-                o => FormatosPedagogicos.ParaTokenCanonico(o.FormatoPedagogico),
-                d),
-            [CamposOrdenacaoOfertaCurso.RegimeDeFuncionamento] = d => KeysetSortColumn<OfertaCursoOrdenada>.For(
-                CamposOrdenacaoOfertaCurso.RegimeDeFuncionamento,
-                o => o.RegimeDeFuncionamento,
-                o => RegimesDeFuncionamento.ParaTokenCanonico(o.RegimeDeFuncionamento),
-                d),
-            [CamposOrdenacaoOfertaCurso.RegimeDeTurno] = d => KeysetSortColumn<OfertaCursoOrdenada>.For(
-                CamposOrdenacaoOfertaCurso.RegimeDeTurno,
-                o => o.RegimeDeTurno,
-                o => RegimesDeTurno.ParaTokenCanonico(o.RegimeDeTurno),
-                d),
-            [CamposOrdenacaoOfertaCurso.CriadoEm] = d => KeysetSortColumn<OfertaCursoOrdenada>.For(
-                CamposOrdenacaoOfertaCurso.CriadoEm, o => o.CriadoEm, o => ChaveDeInstante(o.CriadoEm), d),
+            [CamposOrdenacaoOfertaCurso.CursoNome] = new(
+                d => KeysetSortColumn<OfertaCursoOrdenada>.For(
+                    CamposOrdenacaoOfertaCurso.CursoNome, o => o.NomeOrdenacao, o => o.NomeOrdenacao, d),
+                (oferta, parte) => oferta with { NomeOrdenacao = parte }),
+            [CamposOrdenacaoOfertaCurso.CursoCodigo] = new(
+                d => KeysetSortColumn<OfertaCursoOrdenada>.For(
+                    CamposOrdenacaoOfertaCurso.CursoCodigo, o => o.Codigo, o => o.Codigo, d),
+                (oferta, parte) => oferta with { Codigo = parte }),
+            [CamposOrdenacaoOfertaCurso.UnidadeOfertanteSigla] = new(
+                d => KeysetSortColumn<OfertaCursoOrdenada>.For(
+                    CamposOrdenacaoOfertaCurso.UnidadeOfertanteSigla, o => o.UnidadeSigla, o => o.UnidadeSigla, d),
+                (oferta, parte) => oferta with { UnidadeSigla = parte }),
+            [CamposOrdenacaoOfertaCurso.ProgramaDeOferta] = new(
+                d => KeysetSortColumn<OfertaCursoOrdenada>.For(
+                    CamposOrdenacaoOfertaCurso.ProgramaDeOferta, o => o.ProgramaDeOferta, o => o.ProgramaDeOferta.Codigo(), d),
+                (oferta, parte) => oferta with { ProgramaDeOferta = CatalogoDe<ProgramaDeOferta>.Obter(parte) }),
+            [CamposOrdenacaoOfertaCurso.FormatoPedagogico] = new(
+                d => KeysetSortColumn<OfertaCursoOrdenada>.For(
+                    CamposOrdenacaoOfertaCurso.FormatoPedagogico, o => o.FormatoPedagogico, o => o.FormatoPedagogico.Codigo(), d),
+                (oferta, parte) => oferta with { FormatoPedagogico = CatalogoDe<FormatoPedagogico>.Obter(parte) }),
+            [CamposOrdenacaoOfertaCurso.RegimeDeFuncionamento] = new(
+                d => KeysetSortColumn<OfertaCursoOrdenada>.For(
+                    CamposOrdenacaoOfertaCurso.RegimeDeFuncionamento,
+                    o => o.RegimeDeFuncionamento,
+                    o => RegimesDeFuncionamento.ParaTokenCanonico(o.RegimeDeFuncionamento),
+                    d),
+                (oferta, parte) => oferta with { RegimeDeFuncionamento = RegimeDeFuncionamentoDoCursor(parte) }),
+            [CamposOrdenacaoOfertaCurso.RegimeDeTurno] = new(
+                d => KeysetSortColumn<OfertaCursoOrdenada>.For(
+                    CamposOrdenacaoOfertaCurso.RegimeDeTurno,
+                    o => o.RegimeDeTurno,
+                    o => RegimesDeTurno.ParaTokenCanonico(o.RegimeDeTurno),
+                    d),
+                (oferta, parte) => oferta with { RegimeDeTurno = RegimeDeTurnoDoCursor(parte) }),
+            [CamposOrdenacaoOfertaCurso.CriadoEm] = new(
+                d => KeysetSortColumn<OfertaCursoOrdenada>.For(
+                    CamposOrdenacaoOfertaCurso.CriadoEm, o => o.CriadoEm, o => ChaveDeInstante(o.CriadoEm), d),
+                (oferta, parte) => oferta with { CriadoEm = InstanteDaChave(parte) }),
         };
 
     /// <summary>Nomes de campo que a listagem de Cursos sabe ordenar.</summary>
@@ -179,7 +194,7 @@ internal static class OrdenacaoDeCursos
         CamposDeCurso[campo.Campo](campo.Direcao);
 
     private static KeysetSortColumn<OfertaCursoOrdenada> ColunaDeOferta(SortField campo) =>
-        CamposDeOferta[campo.Campo](campo.Direcao);
+        CamposDeOferta[campo.Campo].Coluna(campo.Direcao);
 
     /// <summary>
     /// Instante em ISO-8601 com precisão de milissegundo e deslocamento zero. A
@@ -197,29 +212,30 @@ internal static class OrdenacaoDeCursos
             Codigo = valores.GetValueOrDefault(CamposOrdenacaoCurso.Codigo, string.Empty),
             Grau = valores.GetValueOrDefault(CamposOrdenacaoCurso.Grau, string.Empty),
             NivelEnsino = valores.GetValueOrDefault(CamposOrdenacaoCurso.NivelEnsino, string.Empty),
-            CriadoEm = InstanteDaChave(valores, CamposOrdenacaoCurso.CriadoEm),
+            CriadoEm = InstanteDaChave(valores.GetValueOrDefault(CamposOrdenacaoCurso.CriadoEm)),
         };
 
-    private static OfertaCursoOrdenada OfertaLidaDoCursor(Dictionary<string, string> valores, Guid id) =>
-        new()
+    // A linha só leva as colunas da ordenação pedida e o Id: a paginação por chave não lê as outras.
+    private static OfertaCursoOrdenada OfertaLidaDoCursor(IReadOnlyList<SortField> campos, IReadOnlyList<string> partes, Guid id)
+    {
+        OfertaCursoOrdenada oferta = new() { Id = id };
+        for (int i = 0; i < campos.Count && i < partes.Count; i++)
         {
-            Id = id,
-            NomeOrdenacao = valores.GetValueOrDefault(CamposOrdenacaoOfertaCurso.CursoNome, string.Empty),
-            Codigo = valores.GetValueOrDefault(CamposOrdenacaoOfertaCurso.CursoCodigo, string.Empty),
-            UnidadeSigla = valores.GetValueOrDefault(CamposOrdenacaoOfertaCurso.UnidadeOfertanteSigla, string.Empty),
-            ProgramaDeOferta = ClassificacaoDoCursor<ProgramaDeOferta>(valores, CamposOrdenacaoOfertaCurso.ProgramaDeOferta, ProgramasDeOferta.TryAnalisar),
-            FormatoPedagogico = ClassificacaoDoCursor<FormatoPedagogico>(valores, CamposOrdenacaoOfertaCurso.FormatoPedagogico, FormatosPedagogicos.TryAnalisar),
-            RegimeDeFuncionamento = ClassificacaoDoCursor<RegimeDeFuncionamento>(valores, CamposOrdenacaoOfertaCurso.RegimeDeFuncionamento, RegimesDeFuncionamento.TryAnalisar),
-            RegimeDeTurno = ClassificacaoDoCursor<RegimeDeTurno>(valores, CamposOrdenacaoOfertaCurso.RegimeDeTurno, RegimesDeTurno.TryAnalisar),
-            CriadoEm = InstanteDaChave(valores, CamposOrdenacaoOfertaCurso.CriadoEm),
-        };
+            oferta = CamposDeOferta[campos[i].Campo].Reconstituir(oferta, partes[i]);
+        }
 
-    private delegate bool Analisador<TEnum>(string? texto, out TEnum valor);
+        return oferta;
+    }
 
-    private static TEnum ClassificacaoDoCursor<TEnum>(
-        Dictionary<string, string> valores, string campo, Analisador<TEnum> analisar)
-        where TEnum : struct, Enum =>
-        analisar(valores.GetValueOrDefault(campo), out TEnum classificacao) ? classificacao : default;
+    private static RegimeDeFuncionamento RegimeDeFuncionamentoDoCursor(string parte) =>
+        RegimesDeFuncionamento.TryAnalisar(parte, out RegimeDeFuncionamento regime)
+            ? regime
+            : default;
+
+    private static RegimeDeTurno RegimeDeTurnoDoCursor(string parte) =>
+        RegimesDeTurno.TryAnalisar(parte, out RegimeDeTurno turno)
+            ? turno
+            : default;
 
     private static Dictionary<string, string> ValoresPorCampo(
         IReadOnlyList<SortField> campos,
@@ -234,9 +250,8 @@ internal static class OrdenacaoDeCursos
         return valores;
     }
 
-    private static DateTimeOffset InstanteDaChave(Dictionary<string, string> valores, string campo) =>
-        valores.TryGetValue(campo, out string? bruto)
-        && DateTimeOffset.TryParse(
+    private static DateTimeOffset InstanteDaChave(string? bruto) =>
+        DateTimeOffset.TryParse(
             bruto,
             System.Globalization.CultureInfo.InvariantCulture,
             System.Globalization.DateTimeStyles.RoundtripKind,

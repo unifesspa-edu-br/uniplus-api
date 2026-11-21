@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -112,7 +113,7 @@ internal sealed class OfertaCursoReader : IOfertaCursoReader
 
         return new OfertaCursoView(
             o.Id, o.Codigo, o.CursoId, o.LocalOfertaId, unidade.OrigemId, unidade.Sigla, unidade.Nome, unidade.Tipo,
-            ProgramasDeOferta.ParaTokenCanonico(o.ProgramaDeOferta), FormatosPedagogicos.ParaTokenCanonico(o.FormatoPedagogico),
+            o.ProgramaDeOferta.Codigo(), o.FormatoPedagogico.Codigo(),
             RegimesDeFuncionamento.ParaTokenCanonico(o.RegimeDeFuncionamento), RegimesDeTurno.ParaTokenCanonico(o.RegimeDeTurno),
             [.. TurnosOferta.OrdenarCanonicamente(o.Turnos).Select(TurnosOferta.ParaTokenCanonico)],
             o.EMecCodigo, o.CodigoSga, o.VagasAnuaisAutorizadas, o.BaseLegal, o.AtoAutorizacaoMec,

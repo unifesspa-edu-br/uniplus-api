@@ -1,7 +1,9 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.OfertasCurso;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -31,11 +33,11 @@ public sealed record CriarOfertaCursoCommand(
     Guid LocalOfertaId,
     Guid UnidadeOfertanteOrigemId,
     string? Codigo,
-    string? ProgramaDeOferta,
+    [property: AceitaCodigosDe<ProgramaDeOferta>] string? ProgramaDeOferta,
     string? RegimeDeFuncionamento,
     string? RegimeDeTurno,
     IReadOnlyList<string?>? Turnos,
-    string? FormatoPedagogico = null,
+    [property: AceitaCodigosDe<FormatoPedagogico>] string? FormatoPedagogico = null,
     string? EMecCodigo = null,
     string? CodigoSga = null,
     int? VagasAnuaisAutorizadas = null,

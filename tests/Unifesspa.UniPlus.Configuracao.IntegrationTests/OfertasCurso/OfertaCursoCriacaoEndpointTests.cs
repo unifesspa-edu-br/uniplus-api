@@ -166,8 +166,8 @@ public sealed class OfertaCursoCriacaoEndpointTests
     {
         root.GetProperty("cursoId").GetGuid().Should().Be(dependencias.CursoId);
         root.GetProperty("localOfertaId").GetGuid().Should().Be(dependencias.LocalOfertaId);
-        root.GetProperty("programaDeOferta").GetString().Should().Be("REGULAR");
-        root.GetProperty("formatoPedagogico").GetString().Should().Be("PRESENCIAL");
+        root.GetProperty("programaDeOferta").GetProperty("codigo").GetString().Should().Be("REGULAR");
+        root.GetProperty("formatoPedagogico").GetProperty("codigo").GetString().Should().Be("PRESENCIAL");
         root.GetProperty("regimeDeFuncionamento").GetString().Should().Be("EXTENSIVO");
         root.GetProperty("regimeDeTurno").GetString().Should().Be("INTEGRAL");
         root.GetProperty("turnos").EnumerateArray().Select(t => t.GetString())

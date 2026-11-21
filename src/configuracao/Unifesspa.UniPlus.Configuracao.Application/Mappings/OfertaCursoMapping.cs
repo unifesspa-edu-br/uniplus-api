@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Mappings;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
@@ -12,7 +13,7 @@ public static class OfertaCursoMapping
         ArgumentNullException.ThrowIfNull(oferta);
         return new OfertaCursoDto(
             oferta.Id, oferta.Codigo, oferta.CursoId, oferta.LocalOfertaId, ParaDto(oferta.UnidadeOfertante),
-            ProgramasDeOferta.ParaTokenCanonico(oferta.ProgramaDeOferta), FormatosPedagogicos.ParaTokenCanonico(oferta.FormatoPedagogico),
+            CodigoComRotulo<ProgramaDeOferta>.De(oferta.ProgramaDeOferta), CodigoComRotulo<FormatoPedagogico>.De(oferta.FormatoPedagogico),
             RegimesDeFuncionamento.ParaTokenCanonico(oferta.RegimeDeFuncionamento), RegimesDeTurno.ParaTokenCanonico(oferta.RegimeDeTurno),
             [.. TurnosOferta.OrdenarCanonicamente(oferta.Turnos).Select(TurnosOferta.ParaTokenCanonico)],
             oferta.EMecCodigo, oferta.CodigoSga, oferta.VagasAnuaisAutorizadas, oferta.BaseLegal, oferta.AtoAutorizacaoMec, oferta.CreatedAt);

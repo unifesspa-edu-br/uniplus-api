@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
@@ -48,12 +49,10 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
     private static void ConfigurarClassificacoes(EntityTypeBuilder<OfertaCurso> builder)
     {
         builder.Property(o => o.ProgramaDeOferta)
-            .HasConversion<ProgramaDeOfertaValueConverter>()
             .HasMaxLength(CodigoDeContratoMaxLength)
             .IsRequired();
 
         builder.Property(o => o.FormatoPedagogico)
-            .HasConversion<FormatoPedagogicoValueConverter>()
             .HasMaxLength(CodigoDeContratoMaxLength)
             .IsRequired();
     }
@@ -188,7 +187,7 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
 
         table.HasCheckConstraint(
             "ck_ofertas_de_curso_formato_pedagogico",
-            $"formato_pedagogico IN ({CodigosSql(FormatosPedagogicos.TokensCanonicos)})");
+            $"formato_pedagogico IN ({SqlDosCodigosDeContrato.Lista<FormatoPedagogico>()})");
     }
 
     // Domínio fechado do programa de oferta e guard condicional da base legal (ADR-0066): programa
@@ -197,11 +196,11 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
     {
         table.HasCheckConstraint(
             "ck_ofertas_de_curso_programa_de_oferta",
-            $"programa_de_oferta IN ({CodigosSql(ProgramasDeOferta.TokensCanonicos)})");
+            $"programa_de_oferta IN ({SqlDosCodigosDeContrato.Lista<ProgramaDeOferta>()})");
 
         table.HasCheckConstraint(
             "ck_ofertas_de_curso_base_legal_programa",
-            "programa_de_oferta = 'REGULAR' OR base_legal IS NOT NULL");
+            $"programa_de_oferta = {SqlDosCodigosDeContrato.Literal(ProgramaDeOferta.Regular)} OR base_legal IS NOT NULL");
     }
 
     // Domínios fechados dos regimes e de cada elemento do array de turnos (o `<@` compara conjuntos).
