@@ -56,6 +56,20 @@ public sealed class RepeticaoPorGrupoTests
         return (processo, inscricao, habilitacao);
     }
 
+    /// <summary>Processo com inscrição e isenção na mesma fase, e o grupo da composição familiar no formulário da isenção.</summary>
+    private static (ProcessoSeletivo Processo, FaseCronograma Compartilhada) ProcessoComGrupoDaIsencaoNaFaseCompartilhada()
+    {
+        FaseCronograma compartilhada = Fase(1, "INSCRICAO", coletaInscricao: true, coletaIsencao: true);
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: compartilhada);
+        processo.DefinirCronogramaFases([compartilhada], []).IsSuccess.Should().BeTrue();
+        processo.DefinirFormulario(FinalidadeFormulario.IsencaoTaxa, compartilhada.Id, null, FormularioDeTeste.Etapas())
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados(FinalidadeFormulario.IsencaoTaxa, [], [GrupoDaComposicao()])
+            .IsSuccess.Should().BeTrue();
+
+        return (processo, compartilhada);
+    }
+
     [Fact(DisplayName = "Repetir por grupo que o processo não tem é recusado")]
     public void DefinirDocumentosExigidos_GrupoInexistente_Recusa()
     {
@@ -85,13 +99,7 @@ public sealed class RepeticaoPorGrupoTests
     [InlineData(FinalidadeFormulario.Inscricao, false)]
     public void DefinirDocumentosExigidos_GrupoDaIsencaoNaFaseCompartilhada_SegueAFinalidade(FinalidadeFormulario finalidade, bool aceito)
     {
-        FaseCronograma compartilhada = Fase(1, "INSCRICAO", coletaInscricao: true, coletaIsencao: true);
-        ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: compartilhada);
-        processo.DefinirCronogramaFases([compartilhada], []).IsSuccess.Should().BeTrue();
-        processo.DefinirFormulario(FinalidadeFormulario.IsencaoTaxa, compartilhada.Id, null, FormularioDeTeste.Etapas())
-            .IsSuccess.Should().BeTrue();
-        processo.DefinirFatosColetados(FinalidadeFormulario.IsencaoTaxa, [], [GrupoDaComposicao()])
-            .IsSuccess.Should().BeTrue();
+        (ProcessoSeletivo processo, FaseCronograma compartilhada) = ProcessoComGrupoDaIsencaoNaFaseCompartilhada();
 
         Result resultado = processo.DefinirDocumentosExigidos(
             [NoExigencia.CriarFolha(Documento(compartilhada.Id, finalidade), 0, repetePorEntidade: Composicao).Value!]);
