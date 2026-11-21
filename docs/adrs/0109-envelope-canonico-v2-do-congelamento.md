@@ -261,3 +261,49 @@ versão publicada terá a sua golden fixture preservada, e a identidade volta a 
 artefato próprio por versão.
 
 > **Emendada pela ADR-0137:** o codec único e a golden fixture só da forma corrente valem até a primeira publicação em produção, e não em qualquer ambiente; processos de homologação são recriados quando a forma muda.
+
+## Emenda 4 (2026-11-21) — a identidade da linha entra no envelope quando algo fora da versão a referencia
+
+Esta emenda registra o critério que a E1.1 pressupunha ao falar do "Id já congelado no envelope" e
+estende esse critério às bancas da fase e da etapa. Não reabre a D9 nem a E1.1.
+
+### E4.1 — Guarda-se a identidade quando algo fora da versão aponta para a linha
+
+O envelope guarda o identificador da linha quando algo fora da versão publicada aponta para ela, ou
+quando a retificação precisa reconhecer a mesma linha em duas versões. Já é o caso das fases, das
+etapas, dos itens de avaliação e dos produtos. Passa a ser o caso das bancas da fase e da etapa: a
+designação dos integrantes, a atribuição da inscrição e o julgamento do recurso apontam para a banca
+da versão em vigor, e a retificação compara as bancas da versão publicada com as da nova.
+
+A posição da banca dentro do tipo não serve de identidade, porque muda quando o autor reordena as
+bancas ou retira uma delas.
+
+### E4.2 — A identidade da banca não decide a ordem da banca
+
+A D9 e a E1.1 continuam valendo como estão, inclusive o desempate técnico final por
+`EntityBase.Id` que a E1.1 admite só onde o Id já é congelado no envelope, para estabilizar a rara
+duplicata verdadeira. Esta emenda não estende esse desempate às bancas.
+
+Para as bancas da fase e da etapa, o código do tipo e a posição dentro do tipo substituem a
+ordenação que a E1.1 descrevia pela origem (`*OrigemId`, camada 2). O par código do tipo e posição é
+chave de ordenação única no lugar, garantida por restrição única, e por isso decide a ordem
+sozinho: o identificador da banca não determina a posição dela no envelope, nem como desempate. A
+posição tem sentido de negócio — é o número que distingue "Banca de entrevista 1" de "Banca de
+entrevista 2" —, e reordenar as bancas muda o envelope e o hash.
+
+### E4.3 — O hash identifica a publicação, não a configuração abstrata
+
+Duas configurações equivalentes cujas linhas têm identidades diferentes produzem envelopes e hashes
+diferentes. Isso já valia para fases e etapas. Quem precisar comparar o conteúdo de duas
+configurações normaliza as identidades de forma declarada, como a golden fixture já faz, e compara o
+restante byte a byte.
+
+**Consequência:** o leitor das bancas exige o identificador e a posição no tipo, e reconstrói a banca
+com o identificador gravado. Uma banca reidratada com identificador novo deixaria de corresponder às
+referências feitas a ela.
+
+### Fora desta emenda
+
+Outras coleções passam a guardar identidade pelo mesmo critério da E4.1, quando surgir referência de
+fora da versão. A forma nova das bancas entra no avanço único que fecha o conjunto coordenado de
+commits em que ela é introduzida; D1 e E2.1 não mudam.
