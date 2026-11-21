@@ -18,71 +18,27 @@ using Kernel.Results;
 /// </remarks>
 internal sealed class MontagemDosProdutosDaFase(AtosConsultadosNaEdicao atos)
 {
-    public async Task<Result<ProdutosDaFaseMontados>> MontarAsync(
+    private static readonly IReadOnlyCollection<(string AtoCodigo, PapelProdutoFase? Papel)> NenhumJaDeclarado = [];
+
+    private readonly ConferenciaDoProdutoDeclarado _conferencia = new(atos);
+
+    public async Task<Result<ProdutosConferidos<ProdutoDaFase>>> MontarAsync(
         FaseCronogramaInput fase, int indice, string faseCodigo, CancellationToken cancellationToken)
     {
-        RotuloDoDonoDoProduto dono = RotuloDoDonoDoProduto.DaFase(faseCodigo);
-        List<ProdutoDaFase> produtos = [];
-        List<FieldError> recusas = [];
-        for (int posicao = 0; posicao < fase.Produtos.Count; posicao++)
-        {
-            string campo = $"fases[{indice}].produtos[{posicao}]";
-            Result<ProdutoConferido> conferido = await ConferirAsync(fase.Produtos[posicao], campo, dono, cancellationToken).ConfigureAwait(false);
-            if (conferido.IsFailure)
-            {
-                return Result<ProdutosDaFaseMontados>.ValidationFailure([.. recusas, .. conferido.Errors]);
-            }
-
-            switch (conferido.Value)
-            {
-                case ProdutoConferido.Aceito aceito:
-                    produtos.Add(aceito.Produto);
-                    break;
-                case ProdutoConferido.Recusado recusado:
-                    recusas.Add(recusado.Recusa);
-                    break;
-            }
-        }
-
-        return Result<ProdutosDaFaseMontados>.Success(new ProdutosDaFaseMontados(produtos, recusas));
+        Result<ProdutosConferidos<ProdutoDaFase>> conferidos = await _conferencia
+            .ConferirTodosAsync(
+                [.. fase.Produtos.Select(static p => (p.AtoCodigo, p.Papel))],
+                RotuloDoDonoDoProduto.DaFase(faseCodigo),
+                NenhumJaDeclarado,
+                ProdutoDaFase.Criar,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return conferidos.IsFailure
+            ? Result<ProdutosConferidos<ProdutoDaFase>>.ValidationFailure(NoCaminhoDaFase(conferidos.Errors, indice))
+            : Result<ProdutosConferidos<ProdutoDaFase>>.Success(
+                conferidos.Value! with { Recusas = NoCaminhoDaFase(conferidos.Value!.Recusas, indice) });
     }
 
-    // A falha é a interrupção; a recusa do produto é um desfecho, e não uma falha.
-    private async Task<Result<ProdutoConferido>> ConferirAsync(
-        ProdutoDaFaseInput declarado, string campo, RotuloDoDonoDoProduto dono, CancellationToken cancellationToken)
-    {
-        if (!PapelProdutoFaseCodigo.TentarConverter(declarado.Papel, out PapelProdutoFase? papel))
-        {
-            return Recusa($"{campo}.papel", ConferenciaDoProdutoDoAto.PapelDesconhecido(declarado.Papel, dono));
-        }
-
-        Result<ClassificacaoDoAtoConsultado> classificada = await atos
-            .ClassificacaoAsync(declarado.AtoCodigo, cancellationToken).ConfigureAwait(false);
-        if (classificada.IsFailure)
-        {
-            return InterrupcaoDaFase.Com<ProdutoConferido>($"{campo}.atoCodigo", classificada.Error!);
-        }
-
-        if (classificada.Value is not ClassificacaoDoAtoConsultado.Conhecida conhecida)
-        {
-            return Recusa($"{campo}.atoCodigo", ConferenciaDoProdutoDoAto.AtoNaoEncontrado(declarado.AtoCodigo, dono));
-        }
-
-        return ConferenciaDoProdutoDoAto.RecusaDoPapel(declarado.AtoCodigo, papel, conhecida.Classificacao, dono) is { } recusaDoPapel
-            ? Recusa($"{campo}.papel", recusaDoPapel)
-            : Result<ProdutoConferido>.Success(new ProdutoConferido.Aceito(ProdutoDaFase.Criar(declarado.AtoCodigo, papel)));
-    }
-
-    private static Result<ProdutoConferido> Recusa(string campo, DomainError erro) =>
-        Result<ProdutoConferido>.Success(new ProdutoConferido.Recusado(new FieldError(campo, erro)));
-}
-
-/// <summary>Os produtos da fase que passaram na conferência e as recusas dos demais.</summary>
-internal sealed record ProdutosDaFaseMontados(List<ProdutoDaFase> Produtos, List<FieldError> Recusas)
-{
-    /// <summary>
-    /// Sem todos os produtos íntegros não há o que a fábrica da fase avaliar: chamá-la com a coleção
-    /// incompleta reportaria violações inventadas pela própria falha anterior.
-    /// </summary>
-    public bool Integros => Recusas.Count == 0;
+    private static List<FieldError> NoCaminhoDaFase(IEnumerable<FieldError> recusas, int indice) =>
+        [.. recusas.Select(recusa => recusa.NoCaminhoDe($"fases[{indice}]"))];
 }
