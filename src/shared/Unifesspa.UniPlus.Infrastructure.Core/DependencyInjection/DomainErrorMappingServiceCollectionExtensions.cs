@@ -52,7 +52,7 @@ public static class DomainErrorMappingServiceCollectionExtensions
 
     private static void AddErrorRegistrations(IServiceCollection services)
     {
-        services.AddSingleton<IDomainErrorRegistration, KernelDomainErrorRegistration>();
+        services.AddSingleton<IDomainErrorRegistration>(static _ => new KernelDomainErrorRegistration());
         services.AddSingleton<IDomainErrorRegistration, RegrasDomainErrorRegistration>();
         services.AddSingleton<IDomainErrorRegistration, ErrosDaFronteiraHttpDomainErrorRegistration>();
         services.AddSingleton<IDomainErrorMapper>(provider => new DomainErrorMappingRegistry(

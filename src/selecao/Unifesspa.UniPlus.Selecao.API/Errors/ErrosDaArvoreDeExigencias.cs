@@ -61,7 +61,6 @@ internal static class ErrosDaArvoreDeExigencias
 
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> EstruturaDaArvore() =>
     [
-        new("NoExigencia.OrdemInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.ordem_invalida", "A ordem do nó não pode ser negativa")),
         new("NoExigencia.GrupoVazio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.grupo_vazio", "Um grupo E/OU não pode ter zero filhos")),
         new("NoExigencia.ArvoreComCiclo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.arvore_com_ciclo", "A árvore de satisfação não pode conter ciclos")),
         new("NoExigencia.GrupoComFasesDiferentes", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.grupo_com_fases_diferentes", "Todos os nós de um grupo precisam pertencer à mesma fase do cronograma")),
@@ -76,8 +75,6 @@ internal static class ErrosDaArvoreDeExigencias
         new("NoExigencia.QuantidadeMinimaForaDosLimites", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.quantidade_minima_fora_dos_limites", "quantidadeMinima de um grupo OU/N-de deve estar entre 1 e o número de filhos")),
         new("NoExigencia.ConsequenciaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.consequencia_invalida", "Consequência do grupo fora do domínio conhecido")),
         new("NoExigencia.BaseLegalSemConsequencia", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.base_legal_sem_consequencia", "Base legal de grupo só é permitida quando o grupo carrega consequência")),
-        new("NoExigencia.DocumentoObrigatorioEmFolha", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.documento_obrigatorio_em_folha", "Um nó do tipo FOLHA precisa declarar 'documento'")),
-        new("NoExigencia.TipoInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.tipo_invalido", "Tipo de nó inválido — esperado FOLHA, E ou OU")),
     ];
 
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> CardinalidadeDaFolha() =>

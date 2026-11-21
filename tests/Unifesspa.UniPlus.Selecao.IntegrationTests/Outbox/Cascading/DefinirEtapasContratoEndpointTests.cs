@@ -8,7 +8,12 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Microsoft.Extensions.DependencyInjection;
+
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.PublicacaoPeloEndpointDeTeste;
 
@@ -55,6 +60,18 @@ public sealed class DefinirEtapasContratoEndpointTests(CascadingFixture fixture)
     }
 
     [Fact]
+    public async Task Definir_ProcessoComClassificacaoImportadaEAListaVazia_204SemCorpo()
+    {
+        Guid processoId = await SemearProcessoSemEtapasAsync();
+        using HttpClient client = fixture.Factory.CreateClient();
+
+        using HttpResponseMessage resposta = await EnviarAsync(client, processoId, JsonContent.Create(new JsonArray()));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await resposta.Content.ReadAsStringAsync()).Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task Definir_Publicado_422ComMutacaoBloqueada()
     {
         await TiposDeAtoSeeder.SemearAsync(fixture.Factory.Services);
@@ -71,6 +88,16 @@ public sealed class DefinirEtapasContratoEndpointTests(CascadingFixture fixture)
         (HttpClient client, Guid processoId) = await PrepararAsync();
         using HttpResponseMessage resposta = await EnviarAsync(client, processoId, JsonContent.Create(Array.Empty<object>()), "chave inválida com espaços");
         await ExigirErroAsync(resposta, HttpStatusCode.BadRequest, "uniplus.idempotency.key_malformada");
+    }
+
+    private async Task<Guid> SemearProcessoSemEtapasAsync()
+    {
+        await using AsyncServiceScope scope = fixture.Factory.Services.CreateAsyncScope();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        ProcessoSeletivo processo = ApoioDoProcessoConformeSemeado.ProcessoBaseConforme(db, "PSR 2027");
+        await db.ProcessosSeletivos.AddAsync(processo);
+        await db.SaveChangesAsync();
+        return processo.Id;
     }
 
     private async Task<(HttpClient Client, Guid ProcessoId)> PrepararAsync()
