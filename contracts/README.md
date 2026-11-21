@@ -53,7 +53,7 @@ Os arquivos `contracts/openapi.*.json` correspondentes são reescritos. Mudou um
 
 ## Códigos de erro
 
-O código de erro vai no corpo `application/problem+json` (ADR-0023), e não é um schema do OpenAPI. `codigos-de-erro.json` o torna um contrato de arquivo: o lint do catálogo de erros do portal (`uniplus-developers`) o lê para conferir que cada código tem página, sem depender de ler o código-fonte da API.
+O código de erro vai no corpo `application/problem+json` (ADR-0023), e não é um schema do OpenAPI. `codigos-de-erro.json` publica os códigos, os títulos e os status HTTP que alimentam o catálogo de erros. A API confere esse arquivo contra os próprios registros.
 
 ### Formato
 
@@ -86,7 +86,28 @@ O mesmo código declarado em mais de um registro com o mesmo status e título en
 UPDATE_CODIGOS_DE_ERRO_BASELINE=1 dotnet test tests/Unifesspa.UniPlus.ArchTests --filter "FullyQualifiedName~CodigosDeErroPublicados"
 ```
 
-O teste falha, sem regerar, quando o arquivo diverge do código: código novo sem entrada, entrada sem código correspondente, ou status e título diferentes. A mensagem aponta o código e repete o comando acima. **Revise o diff** (`git diff contracts/codigos-de-erro.json`): código novo pede também a página em `uniplus-developers/docs/erros/`.
+O teste falha, sem regerar, quando o arquivo diverge do código: código novo sem entrada, entrada sem código correspondente, ou status e título diferentes. A mensagem aponta o código e repete o comando acima. **Revise o diff** (`git diff contracts/codigos-de-erro.json`): todo código novo exige a descrição pública no mesmo PR.
+
+### Descrições públicas
+
+`descricoes-de-erros.json` traz a versão do formato e as entradas em ordem
+ordinal por `codigo`. Cada entrada contém `requisitos`, com os identificadores
+`UNI-REQ-NNNN` aplicáveis, e as seções obrigatórias `oQueAconteceu` e
+`comoResolver`. Use `ondeAparece` quando for necessário indicar em quais
+operações a recusa ocorre. Cada item de uma seção é um bloco de Markdown
+simples, como um parágrafo, lista ou tabela. Use links HTTPS ou caminhos
+absolutos do portal. O título e o status vêm de `codigos-de-erro.json`.
+
+Escreva ou atualize a descrição no mesmo PR que muda o código, conforme a
+[ADR-0178](../docs/adrs/0178-texto-publico-dos-erros-na-api.md). Use linguagem
+voltada a quem recebe o erro. O teste confere pares de códigos, formato,
+seções, requisitos e ausência de exemplos com CPF, e-mail ou sequências de
+11 ou mais algarismos. A variável abaixo reordena e reformata as descrições
+existentes. Código sem descrição continua a reprovar o teste.
+
+```bash
+UPDATE_DESCRICOES_DE_ERRO_BASELINE=1 dotnet test tests/Unifesspa.UniPlus.ArchTests --filter "FullyQualifiedName~DescricoesDeErrosPublicadas"
+```
 
 ## Spectral house-style
 

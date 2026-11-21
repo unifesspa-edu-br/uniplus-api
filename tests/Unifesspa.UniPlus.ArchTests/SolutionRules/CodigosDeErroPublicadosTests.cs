@@ -15,8 +15,8 @@ using static ArchUnitNET.Fluent.ArchRuleDefinition;
 
 /// <summary>
 /// O arquivo <c>contracts/codigos-de-erro.json</c> é a lista dos códigos de erro de fio que a API
-/// emite, e é gerado dos registros de erro dos módulos e das definições da fronteira HTTP. A
-/// conferência de que cada código tem página é do portal, por outro caminho.
+/// emite, e é gerado dos registros de erro dos módulos e das definições da fronteira HTTP.
+/// A correspondência com as descrições públicas é conferida no contrato de descrições.
 /// Código novo, código removido, ou status e título alterados reprovam até o arquivo ser regerado.
 /// </summary>
 public sealed class CodigosDeErroPublicadosTests
@@ -69,7 +69,7 @@ public sealed class CodigosDeErroPublicadosTests
                 .Where(static codigo => !codigo.StartsWith("uniplus.", StringComparison.Ordinal)),
         ];
 
-        foraDoPadrao.Should().BeEmpty("o código de fio é uniplus.<módulo>.<assunto>.<motivo>, e o lint do portal parte desse prefixo");
+        foraDoPadrao.Should().BeEmpty("o código de fio é uniplus.<módulo>.<assunto>.<motivo>, e o portal agrupa os códigos a partir dessa estrutura");
     }
 
     [Fact(DisplayName = "Todo módulo cuja API expõe controller contribui com registro de erros para o catálogo")]

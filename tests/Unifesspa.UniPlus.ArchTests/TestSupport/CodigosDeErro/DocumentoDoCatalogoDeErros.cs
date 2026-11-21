@@ -5,8 +5,7 @@ using System.Text.Json;
 
 /// <summary>
 /// O conteúdo de <c>contracts/codigos-de-erro.json</c>: a versão do formato e a lista de códigos,
-/// ordenada por código. Quem lê o arquivo (o lint do catálogo de erros do portal) confere a versão
-/// antes de interpretar a lista.
+/// ordenada por código. O teste de contrato usa essa lista para conferir as descrições públicas.
 /// </summary>
 internal sealed record DocumentoDoCatalogoDeErros(int VersaoDoFormato, IReadOnlyList<EntradaDoCatalogoDeErros> Codigos)
 {
