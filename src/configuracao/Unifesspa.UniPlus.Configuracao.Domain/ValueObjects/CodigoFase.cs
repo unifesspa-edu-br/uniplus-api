@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// Código de uma <see cref="Entities.FaseCanonica"/> (UNI-REQ-0064, módulo
 /// Configuração) — chave natural do vocabulário de cronograma (ex.: <c>INSCRICAO</c>,
-/// <c>AVALIACAO</c>, <c>RECURSOS</c>). Value object com formato fechado:
+/// <c>AVALIACAO</c>, <c>CLASSIFICACAO</c>). Value object com formato fechado:
 /// <c>^[A-Z_]+$</c> — apenas letras maiúsculas e sublinhado (<b>sem hífen e sem
 /// dígito</b>, diferente do <c>CodigoModalidade</c>). Persistido como <c>varchar</c>
 /// via conversor de valor (fail-fast na reidratação).
@@ -24,6 +24,11 @@ public sealed partial record CodigoFase
 {
     private const int TamanhoMaximo = 60;
 
+    private static readonly string MensagemDoFormatoInvalido =
+        "Código da fase deve conter apenas letras maiúsculas e sublinhado "
+        + $"(sem hífen e sem dígito), com no máximo {TamanhoMaximo} caracteres "
+        + "(ex.: INSCRICAO, AVALIACAO, CLASSIFICACAO).";
+
     public string Valor { get; }
 
     private CodigoFase(string valor) => Valor = valor;
@@ -38,23 +43,14 @@ public sealed partial record CodigoFase
     {
         if (string.IsNullOrWhiteSpace(valor))
         {
-            return Result<CodigoFase>.Failure(new DomainError(
-                FaseCanonicaErrorCodes.CodigoObrigatorio,
-                "Código da fase canônica é obrigatório."));
+            return Recusa(FaseCanonicaErrorCodes.CodigoObrigatorio, "Código da fase canônica é obrigatório.");
         }
 
         string normalizado = valor.Trim();
 
-        if (normalizado.Length > TamanhoMaximo || !FormatoValido().IsMatch(normalizado))
-        {
-            return Result<CodigoFase>.Failure(new DomainError(
-                FaseCanonicaErrorCodes.CodigoFormatoInvalido,
-                "Código da fase deve conter apenas letras maiúsculas e sublinhado "
-                + $"(sem hífen e sem dígito), com no máximo {TamanhoMaximo} caracteres "
-                + "(ex.: INSCRICAO, AVALIACAO, RECURSOS)."));
-        }
-
-        return Result<CodigoFase>.Success(new CodigoFase(normalizado));
+        return normalizado.Length > TamanhoMaximo || !FormatoValido().IsMatch(normalizado)
+            ? Recusa(FaseCanonicaErrorCodes.CodigoFormatoInvalido, MensagemDoFormatoInvalido)
+            : Result<CodigoFase>.Success(new CodigoFase(normalizado));
     }
 
     /// <summary>Indica se <paramref name="valor"/> respeita o formato fechado, sem alocar value object.</summary>
@@ -64,6 +60,8 @@ public sealed partial record CodigoFase
         && FormatoValido().IsMatch(valor.Trim());
 
     public override string ToString() => Valor;
+
+    private static Result<CodigoFase> Recusa(string codigo, string mensagem) => Result<CodigoFase>.Failure(new DomainError(codigo, mensagem));
 
     [GeneratedRegex("^[A-Z_]+$", RegexOptions.CultureInvariant)]
     private static partial Regex FormatoValido();

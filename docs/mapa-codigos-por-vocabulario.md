@@ -92,7 +92,7 @@ Limite da classificação por linha nas seções 3.6 e 3.10: ela foi feita por p
 
 ## 3. Vocabulário 1: fase canônica
 
-### 3.1 Os dezesseis códigos
+### 3.1 Os quatorze códigos
 
 Origem única do conjunto: `FaseCanonicaCatalogo.Descritos` (`src/configuracao/Unifesspa.UniPlus.Configuracao.Domain/Enums/FaseCanonicaCatalogo.cs`), que deriva `Codigos`. O cadastro (`configuracao.fases_canonicas`, semeado por `FaseCanonicaSeed` e pela migração `SemeiaFasesCanonicas`) referencia cada um deles; nome, descrição e sinalizadores são editáveis, e o código não é.
 
@@ -104,8 +104,8 @@ Origem única do conjunto: `FaseCanonicaCatalogo.Descritos` (`src/configuracao/U
 | `ENSALAMENTO` | mantido | manter |
 | `AVALIACAO` | mantido | manter |
 | `CLASSIFICACAO` | mantido | manter |
-| `RESULTADO_PRELIMINAR` | mantido | manter |
-| `RECURSOS` | mantido | manter |
+| `RESULTADO_PRELIMINAR` | retirado | retirar; o resultado preliminar, o prazo de recurso e o definitivo ficam na fase `RESULTADO_FINAL` |
+| `RECURSOS` | retirado | retirar; o recurso corre dentro da fase que publicou o resultado, e a complementação durante o recurso fica na fase de origem |
 | `RESULTADO_FINAL` | mantido | manter |
 | `HABILITACAO` | mantido neste mapa | manter; ponto em aberto para o líder técnico (PA-1) |
 | `HETEROIDENTIFICACAO` | mantido | manter |
@@ -121,7 +121,7 @@ Origem única do conjunto: `FaseCanonicaCatalogo.Descritos` (`src/configuracao/U
 |---|---|---|
 | Conjunto de códigos de fase (`FaseCanonicaCatalogo.Codigos`) | fechado em código | Guarda do domínio (`FaseCanonica.EhCanonico`), validator e CHECKs do banco derivam dele. Renomear o código é mudar o catálogo e uma migração nova |
 | Linha do cadastro (`fases_canonicas`: nome, descrição, unidade sugerida, `permite_complementacao`, `coleta_inscricao` e demais sinalizadores) | cadastro configurável | Edita-se sem deploy. O sinalizador `permite_complementacao` só vale para os códigos de `CodigosComComplementacaoPermitida` |
-| Aresta de precedência (`precedencias_entre_fases`) | cadastro configurável, com seed de seis arestas | Cita códigos de fase por valor, sem chave estrangeira |
+| Aresta de precedência (`precedencias_entre_fases`) | cadastro configurável, com seed de quatro arestas | Cita códigos de fase por valor, sem chave estrangeira |
 | Fase do cronograma de um processo (`fases_cronograma`) | snapshot congelado na publicação | Copia o código por valor; a decisão de publicação lê o snapshot, nunca o cadastro vivo |
 | Capacidade de uma fase (coleta de inscrição, coleta de solicitação de isenção, produtos que declara) | configuração da fase | É por ela, e não pelo código, que o sistema reconhece o que a fase faz. A isenção já funciona assim (`PoliticaDaIsencaoDaTaxa.AvaliaNaFase` usa `ColetaSolicitacaoIsencao`) |
 
@@ -153,8 +153,8 @@ O mapa não cria regra por código de fase. As regras por código que já existe
 | 20 | `src/configuracao/.../Entities/ModeloFormulario.cs`, `.../Converters/ConteudoDoModeloJson.cs`, `src/configuracao/.../Application/Commands/ModelosFormulario/ConteudoLido.cs`, `.../Mappings/ModeloFormularioMapping.cs`, `Configuracao.Contracts/ModeloFormularioView.cs` | `FaseCodigo` do documento exigido do modelo (linhas 94, 636 e 686; 71; 115 e 142; 45; 35) | o modelo cita a fase por código, em JSON, sem literal no código | derivado; o dado fica no cadastro de modelos (seção 7) |
 | 21 | `src/selecao/.../Application/Commands/ProcessosSeletivos/SelecaoDosDocumentosDoModelo.cs` | linhas 150 a 155 | resolve a fase do modelo pelo código no cronograma do processo e **recusa com mensagem** se não a encontra; sem literal | derivado; o modelo com código antigo é recusado ao aplicar, e não ignorado |
 | 22 | `src/selecao/.../Domain/Entities/EtapaProcesso.cs` e `Infrastructure/Persistence/Configurations/EtapaProcessoConfiguration.cs` | `FaseCodigo` / coluna `fase_codigo` | etapa ligada à fase por código; sem literal | derivado; dado (seção 7) |
-| 23 | `src/selecao/.../Persistence/Configurations/FaseCronogramaConfiguration.cs`; `Canonicalization/LeituraDoCronograma.cs`, `LeituraDasEtapas.cs`, `SerializacaoDasEtapas.cs`; `Repositories/FasesNoEnvelope.cs` | `codigo` e `faseConcluinteCodigo` da fase; `faseCodigo` da etapa, no envelope congelado | sem literal; o envelope da versão publicada guarda o código e entra no hash | derivado; dado imutável por desenho (seção 7) |
-| 24 | `src/configuracao/Unifesspa.UniPlus.Configuracao.Domain/Entities/FaseCanonica.cs` (linha 233) e `Configuracao.API/Errors/FaseCanonicaErrorMappings.cs` (linha 65) | mensagem "só é permitida nas fases de homologação e recursos" | prosa, sem código | manter (conferir com a página de erro do portal, seção 3.11) |
+| 23 | `src/selecao/.../Persistence/Configurations/FaseCronogramaConfiguration.cs`; `Canonicalization/LeituraDoCronograma.cs`, `LeituraDasEtapas.cs`, `SerializacaoDasEtapas.cs`; `Repositories/FasesNoEnvelope.cs` | `codigo` da fase; `faseCodigo` da etapa, no envelope congelado | sem literal; o envelope da versão publicada guarda o código e entra no hash | derivado; dado imutável por desenho (seção 7) |
+| 24 | `src/configuracao/Unifesspa.UniPlus.Configuracao.Domain/Entities/FaseCanonica.cs` (linha 233) e `Configuracao.API/Errors/FaseCanonicaErrorMappings.cs` (linha 65) | mensagem "só é permitida na fase de homologação das inscrições" | prosa, sem código | manter (conferir com a página de erro do portal, seção 3.11) |
 
 Nenhum literal de fase aparece em `contracts/` (o OpenAPI declara `codigo` como texto livre, sem enumeração), nas coleções Postman, na configuração de permissões nem em `.github/`, `docker/` e `infra/`.
 
@@ -599,7 +599,7 @@ O seed da API chega ao HML por migração; o que não chega é o dado de process
 | `configuracao.precedencias_entre_fases` | `antecessora_codigo`, `sucessora_codigo` | seed e cadastro | a migração nova troca; sem recadastro |
 | `configuracao.fato_candidato` | `ponto_resolucao` | cadastro | a migração nova troca onde valer `HOMOLOGACAO`; as sementes só usam `INSCRICAO` e `HABILITACAO` |
 | `configuracao.modelos_formulario` | `conteudo` (JSON, `documentosExigidos[].faseCodigo`) | cadastro | a migração nova reescreve o JSON; modelos de HML recadastrados a partir do backup precisam trazer o código novo |
-| `selecao.fases_cronograma` | `codigo`, `fase_concluinte_codigo` | dado de processo | recadastro do processo (backup, apagar, subir, recadastrar), com o JSON de exportação do processo já com o código novo |
+| `selecao.fases_cronograma` | `codigo` | dado de processo | recadastro do processo (backup, apagar, subir, recadastrar), com o JSON de exportação do processo já com o código novo |
 | `selecao.etapas_processo` | `fase_codigo` | dado de processo | recadastro do processo |
 | `selecao.versoes_configuracao` | `configuracao_congelada` (jsonb), `configuracao_congelada_canonica` (bytea) e o hash | versão publicada, imutável | recadastro do processo; não se reescreve versão publicada, porque o hash cobre o código |
 
@@ -613,7 +613,7 @@ UNION ALL SELECT 'fato_candidato', count(*) FROM configuracao.fato_candidato WHE
 UNION ALL SELECT 'modelos_formulario', count(*) FROM configuracao.modelos_formulario
   WHERE conteudo::text LIKE '%"faseCodigo": "HOMOLOGACAO"%' OR conteudo::text LIKE '%"faseCodigo":"HOMOLOGACAO"%'
 UNION ALL SELECT 'fases_cronograma', count(*) FROM selecao.fases_cronograma
-  WHERE 'HOMOLOGACAO' IN (codigo, fase_concluinte_codigo)
+  WHERE codigo = 'HOMOLOGACAO'
 UNION ALL SELECT 'etapas_processo', count(*) FROM selecao.etapas_processo WHERE fase_codigo = 'HOMOLOGACAO'
 UNION ALL SELECT 'versoes_configuracao', count(*) FROM selecao.versoes_configuracao
   WHERE configuracao_congelada::text LIKE '%"HOMOLOGACAO"%';

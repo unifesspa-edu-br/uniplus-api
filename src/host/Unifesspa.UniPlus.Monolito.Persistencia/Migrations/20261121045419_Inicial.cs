@@ -467,9 +467,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_fases_canonicas", x => x.id);
                     table.CheckConstraint("ck_fases_canonicas_agrupa_etapas", "agrupa_etapas = false OR codigo = 'AVALIACAO'");
-                    table.CheckConstraint("ck_fases_canonicas_codigo_canonico", "codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO_INSCRICOES', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_PRELIMINAR', 'RECURSOS', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
+                    table.CheckConstraint("ck_fases_canonicas_codigo_canonico", "codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO_INSCRICOES', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
                     table.CheckConstraint("ck_fases_canonicas_codigo_formato", "codigo ~ '^[A-Z_]+$'");
-                    table.CheckConstraint("ck_fases_canonicas_complementacao", "permite_complementacao = false OR codigo IN ('HOMOLOGACAO_INSCRICOES', 'RECURSOS')");
+                    table.CheckConstraint("ck_fases_canonicas_complementacao", "permite_complementacao = false OR codigo IN ('HOMOLOGACAO_INSCRICOES')");
                     table.CheckConstraint("ck_fases_canonicas_inscricao_e_isencao_exclusivas", "NOT (coleta_inscricao AND coleta_solicitacao_isencao)");
                     table.CheckConstraint("ck_fases_canonicas_origem_data", "origem_data IN ('NO_EDITAL', 'NA_EXECUCAO')");
                     table.CheckConstraint("ck_fases_canonicas_solicitacao_isencao", "coleta_solicitacao_isencao = (codigo = 'SOLICITACAO_ISENCAO')");
@@ -885,10 +885,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_precedencias_entre_fases", x => x.id);
-                    table.CheckConstraint("ck_precedencias_entre_fases_antecessora_canonica", "antecessora_codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO_INSCRICOES', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_PRELIMINAR', 'RECURSOS', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
+                    table.CheckConstraint("ck_precedencias_entre_fases_antecessora_canonica", "antecessora_codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO_INSCRICOES', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
                     table.CheckConstraint("ck_precedencias_entre_fases_antecessora_formato", "antecessora_codigo ~ '^[A-Z_]+$'");
                     table.CheckConstraint("ck_precedencias_entre_fases_sem_self_loop", "antecessora_codigo <> sucessora_codigo");
-                    table.CheckConstraint("ck_precedencias_entre_fases_sucessora_canonica", "sucessora_codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO_INSCRICOES', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_PRELIMINAR', 'RECURSOS', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
+                    table.CheckConstraint("ck_precedencias_entre_fases_sucessora_canonica", "sucessora_codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO_INSCRICOES', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
                     table.CheckConstraint("ck_precedencias_entre_fases_sucessora_formato", "sucessora_codigo ~ '^[A-Z_]+$'");
                 });
 
@@ -5162,22 +5162,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 values: new object[,]
                 {
                     { new Guid("f45e0000-0000-7000-8000-000000000006"), null, "CLASSIFICACAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Apuração das notas e ordenação dos candidatos por modalidade.", false, "Classificação", "NO_EDITAL", null, null, null, null, null },
-                    { new Guid("f45e0000-0000-7000-8000-000000000007"), null, "RESULTADO_PRELIMINAR", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Publicação do resultado que ainda admite recurso.", false, "Resultado preliminar", "NO_EDITAL", null, null, null, null, null }
-                });
-
-            migrationBuilder.InsertData(
-                schema: "configuracao",
-                table: "fases_canonicas",
-                columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by", "permite_complementacao" },
-                values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000008"), null, "RECURSOS", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Interposição e análise dos recursos contra o resultado preliminar.", false, "Recursos", "NO_EDITAL", null, null, null, null, null, true });
-
-            migrationBuilder.InsertData(
-                schema: "configuracao",
-                table: "fases_canonicas",
-                columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by" },
-                values: new object[,]
-                {
-                    { new Guid("f45e0000-0000-7000-8000-000000000009"), null, "RESULTADO_FINAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Publicação do resultado depois de julgados os recursos.", false, "Resultado final", "NO_EDITAL", null, null, null, null, null },
+                    { new Guid("f45e0000-0000-7000-8000-000000000009"), null, "RESULTADO_FINAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Publicação do resultado do processo: o preliminar, o prazo de recurso e o definitivo, na mesma fase.", false, "Resultado final", "NO_EDITAL", null, null, null, null, null },
                     { new Guid("f45e0000-0000-7000-8000-000000000010"), "Lei nº 12.711/2012; Portaria Normativa MEC nº 4/2018", "HETEROIDENTIFICACAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Procedimento de heteroidentificação étnico-racial dos candidatos que concorrem por cota.", false, "Heteroidentificação", "NO_EDITAL", null, null, null, null, null },
                     { new Guid("f45e0000-0000-7000-8000-000000000011"), null, "HABILITACAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Comprovação documental dos requisitos declarados pelo candidato.", false, "Habilitação", "NO_EDITAL", null, null, null, null, null },
                     { new Guid("f45e0000-0000-7000-8000-000000000012"), null, "HOMOLOGACAO_RESULTADO_FINAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Ato do conselho que homologa o resultado final do processo seletivo.", false, "Homologação do resultado final", "NO_EDITAL", null, null, null, null, null },
@@ -5291,8 +5276,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 values: new object[,]
                 {
                     { new Guid("93ec0000-0000-7000-8000-000000000001"), "INSCRICAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, false, "HOMOLOGACAO_INSCRICOES", null, null },
-                    { new Guid("93ec0000-0000-7000-8000-000000000002"), "RESULTADO_PRELIMINAR", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, false, "RECURSOS", null, null },
-                    { new Guid("93ec0000-0000-7000-8000-000000000003"), "RECURSOS", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, false, "RESULTADO_FINAL", null, null },
                     { new Guid("93ec0000-0000-7000-8000-000000000004"), "RESULTADO_FINAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, false, "HABILITACAO", null, null },
                     { new Guid("93ec0000-0000-7000-8000-000000000005"), "HABILITACAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, false, "MATRICULA", null, null },
                     { new Guid("93ec0000-0000-7000-8000-000000000006"), "HETEROIDENTIFICACAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, false, "HOMOLOGACAO_RESULTADO_FINAL", null, null }

@@ -30,13 +30,13 @@ using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 /// </para>
 /// <para>
 /// <b>Sem paginação e sem <c>_links</c>.</b> As coleções são pequenas e fechadas (de quatro
-/// a dezesseis itens); paginar ou linkar um vocabulário fixo não ajudaria o cliente, só
+/// a quatorze itens); paginar ou linkar um vocabulário fixo não ajudaria o cliente, só
 /// custaria uma navegação a mais.
 /// </para>
 /// <para>
 /// <b>Devolve rótulo, não o cadastro.</b> A rota de <c>FaseCanonica</c> nasce sempre
 /// semeada (<c>FaseCanonicaSeed</c>), então <c>GET /fases-canonicas</c> quase sempre já
-/// devolveria os dezesseis códigos — mas devolveria o <b>cadastro</b>, que uma
+/// devolveria os quatorze códigos — mas devolveria o <b>cadastro</b>, que uma
 /// remoção lógica esconde e a paginação por cursor obrigaria o cliente a percorrer. O
 /// vocabulário aqui é o código fechado, sempre completo, nunca paginado. Para
 /// <c>TipoBanca</c>, que não tem seed nenhum, essa diferença é a única fonte possível: uma
@@ -77,7 +77,7 @@ public sealed class VocabulariosController : ControllerBase
         return Ok(codigos);
     }
 
-    /// <summary>Lista as dezesseis fases do conjunto canônico, com código e rótulo.</summary>
+    /// <summary>Lista as quatorze fases do conjunto canônico, com código e rótulo.</summary>
     [HttpGet("vocabularios/fases-canonicas")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "codigo-fase-canonica", Versions = [1])]

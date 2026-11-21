@@ -219,15 +219,13 @@ public sealed class PrecedenciaFaseTests
     private static readonly (string Antecessora, string Sucessora)[] ArestasEstruturaisDoCiclo =
     [
         ("INSCRICAO", "HOMOLOGACAO_INSCRICOES"),
-        ("RESULTADO_PRELIMINAR", "RECURSOS"),
-        ("RECURSOS", "RESULTADO_FINAL"),
         ("RESULTADO_FINAL", "HABILITACAO"),
         ("HABILITACAO", "MATRICULA"),
         ("HETEROIDENTIFICACAO", "HOMOLOGACAO_RESULTADO_FINAL"),
     ];
 
-    [Fact(DisplayName = "As seis arestas de §3.3 formam um grafo acíclico entre si")]
-    public void Criar_SeisArestasEstruturais_FormamGrafoAciclico()
+    [Fact(DisplayName = "As quatro arestas de §3.3 formam um grafo acíclico entre si")]
+    public void Criar_QuatroArestasEstruturais_FormamGrafoAciclico()
     {
         List<PrecedenciaFase> vivas = [];
         foreach ((string antecessora, string sucessora) in ArestasEstruturaisDoCiclo)
@@ -237,7 +235,7 @@ public sealed class PrecedenciaFaseTests
             vivas.Add(r.Value!);
         }
 
-        vivas.Should().HaveCount(6);
+        vivas.Should().HaveCount(4);
     }
 
     // ── Atualização ────────────────────────────────────────────────────────────

@@ -13,7 +13,6 @@ public sealed class FaseCanonicaMappingTests
     [InlineData("INSCRICAO", false, false)]
     [InlineData("AVALIACAO", true, false)]
     [InlineData("HOMOLOGACAO_INSCRICOES", false, true)]
-    [InlineData("RECURSOS", false, true)]
     [InlineData("HABILITACAO", false, false)]
     public void ToDto_ExpoeOQueOCodigoAdmite(string codigo, bool admiteAgruparEtapas, bool admiteComplementacao)
     {
@@ -31,7 +30,7 @@ public sealed class FaseCanonicaMappingTests
     public void ToDto_MantemOGravadoAoLadoDoAdmitido()
     {
         FaseCanonica fase = FaseCanonica.Criar(
-            "RECURSOS", "Recursos", null, baseLegal: null, origemData: "NO_EDITAL",
+            "HOMOLOGACAO_INSCRICOES", "Homologação das inscrições", null, baseLegal: null, origemData: "NO_EDITAL",
             sinalizadores: new SinalizadoresDaFase(
                 AgrupaEtapas: false, PermiteComplementacao: true, ColetaInscricao: false, ColetaSolicitacaoIsencao: false)).Value!;
 

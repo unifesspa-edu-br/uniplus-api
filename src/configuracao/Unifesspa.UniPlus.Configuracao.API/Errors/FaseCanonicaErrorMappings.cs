@@ -62,7 +62,7 @@ internal static class FaseCanonicaErrorMappings
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.fase_canonica.complementacao_apenas_fases_permitidas",
-                "Complementação documental só é permitida nas fases de homologação e recursos")),
+                "Complementação documental só é permitida na fase de homologação das inscrições")),
 
         new(FaseCanonicaErrorCodes.SolicitacaoIsencaoApenasNaFaseDeIsencao,
             new DomainErrorMapping(

@@ -66,7 +66,7 @@ internal sealed class ApoioDaPersistenciaDeFaseCanonica
     }
 
     /// <summary>
-    /// Libera o slot de um código ocupado pelo seed das dezesseis fases, usando o mesmo
+    /// Libera o slot de um código ocupado pelo seed das quatorze fases, usando o mesmo
     /// soft-delete que o sistema usa — o índice único é parcial
     /// (<c>WHERE is_deleted = false</c>), então a linha semeada sai do caminho sem ser
     /// destruída.

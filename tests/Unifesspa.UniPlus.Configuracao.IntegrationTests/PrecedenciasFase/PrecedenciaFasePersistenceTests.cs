@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// Integração ponta-a-ponta de <c>PrecedenciaFase</c> contra Postgres real
-/// (UNI-REQ-0064, story #851): seed das seis arestas estruturais (CA-05), leitura
+/// (UNI-REQ-0064, story #851): seed das quatro arestas estruturais (CA-05), leitura
 /// via <see cref="IPrecedenciaFaseReader"/>, UNIQUE parcial do par vivo e CHECKs de
 /// domínio (formato, conjunto canônico, self-loop).
 /// </summary>
@@ -34,8 +34,6 @@ public sealed class PrecedenciaFasePersistenceTests
     private static readonly (string Antecessora, string Sucessora)[] ArestasEsperadas =
     [
         ("INSCRICAO", "HOMOLOGACAO_INSCRICOES"),
-        ("RESULTADO_PRELIMINAR", "RECURSOS"),
-        ("RECURSOS", "RESULTADO_FINAL"),
         ("RESULTADO_FINAL", "HABILITACAO"),
         ("HABILITACAO", "MATRICULA"),
         ("HETEROIDENTIFICACAO", "HOMOLOGACAO_RESULTADO_FINAL"),
@@ -50,7 +48,7 @@ public sealed class PrecedenciaFasePersistenceTests
         _apoio = new ApoioDaPersistenciaDePrecedenciaFase(fixture);
     }
 
-    [Fact(DisplayName = "CA-05: o seed materializa as seis arestas canônicas e o reader devolve o grafo")]
+    [Fact(DisplayName = "CA-05: o seed materializa as quatro arestas canônicas e o reader devolve o grafo")]
     public async Task Seed_MaterializaArestasCanonicas()
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
