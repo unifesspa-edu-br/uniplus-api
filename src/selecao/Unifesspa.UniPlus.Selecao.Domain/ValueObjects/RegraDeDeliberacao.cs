@@ -5,15 +5,17 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// O que o edital declara sobre a composição de uma banca e a forma como ela delibera. Nenhuma
-/// regra de deliberação é fixa no sistema: cada banca declarada carrega a sua.
+/// regra de deliberação é fixa no sistema: cada banca declarada carrega a sua. Na deliberação colegiada, a votação vale para
+/// toda decisão. No ato individual, a banca pode declarar ao lado a votação usada só no julgamento do recurso: quórum, critério
+/// e encerramento juntos, ou nenhum.
 /// </summary>
 /// <param name="Modo">Votação do colegiado ou ato individual.</param>
 /// <param name="Integrantes">Titulares da banca, no mínimo 1.</param>
 /// <param name="Suplentes">Suplentes da banca, no mínimo 0.</param>
-/// <param name="Quorum">De 1 ao número de integrantes; só na votação do colegiado.</param>
-/// <param name="Criterio">O que basta para a votação decidir; só na votação do colegiado.</param>
+/// <param name="Quorum">De 1 ao número de integrantes; na votação do colegiado e na votação do recurso do ato individual.</param>
+/// <param name="Criterio">O que basta para a votação decidir; na votação do colegiado e na votação do recurso do ato individual.</param>
 /// <param name="Desempate">Obrigatório nos critérios de maioria com mais de 1 integrante.</param>
-/// <param name="Encerramento">Quando a votação se encerra; só na votação do colegiado.</param>
+/// <param name="Encerramento">Quando a votação se encerra; na votação do colegiado e na votação do recurso do ato individual.</param>
 /// <param name="SemUnanimidade">Obrigatório na unanimidade com mais de 1 integrante.</param>
 public sealed record DeclaracaoDaDeliberacao(
     ModoDeDeliberacao Modo,
@@ -44,7 +46,7 @@ public sealed class RegraDeDeliberacao
 
     public ResultadoSemUnanimidade? SemUnanimidade { get; private set; }
 
-    /// <summary>Quantos titulares precisam atuar: o quórum na votação, um titular no ato individual.</summary>
+    /// <summary>Quantos titulares precisam atuar: o quórum da votação, ou um titular quando não há votação.</summary>
     public int QuorumExigido => Quorum ?? 1;
 
     private RegraDeDeliberacao() { }

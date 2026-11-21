@@ -4262,11 +4262,6 @@
       "titulo": "O token não identifica quem confirma a política de divulgação"
     },
     {
-      "codigo": "uniplus.selecao.banca.ato_individual_sem_votacao",
-      "status": 422,
-      "titulo": "A deliberação por ato individual não declara campos de votação"
-    },
-    {
       "codigo": "uniplus.selecao.banca.criterio_obrigatorio",
       "status": 422,
       "titulo": "A deliberação colegiada declara o critério de votação"
@@ -4299,7 +4294,7 @@
     {
       "codigo": "uniplus.selecao.banca.modo_de_deliberacao_invalido",
       "status": 422,
-      "titulo": "O modo de deliberação da banca deve ser colegiada com votação ou ato individual"
+      "titulo": "O modo de deliberação deve ser colegiada com votação ou ato individual"
     },
     {
       "codigo": "uniplus.selecao.banca.quorum_fora_do_intervalo",
@@ -4335,6 +4330,11 @@
       "codigo": "uniplus.selecao.banca.suplentes_invalidos",
       "status": 422,
       "titulo": "O número de suplentes da banca não pode ser negativo"
+    },
+    {
+      "codigo": "uniplus.selecao.banca.votacao_do_recurso_incompleta",
+      "status": 422,
+      "titulo": "A votação do recurso está incompleta"
     },
     {
       "codigo": "uniplus.selecao.banca_requerida.categoria_duplicada_no_recorte",

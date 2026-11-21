@@ -15675,7 +15675,7 @@
       },
       "DocumentoDaConfiguracaoBancasRegraDeDeliberacao": {
         "title": "Regra de delibera\u00E7\u00E3o da banca",
-        "description": "Como a banca decide: o modo, a composi\u00E7\u00E3o e, na vota\u00E7\u00E3o do colegiado, o qu\u00F3rum, o crit\u00E9rio, o desempate e o encerramento. Os campos que o modo n\u00E3o admite ficam ausentes.",
+        "description": "Como a banca decide: o modo, a composi\u00E7\u00E3o e, quando h\u00E1 vota\u00E7\u00E3o (no colegiado ou no ato individual que julga o recurso), o qu\u00F3rum, o crit\u00E9rio, o desempate e o encerramento. Os campos que o modo n\u00E3o admite ficam ausentes.",
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -15701,13 +15701,13 @@
           },
           "quorum": {
             "title": "Qu\u00F3rum",
-            "description": "N\u00FAmero m\u00EDnimo de votos para decidir. S\u00F3 na vota\u00E7\u00E3o do colegiado.",
+            "description": "N\u00FAmero m\u00EDnimo de votos para decidir. S\u00F3 quando h\u00E1 vota\u00E7\u00E3o: no colegiado ou no ato individual que julga o recurso.",
             "type": "integer",
             "minimum": 0
           },
           "criterio": {
             "title": "Crit\u00E9rio de vota\u00E7\u00E3o",
-            "description": "Maioria simples, maioria absoluta ou unanimidade. S\u00F3 na vota\u00E7\u00E3o do colegiado.",
+            "description": "Maioria simples, maioria absoluta ou unanimidade. S\u00F3 quando h\u00E1 vota\u00E7\u00E3o: no colegiado ou no ato individual que julga o recurso.",
             "enum": [
               "maioriaSimples",
               "maioriaAbsoluta",

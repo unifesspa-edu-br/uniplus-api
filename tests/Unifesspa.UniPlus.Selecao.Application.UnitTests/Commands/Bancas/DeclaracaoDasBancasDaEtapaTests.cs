@@ -94,6 +94,39 @@ public sealed class DeclaracaoDasBancasDaEtapaTests
         banca.RegraDeDeliberacao!.Quorum.Should().Be(2);
     }
 
+    [Fact(DisplayName = "A banca da etapa em ato individual sem votação, ou com a votação do recurso inteira, é declarada")]
+    public async Task Declarar_AtoIndividualSemVotacaoOuComVotacaoInteira_Aceita()
+    {
+        EtapaProcesso etapa = NovaEtapa();
+        EtapaProcessoInput entrada = Entrada(
+            Banca(TipoDeEntrevista, RegrasDeDeliberacaoDeTeste.AtoIndividual()),
+            Banca(TipoDeRecursos, RegrasDeDeliberacaoDeTeste.AtoIndividualComVotacaoDoRecurso()));
+
+        Result resultado = await Declaracao().DeclararAsync(etapa, entrada, CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue();
+        etapa.Bancas.Select(static banca => banca.RegraDeDeliberacao!.QuorumExigido).Should().Equal(1, 2);
+    }
+
+    [Fact(DisplayName = "A banca da etapa com a votação do recurso pela metade recusa o campo que falta, no caminho da banca")]
+    public async Task Declarar_AtoIndividualComVotacaoPelaMetade_RecusaOsCamposQueFaltam()
+    {
+        EtapaProcesso etapa = NovaEtapa();
+        EtapaProcessoInput entrada = Entrada(
+            Banca(TipoDeEntrevista, RegrasDeDeliberacaoDeTeste.AtoIndividual()),
+            Banca(TipoDeRecursos, RegrasDeDeliberacaoDeTeste.AtoIndividualSoComOQuorum()));
+
+        Result resultado = await Declaracao().DeclararAsync(etapa, entrada, CancellationToken.None);
+
+        resultado.Errors.Select(static erro => erro.Field).Should().BeEquivalentTo(
+        [
+            "bancas[1].regraDeDeliberacao.criterio",
+            "bancas[1].regraDeDeliberacao.encerramento",
+        ]);
+        resultado.Errors.Should().OnlyContain(static erro => erro.Error.Code == "Banca.VotacaoDoRecursoIncompleta");
+        etapa.Bancas.Should().BeEmpty();
+    }
+
     private static DeclaracaoDasBancasDaEtapa Declaracao() => new(new LeituraMemoizada<Guid, TipoBancaView>(
         (tipoId, _) => Task.FromResult<TipoBancaView?>(new[] { TipoDeEntrevista, TipoDeRecursos }.FirstOrDefault(tipo => tipo.Id == tipoId))));
 

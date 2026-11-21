@@ -20,6 +20,9 @@ public sealed class RegraDeDeliberacaoTests
         ResultadoSemUnanimidade? semUnanimidade = null) =>
         new(ModoDeDeliberacao.ColegiadaComVotacao, integrantes, suplentes, quorum, criterio, desempate, encerramento, semUnanimidade);
 
+    private static DeclaracaoDaDeliberacao AtoIndividualComVotacao() =>
+        new(ModoDeDeliberacao.AtoIndividual, 3, 0, 2, CriterioDeVotacao.MaioriaSimples, DesempateDaVotacao.VotoDaPresidencia, EncerramentoDaVotacao.PresidenciaNoQuorum, null);
+
     private static void DeveRecusar(DeclaracaoDaDeliberacao declaracao, string campo, string codigo)
     {
         Result<RegraDeDeliberacao> regra = RegraDeDeliberacao.Criar(declaracao);
@@ -48,14 +51,81 @@ public sealed class RegraDeDeliberacaoTests
         regra.Value!.QuorumExigido.Should().Be(1);
     }
 
-    [Fact(DisplayName = "Ato individual com campo de votação é recusado em cada campo declarado")]
-    public void AtoIndividual_ComCamposDeVotacao_RecusaCadaCampo()
+    [Fact(DisplayName = "Ato individual com a votação do recurso inteira é aceito e o quórum declarado vale")]
+    public void AtoIndividual_ComVotacaoDoRecursoInteira_Aceita()
+    {
+        Result<RegraDeDeliberacao> regra = RegraDeDeliberacao.Criar(AtoIndividualComVotacao());
+
+        regra.IsSuccess.Should().BeTrue();
+        regra.Value!.Declaracao().Should().Be(AtoIndividualComVotacao());
+        regra.Value.QuorumExigido.Should().Be(2);
+    }
+
+    public static TheoryData<DeclaracaoDaDeliberacao, string> VotacoesSemUmCampo => new()
+    {
+        { AtoIndividualComVotacao() with { Quorum = null }, "quorum" },
+        { AtoIndividualComVotacao() with { Criterio = null }, "criterio" },
+        { AtoIndividualComVotacao() with { Encerramento = null }, "encerramento" },
+    };
+
+    [Theory(DisplayName = "Ato individual com a votação pela metade recusa só o campo que falta")]
+    [MemberData(nameof(VotacoesSemUmCampo))]
+    public void AtoIndividual_ComVotacaoPelaMetade_RecusaOCampoQueFalta(DeclaracaoDaDeliberacao declarada, string campoQueFalta)
+    {
+        Result<RegraDeDeliberacao> regra = RegraDeDeliberacao.Criar(declarada);
+
+        FieldError recusa = regra.Errors.Should().ContainSingle().Subject;
+        recusa.Field.Should().Be(campoQueFalta);
+        recusa.Error.Code.Should().Be("Banca.VotacaoDoRecursoIncompleta");
+    }
+
+    [Fact(DisplayName = "Ato individual que declara só o quórum recusa o critério e o encerramento, um por campo")]
+    public void AtoIndividual_SoComOQuorum_RecusaCriterioEEncerramento()
     {
         Result<RegraDeDeliberacao> regra = RegraDeDeliberacao.Criar(
-            new(ModoDeDeliberacao.AtoIndividual, 1, 0, 1, CriterioDeVotacao.MaioriaSimples, null, null, null));
+            new(ModoDeDeliberacao.AtoIndividual, 3, 0, 2, null, null, null, null));
 
-        regra.Errors.Select(static e => e.Field).Should().BeEquivalentTo("quorum", "criterio");
-        regra.Errors.Should().OnlyContain(static e => e.Error.Code == "Banca.AtoIndividualSemVotacao");
+        regra.Errors.Select(static e => e.Field).Should().BeEquivalentTo("criterio", "encerramento");
+        regra.Errors.Should().OnlyContain(static e => e.Error.Code == "Banca.VotacaoDoRecursoIncompleta");
+    }
+
+    [Fact(DisplayName = "Ato individual que declara só o desempate recusa os três campos da votação")]
+    public void AtoIndividual_SoComODesempate_RecusaOsTresCampos()
+    {
+        Result<RegraDeDeliberacao> regra = RegraDeDeliberacao.Criar(
+            new(ModoDeDeliberacao.AtoIndividual, 3, 0, null, null, DesempateDaVotacao.VotoDaPresidencia, null, null));
+
+        regra.Errors.Select(static e => e.Field).Should().BeEquivalentTo("quorum", "criterio", "encerramento");
+        regra.Errors.Should().OnlyContain(static e => e.Error.Code == "Banca.VotacaoDoRecursoIncompleta");
+    }
+
+    [Fact(DisplayName = "A votação pela metade acumula a recusa do campo que falta com a do campo declarado fora da regra")]
+    public void AtoIndividual_ComVotacaoPelaMetadeEQuorumForaDoIntervalo_AcumulaAsDuasRecusas()
+    {
+        Result<RegraDeDeliberacao> regra = RegraDeDeliberacao.Criar(
+            new(ModoDeDeliberacao.AtoIndividual, 3, 0, 9, CriterioDeVotacao.Unanimidade, null, null, ResultadoSemUnanimidade.NovaVotacao));
+
+        regra.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
+        [
+            ("encerramento", "Banca.VotacaoDoRecursoIncompleta"),
+            ("quorum", "Banca.QuorumForaDoIntervalo"),
+        ]);
+    }
+
+    [Fact(DisplayName = "As regras de cada campo continuam valendo na votação do recurso do ato individual")]
+    public void AtoIndividual_ComVotacaoInteira_AplicaAsRegrasDeCadaCampo()
+    {
+        DeveRecusar(AtoIndividualComVotacao() with { Desempate = null }, "desempate", "Banca.DesempateObrigatorio");
+        DeveRecusar(
+            AtoIndividualComVotacao() with { Encerramento = EncerramentoDaVotacao.TodosOsTitulares }, "quorum", "Banca.QuorumIncoerente");
+    }
+
+    [Fact(DisplayName = "A deliberação colegiada sem critério nem encerramento segue recusada pelas regras de sempre")]
+    public void Colegiada_SemCriterioNemEncerramento_NaoRecusaComoVotacaoDoRecursoIncompleta()
+    {
+        Result<RegraDeDeliberacao> regra = RegraDeDeliberacao.Criar(Votacao(criterio: null, encerramento: null));
+
+        regra.Errors.Select(static e => e.Error.Code).Should().NotContain("Banca.VotacaoDoRecursoIncompleta");
     }
 
     [Fact(DisplayName = "Modo fora do vocabulário é recusado")]
@@ -92,6 +162,16 @@ public sealed class RegraDeDeliberacaoTests
     {
         DeveRecusar(
             Votacao(quorum: 2, encerramento: EncerramentoDaVotacao.TodosOsTitulares), "quorum", "Banca.QuorumIncoerente");
+    }
+
+    [Fact(DisplayName = "A recusa do quórum incoerente diz o quórum exigido e não repete o quórum declarado")]
+    public void QuorumIncoerente_DizOExigidoENaoRepeteODeclarado()
+    {
+        Result<RegraDeDeliberacao> regra = RegraDeDeliberacao.Criar(
+            Votacao(quorum: 2, encerramento: EncerramentoDaVotacao.TodosOsTitulares));
+
+        string mensagem = regra.Errors.Single(static e => e.Error.Code == "Banca.QuorumIncoerente").Error.Message;
+        mensagem.Should().Contain("igual ao número de integrantes (3)").And.NotContain("declarado");
     }
 
     [Fact(DisplayName = "Todos os titulares com quórum igual aos integrantes é aceito")]
