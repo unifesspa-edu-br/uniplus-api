@@ -54,7 +54,7 @@ public sealed class LeituraDasRegrasCitadasNaConfiguracaoTests
     {
         RegraCatalogo regra = RegrasDeConsolidacaoDeTeste.Regra(
             RegraConsolidacaoCodigo.ConceitoMaioriaSimples,
-            $$"""{"corretores_distintos":3,"criterio":"maioria_simples","naturezas_do_conceito":["categorico"],"quando_nao_consolida":"{{tratamento}}"}""");
+            $$"""{"corretores_distintos":3,"criterio":"maioria_simples","naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"{{tratamento}}"}""");
         ProcessoSeletivo processo = ProcessoComCorrecaoIndependente.ComRegras(regra.Referencia());
 
         CorretoresDasEtapas corretores = await Ler(RegrasDeConsolidacaoDeTeste.Catalogo(regra), processo);
@@ -109,7 +109,7 @@ public sealed class LeituraDasRegrasCitadasNaConfiguracaoTests
     {
         ProcessoSeletivo processo = ProcessoComCorrecaoIndependente.ComRegras(ProcessoComCorrecaoIndependente.CorrecaoIndependente);
         RegraCatalogo outraDefinicao = RegrasDeConsolidacaoDeTeste.Regra(
-            RegraConsolidacaoCodigo.CorrecaoIndependente, """{"corretores_distintos":4,"naturezas_do_conceito":["numerico"]}""");
+            RegraConsolidacaoCodigo.CorrecaoIndependente, """{"corretores_distintos":4,"naturezas_do_conceito":["NUMERICO"]}""");
 
         CorretoresDasEtapas corretores = await Ler(RegrasDeConsolidacaoDeTeste.Catalogo(outraDefinicao), processo);
 

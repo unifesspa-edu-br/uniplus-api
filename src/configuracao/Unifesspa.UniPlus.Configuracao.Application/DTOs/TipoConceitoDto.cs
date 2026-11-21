@@ -2,13 +2,16 @@ namespace Unifesspa.UniPlus.Configuracao.Application.DTOs;
 
 using System.Text.Json.Serialization;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+
 /// <summary>Representação pública de um tipo de conceito: o <c>Numerico</c> só no numérico e os <c>Valores</c> só no categórico.</summary>
 public sealed record TipoConceitoDto(
     Guid Id,
     string Codigo,
     string Nome,
     string? Descricao,
-    string Natureza,
+    CodigoComRotulo<NaturezaConceito> Natureza,
     bool Ativo,
     EscalaNumericaDto? Numerico,
     IReadOnlyList<ValorCategoricoDto>? Valores)

@@ -36,10 +36,10 @@ public sealed class TipoEtapaConceitosAdmitidosEndpointTests
 
         using JsonDocument tipo = await LerTipoAsync(client, id);
         tipo.RootElement.GetProperty("conceitosAdmitidos").EnumerateArray()
-            .Select(conceito => (conceito.GetProperty("codigo").GetString(), conceito.GetProperty("nome").GetString(), conceito.GetProperty("natureza").GetString()))
+            .Select(conceito => (conceito.GetProperty("codigo").GetString(), conceito.GetProperty("nome").GetString(), conceito.GetProperty("natureza").GetProperty("codigo").GetString()))
             .Should().Equal(
-                ($"{prefixo}_NOTA", "Nota da entrevista", "numerico"),
-                ($"{prefixo}_PARECER", "Parecer da análise", "categorico"));
+                ($"{prefixo}_NOTA", "Nota da entrevista", "NUMERICO"),
+                ($"{prefixo}_PARECER", "Parecer da análise", "CATEGORICO"));
     }
 
     [Fact(DisplayName = "A listagem pública traz os conceitos admitidos de cada tipo de etapa")]

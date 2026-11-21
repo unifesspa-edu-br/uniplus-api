@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Extensions;
 
 /// <summary>Reader cross-módulo dos tipos de conceito ativos; não expõe tipos desativados.</summary>
@@ -45,7 +46,7 @@ internal sealed class TipoConceitoReader : ITipoConceitoReader
 
     private static TipoConceitoView ParaView(TipoConceito tipo) =>
         new(
-            tipo.Id, tipo.Codigo, tipo.Nome, tipo.Descricao, NaturezasConceito.ParaContrato(tipo.Natureza),
+            tipo.Id, tipo.Codigo, tipo.Nome, tipo.Descricao, tipo.Natureza.Codigo(),
             tipo.Natureza == NaturezaConceito.Numerico
                 ? new EscalaNumericaView(tipo.EscalaMinima!.Value, tipo.EscalaMaxima!.Value, tipo.CasasDecimais!.Value)
                 : null,

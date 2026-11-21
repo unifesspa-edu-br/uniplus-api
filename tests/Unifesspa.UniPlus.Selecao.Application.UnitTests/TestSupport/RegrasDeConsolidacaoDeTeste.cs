@@ -17,18 +17,18 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 internal static class RegrasDeConsolidacaoDeTeste
 {
     public static RegraCatalogo AvaliacaoUnica { get; } = Regra(
-        RegraConsolidacaoCodigo.AvaliacaoUnica, """{"corretores_distintos":1,"naturezas_do_conceito":["categorico","numerico"]}""");
+        RegraConsolidacaoCodigo.AvaliacaoUnica, """{"corretores_distintos":1,"naturezas_do_conceito":["CATEGORICO","NUMERICO"]}""");
 
     public static RegraCatalogo CorrecaoIndependente { get; } = Regra(
-        RegraConsolidacaoCodigo.CorrecaoIndependente, """{"corretores_distintos":3,"naturezas_do_conceito":["numerico"]}""");
+        RegraConsolidacaoCodigo.CorrecaoIndependente, """{"corretores_distintos":3,"naturezas_do_conceito":["NUMERICO"]}""");
 
     public static RegraCatalogo ConceitoMaioriaSimples { get; } = Regra(
         RegraConsolidacaoCodigo.ConceitoMaioriaSimples,
-        """{"corretores_distintos":3,"criterio":"maioria_simples","naturezas_do_conceito":["categorico"],"quando_nao_consolida":"novo_corretor"}""");
+        """{"corretores_distintos":3,"criterio":"maioria_simples","naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"novo_corretor"}""");
 
     public static RegraCatalogo ConceitoUnanimidade { get; } = Regra(
         RegraConsolidacaoCodigo.ConceitoUnanimidade,
-        """{"corretores_distintos":2,"criterio":"unanimidade","naturezas_do_conceito":["categorico"],"quando_nao_consolida":"decisao_da_banca"}""");
+        """{"corretores_distintos":2,"criterio":"unanimidade","naturezas_do_conceito":["CATEGORICO"],"quando_nao_consolida":"decisao_da_banca"}""");
 
     public static RegraCatalogo Regra(string codigo, string declaracaoDaRegra, string versao = "v1")
     {

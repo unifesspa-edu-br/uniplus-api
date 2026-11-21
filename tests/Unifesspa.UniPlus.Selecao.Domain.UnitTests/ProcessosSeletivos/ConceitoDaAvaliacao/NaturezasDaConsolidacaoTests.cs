@@ -30,21 +30,21 @@ public sealed class NaturezasDaConsolidacaoTests
         Regra(codigo, versao, JsonSerializer.Serialize(new Dictionary<string, string[]> { ["naturezas_do_conceito"] = naturezas }));
 
     private static ConceitoDaEtapa Numerico() =>
-        ConceitoDaEtapa.Criar("NOTA", "Nota", NaturezaConceitoCodigo.Numerico, new EscalaInformada(0m, 10m, 2), null).Value!;
+        ConceitoDaEtapa.Criar("NOTA", "Nota", NaturezaConceito.Numerico, new EscalaInformada(0m, 10m, 2), null).Value!;
 
     private static ConceitoDaEtapa Categorico() =>
         ConceitoDaEtapa.Criar(
-            "APTO_INAPTO", "Apto ou inapto", NaturezaConceitoCodigo.Categorico, null,
+            "APTO_INAPTO", "Apto ou inapto", NaturezaConceito.Categorico, null,
             [new ValorCategoricoInformado("APTO", "Apto", true), new ValorCategoricoInformado("INAPTO", "Inapto", false)]).Value!;
 
     private static ReferenciaRegra ReferenciaDaRegra() =>
         ReferenciaRegra.De(RegraConsolidacaoCodigo.AvaliacaoUnica, "v1", HashQualquer);
 
     private static IReadOnlyList<NaturezaConceito> AvaliacaoUnica() =>
-        NaturezasDaConsolidacao.De(ComNaturezas(RegraConsolidacaoCodigo.AvaliacaoUnica, "v1", "numerico", "categorico"));
+        NaturezasDaConsolidacao.De(ComNaturezas(RegraConsolidacaoCodigo.AvaliacaoUnica, "v1", "NUMERICO", "CATEGORICO"));
 
     private static IReadOnlyList<NaturezaConceito> CorrecaoIndependente() =>
-        NaturezasDaConsolidacao.De(ComNaturezas(RegraConsolidacaoCodigo.CorrecaoIndependente, "v1", "numerico"));
+        NaturezasDaConsolidacao.De(ComNaturezas(RegraConsolidacaoCodigo.CorrecaoIndependente, "v1", "NUMERICO"));
 
     [Fact(DisplayName = "As naturezas saem do esquema da versão, na ordem declarada")]
     public void De_LeAsNaturezasDaVersao()
@@ -56,7 +56,7 @@ public sealed class NaturezasDaConsolidacaoTests
     [Fact(DisplayName = "A natureza repetida no esquema conta uma vez")]
     public void De_NaturezaRepetida_ContaUmaVez()
     {
-        NaturezasDaConsolidacao.De(ComNaturezas("CONSOLIDACAO-CATEGORICA", "v1", "categorico", "categorico"))
+        NaturezasDaConsolidacao.De(ComNaturezas("CONSOLIDACAO-CATEGORICA", "v1", "CATEGORICO", "CATEGORICO"))
             .Should().Equal(NaturezaConceito.Categorico);
     }
 
@@ -72,8 +72,9 @@ public sealed class NaturezasDaConsolidacaoTests
 
     [Theory(DisplayName = "O esquema com a chave vazia, fora de uma lista ou com token desconhecido é defeito de semente")]
     [InlineData("""{"naturezas_do_conceito":[]}""")]
-    [InlineData("""{"naturezas_do_conceito":"numerico"}""")]
-    [InlineData("""{"naturezas_do_conceito":["numerico","Categorico"]}""")]
+    [InlineData("""{"naturezas_do_conceito":"NUMERICO"}""")]
+    [InlineData("""{"naturezas_do_conceito":["NUMERICO","Categorico"]}""")]
+    [InlineData("""{"naturezas_do_conceito":["numerico"]}""")]
     [InlineData("""{"naturezas_do_conceito":[""]}""")]
     [InlineData("""{"naturezas_do_conceito":[null]}""")]
     [InlineData("""{"naturezas_do_conceito":[1]}""")]
@@ -112,7 +113,7 @@ public sealed class NaturezasDaConsolidacaoTests
     [Fact(DisplayName = "A regra de consolidação categórica com conceito numérico é recusada")]
     public void Recusa_RegraCategoricaComNumerico_Recusa()
     {
-        IReadOnlyList<NaturezaConceito> categorica = NaturezasDaConsolidacao.De(ComNaturezas("CONSOLIDACAO-CATEGORICA", "v1", "categorico"));
+        IReadOnlyList<NaturezaConceito> categorica = NaturezasDaConsolidacao.De(ComNaturezas("CONSOLIDACAO-CATEGORICA", "v1", "CATEGORICO"));
 
         NaturezasDaConsolidacao.Recusa(Numerico(), categorica)!.Error.Code.Should().Be(ConceitoDaEtapaErrorCodes.ConsolidacaoIncompativel);
         NaturezasDaConsolidacao.Recusa(Categorico(), categorica).Should().BeNull();
@@ -121,8 +122,8 @@ public sealed class NaturezasDaConsolidacaoTests
     [Fact(DisplayName = "A versão nova da regra com mais naturezas não muda o que a versão antiga aceita")]
     public void Recusa_VersaoNovaNaoAlteraAVersaoAntiga()
     {
-        IReadOnlyList<NaturezaConceito> antiga = NaturezasDaConsolidacao.De(ComNaturezas("CONSOLIDACAO-X", "v1", "numerico"));
-        IReadOnlyList<NaturezaConceito> nova = NaturezasDaConsolidacao.De(ComNaturezas("CONSOLIDACAO-X", "v2", "numerico", "categorico"));
+        IReadOnlyList<NaturezaConceito> antiga = NaturezasDaConsolidacao.De(ComNaturezas("CONSOLIDACAO-X", "v1", "NUMERICO"));
+        IReadOnlyList<NaturezaConceito> nova = NaturezasDaConsolidacao.De(ComNaturezas("CONSOLIDACAO-X", "v2", "NUMERICO", "CATEGORICO"));
 
         NaturezasDaConsolidacao.Recusa(Categorico(), antiga).Should().NotBeNull();
         NaturezasDaConsolidacao.Recusa(Categorico(), nova).Should().BeNull();

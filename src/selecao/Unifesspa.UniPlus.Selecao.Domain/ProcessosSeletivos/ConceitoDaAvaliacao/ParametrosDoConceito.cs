@@ -11,17 +11,10 @@ internal sealed record ParametrosDoConceito(NaturezaConceito Natureza, EscalaNum
 {
     /// <summary>Os parâmetros copiados, ou <see langword="null"/> com as recusas acumuladas em <paramref name="erros"/>.</summary>
     internal static ParametrosDoConceito? Conferir(
-        string? natureza, EscalaInformada? escala, IReadOnlyList<ValorCategoricoInformado?>? valores, List<FieldError> erros)
+        NaturezaConceito natureza, EscalaInformada? escala, IReadOnlyList<ValorCategoricoInformado?>? valores, List<FieldError> erros)
     {
-        if (!NaturezaConceitoCodigo.TentarConverter(natureza, out NaturezaConceito lida))
-        {
-            erros.Add(new("natureza", new DomainError(
-                ConceitoDaEtapaErrorCodes.NaturezaInvalida, "A natureza do conceito deve ser numerico ou categorico.")));
-            return null;
-        }
-
         int errosAntes = erros.Count;
-        ParametrosDoConceito? parametros = lida == NaturezaConceito.Numerico
+        ParametrosDoConceito? parametros = natureza == NaturezaConceito.Numerico
             ? DoNumerico(escala, valores, erros)
             : DoCategorico(escala, valores, erros);
         return erros.Count == errosAntes ? parametros : null;

@@ -128,7 +128,7 @@ public sealed class TipoEtapaConceitosAdmitidosPersistenceTests
 
     private static TipoConceito Conceito(string codigo) => TipoConceito.Criar(
         codigo,
-        new DefinicaoInformada("Nota da entrevista", null, "numerico", new EscalaInformada(0m, 10m, 2), null)).Value!;
+        new DefinicaoInformada("Nota da entrevista", null, "NUMERICO", new EscalaInformada(0m, 10m, 2), null)).Value!;
 
     private async Task GravarConceitosAsync(params TipoConceito[] conceitos)
     {

@@ -9,9 +9,6 @@ public static class ConceitoDaEtapaErrorCodes
     /// <summary>O nome do conceito está ausente, é longo demais ou traz caractere inválido.</summary>
     public const string NomeInvalido = "ConceitoDaEtapa.NomeInvalido";
 
-    /// <summary>A natureza do conceito está ausente ou não é numérica nem categórica.</summary>
-    public const string NaturezaInvalida = "ConceitoDaEtapa.NaturezaInvalida";
-
     /// <summary>Os parâmetros do conceito não são os da sua natureza: o numérico tem escala e nenhum valor, o categórico tem valores e nenhuma escala.</summary>
     public const string NaturezaIncoerente = "ConceitoDaEtapa.NaturezaIncoerente";
 

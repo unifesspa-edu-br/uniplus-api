@@ -2,6 +2,9 @@ namespace Unifesspa.UniPlus.Configuracao.Application.DTOs;
 
 using System.Text.Json.Serialization;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+
 /// <summary>Representação pública de um tipo de etapa ativo.</summary>
 public sealed record TipoEtapaDto(
     Guid Id,
@@ -21,5 +24,5 @@ public sealed record TipoEtapaDto(
     public IReadOnlyDictionary<string, string>? Links { get; init; }
 }
 
-/// <summary>Um tipo de conceito admitido pelo tipo de etapa; a natureza é <c>numerico</c> ou <c>categorico</c>.</summary>
-public sealed record ConceitoAdmitidoDto(string Codigo, string Nome, string Natureza);
+/// <summary>Um tipo de conceito admitido pelo tipo de etapa; a natureza sai com código e rótulo.</summary>
+public sealed record ConceitoAdmitidoDto(string Codigo, string Nome, CodigoComRotulo<NaturezaConceito> Natureza);

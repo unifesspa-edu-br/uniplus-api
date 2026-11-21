@@ -13,7 +13,7 @@ public sealed class TipoConceitoMappingTests
     {
         TipoConceitoDto dto = TiposConceitoDeTeste.Numerico().ToDto();
 
-        dto.Natureza.Should().Be("numerico");
+        (dto.Natureza.Codigo, dto.Natureza.Rotulo).Should().Be(("NUMERICO", "Numérico"));
         dto.Numerico.Should().Be(new EscalaNumericaDto(0m, 10m, 2));
         dto.Valores.Should().BeNull();
     }
@@ -23,7 +23,7 @@ public sealed class TipoConceitoMappingTests
     {
         TipoConceitoDto dto = TiposConceitoDeTeste.Categorico().ToDto();
 
-        dto.Natureza.Should().Be("categorico");
+        (dto.Natureza.Codigo, dto.Natureza.Rotulo).Should().Be(("CATEGORICO", "Categórico"));
         dto.Numerico.Should().BeNull();
         dto.Valores.Should().Equal(new ValorCategoricoDto("DEFERIDO", "Deferido", true), new ValorCategoricoDto("INDEFERIDO", "Indeferido", false));
     }

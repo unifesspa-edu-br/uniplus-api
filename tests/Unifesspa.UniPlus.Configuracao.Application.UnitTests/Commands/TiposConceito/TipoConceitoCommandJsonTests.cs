@@ -34,7 +34,7 @@ public sealed class TipoConceitoCommandJsonTests
     {
         const string json = """
         {
-          "codigo": "PARECER", "nome": "Parecer", "natureza": "categorico", "numerico": null,
+          "codigo": "PARECER", "nome": "Parecer", "natureza": "CATEGORICO", "numerico": null,
           "valores": [
             { "codigo": "B", "rotulo": "Beta", "contaComoAprovacao": false },
             { "codigo": "A", "rotulo": "Alfa", "contaComoAprovacao": true }
@@ -52,7 +52,7 @@ public sealed class TipoConceitoCommandJsonTests
     public void Criar_Numerico_Desserializa()
     {
         const string json = """
-        { "codigo": "NOTA", "nome": "Nota", "natureza": "numerico",
+        { "codigo": "NOTA", "nome": "Nota", "natureza": "NUMERICO",
           "numerico": { "escalaMinima": 0, "escalaMaxima": 10, "casasDecimais": 2 }, "valores": null }
         """;
 

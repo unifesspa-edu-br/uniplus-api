@@ -17,7 +17,7 @@ public sealed class ConsolidacaoDoConceitoCategoricoTests
 
     private static ConceitoDaEtapa Conceito(params string[] codigos) =>
         ConceitoDaEtapa.Criar(
-            "CONCEITO", "Conceito", NaturezaConceitoCodigo.Categorico, null,
+            "CONCEITO", "Conceito", NaturezaConceito.Categorico, null,
             [.. codigos.Select(static codigo => new ValorCategoricoInformado(codigo, codigo, codigo == "APTO"))]).Value!;
 
     private static ConceitoDaEtapa AptoInapto() => Conceito("APTO", "INAPTO");
@@ -25,7 +25,7 @@ public sealed class ConsolidacaoDoConceitoCategoricoTests
     private static ConceitoDaEtapa AptoInaptoEPendente() => Conceito("APTO", "INAPTO", "PENDENTE");
 
     private static ConceitoDaEtapa Numerico() =>
-        ConceitoDaEtapa.Criar("NOTA", "Nota", NaturezaConceitoCodigo.Numerico, new EscalaInformada(0m, 10m, 2), null).Value!;
+        ConceitoDaEtapa.Criar("NOTA", "Nota", NaturezaConceito.Numerico, new EscalaInformada(0m, 10m, 2), null).Value!;
 
     private static ResultadoDaConsolidacaoDoConceito Consolidar(
         CriterioDeConsolidacaoDoConceito criterio, int corretores, params string[] atribuicoes) =>

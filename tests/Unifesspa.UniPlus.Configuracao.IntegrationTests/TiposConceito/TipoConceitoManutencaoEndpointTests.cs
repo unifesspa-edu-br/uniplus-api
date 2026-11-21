@@ -139,7 +139,7 @@ public sealed class TipoConceitoManutencaoEndpointTests
 
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
         using JsonDocument tipo = await LerAsync(await ObterAsync(client, id));
-        tipo.RootElement.GetProperty("natureza").GetString().Should().Be("categorico");
+        tipo.RootElement.GetProperty("natureza").GetProperty("codigo").GetString().Should().Be("CATEGORICO");
         tipo.RootElement.GetProperty("valores").GetArrayLength().Should().Be(2);
         Ausente(tipo.RootElement, "numerico").Should().BeTrue("a escala da natureza anterior é descartada");
     }

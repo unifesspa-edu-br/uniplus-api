@@ -82,7 +82,7 @@ public sealed class TipoConceitoLeituraEndpointTests
         resposta.StatusCode.Should().Be(HttpStatusCode.OK);
         using JsonDocument tipo = await LerAsync(resposta);
         JsonElement raiz = tipo.RootElement;
-        (raiz.GetProperty("codigo").GetString(), raiz.GetProperty("natureza").GetString()).Should().Be((codigo, "numerico"));
+        (raiz.GetProperty("codigo").GetString(), raiz.GetProperty("natureza").GetProperty("codigo").GetString()).Should().Be((codigo, "NUMERICO"));
         raiz.GetProperty("ativo").GetBoolean().Should().BeTrue();
         raiz.GetProperty("numerico").GetProperty("escalaMaxima").GetDecimal().Should().Be(10m);
         Ausente(raiz, "valores").Should().BeTrue("o tipo numérico não tem valores categóricos");

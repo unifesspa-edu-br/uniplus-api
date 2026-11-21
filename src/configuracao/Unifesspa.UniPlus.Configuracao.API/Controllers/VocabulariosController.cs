@@ -104,6 +104,21 @@ public sealed class VocabulariosController : ControllerBase
         return Ok(codigos);
     }
 
+    /// <summary>Lista as naturezas de tipo de conceito, com código e rótulo, na ordem do enum.</summary>
+    [HttpGet("vocabularios/naturezas-conceito")]
+    [AllowAnonymous]
+    [VendorMediaType(Resource = "codigo-natureza-conceito", Versions = [1])]
+    [ProducesResponseType(typeof(IEnumerable<CodigoComRotulo<NaturezaConceito>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> ListarNaturezasConceito(CancellationToken cancellationToken)
+    {
+        IReadOnlyList<CodigoComRotulo<NaturezaConceito>> naturezas = await _queryBus
+            .Send(new ListarNaturezasConceitoQuery(), cancellationToken)
+            .ConfigureAwait(false);
+
+        return Ok(naturezas);
+    }
+
     /// <summary>
     /// Lista os quatro grupos de área do ENEM (Anexo I da Resolução nº 805/2024/Consepe),
     /// com código e rótulo, na ordem de exibição — para os formulários de cursos e de

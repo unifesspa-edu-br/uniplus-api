@@ -103,6 +103,21 @@ public sealed class VocabulariosEndpointTests
         "CHAMADA",
     ];
 
+    [Fact(DisplayName = "GET /vocabularios/naturezas-conceito devolve código e rótulo na ordem do enum, sem exigir autenticação nem cabeçalho de cache")]
+    public async Task ListarNaturezasConceito_DevolveCodigoERotuloNaOrdemDoEnum()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await client.GetAsync(
+            new Uri("/api/configuracao/vocabularios/naturezas-conceito", UriKind.Relative));
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Content.Headers.ContentType!.MediaType.Should()
+            .Be("application/vnd.uniplus.codigo-natureza-conceito.v1+json");
+        response.Headers.CacheControl.Should().BeNull();
+        CodigoComRotulo<NaturezaConceito>[] naturezas =
+            (await response.Content.ReadFromJsonAsync<CodigoComRotulo<NaturezaConceito>[]>())!;
+        naturezas.Select(static n => (n.Codigo, n.Rotulo)).Should().Equal(("NUMERICO", "Numérico"), ("CATEGORICO", "Categórico"));
+    }
+
     [Fact(DisplayName = "GET /vocabularios/fases-canonicas devolve os dezesseis códigos com nome, na ordem publicada, sem exigir autenticação")]
     public async Task ListarCodigosFaseCanonica_DevolveVocabularioCompleto()
     {
@@ -152,6 +167,7 @@ public sealed class VocabulariosEndpointTests
 
     [Theory(DisplayName = "Vocabulário governado por código não tem rota de escrita — evolução é mudança versionada da API, não cadastro")]
     [InlineData("/api/configuracao/vocabularios/tipos-banca")]
+    [InlineData("/api/configuracao/vocabularios/naturezas-conceito")]
     [InlineData("/api/configuracao/vocabularios/fases-canonicas")]
     [InlineData("/api/configuracao/vocabularios/tipos-instrumento-normativo")]
     [InlineData("/api/configuracao/vocabularios/grupos-area-enem")]

@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.TiposConceito;
 using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 using Npgsql;
 
@@ -133,13 +134,60 @@ public sealed class TipoConceitoPersistenceTests
         return await Record.ExceptionAsync(() => contextoB.SaveChangesAsync());
     }
 
+    [Fact(DisplayName = "A natureza é gravada pelo código declarado no enum")]
+    public async Task Gravar_Natureza_GravaOCodigoDeclarado()
+    {
+        TipoConceito tipo = Novo(Categorico("APROVADO"));
+        await Gravar(tipo);
+
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+        string gravada = await ctx.Database
+            .SqlQuery<string>($"SELECT natureza AS \"Value\" FROM configuracao.tipos_conceito WHERE id = {tipo.Id}")
+            .SingleAsync();
+        gravada.Should().Be("CATEGORICO");
+    }
+
+    [Fact(DisplayName = "As restrições da natureza são montadas dos códigos declarados, com o mesmo texto de sempre")]
+    public async Task Modelo_RestricoesDaNatureza_UsamOsCodigosDeclarados()
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        Dictionary<string, string> restricoes = ctx.Model.FindEntityType(typeof(TipoConceito))!
+            .GetCheckConstraints()
+            .ToDictionary(static c => c.Name!, static c => c.Sql);
+
+        restricoes["ck_tipos_conceito_natureza"].Should().Be("natureza IN ('NUMERICO', 'CATEGORICO')");
+        restricoes["ck_tipos_conceito_parametros_da_natureza"].Should().Be(
+            "(natureza = 'NUMERICO' AND escala_minima IS NOT NULL AND escala_maxima IS NOT NULL AND casas_decimais IS NOT NULL "
+            + "AND escala_minima < escala_maxima AND casas_decimais BETWEEN 0 AND 4) "
+            + "OR (natureza = 'CATEGORICO' AND escala_minima IS NULL AND escala_maxima IS NULL AND casas_decimais IS NULL)");
+    }
+
+    [Fact(DisplayName = "A leitura de uma natureza que o enum não declara falha em vez de virar natureza")]
+    public async Task Ler_NaturezaDesconhecidaNoBanco_Falha()
+    {
+        TipoConceito tipo = Novo(Numerico());
+        await Gravar(tipo);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using IDbContextTransaction transacao = await ctx.Database.BeginTransactionAsync();
+        await ctx.Database.ExecuteSqlRawAsync(
+            "ALTER TABLE configuracao.tipos_conceito DROP CONSTRAINT ck_tipos_conceito_natureza, DROP CONSTRAINT ck_tipos_conceito_parametros_da_natureza");
+        await ctx.Database.ExecuteSqlInterpolatedAsync($"UPDATE configuracao.tipos_conceito SET natureza = 'ORDINAL' WHERE id = {tipo.Id}");
+
+        Func<Task> ler = async () => await ctx.Set<TipoConceito>().AsNoTracking().SingleAsync(t => t.Id == tipo.Id);
+
+        Exception falha = (await ler.Should().ThrowAsync<Exception>()).Which;
+        await transacao.RollbackAsync();
+        falha.GetBaseException().Should().BeOfType<ArgumentException>();
+    }
+
     private static string Codigo() => TiposConceitoHttpDeTeste.CodigoUnico();
 
     private static DefinicaoInformada Numerico() =>
-        new("Nota da entrevista", null, "numerico", new EscalaInformada(0m, 10m, 2), null);
+        new("Nota da entrevista", null, "NUMERICO", new EscalaInformada(0m, 10m, 2), null);
 
     private static DefinicaoInformada Categorico(params string[] codigos) =>
-        new("Parecer da análise", null, "categorico", null,
+        new("Parecer da análise", null, "CATEGORICO", null,
             [.. codigos.Select(codigo => new ValorInformado(codigo, $"Rótulo {codigo}", codigo == "APROVADO"))]);
 
     private static TipoConceito Novo(DefinicaoInformada definicao, string? codigo = null) =>

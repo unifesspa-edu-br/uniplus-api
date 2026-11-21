@@ -16,11 +16,11 @@ public sealed class ConceitoDaEtapaTests
         [new("APTO", "Apto", true), new("INAPTO", "Inapto", false)];
 
     private static Result<ConceitoDaEtapa> Numerico(EscalaInformada? escala, IReadOnlyList<ValorCategoricoInformado?>? valores = null) =>
-        ConceitoDaEtapa.Criar("NOTA", "Nota", NaturezaConceitoCodigo.Numerico, escala, valores);
+        ConceitoDaEtapa.Criar("NOTA", "Nota", NaturezaConceito.Numerico, escala, valores);
 
     private static Result<ConceitoDaEtapa> Categorico(
         IReadOnlyList<ValorCategoricoInformado?>? valores, EscalaInformada? escala = null) =>
-        ConceitoDaEtapa.Criar("APTO_INAPTO", "Apto ou inapto", NaturezaConceitoCodigo.Categorico, escala, valores);
+        ConceitoDaEtapa.Criar("APTO_INAPTO", "Apto ou inapto", NaturezaConceito.Categorico, escala, valores);
 
     private static (string? Campo, string Codigo)[] Pares(Result<ConceitoDaEtapa> resultado) =>
         [.. resultado.Errors.Select(static erro => (erro.Field, erro.Error.Code))];
@@ -142,25 +142,13 @@ public sealed class ConceitoDaEtapaTests
         Pares(Numerico(new(0m, 10m, casas))).Should().Equal(("escala.casasDecimais", ConceitoDaEtapaErrorCodes.CasasDecimaisInvalidas));
     }
 
-    [Theory(DisplayName = "A natureza ausente ou fora dos tokens é recusada, nunca tratada como ausente")]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("numérico")]
-    [InlineData("NUMERICO")]
-    public void Criar_NaturezaDesconhecida_Recusa(string? natureza)
-    {
-        Result<ConceitoDaEtapa> resultado = ConceitoDaEtapa.Criar("NOTA", "Nota", natureza, new EscalaInformada(0m, 10m, 2), null);
-
-        Pares(resultado).Should().Equal(("natureza", ConceitoDaEtapaErrorCodes.NaturezaInvalida));
-    }
-
     [Theory(DisplayName = "O código e o nome ausentes, em branco ou com o caractere nulo são recusados")]
     [InlineData(null)]
     [InlineData("  ")]
     [InlineData("A\0B")]
     public void Criar_CodigoENomeInvalidos_Recusa(string? texto)
     {
-        Result<ConceitoDaEtapa> resultado = ConceitoDaEtapa.Criar(texto, texto, NaturezaConceitoCodigo.Numerico, new EscalaInformada(0m, 10m, 2), null);
+        Result<ConceitoDaEtapa> resultado = ConceitoDaEtapa.Criar(texto, texto, NaturezaConceito.Numerico, new EscalaInformada(0m, 10m, 2), null);
 
         Pares(resultado).Should().Equal(
             ("codigo", ConceitoDaEtapaErrorCodes.CodigoInvalido), ("nome", ConceitoDaEtapaErrorCodes.NomeInvalido));
@@ -171,7 +159,7 @@ public sealed class ConceitoDaEtapaTests
     {
         string longo = new('X', 65);
 
-        Result<ConceitoDaEtapa> resultado = ConceitoDaEtapa.Criar(longo, "Nota", NaturezaConceitoCodigo.Numerico, new EscalaInformada(0m, 10m, 2), null);
+        Result<ConceitoDaEtapa> resultado = ConceitoDaEtapa.Criar(longo, "Nota", NaturezaConceito.Numerico, new EscalaInformada(0m, 10m, 2), null);
 
         resultado.Error!.Code.Should().Be(ConceitoDaEtapaErrorCodes.CodigoInvalido);
         resultado.Error.Message.Should().NotContain(longo);
@@ -202,16 +190,16 @@ public sealed class ConceitoDaEtapaTests
         const string RotuloDecomposto = "Não apto";
 
         ConceitoDaEtapa conceito = ConceitoDaEtapa.Criar(
-            "AVALIACAO", NomeDecomposto, NaturezaConceitoCodigo.Categorico, null, [new("APTO", "Apto", true), new("NAO_APTO", RotuloDecomposto, false)]).Value!;
+            "AVALIACAO", NomeDecomposto, NaturezaConceito.Categorico, null, [new("APTO", "Apto", true), new("NAO_APTO", RotuloDecomposto, false)]).Value!;
 
         conceito.Nome.Should().Be("Avaliação");
         conceito.Valores[1].Rotulo.Should().Be("Não apto");
     }
 
-    [Fact(DisplayName = "As recusas de código, nome, natureza e parâmetros se acumulam no mesmo resultado")]
+    [Fact(DisplayName = "As recusas de código, nome e parâmetros se acumulam no mesmo resultado")]
     public void Criar_VariasRecusas_Acumula()
     {
-        Result<ConceitoDaEtapa> resultado = ConceitoDaEtapa.Criar(" ", null, NaturezaConceitoCodigo.Numerico, new EscalaInformada(5m, 5m, 9), AptoEInapto());
+        Result<ConceitoDaEtapa> resultado = ConceitoDaEtapa.Criar(" ", null, NaturezaConceito.Numerico, new EscalaInformada(5m, 5m, 9), AptoEInapto());
 
         Pares(resultado).Should().Equal(
             ("codigo", ConceitoDaEtapaErrorCodes.CodigoInvalido),

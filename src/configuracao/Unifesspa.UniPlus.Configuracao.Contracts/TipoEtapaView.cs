@@ -32,5 +32,5 @@ public sealed record TipoEtapaView(
     bool ExigeCorrecaoIndependente,
     IReadOnlyList<ConceitoAdmitidoView> ConceitosAdmitidos);
 
-/// <summary>Um tipo de conceito admitido pelo tipo de etapa; a natureza usa o nome do contrato REST (<c>numerico</c> ou <c>categorico</c>).</summary>
+/// <summary>Um tipo de conceito admitido pelo tipo de etapa; a natureza é o código declarado de <c>NaturezaConceito</c> (ADR-0176).</summary>
 public sealed record ConceitoAdmitidoView(string Codigo, string Nome, string Natureza);

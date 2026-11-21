@@ -24,7 +24,7 @@ internal static class TiposConceitoHttpDeTeste
         ["codigo"] = codigo ?? CodigoUnico(),
         ["nome"] = "Nota da entrevista",
         ["descricao"] = "Nota atribuída pela banca.",
-        ["natureza"] = "numerico",
+        ["natureza"] = "NUMERICO",
         ["numerico"] = new { escalaMinima = 0m, escalaMaxima = 10m, casasDecimais = 2 },
     };
 
@@ -32,7 +32,7 @@ internal static class TiposConceitoHttpDeTeste
     {
         ["codigo"] = codigo ?? CodigoUnico(),
         ["nome"] = "Parecer da análise",
-        ["natureza"] = "categorico",
+        ["natureza"] = "CATEGORICO",
         ["valores"] = new object[]
         {
             new { codigo = "INDEFERIDO", rotulo = "Indeferido", contaComoAprovacao = false },
