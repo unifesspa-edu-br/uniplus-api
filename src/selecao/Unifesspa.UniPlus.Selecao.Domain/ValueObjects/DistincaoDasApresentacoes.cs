@@ -36,10 +36,10 @@ public sealed record DistincaoDasApresentacoes
         List<ApresentacaoDocumento> distintas = [.. apresentacoes.DistinctBy(static a => a.Id)];
         return Chave is null ? distintas.Count >= quantidadeMinima : ConferivelPelaContagem
             ? distintas.Select(static a => a.ChaveDistincao).Where(static c => !string.IsNullOrWhiteSpace(c)).Distinct(StringComparer.Ordinal).Count() >= quantidadeMinima
-            : SlotsEsperados(quantidadeMinima)!.All(slot => distintas.Any(a => a.ChaveDistincao == slot));
+            : IdentificacoesDasApresentacoesExigidas(quantidadeMinima)!.All(slot => distintas.Any(a => a.ChaveDistincao == slot));
     }
 
-    public IReadOnlyList<string>? SlotsEsperados(int quantidadeMinima) => Chave switch
+    public IReadOnlyList<string>? IdentificacoesDasApresentacoesExigidas(int quantidadeMinima) => Chave switch
     {
         ChaveDistincao.CompetenciaMensal => ComputarCompetencias(DataReferencia!.Value, quantidadeMinima),
         ChaveDistincao.ExercicioAnual => ComputarExercicios(DataReferencia!.Value, quantidadeMinima),

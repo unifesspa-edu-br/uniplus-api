@@ -176,46 +176,46 @@ public sealed class NoExigenciaFolhaTests
             Documento(), ordem: 0, quantidadeMinima: 2, chaveDistincao: ChaveDistincao.Ocorrencia);
 
         resultado.IsSuccess.Should().BeTrue();
-        (resultado.Value!.Distincao?.SlotsEsperados(resultado.Value.QuantidadeMinima!.Value)).Should().BeNull();
+        (resultado.Value!.Distincao?.IdentificacoesDasApresentacoesExigidas(resultado.Value.QuantidadeMinima!.Value)).Should().BeNull();
     }
 
-    [Fact(DisplayName = "SlotsEsperados para CompetenciaMensal deriva as N competências regulares mais recentes")]
-    public void SlotsEsperados_CompetenciaMensal_DerivaAsMaisRecentes()
+    [Fact(DisplayName = "IdentificacoesDasApresentacoesExigidas para CompetenciaMensal deriva as N competências regulares mais recentes")]
+    public void IdentificacoesDasApresentacoesExigidas_CompetenciaMensal_DerivaAsMaisRecentes()
     {
         Result<NoExigencia> resultado = NoExigencia.CriarFolha(
             Documento(), ordem: 0, quantidadeMinima: 3,
             chaveDistincao: ChaveDistincao.CompetenciaMensal, dataReferencia: new DateOnly(2026, 3, 15));
 
-        (resultado.Value!.Distincao?.SlotsEsperados(resultado.Value.QuantidadeMinima!.Value)).Should().Equal("2026-03", "2026-02", "2026-01");
+        (resultado.Value!.Distincao?.IdentificacoesDasApresentacoesExigidas(resultado.Value.QuantidadeMinima!.Value)).Should().Equal("2026-03", "2026-02", "2026-01");
     }
 
-    [Fact(DisplayName = "SlotsEsperados para ExercicioAnual deriva os N exercícios regulares mais recentes")]
-    public void SlotsEsperados_ExercicioAnual_DerivaOsMaisRecentes()
+    [Fact(DisplayName = "IdentificacoesDasApresentacoesExigidas para ExercicioAnual deriva os N exercícios regulares mais recentes")]
+    public void IdentificacoesDasApresentacoesExigidas_ExercicioAnual_DerivaOsMaisRecentes()
     {
         Result<NoExigencia> resultado = NoExigencia.CriarFolha(
             Documento(), ordem: 0, quantidadeMinima: 3,
             chaveDistincao: ChaveDistincao.ExercicioAnual, dataReferencia: new DateOnly(2026, 3, 15));
 
-        (resultado.Value!.Distincao?.SlotsEsperados(resultado.Value.QuantidadeMinima!.Value)).Should().Equal("2026", "2025", "2024");
+        (resultado.Value!.Distincao?.IdentificacoesDasApresentacoesExigidas(resultado.Value.QuantidadeMinima!.Value)).Should().Equal("2026", "2025", "2024");
     }
 
-    [Fact(DisplayName = "SlotsEsperados sem chaveDistincao é nulo — contagem bruta")]
-    public void SlotsEsperados_SemChave_Nulo()
+    [Fact(DisplayName = "IdentificacoesDasApresentacoesExigidas sem chaveDistincao é nulo — contagem bruta")]
+    public void IdentificacoesDasApresentacoesExigidas_SemChave_Nulo()
     {
         Result<NoExigencia> resultado = NoExigencia.CriarFolha(Documento(), ordem: 0);
 
-        (resultado.Value!.Distincao?.SlotsEsperados(resultado.Value.QuantidadeMinima!.Value)).Should().BeNull();
+        (resultado.Value!.Distincao?.IdentificacoesDasApresentacoesExigidas(resultado.Value.QuantidadeMinima!.Value)).Should().BeNull();
     }
 
-    [Fact(DisplayName = "SlotsEsperados para CompetenciaMensal na âncora mínima representável (ano 1) não lança e não excede o calendário")]
-    public void SlotsEsperados_CompetenciaMensal_AncoraMinima_NaoLanca()
+    [Fact(DisplayName = "IdentificacoesDasApresentacoesExigidas para CompetenciaMensal na âncora mínima representável (ano 1) não lança e não excede o calendário")]
+    public void IdentificacoesDasApresentacoesExigidas_CompetenciaMensal_AncoraMinima_NaoLanca()
     {
         Result<NoExigencia> resultado = NoExigencia.CriarFolha(
             Documento(), ordem: 0, quantidadeMinima: 1,
             chaveDistincao: ChaveDistincao.CompetenciaMensal, dataReferencia: DateOnly.MinValue);
 
         resultado.IsSuccess.Should().BeTrue();
-        (resultado.Value!.Distincao?.SlotsEsperados(resultado.Value.QuantidadeMinima!.Value)).Should().Equal("0001-01");
+        (resultado.Value!.Distincao?.IdentificacoesDasApresentacoesExigidas(resultado.Value.QuantidadeMinima!.Value)).Should().Equal("0001-01");
     }
 
     [Fact(DisplayName = "CriarFolha com CompetenciaMensal recusa quantidadeMinima que excede o calendário representável")]
