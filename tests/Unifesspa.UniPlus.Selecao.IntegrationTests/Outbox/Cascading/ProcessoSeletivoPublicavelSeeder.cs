@@ -37,23 +37,20 @@ internal static class ProcessoSeletivoPublicavelSeeder
     // declara o tipo dele.
     private static readonly string[] TiposDeDecisaoDaFaseUnica = [TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes];
 
-    private static FaseCronograma FaseDeResultadoFinal(
-        bool coletaSolicitacaoIsencao,
-        DateTimeOffset? fimDasInscricoes,
-        UnidadeResponsavelSnapshot? unidadeResponsavel,
-        IReadOnlyList<ProdutoDaFase>? produtosDaFase) => FaseCronograma.Criar(
+    /// <summary>A fase que coleta a inscrição, agrupa as etapas e publica o resultado que homologa as inscrições.</summary>
+    internal static FaseCronograma FaseDeResultadoFinal(OpcoesDoProcessoSeletivoPublicavel opcoes) => FaseCronograma.Criar(
         new OrigemCanonicaDaFase(
-            OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true,
-            ColetaSolicitacaoIsencao: coletaSolicitacaoIsencao),
+            OrigemId: opcoes.OrigemDaFaseDeResultado ?? Guid.CreateVersion7(), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true,
+            ColetaSolicitacaoIsencao: opcoes.ColetaSolicitacaoIsencao),
         new DecisoesDeCronogramaDaFase(
-            Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: fimDasInscricoes ?? new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
-            UnidadeResponsavel: unidadeResponsavel ?? UnidadesDeTeste.Ceps),
+            Ordem: opcoes.OrdemDaFaseDeResultado, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: opcoes.FimDasInscricoes ?? new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+            UnidadeResponsavel: opcoes.UnidadeResponsavel ?? UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(
-            Produtos: produtosDaFase ?? [ProdutoDaFase.Criar(HomologacaoDasInscricoesDeTeste.ResultadoDaFase, PapelProdutoFase.Definitivo)],
+            Produtos: opcoes.ProdutosDaFase ?? [ProdutoDaFase.Criar(HomologacaoDasInscricoesDeTeste.ResultadoDaFase, PapelProdutoFase.Definitivo)],
             EmiteParecerIndividual: false,
-            RegraRecurso: null,
+            RegraRecurso: opcoes.RegraDeRecursoDaFase,
             TiposDeDecisao: TiposDeDecisaoDaFaseUnica,
-            RegraDeHomologacao: HomologacaoDasInscricoesDeTeste.Regra(produtosDaFase is { Count: > 0 } ? produtosDaFase[0].AtoCodigo : HomologacaoDasInscricoesDeTeste.ResultadoDaFase)),
+            RegraDeHomologacao: HomologacaoDasInscricoesDeTeste.Regra(opcoes.ProdutosDaFase is { Count: > 0 } ? opcoes.ProdutosDaFase[0].AtoCodigo : HomologacaoDasInscricoesDeTeste.ResultadoDaFase)),
         bancasRequeridas: []).Value!;
 
     public static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearAsync(
@@ -167,19 +164,19 @@ internal static class ProcessoSeletivoPublicavelSeeder
 
     private static void DefinirCronograma(ProcessoSeletivo processo, OpcoesDoProcessoSeletivoPublicavel opcoes)
     {
-        FaseCronograma faseConforme = FaseDeResultadoFinal(opcoes.ColetaSolicitacaoIsencao, opcoes.FimDasInscricoes, opcoes.UnidadeResponsavel, opcoes.ProdutosDaFase);
-        Result cronogramaResult = processo.DefinirCronogramaFases([faseConforme], []);
-        DefinirEtapas(processo);
+        Result cronogramaResult = processo.DefinirCronogramaFases([FaseDeResultadoFinal(opcoes), .. opcoes.FasesAdicionais], []);
+        DefinirEtapas(processo, opcoes);
         cronogramaResult.IsSuccess.Should().BeTrue(cronogramaResult.Error?.Message);
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
     }
 
-    private static void DefinirEtapas(ProcessoSeletivo processo)
+    private static void DefinirEtapas(ProcessoSeletivo processo, OpcoesDoProcessoSeletivoPublicavel opcoes)
     {
         Result etapasResult = processo.DefinirEtapas([
             EtapaProcesso.Criar(
                 new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
+            .. opcoes.EtapasAdicionais,
         ]);
         etapasResult.IsSuccess.Should().BeTrue(etapasResult.Error?.Message);
     }
@@ -210,7 +207,20 @@ internal sealed record OpcoesDoProcessoSeletivoPublicavel
     public Action<ProcessoSeletivo>? Complementar { get; init; }
     public TipoProcessoSnapshot? Tipo { get; init; }
     public IReadOnlyList<ProdutoDaFase>? ProdutosDaFase { get; init; }
+    public RegraRecursoFase? RegraDeRecursoDaFase { get; init; }
     public UnidadeResponsavelSnapshot? UnidadeResponsavel { get; init; }
     public DateTimeOffset? FimDasInscricoes { get; init; }
     public Guid? ProcessoSeletivoId { get; init; }
+
+    /// <summary>A posição da fase de resultado no cronograma; a das fases adicionais é a que elas mesmas declaram.</summary>
+    public int OrdemDaFaseDeResultado { get; init; } = 1;
+
+    /// <summary>A origem canônica da fase de resultado; ausente, uma nova, como na primeira semeadura do processo.</summary>
+    public Guid? OrigemDaFaseDeResultado { get; init; }
+
+    /// <summary>Fases que acompanham a de resultado no cronograma.</summary>
+    public IReadOnlyList<FaseCronograma> FasesAdicionais { get; init; } = [];
+
+    /// <summary>Etapas que acompanham a prova objetiva da fase de resultado.</summary>
+    public IReadOnlyList<EtapaProcesso> EtapasAdicionais { get; init; } = [];
 }

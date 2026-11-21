@@ -58,6 +58,33 @@ public sealed class ItemDeErroDeCampoTests
     public void Serializar_ItemSemCampo_OmiteAChaveField() =>
         JsonSerializer.Serialize(new ItemDeErroDeCampo(null, "c", "m")).Should().Be("""{"code":"c","message":"m"}""");
 
+    [Fact(DisplayName = "Os identificadores dos itens de lista vão para o item, na ordem do caminho")]
+    public void De_ErroComIdentificadores_CarregaOsIdentificadoresNaOrdem()
+    {
+        FieldError comIdentificadores = Erro with
+        {
+            Identificadores = [new IdentificadorDoItem("etapas", "e-1"), new IdentificadorDoItem("recursos", "r-2")],
+        };
+
+        ItemDeErroDeCampo item = ItemDeErroDeCampo.De(comIdentificadores, new MapeadorDeTeste(("Documento.TipoInvalido", Mapeamento)));
+
+        item.Identificadores.Should().Equal(new IdentificadorDoItemNoFio("etapas", "e-1"), new IdentificadorDoItemNoFio("recursos", "r-2"));
+    }
+
+    [Fact(DisplayName = "O erro sem identificadores e o com lista vazia ficam sem identificadores")]
+    public void De_ErroSemIdentificadores_DeixaOMembroNulo()
+    {
+        ItemDeErroDeCampo.De(Erro, new MapeadorDeTeste()).Identificadores.Should().BeNull();
+        ItemDeErroDeCampo.De(Erro with { Identificadores = [] }, new MapeadorDeTeste()).Identificadores.Should().BeNull();
+    }
+
+    [Theory(DisplayName = "No fio os identificadores usam identificadores, lista e identificador em qualquer política de nomes")]
+    [MemberData(nameof(PoliticasDeNomes))]
+    public void Serializar_ItemComIdentificadores_UsaOsNomesFixosDoFio(JsonSerializerOptions opcoes) =>
+        JsonSerializer.Serialize(
+            new ItemDeErroDeCampo("/a", "c", "m", [new IdentificadorDoItemNoFio("fases", "INSCRICAO")]), opcoes)
+            .Should().Be("""{"field":"/a","code":"c","message":"m","identificadores":[{"lista":"fases","identificador":"INSCRICAO"}]}""");
+
     [Fact(DisplayName = "O erro e o mapeador são obrigatórios")]
     public void De_ArgumentoNulo_Lanca()
     {
