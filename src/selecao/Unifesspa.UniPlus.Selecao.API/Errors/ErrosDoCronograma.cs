@@ -166,10 +166,10 @@ internal static class ErrosDoCronograma
     /// </summary>
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> PrazoDoRecursoDaEtapa() =>
     [
-        new("RecursoDaEtapa.PrazoNaoPositivo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.recurso_da_etapa.prazo_nao_positivo", "O prazo de interposição deve ser estritamente positivo")),
-        new("RecursoDaEtapa.PrazoEmDiasCorridos", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.recurso_da_etapa.prazo_em_dias_corridos", "Prazo de interposição em dias corridos não é aceito")),
-        new("RecursoDaEtapa.PrazoSemUnidadeDeclaravel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.recurso_da_etapa.prazo_sem_unidade_declaravel", "O prazo de interposição precisa declarar dias úteis ou horas")),
-        new("RecursoDaEtapa.PrazoEmFracaoDeDiaUtil", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.recurso_da_etapa.prazo_em_fracao_de_dia_util", "Prazo de interposição em dias úteis exige valor inteiro")),
+        new("RecursoDaEtapa.PrazoNaoPositivo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_do_recurso_da_etapa.prazo_nao_positivo", "O prazo do recurso deve ser maior que zero")),
+        new("RecursoDaEtapa.PrazoEmDiasCorridos", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_do_recurso_da_etapa.prazo_em_dias_corridos", "O prazo do recurso não aceita dias corridos")),
+        new("RecursoDaEtapa.PrazoSemUnidadeDeclaravel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_do_recurso_da_etapa.prazo_sem_unidade_declaravel", "O prazo do recurso precisa declarar dias úteis ou horas")),
+        new("RecursoDaEtapa.PrazoEmFracaoDeDiaUtil", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_do_recurso_da_etapa.prazo_em_fracao_de_dia_util", "O prazo do recurso em dias úteis exige número inteiro")),
         new("RecursoDaEtapa.SuspensividadeIncompleta", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.recurso_da_etapa.suspensividade_incompleta", "A suspensividade exige valor e unidade juntos, ou nenhum dos dois")),
         new("RecursoDaEtapa.SuspensividadeUnidadeNaoDeclaravel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.recurso_da_etapa.suspensividade_unidade_nao_declaravel", "A unidade da suspensividade não é declarável")),
         new("RecursoDaEtapa.SuspensividadeNaoPositiva", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.recurso_da_etapa.suspensividade_nao_positiva", "O valor da suspensividade deve ser estritamente positivo")),
@@ -199,10 +199,10 @@ internal static class ErrosDoCronograma
     /// </summary>
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> PrazoDoRecursoDaFase() =>
     [
-        new("RegraRecursoFase.PrazoEmDiasCorridos", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.prazo_em_dias_corridos", "Prazo de interposição em dias corridos não é aceito")),
-        new("RegraRecursoFase.PrazoEmFracaoDeDiaUtil", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.prazo_em_fracao_de_dia_util", "Prazo de interposição em dias úteis exige valor inteiro")),
-        new("RegraRecursoFase.PrazoSemUnidadeDeclaravel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.prazo_sem_unidade_declaravel", "O prazo de interposição precisa declarar dias úteis ou horas")),
-        new("RegraRecursoFase.PrazoNaoPositivo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.prazo_nao_positivo", "O prazo de interposição deve ser estritamente positivo")),
+        new("RegraRecursoFase.PrazoEmDiasCorridos", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_do_recurso_da_fase.prazo_em_dias_corridos", "O prazo do recurso não aceita dias corridos")),
+        new("RegraRecursoFase.PrazoEmFracaoDeDiaUtil", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_do_recurso_da_fase.prazo_em_fracao_de_dia_util", "O prazo do recurso em dias úteis exige número inteiro")),
+        new("RegraRecursoFase.PrazoSemUnidadeDeclaravel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_do_recurso_da_fase.prazo_sem_unidade_declaravel", "O prazo do recurso precisa declarar dias úteis ou horas")),
+        new("RegraRecursoFase.PrazoNaoPositivo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_do_recurso_da_fase.prazo_nao_positivo", "O prazo do recurso deve ser maior que zero")),
         new("RegraRecursoFase.SuspensividadeIncompleta", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.suspensividade_incompleta", "A suspensividade exige valor e unidade juntos, ou nenhum dos dois")),
         new("RegraRecursoFase.SuspensividadeUnidadeNaoDeclaravel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.suspensividade_unidade_nao_declaravel", "A unidade da suspensividade não é declarável")),
         new("RegraRecursoFase.SuspensividadeNaoPositiva", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.suspensividade_nao_positiva", "O valor da suspensividade deve ser estritamente positivo")),
