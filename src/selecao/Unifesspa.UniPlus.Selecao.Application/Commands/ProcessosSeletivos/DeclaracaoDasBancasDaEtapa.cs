@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Domain.Entities;
 using Domain.ProcessosSeletivos.Bancas;
+using Domain.ProcessosSeletivos.Etapas;
 using Domain.ValueObjects;
 
 using Kernel.Results;
@@ -37,7 +38,7 @@ internal sealed class DeclaracaoDasBancasDaEtapa(LeituraMemoizada<Guid, TipoBanc
             return Result<List<BancaDaEtapa>>.Failure(interrupcao);
         }
 
-        bancas.Acrescentar(IdentificadorDasBancas.Repetidos(input.Bancas.Select(static banca => banca.Id), "bancas", IdentificadorDasBancas.DaEtapa));
+        bancas.Acrescentar(IdentificadorDasBancas.Repetidos(input.Bancas.Select(static banca => banca.Id), EtapaDeclarada.ListaDasBancas, IdentificadorDasBancas.DaEtapa));
 
         return bancas.Resultado();
     }
@@ -69,7 +70,7 @@ internal sealed class DeclaracaoDasBancasDaEtapa(LeituraMemoizada<Guid, TipoBanc
                 $"O tipo de banca {declarada.TipoBancaId} não existe ou está inativo no cadastro."));
         }
 
-        Result<RegraDeDeliberacao?> regra = MontagemDaRegraDeDeliberacao.Montar(declarada.RegraDeDeliberacao, $"bancas[{posicao}]");
+        Result<RegraDeDeliberacao?> regra = MontagemDaRegraDeDeliberacao.Montar(declarada.RegraDeDeliberacao, $"{EtapaDeclarada.ListaDasBancas}[{posicao}]");
         return regra.IsFailure
             ? Result<BancaDaEtapa>.ValidationFailure(regra.Errors)
             : Result<BancaDaEtapa>.Success(BancaDaEtapa.Criar(tipo.Id, tipo.Codigo.Codigo(), tipo.Nome, regra.Value, declarada.Id));

@@ -97,8 +97,8 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
         .ThenBy(static i => i.PontuacaoMaxima)
         .ThenBy(static i => i.Id)];
 
-    /// <summary>As bancas que a etapa requer (0..*).</summary>
-    public IReadOnlyCollection<BancaDaEtapa> Bancas => _bancas.AsReadOnly();
+    /// <summary>As bancas que a etapa requer (0..*), em ordem canônica: a posição de cada uma é a que as recusas apontam em <c>bancas[p]</c>.</summary>
+    public IReadOnlyCollection<BancaDaEtapa> Bancas => [.. OrdemCanonicaDaConfiguracao.BancasDaEtapa(_bancas)];
 
     /// <summary>Os prazos de recurso que a etapa abre (0..*), em ordem canônica: a do documento e a do registro publicado.</summary>
     public IReadOnlyCollection<RecursoDaEtapa> Recursos => [.. OrdemCanonicaDaConfiguracao.RecursosDaEtapa(_recursos, _produtos)];
@@ -345,7 +345,7 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
             null),
         new JanelaDeTempo(Inicio, Fim),
         new PublicacoesDaEtapa([.. OrdemCanonicaDaConfiguracao.ProdutosDaEtapa(_produtos)], EmiteParecerIndividual, [.. Recursos], [.. _tiposDeDecisao.Select(static tipo => tipo.Codigo())]),
-        [.. OrdemCanonicaDaConfiguracao.BancasDaEtapa(_bancas)],
+        [.. Bancas],
         colecoesComParteRecusada);
 
     /// <summary>O que da etapa entra no resultado preliminar que ela publica (ver <see cref="ValueObjects.EntradaDoPreliminar"/>).</summary>

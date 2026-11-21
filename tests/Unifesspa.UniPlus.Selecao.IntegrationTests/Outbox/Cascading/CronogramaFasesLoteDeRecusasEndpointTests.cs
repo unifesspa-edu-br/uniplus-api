@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 
 using System.Net;
+using System.Text.Json;
 
 using AwesomeAssertions;
 
@@ -115,6 +116,20 @@ public sealed class CronogramaFasesLoteDeRecusasEndpointTests
                 new ErroDoProblema("fases[0].produtos[0].papel", CodigoPapelEmAtoQueNaoEhResultado),
                 new ErroDoProblema("fases[1].bancasRequeridas[0].tipoBancaId", "uniplus.selecao.fase_cronograma.tipo_banca_nao_encontrado"),
             ]);
+    }
+
+    [Fact(DisplayName = "A recusa da gravação do cronograma aponta a banca só pela posição e nunca traz identificadores")]
+    public async Task RecusaDaGravacao_ApontaABancaSoPelaPosicao_SemIdentificadores()
+    {
+        CenarioDoCronograma cenario = await PrepararCenarioAsync();
+
+        using HttpResponseMessage resposta = await EnviarCronogramaAsync(cenario.Client, cenario.ProcessoId, FasesComRecusaAcumuladaEInterrupcao(cenario));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        JsonElement[] erros = [.. problema.RootElement.GetProperty("errors").EnumerateArray()];
+        erros.Should().Contain(static erro => erro.GetProperty("field").GetString() == "fases[1].bancasRequeridas[0].tipoBancaId");
+        erros.Count(static erro => erro.TryGetProperty("identificadores", out _)).Should().Be(0, "a gravação aponta pela posição do corpo enviado");
     }
 
     // As duas fases dão papel a um ato que o catálogo não classifica como resultado. São

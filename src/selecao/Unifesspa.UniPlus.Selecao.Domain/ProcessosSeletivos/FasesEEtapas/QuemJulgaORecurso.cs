@@ -73,10 +73,10 @@ internal static class QuemJulgaORecurso
     [
         .. DasFases(cronograma)
             .Where(static recurso => recurso.Nivel == Nivel.Ninguem)
-            .Select(static recurso => CronogramaDoProcesso.NaFase(recurso.Posicao, "bancasRequeridas", FaseSemBancaDeRecursos(recurso.Fase.Codigo))),
+            .Select(static recurso => CronogramaDoProcesso.NaFase(recurso.Posicao, FaseDeclarada.ListaDasBancasRequeridas, FaseSemBancaDeRecursos(recurso.Fase.Codigo))),
         .. DasEtapas(cronograma, etapas)
             .Where(static recurso => recurso.Nivel == Nivel.Ninguem)
-            .Select(static recurso => EtapasDoProcesso.NaEtapa(recurso.Posicao, "bancas", EtapaSemBancaDeRecursos(recurso.Etapa.Nome))),
+            .Select(static recurso => EtapasDoProcesso.NaEtapa(recurso.Posicao, EtapaDeclarada.ListaDasBancas, EtapaSemBancaDeRecursos(recurso.Etapa.Nome))),
     ];
 
     /// <summary>

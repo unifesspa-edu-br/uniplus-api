@@ -138,5 +138,5 @@ public static class CandidatosAtendidosPelasBancas
             CandidatosAtendidosDuplicadosCodigo,
             $"Na fase '{codigoDaFase}', a banca '{banca.Codigo}' atende os mesmos candidatos que outra banca do mesmo tipo. Defina categorias de documento diferentes para cada banca desse tipo."));
 
-    internal static string CampoDosCandidatosAtendidos(int indice) => $"bancasRequeridas[{indice}].categoriasDocumentoIds";
+    internal static string CampoDosCandidatosAtendidos(int indice) => $"{FaseDeclarada.ListaDasBancasRequeridas}[{indice}].categoriasDocumentoIds";
 }

@@ -171,7 +171,7 @@ public sealed class DeclaracaoDasBancasDaEtapaTests
         Result resultado = await Declaracao().DeclararAsync(etapa, entrada, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
-        etapa.Bancas.Select(static banca => banca.RegraDeDeliberacao!.QuorumExigido).Should().Equal(1, 2);
+        etapa.Bancas.Select(static banca => banca.RegraDeDeliberacao!.QuorumExigido).Should().BeEquivalentTo([1, 2]);
     }
 
     [Fact(DisplayName = "A banca da etapa com a votação do recurso pela metade recusa o campo que falta, no caminho da banca")]
