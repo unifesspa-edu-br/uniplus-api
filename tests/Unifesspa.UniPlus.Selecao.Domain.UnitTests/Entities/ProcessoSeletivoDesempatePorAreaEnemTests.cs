@@ -78,8 +78,8 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemTests
         Result result = processo.DefinirCriteriosDesempate([PorArea(1, "FISICA"), PorArea(2, "FISICA")]);
 
         result.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
-            ("criterios[0].areas[0]", "ProcessoSeletivo.DesempateAreaEnemForaDoQuadro"),
-            ("criterios[1].areas[0]", "ProcessoSeletivo.DesempateAreaEnemForaDoQuadro"));
+            ("criterios[0].parametros.areas[0]", "ProcessoSeletivo.DesempateAreaEnemForaDoQuadro"),
+            ("criterios[1].parametros.areas[0]", "ProcessoSeletivo.DesempateAreaEnemForaDoQuadro"));
         result.Errors[0].Error.Message.Should().Contain("Áreas aceitas:");
     }
 
@@ -112,8 +112,8 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemTests
 
         result.IsFailure.Should().BeTrue();
         result.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
-            ("criterios[0].areas[1]", "ProcessoSeletivo.DesempateAreaEnemForaDoQuadro"),
-            ("criterios[2].areas[0]", "ProcessoSeletivo.DesempateAreaEnemForaDoQuadro"));
+            ("criterios[0].parametros.areas[1]", "ProcessoSeletivo.DesempateAreaEnemForaDoQuadro"),
+            ("criterios[2].parametros.areas[0]", "ProcessoSeletivo.DesempateAreaEnemForaDoQuadro"));
         result.Errors[0].Error.Message.Should().Contain("FISICA").And.Contain("ordem 1");
         result.Errors[1].Error.Message.Should().Contain("QUIMICA").And.Contain("ordem 3");
     }
@@ -162,8 +162,8 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemTests
 
         result.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
-            ("criterios[0].areas[0]", "ProcessoSeletivo.DesempateAreaEnemForaDoQuadro"),
-            ("criterios[1].etapaRef", "ProcessoSeletivo.EtapaRefDesempateInexistente"),
+            ("criterios[0].parametros.areas[0]", "ProcessoSeletivo.DesempateAreaEnemForaDoQuadro"),
+            ("criterios[1].parametros.etapaRef", "ProcessoSeletivo.EtapaRefDesempateInexistente"),
             ("criterios[2].ordem", "ProcessoSeletivo.OrdemDesempateDuplicada"),
         ]);
     }
@@ -177,8 +177,8 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemTests
         Result result = processo.DefinirCriteriosDesempate([PorArea(1, "REDACAO"), PorArea(2, "MATEMATICA")]);
 
         result.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
-            ("criterios[0].regraCodigo", "ProcessoSeletivo.DesempateAreaEnemSemQuadro"),
-            ("criterios[1].regraCodigo", "ProcessoSeletivo.DesempateAreaEnemSemQuadro"));
+            ("criterios[0].regra.codigo", "ProcessoSeletivo.DesempateAreaEnemSemQuadro"),
+            ("criterios[1].regra.codigo", "ProcessoSeletivo.DesempateAreaEnemSemQuadro"));
     }
 
     [Fact(DisplayName = "Área que falta em algum grupo do quadro é recusada: o candidato desse grupo ficaria sem a nota")]

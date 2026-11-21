@@ -85,11 +85,12 @@ internal static class ProjecaoDasVagas
                 bonus.Fator,
                 bonus.Teto,
                 bonus.FatoElegibilidadeCodigo,
-                bonus.BaseLegalBonusRegionalId,
-                bonus.TipoInstrumento,
-                bonus.Identificacao,
-                bonus.Descricao,
-                [.. bonus.Municipios.Select(static m => new ConfiguracaoBonusRegionalMunicipioDto(m.CodigoIbge, m.Nome, m.Uf))]);
+                new BaseLegalCongeladaDto(
+                    bonus.BaseLegalBonusRegionalId,
+                    bonus.TipoInstrumento,
+                    bonus.Identificacao,
+                    bonus.Descricao,
+                    [.. bonus.Municipios.Select(static m => new ConfiguracaoBonusRegionalMunicipioDto(m.CodigoIbge, m.Nome, m.Uf))]));
 
     internal static ConfiguracaoCascataRemanejamentoDto? ProjetarCascata(ConfiguracaoCascataRemanejamento? cascata) =>
         cascata is null

@@ -29,7 +29,7 @@ public sealed class OrdemDasRecusasDoDesempateTests
 
         recusas.Select(static recusa => (recusa.Field, recusa.Error.Code)).Should().Equal(
             ("criterios[1].ordem", "ProcessoSeletivo.OrdemDesempateDuplicada"),
-            ("criterios[0].etapaRef", "ProcessoSeletivo.EtapaRefDesempateInexistente"));
+            ("criterios[0].parametros.etapaRef", "ProcessoSeletivo.EtapaRefDesempateInexistente"));
         recusas[1].Error.Message.Should().Be($"O critério de desempate na ordem 2 referencia a etapa {etapaInexistente}, que não existe neste processo.");
     }
 }

@@ -88,27 +88,23 @@ internal static class ProjecaoDoProcessoSeletivo
                 configuracao.Valor,
                 [.. configuracao.Fundamentos.Select(static f => f.ToCodigo())]);
 
-    private static CriterioDesempateDto ProjetarCriterioDeDesempate(CriterioDesempate criterio)
-    {
-        ReferenciaRegraDto regra = Referencia(criterio.Regra);
+    private static CriterioDesempateDto ProjetarCriterioDeDesempate(CriterioDesempate criterio) =>
+        new(criterio.Id, criterio.Ordem, Referencia(criterio.Regra), ProjetarParametrosDoDesempate(criterio.Parametros));
 
-        return criterio.Parametros switch
+    private static ParametrosDoCriterioDesempateDto ProjetarParametrosDoDesempate(ParametrosCriterioDesempate parametros) =>
+        parametros switch
         {
-            ParametrosDesempateMaiorNotaEtapa parametros => new CriterioDesempateDto(
-                criterio.Id, criterio.Ordem, regra, parametros.EtapaRef, null, null, null, null, null),
-            ParametrosDesempateIdoso parametros => new CriterioDesempateDto(
-                criterio.Id, criterio.Ordem, regra, null, parametros.IdadeMinima, null, null, null, null),
-            ParametrosDesempatePredicadoFato parametros => new CriterioDesempateDto(
-                criterio.Id, criterio.Ordem, regra, null, null,
-                parametros.Condicao.Fato,
-                parametros.Condicao.Operador.Codigo(),
-                ProjetarValorDaCondicao(parametros.Condicao.Valor),
+            ParametrosDesempateMaiorNotaEtapa etapa => new(etapa.EtapaRef, null, null, null, null, null),
+            ParametrosDesempateIdoso idoso => new(null, idoso.IdadeMinima, null, null, null, null),
+            ParametrosDesempatePredicadoFato predicado => new(
+                null, null,
+                predicado.Condicao.Fato,
+                predicado.Condicao.Operador.Codigo(),
+                ProjetarValorDaCondicao(predicado.Condicao.Valor),
                 null),
-            ParametrosDesempateMaiorNotaAreaEnem parametros => new CriterioDesempateDto(
-                criterio.Id, criterio.Ordem, regra, null, null, null, null, null, [.. parametros.Areas]),
-            _ => new CriterioDesempateDto(criterio.Id, criterio.Ordem, regra, null, null, null, null, null, null),
+            ParametrosDesempateMaiorNotaAreaEnem areaEnem => new(null, null, null, null, null, [.. areaEnem.Areas]),
+            _ => new(null, null, null, null, null, null),
         };
-    }
 
     /// <summary>
     /// <c>CondicaoDnf.Valor</c> como texto JSON canônico, o mesmo formato de

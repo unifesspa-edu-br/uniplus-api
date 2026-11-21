@@ -55,7 +55,7 @@ public sealed class DefinirCriteriosDesempateAreasDoEnemCommandHandlerTests
 
         result.IsFailure.Should().BeTrue();
         FieldError erro = result.Errors.Should().ContainSingle().Subject;
-        erro.Field.Should().Be("criterios[0].areas");
+        erro.Field.Should().Be("criterios[0].parametros.areas");
         erro.Error.Code.Should().Be("CriterioDesempate.AreasObrigatorias");
         await cenario.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
@@ -70,7 +70,7 @@ public sealed class DefinirCriteriosDesempateAreasDoEnemCommandHandlerTests
 
         result.IsFailure.Should().BeTrue();
         FieldError erro = result.Errors.Should().ContainSingle().Subject;
-        erro.Field.Should().Be("criterios[0].areas[1]");
+        erro.Field.Should().Be("criterios[0].parametros.areas[1]");
         erro.Error.Code.Should().Be("CriterioDesempate.AreaInvalida");
     }
 
@@ -85,8 +85,8 @@ public sealed class DefinirCriteriosDesempateAreasDoEnemCommandHandlerTests
 
         result.IsFailure.Should().BeTrue();
         result.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
-            ("criterios[0].areas[0]", "ProcessoSeletivo.DesempateAreaEnemForaDoQuadro"),
-            ("criterios[1].areas[1]", "ProcessoSeletivo.DesempateAreaEnemForaDoQuadro"));
+            ("criterios[0].parametros.areas[0]", "ProcessoSeletivo.DesempateAreaEnemForaDoQuadro"),
+            ("criterios[1].parametros.areas[1]", "ProcessoSeletivo.DesempateAreaEnemForaDoQuadro"));
         await cenario.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -100,8 +100,8 @@ public sealed class DefinirCriteriosDesempateAreasDoEnemCommandHandlerTests
             Comando(processo.Id, CriterioDeAreas(1, "REDACAO", "REDACAO"), CriterioDeAreas(2, "FISICA")));
 
         result.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
-            ("criterios[0].areas[1]", "CriterioDesempate.AreaRepetida"),
-            ("criterios[1].areas[0]", "ProcessoSeletivo.DesempateAreaEnemForaDoQuadro"));
+            ("criterios[0].parametros.areas[1]", "CriterioDesempate.AreaRepetida"),
+            ("criterios[1].parametros.areas[0]", "ProcessoSeletivo.DesempateAreaEnemForaDoQuadro"));
         processo.CriteriosDesempate.Should().BeEmpty();
         await cenario.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
@@ -119,7 +119,7 @@ public sealed class DefinirCriteriosDesempateAreasDoEnemCommandHandlerTests
         Result result = await cenario.DefinirAsync(Comando(processo.Id, CriterioDeAreas(1, area)));
 
         FieldError erro = result.Errors.Should().ContainSingle().Subject;
-        (erro.Field, erro.Error.Code).Should().Be(("criterios[0].areas[0]", "CriterioDesempate.AreaInvalida"));
+        (erro.Field, erro.Error.Code).Should().Be(("criterios[0].parametros.areas[0]", "CriterioDesempate.AreaInvalida"));
         erro.Error.Message.Should().StartWith("Cada área da ordem de desempate é um código")
             .And.Contain("Áreas aceitas: CIENCIAS_DA_NATUREZA (Ciências da Natureza e suas Tecnologias)")
             .And.NotContain("\u202E").And.NotContain("\n").And.NotContain("AAAAAAAAAA");
@@ -162,9 +162,9 @@ public sealed class DefinirCriteriosDesempateAreasDoEnemCommandHandlerTests
 
         result.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
-            ("criterios[0].areas[1]", "CriterioDesempate.AreaRepetida"),
-            ("criterios[1].areas", "CriterioDesempate.AreasEmExcesso"),
-            ("criterios[0].areas[0]", "ProcessoSeletivo.DesempateAreaEnemForaDoQuadro"),
+            ("criterios[0].parametros.areas[1]", "CriterioDesempate.AreaRepetida"),
+            ("criterios[1].parametros.areas", "CriterioDesempate.AreasEmExcesso"),
+            ("criterios[0].parametros.areas[0]", "ProcessoSeletivo.DesempateAreaEnemForaDoQuadro"),
         ]);
     }
 }

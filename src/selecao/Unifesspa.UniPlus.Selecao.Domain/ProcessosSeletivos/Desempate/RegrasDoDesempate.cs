@@ -45,16 +45,26 @@ public static class RegrasDoDesempate
         return erros;
     }
 
-    /// <summary>O campo de um critério de desempate no comando que define a ordem de desempate.</summary>
-    public static string CampoDoCriterioDesempate(int indice, string? campo = null) =>
-        campo is null ? $"criterios[{indice}]" : $"criterios[{indice}].{campo}";
+    /// <summary>
+    /// O campo de um critério de desempate no comando que define a ordem de desempate. Quem recusa
+    /// nomeia o campo do critério (<c>ordem</c>, <c>regraCodigo</c> ou um parâmetro, como
+    /// <c>etapaRef</c> e <c>areas[1]</c>), e o caminho sai no lugar em que o comando o recebe:
+    /// <c>ordem</c> no critério, <c>regra.codigo</c> na referência da regra e o restante em <c>parametros</c>.
+    /// </summary>
+    public static string CampoDoCriterioDesempate(int indice, string? campo = null) => campo switch
+    {
+        null => $"criterios[{indice}]",
+        "ordem" => $"criterios[{indice}].ordem",
+        "regraCodigo" => $"criterios[{indice}].regra.codigo",
+        _ => $"criterios[{indice}].parametros.{campo}",
+    };
 
     /// <summary>
     /// As invariantes que um critério de desempate só cumpre diante do processo — ordem única,
     /// <c>etapa_ref</c> existente e área do ENEM presente no quadro de pesos por área
     /// da classificação —, acumuladas (ADR-0125), cada uma no campo do item:
-    /// <c>criterios[i].ordem</c>, <c>criterios[i].etapaRef</c>, <c>criterios[i].areas[j]</c> e
-    /// <c>criterios[i].regraCodigo</c> quando a classificação não tem quadro.
+    /// <c>criterios[i].ordem</c>, <c>criterios[i].parametros.etapaRef</c>, <c>criterios[i].parametros.areas[j]</c> e
+    /// <c>criterios[i].regra.codigo</c> quando a classificação não tem quadro.
     /// </summary>
     /// <param name="criterios">
     /// Na posição que cada critério ocupa no comando, inclusive a do critério que o próprio

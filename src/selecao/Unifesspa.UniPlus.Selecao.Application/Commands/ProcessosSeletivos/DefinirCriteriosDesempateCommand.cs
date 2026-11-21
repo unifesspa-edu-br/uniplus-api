@@ -10,10 +10,20 @@ using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Item de entrada de um critério de desempate, usado por
-/// <see cref="DefinirCriteriosDesempateCommand"/>. Os campos além de
-/// <see cref="Ordem"/>/<see cref="RegraCodigo"/>/<see cref="RegraVersao"/> são
-/// os parâmetros aplicados — apenas o(s) relevante(s) para o código da regra
-/// referenciada é(são) preenchido(s):
+/// <see cref="DefinirCriteriosDesempateCommand"/>: a ordem, a regra do catálogo que ele aplica e os
+/// parâmetros dessa regra. Um critério sem <see cref="Parametros"/> equivale a um com todos eles ausentes.
+/// </summary>
+/// <param name="Ordem">Posição do critério na ordem de desempate.</param>
+/// <param name="Regra">Referência à regra de desempate do catálogo.</param>
+/// <param name="Parametros">Os parâmetros que a regra referenciada exige.</param>
+public sealed record CriterioDesempateInput(
+    int Ordem,
+    ReferenciaRegraInput? Regra,
+    ParametrosDoCriterioDesempateInput? Parametros);
+
+/// <summary>
+/// Os parâmetros aplicados por um critério de desempate, na forma do esquema de desempate do documento da configuração:
+/// só o(s) relevante(s) para o código da regra referenciada vem(êm) preenchido(s).
 /// <list type="bullet">
 ///   <item><description><c>DESEMPATE-MAIOR-NOTA-ETAPA</c>: <see cref="EtapaRef"/> (deve existir no processo).</description></item>
 ///   <item><description><c>DESEMPATE-IDOSO</c>: <see cref="IdadeMinima"/>.</description></item>
@@ -22,16 +32,23 @@ using Unifesspa.UniPlus.Regras.Enums;
 ///   <item><description><c>DESEMPATE-MAIOR-IDADE</c>: nenhum.</description></item>
 /// </list>
 /// </summary>
-public sealed record CriterioDesempateInput(
-    int Ordem,
-    string RegraCodigo,
-    string RegraVersao,
+/// <param name="EtapaRef">Etapa do processo cuja nota desempata.</param>
+/// <param name="IdadeMinima">Idade mínima, em anos, a partir da qual o candidato tem preferência.</param>
+/// <param name="Fato">Código do fato do candidato que o predicado compara.</param>
+/// <param name="Operador">Código do operador de comparação.</param>
+/// <param name="Valor">Texto do valor da condição, interpretado como JSON quando for JSON válido.</param>
+/// <param name="Areas">Códigos das áreas do ENEM, na ordem de desempate.</param>
+public sealed record ParametrosDoCriterioDesempateInput(
     Guid? EtapaRef,
     int? IdadeMinima,
     string? Fato,
     [AceitaCodigosDe<Operador>] string? Operador,
     string? Valor,
-    IReadOnlyList<string>? Areas = null);
+    IReadOnlyList<string>? Areas = null)
+{
+    /// <summary>Os parâmetros de um critério enviado sem eles: todos ausentes.</summary>
+    public static ParametrosDoCriterioDesempateInput Ausentes { get; } = new(null, null, null, null, null);
+}
 
 /// <summary>
 /// Substitui integralmente os critérios de desempate do processo (Story

@@ -1959,7 +1959,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"aplica\": true,\n  \"regraCodigo\": \"BONUS-MULTIPLICATIVO\",\n  \"regraVersao\": \"v1\",\n  \"fator\": 1.2,\n  \"teto\": null,\n  \"baseLegalBonusRegionalId\": \"{{base_legal_bonus_regional_id}}\"\n}",
+              "raw": "{\n  \"aplica\": true,\n  \"regra\": {\n    \"codigo\": \"BONUS-MULTIPLICATIVO\",\n    \"versao\": \"v1\"\n  },\n  \"fator\": 1.2,\n  \"teto\": null,\n  \"baseLegal\": {\n    \"id\": \"{{base_legal_bonus_regional_id}}\"\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2083,7 +2083,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"ordem\": 1,\n    \"regraCodigo\": \"DESEMPATE-IDOSO\",\n    \"regraVersao\": \"v1\",\n    \"etapaRef\": null,\n    \"idadeMinima\": 60,\n    \"fato\": null,\n    \"operador\": null,\n    \"valor\": null\n  }\n]",
+              "raw": "[\n  {\n    \"ordem\": 1,\n    \"regra\": {\n      \"codigo\": \"DESEMPATE-IDOSO\",\n      \"versao\": \"v1\"\n    },\n    \"parametros\": {\n      \"idadeMinima\": 60\n    }\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"

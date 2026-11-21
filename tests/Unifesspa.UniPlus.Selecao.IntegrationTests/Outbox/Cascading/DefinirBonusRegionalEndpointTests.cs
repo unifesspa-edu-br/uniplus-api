@@ -38,7 +38,7 @@ public sealed class DefinirBonusRegionalEndpointTests
     {
         (HttpClient client, Guid processoId) = await SemearRascunhoAsync(nameof(SemAplica_400_ENadaDeclarado));
 
-        HttpResponseMessage resposta = await PutAsync(client, processoId, """{ "regraCodigo": null }""");
+        HttpResponseMessage resposta = await PutAsync(client, processoId, """{ "regra": null }""");
 
         resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         (await DeclaracaoGravadaAsync(processoId)).Should().BeNull("a omissão não pode virar uma declaração");
@@ -61,7 +61,7 @@ public sealed class DefinirBonusRegionalEndpointTests
         (HttpClient client, Guid processoId) = await SemearRascunhoAsync(nameof(NaoAplicaComConfiguracao_422));
 
         HttpResponseMessage resposta = await PutAsync(
-            client, processoId, $$"""{ "aplica": false, "regraCodigo": "BONUS-MULTIPLICATIVO", "regraVersao": "v1", "fator": 1.2, "baseLegalBonusRegionalId": "{{Guid.CreateVersion7()}}" }""");
+            client, processoId, $$"""{ "aplica": false, "regra": { "codigo": "BONUS-MULTIPLICATIVO", "versao": "v1" }, "fator": 1.2, "baseLegal": { "id": "{{Guid.CreateVersion7()}}" } }""");
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
@@ -71,9 +71,9 @@ public sealed class DefinirBonusRegionalEndpointTests
     }
 
     [Theory(DisplayName = "Regra informada sem versão, sem fator ou sem base legal é recusada com 422 e código nomeado, sem consultar cadastro")]
-    [InlineData("""{ "aplica": true, "regraCodigo": "BONUS-MULTIPLICATIVO", "fator": 1.2, "baseLegalBonusRegionalId": "019fe8f8-1400-7000-8000-000000000001" }""")]
-    [InlineData("""{ "aplica": true, "regraCodigo": "BONUS-MULTIPLICATIVO", "regraVersao": "v1", "baseLegalBonusRegionalId": "019fe8f8-1400-7000-8000-000000000001" }""")]
-    [InlineData("""{ "aplica": true, "regraCodigo": "BONUS-MULTIPLICATIVO", "regraVersao": "v1", "fator": 1.2 }""")]
+    [InlineData("""{ "aplica": true, "regra": { "codigo": "BONUS-MULTIPLICATIVO" }, "fator": 1.2, "baseLegal": { "id": "019fe8f8-1400-7000-8000-000000000001" } }""")]
+    [InlineData("""{ "aplica": true, "regra": { "codigo": "BONUS-MULTIPLICATIVO", "versao": "v1" }, "baseLegal": { "id": "019fe8f8-1400-7000-8000-000000000001" } }""")]
+    [InlineData("""{ "aplica": true, "regra": { "codigo": "BONUS-MULTIPLICATIVO", "versao": "v1" }, "fator": 1.2 }""")]
     public async Task RegraSemCamposObrigatorios_422(string corpoJson)
     {
         (HttpClient client, Guid processoId) = await SemearRascunhoAsync(nameof(RegraSemCamposObrigatorios_422));

@@ -18,7 +18,7 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.CenarioDos
 public sealed class DefinirCriteriosDesempatePredicadoDeFatoCommandHandlerTests
 {
     private static CriterioDesempateInput PredicadoDoFato(string? fato, string? operador, string? valor) =>
-        new(1, CriterioDesempateCodigo.PredicadoFato, "v1", null, null, fato, operador, valor);
+        CriterioDesempateDeTeste.DaRegra(CriterioDesempateCodigo.PredicadoFato).ComPredicado(fato, operador, valor).Construir();
 
     [Fact(DisplayName = "Predicado sem fato e sem valor recusa nos dois campos")]
     public async Task Handle_PredicadoSemFatoESemValor_RecusaNosDoisCampos()
@@ -28,7 +28,7 @@ public sealed class DefinirCriteriosDesempatePredicadoDeFatoCommandHandlerTests
 
         Result result = await cenario.DefinirAsync(Comando(processo.Id, PredicadoDoFato(null, "IGUAL", null)));
 
-        result.Errors.Select(static e => e.Field).Should().Equal("criterios[0].fato", "criterios[0].valor");
+        result.Errors.Select(static e => e.Field).Should().Equal("criterios[0].parametros.fato", "criterios[0].parametros.valor");
     }
 
     [Fact(DisplayName = "Handle com DESEMPATE-PREDICADO-FATO sobre fato do vocabulário fechado resolve e persiste")]

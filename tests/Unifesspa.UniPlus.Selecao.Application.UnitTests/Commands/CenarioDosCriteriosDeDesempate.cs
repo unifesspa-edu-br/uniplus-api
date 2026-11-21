@@ -66,10 +66,10 @@ internal sealed class CenarioDosCriteriosDeDesempate
         new(processoId, criterios);
 
     public static CriterioDesempateInput CriterioSimples(int ordem, string codigo) =>
-        new(ordem, codigo, "v1", null, null, null, null, null);
+        CriterioDesempateDeTeste.DaRegra(codigo).NaOrdem(ordem).Construir();
 
     public static CriterioDesempateInput CriterioDeAreas(int ordem, params string[] areas) =>
-        new(ordem, CriterioDesempateCodigo.MaiorNotaAreaEnem, "v1", null, null, null, null, null, areas);
+        CriterioDesempateDeTeste.DaRegra(CriterioDesempateCodigo.MaiorNotaAreaEnem).NaOrdem(ordem).ComAreas(areas).Construir();
 
     public CenarioDosCriteriosDeDesempate ComRegra(string codigo, TipoRegra tipo = TipoRegra.CriterioDesempate)
     {

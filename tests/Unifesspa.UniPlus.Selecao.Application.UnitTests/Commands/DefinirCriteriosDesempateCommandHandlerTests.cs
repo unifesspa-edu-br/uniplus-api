@@ -25,7 +25,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
         CriterioSimples(1, "INEXISTENTE"),
         CriterioSimples(2, CriterioDesempateCodigo.MaiorNotaEtapa),
         CriterioSimples(3, CriterioDesempateCodigo.Idoso),
-        new CriterioDesempateInput(4, CriterioDesempateCodigo.PredicadoFato, "v1", null, null, "PROFESSOR_RURAL", null, "true"),
+        CriterioDesempateDeTeste.DaRegra(CriterioDesempateCodigo.PredicadoFato).NaOrdem(4).ComPredicado("PROFESSOR_RURAL", null, "true").Construir(),
     ];
 
     [Fact(DisplayName = "Handle com processo inexistente retorna ProcessoSeletivo.NaoEncontrado")]
@@ -46,7 +46,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
         EtapaProcesso etapa = EtapaEntrevista();
         processo.DefinirEtapas([etapa]);
         CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(CriterioDesempateCodigo.MaiorNotaEtapa);
-        CriterioDesempateInput criterio = new(1, CriterioDesempateCodigo.MaiorNotaEtapa, "v1", etapa.Id, null, null, null, null);
+        CriterioDesempateInput criterio = CriterioDesempateDeTeste.DaRegra(CriterioDesempateCodigo.MaiorNotaEtapa).NaEtapa(etapa.Id).Construir();
 
         Result result = await cenario.DefinirAsync(Comando(processo.Id, criterio));
 
@@ -73,7 +73,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcesso("PSE 2026", TiposDeProcessoDeTeste.PSECampo);
         CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(CriterioDesempateCodigo.Idoso);
-        CriterioDesempateInput criterio = new(1, CriterioDesempateCodigo.Idoso, "v1", null, 60, null, null, null);
+        CriterioDesempateInput criterio = CriterioDesempateDeTeste.DaRegra(CriterioDesempateCodigo.Idoso).ComIdadeMinima(60).Construir();
 
         Result result = await cenario.DefinirAsync(Comando(processo.Id, criterio));
 
@@ -99,7 +99,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
         ProcessoSeletivo processo = ProcessoComClassificacaoEnem();
         CenarioDosCriteriosDeDesempate cenario = Com(processo);
         CriterioDesempateInput[] criterios = [.. Enumerable.Range(1, 10_000).Select(static ordem =>
-            ordem % 2 == 0 ? null! : new CriterioDesempateInput(-ordem, string.Empty, string.Empty, null, null, null, null, null))];
+            ordem % 2 == 0 ? null! : CriterioDesempateDeTeste.DaRegra(string.Empty).NaVersao(string.Empty).NaOrdem(-ordem).Construir())];
 
         Result result = await cenario.DefinirAsync(Comando(processo.Id, criterios));
 
@@ -133,10 +133,10 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
         Result result = await cenario.DefinirAsync(Comando(processo.Id, UmCriterioComCadaRecusaSemCampo()));
 
         result.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
-            ("criterios[0].regraCodigo", "CriterioDesempate.RegraNaoEncontrada"),
-            ("criterios[1].etapaRef", "CriterioDesempate.EtapaRefObrigatorio"),
-            ("criterios[2].idadeMinima", "CriterioDesempate.IdadeMinimaObrigatoria"),
-            ("criterios[3].operador", "CriterioDesempate.PredicadoFatoIncompleto"));
+            ("criterios[0].regra.codigo", "CriterioDesempate.RegraNaoEncontrada"),
+            ("criterios[1].parametros.etapaRef", "CriterioDesempate.EtapaRefObrigatorio"),
+            ("criterios[2].parametros.idadeMinima", "CriterioDesempate.IdadeMinimaObrigatoria"),
+            ("criterios[3].parametros.operador", "CriterioDesempate.PredicadoFatoIncompleto"));
     }
 
     [Fact(DisplayName = "Ordem duplicada entre um critério recusado e um válido também é acusada")]
@@ -149,7 +149,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
             Comando(processo.Id, CriterioSimples(1, CriterioDesempateCodigo.MaiorIdade), CriterioSimples(1, "INEXISTENTE")));
 
         result.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
-            ("criterios[1].regraCodigo", "CriterioDesempate.RegraNaoEncontrada"),
+            ("criterios[1].regra.codigo", "CriterioDesempate.RegraNaoEncontrada"),
             ("criterios[1].ordem", "ProcessoSeletivo.OrdemDesempateDuplicada"));
     }
 
@@ -205,8 +205,8 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
         [
             ("criterios[0].ordem", "CriterioDesempate.OrdemInvalida"),
             ("criterios[1].ordem", "CriterioDesempate.OrdemInvalida"),
-            ("criterios[1].regraCodigo", "CriterioDesempate.RegraNaoEncontrada"),
-            ("criterios[2].regraCodigo", "CriterioDesempate.RegraNaoEncontrada"),
+            ("criterios[1].regra.codigo", "CriterioDesempate.RegraNaoEncontrada"),
+            ("criterios[2].regra.codigo", "CriterioDesempate.RegraNaoEncontrada"),
         ]);
     }
 
@@ -229,12 +229,12 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcesso("PSE 2026", TiposDeProcessoDeTeste.PSECampo);
         CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(CriterioDesempateCodigo.MaiorIdade).ComRegra(CriterioDesempateCodigo.Idoso);
-        CriterioDesempateInput idosoSemIdade = new(2, CriterioDesempateCodigo.Idoso, "v1", null, 0, null, null, null);
+        CriterioDesempateInput idosoSemIdade = CriterioDesempateDeTeste.DaRegra(CriterioDesempateCodigo.Idoso).NaOrdem(2).ComIdadeMinima(0).Construir();
 
         Result result = await cenario.DefinirAsync(Comando(processo.Id, CriterioSimples(1, CriterioDesempateCodigo.MaiorIdade), idosoSemIdade));
 
         result.IsFailure.Should().BeTrue();
-        result.Errors.Select(e => e.Field).Should().BeEquivalentTo(["criterios[1].idadeMinima"]);
+        result.Errors.Select(e => e.Field).Should().BeEquivalentTo(["criterios[1].parametros.idadeMinima"]);
     }
 
     [Fact(DisplayName = "Handle com lista vazia remove todos os critérios e persiste")]
@@ -248,5 +248,18 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         processo.CriteriosDesempate.Should().BeEmpty();
         await cenario.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Critério sem a referência da regra chega ao domínio e é recusado em regra.codigo, com o código da regra não encontrada")]
+    public async Task Handle_CriterioSemRegra_RecusaNoCodigoDaRegra()
+    {
+        ProcessoSeletivo processo = ProcessoComClassificacaoEnem();
+        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegraInexistente(string.Empty);
+        CriterioDesempateInput semRegra = CriterioDesempateDeTeste.DaRegra(CriterioDesempateCodigo.MaiorIdade).SemRegra().Construir();
+
+        Result result = await cenario.DefinirAsync(Comando(processo.Id, semRegra));
+
+        result.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+            ("criterios[0].regra.codigo", "CriterioDesempate.RegraNaoEncontrada"));
     }
 }
