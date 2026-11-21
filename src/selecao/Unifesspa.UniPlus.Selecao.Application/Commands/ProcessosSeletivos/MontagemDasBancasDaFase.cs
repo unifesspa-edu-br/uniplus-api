@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Domain.Entities;
 using Domain.Errors;
+using Domain.ProcessosSeletivos.Cronograma;
 using Domain.ValueObjects;
 
 using Kernel.Results;
@@ -23,7 +24,7 @@ internal sealed class MontagemDasBancasDaFase(CadastrosDasFases cadastros)
         RecusasAcumuladas<BancaRequerida> bancas = new();
         for (int posicao = 0; posicao < fase.BancasRequeridas.Count; posicao++)
         {
-            string campo = $"fases[{indice}].bancasRequeridas[{posicao}]";
+            string campo = $"fases[{indice}].{FaseDeclarada.ListaDasBancasRequeridas}[{posicao}]";
             bancas.Juntar(await BancaAsync(fase.BancasRequeridas[posicao], campo, cancellationToken).ConfigureAwait(false));
         }
 

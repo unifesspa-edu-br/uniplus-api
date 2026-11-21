@@ -138,7 +138,9 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
     public IReadOnlyCollection<ProdutoDaFase> Produtos => _produtos.AsReadOnly();
 
     private readonly List<BancaRequerida> _bancasRequeridas = [];
-    public IReadOnlyCollection<BancaRequerida> BancasRequeridas => _bancasRequeridas.AsReadOnly();
+
+    /// <summary>As bancas que a fase requer (0..*), em ordem canônica: a posição de cada uma é a que as recusas apontam em <c>bancasRequeridas[p]</c>.</summary>
+    public IReadOnlyCollection<BancaRequerida> BancasRequeridas => [.. OrdemCanonicaDaConfiguracao.BancasDaFase(_bancasRequeridas)];
 
     private FaseCronograma() { }
 
@@ -238,7 +240,7 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
         OrigemCanonica(),
         DecisoesDeCronograma(),
         new PublicacoesDaFase([.. OrdemCanonicaDaConfiguracao.ProdutosDaFase(_produtos)], EmiteParecerIndividual, RegraRecurso, [.. _tiposDeDecisao.Select(static tipo => tipo.Codigo())], RegraDeHomologacao),
-        [.. OrdemCanonicaDaConfiguracao.BancasDaFase(_bancasRequeridas)],
+        [.. BancasRequeridas],
         colecoesComParteRecusada);
 
     /// <summary>O que da fase entra no resultado preliminar que ela publica (ver <see cref="ValueObjects.EntradaDoPreliminar"/>).</summary>

@@ -27,7 +27,7 @@ internal static class ProjecaoDaEtapaDoProcesso
         ProjetarAvaliacao(etapa),
         new JanelaDaEtapaDto(Inicio: etapa.Inicio, Fim: etapa.Fim),
         ProjetarPublicacoes(etapa),
-        [.. OrdemCanonicaDaConfiguracao.BancasDaEtapa(etapa.Bancas).Select(ProjetarBancaDaEtapa)]);
+        [.. etapa.Bancas.Select(ProjetarBancaDaEtapa)]);
 
     private static IdentificacaoDaEtapaDto ProjetarIdentificacao(EtapaProcesso etapa) => new(
         etapa.Nome,

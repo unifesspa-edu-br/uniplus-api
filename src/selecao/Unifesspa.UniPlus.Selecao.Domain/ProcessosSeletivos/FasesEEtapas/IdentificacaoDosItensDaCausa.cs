@@ -3,15 +3,19 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using System.Globalization;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// O identificador estável de cada item de lista que o campo de uma causa atravessa. A causa aponta a fase, a etapa e o recurso pela
-/// posição canônica deles, e entre a recusa e a nova leitura outra pessoa pode gravar o processo e mudar as posições; o identificador
-/// deixa o cliente achar o item certo mesmo assim. A fase se identifica pelo código do tipo de fase, que é único no cronograma; a
-/// etapa e o recurso, pelo identificador deles. O item que não existe mais não aponta outro: o identificador que não acha item
-/// nenhum deixa a causa na lista que o contém. Roda antes de o campo virar ponteiro do documento, porque o índice que ele lê é o canônico.
+/// O identificador estável de cada item de lista que o campo de uma causa atravessa. A causa aponta a fase, a etapa, o recurso e a
+/// banca pela posição canônica deles, e entre a recusa e a nova leitura outra pessoa pode gravar o processo e mudar as posições; o
+/// identificador deixa o cliente achar o item certo mesmo assim. A fase se identifica pelo código do tipo de fase, que é único no
+/// cronograma; a etapa, o recurso e a banca, pelo identificador deles. A banca vem depois da fase ou da etapa em que está; a causa
+/// que se refere à fase ou à etapa inteira, sem apontar uma banca, fica só com a fase ou a etapa. O item que não existe mais não
+/// aponta outro: o identificador que não acha item nenhum deixa a causa na lista que o contém. Roda antes de o campo virar ponteiro
+/// do documento, porque o índice que ele lê é o canônico.
 /// </summary>
 public static class IdentificacaoDosItensDaCausa
 {
@@ -44,10 +48,17 @@ public static class IdentificacaoDosItensDaCausa
         return Ler(campo, ListaDasEtapas) is { } etapa ? DaEtapa(etapa, configuracao) : [];
     }
 
-    private static IEnumerable<IdentificadorDoItem> DaFase(ItemDoCaminho fase, ConfiguracaoDeclarada configuracao) =>
-        configuracao.Cronograma.CronogramaFases.ElementAtOrDefault(fase.Posicao) is { } encontrada
-            ? [new(CronogramaDoProcesso.ListaDasFases, encontrada.Codigo)]
-            : [];
+    private static IEnumerable<IdentificadorDoItem> DaFase(ItemDoCaminho caminho, ConfiguracaoDeclarada configuracao)
+    {
+        if (configuracao.Cronograma.CronogramaFases.ElementAtOrDefault(caminho.Posicao) is not { } fase)
+        {
+            return [];
+        }
+
+        IdentificadorDoItem daFase = new(CronogramaDoProcesso.ListaDasFases, fase.Codigo);
+
+        return [daFase, .. DoItem(caminho.Resto, FaseDeclarada.ListaDasBancasRequeridas, [.. fase.BancasRequeridas.Select(static banca => banca.Id)])];
+    }
 
     private static IEnumerable<IdentificadorDoItem> DaEtapa(ItemDoCaminho caminho, ConfiguracaoDeclarada configuracao)
     {
@@ -58,10 +69,20 @@ public static class IdentificacaoDosItensDaCausa
 
         IdentificadorDoItem daEtapa = new(ListaDasEtapas, Texto(etapa.Id));
 
-        return Ler(caminho.Resto, ListaDosRecursos) is { } recurso && etapa.Recursos.ElementAtOrDefault(recurso.Posicao) is { } encontrado
-            ? [daEtapa, new(ListaDosRecursos, Texto(encontrado.Id))]
-            : [daEtapa];
+        return [daEtapa, .. DoFilhoDaEtapa(caminho.Resto, etapa)];
     }
+
+    private static IEnumerable<IdentificadorDoItem> DoFilhoDaEtapa(string caminho, EtapaProcesso etapa) =>
+    [
+        .. DoItem(caminho, ListaDosRecursos, [.. etapa.Recursos.Select(static recurso => recurso.Id)]),
+        .. DoItem(caminho, EtapaDeclarada.ListaDasBancas, [.. etapa.Bancas.Select(static banca => banca.Id)]),
+    ];
+
+    // O item da lista que o caminho aponta, se a posição existe na lista: a posição que sobra não aponta outro item.
+    private static IEnumerable<IdentificadorDoItem> DoItem(string caminho, string lista, Guid[] identificadores) =>
+        Ler(caminho, lista) is { } item && item.Posicao < identificadores.Length
+            ? [new(lista, Texto(identificadores[item.Posicao]))]
+            : [];
 
     private static string Texto(Guid identificador) => identificador.ToString("D", CultureInfo.InvariantCulture);
 

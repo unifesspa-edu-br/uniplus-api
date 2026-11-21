@@ -59,10 +59,8 @@ internal static class ProjecaoDaFaseDoCronograma
         [.. OrdemCanonicaDaConfiguracao.ProdutosDaFase(fase.Produtos)
             .Select(static p => new ProdutoDaFaseDto(p.Id, p.AtoCodigo, p.Papel.ToCodigo()))];
 
-    // As bancas saem na ordem canônica: duas do mesmo tipo convivem na mesma fase, e sem ordem a resposta sairia
-    // na sequência arbitrária em que o EF materializou as linhas.
     private static BancaRequeridaDto[] ProjetarBancasRequeridas(FaseCronograma fase) =>
-        [.. OrdemCanonicaDaConfiguracao.BancasDaFase(fase.BancasRequeridas).Select(ProjetarBancaRequerida)];
+        [.. fase.BancasRequeridas.Select(ProjetarBancaRequerida)];
 
     private static BancaRequeridaDto ProjetarBancaRequerida(BancaRequerida banca) => new(
         banca.Id,

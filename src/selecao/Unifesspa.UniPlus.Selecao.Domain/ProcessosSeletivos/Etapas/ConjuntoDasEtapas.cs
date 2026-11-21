@@ -80,7 +80,7 @@ internal static class ConjuntoDasEtapas
     private static IEnumerable<FieldError> EtapasDoEnemComBanca(IReadOnlyList<EtapaDeclarada> etapas) =>
         DoEnem(etapas)
             .Where(static par => par.Etapa.Bancas.TemBancas)
-            .Select(static par => EtapasDoProcesso.NaEtapa(par.Posicao, "bancas", NotaDoEnemComBanca(par.Etapa.Nome)));
+            .Select(static par => EtapasDoProcesso.NaEtapa(par.Posicao, EtapaDeclarada.ListaDasBancas, NotaDoEnemComBanca(par.Etapa.Nome)));
 
     private static IEnumerable<FieldError> EtapasDoEnemComProdutoOuRecursoEmAto(IReadOnlyList<EtapaDeclarada> etapas) =>
         DoEnem(etapas)

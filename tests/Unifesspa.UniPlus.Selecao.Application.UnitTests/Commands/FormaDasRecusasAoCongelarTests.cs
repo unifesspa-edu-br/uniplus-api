@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -111,6 +112,37 @@ public sealed class FormaDasRecusasAoCongelarTests
         etapa.Produtos.Should().ContainSingle();
         resposta.Errors.Select(static e => e.Field).Should().Contain("/etapas/0/produtos");
         resposta.Errors.Select(static e => e.Field).OfType<string>().Should().OnlyContain(static campo => campo.Length == 0 || campo[0] == '/');
+    }
+
+    [Fact(DisplayName = "A causa em uma banca da etapa chega com o identificador da etapa e o da banca na posição canônica, e a gravação do estado não as acrescenta ao campo")]
+    public async Task CausaDaBancaDaEtapa_ChegaComOsIdentificadoresDaEtapaEDaBanca()
+    {
+        CenarioDeRecusaNoCongelamento cenario = Para(OperacaoQueCongela.Publicar);
+        EtapaProcesso etapa = EtapaComBancasSemRegra(cenario.Processo);
+        BancaDaEtapa[] naOrdemCanonica = [.. etapa.Bancas];
+
+        (Result resposta, _) = await cenario.ExecutarAsync();
+
+        FieldError[] daBanca = [.. resposta.Errors.Where(static e => e.Error.Code == BancaErrorCodes.RegraDeDeliberacaoObrigatoria)];
+        daBanca.Select(static e => e.Field).Should().Equal("/etapas/0/bancas/0", "/etapas/0/bancas/1");
+        for (int posicao = 0; posicao < daBanca.Length; posicao++)
+        {
+            daBanca[posicao].Identificadores.Should().Equal(
+                new IdentificadorDoItem("etapas", etapa.Id.ToString("D")), new IdentificadorDoItem("bancas", naOrdemCanonica[posicao].Id.ToString("D")));
+        }
+    }
+
+    // A banca de heteroidentificação chega antes da de análise documental e fica depois dela na ordem canônica; nenhuma declara a regra de deliberação.
+    private static EtapaProcesso EtapaComBancasSemRegra(ProcessoSeletivo processo)
+    {
+        EtapaProcesso etapa = EtapaQuePublicaPreliminarSemDefinitivo(processo);
+        etapa.DefinirBancas(
+        [
+            BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_HETEROIDENTIFICACAO", "Banca de teste"),
+            BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_ANALISE_DOCUMENTAL", "Banca de teste"),
+        ]);
+
+        return etapa;
     }
 
     // O conjunto de etapas recusa o preliminar sem definitivo ao ser gravado; o estado violado chega pelo produto declarado depois.

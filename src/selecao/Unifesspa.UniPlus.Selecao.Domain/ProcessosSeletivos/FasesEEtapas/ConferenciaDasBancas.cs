@@ -104,19 +104,19 @@ public static class ConferenciaDasBancas
         cronograma.Fases.SelectMany(static (fase, posicao) => fase.Bancas.Declaradas
             .Where(static banca => banca.Regra is null)
             .Select(banca => CronogramaDoProcesso.NaFase(
-                posicao, $"bancasRequeridas[{banca.Posicao}]", RegraDeDeliberacaoAusente(banca.Nome, $"da fase '{fase.Codigo}'"))));
+                posicao, $"{FaseDeclarada.ListaDasBancasRequeridas}[{banca.Posicao}]", RegraDeDeliberacaoAusente(banca.Nome, $"da fase '{fase.Codigo}'"))));
 
     private static IEnumerable<FieldError> BancasSemRegraDasEtapas(EtapasDoProcesso etapas) =>
         etapas.Etapas.SelectMany(static (etapa, posicao) => etapa.Bancas.Declaradas
             .Where(static banca => banca.Regra is null)
             .Select(banca => EtapasDoProcesso.NaEtapa(
-                posicao, $"bancas[{banca.Posicao}]", RegraDeDeliberacaoAusente(banca.Nome, $"da etapa '{etapa.Nome}'"))));
+                posicao, $"{EtapaDeclarada.ListaDasBancas}[{banca.Posicao}]", RegraDeDeliberacaoAusente(banca.Nome, $"da etapa '{etapa.Nome}'"))));
 
     private static IEnumerable<BancaJulgadora> BancasDasFases(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
         cronograma.Fases.SelectMany((fase, posicao) => fase.Bancas.Declaradas
             .Where(static banca => banca.Regra is not null)
             .Select(banca => new BancaJulgadora(
-                erro => CronogramaDoProcesso.NaFase(posicao, $"bancasRequeridas[{banca.Posicao}]", erro),
+                erro => CronogramaDoProcesso.NaFase(posicao, $"{FaseDeclarada.ListaDasBancasRequeridas}[{banca.Posicao}]", erro),
                 banca.Nome,
                 $"da fase '{fase.Codigo}'",
                 banca.Regra!,
@@ -126,7 +126,7 @@ public static class ConferenciaDasBancas
         etapas.Etapas.SelectMany(static (etapa, posicao) => etapa.Bancas.Declaradas
             .Where(static banca => banca.Regra is not null)
             .Select(banca => new BancaJulgadora(
-                erro => EtapasDoProcesso.NaEtapa(posicao, $"bancas[{banca.Posicao}]", erro),
+                erro => EtapasDoProcesso.NaEtapa(posicao, $"{EtapaDeclarada.ListaDasBancas}[{banca.Posicao}]", erro),
                 banca.Nome,
                 $"da etapa '{Eco(etapa.Nome)}'",
                 banca.Regra!,
