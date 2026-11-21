@@ -84,8 +84,19 @@ public sealed class MontagemDasBancasDaFaseTests
         Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(Fase(declarada), 0, CancellationToken.None);
 
         FieldError recusa = resultado.Errors.Should().ContainSingle().Subject;
-        recusa.Field.Should().Be("fases[0].bancasRequeridas[0].categoriasDocumentoIds");
+        recusa.Field.Should().Be("fases[0].bancasRequeridas[0].categoriasDocumentoIds[0]");
         recusa.Error.Code.Should().Be("FaseCronograma.CategoriaDocumentoNaoEncontrada");
+    }
+
+    [Fact(DisplayName = "A categoria ausente do cadastro é recusada na posição que ela ocupa na lista")]
+    public async Task Montar_ComSegundaCategoriaAusenteDoCadastro_RecusaNaPosicaoDela()
+    {
+        BancaRequeridaInput declarada = new(TipoDocumental.Id, [CategoriaRenda.Id, Guid.CreateVersion7()], null);
+
+        Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(Fase(declarada), 0, CancellationToken.None);
+
+        FieldError recusa = resultado.Errors.Should().ContainSingle().Subject;
+        recusa.Field.Should().Be("fases[0].bancasRequeridas[0].categoriasDocumentoIds[1]");
     }
 
     [Fact(DisplayName = "A banca sem regra é rascunho e a montagem a aceita")]
