@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -60,7 +61,7 @@ internal sealed class BaseLegalBonusRegionalReader : IBaseLegalBonusRegionalRead
     private static BaseLegalBonusRegionalView Visao(Domain.Entities.BaseLegalBonusRegional entity) => new(
         entity.Id,
         entity.Codigo.Valor,
-        entity.TipoInstrumento.ToCodigo(),
+        entity.TipoInstrumento.Codigo(),
         entity.Identificacao,
         entity.Descricao,
         entity.Municipios.Select(m => new BaseLegalBonusRegionalMunicipioView(m.CodigoIbge, m.Nome, m.Uf)).ToList().AsReadOnly());

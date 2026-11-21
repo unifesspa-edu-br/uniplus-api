@@ -72,6 +72,41 @@ public sealed class BaseLegalBonusRegionalTests
             e.Error.Code == BaseLegalBonusRegionalErrorCodes.TipoInstrumentoInvalido && e.Field == "tipoInstrumento");
     }
 
+    [Fact(DisplayName = "A recusa do tipo desconhecido lista os códigos aceitos sem repetir o valor recebido")]
+    public void Criar_TipoDesconhecido_ListaOsCodigosAceitosSemRepetirOValor()
+    {
+        Result<BaseLegalBonusRegional> result = BaseLegalBonusRegional.Criar(
+            "MEDIDA_PROVISORIA", "Lei 123", "Descricao", [MunicipioValido]);
+
+        string mensagem = result.Errors.Single(e => e.Field == "tipoInstrumento").Error.Message;
+        mensagem.Should().Contain("LEI, DECRETO, PORTARIA, RESOLUCAO, INSTRUCAO_NORMATIVA, PARECER, EDITAL");
+        mensagem.Should().NotContain("MEDIDA_PROVISORIA");
+    }
+
+    [Fact(DisplayName = "O tipo desconhecido é recusado junto com as demais recusas do pedido")]
+    public void Criar_TipoDesconhecidoEIdentificacaoVazia_AcumulaAsRecusas()
+    {
+        Result<BaseLegalBonusRegional> result = BaseLegalBonusRegional.Criar("MEDIDA_PROVISORIA", "", "Descricao", []);
+
+        result.Errors.Select(e => e.Error.Code).Should().Contain(
+        [
+            BaseLegalBonusRegionalErrorCodes.TipoInstrumentoInvalido,
+            BaseLegalBonusRegionalErrorCodes.IdentificacaoObrigatoria,
+            BaseLegalBonusRegionalErrorCodes.SemMunicipios,
+        ]);
+    }
+
+    [Theory(DisplayName = "Tipo de instrumento em outra caixa, vazio ou nulo é recusado")]
+    [InlineData("lei")]
+    [InlineData("")]
+    [InlineData(null)]
+    public void Criar_TipoForaDoCodigoDeclarado_Recusa(string? tipo)
+    {
+        Result<BaseLegalBonusRegional> result = BaseLegalBonusRegional.Criar(tipo, "Lei 123", "Descricao", [MunicipioValido]);
+
+        result.Errors.Should().Contain(e => e.Error.Code == BaseLegalBonusRegionalErrorCodes.TipoInstrumentoInvalido);
+    }
+
     [Fact(DisplayName = "Criar com identificação vazia retorna IdentificacaoObrigatoria")]
     public void Criar_ComIdentificacaoVazia_RetornaValidationFailure()
     {

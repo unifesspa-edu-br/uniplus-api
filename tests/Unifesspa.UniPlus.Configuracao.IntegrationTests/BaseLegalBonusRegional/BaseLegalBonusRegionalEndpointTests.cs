@@ -117,7 +117,8 @@ public sealed class BaseLegalBonusRegionalEndpointTests
 
     private static void ConferirBaseLegalCriada(JsonElement root, string identificacao)
     {
-        root.GetProperty("tipoInstrumento").GetString().Should().Be("PORTARIA");
+        root.GetProperty("tipoInstrumento").GetProperty("codigo").GetString().Should().Be("PORTARIA");
+        root.GetProperty("tipoInstrumento").GetProperty("rotulo").GetString().Should().Be("Portaria");
         root.GetProperty("identificacao").GetString().Should().Be(identificacao);
         root.GetProperty("codigo").GetString().Should().StartWith("PORTARIA_TESTE_");
         root.GetProperty("municipios").GetArrayLength().Should().Be(1);
@@ -138,7 +139,7 @@ public sealed class BaseLegalBonusRegionalEndpointTests
         HttpResponseMessage obter = await client.GetAsync(
             new Uri($"/api/configuracao/base-legal-bonus-regional/{id}", UriKind.Relative));
         using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
-        doc.RootElement.GetProperty("tipoInstrumento").GetString().Should().Be("EDITAL");
+        doc.RootElement.GetProperty("tipoInstrumento").GetProperty("codigo").GetString().Should().Be("EDITAL");
     }
 
     [Fact(DisplayName = "POST sem nenhum município retorna 422 sem gravar")]

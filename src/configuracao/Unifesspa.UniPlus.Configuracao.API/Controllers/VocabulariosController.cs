@@ -1,14 +1,15 @@
 namespace Unifesspa.UniPlus.Configuracao.API.Controllers;
 
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Queries.Vocabularios;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 
 /// <summary>
@@ -49,10 +50,6 @@ using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 /// </para>
 /// </remarks>
 [ApiController]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class VocabulariosController : ControllerBase
 {
     private readonly IQueryBus _queryBus;
@@ -92,15 +89,15 @@ public sealed class VocabulariosController : ControllerBase
         return Ok(codigos);
     }
 
-    /// <summary>Lista os tipos de instrumento normativo da Base Legal de Bônus Regional, com código, nome e descrição.</summary>
+    /// <summary>Lista os tipos de instrumento normativo da Base Legal de Bônus Regional, com código, rótulo e descrição.</summary>
     [HttpGet("vocabularios/tipos-instrumento-normativo")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "codigo-tipo-instrumento-normativo", Versions = [1])]
-    [ProducesResponseType(typeof(IEnumerable<TipoInstrumentoNormativoVocabularioDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<CodigoComDescricao<TipoInstrumentoNormativo>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ListarCodigosTipoInstrumentoNormativo(CancellationToken cancellationToken)
     {
-        IReadOnlyList<TipoInstrumentoNormativoVocabularioDto> codigos = await _queryBus
+        IReadOnlyList<CodigoComDescricao<TipoInstrumentoNormativo>> codigos = await _queryBus
             .Send(new ListarCodigosTipoInstrumentoNormativoQuery(), cancellationToken)
             .ConfigureAwait(false);
 

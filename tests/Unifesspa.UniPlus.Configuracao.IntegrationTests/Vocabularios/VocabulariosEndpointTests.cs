@@ -7,7 +7,9 @@ using System.Net.Http.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 
 /// <summary>
@@ -120,38 +122,33 @@ public sealed class VocabulariosEndpointTests
         codigos.Should().AllSatisfy(c => c.Nome.Should().NotBeNullOrWhiteSpace());
     }
 
-    [Fact(DisplayName = "GET /vocabularios/tipos-instrumento-normativo devolve os tipos com código, nome e descrição, na ordem publicada, sem exigir autenticação")]
+    [Fact(DisplayName = "GET /vocabularios/tipos-instrumento-normativo devolve os tipos com código, rótulo e descrição, na ordem publicada, sem exigir autenticação")]
     public async Task ListarCodigosTipoInstrumentoNormativo_DevolveVocabularioCompleto()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
-
         HttpResponseMessage response = await client.GetAsync(
             new Uri("/api/configuracao/vocabularios/tipos-instrumento-normativo", UriKind.Relative));
-
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Content.Headers.ContentType!.MediaType.Should()
             .Be("application/vnd.uniplus.codigo-tipo-instrumento-normativo.v1+json");
-
-        TipoInstrumentoNormativoVocabularioDto[] codigos =
-            (await response.Content.ReadFromJsonAsync<TipoInstrumentoNormativoVocabularioDto[]>())!;
-
-        // Afirmado por extenso, e não derivado do catálogo: é o contrato publicado que está
-        // sob teste — derivá-lo da mesma fonte que o produz faria o teste concordar com
-        // qualquer mudança, inclusive uma remoção acidental de código.
-        codigos.Select(c => c.Codigo).Should().Equal(
-            "LEI",
-            "DECRETO",
-            "PORTARIA",
-            "RESOLUCAO",
-            "INSTRUCAO_NORMATIVA",
-            "PARECER",
-            "EDITAL");
-        codigos.Should().AllSatisfy(c =>
-        {
-            c.Nome.Should().NotBeNullOrWhiteSpace();
-            c.Descricao.Should().NotBeNullOrWhiteSpace();
-        });
+        CodigoComDescricao<TipoInstrumentoNormativo>[] tipos =
+            (await response.Content.ReadFromJsonAsync<CodigoComDescricao<TipoInstrumentoNormativo>[]>())!;
+        tipos.Select(static t => (t.Codigo, t.Rotulo)).Should().Equal(TiposDeInstrumentoNaOrdemPublicada);
+        tipos.Should().AllSatisfy(static t => t.Descricao.Should().NotBeNullOrWhiteSpace());
     }
+
+    // Afirmado por extenso, e não derivado do catálogo: é o contrato publicado que está sob teste — derivá-lo da mesma
+    // fonte que o produz faria o teste concordar com qualquer mudança, inclusive uma remoção acidental de código.
+    private static readonly (string Codigo, string Rotulo)[] TiposDeInstrumentoNaOrdemPublicada =
+    [
+        ("LEI", "Lei"),
+        ("DECRETO", "Decreto"),
+        ("PORTARIA", "Portaria"),
+        ("RESOLUCAO", "Resolução"),
+        ("INSTRUCAO_NORMATIVA", "Instrução Normativa"),
+        ("PARECER", "Parecer"),
+        ("EDITAL", "Edital"),
+    ];
 
     [Theory(DisplayName = "Vocabulário governado por código não tem rota de escrita — evolução é mudança versionada da API, não cadastro")]
     [InlineData("/api/configuracao/vocabularios/tipos-banca")]
