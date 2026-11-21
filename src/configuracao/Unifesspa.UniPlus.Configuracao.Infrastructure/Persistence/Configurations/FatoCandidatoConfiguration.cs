@@ -46,7 +46,6 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
         ArgumentNullException.ThrowIfNull(builder);
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
         builder.ToTable("fatos_do_candidato", ConfigurarChecks);
-        builder.HasKey(f => f.Id);
         ConfigurarIdentificacao(builder);
         ConfigurarClassificacaoDoFato(builder);
         ConfigurarProtecaoDeDados(builder);
@@ -62,6 +61,8 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
 
     private static void ConfigurarIdentificacao(EntityTypeBuilder<FatoCandidato> builder)
     {
+        builder.HasKey(f => f.Id);
+
         // Chave Guid v7 gerada no domínio (EntityBase): ValueGeneratedNever força o
         // EF a tratar a chave como fornecida pela aplicação (convenção do repo).
         builder.Property(f => f.Id).ValueGeneratedNever();

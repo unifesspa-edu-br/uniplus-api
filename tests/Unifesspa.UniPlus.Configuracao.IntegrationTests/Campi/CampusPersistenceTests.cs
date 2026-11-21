@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.Campi;
 
-using System.Diagnostics.CodeAnalysis;
-
 using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
@@ -25,10 +23,6 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// de sigla, soft-delete e bloqueio de remoção de Campus com LocalOferta vivo.
 /// </summary>
 [Collection(ConfiguracaoDbCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class CampusPersistenceTests
 {
     private const string AdminA = "admin-a";
