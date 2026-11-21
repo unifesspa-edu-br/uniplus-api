@@ -20,9 +20,9 @@ internal static class EmissaoDeVersao
     }
 
     /// <summary>
-    /// Sucede a versão corrente. O instante é ancorado na vigência dela quando o relógio regride:
-    /// o id v7 do ato novo carrega o instante nos bits mais significativos, e um instante cru
-    /// ordenaria o ato novo antes do que ele emenda, invertendo a cadeia na paginação por keyset (ADR-0032).
+    /// Sucede a versão corrente. O comando já entrega o instante efetivo. Quando o relógio regride, a versão nova
+    /// ainda assume a vigência da versão que sucede: o identificador do ato novo carrega o instante, e um instante anterior
+    /// ordenaria o ato novo antes do ato que ele emenda, invertendo a ordem da cadeia na listagem paginada (ADR-0032).
     /// </summary>
     internal static (VersaoConfiguracao Versao, ProcessoPublicadoEvent Evento) Suceder(
         Guid processoId, VersaoConfiguracao versaoAtual, PedidoDeCongelamento pedido)

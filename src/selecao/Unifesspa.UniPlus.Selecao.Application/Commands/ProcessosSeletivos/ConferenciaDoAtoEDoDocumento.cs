@@ -26,9 +26,10 @@ internal readonly record struct AtoEDocumentoConferidos(
 /// O que as três transições que congelam uma versão conferem antes de qualquer escrita: o documento
 /// confirmado e o tipo do ato no catálogo de Publicações. A vaga que a linhagem reserva sobre o certame é conferida
 /// pelo registro do ato, na mesma transação da publicação. Os atributos conferidos do tipo seguem ao registro por
-/// valor, porque reler o catálogo faria a decisão valer outra coisa. O instante da publicação é lido aqui, depois da
-/// trava do processo que o handler já tomou, e o tipo do ato vigora no dia civil dele no fuso institucional: a data
-/// que o documento declara não escolhe o tipo.
+/// valor, porque reler o catálogo faria a decisão valer outra coisa. O instante da operação é lido aqui, uma só vez,
+/// depois da trava do processo que o handler já tomou, e o tipo do ato vigora no dia civil dele no fuso institucional: a
+/// data que o documento declara não escolhe o tipo. A origem diz qual instante vale: na retificação, o efetivo, que não
+/// precede a vigência da versão sucedida.
 /// </summary>
 public sealed class ConferenciaDoAtoEDoDocumento(
     IDocumentoAPublicarRepository documentos,
@@ -37,21 +38,21 @@ public sealed class ConferenciaDoAtoEDoDocumento(
     LeituraDoInstanteDoComando instantes)
 {
     internal async Task<Result<AtoEDocumentoConferidos>> ConferirAsync(
-        Guid processoId, Guid documentoEditalId, DadosDoAto ato, string momento, CancellationToken cancellationToken)
+        Guid processoId, Guid documentoEditalId, DadosDoAto ato, OrigemDoCongelamento origem, CancellationToken cancellationToken)
     {
         Result<DocumentoAPublicar> documento = await ConferenciaDoDocumentoDoEdital
-            .ConferirAsync(documentos, processoId, documentoEditalId, momento, cancellationToken)
+            .ConferirAsync(documentos, processoId, documentoEditalId, origem.DescricaoDaOperacao, cancellationToken)
             .ConfigureAwait(false);
 
         return documento.IsFailure
             ? Result<AtoEDocumentoConferidos>.Failure(documento.Error!)
-            : await ConferirOTipoEAVagaAsync(processoId, ato, documento.Value!, cancellationToken).ConfigureAwait(false);
+            : await ConferirOTipoEAVagaAsync(processoId, ato, documento.Value!, origem, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<Result<AtoEDocumentoConferidos>> ConferirOTipoEAVagaAsync(
-        Guid processoId, DadosDoAto ato, DocumentoAPublicar documento, CancellationToken cancellationToken)
+        Guid processoId, DadosDoAto ato, DocumentoAPublicar documento, OrigemDoCongelamento origem, CancellationToken cancellationToken)
     {
-        Result<InstanteDoComando> instante = instantes.Ler();
+        Result<InstanteDoComando> instante = origem.LerOInstante(instantes);
 
         return instante.IsFailure
             ? Result<AtoEDocumentoConferidos>.Failure(instante.Error!)
