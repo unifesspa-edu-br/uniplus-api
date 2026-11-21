@@ -190,8 +190,8 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
     }
 
     /// <summary>
-    /// Indica se <paramref name="campos"/> altera algum atributo fora da allowlist de
-    /// edição do catálogo legal fixo. A allowlist enumera o que <b>pode</b> mudar
+    /// Indica se <paramref name="campos"/> altera algum atributo fora da lista de
+    /// atributos editáveis do catálogo legal fixo. Essa lista enumera o que <b>pode</b> mudar
     /// (descrição e base legal) — assim um atributo novo do agregado nasce protegido por
     /// omissão, em vez de desprotegido.
     /// </summary>

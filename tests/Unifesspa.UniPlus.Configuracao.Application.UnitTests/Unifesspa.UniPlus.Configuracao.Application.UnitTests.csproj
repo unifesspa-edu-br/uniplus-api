@@ -28,6 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../Shared/ResultadoDeTeste.cs" Link="ResultadoDeTeste.cs" />
     <Compile Include="../Shared/TipoEtapaDeTeste.cs" Link="TipoEtapaDeTeste.cs" />
     <Compile Include="../Shared/DecisaoDeAcessoDeTeste.cs" Link="DecisaoDeAcessoDeTeste.cs" />
   </ItemGroup>

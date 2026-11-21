@@ -202,7 +202,7 @@ internal static class CorpusEnvelopeProcessoRico
     }
 
     // Coleta de fatos + derivação (Story #928, §7.4): COR_RACA vem da seção do conjunto básico,
-    // sem gate; RENDA é gatado por COR_RACA (pré-condição); a modalidade do candidato é
+    // sem pré-condição; RENDA depende de COR_RACA (pré-condição); a modalidade do candidato é
     // derivada das regras das modalidades ofertadas, e a das cotas de renda cita COR_RACA e
     // RENDA. Exercita, no mesmo snapshot, as arestas de produção, pré-condição e derivação,
     // com predicado DNF de duas condições numa cláusula. A seção traz também a UF do Geo, seleção com as

@@ -76,8 +76,8 @@ public sealed class LocalOfertaPersistenceTests
         LocalOferta persistido = await LerAsync(local.Id);
 
         persistido.Endereco.Should().NotBeNull();
-        persistido.Endereco!.Cep.Should().Be("68507590");
-        persistido.Endereco.CidadeCodigoIbge.Should().Be("1504208");
+        persistido.Endereco?.Cep.Should().Be("68507590");
+        persistido.Endereco?.CidadeCodigoIbge.Should().Be("1504208");
     }
 
     [Fact(DisplayName = "FK campus_responsavel_id inexistente é rejeitada pelo banco")]
@@ -121,13 +121,13 @@ public sealed class LocalOfertaPersistenceTests
         ReferenciaEnderecoGeo.Criar(
             "68507590", "Folha 31", "s/n", null, "Nova Marabá", null,
             "1504208", "Marabá", "PA", -5.3m, -49.1m,
-            NivelResolucaoEndereco.Logradouro, "logradouro", Agora).Value!;
+            NivelResolucaoEndereco.Logradouro, "logradouro", Agora).ValorEsperado();
 
     private async Task<Campus> PersistirCampusAsync()
     {
         Campus campus = Campus.Criar(
             "LOFCAM", "Campus Local", "1504208", "Marabá", "PA",
-            ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null).Value!;
+            ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null).ValorEsperado();
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
         ctx.Campi.Add(campus);
         await ctx.SaveChangesAsync();
@@ -156,10 +156,10 @@ public sealed class LocalOfertaPersistenceTests
     private static OfertaCurso NovaOferta(Curso curso, LocalOferta local)
     {
         UnidadeOfertante unidade = UnidadeOfertante.Criar(
-            Guid.CreateVersion7(), "FACET", "Faculdade de Computação e Engenharia Elétrica", "Faculdade").Value!;
+            Guid.CreateVersion7(), "FACET", "Faculdade de Computação e Engenharia Elétrica", "Faculdade").ValorEsperado();
         return OfertaCurso.Criar(
             curso.Id, local.Id, unidade,
-            new DeclaracaoDaOfertaDeCurso($"OFERTA_{Guid.CreateVersion7():N}".ToUpperInvariant(), "REGULAR", "PRESENCIAL", "EXTENSIVO", "REGULAR", ["MATUTINO"])).Value!;
+            new DeclaracaoDaOfertaDeCurso($"OFERTA_{Guid.CreateVersion7():N}".ToUpperInvariant(), "REGULAR", "PRESENCIAL", "EXTENSIVO", "REGULAR", ["MATUTINO"])).ValorEsperado();
     }
 
     private async Task ConferirRemocaoBloqueadaAsync(Guid localId)
@@ -167,14 +167,14 @@ public sealed class LocalOfertaPersistenceTests
         Result bloqueada = await RemoverLocalAsync(localId);
 
         bloqueada.IsFailure.Should().BeTrue();
-        bloqueada.Error!.Code.Should().Be(LocalOfertaErrorCodes.RemocaoBloqueadaPorOfertaCurso);
+        bloqueada.Error?.Code.Should().Be(LocalOfertaErrorCodes.RemocaoBloqueadaPorOfertaCurso);
         (await ExisteAsync(localId)).Should().BeTrue("o local permanece vivo — a remoção foi bloqueada, não executada");
     }
 
     private async Task<OfertaCurso> PersistirOfertaNoLocalAsync(LocalOferta local)
     {
         Curso curso = Curso.Criar(
-            CodigoUnico(), "Engenharia Civil", "Bacharelado", "Graduação", null).Value!;
+            CodigoUnico(), "Engenharia Civil", "Bacharelado", "Graduação", null).ValorEsperado();
         OfertaCurso oferta = NovaOferta(curso, local);
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
         ctx.Cursos.Add(curso);

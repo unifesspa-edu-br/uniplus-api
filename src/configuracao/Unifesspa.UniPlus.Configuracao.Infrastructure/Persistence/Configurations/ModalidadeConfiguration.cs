@@ -51,7 +51,7 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
     }
 
     // Codigo é value object imutável — persistido por valor como varchar via
-    // CodigoModalidadeValueConverter (reidratação fail-fast). O CHECK de formato
+    // CodigoModalidadeValueConverter (reidratação falha de imediato se o código gravado for inválido). O CHECK de formato
     // e o índice único parcial protegem a coluna.
     private static void ConfigurarIdentificacao(EntityTypeBuilder<Modalidade> builder)
     {
@@ -142,7 +142,9 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
     private static object LinhaDoSeed(ModalidadeSeedItem item) => new
     {
         item.Id,
-        Codigo = CodigoModalidade.Criar(item.Codigo).Value!,
+        Codigo = CodigoModalidade.Criar(item.Codigo).Match(
+            codigo => codigo,
+            erro => throw new InvalidOperationException($"Código de modalidade inválido no cadastro inicial: {erro.Message}")),
         item.Descricao,
         NaturezaLegal = item.Natureza,
         ComposicaoVagas = item.Composicao,
@@ -168,22 +170,22 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
     {
         table.HasCheckConstraint(
             "ck_modalidades_natureza_legal",
-            $"natureza_legal IN ({TokensSql(NaturezasLegais.TokensCanonicos)})");
+            $"natureza_legal IN ({CodigosSql(NaturezasLegais.TokensCanonicos)})");
 
         table.HasCheckConstraint(
             "ck_modalidades_composicao_vagas",
-            $"composicao_vagas IN ({TokensSql(ComposicoesVagas.TokensCanonicos)})");
+            $"composicao_vagas IN ({CodigosSql(ComposicoesVagas.TokensCanonicos)})");
     }
 
     private static void ConfigurarChecksDosDominiosDoRemanejamento(TableBuilder<Modalidade> table)
     {
         table.HasCheckConstraint(
             "ck_modalidades_regra_remanejamento",
-            $"regra_remanejamento IS NULL OR regra_remanejamento IN ({TokensSql(RegrasRemanejamento.TokensCanonicos)})");
+            $"regra_remanejamento IS NULL OR regra_remanejamento IN ({CodigosSql(RegrasRemanejamento.TokensCanonicos)})");
 
         table.HasCheckConstraint(
             "ck_modalidades_acao_quando_indeferido",
-            $"acao_quando_indeferido IS NULL OR acao_quando_indeferido IN ({TokensSql(AcoesQuandoIndeferido.TokensCanonicos)})");
+            $"acao_quando_indeferido IS NULL OR acao_quando_indeferido IN ({CodigosSql(AcoesQuandoIndeferido.TokensCanonicos)})");
     }
 
     // Formato fechado do código — alinhado ao value object CodigoModalidade.
@@ -200,8 +202,8 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
             "(composicao_vagas = 'RETIRADA_DE_OUTRA_MODALIDADE') = (composicao_origem IS NOT NULL)");
     }
 
-    private static string TokensSql(IReadOnlyList<string> tokens) =>
-        string.Join(", ", tokens.Select(token => $"'{token}'"));
+    private static string CodigosSql(IReadOnlyList<string> codigos) =>
+        string.Join(", ", codigos.Select(codigo => $"'{codigo}'"));
 
     // ── Conversores/comparadores jsonb ────────────────────────────────────────
 

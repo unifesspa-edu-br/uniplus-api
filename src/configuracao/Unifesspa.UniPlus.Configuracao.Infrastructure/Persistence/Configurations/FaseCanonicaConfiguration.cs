@@ -42,7 +42,7 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
     }
 
     // Codigo é value object imutável — persistido por valor como varchar via
-    // CodigoFaseValueConverter (reidratação fail-fast). O CHECK de formato, o
+    // CodigoFaseValueConverter (reidratação falha de imediato se o código gravado for inválido). O CHECK de formato, o
     // CHECK de conjunto canônico e o índice único parcial protegem a coluna.
     private static void ConfigurarIdentificacao(EntityTypeBuilder<FaseCanonica> builder)
     {
@@ -166,11 +166,11 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
 
         table.HasCheckConstraint(
             "ck_fases_canonicas_codigo_canonico",
-            $"codigo IN ({TokensSql(FaseCanonicaCatalogo.Codigos)})");
+            $"codigo IN ({CodigosSql(FaseCanonicaCatalogo.Codigos)})");
 
         table.HasCheckConstraint(
             "ck_fases_canonicas_origem_data",
-            $"origem_data IN ({TokensSql(OrigensDataFase.TokensCanonicos)})");
+            $"origem_data IN ({CodigosSql(OrigensDataFase.TokensCanonicos)})");
     }
 
     // Coerência: agrupa_etapas verdadeiro apenas para a fase de avaliação, e
@@ -183,11 +183,11 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
 
         table.HasCheckConstraint(
             "ck_fases_canonicas_complementacao",
-            $"permite_complementacao = false OR codigo IN ({TokensSql(FaseCanonicaCatalogo.CodigosComComplementacaoPermitida)})");
+            $"permite_complementacao = false OR codigo IN ({CodigosSql(FaseCanonicaCatalogo.CodigosComComplementacaoPermitida)})");
     }
 
     // Coerência: a marca de solicitação de isenção existe na fase de isenção, e só nela;
-    // coletar inscrição e coletar solicitação de isenção são janelas distintas.
+    // coletar inscrição e coletar solicitação de isenção são períodos distintos.
     private static void ConfigurarChecksDosSinalizadoresDaIsencao(TableBuilder<FaseCanonica> table)
     {
         table.HasCheckConstraint(
@@ -199,6 +199,6 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
             "NOT (coleta_inscricao AND coleta_solicitacao_isencao)");
     }
 
-    private static string TokensSql(IReadOnlyList<string> tokens) =>
-        string.Join(", ", tokens.Select(token => $"'{token}'"));
+    private static string CodigosSql(IReadOnlyList<string> codigos) =>
+        string.Join(", ", codigos.Select(codigo => $"'{codigo}'"));
 }

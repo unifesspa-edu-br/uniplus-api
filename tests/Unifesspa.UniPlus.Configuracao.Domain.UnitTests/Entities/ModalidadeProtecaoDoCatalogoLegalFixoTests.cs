@@ -152,8 +152,8 @@ public sealed class ModalidadeProtecaoDoCatalogoLegalFixoTests
         m.NaturezaLegal.Should().Be(NaturezaLegal.CotaReservada);
     }
 
-    [Fact(DisplayName = "Token inválido numa legal fixa reporta o erro de domínio, não a proteção")]
-    public void Atualizar_LegalFixaTokenInvalido_ReportaErroDeDominio()
+    [Fact(DisplayName = "Código inválido numa legal fixa reporta o erro de domínio, não a proteção")]
+    public void Atualizar_LegalFixaCodigoInvalido_ReportaErroDeDominio()
     {
         Modalidade m = CotaFederal();
 

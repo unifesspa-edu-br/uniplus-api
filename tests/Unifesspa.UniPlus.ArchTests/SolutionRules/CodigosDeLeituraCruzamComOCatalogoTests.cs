@@ -41,27 +41,27 @@ public sealed class CodigosDeLeituraCruzamComOCatalogoTests
 {
     [Fact(DisplayName = "Natureza legal: o código que Seleção lê é o que o catálogo publica")]
     public void NaturezaLegal_MesmoCodigoNosDoisModulos() =>
-        CadaMembroExcetoSentinela<NaturezaLegalModalidade, NaturezaLegalDoCatalogo>(
+        CadaMembroExceto<NaturezaLegalModalidade, NaturezaLegalDoCatalogo>(
             NaturezaLegalModalidade.Nenhuma,
             static local => local.ToCodigo(),
             NaturezasLegais.ParaTokenCanonico);
 
     [Fact(DisplayName = "Composição de vagas: o código que Seleção lê é o que o catálogo publica")]
     public void ComposicaoVagas_MesmoCodigoNosDoisModulos() =>
-        CadaMembroExcetoSentinela<ComposicaoVagasModalidade, ComposicaoVagasDoCatalogo>(
+        CadaMembroExceto<ComposicaoVagasModalidade, ComposicaoVagasDoCatalogo>(
             ComposicaoVagasModalidade.Nenhuma,
             static local => local.ToCodigo(),
             ComposicoesVagas.ParaTokenCanonico);
 
     [Fact(DisplayName = "Origem da data da fase: o código que Seleção lê é o que o catálogo publica")]
     public void OrigemDataFase_MesmoCodigoNosDoisModulos() =>
-        CadaMembroExcetoSentinela<OrigemDataFase, OrigemDataDoCatalogo>(
+        CadaMembroExceto<OrigemDataFase, OrigemDataDoCatalogo>(
             OrigemDataFase.Nenhuma,
             static local => local.ToCodigo(),
             OrigensDataFase.ParaTokenCanonico);
 
     /// <summary>
-    /// Remanejamento tem um caso a mais: <c>Nenhuma</c> não é sentinela de corrupção, e sim
+    /// Remanejamento tem um caso a mais: <c>Nenhuma</c> não indica corrupção, e sim
     /// a modalidade que não remaneja. O catálogo a representa por ausência do campo, e a
     /// leitura de Seleção precisa fazer o mesmo — um código próprio ali seria vocabulário
     /// que a outra rota não publica, e o cruzamento voltaria a falhar.
@@ -69,7 +69,7 @@ public sealed class CodigosDeLeituraCruzamComOCatalogoTests
     [Fact(DisplayName = "Regra de remanejamento: mesmo código, e a ausência é representada por null nos dois")]
     public void RegraRemanejamento_MesmoCodigoEAusenciaEmAmbos()
     {
-        CadaMembroExcetoSentinela<RegraRemanejamentoModalidade, RegraRemanejamentoDoCatalogo>(
+        CadaMembroExceto<RegraRemanejamentoModalidade, RegraRemanejamentoDoCatalogo>(
             RegraRemanejamentoModalidade.Nenhuma,
             static local => local.ToCodigo()!,
             RegrasRemanejamento.ParaTokenCanonico);
@@ -79,14 +79,14 @@ public sealed class CodigosDeLeituraCruzamComOCatalogoTests
             + "remaneja — emitir um código aqui inventaria vocabulário que a outra rota não conhece");
     }
 
-    private static void CadaMembroExcetoSentinela<TLocal, TCatalogo>(
-        TLocal sentinela,
+    private static void CadaMembroExceto<TLocal, TCatalogo>(
+        TLocal excecao,
         Func<TLocal, string> codigoEmSelecao,
         Func<TCatalogo, string> codigoNoCatalogo)
         where TLocal : struct, Enum
         where TCatalogo : struct, Enum
     {
-        foreach (TLocal local in Enum.GetValues<TLocal>().Where(v => !v.Equals(sentinela)))
+        foreach (TLocal local in Enum.GetValues<TLocal>().Where(v => !v.Equals(excecao)))
         {
             string nome = local.ToString();
 

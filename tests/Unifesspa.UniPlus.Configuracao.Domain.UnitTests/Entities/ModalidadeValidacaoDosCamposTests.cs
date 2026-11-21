@@ -11,7 +11,7 @@ using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Entities.ApoioDaMod
 /// <summary>Acúmulo de violações independentes e validação isolada dos campos de <see cref="Modalidade"/> (ADR-0125).</summary>
 public sealed class ModalidadeValidacaoDosCamposTests
 {
-    // ── Acumulação e gate entre campos independentes (ADR-0125) ────────────────
+    // ── Acumulação e dependência entre campos (ADR-0125) ────────────────
 
     [Fact(DisplayName = "Código ausente, descrição longa e natureza inválida acumulam as três violações")]
     public void Criar_TresViolacoesIndependentes_AcumulaAsTres()
@@ -26,7 +26,7 @@ public sealed class ModalidadeValidacaoDosCamposTests
         r.Errors[2].Field.Should().Be("naturezaLegal");
     }
 
-    [Fact(DisplayName = "Regra fora do domínio com parâmetro presente reporta só o token inválido, não a incoerência derivada")]
+    [Fact(DisplayName = "Regra fora do domínio com parâmetro presente reporta só o código inválido, não a incoerência derivada")]
     public void Criar_RegraInvalidaComParametro_NaoDerivaIncoerenciaDeParametro()
     {
         Result<Modalidade> r = Criar("AC_I", d => d.ComoAcaoAfirmativa("CASCATA") with { RemanejamentoDestino = "AC" });
@@ -34,7 +34,7 @@ public sealed class ModalidadeValidacaoDosCamposTests
         r.IsFailure.Should().BeTrue();
         r.Errors.Should().HaveCount(1,
             "a invariante de parâmetros por regra depende de RegraRemanejamento já reconhecida — " +
-            "reportá-la sobre um token que nem chegou a resolver seria um erro derivado, não independente");
+            "reportá-la sobre um código que nem chegou a resolver seria um erro derivado, não independente");
         r.Error!.Code.Should().Be(ModalidadeErrorCodes.RegraRemanejamentoInvalida);
     }
 

@@ -32,7 +32,7 @@ internal sealed class LocalOfertaConfiguration : IEntityTypeConfiguration<LocalO
 
         builder.Property(l => l.Tipo).HasConversion<string>().HasMaxLength(30).IsRequired();
 
-        // Referência de cidade do Geo (ADR-0090): código + display cache, sem FK
+        // Referência de cidade do Geo (ADR-0090): código + nome copiado, sem FK
         // cross-banco para uniplus_geo.
         builder.Property(l => l.CidadeCodigoIbge)
             .HasMaxLength(ReferenciaCidadeGeo.CodigoIbgeLength)

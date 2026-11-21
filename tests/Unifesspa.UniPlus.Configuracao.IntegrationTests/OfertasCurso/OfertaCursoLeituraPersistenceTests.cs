@@ -20,6 +20,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Configuracao.IntegrationTests.OfertasCurso.ApoioDaPersistenciaDeOfertaCurso;
 
@@ -67,7 +68,7 @@ public sealed class OfertaCursoLeituraPersistenceTests
         (await CursoReferenciadoAsync(cursoId)).Should().BeFalse("o soft-delete da oferta libera o curso para remoção");
     }
 
-    [Fact(DisplayName = "ListarPaginadoAsync filtra por cursoId e o recorte respeita o cursor bidirecional (itens + âncoras)")]
+    [Fact(DisplayName = "ListarPaginadoAsync filtra por cursoId e a página respeita o cursor bidirecional (itens + cursores)")]
     public async Task ListarPaginado_FiltraPorCursoId_RespeitaCursorBidirecional()
     {
         (Guid cursoA, List<Guid> ordemA) = await SemearOfertasIntercaladasDeDoisCursosAsync();
@@ -80,7 +81,7 @@ public sealed class OfertaCursoLeituraPersistenceTests
         ConferirSegundaPagina(pagina2, ordemA, cursoA);
         PaginaDeOfertas anterior = await PaginaAsync(repository, cursoA, limit: 2, apos: pagina2.Anterior, PaginationDirection.Prev);
         ConferirPaginaAnterior(anterior, ordemA, cursoA);
-        (await PaginaAsync(repository, Guid.CreateVersion7(), limit: 50)).Itens.Should().BeEmpty("curso sem ofertas → recorte vazio");
+        (await PaginaAsync(repository, Guid.CreateVersion7(), limit: 50)).Itens.Should().BeEmpty("curso sem ofertas → página vazia");
     }
 
     [Fact(DisplayName = "O reader acompanha a oferta do grupo de área do ENEM do curso, ou de nulo quando o curso não o declara")]
@@ -107,7 +108,7 @@ public sealed class OfertaCursoLeituraPersistenceTests
     }
 
     // issue #755: o filtro entra no IQueryable ANTES do keyset — itens, prev e next devem ficar todos dentro do
-    // recorte do curso A, ignorando o curso B. A criação é intercalada (A, B, A, B, A) para provar que o filtro
+    // conjunto do curso A, ignorando o curso B. A criação é intercalada (A, B, A, B, A) para provar que o filtro
     // isola o curso; a ordem esperada é a do banco (uuid), derivada dele para não depender de Guid.CompareTo no cliente.
     private async Task<(Guid CursoA, List<Guid> OrdemDeA)> SemearOfertasIntercaladasDeDoisCursosAsync()
     {
@@ -136,7 +137,7 @@ public sealed class OfertaCursoLeituraPersistenceTests
         repository.ListarPaginadoAsync(
             OrdenacaoPadraoDeOferta, busca: null, apos?.SortKey, apos?.Id, limit, direcao, cursoId, includeTotal: false, CancellationToken.None);
 
-    // Dentro do recorte de um curso, nome e código são constantes e o Id é a única coluna que move o seek —
+    // Dentro das ofertas de um curso, nome e código são constantes e o Id é a única coluna que move o seek —
     // por isso a ordem esperada é a de Id.
     private static void ConferirPrimeiraPagina(PaginaDeOfertas pagina, List<Guid> ordemA, Guid cursoA)
     {
@@ -182,5 +183,5 @@ public sealed class OfertaCursoLeituraPersistenceTests
     private static LocalOferta CampusSedeEmMaraba() =>
         LocalOferta.Criar(
             new(TipoLocalOferta.CampusSede, null, "1504208", "Marabá", "PA", null, null),
-            Agora).Value!;
+            Agora).ValorEsperado();
 }

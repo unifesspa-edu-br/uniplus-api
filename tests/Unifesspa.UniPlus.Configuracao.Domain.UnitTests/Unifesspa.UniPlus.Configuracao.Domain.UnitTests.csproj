@@ -21,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../Shared/ResultadoDeTeste.cs" Link="ResultadoDeTeste.cs" />
     <Compile Include="../Shared/TipoEtapaDeTeste.cs" Link="TipoEtapaDeTeste.cs" />
   </ItemGroup>
 

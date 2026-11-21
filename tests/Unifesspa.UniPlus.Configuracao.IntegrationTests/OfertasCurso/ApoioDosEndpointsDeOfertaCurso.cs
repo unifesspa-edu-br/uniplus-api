@@ -23,6 +23,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 internal sealed class ApoioDosEndpointsDeOfertaCurso
 {
@@ -157,7 +158,7 @@ internal sealed class ApoioDosEndpointsDeOfertaCurso
             CodigoUnico(), nomeCurso, "Bacharelado", "Graduação", null).Value!;
         LocalOferta local = LocalOferta.Criar(
             new(TipoLocalOferta.CampusSede, null, "1504208", "Marabá", "PA", null, null),
-            Agora).Value!;
+            Agora).ValorEsperado();
 
         await PersistirAsync(curso, local);
 

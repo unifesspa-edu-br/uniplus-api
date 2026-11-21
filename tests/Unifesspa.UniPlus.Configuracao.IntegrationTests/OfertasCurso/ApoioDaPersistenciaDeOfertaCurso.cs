@@ -21,6 +21,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 internal sealed class ApoioDaPersistenciaDeOfertaCurso
 {
@@ -89,7 +90,7 @@ internal sealed class ApoioDaPersistenciaDeOfertaCurso
             CodigoUnico(), "Engenharia Civil", "Bacharelado", "Graduação", null).Value!;
         LocalOferta local = LocalOferta.Criar(
             new(TipoLocalOferta.CampusSede, null, "1504208", "Marabá", "PA", null, null),
-            Agora).Value!;
+            Agora).ValorEsperado();
 
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
         ctx.Cursos.Add(curso);
