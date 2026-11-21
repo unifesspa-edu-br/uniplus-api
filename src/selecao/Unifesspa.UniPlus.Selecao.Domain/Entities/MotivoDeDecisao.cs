@@ -78,16 +78,17 @@ public sealed class MotivoDeDecisao : EntityBase, IAuditableEntity
             return Result<MotivoDeDecisao>.ValidationFailure(validados.Errors);
         }
 
-        CamposValidados valor = validados.Value!;
-        return Result<MotivoDeDecisao>.Success(new MotivoDeDecisao
-        {
-            Tipo = valor.Tipo,
-            Codigo = valor.Codigo,
-            Descricao = valor.Descricao,
-            Subclassificacao = valor.Subclassificacao,
-            Sentido = valor.Sentido,
-        });
+        return Result<MotivoDeDecisao>.Success(NovoAtivoCom(validados.Value!));
     }
+
+    private static MotivoDeDecisao NovoAtivoCom(CamposValidados valor) => new()
+    {
+        Tipo = valor.Tipo,
+        Codigo = valor.Codigo,
+        Descricao = valor.Descricao,
+        Subclassificacao = valor.Subclassificacao,
+        Sentido = valor.Sentido,
+    };
 
     /// <summary>
     /// Atualiza a descrição, único campo editável. Não altera <see cref="Ativo"/>: reativar e
